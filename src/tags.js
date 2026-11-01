@@ -11,6 +11,7 @@
  */
 import { AuditLog } from './audit.js'
 import { diagnosticOf } from './errors.js'
+import { APPROVAL } from './constants.js'
 
 export class TagRecords {
   #log
@@ -41,6 +42,23 @@ export class TagRecords {
     } catch (error) {
       this.#logger.warn('tag record failed (%s)', diagnosticOf(error))
     }
+  }
+
+  /**
+   * Record one answer, placed in the asking turn by the seq of the asking call's `tool/call` event
+   * (§7a.3 "Tags", S37). A call the log does not show as a `tool/call` (a run_code inner call, a
+   * subagent's call) takes the session's latest seq: the asking turn is still running while
+   * Fishball answers, so it lies inside it. Shared by permission requests and questions (rev11g).
+   * @param target.session - the session the user sees (its log); the other fields as add() takes them.
+   */
+  async addForCall({ session, sessionId, callId, answer, kind, grant }) {
+    const events = session.snapshotEvents()
+    let seq = events.at(-1)?.seq
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (events[i].type === APPROVAL.toolCallEvent && events[i].data?.callId === callId) { seq = events[i].seq; break }
+    }
+    if (seq === undefined) return
+    await this.add({ sessionId, callId, seq, answer, kind, grant })
   }
 
   /** The kept records for the browser, newest first. */

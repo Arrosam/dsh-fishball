@@ -83,22 +83,33 @@ describe('Revision 11 rev11g: refused answers, children, and off', () => {
         assert.equal((await q.pile()).length, 0)
       })
     }
-    it('VAL-05 the route with a malformed batch is not 200; the question stays open', T, async () => {
-      await q.t.setLimit({ approvalAnswerSeconds: 1 })
-      const card = await q.pileCard(x, 8000)
-      assert.ok(card, 'to the pile after the limit')
-      const r = await q.route({ questionId: cardId(card), answers: ok.slice(0, 2) })
-      assert.notEqual(r.status, 200, r.text)
-      assert.ok(await q.pileCard(x, 500), 'the card stays')
-      assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'open')
-    })
     it('VAL-02 a good batch is then accepted, and the result is exactly that batch', T, async () => {
-      const r = await q.route({ questionId: qid, answers: ok })
-      assert.equal(r.status, 200, r.text)
+      const r = await q.fbAnswer({ question_id: qid, answers: ok })
+      assert.equal(r.json?.ok, true, r.result.text)
       assert.equal((await q.result(x, id)).text, resultText(ok))
       await ctx.host.call('waitIdle', { sessionId: x })
-      await q.t.setLimit({ approvalAnswerSeconds: 120 })
     })
+  })
+
+  it('VAL-05 the route with a malformed batch is not 200; the question stays open; a good batch then works', T, async () => {
+    await q.t.setLimit({ approvalAnswerSeconds: 1 })
+    try {
+      const text = tok('v5')
+      const id = cid('v5')
+      const own = await q.ask(x, text, id, { questions: Q.mixed(text) })
+      const card = await q.pileCard(x, 8000)
+      assert.ok(card, 'to the pile after the limit')
+      const good = [{ id: 'color', selected: ['Red'] }, { id: 'parts', selected: ['Tests'] }, { id: 'name', selected: [], custom: 'a' }]
+      for (const answers of [good.slice(0, 2), [{ id: 'color', selected: ['Red', 'Blue'] }, good[1], good[2]]]) {
+        const r = await q.route({ questionId: cardId(card), answers })
+        assert.notEqual(r.status, 200, r.text)
+        assert.ok(await q.pileCard(x, 500), 'the card stays')
+        assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'open')
+      }
+      assert.equal((await q.route({ questionId: cardId(card), answers: good })).status, 200)
+      assert.equal((await q.result(x, id)).text, resultText(good))
+      await ctx.host.call('waitIdle', { sessionId: x })
+    } finally { await q.t.setLimit({ approvalAnswerSeconds: 120 }) }
   })
 
   describe('VAL-03 / VAL-04 boundaries of selection', () => {

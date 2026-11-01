@@ -62,7 +62,8 @@ describe('Revision 11 rev11g: question and plan-review tags', () => {
     assert.equal(tag.kind, QUESTION_TAG_KIND.question)
     assert.equal(tag.sessionId, x)
     assert.ok(Number.isInteger(tag.seq))
-    assert.match(JSON.stringify(tag.answer), /Blue/)
+    // The stored record holds no answer text (DESIGN §9 "never stored", the user's confirmed reading); the page reads Fishball's answer from the log.
+    assert.equal(tag.answer, 'answer')
     assert.ok(Number.isFinite(typeof tag.at === 'number' ? tag.at : Date.parse(tag.at)))
     assert.equal(q.tagsOf(id).length, 1)
     const place = await placeOf(x, id)
@@ -86,7 +87,7 @@ describe('Revision 11 rev11g: question and plan-review tags', () => {
     assert.equal(a?.kind, QUESTION_TAG_KIND.planReview)
     assert.match(JSON.stringify(a.answer), /approve/i)
     assert.equal(b?.kind, QUESTION_TAG_KIND.planReview)
-    assert.ok(JSON.stringify(b.answer).includes(feedback), 'the feedback: ' + JSON.stringify(b.answer))
+    assert.match(JSON.stringify(b.answer), /keep/i, 'keep planning (the record holds no feedback text): ' + JSON.stringify(b.answer))
     await q.planOff(x)
   })
 
@@ -124,8 +125,10 @@ describe('Revision 11 rev11g: question and plan-review tags', () => {
     assert.equal((await q.result(x, ib))?.text, resultText([{ id: 'sizeB', selected: ['M'] }]))
     const [a, b] = [await q.untilTag(ia), await q.untilTag(ib)]
     assert.ok(a && b, 'a tag for each call: ' + JSON.stringify(storedRows(ctx.home, 'tags').slice(-3)))
-    assert.match(JSON.stringify(a.answer), /Red/)
-    assert.match(JSON.stringify(b.answer), /\bM\b/)
+    const published = snapshotTags(await ctx.host.state())
+    assert.match(JSON.stringify(published.find((p) => p.callId === ia)), /Red/, 'the published tag carries Fishball\'s words, read from the log')
+    assert.match(JSON.stringify(published.find((p) => p.callId === ib)), /\bM\b/)
+    assert.equal(a.answer, 'answer')
     assert.notEqual(a.seq, b.seq)
   })
 

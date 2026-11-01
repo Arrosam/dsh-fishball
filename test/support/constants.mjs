@@ -224,10 +224,10 @@ export const API = {
 }
 
 // ---- P5 (messaging, intake, outbox) ----
-/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16). */
+/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16); rev11g 'questionMode' (DESIGN §10e snapshot). */
 /** P11 R2 adds 'look' (17). */
 /** Revision 10c adds 'features' (18). Revision 11 rev11a adds 'managed' (19, DESIGN §10e "Snapshot"); rev11c adds 'pile' (20). The tag records the Host publishes (§9 "Tag records") may add a 'tags' key, whose name the design leaves open: tests drop it before comparing (STATE_KEYS_OPTIONAL). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'grants', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'pile', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'grants', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'pile', 'preferences', 'questionMode', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
 /** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
 export const STATE_KEYS_OPTIONAL = ['tags']
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
@@ -620,7 +620,7 @@ export const OWN_PLUGINS = {
   watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
   plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
   // Revision 11 rev11b: ask_fishball and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
-  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant'] },
+  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant', 'list_frozen_sessions', 'answer_prompt', 'withdraw_request', 'answer_question'] },
 }
 /** The five entries of the "Fishball" group (snapshot dsh 'fishball'): the four above and the Messenger look. */
 export const FISHBALL_GROUP_KEYS = [...Object.values(OWN_PLUGINS).map((p) => p.key), 'builtin:messenger']
@@ -780,7 +780,7 @@ export const PROMPT_MANAGED_LABEL = 'Prompt answered by Fishball'
  * notice that wakes it after Allow ("approved, run it again", item 22). The texts are matched, not compared whole:
  * the design gives their meaning, the client/plugin the exact wording (S35's wording is a proposal).
  */
-export const OWN_REQUEST = { code: 'waiting-for-approval', waiting: /waiting for your approval/i, again: /run it again/i, table: 'own_requests' }
+export const OWN_REQUEST = { code: 'waiting-for-approval', waiting: /waiting[- ]for[- ](your )?approval|waits for the user's approval/i, again: /run it again/i, table: 'own_requests' }
 /** Fishball's tool that removes its own card (item 23, §7a.11); its argument is `request_id`. */
 export const WITHDRAW_TOOL = 'withdraw_request'
 /** `own_requests` statuses (§9). */

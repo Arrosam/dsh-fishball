@@ -34,7 +34,8 @@ export const qHost = (label, env = {}) => pileHost(label, { env: { FBTEST_QUESTI
 
 /** The id a pile card is answered by (§10e: `questionId`; tolerant of the card also carrying it as requestId/id). */
 export const cardId = (card) => card?.questionId ?? card?.requestId ?? card?.id
-export const isQuestionCard = (c) => c?.kind === CARD_KIND.question
+/** A question or plan-review card (the builder's cards carry kind 'question' or 'plan-review'; the design's §9 names only 'question'). */
+export const isQuestionCard = (c) => c?.kind === CARD_KIND.question || c?.kind === 'plan-review'
 /** A card whose JSON mentions this token. */
 export const cardMentions = (card, token) => JSON.stringify(card ?? {}).includes(token)
 
@@ -92,7 +93,7 @@ export function qTools(ctx, names) {
     async questionId(text, timeoutMs = 10000) {
       return until(async () => {
         const events = (await ctx.host.call('inspect', { sessionId: ctx.fb, events: true })).events ?? []
-        return events.filter((e) => e.type === 'user/message' && e.source?.kind === 'fishball-notice' && e.text.includes(text)).map((e) => /qst_[\w-]+/.exec(e.text)?.[1]).filter(Boolean).at(-1) ?? false
+        return events.filter((e) => e.type === 'user/message' && e.source?.kind === 'fishball-notice' && e.text.includes(text)).map((e) => /qst_[\w-]+/.exec(e.text)?.[0]).filter(Boolean).at(-1) ?? false
       }, timeoutMs, 100)
     },
     /** Fishball's notices (user messages of source fishball-notice) containing text. */
@@ -121,7 +122,10 @@ export function qTools(ctx, names) {
     route: (body, opts) => ctx.host.post(QUESTION_API.answer, body, opts),
     /** Fishball's model-request count and intake item count: a question Fishball was not told about moves neither. */
     async fbWork() { return { steps: (await ctx.host.call('requests', { sessionId: ctx.fb })).length, items: ((await ctx.host.state())?.intake?.items ?? []).length } },
-    tagsOf: (callId) => storedRows(ctx.home, 'tags').filter((r) => r.callId === callId),
+    /** The tags that record Fishball's ANSWER to a question or plan review (kind question / plan-review). */
+    tagsOf: (callId) => storedRows(ctx.home, 'tags').filter((r) => r.callId === callId && ['question', 'plan-review'].includes(r.kind)),
+    /** Every tag of a call, whatever its kind (e.g. 'sent-to-you' when Fishball sends it to you). */
+    allTagsOf: (callId) => storedRows(ctx.home, 'tags').filter((r) => r.callId === callId),
     untilTag: (callId, timeoutMs = 8000) => until(() => q.tagsOf(callId)[0] ?? false, timeoutMs, 100),
     allEvents: async (sid) => (await ctx.host.call('inspect', { sessionId: sid, events: true })).events ?? [],
     /** Stop the turn of a session the way the Stop button does. */
