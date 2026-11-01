@@ -26,7 +26,7 @@ import './src/tool-attribution.js'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Config, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER, HTTP, PLUGIN_MANAGER, PACKAGE_ERROR, FEATURE_OFF } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER, HTTP, PACKAGE_ERROR, FEATURE_OFF } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -142,7 +142,7 @@ export async function apply(ctx, config) {
   }
   const packages = new FishballPackages(ctx, logger)
   // Installs run DSH's own install process, inherited for Fishball's folder (DESIGN §10d, S31).
-  packages.attachManager((facts) => mountFishballPluginManager(ctx, facts))
+  packages.attachManager((facts) => mountFishballPluginManager(ctx, facts, limits().pluginManagerStartMs))
   // Boot mounts the tree once with the first evaluation; later policy changes remount through
   // the catalog's idle-phase apply (a change mid-turn waits for the turn to end).
   let booted = false
@@ -152,6 +152,7 @@ export async function apply(ctx, config) {
     onChange: () => publish(),
     onPolicyChange: () => { if (booted) void catalog.schedule() },
     isCompactionRunning: () => catalog.isRunning(CONTEXT.compactionPlugin),
+    readLimits: limits,
   })
   const catalog = new PluginCatalog(ctx, store, logger, {
     readLimits: limits,
@@ -203,6 +204,7 @@ export async function apply(ctx, config) {
     packages,
     settings,
     logger,
+    readLimits: limits,
   })
   // An uninstall a restart interrupted finishes now (its rows were not mounted at boot).
   void catalog.finishRemovals()
@@ -366,7 +368,7 @@ export async function apply(ctx, config) {
   commands.pluginDetail = async (plugin) => {
     await knownPlugin(plugin, HTTP.notFound)
     const { shared, rows } = await settings.describe(plugin)
-    return { plugin, shared, settings: catalog.settingsState(plugin), rows, history: catalog.history(plugin, PLUGIN_MANAGER.historyEntries) }
+    return { plugin, shared, settings: catalog.settingsState(plugin), rows, history: catalog.history(plugin, limits().pluginHistoryShown) }
   }
   commands.pluginIcon = (plugin) => {
     const icon = catalog.has(plugin) ? catalog.iconOf(plugin) : undefined

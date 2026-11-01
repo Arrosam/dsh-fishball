@@ -36,7 +36,7 @@ import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { AGENT_IDLE, EVENT, INTAKE_KIND, SOURCE, WATCH, WATCH_BY, WATCH_CONDITION, WATCH_ERROR, WATCH_IGNORED_REASONS, WATCH_MODE, WATCH_STATUS } from './constants.js'
-import { describeSession, lastAnswerExcerpt, readSessionMessages } from './session-info.js'
+import { describeSession, lastAnswerExcerpt, lastSeqOf, readSessionMessages } from './session-info.js'
 import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { diagnosticOf } from './errors.js'
@@ -144,7 +144,7 @@ export class Watches {
     return this.#serial(async () => {
       if (!this.#isEnabled()) throw new WatchError(WATCH_ERROR.featureOff)
       if (sessionId === this.#assistantId()) throw new WatchError(WATCH_ERROR.isFishball)
-      const info = await describeSession(this.#ctx, sessionId)
+      const info = await describeSession(this.#ctx, sessionId, this.#readLimits().forwardExcerptBytes)
       if (info === undefined) throw new WatchError(WATCH_ERROR.unknownSession)
       if (info.archived) throw new WatchError(WATCH_ERROR.archived)
       const same = this.#active().find(([, w]) => w.targetSessionId === sessionId && w.condition === condition && w.mode === mode)
@@ -168,7 +168,7 @@ export class Watches {
 
   /** The target's current last seq (a watermark taken before a message is delivered). */
   async watermarkOf(sessionId) {
-    return (await describeSession(this.#ctx, sessionId))?.lastSeq
+    return lastSeqOf(this.#ctx, sessionId)
   }
 
   /** Close one watch. @throws WatchError(unknownWatch). */
@@ -209,7 +209,7 @@ export class Watches {
     const all = [...this.#store.watches.entries()].sort(([, a], [, b]) => (a.status === OPEN) !== (b.status === OPEN) ? (a.status === OPEN ? -1 : 1) : (a.createdAt < b.createdAt ? 1 : -1))
     return {
       active: this.#active().length,
-      watches: all.slice(0, WATCH.shown).map(([id, w]) => this.#view(id, w)),
+      watches: all.slice(0, this.#readLimits().watchesShown).map(([id, w]) => this.#view(id, w)),
     }
   }
 
@@ -255,7 +255,8 @@ export class Watches {
         if (sessionId === this.#assistantId()) return refused(WATCH_ERROR.isFishball)
         // Unknown first, then relatedness (P6 test A68); reading a session tells nothing beyond
         // whether it exists until it is related.
-        const read = await readSessionMessages(this.#ctx, sessionId, WATCH.readMessages, WATCH.readBytes)
+        const { readSessionMessages: count, readSessionBytes: maxBytes, forwardExcerptBytes } = this.#readLimits()
+        const read = await readSessionMessages(this.#ctx, sessionId, count, maxBytes, forwardExcerptBytes)
         if (read === undefined) return refused(WATCH_ERROR.unknownSession)
         if (!related(sessionId)) return refused(WATCH_ERROR.notRelated)
         return ok({
@@ -331,7 +332,8 @@ export class Watches {
     const events = all.filter((event) => event.seq > record.lastSeenSeq && (event.type === WATCH.turnEndEvent || event.type === EVENT.turnStart))
     const ends = events.filter((event) => event.type === WATCH.turnEndEvent)
     // The notice shows the answer as of that turn end, not a later one (P6 re-review L1).
-    const answerAt = (seq) => lastAnswerExcerpt(all.filter((event) => event.seq < seq))
+    const excerptBytes = this.#readLimits().forwardExcerptBytes
+    const answerAt = (seq) => lastAnswerExcerpt(all.filter((event) => event.seq < seq), excerptBytes)
     if (record.condition === WATCH_CONDITION.perTurn) {
       for (const end of ends) {
         const reason = end.data?.reason?.kind
@@ -364,7 +366,7 @@ export class Watches {
     const record = this.#store.watches.get(id)
     if (record === undefined || record.status !== OPEN || seq <= record.lastSeenSeq) return true
     if (!this.#isEnabled()) { await this.#advance(id, seq); return true }
-    const described = (await describeSession(this.#ctx, record.targetSessionId)) ?? { id: record.targetSessionId, title: '', cwd: null }
+    const described = (await describeSession(this.#ctx, record.targetSessionId, this.#readLimits().forwardExcerptBytes)) ?? { id: record.targetSessionId, title: '', cwd: null }
     const info = { ...described, excerpt }
     try {
       await this.#ledger.publish({
