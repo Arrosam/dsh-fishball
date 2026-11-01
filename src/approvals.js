@@ -78,7 +78,6 @@ import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
 import { diagnosticOf } from './errors.js'
 import { checkGrant } from './grants.js'
-import { waitingResult } from './own-requests.js'
 
 export const APPROVAL_TOOL = Object.freeze({ answer: 'answer_approval', listPrompts: 'list_frozen_sessions', answerPrompt: 'answer_prompt' })
 const SOURCE_IDENTITY = 'fishball/approval'
@@ -917,7 +916,8 @@ export class ApprovalBroker {
       return APPROVAL_OUTCOME.rejected
     }
     if (id === undefined) {
-      this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
+      // Fishball's own tool reads too-many-waiting back as JSON (cardFor); another plugin's tool gets the text by its mark.
+      if (expected === undefined) this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
       return APPROVAL_OUTCOME.rejected
     }
     if (expected === undefined) this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.waiting, requestId: id })
@@ -927,12 +927,11 @@ export class ApprovalBroker {
 
   /**
    * Fishball's own tool, after its request was answered 'rejected': the waiting result when the
-   * request became a card (§7a.11), or undefined when it was refused without one (a never-asking
-   * mode, S35; the cap, whose text post-execute sets).
+   * request became a card (§7a.11), too-many-waiting past the cap, or undefined when it was
+   * refused without either (a never-asking mode, S35).
    */
   cardFor(callId) {
-    const id = this.#own.takeFiled(callId)
-    return id === undefined ? undefined : waitingResult(id)
+    return this.#own.takeFiled(callId)
   }
 
   /**
