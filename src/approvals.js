@@ -152,7 +152,7 @@ const TEXT = Object.freeze({
   userOutcome: (outcome) => `went to the user in that session; the user's answer: ${outcome}`,
   pileOutcome: (outcome) => `went to the user's pile; the user's answer: ${outcome}`,
   timedOut: 'got no answer in time and went to the user',
-  listPromptsDescription: 'List the prompts already showing in other sessions: permission requests waiting there for the user\'s Allow once or Reject that you are not deciding and that are not in the user\'s pile. Look only when the user asks, or when another session\'s message gives you a reason to. Each has its prompt id, its session, the tool and the exact arguments.',
+  listPromptsDescription: 'List the prompts already showing in other sessions: permission requests waiting there for the user\'s Allow once or Reject that you are not deciding and that are not in the user\'s pile. Each has its prompt id, its session, the tool and the exact arguments.',
   answerPromptDescription: 'Answer one prompt from list_frozen_sessions. "allow" runs that call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "reject" refuses it with a reason the session sees. The prompt closes, the session continues, and that session becomes one you manage.',
   promptIdArg: 'The prompt id, e.g. prm_7f3c…, from list_frozen_sessions.',
   promptDecisionArg: '"allow" (low risk, within the user\'s allowance) or "reject" (with a reason the session sees).',
@@ -439,19 +439,27 @@ export class ApprovalBroker {
     if (rationale.length === 0) return refused(APPROVAL_ERROR.reasonRequired)
     const outcome = PROMPT_OUTCOME[decision]
     // Lost the race (you clicked, or the call was cancelled, a moment ago): already answered.
-    if (!prompt.answer(outcome)) return refused(APPROVAL_ERROR.expired)
-    // Set in the same tick, before DSH runs the call's post-execute: the agent reads the reason.
-    if (outcome === APPROVAL_OUTCOME.rejected) this.#wording.mark(prompt.callId, prompt.sessionId, prompt.toolName, { kind: WORDING.reject, reason: rationale })
-    // Tagged first, while the answered call is still the session's latest event (a call the log
-    // does not show as a tool/call falls back to the latest seq, §7a.3 "Tags").
-    await this.#tag(prompt, decision, TAG_KIND.prompt)
+    // The answer wins now (the prompt closes), but the call is released only once the session is
+    // managed, so the agent's very next model request already has the managed tools (§14 rev11e).
+    let release
+    const ready = new Promise((resolve) => { release = resolve })
+    if (!prompt.answer(outcome, ready)) return refused(APPROVAL_ERROR.expired)
     let managed
     try {
+      // Set before the call goes on to DSH's post-execute: the agent reads the reason.
+      if (outcome === APPROVAL_OUTCOME.rejected) this.#wording.mark(prompt.callId, prompt.sessionId, prompt.toolName, { kind: WORDING.reject, reason: rationale })
+      // Tagged while the answered call is still the session's latest event (a call the log does
+      // not show as a tool/call falls back to the latest seq, §7a.3 "Tags").
+      await this.#tag(prompt, decision, TAG_KIND.prompt)
       managed = (await this.#manage(prompt.sessionId, MANAGED_BY.promptAnswer)) ? PROMPT_MANAGED.now : PROMPT_MANAGED.already
     } catch (error) {
       this.#logger.warn('answer_prompt could not make %s managed (%s)', prompt.sessionId, diagnosticOf(error))
       managed = PROMPT_MANAGED.failed
+    } finally {
+      release()
     }
+    // Both audits (§9, the manager's decision 2026-11-02): the request's approvals row (kind prompt) and Fishball's decision.
+    await this.#record({ ...prompt, at: prompt.since, answer: DECISION_ANSWER[decision], kind: REQUEST_KIND.prompt, risk, rationale, finalOutcome: outcome })
     await this.#decide({ action: DECISION_ACTION.answerPrompt, sessionId: prompt.sessionId, target: id, rationale, outcome })
     return ok({ promptId: id, decision, sessionId: prompt.sessionId, managed: managed !== PROMPT_MANAGED.failed, note: TEXT.promptManaged[managed] })
   }
@@ -950,19 +958,20 @@ export class ApprovalBroker {
       let settled = false
       const onAbort = () => finish({ outcome: APPROVAL_OUTCOME.cancelled, by: PROMPT_BY.cancelled })
       /** Settle once; @returns whether this settle won. */
-      const finish = (result) => {
+      /** @param result.ready - answer_prompt's: the outcome goes back to DSH only once it settles. */
+      const finish = ({ ready, ...result }) => {
         if (settled) return false
         settled = true
         this.#prompts.delete(id)
         asker?.removeEventListener('abort', onAbort)
         own.abort()
         if (card !== undefined) this.#pile.settle(card.requestId, { end: result.by === PROMPT_BY.session ? CARD_END.inSession : CARD_END.cancelled })
-        resolve(result)
+        resolve(ready === undefined ? result : ready.then(() => result))
         return true
       }
       this.#prompts.set(id, {
         id, sessionId: call.sessionId, session: call.session, toolName: call.toolName, callId: call.callId, args: call.args,
-        since: new Date().toISOString(), cardId: card?.requestId, answer: (outcome) => finish({ outcome, by: PROMPT_BY.fishball }),
+        since: new Date().toISOString(), cardId: card?.requestId, answer: (outcome, ready) => finish({ outcome, by: PROMPT_BY.fishball, ready }),
       })
       // Your answer on the card settles the race in the same tick (so nothing slips in after the
       // route said yes); a card that leaves for any other reason (Fishball off, released, the
