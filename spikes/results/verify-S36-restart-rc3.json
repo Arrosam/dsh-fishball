@@ -1,0 +1,263 @@
+{
+  "id": "S36-question-routing-restart-0.2.1-rc.3",
+  "started": "2026-11-01T09:02:17.905Z",
+  "finished": "2026-11-01T09:02:23.713Z",
+  "runtime": "0.2.1-rc.3",
+  "node": "v22.22.2",
+  "pass": true,
+  "home": "/Volumes/SSD1/GitHub/dsh-fishball/.claude/worktrees/test-s34-s36-98403f/.runtime/spikes/s36-1793523587869",
+  "sessions": {
+    "legacy": "session-0503ebaa-4b50-49bc-b23b-5ca407a1353e",
+    "timedOpen": "session-aa43eeb7-3f67-4724-8571-b50afb96f99f",
+    "timedContinued": "session-c6fc62ac-9880-4b07-a133-23b95c65653c",
+    "plan": "session-058731ac-07fc-4d4f-a4f4-281eaea0400b"
+  },
+  "recovered": {
+    "legacy": {
+      "found": [],
+      "projection": {
+        "active": [],
+        "settled": []
+      },
+      "lastResult": {
+        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly.",
+        "isError": true,
+        "error": {
+          "name": "ToolOutcomeUnknownError",
+          "code": "TOOL_OUTCOME_UNKNOWN"
+        }
+      }
+    },
+    "timedOpen": {
+      "found": [
+        {
+          "callId": "call_rt",
+          "kind": "question"
+        }
+      ],
+      "projection": {
+        "active": [
+          {
+            "callId": "call_rt",
+            "questions": [
+              {
+                "id": "color",
+                "question": "Which colour?",
+                "options": [
+                  {
+                    "label": "Red (Recommended)"
+                  },
+                  {
+                    "label": "Blue"
+                  }
+                ]
+              },
+              {
+                "id": "parts",
+                "question": "Which parts?",
+                "options": [
+                  {
+                    "label": "Docs"
+                  },
+                  {
+                    "label": "Tests"
+                  },
+                  {
+                    "label": "Code"
+                  }
+                ],
+                "multiSelect": true
+              },
+              {
+                "id": "name",
+                "question": "Name for the branch?"
+              },
+              {
+                "id": "size",
+                "question": "Which size?",
+                "options": [
+                  {
+                    "label": "S"
+                  },
+                  {
+                    "label": "M"
+                  }
+                ]
+              },
+              {
+                "id": "skip",
+                "question": "Anything else?",
+                "options": [
+                  {
+                    "label": "No"
+                  }
+                ]
+              }
+            ],
+            "state": "continued"
+          }
+        ],
+        "settled": []
+      },
+      "lastResult": {
+        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly.",
+        "isError": true,
+        "error": {
+          "name": "ToolOutcomeUnknownError",
+          "code": "TOOL_OUTCOME_UNKNOWN"
+        }
+      }
+    },
+    "timedContinued": {
+      "found": [
+        {
+          "callId": "call_rc",
+          "kind": "question"
+        }
+      ],
+      "projection": {
+        "active": [
+          {
+            "callId": "call_rc",
+            "questions": [
+              {
+                "id": "color",
+                "question": "Which colour?",
+                "options": [
+                  {
+                    "label": "Red (Recommended)"
+                  },
+                  {
+                    "label": "Blue"
+                  }
+                ]
+              },
+              {
+                "id": "parts",
+                "question": "Which parts?",
+                "options": [
+                  {
+                    "label": "Docs"
+                  },
+                  {
+                    "label": "Tests"
+                  },
+                  {
+                    "label": "Code"
+                  }
+                ],
+                "multiSelect": true
+              },
+              {
+                "id": "name",
+                "question": "Name for the branch?"
+              },
+              {
+                "id": "size",
+                "question": "Which size?",
+                "options": [
+                  {
+                    "label": "S"
+                  },
+                  {
+                    "label": "M"
+                  }
+                ]
+              },
+              {
+                "id": "skip",
+                "question": "Anything else?",
+                "options": [
+                  {
+                    "label": "No"
+                  }
+                ]
+              }
+            ],
+            "state": "continued"
+          }
+        ],
+        "settled": []
+      },
+      "lastResult": {
+        "text": "{\"pending\":true,\"callId\":\"call_rc\",\"message\":\"No answer batch arrived before the timeout. This is pending, not a skipped answer. Continue useful independent work. The user can still answer; their reply will be a user message identified as answer_to_pending_question with this callId and the original questions. Do not treat this as permission.\"}",
+        "isError": false
+      }
+    },
+    "plan": {
+      "found": [],
+      "projection": {
+        "active": [],
+        "settled": []
+      },
+      "lastResult": {
+        "text": "The tool call was interrupted after it was recorded, but no result was durably recorded. Its outcome is unknown. Decide whether to retry from the tool semantics: retry only if the operation is read-only or idempotent; if it may have side effects, first verify external state or ask the user. Do not retry blindly.",
+        "isError": true,
+        "error": {
+          "name": "ToolOutcomeUnknownError",
+          "code": "TOOL_OUTCOME_UNKNOWN"
+        }
+      }
+    }
+  },
+  "browserWaterfallsAfterRestart": 0,
+  "answered": {
+    "ok": true,
+    "path": "reply"
+  },
+  "replies": [
+    {
+      "source": {
+        "kind": "user-question-reply",
+        "callId": "call_rt",
+        "outcome": "answered"
+      },
+      "answersEqualFishball": true
+    }
+  ],
+  "projectionAfter": {
+    "active": [],
+    "settled": [
+      {
+        "callId": "call_rt",
+        "answers": [
+          {
+            "id": "color",
+            "selected": [
+              "Blue"
+            ]
+          },
+          {
+            "id": "parts",
+            "selected": [
+              "Docs",
+              "Code"
+            ],
+            "custom": "and CI"
+          },
+          {
+            "id": "name",
+            "selected": [],
+            "custom": "fix/s36"
+          },
+          {
+            "id": "size",
+            "selected": [],
+            "custom": "XL"
+          },
+          {
+            "id": "skip",
+            "selected": []
+          }
+        ]
+      }
+    ]
+  },
+  "modelSawReply": true,
+  "verdict": {
+    "Q4_timed_questions_survive_as_continued": true,
+    "Q4_blocking_question_and_plan_review_end": true,
+    "Q4_no_waterfall_replayed": true,
+    "Q4_fishball_answers_recovered": true
+  }
+}
