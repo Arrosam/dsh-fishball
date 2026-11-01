@@ -4,8 +4,8 @@
  *
  * The snapshot is synchronous, but a cold session's title needs an asynchronous read of its
  * log. So titles are kept in memory: read once when a session joins the set, then followed
- * through DSH's `session/title` events, so a session DSH titles later (one start_session just
- * created) or you rename shows its new title without a restart. Nothing is stored: a restart
+ * through DSH's `session/title` events, so a session that is named later (one start_session
+ * could not name, or one you rename) shows its new title without a restart. Nothing is stored: a restart
  * reads them again.
  */
 import { EVENT, SESSION_INFO } from './constants.js'
