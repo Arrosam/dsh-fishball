@@ -24,7 +24,7 @@ export const LIMITS = Object.freeze([
   ['wakeupsPerHour', 60, MIN.hourlyCap, 'Times an input other than your message or a permission request starts a Fishball turn from idle. 0 = no cap.'],
   ['messagesPerHour', 30, MIN.hourlyCap, 'message_session calls per hour. 0 = no cap.'],
   ['sessionsPerHour', 10, MIN.hourlyCap, 'start_session calls per hour. 0 = no cap.'],
-  ['maxPendingApprovals', 8, MIN.count, 'Permission requests Fishball decides at the same time; extra requests go to you.'],
+  ['maxPendingApprovals', 8, MIN.count, 'Permission requests open at the same time: waiting for Fishball, or waiting for you in your pile; extra requests go to you in their session.'],
   ['approvalAnswerSeconds', 120, MIN.count, 'How long another session\'s permission request waits for Fishball before it goes to you.'],
   ['argumentExcerptBytes', 8192, MIN.count, 'How much of a requested tool call Fishball sees.'],
   ['maxMessageBytes', 65536, MIN.count, 'Size of one message to or from Fishball, and of one plugin event.'],

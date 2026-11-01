@@ -81,7 +81,7 @@ const DECISION_ANSWER = Object.freeze({
   [APPROVAL_DECISION.ask]: APPROVAL_ANSWER.ask,
   [APPROVAL_DECISION.escalate]: APPROVAL_ANSWER.escalate,
 })
-/** Your click on a stock prompt, as a decisions row (other outcomes are not clicks). */
+/** Your click on a stock prompt or a card, as a decisions row (other outcomes are not clicks). */
 const CLICK_ACTION = Object.freeze({ [APPROVAL_OUTCOME.allowedOnce]: DECISION_ACTION.allowOnce, [APPROVAL_OUTCOME.rejected]: DECISION_ACTION.reject })
 /** Request states: Fishball decides it now, or the session owes a reply to Fishball's question. */
 const STATE = Object.freeze({ waiting: 'waiting', question: 'question' })
@@ -455,6 +455,9 @@ export class ApprovalBroker {
     const onAbort = () => this.#pile.settle(request.id, { end: CARD_END.cancelled })
     signal?.addEventListener('abort', onAbort, { once: true })
     if (signal?.aborted) onAbort()
+    // A release that ran between the round's end and this filing found no card to end: end it here.
+    else if (!this.#canAnswer()) this.#pile.settle(request.id, { end: CARD_END.off })
+    else if (!this.#isManaged(request.sessionId)) this.#pile.settle(request.id, { end: CARD_END.released })
     const card = await ended
     signal?.removeEventListener('abort', onAbort)
     switch (card.end) {
@@ -463,7 +466,7 @@ export class ApprovalBroker {
         if (allowed) this.#passes.add(request.key, PASS_KIND.pass, request.sessionId, { requestId: request.id, seenByFishball: request.seen === true })
         const answer = await this.#end(request, result, allowed ? ASK_RESULT.allowed : ASK_RESULT.rejected)
         const outcome = allowed ? APPROVAL_OUTCOME.allowedOnce : APPROVAL_OUTCOME.rejected
-        await this.#clicked(request.sessionId, request.id, outcome, card.note !== undefined)
+        await this.#clicked(request.sessionId, request.id, outcome, allowed ? undefined : card.note !== undefined)
         if (request.seen) this.#tell(TEXT.outcome(request.id, TEXT.pileOutcome(outcome)))
         return { ...answer, byUser: true, ...(card.note === undefined ? {} : { reason: card.note }) }
       }
@@ -580,6 +583,8 @@ export class ApprovalBroker {
 
   /** The asking session's turn ended: its passes, tickets, marks and unanswered threads end too. */
   async #endTurn(sessionId) {
+    // A card leaves with its call's abort (item 16); this also ends one whose call had no signal.
+    this.#pile.settleWhere((card) => card.sessionId === sessionId, { end: CARD_END.cancelled })
     this.#passes.dropSession(sessionId)
     this.#wording.dropSession(sessionId)
     for (const request of this.#questionsOf(sessionId)) await this.#finish(request, { answer: APPROVAL_ANSWER.ask }, APPROVAL_OUTCOME.cancelled)
@@ -650,7 +655,8 @@ export class ApprovalBroker {
    * too-many-waiting text set by post-execute, so Fishball never freezes (Q-r11-cap-own).
    */
   #ownRequest(req, next) {
-    if (this.#openCount() < this.#readLimits().maxPendingApprovals) return next()
+    // Without a call id the text cannot be set, and a bare rejection would read as your choice: prompt as before.
+    if (req.callId === undefined || this.#openCount() < this.#readLimits().maxPendingApprovals) return next()
     this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
     return APPROVAL_OUTCOME.rejected
   }
@@ -757,13 +763,14 @@ export class ApprovalBroker {
 
   /**
    * Your Allow once / Reject on a stock prompt or a card for a request that went through Fishball
-   * (Q-r11-audit-user). @param withNote - a card's Reject: whether you wrote a note (never the note).
+   * (Q-r11-audit-user). @param withNote - a card's Reject: whether you wrote a note (never the note);
+   *   undefined for a stock prompt, which takes no note.
    */
   async #clicked(sessionId, requestId, outcome, withNote) {
     const action = CLICK_ACTION[outcome]
     if (action === undefined) return
     try {
-      await this.#decisions.append({ action, sessionId, by: CHANGED_BY.user, ...(requestId === undefined ? {} : { target: requestId }), ...(withNote && action === DECISION_ACTION.reject ? { withNote } : {}), at: new Date().toISOString(), outcome: DECISION_OK }, [action])
+      await this.#decisions.append({ action, sessionId, by: CHANGED_BY.user, ...(requestId === undefined ? {} : { target: requestId }), ...(withNote === undefined ? {} : { withNote }), at: new Date().toISOString(), outcome: DECISION_OK }, [action])
       this.#onChange()
     } catch (error) {
       this.#logger.warn('decision audit failed (%s)', diagnosticOf(error))

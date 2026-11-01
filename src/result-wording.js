@@ -28,7 +28,7 @@ import { authorOf } from './author.js'
 import { rootSessionOf } from './session-info.js'
 
 /** What Fishball answered for one marked call. */
-export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', question: 'question', tooManyWaiting: 'too-many-waiting' })
+export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', question: 'question', tooManyWaiting: TOO_MANY_WAITING })
 
 /** Agent-visible texts (S35's proposal, kept as the plugin's constants). */
 const TEXT = Object.freeze({
