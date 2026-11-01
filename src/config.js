@@ -24,7 +24,7 @@ export const LIMITS = Object.freeze([
   ['wakeupsPerHour', 60, MIN.hourlyCap, 'Times an input other than your message or a permission request starts a Fishball turn from idle. 0 = no cap.'],
   ['messagesPerHour', 30, MIN.hourlyCap, 'message_session calls per hour. 0 = no cap.'],
   ['sessionsPerHour', 10, MIN.hourlyCap, 'start_session calls per hour. 0 = no cap.'],
-  ['maxPendingApprovals', 8, MIN.count, 'Permission requests Fishball decides at the same time; extra requests go to you.'],
+  ['maxPendingApprovals', 8, MIN.count, 'Permission requests open at the same time: waiting for Fishball, or waiting for you in your pile; extra requests go to you in their session.'],
   ['approvalAnswerSeconds', 120, MIN.count, 'How long another session\'s permission request waits for Fishball before it goes to you.'],
   ['argumentExcerptBytes', 8192, MIN.count, 'How much of a requested tool call Fishball sees.'],
   ['maxMessageBytes', 65536, MIN.count, 'Size of one message to or from Fishball, and of one plugin event.'],
@@ -53,6 +53,8 @@ export const LIMITS = Object.freeze([
   ['userMessagesListed', 20, MIN.count, 'Messages list_user_messages returns to a managed session, newest first.'],
   ['userMessageExcerptChars', 1000, MIN.count, 'Characters of each excerpt list_user_messages returns.'],
   ['defaultReplyCapTokens', 32000, MIN.count, 'The most the automatic reply-length cap can be with a smaller context window; your own reply cap still wins.'],
+  // Revision 11 (rev11c): S37's fixture value, so the composer stays in view below the pile.
+  ['pileMaxHeightVh', 45, MIN.count, 'Height of your pile of waiting requests above Fishball\'s composer, as a percentage of the window height; past it the pile scrolls.'],
 ].map(([field, defaultValue, min, description]) => Object.freeze({ field, defaultValue, min, description })))
 
 /** Whole numbers at or above the limit's minimum; schemastery rejects anything else. */

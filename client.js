@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -145,7 +145,31 @@ window.__ModuleLoader__.load({
       detailActions: 'plugins.detail.actions',
       /** DSH's Add plugin menu: plugin-contributed items after its own (revision 10a). */
       addActions: 'plugins.add.actions',
+      /** Revision 11 (S37): the pile above a session's composer, a tool's whole row by its name, and a turn's tail. */
+      dock: 'conversation.input.dock',
+      toolview: 'tool.call.toolview',
+      turnTail: 'conversation.chat.turnTail',
     })
+    /**
+     * Your pile (DESIGN §10e, S37): a dock entry above Fishball's composer. Its order puts it
+     * before DSH's own docks, as in S37's fixture (the order beside DSH's Todo and Queue docks
+     * was not checked there).
+     */
+    const PILE = Object.freeze({ id: 'fishball-pile', order: -100, heightUnit: 'vh' })
+    /** The ask_fishball row (S37): DSH has no view for this tool, so this entry draws the whole row. */
+    const ASK_ROW = Object.freeze({ tool: 'ask_fishball', phaseStart: 'start', phaseResult: 'result' })
+    /** ask_fishball's answer codes with their own words (keep in step with src/constants.js ASK_RESULT, ASK_ERROR). */
+    const ASK_CODES = new Set(['allowed', 'rejected', 'question', 'unavailable', 'over-capacity', 'no-longer-managed', 'not-user-message', 'too-large', 'expired', 'invalid-request', 'empty', 'cancelled'])
+    /** Your answer on a card (src/constants.js CARD_DECISION) and refusals with their own text. */
+    const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
+    const CARD_ERRORS = new Set(['expired', 'too-large', 'unavailable'])
+    /** Card kinds (src/constants.js REQUEST_KIND) and thread authors (THREAD_FROM) with their own words. */
+    const CARD_KINDS = new Set(['asked', 'direct'])
+    const ARGUMENTS_COMPLETE = 'complete'
+    /** The turn-tail tags (DESIGN §7a.3, §10e; src/constants.js TAG_KIND). */
+    const TURN_TAGS = Object.freeze({ id: 'fishball-tags', sentToYou: 'sent-to-you', iconSize: 12, separator: ' · ' })
+    const TAG_ANSWERS = new Set(['allow', 'reject', 'ask'])
+    const JSON_INDENT = 2
     /**
      * The plugin manager (DESIGN §10d): the Fishball tab, laid out like DSH's Installed tab and
      * plugin page (owner's choice: list version 1, page A), and the tag and switch on DSH's own
@@ -203,7 +227,7 @@ window.__ModuleLoader__.load({
      * form model needs its fields before the first state frame arrives, so the browser keeps
      * this list; the Host schema still decides validity on save.
      */
-    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxSourcesPerPlugin', 'maxFishballOnlyPlugins', 'wakeupsPerHour', 'messagesPerHour', 'sessionsPerHour', 'maxPendingApprovals', 'approvalAnswerSeconds', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'approvalsShown', 'intakeRowsShown', 'outboxShown', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'pluginHistoryShown', 'settingsPromptValueBytes', 'replyCapShare', 'headroomShare', 'minWindowTokens', 'pluginManagerStartMs', 'defaultReplyCapTokens', 'userMessagesListed', 'userMessageExcerptChars'])
+    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxSourcesPerPlugin', 'maxFishballOnlyPlugins', 'wakeupsPerHour', 'messagesPerHour', 'sessionsPerHour', 'maxPendingApprovals', 'approvalAnswerSeconds', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'approvalsShown', 'intakeRowsShown', 'outboxShown', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'pluginHistoryShown', 'settingsPromptValueBytes', 'replyCapShare', 'headroomShare', 'minWindowTokens', 'pluginManagerStartMs', 'defaultReplyCapTokens', 'userMessagesListed', 'userMessageExcerptChars', 'pileMaxHeightVh'])
     /**
      * FishMark (fishball app, Surfaces.kt): body and eye on a 24-unit grid. In the sidebar the
      * body takes the text colour so it reads on light and dark themes; the eye keeps the
@@ -353,7 +377,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted' })
+    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', linkButton: 'fb-link-button', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -478,7 +502,7 @@ window.__ModuleLoader__.load({
       'managedBy.message': 'Messaged by Fishball',
       'managedBy.start': 'Started by Fishball',
       'managedBy.prompt-answer': 'Prompt answered by Fishball',
-      approvalsHint: 'Managed sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you in that session.',
+      approvalsHint: 'Managed sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you: a request the session asked first waits in your pile above Fishball\'s chat, a direct call in that session.',
       approvalsWaiting: 'Waiting for Fishball',
       'approvalAnswer.allow': 'Approved by Fishball',
       'approvalAnswer.escalate': 'Sent to you',
@@ -487,7 +511,8 @@ window.__ModuleLoader__.load({
       'approvalAnswer.released': 'Session no longer managed; sent to you',
       'approvalAnswer.reject': 'Rejected by Fishball',
       'approvalAnswer.ask': 'Fishball asked a question; no reply',
-      'approvalAnswer.to-user': 'Sent to you in the session',
+      'approvalAnswer.to-user': 'Sent to you without Fishball\'s answer',
+      approvalsPile: 'Waiting for you in the pile: {count}',
       'approvalAnswer.pass': 'Ran on Fishball\'s one-time approval',
       'approvalOutcome.allowed-once': 'allowed once',
       'approvalOutcome.rejected': 'rejected',
@@ -637,7 +662,7 @@ window.__ModuleLoader__.load({
       'field.wakeupsPerHour': 'Wake-ups per hour from non-user inputs (0 = no cap)',
       'field.messagesPerHour': 'Messages Fishball sends per hour (0 = no cap)',
       'field.sessionsPerHour': 'Sessions Fishball starts per hour (0 = no cap)',
-      'field.maxPendingApprovals': 'Permission requests Fishball decides at once',
+      'field.maxPendingApprovals': 'Permission requests open at once (waiting for Fishball or in your pile)',
       'field.approvalAnswerSeconds': 'Seconds Fishball has to answer a request',
       'field.argumentExcerptBytes': 'Bytes of a request\'s command Fishball sees',
       'field.maxMessageBytes': 'Bytes in one message',
@@ -660,6 +685,48 @@ window.__ModuleLoader__.load({
       'field.defaultReplyCapTokens': 'Largest automatic reply cap with a smaller window (tokens)',
       'field.userMessagesListed': 'Your messages list_user_messages shows a managed session',
       'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
+      'field.pileMaxHeightVh': 'Height of your pile above Fishball\'s composer (% of the window)',
+      pileTitle: 'Waiting for you ({count})',
+      'cardKind.asked': 'Asked first',
+      'cardKind.direct': 'Direct call',
+      cardReason: 'Reason',
+      cardFishballNote: 'Fishball',
+      cardArgumentsCut: 'The arguments are cut.',
+      cardDetails: 'Details',
+      cardHideDetails: 'Hide details',
+      cardQuotes: 'You asked that session',
+      cardThread: 'Discussion with Fishball',
+      'threadFrom.agent': 'Session',
+      'threadFrom.fishball': 'Fishball',
+      allowOnce: 'Allow once',
+      reject: 'Reject',
+      rejectNote: 'Note to the agent (optional)',
+      rejectSend: 'Reject',
+      'cardError.expired': 'This request was already answered or has ended.',
+      'cardError.too-large': 'The note is too long.',
+      'cardError.unavailable': 'Fishball is not running.',
+      cardFailed: 'That did not work.',
+      askRowTitle: 'Ask Fishball',
+      askRowReply: 'Reply to Fishball',
+      askRowWaitingFishball: 'Waiting for Fishball',
+      askRowWaitingYou: 'Waiting for you',
+      'askResult.allowed': 'Allowed once',
+      'askResult.rejected': 'Rejected',
+      'askResult.question': 'Fishball asks a question',
+      'askResult.unavailable': 'Fishball cannot answer now',
+      'askResult.over-capacity': 'Too many requests waiting',
+      'askResult.no-longer-managed': 'No longer managed by Fishball',
+      'askResult.not-user-message': 'Not a message you typed',
+      'askResult.too-large': 'Too large to send',
+      'askResult.expired': 'Request not open',
+      'askResult.invalid-request': 'Invalid request',
+      'askResult.empty': 'Empty reply',
+      'askResult.cancelled': 'Cancelled',
+      tagAskedFishball: 'Asked Fishball',
+      'tagAnswer.allow': 'allowed once',
+      'tagAnswer.reject': 'rejected',
+      'tagAnswer.ask': 'asked a question',
+      tagSentToYou: 'Sent to you',
       reset: 'Reset to default',
       overridden: 'Custom',
       save: 'Save',
@@ -792,7 +859,7 @@ window.__ModuleLoader__.load({
       'managedBy.message': 'Fishball 发过消息',
       'managedBy.start': 'Fishball 启动',
       'managedBy.prompt-answer': 'Fishball 答复过提示',
-      approvalsHint: '受管理会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你在该会话中决定。',
+      approvalsHint: '受管理会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你：会话事先询问的请求在 Fishball 对话上方的待处理区等你，直接调用则在该会话中等你。',
       approvalsWaiting: '等待 Fishball 处理',
       'approvalAnswer.allow': 'Fishball 已批准',
       'approvalAnswer.escalate': '已转交给你',
@@ -801,7 +868,8 @@ window.__ModuleLoader__.load({
       'approvalAnswer.released': '会话已不再由 Fishball 管理，已转交给你',
       'approvalAnswer.reject': 'Fishball 已拒绝',
       'approvalAnswer.ask': 'Fishball 提出了问题，未获回复',
-      'approvalAnswer.to-user': '已在该会话中转交给你',
+      'approvalAnswer.to-user': '未经 Fishball 回答，直接转交给你',
+      approvalsPile: '在待处理区等你处理：{count}',
       'approvalAnswer.pass': '按 Fishball 的一次性批准运行',
       'approvalOutcome.allowed-once': '允许一次',
       'approvalOutcome.rejected': '已拒绝',
@@ -951,7 +1019,7 @@ window.__ModuleLoader__.load({
       'field.wakeupsPerHour': '每小时非用户输入唤醒次数（0 = 不限）',
       'field.messagesPerHour': 'Fishball 每小时发送的消息（0 = 不限）',
       'field.sessionsPerHour': 'Fishball 每小时新建的会话（0 = 不限）',
-      'field.maxPendingApprovals': 'Fishball 同时处理的权限请求',
+      'field.maxPendingApprovals': '同时打开的权限请求（等待 Fishball 或在你的待处理区）',
       'field.approvalAnswerSeconds': 'Fishball 回答请求的秒数',
       'field.argumentExcerptBytes': 'Fishball 可见的请求命令字节数',
       'field.maxMessageBytes': '单条消息字节数',
@@ -974,6 +1042,48 @@ window.__ModuleLoader__.load({
       'field.defaultReplyCapTokens': '较小窗口时自动回复上限的最大值（token）',
       'field.userMessagesListed': 'list_user_messages 向受管会话列出的你的消息条数',
       'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
+      'field.pileMaxHeightVh': 'Fishball 输入框上方待处理请求区的高度（占窗口的百分比）',
+      pileTitle: '等你处理（{count}）',
+      'cardKind.asked': '事先询问',
+      'cardKind.direct': '直接调用',
+      cardReason: '理由',
+      cardFishballNote: 'Fishball',
+      cardArgumentsCut: '参数已截断。',
+      cardDetails: '详情',
+      cardHideDetails: '收起详情',
+      cardQuotes: '你在该会话中的要求',
+      cardThread: '与 Fishball 的讨论',
+      'threadFrom.agent': '会话',
+      'threadFrom.fishball': 'Fishball',
+      allowOnce: '允许一次',
+      reject: '拒绝',
+      rejectNote: '给代理的说明（可选）',
+      rejectSend: '拒绝',
+      'cardError.expired': '这个请求已被处理或已结束。',
+      'cardError.too-large': '说明太长。',
+      'cardError.unavailable': 'Fishball 未在运行。',
+      cardFailed: '操作未成功。',
+      askRowTitle: '询问 Fishball',
+      askRowReply: '回复 Fishball',
+      askRowWaitingFishball: '等待 Fishball',
+      askRowWaitingYou: '等你处理',
+      'askResult.allowed': '已允许一次',
+      'askResult.rejected': '已拒绝',
+      'askResult.question': 'Fishball 提了一个问题',
+      'askResult.unavailable': 'Fishball 暂时无法回答',
+      'askResult.over-capacity': '等待中的请求太多',
+      'askResult.no-longer-managed': '已不再由 Fishball 管理',
+      'askResult.not-user-message': '不是你输入的消息',
+      'askResult.too-large': '太大，无法发送',
+      'askResult.expired': '请求未打开',
+      'askResult.invalid-request': '请求无效',
+      'askResult.empty': '回复为空',
+      'askResult.cancelled': '已取消',
+      tagAskedFishball: '已询问 Fishball',
+      'tagAnswer.allow': '允许一次',
+      'tagAnswer.reject': '已拒绝',
+      'tagAnswer.ask': '提了一个问题',
+      tagSentToYou: '已转交给你',
       reset: '恢复默认',
       overridden: '已自定义',
       save: '保存',
@@ -1010,6 +1120,22 @@ window.__ModuleLoader__.load({
       // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
       `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
       `.${CLS.entries}{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}`,
+      // The pile, the ask_fishball row and the turn tags (revision 11, S37's fixture look), in DSH's theme tokens
+      // so they follow light and dark. The pile's height comes from pileMaxHeightVh, set inline.
+      `.${CLS.pile}{margin:0 0 8px;overflow:auto;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
+      `.${CLS.pileHead}{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--dsw-alias-border-l2);background:inherit;color:var(--dsw-alias-label-primary);font-weight:600}`,
+      `.${CLS.card}{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-top:.5px solid var(--dsw-alias-border-l2)}`,
+      `.${CLS.card}:first-of-type{border-top:0}`,
+      `.${CLS.cardHead}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
+      `.${CLS.title}{color:var(--dsw-alias-label-primary);font-weight:500;overflow-wrap:anywhere}`,
+      `.${CLS.pre}{margin:0;padding:6px 8px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--ds-font-family-code);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
+      `.${CLS.quote}{margin:0;padding:2px 8px;border-left:3px solid color-mix(in srgb,${FISH_MARK.eyeColor} 50%,transparent);white-space:pre-wrap;overflow-wrap:anywhere}`,
+      `.${CLS.thread}{display:flex;flex-direction:column;gap:2px;margin:0;padding-left:16px;white-space:pre-wrap;overflow-wrap:anywhere}`,
+      `.${CLS.actions}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
+      `.${CLS.linkButton}{align-self:flex-start;padding:0;border:0;background:none;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer}`,
+      `.${CLS.askRow}{display:flex;flex-direction:column;gap:6px;padding:6px 0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
+      `.${CLS.turnTags}{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}`,
+      `.${CLS.fishTag}{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:.5px solid color-mix(in srgb,${FISH_MARK.eyeColor} 35%,transparent);border-radius:999px;background:color-mix(in srgb,${FISH_MARK.eyeColor} 12%,transparent);color:var(--dsw-alias-label-primary);font-size:12px}`,
       // The plugin manager copies DSH's own Plugins-page rules (dsh-client-ui-plugin-manager
       // PluginManagerPage.module.css, rc.2) with DSH's theme variables, so the Fishball tab reads
       // as DSH's Installed tab and plugin page (DESIGN §10d "Look"). If DSH restyles its page,
@@ -1842,6 +1968,7 @@ window.__ModuleLoader__.load({
           h('h3', null, t('approvals')),
           h('p', { className: CLS.muted }, t('approvalsHint')),
           h(ManagedSessions, { state, t }),
+          (state.pile ?? []).length > 0 ? h('p', { 'data-fishball-pile-count': state.pile.length }, t('approvalsPile', { count: state.pile.length })) : null,
           view.pending.length > 0 ? h('ul', { className: CLS.entries }, view.pending.map((p) => h('li', { key: p.id },
             h(Tag, { tone: 'info' }, t('approvalsWaiting')), ' ', h('span', { className: CLS.code }, p.toolName), ' ', h('span', { className: CLS.muted }, p.sessionId)))) : null,
           view.recent.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, view.recent.map((entry) => h('li', { key: entry.key },
@@ -1869,6 +1996,165 @@ window.__ModuleLoader__.load({
           h(Tag, { tone: 'neutral' }, t('managedBy.' + entry.by)), ' ',
           h('span', { className: CLS.muted }, t('managedSince', { at: new Date(entry.since).toLocaleString() })), ' ',
           canManage(state, entry.sessionId) ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void manageNotice.request({ sessionId: entry.sessionId, managed: false }) }, t('takeBack')) : null))))
+    }
+
+    /** POST your answer on a card. @returns null when accepted, else the key of the refusal's text. */
+    async function answerCard(requestId, decision, note) {
+      const { ok, code } = await send(API.requestsAnswer, { requestId, decision, ...(note ? { note } : {}) })
+      if (ok) return null
+      return CARD_ERRORS.has(code) ? 'cardError.' + code : 'cardFailed'
+    }
+
+    /**
+     * Allow once / Reject on one card, the same in your pile and on the session's running row
+     * (item 15). Both read the card from the Host's snapshot, so an answer in either place clears
+     * both. Reject first opens an optional note to the agent (DESIGN §10e).
+     */
+    function CardAnswer({ requestId, t }) {
+      const id = React.useId()
+      const [busy, setBusy] = React.useState(false)
+      const [rejecting, setRejecting] = React.useState(false)
+      const [note, setNote] = React.useState('')
+      const [problem, setProblem] = React.useState(null)
+      const answer = async (decision) => {
+        setBusy(true)
+        const refusal = await answerCard(requestId, decision, decision === CARD_DECISION.reject ? note.trim() : '')
+        setBusy(false)
+        setProblem(refusal)
+      }
+      const button = (key, variant, onClick, label) => h(Button, { key, type: 'button', size: 'sm', variant, disabled: busy, onClick }, t(label))
+      return h('div', { className: CLS.grow, 'data-fishball-card-answer': requestId },
+        rejecting ? h('div', { className: CLS.field },
+          h('label', { htmlFor: id, className: CLS.muted }, t('rejectNote')),
+          h(Input, { id, value: note, onChange: (event) => setNote(event.target.value) })) : null,
+        h('div', { className: CLS.actions },
+          button('allow', 'primary', () => void answer(CARD_DECISION.allow), 'allowOnce'),
+          rejecting ? button('send', 'secondary', () => void answer(CARD_DECISION.reject), 'rejectSend') : button('reject', 'secondary', () => setRejecting(true), 'reject'),
+          rejecting ? button('cancel', 'ghost', () => { setRejecting(false); setNote('') }, 'cancel') : null),
+        problem ? h('div', { role: 'alert' }, t(problem)) : null)
+    }
+
+    /** JSON text indented for reading; text that does not parse (cut arguments) as it is. */
+    function readableJson(text) {
+      try { return JSON.stringify(JSON.parse(text), null, JSON_INDENT) } catch { return text }
+    }
+
+    /** A labelled line of text from another session or from Fishball (plain text, never markup: §10c framing rule). */
+    const labelled = (label, text) => h('div', null, h('span', { className: CLS.muted }, label + ': '), text)
+
+    /**
+     * One card in your pile (DESIGN §10e): the session, the tool, the exact arguments, the agent's
+     * reason and Fishball's note, with the quoted messages and the thread behind Details. Every
+     * text comes from another session or from Fishball, so all of it is drawn as plain text.
+     * A session whose title is not known yet shows its id, as the managed list does.
+     */
+    function PileCard({ card, t }) {
+      const [open, setOpen] = React.useState(false)
+      const hasDetails = card.quotes.length > 0 || card.thread.length > 0
+      return h('li', { className: CLS.card, 'data-fishball-card': card.requestId },
+        h('div', { className: CLS.cardHead },
+          h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId),
+          CARD_KINDS.has(card.kind) ? h(Tag, { tone: 'neutral' }, t('cardKind.' + card.kind)) : null,
+          h('span', { className: CLS.code }, card.toolName)),
+        h('pre', { className: CLS.pre }, readableJson(card.arguments)),
+        card.argumentsStatus === ARGUMENTS_COMPLETE ? null : h('span', { className: CLS.muted }, t('cardArgumentsCut')),
+        card.why ? labelled(t('cardReason'), card.why) : null,
+        card.note ? labelled(t('cardFishballNote'), card.note) : null,
+        hasDetails ? h('button', { type: 'button', className: CLS.linkButton, 'aria-expanded': open, onClick: () => setOpen(!open) }, t(open ? 'cardHideDetails' : 'cardDetails')) : null,
+        open && card.quotes.length > 0 ? h('div', null, h('div', { className: CLS.muted }, t('cardQuotes')), card.quotes.map((quote) => h('blockquote', { key: quote.id, className: CLS.quote }, quote.text))) : null,
+        open && card.thread.length > 0 ? h('div', null, h('div', { className: CLS.muted }, t('cardThread')),
+          h('ol', { className: CLS.thread }, card.thread.map((entry, index) => h('li', { key: index }, labelled(t('threadFrom.' + entry.from), entry.text))))) : null,
+        h(CardAnswer, { requestId: card.requestId, t }))
+    }
+
+    /**
+     * Your pile above Fishball's composer (DESIGN §10e, items 14-16): "Waiting for you (n)", shown
+     * only in Fishball's own session and only while it holds a card. Its height is the limit
+     * pileMaxHeightVh; past it the pile scrolls, so the composer stays in view.
+     */
+    function makePile(t) {
+      return function FishballPile({ sessionId }) {
+        const state = useFishball()
+        const cards = state.pile ?? []
+        if (!sessionId || sessionId !== state.sessionId || cards.length === 0) return null
+        const title = t('pileTitle', { count: cards.length })
+        return h('section', { className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'aria-label': title, 'data-fishball-pile': cards.length },
+          h('div', { className: CLS.pileHead }, title),
+          h('ul', { className: CLS.entries }, cards.map((card) => h(PileCard, { key: card.requestId, card, t }))))
+      }
+    }
+
+    /** An ask_fishball call's arguments: a started block keeps them in argsRaw, a settled one on its call (S37). */
+    function askArguments(block) {
+      try {
+        const value = JSON.parse(block?.argsRaw ?? block?.call?.argsRaw ?? '{}')
+        return value !== null && typeof value === 'object' ? value : {}
+      } catch { return {} }
+    }
+
+    /** A settled call's answer: the JSON ask_fishball returned ({ value }), or its text ({ text }), e.g. an aborted call. */
+    function askResult(block) {
+      const content = block?.content ?? block?.result?.content
+      const text = Array.isArray(content) ? content.filter((part) => typeof part?.text === 'string').map((part) => part.text).join('') : ''
+      try {
+        const value = JSON.parse(text)
+        if (value !== null && typeof value === 'object' && typeof value.code === 'string') return { value }
+      } catch { /* not ask_fishball's JSON: shown as text */ }
+      return { text }
+    }
+
+    /**
+     * The running ask_fishball row in the asking session (DESIGN §10e, S37). DSH has no view for this
+     * tool, so this entry is the whole row: what is asked, whether it waits for Fishball or for you,
+     * and Allow once / Reject once the request is your card (Reading: not while Fishball decides).
+     */
+    function makeAskRow(t) {
+      return function FishballAskRow({ callId, phase, block }) {
+        const state = useFishball()
+        const args = askArguments(block)
+        const card = phase === ASK_ROW.phaseStart ? (state.pile ?? []).find((entry) => entry.callId === callId) : undefined
+        const replying = typeof args.request_id === 'string'
+        const result = phase === ASK_ROW.phaseResult ? askResult(block) : null
+        const code = result?.value?.code
+        return h('div', { className: CLS.askRow, 'data-fishball-ask-row': callId, 'data-fishball-phase': phase },
+          h('div', { className: CLS.cardHead },
+            h('span', { className: CLS.title }, t(replying ? 'askRowReply' : 'askRowTitle')),
+            typeof args.tool === 'string' ? h('span', { className: CLS.code }, args.tool) : null,
+            phase === ASK_ROW.phaseStart ? h(Tag, { tone: card ? 'danger' : 'info' }, t(card ? 'askRowWaitingYou' : 'askRowWaitingFishball')) : null,
+            code !== undefined ? h(Tag, { tone: 'neutral' }, ASK_CODES.has(code) ? t('askResult.' + code) : code) : null),
+          args.arguments !== undefined ? h('pre', { className: CLS.pre }, JSON.stringify(args.arguments, null, JSON_INDENT)) : null,
+          typeof args.why === 'string' && args.why ? labelled(t('cardReason'), args.why) : null,
+          replying && typeof args.reply === 'string' ? h('div', null, args.reply) : null,
+          typeof result?.value?.reason === 'string' ? labelled(t('cardReason'), result.value.reason) : null,
+          typeof result?.value?.question === 'string' ? labelled(t('cardFishballNote'), result.value.question) : null,
+          result?.text ? h('div', { className: CLS.muted }, result.text) : null,
+          card ? h(CardAnswer, { requestId: card.requestId, t }) : null)
+      }
+    }
+
+    /** A tag's words: "Sent to you", or "Asked Fishball" with the answer (DESIGN §7a.3; client wording constants). */
+    const tagText = (t, tag) => {
+      if (tag.kind === TURN_TAGS.sentToYou) return t('tagSentToYou')
+      return TAG_ANSWERS.has(tag.answer) ? `${t('tagAskedFishball')}${TURN_TAGS.separator}${t('tagAnswer.' + tag.answer)}` : t('tagAskedFishball')
+    }
+
+    /**
+     * Tags in a turn's tail (DESIGN §10e, S37): every answer Fishball gave in that turn. A turn
+     * knows its start and end seq, not its call ids, so it shows the records whose seq lies inside
+     * it; a running turn has no end yet. The tail shows in folded turns too.
+     */
+    function makeTurnTags(t) {
+      return function FishballTurnTags({ sessionId, turn }) {
+        const state = useFishball()
+        const from = turn?.start?.seq
+        if (!sessionId || typeof from !== 'number') return null
+        const to = turn?.end?.seq ?? Number.POSITIVE_INFINITY
+        const tags = (state.tags ?? []).filter((tag) => tag.sessionId === sessionId && tag.seq > from && tag.seq < to).sort((a, b) => a.seq - b.seq)
+        if (tags.length === 0) return null
+        return h('div', { className: CLS.turnTags, 'data-fishball-tags': tags.length }, tags.map((tag) => h('span', { key: tag.key, className: CLS.fishTag, 'data-fishball-tag': tag.kind },
+          h(FishballIcon, { size: TURN_TAGS.iconSize, unread: false }),
+          tagText(t, tag))))
+      }
     }
 
     /**
@@ -2585,6 +2871,10 @@ window.__ModuleLoader__.load({
         yield ctx.slots.register({ name: SLOT.overlay, id: MANAGE_MENU.id, locale: NS }, makeRequestNotice(t, manageNotice, 'manageTitle'))
         yield ctx.slots.register({ name: SLOT.overlay, id: ADD_MENU.id, locale: NS }, makeInstallDialog(t, listenToHost))
       }), 'fishball: dialogs')
+      // Revision 11 (DESIGN §10e, S37): your pile, the ask_fishball row with your buttons, and the tags in each turn's tail.
+      ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: PILE.id, order: PILE.order, locale: NS }, makePile(t))), 'fishball: pile')
+      ctx.effect(() => ctx.slots.inject(SLOT.toolview, () => ctx.slots.register({ name: SLOT.toolview, key: ASK_ROW.tool, locale: NS }, makeAskRow(t))), 'fishball: ask_fishball row')
+      ctx.effect(() => ctx.slots.inject(SLOT.turnTail, () => ctx.slots.register({ name: SLOT.turnTail, id: TURN_TAGS.id, locale: NS }, makeTurnTags(t))), 'fishball: turn tags')
       // The plugin manager (DESIGN §10d): the Fishball tab, and a tag and a switch on DSH's page for each plugin.
       const manager = makeManager(t, (text) => ctx.locale.resolveText(text))
       ctx.effect(() => ctx.slots.inject(SLOT.addActions, () => ctx.slots.register({ name: SLOT.addActions, id: ADD_MENU.id, locale: NS }, makeAddMenuItem(t))), 'fishball: Add plugin menu item')
