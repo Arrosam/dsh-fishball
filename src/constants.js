@@ -673,6 +673,13 @@ export const WORKSPACE_ERROR = Object.freeze({
   dshCode: 'session/workspace-attach-failed',
 })
 
+/**
+ * start_session's `managedError` (revision 11, DESIGN §5d): making the new session managed
+ * failed (Fishball's store could not be written). The session still starts, as the user's:
+ * its permission requests go to the user's own prompt and it has no message_fishball.
+ */
+export const START_MANAGED_ERROR = Object.freeze({ failed: 'manage-failed' })
+
 /** Host API under DSH's authenticated /api channel. */
 export const API = Object.freeze({
   state: '/api/fishball/state',
