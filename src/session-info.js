@@ -65,6 +65,18 @@ export async function isSessionGone(ctx, sessionId) {
   }
 }
 
+/** A session's title among its events (DSH folds the latest title event), or '' when it has none. */
+export const titleFrom = (events) => foldSessionTitle(events)?.title ?? ''
+
+/** A session's current title, or '' when it has none or cannot be read. */
+export async function titleOf(ctx, sessionId) {
+  try {
+    return titleFrom((await eventsOf(ctx, sessionId)).events)
+  } catch {
+    return ''
+  }
+}
+
 /** Events and header of a session: the live one when attached, else the persisted log. */
 async function eventsOf(ctx, sessionId) {
   const live = ctx.sessions.get(sessionId)
@@ -102,7 +114,7 @@ export async function lastSeqOf(ctx, sessionId) {
 function describeFrom(ctx, sessionId, read, excerptBytes) {
   return {
     id: sessionId,
-    title: foldSessionTitle(read.events)?.title ?? '',
+    title: titleFrom(read.events),
     cwd: read.header.cwd ?? null,
     archived: ctx.workspaceRegistry.archivedSessionIds.includes(sessionId),
     excerpt: lastAnswerExcerpt(read.events, excerptBytes),
