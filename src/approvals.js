@@ -213,8 +213,8 @@ export function argumentsOf(session, callId, toolName, maxBytes) {
   return none
 }
 
-/** The latest message you typed in a session (sources user / user-rpc), cut to maxBytes. */
-function latestUserText(session, maxBytes) {
+/** The latest message you typed in a session (sources user / user-rpc), cut to maxBytes (also the question notice's, rev11g). */
+export function latestUserText(session, maxBytes) {
   const events = session.snapshotEvents()
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]
@@ -1158,30 +1158,27 @@ export class ApprovalBroker {
   }
 
   /**
-   * One tag record, placed in the asking turn by the seq of the asking call: the ask_fishball call
-   * of this round, or the direct call (§7a.3 "Tags", S37). A call the log does not show as a
-   * `tool/call` (a run_code inner call, a subagent's call) takes the session's latest seq: the
-   * asking turn is still running while Fishball answers or a grant covers it, so it lies inside it.
+   * One tag record in the asking turn: the ask_fishball call of this round, or the direct call (§7a.3 "Tags").
    * @param target - a request, or a call a grant covered: { session, sessionId, askCallId?, callId }.
    * @param answer - an APPROVAL_DECISION; @param kind - a TAG_KIND; @param grant - what a grant tag names.
    */
   async #tag(target, answer, kind, grant) {
-    const callId = target.askCallId ?? target.callId
-    const events = target.session.snapshotEvents()
-    let seq = events.at(-1)?.seq
-    for (let i = events.length - 1; i >= 0; i--) {
-      if (events[i].type === APPROVAL.toolCallEvent && events[i].data?.callId === callId) { seq = events[i].seq; break }
-    }
-    if (seq === undefined) return
-    await this.#tags.add({ sessionId: target.sessionId, callId, seq, answer, kind, grant })
+    await this.#tags.addForCall({ session: target.session, sessionId: target.sessionId, callId: target.askCallId ?? target.callId, answer, kind, grant })
   }
 
   /** A short note to Fishball without waking it (DESIGN §7a: it learns from your choices). */
   #tell(text) {
-    const agent = this.#agentOf()
-    if (agent === undefined) return
-    try { agent.inject(createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(text), author: authorOf(INTAKE_KIND.system) } })) } catch (error) {
-      this.#logger.warn('approval note failed (%s)', diagnosticOf(error))
-    }
+    tellWithoutWake(this.#agentOf(), text, this.#logger)
+  }
+}
+
+/**
+ * A short Fishball notice injected without a wake (it reads it at its next turn). Shared by the
+ * broker and the question router (rev11g). @param agent - Fishball's agent, or undefined (not live: dropped).
+ */
+export function tellWithoutWake(agent, text, logger) {
+  if (agent === undefined) return
+  try { agent.inject(createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(text), author: authorOf(INTAKE_KIND.system) } })) } catch (error) {
+    logger.warn('Fishball note failed (%s)', diagnosticOf(error))
   }
 }
