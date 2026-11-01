@@ -122,6 +122,9 @@ fs.writeFileSync(overlay, JSON.stringify([
     { id: 'fbtest-llm', name: FAKE_LLM_MODULE },
     // An ordinary preset with no tools of its own, so the global fixture tools are what its sessions see.
     { id: 'preset-fbtest-bare', name: '@deepseek-ai/dsh-agent-preset', config: { id: PRESET.bare, order: 90, plugins: [{ id: 'time-context', name: '@deepseek-ai/dsh-time-context' }] } },
+    // rev11g: ordinary presets whose sessions can ask the user questions (ask_user_question: blocking, as the shipped presets, or timed).
+    { id: 'preset-fbtest-ask', name: '@deepseek-ai/dsh-agent-preset', config: { id: PRESET.ask, order: 91, plugins: [{ id: 'time-context', name: '@deepseek-ai/dsh-time-context' }, { id: 'tool-ask-user', name: '@deepseek-ai/dsh-tool-ask-user' }] } },
+    { id: 'preset-fbtest-ask-timed', name: '@deepseek-ai/dsh-agent-preset', config: { id: PRESET.askTimed, order: 92, plugins: [{ id: 'time-context', name: '@deepseek-ai/dsh-time-context' }, { id: 'tool-ask-user', name: '@deepseek-ai/dsh-tool-ask-user', config: { mode: 'timed', timeout: 120 } }] } },
     // Post-review change 11: host rows whose ids look like private-tree ids.
     ...(process.env.FBTEST_SPOOF_ROWS === '1' ? SPOOF_ROWS.map((r) => ({ id: r.id, name: SPOOF_MODULE, config: { tool: r.tool } })) : []),
     // P8: a plain host row (no catalog plugin owns it) that uses ctx.fishball.
@@ -304,6 +307,9 @@ function liveAgent(sessionId) {
 /** JSON-safe summary of one session event. */
 function eventSummary(e) {
   const out = { type: e.type }
+  // rev11g: the event's own sequence number when it has one, and a tool call's name and id (to place a tag record in its turn).
+  out.seq = e.seq ?? null
+  if (e.type === 'tool/call') { out.callId = e.data?.callId ?? null; out.name = e.data?.name ?? null }
   if (e.type === 'user/message') { out.source = e.data?.source ?? e.data?.message?.source ?? null; out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 12000); out.textLength = textOf(e.data?.content ?? e.data?.message?.content).length }
   if (e.type === 'sandbox/mode') out.mode = e.data?.mode
   if (e.type === 'tool/result') out.result = { callId: e.data.message.toolCallId ?? e.data.message.callId, isError: e.data.message.isError, text: textOf(e.data.message.content).slice(0, 400000) }
@@ -612,6 +618,39 @@ const ops = {
     store.askInNewAgentsOff?.()
     store.askInNewAgentsOff = on ? ctx.on('agent/created', ({ agent }) => { try { ctx.get('approval').setPolicy(agent, 'ask') } catch (e) { store.registerErrors.push({ name: 'askInNewAgents', error: String(e?.message ?? e) }) } }) : undefined
     return true
+  },
+  // ---- rev11g operations (questions and plan reviews) ----
+  /** Let Fishball's model answer the next question notice whose text contains needle with answer_question(args). */
+  planQuestion({ sessionId, needle, args, callId }) { model.questionPlans.push({ sessionId, needle, args, callId, used: null }); return true },
+  questionPlanState() { return model.questionPlans.map((p) => ({ needle: p.needle, callId: p.callId, used: p.used })) },
+  /** The browser stand-in's cards (the session's own question cards), oldest first. */
+  qCards({ sessionId } = {}) { return JSON.parse(JSON.stringify((store.qCards ?? []).filter((c) => !sessionId || c.sessionId === sessionId))) },
+  /** Your answer in the session's own card: the newest open card of the session (or the card at index). */
+  qAnswer({ sessionId, index, answers }) {
+    const card = index !== undefined ? store.qCards[index] : [...(store.qCards ?? [])].reverse().find((c) => c.sessionId === sessionId && c.state === 'open')
+    if (!card || card.state !== 'open') return false
+    card.state = 'answered'; card.answeredAt = Date.now()
+    card.resolve({ answers })
+    return true
+  },
+  /** "Discuss" on a plan review (or closing a card): the card rejects with ASK_CANCELLED. */
+  qDiscuss({ sessionId }) {
+    const card = [...(store.qCards ?? [])].reverse().find((c) => c.sessionId === sessionId && c.state === 'open')
+    if (!card) return false
+    card.state = 'closed'; card.closedCode = 'ASK_CANCELLED'; card.closedAt = Date.now()
+    card.reject(Object.assign(new Error('cancelled'), { name: 'UserQuestionError', code: 'ASK_CANCELLED' }))
+    return true
+  },
+  /** Your late answer to a continued (timed, pending) question in the session: what the browser's answer RPC calls. */
+  async qContinued({ sessionId, callId, answers }) {
+    try { return { ok: true, accepted: ctx.get('userQuestions').answer(liveAgent(sessionId), callId, { answers }) } } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  /** DSH's own projection of the session's questions (active, settled). */
+  qProjection({ sessionId }) { return JSON.parse(JSON.stringify(ctx.sessionProjections.stateOf(liveAgent(sessionId).session, 'userQuestions')?.questions ?? null)) },
+  /** /plan and /plan off, as a user types them. */
+  async planCommand({ sessionId, off = false }) {
+    const done = await ctx.commands.execute(liveAgent(sessionId), off ? '/plan off' : '/plan', [], new AbortController().signal)
+    return done === undefined ? { kind: 'missing', text: 'no /plan command in this session' } : JSON.parse(JSON.stringify(done.result))
   },
   clearPlans() { model.plans.length = 0; return true },
   planState() { return model.plans.map((p) => ({ needle: p.needle, callId: p.callId, used: p.used })) },
