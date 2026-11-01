@@ -87,12 +87,17 @@ describe('rev11f: Fishball\'s own requests are cards', () => {
     assert.ok(woke, 'the woken turn made the retry')
   })
 
-  it('OWN-04 the identical retry ran under the pass: installed, no second card, no stock prompt', LONG, async () => {
-    assert.equal(woke.json?.ok, true, woke.text)
+  it('OWN-04 the identical retry ran under the pass: installed, no second add_plugin card, no stock prompt', LONG, async () => {
+    // The install leaves a second request: the unchecked-tools prompt, its own card for set_plugin_enabled with its own pass
+    // (the manager's confirmed reading, 2026-11-02), not a second add_plugin card.
+    assert.equal(woke.json?.installed, 'fishball:' + ADDED_BUNDLE.name, woke.text)
     assert.equal(inFishballFolder(ctx.home, ADDED_BUNDLE.name), true, 'the plugin is installed')
-    assert.deepEqual(await ownCards(ctx), [], 'no second card')
+    const cards = await ownCards(ctx)
+    assert.deepEqual(cards.map((c) => c.toolName), ['set_plugin_enabled'], 'no second add_plugin card: ' + JSON.stringify(cards))
+    assert.deepEqual(cardArguments(cards[0]), { plugin: 'fishball:' + ADDED_BUNDLE.name, on: true })
     assert.equal(await t.stockAsked(), 0)
     assert.ok(await untilStatus(first.card.requestId, OWN_STATUS.used), 'row used: ' + status(first.card.requestId))
+    await t.clearOwn()
   })
 
   it('OWN-07 Reject tells Fishball without waking it, and gives no pass', LONG, async () => {
@@ -192,20 +197,21 @@ describe('rev11f: Fishball\'s own requests are cards', () => {
     assert.equal(inFishballFolder(ctx.home, ADDED_BUNDLE_B.name), false)
     const { answer, retry } = await t.click(id, CLICK.allow, { retry: { tool: 'add_plugin', args, id: names.cid('11') } })
     assert.equal(answer.status, 200, answer.text)
-    assert.equal(retry?.json?.ok, true, retry?.text)
+    assert.equal(retry?.json?.installed, 'fishball:' + ADDED_BUNDLE_B.name, retry?.text)
     assert.equal(inFishballFolder(ctx.home, ADDED_BUNDLE_B.name), true, 'installed')
-    assert.deepEqual(await ownCards(ctx), [], 'no second card')
+    assert.deepEqual((await ownCards(ctx)).map((c) => c.toolName), ['set_plugin_enabled'], 'only the unchecked-tools card follows')
+    await t.clearOwn()
   })
 
   it('OWN-12 rationaleChars: Fishball\'s reason is cut on the card (5), whole by default', T, async () => {
     const long = 'ABCDEFGHIJKLMNOP' + names.tok('r12')
     const whole = await t.add(long, ADDED_BUNDLE_C.dir)
-    assert.ok(JSON.stringify(whole.card).includes(long), 'whole by default (' + LIMITS_R11.rationaleChars.default + ')')
+    assert.ok(String(whole.card.why).includes(long), 'whole by default (' + LIMITS_R11.rationaleChars.default + ')')
     await t.withdraw(whole.card.requestId)
     await t.setLimit({ rationaleChars: 5 })
     try {
       const cut = await t.add(long, ADDED_BUNDLE_C.dir)
-      const text = JSON.stringify(cut.card)
+      const text = String(cut.card.why)
       assert.ok(text.includes('ABCDE'), 'the first 5 characters stay')
       assert.equal(text.includes('ABCDEF'), false, 'the sixth is cut: ' + text)
       await t.withdraw(cut.card.requestId)
@@ -230,7 +236,7 @@ describe('rev11f: Fishball\'s own requests are cards', () => {
 
   it('OWN-14 remove_plugin is a card too; Allow and the retry remove the package', LONG, async () => {
     assert.equal(inFishballFolder(ctx.home, ADDED_BUNDLE.name), true, 'precondition: installed by OWN-04')
-    const args = { plugin: ADDED_BUNDLE.name, reason: names.tok('r14') }
+    const args = { plugin: 'fishball:' + ADDED_BUNDLE.name, reason: names.tok('r14') }
     const r = await t.call('remove_plugin', args)
     assert.ok(t.isWaiting(r), r.result.text)
     assert.equal(await t.stockAsked(), 0)

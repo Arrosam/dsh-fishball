@@ -95,13 +95,14 @@ describe('Revision 11 rev11g: how a managed session\'s question travels', () => 
 
   it('FLW-04 the same batch from Fishball and from the browser gives byte-identical tool results', T, async () => {
     const [viaFishball, viaBrowser] = [tok('04a'), tok('04b')]
+    const [ida, idb] = [cid('04a'), cid('04b')]
     await q.planAnswer(viaFishball, { answers: A.mixed })
-    await q.ask(x, viaFishball, cid('04a'), { questions: Q.mixed(viaFishball), waitCard: false })
-    const a = await q.result(x, cid('04a'))
+    await q.ask(x, viaFishball, ida, { questions: Q.mixed(viaFishball), waitCard: false })
+    const a = await q.result(x, ida)
     await ctx.host.call('waitIdle', { sessionId: x })
-    await q.ask(x, viaBrowser, cid('04b'), { questions: Q.mixed(viaBrowser) })
+    await q.ask(x, viaBrowser, idb, { questions: Q.mixed(viaBrowser) })
     assert.equal(await ctx.host.call('qAnswer', { sessionId: x, answers: A.mixed }), true)
-    const b = await q.result(x, cid('04b'))
+    const b = await q.result(x, idb)
     assert.equal(a.text, b.text)
     assert.equal(a.isError, b.isError)
     assert.equal(a.text, resultText(A.mixed))
@@ -226,6 +227,8 @@ describe('Revision 11 rev11g: how a managed session\'s question travels', () => 
     assert.ok(card, 'a card at once, not after 120 s')
     assert.ok(cardMentions(card, note), 'Fishball\'s note on the card: ' + JSON.stringify(card).slice(0, 600))
     assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'open')
+    assert.ok(q.allTagsOf(id).some((t) => t.kind === 'sent-to-you'), 'a "Sent to you" tag, as escalating a permission request gets (Q-r11-tag-scope): ' + JSON.stringify(q.allTagsOf(id)))
+    assert.equal(q.tagsOf(id).length, 0, 'but no answer tag')
     assert.equal((await q.route({ questionId: cardId(card), answers: A.single })).status, 200)
     assert.equal((await q.result(x, id)).text, resultText(A.single))
     await ctx.host.call('waitIdle', { sessionId: x })
@@ -235,8 +238,9 @@ describe('Revision 11 rev11g: how a managed session\'s question travels', () => 
     const [ta, tb] = [tok('13a'), tok('13b')]
     await q.planAnswer(ta, { to_user: true, note: 'a ' + ta })
     await q.planAnswer(tb, { to_user: true, note: 'b ' + tb })
-    await q.ask(x, ta, cid('13a'))
-    await q.ask(y, tb, cid('13b'))
+    const [ia, ib] = [cid('13a'), cid('13b')]
+    await q.ask(x, ta, ia)
+    await q.ask(y, tb, ib)
     const [ca, cb] = [await q.pileCard(x, 8000), await q.pileCard(y, 8000)]
     assert.ok(ca && cb && cardId(ca) !== cardId(cb))
     assert.equal((await q.pile()).filter((c) => c.kind === 'question').length >= 2, true)
@@ -244,7 +248,7 @@ describe('Revision 11 rev11g: how a managed session\'s question travels', () => 
     assert.ok(await q.noPileCard(x))
     assert.ok(await q.pileCard(y, 1000), 'the other stays')
     assert.equal((await q.route({ questionId: cardId(cb), answers: A.single })).status, 200)
-    await q.result(x, cid('13a')); await q.result(y, cid('13b'))
+    assert.ok(await q.result(x, ia)); assert.ok(await q.result(y, ib))
     await ctx.host.call('waitIdle', { sessionId: x }); await ctx.host.call('waitIdle', { sessionId: y })
   })
 
@@ -258,7 +262,9 @@ describe('Revision 11 rev11g: how a managed session\'s question travels', () => 
     for (const body of [{}, { questionId: qid }, { questionId: 7, answers: A.single }, { questionId: qid, answers: 'no' }, { answers: A.single }]) {
       const r = await q.route(body)
       assert.equal(r.status, 400, JSON.stringify(body) + ' -> ' + r.text)
-      assert.equal(r.json?.code, 'bad-body')
+      // A body of the wrong shape is bad-body; a well-shaped body whose answers are no valid batch is bad-answer (the route validates "as answer_question is", DESIGN §10e).
+      assert.ok(['bad-body', 'bad-answer'].includes(r.json?.code), JSON.stringify(body) + ' -> ' + r.text)
+      if (typeof body.questionId !== 'string') assert.equal(r.json?.code, 'bad-body', JSON.stringify(body))
     }
     const foreign = await q.route({ questionId: qid, answers: A.single }, { headers: { origin: 'http://evil.example' } })
     assert.notEqual(foreign.status, 200, 'a foreign origin is refused')

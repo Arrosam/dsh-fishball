@@ -143,7 +143,7 @@ export async function fishballTool(host, sessionId, tool, args, outcome = OUTCOM
 }
 
 /** A tool result that is Fishball's "waiting for your approval" answer (rev11f; code waiting-for-approval). */
-export const isWaitingResult = (result) => jsonOf(result)?.code === 'waiting-for-approval' || /waiting for your approval/i.test(result?.text ?? '')
+export const isWaitingResult = (result) => jsonOf(result)?.code === 'waiting-for-approval' || /waiting-for-approval|waiting for your approval|waits for the user's approval/i.test(result?.text ?? '')
 /** The newest card of this session's own requests in the pile that is not among `seen`. */
 async function newestOwnCard(host, sessionId, seen) {
   const known = new Set(seen.map((c) => c.requestId))
