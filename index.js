@@ -13,6 +13,7 @@
  * - src/context-window.js  the context-window setting and its enforcement (src/context-policy.js)
  * - src/intake.js          every input that wakes Fishball (durable, deduplicated, wake guard)
  * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
+ * - src/managed.js         which sessions Fishball manages, their tools, Hand over / Take back, release_session
  * - src/watches.js         "tell Fishball when finished": watches, their notices and tools
  * - src/unread.js          unread replies from Fishball (the sidebar mark's count)
  * - src/preferences.js    your display choices (the sidebar brand icon)
@@ -35,6 +36,7 @@ import { CatalogError, PluginCatalog, fishballInstalledKey } from './src/plugin-
 import { ContextWindow } from './src/context-window.js'
 import { IntakeError, IntakeLedger } from './src/intake.js'
 import { MESSAGING_TOOL, registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
+import { MANAGED_TOOL, ManagedError, ManagedRegistry } from './src/managed.js'
 import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
 import { WATCH_TOOL, Watches, WatchError } from './src/watches.js'
 import { Unread } from './src/unread.js'
@@ -61,6 +63,7 @@ export const inject = Object.values(SERVICE)
 /** Each tool Fishball registers, by the key of its own plugin (DESIGN §10d revision 10c). */
 const OWN_TOOL_PLUGIN = new Map([
   [MESSAGING_TOOL, FEATURE_KEY.messages],
+  [MANAGED_TOOL, FEATURE_KEY.messages],
   [WATCH_TOOL, FEATURE_KEY.watching],
   [PLUGIN_TOOL, FEATURE_KEY.plugins],
   [APPROVAL_TOOL, FEATURE_KEY.approvals],
@@ -87,15 +90,19 @@ export async function apply(ctx, config) {
   let lookView = () => null
   /** Which of Fishball's own feature plugins run (revision 10c); null until the catalog exists. */
   let featuresView = () => null
+  /** Managed sessions (revision 11, §10e); null until the registry exists. */
+  let managedView = () => null
+  /** Fishball's tools that only managed sessions have, listed under their plugin ("For other sessions"). */
+  let managedToolNames = () => []
   /** Make each feature follow its plugin's applied state; wired once the features exist. */
   let syncFeatures = () => {}
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView() })
+  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView(), managed: managedView() })
   /** Called on every published change once ctx.fishball exists (sources may become enabled). */
   let refreshSources = () => {}
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable }
+  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable, setManaged: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
@@ -116,6 +123,7 @@ export async function apply(ctx, config) {
     removeWatch: (input) => commands.removeWatch(input),
     markRead: () => commands.markRead(),
     setBrandStyle: (style) => commands.setBrandStyle(style),
+    setManaged: (input) => commands.setManaged(input),
     // Read per request: served whether the look is on or off, the browser decides (DESIGN §10c).
     messengerScript: () => readFile(path.join(import.meta.dirname, MESSENGER.clientFile)),
   })
@@ -168,6 +176,7 @@ export async function apply(ctx, config) {
     packages,
     hasSettings: (key) => settings.has(key),
     ownPluginOf: (name) => OWN_TOOL_PLUGIN.get(name),
+    otherSessionTools: () => managedToolNames(),
   })
   // Settings of the plugins Fishball runs in its private tree (DESIGN §10d).
   const settings = new PluginSettings(store, {
@@ -235,8 +244,22 @@ export async function apply(ctx, config) {
       throw error
     }
   }
-  const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined, watch: watchFor, isEnabled: () => catalog.isAppliedOn(FEATURE_KEY.messages) })
-  const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish(), watch: watchFor })
+  /** Managed sessions (revision 11, §5e); created below, once message_fishball's definition exists. */
+  let managedRegistry
+  const manage = (sessionId, by) => managedRegistry.manage(sessionId, by)
+  const messagesOn = () => catalog.isAppliedOn(FEATURE_KEY.messages)
+  const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined, watch: watchFor, isEnabled: messagesOn, isManaged: (sessionId) => managedRegistry.isManaged(sessionId), manage })
+  const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish(), watch: watchFor, manage })
+  /** What a managed agent has now: message_fishball while Session messages runs (rev11a). */
+  const managedTools = () => (messagesOn() ? [inbound.tool] : [])
+  managedRegistry = new ManagedRegistry(ctx, store, logger, {
+    ledger, readLimits: limits, assistantId, onChange: () => publish(), isEnabled: messagesOn, managedTools,
+    // Waiting requests of a session taken back or released go to you (§5e); the broker exists below.
+    onLeave: (sessionId) => broker.releaseSession(sessionId),
+  })
+  managedRegistry.registerTools((definition) => composition.registerOwnTool(definition))
+  managedView = () => managedRegistry.snapshot()
+  managedToolNames = () => managedTools().map((tool) => tool.name)
   /** Sessions related to Fishball (read_session, DESIGN §5c): watched, messaged it, messaged or started by it, or forwarded by you. */
   const related = (sessionId) => watches.watched(sessionId) || ledger.hasSource(sessionId, Object.values(SOURCE_ID)) || outbound.contacted(sessionId)
   watches.registerTools((definition) => composition.registerOwnTool(definition), related)
@@ -253,13 +276,14 @@ export async function apply(ctx, config) {
     ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,
     startedByFishball: (sessionId) => outbound.started(sessionId), agentOf: () => assistantAgent(), onChange: () => publish(),
     isEnabled: () => catalog.isAppliedOn(FEATURE_KEY.approvals),
+    isManaged: (sessionId) => managedRegistry.isManaged(sessionId),
   })
   broker.registerTools((definition) => composition.registerOwnTool(definition))
   approvalsView = () => broker.snapshot()
-  // Off takes the feature away at the apply: message_fishball leaves other sessions, and requests
-  // waiting for Fishball go to you at once (revision 10c).
+  // Off takes the feature away at the apply: message_fishball leaves managed sessions (they stay
+  // managed, Q-r11-plugins-off), and requests waiting for Fishball go to you at once (revision 10c).
   syncFeatures = () => {
-    inbound.sync()
+    managedRegistry.sync()
     if (!catalog.isAppliedOn(FEATURE_KEY.approvals)) broker.releaseAll()
   }
   // ctx.fishball (DESIGN §8): plugins publish events to Fishball through the ledger.
@@ -293,7 +317,17 @@ export async function apply(ctx, config) {
   const canNotifyUnchecked = () => assistantAgent() !== undefined && catalog.isAppliedOn(FEATURE_KEY.plugins)
   afterApply = () => { if (canNotifyUnchecked()) notifyUnchecked() }
   commands.send = ({ sessionId, note }) => asApiError(IntakeError)(() => inbound.forward(sessionId, note))
+  // Hand over to Fishball / Take back from Fishball (§10e): 409 unavailable while Fishball is not
+  // live (archived, stopped, in recovery, failed), as the watches route reads "ready" (§5c).
+  commands.setManaged = ({ sessionId, managed }) => {
+    // Off answers feature-off even while Fishball is stopped, as for watches (review L4).
+    if (!messagesOn()) return Promise.reject(new LifecycleStateError(FEATURE_OFF))
+    if (assistantAgent() === undefined) return unavailable()
+    return asApiError(ManagedError)(() => (managed ? managedRegistry.handOver(sessionId) : managedRegistry.takeBack(sessionId)))
+  }
   const logged = (label) => (error) => logger.warn('%s failed (%s)', label, diagnosticOf(error))
+  // Sessions DSH no longer finds leave the registry (§9).
+  void managedRegistry.prune().catch(logged('managed sessions check'))
   /** A row waiting for a service may run now; its tools may have appeared too. */
   const recheck = () => void catalog.recheckWaiting().catch(logged('waiting re-audit'))
   // A tool registered or removed anywhere can change Fishball's catalog view, and may bring

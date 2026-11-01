@@ -160,6 +160,7 @@ export class PluginCatalog {
   #packages
   #hasSettings
   #ownPluginOf
+  #otherSessionTools
   #agentOf = () => undefined
   /** key -> catalog entry { key, title, kind, defaultOn, rows?, bundle?, rowIds?, packageName?, packageDir?, prefix } */
   #entries = new Map()
@@ -204,10 +205,13 @@ export class PluginCatalog {
    * @param options.defaults - PluginDefaults (which DSH plugins keep the old default).
    * @param options.packages - FishballPackages (Fishball's own package folder).
    * @param options.hasSettings - (key) => whether settings are stored for the plugin (snapshot `settings`).
+   * @param options.otherSessionTools - () => names of Fishball's tools that only managed sessions
+   *   have (revision 11, §5e): no global view lists them, so the snapshot adds them under their
+   *   own plugin with status other-sessions, as the page showed message_fishball before.
    * @param options.ownPluginOf - (toolName) => the key of Fishball's own plugin a tool Fishball
    *   registers belongs to, or undefined (revision 10c).
    */
-  constructor(ctx, store, logger, { readLimits, mountRows, adjustRows = (key, rows) => rows, pendingRowIds, ownsDefinition, onChange, onApplied = () => {}, defaults, packages, hasSettings = () => false, ownPluginOf = () => undefined }) {
+  constructor(ctx, store, logger, { readLimits, mountRows, adjustRows = (key, rows) => rows, pendingRowIds, ownsDefinition, onChange, onApplied = () => {}, defaults, packages, hasSettings = () => false, ownPluginOf = () => undefined, otherSessionTools = () => [] }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -218,6 +222,7 @@ export class PluginCatalog {
     this.#onApplied = onApplied
     this.#pendingRowIds = pendingRowIds
     this.#ownPluginOf = ownPluginOf
+    this.#otherSessionTools = otherSessionTools
     this.#ownsDefinition = ownsDefinition
     this.#onChange = onChange
     this.#defaults = defaults
@@ -940,6 +945,11 @@ export class PluginCatalog {
       const list = toolsByPlugin.get(decision.plugin) ?? []
       list.push({ name, status: decision.status })
       toolsByPlugin.set(decision.plugin, list)
+    }
+    for (const name of this.#otherSessionTools()) {
+      const plugin = this.#ownPluginOf(name)
+      if (plugin === undefined || decisions?.has(name)) continue
+      toolsByPlugin.set(plugin, [...(toolsByPlugin.get(plugin) ?? []), { name, status: TOOL_STATUS.otherSessions }])
     }
     return {
       plugins: [...this.#entries.values()].map((entry) => {
