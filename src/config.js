@@ -52,6 +52,8 @@ export const LIMITS = Object.freeze([
   // Revision 11 (rev11b): list_user_messages (your answer, Q-r11-list).
   ['userMessagesListed', 20, MIN.count, 'Messages list_user_messages returns to a managed session, newest first.'],
   ['userMessageExcerptChars', 1000, MIN.count, 'Characters of each excerpt list_user_messages returns.'],
+  // Revision 11 (rev11c): S37's fixture value, so the composer stays in view below the pile.
+  ['pileMaxHeightVh', 45, MIN.count, 'Height of your pile of waiting requests above Fishball\'s composer, as a percentage of the window height; past it the pile scrolls.'],
   ['defaultReplyCapTokens', 32000, MIN.count, 'The most the automatic reply-length cap can be with a smaller context window; your own reply cap still wins.'],
 ].map(([field, defaultValue, min, description]) => Object.freeze({ field, defaultValue, min, description })))
 
