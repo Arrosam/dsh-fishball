@@ -617,7 +617,7 @@ export const OWN_PLUGINS = {
   watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
   plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
   // Revision 11 rev11b: ask_fishball and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
-  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant'] },
+  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant', 'list_frozen_sessions', 'answer_prompt'] },
 }
 /** The five entries of the "Fishball" group (snapshot dsh 'fishball'): the four above and the Messenger look. */
 export const FISHBALL_GROUP_KEYS = [...Object.values(OWN_PLUGINS).map((p) => p.key), 'builtin:messenger']
@@ -756,3 +756,17 @@ export const PREFIX_TOOLS = ['bash', 'pwsh', 'terminal_send']
 export const EXACT_ONLY_TOOLS = ['demo_echo', 'fbtest_ask', 'terminal_open']
 /** The fixture tools that ask for approval in their body (fixture-tools.mjs). */
 export const ASKING_SHELL_ENV = { FBTEST_ASKING_TOOLS: PREFIX_TOOLS.concat('demo_echo', 'terminal_open').join(',') }
+
+// ---- Revision 11 rev11e (prompts already showing, the fifth way in, cards for direct calls; DESIGN §7a.1, §7a.6, §7a.9, §9, §10e, §16; S33) ----
+/** Fishball's two tools for prompts already showing (§7a.9), under Permission requests (§10d). */
+export const PROMPT_TOOLS = { list: 'list_frozen_sessions', answer: 'answer_prompt' }
+/** answer_prompt's decisions (§7a.9). */
+export const PROMPT_DECISION = { allow: 'allow', reject: 'reject' }
+/** The registry's `by` for a session that became managed through answer_prompt (§9). */
+export const PROMPT_MANAGED_BY = 'prompt-answer'
+/** The tag record kind (§9 "Tag records"), the audit row kind (§9 "Audit") and the decisions action (§9 "Fishball's other decisions"). */
+export const PROMPT_TAG_KIND = 'prompt'
+export const PROMPT_AUDIT_KIND = 'prompt'
+export const PROMPT_DECISION_ACTION = 'answer-prompt'
+/** The approved tag of a session that became managed through answer_prompt (Q-r11-managed-tag-prompt, client wording). */
+export const PROMPT_MANAGED_LABEL = 'Prompt answered by Fishball'

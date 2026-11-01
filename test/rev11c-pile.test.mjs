@@ -12,13 +12,13 @@
  * | PIL-04  | EP (quote + thread + Fishball's note) | the card shows the quoted message's text, the thread so far, Fishball's reason as its note; callId is the running call's |
  * | PIL-05  | BVA (argumentExcerptBytes 16 / default) | cut arguments on the card to at most 16 bytes + an ellipsis; the default shows them whole |
  * | PIL-06  | EP (markup in text) | arguments, reason and note are in the snapshot verbatim (the client draws them as plain text) |
- * | PIL-07  | EP (a direct call sent to you) | rev11c: stock prompt only, no card (cards for direct calls are rev11e) |
+ * | PIL-07  | EP (a direct call sent to you) | rev11e (was: stock prompt only): a card of kind direct and the stock prompt both show; your click in the session clears the card |
  * | PIL-08  | ST (SSE) | a frame holds the card when it appears and a later frame no longer holds it after the answer |
  * | PIL-09 ×4 | BVA (pileMaxHeightVh) | default 45 in state.limits; 1 accepted live; 0, 1.5 refused and unchanged |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, ASK_CODE, ASK_FISHBALL, ASK_TOOL, CARD_KEYS, CARD_KIND, CLICK, DECISION, ELLIPSIS, LIMITS, LIMITS_R11C, OUTCOME, REQUEST_PLACEHOLDER } from './support/constants.mjs'
+import { API, APPROVER_HOLDS, ASK_CODE, ASK_FISHBALL, ASK_TOOL, CARD_KEYS, CARD_KIND, CLICK, DECISION, ELLIPSIS, LIMITS, LIMITS_R11C, OUTCOME, REQUEST_PLACEHOLDER } from './support/constants.mjs'
 import { HOOK, T, answerCard, askStep, bytes, callStep, cardArguments, cardOf, jsonOf, pileNow, requestMessages, resultById, settledIdle, untilCard, untilNoCard, waitRequest } from './support/expect.mjs'
 import { boot, pileHost, pileTools, tokens, until } from './support/rev11c.mjs'
 
@@ -152,17 +152,25 @@ describe('Revision 11 rev11c: your pile', () => {
     await ctx.host.call('waitIdle', { sessionId: x })
   })
 
-  it('PIL-07 a direct call sent to you shows the stock prompt only: no card until rev11e', T, async () => {
+  it('PIL-07 a direct call sent to you shows a card AND the stock prompt (changed in rev11e: it was the stock prompt only)', T, async () => {
+    // rev11e (DESIGN §7a.6 "Built in rev11e"): the card for a direct call is built with the pass-through. The stock prompt
+    // is held here so the card and the prompt can be seen together; rev11e-direct.test.mjs covers the rest.
     const text = tok('07')
     await t.plan(text, { decision: DECISION.escalate, risk: 'high', reason: 'to you' })
     await settledIdle(ctx.host, x)
     const id = cid('07')
-    await t.withStock(OUTCOME.allow, async () => {
-      const r = await t.run(x, [callStep({ text }, id)])
-      assert.equal(resultById(r, id)?.text, 'outcome=' + OUTCOME.allow, 'the stock prompt answered')
-    })
-    assert.equal((await t.stockSeen(text)).length, 1)
-    assert.deepEqual(await pileNow(ctx.host), [], 'no card for a direct call')
+    await ctx.host.call('setApprover', { outcome: APPROVER_HOLDS })
+    try {
+      await ctx.host.call('driveStart', { sessionId: x, script: [callStep({ text }, id), [{ text: 'done' }]] })
+      const req = await waitRequest(ctx.host, ctx.fb, text)
+      const card = req && (await untilCard(ctx.host, req.id))
+      assert.ok(card, 'a card for the direct call')
+      assert.equal(card.kind, CARD_KIND.direct)
+      assert.equal((await t.stockSeen(text)).length, 1, 'and the stock prompt')
+    } finally { await ctx.host.call('setApprover', { outcome: OUTCOME.reject }) }
+    assert.equal(await ctx.host.call('releaseApproval', { outcome: OUTCOME.allow }), true)
+    await ctx.host.call('waitIdle', { sessionId: x })
+    assert.deepEqual(await pileNow(ctx.host), [], 'your click in the session cleared the card')
   })
 
   it('PIL-08 the event stream: a frame holds the card while it waits, and a later frame no longer holds it', T, async () => {

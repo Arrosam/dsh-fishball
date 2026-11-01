@@ -352,7 +352,7 @@ export const MANAGED = Object.freeze({
   /** Source identity prefix of the notes to Fishball about a change (DESIGN §5e "Notes to Fishball"). */
   sourcePrefix: 'fishball/managed/',
 })
-/** How a session became managed (§9 `by`); 'prompt-answer' arrives with answer_prompt (rev11e). */
+/** How a session became managed (§9 `by`); 'prompt-answer': Fishball answered a prompt in it (answer_prompt, rev11e). */
 export const MANAGED_BY = Object.freeze({ start: 'start', message: 'message', promptAnswer: 'prompt-answer', handOver: 'hand-over', send: 'send' })
 /** What changed, and who did it, in a note to Fishball. */
 export const MANAGED_CHANGE = Object.freeze({ handOver: 'hand-over', takeBack: 'take-back', release: 'release' })
@@ -366,9 +366,9 @@ export const MANAGED_ERROR = Object.freeze({
 /**
  * Fishball's decisions audit (§9 `decisions`): rev11a records release; rev11b adds your own
  * Allow once / Reject clicks on a stock prompt for a request that went through Fishball; rev11d
- * adds Fishball's grants and the revokes, yours and Fishball's.
+ * adds Fishball's grants and the revokes, yours and Fishball's; rev11e adds Fishball's answer_prompt.
  */
-export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke' })
+export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke', answerPrompt: 'answer-prompt' })
 export const DECISION_OK = 'ok'
 
 /** Watches (DESIGN §5c, §9 watches). */
@@ -447,8 +447,8 @@ export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', grant: 'grant',
  * grant (the call itself runs as on allow). grant-used: a call a standing grant covered (no Fishball step).
  */
 export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn', released: 'released', toUser: 'to-user', pass: 'pass', grantUsed: 'grant-used' })
-/** Whether the session asked first (ask_fishball) or made the call directly (§9 audit `kind`). */
-export const REQUEST_KIND = Object.freeze({ asked: 'asked', direct: 'direct' })
+/** Whether the session asked first (ask_fishball), made the call directly, or Fishball answered its showing prompt (answer_prompt, rev11e) (§9 audit `kind`). */
+export const REQUEST_KIND = Object.freeze({ asked: 'asked', direct: 'direct', prompt: 'prompt' })
 /** What a pass-table entry lets through (§7a.3 passes, §7a.6 to-you tickets). */
 export const PASS_KIND = Object.freeze({ pass: 'pass', toYou: 'to-you' })
 /** Who wrote one entry of a request's thread (§9 request threads). */
@@ -478,8 +478,20 @@ export const ASK_ERROR = Object.freeze({
 export const APPROVAL_RISK = Object.freeze({ low: 'low', high: 'high' })
 /** Your answer on a card in the pile or on the running ask_fishball row (§7a.6, §10e). */
 export const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
-/** How a card left the pile: your answer, Fishball going off, the session leaving management, or its call cancelled. */
-export const CARD_END = Object.freeze({ user: 'user', off: 'off', released: 'released', cancelled: 'cancelled' })
+/**
+ * How a card left the pile: your answer, Fishball going off, the session leaving management, its
+ * call cancelled, or (a direct call's card, rev11e) the prompt in its session answered first.
+ */
+export const CARD_END = Object.freeze({ user: 'user', off: 'off', released: 'released', cancelled: 'cancelled', inSession: 'in-session' })
+/**
+ * Prompts already showing (DESIGN §7a.9, rev11e): the broker's pass-through registry, listed by
+ * list_frozen_sessions and answered by answer_prompt (allow or reject only, §7a.9).
+ */
+export const PROMPT = Object.freeze({
+  /** Prompt id prefix Fishball sees (prm_<id>). */
+  idPrefix: 'prm_',
+  decisions: Object.freeze([APPROVAL_DECISION.allow, APPROVAL_DECISION.reject]),
+})
 /**
  * Fishball's own request past maxPendingApprovals returns at once with this code, so it never
  * freezes (your answer Q-r11-cap-own, §7a.6).
@@ -488,9 +500,10 @@ export const TOO_MANY_WAITING = 'too-many-waiting'
 /**
  * Tag records (DESIGN §9 `tags`, S37): one per answer Fishball gave, shown in the asking turn's
  * tail. approval: an answer_approval allow, grant, reject or question; sent-to-you: an escalate;
- * grant: a call a standing grant covered, one per call (rev11d, §7a.8).
+ * grant: a call a standing grant covered, one per call (rev11d, §7a.8); prompt: an answer_prompt
+ * answer, allow or reject (rev11e, §7a.9).
  */
-export const TAG_KIND = Object.freeze({ approval: 'approval', sentToYou: 'sent-to-you', grant: 'grant' })
+export const TAG_KIND = Object.freeze({ approval: 'approval', sentToYou: 'sent-to-you', grant: 'grant', prompt: 'prompt' })
 /** How complete the arguments Fishball sees are (a cut or missing call counts as high-risk). */
 export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
 /** DSH approval outcomes (dsh-user-approval). */
@@ -503,6 +516,8 @@ export const APPROVAL_ERROR = Object.freeze({
   reasonRequired: 'reason-required',
   argumentsIncomplete: 'arguments-incomplete',
   questionRequired: 'question-required',
+  /** answer_prompt takes allow or reject only (§7a.9). */
+  invalidDecision: 'invalid-decision',
 })
 
 /**
