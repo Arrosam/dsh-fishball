@@ -8,15 +8,18 @@ import { foldSessionTitle } from '@deepseek-ai/dsh-session-title'
 import { SESSION_INFO } from './constants.js'
 import { byteLength, cutToBytes } from './text.js'
 
-/** The text of the last assistant message among events, cut to SESSION_INFO.excerptBytes. */
-export function lastAnswerExcerpt(events) {
+/** The seq a session with no events reports, so every later event counts as newer. */
+export const NO_EVENTS_SEQ = -1
+
+/** The text of the last assistant message among events, cut to excerptBytes (the forwardExcerptBytes limit). */
+export function lastAnswerExcerpt(events, excerptBytes) {
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]
     if (event.type !== SESSION_INFO.assistantEvent) continue
     const text = (event.data?.message?.content ?? []).filter((block) => block.type === SESSION_INFO.textBlock).map((block) => block.text).join('\n').trim()
     if (text.length === 0) continue
     // Bounded in bytes, so the framing allowance holds whatever the script (review L).
-    return cutToBytes(text, SESSION_INFO.excerptBytes, SESSION_INFO.ellipsis)
+    return cutToBytes(text, excerptBytes, SESSION_INFO.ellipsis)
   }
   return ''
 }
@@ -48,27 +51,37 @@ async function eventsOf(ctx, sessionId) {
 /**
  * Describe one session, or undefined when no such session exists.
  * @param ctx - context with sessions, sessionController and workspaceRegistry.
- * @returns { id, title, cwd, archived, excerpt }.
+ * @param excerptBytes - bound of the last answer's excerpt (the forwardExcerptBytes limit).
+ * @returns { id, title, cwd, archived, excerpt, lastSeq }.
  */
-export async function describeSession(ctx, sessionId) {
+export async function describeSession(ctx, sessionId, excerptBytes) {
   let read
   try {
     read = await eventsOf(ctx, sessionId)
   } catch {
     return undefined
   }
-  return describeFrom(ctx, sessionId, read)
+  return describeFrom(ctx, sessionId, read, excerptBytes)
+}
+
+/** A session's last event seq (a watermark), or undefined when no such session exists. */
+export async function lastSeqOf(ctx, sessionId) {
+  try {
+    return (await eventsOf(ctx, sessionId)).events.at(-1)?.seq ?? NO_EVENTS_SEQ
+  } catch {
+    return undefined
+  }
 }
 
 /** Describe a session from events and header already read. */
-function describeFrom(ctx, sessionId, read) {
+function describeFrom(ctx, sessionId, read, excerptBytes) {
   return {
     id: sessionId,
     title: foldSessionTitle(read.events)?.title ?? '',
     cwd: read.header.cwd ?? null,
     archived: ctx.workspaceRegistry.archivedSessionIds.includes(sessionId),
-    excerpt: lastAnswerExcerpt(read.events),
-    lastSeq: read.events.at(-1)?.seq ?? -1,
+    excerpt: lastAnswerExcerpt(read.events, excerptBytes),
+    lastSeq: read.events.at(-1)?.seq ?? NO_EVENTS_SEQ,
   }
 }
 
@@ -81,16 +94,17 @@ export const textOfEvent = (event) => {
 /**
  * The last user and assistant messages of a session, newest last, within maxBytes in total
  * (older ones are dropped first; one longer message is cut).
+ * @param excerptBytes - bound of info's last-answer excerpt (the forwardExcerptBytes limit).
  * @returns { info, messages: [{ role, text }] }, or undefined when the session does not exist.
  */
-export async function readSessionMessages(ctx, sessionId, count, maxBytes) {
+export async function readSessionMessages(ctx, sessionId, count, maxBytes, excerptBytes) {
   let read
   try {
     read = await eventsOf(ctx, sessionId)
   } catch {
     return undefined
   }
-  const info = describeFrom(ctx, sessionId, read)
+  const info = describeFrom(ctx, sessionId, read, excerptBytes)
   const picked = []
   let used = 0
   for (let i = read.events.length - 1; i >= 0 && picked.length < count; i--) {

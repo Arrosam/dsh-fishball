@@ -113,6 +113,34 @@ export const LIMITS = {
   auditEntriesKept: { default: 500, min: 1 },
 }
 
+/**
+ * Revision 11 rev11-limits (DESIGN §16 "Hard-coded limits moved to config", table "Today's constants"):
+ * the sixteen fields added to the fishball row's config, with today's value as the default. Every
+ * value is a whole number of at least 1 (§16 "Rules"); `old` is the constant's name in "Today in code".
+ */
+export const LIMITS_R11 = {
+  requestUserMessageBytes: { default: 2048, min: 1, old: 'APPROVAL.userMessageBytes' },
+  rationaleChars: { default: 500, min: 1, old: 'APPROVAL.rationaleChars' },
+  approvalsShown: { default: 20, min: 1, old: 'APPROVAL.shown' },
+  intakeRowsShown: { default: 20, min: 1, old: 'INTAKE.snapshotRows' },
+  outboxShown: { default: 20, min: 1, old: 'OUTBOX_SHOWN' },
+  watchesShown: { default: 50, min: 1, old: 'WATCH.shown' },
+  readSessionMessages: { default: 12, min: 1, old: 'WATCH.readMessages' },
+  readSessionBytes: { default: 12288, min: 1, old: 'WATCH.readBytes' },
+  forwardExcerptBytes: { default: 3072, min: 1, old: 'SESSION_INFO.excerptBytes' },
+  pluginHistoryShown: { default: 10, min: 1, old: 'PLUGIN_MANAGER.historyEntries' },
+  settingsPromptValueBytes: { default: 200, min: 1, old: 'PLUGIN_MANAGER.promptValueBytes' },
+  replyCapShare: { default: 8, min: 1, old: 'CONTEXT.outputShare' },
+  headroomShare: { default: 8, min: 1, old: 'CONTEXT.headroomShare' },
+  minWindowTokens: { default: 4096, min: 1, old: 'CONTEXT.minWindowTokens' },
+  pluginManagerStartMs: { default: 30000, min: 1, old: 'FISHBALL_PACKAGES.managerStartMs' },
+  defaultReplyCapTokens: { default: 32000, min: 1, old: 'CONTEXT.outputMax' },
+}
+/** rev11-limits: package-operation constants removed in favour of DSH's plugin-manager settings (§16 "Values that stay constants"). */
+export const REMOVED_PACKAGE_CONSTANTS = ['FISHBALL_PACKAGES.outputBytes', 'FISHBALL_PACKAGES.idleTimeoutMs', 'FISHBALL_PACKAGES.lockWaitMs', 'FISHBALL_PACKAGES.lookupTimeoutMs']
+/** rev11-limits: constants that stay (§16 "Values that stay constants"), by the name the table gives. */
+export const STAYING_CONSTANTS = ['maxTimerMs', 'HOUR_MS', 'idPattern', 'dshDefaults', 'minCapTokens', 'dedupeKeyBytes', 'descriptionBytes', 'sourceTitleBytes', 'nameBytes', 'maxSubagentDepth', 'resumeAttempts', 'resumeRetryMs', 'maxAttempts', 'modelInfoTimeoutMs', 'SEQ_DIGITS', 'DIGEST_HEX_CHARS', 'WORDS_PER_TOKEN', 'ROUNDING_GUARD', 'FIBER_ACTIVE']
+
 /** R-COMPOSITION: names never shown to Fishball. */
 export const HIDDEN_TOOLS = [
   'image_generate', 'video_generate', 'mover_move_session', 'create_worktree', 'git_worktree',

@@ -614,6 +614,13 @@ const ops = {
     return { changed: r.changed, application: r.application, stage: r.stage ?? null, error: r.error ? JSON.parse(JSON.stringify(r.error)) : null }
   },
 
+  // ---- Revision 11 rev11-limits operations ----
+  /** A row's Schemastery form (toJSON) exactly as DSH's settings service describes it to its settings page. */
+  settingsSchema({ ns = ROW_ID } = {}) {
+    const d = ctx.settings.describe().find((x) => x.ns === ns)
+    return d ? JSON.parse(JSON.stringify(d.schema ?? null)) : null
+  },
+
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, 15000))])
     return true
