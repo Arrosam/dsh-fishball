@@ -11,10 +11,7 @@ export const name = 'fbtest-tools'
 export const inject = ['tools']
 export function apply(ctx) {
   store.fixtureCtx = ctx
-  // rev11d: FBTEST_ASKING_TOOLS names (run_code is not a boot fixture) are registered too, so their asking body can run.
-  const asking = (process.env.FBTEST_ASKING_TOOLS ?? '').split(',').filter(Boolean)
-  const names = [...new Set([...BOOT_TOOLS.filter((n) => !LATE_TOOLS.includes(n)), ...asking])]
-  ctx.effect(() => registerFixtures(ctx, names, store.fixtureRegs), 'fbtest fixture tools')
+  ctx.effect(() => registerFixtures(ctx, BOOT_TOOLS.filter((n) => !LATE_TOOLS.includes(n)), store.fixtureRegs), 'fbtest fixture tools')
   // P7 (FBTEST_APPROVER_AFTER=1): the browser prompt's stand-in. This row mounts before dsh-fishball and
   // prepends, so Fishball's broker (prepended later) runs first and its next() reaches this listener,
   // which answers through the worker's scripted answerer. Before the worker sets it up: rejected.
