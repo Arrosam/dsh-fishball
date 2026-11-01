@@ -2,7 +2,7 @@
 
 Branch `claude/test-rev11e-a6ba37` = rev11e tests + `claude/rev11e-7d7a1d` (`c6e667f`) + `rebuild/managed-sessions` (`15c8e6e`). Not pushed.
 
-## Result: FAIL (2 code findings, 1 to decide)
+## Result: PASS (final run, see "Re-run after the fixes"; the sections below record the first run)
 
 ## Suite
 Second full run `/opt/homebrew/bin/node test/run.mjs` after the test fixes: **tests 1594, pass 1589, fail 4, skipped 1**. The first run (before the fixes) had 14 failures: 7 were my frozen-list reader (`arguments` live in the untrusted `details` text, A-r11e-1), 2 my own test bugs in DCD-08 (call id regenerated), 1 APR-08 (a session that became managed no longer shows a stock prompt: now taken back before the second prompt), 1 APR-10 (see below), RTE-04 and OWN-01 (older cases changed on purpose, see commits), and L31.
@@ -26,3 +26,10 @@ Driven in a real DSH worker (`rev11e-serve.mjs`, fake model, scripted stock prom
 
 ## Not run by hand
 Settings page managed list; real browser prompt (a scripted held prompt stands in; S33 did the real one).
+
+## Re-run after the fixes
+Merged `claude/rev11e-7d7a1d` (`2edee60`) and `rebuild/managed-sessions` (`20fafc4`). Full suite: **tests 1655, pass 1654, fail 0, skipped 1** (the known OFM-06).
+- APR-03b, APR-04b pass: the model request after the answered call, in the same turn, has `ask_fishball`, `list_user_messages` and `message_fishball` (also seen by hand with a debug run: the three tools listed in the turn's last request).
+- APR-10 passes with both rows (`decisions` `answer-prompt` and approvals rows of kind `prompt`).
+- L31 was a test fixture bug (manager 2026-11-02): window raised to 60000 (64000 would make floor(N/2) equal `defaultReplyCapTokens` and hide the effect; 60000 leaves ~10,200 tokens of room). Share 2 accepted and applied live; 1 refused.
+- Done-when item 4 now PASS.
