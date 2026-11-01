@@ -29,8 +29,9 @@
  *   messages the user queued stay parked until the next wake (S34). Redirect is that stop plus
  *   a plain followup: DSH queues it behind the user's queued messages (first in, first out,
  *   your answer) and holds it until the aborted turn has settled, so there is no wait here.
- *   Both leave a `decisions` row; a redirect is also an outbox message and counts toward
- *   messagesPerHour, while stop has no cap (your answers, 2026-11-01).
+ *   Both leave a `decisions` row; a redirect is also an outbox entry of its own kind, so the
+ *   origin of the turn it starts can say redirect_session, and counts toward messagesPerHour,
+ *   while stop has no cap (your answers, 2026-11-01).
  *
  * Caps (messagesPerHour, sessionsPerHour) count every call that reached another session:
  * delivered, unconfirmed (steered, flush failed) and failed after creating a session. The
@@ -67,6 +68,8 @@ export const MESSAGING_TOOL = Object.freeze({ inbound: SELF_MESSAGE_TOOL, send: 
 export const SOURCE_ID = Object.freeze({ session: 'session/', user: 'user/forward/' })
 /** Statuses that count toward an hourly cap: the call reached the other session. */
 const COUNTED = new Set([OUTBOX_STATUS.delivered, OUTBOX_STATUS.unconfirmed, OUTBOX_STATUS.failed])
+/** The hourly cap each outbox kind counts toward: a redirect is a message to the session (messagesPerHour, §7a.12). */
+const CAP_OF = Object.freeze({ [OUTBOX_KIND.message]: OUTBOX_KIND.message, [OUTBOX_KIND.redirect]: OUTBOX_KIND.message, [OUTBOX_KIND.start]: OUTBOX_KIND.start })
 
 
 /** Model-facing texts (stable; no secrets). */
@@ -231,13 +234,14 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
    */
   const attempts = { [OUTBOX_KIND.message]: [], [OUTBOX_KIND.start]: [] }
   const since = () => Date.now() - HOUR_MS
+  /** @param kind - the cap's own kind (CAP_OF's values): message or start. */
   const overCap = (kind, cap) => {
     attempts[kind] = attempts[kind].filter((time) => time > since())
-    const stored = outbox.countSince(new Date(since()).toISOString(), (entry) => entry.kind === kind && COUNTED.has(entry.status))
+    const stored = outbox.countSince(new Date(since()).toISOString(), (entry) => CAP_OF[entry.kind] === kind && COUNTED.has(entry.status))
     return cap !== 0 && Math.max(attempts[kind].length, stored) >= cap
   }
   const record = async (entry) => {
-    if (COUNTED.has(entry.status)) attempts[entry.kind].push(Date.now())
+    if (COUNTED.has(entry.status)) attempts[CAP_OF[entry.kind]].push(Date.now())
     await outbox.append({ ...entry, at: new Date().toISOString() }, [entry.kind])
     onChange()
   }
@@ -410,7 +414,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       const info = await describeSession(ctx, sessionId, readLimits().forwardExcerptBytes)
       if (info === undefined) return refused(OUTBOUND_ERROR.unknownSession)
       if (info.archived) return refused(OUTBOUND_ERROR.archived)
-      const entry = { kind: OUTBOX_KIND.message, targetSessionId: sessionId, messageDigest: digestOf(message) }
+      const entry = { kind: OUTBOX_KIND.redirect, targetSessionId: sessionId, messageDigest: digestOf(message) }
       const result = await deliverAndRecord(entry, sessionId, message, { sessionId, title: info.title }, stopAndFollowup)
       if (result.ok) await decide(DECISION_ACTION.redirect, sessionId)
       return result
@@ -421,6 +425,11 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     snapshot: () => ({ entries: outbox.recent(readLimits().outboxShown) }),
     /** Whether Fishball messaged or started this session (kept outbox entries). */
     contacted: (sessionId) => [...store.outbox.entries()].some(([, entry]) => entry.targetSessionId === sessionId),
+    /** Whether this text is a redirect_session instruction Fishball sent this session (a kept redirect entry). */
+    redirected: (sessionId, text) => {
+      const digest = digestOf(text)
+      return [...store.outbox.entries()].some(([, entry]) => entry.kind === OUTBOX_KIND.redirect && entry.targetSessionId === sessionId && entry.messageDigest === digest)
+    },
     /** Whether Fishball started this session (a kept start_session entry). */
     started: (sessionId) => [...store.outbox.entries()].some(([, entry]) => entry.kind === OUTBOX_KIND.start && entry.targetSessionId === sessionId),
   }
