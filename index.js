@@ -321,7 +321,7 @@ export async function apply(ctx, config) {
   // Managed sessions' permission requests go to Fishball first (DESIGN §7a).
   const broker = new ApprovalBroker(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,
-    startedByFishball: (sessionId) => outbound.started(sessionId), agentOf: () => assistantAgent(), onChange: () => publish(),
+    startedByFishball: (sessionId) => outbound.started(sessionId), redirectedByFishball: (sessionId, text) => outbound.redirected(sessionId, text), agentOf: () => assistantAgent(), onChange: () => publish(),
     isEnabled: approvalsOn,
     isManaged,
     passes: new CallPasses(),

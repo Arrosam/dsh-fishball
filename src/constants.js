@@ -722,8 +722,8 @@ export const SESSION_INFO = Object.freeze({
   maxSubagentDepth: 8,
 })
 
-/** What Fishball sent or started (DESIGN §9 outbox). */
-export const OUTBOX_KIND = Object.freeze({ message: 'message', start: 'start' })
+/** What Fishball sent or started (DESIGN §9 outbox); rev11h adds redirect_session's message (the manager's decision, 2026-11-02). */
+export const OUTBOX_KIND = Object.freeze({ message: 'message', start: 'start', redirect: 'redirect' })
 /** unconfirmed: the session has the message, but its flush to disk could not be confirmed. */
 export const OUTBOX_STATUS = Object.freeze({ delivered: 'delivered', unconfirmed: 'unconfirmed', failed: 'failed' })
 
