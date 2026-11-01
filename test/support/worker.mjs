@@ -41,6 +41,7 @@ const { loadLayeredEnv } = await hostPkg('dsh-app-boot')
 const { createUserMessage } = await hostPkg('dsh-llm')
 const { setSandboxMode } = await hostPkg('dsh-sandbox-policy')
 const { WorkspaceActiveSessionError } = await hostPkg('dsh-workspace')
+const { SessionTitleInvalidError } = await hostPkg('dsh-session-title')
 const { model } = await import(pathToFileURL(FAKE_LLM_MODULE).href)
 
 /** Add one linked bundle to the profile, as a user-installed plugin would be; enabled=false leaves it installed but off. */
@@ -115,6 +116,8 @@ fs.writeFileSync(overlay, JSON.stringify([
   // P11: FBTEST_TITLE_MAX_BYTES raises DSH's title byte cap (80 in dsh-base), so a test can give a session a title
   // longer than the 200-byte author-name bound. The other two fields repeat dsh-base's values.
   ...(process.env.FBTEST_TITLE_MAX_BYTES ? [{ id: 'session-title', config: { fallbackMaxWords: 5, fallbackMaxBytes: 40, maxTitleBytes: Number(process.env.FBTEST_TITLE_MAX_BYTES) } }] : []),
+  // start_session titles: FBTEST_NO_SESSION_TITLE boots DSH without its session-title row, so no sessionTitle service exists.
+  ...(process.env.FBTEST_NO_SESSION_TITLE === '1' ? [{ id: 'session-title', disabled: true }] : []),
   { insert: [
     { id: 'fbtest-llm', name: FAKE_LLM_MODULE },
     // An ordinary preset with no tools of its own, so the global fixture tools are what its sessions see.
@@ -127,6 +130,18 @@ fs.writeFileSync(overlay, JSON.stringify([
 ], null, 2))
 
 const { ctx, shutdown } = await runProfile({ environment: loadLayeredEnv('dsh'), profile: PROFILE, patchFiles: [overlay], args: ['--no-open', '--port', '0'] })
+
+/**
+ * Warnings and errors DSH's logger saw (the same exporter hook DSH's own boot diagnostics use), so a test can check
+ * that a problem was logged. DSH_HOME test hosts print nothing to stdout for them.
+ */
+const logged = []
+ctx.logger.exporter({
+  levels: { default: 2 },
+  export: ({ ts, name, type, args }) => {
+    if (type === 'warn' || type === 'error') logged.push({ at: ts, name, type, text: args.map((a) => (a instanceof Error ? a.message : String(a))).join(' ') })
+  },
+})
 
 /**
  * Scripted approver standing in for the person at DSH's stock prompt: a prepended
@@ -186,6 +201,68 @@ for (const type of [INSTALL_EVENTS.state, INSTALL_EVENTS.log]) {
     try { json = JSON.parse(JSON.stringify(payload ?? null)) } catch { json = null }
     store.installEvents.push({ type, requestId: payload?.requestId ?? null, phase: payload?.phase ?? null, at: Date.now(), json })
   })
+}
+
+/**
+ * start_session titles: the probe records, in order, the host calls a started session goes through (the
+ * session-title service's rename, the first steer into the new agent, the new session's flushes) and can
+ * make one of them fail. It only touches sessions created while it is armed, never Fishball's own.
+ */
+const probe = { active: false, events: [], undo: [] }
+function stopProbe() {
+  probe.active = false
+  for (const undo of probe.undo.splice(0).reverse()) undo()
+}
+function startProbe({ rename = null, steer = false, flush = null }) {
+  stopProbe()
+  probe.events = []
+  probe.active = true
+  const created = new Set()
+  const steered = new Set()
+  const flushFailed = new Set()
+  const titles = ctx.get('sessionTitle')
+  if (titles) {
+    const original = titles.rename
+    titles.rename = function (session, title) {
+      const event = { type: 'rename', sessionId: session?.id ?? null, title, liveSession: session === ctx.sessions.get(session?.id) }
+      probe.events.push(event)
+      if (rename === 'invalid') throw new SessionTitleInvalidError('fbtest: the title has no visible characters')
+      if (rename === 'fail') throw new Error('fbtest: rename failed')
+      const snapshot = original.call(this, session, title)
+      event.returned = snapshot?.title ?? null
+      return snapshot
+    }
+    probe.undo.push(() => { delete titles.rename })
+  }
+  probe.undo.push(ctx.on('agent/created', ({ agent }) => {
+    created.add(agent.id)
+    const original = agent.steer
+    agent.steer = function (message, ...rest) {
+      if (probe.active) {
+        probe.events.push({ type: 'steer', sessionId: agent.id, source: JSON.parse(JSON.stringify(message?.source ?? null)) })
+        steered.add(agent.id)
+        if (steer) throw new Error('fbtest: steer failed')
+      }
+      return original.call(this, message, ...rest)
+    }
+  }))
+  const sessions = ctx.sessions
+  const originalFlush = sessions.flush
+  sessions.flush = async function (session, ...rest) {
+    if (probe.active && created.has(session?.id)) {
+      probe.events.push({ type: 'flush', sessionId: session.id })
+      // Only the first flush after the first steer fails: the unconfirmed case is a message that was delivered but not
+      // committed. Failing every later flush would also break the new session's own turn (its per-request barrier).
+      if (flush && steered.has(session.id) && !flushFailed.has(session.id)) {
+        flushFailed.add(session.id)
+        if (flush === 'throw') throw new Error('fbtest: flush failed')
+        return false
+      }
+    }
+    return originalFlush.call(this, session, ...rest)
+  }
+  probe.undo.push(() => { delete sessions.flush })
+  return true
 }
 
 const tags = new WeakMap()
@@ -593,6 +670,18 @@ const ops = {
   sessionTitle({ sessionId }) { return ctx.get('sessionTitle')?.get(liveAgent(sessionId).session)?.title ?? '' },
   /** Every row id of the dsh-fishball bundle as DSH's plugin manager lists it (the messenger must add none). */
   async fishballRows() { return (await ctx.pluginManager.listBundles()).filter((b) => b.name === PACKAGE_NAME).flatMap((b) => b.rows.map((r) => r.rowId)).sort() },
+
+  // ---- start_session title operations ----
+  /** Arm the probe (see startProbe): rename null|'invalid'|'fail', steer true|false, flush null|'throw'|'false'. */
+  startProbe(options = {}) { return startProbe(options) },
+  /** Disarm the probe and restore the host's own methods. */
+  stopProbe() { stopProbe(); return true },
+  /** The recorded calls, in the order they happened. */
+  probeEvents() { return probe.events },
+  /** Warnings and errors logged so far (optionally those after the first `since`). */
+  loggedProblems({ since = 0 } = {}) { return logged.slice(since) },
+  /** Whether the host has a sessionTitle service. */
+  hasSessionTitle() { return Boolean(ctx.get('sessionTitle')) },
 
   // ---- Revision 10a operations (Install for Fishball) ----
   /** DSH's install progress events seen on the host bus, optionally for one request id. */
