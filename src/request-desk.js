@@ -29,7 +29,7 @@ const NOTE = Object.freeze({
   [ASK_RESULT.rejected]: 'Fishball rejected this call. Do not make it.',
   [ASK_RESULT.question]: 'Fishball asks a question before deciding. Answer with ask_fishball({request_id, reply}); the same request then goes back to Fishball.',
   [ASK_RESULT.unavailable]: 'Fishball cannot answer now. Make the call yourself; the user is asked in this session.',
-  [ASK_RESULT.overCapacity]: 'Too many requests are waiting for Fishball. Make the call yourself; the user is asked in this session.',
+  [ASK_RESULT.overCapacity]: 'Too many requests are waiting for Fishball or the user. Make the call yourself; the user is asked in this session.',
   [ASK_RESULT.noLongerManaged]: 'This session is no longer managed by Fishball. Make the call yourself; the user is asked in this session.',
   [ASK_ERROR.notUserMessage]: 'A quoted id is not a message the user typed in this session. Use ids from list_user_messages. Nothing was sent.',
   [ASK_ERROR.tooLarge]: 'The request is too large to send to Fishball (arguments, quotes, reason and thread together). Quote fewer messages or shorten the reason. Nothing was sent.',

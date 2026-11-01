@@ -662,7 +662,7 @@ window.__ModuleLoader__.load({
       'field.wakeupsPerHour': 'Wake-ups per hour from non-user inputs (0 = no cap)',
       'field.messagesPerHour': 'Messages Fishball sends per hour (0 = no cap)',
       'field.sessionsPerHour': 'Sessions Fishball starts per hour (0 = no cap)',
-      'field.maxPendingApprovals': 'Permission requests Fishball decides at once',
+      'field.maxPendingApprovals': 'Permission requests open at once (waiting for Fishball or in your pile)',
       'field.approvalAnswerSeconds': 'Seconds Fishball has to answer a request',
       'field.argumentExcerptBytes': 'Bytes of a request\'s command Fishball sees',
       'field.maxMessageBytes': 'Bytes in one message',
@@ -1019,7 +1019,7 @@ window.__ModuleLoader__.load({
       'field.wakeupsPerHour': '每小时非用户输入唤醒次数（0 = 不限）',
       'field.messagesPerHour': 'Fishball 每小时发送的消息（0 = 不限）',
       'field.sessionsPerHour': 'Fishball 每小时新建的会话（0 = 不限）',
-      'field.maxPendingApprovals': 'Fishball 同时处理的权限请求',
+      'field.maxPendingApprovals': '同时打开的权限请求（等待 Fishball 或在你的待处理区）',
       'field.approvalAnswerSeconds': 'Fishball 回答请求的秒数',
       'field.argumentExcerptBytes': 'Fishball 可见的请求命令字节数',
       'field.maxMessageBytes': '单条消息字节数',
@@ -2109,10 +2109,10 @@ window.__ModuleLoader__.load({
      * and Allow once / Reject once the request is your card (Reading: not while Fishball decides).
      */
     function makeAskRow(t) {
-      return function FishballAskRow({ callId, sessionId, phase, block }) {
+      return function FishballAskRow({ callId, phase, block }) {
         const state = useFishball()
         const args = askArguments(block)
-        const card = phase === ASK_ROW.phaseStart ? (state.pile ?? []).find((entry) => entry.callId === callId && entry.sessionId === sessionId) : undefined
+        const card = phase === ASK_ROW.phaseStart ? (state.pile ?? []).find((entry) => entry.callId === callId) : undefined
         const replying = typeof args.request_id === 'string'
         const result = phase === ASK_ROW.phaseResult ? askResult(block) : null
         const code = result?.value?.code
