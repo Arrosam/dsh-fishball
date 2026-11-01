@@ -39,6 +39,7 @@ import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
   API, AUTHOR_KIND, INBOUND_TOOL, LIMITS, PRESET, READ_MAX, READ_ROLES, WATCH_API, WATCH_CODE, WATCH_KEYS, WATCH_STATUS, WATCH_SUMMARY, WATCH_TEXT, WATCH_TOOLS,
+  TITLE,
 } from './support/constants.mjs'
 import {
   HOOK, T, callScript, fishballCall, intakeNow, jsonOf, messageFishball, noticesSettled, requestsWith, sessionAuthor, settledIdle, toolNames, turn,
@@ -319,7 +320,7 @@ describe('P6 watches fire', () => {
         fs.mkdirSync(folder, { recursive: true })
         const marker = tok('t06start')
         await host.call('queueMarker', { marker, except: fb, script: [[{ text: 'started ok' }]] })
-        const { json: started } = await fishballCall(host, fb, 'start_session', { folder, message: marker })
+        const { json: started } = await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: marker })
         assert.equal(started?.ok, true, JSON.stringify(started))
         await until(async () => (await host.call('markerState', { marker })).left === 0, 10000, 100)
         const { json } = await read(started.sessionId)
@@ -437,7 +438,7 @@ describe('P6 watches fire', () => {
       fs.mkdirSync(folder, { recursive: true })
       const marker = tok('ntf02')
       await host.call('queueMarker', { marker, except: fb, script: [[{ text: 'NTF02 finished' }]] })
-      const { json } = await fishballCall(host, fb, 'start_session', { folder, message: marker, notify_when_finished: true })
+      const { json } = await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: marker, notify_when_finished: true })
       assert.equal(json?.ok, true, JSON.stringify(json))
       assert.equal(json.watch?.targetSessionId, json.sessionId)
       assert.deepEqual(json.watch.createdBy, { kind: 'assistant' })
@@ -482,7 +483,7 @@ describe('P6 watches fire', () => {
       fs.mkdirSync(folder, { recursive: true })
       const marker = tok('ntf08')
       await host.call('queueMarker', { marker, except: fb, script: [[{ fail: 'FBTEST_FATAL' }]] })
-      const { json } = await fishballCall(host, fb, 'start_session', { folder, message: marker, notify_when_finished: true })
+      const { json } = await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: marker, notify_when_finished: true })
       assert.equal(json?.ok, true, JSON.stringify(json))
       assert.ok(json.watch, 'a watch: ' + JSON.stringify(json))
       const got = await noticesSettled(host, fb, json.watch.id, 1)
@@ -530,7 +531,7 @@ describe('P6 watches fire', () => {
       it('start_session', T, async () => {
         const folder = path.join(home, 'work', 'n-06b')
         fs.mkdirSync(folder, { recursive: true })
-        const { json } = await fishballCall(host, fb, 'start_session', { folder, message: tok('n06') })
+        const { json } = await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: tok('n06') })
         assert.equal(json?.ok, true)
         assert.equal('watch' in json, false)
         assert.equal((await watchesOn(host, json.sessionId)).length, 0)
