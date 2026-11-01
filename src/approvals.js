@@ -100,7 +100,7 @@ const TEXT = Object.freeze({
   riskArg: '"low" or "high": your judgement of the exact call\'s real effect. Optional with "escalate".',
   reasonArg: 'Why, in one or two sentences (kept in the approval audit; a rejection\'s reason is shown to the session). Optional with "escalate".',
   questionArg: 'With "ask": the question for the session.',
-  grantArg: 'With "grant": {kind, prefix?, expires_at}. kind "exact" covers this exact call (same tool and arguments) each time it repeats in that session; kind "prefix" covers that session\'s shell commands (bash, pwsh, terminal_open, terminal_send) whose command text starts with `prefix`, taken from this call\'s command, e.g. "npm test" (a trailing * is optional). Matching is on the raw text, so "npm test" also covers "npm test && git push". expires_at: an ISO time in the future; every grant must end.',
+  grantArg: 'With "grant": {kind, prefix?, expires_at}. kind "exact" covers this exact call (same tool and arguments) each time it repeats in that session; kind "prefix" covers that session\'s shell commands (bash, pwsh, terminal_open, terminal_send) whose command text starts with `prefix`, taken from this call\'s command, e.g. "npm test" (a trailing * is optional). Matching is on the raw text, so "npm test" also covers "npm test && git push"; for terminal_send it is the text sent, for terminal_open the backend type (so it covers every terminal of that type). expires_at: an ISO time in the future; every grant must end.',
   /** The request Fishball sees (DESIGN §7a.2 framing). */
   request: (request, info, userText, provenance, seconds) => [
     `[permission request ${request.id}] Fishball: ${request.kind === REQUEST_KIND.asked ? 'a session you manage asks first, before making a call (ask_fishball).' : 'a session you manage made a call that needs permission without asking first (a direct call).'}${request.thread.length > 0 ? ' The session replied to your question: the thread so far is in the block.' : ''}`,
@@ -311,12 +311,17 @@ export class ApprovalBroker {
         if (granted?.error !== undefined) return refused(granted.error)
         if (decision === APPROVAL_DECISION.reject && rationale.length === 0) return refused(APPROVAL_ERROR.reasonRequired)
         if (decision === APPROVAL_DECISION.ask && asked.length === 0) return refused(APPROVAL_ERROR.questionRequired)
-        // The grant's id is minted first, so the request's audit row names the grant it created.
+        // A grant is written before the request is answered, so the answer and its audit row never
+        // name a grant a failed write lost (a failure throws, and the request stays pending). A
+        // session no longer managed gets no grant; its request was already released (expired).
         const grantId = granted === undefined ? undefined : this.#grants.mintId()
-        this.#settle(id, { answer: DECISION_ANSWER[decision], risk, rationale, question: asked, grantId })
-        if (granted !== undefined) {
-          await this.#grants.create({ id: grantId, sessionId: request.sessionId, toolName: request.toolName, kind: granted.kind, prefix: granted.prefix, args: request.args.value, expiresAt: granted.expiresAt, requestId: id, rationale })
+        if (granted !== undefined && !(await this.#grants.create({ id: grantId, sessionId: request.sessionId, toolName: request.toolName, kind: granted.kind, prefix: granted.prefix, args: request.args.value, expiresAt: granted.expiresAt, requestId: id, rationale }))) return refused(APPROVAL_ERROR.expired)
+        if (!this.#settle(id, { answer: DECISION_ANSWER[decision], risk, rationale, question: asked, grantId })) {
+          // The request ended while the grant was written (a timeout, a cancelled call): no effect.
+          if (grantId !== undefined) await this.#grants.discard(grantId)
+          return refused(APPROVAL_ERROR.expired)
         }
+        if (grantId !== undefined) await this.#grants.confirm(grantId)
         await this.#tag(request, decision, decision === APPROVAL_DECISION.escalate ? TAG_KIND.sentToYou : TAG_KIND.approval)
         return ok({ requestId: id, decision, ...(grantId === undefined ? {} : { grantId, expiresAt: granted.expiresAt }) })
       },
