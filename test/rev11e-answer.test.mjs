@@ -16,16 +16,16 @@
  * | APR-07  | ST (your click first, then Fishball) | refused; the session is not made managed; no tag |
  * | APR-08  | EP (tags) | one tag record per answer: the session, the frozen call's id, kind prompt, an integer seq, a time, an answer naming allow / reject; published in the snapshot; the later answer in the session has the greater seq |
  * | APR-09  | EP (your click) | a prompt you answer yourself leaves no tag |
- * | APR-10  | EP (audit) | one decisions row action answer-prompt by fishball (session, target the prompt id, outcome naming the decision) |
+ * | APR-10  | EP (audit) | one decisions row action answer-prompt by fishball (session, target the prompt id, outcome naming the decision), and approvals audit rows of kind prompt (allow, reject) |
  * | APR-11  | ST (restart) | managed by prompt-answer, the tag and the decisions row survive; no prompt is listed (a restart ends turns) |
  * | APR-12  | EP (the client's tag text) | the client bundle carries "Prompt answered by Fishball" |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
-  ASK_TOOL, DSH_REJECT_WORDS, MANAGED_ENTRY_KEYS, MANAGED_TOOLS, OUTCOME, PROMPT_DECISION, PROMPT_DECISION_ACTION, PROMPT_MANAGED_BY, PROMPT_MANAGED_LABEL, PROMPT_TAG_KIND,
+  ASK_TOOL, DSH_REJECT_WORDS, MANAGED_ENTRY_KEYS, MANAGED_TOOLS, OUTCOME, PROMPT_AUDIT_KIND, PROMPT_DECISION, PROMPT_DECISION_ACTION, PROMPT_MANAGED_BY, PROMPT_MANAGED_LABEL, PROMPT_TAG_KIND,
 } from './support/constants.mjs'
-import { HOOK, T, fishballClientBundle, managedItems, setManaged, settledIdle, snapshotTags, storedRows, toolNames } from './support/expect.mjs'
+import { HOOK, T, approvalAudit, fishballClientBundle, managedItems, setManaged, settledIdle, snapshotTags, storedRows, toolNames } from './support/expect.mjs'
 import { boot, entryFor, idOf, pileHost, promptTools, refused, sleep, tokens, yoursSession, QUIET_MS } from './support/rev11e.mjs'
 
 const { tok, cid } = tokens('APR')
@@ -36,6 +36,7 @@ describe('Revision 11 rev11e: answer_prompt', () => {
   let p
   const s = {}
   const tags = (sid) => storedRows(ctx.home, 'tags').filter((r) => r.sessionId === sid)
+  const promptAudit = () => approvalAudit(ctx.home).filter((r) => r.record.kind === PROMPT_AUDIT_KIND)
   const decisionsFor = (target) => storedRows(ctx.home, 'decisions').filter((d) => d.target === target)
     /** Show a prompt in sid and return its listed prompt id. */
   async function showing(sid, label) {
@@ -204,8 +205,11 @@ describe('Revision 11 rev11e: answer_prompt', () => {
       assert.match(JSON.stringify(rows[0].outcome), word)
       assert.ok(Number.isFinite(typeof rows[0].at === 'number' ? rows[0].at : Date.parse(rows[0].at)))
     }
-    // Requirements "Audit: every Fishball decision (… prompt answer …) goes in the audit list": the decisions rows are that
-    // audit. §9 also lists an approvals-row kind 'prompt'; the build records none (A-r11e-8), so it is not required.
+    // DESIGN §9 (manager's decision, 2026-11-02): an answer also writes an approvals audit row of kind 'prompt'.
+    const kinds = promptAudit()
+    assert.ok(kinds.length >= 2, 'approvals rows of kind prompt: ' + kinds.length)
+    assert.ok(kinds.some((r) => /allow/i.test(JSON.stringify(r.record.answer))), 'an allow row')
+    assert.ok(kinds.some((r) => /reject/i.test(JSON.stringify(r.record.answer))), 'a reject row')
   })
 
   it('APR-12 the client bundle carries the approved tag "Prompt answered by Fishball"', T, async () => {

@@ -1865,4 +1865,4 @@ Written by the test session from the requirements (items 2, 15, 20), DESIGN §7a
 - **A-r11e-5. The tag record's `callId`** is taken to be the frozen call's id (the call whose prompt was answered); `answer` is matched by a regular expression on the decision word.
 - **A-r11e-7. (manager 2026-11-02)** `answer_prompt` allow adds no hint (APR-01 asserts the result is exactly `outcome=allowed-once`); a request with no call id cannot carry the reject reason or the note, a known limit, not tested.
 - **A-r11e-6. "No note" for a Fishball-initiated way in** follows the §16 Reading "Fishball's own actions need no extra note beyond the tool result" (APR-03 asserts no `fishball/managed` item).
-- **A-r11e-8. Audit of `answer_prompt`.** DESIGN §9 lists an approvals-row kind `prompt`, but the build records the answer in the `decisions` table only (rows `answer-prompt`); APR-10 requires the decisions row only. Open question for the manager.
+- **A-r11e-8. Audit of `answer_prompt` (settled, manager 2026-11-02).** Follows DESIGN §9: a `decisions` row `answer-prompt` AND an approvals audit row of kind `prompt`; APR-10 expects both.
