@@ -1832,6 +1832,8 @@ Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in
 
 - **A-r11d-7. Manager's readings (2026-11-02), built in:** `terminal_open` takes exact grants only; a prefix is the start of the asking command; a trailing `*` is dropped; expiry writes no `decisions` row (END-01 checks the grants row only).
 
+- **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.
+
 
 ## Revision 11 rev11e cases (prompts already showing, `answer_prompt`, cards for direct calls)
 
@@ -1876,6 +1878,7 @@ Written by the test session from the requirements (items 2, 15, 20), DESIGN §7a
 | DCD-08 | BVA (`maxPendingApprovals` 2: ask card + direct card, then a third) | defaults "Card cap" | the third shows the stock prompt only: no card, no notice; your click answers it |
 | DCD-09 | ST (Permission requests off while both show) | §7a.5 "keeps the prompt" | the prompt stays; your click answers the call; no card remains afterwards |
 | DCD-10 | EP (second answer) | §7a.6 "first answer wins" | after the card answered, a second card click is 409 and nothing is left to click; one decisions row |
+| DCD-11 | BVA (`maxQueuedInputs` 1, queue full; `maxPendingApprovals` 1) | §11 Reading on undeliverable notices; manager 2026-11-02 | a direct call whose notice cannot be delivered gets a card and the stock prompt like a timeout, no notice, no tag; a second one past the cap gets the stock prompt only |
 
 ### Older cases changed by rev11e
 
@@ -1898,6 +1901,7 @@ Written by the test session from the requirements (items 2, 15, 20), DESIGN §7a
 - **A-r11e-3. A session that is already managed and whose prompt Fishball answers**: whether `by` changes. Not tested.
 - **A-r11e-4. Take back / release while a direct card and its prompt show.** The prompt must stay (the session is the user's again); whether the card leaves is not stated. Not tested. DCD-09 (Permission requests off) asserts only that the prompt stays and the settled call leaves no card.
 - **A-r11e-5. The tag record's `callId`** is taken to be the frozen call's id (the call whose prompt was answered); `answer` is matched by a regular expression on the decision word.
+- **A-r11e-7. (manager 2026-11-02)** `answer_prompt` allow adds no hint (APR-01 asserts the result is exactly `outcome=allowed-once`); a request with no call id cannot carry the reject reason or the note, a known limit, not tested.
 - **A-r11e-6. "No note" for a Fishball-initiated way in** follows the §16 Reading "Fishball's own actions need no extra note beyond the tool result" (APR-03 asserts no `fishball/managed` item).
 
 ## Revision 11 rev11f cases (Fishball's own requests; DESIGN §14 row rev11f, §7a.11, §7a.6 "Cap", §7 N3/N4, §9 `own_requests`, §10e, §16 Q-r11-own, Q-r11-own-scope, Q-r11-own-card-detail, Q-r11-cap-own; requirements items 21-24; S35; written from the requirements alone, no code read)
@@ -1988,3 +1992,5 @@ Support added: `test/support/rev11f.mjs` (host, `ownTools`: call / click with sc
 A-r11f-1 confirmed (`sessionId` = Fishball's session, list under `detail`). A-r11f-4: "and N more" is not counted in the bound; the shown entries total at most the limit and the next whole entry would not fit; a cut entry's "…" counts inside the limit. A-r11f-5 is now DET-07. A-r11f-3: the notice must contain "run it again" and the request id.
 
 - **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.
+
+- **A-r11e-8. Audit of `answer_prompt` (settled, manager 2026-11-02).** Follows DESIGN §9: a `decisions` row `answer-prompt` AND an approvals audit row of kind `prompt`; APR-10 expects both.

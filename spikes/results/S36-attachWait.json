@@ -1,0 +1,1885 @@
+{
+  "id": "S36-attachWait",
+  "started": "2026-11-01T16:10:46.922Z",
+  "finished": "2026-11-01T16:12:09.283Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "timings": {
+    "toolTimeoutS": 10,
+    "answerMs": 30000,
+    "afterPileMs": 10000,
+    "stopAtMs": 15000,
+    "sampleMs": 1000,
+    "waitMs": 15000,
+    "preset": "spike-timed"
+  },
+  "cases": {
+    "l1": {
+      "name": "l1",
+      "hold": "claim",
+      "sessionId": "session-f81bcaee-2a33-445f-96e8-31511cdc9c54",
+      "endedBy": "rejected:ASK_TIMED_OUT",
+      "entry": {
+        "state": "continued",
+        "history": [
+          "opened",
+          "held:claim",
+          "continued"
+        ],
+        "holdAtClaim": {
+          "mode": "claim",
+          "claimed": true,
+          "remainingMsAtClaim": 9999
+        }
+      },
+      "toolResultAtMs": 10168,
+      "result": {
+        "text": "{\"pending\":true,\"callId\":\"call_l1\",\"message\":\"No answer batch arrived before the timeout. This is pending, not a skipped answer. Continue useful independent work. The user can still answer; their reply will be a user message identified as answer_to_pending_question with this callId and the original questions. Do not treat this as permission.\"}",
+        "isError": false
+      },
+      "sameTurn": {
+        "turnStarts": 1,
+        "turnEnds": 1,
+        "userMessages": [
+          "user",
+          "runtime-context"
+        ],
+        "lateReplies": 0,
+        "modelRequests": 3
+      },
+      "leaks": {
+        "waitsForAgent": false,
+        "routerClaimEnded": "released",
+        "gatewayPending": 0,
+        "card": "rejected:ASK_TIMED_OUT",
+        "projection": "continued"
+      },
+      "samples": [
+        {
+          "t": 1.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 2,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 2.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 2,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 3.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 2,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 4.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 2,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 5.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 2,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 6.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 2,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 7.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 2,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 8.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 2,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 9.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 2,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 10.2,
+          "status": "running",
+          "toolResult": "pending",
+          "projection": "continued",
+          "claims": null,
+          "card": "rejected:ASK_TIMED_OUT",
+          "router": "continued"
+        },
+        {
+          "t": 10.2,
+          "mark": "tool-result",
+          "status": "running",
+          "toolResult": "pending",
+          "projection": "continued",
+          "claims": null,
+          "card": "rejected:ASK_TIMED_OUT",
+          "router": "continued"
+        },
+        {
+          "t": 10.2,
+          "mark": "end",
+          "status": "idle",
+          "toolResult": "pending",
+          "projection": "continued",
+          "claims": null,
+          "card": "rejected:ASK_TIMED_OUT",
+          "router": "continued"
+        }
+      ]
+    },
+    "a1": {
+      "name": "a1",
+      "hold": "claim-untimed",
+      "sessionId": "session-25fc3f6c-c3d2-45a4-8e6d-31b79193dd2d",
+      "answered": {
+        "ok": true,
+        "path": "waterfall"
+      },
+      "entry": {
+        "state": "answered",
+        "by": "fishball",
+        "history": [
+          "opened",
+          "held:claim-untimed",
+          "answered-by-fishball"
+        ],
+        "holdAtClaim": {
+          "mode": "claim-untimed",
+          "claimed": true,
+          "remainingMsAtClaim": 10000
+        }
+      },
+      "toolResultAtMs": 40021,
+      "result": {
+        "text": "{\"answers\":[{\"id\":\"color\",\"selected\":[\"Blue\"]},{\"id\":\"note\",\"selected\":[],\"custom\":\"held answer\"}]}",
+        "isError": false
+      },
+      "sameTurn": {
+        "turnStarts": 1,
+        "turnEnds": 1,
+        "userMessages": [
+          "user",
+          "runtime-context"
+        ],
+        "lateReplies": 0,
+        "modelRequests": 3
+      },
+      "leaks": {
+        "waitsForAgent": false,
+        "routerClaimEnded": "released",
+        "gatewayPending": 0,
+        "card": "cancel",
+        "projection": "settled"
+      },
+      "samples": [
+        {
+          "t": 1.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 2.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 3.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 4.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 5.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 6.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 7.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 8.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 9.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 10.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 11.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 12,
+          "mark": "past-tool-timeout",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 12.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 13.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 14.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 15.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 16.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 17.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 18.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 19.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 20.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 21.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 22.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 23.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 24.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 25.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 26.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 27.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 28.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 29.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 30,
+          "mark": "moves-to-pile",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 30.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 31.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 32.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 33.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 34.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 35.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 36.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 37.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 38.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 39.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 40,
+          "mark": "before-answer",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 40,
+          "mark": "end",
+          "status": "idle",
+          "toolResult": "answer",
+          "projection": "settled",
+          "claims": null,
+          "card": "cancel",
+          "router": "answered"
+        }
+      ]
+    },
+    "a2": {
+      "name": "a2",
+      "hold": "claim-untimed",
+      "sessionId": "session-6cbc3061-1ca6-4064-9e8c-1ae7e704c010",
+      "answered": "card",
+      "entry": {
+        "state": "answered",
+        "by": "user",
+        "history": [
+          "opened",
+          "held:claim-untimed",
+          "answered-in-session"
+        ],
+        "holdAtClaim": {
+          "mode": "claim-untimed",
+          "claimed": true,
+          "remainingMsAtClaim": 10000
+        }
+      },
+      "toolResultAtMs": 40022,
+      "result": {
+        "text": "{\"answers\":[{\"id\":\"color\",\"selected\":[\"Red\"]},{\"id\":\"note\",\"selected\":[],\"custom\":\"from the card\"}]}",
+        "isError": false
+      },
+      "sameTurn": {
+        "turnStarts": 1,
+        "turnEnds": 1,
+        "userMessages": [
+          "user",
+          "runtime-context"
+        ],
+        "lateReplies": 0,
+        "modelRequests": 3
+      },
+      "leaks": {
+        "waitsForAgent": false,
+        "routerClaimEnded": "released",
+        "gatewayPending": 0,
+        "card": "answered",
+        "projection": "settled"
+      },
+      "samples": [
+        {
+          "t": 1.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 2.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 3.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 4.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 5.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 6.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 7.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 8.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 9.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 10.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 11.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 12,
+          "mark": "past-tool-timeout",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 12.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 13.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 14.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 15.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 16.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 17.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 18.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 19.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 20.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 21.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 22.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 23.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 24.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 25.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 26.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 27.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 28.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 29.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 30,
+          "mark": "moves-to-pile",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 30.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 31.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 32.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 33.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 34.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 35.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 36.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 37.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 38.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 39.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 40,
+          "mark": "before-answer",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 40,
+          "mark": "end",
+          "status": "idle",
+          "toolResult": "answer",
+          "projection": "settled",
+          "claims": null,
+          "card": "answered",
+          "router": "answered"
+        }
+      ]
+    },
+    "a3": {
+      "name": "a3",
+      "hold": "claim-untimed",
+      "sessionId": "session-f5a3b89b-72d0-4eee-b5e6-5a72808c9237",
+      "fishballAfterStop": {
+        "ok": false,
+        "code": "already-settled",
+        "state": "closed"
+      },
+      "entry": {
+        "state": "closed",
+        "history": [
+          "opened",
+          "held:claim-untimed",
+          "closed:error"
+        ],
+        "holdAtClaim": {
+          "mode": "claim-untimed",
+          "claimed": true,
+          "remainingMsAtClaim": 10000
+        }
+      },
+      "toolResultAtMs": 15022,
+      "result": {
+        "text": "Error: ask_user_question was aborted before the user answered",
+        "isError": true,
+        "error": {
+          "name": "UserQuestionError",
+          "code": "ASK_ABORTED"
+        }
+      },
+      "sameTurn": {
+        "turnStarts": 1,
+        "turnEnds": 1,
+        "userMessages": [
+          "user",
+          "runtime-context"
+        ],
+        "lateReplies": 0,
+        "modelRequests": 2
+      },
+      "leaks": {
+        "waitsForAgent": false,
+        "routerClaimEnded": "released",
+        "gatewayPending": 0,
+        "card": "cancel",
+        "projection": "none"
+      },
+      "samples": [
+        {
+          "t": 1.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 2.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 3.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 4.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 5.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 6.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 7.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 8.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 9.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 10.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 11.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 12.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 13.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 14.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 15,
+          "mark": "stop",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 15,
+          "mark": "end",
+          "status": "idle",
+          "toolResult": "error",
+          "projection": "none",
+          "claims": null,
+          "card": "cancel",
+          "router": "closed"
+        }
+      ]
+    },
+    "a4": {
+      "name": "a4",
+      "hold": "claim-untimed",
+      "sessionId": "session-ebf2d24d-c788-4ad4-bc66-660d6bbd5195",
+      "fishballAfterRelease": {
+        "ok": true,
+        "path": "reply"
+      },
+      "entry": {
+        "state": "answered",
+        "by": "fishball",
+        "history": [
+          "opened",
+          "held:claim-untimed",
+          "continued",
+          "answered-by-fishball"
+        ],
+        "holdAtClaim": {
+          "mode": "claim-untimed",
+          "claimed": true,
+          "remainingMsAtClaim": 10000
+        }
+      },
+      "toolResultAtMs": 15105,
+      "result": {
+        "text": "{\"pending\":true,\"callId\":\"call_a4\",\"message\":\"No answer batch arrived before the timeout. This is pending, not a skipped answer. Continue useful independent work. The user can still answer; their reply will be a user message identified as answer_to_pending_question with this callId and the original questions. Do not treat this as permission.\"}",
+        "isError": false
+      },
+      "sameTurn": {
+        "turnStarts": 2,
+        "turnEnds": 2,
+        "userMessages": [
+          "user",
+          "runtime-context",
+          "user-question-reply"
+        ],
+        "lateReplies": 1,
+        "modelRequests": 4
+      },
+      "leaks": {
+        "waitsForAgent": false,
+        "routerClaimEnded": "released",
+        "gatewayPending": 0,
+        "card": "cancel",
+        "projection": "settled"
+      },
+      "samples": [
+        {
+          "t": 1.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 2.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 3.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 4.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 5.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 6.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 7.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 8.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 9.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 10.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 11.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 12.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 13.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 14.2,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 15,
+          "mark": "release-hold",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "open",
+          "router": "open"
+        },
+        {
+          "t": 15.1,
+          "mark": "end",
+          "status": "idle",
+          "toolResult": "pending",
+          "projection": "settled",
+          "claims": null,
+          "card": "cancel",
+          "router": "answered"
+        }
+      ]
+    },
+    "l0": {
+      "name": "l0",
+      "hold": "claim",
+      "sessionId": "session-729102c9-7832-4449-ab5f-795100ef6537",
+      "answered": {
+        "ok": true,
+        "path": "waterfall"
+      },
+      "entry": {
+        "state": "answered",
+        "by": "fishball",
+        "history": [
+          "opened",
+          "held:claim",
+          "answered-by-fishball"
+        ],
+        "holdAtClaim": {
+          "mode": "claim",
+          "claimed": true,
+          "remainingMsAtClaim": 10000
+        }
+      },
+      "toolResultAtMs": 40023,
+      "result": {
+        "text": "{\"answers\":[{\"id\":\"color\",\"selected\":[\"Blue\"]},{\"id\":\"note\",\"selected\":[],\"custom\":\"held answer\"}]}",
+        "isError": false
+      },
+      "sameTurn": {
+        "turnStarts": 1,
+        "turnEnds": 1,
+        "userMessages": [
+          "user",
+          "runtime-context"
+        ],
+        "lateReplies": 0,
+        "modelRequests": 3
+      },
+      "leaks": {
+        "waitsForAgent": false,
+        "routerClaimEnded": "released",
+        "gatewayPending": 0,
+        "card": "no-browser",
+        "projection": "settled"
+      },
+      "samples": [
+        {
+          "t": 1.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 2.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 3.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 4.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 5.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 6.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 7.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 8.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 9.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 10.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 11.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 12,
+          "mark": "past-tool-timeout",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 12.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 13.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 14.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 15.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 16.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 17.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 18.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 19.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 20.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 21.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 22.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 23.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 24.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 25.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 26.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 27.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 28.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 29.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 30,
+          "mark": "moves-to-pile",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 30.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 31.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 32.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 33.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 34.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 35.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 36.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 37.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 38.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 39.1,
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 40,
+          "mark": "before-answer",
+          "status": "running",
+          "toolResult": "none",
+          "projection": "open",
+          "claims": 1,
+          "card": "no-browser",
+          "router": "open"
+        },
+        {
+          "t": 40,
+          "mark": "end",
+          "status": "idle",
+          "toolResult": "answer",
+          "projection": "settled",
+          "claims": null,
+          "card": "no-browser",
+          "router": "answered"
+        }
+      ]
+    }
+  },
+  "liveClientDuringL0": false,
+  "verdict": {
+    "claim_only_holds_without_card": true,
+    "claim_only_with_card_ends_at_tool_timeout": true,
+    "untimed_card_holds_past_timeout_and_pile": true,
+    "untimed_fishball_answer_same_turn": true,
+    "untimed_card_answer_same_turn": true,
+    "stop_while_held_ends_clean": true,
+    "released_hold_becomes_continued": true
+  }
+}
