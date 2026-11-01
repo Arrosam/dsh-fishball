@@ -43,7 +43,7 @@ import { stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { SessionTitleInvalidError } from '@deepseek-ai/dsh-session-title'
+import { SessionTitleInvalidError, normalizeSessionTitle } from '@deepseek-ai/dsh-session-title'
 import { MANAGED_BY, WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO, OPTIONAL_SERVICE, TITLE_ERROR } from './constants.js'
 import { AuditLog } from './audit.js'
 import { IntakeError } from './intake.js'
@@ -249,8 +249,11 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     if (!flushed) throw new UnconfirmedDelivery()
   }
 
-  /** Deliver and record; returns the tool result. */
-  const deliverAndRecord = async (entry, sessionId, message, success) => {
+  /**
+   * Deliver and record; returns the tool result: ok with `success`, or refused with `failure`
+   * (start_session's names the session it created and its title outcome).
+   */
+  const deliverAndRecord = async (entry, sessionId, message, success, failure = {}) => {
     try {
       await deliver(sessionId, message)
     } catch (error) {
@@ -260,7 +263,7 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       }
       logger.warn('message to %s failed (%s)', sessionId, diagnosticOf(error))
       await record({ ...entry, status: OUTBOX_STATUS.failed, errorCode: OUTBOUND_ERROR.deliveryFailed })
-      return refused(OUTBOUND_ERROR.deliveryFailed, entry.kind === OUTBOX_KIND.start ? { sessionId } : {})
+      return refused(OUTBOUND_ERROR.deliveryFailed, failure)
     }
     await record({ ...entry, status: OUTBOX_STATUS.delivered })
     return ok(success)
@@ -326,8 +329,10 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     async execute({ folder, title, message, notify_when_finished: notify }) {
       const bad = badMessage(message)
       if (bad !== undefined) return refused(bad)
-      // Refused before anything is created. DSH bounds the title's length itself (maxTitleBytes).
-      if (typeof title !== 'string' || title.trim().length === 0) return refused(OUTBOUND_ERROR.noTitle)
+      // Refused before anything is created, by DSH's own test (it strips control, zero-width and
+      // bidi characters too), so rename never meets a title it would refuse. The length is not
+      // checked: DSH cuts the title to its maxTitleBytes, and the result shows what it took.
+      if (typeof title !== 'string' || normalizeSessionTitle(title, Number.MAX_SAFE_INTEGER).length === 0) return refused(OUTBOUND_ERROR.noTitle)
       if (overCap(OUTBOX_KIND.start, readLimits().sessionsPerHour)) return refused(OUTBOUND_ERROR.hourlyCap)
       const target = await placeOf(ctx, folder)
       if (target.error !== undefined) return refused(target.error)
@@ -340,12 +345,12 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
         logger.warn('session start failed (%s)', diagnosticOf(error))
         return refused(OUTBOUND_ERROR.deliveryFailed)
       }
-      // Named before the first message, so the sidebar never shows it untitled.
+      // Named before the first turn starts and before the watch watermark is read.
       const named = nameSession(sessionId, title)
       await manage(sessionId, MANAGED_BY.start)
       // A new session: every turn end in it counts (its log before the message has none).
       const since = notify === true ? await watermarkOfNew(ctx, sessionId) : undefined
-      return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder, ...named }), sessionId, notify, since)
+      return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder, ...named }, { sessionId, ...named }), sessionId, notify, since)
     },
   }))
 
