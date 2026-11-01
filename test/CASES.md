@@ -2039,3 +2039,7 @@ Files: `rev11g-hold` (7), `rev11g-flow` (15), `rev11g-modes` (18), `rev11g-plan`
 - The turn-tail drawing of "Asked Fishball" plus the answer, and that nothing is drawn on the question row (QTG-07 checks only that the Host leaves the tag out of the tool result and the session's log).
 - The pile cards' look (question form, plan with Approve and Keep planning plus a feedback field) and the mode switch on Fishball's settings page.
 - The real browser: the session's own question card (legacy and timed) and plan-review panel closing when Fishball's answer wins; the pile card closing when you answer in the session first; `attachWait` against the real gateway/browser claim.
+
+### rev11g addendum: too-many-waiting as JSON (manager's decision, 2026-11-02)
+
+`rev11g-cap.test.mjs` CAP-01: past `maxPendingApprovals`, Fishball's own request answers parsed JSON `{ok: false, code: 'too-many-waiting', …}` with "or withdraw one" in the text. Total rev11g cases: 96. Readings 1-4 above (User mode/`to_user` card at once, cards rebuilt at start without resuming, 409 after a question goes back to its session, `questionId`) are confirmed by the manager.
