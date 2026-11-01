@@ -159,6 +159,7 @@ describe('Revision 11 rev11c: cards leave, and the cap', () => {
       const r = await fishballTool(ctx.host, ctx.fb, 'set_plugin_enabled', { plugin: FIXTURE_BUNDLE.name, on: true }, OUTCOME.allow)
       assert.ok(Date.now() - t0 < 10000, 'at once')
       assert.ok(r.json?.code === TOO_MANY_WAITING || r.result.text.includes(TOO_MANY_WAITING), 'too-many-waiting: ' + r.result.text.slice(0, 400))
+      assert.match(r.result.text, /or withdraw one/i, 'rev11f: the text gains "or withdraw one" (manager decision 2026-11-02)')
       assert.equal((await ctx.host.call('approvals', {})).length, asked, 'DSH was not asked')
       await answerCard(ctx.host, card.requestId, CLICK.reject)
       await ctx.host.call('waitIdle', { sessionId: x })

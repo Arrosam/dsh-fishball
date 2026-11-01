@@ -5,7 +5,7 @@
  *
  * | id      | technique | req | expected |
  * |---------|-----------|-----|----------|
- * | RTE-01 ×2 | EP (Fishball's own request: set_plugin_enabled with unchecked tools, add_plugin) | P7a | the next answerer is asked for Fishball's session; no request message; not in state.approvals |
+ * | RTE-01 ×2 | EP (Fishball's own request: set_plugin_enabled with unchecked tools, add_plugin) | P7a; rev11f | CHANGED by rev11f (DESIGN §7a.11): the stock prompt is NOT asked for Fishball's session; the call returns waiting-for-approval at once and a card of Fishball's session is in the pile; still no request message for Fishball and not in state.approvals |
  * | RTE-02 | BVA (maxPendingApprovals 2, Fishball busy: 1 pending → routed) | P7c | a request message; pending 2 |
  * | RTE-03 | BVA (2 pending = limit → bypass) | P7c | the next answerer is asked at once (< 1 s); no request message; not recorded |
  * | RTE-04 | BVA (maxQueuedInputs 1, queue full) | P7d | bypass: at once, no request message, not recorded |
@@ -83,11 +83,15 @@ describe('P7 routing and bypass', () => {
         const keys = await recentKeys()
         const msgs = (await requestMessages(host, fb)).length
         const { json } = await fishballCall(host, fb, tool, args)
-        assert.equal(json?.ok, false, 'rejected by the next answerer: ' + JSON.stringify(json))
+        // rev11f: no stock prompt; the request is a card of Fishball's session and the call returned "waiting".
+        assert.equal(json?.code, 'waiting-for-approval', 'a card, not a prompt: ' + JSON.stringify(json))
         const seen = (await host.call('approvals', { sessionId: fb })).slice(before)
-        assert.deepEqual(seen.map((s) => s.toolName), [tool])
+        assert.deepEqual(seen, [], 'the stock prompt was not asked')
+        const cards = ((await host.state()).pile ?? []).filter((c) => c.sessionId === fb && c.toolName === tool)
+        assert.equal(cards.length, 1, 'one card in the pile: ' + JSON.stringify((await host.state()).pile))
         assert.equal((await requestMessages(host, fb)).length, msgs, 'Fishball got no request message')
         assert.deepEqual(await recentKeys(), keys, 'not recorded')
+        await host.post('/api/fishball/requests/answer', { requestId: cards[0].requestId, decision: 'reject' })
       })
     }
   })
