@@ -38,6 +38,8 @@ const NOTE = Object.freeze({
   [ASK_ERROR.empty]: 'The reply is empty.',
   [ASK_ERROR.cancelled]: 'The call was cancelled.',
 })
+/** A call one of Fishball's standing grants covers: allowed at once, no Fishball step (§7a.3, §7a.8). */
+const GRANT_NOTE = 'A standing grant from Fishball covers this call. Make the call now with exactly these arguments.'
 /** The same, when the user answered the request's card (Fishball had sent it to them, §7a.6). */
 const USER_NOTE = Object.freeze({
   [ASK_RESULT.allowed]: 'The user allowed this call once. Make the call now with exactly these arguments.',
@@ -69,14 +71,14 @@ function userMessages(session) {
 const firstChars = (text, chars) => [...text].slice(0, chars).join('')
 
 /** One answer to the agent: the code, the fields that go with it, and what to do next. */
-function answer({ code, requestId, reason, question, byUser }) {
+function answer({ code, requestId, reason, question, byUser, byGrant }) {
   return {
     ok: code === ASK_RESULT.allowed,
     code,
     ...(requestId === undefined ? {} : { request_id: requestId }),
     ...(reason === undefined ? {} : { reason }),
     ...(question === undefined ? {} : { question }),
-    note: (byUser ? USER_NOTE[code] : undefined) ?? NOTE[code],
+    note: byGrant ? GRANT_NOTE : (byUser ? USER_NOTE[code] : undefined) ?? NOTE[code],
   }
 }
 

@@ -4,15 +4,15 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions and tags tables keep version 1: the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags and grants tables keep version 1: the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags', grants: 'grants' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -126,7 +126,31 @@ const tagRecord = z.object({
   seq: z.number().int().nonnegative(),
   answer: z.enum(Object.values(APPROVAL_DECISION)),
   kind: z.enum(Object.values(TAG_KIND)),
+  /** A call a standing grant covered (rev11d): what the tag names, the prefix or "exact call" (never the arguments). */
+  grant: z.object({ kind: z.enum(Object.values(GRANT_KIND)), toolName: z.string().min(1), prefix: z.string().min(1).optional() }).optional(),
   at: z.string(),
+})
+
+/**
+ * A standing grant (DESIGN §7a.8, §9 `grants`), keyed by its grt_ id. An exact grant keeps the
+ * digest of the canonical arguments, never the arguments; a prefix grant keeps its prefix, the
+ * one stored text, because it is the matching rule itself.
+ */
+const grantRecord = z.object({
+  sessionId: z.string().min(1),
+  kind: z.enum(Object.values(GRANT_KIND)),
+  toolName: z.string().min(1),
+  argumentsDigest: z.string().min(1).optional(),
+  prefix: z.string().min(1).optional(),
+  createdAt: z.string(),
+  expiresAt: z.string(),
+  requestId: z.string().min(1),
+  rationale: z.string().optional(),
+  uses: z.number().int().nonnegative(),
+  lastUsedAt: z.string().optional(),
+  status: z.enum(Object.values(GRANT_STATUS)),
+  endedBy: z.enum(Object.values(GRANT_END)).optional(),
+  endedAt: z.string().optional(),
 })
 
 /** You allowed a tool nobody had checked, for exactly these parameters (DESIGN §7). */
@@ -191,6 +215,8 @@ const approvalRecord = z.object({
   /** Revision 11: asked first or a direct call, and the quoted message ids (never their text). */
   kind: z.enum(Object.values(REQUEST_KIND)).optional(),
   quotes: z.array(z.string()).optional(),
+  /** rev11d: the grant this answer created, or the grant that covered this call. */
+  grantId: z.string().min(1).optional(),
   risk: z.enum(Object.values(APPROVAL_RISK)).optional(),
   rationale: z.string().optional(),
   finalOutcome: z.enum(Object.values(APPROVAL_OUTCOME)),
@@ -233,6 +259,7 @@ export const fishballDomain = defineDomain({
     [TABLE.managed]: domainTable(managedRecord),
     [TABLE.decisions]: domainTable(decisionRecord),
     [TABLE.tags]: domainTable(tagRecord),
+    [TABLE.grants]: domainTable(grantRecord),
   },
 })
 
@@ -278,6 +305,7 @@ export class Store {
   get managed() { return this.#domain.table(TABLE.managed) }
   get decisions() { return this.#domain.table(TABLE.decisions) }
   get tags() { return this.#domain.table(TABLE.tags) }
+  get grants() { return this.#domain.table(TABLE.grants) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }
