@@ -34,8 +34,8 @@ describe('rev11f: Fishball\'s own cards and the cap', () => {
 
   async function assertRefused(r, label) {
     assert.ok(r.took < 10000, label + ': at once')
-    assert.equal(r.json?.ok, false, r.result.text)
-    assert.equal(r.json.code, TOO_MANY_WAITING, r.result.text)
+    // The refusal may be a JSON answer with the code or plain text carrying it (the builder's choice).
+    assert.ok(r.json?.code === TOO_MANY_WAITING || r.result.text.includes(TOO_MANY_WAITING), r.result.text)
     assert.match(r.result.text, OWN_WITHDRAW_HINT)
     assert.equal(r.card, undefined, label + ': no card')
     assert.equal(await t.stockAsked(), 0, label + ': no stock prompt')

@@ -85,7 +85,19 @@ export function entriesOf(json) {
 }
 export const idOf = (e) => e?.prompt_id ?? e?.promptId ?? e?.id
 export const toolOf = (e) => e?.tool ?? e?.tool_name ?? e?.toolName
-export const argsOf = (e) => { const a = e?.arguments ?? e?.args; if (typeof a !== 'string') return a; try { return JSON.parse(a) } catch { return a } }
+/**
+ * The entry's arguments: an `arguments`/`args` field (object or JSON text), else the `arguments: "<JSON text>"` line of
+ * its untrusted `details` block (the design names no key, A-r11e-1).
+ */
+export const argsOf = (e) => {
+  let a = e?.arguments ?? e?.args
+  if (a === undefined && typeof e?.details === 'string') {
+    const line = /^arguments: (".*")$/m.exec(e.details)
+    if (line) a = JSON.parse(line[1])
+  }
+  if (typeof a !== 'string') return a
+  try { return JSON.parse(a) } catch { return a }
+}
 /** The listed entry whose text mentions this token, or undefined. */
 export const entryFor = (entries, token) => entries.find((e) => JSON.stringify(e).includes(token))
 /** An answer that was refused: the tool said ok:false, or the call itself came back an error. */
