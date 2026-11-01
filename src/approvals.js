@@ -34,8 +34,10 @@
  *
  * Every request, pass and ticket exists only inside a running turn of the asking session, so a
  * quit ends them and there is nothing to reconcile on restart (DESIGN §11). One audit row per
- * request (Reading); your own Allow once / Reject on a prompt for a request that went through
- * Fishball also leaves a `decisions` row (Q-r11-audit-user).
+ * request (Reading); the later call a pass or a to-you ticket lets through is a request of its
+ * own to DSH and gets its own row (answer pass / to-user), tagged with the asking request's id.
+ * Your own Allow once / Reject on a prompt for a request that went through Fishball also leaves
+ * a `decisions` row (Q-r11-audit-user).
  */
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
@@ -365,7 +367,7 @@ export class ApprovalBroker {
     request.state = STATE.waiting
     this.#requests.set(request.id, request)
     const result = await this.#round(request, signal, true)
-    const ticket = () => this.#passes.add(request.key, PASS_KIND.toYou, request.sessionId, { requestId: request.id, seenByFishball: true })
+    const ticket = () => this.#passes.add(request.key, PASS_KIND.toYou, request.sessionId, { requestId: request.id, seenByFishball: request.seen === true })
     const end = async (code, answer = result.answer) => {
       await this.#finish(request, { ...result, answer }, askedOutcome(code))
       return { code, requestId: request.id }
@@ -385,7 +387,8 @@ export class ApprovalBroker {
         this.#openQuestion(request, result.question)
         return { code: ASK_RESULT.question, requestId: request.id, question: result.question }
       case APPROVAL_ANSWER.withdrawn:
-        this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
+        // A call cancelled before its notice went out is not news to Fishball.
+        if (request.seen) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
         return end(ASK_ERROR.cancelled)
       case APPROVAL_ANSWER.released:
         return end(ASK_RESULT.noLongerManaged)
@@ -451,6 +454,8 @@ export class ApprovalBroker {
               source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(request.toolName)), author: sessionAuthor(INTAKE_KIND.approval, info) },
             }),
           })
+          // Fishball has it: only then is it told how the request ends (tickets, a withdrawal).
+          request.seen = true
         } catch (error) {
           // The request could not reach Fishball (queue full): it goes to you.
           this.#logger.warn('permission request %s not delivered (%s)', id, diagnosticOf(error))
@@ -499,7 +504,7 @@ export class ApprovalBroker {
   async #route(req, next) {
     const asker = req.agent
     // Code rules first: each can only send the request on to you.
-    if (asker === undefined || asker.id === this.#assistantId() || !this.#canAnswer()) return next()
+    if (asker === undefined || asker.id === this.#assistantId()) return next()
     // A subagent asks for the session the user sees; its own session is named as detail (M2).
     const sessionId = rootSessionOf(this.#ctx, asker.id)
     // A session that is yours keeps its own prompt; Fishball is not told and takes no step (§7a.1).
@@ -511,6 +516,12 @@ export class ApprovalBroker {
       sessionId, session: this.#ctx.sessions.get(sessionId) ?? asker.session, child: sessionId === asker.id ? undefined : asker.id,
       toolName: req.toolName, callId: req.callId, reason: req.reason, mode: this.#modeOf(asker), policy: this.#policyOf(asker),
       args, key, at: new Date().toISOString(),
+    }
+    // Fishball off: to your prompt. A to-you ticket (ask_fishball said "unavailable") is used here
+    // too, so the call and your answer are audited under its request; passes do not apply (§7a.5).
+    if (!this.#canAnswer()) {
+      const ticket = this.#passes.take(key)
+      return ticket?.kind === PASS_KIND.toYou ? this.#toYou(call, ticket, next, req.signal) : next()
     }
     const covered = this.#passes.take(key)
     if (covered?.kind === PASS_KIND.pass) {
@@ -528,17 +539,19 @@ export class ApprovalBroker {
         this.#requests.delete(request.id)
         return next()
       case APPROVAL_ANSWER.allow:
-        this.#wording.mark(req.callId, sessionId, { kind: WORDING.allow })
+        this.#wording.mark(req.callId, sessionId, req.toolName, { kind: WORDING.allow })
         await this.#finish(request, result, APPROVAL_OUTCOME.allowedOnce)
         return APPROVAL_OUTCOME.allowedOnce
       case APPROVAL_ANSWER.reject:
-        this.#wording.mark(req.callId, sessionId, { kind: WORDING.reject, reason: result.rationale })
+        this.#wording.mark(req.callId, sessionId, req.toolName, { kind: WORDING.reject, reason: result.rationale })
         await this.#finish(request, result, APPROVAL_OUTCOME.rejected)
         return APPROVAL_OUTCOME.rejected
       case APPROVAL_ANSWER.ask:
+        // Without a call id the question cannot be worded into the result: the call goes to you.
+        if (req.callId === undefined) return this.#sendOn(request, result, next, req.signal)
         // The call itself is over; the thread continues with ask_fishball (Q-r11-direct-reply).
         this.#openQuestion(request, result.question)
-        this.#wording.mark(req.callId, sessionId, { kind: WORDING.question, requestId: request.id, question: result.question })
+        this.#wording.mark(req.callId, sessionId, req.toolName, { kind: WORDING.question, requestId: request.id, question: result.question })
         return APPROVAL_OUTCOME.rejected
       default:
         return this.#sendOn(request, result, next, req.signal)
@@ -557,7 +570,8 @@ export class ApprovalBroker {
       return APPROVAL_OUTCOME.cancelled
     }
     const outcome = await this.#guardedNext(next, signal)
-    await this.#finish(request, result, outcome)
+    // As in P7: a prompt that ended cancelled (Stop, the turn ended) is audited as withdrawn.
+    await this.#finish(request, outcome === APPROVAL_OUTCOME.cancelled ? { answer: APPROVAL_ANSWER.withdrawn } : result, outcome)
     await this.#clicked(request.sessionId, request.id, outcome)
     if (outcome === APPROVAL_OUTCOME.cancelled) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
     // A request released because Fishball or Permission requests went off is not news to Fishball (review L2).
@@ -578,6 +592,8 @@ export class ApprovalBroker {
 
   /** A request ended: forget it and audit it once. */
   async #finish(request, { answer, risk, rationale }, finalOutcome) {
+    // A turn end and a release can both reach an open thread; only the first audits it.
+    if (this.#requests.get(request.id) !== request) return
     this.#requests.delete(request.id)
     await this.#record({ ...request, answer, risk, rationale, finalOutcome })
   }
