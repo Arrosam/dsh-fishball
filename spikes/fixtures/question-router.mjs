@@ -33,6 +33,17 @@ export const ROUTER = Object.freeze({
   idPrefix: 'qst_',
 })
 
+/**
+ * How the router holds a timed question's foreground wait (spike S36-attachWait).
+ * - claim: attach with `userQuestions.attachWait` only (DESIGN.md §7a.10 as written). The host's
+ *   own timer stops while any claim stands, but the session's card claims too and runs its own
+ *   countdown from the same `remainingMs`, rejecting ASK_TIMED_OUT at the tool's timeout.
+ * - claimUntimed: the same claim, and the request is forwarded down the waterfall without
+ *   `wait.timed`, so the card shows as a blocking card (no claim, no countdown) and stays
+ *   answerable until Fishball or the user answers.
+ */
+export const HOLD = Object.freeze({ claim: 'claim', claimUntimed: 'claim-untimed' })
+
 export const STATE = Object.freeze({ open: 'open', continued: 'continued', answered: 'answered', closed: 'closed' })
 export const BY = Object.freeze({ fishball: 'fishball', user: 'user' })
 export const REFUSAL = Object.freeze({ unknown: 'unknown-question', settled: 'already-settled', badAnswer: 'bad-answer', notLive: 'session-not-live' })
@@ -114,6 +125,7 @@ export class QuestionRouter {
   #isManaged
   #resolveAgent
   #onChange
+  #holdTimed
   #seq = 0
   /** id -> entry */
   entries = new Map()
@@ -125,12 +137,14 @@ export class QuestionRouter {
    * @param options.isManaged(sessionId) - whether Fishball manages that session.
    * @param options.resolveAgent(sessionId) - live root agent (resumes a closed session).
    * @param options.onChange(entry, what) - the pile's hook (here: evidence).
+   * @param options.holdTimed(sessionId) - a HOLD mode for that session's timed questions, or undefined.
    */
-  constructor(ctx, { isManaged, resolveAgent, onChange = () => {} }) {
+  constructor(ctx, { isManaged, resolveAgent, onChange = () => {}, holdTimed = () => undefined }) {
     this.#ctx = ctx
     this.#isManaged = isManaged
     this.#resolveAgent = resolveAgent
     this.#onChange = onChange
+    this.#holdTimed = holdTimed
     ctx.on(ROUTER.event, (request, next) => this.#route(request, next), { prepend: true })
     ctx.on('session/event', (session, event) => this.#onSessionEvent(session, event), { global: true })
   }
@@ -163,13 +177,42 @@ export class QuestionRouter {
       kind: isPlanReview(request.questions) ? ROUTER.planReview : 'question',
       questions: request.questions,
       answerForeground: foreground.resolve,
+      foreground: foreground.promise,
     })
     this.#set(entry, STATE.open, 'opened')
     const own = new AbortController()
     const original = request.signal
     request.signal = original === undefined ? own.signal : AbortSignal.any([original, own.signal])
+    const hold = entry.timed ? this.#holdTimed(agent.id) : undefined
+    if (hold !== undefined) await this.#claim(agent, entry, request, hold)
+    try {
+      return await this.#race(entry, request, next, own, original)
+    } finally {
+      entry.claim?.abort()
+    }
+  }
+
+  /**
+   * Hold the timed wait for Fishball. The claim is taken before `next()`, so the host timer is off
+   * before any card sees the request; it is released when the waterfall settles or `releaseHold` runs.
+   */
+  async #claim(agent, entry, request, hold) {
+    entry.claim = new AbortController()
+    const frames = this.#ctx.userQuestions.attachWait(agent, entry.callId, entry.claim.signal)[Symbol.asyncIterator]()
+    const opening = await frames.next()
+    entry.hold = { mode: hold, claimed: opening.done !== true, remainingMsAtClaim: opening.value?.remainingMs }
+    // The second `next()` settles when the claim ends (released, or the wait closed).
+    entry.claimEnded = frames.next().then(() => Date.now(), () => Date.now())
+    if (hold === HOLD.claimUntimed) request.wait = { ...request.wait, timed: false }
+    this.#set(entry, entry.state, 'held:' + hold)
+  }
+
+  /** Give up Fishball's claim (Fishball turned off): the host timer runs again. */
+  releaseHold(id) { this.entries.get(id)?.claim?.abort() }
+
+  async #race(entry, request, next, own, original) {
     const session = Promise.resolve().then(next).then((value) => ({ value }), (error) => ({ error }))
-    const first = await Promise.race([foreground.promise.then((value) => ({ fishball: value })), session])
+    const first = await Promise.race([entry.foreground.then((value) => ({ fishball: value })), session])
     if (first.fishball !== undefined) {
       own.abort(answeredElsewhere())
       return first.fishball
