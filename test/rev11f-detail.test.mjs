@@ -13,7 +13,8 @@
  * | DET-03 | BVA (limit L−1; tools) | cut: whole entries that are a prefix of the full list, at least one, at most n−1, then "and K more" with K = the entries left out; the shown entries fit the limit |
  * | DET-04 | EP (a limit between; tools) | the same shape: a prefix of whole entries and "and K more" |
  * | DET-05 | BVA (limit L, L−1; settings, 4 changes) | whole at L; at L−1 the same cut shape; each value still cut to settingsPromptValueBytes |
- * | DET-06 | BVA (one over-long entry: limit E, E−1, 20; settings, one change) | whole at E; at E−1 and 20 cut with "…" (a prefix of the entry; at most limit + the ellipsis); no "and N more" (nothing is left out) |
+ * | DET-07 | BVA (first entry longer than the limit 20, more entries behind it; tools) | the first entry cut with "…" to fit the limit, then "and n−1 more" |
+ * | DET-06 | BVA (one over-long entry: limit E, E−1, 20; settings, one change) | whole at E; at E−1 and 20 cut with "…" (a prefix of the entry; ellipsis included in the limit); no "and N more" (nothing is left out) |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
@@ -53,6 +54,8 @@ describe('rev11f: the detail list of Fishball\'s cards is bounded by argumentExc
     assert.ok(shown.length >= 1 && shown.length < full.length, label + ': some entries, not all: ' + shown.length + ' of ' + full.length)
     assert.deepEqual(shown, full.slice(0, shown.length), label + ': whole entries, in order')
     assert.equal(Number(more[1]), full.length - shown.length, label + ': N counts the entries left out')
+    // "and N more" is not counted in the bound: the entries shown alone total at most the limit, and one more would not fit.
+    assert.ok(detailBytes(full.slice(0, shown.length + 1)) > limit, label + ': the next entry would not fit')
     assert.ok(detailBytes(shown) <= limit, label + ': the shown entries fit ' + limit + ' bytes (' + detailBytes(shown) + ')')
   }
 
@@ -124,8 +127,18 @@ describe('rev11f: the detail list of Fishball\'s cards is bounded by argumentExc
       assert.ok(whole[0].startsWith(cut[0].slice(0, -1)), 'a prefix of the entry')
       assert.ok(cut[0].length < whole[0].length)
       // The ellipsis counts inside the bound or just after it (PIL-05 and A78 differ; either is accepted).
-      assert.ok(bytes(cut[0]) <= limit + 3, 'at most ' + limit + ' bytes (+ the ellipsis): ' + bytes(cut[0]))
+      assert.ok(bytes(cut[0]) <= limit, 'the cut entry, ellipsis included, fits ' + limit + ' bytes (manager decision 2026-11-02): ' + bytes(cut[0]))
       assert.equal(OWN_MORE.test(cut[0]), false)
     }
+  })
+
+  it('DET-07 a first entry longer than the bound, with more behind it: cut with "…" to fit, then "and N more" for the rest', T, async () => {
+    const limit = 20
+    assert.ok(bytes(full[0]) > limit, 'precondition')
+    const cut = await listAt(limit, 'set_plugin_enabled', { plugin: FIXTURE_BUNDLE.name, on: true })
+    assert.equal(cut.length, 2, cut.join(' | '))
+    assert.ok(cut[0].endsWith('…') && full[0].startsWith(cut[0].slice(0, -1)), 'first entry cut: ' + cut[0])
+    assert.ok(bytes(cut[0]) <= limit, 'fits the bound: ' + bytes(cut[0]))
+    assert.equal(Number(OWN_MORE.exec(cut[1])?.[1]), full.length - 1, 'N counts the remaining entries: ' + cut[1])
   })
 })
