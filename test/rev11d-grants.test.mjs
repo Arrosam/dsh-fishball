@@ -2,7 +2,7 @@
  * Revision 11 rev11d: creating standing grants and what they cover (DESIGN §7a.3 "grant", §7a.8, §9 "Standing
  * grants", "Tag records", "Audit", "Fishball's other decisions"; requirements items 17-18, done-when 6; decisions
  * Q-r11-prefix-tools, Q-r11-grant-bounds, Q-r11-tag-scope). One host; the shell fixture tools (bash, pwsh,
- * terminal_open, terminal_send, run_code) ask for approval in their body. A "direct call" reaches Fishball, whose
+ * terminal_open, terminal_send, demo_echo) ask for approval in their body. A "direct call" reaches Fishball, whose
  * answer_approval(grant) creates the grant. "Covered" means: the call runs (allowed-once), Fishball takes no model
  * step, no notice, no stock prompt.
  *
@@ -16,7 +16,7 @@
  * | GRT-06  | EP (same call, other session) | not covered |
  * | GRT-07  | DT (exact grant) | repeats covered (also with another key order); one argument changed: to Fishball |
  * | GRT-08 ×3 | EP (prefix on pwsh, terminal_open, terminal_send) | accepted; a following command is covered |
- * | GRT-09 ×2 | EP (prefix on run_code, fbtest_ask) | refused, request still pending, no grant |
+ * | GRT-09 ×2 | EP (prefix on demo_echo, fbtest_ask) | refused, request still pending, no grant |
  * | GRT-10 ×10 | DT (refused answers) | no/ past/ now/ garbage end time, no grant object, bad kind, prefix kind without/with empty prefix, risk high, empty reason: ok false, request pending, no grant row |
  * | GRT-11  | BVA (end time one year out; three active grants) | accepted; all three active at once |
  * | GRT-12  | EP (grant through ask_fishball; ask_fishball of a covered call) | allowed; later direct call covered; ask_fishball for a covered call answers allowed with no Fishball step |
@@ -174,7 +174,7 @@ describe('Revision 11 rev11d: creating grants and what they cover', () => {
     })
   }
 
-  for (const tool of ['run_code', 'terminal_open']) it('GRT-09 an exact grant on ' + tool + ' is accepted (exact-call grants are for every tool)', T, async () => {
+  for (const tool of ['demo_echo', 'terminal_open']) it('GRT-09 an exact grant on ' + tool + ' is accepted (exact-call grants are for every tool)', T, async () => {
     const needle = 'print(' + tok('09x' + tool) + ')'
     const id = cid('09x')
     const requestId = await g.directWith(x, tool, { command: needle }, needle, id)
