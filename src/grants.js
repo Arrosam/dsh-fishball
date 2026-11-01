@@ -97,6 +97,9 @@ export class Grants {
   #onChange
   #decisions
   #timer
+  /** Set when the row unloads: a late end or create no longer arms a timer for this instance. */
+  #stopped = false
+  #isManaged
   /** Writes run one after another, so a use count or an end is never lost to an interleaved write. */
   #changes = Promise.resolve()
 
@@ -105,13 +108,16 @@ export class Grants {
    * @param deps.readLimits - () => limits (auditEntriesKept, rationaleChars).
    * @param deps.isPaused - () => whether grants are paused now (Fishball not live, or Permission requests off).
    * @param deps.onChange - called after any grant changes (the state feed publishes).
+   * @param deps.isManaged - (sessionId) => whether Fishball manages that session (a grant is
+   *   written only for a managed one, and ends with its management, §5e).
    */
-  constructor(store, logger, { readLimits, isPaused, onChange }) {
+  constructor(store, logger, { readLimits, isPaused, onChange, isManaged }) {
     this.#store = store
     this.#logger = logger
     this.#readLimits = readLimits
     this.#isPaused = isPaused
     this.#onChange = onChange
+    this.#isManaged = isManaged
     this.#decisions = new AuditLog(() => store.decisions, () => readLimits().auditEntriesKept)
   }
 
@@ -119,19 +125,16 @@ export class Grants {
    * At start (§11 "Restart"): a grant whose end time passed while DSH was down ends as expired,
    * and one whose session is no longer managed ends too (its end was not written); then the
    * timer is armed for the next end time.
-   * @param isManaged - (sessionId) => whether Fishball manages that session.
    */
-  async reconcile(isManaged) {
+  async reconcile() {
     const now = Date.now()
-    for (const [id, record] of this.#active()) {
-      if (Date.parse(record.expiresAt) <= now) await this.#end(id, GRANT_END.expiry)
-      else if (!isManaged(record.sessionId)) await this.#end(id, undefined)
-    }
-    this.#arm()
+    await this.#endEach(this.#active().filter(([, record]) => Date.parse(record.expiresAt) <= now), GRANT_END.expiry)
+    await this.#endEach(this.#active().filter(([, record]) => !this.#isManaged(record.sessionId)), undefined)
   }
 
-  /** Stop the expiry timer (the row unloads). */
+  /** Stop the expiry timer for good (the row unloads). */
   stop() {
+    this.#stopped = true
     clearTimeout(this.#timer)
   }
 
@@ -141,21 +144,48 @@ export class Grants {
   }
 
   /**
-   * Write one grant Fishball created, and its `decisions` row.
+   * Write one grant Fishball created. It is written BEFORE the request is answered, so an answer
+   * never names a grant that a failed write lost; the caller then confirms it (confirm) or, when the
+   * request ended meanwhile, discards it. The managed check runs in the write queue, so a Take back
+   * or release either comes first (nothing is written) or finds the grant and ends it (§5e).
    * @param grant - { id, sessionId, toolName, kind, prefix?, args, expiresAt, requestId, rationale }:
    *   checked by checkGrant; `args` gives an exact grant its digest and is not stored.
+   * @returns whether it was written (false: the session is no longer managed). A write failure throws.
    */
   async create({ id, sessionId, toolName, kind, prefix, args, expiresAt, requestId, rationale }) {
     const now = new Date().toISOString()
     const text = rationale.slice(0, this.#readLimits().rationaleChars)
-    await this.#serial(() => this.#store.grants.put(id, {
-      sessionId, kind, toolName,
-      ...(kind === GRANT_KIND.exact ? { argumentsDigest: argumentsDigest(args) } : { prefix }),
-      createdAt: now, expiresAt, requestId, ...(text ? { rationale: text } : {}), uses: 0, status: GRANT_STATUS.active,
-    }))
-    this.#arm()
-    this.#onChange()
-    await this.#decide({ action: DECISION_ACTION.grant, sessionId, by: CHANGED_BY.fishball, target: id, rationale: text })
+    const written = await this.#serial(async () => {
+      if (!this.#isManaged(sessionId)) return false
+      await this.#store.grants.put(id, {
+        sessionId, kind, toolName,
+        ...(kind === GRANT_KIND.exact ? { argumentsDigest: argumentsDigest(args) } : { prefix }),
+        createdAt: now, expiresAt, requestId, ...(text ? { rationale: text } : {}), uses: 0, status: GRANT_STATUS.active,
+      })
+      return true
+    })
+    if (written) {
+      this.#arm()
+      this.#onChange()
+    }
+    return written
+  }
+
+  /** The grant's request was answered with it: its `decisions` row (§9; a failed write is logged). */
+  async confirm(id) {
+    const record = this.#store.grants.get(id)
+    if (record !== undefined) await this.#decide({ action: DECISION_ACTION.grant, sessionId: record.sessionId, by: CHANGED_BY.fishball, target: id, rationale: record.rationale })
+  }
+
+  /** The grant's request ended before the answer reached it: the grant never took effect, so it leaves without a trace. */
+  async discard(id) {
+    try {
+      await this.#serial(() => this.#store.grants.delete(id))
+      this.#arm()
+      this.#onChange()
+    } catch (error) {
+      this.#warn('grant discard')(error)
+    }
   }
 
   /**
@@ -179,12 +209,15 @@ export class Grants {
     return undefined
   }
 
-  /** Count one covered call (§7a.8: how often it was used, and when last). A write failure is logged. */
+  /**
+   * Count one covered call (§7a.8: how often it was used, and when last). A grant that ended
+   * between cover() and this count keeps its count. A write failure is logged.
+   */
   async use(id) {
     try {
       await this.#serial(async () => {
         const record = this.#store.grants.get(id)
-        if (record !== undefined) await this.#store.grants.put(id, { ...record, uses: record.uses + 1, lastUsedAt: new Date().toISOString() })
+        if (record?.status === GRANT_STATUS.active) await this.#store.grants.put(id, { ...record, uses: record.uses + 1, lastUsedAt: new Date().toISOString() })
       })
       this.#onChange()
     } catch (error) {
@@ -217,8 +250,9 @@ export class Grants {
    * @param change - MANAGED_CHANGE.takeBack or .release; undefined when DSH no longer finds the session.
    */
   async endSession(sessionId, change) {
-    const endedBy = change === undefined ? undefined : END_BY_CHANGE[change]
-    for (const [id, record] of this.#active()) if (record.sessionId === sessionId) await this.#end(id, endedBy)
+    // Read in the write queue, after any grant of this session still being written (see create).
+    const grants = await this.#serial(async () => this.#active().filter(([, record]) => record.sessionId === sessionId))
+    await this.#endEach(grants, change === undefined ? undefined : END_BY_CHANGE[change])
   }
 
   /** Active grants for the browser (§10e "Active grants beside the pile"), newest first. */
@@ -254,6 +288,8 @@ export class Grants {
       },
       output: JSON_OUTPUT,
       execute: async ({ grant_id: id, reason }) => {
+        // As every other Fishball decision that names a reason (answer_approval's reject, release_session).
+        if (typeof reason !== 'string' || reason.trim().length === 0) return refused(GRANT_ERROR.reasonRequired)
         const code = await this.revoke(id, GRANT_END.fishball, reason)
         return code === undefined ? ok({ grantId: id, revoked: true }) : refused(code)
       },
@@ -303,7 +339,10 @@ export class Grants {
    */
   #arm() {
     clearTimeout(this.#timer)
-    const next = Math.min(...this.#active().map(([, record]) => Date.parse(record.expiresAt)))
+    if (this.#stopped) return
+    // A loop, not Math.min(...all): any number of grants may be active (no cap), beyond a spread's argument limit.
+    let next = Number.POSITIVE_INFINITY
+    for (const [, record] of this.#active()) next = Math.min(next, Date.parse(record.expiresAt))
     if (!Number.isFinite(next)) return
     this.#timer = setTimeout(() => void this.#expireDue().catch(this.#warn('grant expiry')), Math.min(Math.max(0, next - Date.now()), APPROVAL.maxTimerMs))
     this.#timer.unref?.()
@@ -311,8 +350,19 @@ export class Grants {
 
   async #expireDue() {
     const now = Date.now()
-    for (const [id, record] of this.#active()) if (Date.parse(record.expiresAt) <= now) await this.#end(id, GRANT_END.expiry)
-    this.#arm()
+    await this.#endEach(this.#active().filter(([, record]) => Date.parse(record.expiresAt) <= now), GRANT_END.expiry)
+  }
+
+  /**
+   * End each listed grant; one failed write is logged and does not stop the others, and the timer
+   * is armed again afterwards whatever happened, so later end times are still kept.
+   */
+  async #endEach(grants, endedBy) {
+    try {
+      for (const [id] of grants) await this.#end(id, endedBy).catch(this.#warn('grant end'))
+    } finally {
+      this.#arm()
+    }
   }
 
   #serial(change) {

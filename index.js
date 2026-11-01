@@ -312,7 +312,7 @@ export async function apply(ctx, config) {
   const pile = new Pile(() => publish())
   const tags = new TagRecords(store, limits, { logger, onChange: () => publish() })
   // Standing grants (rev11d, §7a.8): paused while Fishball is not live or Permission requests is off.
-  const grants = new Grants(store, logger, { readLimits: limits, isPaused: () => assistantAgent() === undefined || !approvalsOn(), onChange: () => publish() })
+  const grants = new Grants(store, logger, { readLimits: limits, isPaused: () => assistantAgent() === undefined || !approvalsOn(), onChange: () => publish(), isManaged: (sessionId) => managedRegistry.isManaged(sessionId) })
   grants.registerTools((definition) => composition.registerOwnTool(definition))
   ctx.effect(() => () => grants.stop(), 'fishball: grant expiry timer')
   // Managed sessions' permission requests go to Fishball first (DESIGN §7a).
@@ -397,7 +397,7 @@ export async function apply(ctx, config) {
   // Sessions DSH no longer finds leave the registry (§9), and their grants end. Grants that ended
   // while DSH was down end now (§11 "Restart").
   void managedRegistry.prune().catch(logged('managed sessions check'))
-  void grants.reconcile((sessionId) => managedRegistry.isManaged(sessionId)).catch(logged('grants check'))
+  void grants.reconcile().catch(logged('grants check'))
   /** A row waiting for a service may run now; its tools may have appeared too. */
   const recheck = () => void catalog.recheckWaiting().catch(logged('waiting re-audit'))
   // A tool registered or removed anywhere can change Fishball's catalog view, and may bring
