@@ -22,6 +22,7 @@
  * - src/request-desk.js    ask_fishball and list_user_messages (managed sessions only)
  * - src/passes.js          one-time passes and to-you tickets
  * - src/pile.js            your pile: requests Fishball sent you, answered there or on the session's row
+ * - src/own-requests.js    Fishball's own requests: its cards in your pile, their passes, withdraw_request
  * - src/tags.js            tag records: each answer Fishball gave, for the asking turn's tail
  * - src/grants.js          standing grants: calls they cover run without waking Fishball
  * - src/result-wording.js  what an agent reads after Fishball answered its direct call
@@ -53,6 +54,7 @@ import { APPROVAL_TOOL, ApprovalBroker } from './src/approvals.js'
 import { DESK_TOOL, requestDeskTools } from './src/request-desk.js'
 import { CallPasses } from './src/passes.js'
 import { Pile } from './src/pile.js'
+import { OWN_TOOL, OwnRequests } from './src/own-requests.js'
 import { TagRecords } from './src/tags.js'
 import { GRANT_TOOL, Grants } from './src/grants.js'
 import { ResultWording } from './src/result-wording.js'
@@ -83,6 +85,7 @@ const OWN_TOOL_PLUGIN = new Map([
   [APPROVAL_TOOL, FEATURE_KEY.approvals],
   [DESK_TOOL, FEATURE_KEY.approvals],
   [GRANT_TOOL, FEATURE_KEY.approvals],
+  [OWN_TOOL, FEATURE_KEY.approvals],
 ].flatMap(([tools, key]) => Object.values(tools).map((name) => [name, key])))
 
 /** Settings-page commands before the catalog exists, or after a core failure. */
@@ -226,18 +229,6 @@ export async function apply(ctx, config) {
     logger.warn('composition failed (%s)', diagnosticOf(error))
     return use(new InactiveLifecycle(STATUS.failed, ERROR.composeFailed, store.assistant()))
   }
-  registerPluginTools({
-    register: (definition) => composition.registerOwnTool(definition),
-    catalog,
-    composition,
-    tools: ctx.tools,
-    scope: composition.key,
-    approval: ctx.approval,
-    packages,
-    settings,
-    logger,
-    readLimits: limits,
-  })
   // An uninstall a restart interrupted finishes now (its rows were not mounted at boot).
   void catalog.finishRemovals()
   catalogView = () => catalog.snapshot(composition.decisions())
@@ -315,6 +306,9 @@ export async function apply(ctx, config) {
   const grants = new Grants(store, logger, { readLimits: limits, isPaused: () => assistantAgent() === undefined || !approvalsOn(), onChange: () => publish(), isManaged: (sessionId) => managedRegistry.isManaged(sessionId) })
   grants.registerTools((definition) => composition.registerOwnTool(definition))
   ctx.effect(() => () => grants.stop(), 'fishball: grant expiry timer')
+  // Fishball's own requests: cards labelled Fishball in your pile, never a prompt (rev11f, §7a.11).
+  const own = new OwnRequests(ctx, store, logger, { ledger, readLimits: limits, assistantId, agentOf: () => assistantAgent(), onChange: () => publish() })
+  own.registerTools((definition) => composition.registerOwnTool(definition))
   // Managed sessions' permission requests go to Fishball first (DESIGN §7a).
   const broker = new ApprovalBroker(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,
@@ -329,14 +323,31 @@ export async function apply(ctx, config) {
     grants,
     // answer_prompt makes the prompt's session managed (the fifth way in, rev11e §7a.9).
     manage,
+    own,
   })
   broker.registerTools((definition) => composition.registerOwnTool(definition))
+  // Registered once the broker exists: each request they make becomes Fishball's card (rev11f).
+  registerPluginTools({
+    register: (definition) => composition.registerOwnTool(definition),
+    catalog,
+    composition,
+    tools: ctx.tools,
+    scope: composition.key,
+    approval: ctx.approval,
+    packages,
+    settings,
+    logger,
+    readLimits: limits,
+    own,
+    broker,
+  })
   deskTools = requestDeskTools({ ctx, broker, readLimits: limits })
   // Managed agents already live get the two tools now that they exist.
   managedRegistry.sync()
   approvalsView = () => broker.snapshot()
-  // Cards come only from managed sessions, whose titles are followed (session-titles.js); text, never markup (§10e).
-  pileView = () => pile.cards().map((card) => ({ ...card, title: sessionTitles.get(card.sessionId) }))
+  // Session cards come only from managed sessions, whose titles are followed (session-titles.js);
+  // Fishball's own cards are labelled Fishball. Text, never markup (§10e). Newest first (Reading).
+  pileView = () => [...pile.cards().map((card) => ({ ...card, title: sessionTitles.get(card.sessionId) })), ...own.cards()].sort((a, b) => (a.since < b.since ? 1 : a.since > b.since ? -1 : 0))
   tagsView = () => tags.snapshot()
   // Grants belong to managed sessions, whose titles are followed (session-titles.js).
   grantsView = () => grants.snapshot().map((grant) => ({ ...grant, title: sessionTitles.get(grant.sessionId) }))
@@ -348,7 +359,9 @@ export async function apply(ctx, config) {
   // Your Allow once / Reject on a card (§10e): 409 expired once the card left; a note over maxMessageBytes is refused.
   commands.answerRequest = async ({ requestId, decision, note }) => {
     if (note !== undefined && byteLength(note) > limits().maxMessageBytes) throw new LifecycleStateError(API_CODE.tooLarge)
-    if (!broker.answerCard({ requestId, decision, note })) throw new LifecycleStateError(API_CODE.expired)
+    // One of Fishball's own cards (§7a.11) answers through its own store; a session's card through the broker.
+    const answered = own.has(requestId) ? await own.answer(requestId, decision, note) : broker.answerCard({ requestId, decision, note })
+    if (!answered) throw new LifecycleStateError(API_CODE.expired)
   }
   // Off takes the feature away at the apply: message_fishball leaves managed sessions (they stay
   // managed, Q-r11-plugins-off), and requests waiting for Fishball go to you at once (revision 10c).
@@ -501,7 +514,9 @@ export async function apply(ctx, config) {
 
   // Each time Fishball goes live: settle the intake queue (restart, adopt), then tell Fishball
   // about unchecked tools of plugins already on (DESIGN §7, §11 steps 4-6).
-  const onLive = () => void ledger.reconcile().then(() => watches.catchUp()).then(() => { if (catalog.isAppliedOn(FEATURE_KEY.plugins)) notifyUnchecked() }).catch(logged('intake reconcile'))
+  // Fishball's own passes are settled first: one whose notice entered a turn before the restart has
+  // ended, and the ledger may deliver a notice still pending right after (§7a.11).
+  const onLive = () => void Promise.resolve(assistantAgent() === undefined ? undefined : own.catchUp(assistantAgent().session)).then(() => ledger.reconcile()).then(() => watches.catchUp()).then(() => { if (catalog.isAppliedOn(FEATURE_KEY.plugins)) notifyUnchecked() }).catch(logged('intake reconcile'))
   // Every lifecycle change publishes; when Fishball is no longer live, its waiting permission
   // requests go to you at once instead of timing out (P7 review M1).
   const onLifecycleChange = () => {

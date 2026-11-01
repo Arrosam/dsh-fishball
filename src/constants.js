@@ -366,9 +366,10 @@ export const MANAGED_ERROR = Object.freeze({
 /**
  * Fishball's decisions audit (§9 `decisions`): rev11a records release; rev11b adds your own
  * Allow once / Reject clicks on a stock prompt for a request that went through Fishball; rev11d
- * adds Fishball's grants and the revokes, yours and Fishball's; rev11e adds Fishball's answer_prompt.
+ * adds Fishball's grants and the revokes, yours and Fishball's; rev11e adds Fishball's answer_prompt;
+ * rev11f adds Fishball's withdraw_request on its own card (your clicks on its cards use allow-once / reject).
  */
-export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke', answerPrompt: 'answer-prompt' })
+export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke', answerPrompt: 'answer-prompt', withdraw: 'withdraw' })
 export const DECISION_OK = 'ok'
 
 /** Watches (DESIGN §5c, §9 watches). */
@@ -447,8 +448,11 @@ export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', grant: 'grant',
  * grant (the call itself runs as on allow). grant-used: a call a standing grant covered (no Fishball step).
  */
 export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn', released: 'released', toUser: 'to-user', pass: 'pass', grantUsed: 'grant-used' })
-/** Whether the session asked first (ask_fishball) or made the call directly (§9 audit `kind`). */
-export const REQUEST_KIND = Object.freeze({ asked: 'asked', direct: 'direct' })
+/**
+ * Whether the session asked first (ask_fishball) or made the call directly (§9 audit `kind`), or
+ * the request is Fishball's own (rev11f, §7a.11): its card in your pile has this kind too.
+ */
+export const REQUEST_KIND = Object.freeze({ asked: 'asked', direct: 'direct', own: 'own' })
 /** What a pass-table entry lets through (§7a.3 passes, §7a.6 to-you tickets). */
 export const PASS_KIND = Object.freeze({ pass: 'pass', toYou: 'to-you' })
 /** Who wrote one entry of a request's thread (§9 request threads). */
@@ -497,6 +501,23 @@ export const PROMPT = Object.freeze({
  * freezes (your answer Q-r11-cap-own, §7a.6).
  */
 export const TOO_MANY_WAITING = 'too-many-waiting'
+/**
+ * Fishball's own requests (DESIGN §7a.11, §9 `own_requests`, rev11f): each one is a card labelled
+ * Fishball in your pile, and the call returns waiting-for-approval at once.
+ */
+export const OWN_REQUEST = Object.freeze({
+  /** Request id prefix (own_<id>). */
+  idPrefix: 'own_',
+  /** The code of the result the call returns at once (§7a.11). */
+  waitingCode: 'waiting-for-approval',
+  /** Intake source of the "approved, run it again" notice (never wake-capped, Reading). */
+  sourceIdentity: 'fishball/own-request',
+})
+/**
+ * One own request's state (§9): waiting is the card; approved is the retry pass; used, expired
+ * (the turn the notice woke ended), rejected and withdrawn are settled.
+ */
+export const OWN_STATUS = Object.freeze({ waiting: 'waiting', approved: 'approved', rejected: 'rejected', withdrawn: 'withdrawn', used: 'used', expired: 'expired' })
 /**
  * Tag records (DESIGN §9 `tags`, S37): one per answer Fishball gave, shown in the asking turn's
  * tail. approval: an answer_approval allow, grant, reject or question; sent-to-you: an escalate;
