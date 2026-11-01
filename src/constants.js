@@ -369,8 +369,9 @@ export const MANAGED_ERROR = Object.freeze({
  * adds Fishball's grants and the revokes, yours and Fishball's; rev11e adds Fishball's answer_prompt;
  * rev11f adds Fishball's withdraw_request on its own card (your clicks on its cards use allow-once / reject).
  * rev11g adds answer-question: Fishball's answer to a question or plan review, or yours on its card.
+ * rev11h adds Fishball's stop_session and redirect_session.
  */
-export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke', answerPrompt: 'answer-prompt', withdraw: 'withdraw', answerQuestion: 'answer-question' })
+export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke', answerPrompt: 'answer-prompt', withdraw: 'withdraw', answerQuestion: 'answer-question', stop: 'stop', redirect: 'redirect' })
 export const DECISION_OK = 'ok'
 
 /** Watches (DESIGN §5c, §9 watches). */
@@ -724,7 +725,7 @@ export const OUTBOX_KIND = Object.freeze({ message: 'message', start: 'start' })
 /** unconfirmed: the session has the message, but its flush to disk could not be confirmed. */
 export const OUTBOX_STATUS = Object.freeze({ delivered: 'delivered', unconfirmed: 'unconfirmed', failed: 'failed' })
 
-/** Stable codes message_session and start_session answer with. */
+/** Stable codes message_session, start_session, stop_session and redirect_session answer with. */
 export const OUTBOUND_ERROR = Object.freeze({
   hourlyCap: 'hourly-cap',
   tooLarge: 'too-large',
@@ -735,6 +736,8 @@ export const OUTBOUND_ERROR = Object.freeze({
   noFolder: 'no-folder',
   notAbsolute: 'not-absolute',
   deliveryFailed: 'delivery-failed',
+  /** stop_session / redirect_session on a session that is yours (rev11h, §7a.12). */
+  notManaged: NOT_MANAGED,
 })
 
 /** Host API under DSH's authenticated /api channel. */
