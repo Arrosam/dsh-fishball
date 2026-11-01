@@ -203,7 +203,7 @@ window.__ModuleLoader__.load({
      * form model needs its fields before the first state frame arrives, so the browser keeps
      * this list; the Host schema still decides validity on save.
      */
-    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxSourcesPerPlugin', 'maxFishballOnlyPlugins', 'wakeupsPerHour', 'messagesPerHour', 'sessionsPerHour', 'maxPendingApprovals', 'approvalAnswerSeconds', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'approvalsShown', 'intakeRowsShown', 'outboxShown', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'pluginHistoryShown', 'settingsPromptValueBytes', 'replyCapShare', 'headroomShare', 'minWindowTokens', 'pluginManagerStartMs', 'defaultReplyCapTokens'])
+    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxSourcesPerPlugin', 'maxFishballOnlyPlugins', 'wakeupsPerHour', 'messagesPerHour', 'sessionsPerHour', 'maxPendingApprovals', 'approvalAnswerSeconds', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'approvalsShown', 'intakeRowsShown', 'outboxShown', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'pluginHistoryShown', 'settingsPromptValueBytes', 'replyCapShare', 'headroomShare', 'minWindowTokens', 'pluginManagerStartMs', 'defaultReplyCapTokens', 'userMessagesListed', 'userMessageExcerptChars'])
     /**
      * FishMark (fishball app, Surfaces.kt): body and eye on a 24-unit grid. In the sidebar the
      * body takes the text colour so it reads on light and dark themes; the eye keeps the
@@ -477,6 +477,10 @@ window.__ModuleLoader__.load({
       'approvalAnswer.timeout': 'No answer in time; sent to you',
       'approvalAnswer.withdrawn': 'Withdrawn',
       'approvalAnswer.released': 'Session no longer managed; sent to you',
+      'approvalAnswer.reject': 'Rejected by Fishball',
+      'approvalAnswer.ask': 'Fishball asked a question; no reply',
+      'approvalAnswer.to-user': 'Sent to you in the session',
+      'approvalAnswer.pass': 'Ran on Fishball\'s one-time approval',
       'approvalOutcome.allowed-once': 'allowed once',
       'approvalOutcome.rejected': 'rejected',
       'approvalOutcome.cancelled': 'cancelled',
@@ -646,6 +650,8 @@ window.__ModuleLoader__.load({
       'field.minWindowTokens': 'Smallest context window you can set (tokens)',
       'field.pluginManagerStartMs': 'Milliseconds Fishball\'s plugin manager may take to start',
       'field.defaultReplyCapTokens': 'Largest automatic reply cap with a smaller window (tokens)',
+      'field.userMessagesListed': 'Your messages list_user_messages shows a managed session',
+      'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
       reset: 'Reset to default',
       overridden: 'Custom',
       save: 'Save',
@@ -777,6 +783,10 @@ window.__ModuleLoader__.load({
       'approvalAnswer.timeout': '超时未答复，已转交给你',
       'approvalAnswer.withdrawn': '已撤回',
       'approvalAnswer.released': '会话已不再由 Fishball 管理，已转交给你',
+      'approvalAnswer.reject': 'Fishball 已拒绝',
+      'approvalAnswer.ask': 'Fishball 提出了问题，未获回复',
+      'approvalAnswer.to-user': '已在该会话中转交给你',
+      'approvalAnswer.pass': '按 Fishball 的一次性批准运行',
       'approvalOutcome.allowed-once': '允许一次',
       'approvalOutcome.rejected': '已拒绝',
       'approvalOutcome.cancelled': '已取消',
@@ -946,6 +956,8 @@ window.__ModuleLoader__.load({
       'field.minWindowTokens': '可设置的最小上下文窗口（token）',
       'field.pluginManagerStartMs': 'Fishball 插件管理器启动可用的毫秒数',
       'field.defaultReplyCapTokens': '较小窗口时自动回复上限的最大值（token）',
+      'field.userMessagesListed': 'list_user_messages 向受管会话列出的你的消息条数',
+      'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
       reset: '恢复默认',
       overridden: '已自定义',
       save: '保存',
