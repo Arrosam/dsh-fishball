@@ -19,6 +19,7 @@
  * | L26    | EP (example: defaultReplyCapTokens 16000, model window 400000) | N 200000: outputCap 16000 (25000 with the default) |
  * | L27    | EP (replyCapShare 4) | N 40000: outputCap 10000, threshold 25000 |
  * | L28    | EP (headroomShare 4) | N 40000: outputCap 5000, threshold 25000 |
+ * | L31    | ST + BVA (replyCapShare 8 -> 2 -> 1 refused -> 8) | N 40000: cap 20000 = floor(N/2) (< defaultReplyCapTokens 32000), threshold 15000, next request maxTokens in (5000, 20000]; 1 refused and cap stays 20000; 8 gives 5000 / 30000 again; same agent |
  * | L29    | ST (each field back to its default) | N 40000 gives outputCap 5000, threshold 30000 again |
  * | L30    | ST (no restart) | after every change Fishball is the same agent, never disposed, status live |
  */
@@ -162,6 +163,31 @@ describe('rev11-limits: context-window fields', () => {
       await setLimit({ headroomShare: D.headroomShare })
       await sameAgent()
     })
+  })
+
+  it('L31 replyCapShare 2 applies live: N 40000 gives cap floor(N/2) 20000; 1 is refused; 8 restores 5000', T, async () => {
+    const f = { ...D, replyCapShare: 2 }
+    assert.ok(Math.floor(N / 2) < D.defaultReplyCapTokens, 'precondition: defaultReplyCapTokens does not hide the effect')
+    await setLimit({ replyCapShare: 2 })
+    const cw = await accepted(N)
+    assert.equal(cw.outputCap, capFor(N, f))
+    assert.equal(cw.outputCap, 20000)
+    assert.equal(cw.threshold, thresholdFor(N, 20000, f))
+    assert.equal(cw.threshold, 15000)
+    const r = await turn(host, fb, [[{ text: 'ok' }]], 'share-2 probe')
+    const cap = r.requests.at(-1)?.maxTokens
+    assert.ok(cap !== null && cap !== undefined && cap > 5000 && cap <= 20000, 'request maxTokens ' + cap + ' follows the half-window cap')
+    await sameAgent()
+    const bad = await host.call('settingsUpdate', { patch: { replyCapShare: 1 } })
+    assert.equal(bad.ok, false, 'replyCapShare 1 must be refused')
+    assert.equal((await host.state()).limits?.replyCapShare, 2, 'state.limits keeps 2')
+    assert.equal((await accepted(N)).outputCap, 20000, 'cap unchanged after the refused 1')
+    await setLimit({ replyCapShare: D.replyCapShare })
+    const back = await accepted(N)
+    assert.equal(back.outputCap, 5000)
+    assert.equal(back.threshold, 30000)
+    await clear()
+    await sameAgent()
   })
 
   it('L29 with every field back at its default, N 40000 gives cap 5000 and threshold 30000 again', T, async () => {

@@ -8,8 +8,12 @@
  */
 import Schema from '@deepseek-ai/schemastery'
 
-/** Minimum for counts and sizes, and for hourly caps (where 0 turns the cap off). */
-const MIN = Object.freeze({ count: 1, hourlyCap: 0 })
+/**
+ * Minimum for counts and sizes, and for hourly caps (where 0 turns the cap off). The reply cap's
+ * share is at least 2, so the automatic reply cap is at most half a smaller window (the user's decision,
+ * 2026-11-01): at 1 the cap would fill the whole window and leave no room for the conversation.
+ */
+const MIN = Object.freeze({ count: 1, hourlyCap: 0, replyCapShare: 2 })
 
 /** One row per limit: [field, default, minimum, description]. */
 export const LIMITS = Object.freeze([
@@ -37,7 +41,7 @@ export const LIMITS = Object.freeze([
   ['forwardExcerptBytes', 3072, MIN.count, 'How much of a session\'s last answer a forward or a watch notice carries, in bytes.'],
   ['pluginHistoryShown', 10, MIN.count, 'Changes a plugin page shows.'],
   ['settingsPromptValueBytes', 200, MIN.count, 'Bytes of each old and new value in set_plugin_settings\' permission request.'],
-  ['replyCapShare', 8, MIN.count, 'With a smaller context window, the automatic reply-length cap is one in this many of its tokens.'],
+  ['replyCapShare', 8, MIN.replyCapShare, 'With a smaller context window, the automatic reply-length cap is one in this many of its tokens.'],
   // At 20,000 tokens one eighth is 2,500, as in spike S5, so a summary of that length fits.
   ['headroomShare', 8, MIN.count, 'With a smaller context window, compaction headroom (and the summary\'s cap) is one in this many of its tokens, at most DSH\'s 65,536.'],
   // Below this the reply and summary caps would be a few hundred tokens; it bounds a save made

@@ -9,11 +9,12 @@
  * | L1     | EP (form)                     | the settings schema has a field for each of the 16 new names and still the 12 existing ones; rebuilt with Schemastery it resolves {} to every documented default |
  * | L2     | EP (value, nothing saved)     | the settings value shows each new field at its default; the 12 existing at theirs |
  * | L3     | EP (existing install: saved config without the new fields) | after saving one old field, the saved row config has none of the 16 new names, and the value still shows each default |
- * | L4 ×16 | BVA (min = 1)                 | accepted; value shows 1; saved in the profile patch |
- * | L5 ×64 | BVA (min-1 = 0) / EP (negative -1, fraction 1.5, string "5") | refused; patch file and value unchanged |
+ * | L4 ×16 | BVA (min: 1, replyCapShare 2) | accepted; value shows min; saved in the profile patch |
+ * | L5 ×65 | BVA (min-1: 0, replyCapShare 1) / EP (negative -1, fraction min+0.5, string "5"; 0 too where min > 1) | refused; patch file and value unchanged |
+ * | L12    | BVA (replyCapShare min 2)     | from 8: 1 refused, settings value and state.limits keep 8; 2 accepted, both show 2 |
  * | L6     | BVA (large: 10 × default, all 16 at once) | accepted; value shows them |
  * | L7     | ST (changed -> defaults)      | one update with all 16 defaults is accepted; value shows them |
- * | L8     | EP (schema min)               | the rebuilt schema refuses 0 and 1.5 for each new field and accepts 1 |
+ * | L8     | EP (schema min)               | the rebuilt schema refuses min-1 and min+0.5 for each new field and accepts min |
  * | L9     | DT (tool x Fishball's own config) | set_plugin_settings on dsh-fishball's row is refused before any prompt; the value is unchanged |
  * | L10    | EP (Fishball's tools)         | no tool in Fishball's request takes a parameter named after any limit field |
  * | L11    | ST (live -updates-> live)     | none of the updates remounted Fishball: same agent, not disposed, created once, status live |
@@ -27,7 +28,14 @@ import { bootLive, newHome, until } from './support/host.mjs'
 const NEW = Object.keys(LIMITS_R11)
 const DEFAULTS = Object.fromEntries(Object.entries(LIMITS_R11).map(([k, v]) => [k, v.default]))
 const OLD_DEFAULTS = Object.fromEntries(Object.entries(LIMITS).map(([k, v]) => [k, v.default]))
-const INVALID = [['L5 min-1', 0], ['L5 negative', -1], ['L5 non-integer', 1.5], ['L5 string', '5']]
+/** L5 inputs per field, from its minimum (replyCapShare's is 2, every other is 1). */
+const invalidFor = (min) => [
+  ['L5 min-1', min - 1],
+  ...(min > 1 ? [['L5 zero', 0]] : []),
+  ['L5 negative', -1],
+  ['L5 non-integer', min + 0.5],
+  ['L5 string', '5'],
+]
 
 /**
  * The field names of a Schemastery form as toJSON() gives it: {uid, refs}, where refs[uid] is the root
@@ -102,13 +110,13 @@ describe('rev11-limits: the new fields in the fishball row config', () => {
   })
 
   for (const field of NEW) {
-    it('L4 ' + field + ' accepts its minimum 1', T, async () => {
+    it('L4 ' + field + ' accepts its minimum ' + LIMITS_R11[field].min, T, async () => {
       await expectAccepted({ [field]: LIMITS_R11[field].min })
     })
   }
 
   for (const field of NEW) {
-    for (const [label, bad] of INVALID) {
+    for (const [label, bad] of invalidFor(LIMITS_R11[field].min)) {
       it(label + ' ' + field + ' = ' + JSON.stringify(bad) + ' is refused and the old value stays', T, async () => {
         const fileBefore = readPatch(home)
         const before = await value()
@@ -120,6 +128,19 @@ describe('rev11-limits: the new fields in the fishball row config', () => {
     }
   }
 
+  it('L12 replyCapShare: 1 is refused and 8 stays (settings value and state.limits); 2 is accepted', T, async () => {
+    assert.equal(LIMITS_R11.replyCapShare.min, 2, 'precondition: shared data has the new minimum')
+    await expectAccepted({ replyCapShare: DEFAULTS.replyCapShare })
+    const fileBefore = readPatch(home)
+    const r = await host.call('settingsUpdate', { patch: { replyCapShare: 1 } })
+    assert.equal(r.ok, false, 'replyCapShare 1 must be refused')
+    assert.equal(readPatch(home), fileBefore, 'profile patch unchanged')
+    assert.equal((await value()).replyCapShare, DEFAULTS.replyCapShare, 'settings value keeps 8')
+    assert.equal((await host.state()).limits?.replyCapShare, DEFAULTS.replyCapShare, 'state.limits keeps 8')
+    await expectAccepted({ replyCapShare: 2 })
+    assert.ok(await until(async () => (await host.state()).limits?.replyCapShare === 2, 5000, 50), 'state.limits shows 2')
+  })
+
   it('L6 large whole numbers (ten times each default) are accepted for all 16 at once', T, async () => {
     await expectAccepted(Object.fromEntries(NEW.map((k) => [k, DEFAULTS[k] * 10])))
   })
@@ -128,12 +149,13 @@ describe('rev11-limits: the new fields in the fishball row config', () => {
     await expectAccepted(DEFAULTS)
   })
 
-  it('L8 the form itself refuses 0 and 1.5 and accepts 1 for each new field', T, async () => {
+  it('L8 the form itself refuses min-1 and min+0.5 and accepts min for each new field', T, async () => {
     const form = new Schema(await host.call('settingsSchema', { ns: ROW_ID }))
     for (const k of NEW) {
-      assert.throws(() => form({ [k]: 0 }), k + ' = 0 must not validate')
-      assert.throws(() => form({ [k]: 1.5 }), k + ' = 1.5 must not validate')
-      assert.equal(form({ [k]: 1 })[k], 1, k + ' = 1 validates')
+      const { min } = LIMITS_R11[k]
+      assert.throws(() => form({ [k]: min - 1 }), k + ' = ' + (min - 1) + ' must not validate')
+      assert.throws(() => form({ [k]: min + 0.5 }), k + ' = ' + (min + 0.5) + ' must not validate')
+      assert.equal(form({ [k]: min })[k], min, k + ' = ' + min + ' validates')
     }
   })
 

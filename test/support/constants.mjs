@@ -116,7 +116,9 @@ export const LIMITS = {
 /**
  * Revision 11 rev11-limits (DESIGN §16 "Hard-coded limits moved to config", table "Today's constants"):
  * the sixteen fields added to the fishball row's config, with today's value as the default. Every
- * value is a whole number of at least 1 (§16 "Rules"); `old` is the constant's name in "Today in code".
+ * value is a whole number of at least 1 (§16 "Rules"), except replyCapShare, whose minimum is 2 (user's
+ * decision 2026-11-01: the automatic reply cap is never more than half the window); `old` is the
+ * constant's name in "Today in code".
  */
 export const LIMITS_R11 = {
   requestUserMessageBytes: { default: 2048, min: 1, old: 'APPROVAL.userMessageBytes' },
@@ -130,7 +132,7 @@ export const LIMITS_R11 = {
   forwardExcerptBytes: { default: 3072, min: 1, old: 'SESSION_INFO.excerptBytes' },
   pluginHistoryShown: { default: 10, min: 1, old: 'PLUGIN_MANAGER.historyEntries' },
   settingsPromptValueBytes: { default: 200, min: 1, old: 'PLUGIN_MANAGER.promptValueBytes' },
-  replyCapShare: { default: 8, min: 1, old: 'CONTEXT.outputShare' },
+  replyCapShare: { default: 8, min: 2, old: 'CONTEXT.outputShare' },
   headroomShare: { default: 8, min: 1, old: 'CONTEXT.headroomShare' },
   minWindowTokens: { default: 4096, min: 1, old: 'CONTEXT.minWindowTokens' },
   pluginManagerStartMs: { default: 30000, min: 1, old: 'FISHBALL_PACKAGES.managerStartMs' },
