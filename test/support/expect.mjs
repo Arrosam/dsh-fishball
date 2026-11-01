@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { ACTION, API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
+import { ACTION, API, CLICK, PILE_API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -113,12 +113,41 @@ export async function fishballTool(host, sessionId, tool, args, outcome = OUTCOM
   await host.call('setApprover', { outcome: answers.at(-1), queue: answers.slice(0, -1) })
   const before = (await host.call('approvals', { sessionId })).length
   try {
-    const { result, asked, requests } = await callTool(host, sessionId, tool, args, timeoutMs)
+    const first = await callTool(host, sessionId, tool, args, timeoutMs)
+    let result = first.result
+    // rev11f (DESIGN §7a.11): Fishball's own requests no longer reach the stock prompt. The call returns "waiting for your
+    // approval" at once and the request is a card in the pile. The scripted answers are applied to those cards instead:
+    // Allow once is clicked and Fishball's woken turn makes the identical call (a new call id), which may file a second
+    // card (the unchecked-tools prompt after the install prompt); Reject is clicked and the waiting result is the answer.
+    const cards = []
+    for (let i = 0; isWaitingResult(result) && i < answers.length + 2; i++) {
+      const card = await newestOwnCard(host, sessionId, cards)
+      if (!card) break
+      cards.push(card)
+      const decision = answers[Math.min(i, answers.length - 1)]
+      if (decision !== OUTCOME.allow) { await answerCard(host, card.requestId, CLICK.reject); await settledIdle(host, sessionId, 20000); break }
+      const id = 'call_fbtest_retry_' + card.requestId + '_' + i
+      await host.call('queueMarker', { marker: card.requestId, script: [[{ tool, args, id }], [{ text: 'done' }]] })
+      const click = await answerCard(host, card.requestId, CLICK.allow)
+      if (click.status !== 200) throw new Error('Allow once on the card answered ' + click.status + ' ' + click.text)
+      const got = await resultOfCall(host, sessionId, id, timeoutMs ?? 20000)
+      if (!got) throw new Error('the woken turn made no retry for ' + card.requestId)
+      await settledIdle(host, sessionId, timeoutMs ?? 20000)
+      result = { text: got.text, isError: got.isError }
+    }
     const approvals = (await host.call('approvals', { sessionId })).slice(before)
-    return { json: jsonOf(result), result, asked, approvals, requests }
+    return { json: jsonOf(result), result, asked: first.asked, approvals, requests: first.requests, cards }
   } finally {
     await host.call('setApprover', { outcome: OUTCOME.reject })
   }
+}
+
+/** A tool result that is Fishball's "waiting for your approval" answer (rev11f; code waiting-for-approval). */
+export const isWaitingResult = (result) => jsonOf(result)?.code === 'waiting-for-approval' || /waiting-for-approval|waiting for your approval|waits for the user's approval/i.test(result?.text ?? '')
+/** The newest card of this session's own requests in the pile that is not among `seen`. */
+async function newestOwnCard(host, sessionId, seen) {
+  const known = new Set(seen.map((c) => c.requestId))
+  return ((await pileNow(host)) ?? []).find((c) => c.sessionId === sessionId && !known.has(c.requestId))
 }
 
 export const setPlugin = (host, sessionId, plugin, on, outcome) => fishballTool(host, sessionId, 'set_plugin_enabled', { plugin, on }, outcome)
@@ -625,3 +654,34 @@ export async function managedSession(host, fb, folder, preset = PRESET.bare) {
 }
 /** A request block's arguments as an object (P7 gives the call's JSON as a string field). */
 export const blockArguments = (block) => { const a = block?.fields?.arguments; return typeof a === 'string' ? JSON.parse(a) : a }
+
+// ---- Revision 11 rev11c helpers (your pile, DESIGN §7a.6, §10e) ----
+
+/** The snapshot's pile (the cards, newest first). */
+export const pileNow = async (host) => (await host.state())?.pile
+/** The card of one request in the snapshot, or undefined. */
+export const cardOf = async (host, requestId) => ((await pileNow(host)) ?? []).find((c) => c.requestId === requestId)
+/** Wait until the pile holds a card for this request; returns it or false. */
+export const untilCard = (host, requestId, timeoutMs = 10000) => until(async () => (await cardOf(host, requestId)) ?? false, timeoutMs, 50)
+/** Wait until the pile holds no card for this request. */
+export const untilNoCard = (host, requestId, timeoutMs = 10000) => until(async () => !(await cardOf(host, requestId)), timeoutMs, 50)
+/** Allow once / Reject on a card through the Host route, as the client's buttons do. */
+export const answerCard = (host, requestId, decision, note) => host.post(PILE_API.answer, { requestId, decision, ...(note === undefined ? {} : { note }) })
+/** A card's arguments as an object (the design says "arguments (excerpt)": a JSON string or an object). */
+export const cardArguments = (card) => (typeof card?.arguments === 'string' ? JSON.parse(card.arguments) : card?.arguments)
+/** Every row of the tags table of one session, in key order. */
+export const tagsOf = (home, sessionId) => storedRows(home, 'tags').filter((t) => t.sessionId === sessionId)
+/**
+ * The tag records the snapshot publishes (§9 "Tag records": the Host publishes {sessionId, callId, seq, answer, kind}
+ * per answer; the design does not name the snapshot key, so the whole snapshot is searched for such objects).
+ */
+export function snapshotTags(state) {
+  const found = []
+  const walk = (x, depth = 0) => {
+    if (!x || typeof x !== 'object' || depth > 6) return
+    if (!Array.isArray(x) && typeof x.sessionId === 'string' && typeof x.callId === 'string' && typeof x.seq === 'number' && typeof x.kind === 'string' && 'answer' in x) found.push(x)
+    for (const v of Object.values(x)) walk(v, depth + 1)
+  }
+  walk(state)
+  return found
+}

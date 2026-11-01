@@ -742,6 +742,20 @@ export const OUTBOUND_ERROR = Object.freeze({
   notManaged: NOT_MANAGED,
   /** stop_session / redirect_session in flight when Session messages went off (as release_session). */
   featureOff: FEATURE_OFF,
+  noTitle: 'no-title',
+})
+
+/**
+ * Why start_session could not name the session it started (the result's titleError; the
+ * session still starts, like a refused watch).
+ */
+export const TITLE_ERROR = Object.freeze({
+  /** No sessionTitle service (dsh-base's session-title row is off). */
+  unavailable: 'title-unavailable',
+  /** DSH found no visible characters in the title. */
+  invalid: 'title-invalid',
+  /** Anything else DSH refused (logged). */
+  failed: 'title-failed',
 })
 
 /** Host API under DSH's authenticated /api channel. */
@@ -869,6 +883,8 @@ export const OPTIONAL_SERVICE = Object.freeze({
   profileContext: 'profileContext',
   /** DSH's runtime package resolution: where the profiles directory is (Fishball's package folder). */
   pluginPackages: 'pluginPackages',
+  /** DSH's session titles (dsh-base's session-title row; absent only if a profile turns that row off): start_session names the new session (DESIGN §5d). */
+  sessionTitle: 'sessionTitle',
 })
 
 /** Host events this plugin listens to. */
