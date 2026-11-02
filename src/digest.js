@@ -12,8 +12,8 @@ import { createHash } from 'node:crypto'
 const DIGEST_ALGORITHM = 'sha256'
 const DIGEST_HEX_CHARS = 16
 
-/** JSON with sorted object keys; arrays keep their order (it is meaningful in schemas). */
-function canonical(value) {
+/** JSON with sorted object keys; arrays keep their order (it is meaningful in schemas and in call arguments). */
+export function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`
   if (value !== null && typeof value === 'object') {
     return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`

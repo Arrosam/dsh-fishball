@@ -131,14 +131,6 @@ export const FISHBALL_PACKAGES = Object.freeze({
   pnpmCommand: 'pnpm',
   /** How DSH's runner runs pnpm for a service: secrets scrubbed, output captured. */
   execution: 'service',
-  /**
-   * Bounds of one package operation, mirroring dsh-plugin-manager's own config defaults
-   * (outputBytes, idleTimeoutMs, lockWaitMs, inspectTimeoutMs), which it does not export.
-   */
-  outputBytes: 16384,
-  idleTimeoutMs: 600000,
-  lockWaitMs: 120000,
-  lookupTimeoutMs: 20000,
   /** The patch file a profile-shaped folder would have; DSH's manager never writes it for installs (S31). */
   patchFile: 'cordis.patch.yml',
   /** How pnpm is told the registry a package came from, so its lockfile check passes on removal (DSH's removeBundle). */
@@ -148,8 +140,6 @@ export const FISHBALL_PACKAGES = Object.freeze({
    * fetched files in node_modules; pnpm install with the restored files removes them again.
    */
   prune: Object.freeze(['install', '--prefer-offline']),
-  /** How long the inherited manager may take to start before package operations give up on it. */
-  managerStartMs: 30000,
 })
 
 
@@ -194,6 +184,8 @@ export const TOOL_STATUS = Object.freeze({
  * Tell Fishball when finished, notify_when_finished.
  */
 export const FEATURE_OFF = 'feature-off'
+/** A session no longer managed by Fishball (revision 11): message_fishball in flight, release_session. */
+export const NOT_MANAGED = 'not-managed'
 
 /** Stable plugin diagnostics (catalog `lastError`, tool results); never message text. */
 export const PLUGIN_ERROR = Object.freeze({
@@ -246,10 +238,6 @@ export const PLUGIN_SETTINGS_STATE = Object.freeze({ none: 'none', default: 'def
 
 /** The plugin manager's bounds and fixed strings (DESIGN §10d). */
 export const PLUGIN_MANAGER = Object.freeze({
-  /** History entries the plugin page shows. */
-  historyEntries: 10,
-  /** Each old and new value in set_plugin_settings' prompt is cut to this many bytes. */
-  promptValueBytes: 200,
   /** Query parameter naming the plugin on the GET routes. */
   pluginParam: 'plugin',
   /** Schemastery's error path prefix (`$.a.b expected …`) and how its segments are written. */
@@ -282,24 +270,11 @@ export const PLUGIN_DEFAULTS = Object.freeze({ recordKey: 'dsh' })
  * Context window (DESIGN §6). DSH_DEFAULTS mirror dsh-compaction-basic's own defaults
  * (lib/index.js DEFAULT_THRESHOLD_RATIO, DEFAULT_RETAIN_RATIO, headroomTokens ?? 65536),
  * which it does not export; they price the threshold shown when no smaller window is set.
+ * How a smaller window is priced (replyCapShare, headroomShare, minWindowTokens and
+ * defaultReplyCapTokens) is config: src/config.js LIMITS.
  */
 export const CONTEXT = Object.freeze({
   dshDefaults: Object.freeze({ thresholdRatio: 0.8, retainRatio: 0.16, headroomTokens: 65536 }),
-  /**
-   * Headroom (and the summary's own token cap, which DSH ties to it) for a smaller window:
-   * one eighth of it, at most DSH's 65,536, which alone would not fit a small window. At
-   * 20,000 that is 2,500, as in spike S5, so a summary of that length fits.
-   */
-  headroomShare: 8,
-  /** Default reply-length cap with a smaller window: one eighth of it, at most 32,000 (Q-defaults). */
-  outputShare: 8,
-  outputMax: 32000,
-  /**
-   * Smallest window accepted, whatever the prompt: below it the reply and summary caps would
-   * be a few hundred tokens. It bounds a save made before any request has measured the
-   * prompt and tools (review M2); with them measured the fit check is usually stricter.
-   */
-  minWindowTokens: 4096,
   /** Smallest reply or summary cap: DSH requires a positive summary cap, a 0 reply is none. */
   minCapTokens: 1,
   /** Bound on asking the model adapter for its window, so a slow discovery never stalls boot. */
@@ -368,7 +343,38 @@ export const INTAKE_ERROR = Object.freeze({
   unknownSession: 'unknown-session',
   deliveryFailed: 'delivery-failed',
   featureOff: FEATURE_OFF,
+  /** message_fishball from a session no longer managed (taken back while the call was in flight; DESIGN §5b). */
+  notManaged: NOT_MANAGED,
 })
+
+/** Managed sessions (revision 11, DESIGN §5e, §9 managed registry). */
+export const MANAGED = Object.freeze({
+  /** Source identity prefix of the notes to Fishball about a change (DESIGN §5e "Notes to Fishball"). */
+  sourcePrefix: 'fishball/managed/',
+})
+/** How a session became managed (§9 `by`); 'prompt-answer': Fishball answered a prompt in it (answer_prompt, rev11e). */
+export const MANAGED_BY = Object.freeze({ start: 'start', message: 'message', promptAnswer: 'prompt-answer', handOver: 'hand-over', send: 'send' })
+/** What changed, and who did it, in a note to Fishball. */
+export const MANAGED_CHANGE = Object.freeze({ handOver: 'hand-over', takeBack: 'take-back', release: 'release' })
+/** Stable codes Hand over / Take back and release_session answer with (DESIGN §10e Host API). */
+export const MANAGED_ERROR = Object.freeze({
+  unknownSession: 'unknown-session',
+  isFishball: 'is-fishball',
+  notManaged: NOT_MANAGED,
+  featureOff: FEATURE_OFF,
+})
+/**
+ * Fishball's decisions audit (§9 `decisions`): rev11a records release; rev11b adds your own
+ * Allow once / Reject clicks on a stock prompt for a request that went through Fishball; rev11d
+ * adds Fishball's grants and the revokes, yours and Fishball's; rev11e adds Fishball's answer_prompt;
+ * rev11f adds Fishball's withdraw_request on its own card (your clicks on its cards use allow-once / reject).
+ * rev11g adds answer-question: Fishball's answer to a question or plan review, or yours on its card.
+ * rev11h adds Fishball's stop_session and redirect_session.
+ */
+export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke', answerPrompt: 'answer-prompt', withdraw: 'withdraw', answerQuestion: 'answer-question', stop: 'stop', redirect: 'redirect' })
+export const DECISION_OK = 'ok'
+/** A stop_session that found no turn running (rev11h): a no-op, told apart from a real stop in the audit. */
+export const DECISION_IDLE = 'idle'
 
 /** Watches (DESIGN §5c, §9 watches). */
 export const WATCH_CONDITION = Object.freeze({ finished: 'finished', perTurn: 'per-turn' })
@@ -388,11 +394,6 @@ export const WATCH_ERROR = Object.freeze({
   featureOff: FEATURE_OFF,
 })
 export const WATCH = Object.freeze({
-  /** Watches shown on the settings page and by list_watches. */
-  shown: 50,
-  /** read_session: recent messages and their byte bound. */
-  readMessages: 12,
-  readBytes: 12288,
   turnEndEvent: 'turn/end',
   sourcePrefix: 'fishball/watch/',
 })
@@ -427,26 +428,178 @@ export const SOURCE_STATUS = Object.freeze({ accepted: 'accepted', duplicate: 'd
 export const APPROVAL = Object.freeze({
   /** Request id prefix Fishball sees (apr_<id>). */
   idPrefix: 'apr_',
-  /** Bytes of the asking session's latest user message shown with a request. */
-  userMessageBytes: 2048,
-  /** Characters of a rationale kept in the audit (DESIGN §9). */
-  rationaleChars: 500,
   /** setTimeout's limit (2^31-1 ms): a longer answer time is clamped to it. */
   maxTimerMs: 2147483647,
-  /** Audit entries shown on the settings page. */
-  shown: 20,
   waterfall: 'approval/request',
   assistantEvent: 'assistant/message',
   ptcDispatchEvent: 'tool/ptc-dispatch-start',
   toolCallBlock: 'tool-call',
+  /** The log event of one model tool call; its seq places a tag in its turn (S37). */
+  toolCallEvent: 'tool/call',
   turnStartEvent: 'turn/start',
+  /** A turn ended: the session's passes, to-you tickets, wording marks and open threads end (§7a.3, §9). */
+  turnEndEvent: 'turn/end',
   userEvent: 'user/message',
   userSources: Object.freeze(['user', 'user-rpc']),
 })
-/** Fishball's answer (answer_approval) and what else ended a request. */
-export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', escalate: 'escalate' })
-export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn' })
+/** Fishball's answer (answer_approval, DESIGN §7a.3). */
+export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate' })
+/**
+ * How a request ended, as audited (§9). released: the session left management while the
+ * request waited (§5e). to-user: a call that went to your prompt through a to-you ticket.
+ * pass: a call a one-time pass covered (no Fishball step). ask: the thread ended on Fishball's
+ * question (the turn ended before the session replied). grant: Fishball answered with a standing
+ * grant (the call itself runs as on allow). grant-used: a call a standing grant covered (no Fishball step).
+ * answer (rev11g): Fishball answered a question or plan review (a question's row, kind question).
+ */
+export const APPROVAL_ANSWER = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', withdrawn: 'withdrawn', released: 'released', toUser: 'to-user', pass: 'pass', grantUsed: 'grant-used', answer: 'answer' })
+/**
+ * Whether the session asked first (ask_fishball), made the call directly, or Fishball answered its
+ * showing prompt (answer_prompt, rev11e) (§9 audit `kind`); or the request is Fishball's own
+ * (rev11f, §7a.11): its card in your pile has this kind too. question (rev11g): a managed session's
+ * question or plan review (§7a.10), audited with the question's own ends (QUESTION_END).
+ */
+export const REQUEST_KIND = Object.freeze({ asked: 'asked', direct: 'direct', prompt: 'prompt', own: 'own', question: 'question' })
+/** What a pass-table entry lets through (§7a.3 passes, §7a.6 to-you tickets). */
+export const PASS_KIND = Object.freeze({ pass: 'pass', toYou: 'to-you' })
+/** Who wrote one entry of a request's thread (§9 request threads). */
+export const THREAD_FROM = Object.freeze({ agent: 'agent', fishball: 'fishball' })
+/**
+ * ask_fishball's answers (DESIGN §7a.2). When Fishball escalates, does not answer in time or
+ * cannot be told, the request becomes your card and the agent keeps waiting for your answer
+ * (rev11c, §7a.6), so there is no answer code for it.
+ */
+export const ASK_RESULT = Object.freeze({
+  allowed: 'allowed',
+  rejected: 'rejected',
+  question: 'question',
+  unavailable: 'unavailable',
+  overCapacity: 'over-capacity',
+  noLongerManaged: 'no-longer-managed',
+})
+/** ask_fishball refusals: nothing reached Fishball. */
+export const ASK_ERROR = Object.freeze({
+  notUserMessage: 'not-user-message',
+  tooLarge: 'too-large',
+  expired: 'expired',
+  invalid: 'invalid-request',
+  empty: 'empty',
+  cancelled: 'cancelled',
+})
 export const APPROVAL_RISK = Object.freeze({ low: 'low', high: 'high' })
+/** Your answer on a card in the pile or on the running ask_fishball row (§7a.6, §10e). */
+export const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
+/**
+ * How a card left the pile: your answer, Fishball going off, the session leaving management, its
+ * call cancelled, or (a direct call's card, rev11e) the prompt in its session answered first.
+ */
+export const CARD_END = Object.freeze({ user: 'user', off: 'off', released: 'released', cancelled: 'cancelled', inSession: 'in-session' })
+/**
+ * Prompts already showing (DESIGN §7a.9, rev11e): the broker's pass-through registry, listed by
+ * list_frozen_sessions and answered by answer_prompt (allow or reject only, §7a.9).
+ */
+export const PROMPT = Object.freeze({
+  /** Prompt id prefix Fishball sees (prm_<id>). */
+  idPrefix: 'prm_',
+  decisions: Object.freeze([APPROVAL_DECISION.allow, APPROVAL_DECISION.reject]),
+})
+/**
+ * Fishball's own request past maxPendingApprovals returns at once with this code, so it never
+ * freezes (your answer Q-r11-cap-own, §7a.6).
+ */
+export const TOO_MANY_WAITING = 'too-many-waiting'
+/**
+ * Fishball's own requests (DESIGN §7a.11, §9 `own_requests`, rev11f): each one is a card labelled
+ * Fishball in your pile, and the call returns waiting-for-approval at once.
+ */
+export const OWN_REQUEST = Object.freeze({
+  /** Request id prefix (own_<id>). */
+  idPrefix: 'own_',
+  /** The code of the result the call returns at once (§7a.11). */
+  waitingCode: 'waiting-for-approval',
+  /** Intake source of the "approved, run it again" notice (never wake-capped, Reading). */
+  sourceIdentity: 'fishball/own-request',
+})
+/**
+ * One own request's state (§9): waiting is the card; approved is the retry pass; used, expired
+ * (the turn the notice woke ended), rejected and withdrawn are settled.
+ */
+export const OWN_STATUS = Object.freeze({ waiting: 'waiting', approved: 'approved', rejected: 'rejected', withdrawn: 'withdrawn', used: 'used', expired: 'expired' })
+/**
+ * Managed sessions' questions and plan reviews (DESIGN §7a.10, rev11g, spike S36). DSH's own names
+ * (dsh-user-questions, dsh-tool-ask-user, dsh-plan-mode) are kept here as data.
+ */
+export const QUESTION = Object.freeze({
+  /** Question id prefix Fishball sees (qst_<id>). */
+  idPrefix: 'qst_',
+  /** DSH's answerer waterfall; the router is prepended on it, as the broker is on approval/request. */
+  waterfall: 'user-questions/request',
+  /** The question tool and the plan-review tool (the audit's and the card's tool names). */
+  askTool: 'ask_user_question',
+  planTool: 'exit_plan_mode',
+  /** The plan-review intent's kind (S36). */
+  planIntent: 'plan-review',
+  /** DSH's projection of timed questions; a `continued` one survives a restart (S36 Q4). */
+  projection: 'userQuestions',
+  continuedState: 'continued',
+  /** The source kind of a late reply to a continued question (the user's in the session, or Fishball's). */
+  replySource: 'user-question-reply',
+  /** The timed tool's parameter: a request header listing it means the calls that follow are timed. */
+  timedParameter: 'timeout',
+  /** DSH's error codes (dsh-user-questions). */
+  timedOut: 'ASK_TIMED_OUT',
+  aborted: 'ASK_ABORTED',
+  replyQueued: 'REPLY_QUEUED',
+  errorName: 'UserQuestionError',
+  /** Resume repair's result for a call a restart interrupted (dsh-session): a timed question stays continued. */
+  outcomeUnknown: 'TOOL_OUTCOME_UNKNOWN',
+  /** Intake source of the question notice (never wake-capped: kind approval, Reading). */
+  sourceIdentity: 'fishball/question',
+  requestHeaderEvent: 'request/header',
+  toolResultEvent: 'tool/result',
+})
+/** Who answers a managed session's question (§7a.10 "The mode"); absent means auto. */
+export const QUESTION_MODE = Object.freeze({ auto: 'auto', fishball: 'fishball', user: 'user' })
+/** The stored mode's record key in `settings` (§9). */
+export const QUESTION_MODE_KEY = 'questions'
+/** A question card's kind (and the open-question entry's, §9 "Open questions"). */
+export const QUESTION_KIND = Object.freeze({ question: 'question', planReview: 'plan-review' })
+/** answer_question's and the pile route's refusals (the question stays open). */
+export const QUESTION_ERROR = Object.freeze({
+  /** Unknown, already answered or closed, or already your card in the pile. */
+  expired: 'expired',
+  /** User mode: only a note is accepted (§7a.10). */
+  modeUser: 'mode-user',
+  /** The batch does not fit the question (validated before it reaches DSH). */
+  badAnswer: 'bad-answer',
+  /** A continued question someone answered first (userQuestions.answer said no, or REPLY_QUEUED). */
+  alreadySettled: 'already-settled',
+  /** The asking session could not be resumed to take a continued answer. */
+  notLive: 'session-not-live',
+})
+/** How a question ended, as its approvals audit row records (finalOutcome, kind question). */
+export const QUESTION_END = Object.freeze({
+  fishball: 'answered-by-fishball',
+  pile: 'answered-in-pile',
+  session: 'answered-in-session',
+  /** Stopped, Discuss, or its turn ended. */
+  closed: 'closed',
+  /** Fishball or Permission requests went off, or the session left management: back to its own card. */
+  back: 'back-to-session',
+})
+/**
+ * Tag records (DESIGN §9 `tags`, S37): one per answer Fishball gave, shown in the asking turn's
+ * tail. approval: an answer_approval allow, grant, reject or question; sent-to-you: an escalate;
+ * grant: a call a standing grant covered, one per call (rev11d, §7a.8); prompt: an answer_prompt
+ * answer, allow or reject (rev11e, §7a.9); question and plan-review: Fishball's answer to a
+ * managed session's question or plan review (rev11g, §7a.10).
+ */
+export const TAG_KIND = Object.freeze({ approval: 'approval', sentToYou: 'sent-to-you', grant: 'grant', prompt: 'prompt', question: 'question', planReview: 'plan-review' })
+/**
+ * A question's or plan review's tag answer (rev11g, §7a.10 "Tags"): the answer itself stays in the
+ * session log (§9 "never stored"); the snapshot reads its words from there.
+ */
+export const QUESTION_TAG_ANSWER = Object.freeze({ answer: 'answer', approve: 'approve', keepPlanning: 'keep-planning' })
 /** How complete the arguments Fishball sees are (a cut or missing call counts as high-risk). */
 export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
 /** DSH approval outcomes (dsh-user-approval). */
@@ -454,8 +607,51 @@ export const APPROVAL_OUTCOME = Object.freeze({ allowedOnce: 'allowed-once', rej
 export const APPROVAL_ERROR = Object.freeze({
   expired: 'expired',
   allowNeedsLowRisk: 'allow-needs-low-risk',
+  /** Every decision but escalate names its risk (§7a.3). */
+  riskRequired: 'risk-required',
   reasonRequired: 'reason-required',
   argumentsIncomplete: 'arguments-incomplete',
+  questionRequired: 'question-required',
+  /** answer_prompt takes allow or reject only (§7a.9). */
+  invalidDecision: 'invalid-decision',
+})
+
+/**
+ * Standing grants (DESIGN §7a.8, §9 `grants`, rev11d). No limit on a grant's lifetime or on how
+ * many are active (Q-r11-grant-bounds): every grant only needs an end time in the future.
+ */
+export const GRANT = Object.freeze({
+  /** Grant id prefix Fishball sees (grt_<id>). */
+  idPrefix: 'grt_',
+  /**
+   * Shell tools a command-prefix grant may name, each with the argument that holds its command
+   * text, read from the tools' schemas (Q-r11-prefix-tools; §7a.8 Reading). terminal_open's
+   * schema has no command text (only type, name, cwd), so it gets exact-call grants only, as
+   * run_code and every other tool do: matching its type would cover opening every terminal of
+   * that type (the manager's decision, 2026-11-02).
+   */
+  commandArgument: Object.freeze({ bash: 'command', pwsh: 'command', terminal_send: 'text' }),
+  /** "npm test*" and "npm test" name the same prefix: one trailing wildcard is notation, not text. */
+  wildcard: '*',
+})
+export const GRANT_KIND = Object.freeze({ exact: 'exact', prefix: 'prefix' })
+/** A grant's state (§9): active until its end time, a revoke, or its session leaving management. */
+export const GRANT_STATUS = Object.freeze({ active: 'active', expired: 'expired', revoked: 'revoked', ended: 'ended' })
+/** What ended a grant (§9 `endedBy`); a grant whose session DSH no longer finds ends with none. */
+export const GRANT_END = Object.freeze({ user: 'user', fishball: 'fishball', expiry: 'expiry', takeBack: 'take-back', release: 'release' })
+/** answer_approval's grant refusals and revoke_grant's (a refused grant leaves the request pending). */
+export const GRANT_ERROR = Object.freeze({
+  invalid: 'grant-invalid',
+  prefixNotShell: 'prefix-not-shell-tool',
+  prefixEmpty: 'prefix-empty',
+  prefixNotInCall: 'prefix-not-in-call',
+  expiresRequired: 'expires-at-required',
+  expiresInvalid: 'expires-at-invalid',
+  expiresPast: 'expires-at-past',
+  /** revoke_grant without a reason. */
+  reasonRequired: 'reason-required',
+  unknown: 'unknown',
+  ended: 'ended',
 })
 
 /** Unread replies from Fishball (src/unread.js): the one stored record's key. */
@@ -477,8 +673,6 @@ export const INTAKE = Object.freeze({
   keySeparator: '\n',
   /** Delivery attempts before a row is marked failed (each restart or reconcile retries). */
   maxAttempts: 3,
-  /** Rows shown on the settings page. */
-  snapshotRows: 20,
 })
 
 /** Outcome of handing one item to the ledger. */
@@ -512,28 +706,32 @@ export const AUTHOR = Object.freeze({
 })
 
 /**
- * Reading another session for a notice (src/session-info.js). The excerpt bound keeps a
- * notice small however long the other session's last answer was.
+ * Reading another session for a notice (src/session-info.js). The excerpt's bound, which keeps a
+ * notice small however long the other session's last answer was, is the forwardExcerptBytes limit.
  */
 export const SESSION_INFO = Object.freeze({
-  /** Bytes of a session's last answer in a forward (Fishball's own bound, not the sender's). */
-  excerptBytes: 3072,
   ellipsis: '…',
   assistantEvent: 'assistant/message',
   userEvent: 'user/message',
-  roles: Object.freeze({ user: 'user', assistant: 'assistant' }),
+  /** DSH's title event (dsh-session-title folds the latest one). */
+  titleEvent: 'session/title',
+  /**
+   * Who wrote a message read_session returns (DESIGN §5c): the user typing, that session's
+   * agent, Fishball, another session, or context DSH or a plugin added.
+   */
+  roles: Object.freeze({ user: 'user', assistant: 'assistant', fishball: 'fishball', agent: 'agent', context: 'context' }),
   textBlock: 'text',
   /** Session header marking a subagent's session, and how far up its parents are followed. */
   subagentOrigin: 'subagent',
   maxSubagentDepth: 8,
 })
 
-/** What Fishball sent or started (DESIGN §9 outbox). */
-export const OUTBOX_KIND = Object.freeze({ message: 'message', start: 'start' })
+/** What Fishball sent or started (DESIGN §9 outbox); rev11h adds redirect_session's message (the manager's decision, 2026-11-02). */
+export const OUTBOX_KIND = Object.freeze({ message: 'message', start: 'start', redirect: 'redirect' })
 /** unconfirmed: the session has the message, but its flush to disk could not be confirmed. */
 export const OUTBOX_STATUS = Object.freeze({ delivered: 'delivered', unconfirmed: 'unconfirmed', failed: 'failed' })
 
-/** Stable codes message_session and start_session answer with. */
+/** Stable codes message_session, start_session, stop_session and redirect_session answer with. */
 export const OUTBOUND_ERROR = Object.freeze({
   hourlyCap: 'hourly-cap',
   tooLarge: 'too-large',
@@ -544,7 +742,43 @@ export const OUTBOUND_ERROR = Object.freeze({
   noFolder: 'no-folder',
   notAbsolute: 'not-absolute',
   deliveryFailed: 'delivery-failed',
+  /** stop_session / redirect_session on a session that is yours (rev11h, §7a.12). */
+  notManaged: NOT_MANAGED,
+  /** stop_session / redirect_session in flight when Session messages went off (as release_session). */
+  featureOff: FEATURE_OFF,
+  noTitle: 'no-title',
 })
+
+/**
+ * Why start_session could not name the session it started (the result's titleError; the
+ * session still starts, like a refused watch).
+ */
+export const TITLE_ERROR = Object.freeze({
+  /** No sessionTitle service (dsh-base's session-title row is off). */
+  unavailable: 'title-unavailable',
+  /** DSH found no visible characters in the title. */
+  invalid: 'title-invalid',
+  /** Anything else DSH refused (logged). */
+  failed: 'title-failed',
+})
+
+/**
+ * start_session's `workspaceError` (DESIGN §5d): DSH created the session but could not add it
+ * to the workspace. The session still starts and shows under Ungrouped, like one started in a
+ * folder that is not a workspace.
+ */
+export const WORKSPACE_ERROR = Object.freeze({
+  attachFailed: 'workspace-attach-failed',
+  /** DSH's RemoteError code for this case; its details carry the new session's id. */
+  dshCode: 'session/workspace-attach-failed',
+})
+
+/**
+ * start_session's `managedError` (revision 11, DESIGN §5d): making the new session managed
+ * failed (Fishball's store could not be written). The session still starts, as the user's:
+ * its permission requests go to the user's own prompt and it has no message_fishball.
+ */
+export const START_MANAGED_ERROR = Object.freeze({ failed: 'manage-failed' })
 
 /** Host API under DSH's authenticated /api channel. */
 export const API = Object.freeze({
@@ -585,6 +819,15 @@ export const API = Object.freeze({
   install: '/api/fishball/install',
   /** POST { requestId }: cancel that install. */
   installCancel: '/api/fishball/install/cancel',
+  /** POST { questionId, answers } | { questionId, approve } | { questionId, feedback }: your answer on a question card (rev11g). */
+  questionsAnswer: '/api/fishball/questions/answer',
+  /** POST { mode }: who answers managed sessions' questions (auto, fishball, user; rev11g). */
+  questionMode: '/api/fishball/question-mode',
+  /** POST { sessionId, managed }: Hand over to Fishball (true) / Take back from Fishball (false), DESIGN §10e. */
+  managed: '/api/fishball/managed',
+  /** POST { requestId, decision: 'allow' | 'reject', note? }: your answer on a card (DESIGN §10e). */
+  requestsAnswer: '/api/fishball/requests/answer',
+  grantsRevoke: '/api/fishball/grants/revoke',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -604,6 +847,12 @@ export const API_CODE = Object.freeze({
   noSettings: 'no-settings',
   /** Settings: the new config fails the row's schema (400, with `path`). */
   invalid: 'invalid',
+  /** A card that already left the pile (answered, its turn ended, or Fishball went off). */
+  expired: 'expired',
+  /** Your note on Reject is over maxMessageBytes. */
+  tooLarge: 'too-large',
+  /** Your Revoke on a grant that already ended (expired, revoked, or its session left management). */
+  ended: 'ended',
   failed: 'failed',
 })
 export const RESPONSE_HEADERS = Object.freeze({
@@ -650,10 +899,14 @@ export const SERVICE = Object.freeze({
 export const OPTIONAL_SERVICE = Object.freeze({
   /** Measures a request's size for the context window's hard ceiling (DESIGN §6). */
   tokenMeter: 'tokenMeter',
+  /** DSH's question service: continued answers and the held timed wait (rev11g, §7a.10). */
+  userQuestions: 'userQuestions',
   /** The profile launcher's facts (absent in non-profile hosts): bundle rows and Fishball's package folder. */
   profileContext: 'profileContext',
   /** DSH's runtime package resolution: where the profiles directory is (Fishball's package folder). */
   pluginPackages: 'pluginPackages',
+  /** DSH's session titles (dsh-base's session-title row; absent only if a profile turns that row off): start_session names the new session (DESIGN §5d). */
+  sessionTitle: 'sessionTitle',
 })
 
 /** Host events this plugin listens to. */
@@ -663,6 +916,8 @@ export const EVENT = Object.freeze({
   sessionStop: 'workspace/session-stop',
   volatileUpdate: 'loader/volatile-update',
   agentDisposed: 'agent/disposed',
+  /** Any agent was created (resume, clear and compaction re-create one; spike S34). */
+  agentCreated: 'agent/created',
   /** Cordis: a service was provided or removed (a row waiting for one may now run). */
   service: 'internal/service',
   /** dsh-plugin-manager: a bundle was installed, removed, enabled or disabled. */
@@ -676,6 +931,8 @@ export const EVENT = Object.freeze({
   /** dsh-llm: every model call (the hard ceiling answers Fishball's own requests). */
   llmStream: 'llm/stream',
   agentStatus: 'agent/status',
+  /** dsh-tools: every tool result before it is committed (Fishball's wording, spike S35). */
+  postExecute: 'tools/post-execute',
   /** Every event appended to any session (watches), and the turn start it watches for. */
   sessionEvent: 'session/event',
   turnStart: 'turn/start',
@@ -683,6 +940,9 @@ export const EVENT = Object.freeze({
   inboxClaimed: 'agent/inbox/claimed',
   inboxDiscarded: 'agent/inbox/discarded',
 })
+
+/** dsh-tools post-execute decisions: keep the result (maybe replaced) or turn it into an error. */
+export const POST_DECISION = Object.freeze({ accept: 'accept', block: 'block' })
 
 /** Agent status after a turn ends (dsh-agent). */
 export const AGENT_IDLE = 'idle'

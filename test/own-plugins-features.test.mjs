@@ -5,11 +5,11 @@
  *
  * | id     | technique | expected |
  * |--------|-----------|----------|
- * | OFM-01 | EP (precondition, on) | message_fishball is in the global tool list and an ordinary request; Send to Fishball answers 200 |
- * | OFM-02 | ST on -user off-> off | features.messages false; message_fishball leaves the global tool list and the ordinary request; message_session and start_session plugin-off and absent from Fishball's request |
+ * | OFM-01 | EP (precondition, on) | message_fishball is in a managed session's request (rev11a: per managed agent, no longer global); Send to Fishball answers 200 |
+ * | OFM-02 | ST on -user off-> off | features.messages false; message_fishball leaves the managed session's request; message_session and start_session plugin-off and absent from Fishball's request |
  * | OFM-03 | EP (route while off) | POST send: 409 feature-off; Fishball receives nothing |
  * | OFM-04 | EP (guard while off) | Fishball's direct message_session call is a tool error; nothing reaches the target |
- * | OFM-05 | ST off -user on-> on | message_fishball back (global and ordinary request); a call answers ok; Send 200; features.messages true |
+ * | OFM-05 | ST off -user on-> on | message_fishball back in the managed session's request; a call answers ok; Send 200; features.messages true |
  * | OFW-01 | ST on -user off-> off | features.watching false; the 4 watch tools plugin-off and absent from Fishball's request; a direct watch_session call is a tool error |
  * | OFW-02 | EP (route while off) | POST watches: 409 feature-off; no watch added |
  * | OFW-03 ×3 | DT (message tool × notify_when_finished × watching off) | message_session, start_session, message_fishball: ok:true, watchError feature-off, no watch key, the message is still delivered |
@@ -27,12 +27,11 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, FEATURE_OFF, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, INBOUND_TOOL, NOTICE, OWN_PLUGINS, PRESET, STATUS, TOOL_STATUS, WATCH_API, WATCH_STATUS } from './support/constants.mjs'
+import { API, FEATURE_OFF, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, INBOUND_TOOL, NOTICE, OWN_PLUGINS, PRESET, STATUS, TITLE, TOOL_STATUS, WATCH_API, WATCH_STATUS } from './support/constants.mjs'
 import { GENERIC_PARAMETERS } from './support/fixture-tools.mjs'
 import {
   HOOK, T, callTool, catalogSettled, fishballCall, fishballClientBundle, fishballMessages, jsonOf, callScript, messageFishball, nextTools, noticesSettled,
-  resultOfCall, settle, settledIdle, toolIn, toolNames, turn, untilSeen, watchById, watchNotices, watchesNow, watchesOn,
-} from './support/expect.mjs'
+  resultOfCall, settle, settledIdle, toolIn, toolNames, turn, untilSeen, watchById, watchNotices, watchesNow, watchesOn, makeManaged } from './support/expect.mjs'
 import { bootLive, newHome, sleep, until } from './support/host.mjs'
 
 let seq = 0
@@ -50,7 +49,9 @@ describe('Revision 10c: Session messages and Session watching off', () => {
     return catalogSettled(host)
   }
   const features = async () => (await host.state()).features
-  const globalHas = async () => (await host.call('globalToolNames')).includes(INBOUND_TOOL)
+  // rev11a: message_fishball is registered per managed agent, not globally (DESIGN §5e); `bare` below is handed over.
+  let managedSid
+  const globalHas = async () => toolNames((await turn(host, managedSid, [[{ text: 'hi' }]])).requests.at(-1)).includes(INBOUND_TOOL)
   const ordinaryTools = async (sid) => toolNames((await turn(host, sid, [[{ text: 'hi' }]])).requests.at(-1))
   const delivered = (sid, needle) => until(async () => (await host.call('requestsContaining', { needle })).some((r) => r.sessionId === sid), 10000, 100)
 
@@ -69,6 +70,8 @@ describe('Revision 10c: Session messages and Session watching off', () => {
     let target
     before(async () => {
       bare = await ordinary('ofm-bare')
+      await makeManaged(host, fb, bare)
+      managedSid = bare
       target = await ordinary('ofm-target')
       await turn(host, target, [[{ text: 'target answer' }]])
     }, HOOK)
@@ -132,7 +135,8 @@ describe('Revision 10c: Session messages and Session watching off', () => {
       assert.ok(await until(() => host.call('isHeld', { sessionId: bare }), 5000, 50), 'precondition: the request (with message_fishball) is held')
       try {
         await toggle(spec.key, false)
-        assert.ok(await until(async () => !(await globalHas()), 5000, 100), 'precondition: unregistered while the call waits')
+        // bare is held, so its tools cannot be sampled here; the plugin's applied state stands for the unregister.
+        assert.ok(await until(async () => (await features()).messages === false, 5000, 100), 'precondition: off while the call waits')
       } finally {
         await host.call('releaseHold', { sessionId: bare })
       }
@@ -207,7 +211,7 @@ describe('Revision 10c: Session messages and Session watching off', () => {
         const folder = path.join(home, 'work', 'ofw-03b')
         fs.mkdirSync(folder, { recursive: true })
         const text = tok('ofw03b')
-        const { json } = await fishballCall(host, fb, 'start_session', { folder, message: text, notify_when_finished: true })
+        const { json } = await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: text, notify_when_finished: true })
         assert.equal(json?.ok, true, JSON.stringify(json))
         assert.equal(json.watchError, FEATURE_OFF)
         assert.equal('watch' in json, false)
@@ -217,6 +221,7 @@ describe('Revision 10c: Session messages and Session watching off', () => {
       })
       it('message_fishball', T, async () => {
         const sid = await ordinary('ofw-03c')
+        await makeManaged(host, fb, sid) // rev11a: only a managed session has message_fishball
         const text = tok('ofw03c')
         const r = await turn(host, sid, callScript(INBOUND_TOOL, { message: text, notify_when_finished: true }))
         const json = jsonOf(r.results[0])

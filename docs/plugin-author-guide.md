@@ -15,7 +15,11 @@ Fishball's private tree cannot publish host services: a plugin that provides a s
 ```ts
 interface FishballService {
   /** Effect-scoped: removed when your plugin unloads. Throws FISHBALL_SOURCE_DUPLICATE, FISHBALL_LIMIT, FISHBALL_INVALID, FISHBALL_UNKNOWN_PLUGIN. */
-  registerSource(def: { id: string; title: string; description?: string }): FishballSource
+  registerSource(def: {
+    id: string             // see Source id below
+    title: string          // ≤ 200 bytes (UTF-8)
+    description?: string   // ≤ 1,024 bytes (UTF-8)
+  }): FishballSource
 }
 interface FishballSource {
   /** false while Fishball is not running, or has your plugin turned off. */
@@ -33,6 +37,7 @@ interface FishballSource {
 
 - **Inject it.** Register inside `ctx.inject(['fishball'], (ctx) => …)` without a static `inject` entry for `fishball`, so your plugin also loads without Fishball and starts when the service appears (and stops when it goes). If your plugin is useless without Fishball, `export const inject = ['fishball']` is fine.
 - **Call it as `ctx.fishball.registerSource(…)`.** Fishball works out who is calling from that context; a detached call (`const { registerSource } = ctx.fishball`) or a call after your plugin unloaded is refused with `FISHBALL_UNKNOWN_PLUGIN`.
+- **Fixed sizes.** Three sizes are a fixed part of this contract, not settings the user can change, so you can rely on them: a dedupe key is at most **256 bytes**, a source description at most **1,024 bytes**, and a source title at most **200 bytes** (UTF-8; a longer title or description throws `FISHBALL_INVALID`, a longer dedupe key rejects with it). The other bounds named here (`maxSourcesPerPlugin`, `maxMessageBytes`, `auditEntriesKept`) are the user's limits on Fishball's settings page; the defaults shown are what applies until the user changes them.
 - **Source id.** Letters, digits, `.`, `_` and `-`, up to 64 characters, distinct within your plugin row. One bundle may register up to `maxSourcesPerPlugin` sources in total (8 by default), across all its rows.
 - **Identity.** Fishball names your source `<bundle>/<row>/<source id>` (the row is your plugin row's id, as a slug), worked out from the plugin that called, never from the event. It stays the same whether your plugin runs for everyone or for Fishball only; two rows of one bundle are separate sources. Plugins run in-process with host authority, so this identifies a well-behaved plugin; it is not a security boundary between plugins.
 - **When to publish.** Your plugin may load before Fishball is running. Publish when `source.enabled` is true, and again from `source.onEnabled(…)` (it runs each time the source becomes enabled; an error in it is logged, never fatal).
