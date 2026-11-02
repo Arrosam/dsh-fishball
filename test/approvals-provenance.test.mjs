@@ -2,7 +2,7 @@
  * Permission-request provenance (DESIGN 7a): "Session started by" and "its current turn started by", for every kind of
  * source that can start a session or a turn. Regression for the read_session fix: the approvals provenance now shares
  * one classification rule with read_session's labels (Q-read-roles) and its behaviour must not change, so these cases
- * were also run against the version before the fix (see CASES.md A150) and give the same answers there.
+ * were also run against the version before the fix (see CASES.md A151) and give the same answers there.
  *
  * Values (DESIGN 7a): started by 'the user' | 'Fishball (start_session)' | 'another agent or a notice' | 'unknown';
  * turn started by 'the user' | 'Fishball (message_session)' | 'another agent or a notice' | 'unknown'.
@@ -21,7 +21,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { APPROVER_AFTER_ENV, ASK_TOOL, OUTCOME, PRESET, STARTED_BY, STARTED_BY_OTHER, TURN_BY } from './support/constants.mjs'
-import { HOOK, T, askSettled, settledIdle, startAsk, turn, waitRequest } from './support/expect.mjs'
+import { HOOK, T, askSettled, makeManaged, settledIdle, startAsk, turn, waitRequest } from './support/expect.mjs'
 import { bootHost, newHome } from './support/host.mjs'
 import { tok } from './support/start-session.mjs'
 
@@ -68,7 +68,13 @@ describe('Permission-request provenance by source kind', () => {
     await settledIdle(host, sid)
     return { started, turnBy, req, turnText }
   }
-  const blank = async (folder) => (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
+  // Revision 11 (rev11a): only a managed session's permission requests reach Fishball (DESIGN 7a.1), so each session is
+  // handed over to Fishball first. Who started it is decided by its first message, not by how it became managed.
+  const blank = async (folder) => {
+    const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
+    await makeManaged(host, fb, sid)
+    return sid
+  }
   const startedByUser = async (folder) => { const sid = await blank(folder); await turn(host, sid, [[{ text: 'hello' }]], 'first words'); return sid }
 
   describe('PRV-01 a turn started by this source, in a session the user started', () => {

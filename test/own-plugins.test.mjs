@@ -9,11 +9,11 @@
  * | id     | technique | expected |
  * |--------|-----------|----------|
  * | OWN-01 ×5 | EP (one per Fishball-group entry) | kind builtin, dsh fishball, status builtin, on, applied, [disable], removing false, changedBy null, lastError null, its title, exactly its tools |
- * | OWN-02 | EP (tool status) | every own tool visible, message_fishball other-sessions |
+ * | OWN-02 | EP (tool status) | every own tool visible; message_fishball, ask_fishball and list_user_messages other-sessions (rev11b) |
  * | OWN-03 | EP (otherTools) | none of Fishball's own tool names in otherTools; each own tool under exactly one plugin |
  * | OWN-04 | EP (other built-ins) | the 7 DSH built-ins keep dsh builtin; exactly the 5 Fishball-group entries have dsh fishball |
  * | OWN-05 | EP | GET state and the first SSE frame have features {approvals, messages, plugins, watching}, all true |
- * | OWN-06 | EP (Fishball / ordinary) | Fishball's request lists its own tools but not message_fishball; an ordinary request lists message_fishball and none of Fishball's own tools |
+ * | OWN-06 | EP (Fishball / managed session) | Fishball's request lists its own tools but none of the three for other sessions; a managed session's request lists message_fishball, ask_fishball, list_user_messages (rev11b) and none of Fishball's other tools (rev11a: the session is handed over in setup) |
  * | OWN-10 ×4 | DT (user × own plugin × off then on, idle) | 200, no prompt; off: changedBy user, applied off, features false, tools plugin-off, absent from the next request; on: no prompt, tools visible (trusted, never unchecked), features true |
  * | OWN-11 ×3 | DT (Fishball × own plugin × off, Reject, Allow once) | off: ok, no prompt, same turn keeps the tools, the next request lacks them, changedBy fishball; on+Reject: one prompt naming "Fishball asks to turn on" and the title shown on the tab, {ok:false, code:'rejected'}, stays off; on+Allow once: ok, on, tools back, no unchecked |
  * | OWN-12 | DT (Fishball × own plugin × on, unavailable) | Session watching: {ok:false, code:'rejected'}, stays off |
@@ -24,26 +24,28 @@
  * | OWN-17 | EP (Fishball × own plugin already on × on) | nothing to ask: no prompt, ok, stays on |
  * | OWN-18 | ST (your off arrives while Fishball's turn runs, before its set_plugin_enabled(on)) | your off holds: either one prompt (Reject → rejected) or ask-first without a prompt; stays off |
  * | OWN-19 ×6 | ST (race: your off POSTed as Fishball's set_plugin_enabled(on) of an on plugin runs) | whatever the order, the off holds without an Allow once: the answer is ok (your off came after), rejected after a prompt, or ask-first without a prompt; the plugin ends off |
- * | OWN-20 | ST (user off while Fishball is held in a turn) | on false at once, applied still true; features.messages stays true and message_fishball stays registered until the turn ends, then both are off |
- * | OWN-21 | ST (user on while held) | applied stays off and Send to Fishball answers 409 feature-off until the turn ends; then features.messages true, message_fishball back, Send 200 |
+ * | OWN-20 | ST (user off while Fishball is held in a turn) | on false at once, applied still true; features.messages stays true and the managed session keeps message_fishball until the turn ends, then both are off (rev11a: per managed agent, not global) |
+ * | OWN-21 | ST (user on while held) | applied stays off and Send to Fishball answers 409 feature-off until the turn ends; then features.messages true, message_fishball back in the managed session, Send 200 |
  * | OWN-30 | EP (invariant over every collected SSE frame) | features[f] === entry.applied for each own plugin (coordinator's correction: effects follow the applied state only) |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
-  ACTION, API, BUILTINS, CHANGED_BY, CODE, DSH_STATE, FEATURE_KEYS, FEATURE_OFF, FISHBALL_GROUP_KEYS, INBOUND_TOOL, KIND, MESSENGER, OUTCOME,
+  ACTION, API, BUILTINS, CHANGED_BY, CODE, DSH_STATE, FEATURE_KEYS, FEATURE_OFF, FISHBALL_GROUP_KEYS, INBOUND_TOOL, KIND, MANAGED_TOOLS, MESSENGER, OUTCOME,
   OWN_ASK, OWN_PLUGINS, PLUGIN_STATUS, PRESET, TOOL_STATUS,
 } from './support/constants.mjs'
 import {
-  HOOK, T, callScript, callTool, resultOfCall, catalogSettled, holdFishball, listPlugins, nextTools, pluginIn, removePlugin, setPlugin, settle, settledIdle, toolIn, toolNames, turn, untilCatalog,
+  HOOK, T, makeManaged, callScript, callTool, resultOfCall, catalogSettled, holdFishball, listPlugins, nextTools, pluginIn, removePlugin, setPlugin, settle, settledIdle, toolIn, toolNames, turn, untilCatalog,
 } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
 const LONG = { timeout: 150000 }
 const ALL_OWN_TOOLS = Object.values(OWN_PLUGINS).flatMap((p) => p.tools)
 /** Fishball's own tools that Fishball itself sees (message_fishball is for other sessions only). */
-const visibleTools = (p) => p.tools.filter((n) => n !== INBOUND_TOOL)
-const expectedStatus = (name) => (name === INBOUND_TOOL ? TOOL_STATUS.otherSessions : TOOL_STATUS.visible)
+// The tools for other sessions (message_fishball since rev11a; ask_fishball and list_user_messages since rev11b) are listed
+// under their plugin as other-sessions and never appear in Fishball's own requests.
+const visibleTools = (p) => p.tools.filter((n) => !MANAGED_TOOLS.includes(n))
+const expectedStatus = (name) => (MANAGED_TOOLS.includes(name) ? TOOL_STATUS.otherSessions : TOOL_STATUS.visible)
 
 describe('Revision 10c Fishball\'s own plugins: catalog and switches', () => {
   let host
@@ -64,6 +66,8 @@ describe('Revision 10c Fishball\'s own plugins: catalog and switches', () => {
     bare = (await host.call('ordinary', { preset: PRESET.bare, folder: 'own-bare' })).sessionId
     await settle(host)
     await settledIdle(host, fb)
+    // rev11a: message_fishball exists only in managed sessions (DESIGN §5e), so the session that checks it is handed over.
+    await makeManaged(host, fb, bare)
   }, HOOK)
   after(async () => { stream?.close(); await host?.stop() }, HOOK)
 
@@ -121,13 +125,14 @@ describe('Revision 10c Fishball\'s own plugins: catalog and switches', () => {
     assert.deepEqual(stream.frames[0].features, { approvals: true, messages: true, plugins: true, watching: true })
   })
 
-  it('OWN-06 Fishball has its own tools but not message_fishball; an ordinary session has only message_fishball', T, async () => {
+  it('OWN-06 Fishball has its own tools but none for other sessions; a managed session has only the tools for other sessions', T, async () => {
     const fbNames = await nextTools(host, fb)
     for (const spec of Object.values(OWN_PLUGINS)) for (const n of visibleTools(spec)) assert.ok(fbNames.includes(n), 'Fishball lacks ' + n)
-    assert.equal(fbNames.includes(INBOUND_TOOL), false)
+    for (const n of MANAGED_TOOLS) assert.equal(fbNames.includes(n), false, 'Fishball has ' + n)
     const names = await ordinaryTools()
-    assert.ok(names.includes(INBOUND_TOOL), 'ordinary session lacks ' + INBOUND_TOOL)
-    for (const n of ALL_OWN_TOOLS.filter((x) => x !== INBOUND_TOOL)) assert.equal(names.includes(n), false, 'ordinary session has ' + n)
+    // rev11b: a managed session has message_fishball, ask_fishball and list_user_messages (§5e).
+    for (const n of MANAGED_TOOLS) assert.ok(names.includes(n), 'managed session lacks ' + n)
+    for (const n of ALL_OWN_TOOLS.filter((x) => !MANAGED_TOOLS.includes(x))) assert.equal(names.includes(n), false, 'managed session has ' + n)
   })
 
   for (const spec of Object.values(OWN_PLUGINS)) {
@@ -373,7 +378,8 @@ describe('Revision 10c Fishball\'s own plugins: catalog and switches', () => {
 
   describe('Session messages switched while Fishball is inside a turn', () => {
     const spec = OWN_PLUGINS.messages
-    const globalHas = async () => (await host.call('globalToolNames')).includes(INBOUND_TOOL)
+    // rev11a: message_fishball is registered per managed agent, not globally; the managed session's next request shows it.
+    const globalHas = async () => (await ordinaryTools()).includes(INBOUND_TOOL)
     const assertFormula = async (label) => {
       const s = await host.state()
       const p = pluginIn(s.catalog, spec.key)

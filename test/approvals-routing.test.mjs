@@ -5,7 +5,7 @@
  *
  * | id      | technique | req | expected |
  * |---------|-----------|-----|----------|
- * | RTE-01 ×2 | EP (Fishball's own request: set_plugin_enabled with unchecked tools, add_plugin) | P7a | the next answerer is asked for Fishball's session; no request message; not in state.approvals |
+ * | RTE-01 ×2 | EP (Fishball's own request: set_plugin_enabled with unchecked tools, add_plugin) | P7a; rev11f | CHANGED by rev11f (DESIGN §7a.11): the stock prompt is NOT asked for Fishball's session; the call returns waiting-for-approval at once and a card of Fishball's session is in the pile; still no request message for Fishball and not in state.approvals |
  * | RTE-02 | BVA (maxPendingApprovals 2, Fishball busy: 1 pending → routed) | P7c | a request message; pending 2 |
  * | RTE-03 | BVA (2 pending = limit → bypass) | P7c | the next answerer is asked at once (< 1 s); no request message; not recorded |
  * | RTE-04 | BVA (maxQueuedInputs 1, queue full) | P7d | bypass: at once, no request message, not recorded |
@@ -14,9 +14,9 @@
  * | RTE-07 | ST (archived –unarchive + retry→ live) | P7b | requests reach Fishball again |
  */
 import assert from 'node:assert/strict'
-import { after, before, describe, it } from 'node:test'
+import { after, afterEach, before, describe, it } from 'node:test'
 import { ADDED_BUNDLE, APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FIXTURE_BUNDLE, LIMITS, OUTCOME, PRESET, STATUS } from './support/constants.mjs'
-import { HOOK, T, approvalsNow, askSettled, fishballCall, messageFishball, requestMessages, settledIdle, startAsk, turn, waitRequest } from './support/expect.mjs'
+import { HOOK, T, approvalsNow, askSettled, fishballCall, messageFishball, requestMessages, settledIdle, startAsk, turn, waitRequest, makeManaged } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
 let seq = 0
@@ -34,6 +34,8 @@ describe('P7 routing and bypass', () => {
   async function session(folder) {
     const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
     await turn(host, sid, [[{ text: 'hello' }]], 'first words')
+    // rev11a: only a managed session's permission requests reach Fishball (DESIGN §7a.1).
+    await makeManaged(host, fb, sid)
     sessions.push(sid)
     return sid
   }
@@ -45,7 +47,7 @@ describe('P7 routing and bypass', () => {
   }
   async function releaseFishball() { await host.call('releaseHold', { sessionId: fb }); await settledIdle(host, fb) }
   /** Ask from sid and expect the bypass: the next answerer is asked at once and Fishball gets no request. */
-  async function expectBypass(sid, text) {
+  async function expectBypass(sid, text, { recorded = false } = {}) {
     const keys = await recentKeys()
     await startAsk(host, sid, ASK_TOOL, { text })
     const done = await askSettled(host, text, 5000)
@@ -55,7 +57,11 @@ describe('P7 routing and bypass', () => {
     assert.ok(seen[0].at - done.askedAt < AT_ONCE_MS, 'at once: ' + (seen[0].at - done.askedAt) + ' ms')
     await sleep(300)
     assert.deepEqual(await requestMessages(host, fb, text), [], 'no request message for Fishball')
-    assert.deepEqual(await recentKeys(), keys, 'a bypassed request is not recorded')
+    if (recorded) {
+      // rev11e (manager's decision, 2026-11-02; DESIGN §11 Reading): a notice that cannot be delivered is audited (`to-user`) and its request is also a card,
+      // so the request is recorded; Fishball still gets no request message.
+      assert.equal((await recentKeys()).length, keys.length + 1, 'an undelivered request is recorded once')
+    } else assert.deepEqual(await recentKeys(), keys, 'a bypassed request is not recorded')
     await settledIdle(host, sid)
   }
   async function cancelAll() {
@@ -72,6 +78,8 @@ describe('P7 routing and bypass', () => {
   after(async () => { await host?.stop() }, HOOK)
 
   describe('RTE-01 Fishball\'s own requests always go to the next answerer', () => {
+    // The cards would count toward the cap of the later cases: reject whatever is left, pass or fail.
+    afterEach(async () => { for (const c of ((await host.state()).pile ?? []).filter((x) => x.sessionId === fb)) await host.post('/api/fishball/requests/answer', { requestId: c.requestId, decision: 'reject' }) })
     for (const [label, tool, args] of [
       ['set_plugin_enabled with unchecked tools', 'set_plugin_enabled', { plugin: FIXTURE_BUNDLE.name, on: true }],
       ['add_plugin', 'add_plugin', { spec: ADDED_BUNDLE.dir, reason: 'fbtest' }],
@@ -81,11 +89,15 @@ describe('P7 routing and bypass', () => {
         const keys = await recentKeys()
         const msgs = (await requestMessages(host, fb)).length
         const { json } = await fishballCall(host, fb, tool, args)
-        assert.equal(json?.ok, false, 'rejected by the next answerer: ' + JSON.stringify(json))
+        // rev11f: no stock prompt; the request is a card of Fishball's session and the call returned "waiting".
+        assert.equal(json?.code, 'waiting-for-approval', 'a card, not a prompt: ' + JSON.stringify(json))
         const seen = (await host.call('approvals', { sessionId: fb })).slice(before)
-        assert.deepEqual(seen.map((s) => s.toolName), [tool])
+        assert.deepEqual(seen, [], 'the stock prompt was not asked')
+        const cards = ((await host.state()).pile ?? []).filter((c) => c.sessionId === fb && c.toolName === tool)
+        assert.equal(cards.length, 1, 'one card in the pile: ' + JSON.stringify((await host.state()).pile))
         assert.equal((await requestMessages(host, fb)).length, msgs, 'Fishball got no request message')
-        assert.deepEqual(await recentKeys(), keys, 'not recorded')
+        // rev11f (§9 Audit, kind 'own'): the filed request is recorded once, answer to-user; it is still not a state.approvals entry.
+        assert.equal((await recentKeys()).length, keys.length + 1, 'recorded once as an own request')
       })
     }
   })
@@ -125,7 +137,7 @@ describe('P7 routing and bypass', () => {
       assert.equal(m.json?.ok, true, 'precondition: one queued input')
       const full = await messageFishball(host, s1, { message: tok('04full') })
       assert.equal(full.json?.code, 'queue-full', 'precondition: the queue is full')
-      await expectBypass(s2, tok('04'))
+      await expectBypass(s2, tok('04'), { recorded: true })
     } finally {
       await releaseFishball()
       await setLimit({ maxQueuedInputs: LIMITS.maxQueuedInputs.default })

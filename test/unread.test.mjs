@@ -39,7 +39,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { API, INBOUND_TOOL, PRESET, STATUS, STORE, UNREAD, UNREAD_UI, assistantDir } from './support/constants.mjs'
-import { HOOK, T, callScript, fishballClientBundle, moveArtifacts, settledIdle, turn } from './support/expect.mjs'
+import { HOOK, T, callScript, fishballClientBundle, moveArtifacts, settledIdle, turn, makeManaged } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
 
 // ---- helpers ----
@@ -179,6 +179,8 @@ describe('Unread: counting, read route, stream', () => {
   })
 
   it('UNR-07 a message from another session wakes Fishball and its one reply adds 1', T, async () => {
+    // rev11a: only a managed session has message_fishball; the hand-over note's reply is cleared by the reset below.
+    await makeManaged(host, fb, bare)
     await resetUnread(host, fb)
     const text = 'unread relay ' + Math.random().toString(36).slice(2, 8)
     await turn(host, bare, callScript(INBOUND_TOOL, { message: text }))

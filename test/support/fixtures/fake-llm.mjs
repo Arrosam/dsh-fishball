@@ -6,7 +6,7 @@
  */
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { FAKE, FAKE_MODELS, FAKE_WINDOW, RUNTIME } from '../constants.mjs'
+import { FAKE, FAKE_MODELS, FAKE_WINDOW, REQUEST_PLACEHOLDER, RUNTIME } from '../constants.mjs'
 
 const { LlmAdapter } = await import(pathToFileURL(path.join(RUNTIME, '@deepseek-ai/dsh-llm/lib/index.js')).href)
 
@@ -15,7 +15,7 @@ export const model = (globalThis.__fbtestModel ??= {
   aux: [],
   queues: new Map(),
   queue(sessionId, ...responses) { const q = this.queues.get(sessionId) ?? []; q.push(...responses); this.queues.set(sessionId, q) },
-  respond(options) { return this.queues.get(options.sessionId)?.shift() ?? this.byPlan(options) ?? this.byMarker(options) ?? [{ text: 'ok' }] },
+  respond(options) { return this.queues.get(options.sessionId)?.shift() ?? this.byPlan(options) ?? this.byQuestionPlan(options) ?? this.byMarker(options) ?? [{ text: 'ok' }] },
   /**
    * P7: a permission request wakes Fishball before a test could queue an answer, so Fishball's model
    * answers from the request text: a plan {sessionId, needle, args, callId} answers the newest
@@ -23,6 +23,22 @@ export const model = (globalThis.__fbtestModel ??= {
    * and request_id taken from that message.
    */
   plans: [],
+  /**
+   * rev11g: a question plan {sessionId, needle, args, callId} answers the newest user message that contains needle
+   * and a question id (qst_...) once, with answer_question({question_id, ...args}).
+   */
+  questionPlans: [],
+  byQuestionPlan(options) {
+    const users = (options.messages ?? []).filter((m) => m.role === 'user').map((m) => textOf(m.content))
+    for (const plan of this.questionPlans) {
+      if (plan.used || plan.sessionId !== options.sessionId) continue
+      const found = users.filter((t) => t.includes(plan.needle)).map((t) => /qst_[\w-]+/.exec(t)).filter(Boolean).at(-1)
+      if (!found) continue
+      plan.used = { questionId: found[0], at: Date.now() }
+      return [{ tool: 'answer_question', id: plan.callId ?? 'call_qplan_' + Math.random().toString(36).slice(2, 8), args: { question_id: found[0], ...plan.args } }]
+    }
+    return undefined
+  },
   byPlan(options) {
     const users = (options.messages ?? []).filter((m) => m.role === 'user').map((m) => textOf(m.content))
     for (const plan of this.plans) {
@@ -53,6 +69,8 @@ export const model = (globalThis.__fbtestModel ??= {
 })
 
 const textOf = (content) => (Array.isArray(content) ? content.map((b) => b?.text ?? '').join('') : String(content ?? ''))
+/** rev11b: like textOf, but also reads blocks that nest their own content (tool results). */
+const deepText = (content) => (Array.isArray(content) ? content.map((b) => b?.text ?? (b?.content !== undefined ? deepText(b.content) : '')).join('') : String(content ?? ''))
 
 /** A JSON-safe digest of one request. */
 function digest(options) {
@@ -70,7 +88,27 @@ function digest(options) {
     chars: charsOf(options),
     // P5: the tail of every message's text, so a test can tell whether an input reached the model.
     texts: (options.messages ?? []).map((m) => textOf(m.content)).join('\n').slice(-TEXTS_TAIL),
+    // rev11b: the last few messages one by one (role, source kind, tool-result flag, text tail), so a test can
+    // tell a tool result from a context message that follows it (S35: run_code's hint arrives as a separate message).
+    last: (options.messages ?? []).slice(-LAST_MESSAGES).map((m) => ({ role: m.role, source: m.source?.kind ?? null, isError: m.isError ?? null, text: deepText(m.content).slice(-LAST_TEXT_CHARS) })),
   }
+}
+
+/** rev11b: messages kept one by one per request digest, and the text tail kept of each. */
+const LAST_MESSAGES = 8
+const LAST_TEXT_CHARS = 4000
+
+/**
+ * rev11b: a scripted tool argument whose value is exactly REQUEST_PLACEHOLDER is replaced with the newest
+ * permission request id (apr_<hex>) that appears in the conversation so far, so a script can answer a
+ * question (ask_fishball {request_id, reply}) whose request id is minted while the turn runs.
+ */
+const REQUEST_ID = /apr_[0-9a-f]+/g
+function fillPlaceholders(script, options) {
+  if (!script.some((s) => s.args && Object.values(s.args).includes(REQUEST_PLACEHOLDER))) return script
+  const text = (options.messages ?? []).filter((m) => m.role !== 'system').map((m) => deepText(m.content)).join('\n')
+  const id = [...text.matchAll(REQUEST_ID)].at(-1)?.[0] ?? 'apr_none'
+  return script.map((s) => (s.args ? { ...s, args: Object.fromEntries(Object.entries(s.args).map(([k, v]) => [k, v === REQUEST_PLACEHOLDER ? id : v])) } : s))
 }
 
 /** P5: characters of message text kept per request digest (bounded for the P4 load tests). */
@@ -202,7 +240,7 @@ class FakeAdapter extends LlmAdapter {
         await new Promise((resolve) => model.holds.set(options.sessionId, resolve))
       }
       model.requests.push(digest(options))
-      script = model.respond(options)
+      script = fillPlaceholders(model.respond(options), options)
     }
     for (const chunk of chunksFor(script)) yield chunk
   }

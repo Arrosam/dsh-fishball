@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { ACTION, API, AUTHOR_KIND, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
+import { ACTION, API, CLICK, PILE_API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -113,12 +113,41 @@ export async function fishballTool(host, sessionId, tool, args, outcome = OUTCOM
   await host.call('setApprover', { outcome: answers.at(-1), queue: answers.slice(0, -1) })
   const before = (await host.call('approvals', { sessionId })).length
   try {
-    const { result, asked, requests } = await callTool(host, sessionId, tool, args, timeoutMs)
+    const first = await callTool(host, sessionId, tool, args, timeoutMs)
+    let result = first.result
+    // rev11f (DESIGN §7a.11): Fishball's own requests no longer reach the stock prompt. The call returns "waiting for your
+    // approval" at once and the request is a card in the pile. The scripted answers are applied to those cards instead:
+    // Allow once is clicked and Fishball's woken turn makes the identical call (a new call id), which may file a second
+    // card (the unchecked-tools prompt after the install prompt); Reject is clicked and the waiting result is the answer.
+    const cards = []
+    for (let i = 0; isWaitingResult(result) && i < answers.length + 2; i++) {
+      const card = await newestOwnCard(host, sessionId, cards)
+      if (!card) break
+      cards.push(card)
+      const decision = answers[Math.min(i, answers.length - 1)]
+      if (decision !== OUTCOME.allow) { await answerCard(host, card.requestId, CLICK.reject); await settledIdle(host, sessionId, 20000); break }
+      const id = 'call_fbtest_retry_' + card.requestId + '_' + i
+      await host.call('queueMarker', { marker: card.requestId, script: [[{ tool, args, id }], [{ text: 'done' }]] })
+      const click = await answerCard(host, card.requestId, CLICK.allow)
+      if (click.status !== 200) throw new Error('Allow once on the card answered ' + click.status + ' ' + click.text)
+      const got = await resultOfCall(host, sessionId, id, timeoutMs ?? 20000)
+      if (!got) throw new Error('the woken turn made no retry for ' + card.requestId)
+      await settledIdle(host, sessionId, timeoutMs ?? 20000)
+      result = { text: got.text, isError: got.isError }
+    }
     const approvals = (await host.call('approvals', { sessionId })).slice(before)
-    return { json: jsonOf(result), result, asked, approvals, requests }
+    return { json: jsonOf(result), result, asked: first.asked, approvals, requests: first.requests, cards }
   } finally {
     await host.call('setApprover', { outcome: OUTCOME.reject })
   }
+}
+
+/** A tool result that is Fishball's "waiting for your approval" answer (rev11f; code waiting-for-approval). */
+export const isWaitingResult = (result) => jsonOf(result)?.code === 'waiting-for-approval' || /waiting-for-approval|waiting for your approval|waits for the user's approval/i.test(result?.text ?? '')
+/** The newest card of this session's own requests in the pile that is not among `seen`. */
+async function newestOwnCard(host, sessionId, seen) {
+  const known = new Set(seen.map((c) => c.requestId))
+  return ((await pileNow(host)) ?? []).find((c) => c.sessionId === sessionId && !known.has(c.requestId))
 }
 
 export const setPlugin = (host, sessionId, plugin, on, outcome) => fishballTool(host, sessionId, 'set_plugin_enabled', { plugin, on }, outcome)
@@ -548,3 +577,111 @@ export function promptLine(reason, fieldPath) {
 
 /** Let `ms` pass (a negative check: something must NOT happen in that time). */
 export const quiet = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// ---- Revision 11 rev11a helpers (managed sessions) ----
+
+/** Hand over (managed true) or Take back (managed false) through the Host route, as the client's buttons do. */
+export const setManaged = (host, sessionId, managed) => host.post(MANAGED_API, { sessionId, managed })
+/** The snapshot's managed list. */
+export const managedNow = async (host) => (await host.state())?.managed
+/** The snapshot's managed entry for one session, or undefined. */
+export const managedEntry = async (host, sessionId) => ((await managedNow(host)) ?? []).find((e) => e.sessionId === sessionId)
+/** Intake items of the notes about one session's management (§5e item 5: source fishball/managed/<session>). */
+export const managedItems = async (host, sessionId) => ((await intakeNow(host))?.items ?? []).filter((i) => i.sourceIdentity === MANAGED_IDENTITY(sessionId))
+/**
+ * Make a session managed through Hand over and wait until Fishball has read the note, so the note's
+ * Fishball turn cannot overlap the caller's next step. Used by the pre-revision-11 cases that are about
+ * a session talking to Fishball: from rev11a only managed sessions have message_fishball and only their
+ * permission requests reach Fishball (CASES.md "Revision 11 rev11a cases", older tests changed).
+ */
+export async function makeManaged(host, fb, sessionId) {
+  const r = await setManaged(host, sessionId, true)
+  if (r.status !== 200) throw new Error('precondition: hand over ' + sessionId + ' answered ' + r.status + ' ' + r.text)
+  await until(async () => (await managedItems(host, sessionId)).some((i) => i.status === 'consumed'), 5000, 100)
+  await settledIdle(host, fb)
+  return r
+}
+
+// ---- Revision 11 rev11b helpers (ask_fishball, passes, direct calls) ----
+
+/** One scripted model step that calls a tool, with a call id so its result can be found. */
+export const step = (tool, args, id) => [{ tool, args, ...(id ? { id } : {}) }]
+/** One scripted ask_fishball step. */
+export const askStep = (args, id) => step(ASK_FISHBALL, args, id)
+/** One scripted call of the asking fixture tool (its body asks DSH for approval). */
+export const callStep = (args, id) => step(ASK_TOOL, args, id)
+/** The result of the call with this id in a drive record, or undefined. */
+export const resultById = (r, id) => r.results.find((x) => x.callId === id)
+/** The stock prompt's records (the scripted answerer after the broker) for the asking tool's call with this text. */
+export const stockSeen = async (host, text) => (await host.call('approvals', {})).filter((a) => a.reason === ASK_REASON(text))
+
+/**
+ * Every approval audit record (domain fishball_intake, table approvals, one file per record; §9), with its
+ * file name: the record key, which carries the request id's hex part (P7). The record is the object inside
+ * the file's JSON that carries an `answer`, whatever wrapper the store adds.
+ */
+export function approvalAudit(home) {
+  const dir = path.join(INTAKE_DIR(home), 'approvals')
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir) : []
+  const find = (x, depth = 0) => {
+    if (!x || typeof x !== 'object' || depth > 6) return undefined
+    if (Object.hasOwn(x, 'answer')) return x
+    for (const v of Object.values(x)) { const r = find(v, depth + 1); if (r) return r }
+    return undefined
+  }
+  const found = []
+  for (const file of files) {
+    let record
+    try { record = find(JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'))) } catch { record = undefined }
+    if (record) found.push({ file, record })
+  }
+  return found
+}
+/** The audit records of one request, found by the request id's hex part in the record key (file name). */
+export const auditOf = (home, requestId) => approvalAudit(home).filter((r) => r.file.includes(String(requestId).replace(/^apr_/, ''))).map((r) => r.record)
+/** The rows of one table of the fishball domain (single-file layout, §9); [] when the table is missing. */
+export function storedRows(home, table) {
+  try { return Object.values(JSON.parse(fs.readFileSync(STORE.file(home), 'utf8')).tables?.[table] ?? {}) } catch { return [] }
+}
+/** Fishball's permission-request messages of one request id (one per round), oldest first. */
+export const roundsOf = async (host, fb, requestId) => (await requestMessages(host, fb, '[permission request ' + requestId + ']')).map((m) => ({ ...m, block: untrustedBlock(m.text) }))
+/** A session the user starts with one plain turn ('first words'), then handed over, so it is managed (rev11a). */
+export async function managedSession(host, fb, folder, preset = PRESET.bare) {
+  const sid = (await host.call('ordinary', { preset, folder })).sessionId
+  await turn(host, sid, [[{ text: 'hello' }]], 'first words')
+  await makeManaged(host, fb, sid)
+  return sid
+}
+/** A request block's arguments as an object (P7 gives the call's JSON as a string field). */
+export const blockArguments = (block) => { const a = block?.fields?.arguments; return typeof a === 'string' ? JSON.parse(a) : a }
+
+// ---- Revision 11 rev11c helpers (your pile, DESIGN §7a.6, §10e) ----
+
+/** The snapshot's pile (the cards, newest first). */
+export const pileNow = async (host) => (await host.state())?.pile
+/** The card of one request in the snapshot, or undefined. */
+export const cardOf = async (host, requestId) => ((await pileNow(host)) ?? []).find((c) => c.requestId === requestId)
+/** Wait until the pile holds a card for this request; returns it or false. */
+export const untilCard = (host, requestId, timeoutMs = 10000) => until(async () => (await cardOf(host, requestId)) ?? false, timeoutMs, 50)
+/** Wait until the pile holds no card for this request. */
+export const untilNoCard = (host, requestId, timeoutMs = 10000) => until(async () => !(await cardOf(host, requestId)), timeoutMs, 50)
+/** Allow once / Reject on a card through the Host route, as the client's buttons do. */
+export const answerCard = (host, requestId, decision, note) => host.post(PILE_API.answer, { requestId, decision, ...(note === undefined ? {} : { note }) })
+/** A card's arguments as an object (the design says "arguments (excerpt)": a JSON string or an object). */
+export const cardArguments = (card) => (typeof card?.arguments === 'string' ? JSON.parse(card.arguments) : card?.arguments)
+/** Every row of the tags table of one session, in key order. */
+export const tagsOf = (home, sessionId) => storedRows(home, 'tags').filter((t) => t.sessionId === sessionId)
+/**
+ * The tag records the snapshot publishes (§9 "Tag records": the Host publishes {sessionId, callId, seq, answer, kind}
+ * per answer; the design does not name the snapshot key, so the whole snapshot is searched for such objects).
+ */
+export function snapshotTags(state) {
+  const found = []
+  const walk = (x, depth = 0) => {
+    if (!x || typeof x !== 'object' || depth > 6) return
+    if (!Array.isArray(x) && typeof x.sessionId === 'string' && typeof x.callId === 'string' && typeof x.seq === 'number' && typeof x.kind === 'string' && 'answer' in x) found.push(x)
+    for (const v of Object.values(x)) walk(v, depth + 1)
+  }
+  walk(state)
+  return found
+}

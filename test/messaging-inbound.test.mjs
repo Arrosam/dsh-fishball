@@ -5,12 +5,12 @@
  *
  * | id     | technique | req | expected |
  * |--------|-----------|-----|----------|
- * | MSG-01 | EP (bare / standard preset) | M1, P6 W6 | every ordinary request lists message_fishball with the required string 'message' and the optional boolean 'notify_when_finished' |
+ * | MSG-01 | EP (bare / standard preset) | M1, P6 W6 | every managed session's request lists message_fishball with the required string 'message' and the optional boolean 'notify_when_finished' (rev11a: both sessions are handed over first) |
  * | MSG-02 | EP (Fishball / ordinary) | M14 | Fishball's requests never list message_fishball and always list message_session and start_session; ordinary requests never list those two |
  * | MSG-03 | EP (valid message, Fishball idle) | M1, M9 | {ok:true, note:'Delivered to Fishball.'}; exactly one relay message from the caller; trusted header, one untrusted block with session_id, session_title, session_folder and the JSON-quoted text; Fishball wakes and reads it; intake item session/<id> ends consumed; state never holds the text |
  * | MSG-04 | EP (hostile text) | M1 review | a fake closing tag and a fake forward stay inside the block as one JSON string; one closing tag; one session_id line |
  * | MSG-05 | EP (spoofed sender arguments) | M1 | the sender is the calling session, never an argument |
- * | MSG-06 | EP (subagent caller) | M1 review | attributed to the parent session S; sent_by_subagent_session names the child |
+ * | MSG-06 | EP (subagent caller) | M1 review, rev11a Q-r11-subagent-tools | a subagent of the managed session S has no message_fishball: its call is UNKNOWN_TOOL and nothing reaches Fishball |
  * | MSG-07 ×4 | DT (call id × response × text) | M2 review | same id+response+text: one message, the repeat answers {ok:true, duplicate:true, note}; later response: new; other text: new; other id: new |
  * | MSG-08 ×8 | BVA + EP (maxMessageBytes 64) | M3 | '' and whitespace: empty; 1, 64 ASCII and 64 bytes of 2-byte chars: delivered; 65 ASCII, 63+one 2-byte char, 66 bytes: too-large and nothing delivered |
  * | MSG-09 | BVA (maxQueuedInputs 2, Fishball held) + ST (full → read → free) | M3, M9, M11 | 2 accepted, the 3rd queue-full; queued 2 while held; the route answers 409 queue-full; after release both are read once; a new message is accepted |
@@ -26,7 +26,7 @@ import {
   P5_CODE, PRESET, RELAY, RELAY_HEADER, STATE_LIST_MAX,
 } from './support/constants.mjs'
 import {
-  HOOK, T, callTool, sessionAuthor, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball, settledIdle,
+  HOOK, T, callTool, makeManaged, sessionAuthor, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball, settledIdle,
   toolNames, toolSchema, turn, untilSeen, untrustedBlock,
 } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
@@ -63,10 +63,13 @@ describe('P5 message_fishball', () => {
     // A first turn gives the session a title (the fake model titles every session 'fbtest title').
     await turn(host, bare, [[{ text: 'hello' }]])
     await settledIdle(host, fb)
+    // rev11a: only managed sessions have message_fishball (DESIGN §5e); these cases are about sessions talking to Fishball.
+    await makeManaged(host, fb, bare)
+    await makeManaged(host, fb, std)
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
-  it('MSG-01 every ordinary session has message_fishball with one required string argument', T, async () => {
+  it('MSG-01 every managed session has message_fishball with one required string argument', T, async () => {
     for (const sid of [bare, std]) {
       const req = (await turn(host, sid, [[{ text: 'list' }]])).requests.at(-1)
       assert.ok(toolNames(req).includes(INBOUND_TOOL), sid + ' lacks ' + INBOUND_TOOL)
@@ -145,7 +148,7 @@ describe('P5 message_fishball', () => {
     }
   })
 
-  it('MSG-06 a subagent\'s message is attributed to its parent session and names the child', T, async () => {
+  it('MSG-06 a subagent of a managed session has no message_fishball (rev11a)', T, async () => {
     const marker = tok('m06sub')
     const text = tok('m06')
     await host.call('queueMarker', { marker, except: std, script: [[{ tool: INBOUND_TOOL, args: { message: text } }], [{ text: 'sub done' }]] })
@@ -153,16 +156,10 @@ describe('P5 message_fishball', () => {
     assert.equal(r.results[0]?.isError, false, 'subagent started: ' + r.results[0]?.text)
     assert.ok(await until(async () => (await host.call('markerState', { marker })).left === 0, 15000, 100), 'the subagent ran its script')
     const child = (await host.call('markerState', { marker })).sessions[0]
-    assert.ok(await untilSeen(host, fb, text))
-    const got = await fishballMessages(host, fb, text)
-    assert.equal(got.length, 1)
-    // P11 R4: a subagent's call counts as its root session, also for the author.
-    assert.deepEqual(got[0].source, { ...RELAY, senderSessionId: std, author: await sessionAuthor(host, AUTHOR_KIND.session, std) })
-    const block = untrustedBlock(got[0].text)
-    assert.equal(block.fields.session_id, std)
-    assert.equal(block.fields.sent_by_subagent_session, child)
     assert.notEqual(child, std)
-    assert.ok((await intakeNow(host)).items.some((i) => i.sourceIdentity === IDENTITY.session(std)))
+    for (const req of await host.call('requests', { sessionId: child })) assert.equal(toolNames(req).includes(INBOUND_TOOL), false, 'the child lists ' + INBOUND_TOOL)
+    await settledIdle(host, fb)
+    assert.equal((await fishballMessages(host, fb, text)).length, 0, 'nothing reached Fishball')
   })
 
   describe('MSG-07 dedupe decision table', () => {
