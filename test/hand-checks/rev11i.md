@@ -36,3 +36,12 @@ Screenshot names omit the common prefix `mcp-Claude_Browser-blob-`; the file end
 - The banner spans the whole chat panel (left 280 to 1273 px at 1280) while the composer and the Queue dock are narrower (421 to 1129 and 429 to 1125); the banner's top edge is 3 px above the Queue dock's bottom edge (620 vs 623), so it slightly overlaps the dock. Cosmetic.
 - While a question panel is open in the session, DSH covers the composer area and the banner has a zero-size box (not visible); it returns after the answer.
 - Row marks only exist for expanded workspaces (DSH renders rows only then).
+
+## Final check (merge of `f6aebbc`: integration head `6f87907` plus the banner layout fix in `client.js`)
+- **Suite:** 1977 tests, 1974 pass, 1 skipped (known), 2 fail in the full run: OWN-14 (own-plugins) and FLW-12 (rev11g-flow). Both are timing flakes: each file passes alone (own-plugins 47/47; rev11f-request 15/15; rev11g-flow 15/15 on a rerun, and FLW-12 alone passed 2 of 3 times, failing when the "Sent to you" tag is read right after the pile card appears). `src/` and `index.js` are unchanged since the first run's `10337db`, where all passed. A first full run was void: my own browser server created a test home while `run.mjs` was clearing them.
+- **Browser** (fake model, dark and light; managed session with a held turn and one queued message):
+  - Order top to bottom: banner (top 559), Queue dock (603), composer (648). The banner sits above the Queue dock and the Queue dock stays attached to the composer.
+  - Width: the banner and the Queue card line up at the same left and right edges (banner 312-985 px, dock box 304-993 px including its own padding), inside the composer's 296-997. No overlap: gap banner to dock 6 px, dock to composer 5 px.
+  - Screenshots: `/Users/samuel/.claude/projects/-Volumes-SSD1-GitHub-dsh-fishball--claude-worktrees-test-rev11i-146390/86a174de-b1d4-41f6-81d8-768365c19b32/tool-results/mcp-Claude_Browser-blob-1793581079856-6q7ppa.jpg` (dark), `/Users/samuel/.claude/projects/-Volumes-SSD1-GitHub-dsh-fishball--claude-worktrees-test-rev11i-146390/86a174de-b1d4-41f6-81d8-768365c19b32/tool-results/mcp-Claude_Browser-blob-1793581082052-tge689.jpg` (light).
+  - Not repeated: the other 17 checks (client.js changed only in layout).
+- **Observation:** FLW-12 reads the tag list immediately after the pile card appears; it races the tag write. Worth a wait-until in the test, not a code issue as far as I can tell (not changed; code was not read).
