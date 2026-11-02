@@ -25,7 +25,8 @@
  * | REC-15 | ST installed -uninstall-> install | removing it brings Install back | dsh-idle-compact and meow-memory entries `install` again, plugin null, blocked null; profile unchanged |
  * | REC-16 | EP (invariant, after every step above) | an entry follows the catalog by package name | none → install; fishball-installed → installed; DSH plugin on/off → dsh-on/dsh-off; plugin and blocked equal the catalog entry's |
  * | WEL-01 | ST (fresh home) | not shown yet | welcome deep-equals {show:true}; the state has the `welcome` and `recommended` keys |
- * | WEL-02 ×7 | EP | seen: other bodies | invalid JSON, [], "x", 5, null, true, {a:1} -> 400 {ok:false, code:'bad-body'}; show stays true |
+ * | WEL-02 ×6 | EP | seen: a body that is not a JSON object | invalid JSON, [], "x", 5, null, true -> 400 {ok:false, code:'bad-body'}; show stays true |
+ * | WEL-02b | EP | seen: an object with extra fields | {a:1} (after seen) -> 200, extra fields ignored (DESIGN §10f after c63fa9d) |
  * | WEL-03 ×2 | EP | auth and fence | no cookie, and a foreign Origin: not 200; show stays true |
  * | WEL-04 | ST show -seen-> seen | POST {} | 200; show false in GET state and in a new event stream's first frame |
  * | WEL-05 | ST seen -seen again-> seen | a repeat | 200; show still false; no turn, no event in Fishball's session |
@@ -343,11 +344,10 @@ describe('Revision 12 welcome card: once only', () => {
     assert.equal(await host.call('agentStatus', { sessionId: fb }), 'idle', 'no turn started')
   })
 
-  it('WEL-02 seen with an object that has a key answers 400 bad-body (any body but {})', T, async () => {
+  it('WEL-02 seen with an object that has a key ignores the extra field: 200, still seen', T, async () => {
     const res = await seen(WELCOME_KEYED_BODY)
-    assert.equal(res.status, 400, res.text)
-    assert.deepEqual(res.json, { ok: false, code: 'bad-body' })
-    assert.deepEqual((await host.state()).welcome, { show: false }, 'unchanged')
+    assert.equal(res.status, 200, res.text)
+    assert.deepEqual((await host.state()).welcome, { show: false })
   })
 
   it('WEL-06 Fishball is told nothing of the card or the list', T, async () => {
