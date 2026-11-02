@@ -1013,5 +1013,5 @@ export const REC_STANDIN = {
 /** FBTEST_LINK: the DSH-profile stand-ins (on in DSH), linked at boot. */
 export const REC_LINK_ENV = { FBTEST_LINK: JSON.stringify([REC_STANDIN.telegram, REC_STANDIN.smart].map((b) => ({ name: b.name, dir: b.dir, enabled: true }))) }
 export const WELCOME_BAD_BODIES = [['invalid JSON', '{"a":', true], ['an array', []], ['a string', 'x'], ['a number', 5], ['null', null], ['a boolean', true]]
-/** DESIGN §10f: `{}` is the only accepted body; an object with a key is "any other body" too (run after the card is seen, since a wrongly accepted body would otherwise spoil later cases). */
+/** DESIGN §10f (after the c63fa9d review fix): 400 `bad-body` for a body that is not a JSON object; extra fields are ignored, so an object with a key answers 200. */
 export const WELCOME_KEYED_BODY = { a: 1 }

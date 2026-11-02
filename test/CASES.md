@@ -2399,7 +2399,8 @@ Requirements: DESIGN §10f, §9 `notices`, §14 "Recommended plugins (revision 1
 | REC-15 | ST installed → uninstalled | Install back | both entries install, plugin and blocked null; profile unchanged |
 | REC-16 (inside REC-06, 10–15) | EP invariant | an entry follows the catalog by package name | none → install; fishball-installed → installed; DSH plugin on/off → dsh-on/dsh-off; plugin and blocked equal the catalog entry's |
 | WEL-01 | ST fresh home | not shown yet | welcome {show:true}; state keys equal STATE_KEYS |
-| WEL-02 ×7 | EP | seen: other bodies | invalid JSON, [], "x", 5, null, true, and {a:1} (run after seen): 400 {ok:false, code:'bad-body'}; show stays true |
+| WEL-02 ×6 | EP | seen: a body that is not a JSON object | invalid JSON, [], "x", 5, null, true: 400 {ok:false, code:'bad-body'}; show stays true |
+| WEL-02b | EP | seen: an object with extra fields | `{a:1}` (run after seen): 200, the extra field is ignored. Changed from "400 for any body but `{}`" after DESIGN §10f's review fix (c63fa9d): "400 `bad-body` for a body that is not a JSON object, as `read`" |
 | WEL-03 ×2 | EP | auth and fence | no cookie; foreign Origin: not 200; show stays true |
 | WEL-04 | ST show → seen | POST {} | 200; show false in GET state and in a new event stream's first frame; Fishball's session gains no event |
 | WEL-05 | ST seen → seen | repeat | 200; show false; recommended unchanged; no event, no turn |
@@ -2417,3 +2418,5 @@ Hand-check list (not tested here; checked in a sandbox DSH with the fake model, 
 - Install on an entry opens the "Install for Fishball" dialog over the settings page with the spec filled in and the check run; Install on the confirmation approves; the entry then reads Installed; a failed check returns with the spec and reason.
 - Turn on for Fishball on an "In DSH, off in Fishball" entry; its refusal shows a reason in the row.
 - The welcome card above the "Waiting for you" pile: shows once, not after a reload or a restart, never in another session; × closes it; See recommended plugins opens the settings page with the section in view; hidden under a question panel.
+
+Persona baseline loader (final release run): `support/persona-bold.mjs` `loadBaseline()` now exports the baseline ref's `src/` and `package.json` with `git archive` into a fresh temp folder outside the repo (removed on exit), because the baseline `persona.js` imports `./constants.js` and a lone `data:` URL could not resolve it (PBD-10..15 and R-B2 failed for that reason only). No assertion and no baseline ref changed.
