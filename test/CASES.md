@@ -967,6 +967,46 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | MCJ-06 | EP | `files` lists `packages/messenger/`; `npm pack --dry-run` lists `packages/messenger/package.json` and `packages/messenger/client.js` |
 | MCJ-07 | EP | client.js calls `window.__ModuleLoader__.load({ … id: 'dsh-fishball-messenger' … })` |
 
+### [messenger-table.test.mjs](messenger-table.test.mjs): markdown tables stay inside Fishball's reply bubble and fit it when they can (follow-up fix to the Messenger look)
+
+**Requirements.** R1: in Fishball's session with the look on, a table in a reply stays inside the bubble (the wrapper's edges do not pass the bubble's content edges). R2 (changed in the second round): a 4+ column table (`md-table-wide`) fits the bubble width when it can: its cells wrap, so every column shows without scrolling (table width at most the wrapper's, last cell's right edge at most the bubble's right content edge); a short wide table keeps its natural compact width and is not stretched; only a table that cannot fit even with wrapping (each cell has `min-width: 100px`, so for example eight columns) overflows the wrapper and scrolls sideways inside the bubble on hover or focus, DSH's hover rule (`overflow-x: scroll`) keeping that working. R3: tables with fewer columns (`_tableFill_*`) also stay inside. R4: other sessions (no `data-fishball-messenger` marker) keep DSH's stock layout. R5: rows that are not replies (for example `reasoning`) are not changed. R6: with the look off (the plugin disposed, its style element removed) DSH's stock behaviour returns.
+
+**How.** Node has no layout engine, so the cases run the module's browser file in a `vm` against a stub host ([support/messenger-style.mjs](support/messenger-style.mjs); the file is executed, its source is not read) and check the stylesheet it mounts: a small CSS parser, a selector-specificity calculator, the cascade winner of a property (`!important`, then specificity, then order), and a decision table that asks which rules a DOM context (marker, row part, wrapper class) selects. The real layout was measured separately in headless Chrome with DSH 0.2.1-rc.3's CSS (before and after each fix, chat-area widths 1200, 1000, 750, 749 and 700, with and without the marker and with the style removed, with a real hover and Tab focus); that fixture is not part of the suite. `FBTEST_MESSENGER_CLIENT=<path>` runs the cases against another copy of the file (the file from before any fix fails MTB-01, 02, 03 #1, 05, 06, 09, 10 and 11; the file after the first fix fails MTB-10 and 11, which is the R2 change). A first mutation check wrapped the file of the first round with eleven defects (unscoped rule, any row part, low specificity, `overflow-x: hidden`, a negative margin, a fixed width, a hashed class name, a fill wrapper widened, a dropped padding or max-width, a disposer that keeps the style); every one was caught. For R2 a second check wrapped the current file with ten table defects (width `100%`, `max-content` or `512px`, a `min-width`, `white-space: nowrap`, a zero-specificity table rule, a table rule without the marker or for every row part, a dropped table rule, `overflow-x: hidden` on the wrapper); every one is caught, and the equivalent spelling `width: fit-content` still passes.
+
+| id | technique | expected result |
+|---|---|---|
+| MTB-00 | EP (helpers) | `parseCss` keeps quoted `;` `{`, groups of selectors and at-rules whole; specificity: scoped reply selector `[0,5,0]`, DSH's `.hWmORq_body .md-table-wide` `[0,2,0]`, `:where()` counts nothing |
+| MTB-01 | EP (look on) | one style element; a table rule applies to a wide wrapper in a Fishball reply row |
+| MTB-02 | EP (R1) | the rules about the wrapper itself (not the table in it) give width `auto`/`100%`, max-width `100%`, margin-left and padding-left `0` |
+| MTB-03 ×7 | DT (marker × row part × wrapper class) | applies for marker + reply + wide; applies for none of: no marker, `reasoning` row, other row part, fill wrapper without marker or outside replies |
+| MTB-03 (R3) | EP | any rule that applies to a fill wrapper in a Fishball reply keeps it contained (the case does not require such a rule) |
+| MTB-04 | BVA (specificity against DSH's `[0,2,0]`) | each contained declaration is `!important` or has higher specificity than DSH's stock rule |
+| MTB-05 | EP (R2) | no table rule sets `overflow`, `overflow-x`, `overflow-y`, `display: none` or `visibility: hidden` |
+| MTB-06 | EP (R4, R5) | every table rule needs the conversation, the marker, the step kind and the reply part |
+| MTB-07 | EP (R3) | the stylesheet does not name DSH's generated classes `_tableScroll_*` and `_tableFill_*` (they change with DSH's build) |
+| MTB-08 | ST (on → dispose) | the style element is removed; nothing is left in `document.head` (R6) |
+| MTB-09 | ST (on, off, on, off, on) | one style element with the same text each time it is on, none while off (R6) |
+| MTB-10 | EP + BVA (specificity against DSH's `[0,1,1]`) | the cascade's winning `width` on the table inside a wide wrapper in Fishball's reply is `auto` (or `fit-content`: shrink-to-fit, so cells wrap to fit the bubble and a short table keeps its natural width), `!important` or with higher specificity than DSH's `._tableScroll_* table { width: max-content }` (R2) |
+| MTB-11 | EP (forbidden values) | a rule is about that table; none of them sets a `width` other than `auto`/`fit-content` (pinned `max-content`, stretched `100%`, fixed px), a `min-width` other than `0`/`auto`, or `white-space: nowrap`/`pre` (R2) |
+| MTB-12 ×4 | DT (marker × row part, wide wrapper) | no rule sets a width on the table without the marker, in a `reasoning` row, in another row part, or with neither (R2 R4 R5) |
+
+### [messenger-layout.test.mjs](messenger-layout.test.mjs): round avatars and the footer under the reply bubble (second follow-up fix to the Messenger look)
+
+**Requirements.** R7: DSH's theme turns `border-radius: 50%` into a rounded square (`@supports (corner-shape: superellipse(1.5)) { *, :before, :after { corner-shape: var(--dsw-corner-shape) } }`). Fishball's reply avatar (the reply row's `::before`) and the sender avatars (`.fbm-avatar`) compute `corner-shape: round` (Chrome serialises it `superellipse(1)`, the same shape) and look round; other elements keep the superellipse. R8: DSH's footer under a reply (copy button, time) is a separate chat row (`data-chat-flow-kind="turn-tail"`). In Fishball's session its content box starts at the reply bubble's left border edge, not under the avatar (the copy button box starts 6px further left because of DSH's -6px margin, which lines the icon up with that edge); in another session the footer is unchanged.
+
+**How.** As for the table cases: the module's file is executed in a `vm` and the stylesheet it mounts is checked. The left offset of a row is its `margin-left` plus `padding-left` from the cascade's winner (the reply row's offset plus the bubble's own left margin is where the bubble's left border edge sits; the footer's offset is where its content starts); only `px` and `0` are accepted. The real layout and the pixels were checked in headless Chrome against DSH's CSS (computed `corner-shape` of both avatars and of the controls, sampled pixels on the circle's and the superellipse's diagonals, footer content-left against the bubble's left border edge at several widths, with and without the marker); that fixture is not part of the suite. The same `FBTEST_MESSENGER_CLIENT` switch and mutation wrapper were used: the file from before any fix fails MLY-01 to 04, MLY-05 #1, MLY-06 and MLY-07; the file after the first table fix fails the same ones. Eleven avatar defects (a missing `corner-shape` on either avatar or both, the squircle value, a global `*`, one on the bubble, the theme variable redefined, a radius of 4px, a zero-specificity rule) and eight footer defects (28px, no rule, no marker, no conversation, the inner button touched, reasoning or process rows shifted, a percentage) are caught; a `margin-left` or the `padding: 0 0 0 36px` shorthand instead of `padding-left` still passes.
+
+| id | technique | expected result |
+|---|---|---|
+| MLY-00 | EP (helpers) | `lastCompound` ignores whitespace inside `(...)`/`[...]`; `isPseudoElement`; `winning` (`!important` > specificity > later rule); `pxLength` (`px` and `0` only); the left side of a 1 to 4 value shorthand; a longhand wins over a shorthand |
+| MLY-01 | EP + BVA (specificity against DSH's `[0,0,1]`) | the reply row's `::before` (it has `content`) has winning `corner-shape` `round`/`superellipse(1)`, keeps `border-radius` `50%` (or at least 14px), and the winning rule is `!important` or outranks DSH's `*, :before, :after` (R7) |
+| MLY-02 | EP + BVA | the same for `.fbm-avatar` (R7) |
+| MLY-03 | EP (what else may change) | every rule that sets `corner-shape` is about `.fbm-avatar` or the reply row's `::before`; the stylesheet never writes `--dsw-corner-shape` (R7: other elements keep the superellipse) |
+| MLY-04 | EP | the footer row has a left margin or padding; its offset is more than 0 and equals the reply row's offset plus the bubble's left margin (R8) |
+| MLY-05 ×6 | DT (marker × row kind × row part) | a left margin/padding rule applies to: Fishball's footer and Fishball's reply row; to none of: another session's footer, another session's reply row, Fishball's `reasoning` row, Fishball's `turn-process` row (R8, R4, R5) |
+| MLY-06 | EP | every rule that names the footer row has the conversation and the marker, and styles the row itself, not what is inside it (DSH's -6px margin on the copy button stays) (R8, R4) |
+| MLY-07 | ST (on, off, on, off, on) | each time the look is on the reply avatar, sender avatar and footer rules are mounted; each time it is off there is no style element (R6, R7, R8) |
+
 ### [messenger-author.test.mjs](messenger-author.test.mjs): R4 (one host with source fixtures and the raised title cap)
 
 | id | technique | expected result |
@@ -2288,3 +2328,51 @@ Host-side cases in [rev11-pile-list.test.mjs](rev11-pile-list.test.mjs). PLL-01 
 | PLL-10 | EP | P9 | markup in a note is kept verbatim |
 
 Left to the hand check (HC): PLL-HC-P1 rows (two lines, ellipsis, buttons per kind, newest first, count); PLL-HC-P2 fallback why line in English and Chinese and live replacement; PLL-HC-P4 detail (content, other rows and grants hidden, Back/outside/Escape, answer returns, focus); PLL-HC-P5 detail closes when the request leaves; PLL-HC-P6 arrival while detail open; PLL-HC-P7 scrolling, cap, opaque title, grants below; PLL-HC-P8 animations and reduced motion; PLL-HC-P9 `ask_fishball` row, plain-text drawing, Chinese, light and dark.
+
+## Fix: Chinese punctuation stays outside bold text (persona rule; DESIGN §7 "Bold text and Chinese punctuation", §16 Q-bold-punct; requirements R-B1..R-B4; written from the requirements alone, no behaviour code read)
+
+DSH's markdown renderer can leave bold text unclosed when it ends in Chinese punctuation and a letter follows (`**还在进行中：**dsh` showed its asterisks). Fishball cannot change the renderer, so the persona gets one last line asking the model to write `**还在进行中**：` and not `**还在进行中：**`. Two files; both import only the data exports of `src/persona.js` (`PERSONA_ROLE`, `PERSONA_ROW`, `HIDDEN_PROMPT_ENTRIES`), through [support/persona-bold.mjs](support/persona-bold.mjs). Named values are in `PERSONA_BOLD`, `DSH_MARKDOWN`, `AFTER_PUNCT`, `CHINESE_PUNCT` and `BOLD_SENTENCES` in [support/constants.mjs](support/constants.mjs).
+
+### [persona-bold.test.mjs](persona-bold.test.mjs): R-B1, R-B2, R-B3 (PBD-nn; 20 tests; static cases need no host, the R-B3 prompt cases boot one)
+
+| id | technique | expected result |
+|---|---|---|
+| PBD-01 | EP (rule line count) | exactly one line holds both forms of the example; each form occurs once in the whole persona |
+| PBD-02 | BVA (last line) | that line is the last line (index = length − 1); it is not empty; the persona has no trailing line break and no carriage return |
+| PBD-03 | EP (wording) | the line contains "bold", "Chinese punctuation", "outside" (case-insensitive) and `**` |
+| PBD-04 | DT (order × lead-in) | the form to write comes before the form not to write; "write" just before the first, "not" just before the second |
+| PBD-10 | BVA (line count) | baseline lines + 1 (equal if the baseline already has the rule) |
+| PBD-11 | EP (every old line) | line i equals the baseline's line i for every baseline line |
+| PBD-12 | BVA (edges) | line 0 and the baseline's last line unchanged; the rule line sits right after the last old line |
+| PBD-13 | BVA (blank lines) | blank lines at the same indices as the baseline's; the rule line is not blank |
+| PBD-14 | EP (exact text) | persona = baseline + line break + rule line |
+| PBD-15 | EP (rest of module) | same export names (the three above); `PERSONA_ROW` equal to the baseline's except `config.prefix`; `HIDDEN_PROMPT_ENTRIES` equal |
+| PBD-20 | EP (mounted row) | `PERSONA_ROW.name` is `@deepseek-ai/dsh-persona`; `config.prefix` equals the persona and ends with the rule line |
+| PBD-21 ×4 | DT (session × rule) | rule line once in Fishball's setup-turn and driven-turn system prompts; in neither the bare-preset nor the standard-preset ordinary session's |
+| PBD-22 | EP (prompt shape) | the whole persona occurs once in Fishball's prompt, and the rule line is where it ends |
+| PBD-23 ×2 | EP (ordinary) | neither ordinary session's prompt holds either form of the example, "Chinese punctuation" or "还在进行中" |
+| PBD-24 | ST (restart) | after a restart the same Fishball session's next request holds the persona once, with the rule line |
+
+The baseline is `git show rebuild/assistant:src/persona.js`, imported from a `data:` URL (no file is written). R-B2's cases are skipped, with the reason, when that ref is not in the clone. When the live branch has taken the rule in, "the added line" is already part of the baseline and the cases expect no difference at all. `FBTEST_PLUGIN_DIR` points both the data import and the booted host at another checkout, so a baseline run of the file shows the cases that need the rule failing.
+
+Checked by changing a copy of the persona (eight mutants, run through `FBTEST_PLUGIN_DIR`, not committed): no rule; rule in the middle; blank line before it; the two forms swapped; an earlier line edited; trailing line break; two rule lines; ASCII colon in the example. Every mutant fails at least one of PBD-01..20.
+
+### [persona-bold-render.test.mjs](persona-bold-render.test.mjs): R-B4, DSH's own parser (PBR-nn; 30 tests for each installed version in `DSH_MARKDOWN.versions`: 0.2.1-rc.3 and 0.2.1-rc.2)
+
+[support/dsh-markdown.mjs](support/dsh-markdown.mjs) cuts the chat's markdown parser verbatim out of the installed web frontend bundle (`dsh-web-frontend/dist/assets/index-*.js`: micromark `fromMarkdown` with the gfm extension, DSH's own `cjkFriendlyAttention` rule and the math extensions) and imports it with the bundle's vendor chunk. It is not another markdown library. Not DSH's code: a stub `document` while the vendor chunk loads, and a stub for the one image-file-type helper of the post-processing step (it only rewrites a paragraph that is a single local image path). The mdast to React step is not run: a `strong` node is what the chat shows in bold. A version that is not installed, or whose bundle has another shape, skips its cases with the reason.
+
+| id | technique | expected result |
+|---|---|---|
+| PBR-01 | EP (the reported bug) | `**还在进行中：**dsh`: no `strong` node, the `**` stay in plain text |
+| PBR-02 | EP (the rule's form) | `**还在进行中**：dsh`: `strong` "还在进行中", plain text "：dsh", no asterisk |
+| PBR-03 ×9 | DT (form × what follows the mark: letter, capital, digit, accented letter, Cyrillic letter, Chinese character, space, end of line, ASCII mark) | rule's form: bold in every row. The forbidden form: asterisks shown after a letter or digit (five rows), closed by the renderer after the other four |
+| PBR-04 ×15 | EP (each Chinese mark: `，。！？；：、）」”…—（【》`) | rule's form bold; the forbidden form followed by a letter shows its asterisks |
+| PBR-05 ×3 | EP (in context) | a mark mid-line; two bold runs in one line; two list items: every bold run found, no asterisk left in plain text |
+| PBR-06 | EP (the persona's own text) | the two example forms cut from the persona's rule line behave as PBR-01/02 |
+
+### Ambiguities and findings (persona rule)
+
+- **A173. "First part of the system prompt".** The persona is not at the very start of Fishball's system prompt: DSH puts its own line `You are an AI agent powered by DeepSeek Harness.` first (the persona starts at character 51), and the persona is followed by blank-line separated sections (web search notes and so on). PBD-22 therefore checks that the whole persona occurs once and that the rule line is where it ends, not that it starts at index 0.
+- **A174. Wording.** The requirement fixes the examples (`**还在进行中**：` to write, `**还在进行中：**` not to) and the sense ("in bold text, put Chinese punctuation outside the `**` markers"), not the exact sentence. PBD-03/04 check the words "bold", "Chinese punctuation", "outside", `**`, and the order "write … not …"; a rewording that drops one of them fails there on purpose and is a one-line change to `PERSONA_BOLD.terms` / `before`.
+- **A175. The persona has no list marker requirement.** The new line begins `- ` like its neighbours, but the requirement does not ask for it, so no case checks it.
+- **A176. What the renderer does (finding, PBR-03/04).** The asterisks stay visible when a letter or digit of any script follows the closing marker (Latin, capital, digit, accented, Cyrillic); a Chinese character, a space, the end of the line or an ASCII mark after it closes the bold text. All 15 Chinese marks tried (`，。！？；：、）」”…—（【》`) behave alike. The rule is therefore needed only before a letter or digit, but it is safe in every position. The same happens with an ASCII mark (`**still going:**dsh`, `**还在进行中:**dsh` keep their asterisks): the persona rule covers Chinese punctuation only, as the requirement says.
