@@ -93,6 +93,9 @@ export const PRESET = {
   standard: 'standard',
   /** A test preset with no tools of its own, so the global fixture tools are what an ordinary session sees. */
   bare: 'fbtest-bare',
+  /** rev11g: sessions that can call ask_user_question (blocking, like the shipped presets) / the timed variant (default wait 120 s, per call `timeout`). */
+  ask: 'fbtest-ask',
+  askTimed: 'fbtest-ask-timed',
 }
 
 export const assistantDir = (home) => path.join(home, 'fishball', 'assistant')
@@ -221,10 +224,10 @@ export const API = {
 }
 
 // ---- P5 (messaging, intake, outbox) ----
-/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16). */
+/** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16); rev11g 'questionMode' (DESIGN §10e snapshot). */
 /** P11 R2 adds 'look' (17). */
 /** Revision 10c adds 'features' (18). Revision 11 rev11a adds 'managed' (19, DESIGN §10e "Snapshot"); rev11c adds 'pile' (20). The tag records the Host publishes (§9 "Tag records") may add a 'tags' key, whose name the design leaves open: tests drop it before comparing (STATE_KEYS_OPTIONAL). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'grants', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'pile', 'preferences', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'grants', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'pile', 'preferences', 'questionMode', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
 /** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
 export const STATE_KEYS_OPTIONAL = ['tags']
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
@@ -245,6 +248,11 @@ export const P5_CODE = {
  * titles passes (DSH keeps it as given: single line, short, no edge whitespace).
  */
 export const TITLE = { refused: 'no-title', unavailable: 'title-unavailable', invalid: 'title-invalid', failed: 'title-failed', plain: 'Fbtest started session' }
+/**
+ * start_session keeps a session DSH created but could not add to the workspace (DESIGN 5d, Q-start-half-made): the
+ * error code DSH's create throws, and the value of the `workspaceError` field the answer carries.
+ */
+export const HALF_MADE = { dshCode: 'session/workspace-attach-failed', workspaceError: 'workspace-attach-failed' }
 export const INTAKE_KEYS = ['failed', 'items', 'queued', 'wakeupsThisHour']
 export const INTAKE_ITEM_KEYS = ['createdAt', 'errorCode', 'intakeId', 'kind', 'sourceIdentity', 'status']
 export const INTAKE_KINDS = ['session', 'user', 'system']
@@ -294,6 +302,8 @@ export const WATCH_TOOLS = ['watch_session', 'list_watches', 'unwatch_session', 
 /** W5: read_session bounds. */
 export const READ_MAX = { messages: 12, bytes: 12288 }
 export const READ_ROLES = ['user', 'assistant']
+/** Q-read-roles: the five labels read_session gives a message, from the source DSH recorded with it. */
+export const READ_ROLE = { user: 'user', assistant: 'assistant', fishball: 'fishball', agent: 'agent', context: 'context' }
 
 /** P4 C1: keys of state.contextWindow, and its refusal codes (C3, C7). */
 export const CONTEXT_WINDOW_KEYS = ['compactionOff', 'contextWindowTokens', 'effectiveWindow', 'error', 'maxOutputTokens', 'modelWindow', 'outputCap', 'pressureTokens', 'threshold']
@@ -613,11 +623,11 @@ export const PRIVATE_ROW_PREFIX = 'fbo-'
  */
 export const OWN_PLUGINS = {
   // Revision 11 rev11a: release_session joins Session messages (DESIGN §5e "Which Fishball plugin", §10d).
-  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_fishball', 'release_session'] },
+  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_fishball', 'release_session', 'stop_session', 'redirect_session'] },
   watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
   plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
   // Revision 11 rev11b: ask_fishball and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
-  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant', 'list_frozen_sessions', 'answer_prompt', 'withdraw_request'] },
+  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant', 'list_frozen_sessions', 'answer_prompt', 'withdraw_request', 'answer_question'] },
 }
 /** The five entries of the "Fishball" group (snapshot dsh 'fishball'): the four above and the Messenger look. */
 export const FISHBALL_GROUP_KEYS = [...Object.values(OWN_PLUGINS).map((p) => p.key), 'builtin:messenger']
@@ -789,3 +799,24 @@ export const CUT_MARK = '…'
 export const OWN_WITHDRAW_HINT = /or withdraw one/i
 /** The fixture plugin tool that asks DSH for approval in its body (fixture-tools.mjs, FBTEST_ASKING_TOOLS) and is visible to Fishball. */
 export const OWN_ASKING_TOOL = 'demo_echo'
+
+// ---- Revision 11 rev11g (questions and plan reviews in managed sessions; DESIGN §7a.10, §9, §10e, §11, §14, §16; requirements items 25-27; S36, S37) ----
+/** Fishball's tool (§7a.10): {question_id, answers?, approve?, feedback?, to_user?, note?}. */
+export const ANSWER_QUESTION = 'answer_question'
+/** Host routes (§10e "Host API"): answer a question card; set the mode. */
+export const QUESTION_API = { answer: '/api/fishball/questions/answer', mode: '/api/fishball/question-mode' }
+/** The three modes (item 25); `auto` is the default. */
+export const QUESTION_MODE = { auto: 'auto', fishball: 'fishball', user: 'user' }
+/** The code answer_question gives in User mode (§7a.10 "Code enforces only User mode"). */
+export const MODE_USER_CODE = 'mode-user'
+/** Table `settings`, key `questions`: {mode, changedAt} (§9). */
+export const QUESTION_SETTINGS = { table: 'settings', key: 'questions' }
+/** Tag kinds rev11g adds (§9 "Tag records"). */
+export const QUESTION_TAG_KIND = { question: 'question', planReview: 'plan-review' }
+/** DSH's own wording for a plan-review outcome (dsh-plan-mode), and the tool names. */
+export const PLAN = { exit: 'exit_plan_mode', approve: 'Approve', keep: 'Keep planning', approved: /Plan approved/, feedbackPrefix: 'The user chose to keep planning; their feedback: ', dismissed: /dismissed the plan review/ }
+/** The ask_user_question tool and the id of a plan review's single question. */
+export const ASK_USER_QUESTION = 'ask_user_question'
+export const PLAN_REVIEW_ID = 'plan-review'
+/** A timed question's pending result carries these (dsh-tool-ask-user). */
+export const PENDING = { key: 'pending' }

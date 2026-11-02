@@ -68,17 +68,16 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SOURCE, TAG_KIND, THREAD_FROM } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SESSION_INFO, SOURCE, TAG_KIND, THREAD_FROM } from './constants.js'
 import { AuditLog } from './audit.js'
 import { CallPasses } from './passes.js'
 import { WORDING } from './result-wording.js'
-import { describeSession, rootSessionOf } from './session-info.js'
+import { describeSession, rootSessionOf, senderOf } from './session-info.js'
 import { authorOf, sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
 import { diagnosticOf } from './errors.js'
 import { checkGrant } from './grants.js'
-import { waitingResult } from './own-requests.js'
 
 export const APPROVAL_TOOL = Object.freeze({ answer: 'answer_approval', listPrompts: 'list_frozen_sessions', answerPrompt: 'answer_prompt' })
 const SOURCE_IDENTITY = 'fishball/approval'
@@ -87,6 +86,7 @@ const PROVENANCE = Object.freeze({
   user: 'the user',
   fishballStart: 'Fishball (start_session)',
   fishballMessage: 'Fishball (message_session)',
+  fishballRedirect: 'Fishball (redirect_session)',
   other: 'another agent or a notice',
   unknown: 'unknown',
 })
@@ -173,7 +173,8 @@ const TEXT = Object.freeze({
 const JSON_OUTPUT = Object.freeze({ schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value, null, 2) }] })
 const ok = (fields = {}) => ({ ok: true, ...fields })
 const refused = (code, fields = {}) => ({ ok: false, code, ...fields })
-const sha256 = (text) => createHash('sha256').update(text).digest('hex')
+/** The audit's digest of a text (the question router's too, rev11g). */
+export const sha256 = (text) => createHash('sha256').update(text).digest('hex')
 const trimmed = (text) => (typeof text === 'string' ? text.trim() : '')
 
 /** The parsed arguments of one call as the model sent them (JSON text or a value), or undefined. */
@@ -214,13 +215,16 @@ export function argumentsOf(session, callId, toolName, maxBytes) {
   return none
 }
 
-/** The latest message you typed in a session (sources user / user-rpc), cut to maxBytes. */
-function latestUserText(session, maxBytes) {
+/** A user message event's text blocks, joined as they were sent (a redirect's digest is of that text). */
+const textOf = (event) => (event.data?.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('\n')
+
+/** The latest message you typed in a session (sources user / user-rpc), cut to maxBytes (also the question notice's, rev11g). */
+export function latestUserText(session, maxBytes) {
   const events = session.snapshotEvents()
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]
-    if (event.type !== APPROVAL.userEvent || !APPROVAL.userSources.includes(event.data?.source?.kind)) continue
-    const text = (event.data.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim()
+    if (event.type !== APPROVAL.userEvent || senderOf(event.data?.source) !== SESSION_INFO.roles.user) continue
+    const text = textOf(event).trim()
     if (text.length > 0) return cutToBytes(text, maxBytes, ELLIPSIS)
   }
   return ''
@@ -261,6 +265,7 @@ export class ApprovalBroker {
   #assistantId
   #isLive
   #startedByFishball
+  #redirectedByFishball
   #agentOf
   #onChange
   #isEnabled
@@ -288,6 +293,7 @@ export class ApprovalBroker {
    * @param store - Store (approvals and decisions audits). @param logger - plugin logger.
    * @param deps.ledger, deps.readLimits, deps.assistantId, deps.isLive, deps.onChange.
    * @param deps.startedByFishball - (sessionId) => whether Fishball started that session.
+   * @param deps.redirectedByFishball - (sessionId, text) => whether that text is a redirect_session instruction Fishball sent it.
    * @param deps.agentOf - () => Fishball's agent (for notes without a wake).
    * @param deps.isEnabled - () => whether Fishball's Permission requests plugin runs (revision 10c);
    *   when it stops, the caller releases waiting requests (releaseAll).
@@ -299,7 +305,7 @@ export class ApprovalBroker {
    * @param deps.manage - (sessionId, by) => Promise<whether it became managed now> (answer_prompt, §7a.9).
    * @param deps.own - OwnRequests (Fishball's own cards and their passes, §7a.11).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, tags, grants, manage, own }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, redirectedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, tags, grants, manage, own }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -308,6 +314,7 @@ export class ApprovalBroker {
     this.#assistantId = assistantId
     this.#isLive = isLive
     this.#startedByFishball = startedByFishball
+    this.#redirectedByFishball = redirectedByFishball
     this.#agentOf = agentOf
     this.#onChange = onChange
     this.#isEnabled = isEnabled
@@ -917,7 +924,8 @@ export class ApprovalBroker {
       return APPROVAL_OUTCOME.rejected
     }
     if (id === undefined) {
-      this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
+      // Fishball's own tool reads too-many-waiting back as JSON (cardFor); another plugin's tool gets the text by its mark.
+      if (expected === undefined) this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
       return APPROVAL_OUTCOME.rejected
     }
     if (expected === undefined) this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.waiting, requestId: id })
@@ -927,12 +935,11 @@ export class ApprovalBroker {
 
   /**
    * Fishball's own tool, after its request was answered 'rejected': the waiting result when the
-   * request became a card (§7a.11), or undefined when it was refused without one (a never-asking
-   * mode, S35; the cap, whose text post-execute sets).
+   * request became a card (§7a.11), too-many-waiting past the cap, or undefined when it was
+   * refused without either (a never-asking mode, S35).
    */
   cardFor(callId) {
-    const id = this.#own.takeFiled(callId)
-    return id === undefined ? undefined : waitingResult(id)
+    return this.#own.takeFiled(callId)
   }
 
   /**
@@ -1099,14 +1106,19 @@ export class ApprovalBroker {
   #provenance(session) {
     const fishball = this.#assistantId()
     const events = session.snapshotEvents()
-    const byFishball = (source) => source?.kind === SOURCE.relay.kind && source.senderSessionId === fishball
-    const describe = (source, fishballText) => source === undefined ? PROVENANCE.unknown : byFishball(source) ? fishballText : APPROVAL.userSources.includes(source.kind) ? PROVENANCE.user : PROVENANCE.other
+    const describe = (source, fishballText) => {
+      if (source === undefined) return PROVENANCE.unknown
+      const sender = senderOf(source, fishball)
+      return sender === SESSION_INFO.roles.user ? PROVENANCE.user : sender === SESSION_INFO.roles.fishball ? fishballText : PROVENANCE.other
+    }
     let turnStart = -1
     for (let i = events.length - 1; i >= 0; i--) if (events[i].type === APPROVAL.turnStartEvent) { turnStart = i; break }
-    const firstOfTurn = events.slice(turnStart + 1).find((event) => event.type === APPROVAL.userEvent)?.data?.source
+    const firstOfTurn = events.slice(turnStart + 1).find((event) => event.type === APPROVAL.userEvent)
     const firstOfSession = events.find((event) => event.type === APPROVAL.userEvent)?.data?.source
     const session_ = this.#startedByFishball(session.id) ? PROVENANCE.fishballStart : describe(firstOfSession, PROVENANCE.fishballStart)
-    return { session: session_, turn: describe(firstOfTurn, PROVENANCE.fishballMessage) }
+    // A Fishball relay is a redirect when the outbox keeps a redirect of exactly that text (rev11h).
+    const turnText = firstOfTurn !== undefined && this.#redirectedByFishball(session.id, textOf(firstOfTurn)) ? PROVENANCE.fishballRedirect : PROVENANCE.fishballMessage
+    return { session: session_, turn: describe(firstOfTurn?.data?.source, turnText) }
   }
 
   /** Audit one request (never the arguments or quoted text: a digest and message ids). */
@@ -1159,30 +1171,27 @@ export class ApprovalBroker {
   }
 
   /**
-   * One tag record, placed in the asking turn by the seq of the asking call: the ask_fishball call
-   * of this round, or the direct call (§7a.3 "Tags", S37). A call the log does not show as a
-   * `tool/call` (a run_code inner call, a subagent's call) takes the session's latest seq: the
-   * asking turn is still running while Fishball answers or a grant covers it, so it lies inside it.
+   * One tag record in the asking turn: the ask_fishball call of this round, or the direct call (§7a.3 "Tags").
    * @param target - a request, or a call a grant covered: { session, sessionId, askCallId?, callId }.
    * @param answer - an APPROVAL_DECISION; @param kind - a TAG_KIND; @param grant - what a grant tag names.
    */
   async #tag(target, answer, kind, grant) {
-    const callId = target.askCallId ?? target.callId
-    const events = target.session.snapshotEvents()
-    let seq = events.at(-1)?.seq
-    for (let i = events.length - 1; i >= 0; i--) {
-      if (events[i].type === APPROVAL.toolCallEvent && events[i].data?.callId === callId) { seq = events[i].seq; break }
-    }
-    if (seq === undefined) return
-    await this.#tags.add({ sessionId: target.sessionId, callId, seq, answer, kind, grant })
+    await this.#tags.addForCall({ session: target.session, sessionId: target.sessionId, callId: target.askCallId ?? target.callId, answer, kind, grant })
   }
 
   /** A short note to Fishball without waking it (DESIGN §7a: it learns from your choices). */
   #tell(text) {
-    const agent = this.#agentOf()
-    if (agent === undefined) return
-    try { agent.inject(createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(text), author: authorOf(INTAKE_KIND.system) } })) } catch (error) {
-      this.#logger.warn('approval note failed (%s)', diagnosticOf(error))
-    }
+    tellWithoutWake(this.#agentOf(), text, this.#logger)
+  }
+}
+
+/**
+ * A short Fishball notice injected without a wake (it reads it at its next turn). Shared by the
+ * broker and the question router (rev11g). @param agent - Fishball's agent, or undefined (not live: dropped).
+ */
+export function tellWithoutWake(agent, text, logger) {
+  if (agent === undefined) return
+  try { agent.inject(createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(text), author: authorOf(INTAKE_KIND.system) } })) } catch (error) {
+    logger.warn('Fishball note failed (%s)', diagnosticOf(error))
   }
 }
