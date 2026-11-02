@@ -1,0 +1,56 @@
+{
+  "id": "rev12-recheck-dsh-idle-compact+dsh-plugin-save-token+smart-compaction",
+  "started": "2026-11-02T07:33:42.471Z",
+  "finished": "2026-11-02T07:33:59.506Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "home": "/Volumes/SSD1/GitHub/dsh-fishball/.claude/worktrees/rec-plugins-build-d5cb13/.runtime/spikes/rev12recheck-1793604822472",
+  "fishballStatus": "live",
+  "results": {
+    "dsh-idle-compact": {
+      "install": 200,
+      "version": "0.3.0",
+      "onAfterInstall": true,
+      "onCode": null,
+      "on": true,
+      "applied": true,
+      "waiting": false,
+      "lastError": null,
+      "blocked": null,
+      "tools": [],
+      "ms": 5032
+    },
+    "dsh-plugin-save-token": {
+      "install": 200,
+      "version": "2.4.1",
+      "onAfterInstall": true,
+      "onCode": null,
+      "on": true,
+      "applied": true,
+      "waiting": false,
+      "lastError": null,
+      "blocked": null,
+      "tools": [
+        "save_token_expand:unchecked"
+      ],
+      "ms": 3653
+    },
+    "smart-compaction": {
+      "install": 200,
+      "version": "0.3.15",
+      "onAfterInstall": true,
+      "onCode": null,
+      "on": true,
+      "applied": true,
+      "waiting": false,
+      "lastError": null,
+      "blocked": null,
+      "tools": [
+        "compact_now:unchecked",
+        "context_status:unchecked"
+      ],
+      "ms": 3965
+    }
+  }
+}

@@ -671,6 +671,9 @@ export const UNREAD = Object.freeze({ recordKey: 'assistant' })
 export const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
 export const PREFERENCE = Object.freeze({ recordKey: 'display', defaultBrandStyle: BRAND_STYLE.fishball })
 
+/** Keys of the notices table (DESIGN §9, revision 12): one record per one-time notice once it has shown. */
+export const NOTICE = Object.freeze({ welcome: 'welcome' })
+
 /** One hour, for the hourly caps (wake-ups, messages, sessions). */
 export const HOUR_MS = 60 * 60 * 1000
 
@@ -810,6 +813,8 @@ export const API = Object.freeze({
   read: '/api/fishball/read',
   /** POST { style }: which brand icon the sidebar shows (BRAND_STYLE). */
   brand: '/api/fishball/brand',
+  /** POST {}: the welcome card has shown, so it never shows again (DESIGN §10f). */
+  welcomeSeen: '/api/fishball/welcome/seen',
   /** GET: the Messenger look's browser file (DESIGN §10c; Fishball's browser half loads it). */
   messengerClient: '/api/fishball/messenger/client.js',
   /** GET ?plugin=: one plugin's page data (rows, settings form, history; DESIGN §10d). */
