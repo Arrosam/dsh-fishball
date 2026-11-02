@@ -1242,25 +1242,26 @@ The Host state and routes below need no spike.
 - **Reading:** a failed check returns to the dialog's first screen with the spec still in the field and the reason shown, as when you type it; the result screen has no "Open its page" when opened from the settings page, as from DSH's Add menu (DSH cannot open the Fishball tab from outside, S28).
 - While Fishball is not ready the install routes answer 409 `unavailable`, as today; the dialog says so.
 
-**The list** (`src/recommended.js`, data in code, read into the snapshot). Each entry: category, package name, the spec the dialog installs, and its source link. Checked on npm with `npm view` (metadata only) on 2026-11-02. Whether each entry runs for Fishball alone is re-checked in a throwaway sandbox (your answer Q-rec-recheck, results in §16 "Revision 12 sandbox re-check"); an entry that no longer runs for Fishball alone is left out, with its reason recorded there.
+**The list** (`src/recommended.js`, data in code, read into the snapshot). Each entry: category, package name, the spec the dialog installs, and its source link. Checked on npm with `npm view` (metadata only) on 2026-11-02. Every entry was installed through Fishball's own install route in a throwaway sandbox and ran for Fishball alone (your answer Q-rec-recheck; `spikes/rev12-recheck.mjs`, §16 "Revision 12 sandbox re-check"). Two of P10's entries no longer do and are left out: OpenViking and `dsh-slack` (below).
 
-| Category | Package (spec) | Version on 2026-11-02 (P10's mount check) | Note |
+| Category | Package (spec) | Version checked on 2026-11-02 (P10's) | Note |
 |---|---|---|---|
 | Context management | `dsh-idle-compact` | 0.3.0 | Your own plugin, now from npm (Q-rec-idle-spec; P10 used `github:Arrosam/dsh-idle-compact`) |
 | Context management | `dsh-plugin-save-token` | 2.4.1 (same) | |
 | Context management | `smart-compaction` | 0.3.15 (0.3.12) | Changed |
-| Memory | `@openviking/dsh-memory-plugin` | 0.5.32 (0.5.29) | Changed; needs an OpenViking server |
 | Memory | `meow-memory` | 0.32.4 (0.31.1) | Changed; now also needs `@deepseek-ai/dsh-llm` as a peer |
 | Memory | `@a9i5k4/dsh-auto-memory` | 3.3.17 (same) | |
 | Memory | `@zilliz/memsearch-dsh` | 0.1.8 (0.1.7) | Changed; gained a dependency (`cross-spawn`); needs the memsearch tool installed |
 | Channel | `@michengai/dsh-im-connect` | 1.0.21 (1.0.17) | Changed (same manifest); WeChat, WeCom, DingTalk, Feishu, Lark, QQ, Telegram |
 | Channel | `@zaofan/dsh-qqbot` | 1.11.36 (1.10.36) | Changed (same manifest) |
 | Channel | `dsh-telegram-notify` | 0.2.3 (same) | One way |
-| Channel | `dsh-slack` | 0.4.7 (0.3.4) | Changed: it gained a browser part (sidebar and settings) and a dependency on `@stardustlc/dsh-updates` ("native DSH plugin update controls"). A Fishball-only plugin's browser part never loads (P10-S22) |
 | Channel | `dsh-plugin-discord` | 0.1.0 (same) | |
 | Channel | `dsh-dingtalk-channel` | 0.1.0 (same) | |
 | Pet | none | | Note only (P10-S22) |
 
+- **Left out after the sandbox re-check (2026-11-02, your rule Q-rec-recheck):**
+  - `@openviking/dsh-memory-plugin` 0.5.32 (P10 checked 0.5.29): it now publishes a service to the whole process (`ctx.provide("openvikingMemory")` in its `index.mjs`), so the catalog turned it off with `leaks-service` (revision 10b keeps such plugins off for Fishball).
+  - `dsh-slack` 0.4.7 (P10 checked 0.3.4): DSH's install refuses it with `incompatible-version`, because it now requires DSH 0.2.1-rc.3 or later (`dsh.compatibility`) and the baseline is rc.2. It also gained a browser part, which never loads for a Fishball-only plugin (P10-S22).
 - **Left out (your answer "1c"), re-checked on npm 2026-11-02, not re-installed** (the sandbox re-check covers the listed plugins only). Revision 10b decided that plugins publishing a service stay off for Fishball (isolation not adopted, S32), so these five remain out: `@xmanrui/dsh-im` 5.9.1 (was 5.6.0), `dsh-plugin-weixin` 1.2.0 (was 0.9.3), `@wsz987/dsh-channels` 0.5.1 (same), `dsh-lark-bot` 0.19.16 (same), `@agentscope-ai/reme-dsh-plugin` 0.1.2 (same). The two that edit other rows also stay out, since that comes from their patch's shape: `billion-context` 0.1.211 (was 0.1.206) and `dsh-handoff-compaction` 0.2.0-rc.9 (was rc.8).
 - **A plugin that later stops running for Fishball** after install is handled as today: the catalog turns it off with its reason (`leaks-service`, `row-failed`, ...) and the entry then shows that tag. Nothing about the list widens what can run.
 - **P10's spikes** are on branch `p10-recommended-plugins` only. Their names there collide with today's S22 and S23, so this section calls them P10-S22 (a Fishball-only plugin's browser part is never served: the boot graph lists only the host tree) and P10-S23 (each candidate turned on for Fishball alone in a throwaway profile; rows applied, or refused with `leaks-service`). P10-H1 tested the marker turn, which is dropped.
@@ -1894,7 +1895,25 @@ Carried over from P10 (your answers then; they hold where today's design does no
 
 **Readings for revision 12, to confirm** (marked **Reading** in §10f): the card shows once on every install, including your existing one, with no reset; the section sits right after Status, as in P10; a failed check from an entry's Install returns to the dialog's first screen with the spec and the reason; the dialog opened from the settings page has no "Open its page"; the card's button is not drawn where the settings page cannot be opened.
 
-**Revision 12 sandbox re-check:** pending (filled in by rev12).
+**Revision 12 sandbox re-check (2026-11-02, Q-rec-recheck):** `spikes/rev12-recheck.mjs`, results in `spikes/results/rev12-recheck-*.json`. A throwaway DSH home under the worktree's ignored `.runtime/spikes/`, the fake model, dsh-fishball linked; each listed spec installed through Fishball's own route (`POST /api/fishball/install`, DSH's inherited process, Fishball's folder only), which turned it on for Fishball, then turned off again before the next. The home was deleted afterwards; nothing touched `~/.dsh` or a real profile (pnpm's shared download store is outside DSH and was used as for any install).
+
+| Package | Version | Result |
+|---|---|---|
+| `dsh-idle-compact` (npm) | 0.3.0 | Runs for Fishball alone |
+| `dsh-plugin-save-token` | 2.4.1 | Runs; 1 unchecked tool |
+| `smart-compaction` | 0.3.15 | Runs; 2 unchecked tools |
+| `@openviking/dsh-memory-plugin` | 0.5.32 | **Left out:** `leaks-service` (it now provides `openvikingMemory` to the whole process) |
+| `meow-memory` | 0.32.4 | Runs; 8 unchecked tools |
+| `@a9i5k4/dsh-auto-memory` | 3.3.17 | Runs; 19 unchecked tools |
+| `@zilliz/memsearch-dsh` | 0.1.8 | Runs |
+| `@michengai/dsh-im-connect` | 1.0.21 | Runs |
+| `@zaofan/dsh-qqbot` | 1.11.36 | Runs |
+| `dsh-telegram-notify` | 0.2.3 | Runs |
+| `dsh-slack` | 0.4.7 | **Left out:** install refused `incompatible-version` (requires DSH ≥ 0.2.1-rc.3; baseline rc.2) |
+| `dsh-plugin-discord` | 0.1.0 | Runs |
+| `dsh-dingtalk-channel` | 0.1.0 | Runs |
+
+**Reading:** "runs" means its rows applied in Fishball's private tree with no error; whether each plugin works with its own service or account (an OpenViking server, a Slack token, a QQ bot) was not tried, as in P10.
 
 **Still open for revision 12:** nothing.
 
