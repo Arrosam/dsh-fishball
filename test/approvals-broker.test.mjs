@@ -31,7 +31,7 @@
  * | APR-21  | EP | P8 | approvals keys; pending entry while waiting; recent entry keys and enums, newest first; never the arguments (state and audit files) |
  * | APR-22  | BVA (21 requests) | P8 | 20 listed, newest first |
  * | APR-23  | BVA (auditEntriesKept 2) | P8 | at most 2 audit records, the newest kept |
- * | APR-24  | EP | P9 | the rubric phrases in Fishball's system prompt |
+ * | APR-24  | EP | P9, rev11 §7a.7 | the rubric phrases (rules 1-5) in Fishball's system prompt; no "You cannot reject"; one line lets it reject only beyond the user's request and when dangerous |
  * | APR-25  | EP | P10 | the client bundle has 'Permission requests' |
  */
 import assert from 'node:assert/strict'
@@ -41,10 +41,10 @@ import { after, before, describe, it } from 'node:test'
 import {
   ANSWER_TOOL, APPROVALS_KEYS, AUTHOR_KIND, APPROVAL_FIELDS, APPROVAL_ID, APPROVAL_PREFIX, APPROVAL_SUMMARY, APPROVER_AFTER_ENV, APPROVER_THROWS, APR_CODE, APR_NOTE,
   ASK_REASON, ASK_TOOL, ELLIPSIS, FINAL_OUTCOMES, INBOUND_TOOL, LATEST_USER_MAX_BYTES, LIMITS, NOTICE, OUTCOME, PENDING_KEYS, PRESET, RECENT_ANSWERS,
-  RECENT_KEYS, RECENT_MAX, RUBRIC, STARTED_BY, STARTED_BY_OTHER, TITLE, TURN_BY,
+  RECENT_KEYS, RECENT_MAX, REJECT_RULE, RUBRIC, RUBRIC_REMOVED, STARTED_BY, STARTED_BY_OTHER, TITLE, TURN_BY,
 } from './support/constants.mjs'
 import {
-  HOOK, T, approvalsNow, askSettled, bytes, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball,
+  HOOK, T, makeManaged, approvalsNow, askSettled, bytes, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball,
   requestMessages, resultOfCall, sessionAuthor, settledIdle, startAsk, toolNames, turn, waitRequest,
 } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
@@ -66,6 +66,8 @@ describe('P7 ApprovalBroker', () => {
   const fresh = async (folder) => {
     const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
     await turn(host, sid, [[{ text: 'hello' }]], 'first words')
+    // rev11a: only a managed session's permission requests reach Fishball (DESIGN §7a.1); these cases are about those.
+    await makeManaged(host, fb, sid)
     return sid
   }
   /** One Fishball turn answering a request directly; returns the parsed answer. */
@@ -489,6 +491,7 @@ describe('P7 ApprovalBroker', () => {
     })
     it('first user message from another agent: never "the user"', T, async () => {
       const sid = (await host.call('ordinary', { preset: PRESET.bare, folder: 'apr-16e' })).sessionId
+      await makeManaged(host, fb, sid)
       const text = tok('16e')
       await escalateFor(text)
       await startAsk(host, sid, ASK_TOOL, { text }, 'agent words ' + text, { kind: 'agent-message', form: 'relay', senderSessionId: x })
@@ -505,6 +508,7 @@ describe('P7 ApprovalBroker', () => {
     await host.call('askInNewAgents', { on: true })
     try {
       const std = (await host.call('ordinary', { preset: PRESET.standard, folder: 'apr-17' })).sessionId
+      await makeManaged(host, fb, std)
       const marker = tok('17sub')
       const text = tok('17')
       await host.call('queueMarker', { marker, except: std, script: [...callScript(ASK_TOOL, { text })] })
@@ -646,9 +650,14 @@ describe('P7 ApprovalBroker', () => {
     } finally { await setLimit({ auditEntriesKept: LIMITS.auditEntriesKept.default }) }
   })
 
-  it('APR-24 Fishball\'s system prompt carries the permission rubric', T, async () => {
+  it('APR-24 Fishball\'s system prompt carries the permission rubric (revision 11: may reject only beyond the request and dangerous)', T, async () => {
     const system = (await host.call('requests', { sessionId: fb })).at(-1).system
     for (const phrase of RUBRIC) assert.ok(system.includes(phrase), 'missing: ' + phrase)
+    for (const phrase of RUBRIC_REMOVED) assert.equal(system.includes(phrase), false, 'revision 11 removed: ' + phrase)
+    // One line (or sentence) carries the whole rule: both conditions must hold.
+    const units = system.split(/\n|(?<=[.;])\s+/)
+    const rule = units.find((u) => Object.values(REJECT_RULE).every((re) => re.test(u)))
+    assert.ok(rule, 'a line letting Fishball reject only beyond the user\'s request and when dangerous')
   })
 
   it('APR-25 the client bundle has a Permission requests section', T, async () => {

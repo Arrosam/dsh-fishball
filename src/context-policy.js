@@ -24,11 +24,21 @@ const DSH_POLICY = Object.freeze({ thresholdRatio: DSH_THRESHOLD_RATIO, headroom
  */
 const ROUNDING_GUARD = 0.5
 
-/** Default reply-length cap for a smaller window: one eighth of it, at most 32,000 (Q-defaults). */
-export const defaultOutputCap = (window) => Math.min(CONTEXT.outputMax, Math.floor(window / CONTEXT.outputShare))
+/** The limits (src/config.js) that price a smaller window: every one evaluateWindow reads. */
+export const PRICING_LIMITS = Object.freeze(['replyCapShare', 'headroomShare', 'minWindowTokens', 'defaultReplyCapTokens'])
 
-/** Compaction headroom for a smaller window; DSH also caps the summary's length with it. */
-export const headroomFor = (window) => Math.min(DSH_HEADROOM, Math.floor(window / CONTEXT.headroomShare))
+/**
+ * Default reply-length cap for a smaller window: one in limits.replyCapShare of it, at most
+ * limits.defaultReplyCapTokens (Q-defaults).
+ * @param window - the smaller window, in tokens; limits - current limits (readLimits).
+ */
+export const defaultOutputCap = (window, limits) => Math.min(limits.defaultReplyCapTokens, Math.floor(window / limits.replyCapShare))
+
+/**
+ * Compaction headroom for a smaller window; DSH also caps the summary's length with it.
+ * @param window - the smaller window, in tokens; limits - current limits (readLimits).
+ */
+export const headroomFor = (window, limits) => Math.min(DSH_HEADROOM, Math.floor(window / limits.headroomShare))
 
 /** dsh-compaction-basic's pricing of one request (see the module comment). */
 export function specOf({ thresholdRatio, headroomTokens, retainTokens }, window, reserved) {
@@ -41,11 +51,12 @@ export function specOf({ thresholdRatio, headroomTokens, retainTokens }, window,
 /**
  * dsh-compaction-basic config making the engine, on a model of modelWindow, trigger and
  * retain as DSH's defaults would on a model of effectiveWindow with reply cap output.
+ * @param limits - current limits (readLimits): headroomShare prices the headroom.
  * @returns { config, threshold, retain }; config holds thresholdRatio, headroomTokens,
  *   retainTokens and maxTokens (the summary's cap, which DSH otherwise ties to headroom).
  */
-export function derivePolicy(effectiveWindow, modelWindow, output) {
-  const headroomTokens = headroomFor(effectiveWindow)
+export function derivePolicy(effectiveWindow, modelWindow, output, limits) {
+  const headroomTokens = headroomFor(effectiveWindow, limits)
   const target = specOf({ ...DSH_POLICY, headroomTokens }, effectiveWindow, output)
   return {
     config: {
@@ -64,7 +75,7 @@ export function derivePolicy(effectiveWindow, modelWindow, output) {
  * that must stay below the threshold, or compaction would run again at once and never settle.
  * The summary cap and reply cap must also be at least the minimum (review M2: DSH refuses a
  * summary cap of 0, which would break Fishball's compaction plugin; a reply cap of 0 is none).
- * While the envelope is unknown (no request yet), CONTEXT.minWindowTokens bounds the window.
+ * While the envelope is unknown (no request yet), the minWindowTokens limit bounds the window.
  */
 const fits = ({ threshold, retain }, envelope, summaryCap) => summaryCap >= CONTEXT.minCapTokens && threshold > 0 && retain + envelope + summaryCap < threshold
 
@@ -80,12 +91,14 @@ const dshAccepts = ({ threshold, retain }, window, reserved) => window - reserve
  * @param setting - { contextWindowTokens?, maxOutputTokens? } (positive whole numbers when set).
  * @param model - { window?, defaultMaxTokens? } from the model adapter; window undefined = unknown.
  * @param envelopeTokens - system prompt plus tool declarations of the latest request (0 = unknown).
+ * @param limits - current limits (src/config.js readLimits): replyCapShare, headroomShare,
+ *   minWindowTokens and defaultReplyCapTokens price a smaller window.
  * @returns { modelWindow, effectiveWindow, outputCap, threshold, retain, config, error }.
  *   config is the compaction row's config ({} = DSH's defaults); outputCap the reply cap every
  *   request gets (undefined = none). error is a CONTEXT_ERROR code when the setting cannot
  *   apply: then none of it applies (DSH's defaults, no cap) and the reason is shown.
  */
-export function evaluateWindow(setting, model, envelopeTokens) {
+export function evaluateWindow(setting, model, envelopeTokens, limits) {
   const requested = setting.contextWindowTokens
   const modelWindow = model.window
   const unapplied = (error) => ({ modelWindow, effectiveWindow: modelWindow, outputCap: undefined, threshold: undefined, retain: undefined, config: {}, error })
@@ -101,11 +114,11 @@ export function evaluateWindow(setting, model, envelopeTokens) {
     return { modelWindow, effectiveWindow: modelWindow, outputCap, ...spec, config: {}, error: null }
   }
 
-  if (requested < CONTEXT.minWindowTokens) return unapplied(CONTEXT_ERROR.windowTooSmall)
-  const outputCap = setting.maxOutputTokens ?? defaultOutputCap(requested)
+  if (requested < limits.minWindowTokens) return unapplied(CONTEXT_ERROR.windowTooSmall)
+  const outputCap = setting.maxOutputTokens ?? defaultOutputCap(requested, limits)
   if (outputCap >= requested) return unapplied(CONTEXT_ERROR.outputTooLarge)
   if (outputCap < CONTEXT.minCapTokens) return unapplied(CONTEXT_ERROR.windowTooSmall)
-  const derived = derivePolicy(requested, modelWindow, outputCap)
+  const derived = derivePolicy(requested, modelWindow, outputCap, limits)
   if (!fits(derived, envelopeTokens, derived.config.maxTokens)) return unapplied(CONTEXT_ERROR.windowTooSmall)
   return { modelWindow, effectiveWindow: requested, outputCap, threshold: derived.threshold, retain: derived.retain, config: derived.config, error: null }
 }

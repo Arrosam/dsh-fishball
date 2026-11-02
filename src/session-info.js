@@ -8,15 +8,18 @@ import { foldSessionTitle } from '@deepseek-ai/dsh-session-title'
 import { APPROVAL, SESSION_INFO, SOURCE } from './constants.js'
 import { byteLength, cutToBytes } from './text.js'
 
-/** The text of the last assistant message among events, cut to SESSION_INFO.excerptBytes. */
-export function lastAnswerExcerpt(events) {
+/** The seq a session with no events reports, so every later event counts as newer. */
+export const NO_EVENTS_SEQ = -1
+
+/** The text of the last assistant message among events, cut to excerptBytes (the forwardExcerptBytes limit). */
+export function lastAnswerExcerpt(events, excerptBytes) {
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]
     if (event.type !== SESSION_INFO.assistantEvent) continue
     const text = (event.data?.message?.content ?? []).filter((block) => block.type === SESSION_INFO.textBlock).map((block) => block.text).join('\n').trim()
     if (text.length === 0) continue
     // Bounded in bytes, so the framing allowance holds whatever the script (review L).
-    return cutToBytes(text, SESSION_INFO.excerptBytes, SESSION_INFO.ellipsis)
+    return cutToBytes(text, excerptBytes, SESSION_INFO.ellipsis)
   }
   return ''
 }
@@ -37,6 +40,43 @@ export function rootSessionOf(ctx, sessionId) {
   return id
 }
 
+/**
+ * DSH's "session not found": the controller throws an ApiSessionNotFound (class name; its
+ * error.name stays 'Error'), the query engine a SESSION_QUERY_SESSION_NOT_FOUND code.
+ */
+const NOT_FOUND = Object.freeze({ errorName: 'ApiSessionNotFound', queryCode: 'SESSION_QUERY_SESSION_NOT_FOUND' })
+
+/**
+ * Whether a read failed because the session does not exist (DSH's not-found failures), as
+ * opposed to a transient or migration failure.
+ */
+export const isNotFound = (error) => error?.constructor?.name === NOT_FOUND.errorName || error?.code === NOT_FOUND.queryCode
+
+/**
+ * Whether DSH reports a session as gone. Only a not-found failure counts: any other read
+ * failure may be transient, so the session is treated as still there.
+ */
+export async function isSessionGone(ctx, sessionId) {
+  try {
+    await eventsOf(ctx, sessionId)
+    return false
+  } catch (error) {
+    return isNotFound(error)
+  }
+}
+
+/** A session's title among its events (DSH folds the latest title event), or '' when it has none. */
+export const titleFrom = (events) => foldSessionTitle(events)?.title ?? ''
+
+/** A session's current title, or '' when it has none or cannot be read. */
+export async function titleOf(ctx, sessionId) {
+  try {
+    return titleFrom((await eventsOf(ctx, sessionId)).events)
+  } catch {
+    return ''
+  }
+}
+
 /** Events and header of a session: the live one when attached, else the persisted log. */
 async function eventsOf(ctx, sessionId) {
   const live = ctx.sessions.get(sessionId)
@@ -48,27 +88,37 @@ async function eventsOf(ctx, sessionId) {
 /**
  * Describe one session, or undefined when no such session exists.
  * @param ctx - context with sessions, sessionController and workspaceRegistry.
- * @returns { id, title, cwd, archived, excerpt }.
+ * @param excerptBytes - bound of the last answer's excerpt (the forwardExcerptBytes limit).
+ * @returns { id, title, cwd, archived, excerpt, lastSeq }.
  */
-export async function describeSession(ctx, sessionId) {
+export async function describeSession(ctx, sessionId, excerptBytes) {
   let read
   try {
     read = await eventsOf(ctx, sessionId)
   } catch {
     return undefined
   }
-  return describeFrom(ctx, sessionId, read)
+  return describeFrom(ctx, sessionId, read, excerptBytes)
+}
+
+/** A session's last event seq (a watermark), or undefined when no such session exists. */
+export async function lastSeqOf(ctx, sessionId) {
+  try {
+    return (await eventsOf(ctx, sessionId)).events.at(-1)?.seq ?? NO_EVENTS_SEQ
+  } catch {
+    return undefined
+  }
 }
 
 /** Describe a session from events and header already read. */
-function describeFrom(ctx, sessionId, read) {
+function describeFrom(ctx, sessionId, read, excerptBytes) {
   return {
     id: sessionId,
-    title: foldSessionTitle(read.events)?.title ?? '',
+    title: titleFrom(read.events),
     cwd: read.header.cwd ?? null,
     archived: ctx.workspaceRegistry.archivedSessionIds.includes(sessionId),
-    excerpt: lastAnswerExcerpt(read.events),
-    lastSeq: read.events.at(-1)?.seq ?? -1,
+    excerpt: lastAnswerExcerpt(read.events, excerptBytes),
+    lastSeq: read.events.at(-1)?.seq ?? NO_EVENTS_SEQ,
   }
 }
 
@@ -112,16 +162,17 @@ function messageOf(event, fishballId, text) {
  * in total (older ones are dropped first; one longer message is cut). Each is labelled by who
  * wrote it (senderOf), so Fishball never reads its own or another agent's words as the user's.
  * @param fishballId - Fishball's session id, to tell its own messages apart.
+ * @param excerptBytes - bound of info's last-answer excerpt (the forwardExcerptBytes limit).
  * @returns { info, messages: [{ role, from?, source?, text }] }, or undefined when the session does not exist.
  */
-export async function readSessionMessages(ctx, sessionId, fishballId, count, maxBytes) {
+export async function readSessionMessages(ctx, sessionId, fishballId, count, maxBytes, excerptBytes) {
   let read
   try {
     read = await eventsOf(ctx, sessionId)
   } catch {
     return undefined
   }
-  const info = describeFrom(ctx, sessionId, read)
+  const info = describeFrom(ctx, sessionId, read, excerptBytes)
   const picked = []
   let used = 0
   for (let i = read.events.length - 1; i >= 0 && picked.length < count; i--) {

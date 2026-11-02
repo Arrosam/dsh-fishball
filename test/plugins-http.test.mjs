@@ -19,7 +19,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, CATALOG_KEYS, CHANGED_BY, CODE, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, LIMITS, MS, ONLY_BUNDLES, PACKAGE_NAME, STATE_KEYS, TOOL_STATUS } from './support/constants.mjs'
+import { API, CATALOG_KEYS, CHANGED_BY, CODE, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, LIMITS, MS, ONLY_BUNDLES, PACKAGE_NAME, STATE_KEYS, STATE_KEYS_OPTIONAL, TOOL_STATUS } from './support/constants.mjs'
 import { HOOK, T, allowFixtures, listPlugins, nextTools, pluginIn, settle, toolIn } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
@@ -47,7 +47,7 @@ describe('P3 settings-page API', () => {
 
   it('PHT-01 GET state includes the catalog with the shape of list_plugins', T, async () => {
     const s = await host.state()
-    assert.deepEqual(Object.keys(s).sort(), STATE_KEYS)
+    assert.deepEqual(Object.keys(s).filter((k) => !STATE_KEYS_OPTIONAL.includes(k)).sort(), STATE_KEYS)
     assert.deepEqual(Object.keys(s.catalog).sort(), CATALOG_KEYS)
     const listed = await listPlugins(host, fb)
     const s2 = await host.state()
@@ -113,7 +113,7 @@ describe('P3 settings-page API', () => {
       assert.equal((await toggle(key, true)).status, 200)
       const frame = await until(() => stream.frames.slice(count).find((f) => pluginIn(f.catalog, key)?.on === true), MS.sseChange, 20)
       assert.ok(frame, 'a frame with the change arrives')
-      assert.deepEqual(Object.keys(frame).sort(), STATE_KEYS)
+      assert.deepEqual(Object.keys(frame).filter((k) => !STATE_KEYS_OPTIONAL.includes(k)).sort(), STATE_KEYS)
     } finally {
       stream.close()
       await toggle(key, false)

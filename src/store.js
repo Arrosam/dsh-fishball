@@ -4,15 +4,15 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults and plugin_settings tables keep version 1: the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants and own_requests tables keep version 1 (as do the question-mode record, rev11g's tag answers and question audit ends, which only add values): the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_TAG_ANSWER, QUESTION_END } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags', grants: 'grants', ownRequests: 'own_requests' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -51,6 +51,15 @@ const settingsRecord = z.object({
   sessionId: z.string().min(1),
   contextWindowTokens: tokenCount.optional(),
   maxOutputTokens: tokenCount.optional(),
+  changedAt: z.string(),
+})
+
+/**
+ * Who answers managed sessions' questions (rev11g, §9 `settings['questions']`); absent means auto.
+ * It shares the settings table with the context-window record, under its own key.
+ */
+const questionModeRecord = z.object({
+  mode: z.enum(Object.values(QUESTION_MODE)),
   changedAt: z.string(),
 })
 
@@ -96,6 +105,90 @@ const pluginSettingsRecord = z.object({
   rows: z.record(z.string().min(1), z.record(z.string(), z.unknown())),
   changedBy: z.enum(Object.values(CHANGED_BY)),
   changedAt: z.string(),
+})
+
+/** A session Fishball manages, keyed by its (root) session id (revision 11, DESIGN §5e, §9). */
+const managedRecord = z.object({
+  since: z.string(),
+  by: z.enum(Object.values(MANAGED_BY)),
+  changedAt: z.string(),
+})
+
+/** One of Fishball's decisions (DESIGN §9 `decisions`); its rationale is cut to rationaleChars. */
+const decisionRecord = z.object({
+  action: z.enum(Object.values(DECISION_ACTION)),
+  sessionId: z.string().min(1),
+  by: z.enum(Object.values(CHANGED_BY)),
+  rationale: z.string().optional(),
+  /** The request a click answered (rev11b). */
+  target: z.string().min(1).optional(),
+  /** Your Reject on a card: whether you wrote a note to the agent; the note itself is never stored (§9, rev11c). */
+  withNote: z.boolean().optional(),
+  at: z.string(),
+  outcome: z.string().min(1),
+})
+
+/** One answer Fishball gave, placed in the asking turn's tail by the seq of its call (DESIGN §9 `tags`, S37). */
+const tagRecord = z.object({
+  sessionId: z.string().min(1),
+  callId: z.string().min(1).optional(),
+  seq: z.number().int().nonnegative(),
+  /** An answer_approval / answer_prompt decision, or a question's answer kind (rev11g; the words stay in the session log). */
+  answer: z.enum([...Object.values(APPROVAL_DECISION), ...Object.values(QUESTION_TAG_ANSWER)]),
+  kind: z.enum(Object.values(TAG_KIND)),
+  /** A call a standing grant covered (rev11d): what the tag names, the prefix or "exact call" (never the arguments). */
+  grant: z.object({ kind: z.enum(Object.values(GRANT_KIND)), toolName: z.string().min(1), prefix: z.string().min(1).optional() }).optional(),
+  at: z.string(),
+})
+
+/**
+ * A standing grant (DESIGN §7a.8, §9 `grants`), keyed by its grt_ id. An exact grant keeps the
+ * digest of the canonical arguments, never the arguments; a prefix grant keeps its prefix, the
+ * one stored text, because it is the matching rule itself.
+ */
+const grantRecord = z.object({
+  sessionId: z.string().min(1),
+  kind: z.enum(Object.values(GRANT_KIND)),
+  toolName: z.string().min(1),
+  argumentsDigest: z.string().min(1).optional(),
+  prefix: z.string().min(1).optional(),
+  createdAt: z.string(),
+  expiresAt: z.string(),
+  requestId: z.string().min(1),
+  rationale: z.string().optional(),
+  uses: z.number().int().nonnegative(),
+  lastUsedAt: z.string().optional(),
+  status: z.enum(Object.values(GRANT_STATUS)),
+  endedBy: z.enum(Object.values(GRANT_END)).optional(),
+  endedAt: z.string().optional(),
+})
+
+/**
+ * One of Fishball's own requests (DESIGN §7a.11, §9 `own_requests`, rev11f), keyed by its own_ id.
+ * The arguments are kept, cut to argumentExcerptBytes, because the card shows them across a
+ * restart (item 24); the pass matches by the digest of the whole canonical arguments.
+ */
+const ownRequestRecord = z.object({
+  toolName: z.string().min(1),
+  /** sha256 of the canonical arguments; absent when they could not be read (no pass can match then). */
+  argumentsDigest: z.string().min(1).optional(),
+  arguments: z.string(),
+  argumentsStatus: z.enum(Object.values(ARGUMENTS_STATUS)),
+  /** Fishball's reason, cut to rationaleChars. */
+  reason: z.string(),
+  /** The bounded detail list (the unchecked tools, or the changed settings), "and N more" included. */
+  detail: z.array(z.string()).optional(),
+  status: z.enum(Object.values(OWN_STATUS)),
+  createdAt: z.string(),
+  decidedAt: z.string().optional(),
+  /** Your Reject note, told to Fishball. */
+  note: z.string().optional(),
+  /** The id of the "run it again" notice, to find the turn it woke. */
+  noticeId: z.string().min(1).optional(),
+  /** The turn of Fishball's session the notice entered: the pass ends with it. */
+  wokenTurn: z.number().int().nonnegative().optional(),
+  /** Whether Fishball has been given the outcome: false for a rejection or run-again notice it could not be given yet (given at its next go-live). */
+  told: z.boolean().optional(),
 })
 
 /** You allowed a tool nobody had checked, for exactly these parameters (DESIGN §7). */
@@ -157,9 +250,15 @@ const approvalRecord = z.object({
   /** When it was routed to Fishball (the audit key's time). */
   at: z.string(),
   answer: z.enum(Object.values(APPROVAL_ANSWER)),
+  /** Revision 11: asked first or a direct call, and the quoted message ids (never their text). */
+  kind: z.enum(Object.values(REQUEST_KIND)).optional(),
+  quotes: z.array(z.string()).optional(),
+  /** rev11d: the grant this answer created, or the grant that covered this call. */
+  grantId: z.string().min(1).optional(),
   risk: z.enum(Object.values(APPROVAL_RISK)).optional(),
   rationale: z.string().optional(),
-  finalOutcome: z.enum(Object.values(APPROVAL_OUTCOME)),
+  /** DSH's outcome; a question's row (kind question, rev11g) records how the question ended instead. */
+  finalOutcome: z.enum([...Object.values(APPROVAL_OUTCOME), ...Object.values(QUESTION_END)]),
   decidedAt: z.string(),
 })
 
@@ -190,12 +289,17 @@ export const fishballDomain = defineDomain({
     [TABLE.plugins]: domainTable(pluginRecord),
     [TABLE.toolApprovals]: domainTable(toolApprovalRecord),
     [TABLE.pluginChanges]: domainTable(pluginChangeRecord),
-    [TABLE.settings]: domainTable(settingsRecord),
+    [TABLE.settings]: domainTable(z.union([settingsRecord, questionModeRecord])),
     [TABLE.watches]: domainTable(watchRecord),
     [TABLE.unread]: domainTable(unreadRecord),
     [TABLE.preferences]: domainTable(preferencesRecord),
     [TABLE.pluginDefaults]: domainTable(pluginDefaultsRecord),
     [TABLE.pluginSettings]: domainTable(pluginSettingsRecord),
+    [TABLE.managed]: domainTable(managedRecord),
+    [TABLE.decisions]: domainTable(decisionRecord),
+    [TABLE.tags]: domainTable(tagRecord),
+    [TABLE.grants]: domainTable(grantRecord),
+    [TABLE.ownRequests]: domainTable(ownRequestRecord),
   },
 })
 
@@ -238,6 +342,11 @@ export class Store {
   get preferences() { return this.#domain.table(TABLE.preferences) }
   get pluginDefaults() { return this.#domain.table(TABLE.pluginDefaults) }
   get pluginSettings() { return this.#domain.table(TABLE.pluginSettings) }
+  get managed() { return this.#domain.table(TABLE.managed) }
+  get decisions() { return this.#domain.table(TABLE.decisions) }
+  get tags() { return this.#domain.table(TABLE.tags) }
+  get grants() { return this.#domain.table(TABLE.grants) }
+  get ownRequests() { return this.#domain.table(TABLE.ownRequests) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }

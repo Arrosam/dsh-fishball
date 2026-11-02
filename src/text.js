@@ -1,5 +1,8 @@
 /** Text helpers shared by the intake and messaging modules. */
 
+/** Sort comparator for ISO times (or any text), latest first; a missing value sorts last. */
+export const latestFirst = (a = '', b = '') => (a < b ? 1 : a > b ? -1 : 0)
+
 /** UTF-8 size of a text, as maxMessageBytes counts it. */
 export const byteLength = (text) => Buffer.byteLength(text, 'utf8')
 
