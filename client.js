@@ -1555,14 +1555,18 @@ window.__ModuleLoader__.load({
         React.useEffect(() => {
           const button = ref.current?.closest('button')
           if (!button) return undefined
-          const previous = button.getAttribute(BRAND_LABEL_ATTR)
+          let previous = button.getAttribute(BRAND_LABEL_ATTR)
           // DSH renders its own label on this button and sets it again whenever it re-renders (after
           // its language loads on a fresh page, or changes): put Fishball's back each time, worded
           // anew so it follows the current language (rev11-ui-fixes R5). Equal labels are left
           // alone, so this cannot loop.
           const keepLabel = () => {
             const label = count > 0 ? t('brandLabelUnread', { count }) : t('brandLabel')
-            if (button.getAttribute(BRAND_LABEL_ATTR) !== label) button.setAttribute(BRAND_LABEL_ATTR, label)
+            const current = button.getAttribute(BRAND_LABEL_ATTR)
+            if (current === label) return
+            // DSH's newest label (e.g. in a new language) is the one to give back when Fishball's goes.
+            previous = current
+            button.setAttribute(BRAND_LABEL_ATTR, label)
           }
           keepLabel()
           const labelWatch = new MutationObserver(keepLabel)
