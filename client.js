@@ -159,11 +159,24 @@ window.__ModuleLoader__.load({
      */
     const PILE = Object.freeze({ id: 'fishball-pile', order: -100, heightUnit: 'vh' })
     /**
-     * The managed-session banner (DESIGN §10e item 30): a dock entry in a managed session's chat.
-     * Order 30 puts it after DSH's Todo (0) and Queue (20) docks, so it sits directly on the
-     * composer it describes (the builder's choice, per the Reading). Sizes are in px.
+     * DSH's composer layout variables (dsh-client-ui-conversation, rc.2), read so a dock entry
+     * takes DSH's own width and spacing. The composer stack is a column whose gap
+     * (--dsh-composer-stack-gap) spaces its docks. DSH's Todo dock is a free-standing card
+     * `width: calc(100% - 2 × side clearance - 4 × dock inset)`, max-width the composer card's
+     * minus 4 dock insets, `margin: 0 auto`; the Queue dock's visible panel comes out the same
+     * width (its box is 2 insets narrower and padded by an inset on each side).
      */
-    const MANAGED_BANNER = Object.freeze({ id: 'fishball-managed', order: 30, iconPx: 16, gapPx: 8, marginBottomPx: 8, paddingYPx: 4, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
+    const DSH_COMPOSER = Object.freeze({ sideClearance: 'var(--dsh-composer-side-clearance)', dockInset: 'var(--dsh-composer-dock-inset)', cardMaxWidth: 'var(--dsh-composer-card-max-width)', sideClearances: 2, dockInsets: 4 })
+    /** `n` copies of a CSS length, subtracted inside a calc(). */
+    const minusTimes = (length, n) => ` - ${length}`.repeat(n)
+    /**
+     * The managed-session banner (DESIGN §10e item 30): a dock entry in a managed session's chat.
+     * Order 10 puts it after DSH's Todo dock (0) and before its Queue dock (20) (the builder's
+     * choice, per the Reading): the Queue dock must stay last, because its negative bottom
+     * margin tucks it into the composer card and would overlap anything placed between them.
+     * Sizes are in px.
+     */
+    const MANAGED_BANNER = Object.freeze({ id: 'fishball-managed', order: 10, iconPx: 16, gapPx: 8, paddingYPx: 4, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
     /**
      * The managed mark in a sidebar row's leading cell. cellPx copies DSH's leading cell (the
      * seat's contract in dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the
@@ -1269,7 +1282,8 @@ window.__ModuleLoader__.load({
       `.${CLS.turnTags}{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}`,
       `.${CLS.fishTag}{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:.5px solid color-mix(in srgb,${FISH_MARK.eyeColor} 35%,transparent);border-radius:999px;background:color-mix(in srgb,${FISH_MARK.eyeColor} 12%,transparent);color:var(--dsw-alias-label-primary);font-size:12px}`,
       // The managed-session banner and sidebar mark (item 30), in DSH's theme tokens for light and dark.
-      `.${CLS.managedBanner}{display:flex;align-items:center;gap:${MANAGED_BANNER.gapPx}px;margin:0 0 ${MANAGED_BANNER.marginBottomPx}px;padding:${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingEndPx}px ${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingStartPx}px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:${MANAGED_BANNER.fontPx}px;line-height:1.5}`,
+      // Width and spacing as DSH's Todo dock (DSH_COMPOSER): no margin of its own, so the composer stack's gap spaces it.
+      `.${CLS.managedBanner}{box-sizing:border-box;flex:none;width:calc(100%${minusTimes(DSH_COMPOSER.sideClearance, DSH_COMPOSER.sideClearances)}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});max-width:calc(${DSH_COMPOSER.cardMaxWidth}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});margin:0 auto;display:flex;align-items:center;gap:${MANAGED_BANNER.gapPx}px;padding:${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingEndPx}px ${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingStartPx}px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:${MANAGED_BANNER.fontPx}px;line-height:1.5}`,
       `.${CLS.managedText}{flex:1;min-width:0}`,
       `.${CLS.managedRow}{display:inline-flex;align-items:center;justify-content:center;width:${MANAGED_ROW.cellPx}px;height:${MANAGED_ROW.cellPx}px;color:var(--dsw-alias-label-primary)}`,
       // The plugin manager copies DSH's own Plugins-page rules (dsh-client-ui-plugin-manager
