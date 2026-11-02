@@ -444,7 +444,7 @@ export const APR_NOTE = {
 /** P8: state.approvals. */
 export const APPROVALS_KEYS = ['pending', 'recent']
 export const PENDING_KEYS = ['at', 'id', 'sessionId', 'toolName']
-export const RECENT_KEYS = ['answer', 'argumentsStatus', 'at', 'decidedAt', 'finalOutcome', 'key', 'rationale', 'risk', 'sessionId', 'toolName']
+export const RECENT_KEYS = ['answer', 'argumentsStatus', 'at', 'decidedAt', 'finalOutcome', 'key', 'passBy', 'rationale', 'risk', 'sessionId', 'toolName']
 export const RECENT_ANSWERS = ['allow', 'escalate', 'timeout', 'withdrawn']
 export const FINAL_OUTCOMES = ['allowed-once', 'rejected', 'cancelled', 'unavailable']
 export const RECENT_MAX = 20
