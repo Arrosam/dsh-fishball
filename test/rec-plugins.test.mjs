@@ -43,7 +43,7 @@ import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
   API, BLOCKED, INSTALL_API, INSTALLED_KEY, KIND, MS, PRE_REV12, REC_API, REC_CATEGORY_COUNT, REC_ENTRY_KEYS, REC_HIGHLIGHT_COUNT, REC_IDLE_SPEC, REC_LINK_ENV,
-  REC_LISTED, REC_NEVER, REC_ROOT_KEYS, REC_STANDIN, REC_STATE, REPO, STATE_KEYS, STATE_KEYS_OPTIONAL, STATUS, TEST_HOMES, WELCOME_BAD_BODIES,
+  REC_LISTED, REC_NEVER, REC_ROOT_KEYS, REC_STANDIN, REC_STATE, REPO, STATE_KEYS, STATE_KEYS_OPTIONAL, STATUS, TEST_HOMES, WELCOME_BAD_BODIES, WELCOME_KEYED_BODY,
 } from './support/constants.mjs'
 import { HOOK, INSTALL_MS, T, catalogSettled, pluginIn, profileSnapshot, settle, settledIdle, turn, untilCatalog } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, until } from './support/host.mjs'
@@ -297,15 +297,6 @@ describe('Revision 12 welcome card: once only', () => {
     assert.deepEqual(Object.keys(s).filter((k) => !STATE_KEYS_OPTIONAL.includes(k)).sort(), STATE_KEYS)
   })
 
-  for (const [label, body, raw] of WELCOME_BAD_BODIES) {
-    it('WEL-02 seen with ' + label + ' answers 400 bad-body and the card is still to show', T, async () => {
-      const res = await seen(body, { raw: Boolean(raw) })
-      assert.equal(res.status, 400, res.text)
-      assert.deepEqual(res.json, { ok: false, code: 'bad-body' })
-      assert.deepEqual((await host.state()).welcome, { show: true })
-    })
-  }
-
   it('WEL-03 seen without the browser cookie is refused', T, async () => {
     const res = await fetch(host.origin + REC_API.seen, { method: 'POST', headers: { origin: host.origin, 'content-type': 'application/json' }, body: '{}' })
     assert.notEqual(res.status, 200, await res.text())
@@ -317,6 +308,15 @@ describe('Revision 12 welcome card: once only', () => {
     assert.notEqual(res.status, 200, res.text)
     assert.deepEqual((await host.state()).welcome, { show: true })
   })
+
+  for (const [label, body, raw] of WELCOME_BAD_BODIES) {
+    it('WEL-02 seen with ' + label + ' answers 400 bad-body and the card is still to show', T, async () => {
+      const res = await seen(body, { raw: Boolean(raw) })
+      assert.equal(res.status, 400, res.text)
+      assert.deepEqual(res.json, { ok: false, code: 'bad-body' })
+      assert.deepEqual((await host.state()).welcome, { show: true })
+    })
+  }
 
   it('WEL-04 seen answers 200 and show is false in GET state and in a new event stream', T, async () => {
     const before = await eventsOfFishball()
@@ -341,6 +341,13 @@ describe('Revision 12 welcome card: once only', () => {
     assert.deepEqual(after.recommended, first.recommended)
     assert.equal(await eventsOfFishball(), before)
     assert.equal(await host.call('agentStatus', { sessionId: fb }), 'idle', 'no turn started')
+  })
+
+  it('WEL-02 seen with an object that has a key answers 400 bad-body (any body but {})', T, async () => {
+    const res = await seen(WELCOME_KEYED_BODY)
+    assert.equal(res.status, 400, res.text)
+    assert.deepEqual(res.json, { ok: false, code: 'bad-body' })
+    assert.deepEqual((await host.state()).welcome, { show: false }, 'unchanged')
   })
 
   it('WEL-06 Fishball is told nothing of the card or the list', T, async () => {
