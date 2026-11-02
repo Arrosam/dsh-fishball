@@ -15,13 +15,16 @@
  *   its own preset), steer the message with DSH's agent-message relay source naming Fishball,
  *   flush, audit.
  * - Both make the target managed before the message is delivered (§5d, §5e), so its next model
- *   request already has Fishball's tools.
+ *   request already has Fishball's tools. A session start_session created stays the user's
+ *   when that fails; it still starts, reported as managedError.
  * - start_session({folder, title, message}): create an ordinary session in an existing DSH
  *   workspace or folder (DSH's default preset and permission mode; never Fishball's
  *   composition), name it with Fishball's title, then send the first message the same way.
  *   DSH's automatic title reads only user messages, and a relay is not one, so Fishball names
  *   the session itself; a title DSH cannot take is reported as titleError and the session
- *   still starts. Fishball cannot create folders: a missing folder is refused, because DSH's
+ *   still starts. DSH can create the session and then fail to add it to the workspace: that
+ *   session exists (under Ungrouped), so it still starts and is reported as workspaceError.
+ *   Fishball cannot create folders: a missing folder is refused, because DSH's
  *   create would make it (spike S18). A folder removed between the check and the create would
  *   still be created by DSH; that window needs host support.
  *
@@ -55,7 +58,7 @@ import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { SessionTitleInvalidError, normalizeSessionTitle } from '@deepseek-ai/dsh-session-title'
-import { AGENT_IDLE, CHANGED_BY, DECISION_ACTION, DECISION_IDLE, DECISION_OK, MANAGED_BY, WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO, OPTIONAL_SERVICE, TITLE_ERROR } from './constants.js'
+import { AGENT_IDLE, CHANGED_BY, DECISION_ACTION, DECISION_IDLE, DECISION_OK, MANAGED_BY, WATCH_BY, HOUR_MS, INTAKE_KIND, INTAKE_ERROR, INTAKE_OUTCOME, OUTBOUND_ERROR, OUTBOX_KIND, OUTBOX_STATUS, SOURCE, SESSION_INFO, OPTIONAL_SERVICE, START_MANAGED_ERROR, TITLE_ERROR, WORKSPACE_ERROR } from './constants.js'
 import { AuditLog, recordDecision } from './audit.js'
 import { IntakeError } from './intake.js'
 import { describeSession, lastSeqOf, NO_EVENTS_SEQ, rootSessionOf } from './session-info.js'
@@ -225,7 +228,8 @@ class UnconfirmedDelivery extends Error {}
  * @param deps.onChange - called after the outbox changed.
  * @param deps.watch - (sessionId, by, since?) => Promise<{ watch } | { watchError }>.
  * @param deps.manage - (sessionId, by) => Promise: make the target managed (MANAGED_BY).
- * @param deps.isManaged - (sessionId) => whether Fishball manages that session (stop and redirect).
+ * @param deps.isManaged - (sessionId) => whether Fishball manages that session (stop and redirect,
+ *   and whether a started session stayed managed after manage threw).
  * @param deps.isEnabled - () => whether Session messages runs (stop and redirect cannot be undone,
  *   so a call in flight when it went off is refused, as release_session's is).
  * @returns { snapshot() } for the settings page.
@@ -308,8 +312,8 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
 
   /**
    * Deliver and record; returns the tool result: ok with `success`, or refused with `failure`
-   * (start_session's names the session it created and its title outcome). `send` is how the
-   * message goes in (redirect_session stops the turn first).
+   * (start_session's names the session it created and its title, workspace and managed
+   * outcomes). `send` is how the message goes in (redirect_session stops the turn first).
    */
   const deliverAndRecord = async (entry, sessionId, message, success, failure = {}, send = steer) => {
     try {
@@ -342,6 +346,45 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       if (error instanceof SessionTitleInvalidError) return { titleError: TITLE_ERROR.invalid }
       logger.warn('naming session %s failed (%s)', sessionId, diagnosticOf(error))
       return { titleError: TITLE_ERROR.failed }
+    }
+  }
+
+  /**
+   * Create the session through DSH (DESIGN §5d). DSH creates it first and then adds it to the
+   * workspace; when only that step fails, the session exists (under Ungrouped) and its id is in
+   * the error, so it carries on rather than being left without a title, first message or record.
+   * @returns { sessionId }, { sessionId, workspaceError }, or undefined when nothing was created.
+   */
+  const createSession = async (request) => {
+    try {
+      return { sessionId: (await ctx.sessionController.create(request)).sessionId }
+    } catch (error) {
+      // DSH tells its errors apart by code, never by class (dsh-typert-protocol RemoteError).
+      const sessionId = error?.code === WORKSPACE_ERROR.dshCode ? error.details?.sessionId : undefined
+      if (typeof sessionId !== 'string') {
+        logger.warn('session start failed (%s)', diagnosticOf(error))
+        return undefined
+      }
+      logger.warn('session %s was created but not added to its workspace (%s)', sessionId, diagnosticOf(error))
+      return { sessionId, workspaceError: WORKSPACE_ERROR.attachFailed }
+    }
+  }
+
+  /**
+   * Make a session Fishball just started managed (§5e), before its first turn. The session
+   * exists either way, so a failure (Fishball's store could not be written) leaves it the
+   * user's and it still starts (Q-start-half-made), rather than being left unrecorded.
+   * @returns {} or { managedError }.
+   */
+  const manageStarted = async (sessionId) => {
+    try {
+      await manage(sessionId, MANAGED_BY.start)
+      return {}
+    } catch (error) {
+      logger.warn('making session %s managed failed (%s)', sessionId, diagnosticOf(error))
+      // manage writes the store first; a throw after that write (syncing tools, a listener)
+      // leaves the session managed, so only a session still the user's is reported.
+      return isManaged(sessionId) ? {} : { managedError: START_MANAGED_ERROR.failed }
     }
   }
 
@@ -395,20 +438,17 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       const target = await placeOf(ctx, folder)
       if (target.error !== undefined) return refused(target.error)
       const entry = { kind: OUTBOX_KIND.start, folder: target.folder, messageDigest: digestOf(message) }
-      let sessionId
-      try {
-        sessionId = (await ctx.sessionController.create(target.request)).sessionId
-      } catch (error) {
-        // Nothing was created: not counted, not recorded (like a refusal).
-        logger.warn('session start failed (%s)', diagnosticOf(error))
-        return refused(OUTBOUND_ERROR.deliveryFailed)
-      }
+      const created = await createSession(target.request)
+      // Nothing was created: not counted, not recorded (like a refusal).
+      if (created === undefined) return refused(OUTBOUND_ERROR.deliveryFailed)
+      const { sessionId, ...placed } = created
       // Named before the first turn starts and before the watch watermark is read.
       const named = nameSession(sessionId, title)
-      await manage(sessionId, MANAGED_BY.start)
+      const managed = await manageStarted(sessionId)
       // A new session: every turn end in it counts (its log before the message has none).
       const since = notify === true ? await watermarkOfNew(ctx, sessionId) : undefined
-      return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder, ...named }, { sessionId, ...named }), sessionId, notify, since)
+      const outcome = { ...placed, ...named, ...managed }
+      return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder, ...outcome }, { sessionId, ...outcome }), sessionId, notify, since)
     },
   }))
 
