@@ -27,7 +27,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { LIMITS, P5_CODE, PILE_API, RELAY } from './support/constants.mjs'
-import { HOOK, T, fishballCall, makeManaged, managedEntry, setManaged, settledIdle, storedRows } from './support/expect.mjs'
+import { HOOK, T, outboxNow, callStep, waitRequest, fishballCall, makeManaged, managedEntry, setManaged, settledIdle, storedRows } from './support/expect.mjs'
 import { A, MODES, cardId, qHost, qTools, refused, tokens, until } from './support/rev11g.mjs'
 
 const { tok, cid } = tokens('STP')
@@ -73,6 +73,8 @@ describe('Revision 11 rev11h: stop_session and redirect_session', () => {
     const r = await stop(sid)
     await release(sid)
     assert.equal(r.json?.ok, true, r.result?.text)
+    assert.equal(r.json?.stopped, true, 'a turn was running')
+    assert.equal(decisions(sid, 'stop')[0]?.outcome, 'ok')
     assert.ok(await idle(sid), 'idle')
     const ends = await turnEnds(sid)
     assert.equal(ends.length, before + 1)
@@ -92,11 +94,23 @@ describe('Revision 11 rev11h: stop_session and redirect_session', () => {
     assert.ok(await until(async () => !((await host().state()).pile ?? []).some((c) => c.requestId === requestId), 10000, 50), 'the card left the pile')
     assert.ok(await idle(sid), 'idle')
     assert.equal((await turnEnds(sid)).at(-1), 'aborted')
-    const events = JSON.stringify(await host().call('approvalEvents', { sessionId: sid }))
-    assert.match(events, /cancelled/, 'the approval settled cancelled')
+    assert.match((await q.result(sid, id)).text, /abort|cancel/i, 'the ask_fishball call ended aborted')
     const click = await host().post(PILE_API.answer, { requestId, decision: 'allow' }).catch(() => null)
     if (click) assert.equal(click.status, 409, click.text)
     assert.ok(await managedEntry(host(), sid), 'still managed')
+  })
+
+  it('STP-02b a direct call waiting for Fishball: its approval settles cancelled', T, async () => {
+    const sid = await q.session('stp02b')
+    const text = tok('02b')
+    await q.free(sid)
+    await host().call('driveStart', { sessionId: sid, script: [callStep({ text }, cid('02b')), [{ text: 'done' }]] })
+    assert.ok(await waitRequest(host(), ctx.fb, text), 'the call reached Fishball')
+    assert.equal((await stop(sid)).json?.ok, true)
+    assert.ok(await idle(sid))
+    assert.equal((await turnEnds(sid)).at(-1), 'aborted')
+    assert.match(JSON.stringify(await host().call('approvalEvents', { sessionId: sid })), /cancelled/, 'the approval settled cancelled')
+    assert.ok(await managedEntry(host(), sid))
   })
 
   it('STP-03 a pending question settles ASK_ABORTED: both cards leave and a late answer is refused', T, async () => {
@@ -129,6 +143,8 @@ describe('Revision 11 rev11h: stop_session and redirect_session', () => {
     const reqs = (await host().call('requests', { sessionId: sid })).length
     const r = await stop(sid)
     assert.equal(r.json?.ok, true, r.result?.text)
+    assert.equal(r.json?.stopped, false, 'nothing was running')
+    assert.equal(decisions(sid, 'stop')[0]?.outcome, 'idle')
     await new Promise((r2) => setTimeout(r2, QUIET))
     assert.equal((await turnEnds(sid)).length, ends, 'no turn end written')
     assert.equal((await host().call('requests', { sessionId: sid })).length, reqs, 'no model request')
@@ -297,6 +313,9 @@ describe('Revision 11 rev11h: stop_session and redirect_session', () => {
     const rows = decisions(sid, 'redirect')
     assert.equal(rows.length, 1, JSON.stringify(rows))
     assert.equal(rows[0].by, 'fishball')
+    const out = (await outboxNow(host())).find((e) => e.targetSessionId === sid)
+    assert.equal(out?.kind, 'redirect', 'its own outbox kind')
+    assert.equal(out?.status, 'delivered')
   })
 
   it('RDR-06 on an idle managed session the instruction simply starts a turn', T, async () => {

@@ -616,7 +616,7 @@ export const PRIVATE_ROW_PREFIX = 'fbo-'
  */
 export const OWN_PLUGINS = {
   // Revision 11 rev11a: release_session joins Session messages (DESIGN §5e "Which Fishball plugin", §10d).
-  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_fishball', 'release_session'] },
+  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_fishball', 'release_session', 'stop_session', 'redirect_session'] },
   watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
   plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
   // Revision 11 rev11b: ask_fishball and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
