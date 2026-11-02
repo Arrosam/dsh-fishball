@@ -12,7 +12,7 @@ Merged: `rebuild/managed-sessions` (a9c492b), then `c811a89` (rev11h b416d3e mer
 - `test/rev11h-stop.test.mjs`: 17 tests, all pass.
 
 ## Done-when item 9 (and the rev11h row)
-All checked in a real DSH 0.2.1-rc.2 runtime with the fake model (the test host), not in the browser pane. The built-in-browser pass was NOT RUN (no scripted-model server for the pane was set up).
+Checked in a real DSH 0.2.1-rc.2 runtime with the fake model (the test host). Stage 2 follow-up added ORG-01, OFF-01 and the browser label check; `test/rev11h-stop.test.mjs` now has 19 tests, all passing. The shared helpers did not change, so the full suite was not re-run after them (last full run: 1802 pass, 0 fail).
 
 | Item | Result | What I did / saw |
 |---|---|---|
@@ -26,4 +26,6 @@ All checked in a real DSH 0.2.1-rc.2 runtime with the fake model (the test host)
 | both refuse yours / Fishball's own | PASS | STP-07, RDR-04 (`not-managed`, `is-fishball`) |
 | both audited | PASS | STP-08, RDR-05 (decisions + outbox kind `redirect`) |
 | no cap on stop; redirect counts toward messagesPerHour | PASS | CAP-01, CAP-02 |
-| settings page shows Redirect / 重定向; origin "Fishball (redirect_session)"; `feature-off` | NOT RUN | not covered by tests or browser |
+| permission request from a redirected turn names "Fishball (redirect_session)" | PASS | ORG-01 (header matches, not message_session) |
+| Session messages off: both tools refused, nothing stopped or audited | PASS | OFF-01. With the plugin off the tool is hidden from Fishball (DSH's "not available" error); the `feature-off` code itself only shows for a call already running when it goes off, which the harness cannot time, so that part is NOT RUN |
+| settings page outbox shows Redirect / 重定向 | PASS | built-in browser pane on a test host (real DSH, fake model) after one `redirect_session`: Plugins > Installed > dsh-fishball page, "Sent by Fishball" lists "Redirect session-… Delivered"; with Language 中文 the list reads "重定向 … 已送达" under "Fishball 发出的". Server stopped, tab closed |

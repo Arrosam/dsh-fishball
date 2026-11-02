@@ -26,8 +26,8 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { LIMITS, P5_CODE, PILE_API, RELAY } from './support/constants.mjs'
-import { HOOK, T, outboxNow, callStep, waitRequest, fishballCall, makeManaged, managedEntry, setManaged, settledIdle, storedRows } from './support/expect.mjs'
+import { API, ASK_TOOL, LIMITS, OWN_PLUGINS, P5_CODE, PILE_API, RELAY, TURN_BY } from './support/constants.mjs'
+import { HOOK, T, callScript, outboxNow, callStep, waitRequest, fishballCall, makeManaged, managedEntry, setManaged, settledIdle, storedRows } from './support/expect.mjs'
 import { A, MODES, cardId, qHost, qTools, refused, tokens, until } from './support/rev11g.mjs'
 
 const { tok, cid } = tokens('STP')
@@ -327,6 +327,43 @@ describe('Revision 11 rev11h: stop_session and redirect_session', () => {
     assert.ok(await until(async () => (await modelSaw(sid, text)) > 0, 15000, 100))
     assert.ok(await idle(sid))
     assert.equal((await turnEnds(sid)).at(-1), 'completed')
+  })
+
+  it('ORG-01 a permission request from the redirected turn names redirect_session as its origin', T, async () => {
+    const sid = await running('org01')
+    const text = tok('org')
+    await host().call('queueMarker', { marker: text, except: ctx.fb, script: callScript(ASK_TOOL, { text }) })
+    assert.equal((await redirect(sid, text)).json?.ok, true)
+    await release(sid)
+    const req = await waitRequest(host(), ctx.fb, text)
+    assert.ok(req, 'the request reached Fishball')
+    const header = req.block.header
+    assert.match(header, /Fishball \(redirect_session\)/)
+    assert.doesNotMatch(header, /Fishball \(message_session\)/)
+    await t.stop(sid)
+  })
+
+  it('OFF-01 with Session messages off, neither tool works and nothing is stopped', T, async () => {
+    const sid = await running('off01')
+    const toggle = async (on) => {
+      const r = await host().post(API.plugins, { plugin: OWN_PLUGINS.messages.key, on })
+      assert.equal(r.status, 200, r.text)
+      assert.ok(await until(async () => (await host().state()).features?.messages === on, 10000, 100), 'features.messages ' + on)
+    }
+    await toggle(false)
+    try {
+      const text = tok('off')
+      for (const [name, r] of [[STOP, await stop(sid)], [REDIRECT, await redirect(sid, text)]]) {
+        const refusedNow = r.json?.code === 'feature-off' || r.result?.isError === true
+        assert.ok(refusedNow, name + ' refused: ' + r.result?.text)
+        assert.notEqual(r.json?.ok, true, name)
+      }
+      assert.equal(await status(sid), 'running', 'the turn was not stopped')
+      assert.equal(await modelSaw(sid, text), 0)
+    } finally { await toggle(true) }
+    await release(sid)
+    await t.stop(sid)
+    assert.equal(decisions(sid, 'stop').length + decisions(sid, 'redirect').length, 0, 'nothing audited')
   })
 })
 
