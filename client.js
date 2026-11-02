@@ -384,23 +384,23 @@ window.__ModuleLoader__.load({
       lift: '-2px',
     })
     /**
-     * The "Deepseek Harness" tag: a tilted sticker overlapping the word logo's bottom-right corner
-     * (design 8 of the owner's pick), with a hard magenta drop shadow. A negative `right` pushes it
-     * past the word's right edge so its left end no longer covers the mark; the brand button has
-     * free room to the right of the word (it grows to the sidebar toggle), so nothing is cut off. It covers the foot of the
-     * last letters on purpose: the small plain text it replaced could not be read at sidebar size.
-     * The tilt pivots on the bottom-right corner, so the left end swings down below the word.
-     * The shell clips the brand name to a 24px-high box (dsh-client-ui-sidebar `.brand`), which
-     * cut that end off, so releaseClip() opens the box while the brand is shown. Squeezing the
-     * sticker inside the box instead (pivot on the left, or a smaller tilt) covered nearly the
-     * whole word, which is worse. The fill and text swap the sidebar's own label colours so the
+     * The "Deepseek Harness" tag: a flat sticker overlapping the word logo's bottom-right corner
+     * (design 8 of the owner's pick, untilted at the owner's request), with a hard magenta drop
+     * shadow. A negative `right` pushes it past the word's right edge so its left end no longer
+     * covers the mark; the brand button has free room to the right of the word (it grows to the
+     * sidebar toggle), so nothing is cut off. It covers the foot of the last letters on purpose:
+     * the small plain text it replaced could not be read at sidebar size. Flat, it sits low (the
+     * owner picked -9px) so it touches only the letters' feet; at -2px it hid their lower half.
+     * Its bottom and shadow hang below the shell's brand box (dsh-client-ui-sidebar `.brand`,
+     * 24px high, overflow hidden), so releaseClip() opens it while the brand is shown. The fill
+     * and text swap the sidebar's own label colours so the
      * sticker reads on light and dark themes; the ring is the sidebar ground and separates the
      * sticker from the letters it covers; the shadow is the mark's eye magenta
      * (FISH_MARK.eyeColor), the one colour the brand spends.
      */
     const BRAND_TAG = Object.freeze({
       fontFamily: BRAND_LATIN_FONT, fontSize: '9px', lineHeight: '11px', fontWeight: 800, paddingX: '4px', radius: '1px',
-      right: '-16px', bottom: '-2px', rotate: '-5deg', origin: 'right bottom',
+      right: '-16px', bottom: '-9px',
       fill: 'var(--dsw-alias-label-primary)', textColor: 'var(--dsw-alias-label-primary-inverted)',
       ring: '0 0 0 1.5px var(--dsw-alias-label-primary-inverted)', shadow: '2px 2px 0 1.5px ' + FISH_MARK.eyeColor,
     })
@@ -1394,7 +1394,7 @@ window.__ModuleLoader__.load({
       `.${CLS.list} li{padding:2px 8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--ds-font-family-code)}`,
       `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing};line-height:${WORDMARK.lineHeight};top:${WORDMARK.lift}}`,
       // Overlaid on the corner, so it takes no layout space and cannot push the sidebar controls.
-      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} ${BRAND_TAG.fontFamily};transform:rotate(${BRAND_TAG.rotate});transform-origin:${BRAND_TAG.origin};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
+      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} ${BRAND_TAG.fontFamily};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
