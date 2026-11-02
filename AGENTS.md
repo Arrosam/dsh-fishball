@@ -1,8 +1,8 @@
 # Fishball development rules
 
-## Git and the private repo
-- Commit logical units on local branches. Pushing branches to `origin` (the private GitHub repo) is allowed.
-- Keep the repository private: never make it public, publish the package, add another remote or open remote issues.
+## Git and the GitHub repo
+- Commit logical units on local branches. Pushing branches to `origin` (the GitHub repo) is allowed.
+- The repository has gone public on GitHub (the user confirmed this on 2026-11-02): anything pushed is visible to everyone. Never publish the package, add another remote or open remote issues.
 - Never rewrite, reset or delete existing branch history or tags. The old preview is kept at tag `archive/df-preview-2026-10-23`.
 
 ## Coding principles
