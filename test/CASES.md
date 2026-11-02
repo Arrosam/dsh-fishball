@@ -12,6 +12,8 @@ Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-
 - No test reads the implementation (`index.js`, `src/**`, `client.js`).
 - **P3 additions.** The profile also has four fixture bundles installed as dependencies but not enabled in `dsh.profile.bundles`: `fbtest-only`, `fbtest-only-b` and `fbtest-only-c`, whose patches only insert their own row, and `fbtest-edits`, whose patch also edits the `fbtest-tools` row. Each registers one tool (`only_echo`, `only_b_echo`, `only_c_echo`, `edits_echo`) and records `apply` and `dispose`, so a test can tell whether its code runs. Every fixture tool description has two lines.
 - **Scripted approver.** The worker adds a prepended host-level `approval/request` answerer (the S12 position, ahead of the browser forwarder). It records each question (session, toolName, reason) and answers with an outcome the test sets: `allowed-once`, `rejected`, `unavailable` or `cancelled`. The default is `rejected`, so a prompt nobody expected cannot pass a case or hang a turn.
+- **Host probe (start_session titles).** The worker's `startProbe` op wraps the host's own methods for the sessions created while it is armed (never Fishball's): the session-title service's `rename`, the new agent's `steer` and the new session's `flush`. It records the calls in order and can make `rename` throw the real `SessionTitleInvalidError` or a plain `Error`, make the steer throw, or make the first flush after the steer reject or answer `false`. `FBTEST_NO_SESSION_TITLE=1` boots DSH without its `session-title` row, so there is no `sessionTitle` service. The worker also records DSH's logger warnings and errors (`loggedProblems`). The fake model now records each tool's description next to its name and parameters.
+- **Host operations for the read_session roles and half-made start_session fixes.** `injectUserMessage` appends one user/message (any source, or none; empty content with `text: ''`) to a live session's log with DSH's own `session.append` and the `surfaceOp: 'append'` marker DSH requires, so no turn runs. `failAttach` makes one registered workspace's `attachSession` throw; DSH's own `sessionController.create` then really creates the session and throws its real `session/workspace-attach-failed` (details `{sessionId, workspaceId}`), and `attachCalls` lists the failed attaches. `failCreate` replaces `sessionController.create` with one that throws a given `code` and `details` (optionally after really creating the session through DSH's create, `createFirst`; `createdByWrapper` lists those sessions); no code restores DSH's own. The start_session helpers shared by the start-title and half-made files live in [support/start-session.mjs](support/start-session.mjs).
 - **Making fixture tools visible (P3).** The fixture tools are not on Fishball's checked list, so they are unchecked and hidden. P2 cases that need them visible (CMP-03..09, PTC-01/02, FW-03/05) first call `set_plugin_enabled({plugin:'fbtest-tools', on:true})` from a scripted Fishball turn, with the approver answering Allow once. They then wait for the change to apply ("settle", A20).
 - **add_plugin** installs the local directory `support/fixtures/fbtest-added` by absolute path. DSH's plugin manager runs pnpm in the throwaway profile; a local directory needs no network.
 
@@ -348,6 +350,37 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 | CAP-04 | BVA (auditEntriesKept 1 < cap 5, with 4 delivered this hour) | the 5th is delivered, the 6th refused |
 | CAP-05 | BVA (21 sends) | the state lists 20, newest first |
 | CAP-06 | BVA (auditEntriesKept 2) | at most 2 entries, including the newest |
+
+Every `start_session` call in these tests passes a `title` now (`TITLE.plain`): OUT-05..07, CAP-02/03 and the start_session calls in the watch (NTF-02/06/08, T-06), own-plugin (OFW-03) and approval (APR-16) cases.
+
+### [messaging-start-title.test.mjs](messaging-start-title.test.mjs): start_session names the session (R1-R7)
+
+Three hosts: A has DSH's session-title service, B checks the order of the checks with `sessionsPerHour` 1, C boots without the service. A runs with `sessionsPerHour` 0.
+
+| id | technique | req | expected result |
+|---|---|---|---|
+| SST-01 | EP (schema) | R1 | `folder`, `title`, `message` required strings; `notify_when_finished` optional boolean; the description matches /title/ |
+| SST-01b | EP (schema) | R7 | message_session keeps `session_id`, `message` (required) and `notify_when_finished`; no title |
+| SST-02 | ST created → renamed → steered → flushed | R3, R4 | rename once, with the live session of the new id and the title as given, before the one steer; the steer's source is `{kind:'agent-message', form:'relay', senderSessionId: Fishball}`; a flush after it; ok with `sessionId`, `folder`, `title`; the new session got the text verbatim once; outbox `start`, `delivered`, only the documented keys; DSH reports the title |
+| SST-03 ×4 | EP + BVA (length) | R3 | rename gets the title exactly as given; the answer's `title` is what the snapshot returned (plain; whitespace collapsed and trimmed; non-ASCII; 300 characters cut at DSH's cap); DSH reports the same |
+| SST-03b | ST | R3 | the title is the same after the new session's first turn |
+| SST-03c ×3 | BVA | R2, R3 | one visible character, padded with spaces, padded with no-break and ideographic spaces: all accepted, title `x` |
+| SST-03d ×3 | EP (visible text + invisible characters) | R2 (update), R3 | accepted; DSH strips the zero-width space, bidi marks, word joiner, control characters and escape sequences (`ab`, `Release plan`, `Report ready`) |
+| SST-04 ×2 (+ control) | EP | R5 | rename throws the real `SessionTitleInvalidError` / a plain `Error`: ok, `titleError` `title-invalid` / `title-failed`, no `title` key, session and folder in the answer, rename once and before the steer, message delivered and recorded; a warning is logged for `title-failed`; a normal start logs none |
+| SST-05 ×4 | DT (rename ok / invalid × flag) | R6 | the watch (`createdBy` assistant) or none, next to `title` or `titleError`; one notice after the first turn; delivered |
+| SST-05b | ST (the first turn fails at once) | R6 | one notice, reason error |
+| SST-06, 06b | EP (the first flush after the steer rejects / answers false) | R6 | ok, `unconfirmed: true`, `title` present, `folder`; steered once; outbox `unconfirmed` |
+| SST-07 ×3 | DT (steer throws × rename ok / invalid / fails) | R6 (update) | `{ok:false, code:'delivery-failed', sessionId}` plus `title` or `titleError`, never `folder`; renamed once, before the steer; the session exists; outbox `failed` with `errorCode` |
+| SST-08 | EP (live and cold target) | R7 | message_session never calls rename; titles unchanged. The failed-delivery refusal of message_session stays `{ok:false, code:'delivery-failed'}` (OUT-04's `deepEqual`) |
+| ORD-01 ×3 | DT (message) | R2 | empty (empty, whitespace) and too-large win over a bad title and a missing folder |
+| ORD-02 ×17 | EP (title) × DT | R2 (update) | `no-title` for `''`, spaces, line breaks and tabs, Unicode spaces, zero-width space, LRM, bidi overrides, word joiner + BOM, control characters, a CSI and an OSC escape sequence, whitespace around invisible characters (each checked to normalize to empty with DSH's `normalizeSessionTitle`); no title / number / null / array / object: `no-title` or a tool error (A51). A missing folder in every row. Nothing created or recorded |
+| ORD-03 ×2 | DT (good title × folder) | R2 | `no-folder`, `not-absolute` |
+| ORD-04 | ST (cap 1) | R2 | after every refusal above a valid start still succeeds: none was counted |
+| ORD-05 ×5 | DT (cap spent × other checks) | R2 | `hourly-cap` before the folder; `no-title`, `empty`, `too-large` before the cap |
+| UNA-01 | EP (no service) | R5 | ok, `titleError` `title-unavailable`, no `title`; delivered, recorded; no title set |
+| UNA-02 | DT (no service × flag) | R6 | the watch next to `titleError`; one notice |
+| UNA-03 ×2 | DT (no service × empty / invisible title) | R2 | `no-title`: the title is checked without the service |
+| UNA-04 | EP (no service, steer throws) | R6 (update) | `delivery-failed`, `sessionId`, `titleError` `title-unavailable`, no `folder` |
 
 ### [messaging-durable.test.mjs](messaging-durable.test.mjs): M9-M11
 
@@ -829,8 +862,12 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 - **A51. start_session without `folder`.** M7 says "missing or empty folder → no-folder". The tool schema marks `folder` required, so DSH rejects the call before the tool runs ("invalid arguments: missing required property folder", a tool error). OUT-07 accepts either; an empty string gives `no-folder`.
 - **A52. A folder that is neither a workspace id nor an absolute path.** Observed `not-absolute`. Whether an unknown workspace id should be `no-folder` instead is not specified; OUT-07 accepts both.
 - **A53. Extra arguments to message_fishball.** A call with `senderSessionId`/`sessionId`/`session_id` next to `message` is accepted and attributed to the caller (MSG-05). Whether such calls should be refused is not specified.
-- **A54. Not driven black-box: `unconfirmed`.** The `{ok:true, unconfirmed:true}` outcome and outbox status `unconfirmed` need a session flush that fails after delivery. Nothing public produces that. OUT-08 only allows the status.
-- **A55. Not driven black-box: delivery retries and `failed` items.** "Three failed deliveries → `failed` with `delivery-failed`", "retried each time Fishball goes idle", a start_session whose session cannot be created at all (answers `delivery-failed`, not recorded), and caps counting "failed after the session was created" all need a fault inside steer, flush or create. The fixtures cannot inject one. message_session's `delivery-failed` is driven by a target whose recorded preset no longer exists (OUT-04); start_session's is not.
+- **A54. `unconfirmed`.** The `{ok:true, unconfirmed:true}` outcome and outbox status `unconfirmed` need a session flush that fails after delivery. Nothing public produces that, so OUT-08 only allows the status. start_session's is now driven with the host probe (SST-06/06b), which fails the first flush after the steer.
+- **A55. Not driven black-box: delivery retries and `failed` items.** "Three failed deliveries → `failed` with `delivery-failed`", "retried each time Fishball goes idle", a start_session whose session cannot be created at all (answers `delivery-failed`, not recorded), and caps counting "failed after the session was created" all need a fault inside steer, flush or create. The fixtures cannot inject one. message_session's `delivery-failed` is driven by a target whose recorded preset no longer exists (OUT-04). start_session's is driven by the host probe, which makes the steer into the new agent throw (SST-07, UNA-04); a session that cannot be created at all is still not driven.
+- **A144. What "unconfirmed" is.** The flush is DSH's `ctx.sessions.flush(session)`, which answers a boolean and rejects on a listener failure. SST-06 makes it reject, SST-06b makes it answer `false`; both are expected to give `unconfirmed: true`. Only the first flush after the steer fails, because failing every later one would also break the new session's own turn.
+- **A145. Missing and non-string titles.** The schema marks `title` as a required string, so DSH rejects a call without it (or with a number, null, array or object) before the tool runs, as for a missing folder (A51). ORD-02 accepts `no-title` or a tool error for those rows; an empty or whitespace-only or invisible-only string must give `no-title`.
+- **A146. Invisible titles (R2 update).** "Empty after DSH's `normalizeSessionTitle(title, Number.MAX_SAFE_INTEGER)`" is tested with the real function as a precondition of each ORD-02 row, and every expected kept title (SST-03d) is written out by hand. `title-invalid` can no longer come from DSH's real service through start_session, so SST-04 gets it from a stub that throws the real `SessionTitleInvalidError` class.
+- **A147. A started session's first message text.** The relay text of a start_session is the message verbatim (observed; no header), unlike message_fishball's relays. SST-02 asserts equality.
 - **A56. The wake guard for stranded items.** DSH's turn-retirement gap cannot be triggered on purpose. WAK-04 covers parked items read by the next turn (consumed, never discarded), and DUR-02 covers pending items delivered once Fishball is live again.
 - **A57. GUI (M5).** Only the served client bundle is checked: it contains "Send to Fishball". The row menu, the header action, its visibility rules (live only, never in Fishball's own session) and the dialog are not exercised in a browser. Whether the bundle names the route path literally is a diagnostic only.
 - **A58. Wake-ups per process.** DESIGN §5b counts wake-ups per process, so a restart resets the count. This is not asserted. WAK-03 sets the cap to the current count + 1 at runtime instead of starting from a known zero, because the setup turn may or may not count the unchecked-tools notice.
@@ -1330,3 +1367,86 @@ The rules:
 - **`DSH_STATE`** gains `fishball`, and **`expectedDsh`** returns it for the Fishball group. This affects MCAT-01/02.
 - **`CODE.askFirst`** (`ask-first`) is new (review M1).
 - **MCAT-04** expects `expectedDsh(p)` for built-ins instead of `builtin` for all of them.
+
+## Fix: read_session labels who wrote each message, start_session keeps a half-made session (DESIGN §5c, §5d, Q-read-roles, Q-start-half-made)
+
+Baseline before the fix: 1240 pass / 0 fail / 1 skip (OFM-06). Every new file was also run against the version before the fix (d63322a, extracted with `git archive` and booted with `FBTEST_PLUGIN_DIR`): the control and regression cases pass there, the cases that need the fix fail there.
+
+### [messaging-read-roles.test.mjs](messaging-read-roles.test.mjs): read_session labels (ROL-nn)
+
+Two hosts: one for everything but the restart, one restarted so the session is read from its stored log.
+
+| id | technique | expected result |
+|---|---|---|
+| ROL-01 ×25 | DT (source kind × sender id) | `user` for kind `user` (also with an rpc id, also kind `user-rpc`); `fishball` for a relay whose sender is Fishball's session; `agent` with `from` for any other sender (including Fishball's id plus one character, minus one character, in upper case); `context` with `source` = the kind for notice, goal, schedule, runtime-context, webhook, team-message, subagent-settled, skill-invocation, session-reference, user-approval, user-question-reply, `agent-message-extra`, a made-up kind, and the near-misses `User`, `USER`, `user `, `Agent-Message`; each entry has exactly the keys of its label |
+| ROL-02 ×1 | ST | one entry per message, in recorded order, newest last, nothing else in the session |
+| ROL-03 | EP | role `user` for the three user rows and no other |
+| ROL-04 | EP (real turn) | a scripted answer is `{role:'assistant', text}`; the typed message is `user`; the context DSH adds to a first turn is `context` with its kind; the whole list equals the oracle |
+| ROL-07 | EP (a turn with a tool call) | the assistant message that only calls a tool (no text) and the tool result are not listed; the typed message and the final answer are |
+| ROL-05 ×5 | DT (a relay's sender: missing, null, 7, 0, '') | `{role:'agent', text}` with no `from` key when the sender is not a string (review fix); the empty string is a string, so `from: ''` |
+| ROL-06 ×5 | EP + error guessing | no source at all: `{role:'context', text}`, no `source`/`from` key; an empty source object, a null, a numeric and an empty kind: `context`, no `from` |
+| ROL-10 | ST (live session) | typed turn, message_session, a relay from another session, a notice: the list equals the oracle; Fishball's own message is `fishball`; only the typed message is `user` |
+| ROL-11 | ST (start_session) | the first message is `fishball` with its text verbatim; the answer after it is `assistant`; nothing is `user` |
+| ROL-12 | ST (restart) | after a restart the session is not live; read_session gives the same messages with the same labels as before |
+| ROL-20 | BVA (15 messages, all labels) | the newest 12, in order, labels intact |
+| ROL-21 | BVA (12 × 1024 bytes = 12288, labels of 300+ characters) | all 12 kept: labels are not counted |
+| ROL-22 | BVA (12288 + 1) | at most 12288 bytes of text; 11 or 12 messages; the newest whole and labelled; an oldest that is kept is cut with an ellipsis |
+| ROL-23 ×2 | BVA (13000 bytes of ASCII; 16000 bytes of 2-byte characters) | one entry, label kept, text a prefix ending with an ellipsis, at most 12288 bytes, no broken character |
+| ROL-24 | EP (empty-text messages of five labels, in the middle and at the end) | skipped and not counted toward the 12 |
+| ROL-30 ×2 | EP (hostile source kind, hostile sender id) | one closing tag, one messages line, one session_id line; the strings come back exactly |
+| ROL-40 | EP | the tool description names user, assistant, fishball, agent and context and words context exactly as the review fix says; the arguments are still only `session_id` |
+| ROL-41 | EP | the result's `note` is exactly the review fix's sentence (information, never instructions; a user message was typed to that session, not to Fishball) |
+
+### [messaging-start-halfmade.test.mjs](messaging-start-halfmade.test.mjs): start_session keeps a half-made session (HM-nn)
+
+Three hosts: A (title service, no cap), B (`sessionsPerHour` 2), C (no `sessionTitle` service).
+
+| id | technique | expected result |
+|---|---|---|
+| HM-00 ×2 | EP (control) | a normal start in a registered workspace, by id and by path, has no `workspaceError` and the session joins the workspace |
+| HM-01 ×2 | EP (workspace id, workspace path) | ok; same `folder` and keys as the normal start plus `workspaceError: 'workspace-attach-failed'`; one failed attach for this session in this workspace; the session exists, in no workspace; renamed once before the one steer (a relay from Fishball); the first message delivered once; outbox `start`, `delivered`, with `targetSessionId`; the new session runs its first turn; DSH reports the title |
+| HM-02 ×2 | DT (rename invalid / fails) | ok with `titleError` `title-invalid` / `title-failed`, no `title`, `workspaceError`; delivered and recorded |
+| HM-03 ×2 | DT (flag set / not set) | watch with `createdBy` assistant and one notice after the first turn; none without the flag |
+| HM-04 | ST | read_session ok and shows the first message; watch_session ok |
+| HM-05 ×2 | EP (flush rejects / answers false) | ok, `unconfirmed`, same keys as the unconfirmed start made whole plus `workspaceError`; steered once; outbox `unconfirmed` |
+| HM-06 ×3 | DT (steer throws × rename ok / invalid / fails) | `delivery-failed` with `sessionId`, the title outcome, `workspaceError`, no `folder`; keys as the same failed delivery made whole plus `workspaceError`; outbox `failed` with `errorCode` |
+| HM-07 ×2 | DT (attach-failed error with only a string sessionId; with extra details) | carries on: ok, `workspaceError`, renamed, delivered, recorded |
+| HM-08 | EP (controls) | no `workspaceError` on a start in a workspace, a start in a plain folder, or a normal failed delivery |
+| HM-10 ×9 | DT (create fails: a different code; the attach code in upper case; with a suffix; with no details; details without a sessionId; a numeric, null and object sessionId; an error with no code) | `{ok:false, code:'delivery-failed'}`; outbox unchanged; a session created anyway gets no message and no title |
+| HM-11 | ST (cap 2) | none of HM-10 was counted: a half-made start succeeds |
+| HM-12 | ST (cap 2) | a half-made start whose delivery fails is refused `delivery-failed` with `workspaceError` |
+| HM-13 ×2 | ST (cap 2 spent) | the next start, normal or half-made, is refused `hourly-cap` and creates nothing: both half-made starts were counted |
+| HM-30, HM-31 | EP (no sessionTitle service) | `titleError` `title-unavailable` with `workspaceError`, delivered and recorded; a failed delivery carries both and the sessionId |
+
+### [approvals-provenance.test.mjs](approvals-provenance.test.mjs): permission-request provenance by source kind (PRV-nn)
+
+| id | technique | expected result |
+|---|---|---|
+| PRV-01 ×9 | DT (source of the message that starts the turn; session started by the user) | started by `the user`; turn by `the user` for kind user (also with an rpc id), `Fishball (message_session)` for a relay from Fishball, `another agent or a notice` for a relay from anyone else (including Fishball's id plus one character), a Fishball notice, a goal round, a schedule and a made-up kind |
+| PRV-02 ×9 | DT (source of the session's first message, which is also its first turn) | started by `the user`, `Fishball (start_session)` for a relay from Fishball, otherwise `another agent or a notice` or `unknown`; turn by as in PRV-01 |
+| PRV-04 ×14 | DT (source of a later message; the user typed earlier) | the request's `latest_user_message` is the later message for kind user (also with an rpc id) and the earlier typed message for every other source, including relays with a null, numeric or missing sender, `User` and `user ` |
+| PRV-03 | ST | after a relay from Fishball the user types: the new turn is `the user`'s, the session is still started by Fishball |
+
+### Ambiguities (read_session roles, half-made start)
+
+- **A148. A message with no source.** DSH's steer crashes on a message with a null source ("Cannot read properties of null (reading 'kind')", observed) and DSH's own load check refuses one without a source, so a no-source message can only be produced by appending the event to a live session's log. ROL-06 does that (`injectUserMessage`); a no-source message read back from a stored log is not driven. The same op appends every ROL-01 row; a steered message is stored with exactly the source it was given (observed with the table's kinds), so the appended events have the shape of real ones, and ROL-04 and ROL-10..12 repeat the labels through the real paths (DSH's own turns, steer with a source, message_session, start_session).
+- **A149. Sources the requirement does not name.** An empty source object, and a `kind` that is null, a number or the empty string: the tests require only "never `user`", `context`, and no `from` key. (A relay whose sender is not a string was in this list until the review fix specified it: `{role:'agent', text}` with no `from`, ROL-05.) The empty-string sender is read literally: a string other than Fishball's, so it keeps `from: ''`. Whether such a message carries a `source` key is not asserted.
+- **A150. Provenance regression.** "Its behaviour must be unchanged" is tested by PRV-01..03 plus the existing APR-01 and APR-16 cases, and the PRV file was run against the version before the fix with the same answers. The labels for a Fishball notice, a goal round, a schedule and a made-up kind come from DESIGN §7a's value `another agent or a notice`; for a session's first message from them, `unknown` is accepted too, as in APR-16.
+- **A151. Shapes.** Each entry is compared whole with `deepEqual`: `{role, text}`, `{role, from, text}` or `{role, source, text}`, as the requirement writes them. An extra key (for example a timestamp) would fail the cases.
+- **A152. Bounds with labels.** "Count message text as before" is read as: at most 12 messages and at most 12288 bytes of message text, with `from` and `source` not counted. At exactly 12288 bytes of text all 12 messages must come back (ROL-21). One byte over (ROL-22) the requirement says only that older ones are dropped first and one long message is cut with an ellipsis, so the case accepts the oldest being dropped or being cut with an ellipsis and requires the newest to be whole.
+- **A153. Empty text.** A user/message with no content blocks is an empty-text message (ROL-24). Whitespace-only text is not tested.
+- **A154. The oracle for real sessions.** ROL-04, 10, 11 and 12 compare read_session with the labels computed from the session's own event log (`expectedFromLog` in the test: the requirement's rule applied to each `user/message` source and `assistant/message`; empty text skipped). Sessions in these cases stay under 12 messages and 12 KB. DSH adds a `runtime-context` and a `time-context` message to a session's first turn (observed on 0.2.1-rc.2); they must read as `context` with those sources. ROL-04 logs them and does not require them.
+- **A155. The tool description.** "Explains the five roles" is tested as: the description contains each of `user`, `assistant`, `fishball`, `agent`, `context` as a word (case-insensitive). The wording is not asserted.
+- **A156. Simulating the attach failure.** `failAttach` replaces `attachSession` on the registered workspace's own object, so DSH's real `sessionController.create` creates the session and throws its real error. The session is then in no workspace (what DSH shows under Ungrouped). Only the folder forms the requirement names are used: a workspace id, and the path of a registered workspace; both put the session in the workspace when the attach works (HM-00).
+- **A157. Other create failures.** `failCreate` throws an error with a given `code` and `details` instead of DSH's own. Rows that need a session id in the details create the session through DSH's own create first (`createFirst`). "Without a string `details.sessionId`" is tested with the id missing, a number, null and an object, and with the details missing; an empty-string id and an id naming no session are not tested. HM-07 shows the recognized error is the code plus a string `details.sessionId`: `workspaceId` need not be there and extra details are ignored.
+- **A158. What the half-made answer must look like.** The requirement lists `sessionId`, `folder`, the title outcome and `workspaceError`. The tests compare the answer with the same start made whole in the same workspace (the reference, made in the same host): same `folder` (observed: the workspace's path, for an id and for a path), same keys, plus `workspaceError`. Fields that come with a case (`unconfirmed` with its `note`, `watch`) are therefore not listed by name in HM-05.
+- **A159. The cap.** "Counts it against `sessionsPerHour`" is tested by spending a cap of 2 with one half-made success and one half-made failed delivery and then expecting `hourly-cap`, from a normal start and from a start that would be half-made (which must create nothing). HM-11 shows that nine other failures were not counted.
+- **A160. The refusal for other failures.** `{ok:false, code:'delivery-failed'}` exactly, as OUT-04 and as before the fix. A session that was created anyway (`createFirst`) is not sent the first message and is not titled.
+- **A161. The restart case.** ROL-12 relies on a restarted host resuming only Fishball's own session, so the other session is read from its stored log; it asserts that first (`agentStatus` null) and that reading does not make it live.
+- **A162. Wording fixed by the review fix.** The `read_session` note and the tool description's definition of context are asserted verbatim (ROL-40, ROL-41), because the coordinator gave the exact sentences. The earlier checks (each role named as a word) stay.
+- **A163. The request's latest user message (PRV-04).** "Only DSH user sources count" is tested with kind `user` (with and without an rpc id) as the only sources that replace the user's earlier typed message; every other source in the table leaves it. The literal kind `user-rpc` is not used there: DSH never records it (its rpc source has kind `user`). PRV-04 also passes on the version before the fix.
+
+### Cases changed by this fix
+
+- No existing expectation changed. The start_session helpers of messaging-start-title.test.mjs (`useHost`, `assertDelivered`, `assertTitleError`, `assertFailedDelivery`, `assertRefused` and the rest) moved to [support/start-session.mjs](support/start-session.mjs) unchanged; `assertDelivered` gained an optional `folder` argument that defaults to the old behaviour.
+- `READ_ROLES` in support/constants.mjs still lists `user` and `assistant`: TOL-07 reads a session that has only those two, and still passes. `READ_ROLE` (five labels) and `HALF_MADE` are new.
