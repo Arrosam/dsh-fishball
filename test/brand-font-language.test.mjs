@@ -6,7 +6,7 @@
  * Node has no layout engine, so the observable is the style sheet text the module puts into document.head.
  * The module is executed against a stub host, never read (same approach as support/messenger-style.mjs).
  * The three brand rules are found by what the requirements say about them, not by selector name:
- *   sticker = the rule that rotates by -5deg; pill = weight 800 at 10px; word logo = letter-spacing -0.5px.
+ *   sticker = weight 800 at 9px / 11px; pill = weight 800 at 10px; word logo = letter-spacing -0.5px.
  *
  * | id       | technique                       | expected |
  * |----------|---------------------------------|----------|
@@ -15,7 +15,9 @@
  * | BFL-03   | EP (shared value)               | sticker and pill carry the identical stack |
  * | BFL-04   | EP (word logo)                  | "Archivo","Helvetica Neue",Helvetica,Arial,sans-serif; weight 900; letter-spacing -0.5px |
  * | BFL-05   | BVA (family list positions)     | in each stack the generic family is last and only last; Helvetica is index 0 (sticker, pill) |
- * | BFL-06   | EP (unchanged look)             | sticker 800 / 9px / 11px / rotate(-5deg); pill 800 / 10px / 16px |
+ * | BFL-06   | EP (unchanged look)             | sticker 800 / 9px / 11px; pill 800 / 10px / 16px |
+ * | BFL-09   | EP (R7 flat sticker)            | the sticker rule has no transform containing rotate(...) |
+ * | BFL-10   | BVA (R8 position)               | bottom is exactly -9px (not the old -2px), right is -16px |
  * | BFL-07   | EP (error guessing, whole sheet)| no font / font-family declaration in the sheet ends on a bare generic family as its only name |
  * | BFL-08   | DT (lang x navigator language)  | the sheet text is identical for en, zh-CN, ja, zh-TW, and an unset lang |
  */
@@ -77,7 +79,8 @@ const base = LANGUAGES[0]
 const sheetText = () => mountedSheets(base).join('\n')
 const rules = () => parseCss(sheetText())
 const declsOf = (pred) => { const hits = rules().filter((r) => pred(r.decls)); return hits }
-const rotated = (d) => /rotate\(\s*-5deg\s*\)/.test(d.transform?.value ?? '')
+// The sticker: the only rule with weight 800, 9px text and an 11px line (the tilt no longer identifies it).
+const rotated = (d) => weightOf(d) === '800' && sizeOf(d) === '9px' && lineOf(d) === '11px'
 const pill = (d) => weightOf(d) === '800' && sizeOf(d) === '10px'
 const word = (d) => d['letter-spacing']?.value === '-0.5px'
 
@@ -115,11 +118,22 @@ describe('fix-brand-font: brand text uses Latin font families whatever the displ
   it('BFL-05 the sticker and the pill start with Helvetica, then Arial', () => {
     for (const pred of [rotated, pill]) assert.deepEqual(familyOf(only(pred, 'brand text')).split(',').slice(0, 2), ['Helvetica', 'Arial'])
   })
-  it('BFL-06 the sticker keeps 800 / 9px / 11px / -5deg and the pill keeps 800 / 10px / 16px', () => {
+  it('BFL-06 the sticker keeps 800 / 9px / 11px and the pill keeps 800 / 10px / 16px', () => {
     const tag = only(rotated, 'sticker')
     assert.deepEqual([weightOf(tag), sizeOf(tag), lineOf(tag)], ['800', '9px', '11px'])
     const badge = only(pill, 'pill')
     assert.deepEqual([weightOf(badge), sizeOf(badge), lineOf(badge)], ['800', '10px', '16px'])
+  })
+  it('BFL-09 the sticker is flat: no rotate() in its transform', () => {
+    const d = only(rotated, 'sticker')
+    assert.equal(/rotate/i.test(d.transform?.value ?? ''), false, 'transform: ' + d.transform?.value)
+    assert.equal(/rotate/i.test(d.rotate?.value ?? '') && d.rotate.value !== 'none', false, 'rotate property: ' + d.rotate?.value)
+  })
+  it('BFL-10 the sticker sits at bottom -9px and right -16px', () => {
+    const d = only(rotated, 'sticker')
+    assert.equal(d.bottom?.value, '-9px')
+    assert.notEqual(d.bottom?.value, '-2px')
+    assert.equal(d.right?.value, '-16px')
   })
   it('BFL-07 no font / font-family declaration in the sheet is a bare generic family', () => {
     let seen = 0
