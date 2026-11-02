@@ -1,0 +1,6 @@
+# An entry with an id together with insert: it edits the row it names (fbtest-tools).
+- id: fbtest-tools
+  insert:
+    - id: fbtest-idinsert
+      name: 'fbtest-idinsert'
+      config: {}

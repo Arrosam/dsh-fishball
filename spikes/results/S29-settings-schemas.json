@@ -1,0 +1,652 @@
+{
+  "id": "S29-settings-schemas",
+  "started": "2026-10-31T05:40:26.103Z",
+  "finished": "2026-10-31T05:40:29.813Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "summary": {
+    "rows": 57,
+    "withSchema": 37,
+    "noSettings": 18,
+    "failed": 2,
+    "fields": 276,
+    "drawn": 257,
+    "drawnShare": "93%",
+    "notDrawnKinds": {
+      "array<any>": 1,
+      "union(object|object)": 1,
+      "array<object>": 7,
+      "array<union>": 1,
+      "dict": 2,
+      "const": 1,
+      "union(string|const)": 3,
+      "transform": 2,
+      "union(const|number)": 1
+    },
+    "rowsWithSecrets": [
+      "dsh-plugin-subscriptions#llm-subscriptions"
+    ]
+  },
+  "results": [
+    {
+      "plugin": "dsh-fishball",
+      "row": "fishball-attribution",
+      "module": "file:///Volumes/SSD1/GitHub/dsh-fishball/src/tool-attribution.js",
+      "config": "none"
+    },
+    {
+      "plugin": "dsh-fishball",
+      "row": "fishball",
+      "module": "file:///Volumes/SSD1/GitHub/dsh-fishball/index.js",
+      "config": "schema",
+      "fields": 12,
+      "drawn": 12,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@linxin666/dsh-client-ui-git-graph",
+      "row": "ui-git-graph",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/@linxin666/dsh-client-ui-git-graph/lib/index.js",
+      "config": "schema",
+      "fields": 3,
+      "drawn": 3,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true
+    },
+    {
+      "plugin": "@linxin666/dsh-client-ui-skill-explorer",
+      "row": "ui-skill-explorer",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/@linxin666/dsh-client-ui-skill-explorer/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@local/dsh-coding-mode-preset",
+      "row": "preset-coding-mode",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-agent-preset/lib/index.js",
+      "config": "schema",
+      "fields": 5,
+      "drawn": 4,
+      "notDrawn": [
+        "plugins:array<any>"
+      ],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@michengai/dsh-btw",
+      "row": "michengai-btw",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/@michengai/dsh-btw/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@michengai/dsh-code-review",
+      "row": "michengai-code-review",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/@michengai/dsh-code-review/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@openviking/dsh-memory-plugin",
+      "row": "openviking-memory-runtime",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/@openviking/dsh-memory-plugin/index.mjs",
+      "config": "none"
+    },
+    {
+      "plugin": "@roarpeng/graphflow-dsh",
+      "row": "mcp-graphflow",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-mcp-client/lib/index.js",
+      "config": "schema",
+      "fields": 1,
+      "drawn": 0,
+      "notDrawn": [
+        "(root):union(object|object)"
+      ],
+      "secrets": 0,
+      "jsonRoundTrip": "invalid-config",
+      "patchConfigValid": "expected { transport?: \"stdio\", serverName: string, command: string, args?: string[], env?: { [key: string]: string }, c"
+    },
+    {
+      "plugin": "@studyzy/dsh-suggest-prompt",
+      "row": "suggest-prompt",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/@studyzy/dsh-suggest-prompt/lib/index.js",
+      "config": "schema",
+      "fields": 9,
+      "drawn": 9,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@wxg-prc-cpg/browser-skill-dsh-plugin",
+      "row": "browserskill",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/@wxg-prc-cpg/browser-skill-dsh-plugin/lib/index.mjs",
+      "config": "schema",
+      "fields": 8,
+      "drawn": 8,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "dsh-better-workspace-file-manager",
+      "row": "better-workspace-file-manager",
+      "module": "file:///Users/samuel/Documents/dsh-better-workspace-file-manager/index.js",
+      "config": "schema",
+      "fields": 1,
+      "drawn": 1,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true
+    },
+    {
+      "plugin": "dsh-diff-approval",
+      "row": "diff-approval",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/dsh-diff-approval/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "dsh-idle-compact",
+      "row": "idle-compact",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/dsh-idle-compact/index.js",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 2,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "dsh-model-quick-selector",
+      "row": "model-quick-selector",
+      "module": "file:///Users/samuel/Documents/dsh-model-quick-selector/lib/index.js",
+      "config": "schema",
+      "fields": 1,
+      "drawn": 0,
+      "notDrawn": [
+        "quickModels:array<object>"
+      ],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true
+    },
+    {
+      "plugin": "dsh-notification",
+      "row": "notify",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/dsh-notification/index.js",
+      "config": "schema",
+      "fields": 9,
+      "drawn": 9,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "dsh-plugin-subscriptions",
+      "row": "llm-subscriptions",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/dsh-plugin-subscriptions/lib/index.js",
+      "config": "schema",
+      "fields": 23,
+      "drawn": 15,
+      "notDrawn": [
+        "providers:array<union>",
+        "models.codex:array<object>",
+        "models.claude:array<object>",
+        "models.grok:array<object>",
+        "models.copilot:array<object>",
+        "models.antigravity:array<object>",
+        "pool.families:dict",
+        "pool.tiers:dict"
+      ],
+      "secrets": 1,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true,
+      "redacted": [
+        "antigravity.clientSecret:unset"
+      ]
+    },
+    {
+      "plugin": "dsh-rewind-plugin",
+      "row": "dsh-rewind-plugin",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/dsh-rewind-plugin/lib/index.js",
+      "config": "schema",
+      "fields": 9,
+      "drawn": 9,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "dsh-sidebar-focus",
+      "row": "dsh-sidebar-focus",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/dsh-sidebar-focus/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "dsh-smart-prompt",
+      "row": "dsh-smart-prompt",
+      "module": "file:///Volumes/SSD1/GitHub/dsh-smart-prompt/lib/index.js",
+      "config": "schema",
+      "fields": 25,
+      "drawn": 25,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "dsh-workspace-mover",
+      "row": "workspace-mover",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/dsh-workspace-mover/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "dshmarket",
+      "row": "dsh-market",
+      "module": "file:///Users/samuel/.dsh/profiles/web/node_modules/dshmarket/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-agent-team-profile",
+      "config": "rows: edits-other-rows"
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-inspector-profile",
+      "row": "experimental-inspector",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-inspector/lib/index.js",
+      "config": "schema",
+      "fields": 24,
+      "drawn": 23,
+      "notDrawn": [
+        "host:const"
+      ],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-inspector-profile",
+      "row": "session-inspector",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-session-inspector/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+      "row": "speech-to-text",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-speech-to-text/lib/index.js",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 2,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+      "row": "speech-to-text-sensevoice",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-speech-to-text-sensevoice/lib/index.js",
+      "config": "schema",
+      "fields": 23,
+      "drawn": 20,
+      "notDrawn": [
+        "modelDirectory:union(string|const)",
+        "vadModelPath:union(string|const)",
+        "modelOrigin:union(string|const)"
+      ],
+      "secrets": 0,
+      "jsonRoundTrip": "invalid-config",
+      "patchConfigValid": "$.dataRoot expected string but got [object Object]",
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+      "row": "api-speech-to-text",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-api-speech-to-text/lib/index.js",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 2,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+      "row": "ui-voice-input",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-client-ui-voice-input/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-auto-review",
+      "row": "auto-review",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-auto-review/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+      "row": "translator",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-translator/lib/index.js",
+      "config": "schema",
+      "fields": 8,
+      "drawn": 6,
+      "notDrawn": [
+        "googleEndpoint:transform",
+        "bingEndpoint:transform"
+      ],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+      "row": "cot-translation",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-client-ui-cot-translation/lib/index.js",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 2,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-badge-skill-bundle",
+      "row": "skill-badge",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-skill-badge/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-ralph-bundle",
+      "row": "optional-ralph-workflow",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-workflow-ptc/lib/index.js",
+      "config": "schema",
+      "fields": 5,
+      "drawn": 5,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-ralph-bundle",
+      "row": "tool-ralph",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-tool-ralph/lib/index.js",
+      "config": "schema",
+      "fields": 4,
+      "drawn": 4,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-session-titles-bundle",
+      "config": "rows: edits-other-rows"
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-terminal-bundle",
+      "row": "optional-terminal-registry",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-terminal/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-terminal-bundle",
+      "row": "optional-terminal-bash",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-terminal-bash/lib/index.js",
+      "config": "schema",
+      "fields": 16,
+      "drawn": 16,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-terminal-bundle",
+      "row": "optional-terminal-pwsh",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-terminal-bash/lib/index.js",
+      "config": "schema",
+      "fields": 16,
+      "drawn": 16,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-terminal-bundle",
+      "row": "optional-tool-terminal",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-tool-terminal/lib/index.js",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 2,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-session-search",
+      "row": "optional-session-query-sqlite",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-session-query-sqlite/lib/index.js",
+      "config": "schema",
+      "fields": 9,
+      "drawn": 9,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-session-search",
+      "row": "optional-tool-session-query",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-tool-session-query/lib/index.js",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 2,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-tool-worktree",
+      "row": "worktree",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-worktree/lib/index.js",
+      "config": "schema",
+      "fields": 7,
+      "drawn": 7,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-tool-worktree",
+      "row": "tool-worktree",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-experimental-tool-worktree/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+      "row": "plugin-market",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-plugin-market/lib/index.js",
+      "config": "schema",
+      "fields": 4,
+      "drawn": 4,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+      "row": "ui-plugin-market",
+      "module": "file:///Users/samuel/Library/Application%20Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-client-ui-plugin-market/lib/index.js",
+      "config": "none"
+    },
+    {
+      "plugin": "builtin:compaction",
+      "row": "compaction-basic",
+      "module": "dsh-fishball/compaction",
+      "config": "schema",
+      "fields": 11,
+      "drawn": 10,
+      "notDrawn": [
+        "modelPolicies:array<object>"
+      ],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "builtin:compaction",
+      "row": "command-compact",
+      "module": "@deepseek-ai/dsh-command-compact",
+      "config": "none"
+    },
+    {
+      "plugin": "builtin:compaction",
+      "row": "tool-result-pruner",
+      "module": "@deepseek-ai/dsh-compaction-tool-result-pruner",
+      "config": "schema",
+      "fields": 3,
+      "drawn": 3,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "builtin:web",
+      "row": "tool-web",
+      "module": "@deepseek-ai/dsh-tool-web",
+      "config": "schema",
+      "fields": 7,
+      "drawn": 7,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "builtin:time",
+      "row": "time-context",
+      "module": "@deepseek-ai/dsh-time-context",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 2,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "builtin:reminders",
+      "row": "tool-schedule",
+      "module": "@deepseek-ai/dsh-tool-schedule",
+      "config": "none"
+    },
+    {
+      "plugin": "builtin:ask-user",
+      "row": "tool-ask-user",
+      "module": "@deepseek-ai/dsh-tool-ask-user",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 1,
+      "notDrawn": [
+        "timeout:union(const|number)"
+      ],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true
+    },
+    {
+      "plugin": "builtin:skills",
+      "row": "skill-filesystem",
+      "module": "@deepseek-ai/dsh-skill-filesystem",
+      "config": "schema",
+      "fields": 12,
+      "drawn": 12,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "builtin:skills",
+      "row": "tool-skill",
+      "module": "@deepseek-ai/dsh-tool-skill",
+      "config": "schema",
+      "fields": 1,
+      "drawn": 1,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true,
+      "badValueRefused": true
+    },
+    {
+      "plugin": "builtin:shell",
+      "row": "tool-bash",
+      "module": "@deepseek-ai/dsh-tool-bash",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 2,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true
+    },
+    {
+      "plugin": "builtin:shell",
+      "row": "tool-pwsh",
+      "module": "@deepseek-ai/dsh-tool-pwsh",
+      "config": "schema",
+      "fields": 2,
+      "drawn": 2,
+      "notDrawn": [],
+      "secrets": 0,
+      "jsonRoundTrip": true,
+      "patchConfigValid": true
+    }
+  ]
+}

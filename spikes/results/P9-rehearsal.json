@@ -1,0 +1,9 @@
+{
+  "id": "P9-rehearsal",
+  "started": "2026-10-24T21:05:40.421Z",
+  "finished": "2026-10-24T21:05:40.461Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": false,
+  "error": "Error: EEXIST: file already exists, symlink '/Volumes/SSD1/GitHub/dsh-fishball' -> '/Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/p9rehearsal-1792875940422/profiles/spike/node_modules/dsh-fishball'\n    at Object.symlinkSync (node:fs:1885:11)\n    at setupProfile (file:///Volumes/SSD1/GitHub/dsh-fishball/spikes/p9-rehearsal.mjs:38:8)\n    at bootDsh (file:///Volumes/SSD1/GitHub/dsh-fishball/spikes/harness.mjs:47:29)\n    at async file:///Volumes/SSD1/GitHub/dsh-fishball/spikes/p9-rehearsal.mjs:24:25\n    at async runSpike (file:///Volumes/SSD1/GitHub/dsh-fishball/spikes/harness.mjs:140:18)\n    at async file:///Volumes/SSD1/GitHub/dsh-fishball/spikes/p9-rehearsal.mjs:18:1"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "S3-S12-S14-S16-S18-browser",
+  "date": "2026-10-24",
+  "runtime": "0.2.1-rc.2",
+  "method": "Isolated DSH Web on 127.0.0.1:3096 (spikes/s14-brand-server.mjs, throwaway DSH_HOME under .runtime/spikes), real Chromium via browser-skill",
+  "pass": true,
+  "observations": {
+    "S14_brand": "With the fixture's client half registered at slot priority -1 (single slots render the LOWEST priority; the shipped brand uses 0), the sidebar shows the Fishball mark and name. The expanded brand button's aria-label becomes 'Open Fishball'. Mouse click and Enter on the focused button open the assistant session through uiWorkspace.openSession(sessionId). The 'New session' button still starts a new session. Collapsing the sidebar shows the mark in the rail; 'Open sidebar' still expands it.",
+    "S14_requirements": "The client half must inject @deepseek-ai/dsh-client-ui-renderer (slots) in dsh.client.inject, export {name, inject, apply} through module.exports, and pass a bare session id to openSession.",
+    "S3_chat": "The live assistant session (header agentPreset 'fishball:assistant', a never-registered id) opens and chats normally in the GUI: the user's message reached the live agent and was answered.",
+    "S12_browser": "A prepended host-level approval/request listener saw ask_me first and returned next(); the stock 'Waiting for approval' prompt with Reject / Allow once appeared in the asking session; Allow once completed the call.",
+    "S16_browser": "A message steered with source {kind:'agent-message', form:'relay', senderSessionId} renders as a 'Task message received' row whose body is the message text; the turn ran.",
+    "S18_browser": "sessionController.create({cwd}) on an existing folder that was not a workspace created a session (preset 'standard') that ran and appears under Ungrouped; no workspace was registered for that folder."
+  },
+  "screenshots": "browser-skill temporary files, not retained"
+}

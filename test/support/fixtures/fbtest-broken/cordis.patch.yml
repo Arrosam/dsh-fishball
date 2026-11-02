@@ -1,0 +1,5 @@
+# Its main file (missing.js) does not exist: mounting the row must fail as row-failed.
+- insert:
+    - id: fbtest-broken
+      name: 'fbtest-broken'
+      config: {}

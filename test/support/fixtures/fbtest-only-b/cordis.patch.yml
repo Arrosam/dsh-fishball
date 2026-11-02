@@ -1,0 +1,4 @@
+- insert:
+    - id: fbtest-only-b
+      name: 'fbtest-only-b'
+      config: {}

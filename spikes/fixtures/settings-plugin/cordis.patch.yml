@@ -1,0 +1,4 @@
+- insert:
+    - id: spike-settings
+      name: 'fishball-spike-settings'
+      config: { greeting: hello }

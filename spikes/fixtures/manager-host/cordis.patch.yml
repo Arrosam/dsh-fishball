@@ -1,0 +1,4 @@
+- insert:
+    - id: spike-manager-host
+      name: 'fishball-spike-manager-host'
+      config: {}

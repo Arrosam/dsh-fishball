@@ -1,0 +1,6 @@
+# One host row. Leave the bundle off in the profile and turn it on for Fishball only on
+# Fishball's Plugins page ("Plugins for Fishball"), or enable it for everyone.
+- insert:
+    - id: fishball-source-example
+      name: 'fishball-source-example'
+      config: {}

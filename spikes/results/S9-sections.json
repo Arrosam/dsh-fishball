@@ -1,0 +1,51 @@
+{
+  "id": "S9-sections",
+  "started": "2026-10-24T02:40:31.484Z",
+  "finished": "2026-10-24T02:40:33.513Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "sections": [
+    [
+      "harness:identity",
+      48
+    ],
+    [
+      "deployment:persona-prefix",
+      54
+    ],
+    [
+      "context:file-reference",
+      0
+    ],
+    [
+      "mcp-resource-servers",
+      0
+    ],
+    [
+      "ui:deliverable-file-references",
+      1304
+    ],
+    [
+      "harness:source",
+      325
+    ],
+    [
+      "app:web-surface",
+      1002
+    ],
+    [
+      "deployment:persona-suffix",
+      0
+    ]
+  ],
+  "contexts": [
+    "working-directory:current",
+    "sandbox:policy",
+    "approval:policy",
+    "harness:source",
+    "app:web-surface"
+  ],
+  "shadowed": "harness:identity",
+  "removed": true
+}

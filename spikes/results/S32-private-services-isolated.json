@@ -1,0 +1,79 @@
+{
+  "id": "S32-private-services",
+  "started": "2026-10-31T10:33:46.594Z",
+  "finished": "2026-10-31T10:33:52.751Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "leaking": {
+    "inspector-profile": {
+      "accepted": true,
+      "on": true,
+      "applied": true,
+      "lastError": null,
+      "tools": [],
+      "isolated": [
+        "inspector"
+      ],
+      "globallyVisible": []
+    },
+    "voice-input-bundle": {
+      "accepted": true,
+      "on": true,
+      "applied": true,
+      "lastError": null,
+      "tools": [],
+      "isolated": [
+        "speechToText",
+        "speechController"
+      ],
+      "globallyVisible": []
+    },
+    "cot-translation-bundle": {
+      "accepted": true,
+      "on": true,
+      "applied": true,
+      "lastError": null,
+      "tools": [],
+      "isolated": [
+        "translator",
+        "cotTranslation"
+      ],
+      "globallyVisible": []
+    },
+    "tool-worktree": {
+      "accepted": true,
+      "on": true,
+      "applied": true,
+      "lastError": null,
+      "tools": [
+        "create_worktree:hidden"
+      ],
+      "isolated": [
+        "worktrees"
+      ],
+      "globallyVisible": []
+    },
+    "plugin-market-bundle": {
+      "accepted": true,
+      "on": true,
+      "applied": true,
+      "lastError": null,
+      "tools": [],
+      "isolated": [
+        "pluginMarket"
+      ],
+      "globallyVisible": []
+    }
+  },
+  "blocked": {
+    "agent-team-profile": {
+      "blocked": "edits-other-rows",
+      "actions": []
+    },
+    "session-titles-bundle": {
+      "blocked": "edits-other-rows",
+      "actions": []
+    }
+  }
+}

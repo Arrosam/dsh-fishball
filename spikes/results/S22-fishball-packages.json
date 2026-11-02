@@ -1,0 +1,11 @@
+{
+  "id": "S22-fishball-packages",
+  "started": "2026-10-25T02:03:12.093Z",
+  "finished": "2026-10-25T02:03:14.963Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "profilesDir": "/Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/s22-1792893792093/profiles",
+  "resolved": "file:///Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/s22-1792893792093/profiles/.fishball/node_modules/fishball-spike-peer/index.js",
+  "sameScope": true
+}
