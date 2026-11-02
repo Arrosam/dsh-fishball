@@ -18,8 +18,8 @@
  *   ask_fishball({request_id, reply}) answers Fishball's question in the same thread.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, ASK_ERROR, ASK_RESULT } from './constants.js'
-import { rootSessionOf, textOfEvent } from './session-info.js'
+import { APPROVAL, ASK_ERROR, ASK_RESULT, SESSION_INFO } from './constants.js'
+import { rootSessionOf, senderOf, textOfEvent } from './session-info.js'
 
 export const DESK_TOOL = Object.freeze({ ask: 'ask_fishball', list: 'list_user_messages' })
 
@@ -63,7 +63,7 @@ const isObject = (value) => value !== null && typeof value === 'object' && !Arra
 /** The messages you typed in a session, oldest first: [{ id, at, text }]. */
 function userMessages(session) {
   return session.snapshotEvents()
-    .filter((event) => event.type === APPROVAL.userEvent && APPROVAL.userSources.includes(event.data?.source?.kind) && typeof event.data?.id === 'string')
+    .filter((event) => event.type === APPROVAL.userEvent && senderOf(event.data?.source) === SESSION_INFO.roles.user && typeof event.data?.id === 'string')
     .map((event) => ({ id: event.data.id, at: new Date(event.time).toISOString(), text: textOfEvent(event) }))
 }
 
