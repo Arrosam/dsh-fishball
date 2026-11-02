@@ -4,7 +4,7 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants and own_requests tables keep version 1 (as do the question-mode record, rev11g's tag answers and question audit ends, which only add values): the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants, own_requests and notices tables keep version 1 (as do the question-mode record, rev11g's tag answers and question audit ends, which only add values): the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
@@ -12,7 +12,7 @@ import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_TAG_ANSWER, QUESTION_END } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags', grants: 'grants', ownRequests: 'own_requests' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags', grants: 'grants', ownRequests: 'own_requests', notices: 'notices' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -41,6 +41,9 @@ const preferencesRecord = z.object({
   brandStyle: z.enum(Object.values(BRAND_STYLE)),
   changedAt: z.string(),
 })
+
+/** A one-time notice that has shown (revision 12: the welcome card, DESIGN §10f); absent means not yet. */
+const noticeRecord = z.object({ seenAt: z.string() })
 
 /** A positive whole number of tokens (context-window settings). */
 export const tokenCount = z.number().int().positive()
@@ -302,6 +305,7 @@ export const fishballDomain = defineDomain({
     [TABLE.tags]: domainTable(tagRecord),
     [TABLE.grants]: domainTable(grantRecord),
     [TABLE.ownRequests]: domainTable(ownRequestRecord),
+    [TABLE.notices]: domainTable(noticeRecord),
   },
 })
 
@@ -349,6 +353,7 @@ export class Store {
   get tags() { return this.#domain.table(TABLE.tags) }
   get grants() { return this.#domain.table(TABLE.grants) }
   get ownRequests() { return this.#domain.table(TABLE.ownRequests) }
+  get notices() { return this.#domain.table(TABLE.notices) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }

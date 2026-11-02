@@ -1223,7 +1223,7 @@ The Host state and routes below need no spike.
 **Where the list shows (Q-rec-place: Fishball's settings page).** A section "Recommended plugins" on Fishball's settings page (`plugins.bundle.config`), right after Status, as P10 placed it.
 - **Layout.** Categories in order, each with its heading. Context management and Memory carry a "Recommended first" badge in Fishball's colour and the sentence "These significantly improve how Fishball works." One compact row per plugin: its package name, its one-line description (cut with an ellipsis, full text on hover and for screen readers), a "Source" link to its npm or Git page, and the action on the right. Pet shows "Pets draw only in DSH's own interface, and a plugin that runs only for Fishball has no browser part, so none can be listed here."
 - The descriptions and every other text are client wording constants, in English and Chinese.
-- The section is drawn from the snapshot; while the snapshot is not loaded it shows the page's usual loading state, like the other sections.
+- The section is drawn from the snapshot; until the snapshot holds the list (before Fishball's catalog exists) it renders nothing, like the plugins summary.
 
 **An entry's state and action.** Read from the catalog in the snapshot, by package name; it changes live with the catalog.
 
@@ -1275,7 +1275,7 @@ The Host state and routes below need no spike.
 
 **Host API.** Same authentication, same-origin fence and boundary checks as §10.
 - Snapshot: `recommended: {highlighted: [category], categories: [{category, plugins: [{packageName, spec, source, plugin, state, blocked}]}]}`, where `state` is `install`, `installed`, `dsh-on` or `dsh-off` (the table above), `plugin` is the catalog key or null, and `blocked` the catalog's reason or null; `welcome: {show}`.
-- `POST /api/fishball/welcome/seen` (`{}`): stores the notice and answers 200 with the state; a repeat answers the same and changes nothing; 400 `bad-body` for any other body. It answers while Fishball is not live too, since the store does not need the session.
+- `POST /api/fishball/welcome/seen` (`{}`): stores the notice and answers 200 with the state; a repeat answers the same and changes nothing; 400 `bad-body` for a body that is not a JSON object, as `read` (extra fields are ignored). It answers while Fishball is not live too, since the store does not need the session.
 - No new install route: the list uses `install/inspect`, `install` and `install/cancel` (§10d) and the plugin switch (§10).
 
 **Not changed.** The dialog's process, approvals, refusals and limits (revision 10a); the Fishball tab and its groups; the plugin statuses and defaults (§4); the tool mask (§7). No new safety limit: the list and the card bound nothing. Fishball itself does not see the list (not asked for).
@@ -1912,6 +1912,8 @@ Carried over from P10 (your answers then; they hold where today's design does no
 | `dsh-slack` | 0.4.7 | **Left out:** install refused `incompatible-version` (requires DSH ≥ 0.2.1-rc.3; baseline rc.2) |
 | `dsh-plugin-discord` | 0.1.0 | Runs |
 | `dsh-dingtalk-channel` | 0.1.0 | Runs |
+
+**Finding:** while it ran, `@zaofan/dsh-qqbot` created a folder `dshqqbot/.qqbot-extensions/ui/demo-dock/` (a demo card's HTML, CSS and JS) in DSH's working directory, outside the DSH home; the folder was deleted after the check. Fishball's rule that it never writes files covers its own tools (§7), not the code of a plugin you install, so this is noted for you, not enforced.
 
 **Reading:** "runs" means its rows applied in Fishball's private tree with no error; whether each plugin works with its own service or account (an OpenViking server, a Slack token, a QQ bot) was not tried, as in P10.
 
