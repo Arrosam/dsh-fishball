@@ -51,6 +51,8 @@ import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
 import { WATCH_TOOL, Watches, WatchError } from './src/watches.js'
 import { Unread } from './src/unread.js'
 import { Preferences } from './src/preferences.js'
+import { Welcome } from './src/welcome.js'
+import { recommendedView } from './src/recommended.js'
 import { APPROVAL_TOOL, ApprovalBroker } from './src/approvals.js'
 import { DESK_TOOL, requestDeskTools } from './src/request-desk.js'
 import { CallPasses } from './src/passes.js'
@@ -108,6 +110,8 @@ export async function apply(ctx, config) {
   let sourcesView = () => null
   let unreadView = () => null
   let preferencesView = () => null
+  /** The one-time welcome card (revision 12, §10f); null until the store is open. */
+  let welcomeView = () => null
   /** The Messenger look's on/off for the browser (DESIGN §10c); null until the catalog exists. */
   let lookView = () => null
   /** Which of Fishball's own feature plugins run (revision 10c); null until the catalog exists. */
@@ -125,13 +129,17 @@ export async function apply(ctx, config) {
   let managedToolNames = () => []
   /** Make each feature follow its plugin's applied state; wired once the features exist. */
   let syncFeatures = () => {}
-  const snapshot = () => ({ ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog: catalogView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView(), managed: managedView(), pile: pileView(), tags: tagsView(), grants: grantsView(), questionMode: questionModeView() })
+  const snapshot = () => {
+    // Read once: the recommended list derives its states from the same catalog view (§10f).
+    const catalog = catalogView()
+    return { ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog, contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView(), managed: managedView(), pile: pileView(), tags: tagsView(), grants: grantsView(), questionMode: questionModeView(), recommended: recommendedView(catalog), welcome: welcomeView() }
+  }
   /** Called on every published change once ctx.fishball exists (sources may become enabled). */
   let refreshSources = () => {}
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable, setManaged: unavailable, answerRequest: unavailable, revokeGrant: unavailable, answerQuestion: unavailable, setQuestionMode: unavailable }
+  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable, markWelcomeSeen: unavailable, setManaged: unavailable, answerRequest: unavailable, revokeGrant: unavailable, answerQuestion: unavailable, setQuestionMode: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
@@ -152,6 +160,7 @@ export async function apply(ctx, config) {
     removeWatch: (input) => commands.removeWatch(input),
     markRead: () => commands.markRead(),
     setBrandStyle: (style) => commands.setBrandStyle(style),
+    markWelcomeSeen: () => commands.markWelcomeSeen(),
     setManaged: (input) => commands.setManaged(input),
     answerRequest: (input) => commands.answerRequest(input),
     revokeGrant: (input) => commands.revokeGrant(input),
@@ -170,6 +179,11 @@ export async function apply(ctx, config) {
     logger.warn('store could not be opened (%s)', diagnosticOf(error))
     return use(new InactiveLifecycle(STATUS.failed, ERROR.storeUnreadable))
   }
+  // Wired as soon as the store is open: the card's record needs no session, so its route works
+  // even when Fishball fails to start (§10f).
+  const welcome = new Welcome(store, { onChange: () => publish() })
+  welcomeView = () => welcome.snapshot()
+  commands.markWelcomeSeen = () => welcome.markSeen()
 
   const composition = new AssistantComposition(ctx, logger)
   // Decided once, before the first catalog listing: an install whose session already exists

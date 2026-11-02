@@ -29,7 +29,7 @@ window.__ModuleLoader__.load({
     const exports = module.exports
     const React = require('react')
     const { createPortal } = require('react-dom')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, IconLoadingOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -126,7 +126,7 @@ window.__ModuleLoader__.load({
     /** The newest output lines the progress screen keeps. */
     const INSTALL_LOG_LINES = 200
     /** Where the dialog was opened: the Fishball tab can open the new plugin's page, DSH's menu cannot (S28). */
-    const INSTALL_FROM = Object.freeze({ tab: 'tab', menu: 'menu' })
+    const INSTALL_FROM = Object.freeze({ tab: 'tab', menu: 'menu', settings: 'settings' })
     const VISIBLE = 'visible'
     const VISIBILITY_EVENT = 'visibilitychange'
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
@@ -190,6 +190,10 @@ window.__ModuleLoader__.load({
     const DSH_COMPOSER = Object.freeze({ sideClearance: 'var(--dsh-composer-side-clearance)', dockInset: 'var(--dsh-composer-dock-inset)', cardMaxWidth: 'var(--dsh-composer-card-max-width)', sideClearances: 2, dockInsets: 4 })
     /** `n` copies of a CSS length, subtracted inside a calc(). */
     const minusTimes = (length, n) => ` - ${length}`.repeat(n)
+    /** A dock card's box: the width and centring of DSH's Todo dock (shared by the managed banner and the welcome card). */
+    /** A dock card's surface (the managed banner's look, shared with the welcome card). */
+    const DOCK_CARD_LOOK = 'border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);line-height:1.5'
+    const DOCK_CARD_WIDTH = `box-sizing:border-box;flex:none;width:calc(100%${minusTimes(DSH_COMPOSER.sideClearance, DSH_COMPOSER.sideClearances)}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});max-width:calc(${DSH_COMPOSER.cardMaxWidth}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});margin:0 auto`
     /**
      * The managed-session banner (DESIGN §10e item 30): a dock entry in a managed session's chat.
      * Order 10 puts it after DSH's Todo dock (0) and before its Queue dock (20) (the builder's
@@ -198,6 +202,25 @@ window.__ModuleLoader__.load({
      * Sizes are in px.
      */
     const MANAGED_BANNER = Object.freeze({ id: 'fishball-managed', order: 10, iconPx: 16, gapPx: 8, paddingYPx: 4, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
+    /**
+     * The one-time welcome card (DESIGN §10f, revision 12): a dock entry in Fishball's chat. Order
+     * −200 puts it at the top of the composer area, above your pile (−100), as you chose
+     * (Q-rec-card-place). Sizes are in px.
+     */
+    const WELCOME = Object.freeze({ id: 'fishball-welcome', order: -200, iconPx: 16, closeIconPx: 14, gapPx: 6, headGapPx: 8, paddingYPx: 8, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
+    /** Recommended plugins on the settings page (DESIGN §10f). States as src/recommended.js RECOMMENDED_STATE. Sizes in px. */
+    const RECOMMENDED = Object.freeze({
+      state: Object.freeze({ install: 'install', installed: 'installed', dshOn: 'dsh-on', dshOff: 'dsh-off' }),
+      rowGapPx: 12, rowPaddingYPx: 6, categoryGapPx: 8,
+      /** How the section comes into view when the welcome card's link opens the page. */
+      scroll: Object.freeze({ behavior: 'smooth', block: 'start' }),
+      /**
+       * How long the welcome card's request to bring the section into view waits for the page to
+       * mount. Past it the request lapses, so a later visit to the settings page never jumps (when
+       * DSH could not open Fishball's page, or the page was already open).
+       */
+      focusMs: 5000,
+    })
     /**
      * The managed mark in a sidebar row's leading cell. cellPx copies DSH's leading cell (the
      * seat's contract in dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the
@@ -451,7 +474,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body' })
+    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -682,6 +705,36 @@ window.__ModuleLoader__.load({
       refreshFailed: 'The plugin list could not be read again. Try Refresh again.',
       pluginsSummary: 'On in Fishball: {on}. Waiting for you: {needs}.',
       pluginsWhere: 'Manage them in the Fishball tab of the Plugins list.',
+      recommended: 'Recommended plugins',
+      recommendedHint: "Plugins that work well with Fishball. Install puts one in Fishball's own folder after you confirm it; DSH's other sessions are unchanged.",
+      recommendedFirst: 'Recommended first',
+      recommendedNote: 'These significantly improve how Fishball works.',
+      'recommendedCategory.context': 'Context management',
+      'recommendedCategory.memory': 'Memory',
+      'recommendedCategory.channel': 'Channel',
+      'recommendedCategory.pet': 'Pet',
+      recommendedPetNote: "Pets draw only in DSH's own interface, and a plugin that runs only for Fishball has no browser part, so none can be listed here.",
+      recommendedSource: 'Source',
+      recommendedInstallLabel: 'Install {name} for Fishball',
+      recommendedTurnOn: 'Turn on for Fishball',
+      recommendedTurnOnLabel: 'Turn on {name} for Fishball',
+      'recommendedState.installed': 'Installed',
+      'recommendedState.dsh-on': 'On in Fishball',
+      'recommendedState.dsh-off': 'In DSH, off in Fishball',
+      'recommendedDesc.dsh-idle-compact': 'Prepares a compaction while you are idle, before the model cache expires, and applies it without a new model call.',
+      'recommendedDesc.dsh-plugin-save-token': 'Cuts token cost by compressing tool output losslessly and spilling large results to disk.',
+      'recommendedDesc.smart-compaction': 'Lets the model compact at a safe point and check its real token use.',
+      'recommendedDesc.meow-memory': 'Local memory across sessions in SQLite, with remember and search tools and automatic reflection.',
+      'recommendedDesc.@a9i5k4/dsh-auto-memory': 'Recalls before the model answers and consolidates what it learns over time.',
+      'recommendedDesc.@zilliz/memsearch-dsh': 'Markdown memory shared with other coding agents, with search-based recall. Needs the memsearch tool.',
+      'recommendedDesc.@michengai/dsh-im-connect': 'Talk to DSH from WeChat, WeCom, DingTalk, Feishu, Lark, QQ and Telegram.',
+      'recommendedDesc.@zaofan/dsh-qqbot': 'QQ official bot channel for group and private chats. Needs a QQ bot app id and secret.',
+      'recommendedDesc.dsh-telegram-notify': 'Sends turn ends, questions and permission requests to a Telegram chat (one way).',
+      'recommendedDesc.dsh-plugin-discord': 'Drive a session from Discord. Needs a Discord bot token and your user id in its allow list.',
+      'recommendedDesc.dsh-dingtalk-channel': 'DingTalk Stream-mode bot: each chat drives its own agent. Needs a DingTalk client id and secret.',
+      welcomeTitle: 'Welcome to Fishball',
+      welcomeIntro: 'Plugins give Fishball more to work with:',
+      welcomeSee: 'See recommended plugins',
       installForFishball: 'Install for Fishball',
       'group.builtin': 'Built in',
       'group.dsh': 'DSH plugins',
@@ -1097,6 +1150,36 @@ window.__ModuleLoader__.load({
       refreshFailed: '无法重新读取插件列表。请再试一次刷新。',
       pluginsSummary: 'Fishball 中已开启：{on} 个。等待你处理：{needs} 个。',
       pluginsWhere: '在插件列表的 Fishball 标签页中管理它们。',
+      recommended: '推荐插件',
+      recommendedHint: '与 Fishball 配合良好的插件。安装会在你确认后放入 Fishball 自己的文件夹，DSH 的其他会话不受影响。',
+      recommendedFirst: '优先推荐',
+      recommendedNote: '它们能显著改善 Fishball 的使用体验。',
+      'recommendedCategory.context': '上下文管理',
+      'recommendedCategory.memory': '记忆',
+      'recommendedCategory.channel': '渠道',
+      'recommendedCategory.pet': '宠物',
+      recommendedPetNote: '宠物只在 DSH 自己的界面中绘制，而仅为 Fishball 运行的插件没有浏览器部分，所以这里无法列出。',
+      recommendedSource: '来源',
+      recommendedInstallLabel: '为 Fishball 安装 {name}',
+      recommendedTurnOn: '在 Fishball 中开启',
+      recommendedTurnOnLabel: '在 Fishball 中开启 {name}',
+      'recommendedState.installed': '已安装',
+      'recommendedState.dsh-on': 'Fishball 中已开启',
+      'recommendedState.dsh-off': '已装在 DSH，Fishball 中关闭',
+      'recommendedDesc.dsh-idle-compact': '在你空闲时、模型缓存过期前准备压缩，并且无需新的模型调用即可应用。',
+      'recommendedDesc.dsh-plugin-save-token': '无损压缩工具输出，并把大结果写到磁盘，降低 token 开销。',
+      'recommendedDesc.smart-compaction': '让模型在安全的时机压缩上下文，并查看真实的 token 用量。',
+      'recommendedDesc.meow-memory': '基于 SQLite 的本地跨会话记忆，提供记住与搜索工具，并会自动反思。',
+      'recommendedDesc.@a9i5k4/dsh-auto-memory': '在模型回答前回忆相关内容，并随时间整理所学。',
+      'recommendedDesc.@zilliz/memsearch-dsh': '与其他编程智能体共享的 Markdown 记忆，基于搜索回忆。需要安装 memsearch 工具。',
+      'recommendedDesc.@michengai/dsh-im-connect': '通过微信、企业微信、钉钉、飞书、Lark、QQ 和 Telegram 与 DSH 对话。',
+      'recommendedDesc.@zaofan/dsh-qqbot': 'QQ 官方机器人渠道，支持群聊和私聊。需要 QQ 机器人的应用 ID 和密钥。',
+      'recommendedDesc.dsh-telegram-notify': '把回合结束、提问和权限请求发到 Telegram 聊天（单向）。',
+      'recommendedDesc.dsh-plugin-discord': '从 Discord 操作会话。需要 Discord 机器人令牌，并把你的用户 ID 加入允许列表。',
+      'recommendedDesc.dsh-dingtalk-channel': '钉钉 Stream 模式机器人：每个聊天驱动自己的智能体。需要钉钉的客户端 ID 和密钥。',
+      welcomeTitle: '欢迎使用 Fishball',
+      welcomeIntro: '插件能让 Fishball 做得更多：',
+      welcomeSee: '查看推荐插件',
       installForFishball: '为 Fishball 安装',
       'group.builtin': '内置',
       'group.dsh': 'DSH 插件',
@@ -1342,8 +1425,15 @@ window.__ModuleLoader__.load({
       `.${CLS.fishTag}{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:.5px solid color-mix(in srgb,${FISH_MARK.eyeColor} 35%,transparent);border-radius:999px;background:color-mix(in srgb,${FISH_MARK.eyeColor} 12%,transparent);color:var(--dsw-alias-label-primary);font-size:12px}`,
       // The managed-session banner and sidebar mark (item 30), in DSH's theme tokens for light and dark.
       // Width and spacing as DSH's Todo dock (DSH_COMPOSER): no margin of its own, so the composer stack's gap spaces it.
-      `.${CLS.managedBanner}{box-sizing:border-box;flex:none;width:calc(100%${minusTimes(DSH_COMPOSER.sideClearance, DSH_COMPOSER.sideClearances)}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});max-width:calc(${DSH_COMPOSER.cardMaxWidth}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});margin:0 auto;display:flex;align-items:center;gap:${MANAGED_BANNER.gapPx}px;padding:${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingEndPx}px ${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingStartPx}px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:${MANAGED_BANNER.fontPx}px;line-height:1.5}`,
+      `.${CLS.managedBanner}{${DOCK_CARD_WIDTH};display:flex;align-items:center;gap:${MANAGED_BANNER.gapPx}px;padding:${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingEndPx}px ${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingStartPx}px;${DOCK_CARD_LOOK};font-size:${MANAGED_BANNER.fontPx}px}`,
       `.${CLS.managedText}{flex:1;min-width:0}`,
+      // The welcome card (revision 12) shares the banner's width and look; it stacks its lines.
+      `.${CLS.welcome}{${DOCK_CARD_WIDTH};display:flex;flex-direction:column;gap:${WELCOME.gapPx}px;padding:${WELCOME.paddingYPx}px ${WELCOME.paddingEndPx}px ${WELCOME.paddingYPx}px ${WELCOME.paddingStartPx}px;${DOCK_CARD_LOOK};font-size:${WELCOME.fontPx}px}`,
+      `.${CLS.welcomeLine}{display:flex;align-items:center;gap:${WELCOME.headGapPx}px}`,
+      // Recommended plugins on the settings page: one compact row per plugin, the description cut to one line.
+      `.${CLS.recCategory}{display:flex;align-items:center;gap:${RECOMMENDED.categoryGapPx}px;margin:0}`,
+      `.${CLS.recRow}{display:flex;align-items:center;gap:${RECOMMENDED.rowGapPx}px;padding:${RECOMMENDED.rowPaddingYPx}px 0;border-bottom:.5px solid var(--dsw-alias-border-l2)}`,
+      `.${CLS.recDesc}{overflow:hidden;color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap}`,
       `.${CLS.managedRow}{display:inline-flex;align-items:center;justify-content:center;width:${MANAGED_ROW.cellPx}px;height:${MANAGED_ROW.cellPx}px;color:var(--dsw-alias-label-primary)}`,
       // The plugin manager copies DSH's own Plugins-page rules (dsh-client-ui-plugin-manager
       // PluginManagerPage.module.css, rc.2) with DSH's theme variables, so the Fishball tab reads
@@ -1677,6 +1767,126 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * The welcome card's link asks the settings page to bring "Recommended plugins" into view
+     * (DESIGN §10f). The page mounts only after DSH opens it, so the request waits here until the
+     * section takes it.
+     */
+    const recommendedFocus = (() => {
+      let requestedAt = null
+      return {
+        request: () => { requestedAt = Date.now() },
+        take: () => { const fresh = requestedAt !== null && Date.now() - requestedAt <= RECOMMENDED.focusMs; requestedAt = null; return fresh },
+      }
+    })()
+
+    /** One recommended plugin's action (DESIGN §10f table): a reason, a state, Install or Turn on. */
+    function RecommendedAction({ item, t, onFailed }) {
+      if (item.blocked) return h(Tag, { tone: 'danger' }, pluginErrorText(t, item.blocked))
+      if (item.state === RECOMMENDED.state.install) {
+        return h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', 'aria-label': t('recommendedInstallLabel', { name: item.packageName }), onClick: () => installRequest.open(INSTALL_FROM.settings, item.spec) }, t('install')))
+      }
+      const state = h(Tag, { tone: 'neutral' }, t('recommendedState.' + item.state))
+      if (item.state !== RECOMMENDED.state.dshOff) return state
+      // Your own switch, as on the Fishball tab (POST plugins); it applies when Fishball's turn ends.
+      const turnOn = async () => onFailed(!(await post(API.plugins, { plugin: item.plugin, on: true })))
+      return h(React.Fragment, null, state,
+        h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', 'aria-label': t('recommendedTurnOnLabel', { name: item.packageName }), onClick: turnOn }, t('recommendedTurnOn'))))
+    }
+
+    /** One compact row: package name, its description on one line (full text on hover), Source, and the action. */
+    function RecommendedRow({ item, t }) {
+      const [failed, setFailed] = React.useState(false)
+      const description = t('recommendedDesc.' + item.packageName)
+      return h('li', { className: CLS.recRow, 'data-fishball-recommended': item.packageName, 'data-state': item.blocked ? 'blocked' : item.state },
+        h('div', { className: CLS.grow },
+          h('span', { className: CLS.code }, item.packageName),
+          h('span', { className: CLS.recDesc, title: description }, description),
+          failed ? h('span', { role: 'alert' }, t('changeFailed')) : null),
+        h('a', { href: item.source, target: '_blank', rel: 'noopener noreferrer' }, t('recommendedSource')),
+        h(RecommendedAction, { item, t, onFailed: setFailed }))
+    }
+
+    /** The "Recommended first" badge in Fishball's colour (the turn tags' pill). */
+    const recommendedBadge = (t) => h('span', { className: CLS.fishTag }, t('recommendedFirst'))
+
+    /**
+     * Recommended plugins on Fishball's settings page (DESIGN §10f): the categories in order, the
+     * highlighted ones with their badge and note, Pet with its note. States come from the Host's
+     * snapshot, which reads them from the catalog, so they change live.
+     */
+    function makeRecommended(t) {
+      return function FishballRecommended() {
+        const recommended = useFishball().recommended
+        const ref = React.useRef(null)
+        const loaded = Boolean(recommended)
+        React.useEffect(() => {
+          if (loaded && recommendedFocus.take()) ref.current?.scrollIntoView(RECOMMENDED.scroll)
+        }, [loaded])
+        if (!recommended) return null
+        return h('div', { className: CLS.section, ref, 'data-fishball-recommended-section': true },
+          h('h3', null, t('recommended')),
+          h('p', { className: CLS.muted }, t('recommendedHint')),
+          recommended.categories.map(({ category, plugins }) => {
+            const highlighted = recommended.highlighted.includes(category)
+            return h('div', { key: category, 'data-fishball-recommended-category': category },
+              h('h4', { className: CLS.recCategory }, t('recommendedCategory.' + category), highlighted ? recommendedBadge(t) : null),
+              highlighted ? h('p', { className: CLS.muted }, t('recommendedNote')) : null,
+              plugins.length === 0
+                ? h('p', { className: CLS.muted }, t('recommendedPetNote'))
+                : h('ul', { className: CLS.entries }, plugins.map((item) => h(RecommendedRow, { key: item.packageName, item, t }))))
+          }))
+      }
+    }
+
+    /**
+     * The welcome card's state for this page load: the session it was shown in, and whether it was
+     * closed. Kept outside the component because DSH draws the dock only inside its composer bar,
+     * which a panel (a question) can replace; the card must come back with it, while the Host's
+     * flag is already false (DESIGN §10f).
+     */
+    const welcomeState = valueStore({ shownIn: null, closed: false })
+    const useWelcomeState = () => React.useSyncExternalStore(welcomeState.subscribe, welcomeState.get)
+
+    /**
+     * The one-time welcome card above Fishball's composer (DESIGN §10f). It reports itself shown
+     * as soon as it renders, so it never comes back after this page load, and stays until you
+     * close it, follow its link, or open another session's chat.
+     */
+    function makeWelcome(ctx, t) {
+      return function FishballWelcome({ sessionId }) {
+        const state = useFishball()
+        const { shownIn, closed } = useWelcomeState()
+        const eligible = Boolean(sessionId) && sessionId === state.sessionId && state.status === STATUS.live && state.welcome?.show === true && Boolean(state.recommended)
+        React.useEffect(() => {
+          if (!eligible || shownIn !== null || closed) return
+          welcomeState.set({ shownIn: sessionId, closed: false })
+          // A report lost to a network failure only means the card shows once more next time.
+          void post(API.welcomeSeen, {})
+        }, [eligible, shownIn, closed])
+        // Another session's chat ends it: the dock is drawn per session.
+        React.useEffect(() => { if (shownIn !== null && sessionId !== shownIn && !closed) welcomeState.set({ shownIn, closed: true }) }, [sessionId, shownIn, closed])
+        if (shownIn === null || closed || sessionId !== shownIn || !state.recommended) return null
+        const close = () => welcomeState.set({ shownIn, closed: true })
+        // Read when drawn, as the other openers are: the service may arrive after this module.
+        const openPage = settingsOpener(ctx)
+        const Icon = brandIconOf(state)
+        const { categories, highlighted } = state.recommended
+        const see = () => { recommendedFocus.request(); close(); openPage() }
+        return h('section', { className: CLS.welcome, 'aria-label': t('welcomeTitle'), 'data-fishball-welcome': true },
+          h('div', { className: CLS.welcomeLine },
+            h(Icon, { size: WELCOME.iconPx, unread: false }),
+            h('strong', { className: CLS.managedText }, t('welcomeTitle')),
+            h('button', { type: 'button', className: MCLS.iconButton, 'aria-label': t('close'), onClick: close }, h(IconCloseOutlineRegular, { size: WELCOME.closeIconPx }))),
+          h('span', null, t('welcomeIntro')),
+          h('ul', { className: CLS.entries }, categories.map(({ category }) => h('li', { key: category, className: CLS.welcomeLine },
+            t('recommendedCategory.' + category), highlighted.includes(category) ? recommendedBadge(t) : null))),
+          h('span', { className: CLS.muted }, t('recommendedNote')),
+          // Where no service can open the settings page, there is nothing to link to (Reading, §10f).
+          openPage ? h('div', null, h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: see }, t('welcomeSee'))) : null)
+      }
+    }
+
+    /**
      * Install for Fishball (DESIGN §10d revision 10a): one request store shared by the item in
      * DSH's Add plugin menu and the Fishball tab's button. The dialog lives in the shell overlay,
      * so it outlives the menu that opened it (as "Send to Fishball" does).
@@ -1684,7 +1894,8 @@ window.__ModuleLoader__.load({
     const installRequest = (() => {
       const store = valueStore(null)
       let count = 0
-      return { ...store, open: (from) => store.set({ from, id: ++count }), close: () => store.set(null) }
+      // spec: a package already chosen (a recommended plugin, DESIGN §10f); the dialog checks it at once.
+      return { ...store, open: (from, spec = null) => store.set({ from, spec, id: ++count }), close: () => store.set(null) }
     })()
     const useInstallRequest = () => React.useSyncExternalStore(installRequest.subscribe, installRequest.get)
 
@@ -1721,7 +1932,7 @@ window.__ModuleLoader__.load({
       return function FishballInstallDialog() {
         const request = useInstallRequest()
         if (request === null) return null
-        return h(InstallFlow, { key: request.id, from: request.from, t, listen })
+        return h(InstallFlow, { key: request.id, from: request.from, initialSpec: request.spec, t, listen })
       }
     }
 
@@ -1731,10 +1942,10 @@ window.__ModuleLoader__.load({
      * is not exported (S31), so its screens are rebuilt from DSH's components; the process behind
      * them is DSH's own, inherited for Fishball's folder. Your click on Install approves it.
      */
-    function InstallFlow({ from, t, listen }) {
+    function InstallFlow({ from, initialSpec, t, listen }) {
       const id = React.useId()
       const [step, setStep] = React.useState(INSTALL_STEP.edit)
-      const [spec, setSpec] = React.useState('')
+      const [spec, setSpec] = React.useState(initialSpec ?? '')
       const [problem, setProblem] = React.useState(null)
       const [subject, setSubject] = React.useState(null)
       const [progress, setProgress] = React.useState({ phase: null, attempt: null, output: '' })
@@ -1776,6 +1987,8 @@ window.__ModuleLoader__.load({
         setSubject(shipped ? { kind: null, shipped: true } : { ...inspection, inDsh })
         setStep(INSTALL_STEP.confirm)
       }
+      // A chosen package goes straight to DSH's check, as if you had typed it and pressed Install (§10f).
+      React.useEffect(() => { if (initialSpec) void check() }, [])
       const install = async (approvedBuilds) => {
         requestId.current = crypto.randomUUID()
         setProgress({ phase: null, attempt: null, output: '' })
@@ -2864,7 +3077,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
+    function makeSettingsPage(section, Status, Recommended, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -2874,6 +3087,7 @@ window.__ModuleLoader__.load({
         const disabled = !state.writable || state.saving
         return h(React.Fragment, null,
           h(Status),
+          h(Recommended),
           h(BrandStyle),
           h(ContextWindow),
           h(Intake),
@@ -3524,6 +3738,7 @@ window.__ModuleLoader__.load({
       }), 'fishball: dialogs')
       // Revision 11 (DESIGN §10e, S37): your pile, the ask_fishball row with your buttons, and the tags in each turn's tail.
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: PILE.id, order: PILE.order, locale: NS }, makePile(t))), 'fishball: pile')
+      ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: WELCOME.id, order: WELCOME.order, locale: NS }, makeWelcome(ctx, t))), 'fishball: welcome card')
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: MANAGED_BANNER.id, order: MANAGED_BANNER.order, locale: NS }, makeManagedBanner(t))), 'fishball: managed banner')
       ctx.effect(() => ctx.slots.inject(SLOT.rowLeading, () => ctx.slots.register({ name: SLOT.rowLeading, id: MANAGED_ROW.id, locale: NS }, makeManagedRowMark(t))), 'fishball: managed row mark')
       ctx.effect(() => ctx.slots.inject(SLOT.toolview, () => ctx.slots.register({ name: SLOT.toolview, key: ASK_ROW.tool, locale: NS }, makeAskRow(t))), 'fishball: ask_fishball row')
@@ -3536,7 +3751,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.detailActions, () => ctx.slots.register({ name: SLOT.detailActions, id: MANAGER.actionId, locale: NS }, manager.DetailAction)), 'fishball: plugin page switch')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeRecommended(t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')
