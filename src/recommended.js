@@ -9,7 +9,10 @@
  *   dsh-handoff-compaction edit other rows; @xmanrui/dsh-im, dsh-plugin-weixin,
  *   @wsz987/dsh-channels, dsh-lark-bot and ReMe publish a service to the whole process;
  * - after the re-check: @openviking/dsh-memory-plugin 0.5.32 now publishes a service
- *   (leaks-service), and dsh-slack 0.4.7 requires DSH 0.2.1-rc.3 (incompatible-version).
+ *   (leaks-service), and dsh-slack 0.4.7 requires DSH 0.2.1-rc.3 (incompatible-version);
+ * - your answer after the re-check: @zaofan/dsh-qqbot wrote a folder into DSH's working directory
+ *   while it ran for Fishball, which promises never to write local files (QQ stays reachable
+ *   through @michengai/dsh-im-connect).
  * Pet lists none: a Fishball-only plugin's browser part is never served (P10-S22).
  *
  * Install goes through the ordinary "Install for Fishball" dialog with the entry's spec, so the
@@ -40,7 +43,6 @@ export const RECOMMENDED_PLUGINS = Object.freeze([
   npm(RECOMMENDED_CATEGORY.memory, '@a9i5k4/dsh-auto-memory'),
   npm(RECOMMENDED_CATEGORY.memory, '@zilliz/memsearch-dsh'),
   npm(RECOMMENDED_CATEGORY.channel, '@michengai/dsh-im-connect'),
-  npm(RECOMMENDED_CATEGORY.channel, '@zaofan/dsh-qqbot'),
   npm(RECOMMENDED_CATEGORY.channel, 'dsh-telegram-notify'),
   npm(RECOMMENDED_CATEGORY.channel, 'dsh-plugin-discord'),
   npm(RECOMMENDED_CATEGORY.channel, 'dsh-dingtalk-channel'),
