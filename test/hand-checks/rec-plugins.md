@@ -25,3 +25,8 @@ Build: `c63fa9d` merged into `claude/test-rec-plugins-98721c` (merge `9eb9192`).
 ## Findings
 - `POST /api/fishball/welcome/seen` accepts `{"a":1}` (200). DESIGN §10f says every body but `{}` answers 400 `bad-body`; the builder's note says "non-object body". Test WEL-02 (object with a key) fails on this. Low severity, no user-visible effect.
 - The builder's branch has three newer commits than `c63fa9d` (`c10b6e8` drops `@zaofan/dsh-qqbot`, `6c31115` and `50eb9a0` docs); this run is on `c63fa9d` as instructed, and the list still shows qqbot.
+
+## Final release run (build 50eb9a0 merged, `4d1be3e`)
+- Settings page, sandbox: "Recommended plugins" shows 10 rows (Context 3, Memory 3, Channel 4, Pet none), each with its Install button; no `@zaofan/dsh-qqbot` anywhere on the page. The snapshot agrees (10 entries). PASS.
+- WEL-02 now follows DESIGN §10f after c63fa9d: a non-object body answers 400, an object with extra fields answers 200 (the finding above is closed).
+- Full suite: 2147 tests, 2146 pass, 0 fail, 0 cancelled, 1 skipped (OFM-06, self-skipping). The persona baseline cases PBD-10..15 and R-B2 pass with the loader fix.
