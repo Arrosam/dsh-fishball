@@ -68,7 +68,7 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SESSION_INFO, SOURCE, TAG_KIND, THREAD_FROM } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, PILE_NOTE, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SESSION_INFO, SOURCE, TAG_KIND, THREAD_FROM } from './constants.js'
 import { AuditLog } from './audit.js'
 import { CallPasses } from './passes.js'
 import { WORDING } from './result-wording.js'
@@ -119,11 +119,11 @@ const PROMPT_MANAGED = Object.freeze({ now: 'now', already: 'already', failed: '
 const STATE = Object.freeze({ waiting: 'waiting', question: 'question' })
 
 const TEXT = Object.freeze({
-  answerDescription: 'Answer a permission request from a session you manage ([permission request apr_…]). "allow" approves this one call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "grant" approves it as "allow" does and also creates a standing grant, so that session\'s later calls it covers run without asking you: only when the user\'s allowance covers every call the grant covers; it needs `grant` with an end time. "reject" refuses it with a reason the session sees: only when the call goes beyond what the user asked that session to do AND it is dangerous. "ask" sends the session a question; its reply comes back as the same request. "escalate" hands it to the user; tell the user in one or two sentences why.',
+  answerDescription: 'Answer a permission request from a session you manage ([permission request apr_…]). "allow" approves this one call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "grant" approves it as "allow" does and also creates a standing grant, so that session\'s later calls it covers run without asking you: only when the user\'s allowance covers every call the grant covers; it needs `grant` with an end time. "reject" refuses it with a reason the session sees: only when the call goes beyond what the user asked that session to do AND it is dangerous. "ask" sends the session a question; its reply comes back as the same request. "escalate" hands it to the user; its reason is the line on the user\'s card: ' + PILE_NOTE.guide + '.',
   requestIdArg: 'The request id, e.g. apr_7f3c….',
   decisionArg: '"allow" (low risk, within the user\'s allowance), "grant" (as allow, plus a standing grant), "reject" (beyond the user\'s request and dangerous), "ask" (a question to the session) or "escalate" (to the user).',
   riskArg: '"low" or "high": your judgement of the exact call\'s real effect. Optional with "escalate" and "ask".',
-  reasonArg: 'Why, in one or two sentences (kept in the approval audit; a rejection\'s reason is shown to the session). Optional with "escalate" and "ask".',
+  reasonArg: `Why, in one or two sentences (kept in the approval audit; a rejection's reason is shown to the session). With "escalate": ${PILE_NOTE.guide}, shown on the user's card. Optional with "escalate" and "ask".`,
   questionArg: 'With "ask": the question for the session.',
   grantArg: 'With "grant": {kind, prefix?, expires_at}. kind "exact" covers this exact call (same tool and arguments) each time it repeats in that session; kind "prefix" covers that session\'s shell commands (bash, pwsh, terminal_send) whose command text starts with `prefix`, taken from this call\'s command, e.g. "npm test" (a trailing * is optional). Matching is on the raw text, so "npm test" also covers "npm test && git push"; for terminal_send it is the text sent. Every other tool, run_code and terminal_open included, gets exact grants only. expires_at: an ISO time in the future; every grant must end.',
   /** The request Fishball sees (DESIGN §7a.2 framing). */

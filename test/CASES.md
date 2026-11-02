@@ -2269,3 +2269,22 @@ File: `rev11-ui-fixes` (5 cases UIF-01..05; two of them fail until the fix lands
 | UIF-05 | EP (served client bundle) | holds "Ran on your one-time approval", "used once", "used {count} times" |
 
 Left to the hand check (the suite cannot see them): R1 (pile and grants title rows opaque, light and dark, nothing shows through while scrolling); R2 wording for counts 0, 1, 2 in English and Chinese "已使用 {count} 次"; R3 "Fishball:" label on the session's row (and the Chinese label, "Reason:" kept for the agent's reason); R4 audit labels in the settings page, an Allow once on the session's row, Chinese label; R5 wordmark label "Open Fishball" after a language change and fresh load.
+
+## Revision 11 pile list (one-line rows, detail view, animations; P1-P9)
+
+Host-side cases in [rev11-pile-list.test.mjs](rev11-pile-list.test.mjs). PLL-01 and PLL-02 fail on the base until the builder's P3 lands. The layout, animation, focus and fallback-wording requirements are drawn only in the browser, so they are left to the hand check (`hand-checks/rev11-pile-list.md`).
+
+| id | technique | requirement | expected result |
+|---|---|---|---|
+| PLL-01 | EP | P3 | Fishball's system text tells it to write the note as one conversational sentence |
+| PLL-02 | EP | P3 | the note/reason parameter description of `answer_approval` says "one sentence" |
+| PLL-03 | EP | P2, P9 | an escalated card carries Fishball's note verbatim; `arguments`, `why`, `callId`, `kind` and every CARD_KEYS key unchanged |
+| PLL-04 | BVA (2000 chars) | P4 | a long note is kept whole on the card |
+| PLL-05 | EP | P2 | a direct call sent to you has a card with its documented keys (no Host-invented note) |
+| PLL-06 | BVA (12 cards, cap raised) | P1, P7 | count 12, newest first, count falls by one per answer |
+| PLL-07 | DT | P1, P9 | Reject with no note, Reject with a note, Allow once each answer 200 with the matching code; a repeat is 409 `expired` |
+| PLL-08 | ST | P5 | a stopped turn removes only its own card |
+| PLL-09 | ST | P6 | a card arriving while another waits joins at the top; the older card is unchanged |
+| PLL-10 | EP | P9 | markup in a note is kept verbatim |
+
+Left to the hand check (HC): PLL-HC-P1 rows (two lines, ellipsis, buttons per kind, newest first, count); PLL-HC-P2 fallback why line in English and Chinese and live replacement; PLL-HC-P4 detail (content, other rows and grants hidden, Back/outside/Escape, answer returns, focus); PLL-HC-P5 detail closes when the request leaves; PLL-HC-P6 arrival while detail open; PLL-HC-P7 scrolling, cap, opaque title, grants below; PLL-HC-P8 animations and reduced motion; PLL-HC-P9 `ask_fishball` row, plain-text drawing, Chinese, light and dark.

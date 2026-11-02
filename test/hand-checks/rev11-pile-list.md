@@ -1,0 +1,30 @@
+# Hand check: rev11-pile-list (P1-P9)
+
+Tested at `d5ec193` (merge of builder `067509e` and the ui-fixes tests `a523e42`; `test/CASES.md` conflict resolved by keeping both sections, ui-fixes first; nothing else conflicted).
+
+## Suite
+`node test/run.mjs`: 1992 tests, 1990 pass, 1 fail, 1 skipped. The one failure was **APR-24**: it required the old persona phrase "When you escalate, tell the user", which P3 replaced ("When you escalate, give a reason: ..."). That phrase contradicts the new P3 requirement, so I updated `RUBRIC` in `test/support/constants.mjs` (the rule is still checked, with the new opening words) and re-ran APR-24 alone: pass. PLL-01..PLL-10 all pass (PLL-01/02 now pass). No flakes seen.
+
+## By hand
+Real DSH worker with the fake model (the builder's serve script; I used a copy that adds `ASKING_SHELL_ENV` so `bash` direct calls ask), built-in browser pane, 800x600 pane. The sandbox was stopped afterwards. Animations were read from `data-fishball-reveal` and DOM mutation timings plus the CSS; screenshots taken right after a click often show a mid-transition frame.
+
+| Req | Result | What I did and saw |
+|---|---|---|
+| P1 rows | PASS | Pile of five (own add_plugin, plan review, question, two asked), then up to 12 cards. Each is a two-line row, both lines ellipsised; line 1 "title · tool + main argument" / "Fishball · add_plugin @example/weather" / "title · Plan review" / "title · Theme colour"; buttons: Allow once + Reject, Approve + Keep planning, Answer. Newest first; "Waiting for you (n)" counted every card. Row Reject recorded `withNote:false` (stored decision), Keep planning without feedback worked, Approve/Allow once buttons present, Answer opens the detail. |
+| P2 why line | PASS | With Fishball's note: the note. Without: "fbtest title wants to use fbtest_ask: ls -la /tmp/build", "... wants to run make clean all" (bash), "... asks you: Which size?", "... asks you to review its plan". Chinese: "想使用 fbtest_ask：…", "想运行 make clean all", "问你：…", "请你审阅它的计划". A question card with no note switched to Fishball's note live (no reload) after `fbAnswer`, row and detail ("Fishball: ..."). |
+| P3 | PASS | PLL-01/02 pass in the suite (persona and `answer_approval` text say one conversational sentence). Not looked at by hand. |
+| P4 detail | PASS | Click on a row's text opens it in place; other rows and the standing-grants section are gone (`data-fishball-pile-open` set). Contents seen: arguments, reason, "Direct call"/"Asked first"/"Fishball asks" tag, Fishball's note in full, question form with Send answer, plan with feedback field + Approve/Keep planning, Reject with optional note. Back, Escape, and a click in the chat outside each returned to the list (grants back). Focus: on Back when opened; back on the row's main button after Escape; after a click outside it stayed where I clicked (body); after Reject-with-note in the detail it went to the pile box (the row left). Answer in detail (Reject with note "not now") returned to the list; the stored decision has `withNote:true`. |
+| P5 | PASS | Detail of a question open, answered through the Host route: detail closed to the list, count 6 to 5. Detail of a permission card open, its session's turn stopped: same. (Expiry not run by hand.) |
+| P6 | PASS | With a detail open a new request arrived: title count went 5 to 6, no new row drawn, detail stayed open; Back showed it. |
+| P7 scrolling | PASS | 11 cards: pile `max-height` 345.6px (45vh of 768), `overflow-y:auto`, scrollHeight 897; composer stays in view; the title row (`fb-pile-head`) is sticky and opaque (rgb 35,35,36), rows scroll under it. "Standing grants (1)" sits below the list in the same scrolling area. Detail keeps the same cap, and opens scrolled to the top even when the list was scrolled to the bottom. |
+| P8 animations | PASS | Back: every row `hidden`/`opening` then `open` after about 180 ms while the detail was removed at about 190 ms. Row Reject: `closing`, element removed 180 ms later. New cards `opening`->`open`. Reject's note field opened with the reveal (screenshot mid-open, then settled). Pile box appears and disappears the same way. **Reduced motion:** the pane has no media emulation, so I stubbed `matchMedia('(prefers-reduced-motion: reduce)')` to true: a row Reject removed the element in about 26 ms with no `closing`, opening a detail swapped at once, no `opening`/`closing` seen; and the stylesheet carries `@media (prefers-reduced-motion: reduce){ .fb-reveal { transition: none } }`. Not tested with the OS setting itself. |
+| P9 | PASS | The session's own `ask_fishball` row still shows Allow once / Reject (Chinese: 允许一次 / 拒绝) and "理由: ..." in the session's chat; its Reject opens the note field. Host routes covered by the suite (PLL-07, all rev11 files). A note `<b>bold</b> <img src=x onerror=...>` and arguments `<i>hi</i>` render as literal text; no `b`/`i`/`img` nodes, no script ran. |
+| Chinese | PASS | Whole pile (title "等你处理（9）", 允许一次, 拒绝, 批准, 继续规划, 回答, 返回, "给会话的反馈（可选）", grants "已使用 0 次", 撤销). "Approve this plan and leave plan mode?" and the plan text stay English: they come from the session's own plan-review payload, not Fishball's wording. |
+| Light theme | PASS | List and detail readable; title row opaque; buttons dark on light. Dark checked earlier in the same run. |
+| Direct-call card | PASS | A direct `bash` call escalated with a note, and one that timed out (no note): the first showed the note, the second "fbtest title wants to run make clean all" (Chinese "想运行 make clean all"). Detail tagged "Direct call". |
+| Grant with detail | PASS | Standing grant `npm test*` made via a direct call; with the detail open the grants section was hidden and it came back on Back and on a click outside. |
+
+## Not done / limits
+- Expiry of a card (P5) and the OS-level reduced-motion setting were not run.
+- Dark theme in Chinese and the plan-review hand-over text in the session's own panel were not looked at.
+- The pane was 800x600, so a narrow phone width was not checked.
