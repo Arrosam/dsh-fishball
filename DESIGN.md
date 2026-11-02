@@ -1682,6 +1682,16 @@ Each phase ends with:
 |---|---|---|
 | Tag icon | "Don't use emoji here. Use Fishball logo." Then, asked whether tags should follow the Sidebar icon setting like the banner: "Keep the fish". Every tag shows Fishball's fish mark, never an emoji, whatever the setting | §10e. As built since rev11c (`FishballIcon` in `client.js`), so no code change. The emoji in S37's screenshots comes from the spike's throwaway fixture (`spikes/fixtures/client-slots/client.js`) |
 
+**Revision 11 fixes after the UI gallery (2026-11-02; the user said "Yes, fix them"):**
+
+| Fix | What was wrong | What it does now | The manager's wording decisions |
+|---|---|---|---|
+| R1 Pile titles | The pinned "Waiting for you (n)" and "Standing grants (n)" rows had `background: inherit` from a parent with no background, so card text showed through them while the pile scrolled | The title rows use the pile's own fill (`PILE.fill`, DSH's layer-1 token), opaque in light and dark; nothing else about the pile changes | None |
+| R2 Grant use count | A grant used once read "used 1 times" | Exactly one use reads "used once"; every other count "used {count} times". Chinese stays "已使用 {count} 次" for every count | "used once" for one use |
+| R3 Fishball's text on the row | A rejected `ask_fishball` row showed two "Reason:" lines, the agent's and then Fishball's | Fishball's reason is labelled "Fishball:" (Chinese: the pile card's label), as on the pile card; the agent's reason keeps "Reason:". The tool's result now carries `reason_from: 'fishball'\|'user'` next to `reason`, so your own Reject note (and a row written before the fix) keeps "Reason:" (the builder's reading: your note is not Fishball's text) | Match the pile card's label |
+| R4 Audit credits your Allow once | A call that ran on the pass from your Allow once (pile card or the session's row) read "Ran on Fishball's one-time approval" | The pass records who gave it; the audit row keeps it as `passBy: 'user'\|'fishball'` (the snapshot's `recent` adds `passBy`, null otherwise; `answer` stays `pass`), so the label survives a restart. Your passes read "Ran on your one-time approval" (按你的一次性批准运行); Fishball's keep their label. The retry pass of Fishball's own request, which only your Allow mints, counts as yours (the builder's reading). Rows from before the fix are left as they are | "Ran on your one-time approval" |
+| R5 Wordmark label | After DSH switched to Chinese, live and on a fresh load, the brand button carried DSH's 新建会话: Fishball set its label once per unread count, and DSH's re-render put its own back (reproduced in a sandbox DSH) | Fishball watches the button's `aria-label` and puts its own back whenever DSH changes it, worded in the current language ("Open Fishball", with the unread count) | None |
+
 **Revision 11, decided by the manager for you on 2026-11-02 (you were away; please review):**
 
 | ID | Decision | Why | Effect on the plan |

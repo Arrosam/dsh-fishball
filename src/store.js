@@ -255,6 +255,8 @@ const approvalRecord = z.object({
   quotes: z.array(z.string()).optional(),
   /** rev11d: the grant this answer created, or the grant that covered this call. */
   grantId: z.string().min(1).optional(),
+  /** rev11-ui-fixes R4: who gave the pass a `pass` row ran on (your Allow once, or Fishball's allow). */
+  passBy: z.enum(Object.values(CHANGED_BY)).optional(),
   risk: z.enum(Object.values(APPROVAL_RISK)).optional(),
   rationale: z.string().optional(),
   /** DSH's outcome; a question's row (kind question, rev11g) records how the question ended instead. */

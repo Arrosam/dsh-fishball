@@ -18,7 +18,7 @@
  *   ask_fishball({request_id, reply}) answers Fishball's question in the same thread.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, ASK_ERROR, ASK_RESULT, SESSION_INFO } from './constants.js'
+import { APPROVAL, ASK_ERROR, ASK_RESULT, CHANGED_BY, SESSION_INFO } from './constants.js'
 import { rootSessionOf, senderOf, textOfEvent } from './session-info.js'
 
 export const DESK_TOOL = Object.freeze({ ask: 'ask_fishball', list: 'list_user_messages' })
@@ -76,7 +76,9 @@ function answer({ code, requestId, reason, question, byUser, byGrant }) {
     ok: code === ASK_RESULT.allowed,
     code,
     ...(requestId === undefined ? {} : { request_id: requestId }),
-    ...(reason === undefined ? {} : { reason }),
+    // reason_from says whose words the reason is: Fishball's rejection, or your note with Reject on
+    // the card. The session's row labels only Fishball's as Fishball (rev11-ui-fixes R3).
+    ...(reason === undefined ? {} : { reason, reason_from: byUser ? CHANGED_BY.user : CHANGED_BY.fishball }),
     ...(question === undefined ? {} : { question }),
     note: byGrant ? GRANT_NOTE : (byUser ? USER_NOTE[code] : undefined) ?? NOTE[code],
   }
