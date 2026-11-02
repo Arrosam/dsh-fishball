@@ -196,6 +196,8 @@ window.__ModuleLoader__.load({
     const CARD_KINDS = new Set(['asked', 'direct', 'own'])
     /** Fishball's own request (rev11f, §7a.11): its card is labelled Fishball instead of a session. */
     const OWN_CARD_KIND = 'own'
+    // The attribute Fishball keeps on DSH's brand button (rev11-ui-fixes R5).
+    const BRAND_LABEL_ATTR = 'aria-label'
     // The one use count English words apart ("used once", not "used 1 times"); the manager's decision, rev11-ui-fixes R2.
     const GRANT_USES = Object.freeze({ once: 1 })
     // An audit row that ran on a pass: who gave the pass (passBy, recorded since rev11-ui-fixes R4).
@@ -1553,8 +1555,18 @@ window.__ModuleLoader__.load({
         React.useEffect(() => {
           const button = ref.current?.closest('button')
           if (!button) return undefined
-          const previous = button.getAttribute('aria-label')
-          button.setAttribute('aria-label', count > 0 ? t('brandLabelUnread', { count }) : t('brandLabel'))
+          const previous = button.getAttribute(BRAND_LABEL_ATTR)
+          // DSH renders its own label on this button and sets it again whenever it re-renders (after
+          // its language loads on a fresh page, or changes): put Fishball's back each time, worded
+          // anew so it follows the current language (rev11-ui-fixes R5). Equal labels are left
+          // alone, so this cannot loop.
+          const keepLabel = () => {
+            const label = count > 0 ? t('brandLabelUnread', { count }) : t('brandLabel')
+            if (button.getAttribute(BRAND_LABEL_ATTR) !== label) button.setAttribute(BRAND_LABEL_ATTR, label)
+          }
+          keepLabel()
+          const labelWatch = new MutationObserver(keepLabel)
+          labelWatch.observe(button, { attributes: true, attributeFilter: [BRAND_LABEL_ATTR] })
           const onClick = (event) => {
             const open = fishballOpener(ctx)
             if (open === undefined) return
@@ -1565,9 +1577,10 @@ window.__ModuleLoader__.load({
           }
           button.addEventListener('click', onClick, true)
           return () => {
+            labelWatch.disconnect()
             button.removeEventListener('click', onClick, true)
-            if (previous === null) button.removeAttribute('aria-label')
-            else button.setAttribute('aria-label', previous)
+            if (previous === null) button.removeAttribute(BRAND_LABEL_ATTR)
+            else button.setAttribute(BRAND_LABEL_ATTR, previous)
           }
         }, [count])
         // DeepSeek's word logo is the stock one, without Fishball's tag or its lifted word.
