@@ -19,7 +19,7 @@ const KEY_SEPARATOR = '|'
 export const argumentsDigest = (args) => createHash('sha256').update(canonical(args)).digest('hex')
 
 export class CallPasses {
-  /** key -> { kind: PASS_KIND, sessionId, requestId?, seenByFishball } */
+  /** key -> { kind: PASS_KIND, sessionId, requestId?, seenByFishball, by? } */
   #entries = new Map()
 
   /**
@@ -35,14 +35,15 @@ export class CallPasses {
   /**
    * Let the call with this key through once (a later add for the same key replaces it).
    * @param origin.requestId - the request that left it; origin.seenByFishball - whether that
-   *   request reached Fishball (it is then told how the call ended).
+   *   request reached Fishball (it is then told how the call ended); origin.by - who gave a pass
+   *   (CHANGED_BY: Fishball's allow, or your Allow once), audited with the call it lets through.
    */
-  add(key, kind, sessionId, { requestId, seenByFishball }) {
+  add(key, kind, sessionId, { requestId, seenByFishball, by }) {
     if (key === undefined) return
-    this.#entries.set(key, { kind, sessionId, requestId, seenByFishball })
+    this.#entries.set(key, { kind, sessionId, requestId, seenByFishball, by })
   }
 
-  /** Use the entry of this key, if any: @returns { kind, sessionId, requestId?, seenByFishball } or undefined. */
+  /** Use the entry of this key, if any: @returns { kind, sessionId, requestId?, seenByFishball, by? } or undefined. */
   take(key) {
     if (key === undefined) return undefined
     const entry = this.#entries.get(key)

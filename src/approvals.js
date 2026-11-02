@@ -339,7 +339,7 @@ export class ApprovalBroker {
   snapshot() {
     return {
       pending: [...this.#waiting.keys()].map((id) => this.#requests.get(id)).filter(Boolean).map((r) => ({ id: r.id, sessionId: r.sessionId, toolName: r.toolName, at: r.at })),
-      recent: this.#audit.recent(this.#readLimits().approvalsShown).map(({ key, sessionId, toolName, at, answer, risk, rationale, finalOutcome, decidedAt, argumentsStatus }) => ({ key, sessionId, toolName, at, answer, risk: risk ?? null, rationale: rationale ?? null, finalOutcome, decidedAt, argumentsStatus })),
+      recent: this.#audit.recent(this.#readLimits().approvalsShown).map(({ key, sessionId, toolName, at, answer, passBy, risk, rationale, finalOutcome, decidedAt, argumentsStatus }) => ({ key, sessionId, toolName, at, answer, passBy: passBy ?? null, risk: risk ?? null, rationale: rationale ?? null, finalOutcome, decidedAt, argumentsStatus })),
     }
   }
 
@@ -596,7 +596,7 @@ export class ApprovalBroker {
       case APPROVAL_ANSWER.allow:
       case APPROVAL_ANSWER.grant:
         // A grant allows the asking call as allow does: by a pass, so that call leaves no grant tag.
-        this.#passes.add(request.key, PASS_KIND.pass, request.sessionId, { requestId: request.id, seenByFishball: true })
+        this.#passes.add(request.key, PASS_KIND.pass, request.sessionId, { requestId: request.id, seenByFishball: true, by: CHANGED_BY.fishball })
         return end(ASK_RESULT.allowed)
       case APPROVAL_ANSWER.reject:
         return { ...(await end(ASK_RESULT.rejected)), reason: result.rationale }
@@ -652,7 +652,7 @@ export class ApprovalBroker {
     switch (card.end) {
       case CARD_END.user: {
         const allowed = card.decision === CARD_DECISION.allow
-        if (allowed) this.#passes.add(request.key, PASS_KIND.pass, request.sessionId, { requestId: request.id, seenByFishball: request.seen === true })
+        if (allowed) this.#passes.add(request.key, PASS_KIND.pass, request.sessionId, { requestId: request.id, seenByFishball: request.seen === true, by: CHANGED_BY.user })
         const answer = await this.#end(request, result, allowed ? ASK_RESULT.allowed : ASK_RESULT.rejected)
         const outcome = allowed ? APPROVAL_OUTCOME.allowedOnce : APPROVAL_OUTCOME.rejected
         await this.#clicked(request.sessionId, request.id, outcome, allowed ? undefined : card.note !== undefined)
@@ -832,7 +832,7 @@ export class ApprovalBroker {
     }
     const covered = this.#passes.take(key)
     if (covered?.kind === PASS_KIND.pass) {
-      await this.#record({ ...call, id: covered.requestId, kind: REQUEST_KIND.asked, answer: APPROVAL_ANSWER.pass, finalOutcome: APPROVAL_OUTCOME.allowedOnce })
+      await this.#record({ ...call, id: covered.requestId, kind: REQUEST_KIND.asked, answer: APPROVAL_ANSWER.pass, passBy: covered.by, finalOutcome: APPROVAL_OUTCOME.allowedOnce })
       return APPROVAL_OUTCOME.allowedOnce
     }
     if (covered?.kind === PASS_KIND.toYou) return this.#toYou(call, covered, via)
@@ -905,7 +905,8 @@ export class ApprovalBroker {
     const call = { sessionId: this.#assistantId(), toolName, callId: req.callId, args, at: new Date().toISOString() }
     const passed = await this.#own.takePass(toolName, args.value)
     if (passed !== undefined) {
-      await this.#record({ ...call, id: passed, kind: REQUEST_KIND.own, answer: APPROVAL_ANSWER.pass, finalOutcome: APPROVAL_OUTCOME.allowedOnce })
+      // Only your Allow mints the retry pass of Fishball's own request (§7a.11).
+      await this.#record({ ...call, id: passed, kind: REQUEST_KIND.own, answer: APPROVAL_ANSWER.pass, passBy: CHANGED_BY.user, finalOutcome: APPROVAL_OUTCOME.allowedOnce })
       return APPROVAL_OUTCOME.allowedOnce
     }
     // Arguments that could not be read give no pass key: Allow could never let a retry through,
@@ -1122,13 +1123,15 @@ export class ApprovalBroker {
   }
 
   /** Audit one request (never the arguments or quoted text: a digest and message ids). */
-  async #record({ id, sessionId, toolName, callId, args, at, answer, risk, rationale, finalOutcome, kind, quotes, grantId }) {
+  async #record({ id, sessionId, toolName, callId, args, at, answer, risk, rationale, finalOutcome, kind, quotes, grantId, passBy }) {
     try {
       await this.#audit.append({
         sessionId, toolName, ...(callId === undefined ? {} : { callId }),
         argumentsDigest: sha256(args.text), argumentsStatus: args.status, at, answer, kind,
         ...(quotes === undefined || quotes.length === 0 ? {} : { quotes: quotes.map((quote) => quote.id) }),
         ...(grantId === undefined ? {} : { grantId }),
+        // A pass row names who gave the pass (rev11-ui-fixes R4); rows written before it have none.
+        ...(passBy === undefined ? {} : { passBy }),
         ...(risk === undefined ? {} : { risk }), ...this.#rationaleField(rationale),
         finalOutcome, decidedAt: new Date().toISOString(),
       }, id === undefined ? [] : [id])
