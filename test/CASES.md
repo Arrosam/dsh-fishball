@@ -2376,3 +2376,44 @@ Checked by changing a copy of the persona (eight mutants, run through `FBTEST_PL
 - **A174. Wording.** The requirement fixes the examples (`**还在进行中**：` to write, `**还在进行中：**` not to) and the sense ("in bold text, put Chinese punctuation outside the `**` markers"), not the exact sentence. PBD-03/04 check the words "bold", "Chinese punctuation", "outside", `**`, and the order "write … not …"; a rewording that drops one of them fails there on purpose and is a one-line change to `PERSONA_BOLD.terms` / `before`.
 - **A175. The persona has no list marker requirement.** The new line begins `- ` like its neighbours, but the requirement does not ask for it, so no case checks it.
 - **A176. What the renderer does (finding, PBR-03/04).** The asterisks stay visible when a letter or digit of any script follows the closing marker (Latin, capital, digit, accented, Cyrillic); a Chinese character, a space, the end of the line or an ASCII mark after it closes the bold text. All 15 Chinese marks tried (`，。！？；：、）」”…—（【》`) behave alike. The rule is therefore needed only before a letter or digit, but it is safe in every position. The same happens with an ASCII mark (`**still going:**dsh`, `**还在进行中:**dsh` keep their asterisks): the persona rule covers Chinese punctuation only, as the requirement says.
+
+### [rec-plugins.test.mjs](rec-plugins.test.mjs): revision 12, recommended plugins and the one-time welcome card (REC-nn, WEL-nn)
+
+Requirements: DESIGN §10f, §9 `notices`, §14 "Recommended plugins (revision 12)", §16 "Revision 12" (commit 282e595 of `claude/rec-plugins-build-d5cb13`), with the user's answers: the list is a section on Fishball's settings page; Install opens the "Install for Fishball" dialog (no new route); a DSH plugin off in Fishball offers Turn on for Fishball; `dsh-idle-compact` installs from npm; the card sits above the pile. Host side only. No case reaches npm: [fixtures/rec-*](support/fixtures) are stand-ins named like listed packages (`dsh-idle-compact`, `dsh-telegram-notify`, `smart-compaction`, and `meow-memory` whose patch edits another row, so it is blocked). The two DSH-profile stand-ins are linked by `FBTEST_LINK` (`REC_LINK_ENV`); the other two are installed for Fishball through `POST /api/fishball/install` from their local folder. `STATE_KEYS` gains `recommended` and `welcome`, so every test that compares the state's keys fails until the build.
+
+| id | technique | requirement | expected result |
+|---|---|---|---|
+| REC-01 | EP | snapshot shape | `recommended` = {highlighted, categories}; four categories in order, each {category, plugins}; `highlighted` = the first two category ids; the last (Pet) has no entries |
+| REC-02 | EP + BVA | entry shape | each entry exactly {blocked, packageName, plugin, source, spec, state}; non-empty strings; https source; state in install, installed, dsh-on, dsh-off; plugin and blocked a string or null |
+| REC-03 | EP | the list | every entry is a design entry of its category (a builder may drop some, §16, never add); dsh-idle-compact is in the first category; each highlighted category has an entry; names unique |
+| REC-04 ×7 | EP | left out ("1c") | billion-context, dsh-handoff-compaction, @xmanrui/dsh-im, dsh-plugin-weixin, @wsz987/dsh-channels, dsh-lark-bot, @agentscope-ai/reme-dsh-plugin never listed |
+| REC-05 | EP | your answer: npm | dsh-idle-compact's `spec` is exactly `dsh-idle-compact` |
+| REC-06 | DT (not in the catalog) | Install | every entry install, plugin null, blocked null; follows the catalog |
+| REC-07 | EP | events | the first SSE frame's recommended and welcome equal GET state's |
+| REC-08 | EP | no new install route | `/api/fishball/recommended/install` answers as a path no route serves; nothing installed |
+| REC-10 ×2 | DT (DSH plugin on in DSH, off in Fishball) | "In DSH, off in Fishball" | dsh-telegram-notify, smart-compaction: dsh-off, plugin = package name, blocked null |
+| REC-11 | ST dsh-off → dsh-on → dsh-off | Turn on for Fishball = `POST /api/fishball/plugins` | live in the event stream; no prompt; the other DSH plugin unchanged; DSH profile files byte-identical |
+| REC-12 | ST install → installed | Install through the dialog's route | install 200; entry installed, plugin `fishball:dsh-idle-compact`, blocked null; no prompt; profile files byte-identical |
+| REC-13 | ST installed on ↔ off | no action either way | stays installed |
+| REC-14 | DT (installed × blocked) | reason, no action | meow-memory stand-in: installed, blocked `edits-other-rows`, equal to the catalog's |
+| REC-15 | ST installed → uninstalled | Install back | both entries install, plugin and blocked null; profile unchanged |
+| REC-16 (inside REC-06, 10–15) | EP invariant | an entry follows the catalog by package name | none → install; fishball-installed → installed; DSH plugin on/off → dsh-on/dsh-off; plugin and blocked equal the catalog entry's |
+| WEL-01 | ST fresh home | not shown yet | welcome {show:true}; state keys equal STATE_KEYS |
+| WEL-02 ×7 | EP | seen: other bodies | invalid JSON, [], "x", 5, null, true, {a:1}: 400 {ok:false, code:'bad-body'}; show stays true |
+| WEL-03 ×2 | EP | auth and fence | no cookie; foreign Origin: not 200; show stays true |
+| WEL-04 | ST show → seen | POST {} | 200; show false in GET state and in a new event stream's first frame; Fishball's session gains no event |
+| WEL-05 | ST seen → seen | repeat | 200; show false; recommended unchanged; no event, no turn |
+| WEL-06 | EP | not in Fishball's context | Fishball's next request lacks the card's and the list's texts and the sources |
+| WEL-07 | ST clean restart | never again | show false; recommended unchanged |
+| WEL-08 | ST crash | stored before the answer | seen answered 200, process killed: show false after the restart |
+| WEL-09 | ST not live | the store needs no session | seen right after boot (before live): 200; false once live and after a restart |
+| WEL-10 | ST existing install (Reading) | shows once after the upgrade | home booted by 5343079 (git archive, as own-plugins-upgrade): no `welcome` there; true after the upgrade; seen → false; false after a restart |
+| WEL-11 | EP | a new home is separate | a second fresh home starts with show true |
+
+Fail before the build: all of REC-01..03, 05, 10..15, WEL-01..05, 07..11 (no `recommended` or `welcome` in the state, no seen route). Pass before and after: REC-04 (guarded by the entries helper: fails before), REC-08, WEL-06 and WEL-03 only vacuously until WEL-01 runs.
+
+Hand-check list (not tested here; checked in a sandbox DSH with the fake model, notes in [hand-checks/rec-plugins.md](hand-checks/rec-plugins.md)):
+- The "Recommended plugins" section on Fishball's settings page, right after Status: four categories in order, "Recommended first" badge and sentence on the first two, Pet's note, one-line description with ellipsis, Source link, the action at the right of each row; English and Chinese, light and dark.
+- Install on an entry opens the "Install for Fishball" dialog over the settings page with the spec filled in and the check run; Install on the confirmation approves; the entry then reads Installed; a failed check returns with the spec and reason.
+- Turn on for Fishball on an "In DSH, off in Fishball" entry; its refusal shows a reason in the row.
+- The welcome card above the "Waiting for you" pile: shows once, not after a reload or a restart, never in another session; × closes it; See recommended plugins opens the settings page with the section in view; hidden under a question panel.
