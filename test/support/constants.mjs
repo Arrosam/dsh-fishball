@@ -226,8 +226,8 @@ export const API = {
 // ---- P5 (messaging, intake, outbox) ----
 /** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16); rev11g 'questionMode' (DESIGN §10e snapshot). */
 /** P11 R2 adds 'look' (17). */
-/** Revision 10c adds 'features' (18). Revision 11 rev11a adds 'managed' (19, DESIGN §10e "Snapshot"); rev11c adds 'pile' (20). The tag records the Host publishes (§9 "Tag records") may add a 'tags' key, whose name the design leaves open: tests drop it before comparing (STATE_KEYS_OPTIONAL). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'grants', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'pile', 'preferences', 'questionMode', 'sessionId', 'sources', 'status', 'unread', 'watches', 'workspaceId']
+/** Revision 10c adds 'features' (18). Revision 12 adds 'recommended' and 'welcome' (22, DESIGN §10f "Host API"). Revision 11 rev11a adds 'managed' (19, DESIGN §10e "Snapshot"); rev11c adds 'pile' (20). The tag records the Host publishes (§9 "Tag records") may add a 'tags' key, whose name the design leaves open: tests drop it before comparing (STATE_KEYS_OPTIONAL). */
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'grants', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'pile', 'preferences', 'questionMode', 'recommended', 'sessionId', 'sources', 'status', 'unread', 'watches', 'welcome', 'workspaceId']
 /** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
 export const STATE_KEYS_OPTIONAL = ['tags']
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
@@ -981,3 +981,37 @@ export const BOLD_SENTENCES = {
   twoBold: { text: '**还在进行中**：dsh 和 **另一个**：abc', strong: ['还在进行中', '另一个'] },
   list: { text: '- **还在进行中**：dsh\n- **完成**：x', strong: ['还在进行中', '完成'] },
 }
+
+// ---- Revision 12 (DESIGN §10f): recommended plugins and the one-time welcome card ----
+/** The commit before revision 12 (this branch's base), extracted as the "existing install" version. */
+export const PRE_REV12 = { commit: '5343079' }
+export const REC_API = { seen: '/api/fishball/welcome/seen', removedInstall: '/api/fishball/recommended/install' }
+export const REC_ROOT_KEYS = ['categories', 'highlighted']
+export const REC_ENTRY_KEYS = ['blocked', 'packageName', 'plugin', 'source', 'spec', 'state']
+export const REC_STATE = { install: 'install', installed: 'installed', dshOn: 'dsh-on', dshOff: 'dsh-off' }
+/** The four categories in order; the first two are highlighted. The design names them Context management, Memory, Channel, Pet; the ids are the builder's. */
+export const REC_CATEGORY_COUNT = 4
+export const REC_HIGHLIGHT_COUNT = 2
+/** The design's list (table in §10f) by category position; a builder may drop entries (§16), never add others. */
+export const REC_LISTED = [
+  ['dsh-idle-compact', 'dsh-plugin-save-token', 'smart-compaction'],
+  ['@openviking/dsh-memory-plugin', 'meow-memory', '@a9i5k4/dsh-auto-memory', '@zilliz/memsearch-dsh'],
+  ['@michengai/dsh-im-connect', '@zaofan/dsh-qqbot', 'dsh-telegram-notify', 'dsh-slack', 'dsh-plugin-discord', 'dsh-dingtalk-channel'],
+  [],
+]
+/** Left out for good (your answer "1c"): they edit other rows or publish a service. */
+export const REC_NEVER = ['billion-context', 'dsh-handoff-compaction', '@xmanrui/dsh-im', 'dsh-plugin-weixin', '@wsz987/dsh-channels', 'dsh-lark-bot', '@agentscope-ai/reme-dsh-plugin']
+/** Your answer: dsh-idle-compact installs from npm under its own name. */
+export const REC_IDLE_SPEC = 'dsh-idle-compact'
+/** Stand-ins named like listed packages (fixtures/rec-*): no test reaches npm. */
+export const REC_STANDIN = {
+  idle: { name: 'dsh-idle-compact', dir: fixtureDir('rec-dsh-idle-compact'), tool: 'rec_idle_echo' },
+  telegram: { name: 'dsh-telegram-notify', dir: fixtureDir('rec-dsh-telegram-notify'), tool: 'rec_tg_echo' },
+  smart: { name: 'smart-compaction', dir: fixtureDir('rec-smart-compaction'), tool: 'rec_smart_echo' },
+  meow: { name: 'meow-memory', dir: fixtureDir('rec-meow-memory'), tool: 'rec_meow_echo' },
+}
+/** FBTEST_LINK: the DSH-profile stand-ins (on in DSH), linked at boot. */
+export const REC_LINK_ENV = { FBTEST_LINK: JSON.stringify([REC_STANDIN.telegram, REC_STANDIN.smart].map((b) => ({ name: b.name, dir: b.dir, enabled: true }))) }
+export const WELCOME_BAD_BODIES = [['invalid JSON', '{"a":', true], ['an array', []], ['a string', 'x'], ['a number', 5], ['null', null], ['a boolean', true]]
+/** DESIGN §10f (after the c63fa9d review fix): 400 `bad-body` for a body that is not a JSON object; extra fields are ignored, so an object with a key answers 200. */
+export const WELCOME_KEYED_BODY = { a: 1 }

@@ -26,6 +26,7 @@
  * POST question-mode          -> { mode: 'auto' | 'fishball' | 'user' } (who answers managed sessions' questions)
  * POST read                   -> {} (Fishball's chat is on screen: its unread replies are read)
  * POST brand                  -> { style: 'fishball' | 'deepseek' } (the sidebar brand icon, DESIGN §10)
+ * POST welcome/seen           -> {} (the welcome card has shown; a repeat changes nothing, DESIGN §10f)
  * GET  messenger/client.js    -> the Messenger look's browser file (DESIGN §10c)
  * GET  plugins/detail?plugin= -> one plugin's page data (DESIGN §10d); 404 unknown
  * GET  plugins/icon?plugin=   -> one plugin's icon image; 404 unknown when it has none
@@ -101,7 +102,7 @@ const BODY = Object.freeze({
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
  *   addWatch({ sessionId }), removeWatch({ watchId }), setManaged({ sessionId, managed }),
  *   answerRequest({ requestId, decision, note? }), revokeGrant({ grantId }), answerQuestion({ questionId, answers?, approve?, feedback? }),
- *   setQuestionMode(mode), markRead(), setBrandStyle(style), messengerScript(),
+ *   setQuestionMode(mode), markRead(), setBrandStyle(style), markWelcomeSeen(), messengerScript(),
  *   pluginDetail(plugin), pluginIcon(plugin), saveSettings({ plugin, row, values, reset }), inspectInstall(spec),
  *   install({ spec, requestId, approvedBuilds }), cancelInstall(requestId), refreshPlugins() }; the commands reject
  *   LifecycleStateError for a refusal (409 unless it names another status); messengerScript resolves the
@@ -205,6 +206,7 @@ export function registerRoutes(ctx, state) {
     { path: API.brand, methods: [HTTP_METHOD.post], fetch: command(BODY.brand, (style) => state.setBrandStyle(style)) },
     { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
     { path: API.read, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markRead()) },
+    { path: API.welcomeSeen, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markWelcomeSeen()) },
     { path: API.messengerClient, methods: [HTTP_METHOD.get], fetch: messengerScript },
     { path: API.pluginsDetail, methods: [HTTP_METHOD.get], fetch: forPlugin(async (plugin) => json(HTTP.ok, { ok: true, detail: await state.pluginDetail(plugin) })) },
     { path: API.pluginsIcon, methods: [HTTP_METHOD.get], fetch: forPlugin(icon) },
