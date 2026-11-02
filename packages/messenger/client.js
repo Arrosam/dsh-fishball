@@ -157,18 +157,20 @@ window.__ModuleLoader__.load({
         `${REPLY_BUBBLE}{padding:6px 12px;border-radius:4px 18px 18px 18px;background:var(--dsw-alias-bg-module-platform);border:1px solid var(--dsw-alias-border-l2)}`,
         `${REPLY}::before{content:"";position:absolute;left:0;top:0;width:${AVATAR.sizePx}px;height:${AVATAR.sizePx}px;${CIRCLE};background:${markImage(mark, REPLY_LAYOUT.fishFill)} center/${REPLY_LAYOUT.fishShare} no-repeat,${ACCENT}}`,
         `${REPLY}::after{content:${JSON.stringify(FISHBALL_NAME)};position:absolute;left:${BUBBLE_LEFT};top:0;font-size:12px;line-height:${REPLY_LAYOUT.nameLinePx}px;font-weight:600;color:${ACCENT}}`,
-        // DSH's footer under a reply (Fishball's copy button and the time) is a chat row of its
-        // own, so it would start under the avatar; it starts at the bubble's left edge instead.
+        // DSH's footer at the end of each turn is a chat row of its own: the copy button and time
+        // of the turn's closing reply, and any turn cards from other plugins (plans, files). It
+        // would start under the avatar; it starts at the bubble's left edge instead.
         `${SCOPE} [data-chat-flow-kind="turn-tail"]{padding-left:${BUBBLE_LEFT}}`,
         // DSH stretches a table of four or more columns (its md-table-wide class) past the chat
         // column to the edges of the chat area, at its full width. The reply row is narrower
         // (avatar on the left, a margin on the right), so that stretch ran past the bubble's right
-        // edge. Here the table stays in the row and fits its width, as DSH's narrower tables do:
-        // its cells wrap (DSH's markdown breaks long words). Only a table too wide even then
-        // scrolls sideways, on hover or focus as DSH's wide tables do. DSH resets its compact
-        // markdown's tables the same way. Scoped to the reply row, whose margin and padding cause
-        // the narrowing, so it holds even if the bubble element falls back to DSH's look.
+        // edge. Scoped to the reply row, whose margin and padding cause the narrowing, so it holds
+        // even if the bubble element falls back to DSH's look.
+        // 1. The wrapper stays within the row, as DSH resets it for its compact markdown.
         `${REPLY} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
+        // 2. The table shrinks to fit the row (auto in place of DSH's max-content), so its cells
+        //    wrap as in DSH's narrower tables (DSH's markdown breaks long words). Only a table too
+        //    wide even then scrolls sideways, on hover or focus as DSH's wide tables do.
         `${REPLY} .md-table-wide>table{width:auto}`,
         // Work rows (tool calls, reasoning, process groups) read as quieter activity lines.
         `${SCOPE} [data-chat-group-part]:not([data-chat-group-part="response"]){opacity:.7}`,
