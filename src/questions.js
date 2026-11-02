@@ -50,7 +50,7 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, QUESTION_TAG_ANSWER, REQUEST_KIND, SOURCE, TAG_KIND } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, QUESTION_TAG_ANSWER, REQUEST_KIND, SOURCE, TAG_KIND } from './constants.js'
 import { AuditLog } from './audit.js'
 import { Pile } from './pile.js'
 import { argumentsText, latestUserText, sha256, tellWithoutWake } from './approvals.js'
@@ -84,7 +84,7 @@ const TEXT = Object.freeze({
   approveArg: 'For a plan review: true approves the plan; false keeps planning.',
   feedbackArg: 'For a plan review: keep planning, with this feedback for the session.',
   toUserArg: 'true: send it to the user\'s pile instead of answering.',
-  noteArg: 'A note for the user, shown on its card in the pile.',
+  noteArg: `A note for the user, shown on its card in the pile: ${PILE_NOTE.guide}.`,
   /** The question Fishball sees (DESIGN §7a.10, the §7 framing). */
   notice: (entry, info, userText, mode, seconds, questions) => [
     `[question ${entry.id}] Fishball: ${entry.kind === QUESTION_KIND.planReview ? 'a session you manage asks the user to review its plan (exit_plan_mode).' : 'a session you manage asks the user a question (ask_user_question).'}`,
@@ -97,7 +97,7 @@ const TEXT = Object.freeze({
   mode: Object.freeze({
     [QUESTION_MODE.auto]: 'Mode Auto: answer only when the user\'s own words cover the answer (in this chat, or the user\'s own messages in that session); otherwise send it to the user with to_user: true.',
     [QUESTION_MODE.fishball]: 'Mode Fishball: answer from your own judgement; send the user only what you cannot decide (to_user: true).',
-    [QUESTION_MODE.user]: 'Mode User: it is already in the user\'s pile and only the user answers it. You may add a note for the user with answer_question({question_id, note}).',
+    [QUESTION_MODE.user]: 'Mode User: it is already in the user\'s pile and only the user answers it. You may add a note for the user with answer_question({question_id, note}): ' + PILE_NOTE.guide + '.',
   }),
   summary: (entry) => `Question: ${entry.toolName}`,
   /** Notes to Fishball without a wake, as for permission requests (it learns how each ended). */

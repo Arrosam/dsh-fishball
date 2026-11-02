@@ -34,7 +34,7 @@
  * package.json, lockfile or cordis.patch.yml.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL_GRANTED, CHANGED_BY, PLUGIN_ACTION, PLUGIN_ERROR, PLUGIN_KIND, SESSION_INFO } from './constants.js'
+import { APPROVAL_GRANTED, CHANGED_BY, PILE_NOTE, PLUGIN_ACTION, PLUGIN_ERROR, PLUGIN_KIND, SESSION_INFO } from './constants.js'
 import { cutToBytes } from './text.js'
 import { SettingsError } from './plugin-settings.js'
 import { CatalogError, fishballInstalledKey } from './plugin-catalog.js'
@@ -53,20 +53,20 @@ const TEXT = Object.freeze({
   setDescription: 'Turn one plugin on or off for Fishball only. The DSH profile is not changed, and other sessions are not affected, except by Fishball\'s own plugins: Session messages off takes message_fishball away from them, and Permission requests off sends their permission requests straight to the user. The change takes effect when your current turn ends. Turning on a plugin with tools nobody has checked, or one of Fishball\'s own plugins that is off, asks the user first: the call returns waiting-for-approval at once.',
   addDescription: 'Install a plugin package for Fishball only, after the user allows it: the call returns waiting-for-approval at once, and you are told to run it again once the user allows it. It goes into Fishball\'s own package folder, not the DSH profile, so other sessions never see it; Fishball then turns it on for itself.',
   removeDescription: 'Uninstall a plugin installed in Fishball only (status installed-in-fishball), after the user allows it: the call returns waiting-for-approval at once, and you are told to run it again once the user allows it. Plugins installed in DSH cannot be uninstalled from Fishball; turn them off instead. The uninstall happens when your current turn ends.',
-  removeReasonArg: 'Why Fishball wants to uninstall this plugin, shown to the user with the request.',
+  removeReasonArg: `Why Fishball wants to uninstall this plugin, shown on the user's card: ${PILE_NOTE.guide}.`,
   removesLater: 'Allowed. It is uninstalled when this turn ends.',
   removePrompt: (plugin, reason) => `Fishball asks to uninstall "${plugin}", a plugin installed for Fishball only. Reason: ${reason}`,
   pluginArg: 'The plugin key exactly as list_plugins shows it.',
   onArg: 'true to turn the plugin on for Fishball, false to turn it off.',
   specArg: 'One package spec: a registry name, an absolute path, a git address or a tarball URL.',
-  reasonArg: 'Why Fishball needs this plugin, shown to the user with the request.',
+  reasonArg: `Why Fishball needs this plugin, shown on the user's card: ${PILE_NOTE.guide}.`,
   appliesLater: 'Saved. It takes effect when this turn ends.',
   addPrompt: (spec, reason) => `Fishball asks to install the plugin "${spec}" for Fishball only, in its own package folder; the DSH profile and other sessions are not changed. Reason: ${reason}`,
   getSettingsDescription: 'Read the settings of one plugin Fishball runs itself (built in, installed in Fishball only, or a DSH plugin that is off in DSH and on in Fishball): each field\'s path, kind, description, the plugin\'s own value and the current value. Secret fields show only whether they are set. A plugin on in DSH shares DSH\'s settings (shared: true); change those on DSH\'s Plugins page.',
   setSettingsDescription: 'Change settings of one plugin Fishball runs itself, after the user allows it: the call returns waiting-for-approval at once, and you are told to run it again once the user allows it. Pass only the fields to change, as a nested object for one row (get_plugin_settings lists rows and fields). Secret fields cannot be set by Fishball. The change takes effect when your current turn ends.',
   rowArg: 'The row id exactly as get_plugin_settings shows it.',
   valuesArg: 'The fields to change, as a nested object, for example {"limit": 5}. Objects are merged; lists and other values replace.',
-  settingsReasonArg: 'Why Fishball wants this change, shown to the user with the request.',
+  settingsReasonArg: `Why Fishball wants this change, shown on the user's card: ${PILE_NOTE.guide}.`,
   settingsPrompt: (plugin, row, lines, reason) => [
     `Fishball asks to change settings of "${plugin}" (row ${row}) for Fishball only; other sessions and the DSH profile are not changed:`,
     ...lines,
