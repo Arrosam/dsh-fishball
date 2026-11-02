@@ -1,6 +1,8 @@
 # dsh-fishball rebuild: always-on personal assistant on DSH
 
-**Status: approved 2026-10-24; revision 9 approved 2026-10-31; revision 10 approved 2026-10-31; revision 10a (Install for Fishball) decided and delivered 2026-10-31; revision 10b (private services) 2026-10-31; revision 10c (Fishball's own plugins) decided 2026-10-31 and delivered 2026-11-01; revision 11 (Fishball-managed sessions) requirements approved 2026-11-01, design folded in the same day, and delivered 2026-11-02 on `rebuild/managed-sessions`; merging it into `rebuild/assistant` awaits your OK.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
+**Status: approved 2026-10-24; revision 9 approved 2026-10-31; revision 10 approved 2026-10-31; revision 10a (Install for Fishball) decided and delivered 2026-10-31; revision 10b (private services) 2026-10-31; revision 10c (Fishball's own plugins) decided 2026-10-31 and delivered 2026-11-01; revision 11 (Fishball-managed sessions) requirements approved 2026-11-01, design folded in the same day, and delivered 2026-11-02 on `rebuild/managed-sessions`; merging it into `rebuild/assistant` awaits your OK; revision 12 (recommended plugins and the one-time welcome card) designed 2026-11-02, with questions open in §16.** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
+
+Revision 12 (2026-11-02, owner's request before the v0.1.0 release) rebuilds P10's recommended plugins and one-time welcome card on today's design. P10 (2026-10-25, branch `p10-recommended-plugins`, commit `6555e88`) was never merged: revision 8 replaced its plugin list, and revision 10a made your click in the "Install for Fishball" dialog the approval. So the recommended list now lives in that dialog and installs through it, and the welcome card sits in Fishball's chat below your pile (§10f, §9, phase rev12 in §14, decisions in §16 "Revision 12").
 
 Revision 11 (2026-11-01, owner's request; requirements approved the same day in [docs/revision-11-requirements.md](docs/revision-11-requirements.md), items 1-29) splits sessions into yours and Fishball-managed ones. Only managed sessions have Fishball's tools and send it their permission requests and questions; yours keep their own prompts and cost Fishball nothing. Managed agents ask Fishball first with `ask_fishball`, quoting your messages; Fishball can allow once, grant for a while, reject, ask back or send the request to your pile above its composer; its own requests become non-blocking cards; it can stop or redirect a managed session (§5e, §7a rewritten, §9, §10e, §11, spikes S33-S37 in §13, phases rev11a-rev11h in §14, decisions in §16 "Revision 11"). Mechanisms that wait on a spike are marked "pending S3x".
 
@@ -933,6 +935,8 @@ Two storage domains, both opened with `ctx.storageDomain` and zod schemas. Each 
 - **What is never stored:** argument text, quoted message text, question text and answers stay in the session logs, as for approvals today; our tables hold digests and ids. A prefix grant's prefix is the one exception: it is the matching rule itself.
 - **Your clicks are audited** (your answer, 2026-11-01): each Allow once, Reject and Revoke you click gets its own `decisions` row with `by: 'user'` (Reject's note is not stored, only whether there was one), as well as the request's final outcome.
 
+**Revision 12 addition.** `fishball.notices['welcome']`: `{seenAt}`, written once when the welcome card first shows (§10f). A new table in domain `fishball`, read as empty when missing, so the domain keeps version 1. Absent means the card has not shown yet.
+
 No custom session event types are added: persistence refuses logs containing unknown event types that are not marked ignorable [V `dsh-session/lib/types/known-event-types.d.ts`].
 
 ## 10. UI and host API
@@ -1141,7 +1145,7 @@ No custom session event types are added: persistence refuses logs containing unk
   - **Limit:** version exemptions are read from Fishball's folder, so a plugin you exempted only in DSH is still refused `incompatible-version` for Fishball.
   - Fishball's `add_plugin` tool installs through the same subclass, after its Allow once.
 - **Who approves.** Your click in the dialog, as in DSH's own Add plugin (Q-install-route amended). After a successful install the plugin is turned on for Fishball (changed by you); tools nobody has checked stay hidden until you allow them (§7).
-- **The dialog.** DSH does not export its install dialog or its controller (S31 read), so Fishball's dialog follows its screens with DSH's components: the package field, a check of what the spec names (inspect), a confirmation with the package's name, version, description and source, progress with the pnpm output and Cancel, then the result with "Open its page", or the reason it failed and Retry.
+- **The dialog.** DSH does not export its install dialog or its controller (S31 read), so Fishball's dialog follows its screens with DSH's components: the package field, a check of what the spec names (inspect), a confirmation with the package's name, version, description and source, progress with the pnpm output and Cancel, then the result with "Open its page", or the reason it failed and Retry. Revision 12 adds the recommended list to its first screen (§10f).
 - **Where it opens.** An item "Install for Fishball only" in DSH's Add plugin menu (`plugins.add.actions`), and a "+ Install for Fishball" button in the page header where DSH's own Add plugin sits (owner's request, 2026-10-31). DSH hides its toolbar on a contributed tab and offers no header slot, so the button is rendered into the header row through a React portal, found from the tab panel by the page title; if DSH's markup changes and the header is not found, it stays at the top of the tab. It shows on the Fishball tab's list, as DSH's shows on its list, and has DSH's own Add button shape (32 px, the medium radius, 13 px text, a 13 px "+"), in Fishball's colour.
 - **Refresh (owner's request, 2026-10-31).** Beside it, as on DSH's list, a Refresh icon button in DSH's style: it reads Fishball's plugin list again (`POST /api/fishball/plugins/refresh`, `{}`, answering the state like the other commands; DSH's own Refresh reads only DSH's list) and reads an open plugin page again. It is disabled with a spinner until the read settles and at least 400 ms have passed, as DSH's is; a failed read says so above the list.
 - **Fishball's colour.** Fishball's own interactive controls take its colour, derived from the mark's eye (`#EC0A6E`), so they stand apart from DSH's. Buttons (Install for Fishball, its menu item, the primary buttons of Fishball's dialogs and settings forms) take a light magenta fill with a deep magenta text (about 8:1, owner's note on contrast). Fishball's switches, everywhere they appear (the tab, its plugin pages, DSH's own plugin pages), are magenta when on and carry a small magenta fish on a white knob in both states (owner's choice, 2026-10-31).
@@ -1206,6 +1210,73 @@ The Host state and routes below need no spike.
   - `POST /api/fishball/questions/answer` (`{questionId, answers}` or `{questionId, approve}` / `{questionId, feedback}` for plan reviews, validated and composed as `answer_question` is, S36); 409 `expired`; 400 `bad-answer` (with `reason`) for a batch that does not fit, and for a body with no answer at all (as built, the manager's decision for you, 2026-11-02, §16).
   - `POST /api/fishball/grants/revoke` (`{grantId}`); 409 `unknown` or `ended`.
   - `POST /api/fishball/question-mode` (`{mode}`); 400 `bad-body` for any other value.
+
+## 10f. Recommended plugins and the welcome card (revision 12)
+
+**What you asked for (P10, 2026-10-25; asked again for v0.1.0, 2026-11-02).** A curated list of plugins that work well with Fishball, in four categories: Context management, Memory, Channel and Pet. The first two are highlighted, because they significantly improve the experience. A welcome card in Fishball's chat, shown once, points to the list.
+
+**What carries over from P10, and what does not.**
+- **Kept:** the four categories and their order; the highlight and its sentence; your rule that a plugin which cannot run for Fishball alone is left out ("1c"); Pet shown with a note and no entries; the welcome as a card drawn in Fishball's chat, not a model message ("2a"); the card reporting itself shown as soon as it renders.
+- **Dropped, because revision 10a replaced it:** P10's install route (`POST /api/fishball/recommended/install`), its marker turn that opened a turn without the model so DSH's prompt could ask in Fishball's chat (`src/install-requests.js`, review H1, M1, M2), and the outcome texts kept in memory. Since revision 10a your click in the "Install for Fishball" dialog is the approval, as in DSH's own Add plugin, so no prompt and no turn are needed. The dialog already reports progress, cancel, build approval and every failure.
+- **Changed:** the list moves from the settings page (P10's "Recommended plugins" section after Status) into the install dialog, because revision 10 made the Fishball tab "installed plugins only" and moved installing into that dialog. An entry's state follows revision 8's statuses (table below) instead of P10's "Installed or not".
+
+**Where the list shows (pending Q-rec-place).** On the first screen of Fishball's install dialog (§10d "Install for Fishball"), below the package field, under the heading "Recommended for Fishball".
+- The dialog opens on that screen from all three places that open it today ("+ Install for Fishball" on the Fishball tab, "Install for Fishball only" in DSH's Add plugin menu) and from the welcome card.
+- **Why the dialog and not the tab.** DSH offers no way to select a page tab from outside (S28), so the welcome card could not open the Fishball tab. The dialog is drawn in DSH's global overlay slot (`shell.overlay`), so it opens on any page, Fishball's chat included. It also keeps the tab to installed plugins, as you chose in Q-manager.
+- **Layout.** Categories in order, each with its heading. Context management and Memory carry a "Recommended first" badge in Fishball's colour and the sentence "These significantly improve how Fishball works." One compact row per plugin: its package name, its one-line description (cut with an ellipsis, full text on hover and for screen readers), a "Source" link to its npm or Git page, and the action on the right. Pet shows "Pets draw only in DSH's own interface, and a plugin that runs only for Fishball has no browser part, so none can be listed here." The list scrolls inside the dialog, which keeps its size.
+- The descriptions and every other text are client wording constants, in English and Chinese.
+
+**An entry's state and action.** Read from the catalog in the snapshot, by package name; it changes live with the catalog.
+
+| The package in Fishball's catalog | Shows | Action |
+|---|---|---|
+| Not in the catalog | nothing | **Install** |
+| Installed for Fishball only (`fishball:<name>`), on or off | "Installed" | none; the row's name opens its page when the dialog was opened from the Fishball tab |
+| A DSH plugin, on in Fishball | "On in Fishball" | none |
+| A DSH plugin, off in Fishball | "In DSH, off in Fishball" | **Turn on for Fishball** (pending Q-rec-dsh) |
+| Any of the above with `blocked` set (§4, revision 10b) | the catalog's reason tag, as on the tab | none |
+
+- When a package is both a DSH plugin and installed for Fishball only, the Fishball-only entry wins (it is the one Fishball runs).
+- **Turn on for Fishball** is your own switch: the same `POST /api/fishball/plugins` (`{plugin, on: true}`) the tab's switch sends, recorded as changed by you. It applies when Fishball's current turn ends, as every switch does. Tools nobody has checked stay hidden until you allow them (§7).
+
+**Install.** Install on an entry puts its spec into the dialog's package field and runs the dialog's own check at once (`POST /api/fishball/install/inspect`). From there it is exactly today's dialog: the confirmation with name, version, description and source; your click on Install; progress with Cancel; then the result with "Open its page" or the reason it failed and Retry. Back on the confirmation returns to the first screen with the list. Nothing new reaches the Host: the dialog may install any spec you type, so a recommended spec gets no special path and needs no allow-list. After the install the plugin is on for Fishball (changed by you, revision 10a), and the entry shows "Installed".
+- While Fishball is not ready the install routes answer 409 `unavailable`, as today; the dialog says so.
+
+**The list** (`src/recommended.js`, data in code, read into the snapshot). Each entry: category, package name, the spec the dialog installs, and its source link. Checked on npm with `npm view` (metadata only) on 2026-11-02; the "mounted for Fishball alone" verdicts are P10's (P10-S23, below), from the versions checked then.
+
+| Category | Package (spec) | Version on 2026-11-02 (P10's mount check) | Note |
+|---|---|---|---|
+| Context management | `dsh-idle-compact` | 0.3.0 | Your own plugin. P10 installed it from `github:Arrosam/dsh-idle-compact`; it is now on npm under your account (Q-rec-idle-spec). P10-S23 did not mount it (it was already in your profile) |
+| Context management | `dsh-plugin-save-token` | 2.4.1 (same) | |
+| Context management | `smart-compaction` | 0.3.15 (0.3.12) | **Changed** |
+| Memory | `@openviking/dsh-memory-plugin` | 0.5.32 (0.5.29) | **Changed**; needs an OpenViking server |
+| Memory | `meow-memory` | 0.32.4 (0.31.1) | **Changed**; now also needs `@deepseek-ai/dsh-llm` as a peer |
+| Memory | `@a9i5k4/dsh-auto-memory` | 3.3.17 (same) | |
+| Memory | `@zilliz/memsearch-dsh` | 0.1.8 (0.1.7) | **Changed**; gained a dependency (`cross-spawn`); needs the memsearch tool installed |
+| Channel | `@michengai/dsh-im-connect` | 1.0.21 (1.0.17) | **Changed** (same manifest); WeChat, WeCom, DingTalk, Feishu, Lark, QQ, Telegram |
+| Channel | `@zaofan/dsh-qqbot` | 1.11.36 (1.10.36) | **Changed** (same manifest) |
+| Channel | `dsh-telegram-notify` | 0.2.3 (same) | One way |
+| Channel | `dsh-slack` | 0.4.7 (0.3.4) | **Changed, verdict in doubt:** it gained a browser part (sidebar and settings) and a dependency on `@stardustlc/dsh-updates` ("native DSH plugin update controls"). A Fishball-only plugin's browser part never loads (P10-S22), and an update control may publish a host service, which revision 10b keeps off for Fishball (Q-rec-recheck) |
+| Channel | `dsh-plugin-discord` | 0.1.0 (same) | |
+| Channel | `dsh-dingtalk-channel` | 0.1.0 (same) | |
+| Pet | none | | Note only (P10-S22) |
+
+- **Left out (your answer "1c"), re-checked on npm 2026-11-02.** Revision 10b decided that plugins publishing a service stay off for Fishball (isolation not adopted, S32), so these five remain out unless a new version stopped publishing its service: `@xmanrui/dsh-im` 5.9.1 (was 5.6.0, **changed**), `dsh-plugin-weixin` 1.2.0 (was 0.9.3, **changed**, now with a `pdfjs-dist` peer), `@wsz987/dsh-channels` 0.5.1 (same), `dsh-lark-bot` 0.19.16 (same), `@agentscope-ai/reme-dsh-plugin` 0.1.2 (same). The two that edit other rows also stay out, since that comes from their patch's shape: `billion-context` 0.1.211 (was 0.1.206, changed) and `dsh-handoff-compaction` 0.2.0-rc.9 (was rc.8, changed). Whether a changed version now mounts can only be known by installing it in a sandbox, which this design did not do (Q-rec-recheck).
+- **A plugin that turns out not to run for Fishball** after install is handled as today: the catalog turns it off with its reason (`leaks-service`, `row-failed`, ...) and the entry then shows that tag. Nothing about the list widens what can run.
+- **P10's spikes** are on branch `p10-recommended-plugins` only. Their names there collide with today's S22 and S23, so this section calls them P10-S22 (a Fishball-only plugin's browser part is never served: the boot graph lists only the host tree) and P10-S23 (each candidate turned on for Fishball alone in a throwaway profile; rows applied, or refused with `leaks-service`). P10-H1 tested the marker turn, which is dropped.
+
+**The welcome card.**
+- **Where.** A `conversation.input.dock` entry, rendered only in Fishball's own session while `welcome.show` is true and Fishball is live. Order −50 (pending Q-rec-card-place): below your pile (order −100), above DSH's Todo dock (0); the managed banner (10) never shows in Fishball's chat. It takes the same width and spacing as the banner, so it lines up with the composer. While a question panel covers the composer, DSH hides the dock area, card included.
+- **What it says.** "Welcome to Fishball", then one line per category, Context management and Memory first with the "Recommended first" badge and the sentence that they significantly improve the experience, then the button **See recommended plugins**, which opens the install dialog on its list, and a close button (×). Compact, as P10's browser check settled. Wording constants in English and Chinese.
+- **Once.** As soon as it renders, the browser reports it shown (`POST /api/fishball/welcome/seen`, `{}`), and the Host stores `notices['welcome']` (§9). It stays on screen until you close it or leave the chat, and never shows again, in any browser, including after a restart, even if you left without pressing anything. **Reading:** every install shows it once, including one that existed before revision 12 (your own); a reset is not offered.
+- It is a card in the page, never a message in the session log, so it adds nothing to Fishball's context.
+
+**Host API.** Same authentication, same-origin fence and boundary checks as §10.
+- Snapshot: `recommended: {highlighted: [category], categories: [{category, plugins: [{packageName, spec, source, plugin, state, blocked}]}]}`, where `state` is `install`, `installed`, `dsh-on` or `dsh-off` (the table above), `plugin` is the catalog key or null, and `blocked` the catalog's reason or null; `welcome: {show}`.
+- `POST /api/fishball/welcome/seen` (`{}`): stores the notice and answers 200 with the state; a repeat answers the same and changes nothing; 400 `bad-body` for any other body. It answers while Fishball is not live too, since the store does not need the session.
+- No new install route: the list uses `install/inspect`, `install` and `install/cancel` (§10d) and the plugin switch (§10).
+
+**Not changed.** The dialog's process, approvals, refusals and limits (revision 10a); the Fishball tab's groups; the plugin statuses and defaults (§4); the tool mask (§7). No new safety limit: the list and the card bound nothing. Fishball itself does not see the list (not asked for).
 
 ## 11. Failure, restart, bounds and security
 
@@ -1421,6 +1492,7 @@ Each phase ends with:
 | Revision 10a delivered (2026-10-31) | Implemented as amended | Install for Fishball through DSH's inherited install process (`src/fishball-plugin-manager.js`, S31): routes `install/inspect`, `install`, `install/cancel`; `add_plugin` uses the same process; the old `plugins/install` route removed. Browser: the install dialog following DSH's screens, "Install for Fishball only" in DSH's Add plugin menu, Fishball's light magenta on its controls, the invisible field fixed (also in Send to Fishball). Live check in the browser pane: menu item, check, install with DSH's progress events, Open its page, colours; DSH's profile files identical by content. Independent review: 1 high, 5 medium and 9 low findings, all fixed. Tests: 1067 of 1067 pass (`test/manager-install.test.mjs`, revision 10a in `test/CASES.md`) |
 | Revision 10c delivered (2026-11-01) | Implemented as amended | Fishball's own plugins (Session messages, Session watching, Plugin management, Permission requests, plus the Messenger look) in a first "Fishball" group; every tool Fishball registers is attributed to one (`OWN_TOOL_PLUGIN` in index.js); `message_fishball` shown as "For other sessions"; snapshot `features`; off follows the applied state (`message_fishball` unregistered, routes answer `feature-off`, watch turn ends passed over, waiting permission requests released, buttons hidden); Fishball asks before turning one on, checked again where the choice is written (`ask-first`). Built on branch `rebuild/own-plugins` apart from revision 10b. Live check in the browser pane: the Fishball group, the Session messages page, the off and on flow through the routes. Independent review: 1 medium and 5 low findings, all fixed. Tests: 1157 of 1158 pass, 1 skipped as not reachable from outside (`test/own-plugins*.test.mjs`, revision 10c in `test/CASES.md`) |
 | Revision 11 delivered (2026-11-02) | Implemented as amended | Fishball-managed sessions and permission requests (`docs/revision-11-requirements.md` items 1-30), on branch `rebuild/managed-sessions`. Phases: rev11-limits and rev11a-rev11i, each built by its own session and Sonnet-tested in a separate session before it was merged, under your rule that development sessions don't test (§14 "Revision 11 delivery plan"); review findings fixed in `fix(<phase>)` commits. Spikes: S33-S37, plus S36-attachWait, which amended §7a.10 (claim the question, then forward it untimed) (§13d). The manager decided 42 rows for you while you were away (§16 "Revision 11, decided by the manager for you on 2026-11-02"; please review). Also merged in: your `start_session` title fix (Q-start-title), `read_session` sender labels (Q-read-roles), `start_session` keeping a half-made session (Q-start-half-made), and PR #1 from the live branch `rebuild/assistant` (with AGENTS.md's public-repo note). Browser checks in the browser pane for every UI phase. Final suite: 1977 tests, 1974 pass, 1 skipped (OFM-06), and 2 timing flakes that pass when run alone (OWN-14; FLW-12, whose test now waits for the tag record). Merged into `rebuild/assistant` with your OK on 2026-11-02 (merge `704b7d5`) and pushed to GitHub |
+| rev12 (revision 12) | Recommended plugins and the one-time welcome card (§10f): `src/recommended.js` and the snapshot's `recommended`; the list on the install dialog's first screen, its Install handing the spec to the dialog's own check; the welcome card in Fishball's chat with `welcome` in the snapshot, `POST /api/fishball/welcome/seen` and `notices` (§9). No spike: every drawing point and route it uses already runs (S31, S37). Built by its own session, tested by a separate Sonnet session, as in revision 11 | §14 "Recommended plugins (revision 12)" criteria, checked by hand in a sandbox DSH with the fake model |
 
 **Revision 11 delivery plan.** rev11-limits runs first, before rev11a, because every later phase also edits `src/config.js` and `src/constants.js`; each later phase adds its own new limits as config fields (§16). The phases run one at a time, because they share `src/approvals.js`, `index.js`, `src/store.js`, `src/persona.js` and `client.js`. Development sessions do not write or run tests (your rule, 2026-11-02): a phase's builder writes the code, gets an independent code review and commits. For each phase the manager arranges a separate Sonnet test session. While the builder codes, it writes the phase's black-box tests from the requirements and this section alone (boundary values, equivalence partitions, decision tables, state transitions). Then it merges the build, runs the full suite and checks by hand in a real DSH. Code failures go back to a builder; the test session changes a test only when the test contradicts the requirements. A phase is merged into `rebuild/managed-sessions` only after its test session passes, and the next phase's build may overlap that test session (both the manager's decisions for you, §16). A phase whose spike fails is not started until this document is amended with the user's choice of fallback. The user answered the folding's open questions on 2026-11-01; before each phase, the questions still open that name it (§16 "Revision 11").
 
@@ -1503,6 +1575,12 @@ Each phase ends with:
   - A plugin on in DSH shows no Fishball settings form and refuses settings from the route and the tool.
   - A secret value never appears in the snapshot, the detail route, the tool's result or the prompt.
   - `set_plugin_settings` changes nothing until you click Allow once; Reject changes nothing; secrets and plugins shared with DSH are refused before any prompt.
+- **Recommended plugins (revision 12):**
+  - The install dialog's first screen shows the four categories in order, Context management and Memory first, highlighted, with the note; Pet shows its note and no entries. The dialog opens on that screen from the Fishball tab, DSH's Add plugin menu and the welcome card.
+  - Each entry shows the action its state gives (§10f table), from the snapshot's `recommended`, and changes live when the catalog changes.
+  - Install on an entry runs DSH's check of its spec and shows the confirmation; nothing is installed before your click on the confirmation's Install. Back returns to the list. After the install the entry shows "Installed" and the plugin is on for Fishball; the DSH profile's `package.json`, lockfile and `cordis.patch.yml` stay byte-identical.
+  - The welcome card shows in Fishball's chat, below the pile, only while `welcome.show` is true; after it has shown once, `welcome.show` is false across reloads and restarts, and the card never shows in another session.
+  - `POST /api/fishball/welcome/seen` answers the state; a second call changes nothing.
 - **Brand:**
   - With the plugin enabled, the sidebar shows the Fishball mark and name.
   - Clicking it, or pressing Enter on it, opens the assistant session.
@@ -1789,6 +1867,28 @@ Your request: "In fishball's page. All request pending need to be shrunk to one 
 | Q-start-half-made | DSH can create a session and then fail to add it to the workspace; `start_session` forgot that session (no title, first message, record or count). You chose to carry on and report it | `start_session` names it, sends the first message, records and counts it, and reports `workspaceError`; on revision 11 a session that could not be made managed starts as yours with `managedError` (§5d) |
 | Q-start-title | Sessions Fishball started had no title: DSH's automatic title reads only user messages, and the first message is a relay. You first chose to send the first message as yours; review then found that DSH treats a user-source message as your own typing (it allows goals with no round limit, your-only `/skills` and session-link recall on it), so you chose instead: keep the relay, and Fishball names the session | `start_session` takes a required `title`, set with DSH's `sessionTitle.rename` (§5d) |
 | Q-bold-punct | Fishball's reply showed `**还在进行中：**` with its asterisks: DSH's markdown renderer does not close bold text ending in punctuation when a letter or digit follows directly. You chose a persona rule that keeps Chinese punctuation outside bold text | One more persona line (§7 "Bold text and Chinese punctuation"); no change to DSH or the Messenger look |
+
+**Revision 12 (recommended plugins and the welcome card; your request, 2026-11-02, rebuilding P10 of 2026-10-25):**
+
+Carried over from P10 (your answers then; they hold where today's design does not contradict them):
+
+| ID | Your answer (P10, 2026-10-25) | Effect on the plan |
+|---|---|---|
+| Q-rec-categories | Context management, Memory, Channel and Pet; the first two highlighted, because they significantly improve the experience | §10f layout and card |
+| Q-rec-1c | A plugin that cannot run for Fishball alone is left out: two that edit other rows, five that publish a service | §10f "Left out"; revision 10b keeps the service rule |
+| Q-rec-pet | Pet shown with a note and no entries (P10-S22) | §10f |
+| Q-rec-installed | An installed plugin shows "Installed" instead of a button. **Contradicted by revision 8** for DSH plugins, which can be off in Fishball: see Q-rec-dsh | §10f state table |
+| Q-rec-2a | The welcome is a card drawn in Fishball's chat, not a model message | §10f card |
+
+Open for revision 12 (recommendation first):
+
+| ID | Question | Options |
+|---|---|---|
+| Q-rec-place | Where should the recommended list show? | **A (recommended):** on the first screen of the "Install for Fishball" dialog, which opens from the tab, DSH's Add menu and the welcome card (DSH cannot open the Fishball tab from outside, S28). **B:** the dialog, and also a "Recommended" group at the end of the Fishball tab (which then lists plugins not yet installed, against Q-manager's "installed only"). **C:** a section on Fishball's settings page, as P10 had it |
+| Q-rec-dsh | A recommended plugin already installed in DSH but off in Fishball: what does its row offer? | **A (recommended):** "In DSH, off in Fishball" with **Turn on for Fishball** (your own switch, as on the tab). **B:** "Installed", no action (P10's rule). **C:** Install, which puts Fishball's own copy beside DSH's |
+| Q-rec-recheck | Seven listed plugins and four left-out ones have new versions since P10's mount check, and `dsh-slack` gained a browser part and an update-control dependency. Re-checking means installing them into a throwaway sandbox profile with the fake model, which the brief does not allow. | **A (recommended):** you allow that sandbox re-check (P10-S23's method, no real model, nothing in `~/.dsh`), and the list follows its results. **B:** keep P10's verdicts and list `dsh-slack` as is; a plugin that no longer runs for Fishball is turned off with its reason after install. **C:** as B, but drop `dsh-slack` until it is re-checked |
+| Q-rec-idle-spec | `dsh-idle-compact` is now on npm under your account (0.3.0). Which spec? | **A (recommended):** `dsh-idle-compact` from npm. **B:** keep `github:Arrosam/dsh-idle-compact` |
+| Q-rec-card-place | Where does the welcome card sit in Fishball's chat? | **A (recommended):** below your pile and above DSH's Todo dock (order −50), so waiting requests stay on top. **B:** above the pile (order below −100) |
 
 **Open for revision 10:** Q-manager-stale, Q-manager-form and Q-manager-secrets above (implementer's assumptions; revision 10 was approved 2026-10-31).
 
