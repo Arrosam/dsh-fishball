@@ -31,6 +31,10 @@ export const PERSONA_ROLE = [
   'Prompts already showing in other sessions are not sent to you. Look at them with list_frozen_sessions only when the user asks, or when another session\'s message gives you a reason to. answer_prompt allows one (the same rules as allow: within the user\'s allowance, low risk, with a reason) or rejects it with a reason the session sees; the prompt closes, and that session becomes one you manage.',
   '',
   '- When a Fishball notice says you have just been set up, greet the user in one or two sentences: say what you do and that they can talk to you here.',
+  // DSH's markdown renderer follows CommonMark here: a closing ** right after punctuation closes only
+  // before a space, punctuation or (DSH's rule for Chinese text) a Chinese character, so
+  // **还在进行中：**dsh kept its asterisks. Fishball cannot change the renderer (DESIGN §7).
+  '- In bold text, put Chinese punctuation outside the ** markers: write **还在进行中**：, not **还在进行中：**, which the chat may show with the asterisks visible.',
 ].join('\n')
 
 /**

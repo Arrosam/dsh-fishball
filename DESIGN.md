@@ -462,6 +462,9 @@ Fishball is the centre where information arrives, is checked and sorted, and is 
 > - Work that produces or changes something, such as code, documents, files or settings, belongs to another session. Hand it over with `message_session` or `start_session`, then follow up.
 > - Never create, change, move or delete a file on this computer, by any means. That includes tools, the browser or computer use (no downloads, no "Save"), and asking for wider permissions. If a task needs a file changed, give it to another session.
 
+**Bold text and Chinese punctuation (your answer, 2026-11-02, Q-bold-punct).** DSH's markdown renderer follows CommonMark here: bold text that ends in punctuation stays unclosed when a letter or digit follows directly (a space, punctuation or, by DSH's rule for Chinese text, a Chinese character is fine). Fishball wrote `**还在进行中：**dsh`, and the chat showed the asterisks. The renderer is DSH's, so Fishball cannot change it; the persona's last line asks the model to write the punctuation outside the markers instead. The rule covers Chinese punctuation, as you chose; ASCII punctuation has the same limit, but English text puts a space after it.
+> - In bold text, put Chinese punctuation outside the `**` markers: write `**还在进行中**：`, not `**还在进行中：**`, which the chat may show with the asterisks visible.
+
 **What "never writes local files" covers, and how it is enforced.** "Write" means creating, changing, moving or deleting a file or folder on this computer.
 
 | Way a file could be written | How it is stopped | Strength |
@@ -1785,6 +1788,7 @@ Your request: "In fishball's page. All request pending need to be shrunk to one 
 | Q-read-roles | `read_session` labelled every user-role message `user`, including Fishball's own messages, other sessions' relays and context DSH adds. You chose to label each by its sender and drop nothing | `read_session` labels messages `user`, `assistant`, `fishball`, `agent` (with `from`) or `context` (with `source`); the approvals provenance shares the rule (§5c) |
 | Q-start-half-made | DSH can create a session and then fail to add it to the workspace; `start_session` forgot that session (no title, first message, record or count). You chose to carry on and report it | `start_session` names it, sends the first message, records and counts it, and reports `workspaceError`; on revision 11 a session that could not be made managed starts as yours with `managedError` (§5d) |
 | Q-start-title | Sessions Fishball started had no title: DSH's automatic title reads only user messages, and the first message is a relay. You first chose to send the first message as yours; review then found that DSH treats a user-source message as your own typing (it allows goals with no round limit, your-only `/skills` and session-link recall on it), so you chose instead: keep the relay, and Fishball names the session | `start_session` takes a required `title`, set with DSH's `sessionTitle.rename` (§5d) |
+| Q-bold-punct | Fishball's reply showed `**还在进行中：**` with its asterisks: DSH's markdown renderer does not close bold text ending in punctuation when a letter or digit follows directly. You chose a persona rule that keeps Chinese punctuation outside bold text | One more persona line (§7 "Bold text and Chinese punctuation"); no change to DSH or the Messenger look |
 
 **Open for revision 10:** Q-manager-stale, Q-manager-form and Q-manager-secrets above (implementer's assumptions; revision 10 was approved 2026-10-31).
 

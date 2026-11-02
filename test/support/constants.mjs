@@ -641,6 +641,83 @@ export const OWN_ASK = 'Fishball asks to turn on'
 /** The last commit before revision 10c (an install from before Fishball's own plugins). */
 export const PRE_OWN_PLUGINS = { commit: '90a6a8c' }
 
+// ---- Messenger look: wide markdown tables inside Fishball's reply bubble ----
+/**
+ * Vocabulary from the requirement and from DSH 0.2.1-rc.3's own DOM and CSS (never from the implementation).
+ * DSH draws a table with 4 or more columns in a wrapper with the class `md-table-wide` and stretches it to the chat
+ * area's edges; fewer columns get `_tableFill_*`. The `_tableScroll_*` and `_tableFill_*` names are generated
+ * (hashed) by DSH's build.
+ */
+export const MESSENGER_TABLE = {
+  /** The mounted stylesheet's element id and the `mark` values the host hands the module (visual only). */
+  styleId: 'fishball-messenger-style',
+  /** Run the cases against another copy of the module (for example the file from before a fix) by naming its path here. */
+  fileEnv: 'FBTEST_MESSENGER_CLIENT',
+  mark: { eyeColor: '#1f2328', viewBox: '0 0 24 24', body: '' },
+  /** Atoms of a selector: the conversation, Fishball's header marker, and the reply row (DSH's own attributes). */
+  atoms: {
+    conversation: '[data-slot="main.conversation"]',
+    marker: '[data-fishball-messenger]',
+    stepKind: '[data-chat-flow-kind="assistant-step"]',
+    reply: '[data-chat-group-part="response"]',
+    wide: '.md-table-wide',
+  },
+  /** Wrapper classes DSH gives tables; the hashed ones may not appear in Fishball's rules (they change per DSH build). */
+  hashedClasses: ['_tableScroll_1ypvv_192', '_tableFill_1ypvv_239'],
+  /** A selector that is about a table: DSH's wrapper classes, or the table, section or cell elements. */
+  tableSelector: /md-table|_table(?:Scroll|Fill)|(?:^|[\s>+~])(?:table|thead|tbody|tr|th|td)(?![\w-])/,
+  /** DSH's strongest stock rule on the wide wrapper (`.hWmORq_body .md-table-wide`): two classes. */
+  dshWideSpecificity: [0, 2, 0],
+  /** Declaration values that keep the wrapper inside its container, as a plain (not wide) wrapper already is. */
+  contained: { width: ['auto', '100%'], maxWidth: ['100%'], marginLeft: ['0', '0px'], paddingLeft: ['0', '0px'] },
+  /** Properties that would clip or hide a wrapper for good, or defeat DSH's hover scrolling. */
+  clipping: ['overflow', 'overflow-x', 'overflow-y'],
+  hidden: { display: 'none', visibility: 'hidden' },
+  /** Contexts of the decision table: the group part of the row the table sits in. */
+  parts: { reply: 'response', reasoning: 'reasoning', other: 'toolcall' },
+  /** DSH's stock rule on the table itself (`._tableScroll_* table`: `width: max-content`): one class and one element. */
+  dshTableSpecificity: [0, 1, 1],
+  /**
+   * R2: in Fishball's bubble a wide table fits the bubble when it can (cells wrap) and a short one keeps its natural
+   * width. `width: auto` is the shrink-to-fit width that does both; anything else pins the table at its natural
+   * width (`max-content`, which is DSH's stock value), stretches it (`100%`) or fixes it (px).
+   */
+  fitting: {
+    width: ['auto', 'fit-content'],
+    /** A table in a wide wrapper has no `min-width` beyond these (a `min-width` pins or stretches it). */
+    minWidth: ['0', '0px', 'auto'],
+    /** `white-space` values that stop cells from wrapping. */
+    noWrap: ['nowrap', 'pre'],
+  },
+}
+
+// ---- Messenger look: round avatars and the footer under the reply bubble (R7, R8) ----
+/**
+ * Vocabulary from the requirement and from DSH 0.2.1-rc.3's own DOM and CSS (never from the implementation).
+ * DSH's theme turns every `border-radius: 50%` into a rounded square with `*, :before, :after { corner-shape:
+ * var(--dsw-corner-shape) }` (`superellipse(1.5)`); `corner-shape: round` brings the circle back. The footer under a
+ * reply (copy button, time) is its own chat row, `data-chat-flow-kind="turn-tail"`.
+ */
+export const MESSENGER_LAYOUT = {
+  atoms: {
+    tailKind: '[data-chat-flow-kind="turn-tail"]',
+    processKind: '[data-chat-flow-kind="turn-process"]',
+    chatNode: '[data-slot="conversation.chat.node"]',
+    avatar: '.fbm-avatar',
+    incoming: '.fbm-incoming',
+    sender: '.fbm-sender',
+  },
+  corner: { prop: 'corner-shape', themeVar: '--dsw-corner-shape' },
+  /** Values that mean a circle with `border-radius: 50%`. Chrome serialises `round` as `superellipse(1)` (the same shape). */
+  round: ['round', 'superellipse(1)'],
+  /** DSH's stock rule `*, :before, :after { corner-shape }`: the strongest part is `:before`/`:after` (one pseudo-element). */
+  dshCornerSpecificity: [0, 0, 1],
+  /** The Messenger look draws avatars 28px wide; a radius of half of that (or 50%) makes them circles. */
+  avatarSize: 28,
+  /** The reply row's group part, and another part the footer rule must leave alone. */
+  parts: { reply: 'response', reasoning: 'reasoning' },
+}
+
 // ---- Revision 11 rev11a (managed sessions; DESIGN §5b, §5e, §7a.1, §9, §10e) ----
 /** Hand over / Take back: POST {sessionId, managed: boolean} (§10e "Host API"). */
 export const MANAGED_API = '/api/fishball/managed'
@@ -821,3 +898,86 @@ export const ASK_USER_QUESTION = 'ask_user_question'
 export const PLAN_REVIEW_ID = 'plan-review'
 /** A timed question's pending result carries these (dsh-tool-ask-user). */
 export const PENDING = { key: 'pending' }
+
+// ---- Persona rule: Chinese punctuation stays outside bold text (DESIGN §7 "Bold text and Chinese punctuation", §16 Q-bold-punct) ----
+/**
+ * What the persona tests compare against. `module` is the persona data module (exports PERSONA_ROLE and PERSONA_ROW);
+ * FBTEST_PLUGIN_DIR points it at another checkout, as it does for the worker (a baseline run of a file).
+ * `baseline` is where the persona stood before the rule was added: the live branch.
+ */
+export const PERSONA_BOLD = {
+  module: path.join(process.env.FBTEST_PLUGIN_DIR ?? REPO, 'src', 'persona.js'),
+  baseline: { ref: 'rebuild/assistant', file: 'src/persona.js', moduleType: 'text/javascript' },
+  exports: ['HIDDEN_PROMPT_ENTRIES', 'PERSONA_ROLE', 'PERSONA_ROW'],
+  rowName: '@deepseek-ai/dsh-persona',
+  lineBreak: '\n',
+  carriageReturn: '\r',
+  /** The bold marker, and the two forms of the requirement's example: to write, and not to write. */
+  marker: '**',
+  asterisk: '*',
+  /** The example's words and its Chinese punctuation mark (the full-width colon, U+FF1A). */
+  words: '还在进行中',
+  punct: '：',
+  good: '**还在进行中**：',
+  bad: '**还在进行中：**',
+  /** The words the rule line says it with (the requirement: "in bold text, put Chinese punctuation outside the ** markers"). */
+  terms: ['bold', 'Chinese punctuation', 'outside'],
+  /** What comes just before each example in the rule line: "write <good>, not <bad>". */
+  before: { good: /write\W*$/i, bad: /\bnot\W*$/i },
+  /** Ordinary (non-Fishball) prompts must not carry any of these. */
+  absentFromOrdinary: ['Chinese punctuation', '还在进行中'],
+  /** Sessions whose system prompt is checked. */
+  sessions: { setup: 'Fishball setup turn', driven: 'Fishball driven turn', restarted: 'Fishball after a restart', bare: 'ordinary session (bare preset)', standard: 'ordinary session (standard preset)' },
+}
+
+/**
+ * DSH's own markdown renderer, run offline: the web frontend bundles of the installed DSH versions
+ * (`dsh-web-frontend/dist/assets/index-*.js` plus its `vendor-*.js` chunk). `versions` are checked one by one.
+ * `generated` is the gitignored folder the extracted module is written to.
+ */
+export const DSH_MARKDOWN = {
+  versionsDir: path.resolve(RUNTIME, '..', '..'),
+  versions: ['0.2.1-rc.3', '0.2.1-rc.2'],
+  assets: ['node_modules', '@deepseek-ai', 'dsh-web-frontend', 'dist', 'assets'],
+  generated: path.join(REPO, '.runtime', 'dsh-markdown'),
+  indexFile: /^index-.*\.js$/,
+  vendorFile: /^vendor-.*\.js$/,
+  /** The bundle is the chat's renderer when it holds DSH's own attention rule. */
+  marker: 'cjkFriendlyAttention',
+  /** The renderer function: the parser with gfm, DSH's attention rule and math; the post-processing function it wraps. */
+  parserPattern: /function ([\w$]+)\(e\)\{return ([\w$]+)\(([\w$]+)\(e,\{extensions:\[[\w$]+\(\),[\w$]+\(\),[\w$]+\(\),[\w$]+\(\)\],mdastExtensions:\[[\w$]+\(\),[\w$]+\(\)\]\}\),e\)\}/,
+  /** The one helper the post-processing calls that is not part of the extracted slice (image file types); unused for bold text. */
+  imageKindPattern: /([\w$]+)\([\w$]\[2\]\)==="image"/,
+  /** What the bundle needs from a browser while it loads: only `document.compatMode` and an element for entity decoding. */
+  compatMode: 'CSS1Compat',
+  indexModule: 'dsh-renderer.mjs',
+  vendorModule: 'vendor.mjs',
+}
+
+/** The mdast node types the bold checks read. */
+export const MDAST = { text: 'text', strong: 'strong' }
+
+/** Characters that may follow the punctuation, by class (the renderer decides by what follows a closing marker). */
+export const AFTER_PUNCT = {
+  latin: 'dsh',
+  upper: 'DSH',
+  digit: '1',
+  accented: 'é',
+  cyrillic: 'ж',
+  chinese: '好',
+  space: ' dsh',
+  end: '',
+  asciiPunct: '.',
+}
+/** After which the unclosed form stays unclosed (a letter or digit follows the closing marker), and after which it closes. */
+export const AFTER_WORD = ['latin', 'upper', 'digit', 'accented', 'cyrillic']
+export const AFTER_NON_WORD = ['chinese', 'space', 'end', 'asciiPunct']
+
+/** Chinese (full-width and CJK) punctuation marks: the persona rule covers these. */
+export const CHINESE_PUNCT = ['，', '。', '！', '？', '；', '：', '、', '）', '」', '”', '…', '—', '（', '【', '》']
+/** Texts for the sentence-level cases. */
+export const BOLD_SENTENCES = {
+  midLine: { text: '状态：**还在进行中**：dsh 继续', strong: ['还在进行中'] },
+  twoBold: { text: '**还在进行中**：dsh 和 **另一个**：abc', strong: ['还在进行中', '另一个'] },
+  list: { text: '- **还在进行中**：dsh\n- **完成**：x', strong: ['还在进行中', '完成'] },
+}
