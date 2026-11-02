@@ -191,6 +191,8 @@ window.__ModuleLoader__.load({
     /** `n` copies of a CSS length, subtracted inside a calc(). */
     const minusTimes = (length, n) => ` - ${length}`.repeat(n)
     /** A dock card's box: the width and centring of DSH's Todo dock (shared by the managed banner and the welcome card). */
+    /** A dock card's surface (the managed banner's look, shared with the welcome card). */
+    const DOCK_CARD_LOOK = 'border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);line-height:1.5'
     const DOCK_CARD_WIDTH = `box-sizing:border-box;flex:none;width:calc(100%${minusTimes(DSH_COMPOSER.sideClearance, DSH_COMPOSER.sideClearances)}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});max-width:calc(${DSH_COMPOSER.cardMaxWidth}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});margin:0 auto`
     /**
      * The managed-session banner (DESIGN §10e item 30): a dock entry in a managed session's chat.
@@ -207,13 +209,17 @@ window.__ModuleLoader__.load({
      */
     const WELCOME = Object.freeze({ id: 'fishball-welcome', order: -200, iconPx: 16, closeIconPx: 14, gapPx: 6, headGapPx: 8, paddingYPx: 8, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
     /** Recommended plugins on the settings page (DESIGN §10f). States as src/recommended.js RECOMMENDED_STATE. Sizes in px. */
-    /** Category keys in display order, as src/recommended.js RECOMMENDED_CATEGORY (the welcome card lists them). */
-    const RECOMMENDED_CATEGORY = Object.freeze({ context: 'context', memory: 'memory', channel: 'channel', pet: 'pet' })
     const RECOMMENDED = Object.freeze({
       state: Object.freeze({ install: 'install', installed: 'installed', dshOn: 'dsh-on', dshOff: 'dsh-off' }),
       rowGapPx: 12, rowPaddingYPx: 6, categoryGapPx: 8,
       /** How the section comes into view when the welcome card's link opens the page. */
       scroll: Object.freeze({ behavior: 'smooth', block: 'start' }),
+      /**
+       * How long the welcome card's request to bring the section into view waits for the page to
+       * mount. Past it the request lapses, so a later visit to the settings page never jumps (when
+       * DSH could not open Fishball's page, or the page was already open).
+       */
+      focusMs: 5000,
     })
     /**
      * The managed mark in a sidebar row's leading cell. cellPx copies DSH's leading cell (the
@@ -1419,10 +1425,10 @@ window.__ModuleLoader__.load({
       `.${CLS.fishTag}{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:.5px solid color-mix(in srgb,${FISH_MARK.eyeColor} 35%,transparent);border-radius:999px;background:color-mix(in srgb,${FISH_MARK.eyeColor} 12%,transparent);color:var(--dsw-alias-label-primary);font-size:12px}`,
       // The managed-session banner and sidebar mark (item 30), in DSH's theme tokens for light and dark.
       // Width and spacing as DSH's Todo dock (DSH_COMPOSER): no margin of its own, so the composer stack's gap spaces it.
-      `.${CLS.managedBanner}{${DOCK_CARD_WIDTH};display:flex;align-items:center;gap:${MANAGED_BANNER.gapPx}px;padding:${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingEndPx}px ${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingStartPx}px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:${MANAGED_BANNER.fontPx}px;line-height:1.5}`,
+      `.${CLS.managedBanner}{${DOCK_CARD_WIDTH};display:flex;align-items:center;gap:${MANAGED_BANNER.gapPx}px;padding:${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingEndPx}px ${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingStartPx}px;${DOCK_CARD_LOOK};font-size:${MANAGED_BANNER.fontPx}px}`,
       `.${CLS.managedText}{flex:1;min-width:0}`,
       // The welcome card (revision 12) shares the banner's width and look; it stacks its lines.
-      `.${CLS.welcome}{${DOCK_CARD_WIDTH};display:flex;flex-direction:column;gap:${WELCOME.gapPx}px;padding:${WELCOME.paddingYPx}px ${WELCOME.paddingEndPx}px ${WELCOME.paddingYPx}px ${WELCOME.paddingStartPx}px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:${WELCOME.fontPx}px;line-height:1.5}`,
+      `.${CLS.welcome}{${DOCK_CARD_WIDTH};display:flex;flex-direction:column;gap:${WELCOME.gapPx}px;padding:${WELCOME.paddingYPx}px ${WELCOME.paddingEndPx}px ${WELCOME.paddingYPx}px ${WELCOME.paddingStartPx}px;${DOCK_CARD_LOOK};font-size:${WELCOME.fontPx}px}`,
       `.${CLS.welcomeLine}{display:flex;align-items:center;gap:${WELCOME.headGapPx}px}`,
       // Recommended plugins on the settings page: one compact row per plugin, the description cut to one line.
       `.${CLS.recCategory}{display:flex;align-items:center;gap:${RECOMMENDED.categoryGapPx}px;margin:0}`,
@@ -1766,8 +1772,11 @@ window.__ModuleLoader__.load({
      * section takes it.
      */
     const recommendedFocus = (() => {
-      let pending = false
-      return { request: () => { pending = true }, take: () => { const was = pending; pending = false; return was } }
+      let requestedAt = null
+      return {
+        request: () => { requestedAt = Date.now() },
+        take: () => { const fresh = requestedAt !== null && Date.now() - requestedAt <= RECOMMENDED.focusMs; requestedAt = null; return fresh },
+      }
     })()
 
     /** One recommended plugin's action (DESIGN §10f table): a reason, a state, Install or Turn on. */
@@ -1830,36 +1839,46 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * The welcome card's state for this page load: the session it was shown in, and whether it was
+     * closed. Kept outside the component because DSH draws the dock only inside its composer bar,
+     * which a panel (a question) can replace; the card must come back with it, while the Host's
+     * flag is already false (DESIGN §10f).
+     */
+    const welcomeState = valueStore({ shownIn: null, closed: false })
+    const useWelcomeState = () => React.useSyncExternalStore(welcomeState.subscribe, welcomeState.get)
+
+    /**
      * The one-time welcome card above Fishball's composer (DESIGN §10f). It reports itself shown
-     * as soon as it renders, so it never comes back, then stays until you close it, follow its
-     * link or leave the chat. The Host's flag turns false at once, so the card keeps its own
-     * "shown in this session" state instead of following the flag.
+     * as soon as it renders, so it never comes back after this page load, and stays until you
+     * close it, follow its link, or open another session's chat.
      */
     function makeWelcome(ctx, t) {
-      const openPage = settingsOpener(ctx)
       return function FishballWelcome({ sessionId }) {
         const state = useFishball()
-        const [shownIn, setShownIn] = React.useState(null)
-        const [closed, setClosed] = React.useState(false)
+        const { shownIn, closed } = useWelcomeState()
         const eligible = Boolean(sessionId) && sessionId === state.sessionId && state.status === STATUS.live && state.welcome?.show === true && Boolean(state.recommended)
         React.useEffect(() => {
           if (!eligible || shownIn !== null || closed) return
-          setShownIn(sessionId)
+          welcomeState.set({ shownIn: sessionId, closed: false })
+          // A report lost to a network failure only means the card shows once more next time.
           void post(API.welcomeSeen, {})
         }, [eligible, shownIn, closed])
-        // Leaving the chat ends it: the same entry may be kept for another session's composer.
-        React.useEffect(() => { if (shownIn !== null && sessionId !== shownIn) setClosed(true) }, [sessionId, shownIn])
-        if (shownIn === null || closed || sessionId !== shownIn) return null
+        // Another session's chat ends it: the dock is drawn per session.
+        React.useEffect(() => { if (shownIn !== null && sessionId !== shownIn && !closed) welcomeState.set({ shownIn, closed: true }) }, [sessionId, shownIn, closed])
+        if (shownIn === null || closed || sessionId !== shownIn || !state.recommended) return null
+        const close = () => welcomeState.set({ shownIn, closed: true })
+        // Read when drawn, as the other openers are: the service may arrive after this module.
+        const openPage = settingsOpener(ctx)
         const Icon = brandIconOf(state)
-        const highlighted = state.recommended?.highlighted ?? NO_ENTRIES
-        const see = () => { recommendedFocus.request(); setClosed(true); openPage() }
+        const { categories, highlighted } = state.recommended
+        const see = () => { recommendedFocus.request(); close(); openPage() }
         return h('section', { className: CLS.welcome, 'aria-label': t('welcomeTitle'), 'data-fishball-welcome': true },
           h('div', { className: CLS.welcomeLine },
             h(Icon, { size: WELCOME.iconPx, unread: false }),
             h('strong', { className: CLS.managedText }, t('welcomeTitle')),
-            h('button', { type: 'button', className: MCLS.iconButton, 'aria-label': t('close'), onClick: () => setClosed(true) }, h(IconCloseOutlineRegular, { size: WELCOME.closeIconPx }))),
+            h('button', { type: 'button', className: MCLS.iconButton, 'aria-label': t('close'), onClick: close }, h(IconCloseOutlineRegular, { size: WELCOME.closeIconPx }))),
           h('span', null, t('welcomeIntro')),
-          h('ul', { className: CLS.entries }, Object.values(RECOMMENDED_CATEGORY).map((category) => h('li', { key: category, className: CLS.welcomeLine },
+          h('ul', { className: CLS.entries }, categories.map(({ category }) => h('li', { key: category, className: CLS.welcomeLine },
             t('recommendedCategory.' + category), highlighted.includes(category) ? recommendedBadge(t) : null))),
           h('span', { className: CLS.muted }, t('recommendedNote')),
           // Where no service can open the settings page, there is nothing to link to (Reading, §10f).
