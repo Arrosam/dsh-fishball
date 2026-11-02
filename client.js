@@ -360,14 +360,23 @@ window.__ModuleLoader__.load({
       fish: `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='${FISH_MARK.viewBox}'><path d='${FISH_MARK.body}' fill='${FISH_MARK.eyeColor}'/><path d='${FISH_MARK.eye}' fill='#fff'/></svg>`)}")`,
     })
     /**
+     * The font the brand's text ends on (the tag, the unread count, the word logo's fallback).
+     * DSH sets <html lang> to its display language (dsh-client-locale), and a bare `sans-serif`
+     * then picks a per-language face: PingFang SC in Chinese, lighter and shaped differently,
+     * so the tag changed look. Named Latin faces first give every language the English face.
+     * DSH's own --dsw-font-family is SF Pro on macOS, wider than the approved look.
+     */
+    const BRAND_LATIN_FONT = 'Helvetica,Arial,sans-serif'
+    /**
      * The word logo from the fishball repo. The repo ships no image for it: it is the string
      * `wordmark` ("FISHBALL", strings.xml) set in the display face at weight 900 with -0.5px
      * tracking (docs/preview/designs.html `.brand .wm`, Theme.kt displaySmall). The face is
      * the repo's stack and is not downloaded here, so a machine without Archivo falls back to
-     * the next family, as the app's own dummy does.
+     * the next family, as the app's own dummy does. It ends on BRAND_LATIN_FONT instead of
+     * the repo's bare `sans-serif`, so Windows (no Helvetica Neue) keeps one face in every language.
      */
     const WORDMARK = Object.freeze({
-      fontFamily: '"Archivo","Helvetica Neue",sans-serif',
+      fontFamily: `"Archivo","Helvetica Neue",${BRAND_LATIN_FONT}`,
       fontWeight: 900,
       letterSpacing: '-0.5px',
       lineHeight: 1,
@@ -390,7 +399,7 @@ window.__ModuleLoader__.load({
      * (FISH_MARK.eyeColor), the one colour the brand spends.
      */
     const BRAND_TAG = Object.freeze({
-      fontSize: '9px', lineHeight: '11px', fontWeight: 800, paddingX: '4px', radius: '1px',
+      fontFamily: BRAND_LATIN_FONT, fontSize: '9px', lineHeight: '11px', fontWeight: 800, paddingX: '4px', radius: '1px',
       right: '-16px', bottom: '-2px', rotate: '-5deg', origin: 'right bottom',
       fill: 'var(--dsw-alias-label-primary)', textColor: 'var(--dsw-alias-label-primary-inverted)',
       ring: '0 0 0 1.5px var(--dsw-alias-label-primary-inverted)', shadow: '2px 2px 0 1.5px ' + FISH_MARK.eyeColor,
@@ -421,7 +430,7 @@ window.__ModuleLoader__.load({
       fill: FISH_MARK.eyeColor, textColor: '#fff',
       ring: '0 0 0 2px var(--dsw-alias-label-primary-inverted)',
       minWidth: '16px', height: '16px', paddingX: '4px', radius: '8px',
-      fontSize: '10px', fontWeight: 800, top: '-7px', right: '-9px',
+      fontFamily: BRAND_LATIN_FONT, fontSize: '10px', fontWeight: 800, top: '-7px', right: '-9px',
       cycleSeconds: 2.2, wagOrigin: '70% 40%',
       /** Keyframe percentages of one cycle: rest, then wag back and forth, then rest. */
       wag: Object.freeze([[0, 0], [55, 0], [62, -14], [70, 12], [78, -9], [86, 5], [100, 0]]),
@@ -1370,7 +1379,7 @@ window.__ModuleLoader__.load({
       `.${CLS.section}{display:flex;flex-direction:column;gap:12px;margin:0 0 24px;color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13)}`,
       `.${CLS.mark}{color:var(--dsw-alias-label-primary)}`,
       `.${CLS.markBox}{position:relative;display:inline-flex}`,
-      `.${CLS.badge}{position:absolute;top:${UNREAD_BADGE.top};right:${UNREAD_BADGE.right};box-sizing:border-box;min-width:${UNREAD_BADGE.minWidth};height:${UNREAD_BADGE.height};padding:0 ${UNREAD_BADGE.paddingX};border-radius:${UNREAD_BADGE.radius};background:${UNREAD_BADGE.fill};color:${UNREAD_BADGE.textColor};box-shadow:${UNREAD_BADGE.ring};font:${UNREAD_BADGE.fontWeight} ${UNREAD_BADGE.fontSize}/${UNREAD_BADGE.height} sans-serif;text-align:center;white-space:nowrap;pointer-events:none;animation:${UNREAD_BADGE.popAnimation} ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
+      `.${CLS.badge}{position:absolute;top:${UNREAD_BADGE.top};right:${UNREAD_BADGE.right};box-sizing:border-box;min-width:${UNREAD_BADGE.minWidth};height:${UNREAD_BADGE.height};padding:0 ${UNREAD_BADGE.paddingX};border-radius:${UNREAD_BADGE.radius};background:${UNREAD_BADGE.fill};color:${UNREAD_BADGE.textColor};box-shadow:${UNREAD_BADGE.ring};font:${UNREAD_BADGE.fontWeight} ${UNREAD_BADGE.fontSize}/${UNREAD_BADGE.height} ${UNREAD_BADGE.fontFamily};text-align:center;white-space:nowrap;pointer-events:none;animation:${UNREAD_BADGE.popAnimation} ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
       `.${CLS.wag}{transform-origin:${UNREAD_BADGE.wagOrigin};animation:${UNREAD_BADGE.wagAnimation} ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
       `@keyframes ${UNREAD_BADGE.wagAnimation}{${UNREAD_BADGE.wag.map(([at, degrees]) => `${at}%{transform:rotate(${degrees}deg)}`).join('')}}`,
       `@keyframes ${UNREAD_BADGE.popAnimation}{${UNREAD_BADGE.pop.map(([at, scale]) => `${at}%{transform:scale(${scale})}`).join('')}}`,
@@ -1385,7 +1394,7 @@ window.__ModuleLoader__.load({
       `.${CLS.list} li{padding:2px 8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--ds-font-family-code)}`,
       `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing};line-height:${WORDMARK.lineHeight};top:${WORDMARK.lift}}`,
       // Overlaid on the corner, so it takes no layout space and cannot push the sidebar controls.
-      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} sans-serif;transform:rotate(${BRAND_TAG.rotate});transform-origin:${BRAND_TAG.origin};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
+      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} ${BRAND_TAG.fontFamily};transform:rotate(${BRAND_TAG.rotate});transform-origin:${BRAND_TAG.origin};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
