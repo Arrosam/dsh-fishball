@@ -12,7 +12,7 @@
  * - src/plugin-settings.js settings of the plugins Fishball runs itself (the plugin manager, DESIGN §10d)
  * - src/context-window.js  the context-window setting and its enforcement (src/context-policy.js)
  * - src/intake.js          every input that wakes Fishball (durable, deduplicated, wake guard)
- * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session
+ * - src/messaging.js       message_fishball, "Send to Fishball", message_session, start_session, stop_session, redirect_session
  * - src/managed.js         which sessions Fishball manages, their tools, Hand over / Take back, release_session
  * - src/session-titles.js  current titles of the managed sessions (the settings page's list)
  * - src/watches.js         "tell Fishball when finished": watches, their notices and tools
@@ -268,9 +268,10 @@ export async function apply(ctx, config) {
   /** Managed sessions (revision 11, §5e); created below, once message_fishball's definition exists. */
   let managedRegistry
   const manage = (sessionId, by) => managedRegistry.manage(sessionId, by)
+  const isManaged = (sessionId) => managedRegistry.isManaged(sessionId)
   const messagesOn = () => catalog.isAppliedOn(FEATURE_KEY.messages)
-  const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined, watch: watchFor, isEnabled: messagesOn, isManaged: (sessionId) => managedRegistry.isManaged(sessionId), manage })
-  const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish(), watch: watchFor, manage, isManaged: (sessionId) => managedRegistry.isManaged(sessionId) })
+  const inbound = registerInbound({ ctx, ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined, watch: watchFor, isEnabled: messagesOn, isManaged, manage })
+  const outbound = registerOutbound({ ctx, register: (definition) => composition.registerOwnTool(definition), store, readLimits: limits, assistantId, logger, onChange: () => publish(), watch: watchFor, manage, isManaged, isEnabled: messagesOn })
   const approvalsOn = () => catalog.isAppliedOn(FEATURE_KEY.approvals)
   /** ask_fishball and list_user_messages; created with the broker below. */
   let deskTools = []
@@ -311,7 +312,7 @@ export async function apply(ctx, config) {
   const pile = new Pile(() => publish())
   const tags = new TagRecords(store, limits, { logger, onChange: () => publish() })
   // Standing grants (rev11d, §7a.8): paused while Fishball is not live or Permission requests is off.
-  const grants = new Grants(store, logger, { readLimits: limits, isPaused: () => assistantAgent() === undefined || !approvalsOn(), onChange: () => publish(), isManaged: (sessionId) => managedRegistry.isManaged(sessionId) })
+  const grants = new Grants(store, logger, { readLimits: limits, isPaused: () => assistantAgent() === undefined || !approvalsOn(), onChange: () => publish(), isManaged })
   grants.registerTools((definition) => composition.registerOwnTool(definition))
   ctx.effect(() => () => grants.stop(), 'fishball: grant expiry timer')
   // Fishball's own requests: cards labelled Fishball in your pile, never a prompt (rev11f, §7a.11).
@@ -320,9 +321,9 @@ export async function apply(ctx, config) {
   // Managed sessions' permission requests go to Fishball first (DESIGN §7a).
   const broker = new ApprovalBroker(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,
-    startedByFishball: (sessionId) => outbound.started(sessionId), agentOf: () => assistantAgent(), onChange: () => publish(),
+    startedByFishball: (sessionId) => outbound.started(sessionId), redirectedByFishball: (sessionId, text) => outbound.redirected(sessionId, text), agentOf: () => assistantAgent(), onChange: () => publish(),
     isEnabled: approvalsOn,
-    isManaged: (sessionId) => managedRegistry.isManaged(sessionId),
+    isManaged,
     passes: new CallPasses(),
     // The one post-execute listener that sets Fishball's wording (spike S35).
     wording: new ResultWording(ctx),
@@ -338,7 +339,7 @@ export async function apply(ctx, config) {
   const questions = new QuestionRouter(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, agentOf: () => assistantAgent(), tags, onChange: () => publish(),
     canAnswer: () => assistantAgent() !== undefined && approvalsOn(),
-    isManaged: (sessionId) => managedRegistry.isManaged(sessionId),
+    isManaged,
     managedIds: () => managedRegistry.snapshot().map((entry) => entry.sessionId),
   })
   questions.registerTools((definition) => composition.registerOwnTool(definition))

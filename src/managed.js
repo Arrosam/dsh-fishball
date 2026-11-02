@@ -31,8 +31,8 @@ import { randomUUID } from 'node:crypto'
 import { createScope, scopeOf } from '@deepseek-ai/dsh-scope'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, MANAGED, MANAGED_BY, MANAGED_CHANGE, MANAGED_ERROR, SOURCE } from './constants.js'
-import { AuditLog } from './audit.js'
+import { CHANGED_BY, DECISION_ACTION, EVENT, INTAKE_KIND, MANAGED, MANAGED_BY, MANAGED_CHANGE, MANAGED_ERROR, SOURCE } from './constants.js'
+import { AuditLog, recordDecision } from './audit.js'
 import { describeSession, isSessionGone, rootSessionOf } from './session-info.js'
 import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
@@ -312,12 +312,7 @@ export class ManagedRegistry {
   }
 
   /** Fishball's release in its decisions audit (§9; Q-r11-defaults "every Fishball decision audited"). */
-  async #audit(sessionId, reason) {
-    const rationale = typeof reason === 'string' ? reason.trim().slice(0, this.#readLimits().rationaleChars) : ''
-    try {
-      await this.#decisions.append({ action: DECISION_ACTION.release, sessionId, by: CHANGED_BY.fishball, ...(rationale ? { rationale } : {}), at: new Date().toISOString(), outcome: DECISION_OK }, [DECISION_ACTION.release])
-    } catch (error) {
-      this.#logger.warn('decision audit failed (%s)', diagnosticOf(error))
-    }
+  #audit(sessionId, reason) {
+    return recordDecision(this.#decisions, this.#logger, { action: DECISION_ACTION.release, sessionId, by: CHANGED_BY.fishball, reason, rationaleChars: this.#readLimits().rationaleChars })
   }
 }

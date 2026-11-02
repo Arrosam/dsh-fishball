@@ -86,6 +86,7 @@ const PROVENANCE = Object.freeze({
   user: 'the user',
   fishballStart: 'Fishball (start_session)',
   fishballMessage: 'Fishball (message_session)',
+  fishballRedirect: 'Fishball (redirect_session)',
   other: 'another agent or a notice',
   unknown: 'unknown',
 })
@@ -214,13 +215,16 @@ export function argumentsOf(session, callId, toolName, maxBytes) {
   return none
 }
 
+/** A user message event's text blocks, joined as they were sent (a redirect's digest is of that text). */
+const textOf = (event) => (event.data?.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('\n')
+
 /** The latest message you typed in a session (sources user / user-rpc), cut to maxBytes (also the question notice's, rev11g). */
 export function latestUserText(session, maxBytes) {
   const events = session.snapshotEvents()
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]
     if (event.type !== APPROVAL.userEvent || senderOf(event.data?.source) !== SESSION_INFO.roles.user) continue
-    const text = (event.data.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim()
+    const text = textOf(event).trim()
     if (text.length > 0) return cutToBytes(text, maxBytes, ELLIPSIS)
   }
   return ''
@@ -261,6 +265,7 @@ export class ApprovalBroker {
   #assistantId
   #isLive
   #startedByFishball
+  #redirectedByFishball
   #agentOf
   #onChange
   #isEnabled
@@ -288,6 +293,7 @@ export class ApprovalBroker {
    * @param store - Store (approvals and decisions audits). @param logger - plugin logger.
    * @param deps.ledger, deps.readLimits, deps.assistantId, deps.isLive, deps.onChange.
    * @param deps.startedByFishball - (sessionId) => whether Fishball started that session.
+   * @param deps.redirectedByFishball - (sessionId, text) => whether that text is a redirect_session instruction Fishball sent it.
    * @param deps.agentOf - () => Fishball's agent (for notes without a wake).
    * @param deps.isEnabled - () => whether Fishball's Permission requests plugin runs (revision 10c);
    *   when it stops, the caller releases waiting requests (releaseAll).
@@ -299,7 +305,7 @@ export class ApprovalBroker {
    * @param deps.manage - (sessionId, by) => Promise<whether it became managed now> (answer_prompt, §7a.9).
    * @param deps.own - OwnRequests (Fishball's own cards and their passes, §7a.11).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, tags, grants, manage, own }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, redirectedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, tags, grants, manage, own }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -308,6 +314,7 @@ export class ApprovalBroker {
     this.#assistantId = assistantId
     this.#isLive = isLive
     this.#startedByFishball = startedByFishball
+    this.#redirectedByFishball = redirectedByFishball
     this.#agentOf = agentOf
     this.#onChange = onChange
     this.#isEnabled = isEnabled
@@ -1106,10 +1113,12 @@ export class ApprovalBroker {
     }
     let turnStart = -1
     for (let i = events.length - 1; i >= 0; i--) if (events[i].type === APPROVAL.turnStartEvent) { turnStart = i; break }
-    const firstOfTurn = events.slice(turnStart + 1).find((event) => event.type === APPROVAL.userEvent)?.data?.source
+    const firstOfTurn = events.slice(turnStart + 1).find((event) => event.type === APPROVAL.userEvent)
     const firstOfSession = events.find((event) => event.type === APPROVAL.userEvent)?.data?.source
     const session_ = this.#startedByFishball(session.id) ? PROVENANCE.fishballStart : describe(firstOfSession, PROVENANCE.fishballStart)
-    return { session: session_, turn: describe(firstOfTurn, PROVENANCE.fishballMessage) }
+    // A Fishball relay is a redirect when the outbox keeps a redirect of exactly that text (rev11h).
+    const turnText = firstOfTurn !== undefined && this.#redirectedByFishball(session.id, textOf(firstOfTurn)) ? PROVENANCE.fishballRedirect : PROVENANCE.fishballMessage
+    return { session: session_, turn: describe(firstOfTurn?.data?.source, turnText) }
   }
 
   /** Audit one request (never the arguments or quoted text: a digest and message ids). */
