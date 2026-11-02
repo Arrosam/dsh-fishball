@@ -161,6 +161,25 @@ window.__ModuleLoader__.load({
     // cards scrolling under them show through (rev11-ui-fixes R1).
     const PILE = Object.freeze({ id: 'fishball-pile', order: -100, heightUnit: 'vh', fill: 'var(--dsw-alias-bg-layer-1)' })
     /**
+     * Your pile as a list of rows with a detail view (DESIGN §10e, rev11-pile-list). The reveal's
+     * length and easing are presentation, not settings (the manager's decision): short, so a switch
+     * never holds up a click; under prefers-reduced-motion: reduce every switch is instant.
+     */
+    const PILE_LIST = Object.freeze({
+      revealMs: 180,
+      easing: 'cubic-bezier(.2,0,0,1)',
+      /** A reveal's states, drawn as data-fishball-reveal. */
+      reveal: Object.freeze({ hidden: 'hidden', opening: 'opening', open: 'open', closing: 'closing' }),
+      /** A shell tool's command argument, as prefix grants read it (keep in step with src/constants.js GRANT.commandArgument). */
+      commandArgument: Object.freeze({ bash: 'command', pwsh: 'command', terminal_send: 'text' }),
+      escapeKey: 'Escape',
+      /** The pile's scrolling box: a click on it (its scroll bar) is not a click outside the detail. */
+      scrollArea: '[data-fishball-pile]',
+      /** One card's whole box in the list (its li): a click inside it is not outside its detail. */
+      cardBox: '[data-fishball-card]',
+      rowGapPx: 8,
+    })
+    /**
      * DSH's composer layout variables (dsh-client-ui-conversation, rc.2), read so a dock entry
      * takes DSH's own width and spacing. The composer stack is a column whose gap
      * (--dsh-composer-stack-gap) spaces its docks. DSH's Todo dock is a free-standing card
@@ -432,7 +451,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', linkButton: 'fb-link-button', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row' })
+    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -755,6 +774,14 @@ window.__ModuleLoader__.load({
       'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
       'field.pileMaxHeightVh': 'Height of your pile above Fishball\'s composer (% of the window)',
       pileTitle: 'Waiting for you ({count})',
+      pileOwnName: 'Fishball',
+      pileBack: 'Back',
+      questionAnswer: 'Answer',
+      whyRun: '{who} wants to run {command}',
+      whyUseOn: '{who} wants to use {tool}: {argument}',
+      whyUse: '{who} wants to use {tool}',
+      whyQuestion: '{who} asks you: {question}',
+      whyPlan: '{who} asks you to review its plan',
       'cardKind.asked': 'Asked first',
       'cardKind.direct': 'Direct call',
       'cardKind.own': 'Fishball',
@@ -784,8 +811,6 @@ window.__ModuleLoader__.load({
       cardReason: 'Reason',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: 'The arguments are cut.',
-      cardDetails: 'Details',
-      cardHideDetails: 'Hide details',
       cardQuotes: 'You asked that session',
       cardThread: 'Discussion with Fishball',
       'threadFrom.agent': 'Session',
@@ -1164,6 +1189,14 @@ window.__ModuleLoader__.load({
       'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
       'field.pileMaxHeightVh': 'Fishball 输入框上方待处理请求区的高度（占窗口的百分比）',
       pileTitle: '等你处理（{count}）',
+      pileOwnName: 'Fishball',
+      pileBack: '返回',
+      questionAnswer: '回答',
+      whyRun: '{who} 想运行 {command}',
+      whyUseOn: '{who} 想使用 {tool}：{argument}',
+      whyUse: '{who} 想使用 {tool}',
+      whyQuestion: '{who} 问你：{question}',
+      whyPlan: '{who} 请你审阅它的计划',
       'cardKind.asked': '事先询问',
       'cardKind.direct': '直接调用',
       'cardKind.own': 'Fishball',
@@ -1193,8 +1226,6 @@ window.__ModuleLoader__.load({
       cardReason: '理由',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: '参数已截断。',
-      cardDetails: '详情',
-      cardHideDetails: '收起详情',
       cardQuotes: '你在该会话中的要求',
       cardThread: '与 Fishball 的讨论',
       'threadFrom.agent': '会话',
@@ -1285,14 +1316,27 @@ window.__ModuleLoader__.load({
       `.${CLS.pile}{margin:0 0 8px;overflow:auto;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:${PILE.fill};color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
       `.${CLS.pileHead}{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--dsw-alias-border-l2);background:${PILE.fill};color:var(--dsw-alias-label-primary);font-weight:600}`,
       `.${CLS.card}{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-top:.5px solid var(--dsw-alias-border-l2)}`,
-      `.${CLS.card}:first-of-type{border-top:0}`,
+      `.${CLS.entries}>:first-child>.${CLS.revealInner}>.${CLS.card}{border-top:0}`,
+      // The reveal (rev11-pile-list): a one-row grid from 0fr to 1fr, so the box's height moves and the
+      // entries around it reflow with it. Its content is clipped only while it moves, so focus rings
+      // and the pinned titles work once it is open.
+      `.${CLS.reveal}{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows ${PILE_LIST.revealMs}ms ${PILE_LIST.easing},opacity ${PILE_LIST.revealMs}ms ${PILE_LIST.easing}}`,
+      `.${CLS.reveal}[data-fishball-reveal="${PILE_LIST.reveal.hidden}"],.${CLS.reveal}[data-fishball-reveal="${PILE_LIST.reveal.closing}"]{grid-template-rows:0fr;opacity:0}`,
+      `.${CLS.revealInner}{min-width:0;min-height:0}`,
+      `.${CLS.reveal}:not([data-fishball-reveal="${PILE_LIST.reveal.open}"])>.${CLS.revealInner}{overflow:hidden}`,
+      `@media (prefers-reduced-motion: reduce){.${CLS.reveal}{transition:none}}`,
+      `.${CLS.pileRow}{display:flex;align-items:center;gap:${PILE_LIST.rowGapPx}px;cursor:pointer}`,
+      `.${CLS.rowMain}{display:flex;flex:1;flex-direction:column;min-width:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}`,
+      `.${CLS.rowMain}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}`,
+      `.${CLS.rowLine}{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}`,
+      `.${CLS.rowControls}{display:flex;flex:none;flex-direction:column;align-items:flex-end;gap:4px;cursor:auto}`,
+      `.${CLS.detail},.${CLS.detailBody}{display:flex;flex-direction:column;gap:6px}`,
       `.${CLS.cardHead}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
       `.${CLS.title}{color:var(--dsw-alias-label-primary);font-weight:500;overflow-wrap:anywhere}`,
       `.${CLS.pre}{margin:0;padding:6px 8px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--ds-font-family-code);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${CLS.quote}{margin:0;padding:2px 8px;border-left:3px solid color-mix(in srgb,${FISH_MARK.eyeColor} 50%,transparent);white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${CLS.thread}{display:flex;flex-direction:column;gap:2px;margin:0;padding-left:16px;white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${CLS.actions}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
-      `.${CLS.linkButton}{align-self:flex-start;padding:0;border:0;background:none;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer}`,
       `.${CLS.askRow}{display:flex;flex-direction:column;gap:6px;padding:6px 0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
       `.${CLS.turnTags}{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}`,
       `.${CLS.fishTag}{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:.5px solid color-mix(in srgb,${FISH_MARK.eyeColor} 35%,transparent);border-radius:999px;background:color-mix(in srgb,${FISH_MARK.eyeColor} 12%,transparent);color:var(--dsw-alias-label-primary);font-size:12px}`,
@@ -2226,40 +2270,127 @@ window.__ModuleLoader__.load({
           canManage(state, entry.sessionId) ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void manageNotice.request({ sessionId: entry.sessionId, managed: false }) }, t('takeBack')) : null))))
     }
 
-    /** POST your answer on a card. @returns null when accepted, else the key of the refusal's text. */
-    async function answerCard(requestId, decision, note) {
+    /** POST your answer on a card. @returns null when accepted, else the refusal's text. */
+    async function answerCard(requestId, decision, note, t) {
       const { ok, code } = await send(API.requestsAnswer, { requestId, decision, ...(note ? { note } : {}) })
       if (ok) return null
-      return CARD_ERRORS.has(code) ? 'cardError.' + code : 'cardFailed'
+      return t(CARD_ERRORS.has(code) ? 'cardError.' + code : 'cardFailed')
     }
 
     /**
-     * Allow once / Reject on one card, the same in your pile and on the session's running row
-     * (item 15). Both read the card from the Host's snapshot, so an answer in either place clears
-     * both. Reject first opens an optional note to the agent (DESIGN §10e).
+     * One answer in flight at a time, shared by the pile's rows, its detail and the session's row:
+     * busy while it runs, then the refusal's text, or null and onDone() once it was taken.
      */
-    function CardAnswer({ requestId, t }) {
-      const id = React.useId()
+    function useSubmit() {
       const [busy, setBusy] = React.useState(false)
-      const [rejecting, setRejecting] = React.useState(false)
-      const [note, setNote] = React.useState('')
       const [problem, setProblem] = React.useState(null)
-      const answer = async (decision) => {
+      const run = async (submit, onDone) => {
         setBusy(true)
-        const refusal = await answerCard(requestId, decision, decision === CARD_DECISION.reject ? note.trim() : '')
+        const refusal = await submit()
         setBusy(false)
         setProblem(refusal)
+        if (refusal === null) onDone?.()
       }
-      const button = (key, variant, onClick, label) => h(Button, { key, type: 'button', size: 'sm', variant, disabled: busy, onClick }, t(label))
+      return { busy, problem, run }
+    }
+
+    /** A small button on a card; every card control is one of these, disabled while an answer is in flight. */
+    const cardButton = (t, busy, key, variant, onClick, label) => h(Button, { key, type: 'button', size: 'sm', variant, disabled: busy, onClick }, t(label))
+    const problemLine = (problem) => (problem ? h('div', { role: 'alert' }, problem) : null)
+
+    /** How long a reveal takes now: none when you asked for less motion (DESIGN §10e animation). */
+    const revealMs = () => (window.matchMedia(MOTION_QUERY).matches ? PILE_LIST.revealMs : 0)
+
+    /**
+     * Shows or hides its children with a short open/close (DESIGN §10e animation, rev11-pile-list).
+     * The box grows from no height to its own (a grid row from 0fr to 1fr) while it fades in, so the
+     * entries around it reflow smoothly with it; closing runs the other way, and once closed nothing
+     * is drawn, not even the box. A box mounted shown opens, so new entries arrive the same way.
+     * The state is drawn as data-fishball-reveal (hidden, opening, open, closing); while not shown
+     * the box is inert, so a closing entry can't be clicked or focused.
+     */
+    function Reveal({ shown, as = 'div', className, children, ...rest }) {
+      const S = PILE_LIST.reveal
+      const ref = React.useRef(null)
+      const [state, setState] = React.useState(S.hidden)
+      React.useLayoutEffect(() => {
+        if (ref.current) ref.current.inert = !shown
+        const target = shown ? S.open : S.hidden
+        if (state === target) return undefined
+        const ms = revealMs()
+        if (ms === 0) {
+          setState(target)
+          return undefined
+        }
+        const moving = shown ? S.opening : S.closing
+        if (state !== moving) {
+          // Lay the current size out before the change, so the browser has a size to move from.
+          void ref.current?.offsetHeight
+          setState(moving)
+          return undefined
+        }
+        const timer = setTimeout(() => setState(target), ms)
+        return () => clearTimeout(timer)
+      }, [shown, state])
+      if (state === S.hidden && !shown) return null
+      return h(as, { ref, className: className ? `${CLS.reveal} ${className}` : CLS.reveal, 'data-fishball-reveal': state, 'aria-hidden': shown ? undefined : true, ...rest },
+        h('div', { className: CLS.revealInner }, children))
+    }
+
+    /**
+     * The entries to draw: the current ones, and for one reveal each one that just left, at its old
+     * place and marked leaving, so it closes instead of vanishing (DESIGN §10e: rows leaving).
+     * @returns [{ item, leaving }].
+     */
+    function useLeaving(items, keyOf) {
+      const [previous, setPrevious] = React.useState(items)
+      // [{ item, index, until }]: entries that left, with the time their close ends.
+      const [left, setLeft] = React.useState([])
+      if (items !== previous) {
+        // Adjusted while rendering (React's pattern for state derived from a prop change), so the entry
+        // that left is never unmounted first, which would lose its open state and skip its close.
+        const now = new Set(items.map(keyOf))
+        const until = Date.now() + revealMs()
+        const gone = previous.map((item, index) => ({ item, index, until })).filter(({ item }) => !now.has(keyOf(item)))
+        const goneKeys = new Set(gone.map(({ item }) => keyOf(item)))
+        setPrevious(items)
+        if (gone.length > 0) setLeft((current) => [...current.filter(({ item }) => !goneKeys.has(keyOf(item))), ...gone])
+      }
+      React.useEffect(() => {
+        if (left.length === 0) return undefined
+        const next = Math.min(...left.map((entry) => entry.until))
+        const timer = setTimeout(() => setLeft((current) => current.filter((entry) => entry.until > Date.now())), Math.max(0, next - Date.now()))
+        return () => clearTimeout(timer)
+      }, [left])
+      const now = new Set(items.map(keyOf))
+      const drawn = items.map((item) => ({ item, leaving: false }))
+      // An entry that came back is drawn once, as current.
+      for (const { item, index } of left) if (!now.has(keyOf(item))) drawn.splice(Math.min(index, drawn.length), 0, { item, leaving: true })
+      return drawn
+    }
+
+    /**
+     * Allow once / Reject on one card, the same in your pile's detail and on the session's running
+     * row (item 15). Both read the card from the Host's snapshot, so an answer in either place clears
+     * both. Reject first opens an optional note to the agent (DESIGN §10e).
+     * @param onDone - optional, called once your answer was taken (the pile's detail goes back to its list).
+     */
+    function CardAnswer({ requestId, t, onDone }) {
+      const id = React.useId()
+      const { busy, problem, run } = useSubmit()
+      const [rejecting, setRejecting] = React.useState(false)
+      const [note, setNote] = React.useState('')
+      const answer = (decision) => run(() => answerCard(requestId, decision, decision === CARD_DECISION.reject ? note.trim() : '', t), onDone)
+      const button = (key, variant, onClick, label) => cardButton(t, busy, key, variant, onClick, label)
       return h('div', { className: CLS.grow, 'data-fishball-card-answer': requestId },
-        rejecting ? h('div', { className: CLS.field },
+        h(Reveal, { shown: rejecting }, h('div', { className: CLS.field },
           h('label', { htmlFor: id, className: CLS.muted }, t('rejectNote')),
-          h(Input, { id, value: note, onChange: (event) => setNote(event.target.value) })) : null,
+          h(Input, { id, value: note, onChange: (event) => setNote(event.target.value) }))),
         h('div', { className: CLS.actions },
           button('allow', 'primary', () => void answer(CARD_DECISION.allow), 'allowOnce'),
           rejecting ? button('send', 'secondary', () => void answer(CARD_DECISION.reject), 'rejectSend') : button('reject', 'secondary', () => setRejecting(true), 'reject'),
           rejecting ? button('cancel', 'ghost', () => { setRejecting(false); setNote('') }, 'cancel') : null),
-        problem ? h('div', { role: 'alert' }, t(problem)) : null)
+        problemLine(problem))
     }
 
     /** JSON text indented for reading; text that does not parse (cut arguments) as it is. */
@@ -2270,22 +2401,21 @@ window.__ModuleLoader__.load({
     /** A labelled line of text from another session or from Fishball (plain text, never markup: §10c framing rule). */
     const labelled = (label, text) => h('div', null, h('span', { className: CLS.muted }, label + ': '), text)
 
+    /** The session's title, or its id styled as code while it has none (as the managed list does). */
+    const sessionTitle = (card) => h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId)
+
     /**
-     * One card in your pile (DESIGN §10e): the session, the tool, the exact arguments, the agent's
-     * reason and Fishball's note, with the quoted messages and the thread behind Details. Every
-     * text comes from another session or from Fishball, so all of it is drawn as plain text.
-     * A session whose title is not known yet shows its id, as the managed list does. One of
-     * Fishball's own requests is labelled Fishball, with its list (the unchecked tools, or the
+     * One permission request in full, in your pile's detail (DESIGN §10e): the session, the tool,
+     * the exact arguments, the agent's reason, Fishball's note, the quoted messages and the thread.
+     * Every text comes from another session or from Fishball, so all of it is drawn as plain text.
+     * One of Fishball's own requests is labelled Fishball, with its list (the unchecked tools, or the
      * changed settings) under the arguments, one entry per line.
      */
-    function PileCard({ card, t }) {
-      const [open, setOpen] = React.useState(false)
-      const hasDetails = card.quotes.length > 0 || card.thread.length > 0
+    function PileCard({ card, t, onDone }) {
       const own = card.kind === OWN_CARD_KIND
-      return h('li', { className: CLS.card, 'data-fishball-card': card.requestId, 'data-fishball-card-kind': card.kind },
+      return h('div', { className: CLS.detailBody },
         h('div', { className: CLS.cardHead },
-          own ? h('span', { className: CLS.title }, t('cardOwnTitle'))
-            : h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId),
+          own ? h('span', { className: CLS.title }, t('cardOwnTitle')) : sessionTitle(card),
           CARD_KINDS.has(card.kind) ? h(Tag, { tone: 'neutral' }, t('cardKind.' + card.kind)) : null,
           h('span', { className: CLS.code }, card.toolName)),
         h('pre', { className: CLS.pre }, readableJson(card.arguments)),
@@ -2293,11 +2423,10 @@ window.__ModuleLoader__.load({
         own && (card.detail ?? []).length > 0 ? h('ul', { className: CLS.thread, 'data-fishball-card-detail': card.detail.length }, card.detail.map((entry, index) => h('li', { key: index }, entry))) : null,
         card.why ? labelled(t('cardReason'), card.why) : null,
         card.note ? labelled(t('cardFishballNote'), card.note) : null,
-        hasDetails ? h('button', { type: 'button', className: CLS.linkButton, 'aria-expanded': open, onClick: () => setOpen(!open) }, t(open ? 'cardHideDetails' : 'cardDetails')) : null,
-        open && card.quotes.length > 0 ? h('div', null, h('div', { className: CLS.muted }, t('cardQuotes')), card.quotes.map((quote) => h('blockquote', { key: quote.id, className: CLS.quote }, quote.text))) : null,
-        open && card.thread.length > 0 ? h('div', null, h('div', { className: CLS.muted }, t('cardThread')),
+        card.quotes.length > 0 ? h('div', null, h('div', { className: CLS.muted }, t('cardQuotes')), card.quotes.map((quote) => h('blockquote', { key: quote.id, className: CLS.quote }, quote.text))) : null,
+        card.thread.length > 0 ? h('div', null, h('div', { className: CLS.muted }, t('cardThread')),
           h('ol', { className: CLS.thread }, card.thread.map((entry, index) => h('li', { key: index }, labelled(t('threadFrom.' + entry.from), entry.text))))) : null,
-        h(CardAnswer, { requestId: card.requestId, t }))
+        h(CardAnswer, { requestId: card.requestId, t, onDone }))
     }
 
     /** POST your answer on a question card. @returns null when accepted, else the refusal's text. */
@@ -2308,23 +2437,18 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * One question or plan-review card in your pile (DESIGN §10e, rev11g): a question shows its
-     * form with the answer controls DSH's own card has (one choice, several choices, your own
-     * text); a plan review shows the plan with Approve, and Keep planning with a feedback field,
+     * One question or plan review in full, in your pile's detail (DESIGN §10e, rev11g): a question
+     * shows its form with the answer controls DSH's own card has (one choice, several choices, your
+     * own text); a plan review shows the plan with Approve, and Keep planning with a feedback field,
      * which the session's own panel does not offer (S36). Every text comes from the session or from
      * Fishball, so it is drawn as plain text.
      */
-    function QuestionCard({ card, t }) {
+    function QuestionCard({ card, t, onDone }) {
       const [choices, setChoices] = React.useState({})
       const [feedback, setFeedback] = React.useState('')
-      const [busy, setBusy] = React.useState(false)
-      const [problem, setProblem] = React.useState(null)
+      const { busy, problem, run } = useSubmit()
       const planReview = card.kind === QUESTION_VIEW.planReview
-      const submit = async (body) => {
-        setBusy(true)
-        setProblem(await answerQuestionCard(card.questionId, body, t))
-        setBusy(false)
-      }
+      const submit = (body) => run(() => answerQuestionCard(card.questionId, body, t), onDone)
       const choiceOf = (id) => choices[id] ?? { selected: [], custom: '' }
       // Functional, so two changes before a re-render (a toggle and typing) both count.
       const update = (id, change) => setChoices((current) => {
@@ -2337,10 +2461,10 @@ window.__ModuleLoader__.load({
         // As DSH's card: on a single-select question your own text replaces the choice.
         return { id: question.id, selected: text !== '' && question.multiSelect !== true ? [] : selected, ...(text === '' ? {} : { custom: text }) }
       })
-      const button = (key, variant, onClick, label) => h(Button, { key, type: 'button', size: 'sm', variant, disabled: busy, onClick }, t(label))
-      return h('li', { className: CLS.card, 'data-fishball-card': card.requestId, 'data-fishball-card-kind': card.kind },
+      const button = (key, variant, onClick, label) => cardButton(t, busy, key, variant, onClick, label)
+      return h('div', { className: CLS.detailBody },
         h('div', { className: CLS.cardHead },
-          h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId),
+          sessionTitle(card),
           h(Tag, { tone: 'neutral' }, t('cardKind.' + card.kind)),
           card.continued ? h(Tag, { tone: 'info' }, t('cardContinued')) : null),
         card.note ? labelled(t('cardFishballNote'), card.note) : null,
@@ -2366,7 +2490,121 @@ window.__ModuleLoader__.load({
                 h(Input, { 'aria-label': t('questionOther'), placeholder: t('questionOther'), value: choice.custom, onChange: (event) => { const custom = event.target.value; update(question.id, () => ({ custom })) } }))
             }),
             h('div', { className: CLS.actions }, button('send', 'primary', () => void submit({ answers: answers() }), 'questionSubmit'))),
-        problem ? h('div', { role: 'alert' }, problem) : null)
+        problemLine(problem))
+    }
+
+    /**
+     * A card's main argument (DESIGN §10e row, the builder's reading): a shell tool's command, as
+     * prefix grants read it, otherwise its first text argument; none when the arguments are cut and
+     * do not parse.
+     */
+    function mainArgument(card) {
+      let value
+      try { value = JSON.parse(card.arguments) } catch { return '' }
+      if (value === null || typeof value !== 'object') return ''
+      const commandKey = PILE_LIST.commandArgument[card.toolName]
+      const text = commandKey === undefined ? Object.values(value).find((entry) => typeof entry === 'string') : value[commandKey]
+      return typeof text === 'string' ? text : ''
+    }
+
+    /** Who asks, in words: the session's title (its id while it has none), or Fishball for its own requests. */
+    const cardWho = (t, card) => (card.kind === OWN_CARD_KIND ? t('pileOwnName') : card.title || card.sessionId)
+
+    /** A row's first line after who asks: the tool and its main argument, the question's header, or "Plan review". */
+    function requestLine(t, card) {
+      if (card.kind === QUESTION_VIEW.planReview) return t('cardKind.' + card.kind)
+      if (card.kind === QUESTION_VIEW.question) return card.questions[0]?.header || t('cardKind.' + card.kind)
+      const argument = mainArgument(card)
+      return argument ? `${card.toolName} ${argument}` : card.toolName
+    }
+
+    /**
+     * A row's second line, why it needs you (DESIGN §10e): Fishball's note; on Fishball's own cards its
+     * request's reason; otherwise a plain line built from the request. Fishball's note replaces the
+     * plain line as soon as the snapshot carries it.
+     */
+    function whyLine(t, card) {
+      if (card.note) return card.note
+      if (card.kind === OWN_CARD_KIND && card.why) return card.why
+      const who = cardWho(t, card)
+      if (card.kind === QUESTION_VIEW.planReview) return t('whyPlan', { who })
+      if (card.kind === QUESTION_VIEW.question) return t('whyQuestion', { who, question: card.questions[0]?.question || requestLine(t, card) })
+      const argument = mainArgument(card)
+      if (argument && PILE_LIST.commandArgument[card.toolName] !== undefined) return t('whyRun', { who, command: argument })
+      return argument ? t('whyUseOn', { who, tool: card.toolName, argument }) : t('whyUse', { who, tool: card.toolName })
+    }
+
+    /**
+     * The buttons beside a row (DESIGN §10e): Allow once / Reject on a permission request (Reject at
+     * once, with no note: the note is only in the detail), Approve / Keep planning (no feedback) on a
+     * plan review, and Answer on a question, which opens the detail.
+     */
+    function RowButtons({ card, t, onOpen }) {
+      const { busy, problem, run } = useSubmit()
+      const button = (key, variant, onClick, label) => cardButton(t, busy, key, variant, onClick, label)
+      const plan = (body) => () => void run(() => answerQuestionCard(card.questionId, body, t))
+      const decide = (decision) => () => void run(() => answerCard(card.requestId, decision, '', t))
+      const buttons = card.kind === QUESTION_VIEW.question ? [button('answer', 'primary', onOpen, 'questionAnswer')]
+        : card.kind === QUESTION_VIEW.planReview ? [button('approve', 'primary', plan({ approve: true }), 'planApprove'), button('keep', 'secondary', plan({ approve: false }), 'planKeep')]
+          : [button('allow', 'primary', decide(CARD_DECISION.allow), 'allowOnce'), button('reject', 'secondary', decide(CARD_DECISION.reject), 'reject')]
+      return h(React.Fragment, null, h('div', { className: CLS.actions }, buttons), problemLine(problem))
+    }
+
+    /**
+     * One request as a compact row (DESIGN §10e): two lines cut with an ellipsis, and its buttons.
+     * A click anywhere on it but its buttons opens the detail; the lines are one button, so the
+     * keyboard opens it too. @param focus - take the focus when drawn (the detail just closed).
+     */
+    function PileRow({ card, t, onOpen, focus }) {
+      const main = React.useRef(null)
+      const controls = React.useRef(null)
+      React.useEffect(() => { if (focus) main.current?.focus() }, [focus])
+      const open = () => onOpen(card.requestId)
+      return h('div', { className: CLS.pileRow, 'data-fishball-row': card.requestId, onClick: (event) => { if (!controls.current?.contains(event.target)) open() } },
+        h('button', { ref: main, type: 'button', className: CLS.rowMain, 'aria-expanded': false },
+          h('span', { className: CLS.rowLine, 'data-fishball-row-request': true },
+            card.kind === OWN_CARD_KIND ? h('span', { className: CLS.title }, t('pileOwnName')) : sessionTitle(card), TURN_TAGS.separator, requestLine(t, card)),
+          h('span', { className: `${CLS.rowLine} ${CLS.muted}`, 'data-fishball-row-why': true }, whyLine(t, card))),
+        h('div', { ref: controls, className: CLS.rowControls }, h(RowButtons, { card, t, onOpen: open })))
+    }
+
+    /**
+     * One request opened in place of the list (DESIGN §10e detail): Back, a click anywhere outside it,
+     * Escape while the focus is in it, or an answer taken go back to the list. The focus moves to Back
+     * when it opens. @param onClose - (returnFocus) => void; a click outside keeps the focus where you
+     * clicked, so it never takes it back from the composer.
+     */
+    function PileDetail({ card, t, active, onClose }) {
+      const root = React.useRef(null)
+      React.useEffect(() => { root.current?.querySelector('button')?.focus({ preventScroll: true }) }, [])
+      React.useEffect(() => {
+        // Only while open: a closing detail stays drawn for its close, and must not close the next one.
+        if (!active) return undefined
+        // The card's own box (its padding) and the pile's (its scroll bar) belong to the detail's window.
+        const outside = (event) => {
+          const inside = root.current?.closest(PILE_LIST.cardBox)?.contains(event.target) || event.target.matches?.(PILE_LIST.scrollArea)
+          if (!inside) onClose(false)
+        }
+        document.addEventListener('pointerdown', outside, true)
+        return () => document.removeEventListener('pointerdown', outside, true)
+      }, [active, onClose])
+      const back = () => onClose(true)
+      // Escape while an input method composes (Chinese, for one) only ends the composition.
+      const onKeyDown = (event) => { if (event.key === PILE_LIST.escapeKey && !event.nativeEvent.isComposing) { event.stopPropagation(); back() } }
+      return h('div', { ref: root, role: 'region', 'aria-label': cardWho(t, card), className: CLS.detail, 'data-fishball-detail': card.requestId, onKeyDown },
+        h('button', { type: 'button', className: MCLS.crumb, onClick: back }, h(IconChevronLeftOutlineRegular, { size: MANAGER.crumbIconSize }), t('pileBack')),
+        h(QUESTION_KINDS.has(card.kind) ? QuestionCard : PileCard, { card, t, onDone: () => onClose(true, card.requestId) }))
+    }
+
+    /**
+     * One card's place in the list: its row, or its detail while it is open. It is drawn while the list
+     * shows, or while it is the open one, and closes when it leaves the pile.
+     */
+    function PileEntry({ card, t, leaving, listShown, isOpen, onOpen, onClose, focus }) {
+      return h(Reveal, { as: 'li', shown: !leaving && (listShown || isOpen), 'data-fishball-card': card.requestId, 'data-fishball-card-kind': card.kind },
+        h('div', { className: CLS.card },
+          h(Reveal, { shown: !isOpen }, h(PileRow, { card, t, onOpen, focus })),
+          h(Reveal, { shown: isOpen }, h(PileDetail, { card, t, active: isOpen, onClose }))))
     }
 
     /**
@@ -2398,11 +2636,11 @@ window.__ModuleLoader__.load({
     /** What a grant covers, in words: "npm test*", or "exact bash call" (never the arguments, which the Host does not keep). */
     const grantWhat = (t, grant) => (grant.kind === GRANT_VIEW.prefix ? grant.prefix + GRANT_VIEW.wildcard : t('grantExact', { tool: grant.toolName }))
 
-    /** POST your Revoke. @returns null when accepted, else the key of the refusal's text. */
-    async function revokeGrant(grantId) {
+    /** POST your Revoke. @returns null when accepted, else the refusal's text. */
+    async function revokeGrant(grantId, t) {
       const { ok, code } = await send(API.grantsRevoke, { grantId })
       if (ok) return null
-      return GRANT_ERRORS.has(code) ? 'grantError.' + code : 'cardFailed'
+      return t(GRANT_ERRORS.has(code) ? 'grantError.' + code : 'cardFailed')
     }
 
     /**
@@ -2411,45 +2649,78 @@ window.__ModuleLoader__.load({
      * title another session's, so both are drawn as plain text.
      */
     function GrantRow({ grant, t }) {
-      const [busy, setBusy] = React.useState(false)
-      const [problem, setProblem] = React.useState(null)
-      const revoke = async () => {
-        setBusy(true)
-        setProblem(await revokeGrant(grant.grantId))
-        setBusy(false)
-      }
-      return h('li', { className: CLS.card, 'data-fishball-grant': grant.grantId },
+      const { busy, problem, run } = useSubmit()
+      return h('div', { className: CLS.card },
         h('div', { className: CLS.cardHead },
-          h('span', { className: grant.title ? CLS.title : `${CLS.title} ${CLS.code}` }, grant.title || grant.sessionId),
+          sessionTitle(grant),
           h('span', { className: CLS.code }, grant.toolName),
           grant.paused ? h(Tag, { tone: 'neutral' }, t('grantPaused')) : null),
         h('div', { className: CLS.code }, grantWhat(t, grant)),
         h('div', { className: CLS.muted }, `${t('grantEnds', { at: new Date(grant.expiresAt).toLocaleString() })}${TURN_TAGS.separator}${grant.uses === GRANT_USES.once ? t('grantUsedOnce') : t('grantUses', { count: grant.uses })}`),
-        h('div', { className: CLS.actions }, h(Button, { type: 'button', size: 'sm', variant: 'secondary', disabled: busy, onClick: () => void revoke() }, t('revoke'))),
-        problem ? h('div', { role: 'alert' }, t(problem)) : null)
+        h('div', { className: CLS.actions }, cardButton(t, busy, 'revoke', 'secondary', () => void run(() => revokeGrant(grant.grantId, t)), 'revoke')),
+        problemLine(problem))
     }
 
+    const cardKey = (card) => card.requestId
+    // One empty list for a snapshot without cards or grants: useLeaving compares lists by identity.
+    const NO_ENTRIES = Object.freeze([])
+    const grantKey = (grant) => grant.grantId
+
     /**
-     * Your pile above Fishball's composer (DESIGN §10e, items 14-16): "Waiting for you (n)", shown
-     * only in Fishball's own session and only while it holds a card. The active grants are a second
-     * section in the same pinned area (Q-r11-grants-place), shown while there are any. Its height is
-     * the limit pileMaxHeightVh; past it the area scrolls, so the composer stays in view.
+     * Your pile above Fishball's composer (DESIGN §10e, items 14-16; rev11-pile-list): "Waiting for
+     * you (n)" over a list of compact rows, shown only in Fishball's own session and only while it
+     * holds a card or a grant. One row at a time opens into its detail, in place of the list: the other
+     * rows and the grants hide until it closes, and a request that arrives meanwhile only changes the
+     * count. If the open request leaves the pile, the detail closes. The active grants are a second
+     * section in the same pinned area (Q-r11-grants-place). Its height is the limit pileMaxHeightVh;
+     * past it the area scrolls, the list and the detail alike, so the composer stays in view.
      */
     function makePile(t) {
       return function FishballPile({ sessionId }) {
         const state = useFishball()
-        const cards = state.pile ?? []
-        const grants = state.grants ?? []
-        if (!sessionId || sessionId !== state.sessionId || (cards.length === 0 && grants.length === 0)) return null
-        const title = t('pileTitle', { count: cards.length })
-        const grantsTitle = t('grantsTitle', { count: grants.length })
-        return h('section', { className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'data-fishball-pile': cards.length, 'data-fishball-grants': grants.length },
-          cards.length > 0 ? h('section', { 'aria-label': title },
-            h('div', { className: CLS.pileHead }, title),
-            h('ul', { className: CLS.entries }, cards.map((card) => h(QUESTION_KINDS.has(card.kind) ? QuestionCard : PileCard, { key: card.requestId, card, t })))) : null,
-          grants.length > 0 ? h('section', { 'aria-label': grantsTitle },
-            h('div', { className: CLS.pileHead }, grantsTitle),
-            h('ul', { className: CLS.entries }, grants.map((grant) => h(GrantRow, { key: grant.grantId, grant, t })))) : null)
+        const live = state.pile ?? NO_ENTRIES
+        const liveGrants = state.grants ?? NO_ENTRIES
+        // Cards you just answered in their detail: hidden at once, before the snapshot drops them, so
+        // the answered row never shows again with live buttons. Ids are unique, so none comes back.
+        const [answered, setAnswered] = React.useState(NO_ENTRIES)
+        const shownCards = React.useMemo(() => (answered.length === 0 ? live : live.filter((card) => !answered.includes(card.requestId))), [live, answered])
+        const cards = useLeaving(shownCards, cardKey)
+        const grants = useLeaving(liveGrants, grantKey)
+        const [openId, setOpenId] = React.useState(null)
+        const [focusId, setFocusId] = React.useState(null)
+        const scroller = React.useRef(null)
+        // Derived, so a request that left the pile closes its detail at once (P5).
+        const open = openId !== null && live.some((card) => card.requestId === openId) ? openId : null
+        // The detail starts at the top of the scrolling area once the rows above it have closed.
+        React.useEffect(() => {
+          if (open === null) return undefined
+          const timer = setTimeout(() => { if (scroller.current) scroller.current.scrollTop = 0 }, revealMs())
+          return () => clearTimeout(timer)
+        }, [open])
+        // The open id as last drawn, so closing knows which row takes the focus back.
+        const drawnOpen = React.useRef(open)
+        drawnOpen.current = open
+        const onOpen = React.useCallback((requestId) => { setFocusId(null); setOpenId(requestId) }, [])
+        /** @param answeredId - the card you answered in the detail: it leaves, so the pile takes the focus. */
+        const onClose = React.useCallback((returnFocus, answeredId) => {
+          setFocusId(returnFocus && answeredId === undefined ? drawnOpen.current : null)
+          if (answeredId !== undefined) {
+            setAnswered((current) => [...current, answeredId])
+            scroller.current?.focus({ preventScroll: true })
+          }
+          setOpenId(null)
+        }, [])
+        if (!sessionId || sessionId !== state.sessionId) return null
+        const title = t('pileTitle', { count: live.length })
+        const grantsTitle = t('grantsTitle', { count: liveGrants.length })
+        return h(Reveal, { shown: live.length > 0 || liveGrants.length > 0 },
+          h('section', { ref: scroller, tabIndex: -1, className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'data-fishball-pile': live.length, 'data-fishball-grants': liveGrants.length, 'data-fishball-pile-open': open ?? undefined },
+            h(Reveal, { shown: live.length > 0 }, h('section', { 'aria-label': title },
+              h('div', { className: CLS.pileHead }, title),
+              h('ul', { className: CLS.entries }, cards.map(({ item: card, leaving }) => h(PileEntry, { key: card.requestId, card, t, leaving, listShown: open === null, isOpen: open === card.requestId, onOpen, onClose, focus: open === null && focusId === card.requestId }))))),
+            h(Reveal, { shown: liveGrants.length > 0 && open === null }, h('section', { 'aria-label': grantsTitle },
+              h('div', { className: CLS.pileHead }, grantsTitle),
+              h('ul', { className: CLS.entries }, grants.map(({ item: grant, leaving }) => h(Reveal, { as: 'li', key: grant.grantId, shown: !leaving, 'data-fishball-grant': grant.grantId }, h(GrantRow, { grant, t }))))))))
       }
     }
 
