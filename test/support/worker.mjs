@@ -277,6 +277,15 @@ function startProbe({ rename = null, steer = false, flush = null }) {
   return true
 }
 
+/** Half-made start_session: failing attaches seen, and the undo of each replaced attachSession / sessionController.create. */
+const attachCalls = []
+const attachUndo = new Map()
+const createUndo = []
+const createdByWrapper = []
+/** Revision 11 R3: the undo of a failing store table, and the writes it saw. */
+const storeUndo = []
+const storeWriteCalls = []
+
 const tags = new WeakMap()
 let tagCounter = 0
 const tagOf = (agent) => { if (!tags.has(agent)) tags.set(agent, 'agent-' + ++tagCounter); return tags.get(agent) }
@@ -730,6 +739,95 @@ const ops = {
   loggedProblems({ since = 0 } = {}) { return logged.slice(since) },
   /** Whether the host has a sessionTitle service. */
   hasSessionTitle() { return Boolean(ctx.get('sessionTitle')) },
+
+  // ---- read_session roles and half-made start_session operations ----
+  /**
+   * Append a user/message straight into a live session's log, without a turn: the way to reach sources a steer cannot
+   * carry. `omitSource` leaves the source out altogether (DSH's steer path crashes on a message with no source, so this
+   * is the only way to get one into a log); `text: ''` gives a message with no content blocks.
+   */
+  injectUserMessage({ sessionId, text, source, omitSource = false }) {
+    const message = createUserMessage({ content: text === '' ? [] : [{ type: 'text', text }], ...(omitSource ? {} : { source }) })
+    // surfaceOp 'append' is the marker DSH requires on every message event that adds to the conversation.
+    liveAgent(sessionId).session.append('user/message', message, { surfaceOp: 'append' })
+    return true
+  },
+  /**
+   * start_session, half-made: make adding a session to one workspace fail. DSH's own sessionController.create then
+   * creates the session and throws its real `session/workspace-attach-failed` (details {sessionId, workspaceId}).
+   * The failing attach is recorded in attachCalls; the session is NOT added to the workspace.
+   */
+  failAttach({ workspaceId, on = true }) {
+    const workspace = ctx.workspaceRegistry.get(workspaceId)
+    if (!workspace) throw new Error('no workspace ' + workspaceId)
+    const undo = attachUndo.get(workspaceId)
+    if (undo) { undo(); attachUndo.delete(workspaceId) }
+    if (!on) return true
+    const own = Object.getOwnPropertyDescriptor(workspace, 'attachSession')
+    workspace.attachSession = async function (sessionId) {
+      attachCalls.push({ workspaceId, sessionId })
+      throw new Error('fbtest: attach failed')
+    }
+    attachUndo.set(workspaceId, () => { if (own) Object.defineProperty(workspace, 'attachSession', own); else delete workspace.attachSession })
+    return true
+  },
+  attachCalls() { return attachCalls },
+  /**
+   * start_session, other failures: replace sessionController.create with one that throws an error with this code and
+   * details (details may be left out). With createFirst it really creates the session through DSH's own create first
+   * and merges that session's id into the details ({sessionId, ...details}), as DSH's attach failure does; the ids it
+   * created are listed by createdByWrapper. A call with no code restores DSH's own create.
+   */
+  failCreate({ code, details, message = 'fbtest: create failed', createFirst = false } = {}) {
+    const controller = ctx.sessionController
+    createUndo.splice(0).forEach((undo) => undo())
+    if (code === undefined) return true
+    const own = Object.getOwnPropertyDescriptor(controller, 'create')
+    const original = controller.create
+    controller.create = async function (request, ...rest) {
+      let sessionId
+      if (createFirst) {
+        sessionId = (await original.call(this, request, ...rest)).sessionId
+        createdByWrapper.push(sessionId)
+      }
+      const merged = createFirst ? { sessionId, ...details } : details
+      throw Object.assign(new Error(message), { code, ...(merged === undefined ? {} : { details: merged }) })
+    }
+    createUndo.push(() => { if (own) Object.defineProperty(controller, 'create', own); else delete controller.create })
+    return true
+  },
+  createdByWrapper() { return createdByWrapper },
+
+  // ---- Revision 11 R3: start_session and the managed list ----
+  /**
+   * Make writes to one table of Fishball's own store (domain `fishball`, e.g. the `managed` registry) fail, without
+   * touching its other tables: DSH's storage-domain facility keeps the open domain, and the table handle is the one
+   * object Fishball writes through. mode 'reject': put and update reject before anything is stored, so the record is
+   * not made. mode 'after': the write is stored (the handle's own put/update run to the end) and then the call
+   * rejects, as when something after a successful write throws. mode null restores the handle. `storeWriteCalls` lists
+   * the writes attempted while armed (table, key).
+   */
+  failStoreTable({ table = 'managed', mode = null }) {
+    const handle = ctx.storageDomain.get('fishball')?.table(table)
+    if (!handle) throw new Error('no open fishball domain table ' + table)
+    storeUndo.splice(0).forEach((undo) => undo())
+    if (!mode) return true
+    for (const method of ['put', 'update']) {
+      const own = Object.getOwnPropertyDescriptor(handle, method)
+      const original = handle[method]
+      handle[method] = async function (key, ...rest) {
+        storeWriteCalls.push({ table, key, method, at: Date.now() })
+        if (mode === 'reject') throw new Error('fbtest: store write failed')
+        await original.call(this, key, ...rest)
+        throw new Error('fbtest: failed after the store was written')
+      }
+      storeUndo.push(() => { if (own) Object.defineProperty(handle, method, own); else delete handle[method] })
+    }
+    return true
+  },
+  storeWriteCalls() { return storeWriteCalls },
+  /** The record of one table of Fishball's store as the open domain holds it (null when absent). */
+  storeRecord({ table, key }) { const r = ctx.storageDomain.get('fishball')?.table(table)?.get(key); return r === undefined ? null : JSON.parse(JSON.stringify(r)) },
 
   // ---- Revision 10a operations (Install for Fishball) ----
   /** DSH's install progress events seen on the host bus, optionally for one request id. */
