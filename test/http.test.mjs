@@ -21,7 +21,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, CATALOG_KEYS, CONFLICT_CODE, LIMITS, MS, PREFERENCES, STATE_HIDDEN_TOOLS, STATE_KEYS, STATUS } from './support/constants.mjs'
+import { API, CATALOG_KEYS, CONFLICT_CODE, LIMITS, LIMITS_R11, LIMITS_R11B, LIMITS_R11C, MS, PREFERENCES, STATE_HIDDEN_TOOLS, STATE_KEYS, STATE_KEYS_OPTIONAL, STATUS } from './support/constants.mjs'
 import { HOOK, T } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
@@ -43,14 +43,15 @@ describe('R-HTTP', () => {
     assert.equal(res.status, 200)
     assert.match(res.contentType, /^application\/json/)
     const s = res.json
-    assert.deepEqual(Object.keys(s).sort(), STATE_KEYS)
+    assert.deepEqual(Object.keys(s).filter((k) => !STATE_KEYS_OPTIONAL.includes(k)).sort(), STATE_KEYS)
     assert.ok(Object.values(STATUS).includes(s.status))
     assert.equal(s.status, STATUS.live)
     assert.equal(typeof s.sessionId, 'string')
     assert.equal(s.workspaceId, null)
     assert.equal(typeof s.cwd, 'string')
     assert.equal(s.error, null)
-    assert.deepEqual(Object.keys(s.limits).sort(), Object.keys(LIMITS).sort())
+    // rev11-limits: the 12 original limit fields plus the 16 moved from constants (DESIGN §16, §3 `Config`); rev11b adds 2.
+    assert.deepEqual(Object.keys(s.limits).sort(), Object.keys({ ...LIMITS, ...LIMITS_R11, ...LIMITS_R11B, ...LIMITS_R11C }).sort())
     for (const v of Object.values(s.limits)) assert.ok(Number.isInteger(v))
     assert.deepEqual(Object.keys(s.catalog ?? {}).sort(), CATALOG_KEYS, 'catalog is not null while live')
     // Brand icon feature: preferences = {brandStyle}, 'fishball' by default.
@@ -86,7 +87,7 @@ describe('R-HTTP', () => {
       assert.equal(r.ok, true, JSON.stringify(r.error))
       const changed = await until(() => stream.frames.slice(count).find((f) => f.limits?.maxActiveWatches === 7), MS.sseChange, 20)
       assert.ok(changed, 'a frame with the new limit arrives')
-      assert.deepEqual(Object.keys(changed).sort(), STATE_KEYS)
+      assert.deepEqual(Object.keys(changed).filter((k) => !STATE_KEYS_OPTIONAL.includes(k)).sort(), STATE_KEYS)
     } finally {
       stream.close()
       await host.call('settingsUpdate', { patch: { maxActiveWatches: LIMITS.maxActiveWatches.default } })

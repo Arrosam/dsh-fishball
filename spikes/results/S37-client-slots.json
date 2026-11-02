@@ -1,0 +1,84 @@
+{
+  "id": "S37-client-slots",
+  "date": "2026-11-01",
+  "runtimes": ["0.2.1-rc.2", "0.2.1-rc.3"],
+  "server": "spikes/s37-client-slots-server.mjs",
+  "fixture": "spikes/fixtures/client-slots",
+  "browser": "Claude desktop browser pane (Chromium), 800x600, light and dark via prefers-color-scheme emulation",
+  "verdict": "pass-with-amendment",
+  "questions": {
+    "Q1-ask-fishball-buttons": {
+      "verdict": "pass",
+      "extensionPoint": "tool.call.toolview, key 'ask_fishball' (keyed; ui-tool dispatches every atomic call by wire tool name)",
+      "observed": {
+        "runningPhase": "start",
+        "allowRejectShownWhileRunning": true,
+        "allowOncePost": { "path": "/api/s37/answer", "status": 200 },
+        "afterAllow": { "phase": "result", "rowText": "allowed once by the user", "pileCards": "4 -> 3" },
+        "stopButton": { "phase": "result", "rowText": "Error: tool call aborted", "pileCards": "4 -> 3", "how": "the tool body listens to exec.signal" },
+        "argsLocation": { "start": "block.argsRaw", "result": "block.call.argsRaw" },
+        "props": ["block", "callId", "cwd", "home", "inputActions", "inspect", "loadImage", "openFile", "phase", "renderFactorySlot", "sessionId", "t", "toolName", "useAccess", "useChat", "useConversation", "useDisclosure", "useInput", "usePanelInfo", "useProjection", "useRemoteAccess", "useResource", "useSession", "useSessionAccess", "useSessionRetainInfo", "useSessionStatus", "useSessions", "useTrajectory", "useWorkspaceAccess", "useWorkspaces"]
+      },
+      "screenshots": ["S37/ask-row-running-dark.jpg", "S37/ask-row-running-light.jpg"]
+    },
+    "Q2-asked-fishball-tags": {
+      "verdict": "pass-with-amendment",
+      "askUserQuestion": {
+        "extensionPoint": "tool.call.toolview, key 'ask_user_question', priority -1, rendering the next occupant (DSH's question row) then the tag (messenger S25 pattern)",
+        "nextOccupantFound": true,
+        "tagText": "Asked Fishball  date-fns (Recommended)",
+        "visibility": "inside the settled turn's collapsed 'Asked questions' group: shown once the user expands 'Completed in …' and the group"
+      },
+      "planReview": {
+        "tried": {
+          "conversation.chat.node key 'tool-call' at priority -1": "fail: the occupant renders (name exit_plan_mode, callId call_plan_1, next occupant found) but its output never reaches the visible chat row; neither a fragment nor a wrapper element appeared in the DOM",
+          "tool.call.toolview key 'exit_plan_mode'": "works, but DSH registers no view for this key (it renders through ui-tool's private GenericToolCard), so Fishball's row would replace DSH's row in every session",
+          "conversation.chat.turnTail (list)": "pass: the tag shows in the turn beside DSH's plan card, without expanding anything"
+        },
+        "extensionPoint": "conversation.chat.turnTail",
+        "turnProps": { "keys": ["data", "end", "start", "status", "steps", "turn"], "note": "a turn carries start/end seq, not its call ids, so each tag must carry its tool/call event seq" },
+        "tagText": "Asked Fishball  Approve"
+      },
+      "hostFindings": {
+        "untimedQuestionHasNoCallId": "a non-timed ask_user_question reaches user-questions/request with no wait.callId; the fixture mapped the call id itself (S36 owns how the build finds it)",
+        "planReviewCarriesCallId": "the plan-review intent carries callId (intent: {kind: 'plan-review', approve: 'Approve', callId})",
+        "planModeEntry": "plan mode is mounted per agent preset; the fixture entered it with ctx.commands.execute(agent, '/plan', …)"
+      },
+      "screenshots": ["S37/question-tag-dark.jpg", "S37/question-tag-light.jpg", "S37/plan-tag-tail-dark.jpg", "S37/plan-tag-tail-light.jpg", "S37/plan-tag-own-row-dark.jpg", "S37/plan-tag-node-fails-dark.jpg"]
+    },
+    "Q3-pile-above-composer": {
+      "verdict": "pass",
+      "extensionPoint": "conversation.input.dock (list, session scope: 'Full-width entries above the composer card', where DSH's Todo and Queue docks live)",
+      "observed": {
+        "renderedOnlyInFishballSession": true,
+        "count": "4 (two live ask_fishball calls, one question card, one Fishball add_plugin card)",
+        "liveUpdate": "server-sent snapshots; count went 4 -> 3 when a card was answered in its own session and when a session was stopped",
+        "cardContents": ["session", "kind tag", "tool", "exact arguments", "reason", "Fishball's note", "Details toggle: quoted user messages and discussion thread", "note field", "Allow once / Reject"],
+        "props": ["input", "inputActions", "renderFactorySlot", "session", "sessionId", "t", "useAccess", "useChat", "useConversation", "useInput", "usePanelInfo", "useProjection", "useRemoteAccess", "useResource", "useSession", "useSessionAccess", "useSessionRetainInfo", "useSessionStatus", "useSessions", "useTrajectory", "useWorkspaceAccess", "useWorkspaces"]
+      },
+      "screenshots": ["S37/pile-dark.jpg", "S37/pile-details-dark.jpg", "S37/pile-details-light.jpg", "S37/pile-dark-rc3.jpg"]
+    },
+    "Q4-hand-over-take-back": {
+      "verdict": "pass",
+      "extensionPoints": ["sidebar.workspaces.session.menu.item", "conversation.session.header.actions"],
+      "observed": {
+        "menuOnUsersSession": "Hand over to Fishball",
+        "menuOnManagedSession": "Take back from Fishball",
+        "handOverPost": { "path": "/api/s37/manage", "body": { "managed": true }, "status": 200, "headerAfter": "Take back from Fishball" },
+        "takeBackPost": { "path": "/api/s37/manage", "body": { "managed": false }, "status": 200, "headerAfter": "Hand over to Fishball" },
+        "hiddenInFishballSession": true,
+        "menuProps": ["displayTitle", "renderFactorySlot", "sessionId", "t", "useMenuOpenState", "usePanelInfo", "useRemoteAccess", "useResource", "useSessionAccess", "useSessionRetainInfo", "useSessionStatus", "useSessions", "useShortcuts", "useWorkspaceAccess", "useWorkspaces"]
+      },
+      "screenshots": ["S37/hand-over-menu-dark.jpg", "S37/take-back-menu-light.jpg"]
+    }
+  },
+  "rc3": {
+    "askRow": { "phase": "start", "buttons": true },
+    "questionTag": "Asked Fishball  date-fns (Recommended)",
+    "planTagTail": "Asked Fishball  Approve",
+    "planTagNode": "absent (same failure as rc.2)",
+    "header": "Hand over to Fishball",
+    "pileCount": "4"
+  },
+  "primitives": { "count": 288, "Button": true, "Tag": true, "MenuItemButton": true, "DisclosureRow": true, "ToolRow": false }
+}

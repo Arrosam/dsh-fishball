@@ -19,7 +19,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, AUTHOR_KIND, ELLIPSIS, FORWARD_ANSWER_MAX_BYTES, FORWARD_HEADER, FORWARD_SUMMARY, IDENTITY, LIMITS, NOTE_PREFIX, NO_NOTE, NOTICE, P5_CODE, PRESET, STATE_KEYS, STATUS, STORE } from './support/constants.mjs'
+import { API, AUTHOR_KIND, ELLIPSIS, FORWARD_ANSWER_MAX_BYTES, FORWARD_HEADER, FORWARD_SUMMARY, IDENTITY, LIMITS, NOTE_PREFIX, NO_NOTE, NOTICE, P5_CODE, PRESET, STATE_KEYS, STATE_KEYS_OPTIONAL, STATUS, STORE } from './support/constants.mjs'
 import { HOOK, T, fishballMessages, sessionAuthor, intakeNow, settledIdle, turn, untilSeen, untrustedBlock } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, until } from './support/host.mjs'
 
@@ -53,7 +53,7 @@ describe('P5 Send to Fishball', () => {
     const res = await send({ sessionId: target, note })
     assert.equal(res.status, 200, res.text)
     assert.equal(res.json?.ok, true)
-    assert.deepEqual(Object.keys(res.json.state ?? {}).sort(), STATE_KEYS)
+    assert.deepEqual(Object.keys(res.json.state ?? {}).filter((k) => !STATE_KEYS_OPTIONAL.includes(k)).sort(), STATE_KEYS)
     assert.ok(await untilSeen(host, fb, last), 'Fishball read the forward')
     const got = await forwardsWith(last)
     assert.equal(got.length, 1)

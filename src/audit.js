@@ -4,6 +4,8 @@
  * age; a per-process counter keeps two entries of one millisecond apart.
  */
 import { compoundKey } from './keys.js'
+import { DECISION_OK } from './constants.js'
+import { diagnosticOf } from './errors.js'
 
 /** Width of the counter segment (sorts as text). */
 const SEQ_DIGITS = 8
@@ -47,5 +49,19 @@ export class AuditLog {
     let count = 0
     for (const [, record] of this.#table().entries()) if (record.at >= since && filter(record)) count++
     return count
+  }
+}
+
+/**
+ * Append one row to Fishball's `decisions` audit (§9). The reason is trimmed and cut to
+ * `rationaleChars`, and left out when empty. A failed write is logged: the decision itself stands.
+ * @param log - AuditLog over store.decisions. @param logger - plugin logger.
+ */
+export async function recordDecision(log, logger, { action, sessionId, by, reason, rationaleChars, outcome = DECISION_OK }) {
+  const rationale = typeof reason === 'string' ? reason.trim().slice(0, rationaleChars) : ''
+  try {
+    await log.append({ action, sessionId, by, ...(rationale ? { rationale } : {}), at: new Date().toISOString(), outcome }, [action])
+  } catch (error) {
+    logger.warn('decision audit failed (%s)', diagnosticOf(error))
   }
 }

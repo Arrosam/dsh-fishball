@@ -13,6 +13,17 @@
  * POST send                   -> { sessionId: string, note: string } ("Send to Fishball", DESIGN §5b)
  * POST watches                -> { sessionId: string } ("Tell Fishball when finished", DESIGN §5c)
  * POST watches/remove         -> { watchId: string }
+ * POST managed                -> { sessionId: string, managed: boolean } (Hand over / Take back,
+ *                                DESIGN §10e); 409 unknown-session, is-fishball, feature-off
+ * POST requests/answer        -> { requestId: string, decision: 'allow' | 'reject', note?: string } (your
+ *                                answer on a card, DESIGN §10e); 409 expired, too-large
+ * POST grants/revoke          -> { grantId: string } (your Revoke on a standing grant, DESIGN §10e);
+ *                                409 unknown, ended
+ * POST questions/answer       -> { questionId, answers: [{ id, selected, custom? }] } for a question, or
+ *                                { questionId, approve?: boolean, feedback?: string } for a plan review
+ *                                (your answer on a question card, rev11g); 400 bad-answer with `reason`;
+ *                                409 expired, already-settled, session-not-live
+ * POST question-mode          -> { mode: 'auto' | 'fishball' | 'user' } (who answers managed sessions' questions)
  * POST read                   -> {} (Fishball's chat is on screen: its unread replies are read)
  * POST brand                  -> { style: 'fishball' | 'deepseek' } (the sidebar brand icon, DESIGN §10)
  * GET  messenger/client.js    -> the Messenger look's browser file (DESIGN §10c)
@@ -26,11 +37,13 @@
  *                                400 invalid with `path`; 409 unknown, shared-with-dsh, no-settings
  */
 import { isSettingInput } from './context-window.js'
-import { API, API_CODE, BRAND_STYLE, HTTP, HTTP_METHOD, PLUGIN_MANAGER, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
+import { API, API_CODE, BRAND_STYLE, CARD_DECISION, HTTP, HTTP_METHOD, PLUGIN_MANAGER, QUESTION_MODE, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
 import { LifecycleStateError } from './errors.js'
 
 const ACTIONS = new Set(Object.values(RECOVERY_ACTION))
 const BRAND_STYLES = new Set(Object.values(BRAND_STYLE))
+const CARD_DECISIONS = new Set(Object.values(CARD_DECISION))
+const QUESTION_MODES = new Set(Object.values(QUESTION_MODE))
 const json = (status, payload) => new Response(JSON.stringify(payload), { status, headers: RESPONSE_HEADERS.json })
 /** A refused command: 409 unless the error names another status, with its extra fields (an invalid setting's path). */
 const refusal = (error) => json(error.status ?? HTTP.conflict, { ok: false, code: error.code, ...error.fields })
@@ -52,6 +65,18 @@ const BODY = Object.freeze({
   unwatch: (body) => (isRecord(body) && isName(body.watchId) ? { watchId: body.watchId } : undefined),
   brand: (body) => (isRecord(body) && BRAND_STYLES.has(body.style) ? body.style : undefined),
   read: (body) => (isRecord(body) ? {} : undefined),
+  managed: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.managed === 'boolean' ? { sessionId: body.sessionId, managed: body.managed } : undefined),
+  // An empty note is no note.
+  requestAnswer: (body) => (isRecord(body) && isName(body.requestId) && CARD_DECISIONS.has(body.decision) && (body.note === undefined || typeof body.note === 'string')
+    ? { requestId: body.requestId, decision: body.decision, ...(isText(body.note) ? { note: body.note.trim() } : {}) }
+    : undefined),
+  grantRevoke: (body) => (isRecord(body) && isName(body.grantId) ? { grantId: body.grantId } : undefined),
+  // Only the shape here: whether the batch fits the question is the router's check (answer_question's own).
+  questionAnswer: (body) => (isRecord(body) && isName(body.questionId) && (body.answers === undefined || Array.isArray(body.answers))
+    && (body.approve === undefined || typeof body.approve === 'boolean') && (body.feedback === undefined || typeof body.feedback === 'string')
+    ? { questionId: body.questionId, answers: body.answers, approve: body.approve, feedback: body.feedback }
+    : undefined),
+  questionMode: (body) => (isRecord(body) && QUESTION_MODES.has(body.mode) ? body.mode : undefined),
   send: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.note === 'string' ? { sessionId: body.sessionId, note: body.note } : undefined),
   installSpec: (body) => (isRecord(body) && isText(body.spec) ? body.spec.trim() : undefined),
   install: (body) => (isRecord(body) && isText(body.spec) && isName(body.requestId)
@@ -74,7 +99,9 @@ const BODY = Object.freeze({
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on), removePlugin(plugin),
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
- *   addWatch({ sessionId }), removeWatch({ watchId }), markRead(), setBrandStyle(style), messengerScript(),
+ *   addWatch({ sessionId }), removeWatch({ watchId }), setManaged({ sessionId, managed }),
+ *   answerRequest({ requestId, decision, note? }), revokeGrant({ grantId }), answerQuestion({ questionId, answers?, approve?, feedback? }),
+ *   setQuestionMode(mode), markRead(), setBrandStyle(style), messengerScript(),
  *   pluginDetail(plugin), pluginIcon(plugin), saveSettings({ plugin, row, values, reset }), inspectInstall(spec),
  *   install({ spec, requestId, approvedBuilds }), cancelInstall(requestId), refreshPlugins() }; the commands reject
  *   LifecycleStateError for a refusal (409 unless it names another status); messengerScript resolves the
@@ -170,6 +197,11 @@ export function registerRoutes(ctx, state) {
     { path: API.contextWindow, methods: [HTTP_METHOD.post], fetch: command(BODY.contextWindow, (setting) => state.setContextWindow(setting)) },
     { path: API.send, methods: [HTTP_METHOD.post], fetch: command(BODY.send, (input) => state.send(input)) },
     { path: API.watches, methods: [HTTP_METHOD.post], fetch: command(BODY.watch, (input) => state.addWatch(input)) },
+    { path: API.managed, methods: [HTTP_METHOD.post], fetch: command(BODY.managed, (input) => state.setManaged(input)) },
+    { path: API.requestsAnswer, methods: [HTTP_METHOD.post], fetch: command(BODY.requestAnswer, (input) => state.answerRequest(input)) },
+    { path: API.grantsRevoke, methods: [HTTP_METHOD.post], fetch: command(BODY.grantRevoke, (input) => state.revokeGrant(input)) },
+    { path: API.questionsAnswer, methods: [HTTP_METHOD.post], fetch: command(BODY.questionAnswer, (input) => state.answerQuestion(input)) },
+    { path: API.questionMode, methods: [HTTP_METHOD.post], fetch: command(BODY.questionMode, (mode) => state.setQuestionMode(mode)) },
     { path: API.brand, methods: [HTTP_METHOD.post], fetch: command(BODY.brand, (style) => state.setBrandStyle(style)) },
     { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
     { path: API.read, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markRead()) },

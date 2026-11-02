@@ -41,6 +41,7 @@ const { loadLayeredEnv } = await hostPkg('dsh-app-boot')
 const { createUserMessage } = await hostPkg('dsh-llm')
 const { setSandboxMode } = await hostPkg('dsh-sandbox-policy')
 const { WorkspaceActiveSessionError } = await hostPkg('dsh-workspace')
+const { SessionTitleInvalidError } = await hostPkg('dsh-session-title')
 const { model } = await import(pathToFileURL(FAKE_LLM_MODULE).href)
 
 /** Add one linked bundle to the profile, as a user-installed plugin would be; enabled=false leaves it installed but off. */
@@ -115,10 +116,15 @@ fs.writeFileSync(overlay, JSON.stringify([
   // P11: FBTEST_TITLE_MAX_BYTES raises DSH's title byte cap (80 in dsh-base), so a test can give a session a title
   // longer than the 200-byte author-name bound. The other two fields repeat dsh-base's values.
   ...(process.env.FBTEST_TITLE_MAX_BYTES ? [{ id: 'session-title', config: { fallbackMaxWords: 5, fallbackMaxBytes: 40, maxTitleBytes: Number(process.env.FBTEST_TITLE_MAX_BYTES) } }] : []),
+  // start_session titles: FBTEST_NO_SESSION_TITLE boots DSH without its session-title row, so no sessionTitle service exists.
+  ...(process.env.FBTEST_NO_SESSION_TITLE === '1' ? [{ id: 'session-title', disabled: true }] : []),
   { insert: [
     { id: 'fbtest-llm', name: FAKE_LLM_MODULE },
     // An ordinary preset with no tools of its own, so the global fixture tools are what its sessions see.
     { id: 'preset-fbtest-bare', name: '@deepseek-ai/dsh-agent-preset', config: { id: PRESET.bare, order: 90, plugins: [{ id: 'time-context', name: '@deepseek-ai/dsh-time-context' }] } },
+    // rev11g: ordinary presets whose sessions can ask the user questions (ask_user_question: blocking, as the shipped presets, or timed).
+    { id: 'preset-fbtest-ask', name: '@deepseek-ai/dsh-agent-preset', config: { id: PRESET.ask, order: 91, plugins: [{ id: 'time-context', name: '@deepseek-ai/dsh-time-context' }, { id: 'tool-ask-user', name: '@deepseek-ai/dsh-tool-ask-user' }] } },
+    { id: 'preset-fbtest-ask-timed', name: '@deepseek-ai/dsh-agent-preset', config: { id: PRESET.askTimed, order: 92, plugins: [{ id: 'time-context', name: '@deepseek-ai/dsh-time-context' }, { id: 'tool-ask-user', name: '@deepseek-ai/dsh-tool-ask-user', config: { mode: 'timed', timeout: 120 } }] } },
     // Post-review change 11: host rows whose ids look like private-tree ids.
     ...(process.env.FBTEST_SPOOF_ROWS === '1' ? SPOOF_ROWS.map((r) => ({ id: r.id, name: SPOOF_MODULE, config: { tool: r.tool } })) : []),
     // P8: a plain host row (no catalog plugin owns it) that uses ctx.fishball.
@@ -127,6 +133,18 @@ fs.writeFileSync(overlay, JSON.stringify([
 ], null, 2))
 
 const { ctx, shutdown } = await runProfile({ environment: loadLayeredEnv('dsh'), profile: PROFILE, patchFiles: [overlay], args: ['--no-open', '--port', '0'] })
+
+/**
+ * Warnings and errors DSH's logger saw (the same exporter hook DSH's own boot diagnostics use), so a test can check
+ * that a problem was logged. DSH_HOME test hosts print nothing to stdout for them.
+ */
+const logged = []
+ctx.logger.exporter({
+  levels: { default: 2 },
+  export: ({ ts, name, type, args }) => {
+    if (type === 'warn' || type === 'error') logged.push({ at: ts, name, type, text: args.map((a) => (a instanceof Error ? a.message : String(a))).join(' ') })
+  },
+})
 
 /**
  * Scripted approver standing in for the person at DSH's stock prompt: a prepended
@@ -138,10 +156,19 @@ const approver = { outcome: process.env.FBTEST_APPROVAL ?? OUTCOME.reject, queue
 function answerQuestion(req) {
   // A queued answer (one per question, in order) wins over the standing outcome.
   const answer = approver.queue.length > 0 ? approver.queue.shift() : approver.outcome
-  approver.seen.push({ sessionId: req.agent?.id ?? null, toolName: req.toolName, callId: req.callId ?? null, reason: req.reason ?? null, answered: answer, at: Date.now() })
+  const entry = { sessionId: req.agent?.id ?? null, toolName: req.toolName, callId: req.callId ?? null, reason: req.reason ?? null, answered: answer, at: Date.now() }
+  // rev11e: the prompt's close signal, kept off the wire; approvals() reports it as `closed` (a showing stock prompt is closed when its signal aborts, S33).
+  Object.defineProperty(entry, 'signal', { value: req.signal, enumerable: false })
+  approver.seen.push(entry)
   if (answer === APPROVER_THROWS) throw new Error('fbtest approver failed')
   // Hold the question open until the test calls releaseApproval (a person who has not clicked yet).
-  if (answer === APPROVER_HOLDS) return new Promise((resolve) => approver.held.push(resolve))
+  // rev11e: a held prompt that is closed (its signal aborts: a plugin answer or a stopped turn) leaves the held list, as a closed browser prompt does.
+  if (answer === APPROVER_HOLDS) {
+    return new Promise((resolve) => {
+      approver.held.push(resolve)
+      req.signal?.addEventListener('abort', () => { const i = approver.held.indexOf(resolve); if (i >= 0) approver.held.splice(i, 1) }, { once: true })
+    })
+  }
   return answer
 }
 /**
@@ -188,6 +215,77 @@ for (const type of [INSTALL_EVENTS.state, INSTALL_EVENTS.log]) {
   })
 }
 
+/**
+ * start_session titles: the probe records, in order, the host calls a started session goes through (the
+ * session-title service's rename, the first steer into the new agent, the new session's flushes) and can
+ * make one of them fail. It only touches sessions created while it is armed, never Fishball's own.
+ */
+const probe = { active: false, events: [], undo: [] }
+function stopProbe() {
+  probe.active = false
+  for (const undo of probe.undo.splice(0).reverse()) undo()
+}
+function startProbe({ rename = null, steer = false, flush = null }) {
+  stopProbe()
+  probe.events = []
+  probe.active = true
+  const created = new Set()
+  const steered = new Set()
+  const flushFailed = new Set()
+  const titles = ctx.get('sessionTitle')
+  if (titles) {
+    const original = titles.rename
+    titles.rename = function (session, title) {
+      const event = { type: 'rename', at: Date.now(), sessionId: session?.id ?? null, title, liveSession: session === ctx.sessions.get(session?.id) }
+      probe.events.push(event)
+      if (rename === 'invalid') throw new SessionTitleInvalidError('fbtest: the title has no visible characters')
+      if (rename === 'fail') throw new Error('fbtest: rename failed')
+      const snapshot = original.call(this, session, title)
+      event.returned = snapshot?.title ?? null
+      return snapshot
+    }
+    probe.undo.push(() => { delete titles.rename })
+  }
+  probe.undo.push(ctx.on('agent/created', ({ agent }) => {
+    created.add(agent.id)
+    const original = agent.steer
+    agent.steer = function (message, ...rest) {
+      if (probe.active) {
+        probe.events.push({ type: 'steer', at: Date.now(), sessionId: agent.id, source: JSON.parse(JSON.stringify(message?.source ?? null)) })
+        steered.add(agent.id)
+        if (steer) throw new Error('fbtest: steer failed')
+      }
+      return original.call(this, message, ...rest)
+    }
+  }))
+  const sessions = ctx.sessions
+  const originalFlush = sessions.flush
+  sessions.flush = async function (session, ...rest) {
+    if (probe.active && created.has(session?.id)) {
+      probe.events.push({ type: 'flush', at: Date.now(), sessionId: session.id })
+      // Only the first flush after the first steer fails: the unconfirmed case is a message that was delivered but not
+      // committed. Failing every later flush would also break the new session's own turn (its per-request barrier).
+      if (flush && steered.has(session.id) && !flushFailed.has(session.id)) {
+        flushFailed.add(session.id)
+        if (flush === 'throw') throw new Error('fbtest: flush failed')
+        return false
+      }
+    }
+    return originalFlush.call(this, session, ...rest)
+  }
+  probe.undo.push(() => { delete sessions.flush })
+  return true
+}
+
+/** Half-made start_session: failing attaches seen, and the undo of each replaced attachSession / sessionController.create. */
+const attachCalls = []
+const attachUndo = new Map()
+const createUndo = []
+const createdByWrapper = []
+/** Revision 11 R3: the undo of a failing store table, and the writes it saw. */
+const storeUndo = []
+const storeWriteCalls = []
+
 const tags = new WeakMap()
 let tagCounter = 0
 const tagOf = (agent) => { if (!tags.has(agent)) tags.set(agent, 'agent-' + ++tagCounter); return tags.get(agent) }
@@ -196,6 +294,8 @@ const serviceDisposers = new Map()
 const scopedDisposers = new Map()
 /** P8: sources registered through sourceRegister, by key. */
 const sources = new Map()
+/** Revision 11 rev11a: agent handles of sessions made with createKept, by session id. */
+const keptHandles = new Map()
 const errorInfo = (e) => ({ name: e?.name ?? null, ctor: e?.constructor?.name ?? null, code: e?.code ?? null, message: String(e?.message ?? e).slice(0, 400) })
 
 function liveAgent(sessionId) {
@@ -207,6 +307,9 @@ function liveAgent(sessionId) {
 /** JSON-safe summary of one session event. */
 function eventSummary(e) {
   const out = { type: e.type }
+  // rev11g: the event's own sequence number when it has one, and a tool call's name and id (to place a tag record in its turn).
+  out.seq = e.seq ?? null
+  if (e.type === 'tool/call') { out.callId = e.data?.callId ?? null; out.name = e.data?.name ?? null }
   if (e.type === 'user/message') { out.source = e.data?.source ?? e.data?.message?.source ?? null; out.text = textOf(e.data?.content ?? e.data?.message?.content).slice(0, 12000); out.textLength = textOf(e.data?.content ?? e.data?.message?.content).length }
   if (e.type === 'sandbox/mode') out.mode = e.data?.mode
   if (e.type === 'tool/result') out.result = { callId: e.data.message.toolCallId ?? e.data.message.callId, isError: e.data.message.isError, text: textOf(e.data.message.content).slice(0, 400000) }
@@ -370,7 +473,7 @@ const ops = {
   releaseApproval({ outcome }) { const resolve = approver.held.shift(); resolve?.(outcome); return Boolean(resolve) },
   heldApprovals() { return approver.held.length },
   setApprover({ outcome, queue = [] }) { approver.outcome = outcome; approver.queue = [...queue]; return outcome },
-  approvals({ sessionId } = {}) { return approver.seen.filter((a) => !sessionId || a.sessionId === sessionId) },
+  approvals({ sessionId } = {}) { return approver.seen.filter((a) => !sessionId || a.sessionId === sessionId).map((a) => ({ ...a, closed: Boolean(a.signal?.aborted) })) },
   agentScoped() { return store.agentScoped ?? [] },
   bundleEvents({ bundle } = {}) { return store.bundleEvents.filter((e) => !bundle || e.bundle === bundle) },
 
@@ -516,6 +619,39 @@ const ops = {
     store.askInNewAgentsOff = on ? ctx.on('agent/created', ({ agent }) => { try { ctx.get('approval').setPolicy(agent, 'ask') } catch (e) { store.registerErrors.push({ name: 'askInNewAgents', error: String(e?.message ?? e) }) } }) : undefined
     return true
   },
+  // ---- rev11g operations (questions and plan reviews) ----
+  /** Let Fishball's model answer the next question notice whose text contains needle with answer_question(args). */
+  planQuestion({ sessionId, needle, args, callId }) { model.questionPlans.push({ sessionId, needle, args, callId, used: null }); return true },
+  questionPlanState() { return model.questionPlans.map((p) => ({ needle: p.needle, callId: p.callId, used: p.used })) },
+  /** The browser stand-in's cards (the session's own question cards), oldest first. */
+  qCards({ sessionId } = {}) { return JSON.parse(JSON.stringify((store.qCards ?? []).filter((c) => !sessionId || c.sessionId === sessionId))) },
+  /** Your answer in the session's own card: the newest open card of the session (or the card at index). */
+  qAnswer({ sessionId, index, answers }) {
+    const card = index !== undefined ? store.qCards[index] : [...(store.qCards ?? [])].reverse().find((c) => c.sessionId === sessionId && c.state === 'open')
+    if (!card || card.state !== 'open') return false
+    card.state = 'answered'; card.answeredAt = Date.now()
+    card.resolve({ answers })
+    return true
+  },
+  /** "Discuss" on a plan review (or closing a card): the card rejects with ASK_CANCELLED. */
+  qDiscuss({ sessionId }) {
+    const card = [...(store.qCards ?? [])].reverse().find((c) => c.sessionId === sessionId && c.state === 'open')
+    if (!card) return false
+    card.state = 'closed'; card.closedCode = 'ASK_CANCELLED'; card.closedAt = Date.now()
+    card.reject(Object.assign(new Error('cancelled'), { name: 'UserQuestionError', code: 'ASK_CANCELLED' }))
+    return true
+  },
+  /** Your late answer to a continued (timed, pending) question in the session: what the browser's answer RPC calls. */
+  async qContinued({ sessionId, callId, answers }) {
+    try { return { ok: true, accepted: ctx.get('userQuestions').answer(liveAgent(sessionId), callId, { answers }) } } catch (e) { return { ok: false, error: errorInfo(e) } }
+  },
+  /** DSH's own projection of the session's questions (active, settled). */
+  qProjection({ sessionId }) { return JSON.parse(JSON.stringify(ctx.sessionProjections.stateOf(liveAgent(sessionId).session, 'userQuestions')?.questions ?? null)) },
+  /** /plan and /plan off, as a user types them. */
+  async planCommand({ sessionId, off = false }) {
+    const done = await ctx.commands.execute(liveAgent(sessionId), off ? '/plan off' : '/plan', [], new AbortController().signal)
+    return done === undefined ? { kind: 'missing', text: 'no /plan command in this session' } : JSON.parse(JSON.stringify(done.result))
+  },
   clearPlans() { model.plans.length = 0; return true },
   planState() { return model.plans.map((p) => ({ needle: p.needle, callId: p.callId, used: p.used })) },
 
@@ -592,6 +728,107 @@ const ops = {
   /** Every row id of the dsh-fishball bundle as DSH's plugin manager lists it (the messenger must add none). */
   async fishballRows() { return (await ctx.pluginManager.listBundles()).filter((b) => b.name === PACKAGE_NAME).flatMap((b) => b.rows.map((r) => r.rowId)).sort() },
 
+  // ---- start_session title operations ----
+  /** Arm the probe (see startProbe): rename null|'invalid'|'fail', steer true|false, flush null|'throw'|'false'. */
+  startProbe(options = {}) { return startProbe(options) },
+  /** Disarm the probe and restore the host's own methods. */
+  stopProbe() { stopProbe(); return true },
+  /** The recorded calls, in the order they happened. */
+  probeEvents() { return probe.events },
+  /** Warnings and errors logged so far (optionally those after the first `since`). */
+  loggedProblems({ since = 0 } = {}) { return logged.slice(since) },
+  /** Whether the host has a sessionTitle service. */
+  hasSessionTitle() { return Boolean(ctx.get('sessionTitle')) },
+
+  // ---- read_session roles and half-made start_session operations ----
+  /**
+   * Append a user/message straight into a live session's log, without a turn: the way to reach sources a steer cannot
+   * carry. `omitSource` leaves the source out altogether (DSH's steer path crashes on a message with no source, so this
+   * is the only way to get one into a log); `text: ''` gives a message with no content blocks.
+   */
+  injectUserMessage({ sessionId, text, source, omitSource = false }) {
+    const message = createUserMessage({ content: text === '' ? [] : [{ type: 'text', text }], ...(omitSource ? {} : { source }) })
+    // surfaceOp 'append' is the marker DSH requires on every message event that adds to the conversation.
+    liveAgent(sessionId).session.append('user/message', message, { surfaceOp: 'append' })
+    return true
+  },
+  /**
+   * start_session, half-made: make adding a session to one workspace fail. DSH's own sessionController.create then
+   * creates the session and throws its real `session/workspace-attach-failed` (details {sessionId, workspaceId}).
+   * The failing attach is recorded in attachCalls; the session is NOT added to the workspace.
+   */
+  failAttach({ workspaceId, on = true }) {
+    const workspace = ctx.workspaceRegistry.get(workspaceId)
+    if (!workspace) throw new Error('no workspace ' + workspaceId)
+    const undo = attachUndo.get(workspaceId)
+    if (undo) { undo(); attachUndo.delete(workspaceId) }
+    if (!on) return true
+    const own = Object.getOwnPropertyDescriptor(workspace, 'attachSession')
+    workspace.attachSession = async function (sessionId) {
+      attachCalls.push({ workspaceId, sessionId })
+      throw new Error('fbtest: attach failed')
+    }
+    attachUndo.set(workspaceId, () => { if (own) Object.defineProperty(workspace, 'attachSession', own); else delete workspace.attachSession })
+    return true
+  },
+  attachCalls() { return attachCalls },
+  /**
+   * start_session, other failures: replace sessionController.create with one that throws an error with this code and
+   * details (details may be left out). With createFirst it really creates the session through DSH's own create first
+   * and merges that session's id into the details ({sessionId, ...details}), as DSH's attach failure does; the ids it
+   * created are listed by createdByWrapper. A call with no code restores DSH's own create.
+   */
+  failCreate({ code, details, message = 'fbtest: create failed', createFirst = false } = {}) {
+    const controller = ctx.sessionController
+    createUndo.splice(0).forEach((undo) => undo())
+    if (code === undefined) return true
+    const own = Object.getOwnPropertyDescriptor(controller, 'create')
+    const original = controller.create
+    controller.create = async function (request, ...rest) {
+      let sessionId
+      if (createFirst) {
+        sessionId = (await original.call(this, request, ...rest)).sessionId
+        createdByWrapper.push(sessionId)
+      }
+      const merged = createFirst ? { sessionId, ...details } : details
+      throw Object.assign(new Error(message), { code, ...(merged === undefined ? {} : { details: merged }) })
+    }
+    createUndo.push(() => { if (own) Object.defineProperty(controller, 'create', own); else delete controller.create })
+    return true
+  },
+  createdByWrapper() { return createdByWrapper },
+
+  // ---- Revision 11 R3: start_session and the managed list ----
+  /**
+   * Make writes to one table of Fishball's own store (domain `fishball`, e.g. the `managed` registry) fail, without
+   * touching its other tables: DSH's storage-domain facility keeps the open domain, and the table handle is the one
+   * object Fishball writes through. mode 'reject': put and update reject before anything is stored, so the record is
+   * not made. mode 'after': the write is stored (the handle's own put/update run to the end) and then the call
+   * rejects, as when something after a successful write throws. mode null restores the handle. `storeWriteCalls` lists
+   * the writes attempted while armed (table, key).
+   */
+  failStoreTable({ table = 'managed', mode = null }) {
+    const handle = ctx.storageDomain.get('fishball')?.table(table)
+    if (!handle) throw new Error('no open fishball domain table ' + table)
+    storeUndo.splice(0).forEach((undo) => undo())
+    if (!mode) return true
+    for (const method of ['put', 'update']) {
+      const own = Object.getOwnPropertyDescriptor(handle, method)
+      const original = handle[method]
+      handle[method] = async function (key, ...rest) {
+        storeWriteCalls.push({ table, key, method, at: Date.now() })
+        if (mode === 'reject') throw new Error('fbtest: store write failed')
+        await original.call(this, key, ...rest)
+        throw new Error('fbtest: failed after the store was written')
+      }
+      storeUndo.push(() => { if (own) Object.defineProperty(handle, method, own); else delete handle[method] })
+    }
+    return true
+  },
+  storeWriteCalls() { return storeWriteCalls },
+  /** The record of one table of Fishball's store as the open domain holds it (null when absent). */
+  storeRecord({ table, key }) { const r = ctx.storageDomain.get('fishball')?.table(table)?.get(key); return r === undefined ? null : JSON.parse(JSON.stringify(r)) },
+
   // ---- Revision 10a operations (Install for Fishball) ----
   /** DSH's install progress events seen on the host bus, optionally for one request id. */
   installEvents({ requestId } = {}) { return store.installEvents.filter((e) => !requestId || e.requestId === requestId).map(({ json, ...e }) => ({ ...e, json: JSON.stringify(json).slice(0, 2000) })) },
@@ -612,6 +849,44 @@ const ops = {
   async setBundleEnabled({ name, enabled }) {
     const r = await ctx.pluginManager.setBundleEnabled(name, enabled)
     return { changed: r.changed, application: r.application, stage: r.stage ?? null, error: r.error ? JSON.parse(JSON.stringify(r.error)) : null }
+  },
+
+  // ---- Revision 11 rev11-limits operations ----
+  /** A row's Schemastery form (toJSON) exactly as DSH's settings service describes it to its settings page. */
+  settingsSchema({ ns = ROW_ID } = {}) {
+    const d = ctx.settings.describe().find((x) => x.ns === ns)
+    return d ? JSON.parse(JSON.stringify(d.schema ?? null)) : null
+  },
+
+  // ---- Revision 11 rev11a operations (managed sessions) ----
+  /**
+   * An ordinary session created through ctx.agents.create whose handle the worker keeps, so a test can
+   * dispose its live agent and have DSH create a new one on resume (S34 "re-created agent").
+   */
+  async createKept({ folder = 'kept', preset = PRESET.bare }) {
+    const cwd = path.join(home, 'work', folder)
+    fs.mkdirSync(cwd, { recursive: true })
+    const sessionId = 'session-fbtest-kept-' + folder + '-' + Date.now()
+    const handle = await ctx.agents.create({ sessionId, meta: { cwd, agentPreset: preset }, agentOptions: { provider: FAKE.provider, model: FAKE.model } })
+    await ctx.sessions.flush(handle.agent.session)
+    keptHandles.set(sessionId, handle)
+    return { sessionId, cwd }
+  },
+  /** Dispose a kept session's agent (the session stays stored); resume makes a new agent. */
+  async disposeKept({ sessionId }) {
+    const handle = keptHandles.get(sessionId)
+    keptHandles.delete(sessionId)
+    if (handle) { await ctx.sessions.flush(handle.agent.session); await handle.dispose() }
+    return { disposed: Boolean(handle), live: Boolean(ctx.agents.get(sessionId)) }
+  },
+
+  // ---- Revision 11 rev11b operations (ask_fishball, list_user_messages) ----
+  /** Every user/message of a live session in log order: DSH message id, source kind, rpc id and the whole text. */
+  userMessageLog({ sessionId }) {
+    return liveAgent(sessionId).session.snapshotEvents().filter((e) => e.type === 'user/message').map((e) => {
+      const message = e.data?.message ?? e.data
+      return { id: message?.id ?? null, kind: message?.source?.kind ?? null, rpcId: message?.source?.rpcId ?? null, text: textOf(message?.content) }
+    })
   },
 
   async shutdown() {

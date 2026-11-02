@@ -27,6 +27,7 @@ import { InvalidInstallSpecError, parseInstallSpec } from '@deepseek-ai/dsh-plug
 import { runPluginCommand } from '@deepseek-ai/dsh-plugin-manager/operations'
 import { FISHBALL_PACKAGES, OPTIONAL_SERVICE, PACKAGE_ERROR, PLUGIN } from './constants.js'
 import { diagnosticOf } from './errors.js'
+import { packageBounds } from './fishball-plugin-manager.js'
 
 /** dsh-plugin-manager's spec kinds for a local directory and a registry name. */
 const PATH_SPEC = 'path'
@@ -320,6 +321,7 @@ export class FishballPackages {
     const profile = this.#profile()
     const dir = this.dir
     const manager = profile.packageManager
+    const bounds = packageBounds(this.#ctx)
     return runPluginCommand(
       { profile: FISHBALL_PACKAGES.folder, dir, installAnchor: profile.installAnchor, cwd: profile.cwd, home: profile.home },
       args,
@@ -328,10 +330,11 @@ export class FishballPackages {
         command: manager?.command ?? FISHBALL_PACKAGES.pnpmCommand,
         ...(manager?.args === undefined ? {} : { args: manager.args }),
         ...(manager?.env === undefined ? {} : { env: manager.env }),
-        outputBytes: FISHBALL_PACKAGES.outputBytes,
-        idleTimeoutMs: FISHBALL_PACKAGES.idleTimeoutMs,
-        lockWaitMs: FISHBALL_PACKAGES.lockWaitMs,
-        lookupTimeoutMs: FISHBALL_PACKAGES.lookupTimeoutMs,
+        // DSH's own manager passes inspectTimeoutMs to its runner as lookupTimeoutMs.
+        outputBytes: bounds.outputBytes,
+        idleTimeoutMs: bounds.idleTimeoutMs,
+        lockWaitMs: bounds.lockWaitMs,
+        lookupTimeoutMs: bounds.inspectTimeoutMs,
         // Nothing boots this folder, so there is no bundle selection to reconcile.
         activateNewBundles: false,
       },
