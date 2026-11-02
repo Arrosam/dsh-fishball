@@ -1,0 +1,14 @@
+{
+  "name": "fbtest-broken",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "missing.js",
+  "exports": {
+    ".": "./missing.js"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

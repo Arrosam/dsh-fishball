@@ -1,0 +1,4 @@
+- insert:
+    - id: dsh-idle-compact
+      name: 'dsh-idle-compact'
+      config: {}

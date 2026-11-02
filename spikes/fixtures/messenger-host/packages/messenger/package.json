@@ -1,0 +1,6 @@
+{
+  "name": "fishball-spike-messenger",
+  "version": "0.0.1",
+  "private": true,
+  "exports": { "./client": "./client.js", "./package.json": "./package.json" }
+}

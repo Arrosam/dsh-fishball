@@ -1,0 +1,4 @@
+- insert:
+    - id: spike-attrib
+      name: 'fishball-spike-attrib'
+      config: {}

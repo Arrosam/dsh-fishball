@@ -1,34 +1,20 @@
-# dsh-fishball development rules
+# Fishball development rules
 
-## Authorization and product boundary
-- Current project is dsh-fishball (df), MIT by explicit owner decision. Read [the owner amendment](docs/owner-amendment-2026-10-04.md). Historical BUB ticket/AC IDs are retained aliases for same-suffix DF IDs. Intended eventual public target is Arrosam/dsh-fishball; keep all Git local until full agreed acceptance.
-- This phase requires a provider-neutral chat adapter contract, not a selected chat software implementation. Live chat accounts/provider delivery are explicitly out of this phase, not failing prerequisites. No mobile remote-control or Hydrogen server-tools integration is in current scope.
-- The owner authorized local staged development, logical-unit commits, independent English-prompt worker/reviewer sessions, and squash merges into local main. Keep Git local until the full agreed MVP is accepted. Do not create a remote, push, publish, open remote issues, expand OAuth scopes or set up live external accounts.
-- DSH is the native execution host. Reuse public DSH tool/model/permission/session interfaces. Do not create a new harness, SDK runtime, daemon, DSH-X launcher or whole fishball/Hydrogen dependency.
-- Current host baseline is the verified newest official published preview, DSH Web 0.2.1-alpha.1, installed in project-controlled isolation. Pin it for this wave; evaluate subsequent breaking releases explicitly. Do not add old Desktop compatibility shims or Electron/native-shell acceptance. Old-host evidence is historical only. See [compatibility](docs/compatibility.md).
-- Full DSH quit stops dsh-fishball. On restart reconcile durable facts before admitting work. Never promise exactly-once arbitrary effects or instant cancellation.
-- M1 is bounded BUB001/003/006 plus minimum BUB012 admission. The owner explicitly authorized continuing all three development stages on2026-10-04 08:46UTC and consolidating cross-stage functional/visual regression after Stage3. Follow [the three-stage mapping](docs/three-stage-development.md), retain [deferred acceptance debt](docs/evidence/acceptance-debt.md), and preserve every ticket/AC. No deferred case is passed and the foundation is not a full MVP.
-- No live inference, paid model calls, live webhook/chat setup, personal credential/settings changes, production data access or fishball personal-data inspection. Latest official Web installation and a new project-local synthetic profile on loopback are authorized. Test with mock providers and synthetic identities/secrets. If a real DSH model invocation is necessary, report the exact bounded request for owner approval first. Stop on a denied runtime-policy action; do not bypass it.
-- Code reuse requires pinned provenance and applicable notices. Owner chose MIT; [LICENSE](LICENSE) and [notices](THIRD_PARTY_NOTICES.md) cover the owner-authored project. M1 copied no fishball source. Current ESM translation covers a pinned memory subset, not compiled Kotlin/JS or the whole fishball application. The inspected source histories match the owner identity and identify no concrete third-party conflict; newly incorporated source needs its own provenance review. Publication remains gated by full acceptance.
+## Git and the GitHub repo
+- Commit logical units on local branches. Pushing branches to `origin` (the GitHub repo) is allowed.
+- The repository has gone public on GitHub (the user confirmed this on 2026-11-02): anything pushed is visible to everyone. Never publish the package, add another remote or open remote issues.
+- Never rewrite, reset or delete existing branch history or tags. The old preview is kept at tag `archive/df-preview-2026-10-23`.
 
-## Workflow and branching
-- Read applicable rules and touched subsystems. Follow [the six-stage workflow](docs/development-workflow.md); freeze the ticket/milestone AC and risks before implementation.
-- Every ticket requires an independent code review and a separate independent ISTQB test-design review before acceptance. BUB015 is runtime product functionality, not permission to defer development review.
-- English delegated prompts. Coding: gpt-6.1-sol, reasoning high or above. Root-cause and audits: gpt-6.1-sol max. Visual validation: xhigh. No Astra or silent downgrade.
-- Commit logical units on feature branches. Root controls Git mutations to avoid shared-directory races. Keep granular branches; squash reviewed units to local main as development integrations even while final regression debt remains, recording that distinction. Never reset/rewrite/delete working branch history to consolidate the future public main snapshot.
-- Independent author/reviewer identity, exact reviewed tree, commands/results and remediation/retest evidence go under docs/evidence/M1. Distinguish implemented, tested, accepted and released.
-- Verify final changed code with unit/module tests and independent code/ISTQB reviews; do not remove failing tests, weaken assertions or bypass security. Full cross-stage functional/visual validation is consolidated after all three development stages under the owner's newer authorization. Real isolated Web/profile/browser/provider oracles remain required for final acceptance; fixture-only or screenshot-only evidence cannot satisfy them. Explicitly retain blocked/deferred/not-run cases.
-- Development uses the installed Node 22.22.2 / Python 3.14.5 / macOS runtime baseline. Record actual versions and package/dependency/lifecycle sources before any install. Use built-in runtime APIs and existing public host packages first; no unreviewed downloaded code or install scripts.
-- Release channel defaults to preview throughout tags, packages, documentation and any eventual automation. Main or a successful test run never implies stable.
+## Coding principles
+Follow the user's `general-coding-principle` skill for all code and test work. In short:
+- Read the relevant code, callers and DSH host APIs first. Reuse existing DSH services and components before writing new ones.
+- Never invent behaviour. When a requirement is missing or ambiguous, ask the user.
+- No repeated code blocks. Share behaviour through functions, or through base classes for similar variants.
+- No bare numbers or strings in behaviour code. Put them in feature-owned constant objects or in the plugin's typed config.
+- Keep to SOLID and make surgical changes: the smallest complete change, with no unrelated refactors.
+- Tests are written by a separate subagent from the requirements alone. It uses boundary values, equivalence partitions, decision tables and state transitions. While coding, do not read the test code.
+- Comment non-obvious constraints and the reasons behind design choices.
 
-## Invariants
-- The task/action/approval ledger is authoritative, transactional, schema-versioned and independent of memory summaries.
-- Identity is trusted host/operator context, never model/payload claims. Key all durable state by owner + workspace + task; grants bind exact action/target/data digest/limits/task and authorization versions with expiry. Check at the atomic dispatch claim and reconcile effects committed earlier.
-- Revoke/cancel racing with dispatch has an explicit linearization point. Stop new dispatch first; preserve uncertain or in-flight reservations until actual termination/effect evidence.
-- Deduplicate durable intake by complete source identity. Unknown outcomes remain recovery-required; never automatically replay an arbitrary external action.
-- Secrets/raw payloads do not enter logs, diagnostics, exports, memory or durable evidence. Use references/digests and schema-allowlisted metadata; redact errors by stable codes.
-- Enforce bounded queue/action/message sizes, active reservations and attempts before work. Reviewers and repair work count against limits.
-- Treat storage faults, unsupported/future schema and migration failure as fail-closed; preserve original data and recoverable migration backup. Do not overwrite data the code cannot understand.
-
-## Reference policy
-Hydrogen's workflow is a reference, not inherited project configuration. Do not edit Hydrogen or copy its remote-first baseline, release pipeline, database or GraphFlow setup. Local .agents/skills inventory contains a Jira-specific webtesting workflow; this repository uses its own local AC/review process. M1 adds no dsh-fishball task UI, but actual host Web smoke is required under the newer owner baseline. Historical Codex session-manager model-routing rules are superseded by the owner's current Sol 6.1 instructions.
+## Process
+- [DESIGN.md](DESIGN.md) is the approved plan. Change it when a spike or the user changes the design.
+- Each delivery phase ends with tests, an independent code review and a local commit.

@@ -1,0 +1,18 @@
+{
+  "id": "S8-peers",
+  "started": "2026-10-24T02:13:46.672Z",
+  "finished": "2026-10-24T02:13:48.688Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "peer": {
+    "ok": true,
+    "read": {
+      "n": 1
+    },
+    "limit": "object"
+  },
+  "files": [
+    "storages/fishball_spike.json"
+  ]
+}

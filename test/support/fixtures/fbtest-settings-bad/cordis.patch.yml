@@ -1,0 +1,5 @@
+# P12: the patch config is invalid on its own (the required name is missing), like a row DSH fills from the profile.
+- insert:
+    - id: fbtest-settings-bad
+      name: 'fbtest-settings-bad'
+      config: {}

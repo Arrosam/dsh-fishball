@@ -1,0 +1,18 @@
+{
+  "name": "fbtest-settings",
+  "version": "1.2.3",
+  "description": "fbtest settings fixture: a Config with every field kind the plugin manager handles.",
+  "icon": "icon.svg",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./side": "./side.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

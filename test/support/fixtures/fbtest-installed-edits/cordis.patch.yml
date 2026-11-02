@@ -1,0 +1,7 @@
+# Edits another plugin's row besides inserting its own, so it cannot run in Fishball's tree (blocked).
+- id: fbtest-tools
+  config: {}
+- insert:
+    - id: fbtest-installed-edits
+      name: 'fbtest-installed-edits'
+      config: {}

@@ -1,0 +1,4 @@
+- insert:
+    - id: fbtest-import-throws
+      name: 'fbtest-import-throws'
+      config: {}

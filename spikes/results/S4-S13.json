@@ -1,0 +1,15 @@
+{
+  "id": "S4-S13",
+  "started": "2026-10-24T02:21:50.032Z",
+  "finished": "2026-10-24T02:21:52.162Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "modelSaw": true,
+  "summaryLength": 120,
+  "afterResume": {
+    "kind": "fishball-notice",
+    "form": "notice",
+    "summary": "Session \"Refactor billing\" finished: completed. Session \"Refactor billing\" finished: completed. Session \"Refactor billi…"
+  }
+}

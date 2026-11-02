@@ -1,0 +1,4 @@
+- insert:
+    - id: spike-peer
+      name: 'fishball-spike-peer'
+      config: {}

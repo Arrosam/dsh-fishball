@@ -1,0 +1,50 @@
+{
+  "id": "S30-settings-remount",
+  "started": "2026-10-31T05:41:23.062Z",
+  "finished": "2026-10-31T05:41:25.140Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "first": {
+    "applies": [
+      {
+        "greeting": "hello",
+        "limit": 3,
+        "live": "one"
+      }
+    ],
+    "demoApplies": 1,
+    "failed": []
+  },
+  "ordinaryChange": {
+    "applies": [
+      {
+        "greeting": "hello",
+        "limit": 7,
+        "live": "one"
+      }
+    ],
+    "demoApplies": 1,
+    "demoFiberKept": true,
+    "settingsFiberReplaced": false,
+    "failed": []
+  },
+  "volatileChange": {
+    "newApplies": [],
+    "liveValueNow": "two",
+    "demoFiberKept": true
+  },
+  "invalidChange": {
+    "failed": [],
+    "demoFiberKept": true,
+    "newApplies": []
+  },
+  "recovered": {
+    "failed": [],
+    "last": {
+      "greeting": "hello",
+      "limit": 5,
+      "live": "one"
+    }
+  }
+}

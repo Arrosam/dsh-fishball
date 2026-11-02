@@ -1,0 +1,510 @@
+{
+  "id": "P3-smoke",
+  "started": "2026-10-24T08:16:05.647Z",
+  "finished": "2026-10-24T08:16:09.390Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "visibleAtStart": [
+    "add_plugin",
+    "list_plugins",
+    "schedule_create",
+    "schedule_delete",
+    "schedule_list",
+    "schedule_update",
+    "set_plugin_enabled",
+    "web_fetch",
+    "web_search",
+    "working_directory"
+  ],
+  "list": {
+    "plugins": [
+      {
+        "plugin": "builtin:compaction",
+        "title": "Compaction",
+        "kind": "builtin",
+        "on": true,
+        "applied": true,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "builtin:web",
+        "title": "Web search and page opening",
+        "kind": "builtin",
+        "on": true,
+        "applied": true,
+        "changedBy": null,
+        "lastError": null,
+        "tools": [
+          {
+            "name": "web_fetch",
+            "status": "visible"
+          },
+          {
+            "name": "web_search",
+            "status": "visible"
+          }
+        ]
+      },
+      {
+        "plugin": "builtin:time",
+        "title": "Time awareness",
+        "kind": "builtin",
+        "on": true,
+        "applied": true,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "builtin:reminders",
+        "title": "Reminders",
+        "kind": "builtin",
+        "on": true,
+        "applied": true,
+        "changedBy": null,
+        "lastError": null,
+        "tools": [
+          {
+            "name": "schedule_create",
+            "status": "visible"
+          },
+          {
+            "name": "schedule_delete",
+            "status": "visible"
+          },
+          {
+            "name": "schedule_list",
+            "status": "visible"
+          },
+          {
+            "name": "schedule_update",
+            "status": "visible"
+          }
+        ]
+      },
+      {
+        "plugin": "builtin:ask-user",
+        "title": "Ask you a question",
+        "kind": "builtin",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "builtin:skills",
+        "title": "Skills",
+        "kind": "builtin",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "builtin:shell",
+        "title": "Read-only shell",
+        "kind": "builtin",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "fishball-spike-demo",
+        "title": "fishball-spike-demo",
+        "kind": "profile",
+        "on": true,
+        "applied": true,
+        "changedBy": null,
+        "lastError": null,
+        "tools": [
+          {
+            "name": "demo_echo",
+            "status": "unchecked"
+          }
+        ]
+      },
+      {
+        "plugin": "fishball-p3-off",
+        "title": "fishball-p3-off",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-agent-team-profile",
+        "title": "@deepseek-ai/dsh-experimental-agent-team-profile",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-inspector-profile",
+        "title": "@deepseek-ai/dsh-experimental-inspector-profile",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+        "title": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-auto-review",
+        "title": "@deepseek-ai/dsh-experimental-auto-review",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+        "title": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-badge-skill-bundle",
+        "title": "@deepseek-ai/dsh-experimental-badge-skill-bundle",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-ralph-bundle",
+        "title": "@deepseek-ai/dsh-experimental-ralph-bundle",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-session-titles-bundle",
+        "title": "@deepseek-ai/dsh-experimental-session-titles-bundle",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-terminal-bundle",
+        "title": "@deepseek-ai/dsh-experimental-terminal-bundle",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-session-search",
+        "title": "@deepseek-ai/dsh-experimental-session-search",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-tool-worktree",
+        "title": "@deepseek-ai/dsh-experimental-tool-worktree",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      },
+      {
+        "plugin": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+        "title": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+        "kind": "fishball-only",
+        "on": false,
+        "applied": false,
+        "changedBy": null,
+        "lastError": null,
+        "tools": []
+      }
+    ],
+    "allowedTools": [],
+    "otherTools": []
+  },
+  "offDemo": {
+    "ok": true,
+    "plugin": "fishball-spike-demo",
+    "on": false,
+    "note": "Saved. It takes effect when this turn ends."
+  },
+  "visibleAfterOff": [
+    "add_plugin",
+    "list_plugins",
+    "schedule_create",
+    "schedule_delete",
+    "schedule_list",
+    "schedule_update",
+    "set_plugin_enabled",
+    "web_fetch",
+    "web_search",
+    "working_directory"
+  ],
+  "onDemoRejected": {
+    "ok": false,
+    "code": "rejected",
+    "unchecked": [
+      "demo_echo"
+    ]
+  },
+  "visibleAfterReject": [
+    "add_plugin",
+    "list_plugins",
+    "schedule_create",
+    "schedule_delete",
+    "schedule_list",
+    "schedule_update",
+    "set_plugin_enabled",
+    "web_fetch",
+    "web_search",
+    "working_directory"
+  ],
+  "onDemoAllowed": {
+    "ok": true,
+    "plugin": "fishball-spike-demo",
+    "on": true,
+    "allowedTools": [
+      "demo_echo"
+    ],
+    "note": "Saved. It takes effect when this turn ends."
+  },
+  "visibleAfterAllow": [
+    "add_plugin",
+    "demo_echo",
+    "list_plugins",
+    "schedule_create",
+    "schedule_delete",
+    "schedule_list",
+    "schedule_update",
+    "set_plugin_enabled",
+    "web_fetch",
+    "web_search",
+    "working_directory"
+  ],
+  "onOff": {
+    "ok": true,
+    "plugin": "fishball-p3-off",
+    "on": true,
+    "allowedTools": [
+      "off_echo"
+    ],
+    "note": "Saved. It takes effect when this turn ends."
+  },
+  "visibleAfterFishballOnly": [
+    "add_plugin",
+    "demo_echo",
+    "list_plugins",
+    "off_echo",
+    "schedule_create",
+    "schedule_delete",
+    "schedule_list",
+    "schedule_update",
+    "set_plugin_enabled",
+    "web_fetch",
+    "web_search",
+    "working_directory"
+  ],
+  "offApplies": 1,
+  "globalHasOffEcho": false,
+  "asked": [
+    {
+      "tool": "set_plugin_enabled",
+      "reason": "Fishball wants to turn on \"fishball-spike-demo\" for itself. Nobody has checked these tools yet; allowing shows them to Fishball:\n- demo_echo: Echo the text back (spike fixture)."
+    },
+    {
+      "tool": "set_plugin_enabled",
+      "reason": "Fishball wants to turn on \"fishball-spike-demo\" for itself. Nobody has checked these tools yet; allowing shows them to Fishball:\n- demo_echo: Echo the text back (spike fixture)."
+    },
+    {
+      "tool": "set_plugin_enabled",
+      "reason": "Fishball wants to turn on \"fishball-p3-off\" for itself. Nobody has checked these tools yet; allowing shows them to Fishball:\n- off_echo: Echo (fishball-only fixture)."
+    }
+  ],
+  "requestToolsLast": [
+    "add_plugin",
+    "demo_echo",
+    "list_plugins",
+    "schedule_create",
+    "schedule_delete",
+    "schedule_list",
+    "schedule_update",
+    "set_plugin_enabled",
+    "web_fetch",
+    "web_search",
+    "working_directory"
+  ],
+  "storeFile": {
+    "plugins": {
+      "fishball-spike-demo": {
+        "kind": "profile",
+        "on": true,
+        "changedBy": "fishball",
+        "changedAt": "2026-10-24T08:16:08.864Z"
+      },
+      "fishball-p3-off": {
+        "kind": "fishball-only",
+        "on": true,
+        "changedBy": "fishball",
+        "changedAt": "2026-10-24T08:16:09.096Z"
+      }
+    },
+    "tool_approvals": {
+      "fishball-spike-demo#demo_echo#e3dce8d1afb8d036": {
+        "module": "fishball-spike-demo",
+        "toolName": "demo_echo",
+        "paramsDigest": "e3dce8d1afb8d036",
+        "allowedAt": "2026-10-24T08:16:08.852Z"
+      },
+      "fishball-p3-off#off_echo#d95b00b27ca2bbbe": {
+        "module": "fishball-p3-off",
+        "toolName": "off_echo",
+        "paramsDigest": "d95b00b27ca2bbbe",
+        "allowedAt": "2026-10-24T08:16:09.083Z"
+      }
+    },
+    "plugin_changes": {
+      "2026-10-24T08:16:08.450Z#fishball-spike-demo#off": {
+        "plugin": "fishball-spike-demo",
+        "action": "off",
+        "by": "fishball",
+        "at": "2026-10-24T08:16:08.450Z",
+        "outcome": "ok"
+      },
+      "2026-10-24T08:16:08.657Z#fishball-spike-demo#on": {
+        "plugin": "fishball-spike-demo",
+        "action": "on",
+        "by": "fishball",
+        "at": "2026-10-24T08:16:08.657Z",
+        "outcome": "rejected"
+      },
+      "2026-10-24T08:16:08.874Z#fishball-spike-demo#on": {
+        "plugin": "fishball-spike-demo",
+        "action": "on",
+        "by": "fishball",
+        "at": "2026-10-24T08:16:08.874Z",
+        "outcome": "ok"
+      },
+      "2026-10-24T08:16:09.127Z#fishball-p3-off#on": {
+        "plugin": "fishball-p3-off",
+        "action": "on",
+        "by": "fishball",
+        "at": "2026-10-24T08:16:09.127Z",
+        "outcome": "ok"
+      }
+    }
+  },
+  "catalogSummary": [
+    [
+      "builtin:compaction",
+      "builtin",
+      true,
+      true
+    ],
+    [
+      "builtin:web",
+      "builtin",
+      true,
+      true
+    ],
+    [
+      "builtin:time",
+      "builtin",
+      true,
+      true
+    ],
+    [
+      "builtin:reminders",
+      "builtin",
+      true,
+      true
+    ],
+    [
+      "builtin:ask-user",
+      "builtin",
+      false,
+      false
+    ],
+    [
+      "builtin:skills",
+      "builtin",
+      false,
+      false
+    ],
+    [
+      "builtin:shell",
+      "builtin",
+      false,
+      false
+    ],
+    [
+      "fishball-spike-demo",
+      "profile",
+      true,
+      true
+    ],
+    [
+      "fishball-p3-off",
+      "fishball-only",
+      false,
+      false
+    ]
+  ],
+  "demoAfter": {
+    "plugin": "fishball-spike-demo",
+    "title": "fishball-spike-demo",
+    "kind": "profile",
+    "on": true,
+    "applied": true,
+    "changedBy": "fishball",
+    "lastError": null,
+    "tools": [
+      {
+        "name": "demo_echo",
+        "status": "visible"
+      }
+    ]
+  },
+  "otherToolsAfter": []
+}

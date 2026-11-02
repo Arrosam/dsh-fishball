@@ -1,0 +1,6 @@
+- id: fbtest-tools
+  config: {}
+- insert:
+    - id: fbtest-edits
+      name: 'fbtest-edits'
+      config: {}

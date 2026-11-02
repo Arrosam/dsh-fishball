@@ -1,0 +1,20 @@
+{
+  "id": "P9-S15",
+  "started": "2026-10-24T19:19:57.276Z",
+  "finished": "2026-10-24T19:20:04.481Z",
+  "runtime": "0.2.1-rc.2",
+  "node": "v22.22.2",
+  "pass": true,
+  "platform": "darwin",
+  "mode": "read-only",
+  "enable": "{\n  \"ok\": true,\n  \"plugin\": \"builtin:shell\",\n  \"on\": true,\n  \"allowedTools\": [],\n  \"note\": \"Saved. It takes effect when this turn ends.\"\n}",
+  "bashVisible": true,
+  "read": "readable\nApplications\nLibrary\nSystem\nUsers\nVolumes\nbin\ncores\ndev\netc\nhome\nopt\npkg\nprivate\nsbin\ntmp\nusr\nvar\n",
+  "writeInside": "[stderr]\nbash: /Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/p9s15-1792869597276/fishball/assistant/should-not-exist.txt: Operation not permitted\n[sandbox: file access denied under read-only mode]\n[sandbox: escalation available — retry this exact command once with sandbox_permissions (the narrow",
+  "writeOutside": "[stderr]\nbash: /Volumes/SSD1/GitHub/dsh-fishball/.runtime/spikes/p9s15-1792869597276/outside-should-not-exist.txt: Operation not permitted\n[sandbox: file access denied under read-only mode]\n[sandbox: escalation available — retry this exact command once with sandbox_permissions (the narrowest wider m",
+  "escalation": "Error: Fishball never widens its sandbox, so this \"bash\" call with sandbox_permissions is refused.",
+  "escalationAsked": false,
+  "writeTool": "Error: Fishball never writes local files, so \"write\" is refused. Hand the change to another session.",
+  "insideExists": false,
+  "outsideExists": false
+}

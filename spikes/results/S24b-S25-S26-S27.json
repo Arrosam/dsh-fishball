@@ -1,0 +1,25 @@
+{
+  "id": "S24b-S25-S26-S27",
+  "date": "2026-10-31",
+  "runtime": "0.2.1-rc.2",
+  "how": "spikes/s24b-s25-s26-server.mjs with spikes/fixtures/messenger-host (a bundle carrying packages/messenger), checked in the Claude desktop app's browser pane (Chrome 152). Evidence below was read from the page with JavaScript.",
+  "S24b": {
+    "pass": true,
+    "finding": "The host half serves the nested package's client.js from its own route; the bundle's browser half loads it with a <script> once (live registration in DSH's module system), require()s it by name and mounts it with ctx.plugin(). dispose() unmounts it and a second mount works, with no page reload.",
+    "log": ["host: messenger on", "messenger: applied", "host: messenger off", "messenger: disposed", "host: messenger on", "messenger: applied"]
+  },
+  "S25": {
+    "pass": "partial",
+    "messageRows": "Pass for user, steering, context and turn-trigger: an occupant at priority -1 with the shipped entry's locale ('chat') receives the same props and renders the shipped component for other sessions. The ordinary session's <main> HTML was identical with the messenger off and on (53504 = 53504 characters, string-equal).",
+    "assistantRows": "Fail for assistant-step: registering it with the shipped entry's children throws 'slot \"conversation.chat.reasoning.body\" is already declared (by an entry in \"conversation.chat.node\" (Kb))', and without them the shipped AssistantNodeView lacks the renderSlot prop it needs. conversation.chat.flow declares children too, so it cannot be wrapped either."
+  },
+  "S26": {
+    "pass": true,
+    "finding": "Every row's props carry sessionId. node.data.source reaches the browser complete, including extra fields: a fishball-notice with author {kind, name, seed} arrived unchanged. Steering rows also carry messageId; turn-trigger rows (relays and notices that start a turn) carry source, producer and form but no messageId. Your messages steered into the session are 'steering' rows; relays and notices are 'turn-trigger' rows."
+  },
+  "S27": {
+    "pass": true,
+    "finding": "A stylesheet scoped with :has() to the chat list containing the fixture's rows styled the assistant rows ([data-chat-flow-kind=assistant-step][data-chat-group-part=response]) in the stand-in assistant session only: outline rgb(225,29,116) there, the stock rgb(249,250,251) in the ordinary session, stock again with the messenger off, styled again when turned on. The session header actions and the chat list share the main.conversation slot, so a marker rendered by a session-header action can scope it without depending on which rows are loaded."
+  },
+  "alsoFound": "DSH's UI primitives export MarkdownText (DSH's own markdown renderer)."
+}
