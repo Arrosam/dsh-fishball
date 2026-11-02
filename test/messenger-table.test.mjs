@@ -1,5 +1,5 @@
 /**
- * Messenger look: a markdown table in Fishball's reply stays inside the reply bubble (R1-R6).
+ * Messenger look: a markdown table in Fishball's reply stays inside the reply bubble (R1-R6), and fits it when it can (R2).
  *
  * DSH draws a table with 4 or more columns in a wrapper `md-table-wide` and stretches it past the chat column to the
  * chat area's edges; fewer columns get `_tableFill_*`. In Fishball's bubble the stretched wrapper stuck out of the
@@ -18,30 +18,18 @@
  * | MTB-07 | EP | R3 | the stylesheet does not name DSH's generated wrapper classes |
  * | MTB-08 | ST (on -dispose-> off) | R6 | disposing removes the style element: no table rule is left in document.head |
  * | MTB-09 | ST (on, off, on, off, on) | R6 | the rule is mounted each time the look is on and gone each time it is off, never twice |
+ * | MTB-10 | EP + BVA (specificity vs DSH's [0,1,1]) | R2 | the table inside the wide wrapper gets width auto (shrink-to-fit: cells wrap to fit the bubble, a short table keeps its width), and that wins over DSH's `width: max-content` |
+ * | MTB-11 | EP (forbidden values) | R2 | no rule on that table pins, stretches or un-wraps it: no width other than auto, no min-width, no white-space nowrap |
+ * | MTB-12 ×4 | DT (marker x row part x wrapper class) | R2 R3 R4 R5 | a width rule on the table applies only for marker + reply row + wide wrapper |
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { MESSENGER, MESSENGER_TABLE as TBL } from './support/constants.mjs'
-import { compareSpecificity, loadMessenger, parseCss, selectorAtoms, specificity } from './support/messenger-style.mjs'
+import { compareSpecificity, declared, lastCompound, loadMessenger, matching, mountedLook as mounted, parseCss, selectorAtoms, specificity, winning } from './support/messenger-style.mjs'
 
 const REPLY_SCOPE = [TBL.atoms.conversation, TBL.atoms.marker, TBL.atoms.stepKind, TBL.atoms.reply]
 const CONTAINED_PROPS = [['width', TBL.contained.width], ['max-width', TBL.contained.maxWidth], ['margin-left', TBL.contained.marginLeft], ['padding-left', TBL.contained.paddingLeft]]
-const SHORTHAND = { 'margin-left': 'margin', 'padding-left': 'padding' }
-
-/** Mount the look on a fresh load and return the stylesheet's rules. */
-function mounted() {
-  const host = loadMessenger()
-  const look = host.apply()
-  const style = host.styles()[0]
-  return { host, look, style, rules: parseCss(style?.textContent ?? '') }
-}
 const tableRules = (rules) => rules.filter((r) => r.selectors.some((s) => TBL.tableSelector.test(s)))
-/** True when every simple selector of `selector` is one the context provides (the DSH DOM nests them in this order). */
-const applies = (selector, contextAtoms) => selectorAtoms(selector).every((atom) => contextAtoms.has(atom))
-/** The rules' selectors that match a context, with the declarations of their rule. */
-const matching = (rules, contextAtoms) => rules.flatMap((rule) => rule.selectors.filter((s) => applies(s, contextAtoms)).map((selector) => ({ selector, decls: rule.decls })))
-/** The value of a longhand declared directly or through a one-value shorthand (`margin: 0`), else undefined. */
-const declared = (decls, prop) => decls[prop] ?? (decls[SHORTHAND[prop]]?.value.split(/\s+/).length === 1 ? decls[SHORTHAND[prop]] : undefined)
 
 /** A DOM context as a set of simple selectors: Fishball's marker or not, a row part, a wrapper class. */
 const context = ({ marker, part, wide }) => new Set([
@@ -51,6 +39,11 @@ const context = ({ marker, part, wide }) => new Set([
   `[data-chat-group-part="${part}"]`,
   ...(wide ? [TBL.atoms.wide] : [`.${TBL.hashedClasses[1]}`]),
 ])
+
+/** True when the rule is about the `table` element itself, not its wrapper. */
+const isTableElement = (selector) => /^table(?![\w-])/.test(lastCompound(selector))
+/** The matches about the `table` element in a context. */
+const onTable = (rules, ctx) => matching(rules, ctx).filter((m) => isTableElement(m.selector))
 
 describe('Messenger look: tables inside the reply bubble', () => {
   it('MTB-00 helpers: parseCss keeps strings, groups and at-rules whole; specificity orders the cascade', () => {
@@ -80,7 +73,8 @@ describe('Messenger look: tables inside the reply bubble', () => {
 
   it('MTB-02 the wide wrapper gets contained width, max-width, margin-left and padding-left', () => {
     const { rules } = mounted()
-    const wide = matching(tableRules(rules), context({ marker: true, part: TBL.parts.reply, wide: true }))
+    // the wrapper's own rules: since R2 a rule about the table inside it (width auto, MTB-10) matches the same context
+    const wide = matching(tableRules(rules), context({ marker: true, part: TBL.parts.reply, wide: true })).filter((m) => !isTableElement(m.selector))
     for (const [prop, allowed] of CONTAINED_PROPS) {
       const values = wide.map((m) => declared(m.decls, prop)?.value).filter((v) => v !== undefined)
       assert.ok(values.length > 0, prop + ' is declared')
@@ -180,4 +174,38 @@ describe('Messenger look: tables inside the reply bubble', () => {
       }
     }
   })
+
+  it('MTB-10 the table inside the wide wrapper gets width auto, and that wins over DSH\'s width: max-content', () => {
+    const { rules } = mounted()
+    const width = winning(onTable(rules, context({ marker: true, part: TBL.parts.reply, wide: true })), (d) => d.width)
+    assert.ok(width, 'a rule sets the width of the table in a wide wrapper: ' + JSON.stringify(rules.map((r) => r.selectors)))
+    assert.ok(TBL.fitting.width.includes(width.value), `width ${width.value} is one of ${JSON.stringify(TBL.fitting.width)} ("${width.selector}")`)
+    assert.ok(width.important || compareSpecificity(width.specificity, TBL.dshTableSpecificity) > 0, `"${width.selector}" does not outrank DSH's ${TBL.dshTableSpecificity} rule`)
+  })
+
+  it('MTB-11 no rule on that table pins, stretches or un-wraps it', () => {
+    const { rules } = mounted()
+    const onWide = onTable(rules, context({ marker: true, part: TBL.parts.reply, wide: true }))
+    assert.ok(onWide.length > 0, 'precondition: a rule is about the table')
+    for (const m of onWide) {
+      if (m.decls.width) assert.ok(TBL.fitting.width.includes(m.decls.width.value), `${m.selector}: width ${m.decls.width.value}`)
+      if (m.decls['min-width']) assert.ok(TBL.fitting.minWidth.includes(m.decls['min-width'].value), `${m.selector}: min-width ${m.decls['min-width'].value}`)
+      if (m.decls['white-space']) assert.ok(!TBL.fitting.noWrap.includes(m.decls['white-space'].value), `${m.selector}: white-space ${m.decls['white-space'].value}`)
+    }
+  })
+
+  // Decision table (the cases where the table keeps DSH's stock width): marker x row part, wide wrapper.
+  const NO_WIDTH = [
+    { marker: false, part: TBL.parts.reply, why: 'R4 another session' },
+    { marker: true, part: TBL.parts.reasoning, why: 'R5 reasoning row' },
+    { marker: true, part: TBL.parts.other, why: 'R5 any other row part' },
+    { marker: false, part: TBL.parts.reasoning, why: 'R4+R5 neither' },
+  ]
+  for (const [i, row] of NO_WIDTH.entries()) {
+    it(`MTB-12 #${i + 1} marker=${row.marker} part=${row.part}: no width rule applies to the table (${row.why})`, () => {
+      const { rules } = mounted()
+      const found = onTable(rules, context({ ...row, wide: true })).filter((m) => m.decls.width)
+      assert.deepEqual(found.map((m) => m.selector), [])
+    })
+  }
 })

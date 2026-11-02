@@ -615,4 +615,45 @@ export const MESSENGER_TABLE = {
   hidden: { display: 'none', visibility: 'hidden' },
   /** Contexts of the decision table: the group part of the row the table sits in. */
   parts: { reply: 'response', reasoning: 'reasoning', other: 'toolcall' },
+  /** DSH's stock rule on the table itself (`._tableScroll_* table`: `width: max-content`): one class and one element. */
+  dshTableSpecificity: [0, 1, 1],
+  /**
+   * R2: in Fishball's bubble a wide table fits the bubble when it can (cells wrap) and a short one keeps its natural
+   * width. `width: auto` is the shrink-to-fit width that does both; anything else pins the table at its natural
+   * width (`max-content`, which is DSH's stock value), stretches it (`100%`) or fixes it (px).
+   */
+  fitting: {
+    width: ['auto', 'fit-content'],
+    /** A table in a wide wrapper has no `min-width` beyond these (a `min-width` pins or stretches it). */
+    minWidth: ['0', '0px', 'auto'],
+    /** `white-space` values that stop cells from wrapping. */
+    noWrap: ['nowrap', 'pre'],
+  },
+}
+
+// ---- Messenger look: round avatars and the footer under the reply bubble (R7, R8) ----
+/**
+ * Vocabulary from the requirement and from DSH 0.2.1-rc.3's own DOM and CSS (never from the implementation).
+ * DSH's theme turns every `border-radius: 50%` into a rounded square with `*, :before, :after { corner-shape:
+ * var(--dsw-corner-shape) }` (`superellipse(1.5)`); `corner-shape: round` brings the circle back. The footer under a
+ * reply (copy button, time) is its own chat row, `data-chat-flow-kind="turn-tail"`.
+ */
+export const MESSENGER_LAYOUT = {
+  atoms: {
+    tailKind: '[data-chat-flow-kind="turn-tail"]',
+    processKind: '[data-chat-flow-kind="turn-process"]',
+    chatNode: '[data-slot="conversation.chat.node"]',
+    avatar: '.fbm-avatar',
+    incoming: '.fbm-incoming',
+    sender: '.fbm-sender',
+  },
+  corner: { prop: 'corner-shape', themeVar: '--dsw-corner-shape' },
+  /** Values that mean a circle with `border-radius: 50%`. Chrome serialises `round` as `superellipse(1)` (the same shape). */
+  round: ['round', 'superellipse(1)'],
+  /** DSH's stock rule `*, :before, :after { corner-shape }`: the strongest part is `:before`/`:after` (one pseudo-element). */
+  dshCornerSpecificity: [0, 0, 1],
+  /** The Messenger look draws avatars 28px wide; a radius of half of that (or 50%) makes them circles. */
+  avatarSize: 28,
+  /** The reply row's group part, and another part the footer rule must leave alone. */
+  parts: { reply: 'response', reasoning: 'reasoning' },
 }
