@@ -24,9 +24,9 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, INTAKE_KIND, SOURCE } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, INTAKE_KIND, SESSION_INFO, SOURCE } from './constants.js'
 import { AuditLog } from './audit.js'
-import { describeSession, rootSessionOf } from './session-info.js'
+import { describeSession, rootSessionOf, senderOf } from './session-info.js'
 import { authorOf, sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
@@ -112,7 +112,7 @@ function latestUserText(session) {
   const events = session.snapshotEvents()
   for (let i = events.length - 1; i >= 0; i--) {
     const event = events[i]
-    if (event.type !== APPROVAL.userEvent || !APPROVAL.userSources.includes(event.data?.source?.kind)) continue
+    if (event.type !== APPROVAL.userEvent || senderOf(event.data?.source) !== SESSION_INFO.roles.user) continue
     const text = (event.data.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim()
     if (text.length > 0) return cutToBytes(text, APPROVAL.userMessageBytes, ELLIPSIS)
   }
@@ -312,8 +312,11 @@ export class ApprovalBroker {
   #provenance(session) {
     const fishball = this.#assistantId()
     const events = session.snapshotEvents()
-    const byFishball = (source) => source?.kind === SOURCE.relay.kind && source.senderSessionId === fishball
-    const describe = (source, fishballText) => source === undefined ? PROVENANCE.unknown : byFishball(source) ? fishballText : APPROVAL.userSources.includes(source.kind) ? PROVENANCE.user : PROVENANCE.other
+    const describe = (source, fishballText) => {
+      if (source === undefined) return PROVENANCE.unknown
+      const sender = senderOf(source, fishball)
+      return sender === SESSION_INFO.roles.user ? PROVENANCE.user : sender === SESSION_INFO.roles.fishball ? fishballText : PROVENANCE.other
+    }
     let turnStart = -1
     for (let i = events.length - 1; i >= 0; i--) if (events[i].type === APPROVAL.turnStartEvent) { turnStart = i; break }
     const firstOfTurn = events.slice(turnStart + 1).find((event) => event.type === APPROVAL.userEvent)?.data?.source

@@ -27,7 +27,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, FEATURE_OFF, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, INBOUND_TOOL, NOTICE, OWN_PLUGINS, PRESET, STATUS, TOOL_STATUS, WATCH_API, WATCH_STATUS } from './support/constants.mjs'
+import { API, FEATURE_OFF, FIXTURE_BUNDLE, FIXTURE_UNCHECKED, INBOUND_TOOL, NOTICE, OWN_PLUGINS, PRESET, STATUS, TITLE, TOOL_STATUS, WATCH_API, WATCH_STATUS } from './support/constants.mjs'
 import { GENERIC_PARAMETERS } from './support/fixture-tools.mjs'
 import {
   HOOK, T, callTool, catalogSettled, fishballCall, fishballClientBundle, fishballMessages, jsonOf, callScript, messageFishball, nextTools, noticesSettled,
@@ -207,7 +207,7 @@ describe('Revision 10c: Session messages and Session watching off', () => {
         const folder = path.join(home, 'work', 'ofw-03b')
         fs.mkdirSync(folder, { recursive: true })
         const text = tok('ofw03b')
-        const { json } = await fishballCall(host, fb, 'start_session', { folder, message: text, notify_when_finished: true })
+        const { json } = await fishballCall(host, fb, 'start_session', { folder, title: TITLE.plain, message: text, notify_when_finished: true })
         assert.equal(json?.ok, true, JSON.stringify(json))
         assert.equal(json.watchError, FEATURE_OFF)
         assert.equal('watch' in json, false)
