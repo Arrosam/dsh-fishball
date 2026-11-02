@@ -175,6 +175,8 @@ window.__ModuleLoader__.load({
       escapeKey: 'Escape',
       /** The pile's scrolling box: a click on it (its scroll bar) is not a click outside the detail. */
       scrollArea: '[data-fishball-pile]',
+      /** One card's whole box in the list (its li): a click inside it is not outside its detail. */
+      cardBox: '[data-fishball-card]',
       rowGapPx: 8,
     })
     /**
@@ -2526,7 +2528,7 @@ window.__ModuleLoader__.load({
       if (card.kind === OWN_CARD_KIND && card.why) return card.why
       const who = cardWho(t, card)
       if (card.kind === QUESTION_VIEW.planReview) return t('whyPlan', { who })
-      if (card.kind === QUESTION_VIEW.question) return t('whyQuestion', { who, question: card.questions[0]?.question ?? '' })
+      if (card.kind === QUESTION_VIEW.question) return t('whyQuestion', { who, question: card.questions[0]?.question || requestLine(t, card) })
       const argument = mainArgument(card)
       if (argument && PILE_LIST.commandArgument[card.toolName] !== undefined) return t('whyRun', { who, command: argument })
       return argument ? t('whyUseOn', { who, tool: card.toolName, argument }) : t('whyUse', { who, tool: card.toolName })
@@ -2561,7 +2563,7 @@ window.__ModuleLoader__.load({
       return h('div', { className: CLS.pileRow, 'data-fishball-row': card.requestId, onClick: (event) => { if (!controls.current?.contains(event.target)) open() } },
         h('button', { ref: main, type: 'button', className: CLS.rowMain, 'aria-expanded': false },
           h('span', { className: CLS.rowLine, 'data-fishball-row-request': true },
-            h('span', { className: card.kind === OWN_CARD_KIND || card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, cardWho(t, card)), TURN_TAGS.separator, requestLine(t, card)),
+            card.kind === OWN_CARD_KIND ? h('span', { className: CLS.title }, t('pileOwnName')) : sessionTitle(card), TURN_TAGS.separator, requestLine(t, card)),
           h('span', { className: `${CLS.rowLine} ${CLS.muted}`, 'data-fishball-row-why': true }, whyLine(t, card))),
         h('div', { ref: controls, className: CLS.rowControls }, h(RowButtons, { card, t, onOpen: open })))
     }
@@ -2572,19 +2574,26 @@ window.__ModuleLoader__.load({
      * when it opens. @param onClose - (returnFocus) => void; a click outside keeps the focus where you
      * clicked, so it never takes it back from the composer.
      */
-    function PileDetail({ card, t, onClose }) {
+    function PileDetail({ card, t, active, onClose }) {
       const root = React.useRef(null)
       React.useEffect(() => { root.current?.querySelector('button')?.focus({ preventScroll: true }) }, [])
       React.useEffect(() => {
-        // The pile's own box (its scroll bar, its padding) belongs to the detail's window, not outside it.
-        const outside = (event) => { if (!root.current?.contains(event.target) && !event.target.matches?.(PILE_LIST.scrollArea)) onClose(false) }
+        // Only while open: a closing detail stays drawn for its close, and must not close the next one.
+        if (!active) return undefined
+        // The card's own box (its padding) and the pile's (its scroll bar) belong to the detail's window.
+        const outside = (event) => {
+          const inside = root.current?.closest(PILE_LIST.cardBox)?.contains(event.target) || event.target.matches?.(PILE_LIST.scrollArea)
+          if (!inside) onClose(false)
+        }
         document.addEventListener('pointerdown', outside, true)
         return () => document.removeEventListener('pointerdown', outside, true)
-      }, [onClose])
+      }, [active, onClose])
       const back = () => onClose(true)
-      return h('div', { ref: root, role: 'region', 'aria-label': cardWho(t, card), className: CLS.detail, 'data-fishball-detail': card.requestId, onKeyDown: (event) => { if (event.key === PILE_LIST.escapeKey) { event.stopPropagation(); back() } } },
+      // Escape while an input method composes (Chinese, for one) only ends the composition.
+      const onKeyDown = (event) => { if (event.key === PILE_LIST.escapeKey && !event.nativeEvent.isComposing) { event.stopPropagation(); back() } }
+      return h('div', { ref: root, role: 'region', 'aria-label': cardWho(t, card), className: CLS.detail, 'data-fishball-detail': card.requestId, onKeyDown },
         h('button', { type: 'button', className: MCLS.crumb, onClick: back }, h(IconChevronLeftOutlineRegular, { size: MANAGER.crumbIconSize }), t('pileBack')),
-        h(QUESTION_KINDS.has(card.kind) ? QuestionCard : PileCard, { card, t, onDone: back }))
+        h(QUESTION_KINDS.has(card.kind) ? QuestionCard : PileCard, { card, t, onDone: () => onClose(true, card.requestId) }))
     }
 
     /**
@@ -2595,7 +2604,7 @@ window.__ModuleLoader__.load({
       return h(Reveal, { as: 'li', shown: !leaving && (listShown || isOpen), 'data-fishball-card': card.requestId, 'data-fishball-card-kind': card.kind },
         h('div', { className: CLS.card },
           h(Reveal, { shown: !isOpen }, h(PileRow, { card, t, onOpen, focus })),
-          h(Reveal, { shown: isOpen }, h(PileDetail, { card, t, onClose }))))
+          h(Reveal, { shown: isOpen }, h(PileDetail, { card, t, active: isOpen, onClose }))))
     }
 
     /**
@@ -2671,7 +2680,11 @@ window.__ModuleLoader__.load({
         const state = useFishball()
         const live = state.pile ?? NO_ENTRIES
         const liveGrants = state.grants ?? NO_ENTRIES
-        const cards = useLeaving(live, cardKey)
+        // Cards you just answered in their detail: hidden at once, before the snapshot drops them, so
+        // the answered row never shows again with live buttons. Ids are unique, so none comes back.
+        const [answered, setAnswered] = React.useState(NO_ENTRIES)
+        const shownCards = React.useMemo(() => (answered.length === 0 ? live : live.filter((card) => !answered.includes(card.requestId))), [live, answered])
+        const cards = useLeaving(shownCards, cardKey)
         const grants = useLeaving(liveGrants, grantKey)
         const [openId, setOpenId] = React.useState(null)
         const [focusId, setFocusId] = React.useState(null)
@@ -2688,15 +2701,20 @@ window.__ModuleLoader__.load({
         const drawnOpen = React.useRef(open)
         drawnOpen.current = open
         const onOpen = React.useCallback((requestId) => { setFocusId(null); setOpenId(requestId) }, [])
-        const onClose = React.useCallback((returnFocus) => {
-          setFocusId(returnFocus ? drawnOpen.current : null)
+        /** @param answeredId - the card you answered in the detail: it leaves, so the pile takes the focus. */
+        const onClose = React.useCallback((returnFocus, answeredId) => {
+          setFocusId(returnFocus && answeredId === undefined ? drawnOpen.current : null)
+          if (answeredId !== undefined) {
+            setAnswered((current) => [...current, answeredId])
+            scroller.current?.focus({ preventScroll: true })
+          }
           setOpenId(null)
         }, [])
         if (!sessionId || sessionId !== state.sessionId) return null
         const title = t('pileTitle', { count: live.length })
         const grantsTitle = t('grantsTitle', { count: liveGrants.length })
         return h(Reveal, { shown: live.length > 0 || liveGrants.length > 0 },
-          h('section', { ref: scroller, className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'data-fishball-pile': live.length, 'data-fishball-grants': liveGrants.length, 'data-fishball-pile-open': open ?? undefined },
+          h('section', { ref: scroller, tabIndex: -1, className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'data-fishball-pile': live.length, 'data-fishball-grants': liveGrants.length, 'data-fishball-pile-open': open ?? undefined },
             h(Reveal, { shown: live.length > 0 }, h('section', { 'aria-label': title },
               h('div', { className: CLS.pileHead }, title),
               h('ul', { className: CLS.entries }, cards.map(({ item: card, leaving }) => h(PileEntry, { key: card.requestId, card, t, leaving, listShown: open === null, isOpen: open === card.requestId, onOpen, onClose, focus: open === null && focusId === card.requestId }))))),
