@@ -2410,7 +2410,7 @@ Requirements: DESIGN §10f, §9 `notices`, §14 "Recommended plugins (revision 1
 | WEL-10 | ST existing install (Reading) | shows once after the upgrade | home booted by 5343079 (git archive, as own-plugins-upgrade): no `welcome` there; true after the upgrade; seen → false; false after a restart |
 | WEL-11 | EP | a new home is separate | a second fresh home starts with show true |
 
-Fail before the build: all of REC-01..03, 05, 10..15, WEL-01..05, 07..11 (no `recommended` or `welcome` in the state, no seen route). Pass before and after: REC-04 (guarded by the entries helper: fails before), REC-08, WEL-06 and WEL-03 only vacuously until WEL-01 runs.
+Fail before the build: every case except REC-08 and WEL-06 (no `recommended` or `welcome` in the state, no seen route); REC-08 and WEL-06 check absences and pass on both sides.
 
 Hand-check list (not tested here; checked in a sandbox DSH with the fake model, notes in [hand-checks/rec-plugins.md](hand-checks/rec-plugins.md)):
 - The "Recommended plugins" section on Fishball's settings page, right after Status: four categories in order, "Recommended first" badge and sentence on the first two, Pet's note, one-line description with ellipsis, Source link, the action at the right of each row; English and Chinese, light and dark.
