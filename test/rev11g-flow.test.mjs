@@ -227,6 +227,8 @@ describe('Revision 11 rev11g: how a managed session\'s question travels', () => 
     assert.ok(card, 'a card at once, not after 120 s')
     assert.ok(cardMentions(card, note), 'Fishball\'s note on the card: ' + JSON.stringify(card).slice(0, 600))
     assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'open')
+    // The requirements do not order the tag record before the pile card, so wait for it (bounded) instead of reading it at once.
+    await until(async () => q.allTagsOf(id).some((t) => t.kind === 'sent-to-you'), 5000, 50)
     assert.ok(q.allTagsOf(id).some((t) => t.kind === 'sent-to-you'), 'a "Sent to you" tag, as escalating a permission request gets (Q-r11-tag-scope): ' + JSON.stringify(q.allTagsOf(id)))
     assert.equal(q.tagsOf(id).length, 0, 'but no answer tag')
     assert.equal((await q.route({ questionId: cardId(card), answers: A.single })).status, 200)
