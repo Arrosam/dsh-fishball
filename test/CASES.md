@@ -2255,3 +2255,17 @@ File: `rev11h-stop` (16 cases: STP-01..09 in 8 tests, RDR-01..06, CAP-01..02), o
 | CAP-02 | BVA | `messagesPerHour` 0: no cap for redirect |
 
 Readings (not in the design text, taken from existing conventions): refusal codes are `not-managed`, `is-fishball` (P5 code); a decisions row carries `action`, `sessionId`, `by`, `at`, with the reason somewhere in the row; Stop on a question needs User mode so the question is a pile card at once. No older case is changed.
+
+## Revision 11 rev11-ui-fixes cases (five small UI fixes R1-R5; written from the requirements alone, no code read)
+
+File: `rev11-ui-fixes` (5 cases UIF-01..05; two of them fail until the fix lands). The stored field that records who gave a pass is not named by the requirements, so UIF-01..04 compare the pass entries of the two givers by every field that is not identity, time or free text (snapshot `approvals.recent` and the stored audit record).
+
+| id | technique | expected |
+|---|---|---|
+| UIF-01 | DT (giver you / Fishball) × (snapshot, store) | answer stays `pass`; the remaining fields differ between the givers |
+| UIF-02 | EP (two passes of each giver) | same giver, same remaining fields |
+| UIF-03 | ST (restart) | the same fields after a restart, in snapshot and store |
+| UIF-04 | EP (entry written before the fix: giver's field removed) | host starts live; the entry, if listed, still reads `pass` |
+| UIF-05 | EP (served client bundle) | holds "Ran on your one-time approval", "used once", "used {count} times" |
+
+Left to the hand check (the suite cannot see them): R1 (pile and grants title rows opaque, light and dark, nothing shows through while scrolling); R2 wording for counts 0, 1, 2 in English and Chinese "已使用 {count} 次"; R3 "Fishball:" label on the session's row (and the Chinese label, "Reason:" kept for the agent's reason); R4 audit labels in the settings page, an Allow once on the session's row, Chinese label; R5 wordmark label "Open Fishball" after a language change and fresh load.

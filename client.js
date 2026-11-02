@@ -157,7 +157,9 @@ window.__ModuleLoader__.load({
      * before DSH's own docks, as in S37's fixture (the order beside DSH's Todo and Queue docks
      * was not checked there).
      */
-    const PILE = Object.freeze({ id: 'fishball-pile', order: -100, heightUnit: 'vh' })
+    // fill: the pile's background, shared by its pinned title rows, which must be opaque or the
+    // cards scrolling under them show through (rev11-ui-fixes R1).
+    const PILE = Object.freeze({ id: 'fishball-pile', order: -100, heightUnit: 'vh', fill: 'var(--dsw-alias-bg-layer-1)' })
     /**
      * DSH's composer layout variables (dsh-client-ui-conversation, rc.2), read so a dock entry
      * takes DSH's own width and spacing. The composer stack is a column whose gap
@@ -194,6 +196,15 @@ window.__ModuleLoader__.load({
     const CARD_KINDS = new Set(['asked', 'direct', 'own'])
     /** Fishball's own request (rev11f, §7a.11): its card is labelled Fishball instead of a session. */
     const OWN_CARD_KIND = 'own'
+    // The attribute Fishball keeps on DSH's brand button (rev11-ui-fixes R5).
+    const BRAND_LABEL_ATTR = 'aria-label'
+    // The one use count English words apart ("used once", not "used 1 times"); the manager's decision, rev11-ui-fixes R2.
+    const GRANT_USES = Object.freeze({ once: 1 })
+    // An audit row that ran on a pass: who gave the pass (passBy, recorded since rev11-ui-fixes R4).
+    // A row without passBy (written before the fix) keeps the wording it always had.
+    const AUDIT_PASS = Object.freeze({ answer: 'pass', byUser: 'user', userKey: 'approvalAnswer.pass-user' })
+    // ask_fishball's reason_from for Fishball's own reason (rev11-ui-fixes R3); a row from before the fix has none.
+    const REASON_FROM_FISHBALL = 'fishball'
     const ARGUMENTS_COMPLETE = 'complete'
     /** The turn-tail tags (DESIGN §7a.3, §10e; src/constants.js TAG_KIND). */
     const TURN_TAGS = Object.freeze({ id: 'fishball-tags', sentToYou: 'sent-to-you', grant: 'grant', prompt: 'prompt', question: 'question', planReview: 'plan-review', iconSize: 12, separator: ' · ' })
@@ -561,6 +572,7 @@ window.__ModuleLoader__.load({
       'approvalAnswer.to-user': 'Sent to you without Fishball\'s answer',
       approvalsPile: 'Waiting for you in the pile: {count}',
       'approvalAnswer.pass': 'Ran on Fishball\'s one-time approval',
+      'approvalAnswer.pass-user': 'Ran on your one-time approval',
       'approvalAnswer.grant': 'Approved by Fishball with a standing grant',
       'approvalAnswer.grant-used': 'Ran on Fishball\'s standing grant',
       'approvalAnswer.answer': 'Question answered by Fishball',
@@ -817,6 +829,7 @@ window.__ModuleLoader__.load({
       grantsTitle: 'Standing grants ({count})',
       grantEnds: 'ends {at}',
       grantUses: 'used {count} times',
+      grantUsedOnce: 'used once',
       grantPaused: 'Paused while Fishball or Permission requests is off',
       revoke: 'Revoke',
       'grantError.unknown': 'This grant does not exist.',
@@ -968,6 +981,7 @@ window.__ModuleLoader__.load({
       'approvalAnswer.to-user': '未经 Fishball 回答，直接转交给你',
       approvalsPile: '在待处理区等你处理：{count}',
       'approvalAnswer.pass': '按 Fishball 的一次性批准运行',
+      'approvalAnswer.pass-user': '按你的一次性批准运行',
       'approvalAnswer.grant': 'Fishball 已批准并授予长期许可',
       'approvalAnswer.grant-used': '按 Fishball 的长期许可运行',
       'approvalAnswer.answer': 'Fishball 已回答问题',
@@ -1224,6 +1238,7 @@ window.__ModuleLoader__.load({
       grantsTitle: '长期许可（{count}）',
       grantEnds: '{at} 到期',
       grantUses: '已使用 {count} 次',
+      grantUsedOnce: '已使用 1 次',
       grantPaused: 'Fishball 或“权限请求”关闭期间暂停',
       revoke: '撤销',
       'grantError.unknown': '这个许可不存在。',
@@ -1267,8 +1282,8 @@ window.__ModuleLoader__.load({
       `.${CLS.entries}{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}`,
       // The pile, the ask_fishball row and the turn tags (revision 11, S37's fixture look), in DSH's theme tokens
       // so they follow light and dark. The pile's height comes from pileMaxHeightVh, set inline.
-      `.${CLS.pile}{margin:0 0 8px;overflow:auto;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
-      `.${CLS.pileHead}{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--dsw-alias-border-l2);background:inherit;color:var(--dsw-alias-label-primary);font-weight:600}`,
+      `.${CLS.pile}{margin:0 0 8px;overflow:auto;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:${PILE.fill};color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
+      `.${CLS.pileHead}{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--dsw-alias-border-l2);background:${PILE.fill};color:var(--dsw-alias-label-primary);font-weight:600}`,
       `.${CLS.card}{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-top:.5px solid var(--dsw-alias-border-l2)}`,
       `.${CLS.card}:first-of-type{border-top:0}`,
       `.${CLS.cardHead}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
@@ -1540,8 +1555,22 @@ window.__ModuleLoader__.load({
         React.useEffect(() => {
           const button = ref.current?.closest('button')
           if (!button) return undefined
-          const previous = button.getAttribute('aria-label')
-          button.setAttribute('aria-label', count > 0 ? t('brandLabelUnread', { count }) : t('brandLabel'))
+          let previous = button.getAttribute(BRAND_LABEL_ATTR)
+          // DSH renders its own label on this button and sets it again whenever it re-renders (after
+          // its language loads on a fresh page, or changes): put Fishball's back each time, worded
+          // anew so it follows the current language (rev11-ui-fixes R5). Equal labels are left
+          // alone, so this cannot loop.
+          const keepLabel = () => {
+            const label = count > 0 ? t('brandLabelUnread', { count }) : t('brandLabel')
+            const current = button.getAttribute(BRAND_LABEL_ATTR)
+            if (current === label) return
+            // DSH's newest label (e.g. in a new language) is the one to give back when Fishball's goes.
+            previous = current
+            button.setAttribute(BRAND_LABEL_ATTR, label)
+          }
+          keepLabel()
+          const labelWatch = new MutationObserver(keepLabel)
+          labelWatch.observe(button, { attributes: true, attributeFilter: [BRAND_LABEL_ATTR] })
           const onClick = (event) => {
             const open = fishballOpener(ctx)
             if (open === undefined) return
@@ -1552,9 +1581,10 @@ window.__ModuleLoader__.load({
           }
           button.addEventListener('click', onClick, true)
           return () => {
+            labelWatch.disconnect()
             button.removeEventListener('click', onClick, true)
-            if (previous === null) button.removeAttribute('aria-label')
-            else button.setAttribute('aria-label', previous)
+            if (previous === null) button.removeAttribute(BRAND_LABEL_ATTR)
+            else button.setAttribute(BRAND_LABEL_ATTR, previous)
           }
         }, [count])
         // DeepSeek's word logo is the stock one, without Fishball's tag or its lifted word.
@@ -2170,7 +2200,7 @@ window.__ModuleLoader__.load({
           view.pending.length > 0 ? h('ul', { className: CLS.entries }, view.pending.map((p) => h('li', { key: p.id },
             h(Tag, { tone: 'info' }, t('approvalsWaiting')), ' ', h('span', { className: CLS.code }, p.toolName), ' ', h('span', { className: CLS.muted }, p.sessionId)))) : null,
           view.recent.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, view.recent.map((entry) => h('li', { key: entry.key },
-            h(Tag, { tone: entry.answer === 'allow' ? 'danger' : 'neutral' }, t('approvalAnswer.' + entry.answer)), ' ',
+            h(Tag, { tone: entry.answer === 'allow' ? 'danger' : 'neutral' }, t(entry.answer === AUDIT_PASS.answer && entry.passBy === AUDIT_PASS.byUser ? AUDIT_PASS.userKey : 'approvalAnswer.' + entry.answer)), ' ',
             h('span', { className: CLS.code }, entry.toolName), ' ',
             h('span', { className: CLS.muted }, entry.sessionId), ' ',
             h('span', { className: CLS.muted }, t('approvalOutcome.' + entry.finalOutcome)), ' ',
@@ -2394,7 +2424,7 @@ window.__ModuleLoader__.load({
           h('span', { className: CLS.code }, grant.toolName),
           grant.paused ? h(Tag, { tone: 'neutral' }, t('grantPaused')) : null),
         h('div', { className: CLS.code }, grantWhat(t, grant)),
-        h('div', { className: CLS.muted }, `${t('grantEnds', { at: new Date(grant.expiresAt).toLocaleString() })}${TURN_TAGS.separator}${t('grantUses', { count: grant.uses })}`),
+        h('div', { className: CLS.muted }, `${t('grantEnds', { at: new Date(grant.expiresAt).toLocaleString() })}${TURN_TAGS.separator}${grant.uses === GRANT_USES.once ? t('grantUsedOnce') : t('grantUses', { count: grant.uses })}`),
         h('div', { className: CLS.actions }, h(Button, { type: 'button', size: 'sm', variant: 'secondary', disabled: busy, onClick: () => void revoke() }, t('revoke'))),
         problem ? h('div', { role: 'alert' }, t(problem)) : null)
     }
@@ -2464,7 +2494,9 @@ window.__ModuleLoader__.load({
           args.arguments !== undefined ? h('pre', { className: CLS.pre }, JSON.stringify(args.arguments, null, JSON_INDENT)) : null,
           typeof args.why === 'string' && args.why ? labelled(t('cardReason'), args.why) : null,
           replying && typeof args.reply === 'string' ? h('div', null, args.reply) : null,
-          typeof result?.value?.reason === 'string' ? labelled(t('cardReason'), result.value.reason) : null,
+          // Fishball's reject reason carries the pile card's Fishball label; your own Reject note, and a
+          // row from before reason_from, keep Reason (rev11-ui-fixes R3).
+          typeof result?.value?.reason === 'string' ? labelled(t(result.value.reason_from === REASON_FROM_FISHBALL ? 'cardFishballNote' : 'cardReason'), result.value.reason) : null,
           typeof result?.value?.question === 'string' ? labelled(t('cardFishballNote'), result.value.question) : null,
           result?.text ? h('div', { className: CLS.muted }, result.text) : null,
           card ? h(CardAnswer, { requestId: card.requestId, t }) : null)
