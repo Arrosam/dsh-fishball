@@ -452,7 +452,8 @@ export const RECENT_MAX = 20
  * P9: rubric phrases in Fishball's system prompt (rules 1-5 stay word for word in revision 11, DESIGN §7a.7).
  * Revision 11 removes "You cannot reject" (Q-r11-reject): it is in RUBRIC_REMOVED, never expected.
  */
-export const RUBRIC = ['**Permission requests.**', 'Approve only if the user has allowed you to', 'With no such allowance, escalate at once', 'Low risk:', 'High risk:', 'When unsure, it is high risk', 'When you escalate, tell the user', 'If you started the requesting session or its current turn, approve only work the user asked for', 'answer_approval']
+/** Rev11 pile list (P3): rule 4 no longer says "tell the user in one or two sentences"; the escalate note is one sentence for the user's card, so the rule reads "When you escalate, give a reason: ...". */
+export const RUBRIC = ['**Permission requests.**', 'Approve only if the user has allowed you to', 'With no such allowance, escalate at once', 'Low risk:', 'High risk:', 'When unsure, it is high risk', 'When you escalate, give a reason', 'If you started the requesting session or its current turn, approve only work the user asked for', 'answer_approval']
 export const RUBRIC_REMOVED = ['You cannot reject']
 /**
  * Revision 11 (§7a.7, Q-r11-reject-rubric): one operational line lets Fishball reject only when the call goes
