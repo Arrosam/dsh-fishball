@@ -2295,3 +2295,51 @@ File: `rev11h-stop` (16 cases: STP-01..09 in 8 tests, RDR-01..06, CAP-01..02), o
 | CAP-02 | BVA | `messagesPerHour` 0: no cap for redirect |
 
 Readings (not in the design text, taken from existing conventions): refusal codes are `not-managed`, `is-fishball` (P5 code); a decisions row carries `action`, `sessionId`, `by`, `at`, with the reason somewhere in the row; Stop on a question needs User mode so the question is a pile card at once. No older case is changed.
+
+## Fix: Chinese punctuation stays outside bold text (persona rule; DESIGN §7 "Bold text and Chinese punctuation", §16 Q-bold-punct; requirements R-B1..R-B4; written from the requirements alone, no behaviour code read)
+
+DSH's markdown renderer can leave bold text unclosed when it ends in Chinese punctuation and a letter follows (`**还在进行中：**dsh` showed its asterisks). Fishball cannot change the renderer, so the persona gets one last line asking the model to write `**还在进行中**：` and not `**还在进行中：**`. Two files; both import only the data exports of `src/persona.js` (`PERSONA_ROLE`, `PERSONA_ROW`, `HIDDEN_PROMPT_ENTRIES`), through [support/persona-bold.mjs](support/persona-bold.mjs). Named values are in `PERSONA_BOLD`, `DSH_MARKDOWN`, `AFTER_PUNCT`, `CHINESE_PUNCT` and `BOLD_SENTENCES` in [support/constants.mjs](support/constants.mjs).
+
+### [persona-bold.test.mjs](persona-bold.test.mjs): R-B1, R-B2, R-B3 (PBD-nn; 20 tests; static cases need no host, the R-B3 prompt cases boot one)
+
+| id | technique | expected result |
+|---|---|---|
+| PBD-01 | EP (rule line count) | exactly one line holds both forms of the example; each form occurs once in the whole persona |
+| PBD-02 | BVA (last line) | that line is the last line (index = length − 1); it is not empty; the persona has no trailing line break and no carriage return |
+| PBD-03 | EP (wording) | the line contains "bold", "Chinese punctuation", "outside" (case-insensitive) and `**` |
+| PBD-04 | DT (order × lead-in) | the form to write comes before the form not to write; "write" just before the first, "not" just before the second |
+| PBD-10 | BVA (line count) | baseline lines + 1 (equal if the baseline already has the rule) |
+| PBD-11 | EP (every old line) | line i equals the baseline's line i for every baseline line |
+| PBD-12 | BVA (edges) | line 0 and the baseline's last line unchanged; the rule line sits right after the last old line |
+| PBD-13 | BVA (blank lines) | blank lines at the same indices as the baseline's; the rule line is not blank |
+| PBD-14 | EP (exact text) | persona = baseline + line break + rule line |
+| PBD-15 | EP (rest of module) | same export names (the three above); `PERSONA_ROW` equal to the baseline's except `config.prefix`; `HIDDEN_PROMPT_ENTRIES` equal |
+| PBD-20 | EP (mounted row) | `PERSONA_ROW.name` is `@deepseek-ai/dsh-persona`; `config.prefix` equals the persona and ends with the rule line |
+| PBD-21 ×4 | DT (session × rule) | rule line once in Fishball's setup-turn and driven-turn system prompts; in neither the bare-preset nor the standard-preset ordinary session's |
+| PBD-22 | EP (prompt shape) | the whole persona occurs once in Fishball's prompt, and the rule line is where it ends |
+| PBD-23 ×2 | EP (ordinary) | neither ordinary session's prompt holds either form of the example, "Chinese punctuation" or "还在进行中" |
+| PBD-24 | ST (restart) | after a restart the same Fishball session's next request holds the persona once, with the rule line |
+
+The baseline is `git show rebuild/assistant:src/persona.js`, imported from a `data:` URL (no file is written). R-B2's cases are skipped, with the reason, when that ref is not in the clone. When the live branch has taken the rule in, "the added line" is already part of the baseline and the cases expect no difference at all. `FBTEST_PLUGIN_DIR` points both the data import and the booted host at another checkout, so a baseline run of the file shows the cases that need the rule failing.
+
+Checked by changing a copy of the persona (eight mutants, run through `FBTEST_PLUGIN_DIR`, not committed): no rule; rule in the middle; blank line before it; the two forms swapped; an earlier line edited; trailing line break; two rule lines; ASCII colon in the example. Every mutant fails at least one of PBD-01..20.
+
+### [persona-bold-render.test.mjs](persona-bold-render.test.mjs): R-B4, DSH's own parser (PBR-nn; 30 tests for each installed version in `DSH_MARKDOWN.versions`: 0.2.1-rc.3 and 0.2.1-rc.2)
+
+[support/dsh-markdown.mjs](support/dsh-markdown.mjs) cuts the chat's markdown parser verbatim out of the installed web frontend bundle (`dsh-web-frontend/dist/assets/index-*.js`: micromark `fromMarkdown` with the gfm extension, DSH's own `cjkFriendlyAttention` rule and the math extensions) and imports it with the bundle's vendor chunk. It is not another markdown library. Not DSH's code: a stub `document` while the vendor chunk loads, and a stub for the one image-file-type helper of the post-processing step (it only rewrites a paragraph that is a single local image path). The mdast to React step is not run: a `strong` node is what the chat shows in bold. A version that is not installed, or whose bundle has another shape, skips its cases with the reason.
+
+| id | technique | expected result |
+|---|---|---|
+| PBR-01 | EP (the reported bug) | `**还在进行中：**dsh`: no `strong` node, the `**` stay in plain text |
+| PBR-02 | EP (the rule's form) | `**还在进行中**：dsh`: `strong` "还在进行中", plain text "：dsh", no asterisk |
+| PBR-03 ×9 | DT (form × what follows the mark: letter, capital, digit, accented letter, Cyrillic letter, Chinese character, space, end of line, ASCII mark) | rule's form: bold in every row. The forbidden form: asterisks shown after a letter or digit (five rows), closed by the renderer after the other four |
+| PBR-04 ×15 | EP (each Chinese mark: `，。！？；：、）」”…—（【》`) | rule's form bold; the forbidden form followed by a letter shows its asterisks |
+| PBR-05 ×3 | EP (in context) | a mark mid-line; two bold runs in one line; two list items: every bold run found, no asterisk left in plain text |
+| PBR-06 | EP (the persona's own text) | the two example forms cut from the persona's rule line behave as PBR-01/02 |
+
+### Ambiguities and findings (persona rule)
+
+- **A173. "First part of the system prompt".** The persona is not at the very start of Fishball's system prompt: DSH puts its own line `You are an AI agent powered by DeepSeek Harness.` first (the persona starts at character 51), and the persona is followed by blank-line separated sections (web search notes and so on). PBD-22 therefore checks that the whole persona occurs once and that the rule line is where it ends, not that it starts at index 0.
+- **A174. Wording.** The requirement fixes the examples (`**还在进行中**：` to write, `**还在进行中：**` not to) and the sense ("in bold text, put Chinese punctuation outside the `**` markers"), not the exact sentence. PBD-03/04 check the words "bold", "Chinese punctuation", "outside", `**`, and the order "write … not …"; a rewording that drops one of them fails there on purpose and is a one-line change to `PERSONA_BOLD.terms` / `before`.
+- **A175. The persona has no list marker requirement.** The new line begins `- ` like its neighbours, but the requirement does not ask for it, so no case checks it.
+- **A176. What the renderer does (finding, PBR-03/04).** The asterisks stay visible when a letter or digit of any script follows the closing marker (Latin, capital, digit, accented, Cyrillic); a Chinese character, a space, the end of the line or an ASCII mark after it closes the bold text. All 15 Chinese marks tried (`，。！？；：、）」”…—（【》`) behave alike. The rule is therefore needed only before a letter or digit, but it is safe in every position. The same happens with an ASCII mark (`**still going:**dsh`, `**还在进行中:**dsh` keep their asterisks): the persona rule covers Chinese punctuation only, as the requirement says.

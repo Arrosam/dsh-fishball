@@ -897,3 +897,86 @@ export const ASK_USER_QUESTION = 'ask_user_question'
 export const PLAN_REVIEW_ID = 'plan-review'
 /** A timed question's pending result carries these (dsh-tool-ask-user). */
 export const PENDING = { key: 'pending' }
+
+// ---- Persona rule: Chinese punctuation stays outside bold text (DESIGN §7 "Bold text and Chinese punctuation", §16 Q-bold-punct) ----
+/**
+ * What the persona tests compare against. `module` is the persona data module (exports PERSONA_ROLE and PERSONA_ROW);
+ * FBTEST_PLUGIN_DIR points it at another checkout, as it does for the worker (a baseline run of a file).
+ * `baseline` is where the persona stood before the rule was added: the live branch.
+ */
+export const PERSONA_BOLD = {
+  module: path.join(process.env.FBTEST_PLUGIN_DIR ?? REPO, 'src', 'persona.js'),
+  baseline: { ref: 'rebuild/assistant', file: 'src/persona.js', moduleType: 'text/javascript' },
+  exports: ['HIDDEN_PROMPT_ENTRIES', 'PERSONA_ROLE', 'PERSONA_ROW'],
+  rowName: '@deepseek-ai/dsh-persona',
+  lineBreak: '\n',
+  carriageReturn: '\r',
+  /** The bold marker, and the two forms of the requirement's example: to write, and not to write. */
+  marker: '**',
+  asterisk: '*',
+  /** The example's words and its Chinese punctuation mark (the full-width colon, U+FF1A). */
+  words: '还在进行中',
+  punct: '：',
+  good: '**还在进行中**：',
+  bad: '**还在进行中：**',
+  /** The words the rule line says it with (the requirement: "in bold text, put Chinese punctuation outside the ** markers"). */
+  terms: ['bold', 'Chinese punctuation', 'outside'],
+  /** What comes just before each example in the rule line: "write <good>, not <bad>". */
+  before: { good: /write\W*$/i, bad: /\bnot\W*$/i },
+  /** Ordinary (non-Fishball) prompts must not carry any of these. */
+  absentFromOrdinary: ['Chinese punctuation', '还在进行中'],
+  /** Sessions whose system prompt is checked. */
+  sessions: { setup: 'Fishball setup turn', driven: 'Fishball driven turn', restarted: 'Fishball after a restart', bare: 'ordinary session (bare preset)', standard: 'ordinary session (standard preset)' },
+}
+
+/**
+ * DSH's own markdown renderer, run offline: the web frontend bundles of the installed DSH versions
+ * (`dsh-web-frontend/dist/assets/index-*.js` plus its `vendor-*.js` chunk). `versions` are checked one by one.
+ * `generated` is the gitignored folder the extracted module is written to.
+ */
+export const DSH_MARKDOWN = {
+  versionsDir: path.resolve(RUNTIME, '..', '..'),
+  versions: ['0.2.1-rc.3', '0.2.1-rc.2'],
+  assets: ['node_modules', '@deepseek-ai', 'dsh-web-frontend', 'dist', 'assets'],
+  generated: path.join(REPO, '.runtime', 'dsh-markdown'),
+  indexFile: /^index-.*\.js$/,
+  vendorFile: /^vendor-.*\.js$/,
+  /** The bundle is the chat's renderer when it holds DSH's own attention rule. */
+  marker: 'cjkFriendlyAttention',
+  /** The renderer function: the parser with gfm, DSH's attention rule and math; the post-processing function it wraps. */
+  parserPattern: /function ([\w$]+)\(e\)\{return ([\w$]+)\(([\w$]+)\(e,\{extensions:\[[\w$]+\(\),[\w$]+\(\),[\w$]+\(\),[\w$]+\(\)\],mdastExtensions:\[[\w$]+\(\),[\w$]+\(\)\]\}\),e\)\}/,
+  /** The one helper the post-processing calls that is not part of the extracted slice (image file types); unused for bold text. */
+  imageKindPattern: /([\w$]+)\([\w$]\[2\]\)==="image"/,
+  /** What the bundle needs from a browser while it loads: only `document.compatMode` and an element for entity decoding. */
+  compatMode: 'CSS1Compat',
+  indexModule: 'dsh-renderer.mjs',
+  vendorModule: 'vendor.mjs',
+}
+
+/** The mdast node types the bold checks read. */
+export const MDAST = { text: 'text', strong: 'strong' }
+
+/** Characters that may follow the punctuation, by class (the renderer decides by what follows a closing marker). */
+export const AFTER_PUNCT = {
+  latin: 'dsh',
+  upper: 'DSH',
+  digit: '1',
+  accented: 'é',
+  cyrillic: 'ж',
+  chinese: '好',
+  space: ' dsh',
+  end: '',
+  asciiPunct: '.',
+}
+/** After which the unclosed form stays unclosed (a letter or digit follows the closing marker), and after which it closes. */
+export const AFTER_WORD = ['latin', 'upper', 'digit', 'accented', 'cyrillic']
+export const AFTER_NON_WORD = ['chinese', 'space', 'end', 'asciiPunct']
+
+/** Chinese (full-width and CJK) punctuation marks: the persona rule covers these. */
+export const CHINESE_PUNCT = ['，', '。', '！', '？', '；', '：', '、', '）', '」', '”', '…', '—', '（', '【', '》']
+/** Texts for the sentence-level cases. */
+export const BOLD_SENTENCES = {
+  midLine: { text: '状态：**还在进行中**：dsh 继续', strong: ['还在进行中'] },
+  twoBold: { text: '**还在进行中**：dsh 和 **另一个**：abc', strong: ['还在进行中', '另一个'] },
+  list: { text: '- **还在进行中**：dsh\n- **完成**：x', strong: ['还在进行中', '完成'] },
+}
