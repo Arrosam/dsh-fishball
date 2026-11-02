@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -149,6 +149,8 @@ window.__ModuleLoader__.load({
       dock: 'conversation.input.dock',
       toolview: 'tool.call.toolview',
       turnTail: 'conversation.chat.turnTail',
+      /** DSH's 16px cell before a session row's title, mounted only while the row is idle (dsh-client-ui-workspace, rc.2). */
+      rowLeading: 'sidebar.session.row.leading',
     })
     /**
      * Your pile (DESIGN §10e, S37): a dock entry above Fishball's composer. Its order puts it
@@ -156,6 +158,31 @@ window.__ModuleLoader__.load({
      * was not checked there).
      */
     const PILE = Object.freeze({ id: 'fishball-pile', order: -100, heightUnit: 'vh' })
+    /**
+     * DSH's composer layout variables (dsh-client-ui-conversation, rc.2), read so a dock entry
+     * takes DSH's own width and spacing. The composer stack is a column whose gap
+     * (--dsh-composer-stack-gap) spaces its docks. DSH's Todo dock is a free-standing card
+     * `width: calc(100% - 2 × side clearance - 4 × dock inset)`, max-width the composer card's
+     * minus 4 dock insets, `margin: 0 auto`; the Queue dock's visible panel comes out the same
+     * width (its box is 2 insets narrower and padded by an inset on each side).
+     */
+    const DSH_COMPOSER = Object.freeze({ sideClearance: 'var(--dsh-composer-side-clearance)', dockInset: 'var(--dsh-composer-dock-inset)', cardMaxWidth: 'var(--dsh-composer-card-max-width)', sideClearances: 2, dockInsets: 4 })
+    /** `n` copies of a CSS length, subtracted inside a calc(). */
+    const minusTimes = (length, n) => ` - ${length}`.repeat(n)
+    /**
+     * The managed-session banner (DESIGN §10e item 30): a dock entry in a managed session's chat.
+     * Order 10 puts it after DSH's Todo dock (0) and before its Queue dock (20) (the builder's
+     * choice, per the Reading): the Queue dock must stay last, because its negative bottom
+     * margin tucks it into the composer card and would overlap anything placed between them.
+     * Sizes are in px.
+     */
+    const MANAGED_BANNER = Object.freeze({ id: 'fishball-managed', order: 10, iconPx: 16, gapPx: 8, paddingYPx: 4, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
+    /**
+     * The managed mark in a sidebar row's leading cell. cellPx copies DSH's leading cell (the
+     * seat's contract in dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the
+     * title"); the cell is not sized by its parent, so a percentage would collapse. Revisit if DSH resizes it.
+     */
+    const MANAGED_ROW = Object.freeze({ id: 'fishball-managed', iconPx: 14, cellPx: 16 })
     /** The ask_fishball row (S37): DSH has no view for this tool, so this entry draws the whole row. */
     const ASK_ROW = Object.freeze({ tool: 'ask_fishball', phaseStart: 'start', phaseResult: 'result' })
     /** ask_fishball's answer codes with their own words (keep in step with src/constants.js ASK_RESULT, ASK_ERROR). */
@@ -169,8 +196,17 @@ window.__ModuleLoader__.load({
     const OWN_CARD_KIND = 'own'
     const ARGUMENTS_COMPLETE = 'complete'
     /** The turn-tail tags (DESIGN §7a.3, §10e; src/constants.js TAG_KIND). */
-    const TURN_TAGS = Object.freeze({ id: 'fishball-tags', sentToYou: 'sent-to-you', grant: 'grant', prompt: 'prompt', iconSize: 12, separator: ' · ' })
+    const TURN_TAGS = Object.freeze({ id: 'fishball-tags', sentToYou: 'sent-to-you', grant: 'grant', prompt: 'prompt', question: 'question', planReview: 'plan-review', iconSize: 12, separator: ' · ' })
     const TAG_ANSWERS = new Set(['allow', 'grant', 'reject', 'ask'])
+    /** A plan review's tag answers (src/constants.js QUESTION_TAG_ANSWER); a question's tag shows the answer's own words. */
+    const PLAN_TAG_ANSWERS = new Set(['approve', 'keep-planning'])
+    /**
+     * Questions and plan reviews (rev11g, §7a.10; src/constants.js QUESTION_KIND, QUESTION_MODE,
+     * QUESTION_ERROR): their cards share the pile, the mode is set on the settings page.
+     */
+    const QUESTION_VIEW = Object.freeze({ question: 'question', planReview: 'plan-review', modes: Object.freeze(['auto', 'fishball', 'user']) })
+    const QUESTION_KINDS = new Set([QUESTION_VIEW.question, QUESTION_VIEW.planReview])
+    const QUESTION_ERRORS = new Set(['expired', 'bad-answer', 'already-settled', 'session-not-live', 'unavailable'])
     /**
      * Standing grants (rev11d; src/constants.js GRANT_KIND, GRANT.wildcard): a prefix grant is shown
      * as its prefix with the wildcard, an exact one by its tool. Revoke refusals with their own text.
@@ -385,7 +421,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', linkButton: 'fb-link-button', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted' })
+    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', linkButton: 'fb-link-button', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -448,6 +484,8 @@ window.__ModuleLoader__.load({
       handOver: 'Hand over to Fishball',
       takeBack: 'Take back from Fishball',
       manageTitle: 'Managed by Fishball',
+      // The banner's words. Same text as manageTitle (the refusal dialog's title) today, but a separate meaning.
+      managedBanner: 'Managed by Fishball',
       manageFailed: 'That did not work.',
       'manageError.unknown-session': 'This session could not be read.',
       'manageError.is-fishball': 'This is Fishball\'s own session.',
@@ -492,6 +530,7 @@ window.__ModuleLoader__.load({
       outboxHint: 'Messages Fishball sent to other sessions and sessions it started.',
       'outboxKind.message': 'Message',
       'outboxKind.start': 'New session',
+      'outboxKind.redirect': 'Redirect',
       'outboxStatus.delivered': 'Delivered',
       'outboxStatus.unconfirmed': 'Delivered, not confirmed',
       'outboxStatus.failed': 'Failed',
@@ -524,11 +563,17 @@ window.__ModuleLoader__.load({
       'approvalAnswer.pass': 'Ran on Fishball\'s one-time approval',
       'approvalAnswer.grant': 'Approved by Fishball with a standing grant',
       'approvalAnswer.grant-used': 'Ran on Fishball\'s standing grant',
+      'approvalAnswer.answer': 'Question answered by Fishball',
       approvalsGrants: 'Active standing grants: {count}',
       'approvalOutcome.allowed-once': 'allowed once',
       'approvalOutcome.rejected': 'rejected',
       'approvalOutcome.cancelled': 'cancelled',
       'approvalOutcome.unavailable': 'no answer',
+      'approvalOutcome.answered-by-fishball': 'answered by Fishball',
+      'approvalOutcome.answered-in-pile': 'answered by you in the pile',
+      'approvalOutcome.answered-in-session': 'answered in its session',
+      'approvalOutcome.closed': 'closed',
+      'approvalOutcome.back-to-session': 'back to its session',
       plugins: 'Plugins for Fishball',
       pluginToggle: 'Use {name} in Fishball',
       uninstall: 'Uninstall',
@@ -702,6 +747,28 @@ window.__ModuleLoader__.load({
       'cardKind.direct': 'Direct call',
       'cardKind.own': 'Fishball',
       cardOwnTitle: 'Fishball asks',
+      'cardKind.question': 'Question',
+      'cardKind.plan-review': 'Plan review',
+      cardContinued: 'The session went on; your answer reaches it as a reply',
+      questionOther: 'Your own answer (optional)',
+      questionSubmit: 'Send answer',
+      planApprove: 'Approve',
+      planKeep: 'Keep planning',
+      planFeedback: 'Feedback for the session (optional)',
+      'questionError.expired': 'This question was already answered, has ended, or went back to its session.',
+      'questionError.bad-answer': 'That answer does not fit the question: {reason}',
+      'questionError.already-settled': 'Someone answered this question first.',
+      'questionError.session-not-live': 'The session could not be reached.',
+      'questionError.unavailable': 'Fishball is not running.',
+      questionMode: 'Questions in managed sessions',
+      questionModeHint: 'Who answers the questions and plan reviews of sessions Fishball manages. Your own sessions\' questions always stay with you.',
+      'questionMode.auto': 'Auto',
+      'questionMode.fishball': 'Fishball',
+      'questionMode.user': 'You',
+      'questionModeHint.auto': 'Fishball answers only when your own words cover it; otherwise the question comes to your pile.',
+      'questionModeHint.fishball': 'Fishball answers on its own judgement and sends you only what it cannot decide.',
+      'questionModeHint.user': 'Every question comes to your pile; Fishball may add a note.',
+      questionModeFailed: 'The mode was not changed. Fishball may not be running; try again.',
       cardReason: 'Reason',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: 'The arguments are cut.',
@@ -741,6 +808,9 @@ window.__ModuleLoader__.load({
       'tagAnswer.ask': 'asked a question',
       tagSentToYou: 'Sent to you',
       'tagAnswer.grant': 'granted (standing grant)',
+      'tagAnswer.answer': 'answered',
+      'tagAnswer.approve': 'plan approved',
+      'tagAnswer.keep-planning': 'keep planning',
       tagGrant: 'Allowed by Fishball\'s grant: {what}',
       tagPrompt: 'Answered by Fishball: {decision}',
       grantExact: 'exact {tool} call',
@@ -822,6 +892,7 @@ window.__ModuleLoader__.load({
       handOver: '交给 Fishball 管理',
       takeBack: '从 Fishball 收回',
       manageTitle: '由 Fishball 管理',
+      managedBanner: '由 Fishball 管理',
       manageFailed: '操作未成功。',
       'manageError.unknown-session': '无法读取此会话。',
       'manageError.is-fishball': '这是 Fishball 自己的会话。',
@@ -866,6 +937,7 @@ window.__ModuleLoader__.load({
       outboxHint: 'Fishball 发给其他会话的消息和它新建的会话。',
       'outboxKind.message': '消息',
       'outboxKind.start': '新会话',
+      'outboxKind.redirect': '重定向',
       'outboxStatus.delivered': '已送达',
       'outboxStatus.unconfirmed': '已送达，未确认',
       'outboxStatus.failed': '失败',
@@ -898,11 +970,17 @@ window.__ModuleLoader__.load({
       'approvalAnswer.pass': '按 Fishball 的一次性批准运行',
       'approvalAnswer.grant': 'Fishball 已批准并授予长期许可',
       'approvalAnswer.grant-used': '按 Fishball 的长期许可运行',
+      'approvalAnswer.answer': 'Fishball 已回答问题',
       approvalsGrants: '生效中的长期许可：{count}',
       'approvalOutcome.allowed-once': '允许一次',
       'approvalOutcome.rejected': '已拒绝',
       'approvalOutcome.cancelled': '已取消',
       'approvalOutcome.unavailable': '无人答复',
+      'approvalOutcome.answered-by-fishball': '由 Fishball 回答',
+      'approvalOutcome.answered-in-pile': '由你在待处理区回答',
+      'approvalOutcome.answered-in-session': '在其会话中回答',
+      'approvalOutcome.closed': '已关闭',
+      'approvalOutcome.back-to-session': '已回到其会话',
       plugins: 'Fishball 的插件',
       pluginToggle: '在 Fishball 中使用 {name}',
       uninstall: '卸载',
@@ -1076,6 +1154,28 @@ window.__ModuleLoader__.load({
       'cardKind.direct': '直接调用',
       'cardKind.own': 'Fishball',
       cardOwnTitle: 'Fishball 请求',
+      'cardKind.question': '问题',
+      'cardKind.plan-review': '计划审阅',
+      cardContinued: '会话已继续，你的回答会作为回复送达',
+      questionOther: '你自己的回答（可选）',
+      questionSubmit: '发送回答',
+      planApprove: '批准',
+      planKeep: '继续规划',
+      planFeedback: '给会话的反馈（可选）',
+      'questionError.expired': '这个问题已被回答、已结束，或已回到它的会话。',
+      'questionError.bad-answer': '这个回答不符合问题：{reason}',
+      'questionError.already-settled': '已有人先回答了这个问题。',
+      'questionError.session-not-live': '无法连接到该会话。',
+      'questionError.unavailable': 'Fishball 未在运行。',
+      questionMode: '受管会话中的问题',
+      questionModeHint: '由谁回答 Fishball 管理的会话中的问题和计划审阅。你自己的会话中的问题始终由你回答。',
+      'questionMode.auto': '自动',
+      'questionMode.fishball': 'Fishball',
+      'questionMode.user': '你',
+      'questionModeHint.auto': '只有在你自己的话涵盖时 Fishball 才回答；否则问题会进入你的待处理区。',
+      'questionModeHint.fishball': 'Fishball 按自己的判断回答，只把它无法决定的交给你。',
+      'questionModeHint.user': '每个问题都进入你的待处理区；Fishball 可以附上备注。',
+      questionModeFailed: '模式未更改。Fishball 可能未在运行，请重试。',
       cardReason: '理由',
       cardFishballNote: 'Fishball',
       cardArgumentsCut: '参数已截断。',
@@ -1115,6 +1215,9 @@ window.__ModuleLoader__.load({
       'tagAnswer.ask': '提了一个问题',
       tagSentToYou: '已转交给你',
       'tagAnswer.grant': '已授予长期许可',
+      'tagAnswer.answer': '已回答',
+      'tagAnswer.approve': '已批准计划',
+      'tagAnswer.keep-planning': '继续规划',
       tagGrant: '由 Fishball 的长期许可允许：{what}',
       tagPrompt: 'Fishball 已答复：{decision}',
       grantExact: '完全相同的 {tool} 调用',
@@ -1178,6 +1281,11 @@ window.__ModuleLoader__.load({
       `.${CLS.askRow}{display:flex;flex-direction:column;gap:6px;padding:6px 0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
       `.${CLS.turnTags}{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}`,
       `.${CLS.fishTag}{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:.5px solid color-mix(in srgb,${FISH_MARK.eyeColor} 35%,transparent);border-radius:999px;background:color-mix(in srgb,${FISH_MARK.eyeColor} 12%,transparent);color:var(--dsw-alias-label-primary);font-size:12px}`,
+      // The managed-session banner and sidebar mark (item 30), in DSH's theme tokens for light and dark.
+      // Width and spacing as DSH's Todo dock (DSH_COMPOSER): no margin of its own, so the composer stack's gap spaces it.
+      `.${CLS.managedBanner}{box-sizing:border-box;flex:none;width:calc(100%${minusTimes(DSH_COMPOSER.sideClearance, DSH_COMPOSER.sideClearances)}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});max-width:calc(${DSH_COMPOSER.cardMaxWidth}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});margin:0 auto;display:flex;align-items:center;gap:${MANAGED_BANNER.gapPx}px;padding:${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingEndPx}px ${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingStartPx}px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:${MANAGED_BANNER.fontPx}px;line-height:1.5}`,
+      `.${CLS.managedText}{flex:1;min-width:0}`,
+      `.${CLS.managedRow}{display:inline-flex;align-items:center;justify-content:center;width:${MANAGED_ROW.cellPx}px;height:${MANAGED_ROW.cellPx}px;color:var(--dsw-alias-label-primary)}`,
       // The plugin manager copies DSH's own Plugins-page rules (dsh-client-ui-plugin-manager
       // PluginManagerPage.module.css, rc.2) with DSH's theme variables, so the Fishball tab reads
       // as DSH's Installed tab and plugin page (DESIGN §10d "Look"). If DSH restyles its page,
@@ -1360,12 +1468,14 @@ window.__ModuleLoader__.load({
     }
 
     const BRAND_ICON = Object.freeze({ [BRAND_STYLE.fishball]: FishballIcon, [BRAND_STYLE.deepseek]: OrcaIcon })
+    /** The icon the Sidebar icon setting chose: the brand mark and the managed-session marks share it. */
+    const brandIconOf = (state) => BRAND_ICON[brandStyleOf(state)] ?? FishballIcon
 
     function makeMark(t) {
       return function Mark({ size }) {
         const state = useFishball()
         const count = unreadCount(state)
-        const Icon = BRAND_ICON[brandStyleOf(state)] ?? FishballIcon
+        const Icon = brandIconOf(state)
         return h('span', { className: CLS.markBox, 'data-fishball-unread': count },
           h(Icon, { size, unread: count > 0 }),
           count > 0 ? h('span', { className: CLS.badge, 'data-fishball-badge': true }, count > UNREAD_BADGE.max ? t('unreadMany', { max: UNREAD_BADGE.max }) : String(count)) : null)
@@ -1950,12 +2060,56 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** The Hand over / Take back button, shared by the session header and the managed banner so they cannot drift. */
+    const manageButton = (t, state, sessionId) => {
+      const choice = manageChoice(state, sessionId)
+      return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void choice.run() }, t(choice.label))
+    }
+
     function makeManageHeaderAction(t) {
       return function FishballManageHeaderAction({ sessionId }) {
         const state = useFishball()
         if (!canManage(state, sessionId)) return null
-        const choice = manageChoice(state, sessionId)
-        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void choice.run() }, t(choice.label))
+        return manageButton(t, state, sessionId)
+      }
+    }
+
+    /**
+     * Whether a session shows the managed-session marks (item 30): it is managed, and Take back is
+     * offered (canManage: Fishball live, Session messages on, never Fishball's own session). The
+     * user's answers hide both the banner and the sidebar icon whenever Take back would be hidden.
+     */
+    const showsManagedMarks = (state, sessionId) => canManage(state, sessionId) && isManagedSession(state, sessionId)
+
+    /**
+     * The banner above a managed session's composer (DESIGN §10e item 30): the mark the Sidebar
+     * icon setting chose, "Managed by Fishball", and Take back, the menu entry's own action, so a
+     * refusal opens the same dialog. The mark never wags here: unread replies are Fishball's own.
+     */
+    function makeManagedBanner(t) {
+      return function FishballManagedBanner({ sessionId }) {
+        const state = useFishball()
+        if (!showsManagedMarks(state, sessionId)) return null
+        const Icon = brandIconOf(state)
+        return h('div', { className: CLS.managedBanner, 'data-fishball-managed-banner': sessionId },
+          h(Icon, { size: MANAGED_BANNER.iconPx, unread: false }),
+          h('span', { className: CLS.managedText }, t('managedBanner')),
+          manageButton(t, state, sessionId))
+      }
+    }
+
+    /**
+     * The managed mark in a sidebar row (DESIGN §10e item 30). DSH mounts this seat only while the
+     * row is idle; its own light shows otherwise. The seat gives only the row's sessionId, so the
+     * managed list comes from the state stream every Fishball entry shares.
+     */
+    function makeManagedRowMark(t) {
+      return function FishballManagedRowMark({ sessionId }) {
+        const state = useFishball()
+        if (!showsManagedMarks(state, sessionId)) return null
+        const Icon = brandIconOf(state)
+        return h('span', { className: CLS.managedRow, role: 'img', 'aria-label': t('managedBanner'), 'data-fishball-managed-row': sessionId },
+          h(Icon, { size: MANAGED_ROW.iconPx, unread: false }))
       }
     }
 
@@ -2010,6 +2164,7 @@ window.__ModuleLoader__.load({
           h('h3', null, t('approvals')),
           h('p', { className: CLS.muted }, t('approvalsHint')),
           h(ManagedSessions, { state, t }),
+          h(QuestionMode, { state, t }),
           (state.pile ?? []).length > 0 ? h('p', { 'data-fishball-pile-count': state.pile.length }, t('approvalsPile', { count: state.pile.length })) : null,
           (state.grants ?? []).length > 0 ? h('p', { 'data-fishball-grants-count': state.grants.length }, t('approvalsGrants', { count: state.grants.length })) : null,
           view.pending.length > 0 ? h('ul', { className: CLS.entries }, view.pending.map((p) => h('li', { key: p.id },
@@ -2115,6 +2270,101 @@ window.__ModuleLoader__.load({
         h(CardAnswer, { requestId: card.requestId, t }))
     }
 
+    /** POST your answer on a question card. @returns null when accepted, else the refusal's text. */
+    async function answerQuestionCard(questionId, body, t) {
+      const { ok, code, answer } = await send(API.questionsAnswer, { questionId, ...body })
+      if (ok) return null
+      return QUESTION_ERRORS.has(code) ? t('questionError.' + code, { reason: answer?.reason ?? '' }) : t('cardFailed')
+    }
+
+    /**
+     * One question or plan-review card in your pile (DESIGN §10e, rev11g): a question shows its
+     * form with the answer controls DSH's own card has (one choice, several choices, your own
+     * text); a plan review shows the plan with Approve, and Keep planning with a feedback field,
+     * which the session's own panel does not offer (S36). Every text comes from the session or from
+     * Fishball, so it is drawn as plain text.
+     */
+    function QuestionCard({ card, t }) {
+      const [choices, setChoices] = React.useState({})
+      const [feedback, setFeedback] = React.useState('')
+      const [busy, setBusy] = React.useState(false)
+      const [problem, setProblem] = React.useState(null)
+      const planReview = card.kind === QUESTION_VIEW.planReview
+      const submit = async (body) => {
+        setBusy(true)
+        setProblem(await answerQuestionCard(card.questionId, body, t))
+        setBusy(false)
+      }
+      const choiceOf = (id) => choices[id] ?? { selected: [], custom: '' }
+      // Functional, so two changes before a re-render (a toggle and typing) both count.
+      const update = (id, change) => setChoices((current) => {
+        const choice = current[id] ?? { selected: [], custom: '' }
+        return { ...current, [id]: { ...choice, ...change(choice) } }
+      })
+      const answers = () => card.questions.map((question) => {
+        const { selected, custom } = choiceOf(question.id)
+        const text = custom.trim()
+        // As DSH's card: on a single-select question your own text replaces the choice.
+        return { id: question.id, selected: text !== '' && question.multiSelect !== true ? [] : selected, ...(text === '' ? {} : { custom: text }) }
+      })
+      const button = (key, variant, onClick, label) => h(Button, { key, type: 'button', size: 'sm', variant, disabled: busy, onClick }, t(label))
+      return h('li', { className: CLS.card, 'data-fishball-card': card.requestId, 'data-fishball-card-kind': card.kind },
+        h('div', { className: CLS.cardHead },
+          h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId),
+          h(Tag, { tone: 'neutral' }, t('cardKind.' + card.kind)),
+          card.continued ? h(Tag, { tone: 'info' }, t('cardContinued')) : null),
+        card.note ? labelled(t('cardFishballNote'), card.note) : null,
+        planReview ? h(React.Fragment, null,
+          h('div', null, card.questions[0].question),
+          card.questions[0].detail ? h('pre', { className: CLS.pre }, card.questions[0].detail) : null,
+          h('div', { className: CLS.field },
+            h('label', { htmlFor: card.requestId + '-feedback', className: CLS.muted }, t('planFeedback')),
+            h(Input, { id: card.requestId + '-feedback', value: feedback, onChange: (event) => setFeedback(event.target.value) })),
+          h('div', { className: CLS.actions },
+            button('approve', 'primary', () => void submit({ approve: true }), 'planApprove'),
+            button('keep', 'secondary', () => void submit(feedback.trim() === '' ? { approve: false } : { feedback: feedback.trim() }), 'planKeep')))
+          : h(React.Fragment, null,
+            card.questions.map((question) => {
+              const choice = choiceOf(question.id)
+              const multi = question.multiSelect === true
+              const toggle = (label, on) => update(question.id, (current) => ({ selected: multi ? (on ? [...current.selected, label] : current.selected.filter((entry) => entry !== label)) : (on ? [label] : []) }))
+              return h('fieldset', { key: question.id, className: CLS.field, 'data-fishball-question': question.id },
+                h('legend', null, question.header ? `${question.header}${TURN_TAGS.separator}${question.question}` : question.question),
+                (question.options ?? []).map((option) => h('label', { key: option.label, className: CLS.row },
+                  h('input', { type: multi ? 'checkbox' : 'radio', name: card.requestId + '-' + question.id, checked: choice.selected.includes(option.label), disabled: busy, onChange: (event) => toggle(option.label, event.target.checked) }),
+                  ' ', option.label, option.description ? h('span', { className: CLS.muted }, ` ${option.description}`) : null)),
+                h(Input, { 'aria-label': t('questionOther'), placeholder: t('questionOther'), value: choice.custom, onChange: (event) => { const custom = event.target.value; update(question.id, () => ({ custom })) } }))
+            }),
+            h('div', { className: CLS.actions }, button('send', 'primary', () => void submit({ answers: answers() }), 'questionSubmit'))),
+        problem ? h('div', { role: 'alert' }, problem) : null)
+    }
+
+    /**
+     * Who answers managed sessions' questions (item 25, §10e): Auto, Fishball or You, in the
+     * Permission requests section. The choice is the Host's (snapshot `questionMode`).
+     */
+    function QuestionMode({ state, t }) {
+      const [busy, setBusy] = React.useState(false)
+      const [failed, setFailed] = React.useState(false)
+      const mode = state.questionMode
+      if (typeof mode !== 'string') return null
+      const choose = async (next) => {
+        setBusy(true)
+        const { ok } = await send(API.questionMode, { mode: next })
+        setFailed(!ok)
+        setBusy(false)
+      }
+      return h('div', { 'data-fishball-question-mode': mode },
+        h('h4', null, t('questionMode')),
+        h('p', { className: CLS.muted }, t('questionModeHint')),
+        h('div', { className: CLS.actions, role: 'radiogroup', 'aria-label': t('questionMode') }, QUESTION_VIEW.modes.map((option) => h(Button, {
+          key: option, type: 'button', size: 'sm', variant: option === mode ? 'primary' : 'secondary', role: 'radio', 'aria-checked': option === mode, disabled: busy,
+          onClick: () => { if (option !== mode) void choose(option) },
+        }, t('questionMode.' + option)))),
+        h('p', { className: CLS.muted }, t('questionModeHint.' + mode)),
+        failed ? h('div', { role: 'alert' }, t('questionModeFailed')) : null)
+    }
+
     /** What a grant covers, in words: "npm test*", or "exact bash call" (never the arguments, which the Host does not keep). */
     const grantWhat = (t, grant) => (grant.kind === GRANT_VIEW.prefix ? grant.prefix + GRANT_VIEW.wildcard : t('grantExact', { tool: grant.toolName }))
 
@@ -2166,7 +2416,7 @@ window.__ModuleLoader__.load({
         return h('section', { className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'data-fishball-pile': cards.length, 'data-fishball-grants': grants.length },
           cards.length > 0 ? h('section', { 'aria-label': title },
             h('div', { className: CLS.pileHead }, title),
-            h('ul', { className: CLS.entries }, cards.map((card) => h(PileCard, { key: card.requestId, card, t })))) : null,
+            h('ul', { className: CLS.entries }, cards.map((card) => h(QUESTION_KINDS.has(card.kind) ? QuestionCard : PileCard, { key: card.requestId, card, t })))) : null,
           grants.length > 0 ? h('section', { 'aria-label': grantsTitle },
             h('div', { className: CLS.pileHead }, grantsTitle),
             h('ul', { className: CLS.entries }, grants.map((grant) => h(GrantRow, { key: grant.grantId, grant, t })))) : null)
@@ -2230,6 +2480,9 @@ window.__ModuleLoader__.load({
       if (tag.kind === TURN_TAGS.sentToYou) return t('tagSentToYou')
       if (tag.kind === TURN_TAGS.prompt && TAG_ANSWERS.has(tag.answer)) return t('tagPrompt', { decision: t('tagAnswer.' + tag.answer) })
       if (tag.kind === TURN_TAGS.grant && tag.grant) return t('tagGrant', { what: grantWhat(t, tag.grant) })
+      // A question's tag shows Fishball's answer in its own words, read by the Host from the session log (§9).
+      if (tag.kind === TURN_TAGS.question) return `${t('tagAskedFishball')}${TURN_TAGS.separator}${tag.answerText || t('tagAnswer.answer')}`
+      if (tag.kind === TURN_TAGS.planReview && PLAN_TAG_ANSWERS.has(tag.answer)) return `${t('tagAskedFishball')}${TURN_TAGS.separator}${t('tagAnswer.' + tag.answer)}`
       return TAG_ANSWERS.has(tag.answer) ? `${t('tagAskedFishball')}${TURN_TAGS.separator}${t('tagAnswer.' + tag.answer)}` : t('tagAskedFishball')
     }
 
@@ -2968,6 +3221,8 @@ window.__ModuleLoader__.load({
       }), 'fishball: dialogs')
       // Revision 11 (DESIGN §10e, S37): your pile, the ask_fishball row with your buttons, and the tags in each turn's tail.
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: PILE.id, order: PILE.order, locale: NS }, makePile(t))), 'fishball: pile')
+      ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: MANAGED_BANNER.id, order: MANAGED_BANNER.order, locale: NS }, makeManagedBanner(t))), 'fishball: managed banner')
+      ctx.effect(() => ctx.slots.inject(SLOT.rowLeading, () => ctx.slots.register({ name: SLOT.rowLeading, id: MANAGED_ROW.id, locale: NS }, makeManagedRowMark(t))), 'fishball: managed row mark')
       ctx.effect(() => ctx.slots.inject(SLOT.toolview, () => ctx.slots.register({ name: SLOT.toolview, key: ASK_ROW.tool, locale: NS }, makeAskRow(t))), 'fishball: ask_fishball row')
       ctx.effect(() => ctx.slots.inject(SLOT.turnTail, () => ctx.slots.register({ name: SLOT.turnTail, id: TURN_TAGS.id, locale: NS }, makeTurnTags(t))), 'fishball: turn tags')
       // The plugin manager (DESIGN §10d): the Fishball tab, and a tag and a switch on DSH's page for each plugin.

@@ -13,6 +13,7 @@ Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-
 - **P3 additions.** The profile also has four fixture bundles installed as dependencies but not enabled in `dsh.profile.bundles`: `fbtest-only`, `fbtest-only-b` and `fbtest-only-c`, whose patches only insert their own row, and `fbtest-edits`, whose patch also edits the `fbtest-tools` row. Each registers one tool (`only_echo`, `only_b_echo`, `only_c_echo`, `edits_echo`) and records `apply` and `dispose`, so a test can tell whether its code runs. Every fixture tool description has two lines.
 - **Scripted approver.** The worker adds a prepended host-level `approval/request` answerer (the S12 position, ahead of the browser forwarder). It records each question (session, toolName, reason) and answers with an outcome the test sets: `allowed-once`, `rejected`, `unavailable` or `cancelled`. The default is `rejected`, so a prompt nobody expected cannot pass a case or hang a turn.
 - **Host probe (start_session titles).** The worker's `startProbe` op wraps the host's own methods for the sessions created while it is armed (never Fishball's): the session-title service's `rename`, the new agent's `steer` and the new session's `flush`. It records the calls in order and can make `rename` throw the real `SessionTitleInvalidError` or a plain `Error`, make the steer throw, or make the first flush after the steer reject or answer `false`. `FBTEST_NO_SESSION_TITLE=1` boots DSH without its `session-title` row, so there is no `sessionTitle` service. The worker also records DSH's logger warnings and errors (`loggedProblems`). The fake model now records each tool's description next to its name and parameters.
+- **Host operations for the read_session roles and half-made start_session fixes.** `injectUserMessage` appends one user/message (any source, or none; empty content with `text: ''`) to a live session's log with DSH's own `session.append` and the `surfaceOp: 'append'` marker DSH requires, so no turn runs. `failAttach` makes one registered workspace's `attachSession` throw; DSH's own `sessionController.create` then really creates the session and throws its real `session/workspace-attach-failed` (details `{sessionId, workspaceId}`), and `attachCalls` lists the failed attaches. `failCreate` replaces `sessionController.create` with one that throws a given `code` and `details` (optionally after really creating the session through DSH's create, `createFirst`; `createdByWrapper` lists those sessions); no code restores DSH's own. The start_session helpers shared by the start-title and half-made files live in [support/start-session.mjs](support/start-session.mjs).
 - **Making fixture tools visible (P3).** The fixture tools are not on Fishball's checked list, so they are unchecked and hidden. P2 cases that need them visible (CMP-03..09, PTC-01/02, FW-03/05) first call `set_plugin_enabled({plugin:'fbtest-tools', on:true})` from a scripted Fishball turn, with the approver answering Allow once. They then wait for the change to apply ("settle", A20).
 - **add_plugin** installs the local directory `support/fixtures/fbtest-added` by absolute path. DSH's plugin manager runs pnpm in the throwaway profile; a local directory needs no network.
 
@@ -1993,4 +1994,264 @@ A-r11f-1 confirmed (`sessionId` = Fishball's session, list under `detail`). A-r1
 
 - **A-r11d-8. run_code.** `run_code` is a DSH built-in present only in PTC mode, so the fixture cannot register it (`unknown tool`). `demo_echo` stands in for "every other tool" in the exact-only cases (GRT-09); `run_code` itself is left to the hand check.
 
+## Revision 11 rev11g cases (questions and plan reviews in managed sessions; DESIGN §14 row rev11g, §7a.10, §9 "Session cards"/"Open questions"/"Tag records"/`settings['questions']`, §10e "Question mode"/"Host API", §11 "Revision 11", §16 Q-r11-questions, Q-r11-question-card, Q-r11-timed-wait, Q-r11-timed-release, Q-r11-continued-cards, Q-r11-question-off, Q-r11-mode-place, Q-r11-question-tag; requirements items 25-27; S36, S37; written from the requirements alone, no code read)
+
+Files: `rev11g-hold` (7), `rev11g-flow` (15), `rev11g-modes` (18), `rev11g-plan` (11), `rev11g-validate` (30), `rev11g-tags` (8), `rev11g-restart` (6). Shared set-up: [support/rev11g.mjs](support/rev11g.mjs) on the rev11c host.
+
+### Harness added for rev11g (test code only)
+
+- **The session's own question card** is a stand-in registered by the fixture bundle (`FBTEST_QUESTIONS=1`, fixtures/fbtest-tools): a prepended `user-questions/request` listener that mounts before dsh-fishball, so Fishball's router (prepended later) runs first and its `next()` reaches it, as the approvals stand-in does. It keeps the card OPEN until `qAnswer` (your click), `qDiscuss` (Discuss: `ASK_CANCELLED`) or the request's signal aborts, which closes it (the gateway's `cancel` to a browser). It does NOT claim `attachWait`, so a timed question is held only if Fishball's router holds it. Worker ops: `qCards`, `qAnswer`, `qDiscuss`, `qContinued` (`userQuestions.answer`, what the browser's RPC calls), `qProjection`, `planCommand` (`/plan`, `/plan off`), `planQuestion`.
+- **Presets** `fbtest-ask` (legacy blocking `ask_user_question`, as the shipped presets) and `fbtest-ask-timed` (timed, default 120 s, per-call `timeout`). Plan reviews use the `standard` preset, because `/plan` and `exit_plan_mode` come with it.
+- **Fishball's model** answers a question notice from a plan (`planQuestion {needle, args}` → `answer_question({question_id, …args})`), the question id taken from the newest user message with the needle and a `qst_…` id.
+- `eventSummary` also gives each event's `seq` (when it has one) and a `tool/call`'s `callId` and `name`, so a tag's `seq` can be checked against its turn.
+- No older case is changed. (`support/constants.mjs` gains `PRESET.ask`/`askTimed` and the rev11g constants; the old `CARD_KIND.question` is used as is.)
+
+### What is checked, per "done when" item
+
+| Done-when item | Cases |
+|---|---|
+| `attachWait` proof first: a timed question's wait is held through `approvalAnswerSeconds` past the tool's shorter `timeout`, and still held once it is a pile card | HLD-01, HLD-02, HLD-03, HLD-04, HLD-05, HLD-06, HLD-07 (file first) |
+| 120 s limit measured against `approvalAnswerSeconds` | FLW-07 (1 s, 3 s), HLD-01..03, MOD-04..06 (no answer) |
+| In each mode a question behaves as item 25 says; User mode: Fishball's answer is refused and its note shows on the card | MOD-01..07 (decision table), FLW-12, PLN-10 |
+| A question answered in the session's own card clears its pile card, and the reverse | FLW-08, FLW-09, FLW-05, FLW-13, HLD-02, PLN-05..07, RST-05/06 |
+| Every answered question and plan review shows its tag in the turn tail (not on the question row) | QTG-01..08 (tag records, `seq` in the right turn, no tag text in the session's log or the result); the drawing itself is a hand check |
+| A session that is yours keeps its questions with no Fishball step | FLW-01, PLN-11 |
+| Fishball or Permission requests off: the question stays in its own card, Fishball takes no step | OFF-01..04 |
+| The router answers in the browser's exact shape (result matches a browser answer byte for byte); a malformed batch is refused and the question stays open | FLW-04, FLW-03, VAL-01 ×13, VAL-02..05 |
+| Legacy question's call id recovered from the log, so its tag lands in the right turn | QTG-01, QTG-03, QTG-04, FLW-10 (the card's `callId`) |
+| Plan review: Approve exits plan mode; Keep planning with feedback keeps it on and the agent sees the feedback; Discuss closes the pile card | PLN-02..08 |
+| A blocking question or plan review open at a restart ends with its card | RST-01 |
+| A timed question Fishball answers within its time returns in the same turn | HLD-01, HLD-05, QTG-05 |
+| A continued timed question open at a restart has its pile card again after the start | RST-02..06 |
+| A child agent's question never reaches Fishball | CHD-01 |
+| The session's own question card is open while Fishball decides, and the first answer wins | FLW-02, FLW-03, FLW-05, FLW-06, HLD-06 |
+| In a real browser: the session's own question card (legacy and timed) and plan-review panel close when Fishball's answer wins; the pile card closes when you answer in the session first | not automated: stage 2 hand check |
+
+### Readings the tests take (the design is silent or loose; a different builder reading is reported, not hidden)
+
+1. **Names the design leaves open.** The pile card's id is read as `questionId`, falling back to `requestId`/`id`; a question card has `kind: 'question'` (§9), its `callId` and `sessionId`, and shows the question text, choices (or the plan) and Fishball's note anywhere in its JSON. A plan-review card is also `kind: 'question'`. The snapshot key for the mode is `questionMode` (§10e). Refusals are `{ok:false}` or an error result; only User mode's code (`mode-user`) is named, so only it is compared. A question notice is a `fishball-notice` user message that carries the `qst_…` id.
+2. **User mode shows the pile card at once** ("always the pile", §7a.10), not after `approvalAnswerSeconds`. MOD-06, PLN-10.
+3. **`to_user: true`** makes a card at once with the note, in any mode (FLW-12, PLN-05).
+4. **A note** (`answer_question({question_id, note})` with no answer) is accepted in every mode and shows on the card (MOD-06).
+5. **Keep planning with no feedback** is `answer_question({question_id, approve: false})`; the agent is then told to revise and present again (PLN-04, dsh-plan-mode's wording).
+6. **After a restart, "at start" means the cards exist without anyone resuming the sessions** (RST-02, §7a.10 "At start the router rebuilds"). Resuming a session first would hide a router that only rebuilds on resume. If the builder rebuilds lazily, RST-02 fails and the question for the manager is whether that is intended.
+7. **`qContinued`** (your late answer in the session) is the call the browser's RPC makes; the router learns it from the `user-question-reply` message (S36).
+8. **A question that left Fishball** (Permission requests turned off while it waited, OFF-02) is no longer answerable through the route (409). The design says only that it goes back to the session's own card.
+9. **Not asserted, because the design leaves it open:** whether Fishball's answer is still accepted after a question moved to the pile (the design says "the question moves to your pile"); the Auto-mode rule (prompt-only); the multi-select "same label twice" batch (VAL-04 last row only checks that nothing crashes).
+
+### Not automated (hand checks in stage 2)
+
+- The turn-tail drawing of "Asked Fishball" plus the answer, and that nothing is drawn on the question row (QTG-07 checks only that the Host leaves the tag out of the tool result and the session's log).
+- The pile cards' look (question form, plan with Approve and Keep planning plus a feedback field) and the mode switch on Fishball's settings page.
+- The real browser: the session's own question card (legacy and timed) and plan-review panel closing when Fishball's answer wins; the pile card closing when you answer in the session first; `attachWait` against the real gateway/browser claim.
+
+### rev11g addendum: too-many-waiting as JSON (manager's decision, 2026-11-02)
+
+`rev11g-cap.test.mjs` CAP-01: past `maxPendingApprovals`, Fishball's own request answers parsed JSON `{ok: false, code: 'too-many-waiting', …}` with "or withdraw one" in the text. Total rev11g cases: 96. Readings 1-4 above (User mode/`to_user` card at once, cards rebuilt at start without resuming, 409 after a question goes back to its session, `questionId`) are confirmed by the manager.
+
 - **A-r11e-8. Audit of `answer_prompt` (settled, manager 2026-11-02).** Follows DESIGN §9: a `decisions` row `answer-prompt` AND an approvals audit row of kind `prompt`; APR-10 expects both.
+
+### rev11g after the build (stage 2)
+
+Older cases changed on purpose: `STATE_KEYS` gains `questionMode` (HTP-01, HTP-04/05, SND-01, PHT-01, PHT-04) and `OWN_PLUGINS.approvals.tools` gains `answer_question` (OWN-01): DESIGN §10e, §7a.10. Readings 1 and the rest above changed as follows: plan-review cards are `kind: 'plan-review'` (the helper accepts both); a tag record's `answer` is a word (`answer`, `approve`, `keep-planning`) and the published record carries Fishball's words (the user's confirmed reading); a rebuilt continued card is the user's and Fishball's answer on it is `expired` (RST-04); a `to_user` question gets a Sent-to-you tag (FLW-12); the route's `bad-answer` for a well-shaped body with invalid answers (FLW-14); the session's own card is untimed (HLD-01). Full report: [hand-checks/rev11g.md](hand-checks/rev11g.md).
+
+## Revision 11 rev11i cases (managed-session marks; DESIGN §14 row rev11i, §10e "Managed-session marks", §16 sixth round; requirements item 30; S37; written from the requirements alone, no code read)
+
+### Automated: [managed-marks.test.mjs](managed-marks.test.mjs)
+
+The banner and icon are drawn in the browser, so these check what a client reads: the snapshot's `managed` list, `features.messages`, `status`, `preferences.brandStyle`, the route of the banner's button, and the served bundle. Technique: EP, ST, DT.
+
+| id | technique | expected result |
+|---|---|---|
+| MKS-01a..d | EP (way in: Hand over, Send to Fishball, message_session, start_session) | the session is in `managed` with its way's tag. (The fifth way, `answer_prompt`, is asserted in rev11e-answer: `by` is `prompt-answer`.) |
+| MKS-02 | EP (yours, Fishball's own) | neither is listed; the list is exactly the four managed ones |
+| MKS-03 | ST (managed –Take back, banner route→ yours) | 200; the id leaves the snapshot and an events frame; the others stay |
+| MKS-04 | ST (managed –release_session→ yours) | the id leaves the snapshot and an events frame |
+| MKS-05 | DT (Fishball's own / unknown / bad body) | 409 `is-fishball` / 409 `unknown-session` / 400 `bad-body`; list unchanged (the banner's refusal dialog comes from these) |
+| MKS-06 | ST (Session messages on –off→ on) | off: `features.messages` false and the entries kept unchanged; on: true and the same entries |
+| MKS-07 | EP | `status` live while entries exist |
+| MKS-08 | EP | `preferences` has only `brandStyle`, one of fishball / deepseek, default fishball |
+| MKS-09 | EP | the served client bundle has "Managed by Fishball" and "Take back from Fishball" (weak: the first string may already exist elsewhere on base; the browser checks decide) |
+| MKS-10 | ST (restart) | the same entries after a restart |
+
+Not automatable here: Fishball not live (no way to stop the assistant without ending the host), brandStyle change (a plugin setting set through the browser page), everything drawn.
+
+### Browser checks (real DSH, fake model, built-in browser pane; one row per "done when" item, plus the partitions)
+
+Setup: sessions A (Hand over), B (Send to Fishball), C (message_session), D (start_session), E (answer_prompt on a frozen prompt), M (yours), plus Fishball's own chat F. Screenshot each row. Themes: light and dark. Languages: English and 简体中文 (banner wording proposed: 由 Fishball 管理).
+
+| id | done-when item | technique | steps | expected |
+|---|---|---|---|---|
+| BRW-01 | banner after each way in | EP (5 ways in) | open each of A–E | banner above the composer: mark, "Managed by Fishball", "Take back from Fishball"; appears in the open chat without a reload when the way in happens while it is open (at least for A and C) |
+| BRW-02 | banner never in yours / Fishball's chat | EP | open M and F | no banner in either; F shows its pile (when cards exist), never the banner |
+| BRW-03 | banner leaves after Take back | ST (managed → yours) | click the banner's button in A | banner gone with no reload; A's header menu offers Hand over again; Fishball got one note |
+| BRW-04 | banner leaves after release_session | ST | Fishball releases C | banner gone with no reload |
+| BRW-05 | button refusal shows the dialog | DT (refusal) | make the route refuse (for example stop the Host-side feature or take back in another tab first, so 409 `unknown`/`feature-off` follows), click | the same refusal dialog and wording as the session menu; banner state stays consistent |
+| BRW-06 | mark follows Sidebar icon | EP (fish vs orca) | change the "Sidebar icon" setting on Fishball's page while A is open | banner mark switches between Fishball's fish and DSH's orca at once, no reload; same for the sidebar mark |
+| BRW-07 | hidden while Session messages off | DT (messages off × managed) | turn Session messages off | banner and sidebar mark of A–E disappear; sessions stay managed (settings list still lists them); turning it on brings them back |
+| BRW-08 | hidden while Fishball isn't live | DT (not live) | put Fishball into recovery/archived (archive its session) | banner and sidebar mark hidden; back when it is live again |
+| BRW-09 | sidebar mark while idle | EP (idle) | idle managed session A | Fishball's mark (or orca per setting) in the status-light place of A's row; unmanaged M keeps DSH's normal row |
+| BRW-10 | sidebar shows DSH's light when not idle | ST (idle → running → waiting → just finished → idle) | run a turn in A; hold a prompt (waiting); let it end | running: DSH's light (no mark); waiting: DSH's light; just finished: DSH's light; idle again: the mark returns |
+| BRW-11 | no mark on yours or Fishball's own row | EP | look at M's row and F's row | no Fishball mark on either (F keeps whatever DSH shows) |
+| BRW-12 | themes | EP (light, dark) | repeat BRW-01, BRW-09 in both | readable, token colours, no clipped text |
+| BRW-13 | languages | EP (en, zh) | switch language, repeat BRW-01 | banner text and button follow the language |
+| BRW-14 | order among docks | EP | A with a Todo or Queue dock showing | the banner sits among the docks without hiding the composer; record the order (builder's choice) |
+| BRW-15 | pile never with banner | EP | cards in the pile, open A and F | the pile shows in F only; A shows only the banner |
+| BRW-16 | Take back from three places agree | ST | Take back from the banner, then Hand over again from menu, then Take back from the settings list | all places update; one note each time |
+| BRW-17 | restart | ST | restart the Host, reload | banner and marks present for managed sessions again |
+
+## Fix: read_session labels who wrote each message, start_session keeps a half-made session (DESIGN §5c, §5d, Q-read-roles, Q-start-half-made)
+
+Baseline before the fix: 1240 pass / 0 fail / 1 skip (OFM-06). Every new file was also run against the version before the fix (d63322a, extracted with `git archive` and booted with `FBTEST_PLUGIN_DIR`): the control and regression cases pass there, the cases that need the fix fail there.
+
+### [messaging-read-roles.test.mjs](messaging-read-roles.test.mjs): read_session labels (ROL-nn)
+
+Two hosts: one for everything but the restart, one restarted so the session is read from its stored log.
+
+| id | technique | expected result |
+|---|---|---|
+| ROL-01 ×25 | DT (source kind × sender id) | `user` for kind `user` (also with an rpc id, also kind `user-rpc`); `fishball` for a relay whose sender is Fishball's session; `agent` with `from` for any other sender (including Fishball's id plus one character, minus one character, in upper case); `context` with `source` = the kind for notice, goal, schedule, runtime-context, webhook, team-message, subagent-settled, skill-invocation, session-reference, user-approval, user-question-reply, `agent-message-extra`, a made-up kind, and the near-misses `User`, `USER`, `user `, `Agent-Message`; each entry has exactly the keys of its label |
+| ROL-02 ×1 | ST | one entry per message, in recorded order, newest last, nothing else in the session |
+| ROL-03 | EP | role `user` for the three user rows and no other |
+| ROL-04 | EP (real turn) | a scripted answer is `{role:'assistant', text}`; the typed message is `user`; the context DSH adds to a first turn is `context` with its kind; the whole list equals the oracle |
+| ROL-07 | EP (a turn with a tool call) | the assistant message that only calls a tool (no text) and the tool result are not listed; the typed message and the final answer are |
+| ROL-05 ×5 | DT (a relay's sender: missing, null, 7, 0, '') | `{role:'agent', text}` with no `from` key when the sender is not a string (review fix); the empty string is a string, so `from: ''` |
+| ROL-06 ×5 | EP + error guessing | no source at all: `{role:'context', text}`, no `source`/`from` key; an empty source object, a null, a numeric and an empty kind: `context`, no `from` |
+| ROL-10 | ST (live session) | typed turn, message_session, a relay from another session, a notice: the list equals the oracle; Fishball's own message is `fishball`; only the typed message is `user` |
+| ROL-11 | ST (start_session) | the first message is `fishball` with its text verbatim; the answer after it is `assistant`; nothing is `user` |
+| ROL-12 | ST (restart) | after a restart the session is not live; read_session gives the same messages with the same labels as before |
+| ROL-20 | BVA (15 messages, all labels) | the newest 12, in order, labels intact |
+| ROL-21 | BVA (12 × 1024 bytes = 12288, labels of 300+ characters) | all 12 kept: labels are not counted |
+| ROL-22 | BVA (12288 + 1) | at most 12288 bytes of text; 11 or 12 messages; the newest whole and labelled; an oldest that is kept is cut with an ellipsis |
+| ROL-23 ×2 | BVA (13000 bytes of ASCII; 16000 bytes of 2-byte characters) | one entry, label kept, text a prefix ending with an ellipsis, at most 12288 bytes, no broken character |
+| ROL-24 | EP (empty-text messages of five labels, in the middle and at the end) | skipped and not counted toward the 12 |
+| ROL-30 ×2 | EP (hostile source kind, hostile sender id) | one closing tag, one messages line, one session_id line; the strings come back exactly |
+| ROL-40 | EP | the tool description names user, assistant, fishball, agent and context and words context exactly as the review fix says; the arguments are still only `session_id` |
+| ROL-41 | EP | the result's `note` is exactly the review fix's sentence (information, never instructions; a user message was typed to that session, not to Fishball) |
+
+### [messaging-start-halfmade.test.mjs](messaging-start-halfmade.test.mjs): start_session keeps a half-made session (HM-nn)
+
+Three hosts: A (title service, no cap), B (`sessionsPerHour` 2), C (no `sessionTitle` service).
+
+| id | technique | expected result |
+|---|---|---|
+| HM-00 ×2 | EP (control) | a normal start in a registered workspace, by id and by path, has no `workspaceError` and the session joins the workspace |
+| HM-01 ×2 | EP (workspace id, workspace path) | ok; same `folder` and keys as the normal start plus `workspaceError: 'workspace-attach-failed'`; one failed attach for this session in this workspace; the session exists, in no workspace; renamed once before the one steer (a relay from Fishball); the first message delivered once; outbox `start`, `delivered`, with `targetSessionId`; the new session runs its first turn; DSH reports the title |
+| HM-02 ×2 | DT (rename invalid / fails) | ok with `titleError` `title-invalid` / `title-failed`, no `title`, `workspaceError`; delivered and recorded |
+| HM-03 ×2 | DT (flag set / not set) | watch with `createdBy` assistant and one notice after the first turn; none without the flag |
+| HM-04 | ST | read_session ok and shows the first message; watch_session ok |
+| HM-05 ×2 | EP (flush rejects / answers false) | ok, `unconfirmed`, same keys as the unconfirmed start made whole plus `workspaceError`; steered once; outbox `unconfirmed` |
+| HM-06 ×3 | DT (steer throws × rename ok / invalid / fails) | `delivery-failed` with `sessionId`, the title outcome, `workspaceError`, no `folder`; keys as the same failed delivery made whole plus `workspaceError`; outbox `failed` with `errorCode` |
+| HM-07 ×2 | DT (attach-failed error with only a string sessionId; with extra details) | carries on: ok, `workspaceError`, renamed, delivered, recorded |
+| HM-08 | EP (controls) | no `workspaceError` on a start in a workspace, a start in a plain folder, or a normal failed delivery |
+| HM-10 ×9 | DT (create fails: a different code; the attach code in upper case; with a suffix; with no details; details without a sessionId; a numeric, null and object sessionId; an error with no code) | `{ok:false, code:'delivery-failed'}`; outbox unchanged; a session created anyway gets no message and no title |
+| HM-11 | ST (cap 2) | none of HM-10 was counted: a half-made start succeeds |
+| HM-12 | ST (cap 2) | a half-made start whose delivery fails is refused `delivery-failed` with `workspaceError` |
+| HM-13 ×2 | ST (cap 2 spent) | the next start, normal or half-made, is refused `hourly-cap` and creates nothing: both half-made starts were counted |
+| HM-30, HM-31 | EP (no sessionTitle service) | `titleError` `title-unavailable` with `workspaceError`, delivered and recorded; a failed delivery carries both and the sessionId |
+
+### [approvals-provenance.test.mjs](approvals-provenance.test.mjs): permission-request provenance by source kind (PRV-nn)
+
+| id | technique | expected result |
+|---|---|---|
+| PRV-01 ×9 | DT (source of the message that starts the turn; session started by the user) | started by `the user`; turn by `the user` for kind user (also with an rpc id), `Fishball (message_session)` for a relay from Fishball, `another agent or a notice` for a relay from anyone else (including Fishball's id plus one character), a Fishball notice, a goal round, a schedule and a made-up kind |
+| PRV-02 ×9 | DT (source of the session's first message, which is also its first turn) | started by `the user`, `Fishball (start_session)` for a relay from Fishball, otherwise `another agent or a notice` or `unknown`; turn by as in PRV-01 |
+| PRV-04 ×14 | DT (source of a later message; the user typed earlier) | the request's `latest_user_message` is the later message for kind user (also with an rpc id) and the earlier typed message for every other source, including relays with a null, numeric or missing sender, `User` and `user ` |
+| PRV-03 | ST | after a relay from Fishball the user types: the new turn is `the user`'s, the session is still started by Fishball |
+
+### Ambiguities (read_session roles, half-made start)
+
+- **A149. A message with no source.** DSH's steer crashes on a message with a null source ("Cannot read properties of null (reading 'kind')", observed) and DSH's own load check refuses one without a source, so a no-source message can only be produced by appending the event to a live session's log. ROL-06 does that (`injectUserMessage`); a no-source message read back from a stored log is not driven. The same op appends every ROL-01 row; a steered message is stored with exactly the source it was given (observed with the table's kinds), so the appended events have the shape of real ones, and ROL-04 and ROL-10..12 repeat the labels through the real paths (DSH's own turns, steer with a source, message_session, start_session).
+- **A150. Sources the requirement does not name.** An empty source object, and a `kind` that is null, a number or the empty string: the tests require only "never `user`", `context`, and no `from` key. (A relay whose sender is not a string was in this list until the review fix specified it: `{role:'agent', text}` with no `from`, ROL-05.) The empty-string sender is read literally: a string other than Fishball's, so it keeps `from: ''`. Whether such a message carries a `source` key is not asserted.
+- **A151. Provenance regression.** "Its behaviour must be unchanged" is tested by PRV-01..03 plus the existing APR-01 and APR-16 cases, and the PRV file was run against the version before the fix with the same answers. The labels for a Fishball notice, a goal round, a schedule and a made-up kind come from DESIGN §7a's value `another agent or a notice`; for a session's first message from them, `unknown` is accepted too, as in APR-16.
+- **A152. Shapes.** Each entry is compared whole with `deepEqual`: `{role, text}`, `{role, from, text}` or `{role, source, text}`, as the requirement writes them. An extra key (for example a timestamp) would fail the cases.
+- **A153. Bounds with labels.** "Count message text as before" is read as: at most 12 messages and at most 12288 bytes of message text, with `from` and `source` not counted. At exactly 12288 bytes of text all 12 messages must come back (ROL-21). One byte over (ROL-22) the requirement says only that older ones are dropped first and one long message is cut with an ellipsis, so the case accepts the oldest being dropped or being cut with an ellipsis and requires the newest to be whole.
+- **A154. Empty text.** A user/message with no content blocks is an empty-text message (ROL-24). Whitespace-only text is not tested.
+- **A155. The oracle for real sessions.** ROL-04, 10, 11 and 12 compare read_session with the labels computed from the session's own event log (`expectedFromLog` in the test: the requirement's rule applied to each `user/message` source and `assistant/message`; empty text skipped). Sessions in these cases stay under 12 messages and 12 KB. DSH adds a `runtime-context` and a `time-context` message to a session's first turn (observed on 0.2.1-rc.2); they must read as `context` with those sources. ROL-04 logs them and does not require them.
+- **A156. The tool description.** "Explains the five roles" is tested as: the description contains each of `user`, `assistant`, `fishball`, `agent`, `context` as a word (case-insensitive). The wording is not asserted.
+- **A157. Simulating the attach failure.** `failAttach` replaces `attachSession` on the registered workspace's own object, so DSH's real `sessionController.create` creates the session and throws its real error. The session is then in no workspace (what DSH shows under Ungrouped). Only the folder forms the requirement names are used: a workspace id, and the path of a registered workspace; both put the session in the workspace when the attach works (HM-00).
+- **A158. Other create failures.** `failCreate` throws an error with a given `code` and `details` instead of DSH's own. Rows that need a session id in the details create the session through DSH's own create first (`createFirst`). "Without a string `details.sessionId`" is tested with the id missing, a number, null and an object, and with the details missing; an empty-string id and an id naming no session are not tested. HM-07 shows the recognized error is the code plus a string `details.sessionId`: `workspaceId` need not be there and extra details are ignored.
+- **A159. What the half-made answer must look like.** The requirement lists `sessionId`, `folder`, the title outcome and `workspaceError`. The tests compare the answer with the same start made whole in the same workspace (the reference, made in the same host): same `folder` (observed: the workspace's path, for an id and for a path), same keys, plus `workspaceError`. Fields that come with a case (`unconfirmed` with its `note`, `watch`) are therefore not listed by name in HM-05.
+- **A160. The cap.** "Counts it against `sessionsPerHour`" is tested by spending a cap of 2 with one half-made success and one half-made failed delivery and then expecting `hourly-cap`, from a normal start and from a start that would be half-made (which must create nothing). HM-11 shows that nine other failures were not counted.
+- **A161. The refusal for other failures.** `{ok:false, code:'delivery-failed'}` exactly, as OUT-04 and as before the fix. A session that was created anyway (`createFirst`) is not sent the first message and is not titled.
+- **A162. The restart case.** ROL-12 relies on a restarted host resuming only Fishball's own session, so the other session is read from its stored log; it asserts that first (`agentStatus` null) and that reading does not make it live.
+- **A163. Wording fixed by the review fix.** The `read_session` note and the tool description's definition of context are asserted verbatim (ROL-40, ROL-41), because the coordinator gave the exact sentences. The earlier checks (each role named as a word) stay.
+- **A164. The request's latest user message (PRV-04).** "Only DSH user sources count" is tested with kind `user` (with and without an rpc id) as the only sources that replace the user's earlier typed message; every other source in the table leaves it. The literal kind `user-rpc` is not used there: DSH never records it (its rpc source has kind `user`). PRV-04 also passes on the version before the fix.
+
+### Cases changed by this fix
+
+- No existing expectation changed. The start_session helpers of messaging-start-title.test.mjs (`useHost`, `assertDelivered`, `assertTitleError`, `assertFailedDelivery`, `assertRefused` and the rest) moved to [support/start-session.mjs](support/start-session.mjs) unchanged; `assertDelivered` gained an optional `folder` argument that defaults to the old behaviour.
+- `READ_ROLES` in support/constants.mjs still lists `user` and `assistant`: TOL-07 reads a session that has only those two, and still passes. `READ_ROLE` (five labels) and `HALF_MADE` are new.
+
+## Revision 11: the live fixes on revision 11 (start_session managed step, read_session settings, list_user_messages sources)
+
+The merge brought the live branch's tests (ROL, HM, PRV above) onto revision 11, where only managed sessions' permission requests reach Fishball, `start_session` also makes the session managed (DESIGN §5d "Not made managed", §5e) and read_session's bounds are the settings `readSessionMessages` and `readSessionBytes` (§16). The files below are new; the harness gained `failStoreTable`, `storeWriteCalls` and `storeRecord` ([support/worker.mjs](support/worker.mjs)) and [support/read-session.mjs](support/read-session.mjs).
+
+### [managed-start.test.mjs](managed-start.test.mjs): R3, start_session makes the session managed and carries on when it cannot (MST-nn)
+
+Two hosts (approver after the broker, as managed-ways): A has no cap; B has `sessionsPerHour` 2. The new session's first message makes it ask for permission at once, so where its request goes shows whether it is the user's (its own stock prompt) or managed (a request to Fishball).
+
+| id | technique | expected result |
+|---|---|---|
+| MST-01 | EP (control, the registry works) | no `managedError`; managed by `start`; every request has the three managed tools; its request goes to Fishball |
+| MST-02 | EP (the managed-list write fails before storing) | ok with `managedError: 'manage-failed'`, the control's keys plus `managedError`; the write was tried after the rename and before the first message; renamed once; first message delivered once as a relay from Fishball; outbox `start`/`delivered`; the session ran its first turn; not listed, not stored, no Fishball tool in any request, its request went to the stock prompt and Fishball was not told |
+| MST-03 | EP (the write is stored, then the call fails) | no `managedError`; the control's keys; listed by `start`; its request goes to Fishball |
+| MST-04 ×2 | DT (flag × write fails) | the watch (`createdBy` assistant) and one notice after the first turn, or none; `managedError` either way |
+| MST-05 ×3 | DT (write fails × rename ok / invalid / fails) | `managedError` next to `title` or `titleError`; delivered and recorded |
+| MST-06 ×2 | DT (flush rejects / answers false × write fails) | ok, `unconfirmed`, `managedError`; keys as the unconfirmed start made whole plus `managedError`; steered once; outbox `unconfirmed` |
+| MST-07 ×2 | DT (steer throws × write fails / write stored then fails) | `delivery-failed` with `sessionId`, the title, no `folder`, outbox `failed`; with `managedError` and the session the user's (first), without and managed (second) |
+| MST-08 | EP (control, steer throws, registry works) | `delivery-failed` without `managedError`; the session is managed |
+| MST-09 ×2 | DT (workspace attach fails × write fails / works) | both `workspaceError` and `managedError` (the session the user's, in no workspace) / `workspaceError` alone (managed) |
+| MST-10 | ST (the user's after a failed write → Hand over) | 200, managed by `hand-over`, the next request has the three tools |
+| MST-20..22 | ST (cap 2) | a start whose write fails succeeds; one whose delivery also fails is refused with `managedError`; the next start is refused `hourly-cap`, creating nothing |
+
+### [rev11b-sources.test.mjs](rev11b-sources.test.mjs): R4, list_user_messages lists only what the user typed (LUS-nn)
+
+| id | technique | expected result |
+|---|---|---|
+| LUS-00..03 | DT (one message per source in a managed session's log; 2 typed, 15 not) | listed: kind `user` plain and with an rpc id. Not listed: relays from Fishball, from another session and with a null, numeric or missing sender; a Fishball notice, a goal round, a schedule, runtime context; `user-approval`, `user-question-reply`, a made-up kind, `User`, `user `; an empty source object. The list equals the log's typed messages, newest first, with DSH's ids. Passes on the base branch (83e4275) too |
+
+### [limits-read-roles.test.mjs](limits-read-roles.test.mjs): read_session's bounds are settings, with labelled messages (LRR-nn)
+
+| id | technique | expected result |
+|---|---|---|
+| LRR-01 | ST + BVA (`readSessionMessages` 12 → 3 → 1 → 12; 15 messages of five labels) | the newest 12 / 3 / 1 / 12, in order, labels intact, applied to the next read |
+| LRR-02 | BVA (`readSessionBytes` 2048 / 3072 / default; four messages of exactly 1024 bytes with 300-character labels) | the newest 2 / 3 / all 4: labels are not counted |
+| LRR-03 | BVA (`readSessionBytes` 2047) | at most 2047 bytes of text; the newest whole with its label |
+| LRR-04 | BVA (`readSessionBytes` 2048, one 5000-byte message from another session) | one entry, label kept, a prefix ending with an ellipsis, at most 2048 bytes |
+
+### Ambiguities (revision 11 fixes)
+
+- **A165. Simulating the failing managed-list write.** `failStoreTable` wraps `put` and `update` on the `managed` table handle of Fishball's open store domain (DSH's storage-domain facility, `ctx.storageDomain.get('fishball')`, its diagnostic lookup), so only that table fails and the outbox the same start writes to keeps working. Mode `reject` stores nothing. Mode `after` lets the write complete and then rejects: this stands in for the requirement's "a change listener throws after the store write", because DSH contains failures of its own domain listeners and Fishball's own listeners cannot be reached from outside.
+- **A166. "Managed" when the throw comes after the write.** MST-03 and MST-07's second row require: no `managedError`, the session in the managed list by `start`, and (when it runs) its permission request going to Fishball. They do not require the managed tools in its requests: in this simulation the call fails before the registry can give the session its tools (observed: its requests have none), and DESIGN §5d names a failure while giving the tools among those that leave the session managed.
+- **A167. "The session is then the user's."** Not in the managed list, not in the store, no tool whose name mentions Fishball or is `list_user_messages` in any request of the session, its request asked its own stock prompt once and Fishball was not told. A start whose delivery failed ran no turn, so only the first three are checked there.
+- **A168. The answer's shape.** The control start in the same host is the reference: the half answer has the same keys plus `managedError` (so `unconfirmed` with its note, or `watch`, need not be named). The refusal for a failed delivery has the keys of the same failed delivery made whole plus `managedError`.
+- **A169. The order.** "After naming it and before delivering the first message" is checked with timestamps: the rename (probe), the failing write attempt (`storeWriteCalls`) and the first steer (probe), in that order.
+- **A170. A failed delivery still leaves the session managed.** Because the managed step comes before the delivery (A169), a start whose delivery fails but whose registry works leaves the session managed (MST-08). This follows from the order and is not stated separately.
+- **A171. list_user_messages and a message with no source.** DSH's agent loop cannot run a turn over a message with no source (it throws reading the source's kind), and the tool is called inside a turn, so the table has no such row; read_session's ROL-06 covers it. The literal kind `user-rpc` is not used either: DSH records its rpc source with kind `user` (LUM-05's USER_RPC_SOURCE).
+- **A172. Older tests changed by the merge.** approvals-provenance hands each session over to Fishball first (`makeManaged`), as the rev11a older-tests list does for the other approvals files, because only a managed session's requests reach Fishball. messaging-start-title keeps revision 11's filter for DSH's unrelated `client-module-registry` warning. The merged tests that start a session (HM, ROL-11) pass unchanged: `start_session` makes the session managed there, which they do not look at.
+
+## Revision 11 rev11h cases (stop and redirect; DESIGN §14 row rev11h, §7a.12, §9 "Fishball's other decisions", §11, §16 Q-r11-stop, Q-r11-stop-cap, Q-r11-redirect-order; requirements items 28-29, done-when 9; S34; written from the requirements alone, no code read)
+
+File: `rev11h-stop` (16 cases: STP-01..09 in 8 tests, RDR-01..06, CAP-01..02), on the rev11g host (stand-in question card). Each case uses a fresh managed session; a "running" turn is one held at its first model request (`holdNext`).
+
+| id | technique | expected |
+|---|---|---|
+| STP-01 | EP | `stop_session` on a running turn: ok, turn ends `aborted`, session idle and still managed, script does not continue |
+| STP-02 | ST | pending approval card: card leaves, approval settles `cancelled`, turn `aborted`, later click 409 |
+| STP-03 | ST | pending question (User mode): pile card leaves, own card closes, result ASK_ABORTED, late answers refused |
+| STP-04 | ST | idle session: ok, no turn end, no model request, still managed |
+| STP-05 | ST | idle until next message; a Fishball message then runs a completed turn |
+| STP-06 | ST | message queued before the stop starts no turn; it runs at the next wake |
+| STP-07 | DT | yours / taken back: `not-managed`, turn untouched, not audited; Fishball's own: `is-fishball`; unknown id refused |
+| STP-08/09 | EP | one `decisions` row `stop` by fishball keeping the reason; reason optional |
+| RDR-01 | EP | old turn `aborted`, new turn from Fishball (relay source with `senderSessionId`) completes |
+| RDR-02 | ST | waiting approval and question cancelled, cards leave, new turn runs |
+| RDR-03 | ST | queued user message is read before Fishball's instruction (log order) |
+| RDR-04 | DT | refusals as STP-07; nothing delivered |
+| RDR-05 | EP | one `decisions` row `redirect` by fishball |
+| RDR-06 | EP | idle managed session: instruction just starts a turn |
+| CAP-01 | BVA | `messagesPerHour` 2: two redirects ok, third `hourly-cap` and undelivered, `message_session` shares the count; six `stop_session` calls all ok and audited |
+| CAP-02 | BVA | `messagesPerHour` 0: no cap for redirect |
+
+Readings (not in the design text, taken from existing conventions): refusal codes are `not-managed`, `is-fishball` (P5 code); a decisions row carries `action`, `sessionId`, `by`, `at`, with the reason somewhere in the row; Stop on a question needs User mode so the question is a pile card at once. No older case is changed.
