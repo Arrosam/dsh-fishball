@@ -2399,7 +2399,7 @@ Requirements: DESIGN §10f, §9 `notices`, §14 "Recommended plugins (revision 1
 | REC-15 | ST installed → uninstalled | Install back | both entries install, plugin and blocked null; profile unchanged |
 | REC-16 (inside REC-06, 10–15) | EP invariant | an entry follows the catalog by package name | none → install; fishball-installed → installed; DSH plugin on/off → dsh-on/dsh-off; plugin and blocked equal the catalog entry's |
 | WEL-01 | ST fresh home | not shown yet | welcome {show:true}; state keys equal STATE_KEYS |
-| WEL-02 ×7 | EP | seen: other bodies | invalid JSON, [], "x", 5, null, true, {a:1}: 400 {ok:false, code:'bad-body'}; show stays true |
+| WEL-02 ×7 | EP | seen: other bodies | invalid JSON, [], "x", 5, null, true, and {a:1} (run after seen): 400 {ok:false, code:'bad-body'}; show stays true |
 | WEL-03 ×2 | EP | auth and fence | no cookie; foreign Origin: not 200; show stays true |
 | WEL-04 | ST show → seen | POST {} | 200; show false in GET state and in a new event stream's first frame; Fishball's session gains no event |
 | WEL-05 | ST seen → seen | repeat | 200; show false; recommended unchanged; no event, no turn |
