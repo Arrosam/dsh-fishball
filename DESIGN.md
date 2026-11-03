@@ -197,14 +197,16 @@ One component per responsibility; each is a module with an explicit contract:
 
 ## 4. Requirement 1: runtime and profile isolation
 
-**What Fishball takes from the profile, and what it chooses for itself.**
+**2026-11-03 isolation correction (investigation, not delivered):** the composition described below is a child-scope overlay and still shares main-profile services and global plugin hooks. The owner now requires an independent Fishball runtime using the same DSH installation, with existing model-account access through an explicit bridge. [Runtime isolation investigation](<docs/runtime-isolation.md>) records the verified gaps, proposed child-process boundary, and pending model API decision. The existing shared-runtime implementation remains in place until that migration is tested and delivered; tool switches must not be described as full plugin isolation.
+
+**What the current implementation takes from the profile, and what it chooses for itself.**
 
 | Inherited (host plane; needed) | Fishball's own choice (agent plane) |
 |---|---|
 | Model adapters and credentials, model settings (§6), session store and persistence, storage | Agent presets: none bound |
 | Web search provider and credentials (`ctx.web`) | Tools from profile-wide plugins: visible unless Fishball turns that plugin off for itself, except the tools hidden in §7 |
 | Schedule, approval, token meter, session controller, plugin manager | Global persona prefix/suffix, `harness:*` sections, optional runtime context (shadowed or suppressed) |
-| Global policy listeners: spill, timeouts, checkpointing. Cannot be hidden [V], and are harmless | Plugins that run for Fishball only (private tree) |
+| Global policy and arbitrary plugin listeners cannot be hidden by this scope [V]; their effects are not necessarily harmless (2026-11-03 correction above) | Plugins that run for Fishball only (private tree; not a separate event bus) |
 
 **Plugin states.** Fishball's catalog lists every DSH plugin (a bundle installed in the profile or offered by the installation, `pluginManager.listBundles()` [V]), the plugins installed in Fishball only (its own package folder, below), and DSH built-in capability packages: compaction, web, time, reminders, ask-user, skills and the read-only shell. Revision 9 adds one Fishball built-in, the Messenger look, which changes only how Fishball's session is drawn and mounts nothing in the private tree (§10c). Each has a Fishball-only on/off state:
 

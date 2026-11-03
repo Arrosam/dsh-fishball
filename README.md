@@ -8,6 +8,10 @@ The design is in [DESIGN.md](DESIGN.md). The original brief is [SMART-PROMPT.md]
 
 First release: v0.1.0, on `main`. The earlier "dsh-fishball (df)" preview is archived at tag `archive/df-preview-2026-10-23` and can be checked out from there.
 
+## Isolation status
+
+The current release uses a private agent scope inside the main DSH runtime, **not a fully isolated profile/runtime**. Fishball plugin switches control tool visibility and private plugin rows; they do not exclude main-profile global hooks or shared services. The [runtime isolation investigation](<docs/runtime-isolation.md>) describes the proposed same-installation child runtime and the unresolved hook-free model-account bridge. This migration has not shipped.
+
 ## Host
 
 - DSH Web 0.2.1-rc.2 (Cordis 4.0.5), as installed by DSH-X.
