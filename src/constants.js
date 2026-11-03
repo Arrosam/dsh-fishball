@@ -273,6 +273,9 @@ export const PLUGIN_MANAGER = Object.freeze({
  */
 export const PLUGIN_DEFAULTS = Object.freeze({ recordKey: 'dsh' })
 
+/** Fishball's explicit model choice; never initialized from a session or the DSH default. */
+export const MODEL_SELECTION = Object.freeze({ settingsKey: 'model', minIdLength: 1 })
+
 /**
  * Context window (DESIGN §6). DSH_DEFAULTS mirror dsh-compaction-basic's own defaults
  * (lib/index.js DEFAULT_THRESHOLD_RATIO, DEFAULT_RETAIN_RATIO, headroomTokens ?? 65536),
@@ -794,6 +797,10 @@ export const START_MANAGED_ERROR = Object.freeze({ failed: 'manage-failed' })
 export const API = Object.freeze({
   state: '/api/fishball/state',
   events: '/api/fishball/events',
+  /** GET: DSH's live provider/model catalog, without changing its default. */
+  models: '/api/fishball/models',
+  /** POST { provider, model, reasoningEffort? }: Fishball's own durable choice. */
+  model: '/api/fishball/model',
   recovery: '/api/fishball/recovery',
   /** POST { plugin, on }: your own on/off choice for one catalog plugin. */
   plugins: '/api/fishball/plugins',

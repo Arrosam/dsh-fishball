@@ -4,12 +4,12 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants, own_requests and notices tables keep version 1 (as do the question-mode record, rev11g's tag answers and question audit ends, which only add values): the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants, own_requests and notices tables keep version 1 (as do the dedicated model selection and question-mode records, rev11g's tag answers and question audit ends, which only add values): the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_TAG_ANSWER, QUESTION_END } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_TAG_ANSWER, QUESTION_END, MODEL_SELECTION } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
 const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags', grants: 'grants', ownRequests: 'own_requests', notices: 'notices' })
@@ -65,6 +65,14 @@ const questionModeRecord = z.object({
   mode: z.enum(Object.values(QUESTION_MODE)),
   changedAt: z.string(),
 })
+
+/** A separate version-1 settings record; old headers/defaults do not establish explicit consent. */
+export const modelSelectionSchema = z.object({
+  provider: z.string().trim().min(MODEL_SELECTION.minIdLength),
+  model: z.string().trim().min(MODEL_SELECTION.minIdLength),
+  reasoningEffort: z.string().trim().min(MODEL_SELECTION.minIdLength).optional(),
+})
+const modelSelectionRecord = modelSelectionSchema.extend({ changedAt: z.string() })
 
 const assistantRecord = z.object({
   /** The one assistant session; null before the first successful creation. */
@@ -294,7 +302,7 @@ export const fishballDomain = defineDomain({
     [TABLE.plugins]: domainTable(pluginRecord),
     [TABLE.toolApprovals]: domainTable(toolApprovalRecord),
     [TABLE.pluginChanges]: domainTable(pluginChangeRecord),
-    [TABLE.settings]: domainTable(z.union([settingsRecord, questionModeRecord])),
+    [TABLE.settings]: domainTable(z.union([settingsRecord, questionModeRecord, modelSelectionRecord])),
     [TABLE.watches]: domainTable(watchRecord),
     [TABLE.unread]: domainTable(unreadRecord),
     [TABLE.preferences]: domainTable(preferencesRecord),

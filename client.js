@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', model: 'api/fishball/model', models: 'api/fishball/models', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -80,6 +80,13 @@ window.__ModuleLoader__.load({
     const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'feature-off', 'unavailable'])
     /** The two context-window settings (src/constants.js API.contextWindow body). */
     const CONTEXT_FIELDS = Object.freeze(['contextWindowTokens', 'maxOutputTokens'])
+    /** Fishball's explicit model choice is independent of the host's last-used/default route. */
+    const MODEL = Object.freeze({
+      gateId: 'fishball-model-required', gateOrder: -50, styleId: 'fishball-model-seat',
+      settingsClass: 'fb-model-settings', gateClass: 'fb-model-gate', empty: '',
+      fieldSuffix: '-model', effortSuffix: '-effort',
+      seatSelector: (id) => `[data-conversation-session="${CSS.escape(id)}"] > [data-conversation-scroll] > [data-composer-seat] [data-slot="conversation.input.model"]`,
+    })
     /** Context-window refusals with their own text (keep in step with src/constants.js CONTEXT_ERROR). */
     const CONTEXT_ERRORS = new Set(['window-too-small', 'output-too-large', 'model-window-unknown'])
     const WHOLE_NUMBER = /^[1-9][0-9]*$/
@@ -502,6 +509,17 @@ window.__ModuleLoader__.load({
       hiddenToolsHint: 'They save files, change the profile, or start agents inside Fishball\'s own session.',
       limits: 'Safety limits',
       openSettings: 'Fishball settings',
+      modelTitle: 'Model for Fishball',
+      modelHint: 'Choose a dedicated model for Fishball. This does not change the model or default for your other sessions.',
+      modelRequired: 'Choose a model in Fishball settings before sending messages.',
+      modelChoose: 'Select model',
+      modelLoading: 'Loading models…',
+      modelEffort: 'Reasoning effort',
+      modelEffortDefault: 'Model default',
+      modelEmpty: 'No models available. Configure a provider in DSH model settings, then refresh.',
+      modelLoadFailed: 'Models could not be loaded. Refresh to try again.',
+      modelSaveFailed: 'The model was not saved. Check that it is still available and try again.',
+      modelUnavailable: 'The saved model is not in the current catalog. Select another model to change it.',
       contextWindow: 'Context window',
       contextHint: 'Leave the window empty to use the model\'s full window. A smaller window makes Fishball summarise its conversation sooner; only Fishball\'s session is affected.',
       'contextField.contextWindowTokens': 'Context window (tokens)',
@@ -947,6 +965,17 @@ window.__ModuleLoader__.load({
       hiddenToolsHint: '它们会保存文件、修改配置，或在 Fishball 自己的会话里启动代理。',
       limits: '安全限制',
       openSettings: 'Fishball 设置',
+      modelTitle: 'Fishball 专用模型',
+      modelHint: '为 Fishball 选择专用模型。不会更改其他会话的模型或 DSH 默认模型。',
+      modelRequired: '请先在 Fishball 设置中选择模型，再发送消息。',
+      modelChoose: '选择模型',
+      modelLoading: '正在加载模型…',
+      modelEffort: '推理强度',
+      modelEffortDefault: '模型默认值',
+      modelEmpty: '没有可用模型。请先在 DSH 模型设置中配置提供商，然后刷新。',
+      modelLoadFailed: '无法加载模型。请刷新重试。',
+      modelSaveFailed: '模型未保存。请确认模型仍然可用，然后重试。',
+      modelUnavailable: '当前列表中没有已保存的模型。可以选择其他模型来更改它。',
       contextWindow: '上下文窗口',
       contextHint: '留空则使用模型的完整窗口。窗口越小，Fishball 越早总结对话；只影响 Fishball 的会话。',
       'contextField.contextWindowTokens': '上下文窗口（token）',
@@ -1378,6 +1407,8 @@ window.__ModuleLoader__.load({
       `@keyframes fb-swim{${[...ORCA_SWIM.sway.map(([at, transform]) => [at * SWIM_SHARE, transform]), [100, 'none']].map(([at, transform]) => `${at}%{transform:${transform}}`).join('')}}`,
       // Motion is the only thing that stops: the pill and its count stay.
       `@media (prefers-reduced-motion:reduce){.${CLS.badge},.${CLS.wag},.${CLS.swim}{animation:none}}`,
+      `.${MODEL.settingsClass} select{width:100%;font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-3);border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);padding:8px 12px}`,
+      `.${MODEL.gateClass}{${DOCK_CARD_WIDTH};${DOCK_CARD_LOOK};padding:12px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;font:var(--dsw-font-xs-13)}`,
       `.${CLS.row}{display:flex;gap:12px;align-items:baseline}`,
       `.${CLS.label}{min-width:120px;color:var(--dsw-alias-label-tertiary)}`,
       `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
@@ -2132,6 +2163,91 @@ window.__ModuleLoader__.load({
           problem ? h('div', { role: 'alert' }, t(problem)) : null,
           h('div', { className: CLS.row },
             h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: !dirty || saving || CONTEXT_FIELDS.some(invalid), onClick: save }, saving ? t('saving') : t('save'))))
+      }
+    }
+
+    /**
+     * The host's model picker is not a public component and its selection RPC also changes
+     * DSH's global default. Reuse its read-only catalog, with native keyboard-accessible fields
+     * and our own save command instead, so Fishball never changes another session's model.
+     */
+    function makeModelSettings(t) {
+      return function FishballModelSettings() {
+        const state = useFishball()
+        const baseId = React.useId()
+        const [draft, setDraft] = React.useState(null)
+        const [catalog, setCatalog] = React.useState(null)
+        const [refresh, setRefresh] = React.useState(false)
+        const [loading, setLoading] = React.useState(true)
+        const [saving, setSaving] = React.useState(false)
+        const [problem, setProblem] = React.useState(null)
+        React.useEffect(() => {
+          let current = true
+          setLoading(true)
+          fetch(apiUrl(API.models)).then(async (response) => {
+            if (!response.ok) throw new Error()
+            const answer = await response.json()
+            if (current) { setCatalog(answer.catalog); setProblem(null) }
+          }).catch(() => { if (current) setProblem('modelLoadFailed') })
+            .finally(() => { if (current) setLoading(false) })
+          return () => { current = false }
+        }, [refresh])
+        const selection = draft ?? state.modelSelection
+        const valueOf = (choice) => choice ? JSON.stringify([choice.provider, choice.model]) : MODEL.empty
+        const options = catalog?.groups.flatMap((group) => group.models.map((model) => ({ group, model }))) ?? []
+        const chosen = options.find(({ group, model }) => group.id === selection?.provider && model.id === selection?.model)
+        const efforts = chosen?.model.reasoning?.efforts ?? []
+        const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(state.modelSelection)
+        const save = async () => {
+          setSaving(true)
+          const { ok } = await send(API.model, draft)
+          setSaving(false)
+          if (ok) { setDraft(null); setProblem(null) } else setProblem('modelSaveFailed')
+          // Only the authoritative state stream clears the composer block, never an optimistic draft.
+        }
+        return h('section', { className: CLS.section + ' ' + MODEL.settingsClass, 'data-fishball-model-settings': true },
+          h('h3', null, t('modelTitle')),
+          h('p', { className: CLS.muted }, t('modelHint')),
+          h('label', { htmlFor: baseId + MODEL.fieldSuffix }, t('modelChoose')),
+          h('select', {
+            id: baseId + MODEL.fieldSuffix, 'data-fishball-model-select': true,
+            value: chosen ? valueOf(selection) : MODEL.empty, disabled: loading || saving,
+            onChange: (event) => {
+              if (event.target.value === MODEL.empty) { setDraft(null); return }
+              const [provider, model] = JSON.parse(event.target.value)
+              setDraft({ provider, model })
+            },
+          }, h('option', { value: MODEL.empty }, t('modelChoose')),
+          catalog?.groups.map((group) => h('optgroup', { key: group.id, label: group.name },
+            group.models.map((model) => h('option', { key: model.id, value: valueOf({ provider: group.id, model: model.id }) }, model.name))))),
+          efforts.length > 0 ? h(React.Fragment, null,
+            h('label', { htmlFor: baseId + MODEL.effortSuffix }, t('modelEffort')),
+            h('select', {
+              id: baseId + MODEL.effortSuffix, 'data-fishball-model-effort': true,
+              value: selection?.reasoningEffort ?? MODEL.empty, disabled: loading || saving,
+              onChange: (event) => setDraft({ provider: selection.provider, model: selection.model,
+                ...(event.target.value === MODEL.empty ? {} : { reasoningEffort: event.target.value }) }),
+            }, h('option', { value: MODEL.empty }, t('modelEffortDefault')),
+            efforts.map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name)))) : null,
+          loading ? h('p', { role: 'status' }, t('modelLoading')) : null,
+          !loading && catalog && options.length === 0 ? h('p', { role: 'status' }, t('modelEmpty')) : null,
+          !loading && selection && !chosen && options.length > 0 ? h('p', { role: 'status' }, t('modelUnavailable')) : null,
+          catalog?.failures.map((failure) => h('p', { key: failure.id, role: 'status' }, failure.name + ': ' + failure.message)),
+          problem ? h('p', { role: 'alert' }, t(problem)) : null,
+          h('div', { className: CLS.row },
+            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: !dirty || !chosen || loading || saving, onClick: save }, saving ? t('saving') : t('save')),
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: loading || saving, onClick: () => setRefresh(!refresh) }, t('refresh'))))
+      }
+    }
+
+    /** A model-setting prompt remains usable while DSH makes the editor and submit paths inert. */
+    function makeModelGate(ctx, t) {
+      return function FishballModelGate({ sessionId }) {
+        const state = useFishball()
+        if (!sessionId || sessionId !== state.sessionId || state.modelSelection) return null
+        return h('div', { className: MODEL.gateClass, 'data-fishball-model-gate': true },
+          h('span', { className: CLS.grow, role: 'status' }, t('modelRequired')),
+          h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: () => openSettings(ctx) }, t('openSettings')))
       }
     }
 
@@ -3075,7 +3191,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, Recommended, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
+    function makeSettingsPage(section, Status, ModelSettings, Recommended, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -3085,6 +3201,7 @@ window.__ModuleLoader__.load({
         const disabled = !state.writable || state.saving
         return h(React.Fragment, null,
           h(Status),
+          h(ModelSettings),
           h(Recommended),
           h(BrandStyle),
           h(ContextWindow),
@@ -3141,6 +3258,49 @@ window.__ModuleLoader__.load({
       update()
       const unsubscribe = stateSource.subscribe(update)
       return () => { unsubscribe(); style.remove() }
+    }
+
+    /**
+     * DSH's single slots cannot elect per session. Hide its model seat by the public slot
+     * wrapper, scoped to Fishball's conversation, rather than replacing the host component
+     * (which would replace it in ordinary chats too). !important beats its inline display:contents.
+     */
+    function hideModelSeat() {
+      const style = document.createElement('style')
+      style.id = MODEL.styleId
+      document.head.appendChild(style)
+      const update = () => {
+        const { sessionId } = stateSource.get()
+        style.textContent = sessionId ? MODEL.seatSelector(sessionId) + '{display:none !important}' : MODEL.empty
+      }
+      update()
+      const unsubscribe = stateSource.subscribe(update)
+      return () => { unsubscribe(); style.remove() }
+    }
+
+    /** Keep the block alive even when the dock is not mounted (settings, dialogs, or another chat). */
+    function requireModel(conversation, t) {
+      let ownedSession
+      let ownedBlock
+      const clear = () => {
+        if (ownedSession && conversation.blocks.storeFor(ownedSession).getSnapshot() === ownedBlock) {
+          conversation.blocks.set(ownedSession, undefined)
+        }
+        ownedSession = undefined
+        ownedBlock = undefined
+      }
+      const update = () => {
+        const { sessionId, modelSelection } = stateSource.get()
+        if (sessionId !== ownedSession || modelSelection) clear()
+        if (sessionId && !modelSelection && ownedSession !== sessionId) {
+          ownedSession = sessionId
+          ownedBlock = { reason: t('modelRequired') }
+          conversation.blocks.set(sessionId, ownedBlock)
+        }
+      }
+      update()
+      const unsubscribe = stateSource.subscribe(update)
+      return () => { unsubscribe(); clear() }
     }
 
     /** Load a script once; the promise settles when it has run. */
@@ -3709,6 +3869,10 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
       ctx.effect(mountStyles, 'fishball: styles')
       ctx.effect(hideOwnRow, 'fishball: hide own session row')
+      ctx.effect(hideModelSeat, 'fishball: hide composer model seat')
+      ctx.inject(['conversation'], (scope) => {
+        scope.effect(() => requireModel(scope.conversation, t), 'fishball: require dedicated model')
+      })
       ctx.effect(() => followMessenger(ctx), 'fishball: messenger look')
       const BrandName = makeBrandName(ctx, t)
       ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
@@ -3735,6 +3899,7 @@ window.__ModuleLoader__.load({
         yield ctx.slots.register({ name: SLOT.overlay, id: ADD_MENU.id, locale: NS }, makeInstallDialog(t, listenToHost))
       }), 'fishball: dialogs')
       // Revision 11 (DESIGN §10e, S37): your pile, the ask_fishball row with your buttons, and the tags in each turn's tail.
+      ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: MODEL.gateId, order: MODEL.gateOrder, locale: NS }, makeModelGate(ctx, t))), 'fishball: model setting prompt')
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: PILE.id, order: PILE.order, locale: NS }, makePile(t))), 'fishball: pile')
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: WELCOME.id, order: WELCOME.order, locale: NS }, makeWelcome(ctx, t))), 'fishball: welcome card')
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: MANAGED_BANNER.id, order: MANAGED_BANNER.order, locale: NS }, makeManagedBanner(t))), 'fishball: managed banner')
@@ -3749,7 +3914,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.detailActions, () => ctx.slots.register({ name: SLOT.detailActions, id: MANAGER.actionId, locale: NS }, manager.DetailAction)), 'fishball: plugin page switch')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeRecommended(t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeModelSettings(t), makeRecommended(t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')
