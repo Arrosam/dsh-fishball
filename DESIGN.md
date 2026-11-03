@@ -197,7 +197,7 @@ One component per responsibility; each is a module with an explicit contract:
 
 ## 4. Requirement 1: runtime and profile isolation
 
-**2026-11-03 isolation correction (investigation, not delivered):** the composition described below is a child-scope overlay and still shares main-profile services and global plugin hooks. The owner now requires an independent Fishball runtime using the same DSH installation, with existing model-account access through an explicit bridge. [Runtime isolation investigation](<docs/runtime-isolation.md>) records the verified gaps, proposed child-process boundary, and pending model API decision. The existing shared-runtime implementation remains in place until that migration is tested and delivered; tool switches must not be described as full plugin isolation.
+**2026-11-03 isolation correction (investigation, not delivered):** the composition described below is a child-scope overlay and still shares main-profile services and global plugin hooks. The owner now requires an independent Fishball runtime using the same DSH installation, with existing model-account access through an explicit bridge. [Runtime isolation investigation](<docs/runtime-isolation.md>) records the verified gaps, proposed child-process boundary, pending model API decision, and supported private-client composition seams (audited 2026-11-04; browser integration remains unproved). The existing shared-runtime implementation remains in place until that migration is tested and delivered; tool switches must not be described as full plugin isolation.
 
 **What the current implementation takes from the profile, and what it chooses for itself.**
 
