@@ -73,9 +73,22 @@ Keep a host-side controller for the intentional operations Fishball already perf
 
 ### Conversation UI and approvals
 
-Reuse stock DSH conversation components with a private `ClientSessions`/remote connection and runtime-owned session controller/projections. Carrier-neutral connection and gateway APIs exist (`dsh-client-connection/lib/types/index.d.ts:49-56`, `dsh-api-gateway/lib/types/index.d.ts:88-100`); the stock client session manager accepts a remote interface. These establish a possible seam, **not a proven drop-in dual-runtime UI**.
+Reuse stock DSH conversation components with a private client context, remote connection and runtime-owned session controller/projections. Carrier-neutral connection and gateway APIs exist (`dsh-client-connection/lib/types/index.d.ts:49-56`, `dsh-api-gateway/lib/types/index.d.ts:88-100`). Although the internal `ClientSessions` constructor accepts a remote interface, it is **not exported by the supported client entrypoint**; install the stock session-controller client plugin rather than deep-importing that class. These establish a possible seam, **not a proven drop-in dual-runtime UI**.
 
 A separate client root (or stronger embedded-page boundary) must prevent main-profile frontend extension slots from mutating Fishball’s conversation. Do not re-register its agent in the host to make the current open-session call work. Fishball’s own approvals must return to private pending-request state, including cancellation/disconnect handling; no live answerer means fail closed. Host-managed-session approvals remain intentional host integration.
+
+### Client composition audit (2026-11-04)
+
+The rc.3 public client entrypoints expose enough composition seams to investigate reuse without publishing private sessions into the host. This is a source audit, not a browser integration result:
+
+| Public owner | Verified seam | Constraint for the private composition |
+|---|---|---|
+| `@deepseek-ai/dsh-client-connection/client` | `installConnection(ctx, options)` accepts an instance-local `transport.rpc` (decoded unary/stream carrier), plus explicit interaction participation and location. | Use explicit options; the plugin’s ordinary `apply` reads page-global `__DSH_TRANSPORT__`. Never replace the main page’s global transport. A missing private carrier must fail startup rather than default to host HTTP. |
+| `@deepseek-ai/dsh-api-session-controller/client` | `apply(ctx)` constructs its session owner from `ctx.remote`, subscribes to remote session events, and owns the reconnecting control stream. | Requires private connection, file upload, Typert contexts and generated `commands`, `session`, `subagents` remotes. Reusing the host services would reintroduce cross-runtime routing. |
+| `@deepseek-ai/dsh-client-ui-renderer/client` | `apply(ctx)` creates a context-owned slot registry and a `uiRenderer.mount(container)` disposer. | A private registry can exclude host slot entries, but shared page globals, the module loader and CSS remain shared. This does not establish a separate browser execution realm. |
+| `@deepseek-ai/dsh-client-ui-session/client` | `apply(ctx)` binds session UI sources and scopes to the installed sessions, slots, remote and remote-access services. | All four must belong to the private client composition. A private backend plus the existing host UI scope is insufficient. |
+
+The existing [Fishball opener](<../client.js#L1676-L1684>) passes its session ID to the host workspace. Its [status EventSource](<../client.js#L1544-L1576>) is not the stock session/control transport. Neither can simply be pointed at a worker session ID. Before UI delivery, demonstrate stock private-session history, streaming, tool cards, uploads, approvals, cancellation and reconnect in the actual served GUI; demonstrate host extension-slot exclusion and define the page/realm boundary. A same-origin frame alone is not protection against malicious parent-page scripts, just as a child process alone is not an OS filesystem sandbox.
 
 ## Delivery gates
 
@@ -97,5 +110,21 @@ Run it with an explicit rc.3 installed package directory (the investigation test
 ```sh
 DSH_RUNTIME_ROOT="/absolute/path/to/installed/dsh/node_modules" node --test test/runtime-isolation-boundary.test.mjs
 ```
+
+### Transport and approval proof result (2026-11-04)
+
+The independently authored [transport test](<../test/runtime-isolation-transport.test.mjs>) passes four tests (three behavioral subtests plus their parent) against the installed rc.3 packages:
+
+- Unary invoke, stream and uplink calls reach the private controller; live host-side control calls establish that the host observers are registered but do not receive private traffic.
+- Stock `ApprovalService` returns `unavailable` without a private answerer, even when the other root has an allowing plugin.
+- Stock `api-remotes` projects a private approval event; answering it through the private Connection direct Fetch handler and Gateway returns `allowed-once` to the private approval request, without involving the host approval listener.
+
+The fixture uses two independent roots in one test process, synthetic controllers/session audit sinks and direct in-process carriers. No network listener, account or live user session is used. This validates the public backend transport and approval seams; it **does not prove IPC, browser client installation, real session persistence, disconnect/reconnect, production approval migration, model-account access or hostile-code isolation**. The opt-in selector behavior is the same as the boundary proof: absent skips; explicitly invalid fails.
+
+```sh
+DSH_RUNTIME_ROOT="/absolute/path/to/installed/dsh/node_modules" node --test test/runtime-isolation-transport.test.mjs
+```
+
+Validation scope: the targeted proofs above passed; no full-suite pass is claimed. The earlier optional `npm test` run, with disposable homes, was stopped after roughly 255 seconds after PTA-01 failed while waiting for an inner approval request. Its cause was not established and no baseline rerun was performed. The job was stopped and collected and its disposable regression homes were cleaned. This is neither proof of a pre-existing failure nor proof of a regression from these investigation tests.
 
 Acceptance includes main-only prompt, skill, MCP, memory, tool guard, session-hook and LLM middleware probes leaving Fishball unchanged; Fishball plugin enable/disable/config writes leaving main state unchanged; same-version resolution without downloading DSH; fail-closed worker/bridge failures; and complete process cleanup. Approved bridges are the only intentional exceptions.
