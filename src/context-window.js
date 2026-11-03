@@ -68,6 +68,7 @@ export class ContextWindow {
   #onPolicyChange
   #isCompactionRunning
   #readLimits
+  #modelSelection
   /** pricingKey of the limits last seen, so only a change of them re-evaluates. */
   #pricing
   #agentOf = () => undefined
@@ -97,8 +98,9 @@ export class ContextWindow {
    *   last mounted (the catalog schedules its idle-phase apply).
    * @param options.isCompactionRunning - () => whether Fishball's compaction plugin runs.
    * @param options.readLimits - () => current limits (read at each evaluation and save).
+   * @param options.modelSelection - () => dedicated Fishball choice, or null before an explicit save.
    */
-  constructor(ctx, store, logger, { onChange, onPolicyChange, isCompactionRunning, readLimits }) {
+  constructor(ctx, store, logger, { onChange, onPolicyChange, isCompactionRunning, readLimits, modelSelection = () => null }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -106,6 +108,7 @@ export class ContextWindow {
     this.#onPolicyChange = onPolicyChange
     this.#isCompactionRunning = isCompactionRunning
     this.#readLimits = readLimits
+    this.#modelSelection = modelSelection
     this.#pricing = pricingKey(readLimits())
     ctx.on(EVENT.adaptersUpdated, () => { void this.evaluate() })
     // DSH broadcasts every plugin's volatile change; only a change of the pricing limits matters here.
@@ -263,15 +266,14 @@ export class ContextWindow {
   }
 
   /**
-   * The model window and default reply cap for the route Fishball uses: the latest
-   * request's route, else DSH's default selection (a new session's first route). After a
-   * switch in the model picker, the first request of the next turn still runs on the old
-   * route's policy; the evaluation after that turn corrects it (review L4).
+   * The model window and default reply cap for Fishball's dedicated choice, as soon as
+   * saved, even before a request logs that route. Without an explicit choice, preserve
+   * the setup lifecycle's latest request route or DSH default fallback.
    * Bounded, so a slow adapter discovery never stalls boot or a save. A failed lookup keeps
    * the route's last known answer (review M3); unknown only if it was never known.
    */
   async #modelInfo() {
-    const route = this.#agentOf()?.session.requestHeader()?.config ?? this.#ctx.agentDefaultModel.currentSelection()
+    const route = this.#modelSelection() ?? this.#agentOf()?.session.requestHeader()?.config ?? this.#ctx.agentDefaultModel.currentSelection()
     if (!route?.provider || !route?.model) return {}
     const key = route.provider + '\n' + route.model
     try {

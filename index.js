@@ -43,6 +43,7 @@ import { Store } from './src/store.js'
 import { AssistantComposition } from './src/composition.js'
 import { CatalogError, PluginCatalog, fishballInstalledKey } from './src/plugin-catalog.js'
 import { ContextWindow } from './src/context-window.js'
+import { ModelSelection } from './src/model-selection.js'
 import { IntakeError, IntakeLedger } from './src/intake.js'
 import { MESSAGING_TOOL, registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
 import { MANAGED_TOOL, ManagedError, ManagedRegistry } from './src/managed.js'
@@ -103,6 +104,7 @@ export async function apply(ctx, config) {
   let lifecycle = new InactiveLifecycle(STATUS.starting)
   let catalogView = () => null
   let contextView = () => null
+  let modelSelectionView = () => null
   let intakeView = () => null
   let outboxView = () => null
   let watchesView = () => null
@@ -132,16 +134,18 @@ export async function apply(ctx, config) {
   const snapshot = () => {
     // Read once: the recommended list derives its states from the same catalog view (§10f).
     const catalog = catalogView()
-    return { ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog, contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView(), managed: managedView(), pile: pileView(), tags: tagsView(), grants: grantsView(), questionMode: questionModeView(), recommended: recommendedView(catalog), welcome: welcomeView() }
+    return { ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog, modelSelection: modelSelectionView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView(), managed: managedView(), pile: pileView(), tags: tagsView(), grants: grantsView(), questionMode: questionModeView(), recommended: recommendedView(catalog), welcome: welcomeView() }
   }
   /** Called on every published change once ctx.fishball exists (sources may become enabled). */
   let refreshSources = () => {}
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable, markWelcomeSeen: unavailable, setManaged: unavailable, answerRequest: unavailable, revokeGrant: unavailable, answerQuestion: unavailable, setQuestionMode: unavailable }
+  const commands = { setModel: unavailable, setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable, markWelcomeSeen: unavailable, setManaged: unavailable, answerRequest: unavailable, revokeGrant: unavailable, answerQuestion: unavailable, setQuestionMode: unavailable }
   registerRoutes(ctx, {
     snapshot,
+    modelCatalog: () => ctx.sessionController.modelCatalog(),
+    setModel: (selection) => commands.setModel(selection),
     subscribe: (listener) => feed.subscribe(listener),
     recover: (action) => lifecycle.recover(action),
     setPlugin: (plugin, on) => commands.setPlugin(plugin, on),
@@ -185,6 +189,12 @@ export async function apply(ctx, config) {
   welcomeView = () => welcome.snapshot()
   commands.markWelcomeSeen = () => welcome.markSeen()
 
+  // An explicit choice survives lifecycle/composition failures and is never inferred from DSH.
+  let evaluateModel = () => Promise.resolve()
+  const modelSelection = new ModelSelection(ctx, store, { onChange: () => publish(), onPrepare: () => evaluateModel() })
+  modelSelectionView = () => modelSelection.snapshot()
+  commands.setModel = (selection) => modelSelection.save(selection)
+
   const composition = new AssistantComposition(ctx, logger)
   // Decided once, before the first catalog listing: an install whose session already exists
   // keeps the old default for the DSH plugins present now (src/plugin-defaults.js).
@@ -208,7 +218,9 @@ export async function apply(ctx, config) {
     onPolicyChange: () => { if (booted) void catalog.schedule() },
     isCompactionRunning: () => catalog.isRunning(CONTEXT.compactionPlugin),
     readLimits: limits,
+    modelSelection: () => modelSelection.policySelection(),
   })
+  evaluateModel = () => contextWindow.evaluate()
   const catalog = new PluginCatalog(ctx, store, logger, {
     readLimits: limits,
     mountRows: (rows) => composition.mountRows(rows),
@@ -243,6 +255,7 @@ export async function apply(ctx, config) {
     await catalog.apply()
     composition.attachCatalog(catalog)
     composition.addAgentSetup((agentCtx, agent) => contextWindow.installAgent(agentCtx, agent))
+    composition.addAgentSetup((agentCtx) => modelSelection.installAgent(agentCtx))
     booted = true
     // An evaluation that finished while boot was mounting (llm/adapters-updated) is caught here.
     contextWindow.reconcile()

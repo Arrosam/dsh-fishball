@@ -2,6 +2,8 @@
 
 **Status: approved 2026-10-24; revision 9 approved 2026-10-31; revision 10 approved 2026-10-31; revision 10a (Install for Fishball) decided and delivered 2026-10-31; revision 10b (private services) 2026-10-31; revision 10c (Fishball's own plugins) decided 2026-10-31 and delivered 2026-11-01; revision 11 (Fishball-managed sessions) requirements approved 2026-11-01, design folded in the same day, and delivered 2026-11-02 on `rebuild/managed-sessions`, then merged into `rebuild/assistant` with your OK and pushed the same day; revision 12 (recommended plugins and the one-time welcome card) designed 2026-11-02, your answers recorded and built the same day (§16).** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
 
+**2026-11-03 model-settings amendment (owner's request, with scope/migration confirmed):** model selection moves out of Fishball's composer and into its settings; an explicit dedicated choice is required before the composer accepts messages, separate from DSH defaults and ordinary sessions (§6).
+
 Revision 12 (2026-11-02, owner's request before the v0.1.0 release) rebuilds P10's recommended plugins and one-time welcome card on today's design. P10 (2026-10-25, branch `p10-recommended-plugins`, commit `6555e88`) was never merged: revision 8 replaced its plugin list, and revision 10a made your click in the "Install for Fishball" dialog the approval. So the recommended list is a section on Fishball's settings page whose Install opens that dialog, and the welcome card sits in Fishball's chat above your pile (§10f, §9, phase rev12 in §14, decisions in §16 "Revision 12").
 
 Revision 11 (2026-11-01, owner's request; requirements approved the same day in [docs/revision-11-requirements.md](docs/revision-11-requirements.md), items 1-29) splits sessions into yours and Fishball-managed ones. Only managed sessions have Fishball's tools and send it their permission requests and questions; yours keep their own prompts and cost Fishball nothing. Managed agents ask Fishball first with `ask_fishball`, quoting your messages; Fishball can allow once, grant for a while, reject, ask back or send the request to your pile above its composer; its own requests become non-blocking cards; it can stop or redirect a managed session (§5e, §7a rewritten, §9, §10e, §11, spikes S33-S37 in §13, phases rev11a-rev11h in §14, decisions in §16 "Revision 11"). Mechanisms that wait on a spike are marked "pending S3x".
@@ -429,7 +431,10 @@ Every session is either yours or managed by Fishball. "Connected" and "managed" 
 
 ## 6. Requirement 3: context window of the single session
 
-- **Model.** Fishball follows DSH's model settings (Q-model). It starts on DSH's default model and is changed with the normal model picker in its chat. As everywhere in DSH, a choice there also changes the default for new sessions. There is no Fishball model setting.
+- **Model (2026-11-03, supersedes Q-model).** Fishball has a dedicated persisted model selection, chosen explicitly on its own settings page under Plugins. It is independent of DSH's default and ordinary sessions. Neither an existing chat's route nor the global default counts as a dedicated choice. Until the user saves one, a model-setting widget above Fishball's composer links to settings, and DSH's per-session composer block makes the editor and send paths inert. Pending/failed saves do not unblock it; a successful persisted choice does, including across reload/restart. The stock composer model seat is hidden only in Fishball's conversation, regardless of Messenger look; ordinary sessions retain their picker. The existing automatic setup-turn lifecycle is unchanged; this requirement gates the user's composer, not background intake/setup turns.
+  - **Persistence and routing.** `settings['model']` stores `{provider, model, reasoningEffort?, changedAt}`; top-level `modelSelection` in the snapshot is the choice or null. Fishball reuses DSH's `installModelSelection` helper in its private agent scope, snapshotting the choice at prompt assembly, keeping provider/model variables and routing consistent, emitting the host's route-switch notice and stripping inherited effort when omitted. It never calls DSH's `selectModel` RPC because that also writes the global default. Its context-window policy evaluates the dedicated model immediately after save.
+  - **Settings UI/API.** Native labelled selects reuse DSH's read-only provider-grouped catalog and advertised effort metadata, with Save, Refresh, and loading/empty/error states. The host picker component is not publicly exported in rc.3. `GET /api/fishball/models` returns `{ok:true,catalog}` from DSH; `POST /api/fishball/model` validates `{provider,model,reasoningEffort?}` against the live catalog and resolver before persisting. Saves are serialized; the published choice stays at the previous value until the durable write and context-policy preparation complete.
+  - **Host integration.** Client `conversation.blocks` is held from the shared state subscription, not the dock's mount lifetime, and released on selection, session-id change, or plugin disposal. The model seat's public `data-slot` wrapper is hidden with a Fishball-session-scoped style (inline `display:contents` requires `!important`); no global single-slot replacement or host edits are used.
 - **Setting.** Stored in domain `fishball` table `settings`, recorded with the assistant session id it was made for (an adopted new session starts from the defaults), and edited in Fishball settings (`POST /api/fishball/context-window`, each value a positive whole number or null):
   - `contextWindowTokens` is optional. Unset means the full window of the model Fishball is using (Q-defaults).
   - `maxOutputTokens` is the reply-length cap. When you set a smaller window, it defaults to one eighth of that window, at most 32,000 tokens; you can change it.
@@ -941,7 +946,7 @@ No custom session event types are added: persistence refuses logs containing unk
 
 ## 10. UI and host API
 
-- **Reused from DSH:** the chat view for the pinned assistant session, including queue/steer, stop, model display and `/compact`; sidebar pin and archive; the Plugins page for installing packages; the stock approval prompt for escalated permission requests.
+- **Reused from DSH:** the chat view for the pinned assistant session, including queue/steer, stop and `/compact` (the composer model seat is hidden for Fishball; model selection lives in its settings, §6); sidebar pin and archive; the Plugins page for installing packages; the stock approval prompt for escalated permission requests.
 - **New client half.** A hand-written `client.js`, in the same style as `dsh-idle-compact`, using DSH runtime primitives:
   1. **Fishball brand button (Q3).**
      - **Look.** It fills `sidebar.brand.mark` with a Fishball mark and `sidebar.brand.name` with the word "Fishball", replacing the DeepSeek Harness art [V slot ranking]. The collapsed rail shows the same mark. The mark is FishMark from your fishball app (owner's choice, P2); the package declares it as its Plugins-page icon too.
@@ -961,6 +966,7 @@ No custom session event types are added: persistence refuses logs containing unk
      - **Borrowed from DSH.** The two swim shapes and the sway are not exported by `dsh-client-ui-conversation`, so `client.js` keeps a copy of them (`ORCA_SWIM`); the resting shape comes from the primitives. A DSH update that changes its hero animation does not change ours.
   2. **Fishball settings live on its page under Plugins** (owner's choice, P2), through `plugins.bundle.config`. There is no separate settings panel. The page opens from the header action in the assistant session and from the brand while the assistant needs attention. It shows, as the phases add them:
      - status and recovery actions;
+     - the dedicated Fishball model and optional reasoning effort (§6, 2026-11-03);
      - the context window (`W_eff`, threshold, pressure);
      - the plugin catalog: each plugin's status (§4) with only its actions (a switch for enable/disable, Uninstall for plugins installed in Fishball only), who last changed it, and "Install a plugin for Fishball only" (revision 10 moves this to the Fishball tab and leaves a summary here, §10d);
      - the tools hidden from Fishball because they write files (read-only, §7);
@@ -1340,7 +1346,7 @@ The Host state and routes below need no spike.
 | (Revision 11) Telling Fishball about prompts in your sessions | Requirements non-goal: they cost Fishball nothing; it lists them only when it looks (§7a.9) |
 | A special package format for Fishball plugins (revision 1's `dsh.fishball` manifest) | You want standard DSH plugins. Any bundle that adds its own rows can run Fishball-only (§4) |
 | Letting Fishball move plugins between "everyone" and "Fishball only" | That changes the profile for every session, which requirement 1 rules out for Fishball's own choices |
-| A Fishball-specific model setting | You chose DSH's model settings (Q-model) |
+| A Fishball-specific model setting (earlier rejection, superseded 2026-11-03) | Dedicated settings selection and required-model composer gate are now requested (§6) |
 | Urgency levels that let quiet inputs wait without waking Fishball | You want every input to steer Fishball's session |
 | A block list in Fishball settings, or the prompt alone, for file-saving plugin tools (revision 3, N2) | You chose to not expose them at all. The hidden set is fixed in the plugin's code (§7) |
 | A 10-minute timeout on `add_plugin` (revision 3) | You want adding a plugin handled like any DSH permission request, which waits for your answer. **Revision 11:** it still waits for your answer, as a non-blocking card (§7a.11) |
@@ -1622,7 +1628,7 @@ Each phase ends with:
 | Q-outbound | Fishball can message other sessions | `message_session` (§5d); requirement 4 widened (§7) |
 | Q-toggle | Fishball turns its plugins on and off; adding one needs your permission | `set_plugin_enabled`, and `add_plugin` with your approval (§4) |
 | Q-fetch | It cannot write local files; everything else is allowed, including browser and computer use through plugins | Page opening on, and the hard file-write limit (§7) |
-| Q-model | Use DSH's settings | No Fishball model setting (§6) |
+| Q-model (superseded 2026-11-03) | Dedicated Fishball model on its settings page; existing chat/default does not count; Fishball only | Required-model composer gate, no composer picker, no changes to ordinary sessions/default (§6) |
 | Q-defaults | Default to the model's context window; a smaller one can be set | §6. With a smaller window, the reply-length cap is set automatically (one eighth of the window, at most 32,000 tokens) |
 | Q-watch | Agreed | §5c as written: "finished" means the turn ended and the session is idle with nothing queued; Fishball is told once |
 | Q-ext | Standard DSH plugins that can be enabled in Fishball only | Plugin states (§4) and §8 |
