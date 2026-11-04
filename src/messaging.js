@@ -20,6 +20,8 @@
  * - start_session({folder, title, message}): create an ordinary session in an existing DSH
  *   workspace or folder (DSH's default preset and permission mode; never Fishball's
  *   composition), name it with Fishball's title, then send the first message the same way.
+ *   Optional model/reasoning_effort are validated against DSH's live catalog and committed
+ *   through official Session/Agent APIs before the message; failure never falls back.
  *   DSH's automatic title reads only user messages, and a relay is not one, so Fishball names
  *   the session itself; a title DSH cannot take is reported as titleError and the session
  *   still starts. DSH can create the session and then fail to add it to the workspace: that
@@ -68,6 +70,8 @@ import { digestOf } from './digest.js'
 import { diagnosticOf } from './errors.js'
 import { SELF_MESSAGE_TOOL } from './tool-rules.js'
 import { untrustedBlock, sessionFields } from './framing.js'
+import { prepareSessionModel, applySessionModel } from './session-model.js'
+import { ModelChoiceError, MODEL_ERROR, MODEL_TEXT } from './model-catalog.js'
 
 export const MESSAGING_TOOL = Object.freeze({ inbound: SELF_MESSAGE_TOOL, send: 'message_session', start: 'start_session', stop: 'stop_session', redirect: 'redirect_session' })
 
@@ -89,7 +93,9 @@ export const TEXT = Object.freeze({
   sendDescription: 'Send a message to another DSH session, which then works on it with its own tools and permission mode. The session sees it as a message from Fishball, not from the user. Use it to hand work off or ask for a status; follow up later.',
   sessionArg: 'The id of the session to message.',
   messageArg: 'What the session should do or know, self-contained.',
-  startDescription: 'Start a new ordinary DSH session in an existing workspace or folder, give it a title and a first message, so it starts working at once. It runs DSH\'s default agent and permission mode. Fishball cannot create folders: the folder must exist.',
+  startDescription: 'Start a new ordinary DSH session in an existing workspace or folder, give it a title and a first message, so it starts working at once. It runs DSH\'s default agent and permission mode. Optionally set model (provider/model) and reasoning_effort before the first message, for this session only, without changing DSH defaults or Fishball settings. Omit both to keep the default model behavior. Invalid choices return available values; never fall back. Fishball cannot create folders: the folder must exist.',
+  modelArg: 'Optional full provider/model id, for example codex/gpt-6.1-sol. Must be in DSH\'s current model catalog. Errors list availableModels.',
+  effortArg: 'Optional reasoning effort supported by the selected model (for example low, medium, high, xhigh or max; availability varies). Requires model. Omit for provider defaults; errors list availableReasoningEfforts.',
   folderArg: 'A DSH workspace id, or an absolute path of an existing folder.',
   titleArg: 'A short title for the new session, as the sidebar shows it: a few words naming the work.',
   notifyInboundArg: 'true to have Fishball told when this session finishes its current work.',
@@ -423,11 +429,13 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
     parameters: {
       folder: { type: 'string', required: true, description: TEXT.folderArg },
       title: { type: 'string', required: true, description: TEXT.titleArg },
+      model: { type: 'string', description: TEXT.modelArg },
+      reasoning_effort: { type: 'string', description: TEXT.effortArg },
       message: { type: 'string', required: true, description: TEXT.messageArg },
       notify_when_finished: { type: 'boolean', description: TEXT.notifyOutboundArg },
     },
     output: JSON_OUTPUT,
-    async execute({ folder, title, message, notify_when_finished: notify }) {
+    async execute({ folder, title, message, notify_when_finished: notify, model, reasoning_effort: reasoningEffort }) {
       const bad = badMessage(message)
       if (bad !== undefined) return refused(bad)
       // Refused before anything is created, by DSH's own test (it strips control, zero-width and
@@ -437,6 +445,11 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       if (overCap(OUTBOX_KIND.start, readLimits().sessionsPerHour)) return refused(OUTBOUND_ERROR.hourlyCap)
       const target = await placeOf(ctx, folder)
       if (target.error !== undefined) return refused(target.error)
+      let selection
+      try { selection = await prepareSessionModel(ctx, model, reasoningEffort) } catch (error) {
+        if (error instanceof ModelChoiceError) return refused(error.code, error.fields)
+        throw error
+      }
       const entry = { kind: OUTBOX_KIND.start, folder: target.folder, messageDigest: digestOf(message) }
       const created = await createSession(target.request)
       // Nothing was created: not counted, not recorded (like a refusal).
@@ -444,10 +457,17 @@ export function registerOutbound({ ctx, register, store, readLimits, assistantId
       const { sessionId, ...placed } = created
       // Named before the first turn starts and before the watch watermark is read.
       const named = nameSession(sessionId, title)
+      if (selection !== undefined) {
+        try { await applySessionModel(ctx, sessionId, selection) } catch (error) {
+          logger.warn('model selection for session %s failed (%s)', sessionId, diagnosticOf(error))
+          await record({ ...entry, targetSessionId: sessionId, status: OUTBOX_STATUS.failed, errorCode: MODEL_ERROR.failed })
+          return refused(MODEL_ERROR.failed, { sessionId, folder: target.folder, ...placed, ...named, message: MODEL_TEXT.failed })
+        }
+      }
       const managed = await manageStarted(sessionId)
       // A new session: every turn end in it counts (its log before the message has none).
       const since = notify === true ? await watermarkOfNew(ctx, sessionId) : undefined
-      const outcome = { ...placed, ...named, ...managed }
+      const outcome = { ...placed, ...named, ...managed, ...(selection === undefined ? {} : { selected: selection }) }
       return withWatch(await deliverAndRecord({ ...entry, targetSessionId: sessionId }, sessionId, message, { sessionId, folder: target.folder, ...outcome }, { sessionId, ...outcome }), sessionId, notify, since)
     },
   }))

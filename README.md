@@ -39,6 +39,25 @@ Open **Fishball settings** from its chat header or the model-setting prompt abov
 
 Fishball’s composer stays blocked until a dedicated model is saved. An existing chat model or DSH default does not count as this explicit choice. The selection survives restarts and does not change ordinary sessions or DSH’s default model. The model switcher is no longer shown in Fishball’s composer.
 
+## Choose a model for delegated work
+
+Fishball can pass optional `model` and `reasoning_effort` to `start_session`:
+
+```json
+{
+  "folder": "/absolute/existing/project",
+  "title": "Review the changes",
+  "message": "Review the current changes and report findings.",
+  "model": "codex/gpt-6.1-sol",
+  "reasoning_effort": "high",
+  "notify_when_finished": true
+}
+```
+
+Use an available `provider/model` id from DSH's live catalog. Effort values depend on that model; `reasoning_effort` requires `model`. Omit effort for provider defaults, or omit both new parameters to keep the existing default-model behavior. Invalid choices return a clear error and `availableModels` / `availableReasoningEfforts` instead of falling back.
+
+The choice is committed before the first message runs and affects only the new session, not DSH defaults or Fishball's own dedicated model. If selection cannot be confirmed after creation, the error includes `sessionId`; no first message or watch is sent. Use that existing session rather than creating a duplicate. Switching models of existing sessions through a Fishball tool is not included in this change.
+
 ## Licence
 
 [MIT](LICENSE). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
