@@ -1,7 +1,8 @@
 /**
- * Every numeric limit the slim contract names (§3.6, §5.2, §6.2, and §6.4's hostRef lifetime),
- * in one place. Units are part of each name, and values with different meanings keep separate
- * names even when they coincide. Contract only: no DSH package import and no behaviour (§15 T01).
+ * Every numeric limit the slim contract names (§3.6, §5.2, §6.2, §6.4's hostRef lifetime, and
+ * the answer/decision-label caps §5.2 and §8.1 require), in one place. Units are part of each
+ * name, and values with different meanings keep separate names even when they coincide.
+ * Contract only: no DSH package import and no behaviour (§15 T01).
  */
 
 const KIB = 1024
@@ -38,4 +39,19 @@ export const LIMITS = Object.freeze({
 
   // A hostRef is single-use and expires ten minutes after attachment.put completes (§6.4).
   hostRefTtlMs: 10 * MINUTE_MS,
+
+  // Answer payloads and the decision-label snapshot (§5.2, §8.1). Reason, note, feedback and
+  // custom text reuse the plugin's 500-character rationale budget; a short label/header/title
+  // keeps one timeline row readable; a quoted user message matches requestUserMessageBytes.
+  reasonChars: 500,
+  questionChars: 500,
+  noteChars: 500,
+  feedbackChars: 500,
+  customChars: 500,
+  labelChars: 200,
+  titleChars: 200,
+  quoteBytes: 2048,
+  grantPrefixChars: 512,
+  questionsPerRequest: 32,
+  selectedLabelsPerAnswer: 32,
 })
