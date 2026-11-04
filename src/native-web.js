@@ -1,8 +1,8 @@
 /** Native rc3 Connection exact fetch routes enforce authenticated owner peers.
  * Do not move these to webServer: that would bypass admission and owner checks.
- * The launch capability appears only in the clicked POST's no-store response; the client passes it
- * straight to window.open. (A 303 to a target=_blank form fails in the DSH desktop shell, which
- * reloads denied same-origin windows as GET.)
+ * The launch capability appears only in the clicked POST's no-store response; the client navigates
+ * the tab it opened in that click. (A target=_blank form + 303 failed: rel=noreferrer makes the POST
+ * carry `Origin: null`, and a noopener/desktop-shell new window can arrive here as GET -> "not found".)
  */
 const WEB = Object.freeze({
   statusPath: '/api/fishball/native/status', openPath: '/api/fishball/native/open',
