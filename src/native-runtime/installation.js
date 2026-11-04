@@ -102,6 +102,21 @@ async function validateStartupFiles(paths) {
   }
 }
 
+/**
+ * The attached profile was first created with the Web bundle, and initProfile never rewrites an
+ * existing manifest. The slim child must run the core only (§2.1, §2.3), so the configured base
+ * bundle leads and the legacy Web bundle is dropped; every bundle the owner installed into the
+ * child profile afterwards is kept in order.
+ */
+function slimProfileBundles(boot, profileDir) {
+  const manifest = boot.readProfileManifest(RUNTIME.profileName, profileDir)
+  const current = manifest.dsh?.profile?.bundles ?? []
+  const retained = current.filter(name => !RUNTIME.profile.bundles.includes(name) && name !== RUNTIME.profile.legacyBundle)
+  const bundles = [...RUNTIME.profile.bundles, ...retained]
+  const unchanged = current.length === bundles.length && current.every((name, index) => name === bundles[index])
+  if (!unchanged) boot.writeProfileBundles(profileDir, manifest, bundles)
+}
+
 export async function initializeProfile(paths, installation, preflight, mainWorkspaces) {
   const args = { mainHome: paths.mainHome, runtimeRoot: paths.root, workspace: paths.workspace, mainWorkspaces, installRoot: installation.installRoot, profileDir: paths.profile }
   // First reject ambient ancestry before importing even the installation's metadata API.
@@ -110,8 +125,9 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   const boot = await import(pathToFileURL(installation.bootPath).href)
   if (boot.resolveProfileDir(RUNTIME.profileName, paths.home) !== paths.profile) fail('PROFILE_PATH_MISMATCH')
   const fresh = !await exists(path.join(paths.profile, 'package.json'))
-  boot.initProfile(paths.profile, boot.PROFILE_TEMPLATES.web.bundles)
+  boot.initProfile(paths.profile, RUNTIME.profile.bundles)
   if (fresh) await privateTree(paths.profile)
+  slimProfileBundles(boot, paths.profile)
   await validateStartupFiles(paths)
   const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
   if (profile.skippedBundles.length) fail('PROFILE_INCOMPATIBLE', 'Private profile contains missing or incompatible bundles.')
@@ -133,17 +149,22 @@ export async function copyChildCode(paths, record) {
   await mkdir(destination, { mode: RUNTIME.privateDirectoryMode })
   await writePrivate(path.join(destination, RUNTIME.marker), record, true)
   await writePrivate(path.join(destination, 'package.json'), { type: 'module', private: true }, true)
-  async function copy(source, target) {
+  // Lifecycle modules are JavaScript; the slim app tree also ships its UI assets, so that copy
+  // keeps every file (§2.4).
+  const javascript = file => file.endsWith('.js')
+  const everyFile = () => true
+  async function copy(source, target, keep) {
     const info = await lstat(source)
     if (info.isSymbolicLink()) fail('UNSAFE_INTEGRATION_SOURCE')
     if (info.isDirectory()) {
       await mkdir(target, { mode: RUNTIME.privateDirectoryMode })
-      for (const entry of await readdir(source)) await copy(path.join(source, entry), path.join(target, entry))
-    } else if (source.endsWith('.js')) await writePrivate(target, await readFile(source, 'utf8'), true)
+      for (const entry of await readdir(source)) await copy(path.join(source, entry), path.join(target, entry), keep)
+    } else if (keep(source)) await writePrivate(target, await readFile(source, 'utf8'), true)
   }
   await mkdir(path.join(destination, 'src'), { mode: RUNTIME.privateDirectoryMode })
-  await copy(path.join(sourceRoot, 'native-child.js'), path.join(destination, 'native-child.js'))
-  await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'))
-  if (await exists(path.join(sourceRoot, 'src', 'native-control'))) await copy(path.join(sourceRoot, 'src', 'native-control'), path.join(destination, 'src', 'native-control'))
+  await copy(path.join(sourceRoot, 'native-child.js'), path.join(destination, 'native-child.js'), javascript)
+  await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
+  if (await exists(path.join(sourceRoot, 'src', 'native-control'))) await copy(path.join(sourceRoot, 'src', 'native-control'), path.join(destination, 'src', 'native-control'), javascript)
+  await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), everyFile)
   return path.join(destination, 'native-child.js')
 }
