@@ -166,7 +166,7 @@ window.__ModuleLoader__.load({
      */
     // fill: the pile's background, shared by its pinned title rows, which must be opaque or the
     // cards scrolling under them show through (rev11-ui-fixes R1).
-    const PILE = Object.freeze({ id: 'fishball-pile', order: -100, heightUnit: 'vh', fill: 'var(--dsw-alias-bg-layer-1)' })
+    const PILE = Object.freeze({ id: 'fishball-pile', order: -100, heightUnit: 'vh', fill: 'var(--dsw-alias-bg-layer-1)', requestsExpanded: true, grantsExpanded: false, chevronPx: 14, expandedRotationDeg: -90, collapsedRotationDeg: -180 })
     /**
      * Your pile as a list of rows with a detail view (DESIGN §10e, rev11-pile-list). The reveal's
      * length and easing are presentation, not settings (the manager's decision): short, so a switch
@@ -194,13 +194,16 @@ window.__ModuleLoader__.load({
      * minus 4 dock insets, `margin: 0 auto`; the Queue dock's visible panel comes out the same
      * width (its box is 2 insets narrower and padded by an inset on each side).
      */
-    const DSH_COMPOSER = Object.freeze({ sideClearance: 'var(--dsh-composer-side-clearance)', dockInset: 'var(--dsh-composer-dock-inset)', cardMaxWidth: 'var(--dsh-composer-card-max-width)', sideClearances: 2, dockInsets: 4 })
+    const DSH_COMPOSER = Object.freeze({ sideClearance: 'var(--dsh-composer-side-clearance)', dockInset: 'var(--dsh-composer-dock-inset)', cardMaxWidth: 'var(--dsh-composer-card-max-width)', sideClearances: 2, dockInsets: 4, cardInsets: 0 })
     /** `n` copies of a CSS length, subtracted inside a calc(). */
     const minusTimes = (length, n) => ` - ${length}`.repeat(n)
-    /** A dock card's box: the width and centring of DSH's Todo dock (shared by the managed banner and the welcome card). */
     /** A dock card's surface (the managed banner's look, shared with the welcome card). */
     const DOCK_CARD_LOOK = 'border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);line-height:1.5'
-    const DOCK_CARD_WIDTH = `box-sizing:border-box;flex:none;width:calc(100%${minusTimes(DSH_COMPOSER.sideClearance, DSH_COMPOSER.sideClearances)}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});max-width:calc(${DSH_COMPOSER.cardMaxWidth}${minusTimes(DSH_COMPOSER.dockInset, DSH_COMPOSER.dockInsets)});margin:0 auto`
+    const dockCardWidth = (insets) => `box-sizing:border-box;flex:none;width:calc(100%${minusTimes(DSH_COMPOSER.sideClearance, DSH_COMPOSER.sideClearances)}${minusTimes(DSH_COMPOSER.dockInset, insets)});max-width:calc(${DSH_COMPOSER.cardMaxWidth}${minusTimes(DSH_COMPOSER.dockInset, insets)});margin:0 auto`
+    const DOCK_CARD_WIDTH = dockCardWidth(DSH_COMPOSER.dockInsets)
+    // The pile matches the composer card itself, not the narrower Todo/Queue panels. Constrain
+    // Reveal's outer box: a width on its inner section would resolve against the wrong containing box.
+    const PILE_DOCK_WIDTH = dockCardWidth(DSH_COMPOSER.cardInsets)
     /**
      * The managed-session banner (DESIGN §10e item 30): a dock entry in a managed session's chat.
      * Order 10 puts it after DSH's Todo dock (0) and before its Queue dock (20) (the builder's
@@ -490,7 +493,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ pile: 'fb-pile', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc' })
+    const CLS = Object.freeze({ pile: 'fb-pile', pileDock: 'fb-pile-dock', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -1434,8 +1437,10 @@ window.__ModuleLoader__.load({
       `.${CLS.entries}{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}`,
       // The pile, the ask_fishball row and the turn tags (revision 11, S37's fixture look), in DSH's theme tokens
       // so they follow light and dark. The pile's height comes from pileMaxHeightVh, set inline.
-      `.${CLS.pile}{margin:0 0 8px;overflow:auto;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:${PILE.fill};color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
-      `.${CLS.pileHead}{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--dsw-alias-border-l2);background:${PILE.fill};color:var(--dsw-alias-label-primary);font-weight:600}`,
+      `.${CLS.pileDock}{${PILE_DOCK_WIDTH};min-width:0}`,
+      `.${CLS.pile}{margin:0;overflow:auto;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:${PILE.fill};color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
+      `.${CLS.pileHead}{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;box-sizing:border-box;width:100%;padding:8px 12px;border:0;border-bottom:.5px solid var(--dsw-alias-border-l2);background:${PILE.fill};color:var(--dsw-alias-label-primary);font:inherit;font-weight:600;text-align:left;cursor:pointer}`,
+      `.${CLS.pileHead}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}`,
       `.${CLS.card}{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-top:.5px solid var(--dsw-alias-border-l2)}`,
       `.${CLS.entries}>:first-child>.${CLS.revealInner}>.${CLS.card}{border-top:0}`,
       // The reveal (rev11-pile-list): a one-row grid from 0fr to 1fr, so the box's height moves and the
@@ -3002,6 +3007,15 @@ window.__ModuleLoader__.load({
     const NO_ENTRIES = Object.freeze([])
     const grantKey = (grant) => grant.grantId
 
+    /** Shared section disclosure. A native button supplies Enter/Space without custom key handlers. */
+    function PileSection({ title, expanded, onToggle, children }) {
+      const id = React.useId()
+      return h('section', { 'aria-label': title },
+        h('button', { type: 'button', className: CLS.pileHead, 'aria-expanded': expanded, 'aria-controls': id, onClick: onToggle },
+          h(IconChevronLeftOutlineRegular, { size: PILE.chevronPx, 'aria-hidden': true, style: { transform: `rotate(${expanded ? PILE.expandedRotationDeg : PILE.collapsedRotationDeg}deg)` } }), title),
+        h('div', { id }, h(Reveal, { shown: expanded }, children)))
+    }
+
     /**
      * Your pile above Fishball's composer (DESIGN §10e, items 14-16; rev11-pile-list): "Waiting for
      * you (n)" over a list of compact rows, shown only in Fishball's own session and only while it
@@ -3024,6 +3038,10 @@ window.__ModuleLoader__.load({
         const grants = useLeaving(liveGrants, grantKey)
         const [openId, setOpenId] = React.useState(null)
         const [focusId, setFocusId] = React.useState(null)
+        // Snapshot updates must not reopen a section the user folded. Keep these choices here,
+        // outside the reveals that temporarily hide grants while a request detail is open.
+        const [requestsExpanded, setRequestsExpanded] = React.useState(PILE.requestsExpanded)
+        const [grantsExpanded, setGrantsExpanded] = React.useState(PILE.grantsExpanded)
         const scroller = React.useRef(null)
         // Derived, so a request that left the pile closes its detail at once (P5).
         const open = openId !== null && live.some((card) => card.requestId === openId) ? openId : null
@@ -3049,13 +3067,16 @@ window.__ModuleLoader__.load({
         if (!sessionId || sessionId !== state.sessionId) return null
         const title = t('pileTitle', { count: live.length })
         const grantsTitle = t('grantsTitle', { count: liveGrants.length })
-        return h(Reveal, { shown: live.length > 0 || liveGrants.length > 0 },
+        const toggleRequests = () => {
+          setRequestsExpanded((expanded) => !expanded)
+          setOpenId(null)
+          setFocusId(null)
+        }
+        return h(Reveal, { shown: live.length > 0 || liveGrants.length > 0, className: CLS.pileDock },
           h('section', { ref: scroller, tabIndex: -1, className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'data-fishball-pile': live.length, 'data-fishball-grants': liveGrants.length, 'data-fishball-pile-open': open ?? undefined },
-            h(Reveal, { shown: live.length > 0 }, h('section', { 'aria-label': title },
-              h('div', { className: CLS.pileHead }, title),
+            h(Reveal, { shown: live.length > 0 }, h(PileSection, { title, expanded: requestsExpanded, onToggle: toggleRequests },
               h('ul', { className: CLS.entries }, cards.map(({ item: card, leaving }) => h(PileEntry, { key: card.requestId, card, t, leaving, listShown: open === null, isOpen: open === card.requestId, onOpen, onClose, focus: open === null && focusId === card.requestId }))))),
-            h(Reveal, { shown: liveGrants.length > 0 && open === null }, h('section', { 'aria-label': grantsTitle },
-              h('div', { className: CLS.pileHead }, grantsTitle),
+            h(Reveal, { shown: liveGrants.length > 0 && open === null }, h(PileSection, { title: grantsTitle, expanded: grantsExpanded, onToggle: () => setGrantsExpanded((expanded) => !expanded) },
               h('ul', { className: CLS.entries }, grants.map(({ item: grant, leaving }) => h(Reveal, { as: 'li', key: grant.grantId, shown: !leaving, 'data-fishball-grant': grant.grantId }, h(GrantRow, { grant, t }))))))))
       }
     }
