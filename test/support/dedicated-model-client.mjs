@@ -7,7 +7,7 @@ import { MODEL_CASE as C } from './dedicated-model.mjs'
 
 const UI = Object.freeze({
   file: path.join(REPO, 'client.js'), base: 'http://fishball.test/', fishball: 'dedicated-fishball', ordinary: 'ordinary-control',
-  dock: 'conversation.input.dock', settings: 'plugins.bundle.config', empty: '', slash: '/',
+  moduleId: 'dsh-fishball', dock: 'conversation.input.dock', settings: 'plugins.bundle.config', empty: '', slash: '/',
   method: Object.freeze({ get: 'GET', post: 'POST' }),
   catalog: Object.freeze({ groups: [{ id: C.selection.provider, name: 'Test provider', models: [{ id: C.original.model, name: 'Original model' }, { id: C.selection.model, name: 'Dedicated model' }] }], failures: [], routableProviders: [C.selection.provider], default: C.original }),
 })
@@ -18,7 +18,8 @@ const primitive = (name) => (props) => ({ type: name, props })
 const neutral = new Proxy(function () {}, { get: (_target, key) => key === Symbol.toPrimitive ? () => UI.empty : neutral, apply: () => neutral })
 const equalDeps = (a, b) => a && b && a.length === b.length && a.every((x, i) => Object.is(x, b[i]))
 
-export async function clientHarness() {
+/** Options add only external boundaries: an HTTP-served combo script, real fetch, and OS motion preference. */
+export async function clientHarness(options = {}) {
   let definition
   let dictionaries
   let current
@@ -71,22 +72,26 @@ export async function clientHarness() {
     return tree
   }
   const styles = []
+  const documentListeners = new Map()
   const document = {
     baseURI: UI.base, head: { appendChild: (element) => styles.push(element) }, documentElement: { setAttribute: inert, removeAttribute: inert },
     createElement: () => ({ remove: inert, setAttribute: inert }), getElementById: () => null,
     querySelector: () => null, querySelectorAll: () => [],
+    addEventListener(type, listener) { if (!documentListeners.has(type)) documentListeners.set(type, new Set()); documentListeners.get(type).add(listener) },
+    removeEventListener(type, listener) { documentListeners.get(type)?.delete(listener) },
   }
-  const fetch = async (url, options = {}) => {
+  const fetch = async (url, request = {}) => {
     const pathname = new URL(url).pathname
-    if ((options.method ?? UI.method.get) === UI.method.post) {
-      sent.push({ pathname, body: JSON.parse(options.body) })
+    if (options.fetch) return options.fetch(url, request)
+    if ((request.method ?? UI.method.get) === UI.method.post) {
+      sent.push({ pathname, body: JSON.parse(request.body) })
       return new Promise((resolve) => { answer = (ok, body = {}) => resolve({ ok, json: async () => body }) })
     }
     return { ok: true, json: async () => ({ ok: true, catalog: UI.catalog }) }
   }
-  vm.runInNewContext(fs.readFileSync(UI.file, 'utf8'), {
-    window: { __ModuleLoader__: { load: (value) => { definition = value } }, matchMedia: () => ({ matches: false }), addEventListener: inert, removeEventListener: inert },
-    document, fetch, URL, console, setTimeout, clearTimeout, CSS: { escape: (value) => value },
+  vm.runInNewContext(options.script ?? fs.readFileSync(UI.file, 'utf8'), {
+    window: { __ModuleLoader__: { load: (value) => { if (value.id === UI.moduleId) definition = value } }, matchMedia: () => ({ matches: options.reducedMotion ?? false }), addEventListener: inert, removeEventListener: inert },
+    document, fetch, URL, console, setTimeout, clearTimeout, matchMedia: () => ({ matches: options.reducedMotion ?? false }), CSS: { escape: (value) => value },
     EventSource: class { constructor() { sources.push(this) } close() {} },
     MutationObserver: class { observe() {} disconnect() {} },
   })
@@ -108,11 +113,12 @@ export async function clientHarness() {
   }
   exported.apply(ctx)
   const state = (selection = null) => ({ status: 'live', sessionId: UI.fishball, modelSelection: selection, limits: {}, hiddenTools: [], preferences: {}, catalog: null })
-  async function emit(selection = null) { for (const source of sources) source.onmessage?.({ data: JSON.stringify(state(selection)) }); return flush() }
+  async function emitSnapshot(snapshot) { for (const source of sources) source.onmessage?.({ data: JSON.stringify(snapshot) }); return flush() }
+  async function emit(selection = null) { return emitSnapshot(state(selection)) }
   return {
     registrations, blocks, sent, opened, state, styles,
     async render(Component, props = {}) { root = React.createElement(Component, props); return flush() },
-    flush, emit,
+    flush, emit, emitSnapshot,
     reply(ok, body) { answer?.(ok, body); return flush() },
     dispose() { for (const dispose of subscriptions.values()) dispose?.(); for (const cell of cells.values()) cell.cleanup?.(); while (disposers.length) disposers.pop()() },
   }
