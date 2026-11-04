@@ -35,6 +35,7 @@
   "peerDependencies": {
     "@deepseek-ai/cordis-plugin-loader": "*",
     "@deepseek-ai/cosmokit": "*",
+    "@deepseek-ai/dsh-agent": "*",
     "@deepseek-ai/dsh-agent-preset-registry": "*",
     "@deepseek-ai/dsh-app-boot": "*",
     "@deepseek-ai/dsh-compaction-basic": "*",

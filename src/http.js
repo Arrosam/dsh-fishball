@@ -4,6 +4,9 @@
  *
  * GET  state                  -> current snapshot (JSON)
  * GET  events                 -> server-sent snapshots: one at once, then one per change
+ * GET  models                 -> { ok: true, catalog }: the host model catalog, without default writes
+ * POST model                  -> { provider, model, reasoningEffort? }: Fishball's explicit choice
+ *                                400 bad-body, 409 unknown/refused, 500 failed; no failed save changes it
  * POST recovery               -> { action: 'retry' | 'adopt' }
  * POST plugins                -> { plugin: string, on: boolean } (your own choice, DESIGN §4)
  * POST plugins/remove         -> { plugin: string } (uninstall a plugin installed in Fishball only)
@@ -38,6 +41,7 @@
  *                                400 invalid with `path`; 409 unknown, shared-with-dsh, no-settings
  */
 import { isSettingInput } from './context-window.js'
+import { readModelSelection } from './model-selection.js'
 import { API, API_CODE, BRAND_STYLE, CARD_DECISION, HTTP, HTTP_METHOD, PLUGIN_MANAGER, QUESTION_MODE, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
 import { LifecycleStateError } from './errors.js'
 
@@ -58,6 +62,7 @@ const isPaths = (value) => Array.isArray(value) && value.every((path) => Array.i
 
 /** Body readers: the validated command, or undefined for anything malformed. */
 const BODY = Object.freeze({
+  model: readModelSelection,
   recovery: (body) => (isRecord(body) && ACTIONS.has(body.action) ? body.action : undefined),
   plugin: (body) => (isRecord(body) && isName(body.plugin) && typeof body.on === 'boolean' ? { plugin: body.plugin, on: body.on } : undefined),
   pluginRemove: (body) => (isRecord(body) && isName(body.plugin) ? body.plugin : undefined),
@@ -99,6 +104,7 @@ const BODY = Object.freeze({
  * Register the routes; they are removed with the plugin context.
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), recover(action), setPlugin(plugin, on), removePlugin(plugin),
+ *   modelCatalog(), setModel({ provider, model, reasoningEffort? }),
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
  *   addWatch({ sessionId }), removeWatch({ watchId }), setManaged({ sessionId, managed }),
  *   answerRequest({ requestId, decision, note? }), revokeGrant({ grantId }), answerQuestion({ questionId, answers?, approve?, feedback? }),
@@ -138,22 +144,20 @@ export function registerRoutes(ctx, state) {
     return Promise.resolve(new Response(body, { status: HTTP.ok, headers: RESPONSE_HEADERS.eventStream }))
   }
 
-  /**
-   * One POST: parse and validate the body, run it, and answer. A LifecycleStateError answers its
-   * refusal (409 unless it names another status); anything else 500 `failed`.
-   * @param answer - (value) => the answer's fields beside `ok: true`.
-   */
+  /** Share the result/error envelope across commands and the read-only model catalog. */
+  const result = async (run) => {
+    try { return json(HTTP.ok, { ok: true, ...await run() }) } catch (error) {
+      if (error instanceof LifecycleStateError) return refusal(error)
+      return json(HTTP.serverError, { ok: false, code: API_CODE.failed })
+    }
+  }
+  /** Parse and validate one POST; `answer` supplies the fields beside `ok: true`. */
   const post = (read, run, answer) => async (request) => {
     let body
     try { body = await request.json() } catch { return json(HTTP.badRequest, { ok: false, code: API_CODE.badBody }) }
     const input = read(body)
     if (input === undefined) return json(HTTP.badRequest, { ok: false, code: API_CODE.badBody })
-    try {
-      return json(HTTP.ok, { ok: true, ...answer(await run(input)) })
-    } catch (error) {
-      if (error instanceof LifecycleStateError) return refusal(error)
-      return json(HTTP.serverError, { ok: false, code: API_CODE.failed })
-    }
+    return result(async () => answer(await run(input)))
   }
   /** A command: its answer is the new state. */
   const command = (read, run) => post(read, run, () => ({ state: state.snapshot() }))
@@ -191,6 +195,8 @@ export function registerRoutes(ctx, state) {
   const routes = [
     { path: API.state, methods: [HTTP_METHOD.get], fetch: () => Promise.resolve(json(HTTP.ok, state.snapshot())) },
     { path: API.events, methods: [HTTP_METHOD.get], fetch: events },
+    { path: API.models, methods: [HTTP_METHOD.get], fetch: () => result(async () => ({ catalog: await state.modelCatalog() })) },
+    { path: API.model, methods: [HTTP_METHOD.post], fetch: command(BODY.model, (selection) => state.setModel(selection)) },
     { path: API.recovery, methods: [HTTP_METHOD.post], fetch: command(BODY.recovery, (action) => state.recover(action)) },
     { path: API.plugins, methods: [HTTP_METHOD.post], fetch: command(BODY.plugin, ({ plugin, on }) => state.setPlugin(plugin, on)) },
     { path: API.pluginsRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.pluginRemove, (plugin) => state.removePlugin(plugin)) },

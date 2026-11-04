@@ -33,6 +33,12 @@ The command installs the package into the profile and turns it on. Fishball's se
 
 These steps were verified on 2026-11-02 with the same mechanics, from branch `rebuild/assistant`, in a throwaway DSH home on DSH 0.2.1-rc.2 and Node 22.22.2: the plugin installed, loaded from the profile and started Fishball's session.
 
+## Choose Fishball’s model
+
+Open **Fishball settings** from its chat header or the model-setting prompt above its composer. Under **Model for Fishball**, choose a model, optionally choose its reasoning effort, and press **Save**.
+
+Fishball’s composer stays blocked until a dedicated model is saved. An existing chat model or DSH default does not count as this explicit choice. The selection survives restarts and does not change ordinary sessions or DSH’s default model. The model switcher is no longer shown in Fishball’s composer.
+
 ## Licence
 
 [MIT](LICENSE). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
