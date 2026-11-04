@@ -604,37 +604,35 @@ removed.
 
 ## 14. Open questions (each needs one answer)
 
-Answered on 2026-11-05 (kept here so the numbering stays stable):
+Answered on 2026-11-05; the numbering stays stable and every question now has an answer. The user
+accepted the recommended answer for Q1, Q2, Q4, Q8, Q9, Q10, Q11 and Q12; Q3, Q5, Q6, Q7 and Q13
+were answered earlier.
 
+- Q1 -> the live card stays only in that managed session's pile on the main DSH; Fishball's chat
+  carries a mirror label, not a second answerable card (§4, §8.1).
+- Q2 -> refuse with `images-unsupported` before anything is queued; nothing is silently dropped and
+  no model is switched (§6.3).
 - Q3 -> D13: the user accepts that a main-page plugin can script the same-origin embed.
+- Q4 -> the DSH plugin market index for discovery, plus a manual package spec; no fixed recommended
+  list (§9).
 - Q5 -> D11: the fish layout is the target; the running case waits for DSH (see Q13).
 - Q6 -> settled by the Q5 wording "when that toggle is on": Fishball's existing "Use the DeepSeek
   icon" switch.
 - Q7 -> settled by the Q5 instruction "Keep the reduced-motion rule": static marker, dots and an
   accessible name.
+- Q8 -> every outbound message and every permission, question or escalation decision gets one
+  compact label; routine sends are included, and the single-row form keeps the timeline readable
+  (§8.1, `DEC-04`).
+- Q9 -> OAuth providers are logged in inside the embedded page's own minimal settings area; the
+  main settings page never handles OAuth credentials, which stay in the child's own home (§2.3, §9).
+- Q10 -> plain modern JavaScript with no build step; a UI change is one file edit in the isolated
+  Fishball (§2.1).
+- Q11 -> yes: watch-only and send-only are dropped; hand-over with an optional note covers both,
+  and a watch-only request becomes a hand-over note (§8.3).
+- Q12 -> reloading the page is acceptable: the child stops with the main DSH, so a main restart
+  starts a new child and re-mints its bearer (§2.4, §11).
 - Q13 -> wait for DSH upstream support; no CSS approximation. T13a ships the idle marker with the
   dots now; T13b is blocked on upstream (§8.2, §15).
-
-Still open:
-
-Q1. For an approval Fishball escalates to you, should the live card stay only in that managed
-session's pile on the main DSH (with a mirror label in Fishball's chat), or should the card also
-appear in Fishball's chat as an answerable card?
-Q2. If Fishball's selected model cannot accept images, should the call be refused with
-`images-unsupported` (proposed), or should Fishball switch to an image-capable model first?
-Q4. Where should the isolated Fishball's installable plugins come from: the DSH plugin market
-index, a fixed recommended list, or a manual package spec only?
-Q8. Do routine outbound messages (a `message_fishball` delivery, a `message_session` send) each get
-a decision label, or only decisions about permissions, questions and escalations? Labels per
-message could fill the timeline when Fishball is chatty.
-Q9. Should the isolated Fishball's OAuth providers (ChatGPT and Claude subscriptions) be logged in
-inside the embedded page's own minimal settings area, or do you expect to log in elsewhere?
-Q10. Should the child's chat UI be plain modern JavaScript with no build step (proposed, so a UI
-change is one file edit in the isolated Fishball), or may it use a build step with React?
-Q11. Is dropping watch-only and send-only acceptable now that hand-over with an optional note
-covers both?
-Q12. Should the embed survive a main DSH restart with the same child instance (re-mint the bearer
-and keep the open page), or is reloading the page acceptable?
 
 ## 15. Task breakdown for parallel single-task sessions
 
@@ -644,9 +642,9 @@ DSH 0.2.2-rc.1; rc.3 compatibility is checked only where the contract is unchang
 scope. `client.js` is a single DSH client module, so **at most one task per wave may own it**
 (marked `[client]`).
 
-### Wave 1 — contract (READY TO DISPATCH; one task)
+### Wave 1 — contract (DONE; one task)
 
-**T01 — Freeze the slim contract and this design `[contract]`**
+**T01 — Freeze the slim contract and this design `[contract]` — DONE**
 - Goal: one place that defines every operation, frame, limit, error code and route both sides use.
 - Branch: `feat/slim-contract`, cut from `feat/slim-native-embedded-ui` (current tip).
 - Owns and touches nothing else: `src/slim/contract.js`, `src/slim/limits.js`,
@@ -666,6 +664,8 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
   6. No test file and no file owned by another task is touched.
 - Tests: `CONTRACT-01 envelope rejects an unknown key`; `-02 unknown operation rejected`;
   `-03 oversize frame rejected`; `-04 capability mismatch rejected`.
+- Done 2026-11-05: local commit on `feat/slim-contract`; the contract and limits live in the two
+  modules named above, and §14 is fully answered.
 
 ### Wave 2 — runtime and child app (parallel)
 
