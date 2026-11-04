@@ -24,6 +24,7 @@ import { after, before, describe, it } from 'node:test'
 import { ADDED_BUNDLE, ADDED_BUNDLE_B, ADDED_BUNDLE_C, CLICK, LIMITS, LIMITS_R11, OWN_REQUEST, OWN_STATUS, PILE_API, WITHDRAW_TOOL } from './support/constants.mjs'
 import { HOOK, T, answerCard, cardOf, inFishballFolder, pileNow, untilCard, untilNoCard } from './support/expect.mjs'
 import { pileTools } from './support/rev11c.mjs'
+import { assertOwnNotices } from './support/own-request-notices.mjs'
 import { AT_ONCE_MS, QUIET_MS, bootOwn, cardArguments, ownCards, ownHost, ownRow, ownRows, ownTools, sleep, tokens, until } from './support/rev11f.mjs'
 
 const LONG = { timeout: 180000 }
@@ -80,8 +81,13 @@ describe('rev11f: Fishball\'s own requests are cards', () => {
     assert.equal(answer.status, 200, answer.text)
     assert.equal(await cardOf(ctx.host, id), undefined, 'the card left')
     const notices = await t.notices(id)
-    assert.equal(notices.length >= 1, true, 'a notice naming the request reached Fishball')
-    assert.match(notices.map((n) => n.text).join('\n'), OWN_REQUEST.again)
+    assertOwnNotices(notices, { approved: 1, rejected: 0 })
+    for (const decision of [CLICK.allow, CLICK.reject]) {
+      const duplicate = await answerCard(ctx.host, id, decision)
+      assert.equal(duplicate.status, 409, duplicate.text)
+      assert.equal(duplicate.json?.code, 'expired')
+    }
+    assertOwnNotices(await t.notices(id), { approved: 1, rejected: 0 })
     assert.ok((await t.fbSteps()) > steps, 'Fishball was woken')
     woke = got
     assert.ok(woke, 'the woken turn made the retry')
@@ -117,6 +123,13 @@ describe('rev11f: Fishball\'s own requests are cards', () => {
     const next = await t.another('fbtest after reject ' + names.tok('07'))
     const seen = next.requests.at(-1).texts
     assert.ok(seen.includes(id), "Fishball's next turn carries a note naming the request")
+    const notices = await t.notices(id)
+    assertOwnNotices(notices, { approved: 0, rejected: 1 })
+    assert.ok(notices[0].text.includes(note), "the rejection includes the user's note")
+    const duplicate = await answerCard(ctx.host, id, CLICK.allow)
+    assert.equal(duplicate.status, 409, duplicate.text)
+    assert.equal(duplicate.json?.code, 'expired')
+    assertOwnNotices(await t.notices(id), { approved: 0, rejected: 1 })
     const again = await t.add(reason, ADDED_BUNDLE_C.dir)
     assert.ok(t.isWaiting(again), 'the identical call after a reject asks again')
     assert.notEqual(again.card.requestId, id)
@@ -160,7 +173,8 @@ describe('rev11f: Fishball\'s own requests are cards', () => {
     const r = await t.add(reason, ADDED_BUNDLE_C.dir)
     const { answer } = await t.click(r.card.requestId, CLICK.allow) // the woken turn does not retry
     assert.equal(answer.status, 200)
-    await sleep(500)
+    assert.ok(await untilStatus(r.card.requestId, OWN_STATUS.expired), 'unused pass expired at turn end')
+    assertOwnNotices(await t.notices(r.card.requestId), { approved: 1, rejected: 0 })
     const later = await t.add(reason, ADDED_BUNDLE_C.dir) // a later turn
     assert.ok(t.isWaiting(later), 'a retry in a later turn needs a new card: ' + later.result.text)
     await t.withdraw(later.card.requestId)

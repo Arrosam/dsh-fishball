@@ -254,8 +254,12 @@ export class OwnRequests {
     })
     if (answered === undefined) return false
     await this.#decide({ action: allowed ? DECISION_ACTION.allowOnce : DECISION_ACTION.reject, by: CHANGED_BY.user, target: requestId, ...(allowed ? {} : { withNote: Boolean(note) }) })
-    if (allowed && !(await this.#wake(requestId, answered.notice))) await this.#serial(() => this.#update(requestId, { told: false })).catch(this.#warn('own request told'))
-    else await this.#tellRejected(requestId, answered.record)
+    if (allowed) {
+      // Delivery failure defers the approval notice; it never changes your decision into a rejection.
+      if (!(await this.#wake(requestId, answered.notice))) await this.#serial(() => this.#update(requestId, { told: false })).catch(this.#warn('own request told'))
+    } else {
+      await this.#tellRejected(requestId, answered.record)
+    }
     return true
   }
 
