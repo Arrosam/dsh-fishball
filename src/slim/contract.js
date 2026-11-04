@@ -5,7 +5,8 @@
  * and constants. The main host and the child app validate every frame with it.
  *
  * Envelope v2 keeps envelope v1's seven-key frame (src/native-control/protocol.js) and replaces
- * v1's operation set with §5.2's, which adds attachment.read/put and the inbox/session-state
+ * v1's operation set with §5.2's: attachment transfer, the full approval, question, prompt and
+ * grant answers today's Fishball tools carry, session release, and the inbox/session-state
  * messages. The lifecycle wire owns identity and its HMAC proof; the handshake here negotiates
  * which §5.2 operations each side implements.
  */
@@ -34,8 +35,14 @@ export const OPERATION = Object.freeze({
   sessionWatch: 'session.watch',
   sessionWatches: 'session.watches',
   sessionUnwatch: 'session.unwatch',
+  sessionRelease: 'session.release',
   approvalList: 'approval.list',
   approvalAnswer: 'approval.answer',
+  questionAnswer: 'question.answer',
+  promptList: 'prompt.list',
+  promptAnswer: 'prompt.answer',
+  grantList: 'grant.list',
+  grantRevoke: 'grant.revoke',
   attachmentRead: 'attachment.read',
   attachmentPut: 'attachment.put',
   inboxPush: 'inbox.push',
@@ -58,8 +65,14 @@ export const OPERATIONS = Object.freeze({
   [OPERATION.sessionWatch]: spec(DIRECTION.childToMain, true),
   [OPERATION.sessionWatches]: spec(DIRECTION.childToMain, false),
   [OPERATION.sessionUnwatch]: spec(DIRECTION.childToMain, false),
+  [OPERATION.sessionRelease]: spec(DIRECTION.childToMain, true),
   [OPERATION.approvalList]: spec(DIRECTION.childToMain, true),
   [OPERATION.approvalAnswer]: spec(DIRECTION.childToMain, true),
+  [OPERATION.questionAnswer]: spec(DIRECTION.childToMain, true),
+  [OPERATION.promptList]: spec(DIRECTION.childToMain, false),
+  [OPERATION.promptAnswer]: spec(DIRECTION.childToMain, true),
+  [OPERATION.grantList]: spec(DIRECTION.childToMain, false),
+  [OPERATION.grantRevoke]: spec(DIRECTION.childToMain, false),
   [OPERATION.attachmentRead]: spec(DIRECTION.childToMain, true),
   [OPERATION.attachmentPut]: spec(DIRECTION.childToMain, false),
   [OPERATION.inboxPush]: spec(DIRECTION.mainToChild, false),
@@ -79,13 +92,19 @@ export const EVENT_DIRECTION = DIRECTION.mainToChild
 
 /**
  * Payload vocabularies, reused from today's main-side services so the child speaks one language:
- * delivery (§5.2), read_session roles, approval decisions and kinds, watch mode/status, the
- * watch event state (v1's "existing" watch.status), intake kinds and the escalation answerer.
+ * delivery, read_session roles, approval decisions/risk/kinds, prompt decisions, grant kinds,
+ * question/plan-review shapes, watch mode/status and the watch event state (v1's "existing"
+ * watch.status), intake kinds and the escalation answerer.
  */
 export const DELIVERY = Object.freeze({ delivered: 'delivered', unconfirmed: 'unconfirmed' })
 export const ROLE = Object.freeze({ user: 'user', assistant: 'assistant', fishball: 'fishball', agent: 'agent', context: 'context' })
 export const DECISION = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate' })
+export const RISK = Object.freeze({ low: 'low', high: 'high' })
+export const GRANT_KIND = Object.freeze({ exact: 'exact', prefix: 'prefix' })
+export const PROMPT_DECISIONS = Object.freeze([DECISION.allow, DECISION.reject])
 export const APPROVAL_KIND = Object.freeze({ approval: 'approval', question: 'question' })
+export const PLAN_REVIEW = 'plan-review'
+export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
 export const WATCH_MODE = Object.freeze({ once: 'once', repeat: 'repeat' })
 export const WATCH_STATUS = Object.freeze({ active: 'active', closed: 'closed', targetMissing: 'target-missing' })
 export const WATCH_STATE = Object.freeze({ idle: 'idle', running: 'running', waiting: 'waiting', closed: 'closed' })
@@ -113,7 +132,7 @@ const NAME = Object.freeze({ nul: '\0', separators: Object.freeze(['/', '\\']), 
 
 /**
  * Stable error codes. Envelope and authorization codes come from v1; the operation-specific
- * refusal codes are §5.2's (expired, conflict, not-referenced, too-large) and §6.3's
+ * refusals mirror §5.2's approvals, questions, prompts, grants and release, plus §6.3's
  * images-unsupported. operation-failed is the only code for an unexpected host failure.
  */
 export const ERROR = Object.freeze({
@@ -134,6 +153,30 @@ export const ERROR = Object.freeze({
   imagesUnsupported: 'images-unsupported',
   failed: 'operation-failed',
   duplicate: 'duplicate-request',
+  // Answer and management refusals mirror today's tool codes (§5.2).
+  unknownSession: 'unknown-session',
+  isFishball: 'is-fishball',
+  notManaged: 'not-managed',
+  featureOff: 'feature-off',
+  invalidDecision: 'invalid-decision',
+  riskRequired: 'risk-required',
+  reasonRequired: 'reason-required',
+  allowNeedsLowRisk: 'allow-needs-low-risk',
+  argumentsIncomplete: 'arguments-incomplete',
+  questionRequired: 'question-required',
+  modeUser: 'mode-user',
+  badAnswer: 'bad-answer',
+  alreadySettled: 'already-settled',
+  sessionNotLive: 'session-not-live',
+  grantInvalid: 'grant-invalid',
+  prefixNotShellTool: 'prefix-not-shell-tool',
+  prefixEmpty: 'prefix-empty',
+  prefixNotInCall: 'prefix-not-in-call',
+  expiresRequired: 'expires-at-required',
+  expiresInvalid: 'expires-at-invalid',
+  expiresPast: 'expires-at-past',
+  grantUnknown: 'unknown',
+  grantEnded: 'ended',
 })
 
 /**
@@ -238,6 +281,33 @@ function uniqueStrings(values, code = ERROR.invalid) {
   for (const value of values) text(value)
 }
 
+function uniqueBy(values, keyOf) {
+  const seen = new Set()
+  for (const value of values) {
+    const key = keyOf(value)
+    if (seen.has(key)) fail()
+    seen.add(key)
+  }
+}
+
+/** A character cap (code points), not a byte cap; used for the fields a person reads. */
+function chars(value, max) {
+  string(value)
+  if ([...value].length > max) fail(ERROR.limit)
+}
+
+function bytes(value, max) {
+  string(value)
+  if (Buffer.byteLength(value, 'utf8') > max) fail(ERROR.limit)
+}
+
+/** The validation clock; a caller may pin it so a future expiresAt is checked deterministically. */
+function nowMs(context) {
+  const value = context?.now ?? Date.now()
+  if (!Number.isSafeInteger(value) || value < NUMBER.zero) fail()
+  return value
+}
+
 function digest(value) {
   text(value)
   if (value.length !== DIGEST.hexLength) fail()
@@ -331,14 +401,33 @@ function readMessage(value) {
   images(value.images)
 }
 
+/**
+ * The live request approval.list and approval.request carry. It keeps v1's fields and adds the
+ * decision-label snapshot (§8.1); a question also carries its DSH question items, which the child
+ * renders and answers with question.answer.
+ */
+const APPROVAL_DESCRIPTOR_KEYS = Object.freeze([
+  'approvalId', 'offerId', 'kind', 'prompt', 'choices', 'expiresAt',
+  'title', 'at', 'toolName', 'callId', 'reason', 'quotes',
+])
+
 function approvalDescriptor(value) {
-  exact(value, ['approvalId', 'offerId', 'kind', 'prompt', 'choices', 'expiresAt'])
+  if (!value || typeof value !== 'object' || Array.isArray(value)) fail()
+  const questioned = value.kind === APPROVAL_KIND.question
+  exact(value, questioned ? [...APPROVAL_DESCRIPTOR_KEYS, 'questions'] : APPROVAL_DESCRIPTOR_KEYS)
   text(value.approvalId)
   text(value.offerId)
   member(value.kind, Object.values(APPROVAL_KIND))
   text(value.prompt)
   uniqueStrings(value.choices)
   natural(value.expiresAt)
+  chars(value.title, LIMITS.titleChars)
+  natural(value.at)
+  text(value.toolName)
+  if (value.callId !== null) text(value.callId)
+  chars(value.reason, LIMITS.reasonChars)
+  arrayOf(value.quotes, (quote) => bytes(quote, LIMITS.quoteBytes))
+  if (questioned) questions(value.questions)
 }
 
 /** The existing watch registry's identity and state; §5.2 leaves the list record to this contract. */
@@ -350,16 +439,72 @@ function watchRecord(value) {
   member(value.status, Object.values(WATCH_STATUS))
 }
 
-/** A decision word for approvals, or the answer text for a question (§5.2). */
-function answerValue(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) fail()
-  if (Object.hasOwn(value, 'decision')) {
-    exact(value, ['decision'])
-    member(value.decision, Object.values(DECISION))
-  } else {
-    exact(value, ['text'])
-    text(value.text)
+/**
+ * answer_approval's grant, as today's tool carries it: an exact call or a shell-command prefix,
+ * with an end time that must be in the future (§7a.8). The host still checks that a prefix
+ * belongs to the asking call and its tool; that needs the call, not the frame.
+ */
+function grantSpec(value, now) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) fail(ERROR.grantInvalid)
+  exact(value, [], ['kind', 'prefix', 'expiresAt'])
+  if (!Object.hasOwn(value, 'kind')) fail(ERROR.grantInvalid)
+  member(value.kind, Object.values(GRANT_KIND), ERROR.grantInvalid)
+  if (!Object.hasOwn(value, 'expiresAt')) fail(ERROR.expiresRequired)
+  if (!Number.isSafeInteger(value.expiresAt) || value.expiresAt < NUMBER.zero) fail(ERROR.expiresInvalid)
+  if (value.expiresAt <= now) fail(ERROR.expiresPast)
+  if (value.kind === GRANT_KIND.prefix) {
+    if (typeof value.prefix !== 'string') fail(ERROR.prefixEmpty)
+    chars(value.prefix, LIMITS.grantPrefixChars)
+    if (value.prefix.trim().length === NUMBER.zero) fail(ERROR.prefixEmpty)
+  } else if (Object.hasOwn(value, 'prefix')) fail(ERROR.grantInvalid)
+}
+
+/** answer_approval's answer object (§5.2): the decision plus the fields that decision uses. */
+function approvalAnswer(value, context) {
+  exact(value, ['decision'], ['risk', 'reason', 'question', 'grant'])
+  member(value.decision, Object.values(DECISION))
+  if (Object.hasOwn(value, 'risk')) member(value.risk, Object.values(RISK))
+  if (Object.hasOwn(value, 'reason')) chars(value.reason, LIMITS.reasonChars)
+  if (Object.hasOwn(value, 'question')) {
+    if (value.decision !== DECISION.ask) fail()
+    chars(value.question, LIMITS.questionChars)
   }
+  if (Object.hasOwn(value, 'grant')) {
+    if (value.decision !== DECISION.grant) fail(ERROR.grantInvalid)
+    grantSpec(value.grant, nowMs(context))
+  }
+}
+
+function questionOption(value) {
+  exact(value, ['label'], ['description'])
+  chars(value.label, LIMITS.labelChars)
+  if (Object.hasOwn(value, 'description')) string(value.description)
+}
+
+/** DSH's presentation intent (dsh-user-questions): a plan review names the option that approves it. */
+function planIntent(value) {
+  exact(value, ['kind', 'approve'], ['callId'])
+  if (value.kind !== PLAN_REVIEW) fail()
+  chars(value.approve, LIMITS.labelChars)
+  if (Object.hasOwn(value, 'callId')) text(value.callId)
+}
+
+/** One question as DSH asks it; detail (a plan) and description are free text, frame-bounded. */
+function questionItem(value) {
+  exact(value, ['id', 'question'], ['detail', 'header', 'options', 'multiSelect', 'intent'])
+  text(value.id)
+  chars(value.question, LIMITS.questionChars)
+  if (Object.hasOwn(value, 'detail')) string(value.detail)
+  if (Object.hasOwn(value, 'header')) chars(value.header, LIMITS.labelChars)
+  if (Object.hasOwn(value, 'options')) arrayOf(value.options, questionOption)
+  if (Object.hasOwn(value, 'multiSelect')) boolean(value.multiSelect)
+  if (Object.hasOwn(value, 'intent')) planIntent(value.intent)
+}
+
+function questions(values) {
+  arrayOf(values, questionItem)
+  if (values.length === NUMBER.zero || values.length > LIMITS.questionsPerRequest) fail(ERROR.limit)
+  uniqueBy(values, (question) => question.id)
 }
 
 function capabilities(values) {
@@ -428,7 +573,7 @@ function requestSessionStop(payload) {
   if (Object.hasOwn(payload, 'reason')) string(payload.reason)
 }
 
-/** The four acknowledgement results are one true flag and nothing else. */
+/** A single-flag acknowledgement is that true flag and nothing else. */
 function trueFlag(payload, key) {
   exact(payload, [key])
   if (payload[key] !== true) fail()
@@ -468,7 +613,8 @@ function responseSessionWatch(payload) {
   }
 }
 
-function requestSessionWatches(payload) { exact(payload, []) }
+/** session.watches, prompt.list and grant.list carry no request fields. */
+function requestEmpty(payload) { exact(payload, []) }
 
 function responseSessionWatches(payload) {
   exact(payload, ['watches'])
@@ -490,17 +636,137 @@ function requestApprovalList(payload) {
 function responseApprovalList(payload) {
   exact(payload, ['approvals'])
   arrayOf(payload.approvals, approvalDescriptor)
+  uniqueBy(payload.approvals, (approval) => approval.approvalId)
 }
 
-function requestApprovalAnswer(payload) {
+function requestApprovalAnswer(payload, context) {
   exact(payload, ['sessionId', 'approvalId', 'offerId', 'answer'])
   text(payload.sessionId)
   text(payload.approvalId)
   text(payload.offerId)
-  answerValue(payload.answer)
+  approvalAnswer(payload.answer, context)
 }
 
-function responseApprovalAnswer(payload) { trueFlag(payload, 'accepted') }
+/** A grant answer also returns the minted grantId and its end time, as today's tool does. */
+function responseApprovalAnswer(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) fail()
+  if (!Object.hasOwn(payload, 'grantId')) { trueFlag(payload, 'accepted'); return }
+  exact(payload, ['accepted', 'grantId', 'expiresAt'])
+  if (payload.accepted !== true) fail()
+  text(payload.grantId)
+  natural(payload.expiresAt)
+}
+
+function questionAnswerItem(value) {
+  exact(value, ['id', 'selected'], ['custom'])
+  text(value.id)
+  uniqueStrings(value.selected)
+  if (value.selected.length > LIMITS.selectedLabelsPerAnswer) fail(ERROR.limit)
+  for (const label of value.selected) chars(label, LIMITS.labelChars)
+  if (Object.hasOwn(value, 'custom')) chars(value.custom, LIMITS.customChars)
+}
+
+/** answer_question's payload (§5.2): structured answers, or a plan review's approve/feedback. */
+function requestQuestionAnswer(payload) {
+  exact(payload, ['sessionId', 'questionId'], ['answers', 'approve', 'feedback', 'toUser', 'note'])
+  text(payload.sessionId)
+  text(payload.questionId)
+  const parts = ['answers', 'approve', 'feedback', 'toUser', 'note']
+  if (!parts.some((key) => Object.hasOwn(payload, key))) fail()
+  if (Object.hasOwn(payload, 'answers')) {
+    arrayOf(payload.answers, questionAnswerItem)
+    if (payload.answers.length === NUMBER.zero || payload.answers.length > LIMITS.questionsPerRequest) fail(ERROR.limit)
+    uniqueBy(payload.answers, (item) => item.id)
+    if (Object.hasOwn(payload, 'approve') || Object.hasOwn(payload, 'feedback')) fail()
+  }
+  if (Object.hasOwn(payload, 'approve')) boolean(payload.approve)
+  if (Object.hasOwn(payload, 'feedback')) chars(payload.feedback, LIMITS.feedbackChars)
+  if (Object.hasOwn(payload, 'toUser')) boolean(payload.toUser)
+  if (Object.hasOwn(payload, 'note')) chars(payload.note, LIMITS.noteChars)
+}
+
+function responseQuestionAnswer(payload) { trueFlag(payload, 'accepted') }
+
+function promptSummary(value) {
+  exact(value, ['promptId', 'sessionId', 'title', 'toolName', 'argumentsStatus', 'since', 'managed'])
+  text(value.promptId)
+  text(value.sessionId)
+  chars(value.title, LIMITS.titleChars)
+  text(value.toolName)
+  member(value.argumentsStatus, Object.values(ARGUMENTS_STATUS))
+  natural(value.since)
+  boolean(value.managed)
+}
+
+function responsePromptList(payload) {
+  exact(payload, ['prompts'])
+  arrayOf(payload.prompts, promptSummary)
+  uniqueBy(payload.prompts, (prompt) => prompt.promptId)
+}
+
+/** answer_prompt (§7a.9): allow or reject a frozen prompt, with the same rules as an approval. */
+function requestPromptAnswer(payload) {
+  exact(payload, ['sessionId', 'promptId', 'decision', 'reason'], ['risk'])
+  text(payload.sessionId)
+  text(payload.promptId)
+  member(payload.decision, PROMPT_DECISIONS, ERROR.invalidDecision)
+  if (Object.hasOwn(payload, 'risk')) member(payload.risk, Object.values(RISK))
+  chars(payload.reason, LIMITS.reasonChars)
+}
+
+function responsePromptAnswer(payload) {
+  exact(payload, ['promptId', 'decision', 'managed'])
+  text(payload.promptId)
+  member(payload.decision, PROMPT_DECISIONS)
+  boolean(payload.managed)
+}
+
+function grantSummary(value) {
+  exact(value, ['grantId', 'sessionId', 'toolName', 'kind', 'expiresAt', 'uses', 'paused'], ['prefix', 'lastUsedAt'])
+  text(value.grantId)
+  text(value.sessionId)
+  text(value.toolName)
+  member(value.kind, Object.values(GRANT_KIND))
+  if (value.kind === GRANT_KIND.prefix) {
+    text(value.prefix)
+    chars(value.prefix, LIMITS.grantPrefixChars)
+  } else if (Object.hasOwn(value, 'prefix')) fail()
+  natural(value.expiresAt)
+  natural(value.uses)
+  if (Object.hasOwn(value, 'lastUsedAt')) natural(value.lastUsedAt)
+  boolean(value.paused)
+}
+
+function responseGrantList(payload) {
+  exact(payload, ['grants'])
+  arrayOf(payload.grants, grantSummary)
+  uniqueBy(payload.grants, (grant) => grant.grantId)
+}
+
+function requestGrantRevoke(payload) {
+  exact(payload, ['grantId', 'reason'])
+  text(payload.grantId)
+  chars(payload.reason, LIMITS.reasonChars)
+}
+
+function responseGrantRevoke(payload) {
+  exact(payload, ['grantId', 'revoked'])
+  text(payload.grantId)
+  if (payload.revoked !== true) fail()
+}
+
+/** release_session (§5.2): Fishball gives a managed session back; the reason is audited. */
+function requestSessionRelease(payload) {
+  exact(payload, ['sessionId', 'reason'])
+  text(payload.sessionId)
+  chars(payload.reason, LIMITS.reasonChars)
+}
+
+function responseSessionRelease(payload) {
+  exact(payload, ['sessionId', 'managed'])
+  text(payload.sessionId)
+  if (payload.managed !== false) fail()
+}
 
 function requestAttachmentRead(payload) {
   exact(payload, ['sessionId', 'attachmentId'])
@@ -603,10 +869,16 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.sessionStop]: requestSessionStop,
     [OPERATION.sessionRead]: requestSessionRead,
     [OPERATION.sessionWatch]: requestSessionWatch,
-    [OPERATION.sessionWatches]: requestSessionWatches,
+    [OPERATION.sessionWatches]: requestEmpty,
     [OPERATION.sessionUnwatch]: requestSessionUnwatch,
+    [OPERATION.sessionRelease]: requestSessionRelease,
     [OPERATION.approvalList]: requestApprovalList,
     [OPERATION.approvalAnswer]: requestApprovalAnswer,
+    [OPERATION.questionAnswer]: requestQuestionAnswer,
+    [OPERATION.promptList]: requestEmpty,
+    [OPERATION.promptAnswer]: requestPromptAnswer,
+    [OPERATION.grantList]: requestEmpty,
+    [OPERATION.grantRevoke]: requestGrantRevoke,
     [OPERATION.attachmentRead]: requestAttachmentRead,
     [OPERATION.attachmentPut]: requestAttachmentPut,
     [OPERATION.inboxPush]: requestInboxPush,
@@ -622,8 +894,14 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.sessionWatch]: responseSessionWatch,
     [OPERATION.sessionWatches]: responseSessionWatches,
     [OPERATION.sessionUnwatch]: responseSessionUnwatch,
+    [OPERATION.sessionRelease]: responseSessionRelease,
     [OPERATION.approvalList]: responseApprovalList,
     [OPERATION.approvalAnswer]: responseApprovalAnswer,
+    [OPERATION.questionAnswer]: responseQuestionAnswer,
+    [OPERATION.promptList]: responsePromptList,
+    [OPERATION.promptAnswer]: responsePromptAnswer,
+    [OPERATION.grantList]: responseGrantList,
+    [OPERATION.grantRevoke]: responseGrantRevoke,
     [OPERATION.attachmentRead]: responseAttachmentRead,
     [OPERATION.attachmentPut]: responseAttachmentPut,
     [OPERATION.inboxPush]: responseInboxPush,
@@ -636,14 +914,15 @@ export const VALIDATORS = Object.freeze({
   }),
 })
 
-function validatePayload(kind, operation, payload) {
+function validatePayload(kind, operation, payload, context) {
   const group = VALIDATORS[kind]
   if (!Object.hasOwn(group, operation)) fail(ERROR.operation)
-  group[operation](payload)
+  group[operation](payload, context)
   return payload
 }
 
-export function validateRequest(operation, payload) { return validatePayload(ENVELOPE.type.request, operation, payload) }
+/** The answer validators take an optional { now } so a future grant expiry is checked deterministically. */
+export function validateRequest(operation, payload, context = {}) { return validatePayload(ENVELOPE.type.request, operation, payload, context) }
 export function validateResponse(operation, payload) { return validatePayload(ENVELOPE.type.response, operation, payload) }
 export function validateEvent(operation, payload) { return validatePayload(ENVELOPE.type.event, operation, payload) }
 
@@ -675,10 +954,11 @@ function validateEventEnvelope(envelope) {
 /**
  * Validate one complete envelope. options.receivingSide additionally enforces direction:
  * requests arrive at their target, responses and errors at their source, events at the child.
- * options.expectedHostId rejects a frame from another host (§5.1).
+ * options.expectedHostId rejects a frame from another host (§5.1); options.now pins the clock
+ * for a grant answer's future expiresAt.
  */
 export function validateEnvelope(envelope, options = {}) {
-  const { expectedHostId, receivingSide } = options ?? {}
+  const { expectedHostId, receivingSide, now } = options ?? {}
   if (receivingSide !== undefined) member(receivingSide, Object.values(SIDE))
   if (expectedHostId !== undefined) text(expectedHostId)
   exact(envelope, ENVELOPE.keys)
@@ -696,7 +976,7 @@ export function validateEnvelope(envelope, options = {}) {
   const operation = OPERATIONS[envelope.operation]
   if (envelope.type === ENVELOPE.type.request) {
     if (receivingSide !== undefined && targetSide(operation.direction) !== receivingSide) fail(ERROR.forbidden)
-    validateRequest(envelope.operation, envelope.payload)
+    validateRequest(envelope.operation, envelope.payload, { now })
     if (operation.sessionScoped) {
       text(envelope.sessionId)
       if (envelope.sessionId !== envelope.payload.sessionId) fail()

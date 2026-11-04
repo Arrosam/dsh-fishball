@@ -246,7 +246,10 @@ read a main file, plugin or config.
 ### 5.2 Operations
 
 All payloads are exact-key validated; unknown keys reject the frame. Text limits are byte bounded;
-attachment frames are bounded separately (§6.2).
+attachment frames are bounded separately (§6.2). Answer and label caps live in
+`src/slim/limits.js`: a 500-character reason/question/note/feedback/custom text, a 200-character
+label or session title, a 2048-byte quoted message, a 512-character grant prefix, and 32 questions
+with 32 selected labels each.
 
 | Op | Direction | Payload | Authorization | Result / errors |
 | --- | --- | --- | --- | --- |
@@ -259,15 +262,42 @@ attachment frames are bounded separately (§6.2).
 | `session.watch` | child to main | `{sessionId, mode}` | related session | `{watchId}`; refusal carries `watchError`. |
 | `session.watches` | child to main | `{}` | — | bounded list. |
 | `session.unwatch` | child to main | `{watchId}` | — | `{ok}`. |
-| `approval.list` | child to main | `{sessionId}` | managed session | live requests only, current `offerId`. |
-| `approval.answer` | child to main | `{sessionId, approvalId, offerId, answer: {decision} or {text}}` | live offer, not expired | `{accepted:true}`; `expired`, `conflict`. |
+| `session.release` | child to main | `{sessionId, reason}` | managed session | `{sessionId, managed:false}`; `unknown-session`, `is-fishball`, `not-managed`, `feature-off`. |
+| `approval.list` | child to main | `{sessionId}` | managed session | `{approvals:[descriptor]}`; live requests only, current `offerId`. |
+| `approval.answer` | child to main | `{sessionId, approvalId, offerId, answer: {decision, risk?, reason?, question?, grant?}}` | live offer, not expired | `{accepted:true, grantId?, expiresAt?}`; `expired`, `conflict`, `risk-required`, `reason-required`, `allow-needs-low-risk`, `arguments-incomplete`, `question-required`, `grant-invalid`, `prefix-not-shell-tool`, `prefix-empty`, `prefix-not-in-call`, `expires-at-required`, `expires-at-invalid`, `expires-at-past`. |
+| `question.answer` | child to main | `{sessionId, questionId, answers?, approve?, feedback?, toUser?, note?}` | managed session's open question | `{accepted:true}`; `expired`, `mode-user`, `bad-answer`, `already-settled`, `session-not-live`. |
+| `prompt.list` | child to main | `{}` | — | `{prompts:[{promptId,sessionId,title,toolName,argumentsStatus,since,managed}]}`. |
+| `prompt.answer` | child to main | `{sessionId, promptId, decision: allow or reject, risk?, reason}` | that frozen prompt's session | `{promptId, decision, managed}`; `expired`, `invalid-decision`, `risk-required`, `reason-required`, `allow-needs-low-risk`, `arguments-incomplete`. |
+| `grant.list` | child to main | `{}` | — | `{grants:[{grantId,sessionId,toolName,kind,prefix?,expiresAt,uses,lastUsedAt?,paused}]}`. |
+| `grant.revoke` | child to main | `{grantId, reason}` | an active grant of a managed session | `{grantId, revoked:true}`; `reason-required`, `unknown`, `ended`. |
 | `attachment.read` | child to main | `{sessionId, attachmentId}` | the image is referenced by that session's log; 0.2.2's own attachment RPC no longer makes that check (`dsh-api-session-controller/lib/index.js:886-895`), so the bridge verifies the log itself | chunked bytes; `not-referenced`, `too-large`. |
 | `attachment.put` | child to main | `{transferId, total, sha256, mediaType, name?, chunks[]}` | the child instance only; bytes are admitted by the host's own attachment store | `{hostRef, expiresAt}` for one later `session.start`/`session.message` |
 | `inbox.push` | main to child | `{messageId, kind, sourceSessionId, text, images[], dedupeKey, at}` | a managed session authored it | `{acked:true}`; re-delivered unchanged after reconnect |
-| event `approval.request` | main to child | same shape as today (`src/native-control/protocol.js:49-55`) | managed session | — |
+| event `approval.request` | main to child | v1's `{approvalId, offerId, kind, prompt, choices, expiresAt}` plus `title`, `at`, `toolName`, `callId`, `reason`, `quotes`, and for a question `questions[]` | managed session | `kind` selects `approval.answer` or `question.answer`. |
 | event `approval.settled` | main to child | `{approvalId, decision, by: user or fishball}` | managed session | lets the child update decision labels (§8.1). |
 | event `watch.status` | main to child | existing | watch owner | — |
 | event `session.state` | main to child | `{sessionId, running, pendingInteraction}` | managed session | drives the indicator and the child's list. |
+
+**Requests and questions.** `approval.list` and `approval.request` carry both permission requests
+and questions. The descriptor keeps v1's `approvalId`, `offerId`, `kind`, `prompt`, `choices` and
+`expiresAt`, and adds the decision-label snapshot of §8.1: `title`, `at`, `toolName`, `callId`,
+`reason` and `quotes`. A question (`kind: question`) also carries `questions[]` in DSH's shape
+(`id`, `question`, `options`, `multiSelect`, optional `detail`, `header` and the plan-review
+`intent`); `kind` selects `approval.answer` or `question.answer`. `callId` is null when the request
+names no tool call.
+
+**Approval answers.** `decision` is `allow`, `grant`, `reject`, `ask` or `escalate`; `risk` is
+`low` or `high`; `reason` is at most 500 characters; `question` (with `ask`) at most 500; `grant`
+is `{kind: exact|prefix, prefix?, expiresAt}` with an epoch-ms `expiresAt` in the future and a
+prefix of at most 512 characters. The host applies today's decision rules (allow and grant need low
+risk and a reason, reject a reason, ask a question) and returns the typed refusals above; a grant
+answer also returns the minted `grantId` and its `expiresAt`.
+
+**Question answers.** `answers` is `[{id, selected[], custom?}]`, one item per question, with labels
+copied from that question's options; a plan review uses `approve: boolean` and `feedback` instead.
+`toUser: true` sends the question to the user, and `note` adds Fishball's note. A payload cannot
+carry both `answers` and `approve`/`feedback`. All bridge times (`at`, `since`, `expiresAt`,
+`lastUsedAt`) are epoch milliseconds; the main host converts its ISO store values.
 
 In `session.start`, `session.message` and `session.redirect`, the `attachments` list carries the
 `hostRef`s returned by `attachment.put`; the host consumes each ref at the same time as it builds
@@ -277,7 +307,9 @@ the message.
 a dedupe key, the caller's framed text and image references. The main host's existing intake
 ledger (`src/intake.js`) remains the durable queue, so a stopped child never loses a message; the
 child acks each item and the host re-delivers unacked items after a reconnect with the same
-dedupe key.
+dedupe key. A hand-over note arrives the same way with `kind: user`: it is the user's own words
+outside the untrusted block (§8.3). Take back is a main-page action; Fishball's own release is
+`session.release`.
 
 **Not in the bridge:** file writes, plugin or config changes on the main side, agent/session
 objects, model calls, main credentials, shell execution. The admin operations are on the lifecycle
@@ -649,8 +681,9 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
 - Branch: `feat/slim-contract`, cut from `feat/slim-native-embedded-ui` (current tip).
 - Owns and touches nothing else: `src/slim/contract.js`, `src/slim/limits.js`,
   `docs/slim-native-design.md`.
-- Provides: envelope v2 (adds `attachment.*`), the exact operation allowlist from §5.2, payload
-  validators for every request, response and event, error codes, the status model,
+- Provides: envelope v2 (adds `attachment.*`, the full approval/question/prompt/grant answers,
+  `session.release` and the decision-label snapshot), the exact operation allowlist from §5.2,
+  payload validators for every request, response and event, error codes, the status model,
   `/fishball/embed/*` route names, and the bearer rules.
 - Depends: none.
 - Acceptance criteria:
@@ -664,7 +697,7 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
   6. No test file and no file owned by another task is touched.
 - Tests: `CONTRACT-01 envelope rejects an unknown key`; `-02 unknown operation rejected`;
   `-03 oversize frame rejected`; `-04 capability mismatch rejected`.
-- Done 2026-11-05: local commit on `feat/slim-contract`; the contract and limits live in the two
+- Done 2026-11-05: local commits on `feat/slim-contract`; the contract and limits live in the two
   modules named above, and §14 is fully answered.
 
 ### Wave 2 — runtime and child app (parallel)
