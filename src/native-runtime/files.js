@@ -25,15 +25,17 @@ export async function readPrivate(file, limit = RUNTIME_LIMITS.maxMetadataBytes)
     return await handle.readFile('utf8')
   } finally { await handle.close() }
 }
+// Buffers are written verbatim: copied code snapshots include binary assets, and a UTF-8
+// round-trip would replace every non-UTF-8 byte and corrupt the file.
 export async function writePrivate(file, value, exclusive = false) {
-  const text = typeof value === 'string' ? value : JSON.stringify(value) + '\n'
+  const content = Buffer.isBuffer(value) ? value : typeof value === 'string' ? value : JSON.stringify(value) + '\n'
   if (exclusive) {
     const handle = await open(file, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, RUNTIME.privateFileMode)
-    try { await handle.writeFile(text); await handle.sync() } finally { await handle.close() }
+    try { await handle.writeFile(content); await handle.sync() } finally { await handle.close() }
     return
   }
   const temporary = file + '.' + randomUUID()
-  await writePrivate(temporary, text, true)
+  await writePrivate(temporary, content, true)
   try { await rename(temporary, file) } catch (error) { await unlink(temporary).catch(() => {}); throw error }
 }
 export async function jsonPrivate(file) { return JSON.parse(await readPrivate(file)) }
