@@ -138,6 +138,11 @@ window.__ModuleLoader__.load({
         `.${CLS.sender} .${CLS.name}{color:var(${SENDER_COLOUR.variable})}`,
         `.${CLS.sender} .${CLS.bubble}{background:${tint(`var(${SENDER_COLOUR.variable})`, SENDER_COLOUR.fill)};border-color:${tint(`var(${SENDER_COLOUR.variable})`, SENDER_COLOUR.edge)}}`,
         `.${CLS.mine}{display:flex;flex-direction:column;align-items:flex-end;margin:6px 0 6px 20%}`,
+        // DSH's user row already right-aligns an intrinsic content stack with a percentage max-width.
+        // Let that row fill our available lane: shrink-wrapping it again makes the stack resolve its
+        // percentage against the short text itself, squeezing e.g. two CJK characters onto two lines.
+        // Only the row stretches; the stock stack/bubble retain their natural width, cap and wrapping.
+        `.${CLS.mine}>[class$="_userRow"]{align-self:stretch;min-width:0}`,
         // Your messages are DSH's rows, whose classes are generated, so they are matched only
         // inside our wrapper: the text bubble by its stable "_bubble" ending, and a forwarded
         // session's card as DSH's section element. If DSH changes either, that row keeps DSH's

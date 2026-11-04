@@ -999,6 +999,7 @@ No custom session event types are added: persistence refuses logs containing unk
 
 **How it looks.**
 - **Bubbles.** Your messages are right-aligned bubbles with no label: their side and tint mark them as yours (owner's choice, 2026-10-31; a forwarded session keeps its quoted card). Fishball's replies are left-aligned bubbles with the FishMark avatar and the name "Fishball". Input bubbles show their time; Fishball's replies keep DSH's own turn footer with its time (S25: DSH's reply row cannot be wrapped, see below).
+  - **User-bubble width (2026-11-04).** The Messenger wrapper gives DSH’s user/steering row a definite full-width lane, while DSH’s own inner content stack and bubble keep their intrinsic width, maximum width and normal wrapping. This avoids nesting DSH’s percentage-capped stack inside another shrink-to-fit flex item: short CJK, Latin and mixed messages stay content-sized, and long messages wrap within the existing host cap. Only the direct host user row inside Fishball’s own-message wrapper is stretched; incoming messages, replies, ordinary sessions, composer and the aligned pile are unchanged. The wrapper’s end-alignment rule predates the pile change: it originated with Messenger commit `82ce1c18`, not `c03cb931`.
 - **Every sender is an author.** An input that reached Fishball through the intake ledger (§5) is a left-aligned bubble from its sender:
   | Intake kind | Author name | Avatar |
   |---|---|---|
