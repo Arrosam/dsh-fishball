@@ -78,6 +78,10 @@ window.__ModuleLoader__.load({
     const MANAGE_MENU = Object.freeze({ id: 'fishball-manage', order: 422 })
     const MANAGE_HEADER = Object.freeze({ id: 'fishball-manage', order: 4.5 })
     const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'feature-off', 'unavailable'])
+    const PROVIDER_SYNC_UI = Object.freeze({ path: '/api/fishball/provider-sync', mask: '••••••••',
+      groups: Object.freeze(['add', 'existsSkip', 'conflictSkip', 'unsupported']),
+      invitationRows: 3, inactive: 'inactive', pendingSource: 'pendingSource', pendingTarget: 'pendingTarget', paired: 'paired',
+    })
     /** The two context-window settings (src/constants.js API.contextWindow body). */
     const CONTEXT_FIELDS = Object.freeze(['contextWindowTokens', 'maxOutputTokens'])
     /** Fishball's explicit model choice is independent of the host's last-used/default route. */
@@ -537,6 +541,16 @@ window.__ModuleLoader__.load({
       modelLoadFailed: 'Models could not be refreshed. Any previous list and selection are unchanged. Try again.',
       modelSaveFailed: 'The model was not saved. Check that it is still available and try again.',
       modelUnavailable: 'A saved or selected model is unavailable in the current list. Its selection is kept; choose another model to change it.',
+      syncTitle: 'Sync model providers and API keys',
+      syncHint: 'Manual additions only. Pair source and target pages, preview, then confirm. The invitation is a short-lived scoped pairing capability, not a DSH Web or OAuth token. Existing settings are skipped. OAuth and logins are never copied.',
+      syncInvite: 'Create target invitation', syncInvitation: 'One-time target invitation', syncPaste: 'Paste target invitation on the source',
+      syncBegin: 'Connect to target', syncApprove: 'Approve source on target', syncFinish: 'Confirm target on source',
+      syncStatus: 'Check pairing status', syncClose: 'Close sync channel', syncPreview: 'Preview sync', syncConfirm: 'Confirm selected additions',
+      syncConsent: 'I confirm transferring the selected model configuration and current API keys to this target. Partial success is possible.',
+      syncIdentity: 'Runtime / profile', syncFailed: 'Sync was refused or could not be confirmed. Check pairing and create a new preview; no automatic retry.',
+      syncComplete: 'Selected additions completed. Catalog presence does not prove account authentication.',
+      syncPartial: 'Not all items completed. Review every result; create a new preview before retrying failed or unknown items.',
+      'syncGroup.add': 'Will add', 'syncGroup.existsSkip': 'Already exists — skip', 'syncGroup.conflictSkip': 'Conflict — skip', 'syncGroup.unsupported': 'Unsupported',
       contextWindow: 'Context window',
       contextHint: 'Leave the window empty to use the model\'s full window. A smaller window makes Fishball summarise its conversation sooner; only Fishball\'s session is affected.',
       'contextField.contextWindowTokens': 'Context window (tokens)',
@@ -997,6 +1011,16 @@ window.__ModuleLoader__.load({
       modelLoadFailed: '无法刷新模型列表。原有列表和选择保持不变，请重试。',
       modelSaveFailed: '模型未保存。请确认模型仍然可用，然后重试。',
       modelUnavailable: '已保存或当前选择的模型不在列表中，原选择仍然保留；可另选模型来更改。',
+      syncTitle: '同步模型提供商和 API key',
+      syncHint: '仅手动新增。先在来源与目标两端配对，再预览并确认。邀请是短期、限用途的配对凭证，不是 DSH Web 或 OAuth 令牌；已有配置跳过，不复制 OAuth 或登录信息。',
+      syncInvite: '创建目标邀请', syncInvitation: '一次性目标邀请', syncPaste: '在来源粘贴目标邀请',
+      syncBegin: '连接目标', syncApprove: '在目标批准来源', syncFinish: '在来源确认目标',
+      syncStatus: '检查配对状态', syncClose: '关闭同步通道', syncPreview: '预览同步', syncConfirm: '确认所选新增项',
+      syncConsent: '确认将所选模型配置及执行时的 API key 转移到此目标。可能出现部分成功。',
+      syncIdentity: '运行实例 / profile', syncFailed: '同步被拒绝或无法确认。请检查配对并重新预览，不会自动重试。',
+      syncComplete: '所选新增项已完成。模型在目录中不代表账户认证已验证。',
+      syncPartial: '部分项目未完成。请逐项检查；失败或未知项需重新预览再重试。',
+      'syncGroup.add': '将新增', 'syncGroup.existsSkip': '已存在，跳过', 'syncGroup.conflictSkip': '冲突，跳过', 'syncGroup.unsupported': '不支持',
       contextWindow: '上下文窗口',
       contextHint: '留空则使用模型的完整窗口。窗口越小，Fishball 越早总结对话；只影响 Fishball 的会话。',
       'contextField.contextWindowTokens': '上下文窗口（token）',
@@ -2310,6 +2334,70 @@ window.__ModuleLoader__.load({
     }
 
     /** A model-setting prompt remains usable while DSH makes the editor and submit paths inert. */
+    /** Dedicated owner controls; no session-management tool exposes these actions. */
+    function makeProviderSyncSettings(t) {
+      return function FishballProviderSyncSettings() {
+        const [pair, setPair] = React.useState({ state: PROVIDER_SYNC_UI.inactive })
+        const [invitation, setInvitation] = React.useState('')
+        const [outgoing, setOutgoing] = React.useState('')
+        const [plan, setPlan] = React.useState(null)
+        const [selected, setSelected] = React.useState([])
+        const [consent, setConsent] = React.useState(false)
+        const [result, setResult] = React.useState(null)
+        const [busy, setBusy] = React.useState(false)
+        const [problem, setProblem] = React.useState(false)
+        const active = React.useRef(false)
+        const invoke = async (action, payload = {}) => {
+          if (active.current) return
+          active.current = true; setBusy(true); setProblem(false)
+          if (action !== 'confirm') { setPlan(null); setSelected([]); setConsent(false); setResult(null) }
+          try {
+            const response = await send(PROVIDER_SYNC_UI.path, { action, ...payload })
+            if (!response.ok || response.answer?.ok !== true || !response.answer.result) {
+              setProblem(true); setPlan(null); setConsent(false); return
+            }
+            const answer = response.answer.result
+            if (action === 'preview') { setPlan(answer); setSelected([]); setConsent(false); setResult(null) }
+            else if (action === 'confirm') { setResult(answer); setPlan(null); setSelected([]); setConsent(false) }
+            else if (action === 'begin') { setPair({ ...answer, peer: answer.identity, state: PROVIDER_SYNC_UI.pendingTarget }); setInvitation('') }
+            else { setPair(answer); if (action === 'invite') setOutgoing(answer.invitation); if (action === 'close') { setOutgoing(''); setInvitation('') } }
+          } finally { active.current = false; setBusy(false) }
+        }
+        const button = (key, action, payload, disabled = false) => h(Button, { type: 'button', size: 'sm', variant: 'ghost',
+          disabled: busy || disabled, onClick: () => invoke(action, payload) }, t(key))
+        const peer = pair.peer ?? pair.identity
+        return h('section', { className: CLS.section, 'data-fishball-provider-sync': true, 'aria-busy': busy },
+          h('h3', null, t('syncTitle')), h('p', { className: CLS.muted }, t('syncHint')),
+          h('p', { role: 'status' }, pair.state),
+          peer ? h('p', null, t('syncIdentity') + ': ' + peer.runtimeId + ' / ' + peer.profileId) : null,
+          h('div', { className: CLS.row }, button('syncInvite', 'invite'), button('syncStatus', 'status'), button('syncClose', 'close')),
+          outgoing ? h('label', null, t('syncInvitation'), h('textarea', { readOnly: true, value: outgoing, rows: PROVIDER_SYNC_UI.invitationRows })) : null,
+          h('label', null, t('syncPaste'), h('textarea', { value: invitation, disabled: busy, rows: PROVIDER_SYNC_UI.invitationRows,
+            onChange: (event) => setInvitation(event.target.value) })),
+          button('syncBegin', 'begin', { invitation }, !invitation.trim()),
+          pair.state === PROVIDER_SYNC_UI.pendingSource ? button('syncApprove', 'approve', { pairId: pair.pairId }) : null,
+          pair.state === PROVIDER_SYNC_UI.pendingTarget ? button('syncFinish', 'finish', { pairId: pair.pairId }) : null,
+          button('syncPreview', 'preview', {}, pair.state !== PROVIDER_SYNC_UI.paired || pair.role === 'target'),
+          plan ? h('div', { 'data-fishball-sync-preview': true },
+            h('p', null, plan.source?.profileId + ' → ' + plan.target?.profileId),
+            PROVIDER_SYNC_UI.groups.map((group) => h('section', { key: group }, h('h4', null, t('syncGroup.' + group)),
+              h('ul', null, (plan.groups?.[group] ?? []).map((item) => h('li', { key: item.id },
+                group === 'add' ? h('label', null, h('input', { type: 'checkbox', checked: selected.includes(item.id), disabled: busy,
+                  onChange: (event) => { setSelected((previous) => event.target.checked ? [...previous, item.id] : previous.filter((id) => id !== item.id)); setConsent(false) } }), item.name + ' (' + item.id + ')') : item.name + ' (' + item.id + ')',
+                ' — ' + PROVIDER_SYNC_UI.mask,
+                item.api ? h('span', null, ' — ' + item.api) : null,
+                item.endpoint ? h('span', null, ' — ' + item.endpoint) : null,
+                item.models?.length ? h('span', null, ' — ' + item.models.join(', ')) : null,
+                item.reason ? h('span', null, ' — ' + item.reason) : null))))),
+            h('label', null, h('input', { type: 'checkbox', checked: consent, disabled: busy,
+              onChange: (event) => setConsent(event.target.checked) }), t('syncConsent')),
+            button('syncConfirm', 'confirm', { previewId: plan.previewId, ids: selected, confirmed: true }, !consent || selected.length === 0)) : null,
+          result ? h('div', { 'data-fishball-sync-result': true }, h('p', { role: 'status' }, t(result.complete ? 'syncComplete' : 'syncPartial')),
+            h('ul', null, result.results.map((item) => h('li', { key: item.id }, item.id + ': ' + item.status + ' / ' + item.config + ' / ' + item.key)))) : null,
+          problem ? h('p', { role: 'alert' }, t('syncFailed')) : null)
+      }
+    }
+
     function makeModelGate(ctx, t) {
       return function FishballModelGate({ sessionId }) {
         const state = useFishball()
@@ -3276,7 +3364,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, ModelSettings, Recommended, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
+    function makeSettingsPage(section, Status, ModelSettings, ProviderSyncSettings, Recommended, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -3287,6 +3375,7 @@ window.__ModuleLoader__.load({
         return h(React.Fragment, null,
           h(Status),
           h(ModelSettings),
+          h(ProviderSyncSettings),
           h(Recommended),
           h(BrandStyle),
           h(ContextWindow),
@@ -3999,7 +4088,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.detailActions, () => ctx.slots.register({ name: SLOT.detailActions, id: MANAGER.actionId, locale: NS }, manager.DetailAction)), 'fishball: plugin page switch')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeModelSettings(t), makeRecommended(t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeModelSettings(t), makeProviderSyncSettings(t), makeRecommended(t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')
