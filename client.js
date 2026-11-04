@@ -84,7 +84,8 @@ window.__ModuleLoader__.load({
       codes: Object.freeze(['NATIVE_START_FAILED', 'NATIVE_STOP_FAILED', 'NATIVE_CHILD_EXITED', 'NATIVE_UNAVAILABLE', 'NATIVE_OPEN_FAILED', 'NATIVE_TIMEOUT', 'NATIVE_DISABLED']),
       ready: 'ready', unavailable: 'unavailable', loading: 'loading',
       request: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
-      method: 'post', target: '_blank', rel: 'noopener noreferrer',
+      openRequest: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin' }),
+      target: '_blank', features: 'noopener,noreferrer', protocol: 'http:', openFailed: 'NATIVE_OPEN_FAILED',
     })
     const PROVIDER_SYNC_UI = Object.freeze({ path: '/api/fishball/provider-sync', mask: '••••••••',
       groups: Object.freeze(['add', 'existsSkip', 'conflictSkip', 'unsupported']),
@@ -550,7 +551,7 @@ window.__ModuleLoader__.load({
       modelSaveFailed: 'The model was not saved. Check that it is still available and try again.',
       modelUnavailable: 'A saved or selected model is unavailable in the current list. Its selection is kept; choose another model to change it.',
       nativeTitle: 'Isolated Fishball', nativeOpen: 'Open isolated Fishball', nativeRefresh: 'Refresh status',
-      nativeHint: 'Separate native DSH. Enable it in the profile configuration; this does not replace the existing Fishball chat. Opens a new tab.',
+      nativeHint: 'Separate native DSH. Enable it in the profile configuration; this does not replace the existing Fishball chat. Opens in a new browser tab (the system browser in the desktop app).',
       'native.loading': 'Checking status…', 'native.disabled': 'Disabled', 'native.waiting': 'Waiting for host readiness',
       'native.starting': 'Starting', 'native.ready': 'Ready', 'native.stopping': 'Stopping', 'native.stopped': 'Stopped',
       'native.failed': 'Native runtime failed', 'native.unavailable': 'Unavailable or not enabled in this profile',
@@ -1025,7 +1026,7 @@ window.__ModuleLoader__.load({
       modelSaveFailed: '模型未保存。请确认模型仍然可用，然后重试。',
       modelUnavailable: '已保存或当前选择的模型不在列表中，原选择仍然保留；可另选模型来更改。',
       nativeTitle: '独立 Fishball', nativeOpen: '打开独立 Fishball', nativeRefresh: '刷新状态',
-      nativeHint: '独立的原生 DSH；需通过 profile 配置启用，不替代现有 Fishball 聊天。将在新标签页打开。',
+      nativeHint: '独立的原生 DSH；需通过 profile 配置启用，不替代现有 Fishball 聊天。将在新的浏览器标签页打开（桌面版会用系统浏览器打开）。',
       'native.loading': '正在检查状态…', 'native.disabled': '已禁用', 'native.waiting': '等待主端就绪',
       'native.starting': '正在启动', 'native.ready': '已就绪', 'native.stopping': '正在停止', 'native.stopped': '已停止',
       'native.failed': '原生运行时失败', 'native.unavailable': '不可用，或当前 profile 未启用',
@@ -2351,7 +2352,10 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** The capability is never fetched into JavaScript: native owner-only POST redirects the new tab. */
+    /** Opening fetches the click-time capability URL and hands it straight to window.open; it is never kept in
+     * state, rendered or logged. Not a form with target=_blank: the DSH desktop shell denies every new window and
+     * reloads a same-origin one in the current tab as a GET, which the POST-only route answers with "not found".
+     * window.open of the child's different-port URL is instead passed to the system browser by that shell. */
     function makeNativeSettings(t) {
       return function FishballNativeSettings() {
         const [status, setStatus] = React.useState({ state: NATIVE_UI.loading, code: null })
@@ -2375,14 +2379,28 @@ window.__ModuleLoader__.load({
           void load()
           return () => abort.abort()
         }, [refresh])
+        const [opening, setOpening] = React.useState(false)
+        const open = async () => {
+          setOpening(true)
+          let opened = false
+          try {
+            const response = await fetch(apiUrl(NATIVE_UI.openPath), NATIVE_UI.openRequest)
+            const url = response.ok ? (await response.json())?.url : undefined
+            if (typeof url === 'string' && new URL(url).protocol === NATIVE_UI.protocol) {
+              window.open(url, NATIVE_UI.target, NATIVE_UI.features)
+              opened = true
+            }
+          } catch { /* Errors may carry the capability: never logged or shown. */ }
+          setOpening(false)
+          if (!opened) setStatus(value => ({ ...value, code: NATIVE_UI.openFailed }))
+        }
         return h('div', { className: CLS.section, 'data-fishball-native': true },
           h('h3', null, t('nativeTitle')),
           h('p', { className: CLS.muted }, t('nativeHint')),
           h('p', { role: 'status', 'aria-live': 'polite' }, t('native.' + status.state)),
           status.code ? h('p', { className: CLS.code }, status.code) : null,
-          h('form', { action: apiUrl(NATIVE_UI.openPath), method: NATIVE_UI.method,
-            target: NATIVE_UI.target, rel: NATIVE_UI.rel, className: CLS.row },
-            h(Button, { type: 'submit', size: 'sm', disabled: status.state !== NATIVE_UI.ready }, t('nativeOpen')),
+          h('div', { className: CLS.row },
+            h(Button, { type: 'button', size: 'sm', disabled: opening || status.state !== NATIVE_UI.ready, onClick: () => void open() }, t('nativeOpen')),
             h(Button, { type: 'button', size: 'sm', disabled: status.state === NATIVE_UI.loading,
               onClick: () => setRefresh(value => !value) }, t('nativeRefresh'))))
       }
