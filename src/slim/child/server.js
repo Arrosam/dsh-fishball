@@ -59,10 +59,12 @@ const UI_TYPES = Object.freeze({
 
 /**
  * The child origin can never be framed directly and never joins a cross-origin load (§3.3).
- * Vary keeps a cache from reusing one credential's response for another.
+ * default-src admits only same-origin files, so the shell carries no inline script or style;
+ * img-src still allows its data: favicon. Vary keeps a cache from reusing one credential's
+ * response for another.
  */
 const SECURITY = Object.freeze({
-  'content-security-policy': "frame-ancestors 'none'",
+  'content-security-policy': "frame-ancestors 'none'; default-src 'self'; img-src 'self' data:; connect-src 'self'",
   'cross-origin-resource-policy': 'same-origin',
   'x-content-type-options': 'nosniff',
   'referrer-policy': 'no-referrer',
@@ -80,7 +82,15 @@ const HEALTH = Buffer.from(JSON.stringify({ ok: true }), 'utf8')
 
 const BASE_ORIGIN = 'http://' + BIND.host
 const SEPARATOR = path.sep
-const readable = (method) => method === METHOD.get || method === METHOD.head
+
+/**
+ * The methods each route supports. Allow is a property of the target resource (RFC 9110 §10.2.1),
+ * so a 405 names this list, never the contract's wider GET/HEAD/POST proxy set.
+ */
+const ALLOW = Object.freeze({
+  readable: Object.freeze([METHOD.get, METHOD.head]),
+  events: Object.freeze([METHOD.get]),
+})
 
 /** One response shape, so every status carries the security and cache headers. */
 function send(res, status, headers, body) {
@@ -181,6 +191,38 @@ function serveEvents(res, heartbeatMs, streams) {
   timer.unref?.()
 }
 
+/**
+ * Resolve one parsed pathname to its route, which owns both the methods that target supports and
+ * its handler; undefined means no route, which is a bodyless 404 for every method.
+ */
+function resolveRoute(pathname, options) {
+  if (pathname === PATHS.document) {
+    return {
+      allow: ALLOW.readable,
+      serve: (res) => send(res, HTTP.ok, { 'content-type': TYPE.html }, options.document),
+    }
+  }
+  if (pathname.startsWith(PATHS.ui)) {
+    return {
+      allow: ALLOW.readable,
+      serve: (res) => { void serveUi(res, options.uiDir, pathname).catch(() => fail(res)) },
+    }
+  }
+  if (pathname === PATHS.events) {
+    return {
+      allow: ALLOW.events,
+      serve: (res) => serveEvents(res, options.heartbeatMs, options.streams),
+    }
+  }
+  if (pathname === PATHS.health) {
+    return {
+      allow: ALLOW.readable,
+      serve: (res) => send(res, HTTP.ok, { 'content-type': TYPE.json }, HEALTH),
+    }
+  }
+  return undefined
+}
+
 function handle(req, res, options) {
   try {
     // Bearer first: an unauthenticated request learns nothing about paths or methods.
@@ -188,31 +230,13 @@ function handle(req, res, options) {
       send(res, HTTP.unauthorized, { 'www-authenticate': BEARER.scheme })
       return
     }
-    if (!ROUTES.methods.includes(req.method)) { methodNotAllowed(res, ROUTES.methods); return }
+    // Resolve before checking the method: Allow describes the target resource, and an unknown
+    // path is a 404 whatever the method (RFC 9110 §10.2.1).
     const pathname = requestPath(req.url)
-    if (pathname === undefined) { notFound(res); return }
-    if (pathname === PATHS.document) {
-      if (!readable(req.method)) { methodNotAllowed(res, [METHOD.get, METHOD.head]); return }
-      send(res, HTTP.ok, { 'content-type': TYPE.html }, options.document)
-      return
-    }
-    if (pathname.startsWith(PATHS.ui)) {
-      if (!readable(req.method)) { methodNotAllowed(res, [METHOD.get, METHOD.head]); return }
-      void serveUi(res, options.uiDir, pathname).catch(() => fail(res))
-      return
-    }
-    if (pathname === PATHS.events) {
-      if (req.method !== METHOD.get) { methodNotAllowed(res, [METHOD.get]); return }
-      serveEvents(res, options.heartbeatMs, options.streams)
-      return
-    }
-    if (pathname === PATHS.health) {
-      if (!readable(req.method)) { methodNotAllowed(res, [METHOD.get, METHOD.head]); return }
-      send(res, HTTP.ok, { 'content-type': TYPE.json }, HEALTH)
-      return
-    }
-    // Unknown API or document paths are one bodyless 404; no bytes and no path echo.
-    notFound(res)
+    const route = pathname === undefined ? undefined : resolveRoute(pathname, options)
+    if (route === undefined) { notFound(res); return }
+    if (!route.allow.includes(req.method)) { methodNotAllowed(res, route.allow); return }
+    route.serve(res)
   } catch { fail(res) }
 }
 

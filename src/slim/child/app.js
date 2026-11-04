@@ -16,8 +16,9 @@
  * T02; this module needs none of it at T03.
  *
  * The row runs from the child's code snapshot, so T02's copyChildCode must carry this module's
- * whole tree — src/slim/child/*.js, ../contract.js, ../limits.js and ../ui/shell.html. A copy that
- * keeps only *.js fails loud here, because the shell document is read before the server starts.
+ * whole tree — src/slim/child/*.js, ../contract.js, ../limits.js and every file under ../ui/. A
+ * copy that keeps only *.js fails loud here, because the shell document is read before the server
+ * starts; the shell's script and stylesheet are read when /ui/* is requested.
  */
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
