@@ -66,7 +66,7 @@ describe('start_session names the session (DSH session-title service present)', 
   it('SST-01 start_session takes folder, title and message (required) and notify_when_finished (optional); the description mentions the title', T, async () => {
     const req = (await turn(w.host, w.fb, [[{ text: 'list tools' }]])).requests.at(-1)
     const schema = toolSchema(req, TOOL)
-    assert.deepEqual(Object.keys(schema.properties ?? {}).sort(), ['folder', 'message', 'notify_when_finished', 'title'])
+    assert.deepEqual(Object.keys(schema.properties ?? {}).sort(), ['folder', 'message', 'model', 'notify_when_finished', 'reasoning_effort', 'title'])
     assert.deepEqual([...schema.required].sort(), ['folder', 'message', 'title'])
     for (const name of ['folder', 'title', 'message']) assert.equal(schema.properties[name].type, 'string', name)
     assert.equal(schema.properties.notify_when_finished.type, 'boolean')

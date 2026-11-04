@@ -274,7 +274,7 @@ export const PLUGIN_MANAGER = Object.freeze({
 export const PLUGIN_DEFAULTS = Object.freeze({ recordKey: 'dsh' })
 
 /** Fishball's explicit model choice; never initialized from a session or the DSH default. */
-export const MODEL_SELECTION = Object.freeze({ settingsKey: 'model', minIdLength: 1 })
+export const MODEL_SELECTION = Object.freeze({ settingsKey: 'model', minIdLength: 1, routeSeparator: '/' })
 
 /**
  * Context window (DESIGN §6). DSH_DEFAULTS mirror dsh-compaction-basic's own defaults

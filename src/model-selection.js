@@ -3,6 +3,7 @@ import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import { API_CODE, HTTP, MODEL_SELECTION } from './constants.js'
 import { LifecycleStateError } from './errors.js'
 import { modelSelectionSchema } from './store.js'
+import { ModelChoiceError, modelCatalog, validateModelChoice } from './model-catalog.js'
 
 /** A detached public choice, without persistence metadata or an absent effort property. */
 const selectionOf = ({ provider, model, reasoningEffort }) => ({
@@ -13,6 +14,13 @@ const selectionOf = ({ provider, model, reasoningEffort }) => ({
 export function readModelSelection(input) {
   const result = modelSelectionSchema.safeParse(input)
   return result.success ? selectionOf(result.data) : undefined
+}
+
+/** Wrap later host selectors so prompt variables and routing use the same official snapshot. */
+export function installSelectedModel(agentCtx, selection) {
+  return installModelSelection({
+    on: (name, listener, options) => agentCtx.on(name, listener, { ...options, prepend: true }),
+  }, selection)
 }
 
 export class ModelSelection {
@@ -46,7 +54,7 @@ export class ModelSelection {
 
   /** Use the host catalog, including its provider failures and reasoning metadata. */
   catalog() {
-    return this.#ctx.sessionController.modelCatalog()
+    return modelCatalog(this.#ctx)
   }
 
   /** Serialize validation and durable writes so an older, slower save cannot win a race. */
@@ -55,13 +63,11 @@ export class ModelSelection {
       const selection = readModelSelection(input)
       if (selection === undefined) throw new LifecycleStateError(API_CODE.badBody, { status: HTTP.badRequest })
       const catalog = await this.catalog()
-      const advertised = catalog.groups.some((group) => group.id === selection.provider
-        && group.models.some((model) => model.id === selection.model))
-      if (!advertised) throw new LifecycleStateError(API_CODE.unknown)
       try {
-        await this.#ctx.llm.resolveCallConfig({ ...selection })
-      } catch {
-        throw new LifecycleStateError(API_CODE.refused)
+        await validateModelChoice(this.#ctx, selection, catalog)
+      } catch (error) {
+        if (error instanceof ModelChoiceError) throw new LifecycleStateError(error.apiCode, { fields: error.fields })
+        throw error
       }
       // The resolver may materialize adapter defaults. Preserve the user's omission instead,
       // so the next request cannot inherit a previous model's explicit reasoning effort.
@@ -86,9 +92,7 @@ export class ModelSelection {
     const owner = this
     // Keep the host's assembly snapshot, model variables and switch notice coupled to routing.
     // Fishball's dedicated choice must wrap later session/default selectors, not be overwritten by them.
-    installModelSelection({
-      on: (name, listener, options) => agentCtx.on(name, listener, { ...options, prepend: true }),
-    }, {
+    installSelectedModel(agentCtx, {
       get current() { return owner.snapshot() ?? undefined },
       assembled: undefined,
     })
