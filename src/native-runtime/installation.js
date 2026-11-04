@@ -150,7 +150,8 @@ export async function copyChildCode(paths, record) {
   await writePrivate(path.join(destination, RUNTIME.marker), record, true)
   await writePrivate(path.join(destination, 'package.json'), { type: 'module', private: true }, true)
   // Lifecycle modules are JavaScript; the slim app tree also ships its UI assets, so that copy
-  // keeps every file (§2.4).
+  // keeps every file and its bytes unchanged: decoding as UTF-8 would corrupt PNG, font and other
+  // binary assets (§2.4).
   const javascript = file => file.endsWith('.js')
   const everyFile = () => true
   async function copy(source, target, keep) {
@@ -159,7 +160,7 @@ export async function copyChildCode(paths, record) {
     if (info.isDirectory()) {
       await mkdir(target, { mode: RUNTIME.privateDirectoryMode })
       for (const entry of await readdir(source)) await copy(path.join(source, entry), path.join(target, entry), keep)
-    } else if (keep(source)) await writePrivate(target, await readFile(source, 'utf8'), true)
+    } else if (keep(source)) await writePrivate(target, await readFile(source), true)
   }
   await mkdir(path.join(destination, 'src'), { mode: RUNTIME.privateDirectoryMode })
   await copy(path.join(sourceRoot, 'native-child.js'), path.join(destination, 'native-child.js'), javascript)
