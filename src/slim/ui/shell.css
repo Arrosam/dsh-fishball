@@ -1,0 +1,63 @@
+/*
+ * The Fishball shell's presentation. It is a same-origin /ui/ file because the §3.3 CSP admits no
+ * inline style; the relative URL keeps it working at the child's "/" and behind "/fishball/embed/".
+ */
+:root {
+  color-scheme: light dark;
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --text: #1f2023;
+  --muted: #6b6f76;
+  --line: #e6e7ea;
+  --ok: #178a5b;
+  --warn: #a96f00;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131416;
+    --surface: #1a1b1e;
+    --text: #ecedef;
+    --muted: #9aa0a8;
+    --line: #282a2e;
+    --ok: #3ecf8e;
+    --warn: #e0b341;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+h1 { margin: 0; font-size: 15px; font-weight: 600; }
+.status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status[data-state="connected"] { color: var(--ok); }
+.status[data-state="reconnecting"] { color: var(--warn); }
+main { flex: 1; display: grid; place-items: center; padding: 24px; }
+p { margin: 0; max-width: 36ch; text-align: center; color: var(--muted); }

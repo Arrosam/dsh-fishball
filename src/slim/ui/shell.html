@@ -5,67 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishball</title>
 <link rel="icon" href="data:,">
-<style>
-  :root {
-    color-scheme: light dark;
-    --bg: #f7f7f8;
-    --surface: #ffffff;
-    --text: #1f2023;
-    --muted: #6b6f76;
-    --line: #e6e7ea;
-    --ok: #178a5b;
-    --warn: #a96f00;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #131416;
-      --surface: #1a1b1e;
-      --text: #ecedef;
-      --muted: #9aa0a8;
-      --line: #282a2e;
-      --ok: #3ecf8e;
-      --warn: #e0b341;
-    }
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    display: flex;
-    flex-direction: column;
-  }
-  header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 18px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--line);
-  }
-  h1 { margin: 0; font-size: 15px; font-weight: 600; }
-  .status {
-    margin-left: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--muted);
-  }
-  .status::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: currentColor;
-  }
-  .status[data-state="connected"] { color: var(--ok); }
-  .status[data-state="reconnecting"] { color: var(--warn); }
-  main { flex: 1; display: grid; place-items: center; padding: 24px; }
-  p { margin: 0; max-width: 36ch; text-align: center; color: var(--muted); }
-</style>
+<link rel="stylesheet" href="ui/shell.css">
 </head>
 <body>
 <header>
@@ -75,29 +15,7 @@
 <main>
   <p id="message">Connecting to Fishball…</p>
 </main>
-<script>
-  // The shell's only job at T03 is to prove the authenticated page and its SSE stream are live.
-  // The chat timeline and composer arrive in a later task. The script and style are inline because
-  // T03 owns only this file; the broker's §3.3 CSP (default-src 'self') will need a hash, a nonce,
-  // or an /ui/*.js file before this page is framed through the embed route.
-  const COPY = {
-    connected: { status: 'Connected', message: 'Fishball is ready.' },
-    reconnecting: { status: 'Reconnecting…', message: 'Connection lost. Reconnecting…' },
-  }
-  const status = document.getElementById('status')
-  const message = document.getElementById('message')
-  function show(state) {
-    const next = COPY[state]
-    status.textContent = next.status
-    status.dataset.state = state
-    message.textContent = next.message
-  }
-  // Relative, so one shell works both directly at the child's "/" and under the broker's
-  // "/fishball/embed/" document URL (§3.1). EventSource reconnects on its own; no token or URL
-  // capability is ever added here.
-  const events = new EventSource('api/events')
-  events.addEventListener('open', () => show('connected'))
-  events.addEventListener('error', () => show('reconnecting'))
-</script>
+<!-- Relative URLs keep the one shell working at the child's "/" and behind "/fishball/embed/". -->
+<script src="ui/shell.js"></script>
 </body>
 </html>
