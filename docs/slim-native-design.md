@@ -35,17 +35,21 @@ Rejected alternatives are recorded where they were rejected (§3.2, §6.2, §13)
 ### 2.1 What the child runs
 
 **Decision:** the child boots the shipped `dsh` launcher with a Fishball-owned profile whose only
-bundle is `dsh-base`, plus a launch overlay that inserts one row: `fishball-native-app` (this
-repository's child app). The child app owns a loopback `node:http` server (UI, JSON API, SSE) and
-wires the DSH core services to it.
+bundle is `dsh-base`, plus a launch overlay that inserts the rows base does not ship: the Fishball
+app row (`fishball-native-app`), the reminder rows (`schedule`, `tool-schedule`), and the restored
+web-standard rows `time-context` and `tool-ask-user` (§2.3). The child app owns a loopback
+`node:http` server (UI, JSON API, SSE) and wires the DSH core services to it.
 
 It runs: `agent`, `session` + JSONL persistence + projection + storage, `llm` + adapters
-(`llm-pi-ai`, `llm-deepseek-api-key`), `tools` (bash/fs/search/skill/goal/jobs/todo/present),
-`user-approval`, `user-questions`, `settings`, `config-editor`, `plugin-manager`, plus the
-Fishball rows: `schedule` + `tool-schedule` (reminders) and our app row.
+(`llm-pi-ai`, `llm-deepseek-api-key`), `tools` (bash/fs/web search/web fetch/skill/goal/jobs/todo),
+`user-approval`, `user-questions` + `tool-ask-user` (`ask_user_question`), `system-prompt`,
+`time-context`, `settings`, `config-editor`, `plugin-manager`, plus the Fishball rows:
+`schedule` + `tool-schedule` (reminders) and our app row.
 
 It does not run: `dsh-web-app`, the browser client kernel (`client-modules`, `web-frontend`), any
-`dsh-client-ui-*` package, the web server row, MCP clients, memory plugins, web/X search plugins.
+`dsh-client-ui-*` package, the web server row, MCP clients, memory plugins, X search, or
+`tool-present`. Base's web search and web fetch stay in, and `present` stays out, because the slim
+UI is Fishball's own (§2.3).
 
 ### 2.2 Evidence that 0.2.2 can start a core without the Web UI
 
@@ -79,9 +83,29 @@ backpressure are the child app's responsibility.
 
 - Profile: `<child home>/profiles/fishball` with `dsh.profile.bundles = ["@deepseek-ai/dsh-base"]`
   (replaces today's `boot.PROFILE_TEMPLATES.web.bundles` at `src/native-runtime/installation.js:113`).
-- Overlay rows: `fishball-native-app` (required), `schedule`, `tool-schedule`; keep `hmr`
-  disabled, set `sandbox-policy.mode = read-only`, `approval.policy = ask`, `bash-sandbox`
-  unchanged.
+- Overlay rows: `fishball-native-app` (required), `schedule`, `tool-schedule`, `time-context`,
+  `tool-ask-user`; keep `hmr` disabled, set `sandbox-policy.mode = read-only`,
+  `approval.policy = ask`, `bash-sandbox` unchanged. `time-context` and `tool-ask-user` are the
+  web `standard` preset's rows (`dsh-web-app/presets/standard.patch.yml:19-20,112-113`); base
+  already carries the `user-questions` service (`dsh-base/cordis.patch.yml:79-80`), web search and
+  fetch (`:486-487`) and the prompt registry (`:510-513`). A root `tool-ask-user` row expands
+  every agent's tool list regardless of preset (`dsh-client-ui-user-questions/lib/index.js:5-8`),
+  so the slim child needs no web UI row for it. The SDK app mounts the same two rows at the root
+  of a non-web profile (`dsh-sdk-app/cordis.patch.yml:61-68`), which is the layer this overlay
+  uses. `time-context` keeps its defaults (host zone until the child composer reports
+  `clientTimeZone`).
+- Not restored: `present` (`@deepseek-ai/dsh-tool-present`, `standard.patch.yml:123-124`) because
+  the slim UI is self-made. Persona is not an overlay row either: `@deepseek-ai/dsh-persona` is
+  scope-only and collides when mounted globally (`dsh-persona/lib/index.js:7-11`), so Fishball's
+  persona (`src/persona.js:48-52`) needs a separate composition decision and is not restored here.
+- Question seam for T09: `ask_user_question` calls `ctx.userQuestions.ask`, which raises the
+  Agent-scoped `user-questions/request` waterfall (`dsh-user-questions/lib/index.js:709-712`).
+  The child app will register an in-process answerer on that event, filter by `request.agent` and
+  return `{answers}` (the SDK adapter does exactly this at
+  `dsh-sdk-jsonrpc-server/lib/index.js:165-169`); T09 will stream the card over the app's SSE. The
+  `userQuestions` projection records only timed questions
+  (`dsh-user-questions/lib/index.js:268-292`), and this row keeps the standard untimed mode, so
+  the slim UI takes the live request.
 - The row's config carries `mainHome`, `hostId`, `instanceId`, `limits`, `control`, and the
   256-bit bridge bearer endpoint. Nothing else crosses into the child.
 - `native-child.js` no longer injects `webServer`/`webApp`; it injects `nativeRuntime`,
