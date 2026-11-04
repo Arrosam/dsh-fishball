@@ -1583,13 +1583,18 @@ window.__ModuleLoader__.load({
     const stateSource = (() => {
       let snapshot = { status: STATUS.starting, sessionId: null, error: null, limits: {}, hiddenTools: [] }
       const listeners = new Set()
+      const publish = (next) => {
+        snapshot = next
+        for (const listener of listeners) listener()
+      }
       let source
       const open = () => {
         if (source) return
         source = new EventSource(apiUrl(API.events))
         source.onmessage = (event) => {
-          try { snapshot = JSON.parse(event.data) } catch { return }
-          for (const listener of listeners) listener()
+          let next
+          try { next = JSON.parse(event.data) } catch { return }
+          publish(next)
         }
       }
       return {
@@ -1602,6 +1607,7 @@ window.__ModuleLoader__.load({
           }
         },
         get: () => snapshot,
+        publish,
       }
     })()
     const useFishball = () => React.useSyncExternalStore(stateSource.subscribe, stateSource.get)
@@ -2185,6 +2191,9 @@ window.__ModuleLoader__.load({
      * DSH's global default. Reuse its read-only catalog, with native keyboard-accessible fields
      * and our own save command instead, so Fishball never changes another session's model.
      */
+    const sameModelChoice = (left, right) => left?.provider === right?.provider
+      && left?.model === right?.model && left?.reasoningEffort === right?.reasoningEffort
+
     function makeModelSettings(t) {
       return function FishballModelSettings() {
         const state = useFishball()
@@ -2213,11 +2222,25 @@ window.__ModuleLoader__.load({
         const efforts = chosen?.model.reasoning?.efforts ?? []
         const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(state.modelSelection)
         const save = async () => {
+          const requested = draft
+          const previous = stateSource.get()
           setSaving(true)
-          const { ok } = await send(API.model, draft)
+          const { ok, answer } = await send(API.model, requested)
+          const current = stateSource.get()
+          const confirmed = ok && answer?.ok === true && answer.state?.sessionId === previous.sessionId
+            && sameModelChoice(answer.state.modelSelection, requested)
+          const streamed = current.sessionId === previous.sessionId && sameModelChoice(current.modelSelection, requested)
+          // The POST receipt is authoritative too. Dropping the draft while waiting only for
+          // SSE reverted a successful Save to null/old selection when that stream was stalled.
+          // Merge just this field so unrelated newer state is not rolled back; an already
+          // observed different model/session wins over this older in-flight receipt.
+          if (confirmed && current.sessionId === previous.sessionId
+            && (streamed || sameModelChoice(current.modelSelection, previous.modelSelection))) {
+            stateSource.publish({ ...current, modelSelection: answer.state.modelSelection })
+          }
           setSaving(false)
-          if (ok) { setDraft(null); setProblem(null) } else setProblem('modelSaveFailed')
-          // Only the authoritative state stream clears the composer block, never an optimistic draft.
+          if (ok && (confirmed || streamed)) { setDraft(null); setProblem(null) } else setProblem('modelSaveFailed')
+          // Never treat a draft or a bare HTTP 2xx as confirmation of dedicated consent.
         }
         return h('section', { className: CLS.section + ' ' + MODEL.settingsClass, 'data-fishball-model-settings': true },
           h('h3', null, t('modelTitle')),
