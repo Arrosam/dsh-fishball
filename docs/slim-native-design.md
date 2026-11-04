@@ -5,9 +5,10 @@ user approved this design. Development and testing stay separate: this document 
 scenarios; a separate testing session writes and runs them in a disposable environment.
 
 Base: `d67e69f` on `integration/native-runtime-on-74fe6be`, branch `feat/slim-native-embedded-ui`.
-SDK baseline: DSH 0.2.1-rc.3, read-only at
-`/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.3/node_modules/@deepseek-ai/`
-(cited below as `<pkg>/...` without that prefix).
+SDK baseline: DSH **0.2.2-rc.1**, the newest published 0.2.2 build (no final 0.2.2 exists; npm
+`latest` is 0.2.1-rc.5). Verified against a temporary install at `/tmp/dsh-022` (read-only for this
+repository); every citation below is 0.2.2-rc.1. rc.3 keeps working where the contracts are
+unchanged and is not a separate target.
 
 ## 1. Decisions
 
@@ -23,7 +24,7 @@ SDK baseline: DSH 0.2.1-rc.3, read-only at
 | D8 | Fishball's own session is hard-wired read-only; its composer has no permission control. | user |
 | D9 | Fishball decisions are labelled inline in Fishball's own chat, not in a trail under managed sessions. | user |
 | D10 | One "Hand over to Fishball" button with an optional user note replaces watch-only and send-only. | user |
-| D11 | Main-DSH session rows keep the Fishball fish as the base layer in every managed state; DSH's hollow running spinner draws above it, and green unread / yellow needs-action dots stay at the top-right. Running animation reuses rc.3's orca swim when the DeepSeek icon is on. | user |
+| D11 | Managed sessions show the Fishball fish in DSH's idle leading slot with green unread / yellow needs-action dots; the running fish-under-the-hollow-spinner layout waits for a DSH upstream slot and no CSS approximation is used. | user |
 | D12 | Fishball-accent buttons become normal DSH buttons with one magenta ring, from one shared constant/token. | user |
 | D13 | Main-DSH plugins may technically script the same-origin embedded Fishball page; accepted, because the child process, its home and its credentials stay isolated. | user |
 
@@ -46,17 +47,17 @@ Fishball rows: `schedule` + `tool-schedule` (reminders) and our app row.
 It does not run: `dsh-web-app`, the browser client kernel (`client-modules`, `web-frontend`), any
 `dsh-client-ui-*` package, the web server row, MCP clients, memory plugins, web/X search plugins.
 
-### 2.2 Evidence that rc.3 can start a core without the Web UI
+### 2.2 Evidence that 0.2.2 can start a core without the Web UI
 
-| Claim | Evidence (rc.3 SDK) |
+| Claim | Evidence (0.2.2-rc.1 SDK) |
 | --- | --- |
-| Profiles are bundle stacks; several shipped templates have no web UI | `dsh-app-boot/lib/index.js:551-557`: `"headless"` = base + headless, `"sdk"` = base + sdk-app, `"sdk-minimal"` = sdk-minimal alone. |
+| Profiles are bundle stacks; several shipped templates have no web UI | `dsh-official-bundles/lib/index.js:4-8`: `"headless"` = base + headless, `"sdk"` = base + sdk-app, `"sdk-minimal"` = sdk-minimal alone. |
 | A base-backed core is a supported, documented composition | `dsh-headless/package.json:3`: "a direct core Agent/Session runner over dsh-base with no Host, HTTP, or browser layer". |
-| The launcher provides the services a non-web app needs | `dsh/lib/profile-boot-C14i-8IN.js:304-312`: `profileContext`, launch environment, `cmdlineArgs`/`appReady` are provided by the launcher before the tree composes. |
+| The launcher provides the services a non-web app needs | `dsh/lib/profile-boot-e2mS45fC.js:305-315`: `profileContext`, launch environment, `cmdlineArgs`/`appReady` are provided by the launcher before the tree composes. |
 | Boot does not require `webServer`/`connection` | Same file: the tree is only patch layers; rows gate on `profileContext` (`dsh-base/cordis.patch.yml:20,105,109`). Nothing in base injects `webServer`. |
-| The sdk bundle is stdio-bound, so unsuitable for a detached child | `dsh-sdk-app/lib/index.js` calls `exitOnStdinEnd(ctx, "sdk-app.stdin")`, while the native child is spawned with stdio ignored plus one pipe (`src/native-runtime/index.js:211`). |
-| A headless core can be long-lived only if a plugin holds the process | `runProfile` returns after `appReady.commit()` (`dsh/lib/profile-boot-C14i-8IN.js:314`); the child app's listening server keeps the loop alive and calls `ctx.appExit` on stop. |
-| Core services suffice for a chat agent | `ctx.agents.create/resume` (`dsh-agent/lib/types/index.d.ts:278,286`), session events (`dsh-session/lib/types/index.d.ts:224`), approval waterfall (`dsh-user-approval/lib/index.js:176`), question waterfall (`dsh-user-questions/lib/index.js:681`). |
+| The sdk bundle is stdio-bound, so unsuitable for a detached child | `dsh-sdk-app/lib/index.js:39` calls `exitOnStdinEnd(ctx, "sdk-app.stdin")`, while the native child is spawned with stdio ignored plus one pipe (`src/native-runtime/index.js:211`). |
+| A headless core can be long-lived only if a plugin holds the process | `runProfile` returns after `appReady.commit()` (`dsh/lib/profile-boot-e2mS45fC.js:315`); the child app's listening server keeps the loop alive and calls `ctx.appExit` on stop. |
+| Core services suffice for a chat agent | `ctx.agents.create/resume` (`dsh-agent/lib/types/index.d.ts:292,300`), session events (`dsh-session/lib/types/index.d.ts:228`), approval waterfall (`dsh-user-approval/lib/index.js:201`), question waterfall (`dsh-user-questions/lib/index.js:709`). |
 
 This is the "headless core" option rather than a purpose-built agent loop or a bare minimal server:
 DSH's own agent, session, tool and model stack runs the chat, and only the transport and UI are
@@ -69,7 +70,7 @@ Fishball's. The headless bundle itself is not the runtime — it is a one-shot r
 roster. Disabling rows would still ship and mount the web shell, which is what D2 removes.
 
 **Why not include `dsh-host-webserver` in the child:** that row requires `webStartup`
-(`dsh-web-app/cordis.patch.yml:179-189`), which belongs to the web app. The child app therefore
+(`dsh-web-app/cordis.patch.yml:175-184`), which belongs to the web app. The child app therefore
 binds its own `127.0.0.1:0` server — the same pattern this repository already uses for the
 provider-sync channel (`src/provider-sync-channel.js:1-20`). Route registration, SSE and
 backpressure are the child app's responsibility.
@@ -90,10 +91,31 @@ backpressure are the child app's responsibility.
 ### 2.4 Lifecycle (unchanged rules)
 
 Start after main `appReady`, stop on dispose/exit, HMR stop-then-restart, one writer per attached
-home, bounded stop (4000 ms inside rc.3's 5000 ms grace), parent-lifetime pipe, no PID-only signals.
+home, bounded stop (4000 ms inside 0.2.2's 5000 ms grace), parent-lifetime pipe, no PID-only signals.
 Only the readiness checks and the copied code set change: `src/native-runtime/constants.js`
 `requiredServices`, `overlay.js` row assertions, and `copyChildCode` now copies `src/slim/**`
 in addition to the lifecycle modules.
+
+### 2.5 0.2.2 compatibility notes
+
+Verified against **0.2.2-rc.1** (temporary install at `/tmp/dsh-022`). rc.3 is not a separate
+target; where a contract is unchanged the same code runs there.
+
+| Area | 0.2.2-rc.1 | rc.3 |
+| --- | --- | --- |
+| Profile templates | moved to `dsh-official-bundles/lib/index.js:4-8`; `dsh-app-boot/lib/index.js:15` imports it | owned by `dsh-app-boot` |
+| Boot sequence | `dsh/lib/profile-boot-e2mS45fC.js:305-315` | `profile-boot-C14i-8IN.js:304-314` |
+| Attachment RPC | reads the supplied reference without checking Session history (`dsh-api-session-controller/lib/index.js:886-895`) | checked the log (`referencedImage`) |
+| Sidebar slots | new always-mounted `sidebar.session.row.trailing` (`dsh-client-ui-workspace/lib/client.js:2635`, registered `:6066`); the leading slot is still idle-only (`:2535,2609`) | no trailing slot |
+| Client assets | `dsh-web-frontend/dist/assets/index-BgUyXZcc.js` (`StateDot`, one minified line), `.../index-lh_YM6sT.css` (spinner rules, one minified line) | other hashes |
+| New UI packages | `dsh-client-ui-action-cards`, `dsh-client-ui-file-actions` (not used) | absent |
+| Agent, session, approvals | `dsh-agent/lib/types/index.d.ts:292,300`; `dsh-session/lib/types/index.d.ts:228`; `dsh-user-approval/lib/index.js:201`; `dsh-user-questions/lib/index.js:709` | shifted |
+| Plugin API | `settings.mutate`, `credentials.modifyRecord`, `pluginManager.listPlugins/inspect` and `dsh-plugin-manager/operations` (`runPluginCommand`) unchanged | same |
+
+Design impact: the bridge keeps its own image-reference authorization instead of the changed
+attachment RPC; every other difference above is a line shift or an unused package. All tasks target
+0.2.2-rc.1; rc.3 compatibility is verified only where the contract is unchanged and never adds
+scope.
 
 ## 3. Embedded UI
 
@@ -161,7 +183,7 @@ never opens one. The shell's `will-navigate` guard applies to the main frame, no
 
 ### 3.5 Cookies and SameSite across ports on 127.0.0.1
 
-For the record, because a direct-iframe design would hit this: rc.3 mints
+For the record, because a direct-iframe design would hit this: 0.2.2 mints
 `HttpOnly; SameSite=Strict` cookies whose name hashes the authority
 (`dsh-client-connection/lib/index.js:335-350`). Cookies are host+path scoped, not port scoped, so
 two `127.0.0.1:<port>` origins are **same-site** (ports never change the site), share the cookie
@@ -185,7 +207,7 @@ no `SameSite=None; Secure` workaround, and no dependency on `127.0.0.1` vs `loca
 | Feature | Runs today | Runs after | Notes |
 | --- | --- | --- | --- |
 | Fishball chat UI | main DSH conversation + injected slots (`client.js:156-175`) | child UI (`src/slim/ui/`) | D1; not feature-parity with DSH at v1. UI changes ship as a child update; Fishball never edits its own UI at runtime. |
-| Permission mode in Fishball's composer | DSH composer selector (`dsh-client-ui-permission-presets/lib/client.js:803`) | absent from the child composer; the session is fixed read-only | D8, §8.4. |
+| Permission mode in Fishball's composer | DSH composer selector (`dsh-client-ui-permission-presets/lib/client.js:1026`) | absent from the child composer; the session is fixed read-only | D8, §8.4. |
 | Fishball agent/session | main process (`index.js`, `src/lifecycle.js`) | child (`src/slim/child/chat.js`) | read-only sandbox (§8.4). |
 | `message_fishball`, `ask_fishball`, `list_user_messages` | main, `src/messaging.js`, `src/request-desk.js` | tool definitions stay in the main host (they run in managed sessions); delivery moves over the bridge into the child's inbox | §5. |
 | Session control (`start_session`, `message_session`, `stop_session`, `redirect_session`) | main `src/messaging.js` | bridge operations executed by the main host (§5.2) | Fishball calls them from the child. |
@@ -200,7 +222,7 @@ no `SameSite=None; Secure` workaround, and no dependency on `127.0.0.1` vs `loca
 | Model choice / context window | main settings | child settings applied through the admin API | §9. |
 | Provider sync | main to other profile (pairing channel) | main to child (same preview/confirm; child owns the write) | §10. |
 | Open isolated Fishball | new browser tab (`client.js:2403-2425`) | embed panel; `openUrl` route removed | §7. |
-| Unread count / brand mark | main `client.js` | main unchanged, plus the always-on fish base layer, the spinner drawn above it, and Fishball's own unread / needs-action dots (§8.2) | — |
+| Unread count / brand mark | main `client.js` | main unchanged, plus the idle-slot marker with Fishball's unread / needs-action dots; the fish-under-spinner layout arrives after a DSH slot change (§8.2) | — |
 | Send / watch / hand over | three header buttons (`client.js:4138-4143`) | one hand-over button with a note (§8.3) | D10. |
 
 ## 5. The narrow bridge
@@ -239,7 +261,7 @@ attachment frames are bounded separately (§6.2).
 | `session.unwatch` | child to main | `{watchId}` | — | `{ok}`. |
 | `approval.list` | child to main | `{sessionId}` | managed session | live requests only, current `offerId`. |
 | `approval.answer` | child to main | `{sessionId, approvalId, offerId, answer: {decision} or {text}}` | live offer, not expired | `{accepted:true}`; `expired`, `conflict`. |
-| `attachment.read` | child to main | `{sessionId, attachmentId}` | the image is referenced by that session's log (`referencedImage`, `dsh-api-session-controller/lib/index.js:978-989`) | chunked bytes; `not-referenced`, `too-large`. |
+| `attachment.read` | child to main | `{sessionId, attachmentId}` | the image is referenced by that session's log; 0.2.2's own attachment RPC no longer makes that check (`dsh-api-session-controller/lib/index.js:886-895`), so the bridge verifies the log itself | chunked bytes; `not-referenced`, `too-large`. |
 | `attachment.put` | child to main | `{transferId, total, sha256, mediaType, name?, chunks[]}` | the child instance only; bytes are admitted by the host's own attachment store | `{hostRef, expiresAt}` for one later `session.start`/`session.message` |
 | `inbox.push` | main to child | `{messageId, kind, sourceSessionId, text, images[], dedupeKey, at}` | a managed session authored it | `{acked:true}`; re-delivered unchanged after reconnect |
 | event `approval.request` | main to child | same shape as today (`src/native-control/protocol.js:49-55`) | managed session | — |
@@ -274,32 +296,33 @@ channel, not here.
 | `message_session` / `start_session` / `redirect_session` | Fishball to session | new optional `attachments: [{attachment_id, kind: 'image' or 'file'}]` from Fishball's own store. |
 | Fishball chat uploads | user to Fishball | the child UI posts bytes to its own API; the child admits them into its own store. |
 
-### 6.2 Format, limits, and rc.3 reuse
+### 6.2 Format, limits, and 0.2.2 reuse
 
-rc.3 already has the whole vocabulary; we reuse it and add no new image format.
+0.2.2 already has the whole vocabulary; we reuse it and add no new image format.
 
-| Need | rc.3 API | Evidence |
+| Need | 0.2.2 API | Evidence |
 | --- | --- | --- |
-| Image content part | `ImageBlock { type:'image', attachment: ImageAttachmentRef }` | `dsh-llm/lib/types/types.d.ts:61-71` |
+| Image content part | `ImageBlock { type:'image', attachment: ImageAttachmentRef }` | `dsh-llm/lib/types/types.d.ts:68-78` |
 | Allowed media types | `image/png`, `image/jpeg`, `image/webp`, `image/gif` | `dsh-attachment/lib/types/types.d.ts:5` |
 | Durable, content-addressed id | `ImageAttachmentRef.attachmentId` (`types.d.ts:7-20`); file ids are the sha256 of the bytes (`:34-41`) | `dsh-attachment/lib/types/types.d.ts` |
 | Admission and normalization | `saveImage`, `saveImages`, `admitPromptContent`, `readImage` | `dsh-attachment/lib/types/index.d.ts` (`AttachmentStore`) |
-| Defaults | 20 images/message, 4 194 304 pixels, 4 194 304 normalized bytes | `dsh-attachment-local/lib/index.js:971-1014` |
-| Capability gate | reject when the route's model lacks `image` in `inputModalities` | `dsh-api-session-controller/lib/index.js:938-941` |
+| Defaults | 20 images/message, 4 194 304 pixels, 4 194 304 normalized bytes | `dsh-attachment-local/lib/index.js:978-1016` |
+| Capability gate | reject when the route's model lacks `image` in `inputModalities` | `dsh-api-session-controller/lib/index.js:848` |
 | Request budget and placeholders | `requiredImageOffload`, `projectOffloadedImages`, `projectImagesForTextModel` | `dsh-llm/lib/types/content.d.ts` |
 | File blocks stay text for models | `projectFilesToText`, `fileHandleText` | `dsh-llm/lib/types/content.d.ts` |
-| Reading an image from a session | verify the log references it, then `attachments.readImage` and base64 | `dsh-api-session-controller/lib/index.js:978-999` |
-| Image a session already produced | `read_image` returns a text block **and** an image block with a durable ref | `dsh-tool-fs/lib/index.js:969-975` |
+| Reading an image by reference | `attachments.readImage` and base64; 0.2.2 does not verify Session references, so the bridge checks the log itself | `dsh-api-session-controller/lib/index.js:886-895` |
+| Image a session already produced | `read_image` returns a text block **and** an image block with a durable ref | `dsh-tool-fs/lib/index.js:1735-1741` |
 
 Bridge rules: 4 MiB per image, 20 per message, 512 KiB per chunk, sha256 verified by the receiver,
-one transfer per message, no path or URL accepted anywhere. Files keep the rc.3 rule: they are
+one transfer per message, no path or URL accepted anywhere. Files keep the 0.2.2 rule: they are
 stored verbatim and reach a model only as handle text naming the stored path.
 
 ### 6.3 Sessions to Fishball
 
 1. The agent calls `message_fishball({message, images:[{attachment_id}]})`.
-2. The main host resolves each id with the same rule rc.3 uses (`referencedImage` over the calling
-   session's events), reads the bytes with `attachments.readImage`, and pushes an `inbox.push`
+2. The main host verifies each id against the calling session's events (`referencedImage`-style;
+   0.2.2's own RPC dropped that check), reads the bytes with `attachments.readImage`, and pushes an
+   `inbox.push`
    whose text keeps today's untrusted block (`src/messaging.js:109-112`) and whose images carry ids
    and metadata only.
 3. The child pulls each id with `attachment.read`, saves it into its own store
@@ -334,7 +357,7 @@ attachment store; no path, no URL, no SVG. The child renders session images with
 The child UI's composer accepts drag and drop, paste and a file picker. The browser posts
 `{mediaType, data(base64), name?}` to the child API; the child validates with
 `attachments.validateImage`/`saveImage` under the same limits, then appends an ordinary user
-message with image and file blocks. A text-only model gets the rc.3 text-only projection
+message with image and file blocks. A text-only model gets the 0.2.2 text-only projection
 (`projectImagesForTextModel`) plus a visible notice in the UI, not a silent loss.
 
 ## 7. Embedded page, opening and the button
@@ -369,70 +392,64 @@ grant, question, plan review, escalation), `sessionId` and title, `at`, the requ
 the outcome, and — for escalations — the user's final decision delivered by `approval.settled`.
 The child owns placement and rendering; the host owns authorization and outcomes.
 
-### 8.2 Sidebar mark: the fish is always the base layer
+### 8.2 Sidebar mark: idle marker now, fish-under-spinner after upstream
 
-Accepted layout (Q5 answered): the Fishball fish sits in the 16x20 leading cell in **every** state
-of a managed session. While the session runs, DSH's own status spinner draws on top; rc.3's spinner
-is a hollow ring, so the fish shows through its centre. Fishball's green unread dot and yellow
-needs-action dot stay at the cell's top-right, needs-action winning when both apply. The fish may
-flip or turn while running; with the DeepSeek-icon switch on, the orca plays rc.3's own swim. Under
+Q13 answered: wait for DSH upstream support. The CSS approximation keyed to `data-row-key` is
+rejected, so nothing in this design paints the sidebar through DSH's row internals.
+
+**Ships now (T13a).** The managed-session marker renders only in DSH's
+`sidebar.session.row.leading` slot, which DSH mounts when the row's primary status is idle
+(`dsh-client-ui-workspace/lib/client.js:2535,2609`). It shows the Fishball fish plus the green
+unread dot and the yellow needs-action dot at the top-right; needs-action wins when both apply.
+While a session runs, DSH shows its own spinner and no Fishball mark. Under
 `prefers-reduced-motion: reduce` nothing animates; the dots and the accessible name carry the state.
 
-| State | Base layer | On top |
-| --- | --- | --- |
-| needs action | fish | yellow dot, top-right; DSH's spinner while running |
-| unread | fish | green dot, top-right; DSH's spinner while running |
-| running, nothing pending | fish | DSH's spinner |
-| idle | fish | nothing |
-| unmanaged | none | DSH's own indicator, unchanged |
+**Later (T13b, blocked on upstream).** The accepted target layout: the fish is the base layer in
+every managed state; DSH's hollow running spinner draws above it and the fish shows through its
+centre; the dots stay at the top-right; the fish flips, and with the DeepSeek-icon switch on the
+orca plays 0.2.2's own swim.
 
-**Can rc.3 do this cleanly?** Not with a real element while running:
+**Why the target waits.** Evidence:
 
-- The leading cell is one 16x20 inline-flex span
-  (`dsh-client-ui-workspace/lib/client.js:1742`).
+- The leading cell is one 16x20 inline-flex span (`dsh-client-ui-workspace/lib/client.js:1955`).
 - It renders DSH's `SessionStatusDots` whenever the primary status is not idle, and the
   `sidebar.session.row.leading` slot only when it is idle
-  (`dsh-client-ui-workspace/lib/client.js:2261,2307`). The slot is unmounted while running, so no
+  (`dsh-client-ui-workspace/lib/client.js:2535,2609`). The slot is unmounted while running, so no
   plugin element can sit under the spinner.
-- The row's only stable hook is `data-row-key="session:<id>"` on the row element
-  (`dsh-client-ui-workspace/lib/client.js:2276`). The hover slot lives inside the hover card
-  (`dsh-client-ui-workspace/lib/client.js:2155`) and the row-action slot is hover-only
-  (`dsh-client-ui-workspace/lib/client.js:2349`); neither mounts in the leading cell.
-- The spinner is `StateDot` for `ongoing`: a 14px SVG
-  (`dsh-web-frontend/dist/assets/index-BXV-oxvX.js:129`) whose track and arc are
-  `fill:none; stroke-width:2` (`dsh-web-frontend/dist/assets/index-BNyAYEM7.css:1`) — a hollow
-  ring, as assumed.
+- The hover slot lives inside the hover card (`dsh-client-ui-workspace/lib/client.js:2418`) and
+  the row-action slot is hover-only (`dsh-client-ui-workspace/lib/client.js:2663`); neither
+  mounts in the leading cell.
+- The spinner is `StateDot` for `ongoing`: a 14px SVG in
+  `dsh-web-frontend/dist/assets/index-BgUyXZcc.js` (the `ongoing` branch, one minified line) whose
+  track and arc are `fill:none; stroke-width:2` in
+  `dsh-web-frontend/dist/assets/index-lh_YM6sT.css` (one minified line) — a hollow ring, as assumed.
+- The row exposes a stable `data-row-key="session:<id>"` (`dsh-client-ui-workspace/lib/client.js:2560`),
+  which would allow a CSS layer, but Q13 rejects that approximation.
 
-**Upstream ask (the clean path).** Either render `sidebar.session.row.leading` in every state and
-draw DSH's status dot/spinner above it, or add a `sidebar.session.row.accessory` slot rendered
-inside the leading cell in every state. Then the fish is an ordinary slot element, the spinner
-overlays its hollow centre, Fishball's dots and `role="img"` label live in the same element, and the
-orca SMIL swim runs unchanged.
+**0.2.2 does not unblock T13b.** The leading slot is still idle-only
+(`dsh-client-ui-workspace/lib/client.js:2535,2609`). 0.2.2 adds an always-mounted
+`sidebar.session.row.trailing` slot (`:2635`, registered `:6066`), but it renders next to the
+timestamp in the right-hand resting area, not under the leading spinner, so it is not the target
+placement; it is useful as precedent in the upstream request.
 
-**Closest plugin-only option (interim).** A CSS-only base layer keyed to `data-row-key`: the fish
-painted on the leading cell through a CSS mask so it follows the theme's text colour, with the
-spinner above it and the two dots as another layer. It uses no portal, no DOM mutation and no slot
-abuse, and the row hook is stable. It can show the static fish and turn the masked fish with a CSS
-transform while running, but it cannot run the orca SMIL swim (an image used as a CSS mask does not
-animate), and it cannot add an accessible label of its own; DSH's visually hidden status labels
-still announce running and waiting, while unread is visual-only in the interim. So the fish under
-the spinner, the flip and the two dots are achievable now; only the DeepSeek swim needs the upstream
-slot.
+**Upstream request (ready to file, not filed).** Either render
+`sidebar.session.row.leading` in every state and draw DSH's status dot/spinner above it, or add a
+`sidebar.session.row.accessory` slot rendered inside the leading cell in every state. The slot
+must be mounted for idle and running rows, the status dot must paint above it, the cell stays
+16x20, and rows without contributions are unchanged. Then the fish is an ordinary slot element,
+the spinner overlays its hollow centre, Fishball's dots and `role="img"` label live in the same
+element, and the orca SMIL swim runs unchanged.
 
-The Fishball client generates the per-session CSS the same way it already hides the model seat
-(`client.js:102,3522-3533`): one selector per managed session id from the host state feed. No DOM
-query, no React portal.
-
-Reuse, do not redraw: the orca morph is rc.3's `HeroFish` — `FISH_LOGO_PATH`,
+Reuse, do not redraw: the orca morph is 0.2.2's `HeroFish` — `FISH_LOGO_PATH`,
 `HERO_SWIM_UP_PATH`, `HERO_SWIM_DOWN_PATH`, a SMIL `d` animation over 1.6 s
-(`dsh-client-ui-conversation/lib/client.js:17724,17736`) with the CSS sway
-(`dsh-client-ui-conversation/lib/client.js:17644`, gated by hover and reduced-motion media
+(`dsh-client-ui-conversation/lib/client.js:20394,20406`) with the CSS sway
+(`dsh-client-ui-conversation/lib/client.js:20314`, gated by hover and reduced-motion media
 queries). The Fishball client should import `FISH_LOGO_PATH` and `FISH_LOGO_VIEWBOX` from
 `dsh-client-ui-primitives` instead of keeping its own copy (this repository's `client.js:32`
 already imports from that package; the current `ORCA_SWIM` copy at `client.js:474` is replaced).
 
 The "DeepSeek icon" condition is Fishball's existing switch (`client.js:1688,3413`, host
-preference `brandStyle`), not a DSH theme setting. rc.3 ships no such user setting: the official
+preference `brandStyle`), not a DSH theme setting. 0.2.2 ships no such user setting: the official
 brand package is presentation only (`dsh-client-ui-brand-official/lib/index.js:3-8`, an empty
 `apply`), and the only icon choice found is Fishball's own.
 
@@ -575,10 +592,10 @@ removed.
 3. **Loopback port exposure.** The child refuses all requests without the bearer, but any local
    process can still attempt connections; rate limiting and 401 are the only defense.
 4. **A DSH core upgrade may move rows we depend on** (`dsh-base` row ids, `profileContext`,
-   `agents` and `sessions` contracts). The design pins rc.3 contracts and fails loud at startup.
-5. **The leading cell is not composable in rc.3** (§8.2): while a session runs, DSH renders its
-   spinner in place of the plugin slot, so the orca swim needs a small upstream slot change; the
-   interim CSS layer covers the static fish, the flip and the dots but not the swim (Q13).
+   `agents` and `sessions` contracts). The design pins 0.2.2-rc.1 contracts and keeps rc.3 compatible where the contracts are unchanged.
+5. **The running-state fish is blocked on a DSH slot change** (§8.2): while a session runs, DSH
+   renders its spinner in place of the plugin slot. Q13 waits for upstream; the idle marker with
+   the dots ships now, and no CSS override of DSH's row internals is used.
 6. **A purpose-built chat UI is less capable than DSH's** at v1 (markdown, tool cards, plan review,
    attachment previews). It is Fishball-owned, so it can catch up incrementally.
 7. **No tests are written here.** Acceptance depends on the separate testing session.
@@ -590,13 +607,13 @@ removed.
 Answered on 2026-11-05 (kept here so the numbering stays stable):
 
 - Q3 -> D13: the user accepts that a main-page plugin can script the same-origin embed.
-- Q5 -> D11: the fish is always the base layer; DSH's hollow spinner draws above it; the green and
-  yellow dots stay at the top-right. Composition, the rc.3 constraint and the upstream ask are in
-  §8.2.
+- Q5 -> D11: the fish layout is the target; the running case waits for DSH (see Q13).
 - Q6 -> settled by the Q5 wording "when that toggle is on": Fishball's existing "Use the DeepSeek
   icon" switch.
-- Q7 -> settled by the Q5 instruction "Keep the reduced-motion rule": static mark, dots and an
+- Q7 -> settled by the Q5 instruction "Keep the reduced-motion rule": static marker, dots and an
   accessible name.
+- Q13 -> wait for DSH upstream support; no CSS approximation. T13a ships the idle marker with the
+  dots now; T13b is blocked on upstream (§8.2, §15).
 
 Still open:
 
@@ -618,25 +635,35 @@ Q11. Is dropping watch-only and send-only acceptable now that hand-over with an 
 covers both?
 Q12. Should the embed survive a main DSH restart with the same child instance (re-mint the bearer
 and keep the open page), or is reloading the page acceptable?
-Q13. Sidebar composition: wait for the DSH slot change before shipping the running fish, or ship
-the interim CSS base layer now (static fish and flip under the spinner; the orca swim arrives with
-the upstream slot)?
 
 ## 15. Task breakdown for parallel single-task sessions
 
 Rules for every task: one branch, one deliverable; do not read or write another task's files; the
-separate testing session owns all test code; merge before the dependants start. `client.js` is a
-single DSH client module, so **at most one task per wave may own it** (marked `[client]`).
+separate testing session owns all test code; merge before the dependants start. All tasks target
+DSH 0.2.2-rc.1; rc.3 compatibility is checked only where the contract is unchanged and never adds
+scope. `client.js` is a single DSH client module, so **at most one task per wave may own it**
+(marked `[client]`).
 
-### Wave 1 — contract (one task, everything builds on it)
+### Wave 1 — contract (READY TO DISPATCH; one task)
 
-**T01 — Freeze the slim contract and this design**
+**T01 — Freeze the slim contract and this design `[contract]`**
 - Goal: one place that defines every operation, frame, limit, error code and route both sides use.
-- Owns: `docs/slim-native-design.md`, `src/slim/contract.js`, `src/slim/limits.js`.
-- Provides: envelope v2 (adds `attachment.*`), operation allowlist, payload validators, status
-  model, `/fishball/embed/*` route names, bearer rules.
-- Depends: none. Acceptance: every later task can name its payloads from this file; no later task
-  edits it without a contract change note.
+- Branch: `feat/slim-contract`, cut from `feat/slim-native-embedded-ui` (current tip).
+- Owns and touches nothing else: `src/slim/contract.js`, `src/slim/limits.js`,
+  `docs/slim-native-design.md`.
+- Provides: envelope v2 (adds `attachment.*`), the exact operation allowlist from §5.2, payload
+  validators for every request, response and event, error codes, the status model,
+  `/fishball/embed/*` route names, and the bearer rules.
+- Depends: none.
+- Acceptance criteria:
+  1. `src/slim/contract.js` exports envelope v2, the §5.2 operation allowlist, validators for
+     every request, response and event, and the error-code and status constants.
+  2. `src/slim/limits.js` exports every numeric limit named in §3.6, §5.2 and §6.2.
+  3. Route names and bearer rules are constants in the contract module.
+  4. The doc names 0.2.2-rc.1 as the baseline, and every citation is verified against that build.
+  5. `node --check` passes on both modules; they import no DSH package and hold no behaviour beyond
+     validation and constants.
+  6. No test file and no file owned by another task is touched.
 - Tests: `CONTRACT-01 envelope rejects an unknown key`; `-02 unknown operation rejected`;
   `-03 oversize frame rejected`; `-04 capability mismatch rejected`.
 
@@ -646,7 +673,7 @@ single DSH client module, so **at most one task per wave may own it** (marked `[
 - Goal: the child boots a base-only profile plus the Fishball app row, and readiness means core
   plus server, not web UI.
 - Owns: `src/native-runtime/*` (constants, installation, overlay, index), `native-child.js`.
-- Depends: T01. Acceptance: `dsh` starts with the base-only profile, the app row mounts, the
+- Depends: T01. Acceptance: `dsh` 0.2.2-rc.1 starts with the base-only profile, the app row mounts, the
   lifecycle reports ready, stop/restart and the parent-pipe exit path still work, and no
   `webServer` or `webApp` injection remains. The app row itself is T03.
 - Tests: `LIFE-01 base-only profile reaches ready`; `-02 missing app row fails loud`; `-03 stop is
@@ -705,7 +732,7 @@ single DSH client module, so **at most one task per wave may own it** (marked `[
 ### Wave 4 — images, chat UI, approvals, settings UI, model sync (parallel; one client task)
 
 **T06 — Images and files across the bridge `[host]` plus `[child]`**
-- Goal: both directions of §6 work with rc.3 limits.
+- Goal: both directions of §6 work with 0.2.2 limits.
 - Owns: `src/slim/attachment-transfer.js`, `src/slim/host/images.js`, `src/slim/child/images.js`,
   the image parts of `src/slim/ui/composer.js`.
 - Depends: T05, **Q2 answered** (text-only model). Acceptance: png, jpeg, webp and gif accepted, others refused; 4 MiB and 20-image
@@ -769,19 +796,17 @@ single DSH client module, so **at most one task per wave may own it** (marked `[
 - Tests: `DEC-01 allow label`; `-02 escalation label updates after the user's answer`; `-03
   question label`; `-04 message label`; `-05 expand shows card and reply`; `-06 no turn-tail tags`.
 
-**T13 — Sidebar mark: fish base layer under the spinner `[client]`**
-- Goal: the §8.2 layout: the fish in every managed state, DSH's hollow spinner above it, green and
-  yellow dots top-right, reduced-motion static.
-- Owns: the row mark and its per-session stylesheet in `client.js`; a small host feed of per-session
-  state.
-- Depends: T05, D11, D13, **Q13 answered**; the orca swim additionally needs the DSH slot change
-  in §8.2 (the interim covers the static fish, the flip and the dots).
-- Acceptance: the fish is present in every managed state; while running the hollow spinner draws
-  above it and the fish shows through; needs-action beats unread; reduced-motion is static; the
-  unmanaged row is untouched; the orca path data is imported, not copied where the slot path is used.
-- Tests: `MARK-01 fish present in every managed state`; `-02 spinner draws over the fish`; `-03
-  needs-action beats unread`; `-04 running plus dot`; `-05 reduced motion static`; `-06 unmanaged
-  unchanged`; `-07 DeepSeek mode plays the imported swim`.
+**T13a — Sidebar idle marker with dots `[client]`**
+- Goal: the §8.2 "ships now" behaviour: the fish in DSH's idle leading slot, green unread / yellow
+  needs-action dots, no Fishball mark while the session runs.
+- Owns: the row-mark component in `client.js`; a small host feed of per-session state.
+- Depends: T05, D11, D13.
+- Acceptance: the marker appears only where DSH mounts the leading slot; needs-action beats unread;
+  a running row shows only DSH's spinner; reduced-motion is static; the unmanaged row is untouched;
+  no CSS is injected against DSH's row internals.
+- Tests: `MARK-01 marker in the idle leading slot`; `-02 green unread dot`; `-03 yellow needs-action
+  dot beats unread`; `-04 running row shows DSH's spinner only`; `-05 reduced motion static`; `-06
+  unmanaged row unchanged`.
 
 ### Wave 6 — hand-over (one client task)
 
@@ -805,14 +830,32 @@ single DSH client module, so **at most one task per wave may own it** (marked `[
 - Tests: `RET-01 no legacy chat surface`; `-02 plugin loads with the new rows`; `-03 restart is
   clean`; `-04 no orphaned storage table`.
 
+### Wave 8 — blocked on upstream (not scheduled)
+
+**T13b — Fish under the hollow spinner (BLOCKED) `[client]`**
+- Goal: the §8.2 target: the fish is the base layer in every managed state, DSH's hollow spinner
+  draws above it and the fish shows through, the dots stay top-right, the fish flips, and the orca
+  plays 0.2.2's swim in DeepSeek mode.
+- Owns: the row-mark component from T13a, extended; no other files.
+- Depends: T13a, the **DSH upstream slot change** in §8.2. Blocked: do not start until DSH mounts
+  `sidebar.session.row.leading` (or the accessory slot) while running. No `data-row-key` CSS
+  approximation. 0.2.2 check: the leading slot is still idle-only; the new
+  `sidebar.session.row.trailing` slot is always mounted but sits on the right, so this stays blocked.
+- Acceptance: the fish is visible while running through the spinner's hollow centre; the orca swim
+  is imported, not copied; reduced-motion is static; no DOM overlay or CSS override of DSH's row
+  internals.
+- Tests: `MARK-07 fish visible while running under the hollow spinner`; `-08 DeepSeek mode plays the
+  imported swim`; `-09 running plus needs-action dot`.
+
 ### Dependency graph (summary)
 
-`T01 -> {T02, T03} -> {T04, T05, T10, T11} -> {T06, T07, T09, T12, T16} -> {T08, T13} -> T14 -> T15`
+`T01 -> {T02, T03} -> {T04, T05, T10, T11} -> {T06, T07, T09, T12, T16} -> {T08, T13a} -> T14 -> T15`
+`T13b <- DSH upstream slot change` (blocked, not scheduled)
 
-T03 implements the row T02 inserts, so the pair is verified together at the end of wave 2. T13
-needs T05 plus the sidebar decision (Q13); T14 needs T05 plus Q11; both own `client.js`, so they are
-split across waves 5 and 6.
-`client.js` appears in T04, T12, T13, T14 and T15 only, one per wave.
+T03 implements the row T02 inserts, so the pair is verified together at the end of wave 2. T13a
+needs T05; T14 needs T05 plus Q11; T13a and T14 both own `client.js`, so they are split across
+waves 5 and 6. T13b is blocked on the upstream slot and starts only after that ships.
+`client.js` appears in T04, T12, T13a, T14 and T15 only, one per wave.
 
 ## 16. Test plan outline (names only)
 
@@ -824,7 +867,7 @@ split across waves 5 and 6.
 - Images: `IMG-01..08`.
 - Approvals and questions: `APPR-01..07`.
 - Decision labels: `DEC-01..06`.
-- Row mark: `MARK-01..07`.
+- Row mark: `MARK-01..06` (now) and `MARK-07..09` (blocked on upstream).
 - Hand-over: `HAND-01..05`.
 - Settings: `SET-01..07`.
 - Provider sync: `SYNC-01..06`.
@@ -833,6 +876,8 @@ split across waves 5 and 6.
 - End-to-end smoke in a disposable home: `E2E-01 cold start`; `-02 chat and tool call`; `-03
   hand-over and inbound message`; `-04 restart with an open page`; `-05 child crash and Retry`;
   `-06 main DSH shutdown stops the child`.
+- Compatibility: `COMPAT-01 0.2.2-rc.1 core boots without the web UI`; `-02 0.2.2 attachment read by
+  reference`; `-03 the same contract module runs on rc.3`.
 
 ## 17. Development and testing boundary
 
