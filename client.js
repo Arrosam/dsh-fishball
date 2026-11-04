@@ -84,7 +84,8 @@ window.__ModuleLoader__.load({
     const MODEL = Object.freeze({
       gateId: 'fishball-model-required', gateOrder: -50, styleId: 'fishball-model-seat',
       settingsClass: 'fb-model-settings', gateClass: 'fb-model-gate', empty: '',
-      fieldSuffix: '-model', effortSuffix: '-effort',
+      fieldSuffix: '-model', effortSuffix: '-effort', pickerClass: 'fb-model-picker',
+      request: Object.freeze({ cache: 'no-store' }), routeSeparator: '/', refreshStart: 0, refreshStep: 1,
       seatSelector: (id) => `[data-conversation-session="${CSS.escape(id)}"] > [data-conversation-scroll] > [data-composer-seat] [data-slot="conversation.input.model"]`,
     })
     /** Context-window refusals with their own text (keep in step with src/constants.js CONTEXT_ERROR). */
@@ -526,12 +527,16 @@ window.__ModuleLoader__.load({
       modelRequired: 'Choose a model in Fishball settings before sending messages.',
       modelChoose: 'Select model',
       modelLoading: 'Loading models…',
+      modelRefresh: 'Refresh models',
+      modelRefreshing: 'Refreshing…',
+      modelRefreshHint: 'Fetch the models configured in this DSH again, without reloading the page.',
+      modelUnavailableOption: 'Unavailable',
       modelEffort: 'Reasoning effort',
       modelEffortDefault: 'Model default',
       modelEmpty: 'No models available. Configure a provider in DSH model settings, then refresh.',
-      modelLoadFailed: 'Models could not be loaded. Refresh to try again.',
+      modelLoadFailed: 'Models could not be refreshed. Any previous list and selection are unchanged. Try again.',
       modelSaveFailed: 'The model was not saved. Check that it is still available and try again.',
-      modelUnavailable: 'The saved model is not in the current catalog. Select another model to change it.',
+      modelUnavailable: 'A saved or selected model is unavailable in the current list. Its selection is kept; choose another model to change it.',
       contextWindow: 'Context window',
       contextHint: 'Leave the window empty to use the model\'s full window. A smaller window makes Fishball summarise its conversation sooner; only Fishball\'s session is affected.',
       'contextField.contextWindowTokens': 'Context window (tokens)',
@@ -982,12 +987,16 @@ window.__ModuleLoader__.load({
       modelRequired: '请先在 Fishball 设置中选择模型，再发送消息。',
       modelChoose: '选择模型',
       modelLoading: '正在加载模型…',
+      modelRefresh: '刷新模型列表',
+      modelRefreshing: '正在刷新…',
+      modelRefreshHint: '重新获取当前 DSH 已配置的模型，无需刷新页面。',
+      modelUnavailableOption: '不可用',
       modelEffort: '推理强度',
       modelEffortDefault: '模型默认值',
       modelEmpty: '没有可用模型。请先在 DSH 模型设置中配置提供商，然后刷新。',
-      modelLoadFailed: '无法加载模型。请刷新重试。',
+      modelLoadFailed: '无法刷新模型列表。原有列表和选择保持不变，请重试。',
       modelSaveFailed: '模型未保存。请确认模型仍然可用，然后重试。',
-      modelUnavailable: '当前列表中没有已保存的模型。可以选择其他模型来更改它。',
+      modelUnavailable: '已保存或当前选择的模型不在列表中，原选择仍然保留；可另选模型来更改。',
       contextWindow: '上下文窗口',
       contextHint: '留空则使用模型的完整窗口。窗口越小，Fishball 越早总结对话；只影响 Fishball 的会话。',
       'contextField.contextWindowTokens': '上下文窗口（token）',
@@ -1419,6 +1428,8 @@ window.__ModuleLoader__.load({
       `@keyframes fb-swim{${[...ORCA_SWIM.sway.map(([at, transform]) => [at * SWIM_SHARE, transform]), [100, 'none']].map(([at, transform]) => `${at}%{transform:${transform}}`).join('')}}`,
       // Motion is the only thing that stops: the pill and its count stay.
       `@media (prefers-reduced-motion:reduce){.${CLS.badge},.${CLS.wag},.${CLS.swim}{animation:none}}`,
+      `.${MODEL.pickerClass}{display:flex;flex-wrap:wrap;gap:12px;align-items:center}`,
+      `.${MODEL.pickerClass} select{flex:1;min-width:0}`,
       `.${MODEL.settingsClass} select{width:100%;font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-3);border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);padding:8px 12px}`,
       `.${MODEL.gateClass}{${DOCK_CARD_WIDTH};${DOCK_CARD_LOOK};padding:12px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;font:var(--dsw-font-xs-13)}`,
       `.${CLS.row}{display:flex;gap:12px;align-items:baseline}`,
@@ -2194,22 +2205,34 @@ window.__ModuleLoader__.load({
     const sameModelChoice = (left, right) => left?.provider === right?.provider
       && left?.model === right?.model && left?.reasoningEffort === right?.reasoningEffort
 
+    // Validate only the display contract we consume. A malformed 2xx is a failed refresh,
+    // not permission to discard the last usable list. Providers/efforts remain host-owned.
+    const modelEntry = (entry) => typeof entry?.id === 'string' && entry.id.length > 0
+      && typeof entry.name === 'string' && entry.name.length > 0
+    const validModelCatalog = (catalog) => Array.isArray(catalog?.groups) && Array.isArray(catalog.failures)
+      && catalog.groups.every((group) => modelEntry(group) && Array.isArray(group.models)
+        && group.models.every((model) => modelEntry(model) && (model.reasoning === undefined
+          || (Array.isArray(model.reasoning?.efforts) && model.reasoning.efforts.every(modelEntry)))))
+      && catalog.failures.every((failure) => modelEntry(failure) && typeof failure.message === 'string')
+
     function makeModelSettings(t) {
       return function FishballModelSettings() {
         const state = useFishball()
         const baseId = React.useId()
         const [draft, setDraft] = React.useState(null)
         const [catalog, setCatalog] = React.useState(null)
-        const [refresh, setRefresh] = React.useState(false)
+        const [refresh, setRefresh] = React.useState(MODEL.refreshStart)
         const [loading, setLoading] = React.useState(true)
         const [saving, setSaving] = React.useState(false)
         const [problem, setProblem] = React.useState(null)
         React.useEffect(() => {
           let current = true
           setLoading(true)
-          fetch(apiUrl(API.models)).then(async (response) => {
+          setProblem(null)
+          fetch(apiUrl(API.models), MODEL.request).then(async (response) => {
             if (!response.ok) throw new Error()
             const answer = await response.json()
+            if (answer?.ok !== true || !validModelCatalog(answer.catalog)) throw new Error()
             if (current) { setCatalog(answer.catalog); setProblem(null) }
           }).catch(() => { if (current) setProblem('modelLoadFailed') })
             .finally(() => { if (current) setLoading(false) })
@@ -2218,7 +2241,12 @@ window.__ModuleLoader__.load({
         const selection = draft ?? state.modelSelection
         const valueOf = (choice) => choice ? JSON.stringify([choice.provider, choice.model]) : MODEL.empty
         const options = catalog?.groups.flatMap((group) => group.models.map((model) => ({ group, model }))) ?? []
+        const available = (choice) => options.some(({ group, model }) => group.id === choice?.provider && model.id === choice?.model)
         const chosen = options.find(({ group, model }) => group.id === selection?.provider && model.id === selection?.model)
+        // Keep the saved identity even while a different draft is selected, or the refreshed
+        // catalog is empty. Catalog availability is never a command to clear consent/state.
+        const missing = [state.modelSelection, selection].filter((choice, index, choices) => choice && !available(choice)
+          && choices.findIndex((candidate) => valueOf(candidate) === valueOf(choice)) === index)
         const efforts = chosen?.model.reasoning?.efforts ?? []
         const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(state.modelSelection)
         const save = async () => {
@@ -2246,17 +2274,22 @@ window.__ModuleLoader__.load({
           h('h3', null, t('modelTitle')),
           h('p', { className: CLS.muted }, t('modelHint')),
           h('label', { htmlFor: baseId + MODEL.fieldSuffix }, t('modelChoose')),
-          h('select', {
+          h('div', { className: MODEL.pickerClass, 'aria-busy': loading }, h('select', {
             id: baseId + MODEL.fieldSuffix, 'data-fishball-model-select': true,
-            value: chosen ? valueOf(selection) : MODEL.empty, disabled: loading || saving,
+            value: valueOf(selection), disabled: loading || saving,
             onChange: (event) => {
               if (event.target.value === MODEL.empty) { setDraft(null); return }
               const [provider, model] = JSON.parse(event.target.value)
               setDraft({ provider, model })
             },
           }, h('option', { value: MODEL.empty }, t('modelChoose')),
+          missing.map((choice) => h('option', { key: valueOf(choice), value: valueOf(choice), disabled: true },
+            [choice.provider, choice.model].join(MODEL.routeSeparator) + ' (' + t('modelUnavailableOption') + ')')),
           catalog?.groups.map((group) => h('optgroup', { key: group.id, label: group.name },
             group.models.map((model) => h('option', { key: model.id, value: valueOf({ provider: group.id, model: model.id }) }, model.name))))),
+          h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-model-refresh': true,
+            title: t('modelRefreshHint'), disabled: loading || saving, onClick: () => setRefresh((previous) => previous + MODEL.refreshStep) },
+          loading ? t('modelRefreshing') : t('modelRefresh'))),
           efforts.length > 0 ? h(React.Fragment, null,
             h('label', { htmlFor: baseId + MODEL.effortSuffix }, t('modelEffort')),
             h('select', {
@@ -2268,12 +2301,11 @@ window.__ModuleLoader__.load({
             efforts.map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name)))) : null,
           loading ? h('p', { role: 'status' }, t('modelLoading')) : null,
           !loading && catalog && options.length === 0 ? h('p', { role: 'status' }, t('modelEmpty')) : null,
-          !loading && selection && !chosen && options.length > 0 ? h('p', { role: 'status' }, t('modelUnavailable')) : null,
+          !loading && catalog && missing.length > 0 ? h('p', { role: 'status' }, t('modelUnavailable')) : null,
           catalog?.failures.map((failure) => h('p', { key: failure.id, role: 'status' }, failure.name + ': ' + failure.message)),
           problem ? h('p', { role: 'alert' }, t(problem)) : null,
           h('div', { className: CLS.row },
-            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: !dirty || !chosen || loading || saving, onClick: save }, saving ? t('saving') : t('save')),
-            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: loading || saving, onClick: () => setRefresh(!refresh) }, t('refresh'))))
+            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: !dirty || !chosen || loading || saving, onClick: save }, saving ? t('saving') : t('save'))))
       }
     }
 

@@ -35,6 +35,7 @@ export async function clientHarness(options = {}) {
   const blocks = new Map()
   const sent = []
   const opened = []
+  const reloads = []
   const subscriptions = new Map()
   let answer
   const React = {
@@ -81,6 +82,9 @@ export async function clientHarness(options = {}) {
     removeEventListener(type, listener) { documentListeners.get(type)?.delete(listener) },
   }
   const fetch = async (url, request = {}) => {
+    // Interception precedes URL parsing; undefined delegates to the existing transport or fixture.
+    const intercepted = options.interceptFetch?.(url, request)
+    if (intercepted !== undefined) return intercepted
     const pathname = new URL(url).pathname
     if (options.fetch) return options.fetch(url, request)
     if ((request.method ?? UI.method.get) === UI.method.post) {
@@ -90,8 +94,8 @@ export async function clientHarness(options = {}) {
     return { ok: true, json: async () => ({ ok: true, catalog: UI.catalog }) }
   }
   vm.runInNewContext(options.script ?? fs.readFileSync(UI.file, 'utf8'), {
-    window: { __ModuleLoader__: { load: (value) => { if (value.id === UI.moduleId) definition = value } }, matchMedia: () => ({ matches: options.reducedMotion ?? false }), addEventListener: inert, removeEventListener: inert },
-    document, fetch, URL, console, setTimeout, clearTimeout, matchMedia: () => ({ matches: options.reducedMotion ?? false }), CSS: { escape: (value) => value },
+    window: { location: { reload: (...args) => reloads.push(args) }, __ModuleLoader__: { load: (value) => { if (value.id === UI.moduleId) definition = value } }, matchMedia: () => ({ matches: options.reducedMotion ?? false }), addEventListener: inert, removeEventListener: inert },
+    document, fetch, URL, AbortController, console, setTimeout, clearTimeout, matchMedia: () => ({ matches: options.reducedMotion ?? false }), CSS: { escape: (value) => value },
     EventSource: class { constructor() { sources.push(this) } close() {} },
     MutationObserver: class { observe() {} disconnect() {} },
   })
@@ -116,9 +120,18 @@ export async function clientHarness(options = {}) {
   async function emitSnapshot(snapshot) { for (const source of sources) source.onmessage?.({ data: JSON.stringify(snapshot) }); return flush() }
   async function emit(selection = null) { return emitSnapshot(state(selection)) }
   return {
-    registrations, blocks, sent, opened, state, styles,
+    registrations, blocks, sent, opened, state, styles, reloads,
     async render(Component, props = {}) { root = React.createElement(Component, props); return flush() },
     flush, emit, emitSnapshot,
+    unmount() {
+      // A real root cleanup runs before a later mount; clear hook cells so a new
+      // mount cannot accidentally reuse the obsolete instance in lifecycle tests.
+      root = null; tree = null; effects.length = C.zero
+      for (const dispose of subscriptions.values()) dispose?.()
+      subscriptions.clear()
+      for (const cell of cells.values()) cell.cleanup?.()
+      cells.clear()
+    },
     reply(ok, body) { answer?.(ok, body); return flush() },
     dispose() { for (const dispose of subscriptions.values()) dispose?.(); for (const cell of cells.values()) cell.cleanup?.(); while (disposers.length) disposers.pop()() },
   }
