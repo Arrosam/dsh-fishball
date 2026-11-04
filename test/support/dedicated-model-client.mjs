@@ -8,6 +8,7 @@ import { MODEL_CASE as C } from './dedicated-model.mjs'
 const UI = Object.freeze({
   file: path.join(REPO, 'client.js'), base: 'http://fishball.test/', fishball: 'dedicated-fishball', ordinary: 'ordinary-control',
   moduleId: 'dsh-fishball', dock: 'conversation.input.dock', settings: 'plugins.bundle.config', empty: '', slash: '/',
+  defaultLocale: 'en',
   method: Object.freeze({ get: 'GET', post: 'POST' }),
   catalog: Object.freeze({ groups: [{ id: C.selection.provider, name: 'Test provider', models: [{ id: C.original.model, name: 'Original model' }, { id: C.selection.model, name: 'Dedicated model' }] }], failures: [], routableProviders: [C.selection.provider], default: C.original }),
 })
@@ -18,8 +19,9 @@ const primitive = (name) => (props) => ({ type: name, props })
 const neutral = new Proxy(function () {}, { get: (_target, key) => key === Symbol.toPrimitive ? () => UI.empty : neutral, apply: () => neutral })
 const equalDeps = (a, b) => a && b && a.length === b.length && a.every((x, i) => Object.is(x, b[i]))
 
-/** Options add only external boundaries: an HTTP-served combo script, real fetch, and OS motion preference. */
+/** Options add only external boundaries: an HTTP-served combo script, real fetch, OS motion preference, and locale. */
 export async function clientHarness(options = {}) {
+  const { locale = UI.defaultLocale } = options
   let definition
   let dictionaries
   let current
@@ -37,7 +39,8 @@ export async function clientHarness(options = {}) {
   const opened = []
   const reloads = []
   const subscriptions = new Map()
-  let answer
+  // Each fixture reply or rejection settles the oldest pending POST, including overlapping status calls.
+  const answers = []
   const React = {
     Fragment: 'fragment',
     useId() { return current + UI.slash + position++ },
@@ -89,7 +92,7 @@ export async function clientHarness(options = {}) {
     if (options.fetch) return options.fetch(url, request)
     if ((request.method ?? UI.method.get) === UI.method.post) {
       sent.push({ pathname, body: JSON.parse(request.body) })
-      return new Promise((resolve) => { answer = (ok, body = {}) => resolve({ ok, json: async () => body }) })
+      return new Promise((resolve, reject) => { answers.push({ resolve: (ok, body = {}) => resolve({ ok, json: async () => body }), reject }) })
     }
     return { ok: true, json: async () => ({ ok: true, catalog: UI.catalog }) }
   }
@@ -110,7 +113,7 @@ export async function clientHarness(options = {}) {
   const ctx = {
     slots, conversation,
     inject(_deps, fn) { return fn(ctx) },
-    locale: { bind: () => (key, values = {}) => { let text = dictionaries?.en?.[key] ?? key; for (const [name, value] of Object.entries(values)) text = text.replaceAll('{'+name+'}', value); return text }, register(_ns, value) { dictionaries = value; return inert }, resolveText: (text) => text },
+    locale: { bind: () => (key, values = {}) => { let text = dictionaries?.[locale]?.[key] ?? dictionaries?.en?.[key] ?? key; for (const [name, value] of Object.entries(values)) text = text.replaceAll('{'+name+'}', value); return text }, register(_ns, value) { dictionaries = value; return inert }, resolveText: (text) => text },
     effect(fn) { const dispose = fn(); if (typeof dispose === 'function') disposers.push(dispose); return dispose },
     configForms: { get: () => neutral, whileServed(_ids, fn) { return fn() } },
     get: (name) => name === 'conversation' ? conversation : name.toLowerCase().includes('plugin') || name.toLowerCase().includes('setting') ? settings : undefined,
@@ -132,7 +135,8 @@ export async function clientHarness(options = {}) {
       for (const cell of cells.values()) cell.cleanup?.()
       cells.clear()
     },
-    reply(ok, body) { answer?.(ok, body); return flush() },
+    reply(ok, body) { answers.shift()?.resolve(ok, body); return flush() },
+    reject(error) { answers.shift()?.reject(error); return flush() },
     dispose() { for (const dispose of subscriptions.values()) dispose?.(); for (const cell of cells.values()) cell.cleanup?.(); while (disposers.length) disposers.pop()() },
   }
 }

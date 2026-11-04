@@ -41,6 +41,14 @@ Use **Refresh models** beside the picker after changing providers or models in D
 
 Fishball’s composer stays blocked until a dedicated model is saved. An existing chat model or DSH default does not count as this explicit choice. The selection survives restarts and does not change ordinary sessions or DSH’s default model. The model switcher is no longer shown in Fishball’s composer.
 
+## Manually sync provider configuration and API keys
+
+Install this feature on both source and target profiles. In the target Fishball settings, choose **Create target invitation**. Paste that short-lived invitation into the source page and connect; approve the source on the target page, then confirm the target on the source page. Use **Check pairing status** as needed. The invitation is a scoped pairing capability, not a DSH Web or OAuth token; never paste it into chat or logs.
+
+Choose **Preview sync**, review the four groups, select additions, and explicitly confirm transfer of the selected configuration and current API keys. Only compatible official pi-ai API-key records are supported. Existing target providers/keys are skipped; OAuth, logins, environment-dependent credentials, secret references and custom secret-bearing settings are not copied. This does not change DSH defaults or Fishball’s dedicated model choice.
+
+Partial or unknown results require a new preview before any retry. There is no cross-store transaction or destructive rollback; model catalog presence is not proof of account authentication. Official credential-local storage is plaintext YAML with owner-only permissions, not encryption. Close the channel when finished; pairing expires automatically. See the [approved design and limits](<docs/model-provider-sync-design.md>).
+
 ## Choose a model for delegated work
 
 Fishball can pass optional `model` and `reasoning_effort` to `start_session`:
