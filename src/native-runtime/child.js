@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { realpath, readFile, chmod, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
+import { registerParentShutdown } from './parent-watch.js'
 import { RUNTIME, runtimeLimits, fail, NativeRuntimeError } from './constants.js'
 import { jsonPrivate, readPrivate, writePrivate, privateDirectory, launchPath, snapshotPath, pathsFor, inside, lifecycleLog } from './files.js'
 import { Wire, proof, sameProof } from './wire.js'
@@ -35,11 +36,12 @@ async function authenticatedReadiness(ctx, limits) {
   if (anonymous.status !== HTTP.unauthorized || exchanged.status !== HTTP.redirect || !cookie) fail('WEB_AUTH_NOT_READY')
   const page = await probeHttp(origin.href, limits.requestTimeoutMs, cookie)
   if (page.status !== HTTP.success) fail('WEB_AUTH_NOT_READY')
-  return { url, capabilities: [...RUNTIME.requiredServices, 'authenticated-web', 'lifecycle-v1', 'control-transport-v1'] }
+  return { capabilities: [...RUNTIME.requiredServices, 'authenticated-web', 'lifecycle-v1', 'control-transport-v1'] }
 }
 
 /** Mounted only by the explicit private CLI overlay, not the legacy Fishball entrypoint. */
 export async function applyNativeChild(ctx, config) {
+  registerParentShutdown(code => ctx.appExit(code))
   process.umask(RUNTIME.privateDirectoryMode ^ 0o777)
   const limits = runtimeLimits(config.limits)
   const paths = pathsFor(config.mainHome)
@@ -106,7 +108,7 @@ export async function applyNativeChild(ctx, config) {
       try {
         let payload
         if (message.operation === 'health') payload = { state: ready ? 'ready' : 'starting', ...identity, pid: process.pid, version: manifest.version, installAnchor: record.installAnchor, capabilities: ready?.capabilities ?? [] }
-        else if (message.operation === 'open-url') { if (!ready) fail('NOT_READY'); payload = { url: ready.url } }
+        else if (message.operation === 'open-url') { if (!ready) fail('NOT_READY'); payload = { url: ctx.connection.authenticatedUrl(ctx.webServer.getOrigin()) } }
         else if (message.operation === 'control') {
           if (!ready || current) fail('CONTROL_BUSY')
           const metadata = { ...identity, connectionId: randomUUID() }

@@ -19,6 +19,14 @@ export const RUNTIME = Object.freeze({
   requiredServices: ['webServer', 'webApp', 'connection', 'sessionController', 'pluginManager', 'appExit', 'appReady', 'pluginPackages'],
 })
 
+// rc.3 grants the entire host tree 5000 ms; native cleanup must finish sooner.
+export const LIFETIME = Object.freeze({
+  parentFd: 3, shutdownTimeoutMs: 4000, forceAfterMs: 2500,
+  childExitTimeoutMs: 3000, successExitCode: 0, failureExitCode: 1,
+  gracefulSignal: 'SIGTERM', forceSignal: 'SIGKILL',
+  registryKey: 'dsh-fishball.native-lifecycle.v1',
+})
+
 export const RUNTIME_LIMITS = Object.freeze({
   startupTimeoutMs: 60000,
   stopTimeoutMs: 15000,
