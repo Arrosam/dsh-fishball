@@ -1,0 +1,149 @@
+import { readFile, realpath, lstat, chmod, readdir, mkdir } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import path from 'node:path'
+import { RUNTIME, fail, NativeRuntimeError } from './constants.js'
+import { inside, privateDirectory, writePrivate, exists, snapshotPath } from './files.js'
+
+export async function resolveInstallation(installAnchor) {
+  if (typeof installAnchor !== 'string' || !path.isAbsolute(installAnchor)) fail('INVALID_INSTALLATION')
+  const anchor = await realpath(installAnchor)
+  const manifest = JSON.parse(await readFile(anchor, 'utf8'))
+  if (manifest.name !== RUNTIME.packageName || typeof manifest.version !== 'string' || typeof manifest.bin?.dsh !== 'string') fail('INVALID_INSTALLATION')
+  const directory = path.dirname(anchor)
+  const bin = await realpath(path.resolve(directory, manifest.bin.dsh))
+  if (!inside(directory, bin) || !(await lstat(bin)).isFile()) fail('INVALID_BIN')
+  // Both flat and pnpm installations are rooted above their outermost node_modules.
+  const parts = directory.split(path.sep)
+  const index = parts.indexOf('node_modules')
+  if (index < 1) fail('UNSUPPORTED_INSTALLATION', 'An installed DSH package anchor is required.')
+  const installRoot = parts.slice(0, index).join(path.sep) || path.sep
+  const require = createRequire(anchor)
+  const bootPath = await realpath(require.resolve('@deepseek-ai/dsh-app-boot'))
+  if (!inside(installRoot, bootPath)) fail('INVALID_BOOT_API')
+  return { installAnchor: anchor, installRoot, bin, version: manifest.version, bootPath }
+}
+
+export function isolatedEnvironment(paths, executableSearchPath) {
+  if (typeof executableSearchPath !== 'string' || !executableSearchPath || executableSearchPath.split(path.delimiter).some(part => !path.isAbsolute(part))) fail('INVALID_EXECUTABLE_PATH')
+  const env = {}
+  Object.assign(env, {
+    PATH: executableSearchPath,
+    HOME: paths.osHome,
+    USERPROFILE: paths.osHome,
+    DSH_HOME: paths.home,
+    DSH_AGENTS_HOME: paths.agentsHome,
+    XDG_CONFIG_HOME: path.join(paths.osHome, 'config'),
+    XDG_CACHE_HOME: path.join(paths.osHome, 'cache'),
+    XDG_DATA_HOME: path.join(paths.osHome, 'data'),
+    XDG_STATE_HOME: path.join(paths.osHome, 'state'),
+    APPDATA: path.join(paths.osHome, 'config'),
+    LOCALAPPDATA: path.join(paths.osHome, 'data'),
+    TMPDIR: paths.tmp,
+    TMP: paths.tmp,
+    TEMP: paths.tmp,
+    DSH_TELEMETRY_DISABLED: '1',
+  })
+  return env
+}
+
+export async function runProbe(spawn, command, args, options, timeoutMs, maxBytes) {
+  return new Promise((resolve, reject) => {
+    let child
+    try { child = spawn(command, args, { ...options, stdio: ['ignore', 'pipe', 'ignore'] }) } catch { reject(new NativeRuntimeError('PROBE_FAILED')); return }
+    let output = ''
+    let done = false
+    let failure
+    const finish = (error, code) => {
+      if (done) return
+      done = true; clearTimeout(timer)
+      if (error) reject(error); else resolve({ code, output })
+    }
+    const timer = setTimeout(() => { failure = new NativeRuntimeError('PROBE_TIMEOUT'); child.kill('SIGKILL') }, timeoutMs)
+    child.on('error', () => { failure = new NativeRuntimeError('PROBE_FAILED') })
+    child.stdout.on('data', data => {
+      output += data.toString('utf8')
+      if (Buffer.byteLength(output) > maxBytes) { failure = new NativeRuntimeError('PROBE_OUTPUT_LIMIT'); child.kill('SIGKILL') }
+    })
+    // close commits both process exit and complete stdout; timeout also waits for owned-handle cleanup.
+    child.on('close', code => finish(failure, code))
+  })
+}
+
+export async function verifyNode(nodeExecutable, spawn, env, paths, limits) {
+  if (typeof nodeExecutable !== 'string' || !path.isAbsolute(nodeExecutable)) fail('INVALID_NODE')
+  const executable = await realpath(nodeExecutable)
+  const probe = await runProbe(spawn, executable, ['-e', 'process.stdout.write(JSON.stringify({node:process.versions.node,electron:!!process.versions.electron}))'], { env, cwd: paths.workspace }, limits.requestTimeoutMs, limits.maxMetadataBytes)
+  let result
+  try { result = JSON.parse(probe.output) } catch { fail('INVALID_NODE') }
+  if (probe.code !== 0 || result.electron || Number(result.node?.split('.')[0]) < 22) fail('INVALID_NODE', 'A verified plain Node 22+ executable is required.')
+  return executable
+}
+
+async function privateTree(directory) {
+  const info = await lstat(directory)
+  if (info.isSymbolicLink()) fail('UNSAFE_PROFILE')
+  if (info.isDirectory()) {
+    await chmod(directory, RUNTIME.privateDirectoryMode)
+    for (const entry of await readdir(directory)) await privateTree(path.join(directory, entry))
+  } else if (info.isFile()) await chmod(directory, RUNTIME.privateFileMode)
+}
+
+async function validateStartupFiles(paths) {
+  // Validate file identities only, never read credential/config contents here.
+  const files = [
+    [paths.profile, ['package.json', 'cordis.patch.yml', 'pnpm-workspace.yaml', '.npmrc']],
+    [paths.home, ['.env', '.credentials.yaml', 'settings.yaml', 'settings.yml', 'cordis.patch.yml']],
+    [paths.workspace, ['.env']],
+  ]
+  for (const [root, names] of files) for (const name of names) {
+    const info = await exists(path.join(root, name))
+    if (info && (!info.isFile() || info.isSymbolicLink() || info.nlink !== 1 || info.uid !== process.getuid())) fail('UNSAFE_STARTUP_FILE', 'Private startup files must be owned regular unlinked files.')
+  }
+}
+
+export async function initializeProfile(paths, installation, preflight, mainWorkspaces) {
+  const args = { mainHome: paths.mainHome, runtimeRoot: paths.root, workspace: paths.workspace, mainWorkspaces, installRoot: installation.installRoot, profileDir: paths.profile }
+  // First reject ambient ancestry before importing even the installation's metadata API.
+  await preflight(args)
+  await validateStartupFiles(paths)
+  const boot = await import(pathToFileURL(installation.bootPath).href)
+  if (boot.resolveProfileDir(RUNTIME.profileName, paths.home) !== paths.profile) fail('PROFILE_PATH_MISMATCH')
+  const fresh = !await exists(path.join(paths.profile, 'package.json'))
+  boot.initProfile(paths.profile, boot.PROFILE_TEMPLATES.web.bundles)
+  if (fresh) await privateTree(paths.profile)
+  await validateStartupFiles(paths)
+  const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
+  if (profile.skippedBundles.length) fail('PROFILE_INCOMPATIBLE', 'Private profile contains missing or incompatible bundles.')
+  const resolution = await boot.createRuntimeResolution({ installAnchor: installation.installAnchor, profile, home: paths.home })
+  const result = await preflight({ ...args, resolution })
+  const homePatches = boot.loadOptionalPatches('fishball', path.join(paths.home, boot.PROFILE_PATCH_FILENAME)) ?? []
+  const entries = boot.composeEntries([...profile.layers.map(layer => layer.patches), profile.patches, homePatches])
+  return { warnings: result.warnings ?? [], entries }
+}
+
+/** Snapshot only owned integration code, never the main profile or its dependency graph. */
+export async function copyChildCode(paths, record) {
+  const sourceRoot = fileURLToPath(new URL('../../', import.meta.url))
+  // Native package interception covers the profile, not sibling launch metadata directories.
+  // Direct placement keeps every existing ancestor within the completed profile preflight.
+  const destination = snapshotPath(paths, record.instanceId)
+  await privateDirectory(paths.profile)
+  // Exclusive creation prevents reusing a partial or older instance's module tree.
+  await mkdir(destination, { mode: RUNTIME.privateDirectoryMode })
+  await writePrivate(path.join(destination, RUNTIME.marker), record, true)
+  await writePrivate(path.join(destination, 'package.json'), { type: 'module', private: true }, true)
+  async function copy(source, target) {
+    const info = await lstat(source)
+    if (info.isSymbolicLink()) fail('UNSAFE_INTEGRATION_SOURCE')
+    if (info.isDirectory()) {
+      await mkdir(target, { mode: RUNTIME.privateDirectoryMode })
+      for (const entry of await readdir(source)) await copy(path.join(source, entry), path.join(target, entry))
+    } else if (source.endsWith('.js')) await writePrivate(target, await readFile(source, 'utf8'), true)
+  }
+  await mkdir(path.join(destination, 'src'), { mode: RUNTIME.privateDirectoryMode })
+  await copy(path.join(sourceRoot, 'native-child.js'), path.join(destination, 'native-child.js'))
+  await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'))
+  if (await exists(path.join(sourceRoot, 'src', 'native-control'))) await copy(path.join(sourceRoot, 'src', 'native-control'), path.join(destination, 'src', 'native-control'))
+  return path.join(destination, 'native-child.js')
+}

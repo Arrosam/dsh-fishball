@@ -8,6 +8,9 @@
   "main": "./index.js",
   "exports": {
     ".": "./index.js",
+    "./native-host": "./native-host.js",
+    "./native-runtime": "./src/native-runtime/index.js",
+    "./native-control": "./src/native-control/index.js",
     "./attribution": "./src/tool-attribution.js",
     "./compaction": "./src/compaction.js",
     "./client": "./client.js",
@@ -15,6 +18,8 @@
   },
   "files": [
     "index.js",
+    "native-host.js",
+    "native-child.js",
     "src/",
     "client.js",
     "packages/messenger/",
