@@ -2352,10 +2352,11 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** Opening fetches the click-time capability URL and hands it straight to window.open; it is never kept in
-     * state, rendered or logged. Not a form with target=_blank: the DSH desktop shell denies every new window and
-     * reloads a same-origin one in the current tab as a GET, which the POST-only route answers with "not found".
-     * window.open of the child's different-port URL is instead passed to the system browser by that shell. */
+    /** Opening fetches the click-time capability URL and navigates a tab opened synchronously in the click (so no
+     * popup blocker applies); the URL is never kept in state, rendered or logged. Not a target=_blank form: its
+     * rel=noreferrer sends `Origin: null` on POST (rc3 admission answers 403) and a noopener new-window form
+     * submission can reach the POST-only route as a GET (rc3 answers "not found"); the DSH desktop shell likewise
+     * reloads a denied same-origin window as a GET. A page fetch always carries its real Origin. */
     function makeNativeSettings(t) {
       return function FishballNativeSettings() {
         const [status, setStatus] = React.useState({ state: NATIVE_UI.loading, code: null })
@@ -2382,15 +2383,20 @@ window.__ModuleLoader__.load({
         const [opening, setOpening] = React.useState(false)
         const open = async () => {
           setOpening(true)
+          // Opened before any await while the click's activation is live; the desktop shell denies it (null).
+          const tab = window.open('', NATIVE_UI.target)
+          if (tab) tab.opener = null
           let opened = false
           try {
             const response = await fetch(apiUrl(NATIVE_UI.openPath), NATIVE_UI.openRequest)
             const url = response.ok ? (await response.json())?.url : undefined
             if (typeof url === 'string' && new URL(url).protocol === NATIVE_UI.protocol) {
-              window.open(url, NATIVE_UI.target, NATIVE_UI.features)
+              if (tab && !tab.closed) tab.location.replace(url)
+              else window.open(url, NATIVE_UI.target, NATIVE_UI.features)
               opened = true
             }
           } catch { /* Errors may carry the capability: never logged or shown. */ }
+          if (!opened) tab?.close()
           setOpening(false)
           if (!opened) setStatus(value => ({ ...value, code: NATIVE_UI.openFailed }))
         }
