@@ -1951,17 +1951,40 @@ Black-box surfaces: Fishball's tool results (`add_plugin`, `remove_plugin`, `set
 
 Support added: `test/support/rev11f.mjs` (host, `ownTools`: call / click with scripted retries / withdraw, `ownRows`, `detailEntries`); constants `OWN_REQUEST`, `WITHDRAW_TOOL`, `OWN_STATUS`, `OWN_MORE`, `OWN_WITHDRAW_HINT`, `OWN_ASKING_TOOL` (demo_echo asks in its body through `FBTEST_ASKING_TOOLS`); `fishballTool` in `expect.mjs` now works with cards (below).
 
+### [own-requests-notices.test.mjs](own-requests-notices.test.mjs): decision/notice regression at the public component boundary
+
+Added from the own-request double-notice acceptance criteria. Unlike the original system-only cases, this focused integration suite imports the exported OwnRequests component and calls only its public methods and session-event boundary. Memory tables and fake intake/agent ports provide controlled delivery failures; no production test hook or private-method access is added. The existing HTTP system cases below retain the real-host proof.
+
+| Rule | Conditions / transition | Expected |
+|---|---|---|
+| R1 | Allow; intake queue accepts | exactly one approval saying run it again, zero rejections; approved; identical retry consumes once to used |
+| R2 | Allow; queue fails; live injection accepts | same as R1; fallback never adds a rejection |
+| R3 ×2 | Allow; queue fails; agent offline / injection throws | approved with no delivery yet; later catchUp delivers exactly one approval and zero rejections; pass still works |
+| R4 ×2 | Reject; without / with note | exactly one rejection, zero approvals; no wake attempt; rejected and takePass fails |
+| R5 | Reject while offline; later catchUp | one rejection after recovery, no wake or pass; repeated catchUp is idempotent |
+| R6 | Unused approval; unrelated turn end / owning turn end | approved until its own turn ends, then expired; zero rejections and takePass fails |
+
+EP distinguishes decisions and delivery availability; the decision table covers all relevant combinations. BVA checks zero versus one versus duplicate notifications and first versus second pass use. State transitions and duplicate Allow/Reject cover approved, used, rejected and expired; each duplicate returns false without a second notice. Notification assertions are shared in [own-request-notices.mjs](support/own-request-notices.mjs).
+
+Run only the focused targets with HOME/DSH_HOME/DSH_AGENTS_HOME/TMPDIR isolated under this worktree:
+
+```sh
+/opt/homebrew/bin/node --test --test-concurrency=1 --test-reporter=spec test/own-requests-notices.test.mjs test/rev11f-request.test.mjs
+```
+
+Do not run this command concurrently with another host suite using the shared installed runtime. The full runner clears this worktree's entire test-homes root; direct node --test does not. Initial verification: 8/8 component checks and 15/15 system checks passed on the existing rc.2 runtime, with no skipped tests.
+
 ### [rev11f-request.test.mjs](rev11f-request.test.mjs): add_plugin and remove_plugin (one host, in order)
 
 | id | technique | requirement | expected |
 |---|---|---|---|
 | OWN-01 | EP (mode asks) | item 21; §14 "returns at once with a card" | `ok:false`, code `waiting-for-approval`, waiting text, within seconds; a card of Fishball's session with tool, exact arguments and its reason; the stock prompt not asked; nothing installed; `own_requests` row `waiting` |
 | OWN-02 | ST (card waiting) | item 21 "keeps handling whatever else comes in" | another message gets its model step; the one card is still there |
-| OWN-03 | ST (waiting → approved) | item 22 | route 200; card leaves; a notice naming the request and saying to run it again wakes Fishball (a model step) |
+| OWN-03 | ST (waiting → approved); BVA notification count; duplicate answer | item 22; double-notice regression | route 200; card leaves; exactly one approval saying to run it again wakes Fishball, zero rejections; repeated Allow/Reject both return HTTP 409 expired with no new notice |
 | OWN-04 | ST (approved → used) | item 22 "one-time pass covers the identical retry" | the retry installs; no second card; no stock prompt; row `used` |
-| OWN-07 | ST (waiting → rejected) | item 22; defaults "Rejecting Fishball's own card tells Fishball without waking it" | no model step for 1 s; row `rejected`; Fishball's next turn carries a text naming the request; the identical call asks again (no pass) |
+| OWN-07 | ST (waiting → rejected); duplicate answer | item 22; defaults "Rejecting Fishball's own card tells Fishball without waking it" | no model step for 1 s; row `rejected`; next turn carries exactly one rejection naming the request and note, zero approvals; repeated Allow returns 409 expired with no new notice; identical call asks again (no pass) |
 | OWN-08 ×4 | DT (withdraw: waiting / again / unknown / a session's card) | item 23 | waiting: ok, card gone, row `withdrawn`, a click is 409 `expired`; a second withdraw, an unknown id and a managed session's card id are refused; the session card stays |
-| OWN-09 | ST (pass ends with the woken turn) | defaults "Pass lifetime" | Allow with a woken turn that does not retry; a call in a later turn files a new card |
+| OWN-09 | ST (pass ends with the woken turn) | defaults "Pass lifetime" | Allow with a woken turn that does not retry; row becomes expired; exactly one approval and zero rejections; a call in a later turn files a new card |
 | OWN-10 | EP (policy never) | §7a.11 "Never-asking modes" (a fact since S35); §14 (Reading) | refused (`ok:false`, not waiting), no card, no stock prompt, no `own_requests` row |
 | OWN-11 | ST (restart before the click) | item 24; §14 "Allow after it still works" | the card is in the pile after the start with the same tool and arguments; Allow works, the woken turn's retry installs; no second card |
 | OWN-12 | BVA (`rationaleChars` 5 / default) | §9 `own_requests.reason` | Fishball's reason on the card is cut to 5 characters; whole at the default |
