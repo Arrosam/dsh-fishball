@@ -23,8 +23,9 @@ SDK baseline: DSH 0.2.1-rc.3, read-only at
 | D8 | Fishball's own session is hard-wired read-only; its composer has no permission control. | user |
 | D9 | Fishball decisions are labelled inline in Fishball's own chat, not in a trail under managed sessions. | user |
 | D10 | One "Hand over to Fishball" button with an optional user note replaces watch-only and send-only. | user |
-| D11 | Main-DSH session rows show a Fishball state mark (running / unread / needs action), reusing rc.3's orca swim when Fishball shows the DeepSeek icon. | user |
+| D11 | Main-DSH session rows keep the Fishball fish as the base layer in every managed state; DSH's hollow running spinner draws above it, and green unread / yellow needs-action dots stay at the top-right. Running animation reuses rc.3's orca swim when the DeepSeek icon is on. | user |
 | D12 | Fishball-accent buttons become normal DSH buttons with one magenta ring, from one shared constant/token. | user |
+| D13 | Main-DSH plugins may technically script the same-origin embedded Fishball page; accepted, because the child process, its home and its credentials stay isolated. | user |
 
 Rejected alternatives are recorded where they were rejected (§3.2, §6.2, §13).
 
@@ -199,7 +200,7 @@ no `SameSite=None; Secure` workaround, and no dependency on `127.0.0.1` vs `loca
 | Model choice / context window | main settings | child settings applied through the admin API | §9. |
 | Provider sync | main to other profile (pairing channel) | main to child (same preview/confirm; child owns the write) | §10. |
 | Open isolated Fishball | new browser tab (`client.js:2403-2425`) | embed panel; `openUrl` route removed | §7. |
-| Unread count / brand mark | main `client.js` | main unchanged, plus the new row mark (§8.2) | — |
+| Unread count / brand mark | main `client.js` | main unchanged, plus the always-on fish base layer, the spinner drawn above it, and Fishball's own unread / needs-action dots (§8.2) | — |
 | Send / watch / hand over | three header buttons (`client.js:4138-4143`) | one hand-over button with a note (§8.3) | D10. |
 
 ## 5. The narrow bridge
@@ -368,22 +369,59 @@ grant, question, plan review, escalation), `sessionId` and title, `at`, the requ
 the outcome, and — for escalations — the user's final decision delivered by `approval.settled`.
 The child owns placement and rendering; the host owns authorization and outcomes.
 
-### 8.2 Sidebar status mark
+### 8.2 Sidebar mark: the fish is always the base layer
 
-States for a managed session:
+Accepted layout (Q5 answered): the Fishball fish sits in the 16x20 leading cell in **every** state
+of a managed session. While the session runs, DSH's own status spinner draws on top; rc.3's spinner
+is a hollow ring, so the fish shows through its centre. Fishball's green unread dot and yellow
+needs-action dot stay at the cell's top-right, needs-action winning when both apply. The fish may
+flip or turn while running; with the DeepSeek-icon switch on, the orca plays rc.3's own swim. Under
+`prefers-reduced-motion: reduce` nothing animates; the dots and the accessible name carry the state.
 
-| State | Mark | Dot |
+| State | Base layer | On top |
 | --- | --- | --- |
-| needs action (pending approval or question) | running animation if running, else static | yellow, top-right |
-| unread | as above | green, top-right |
-| running, nothing pending | continuous animation: fish flips, or the DeepSeek orca swims | none |
-| idle | static mark | none |
-| unmanaged | none — DSH's own indicator unchanged | — |
+| needs action | fish | yellow dot, top-right; DSH's spinner while running |
+| unread | fish | green dot, top-right; DSH's spinner while running |
+| running, nothing pending | fish | DSH's spinner |
+| idle | fish | nothing |
+| unmanaged | none | DSH's own indicator, unchanged |
 
-Precedence: needs-action > unread > none; the dot is independent of the animation, so a running
-session can show a dot. Under `prefers-reduced-motion: reduce` the mark is static; the dot stays and
-the accessible name carries the state ("running", "unread", "waiting for you"), so the state never
-depends on motion alone.
+**Can rc.3 do this cleanly?** Not with a real element while running:
+
+- The leading cell is one 16x20 inline-flex span
+  (`dsh-client-ui-workspace/lib/client.js:1742`).
+- It renders DSH's `SessionStatusDots` whenever the primary status is not idle, and the
+  `sidebar.session.row.leading` slot only when it is idle
+  (`dsh-client-ui-workspace/lib/client.js:2261,2307`). The slot is unmounted while running, so no
+  plugin element can sit under the spinner.
+- The row's only stable hook is `data-row-key="session:<id>"` on the row element
+  (`dsh-client-ui-workspace/lib/client.js:2276`). The hover slot lives inside the hover card
+  (`dsh-client-ui-workspace/lib/client.js:2155`) and the row-action slot is hover-only
+  (`dsh-client-ui-workspace/lib/client.js:2349`); neither mounts in the leading cell.
+- The spinner is `StateDot` for `ongoing`: a 14px SVG
+  (`dsh-web-frontend/dist/assets/index-BXV-oxvX.js:129`) whose track and arc are
+  `fill:none; stroke-width:2` (`dsh-web-frontend/dist/assets/index-BNyAYEM7.css:1`) — a hollow
+  ring, as assumed.
+
+**Upstream ask (the clean path).** Either render `sidebar.session.row.leading` in every state and
+draw DSH's status dot/spinner above it, or add a `sidebar.session.row.accessory` slot rendered
+inside the leading cell in every state. Then the fish is an ordinary slot element, the spinner
+overlays its hollow centre, Fishball's dots and `role="img"` label live in the same element, and the
+orca SMIL swim runs unchanged.
+
+**Closest plugin-only option (interim).** A CSS-only base layer keyed to `data-row-key`: the fish
+painted on the leading cell through a CSS mask so it follows the theme's text colour, with the
+spinner above it and the two dots as another layer. It uses no portal, no DOM mutation and no slot
+abuse, and the row hook is stable. It can show the static fish and turn the masked fish with a CSS
+transform while running, but it cannot run the orca SMIL swim (an image used as a CSS mask does not
+animate), and it cannot add an accessible label of its own; DSH's visually hidden status labels
+still announce running and waiting, while unread is visual-only in the interim. So the fish under
+the spinner, the flip and the two dots are achievable now; only the DeepSeek swim needs the upstream
+slot.
+
+The Fishball client generates the per-session CSS the same way it already hides the model seat
+(`client.js:102,3522-3533`): one selector per managed session id from the host state feed. No DOM
+query, no React portal.
 
 Reuse, do not redraw: the orca morph is rc.3's `HeroFish` — `FISH_LOGO_PATH`,
 `HERO_SWIM_UP_PATH`, `HERO_SWIM_DOWN_PATH`, a SMIL `d` animation over 1.6 s
@@ -393,15 +431,10 @@ queries). The Fishball client should import `FISH_LOGO_PATH` and `FISH_LOGO_VIEW
 `dsh-client-ui-primitives` instead of keeping its own copy (this repository's `client.js:32`
 already imports from that package; the current `ORCA_SWIM` copy at `client.js:474` is replaced).
 
-**Constraint found in rc.3:** the leading cell renders DSH's own status dot whenever the session's
-primary status is not idle, and the `sidebar.session.row.leading` slot only when it is idle
-(`dsh-client-ui-workspace/lib/client.js:2261,2307`). A running managed session therefore cannot
-show a slot mark today. This needs a user decision (Q5).
-
 The "DeepSeek icon" condition is Fishball's existing switch (`client.js:1688,3413`, host
 preference `brandStyle`), not a DSH theme setting. rc.3 ships no such user setting: the official
 brand package is presentation only (`dsh-client-ui-brand-official/lib/index.js:3-8`, an empty
-`apply`), and the only icon choice found is Fishball's own (Q6).
+`apply`), and the only icon choice found is Fishball's own.
 
 ### 8.3 One hand-over button
 
@@ -536,16 +569,16 @@ removed.
 
 1. **Same-origin iframe means no script boundary.** Any main-page plugin can read or drive the
    Fishball UI. The isolation claim is process, data and deployment isolation, not confidentiality
-   from the main page. Accepted unless the user says otherwise (Q3).
+   from the main page. Accepted (D13).
 2. **The child's bearer lives in main-process memory.** It is not persisted and rotates per
    instance; a compromised main process already owns both sides.
 3. **Loopback port exposure.** The child refuses all requests without the bearer, but any local
    process can still attempt connections; rate limiting and 401 are the only defense.
 4. **A DSH core upgrade may move rows we depend on** (`dsh-base` row ids, `profileContext`,
    `agents` and `sessions` contracts). The design pins rc.3 contracts and fails loud at startup.
-5. **The row-leading slot is not composable with DSH's status dot** (§8.2), which blocks D11's
-   running animation until DSH exposes a composable accessory or the user accepts a different
-   trigger.
+5. **The leading cell is not composable in rc.3** (§8.2): while a session runs, DSH renders its
+   spinner in place of the plugin slot, so the orca swim needs a small upstream slot change; the
+   interim CSS layer covers the static fish, the flip and the dots but not the swim (Q13).
 6. **A purpose-built chat UI is less capable than DSH's** at v1 (markdown, tool cards, plan review,
    attachment previews). It is Fishball-owned, so it can catch up incrementally.
 7. **No tests are written here.** Acceptance depends on the separate testing session.
@@ -554,23 +587,26 @@ removed.
 
 ## 14. Open questions (each needs one answer)
 
+Answered on 2026-11-05 (kept here so the numbering stays stable):
+
+- Q3 -> D13: the user accepts that a main-page plugin can script the same-origin embed.
+- Q5 -> D11: the fish is always the base layer; DSH's hollow spinner draws above it; the green and
+  yellow dots stay at the top-right. Composition, the rc.3 constraint and the upstream ask are in
+  §8.2.
+- Q6 -> settled by the Q5 wording "when that toggle is on": Fishball's existing "Use the DeepSeek
+  icon" switch.
+- Q7 -> settled by the Q5 instruction "Keep the reduced-motion rule": static mark, dots and an
+  accessible name.
+
+Still open:
+
 Q1. For an approval Fishball escalates to you, should the live card stay only in that managed
 session's pile on the main DSH (with a mirror label in Fishball's chat), or should the card also
 appear in Fishball's chat as an answerable card?
 Q2. If Fishball's selected model cannot accept images, should the call be refused with
 `images-unsupported` (proposed), or should Fishball switch to an image-capable model first?
-Q3. Is it acceptable that a main-page plugin can script the embedded Fishball UI, given that the
-child process, home and credentials stay separate?
 Q4. Where should the isolated Fishball's installable plugins come from: the DSH plugin market
 index, a fixed recommended list, or a manual package spec only?
-Q5. DSH's sidebar renders its own status dot while a session runs, and only then mounts our slot
-(`dsh-client-ui-workspace/lib/client.js:2261,2307`), so the running animation cannot show without
-a DSH change. Do we (a) ask DSH upstream for a composable row accessory, (b) keep the mark only for
-idle, unread and needs-action rows, or (c) accept a fragile DOM overlay?
-Q6. Should the DeepSeek-icon condition be Fishball's existing "Use the DeepSeek icon" switch
-(proposed; it is Fishball's own preference), or a new DSH setting?
-Q7. With `prefers-reduced-motion`, is a static mark plus the dot and an accessible name enough as
-the running cue, or do you want a specific static running cue?
 Q8. Do routine outbound messages (a `message_fishball` delivery, a `message_session` send) each get
 a decision label, or only decisions about permissions, questions and escalations? Labels per
 message could fill the timeline when Fishball is chatty.
@@ -582,6 +618,9 @@ Q11. Is dropping watch-only and send-only acceptable now that hand-over with an 
 covers both?
 Q12. Should the embed survive a main DSH restart with the same child instance (re-mint the bearer
 and keep the open page), or is reloading the page acceptable?
+Q13. Sidebar composition: wait for the DSH slot change before shipping the running fish, or ship
+the interim CSS base layer now (static fish and flip under the spinner; the orca swim arrives with
+the upstream slot)?
 
 ## 15. Task breakdown for parallel single-task sessions
 
@@ -656,7 +695,7 @@ single DSH client module, so **at most one task per wave may own it** (marked `[
 - Goal: the main settings page can read and change the child's model, plugins and settings, and
   restart it, without writing the child's files.
 - Owns: `src/slim/host/admin.js`, `src/slim/child/admin.js`.
-- Depends: T02, T03. Acceptance: list/install/remove/enable/disable hit the child's profile only;
+- Depends: T02, T03, **Q4 answered** (where installable plugins come from). Acceptance: list/install/remove/enable/disable hit the child's profile only;
   model change takes effect on the next request; every mutation is revision-checked; refusals are
   typed, not thrown into the page.
 - Tests: `ADMIN-01 list the child's plugins`; `-02 install lands in the child profile, not the
@@ -669,7 +708,7 @@ single DSH client module, so **at most one task per wave may own it** (marked `[
 - Goal: both directions of §6 work with rc.3 limits.
 - Owns: `src/slim/attachment-transfer.js`, `src/slim/host/images.js`, `src/slim/child/images.js`,
   the image parts of `src/slim/ui/composer.js`.
-- Depends: T05. Acceptance: png, jpeg, webp and gif accepted, others refused; 4 MiB and 20-image
+- Depends: T05, **Q2 answered** (text-only model). Acceptance: png, jpeg, webp and gif accepted, others refused; 4 MiB and 20-image
   limits enforced on both sides; sha256 verified; no path accepted; text-only model refused with
   `images-unsupported`; files arrive as handle text.
 - Tests: `IMG-01 session image reaches the model`; `-02 Fishball image reaches a session`;
@@ -699,7 +738,7 @@ single DSH client module, so **at most one task per wave may own it** (marked `[
 **T12 — Settings page and one button style `[client]` plus `[host]`**
 - Goal: the rebuilt settings page (§9) and the §8.5 restyle of all nine accent buttons.
 - Owns: the settings page in `client.js`, the accent token and helper, `src/slim/host/settings-routes.js`.
-- Depends: T11, T04. Acceptance: status, model, plugins, settings and restart work end to end
+- Depends: T11, T04, **Q4 answered**. Acceptance: status, model, plugins, settings and restart work end to end
   against a disposable child; every accent button is DSH secondary plus one magenta ring; one
   constant and one CSS class; light and dark checked; no legacy sections.
 - Tests: `SET-01 status and restart`; `-02 model change`; `-03 plugin install and uninstall`; `-04
@@ -730,14 +769,19 @@ single DSH client module, so **at most one task per wave may own it** (marked `[
 - Tests: `DEC-01 allow label`; `-02 escalation label updates after the user's answer`; `-03
   question label`; `-04 message label`; `-05 expand shows card and reply`; `-06 no turn-tail tags`.
 
-**T13 — Sidebar status mark `[client]`**
-- Goal: the §8.2 states, precedence and animation, reusing rc.3's orca assets.
-- Owns: the row-mark component in `client.js`; a small host feed of per-session state.
-- Depends: T05, **Q5 answered**, Q6, Q7. Acceptance: states and precedence match §8.2;
-  reduced-motion is static; the unmanaged row is untouched; the orca path data is imported, not
-  copied.
-- Tests: `MARK-01 running animation`; `-02 needs-action beats unread`; `-03 running plus dot`;
-  `-04 reduced motion static`; `-05 unmanaged unchanged`; `-06 orca mode uses rc.3 assets`.
+**T13 — Sidebar mark: fish base layer under the spinner `[client]`**
+- Goal: the §8.2 layout: the fish in every managed state, DSH's hollow spinner above it, green and
+  yellow dots top-right, reduced-motion static.
+- Owns: the row mark and its per-session stylesheet in `client.js`; a small host feed of per-session
+  state.
+- Depends: T05, D11, D13, **Q13 answered**; the orca swim additionally needs the DSH slot change
+  in §8.2 (the interim covers the static fish, the flip and the dots).
+- Acceptance: the fish is present in every managed state; while running the hollow spinner draws
+  above it and the fish shows through; needs-action beats unread; reduced-motion is static; the
+  unmanaged row is untouched; the orca path data is imported, not copied where the slot path is used.
+- Tests: `MARK-01 fish present in every managed state`; `-02 spinner draws over the fish`; `-03
+  needs-action beats unread`; `-04 running plus dot`; `-05 reduced motion static`; `-06 unmanaged
+  unchanged`; `-07 DeepSeek mode plays the imported swim`.
 
 ### Wave 6 — hand-over (one client task)
 
@@ -765,8 +809,9 @@ single DSH client module, so **at most one task per wave may own it** (marked `[
 
 `T01 -> {T02, T03} -> {T04, T05, T10, T11} -> {T06, T07, T09, T12, T16} -> {T08, T13} -> T14 -> T15`
 
-T03 implements the row T02 inserts, so the pair is verified together at the end of wave 2. T13 and
-T14 each need only T05 but both own `client.js`, so they are split across waves 5 and 6.
+T03 implements the row T02 inserts, so the pair is verified together at the end of wave 2. T13
+needs T05 plus the sidebar decision (Q13); T14 needs T05 plus Q11; both own `client.js`, so they are
+split across waves 5 and 6.
 `client.js` appears in T04, T12, T13, T14 and T15 only, one per wave.
 
 ## 16. Test plan outline (names only)
@@ -779,7 +824,7 @@ T14 each need only T05 but both own `client.js`, so they are split across waves 
 - Images: `IMG-01..08`.
 - Approvals and questions: `APPR-01..07`.
 - Decision labels: `DEC-01..06`.
-- Row mark: `MARK-01..06`.
+- Row mark: `MARK-01..07`.
 - Hand-over: `HAND-01..05`.
 - Settings: `SET-01..07`.
 - Provider sync: `SYNC-01..06`.
