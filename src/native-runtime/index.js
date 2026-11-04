@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url'
 import { spawn as nodeSpawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { RUNTIME, RUNTIME_LIMITS, LIFETIME, NativeRuntimeError, fail, runtimeLimits } from './constants.js'
+import { RUNTIME, RUNTIME_LIMITS, LIFETIME, NativeRuntimeError, fail, runtimeLimits, appAccess } from './constants.js'
 import { pathsFor, prepareLayout, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
 import { resolveInstallation, isolatedEnvironment, verifyNode, initializeProfile, copyChildCode, runProbe } from './installation.js'
 import { connectWire } from './wire.js'
@@ -88,14 +88,16 @@ class NativeRuntime {
     if (!record) return this.stopped()
     try { return this.publicHealth(await this.authenticateReady(record)) } catch { return { state: 'unavailable', hostId: this.hostId, instanceId: record.instanceId, warnings: [...this.warnings] } }
   }) }
-  openUrl() { return this.serial(async () => {
+  /**
+   * The child's loopback origin and the bearer it minted, for the main-side embed broker (§3.1,
+   * §3.2). Main-process only: publicHealth never carries it, so no page can read the token.
+   */
+  embedAccess() { return this.serial(async () => {
     await this.prepare()
     const record = await this.active()
     if (!record) fail('NOT_RUNNING')
-    const result = await this.query(record, 'open-url')
-    const url = new URL(result.url)
-    if (url.protocol !== 'http:' || url.hostname !== RUNTIME.host || !url.port || url.username || url.password) fail('UNSAFE_WEB_URL')
-    return url.href
+    const status = await this.authenticateReady(record)
+    return appAccess(status.access)
   }) }
   async prepare() {
     const layout = await prepareLayout(this.options.mainHome)
@@ -147,7 +149,10 @@ class NativeRuntime {
     const status = await this.query(record, 'health')
     if (status.hostId !== this.hostId || status.instanceId !== record.instanceId || status.pid !== await this.pid(record) || status.version !== record.version || status.installAnchor !== record.installAnchor) fail('CHILD_IDENTITY_MISMATCH')
     if (status.state !== 'ready') fail('NOT_READY')
-    if (!RUNTIME.requiredServices.every(service => status.capabilities.includes(service)) || !status.capabilities.includes('authenticated-web')) fail('MISSING_CAPABILITY')
+    if (!RUNTIME.requiredServices.every(service => status.capabilities.includes(service)) || !status.capabilities.includes(RUNTIME.capabilities.authenticatedApp)) fail('MISSING_CAPABILITY')
+    // A ready child always reports the app surface it is reachable through; validate it here so
+    // the startup loop and the embed broker share one rule (§2.3, §3.2).
+    appAccess(status.access)
     return status
   }
   dropControl() {
@@ -229,7 +234,7 @@ class NativeRuntime {
         if (signal?.aborted) fail('START_INTERRUPTED')
         if (spawnFailed || child.exitCode !== null || child.signalCode !== null) fail('CHILD_EXITED')
         try { status = await this.authenticateReady(record); break } catch (error) {
-          if (['CHILD_IDENTITY_MISMATCH', 'MISSING_CAPABILITY'].includes(error.code)) throw error
+          if (RUNTIME.fatalStartupCodes.includes(error.code)) throw error
         }
         await delay(this.limits.pollIntervalMs)
       }

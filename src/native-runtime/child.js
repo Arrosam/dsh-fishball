@@ -5,38 +5,45 @@ import { fileURLToPath } from 'node:url'
 import { realpath, readFile, chmod, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { registerParentShutdown } from './parent-watch.js'
-import { RUNTIME, runtimeLimits, fail, NativeRuntimeError } from './constants.js'
+import { RUNTIME, runtimeLimits, fail, NativeRuntimeError, appAccess } from './constants.js'
+import { BEARER, ROUTES } from '../slim/contract.js'
 import { jsonPrivate, readPrivate, writePrivate, privateDirectory, launchPath, snapshotPath, pathsFor, inside, lifecycleLog } from './files.js'
 import { Wire, proof, sameProof } from './wire.js'
 
-const HTTP = Object.freeze({ unauthorized: 401, redirect: 303, success: 200 })
-async function probeHttp(url, timeoutMs, cookie) {
+const HTTP = Object.freeze({ success: 200 })
+async function probeHttp(url, timeoutMs, bearer) {
   return new Promise((resolve, reject) => {
-    const request = http.get(url, { headers: cookie ? { cookie } : {}, agent: false }, response => {
-      const result = { status: response.statusCode, cookie: response.headers['set-cookie'] }
+    const headers = bearer === undefined ? {} : { [BEARER.header]: BEARER.scheme + BEARER.separator + bearer }
+    const request = http.get(url, { headers, agent: false }, response => {
+      const result = { status: response.statusCode }
       response.resume()
       response.on('end', () => resolve(result))
-      response.on('error', () => reject(new NativeRuntimeError('WEB_AUTH_NOT_READY')))
+      response.on('error', () => reject(new NativeRuntimeError('APP_AUTH_NOT_READY')))
     })
     request.setTimeout(timeoutMs, () => request.destroy())
-    request.on('error', () => reject(new NativeRuntimeError('WEB_AUTH_NOT_READY')))
+    request.on('error', () => reject(new NativeRuntimeError('APP_AUTH_NOT_READY')))
   })
 }
 
+/** The child owns the contract routes without the broker prefix, exactly as the app server does (§3.1). */
+const HEALTH_PATH = ROUTES.api.slice(ROUTES.prefix.length) + 'health'
+
+/**
+ * The slim readiness gate (§2.3): the base core services are mounted, the app row published its
+ * loopback service while booting, and that server accepts the bearer it minted. The previous gate
+ * exchanged the DSH Web UI's own login cookie, which only exists when the Web bundle runs.
+ */
 async function authenticatedReadiness(ctx, limits) {
   for (const service of RUNTIME.requiredServices) if (ctx.get(service) === undefined) fail('MISSING_CAPABILITY')
-  const origin = new URL(ctx.webServer.getOrigin())
-  if (origin.protocol !== 'http:' || origin.hostname !== RUNTIME.host || !origin.port || origin.username || origin.password) fail('UNSAFE_WEB_BIND')
-  const url = ctx.connection.authenticatedUrl(origin.href)
-  const authenticated = new URL(url)
-  if (authenticated.origin !== origin.origin || !authenticated.search || authenticated.pathname !== '/') fail('INVALID_WEB_AUTH')
-  const anonymous = await probeHttp(origin.href, limits.requestTimeoutMs)
-  const exchanged = await probeHttp(url, limits.requestTimeoutMs)
-  const cookie = exchanged.cookie?.map(value => value.split(';')[0]).join('; ')
-  if (anonymous.status !== HTTP.unauthorized || exchanged.status !== HTTP.redirect || !cookie) fail('WEB_AUTH_NOT_READY')
-  const page = await probeHttp(origin.href, limits.requestTimeoutMs, cookie)
-  if (page.status !== HTTP.success) fail('WEB_AUTH_NOT_READY')
-  return { capabilities: [...RUNTIME.requiredServices, 'authenticated-web', 'lifecycle-v1', 'control-transport-v1'] }
+  const app = ctx.get(RUNTIME.appService)
+  if (app === undefined) fail('APP_NOT_PUBLISHED')
+  const access = appAccess(app)
+  const health = new URL(HEALTH_PATH, access.origin).href
+  const anonymous = await probeHttp(health, limits.requestTimeoutMs)
+  if (anonymous.status !== BEARER.unauthorizedStatus) fail('APP_AUTH_NOT_READY')
+  const authenticated = await probeHttp(health, limits.requestTimeoutMs, access.bearer)
+  if (authenticated.status !== HTTP.success) fail('APP_AUTH_NOT_READY')
+  return { access, capabilities: [...RUNTIME.requiredServices, RUNTIME.capabilities.authenticatedApp, RUNTIME.capabilities.lifecycle, RUNTIME.capabilities.control] }
 }
 
 /** Mounted only by the explicit private CLI overlay, not the legacy Fishball entrypoint. */
@@ -107,8 +114,7 @@ export async function applyNativeChild(ctx, config) {
     wire.on('request', async message => {
       try {
         let payload
-        if (message.operation === 'health') payload = { state: ready ? 'ready' : 'starting', ...identity, pid: process.pid, version: manifest.version, installAnchor: record.installAnchor, capabilities: ready?.capabilities ?? [] }
-        else if (message.operation === 'open-url') { if (!ready) fail('NOT_READY'); payload = { url: ctx.connection.authenticatedUrl(ctx.webServer.getOrigin()) } }
+        if (message.operation === 'health') payload = { state: ready ? 'ready' : 'starting', ...identity, pid: process.pid, version: manifest.version, installAnchor: record.installAnchor, capabilities: ready?.capabilities ?? [], access: ready?.access ?? null }
         else if (message.operation === 'control') {
           if (!ready || current) fail('CONTROL_BUSY')
           const metadata = { ...identity, connectionId: randomUUID() }

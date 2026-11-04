@@ -3,6 +3,14 @@ export const RUNTIME = Object.freeze({
   protocol: 'fishball-lifecycle/1',
   packageName: '@deepseek-ai/dsh',
   profileName: 'fishball',
+  // The slim child is the DSH core only: the app row supplies the transport and UI (§2.1).
+  profile: Object.freeze({
+    bundles: Object.freeze(['@deepseek-ai/dsh-base']),
+    // Earlier attached runtimes created this profile with the Web bundle, and initProfile never
+    // rewrites an existing manifest. The slim child must not run that Web UI, so its bundle is
+    // dropped on start; every bundle the owner installed later is kept (§2.1, §2.3).
+    legacyBundle: '@deepseek-ai/dsh-web-app',
+  }),
   codeSnapshotPrefix: '.fishball-native-',
   host: '127.0.0.1',
   socketName: 'control.sock',
@@ -16,8 +24,44 @@ export const RUNTIME = Object.freeze({
   pid: 'pid.json',
   endpoint: 'endpoint.json',
   log: 'lifecycle.log',
-  requiredServices: ['webServer', 'webApp', 'connection', 'sessionController', 'pluginManager', 'appExit', 'appReady', 'pluginPackages'],
+  // Readiness is the base core plus the app server (§2.3). The old gate waited for webServer,
+  // webApp, connection and sessionController, which only the Web UI bundle supplies.
+  requiredServices: Object.freeze(['agents', 'sessions', 'tools', 'profileContext', 'appExit', 'appReady']),
+  // The app row publishes {`origin`, `bearer`} here while it boots, before appReady, and removes
+  // it when the listener closes (T03). Absent while starting; readiness probes it once (§2.3).
+  appService: 'fishballApp',
+  capabilities: Object.freeze({ authenticatedApp: 'authenticated-app', lifecycle: 'lifecycle-v1', control: 'control-transport-v1' }),
+  // A ready child reporting any of these can never recover by polling again.
+  fatalStartupCodes: Object.freeze(['CHILD_IDENTITY_MISMATCH', 'MISSING_CAPABILITY', 'UNSAFE_APP_ORIGIN', 'INVALID_APP_ACCESS', 'INVALID_APP_BEARER']),
 })
+
+/**
+ * The app row's loopback surface (§2.3, §3.2): the origin it listens on and the bearer it minted.
+ * The bearer stays opaque to the lifecycle — the app decides authentication — but it becomes an
+ * Authorization header value, so a value that is not header-safe is refused before the probe.
+ */
+export const APP_ACCESS = Object.freeze({
+  protocol: 'http:',
+  documentPath: '/',
+  // A 256-bit token is 32 raw bytes; its hex, base64 and base64url text forms are 32 to 64 bytes.
+  // The range accepts every standard encoding without fixing one for the app row.
+  minBearerBytes: 32,
+  maxBearerBytes: 64,
+  headerUnsafe: /[^\x21-\x7e]/,
+})
+
+export function appAccess(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) fail('INVALID_APP_ACCESS')
+  const { origin, bearer } = value
+  let url
+  try { url = new URL(origin) } catch { fail('INVALID_APP_ACCESS') }
+  // The browser never addresses the child port (§3.1); the main-side broker is the only client.
+  if (url.protocol !== APP_ACCESS.protocol || url.hostname !== RUNTIME.host || !url.port || url.username || url.password || url.pathname !== APP_ACCESS.documentPath || url.search || url.hash) fail('UNSAFE_APP_ORIGIN')
+  if (typeof bearer !== 'string' || APP_ACCESS.headerUnsafe.test(bearer)) fail('INVALID_APP_BEARER')
+  const bytes = Buffer.byteLength(bearer, 'utf8')
+  if (bytes < APP_ACCESS.minBearerBytes || bytes > APP_ACCESS.maxBearerBytes) fail('INVALID_APP_BEARER')
+  return Object.freeze({ origin: url.origin, bearer })
+}
 
 // rc.3 grants the entire host tree 5000 ms; native cleanup must finish sooner.
 export const LIFETIME = Object.freeze({
