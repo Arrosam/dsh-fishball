@@ -37,6 +37,8 @@ These steps were verified on 2026-11-02 with the same mechanics, from branch `re
 
 Open **Fishball settings** from its chat header or the model-setting prompt above its composer. Under **Model for Fishball**, choose a model, optionally choose its reasoning effort, and press **Save**.
 
+Use **Refresh models** beside the picker after changing providers or models in DSH. It fetches the current host catalog without a page reload. Loading and provider failures are shown; a failed refresh keeps the previous list. If a saved model disappears, its provider/model identity remains visible as **Unavailable**, without clearing the saved choice or locking the composer. Refresh never saves a model or changes credentials.
+
 Fishball’s composer stays blocked until a dedicated model is saved. An existing chat model or DSH default does not count as this explicit choice. The selection survives restarts and does not change ordinary sessions or DSH’s default model. The model switcher is no longer shown in Fishball’s composer.
 
 ## Choose a model for delegated work

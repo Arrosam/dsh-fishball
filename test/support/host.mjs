@@ -21,7 +21,7 @@ export function newHome(label) {
 export async function bootHost(home, { timeoutMs = MS.boot, env = {} } = {}) {
   const child = spawn(NODE, [WORKER], {
     // FBTEST_PLUGIN_DIR from the runner's environment boots another checkout of the plugin (a baseline run of a file).
-    env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '', DSH_HOME: home, DSH_TELEMETRY_DISABLED: '1', NO_COLOR: '1', ...(process.env.FBTEST_PLUGIN_DIR ? { FBTEST_PLUGIN_DIR: process.env.FBTEST_PLUGIN_DIR } : {}), ...env },
+    env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '', DSH_HOME: home, DSH_TELEMETRY_DISABLED: '1', NO_COLOR: '1', ...(process.env.FBTEST_PLUGIN_DIR ? { FBTEST_PLUGIN_DIR: process.env.FBTEST_PLUGIN_DIR } : {}), ...(process.env.FBTEST_DSH_RUNTIME !== undefined ? { FBTEST_DSH_RUNTIME: process.env.FBTEST_DSH_RUNTIME } : {}), ...env },
     // stdin is a pipe that is never ended: the DSH launcher shuts down on stdin EOF.
     stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
   })
