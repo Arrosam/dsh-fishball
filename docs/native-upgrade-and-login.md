@@ -2,6 +2,8 @@
 
 Status: source-only research, 2026-11-04. Production implementation has been approved in the parent task; **this investigation performs no live action** and writes only this document. The earlier [runtime-isolation audit](<runtime-isolation.md>) is the evidence baseline, not proof that production lifecycle or login is complete.
 
+> Lifecycle amendment: the newer owner-approved [host-bound lifecycle](<native-manual-handoff.md>) supersedes the historical detach/survive proposal below. Enabled native hosting now starts after main readiness and stops on disable/dispose/main shutdown; HMR stops before restarting. This remains source-only and manually unverified. Upgrade code retention and independent Claude login are still not guaranteed.
+
 ## Scope and conclusions
 
 - Runtime baseline: unmodified DSH **0.2.1-rc.3**, established by the [prior audit](<runtime-isolation.md#L124-L160>). Upgrade design below uses that audit; this investigation did not re-audit the installed DSH updater or execute a host.
@@ -83,7 +85,7 @@ This is the small contract to coordinate with the lifecycle author, **not a clai
 | Compatible, child stopped | Explicit start from that anchor, same private home, unchanged existing config; verify application readiness. | Copy main settings, package trees, credentials or sessions. |
 | Old child still running / reattached | Installation/version mismatch becomes restart-required; authenticate ownership before explicit stop/restart. | Second writer, mismatch silently marked ready, old code deleted while in use. |
 | New version incompatible / start failed | Preserve data/config and expose precise failed gate. | Disable required plugins, rewrite config, reset defaults, migrate/delete or auto-downgrade. |
-| Ordinary disable/uninstall | Operator must call the authenticated lifecycle service stop and confirm exit **before** disabling/removing the entry. Current plugin disposal only detaches; retain private data/config/history. | Assume disable stops the child, or treat uninstall as consent to delete runtime home. |
+| Ordinary disable/uninstall | Native plugin disposal now initiates bounded child shutdown; confirm stopped rather than failed before removing installed code. Retain private data/config/history. | Treat a failed/uncertain stop as confirmed exit, or uninstall as consent to delete runtime home. |
 
 Rollback is **not** promised safe merely because Fishball leaves configuration alone. Native DSH/plugins may have their own startup/sanitization/storage changes. The [prior audit:82](<runtime-isolation.md#L82>) notes selected-patch sanitation backups. Subscriptions contains its own legacy-store migration in [store:169–174](</Users/samuel/.dsh/profiles/web/node_modules/dsh-plugin-subscriptions/lib/auth/store.js#L169-L174>) and [store:193–221](</Users/samuel/.dsh/profiles/web/node_modules/dsh-plugin-subscriptions/lib/auth/store.js#L193-L221>). This source fact is **not an instruction to inspect, repair, migrate or remove any actual store**. Fishball must not adopt main/legacy stores or use plugin migration routines as an upgrade strategy. Guaranteeing that arbitrary native plugins never modify their own state would require a different contract or further validation.
 

@@ -1,54 +1,57 @@
-# Native runtime: manual integration handoff
+# Native runtime: host-bound manual integration handoff
 
-This is unverified opt-in development code, not a replacement for the delivered legacy Fishball. No automated tests or native launches are performed for this handoff. Install/package/restart are separate operator actions.
+This is development code with syntax-only validation, not production acceptance. No automated tests, native launches, package/install or live restarts are performed for this change. The original delivery features and legacy Fishball remain in place.
 
-## Default and package scope
+## Installation and one-switch control
 
-The default bundle patch is unchanged: it registers the existing legacy Fishball and attribution entries only. The native host export is not registered automatically. Even if explicitly registered, its `autoStart` default is `false`. Both native entry files and the source modules are included in the package file allowlist. Installing this code alone must not launch a native child.
-
-## Explicit activation
-
-An operator who controls the main DSH profile composition can append the following patch entry using the normal profile configuration mechanism; do not overwrite existing entries or delivery settings. This is an example for the known local Node 22 binary, not executable-path discovery. Verify the binary path before enabling.
+The separate install session should append this entry to the main web profile using the normal profile composition mechanism, preserving every existing entry and setting. Do not add it to the isolated child profile. Verify the explicit Node binary exists on the target host.
 
 ```yaml
 - insert:
     - id: fishball-native-host
       name: dsh-fishball/native-host
       config:
+        enabled: true
         nodeExecutable: /opt/homebrew/Cellar/node@22/22.22.2_1/bin/node
         executableSearchPath: /opt/homebrew/Cellar/node@22/22.22.2_1/bin:/usr/bin:/bin
         managedSessionIds: []
-        autoStart: false
 ```
 
-Load the entry through the native plugin loader. With `autoStart: false`, loading registers a host-local service but does not start a child. Empty `managedSessionIds` denies control of all main-host sessions. Add only explicit locally authorized existing session IDs if control is desired; this is not linked automatically to the legacy managed-session UI.
+`enabled: true` means start automatically after main DSH reports ready. `enabled: false` is the single feature off switch: reloading that changed configuration disposes the old host entry and stops its child, and the new disabled instance cannot start one. Disabling/removing the native plugin entry also stops its child. The retired `autoStart` setting no longer controls this lifecycle. The generic package bundle patch still registers only legacy Fishball; the profile entry above is the explicit install opt-in requested by the owner.
 
-To start, either explicitly change `autoStart` to `true` and reload this entry, or call `await ctx.nativeFishballRuntime.start()` from an authorized **server-side DSH plugin context**. Read health with `await ctx.nativeFishballRuntime.health()` and obtain the private Web login URL with `await ctx.nativeFishballRuntime.openUrl()`. Open that URL privately; it contains a bearer login capability and must not be logged or shared. The child uses a loopback ephemeral port, not the main GUI port. Its profile is initialized fresh from the running main installation anchor; legacy conversations/config/credentials are not migrated.
+An empty `managedSessionIds` denies control of all main-host sessions. Add only explicit locally authorized main-host session IDs if desired; the legacy managed-session UI does not automatically populate this list. Native approval forwarding and native status/watch integration remain separate unfinished work.
 
-There is currently **no native lifecycle GUI, command-line wrapper, public RPC, or agent start/stop tool**. `ctx` above is a host plugin context, not a browser-console variable. The legacy Fishball sidebar continues to control the legacy assistant. If the operator has no host-side integration able to invoke the service and retrieve the URL, this revision does not provide a complete end-user start/open/stop workflow; leave native disabled rather than invent a GUI action.
+## Open from the main GUI
 
-## Explicit shutdown
+In **Plugins → Fishball → settings**, the native section immediately after legacy Status reports its state independently of legacy Fishball; use Refresh to update it. When ready, click **Open isolated Fishball**. The owner-authenticated POST endpoint responds with a no-store, no-referrer redirect to a freshly requested child capability URL. The URL is not inserted into client state, rendered as a link, logged or saved in configuration. Only the browser navigation for that click receives it. Native owner admission enforces authorization on the server, not just by hiding the button.
 
-1. While the host entry is still loaded, call `await ctx.nativeFishballRuntime.stop()` from that same authorized host integration and confirm success. Failure is not permission to signal an arbitrary PID.
-2. Set `autoStart: false` before any future reload, then disable/remove only the `fishball-native-host` entry.
-3. Preserve the private runtime directory. Do not delete profiles, credentials, sessions or legacy state.
+The child uses a loopback ephemeral port and a separate freshly initialized profile. It does not replace main GUI port54679 or migrate legacy conversations, config or credentials. Opening from a different computer is not supported by this loopback link. Browser/network inspection of the actual click can of course see the navigation capability; no application can hide a destination from the browser performing that navigation.
 
-Disabling the plugin, restarting the main process, or changing `autoStart` to false **does not itself stop a running child**: disposal detaches so it can survive the main host. Stop explicitly before uninstall/upgrades remove installed code. No installed-code retention lease is implemented.
+If native startup fails or native hosting is not installed/enabled, the native section shows a non-ready status; the legacy Fishball panel remains usable. Opening must not implicitly launch a new runtime.
+
+## Lifecycle, restart and failure rules
+
+- Main readiness triggers asynchronous startup; plugin apply does not await child readiness. Exceptions are reduced to bounded safe status codes, not raw launch output/paths/tokens. Native failure must not fail main startup.
+- Disable/dispose and native main shutdown begin graceful authenticated child stop. Escalation is bounded and restricted to the exact still-live ChildProcess handle spawned by this owner; persisted PID numbers are never standalone signal authority. rc.3 main shutdown has a 5000 ms application-disposal grace; native host cleanup has a 4000 ms deadline and an owned-handle force fallback at 2500 ms (an unsuccessful graceful stop may escalate earlier).
+- HMR uses **stop then restart**, never intentional detach-and-survive. A process-global per-attached-home registry serializes successor startup behind confirmed predecessor cleanup, including across module reloads. If stop is uncertain, retain the failed gate and refuse replacement.
+- Startup checks private ownership markers, active claim, host/instance identity and authenticated lifecycle endpoint. A surviving prior instance must be handled before a replacement can start; dead claims are retired only after verified death, and unknown state fails closed. No second writer is allowed.
+- A child crash changes status to failed; there is no automatic respawn loop. An explicit service start/restart or plugin reload can attempt verified recovery.
+- Abrupt process exit cannot await asynchronous JavaScript. A Node --import preload installs a private fd3 parent-lifetime pipe before CLI/plugin evaluation. Parent process exit, including SIGKILL, closes the pipe: the child requests native graceful shutdown and has a 3000 ms self-exit deadline. A blocked child event loop, OS failure, termination before preload evaluation, and pre-existing orphan formats still require conservative recovery. An unauthenticated old PID is never killed on the strength of its metadata.
+- Private data and snapshots are not deleted when turning the feature off. No installed-code retention lease or transparent upgrade guarantee is provided. Confirm child stop before removing the old installed runtime.
 
 ## Known unverified/open items
 
-- Last expanded contract execution: 78 cases, 75 passed, 3 failed (HOST-04 wrong agent identity; HOST-04 wrong session identity; HOST-05 authorization revoked during resolve). A production terminal-refusal fix is written but has not been rerun. Later additional cases are unexecuted.
-- Last native lifecycle execution failed: three startup waits timed out, then the outer 240-second deadline interrupted the fourth case. No full native acceptance passed.
-- Startup fixes now preserve the full preset config (including required id and tools) and place copied child code within the private profile resolver scope. A side-effect-free resolver probe confirmed ERR_MODULE_NOT_FOUND at the old snapshot location. Post-fix startup remains unverified.
+- The new host-bound shutdown, enabled switch, HMR serialization, crash recovery, failure status and owner-only click redirect have only source review and node --check, not behavioral/browser/native verification.
+- Last expanded contract execution:78 cases,75 passed,3 failed (HOST-04 wrong agent identity; HOST-04 wrong session identity; HOST-05 authorization revoked during resolve). A terminal-refusal production fix is written but has not been rerun. Later added cases remain unexecuted.
+- Last native lifecycle execution failed: three startup waits timed out, then the outer240-second deadline interrupted the fourth case. No full native acceptance passed.
+- Earlier startup fixes preserve the full preset config and place copied child code within the private profile resolver scope. The old resolver path failed ERR_MODULE_NOT_FOUND; post-fix startup remains unverified.
 - Real native host session.status/watch callbacks are absent. Generic protocol support does not establish integration.
-- Approval adapter code is present but not wired to the native host. Explicit opt-in configuration, TTL and lifecycle integration are unfinished; do not assume host approvals reach the child.
-- P1 preflight canonical-target deduplication may skip core-slot inspection through a later scope alias. The logical-path recursion correction alone does not fix this. Do not treat preflight as a complete security boundary; no OS sandbox is established.
-- Per-instance owned code snapshots are retained without bounded garbage collection.
-- Partial initialization/crash metadata can fail closed and require separately authorized recovery. POSIX only; no broad upgrade/rollback recovery guarantee.
-- Test-runner outer deadline/grandchild reaping repair and orphan PID 60179 cleanup belong to the separate testing session; this handoff does not perform either.
-- Native runtime/source relocation received limited source review, not final whole-change security acceptance.
-- Independent Claude first-account onboarding without credential import/Keychain access is unresolved; see [login research](<native-upgrade-and-login.md>). Do not click stock first Connect under a no-Keychain constraint.
+- Approval adapter code exists but explicit opt-in/TTL/lifecycle integration is unfinished; do not assume main approvals reach the child.
+- P1 preflight canonical-target deduplication may skip core-slot inspection through a later scope alias. The logical-path recursion correction alone does not fix it. No OS sandbox is established.
+- Per-instance code snapshots are retained without bounded garbage collection. Partial initialization/crash metadata can fail closed and require separately authorized recovery. POSIX only.
+- Test-runner timeout/grandchild reaping and orphan PID60179 belong to the separate testing session; no action against that PID is part of this work.
+- Independent Claude onboarding without credential import/Keychain access remains unresolved: see [login research](<native-upgrade-and-login.md>). Do not click stock first Connect under a no-Keychain constraint.
 
 ## Integration baseline
 
-The delivery baseline is 74fe6be (delivery/2026-11-04-sync), including the existing fixes, bubble change, model refresh and provider sync. Native integration must retain that baseline. Production/docs and unchanged existing independent tests are separate commits; no tests are run, no package is built or installed, and no live process is restarted as part of this development handoff.
+This change builds on integration/native-runtime-on-74fe6be and preserves delivery74fe6be (existing fixes, bubble change, model refresh and provider sync). Test sources are unchanged. No real home, credentials or Keychain are accessed, no DSH is launched/restarted, and no branch is pushed.

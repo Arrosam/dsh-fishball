@@ -78,6 +78,14 @@ window.__ModuleLoader__.load({
     const MANAGE_MENU = Object.freeze({ id: 'fishball-manage', order: 422 })
     const MANAGE_HEADER = Object.freeze({ id: 'fishball-manage', order: 4.5 })
     const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'feature-off', 'unavailable'])
+    const NATIVE_UI = Object.freeze({
+      statusPath: '/api/fishball/native/status', openPath: '/api/fishball/native/open',
+      states: Object.freeze(['disabled', 'waiting', 'starting', 'ready', 'stopping', 'stopped', 'failed']),
+      codes: Object.freeze(['NATIVE_START_FAILED', 'NATIVE_STOP_FAILED', 'NATIVE_CHILD_EXITED', 'NATIVE_UNAVAILABLE', 'NATIVE_OPEN_FAILED', 'NATIVE_TIMEOUT', 'NATIVE_DISABLED']),
+      ready: 'ready', unavailable: 'unavailable', loading: 'loading',
+      request: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
+      method: 'post', target: '_blank', rel: 'noopener noreferrer',
+    })
     const PROVIDER_SYNC_UI = Object.freeze({ path: '/api/fishball/provider-sync', mask: '••••••••',
       groups: Object.freeze(['add', 'existsSkip', 'conflictSkip', 'unsupported']),
       invitationRows: 3, inactive: 'inactive', pendingSource: 'pendingSource', pendingTarget: 'pendingTarget', paired: 'paired',
@@ -541,6 +549,11 @@ window.__ModuleLoader__.load({
       modelLoadFailed: 'Models could not be refreshed. Any previous list and selection are unchanged. Try again.',
       modelSaveFailed: 'The model was not saved. Check that it is still available and try again.',
       modelUnavailable: 'A saved or selected model is unavailable in the current list. Its selection is kept; choose another model to change it.',
+      nativeTitle: 'Isolated Fishball', nativeOpen: 'Open isolated Fishball', nativeRefresh: 'Refresh status',
+      nativeHint: 'Separate native DSH. Enable it in the profile configuration; this does not replace the existing Fishball chat. Opens a new tab.',
+      'native.loading': 'Checking status…', 'native.disabled': 'Disabled', 'native.waiting': 'Waiting for host readiness',
+      'native.starting': 'Starting', 'native.ready': 'Ready', 'native.stopping': 'Stopping', 'native.stopped': 'Stopped',
+      'native.failed': 'Native runtime failed', 'native.unavailable': 'Unavailable or not enabled in this profile',
       syncTitle: 'Sync model providers and API keys',
       syncHint: 'Manual additions only. Pair source and target pages, preview, then confirm. The invitation is a short-lived scoped pairing capability, not a DSH Web or OAuth token. Existing settings are skipped. OAuth and logins are never copied.',
       syncInvite: 'Create target invitation', syncInvitation: 'One-time target invitation', syncPaste: 'Paste target invitation on the source',
@@ -1011,6 +1024,11 @@ window.__ModuleLoader__.load({
       modelLoadFailed: '无法刷新模型列表。原有列表和选择保持不变，请重试。',
       modelSaveFailed: '模型未保存。请确认模型仍然可用，然后重试。',
       modelUnavailable: '已保存或当前选择的模型不在列表中，原选择仍然保留；可另选模型来更改。',
+      nativeTitle: '独立 Fishball', nativeOpen: '打开独立 Fishball', nativeRefresh: '刷新状态',
+      nativeHint: '独立的原生 DSH；需通过 profile 配置启用，不替代现有 Fishball 聊天。将在新标签页打开。',
+      'native.loading': '正在检查状态…', 'native.disabled': '已禁用', 'native.waiting': '等待主端就绪',
+      'native.starting': '正在启动', 'native.ready': '已就绪', 'native.stopping': '正在停止', 'native.stopped': '已停止',
+      'native.failed': '原生运行时失败', 'native.unavailable': '不可用，或当前 profile 未启用',
       syncTitle: '同步模型提供商和 API key',
       syncHint: '仅手动新增。先在来源与目标两端配对，再预览并确认。邀请是短期、限用途的配对凭证，不是 DSH Web 或 OAuth 令牌；已有配置跳过，不复制 OAuth 或登录信息。',
       syncInvite: '创建目标邀请', syncInvitation: '一次性目标邀请', syncPaste: '在来源粘贴目标邀请',
@@ -2333,6 +2351,43 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** The capability is never fetched into JavaScript: native owner-only POST redirects the new tab. */
+    function makeNativeSettings(t) {
+      return function FishballNativeSettings() {
+        const [status, setStatus] = React.useState({ state: NATIVE_UI.loading, code: null })
+        const [refresh, setRefresh] = React.useState(false)
+        React.useEffect(() => {
+          const abort = new AbortController()
+          setStatus({ state: NATIVE_UI.loading, code: null })
+          const load = async () => {
+            let next = { state: NATIVE_UI.unavailable, code: null }
+            try {
+              const response = await fetch(apiUrl(NATIVE_UI.statusPath), { ...NATIVE_UI.request, signal: abort.signal })
+              if (response.ok) {
+                const value = await response.json()
+                if (NATIVE_UI.states.includes(value?.state) &&
+                    (value.state !== NATIVE_UI.ready || value.enabled === true)) next = { state: value.state,
+                      code: NATIVE_UI.codes.includes(value.code) ? value.code : null }
+              }
+            } catch { /* Missing native plugin, authorization and network failures stay local to this section. */ }
+            if (!abort.signal.aborted) setStatus(next)
+          }
+          void load()
+          return () => abort.abort()
+        }, [refresh])
+        return h('div', { className: CLS.section, 'data-fishball-native': true },
+          h('h3', null, t('nativeTitle')),
+          h('p', { className: CLS.muted }, t('nativeHint')),
+          h('p', { role: 'status', 'aria-live': 'polite' }, t('native.' + status.state)),
+          status.code ? h('p', { className: CLS.code }, status.code) : null,
+          h('form', { action: apiUrl(NATIVE_UI.openPath), method: NATIVE_UI.method,
+            target: NATIVE_UI.target, rel: NATIVE_UI.rel, className: CLS.row },
+            h(Button, { type: 'submit', size: 'sm', disabled: status.state !== NATIVE_UI.ready }, t('nativeOpen')),
+            h(Button, { type: 'button', size: 'sm', disabled: status.state === NATIVE_UI.loading,
+              onClick: () => setRefresh(value => !value) }, t('nativeRefresh'))))
+      }
+    }
+
     /** A model-setting prompt remains usable while DSH makes the editor and submit paths inert. */
     /** Dedicated owner controls; no session-management tool exposes these actions. */
     function makeProviderSyncSettings(t) {
@@ -3364,7 +3419,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, ModelSettings, ProviderSyncSettings, Recommended, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
+    function makeSettingsPage(section, Status, NativeSettings, ModelSettings, ProviderSyncSettings, Recommended, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -3374,6 +3429,7 @@ window.__ModuleLoader__.load({
         const disabled = !state.writable || state.saving
         return h(React.Fragment, null,
           h(Status),
+          h(NativeSettings),
           h(ModelSettings),
           h(ProviderSyncSettings),
           h(Recommended),
@@ -4088,7 +4144,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.detailActions, () => ctx.slots.register({ name: SLOT.detailActions, id: MANAGER.actionId, locale: NS }, manager.DetailAction)), 'fishball: plugin page switch')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeModelSettings(t), makeProviderSyncSettings(t), makeRecommended(t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeNativeSettings(t), makeModelSettings(t), makeProviderSyncSettings(t), makeRecommended(t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')

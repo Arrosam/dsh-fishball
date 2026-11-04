@@ -1,8 +1,9 @@
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { spawn as nodeSpawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { RUNTIME, RUNTIME_LIMITS, NativeRuntimeError, fail, runtimeLimits } from './constants.js'
+import { RUNTIME, RUNTIME_LIMITS, LIFETIME, NativeRuntimeError, fail, runtimeLimits } from './constants.js'
 import { pathsFor, prepareLayout, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
 import { resolveInstallation, isolatedEnvironment, verifyNode, initializeProfile, copyChildCode, runProbe } from './installation.js'
 import { connectWire } from './wire.js'
@@ -40,6 +41,35 @@ class NativeRuntime {
     return this.serial(() => this.startInternal(startup.signal))
   }
   stop() { this.startup?.abort(); return this.serial(() => this.stopInternal()) }
+  // Synchronous process-exit hook can close a private pipe but cannot await.
+  // EOF lets the child request graceful appExit and enforce its own deadline.
+  parentExit() { this.startup?.abort(); this.parentPipe?.destroy() }
+  forceOwned() {
+    const identity = this.childIdentity
+    const child = this.child
+    if (!identity || !this.owns(identity, identity.pid) || child.exitCode !== null || child.signalCode !== null) return
+    try { child.kill(LIFETIME.forceSignal) } catch { /* Retain ownership; never substitute a PID signal. */ }
+  }
+  shutdown() {
+    this.startup?.abort()
+    this.parentExit()
+    const began = Date.now()
+    let forceTimer, deadlineTimer
+    const deadline = new Promise((_, reject) => {
+      forceTimer = setTimeout(() => this.forceOwned(), LIFETIME.forceAfterMs)
+      deadlineTimer = setTimeout(() => { this.forceOwned(); reject(new NativeRuntimeError('STOP_TIMEOUT')) }, LIFETIME.shutdownTimeoutMs)
+    })
+    const stopped = this.stop().catch(async error => {
+      // Metadata/transport failure cannot cancel escalation or skip pipe grace.
+      await delay(Math.max(0, LIFETIME.forceAfterMs - (Date.now() - began)))
+      this.forceOwned()
+      if (this.childIdentity && this.owns(this.childIdentity, this.childIdentity.pid)) {
+        await this.waitOwnedDead()
+      }
+      throw error
+    })
+    return Promise.race([stopped, deadline]).finally(() => { clearTimeout(forceTimer); clearTimeout(deadlineTimer) })
+  }
   restart() {
     this.startup?.abort()
     const startup = new AbortController()
@@ -141,7 +171,6 @@ class NativeRuntime {
     this.installation = await resolveInstallation(this.options.installAnchor)
     let record = await this.active()
     if (record) {
-      if (record.installAnchor !== this.installation.installAnchor || record.version !== this.installation.version) fail('INSTALLATION_CHANGED', 'Stop the existing private runtime explicitly before using another DSH installation.')
       let status
       try { status = await this.authenticateReady(record) } catch (error) {
         const pid = await this.pid(record)
@@ -152,16 +181,21 @@ class NativeRuntime {
         record = undefined
       }
       if (record) {
-        await this.attach(record)
-        await this.log('REATTACH')
-        return this.publicHealth(status)
+        if (this.owns(record, this.childIdentity?.pid)) {
+          await this.attach(record)
+          return this.publicHealth(status)
+        }
+        // A previous parent owns any lifetime pipe. Authenticate, stop and confirm
+        // exit before replacing it; never inherit a raw PID as signal authority.
+        await this.stopInternal()
+        record = undefined
       }
     }
     const env = isolatedEnvironment(this.paths, this.options.executableSearchPath)
     const executable = await verifyNode(this.options.nodeExecutable, this.spawn, env, this.paths, this.limits)
+    if (signal?.aborted) fail('START_INTERRUPTED')
     record = { format: RUNTIME.format, hostId: this.hostId, instanceId: randomUUID(), installAnchor: this.installation.installAnchor, installRoot: this.installation.installRoot, version: this.installation.version }
     try { await writePrivate(path.join(this.paths.root, RUNTIME.active), record, true) } catch (error) { if (error.code === 'EEXIST') fail('OWNERSHIP_BUSY'); throw error }
-    let launched = false
     const directory = launchPath(this.paths, record.instanceId)
     try {
       await privateDirectory(directory)
@@ -171,15 +205,21 @@ class NativeRuntime {
       const childModule = await copyChildCode(this.paths, record)
       const overlay = path.join(directory, 'launch.patch.yml')
       await writePrivate(overlay, launchOverlay(this.paths, record, childModule, this.limits, this.options.control ?? {}, profile.entries), true)
-      const args = [this.installation.bin, '--profile', RUNTIME.profileName, '--patch', overlay, '--host', RUNTIME.host, '--port', '0', '--no-open']
+      const preload = pathToFileURL(path.join(path.dirname(childModule), 'src/native-runtime/parent-watch.js')).href
+      const args = ['--import', preload, this.installation.bin, '--profile', RUNTIME.profileName, '--patch', overlay, '--host', RUNTIME.host, '--port', '0', '--no-open']
       if (signal?.aborted) fail('START_INTERRUPTED')
-      const child = this.spawn(executable, args, { cwd: this.paths.workspace, env, detached: true, stdio: 'ignore' })
+      const child = this.spawn(executable, args, { cwd: this.paths.workspace, env, detached: true, stdio: ['ignore', 'ignore', 'ignore', 'pipe'] })
       this.child = child
+      this.parentPipe = child.stdio[LIFETIME.parentFd]
+      this.parentPipe?.on('error', () => {})
+      this.parentPipe?.unref()
       this.childIdentity = { hostId: record.hostId, instanceId: record.instanceId, pid: child.pid }
       let spawnFailed = false
       child.once('error', () => { spawnFailed = true })
+      child.once('exit', () => {
+        if (this.child === child) this.options.onExit?.()
+      })
       await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', () => reject(new NativeRuntimeError('SPAWN_FAILED'))) })
-      launched = true
       child.unref()
       await writePrivate(path.join(directory, RUNTIME.pid), { hostId: this.hostId, instanceId: record.instanceId, pid: child.pid })
       await this.log('START')
@@ -196,10 +236,12 @@ class NativeRuntime {
       if (!status) fail('STARTUP_TIMEOUT')
       await this.attach(record)
       await this.log('READY')
+      if (signal?.aborted) fail('START_INTERRUPTED')
+      if (child.exitCode !== null || child.signalCode !== null) fail('CHILD_EXITED')
       return this.publicHealth(status)
     } catch (error) {
       await this.log('FAILED').catch(() => {})
-      if (launched) await this.stopOwned(record).catch(() => {})
+      if (this.owns(record, this.childIdentity?.pid) && Number.isSafeInteger(this.childIdentity?.pid)) await this.stopOwned(record).catch(() => {})
       else if (await exists(path.join(directory, RUNTIME.marker))) await removeLaunch(this.paths, record)
       throw error instanceof NativeRuntimeError ? error : new NativeRuntimeError(error.code ?? 'START_FAILED', 'Attached runtime startup failed; private state retained.')
     }
@@ -207,21 +249,35 @@ class NativeRuntime {
   owns(record, pid) {
     return this.child && this.childIdentity?.hostId === record.hostId && this.childIdentity?.instanceId === record.instanceId && this.childIdentity?.pid === pid && this.child.pid === pid
   }
-  async waitDead(record) {
+  async waitOwnedDead() {
+    const child = this.child
     const deadline = Date.now() + this.limits.stopTimeoutMs
-    const pid = await this.pid(record)
     do {
-      const ownedExited = this.owns(record, pid) && (this.child.exitCode !== null || this.child.signalCode !== null)
-      if (ownedExited || await this.alive(pid) === false) return
+      if (child.exitCode !== null || child.signalCode !== null) return
+      await delay(this.limits.pollIntervalMs)
+    } while (Date.now() < deadline)
+    fail('STOP_TIMEOUT')
+  }
+  async waitDead(record) {
+    if (this.owns(record, this.childIdentity?.pid)) return this.waitOwnedDead()
+    const deadline = Date.now() + this.limits.stopTimeoutMs
+    const pid = await this.pid(record) ?? (this.owns(record, this.childIdentity?.pid) ? this.childIdentity.pid : undefined)
+    do {
+      if (this.owns(record, pid)) {
+        if (this.child.exitCode !== null || this.child.signalCode !== null) return
+      } else if (await this.alive(pid) === false) return
       await delay(this.limits.pollIntervalMs)
     } while (Date.now() < deadline)
     fail('STOP_TIMEOUT', 'Private process exit is not confirmed; its ownership record is retained.')
   }
   async stopOwned(record) {
     const child = this.child
-    if (!this.owns(record, await this.pid(record))) fail('CHILD_UNREACHABLE')
-    if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM')
-    await this.waitDead(record)
+    if (!this.owns(record, this.childIdentity?.pid)) fail('CHILD_UNREACHABLE')
+    if (child.exitCode === null && child.signalCode === null) child.kill(LIFETIME.gracefulSignal)
+    try { await this.waitDead(record) } catch {
+      this.forceOwned()
+      await this.waitDead(record)
+    }
     await removeLaunch(this.paths, record)
     this.child = undefined
   }
@@ -232,14 +288,19 @@ class NativeRuntime {
     this.dropControl()
     if (!record) return this.stopped()
     try { await this.query(record, 'stop') } catch {
-      if (this.owns(record, await this.pid(record))) {
+      if (this.owns(record, this.childIdentity?.pid)) {
         await this.stopOwned(record)
         await this.log('STOP')
         return this.stopped()
       }
       if (await this.alive(await this.pid(record)) !== false) fail('CHILD_UNREACHABLE', 'No authenticated stop endpoint or owned ChildProcess; refusing PID-only signals.')
     }
-    await this.waitDead(record)
+    try { await this.waitDead(record) } catch (error) {
+      if (!this.owns(record, this.childIdentity?.pid)) throw error
+      await this.stopOwned(record)
+      await this.log('STOP')
+      return this.stopped()
+    }
     await removeLaunch(this.paths, record)
     this.child = undefined
     await this.log('STOP')
