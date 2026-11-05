@@ -7,16 +7,16 @@
  *    the shell's New Session handler) and opens the assistant session. On macOS Desktop
  *    the brand row is a drag region without a button; there Fishball opens from its
  *    pinned session and its Plugins page.
- * 2. Settings live on Fishball's own page under Plugins (owner's choice, P2): the
- *    page's `plugins.bundle.config` entry shows status and recovery actions, the live
- *    limits form (DSH's staged settings form; the Host schema decides validity) and the
- *    tools Fishball never uses. There is no separate settings panel.
- * 3. Header action in Fishball's own session: opens that Plugins page.
+ * 2. The Plugins → Fishball settings page is the isolated Fishball's console (§9): its
+ *    status and restart, model, plugins and settings through the owner-only admin routes
+ *    (src/slim/host/settings-routes.js), plus Fishball's own limits. The legacy page
+ *    sections are no longer rendered; T15 removes their remaining code.
+ * 3. Fishball's own session header action opens that page, and its chat is shown through
+ *    the embed panel below.
  * 4. Fishball's own session row is hidden from the sidebar's session list; the brand opens it.
  * 5. The Messenger look (DESIGN §10c): while the Host reports `look.messenger`, this half loads
  *    the dsh-fishball-messenger package's browser file from the Host and mounts it as a child
- *    plugin; it is disposed when the look is turned off. DSH serves browser halves only for
- *    host rows, and the messenger package has none (spike S24).
+ *    plugin; it is disposed when the look is turned off (spike S24).
  *
  * The mark is FishMark from the owner's fishball app (assets/icon.svg, THIRD_PARTY_NOTICES).
  *
@@ -159,6 +159,24 @@ window.__ModuleLoader__.load({
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
     const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
+    /**
+     * The child admin routes (§9; src/slim/host/settings-routes.js). One exact path per admin
+     * operation; every request is POST with that operation's payload, and every answer is
+     * {ok:true,result} or {ok:false,error:{code}}. The slugs must match the route module.
+     */
+    const ADMIN_UI = Object.freeze({
+      prefix: '/api/fishball/native/admin/',
+      path: Object.freeze({
+        status: 'status', restart: 'restart',
+        modelGet: 'model/get', modelSet: 'model/set',
+        pluginsGet: 'plugins/get', pluginInstall: 'plugin/install', pluginRemove: 'plugin/remove',
+        pluginEnable: 'plugin/enable', pluginDisable: 'plugin/disable',
+        settingsGet: 'settings/get', settingsMutate: 'settings/mutate',
+      }),
+      request: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: JSON_HEADERS }),
+      /** Admin refusal codes with their own words; any other code is shown with the code itself. */
+      errors: Object.freeze(['stale-revision', 'unavailable', 'timeout', 'disconnected', 'invalid-payload', 'read-only', 'unknown-namespace', 'unknown-provider', 'unknown-model', 'invalid-reasoning-effort', 'model-unavailable', 'unknown-plugin', 'invalid-spec', 'already-installed', 'not-removable', 'build-blocked', 'plugin-failed', 'too-large', 'operation-failed']),
+    })
     const SLOT = Object.freeze({
       mark: 'sidebar.brand.mark',
       name: 'sidebar.brand.name',
@@ -356,6 +374,13 @@ window.__ModuleLoader__.load({
      */
     const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxSourcesPerPlugin', 'maxFishballOnlyPlugins', 'wakeupsPerHour', 'messagesPerHour', 'sessionsPerHour', 'maxPendingApprovals', 'approvalAnswerSeconds', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'approvalsShown', 'intakeRowsShown', 'outboxShown', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'pluginHistoryShown', 'settingsPromptValueBytes', 'replyCapShare', 'headroomShare', 'minWindowTokens', 'pluginManagerStartMs', 'defaultReplyCapTokens', 'userMessagesListed', 'userMessageExcerptChars', 'pileMaxHeightVh'])
     /**
+     * The one Fishball accent (§8.5): the app's magenta. It is declared once here and exposed
+     * once as `--fb-accent` (the style sheet below); the ring, the switches and the brand's
+     * badge all read it. DSH mounts this plugin's surfaces in several slots, so the variable is
+     * set on the document rather than on a single root element.
+     */
+    const FISHBALL_ACCENT = '#EC0A6E'
+    /**
      * FishMark (fishball app, Surfaces.kt): body and eye on a 24-unit grid. In the sidebar the
      * body takes the text colour so it reads on light and dark themes; the eye keeps the
      * app's magenta, the one colour the mark spends.
@@ -365,20 +390,17 @@ window.__ModuleLoader__.load({
       body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
       eye: 'M14.6 7.4 h2 v2 h-2 Z',
       bodyColor: 'currentColor',
-      eyeColor: '#EC0A6E',
+      eyeColor: FISHBALL_ACCENT,
     })
     /**
-     * Fishball's own interactive controls take a light magenta derived from the mark's eye, so they
-     * stand apart from DSH's (owner's choice, revision 10a): its buttons, switches and menu item.
-     * Mixed with white, it reads on DSH's light and dark themes; the text is a deep magenta.
+     * The §8.5 button style: DSH's Button with its normal (secondary) background and text plus
+     * one class whose only rule is the magenta ring. The old filled magenta constants
+     * (FISHBALL_COLOUR) are gone; the ring mixes the accent with the current surface, so light
+     * and dark themes both work and DSH keeps its own hover, active and focus-visible states.
+     * 0.2.2-rc.1's Button has no `secondary` variant class; the base variant is the normal
+     * transparent background and label colour, so this is the intended look either way.
      */
-    const FISHBALL_COLOUR = Object.freeze({
-      fill: `color-mix(in srgb, ${FISH_MARK.eyeColor} 32%, #fff)`,
-      fillHover: `color-mix(in srgb, ${FISH_MARK.eyeColor} 44%, #fff)`,
-      // Dark enough to read on the light fill (about 8:1); the earlier 70% mix read at about 4:1 (owner's note).
-      text: `color-mix(in srgb, ${FISH_MARK.eyeColor} 35%, #000)`,
-      accent: FISH_MARK.eyeColor,
-    })
+    const ACCENT_BUTTON = Object.freeze({ variant: 'secondary', className: 'fb-outline' })
     const ADD_MENU = Object.freeze({ id: 'fishball-install', iconSize: 14 })
     /**
      * The knob of Fishball's switches: white, with the fish mark in magenta (its eye white), drawn as
@@ -557,7 +579,7 @@ window.__ModuleLoader__.load({
       modelSaveFailed: 'The model was not saved. Check that it is still available and try again.',
       modelUnavailable: 'A saved or selected model is unavailable in the current list. Its selection is kept; choose another model to change it.',
       nativeTitle: 'Isolated Fishball', nativeOpen: 'Open Fishball panel', nativeRefresh: 'Refresh status',
-      nativeHint: 'Isolated Fishball, shown in a panel on this page. Enable it in the profile configuration; this does not replace the existing Fishball chat.',
+      nativeHint: 'The isolated Fishball runs beside DSH in its own home. Its chat opens in a panel on this page; the model, plugins and settings below are its own.',
       embedTitle: 'Fishball panel', embedRefresh: 'Refresh', embedOpenTab: 'Open in a tab',
       embedUnavailable: 'Fishball is not available. Retry starts it again.', embedRetry: 'Retry',
       embedState: 'State', embedCode: 'Code',
@@ -992,6 +1014,62 @@ window.__ModuleLoader__.load({
       invalid: 'Enter a whole number.',
       unavailable: 'Fishball is not loaded, so its limits cannot be changed right now.',
       readOnly: 'This deployment stores settings read-only.',
+      // The rebuilt settings page (§9): the isolated child's status, model, plugins and settings.
+      "adminStatusHint": "Restart stops the isolated Fishball and starts it again; its own home and settings are kept.",
+      "adminRestart": "Restart",
+      "adminRestarting": "Restarting…",
+      "adminLoading": "Loading…",
+      "adminReload": "Reload",
+      "adminModelTitle": "Model for the isolated Fishball",
+      "adminModelHint": "From the isolated Fishball's own catalog. A change applies to its next request and does not change the model your other sessions use.",
+      "adminProvider": "Provider",
+      "adminModel": "Model",
+      "adminModelUnavailable": "The saved model is not in the current catalog. Its selection is kept; choose another model to change it.",
+      "adminModelSaved": "Saved. The isolated Fishball uses it from its next request.",
+      "adminModelSavedNotApplied": "Saved as the default. The live chat could not take it now; its next request may still use the previous model.",
+      "adminPluginsTitle": "Plugins for the isolated Fishball",
+      "adminPluginsHint": "These are installed in the isolated Fishball's own profile; nothing here changes DSH's own plugins or another session.",
+      "adminInstalled": "Installed",
+      "adminNoPlugins": "No plugins are installed in the isolated Fishball.",
+      "adminPluginToggle": "Use {name} in the isolated Fishball",
+      "adminPluginRemoveLabel": "Uninstall {name} from the isolated Fishball",
+      "adminOff": "Off",
+      "adminCoreOn": "Core, on",
+      "adminInstallTitle": "Install a plugin",
+      "adminInstallHint": "A recommended plugin, or any package spec you type: a package name with an optional version, a Git address, a tarball URL or an absolute folder path.",
+      "adminRecommendedTitle": "Recommended plugins",
+      "adminRecommendedHint": "A fixed list chosen for the isolated Fishball. Installing one needs your click and changes only the child's profile.",
+      "adminPluginInstalled": "Installed. It is in the list above now.",
+      "adminPluginChanged": "Enabled state saved.",
+      "adminPluginRemoved": "Uninstalled.",
+      "adminSettingsTitle": "Settings of the isolated Fishball",
+      "adminSettingsHint": "The settings its own plugins publish. Each Save sends the revision this page read, so a change made elsewhere is refused instead of overwritten.",
+      "adminSettingsReadOnly": "The isolated Fishball stores settings read-only, so they cannot be changed here.",
+      "adminSettingsNone": "No plugin in the isolated Fishball publishes a setting this page can change.",
+      "adminSettingsAuto": "Some of these values are generated automatically.",
+      "adminSettingsSaved": "Saved.",
+      "adminSettingsStale": "These settings changed elsewhere. The current values were reloaded; review them and save again.",
+      "adminRevisionNumbers": "(expected revision {expected}, found {actual})",
+      "adminErrorOther": "The isolated Fishball refused that operation.",
+      "adminError.stale-revision": "These values changed since the page read them, so nothing was written. Reload and try again.",
+      "adminError.unavailable": "The isolated Fishball is not running.",
+      "adminError.timeout": "The isolated Fishball did not answer in time. It may still be applying the change; reload before retrying.",
+      "adminError.disconnected": "The connection to the isolated Fishball closed. Restart it and try again.",
+      "adminError.invalid-payload": "That request was not valid.",
+      "adminError.read-only": "The isolated Fishball stores settings read-only.",
+      "adminError.unknown-namespace": "That settings section no longer exists.",
+      "adminError.unknown-provider": "That provider is not in the isolated Fishball's catalog.",
+      "adminError.unknown-model": "That model is not in the isolated Fishball's catalog.",
+      "adminError.invalid-reasoning-effort": "That reasoning effort is not offered for this model.",
+      "adminError.model-unavailable": "That model cannot be selected right now.",
+      "adminError.unknown-plugin": "That plugin is not installed in the isolated Fishball.",
+      "adminError.invalid-spec": "That is not a package spec DSH accepts.",
+      "adminError.already-installed": "That plugin is already installed in the isolated Fishball.",
+      "adminError.not-removable": "The isolated Fishball cannot remove or disable that plugin; it is part of its core.",
+      "adminError.build-blocked": "The install is waiting for your approval of its build scripts (DSH's own dialog).",
+      "adminError.plugin-failed": "The plugin change failed.",
+      "adminError.too-large": "That answer was too large for the connection.",
+      "adminError.operation-failed": "That operation failed.",
     }
     const zh = {
       brandName: 'FISHBALL',
@@ -1035,7 +1113,7 @@ window.__ModuleLoader__.load({
       modelSaveFailed: '模型未保存。请确认模型仍然可用，然后重试。',
       modelUnavailable: '已保存或当前选择的模型不在列表中，原选择仍然保留；可另选模型来更改。',
       nativeTitle: '独立 Fishball', nativeOpen: '打开 Fishball 面板', nativeRefresh: '刷新状态',
-      nativeHint: '独立的原生 DSH，在本页面板中显示；需通过 profile 配置启用，不替代现有 Fishball 聊天。',
+      nativeHint: '隔离的 Fishball 在自己的主目录中与 DSH 并行运行。它的聊天在本页的面板中打开；下面的模型、插件和设置都是它自己的。',
       embedTitle: 'Fishball 面板', embedRefresh: '刷新', embedOpenTab: '在标签页中打开',
       embedUnavailable: 'Fishball 当前不可用。重试会重新启动它。', embedRetry: '重试',
       embedState: '状态', embedCode: '代码',
@@ -1469,6 +1547,61 @@ window.__ModuleLoader__.load({
       invalid: '请输入整数。',
       unavailable: 'Fishball 当前未加载，暂时无法修改限制。',
       readOnly: '本部署的设置为只读。',
+      "adminStatusHint": "重启会停止隔离的 Fishball 并再次启动；它自己的主目录和设置会保留。",
+      "adminRestart": "重启",
+      "adminRestarting": "正在重启…",
+      "adminLoading": "正在读取…",
+      "adminReload": "重新读取",
+      "adminModelTitle": "隔离 Fishball 使用的模型",
+      "adminModelHint": "来自隔离 Fishball 自己的模型目录。更改会在它的下一次请求生效，不会改变你其他会话使用的模型。",
+      "adminProvider": "提供商",
+      "adminModel": "模型",
+      "adminModelUnavailable": "已保存的模型不在当前目录中。选择会保留；要更改请选择另一个模型。",
+      "adminModelSaved": "已保存。隔离 Fishball 会在下一次请求使用它。",
+      "adminModelSavedNotApplied": "已保存为默认值。当前聊天未能立即采用；它的下一次请求可能仍使用此前的模型。",
+      "adminPluginsTitle": "隔离 Fishball 的插件",
+      "adminPluginsHint": "这些插件安装在隔离 Fishball 自己的配置中；此处不会改变 DSH 自己的插件或其他会话。",
+      "adminInstalled": "已安装",
+      "adminNoPlugins": "隔离 Fishball 中尚未安装插件。",
+      "adminPluginToggle": "在隔离 Fishball 中使用 {name}",
+      "adminPluginRemoveLabel": "从隔离 Fishball 卸载 {name}",
+      "adminOff": "已关闭",
+      "adminCoreOn": "核心，已开启",
+      "adminInstallTitle": "安装插件",
+      "adminInstallHint": "推荐插件，或你输入的任何包规格：包名（可带版本）、Git 地址、压缩包 URL 或绝对文件夹路径。",
+      "adminRecommendedTitle": "推荐插件",
+      "adminRecommendedHint": "为隔离 Fishball 选定的固定列表。安装需要你点击，并且只改它的配置。",
+      "adminPluginInstalled": "已安装。它现在在上面的列表中。",
+      "adminPluginChanged": "启用状态已保存。",
+      "adminPluginRemoved": "已卸载。",
+      "adminSettingsTitle": "隔离 Fishball 的设置",
+      "adminSettingsHint": "它自己的插件公开的设置。每次保存都会发送本页读取的修订号，因此在别处发生的更改会被拒绝，不会被覆盖。",
+      "adminSettingsReadOnly": "隔离 Fishball 以只读方式存储设置，因此不能在这里修改。",
+      "adminSettingsNone": "隔离 Fishball 中没有插件公开本页可修改的设置。",
+      "adminSettingsAuto": "其中一些值是自动生成的。",
+      "adminSettingsSaved": "已保存。",
+      "adminSettingsStale": "这些设置在别处已更改。已重新读取当前值；请检查后再次保存。",
+      "adminRevisionNumbers": "（期望修订号 {expected}，实际 {actual}）",
+      "adminErrorOther": "隔离 Fishball 拒绝了该操作。",
+      "adminError.stale-revision": "自本页读取以来这些值已更改，因此没有写入任何内容。请重新读取后再试。",
+      "adminError.unavailable": "隔离 Fishball 未在运行。",
+      "adminError.timeout": "隔离 Fishball 未及时回答。它可能仍在应用更改；重试前请重新读取。",
+      "adminError.disconnected": "与隔离 Fishball 的连接已关闭。请重启后再试。",
+      "adminError.invalid-payload": "该请求无效。",
+      "adminError.read-only": "隔离 Fishball 以只读方式存储设置。",
+      "adminError.unknown-namespace": "该设置分区已不存在。",
+      "adminError.unknown-provider": "该提供商不在隔离 Fishball 的目录中。",
+      "adminError.unknown-model": "该模型不在隔离 Fishball 的目录中。",
+      "adminError.invalid-reasoning-effort": "该模型不提供这个推理强度。",
+      "adminError.model-unavailable": "当前无法选择该模型。",
+      "adminError.unknown-plugin": "隔离 Fishball 中未安装该插件。",
+      "adminError.invalid-spec": "DSH 不接受这个包规格。",
+      "adminError.already-installed": "隔离 Fishball 中已安装该插件。",
+      "adminError.not-removable": "隔离 Fishball 无法卸载或停用该插件；它是核心的一部分。",
+      "adminError.build-blocked": "安装正在等待你批准其构建脚本（DSH 自己的对话框）。",
+      "adminError.plugin-failed": "插件更改失败。",
+      "adminError.too-large": "该回答对于连接来说太大。",
+      "adminError.operation-failed": "该操作失败。",
     }
 
     const css = [
@@ -1614,18 +1747,19 @@ window.__ModuleLoader__.load({
       `.${MCLS.input}[aria-invalid="true"]{border-color:var(--dsw-alias-state-error-primary)}`,
       `.${MCLS.readOnly}{margin:0;padding:6px 10px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${MCLS.formActions}{display:flex;justify-content:flex-end;gap:8px}`,
-      // Fishball's colour on its own controls (revision 10a). A switch is a button too: only its "on" track changes.
-      // Enabled buttons only: a disabled one keeps DSH's own disabled look (review L8).
-      `.${MCLS.accent} button:not([role=switch]):not(:disabled){background:${FISHBALL_COLOUR.fill};color:${FISHBALL_COLOUR.text}}`,
-      `.${MCLS.accent} button:not([role=switch]):hover:not(:disabled){background:${FISHBALL_COLOUR.fillHover}}`,
+      // The one accent token and the one ring (§8.5). The ring mixes the accent with whatever
+      // surface is under it, so it reads on light and dark; DSH's own variant supplies hover,
+      // active and focus-visible.
+      `:root{--fb-accent:${FISHBALL_ACCENT}}`,
+      `.${ACCENT_BUTTON.className}{box-shadow:0 0 0 1px color-mix(in srgb, var(--fb-accent) 55%, transparent)}`,
       // Fishball's switches (owner's choice): magenta when on, and a small fish on the knob in both
       // states, so one reads as Fishball's wherever it appears, DSH's pages included. DSH's switch
       // is a button[role=switch] with one span knob (dsh-client-ui-primitives Switch, rc.2).
-      `.${MCLS.accent} [role=switch][aria-checked="true"]{background:${FISHBALL_COLOUR.accent}}`,
+      `.${MCLS.accent} [role=switch][aria-checked="true"]{background:${FISHBALL_ACCENT}}`,
       // [aria-checked] outranks DSH's off-state knob rule, whose `background` shorthand would clear the fish.
       `.${MCLS.accent} [role=switch][aria-checked] > span{background-color:${FISHBALL_SWITCH.knob};background-image:${FISHBALL_SWITCH.fish};background-position:center;background-repeat:no-repeat;background-size:${FISHBALL_SWITCH.fishSize}}`,
       `.${MCLS.accent}{display:inline-flex;align-items:center;gap:8px}`,
-      `.${MCLS.menuIcon}{display:inline-flex;color:${FISHBALL_COLOUR.accent}}`,
+      `.${MCLS.menuIcon}{display:inline-flex;color:${FISHBALL_ACCENT}}`,
       // As DSH's own toolbar in the page header (dsh-client-ui-plugin-manager .toolbar, rc.2).
       `.${MCLS.headerActions}{display:flex;flex:none;align-items:center;justify-content:flex-end;gap:16px;white-space:nowrap}`,
       // DSH's own Add button pattern on top of its primary small button (dsh-client-ui-plugin-manager
@@ -1697,6 +1831,37 @@ window.__ModuleLoader__.load({
     /** POST one command. @returns whether it was accepted. */
     const post = async (path, body) => (await send(path, body)).ok
     const recover = (action) => post(API.recovery, { action })
+
+    /**
+     * One child admin operation (§9). Never throws: a transport failure is a typed error, and a
+     * refusal keeps the child's code (and its revision facts) so the page can show the reason.
+     */
+    async function adminRequest(operation, payload = {}) {
+      try {
+        const response = await fetch(apiUrl(ADMIN_UI.prefix + ADMIN_UI.path[operation]), { ...ADMIN_UI.request, body: JSON.stringify(payload) })
+        const answer = await response.json().catch(() => null)
+        if (answer?.ok === true && answer.result !== undefined) return { ok: true, result: answer.result }
+        const error = answer?.ok === false && typeof answer.error?.code === 'string' ? answer.error : { code: 'operation-failed' }
+        return { ok: false, error }
+      } catch { return { ok: false, error: { code: 'unavailable' } } }
+    }
+
+    /** One Fishball-accent button (§8.5): DSH's Button with the shared magenta ring. */
+    const accentButton = (props, ...children) => h(Button, {
+      type: 'button', ...props, variant: ACCENT_BUTTON.variant,
+      className: [ACCENT_BUTTON.className, props.className].filter(Boolean).join(' '),
+    }, ...children)
+
+    /** A typed admin refusal in words, with its code and any revision numbers the child sent. */
+    function AdminProblem({ error, t }) {
+      if (!error) return null
+      const numbers = Number.isSafeInteger(error.expected) && Number.isSafeInteger(error.actual)
+        ? t('adminRevisionNumbers', { expected: error.expected, actual: error.actual }) : null
+      return h('div', { role: 'alert', 'data-fishball-admin-error': error.code },
+        h('span', null, ADMIN_UI.errors.includes(error.code) ? t('adminError.' + error.code) : t('adminErrorOther')),
+        numbers ? h('span', null, ' ' + numbers) : null,
+        ' ', h('code', { className: CLS.code }, error.code))
+    }
 
     /** Unread replies from the Host snapshot: a whole number, 0 until the first frame arrives. */
     const unreadCount = (state) => state.unread?.count ?? 0
@@ -2116,7 +2281,6 @@ window.__ModuleLoader__.load({
         setOutcome(answer.ok ? answer.answer : { code: answer.code, pendingBuilds: answer.answer?.pendingBuilds ?? [] })
         setStep(answer.ok ? INSTALL_STEP.done : INSTALL_STEP.failed)
       }
-      const accent = (props, label) => h('span', { className: MCLS.accent }, h(Button, { type: 'button', variant: 'primary', ...props }, label))
       const outline = (props, label) => h(Button, { type: 'button', variant: 'outline', ...props }, label)
       const title = subject?.name ?? spec.trim()
       const screens = {
@@ -2134,7 +2298,7 @@ window.__ModuleLoader__.load({
               problem ? h('p', { role: 'alert', className: MCLS.hint }, t(problem.key), problem.reason ? ` ${problem.reason}` : '') : null),
             h('p', { key: 'trust', className: MCLS.trust }, t('installTrust')),
           ],
-          footer: [outline({ key: 'cancel', onClick: close }, t('cancel')), accent({ key: 'go', disabled: spec.trim() === '', onClick: check }, t('install'))],
+          footer: [outline({ key: 'cancel', onClick: close }, t('cancel')), accentButton({ key: 'go', disabled: spec.trim() === '', onClick: check }, t('install'))],
         }),
         [INSTALL_STEP.checking]: () => ({
           body: [h('p', { key: 'checking', role: 'status' }, t('installChecking'))],
@@ -2152,7 +2316,7 @@ window.__ModuleLoader__.load({
             subject.shipped ? h('p', { key: 'shipped', className: MCLS.hint }, t('shippedByDsh')) : null,
             h('p', { key: 'trust', className: MCLS.trust }, t('installTrust')),
           ],
-          footer: [outline({ key: 'back', onClick: () => setStep(INSTALL_STEP.edit) }, t('back')), accent({ key: 'go', onClick: () => install() }, t('installConfirm'))],
+          footer: [outline({ key: 'back', onClick: () => setStep(INSTALL_STEP.edit) }, t('back')), accentButton({ key: 'go', onClick: () => install() }, t('installConfirm'))],
         }),
         [INSTALL_STEP.installing]: () => ({
           body: [
@@ -2172,7 +2336,7 @@ window.__ModuleLoader__.load({
             // DSH offers no way to select the Fishball tab from its own menu (S28): only the tab opens the page.
             // Only once the tab lists it, so the page never opens by surprise later (review L8).
             from === INSTALL_FROM.tab && catalog?.plugins.some((plugin) => plugin.plugin === outcome.plugin)
-              ? accent({ key: 'open', onClick: () => { managerView.show(outcome.plugin); close() } }, t('openPluginPage'))
+              ? accentButton({ key: 'open', onClick: () => { managerView.show(outcome.plugin); close() } }, t('openPluginPage'))
               : null,
           ],
         }),
@@ -2185,8 +2349,8 @@ window.__ModuleLoader__.load({
           footer: [
             outline({ key: 'back', onClick: () => setStep(INSTALL_STEP.edit) }, t('back')),
             outcome.code === BUILD_BLOCKED
-              ? accent({ key: 'scripts', onClick: () => install(outcome.pendingBuilds) }, t('allowScripts'))
-              : accent({ key: 'retry', onClick: () => install() }, t('installRetry')),
+              ? accentButton({ key: 'scripts', onClick: () => install(outcome.pendingBuilds) }, t('allowScripts'))
+              : accentButton({ key: 'retry', onClick: () => install() }, t('installRetry')),
           ],
         }),
       }
@@ -2273,99 +2437,258 @@ window.__ModuleLoader__.load({
           || (Array.isArray(model.reasoning?.efforts) && model.reasoning.efforts.every(modelEntry)))))
       && catalog.failures.every((failure) => modelEntry(failure) && typeof failure.message === 'string')
 
+    /**
+     * The child's model (§9): provider, model and reasoning effort from the child's own catalog,
+     * saved with the settings revision the page read. A stale revision is a typed refusal, shown
+     * with its code; Reload reads the child's current values instead of guessing.
+     */
     function makeModelSettings(t) {
       return function FishballModelSettings() {
-        const state = useFishball()
         const baseId = React.useId()
-        const [draft, setDraft] = React.useState(null)
-        const [catalog, setCatalog] = React.useState(null)
-        const [refresh, setRefresh] = React.useState(MODEL.refreshStart)
-        const [loading, setLoading] = React.useState(true)
+        const [snapshot, setSnapshot] = React.useState(null)
+        const [selection, setSelection] = React.useState(null)
         const [saving, setSaving] = React.useState(false)
         const [problem, setProblem] = React.useState(null)
-        React.useEffect(() => {
-          let current = true
-          setLoading(true)
+        const [message, setMessage] = React.useState(null)
+        const load = React.useCallback(async () => {
+          setMessage(null)
+          const answer = await adminRequest('modelGet')
+          if (!answer.ok) { setProblem(answer.error); return }
           setProblem(null)
-          fetch(apiUrl(API.models), MODEL.request).then(async (response) => {
-            if (!response.ok) throw new Error()
-            const answer = await response.json()
-            if (answer?.ok !== true || !validModelCatalog(answer.catalog)) throw new Error()
-            if (current) { setCatalog(answer.catalog); setProblem(null) }
-          }).catch(() => { if (current) setProblem('modelLoadFailed') })
-            .finally(() => { if (current) setLoading(false) })
-          return () => { current = false }
-        }, [refresh])
-        const selection = draft ?? state.modelSelection
-        const valueOf = (choice) => choice ? JSON.stringify([choice.provider, choice.model]) : MODEL.empty
-        const options = catalog?.groups.flatMap((group) => group.models.map((model) => ({ group, model }))) ?? []
-        const available = (choice) => options.some(({ group, model }) => group.id === choice?.provider && model.id === choice?.model)
-        const chosen = options.find(({ group, model }) => group.id === selection?.provider && model.id === selection?.model)
-        // Keep the saved identity even while a different draft is selected, or the refreshed
-        // catalog is empty. Catalog availability is never a command to clear consent/state.
-        const missing = [state.modelSelection, selection].filter((choice, index, choices) => choice && !available(choice)
-          && choices.findIndex((candidate) => valueOf(candidate) === valueOf(choice)) === index)
-        const efforts = chosen?.model.reasoning?.efforts ?? []
-        const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(state.modelSelection)
+          setSnapshot(answer.result)
+          setSelection(answer.result.selection)
+        }, [])
+        React.useEffect(() => { void load() }, [load])
+        const providers = snapshot?.providers ?? []
+        const models = snapshot?.models ?? []
+        const offered = models.filter((model) => model.provider === selection?.provider)
+        const chosen = offered.find((model) => model.id === selection?.model)
+        const efforts = chosen?.efforts ?? []
+        const known = selection !== null && providers.some((provider) => provider.id === selection.provider) && chosen !== undefined
+        const dirty = snapshot !== null && JSON.stringify(selection) !== JSON.stringify(snapshot.selection)
+        // A model switch drops the effort unless the new model offers it.
+        const pickProvider = (provider) => {
+          const first = models.find((model) => model.provider === provider)
+          setSelection(first === undefined ? { provider, model: '' } : { provider, model: first.id })
+          setMessage(null)
+        }
+        const pickModel = (id) => {
+          const next = offered.find((model) => model.id === id)
+          const keep = next?.efforts?.some((effort) => effort.id === selection.reasoningEffort) === true
+          setSelection({ provider: selection.provider, model: id, ...(keep ? { reasoningEffort: selection.reasoningEffort } : {}) })
+          setMessage(null)
+        }
+        const pickEffort = (id) => {
+          setSelection((previous) => {
+            const next = { ...previous }
+            if (id === MODEL.empty) delete next.reasoningEffort
+            else next.reasoningEffort = id
+            return next
+          })
+          setMessage(null)
+        }
         const save = async () => {
-          const requested = draft
-          const previous = stateSource.get()
           setSaving(true)
-          const { ok, answer } = await send(API.model, requested)
-          const current = stateSource.get()
-          const confirmed = ok && answer?.ok === true && answer.state?.sessionId === previous.sessionId
-            && sameModelChoice(answer.state.modelSelection, requested)
-          const streamed = current.sessionId === previous.sessionId && sameModelChoice(current.modelSelection, requested)
-          // The POST receipt is authoritative too. Dropping the draft while waiting only for
-          // SSE reverted a successful Save to null/old selection when that stream was stalled.
-          // Merge just this field so unrelated newer state is not rolled back; an already
-          // observed different model/session wins over this older in-flight receipt.
-          if (confirmed && current.sessionId === previous.sessionId
-            && (streamed || sameModelChoice(current.modelSelection, previous.modelSelection))) {
-            stateSource.publish({ ...current, modelSelection: answer.state.modelSelection })
-          }
+          const request = { revision: snapshot.revision, provider: selection.provider, model: selection.model }
+          if (selection.reasoningEffort !== undefined) request.reasoningEffort = selection.reasoningEffort
+          const answer = await adminRequest('modelSet', request)
           setSaving(false)
-          if (ok && (confirmed || streamed)) { setDraft(null); setProblem(null) } else setProblem('modelSaveFailed')
-          // Never treat a draft or a bare HTTP 2xx as confirmation of dedicated consent.
+          if (!answer.ok) { setProblem(answer.error); return }
+          setProblem(null)
+          setSnapshot({ ...snapshot, revision: answer.result.revision, selection: answer.result.selection })
+          setSelection(answer.result.selection)
+          setMessage(answer.result.sessionError ? 'adminModelSavedNotApplied' : 'adminModelSaved')
         }
         return h('section', { className: CLS.section + ' ' + MODEL.settingsClass, 'data-fishball-model-settings': true },
-          h('h3', null, t('modelTitle')),
-          h('p', { className: CLS.muted }, t('modelHint')),
-          h('label', { htmlFor: baseId + MODEL.fieldSuffix }, t('modelChoose')),
-          h('div', { className: MODEL.pickerClass, 'aria-busy': loading }, h('select', {
-            id: baseId + MODEL.fieldSuffix, 'data-fishball-model-select': true,
-            value: valueOf(selection), disabled: loading || saving,
-            onChange: (event) => {
-              if (event.target.value === MODEL.empty) { setDraft(null); return }
-              const [provider, model] = JSON.parse(event.target.value)
-              setDraft({ provider, model })
-            },
-          }, h('option', { value: MODEL.empty }, t('modelChoose')),
-          missing.map((choice) => h('option', { key: valueOf(choice), value: valueOf(choice), disabled: true },
-            [choice.provider, choice.model].join(MODEL.routeSeparator) + ' (' + t('modelUnavailableOption') + ')')),
-          catalog?.groups.map((group) => h('optgroup', { key: group.id, label: group.name },
-            group.models.map((model) => h('option', { key: model.id, value: valueOf({ provider: group.id, model: model.id }) }, model.name))))),
-          h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-model-refresh': true,
-            title: t('modelRefreshHint'), disabled: loading || saving, onClick: () => setRefresh((previous) => previous + MODEL.refreshStep) },
-          loading ? t('modelRefreshing') : t('modelRefresh'))),
-          efforts.length > 0 ? h(React.Fragment, null,
-            h('label', { htmlFor: baseId + MODEL.effortSuffix }, t('modelEffort')),
-            h('select', {
-              id: baseId + MODEL.effortSuffix, 'data-fishball-model-effort': true,
-              value: selection?.reasoningEffort ?? MODEL.empty, disabled: loading || saving,
-              onChange: (event) => setDraft({ provider: selection.provider, model: selection.model,
-                ...(event.target.value === MODEL.empty ? {} : { reasoningEffort: event.target.value }) }),
-            }, h('option', { value: MODEL.empty }, t('modelEffortDefault')),
-            efforts.map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name)))) : null,
-          loading ? h('p', { role: 'status' }, t('modelLoading')) : null,
-          !loading && catalog && options.length === 0 ? h('p', { role: 'status' }, t('modelEmpty')) : null,
-          !loading && catalog && missing.length > 0 ? h('p', { role: 'status' }, t('modelUnavailable')) : null,
-          catalog?.failures.map((failure) => h('p', { key: failure.id, role: 'status' }, failure.name + ': ' + failure.message)),
-          problem ? h('p', { role: 'alert' }, t(problem)) : null,
+          h('h3', null, t('adminModelTitle')),
+          h('p', { className: CLS.muted }, t('adminModelHint')),
+          snapshot === null ? h('p', { role: 'status' }, t('modelLoading')) : h(React.Fragment, null,
+            h('label', { htmlFor: baseId + '-provider' }, t('adminProvider')),
+            h('select', { id: baseId + '-provider', value: selection?.provider ?? '', disabled: saving, onChange: (event) => pickProvider(event.target.value) },
+              providers.map((provider) => h('option', { key: provider.id, value: provider.id }, provider.name))),
+            h('label', { htmlFor: baseId + '-model' }, t('adminModel')),
+            h('select', { id: baseId + '-model', value: selection?.model ?? '', disabled: saving, onChange: (event) => pickModel(event.target.value) },
+              offered.map((model) => h('option', { key: model.id, value: model.id }, model.name))),
+            efforts.length > 0 ? h(React.Fragment, null,
+              h('label', { htmlFor: baseId + '-effort' }, t('modelEffort')),
+              h('select', { id: baseId + '-effort', value: selection?.reasoningEffort ?? MODEL.empty, disabled: saving, onChange: (event) => pickEffort(event.target.value) },
+                h('option', { value: MODEL.empty }, t('modelEffortDefault')),
+                efforts.map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name)))) : null,
+            providers.length === 0 || models.length === 0 ? h('p', { role: 'status' }, t('modelEmpty')) : null,
+            known ? null : h('p', { role: 'status' }, t('adminModelUnavailable'))),
+          h(AdminProblem, { error: problem, t }),
+          message ? h('p', { role: 'status', className: CLS.muted }, t(message)) : null,
           h('div', { className: CLS.row },
-            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: !dirty || !chosen || loading || saving, onClick: save }, saving ? t('saving') : t('save'))))
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: saving, onClick: () => void load() }, t('refresh')),
+            problem?.code === 'stale-revision' ? h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: () => void load() }, t('adminReload')) : null,
+            accentButton({ size: 'sm', disabled: !known || !dirty || saving, onClick: () => void save() }, saving ? t('saving') : t('save'))))
       }
     }
+
+    /**
+     * The child's plugins (§9). The recommended list is ADMIN_RECOMMENDED (src/slim/host/admin.js,
+     * backed by src/recommended.js) plus any package spec you type. Every mutation sends the
+     * inventory digest the page read, so a change made elsewhere is refused as stale-revision
+     * instead of overwriting it; a successful change reloads the inventory.
+     */
+    function makeChildPlugins(t) {
+      return function FishballChildPlugins() {
+        const baseId = React.useId()
+        const recommendedRef = React.useRef(null)
+        const [view, setView] = React.useState({ loading: true, revision: null, bundles: [], recommended: [], error: null })
+        const [busy, setBusy] = React.useState(false)
+        const [spec, setSpec] = React.useState('')
+        const [problem, setProblem] = React.useState(null)
+        const [message, setMessage] = React.useState(null)
+        const load = React.useCallback(async () => {
+          const answer = await adminRequest('pluginsGet')
+          if (!answer.ok) { setView((previous) => ({ ...previous, loading: false, error: answer.error })); return }
+          setView({ loading: false, revision: answer.result.inventoryRevision, bundles: answer.result.bundles, recommended: answer.result.recommended ?? [], error: null })
+          setProblem(null)
+        }, [])
+        React.useEffect(() => { void load() }, [load])
+        const loaded = !view.loading && view.revision !== null
+        // The welcome card's link still asks for the recommended list (§10f); keep it scrollable.
+        React.useEffect(() => { if (loaded && recommendedFocus.take()) recommendedRef.current?.scrollIntoView(RECOMMENDED.scroll) }, [loaded])
+        const run = async (operation, payload, done) => {
+          setBusy(true)
+          setProblem(null)
+          setMessage(null)
+          const answer = await adminRequest(operation, payload)
+          setBusy(false)
+          if (!answer.ok) { setProblem(answer.error); return }
+          setMessage(done)
+          await load()
+        }
+        const install = (value) => {
+          const trimmed = value.trim()
+          return trimmed === '' ? undefined : run('pluginInstall', { inventoryRevision: view.revision, spec: trimmed }, 'adminPluginInstalled')
+        }
+        const setEnabled = (bundle, on) => run(on ? 'pluginEnable' : 'pluginDisable', { inventoryRevision: view.revision, name: bundle.name }, 'adminPluginChanged')
+        const remove = (bundle) => run('pluginRemove', { inventoryRevision: view.revision, name: bundle.name }, 'adminPluginRemoved')
+        const installed = new Set(view.bundles.map((bundle) => bundle.name))
+        const groups = []
+        for (const item of view.recommended) {
+          let group = groups.find((candidate) => candidate.category === item.category)
+          if (group === undefined) { group = { category: item.category, items: [] }; groups.push(group) }
+          group.items.push(item)
+        }
+        return h('section', { className: CLS.section, 'data-fishball-child-plugins': true },
+          h('h3', null, t('adminPluginsTitle')),
+          h('p', { className: CLS.muted }, t('adminPluginsHint')),
+          view.loading ? h('p', { role: 'status' }, t('adminLoading')) : null,
+          h(AdminProblem, { error: view.error, t }),
+          h(AdminProblem, { error: problem, t }),
+          message ? h('p', { role: 'status', className: CLS.muted }, t(message)) : null,
+          view.revision === null ? null : h(React.Fragment, null,
+          h('h4', null, t('adminInstalled')),
+          view.bundles.length === 0 ? h('p', { className: CLS.muted }, t('adminNoPlugins'))
+            : h('ul', { className: MCLS.rows }, view.bundles.map((bundle) => h('li', { key: bundle.name, className: MCLS.row },
+              h('span', { className: CLS.grow }, h('code', null, bundle.name), bundle.version ? h('span', { className: CLS.muted }, ' ' + bundle.version) : null),
+              bundle.removable && bundle.installed
+                ? h('span', { className: MCLS.accent }, h(Switch, { checked: bundle.enabled, label: t('adminPluginToggle', { name: bundle.name }), disabled: busy, onChange: (on) => void setEnabled(bundle, on) }))
+                : h(Tag, { tone: 'neutral' }, t(bundle.enabled ? 'adminCoreOn' : 'adminOff')),
+              bundle.removable && bundle.installed
+                ? h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: busy, 'aria-label': t('adminPluginRemoveLabel', { name: bundle.name }), onClick: () => void remove(bundle) }, t('uninstall'))
+                : null))),
+          h('h4', null, t('adminInstallTitle')),
+          h('p', { className: CLS.muted }, t('adminInstallHint')),
+          h('div', { className: CLS.row },
+            h(Input, { id: baseId + '-spec', 'aria-label': t('installSpecLabel'), value: spec, placeholder: t('installPlaceholder'), disabled: busy, onChange: (event) => setSpec(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) void install(spec) } }),
+            accentButton({ size: 'sm', disabled: busy || view.revision === null || spec.trim() === '', onClick: () => void install(spec) }, t('install'))),
+          h('div', { ref: recommendedRef, 'data-fishball-recommended-section': true },
+            h('h4', null, t('adminRecommendedTitle')),
+            h('p', { className: CLS.muted }, t('adminRecommendedHint')),
+            groups.map((group) => h('div', { key: group.category, 'data-fishball-recommended-category': group.category },
+              h('h5', { className: CLS.recCategory }, t('recommendedCategory.' + group.category)),
+              h('ul', { className: CLS.entries }, group.items.map((item) => h('li', { key: item.packageName, className: CLS.recRow, 'data-fishball-recommended': item.packageName },
+                h('div', { className: CLS.grow },
+                  h('span', { className: CLS.code }, item.packageName),
+                  h('span', { className: CLS.recDesc, title: t('recommendedDesc.' + item.packageName) }, t('recommendedDesc.' + item.packageName))),
+                installed.has(item.packageName)
+                  ? h(Tag, { tone: 'neutral' }, t('recommendedState.installed'))
+                  : accentButton({ size: 'sm', disabled: busy, 'aria-label': t('recommendedInstallLabel', { name: item.packageName }), onClick: () => void install(item.spec) }, t('install'))))))))),
+          h('div', { className: CLS.row },
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: busy || view.loading, onClick: () => void load() }, t('refresh')),
+            problem?.code === 'stale-revision' ? h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: busy, onClick: () => void load() }, t('adminReload')) : null))
+      }
+    }
+
+    /** Flatten nested form values into the admin's field-path set operations. */
+    function valueOps(value, path = [], ops = []) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        for (const [key, child] of Object.entries(value)) valueOps(child, [...path, key], ops)
+        return ops
+      }
+      ops.push({ op: 'set', path, value })
+      return ops
+    }
+
+    /**
+     * The child's settings (§9): the namespaces its own settings service describes, drawn with
+     * the shared schema form. Save sends the namespace revision and field-path ops only, so a
+     * stale revision is refused instead of overwriting another writer; a stale refusal reloads.
+     */
+    function makeChildSettings(t, resolveText) {
+      const { SchemaForm } = makeSchemaForm(t, resolveText)
+
+      function NamespaceForm({ entry, t, onSaved, onStale }) {
+        const [problem, setProblem] = React.useState(null)
+        const [message, setMessage] = React.useState(null)
+        const save = async ({ values = {}, reset = [] }) => {
+          const ops = valueOps(values)
+          for (const path of reset) if (path.length > 0) ops.push({ op: 'unset', path })
+          if (ops.length === 0) return true
+          setProblem(null)
+          setMessage(null)
+          const answer = await adminRequest('settingsMutate', { ns: entry.ns, revision: entry.revision, ops })
+          if (answer.ok) { setMessage('adminSettingsSaved'); onSaved(answer.result.revision); return true }
+          if (answer.error.code === 'stale-revision') { onStale(); return false }
+          setProblem(answer.error)
+          return false
+        }
+        return h('div', { className: MCLS.section, 'data-fishball-child-namespace': entry.ns },
+          h('h4', { className: MCLS.sectionTitle }, entry.ns),
+          entry.autoGenerate ? h('p', { className: MCLS.hint }, t('adminSettingsAuto')) : null,
+          // The admin reports only {"set"} for a secret; stored is what the field's Clear action asks for.
+          h(SchemaForm, { schema: entry.schema, value: entry.value, secrets: entry.secrets.map((secret) => ({ ...secret, stored: secret.set })), user: {}, resetAll: false, onSave: save }),
+          h(AdminProblem, { error: problem, t }),
+          message ? h('p', { role: 'status', className: MCLS.hint }, t(message)) : null)
+      }
+
+      return function FishballChildSettings() {
+        const [view, setView] = React.useState({ loading: true, writable: false, namespaces: [], error: null })
+        const [reloads, setReloads] = React.useState(0)
+        const [notice, setNotice] = React.useState(null)
+        const load = React.useCallback(async () => {
+          setView((previous) => ({ ...previous, loading: true }))
+          const answer = await adminRequest('settingsGet')
+          if (!answer.ok) { setView((previous) => ({ ...previous, loading: false, error: answer.error })); return }
+          setView({ loading: false, writable: answer.result.writable, namespaces: answer.result.namespaces, error: null })
+        }, [])
+        React.useEffect(() => { void load() }, [load, reloads])
+        const update = (ns, revision) => setView((previous) => ({ ...previous, namespaces: previous.namespaces.map((entry) => (entry.ns === ns ? { ...entry, revision } : entry)) }))
+        const stale = () => { setNotice('adminSettingsStale'); setReloads((count) => count + 1) }
+        return h('section', { className: CLS.section, 'data-fishball-child-settings': true },
+          h('h3', null, t('adminSettingsTitle')),
+          h('p', { className: CLS.muted }, t('adminSettingsHint')),
+          view.loading ? h('p', { role: 'status' }, t('adminLoading')) : null,
+          h(AdminProblem, { error: view.error, t }),
+          !view.loading && view.error === null && view.writable === false ? h('p', { role: 'status', className: CLS.muted }, t('adminSettingsReadOnly')) : null,
+          !view.loading && view.error === null && view.writable && view.namespaces.length === 0 ? h('p', { className: CLS.muted }, t('adminSettingsNone')) : null,
+          view.writable ? view.namespaces.map((entry) => h(NamespaceForm, { key: entry.ns, entry, t, onSaved: (revision) => { setNotice(null); update(entry.ns, revision) }, onStale: stale })) : null,
+          notice ? h('p', { role: 'status', className: CLS.muted }, t(notice)) : null,
+          h('div', { className: CLS.row },
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: view.loading, onClick: () => { setNotice(null); setReloads((count) => count + 1) } }, t('refresh'))))
+      }
+    }
+
+    /**
+     * T16's slot (§10): provider sync preview/confirm into the child's own home. T16 builds the
+     * preview/confirm body inside this component; this page deliberately renders nothing here,
+     * never reads an API key, and keeps the slot in its final position in the page.
+     */
+    function ProviderSyncSlot() { return null }
 
     /** One read of the native status route; failures stay local to the caller. */
     async function nativeStatus(signal) {
@@ -2382,27 +2705,39 @@ window.__ModuleLoader__.load({
       return next
     }
 
-    /** The status section; opening uses the same panel as the brand button (§7). */
+    /**
+     * Status and restart of the isolated Fishball (§9), through the admin relay. The state and
+     * code are the host's safe vocabulary; nothing else about the child is shown (§11).
+     */
     function makeNativeSettings(t) {
       return function FishballNativeSettings() {
-        const [status, setStatus] = React.useState({ state: NATIVE_UI.loading, code: null })
-        const [refresh, setRefresh] = React.useState(false)
-        React.useEffect(() => {
-          const abort = new AbortController()
-          setStatus({ state: NATIVE_UI.loading, code: null })
-          void nativeStatus(abort.signal).then((next) => { if (!abort.signal.aborted) setStatus(next) })
-          return () => abort.abort()
-        }, [refresh])
+        const [view, setView] = React.useState({ loading: true, state: NATIVE_UI.loading, code: null, error: null })
+        const [busy, setBusy] = React.useState(false)
+        const load = React.useCallback(async () => {
+          setView((previous) => ({ ...previous, loading: true, error: null }))
+          const answer = await adminRequest('status')
+          if (answer.ok) setView({ loading: false, state: answer.result.state, code: answer.result.code ?? null, error: null })
+          else setView({ loading: false, state: NATIVE_UI.unavailable, code: null, error: answer.error })
+        }, [])
+        React.useEffect(() => { void load() }, [load])
+        const restart = async () => {
+          setBusy(true)
+          const answer = await adminRequest('restart')
+          setBusy(false)
+          if (answer.ok) setView({ loading: false, state: answer.result.state, code: answer.result.code ?? null, error: null })
+          else setView((previous) => ({ ...previous, loading: false, error: answer.error }))
+        }
         return h('div', { className: CLS.section, 'data-fishball-native': true },
           h('h3', null, t('nativeTitle')),
           h('p', { className: CLS.muted }, t('nativeHint')),
-          h('p', { role: 'status', 'aria-live': 'polite' }, t('native.' + status.state)),
-          status.code ? h('p', { className: CLS.code }, status.code) : null,
+          view.loading ? h('p', { role: 'status' }, t('native.loading'))
+            : h('p', { role: 'status', 'aria-live': 'polite' }, t('native.' + view.state)),
+          view.code ? h('p', { className: CLS.code }, view.code) : null,
+          h(AdminProblem, { error: view.error, t }),
           h('div', { className: CLS.row },
-            h(Button, { type: 'button', size: 'sm', disabled: status.state !== NATIVE_UI.ready,
-              onClick: () => embedPanel.set(true) }, t('nativeOpen')),
-            h(Button, { type: 'button', size: 'sm', disabled: status.state === NATIVE_UI.loading,
-              onClick: () => setRefresh(value => !value) }, t('nativeRefresh'))))
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: busy || view.loading, onClick: () => void load() }, t('nativeRefresh')),
+            h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: busy || view.loading, onClick: () => void restart() }, busy ? t('adminRestarting') : t('adminRestart'))),
+          h('p', { className: CLS.muted }, t('adminStatusHint')))
       }
     }
 
@@ -3492,8 +3827,14 @@ window.__ModuleLoader__.load({
       return { store, actions: form.actions(), dispose: () => form.dispose() }
     }
 
-    /** Fishball's whole settings page: status, context window, plugins, limits form, hidden tools. */
-    function makeSettingsPage(section, Status, NativeSettings, ModelSettings, ProviderSyncSettings, Recommended, BrandStyle, ContextWindow, Intake, Watches, Approvals, Sources, Plugins, HiddenTools, t) {
+    /**
+     * Fishball's whole settings page (§9): the isolated child's status and restart, model,
+     * plugins and settings, the T16 provider-sync slot, the brand switch and Fishball's own
+     * limits. The legacy sections (the old chat's status, context window, intake, watches,
+     * approvals, sources, the main plugin catalog and hidden tools) are not rendered: those
+     * concepts either belong to the child now or are retired with the legacy chat.
+     */
+    function makeSettingsPage(section, NativeSettings, ModelSettings, ChildPlugins, ChildSettings, BrandStyle, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
@@ -3502,18 +3843,12 @@ window.__ModuleLoader__.load({
         if (props.view === SUMMARY_VIEW) return null
         const disabled = !state.writable || state.saving
         return h(React.Fragment, null,
-          h(Status),
           h(NativeSettings),
           h(ModelSettings),
-          h(ProviderSyncSettings),
-          h(Recommended),
+          h(ChildPlugins),
+          h(ChildSettings),
+          h(ProviderSyncSlot),
           h(BrandStyle),
-          h(ContextWindow),
-          h(Intake),
-          h(Watches),
-          h(Approvals),
-          h(Sources),
-          h(Plugins),
           h('h3', null, t('limits')),
           h(SettingsForm, {
             labels: { unavailable: t('unavailable'), readOnly: t('readOnly'), saveFailed: t('saveFailed'), save: t('save'), saving: t('saving') },
@@ -3537,8 +3872,7 @@ window.__ModuleLoader__.load({
               onEdit: (text) => section.actions.edit(field, text),
               onReset: () => section.actions.resetField(field),
             })
-          })),
-          h(HiddenTools))
+          })))
       }
     }
 
@@ -3678,11 +4012,190 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * The schema-driven settings fields, shared by the plugin manager's settings rows and the
+     * isolated child's settings namespaces (§9). Both receive DSH's own schemastery envelope
+     * ({ uid, refs }) and draw the same kinds: text, number, switch, choice, list, secret, and a
+     * shown-only value for anything else. Edits are drafts until Save; Save hands the caller the
+     * nested `values` and the `reset` paths, because the two destinations speak different wire
+     * shapes (the plugin-side route and the child's admin mutate).
+     */
+    function makeSchemaForm(t, resolveText) {
+      const localized = (text) => (text === undefined || text === null ? undefined : resolveText(text))
+
+      /** The fields of a schema JSON envelope, in declaration order, each with the way the form draws it. */
+      function formFields(json) {
+        const node = (ref) => (typeof ref === 'object' ? ref : json.refs?.[ref])
+        const kindOf = (field) => {
+          if (field.meta?.role === SCHEMA.secretRole) return FIELD_KIND.secret
+          if (field.type === SCHEMA.string) return FIELD_KIND.text
+          if (field.type === SCHEMA.number) return FIELD_KIND.number
+          if (field.type === SCHEMA.boolean) return FIELD_KIND.switch
+          if (field.type === SCHEMA.union && (field.list ?? []).length > 0 && field.list.every((ref) => node(ref)?.type === SCHEMA.constant)) return FIELD_KIND.choice
+          if (field.type === SCHEMA.array && [SCHEMA.string, SCHEMA.number].includes(node(field.inner)?.type)) return FIELD_KIND.list
+          return FIELD_KIND.readOnly
+        }
+        const walk = (ref, path) => {
+          const field = node(ref)
+          if (!field || field.meta?.hidden) return []
+          if (field.type === SCHEMA.object) return Object.entries(field.dict ?? {}).flatMap(([key, inner]) => walk(inner, [...path, key]))
+          if (field.type === SCHEMA.intersect) return (field.list ?? []).flatMap((inner) => walk(inner, path))
+          const kind = path.length === 0 ? FIELD_KIND.readOnly : kindOf(field)
+          return [{
+            path,
+            key: JSON.stringify(path),
+            kind,
+            description: localized(field.meta?.description),
+            numbers: kind === FIELD_KIND.list && node(field.inner)?.type === SCHEMA.number,
+            choices: kind === FIELD_KIND.choice ? field.list.map((choice) => node(choice).value) : undefined,
+          }]
+        }
+        return walk(json.uid ?? json, [])
+      }
+
+      /** A field's text in the form, from its current value. */
+      function fieldText(field, value) {
+        if (value === undefined || value === null) return ''
+        if (field.kind === FIELD_KIND.list) return Array.isArray(value) ? value.join(LIST_SEPARATOR) : ''
+        if (field.kind === FIELD_KIND.choice) return String(Math.max(0, field.choices.findIndex((choice) => choice === value)))
+        return String(value)
+      }
+
+      /** The value a field's draft stands for; undefined when it is not a valid value for its kind. */
+      function fieldValue(field, draft) {
+        if (field.kind === FIELD_KIND.switch) return draft === true
+        if (field.kind === FIELD_KIND.choice) return field.choices[Number(draft)]
+        if (field.kind === FIELD_KIND.number) {
+          const number = Number(String(draft).trim())
+          return String(draft).trim() !== '' && Number.isFinite(number) ? number : undefined
+        }
+        if (field.kind === FIELD_KIND.list) {
+          const items = String(draft).split(LIST_SEPARATOR).map((item) => item.trim()).filter((item) => item !== '')
+          if (!field.numbers) return items
+          const numbers = items.map(Number)
+          return numbers.every(Number.isFinite) ? numbers : undefined
+        }
+        return String(draft)
+      }
+
+      /** A field's label row: its name, and "Changed" with Reset for a field you changed. */
+      function FieldHead({ id, label, changed, onReset, disabled }) {
+        return h('div', { className: MCLS.fieldHead },
+          id === undefined ? h('span', { className: MCLS.label }, label) : h('label', { htmlFor: id, className: MCLS.label }, label),
+          changed ? h(React.Fragment, null, h(Tag, { tone: 'neutral' }, t('settingsChanged')), h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('resetField', { name: label }), onClick: onReset }, t('settingsReset'))) : null)
+      }
+
+      /** One field of the form, drawn for its kind. */
+      function SettingsField({ field, id, value, secrets, draft, changed, invalid, disabled, onEdit, onReset }) {
+        const label = field.path.join('.')
+        const current = valueAt(value, field.path)
+        const text = draft !== undefined ? draft : fieldText(field, current)
+        const labelled = field.kind === FIELD_KIND.choice || field.kind === FIELD_KIND.list
+        const head = h(FieldHead, { id: labelled ? id : undefined, label, changed, onReset, disabled })
+        const hint = field.description ? h('p', { className: MCLS.hint }, field.description) : null
+        if (field.kind === FIELD_KIND.text || field.kind === FIELD_KIND.number) {
+          return h(SettingsValueField, {
+            id, label, text, numeric: field.kind === FIELD_KIND.number, hint: field.description, invalid, invalidLabel: t('settingsInvalid'),
+            overridden: changed, overriddenLabel: t('settingsChanged'), resetLabel: t('settingsReset'), onReset, disabled, onEdit,
+          })
+        }
+        if (field.kind === FIELD_KIND.secret) {
+          const slot = secrets.find((candidate) => JSON.stringify(candidate.path) === field.key)
+          const set = slot?.set === true
+          // DSH's secret field draws its own padding; Clear sits under it.
+          return h('div', null,
+            h(SettingsSecretField, { id, label, configured: set, stateLabel: t(set ? 'secretSet' : 'secretUnset'), text: draft ?? '', hint: t('secretHint'), disabled, onEdit }),
+            // Clear drops the value you set; the plugin's own value, if any, then applies.
+            slot?.stored === true ? h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('clearField', { name: label }), onClick: onReset }, t('secretClear')) : null)
+        }
+        if (field.kind === FIELD_KIND.switch) {
+          return h('div', { className: MCLS.field }, head, h(Switch, { checked: draft !== undefined ? draft : current === true, label, onChange: onEdit }), hint)
+        }
+        if (field.kind === FIELD_KIND.choice) {
+          return h('div', { className: MCLS.field }, head,
+            h('select', { id, className: MCLS.input, value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) },
+              field.choices.map((choice, index) => h('option', { key: index, value: String(index) }, String(choice)))),
+            hint)
+        }
+        if (field.kind === FIELD_KIND.list) {
+          return h('div', { className: MCLS.field }, head,
+            h('textarea', { id, className: MCLS.input, rows: Math.max(MANAGER.listMinRows, text.split(LIST_SEPARATOR).length), value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) }),
+            h('p', { className: MCLS.hint }, [field.description, t('settingsListHint')].filter(Boolean).join(' ')))
+        }
+        return h('div', { className: MCLS.field }, head,
+          h('pre', { className: MCLS.readOnly }, JSON.stringify(current ?? null, null, 2)),
+          h('p', { className: MCLS.hint }, [field.description, t('settingsReadOnly')].filter(Boolean).join(' ')))
+      }
+
+      /**
+       * The fields, their drafts and the Save action. `onSave(edits)` returns whether the save was
+       * accepted; only then are the drafts cleared, so a refusal leaves your edits in place.
+       */
+      function SchemaForm({ schema, value, secrets, user, invalidPath, resetAll, disabled, onSave }) {
+        const baseId = React.useId()
+        const fields = React.useMemo(() => formFields(schema), [schema])
+        const [drafts, setDrafts] = React.useState({})
+        const [resets, setResets] = React.useState([])
+        const [saving, setSaving] = React.useState(false)
+        const [invalid, setInvalid] = React.useState(false)
+        const edit = (field, next) => { setDrafts({ ...drafts, [field.key]: next }); setResets(resets.filter((key) => key !== field.key)); setInvalid(false) }
+        const reset = (field) => {
+          const next = { ...drafts }
+          delete next[field.key]
+          setDrafts(next)
+          setResets([...new Set([...resets, field.key])])
+          setInvalid(false)
+        }
+        const submit = async (body = null) => {
+          const values = {}
+          if (body === null) {
+            for (const field of fields) {
+              if (!Object.hasOwn(drafts, field.key)) continue
+              // An empty secret field means "keep the stored secret".
+              if (field.kind === FIELD_KIND.secret && drafts[field.key] === '') continue
+              const next = fieldValue(field, drafts[field.key])
+              if (next === undefined) { setInvalid(true); return }
+              setAt(values, field.path, next)
+            }
+          }
+          const resetPaths = body?.reset ?? resets.map((key) => JSON.parse(key))
+          if (Object.keys(values).length === 0 && resetPaths.length === 0) { setDrafts({}); return }
+          setSaving(true)
+          const saved = await onSave({ ...(Object.keys(values).length > 0 ? { values } : {}), ...(resetPaths.length > 0 ? { reset: resetPaths } : {}) })
+          setSaving(false)
+          if (saved) { setDrafts({}); setResets([]) }
+        }
+        const dirty = Object.keys(drafts).length > 0 || resets.length > 0
+        // The Host names the failing field's path, which can lie inside a field (a list item): the field containing it is marked (review L7).
+        const isInvalid = (field) => invalidPath !== undefined && field.path.every((key, index) => invalidPath[index] === key)
+        return h(React.Fragment, null,
+          h('div', { className: MCLS.fields }, fields.map((field) => h(SettingsField, {
+            key: field.key,
+            field,
+            id: `${baseId}-${field.key}`,
+            value,
+            secrets,
+            draft: drafts[field.key],
+            changed: Object.hasOwn(drafts, field.key) || (valueAt(user, field.path) !== undefined && !resets.includes(field.key)),
+            invalid: isInvalid(field),
+            disabled: saving || disabled,
+            onEdit: (next) => edit(field, next),
+            onReset: () => reset(field),
+          }))),
+          invalid ? h('div', { role: 'alert' }, t('settingsInvalid')) : null,
+          h('div', { className: MCLS.formActions },
+            resetAll ? h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: saving || disabled, onClick: () => void submit({ reset: [[]] }) }, t('settingsResetAll')) : null,
+            accentButton({ size: 'sm', disabled: saving || disabled || !dirty, onClick: () => void submit() }, saving ? t('saving') : t('save'))))
+      }
+
+      return { formFields, SchemaForm }
+    }
+    /**
      * The plugin manager's components (DESIGN §10d). Display text from DSH's metadata is read
      * through DSH's own locale service, as its Plugins page reads it (review M3).
      * @param resolveText - ctx.locale.resolveText (LocalizedText -> string in the UI language).
      */
     function makeManager(t, resolveText) {
+      const { formFields, SchemaForm } = makeSchemaForm(t, resolveText)
       const localized = (text) => (text === undefined || text === null ? undefined : resolveText(text))
       const pluginTitle = (plugin) => localized(plugin.meta?.title) || plugin.title
       const pluginDescription = (plugin) => localized(plugin.meta?.description) || plugin.description || ''
@@ -3791,7 +4304,7 @@ window.__ModuleLoader__.load({
         }, [])
         const button = h(React.Fragment, null,
           h(RefreshButton, { t, onResult }),
-          h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', className: MCLS.addButton, onClick: onInstall }, h(IconPlusOutlineRegular, { size: MANAGER.addIconSize }), t('installForFishball'))))
+          accentButton({ size: 'sm', className: MCLS.addButton, onClick: onInstall }, h(IconPlusOutlineRegular, { size: MANAGER.addIconSize }), t('installForFishball')))
         // The anchor stays in the tab only to find the header; its class sets display, so it is hidden inline once the button moved.
         return h('span', { ref: anchor, className: MCLS.bar, style: slot === null ? undefined : { display: 'none' } }, slot === null ? button : createPortal(button, slot))
       }
@@ -3843,186 +4356,36 @@ window.__ModuleLoader__.load({
       }
 
       /**
-       * The fields of a schema JSON envelope ({ uid, refs }, schemastery toJSON), in declaration
-       * order, each with the way the form draws it. A root that is not an object is shown only.
-       */
-      function formFields(json) {
-        const node = (ref) => (typeof ref === 'object' ? ref : json.refs?.[ref])
-        const kindOf = (field) => {
-          if (field.meta?.role === SCHEMA.secretRole) return FIELD_KIND.secret
-          if (field.type === SCHEMA.string) return FIELD_KIND.text
-          if (field.type === SCHEMA.number) return FIELD_KIND.number
-          if (field.type === SCHEMA.boolean) return FIELD_KIND.switch
-          if (field.type === SCHEMA.union && (field.list ?? []).length > 0 && field.list.every((ref) => node(ref)?.type === SCHEMA.constant)) return FIELD_KIND.choice
-          if (field.type === SCHEMA.array && [SCHEMA.string, SCHEMA.number].includes(node(field.inner)?.type)) return FIELD_KIND.list
-          return FIELD_KIND.readOnly
-        }
-        const walk = (ref, path) => {
-          const field = node(ref)
-          if (!field || field.meta?.hidden) return []
-          if (field.type === SCHEMA.object) return Object.entries(field.dict ?? {}).flatMap(([key, inner]) => walk(inner, [...path, key]))
-          if (field.type === SCHEMA.intersect) return (field.list ?? []).flatMap((inner) => walk(inner, path))
-          const kind = path.length === 0 ? FIELD_KIND.readOnly : kindOf(field)
-          return [{
-            path,
-            key: JSON.stringify(path),
-            kind,
-            description: localized(field.meta?.description),
-            numbers: kind === FIELD_KIND.list && node(field.inner)?.type === SCHEMA.number,
-            choices: kind === FIELD_KIND.choice ? field.list.map((choice) => node(choice).value) : undefined,
-          }]
-        }
-        return walk(json.uid ?? json, [])
-      }
-
-      /** A field's text in the form, from its current value. */
-      function fieldText(field, value) {
-        if (value === undefined || value === null) return ''
-        if (field.kind === FIELD_KIND.list) return Array.isArray(value) ? value.join(LIST_SEPARATOR) : ''
-        if (field.kind === FIELD_KIND.choice) return String(Math.max(0, field.choices.findIndex((choice) => choice === value)))
-        return String(value)
-      }
-
-      /** The value a field's draft stands for; undefined when it is not a valid value for its kind. */
-      function fieldValue(field, draft) {
-        if (field.kind === FIELD_KIND.switch) return draft === true
-        if (field.kind === FIELD_KIND.choice) return field.choices[Number(draft)]
-        if (field.kind === FIELD_KIND.number) {
-          const number = Number(String(draft).trim())
-          return String(draft).trim() !== '' && Number.isFinite(number) ? number : undefined
-        }
-        if (field.kind === FIELD_KIND.list) {
-          const items = String(draft).split(LIST_SEPARATOR).map((item) => item.trim()).filter((item) => item !== '')
-          if (!field.numbers) return items
-          const numbers = items.map(Number)
-          return numbers.every(Number.isFinite) ? numbers : undefined
-        }
-        return String(draft)
-      }
-
-      /** A field's label row: its name, and "Changed" with Reset for a field you changed (as DSH's value field shows). */
-      function FieldHead({ id, label, changed, onReset, disabled, t }) {
-        return h('div', { className: MCLS.fieldHead },
-          // A control without an id of its own (the switch, a shown-only value) gets a plain caption.
-          id === undefined ? h('span', { className: MCLS.label }, label) : h('label', { htmlFor: id, className: MCLS.label }, label),
-          changed ? h(React.Fragment, null, h(Tag, { tone: 'neutral' }, t('settingsChanged')), h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('resetField', { name: label }), onClick: onReset }, t('settingsReset'))) : null)
-      }
-
-      /** One field of the form, drawn for its kind. */
-      function SettingsField({ field, id, row, draft, changed, invalid, disabled, onEdit, onReset, t }) {
-        const label = field.path.join('.')
-        const current = valueAt(row.value, field.path)
-        const text = draft !== undefined ? draft : fieldText(field, current)
-        const labelled = field.kind === FIELD_KIND.choice || field.kind === FIELD_KIND.list
-        const head = h(FieldHead, { id: labelled ? id : undefined, label, changed, onReset, disabled, t })
-        const hint = field.description ? h('p', { className: MCLS.hint }, field.description) : null
-        if (field.kind === FIELD_KIND.text || field.kind === FIELD_KIND.number) {
-          return h(SettingsValueField, {
-            id, label, text, numeric: field.kind === FIELD_KIND.number, hint: field.description, invalid, invalidLabel: t('settingsInvalid'),
-            overridden: changed, overriddenLabel: t('settingsChanged'), resetLabel: t('settingsReset'), onReset, disabled, onEdit,
-          })
-        }
-        if (field.kind === FIELD_KIND.secret) {
-          const slot = row.secrets.find((candidate) => JSON.stringify(candidate.path) === field.key)
-          const set = slot?.set === true
-          // DSH's secret field draws its own padding; Clear sits under it.
-          return h('div', null,
-            h(SettingsSecretField, { id, label, configured: set, stateLabel: t(set ? 'secretSet' : 'secretUnset'), text: draft ?? '', hint: t('secretHint'), disabled, onEdit }),
-            // Clear drops the value you set; the plugin's own value, if any, then applies.
-            slot?.stored === true ? h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('clearField', { name: label }), onClick: onReset }, t('secretClear')) : null)
-        }
-        if (field.kind === FIELD_KIND.switch) {
-          return h('div', { className: MCLS.field }, head, h(Switch, { checked: draft !== undefined ? draft : current === true, label, onChange: onEdit }), hint)
-        }
-        if (field.kind === FIELD_KIND.choice) {
-          return h('div', { className: MCLS.field }, head,
-            h('select', { id, className: MCLS.input, value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) },
-              field.choices.map((choice, index) => h('option', { key: index, value: String(index) }, String(choice)))),
-            hint)
-        }
-        if (field.kind === FIELD_KIND.list) {
-          return h('div', { className: MCLS.field }, head,
-            h('textarea', { id, className: MCLS.input, rows: Math.max(MANAGER.listMinRows, text.split(LIST_SEPARATOR).length), value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) }),
-            h('p', { className: MCLS.hint }, [field.description, t('settingsListHint')].filter(Boolean).join(' ')))
-        }
-        return h('div', { className: MCLS.field }, head,
-          h('pre', { className: MCLS.readOnly }, JSON.stringify(current ?? null, null, 2)),
-          h('p', { className: MCLS.hint }, [field.description, t('settingsReadOnly')].filter(Boolean).join(' ')))
-      }
-
-      /**
-       * One row's settings form (DESIGN §10d "The form"). Edits are drafts until Save; Reset on a
-       * field drops your value for it; Reset all drops every value of the row. The Host checks the
-       * whole config and answers an invalid field's path, which the form marks.
+       * One row's settings form (DESIGN §10d "The form"). The shared schema form owns the drafts
+       * and Save; this row hands them to the plugin-settings route and shows its messages.
        */
       function SettingsRowForm({ plugin, row, showRow, t, onSaved }) {
-        const baseId = React.useId()
-        const fields = React.useMemo(() => formFields(row.schema), [row.schema])
-        const [drafts, setDrafts] = React.useState({})
-        const [resets, setResets] = React.useState([])
-        const [saving, setSaving] = React.useState(false)
         const [message, setMessage] = React.useState(null)
-        const edit = (field, value) => {
-          setDrafts({ ...drafts, [field.key]: value })
-          setResets(resets.filter((key) => key !== field.key))
-          setMessage(null)
-        }
-        const reset = (field) => {
-          const next = { ...drafts }
-          delete next[field.key]
-          setDrafts(next)
-          setResets([...new Set([...resets, field.key])])
-          setMessage(null)
-        }
         const save = async (body) => {
-          setSaving(true)
           const answer = await send(API.pluginsSettings, { plugin, row: row.row, ...body })
-          setSaving(false)
-          if (answer.ok) { setDrafts({}); setResets([]); setMessage({ kind: FORM_MESSAGE.saved }); onSaved() }
-          else setMessage(answer.code === SETTINGS_INVALID ? { kind: FORM_MESSAGE.invalid, path: answer.path ?? [] } : { kind: FORM_MESSAGE.failed })
+          if (answer.ok) { setMessage({ kind: FORM_MESSAGE.saved }); onSaved(); return true }
+          setMessage(answer.code === SETTINGS_INVALID ? { kind: FORM_MESSAGE.invalid, path: answer.path ?? [] } : { kind: FORM_MESSAGE.failed })
+          return false
         }
-        const submit = () => {
-          const values = {}
-          for (const field of fields) {
-            if (!Object.hasOwn(drafts, field.key)) continue
-            // An empty secret field means "keep the stored secret".
-            if (field.kind === FIELD_KIND.secret && drafts[field.key] === '') continue
-            const value = fieldValue(field, drafts[field.key])
-            if (value === undefined) { setMessage({ kind: FORM_MESSAGE.invalid, path: field.path }); return }
-            setAt(values, field.path, value)
-          }
-          const reset = resets.map((key) => JSON.parse(key))
-          // Only an emptied secret was edited: nothing to send (review L3).
-          if (Object.keys(values).length === 0 && reset.length === 0) { setDrafts({}); return }
-          void save({ ...(Object.keys(values).length > 0 ? { values } : {}), ...(reset.length > 0 ? { reset } : {}) })
-        }
-        const dirty = Object.keys(drafts).length > 0 || resets.length > 0
-        // The Host names the failing field's path, which can lie inside a field (a list item): the field containing it is marked (review L7).
-        const isInvalid = (field) => message?.kind === FORM_MESSAGE.invalid && field.path.every((key, index) => message.path[index] === key)
-        const marked = fields.some(isInvalid)
+        // The Host names the failing field's path, which can lie inside a field (a list item): say it
+        // here whenever no drawn field contains it.
+        const marked = message?.kind === FORM_MESSAGE.invalid && formFields(row.schema).some(
+          (field) => field.path.every((key, index) => message.path[index] === key))
         return h('div', { className: MCLS.section, 'data-fishball-settings-row': row.row },
           showRow ? h('p', { className: MCLS.hint }, t('settingsRow', { row: row.row })) : null,
           row.error ? h('p', { role: 'status', className: MCLS.hint }, t('settingsOwnError', { message: row.error })) : null,
-          h('div', { className: MCLS.fields }, fields.map((field) => h(SettingsField, {
-            key: field.key,
-            field,
-            id: `${baseId}-${field.key}`,
-            row,
-            draft: drafts[field.key],
-            changed: Object.hasOwn(drafts, field.key) || (valueAt(row.user, field.path) !== undefined && !resets.includes(field.key)),
-            invalid: isInvalid(field),
-            disabled: saving,
-            onEdit: (value) => edit(field, value),
-            onReset: () => reset(field),
-            t,
-          }))),
+          h(SchemaForm, {
+            schema: row.schema,
+            value: row.value,
+            secrets: row.secrets,
+            user: row.user,
+            invalidPath: message?.kind === FORM_MESSAGE.invalid ? message.path : undefined,
+            resetAll: Object.keys(row.user).length > 0,
+            onSave: save,
+          }),
           message?.kind === FORM_MESSAGE.saved ? h('div', { role: 'status', className: MCLS.hint }, t('settingsSaved')) : null,
           message?.kind === FORM_MESSAGE.failed ? h('div', { role: 'alert' }, t('settingsFailed')) : null,
-          // A field the Host named is marked on the field itself; say it here only when no drawn field contains it.
-          message?.kind === FORM_MESSAGE.invalid && !marked ? h('div', { role: 'alert' }, t('settingsInvalid')) : null,
-          h('div', { className: MCLS.formActions },
-            Object.keys(row.user).length > 0 ? h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: saving, onClick: () => void save({ reset: [[]] }) }, t('settingsResetAll')) : null,
-            h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: saving || !dirty, onClick: submit }, saving ? t('saving') : t('save')))))
+          message?.kind === FORM_MESSAGE.invalid && !marked ? h('div', { role: 'alert' }, t('settingsInvalid')) : null)
       }
 
       /** Settings for Fishball on the plugin page; a plugin on in DSH uses DSH's settings (DESIGN §10d). */
@@ -4219,7 +4582,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.detailActions, () => ctx.slots.register({ name: SLOT.detailActions, id: MANAGER.actionId, locale: NS }, manager.DetailAction)), 'fishball: plugin page switch')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeStatus(ctx, t), makeNativeSettings(t), makeModelSettings(t), makeProviderSyncSettings(t), makeRecommended(t), makeBrandStyle(t), makeContextWindow(t), makeIntake(t), makeWatches(t), makeApprovals(t), makeSources(t), makePluginsSummary(t), makeHiddenTools(t), t)
+        const Settings = makeSettingsPage(section, makeNativeSettings(t), makeModelSettings(t), makeChildPlugins(t), makeChildSettings(t, (text) => ctx.locale.resolveText(text)), makeBrandStyle(t), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')
