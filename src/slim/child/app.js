@@ -36,8 +36,9 @@ const APP = Object.freeze({
   service: 'fishballApp',
   logger: 'fishball-native-app',
   /**
-   * The chat row's service (T07): the Schedule runtime's activation owner and the admin
-   * service's live-model port read it by this name. It exists exactly while this app row runs.
+   * The chat row's service (T07): the Schedule runtime's activation owner, the admin service's
+   * live-model port and the inbox row's delivery port read it by this name. It exists exactly
+   * while this app row runs.
    */
   chatService: 'fishballChat',
   /** T06's image service: the upload route and the chat's attachment blocks read it. */

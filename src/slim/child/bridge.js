@@ -192,9 +192,11 @@ class BridgeClient {
   /**
    * Receive inbox items (message_fishball, hand-over notes, and T09's question-answer notice)
    * from the main host. At least one listener must accept the item; with none the client refuses
-   * the item so the host keeps it queued. A listener that throws, or returns false, refuses the
+   * the item so the host keeps it queued. A listener that throws, or resolves false, refuses the
    * item in the same way, so a notice another module owns can never be acked by this one.
-   * @param {(item: object) => (void|boolean)} listener
+   * A listener may return a promise; the item is acked only after at least one listener settles
+   * as accepting, which lets a consumer ack after it queued its turn (§5.2).
+   * @param {(item: object) => (void|boolean|Promise<void|boolean>)} listener
    * @returns {() => void} disposer
    */
   onInbox(listener) { return subscribe(this.inboxListeners, listener, this.limits.maxListeners) }
@@ -288,6 +290,22 @@ class BridgeClient {
   receiveRequest(connection, envelope) {
     if (!connection.ready) { this.replyError(connection, envelope, ERROR.handshakeRequired); return }
     if (envelope.operation !== OPERATION.inboxPush) { this.replyError(connection, envelope, ERROR.operation); return }
+    void this.dispatchInbox(connection, envelope).catch(() => {
+      // An internal dispatch failure leaves the item unacked; dropping the channel makes the
+      // host keep it queued and try again on the next connection instead of waiting forever.
+      this.disconnect(connection, ERROR.failed)
+    })
+  }
+
+  /**
+   * Hand one item to every consumer and wait for their answers before acking. Listeners run
+   * together and each refusal or failure is contained; the item is accepted when at least one
+   * settles without false. The host sends one inbox item at a time (inboxSending), so waiting
+   * here cannot reorder the queue. The dedupe key is remembered before the ack: if the
+   * connection died while a listener was working, a reconnect still acks the item instead of
+   * delivering the same turn twice.
+   */
+  async dispatchInbox(connection, envelope) {
     const key = envelope.payload.dedupeKey
     if (this.inboxKeys.has(key)) { this.replyAck(connection, envelope); return }
     if (this.inboxKeys.size >= this.limits.maxInboxKeys) {
@@ -295,14 +313,12 @@ class BridgeClient {
       this.replyError(connection, envelope, ERROR.limit)
       return
     }
-    // Hand the item to every consumer; it is accepted when at least one took it without failing.
-    let accepted = false
-    for (const listener of this.inboxListeners) {
-      // A listener that returns false declines the item (T09 answers only its own question-answer
-      // notices); any other return, including undefined, accepts it as before.
-      try { if (listener(envelope.payload) !== false) accepted = true } catch { /* another consumer may still take it */ }
-    }
-    if (!accepted) { this.replyError(connection, envelope, ERROR.failed); return }
+    // A listener that returns false declines the item (T09 answers only its own question-answer
+    // notices); any other settled value, including undefined, accepts it as before.
+    const outcomes = await Promise.all([...this.inboxListeners].map(async (listener) => {
+      try { return (await listener(envelope.payload)) !== false } catch { return false }
+    }))
+    if (!outcomes.some(Boolean)) { this.replyError(connection, envelope, ERROR.failed); return }
     this.inboxKeys.add(key)
     this.replyAck(connection, envelope)
   }

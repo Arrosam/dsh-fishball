@@ -1,6 +1,7 @@
 import { applyNativeChild } from './src/native-runtime/child.js'
 import * as sessionTools from './src/slim/child/session-tools.js'
 import * as approvals from './src/slim/child/approvals.js'
+import * as inbox from './src/slim/child/inbox.js'
 
 /**
  * The attached child's lifecycle row: identity checks, control wire and bounded shutdown.
@@ -23,4 +24,8 @@ export async function apply(ctx, config) {
   // The approval tools, their cards and Fishball's own question answerer share that row's one
   // bridge client (fishballBridge); T09 opens no second channel.
   ctx.plugin(approvals, {})
+  // The inbox consumer also shares that bridge client and delivers session messages, hand-over
+  // notes and notices into Fishball's chat. It waits for fishballChat, which the app row
+  // publishes; T09's own question-answer items are declined by both sides' listener rule.
+  ctx.plugin(inbox, {})
 }
