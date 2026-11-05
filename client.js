@@ -41,12 +41,12 @@ window.__ModuleLoader__.load({
     /** Plugins page main-panel id (dsh-client-ui-plugin-manager PANEL_ID) and its navigation service. */
     const PLUGINS_PANEL = 'plugins'
     /** Client services read on demand (not injected: Fishball works without each of them). */
-    const SERVICE = Object.freeze({ pluginNavigation: 'pluginNavigation', layout: 'layout', uiWorkspace: 'uiWorkspace', remote: 'remote' })
+    const SERVICE = Object.freeze({ pluginNavigation: 'pluginNavigation', layout: 'layout', remote: 'remote' })
     const SUMMARY_VIEW = 'summary'
     const HEADER_ACTION_ID = 'fishball-settings'
     /** Renders nothing: while mounted for Fishball's session, that chat is on screen (see ReadReporter). */
     const READ_HEADER = Object.freeze({ id: 'fishball-read', order: 6 })
-    /** Host statuses (src/constants.js STATUS) and the recovery actions each one offers. */
+    /** Host statuses (src/constants.js STATUS) the page compares against. */
     const STATUS = Object.freeze({ starting: 'starting', live: 'live', recovery: 'recovery', archived: 'archived', stopped: 'stopped', failed: 'failed' })
     /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
     const FEATURE = Object.freeze({ messages: 'messages' })
@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', model: 'api/fishball/model', models: 'api/fishball/models', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
+    const API = Object.freeze({ events: 'api/fishball/events', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', send: 'api/fishball/send', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /**
@@ -87,23 +87,15 @@ window.__ModuleLoader__.load({
       ready: 'ready', unavailable: 'unavailable', loading: 'loading',
       request: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
     })
-    const PROVIDER_SYNC_UI = Object.freeze({ path: '/api/fishball/provider-sync', mask: '••••••••',
-      groups: Object.freeze(['add', 'existsSkip', 'conflictSkip', 'unsupported']),
-      invitationRows: 3, inactive: 'inactive', pendingSource: 'pendingSource', pendingTarget: 'pendingTarget', paired: 'paired',
-    })
-    /** The two context-window settings (src/constants.js API.contextWindow body). */
-    const CONTEXT_FIELDS = Object.freeze(['contextWindowTokens', 'maxOutputTokens'])
     /** Fishball's explicit model choice is independent of the host's last-used/default route. */
     const MODEL = Object.freeze({
       gateId: 'fishball-model-required', gateOrder: -50, styleId: 'fishball-model-seat',
       settingsClass: 'fb-model-settings', gateClass: 'fb-model-gate', empty: '',
-      fieldSuffix: '-model', effortSuffix: '-effort', pickerClass: 'fb-model-picker',
+      fieldSuffix: '-model', effortSuffix: '-effort',
       request: Object.freeze({ cache: 'no-store' }), routeSeparator: '/', refreshStart: 0, refreshStep: 1,
       seatSelector: (id) => `[data-conversation-session="${CSS.escape(id)}"] > [data-conversation-scroll] > [data-composer-seat] [data-slot="conversation.input.model"]`,
     })
     /** Context-window refusals with their own text (keep in step with src/constants.js CONTEXT_ERROR). */
-    const CONTEXT_ERRORS = new Set(['window-too-small', 'output-too-large', 'model-window-unknown'])
-    const WHOLE_NUMBER = /^[1-9][0-9]*$/
     /** Host tool statuses (src/constants.js TOOL_STATUS) shown as tags, and the plugin kinds. */
     const TOOL_STATUS = Object.freeze({ visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked', otherSessions: 'other-sessions' })
     /** Tag tones used by DSH's own plugin page (neutral, info, danger). */
@@ -147,7 +139,7 @@ window.__ModuleLoader__.load({
     /** The newest output lines the progress screen keeps. */
     const INSTALL_LOG_LINES = 200
     /** Where the dialog was opened: the Fishball tab can open the new plugin's page, DSH's menu cannot (S28). */
-    const INSTALL_FROM = Object.freeze({ tab: 'tab', menu: 'menu', settings: 'settings' })
+    const INSTALL_FROM = Object.freeze({ tab: 'tab', menu: 'menu' })
     const VISIBLE = 'visible'
     const VISIBILITY_EVENT = 'visibilitychange'
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
@@ -273,7 +265,6 @@ window.__ModuleLoader__.load({
     const WELCOME = Object.freeze({ id: 'fishball-welcome', order: -200, iconPx: 16, closeIconPx: 14, gapPx: 6, headGapPx: 8, paddingYPx: 8, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
     /** Recommended plugins on the settings page (DESIGN §10f). States as src/recommended.js RECOMMENDED_STATE. Sizes in px. */
     const RECOMMENDED = Object.freeze({
-      state: Object.freeze({ install: 'install', installed: 'installed', dshOn: 'dsh-on', dshOff: 'dsh-off' }),
       rowGapPx: 12, rowPaddingYPx: 6, categoryGapPx: 8,
       /** How the section comes into view when the welcome card's link opens the page. */
       scroll: Object.freeze({ behavior: 'smooth', block: 'start' }),
@@ -584,39 +575,21 @@ window.__ModuleLoader__.load({
       brandStyle: 'Sidebar icon',
       brandStyleHint: 'Fishball\'s own mark and word logo, or the DeepSeek orca and DeepSeek\'s word logo. A new message shows the number either way; Fishball\'s fish wags, and the orca swims as it does when you hover it in a new session.',
       brandStyleDeepseek: 'Use the DeepSeek icon',
-      session: 'Session',
-      folder: 'Folder',
-      error: 'Problem',
       'status.starting': 'Starting',
       'status.live': 'Running',
       'status.recovery': 'Needs your decision',
       'status.archived': 'Archived',
       'status.stopped': 'Stopped',
       'status.failed': 'Could not start (restart DSH)',
-      recoverFailed: 'That did not work. Check the status above and try again.',
       retry: 'Try again',
-      adopt: 'Start a new Fishball session',
-      openChat: 'Open chat',
-      hiddenTools: 'Tools Fishball never uses',
-      hiddenToolsHint: 'They save files, change the profile, or start agents inside Fishball\'s own session.',
       limits: 'Safety limits',
       openSettings: 'Fishball settings',
-      modelTitle: 'Model for Fishball',
-      modelHint: 'Choose a dedicated model for Fishball. This does not change the model or default for your other sessions.',
       modelRequired: 'Choose a model in Fishball settings before sending messages.',
-      modelChoose: 'Select model',
       modelLoading: 'Loading models…',
-      modelRefresh: 'Refresh models',
-      modelRefreshing: 'Refreshing…',
-      modelRefreshHint: 'Fetch the models configured in this DSH again, without reloading the page.',
-      modelUnavailableOption: 'Unavailable',
       modelEffort: 'Reasoning effort',
       modelEffortDefault: 'Model default',
       modelEmpty: 'No models available. Configure a provider in DSH model settings, then refresh.',
-      modelLoadFailed: 'Models could not be refreshed. Any previous list and selection are unchanged. Try again.',
-      modelSaveFailed: 'The model was not saved. Check that it is still available and try again.',
-      modelUnavailable: 'A saved or selected model is unavailable in the current list. Its selection is kept; choose another model to change it.',
-      nativeTitle: 'Isolated Fishball', nativeOpen: 'Open Fishball panel', nativeRefresh: 'Refresh status',
+      nativeTitle: 'Isolated Fishball', nativeRefresh: 'Refresh status',
       nativeHint: 'The isolated Fishball runs beside DSH in its own home. Its chat opens in a panel on this page; the model, plugins and settings below are its own.',
       embedTitle: 'Fishball panel', embedRefresh: 'Refresh', embedOpenTab: 'Open in a tab',
       embedUnavailable: 'Fishball is not available. Retry starts it again.', embedRetry: 'Retry',
@@ -625,33 +598,11 @@ window.__ModuleLoader__.load({
       'native.starting': 'Starting', 'native.ready': 'Ready', 'native.stopping': 'Stopping', 'native.stopped': 'Stopped',
       'native.failed': 'Native runtime failed', 'native.unavailable': 'Unavailable or not enabled in this profile',
       syncTitle: 'Sync model providers and API keys',
-      syncHint: 'Manual additions only. Pair source and target pages, preview, then confirm. The invitation is a short-lived scoped pairing capability, not a DSH Web or OAuth token. Existing settings are skipped. OAuth and logins are never copied.',
-      syncInvite: 'Create target invitation', syncInvitation: 'One-time target invitation', syncPaste: 'Paste target invitation on the source',
-      syncBegin: 'Connect to target', syncApprove: 'Approve source on target', syncFinish: 'Confirm target on source',
-      syncStatus: 'Check pairing status', syncClose: 'Close sync channel', syncPreview: 'Preview sync', syncConfirm: 'Confirm selected additions',
-      syncConsent: 'I confirm transferring the selected model configuration and current API keys to this target. Partial success is possible.',
+      syncPreview: 'Preview sync', syncConfirm: 'Confirm selected additions',
       syncIdentity: 'Runtime / profile', syncFailed: 'Sync was refused or could not be confirmed. Check pairing and create a new preview; no automatic retry.',
       syncComplete: 'Selected additions completed. Catalog presence does not prove account authentication.',
       syncPartial: 'Not all items completed. Review every result; create a new preview before retrying failed or unknown items.',
       'syncGroup.add': 'Will add', 'syncGroup.existsSkip': 'Already exists — skip', 'syncGroup.conflictSkip': 'Conflict — skip', 'syncGroup.unsupported': 'Unsupported',
-      contextWindow: 'Context window',
-      contextHint: 'Leave the window empty to use the model\'s full window. A smaller window makes Fishball summarise its conversation sooner; only Fishball\'s session is affected.',
-      'contextField.contextWindowTokens': 'Context window (tokens)',
-      'contextField.maxOutputTokens': 'Reply length cap (tokens)',
-      contextModel: 'Model window',
-      contextEffective: 'Window in use',
-      contextThreshold: 'Summarises at',
-      contextPressure: 'In use now',
-      contextOutput: 'Reply cap',
-      contextUnknown: 'unknown',
-      contextNone: 'none',
-      contextDefault: 'Default',
-      contextCompactionOff: 'Compaction is off for Fishball, so only the reply cap applies. Turn it on under Plugins for Fishball.',
-      'contextError.window-too-small': 'That window is too small: it is below the smallest window in the safety limits, or cannot hold Fishball\'s instructions, tools, a summary and recent messages.',
-      'contextError.output-too-large': 'The reply cap does not fit in the window.',
-      'contextError.model-window-unknown': 'The model does not report its window, so a smaller one cannot be set.',
-      contextSaveFailed: 'That value was not accepted.',
-      contextInvalid: 'Enter a whole number, or leave it empty.',
       handOver: 'Hand over to Fishball',
       handOverTitle: 'Hand over "{title}" to Fishball',
       handOverNoteLabel: 'Note for Fishball (optional)',
@@ -680,24 +631,6 @@ window.__ModuleLoader__.load({
       'manageError.is-fishball': 'This is Fishball\'s own session.',
       'manageError.feature-off': 'Fishball\'s Session messages plugin is off.',
       'manageError.unavailable': 'Fishball is not running.',
-      nothingYet: 'Nothing yet.',
-      sources: 'Plugin sources',
-      sourcesHint: 'Plugins that send Fishball events through ctx.fishball. A source is off while Fishball is not running or has its plugin turned off.',
-      sourceOn: 'Accepting events',
-      sourceOff: 'Off',
-      approvals: 'Permission requests',
-      managedSessions: 'Managed sessions',
-      managedSessionsHint: 'Sessions Fishball looks after: they can message it, and their permission requests go to it first. Every other session is yours.',
-      managedSince: 'since {at}',
-      'managedBy.hand-over': 'Handed over by you',
-      'managedBy.send': 'Sent by you',
-      'managedBy.message': 'Messaged by Fishball',
-      'managedBy.start': 'Started by Fishball',
-      'managedBy.prompt-answer': 'Prompt answered by Fishball',
-      approvalsHint: 'Managed sessions\' permission requests go to Fishball first. It approves only low-risk requests within an allowance you gave it in its chat, and hands the rest to you: a request the session asked first waits in your pile above Fishball\'s chat, and a direct call waits both there and in that session.',
-      approvalsWaiting: 'Waiting for Fishball',
-      approvalsPile: 'Waiting for you in the pile: {count}',
-      approvalsGrants: 'Active standing grants: {count}',
       plugins: 'Plugins for Fishball',
       pluginToggle: 'Use {name} in Fishball',
       uninstall: 'Uninstall',
@@ -773,24 +706,14 @@ window.__ModuleLoader__.load({
       tabTitle: 'Fishball',
       refresh: 'Refresh',
       refreshFailed: 'The plugin list could not be read again. Try Refresh again.',
-      pluginsSummary: 'On in Fishball: {on}. Waiting for you: {needs}.',
-      pluginsWhere: 'Manage them in the Fishball tab of the Plugins list.',
-      recommended: 'Recommended plugins',
-      recommendedHint: "Plugins that work well with Fishball. Install puts one in Fishball's own folder after you confirm it; DSH's other sessions are unchanged.",
       recommendedFirst: 'Recommended first',
       recommendedNote: 'These significantly improve how Fishball works.',
       'recommendedCategory.context': 'Context management',
       'recommendedCategory.memory': 'Memory',
       'recommendedCategory.channel': 'Channel',
       'recommendedCategory.pet': 'Pet',
-      recommendedPetNote: "Pets draw only in DSH's own interface, and a plugin that runs only for Fishball has no browser part, so none can be listed here.",
-      recommendedSource: 'Source',
       recommendedInstallLabel: 'Install {name} for Fishball',
-      recommendedTurnOn: 'Turn on for Fishball',
-      recommendedTurnOnLabel: 'Turn on {name} for Fishball',
       'recommendedState.installed': 'Installed',
-      'recommendedState.dsh-on': 'On in Fishball',
-      'recommendedState.dsh-off': 'In DSH, off in Fishball',
       'recommendedDesc.dsh-idle-compact': 'Prepares a compaction while you are idle, before the model cache expires, and applies it without a new model call.',
       'recommendedDesc.dsh-plugin-save-token': 'Cuts token cost by compressing tool output losslessly and spilling large results to disk.',
       'recommendedDesc.smart-compaction': 'Lets the model compact at a safe point and check its real token use.',
@@ -1048,39 +971,21 @@ window.__ModuleLoader__.load({
       brandStyle: '侧边栏图标',
       brandStyleHint: 'Fishball 自己的标志和字标，或 DeepSeek 的鲸鱼和字标。新消息在两种图标上都会显示数字；Fishball 的小鱼会摆尾，鲸鱼则会像在新会话里悬停时那样游动。',
       brandStyleDeepseek: '使用 DeepSeek 图标',
-      session: '会话',
-      folder: '文件夹',
-      error: '问题',
       'status.starting': '启动中',
       'status.live': '运行中',
       'status.recovery': '需要你的决定',
       'status.archived': '已归档',
       'status.stopped': '已停止',
       'status.failed': '无法启动（请重启 DSH）',
-      recoverFailed: '操作未成功。请查看上方状态后重试。',
       retry: '重试',
-      adopt: '新建 Fishball 会话',
-      openChat: '打开对话',
-      hiddenTools: 'Fishball 永不使用的工具',
-      hiddenToolsHint: '它们会保存文件、修改配置，或在 Fishball 自己的会话里启动代理。',
       limits: '安全限制',
       openSettings: 'Fishball 设置',
-      modelTitle: 'Fishball 专用模型',
-      modelHint: '为 Fishball 选择专用模型。不会更改其他会话的模型或 DSH 默认模型。',
       modelRequired: '请先在 Fishball 设置中选择模型，再发送消息。',
-      modelChoose: '选择模型',
       modelLoading: '正在加载模型…',
-      modelRefresh: '刷新模型列表',
-      modelRefreshing: '正在刷新…',
-      modelRefreshHint: '重新获取当前 DSH 已配置的模型，无需刷新页面。',
-      modelUnavailableOption: '不可用',
       modelEffort: '推理强度',
       modelEffortDefault: '模型默认值',
       modelEmpty: '没有可用模型。请先在 DSH 模型设置中配置提供商，然后刷新。',
-      modelLoadFailed: '无法刷新模型列表。原有列表和选择保持不变，请重试。',
-      modelSaveFailed: '模型未保存。请确认模型仍然可用，然后重试。',
-      modelUnavailable: '已保存或当前选择的模型不在列表中，原选择仍然保留；可另选模型来更改。',
-      nativeTitle: '独立 Fishball', nativeOpen: '打开 Fishball 面板', nativeRefresh: '刷新状态',
+      nativeTitle: '独立 Fishball', nativeRefresh: '刷新状态',
       nativeHint: '隔离的 Fishball 在自己的主目录中与 DSH 并行运行。它的聊天在本页的面板中打开；下面的模型、插件和设置都是它自己的。',
       embedTitle: 'Fishball 面板', embedRefresh: '刷新', embedOpenTab: '在标签页中打开',
       embedUnavailable: 'Fishball 当前不可用。重试会重新启动它。', embedRetry: '重试',
@@ -1089,33 +994,11 @@ window.__ModuleLoader__.load({
       'native.starting': '正在启动', 'native.ready': '已就绪', 'native.stopping': '正在停止', 'native.stopped': '已停止',
       'native.failed': '原生运行时失败', 'native.unavailable': '不可用，或当前 profile 未启用',
       syncTitle: '同步模型提供商和 API key',
-      syncHint: '仅手动新增。先在来源与目标两端配对，再预览并确认。邀请是短期、限用途的配对凭证，不是 DSH Web 或 OAuth 令牌；已有配置跳过，不复制 OAuth 或登录信息。',
-      syncInvite: '创建目标邀请', syncInvitation: '一次性目标邀请', syncPaste: '在来源粘贴目标邀请',
-      syncBegin: '连接目标', syncApprove: '在目标批准来源', syncFinish: '在来源确认目标',
-      syncStatus: '检查配对状态', syncClose: '关闭同步通道', syncPreview: '预览同步', syncConfirm: '确认所选新增项',
-      syncConsent: '确认将所选模型配置及执行时的 API key 转移到此目标。可能出现部分成功。',
+      syncPreview: '预览同步', syncConfirm: '确认所选新增项',
       syncIdentity: '运行实例 / profile', syncFailed: '同步被拒绝或无法确认。请检查配对并重新预览，不会自动重试。',
       syncComplete: '所选新增项已完成。模型在目录中不代表账户认证已验证。',
       syncPartial: '部分项目未完成。请逐项检查；失败或未知项需重新预览再重试。',
       'syncGroup.add': '将新增', 'syncGroup.existsSkip': '已存在，跳过', 'syncGroup.conflictSkip': '冲突，跳过', 'syncGroup.unsupported': '不支持',
-      contextWindow: '上下文窗口',
-      contextHint: '留空则使用模型的完整窗口。窗口越小，Fishball 越早总结对话；只影响 Fishball 的会话。',
-      'contextField.contextWindowTokens': '上下文窗口（token）',
-      'contextField.maxOutputTokens': '回复长度上限（token）',
-      contextModel: '模型窗口',
-      contextEffective: '当前使用的窗口',
-      contextThreshold: '总结阈值',
-      contextPressure: '当前占用',
-      contextOutput: '回复上限',
-      contextUnknown: '未知',
-      contextNone: '无',
-      contextDefault: '默认',
-      contextCompactionOff: 'Fishball 的压缩已关闭，因此只有回复上限生效。请在“Fishball 的插件”中开启。',
-      'contextError.window-too-small': '窗口太小：低于安全限制中的最小窗口，或放不下 Fishball 的指令、工具、总结和最近的消息。',
-      'contextError.output-too-large': '回复上限超出了窗口。',
-      'contextError.model-window-unknown': '模型没有报告其窗口，因此无法设置更小的窗口。',
-      contextSaveFailed: '该值未被接受。',
-      contextInvalid: '请输入整数，或留空。',
       handOver: '交给 Fishball 管理',
       handOverTitle: '把“{title}”交给 Fishball 管理',
       handOverNoteLabel: '给 Fishball 的备注（可选）',
@@ -1143,24 +1026,6 @@ window.__ModuleLoader__.load({
       'manageError.is-fishball': '这是 Fishball 自己的会话。',
       'manageError.feature-off': 'Fishball 的会话消息插件已关闭。',
       'manageError.unavailable': 'Fishball 未在运行。',
-      nothingYet: '暂无。',
-      sources: '插件信息源',
-      sourcesHint: '通过 ctx.fishball 向 Fishball 发送事件的插件。Fishball 未运行或关闭了该插件时，信息源处于关闭状态。',
-      sourceOn: '正在接收事件',
-      sourceOff: '已关闭',
-      approvals: '权限请求',
-      managedSessions: '由 Fishball 管理的会话',
-      managedSessionsHint: 'Fishball 负责的会话：它们可以给 Fishball 发消息，权限请求会先交给 Fishball。其他会话都由你自己处理。',
-      managedSince: '自 {at}',
-      'managedBy.hand-over': '由你交给它',
-      'managedBy.send': '由你发送给它',
-      'managedBy.message': 'Fishball 发过消息',
-      'managedBy.start': 'Fishball 启动',
-      'managedBy.prompt-answer': 'Fishball 答复过提示',
-      approvalsHint: '受管理会话的权限请求会先交给 Fishball。它只会在你于对话中给出的授权范围内批准低风险请求，其余的交给你：会话事先询问的请求在 Fishball 对话上方的待处理区等你，直接调用则同时在待处理区和该会话中等你。',
-      approvalsWaiting: '等待 Fishball 处理',
-      approvalsPile: '在待处理区等你处理：{count}',
-      approvalsGrants: '生效中的长期许可：{count}',
       plugins: 'Fishball 的插件',
       pluginToggle: '在 Fishball 中使用 {name}',
       uninstall: '卸载',
@@ -1236,24 +1101,14 @@ window.__ModuleLoader__.load({
       tabTitle: 'Fishball',
       refresh: '刷新',
       refreshFailed: '无法重新读取插件列表。请再试一次刷新。',
-      pluginsSummary: 'Fishball 中已开启：{on} 个。等待你处理：{needs} 个。',
-      pluginsWhere: '在插件列表的 Fishball 标签页中管理它们。',
-      recommended: '推荐插件',
-      recommendedHint: '与 Fishball 配合良好的插件。安装会在你确认后放入 Fishball 自己的文件夹，DSH 的其他会话不受影响。',
       recommendedFirst: '优先推荐',
       recommendedNote: '它们能显著改善 Fishball 的使用体验。',
       'recommendedCategory.context': '上下文管理',
       'recommendedCategory.memory': '记忆',
       'recommendedCategory.channel': '渠道',
       'recommendedCategory.pet': '宠物',
-      recommendedPetNote: '宠物只在 DSH 自己的界面中绘制，而仅为 Fishball 运行的插件没有浏览器部分，所以这里无法列出。',
-      recommendedSource: '来源',
       recommendedInstallLabel: '为 Fishball 安装 {name}',
-      recommendedTurnOn: '在 Fishball 中开启',
-      recommendedTurnOnLabel: '在 Fishball 中开启 {name}',
       'recommendedState.installed': '已安装',
-      'recommendedState.dsh-on': 'Fishball 中已开启',
-      'recommendedState.dsh-off': '已装在 DSH，Fishball 中关闭',
       'recommendedDesc.dsh-idle-compact': '在你空闲时、模型缓存过期前准备压缩，并且无需新的模型调用即可应用。',
       'recommendedDesc.dsh-plugin-save-token': '无损压缩工具输出，并把大结果写到磁盘，降低 token 开销。',
       'recommendedDesc.smart-compaction': '让模型在安全的时机压缩上下文，并查看真实的 token 用量。',
@@ -1517,8 +1372,6 @@ window.__ModuleLoader__.load({
       `@keyframes ${MANAGED_ROW.flipAnimation}{${MANAGED_ROW.flip.map(([at, degrees]) => `${at}%{transform:rotateY(${degrees}deg)}`).join('')}}`,
       // Motion is the only thing that stops: the pill, its count and the dots stay.
       `@media (prefers-reduced-motion:reduce){.${CLS.badge},.${CLS.wag},.${CLS.swim},.${CLS.flip}{animation:none}}`,
-      `.${MODEL.pickerClass}{display:flex;flex-wrap:wrap;gap:12px;align-items:center}`,
-      `.${MODEL.pickerClass} select{flex:1;min-width:0}`,
       `.${MODEL.settingsClass} select{width:100%;font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-3);border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);padding:8px 12px}`,
       `.${MODEL.gateClass}{${DOCK_CARD_WIDTH};${DOCK_CARD_LOOK};padding:12px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;font:var(--dsw-font-xs-13)}`,
       `.${CLS.row}{display:flex;gap:12px;align-items:baseline}`,
@@ -1540,7 +1393,7 @@ window.__ModuleLoader__.load({
       // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
       `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
       `.${CLS.entries}{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}`,
-      // The pile, the ask_fishball row and the turn tags (revision 11, S37's fixture look), in DSH's theme tokens
+      // The pile and the ask_fishball row (revision 11, S37's fixture look), in DSH's theme tokens
       // so they follow light and dark. The pile's height comes from pileMaxHeightVh, set inline.
       `.${CLS.pileDock}{${PILE_DOCK_WIDTH};min-width:0}`,
       `.${CLS.pile}{margin:0;overflow:auto;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:${PILE.fill};color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
@@ -1689,7 +1542,7 @@ window.__ModuleLoader__.load({
 
     /** One shared EventSource for all components; reconnects by itself. */
     const stateSource = (() => {
-      let snapshot = { status: STATUS.starting, sessionId: null, error: null, limits: {}, hiddenTools: [] }
+      let snapshot = { status: STATUS.starting, sessionId: null, error: null, limits: {} }
       const listeners = new Set()
       const publish = (next) => {
         snapshot = next
@@ -1733,7 +1586,6 @@ window.__ModuleLoader__.load({
     }
     /** POST one command. @returns whether it was accepted. */
     const post = async (path, body) => (await send(path, body)).ok
-    const recover = (action) => post(API.recovery, { action })
 
     /**
      * One child admin operation (§9). Never throws: a transport failure is a typed error, and a
@@ -1867,26 +1719,6 @@ window.__ModuleLoader__.load({
       settingsOpener(ctx)?.()
     }
 
-    /** Statuses in which a running agent holds the session, so the brand opens its chat. */
-    const CHAT_STATUSES = Object.freeze([STATUS.live, STATUS.starting])
-
-    /**
-     * How to open Fishball now: its chat while an agent holds the session (live, or still
-     * running its setup turn, whose approval prompts appear only in that chat), else its
-     * settings. Undefined when the service that would do it is missing, so the brand leaves
-     * the click to the shell.
-     */
-    function fishballOpener(ctx) {
-      const state = stateSource.get()
-      if (!CHAT_STATUSES.includes(state.status) || !state.sessionId) return settingsOpener(ctx)
-      const workspace = ctx.get(SERVICE.uiWorkspace)
-      return workspace === undefined ? undefined : () => workspace.openSession(state.sessionId)
-    }
-
-    function openFishball(ctx) {
-      fishballOpener(ctx)?.()
-    }
-
     function makeBrandName(t) {
       return function FishballBrandName() {
         const ref = React.useRef(null)
@@ -1937,43 +1769,6 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** Status, recovery actions and hidden tools; rendered above the limits on Fishball's Plugins page. */
-    function makeStatus(ctx, t) {
-      return function FishballStatus() {
-        const state = useFishball()
-        const [recoverFailed, setRecoverFailed] = React.useState(false)
-        const status = state.status ?? STATUS.starting
-        const offered = OFFERED[status] ?? []
-        const run = async (action) => { setRecoverFailed(!(await recover(action))) }
-        return h('div', { className: CLS.section, 'data-fishball-settings': true },
-          h('div', { className: CLS.row }, h('span', { className: CLS.label }, t('status')), h('span', { 'data-fishball-status': status }, t('status.' + status))),
-          state.sessionId ? h('div', { className: CLS.row }, h('span', { className: CLS.label }, t('session')), h('span', { className: CLS.code }, state.sessionId)) : null,
-          state.cwd ? h('div', { className: CLS.row }, h('span', { className: CLS.label }, t('folder')), h('span', { className: CLS.code }, state.cwd)) : null,
-          state.error ? h('div', { className: CLS.row }, h('span', { className: CLS.label }, t('error')), h('span', { className: CLS.code }, state.error.code)) : null,
-          h('div', { className: CLS.row },
-            status === STATUS.live ? h(Button, { type: 'button', size: 'sm', onClick: () => openFishball(ctx) }, t('openChat')) : null,
-            offered.includes(ACTION.retry) ? h(Button, { type: 'button', size: 'sm', onClick: () => run(ACTION.retry) }, t('retry')) : null,
-            offered.includes(ACTION.adopt) ? h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: () => run(ACTION.adopt) }, t('adopt')) : null),
-          recoverFailed ? h('div', { role: 'alert' }, t('recoverFailed')) : null)
-      }
-    }
-
-    /**
-     * The plugins on Fishball's settings page (DESIGN §10d): one line of counts. The plugins
-     * themselves are managed in the Fishball tab of DSH's Plugins page; DSH offers no way to
-     * select that tab from here (spike S28), so the page names it instead of linking to it.
-     */
-    function makePluginsSummary(t) {
-      return function FishballPluginsSummary() {
-        const catalog = useFishball().catalog
-        if (!catalog) return null
-        return h('div', { className: CLS.section, 'data-fishball-plugins-summary': true },
-          h('h3', null, t('plugins')),
-          h('p', null, t('pluginsSummary', { on: catalog.plugins.filter((plugin) => plugin.on).length, needs: catalog.plugins.filter(needsYou).length })),
-          h('p', { className: CLS.muted }, t('pluginsWhere')))
-      }
-    }
-
     /**
      * The welcome card's link asks the settings page to bring "Recommended plugins" into view
      * (DESIGN §10f). The page mounts only after DSH opens it, so the request waits here until the
@@ -1987,64 +1782,8 @@ window.__ModuleLoader__.load({
       }
     })()
 
-    /** One recommended plugin's action (DESIGN §10f table): a reason, a state, Install or Turn on. */
-    function RecommendedAction({ item, t, onFailed }) {
-      if (item.blocked) return h(Tag, { tone: 'danger' }, pluginErrorText(t, item.blocked))
-      if (item.state === RECOMMENDED.state.install) {
-        return accentButton({ size: 'sm', 'aria-label': t('recommendedInstallLabel', { name: item.packageName }), onClick: () => installRequest.open(INSTALL_FROM.settings, item.spec) }, t('install'))
-      }
-      const state = h(Tag, { tone: 'neutral' }, t('recommendedState.' + item.state))
-      if (item.state !== RECOMMENDED.state.dshOff) return state
-      // Your own switch, as on the Fishball tab (POST plugins); it applies when Fishball's turn ends.
-      const turnOn = async () => onFailed(!(await post(API.plugins, { plugin: item.plugin, on: true })))
-      return h(React.Fragment, null, state,
-        accentButton({ size: 'sm', 'aria-label': t('recommendedTurnOnLabel', { name: item.packageName }), onClick: turnOn }, t('recommendedTurnOn')))
-    }
-
-    /** One compact row: package name, its description on one line (full text on hover), Source, and the action. */
-    function RecommendedRow({ item, t }) {
-      const [failed, setFailed] = React.useState(false)
-      const description = t('recommendedDesc.' + item.packageName)
-      return h('li', { className: CLS.recRow, 'data-fishball-recommended': item.packageName, 'data-state': item.blocked ? 'blocked' : item.state },
-        h('div', { className: CLS.grow },
-          h('span', { className: CLS.code }, item.packageName),
-          h('span', { className: CLS.recDesc, title: description }, description),
-          failed ? h('span', { role: 'alert' }, t('changeFailed')) : null),
-        h('a', { href: item.source, target: '_blank', rel: 'noopener noreferrer' }, t('recommendedSource')),
-        h(RecommendedAction, { item, t, onFailed: setFailed }))
-    }
-
-    /** The "Recommended first" badge in Fishball's colour (the turn tags' pill). */
+    /** The "Recommended first" badge in Fishball's colour. */
     const recommendedBadge = (t) => h('span', { className: CLS.fishTag }, t('recommendedFirst'))
-
-    /**
-     * Recommended plugins on Fishball's settings page (DESIGN §10f): the categories in order, the
-     * highlighted ones with their badge and note, Pet with its note. States come from the Host's
-     * snapshot, which reads them from the catalog, so they change live.
-     */
-    function makeRecommended(t) {
-      return function FishballRecommended() {
-        const recommended = useFishball().recommended
-        const ref = React.useRef(null)
-        const loaded = Boolean(recommended)
-        React.useEffect(() => {
-          if (loaded && recommendedFocus.take()) ref.current?.scrollIntoView(RECOMMENDED.scroll)
-        }, [loaded])
-        if (!recommended) return null
-        return h('div', { className: CLS.section, ref, 'data-fishball-recommended-section': true },
-          h('h3', null, t('recommended')),
-          h('p', { className: CLS.muted }, t('recommendedHint')),
-          recommended.categories.map(({ category, plugins }) => {
-            const highlighted = recommended.highlighted.includes(category)
-            return h('div', { key: category, 'data-fishball-recommended-category': category },
-              h('h4', { className: CLS.recCategory }, t('recommendedCategory.' + category), highlighted ? recommendedBadge(t) : null),
-              highlighted ? h('p', { className: CLS.muted }, t('recommendedNote')) : null,
-              plugins.length === 0
-                ? h('p', { className: CLS.muted }, t('recommendedPetNote'))
-                : h('ul', { className: CLS.entries }, plugins.map((item) => h(RecommendedRow, { key: item.packageName, item, t }))))
-          }))
-      }
-    }
 
     /**
      * The welcome card's state for this page load: the session it was shown in, and whether it was
@@ -2283,84 +2022,6 @@ window.__ModuleLoader__.load({
       return h(Modal, { open: true, onClose: close, closeLabel: t('close'), title: t('installTitle'), footer: h(React.Fragment, null, ...screen.footer) },
         h('div', { className: MCLS.dialog, 'data-fishball-install': step }, ...screen.body))
     }
-
-    /** A token count for display, or a fallback word. */
-    const countText = (value, t, fallback) => (value === null || value === undefined ? t(fallback) : Number(value).toLocaleString())
-
-    /**
-     * The context window (DESIGN §6): your two values, what is in use, the threshold and
-     * the current size. Empty fields mean unset; the Host checks a value against the model.
-     */
-    function makeContextWindow(t) {
-      return function FishballContextWindow() {
-        const state = useFishball()
-        const view = state.contextWindow
-        const baseId = React.useId()
-        const stored = (field) => (view?.[field] == null ? '' : String(view[field]))
-        const [draft, setDraft] = React.useState(null)
-        const [saving, setSaving] = React.useState(false)
-        const [problem, setProblem] = React.useState(null)
-        if (!view) return null
-        const text = (field) => (draft?.[field] ?? stored(field))
-        // Digits only and within the safe-integer range, which the Host's check also requires.
-        const invalid = (field) => text(field).trim() !== '' && !(WHOLE_NUMBER.test(text(field).trim()) && Number.isSafeInteger(Number(text(field).trim())))
-        const dirty = draft !== null && CONTEXT_FIELDS.some((field) => text(field) !== stored(field))
-        const save = async () => {
-          setSaving(true)
-          const body = Object.fromEntries(CONTEXT_FIELDS.map((field) => [field, text(field).trim() === '' ? null : Number(text(field).trim())]))
-          const { ok, code } = await send(API.contextWindow, body)
-          setSaving(false)
-          if (ok) { setDraft(null); setProblem(null) } else setProblem(CONTEXT_ERRORS.has(code) ? 'contextError.' + code : 'contextSaveFailed')
-        }
-        const info = (label, value, fallback) => h('div', { className: CLS.row }, h('span', { className: CLS.label }, t(label)), h('span', null, countText(value, t, fallback)))
-        return h('div', { className: CLS.section, 'data-fishball-context': true },
-          h('h3', null, t('contextWindow')),
-          h('p', { className: CLS.muted }, t('contextHint')),
-          info('contextModel', view.modelWindow, 'contextUnknown'),
-          info('contextEffective', view.effectiveWindow, 'contextUnknown'),
-          info('contextThreshold', view.threshold, 'contextUnknown'),
-          info('contextPressure', view.pressureTokens, 'contextUnknown'),
-          info('contextOutput', view.outputCap, 'contextNone'),
-          view.error ? h('div', { role: 'status' }, CONTEXT_ERRORS.has(view.error) ? t('contextError.' + view.error) : t('contextSaveFailed')) : null,
-          view.compactionOff ? h('div', { role: 'status' }, t('contextCompactionOff')) : null,
-          CONTEXT_FIELDS.map((field) => h(SettingsValueField, {
-            key: field,
-            id: `${baseId}-${field}`,
-            label: t('contextField.' + field),
-            text: text(field),
-            overridden: stored(field) !== '',
-            invalid: invalid(field),
-            overriddenLabel: t('overridden'),
-            resetLabel: t('contextDefault'),
-            invalidLabel: t('contextInvalid'),
-            disabled: saving,
-            numeric: true,
-            onEdit: (next) => setDraft({ ...(draft ?? {}), [field]: next }),
-            onReset: () => setDraft({ ...(draft ?? {}), [field]: '' }),
-          })),
-          problem ? h('div', { role: 'alert' }, t(problem)) : null,
-          h('div', { className: CLS.row },
-            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: !dirty || saving || CONTEXT_FIELDS.some(invalid), onClick: save }, saving ? t('saving') : t('save'))))
-      }
-    }
-
-    /**
-     * The host's model picker is not a public component and its selection RPC also changes
-     * DSH's global default. Reuse its read-only catalog, with native keyboard-accessible fields
-     * and our own save command instead, so Fishball never changes another session's model.
-     */
-    const sameModelChoice = (left, right) => left?.provider === right?.provider
-      && left?.model === right?.model && left?.reasoningEffort === right?.reasoningEffort
-
-    // Validate only the display contract we consume. A malformed 2xx is a failed refresh,
-    // not permission to discard the last usable list. Providers/efforts remain host-owned.
-    const modelEntry = (entry) => typeof entry?.id === 'string' && entry.id.length > 0
-      && typeof entry.name === 'string' && entry.name.length > 0
-    const validModelCatalog = (catalog) => Array.isArray(catalog?.groups) && Array.isArray(catalog.failures)
-      && catalog.groups.every((group) => modelEntry(group) && Array.isArray(group.models)
-        && group.models.every((model) => modelEntry(model) && (model.reasoning === undefined
-          || (Array.isArray(model.reasoning?.efforts) && model.reasoning.efforts.every(modelEntry)))))
-      && catalog.failures.every((failure) => modelEntry(failure) && typeof failure.message === 'string')
 
     /**
      * The child's model (§9): provider, model and reasoning effort from the child's own catalog,
@@ -2811,71 +2472,6 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** A model-setting prompt remains usable while DSH makes the editor and submit paths inert. */
-    /** Dedicated owner controls; no session-management tool exposes these actions. */
-    function makeProviderSyncSettings(t) {
-      return function FishballProviderSyncSettings() {
-        const [pair, setPair] = React.useState({ state: PROVIDER_SYNC_UI.inactive })
-        const [invitation, setInvitation] = React.useState('')
-        const [outgoing, setOutgoing] = React.useState('')
-        const [plan, setPlan] = React.useState(null)
-        const [selected, setSelected] = React.useState([])
-        const [consent, setConsent] = React.useState(false)
-        const [result, setResult] = React.useState(null)
-        const [busy, setBusy] = React.useState(false)
-        const [problem, setProblem] = React.useState(false)
-        const active = React.useRef(false)
-        const invoke = async (action, payload = {}) => {
-          if (active.current) return
-          active.current = true; setBusy(true); setProblem(false)
-          if (action !== 'confirm') { setPlan(null); setSelected([]); setConsent(false); setResult(null) }
-          try {
-            const response = await send(PROVIDER_SYNC_UI.path, { action, ...payload })
-            if (!response.ok || response.answer?.ok !== true || !response.answer.result) {
-              setProblem(true); setPlan(null); setConsent(false); return
-            }
-            const answer = response.answer.result
-            if (action === 'preview') { setPlan(answer); setSelected([]); setConsent(false); setResult(null) }
-            else if (action === 'confirm') { setResult(answer); setPlan(null); setSelected([]); setConsent(false) }
-            else if (action === 'begin') { setPair({ ...answer, peer: answer.identity, state: PROVIDER_SYNC_UI.pendingTarget }); setInvitation('') }
-            else { setPair(answer); if (action === 'invite') setOutgoing(answer.invitation); if (action === 'close') { setOutgoing(''); setInvitation('') } }
-          } finally { active.current = false; setBusy(false) }
-        }
-        const button = (key, action, payload, disabled = false) => h(Button, { type: 'button', size: 'sm', variant: 'ghost',
-          disabled: busy || disabled, onClick: () => invoke(action, payload) }, t(key))
-        const peer = pair.peer ?? pair.identity
-        return h('section', { className: CLS.section, 'data-fishball-provider-sync': true, 'aria-busy': busy },
-          h('h3', null, t('syncTitle')), h('p', { className: CLS.muted }, t('syncHint')),
-          h('p', { role: 'status' }, pair.state),
-          peer ? h('p', null, t('syncIdentity') + ': ' + peer.runtimeId + ' / ' + peer.profileId) : null,
-          h('div', { className: CLS.row }, button('syncInvite', 'invite'), button('syncStatus', 'status'), button('syncClose', 'close')),
-          outgoing ? h('label', null, t('syncInvitation'), h('textarea', { readOnly: true, value: outgoing, rows: PROVIDER_SYNC_UI.invitationRows })) : null,
-          h('label', null, t('syncPaste'), h('textarea', { value: invitation, disabled: busy, rows: PROVIDER_SYNC_UI.invitationRows,
-            onChange: (event) => setInvitation(event.target.value) })),
-          button('syncBegin', 'begin', { invitation }, !invitation.trim()),
-          pair.state === PROVIDER_SYNC_UI.pendingSource ? button('syncApprove', 'approve', { pairId: pair.pairId }) : null,
-          pair.state === PROVIDER_SYNC_UI.pendingTarget ? button('syncFinish', 'finish', { pairId: pair.pairId }) : null,
-          button('syncPreview', 'preview', {}, pair.state !== PROVIDER_SYNC_UI.paired || pair.role === 'target'),
-          plan ? h('div', { 'data-fishball-sync-preview': true },
-            h('p', null, plan.source?.profileId + ' → ' + plan.target?.profileId),
-            PROVIDER_SYNC_UI.groups.map((group) => h('section', { key: group }, h('h4', null, t('syncGroup.' + group)),
-              h('ul', null, (plan.groups?.[group] ?? []).map((item) => h('li', { key: item.id },
-                group === 'add' ? h('label', null, h('input', { type: 'checkbox', checked: selected.includes(item.id), disabled: busy,
-                  onChange: (event) => { setSelected((previous) => event.target.checked ? [...previous, item.id] : previous.filter((id) => id !== item.id)); setConsent(false) } }), item.name + ' (' + item.id + ')') : item.name + ' (' + item.id + ')',
-                ' — ' + PROVIDER_SYNC_UI.mask,
-                item.api ? h('span', null, ' — ' + item.api) : null,
-                item.endpoint ? h('span', null, ' — ' + item.endpoint) : null,
-                item.models?.length ? h('span', null, ' — ' + item.models.join(', ')) : null,
-                item.reason ? h('span', null, ' — ' + item.reason) : null))))),
-            h('label', null, h('input', { type: 'checkbox', checked: consent, disabled: busy,
-              onChange: (event) => setConsent(event.target.checked) }), t('syncConsent')),
-            button('syncConfirm', 'confirm', { previewId: plan.previewId, ids: selected, confirmed: true }, !consent || selected.length === 0)) : null,
-          result ? h('div', { 'data-fishball-sync-result': true }, h('p', { role: 'status' }, t(result.complete ? 'syncComplete' : 'syncPartial')),
-            h('ul', null, result.results.map((item) => h('li', { key: item.id }, item.id + ': ' + item.status + ' / ' + item.config + ' / ' + item.key)))) : null,
-          problem ? h('p', { role: 'alert' }, t('syncFailed')) : null)
-      }
-    }
-
     function makeModelGate(ctx, t) {
       return function FishballModelGate({ sessionId }) {
         const state = useFishball()
@@ -2883,17 +2479,6 @@ window.__ModuleLoader__.load({
         return h('div', { className: MODEL.gateClass, 'data-fishball-model-gate': true },
           h('span', { className: CLS.grow, role: 'status' }, t('modelRequired')),
           h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: () => openSettings(ctx) }, t('openSettings')))
-      }
-    }
-
-    /** The tools Fishball never uses, as data from the Host. */
-    function makeHiddenTools(t) {
-      return function FishballHiddenTools() {
-        const state = useFishball()
-        return h('div', { className: CLS.section },
-          h('h3', null, t('hiddenTools')),
-          h('p', null, t('hiddenToolsHint')),
-          h('ul', { className: CLS.list }, (state.hiddenTools ?? []).map((name) => h('li', { key: name }, name))))
       }
     }
 
@@ -3123,62 +2708,6 @@ window.__ModuleLoader__.load({
       const running = useSessionStatus((statuses) => statuses.get(sessionId)?.running === true)
       if (!running) return null
       return h(ManagedMark, { state, sessionId, t, running: true })
-    }
-
-    /** Plugin sources (DESIGN §8, §10): each registered source and whether it accepts events. */
-    function makeSources(t) {
-      return function FishballSources() {
-        const state = useFishball()
-        const view = state.sources
-        if (!view) return null
-        return h('div', { className: CLS.section, 'data-fishball-sources': true },
-          h('h3', null, t('sources')),
-          h('p', { className: CLS.muted }, t('sourcesHint')),
-          view.sources.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, view.sources.map((source) => h('li', { key: source.identity },
-            h('span', { className: CLS.name }, source.title), ' ',
-            h('span', { className: CLS.code }, source.identity), ' ',
-            h(Tag, { tone: source.enabled ? 'info' : 'neutral' }, t(source.enabled ? 'sourceOn' : 'sourceOff'))))))
-      }
-    }
-
-    /**
-     * Permission requests (DESIGN §10): the waiting ones. The recent decision audit list is gone
-     * from settings (the user's ask, 2026-11-05): every decision is an inline label in Fishball's
-     * chat now (T08, §8.1), so settings keeps the question mode and no history.
-     */
-    function makeApprovals(t) {
-      return function FishballApprovals() {
-        const state = useFishball()
-        const view = state.approvals
-        if (!view) return null
-        return h('div', { className: CLS.section, 'data-fishball-approvals': true },
-          h('h3', null, t('approvals')),
-          h('p', { className: CLS.muted }, t('approvalsHint')),
-          h(ManagedSessions, { state, t }),
-          h(QuestionMode, { state, t }),
-          (state.pile ?? []).length > 0 ? h('p', { 'data-fishball-pile-count': state.pile.length }, t('approvalsPile', { count: state.pile.length })) : null,
-          (state.grants ?? []).length > 0 ? h('p', { 'data-fishball-grants-count': state.grants.length }, t('approvalsGrants', { count: state.grants.length })) : null,
-          view.pending.length > 0 ? h('ul', { className: CLS.entries }, view.pending.map((p) => h('li', { key: p.id },
-            h(Tag, { tone: 'info' }, t('approvalsWaiting')), ' ', h('span', { className: CLS.code }, p.toolName), ' ', h('span', { className: CLS.muted }, p.sessionId)))) : null)
-      }
-    }
-
-    /**
-     * The managed sessions (DESIGN §10e "Settings page"; the user's answers 2026-11-01): newest
-     * first, each with its title, how it became managed and since when, and Take back under the
-     * same rule as the menu entry (canManage). The list shows even when Take back cannot.
-     * A session whose title is not known yet shows its id instead.
-     */
-    function ManagedSessions({ state, t }) {
-      const entries = [...(state.managed ?? [])].sort((a, b) => (a.since < b.since ? 1 : a.since > b.since ? -1 : 0))
-      return h(React.Fragment, null,
-        h('h4', null, t('managedSessions')),
-        h('p', { className: CLS.muted }, t('managedSessionsHint')),
-        entries.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries, 'data-fishball-managed': true }, entries.map((entry) => h('li', { key: entry.sessionId },
-          entry.title ? h('span', null, entry.title) : h('span', { className: CLS.code }, entry.sessionId), ' ',
-          h(Tag, { tone: 'neutral' }, t('managedBy.' + entry.by)), ' ',
-          h('span', { className: CLS.muted }, t('managedSince', { at: new Date(entry.since).toLocaleString() })), ' ',
-          canManage(state, entry.sessionId) ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void manageNotice.request({ sessionId: entry.sessionId, managed: false }) }, t('takeBack')) : null))))
     }
 
     /** POST your answer on a card. @returns null when accepted, else the refusal's text. */

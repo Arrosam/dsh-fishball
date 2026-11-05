@@ -24,7 +24,6 @@
  * - src/pile.js            your pile: requests Fishball sent you, answered there or on the session's row
  * - src/questions.js       managed sessions' questions and plan reviews go to Fishball, the mode, their cards
  * - src/own-requests.js    Fishball's own requests: its cards in your pile, their passes, withdraw_request
- * - src/tags.js            tag records: each answer Fishball gave, for the asking turn's tail
  * - src/grants.js          standing grants: calls they cover run without waking Fishball
  * - src/result-wording.js  what an agent reads after Fishball answered its direct call
  * - src/sources.js         ctx.fishball: plugins publish events to Fishball (DESIGN §8)
@@ -63,7 +62,6 @@ import { Pile } from './src/pile.js'
 import { QUESTION_TOOL, QuestionRouter } from './src/questions.js'
 import { OwnQuestions } from './src/own-questions.js'
 import { OWN_TOOL, OwnRequests } from './src/own-requests.js'
-import { TagRecords } from './src/tags.js'
 import { GRANT_TOOL, Grants } from './src/grants.js'
 import { ResultWording } from './src/result-wording.js'
 import { SourceRegistry } from './src/sources.js'
@@ -124,9 +122,8 @@ export async function apply(ctx, config) {
   let featuresView = () => null
   /** Managed sessions (revision 11, §10e); null until the registry exists. */
   let managedView = () => null
-  /** Your pile and the tag records (rev11c, §10e); null until the broker exists. */
+  /** Your pile (rev11c, §10e); null until the broker exists. */
   let pileView = () => null
-  let tagsView = () => null
   /** Active standing grants (rev11d, §10e); null until they exist. */
   let grantsView = () => null
   /** Who answers managed sessions' questions (rev11g, §10e); null until the router exists. */
@@ -138,7 +135,7 @@ export async function apply(ctx, config) {
   const snapshot = () => {
     // Read once: the recommended list derives its states from the same catalog view (§10f).
     const catalog = catalogView()
-    return { ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog, modelSelection: modelSelectionView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView(), managed: managedView(), pile: pileView(), tags: tagsView(), grants: grantsView(), questionMode: questionModeView(), recommended: recommendedView(catalog), welcome: welcomeView() }
+    return { ...lifecycle.snapshot(), limits: limits(), hiddenTools: [...HIDDEN_TOOLS], catalog, modelSelection: modelSelectionView(), contextWindow: contextView(), intake: intakeView(), outbox: outboxView(), watches: watchesView(), approvals: approvalsView(), sources: sourcesView(), unread: unreadView(), preferences: preferencesView(), look: lookView(), features: featuresView(), managed: managedView(), pile: pileView(), grants: grantsView(), questionMode: questionModeView(), recommended: recommendedView(catalog), welcome: welcomeView() }
   }
   /** Called on every published change once ctx.fishball exists (sources may become enabled). */
   let refreshSources = () => {}
@@ -415,7 +412,7 @@ export async function apply(ctx, config) {
   const preferences = new Preferences(store, { onChange: () => publish() })
   preferencesView = () => preferences.snapshot()
   commands.setBrandStyle = (style) => preferences.setBrandStyle(style)
-  // Requests Fishball sends you, and the tags of its answers (rev11c, §7a.6, §9). A card that
+  // Requests Fishball sends you (rev11c, §7a.6, §9). A card that
   // leaves without your answer gets its closure line and the slim bridge's event from the broker
   // (src/card-lifecycle.js); the callback runs only after the broker exists.
   // T08: the pile keeps its cards in the plugin's own store (fishball.json, table pile), so a
@@ -429,7 +426,6 @@ export async function apply(ctx, config) {
   const ownPile = new Pile(() => publish(), (card, end) => broker.cardClosed(card, end), { stored: store.pile, scope: PILE_SCOPE.ownQuestions, logger })
   ownQuestions = new OwnQuestions(ownPile, { readLimits: limits })
   ownQuestions.restore()
-  const tags = new TagRecords(store, limits, { logger, onChange: () => publish() })
   // Standing grants (rev11d, §7a.8): paused while Fishball is not live or Permission requests is off.
   grants = new Grants(store, logger, { readLimits: limits, isPaused: () => (assistantAgent() === undefined && !nativeBridgeReady) || !approvalsOn(), onChange: () => publish(), isManaged })
   grants.registerTools((definition) => composition.registerOwnTool(definition))
@@ -447,7 +443,6 @@ export async function apply(ctx, config) {
     // The one post-execute listener that sets Fishball's wording (spike S35).
     wording: new ResultWording(ctx),
     pile,
-    tags,
     grants,
     // answer_prompt makes the prompt's session managed (the fifth way in, rev11e §7a.9).
     manage,
@@ -456,7 +451,7 @@ export async function apply(ctx, config) {
   broker.registerTools((definition) => composition.registerOwnTool(definition))
   // Managed sessions' questions and plan reviews go to Fishball (rev11g, §7a.10); yours stay in their chat.
   questions = new QuestionRouter(ctx, store, logger, {
-    ledger, readLimits: limits, assistantId, agentOf: () => assistantAgent(), tags, onChange: () => publish(),
+    ledger, readLimits: limits, assistantId, agentOf: () => assistantAgent(), onChange: () => publish(),
     canAnswer: () => (assistantAgent() !== undefined || nativeBridgeReady) && approvalsOn(),
     isManaged,
     managedIds: () => managedRegistry.snapshot().map((entry) => entry.sessionId),
@@ -490,12 +485,6 @@ export async function apply(ctx, config) {
   // Session cards come only from managed sessions, whose titles are followed (session-titles.js);
   // Fishball's own cards are labelled Fishball. Text, never markup (§10e). Newest first (Reading).
   pileView = () => [...[...pile.cards(), ...questions.cards(), ...ownPile.cards()].map((card) => ({ ...card, title: card.title ?? sessionTitles.get(card.sessionId) })), ...own.cards()].sort((a, b) => latestFirst(a.since, b.since))
-  // A question tag's words come from the session log, never from our tables (§9).
-  tagsView = () => {
-    const kept = tags.snapshot()
-    const words = questions.wordsOfTags(kept)
-    return kept.map((tag) => ({ ...tag, answerText: words.get(tag.key) ?? null }))
-  }
   // Grants belong to managed sessions, whose titles are followed (session-titles.js).
   grantsView = () => grants.snapshot().map((grant) => ({ ...grant, title: sessionTitles.get(grant.sessionId) }))
   // Your Revoke beside the pile (§10e): 409 unknown, or ended once it expired, was revoked or its session left.

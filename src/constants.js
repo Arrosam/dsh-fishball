@@ -608,19 +608,6 @@ export const QUESTION_END = Object.freeze({
   /** Fishball or Permission requests went off, or the session left management: back to its own card. */
   back: 'back-to-session',
 })
-/**
- * Tag records (DESIGN §9 `tags`, S37): one per answer Fishball gave, shown in the asking turn's
- * tail. approval: an answer_approval allow, grant, reject or question; sent-to-you: an escalate;
- * grant: a call a standing grant covered, one per call (rev11d, §7a.8); prompt: an answer_prompt
- * answer, allow or reject (rev11e, §7a.9); question and plan-review: Fishball's answer to a
- * managed session's question or plan review (rev11g, §7a.10).
- */
-export const TAG_KIND = Object.freeze({ approval: 'approval', sentToYou: 'sent-to-you', grant: 'grant', prompt: 'prompt', question: 'question', planReview: 'plan-review' })
-/**
- * A question's or plan review's tag answer (rev11g, §7a.10 "Tags"): the answer itself stays in the
- * session log (§9 "never stored"); the snapshot reads its words from there.
- */
-export const QUESTION_TAG_ANSWER = Object.freeze({ answer: 'answer', approve: 'approve', keepPlanning: 'keep-planning' })
 /** How complete the arguments Fishball sees are (a cut or missing call counts as high-risk). */
 export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
 /** DSH approval outcomes (dsh-user-approval). */

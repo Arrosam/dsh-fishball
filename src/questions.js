@@ -39,10 +39,9 @@
  *   without resuming it (the manager's decision, 2026-11-02; S36 Q4).
  * - Children need nothing: DSH refuses a live child's question before the waterfall (S36 Q5).
  *
- * Every answer Fishball gives leaves a tag record in the asking turn (src/tags.js, kind question
- * or plan-review); the answer's words stay in the session log and the snapshot reads them from
- * there (§9 "never stored"). Each question leaves one approvals audit row (kind question, a digest
- * of its questions) and each answer, Fishball's or yours on a card, a `decisions` row.
+ * Each question leaves one approvals audit row (kind question, a digest of its questions) and each
+ * answer, Fishball's or yours on a card, a `decisions` row. The child's decision label carries the
+ * answer's words; they are read from the session log, never stored (§9 "never stored").
  *
  * Questions and their cards live in memory, apart from the permission-request pile: the cap
  * maxPendingApprovals counts permission requests, as its description says (Reading).
@@ -54,7 +53,7 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, PILE_SCOPE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, QUESTION_TAG_ANSWER, REQUEST_KIND, SOURCE, TAG_KIND } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, PILE_SCOPE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, REQUEST_KIND, SOURCE } from './constants.js'
 import { AuditLog } from './audit.js'
 import { Pile } from './pile.js'
 import { argumentsText, latestUserText, sha256 } from './approvals.js'
@@ -68,9 +67,7 @@ import { JSON_OUTPUT, ok, refused } from './tool-results.js'
 export const QUESTION_TOOL = Object.freeze({ answer: 'answer_question' })
 
 const MS_PER_SECOND = 1000
-/** Joins session and call id: providers may reuse call ids across sessions. */
-const KEY_SEPARATOR = '|'
-/** How the words of one answer item are joined, and the items of a batch, in a tag. */
+/** How the words of one answer item are joined, and the items of a batch, in a decision label. */
 const WORDS = Object.freeze({ withinItem: ', ', betweenItems: ' · ' })
 /** Who settled an open question. */
 const BY = Object.freeze({ fishball: 'fishball', pile: 'pile', session: 'session' })
@@ -310,33 +307,29 @@ function planDecision(question, { approve, feedback }) {
  * The batch for one answer, from answer_question's or the pile route's input, validated before it
  * reaches DSH (a refused one leaves the question open).
  * @param input - { answers? } for a question; { approve?, feedback? } for a plan review.
- * @returns { batch, tagAnswer } or { reason }.
+ * @returns { batch } or { reason }.
  */
 export function batchFor(kind, questions, { answers, approve, feedback }) {
   if (kind === QUESTION_KIND.planReview) {
     if (answers !== undefined) return { reason: REASON.planOnly }
     if (approve === true && feedback !== undefined) return { reason: REASON.planBoth }
     if (feedback !== undefined && trimmed(feedback) === '') return { reason: REASON.feedback }
-    const approved = approve === true
-    return { batch: planDecision(questions[0], { approve: approved, feedback }), tagAnswer: approved ? QUESTION_TAG_ANSWER.approve : QUESTION_TAG_ANSWER.keepPlanning }
+    return { batch: planDecision(questions[0], { approve: approve === true, feedback }) }
   }
   if (approve !== undefined || feedback !== undefined) return { reason: REASON.questionOnly }
   const reason = checkAnswer(questions, answers)
   if (reason !== undefined) return { reason }
-  return { batch: composeAnswer(questions, answers), tagAnswer: QUESTION_TAG_ANSWER.answer }
+  return { batch: composeAnswer(questions, answers) }
 }
 
 /**
- * A question answer's words for its tag: the chosen labels and typed text, item by item; skipped
- * items say nothing. Cut to `chars` characters (rationaleChars: Fishball's own words, Reading).
+ * A question answer's words for the child's decision label: the chosen labels and typed text, item
+ * by item; skipped items say nothing. Cut to `chars` characters (rationaleChars, Reading).
  */
 export function answerWords(answers, chars) {
   const words = answers.map((item) => [...(item.selected ?? []), ...(item.custom === undefined ? [] : [item.custom])].join(WORDS.withinItem)).filter((text) => text !== '').join(WORDS.betweenItems)
   return [...words].slice(0, chars).join('')
 }
-/** The words cache key of one call. */
-const wordsKey = (sessionId, callId) => sessionId + KEY_SEPARATOR + callId
-
 export class QuestionRouter {
   #ctx
   #store
@@ -349,17 +342,12 @@ export class QuestionRouter {
   #managedIds
   #agentOf
   #onChange
-  #tags
   #audit
   #decisions
   /** Question cards in your pile (beside the permission-request pile, src/pile.js). */
   #pile
   /** qst id -> entry (DESIGN §9 "Open questions"). */
   #entries = new Map()
-  /** sessionId|callId -> the words of Fishball's answer, read once from the log (memory only, §9). */
-  #words = new Map()
-  /** sessionId|callId -> the log length when its answer was not found (read again once it grows). */
-  #misses = new Map()
   /** Continued questions get their cards once per start (rebuild). */
   #rebuilt = false
   /** Slim bridge observers (src/slim/host/approvals.js): offers, escalations and settlements. */
@@ -372,9 +360,9 @@ export class QuestionRouter {
    * @param deps.assistantId - () => Fishball's session id. @param deps.agentOf - () => its agent (notes without a wake).
    * @param deps.canAnswer - () => Fishball live with Permission requests on (item 10).
    * @param deps.isManaged - (sessionId) => managed. @param deps.managedIds - () => every managed session id.
-   * @param deps.tags - TagRecords. @param deps.onChange - state changed (the state feed publishes).
+   * @param deps.onChange - state changed (the state feed publishes).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, agentOf, canAnswer, isManaged, managedIds, tags, onChange }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, agentOf, canAnswer, isManaged, managedIds, onChange }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -385,7 +373,6 @@ export class QuestionRouter {
     this.#canAnswer = canAnswer
     this.#isManaged = isManaged
     this.#managedIds = managedIds
-    this.#tags = tags
     this.#onChange = onChange
     // T08: cards live in the plugin's store too, under this router's own scope, so a question the
     // user still had is rebuilt at the next start (rebuild() below re-files the ones DSH keeps).
@@ -503,7 +490,6 @@ export class QuestionRouter {
       if (toUser === true) {
         if (entry.inPile) return refused(QUESTION_ERROR.expired, { note: TEXT.expired })
         this.#toPile(entry, APPROVAL_ANSWER.escalate)
-        await this.#tags.addForCall({ session: entry.session, sessionId: entry.sessionId, callId: entry.callId, answer: APPROVAL_DECISION.escalate, kind: TAG_KIND.sentToYou })
         return ok({ questionId: id, toUser: true })
       }
       return noted === '' ? refused(QUESTION_ERROR.badAnswer, { reason: TEXT.needsSomething }) : ok({ questionId: id, note: TEXT.noteAdded })
@@ -620,47 +606,6 @@ export class QuestionRouter {
   /** Close every restored card no continued question took over (T08, src/pile.js). */
   #closeRestored() {
     this.#pile.settleWhere((card) => card.restored === true, { end: CARD_END.restarted })
-  }
-
-  /**
-   * The words of Fishball's answers for the kept tags (the snapshot's), read from each session log
-   * once. The cache keeps only the given tags' words, so it never outgrows the tag list
-   * (auditEntriesKept); a call whose answer is not in its log yet is read again only once the log grew.
-   * @param tags - the tag records kept now. @returns Map tag key -> words (absent when not known).
-   */
-  wordsOfTags(tags) {
-    const found = new Map()
-    const kept = new Set()
-    for (const tag of tags) {
-      if (tag.kind !== TAG_KIND.question || tag.callId === undefined || tag.callId === null) continue
-      const key = wordsKey(tag.sessionId, tag.callId)
-      kept.add(key)
-      const words = this.#wordsOf(key, tag)
-      if (words !== undefined) found.set(tag.key, words)
-    }
-    for (const key of [...this.#words.keys()]) if (!kept.has(key)) this.#words.delete(key)
-    for (const key of [...this.#misses.keys()]) if (!kept.has(key)) this.#misses.delete(key)
-    return found
-  }
-
-  #wordsOf(key, tag) {
-    if (this.#words.has(key)) return this.#words.get(key)
-    const session = this.#ctx.sessions.get(tag.sessionId)
-    if (session === undefined) return undefined
-    const events = session.snapshotEvents()
-    if (this.#misses.get(key) === events.length) return undefined
-    for (const event of events) {
-      const fromResult = event.type === QUESTION.toolResultEvent && event.data?.message?.toolCallId === tag.callId
-      const fromReply = event.type === APPROVAL.userEvent && event.data?.source?.kind === QUESTION.replySource && event.data.source.callId === tag.callId
-      const answers = fromResult ? parsedText(event.data.message.content)?.answers : fromReply ? parsedText(event.data.content)?.answers : undefined
-      if (!Array.isArray(answers)) continue
-      const words = answerWords(answers, this.#readLimits().rationaleChars)
-      this.#words.set(key, words)
-      this.#misses.delete(key)
-      return words
-    }
-    this.#misses.set(key, events.length)
-    return undefined
   }
 
   /**
@@ -893,9 +838,9 @@ export class QuestionRouter {
   }
 
   /**
-   * A question ended: forget it, take its card out of your pile, audit it once, tag Fishball's
-   * answer, and tell Fishball how it ended when it saw the question.
-   * @param end - a QUESTION_END. @param answered - { by, batch, tagAnswer } for an answer from Fishball or your card.
+   * A question ended: forget it, take its card out of your pile, audit it once, and tell Fishball
+   * how it ended when it saw the question.
+   * @param end - a QUESTION_END. @param answered - { by, batch } for an answer from Fishball or your card.
    */
   async #ended(entry, end, answered) {
     if (this.#entries.get(entry.id) !== entry) return
@@ -903,10 +848,6 @@ export class QuestionRouter {
     clearTimeout(entry.timer)
     entry.releaseHold?.()
     const byFishball = answered?.by === BY.fishball
-    if (byFishball) {
-      if (entry.callId !== undefined && entry.kind === QUESTION_KIND.question) this.#words.set(wordsKey(entry.sessionId, entry.callId), answerWords(answered.batch.answers, this.#readLimits().rationaleChars))
-      await this.#tags.addForCall({ session: entry.session, sessionId: entry.sessionId, callId: entry.callId, answer: answered.tagAnswer, kind: entry.kind === QUESTION_KIND.planReview ? TAG_KIND.planReview : TAG_KIND.question })
-    }
     // Your answer, on the card or in the session's own card, is a decisions row by you, as Fishball's is by Fishball.
     const byYou = answered?.by === BY.pile || end === QUESTION_END.session
     if (byFishball || byYou) await this.#decide(entry, byFishball ? CHANGED_BY.fishball : CHANGED_BY.user)

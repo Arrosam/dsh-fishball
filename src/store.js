@@ -4,15 +4,15 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants, own_requests, notices and pile (T08) tables keep version 1 (as do the dedicated model selection and question-mode records, rev11g's tag answers and question audit ends, which only add values): the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, grants, own_requests, notices and pile (T08) tables keep version 1 (as do the dedicated model selection and question-mode records and question audit ends, which only add values): the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_TAG_ANSWER, QUESTION_END, MODEL_SELECTION } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_END, MODEL_SELECTION } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags', grants: 'grants', ownRequests: 'own_requests', notices: 'notices', pile: 'pile' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', grants: 'grants', ownRequests: 'own_requests', notices: 'notices', pile: 'pile' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -149,19 +149,6 @@ const decisionRecord = z.object({
   withNote: z.boolean().optional(),
   at: z.string(),
   outcome: z.string().min(1),
-})
-
-/** One answer Fishball gave, placed in the asking turn's tail by the seq of its call (DESIGN §9 `tags`, S37). */
-const tagRecord = z.object({
-  sessionId: z.string().min(1),
-  callId: z.string().min(1).optional(),
-  seq: z.number().int().nonnegative(),
-  /** An answer_approval / answer_prompt decision, or a question's answer kind (rev11g; the words stay in the session log). */
-  answer: z.enum([...Object.values(APPROVAL_DECISION), ...Object.values(QUESTION_TAG_ANSWER)]),
-  kind: z.enum(Object.values(TAG_KIND)),
-  /** A call a standing grant covered (rev11d): what the tag names, the prefix or "exact call" (never the arguments). */
-  grant: z.object({ kind: z.enum(Object.values(GRANT_KIND)), toolName: z.string().min(1), prefix: z.string().min(1).optional() }).optional(),
-  at: z.string(),
 })
 
 /**
@@ -322,8 +309,7 @@ export const fishballDomain = defineDomain({
     [TABLE.pluginSettings]: domainTable(pluginSettingsRecord),
     [TABLE.managed]: domainTable(managedRecord),
     [TABLE.decisions]: domainTable(decisionRecord),
-    [TABLE.tags]: domainTable(tagRecord),
-    [TABLE.grants]: domainTable(grantRecord),
+      [TABLE.grants]: domainTable(grantRecord),
     [TABLE.ownRequests]: domainTable(ownRequestRecord),
     [TABLE.notices]: domainTable(noticeRecord),
     [TABLE.pile]: domainTable(pileCardRecord),
@@ -371,7 +357,6 @@ export class Store {
   get pluginSettings() { return this.#domain.table(TABLE.pluginSettings) }
   get managed() { return this.#domain.table(TABLE.managed) }
   get decisions() { return this.#domain.table(TABLE.decisions) }
-  get tags() { return this.#domain.table(TABLE.tags) }
   get grants() { return this.#domain.table(TABLE.grants) }
   get ownRequests() { return this.#domain.table(TABLE.ownRequests) }
   get notices() { return this.#domain.table(TABLE.notices) }
