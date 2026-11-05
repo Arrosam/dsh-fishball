@@ -19,6 +19,15 @@ const PACKAGE = Object.freeze({
   toolSchedule: '@deepseek-ai/dsh-tool-schedule',
   timeContext: '@deepseek-ai/dsh-time-context',
 })
+/**
+ * The old native build seeded the child profile's user patch with this Web UI row. The slim
+ * child runs no web UI, so its client-only package must never mount. A loader patch cannot
+ * remove a row, so the launch layer disables it and leaves the profile patch byte-identical.
+ */
+const STALE_WEB_ROW = Object.freeze({
+  id: 'ui-settings-general',
+  name: '@deepseek-ai/dsh-client-ui-settings-general',
+})
 /** Policies the slim child fixes independently of the main deployment (§2.3). */
 const POLICY = Object.freeze({ sandboxMode: 'read-only', approval: 'ask' })
 /** copyChildCode copies this tree beside native-child.js, so the app row resolves inside the snapshot. */
@@ -58,6 +67,8 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
     else if (row.name === '@deepseek-ai/dsh-agent-instructions') overlays.push({ id: row.id, config: instructionConfig(row.config) })
     else if (row.name === '@deepseek-ai/dsh-skill-filesystem') overlays.push({ id: row.id, config: skillConfig(row.config) })
   }
+  // The stale row survives in an existing child profile's patch; disable it in the last layer.
+  if (rows.get(STALE_WEB_ROW.id)?.name === STALE_WEB_ROW.name) overlays.push({ id: STALE_WEB_ROW.id, disabled: true })
   // The profile is base-only (§2.3), so only the rows this overlay rewrites must be present;
   // webserver, web-runtime and preset-standard belonged to the Web UI bundle and are gone.
   for (const id of [ROW.hmr, ROW.sandboxPolicy, ROW.approval]) if (!rows.has(id)) fail('UNSUPPORTED_PROFILE')

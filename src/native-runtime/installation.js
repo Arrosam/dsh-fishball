@@ -167,6 +167,10 @@ export async function copyChildCode(paths, record) {
   await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
   if (await exists(path.join(sourceRoot, 'src', 'native-control'))) await copy(path.join(sourceRoot, 'src', 'native-control'), path.join(destination, 'src', 'native-control'), javascript)
   await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), everyFile)
+  // T07 registers Fishball's persona from src/persona.js in the chat agent's scope; the module
+  // and its one text dependency ship beside the slim tree so the snapshot resolves them.
+  await copy(path.join(sourceRoot, 'src', 'persona.js'), path.join(destination, 'src', 'persona.js'), javascript)
+  await copy(path.join(sourceRoot, 'src', 'pile-note.js'), path.join(destination, 'src', 'pile-note.js'), javascript)
   // T16's child target imports the shared preview/confirm engine and dynamically imports the
   // pi-ai host adapter beside it (src/slim/child/provider-sync-target.js: '../../provider-sync.js').
   // Both modules ship with the slim tree so the target uses the same reviewed rules as pairing.
