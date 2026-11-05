@@ -11,10 +11,10 @@
  *   and no request that could carry one. The label is text, not a selector.
  * - Messages are plain text, never HTML: Fishball's chat renders untrusted content from other
  *   sessions as text.
- * - Attachments (T06) and decision labels (T08, via T09) are not built here. The composer is
- *   its own module (src/slim/ui/composer.js) because T06 owns its image parts; a message without
- *   text still gets its bubble, and a tool row with only its call id still renders, so those
- *   seams can fill the same structures instead of replacing them.
+ * - Attachments (T06) and decision labels (T08, via T09) render into this timeline. The
+ *   composer module owns the image parts; a message without text still gets its bubble, and a
+ *   tool row with only its call id still renders, so those seams fill the same structures. An
+ *   image is fetched from the child's read-only by-id route, so its preview survives a reload.
  *
  * Classes are the only styling hook, because the CSP admits no inline style; dynamic state is a
  * class or a data attribute, never element.style. Server entries are partial records merged by
@@ -180,12 +180,6 @@ export function createChatView(options = {}) {
   /** Entry data by id, and the rendered row, so a partial update replaces one row in place. */
   const entries = new Map()
   const rows = new Map()
-  /**
-   * Data-URL previews for images this page uploaded. The child never serves stored bytes back
-   * to the page, so a reload shows the image's name and "Preview unavailable" instead; nothing
-   * else invents a URL (no path, no blob: under the §3.3 CSP).
-   */
-  const previewUrls = new Map()
   let providers = []
   let models = []
   let current = undefined
@@ -224,13 +218,21 @@ export function createChatView(options = {}) {
       && (item.kind === 'image' || item.kind === 'file') && typeof item.attachmentId === 'string')
   }
 
-  /** Append one message's image/file blocks; the caller's text bubble may be empty or absent. */
+  /**
+   * Append one message's image/file blocks; the caller's text bubble may be empty or absent.
+   * An image carries its content-addressed id, so the preview helper builds the child's
+   * read-only api/images/<id> URL; that is what survives a page reload.
+   */
   function appendAttachments(row, entry) {
     for (const attachment of entryAttachments(entry)) {
-      const url = previewUrls.get(attachment.attachmentId)
       row.append(attachmentPreview(
-        { kind: attachment.kind, name: textOf(attachment.name), bytes: attachment.bytes },
-        { document, ...(url === undefined ? {} : { url }) },
+        {
+          kind: attachment.kind,
+          attachmentId: attachment.attachmentId,
+          name: textOf(attachment.name),
+          bytes: attachment.bytes,
+        },
+        { document },
       ))
     }
   }
@@ -512,8 +514,8 @@ export function createChatView(options = {}) {
 
   /**
    * Send one prompt through the composer's callback; false keeps the text and files for a retry.
-   * The attachment descriptors are the upload answers; the previews stay in this page's map,
-   * keyed by the durable id the committed entry will carry.
+   * The attachment descriptors are the upload answers; their durable ids are all a row needs,
+   * because the read-only image route resolves the bytes after a reload.
    */
   async function sendPrompt(value, attachments = []) {
     clearNotice()
@@ -524,9 +526,6 @@ export function createChatView(options = {}) {
       const answer = await request(API.chat, { method: 'POST', body: JSON.stringify(body) })
       if (typeof answer?.messageId === 'string' && answer.messageId !== '') {
         const entriesForMessage = attachments.map(attachmentEntry)
-        for (const attachment of attachments) {
-          if (typeof attachment.previewUrl === 'string') previewUrls.set(attachment.attachment.attachmentId, attachment.previewUrl)
-        }
         // The optimistic row shares the durable message id, so the committed user/message
         // replaces it instead of appearing twice.
         upsert({
@@ -568,7 +567,6 @@ export function createChatView(options = {}) {
     if (disposed) return
     disposed = true
     approvals.dispose()
-    previewUrls.clear()
     container.replaceChildren()
     modelSlot.replaceChildren()
   }

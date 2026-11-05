@@ -5,9 +5,10 @@
  * control, Enter sends and Shift+Enter starts a new line, and the owner's send callback decides
  * whether the prompt is cleared. T06 adds the image and file parts of the same module: drag and
  * drop, paste and a file picker; one chip per pending attachment; a thumbnail from a data URL
- * (the §3.3 CSP admits data: but not blob:); and the one upload call to the child's own
- * api/upload. The accepted attachment descriptors travel to the same onSubmit callback, which
- * the chat view turns into the message's image and file blocks.
+ * while the file is local (the §3.3 CSP admits data: but not blob:), then from the child's
+ * read-only api/images/<id> route once it is uploaded; and the one upload call to the child's
+ * own api/upload. The accepted attachment descriptors travel to the same onSubmit callback,
+ * which the chat view turns into the message's image and file blocks.
  *
  * A path is never sent: bytes go as canonical base64 to the child API, which admits them into
  * the child's own store under the contract's limits. A failed upload leaves the files in place
@@ -23,7 +24,13 @@
  * 404 behind the broker); the child still enforces the same rules authoritatively, so a stale
  * copy can only refuse early, never admit too much.
  */
-const API = Object.freeze({ upload: 'api/upload', media: 'application/json', method: 'POST' })
+const API = Object.freeze({
+  upload: 'api/upload',
+  /** The child's read-only image route; relative URLs work at "/" and under /fishball/embed/ (§3.1). */
+  images: 'api/images/',
+  media: 'application/json',
+  method: 'POST',
+})
 
 const LIMITS_UI = Object.freeze({
   imageBytes: 4 * 1024 * 1024,
@@ -89,6 +96,30 @@ const REFUSAL = Object.freeze({
   failed: 'operation-failed',
 })
 
+/**
+ * The child's read-only URL for one stored image id. The id is content-addressed and opaque;
+ * encoding the one path segment keeps its "sha256:" prefix out of the URL grammar's way.
+ *
+ * @param {unknown} attachmentId
+ * @returns {string|undefined} the relative URL, or undefined when there is no id to name.
+ */
+export function imageUrl(attachmentId) {
+  return typeof attachmentId === 'string' && attachmentId !== ''
+    ? API.images + encodeURIComponent(attachmentId)
+    : undefined
+}
+
+/**
+ * The thumbnail source for one attachment: the caller's explicit URL, then a local pending
+ * preview (a data URL the CSP admits), then the child's by-id route for a stored image. The
+ * last case is what keeps a timeline preview after a page reload.
+ */
+function thumbnailUrl(attachment, override) {
+  if (typeof override === 'string' && override !== '') return override
+  if (typeof attachment?.previewUrl === 'string' && attachment.previewUrl !== '') return attachment.previewUrl
+  return imageUrl(attachment?.attachmentId)
+}
+
 /** The kind a browser File becomes: only 0.2.2's four image types are images. */
 export function fileKind(file) {
   const type = typeof file?.type === 'string' ? file.type : ''
@@ -115,9 +146,10 @@ export function filesFromPaste(event) {
 }
 
 /**
- * Build one pending attachment from a browser File. A chip shows its name at once; a thumbnail
- * waits for previewDataUrl(), because the child's CSP admits img-src 'self' data: and not the
- * blob: URL createObjectURL would produce (§3.3). Uploading does not need the preview.
+ * Build one pending attachment from a browser File. A chip shows its name at once; a local
+ * thumbnail waits for previewDataUrl(), because the child's CSP admits img-src 'self' data: and
+ * not the blob: URL createObjectURL would produce (§3.3). Uploading does not need the preview;
+ * after upload the chip switches to the child's by-id route.
  */
 export function pendingAttachment(file) {
   return { kind: fileKind(file), name: file.name, file }
@@ -137,7 +169,10 @@ export function previewDataUrl(file) {
 /**
  * Render one attachment chip for the composer.
  *
- * @param {{kind: string, name?: string, previewUrl?: string}} attachment
+ * A pending file shows its local preview; an already-uploaded descriptor without one
+ * reads through the child's image route, so the same chip works on both sides of an upload.
+ *
+ * @param {{kind: string, name?: string, previewUrl?: string, attachmentId?: string}} attachment
  * @param {{document?: Document, onRemove?: () => void}} [options]
  * @returns {HTMLElement}
  */
@@ -148,10 +183,11 @@ export function attachmentChip(attachment, options = {}) {
   root.dataset.kind = attachment.kind
   const fallback = attachment.kind === KIND.image ? COPY.image : COPY.file
   const name = typeof attachment.name === 'string' && attachment.name.length > 0 ? attachment.name : fallback
-  if (attachment.kind === KIND.image && typeof attachment.previewUrl === 'string') {
+  const url = attachment.kind === KIND.image ? thumbnailUrl(attachment) : undefined
+  if (url !== undefined) {
     const image = document.createElement('img')
     image.className = CLASS.thumb
-    image.src = attachment.previewUrl
+    image.src = url
     image.alt = ''
     root.append(image)
   }
@@ -168,12 +204,23 @@ export function attachmentChip(attachment, options = {}) {
   return root
 }
 
+/** The one fallback for an image the page cannot display; the same node serves both paths. */
+function missingPreview(document) {
+  const missing = document.createElement('span')
+  missing.className = CLASS.missing
+  missing.textContent = COPY.noPreview
+  return missing
+}
+
 /**
  * Render one attachment in the timeline. A session image carries the caller's "from <session>"
  * caption and is never used as an avatar or an icon (§6.5). A file is a name and size only: the
  * browser never receives a path, and no URL is invented for a file.
  *
- * @param {{kind: string, name?: string, bytes?: number}} attachment
+ * The image source is the caller's URL when given, otherwise the child's read-only route for
+ * the attachment id; the route is what keeps the preview after a page reload.
+ *
+ * @param {{kind: string, name?: string, bytes?: number, attachmentId?: string}} attachment
  * @param {{document?: Document, url?: string, caption?: string}} [options]
  * @returns {HTMLElement}
  */
@@ -183,18 +230,22 @@ export function attachmentPreview(attachment, options = {}) {
   root.className = CLASS.preview
   root.dataset.kind = attachment.kind
   if (attachment.kind === KIND.image) {
-    if (typeof options.url === 'string' && options.url.length > 0) {
+    const url = thumbnailUrl(attachment, options.url)
+    if (url !== undefined) {
       const image = document.createElement('img')
       image.className = CLASS.thumb
-      image.src = options.url
+      image.src = url
       image.alt = typeof attachment.name === 'string' ? attachment.name : COPY.image
       image.loading = 'lazy'
+      // A 404 (an id this child did not admit) or a transient failure keeps the old readable
+      // fallback instead of leaving a broken-image glyph in the timeline.
+      image.addEventListener('error', () => {
+        image.remove()
+        root.prepend(missingPreview(document))
+      })
       root.append(image)
     } else {
-      const missing = document.createElement('span')
-      missing.className = CLASS.missing
-      missing.textContent = COPY.noPreview
-      root.append(missing)
+      root.append(missingPreview(document))
     }
   } else {
     const file = document.createElement('div')
@@ -301,7 +352,7 @@ function base64Of(buffer) {
  *
  * @param {object} options
  * @param {Document} options.document - the page document.
- * @param {(text: string, attachments: Array<{kind: string, attachment: object, previewUrl?: string}>)
+ * @param {(text: string, attachments: Array<{kind: string, attachment: object}>)
  *   => Promise<boolean>} options.onSubmit - sends one prompt with its already-uploaded attachment
  *   descriptors; resolves true when it was accepted (the composer then clears), false when the
  *   owner already reported the failure, or rejects on an unexpected failure.
@@ -383,7 +434,9 @@ export function createComposer(options = {}) {
       // The preview is cosmetic and may be unavailable; the upload never waits for it.
       if (item.kind === KIND.image) {
         void previewDataUrl(file).then((previewUrl) => {
-          if (previewUrl === undefined || !pending.some((entry) => entry.id === item.id)) return
+          // An upload can finish first; its by-id route preview must not be replaced by the
+          // late local data URL.
+          if (previewUrl === undefined || item.uploaded === true || !pending.some((entry) => entry.id === item.id)) return
           item.previewUrl = previewUrl
           renderChips()
         })
@@ -392,16 +445,28 @@ export function createComposer(options = {}) {
     renderChips()
   }
 
-  /** Upload every pending file in order, or report the first typed refusal. */
+  /**
+   * Upload every pending file in order, or report the first typed refusal. Once uploaded, an
+   * image chip switches from its local data URL to the child's by-id route (the upload route has
+   * already registered the id), so a failed send leaves a chip that still previews correctly.
+   */
   async function uploadPending() {
     const results = await uploadFiles(pending.map((item) => item.file), { existing: 0 })
     const refused = results.find((result) => !result.ok)
     if (refused !== undefined) { setNotice(refused.code); return undefined }
-    return pending.map((item, index) => ({
-      kind: results[index].kind,
-      attachment: results[index].attachment,
-      ...(item.previewUrl === undefined ? {} : { previewUrl: item.previewUrl }),
-    }))
+    const attachments = pending.map((item, index) => {
+      const result = results[index]
+      if (result.kind === KIND.image) {
+        const url = imageUrl(result.attachment.attachmentId)
+        if (url !== undefined) {
+          item.previewUrl = url
+          item.uploaded = true
+        }
+      }
+      return { kind: result.kind, attachment: result.attachment }
+    })
+    renderChips()
+    return attachments
   }
 
   async function submit() {

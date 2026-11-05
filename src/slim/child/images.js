@@ -1,10 +1,12 @@
 /**
  * Images and attachments in the isolated child (§6.3, §6.4, §6.6, §15 T06).
  *
- * Four jobs, all on the child's own store and the one shared bridge client:
+ * The child's image surface, all on the child's own store and the one shared bridge client:
  * - receive(): pull the images of an inbox item by id (attachment.read), verify them and save
  *   them into the child's store, returning the image blocks for Fishball's own user message;
  * - upload(): admit one browser upload into the child's store through /api/upload;
+ * - read(): serve one stored image's verified bytes by id, so a timeline or composer preview
+ *   survives a page reload; the upload route stays the only way bytes enter the store;
  * - blocks(): verify the refs a chat upload named and turn them into DSH image/file content
  *   blocks for Fishball's own user message (§6.6); the store's own read verifies the bytes;
  * - prepare()/send(): turn the child's own image or file refs into attachment.put hostRefs and
@@ -21,7 +23,9 @@
  * as application/octet-stream and reaches a model only as DSH's own file handle text.
  */
 import { randomUUID } from 'node:crypto'
-import { ERROR, LIMITS, MEDIA, OPERATION, ROUTES, ContractError } from '../contract.js'
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { DIGEST, ERROR, IMAGE_TYPES, LIMITS, MEDIA, OPERATION, ROUTES, ContractError } from '../contract.js'
 import {
   chunksOf, fromBase64, isImageMediaType, maxChunkedBytes, sha256Hex, verifyTransfer,
 } from '../attachment-transfer.js'
@@ -33,6 +37,15 @@ export const IMAGES = Object.freeze({
   /** The child's unprefixed tail of the broker's /fishball/embed/api/upload route (§3.1). */
   uploadPath: ROUTES.api.slice(ROUTES.prefix.length) + 'upload',
   uploadMethods: Object.freeze(['POST']),
+  /** The read route's unprefixed tail; one canonical image id follows the slash. */
+  readPath: ROUTES.api.slice(ROUTES.prefix.length) + 'images/',
+  /**
+   * An image id is the sha256 of its immutable normalized bytes, so the same id always names
+   * the same bytes. private keeps a shared cache from storing one child's images; the T04
+   * broker still normalizes every /api/* response to no-store (host/embed.js), so this header
+   * describes the child route, not what the embedded page receives.
+   */
+  readCacheControl: 'private, max-age=31536000, immutable',
   /** The upload POST is the one route the T04 proxy admits at 8 MiB (§3.6). */
   maxUploadBytes: LIMITS.embedUploadBodyBytes,
   maxImageBytes: LIMITS.imageBytes,
@@ -65,6 +78,29 @@ const UPLOAD_KEYS = Object.freeze(['mediaType', 'data', 'name'])
 const UPLOAD_REQUIRED = Object.freeze(['mediaType', 'data'])
 const CONTROL = /[\u0000-\u001f\u007f]/u
 const BRIDGE_SERVICE = 'fishballBridge'
+const PROFILE_SERVICE = 'profileContext'
+const ID_PREFIX = DIGEST.algorithm + ':'
+
+/**
+ * DSH's stable codes for a ref that no stored object can satisfy. The route answers all of
+ * them with the same bodyless 404, so a bad id and a missing object cannot be told apart.
+ */
+const READ_MISS = new Set(['INVALID_ATTACHMENT_REF', 'ATTACHMENT_NOT_FOUND', 'ATTACHMENT_CORRUPT'])
+
+/**
+ * Where the child keeps the refs it has admitted. DSH's readImage verifies the complete
+ * ImageAttachmentRef (id, media type, bytes, dimensions), not an id alone, so the read route
+ * needs this sidecar to rebuild the ref for one id. It sits beside the chat record the same
+ * child owns; the store read remains authoritative, so a stale entry can only yield a 404.
+ * The byte cap keeps a corrupt or runaway file from being parsed; a larger index is ignored.
+ */
+const INDEX = Object.freeze({
+  directory: 'fishball',
+  file: 'image-refs.json',
+  directoryMode: 0o700,
+  fileMode: 0o600,
+  maxBytes: 4 * 1024 * 1024,
+})
 
 const MESSAGE = Object.freeze({
   invalid: 'The upload is not a valid attachment request.',
@@ -114,6 +150,110 @@ export function createImages(ctx, options = {}) {
     return bridge
   }
 
+  const logger = typeof ctx?.logger === 'function' ? ctx.logger(IMAGES.plugin) : undefined
+  const indexPath = indexFileOf(ctx)
+  /** The refs this child may serve by id; the attachment store still verifies every read. */
+  const refs = new Map()
+  let loading
+  let saving = Promise.resolve()
+  let dirty = false
+
+  /** Keep one parsed ref if it is new; the map preserves the first exact ref for an id. */
+  function addRef(ref) {
+    if (refs.has(ref.attachmentId)) return false
+    refs.set(ref.attachmentId, ref)
+    return true
+  }
+
+  function warnIndex(message, error) {
+    if (logger === undefined) return
+    const detail = error === undefined ? '' : ' (' + String(error?.code ?? error?.name ?? error) + ')'
+    logger.warn(message + detail)
+  }
+
+  /** Load the sidecar once; a missing or unreadable index leaves the in-memory refs intact. */
+  function loadIndex() {
+    if (loading === undefined) loading = readIndex()
+    return loading
+  }
+
+  async function readIndex() {
+    if (indexPath === undefined) return
+    let raw
+    try {
+      raw = await readFile(indexPath, 'utf8')
+    } catch (error) {
+      if (error?.code !== 'ENOENT') warnIndex('the image ref index could not be read', error)
+      return
+    }
+    if (raw.length > INDEX.maxBytes) { warnIndex('the image ref index is too large and was ignored'); return }
+    let parsed
+    try { parsed = JSON.parse(raw) } catch { warnIndex('the image ref index is not JSON and was ignored'); return }
+    if (!Array.isArray(parsed)) { warnIndex('the image ref index is not a list and was ignored'); return }
+    for (const value of parsed) {
+      const ref = parsedRefOf(value)
+      if (ref !== undefined) addRef(ref)
+    }
+  }
+
+  /** Queue one atomic rewrite; a failed write is diagnostic only, the in-memory refs still serve. */
+  function persistIndex() {
+    if (indexPath === undefined || dirty) return
+    dirty = true
+    saving = saving.then(async () => {
+      // Merge the sidecar before the first write: an upload that happens before any read must
+      // add to the previous index, never replace it with only this process's new refs.
+      await loadIndex()
+      dirty = false
+      await writeIndex([...refs.values()])
+    }).catch((error) => {
+      dirty = false
+      warnIndex('the image ref index could not be written', error)
+    })
+  }
+
+  async function writeIndex(values) {
+    await mkdir(path.dirname(indexPath), { recursive: true, mode: INDEX.directoryMode })
+    const temp = indexPath + '.tmp'
+    await writeFile(temp, JSON.stringify(values) + '\n', { mode: INDEX.fileMode })
+    await rename(temp, indexPath)
+  }
+
+  /**
+   * Register one image ref the child admitted (an upload, an inbox image or a message block).
+   * A malformed value is ignored: the ref came from the store or the page, so it is never a
+   * reason to fail the turn that carried it.
+   */
+  function remember(value) {
+    const ref = parsedRefOf(value)
+    if (ref === undefined) return false
+    if (addRef(ref)) persistIndex()
+    return true
+  }
+
+  /**
+   * Read one stored image by its content-addressed id. The ref index answers which id this
+   * child admitted; readImage re-verifies the bytes, type, length and dimensions, so a stale or
+   * tampered index entry can only be a miss. Unknown, corrupt or vanished objects are undefined.
+   *
+   * @param {string} id - canonical "sha256:<64 lowercase hex>" attachment id.
+   * @returns {Promise<{data: Uint8Array, mediaType: string}|undefined>}
+   */
+  async function read(id) {
+    if (!isAttachmentId(id)) return undefined
+    await loadIndex()
+    const ref = refs.get(id)
+    if (ref === undefined) return undefined
+    try {
+      const stored = await attachments.readImage(ref)
+      if (!IMAGE_TYPES.includes(stored.ref.mediaType)) return undefined
+      return { data: stored.data, mediaType: stored.ref.mediaType }
+    } catch (error) {
+      if (READ_MISS.has(error?.code)) return undefined
+      throw error
+    }
+  }
+
   /** Whether Fishball's current model admits image input; absent modalities mean unknown. */
   async function supportsImages(selection) {
     // An unknown selection or an adapter that declares no modalities means "unknown", which
@@ -152,6 +292,7 @@ export function createImages(ctx, options = {}) {
           data, mediaType: request.mediaType,
           ...(request.name === undefined ? {} : { name: request.name }),
         })
+        remember(attachment)
         return { kind: ATTACHMENT_KIND.image, attachment }
       }
       const attachment = await attachments.saveFile({
@@ -198,6 +339,7 @@ export function createImages(ctx, options = {}) {
       } catch (error) {
         throw refusalOf(error)
       }
+      remember(saved)
       stored.push(saved)
       blocks.push({ type: ATTACHMENT_KIND.image, attachment: saved })
     }
@@ -241,6 +383,7 @@ export function createImages(ctx, options = {}) {
       try {
         if (kind === ATTACHMENT_KIND.image) {
           const stored = await attachments.readImage(attachment)
+          remember(stored.ref)
           blocks.push({ type: ATTACHMENT_KIND.image, attachment: stored.ref })
         } else {
           const ref = fileRefOf(attachment)
@@ -284,6 +427,7 @@ export function createImages(ctx, options = {}) {
     } catch (error) {
       throw refusalOf(error)
     }
+    remember(stored.ref)
     const data = stored.data
     if (data.length > LIMITS.imageBytes) throw new ContractError(ERROR.tooLarge)
     return transferOf(data, stored.ref.mediaType, stored.ref.name)
@@ -314,6 +458,7 @@ export function createImages(ctx, options = {}) {
     message,
     redirect,
     start,
+    read,
   })
 }
 
@@ -393,6 +538,47 @@ function refusalOf(error) {
   const code = error?.code
   if (ATTACHMENT_ERROR.tooLarge.has(code)) return new ContractError(ERROR.tooLarge)
   return new ContractError(ERROR.failed)
+}
+
+/** The sidecar under the child's own home, or undefined when this context has no profile home. */
+function indexFileOf(ctx) {
+  try {
+    const profile = typeof ctx?.get === 'function' ? ctx.get(PROFILE_SERVICE) : undefined
+    if (typeof profile?.home !== 'string' || !path.isAbsolute(profile.home)) return undefined
+    return path.join(profile.home, INDEX.directory, INDEX.file)
+  } catch {
+    return undefined
+  }
+}
+
+/** One canonical image ref from the index or a caller, or undefined when it is not renderable. */
+function parsedRefOf(value) {
+  let ref
+  try { ref = imageMetadataOf(value) } catch { return undefined }
+  return isAttachmentId(ref.attachmentId) ? ref : undefined
+}
+
+/** DSH's content-addressed image id: "sha256:" plus 64 lowercase hex characters. */
+function isAttachmentId(value) {
+  if (typeof value !== 'string' || !value.startsWith(ID_PREFIX)) return false
+  const digest = value.slice(ID_PREFIX.length)
+  if (digest.length !== DIGEST.hexLength) return false
+  for (const character of digest) if (!DIGEST.hex.includes(character)) return false
+  return true
+}
+
+/**
+ * The id of one read target, or undefined when the tail is not exactly one canonical image id.
+ * The one path segment is decoded once and validated; no user text ever becomes a path or a
+ * store lookup key (the attachment store owns the only path derivation).
+ */
+export function imageIdOf(pathname) {
+  if (typeof pathname !== 'string' || !pathname.startsWith(IMAGES.readPath)) return undefined
+  const encoded = pathname.slice(IMAGES.readPath.length)
+  if (encoded === '' || encoded.includes('/')) return undefined
+  let id
+  try { id = decodeURIComponent(encoded) } catch { return undefined }
+  return isAttachmentId(id) ? id : undefined
 }
 
 /** One image metadata record as inbox.push carries it (contract imageRef). */
