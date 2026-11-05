@@ -27,7 +27,6 @@ export const inject = ['nativeRuntime', 'tools']
 
 const CHILD = Object.freeze({
   service: 'fishballBridge',
-  disposed: 'dispose',
   logger: 'fishball-native-session-tools',
 })
 
@@ -286,11 +285,11 @@ export function apply(ctx) {
     onInbox: (listener) => client.onInbox(listener),
   })
   ctx.provide(CHILD.service, service)
-  ctx.on(CHILD.disposed, cleanup)
   try {
     for (const definition of definitions(client)) {
       registrations.push(ctx.tools.register(defineTool(definition)))
     }
   } catch (error) { cleanup(); throw error }
-  return service
+  // Cordis treats an apply() return value as the fiber's disposer; the service itself is published.
+  return cleanup
 }

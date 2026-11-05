@@ -483,7 +483,6 @@ export function apply(ctx) {
   requireBridge(ctx)
   if (typeof ctx.inject === 'function') ctx.inject([BRIDGE_SERVICE], requireBridge)
   ctx.provide(IMAGES.service, images)
-  return images
 }
 
 /** One transfer frame for verified bytes; the name is a display leaf, never a path. */
