@@ -189,8 +189,9 @@ const present = (descriptor, id) => plain(descriptor?.value?.providers) && Objec
 const emptyCredential = () => ({ configured: false, writable: false })
 const checkSignal = (signal) => { if (signal?.aborted) refuse(E.cancelled) }
 /**
- * A built-in route keyed by its API-key record alone: no settings override and an api-key sign-in
- * method. Its key may be copied without a profile (src/provider-sync.js builtinKey).
+ * A dormant built-in route keyed by its API-key record alone: no settings entry, an api-key
+ * sign-in method and a fixed endpoint. Its key may be read for the sync (src/provider-sync.js
+ * builtinKey); the target adopts the route with an empty profile before writing it.
  */
 const builtinKeyRoute = (provider) => provider.declared === false && provider.configured === false
   && provider.profile === null && provider.apiKeyMethod === true && provider.endpointFromEnv === false
@@ -373,11 +374,8 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       const previous = added.get(id) ?? last.namespaces.get(provider.settingsNs)
       currentNamespace(state, provider.settingsNs, previous)
       if (!keyedRoute(provider) || !provider.credential.writable) refuse(E.credential)
-      // A built-in key was approved for a route with no override; one appearing since then would
-      // send the key somewhere else, so it voids the approval like a changed profile does.
-      const sameRoute = (descriptor) => approved.profile === null
-        ? !present(descriptor, id)
-        : present(descriptor, id) && isDeepStrictEqual(safeProfile(descriptor.value.providers[id], provider.declared, defaults, protocols), approved.profile)
+      const sameRoute = (descriptor) => present(descriptor, id)
+        && isDeepStrictEqual(safeProfile(descriptor.value.providers[id], provider.declared, defaults, protocols), approved.profile)
       const checkApproved = (namespaces) => {
         if (approved === undefined) return
         const namespace = namespaces.get(provider.settingsNs)

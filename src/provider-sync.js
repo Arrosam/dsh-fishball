@@ -68,14 +68,26 @@ const recordValid = (record) => plain(record) && record.kind === 'api-key' && te
 /** A login (grant record) is never copied; its own reason lets the page say "log in inside Fishball". */
 const oauthLogin = (entry) => entry.credential?.configured === true && entry.credential.kind === PROVIDER_SYNC.grantKind
 /**
- * A built-in route (shipped by the adapter, not declared in settings) with no settings override,
- * an API-key sign-in method and a fixed endpoint. The user asked for keys set up on these to come
- * over too (2026-11-06): only the key record is added, and only when the target has the same
- * route in the same state, so the key reaches the same endpoint it was entered for. A route whose
- * endpoint comes from environment variables is excluded: the other home's environment differs.
+ * A built-in route (shipped by the adapter, not declared in settings) with an API-key sign-in
+ * method and a fixed endpoint. A route whose endpoint comes from environment variables is
+ * excluded: the other home's environment differs, so the key could reach another endpoint.
  */
-const builtinKey = (entry) => entry.profile === null && entry.configured === false && entry.declared === false
-  && entry.apiKeyMethod === true && entry.endpointFromEnv === false
+const builtinRoute = (entry) => entry.declared === false && entry.apiKeyMethod === true && entry.endpointFromEnv === false
+/**
+ * DSH's own "use the catalog route" profile: the Models page adopts a built-in route by writing
+ * `providers.<route> = {}` (dsh-client-ui-settings-models, materializesNativeProfile). The host
+ * reports it with every canonical default stripped, so it reads as an empty object here.
+ */
+const ADOPTED = Object.freeze({})
+const adopted = (entry) => entry.configured === true && plain(entry.profile) && Object.keys(entry.profile).length === 0
+/** No settings entry at all: pi-ai registers only routes in `providers`, so the route is dormant. */
+const dormant = (entry) => entry.configured === false && entry.profile === null
+/**
+ * The user asked for keys on built-in routes to come over too (2026-11-06): a source key record
+ * on a built-in route that has no override (adopted or dormant). The plain profile path already
+ * covers an adopted source; this also covers the dormant one.
+ */
+const builtinKey = (entry) => builtinRoute(entry) && dormant(entry)
 
 export class ProviderSyncEngine {
   #host; #ttl; #now; #plans = new Map(); #incomplete = new Map(); #busy = false; #abort = new AbortController()
@@ -161,9 +173,11 @@ export class ProviderSyncEngine {
   }
 
   /**
-   * Where a built-in key goes: the target must run the same built-in route from the same owner and
-   * schema with no settings override; an existing target key is kept. The operation is key-only,
-   * so confirm never touches settings for it and the record write stays create-only.
+   * Where a built-in key goes. The target must have the same built-in route from the same owner and
+   * schema, either dormant or adopted with no override; an existing target key is kept. A key
+   * record alone leaves a dormant route unregistered, so a dormant target is adopted the way DSH's
+   * Models page does it (`providers.<route> = {}`, a create-only revision-checked add) before the
+   * create-only key write; an adopted target gets the key only.
    */
   #builtinKeyPlan(entry, existing, target) {
     const R = PROVIDER_SYNC.reason
@@ -171,11 +185,12 @@ export class ProviderSyncEngine {
     if (!namespace || !existing.supported || existing.owner !== entry.owner) return { group: 'conflictSkip', reason: R.incompatible }
     if (existing.credential?.configured) return { group: 'existsSkip', reason: R.credentialExists }
     // Fishball overrides this route itself: the key could reach a different endpoint, so keep it.
-    if (existing.configured || existing.profile !== null) return { group: 'conflictSkip', reason: R.conflict }
-    if (!builtinKey(existing)) return { group: 'conflictSkip', reason: R.incompatible }
+    if (!dormant(existing) && !adopted(existing)) return { group: 'conflictSkip', reason: R.conflict }
+    if (!builtinRoute(existing)) return { group: 'conflictSkip', reason: R.incompatible }
     if (existing.credential?.writable === false) return { group: 'unsupported', reason: R.notWritable }
     if (!Number.isSafeInteger(target.revision[namespace.ns])) return { group: 'unsupported', reason: R.revision }
-    return { group: 'add', operation: { id: entry.id, profile: null, namespace: namespace.ns, ownerGeneration: namespace.ownerGeneration, keyOnly: true } }
+    return { group: 'add', operation: { id: entry.id, profile: { ...ADOPTED }, namespace: namespace.ns,
+      ownerGeneration: namespace.ownerGeneration, keyOnly: adopted(existing) } }
   }
 
   async confirm({ token, sourceFingerprint, items }, peerIdentity, { signal } = {}) {
