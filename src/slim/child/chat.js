@@ -18,6 +18,9 @@
  *
  * Rules kept here:
  * - Delivery is followup, never a retry: one prompt is one queued turn.
+ * - deliverInbox queues one inbox item as Fishball's own turn; notify appends a visible system
+ *   timeline entry without a turn, for a typed inbox refusal. The inbox row
+ *   (src/slim/child/inbox.js) is their only caller.
  * - No path, URL, token or provider text crosses to the page. Typed codes and this module's
  *   own copy are the only failures the UI shows (Section 11).
  * - Text is plain: the slim UI renders it as text, never as HTML.
@@ -38,9 +41,10 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { appendPluginRecord } from '@deepseek-ai/dsh-session'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
-import { ERROR, LIMITS, ROUTES } from '../contract.js'
+import { ERROR, INBOX_KIND, LIMITS, ROUTES } from '../contract.js'
 
 /** The child serves the contract's /api/* tails; the broker adds /fishball/embed in front (3.1). */
 const API = (tail) => ROUTES.api.slice(ROUTES.prefix.length) + tail
@@ -89,6 +93,13 @@ const CHAT_LIMITS = Object.freeze({
   recordChars: 4096,
 })
 
+/**
+ * A system timeline entry is a plugin record: DSH persists and forks it but never projects it to
+ * the model, so a typed inbox refusal stays visible without starting a turn. The record type
+ * belongs to this plugin's own namespace (§5.2, §6.3).
+ */
+const NOTICE_RECORD = 'plugin:fishball/inbox-notice'
+
 const RECORD = Object.freeze({ directory: 'fishball', file: 'chat.json', cwd: 'assistant' })
 const CHILD = Object.freeze({
   agents: 'agents',
@@ -135,6 +146,17 @@ const MESSAGE = Object.freeze({
 
 /** The copy the page shows for a user-role message, from DSH's own source kind. */
 const AUTHOR = Object.freeze({ user: 'You', schedule: 'Reminder', other: 'Context' })
+
+/**
+ * Sources for Fishball's queued turns. An inbox item keeps its origin: a session's message is an
+ * agent relay, while a hand-over note, watch notice or system item is a Fishball notice. Neither
+ * source pretends another session's words are the user's own (§5.2, §6.5).
+ */
+const SOURCE = Object.freeze({
+  user: Object.freeze({ kind: 'user' }),
+  relay: Object.freeze({ kind: 'agent-message', form: 'relay' }),
+  notice: Object.freeze({ kind: 'fishball-notice', form: 'notice' }),
+})
 
 const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
 const text = (value) => (typeof value === 'string' ? value : '')
@@ -208,6 +230,18 @@ function authorOf(source) {
 }
 
 /**
+ * The source of one inbox turn. A session message is an agent relay naming its sender; a
+ * hand-over note, watch notice or system item is a Fishball notice. The text keeps its own
+ * framing; this source only tells DSH whose words the turn carries.
+ */
+function inboxSourceOf(item) {
+  if (item?.kind !== INBOX_KIND.session) return SOURCE.notice
+  return typeof item.sourceSessionId === 'string' && item.sourceSessionId !== ''
+    ? { ...SOURCE.relay, senderSessionId: item.sourceSessionId }
+    : SOURCE.relay
+}
+
+/**
  * Map one committed session event to a partial timeline entry, or undefined for log-only
  * events. Tool names are remembered from tool/call, because a tool/result names only the call
  * id it answers. The page merges a partial entry into the row with the same id.
@@ -269,6 +303,11 @@ function entryOfEvent(event, toolNames) {
         isError: data.message?.isError === true,
         output,
       }
+    }
+    case NOTICE_RECORD: {
+      const value = text(data.text)
+      if (value === '') return undefined
+      return { id: 'n:' + event.seq, kind: ENTRY_KIND.notice, at: event.time, text: clamp(value, CHAT_LIMITS.entryChars) }
     }
     case 'turn/end': {
       const reason = data.reason
@@ -500,6 +539,16 @@ export function createChat(ctx, options = {}) {
     }
   }
 
+  /** Build and queue one turn through the one activation owner; no content means no turn. */
+  async function queue(value, blocks, source) {
+    const content = [...(value === '' ? [] : [{ type: 'text', text: value }]), ...blocks]
+    if (content.length === 0) invalid()
+    const live = await activate()
+    const message = createUserMessage({ content, source })
+    live.followup(message)
+    return { messageId: message.id }
+  }
+
   /**
    * Queue one user turn; the caller's page shows it at once under the returned message id.
    * Attachment refs are verified into blocks first, so a refused upload leaves the Session
@@ -524,12 +573,41 @@ export function createChat(ctx, options = {}) {
         throw error
       }
     }
-    const content = [...(value === '' ? [] : [{ type: 'text', text: value }]), ...blocks]
-    if (content.length === 0) invalid()
+    return queue(value, blocks, SOURCE.user)
+  }
+
+  /**
+   * Queue one inbox item as Fishball's own turn (§5.2, §6.3). The host's text is forwarded as it
+   * arrived, so the sender's framing and untrusted block stay intact; this method never
+   * re-frames content. Images are pulled into the child's own store first, and a model that
+   * cannot accept them refuses before any turn is queued.
+   */
+  async function deliverInbox(item, options = {}) {
+    if (!isRecord(item) || typeof item.text !== 'string' || item.text === '') {
+      throw new TypeError('fishball-native-chat: an inbox item needs text')
+    }
+    let blocks = []
+    if (options.skipImages !== true && Array.isArray(item.images) && item.images.length > 0) {
+      if (typeof images?.receiveInbox !== 'function') {
+        throw new TypeError('fishball-native-chat: the image service is required for inbox images')
+      }
+      const live = await activate()
+      const received = await images.receiveInbox(item, { agent: live })
+      blocks = received.blocks
+    }
+    return queue(item.text, blocks, inboxSourceOf(item))
+  }
+
+  /**
+   * Append a visible system entry without starting a turn. Plugin records are log-only and
+   * ignorable: DSH persists and forks them with the Session but never projects them into a
+   * model request, so a typed inbox refusal stays visible without making Fishball answer it.
+   */
+  async function notify(value) {
+    if (typeof value !== 'string' || value === '') throw new TypeError('fishball-native-chat: a notice needs text')
     const live = await activate()
-    const message = createUserMessage({ content, source: { kind: 'user' } })
-    live.followup(message)
-    return { messageId: message.id }
+    appendPluginRecord(live.session, NOTICE_RECORD, { text: clamp(value, CHAT_LIMITS.entryChars) })
+    return { notified: true }
   }
 
   function requireLlm() {
@@ -711,7 +789,7 @@ export function createChat(ctx, options = {}) {
   return Object.freeze({
     start,
     close,
-    service: Object.freeze({ resolveAgent, applyModel }),
+    service: Object.freeze({ resolveAgent, applyModel, deliverInbox, notify }),
     handle,
     subscribe,
   })
