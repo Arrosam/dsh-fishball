@@ -42,8 +42,8 @@ export const IMAGES = Object.freeze({
   /**
    * An image id is the sha256 of its immutable normalized bytes, so the same id always names
    * the same bytes. private keeps a shared cache from storing one child's images; the T04
-   * broker still normalizes every /api/* response to no-store (host/embed.js), so this header
-   * describes the child route, not what the embedded page receives.
+   * broker preserves this header on the image read route only (host/embed.js), so the embedded
+   * page can reuse the bytes after a reload.
    */
   readCacheControl: 'private, max-age=31536000, immutable',
   /** The upload POST is the one route the T04 proxy admits at 8 MiB (§3.6). */
