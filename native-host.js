@@ -70,7 +70,7 @@ export async function apply(ctx, config) {
   let sessions
   /** T09's approval/question/prompt/grant operations and the cards they offer the child. */
   let approvals
-  /** T16's source side: preview/confirm against the child's own provider-sync target. */
+  /** T16's source side: syncs the main profile's API-key providers into the child's own target. */
   let providerSync
   const status = () => ({ enabled, state, code })
   const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
@@ -89,8 +89,8 @@ export async function apply(ctx, config) {
     // failure, never a main-boot failure (the catch below keeps the row unready).
     sessions = createSessionPort(ctx, { enabled: () => enabled && !closed })
     approvals = createApprovalRelay({ ctx, sessions })
-    // T16: the child is the sync target. The source host reads the main profile's selected
-    // API-key records only inside a confirmed import; the page never sees a value (§10).
+    // T16: the child is the sync target. The source host reads the main profile's API-key
+    // records only inside the sync's confirm step; the page never sees a value (§10).
     providerSync = createChildProviderSync({ ctx })
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
@@ -124,7 +124,7 @@ export async function apply(ctx, config) {
     unsubscribeAdmin = owner.onAdminTransport((transport) => { if (!closed) admin.attach(transport) })
     // T16's provider-sync transport comes up on the same authenticated wire; a replaced
     // transport rejects whatever was in flight (the child restarted, so an answer is never
-    // retried and the page starts a fresh preview).
+    // retried; the next Refresh models previews afresh).
     unsubscribeProviderSync = owner.onProviderSyncTransport((transport, metadata) => {
       if (closed) return
       try { providerSync.attach(transport, metadata) } catch { /* the next wire replaces it */ }
@@ -206,8 +206,12 @@ export async function apply(ctx, config) {
     status, start, stop, restart,
     // T12's settings routes reach the child only through this relay (§9).
     admin,
-    // T16's provider-sync page API: status / preview / confirm (§10).
-    providerSync,
+    // T16's provider-sync page API (§10): only status and the one-step sync. The bridge's
+    // attach/request stay private to this row, so no other row can talk to the child target.
+    providerSync: Object.freeze({
+      status: () => providerSync.status(),
+      sync: () => providerSync.sync(),
+    }),
     async health() {
       if (closed || !owner || state !== PLUGIN.state.ready) return status()
       try {
@@ -226,7 +230,7 @@ export async function apply(ctx, config) {
   registerEmbed(ctx, service)
   // T12's settings page reaches the child only through the admin relay (§9).
   registerAdminRoutes(ctx, service)
-  // T16's provider-sync routes sit beside the admin routes and are subject to the same
+  // T16's provider-sync route sits beside the admin routes and is subject to the same
   // owner-only Fetch registry and same-origin fence (§10).
   registerProviderSyncRoutes(ctx, service)
   registerNativeWeb(ctx, service)

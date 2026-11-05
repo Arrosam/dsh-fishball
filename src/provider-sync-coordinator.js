@@ -1,4 +1,9 @@
-/** Source-side consent coordinator. Browser gets opaque preview ids and fixed metadata, never records. */
+/**
+ * Source-side coordinator: previews against the target, then reads and sends the selected records.
+ * The caller (src/provider-sync-service.js) gets opaque preview ids and fixed metadata, never records.
+ * The channel's `peer()` names the connected target; its `connectionId` changes when the target
+ * reconnects, which voids a preview taken on the old connection.
+ */
 import { randomBytes } from 'node:crypto'
 import { PROVIDER_SYNC, ProviderSyncError, syncFingerprint } from './provider-sync.js'
 
@@ -11,7 +16,7 @@ export class ProviderSyncCoordinator {
   async preview() {
     if (this.#abort.signal.aborted) error('sync-closed')
     const peer = this.#channel.peer()
-    if (!peer) error('not-paired')
+    if (!peer) error('target-unavailable')
     const source = await this.#host.inventory()
     if (this.#abort.signal.aborted) error('sync-closed')
     const plan = await peer.request('inventory', { source }, { signal: this.#abort.signal })
@@ -23,7 +28,7 @@ export class ProviderSyncCoordinator {
     for (const [id, prior] of this.#previews) if (prior.expiresAt <= this.#now()) this.#previews.delete(id)
     if (this.#previews.size >= PROVIDER_SYNC.maxPreviews) this.#previews.delete(this.#previews.keys().next().value)
     this.#previews.set(previewId, { plan: structuredClone(plan), source: structuredClone(source),
-      peer: { identity: structuredClone(peer.identity), pairId: peer.pairId }, expiresAt })
+      peer: { identity: structuredClone(peer.identity), connectionId: peer.connectionId }, expiresAt })
     return { previewId, source: plan.source, target: plan.target, groups: plan.groups, expiresAt }
   }
   async confirm({ previewId, ids, confirmed }, { signal } = {}) {
@@ -37,7 +42,7 @@ export class ProviderSyncCoordinator {
     if (!Array.isArray(ids) || ids.length > PROVIDER_SYNC.maxItems || new Set(ids).size !== ids.length
       || ids.some((id) => !preview.plan.groups.add.some((item) => item.id === id))) error('invalid-selection')
     const peer = this.#channel.peer()
-    if (!peer || peer.pairId !== preview.peer.pairId || syncFingerprint(peer.identity) !== syncFingerprint(preview.peer.identity)) error('repreview-required')
+    if (!peer || peer.connectionId !== preview.peer.connectionId || syncFingerprint(peer.identity) !== syncFingerprint(preview.peer.identity)) error('repreview-required')
     this.#busy = true
     const items = []
     const failures = []
