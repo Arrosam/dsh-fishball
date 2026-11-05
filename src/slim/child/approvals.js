@@ -478,7 +478,7 @@ export function apply(ctx) {
     closed: [],            // newest-first cards the host closed without the user's answer
     questions: new Map(),  // questionId -> Fishball's own live question
     listeners: new Set(),
-    closed: false,
+    disposed: false,       // cleanup ran: no new own question is accepted
   }
   const disposers = []
   const registrations = []
@@ -499,9 +499,12 @@ export function apply(ctx) {
     }
     // A label still waiting for the user is never dropped by the audit cap: the card would vanish
     // from the chat before it is answered (APPROVALS.limits.labels bounds settled history only).
+    // The waiting flag is label state, not part of the outcome: it is set here when the label still
+    // waits for the user and cleared on settlement or closure, so the keep check below reads the
+    // one field that says whether the label is still open.
     remember(state.labels, decisionId, {
       decisionId, kind, sessionId: card?.sessionId ?? '', title: card?.title ?? '', at: Date.now(),
-      request, answer: cutChars(trimmed(answer), LIMITS.reasonChars), outcome, settled: null, ...extra,
+      request, answer: cutChars(trimmed(answer), LIMITS.reasonChars), outcome, settled: null, waiting: false, ...extra,
     }, APPROVALS.limits.labels, (label) => label.waiting === true)
     return decisionId
   }
@@ -627,7 +630,7 @@ export function apply(ctx) {
     })
     state.cards.delete(approvalId)
     const kind = decision === DECISION.grant ? LABEL.kind.grant : decision === DECISION.escalate ? LABEL.kind.escalation : decision === DECISION.ask ? LABEL.kind.question : LABEL.kind.approval
-    const decisionId = recordLabel(card, kind, reason ?? question ?? '', { decision, ...(decision === DECISION.escalate ? { waiting: true } : {}), ...(result.grantId === undefined ? {} : { grantId: result.grantId }) })
+    const decisionId = recordLabel(card, kind, reason ?? question ?? '', { decision, ...(result.grantId === undefined ? {} : { grantId: result.grantId }) }, decision === DECISION.escalate ? { waiting: true } : {})
     if (decision === DECISION.escalate) state.pending.set(approvalId, decisionId)
     publish()
     return ok({
@@ -664,7 +667,7 @@ export function apply(ctx) {
       publish()
       return ok({ questionId, answered: true })
     }
-    const decisionId = recordLabel(target, cardKind(target), note ?? '', { toUser: true, waiting: true })
+    const decisionId = recordLabel(target, cardKind(target), note ?? '', { toUser: true }, { waiting: true })
     state.pending.set(questionId, decisionId)
     publish()
     return ok({ questionId, toUser: true })
@@ -744,7 +747,7 @@ export function apply(ctx) {
    * batch, exactly as dsh-sdk-jsonrpc-server's adapter does.
    */
   const askUser = async (request, next) => {
-    if (request.agent === undefined || state.closed) return next()
+    if (request.agent === undefined || state.disposed) return next()
     const questionId = OWN_QUESTION_PREFIX + randomUUID().replace(/-/g, '')
     const questions = request.questions ?? []
     const entry = { questionId, questions, at: Date.now(), answered: false, resolve: undefined, reject: undefined }
@@ -855,8 +858,8 @@ export function apply(ctx) {
   })
 
   const cleanup = () => {
-    if (state.closed) return
-    state.closed = true
+    if (state.disposed) return
+    state.disposed = true
     for (const entry of state.questions.values()) {
       try { entry.reject(questionError(TEXT.aborted, QUESTION.aborted)) } catch { /* its caller is gone */ }
     }
