@@ -100,9 +100,16 @@ backpressure are the child app's responsibility.
   asks. The child's replacement is its own `ask_user` tool (T09, §5.2): it files a card
   in the user's pile and returns at once, so nothing waits and no card has a deadline.
 - Not restored: `present` (`@deepseek-ai/dsh-tool-present`, `standard.patch.yml:123-124`) because
-  the slim UI is self-made. Persona is not an overlay row either: `@deepseek-ai/dsh-persona` is
-  scope-only and collides when mounted globally (`dsh-persona/lib/index.js:7-11`), so Fishball's
-  persona (`src/persona.js:49-53`) needs a separate composition decision and is not restored here.
+  the slim UI is self-made. Persona is not an overlay row: `@deepseek-ai/dsh-persona` is
+  scope-only and collides when mounted globally (`dsh-persona/lib/index.js:7-11`). T07's chat
+  agent instead registers Fishball's persona (`src/persona.js`, including the "Asking the user"
+  section) in its own agent scope from its `agents.create` / `agents.resume` setup; it shadows
+  the deployment persona for that one agent, and a resumed session gets the current text. The
+  module and its one text dependency (`src/pile-note.js`) ship in the child snapshot.
+- The child profile may still carry the old native build's `ui-settings-general` Web UI row in
+  its own `cordis.patch.yml`. The launch overlay disables that exact row (a loader patch cannot
+  delete a row), so the slim child composes no `dsh-client-ui-*` row and the profile patch stays
+  byte-identical.
 - Question seam for T09: **Fishball asks the user with a card, not with a DSH question.** Its
   `ask_user` tool sends `question.ask` over the bridge; the main host files a card in the user's
   pile (`pile.file(...)`, §5.2) and returns the card id at once, so the tool call never blocks.
@@ -150,6 +157,14 @@ Design impact: the bridge keeps its own image-reference authorization instead of
 attachment RPC; every other difference above is a line shift or an unused package. All tasks target
 0.2.2-rc.1; rc.3 compatibility is verified only where the contract is unchanged and never adds
 scope.
+
+The agent-scope persona uses `systemPrompt.section` and `getSectionOrder`, the same API in
+0.2.2-rc.1 and rc.3, and `agents.resume({ setup })` exists in both, so Fishball's persona and its
+re-application on resume work on rc.3. The only known rc.3 degrade in this design remains the
+0.2.2-only trailing sidebar seat: T13a's running fish waits silently and does not render (the idle
+leading mark and T14's header button do not depend on it). Attachment authorization is the slim
+bridge's own check, so rc.3's stricter RPC does not break it; the moved profile templates and the
+new 0.2.2 UI packages are not used by the slim path.
 
 ## 3. Embedded UI
 

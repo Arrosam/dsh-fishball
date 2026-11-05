@@ -45,6 +45,7 @@ import { appendPluginRecord } from '@deepseek-ai/dsh-session'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
 import { ERROR, INBOX_KIND, LIMITS, ROUTES } from '../contract.js'
+import { applyPersona } from './persona.js'
 
 /** The child serves the contract's /api/* tails; the broker adds /fishball/embed in front (3.1). */
 const API = (tail) => ROUTES.api.slice(ROUTES.prefix.length) + tail
@@ -451,10 +452,20 @@ export function createChat(ctx, options = {}) {
     sessionId = parsed.sessionId
   }
 
-  /** Compose the Session's read-only world before publication (8.4). */
-  function configure(_agentCtx, live) {
+  /** Fishball's persona in the agent's own scope, on create and on every resume (T07). */
+  function composePersona(agentCtx) {
+    applyPersona(agentCtx.systemPrompt)
+  }
+
+  /**
+   * Compose a new Session's world before publication (8.4): read-only and approval "ask", then
+   * its persona. A resume uses composePersona only, because the persisted session already holds
+   * both policies; appending them again on every restart would grow the log.
+   */
+  function configure(agentCtx, live) {
     setSandboxMode(live.session, POLICY.sandbox)
     setApprovalPolicy(live.session, POLICY.approval)
+    composePersona(agentCtx)
   }
 
   async function createSession(agents) {
@@ -468,7 +479,7 @@ export function createChat(ctx, options = {}) {
   async function resumeSession(agents, id) {
     for (let attempt = 1; ; attempt++) {
       try {
-        return (await agents.resume({ resumeSessionId: id, agentOptions: agentOptions() })).agent
+        return (await agents.resume({ resumeSessionId: id, agentOptions: agentOptions(), setup: composePersona })).agent
       } catch (error) {
         const live = agents.get(id)
         if (live !== undefined) return live
