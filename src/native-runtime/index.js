@@ -20,6 +20,8 @@ class NativeRuntime {
     this.spawn = dependencies.spawn ?? nodeSpawn
     this.limits = runtimeLimits(options.limits)
     this.listeners = new Set()
+    // The T11 admin channel is attached once per authenticated wire, beside the control transport.
+    this.adminListeners = new Set()
     this.pending = Promise.resolve()
     this.warnings = []
     this.paths = pathsFor(options.mainHome)
@@ -29,6 +31,15 @@ class NativeRuntime {
     this.listeners.add(listener)
     if (this.control) listener(this.control.transport, this.control.metadata)
     return () => this.listeners.delete(listener)
+  }
+  /**
+   * The admin transport of the attached wire (T11). It exists only after the same mutual HMAC
+   * proof as every lifecycle request, so admin frames inherit that authentication (§5.1).
+   */
+  onAdminTransport(listener) {
+    this.adminListeners.add(listener)
+    if (this.admin && !this.admin.wire.closed) listener(this.admin.transport)
+    return () => this.adminListeners.delete(listener)
   }
   serial(action) {
     const next = this.pending.then(action, action)
@@ -158,6 +169,7 @@ class NativeRuntime {
   dropControl() {
     this.control?.wire.close()
     this.control = undefined
+    this.admin = undefined
   }
   async attach(record) {
     if (this.control && !this.control.wire.closed && this.control.metadata.instanceId === record.instanceId) return
@@ -166,8 +178,13 @@ class NativeRuntime {
     try {
       const metadata = await wire.request('control')
       const transport = wire.controlTransport()
+      // The admin channel is the same authenticated wire, so it comes up with the control
+      // transport and never adds an operation to health, readiness or stop.
+      const admin = wire.adminTransport()
       this.control = { wire, transport, metadata }
+      this.admin = { wire, transport: admin }
       for (const listener of this.listeners) listener(transport, metadata)
+      for (const listener of this.adminListeners) listener(admin)
     } catch (error) { wire.close(); throw error }
   }
   async startInternal(signal) {
