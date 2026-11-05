@@ -7,11 +7,9 @@
  * inventory actions describe presence only, and a record arrives solely in a confirmed `import`
  * frame after the main side read it for that confirmation.
  *
- * Transport: the pairing channel is useless across the lifecycle (`src/provider-sync-channel.js`
- * pairs two user-visible profiles over loopback), so the target rides the already-authenticated
- * lifecycle wire on its own payload channel, exactly like the T11 admin protocol. This module
- * owns the frame shapes, the endpoint and the child row; the wire/runtime/host wiring is a merge
- * hook (see the delivery report):
+ * Transport: the main host starts and owns this child, so the two already trust each other. The target rides
+ * the already-authenticated lifecycle wire on its own payload channel, exactly like the T11 admin
+ * protocol. This module owns the frame shapes, the endpoint and the child row; the wiring is:
  *   1. src/native-runtime/wire.js carries PROVIDER_SYNC_TARGET.channel;
  *   2. src/native-runtime/child.js publishes the child end through onProviderSyncTransport;
  *   3. src/native-runtime/index.js publishes the main end the same way;
@@ -408,8 +406,9 @@ const ROW = Object.freeze({ logger: 'fishball-native-provider-sync' })
 /**
  * Mount the target in the child. The transport arrives with each authenticated main connection
  * and is replaced after a restart; a runtime without the channel (before the merge) leaves the
- * row inert rather than failing the child boot. The engine and host adapter are the same modules
- * the pairing sync uses, so the child applies exactly the reviewed preview/confirm rules.
+ * row inert rather than failing the child boot. The engine and host adapter are the shared
+ * modules (src/provider-sync.js, src/provider-sync-host.js), so the child applies exactly the
+ * reviewed preview/confirm rules.
  */
 export async function apply(ctx) {
   if (typeof ctx.nativeRuntime?.onProviderSyncTransport !== 'function') {

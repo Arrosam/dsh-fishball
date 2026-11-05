@@ -145,6 +145,14 @@ const validPath = (path, id) => Array.isArray(path) && isDeepStrictEqual(path, p
 const present = (descriptor, id) => plain(descriptor?.value?.providers) && Object.hasOwn(descriptor.value.providers, id)
 const emptyCredential = () => ({ configured: false, writable: false })
 const checkSignal = (signal) => { if (signal?.aborted) refuse(E.cancelled) }
+/**
+ * A built-in route keyed by its API-key record alone: no settings override and an api-key sign-in
+ * method. Its key may be copied without a profile (src/provider-sync.js builtinKey).
+ */
+const builtinKeyRoute = (provider) => provider.declared === false && provider.configured === false
+  && provider.profile === null && provider.apiKeyMethod === true && provider.endpointFromEnv === false
+/** A route whose record this adapter may read (source) or create (target): a profile, or a built-in key. */
+const keyedRoute = (provider) => (provider.configured && provider.profile !== null) || builtinKeyRoute(provider)
 const activeOwner = (entry) => entry.options?.name === H.owner && entry.disabled !== true
   && entry.options?.disabled !== true && entry.fiber !== null && typeof entry.fiber === 'object'
   && entry.fiber.state === H.activeState && entry.fiber.runtime !== null && typeof entry.fiber.runtime === 'object'
@@ -229,7 +237,11 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       }
       // The directory's diagnostics are untrusted error text; only its presence is used.
       if (item.error !== undefined) reason ??= E.profile
+      // A route whose endpoint is built from environment variables may point elsewhere in the
+      // other home, so its key is never copied without a profile (src/provider-sync.js builtinKey).
+      const endpointFromEnv = Array.isArray(item.baseURLEnv) && item.baseURLEnv.length > H.minimumRevision
       providers.push({ id, settingsNs: ns, settingsPath: providerPath(id), owner: H.owner,
+        ...(text(item.displayName) ? { label: item.displayName } : {}), endpointFromEnv,
         schema: namespace?.schema ?? H.empty, ownerGeneration: namespace?.ownerGeneration ?? H.empty,
         declared: item.declared === true, configured, profile, credential, supported: reason === undefined,
         ...(reason === undefined ? {} : { reason }), apiKeyMethod })
@@ -272,7 +284,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       const state = await snapshot()
       const provider = trustedProvider(state, id)
       currentNamespace(state, provider.settingsNs, last.namespaces.get(previous.settingsNs))
-      if (!provider.configured || provider.profile === null || !provider.credential.configured || provider.credential.kind !== H.apiKey) refuse(E.credential)
+      if (!keyedRoute(provider) || !provider.credential.configured || provider.credential.kind !== H.apiKey) refuse(E.credential)
       checkSignal(signal)
       const record = await ctx.credentials.readRecord(recordKeyFor(id))
       checkSignal(signal)
@@ -317,15 +329,19 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       const provider = trustedProvider(state, id)
       const previous = added.get(id) ?? last.namespaces.get(provider.settingsNs)
       currentNamespace(state, provider.settingsNs, previous)
-      if (!provider.configured || provider.profile === null || !provider.credential.writable) refuse(E.credential)
+      if (!keyedRoute(provider) || !provider.credential.writable) refuse(E.credential)
+      // A built-in key was approved for a route with no override; one appearing since then would
+      // send the key somewhere else, so it voids the approval like a changed profile does.
+      const sameRoute = (descriptor) => approved.profile === null
+        ? !present(descriptor, id)
+        : present(descriptor, id) && isDeepStrictEqual(safeProfile(descriptor.value.providers[id], provider.declared, defaults, protocols), approved.profile)
       const checkApproved = (namespaces) => {
         if (approved === undefined) return
         const namespace = namespaces.get(provider.settingsNs)
         if (!plain(approved) || !namespace || approved.namespace !== provider.settingsNs
           || approved.schema !== namespace.schema || approved.ownerGeneration !== namespace.ownerGeneration
           || !revision(approved.revision) || approved.revision !== namespace.descriptor.revision
-          || !present(namespace.descriptor, id)
-          || !isDeepStrictEqual(safeProfile(namespace.descriptor.value.providers[id], provider.declared, defaults, protocols), approved.profile)) refuse(E.stale)
+          || !sameRoute(namespace.descriptor)) refuse(E.stale)
       }
       checkApproved(state.namespaces)
       let inserted = false
