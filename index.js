@@ -404,8 +404,10 @@ export async function apply(ctx, config) {
   const preferences = new Preferences(store, { onChange: () => publish() })
   preferencesView = () => preferences.snapshot()
   commands.setBrandStyle = (style) => preferences.setBrandStyle(style)
-  // Requests Fishball sends you, and the tags of its answers (rev11c, §7a.6, §9).
-  const pile = new Pile(() => publish())
+  // Requests Fishball sends you, and the tags of its answers (rev11c, §7a.6, §9). A card that
+  // leaves without your answer gets its closure line and the slim bridge's event from the broker
+  // (src/card-lifecycle.js); the callback runs only after the broker exists.
+  const pile = new Pile(() => publish(), (card, end) => broker.cardClosed(card, end))
   const tags = new TagRecords(store, limits, { logger, onChange: () => publish() })
   // Standing grants (rev11d, §7a.8): paused while Fishball is not live or Permission requests is off.
   grants = new Grants(store, logger, { readLimits: limits, isPaused: () => (assistantAgent() === undefined && !nativeBridgeReady) || !approvalsOn(), onChange: () => publish(), isManaged })
