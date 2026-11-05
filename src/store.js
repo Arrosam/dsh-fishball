@@ -9,7 +9,7 @@
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_END, MODEL_SELECTION } from './constants.js'
+import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, SIDEBAR_ENTRY, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_END, MODEL_SELECTION } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
 const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', grants: 'grants', ownRequests: 'own_requests', notices: 'notices', pile: 'pile' })
@@ -36,9 +36,13 @@ const unreadRecord = z.object({
   changedAt: z.string(),
 })
 
-/** Your display choices; one record, the brand icon for now. */
+/**
+ * Your display choices; one record: the brand icon and the sidebar entry. The entry is optional
+ * so a record saved before it existed still reads (and means the default, the panel row).
+ */
 const preferencesRecord = z.object({
   brandStyle: z.enum(Object.values(BRAND_STYLE)),
+  sidebarEntry: z.enum(Object.values(SIDEBAR_ENTRY)).optional(),
   changedAt: z.string(),
 })
 
