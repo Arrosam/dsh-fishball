@@ -5,6 +5,7 @@ import { LIFETIME } from './src/native-runtime/constants.js'
 import { DEFAULT_CONTROL_LIMITS } from './src/native-control/index.js'
 import { registerNativeWeb } from './src/native-web.js'
 import { registerEmbed } from './src/slim/host/embed.js'
+import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
 import { ContractError, ERROR } from './src/slim/contract.js'
 import { createBridgeHost } from './src/slim/host/bridge.js'
 import { createSessionPort } from './src/slim/host/session-port.js'
@@ -204,6 +205,8 @@ export async function apply(ctx, config) {
   })
   ctx.provide(PLUGIN.service, service)
   registerEmbed(ctx, service)
+  // T12's settings page reaches the child only through the admin relay (§9).
+  registerAdminRoutes(ctx, service)
   registerNativeWeb(ctx, service)
   cancelReady = ctx.appReady.onReady(() => { appReady = true; if (enabled && !closed) void start() })
 }
