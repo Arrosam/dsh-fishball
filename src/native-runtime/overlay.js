@@ -13,13 +13,11 @@ const ROW = Object.freeze({
   schedule: 'schedule',
   toolSchedule: 'tool-schedule',
   timeContext: 'time-context',
-  toolAskUser: 'tool-ask-user',
 })
 const PACKAGE = Object.freeze({
   schedule: '@deepseek-ai/dsh-schedule',
   toolSchedule: '@deepseek-ai/dsh-tool-schedule',
   timeContext: '@deepseek-ai/dsh-time-context',
-  toolAskUser: '@deepseek-ai/dsh-tool-ask-user',
 })
 /** Policies the slim child fixes independently of the main deployment (§2.3). */
 const POLICY = Object.freeze({ sandboxMode: 'read-only', approval: 'ask' })
@@ -73,13 +71,12 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       // Reminders were Web-bundle rows; the slim child composes them itself (§2.1, §2.3).
       { id: ROW.schedule, name: PACKAGE.schedule },
       { id: ROW.toolSchedule, name: PACKAGE.toolSchedule },
-      // The Web standard preset also supplied the current time and the question tool; base ships
-      // the user-questions service but neither row (§2.1, §2.3). Both also mount at the root of
-      // the non-web SDK app (dsh-sdk-app/cordis.patch.yml:61-68). ask_user_question raises the
-      // Agent-scoped `user-questions/request` waterfall, which the app row answers in process
-      // and streams to the slim UI (T09). present stays out: the slim UI is Fishball's own.
+      // The Web standard preset also supplied the current time; base ships the service but no
+      // row (§2.1, §2.3), and the non-web SDK app mounts the same row at its root
+      // (dsh-sdk-app/cordis.patch.yml:61-68). The preset's ask-user row stays out: Fishball asks
+      // the user through a pile card that never waits (the ask_user tool, T09), and a DSH question
+      // tool would block the call on an answer. present stays out: the slim UI is Fishball's own.
       { id: ROW.timeContext, name: PACKAGE.timeContext },
-      { id: ROW.toolAskUser, name: PACKAGE.toolAskUser },
       { id: ROW.lifecycle, name: childModule, required: true, config },
       // The app row is T03's module. required:true makes a missing or inactive app row fail the
       // boot loudly instead of leaving a child that serves nothing (§15 LIFE-02).
