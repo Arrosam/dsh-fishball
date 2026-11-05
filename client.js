@@ -212,6 +212,12 @@ window.__ModuleLoader__.load({
       turnTail: 'conversation.chat.turnTail',
       /** DSH's 16px cell before a session row's title, mounted only while the row is idle (dsh-client-ui-workspace, rc.2). */
       rowLeading: 'sidebar.session.row.leading',
+      /**
+       * DSH's resting area after a session row's time label, mounted in every state (0.2.2). While a
+       * row runs, the leading seat is replaced by DSH's spinner, so the Fishball running fish lives
+       * here. rc.3 has no such seat; slots.inject waits quietly and the fish simply does not mount.
+       */
+      rowTrailing: 'sidebar.session.row.trailing',
     })
     /**
      * Your pile (DESIGN §10e, S37): a dock entry above Fishball's composer. Its order puts it
@@ -286,11 +292,40 @@ window.__ModuleLoader__.load({
       focusMs: 5000,
     })
     /**
-     * The managed mark in a sidebar row's leading cell. cellPx copies DSH's leading cell (the
-     * seat's contract in dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the
-     * title"); the cell is not sized by its parent, so a percentage would collapse. Revisit if DSH resizes it.
+     * The managed mark in a sidebar row. cellPx copies DSH's leading cell (the seat's contract in
+     * dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the title"); the cell is not
+     * sized by its parent, so a percentage would collapse. Revisit if DSH resizes it.
+     *
+     * Idle: a still fish in the leading seat. Running: DSH replaces that seat with its own spinner,
+     * so the same fish moves to the trailing seat and animates (0.2.2's always-mounted seat). The
+     * dots sit at the mark's top-right; needs-action is checked first, so it wins when both apply.
+     * Green/yellow come from DSH's state tokens, so light and dark themes both read.
      */
-    const MANAGED_ROW = Object.freeze({ id: 'fishball-managed', iconPx: 14, cellPx: 16 })
+    const MANAGED_ROW = Object.freeze({
+      id: 'fishball-managed',
+      iconPx: 14,
+      cellPx: 16,
+      dot: Object.freeze({ sizePx: 7, topPx: -1, rightPx: -1, unread: 'unread', action: 'action' }),
+      /** The flipping fish while a row runs (design ⑥): a half-turn, a hold, then the other half. */
+      flipAnimation: 'fb-flip',
+      flipSeconds: 1.8,
+      flipOrigin: '50% 50%',
+      flip: Object.freeze([[0, 0], [45, 180], [55, 180], [100, 360]]),
+      /** Values of data-fishball-row-state, so a running mark is distinguishable from an idle one. */
+      state: Object.freeze({ idle: 'idle', running: 'running' }),
+    })
+    /**
+     * The Host state one managed row's dots read. Both are per session, never Fishball-wide:
+     * - green: an open intake row whose source identity is this session (a message_fishball from
+     *   it that Fishball has not read). The prefix is src/messaging.js SOURCE_ID.session; the open
+     *   statuses are INTAKE_STATUS pending/accepted (src/constants.js).
+     * - yellow: a card or question in state.pile whose sessionId is this session.
+     * Fishball's own chat unread count stays on the top-left brand mark, where the design keeps it.
+     */
+    const ROW_STATE = Object.freeze({
+      unreadSource: 'session/',
+      unreadStatuses: new Set(['pending', 'accepted']),
+    })
     /** The ask_fishball row (S37): DSH has no view for this tool, so this entry draws the whole row. */
     const ASK_ROW = Object.freeze({ tool: 'ask_fishball', phaseStart: 'start', phaseResult: 'result' })
     /** ask_fishball's answer codes with their own words (keep in step with src/constants.js ASK_RESULT, ASK_ERROR). */
@@ -551,7 +586,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ pile: 'fb-pile', pileDock: 'fb-pile-dock', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error' })
+    const CLS = Object.freeze({ pile: 'fb-pile', pileDock: 'fb-pile-dock', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -649,6 +684,9 @@ window.__ModuleLoader__.load({
       manageTitle: 'Managed by Fishball',
       // The banner's words. Same text as manageTitle (the refusal dialog's title) today, but a separate meaning.
       managedBanner: 'Managed by Fishball',
+      managedRowUnread: 'Managed by Fishball, unread input from this session',
+      managedRowNeedsYou: 'Managed by Fishball, needs your action',
+      managedRowRunning: 'Managed by Fishball, working',
       manageFailed: 'That did not work.',
       'manageError.unknown-session': 'This session could not be read.',
       'manageError.is-fishball': 'This is Fishball\'s own session.',
@@ -1185,6 +1223,9 @@ window.__ModuleLoader__.load({
       takeBack: '从 Fishball 收回',
       manageTitle: '由 Fishball 管理',
       managedBanner: '由 Fishball 管理',
+      managedRowUnread: '由 Fishball 管理，此会话有未读输入',
+      managedRowNeedsYou: '由 Fishball 管理，需要你处理',
+      managedRowRunning: '由 Fishball 管理，正在工作',
       manageFailed: '操作未成功。',
       'manageError.unknown-session': '无法读取此会话。',
       'manageError.is-fishball': '这是 Fishball 自己的会话。',
@@ -1636,8 +1677,11 @@ window.__ModuleLoader__.load({
       `@keyframes ${UNREAD_BADGE.popAnimation}{${UNREAD_BADGE.pop.map(([at, scale]) => `${at}%{transform:scale(${scale})}`).join('')}}`,
       `.${CLS.swim}{transform-origin:${ORCA_SWIM.origin};overflow:visible;animation:fb-swim ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
       `@keyframes fb-swim{${[...ORCA_SWIM.sway.map(([at, transform]) => [at * SWIM_SHARE, transform]), [100, 'none']].map(([at, transform]) => `${at}%{transform:${transform}}`).join('')}}`,
-      // Motion is the only thing that stops: the pill and its count stay.
-      `@media (prefers-reduced-motion:reduce){.${CLS.badge},.${CLS.wag},.${CLS.swim}{animation:none}}`,
+      // The running fish's flip (design ⑥): a half-turn to the mirror, a short hold, then back.
+      `.${CLS.flip}{transform-origin:${MANAGED_ROW.flipOrigin};animation:${MANAGED_ROW.flipAnimation} ${MANAGED_ROW.flipSeconds}s ease-in-out infinite}`,
+      `@keyframes ${MANAGED_ROW.flipAnimation}{${MANAGED_ROW.flip.map(([at, degrees]) => `${at}%{transform:rotateY(${degrees}deg)}`).join('')}}`,
+      // Motion is the only thing that stops: the pill, its count and the dots stay.
+      `@media (prefers-reduced-motion:reduce){.${CLS.badge},.${CLS.wag},.${CLS.swim},.${CLS.flip}{animation:none}}`,
       `.${MODEL.pickerClass}{display:flex;flex-wrap:wrap;gap:12px;align-items:center}`,
       `.${MODEL.pickerClass} select{flex:1;min-width:0}`,
       `.${MODEL.settingsClass} select{width:100%;font:inherit;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-3);border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);padding:8px 12px}`,
@@ -1703,7 +1747,10 @@ window.__ModuleLoader__.load({
       `.${CLS.recCategory}{display:flex;align-items:center;gap:${RECOMMENDED.categoryGapPx}px;margin:0}`,
       `.${CLS.recRow}{display:flex;align-items:center;gap:${RECOMMENDED.rowGapPx}px;padding:${RECOMMENDED.rowPaddingYPx}px 0;border-bottom:.5px solid var(--dsw-alias-border-l2)}`,
       `.${CLS.recDesc}{overflow:hidden;color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap}`,
-      `.${CLS.managedRow}{display:inline-flex;align-items:center;justify-content:center;width:${MANAGED_ROW.cellPx}px;height:${MANAGED_ROW.cellPx}px;color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.managedRow}{position:relative;display:inline-flex;align-items:center;justify-content:center;width:${MANAGED_ROW.cellPx}px;height:${MANAGED_ROW.cellPx}px;color:var(--dsw-alias-label-primary)}`,
+      // The dots' two meanings get DSH's own state tokens; yellow is checked first in the component.
+      `.${CLS.managedRowDot}{position:absolute;top:${MANAGED_ROW.dot.topPx}px;right:${MANAGED_ROW.dot.rightPx}px;box-sizing:border-box;width:${MANAGED_ROW.dot.sizePx}px;height:${MANAGED_ROW.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-success-primary);pointer-events:none}`,
+      `.${CLS.managedRowDot}[data-fishball-dot="${MANAGED_ROW.dot.action}"]{background:var(--dsw-alias-state-warn-primary)}`,
       // The plugin manager copies DSH's own Plugins-page rules (dsh-client-ui-plugin-manager
       // PluginManagerPage.module.css, rc.2) with DSH's theme variables, so the Fishball tab reads
       // as DSH's Installed tab and plugin page (DESIGN §10d "Look"). If DSH restyles its page,
@@ -1887,13 +1934,31 @@ window.__ModuleLoader__.load({
 
     /** Unread replies from the Host snapshot: a whole number, 0 until the first frame arrives. */
     const unreadCount = (state) => state.unread?.count ?? 0
+    /** The unread count in words, capped so the pill stays narrow. */
+    const unreadText = (t, count) => count > UNREAD_BADGE.max ? t('unreadMany', { max: UNREAD_BADGE.max }) : String(count)
+    /**
+     * Whether this row's session has a card or question waiting for you: the Host's one pile,
+     * filtered by the card's own sessionId. A card from Fishball's own session has no managed row,
+     * so it lights no dot; the mark never borrows another session's card.
+     */
+    const needsAction = (state, sessionId) => (Array.isArray(state.pile) ? state.pile : []).some((card) => card?.sessionId === sessionId)
+    /**
+     * Whether Fishball has unread input from this row's session: an open intake row whose source
+     * identity is this session. The snapshot lists at most intakeRowsShown items, so a very old
+     * open item may be missing from the dot; the dot is a hint, not a queue count.
+     */
+    const unreadInput = (state, sessionId) => (Array.isArray(state.intake?.items) ? state.intake.items : []).some((item) => item?.sourceIdentity === ROW_STATE.unreadSource + sessionId && ROW_STATE.unreadStatuses.has(item.status))
 
     /** Which brand icon you chose; Fishball's own until the Host says otherwise. */
     const brandStyleOf = (state) => state.preferences?.brandStyle ?? BRAND_STYLE.fishball
 
-    /** Fishball's fish: wags while anything is unread. */
-    function FishballIcon({ size, unread }) {
-      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: unread ? `${CLS.mark} ${CLS.wag}` : CLS.mark, 'aria-hidden': true, 'data-fishball-mark': true },
+    /**
+     * Fishball's fish: wags while anything is unread; flips while a row runs (the managed mark's
+     * running variant). A moving mark never wags, so the running state has one animation.
+     */
+    function FishballIcon({ size, unread, moving }) {
+      const animation = moving ? CLS.flip : unread ? CLS.wag : null
+      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: [CLS.mark, animation].filter(Boolean).join(' '), 'aria-hidden': true, 'data-fishball-mark': true },
         h('path', { d: FISH_MARK.body, fill: FISH_MARK.bodyColor }),
         h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }))
     }
@@ -1914,12 +1979,16 @@ window.__ModuleLoader__.load({
       repeatCount: 'indefinite',
     })
 
-    /** DSH's orca: the stock mark, swimming while anything is unread. */
-    function OrcaIcon({ size, unread }) {
-      const swims = unread && window.matchMedia(MOTION_QUERY).matches
+    /**
+     * DSH's orca: the stock mark, swimming while anything is unread or a managed row runs. The
+     * running variant reuses the same 0.2.2 swim; reduced motion leaves the mark still.
+     */
+    function OrcaIcon({ size, unread, moving }) {
+      const animates = unread || moving
+      const swims = animates && window.matchMedia(MOTION_QUERY).matches
       return h('svg', {
         width: size, height: size * FISH_LOGO_VIEWBOX.height / FISH_LOGO_VIEWBOX.width, viewBox: `0 0 ${FISH_LOGO_VIEWBOX.width} ${FISH_LOGO_VIEWBOX.height}`,
-        fill: 'none', className: unread ? CLS.swim : undefined, 'aria-hidden': true, 'data-fishball-orca': true,
+        fill: 'none', className: animates ? CLS.swim : undefined, 'aria-hidden': true, 'data-fishball-orca': true,
       }, h('path', { d: FISH_LOGO_PATH, fill: 'currentColor' }, swims ? swimAnimation() : null))
     }
 
@@ -1934,7 +2003,7 @@ window.__ModuleLoader__.load({
         const Icon = brandIconOf(state)
         return h('span', { className: CLS.markBox, 'data-fishball-unread': count },
           h(Icon, { size, unread: count > 0 }),
-          count > 0 ? h('span', { className: CLS.badge, 'data-fishball-badge': true }, count > UNREAD_BADGE.max ? t('unreadMany', { max: UNREAD_BADGE.max }) : String(count)) : null)
+          count > 0 ? h('span', { className: CLS.badge, 'data-fishball-badge': true }, unreadText(t, count)) : null)
       }
     }
 
@@ -3235,18 +3304,67 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The managed mark in a sidebar row (DESIGN §10e item 30). DSH mounts this seat only while the
-     * row is idle; its own light shows otherwise. The seat gives only the row's sessionId, so the
-     * managed list comes from the state stream every Fishball entry shares.
+     * One managed row's mark, shared by the idle leading seat and the running trailing seat: the
+     * Sidebar icon setting's fish, a green dot when this session has unread input for Fishball, or
+     * a yellow dot when this session has a card or question waiting. Both dots are per row; yellow
+     * wins when both apply. The fish is still while idle and moves while the row runs; the dots and
+     * the accessible label carry the state, so reduced motion loses no information.
+     */
+    function ManagedMark({ state, sessionId, t, running }) {
+      const needsYou = needsAction(state, sessionId)
+      const hasUnread = unreadInput(state, sessionId)
+      const dot = needsYou ? MANAGED_ROW.dot.action : hasUnread ? MANAGED_ROW.dot.unread : null
+      const label = needsYou
+        ? t('managedRowNeedsYou')
+        : hasUnread
+          ? t('managedRowUnread')
+          : running ? t('managedRowRunning') : t('managedBanner')
+      const Icon = brandIconOf(state)
+      return h('span', {
+        className: CLS.managedRow, role: 'img', 'aria-label': label, title: label,
+        'data-fishball-managed-row': sessionId,
+        'data-fishball-row-state': running ? MANAGED_ROW.state.running : MANAGED_ROW.state.idle,
+      },
+        h(Icon, { size: MANAGED_ROW.iconPx, unread: false, moving: running }),
+        dot === null ? null : h('span', { className: CLS.managedRowDot, 'data-fishball-dot': dot, 'aria-hidden': true }))
+    }
+
+    /**
+     * The idle mark in a DSH session row's leading cell (DESIGN §10e item 30). DSH mounts this
+     * seat only while the row is idle; its own spinner takes the cell otherwise, so the running
+     * variant below uses the trailing seat. The seat gives only the row's sessionId, so the managed
+     * list comes from the state stream every Fishball entry shares.
      */
     function makeManagedRowMark(t) {
       return function FishballManagedRowMark({ sessionId }) {
         const state = useFishball()
         if (!showsManagedMarks(state, sessionId)) return null
-        const Icon = brandIconOf(state)
-        return h('span', { className: CLS.managedRow, role: 'img', 'aria-label': t('managedBanner'), 'data-fishball-managed-row': sessionId },
-          h(Icon, { size: MANAGED_ROW.iconPx, unread: false }))
+        return h(ManagedMark, { state, sessionId, t, running: false })
       }
+    }
+
+    /**
+     * The running mark in a DSH session row's trailing seat (0.2.2's always-mounted seat). DSH's
+     * own spinner stays in the leading cell; only the Fishball fish moves here, and only while this
+     * row runs. An idle row renders nothing here, so it never shows two fish. rc.3 has no trailing
+     * seat: slots.inject waits for the declaration and this entry never mounts (no error).
+     */
+    function makeManagedRowRunningMark(t) {
+      return function FishballManagedRowRunningMark({ sessionId, useSessionStatus }) {
+        const state = useFishball()
+        if (!showsManagedMarks(state, sessionId)) return null
+        // A child owns the hook, so an unmanaged row never subscribes to DSH's status source.
+        return h(ManagedRowRunningMark, { state, sessionId, t, useSessionStatus })
+      }
+    }
+
+    /** The running half of the trailing entry: hooks are unconditional, the null return is not. */
+    function ManagedRowRunningMark({ state, sessionId, t, useSessionStatus }) {
+      // The seat is always mounted, so the row's running state comes from DSH's global status
+      // source; a selector keeps this mark from re-rendering on every other row's status change.
+      const running = useSessionStatus((statuses) => statuses.get(sessionId)?.running === true)
+      if (!running) return null
+      return h(ManagedMark, { state, sessionId, t, running: true })
     }
 
     /** The watches section (DESIGN §10): each watch with who set it up, and Remove. */
@@ -4686,6 +4804,8 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: WELCOME.id, order: WELCOME.order, locale: NS }, makeWelcome(ctx, t))), 'fishball: welcome card')
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: MANAGED_BANNER.id, order: MANAGED_BANNER.order, locale: NS }, makeManagedBanner(t))), 'fishball: managed banner')
       ctx.effect(() => ctx.slots.inject(SLOT.rowLeading, () => ctx.slots.register({ name: SLOT.rowLeading, id: MANAGED_ROW.id, locale: NS }, makeManagedRowMark(t))), 'fishball: managed row mark')
+      // 0.2.2 keeps a row's trailing seat mounted while it runs; rc.3 has no such seat and this waits.
+      ctx.effect(() => ctx.slots.inject(SLOT.rowTrailing, () => ctx.slots.register({ name: SLOT.rowTrailing, id: MANAGED_ROW.id, locale: NS }, makeManagedRowRunningMark(t))), 'fishball: managed row running mark')
       ctx.effect(() => ctx.slots.inject(SLOT.toolview, () => ctx.slots.register({ name: SLOT.toolview, key: ASK_ROW.tool, locale: NS }, makeAskRow(t))), 'fishball: ask_fishball row')
       ctx.effect(() => ctx.slots.inject(SLOT.turnTail, () => ctx.slots.register({ name: SLOT.turnTail, id: TURN_TAGS.id, locale: NS }, makeTurnTags(t))), 'fishball: turn tags')
       // The plugin manager (DESIGN §10d): the Fishball tab, and a tag and a switch on DSH's page for each plugin.

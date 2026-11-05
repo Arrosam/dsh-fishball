@@ -183,6 +183,39 @@ button, select, textarea { font: inherit; }
 /* The composer is fixed to Read Only (D8): a label, not a permission control. */
 .chat-state { margin: 0; padding: 4px 2px; font-size: 12px; color: var(--muted); }
 .chat-state[data-state="running"] { color: var(--ok); }
+
+/* The loading mark under the conversation (Q5): a hollow ring, the fish turning underneath it.
+   It is decoration; the chat-state line above carries the words and the live announcement. */
+.chat-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 0 6px;
+}
+.chat-loader[hidden] { display: none; }
+.chat-loader-ring {
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top-color: var(--accent);
+  border-right-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 50%;
+  animation: fb-loader-ring 1.1s linear infinite;
+}
+.chat-loader-fish {
+  width: 14px;
+  height: 14px;
+  animation: fb-loader-fish 1.4s linear infinite;
+}
+.chat-loader-fish svg { display: block; width: 100%; height: 100%; }
+.chat-loader-fish .fish-body { fill: currentColor; }
+.chat-loader-fish .fish-eye { fill: var(--accent); }
+@keyframes fb-loader-ring { to { transform: rotate(360deg); } }
+@keyframes fb-loader-fish { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .chat-loader-ring, .chat-loader-fish { animation: none; }
+}
 .composer {
   display: flex;
   flex-wrap: wrap;
