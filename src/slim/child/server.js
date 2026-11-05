@@ -535,7 +535,13 @@ export function createAppServer(options) {
     closed = true
     for (const stop of [...streams]) stop()
     if (!listening) return
-    await new Promise((resolve) => server.close(resolve))
+    await new Promise((resolve) => {
+      server.close(resolve)
+      // SSE streams have ended above, but keep-alive sockets and an active proxied request still
+      // hold server.close open until the client or the lifecycle stop window releases them.
+      server.closeIdleConnections()
+      server.closeAllConnections()
+    })
   }
 
   return Object.freeze({
