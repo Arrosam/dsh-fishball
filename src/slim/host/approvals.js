@@ -37,6 +37,7 @@ import {
   PLAN_REVIEW, SETTLED_BY, ContractError,
 } from '../contract.js'
 import { cutToBytes } from '../../text.js'
+import { diagnosticOf } from '../../errors.js'
 import { BridgeRefusal, ensureManaged } from './bridge.js'
 import { SESSION_STATE } from './session-port.js'
 import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
@@ -59,13 +60,15 @@ const SETTLED_BY_LIST = Object.freeze(Object.values(SETTLED_BY))
 const ELLIPSIS = '…'
 /** The provider's event names (src/approvals.js, src/questions.js); the relay maps each to a §5.2 event. */
 const RELAY_EVENT = Object.freeze({ offered: 'offered', escalated: 'escalated', settled: 'settled' })
+/** Log row for a provider event the relay could not carry. */
+const LOG = 'fishball-approval-relay'
 
 /**
  * Create the host's approval relay. One relay per native host row; `attach(host)` adds its seven
  * handlers before the transport attaches, so the welcome advertises them.
  *
  * @param {object} options
- * @param {object} options.ctx - the native host's Cordis context (only `get` is used).
+ * @param {object} options.ctx - the native host's Cordis context (only `get` and `logger` are used).
  * @param {object} options.sessions - the SessionService port (src/slim/host/session-port.js).
  * @param {() => number} [options.now] - clock for offer expiry and inbox times.
  */
@@ -77,12 +80,13 @@ export function createApprovalRelay(options) {
     if (typeof sessions[method] !== 'function') throw new TypeError('fishball approvals: the session port must implement ' + method)
   }
   if (typeof now !== 'function') throw new TypeError('fishball approvals: now must be a function')
-  return new ApprovalRelay({ ctx, sessions, now })
+  const logger = typeof ctx.logger === 'function' ? ctx.logger(LOG) : undefined
+  return new ApprovalRelay({ ctx, sessions, now, logger })
 }
 
 /** The relay: registrations, per-connection offers and the main-to-child events. */
 class ApprovalRelay {
-  constructor({ ctx, sessions, now }) {
+  constructor({ ctx, sessions, now, logger }) {
     this.ctx = ctx
     this.sessions = sessions
     this.now = now
@@ -92,7 +96,10 @@ class ApprovalRelay {
     this.disposers = []
     this.observed = undefined
     this.unsubscribe = undefined
-    this.closed = false
+    // The lifecycle flag must not be named `closed`: the closed(event) method publishes a card's
+    // closure, and a field of that name shadows it (a TypeError the notify catch then hid).
+    this.disposed = false
+    this.logger = logger
   }
 
   /**
@@ -101,7 +108,7 @@ class ApprovalRelay {
    * @param {object} host - a createBridgeHost() instance.
    */
   attach(host) {
-    if (this.closed) throw new ContractError(ERROR.disconnected)
+    if (this.disposed) throw new ContractError(ERROR.disconnected)
     if (this.attached.has(host)) return
     if (typeof host?.register !== 'function' || typeof host?.onConnection !== 'function') {
       throw new TypeError('fishball approvals: the bridge host must implement register and onConnection')
@@ -115,8 +122,8 @@ class ApprovalRelay {
 
   /** Stop observing and make every later operation answer feature-off. */
   close() {
-    if (this.closed) return
-    this.closed = true
+    if (this.disposed) return
+    this.disposed = true
     try { this.observed?.bridgeReady?.(false) } catch { /* the row is already gone */ }
     this.unsubscribe?.()
     this.unsubscribe = undefined
@@ -147,7 +154,7 @@ class ApprovalRelay {
 
   /** A ready channel is a new offer generation; a closed one means the child can no longer answer. */
   connection(ready) {
-    if (this.closed) return
+    if (this.disposed) return
     try {
       this.state().bridgeReady(ready === true)
       this.observe()
@@ -236,13 +243,17 @@ class ApprovalRelay {
 
   /** Provider events: a card, a move to the user, or a settlement. */
   notify(event) {
-    if (this.closed || event === null || typeof event !== 'object') return
+    if (this.disposed || event === null || typeof event !== 'object') return
     try {
       if (event.type === RELAY_EVENT.offered && event.descriptor !== undefined) this.offer(event.descriptor, event.sessionId)
       else if (event.type === RELAY_EVENT.escalated) this.settle({ ...event, decision: DECISION.escalate, by: SETTLED_BY.fishball })
       else if (event.type === RELAY_EVENT.settled) this.settle(event)
       else if (event.type === CARD_CLOSED.event) this.closed(event)
-    } catch { /* a closed channel or an unrepresentable card is not the decision's failure */ }
+    } catch (error) {
+      // A closed channel or an unrepresentable card is not the decision's failure, so the event
+      // is dropped. Log the diagnostic: a silent swallow once hid a field shadowing closed().
+      this.logger?.warn('relay event %s failed (%s)', event.type, diagnosticOf(error))
+    }
   }
 
   /**

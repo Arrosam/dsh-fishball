@@ -29,8 +29,9 @@ export class Pile {
 
   /**
    * @param onChange - called after each card is filed or leaves (the state feed publishes).
-   * @param onClose - optional, called with (card, result) once per card that leaves; the owners
-   *   announce a closure without your answer and pass the end to the slim bridge.
+   * @param onClose - optional, called with (card, end) once per card that leaves, where end is the
+   *   CARD_END of the result that settled it; the owners announce a closure without your answer and
+   *   pass that end to the slim bridge.
    */
   constructor(onChange, onClose) {
     this.#onChange = onChange
@@ -68,7 +69,7 @@ export class Pile {
     if (entry === undefined) return false
     this.#cards.delete(requestId)
     entry.settle(result)
-    this.#onClose?.(entry.card, result)
+    this.#onClose?.(entry.card, result.end)
     this.#onChange()
     return true
   }
