@@ -48,6 +48,7 @@ import { registerProviderSync } from './src/provider-sync-service.js'
 import { IntakeError, IntakeLedger } from './src/intake.js'
 import { MESSAGING_TOOL, registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
 import { MANAGED_TOOL, ManagedError, ManagedRegistry } from './src/managed.js'
+import { SESSION_STATE } from './src/slim/host/session-port.js'
 import { SessionTitles } from './src/session-titles.js'
 import { uncheckedToolsNotifier } from './src/unchecked-notice.js'
 import { WATCH_TOOL, Watches, WatchError } from './src/watches.js'
@@ -324,6 +325,21 @@ export async function apply(ctx, config) {
   })
   managedRegistry.registerTools((definition) => composition.registerOwnTool(definition))
   followManaged()
+  // The slim host's session bridge adapts these registries instead of duplicating them (slim
+  // §5.2): it gets the managed set, the watch registry and Fishball's own id from one service,
+  // while its other operations use the same DSH services these tools use. Provided as an effect,
+  // so turning the row off removes it and the bridge answers feature-off.
+  ctx.effect(() => ctx.provide(SESSION_STATE.service, Object.freeze({
+    assistantId,
+    managedIds: () => managedRegistry.snapshot().map((entry) => entry.sessionId),
+    isManaged: (sessionId) => managedRegistry.isManaged(sessionId),
+    isFishball: (sessionId) => sessionId === assistantId(),
+    manage: (sessionId, by) => managedRegistry.manage(sessionId, by),
+    release: (sessionId, reason) => managedRegistry.release(sessionId, reason),
+    watch: (input) => watches.add({ ...input, by: { kind: WATCH_BY.assistant } }),
+    watches: () => watches.snapshot().watches,
+    unwatch: (watchId) => watches.remove(watchId),
+  })), 'fishball: native session state')
   managedView = () => managedRegistry.snapshot().map((entry) => ({ ...entry, title: sessionTitles.get(entry.sessionId) }))
   managedToolNames = () => managedTools().map((tool) => tool.name)
   /** Sessions related to Fishball (read_session, DESIGN §5c): watched, messaged it, messaged or started by it, or forwarded by you. */

@@ -7,13 +7,16 @@
  * instance's bearer before it looks at a path or a method.
  *
  * The full chat UI and its API arrive in later tasks. This module owns the shell document, the
- * /ui/* static files, the liveness API and the SSE stream with the contract's heartbeat; a path
- * beyond them is a bodyless 404, so an unknown route can never serve bytes.
+ * /ui/* static files, the liveness API, the reminder API (T10) and the SSE stream with the
+ * contract's heartbeat; a path beyond them is a bodyless 404, so an unknown route can never
+ * serve bytes. The reminder module owns its validation and typed refusals; this hook only moves
+ * the request's method, query and bounded JSON body into it and its status and body back out.
  */
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { BEARER, LIMITS, ROUTES } from '../contract.js'
+import { BEARER, ERROR, LIMITS, ROUTES } from '../contract.js'
+import { REMINDERS } from './reminders.js'
 
 /**
  * The child owns the contract routes without the broker prefix: §3.1 names the child's paths
@@ -26,19 +29,24 @@ const PATHS = Object.freeze({
   ui: childPath(ROUTES.ui),
   events: childPath(ROUTES.events),
   health: childPath(ROUTES.api) + 'health',
+  // REMINDERS.path is already the child's unprefixed tail (/api/reminders); the broker adds
+  // /fishball/embed in front of it (§3.1, T10).
+  reminders: REMINDERS.path,
 })
 
 /** Loopback only; port 0 lets the OS choose, and the parent learns the port from the service. */
 const BIND = Object.freeze({ host: '127.0.0.1', port: 0, minPort: 1, maxHeaderBytes: 16 * 1024 })
 
-const METHOD = Object.freeze({ get: 'GET', head: 'HEAD' })
+const METHOD = Object.freeze({ get: 'GET', head: 'HEAD', post: 'POST' })
 
 /** The statuses this server answers; 401 is the contract's bearer refusal (§3.2). */
 const HTTP = Object.freeze({
   ok: 200,
+  badRequest: 400,
   unauthorized: BEARER.unauthorizedStatus,
   notFound: 404,
   methodNotAllowed: 405,
+  payloadTooLarge: 413,
   serverError: 500,
 })
 
@@ -77,6 +85,32 @@ const SSE = Object.freeze({
   heartbeat: ': heartbeat\n\n',
 })
 
+/**
+ * One reminder change frame. The data is REMINDERS.change, never a diff: the view re-reads its
+ * list on the event (src/slim/ui/reminders.js), so the payload can only ever say "something
+ * changed" and cannot drift from what the child actually stored.
+ */
+const REMINDER_FRAME = 'event: ' + REMINDERS.event + '\ndata: ' + JSON.stringify(REMINDERS.change) + '\n\n'
+
+/**
+ * The reminder route's own body refusals. The parsed body is handed to the reminder API, but a
+ * body that never parsed or was over the contract bound has no reminder code of its own; these
+ * two carry the API's 400 vocabulary (src/slim/child/reminders.js) and the contract's too-large.
+ */
+const BODY = Object.freeze({
+  invalid: Object.freeze({ code: 'invalid-input', message: 'The request body must be JSON.' }),
+  tooLarge: Object.freeze({ code: ERROR.tooLarge, message: 'The request body is too large.' }),
+})
+
+/** A body read that failed before the reminder API saw anything; status and JSON body. */
+class BodyError extends Error {
+  constructor(status, body) {
+    super(body.code)
+    this.status = status
+    this.body = body
+  }
+}
+
 /** The liveness answer the parent's readiness probe and the shell may read (§2.3). */
 const HEALTH = Buffer.from(JSON.stringify({ ok: true }), 'utf8')
 
@@ -114,6 +148,62 @@ function notFound(res) { send(res, HTTP.notFound) }
 
 function methodNotAllowed(res, allowed) {
   send(res, HTTP.methodNotAllowed, { allow: allowed.join(', ') })
+}
+
+/** Send one reminder answer as JSON; HEAD carries the same status and no body. */
+function sendAnswer(res, answer, head) {
+  const status = Number.isSafeInteger(answer?.status) ? answer.status : HTTP.serverError
+  if (head) { send(res, status, { 'content-type': TYPE.json }); return }
+  const body = answer?.body === undefined ? '' : JSON.stringify(answer.body)
+  send(res, status, { 'content-type': TYPE.json }, body)
+}
+
+/**
+ * Read one JSON request body up to the contract's bound. Bytes past the bound are drained and
+ * then refused, so the client always receives its 413 instead of a destroyed connection; the
+ * caller parses only what fit.
+ */
+function readBody(req, limit) {
+  return new Promise((resolve, reject) => {
+    let bytes = 0
+    let overflow = false
+    const chunks = []
+    req.on('data', (chunk) => {
+      bytes += chunk.length
+      if (bytes <= limit) { chunks.push(chunk); return }
+      // Stop buffering but keep reading: the response needs the request to reach 'end'.
+      overflow = true
+      chunks.length = 0
+    })
+    req.on('end', () => {
+      if (overflow) { reject(new BodyError(HTTP.payloadTooLarge, BODY.tooLarge)); return }
+      resolve(Buffer.concat(chunks))
+    })
+    req.on('error', reject)
+  })
+}
+
+/**
+ * The reminders hook (T10): GET and HEAD list, POST reads one body and mutates. The reminder
+ * module owns validation, bounds and typed refusals; this hook only carries status and body.
+ */
+async function serveReminders(req, res, reminders) {
+  if (req.method === METHOD.post) {
+    let body
+    try {
+      body = JSON.parse(await readBody(req, LIMITS.embedJsonBodyBytes))
+    } catch (error) {
+      // A body refusal is 413/400; a read failure is the handler failure the outer catch answers.
+      if (error instanceof BodyError) { sendAnswer(res, error, false); return }
+      if (!(error instanceof SyntaxError)) throw error
+      sendAnswer(res, { status: HTTP.badRequest, body: BODY.invalid }, false)
+      return
+    }
+    sendAnswer(res, await reminders.handle({ method: req.method, body }), false)
+    return
+  }
+  const url = new URL(req.url, BASE_ORIGIN)
+  sendAnswer(res, await reminders.handle({ method: req.method, query: url.searchParams }), req.method === METHOD.head)
 }
 
 /**
@@ -161,7 +251,7 @@ async function uiRoute(uiDir, pathname) {
   }
   return {
     allow: ALLOW.readable,
-    serve: (res) => send(res, HTTP.ok, { 'content-type': type }, body),
+    serve: (_req, res) => send(res, HTTP.ok, { 'content-type': type }, body),
   }
 }
 
@@ -170,7 +260,7 @@ async function uiRoute(uiDir, pathname) {
  * heartbeat keeps a 30 s idle broker from closing it (§3.6). Closing the response, the client
  * dropping, or the server disposing all run the same cleanup exactly once.
  */
-function serveEvents(res, heartbeatMs, streams) {
+function serveEvents(res, heartbeatMs, streams, reminders) {
   res.writeHead(HTTP.ok, {
     ...SECURITY,
     'content-type': TYPE.eventStream,
@@ -180,10 +270,14 @@ function serveEvents(res, heartbeatMs, streams) {
   res.flushHeaders()
   let timer
   let closed = false
+  let unsubscribe = () => {}
   const close = () => {
     if (closed) return
     closed = true
     clearInterval(timer)
+    // The reminder subscription belongs to this stream only: a closed stream must not keep
+    // re-reading a list it can no longer send.
+    unsubscribe()
     streams.delete(close)
     try { res.end() } catch { /* the client already closed the response */ }
   }
@@ -191,6 +285,7 @@ function serveEvents(res, heartbeatMs, streams) {
     if (closed) return
     try { res.write(frame) } catch { close() }
   }
+  unsubscribe = reminders.subscribe(() => write(REMINDER_FRAME))
   streams.add(close)
   res.on('close', close)
   res.on('error', close)
@@ -208,20 +303,27 @@ async function resolveRoute(pathname, options) {
   if (pathname === PATHS.document) {
     return {
       allow: ALLOW.readable,
-      serve: (res) => send(res, HTTP.ok, { 'content-type': TYPE.html }, options.document),
+      serve: (_req, res) => send(res, HTTP.ok, { 'content-type': TYPE.html }, options.document),
     }
   }
   if (pathname.startsWith(PATHS.ui)) return uiRoute(options.uiDir, pathname)
   if (pathname === PATHS.events) {
     return {
       allow: ALLOW.events,
-      serve: (res) => serveEvents(res, options.heartbeatMs, options.streams),
+      serve: (_req, res) => serveEvents(res, options.heartbeatMs, options.streams, options.reminders),
     }
   }
   if (pathname === PATHS.health) {
     return {
       allow: ALLOW.readable,
-      serve: (res) => send(res, HTTP.ok, { 'content-type': TYPE.json }, HEALTH),
+      serve: (_req, res) => send(res, HTTP.ok, { 'content-type': TYPE.json }, HEALTH),
+    }
+  }
+  if (pathname === PATHS.reminders) {
+    // The reminder module's own method list: GET and HEAD list, POST mutates (T10).
+    return {
+      allow: REMINDERS.methods,
+      serve: (req, res) => serveReminders(req, res, options.reminders),
     }
   }
   return undefined
@@ -240,7 +342,7 @@ async function handle(req, res, options) {
     const route = pathname === undefined ? undefined : await resolveRoute(pathname, options)
     if (route === undefined) { notFound(res); return }
     if (!route.allow.includes(req.method)) { methodNotAllowed(res, route.allow); return }
-    route.serve(res)
+    await route.serve(req, res)
   } catch { fail(res) }
 }
 
@@ -252,18 +354,23 @@ async function handle(req, res, options) {
  * @param {string} options.uiDir - absolute directory served under /ui/.
  * @param {Buffer} options.document - the shell document served at /.
  * @param {number} [options.heartbeatMs] - SSE heartbeat interval; defaults to the contract limit.
+ * @param {{ handle: Function, subscribe: Function }} options.reminders - the reminder surface
+ *   from src/slim/child/reminders.js (T10): /api/reminders and the SSE change event.
  * @returns {{ readonly origin: string | undefined, start: () => Promise<string>, close: () => Promise<void> }}
  *   origin is undefined until start() resolves; start() binds 127.0.0.1:0 and returns the origin.
  */
 export function createAppServer(options) {
-  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs } = options ?? {}
+  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs, reminders } = options ?? {}
   if (!authority || typeof authority.accepts !== 'function') throw new TypeError('fishball-native-app: a bearer authority is required')
   if (typeof uiDir !== 'string' || !path.isAbsolute(uiDir)) throw new TypeError('fishball-native-app: an absolute UI directory is required')
   if (!Buffer.isBuffer(document)) throw new TypeError('fishball-native-app: the shell document must be a Buffer')
   if (!Number.isSafeInteger(heartbeatMs) || heartbeatMs <= 0) throw new TypeError('fishball-native-app: the heartbeat must be a positive whole number of milliseconds')
+  if (!reminders || typeof reminders.handle !== 'function' || typeof reminders.subscribe !== 'function') {
+    throw new TypeError('fishball-native-app: the reminders surface is required')
+  }
 
   const streams = new Set()
-  const settings = { authority, uiDir, document, heartbeatMs, streams }
+  const settings = { authority, uiDir, document, heartbeatMs, streams, reminders }
   let origin
   let listening = false
   let closed = false
