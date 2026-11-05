@@ -513,11 +513,11 @@ export const CARD_END = Object.freeze({
   inSession: 'in-session', restarted: 'restarted',
 })
 /**
- * Which pile a stored card belongs to (T08, src/pile.js): the two piles a plugin instance runs,
- * the broker's (approval and own cards) and the question router's. A card restored into a pile
- * carries its scope, so the two cannot read each other's cards.
+ * Which pile a stored card belongs to (T08, src/pile.js): the three piles a plugin instance runs,
+ * the broker's approval cards, the question router's and Fishball's own questions' (T09). A card
+ * restored into a pile carries its scope, so no pile reads another's cards.
  */
-export const PILE_SCOPE = Object.freeze({ approvals: 'approvals', questions: 'questions' })
+export const PILE_SCOPE = Object.freeze({ approvals: 'approvals', questions: 'questions', ownQuestions: 'own-questions' })
 /**
  * Prompts already showing (DESIGN §7a.9, rev11e): the broker's pass-through registry, listed by
  * list_frozen_sessions and answered by answer_prompt (allow or reject only, §7a.9).

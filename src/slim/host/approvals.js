@@ -30,6 +30,11 @@
  * the child turns it into a timeline event (§8.1). A card the main row closed without the user's
  * answer travels the same way with the CARD_CLOSED marker, so the child's chat shows
  * "closed: <reason>" instead of the card vanishing. Times are epoch ms.
+ *
+ * Fishball's own question (T09's `ask_user`) is the same machinery in the other direction:
+ * `question.ask` files a card in the user's pile and answers with its id at once, so the child
+ * never waits, and `question.answerOwn` settles that same card when the user answers on the
+ * child's own copy of it. Either answer comes back through the QUESTION_ANSWER item above.
  */
 import { randomUUID } from 'node:crypto'
 import {
@@ -40,18 +45,20 @@ import { cutToBytes } from '../../text.js'
 import { diagnosticOf } from '../../errors.js'
 import { BridgeRefusal, ensureManaged } from './bridge.js'
 import { SESSION_STATE } from './session-port.js'
-import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
+import { CARD_CLOSED, OWN_ANSWER, QUESTION_ANSWER } from '../inbox-markers.js'
 
 /** The §5.2 operations this task registers; they enter the handshake's capability list. */
 export const APPROVAL_OPERATIONS = Object.freeze([
   OPERATION.approvalList, OPERATION.approvalAnswer, OPERATION.questionAnswer,
+  OPERATION.questionAsk, OPERATION.questionAnswerOwn,
   OPERATION.promptList, OPERATION.promptAnswer, OPERATION.grantList, OPERATION.grantRevoke,
 ])
 
 /** The methods the main Fishball row's state provider must carry (index.js). */
 const STATE_METHODS = Object.freeze([
   'bridgeReady', 'liveApprovals', 'answerApproval', 'liveQuestions', 'answerQuestion',
-  'questionSession', 'listPrompts', 'answerPrompt', 'listGrants', 'revokeGrant', 'subscribe',
+  'questionSession', 'askQuestion', 'answerOwnQuestion',
+  'listPrompts', 'answerPrompt', 'listGrants', 'revokeGrant', 'subscribe',
 ])
 const SERVICE_METHODS = Object.freeze(['enabled', 'managedIds', 'isManaged', 'isFishball', 'describe'])
 const ARGUMENTS_STATUS_LIST = Object.freeze(Object.values(ARGUMENTS_STATUS))
@@ -72,7 +79,7 @@ const QUEUED_INBOX = Object.freeze({ max: 64 })
 const LOG = 'fishball-approval-relay'
 
 /**
- * Create the host's approval relay. One relay per native host row; `attach(host)` adds its seven
+ * Create the host's approval relay. One relay per native host row; `attach(host)` adds its nine
  * handlers before the transport attaches, so the welcome advertises them.
  *
  * @param {object} options
@@ -113,7 +120,7 @@ class ApprovalRelay {
   }
 
   /**
-   * Add the seven handlers and the connection edge. A provider that is not up yet leaves every
+   * Add the nine handlers and the connection edge. A provider that is not up yet leaves every
    * handler answering feature-off; the edge retries the subscription when it appears.
    * @param {object} host - a createBridgeHost() instance.
    */
@@ -298,7 +305,24 @@ class ApprovalRelay {
     try { this.host?.publish(EVENT.approvalRan, event.sessionId, payload) } catch { /* closed */ }
   }
 
-  /** Provider events: a card, a move to the user, a settlement, or a call that ran on an approval. */
+  /**
+   * Fishball's own question card was answered (the main row's own questions, src/own-questions.js):
+   * the words travel as the same answer item a question Fishball sent to the user uses, because
+   * the child shows one answer row whichever card the user answered (§5.2, T09).
+   */
+  answered(event) {
+    if (typeof event.questionId !== 'string' || event.questionId === '') return
+    const words = typeof event.words === 'string' && event.words.length > 0 ? event.words : QUESTION_ANSWER.fallback
+    const item = {
+      messageId: randomUUID(), kind: INBOX_KIND.system, sourceSessionId: event.sessionId,
+      text: QUESTION_ANSWER.text(event.questionId, words), images: [],
+      dedupeKey: QUESTION_ANSWER.dedupePrefix + event.questionId, at: this.now(),
+    }
+    // Unacked items stay queued in the host, so a disconnected child still gets the answer.
+    try { void this.host?.pushInbox(item).catch(() => {}) } catch { /* closed */ }
+  }
+
+  /** Provider events: a card, a move to the user, a settlement, a call that ran on an approval, or Fishball's own answer. */
   notify(event) {
     if (this.disposed || event === null || typeof event !== 'object') return
     try {
@@ -306,6 +330,7 @@ class ApprovalRelay {
       else if (event.type === RELAY_EVENT.escalated) this.settle({ ...event, decision: DECISION.escalate, by: SETTLED_BY.fishball })
       else if (event.type === RELAY_EVENT.settled) this.settle(event)
       else if (event.type === RELAY_EVENT.ran) this.ran(event)
+      else if (event.type === OWN_ANSWER.event) this.answered(event)
       else if (event.type === CARD_CLOSED.event) this.closed(event)
     } catch (error) {
       // A closed channel or an unrepresentable card is not the decision's failure, so the event
@@ -327,6 +352,8 @@ class ApprovalRelay {
       }
       case OPERATION.approvalAnswer: return this.answerApproval(state, sessionId, payload)
       case OPERATION.questionAnswer: return this.answerQuestion(state, sessionId, payload)
+      case OPERATION.questionAsk: return this.askQuestion(state, payload)
+      case OPERATION.questionAnswerOwn: return this.answerOwnQuestion(state, payload)
       case OPERATION.promptList: return { prompts: (await this.prompts(state)).map(promptOf) }
       case OPERATION.promptAnswer: return this.answerPrompt(state, sessionId, payload)
       case OPERATION.grantList: return { grants: state.listGrants().map(grantOf) }
@@ -373,6 +400,27 @@ class ApprovalRelay {
     if (!this.sessions.isManaged(sessionId)) throw new BridgeRefusal(ERROR.expired)
     if (state.questionSession(payload.questionId) !== sessionId) throw new BridgeRefusal(ERROR.expired)
     const result = await state.answerQuestion(toQuestionTool(payload))
+    if (result?.ok !== true) throw new BridgeRefusal(result?.code ?? ERROR.failed)
+    return { accepted: true }
+  }
+
+  /**
+   * Fishball's own question (§15 T09): the main row files the card in the user's pile and answers
+   * with its id, so the child's call returns at once. This relay decides nothing and files
+   * nothing; the card's lifetime and its answer belong to the row (src/own-questions.js).
+   */
+  async askQuestion(state, payload) {
+    const result = await state.askQuestion({ sessionId: payload.sessionId, questions: payload.questions })
+    if (result?.ok !== true || typeof result.questionId !== 'string') throw new BridgeRefusal(result?.code ?? ERROR.failed)
+    return { questionId: result.questionId }
+  }
+
+  /**
+   * The user's answer taken on the child's own copy of that card: it settles the same pile card,
+   * and the answer still reaches the child as the inbox item below, so one answer has one row.
+   */
+  async answerOwnQuestion(state, payload) {
+    const result = await state.answerOwnQuestion({ questionId: payload.questionId, answers: payload.answers })
     if (result?.ok !== true) throw new BridgeRefusal(result?.code ?? ERROR.failed)
     return { accepted: true }
   }
