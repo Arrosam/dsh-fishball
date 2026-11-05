@@ -7,8 +7,8 @@
  *   own scope. The sender is the calling agent, never an argument; a subagent would be
  *   attributed to the session the user sees (its root), but subagents no longer get the tool.
  *   Fishball's agent cannot call it (never managed; hidden, and refused by its guard).
- * - "Send to Fishball" (POST /api/fishball/send): you forward a session with a note; the
- *   session becomes managed (§5e).
+ * - "Hand over to Fishball" (POST /api/fishball/send): you forward a session with an optional
+ *   note and the session becomes managed (§5e, §8.3).
  *
  * Outbound, Fishball's own tools (scope P):
  * - message_session({session_id, message}): resolve the session's agent (live, or resumed with
@@ -138,7 +138,7 @@ function logLengthAtCall(exec) {
 const messageOf = (text, source) => createUserMessage({ content: [{ type: 'text', text }], source })
 
 /**
- * The inbound half: message_fishball and the "Send to Fishball" command.
+ * The inbound half: message_fishball and the "Hand over to Fishball" command.
  * @param deps.ctx - fishball row context (tools, sessionController, sessions, workspaceRegistry).
  * @param deps.ledger - IntakeLedger.
  * @param deps.readLimits - () => limits.
@@ -197,7 +197,7 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
   return {
     tool: inboundTool,
     /**
-     * You forward a session with a note.
+     * You hand a session over, forwarding your note.
      * @throws IntakeError(featureOff | unknownSession | fromFishball | tooLarge | queueFull | empty).
      */
     async forward(sessionId, note) {
@@ -213,8 +213,8 @@ export function registerInbound({ ctx, ledger, readLimits, assistantId, isLive, 
         dedupeKey: randomUUID(),
         message: messageOf(TEXT.forwarded(info, note), { ...SOURCE.notice, summary: boundContextSummary(TEXT.forwardSummary), author: sessionAuthor(INTAKE_KIND.user, info) }),
       })
-      // Only a forward Fishball received hands the session over (a refused one changes nothing).
-      await manage(sessionId, MANAGED_BY.send)
+      // Only a hand-over Fishball received hands the session over (a refused one changes nothing).
+      await manage(sessionId, MANAGED_BY.handOver)
       return result
     },
   }
