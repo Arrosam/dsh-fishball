@@ -462,15 +462,40 @@ message with image and file blocks. A text-only model gets the 0.2.2 text-only p
 
 ## 7. Embedded page, opening and the button
 
-- `client.js` renders the embed in a panel of the main DSH page (an `iframe` with
-  `src="/fishball/embed/"`, a `title`, `allow="clipboard-write"`, and no sandbox attribute —
-  a sandbox would break the same-origin session). Its header offers Refresh and "Open in a tab"
-  (the tab opens `/fishball/embed/`, still same-origin).
-- The top-left Fishball brand button opens that panel instead of creating a legacy Fishball
-  session or a new tab. The `POST /api/fishball/native/open` route and its capability URL
-  (`src/native-web.js`) are removed; the lifecycle still exposes status.
-- When the child is not ready the panel shows a static error card: state, the safe code
-  (`NATIVE_CHILD_EXITED`, `NATIVE_TIMEOUT`, ...), and Retry. Retry calls the existing restart
+- `client.js` renders the embed as **the Fishball view in DSH's main area**, where a session's
+  conversation shows (an `iframe` with `src="/fishball/embed/"`, a `title`,
+  `allow="clipboard-write"`, and no sandbox attribute — a sandbox would break the same-origin
+  session). The frame fills the area under a one-line header in DSH's session-header style:
+  "Fishball", the child state as a tag, and small Refresh and "Open in a tab" actions (the tab
+  opens `/fishball/embed/`, still same-origin). There is no Close: you leave by opening a
+  session or another panel, as with any session.
+- **Why the main area, not a dialog (owner's request, 2026-11-06).** The original intent was
+  "clicking the Fishball session opens a nested page pointing at the independent Fishball
+  session"; the first build put it in a small centred modal, which floated over the session
+  pane and blocked the sidebar. DSH already has the exact seat for a full-pane view: the
+  root-scoped keyed `main` slot, whose `conversation` key is the session and whose other keys are
+  global panels selected through `ctx.layout.selectPanel(id)` (Plugins `plugins`, Tasks
+  `schedules`). Opening a session calls `selectPanel(null)` (`dsh-client-ui-workspace`
+  `replaceMain(..., "reveal")`), so navigating away needs no code of ours, and re-selecting
+  Fishball mounts the view again. 0.2.1-rc.5 and 0.2.2-rc.1 have the same contract (layout
+  `MainPanel`/`selectPanel`/`retainMainPanels`; 0.2.2 only wraps the slot in a flex `mainPanel`
+  div), so there is one implementation with no feature detection.
+- **Entries.** By default the sidebar has a Fishball row in DSH's panel list
+  (`sidebar.panellist`, id `fishball`, order −10, above Plugins), drawn by DSH with its own
+  selected highlight and `aria-current` while the view is open; its icon is the brand mark with the
+  unread count. The top-left brand button opens the same view. Fishball's settings page has a
+  "Sidebar entry" switch (owner's choice, 2026-11-06: "a row by default; settings can switch to
+  only the top-left button"), stored with the brand icon (`POST /api/fishball/sidebar-entry`,
+  `{entry:'panel'|'brand'}`). The `main` key stays registered either way, so the brand works
+  without the row. On macOS Desktop the brand row has no button, so there the row is the way in.
+- The per-session green/yellow dots and the running fish stay on managed **session** rows only:
+  they describe one main session, and the Fishball row is not one (Fishball's own cards carry
+  Fishball's session id, which no row shows). Fishball's own unread count stays on its mark.
+- The `POST /api/fishball/native/open` route and its capability URL (`src/native-web.js`) are
+  removed; the lifecycle still exposes status.
+- When the child is not ready (or while its status is read) the view shows, centred in the same
+  area and in DSH's empty/error-state style, the state, the safe code (`NATIVE_CHILD_EXITED`,
+  `NATIVE_TIMEOUT`, ...), and Retry as the §8.5 accent button. Retry calls the existing restart
   service, never a legacy fallback.
 
 ## 8. Main-DSH session UI
@@ -725,7 +750,7 @@ Removed or disabled when the embedded path is live:
 - Tag records and their store table (`src/tags.js`, `src/store.js` table), tag rendering.
 - Dead constants and CSS for the removed surfaces.
 
-Kept on the main side: the brand mark and button, the embed panel, the settings page, the sidebar
+Kept on the main side: the brand mark and button, the Fishball view (§7) and its sidebar row, the settings page, the sidebar
 mark, the hand-over button, the intake ledger and queue, the managed-session registry, the host
 bridge handlers, approvals and questions forwarding, and the pile (for main sessions).
 
@@ -845,6 +870,9 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
 
 **T04 — Embedded page `[host]` plus `[client]`**
 - Goal: the Fishball button opens a panel that frames the child's page through the main origin.
+- Revised 2026-11-06 (owner: "display it like a normal session"): the panel is a `main`-slot view in
+  DSH's main area instead of a modal, with a sidebar panel-list row by default and a setting for
+  the brand button only (§7 has the why). The embed security rules below are unchanged.
 - Owns: `src/slim/host/embed.js`, the embed component in `client.js`.
 - Depends: T02, T03. Acceptance: the iframe URL has no token; the route rejects non-same-origin and
   unauthenticated requests; SSE streams through; a stopped child yields a 503 error card with
@@ -954,6 +982,9 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
 - Depends: T11, T04, **Q4 answered**. Acceptance: status, model, plugins, settings and restart work end to end
   against a disposable child; every accent button is DSH secondary plus one magenta ring; one
   constant and one CSS class; light and dark checked; no legacy sections.
+- Revised 2026-11-06: the Fishball view's Retry is a tenth accent site (`accentButton`, centred in
+  the view's error state), and the brand block gains the "Sidebar entry" switch (§7): the
+  panel-list row is on by default, off leaves only the top-left button.
 - Tests: `SET-01 status and restart`; `-02 model change`; `-03 plugin install and uninstall`; `-04
   refusal shows the typed reason`; `-05 all accent buttons share one ring`; `-06 light, dark and
   focus-visible`; `-07 no legacy section remains`.

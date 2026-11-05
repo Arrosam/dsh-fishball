@@ -4,15 +4,16 @@
  * 1. Brand: fills sidebar.brand.mark / sidebar.brand.name at slot priority -1 (a single
  *    slot renders its LOWEST priority; the shipped brand uses 0 — spike S14). The name
  *    occupant takes over its enclosing button's click (capture phase, so it runs before
- *    the shell's New Session handler) and opens the assistant session. On macOS Desktop
+ *    the shell's New Session handler) and opens the Fishball view (item 3). On macOS Desktop
  *    the brand row is a drag region without a button; there Fishball opens from its
- *    pinned session and its Plugins page.
+ *    sidebar row.
  * 2. The Plugins → Fishball settings page is the isolated Fishball's console (§9): its
  *    status and restart, model, plugins and settings through the owner-only admin routes
  *    (src/slim/host/settings-routes.js), plus Fishball's own limits. The legacy page
  *    sections are no longer rendered; T15 removes their remaining code.
- * 3. Fishball's own session header action opens that page, and its chat is shown through
- *    the embed panel below.
+ * 3. The Fishball view (slim §7): the isolated Fishball's page framed in DSH's main area, the
+ *    `main` slot where a session's conversation shows, opened by the brand and by a Fishball row
+ *    in the sidebar's panel list (on by default; Settings can leave only the brand).
  * 4. Fishball's own session row is hidden from the sidebar's session list; the brand opens it.
  * 5. The Messenger look (DESIGN §10c): while the Host reports `look.messenger`, this half loads
  *    the dsh-fishball-messenger package's browser file from the Host and mounts it as a child
@@ -29,7 +30,7 @@ window.__ModuleLoader__.load({
     const exports = module.exports
     const React = require('react')
     const { createPortal } = require('react-dom')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, IconWarningOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -52,7 +53,7 @@ window.__ModuleLoader__.load({
     const FEATURE = Object.freeze({ messages: 'messages' })
     /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
     const featureOn = (state, feature) => state.features?.[feature] !== false
-    const API = Object.freeze({ events: 'api/fishball/events', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', send: 'api/fishball/send', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
+    const API = Object.freeze({ events: 'api/fishball/events', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', send: 'api/fishball/send', read: 'api/fishball/read', brand: 'api/fishball/brand', sidebarEntry: 'api/fishball/sidebar-entry', welcomeSeen: 'api/fishball/welcome/seen', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /**
@@ -66,14 +67,31 @@ window.__ModuleLoader__.load({
     const HAND_OVER_ERRORS = new Set(['queue-full', 'too-large', 'from-fishball', 'feature-off', 'unknown-session', 'unavailable'])
     /** Take back refusals with their own text (src/constants.js MANAGED_ERROR). */
     const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'feature-off', 'unavailable'])
-    /** The embed panel's fixed document path (§7): no query, fragment or token. Keep in step with contract ROUTES.document. */
+    /**
+     * The Fishball view (§7): the child page framed in DSH's main area, as a global panel.
+     * `document` is the fixed embed path: no query, fragment or token (keep in step with contract
+     * ROUTES.document). `panelId` is one key shared by the `main` occupant and its
+     * `sidebar.panellist` row, as DSH's Plugins ("plugins") and Tasks ("schedules") panels do.
+     * `panelOrder` puts the row first, before Plugins (0) and Tasks (10): Fishball is the
+     * conversation you open most, so it sits where a pinned session would. `warningIconPx` is the
+     * glyph of DSH's own empty/error state (dsh-client-ui-schedule's list error, 24px).
+     * `stateTone` maps the child state to DSH's Tag tones (the ones its plugin page uses).
+     */
     const EMBED_UI = Object.freeze({
-      document: '/fishball/embed/', id: 'fishball-embed',
-      width: 'min(960px, calc(100vw - 120px))', height: 'min(70vh, 720px)',
+      document: '/fishball/embed/', panelId: 'fishball', panelOrder: -10, warningIconPx: 24,
+      stateTone: Object.freeze({ ready: 'info', failed: 'danger' }), neutralTone: 'neutral',
       // noopener, but not noreferrer: the broker admits only Sec-Fetch-Site: same-origin.
       target: '_blank', features: 'noopener',
       retry: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin' }),
     })
+    /**
+     * DSH's session header (dsh-client-ui-conversation ConversationRoot .header/.titleRow/
+     * .crumbCurrent, identical in 0.2.1-rc.5 and 0.2.2-rc.1), without its tab row: the Fishball
+     * view has one page, so the header is one line of DSH's title-row height plus padding.
+     */
+    const DSH_SESSION_HEADER = Object.freeze({ minHeight: '52px', padding: '10px 28px', startPadding: '20px', gap: '8px', nameFont: '14px', nameLine: '20px' })
+    /** DSH's empty/error state (dsh-client-ui-schedule TaskManagerPage .empty, .emptyAction). */
+    const DSH_EMPTY_STATE = Object.freeze({ padding: '48px 20px', gap: '8px', font: '14px', actionGap: '8px' })
     const NATIVE_UI = Object.freeze({
       statusPath: '/api/fishball/native/status',
       states: Object.freeze(['disabled', 'waiting', 'starting', 'ready', 'stopping', 'stopped', 'failed']),
@@ -138,6 +156,8 @@ window.__ModuleLoader__.load({
     const VISIBILITY_EVENT = 'visibilitychange'
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
     const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
+    /** Where the sidebar opens the Fishball view (src/constants.js SIDEBAR_ENTRY): its own row, or the brand only. */
+    const SIDEBAR_ENTRY = Object.freeze({ panel: 'panel', brand: 'brand' })
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
     /**
      * The child admin routes (§9; src/slim/host/settings-routes.js). One exact path per admin
@@ -187,6 +207,13 @@ window.__ModuleLoader__.load({
       headerActions: 'conversation.session.header.actions',
       sessionMenu: 'sidebar.workspaces.session.menu.item',
       overlay: 'shell.overlay',
+      /**
+       * DSH's central pane, keyed by panel id ("conversation" is the session), and the sidebar's
+       * global-panel rows that select it (dsh-client-ui-layout, dsh-client-ui-sidebar; the same
+       * contract in 0.2.1-rc.5 and 0.2.2-rc.1).
+       */
+      main: 'main',
+      panelList: 'sidebar.panellist',
       /** DSH's Plugins page (dsh-client-ui-plugin-manager): a page tab, and a tag and an action on each plugin's page (spike S28). */
       pluginsTab: 'plugins.tab',
       detailBadge: 'plugins.detail.badge',
@@ -565,7 +592,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ pile: 'fb-pile', pileDock: 'fb-pile-dock', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error' })
+    const CLS = Object.freeze({ pile: 'fb-pile', pileDock: 'fb-pile-dock', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -576,6 +603,9 @@ window.__ModuleLoader__.load({
       brandStyle: 'Sidebar icon',
       brandStyleHint: 'Fishball\'s own mark and word logo, or the DeepSeek orca and DeepSeek\'s word logo. A new message shows the number either way; Fishball\'s fish wags, and the orca swims as it does when you hover it in a new session.',
       brandStyleDeepseek: 'Use the DeepSeek icon',
+      sidebarEntry: 'Sidebar entry',
+      sidebarEntryHint: 'Fishball opens in the main area, as a session does. With this on, the sidebar has a Fishball row above Plugins; with it off, only the top-left Fishball button opens it. On macOS Desktop the top-left button cannot be clicked, so keep the row there.',
+      sidebarEntryPanel: 'Show Fishball as a row in the sidebar',
       'status.starting': 'Starting',
       'status.live': 'Running',
       'status.recovery': 'Needs your decision',
@@ -591,8 +621,8 @@ window.__ModuleLoader__.load({
       modelEffortDefault: 'Model default',
       modelEmpty: 'No models available. Configure a provider in DSH model settings, then refresh.',
       nativeTitle: 'Isolated Fishball', nativeRefresh: 'Refresh status',
-      nativeHint: 'The isolated Fishball runs beside DSH in its own home. Its chat opens in a panel on this page; the model, plugins and settings below are its own.',
-      embedTitle: 'Fishball panel', embedRefresh: 'Refresh', embedOpenTab: 'Open in a tab',
+      nativeHint: 'The isolated Fishball runs beside DSH in its own home. Its chat opens in DSH\'s main area, as a session does; the model, plugins and settings below are its own.',
+      viewTitle: 'Fishball', embedTitle: 'Fishball chat', embedRefresh: 'Refresh', embedOpenTab: 'Open in a tab',
       embedUnavailable: 'Fishball is not available. Retry starts it again.', embedRetry: 'Retry',
       embedState: 'State', embedCode: 'Code',
       'native.loading': 'Checking status…', 'native.disabled': 'Disabled', 'native.waiting': 'Waiting for host readiness',
@@ -993,6 +1023,9 @@ window.__ModuleLoader__.load({
       brandStyle: '侧边栏图标',
       brandStyleHint: 'Fishball 自己的标志和字标，或 DeepSeek 的鲸鱼和字标。新消息在两种图标上都会显示数字；Fishball 的小鱼会摆尾，鲸鱼则会像在新会话里悬停时那样游动。',
       brandStyleDeepseek: '使用 DeepSeek 图标',
+      sidebarEntry: '侧边栏入口',
+      sidebarEntryHint: 'Fishball 像普通会话一样在主区域中打开。开启时，侧边栏在「插件」上方多一行 Fishball；关闭时，只有左上角的 Fishball 按钮能打开它。macOS 桌面版的左上角按钮不能点击，在那里请保持开启。',
+      sidebarEntryPanel: '在侧边栏中显示 Fishball 一行',
       'status.starting': '启动中',
       'status.live': '运行中',
       'status.recovery': '需要你的决定',
@@ -1008,8 +1041,8 @@ window.__ModuleLoader__.load({
       modelEffortDefault: '模型默认值',
       modelEmpty: '没有可用模型。请先在 DSH 模型设置中配置提供商，然后刷新。',
       nativeTitle: '独立 Fishball', nativeRefresh: '刷新状态',
-      nativeHint: '隔离的 Fishball 在自己的主目录中与 DSH 并行运行。它的聊天在本页的面板中打开；下面的模型、插件和设置都是它自己的。',
-      embedTitle: 'Fishball 面板', embedRefresh: '刷新', embedOpenTab: '在标签页中打开',
+      nativeHint: '隔离的 Fishball 在自己的主目录中与 DSH 并行运行。它的聊天像普通会话一样在 DSH 主区域中打开；下面的模型、插件和设置都是它自己的。',
+      viewTitle: 'Fishball', embedTitle: 'Fishball 聊天', embedRefresh: '刷新', embedOpenTab: '在标签页中打开',
       embedUnavailable: 'Fishball 当前不可用。重试会重新启动它。', embedRetry: '重试',
       embedState: '状态', embedCode: '代码',
       'native.loading': '正在检查状态…', 'native.disabled': '已禁用', 'native.waiting': '等待主端就绪',
@@ -1427,11 +1460,20 @@ window.__ModuleLoader__.load({
       `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} ${BRAND_TAG.fontFamily};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
-      // The embed panel (§7): a large frame on the modal's own surface, at DSH theme tokens.
-      `.${CLS.embed}{display:flex;flex-direction:column;gap:12px;box-sizing:border-box;width:${EMBED_UI.width};max-width:100%}`,
-      `.${CLS.embedBar}{display:flex;justify-content:flex-end;gap:8px}`,
-      `.${CLS.embedFrame}{display:block;width:100%;height:${EMBED_UI.height};border:0;border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1)}`,
-      `.${CLS.embedError}{display:flex;flex-direction:column;gap:8px;padding:16px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1)}`,
+      // The Fishball view (§7) fills DSH's main area as a session does: DSH's conversation root,
+      // its header (border, padding, the leading clearance a hidden macOS sidebar leaves) and its
+      // name style; the frame takes the rest.
+      `.${CLS.embed}{display:flex;flex-direction:column;flex:1;width:100%;height:100%;min-width:0;min-height:0;background:var(--dsw-alias-bg-base)}`,
+      `.${CLS.embedBar}{box-sizing:border-box;flex:none;display:flex;align-items:center;gap:${DSH_SESSION_HEADER.gap};min-height:${DSH_SESSION_HEADER.minHeight};padding:${DSH_SESSION_HEADER.padding};padding-inline-start:max(${DSH_SESSION_HEADER.startPadding}, var(--dsh-frame-leading-clearance,0px));border-bottom:.5px solid var(--dsw-alias-border-l3)}`,
+      `.${CLS.embedName}{color:var(--dsw-alias-label-primary);font-size:${DSH_SESSION_HEADER.nameFont};line-height:${DSH_SESSION_HEADER.nameLine};font-weight:500;white-space:nowrap}`,
+      // The header is a window-drag area on macOS Desktop, as DSH's own; its buttons are not.
+      `.${CLS.embedActions}{display:flex;align-items:center;gap:${DSH_SESSION_HEADER.gap};margin-inline-start:auto;-webkit-app-region:no-drag}`,
+      `.${CLS.embedFrame}{display:block;flex:1;width:100%;min-height:0;border:0;background:var(--dsw-alias-bg-base)}`,
+      // Not ready, failed or still checking: DSH's empty/error state (dsh-client-ui-schedule .empty), centred in the view.
+      `.${CLS.embedError}{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${DSH_EMPTY_STATE.gap};padding:${DSH_EMPTY_STATE.padding};text-align:center;color:var(--dsw-alias-label-tertiary);font-size:${DSH_EMPTY_STATE.font};line-height:1.6}`,
+      `.${CLS.embedError} p{margin:0}`,
+      `.${CLS.embedGlyph}{color:var(--dsw-alias-label-caption)}`,
+      `.${CLS.embedError} .${ACCENT_BUTTON.className}{margin-top:${DSH_EMPTY_STATE.actionGap}}`,
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
       // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
       `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
@@ -1808,10 +1850,10 @@ window.__ModuleLoader__.load({
       settingsOpener(ctx)?.()
     }
 
-    function makeBrandName(t) {
+    function makeBrandName(ctx, t) {
       return function FishballBrandName() {
         const ref = React.useRef(null)
-        // Subscribed for the unread count and the chosen brand icon; the click opens the panel.
+        // Subscribed for the unread count and the chosen brand icon; the click opens the Fishball view.
         const state = useFishball()
         const count = unreadCount(state)
         const deepseek = brandStyleOf(state) === BRAND_STYLE.deepseek
@@ -1836,11 +1878,11 @@ window.__ModuleLoader__.load({
           const labelWatch = new MutationObserver(keepLabel)
           labelWatch.observe(button, { attributes: true, attributeFilter: [BRAND_LABEL_ATTR] })
           const onClick = (event) => {
-            // The brand opens the same-origin panel (§7); legacy chat and the new-tab open are gone.
+            // The brand opens the Fishball view in the main area (§7), with or without its sidebar row.
             event.preventDefault()
             event.stopPropagation()
             event.stopImmediatePropagation()
-            embedPanel.set(true)
+            openFishballView(ctx)
           }
           button.addEventListener('click', onClick, true)
           return () => {
@@ -2439,28 +2481,27 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The Fishball panel (§7): the child page framed through the main origin. The iframe URL is
-     * constant and carries no token; the panel header reloads the frame or opens that same
-     * document in a tab. A child that is not ready shows its safe state, code and a Retry that
+     * The Fishball view (§7): the child page framed through the main origin, in DSH's main area
+     * where a session's conversation shows (the `main` slot, keyed by EMBED_UI.panelId). DSH swaps
+     * it out when you open a session and back in when you select Fishball, so it has no Close.
+     * The iframe URL is constant and carries no token; the header reloads the frame or opens that
+     * same document in a tab. A child that is not ready shows its safe state, code and a Retry that
      * calls the lifecycle restart service through the broker; it never falls back to legacy chat.
      */
-    function makeEmbedPanel(t) {
-      return function FishballEmbedPanel() {
-        const open = useEmbedPanel()
+    function makeFishballView(t) {
+      return function FishballView() {
         const [status, setStatus] = React.useState({ state: NATIVE_UI.loading, code: null })
         const [generation, setGeneration] = React.useState(0)
         const [retrying, setRetrying] = React.useState(false)
+        // DSH mounts this only while the view is selected, so each visit reads the status afresh.
         React.useEffect(() => {
-          if (!open) return undefined
           const abort = new AbortController()
           setStatus({ state: NATIVE_UI.loading, code: null })
           void nativeStatus(abort.signal).then((next) => { if (!abort.signal.aborted) setStatus(next) })
           return () => abort.abort()
-        }, [open, generation])
-        if (!open) return null
+        }, [generation])
+        const loading = status.state === NATIVE_UI.loading
         const ready = status.state === NATIVE_UI.ready
-        const close = () => { if (!retrying) embedPanel.set(false) }
-        const refresh = () => { setGeneration(value => value + 1) }
         const retry = async () => {
           setRetrying(true)
           try { await fetch(EMBED_UI.document, EMBED_UI.retry) } catch { /* The status probe below reports the state. */ }
@@ -2468,27 +2509,53 @@ window.__ModuleLoader__.load({
           setRetrying(false)
           setStatus(next)
         }
-        return h(Modal, {
-          open: true,
-          onClose: close,
-          closeLabel: t('close'),
-          title: t('embedTitle'),
-          footer: h(Button, { type: 'button', variant: 'outline', disabled: retrying, onClick: close }, t('close')),
-        },
-          h('div', { className: CLS.embed, 'data-fishball-embed': true },
-            h('div', { className: CLS.embedBar },
-              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: status.state === NATIVE_UI.loading, onClick: refresh }, t('embedRefresh')),
-              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !ready, onClick: () => { window.open(EMBED_UI.document, EMBED_UI.target, EMBED_UI.features) } }, t('embedOpenTab'))),
-            status.state === NATIVE_UI.loading
-              ? h('p', { role: 'status', className: CLS.muted }, t('native.loading'))
-              : ready
-                ? h('iframe', { key: generation, className: CLS.embedFrame, src: EMBED_UI.document, title: t('embedTitle'), allow: 'clipboard-write', 'data-fishball-embed-frame': true })
-                : h('div', { className: CLS.embedError },
-                  h('p', { role: 'alert' }, t('embedUnavailable')),
-                  h('p', { className: CLS.row }, h('span', { className: CLS.label }, t('embedState')), h('code', { className: CLS.code }, status.state)),
-                  status.code ? h('p', { className: CLS.row }, h('span', { className: CLS.label }, t('embedCode')), h('code', { className: CLS.code }, status.code)) : null,
-                  h(Button, { type: 'button', variant: 'primary', disabled: retrying, onClick: () => void retry() }, retrying ? t('native.starting') : t('embedRetry')))))
+        const body = loading
+          ? h('div', { className: CLS.embedError }, h('p', { role: 'status' }, t('native.loading')))
+          : ready
+            ? h('iframe', { key: generation, className: CLS.embedFrame, src: EMBED_UI.document, title: t('embedTitle'), allow: 'clipboard-write', 'data-fishball-embed-frame': true })
+            : h('div', { className: CLS.embedError },
+              h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
+              h('p', { role: 'alert' }, t('embedUnavailable')),
+              h('p', null, t('embedState'), ' ', h('code', { className: CLS.code }, status.state)),
+              status.code ? h('p', null, t('embedCode'), ' ', h('code', { className: CLS.code }, status.code)) : null,
+              accentButton({ disabled: retrying, onClick: () => void retry() }, retrying ? t('native.starting') : t('embedRetry')))
+        return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true },
+          h('header', { className: CLS.embedBar, 'data-window-drag': true },
+            h('span', { className: CLS.embedName }, t('viewTitle')),
+            // DSH's Tag takes no data attributes, so the state's hook sits on a wrapper.
+            h('span', { 'data-fishball-embed-state': status.state }, h(Tag, { tone: EMBED_UI.stateTone[status.state] ?? EMBED_UI.neutralTone }, t('native.' + status.state))),
+            h('div', { className: CLS.embedActions },
+              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: loading || retrying, onClick: () => setGeneration((value) => value + 1) }, t('embedRefresh')),
+              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !ready, onClick: () => { window.open(EMBED_UI.document, EMBED_UI.target, EMBED_UI.features) } }, t('embedOpenTab')))),
+          body)
       }
+    }
+
+    /** Open the Fishball view in DSH's main area, as selecting a session would; nothing when DSH has no layout service. */
+    function openFishballView(ctx) {
+      ctx.get(SERVICE.layout)?.selectPanel(EMBED_UI.panelId)
+    }
+
+    /** Which sidebar entry you chose; the panel row until the Host says otherwise. */
+    const sidebarEntryOf = (state) => state.preferences?.sidebarEntry ?? SIDEBAR_ENTRY.panel
+
+    /**
+     * The Fishball row in DSH's sidebar panel list, while you keep it (Settings → Sidebar entry).
+     * DSH draws the row, its label and its selected highlight (`aria-current` while the view is
+     * open, cleared when you open a session), exactly as for Plugins and Tasks; the icon is the
+     * brand mark with its unread count.
+     */
+    function followSidebarEntry(ctx, Icon, t) {
+      let dispose
+      const update = () => {
+        const wanted = sidebarEntryOf(stateSource.get()) === SIDEBAR_ENTRY.panel
+        if (wanted === (dispose !== undefined)) return
+        if (!wanted) { dispose(); dispose = undefined; return }
+        dispose = ctx.slots.inject(SLOT.panelList, () => ctx.slots.register({ name: SLOT.panelList, id: EMBED_UI.panelId, order: EMBED_UI.panelOrder, locale: NS, label: () => t('viewTitle') }, Icon))
+      }
+      update()
+      const unsubscribe = stateSource.subscribe(update)
+      return () => { unsubscribe(); dispose?.(); dispose = undefined }
     }
 
     function makeModelGate(ctx, t) {
@@ -2527,9 +2594,6 @@ window.__ModuleLoader__.load({
      */
     const nativeState = valueStore(null)
     const useNativeState = () => React.useSyncExternalStore(nativeState.subscribe, nativeState.get)
-    /** The embed panel's open state, shared by the brand button and the shell-overlay panel (§7). */
-    const embedPanel = valueStore(false)
-    const useEmbedPanel = () => React.useSyncExternalStore(embedPanel.subscribe, embedPanel.get)
 
     /** Whether a session can be handed over: Fishball runs, it is not Fishball's own session, and Session messages is on. */
     const isOtherSession = (state, sessionId) => Boolean(sessionId) && sessionId !== state.sessionId
@@ -3284,13 +3348,20 @@ window.__ModuleLoader__.load({
         const state = useFishball()
         const [failed, setFailed] = React.useState(false)
         const deepseek = brandStyleOf(state) === BRAND_STYLE.deepseek
+        const panel = sidebarEntryOf(state) === SIDEBAR_ENTRY.panel
         const choose = async (on) => setFailed(!(await post(API.brand, { style: on ? BRAND_STYLE.deepseek : BRAND_STYLE.fishball })))
-        return h('div', { className: CLS.section, 'data-fishball-brand-style': brandStyleOf(state) },
+        const chooseEntry = async (on) => setFailed(!(await post(API.sidebarEntry, { entry: on ? SIDEBAR_ENTRY.panel : SIDEBAR_ENTRY.brand })))
+        return h('div', { className: CLS.section, 'data-fishball-brand-style': brandStyleOf(state), 'data-fishball-sidebar-entry': sidebarEntryOf(state) },
           h('h3', null, t('brandStyle')),
           h('p', { className: CLS.muted }, t('brandStyleHint')),
           h('div', { className: CLS.row },
             h('span', { className: CLS.grow }, t('brandStyleDeepseek')),
             h(Switch, { checked: deepseek, label: t('brandStyleDeepseek'), onChange: choose })),
+          h('h3', null, t('sidebarEntry')),
+          h('p', { className: CLS.muted }, t('sidebarEntryHint')),
+          h('div', { className: CLS.row },
+            h('span', { className: CLS.grow }, t('sidebarEntryPanel')),
+            h(Switch, { checked: panel, label: t('sidebarEntryPanel'), onChange: chooseEntry })),
           failed ? h('div', { role: 'alert' }, t('changeFailed')) : null)
       }
     }
@@ -4028,7 +4099,7 @@ window.__ModuleLoader__.load({
         scope.effect(() => requireModel(scope.conversation, t), 'fishball: require dedicated model')
       })
       ctx.effect(() => followMessenger(ctx), 'fishball: messenger look')
-      const BrandName = makeBrandName(t)
+      const BrandName = makeBrandName(ctx, t)
       ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
         yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, makeMark(t))
         yield ctx.slots.register({ name: SLOT.name, priority: BRAND_PRIORITY }, BrandName)
@@ -4046,8 +4117,11 @@ window.__ModuleLoader__.load({
         yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.id, locale: NS }, makeHandOverDialog(t))
         yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.noticeId, locale: NS }, makeRequestNotice(t, manageNotice, 'manageTitle'))
         yield ctx.slots.register({ name: SLOT.overlay, id: ADD_MENU.id, locale: NS }, makeInstallDialog(t, listenToHost))
-        yield ctx.slots.register({ name: SLOT.overlay, id: EMBED_UI.id, locale: NS }, makeEmbedPanel(t))
       }), 'fishball: dialogs')
+      // The Fishball view in DSH's main area, as Plugins and Tasks register theirs (§7). The key is
+      // registered for the plugin's life, so the brand button opens it even without the row.
+      ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.register({ name: SLOT.main, key: EMBED_UI.panelId, locale: NS }, makeFishballView(t))), 'fishball: main view')
+      ctx.effect(() => followSidebarEntry(ctx, makeMark(t), t), 'fishball: sidebar row')
       // Revision 11 (DESIGN §10e, S37): your pile, the ask_fishball row with your buttons, and the tags in each turn's tail.
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: MODEL.gateId, order: MODEL.gateOrder, locale: NS }, makeModelGate(ctx, t))), 'fishball: model setting prompt')
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: PILE.id, order: PILE.order, locale: NS }, makePile(t))), 'fishball: pile')
