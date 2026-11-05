@@ -8,6 +8,7 @@ const ROW = Object.freeze({
   approval: 'approval',
   lifecycle: 'fishball-native-child',
   app: 'fishball-native-app',
+  admin: 'fishball-native-admin',
   schedule: 'schedule',
   toolSchedule: 'tool-schedule',
   timeContext: 'time-context',
@@ -23,6 +24,8 @@ const PACKAGE = Object.freeze({
 const POLICY = Object.freeze({ sandboxMode: 'read-only', approval: 'ask' })
 /** copyChildCode copies this tree beside native-child.js, so the app row resolves inside the snapshot. */
 const APP_MODULE = path.join('src', 'slim', 'child', 'app.js')
+/** The T11 admin row: the same tree, so the settings page's requests reach the child itself (§9). */
+const ADMIN_MODULE = path.join('src', 'slim', 'child', 'admin.js')
 
 /** Whole-row replacement preserves standard native configuration and tool declarations. */
 export function launchOverlay(paths, record, childModule, limits, control, entries) {
@@ -78,6 +81,10 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       // The app row is T03's module. required:true makes a missing or inactive app row fail the
       // boot loudly instead of leaving a child that serves nothing (§15 LIFE-02).
       { id: ROW.app, name: path.join(path.dirname(childModule), APP_MODULE), required: true, config },
+      // The admin row applies the settings page's changes with the child's own settings,
+      // pluginManager and llm; it takes no config and comes up on the lifecycle wire's admin
+      // channel (T11, §9). It is not required, so an unready admin never fails the child boot.
+      { id: ROW.admin, name: path.join(path.dirname(childModule), ADMIN_MODULE) },
     ] },
   ]
 }

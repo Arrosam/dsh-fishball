@@ -8,6 +8,7 @@ import { registerEmbed } from './src/slim/host/embed.js'
 import { ContractError, ERROR } from './src/slim/contract.js'
 import { createBridgeHost } from './src/slim/host/bridge.js'
 import { createSessionPort } from './src/slim/host/session-port.js'
+import { createAdminRelay } from './src/slim/host/admin.js'
 
 const PLUGIN = Object.freeze({
   name: 'fishball-native-host', service: 'nativeFishballRuntime',
@@ -59,10 +60,16 @@ export async function apply(ctx, config) {
   const hosts = new Map()
   let connection
   let unsubscribe = () => {}
+  let unsubscribeAdmin = () => {}
   /** The bridge's session service: the main Fishball row's registries plus the DSH services its tools use. */
   let sessions
   const status = () => ({ enabled, state, code })
   const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
+  // T11's admin relay. Every page operation except status and restart travels to the child over
+  // the lifecycle wire's own authenticated admin channel; the child applies it with its own
+  // services, so the main process never writes a child file (§9). T12's routes call
+  // service.admin.request(operation, payload).
+  const admin = createAdminRelay({ status, restart })
   const key = ctx.profileContext.home
   const predecessor = registry.get(key)
   // Start teardown immediately, before the new module can queue startup.
@@ -96,6 +103,9 @@ export async function apply(ctx, config) {
       connection?.close()
       connection = host.attach(transport, { connectionId })
     })
+    // The admin transport comes up with each authenticated wire (and again after a restart); the
+    // relay replaces whatever it held, so a reply can never cross instances.
+    unsubscribeAdmin = owner.onAdminTransport((transport) => { if (!closed) admin.attach(transport) })
   } catch { set(PLUGIN.state.failed, PLUGIN.code.failed) }
 
   async function start() {
@@ -129,11 +139,18 @@ export async function apply(ctx, config) {
       return set(enabled ? PLUGIN.state.stopped : PLUGIN.state.disabled)
     } catch { return set(PLUGIN.state.failed, PLUGIN.code.stop) }
   }
+  // The lifecycle's own restart, shared by the service and the admin relay (§9).
+  async function restart() {
+    const result = await stop()
+    return result.state === PLUGIN.state.failed ? result : start()
+  }
   function shutdown() {
     if (disposal) return disposal
     closed = true
     cancelReady()
     unsubscribe()
+    unsubscribeAdmin()
+    admin.close()
     for (const host of hosts.values()) host.close()
     hosts.clear(); connection = undefined
     set(PLUGIN.state.stopping)
@@ -160,8 +177,9 @@ export async function apply(ctx, config) {
   registry.set(key, { shutdown })
   ctx.effect(() => shutdown, PLUGIN.cleanup)
   const service = Object.freeze({
-    status, start, stop,
-    async restart() { const result = await stop(); return result.state === PLUGIN.state.failed ? result : start() },
+    status, start, stop, restart,
+    // T12's settings routes reach the child only through this relay (§9).
+    admin,
     async health() {
       if (closed || !owner || state !== PLUGIN.state.ready) return status()
       try {

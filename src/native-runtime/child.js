@@ -81,7 +81,9 @@ export async function applyNativeChild(ctx, config) {
   }
   const secret = await readPrivate(path.join(paths.root, RUNTIME.secret))
   const listeners = new Set()
+  const adminListeners = new Set()
   let current
+  let currentAdmin
   let ready
   let stopped = false
   const identity = { hostId: marker.hostId, instanceId: record.instanceId }
@@ -91,6 +93,17 @@ export async function applyNativeChild(ctx, config) {
       listeners.add(listener)
       if (current) listener(current.transport, current.metadata)
       return () => listeners.delete(listener)
+    },
+    /**
+     * The admin transport of the current authenticated connection (T11). It is published only
+     * after the same mutual HMAC proof as every lifecycle request, and it is never created by an
+     * unauthenticated peer; the admin protocol rides that connection on its own payload channel.
+     */
+    onAdminTransport(listener) {
+      adminListeners.add(listener)
+      // A wire that already closed can never deliver a reply, so it is not offered again.
+      if (currentAdmin && !currentAdmin.wire.closed) listener(currentAdmin.transport)
+      return () => adminListeners.delete(listener)
     },
   }
   ctx.provide('nativeRuntime', service)
@@ -104,6 +117,7 @@ export async function applyNativeChild(ctx, config) {
     wire.once('closed', () => {
       clearTimeout(timer); connections.delete(wire)
       if (current?.wire === wire) current = undefined
+      if (currentAdmin?.wire === wire) currentAdmin = undefined
     })
     wire.on('auth', message => {
       if (message.channel !== 'auth' || message.step !== 'hello' || message.nonce !== nonce || message.hostId !== identity.hostId || message.instanceId !== identity.instanceId || typeof message.challenge !== 'string' || !sameProof(message.proof, proof(secret, 'main', identity, [nonce, message.challenge]))) return wire.close()
@@ -119,8 +133,13 @@ export async function applyNativeChild(ctx, config) {
           if (!ready || current) fail('CONTROL_BUSY')
           const metadata = { ...identity, connectionId: randomUUID() }
           current = { wire, transport: wire.controlTransport(), metadata }
+          // The admin channel needs no operation of its own: it comes up with the control
+          // transport on the same authenticated wire, and its frames are buffered until its row
+          // attaches. Publish it before the control reply lets the main send one (§5.2, §9).
+          currentAdmin = { wire, transport: wire.adminTransport() }
           // Register receivers before the main logical host emits its protocol greeting.
           for (const listener of listeners) listener(current.transport, metadata)
+          for (const listener of adminListeners) listener(currentAdmin.transport)
           payload = metadata
         } else if (message.operation === 'stop') payload = { stopping: true }
         else fail('UNKNOWN_LIFECYCLE_OPERATION')
@@ -147,7 +166,7 @@ export async function applyNativeChild(ctx, config) {
     authenticatedReadiness(ctx, limits).then(async result => { if (!stopped) { ready = result; await lifecycleLog(paths, 'CHILD_READY', limits.maxLogBytes) } }).catch(async () => { await lifecycleLog(paths, 'CHILD_FAILED', limits.maxLogBytes).catch(() => {}); ctx.appExit(1) })
   })
   ctx.on('dispose', async () => {
-    stopped = true; ready = undefined; cancelReady(); listeners.clear()
+    stopped = true; ready = undefined; cancelReady(); listeners.clear(); adminListeners.clear()
     for (const wire of connections) wire.close()
     await new Promise(resolve => server.close(resolve))
     await unlink(path.join(directory, RUNTIME.endpoint)).catch(error => { if (error.code !== 'ENOENT') throw error })

@@ -3,6 +3,18 @@ import { EventEmitter } from 'node:events'
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto'
 import { RUNTIME, NativeRuntimeError, fail } from './constants.js'
 
+/**
+ * Payload channels that ride the authenticated lifecycle wire beside its own operations. Each
+ * carries one JSON string per frame: the session bridge owns `control` exclusively
+ * (src/slim/host/bridge.js, src/slim/child/bridge.js), and the T11 admin protocol owns `admin`
+ * (`ADMIN.channel` in src/slim/child/admin.js). Any other channel still closes the connection,
+ * so this list is the wire's protocol, not an open tunnel.
+ */
+const PAYLOAD_CHANNEL = Object.freeze({
+  control: Object.freeze({ name: 'control', invalidFrame: 'INVALID_CONTROL_FRAME', ownsClose: true }),
+  admin: Object.freeze({ name: 'admin', invalidFrame: 'INVALID_ADMIN_FRAME', ownsClose: false }),
+})
+
 export function proof(secret, role, identity, challenge) {
   return createHmac('sha256', secret).update(JSON.stringify([RUNTIME.protocol, role, identity.hostId, identity.instanceId, challenge])).digest('hex')
 }
@@ -18,8 +30,8 @@ export class Wire extends EventEmitter {
     this.limits = limits
     this.pending = new Map()
     this.authenticated = false
-    this.controlBacklog = []
-    this.controlBytes = 0
+    // One bounded backlog per payload channel, drained when that protocol attaches.
+    this.channels = new Map(Object.values(PAYLOAD_CHANNEL).map((spec) => [spec.name, { spec, backlog: [], bytes: 0 }]))
     this.closed = false
     let buffer = Buffer.alloc(0)
     socket.on('error', () => this.close())
@@ -48,13 +60,8 @@ export class Wire extends EventEmitter {
   }
   receive(message) {
     if (!this.authenticated) return this.emit('auth', message)
-    if (message.channel === 'control' && typeof message.payload === 'string') {
-      if (this.listenerCount('control')) return this.emit('control', message.payload)
-      this.controlBytes += Buffer.byteLength(message.payload)
-      if (this.controlBytes > this.limits.maxFrameBytes) return this.close()
-      this.controlBacklog.push(message.payload)
-      return
-    }
+    const channel = this.channels.get(message.channel)
+    if (channel !== undefined) return this.receivePayload(channel, message.payload)
     if (message.channel !== 'lifecycle') return this.close()
     if (message.replyTo) {
       const pending = this.pending.get(message.replyTo)
@@ -64,6 +71,18 @@ export class Wire extends EventEmitter {
       if (message.error) pending.reject(new NativeRuntimeError('REMOTE_LIFECYCLE_FAILURE'))
       else pending.resolve(message.payload)
     } else this.emit('request', message)
+  }
+  /**
+   * One payload frame on a protocol channel: its owner receives it, or it waits in a bounded
+   * backlog until that owner attaches (a reconnect can outrun it). The per-channel byte ceiling
+   * keeps an unattached channel from buffering without bound.
+   */
+  receivePayload(channel, payload) {
+    if (typeof payload !== 'string') return this.close()
+    if (this.listenerCount(channel.spec.name)) return this.emit(channel.spec.name, payload)
+    channel.bytes += Buffer.byteLength(payload)
+    if (channel.bytes > this.limits.maxFrameBytes) return this.close()
+    channel.backlog.push(payload)
   }
   send(message) {
     if (this.closed || this.socket.destroyed) fail('DISCONNECTED')
@@ -80,22 +99,32 @@ export class Wire extends EventEmitter {
       try { this.send({ channel: 'lifecycle', id, operation }) } catch (error) { clearTimeout(timer); this.pending.delete(id); reject(error) }
     })
   }
-  controlTransport() {
+  /** One protocol's view of its channel; `close` exists only where that protocol owns the wire. */
+  payloadTransport(channel) {
+    const { spec } = channel
     const subscribe = (event, fn) => { this.on(event, fn); return () => this.off(event, fn) }
-    return Object.freeze({
-      send: (payload) => { if (typeof payload !== 'string') fail('INVALID_CONTROL_FRAME'); this.send({ channel: 'control', payload }) },
+    const transport = {
+      send: (payload) => { if (typeof payload !== 'string') fail(spec.invalidFrame); this.send({ channel: spec.name, payload }) },
       onMessage: (fn) => {
-        const dispose = subscribe('control', fn)
-        const queued = this.controlBacklog.splice(0)
-        this.controlBytes = 0
+        const dispose = subscribe(spec.name, fn)
+        const queued = channel.backlog.splice(0)
+        channel.bytes = 0
         // Defer delivery until the protocol owner has assigned its new channel.
-        queueMicrotask(() => { if (!this.closed && this.listeners('control').includes(fn)) for (const payload of queued) fn(payload) })
+        queueMicrotask(() => { if (!this.closed && this.listeners(spec.name).includes(fn)) for (const payload of queued) fn(payload) })
         return dispose
       },
       onClose: (fn) => subscribe('closed', fn),
-      close: () => this.close(),
-    })
+    }
+    if (spec.ownsClose) transport.close = () => this.close()
+    return Object.freeze(transport)
   }
+  controlTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.control.name)) }
+  /**
+   * The T11 admin channel: the same authenticated wire, its own payload channel. It deliberately
+   * has no `close`: the session bridge and the lifecycle share this wire, so an admin problem
+   * must never drop delivery.
+   */
+  adminTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.admin.name)) }
   close() { this.socket.destroy() }
 }
 
