@@ -65,7 +65,6 @@ export function apply(ctx) {
   const logger = typeof ctx.logger === 'function' ? ctx.logger(CHILD.logger) : undefined
   const consumer = createInboxConsumer({ bridge, chat, logger })
   ctx.effect(() => () => consumer.close(), name + ': inbox consumer')
-  return consumer
 }
 
 /**
