@@ -1,8 +1,11 @@
 /**
  * Watches: "tell Fishball when this session finishes" (DESIGN §5c).
  *
- * Who sets one up: you (GUI "Tell Fishball when finished"), Fishball (watch_session), or
- * another agent (message_fishball with notify_when_finished, watching its own session).
+ * Who sets one up: Fishball (watch_session) or another agent (message_fishball with
+ * notify_when_finished, watching its own session). The GUI's separate "Tell Fishball when
+ * finished" button is gone (§8.3, T14): a watch-only request is now a hand-over note, so no new
+ * watch is created from the main DSH UI. The service stays for Fishball's tools; its route stays
+ * for compatibility and T15 decides whether that legacy entry point is retired (§9).
  *
  * Condition (Q-watch): 'finished' means a turn/end, after which the session is idle with
  * nothing queued; 'per-turn' fires on every turn end. Crash closers ('interrupted') and fork

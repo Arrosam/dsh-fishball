@@ -147,8 +147,8 @@ export class ManagedRegistry {
   }
 
   /**
-   * Make a session managed as a side effect of Fishball's start_session / message_session or
-   * your Send to Fishball, or of answer_prompt (no note; DESIGN §5e). Already managed: unchanged.
+   * Make a session managed as a side effect of Fishball's start_session / message_session, your
+   * hand-over, or answer_prompt (no note; DESIGN §5e, §8.3). Already managed: unchanged.
    * @returns whether the session became managed now.
    */
   manage(sessionId, by) {
