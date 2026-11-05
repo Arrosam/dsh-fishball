@@ -10,13 +10,9 @@ const ROW = Object.freeze({
   app: 'fishball-native-app',
   admin: 'fishball-native-admin',
   providerSync: 'fishball-native-provider-sync',
-  schedule: 'schedule',
-  toolSchedule: 'tool-schedule',
   timeContext: 'time-context',
 })
 const PACKAGE = Object.freeze({
-  schedule: '@deepseek-ai/dsh-schedule',
-  toolSchedule: '@deepseek-ai/dsh-tool-schedule',
   timeContext: '@deepseek-ai/dsh-time-context',
 })
 /**
@@ -79,9 +75,9 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
     { id: ROW.sandboxPolicy, config: { ...rows.get(ROW.sandboxPolicy).config, mode: POLICY.sandboxMode } },
     { id: ROW.approval, config: { ...rows.get(ROW.approval).config, policy: POLICY.approval } },
     { insert: [
-      // Reminders were Web-bundle rows; the slim child composes them itself (§2.1, §2.3).
-      { id: ROW.schedule, name: PACKAGE.schedule },
-      { id: ROW.toolSchedule, name: PACKAGE.toolSchedule },
+      // Reminders are not a row: the slim child owns them inside the app row
+      // (src/slim/child/reminders.js), because DSH's schedule service hard-injects the Web
+      // bundle's sessionController on 0.2.1-rc.3/rc.5 (§2.1, §2.3, T10).
       // The Web standard preset also supplied the current time; base ships the service but no
       // row (§2.1, §2.3), and the non-web SDK app mounts the same row at its root
       // (dsh-sdk-app/cordis.patch.yml:61-68). The preset's ask-user row stays out: Fishball asks

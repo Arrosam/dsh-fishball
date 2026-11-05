@@ -10,9 +10,9 @@
  * - the transcript is derived from DSH's own session log (the supported live-preferred
  *   sessionQuery read), and live updates are relayed as the child app's one SSE event, so the
  *   slim UI re-reads nothing per delta;
- * - resolveAgent is the activation owner the Schedule runtime needs (schedule/resolve-agent):
- *   after a restart only this module can resume Fishball's Session, so without it DSH fails
- *   every reminder delivery into its own session;
+ * - resolveAgent is the activation owner the child's reminder scheduler needs (T10): after a
+ *   restart only this module can resume Fishball's Session, so without it every reminder
+ *   delivery into its own session fails;
  * - applyModel is the live-session port the admin service (T11) calls after it persisted the
  *   child's default model, so the change applies on the next request (Section 9).
  *
@@ -709,11 +709,11 @@ export function createChat(ctx, options = {}) {
   }
 
   /**
-   * The Schedule runtime's activation owner (schedule/resolve-agent). A Session this chat does
-   * not own is delegated to next(); Fishball's own is returned live or resumed here.
+   * The reminder scheduler's activation owner (T10). A Session this chat does not own is
+   * delegated to next(); Fishball's own is returned live or resumed here.
    */
   function resolveAgent(id, next) {
-    if (typeof next !== 'function') throw new TypeError('fishball-native-chat: resolveAgent needs the waterfall continuation')
+    if (typeof next !== 'function') throw new TypeError('fishball-native-chat: resolveAgent needs the delegation continuation')
     if (sessionId === undefined || id !== sessionId) return next()
     return activate()
   }
