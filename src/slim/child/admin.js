@@ -982,6 +982,25 @@ export function createAdminEndpoint(options) {
     send(encoded)
   }
 
+  /**
+   * Handle one wire frame. A frame the codec cannot read is dropped (there is no id to answer
+   * with); every frame it can read is answered, including its own typed refusal.
+   */
+  async function receive(encoded) {
+    if (closed) return
+    let frame
+    try { frame = codec.decode(encoded) } catch { return }
+    if (!frame || typeof frame !== 'object' || typeof frame.id !== 'string') return
+    let request
+    try { request = codec.acceptRequest(frame) } catch (error) {
+      reply(frame.id, frame.op, refusalOf(error))
+      return
+    }
+    let outcome
+    try { outcome = await service.handle(request.op, request.payload) } catch { outcome = refusal(ADMIN_ERROR.failed) }
+    reply(request.id, request.op, outcome)
+  }
+
   return Object.freeze({
     get attached() { return transport !== undefined },
 
@@ -1000,25 +1019,7 @@ export function createAdminEndpoint(options) {
 
     detach,
     close() { closed = true; detach() },
-
-    /**
-     * Handle one wire frame. A frame the codec cannot read is dropped (there is no id to answer
-     * with); every frame it can read is answered, including its own typed refusal.
-     */
-    async receive(encoded) {
-      if (closed) return
-      let frame
-      try { frame = codec.decode(encoded) } catch { return }
-      if (!frame || typeof frame !== 'object' || typeof frame.id !== 'string') return
-      let request
-      try { request = codec.acceptRequest(frame) } catch (error) {
-        reply(frame.id, frame.op, refusalOf(error))
-        return
-      }
-      let outcome
-      try { outcome = await service.handle(request.op, request.payload) } catch { outcome = refusal(ADMIN_ERROR.failed) }
-      reply(request.id, request.op, outcome)
-    },
+    receive,
   })
 }
 
