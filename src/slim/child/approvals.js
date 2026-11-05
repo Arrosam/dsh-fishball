@@ -829,7 +829,7 @@ export function apply(ctx) {
       questions: api.questions(),
       labels: [...state.labels.values()].sort(byAt),
       answers: [...state.answers].sort(byAt),
-      closed: [...state.closed].sort(byAt),
+      closed: [...state.closed], // newest first: closeCard unshifts, so byAt would invert it
     }
   }
 
