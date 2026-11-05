@@ -183,7 +183,10 @@ export async function applyNativeChild(ctx, config) {
   const cancelReady = ctx.appReady.onReady(() => {
     authenticatedReadiness(ctx, limits).then(async result => { if (!stopped) { ready = result; await lifecycleLog(paths, 'CHILD_READY', limits.maxLogBytes) } }).catch(async () => { await lifecycleLog(paths, 'CHILD_FAILED', limits.maxLogBytes).catch(() => {}); ctx.appExit(1) })
   })
-  ctx.on('dispose', async () => {
+  // Cordis 4 has no 'dispose' event: a listener registered there never runs, and the control
+  // listener then keeps the event loop alive after appExit, so the parent waited out its whole
+  // stopTimeout. The row's teardown must be an effect, exactly like the app row's disposers.
+  ctx.effect(() => async () => {
     stopped = true; ready = undefined; cancelReady(); listeners.clear(); adminListeners.clear(); syncListeners.clear()
     for (const wire of connections) wire.close()
     await new Promise(resolve => server.close(resolve))
