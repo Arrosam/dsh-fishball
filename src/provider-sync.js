@@ -7,6 +7,11 @@ export const PROVIDER_SYNC = Object.freeze({
   modelFields: Object.freeze(['id', 'name', 'contextWindow', 'maxTokens', 'input']),
   protocols: Object.freeze(['openai-completions', 'openai-responses', 'anthropic-messages']),
   unsafe: Object.freeze(['__proto__', 'prototype', 'constructor']),
+  /** The DSH credential kind of a login (OAuth/subscription) record; never copied. */
+  grantKind: 'grant',
+  reason: Object.freeze({ oauth: 'oauth-login', noKey: 'no-api-key', unsupported: 'unsupported-provider', credentialExists: 'credential-exists',
+    incompatible: 'incompatible-owner-or-schema', conflict: 'provider-conflict', notWritable: 'credential-not-writable',
+    revision: 'missing-revision' }),
 })
 export class ProviderSyncError extends Error {
   constructor(code) { super(code); this.code = code }
@@ -50,7 +55,7 @@ const validateInventory = (inventory) => {
     ids.add(entry.id)
   }
 }
-const dto = (entry, reason) => ({ id: entry.id, name: entry.profile?.displayName ?? entry.id,
+const dto = (entry, reason) => ({ id: entry.id, name: entry.profile?.displayName ?? (text(entry.label) ? entry.label : entry.id),
   ...(entry.profile?.api === undefined ? {} : { api: entry.profile.api }),
   models: entry.profile?.models?.map((model) => model.id) ?? [],
   ...(entry.profile?.baseURL === undefined ? {} : { endpoint: entry.profile.baseURL }),
@@ -60,6 +65,17 @@ const freshPeer = (source, peer) => identity(peer) && same(source.identity, peer
 const versionMatch = (a, b) => a.version === b.version && a.schemaVersion === b.schemaVersion
 const recordValid = (record) => plain(record) && record.kind === 'api-key' && text(record.key)
   && Object.keys(record).every((key) => ['kind', 'key'].includes(key))
+/** A login (grant record) is never copied; its own reason lets the page say "log in inside Fishball". */
+const oauthLogin = (entry) => entry.credential?.configured === true && entry.credential.kind === PROVIDER_SYNC.grantKind
+/**
+ * A built-in route (shipped by the adapter, not declared in settings) with no settings override,
+ * an API-key sign-in method and a fixed endpoint. The user asked for keys set up on these to come
+ * over too (2026-11-06): only the key record is added, and only when the target has the same
+ * route in the same state, so the key reaches the same endpoint it was entered for. A route whose
+ * endpoint comes from environment variables is excluded: the other home's environment differs.
+ */
+const builtinKey = (entry) => entry.profile === null && entry.configured === false && entry.declared === false
+  && entry.apiKeyMethod === true && entry.endpointFromEnv === false
 
 export class ProviderSyncEngine {
   #host; #ttl; #now; #plans = new Map(); #incomplete = new Map(); #busy = false; #abort = new AbortController()
@@ -76,17 +92,35 @@ export class ProviderSyncEngine {
     const groups = { add: [], existsSkip: [], conflictSkip: [], unsupported: [] }
     const operations = new Map()
     const sameProfile = source.identity.profileId === target.identity.profileId
-    for (const entry of source.providers.filter((entry) => entry.profile !== null || entry.configured)) {
+    // A provider with only a credential (a login, or a key on a built-in route) is listed too: a
+    // built-in key may be added, and a login is named so the user can sign in inside Fishball.
+    for (const entry of source.providers.filter((entry) => entry.profile !== null || entry.configured || entry.credential?.configured)) {
       // Never send unknown-profile fields into a preview; only whitelisted metadata is eligible.
       const safe = safeSyncProfile(entry.profile, entry.declared)
       const display = safe ? entry : { ...entry, profile: null }
       if (sameProfile) { groups.existsSkip.push(dto(display, 'same-profile')); continue }
       if (!versionMatch(source.identity, target.identity)) { groups.unsupported.push(dto(display, 'version-mismatch')); continue }
-      if (!safe || !entry.supported || entry.owner !== PROVIDER_SYNC.owner || entry.credential?.kind !== 'api-key'
+      const keyOnlyRoute = builtinKey(entry)
+      if ((!safe && !keyOnlyRoute) || !entry.supported || entry.owner !== PROVIDER_SYNC.owner || entry.credential?.kind !== 'api-key'
         || !entry.credential.configured || (!entry.declared && !entry.apiKeyMethod)) {
-        groups.unsupported.push(dto(display, 'unsupported-provider')); continue
+        if (!oauthLogin(entry)) {
+          groups.unsupported.push(dto(display, entry.credential?.configured ? PROVIDER_SYNC.reason.unsupported : PROVIDER_SYNC.reason.noKey))
+          continue
+        }
+        // Already signed in inside the target: nothing to do there, so it reads as present.
+        const signedIn = target.providers.some((candidate) => candidate.id === entry.id && candidate.credential?.configured)
+        if (signedIn) groups.existsSkip.push(dto(display, PROVIDER_SYNC.reason.credentialExists))
+        else groups.unsupported.push(dto(display, PROVIDER_SYNC.reason.oauth))
+        continue
       }
       const existing = target.providers.find((candidate) => candidate.id === entry.id)
+      if (keyOnlyRoute) {
+        const verdict = this.#builtinKeyPlan(entry, existing, target)
+        if (verdict.group !== 'add') { groups[verdict.group].push(dto(entry, verdict.reason)); continue }
+        operations.set(entry.id, verdict.operation)
+        groups.add.push(dto(entry))
+        continue
+      }
       if (!existing && this.#host.describeRecord) {
         const credential = await this.#host.describeRecord(entry.id)
         if (credential.configured) { groups.existsSkip.push(dto(entry, 'credential-exists')); continue }
@@ -124,6 +158,24 @@ export class ProviderSyncEngine {
       operations: new Map([...operations].map(([id, operation]) => [id, structuredClone(operation)])),
       expiresAt, peerIdentity: structuredClone(peerIdentity) })
     return { token, source: source.identity, target: target.identity, sourceFingerprint, expiresAt, groups }
+  }
+
+  /**
+   * Where a built-in key goes: the target must run the same built-in route from the same owner and
+   * schema with no settings override; an existing target key is kept. The operation is key-only,
+   * so confirm never touches settings for it and the record write stays create-only.
+   */
+  #builtinKeyPlan(entry, existing, target) {
+    const R = PROVIDER_SYNC.reason
+    const namespace = existing && target.namespaces.find((candidate) => candidate.ns === existing.settingsNs && candidate.schema === entry.schema)
+    if (!namespace || !existing.supported || existing.owner !== entry.owner) return { group: 'conflictSkip', reason: R.incompatible }
+    if (existing.credential?.configured) return { group: 'existsSkip', reason: R.credentialExists }
+    // Fishball overrides this route itself: the key could reach a different endpoint, so keep it.
+    if (existing.configured || existing.profile !== null) return { group: 'conflictSkip', reason: R.conflict }
+    if (!builtinKey(existing)) return { group: 'conflictSkip', reason: R.incompatible }
+    if (existing.credential?.writable === false) return { group: 'unsupported', reason: R.notWritable }
+    if (!Number.isSafeInteger(target.revision[namespace.ns])) return { group: 'unsupported', reason: R.revision }
+    return { group: 'add', operation: { id: entry.id, profile: null, namespace: namespace.ns, ownerGeneration: namespace.ownerGeneration, keyOnly: true } }
   }
 
   async confirm({ token, sourceFingerprint, items }, peerIdentity, { signal } = {}) {
