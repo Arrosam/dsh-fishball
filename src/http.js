@@ -29,6 +29,7 @@
  * POST question-mode          -> { mode: 'auto' | 'fishball' | 'user' } (who answers managed sessions' questions)
  * POST read                   -> {} (Fishball's chat is on screen: its unread replies are read)
  * POST brand                  -> { style: 'fishball' | 'deepseek' } (the sidebar brand icon, DESIGN §10)
+ * POST sidebar-entry          -> { entry: 'panel' | 'brand' } (a Fishball row in the sidebar, or the brand only; slim §7)
  * POST welcome/seen           -> {} (the welcome card has shown; a repeat changes nothing, DESIGN §10f)
  * GET  messenger/client.js    -> the Messenger look's browser file (DESIGN §10c)
  * GET  plugins/detail?plugin= -> one plugin's page data (DESIGN §10d); 404 unknown
@@ -42,11 +43,12 @@
  */
 import { isSettingInput } from './context-window.js'
 import { readModelSelection } from './model-selection.js'
-import { API, API_CODE, BRAND_STYLE, CARD_DECISION, HTTP, HTTP_METHOD, PLUGIN_MANAGER, QUESTION_MODE, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
+import { API, API_CODE, BRAND_STYLE, CARD_DECISION, HTTP, HTTP_METHOD, PLUGIN_MANAGER, QUESTION_MODE, RECOVERY_ACTION, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS, SIDEBAR_ENTRY } from './constants.js'
 import { LifecycleStateError } from './errors.js'
 
 const ACTIONS = new Set(Object.values(RECOVERY_ACTION))
 const BRAND_STYLES = new Set(Object.values(BRAND_STYLE))
+const SIDEBAR_ENTRIES = new Set(Object.values(SIDEBAR_ENTRY))
 const CARD_DECISIONS = new Set(Object.values(CARD_DECISION))
 const QUESTION_MODES = new Set(Object.values(QUESTION_MODE))
 const json = (status, payload) => new Response(JSON.stringify(payload), { status, headers: RESPONSE_HEADERS.json })
@@ -70,6 +72,7 @@ const BODY = Object.freeze({
   watch: (body) => (isRecord(body) && isName(body.sessionId) ? { sessionId: body.sessionId } : undefined),
   unwatch: (body) => (isRecord(body) && isName(body.watchId) ? { watchId: body.watchId } : undefined),
   brand: (body) => (isRecord(body) && BRAND_STYLES.has(body.style) ? body.style : undefined),
+  sidebarEntry: (body) => (isRecord(body) && SIDEBAR_ENTRIES.has(body.entry) ? body.entry : undefined),
   read: (body) => (isRecord(body) ? {} : undefined),
   managed: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.managed === 'boolean' ? { sessionId: body.sessionId, managed: body.managed } : undefined),
   // An empty note is no note.
@@ -108,7 +111,7 @@ const BODY = Object.freeze({
  *   removeAllowance(toolKey), setContextWindow(setting), send({ sessionId, note }),
  *   addWatch({ sessionId }), removeWatch({ watchId }), setManaged({ sessionId, managed }),
  *   answerRequest({ requestId, decision, note? }), revokeGrant({ grantId }), answerQuestion({ questionId, answers?, approve?, feedback? }),
- *   setQuestionMode(mode), markRead(), setBrandStyle(style), markWelcomeSeen(), messengerScript(),
+ *   setQuestionMode(mode), markRead(), setBrandStyle(style), setSidebarEntry(entry), markWelcomeSeen(), messengerScript(),
  *   pluginDetail(plugin), pluginIcon(plugin), saveSettings({ plugin, row, values, reset }), inspectInstall(spec),
  *   install({ spec, requestId, approvedBuilds }), cancelInstall(requestId), refreshPlugins() }; the commands reject
  *   LifecycleStateError for a refusal (409 unless it names another status); messengerScript resolves the
@@ -210,6 +213,7 @@ export function registerRoutes(ctx, state) {
     { path: API.questionsAnswer, methods: [HTTP_METHOD.post], fetch: command(BODY.questionAnswer, (input) => state.answerQuestion(input)) },
     { path: API.questionMode, methods: [HTTP_METHOD.post], fetch: command(BODY.questionMode, (mode) => state.setQuestionMode(mode)) },
     { path: API.brand, methods: [HTTP_METHOD.post], fetch: command(BODY.brand, (style) => state.setBrandStyle(style)) },
+    { path: API.sidebarEntry, methods: [HTTP_METHOD.post], fetch: command(BODY.sidebarEntry, (entry) => state.setSidebarEntry(entry)) },
     { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
     { path: API.read, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markRead()) },
     { path: API.welcomeSeen, methods: [HTTP_METHOD.post], fetch: command(BODY.read, () => state.markWelcomeSeen()) },
