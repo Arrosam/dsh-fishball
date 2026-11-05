@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', watchesRemove: 'api/fishball/watches/remove', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', model: 'api/fishball/model', models: 'api/fishball/models', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', model: 'api/fishball/model', models: 'api/fishball/models', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
     /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
@@ -701,46 +701,11 @@ window.__ModuleLoader__.load({
       'watchError.limit-reached': 'Fishball is watching as many sessions as it may.',
       'watchError.unknown-watch': 'That watch is already closed.',
       'watchError.unavailable': 'Fishball is not running.',
-      watches: 'Watches',
-      watchesHint: 'Sessions Fishball tells you about when they finish. Set one up from a session\'s menu.',
-      'watchBy.user': 'You',
-      'watchBy.assistant': 'Fishball',
-      'watchBy.agent': 'The session itself',
-      'watchCondition.finished': 'When finished',
-      'watchCondition.per-turn': 'Every turn',
-      'watchStatus.active': 'Active',
-      'watchStatus.closed': 'Closed',
-      'watchStatus.target-missing': 'Session gone',
-      watchFired: 'Told {count}×',
-      intake: 'Queue',
-      intakeHint: 'Inputs that wake Fishball: messages from other sessions, sessions you forward, and notices.',
-      intakeQueued: 'Waiting to be read',
-      intakeFailed: 'Could not be delivered',
-      intakeWakeups: 'Wake-ups this hour',
-      'intakeKind.session': 'From a session',
-      'intakeKind.user': 'From you',
-      'intakeKind.system': 'Notice',
-      'intakeKind.watch': 'Watched session',
-      'intakeKind.approval': 'Permission request',
-      'intakeStatus.pending': 'Waiting',
-      'intakeStatus.accepted': 'Queued',
-      'intakeStatus.consumed': 'Read',
-      'intakeStatus.discarded': 'Cleared',
-      'intakeStatus.failed': 'Failed',
-      outbox: 'Sent by Fishball',
-      outboxHint: 'Messages Fishball sent to other sessions and sessions it started.',
-      'outboxKind.message': 'Message',
-      'outboxKind.start': 'New session',
-      'outboxKind.redirect': 'Redirect',
-      'outboxStatus.delivered': 'Delivered',
-      'outboxStatus.unconfirmed': 'Delivered, not confirmed',
-      'outboxStatus.failed': 'Failed',
       nothingYet: 'Nothing yet.',
       sources: 'Plugin sources',
       sourcesHint: 'Plugins that send Fishball events through ctx.fishball. A source is off while Fishball is not running or has its plugin turned off.',
       sourceOn: 'Accepting events',
       sourceOff: 'Off',
-      'intakeKind.plugin': 'Plugin event',
       approvals: 'Permission requests',
       managedSessions: 'Managed sessions',
       managedSessionsHint: 'Sessions Fishball looks after: they can message it, and their permission requests go to it first. Every other session is yours.',
@@ -1240,46 +1205,11 @@ window.__ModuleLoader__.load({
       'watchError.limit-reached': 'Fishball 关注的会话已达上限。',
       'watchError.unknown-watch': '该关注已关闭。',
       'watchError.unavailable': 'Fishball 未在运行。',
-      watches: '关注',
-      watchesHint: '这些会话完成时 Fishball 会告诉你。可在会话菜单中设置。',
-      'watchBy.user': '你',
-      'watchBy.assistant': 'Fishball',
-      'watchBy.agent': '会话自己',
-      'watchCondition.finished': '完成时',
-      'watchCondition.per-turn': '每个回合',
-      'watchStatus.active': '进行中',
-      'watchStatus.closed': '已关闭',
-      'watchStatus.target-missing': '会话已不存在',
-      watchFired: '已通知 {count} 次',
-      intake: '队列',
-      intakeHint: '会唤醒 Fishball 的输入：其他会话的消息、你转发的会话和通知。',
-      intakeQueued: '等待读取',
-      intakeFailed: '无法送达',
-      intakeWakeups: '本小时唤醒次数',
-      'intakeKind.session': '来自会话',
-      'intakeKind.user': '来自你',
-      'intakeKind.system': '通知',
-      'intakeKind.watch': '关注的会话',
-      'intakeKind.approval': '权限请求',
-      'intakeStatus.pending': '等待中',
-      'intakeStatus.accepted': '已排队',
-      'intakeStatus.consumed': '已读取',
-      'intakeStatus.discarded': '已清除',
-      'intakeStatus.failed': '失败',
-      outbox: 'Fishball 发出的',
-      outboxHint: 'Fishball 发给其他会话的消息和它新建的会话。',
-      'outboxKind.message': '消息',
-      'outboxKind.start': '新会话',
-      'outboxKind.redirect': '重定向',
-      'outboxStatus.delivered': '已送达',
-      'outboxStatus.unconfirmed': '已送达，未确认',
-      'outboxStatus.failed': '失败',
       nothingYet: '暂无。',
       sources: '插件信息源',
       sourcesHint: '通过 ctx.fishball 向 Fishball 发送事件的插件。Fishball 未运行或关闭了该插件时，信息源处于关闭状态。',
       sourceOn: '正在接收事件',
       sourceOff: '已关闭',
-      'intakeKind.plugin': '插件事件',
       approvals: '权限请求',
       managedSessions: '由 Fishball 管理的会话',
       managedSessionsHint: 'Fishball 负责的会话：它们可以给 Fishball 发消息，权限请求会先交给 Fishball。其他会话都由你自己处理。',
@@ -3148,37 +3078,6 @@ window.__ModuleLoader__.load({
         problem ? h('div', { role: 'alert' }, t(problem)) : null)
     }
 
-    /** The queue and the outbox (DESIGN §10): counts and recent entries, no message text. */
-    function makeIntake(t) {
-      return function FishballIntake() {
-        const state = useFishball()
-        const intake = state.intake
-        const outbox = state.outbox
-        if (!intake || !outbox) return null
-        const row = (label, value) => h('div', { className: CLS.row }, h('span', { className: CLS.label }, t(label)), h('span', null, String(value)))
-        return h(React.Fragment, null,
-          h('div', { className: CLS.section, 'data-fishball-intake': true },
-            h('h3', null, t('intake')),
-            h('p', { className: CLS.muted }, t('intakeHint')),
-            row('intakeQueued', intake.queued),
-            row('intakeFailed', intake.failed),
-            row('intakeWakeups', intake.wakeupsThisHour),
-            intake.items.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, intake.items.map((item) => h('li', { key: item.intakeId },
-              h(Tag, { tone: 'neutral' }, t('intakeKind.' + item.kind)), ' ',
-              h('span', { className: CLS.code }, item.sourceIdentity), ' ',
-              h(Tag, { tone: item.status === 'failed' ? 'danger' : 'info' }, t('intakeStatus.' + item.status)), ' ',
-              h('span', { className: CLS.muted }, item.createdAt))))),
-          h('div', { className: CLS.section, 'data-fishball-outbox': true },
-            h('h3', null, t('outbox')),
-            h('p', { className: CLS.muted }, t('outboxHint')),
-            outbox.entries.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, outbox.entries.map((entry) => h('li', { key: entry.key },
-              h(Tag, { tone: 'neutral' }, t('outboxKind.' + entry.kind)), ' ',
-              h('span', { className: CLS.code }, entry.targetSessionId ?? entry.folder ?? ''), ' ',
-              h(Tag, { tone: entry.status === 'failed' ? 'danger' : 'info' }, t('outboxStatus.' + entry.status)), ' ',
-              h('span', { className: CLS.muted }, entry.at))))))
-      }
-    }
-
     /**
      * Whether YOU have an active watch on a session (the entries then say so). A watch Fishball
      * or the session set up (e.g. per-turn) is separate: yours is still offered.
@@ -3365,31 +3264,6 @@ window.__ModuleLoader__.load({
       const running = useSessionStatus((statuses) => statuses.get(sessionId)?.running === true)
       if (!running) return null
       return h(ManagedMark, { state, sessionId, t, running: true })
-    }
-
-    /** The watches section (DESIGN §10): each watch with who set it up, and Remove. */
-    function makeWatches(t) {
-      return function FishballWatches() {
-        const state = useFishball()
-        const [problem, setProblem] = React.useState(null)
-        const view = state.watches
-        if (!view) return null
-        const remove = async (watchId) => {
-          const { ok, code } = await send(API.watchesRemove, { watchId })
-          setProblem(ok ? null : WATCH_ERRORS.has(code) ? 'watchError.' + code : 'watchFailed')
-        }
-        return h('div', { className: CLS.section, 'data-fishball-watches': true },
-          h('h3', null, t('watches')),
-          h('p', { className: CLS.muted }, t('watchesHint')),
-          problem ? h('div', { role: 'alert' }, t(problem)) : null,
-          view.watches.length === 0 ? h('p', null, t('nothingYet')) : h('ul', { className: CLS.entries }, view.watches.map((watch) => h('li', { key: watch.id },
-            h('span', { className: CLS.code }, watch.targetSessionId), ' ',
-            h(Tag, { tone: 'neutral' }, t('watchCondition.' + watch.condition)), ' ',
-            h(Tag, { tone: 'neutral' }, t('watchBy.' + watch.createdBy.kind)), ' ',
-            h(Tag, { tone: watch.status === WATCH_ACTIVE ? 'info' : 'neutral' }, t('watchStatus.' + watch.status)), ' ',
-            watch.firedCount > 0 ? h('span', { className: CLS.muted }, t('watchFired', { count: watch.firedCount })) : null, ' ',
-            watch.status === WATCH_ACTIVE ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void remove(watch.id) }, t('remove')) : null))))
-      }
     }
 
     /** Plugin sources (DESIGN §8, §10): each registered source and whether it accepts events. */
