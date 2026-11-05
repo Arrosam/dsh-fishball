@@ -6,16 +6,17 @@
  * admits only the contract's methods, and answers 401 to anything that does not carry this
  * instance's bearer before it looks at a path or a method.
  *
- * The full chat UI and its API arrive in later tasks. This module owns the shell document, the
- * /ui/* static files, the liveness API, the reminder API (T10) and the SSE stream with the
- * contract's heartbeat; a path beyond them is a bodyless 404, so an unknown route can never
- * serve bytes. The reminder module owns its validation and typed refusals; this hook only moves
- * the request's method, query and bounded JSON body into it and its status and body back out.
+ * This module owns the shell document, the /ui/* static files, the liveness API, the reminder
+ * API (T10), the chat API (T07) and the SSE stream with the contract's heartbeat; a path beyond
+ * them is a bodyless 404, so an unknown route can never serve bytes. The reminder and chat
+ * modules own their validation and typed refusals; this hook only moves the request's method,
+ * query and bounded JSON body into the matched surface and its status and body back out.
  */
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { BEARER, ERROR, LIMITS, ROUTES } from '../contract.js'
+import { CHAT } from './chat.js'
 import { REMINDERS } from './reminders.js'
 
 /**
@@ -29,9 +30,11 @@ const PATHS = Object.freeze({
   ui: childPath(ROUTES.ui),
   events: childPath(ROUTES.events),
   health: childPath(ROUTES.api) + 'health',
-  // REMINDERS.path is already the child's unprefixed tail (/api/reminders); the broker adds
-  // /fishball/embed in front of it (§3.1, T10).
+  // REMINDERS.path and CHAT.path are already the child's unprefixed tails (/api/...); the
+  // broker adds /fishball/embed in front of them (§3.1).
   reminders: REMINDERS.path,
+  chat: CHAT.path,
+  model: CHAT.modelPath,
 })
 
 /** Loopback only; port 0 lets the OS choose, and the parent learns the port from the service. */
@@ -93,9 +96,18 @@ const SSE = Object.freeze({
 const REMINDER_FRAME = 'event: ' + REMINDERS.event + '\ndata: ' + JSON.stringify(REMINDERS.change) + '\n\n'
 
 /**
- * The reminder route's own body refusals. The parsed body is handed to the reminder API, but a
- * body that never parsed or was over the contract bound has no reminder code of its own; these
- * two carry the API's 400 vocabulary (src/slim/child/reminders.js) and the contract's too-large.
+ * One chat change frame: an entry, a text delta, a stream end or a state/model change. The
+ * payload is already the contract src/slim/ui/chat.js understands; this hook only frames it.
+ */
+function chatFrame(payload) {
+  return 'event: ' + CHAT.event + '\ndata: ' + JSON.stringify(payload) + '\n\n'
+}
+
+/**
+ * The JSON API routes' own body refusals. The parsed body is handed to the matched surface, but
+ * a body that never parsed or was over the contract bound has no surface code of its own; these
+ * two carry the reminder API's 400 vocabulary (src/slim/child/reminders.js) and the contract's
+ * too-large.
  */
 const BODY = Object.freeze({
   invalid: Object.freeze({ code: 'invalid-input', message: 'The request body must be JSON.' }),
@@ -124,6 +136,8 @@ const SEPARATOR = path.sep
 const ALLOW = Object.freeze({
   readable: Object.freeze([METHOD.get, METHOD.head]),
   events: Object.freeze([METHOD.get]),
+  /** The chat routes read a page and accept one POST; the module refuses a wrong method too. */
+  chat: CHAT.methods,
 })
 
 /** One response shape, so every status carries the security and cache headers. */
@@ -184,10 +198,11 @@ function readBody(req, limit) {
 }
 
 /**
- * The reminders hook (T10): GET and HEAD list, POST reads one body and mutates. The reminder
- * module owns validation, bounds and typed refusals; this hook only carries status and body.
+ * One JSON API hook for the reminder and chat surfaces: GET and HEAD ask for a page, POST reads
+ * one bounded body and mutates. The surface owns validation, bounds and typed refusals; this
+ * hook only carries status and body.
  */
-async function serveReminders(req, res, reminders) {
+async function serveApi(req, res, handle) {
   if (req.method === METHOD.post) {
     let body
     try {
@@ -199,11 +214,11 @@ async function serveReminders(req, res, reminders) {
       sendAnswer(res, { status: HTTP.badRequest, body: BODY.invalid }, false)
       return
     }
-    sendAnswer(res, await reminders.handle({ method: req.method, body }), false)
+    sendAnswer(res, await handle({ method: req.method, body }), false)
     return
   }
   const url = new URL(req.url, BASE_ORIGIN)
-  sendAnswer(res, await reminders.handle({ method: req.method, query: url.searchParams }), req.method === METHOD.head)
+  sendAnswer(res, await handle({ method: req.method, query: url.searchParams }), req.method === METHOD.head)
 }
 
 /**
@@ -260,7 +275,7 @@ async function uiRoute(uiDir, pathname) {
  * heartbeat keeps a 30 s idle broker from closing it (§3.6). Closing the response, the client
  * dropping, or the server disposing all run the same cleanup exactly once.
  */
-function serveEvents(res, heartbeatMs, streams, reminders) {
+function serveEvents(res, heartbeatMs, streams, reminders, chat) {
   res.writeHead(HTTP.ok, {
     ...SECURITY,
     'content-type': TYPE.eventStream,
@@ -271,13 +286,15 @@ function serveEvents(res, heartbeatMs, streams, reminders) {
   let timer
   let closed = false
   let unsubscribe = () => {}
+  let unsubscribeChat = () => {}
   const close = () => {
     if (closed) return
     closed = true
     clearInterval(timer)
-    // The reminder subscription belongs to this stream only: a closed stream must not keep
-    // re-reading a list it can no longer send.
+    // The subscriptions belong to this stream only: a closed stream must not keep re-reading
+    // a list it can no longer send.
     unsubscribe()
+    unsubscribeChat()
     streams.delete(close)
     try { res.end() } catch { /* the client already closed the response */ }
   }
@@ -286,6 +303,9 @@ function serveEvents(res, heartbeatMs, streams, reminders) {
     try { res.write(frame) } catch { close() }
   }
   unsubscribe = reminders.subscribe(() => write(REMINDER_FRAME))
+  // The chat surface exists only when the app mounted it; without it the stream still carries
+  // reminders, so a T03-only server keeps working.
+  if (chat !== undefined) unsubscribeChat = chat.subscribe((payload) => write(chatFrame(payload)))
   streams.add(close)
   res.on('close', close)
   res.on('error', close)
@@ -310,7 +330,7 @@ async function resolveRoute(pathname, options) {
   if (pathname === PATHS.events) {
     return {
       allow: ALLOW.events,
-      serve: (_req, res) => serveEvents(res, options.heartbeatMs, options.streams, options.reminders),
+      serve: (_req, res) => serveEvents(res, options.heartbeatMs, options.streams, options.reminders, options.chat),
     }
   }
   if (pathname === PATHS.health) {
@@ -323,8 +343,15 @@ async function resolveRoute(pathname, options) {
     // The reminder module's own method list: GET and HEAD list, POST mutates (T10).
     return {
       allow: REMINDERS.methods,
-      serve: (req, res) => serveReminders(req, res, options.reminders),
+      serve: (req, res) => serveApi(req, res, (request) => options.reminders.handle(request)),
     }
+  }
+  if (options.chat !== undefined) {
+    // The chat route (T07) reads the page and queues one prompt; its module refuses a wrong
+    // method and any payload key beyond the contract.
+    const chat = options.chat
+    if (pathname === PATHS.chat) return { allow: ALLOW.chat, serve: (req, res) => serveApi(req, res, (request) => chat.handle(CHAT.path, request)) }
+    if (pathname === PATHS.model) return { allow: ALLOW.chat, serve: (req, res) => serveApi(req, res, (request) => chat.handle(CHAT.modelPath, request)) }
   }
   return undefined
 }
@@ -356,11 +383,14 @@ async function handle(req, res, options) {
  * @param {number} [options.heartbeatMs] - SSE heartbeat interval; defaults to the contract limit.
  * @param {{ handle: Function, subscribe: Function }} options.reminders - the reminder surface
  *   from src/slim/child/reminders.js (T10): /api/reminders and the SSE change event.
+ * @param {{ handle: Function, subscribe: Function }} [options.chat] - the chat surface from
+ *   src/slim/child/chat.js (T07): /api/chat, /api/model and the SSE chat event. Optional so a
+ *   shell-only server still serves the document, reminders and liveness.
  * @returns {{ readonly origin: string | undefined, start: () => Promise<string>, close: () => Promise<void> }}
  *   origin is undefined until start() resolves; start() binds 127.0.0.1:0 and returns the origin.
  */
 export function createAppServer(options) {
-  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs, reminders } = options ?? {}
+  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs, reminders, chat } = options ?? {}
   if (!authority || typeof authority.accepts !== 'function') throw new TypeError('fishball-native-app: a bearer authority is required')
   if (typeof uiDir !== 'string' || !path.isAbsolute(uiDir)) throw new TypeError('fishball-native-app: an absolute UI directory is required')
   if (!Buffer.isBuffer(document)) throw new TypeError('fishball-native-app: the shell document must be a Buffer')
@@ -368,9 +398,12 @@ export function createAppServer(options) {
   if (!reminders || typeof reminders.handle !== 'function' || typeof reminders.subscribe !== 'function') {
     throw new TypeError('fishball-native-app: the reminders surface is required')
   }
+  if (chat !== undefined && (typeof chat.handle !== 'function' || typeof chat.subscribe !== 'function')) {
+    throw new TypeError('fishball-native-app: the chat surface must implement handle and subscribe')
+  }
 
   const streams = new Set()
-  const settings = { authority, uiDir, document, heartbeatMs, streams, reminders }
+  const settings = { authority, uiDir, document, heartbeatMs, streams, reminders, chat }
   let origin
   let listening = false
   let closed = false

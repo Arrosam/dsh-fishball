@@ -1,9 +1,10 @@
 /**
- * The child app row, fishball-native-app (§2.1, §2.3, §15 T03).
+ * The child app row, fishball-native-app (§2.1, §2.3, §15 T03 and T07).
  *
  * T02 inserts this module as the child profile's required app row. It owns the child's loopback
  * server: the shell document, /ui/*, /api/health and /api/events, all behind the bearer this
- * instance mints (§3.2). The chat API and its UI belong to later tasks.
+ * instance mints (§3.2). The chat row (T07) lives inside this row: createChat owns Fishball's
+ * Session, the /api/chat and /api/model routes and the chat SSE event.
  *
  * Contract for the child runtime (T02) and the main-side broker (T04):
  *   ctx.get('fishballApp') -> { origin, bearer }
@@ -13,7 +14,7 @@
  * The service exists exactly while the listener is up; a missing service means "not ready". The
  * parent's readiness probe makes one authenticated request (GET /api/health) and requires 200
  * (§2.3). The lifecycle row config (mainHome, hostId, instanceId, limits, control) belongs to
- * T02; this module needs none of it at T03.
+ * T02; this row reads the launcher's profileContext for the chat record's home instead.
  *
  * The row runs from the child's code snapshot, so T02's copyChildCode must carry this module's
  * whole tree — src/slim/child/*.js, ../contract.js, ../limits.js and every file under ../ui/. A
@@ -24,6 +25,7 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { createAppServer } from './server.js'
 import { createAuthority } from './auth.js'
+import { createChat } from './chat.js'
 import { createReminders } from './reminders.js'
 
 /** Stable Cordis plugin name; T02's overlay row id is the same string (§2.3). */
@@ -33,10 +35,8 @@ const APP = Object.freeze({
   service: 'fishballApp',
   logger: 'fishball-native-app',
   /**
-   * T07's chat row will publish the agent resolver the Schedule runtime needs to deliver into
-   * Fishball's existing Session (schedule/resolve-agent). It does not exist yet, so the seam is
-   * read now and simply absent: reminders still list and cancel, and only a delivery into an
-   * existing Session fails until T07 mounts the chat row and provides it.
+   * The chat row's service (T07): the Schedule runtime's activation owner and the admin
+   * service's live-model port read it by this name. It exists exactly while this app row runs.
    */
   chatService: 'fishballChat',
 })
@@ -50,16 +50,19 @@ const APP = Object.freeze({
 export async function apply(ctx) {
   const document = await readFile(fileURLToPath(new URL('../ui/shell.html', import.meta.url)))
   const authority = createAuthority()
-  // The resolver is optional until T07 provides it; createReminders validates what it gets.
-  // The wrapper keeps the chat service as `this`, so a Cordis service proxy sees its caller.
-  const chat = ctx.get(APP.chatService)
-  const resolveAgent = typeof chat?.resolveAgent === 'function' ? (sessionId, next) => chat.resolveAgent(sessionId, next) : undefined
-  const reminders = createReminders(ctx, resolveAgent === undefined ? {} : { resolveAgent })
+  // The chat row owns the one Session and publishes the two ports other rows read: the
+  // Schedule runtime's resolver and the admin service's live-model applier (T10, T11).
+  const chat = createChat(ctx)
+  await chat.start()
+  ctx.effect(() => () => chat.close(), name + ': chat session')
+  ctx.provide(APP.chatService, chat.service)
+  const reminders = createReminders(ctx, { resolveAgent: (sessionId, next) => chat.resolveAgent(sessionId, next) })
   const server = createAppServer({
     authority,
     document,
     uiDir: fileURLToPath(new URL('../ui/', import.meta.url)),
     reminders,
+    chat,
   })
   await server.start()
   ctx.effect(() => () => server.close(), name + ': loopback server')
