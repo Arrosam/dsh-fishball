@@ -2,8 +2,9 @@
  * The main-host SessionService port for the slim session bridge (§5.2, §15 T05 merge).
  *
  * bridge.js owns framing, authorization and the §5.2 operation shapes; this module answers the
- * sixteen methods in that file's header with the same main-DSH services today's Fishball tools
- * use, so the bridge gets today's powers without a second implementation of them:
+ * session methods in that file's header — plus the attachment port it registers — with the same
+ * main-DSH services today's Fishball tools use, so the bridge gets today's powers without a
+ * second implementation of them:
  * - create/message/redirect/stop/read/describe use sessionController.create, resolveAgent,
  *   cancel, state, projections and the history page, sessions.flush, agents.get,
  *   workspaceRegistry and the optional sessionTitle service, exactly as src/messaging.js and
@@ -22,7 +23,12 @@
  *
  * Read messages carry the bridge's own projection (seq, role, author and image metadata) instead
  * of read_session's untrusted-block shape; the role vocabulary and the per-event text helper are
- * shared with src/session-info.js, and images are metadata only because T06 owns their transfer.
+ * shared with src/session-info.js.
+ *
+ * Attachments (§6.4) are the image port from src/slim/host/images.js: attachment.read/put serve the
+ * bridge's two transfer operations, and start/message/redirect consume the hostRefs a child just
+ * put into the one user message they build. A file becomes DSH's own file block, which request
+ * assembly projects to handle text; nothing here inlines file bytes into a provider request.
  */
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionTitleInvalidError } from '@deepseek-ai/dsh-session-title'
@@ -30,6 +36,7 @@ import { ContractError, DELIVERY, ERROR, ROLE, WATCH_ERROR } from '../contract.j
 import { MANAGED_BY, OPTIONAL_SERVICE, SESSION_INFO, SOURCE, TITLE_ERROR, WORKSPACE_ERROR } from '../../constants.js'
 import { senderOf, textOfEvent } from '../../session-info.js'
 import { prepareSessionModel, applySessionModel } from '../../session-model.js'
+import { createImagePort } from './images.js'
 import { byteLength, cutToBytes } from '../../text.js'
 
 /**
@@ -70,9 +77,9 @@ const stateOf = (ctx) => {
 }
 
 /** One user message with Fishball as the sender, as src/messaging.js builds it. */
-function userMessageOf(text, assistantId) {
+function userMessageOf(text, assistantId, attachments = []) {
   return createUserMessage({
-    content: [{ type: 'text', text }],
+    content: [{ type: 'text', text }, ...attachments],
     source: { ...SOURCE.relay, senderSessionId: assistantId },
   })
 }
@@ -109,16 +116,18 @@ function messageOf(event, text, assistantId) {
 /**
  * Create the port over a main-host Cordis context.
  *
- * @param {object} ctx - native-host row context (sessions, sessionController, agents, workspaceRegistry, get, logger).
+ * @param {object} ctx - native-host row context (sessions, sessionController, agents, workspaceRegistry,
+ *   attachments, sessionQuery, get, logger).
  * @param {object} [options]
  * @param {() => boolean} [options.enabled] - the native host's own switch; the port also requires
  *   the Fishball row's state service, so a bridge without the legacy row answers feature-off.
  * @returns {SessionService} the object bridge.js validates and calls.
  */
 export function createSessionPort(ctx, options = {}) {
-  const { enabled = () => true } = options ?? {}
+  const { enabled = () => true, now = Date.now } = options ?? {}
   if (!ctx || typeof ctx.get !== 'function') throw new TypeError('fishball-native-host: a Cordis context is required')
   if (typeof enabled !== 'function') throw new TypeError('fishball-native-host: enabled must be a function')
+  if (typeof now !== 'function') throw new TypeError('fishball-native-host: now must be a function')
   for (const service of DSH_SERVICES) {
     if (ctx[service] === undefined) throw new TypeError('fishball-native-host: missing service ' + service)
   }
@@ -131,6 +140,31 @@ export function createSessionPort(ctx, options = {}) {
     return found
   }
   const workspaces = () => ctx.workspaceRegistry.list()
+
+  /**
+   * The image port needs the full log (sessionQuery.readSession) and the attachment store. Both
+   * are in dsh-base, but a minimal composition may omit them. Resolution is lazy so a profile
+   * that mounts those services after this row still gets the attachment operations; until then
+   * an attachment call is a typed feature-off, never a silently dropped image.
+   */
+  let imagePort
+  function imagePortOf() {
+    if (imagePort !== undefined) return imagePort
+    const attachmentStore = ctx.get('attachments')
+    const sessionQuery = ctx.get('sessionQuery')
+    if (typeof attachmentStore?.readImage !== 'function' || typeof sessionQuery?.readSession !== 'function') {
+      throw new ContractError(ERROR.featureOff)
+    }
+    imagePort = createImagePort({ attachments: attachmentStore, sessionQuery, now })
+    return imagePort
+  }
+
+  /** The bridge's §6.2/§6.4 surface; methods resolve the port on first use. */
+  const attachment = Object.freeze({
+    read: ({ sessionId, attachmentId }) => imagePortOf().read({ sessionId, attachmentId }),
+    put: (payload) => imagePortOf().put(payload),
+    resolve: (hostRefs) => hostRefs.length === 0 ? [] : imagePortOf().resolve(hostRefs),
+  })
 
   /** The workspace a session belongs to, or null for an ungrouped session. */
   const workspaceOf = (sessionId) => workspaces().find((workspace) => workspace.sessionIds.includes(sessionId))?.id ?? null
@@ -177,19 +211,37 @@ export function createSessionPort(ctx, options = {}) {
   }
 
   /** Hand a message to a session's agent and flush it; false on the flush is unconfirmed, never failed. */
-  async function handOver(agent, text, assistantId, send) {
-    await send(agent, userMessageOf(text, assistantId))
+  async function handOver(agent, text, assistantId, send, attachments) {
+    await send(agent, userMessageOf(text, assistantId, attachments))
     let flushed = false
     try { flushed = await ctx.sessions.flush(agent.session) === true } catch { /* Unconfirmed, not undelivered. */ }
     return { status: flushed ? DELIVERY.delivered : DELIVERY.unconfirmed }
   }
 
-  /** Resolve and deliver, as src/messaging.js's deliver does. A missing agent is a refusal, not a status. */
-  async function deliver(sessionId, text, send) {
+  /**
+   * Consume the hostRefs a child put just before this message. An empty list needs no port; a
+   * non-empty one without the port is refused feature-off, never silently delivered as text.
+   */
+  async function attachmentsOf(hostRefs) {
+    if (hostRefs === undefined || hostRefs.length === 0) return []
+    return attachment.resolve(hostRefs)
+  }
+
+  /** Resolve and deliver one message with already-consumed attachment blocks. */
+  async function deliverWith(sessionId, text, send, attachments) {
     const { assistantId } = state()
     const resolved = await ctx.sessionController.resolveAgent(sessionId)
     if (resolved.agent === undefined) throw new ContractError(ERROR.unknownSession)
-    return handOver(resolved.agent, text, assistantId(), send)
+    return handOver(resolved.agent, text, assistantId(), send, attachments)
+  }
+
+  /**
+   * Consume hostRefs and deliver. A refused hostRef fails before resolveAgent, so an invalid
+   * or expired ref cannot activate a session or leave a half-built message behind.
+   */
+  async function deliver(sessionId, text, send, hostRefs = []) {
+    const attachments = await attachmentsOf(hostRefs)
+    return deliverWith(sessionId, text, send, attachments)
   }
 
   /**
@@ -221,10 +273,12 @@ export function createSessionPort(ctx, options = {}) {
   }
 
   /** Create -> title -> model -> manage -> first delivery; the contract has no field for a failed start delivery. */
-  async function start({ target, title, model, reasoningEffort, message }) {
+  async function start({ target, title, model, reasoningEffort, message, attachments: hostRefs = [] }) {
     const registry = state()
     // Validate the model before anything is created, so a refused choice leaves no session behind.
     const selection = await prepareSessionModel(ctx, model, reasoningEffort)
+    // Consume hostRefs only after the model check: a refused model keeps the refs usable.
+    const attachments = await attachmentsOf(hostRefs)
     const created = await createSession(target)
     const named = nameSession(created.sessionId, title)
     if (selection !== undefined) await applySessionModel(ctx, created.sessionId, selection)
@@ -237,7 +291,7 @@ export function createSessionPort(ctx, options = {}) {
     // the answer reports the registry's state rather than the call's outcome.
     const managed = registry.isManaged(created.sessionId)
     try {
-      await deliver(created.sessionId, message, (agent, input) => agent.steer(input))
+      await deliverWith(created.sessionId, message, (agent, input) => agent.steer(input), attachments)
     } catch (error) {
       logger?.warn('first delivery to %s failed (%s)', created.sessionId, error?.code ?? ERROR.failed)
     }
@@ -299,17 +353,20 @@ export function createSessionPort(ctx, options = {}) {
       return found === undefined ? undefined : { id: found.id }
     },
     start,
-    message: ({ sessionId, message }) => deliver(sessionId, message, (agent, input) => agent.steer(input)),
-    redirect: ({ sessionId, message }) => deliver(sessionId, message, async (agent, input) => {
+    message: ({ sessionId, message, attachments }) => deliver(sessionId, message, (agent, input) => agent.steer(input), attachments),
+    redirect: ({ sessionId, message, attachments }) => deliver(sessionId, message, async (agent, input) => {
       // The Stop button's path, then the instruction as the next turn (src/messaging.js).
       await ctx.sessionController.cancel({ sessionId })
       agent.followup(input)
-    }),
+    }, attachments),
     async stop({ sessionId }) {
       // An idle session has no live agent and nothing to stop; DSH's cancel is the Stop button.
       if (ctx.agents.get(sessionId) !== undefined) await ctx.sessionController.cancel({ sessionId })
     },
     read,
+    // T06's two bridge operations. attachment.read answers metadata plus chunks; the image port
+    // has already checked that this Session's log references the id.
+    attachment,
     async watch({ sessionId, mode }) {
       try {
         return { watchId: (await state().watch({ sessionId, mode })).id }
