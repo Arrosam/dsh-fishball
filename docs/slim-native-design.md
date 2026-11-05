@@ -910,13 +910,13 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
      escalation, the user's own decision. The descriptor's optional `arguments` /
      `argumentsStatus` pair is the one contract addition (LIMITS.argumentChars).
   3. The turn tail is gone: `client.js` no longer registers `SLOT.turnTail`, and its tag text,
-     tag copy and tag CSS are deleted. Tag records and their store stay until T15 removes them.
+     tag copy and tag CSS are deleted. T15 removed the tag records and their store.
   4. The settings decision audit list is gone (the old build's list is `client.js`'s
      `makeApprovals`, d67e69f:2794-2816, audit rows at 2809-2814). The `approvalAnswer.*` and
      `approvalOutcome.*` copy and `AUDIT_PASS` went with it. The Auto / Fishball / You question
      mode and its one-line description stay in settings, rendered by `makeSettingsPage`.
-     The audit table and `broker.snapshot().recent` remain (a T15 question), so no storage or API
-     is lost.
+     The approvals audit table and `broker.snapshot().recent` remain: T15's removal list named
+     only the tag table, so no approvals storage or API is lost.
 - Persistence and restart (the user's explicit rule: a card never expires):
   - Pile cards are written while they wait to the plugin's own domain, `fishball.json` table
     `pile` (`{scope, card, filedAt}`) in `$DSH_HOME/storages/fishball.json`, the store the plugin
@@ -980,11 +980,42 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
 
 ### Wave 7 — cleanup (one task)
 
-**T15 — Retire the legacy Fishball `[client]` plus `[host]`**
+**T15 — Retire the legacy Fishball `[client]` plus `[host]` — DONE (2026-11-05)**
 - Goal: §12, after every new path is merged and green.
+- Branch: `feat/slim-t15`, cut from `feat/slim-integration` at
+  `5b5b94dc6dae47786b51427e2931d9b425353b69`.
 - Owns: `index.js`, `cordis.patch.yml`, `package.json` exports, the remaining legacy modules.
-- Depends: all. Acceptance: no legacy chat route, no tag table, no dead constants or CSS, the
-  plugin still loads with only the new rows, and the main DSH is unaffected on restart.
+- Depends: all.
+- Built:
+  1. The in-process chat entry is gone from `client.js`: `openFishball`, `fishballOpener`,
+     `CHAT_STATUSES`, the `uiWorkspace` service lookup, `API.recovery` and the recovery/status
+     buttons are deleted. The brand button and the embed panel open only `/fishball/embed/`; a
+     child that is not ready shows its safe state and code plus Retry (`makeEmbedPanel`), never the
+     old chat.
+  2. The settings page keeps only the slim sections. Deleted its dead legacy renderers and their
+     exclusive dependencies: status/recovery (`OFFERED`, `ACTION`), plugins summary, recommended
+     list, context window (`CONTEXT_FIELDS`, `CONTEXT_ERRORS`, `WHOLE_NUMBER`, the
+     `API.contextWindow` path), hidden tools, plugin sources, and the approvals/managed-session
+     list; and `makeProviderSyncSettings` with its `PROVIDER_SYNC_UI` pairing strings. Their
+     dictionary entries and now-unused CSS/helpers went too (`MODEL.pickerClass`, `countText`,
+     the old model-catalog validators, the unused `API.model`/`API.models` paths).
+     `makeNativeSettings`, `makeModelSettings`, `makeChildPlugins`, `makeChildSettings`,
+     `ProviderSyncSlot`, `makeBrandStyle`, the question mode and the limits form remain.
+  3. T08's deferred cleanup is complete: `src/tags.js` is deleted; the store no longer defines the
+     `tags` table or its record schema; `src/approvals.js` and `src/questions.js` no longer write
+     tag records (`TAG_KIND` and `QUESTION_TAG_ANSWER` removed); and the state feed no longer
+     publishes `tags`. `answerWords` stays because the child's decision label still carries a
+     question answer's words.
+  4. `src/recommended.js` stays: `ADMIN_RECOMMENDED` (`src/slim/host/admin.js`) and the
+     recommended/welcome view read it.
+- Deliberately not touched: the send/watch/hand-over entries and the accent-button CSS (T14), the
+  persona and overlay (release prep), and the still-registered welcome card, model gate, managed
+  banner and pile, which are live components rather than dead code. `src/native-web.js`'s status
+  route stays for the embed panel, and the shared provider-sync engine/route stays for T16. The
+  approvals audit table and `broker.snapshot().recent` also stay; the removal list named the tag
+  table only.
+- Acceptance: no legacy chat route, no tag table, no dead constants or CSS, the plugin still loads
+  with only the new rows, and the main DSH is unaffected on restart.
 - Tests: `RET-01 no legacy chat surface`; `-02 plugin loads with the new rows`; `-03 restart is
   clean`; `-04 no orphaned storage table`.
 
