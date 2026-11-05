@@ -13,9 +13,15 @@
  * - a question Fishball sends to the user (`to_user`) comes back as an inbox notice with the
  *   QUESTION_ANSWER marker. It becomes a timeline answer event for T07, because the frozen
  *   approval.settled payload cannot carry answer words;
+ * - a call that ran on an approval already given (a one-time pass or a standing grant) arrives as
+ *   `approval.ran` and becomes one "ran on …" label (T08): the settings audit list that used to
+ *   show that row is gone, so the label is its only place now;
  * - a card the main row closed without the user's answer comes back the same way with the
  *   CARD_CLOSED marker (src/slim/inbox-markers.js). It becomes one "closed: <reason>" row and ends
  *   the waiting label, so a card the user never answered is never dropped silently;
+ * - labels and closure rows are durable (src/slim/child/decisions.js): the child stops with the
+ *   main DSH, and Fishball's chat keeps its decision history across that restart; a waiting label
+ *   comes back waiting, so the host's later settlement still updates it;
  * - the root `user-questions/request` listener answers Fishball's OWN questions in its own chat.
  *   It takes the live request (never the userQuestions projection, which only records timed
  *   questions) and resolves it with the user's batch, exactly as the SDK adapter does.
@@ -39,16 +45,18 @@
  * `fishballBridge` service and opens no second channel. `require()` makes the seven operations
  * part of the next hello automatically (the SDK's own mechanism).
  */
+import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL_KIND, DECISION, ERROR, EVENT, GRANT_KIND, LIMITS, OPERATION, PLAN_REVIEW, RISK, SETTLED_BY, ContractError } from '../contract.js'
+import { APPROVAL_KIND, DECISION, ERROR, EVENT, GRANT_KIND, LIMITS, OPERATION, PLAN_REVIEW, RAN_VIA, RISK, SETTLED_BY, ContractError } from '../contract.js'
 import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
+import { createDecisionStore } from './decisions.js'
 
 /** Stable Cordis plugin name; native-child.js mounts it after the session-tools row. */
 export const name = 'fishball-native-approvals'
 export const inject = ['tools', 'fishballBridge']
 
-const CHILD = Object.freeze({ bridge: 'fishballBridge', service: 'fishballApprovals' })
+const CHILD = Object.freeze({ bridge: 'fishballBridge', service: 'fishballApprovals', profile: 'profileContext' })
 
 /** The six tool names, unchanged from today's main Fishball tools. */
 export const APPROVAL_TOOL = Object.freeze({
@@ -482,6 +490,14 @@ export function apply(ctx) {
   }
   const disposers = []
   const registrations = []
+  const profile = ctx.get(CHILD.profile)
+  const logger = typeof ctx.logger === 'function' ? ctx.logger(name + ': decisions') : undefined
+  // The label history is durable when the child has its own home (it always does in production):
+  // the labels live in Fishball's chat, which must keep them across a child restart (T08). A host
+  // without a profile home keeps them in memory, as before.
+  const decisions = typeof profile?.home === 'string' && path.isAbsolute(profile.home)
+    ? createDecisionStore({ home: profile.home, limits: APPROVALS.limits, logger })
+    : undefined
 
   const publish = () => {
     for (const listener of state.listeners) {
@@ -489,12 +505,20 @@ export function apply(ctx) {
     }
   }
 
+  /** The record after any label or closure changed. Queued by the store, never awaited here. */
+  const persist = () => {
+    if (decisions === undefined) return
+    void decisions.save({ labels: [...state.labels.values()], closed: [...state.closed] })
+  }
+
   /** Store one decision label; T08 renders it as the inline label, never a turn-tail tag. */
   const recordLabel = (card, kind, answer, outcome, extra = {}) => {
     const decisionId = LABEL.prefix + randomUUID().replace(/-/g, '')
     const request = card === undefined ? {} : {
       approvalId: card.approvalId, toolName: card.toolName, callId: card.callId,
-      prompt: card.prompt, choices: [...card.choices], reason: card.reason, quotes: [...card.quotes],
+      prompt: card.prompt, choices: [...(card.choices ?? [])], reason: card.reason, quotes: [...(card.quotes ?? [])],
+      // T08: the exact call, so a label expands to the request the user decided (not only its name).
+      ...(card.arguments === undefined ? {} : { arguments: card.arguments, argumentsStatus: card.argumentsStatus }),
       ...(card.questions === undefined ? {} : { questions: card.questions }),
     }
     // A label still waiting for the user is never dropped by the audit cap: the card would vanish
@@ -506,6 +530,7 @@ export function apply(ctx) {
       decisionId, kind, sessionId: card?.sessionId ?? '', title: card?.title ?? '', at: Date.now(),
       request, answer: cutChars(trimmed(answer), LIMITS.reasonChars), outcome, settled: null, waiting: false, ...extra,
     }, APPROVALS.limits.labels, (label) => label.waiting === true)
+    persist()
     return decisionId
   }
 
@@ -514,6 +539,7 @@ export function apply(ctx) {
     if (label === undefined) return
     label.settled = { decision: payload.decision, by: payload.by, at: Date.now() }
     label.waiting = false
+    persist()
   }
 
   /** One `approval.settled`: close the card, update the waiting label or record the user's outcome. */
@@ -574,6 +600,25 @@ export function apply(ctx) {
     state.cards.delete(approvalId)
     state.closed.unshift({ approvalId, sessionId, at, reason })
     state.closed.length = Math.min(state.closed.length, APPROVALS.limits.closed)
+    persist()
+    publish()
+  }
+
+  /**
+   * T08: a call ran on an approval already given (a one-time pass or Fishball's standing grant).
+   * The host's settings audit list used to show this row; it is one inline label now, at the time
+   * it ran, with the exact call and Fishball's reason when the host had one.
+   */
+  const receiveRan = (envelope) => {
+    const payload = envelope.payload
+    if (payload === null || typeof payload !== 'object' || typeof payload.approvalId !== 'string') return
+    const card = {
+      approvalId: payload.approvalId, sessionId: envelope.sessionId, title: '', toolName: payload.toolName, callId: null,
+      prompt: '', choices: [], reason: payload.reason, quotes: [],
+      ...(payload.arguments === undefined ? {} : { arguments: payload.arguments, argumentsStatus: payload.argumentsStatus }),
+    }
+    recordLabel(card, payload.via === RAN_VIA.pass ? LABEL.kind.approval : LABEL.kind.grant, '',
+      { ran: payload.via, ranBy: payload.by }, { at: payload.at })
     publish()
   }
 
@@ -596,6 +641,28 @@ export function apply(ctx) {
     state.answers.length = Math.min(state.answers.length, APPROVALS.limits.answers)
     publish()
     return true
+  }
+
+  /**
+   * Put the last run's labels and closures back (T08). A label that was waiting keeps waiting:
+   * the host's settlement still updates it when it arrives (a reconnect, or the user's later
+   * answer), and a closure the host sends ends it exactly as it would have before the restart.
+   */
+  const restoreRecord = (record) => {
+    for (const label of record.labels) {
+      if (state.labels.has(label.decisionId)) continue
+      state.labels.set(label.decisionId, label)
+      const approvalId = label.request?.approvalId
+      if (label.waiting === true && typeof approvalId === 'string' && approvalId !== '') state.pending.set(approvalId, label.decisionId)
+    }
+    state.closed.push(...record.closed)
+    state.closed.length = Math.min(state.closed.length, APPROVALS.limits.closed)
+  }
+
+  if (decisions !== undefined) {
+    void decisions.load()
+      .then((record) => { if (!state.disposed) { restoreRecord(record); publish() } })
+      .catch(() => { /* the store already logged it; the chat works without the history */ })
   }
 
   const requireCard = (approvalId, kind) => {
@@ -876,6 +943,7 @@ export function apply(ctx) {
   disposers.push(bridge.onEvent((envelope) => {
     if (envelope.operation === EVENT.approvalRequest) receiveCard(envelope.sessionId, envelope.payload)
     else if (envelope.operation === EVENT.approvalSettled) settle(envelope.payload)
+    else if (envelope.operation === EVENT.approvalRan) receiveRan(envelope)
   }))
   disposers.push(bridge.onInbox((item) => receiveClosed(item) || receiveAnswer(item)))
   disposers.push(ctx.on(QUESTION.waterfall, (request, next) => askUser(request, next), { prepend: true }))

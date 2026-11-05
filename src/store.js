@@ -4,7 +4,7 @@
  * version or record this code does not understand, and the lifecycle then reports
  * `store-unreadable` instead of overwriting anything.
  *
- * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants, own_requests and notices tables keep version 1 (as do the dedicated model selection and question-mode records, rev11g's tag answers and question audit ends, which only add values): the single-file layout reads a table missing from an
+ * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, tags, grants, own_requests, notices and pile (T08) tables keep version 1 (as do the dedicated model selection and question-mode records, rev11g's tag answers and question audit ends, which only add values): the single-file layout reads a table missing from an
  * older file as empty (dsh-storage-json), and no existing record changes shape.
  */
 import { z } from 'zod'
@@ -12,7 +12,7 @@ import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, APPROVAL_DECISION, TAG_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_TAG_ANSWER, QUESTION_END, MODEL_SELECTION } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags', grants: 'grants', ownRequests: 'own_requests', notices: 'notices' })
+const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', tags: 'tags', grants: 'grants', ownRequests: 'own_requests', notices: 'notices', pile: 'pile' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -44,6 +44,18 @@ const preferencesRecord = z.object({
 
 /** A one-time notice that has shown (revision 12: the welcome card, DESIGN §10f); absent means not yet. */
 const noticeRecord = z.object({ seenAt: z.string() })
+
+/**
+ * One card waiting in the user's pile (T08, src/pile.js). Plain card data, kept as published; the
+ * scope names the pile that owns it (PILE_SCOPE), so the broker's pile and the question router's
+ * never read each other's records. A card is removed the moment it leaves the pile, and one that
+ * is still stored at start is rebuilt and then closed as `restarted` (no call waits on it).
+ */
+const pileCardRecord = z.object({
+  scope: z.string().min(1),
+  card: z.record(z.string(), z.unknown()),
+  filedAt: z.string(),
+})
 
 /** A positive whole number of tokens (context-window settings). */
 export const tokenCount = z.number().int().positive()
@@ -314,6 +326,7 @@ export const fishballDomain = defineDomain({
     [TABLE.grants]: domainTable(grantRecord),
     [TABLE.ownRequests]: domainTable(ownRequestRecord),
     [TABLE.notices]: domainTable(noticeRecord),
+    [TABLE.pile]: domainTable(pileCardRecord),
   },
 })
 
@@ -362,6 +375,7 @@ export class Store {
   get grants() { return this.#domain.table(TABLE.grants) }
   get ownRequests() { return this.#domain.table(TABLE.ownRequests) }
   get notices() { return this.#domain.table(TABLE.notices) }
+  get pile() { return this.#domain.table(TABLE.pile) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }

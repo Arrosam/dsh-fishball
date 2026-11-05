@@ -34,7 +34,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   APPROVAL_KIND, ARGUMENTS_STATUS, DECISION, ERROR, EVENT, GRANT_KIND, INBOX_KIND, LIMITS, OPERATION,
-  PLAN_REVIEW, SETTLED_BY, ContractError,
+  PLAN_REVIEW, RAN_VIA, SETTLED_BY, ContractError,
 } from '../contract.js'
 import { cutToBytes } from '../../text.js'
 import { diagnosticOf } from '../../errors.js'
@@ -59,7 +59,15 @@ const DECISION_LIST = Object.freeze(Object.values(DECISION))
 const SETTLED_BY_LIST = Object.freeze(Object.values(SETTLED_BY))
 const ELLIPSIS = '…'
 /** The provider's event names (src/approvals.js, src/questions.js); the relay maps each to a §5.2 event. */
-const RELAY_EVENT = Object.freeze({ offered: 'offered', escalated: 'escalated', settled: 'settled' })
+const RELAY_EVENT = Object.freeze({ offered: 'offered', escalated: 'escalated', settled: 'settled', ran: 'ran' })
+/** The broker's audit answer for a call that ran (APPROVAL_ANSWER) → the contract's RAN_VIA. */
+const RAN_VIA_OF = Object.freeze({ pass: RAN_VIA.pass, 'grant-used': RAN_VIA.grant })
+/**
+ * T08: a closure or a user's answer can happen while the child is not on the wire — right after a
+ * main restart, the child reconnects a moment later. Those items wait here (bounded) instead of
+ * being dropped, so a restored card's closure still reaches the child that holds its label.
+ */
+const QUEUED_INBOX = Object.freeze({ max: 64 })
 /** Log row for a provider event the relay could not carry. */
 const LOG = 'fishball-approval-relay'
 
@@ -96,6 +104,8 @@ class ApprovalRelay {
     this.disposers = []
     this.observed = undefined
     this.unsubscribe = undefined
+    /** Closure and answer items made while no host was attached yet (T08, QUEUED_INBOX). */
+    this.queuedInbox = []
     // The lifecycle flag must not be named `closed`: the closed(event) method publishes a card's
     // closure, and a field of that name shadows it (a TypeError the notify catch then hid).
     this.disposed = false
@@ -118,6 +128,29 @@ class ApprovalRelay {
     for (const operation of APPROVAL_OPERATIONS) host.register(operation, (request) => this.handle(operation, request))
     this.disposers.push(host.onConnection(({ ready }) => this.connection(ready)))
     try { this.observe() } catch { /* the row is not up: feature-off until it is */ }
+    this.flushQueuedInbox()
+  }
+
+  /**
+   * Queue one inbox item until a host can take it. The bridge host itself keeps unacked items for
+   * the next ready connection, so only the window before the first attach needs this.
+   */
+  queueInbox(item) {
+    if (this.host !== undefined) {
+      try { void this.host.pushInbox(item).catch(() => {}) } catch { /* closed */ }
+      return
+    }
+    this.queuedInbox.push(item)
+    if (this.queuedInbox.length > QUEUED_INBOX.max) this.queuedInbox.shift()
+  }
+
+  /** Send what waited for the first host; failures stay the host's own (a closed wire drops it). */
+  flushQueuedInbox() {
+    const host = this.host
+    if (host === undefined) return
+    for (const item of this.queuedInbox.splice(0)) {
+      try { void host.pushInbox(item).catch(() => {}) } catch { /* closed */ }
+    }
   }
 
   /** Stop observing and make every later operation answer feature-off. */
@@ -215,7 +248,7 @@ class ApprovalRelay {
       text: CARD_CLOSED.text(event.approvalId, event.reason), images: [],
       dedupeKey: CARD_CLOSED.dedupePrefix + event.approvalId, at: this.now(),
     }
-    try { void this.host?.pushInbox(item).catch(() => {}) } catch { /* closed */ }
+    this.queueInbox(item)
   }
 
   /** Publish one settlement; an escalated card also returns the user's later answer to the child. */
@@ -238,16 +271,41 @@ class ApprovalRelay {
       text, images: [], dedupeKey: QUESTION_ANSWER.dedupePrefix + event.approvalId, at: this.now(),
     }
     // Unacked items stay queued in the host, so a disconnected child still gets the answer.
-    try { void this.host?.pushInbox(item).catch(() => {}) } catch { /* closed */ }
+    this.queueInbox(item)
   }
 
-  /** Provider events: a card, a move to the user, or a settlement. */
+  /**
+   * T08: a call ran on an approval already given (a one-time pass or a standing grant). It is not
+   * a settlement, so it gets its own event; the child records one `ran` decision label from it.
+   */
+  ran(event) {
+    const via = RAN_VIA_OF[event.via]
+    if (via === undefined) return
+    const at = Number.isFinite(event.at) ? event.at : Date.parse(event.at)
+    if (!Number.isSafeInteger(at)) return
+    if (!SETTLED_BY_LIST.includes(event.by) || typeof event.toolName !== 'string' || event.toolName === '') return
+    if (typeof event.approvalId !== 'string' || event.approvalId === '') return
+    const argumentsStatus = ARGUMENTS_STATUS_LIST.includes(event.argumentsStatus) ? event.argumentsStatus : ARGUMENTS_STATUS.unavailable
+    const raw = typeof event.arguments === 'string' ? event.arguments : undefined
+    const cut = raw === undefined ? undefined : cutChars(raw, LIMITS.argumentChars)
+    const payload = {
+      approvalId: event.approvalId, via, by: event.by, toolName: event.toolName,
+      reason: cutChars(typeof event.reason === 'string' ? event.reason : '', LIMITS.reasonChars), at,
+      // A cut text is no longer whole, so the label says so rather than quoting it as exact.
+      argumentsStatus: cut !== undefined && cut !== raw ? ARGUMENTS_STATUS.truncated : argumentsStatus,
+      ...(cut === undefined ? {} : { arguments: cut }),
+    }
+    try { this.host?.publish(EVENT.approvalRan, event.sessionId, payload) } catch { /* closed */ }
+  }
+
+  /** Provider events: a card, a move to the user, a settlement, or a call that ran on an approval. */
   notify(event) {
     if (this.disposed || event === null || typeof event !== 'object') return
     try {
       if (event.type === RELAY_EVENT.offered && event.descriptor !== undefined) this.offer(event.descriptor, event.sessionId)
       else if (event.type === RELAY_EVENT.escalated) this.settle({ ...event, decision: DECISION.escalate, by: SETTLED_BY.fishball })
       else if (event.type === RELAY_EVENT.settled) this.settle(event)
+      else if (event.type === RELAY_EVENT.ran) this.ran(event)
       else if (event.type === CARD_CLOSED.event) this.closed(event)
     } catch (error) {
       // A closed channel or an unrepresentable card is not the decision's failure, so the event
@@ -433,6 +491,13 @@ function fitDescriptor(descriptor) {
     reason: cutChars(reason, LIMITS.reasonChars),
     quotes: quotes.map((quote) => cutToBytes(quote, LIMITS.quoteBytes, ELLIPSIS)),
     title: cutChars(typeof title === 'string' ? title : '', LIMITS.titleChars),
+  }
+  // T08: the exact call, as the label expansion shows it. A text cut here is no longer whole, so
+  // the status says truncated; an absent pair keeps the descriptor valid for an older main row.
+  if (typeof descriptor.arguments === 'string' && ARGUMENTS_STATUS_LIST.includes(descriptor.argumentsStatus)) {
+    const cut = cutChars(descriptor.arguments, LIMITS.argumentChars)
+    base.arguments = cut
+    base.argumentsStatus = cut === descriptor.arguments ? descriptor.argumentsStatus : ARGUMENTS_STATUS.truncated
   }
   if (kind === APPROVAL_KIND.approval) return base
   const fitted = fitQuestions(questions)
