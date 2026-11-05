@@ -47,6 +47,11 @@ const CLASS = Object.freeze({
   toolOutput: 'tool-output',
   state: 'chat-state',
   notice: 'chat-notice',
+  loader: 'chat-loader',
+  loaderRing: 'chat-loader-ring',
+  loaderFish: 'chat-loader-fish',
+  fishBody: 'fish-body',
+  fishEye: 'fish-eye',
   picker: 'picker',
   pickerLabel: 'picker-label',
   modelSelect: 'model-select',
@@ -74,6 +79,17 @@ const COPY = Object.freeze({
 
 /** Client-side transcript cap, matching the child's own view bound; the oldest row goes first. */
 const LIMIT = Object.freeze({ entries: 300, scrollThresholdPx: 48 })
+
+/**
+ * The Fishball fish on a 24-unit grid (the same Surfaces.kt mark the main sidebar draws). The
+ * shell needs its own copy: it is a separately served page and imports no main-client module.
+ */
+const FISH = Object.freeze({
+  namespace: 'http://www.w3.org/2000/svg',
+  viewBox: '0 0 24 24',
+  body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
+  eye: 'M14.6 7.4 h2 v2 h-2 Z',
+})
 
 const ARIA = Object.freeze({ live: 'aria-live', label: 'aria-label', role: 'role', status: 'status', alert: 'alert', polite: 'polite' })
 
@@ -115,6 +131,45 @@ function timeNode(at) {
   return time
 }
 
+/** The fish as an SVG node; trusted static paths, built with DOM APIs like every other row. */
+function fishNode(document) {
+  const svg = document.createElementNS(FISH.namespace, 'svg')
+  svg.setAttribute('viewBox', FISH.viewBox)
+  svg.setAttribute('aria-hidden', 'true')
+  svg.setAttribute('focusable', 'false')
+  const body = document.createElementNS(FISH.namespace, 'path')
+  body.setAttribute('d', FISH.body)
+  body.setAttribute('class', CLASS.fishBody)
+  const eye = document.createElementNS(FISH.namespace, 'path')
+  eye.setAttribute('d', FISH.eye)
+  eye.setAttribute('class', CLASS.fishEye)
+  svg.append(body, eye)
+  return svg
+}
+
+/**
+ * The loading mark at the bottom of the conversation (Q5): a hollow ring with the fish turning
+ * underneath it. The adjacent chat-state line already announces "Fishball is working…", so the
+ * mark itself is decorative and never a second live region. CSS stops both turns under
+ * prefers-reduced-motion.
+ */
+function createLoader(document) {
+  const loader = document.createElement('div')
+  loader.className = CLASS.loader
+  loader.dataset.fishballLoader = 'true'
+  loader.setAttribute('aria-hidden', 'true')
+  loader.hidden = true
+  const ring = document.createElement('span')
+  ring.className = CLASS.loaderRing
+  ring.dataset.fishballLoaderRing = 'true'
+  const fish = document.createElement('span')
+  fish.className = CLASS.loaderFish
+  fish.dataset.fishballLoaderFish = 'true'
+  fish.append(fishNode(document))
+  loader.append(ring, fish)
+  return loader
+}
+
 /**
  * Mount the chat view in the shell.
  *
@@ -148,12 +203,14 @@ export function createChatView(options = {}) {
   notice.className = CLASS.notice
   notice.setAttribute(ARIA.role, ARIA.alert)
   notice.hidden = true
+  // Under the timeline, so the fish stays at the bottom of the conversation while a turn runs.
+  const loader = createLoader(document)
 
   const composer = createComposer({ document, onSubmit: (value, attachments) => sendPrompt(value, attachments) })
   // T09's cards, decision labels and the user's answers live in this same timeline, ordered by
   // their own times; the view removes and re-inserts only its own rows.
   const approvals = createApprovalsView({ document, timeline, insertRow, request })
-  container.append(timeline, state, composer.element, notice)
+  container.append(timeline, loader, state, composer.element, notice)
 
   const modelLabel = document.createElement('label')
   modelLabel.className = CLASS.picker
@@ -204,8 +261,13 @@ export function createChatView(options = {}) {
   }
 
   function setRunning(running) {
+    const wasNearBottom = nearBottom()
     state.textContent = running ? COPY.working : COPY.idle
     state.dataset.state = running ? 'running' : 'idle'
+    // One owner for the loading mark: the same running fact the state line shows. Its height
+    // change must not push the last line out of view when the reader was already at the end.
+    loader.hidden = !running
+    scrollToEnd(wasNearBottom)
   }
 
   /** Scroll only when the reader was already at the end, so reading history is not yanked. */
