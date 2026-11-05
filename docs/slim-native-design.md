@@ -438,9 +438,15 @@ and each decision writes a tag record (`src/tags.js`; writes at
 `src/approvals.js:397,465,878,1182`) that `client.js:3376-3389` renders inside the managed session's
 turn tail (`conversation.chat.turnTail`, `client.js:172`). That is the trail the user dislikes.
 
-After: the label is a child-side timeline entry (`src/slim/child/decisions.js`), one compact row
-such as "Fishball asked about <session> and allowed it once", expanding to the request card and
-Fishball's reply. The host stops writing tag records; `SLOT.turnTail` stops rendering them.
+After (built in T08): the label is a child-side timeline entry (`src/slim/child/approvals.js`
+records it, `src/slim/ui/approvals.js` renders it, `src/slim/child/decisions.js` keeps it across a
+child restart), one compact row such as "Fishball asked about <session> and allowed it once",
+expanding to the request card (tool, session, exact arguments when the host has them) and
+Fishball's reply. A call that ran on an approval already given is its own row ("ran on Fishball's
+one-time approval", "ran on your one-time approval", "ran on Fishball's standing grant"),
+delivered as the `approval.ran` event. The host stops writing tag records; `SLOT.turnTail` no
+longer renders them. The decision audit list that used to sit on Fishball's settings page is
+gone with the same rule: settings keeps only the question mode.
 
 Bridge data for each record: `decisionId`, `kind` (message, start, redirect, stop, approval,
 grant, question, plan review, escalation), `sessionId` and title, `at`, the request snapshot
@@ -584,6 +590,9 @@ The Plugins → Fishball → settings page is rebuilt around the isolated Fishba
 - Provider sync: preview/confirm for API-key providers (§10).
 - No legacy sections (intake, outbox, watches, approvals, hidden tools, main plugin catalog) —
   those concepts are either main-side or gone.
+- Kept from the approvals section: the question mode (Auto / Fishball / You) with its one-line
+  description, the one decision setting left on this page. The decision audit list is not here:
+  every decision is an inline label in Fishball's chat (T08, §8.1).
 
 Admin API: owner-only same-origin routes (`/api/fishball/native/admin/*`) go to the lifecycle
 control channel and then to the child admin service. The child applies changes with its own
@@ -842,16 +851,69 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
 
 ### Wave 5 — decisions and the row mark (parallel; one client task)
 
-**T08 — Decision labels in Fishball's chat `[child]` plus `[host]`**
+**T08 — Decision labels in Fishball's chat `[child]` plus `[host]` — DONE (2026-11-05)**
 - Goal: one inline label per decision at its point in Fishball's timeline, expandable; the trail
-  under managed sessions is gone.
-- Owns: `src/slim/child/decisions.js` and its UI, removal in `client.js` of tag rendering and in
-  `src/approvals.js` and `src/tags.js` of tag writes.
-- Depends: T07, T09. Acceptance: each settled decision yields exactly one label; expansion shows
-  the request card and Fishball's reply; no label appears in a managed session's turn tail; the
-  user's escalation outcome updates the label.
+  under managed sessions is gone. **The user's later addition (2026-11-05): the decision audit
+  list leaves settings for the same inline labels, and cards never expire — they survive a main
+  DSH restart and stay visibly closed when their call does not survive it.**
+- Owns: `src/slim/child/decisions.js` (the durable label and closure record), the label rules in
+  `src/slim/child/approvals.js`, the view in `src/slim/ui/approvals.js`, the new `approval.ran`
+  event in `src/slim/contract.js` and `src/slim/host/approvals.js`, the `ran` row in
+  `src/approvals.js`, the pile's durable side in `src/pile.js` and `src/store.js`, the restart
+  wiring in `index.js` and `src/questions.js`, and in `client.js` the turn-tail removal and the
+  settings edit (the audit list out, the question-mode selector kept).
+- Depends: T07, T09.
+- Built (waves 1–5 already had the label and the merged group):
+  1. One label per decision, inline and chronological, merging consecutive labels. Covered kinds:
+     allowed, granted, rejected, asked ("asked a question"), question or plan review answered,
+     escalated / sent to you, waiting, closed, and — new — "ran on Fishball's one-time approval",
+     "ran on your one-time approval" and "ran on Fishball's standing grant". A call that ran on an
+     approval already given is not a new decision: `src/approvals.js` reports it as
+     `approval.ran`, the relay maps it to the contract's `RAN_VIA`, and the child records one
+     label with `outcome.ran` and the time it ran.
+  2. Expansion shows the request (tool, session, and now the exact arguments when the host has
+     them, marked truncated when cut), Fishball's reason, its answer, the outcome and, for an
+     escalation, the user's own decision. The descriptor's optional `arguments` /
+     `argumentsStatus` pair is the one contract addition (LIMITS.argumentChars).
+  3. The turn tail is gone: `client.js` no longer registers `SLOT.turnTail`, and its tag text,
+     tag copy and tag CSS are deleted. Tag records and their store stay until T15 removes them.
+  4. The settings decision audit list is gone (the old build's list is `client.js`'s
+     `makeApprovals`, d67e69f:2794-2816, audit rows at 2809-2814). The `approvalAnswer.*` and
+     `approvalOutcome.*` copy and `AUDIT_PASS` went with it. The Auto / Fishball / You question
+     mode and its one-line description stay in settings, rendered by `makeSettingsPage`.
+     The audit table and `broker.snapshot().recent` remain (a T15 question), so no storage or API
+     is lost.
+- Persistence and restart (the user's explicit rule: a card never expires):
+  - Pile cards are written while they wait to the plugin's own domain, `fishball.json` table
+    `pile` (`{scope, card, filedAt}`) in `$DSH_HOME/storages/fishball.json`, the store the plugin
+    already owns (beside the intake domain `fishball_intake`); DSH's storage writes atomically
+    (temp file + rename + fsync) in its own queue, and `Pile` never awaits a write. A card leaves
+    the store the moment it leaves the pile.
+  - Two piles, two scopes: the broker's (`approvals`) and the question router's (`questions`); a
+    pile restores only its own scope.
+  - At start a card is rebuilt into the pile. DSH ends every turn at a restart, so the call it
+    waited on no longer exists: the rebuilt card is **visibly closed** (`CARD_END.restarted`,
+    "DSH restarted, so the call it waited on ended"), never a lie that it can still be answered.
+    `Pile.answer` refuses a restored card, and the broker closes its own at the first live moment
+    (so the closure line lands in Fishball's chat). The question router closes the rest after
+    `rebuild()`: a continued question DSH still holds is re-filed under the restored card's own
+    id and is answerable again; every other question card is closed with the same reason.
+  - The child keeps its labels and `closed[]` in `<child home>/fishball/decisions.json` (mode
+    0600, temp file + rename, queued writes, bounded by `APPROVALS.limits`). A waiting label is
+    restored as waiting, its decision id back in `pending`, so the host's later settlement still
+    updates it. Closure and answer inbox items made while the child is off the wire wait in the
+    relay (bounded), so a restart's closure reaches the child that holds the label.
+- Acceptance: each settled decision yields exactly one label; expansion shows the request card and
+  Fishball's reply; no label appears in a managed session's turn tail; the user's escalation
+  outcome updates the label; a decision the settings list used to show (including a call that ran
+  on an approval) appears inline; a card pending at a main restart is rebuilt and then closed with
+  the restart reason; labels and closures reappear after a child restart; the slim settings page
+  has no decision audit list and still has the question mode.
 - Tests: `DEC-01 allow label`; `-02 escalation label updates after the user's answer`; `-03
-  question label`; `-04 message label`; `-05 expand shows card and reply`; `-06 no turn-tail tags`.
+  question label`; `-04 message label`; `-05 expand shows card and reply`; `-06 no turn-tail tags`;
+  `-07 ran-on-a-one-time-approval label`; `-08 pending approval card rebuilt and closed after a
+  main restart`; `-09 continued question answerable after a restart, one card only`; `-10 labels
+  and closed rows survive a child restart`; `-11 settings keeps the mode and has no audit list`.
 
 **T13a — Sidebar idle marker with dots `[client]`**
 - Goal: the §8.2 "ships now" behaviour: the fish in DSH's idle leading slot, green unread / yellow
@@ -923,7 +985,8 @@ waves 5 and 6. T13b is blocked on the upstream slot and starts only after that s
 - Chat: `CHAT-01..06`.
 - Images: `IMG-01..08`.
 - Approvals and questions: `APPR-01..07`.
-- Decision labels: `DEC-01..06`.
+- Decision labels: `DEC-01..06`, plus `-07..11` for the settings list's kinds and the two
+  restarts (T08 below).
 - Row mark: `MARK-01..06` (now) and `MARK-07..09` (blocked on upstream).
 - Hand-over: `HAND-01..05`.
 - Settings: `SET-01..07`.

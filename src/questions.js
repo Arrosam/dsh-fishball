@@ -54,7 +54,7 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, QUESTION_TAG_ANSWER, REQUEST_KIND, SOURCE, TAG_KIND } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, PILE_SCOPE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, QUESTION_TAG_ANSWER, REQUEST_KIND, SOURCE, TAG_KIND } from './constants.js'
 import { AuditLog } from './audit.js'
 import { Pile } from './pile.js'
 import { argumentsText, latestUserText, sha256 } from './approvals.js'
@@ -387,7 +387,9 @@ export class QuestionRouter {
     this.#managedIds = managedIds
     this.#tags = tags
     this.#onChange = onChange
-    this.#pile = new Pile(onChange, (card, end) => this.#cardClosed(card, end))
+    // T08: cards live in the plugin's store too, under this router's own scope, so a question the
+    // user still had is rebuilt at the next start (rebuild() below re-files the ones DSH keeps).
+    this.#pile = new Pile(onChange, (card, end) => this.#cardClosed(card, end), { stored: store.pile, scope: PILE_SCOPE.questions, logger })
     this.#audit = new AuditLog(() => store.approvals, () => readLimits().auditEntriesKept)
     this.#decisions = new AuditLog(() => store.decisions, () => readLimits().auditEntriesKept)
     ctx.on(QUESTION.waterfall, (req, next) => this.#route(req, next), { prepend: true })
@@ -583,6 +585,12 @@ export class QuestionRouter {
    * At start, once Fishball can answer: the continued timed questions of every managed session
    * get their pile cards again, read from each log without resuming the session (the manager's
    * decision, 2026-11-02). They are your cards: Fishball is not asked again (Reading). Once per start.
+   *
+   * T08: a card restored from the store (src/pile.js) is taken over when its question is this
+   * continued one — matching on the session and DSH's call id, because a restarted process mints a
+   * new qst_ id — so the user sees one answerable card again. Every other restored card had a call
+   * DSH no longer holds (blocking questions end at a restart, and so do approvals), so it is closed
+   * here with `restarted`; its closure line says why.
    */
   async rebuild() {
     if (this.#rebuilt || !this.#canAnswer()) return
@@ -598,13 +606,20 @@ export class QuestionRouter {
           : continuedInLog(events)
         for (const { callId, questions } of found) {
           if ([...this.#entries.values()].some((entry) => entry.sessionId === sessionId && entry.callId === callId)) continue
-          const entry = this.#mint({ sessionId, session: live ?? { snapshotEvents: () => events }, callId, questions, timed: true, state: STATE.continued })
+          const restored = this.#pile.cards().find((card) => card.restored === true && card.sessionId === sessionId && card.callId === callId)
+          const entry = this.#mint({ id: restored?.requestId, sessionId, session: live ?? { snapshotEvents: () => events }, callId, questions, timed: true, state: STATE.continued })
           this.#toPile(entry, APPROVAL_ANSWER.toUser)
         }
       } catch (error) {
         this.#logger.warn('continued questions of %s not read (%s)', sessionId, diagnosticOf(error))
       }
     }
+    this.#closeRestored()
+  }
+
+  /** Close every restored card no continued question took over (T08, src/pile.js). */
+  #closeRestored() {
+    this.#pile.settleWhere((card) => card.restored === true, { end: CARD_END.restarted })
   }
 
   /**
@@ -648,10 +663,14 @@ export class QuestionRouter {
     return undefined
   }
 
-  #mint({ sessionId, session, callId, questions, timed, state }) {
+  /**
+   * One question entry. @param id - an existing id when rebuild() takes over a card restored from
+   * the store (T08): the live card then replaces the detached one instead of appearing beside it.
+   */
+  #mint({ id, sessionId, session, callId, questions, timed, state }) {
     const kind = isPlanReview(questions) ? QUESTION_KIND.planReview : QUESTION_KIND.question
     const entry = {
-      id: QUESTION.idPrefix + randomUUID().replace(/-/g, ''), sessionId, session, callId, questions, timed, state, kind,
+      id: id ?? QUESTION.idPrefix + randomUUID().replace(/-/g, ''), sessionId, session, callId, questions, timed, state, kind,
       toolName: kind === QUESTION_KIND.planReview ? QUESTION.planTool : QUESTION.askTool,
       since: new Date().toISOString(), inPile: false, note: '', seen: false,
       // A continued question is settled only by #answer, the reply event, or #goBack.
