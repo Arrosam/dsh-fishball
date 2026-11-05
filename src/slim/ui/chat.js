@@ -20,7 +20,7 @@
  * class or a data attribute, never element.style. Server entries are partial records merged by
  * id, so a tool/result completes the row its tool/call started.
  */
-import { createComposer } from './composer.js'
+import { attachmentPreview, createComposer } from './composer.js'
 
 /** Same resources as the child's CHAT; the broker strips its prefix before forwarding. */
 const API = Object.freeze({ chat: 'api/chat', model: 'api/model', media: 'application/json' })
@@ -147,7 +147,7 @@ export function createChatView(options = {}) {
   notice.setAttribute(ARIA.role, ARIA.alert)
   notice.hidden = true
 
-  const composer = createComposer({ document, onSubmit: (value) => sendPrompt(value) })
+  const composer = createComposer({ document, onSubmit: (value, attachments) => sendPrompt(value, attachments) })
   container.append(timeline, state, composer.element, notice)
 
   const modelLabel = document.createElement('label')
@@ -175,6 +175,12 @@ export function createChatView(options = {}) {
   /** Entry data by id, and the rendered row, so a partial update replaces one row in place. */
   const entries = new Map()
   const rows = new Map()
+  /**
+   * Data-URL previews for images this page uploaded. The child never serves stored bytes back
+   * to the page, so a reload shows the image's name and "Preview unavailable" instead; nothing
+   * else invents a URL (no path, no blob: under the §3.3 CSP).
+   */
+  const previewUrls = new Map()
   let providers = []
   let models = []
   let current = undefined
@@ -206,6 +212,24 @@ export function createChatView(options = {}) {
     if (wasNearBottom) timeline.scrollTop = timeline.scrollHeight
   }
 
+  /** The attachment metadata of one entry, filtered to the two kinds the page renders. */
+  function entryAttachments(entry) {
+    if (!Array.isArray(entry.attachments)) return []
+    return entry.attachments.filter((item) => item !== null && typeof item === 'object'
+      && (item.kind === 'image' || item.kind === 'file') && typeof item.attachmentId === 'string')
+  }
+
+  /** Append one message's image/file blocks; the caller's text bubble may be empty or absent. */
+  function appendAttachments(row, entry) {
+    for (const attachment of entryAttachments(entry)) {
+      const url = previewUrls.get(attachment.attachmentId)
+      row.append(attachmentPreview(
+        { kind: attachment.kind, name: textOf(attachment.name), bytes: attachment.bytes },
+        { document, ...(url === undefined ? {} : { url }) },
+      ))
+    }
+  }
+
   /** Build one row; text is always assigned as textContent, never as markup. */
   function buildEntry(entry) {
     const row = document.createElement('li')
@@ -217,14 +241,17 @@ export function createChatView(options = {}) {
     body.className = CLASS.text
     if (entry.kind === KIND.user) {
       author.textContent = textOf(entry.author) || COPY.you
-      body.textContent = textOf(entry.text)
-      row.append(author, body, timeNode(entry.at))
+      // An image- or file-only message has no text bubble (an empty one would be a blank row).
+      if (textOf(entry.text) !== '') { body.textContent = textOf(entry.text); row.append(author, body) } else row.append(author)
+      appendAttachments(row, entry)
+      row.append(timeNode(entry.at))
       return row
     }
     if (entry.kind === KIND.assistant) {
       author.textContent = COPY.fishball
-      body.textContent = textOf(entry.text)
-      row.append(author, body, timeNode(entry.at))
+      if (textOf(entry.text) !== '') { body.textContent = textOf(entry.text); row.append(author, body) } else row.append(author)
+      appendAttachments(row, entry)
+      row.append(timeNode(entry.at))
       return row
     }
     if (entry.kind === KIND.notice) {
@@ -263,6 +290,18 @@ export function createChatView(options = {}) {
     return row
   }
 
+  /**
+   * Insert one row by its message time. A late entry (a resumed log, a slow tool) belongs where
+   * it happened, not at the end; equal times keep insertion order.
+   */
+  function insertOrdered(row, at) {
+    const value = Number.isFinite(at) ? at : Date.now()
+    row.dataset.at = String(value)
+    const next = [...timeline.children].find((child) => Number(child.dataset.at) > value)
+    if (next === undefined) timeline.append(row)
+    else timeline.before(next)
+  }
+
   function trimTimeline() {
     while (timeline.children.length > LIMIT.entries) {
       const oldest = timeline.firstElementChild
@@ -286,8 +325,8 @@ export function createChatView(options = {}) {
     next.dataset.entryId = merged.id
     const wasNearBottom = nearBottom()
     const existing = rows.get(merged.id)
-    if (existing !== undefined) existing.replaceWith(next)
-    else timeline.append(next)
+    if (existing !== undefined) { next.dataset.at = existing.dataset.at; existing.replaceWith(next) }
+    else insertOrdered(next, merged.at)
     rows.set(merged.id, next)
     trimTimeline()
     scrollToEnd(wasNearBottom)
@@ -312,7 +351,7 @@ export function createChatView(options = {}) {
       const body = document.createElement('p')
       body.className = CLASS.text
       pendingRow.append(author, body)
-      timeline.append(pendingRow)
+      insertOrdered(pendingRow, Date.now())
     }
     const body = pendingRow.querySelector('.' + CLASS.text)
     if (body !== null) body.textContent += value
@@ -449,15 +488,43 @@ export function createChatView(options = {}) {
     if (modelPage.status === 'fulfilled') renderModel(modelPage.value)
   }
 
-  /** Send one prompt through the composer's callback; false keeps the text for a retry. */
-  async function sendPrompt(value) {
+  /** The page's metadata view of one uploaded attachment; the POST carries only the descriptor. */
+  function attachmentEntry(attachment) {
+    const ref = attachment.attachment
+    return {
+      kind: attachment.kind,
+      attachmentId: ref.attachmentId,
+      ...(typeof ref.mediaType === 'string' ? { mediaType: ref.mediaType } : {}),
+      ...(Number.isSafeInteger(ref.width) ? { width: ref.width } : {}),
+      ...(Number.isSafeInteger(ref.height) ? { height: ref.height } : {}),
+      ...(typeof ref.name === 'string' ? { name: ref.name } : {}),
+      ...(Number.isSafeInteger(ref.bytes) ? { bytes: ref.bytes } : {}),
+    }
+  }
+
+  /**
+   * Send one prompt through the composer's callback; false keeps the text and files for a retry.
+   * The attachment descriptors are the upload answers; the previews stay in this page's map,
+   * keyed by the durable id the committed entry will carry.
+   */
+  async function sendPrompt(value, attachments = []) {
     clearNotice()
     try {
-      const answer = await request(API.chat, { method: 'POST', body: JSON.stringify({ text: value }) })
+      const body = { text: value, ...(attachments.length === 0 ? {} : {
+        attachments: attachments.map(({ kind, attachment }) => ({ kind, attachment })),
+      }) }
+      const answer = await request(API.chat, { method: 'POST', body: JSON.stringify(body) })
       if (typeof answer?.messageId === 'string' && answer.messageId !== '') {
+        const entriesForMessage = attachments.map(attachmentEntry)
+        for (const attachment of attachments) {
+          if (typeof attachment.previewUrl === 'string') previewUrls.set(attachment.attachment.attachmentId, attachment.previewUrl)
+        }
         // The optimistic row shares the durable message id, so the committed user/message
         // replaces it instead of appearing twice.
-        upsert({ id: 'm:' + answer.messageId, kind: KIND.user, at: Date.now(), author: COPY.you, text: value })
+        upsert({
+          id: 'm:' + answer.messageId, kind: KIND.user, at: Date.now(), author: COPY.you, text: value,
+          ...(entriesForMessage.length === 0 ? {} : { attachments: entriesForMessage }),
+        })
       }
       return true
     } catch (error) {
@@ -492,6 +559,7 @@ export function createChatView(options = {}) {
   function dispose() {
     if (disposed) return
     disposed = true
+    previewUrls.clear()
     container.replaceChildren()
     modelSlot.replaceChildren()
   }

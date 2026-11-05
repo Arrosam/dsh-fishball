@@ -185,6 +185,7 @@ button, select, textarea { font: inherit; }
 .chat-state[data-state="running"] { color: var(--ok); }
 .composer {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px;
   padding: 8px 0 12px;
@@ -224,6 +225,100 @@ button, select, textarea { font: inherit; }
 .send:hover:not(:disabled) { opacity: 0.88; }
 .send:disabled { opacity: 0.55; cursor: default; }
 .chat-notice { margin: 0 0 10px; color: var(--danger); font-size: 13px; }
+
+/* Composer attachments (T06): chips under the input row, one preview per message part. */
+.composer-attachments {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.composer-attachments[hidden] { display: none; }
+.composer-attach {
+  align-self: center;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.composer-attach:hover:not(:disabled) { background: var(--surface-2); }
+.composer-notice {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+.fb-attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 12px;
+}
+.fb-attachment-thumb {
+  width: 26px;
+  height: 26px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex: none;
+}
+.fb-attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 28ch;
+}
+.fb-attachment-remove {
+  flex: none;
+  padding: 0 4px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.fb-attachment-remove:hover { color: var(--danger); }
+.fb-attachment-preview {
+  margin: 4px 0 0;
+  max-width: min(320px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.fb-attachment-preview .fb-attachment-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  border-radius: 0;
+  object-fit: contain;
+  background: var(--surface-2);
+}
+.fb-attachment-missing, .fb-attachment-file {
+  display: block;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.fb-attachment-file { color: var(--text); }
+.fb-attachment-size { display: block; font-size: 11px; color: var(--muted); }
+.fb-attachment-caption {
+  padding: 4px 10px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--muted);
+}
+.entry-user .fb-attachment-preview { align-self: flex-end; }
 
 /* The reminder view (T10); it owns its classes, this file only places them. */
 .reminders { display: flex; flex-direction: column; gap: 6px; }

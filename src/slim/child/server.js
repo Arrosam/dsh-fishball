@@ -1,5 +1,5 @@
 /**
- * The child app's loopback HTTP surface (§3.1, §3.3, §15 T03).
+ * The child app's loopback HTTP surface (§3.1, §3.3, §15 T03, T07, T06).
  *
  * The browser never addresses this origin: the main DSH proxies /fishball/embed/* to it with the
  * parent bearer (§3.1). The child therefore serves the unprefixed tails of the contract routes,
@@ -7,16 +7,18 @@
  * instance's bearer before it looks at a path or a method.
  *
  * This module owns the shell document, the /ui/* static files, the liveness API, the reminder
- * API (T10), the chat API (T07) and the SSE stream with the contract's heartbeat; a path beyond
- * them is a bodyless 404, so an unknown route can never serve bytes. The reminder and chat
- * modules own their validation and typed refusals; this hook only moves the request's method,
- * query and bounded JSON body into the matched surface and its status and body back out.
+ * API (T10), the chat API (T07), the image upload API (T06) and the SSE stream with the
+ * contract's heartbeat; a path beyond them is a bodyless 404, so an unknown route can never
+ * serve bytes. Each surface module owns its validation and typed refusals; this hook only moves
+ * the request's method, query and bounded JSON body into the matched surface and its status and
+ * body back out.
  */
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { BEARER, ERROR, LIMITS, ROUTES } from '../contract.js'
 import { CHAT } from './chat.js'
+import { IMAGES, ImageApiError } from './images.js'
 import { REMINDERS } from './reminders.js'
 
 /**
@@ -30,11 +32,12 @@ const PATHS = Object.freeze({
   ui: childPath(ROUTES.ui),
   events: childPath(ROUTES.events),
   health: childPath(ROUTES.api) + 'health',
-  // REMINDERS.path and CHAT.path are already the child's unprefixed tails (/api/...); the
-  // broker adds /fishball/embed in front of them (§3.1).
+  // These modules publish their own unprefixed tails (/api/...); the broker adds
+  // /fishball/embed in front of them (§3.1).
   reminders: REMINDERS.path,
   chat: CHAT.path,
   model: CHAT.modelPath,
+  upload: IMAGES.uploadPath,
 })
 
 /** Loopback only; port 0 lets the OS choose, and the parent learns the port from the service. */
@@ -106,15 +109,14 @@ function chatFrame(payload) {
 /**
  * The JSON API routes' own body refusals. The parsed body is handed to the matched surface, but
  * a body that never parsed or was over the contract bound has no surface code of its own; these
- * two carry the reminder API's 400 vocabulary (src/slim/child/reminders.js) and the contract's
- * too-large.
+ * two carry the shared 400 vocabulary and the contract's too-large.
  */
 const BODY = Object.freeze({
   invalid: Object.freeze({ code: 'invalid-input', message: 'The request body must be JSON.' }),
   tooLarge: Object.freeze({ code: ERROR.tooLarge, message: 'The request body is too large.' }),
 })
 
-/** A body read that failed before the reminder API saw anything; status and JSON body. */
+/** A body read that failed before the matched surface saw anything; status and JSON body. */
 class BodyError extends Error {
   constructor(status, body) {
     super(body.code)
@@ -136,7 +138,7 @@ const SEPARATOR = path.sep
 const ALLOW = Object.freeze({
   readable: Object.freeze([METHOD.get, METHOD.head]),
   events: Object.freeze([METHOD.get]),
-  /** The chat routes read a page and accept one POST; the module refuses a wrong method too. */
+  /** The chat routes read a page and accept one POST; their module refuses a wrong method too. */
   chat: CHAT.methods,
 })
 
@@ -164,7 +166,7 @@ function methodNotAllowed(res, allowed) {
   send(res, HTTP.methodNotAllowed, { allow: allowed.join(', ') })
 }
 
-/** Send one reminder answer as JSON; HEAD carries the same status and no body. */
+/** Send one surface answer as JSON; HEAD carries the same status and no body. */
 function sendAnswer(res, answer, head) {
   const status = Number.isSafeInteger(answer?.status) ? answer.status : HTTP.serverError
   if (head) { send(res, status, { 'content-type': TYPE.json }); return }
@@ -198,27 +200,49 @@ function readBody(req, limit) {
 }
 
 /**
+ * Parse one bounded JSON body. A refusal is a status/body the route answers as-is; a read
+ * failure is thrown for the outer handler, exactly like any other handler failure.
+ */
+async function readJson(req, limit) {
+  try {
+    return { body: JSON.parse(await readBody(req, limit)) }
+  } catch (error) {
+    if (error instanceof BodyError) return { refusal: error }
+    if (error instanceof SyntaxError) return { refusal: { status: HTTP.badRequest, body: BODY.invalid } }
+    throw error
+  }
+}
+
+/**
  * One JSON API hook for the reminder and chat surfaces: GET and HEAD ask for a page, POST reads
  * one bounded body and mutates. The surface owns validation, bounds and typed refusals; this
  * hook only carries status and body.
  */
 async function serveApi(req, res, handle) {
   if (req.method === METHOD.post) {
-    let body
-    try {
-      body = JSON.parse(await readBody(req, LIMITS.embedJsonBodyBytes))
-    } catch (error) {
-      // A body refusal is 413/400; a read failure is the handler failure the outer catch answers.
-      if (error instanceof BodyError) { sendAnswer(res, error, false); return }
-      if (!(error instanceof SyntaxError)) throw error
-      sendAnswer(res, { status: HTTP.badRequest, body: BODY.invalid }, false)
-      return
-    }
-    sendAnswer(res, await handle({ method: req.method, body }), false)
+    const parsed = await readJson(req, LIMITS.embedJsonBodyBytes)
+    if (parsed.refusal !== undefined) { sendAnswer(res, parsed.refusal, false); return }
+    sendAnswer(res, await handle({ method: req.method, body: parsed.body }), false)
     return
   }
   const url = new URL(req.url, BASE_ORIGIN)
   sendAnswer(res, await handle({ method: req.method, query: url.searchParams }), req.method === METHOD.head)
+}
+
+/**
+ * The upload hook (T06): POST one bounded JSON body to the image service. The module owns the
+ * media-type, size, digest and store rules, and answers a typed ImageApiError; this hook only
+ * carries the status and body back. Its body bound is the broker's 8 MiB upload bound (§3.6).
+ */
+async function serveUpload(req, res, images) {
+  const parsed = await readJson(req, IMAGES.maxUploadBytes)
+  if (parsed.refusal !== undefined) { sendAnswer(res, parsed.refusal, false); return }
+  try {
+    sendAnswer(res, { status: HTTP.ok, body: await images.upload(parsed.body) }, false)
+  } catch (error) {
+    if (!(error instanceof ImageApiError)) throw error
+    sendAnswer(res, error, false)
+  }
 }
 
 /**
@@ -346,6 +370,13 @@ async function resolveRoute(pathname, options) {
       serve: (req, res) => serveApi(req, res, (request) => options.reminders.handle(request)),
     }
   }
+  if (pathname === PATHS.upload && options.images !== undefined) {
+    // Upload is POST only; the image module owns the body's shape and its typed refusals (T06).
+    return {
+      allow: IMAGES.uploadMethods,
+      serve: (req, res) => serveUpload(req, res, options.images),
+    }
+  }
   if (options.chat !== undefined) {
     // The chat route (T07) reads the page and queues one prompt; its module refuses a wrong
     // method and any payload key beyond the contract.
@@ -386,11 +417,14 @@ async function handle(req, res, options) {
  * @param {{ handle: Function, subscribe: Function }} [options.chat] - the chat surface from
  *   src/slim/child/chat.js (T07): /api/chat, /api/model and the SSE chat event. Optional so a
  *   shell-only server still serves the document, reminders and liveness.
+ * @param {{ upload: Function }} [options.images] - the image surface from src/slim/child/images.js
+ *   (T06). The child app row supplies it beside the reminders surface; without it /api/upload is
+ *   an ordinary 404 and no route claims the path.
  * @returns {{ readonly origin: string | undefined, start: () => Promise<string>, close: () => Promise<void> }}
  *   origin is undefined until start() resolves; start() binds 127.0.0.1:0 and returns the origin.
  */
 export function createAppServer(options) {
-  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs, reminders, chat } = options ?? {}
+  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs, reminders, chat, images } = options ?? {}
   if (!authority || typeof authority.accepts !== 'function') throw new TypeError('fishball-native-app: a bearer authority is required')
   if (typeof uiDir !== 'string' || !path.isAbsolute(uiDir)) throw new TypeError('fishball-native-app: an absolute UI directory is required')
   if (!Buffer.isBuffer(document)) throw new TypeError('fishball-native-app: the shell document must be a Buffer')
@@ -401,9 +435,12 @@ export function createAppServer(options) {
   if (chat !== undefined && (typeof chat.handle !== 'function' || typeof chat.subscribe !== 'function')) {
     throw new TypeError('fishball-native-app: the chat surface must implement handle and subscribe')
   }
+  if (images !== undefined && typeof images?.upload !== 'function') {
+    throw new TypeError('fishball-native-app: the image surface must implement upload')
+  }
 
   const streams = new Set()
-  const settings = { authority, uiDir, document, heartbeatMs, streams, reminders, chat }
+  const settings = { authority, uiDir, document, heartbeatMs, streams, reminders, chat, images }
   let origin
   let listening = false
   let closed = false

@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url'
 import { createAppServer } from './server.js'
 import { createAuthority } from './auth.js'
 import { createChat } from './chat.js'
+import { createImages } from './images.js'
 import { createReminders } from './reminders.js'
 
 /** Stable Cordis plugin name; T02's overlay row id is the same string (§2.3). */
@@ -39,7 +40,25 @@ const APP = Object.freeze({
    * service's live-model port read it by this name. It exists exactly while this app row runs.
    */
   chatService: 'fishballChat',
+  /** T06's image service: the upload route and the chat's attachment blocks read it. */
+  imagesService: 'fishballImages',
 })
+
+/**
+ * The image service is optional at the app row: a composition without the attachment store or
+ * the llm still serves the chat and reminders, and only an upload or an attachment is refused.
+ * The row is required, so a failure here must not take the child's only page down with it.
+ */
+function mountImages(ctx) {
+  try {
+    const images = createImages(ctx)
+    ctx.provide(APP.imagesService, images)
+    return images
+  } catch (error) {
+    ctx.logger(APP.logger).warn('the image service is unavailable (%s)', String(error?.code ?? error?.name ?? error))
+    return undefined
+  }
+}
 
 /**
  * Start the loopback server and publish the parent-only service. Listening begins during boot,
@@ -50,9 +69,12 @@ const APP = Object.freeze({
 export async function apply(ctx) {
   const document = await readFile(fileURLToPath(new URL('../ui/shell.html', import.meta.url)))
   const authority = createAuthority()
+  // The image service (T06) is created here, not mounted as its own row: the app row owns the
+  // loopback upload route and the chat's own store reads, and both share this one store client.
+  const images = mountImages(ctx)
   // The chat row owns the one Session and publishes the two ports other rows read: the
   // Schedule runtime's resolver and the admin service's live-model applier (T10, T11).
-  const chat = createChat(ctx)
+  const chat = createChat(ctx, { images })
   await chat.start()
   ctx.effect(() => () => chat.close(), name + ': chat session')
   ctx.provide(APP.chatService, chat.service)
@@ -63,6 +85,7 @@ export async function apply(ctx) {
     uiDir: fileURLToPath(new URL('../ui/', import.meta.url)),
     reminders,
     chat,
+    images,
   })
   await server.start()
   ctx.effect(() => () => server.close(), name + ': loopback server')

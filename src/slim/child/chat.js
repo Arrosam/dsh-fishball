@@ -26,9 +26,11 @@
  *
  * API contract (src/slim/child/server.js owns only the HTTP framing):
  *   GET  /api/chat -> 200 { sessionId, running, permission: { mode }, entries }
- *   POST /api/chat { text } -> 200 { messageId } | 400 { code, message } | 503 { code, message }
+ *   POST /api/chat { text, attachments? } -> 200 { messageId } | 400 { code, message } | 503
  *   GET  /api/model -> 200 { selection, providers, models }
  *   POST /api/model { provider, model, reasoningEffort? } -> 200 { selection } | 400/503
+ * The attachments are the descriptors /api/upload returned ({kind, attachment}); the image
+ * service verifies each against the child's own store before the message is built (§6.6).
  * Entries are the page's timeline records (ENTRY_KIND); a partial entry is a merge by id, so
  * a tool/result completes the row its tool/call started.
  */
@@ -38,7 +40,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
-import { ROUTES } from '../contract.js'
+import { LIMITS, ROUTES } from '../contract.js'
 
 /** The child serves the contract's /api/* tails; the broker adds /fishball/embed in front (3.1). */
 const API = (tail) => ROUTES.api.slice(ROUTES.prefix.length) + tail
@@ -94,6 +96,7 @@ const CHILD = Object.freeze({
   sessionQuery: 'sessionQuery',
   defaultModel: 'agentDefaultModel',
   sandboxPolicy: 'sandboxPolicy',
+  images: 'fishballImages',
   logger: 'fishball-native-chat',
   writerHeld: 'SessionAlreadyOwnedError',
 })
@@ -166,6 +169,37 @@ function textOfBlocks(content) {
   return parts.join('')
 }
 
+/**
+ * The page's view of one attachment block: metadata only, never bytes or a path (§6.5). The
+ * timeline shows the user's own upload under its id; the chat view keeps a data-URL preview for
+ * the images it uploaded in this page, and an image without one reads "Preview unavailable".
+ */
+function attachmentOf(block) {
+  const ref = block?.attachment
+  if (ref === null || typeof ref !== 'object' || typeof ref.attachmentId !== 'string' || ref.attachmentId === '') return undefined
+  if (block.type === 'image') {
+    if (typeof ref.mediaType !== 'string' || !Number.isSafeInteger(ref.width) || !Number.isSafeInteger(ref.height) || !Number.isSafeInteger(ref.bytes)) return undefined
+    return {
+      kind: 'image', attachmentId: ref.attachmentId, mediaType: ref.mediaType,
+      width: ref.width, height: ref.height, bytes: ref.bytes,
+      ...(typeof ref.name === 'string' && ref.name !== '' ? { name: ref.name } : {}),
+    }
+  }
+  if (block.type !== 'file' || typeof ref.name !== 'string' || !Number.isSafeInteger(ref.bytes)) return undefined
+  return { kind: 'file', attachmentId: ref.attachmentId, name: ref.name, bytes: ref.bytes }
+}
+
+/** The attachment metadata of one message content, in block order; empty means none. */
+function attachmentsOf(content) {
+  if (!Array.isArray(content)) return []
+  const attachments = []
+  for (const block of content) {
+    const attachment = attachmentOf(block)
+    if (attachment !== undefined) attachments.push(attachment)
+  }
+  return attachments
+}
+
 function authorOf(source) {
   const kind = source?.kind
   if (kind === 'user') return AUTHOR.user
@@ -184,6 +218,7 @@ function entryOfEvent(event, toolNames) {
   switch (event.type) {
     case 'user/message': {
       const id = text(data.id)
+      const attachments = attachmentsOf(data.content)
       // A message without an id cannot be merged with its live twin; showing it under a
       // sequence id is better than losing it.
       return {
@@ -192,12 +227,18 @@ function entryOfEvent(event, toolNames) {
         at: event.time,
         author: authorOf(data.source),
         text: clamp(textOfBlocks(data.content), CHAT_LIMITS.entryChars),
+        ...(attachments.length === 0 ? {} : { attachments }),
       }
     }
     case 'assistant/message': {
-      const visible = clamp(textOfBlocks(data.message?.content), CHAT_LIMITS.entryChars)
-      if (visible === '') return undefined
-      return { id: 'a:' + event.seq, kind: ENTRY_KIND.assistant, at: event.time, text: visible }
+      const content = data.message?.content
+      const visible = clamp(textOfBlocks(content), CHAT_LIMITS.entryChars)
+      const attachments = attachmentsOf(content)
+      if (visible === '' && attachments.length === 0) return undefined
+      return {
+        id: 'a:' + event.seq, kind: ENTRY_KIND.assistant, at: event.time, text: visible,
+        ...(attachments.length === 0 ? {} : { attachments }),
+      }
     }
     case 'tool/call': {
       const callId = text(data.callId)
@@ -290,14 +331,19 @@ function selectionOf(value) {
  *   loads later is picked up without restarting the chat.
  * @param {Function} [ctx.on] - Cordis event subscription; session/event, agent/status and
  *   agent/assistant-stream drive the live page.
+ * @param {object} [options]
+ * @param {{ blocks: Function }} [options.images] - the child image service
+ *   (src/slim/child/images.js); without it a prompt may carry no attachment. The app row creates
+ *   it from the same context and passes it here, so the chat never reads the store itself.
  * @returns {object} start reads the durable record (never creates a Session by itself); the
  *   first read or send activates the Session. service is the fishballChat service other rows
  *   read; handle serves the JSON routes; subscribe relays the SSE frames.
  */
-export function createChat(ctx) {
+export function createChat(ctx, options = {}) {
   if (!ctx || typeof ctx.get !== 'function' || typeof ctx.on !== 'function') {
     throw new TypeError('fishball-native-chat: a Cordis context with get() and on() is required')
   }
+  const images = options?.images ?? (typeof ctx.get === 'function' ? ctx.get(CHILD.images) : undefined)
   const profile = ctx.get(CHILD.profileContext)
   if (typeof profile?.home !== 'string' || !path.isAbsolute(profile.home)) {
     throw new TypeError('fishball-native-chat: the child profile home is required')
@@ -454,13 +500,31 @@ export function createChat(ctx) {
     }
   }
 
-  /** Queue one user turn; the caller's page shows it at once under the returned message id. */
-  async function send(value) {
+  /**
+   * Queue one user turn; the caller's page shows it at once under the returned message id.
+   * Attachment refs are verified into blocks first, so a refused upload leaves the Session
+   * untouched and no half-built message reaches the log.
+   */
+  async function send(value, attachments = []) {
     if (Buffer.byteLength(value, 'utf8') > CHAT_LIMITS.messageBytes) {
       throw new ChatApiError(CHAT_ERROR.tooLarge, MESSAGE.tooLarge)
     }
+    let blocks = []
+    if (attachments.length > 0) {
+      if (typeof images?.blocks !== 'function') invalid()
+      try {
+        blocks = await images.blocks(attachments)
+      } catch (error) {
+        if (error?.name === 'ContractError' && typeof error.code === 'string') {
+          throw new ChatApiError(error.code, MESSAGE.invalid)
+        }
+        throw error
+      }
+    }
+    const content = [...(value === '' ? [] : [{ type: 'text', text: value }]), ...blocks]
+    if (content.length === 0) invalid()
     const live = await activate()
-    const message = createUserMessage({ content: [{ type: 'text', text: value }], source: { kind: 'user' } })
+    const message = createUserMessage({ content, source: { kind: 'user' } })
     live.followup(message)
     return { messageId: message.id }
   }
@@ -567,10 +631,15 @@ export function createChat(ctx) {
     if (request.method === METHOD.post) {
       if (!isRecord(request.body)) invalid()
       const keys = Object.keys(request.body)
-      if (keys.length !== 1 || keys[0] !== 'text') invalid()
-      const value = request.body.text
-      if (typeof value !== 'string' || value.trim() === '') invalid()
-      return send(value)
+      // Strict keys: a permission or preset name can never enter with a prompt (D8).
+      if (keys.length === 0 || keys.some((key) => key !== 'text' && key !== 'attachments')) invalid()
+      if (Object.hasOwn(request.body, 'text') && typeof request.body.text !== 'string') invalid()
+      const attachments = request.body.attachments ?? []
+      if (!Array.isArray(attachments)) invalid()
+      if (attachments.length > LIMITS.attachmentsPerMessage) throw new ChatApiError(CHAT_ERROR.tooLarge, MESSAGE.tooLarge)
+      const value = Object.hasOwn(request.body, 'text') ? request.body.text : ''
+      if (value.trim() === '' && attachments.length === 0) invalid()
+      return send(value, attachments)
     }
     throw new ChatApiError(CHAT_ERROR.method, MESSAGE.method)
   }
