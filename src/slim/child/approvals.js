@@ -16,14 +16,20 @@
  * - a card the main row closed without the user's answer comes back the same way with the
  *   CARD_CLOSED marker (src/slim/inbox-markers.js). It becomes one "closed: <reason>" row and ends
  *   the waiting label, so a card the user never answered is never dropped silently;
- * - the root `user-questions/request` listener answers Fishball's OWN questions in its own chat.
- *   It takes the live request (never the userQuestions projection, which only records timed
- *   questions) and resolves it with the user's batch, exactly as the SDK adapter does.
+ * - Fishball's own question to the user is the `ask_user` tool (T09's card). It files a card in
+ *   the user's pile through the main host and returns at once with the card's id, so no call waits
+ *   and no DSH question request is raised; the user's answer arrives as the inbox answer item
+ *   above and becomes one answers() row. The same question stays answerable on the child's own
+ *   copy of the card (answerOwnQuestion), which settles that one pile card.
+ * - The root `user-questions/request` listener still answers a DSH question raised inside the
+ *   child (another plugin's tool). It takes the live request (never the userQuestions projection,
+ *   which only records timed questions) and resolves it with the user's batch, exactly as the SDK
+ *   adapter does.
  *
  * UI seam for T07 (src/slim/ui): the app's /api/events stream carries
  * `event: approvals` with `{"changed":true}` whenever anything below changes. T07 re-reads:
  *   fishballApprovals.cards()      live approval and question cards from managed sessions
- *   fishballApprovals.questions()  Fishball's own live questions (ask_user_question)
+ *   fishballApprovals.questions()  Fishball's own live questions (ask_user cards)
  *   fishballApprovals.labels()     one settled decision record per Fishball answer (T08's labels)
  *   fishballApprovals.answers()    the user's answers to questions Fishball sent them
  * and answers through answerApproval/answerQuestion/answerPrompt/revokeGrant or
@@ -36,7 +42,7 @@
  * decision labels.
  *
  * The row is mounted by native-child.js after the session-tools row; it shares that row's
- * `fishballBridge` service and opens no second channel. `require()` makes the seven operations
+ * `fishballBridge` service and opens no second channel. `require()` makes the nine operations
  * part of the next hello automatically (the SDK's own mechanism).
  */
 import { randomUUID } from 'node:crypto'
@@ -50,10 +56,11 @@ export const inject = ['tools', 'fishballBridge']
 
 const CHILD = Object.freeze({ bridge: 'fishballBridge', service: 'fishballApprovals' })
 
-/** The six tool names, unchanged from today's main Fishball tools. */
+/** The six tool names, unchanged from today's main Fishball tools, plus the card ask (T09). */
 export const APPROVAL_TOOL = Object.freeze({
   answer: 'answer_approval',
   question: 'answer_question',
+  ask: 'ask_user',
   listPrompts: 'list_frozen_sessions',
   answerPrompt: 'answer_prompt',
   listGrants: 'list_grants',
@@ -63,6 +70,7 @@ export const APPROVAL_TOOL = Object.freeze({
 /** The §5.2 operations these tools need from the main host (the handshake's required set). */
 export const APPROVAL_REQUIRED = Object.freeze([
   OPERATION.approvalList, OPERATION.approvalAnswer, OPERATION.questionAnswer,
+  OPERATION.questionAsk, OPERATION.questionAnswerOwn,
   OPERATION.promptList, OPERATION.promptAnswer, OPERATION.grantList, OPERATION.grantRevoke,
 ])
 
@@ -87,7 +95,8 @@ export const APPROVALS = Object.freeze({
  *
  * The answer route is action-selected and exact-key: a card answer names the offer it saw
  * (the host refuses a stale one), a question answer carries DSH's batch, and Fishball's own
- * question is answered locally. A wrong shape is the API's own 400, never a thrown handler.
+ * question settles the pile card in the main host — locally only when a DSH request in this
+ * child is waiting. A wrong shape is the API's own 400, never a thrown handler.
  */
 export const APPROVALS_API = Object.freeze({
   /** The same SSE event name the service publishes under. */
@@ -189,6 +198,18 @@ export const TEXT = Object.freeze({
   labels: (id) => id + ': selected must hold labels of the offered options',
   custom: (id) => id + ': custom must be non-empty text',
   single: (id) => id + ': a single-select question takes one label, or custom text alone',
+  /** T09's card ask: the words of DSH's own ask_user_question, plus how the answer arrives. */
+  askDescription: 'Ask the user brief, direct, self-contained questions about missing information, preferences, or decisions: one card in their pile, where their permission requests wait. Use user-facing terms; assume no knowledge of background work or internal names, and use distinct stable question ids. The call returns at once with the card id and never waits, so carry on with other work; the user\'s answer reaches you in this chat as a message, and a card never expires. If the user closes it unanswered, you are told.',
+  questionsArg: 'The questions to ask the user.',
+  askIdArg: 'Stable id for this question; the answer echoes it.',
+  askQuestionArg: 'The specific question to ask the user.',
+  headerArg: 'Optional short heading for the question, such as "Confirm" or "Choose Mode".',
+  optionsArg: 'Optional choices to show the user. If you recommend one, put it first and append "(Recommended)" to that label.',
+  optionLabelArg: 'Short user-facing option label.',
+  optionDescriptionArg: 'One sentence explaining the tradeoff or impact.',
+  multiSelectArg: 'Whether the user may select more than one option. Defaults to false.',
+  askShape: 'questions must be a non-empty list of {id, question, header?, options?, multi_select?} with distinct ids',
+  asked: (questionId) => 'The card ' + questionId + ' is in the user\'s pile. Nothing is waiting: carry on with other work, and the user\'s answer arrives in this chat as a message. A card never expires.',
   listGrantsDescription: 'List your active standing grants: for each, its id, session, tool, kind (an exact call, or a command prefix), end time, how often it was used, and whether it is paused (while you are not live or Permission requests is off).',
   revokeDescription: 'End one of your standing grants before its end time, e.g. when the user narrows or withdraws the allowance it relied on. Its session\'s calls then come to you again.',
   grantIdArg: 'The grant id (grt_…), from list_grants or your answer_approval.',
@@ -306,6 +327,42 @@ function definitions(api, guard) {
       execute: guard(({ question_id: questionId, answers, approve, feedback, to_user: toUser, note }) => api.answerQuestion({ questionId, answers, approve, feedback, toUser, note })),
     },
     {
+      name: APPROVAL_TOOL.ask,
+      description: TEXT.askDescription,
+      parameters: {
+        questions: {
+          type: 'array',
+          required: true,
+          description: TEXT.questionsArg,
+          items: {
+            type: 'object',
+            // DSH requires an explicit true or false on every nested object schema (dsh-tools).
+            additionalProperties: true,
+            properties: {
+              id: { ...STRING, required: true, description: TEXT.askIdArg },
+              question: { ...STRING, required: true, description: TEXT.askQuestionArg },
+              header: { ...STRING, description: TEXT.headerArg },
+              options: {
+                type: 'array',
+                description: TEXT.optionsArg,
+                items: {
+                  type: 'object',
+                  additionalProperties: true,
+                  properties: {
+                    label: { ...STRING, required: true, description: TEXT.optionLabelArg },
+                    description: { ...STRING, description: TEXT.optionDescriptionArg },
+                  },
+                },
+              },
+              multi_select: { type: 'boolean', description: TEXT.multiSelectArg },
+            },
+          },
+        },
+      },
+      output: JSON_OUTPUT,
+      execute: guard((args, exec) => api.askOnCard(args, exec)),
+    },
+    {
       name: APPROVAL_TOOL.listGrants,
       description: TEXT.listGrantsDescription,
       parameters: {},
@@ -380,6 +437,41 @@ function ownBatch(questions, { answers, approve, feedback }) {
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 const isText = (value, max) => typeof value === 'string' && value !== '' && [...value].length <= max
 const optionalText = (value, max) => value === undefined || isText(value, max)
+/**
+ * The model's questions as DSH asks them, contract-shaped, or undefined when the shape is wrong.
+ * The tool schema only describes the arguments; the caps here are the contract's own (§5.2).
+ */
+function questionsValue(value) {
+  if (!Array.isArray(value) || value.length === 0 || value.length > LIMITS.questionsPerRequest) return undefined
+  const items = []
+  const ids = new Set()
+  for (const entry of value) {
+    if (!isRecord(entry)) return undefined
+    if (!isText(entry.id, APPROVALS_API.idChars) || ids.has(entry.id)) return undefined
+    if (!isText(entry.question, LIMITS.questionChars)) return undefined
+    if (entry.header !== undefined && !optionalText(entry.header, LIMITS.labelChars)) return undefined
+    if (entry.multi_select !== undefined && typeof entry.multi_select !== 'boolean') return undefined
+    let options
+    if (entry.options !== undefined) {
+      if (!Array.isArray(entry.options)) return undefined
+      options = []
+      for (const option of entry.options) {
+        if (!isRecord(option) || !isText(option.label, LIMITS.labelChars)) return undefined
+        if (!optionalText(option.description, LIMITS.questionChars)) return undefined
+        options.push({ label: option.label, ...(option.description === undefined ? {} : { description: option.description }) })
+      }
+    }
+    ids.add(entry.id)
+    items.push({
+      id: entry.id, question: entry.question,
+      ...(entry.header === undefined ? {} : { header: entry.header }),
+      ...(options === undefined ? {} : { options }),
+      ...(entry.multi_select === undefined ? {} : { multiSelect: entry.multi_select }),
+    })
+  }
+  return items
+}
+
 const answersValue = (value) => {
   if (!Array.isArray(value) || value.length > LIMITS.questionsPerRequest) return false
   for (const item of value) {
@@ -592,6 +684,8 @@ export function apply(ctx) {
     const match = QUESTION_ANSWER.pattern.exec(item.text)
     if (match === null) return false
     const text = match[2].trim()
+    // Fishball's own card is over once its answer arrived from either card: the row below says it.
+    if (state.questions.get(match[1])?.card === true) state.questions.delete(match[1])
     state.answers.unshift({ questionId: match[1], sessionId: item.sourceSessionId, at: item.at ?? Date.now(), text: text === '' ? QUESTION_ANSWER.fallback : text })
     state.answers.length = Math.min(state.answers.length, APPROVALS.limits.answers)
     publish()
@@ -766,23 +860,53 @@ export function apply(ctx) {
     }
   }
 
+  /**
+   * T09's card ask: file one card in the user's pile through the main host and return at once
+   * with its id. Nothing waits for the answer, and the card carries no deadline; the answer comes
+   * back as the inbox answer item (§5.2 question.ask).
+   * @param exec - the tool call's context; its agent owns the child session that asks.
+   */
+  const askOnCard = async ({ questions }, exec) => {
+    const items = questionsValue(questions)
+    if (items === undefined) return refused(ERROR.badAnswer, { reason: TEXT.askShape })
+    // The card's author is this session: the main host names no main session for Fishball's ask.
+    // Agent.id is the session id (dsh-agent's Agent interface).
+    const sessionId = exec?.agent?.id
+    if (typeof sessionId !== 'string' || sessionId === '') return refused(ERROR.failed)
+    const result = await bridge.request(OPERATION.questionAsk, { sessionId, questions: items })
+    const questionId = result.questionId
+    remember(state.questions, questionId, { questionId, questions: items, at: Date.now(), answered: false, card: true }, APPROVALS.limits.questions)
+    publish()
+    return ok({ question_id: questionId, note: TEXT.asked(questionId) })
+  }
+
   /** The user's answer to Fishball's own question, from the chat card. */
-  const answerOwnQuestion = ({ questionId, answers, approve, feedback }) => {
+  const answerOwnQuestion = async ({ questionId, answers, approve, feedback }) => {
     const entry = state.questions.get(questionId)
     if (entry === undefined || entry.answered === true) return refused(ERROR.expired)
     const built = ownBatch(entry.questions, { answers, approve, feedback })
     if (built.reason !== undefined) return refused(ERROR.badAnswer, { reason: built.reason })
+    if (entry.card === true) {
+      // The card is the main host's, so the answer settles it there; it comes back as the inbox
+      // answer item the chat shows, so one answer is one row whichever card the user used.
+      await bridge.request(OPERATION.questionAnswerOwn, { questionId, answers: built.answers })
+      state.questions.delete(questionId)
+      publish()
+      return ok({ questionId })
+    }
     entry.answered = true
     entry.resolve(built.answers)
     return ok({ questionId })
   }
 
   const api = Object.freeze({
-    answerApproval, answerQuestion, listPrompts, answerPrompt, listGrants, revokeGrant,
+    answerApproval, answerQuestion, askOnCard, listPrompts, answerPrompt, listGrants, revokeGrant,
     answerOwnQuestion, questions: () => [...state.questions.values()].sort(byAt).map((entry) => ({ questionId: entry.questionId, questions: entry.questions, at: entry.at })),
   })
-  const guard = (body) => async (args) => {
-    try { return await body(args) } catch (error) {
+  // The tool call's context is passed on, so a tool that needs its own session (the card ask) can
+  // name it; every other body reads its arguments only.
+  const guard = (body) => async (args, exec) => {
+    try { return await body(args, exec) } catch (error) {
       return refused(error instanceof ContractError ? error.code : ERROR.failed)
     }
   }
@@ -812,7 +936,7 @@ export function apply(ctx) {
       const args = parsed.args
       const result = parsed.action === APPROVALS_API.action.approval
         ? await api.answerApproval(args)
-        : parsed.action === APPROVALS_API.action.question ? await api.answerQuestion(args) : api.answerOwnQuestion(args)
+        : parsed.action === APPROVALS_API.action.question ? await api.answerQuestion(args) : await api.answerOwnQuestion(args)
       return { status: APPROVALS_API.status.ok, body: result }
     } catch (error) {
       return {
@@ -861,6 +985,8 @@ export function apply(ctx) {
     if (state.disposed) return
     state.disposed = true
     for (const entry of state.questions.values()) {
+      // A card entry has no waiting request to reject: its card is the main host's now.
+      if (typeof entry.reject !== 'function') continue
       try { entry.reject(questionError(TEXT.aborted, QUESTION.aborted)) } catch { /* its caller is gone */ }
     }
     state.questions.clear()

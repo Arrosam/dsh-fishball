@@ -18,6 +18,13 @@ export const QUESTION_ANSWER = Object.freeze({
   pattern: /^\[question answer ([^\]\s]+)\] ([\s\S]*)$/,
 })
 
+/**
+ * Fishball's own question was answered: the main row's provider event for it (src/own-questions.js).
+ * Its words travel as the QUESTION_ANSWER item above, the carrier a question Fishball sent to the
+ * user already uses, so the child shows one answer row whichever card the user answered.
+ */
+export const OWN_ANSWER = Object.freeze({ event: 'own-answer' })
+
 /** A card's closure: it left the user's pile without being answered, and this is why. */
 export const CARD_CLOSED = Object.freeze({
   /** The slim relay's provider event and the inbox marker's name. */

@@ -37,14 +37,15 @@ Rejected alternatives are recorded where they were rejected (§3.2, §6.2, §13)
 **Decision:** the child boots the shipped `dsh` launcher with a Fishball-owned profile whose only
 bundle is `dsh-base`, plus a launch overlay that inserts the rows base does not ship: the Fishball
 app row (`fishball-native-app`), the reminder rows (`schedule`, `tool-schedule`), and the restored
-web-standard rows `time-context` and `tool-ask-user` (§2.3). The child app owns a loopback
+web-standard row `time-context` (§2.3). The child app owns a loopback
 `node:http` server (UI, JSON API, SSE) and wires the DSH core services to it.
 
 It runs: `agent`, `session` + JSONL persistence + projection + storage, `llm` + adapters
 (`llm-pi-ai`, `llm-deepseek-api-key`), `tools` (bash/fs/web search/web fetch/skill/goal/jobs/todo),
-`user-approval`, `user-questions` + `tool-ask-user` (`ask_user_question`), `system-prompt`,
-`time-context`, `settings`, `config-editor`, `plugin-manager`, plus the Fishball rows:
-`schedule` + `tool-schedule` (reminders) and our app row.
+`user-approval`, `user-questions` (the service base ships, with no question tool mounted),
+`system-prompt`, `time-context`, `settings`, `config-editor`, `plugin-manager`, plus the
+Fishball rows: `schedule` + `tool-schedule` (reminders) and our app row. Fishball asks the user
+with its own `ask_user` card tool instead of a DSH question tool (§2.3, T09).
 
 It does not run: `dsh-web-app`, the browser client kernel (`client-modules`, `web-frontend`), any
 `dsh-client-ui-*` package, the web server row, MCP clients, memory plugins, X search, or
@@ -83,29 +84,38 @@ backpressure are the child app's responsibility.
 
 - Profile: `<child home>/profiles/fishball` with `dsh.profile.bundles = ["@deepseek-ai/dsh-base"]`
   (replaces today's `boot.PROFILE_TEMPLATES.web.bundles` at `src/native-runtime/installation.js:113`).
-- Overlay rows: `fishball-native-app` (required), `schedule`, `tool-schedule`, `time-context`,
-  `tool-ask-user`; keep `hmr` disabled, set `sandbox-policy.mode = read-only`,
-  `approval.policy = ask`, `bash-sandbox` unchanged. `time-context` and `tool-ask-user` are the
-  web `standard` preset's rows (`dsh-web-app/presets/standard.patch.yml:19-20,112-113`); base
-  already carries the `user-questions` service (`dsh-base/cordis.patch.yml:79-80`), web search and
-  fetch (`:486-487`) and the prompt registry (`:510-513`). A root `tool-ask-user` row expands
-  every agent's tool list regardless of preset (`dsh-client-ui-user-questions/lib/index.js:5-8`),
-  so the slim child needs no web UI row for it. The SDK app mounts the same two rows at the root
+- Overlay rows: `fishball-native-app` (required), `schedule`, `tool-schedule`, `time-context`;
+  keep `hmr` disabled, set `sandbox-policy.mode = read-only`,
+  `approval.policy = ask`, `bash-sandbox` unchanged. `time-context` is one of the web
+  `standard` preset's rows (`dsh-web-app/presets/standard.patch.yml:19-20`); base already carries
+  the `user-questions` service (`dsh-base/cordis.patch.yml:79-80`), web search and fetch
+  (`:486-487`) and the prompt registry (`:510-513`). The SDK app mounts the same row at the root
   of a non-web profile (`dsh-sdk-app/cordis.patch.yml:61-68`), which is the layer this overlay
   uses. `time-context` keeps its defaults (host zone until the child composer reports
   `clientTimeZone`).
+- **Ask User is removed (T02b reversed, user decision 2026-11-05).** T02b also restored the
+  preset's `tool-ask-user` row, which gave the child DSH's blocking `ask_user_question`. It is
+  gone: the user's decision is that questions go through cards like everything else, so the child
+  mounts no question tool and the base `user-questions` service stays unused by Fishball's own
+  asks. The child's replacement is its own `ask_user` tool (T09, §5.2): it files a card
+  in the user's pile and returns at once, so nothing waits and no card has a deadline.
 - Not restored: `present` (`@deepseek-ai/dsh-tool-present`, `standard.patch.yml:123-124`) because
   the slim UI is self-made. Persona is not an overlay row either: `@deepseek-ai/dsh-persona` is
   scope-only and collides when mounted globally (`dsh-persona/lib/index.js:7-11`), so Fishball's
-  persona (`src/persona.js:48-52`) needs a separate composition decision and is not restored here.
-- Question seam for T09: `ask_user_question` calls `ctx.userQuestions.ask`, which raises the
-  Agent-scoped `user-questions/request` waterfall (`dsh-user-questions/lib/index.js:709-712`).
-  The child app will register an in-process answerer on that event, filter by `request.agent` and
-  return `{answers}` (the SDK adapter does exactly this at
-  `dsh-sdk-jsonrpc-server/lib/index.js:165-169`); T09 will stream the card over the app's SSE. The
-  `userQuestions` projection records only timed questions
-  (`dsh-user-questions/lib/index.js:268-292`), and this row keeps the standard untimed mode, so
-  the slim UI takes the live request.
+  persona (`src/persona.js:49-53`) needs a separate composition decision and is not restored here.
+- Question seam for T09: **Fishball asks the user with a card, not with a DSH question.** Its
+  `ask_user` tool sends `question.ask` over the bridge; the main host files a card in the user's
+  pile (`pile.file(...)`, §5.2) and returns the card id at once, so the tool call never blocks.
+  The card carries no end time (nothing arms a timer, `src/card-lifecycle.js`), it is answered on
+  the card with DSH's options, and the answer settles it with `CARD_END.user`. A card that leaves
+  unanswered goes through `Pile.onClose` → `closeCard()`, which is the same closure line every
+  other card gets. The child keeps its own copy of the question (`state.questions`), answerable
+  through T09's existing `own` answer action, and either answer settles the one pile card. The
+  words reach Fishball's chat as the T09 carrier already in use: a `QUESTION_ANSWER` inbox system
+  item plus one `answers()` row, so an answer to Fishball's own question looks like an answer to a
+  question a session sent it. The base `user-questions` service is still answered in process by
+  the child app for a DSH question another plugin raises (the SDK adapter's shape,
+  `dsh-sdk-jsonrpc-server/lib/index.js:165-169`); Fishball's own ask no longer uses it.
 - The row's config carries `mainHome`, `hostId`, `instanceId`, `limits`, `control`, and the
   256-bit bridge bearer endpoint. Nothing else crosses into the child.
 - `native-child.js` no longer injects `webServer`/`webApp`; it injects `nativeRuntime`,
@@ -237,7 +247,7 @@ no `SameSite=None; Secure` workaround, and no dependency on `127.0.0.1` vs `loca
 | Session control (`start_session`, `message_session`, `stop_session`, `redirect_session`) | main `src/messaging.js` | bridge operations executed by the main host (§5.2) | Fishball calls them from the child. |
 | `read_session`, `watch_session`, `list_watches`, `unwatch_session` | main `src/watches.js` | bridge operations + child-side tools | §5.2. |
 | Approvals: Fishball decides allow/grant/reject/escalate | main `src/approvals.js` | child decides and answers over the bridge; the live card stays in the managed session's pile on the main DSH | §5.2, §8.1. |
-| User questions / plan reviews | main `src/questions.js` | child receives and answers over the bridge | same rules. |
+| User questions / plan reviews | main `src/questions.js` | child receives and answers over the bridge | same rules; Fishball's own question to the user is a pile card filed by `ask_user` (T09), never a DSH question. |
 | Pile/cards | main dock (`client.js:3242+`) | live cards stay in the main DSH on the session they belong to; Fishball's own requests appear in the child UI | Q1. |
 | Decision labels | main turn tail (`client.js:3376-3389`) | child timeline (§8.1) | host tag records removed (`src/tags.js`, `src/approvals.js:397,465,878,1182`). |
 | Reminders | main `dsh-schedule` | child `dsh-schedule` + `tool-schedule`, child UI list | §2.1. |
@@ -290,6 +300,8 @@ with 32 selected labels each.
 | `approval.list` | child to main | `{sessionId}` | managed session | `{approvals:[descriptor]}`; live requests only, current `offerId`. |
 | `approval.answer` | child to main | `{sessionId, approvalId, offerId, answer: {decision, risk?, reason?, question?, grant?}}` | live offer, not expired | `{accepted:true, grantId?, expiresAt?}`; `expired`, `conflict`, `risk-required`, `reason-required`, `allow-needs-low-risk`, `arguments-incomplete`, `question-required`, `grant-invalid`, `prefix-not-shell-tool`, `prefix-empty`, `prefix-not-in-call`, `expires-at-required`, `expires-at-invalid`, `expires-at-past`. |
 | `question.answer` | child to main | `{sessionId, questionId, answers?, approve?, feedback?, toUser?, note?}` | managed session's open question | `{accepted:true}`; `expired`, `mode-user`, `bad-answer`, `already-settled`, `session-not-live`. |
+| `question.ask` | child to main | `{sessionId, questions[]}` | the child instance only; `sessionId` is Fishball's own child session, the card's author | `{questionId}` for the card just filed in the user's pile; the call never waits, and the card has no deadline. |
+| `question.answerOwn` | child to main | `{questionId, answers[]}` | an open `question.ask` card | `{accepted:true}`; `expired` once it is answered or closed, `bad-answer` when the batch does not fit. The answer also returns as the inbox item below. |
 | `prompt.list` | child to main | `{}` | — | `{prompts:[{promptId,sessionId,title,toolName,argumentsStatus,since,managed}]}`. |
 | `prompt.answer` | child to main | `{sessionId, promptId, decision: allow or reject, risk?, reason}` | that frozen prompt's session | `{promptId, decision, managed}`; `expired`, `invalid-decision`, `risk-required`, `reason-required`, `allow-needs-low-risk`, `arguments-incomplete`. |
 | `grant.list` | child to main | `{}` | — | `{grants:[{grantId,sessionId,toolName,kind,prefix?,expiresAt,uses,lastUsedAt?,paused}]}`. |
@@ -322,6 +334,16 @@ copied from that question's options; a plan review uses `approve: boolean` and `
 `toUser: true` sends the question to the user, and `note` adds Fishball's note. A payload cannot
 carry both `answers` and `approve`/`feedback`. All bridge times (`at`, `since`, `expiresAt`,
 `lastUsedAt`) are epoch milliseconds; the main host converts its ISO store values.
+
+**Fishball's own question is a card (T09).** `question.ask` files one card in the user's pile —
+`pile.file({requestId, questionId, kind: question, sessionId, questions, …})` — and returns its id
+at once, so the tool call never blocks; no timer is armed and the card has no end time. The user
+answers on that card (the pile's question form) or on the child's own copy of it
+(`question.answerOwn`, the `own` action of the child's answer route); both settle the one card with
+`CARD_END.user`. Any other end uses `pile.settle(id, {end: dismissed | cancelled | …})`, and
+`Pile.onClose` → `closeCard()` gives the child its `[card closed …]` line. The answer's words
+travel back as the `QUESTION_ANSWER` inbox item (the same carrier `toUser` questions use), so the
+child shows one answer row and one `answers()` entry whatever card the user answered.
 
 In `session.start`, `session.message` and `session.redirect`, the `attachments` list carries the
 `hostRef`s returned by `attachment.put`; the host consumes each ref at the same time as it builds
@@ -810,14 +832,23 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
   the session`.
 
 **T09 — Approvals, questions and escalation outcomes `[host]` plus `[child]`**
-- Goal: Fishball decides allow, grant, reject or escalate and answers questions, from its own chat.
-- Owns: `src/slim/child/approvals.js`, `src/slim/host/approvals.js`.
+- Goal: Fishball decides allow, grant, reject or escalate and answers questions, from its own chat;
+  and when Fishball needs something from the user, it asks as a card.
+- Owns: `src/slim/child/approvals.js`, `src/slim/host/approvals.js`, and Fishball's own question
+  cards: `src/own-questions.js` with its provider wiring in `index.js` (the card itself).
 - Depends: T05. Acceptance: a live card is answered once with the current offer id; an expired
   offer is refused; an escalation settles with the user's decision and emits `approval.settled`;
-  the same rules as today's allowance apply.
+  the same rules as today's allowance apply. **Ask User is removed** (user decision 2026-11-05):
+  the child mounts no `tool-ask-user` row, so no `ask_user_question` tool reaches Fishball. Its
+  `ask_user` tool files one card in the user's pile through `question.ask` and returns at once with
+  the card id; the card never expires, the user answers on the card or on the child's copy of it,
+  and the answer arrives in Fishball's chat as the `QUESTION_ANSWER` inbox item plus one
+  `answers()` row. A card closed without an answer reaches the child as `[card closed …]`.
 - Tests: `APPR-01 allow once`; `-02 reject`; `-03 grant then use`; `-04 expired offer`; `-05
   escalation answered by the user`; `-06 question answered`; `-07 disconnect does not lose the
-  card`.
+  card`; `-08 no ask_user_question tool in the child`; `-09 ask_user returns at once with the card
+  id`; `-10 the card waits with no deadline and the answer comes back as a chat row`; `-11 an
+  unanswered card closes with the child's closed line`.
 
 **T12 — Settings page and one button style `[client]` plus `[host]`**
 - Goal: the rebuilt settings page (§9) and the §8.5 restyle of all nine accent buttons.
@@ -922,7 +953,7 @@ waves 5 and 6. T13b is blocked on the upstream slot and starts only after that s
 - Bridge: `BRIDGE-01..08`.
 - Chat: `CHAT-01..06`.
 - Images: `IMG-01..08`.
-- Approvals and questions: `APPR-01..07`.
+- Approvals and questions: `APPR-01..11` (T09; the last four cover Fishball's own card ask).
 - Decision labels: `DEC-01..06`.
 - Row mark: `MARK-01..06` (now) and `MARK-07..09` (blocked on upstream).
 - Hand-over: `HAND-01..05`.

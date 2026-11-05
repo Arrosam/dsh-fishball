@@ -103,7 +103,7 @@ export const SESSION_OPERATIONS = Object.freeze([
 
 /**
  * Every §5.2 operation now has an owner: the session handlers in this file, T06's attachment
- * handlers when the session port carries an image port, and T09's seven approval, question,
+ * handlers when the session port carries an image port, and T09's nine approval, question,
  * prompt and grant handlers registered by src/slim/host/approvals.js. The list stays as the
  * explicit statement of that coverage; an operation that is unavailable at runtime (a missing
  * image port) answers the contract's unsupported-operation from dispatch, not from this list.

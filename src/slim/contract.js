@@ -39,6 +39,8 @@ export const OPERATION = Object.freeze({
   approvalList: 'approval.list',
   approvalAnswer: 'approval.answer',
   questionAnswer: 'question.answer',
+  questionAsk: 'question.ask',
+  questionAnswerOwn: 'question.answerOwn',
   promptList: 'prompt.list',
   promptAnswer: 'prompt.answer',
   grantList: 'grant.list',
@@ -69,6 +71,10 @@ export const OPERATIONS = Object.freeze({
   [OPERATION.approvalList]: spec(DIRECTION.childToMain, true),
   [OPERATION.approvalAnswer]: spec(DIRECTION.childToMain, true),
   [OPERATION.questionAnswer]: spec(DIRECTION.childToMain, true),
+  // Fishball's own question to the user is instance-scoped: its card names no main session, so
+  // the envelope's sessionId is null and the payload carries Fishball's own session for the card.
+  [OPERATION.questionAsk]: spec(DIRECTION.childToMain, false),
+  [OPERATION.questionAnswerOwn]: spec(DIRECTION.childToMain, false),
   [OPERATION.promptList]: spec(DIRECTION.childToMain, false),
   [OPERATION.promptAnswer]: spec(DIRECTION.childToMain, true),
   [OPERATION.grantList]: spec(DIRECTION.childToMain, false),
@@ -687,6 +693,38 @@ function requestQuestionAnswer(payload) {
 
 function responseQuestionAnswer(payload) { trueFlag(payload, 'accepted') }
 
+/**
+ * question.ask (§15 T09): Fishball's own question to the user. The main host files it as a card
+ * in the user's pile and answers at once with the card's id, so the call never waits; the answer
+ * reaches the child later through the inbox. The payload names Fishball's own session (the card's
+ * author) because the card belongs to no main session.
+ */
+function requestQuestionAsk(payload) {
+  exact(payload, ['sessionId', 'questions'])
+  text(payload.sessionId)
+  questions(payload.questions)
+}
+
+function responseQuestionAsk(payload) {
+  exact(payload, ['questionId'])
+  text(payload.questionId)
+}
+
+/**
+ * question.answerOwn: the user answered Fishball's own question on the child's copy of its card
+ * instead of the main pile. The host settles the same pile card, so one card has one answer
+ * whichever card the user used, and the words still travel back through the inbox.
+ */
+function requestQuestionAnswerOwn(payload) {
+  exact(payload, ['questionId', 'answers'])
+  text(payload.questionId)
+  arrayOf(payload.answers, questionAnswerItem)
+  if (payload.answers.length === NUMBER.zero || payload.answers.length > LIMITS.questionsPerRequest) fail(ERROR.limit)
+  uniqueBy(payload.answers, (item) => item.id)
+}
+
+function responseQuestionAnswerOwn(payload) { trueFlag(payload, 'accepted') }
+
 function promptSummary(value) {
   exact(value, ['promptId', 'sessionId', 'title', 'toolName', 'argumentsStatus', 'since', 'managed'])
   text(value.promptId)
@@ -875,6 +913,8 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.approvalList]: requestApprovalList,
     [OPERATION.approvalAnswer]: requestApprovalAnswer,
     [OPERATION.questionAnswer]: requestQuestionAnswer,
+    [OPERATION.questionAsk]: requestQuestionAsk,
+    [OPERATION.questionAnswerOwn]: requestQuestionAnswerOwn,
     [OPERATION.promptList]: requestEmpty,
     [OPERATION.promptAnswer]: requestPromptAnswer,
     [OPERATION.grantList]: requestEmpty,
@@ -898,6 +938,8 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.approvalList]: responseApprovalList,
     [OPERATION.approvalAnswer]: responseApprovalAnswer,
     [OPERATION.questionAnswer]: responseQuestionAnswer,
+    [OPERATION.questionAsk]: responseQuestionAsk,
+    [OPERATION.questionAnswerOwn]: responseQuestionAnswerOwn,
     [OPERATION.promptList]: responsePromptList,
     [OPERATION.promptAnswer]: responsePromptAnswer,
     [OPERATION.grantList]: responseGrantList,
