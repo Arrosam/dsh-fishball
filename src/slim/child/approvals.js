@@ -1086,5 +1086,4 @@ export function apply(ctx) {
     cleanup()
     throw error
   }
-  return service
 }

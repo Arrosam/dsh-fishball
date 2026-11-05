@@ -1057,6 +1057,7 @@ export function apply(ctx) {
   const unsubscribe = ctx.nativeRuntime.onAdminTransport((transport) => {
     try { endpoint.attach(transport) } catch { /* the next transport replaces it */ }
   })
-  ctx.on('dispose', () => { unsubscribe(); endpoint.close() })
-  return endpoint
+  // Cordis treats an apply() return value as the fiber's disposer. The endpoint reaches the
+  // main side through onAdminTransport; returning it instead fails activation with "Invalid effect".
+  return () => { unsubscribe(); endpoint.close() }
 }

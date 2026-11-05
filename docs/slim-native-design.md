@@ -128,11 +128,18 @@ backpressure are the child app's responsibility.
 - `native-child.js` no longer injects `webServer`/`webApp`; it injects `nativeRuntime`,
   `agents`, `sessions`, `tools`, `profileContext`, `appExit`, `appReady`. Its readiness probe
   becomes "server is listening + core services present + authenticated request succeeds".
+- Child rows obey Cordis's `apply` contract: the return value is the fiber's disposer (a function)
+  or nothing. A service or endpoint is published with `ctx.provide` or through the runtime's
+  channel callback, never returned; Cordis rejects any other non-null return as `Invalid effect`
+  and unloads the row.
 
 ### 2.4 Lifecycle (unchanged rules)
 
 Start after main `appReady`, stop on dispose/exit, HMR stop-then-restart, one writer per attached
 home, bounded stop (4000 ms inside 0.2.2's 5000 ms grace), parent-lifetime pipe, no PID-only signals.
+The app row's server close ends its SSE streams first and then closes idle and remaining HTTP
+connections before awaiting `server.close`; a browser keep-alive or SSE socket would otherwise
+hold the child's stop open until the lifecycle stop window.
 Only the readiness checks and the copied code set change: `src/native-runtime/constants.js`
 `requiredServices`, `overlay.js` row assertions, and `copyChildCode` now copies `src/slim/**`
 in addition to the lifecycle modules.

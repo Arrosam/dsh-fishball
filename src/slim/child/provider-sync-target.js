@@ -431,6 +431,8 @@ export async function apply(ctx) {
   const unsubscribe = ctx.nativeRuntime.onProviderSyncTransport((transport) => {
     try { endpoint.attach(transport) } catch { /* the next transport replaces it */ }
   })
-  ctx.on('dispose', () => { unsubscribe(); endpoint.close(); engine.close() })
-  return endpoint
+  // Cordis treats an apply() return value as the fiber's disposer. The endpoint reaches the
+  // main side through onProviderSyncTransport, never through the return value; a returned
+  // object fails activation with "Invalid effect".
+  return () => { unsubscribe(); endpoint.close(); engine.close() }
 }
