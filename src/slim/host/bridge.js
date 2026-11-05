@@ -18,6 +18,9 @@
  *   cut to fit the contract's 1 MiB frame, reporting truncated instead of failing.
  * - Start never creates a folder (§5.2): the folder is resolved to an existing workspace or an
  *   existing absolute directory before the service is called; a missing folder is refused.
+ * - Attachments never travel as paths or bytes in a session frame (§6.2, §6.4): attachment.put
+ *   admits child bytes behind a single-use hostRef, and session.start/message/redirect replace
+ *   those refs with main-side store blocks inside the port.
  * - The child never receives a path, a token or main credentials: only titles, ids and
  *   message text cross, and every response is validated by encodeEnvelope before it is sent.
  *
@@ -27,9 +30,10 @@
  * That keeps the bridge testable against a stub, and keeps T14/T15 free to change how the
  * host stores its bookkeeping.
  *
- * Unimplemented on purpose: approval.*, question.answer, prompt.*, grant.* and attachment.*
- * belong to T09/T06. A request for one of them is answered with unsupported-operation here;
- * later tasks add it with register() and it enters the handshake's capability list.
+ * Unimplemented on purpose: approval.*, question.answer, prompt.* and grant.* belong to T09.
+ * A request for one of them is answered with unsupported-operation here; T09 adds it with
+ * register() and it enters the handshake's capability list. The attachment operations are
+ * registered by this file from the service's own image port when the port implements them.
  *
  * @typedef {Object} SessionSummary
  * @property {string} sessionId
@@ -46,15 +50,18 @@
  * @property {(id: string) => Promise<SessionSummary|undefined>} describe  undefined = unknown or archived.
  * @property {() => Array<{id: string, path: string}>} workspaces
  * @property {(path: string) => Promise<{id: string}|undefined>} resolveWorkspacePath
- * @property {(input: {target: {workspaceId: string}|{cwd: string}, title: string, model?: string, reasoningEffort?: string, message: string}) => Promise<{sessionId: string, managed: boolean, titleError?: string, workspaceError?: string}>} start
- * @property {(input: {sessionId: string, message: string}) => Promise<{status: string}>} message
- * @property {(input: {sessionId: string, message: string}) => Promise<{status: string}>} redirect
+ * @property {(input: {target: {workspaceId: string}|{cwd: string}, title: string, model?: string, reasoningEffort?: string, message: string, attachments?: string[]}) => Promise<{sessionId: string, managed: boolean, titleError?: string, workspaceError?: string}>} start
+ * @property {(input: {sessionId: string, message: string, attachments?: string[]}) => Promise<{status: string}>} message
+ * @property {(input: {sessionId: string, message: string, attachments?: string[]}) => Promise<{status: string}>} redirect
  * @property {(input: {sessionId: string, reason?: string}) => Promise<{stopped: boolean}>} stop
  * @property {(input: {sessionId: string, maxMessages: number, maxBytes: number}) => Promise<{messages: object[], truncated: boolean}>} read
  * @property {(input: {sessionId: string, mode: string}) => Promise<{watchId: string}|{watchError: string}>} watch
  * @property {() => Promise<Array<{watchId: string, sessionId: string, mode: string, status: string}>>} watches
  * @property {(input: {watchId: string}) => Promise<unknown>} unwatch
  * @property {(input: {sessionId: string, reason: string}) => Promise<unknown>} release
+ * @property {{read: (input: {sessionId: string, attachmentId: string}) => Promise<object>, put: (payload: object) => Promise<object>, resolve: (hostRefs: string[]) => object[]}} [attachment]
+ *   - the §6.2/§6.4 image port; when absent the attachment operations stay unregistered and a
+ *   hostRef-carrying session request is refused feature-off rather than silently dropping images.
  */
 import { createHash, randomUUID } from 'node:crypto'
 import { stat } from 'node:fs/promises'
@@ -95,12 +102,15 @@ export const SESSION_OPERATIONS = Object.freeze([
 ])
 
 /**
- * The §5.2 operations left to T09 (approvals, questions, prompts, grants) and T06
- * (attachments). Kept as a named list so a reader can see the whole gap at once; each is
- * answered with unsupported-operation until its owner registers a handler.
+ * The §5.2 operations left to T09 (approvals, questions, prompts, grants). Kept as a named list
+ * so a reader can see the whole gap at once; each is answered with unsupported-operation until
+ * T09 registers a handler. attachment.read/put are registered here when the image port exists.
  */
 export const UNIMPLEMENTED_OPERATIONS = Object.freeze(Object.values(OPERATION).filter(
-  (operation) => !SESSION_OPERATIONS.includes(operation) && operation !== OPERATION.inboxPush,
+  (operation) => !SESSION_OPERATIONS.includes(operation)
+    && operation !== OPERATION.inboxPush
+    && operation !== OPERATION.attachmentRead
+    && operation !== OPERATION.attachmentPut,
 ))
 
 /** Operations whose authorization needs a managed session (§5.2). */
@@ -108,8 +118,8 @@ const MANAGED_OPERATIONS = new Set([
   OPERATION.sessionMessage, OPERATION.sessionRedirect, OPERATION.sessionStop, OPERATION.sessionRelease,
 ])
 /** Operations whose authorization needs a related session: managed, watched, messaged by or forwarded. */
-const RELATED_OPERATIONS = new Set([OPERATION.sessionRead, OPERATION.sessionWatch])
-/** Message-carrying operations that would consume attachment hostRefs; T06 owns those. */
+const RELATED_OPERATIONS = new Set([OPERATION.sessionRead, OPERATION.sessionWatch, OPERATION.attachmentRead])
+/** Message-carrying operations that consume attachment hostRefs (§6.4). */
 const ATTACHMENT_OPERATIONS = new Set([OPERATION.sessionStart, OPERATION.sessionMessage, OPERATION.sessionRedirect])
 
 const ERROR_CODES = new Set(Object.values(ERROR))
@@ -180,13 +190,16 @@ class BridgeHost {
     this.inboxAcked = new Set()
     this.closed = false
     for (const [operation, handler] of sessionHandlers(sessions)) this.handlers.set(operation, handler)
+    // T06 registers the attachment operations through the same seam every later task uses, so
+    // the hello advertises them only when the port can actually serve them.
+    for (const [operation, handler] of imageHandlers(sessions)) this.register(operation, handler)
   }
 
   /** The operations this host answers now; the handshake's welcome is built from it. */
   get capabilities() { return Object.freeze([...this.handlers.keys()]) }
 
   /**
-   * Add one §5.2 operation. T09/T06 call this for their own operations before a transport
+   * Add one §5.2 operation. T09 and T06 call this for their own operations before a transport
    * attaches (the welcome advertises only handlers registered by then). The bridge's shared
    * managed/related authorization covers the session set only; a registered operation's own
    * authorization (a live offer, a referenced image) belongs to its handler.
@@ -367,12 +380,14 @@ class BridgeHost {
 
   /**
    * The bridge's authorization step (§5.1, §5.2), before any handler sees the id: a
-   * managed-session operation needs a managed session; a related one needs managed or watched;
-   * message-carrying operations refuse attachment hostRefs until T06 routes them. A refusal is
-   * an ordinary error frame and never reaches the service.
+   * managed-session operation needs a managed session; a related one needs managed or watched
+   * (attachment.read's own referenced-image check belongs to the image port). A message that
+   * carries hostRefs needs a service that can consume them, so an unwired port refuses instead
+   * of dropping the images. A refusal is an ordinary error frame and never reaches the service.
    */
   async authorize(operation, sessionId, payload) {
-    if (ATTACHMENT_OPERATIONS.has(operation) && payload.attachments.length > 0) refuse(ERROR.operation)
+    if (ATTACHMENT_OPERATIONS.has(operation) && payload.attachments.length > 0
+      && typeof this.sessions.attachment?.resolve !== 'function') refuse(ERROR.featureOff)
     if (MANAGED_OPERATIONS.has(operation)) { await ensureManaged(this.sessions, sessionId); return }
     if (RELATED_OPERATIONS.has(operation)) await ensureRelated(this.sessions, sessionId)
   }
@@ -572,6 +587,7 @@ function sessionHandlers(service) {
         ...(payload.model === undefined ? {} : { model: payload.model }),
         ...(payload.reasoningEffort === undefined ? {} : { reasoningEffort: payload.reasoningEffort }),
         message: payload.message,
+        attachments: payload.attachments,
       })
       if (typeof result?.sessionId !== 'string' || result.sessionId.length === 0 || typeof result.managed !== 'boolean') refuse(ERROR.failed)
       return {
@@ -582,10 +598,10 @@ function sessionHandlers(service) {
       }
     }],
     [OPERATION.sessionMessage, async ({ payload }) => delivery(
-      await service.message({ sessionId: payload.sessionId, message: payload.message }),
+      await service.message({ sessionId: payload.sessionId, message: payload.message, attachments: payload.attachments }),
     )],
     [OPERATION.sessionRedirect, async ({ payload }) => delivery(
-      await service.redirect({ sessionId: payload.sessionId, message: payload.message }),
+      await service.redirect({ sessionId: payload.sessionId, message: payload.message, attachments: payload.attachments }),
     )],
     [OPERATION.sessionStop, async ({ payload }) => {
       await service.stop({ sessionId: payload.sessionId, ...(payload.reason === undefined ? {} : { reason: payload.reason }) })
@@ -609,6 +625,23 @@ function sessionHandlers(service) {
       await service.release({ sessionId: payload.sessionId, reason: payload.reason })
       return { sessionId: payload.sessionId, managed: false }
     }],
+  ]
+}
+
+/**
+ * The two §6.2/§6.4 attachment operations, when the injected service carries an image port.
+ * attachment.read's managed/related check is the bridge's shared RELATED_OPERATIONS rule; the
+ * port adds the referenced-image check that 0.2.2's own RPC no longer makes. attachment.put is
+ * authorized by the authenticated child connection alone, so it has no session to check.
+ * @param {SessionService} service
+ * @returns {Array<[string, Function]>}
+ */
+function imageHandlers(service) {
+  const images = service.attachment
+  if (typeof images?.read !== 'function' || typeof images?.put !== 'function') return []
+  return [
+    [OPERATION.attachmentRead, async ({ sessionId, payload }) => images.read({ sessionId, attachmentId: payload.attachmentId })],
+    [OPERATION.attachmentPut, async ({ payload }) => images.put(payload)],
   ]
 }
 

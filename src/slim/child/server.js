@@ -7,15 +7,17 @@
  * instance's bearer before it looks at a path or a method.
  *
  * The full chat UI and its API arrive in later tasks. This module owns the shell document, the
- * /ui/* static files, the liveness API, the reminder API (T10) and the SSE stream with the
- * contract's heartbeat; a path beyond them is a bodyless 404, so an unknown route can never
- * serve bytes. The reminder module owns its validation and typed refusals; this hook only moves
- * the request's method, query and bounded JSON body into it and its status and body back out.
+ * /ui/* static files, the liveness API, the reminder API (T10), the image upload API (T06) and
+ * the SSE stream with the contract's heartbeat; a path beyond them is a bodyless 404, so an
+ * unknown route can never serve bytes. Each module owns its validation and typed refusals; a
+ * hook only moves the request's method, query and bounded JSON body into it and its status and
+ * body back out.
  */
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { BEARER, ERROR, LIMITS, ROUTES } from '../contract.js'
+import { IMAGES, ImageApiError } from './images.js'
 import { REMINDERS } from './reminders.js'
 
 /**
@@ -29,9 +31,10 @@ const PATHS = Object.freeze({
   ui: childPath(ROUTES.ui),
   events: childPath(ROUTES.events),
   health: childPath(ROUTES.api) + 'health',
-  // REMINDERS.path is already the child's unprefixed tail (/api/reminders); the broker adds
-  // /fishball/embed in front of it (§3.1, T10).
+  // REMINDERS.path and IMAGES.uploadPath are already the child's unprefixed tails
+  // (/api/reminders, /api/upload); the broker adds /fishball/embed in front of them (§3.1).
   reminders: REMINDERS.path,
+  upload: IMAGES.uploadPath,
 })
 
 /** Loopback only; port 0 lets the OS choose, and the parent learns the port from the service. */
@@ -93,16 +96,16 @@ const SSE = Object.freeze({
 const REMINDER_FRAME = 'event: ' + REMINDERS.event + '\ndata: ' + JSON.stringify(REMINDERS.change) + '\n\n'
 
 /**
- * The reminder route's own body refusals. The parsed body is handed to the reminder API, but a
- * body that never parsed or was over the contract bound has no reminder code of its own; these
- * two carry the API's 400 vocabulary (src/slim/child/reminders.js) and the contract's too-large.
+ * The JSON routes' own body refusals. The parsed body is handed to the route's module, but a
+ * body that never parsed or was over the contract bound has no module code of its own; these
+ * two carry the modules' shared 400 vocabulary and the contract's too-large.
  */
 const BODY = Object.freeze({
   invalid: Object.freeze({ code: 'invalid-input', message: 'The request body must be JSON.' }),
   tooLarge: Object.freeze({ code: ERROR.tooLarge, message: 'The request body is too large.' }),
 })
 
-/** A body read that failed before the reminder API saw anything; status and JSON body. */
+/** A body read that failed before the route's module saw anything; status and JSON body. */
 class BodyError extends Error {
   constructor(status, body) {
     super(body.code)
@@ -184,26 +187,48 @@ function readBody(req, limit) {
 }
 
 /**
+ * Parse one bounded JSON body. A refusal is a status/body the route answers as-is; a read
+ * failure is thrown for the outer handler, exactly like any other handler failure.
+ */
+async function readJson(req, limit) {
+  try {
+    return { body: JSON.parse(await readBody(req, limit)) }
+  } catch (error) {
+    if (error instanceof BodyError) return { refusal: error }
+    if (error instanceof SyntaxError) return { refusal: { status: HTTP.badRequest, body: BODY.invalid } }
+    throw error
+  }
+}
+
+/**
  * The reminders hook (T10): GET and HEAD list, POST reads one body and mutates. The reminder
  * module owns validation, bounds and typed refusals; this hook only carries status and body.
  */
 async function serveReminders(req, res, reminders) {
   if (req.method === METHOD.post) {
-    let body
-    try {
-      body = JSON.parse(await readBody(req, LIMITS.embedJsonBodyBytes))
-    } catch (error) {
-      // A body refusal is 413/400; a read failure is the handler failure the outer catch answers.
-      if (error instanceof BodyError) { sendAnswer(res, error, false); return }
-      if (!(error instanceof SyntaxError)) throw error
-      sendAnswer(res, { status: HTTP.badRequest, body: BODY.invalid }, false)
-      return
-    }
-    sendAnswer(res, await reminders.handle({ method: req.method, body }), false)
+    const parsed = await readJson(req, LIMITS.embedJsonBodyBytes)
+    if (parsed.refusal !== undefined) { sendAnswer(res, parsed.refusal, false); return }
+    sendAnswer(res, await reminders.handle({ method: req.method, body: parsed.body }), false)
     return
   }
   const url = new URL(req.url, BASE_ORIGIN)
   sendAnswer(res, await reminders.handle({ method: req.method, query: url.searchParams }), req.method === METHOD.head)
+}
+
+/**
+ * The upload hook (T06): POST one bounded JSON body to the image service. The module owns the
+ * media-type, size, digest and store rules, and answers a typed ImageApiError; this hook only
+ * carries the status and body back. Its body bound is the broker's 8 MiB upload bound (§3.6).
+ */
+async function serveUpload(req, res, images) {
+  const parsed = await readJson(req, IMAGES.maxUploadBytes)
+  if (parsed.refusal !== undefined) { sendAnswer(res, parsed.refusal, false); return }
+  try {
+    sendAnswer(res, { status: HTTP.ok, body: await images.upload(parsed.body) }, false)
+  } catch (error) {
+    if (!(error instanceof ImageApiError)) throw error
+    sendAnswer(res, error, false)
+  }
 }
 
 /**
@@ -326,6 +351,13 @@ async function resolveRoute(pathname, options) {
       serve: (req, res) => serveReminders(req, res, options.reminders),
     }
   }
+  if (pathname === PATHS.upload && options.images !== undefined) {
+    // Upload is POST only; the image module owns the body's shape and its typed refusals (T06).
+    return {
+      allow: IMAGES.uploadMethods,
+      serve: (req, res) => serveUpload(req, res, options.images),
+    }
+  }
   return undefined
 }
 
@@ -356,11 +388,14 @@ async function handle(req, res, options) {
  * @param {number} [options.heartbeatMs] - SSE heartbeat interval; defaults to the contract limit.
  * @param {{ handle: Function, subscribe: Function }} options.reminders - the reminder surface
  *   from src/slim/child/reminders.js (T10): /api/reminders and the SSE change event.
+ * @param {{ upload: Function }} [options.images] - the image surface from src/slim/child/images.js
+ *   (T06). The child app row supplies it beside the reminders surface; without it /api/upload is
+ *   an ordinary 404 and no route claims the path.
  * @returns {{ readonly origin: string | undefined, start: () => Promise<string>, close: () => Promise<void> }}
  *   origin is undefined until start() resolves; start() binds 127.0.0.1:0 and returns the origin.
  */
 export function createAppServer(options) {
-  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs, reminders } = options ?? {}
+  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs, reminders, images } = options ?? {}
   if (!authority || typeof authority.accepts !== 'function') throw new TypeError('fishball-native-app: a bearer authority is required')
   if (typeof uiDir !== 'string' || !path.isAbsolute(uiDir)) throw new TypeError('fishball-native-app: an absolute UI directory is required')
   if (!Buffer.isBuffer(document)) throw new TypeError('fishball-native-app: the shell document must be a Buffer')
@@ -368,9 +403,12 @@ export function createAppServer(options) {
   if (!reminders || typeof reminders.handle !== 'function' || typeof reminders.subscribe !== 'function') {
     throw new TypeError('fishball-native-app: the reminders surface is required')
   }
+  if (images !== undefined && typeof images?.upload !== 'function') {
+    throw new TypeError('fishball-native-app: the image surface must implement upload')
+  }
 
   const streams = new Set()
-  const settings = { authority, uiDir, document, heartbeatMs, streams, reminders }
+  const settings = { authority, uiDir, document, heartbeatMs, streams, reminders, images }
   let origin
   let listening = false
   let closed = false
