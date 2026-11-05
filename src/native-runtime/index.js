@@ -212,11 +212,7 @@ class NativeRuntime {
     if (record) {
       let status
       try { status = await this.authenticateReady(record) } catch (error) {
-        const pid = await this.pid(record)
-        if (!pid) fail('OWNERSHIP_UNCERTAIN', 'An interrupted launch has no process identity; refusing automatic takeover.')
-        if (await this.alive(pid) !== false) fail('CHILD_UNREACHABLE', 'An existing instance cannot be authenticated; refusing a duplicate writer.')
-        await removeLaunch(this.paths, record)
-        await this.log('RECOVER')
+        await this.retirePredecessor(record)
         record = undefined
       }
       if (record) {
@@ -285,6 +281,31 @@ class NativeRuntime {
       throw error instanceof NativeRuntimeError ? error : new NativeRuntimeError(error.code ?? 'START_FAILED', 'Attached runtime startup failed; private state retained.')
     }
   }
+  /**
+   * Retire a recorded instance that is not a ready slim child, before this owner starts its own.
+   *
+   * Upgrade from the old native build reaches this every time: the previous main DSH exits without
+   * stopping its child, and that child is still inside its parent-loss exit window
+   * (parent-watch.js, at most LIFETIME.childExitTimeoutMs) when this main reaches appReady. It
+   * answers the HMAC wire but never reports the slim capabilities, so authenticateReady refuses it.
+   * Refusing outright left Fishball failed on every upgrade start, so the authenticated stop that
+   * stopInternal already sends to a ready predecessor is sent here too. Its exit is then confirmed
+   * by passive polling only: no PID is ever signalled. The wait covers the exit window, which is
+   * longer than the host's stop bound (that bound is for shutdown inside DSH's exit grace; startup
+   * has its own, longer budget). A process that is still alive after it remains a refusal.
+   */
+  async retirePredecessor(record) {
+    const pid = await this.pid(record)
+    if (!pid) fail('OWNERSHIP_UNCERTAIN', 'An interrupted launch has no process identity; refusing automatic takeover.')
+    if (await this.alive(pid) !== false) {
+      try { await this.query(record, 'stop') } catch { /* already closing its endpoint: wait below */ }
+      try { await this.waitDead(record, Math.max(this.limits.stopTimeoutMs, LIFETIME.childExitTimeoutMs)) } catch {
+        fail('CHILD_UNREACHABLE', 'An existing instance did not exit; refusing a duplicate writer.')
+      }
+    }
+    await removeLaunch(this.paths, record)
+    await this.log('RECOVER')
+  }
   owns(record, pid) {
     return this.child && this.childIdentity?.hostId === record.hostId && this.childIdentity?.instanceId === record.instanceId && this.childIdentity?.pid === pid && this.child.pid === pid
   }
@@ -297,9 +318,9 @@ class NativeRuntime {
     } while (Date.now() < deadline)
     fail('STOP_TIMEOUT')
   }
-  async waitDead(record) {
+  async waitDead(record, timeoutMs = this.limits.stopTimeoutMs) {
     if (this.owns(record, this.childIdentity?.pid)) return this.waitOwnedDead()
-    const deadline = Date.now() + this.limits.stopTimeoutMs
+    const deadline = Date.now() + timeoutMs
     const pid = await this.pid(record) ?? (this.owns(record, this.childIdentity?.pid) ? this.childIdentity.pid : undefined)
     do {
       if (this.owns(record, pid)) {
