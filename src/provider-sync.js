@@ -84,10 +84,10 @@ const adopted = (entry) => entry.configured === true && plain(entry.profile) && 
 const dormant = (entry) => entry.configured === false && entry.profile === null
 /**
  * The user asked for keys on built-in routes to come over too (2026-11-06): a source key record
- * on a built-in route that has no override (adopted or dormant). The plain profile path already
- * covers an adopted source; this also covers the dormant one.
+ * on a built-in route with no override, whether dormant or adopted. Both go through
+ * #builtinKeyPlan, so an adopted target that lacks the key still receives it.
  */
-const builtinKey = (entry) => builtinRoute(entry) && dormant(entry)
+const builtinKey = (entry) => builtinRoute(entry) && (dormant(entry) || adopted(entry))
 
 export class ProviderSyncEngine {
   #host; #ttl; #now; #plans = new Map(); #incomplete = new Map(); #busy = false; #abort = new AbortController()
