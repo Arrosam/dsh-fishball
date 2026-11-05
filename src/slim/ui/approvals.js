@@ -11,7 +11,10 @@
  *   burst of decisions does not bury the conversation;
  * - Fishball's own question is the one card the user answers here (T09's answerOwnQuestion);
  *   it renders DSH's options, multi-select and plan-review intent, and posts an exact body;
- * - an answer the user gave to a question Fishball sent them becomes a timeline row.
+ * - an answer the user gave to a question Fishball sent them becomes a timeline row;
+ * - a card the host closed without the user's answer becomes one "closed: <reason>" row, and the
+ *   decision label it left stops saying it is waiting. No card is dropped silently, and none has
+ *   a deadline (src/card-lifecycle.js).
  *
  * The view re-reads `api/approvals` on mount, after a reconnect and on the `approvals` SSE
  * event; the payload is only a snapshot, so it can never drift. A re-read with identical data
@@ -32,6 +35,7 @@ const CLASS = Object.freeze({
   label: 'entry-decision',
   question: 'entry-question',
   answer: 'entry-answer',
+  closed: 'entry-closed',
   pending: 'is-pending',
   details: 'decision',
   summary: 'decision-summary',
@@ -74,6 +78,8 @@ const COPY = Object.freeze({
   keepPlanning: 'Keep planning',
   feedback: 'Feedback for the plan',
   answered: (text) => 'The user answered: ' + text,
+  closed: 'closed',
+  closedReason: (reason) => 'Card closed before you answered: ' + String(reason),
   failed: 'The answer was refused.',
   noOption: 'No options',
 })
@@ -211,6 +217,12 @@ function labelBlock(document, label) {
     settled.textContent = COPY.settled + ': ' + (DECISION_TEXT[label.settled.decision] ?? text(label.settled.decision))
     fragment.append(settled)
   }
+  if (text(label.closed) !== '') {
+    const closed = document.createElement('p')
+    closed.className = CLASS.status
+    closed.textContent = COPY.closed + ': ' + text(label.closed)
+    fragment.append(closed)
+  }
   return fragment
 }
 
@@ -221,10 +233,11 @@ function labelBlock(document, label) {
 function labelSummary(label) {
   const kind = KIND_TEXT[label.kind] ?? KIND_TEXT.approval
   const flags = label.outcome ?? {}
-  const outcome = flags.revoked === true ? OUTCOME_TEXT.revoked
-    : flags.toUser === true ? OUTCOME_TEXT.toUser
-      : flags.answered === true ? OUTCOME_TEXT.answered
-        : DECISION_TEXT[flags.decision] ?? ''
+  const outcome = text(label.closed) !== '' ? COPY.closed + ': ' + text(label.closed)
+    : flags.revoked === true ? OUTCOME_TEXT.revoked
+      : flags.toUser === true ? OUTCOME_TEXT.toUser
+        : flags.answered === true ? OUTCOME_TEXT.answered
+          : DECISION_TEXT[flags.decision] ?? ''
   return COPY.single(kind, text(label.title) || text(label.sessionId), outcome)
 }
 
@@ -487,6 +500,17 @@ export function createApprovalsView(options = {}) {
     return element
   }
 
+  /** One card the host closed without the user's answer: the reason, at the time it left. */
+  function buildClosed(entry) {
+    const at = Number.isFinite(entry?.at) ? entry.at : Date.now()
+    const element = row(CLASS.closed, at)
+    const body = document.createElement('p')
+    body.className = CLASS.text
+    body.textContent = COPY.closedReason(text(entry?.reason))
+    element.append(body)
+    return element
+  }
+
   /** Remove every approval row this view inserted; entries and the pending stream stay. */
   function clearRows() {
     for (const row of timeline.querySelectorAll('[' + ROW.marker + ']')) row.remove()
@@ -522,6 +546,7 @@ export function createApprovalsView(options = {}) {
     for (const card of Array.isArray(page.cards) ? page.cards : []) rows.push(buildCard(card))
     for (const entry of Array.isArray(page.questions) ? page.questions : []) rows.push(buildQuestion(entry))
     for (const answer of Array.isArray(page.answers) ? page.answers : []) rows.push(buildAnswer(answer))
+    for (const entry of Array.isArray(page.closed) ? page.closed : []) rows.push(buildClosed(entry))
     const labels = (Array.isArray(page.labels) ? page.labels : []).filter((label) => label !== null && typeof label === 'object')
     const times = entryTimes()
     for (const group of groupLabels(labels, times)) rows.push(buildLabelGroup(group))

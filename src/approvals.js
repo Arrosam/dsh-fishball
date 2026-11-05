@@ -39,7 +39,9 @@
  *   cannot be delivered: to you. An asked request becomes a card in your pile and the agent keeps
  *   waiting for your Allow once or Reject (src/pile.js, §7a.6); a direct call Fishball escalates or
  *   does not answer in time shows your stock prompt in the session AND a card in your pile, and the
- *   first answer in either place wins (rev11e, S33).
+ *   first answer in either place wins (rev11e, S33). The window only decides that move: a card in
+ *   your pile has no deadline, and every end without your answer leaves a closure line in the chat
+ *   (src/card-lifecycle.js).
  * Each answer Fishball gives leaves a tag record for the asking turn's tail (src/tags.js, §7a.3).
  * Fishball stopping or Permission requests going off sends every waiting request, and every card,
  * to its session's stock prompt (§7a.5, Q-r11-release-pile); a session leaving management does the
@@ -78,11 +80,12 @@ import { AuditLog } from './audit.js'
 import { CallPasses } from './passes.js'
 import { WORDING } from './result-wording.js'
 import { describeSession, rootSessionOf, senderOf } from './session-info.js'
-import { authorOf, sessionAuthor } from './author.js'
+import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
 import { diagnosticOf } from './errors.js'
 import { checkGrant } from './grants.js'
+import { closeCard, tellWithoutWake } from './card-lifecycle.js'
 
 export const APPROVAL_TOOL = Object.freeze({ answer: 'answer_approval', listPrompts: 'list_frozen_sessions', answerPrompt: 'answer_prompt' })
 const SOURCE_IDENTITY = 'fishball/approval'
@@ -118,6 +121,14 @@ const CLICK_ACTION = Object.freeze({ [APPROVAL_OUTCOME.allowedOnce]: DECISION_AC
 const PROMPT_BY = Object.freeze({ session: 'session', fishball: 'fishball', pile: 'pile', cancelled: 'cancelled' })
 /** answer_prompt's decision as DSH's outcome (allow or reject only, §7a.9). */
 const PROMPT_OUTCOME = Object.freeze({ [APPROVAL_DECISION.allow]: APPROVAL_OUTCOME.allowedOnce, [APPROVAL_DECISION.reject]: APPROVAL_OUTCOME.rejected })
+/**
+ * How a card beside a stock prompt left it (§7a.6, rev11e): the prompt's own answer settles the
+ * request elsewhere; a cancelled call cancels it; a prompt that could take no answer closes it
+ * with its own reason, so a closed browser never makes a card vanish unannounced.
+ */
+const cardEndOf = ({ outcome }) => outcome === APPROVAL_OUTCOME.cancelled ? CARD_END.cancelled
+  : outcome === APPROVAL_OUTCOME.unavailable ? CARD_END.unavailable
+    : CARD_END.inSession
 /** Whether answer_prompt's session became managed now, was already, or could not be recorded. */
 const PROMPT_MANAGED = Object.freeze({ now: 'now', already: 'already', failed: 'failed' })
 /** Request states: Fishball decides it now, or the session owes a reply to Fishball's question. */
@@ -728,7 +739,8 @@ export class ApprovalBroker {
    * The request is your card; the agent keeps waiting (silence never approves, item 11) until the
    * card leaves: your Allow once (a pass for the exact call) or Reject (your optional note is the
    * reason), the call cancelled (its turn stopped or ended, item 16), Fishball going off (a to-you
-   * ticket, Q-r11-release-pile) or the session leaving management (§5e).
+   * ticket, Q-r11-release-pile) or the session leaving management (§5e). The card has no deadline
+   * of its own; the closure line for every end without your answer comes from cardClosed().
    * @param result - how the round ended (escalate, timeout or to-user), audited as the request's answer.
    */
   async #awaitCard(request, result, signal) {
@@ -738,6 +750,8 @@ export class ApprovalBroker {
     if (result.answer !== APPROVAL_ANSWER.escalate) {
       this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: APPROVAL_DECISION.escalate, by: SETTLED_BY.fishball })
     }
+    // The answer window is over: the card is yours, so it carries no end time for anything to read.
+    delete request.expiresAt
     const ended = this.#pile.file(this.#cardOf(request, result))
     const onAbort = () => this.#pile.settle(request.id, { end: CARD_END.cancelled })
     signal?.addEventListener('abort', onAbort, { once: true })
@@ -765,7 +779,7 @@ export class ApprovalBroker {
       case CARD_END.released:
         return this.#end(request, { ...result, answer: APPROVAL_ANSWER.released }, ASK_RESULT.noLongerManaged)
       default:
-        if (request.seen) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
+        // No note here: the pile's own closure line names the reason (cardClosed).
         return this.#end(request, result, ASK_ERROR.cancelled)
     }
   }
@@ -867,6 +881,17 @@ export class ApprovalBroker {
     return result
   }
 
+  /**
+   * One card left the pile (src/pile.js's onClose): announce it when the user did not answer, and
+   * pass the closure to the slim bridge. Wired in index.js; this is the only closure path, so a
+   * timeout never closes a card and a card never disappears unseen.
+   * @param card - the pile card: { requestId, kind, sessionId, ... }.
+   * @param end - a CARD_END.
+   */
+  cardClosed(card, end) {
+    closeCard(this.#agentOf(), card, end, this.#logger, (event) => this.#emit(event))
+  }
+
   /** Answer a waiting request once; @returns whether it was still waiting. */
   #settle(id, result) {
     const settle = this.#waiting.get(id)
@@ -892,8 +917,9 @@ export class ApprovalBroker {
 
   /** The asking session's turn ended: its passes, tickets, marks and unanswered threads end too. */
   async #endTurn(sessionId) {
-    // A card leaves with its call's abort (item 16); this also ends one whose call had no signal.
-    this.#pile.settleWhere((card) => card.sessionId === sessionId, { end: CARD_END.cancelled })
+    // A card leaves with its call's abort (item 16); this also ends one whose call had no signal,
+    // and the closure line says the session ended rather than that the call was cancelled.
+    this.#pile.settleWhere((card) => card.sessionId === sessionId, { end: CARD_END.sessionEnded })
     this.#passes.dropSession(sessionId)
     this.#wording.dropSession(sessionId)
     for (const request of this.#questionsOf(sessionId)) await this.#finish(request, { answer: APPROVAL_ANSWER.ask }, APPROVAL_OUTCOME.cancelled)
@@ -1067,6 +1093,8 @@ export class ApprovalBroker {
     // Checked in the same tick as the filing in #passOn, so a release cannot slip in between.
     const sentToYou = timedOut || result.answer === APPROVAL_ANSWER.escalate || result.answer === APPROVAL_ANSWER.toUser
     const toPile = sentToYou && this.#canAnswer() && this.#isManaged(request.sessionId)
+    // The answer window is over: a card filed here carries no end time.
+    if (toPile) delete request.expiresAt
     // A direct call sent to the user closes the slim child's answerable card (Q1); a fishball
     // escalate answer on a direct call takes its own tool path, but this is the one place a
     // timeout, an undelivered notice and an escalate all land.
@@ -1080,9 +1108,10 @@ export class ApprovalBroker {
     await this.#finish(request, outcome === APPROVAL_OUTCOME.cancelled ? { answer: APPROVAL_ANSWER.withdrawn } : result, outcome)
     if (by === PROMPT_BY.session) await this.#clicked(request.sessionId, request.id, outcome)
     else if (by === PROMPT_BY.pile) await this.#clicked(request.sessionId, request.id, outcome, outcome === APPROVAL_OUTCOME.rejected ? note !== undefined : undefined)
-    // Fishball hears how it ended only for a request it saw (not an undelivered notice).
+    // Fishball hears how it ended only for a request it saw (not an undelivered notice). A card's
+    // cancellation is announced by the pile itself (cardClosed), so it is not repeated here.
     if (!request.seen) return outcome
-    if (outcome === APPROVAL_OUTCOME.cancelled) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
+    if (outcome === APPROVAL_OUTCOME.cancelled) { if (!toPile) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn)) }
     else if (by === PROMPT_BY.pile) this.#tell(TEXT.outcome(request.id, TEXT.pileOutcome(outcome)))
     else if (by === PROMPT_BY.session && result.answer === APPROVAL_ANSWER.escalate) this.#tell(TEXT.outcome(request.id, TEXT.escalatedOutcome(outcome)))
     return outcome
@@ -1137,7 +1166,10 @@ export class ApprovalBroker {
         this.#prompts.delete(id)
         asker?.removeEventListener('abort', onAbort)
         own.abort()
-        if (card !== undefined) this.#pile.settle(card.requestId, { end: result.by === PROMPT_BY.session ? CARD_END.inSession : CARD_END.cancelled })
+        // The card's end names how it really left: your answer in the session (or Fishball's
+        // answer_prompt) settles it elsewhere, a cancelled call cancels it, and a prompt that
+        // could take no answer (its browser gone, or the answerer failed) closes it visibly.
+        if (card !== undefined) this.#pile.settle(card.requestId, { end: cardEndOf(result) })
         resolve(ready === undefined ? result : ready.then(() => result))
         return true
       }
@@ -1293,16 +1325,5 @@ export class ApprovalBroker {
   /** A short note to Fishball without waking it (DESIGN §7a: it learns from your choices). */
   #tell(text) {
     tellWithoutWake(this.#agentOf(), text, this.#logger)
-  }
-}
-
-/**
- * A short Fishball notice injected without a wake (it reads it at its next turn). Shared by the
- * broker and the question router (rev11g). @param agent - Fishball's agent, or undefined (not live: dropped).
- */
-export function tellWithoutWake(agent, text, logger) {
-  if (agent === undefined) return
-  try { agent.inject(createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(text), author: authorOf(INTAKE_KIND.system) } })) } catch (error) {
-    logger.warn('Fishball note failed (%s)', diagnosticOf(error))
   }
 }

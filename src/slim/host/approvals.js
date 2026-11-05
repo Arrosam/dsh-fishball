@@ -27,7 +27,9 @@
  * answer, the user's answer to an escalated card, or the card moving to the user). A question
  * Fishball sent to the user (`to_user`) returns the user's answer through an inbox item with the
  * QUESTION_ANSWER marker, because the frozen contract's approval.settled cannot carry answer words;
- * the child turns it into a timeline event (§8.1). Times are epoch ms.
+ * the child turns it into a timeline event (§8.1). A card the main row closed without the user's
+ * answer travels the same way with the CARD_CLOSED marker, so the child's chat shows
+ * "closed: <reason>" instead of the card vanishing. Times are epoch ms.
  */
 import { randomUUID } from 'node:crypto'
 import {
@@ -37,7 +39,7 @@ import {
 import { cutToBytes } from '../../text.js'
 import { BridgeRefusal, ensureManaged } from './bridge.js'
 import { SESSION_STATE } from './session-port.js'
-import { QUESTION_ANSWER } from '../child/approvals.js'
+import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
 
 /** The §5.2 operations this task registers; they enter the handshake's capability list. */
 export const APPROVAL_OPERATIONS = Object.freeze([
@@ -193,6 +195,22 @@ class ApprovalRelay {
     try { this.host?.publish(EVENT.approvalRequest, sessionId, this.withOffer(fitted)) } catch { /* closed */ }
   }
 
+  /**
+   * A card the main row closed without the user's answer (src/card-lifecycle.js): the child's card
+   * or its waiting label is over, so the reason travels as an inbox system item. Unacked items stay
+   * queued on the host, so a disconnected child still learns it.
+   */
+  closed(event) {
+    this.offers.delete(event.approvalId)
+    if (typeof event.approvalId !== 'string' || typeof event.reason !== 'string' || event.reason === '') return
+    const item = {
+      messageId: randomUUID(), kind: INBOX_KIND.system, sourceSessionId: event.sessionId,
+      text: CARD_CLOSED.text(event.approvalId, event.reason), images: [],
+      dedupeKey: CARD_CLOSED.dedupePrefix + event.approvalId, at: this.now(),
+    }
+    try { void this.host?.pushInbox(item).catch(() => {}) } catch { /* closed */ }
+  }
+
   /** Publish one settlement; an escalated card also returns the user's later answer to the child. */
   settle(event) {
     this.offers.delete(event.approvalId)
@@ -223,6 +241,7 @@ class ApprovalRelay {
       if (event.type === RELAY_EVENT.offered && event.descriptor !== undefined) this.offer(event.descriptor, event.sessionId)
       else if (event.type === RELAY_EVENT.escalated) this.settle({ ...event, decision: DECISION.escalate, by: SETTLED_BY.fishball })
       else if (event.type === RELAY_EVENT.settled) this.settle(event)
+      else if (event.type === CARD_CLOSED.event) this.closed(event)
     } catch { /* a closed channel or an unrepresentable card is not the decision's failure */ }
   }
 
