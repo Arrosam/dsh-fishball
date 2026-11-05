@@ -9,6 +9,7 @@ import { ContractError, ERROR } from './src/slim/contract.js'
 import { createBridgeHost } from './src/slim/host/bridge.js'
 import { createSessionPort } from './src/slim/host/session-port.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
+import { createApprovalRelay } from './src/slim/host/approvals.js'
 
 const PLUGIN = Object.freeze({
   name: 'fishball-native-host', service: 'nativeFishballRuntime',
@@ -63,6 +64,8 @@ export async function apply(ctx, config) {
   let unsubscribeAdmin = () => {}
   /** The bridge's session service: the main Fishball row's registries plus the DSH services its tools use. */
   let sessions
+  /** T09's approval/question/prompt/grant operations and the cards they offer the child. */
+  let approvals
   const status = () => ({ enabled, state, code })
   const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
   // T11's admin relay. Every page operation except status and restart travels to the child over
@@ -79,6 +82,7 @@ export async function apply(ctx, config) {
     // Created once per host row and shared by every host object; a wiring failure is a native
     // failure, never a main-boot failure (the catch below keeps the row unready).
     sessions = createSessionPort(ctx, { enabled: () => enabled && !closed })
+    approvals = createApprovalRelay({ ctx, sessions })
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
       nodeExecutable: config.nodeExecutable, executableSearchPath: config.executableSearchPath,
@@ -98,6 +102,9 @@ export async function apply(ctx, config) {
       let host = hosts.get(hostId)
       if (!host) {
         host = createBridgeHost({ hostId, sessions })
+        // The seven T09 operations enter this host's welcome; the relay also re-offers the live
+        // cards on every new connection (the host never replays an answer).
+        approvals.attach(host)
         hosts.set(hostId, host)
       }
       connection?.close()
@@ -151,6 +158,7 @@ export async function apply(ctx, config) {
     unsubscribe()
     unsubscribeAdmin()
     admin.close()
+    approvals?.close()
     for (const host of hosts.values()) host.close()
     hosts.clear(); connection = undefined
     set(PLUGIN.state.stopping)
@@ -190,8 +198,9 @@ export async function apply(ctx, config) {
     },
     // The embed broker reads the child origin and bearer from main-process memory only (§3.2).
     embedAccess: () => owner.embedAccess(),
-    // Approvals, questions, prompts, grants and attachments stay unregistered on the bridge until
-    // T09/T06 register their handlers; the bridge answers unsupported-operation (§5.2).
+    // T09's approvals, questions, prompts and grants are registered on each host by the relay;
+    // T06's attachment.read/put come from the session port's image port. An operation neither
+    // supplies answers unsupported-operation (§5.2).
   })
   ctx.provide(PLUGIN.service, service)
   registerEmbed(ctx, service)

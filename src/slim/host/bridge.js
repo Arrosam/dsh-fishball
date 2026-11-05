@@ -30,10 +30,10 @@
  * That keeps the bridge testable against a stub, and keeps T14/T15 free to change how the
  * host stores its bookkeeping.
  *
- * Unimplemented on purpose: approval.*, question.answer, prompt.* and grant.* belong to T09.
- * A request for one of them is answered with unsupported-operation here; T09 adds it with
- * register() and it enters the handshake's capability list. The attachment operations are
- * registered by this file from the service's own image port when the port implements them.
+ * The §5.2 operations register through one seam: T06's attachment.read/put come from the
+ * session port's image port when it implements them, and T09's approval.*, question.answer,
+ * prompt.* and grant.* are registered by src/slim/host/approvals.js. A registered operation
+ * enters the handshake's capability list; an unavailable one answers unsupported-operation.
  *
  * @typedef {Object} SessionSummary
  * @property {string} sessionId
@@ -102,16 +102,13 @@ export const SESSION_OPERATIONS = Object.freeze([
 ])
 
 /**
- * The §5.2 operations left to T09 (approvals, questions, prompts, grants). Kept as a named list
- * so a reader can see the whole gap at once; each is answered with unsupported-operation until
- * T09 registers a handler. attachment.read/put are registered here when the image port exists.
+ * Every §5.2 operation now has an owner: the session handlers in this file, T06's attachment
+ * handlers when the session port carries an image port, and T09's seven approval, question,
+ * prompt and grant handlers registered by src/slim/host/approvals.js. The list stays as the
+ * explicit statement of that coverage; an operation that is unavailable at runtime (a missing
+ * image port) answers the contract's unsupported-operation from dispatch, not from this list.
  */
-export const UNIMPLEMENTED_OPERATIONS = Object.freeze(Object.values(OPERATION).filter(
-  (operation) => !SESSION_OPERATIONS.includes(operation)
-    && operation !== OPERATION.inboxPush
-    && operation !== OPERATION.attachmentRead
-    && operation !== OPERATION.attachmentPut,
-))
+export const UNIMPLEMENTED_OPERATIONS = Object.freeze([])
 
 /** Operations whose authorization needs a managed session (§5.2). */
 const MANAGED_OPERATIONS = new Set([
@@ -184,6 +181,8 @@ class BridgeHost {
     this.now = now
     this.limits = freezeLimits(limits)
     this.handlers = new Map()
+    /** Lifecycle listeners for T09's re-offer: a reconnect is a clean slate for offers (§5.2). */
+    this.connectionListeners = new Set()
     this.connection = undefined
     this.inboxPending = new Map()
     this.inboxOrder = []
@@ -212,6 +211,19 @@ class BridgeHost {
     if (typeof handler !== 'function') throw new TypeError('fishball bridge: a handler must be a function')
     if (this.handlers.has(operation)) throw new ContractError(ERROR.conflict)
     this.handlers.set(operation, handler)
+  }
+
+  /**
+   * Observe the channel becoming ready and going away. T09 uses the ready edge to re-offer the
+   * live approval and question cards after a reconnect (the host never replays a request), and
+   * the close edge to stop treating the child as the live answerer. A listener owns its failure.
+   * @param {(connection: {ready: boolean, connectionId: string}) => void} listener
+   * @returns {() => void} disposer
+   */
+  onConnection(listener) {
+    if (typeof listener !== 'function') throw new TypeError('fishball bridge: a connection listener must be a function')
+    this.connectionListeners.add(listener)
+    return () => this.connectionListeners.delete(listener)
   }
 
   /**
@@ -307,6 +319,7 @@ class BridgeHost {
 
   disconnect(connection = this.connection) {
     if (connection === undefined || connection.closed) return
+    const wasReady = connection.ready
     connection.closed = true
     if (this.connection === connection) this.connection = undefined
     clearTimeout(connection.timer)
@@ -316,6 +329,16 @@ class BridgeHost {
     connection.pending.clear()
     connection.inboxSending = false
     try { connection.transport.close() } catch { /* already gone */ }
+    // A closed ready channel means the child can no longer answer: the host-side cards stay live
+    // for the next connection, which is told them again by its own ready edge.
+    if (wasReady) this.emitConnection(connection, false)
+  }
+
+  /** Tell observers once per edge; a listener cannot break the channel. */
+  emitConnection(connection, ready) {
+    for (const listener of this.connectionListeners) {
+      try { listener({ ready, connectionId: connection.connectionId }) } catch { /* its own failure */ }
+    }
   }
 
   receive(connection, encoded) {
@@ -375,6 +398,7 @@ class BridgeHost {
     connection.ready = true
     clearTimeout(connection.timer)
     this.reply(connection, envelope, { capabilities: [...available], hostInstanceId: this.hostInstanceId }, ENVELOPE.type.response)
+    this.emitConnection(connection, true)
     this.flushInbox()
   }
 
@@ -533,7 +557,7 @@ async function ensureRelated(service, sessionId) {
   if (!(await isRelated(service, sessionId))) refuse(ERROR.forbidden)
 }
 
-async function ensureManaged(service, sessionId) {
+export async function ensureManaged(service, sessionId) {
   if (!service.enabled()) refuse(ERROR.featureOff)
   if (service.isFishball(sessionId)) refuse(ERROR.isFishball)
   if ((await summaryOf(service, sessionId)) === undefined) refuse(ERROR.unknownSession)

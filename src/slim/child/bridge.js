@@ -190,10 +190,11 @@ class BridgeClient {
   onEvent(listener) { return subscribe(this.events, listener, this.limits.maxListeners) }
 
   /**
-   * Receive inbox items (message_fishball and hand-over notes) from the main host.
-   * At least one listener must accept the item; with none the client refuses the item so the
-   * host keeps it queued. A listener that throws refuses the item in the same way.
-   * @param {(item: object) => void} listener
+   * Receive inbox items (message_fishball, hand-over notes, and T09's question-answer notice)
+   * from the main host. At least one listener must accept the item; with none the client refuses
+   * the item so the host keeps it queued. A listener that throws, or returns false, refuses the
+   * item in the same way, so a notice another module owns can never be acked by this one.
+   * @param {(item: object) => (void|boolean)} listener
    * @returns {() => void} disposer
    */
   onInbox(listener) { return subscribe(this.inboxListeners, listener, this.limits.maxListeners) }
@@ -297,7 +298,9 @@ class BridgeClient {
     // Hand the item to every consumer; it is accepted when at least one took it without failing.
     let accepted = false
     for (const listener of this.inboxListeners) {
-      try { listener(envelope.payload); accepted = true } catch { /* another consumer may still take it */ }
+      // A listener that returns false declines the item (T09 answers only its own question-answer
+      // notices); any other return, including undefined, accepts it as before.
+      try { if (listener(envelope.payload) !== false) accepted = true } catch { /* another consumer may still take it */ }
     }
     if (!accepted) { this.replyError(connection, envelope, ERROR.failed); return }
     this.inboxKeys.add(key)
