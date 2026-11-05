@@ -247,19 +247,30 @@ class ApprovalRelay {
     }
   }
 
-  /** One live approval answer, with the current offer; a stale offer is expired, never replayed. */
+  /**
+   * One live approval answer, with the current offer; a stale offer is expired, never replayed.
+   * A refused answer leaves the request pending, so its offer stays answerable for a retry; only
+   * a taken or ended request consumes it. Liveness is re-read after the call because a concurrent
+   * answer may have settled the request meanwhile (the broker settles it once; the loser's offer
+   * is stale).
+   */
   async answerApproval(state, sessionId, payload) {
     await ensureManaged(this.sessions, sessionId)
+    const live = () => state.liveApprovals(sessionId).some((descriptor) => descriptor.approvalId === payload.approvalId)
     const offerId = this.offers.get(payload.approvalId)
     if (offerId === undefined || offerId !== payload.offerId) throw new BridgeRefusal(ERROR.expired)
-    const live = state.liveApprovals(sessionId).some((descriptor) => descriptor.approvalId === payload.approvalId)
-    if (!live) {
+    if (!live()) {
       this.offers.delete(payload.approvalId)
       throw new BridgeRefusal(ERROR.expired)
     }
     const result = await state.answerApproval(toApprovalTool(payload.approvalId, payload.answer))
+    if (result?.ok !== true) {
+      // A refusal ({risk-required}, {reason-required}, …) leaves the request waiting; a failure
+      // after a concurrent answer finds it settled, and only then is the offer dropped.
+      if (!live()) this.offers.delete(payload.approvalId)
+      throw new BridgeRefusal(result?.code ?? ERROR.failed)
+    }
     this.offers.delete(payload.approvalId)
-    if (result?.ok !== true) throw new BridgeRefusal(result?.code ?? ERROR.failed)
     if (result.grantId === undefined) return { accepted: true }
     const expiresAt = Date.parse(result.expiresAt)
     if (!Number.isSafeInteger(expiresAt)) throw new BridgeRefusal(ERROR.failed)
