@@ -583,7 +583,9 @@ The Plugins → Fishball → settings page is rebuilt around the isolated Fishba
 - Settings: the child plugin config forms that the page can render; limits that belong to Fishball.
 - Provider sync: preview/confirm for API-key providers (§10).
 - No legacy sections (intake, outbox, watches, approvals, hidden tools, main plugin catalog) —
-  those concepts are either main-side or gone.
+  those concepts are either main-side or gone. The intake, outbox and watches blocks' leftover
+  client code (renderers, strings and the unused watches/remove request) is removed; their
+  services and HTTP routes stay for Fishball's tools.
 
 Admin API: owner-only same-origin routes (`/api/fishball/native/admin/*`) go to the lifecycle
 control channel and then to the child admin service. The child applies changes with its own
