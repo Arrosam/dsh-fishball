@@ -10,8 +10,13 @@
  * on the session's row, the call's cancellation and a release can race safely: the first wins
  * and every later one is refused (answering in either place clears both, item 15).
  *
+ * A filed card has no deadline: this class arms no timer, and the owners file cards only after
+ * Fishball's own answer window is over (src/card-lifecycle.js has the rule and the closure line).
+ * `onClose` tells the owner every end, so a card that closes without your answer is announced in
+ * Fishball's chat instead of vanishing.
+ *
  * Cards live in memory: a card exists only while its asking turn runs, and a restart ends turns,
- * so none survives one (item 16).
+ * so none survives one (item 16). A page reload or a re-render re-reads the host's snapshot.
  */
 import { CARD_END } from './constants.js'
 import { latestFirst } from './text.js'
@@ -20,10 +25,16 @@ export class Pile {
   /** requestId -> { card, settle } */
   #cards = new Map()
   #onChange
+  #onClose
 
-  /** @param onChange - called after each card is filed or leaves (the state feed publishes). */
-  constructor(onChange) {
+  /**
+   * @param onChange - called after each card is filed or leaves (the state feed publishes).
+   * @param onClose - optional, called with (card, result) once per card that leaves; the owners
+   *   announce a closure without your answer and pass the end to the slim bridge.
+   */
+  constructor(onChange, onClose) {
     this.#onChange = onChange
+    this.#onClose = onClose
   }
 
   /**
@@ -57,6 +68,7 @@ export class Pile {
     if (entry === undefined) return false
     this.#cards.delete(requestId)
     entry.settle(result)
+    this.#onClose?.(entry.card, result)
     this.#onChange()
     return true
   }

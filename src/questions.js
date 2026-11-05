@@ -54,10 +54,11 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, QUESTION_TAG_ANSWER, REQUEST_KIND, SOURCE, TAG_KIND } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, QUESTION_TAG_ANSWER, REQUEST_KIND, SOURCE, TAG_KIND } from './constants.js'
 import { AuditLog } from './audit.js'
 import { Pile } from './pile.js'
-import { argumentsText, latestUserText, sha256, tellWithoutWake } from './approvals.js'
+import { argumentsText, latestUserText, sha256 } from './approvals.js'
+import { closeCard, tellWithoutWake } from './card-lifecycle.js'
 import { describeSession, rootSessionOf } from './session-info.js'
 import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
@@ -75,6 +76,18 @@ const WORDS = Object.freeze({ withinItem: ', ', betweenItems: ' · ' })
 const BY = Object.freeze({ fishball: 'fishball', pile: 'pile', session: 'session' })
 /** An entry's state (§9 "Open questions"): open while its tool call waits, continued after a timed one ended pending. */
 const STATE = Object.freeze({ open: 'open', continued: 'continued' })
+/**
+ * How a question's end reads on its pile card: the card's own answer is CARD_END.user; an answer in
+ * the session or by Fishball settled it elsewhere first (no closure line); the rest closed the card
+ * without one, and each names its reason (src/card-lifecycle.js).
+ */
+const PILE_END = Object.freeze({
+  [QUESTION_END.fishball]: CARD_END.inSession,
+  [QUESTION_END.pile]: CARD_END.user,
+  [QUESTION_END.session]: CARD_END.inSession,
+  [QUESTION_END.closed]: CARD_END.dismissed,
+  [QUESTION_END.back]: CARD_END.back,
+})
 /** How each winner ends a question in the audit. */
 const END_OF = Object.freeze({ [BY.fishball]: QUESTION_END.fishball, [BY.pile]: QUESTION_END.pile, [BY.session]: QUESTION_END.session })
 /**
@@ -374,7 +387,7 @@ export class QuestionRouter {
     this.#managedIds = managedIds
     this.#tags = tags
     this.#onChange = onChange
-    this.#pile = new Pile(onChange)
+    this.#pile = new Pile(onChange, (card, end) => this.#cardClosed(card, end))
     this.#audit = new AuditLog(() => store.approvals, () => readLimits().auditEntriesKept)
     this.#decisions = new AuditLog(() => store.decisions, () => readLimits().auditEntriesKept)
     ctx.on(QUESTION.waterfall, (req, next) => this.#route(req, next), { prepend: true })
@@ -834,6 +847,9 @@ export class QuestionRouter {
     entry.inPile = true
     entry.routed = answer
     clearTimeout(entry.timer)
+    // The question is the user's card now: it carries no end time, because nothing may close it
+    // on a timer (src/card-lifecycle.js).
+    delete entry.expiresAt
     // Plain data for the browser; every text comes from the session or from Fishball (§10e: never markup).
     void this.#pile.file({
       requestId: entry.id, questionId: entry.id, kind: entry.kind, sessionId: entry.sessionId, callId: entry.callId ?? null,
@@ -867,7 +883,6 @@ export class QuestionRouter {
     this.#entries.delete(entry.id)
     clearTimeout(entry.timer)
     entry.releaseHold?.()
-    this.#pile.settle(entry.id, { end })
     const byFishball = answered?.by === BY.fishball
     if (byFishball) {
       if (entry.callId !== undefined && entry.kind === QUESTION_KIND.question) this.#words.set(wordsKey(entry.sessionId, entry.callId), answerWords(answered.batch.answers, this.#readLimits().rationaleChars))
@@ -889,17 +904,18 @@ export class QuestionRouter {
         ...(words === '' ? {} : { words }),
         ...(entry.routed === undefined ? {} : { routed: entry.routed }),
       })
-    } else if (end === QUESTION_END.back) {
-      // Back to its session's own card: the child's card is gone, and the user answers there.
-      this.#emit({ type: OFFER.event.escalated, approvalId: entry.id, sessionId: entry.sessionId })
-    } else if (end === QUESTION_END.closed) {
-      // Stopped or dismissed: no answer will come, so the child's card must close.
+    } else if (end === QUESTION_END.back || end === QUESTION_END.closed) {
+      // Back to its session's own card, or stopped/dismissed: this card is gone either way, so the
+      // child's card closes; the pile's closure line below tells the user why it left.
       this.#emit({ type: OFFER.event.settled, approvalId: entry.id, sessionId: entry.sessionId, decision: APPROVAL_DECISION.ask, by: SETTLED_BY.fishball })
     }
+    // The pile's closure line comes after the child's own event, so an escalated card is first
+    // known to the child and then closed with its reason.
+    this.#pile.settle(entry.id, { end: PILE_END[end] })
     if (!entry.seen) return
     if (end === QUESTION_END.session) this.#tell(entry, TEXT.inSession)
     else if (end === QUESTION_END.pile) this.#tell(entry, TEXT.inPile)
-    else if (end === QUESTION_END.closed) this.#tell(entry, TEXT.closed)
+    else if (end === QUESTION_END.closed && !entry.inPile) this.#tell(entry, TEXT.closed)
   }
 
   /** A late reply admitted into a session: your answer to a continued question there (S36 Q2). */
@@ -913,6 +929,14 @@ export class QuestionRouter {
 
   #tell(entry, what) {
     tellWithoutWake(this.#agentOf(), TEXT.outcome(entry.id, what), this.#logger)
+  }
+
+  /**
+   * One question card left the pile (src/pile.js's onClose): a closure without the user's answer
+   * leaves its line in Fishball's chat and reaches the slim child, which no longer holds the card.
+   */
+  #cardClosed(card, end) {
+    closeCard(this.#agentOf(), card, end, this.#logger, (event) => this.#emit(event))
   }
 
   /**

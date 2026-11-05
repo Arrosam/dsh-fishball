@@ -13,6 +13,11 @@
  * Under a permission mode that never asks DSH answers 'rejected' before any listener runs, so no
  * card is filed (S35) and the tool is refused as before.
  *
+ * A card here has no deadline: the durable record waits until you answer it or Fishball withdraws
+ * it, and a withdrawal leaves a visible "card closed" line in Fishball's chat (src/card-lifecycle.js).
+ * A pass, unlike a card, ends with its turn; that is the "approved, run it again" notice's
+ * lifetime, not a card's.
+ *
  * Your answers:
  * - Allow: the card becomes a one-time pass for the identical retry (same tool and every argument,
  *   by the digest of the canonical JSON, S35) and Fishball is woken with "approved, run it again"
@@ -30,7 +35,8 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ERROR, ARGUMENTS_STATUS, CARD_DECISION, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OWN_REQUEST, OWN_STATUS, REQUEST_KIND, SOURCE, TOO_MANY_WAITING } from './constants.js'
+import { APPROVAL, APPROVAL_ERROR, ARGUMENTS_STATUS, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OWN_REQUEST, OWN_STATUS, REQUEST_KIND, SOURCE, TOO_MANY_WAITING } from './constants.js'
+import { closeCard } from './card-lifecycle.js'
 import { AuditLog } from './audit.js'
 import { argumentsDigest } from './passes.js'
 import { authorOf } from './author.js'
@@ -275,6 +281,8 @@ export class OwnRequests {
     })
     if (record === undefined) return APPROVAL_ERROR.expired
     await this.#decide({ action: DECISION_ACTION.withdraw, by: CHANGED_BY.fishball, target: requestId })
+    // The card leaves without your answer: one visible line says so (src/card-lifecycle.js).
+    closeCard(this.#agentOf(), { kind: REQUEST_KIND.own, requestId, sessionId: this.#assistantId() }, CARD_END.withdrawn, this.#logger)
     return undefined
   }
 

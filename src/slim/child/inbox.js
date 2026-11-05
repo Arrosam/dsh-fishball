@@ -4,8 +4,9 @@
  * The main host pushes every message a managed session sent to Fishball - message_fishball,
  * a hand-over note, a watch notice or a system item - through `inbox.push`. This row is the one
  * consumer that delivers those items into Fishball's own chat session. T09 owns its own
- * `[question answer ...]` system items and this consumer declines them, so neither row can steal
- * an item from the other (§5.2's listener rule: a listener that returns false refuses the item).
+ * `[question answer ...]` and `[card closed ...]` system items and this consumer declines them,
+ * so neither row can steal an item from the other (§5.2's listener rule: a listener that returns
+ * false refuses the item).
  *
  * Delivery rules kept here:
  * - The item's text is already framed by the host (which session sent it, the user's note for a
@@ -18,7 +19,7 @@
  *   the bridge refuses the item and the host keeps it queued for redelivery (§5.2).
  */
 import { ContractError, ERROR } from '../contract.js'
-import { QUESTION_ANSWER } from './approvals.js'
+import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
 
 /** Stable Cordis plugin name; native-child.js mounts this row. */
 export const name = 'fishball-native-inbox'
@@ -93,7 +94,7 @@ export function createInboxConsumer(options) {
    * the item unacked and queued on the host.
    */
   async function receive(item) {
-    if (isQuestionAnswer(item)) return false
+    if (isApprovalsItem(item)) return false
     try {
       await chat.deliverInbox(item)
       return true
@@ -126,11 +127,13 @@ export function createInboxConsumer(options) {
   return Object.freeze({ close })
 }
 
-/** T09's question answer is a system item with its marker; every other item is ours. */
-function isQuestionAnswer(item) {
-  return item?.kind === QUESTION_ANSWER.kind
-    && typeof item.text === 'string'
-    && QUESTION_ANSWER.pattern.test(item.text)
+/**
+ * T09's items are system messages carrying one of its markers (a question's answer, a card's
+ * closure); every other item is ours and wakes Fishball as before.
+ */
+function isApprovalsItem(item) {
+  if (item?.kind !== QUESTION_ANSWER.kind || typeof item.text !== 'string') return false
+  return QUESTION_ANSWER.pattern.test(item.text) || CARD_CLOSED.pattern.test(item.text)
 }
 
 /** A typed refusal of this item; a channel/wiring failure stays transient and is retried. */
