@@ -125,6 +125,7 @@ function definitions(client) {
         workspace_id: { ...STRING, description: TEXT.workspaceArg },
         limit: { type: 'integer', description: TEXT.limitArg },
       },
+      output: JSON_OUTPUT,
       execute: guard(async (args) => ({
         ok: true,
         sessions: (await client.session.list({
@@ -143,6 +144,7 @@ function definitions(client) {
         model: { ...STRING, description: TEXT.modelArg },
         reasoning_effort: { ...STRING, description: TEXT.effortArg },
       },
+      output: JSON_OUTPUT,
       execute: guard(async (args) => ({
         ok: true,
         ...(await client.session.start({
@@ -161,6 +163,7 @@ function definitions(client) {
         session_id: { ...STRING, required: true, description: TEXT.sessionArg },
         message: { ...STRING, required: true, description: TEXT.messageArg },
       },
+      output: JSON_OUTPUT,
       execute: guard(async (args) => delivered(await client.session.message({ sessionId: args.session_id, message: args.message }))),
     },
     {
@@ -170,6 +173,7 @@ function definitions(client) {
         session_id: { ...STRING, required: true, description: TEXT.managedSessionArg },
         message: { ...STRING, required: true, description: TEXT.messageArg },
       },
+      output: JSON_OUTPUT,
       execute: guard(async (args) => delivered(await client.session.redirect({ sessionId: args.session_id, message: args.message }))),
     },
     {
@@ -179,6 +183,7 @@ function definitions(client) {
         session_id: { ...STRING, required: true, description: TEXT.managedSessionArg },
         reason: { ...STRING, description: TEXT.stopReasonArg },
       },
+      output: JSON_OUTPUT,
       execute: guard(async (args) => {
         await client.session.stop({ sessionId: args.session_id, reason: args.reason ?? undefined })
         return { ok: true, sessionId: args.session_id, stopped: true }
@@ -192,6 +197,7 @@ function definitions(client) {
         max_messages: { type: 'integer', description: TEXT.maxMessagesArg },
         max_bytes: { type: 'integer', description: TEXT.maxBytesArg },
       },
+      output: JSON_OUTPUT,
       execute: guard(async (args) => ({
         ok: true,
         ...(await client.session.read({
@@ -209,6 +215,7 @@ function definitions(client) {
         session_id: { ...STRING, required: true, description: TEXT.watchSessionArg },
         mode: { ...STRING, enum: Object.values(WATCH_MODE), description: TEXT.modeArg },
       },
+      output: JSON_OUTPUT,
       execute: guard(async (args) => {
         const result = await client.session.watch({ sessionId: args.session_id, mode: args.mode ?? WATCH_MODE.once })
         // A watch refusal is a typed result payload (§5.2), not an error frame.
@@ -220,12 +227,14 @@ function definitions(client) {
       name: SESSION_TOOL.watches,
       description: TEXT.watchesDescription,
       parameters: {},
+      output: JSON_OUTPUT,
       execute: guard(async () => ({ ok: true, watches: (await client.session.watches()).watches })),
     },
     {
       name: SESSION_TOOL.unwatch,
       description: TEXT.unwatchDescription,
       parameters: { watch_id: { ...STRING, required: true, description: TEXT.watchIdArg } },
+      output: JSON_OUTPUT,
       execute: guard(async (args) => {
         await client.session.unwatch({ watchId: args.watch_id })
         return { ok: true, watchId: args.watch_id }
@@ -238,6 +247,7 @@ function definitions(client) {
         session_id: { ...STRING, required: true, description: TEXT.releaseSessionArg },
         reason: { ...STRING, required: true, description: TEXT.reasonArg },
       },
+      output: JSON_OUTPUT,
       execute: guard(async (args) => {
         const result = await client.session.release({ sessionId: args.session_id, reason: args.reason })
         return { ok: true, sessionId: result.sessionId, managed: result.managed }
@@ -279,7 +289,6 @@ export function apply(ctx) {
   ctx.on(CHILD.disposed, cleanup)
   try {
     for (const definition of definitions(client)) {
-      definition.parameters = { ...definition.parameters, additionalProperties: false }
       registrations.push(ctx.tools.register(defineTool(definition)))
     }
   } catch (error) { cleanup(); throw error }
