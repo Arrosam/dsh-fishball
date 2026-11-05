@@ -5,8 +5,11 @@
  * sixteen methods in that file's header with the same main-DSH services today's Fishball tools
  * use, so the bridge gets today's powers without a second implementation of them:
  * - create/message/redirect/stop/read/describe use sessionController.create, resolveAgent,
- *   cancel, state and inspect, sessions.flush, agents.get, workspaceRegistry and the optional
- *   sessionTitle service, exactly as src/messaging.js and src/session-info.js do;
+ *   cancel, state, projections and the history page, sessions.flush, agents.get,
+ *   workspaceRegistry and the optional sessionTitle service, exactly as src/messaging.js and
+ *   src/session-info.js do. The cold reads use the remote APIs present in 0.2.2-rc.1 (the
+ *   legacy inspect entry does not exist there), so the bridge works on both the 0.2.1 and the
+ *   0.2.2 main host;
  * - the managed registry, the watch registry and the assistant session id come from the
  *   `fishballSessionState` service the main Fishball row provides (index.js). Those registries
  *   stay owned by that row: this port never writes Fishball's store and never keeps a second
@@ -25,7 +28,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionTitleInvalidError } from '@deepseek-ai/dsh-session-title'
 import { ContractError, DELIVERY, ERROR, ROLE, WATCH_ERROR } from '../contract.js'
 import { MANAGED_BY, OPTIONAL_SERVICE, SESSION_INFO, SOURCE, TITLE_ERROR, WORKSPACE_ERROR } from '../../constants.js'
-import { describeSession, senderOf, textOfEvent } from '../../session-info.js'
+import { senderOf, textOfEvent } from '../../session-info.js'
 import { prepareSessionModel, applySessionModel } from '../../session-model.js'
 import { byteLength, cutToBytes } from '../../text.js'
 
@@ -46,8 +49,14 @@ const DSH_SERVICES = Object.freeze(['sessions', 'sessionController', 'agents', '
 /** A passive state read takes a cancellation signal; the bridge's own request timeout is the bound. */
 const NEVER_ABORTED = new AbortController().signal
 
-/** The bridge summary never shows an excerpt, so describeSession needs no excerpt budget. */
-const SUMMARY_EXCERPT_BYTES = 0
+/** The title projection (dsh-session-title) folded into every Session summary; absent is no title. */
+const TITLE_PROJECTION = 'title'
+/** DSH's history page needs a message budget of at least one (its request validator refuses 0). */
+const MIN_PAGE_MESSAGES = 1
+/** The session address kind every ordinary managed/watchable Session uses. */
+const SESSION_ADDRESS = 'session'
+/** dsh-agent's status for a Session with a turn in progress; 0.2.1 exposes it on the live agent. */
+const RUNNING_AGENT = 'running'
 
 const LOG = 'fishball-session-port'
 const IMAGE_BLOCK = 'image'
@@ -126,11 +135,45 @@ export function createSessionPort(ctx, options = {}) {
   /** The workspace a session belongs to, or null for an ungrouped session. */
   const workspaceOf = (sessionId) => workspaces().find((workspace) => workspace.sessionIds.includes(sessionId))?.id ?? null
 
-  /** Events of a session: the live snapshot when attached, else DSH's cold inspection (session-info's rule). */
-  async function eventsOf(sessionId) {
-    const live = ctx.sessions.get(sessionId)
-    if (live !== undefined) return live.snapshotEvents()
-    return (await ctx.sessionController.inspect(sessionId)).events
+  /**
+   * One passive history page ending at the session's current cursor. This is 0.2.2's events
+   * read (0.2.1 has no events entry, so readEventsOf uses its inspection there); records are
+   * shaped {type:'event', event}.
+   */
+  async function pageOf(sessionId, cursor, maxMessages) {
+    const request = { address: { kind: SESSION_ADDRESS, sessionId }, throughSeq: cursor, maxMessages }
+    return ctx.sessionController.events(request, NEVER_ABORTED)
+  }
+
+  /**
+   * Running and pending-input for one Session. 0.2.2 owns a passive state read; 0.2.1 has none,
+   * so its live agent's status is the running flag and its waiting requests are not exposed on
+   * this API (pendingInteraction stays false there).
+   */
+  async function activityOf(sessionId) {
+    if (typeof ctx.sessionController.state === 'function') {
+      const passive = await ctx.sessionController.state({ sessionId }, NEVER_ABORTED)
+      return {
+        running: passive.running === true,
+        pendingInteraction: Array.isArray(passive.pendingInput) && passive.pendingInput.length > 0,
+      }
+    }
+    return { running: ctx.agents.get(sessionId)?.status === RUNNING_AGENT, pendingInteraction: false }
+  }
+
+  /**
+   * The events a bounded read scans. 0.2.2 reads a page up to the passive cursor; 0.2.1 has no
+   * passive state read but its inspection returns the whole log, and the caller's bounds still
+   * cut it below.
+   */
+  async function readEventsOf(sessionId, maxMessages) {
+    if (typeof ctx.sessionController.state === 'function') {
+      const { cursor } = await ctx.sessionController.state({ sessionId }, NEVER_ABORTED)
+      const page = await pageOf(sessionId, cursor, maxMessages)
+      return { events: (page.records ?? []).map((record) => record.event ?? record), hasMore: page.hasMore === true }
+    }
+    const inspection = await ctx.sessionController.inspect(sessionId, NEVER_ABORTED)
+    return { events: inspection.events, hasMore: false }
   }
 
   /** Hand a message to a session's agent and flush it; false on the flush is unconfirmed, never failed. */
@@ -209,7 +252,9 @@ export function createSessionPort(ctx, options = {}) {
   /** One bounded read page, newest messages kept; reports whether the caller's bounds cut it. */
   async function read({ sessionId, maxMessages, maxBytes }) {
     const { assistantId } = state()
-    const events = await eventsOf(sessionId)
+    // The history request refuses a zero message budget; a caller asking for none gets none.
+    if (maxMessages < MIN_PAGE_MESSAGES) return { messages: [], truncated: false }
+    const { events, hasMore } = await readEventsOf(sessionId, maxMessages)
     const messages = []
     let used = 0
     let truncated = false
@@ -226,7 +271,8 @@ export function createSessionPort(ctx, options = {}) {
       messages.unshift(messageOf(event, cut, assistantId()))
       used += byteLength(cut)
     }
-    return { messages, truncated }
+    // A page that cut older messages reports it; the bridge's own frame bound may cut further.
+    return { messages, truncated: truncated || hasMore }
   }
 
   const port = {
@@ -235,17 +281,17 @@ export function createSessionPort(ctx, options = {}) {
     isManaged: (sessionId) => state().isManaged(sessionId) === true,
     isFishball: (sessionId) => state().isFishball(sessionId) === true,
     async describe(sessionId) {
-      const info = await describeSession(ctx, sessionId, SUMMARY_EXCERPT_BYTES)
+      // The title projection is cold-safe and exists on both host versions; null means no such
+      // session (DSH's own not-found answer), not a read failure.
+      const projection = await ctx.sessionController.projections({ sessionId }, NEVER_ABORTED)
+      if (projection === null || projection === undefined) return undefined
       // An archived session is unknown to the bridge: its rows disappear with the archive (§5.2).
-      if (info === undefined || info.archived) return undefined
+      if (ctx.workspaceRegistry.archivedSessionIds.includes(sessionId)) return undefined
       let running = false
       let pendingInteraction = false
-      try {
-        const passive = await ctx.sessionController.state({ sessionId }, NEVER_ABORTED)
-        running = passive.running === true
-        pendingInteraction = Array.isArray(passive.pendingInput) && passive.pendingInput.length > 0
-      } catch { /* A missing passive state is not a missing session. */ }
-      return { sessionId, title: info.title, workspaceId: workspaceOf(sessionId), running, pendingInteraction }
+      try { ({ running, pendingInteraction } = await activityOf(sessionId)) } catch { /* state read failure */ }
+      const title = typeof projection.values?.[TITLE_PROJECTION] === 'string' ? projection.values[TITLE_PROJECTION] : ''
+      return { sessionId, title, workspaceId: workspaceOf(sessionId), running, pendingInteraction }
     },
     workspaces: () => workspaces().map((workspace) => ({ id: workspace.id, path: workspace.path })),
     async resolveWorkspacePath(path) {
