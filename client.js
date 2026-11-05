@@ -78,14 +78,20 @@ window.__ModuleLoader__.load({
     const MANAGE_MENU = Object.freeze({ id: 'fishball-manage', order: 422 })
     const MANAGE_HEADER = Object.freeze({ id: 'fishball-manage', order: 4.5 })
     const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'feature-off', 'unavailable'])
+    /** The embed panel's fixed document path (§7): no query, fragment or token. Keep in step with contract ROUTES.document. */
+    const EMBED_UI = Object.freeze({
+      document: '/fishball/embed/', id: 'fishball-embed',
+      width: 'min(960px, calc(100vw - 120px))', height: 'min(70vh, 720px)',
+      // noopener, but not noreferrer: the broker admits only Sec-Fetch-Site: same-origin.
+      target: '_blank', features: 'noopener',
+      retry: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin' }),
+    })
     const NATIVE_UI = Object.freeze({
-      statusPath: '/api/fishball/native/status', openPath: '/api/fishball/native/open',
+      statusPath: '/api/fishball/native/status',
       states: Object.freeze(['disabled', 'waiting', 'starting', 'ready', 'stopping', 'stopped', 'failed']),
-      codes: Object.freeze(['NATIVE_START_FAILED', 'NATIVE_STOP_FAILED', 'NATIVE_CHILD_EXITED', 'NATIVE_UNAVAILABLE', 'NATIVE_OPEN_FAILED', 'NATIVE_TIMEOUT', 'NATIVE_DISABLED']),
+      codes: Object.freeze(['NATIVE_START_FAILED', 'NATIVE_STOP_FAILED', 'NATIVE_CHILD_EXITED', 'NATIVE_UNAVAILABLE', 'NATIVE_TIMEOUT', 'NATIVE_DISABLED']),
       ready: 'ready', unavailable: 'unavailable', loading: 'loading',
       request: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
-      openRequest: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin' }),
-      target: '_blank', features: 'noopener,noreferrer', protocol: 'http:', openFailed: 'NATIVE_OPEN_FAILED',
     })
     const PROVIDER_SYNC_UI = Object.freeze({ path: '/api/fishball/provider-sync', mask: '••••••••',
       groups: Object.freeze(['add', 'existsSkip', 'conflictSkip', 'unsupported']),
@@ -507,7 +513,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ pile: 'fb-pile', pileDock: 'fb-pile-dock', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc' })
+    const CLS = Object.freeze({ pile: 'fb-pile', pileDock: 'fb-pile-dock', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', turnTags: 'fb-turn-tags', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -550,8 +556,11 @@ window.__ModuleLoader__.load({
       modelLoadFailed: 'Models could not be refreshed. Any previous list and selection are unchanged. Try again.',
       modelSaveFailed: 'The model was not saved. Check that it is still available and try again.',
       modelUnavailable: 'A saved or selected model is unavailable in the current list. Its selection is kept; choose another model to change it.',
-      nativeTitle: 'Isolated Fishball', nativeOpen: 'Open isolated Fishball', nativeRefresh: 'Refresh status',
-      nativeHint: 'Separate native DSH. Enable it in the profile configuration; this does not replace the existing Fishball chat. Opens in a new browser tab (the system browser in the desktop app).',
+      nativeTitle: 'Isolated Fishball', nativeOpen: 'Open Fishball panel', nativeRefresh: 'Refresh status',
+      nativeHint: 'Isolated Fishball, shown in a panel on this page. Enable it in the profile configuration; this does not replace the existing Fishball chat.',
+      embedTitle: 'Fishball panel', embedRefresh: 'Refresh', embedOpenTab: 'Open in a tab',
+      embedUnavailable: 'Fishball is not available. Retry starts it again.', embedRetry: 'Retry',
+      embedState: 'State', embedCode: 'Code',
       'native.loading': 'Checking status…', 'native.disabled': 'Disabled', 'native.waiting': 'Waiting for host readiness',
       'native.starting': 'Starting', 'native.ready': 'Ready', 'native.stopping': 'Stopping', 'native.stopped': 'Stopped',
       'native.failed': 'Native runtime failed', 'native.unavailable': 'Unavailable or not enabled in this profile',
@@ -1025,8 +1034,11 @@ window.__ModuleLoader__.load({
       modelLoadFailed: '无法刷新模型列表。原有列表和选择保持不变，请重试。',
       modelSaveFailed: '模型未保存。请确认模型仍然可用，然后重试。',
       modelUnavailable: '已保存或当前选择的模型不在列表中，原选择仍然保留；可另选模型来更改。',
-      nativeTitle: '独立 Fishball', nativeOpen: '打开独立 Fishball', nativeRefresh: '刷新状态',
-      nativeHint: '独立的原生 DSH；需通过 profile 配置启用，不替代现有 Fishball 聊天。将在新的浏览器标签页打开（桌面版会用系统浏览器打开）。',
+      nativeTitle: '独立 Fishball', nativeOpen: '打开 Fishball 面板', nativeRefresh: '刷新状态',
+      nativeHint: '独立的原生 DSH，在本页面板中显示；需通过 profile 配置启用，不替代现有 Fishball 聊天。',
+      embedTitle: 'Fishball 面板', embedRefresh: '刷新', embedOpenTab: '在标签页中打开',
+      embedUnavailable: 'Fishball 当前不可用。重试会重新启动它。', embedRetry: '重试',
+      embedState: '状态', embedCode: '代码',
       'native.loading': '正在检查状态…', 'native.disabled': '已禁用', 'native.waiting': '等待主端就绪',
       'native.starting': '正在启动', 'native.ready': '已就绪', 'native.stopping': '正在停止', 'native.stopped': '已停止',
       'native.failed': '原生运行时失败', 'native.unavailable': '不可用，或当前 profile 未启用',
@@ -1485,6 +1497,11 @@ window.__ModuleLoader__.load({
       `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} ${BRAND_TAG.fontFamily};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
+      // The embed panel (§7): a large frame on the modal's own surface, at DSH theme tokens.
+      `.${CLS.embed}{display:flex;flex-direction:column;gap:12px;box-sizing:border-box;width:${EMBED_UI.width};max-width:100%}`,
+      `.${CLS.embedBar}{display:flex;justify-content:flex-end;gap:8px}`,
+      `.${CLS.embedFrame}{display:block;width:100%;height:${EMBED_UI.height};border:0;border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1)}`,
+      `.${CLS.embedError}{display:flex;flex-direction:column;gap:8px;padding:16px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1)}`,
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
       // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
       `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
@@ -1780,11 +1797,10 @@ window.__ModuleLoader__.load({
       fishballOpener(ctx)?.()
     }
 
-    function makeBrandName(ctx, t) {
+    function makeBrandName(t) {
       return function FishballBrandName() {
         const ref = React.useRef(null)
-        // Subscribed only to keep the shared state stream open while the brand is shown:
-        // the click handler reads the latest snapshot when it runs.
+        // Subscribed for the unread count and the chosen brand icon; the click opens the panel.
         const state = useFishball()
         const count = unreadCount(state)
         const deepseek = brandStyleOf(state) === BRAND_STYLE.deepseek
@@ -1809,12 +1825,11 @@ window.__ModuleLoader__.load({
           const labelWatch = new MutationObserver(keepLabel)
           labelWatch.observe(button, { attributes: true, attributeFilter: [BRAND_LABEL_ATTR] })
           const onClick = (event) => {
-            const open = fishballOpener(ctx)
-            if (open === undefined) return
+            // The brand opens the same-origin panel (§7); legacy chat and the new-tab open are gone.
             event.preventDefault()
             event.stopPropagation()
             event.stopImmediatePropagation()
-            open()
+            embedPanel.set(true)
           }
           button.addEventListener('click', onClick, true)
           return () => {
@@ -2352,11 +2367,22 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** Opening fetches the click-time capability URL and navigates a tab opened synchronously in the click (so no
-     * popup blocker applies); the URL is never kept in state, rendered or logged. Not a target=_blank form: its
-     * rel=noreferrer sends `Origin: null` on POST (rc3 admission answers 403) and a noopener new-window form
-     * submission can reach the POST-only route as a GET (rc3 answers "not found"); the DSH desktop shell likewise
-     * reloads a denied same-origin window as a GET. A page fetch always carries its real Origin. */
+    /** One read of the native status route; failures stay local to the caller. */
+    async function nativeStatus(signal) {
+      let next = { state: NATIVE_UI.unavailable, code: null }
+      try {
+        const response = await fetch(apiUrl(NATIVE_UI.statusPath), { ...NATIVE_UI.request, signal })
+        if (response.ok) {
+          const value = await response.json()
+          if (NATIVE_UI.states.includes(value?.state) &&
+              (value.state !== NATIVE_UI.ready || value.enabled === true)) next = { state: value.state,
+                code: NATIVE_UI.codes.includes(value.code) ? value.code : null }
+        }
+      } catch { /* Missing native plugin, authorization and network failures stay local to the caller. */ }
+      return next
+    }
+
+    /** The status section; opening uses the same panel as the brand button (§7). */
     function makeNativeSettings(t) {
       return function FishballNativeSettings() {
         const [status, setStatus] = React.useState({ state: NATIVE_UI.loading, code: null })
@@ -2364,51 +2390,72 @@ window.__ModuleLoader__.load({
         React.useEffect(() => {
           const abort = new AbortController()
           setStatus({ state: NATIVE_UI.loading, code: null })
-          const load = async () => {
-            let next = { state: NATIVE_UI.unavailable, code: null }
-            try {
-              const response = await fetch(apiUrl(NATIVE_UI.statusPath), { ...NATIVE_UI.request, signal: abort.signal })
-              if (response.ok) {
-                const value = await response.json()
-                if (NATIVE_UI.states.includes(value?.state) &&
-                    (value.state !== NATIVE_UI.ready || value.enabled === true)) next = { state: value.state,
-                      code: NATIVE_UI.codes.includes(value.code) ? value.code : null }
-              }
-            } catch { /* Missing native plugin, authorization and network failures stay local to this section. */ }
-            if (!abort.signal.aborted) setStatus(next)
-          }
-          void load()
+          void nativeStatus(abort.signal).then((next) => { if (!abort.signal.aborted) setStatus(next) })
           return () => abort.abort()
         }, [refresh])
-        const [opening, setOpening] = React.useState(false)
-        const open = async () => {
-          setOpening(true)
-          // Opened before any await while the click's activation is live; the desktop shell denies it (null).
-          const tab = window.open('', NATIVE_UI.target)
-          if (tab) tab.opener = null
-          let opened = false
-          try {
-            const response = await fetch(apiUrl(NATIVE_UI.openPath), NATIVE_UI.openRequest)
-            const url = response.ok ? (await response.json())?.url : undefined
-            if (typeof url === 'string' && new URL(url).protocol === NATIVE_UI.protocol) {
-              if (tab && !tab.closed) tab.location.replace(url)
-              else window.open(url, NATIVE_UI.target, NATIVE_UI.features)
-              opened = true
-            }
-          } catch { /* Errors may carry the capability: never logged or shown. */ }
-          if (!opened) tab?.close()
-          setOpening(false)
-          if (!opened) setStatus(value => ({ ...value, code: NATIVE_UI.openFailed }))
-        }
         return h('div', { className: CLS.section, 'data-fishball-native': true },
           h('h3', null, t('nativeTitle')),
           h('p', { className: CLS.muted }, t('nativeHint')),
           h('p', { role: 'status', 'aria-live': 'polite' }, t('native.' + status.state)),
           status.code ? h('p', { className: CLS.code }, status.code) : null,
           h('div', { className: CLS.row },
-            h(Button, { type: 'button', size: 'sm', disabled: opening || status.state !== NATIVE_UI.ready, onClick: () => void open() }, t('nativeOpen')),
+            h(Button, { type: 'button', size: 'sm', disabled: status.state !== NATIVE_UI.ready,
+              onClick: () => embedPanel.set(true) }, t('nativeOpen')),
             h(Button, { type: 'button', size: 'sm', disabled: status.state === NATIVE_UI.loading,
               onClick: () => setRefresh(value => !value) }, t('nativeRefresh'))))
+      }
+    }
+
+    /**
+     * The Fishball panel (§7): the child page framed through the main origin. The iframe URL is
+     * constant and carries no token; the panel header reloads the frame or opens that same
+     * document in a tab. A child that is not ready shows its safe state, code and a Retry that
+     * calls the lifecycle restart service through the broker; it never falls back to legacy chat.
+     */
+    function makeEmbedPanel(t) {
+      return function FishballEmbedPanel() {
+        const open = useEmbedPanel()
+        const [status, setStatus] = React.useState({ state: NATIVE_UI.loading, code: null })
+        const [generation, setGeneration] = React.useState(0)
+        const [retrying, setRetrying] = React.useState(false)
+        React.useEffect(() => {
+          if (!open) return undefined
+          const abort = new AbortController()
+          setStatus({ state: NATIVE_UI.loading, code: null })
+          void nativeStatus(abort.signal).then((next) => { if (!abort.signal.aborted) setStatus(next) })
+          return () => abort.abort()
+        }, [open, generation])
+        if (!open) return null
+        const ready = status.state === NATIVE_UI.ready
+        const close = () => { if (!retrying) embedPanel.set(false) }
+        const refresh = () => { setGeneration(value => value + 1) }
+        const retry = async () => {
+          setRetrying(true)
+          try { await fetch(EMBED_UI.document, EMBED_UI.retry) } catch { /* The status probe below reports the state. */ }
+          const next = await nativeStatus()
+          setRetrying(false)
+          setStatus(next)
+        }
+        return h(Modal, {
+          open: true,
+          onClose: close,
+          closeLabel: t('close'),
+          title: t('embedTitle'),
+          footer: h(Button, { type: 'button', variant: 'outline', disabled: retrying, onClick: close }, t('close')),
+        },
+          h('div', { className: CLS.embed, 'data-fishball-embed': true },
+            h('div', { className: CLS.embedBar },
+              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: status.state === NATIVE_UI.loading, onClick: refresh }, t('embedRefresh')),
+              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !ready, onClick: () => { window.open(EMBED_UI.document, EMBED_UI.target, EMBED_UI.features) } }, t('embedOpenTab'))),
+            status.state === NATIVE_UI.loading
+              ? h('p', { role: 'status', className: CLS.muted }, t('native.loading'))
+              : ready
+                ? h('iframe', { key: generation, className: CLS.embedFrame, src: EMBED_UI.document, title: t('embedTitle'), allow: 'clipboard-write', 'data-fishball-embed-frame': true })
+                : h('div', { className: CLS.embedError },
+                  h('p', { role: 'alert' }, t('embedUnavailable')),
+                  h('p', { className: CLS.row }, h('span', { className: CLS.label }, t('embedState')), h('code', { className: CLS.code }, status.state)),
+                  status.code ? h('p', { className: CLS.row }, h('span', { className: CLS.label }, t('embedCode')), h('code', { className: CLS.code }, status.code)) : null,
+                  h(Button, { type: 'button', variant: 'primary', disabled: retrying, onClick: () => void retry() }, retrying ? t('native.starting') : t('embedRetry')))))
       }
     }
 
@@ -2518,6 +2565,9 @@ window.__ModuleLoader__.load({
       return { ...store, open: (sessionId, title) => store.set({ sessionId, title }), close: () => store.set(null) }
     })()
     const useSendRequest = () => React.useSyncExternalStore(sendRequest.subscribe, sendRequest.get)
+    /** The embed panel's open state, shared by the brand button and the shell-overlay panel (§7). */
+    const embedPanel = valueStore(false)
+    const useEmbedPanel = () => React.useSyncExternalStore(embedPanel.subscribe, embedPanel.get)
 
     /** Whether a session can be sent: Fishball runs, and it is not Fishball's own session. */
     const isOtherSession = (state, sessionId) => Boolean(sessionId) && sessionId !== state.sessionId
@@ -4128,7 +4178,7 @@ window.__ModuleLoader__.load({
         scope.effect(() => requireModel(scope.conversation, t), 'fishball: require dedicated model')
       })
       ctx.effect(() => followMessenger(ctx), 'fishball: messenger look')
-      const BrandName = makeBrandName(ctx, t)
+      const BrandName = makeBrandName(t)
       ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
         yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, makeMark(t))
         yield ctx.slots.register({ name: SLOT.name, priority: BRAND_PRIORITY }, BrandName)
@@ -4151,6 +4201,7 @@ window.__ModuleLoader__.load({
         yield ctx.slots.register({ name: SLOT.overlay, id: WATCH_MENU.id, locale: NS }, makeRequestNotice(t, watchNotice, 'watchSession'))
         yield ctx.slots.register({ name: SLOT.overlay, id: MANAGE_MENU.id, locale: NS }, makeRequestNotice(t, manageNotice, 'manageTitle'))
         yield ctx.slots.register({ name: SLOT.overlay, id: ADD_MENU.id, locale: NS }, makeInstallDialog(t, listenToHost))
+        yield ctx.slots.register({ name: SLOT.overlay, id: EMBED_UI.id, locale: NS }, makeEmbedPanel(t))
       }), 'fishball: dialogs')
       // Revision 11 (DESIGN §10e, S37): your pile, the ask_fishball row with your buttons, and the tags in each turn's tail.
       ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: MODEL.gateId, order: MODEL.gateOrder, locale: NS }, makeModelGate(ctx, t))), 'fishball: model setting prompt')
