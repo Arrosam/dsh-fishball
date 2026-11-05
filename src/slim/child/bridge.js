@@ -19,9 +19,10 @@
  *   module adds no secret, no path and no token to any frame.
  *
  * The child tools (session-tools.js) and later tasks (T09 approvals, T06 images) share this
- * one client: they call require() for the operations they need before a transport attaches, so
- * the handshake advertises exactly the needed operations and the host refuses a channel that
- * cannot serve them.
+ * one client: they call require() for the operations they need before a transport attaches.
+ * The hello announces those operations alongside the inbox receiver the child serves, because
+ * the frozen contract requires requiredCapabilities to be a subset of capabilities
+ * (contract.js:516-520); the host refuses a hello naming an operation it cannot serve.
  */
 import { randomUUID } from 'node:crypto'
 import {
@@ -76,14 +77,22 @@ class BridgeClient {
     this.connection = undefined
     this.state = Object.freeze({ ready: false, hostId, hostInstanceId: null, code: null })
     for (const operation of requiredCapabilities) this.require([operation])
-    // The child implements the inbox receiver; it requires the session operations it sends.
+    // The child serves the inbox receiver; the session operations it sends join the hello
+    // through the capabilities getter below.
     this.ownCapabilities = Object.freeze([...INBOX_OPERATIONS])
     this.session = createSessionRequests(this)
   }
 
   /** Operations this child needs from the main host; extend before a transport attaches. */
   get requiredCapabilities() { return Object.freeze([...this.required]) }
-  get capabilities() { return Object.freeze([...this.ownCapabilities]) }
+
+  /**
+   * The hello's capability list. The contract requires requiredCapabilities to be a subset of
+   * capabilities (requestHandshake), so the operations this child requires from the host are
+   * announced next to the one it serves. What proves the host implements them is the welcome;
+   * a hello requiring an operation the host has not registered is still refused.
+   */
+  get capabilities() { return Object.freeze([...new Set([...this.ownCapabilities, ...this.required])]) }
   get status() { return this.state }
 
   /**
