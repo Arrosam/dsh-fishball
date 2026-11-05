@@ -64,6 +64,11 @@
  * is not told and takes no step, but list_frozen_sessions lists them and answer_prompt answers
  * one, which makes its session managed (the fifth way in, item 2). Fishball's own requests never
  * reach a prompt: they are its cards (§7a.11), which it can never answer (§7a.13).
+ *
+ * The slim bridge (T09) observes the same live state through subscribe()/liveOffers() and calls
+ * answerApproval(); it keeps no second request store and changes no decision rule here. The host
+ * relay (src/slim/host/approvals.js) mints the per-connection offerId and maps these events to
+ * approval.request/approval.settled.
  */
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
@@ -117,6 +122,19 @@ const PROMPT_OUTCOME = Object.freeze({ [APPROVAL_DECISION.allow]: APPROVAL_OUTCO
 const PROMPT_MANAGED = Object.freeze({ now: 'now', already: 'already', failed: 'failed' })
 /** Request states: Fishball decides it now, or the session owes a reply to Fishball's question. */
 const STATE = Object.freeze({ waiting: 'waiting', question: 'question' })
+/**
+ * The slim bridge's offer vocabulary (§5.2, §15 T09). A live request is offered to the child as
+ * a descriptor; the offerId is minted per connection by the host relay (src/slim/host/approvals.js),
+ * not here, because only the relay knows which connection is live. This module owns the request's
+ * own facts: its decision choices, its end time and who settled it.
+ */
+const OFFER = Object.freeze({
+  kind: 'approval',
+  choices: Object.freeze(Object.values(APPROVAL_DECISION)),
+  event: Object.freeze({ offered: 'offered', settled: 'settled' }),
+})
+/** The contract's SETTLED_BY vocabulary; kept local so this legacy row imports no slim module. */
+const SETTLED_BY = Object.freeze({ user: 'user', fishball: 'fishball' })
 
 const TEXT = Object.freeze({
   answerDescription: 'Answer a permission request from a session you manage ([permission request apr_…]). "allow" approves this one call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "grant" approves it as "allow" does and also creates a standing grant, so that session\'s later calls it covers run without asking you: only when the user\'s allowance covers every call the grant covers; it needs `grant` with an end time. "reject" refuses it with a reason the session sees: only when the call goes beyond what the user asked that session to do AND it is dangerous. "ask" sends the session a question; its reply comes back as the same request. "escalate" hands it to the user; its reason is the line on the user\'s card: ' + PILE_NOTE.guide + '.',
@@ -176,6 +194,8 @@ const refused = (code, fields = {}) => ({ ok: false, code, ...fields })
 /** The audit's digest of a text (the question router's too, rev11g). */
 export const sha256 = (text) => createHash('sha256').update(text).digest('hex')
 const trimmed = (text) => (typeof text === 'string' ? text.trim() : '')
+/** A character cap (code points), as the slim descriptor's reason/quote limits count it. */
+const cutChars = (text, max) => ([...text].length <= max ? text : [...text].slice(0, max).join(''))
 
 /** The parsed arguments of one call as the model sent them (JSON text or a value), or undefined. */
 function parsedArguments(raw) {
@@ -287,6 +307,8 @@ export class ApprovalBroker {
   #prompts = new Map()
   /** Copies the S33 re-dispatch fallback hands on: the listener passes them straight to the next answerer. */
   #passing = new WeakSet()
+  /** Slim bridge observers (src/slim/host/approvals.js): offers and settlements, never a second state store. */
+  #listeners = new Set()
 
   /**
    * @param ctx - fishball row context (approval, sandboxPolicy, sessions, workspaceRegistry, on).
@@ -343,6 +365,35 @@ export class ApprovalBroker {
     }
   }
 
+  /**
+   * Observe a live request and its settlement for the slim bridge (§5.2 events, T09). A listener
+   * owns its failure: the broker never lets one stop its own bookkeeping. The slim host maps this
+   * event to `approval.request`/`approval.settled`; no second store of requests exists.
+   * @param {(event: {type: string, approvalId: string, sessionId: string, descriptor?: object, decision?: string, by?: string}) => void} listener
+   * @returns {() => void} disposer
+   */
+  subscribe(listener) {
+    if (typeof listener !== 'function') throw new TypeError('fishball approval broker: a listener must be a function')
+    this.#listeners.add(listener)
+    return () => this.#listeners.delete(listener)
+  }
+
+  /**
+   * The live requests Fishball may answer now, in the slim bridge's descriptor shape (§5.2
+   * approval.list). Only a request waiting for Fishball is offered; one it escalated is the user's
+   * card in the pile (Q1) and is deliberately absent.
+   * @param {string} sessionId - the managed session the user sees
+   * @returns {object[]}
+   */
+  liveOffers(sessionId) {
+    const offers = []
+    for (const request of this.#requests.values()) {
+      if (request.sessionId !== sessionId || !this.#waiting.has(request.id)) continue
+      offers.push(this.#offerOf(request))
+    }
+    return offers.sort((a, b) => a.at - b.at)
+  }
+
   /** Fishball's answer_approval tool (scope P). */
   registerTools(register) {
     register(defineTool({
@@ -364,39 +415,8 @@ export class ApprovalBroker {
         },
       },
       output: JSON_OUTPUT,
-      execute: async ({ request_id: id, decision, risk, reason, question, grant }) => {
-        const request = this.#requests.get(id)
-        if (request === undefined || !this.#waiting.has(id)) return refused(APPROVAL_ERROR.expired)
-        const rationale = trimmed(reason)
-        const asked = trimmed(question)
-        // Code rules (DESIGN §7a.3 table). Any request can go to the user, so escalate needs no
-        // risk or reason, and a question needs only itself; every other decision needs both, as the
-        // schema required before. When given, they are recorded either way.
-        if (decision !== APPROVAL_DECISION.escalate && decision !== APPROVAL_DECISION.ask) {
-          if (risk === undefined) return refused(APPROVAL_ERROR.riskRequired)
-          if (reason === undefined) return refused(APPROVAL_ERROR.reasonRequired)
-        }
-        const allows = decision === APPROVAL_DECISION.allow || decision === APPROVAL_DECISION.grant
-        const allowRefusal = allows ? allowRuleBroken(risk, rationale, request.args) : undefined
-        if (allowRefusal !== undefined) return refused(allowRefusal)
-        const granted = decision === APPROVAL_DECISION.grant ? checkGrant(grant, { toolName: request.toolName, args: request.args.value }, Date.now()) : undefined
-        if (granted?.error !== undefined) return refused(granted.error)
-        if (decision === APPROVAL_DECISION.reject && rationale.length === 0) return refused(APPROVAL_ERROR.reasonRequired)
-        if (decision === APPROVAL_DECISION.ask && asked.length === 0) return refused(APPROVAL_ERROR.questionRequired)
-        // A grant is written before the request is answered, so the answer and its audit row never
-        // name a grant a failed write lost (a failure throws, and the request stays pending). A
-        // session no longer managed gets no grant; its request was already released (expired).
-        const grantId = granted === undefined ? undefined : this.#grants.mintId()
-        if (granted !== undefined && !(await this.#grants.create({ id: grantId, sessionId: request.sessionId, toolName: request.toolName, kind: granted.kind, prefix: granted.prefix, args: request.args.value, expiresAt: granted.expiresAt, requestId: id, rationale }))) return refused(APPROVAL_ERROR.expired)
-        if (!this.#settle(id, { answer: DECISION_ANSWER[decision], risk, rationale, question: asked, grantId })) {
-          // The request ended while the grant was written (a timeout, a cancelled call): no effect.
-          if (grantId !== undefined) await this.#grants.discard(grantId)
-          return refused(APPROVAL_ERROR.expired)
-        }
-        if (grantId !== undefined) await this.#grants.confirm(grantId)
-        await this.#tag(request, decision, decision === APPROVAL_DECISION.escalate ? TAG_KIND.sentToYou : TAG_KIND.approval)
-        return ok({ requestId: id, decision, ...(grantId === undefined ? {} : { grantId, expiresAt: granted.expiresAt }) })
-      },
+      // The bridge reuses this method body, so the allowance rules have one implementation (§5.2).
+      execute: (input) => this.answerApproval(input),
     }))
     register(defineTool({
       name: APPROVAL_TOOL.listPrompts,
@@ -430,6 +450,48 @@ export class ApprovalBroker {
       output: JSON_OUTPUT,
       execute: ({ prompt_id: id, decision, risk, reason }) => this.#answerPrompt(id, decision, risk, reason),
     }))
+  }
+
+  /**
+   * answer_approval's code (§7a.3 table), shared by the tool and the slim bridge so the allowance
+   * rules are implemented once. A refused answer leaves the request pending.
+   * @param input - { request_id, decision, risk?, reason?, question?, grant? } as today's tool takes it.
+   * @returns the tool's result shape ({ok:true,...} or {ok:false, code}).
+   */
+  async answerApproval({ request_id: id, decision, risk, reason, question, grant }) {
+    const request = this.#requests.get(id)
+    if (request === undefined || !this.#waiting.has(id)) return refused(APPROVAL_ERROR.expired)
+    const rationale = trimmed(reason)
+    const asked = trimmed(question)
+    // Code rules (DESIGN §7a.3 table). Any request can go to the user, so escalate needs no
+    // risk or reason, and a question needs only itself; every other decision needs both, as the
+    // schema required before. When given, they are recorded either way.
+    if (decision !== APPROVAL_DECISION.escalate && decision !== APPROVAL_DECISION.ask) {
+      if (risk === undefined) return refused(APPROVAL_ERROR.riskRequired)
+      if (reason === undefined) return refused(APPROVAL_ERROR.reasonRequired)
+    }
+    const allows = decision === APPROVAL_DECISION.allow || decision === APPROVAL_DECISION.grant
+    const allowRefusal = allows ? allowRuleBroken(risk, rationale, request.args) : undefined
+    if (allowRefusal !== undefined) return refused(allowRefusal)
+    const granted = decision === APPROVAL_DECISION.grant ? checkGrant(grant, { toolName: request.toolName, args: request.args.value }, Date.now()) : undefined
+    if (granted?.error !== undefined) return refused(granted.error)
+    if (decision === APPROVAL_DECISION.reject && rationale.length === 0) return refused(APPROVAL_ERROR.reasonRequired)
+    if (decision === APPROVAL_DECISION.ask && asked.length === 0) return refused(APPROVAL_ERROR.questionRequired)
+    // A grant is written before the request is answered, so the answer and its audit row never
+    // name a grant a failed write lost (a failure throws, and the request stays pending). A
+    // session no longer managed gets no grant; its request was already released (expired).
+    const grantId = granted === undefined ? undefined : this.#grants.mintId()
+    if (granted !== undefined && !(await this.#grants.create({ id: grantId, sessionId: request.sessionId, toolName: request.toolName, kind: granted.kind, prefix: granted.prefix, args: request.args.value, expiresAt: granted.expiresAt, requestId: id, rationale }))) return refused(APPROVAL_ERROR.expired)
+    if (!this.#settle(id, { answer: DECISION_ANSWER[decision], risk, rationale, question: asked, grantId })) {
+      // The request ended while the grant was written (a timeout, a cancelled call): no effect.
+      if (grantId !== undefined) await this.#grants.discard(grantId)
+      return refused(APPROVAL_ERROR.expired)
+    }
+    if (grantId !== undefined) await this.#grants.confirm(grantId)
+    // The slim child learns the settlement even though it made the answer (its decision label, T08).
+    this.#emit({ type: OFFER.event.settled, approvalId: id, sessionId: request.sessionId, decision, by: SETTLED_BY.fishball })
+    await this.#tag(request, decision, decision === APPROVAL_DECISION.escalate ? TAG_KIND.sentToYou : TAG_KIND.approval)
+    return ok({ requestId: id, decision, ...(grantId === undefined ? {} : { grantId, expiresAt: granted.expiresAt }) })
   }
 
   /**
@@ -580,6 +642,36 @@ export class ApprovalBroker {
     return prefix + randomUUID().replace(/-/g, '')
   }
 
+  /** Notify slim bridge observers; a listener's failure is its own. */
+  #emit(event) {
+    for (const listener of this.#listeners) {
+      try { listener(event) } catch { /* its own failure */ }
+    }
+  }
+
+  /**
+   * One live request in the slim bridge's descriptor shape (§5.2). Times become epoch ms and text
+   * is cut to the plugin's own excerpt budgets; the host relay adds `title` and `offerId`, which
+   * this legacy row does not own.
+   */
+  #offerOf(request) {
+    const limits = this.#readLimits()
+    const asked = request.kind === REQUEST_KIND.asked
+    const reason = (asked ? request.why : request.reason) ?? ''
+    return {
+      approvalId: request.id,
+      kind: OFFER.kind,
+      prompt: TEXT.summary(request.toolName),
+      choices: [...OFFER.choices],
+      expiresAt: request.expiresAt ?? Date.parse(request.at),
+      at: Date.parse(request.at),
+      toolName: request.toolName,
+      callId: (asked ? request.askCallId : request.callId) ?? null,
+      reason: cutChars(reason, limits.rationaleChars),
+      quotes: (request.quotes ?? []).map((quote) => cutToBytes(quote.text, limits.requestUserMessageBytes, ELLIPSIS)),
+    }
+  }
+
   /** One round of an asked request (or of a thread a direct call opened): Fishball decides, the agent learns the answer. */
   async #consult(request, signal, reply) {
     if (reply !== undefined) request.thread.push(reply)
@@ -640,6 +732,12 @@ export class ApprovalBroker {
    * @param result - how the round ended (escalate, timeout or to-user), audited as the request's answer.
    */
   async #awaitCard(request, result, signal) {
+    // The slim child's answerable card closes now: the request is the user's card (Q1). An
+    // escalate answer already emitted this in answerApproval; a timeout or an undelivered notice
+    // did not, so only those emit here.
+    if (result.answer !== APPROVAL_ANSWER.escalate) {
+      this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: APPROVAL_DECISION.escalate, by: SETTLED_BY.fishball })
+    }
     const ended = this.#pile.file(this.#cardOf(request, result))
     const onAbort = () => this.#pile.settle(request.id, { end: CARD_END.cancelled })
     signal?.addEventListener('abort', onAbort, { once: true })
@@ -654,6 +752,8 @@ export class ApprovalBroker {
         const allowed = card.decision === CARD_DECISION.allow
         if (allowed) this.#passes.add(request.key, PASS_KIND.pass, request.sessionId, { requestId: request.id, seenByFishball: request.seen === true, by: CHANGED_BY.user })
         const answer = await this.#end(request, result, allowed ? ASK_RESULT.allowed : ASK_RESULT.rejected)
+        // The user's final decision reaches the child's label in Fishball's chat (§8.1, T08).
+        this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: allowed ? APPROVAL_DECISION.allow : APPROVAL_DECISION.reject, by: SETTLED_BY.user })
         const outcome = allowed ? APPROVAL_OUTCOME.allowedOnce : APPROVAL_OUTCOME.rejected
         await this.#clicked(request.sessionId, request.id, outcome, allowed ? undefined : card.note !== undefined)
         if (request.seen) this.#tell(TEXT.outcome(request.id, TEXT.pileOutcome(outcome)))
@@ -713,6 +813,8 @@ export class ApprovalBroker {
     const limits = this.#readLimits()
     const { id } = request
     request.round++
+    // The slim descriptor's end time is this round's own window (§5.2 expiresAt).
+    request.expiresAt = Date.now() + Math.min(limits.approvalAnswerSeconds * MS_PER_SECOND, APPROVAL.maxTimerMs)
     let settle
     const answered = new Promise((resolve) => { settle = resolve })
     this.#waiting.set(id, settle)
@@ -737,6 +839,8 @@ export class ApprovalBroker {
         if (stopped !== undefined) return stopped
       } else if (this.#waiting.has(id)) {
         this.#onChange()
+        // The slim child gets its card before the legacy notice: a slow ledger never delays it.
+        this.#emit({ type: OFFER.event.offered, approvalId: id, sessionId: request.sessionId, descriptor: this.#offerOf(request) })
         try {
           await this.#ledger.publish({
             kind: INTAKE_KIND.approval,
@@ -963,6 +1067,10 @@ export class ApprovalBroker {
     // Checked in the same tick as the filing in #passOn, so a release cannot slip in between.
     const sentToYou = timedOut || result.answer === APPROVAL_ANSWER.escalate || result.answer === APPROVAL_ANSWER.toUser
     const toPile = sentToYou && this.#canAnswer() && this.#isManaged(request.sessionId)
+    // A direct call sent to the user closes the slim child's answerable card (Q1); a fishball
+    // escalate answer on a direct call takes its own tool path, but this is the one place a
+    // timeout, an undelivered notice and an escalate all land.
+    if (toPile) this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: APPROVAL_DECISION.escalate, by: SETTLED_BY.fishball })
     // As for an asked request (rev11c): Fishball hears of the timeout at once, not after your answer.
     if (timedOut) this.#tell(TEXT.outcome(request.id, TEXT.timedOut))
     const { outcome, by, note } = await this.#passOn(via, request, toPile ? this.#cardOf(request, result) : undefined)

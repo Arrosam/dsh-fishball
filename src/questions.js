@@ -46,6 +46,10 @@
  *
  * Questions and their cards live in memory, apart from the permission-request pile: the cap
  * maxPendingApprovals counts permission requests, as its description says (Reading).
+ *
+ * The slim bridge (T09) observes one question through subscribe()/liveQuestions()/questionSession()
+ * and answers it through answerQuestion(); the pile above remains the user's card store (Q1), and
+ * the host relay (src/slim/host/approvals.js) adds the per-connection offerId and session title.
  */
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
@@ -73,6 +77,16 @@ const BY = Object.freeze({ fishball: 'fishball', pile: 'pile', session: 'session
 const STATE = Object.freeze({ open: 'open', continued: 'continued' })
 /** How each winner ends a question in the audit. */
 const END_OF = Object.freeze({ [BY.fishball]: QUESTION_END.fishball, [BY.pile]: QUESTION_END.pile, [BY.session]: QUESTION_END.session })
+/**
+ * The slim bridge's offer vocabulary (§5.2, §15 T09). This router owns the question's own facts:
+ * its offered labels, its end time and who settled it; the host relay adds `title` and `offerId`.
+ */
+const OFFER = Object.freeze({
+  kind: 'question',
+  event: Object.freeze({ offered: 'offered', escalated: 'escalated', settled: 'settled' }),
+})
+/** The contract's SETTLED_BY vocabulary; kept local so this legacy row imports no slim module. */
+const SETTLED_BY = Object.freeze({ user: 'user', fishball: 'fishball' })
 
 const TEXT = Object.freeze({
   answerDescription: 'Answer a question or plan review from a session you manage ([question qst_…]). For a question give answers: one {id, selected, custom?} per question, every question id exactly once; selected holds labels of the offered options; a single-select question takes one label, or custom text alone; selected [] with no custom skips it. For a plan review give approve: true to approve the plan (plan mode ends), or feedback to keep planning with your feedback (approve: false without feedback keeps planning). to_user: true sends it to the user\'s pile instead; note adds a note the user sees on its card. Follow the mode the question names. A bad answer is refused and the question stays open.',
@@ -100,6 +114,8 @@ const TEXT = Object.freeze({
     [QUESTION_MODE.user]: 'Mode User: it is already in the user\'s pile and only the user answers it. You may add a note for the user with answer_question({question_id, note}): ' + PILE_NOTE.guide + '.',
   }),
   summary: (entry) => `Question: ${entry.toolName}`,
+  /** The slim card's prompt names the mode today's answer_question description tells Fishball to follow. */
+  prompt: (entry, mode) => `${TEXT.summary(entry)} (mode: ${mode})`,
   /** Notes to Fishball without a wake, as for permission requests (it learns how each ended). */
   outcome: (id, what) => `Fishball notice: question ${id} ${what}.`,
   inSession: 'was answered by the user in that session',
@@ -139,6 +155,22 @@ const answeredElsewhere = () => questionError(TEXT.answeredElsewhere, QUESTION.a
 
 /** A plan review is one question carrying the plan-review intent (S36 Q3). */
 export const isPlanReview = (questions) => questions.length === 1 && questions[0].intent?.kind === QUESTION.planIntent
+
+/**
+ * One question in the slim contract's shape (§5.2): the same fields DSH asked, with an intent
+ * only when it is the plan-review presentation the contract names.
+ */
+function offeredQuestion(question) {
+  return {
+    id: question.id,
+    question: question.question,
+    ...(question.detail === undefined ? {} : { detail: question.detail }),
+    ...(question.header === undefined ? {} : { header: question.header }),
+    ...(question.options === undefined ? {} : { options: question.options.map((option) => ({ label: option.label, ...(option.description === undefined ? {} : { description: option.description }) })) }),
+    ...(question.multiSelect === undefined ? {} : { multiSelect: question.multiSelect }),
+    ...(question.intent?.kind === QUESTION.planIntent ? { intent: { kind: question.intent.kind, approve: question.intent.approve, ...(question.intent.callId === undefined ? {} : { callId: question.intent.callId }) } } : {}),
+  }
+}
 
 /**
  * The call id of a question whose request names none: the shipped legacy ask_user_question sends
@@ -317,6 +349,8 @@ export class QuestionRouter {
   #misses = new Map()
   /** Continued questions get their cards once per start (rebuild). */
   #rebuilt = false
+  /** Slim bridge observers (src/slim/host/approvals.js): offers, escalations and settlements. */
+  #listeners = new Set()
 
   /**
    * @param ctx - fishball row context (sessions, sessionController, on, get).
@@ -367,6 +401,45 @@ export class QuestionRouter {
     return this.#pile.cards()
   }
 
+  /**
+   * Observe a question's offer, escalation and settlement for the slim bridge (§5.2 events, T09).
+   * A listener owns its failure. The host maps this to `approval.request`/`approval.settled`;
+   * no second store of questions exists.
+   * @param {(event: {type: string, approvalId: string, sessionId: string, descriptor?: object, decision?: string, by?: string, words?: string, answers?: object[], routed?: string}) => void} listener
+   * @returns {() => void} disposer
+   */
+  subscribe(listener) {
+    if (typeof listener !== 'function') throw new TypeError('fishball question router: a listener must be a function')
+    this.#listeners.add(listener)
+    return () => this.#listeners.delete(listener)
+  }
+
+  /**
+   * The live questions Fishball may answer now, in the slim bridge's descriptor shape (§5.2).
+   * A question already in the user's pile is the user's card (Q1) and is deliberately absent.
+   * @param {string} sessionId - the managed session the user sees
+   * @returns {object[]}
+   */
+  liveQuestions(sessionId) {
+    const offers = []
+    for (const entry of this.#entries.values()) {
+      if (entry.sessionId !== sessionId || entry.inPile) continue
+      offers.push(this.#offerOf(entry))
+    }
+    return offers.sort((a, b) => a.at - b.at)
+  }
+
+  /**
+   * The session a question belongs to, or null once it settled. The bridge checks this before
+   * answering, because today's answer_question tool names no session: the envelope's sessionId
+   * must be the question's own (§5.2), also for a note on a question already in the pile.
+   * @param {string} questionId
+   * @returns {string|null}
+   */
+  questionSession(questionId) {
+    return this.#entries.get(questionId)?.sessionId ?? null
+  }
+
   /** Fishball's answer_question tool (scope P, Permission requests). */
   registerTools(register) {
     // DSH refuses a tool whose object schemas leave additionalProperties unset, the answers' items included.
@@ -394,7 +467,8 @@ export class QuestionRouter {
         note: { type: 'string', description: TEXT.noteArg },
       },
       output: JSON_OUTPUT,
-      execute: (input) => this.#fishballAnswer(input),
+      // The bridge reuses this method body, so the answer rules are implemented once (§5.2).
+      execute: (input) => this.answerQuestion(input),
     }))
   }
 
@@ -403,7 +477,7 @@ export class QuestionRouter {
    * refused in User mode (mode-user) and once the question is your card (expired: a question in
    * your pile is yours, as a permission request there is, §16 Reading).
    */
-  async #fishballAnswer({ question_id: id, answers, approve, feedback, to_user: toUser, note }) {
+  async answerQuestion({ question_id: id, answers, approve, feedback, to_user: toUser, note }) {
     const entry = this.#entries.get(id)
     if (entry === undefined) return refused(QUESTION_ERROR.expired, { note: TEXT.expired })
     const noted = trimmed(note)
@@ -574,6 +648,38 @@ export class QuestionRouter {
     return entry
   }
 
+  /** Notify slim bridge observers; a listener's failure is its own. */
+  #emit(event) {
+    for (const listener of this.#listeners) {
+      try { listener(event) } catch { /* its own failure */ }
+    }
+  }
+
+  /**
+   * One live question in the slim bridge's descriptor shape (§5.2). Times become epoch ms; the
+   * offered labels are the union of the questions' options, because a selected label must be
+   * echoed back unchanged to be accepted. The host relay adds `title` and `offerId`.
+   */
+  #offerOf(entry) {
+    const choices = []
+    for (const question of entry.questions) {
+      for (const option of question.options ?? []) if (!choices.includes(option.label)) choices.push(option.label)
+    }
+    return {
+      approvalId: entry.id,
+      kind: OFFER.kind,
+      prompt: TEXT.prompt(entry, this.mode()),
+      choices,
+      expiresAt: entry.expiresAt ?? Date.parse(entry.since),
+      at: Date.parse(entry.since),
+      toolName: entry.toolName,
+      callId: entry.callId ?? null,
+      reason: '',
+      quotes: [],
+      questions: entry.questions.map(offeredQuestion),
+    }
+  }
+
   /**
    * The user-questions/request listener (§7a.10, S36 "Mechanism").
    * @param req - DSH's request: { questions, agent?, signal?, wait? }.
@@ -688,10 +794,15 @@ export class QuestionRouter {
       const mode = this.mode()
       if (mode === QUESTION_MODE.user) this.#toPile(entry, APPROVAL_ANSWER.toUser)
       else {
+        const ttl = Math.min(limits.approvalAnswerSeconds * MS_PER_SECOND, APPROVAL.maxTimerMs)
+        // The slim descriptor's end time is this question's own window (§5.2 expiresAt).
+        entry.expiresAt = Date.now() + ttl
         entry.timer = setTimeout(() => {
           if (this.#toPile(entry, APPROVAL_ANSWER.timeout)) this.#tell(entry, TEXT.timedOut)
-        }, Math.min(limits.approvalAnswerSeconds * MS_PER_SECOND, APPROVAL.maxTimerMs))
+        }, ttl)
         entry.timer.unref?.()
+        // The child's card goes out before the legacy notice: a slow ledger never delays it.
+        this.#emit({ type: OFFER.event.offered, approvalId: entry.id, sessionId: entry.sessionId, descriptor: this.#offerOf(entry) })
       }
       const info = (await describeSession(this.#ctx, entry.sessionId, limits.forwardExcerptBytes)) ?? { id: entry.sessionId, title: '', cwd: null }
       if (this.#entries.get(entry.id) !== entry) return
@@ -728,6 +839,8 @@ export class QuestionRouter {
       requestId: entry.id, questionId: entry.id, kind: entry.kind, sessionId: entry.sessionId, callId: entry.callId ?? null,
       toolName: entry.toolName, questions: entry.questions, continued: entry.state === STATE.continued, note: entry.note, since: new Date().toISOString(),
     })
+    // The slim child's answerable card closes: the question is the user's card now (Q1).
+    this.#emit({ type: OFFER.event.escalated, approvalId: entry.id, sessionId: entry.sessionId })
     return true
   }
 
@@ -764,6 +877,25 @@ export class QuestionRouter {
     const byYou = answered?.by === BY.pile || end === QUESTION_END.session
     if (byFishball || byYou) await this.#decide(entry, byFishball ? CHANGED_BY.fishball : CHANGED_BY.user)
     await this.#record(entry, this.#auditAnswer(entry, end, byFishball, byYou), end)
+    // The child learns the outcome, and the words of the user's answer when this router has them
+    // (a pile answer), so Fishball's chat can show the answer it was waiting for (§8.1, T08).
+    if (byFishball || byYou) {
+      const words = answered?.by === BY.pile && Array.isArray(answered.batch?.answers)
+        ? answerWords(answered.batch.answers, this.#readLimits().rationaleChars)
+        : ''
+      this.#emit({
+        type: OFFER.event.settled, approvalId: entry.id, sessionId: entry.sessionId,
+        decision: APPROVAL_DECISION.ask, by: byFishball ? SETTLED_BY.fishball : SETTLED_BY.user,
+        ...(words === '' ? {} : { words }),
+        ...(entry.routed === undefined ? {} : { routed: entry.routed }),
+      })
+    } else if (end === QUESTION_END.back) {
+      // Back to its session's own card: the child's card is gone, and the user answers there.
+      this.#emit({ type: OFFER.event.escalated, approvalId: entry.id, sessionId: entry.sessionId })
+    } else if (end === QUESTION_END.closed) {
+      // Stopped or dismissed: no answer will come, so the child's card must close.
+      this.#emit({ type: OFFER.event.settled, approvalId: entry.id, sessionId: entry.sessionId, decision: APPROVAL_DECISION.ask, by: SETTLED_BY.fishball })
+    }
     if (!entry.seen) return
     if (end === QUESTION_END.session) this.#tell(entry, TEXT.inSession)
     else if (end === QUESTION_END.pile) this.#tell(entry, TEXT.inPile)

@@ -1,5 +1,6 @@
 import { applyNativeChild } from './src/native-runtime/child.js'
 import * as sessionTools from './src/slim/child/session-tools.js'
+import * as approvals from './src/slim/child/approvals.js'
 
 /**
  * The attached child's lifecycle row: identity checks, control wire and bounded shutdown.
@@ -19,4 +20,7 @@ export async function apply(ctx, config) {
   await applyNativeChild(ctx, config)
   // The row injects the nativeRuntime this call has just provided and the child's tools.
   ctx.plugin(sessionTools, {})
+  // The approval tools, their cards and Fishball's own question answerer share that row's one
+  // bridge client (fishballBridge); T09 opens no second channel.
+  ctx.plugin(approvals, {})
 }

@@ -95,13 +95,14 @@ export const SESSION_OPERATIONS = Object.freeze([
 ])
 
 /**
- * The §5.2 operations left to T09 (approvals, questions, prompts, grants) and T06
- * (attachments). Kept as a named list so a reader can see the whole gap at once; each is
- * answered with unsupported-operation until its owner registers a handler.
+ * The §5.2 operations this module's own session handlers do not answer. Kept as a named list so
+ * a reader sees the whole gap at once. T09's approvals, questions, prompts and grants are no
+ * longer in it: they register through register() from src/slim/host/approvals.js. T06's
+ * attachments still answer unsupported-operation until that task registers them.
  */
-export const UNIMPLEMENTED_OPERATIONS = Object.freeze(Object.values(OPERATION).filter(
-  (operation) => !SESSION_OPERATIONS.includes(operation) && operation !== OPERATION.inboxPush,
-))
+export const UNIMPLEMENTED_OPERATIONS = Object.freeze([
+  OPERATION.attachmentRead, OPERATION.attachmentPut,
+])
 
 /** Operations whose authorization needs a managed session (§5.2). */
 const MANAGED_OPERATIONS = new Set([
@@ -174,6 +175,8 @@ class BridgeHost {
     this.now = now
     this.limits = freezeLimits(limits)
     this.handlers = new Map()
+    /** Lifecycle listeners for T09's re-offer: a reconnect is a clean slate for offers (§5.2). */
+    this.connectionListeners = new Set()
     this.connection = undefined
     this.inboxPending = new Map()
     this.inboxOrder = []
@@ -199,6 +202,19 @@ class BridgeHost {
     if (typeof handler !== 'function') throw new TypeError('fishball bridge: a handler must be a function')
     if (this.handlers.has(operation)) throw new ContractError(ERROR.conflict)
     this.handlers.set(operation, handler)
+  }
+
+  /**
+   * Observe the channel becoming ready and going away. T09 uses the ready edge to re-offer the
+   * live approval and question cards after a reconnect (the host never replays a request), and
+   * the close edge to stop treating the child as the live answerer. A listener owns its failure.
+   * @param {(connection: {ready: boolean, connectionId: string}) => void} listener
+   * @returns {() => void} disposer
+   */
+  onConnection(listener) {
+    if (typeof listener !== 'function') throw new TypeError('fishball bridge: a connection listener must be a function')
+    this.connectionListeners.add(listener)
+    return () => this.connectionListeners.delete(listener)
   }
 
   /**
@@ -294,6 +310,7 @@ class BridgeHost {
 
   disconnect(connection = this.connection) {
     if (connection === undefined || connection.closed) return
+    const wasReady = connection.ready
     connection.closed = true
     if (this.connection === connection) this.connection = undefined
     clearTimeout(connection.timer)
@@ -303,6 +320,16 @@ class BridgeHost {
     connection.pending.clear()
     connection.inboxSending = false
     try { connection.transport.close() } catch { /* already gone */ }
+    // A closed ready channel means the child can no longer answer: the host-side cards stay live
+    // for the next connection, which is told them again by its own ready edge.
+    if (wasReady) this.emitConnection(connection, false)
+  }
+
+  /** Tell observers once per edge; a listener cannot break the channel. */
+  emitConnection(connection, ready) {
+    for (const listener of this.connectionListeners) {
+      try { listener({ ready, connectionId: connection.connectionId }) } catch { /* its own failure */ }
+    }
   }
 
   receive(connection, encoded) {
@@ -362,6 +389,7 @@ class BridgeHost {
     connection.ready = true
     clearTimeout(connection.timer)
     this.reply(connection, envelope, { capabilities: [...available], hostInstanceId: this.hostInstanceId }, ENVELOPE.type.response)
+    this.emitConnection(connection, true)
     this.flushInbox()
   }
 
@@ -518,7 +546,7 @@ async function ensureRelated(service, sessionId) {
   if (!(await isRelated(service, sessionId))) refuse(ERROR.forbidden)
 }
 
-async function ensureManaged(service, sessionId) {
+export async function ensureManaged(service, sessionId) {
   if (!service.enabled()) refuse(ERROR.featureOff)
   if (service.isFishball(sessionId)) refuse(ERROR.isFishball)
   if ((await summaryOf(service, sessionId)) === undefined) refuse(ERROR.unknownSession)

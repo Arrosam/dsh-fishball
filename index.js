@@ -280,6 +280,17 @@ export async function apply(ctx, config) {
   const assistantId = () => store.assistant().sessionId
   /** The assistant's running agent; read through a function, the lifecycle is created below. */
   let assistantAgent = () => undefined
+  /**
+   * Whether the slim child's bridge is connected. From T09 the child, not the legacy main agent,
+   * answers managed sessions' permission requests and questions (§5.2): the provider below flips
+   * this from the bridge's own ready/close edges, and the existing services keep their rules.
+   */
+  let nativeBridgeReady = false
+  /** Created below: the slim bridge reads their live state and reuses their tool bodies (T09). */
+  let broker
+  let questions
+  let grants
+  const bridgeTools = new Map()
   const ledger = new IntakeLedger(ctx, store, logger, { readLimits: limits, onChange: () => publish() })
   composition.addAgentSetup((agentCtx, agent) => ledger.installAgent(agentCtx, agent))
   // Watches (DESIGN §5c): set up by you, by Fishball, or by another agent for its own session.
@@ -329,6 +340,19 @@ export async function apply(ctx, config) {
   // §5.2): it gets the managed set, the watch registry and Fishball's own id from one service,
   // while its other operations use the same DSH services these tools use. Provided as an effect,
   // so turning the row off removes it and the bridge answers feature-off.
+  /** One capture of a tool definition, so the bridge runs today's body instead of a second rule set. */
+  const captured = async (toolName, args) => {
+    const definition = bridgeTools.get(toolName)
+    if (definition === undefined) return { ok: false, code: FEATURE_OFF }
+    return definition.execute(args)
+  }
+  /** The list_frozen_sessions body plus the session title the contract's prompt summary carries. */
+  const listPrompts = async () => {
+    const result = await captured(APPROVAL_TOOL.listPrompts, {})
+    if (result?.ok !== true) return result
+    return { ...result, prompts: result.prompts.map((prompt) => ({ ...prompt, title: sessionTitles.get(prompt.session_id) ?? '' })) }
+  }
+  const withTitle = (descriptor, sessionId) => ({ ...descriptor, title: sessionTitles.get(sessionId) ?? '' })
   ctx.effect(() => ctx.provide(SESSION_STATE.service, Object.freeze({
     assistantId,
     managedIds: () => managedRegistry.snapshot().map((entry) => entry.sessionId),
@@ -339,6 +363,33 @@ export async function apply(ctx, config) {
     watch: (input) => watches.add({ ...input, by: { kind: WATCH_BY.assistant } }),
     watches: () => watches.snapshot().watches,
     unwatch: (watchId) => watches.remove(watchId),
+    // T09: the state the approval bridge reads and the bodies it reuses. Nothing here decides;
+    // every rule stays in the broker, the question router and the grants service.
+    bridgeReady: (ready) => {
+      nativeBridgeReady = ready === true
+      // Continued questions get their cards when Fishball can actually answer them.
+      if (nativeBridgeReady) void questions?.rebuild().catch(logged('continued questions'))
+    },
+    liveApprovals: (sessionId) => broker.liveOffers(sessionId).map((descriptor) => withTitle(descriptor, sessionId)),
+    answerApproval: (input) => captured(APPROVAL_TOOL.answer, input),
+    liveQuestions: (sessionId) => questions.liveQuestions(sessionId).map((descriptor) => withTitle(descriptor, sessionId)),
+    answerQuestion: (input) => captured(QUESTION_TOOL.answer, input),
+    questionSession: (questionId) => questions.questionSession(questionId),
+    listPrompts,
+    answerPrompt: (input) => captured(APPROVAL_TOOL.answerPrompt, input),
+    listGrants: () => grants.snapshot(),
+    revokeGrant: (input) => captured(GRANT_TOOL.revoke, input),
+    subscribe: (listener) => {
+      // A live event's descriptor carries the envelope's session, not its own id; the label view
+      // and the child card both need the session title, so it is attached once here.
+      const wrapped = (event) => {
+        if (event?.type === 'offered' && event.descriptor !== undefined) listener({ ...event, descriptor: withTitle(event.descriptor, event.sessionId) })
+        else listener(event)
+      }
+      const offBroker = broker.subscribe(wrapped)
+      const offQuestions = questions.subscribe(wrapped)
+      return () => { offBroker(); offQuestions() }
+    },
   })), 'fishball: native session state')
   managedView = () => managedRegistry.snapshot().map((entry) => ({ ...entry, title: sessionTitles.get(entry.sessionId) }))
   managedToolNames = () => managedTools().map((tool) => tool.name)
@@ -357,15 +408,15 @@ export async function apply(ctx, config) {
   const pile = new Pile(() => publish())
   const tags = new TagRecords(store, limits, { logger, onChange: () => publish() })
   // Standing grants (rev11d, §7a.8): paused while Fishball is not live or Permission requests is off.
-  const grants = new Grants(store, logger, { readLimits: limits, isPaused: () => assistantAgent() === undefined || !approvalsOn(), onChange: () => publish(), isManaged })
+  grants = new Grants(store, logger, { readLimits: limits, isPaused: () => (assistantAgent() === undefined && !nativeBridgeReady) || !approvalsOn(), onChange: () => publish(), isManaged })
   grants.registerTools((definition) => composition.registerOwnTool(definition))
   ctx.effect(() => () => grants.stop(), 'fishball: grant expiry timer')
   // Fishball's own requests: cards labelled Fishball in your pile, never a prompt (rev11f, §7a.11).
   const own = new OwnRequests(ctx, store, logger, { ledger, readLimits: limits, assistantId, agentOf: () => assistantAgent(), onChange: () => publish() })
   own.registerTools((definition) => composition.registerOwnTool(definition))
   // Managed sessions' permission requests go to Fishball first (DESIGN §7a).
-  const broker = new ApprovalBroker(ctx, store, logger, {
-    ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined,
+  broker = new ApprovalBroker(ctx, store, logger, {
+    ledger, readLimits: limits, assistantId, isLive: () => assistantAgent() !== undefined || nativeBridgeReady,
     startedByFishball: (sessionId) => outbound.started(sessionId), redirectedByFishball: (sessionId, text) => outbound.redirected(sessionId, text), agentOf: () => assistantAgent(), onChange: () => publish(),
     isEnabled: approvalsOn,
     isManaged,
@@ -381,13 +432,18 @@ export async function apply(ctx, config) {
   })
   broker.registerTools((definition) => composition.registerOwnTool(definition))
   // Managed sessions' questions and plan reviews go to Fishball (rev11g, §7a.10); yours stay in their chat.
-  const questions = new QuestionRouter(ctx, store, logger, {
+  questions = new QuestionRouter(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, agentOf: () => assistantAgent(), tags, onChange: () => publish(),
-    canAnswer: () => assistantAgent() !== undefined && approvalsOn(),
+    canAnswer: () => (assistantAgent() !== undefined || nativeBridgeReady) && approvalsOn(),
     isManaged,
     managedIds: () => managedRegistry.snapshot().map((entry) => entry.sessionId),
   })
   questions.registerTools((definition) => composition.registerOwnTool(definition))
+  // T09's bridge runs the same tool bodies through the provider above: the allowance, grant and
+  // question rules are not written a second time, and a refusal keeps today's code.
+  broker.registerTools((definition) => { bridgeTools.set(definition.name, definition) })
+  questions.registerTools((definition) => { bridgeTools.set(definition.name, definition) })
+  grants.registerTools((definition) => { bridgeTools.set(definition.name, definition) })
   questionModeView = () => questions.mode()
   // Registered once the broker exists: each request they make becomes Fishball's card (rev11f).
   registerPluginTools({
