@@ -368,7 +368,7 @@ export function createChatView(options = {}) {
     row.dataset.at = String(value)
     const next = [...timeline.children].find((child) => Number(child.dataset.at) > value)
     if (next === undefined) timeline.append(row)
-    else timeline.before(next)
+    else timeline.insertBefore(row, next)
   }
 
   function trimTimeline() {
