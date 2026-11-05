@@ -178,6 +178,22 @@ export class ManagedRegistry {
     if (await this.#drop(root, MANAGED_CHANGE.takeBack)) await this.#note(MANAGED_CHANGE.takeBack, info ?? { id: root, title: '', cwd: null })
   }
 
+  /**
+   * Fishball's release of a session (release_session and the slim bridge's session.release).
+   * @throws ManagedError(featureOff | isFishball | notManaged).
+   * @returns { sessionId, managed: false } once the session left management.
+   */
+  async release(sessionId, reason) {
+    // A call already in flight when Session messages went off (the tool leaves at the apply).
+    if (!this.#isEnabled()) throw new ManagedError(MANAGED_ERROR.featureOff)
+    if (sessionId === this.#assistantId()) throw new ManagedError(MANAGED_ERROR.isFishball)
+    if (!(await this.#drop(sessionId, MANAGED_CHANGE.release))) throw new ManagedError(MANAGED_ERROR.notManaged)
+    await this.#audit(sessionId, reason)
+    const info = (await this.#describe(sessionId)) ?? { id: sessionId, title: '', cwd: null }
+    await this.#note(MANAGED_CHANGE.release, info)
+    return { sessionId, managed: false }
+  }
+
   /** Fishball's release_session (scope P; Session messages). */
   registerTools(register) {
     register(defineTool({
@@ -189,14 +205,10 @@ export class ManagedRegistry {
       },
       output: JSON_OUTPUT,
       execute: async ({ session_id: sessionId, reason }) => {
-        // A call already in flight when Session messages went off (the tool leaves at the apply).
-        if (!this.#isEnabled()) return refused(MANAGED_ERROR.featureOff)
-        if (sessionId === this.#assistantId()) return refused(MANAGED_ERROR.isFishball)
-        if (!(await this.#drop(sessionId, MANAGED_CHANGE.release))) return refused(MANAGED_ERROR.notManaged)
-        await this.#audit(sessionId, reason)
-        const info = (await this.#describe(sessionId)) ?? { id: sessionId, title: '', cwd: null }
-        await this.#note(MANAGED_CHANGE.release, info)
-        return ok({ sessionId, managed: false })
+        try { return ok(await this.release(sessionId, reason)) } catch (error) {
+          if (error instanceof ManagedError) return refused(error.code)
+          throw error
+        }
       },
     }))
   }

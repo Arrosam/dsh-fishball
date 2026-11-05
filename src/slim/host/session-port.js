@@ -1,0 +1,288 @@
+/**
+ * The main-host SessionService port for the slim session bridge (§5.2, §15 T05 merge).
+ *
+ * bridge.js owns framing, authorization and the §5.2 operation shapes; this module answers the
+ * sixteen methods in that file's header with the same main-DSH services today's Fishball tools
+ * use, so the bridge gets today's powers without a second implementation of them:
+ * - create/message/redirect/stop/read/describe use sessionController.create, resolveAgent,
+ *   cancel, state and inspect, sessions.flush, agents.get, workspaceRegistry and the optional
+ *   sessionTitle service, exactly as src/messaging.js and src/session-info.js do;
+ * - the managed registry, the watch registry and the assistant session id come from the
+ *   `fishballSessionState` service the main Fishball row provides (index.js). Those registries
+ *   stay owned by that row: this port never writes Fishball's store and never keeps a second
+ *   managed or watch list. A missing service is refused with feature-off, so the native host can
+ *   still boot without the legacy row and the session operations simply do nothing.
+ *
+ * start runs create -> title -> model (when the caller named one) -> manage -> first delivery.
+ * It never creates a folder: bridge.js resolves the folder to an existing workspace or an
+ * existing absolute directory before this port is called (§5.2).
+ *
+ * Read messages carry the bridge's own projection (seq, role, author and image metadata) instead
+ * of read_session's untrusted-block shape; the role vocabulary and the per-event text helper are
+ * shared with src/session-info.js, and images are metadata only because T06 owns their transfer.
+ */
+import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { SessionTitleInvalidError } from '@deepseek-ai/dsh-session-title'
+import { ContractError, DELIVERY, ERROR, ROLE, WATCH_ERROR } from '../contract.js'
+import { MANAGED_BY, OPTIONAL_SERVICE, SESSION_INFO, SOURCE, TITLE_ERROR, WORKSPACE_ERROR } from '../../constants.js'
+import { describeSession, senderOf, textOfEvent } from '../../session-info.js'
+import { prepareSessionModel, applySessionModel } from '../../session-model.js'
+import { byteLength, cutToBytes } from '../../text.js'
+
+/**
+ * The service the main Fishball row provides for the registries the bridge cannot own. One
+ * constant, shared with index.js, so the provider and the port cannot drift apart.
+ */
+export const SESSION_STATE = Object.freeze({ service: 'fishballSessionState' })
+
+/** The service's own shape; index.js builds it from the row's live objects. */
+const STATE_METHODS = Object.freeze([
+  'assistantId', 'managedIds', 'isManaged', 'isFishball', 'manage', 'release', 'watch', 'watches', 'unwatch',
+])
+
+/** The main-DSH services every operation needs; a missing one is a wiring error, not a refusal. */
+const DSH_SERVICES = Object.freeze(['sessions', 'sessionController', 'agents', 'workspaceRegistry'])
+
+/** A passive state read takes a cancellation signal; the bridge's own request timeout is the bound. */
+const NEVER_ABORTED = new AbortController().signal
+
+/** The bridge summary never shows an excerpt, so describeSession needs no excerpt budget. */
+const SUMMARY_EXCERPT_BYTES = 0
+
+const LOG = 'fishball-session-port'
+const IMAGE_BLOCK = 'image'
+/** Watch refusals the contract's watchError vocabulary can carry (§5.2). */
+const WATCH_REFUSALS = new Set(Object.values(WATCH_ERROR))
+
+const stateOf = (ctx) => {
+  const found = ctx.get(SESSION_STATE.service)
+  if (found === undefined) throw new ContractError(ERROR.featureOff)
+  return found
+}
+
+/** One user message with Fishball as the sender, as src/messaging.js builds it. */
+function userMessageOf(text, assistantId) {
+  return createUserMessage({
+    content: [{ type: 'text', text }],
+    source: { ...SOURCE.relay, senderSessionId: assistantId },
+  })
+}
+
+/** The content blocks of a user or assistant message event. */
+const contentOf = (event) => (event.type === SESSION_INFO.assistantEvent ? event.data?.message?.content : event.data?.content)
+
+/** Image metadata the bridge may show; bytes are T06's, never this read's (§6.1). */
+function imagesOf(event) {
+  const content = contentOf(event)
+  if (!Array.isArray(content)) return []
+  const images = []
+  for (const block of content) {
+    if (block?.type !== IMAGE_BLOCK || block.attachment === undefined) continue
+    const { attachmentId, mediaType, width, height, bytes } = block.attachment
+    images.push({ attachmentId, mediaType, width, height, bytes })
+  }
+  return images
+}
+
+/**
+ * Who wrote one read message: the role vocabulary is session-info's, and the author names the
+ * concrete writer (the other session's id, the source kind) where the role alone cannot.
+ */
+function messageOf(event, text, assistantId) {
+  const role = event.type === SESSION_INFO.assistantEvent ? ROLE.assistant : senderOf(event.data?.source, assistantId)
+  const source = event.data?.source
+  const author = role === ROLE.agent && typeof source?.senderSessionId === 'string' && source.senderSessionId.length > 0
+    ? source.senderSessionId
+    : role === ROLE.context && typeof source?.kind === 'string' && source.kind.length > 0 ? source.kind : role
+  return { seq: event.seq, role, author, text, images: imagesOf(event) }
+}
+
+/**
+ * Create the port over a main-host Cordis context.
+ *
+ * @param {object} ctx - native-host row context (sessions, sessionController, agents, workspaceRegistry, get, logger).
+ * @param {object} [options]
+ * @param {() => boolean} [options.enabled] - the native host's own switch; the port also requires
+ *   the Fishball row's state service, so a bridge without the legacy row answers feature-off.
+ * @returns {SessionService} the object bridge.js validates and calls.
+ */
+export function createSessionPort(ctx, options = {}) {
+  const { enabled = () => true } = options ?? {}
+  if (!ctx || typeof ctx.get !== 'function') throw new TypeError('fishball-native-host: a Cordis context is required')
+  if (typeof enabled !== 'function') throw new TypeError('fishball-native-host: enabled must be a function')
+  for (const service of DSH_SERVICES) {
+    if (ctx[service] === undefined) throw new TypeError('fishball-native-host: missing service ' + service)
+  }
+  const logger = typeof ctx.logger === 'function' ? ctx.logger(LOG) : undefined
+  const state = () => {
+    const found = stateOf(ctx)
+    for (const method of STATE_METHODS) {
+      if (typeof found[method] !== 'function') throw new TypeError('fishball-native-host: the session state service must implement ' + method)
+    }
+    return found
+  }
+  const workspaces = () => ctx.workspaceRegistry.list()
+
+  /** The workspace a session belongs to, or null for an ungrouped session. */
+  const workspaceOf = (sessionId) => workspaces().find((workspace) => workspace.sessionIds.includes(sessionId))?.id ?? null
+
+  /** Events of a session: the live snapshot when attached, else DSH's cold inspection (session-info's rule). */
+  async function eventsOf(sessionId) {
+    const live = ctx.sessions.get(sessionId)
+    if (live !== undefined) return live.snapshotEvents()
+    return (await ctx.sessionController.inspect(sessionId)).events
+  }
+
+  /** Hand a message to a session's agent and flush it; false on the flush is unconfirmed, never failed. */
+  async function handOver(agent, text, assistantId, send) {
+    await send(agent, userMessageOf(text, assistantId))
+    let flushed = false
+    try { flushed = await ctx.sessions.flush(agent.session) === true } catch { /* Unconfirmed, not undelivered. */ }
+    return { status: flushed ? DELIVERY.delivered : DELIVERY.unconfirmed }
+  }
+
+  /** Resolve and deliver, as src/messaging.js's deliver does. A missing agent is a refusal, not a status. */
+  async function deliver(sessionId, text, send) {
+    const { assistantId } = state()
+    const resolved = await ctx.sessionController.resolveAgent(sessionId)
+    if (resolved.agent === undefined) throw new ContractError(ERROR.unknownSession)
+    return handOver(resolved.agent, text, assistantId(), send)
+  }
+
+  /**
+   * Create the session through DSH. DSH creates it first and adds it to the workspace second;
+   * when only that step fails the session exists (under Ungrouped), so it still starts with DSH's
+   * own code for the partial failure (src/messaging.js's rule).
+   */
+  async function createSession(target) {
+    try {
+      return { sessionId: (await ctx.sessionController.create(target)).sessionId }
+    } catch (error) {
+      const sessionId = error?.code === WORKSPACE_ERROR.dshCode ? error.details?.sessionId : undefined
+      if (typeof sessionId !== 'string' || sessionId.length === 0) throw new ContractError(ERROR.failed)
+      return { sessionId, workspaceError: WORKSPACE_ERROR.attachFailed }
+    }
+  }
+
+  /** Name the session; a title DSH refuses is reported, and the session still starts (§5.2). */
+  function nameSession(sessionId, title) {
+    const titles = ctx.get(OPTIONAL_SERVICE.sessionTitle)
+    if (titles === undefined) return { titleError: TITLE_ERROR.unavailable }
+    try {
+      return { title: titles.rename(ctx.sessions.get(sessionId), title).title }
+    } catch (error) {
+      if (error instanceof SessionTitleInvalidError) return { titleError: TITLE_ERROR.invalid }
+      logger?.warn('naming session %s failed (%s)', sessionId, error?.code ?? ERROR.failed)
+      return { titleError: TITLE_ERROR.failed }
+    }
+  }
+
+  /** Create -> title -> model -> manage -> first delivery; the contract has no field for a failed start delivery. */
+  async function start({ target, title, model, reasoningEffort, message }) {
+    const registry = state()
+    // Validate the model before anything is created, so a refused choice leaves no session behind.
+    const selection = await prepareSessionModel(ctx, model, reasoningEffort)
+    const created = await createSession(target)
+    const named = nameSession(created.sessionId, title)
+    if (selection !== undefined) await applySessionModel(ctx, created.sessionId, selection)
+    try {
+      await registry.manage(created.sessionId, MANAGED_BY.start)
+    } catch (error) {
+      logger?.warn('making session %s managed failed (%s)', created.sessionId, error?.code ?? ERROR.failed)
+    }
+    // manage() writes the store first; a throw after that write leaves the session managed, so
+    // the answer reports the registry's state rather than the call's outcome.
+    const managed = registry.isManaged(created.sessionId)
+    try {
+      await deliver(created.sessionId, message, (agent, input) => agent.steer(input))
+    } catch (error) {
+      logger?.warn('first delivery to %s failed (%s)', created.sessionId, error?.code ?? ERROR.failed)
+    }
+    return {
+      sessionId: created.sessionId,
+      managed,
+      ...(named.titleError === undefined ? {} : { titleError: named.titleError }),
+      ...(created.workspaceError === undefined ? {} : { workspaceError: created.workspaceError }),
+    }
+  }
+
+  /** One bounded read page, newest messages kept; reports whether the caller's bounds cut it. */
+  async function read({ sessionId, maxMessages, maxBytes }) {
+    const { assistantId } = state()
+    const events = await eventsOf(sessionId)
+    const messages = []
+    let used = 0
+    let truncated = false
+    for (let index = events.length - 1; index >= 0; index--) {
+      if (messages.length >= maxMessages) { truncated = true; break }
+      const event = events[index]
+      if (event.type !== SESSION_INFO.assistantEvent && event.type !== SESSION_INFO.userEvent) continue
+      const text = textOfEvent(event)
+      if (text.length === 0) continue
+      const room = maxBytes - used
+      // Too little room for even the ellipsis: stop rather than exceed the caller's bound.
+      if (room <= byteLength(SESSION_INFO.ellipsis)) { truncated = true; break }
+      const cut = cutToBytes(text, room, SESSION_INFO.ellipsis)
+      messages.unshift(messageOf(event, cut, assistantId()))
+      used += byteLength(cut)
+    }
+    return { messages, truncated }
+  }
+
+  const port = {
+    enabled: () => enabled() === true && ctx.get(SESSION_STATE.service) !== undefined,
+    managedIds: () => [...state().managedIds()],
+    isManaged: (sessionId) => state().isManaged(sessionId) === true,
+    isFishball: (sessionId) => state().isFishball(sessionId) === true,
+    async describe(sessionId) {
+      const info = await describeSession(ctx, sessionId, SUMMARY_EXCERPT_BYTES)
+      // An archived session is unknown to the bridge: its rows disappear with the archive (§5.2).
+      if (info === undefined || info.archived) return undefined
+      let running = false
+      let pendingInteraction = false
+      try {
+        const passive = await ctx.sessionController.state({ sessionId }, NEVER_ABORTED)
+        running = passive.running === true
+        pendingInteraction = Array.isArray(passive.pendingInput) && passive.pendingInput.length > 0
+      } catch { /* A missing passive state is not a missing session. */ }
+      return { sessionId, title: info.title, workspaceId: workspaceOf(sessionId), running, pendingInteraction }
+    },
+    workspaces: () => workspaces().map((workspace) => ({ id: workspace.id, path: workspace.path })),
+    async resolveWorkspacePath(path) {
+      const found = await ctx.workspaceRegistry.resolveByPath(path)
+      return found === undefined ? undefined : { id: found.id }
+    },
+    start,
+    message: ({ sessionId, message }) => deliver(sessionId, message, (agent, input) => agent.steer(input)),
+    redirect: ({ sessionId, message }) => deliver(sessionId, message, async (agent, input) => {
+      // The Stop button's path, then the instruction as the next turn (src/messaging.js).
+      await ctx.sessionController.cancel({ sessionId })
+      agent.followup(input)
+    }),
+    async stop({ sessionId }) {
+      // An idle session has no live agent and nothing to stop; DSH's cancel is the Stop button.
+      if (ctx.agents.get(sessionId) !== undefined) await ctx.sessionController.cancel({ sessionId })
+    },
+    read,
+    async watch({ sessionId, mode }) {
+      try {
+        return { watchId: (await state().watch({ sessionId, mode })).id }
+      } catch (error) {
+        // A watch refusal is typed data in the §5.2 response, not an error frame.
+        if (typeof error?.code === 'string' && WATCH_REFUSALS.has(error.code)) return { watchError: error.code }
+        throw error
+      }
+    },
+    async watches() {
+      return state().watches().map((watch) => ({ watchId: watch.id, sessionId: watch.targetSessionId, mode: watch.mode, status: watch.status }))
+    },
+    async unwatch({ watchId }) {
+      try { await state().unwatch(watchId) } catch (error) {
+        // Closing is idempotent (§5.2): an unknown id closes nothing.
+        if (error?.code !== WATCH_ERROR.unknownWatch) throw error
+      }
+    },
+    release: ({ sessionId, reason }) => state().release(sessionId, reason),
+  }
+  return Object.freeze(port)
+}

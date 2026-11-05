@@ -24,6 +24,7 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { createAppServer } from './server.js'
 import { createAuthority } from './auth.js'
+import { createReminders } from './reminders.js'
 
 /** Stable Cordis plugin name; T02's overlay row id is the same string (§2.3). */
 export const name = 'fishball-native-app'
@@ -31,6 +32,13 @@ export const name = 'fishball-native-app'
 const APP = Object.freeze({
   service: 'fishballApp',
   logger: 'fishball-native-app',
+  /**
+   * T07's chat row will publish the agent resolver the Schedule runtime needs to deliver into
+   * Fishball's existing Session (schedule/resolve-agent). It does not exist yet, so the seam is
+   * read now and simply absent: reminders still list and cancel, and only a delivery into an
+   * existing Session fails until T07 mounts the chat row and provides it.
+   */
+  chatService: 'fishballChat',
 })
 
 /**
@@ -42,10 +50,16 @@ const APP = Object.freeze({
 export async function apply(ctx) {
   const document = await readFile(fileURLToPath(new URL('../ui/shell.html', import.meta.url)))
   const authority = createAuthority()
+  // The resolver is optional until T07 provides it; createReminders validates what it gets.
+  // The wrapper keeps the chat service as `this`, so a Cordis service proxy sees its caller.
+  const chat = ctx.get(APP.chatService)
+  const resolveAgent = typeof chat?.resolveAgent === 'function' ? (sessionId, next) => chat.resolveAgent(sessionId, next) : undefined
+  const reminders = createReminders(ctx, resolveAgent === undefined ? {} : { resolveAgent })
   const server = createAppServer({
     authority,
     document,
     uiDir: fileURLToPath(new URL('../ui/', import.meta.url)),
+    reminders,
   })
   await server.start()
   ctx.effect(() => () => server.close(), name + ': loopback server')

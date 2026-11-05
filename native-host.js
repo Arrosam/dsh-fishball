@@ -1,16 +1,17 @@
 /** Native lifecycle host: enabled on appReady; failure never aborts main boot. */
 import Schema from '@deepseek-ai/schemastery'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
 import { LIFETIME } from './src/native-runtime/constants.js'
-import { CONTROL, ControlError, DEFAULT_CONTROL_LIMITS } from './src/native-control/index.js'
-import { createNativeHostAdapter, NATIVE_HOST } from './src/native-host-adapter.js'
+import { DEFAULT_CONTROL_LIMITS } from './src/native-control/index.js'
 import { registerNativeWeb } from './src/native-web.js'
 import { registerEmbed } from './src/slim/host/embed.js'
+import { ContractError, ERROR } from './src/slim/contract.js'
+import { createBridgeHost } from './src/slim/host/bridge.js'
+import { createSessionPort } from './src/slim/host/session-port.js'
 
 const PLUGIN = Object.freeze({
   name: 'fishball-native-host', service: 'nativeFishballRuntime',
-  dependencies: ['profileContext', 'workspaceRegistry', 'sessions', 'sessionController', 'appReady', 'connection', 'webServer'],
+  dependencies: ['profileContext', 'workspaceRegistry', 'sessions', 'sessionController', 'agents', 'appReady', 'connection', 'webServer'],
   cleanup: 'fishball native host: stop owned child and retain private data',
   minimumLimit: 1,
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
@@ -26,11 +27,14 @@ export const Config = Schema.object({
   enabled: Schema.boolean().default(true).description('Start the private native child after main appReady. Disable to stop it; private data is retained.'),
   nodeExecutable: Schema.string().required().description('Explicit absolute plain Node executable; never infer from Electron or PATH.'),
   executableSearchPath: Schema.string().required().description('Private PATH with absolute components only.'),
-  managedSessionIds: Schema.array(Schema.string()).default([]).volatile().description('Exact locally authorized session IDs; empty denies every host session.'),
+  // Kept for configuration compatibility only: the slim bridge authorizes a session through the
+  // main Fishball row's managed registry (§5.2), not through this v1 allowlist. T15 retires it.
+  managedSessionIds: Schema.array(Schema.string()).default([]).volatile().description('Retained for configuration compatibility; the slim bridge uses the main Fishball row\'s managed sessions.'),
   limits: limitSchema(RUNTIME_LIMITS),
+  // The v1 control row no longer mounts; the bridge keeps its own ceilings (src/slim/host/bridge.js).
+  // The key stays accepted so an installed profile config keeps loading.
   controlLimits: limitSchema(DEFAULT_CONTROL_LIMITS),
 })
-const readValue = value => typeof value?.get === 'function' ? value.get() : value
 const unavailable = code => Object.assign(new Error(code), { code })
 function bounded(promise, milliseconds) {
   let timer
@@ -54,8 +58,9 @@ export async function apply(ctx, config) {
   let cancelReady = () => {}
   const hosts = new Map()
   let connection
-  let currentHost
   let unsubscribe = () => {}
+  /** The bridge's session service: the main Fishball row's registries plus the DSH services its tools use. */
+  let sessions
   const status = () => ({ enabled, state, code })
   const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
   const key = ctx.profileContext.home
@@ -64,6 +69,9 @@ export async function apply(ctx, config) {
   const barrier = predecessor ? predecessor.shutdown() : Promise.resolve()
   barrier.catch(() => { if (!closed) set(PLUGIN.state.failed, PLUGIN.code.stop) })
   try {
+    // Created once per host row and shared by every host object; a wiring failure is a native
+    // failure, never a main-boot failure (the catch below keeps the row unready).
+    sessions = createSessionPort(ctx, { enabled: () => enabled && !closed })
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
       nodeExecutable: config.nodeExecutable, executableSearchPath: config.executableSearchPath,
@@ -75,17 +83,18 @@ export async function apply(ctx, config) {
       control: { limits: config.controlLimits },
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
-    unsubscribe = owner.onControlTransport((transport, { hostId, instanceId, connectionId }) => {
+    // One authenticated control transport, one envelope-v2 bridge. The v1 control row is gone,
+    // so a foreign frame can no longer close the wire (src/slim/host/bridge.js's receive rule).
+    unsubscribe = owner.onControlTransport((transport, { hostId, connectionId }) => {
       if (closed) throw unavailable(PLUGIN.code.unavailable)
-      if (hostId !== owner.hostId || typeof instanceId !== 'string' || !instanceId) throw new ControlError(CONTROL.error.host)
+      if (hostId !== owner.hostId) throw new ContractError(ERROR.host)
       let host = hosts.get(hostId)
       if (!host) {
-        host = createNativeHostAdapter(ctx, { hostId, managedSessionIds: () => readValue(config.managedSessionIds) ?? [], limits: config.controlLimits }, { createUserMessage })
+        host = createBridgeHost({ hostId, sessions })
         hosts.set(hostId, host)
       }
       connection?.close()
-      connection = host.attach(transport, { connectionId, principalId: NATIVE_HOST.principalId })
-      currentHost = host
+      connection = host.attach(transport, { connectionId })
     })
   } catch { set(PLUGIN.state.failed, PLUGIN.code.failed) }
 
@@ -126,7 +135,7 @@ export async function apply(ctx, config) {
     cancelReady()
     unsubscribe()
     for (const host of hosts.values()) host.close()
-    hosts.clear(); currentHost = undefined; connection = undefined
+    hosts.clear(); connection = undefined
     set(PLUGIN.state.stopping)
     // Do not swallow here: HMR successor awaits confirmed teardown, not a UI status.
     disposal = (async () => {
@@ -163,10 +172,8 @@ export async function apply(ctx, config) {
     },
     // The embed broker reads the child origin and bearer from main-process memory only (§3.2).
     embedAccess: () => owner.embedAccess(),
-    registerApproval(input) {
-      if (closed || !currentHost) throw new ControlError(CONTROL.error.disconnected)
-      return currentHost.registerApproval(input)
-    },
+    // Approvals, questions, prompts, grants and attachments stay unregistered on the bridge until
+    // T09/T06 register their handlers; the bridge answers unsupported-operation (§5.2).
   })
   ctx.provide(PLUGIN.service, service)
   registerEmbed(ctx, service)
