@@ -6,6 +6,8 @@ import { DEFAULT_CONTROL_LIMITS } from './src/native-control/index.js'
 import { registerNativeWeb } from './src/native-web.js'
 import { registerEmbed } from './src/slim/host/embed.js'
 import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
+import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes.js'
+import { createChildProviderSync } from './src/provider-sync-service.js'
 import { ContractError, ERROR } from './src/slim/contract.js'
 import { createBridgeHost } from './src/slim/host/bridge.js'
 import { createSessionPort } from './src/slim/host/session-port.js'
@@ -63,10 +65,13 @@ export async function apply(ctx, config) {
   let connection
   let unsubscribe = () => {}
   let unsubscribeAdmin = () => {}
+  let unsubscribeProviderSync = () => {}
   /** The bridge's session service: the main Fishball row's registries plus the DSH services its tools use. */
   let sessions
   /** T09's approval/question/prompt/grant operations and the cards they offer the child. */
   let approvals
+  /** T16's source side: preview/confirm against the child's own provider-sync target. */
+  let providerSync
   const status = () => ({ enabled, state, code })
   const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
   // T11's admin relay. Every page operation except status and restart travels to the child over
@@ -84,6 +89,9 @@ export async function apply(ctx, config) {
     // failure, never a main-boot failure (the catch below keeps the row unready).
     sessions = createSessionPort(ctx, { enabled: () => enabled && !closed })
     approvals = createApprovalRelay({ ctx, sessions })
+    // T16: the child is the sync target. The source host reads the main profile's selected
+    // API-key records only inside a confirmed import; the page never sees a value (§10).
+    providerSync = createChildProviderSync({ ctx })
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
       nodeExecutable: config.nodeExecutable, executableSearchPath: config.executableSearchPath,
@@ -114,6 +122,13 @@ export async function apply(ctx, config) {
     // The admin transport comes up with each authenticated wire (and again after a restart); the
     // relay replaces whatever it held, so a reply can never cross instances.
     unsubscribeAdmin = owner.onAdminTransport((transport) => { if (!closed) admin.attach(transport) })
+    // T16's provider-sync transport comes up on the same authenticated wire; a replaced
+    // transport rejects whatever was in flight (the child restarted, so an answer is never
+    // retried and the page starts a fresh preview).
+    unsubscribeProviderSync = owner.onProviderSyncTransport((transport, metadata) => {
+      if (closed) return
+      try { providerSync.attach(transport, metadata) } catch { /* the next wire replaces it */ }
+    })
   } catch { set(PLUGIN.state.failed, PLUGIN.code.failed) }
 
   async function start() {
@@ -158,8 +173,10 @@ export async function apply(ctx, config) {
     cancelReady()
     unsubscribe()
     unsubscribeAdmin()
+    unsubscribeProviderSync()
     admin.close()
     approvals?.close()
+    providerSync?.close()
     for (const host of hosts.values()) host.close()
     hosts.clear(); connection = undefined
     set(PLUGIN.state.stopping)
@@ -189,6 +206,8 @@ export async function apply(ctx, config) {
     status, start, stop, restart,
     // T12's settings routes reach the child only through this relay (§9).
     admin,
+    // T16's provider-sync page API: status / preview / confirm (§10).
+    providerSync,
     async health() {
       if (closed || !owner || state !== PLUGIN.state.ready) return status()
       try {
@@ -207,6 +226,9 @@ export async function apply(ctx, config) {
   registerEmbed(ctx, service)
   // T12's settings page reaches the child only through the admin relay (§9).
   registerAdminRoutes(ctx, service)
+  // T16's provider-sync routes sit beside the admin routes and are subject to the same
+  // owner-only Fetch registry and same-origin fence (§10).
+  registerProviderSyncRoutes(ctx, service)
   registerNativeWeb(ctx, service)
   cancelReady = ctx.appReady.onReady(() => { appReady = true; if (enabled && !closed) void start() })
 }

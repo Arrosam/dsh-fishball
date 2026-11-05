@@ -73,6 +73,52 @@ export const APPROVALS = Object.freeze({
 })
 
 /**
+ * The chat view's HTTP seam (§8.1; T07 renders it). One page read and one answer write, served
+ * by the child app's generic JSON hook (src/slim/child/server.js). The page is a snapshot, not
+ * a diff, and the `approvals` SSE event only says "re-read"; the view therefore cannot drift
+ * from what this module holds, and a reconnect loses nothing.
+ *
+ * The answer route is action-selected and exact-key: a card answer names the offer it saw
+ * (the host refuses a stale one), a question answer carries DSH's batch, and Fishball's own
+ * question is answered locally. A wrong shape is the API's own 400, never a thrown handler.
+ */
+export const APPROVALS_API = Object.freeze({
+  /** The same SSE event name the service publishes under. */
+  event: APPROVALS.event,
+  /** The child's unprefixed tails; the broker adds /fishball/embed in front (§3.1). */
+  path: '/api/approvals',
+  answerPath: '/api/approvals/answer',
+  pageMethods: Object.freeze(['GET', 'HEAD']),
+  answerMethods: Object.freeze(['POST']),
+  action: Object.freeze({ approval: 'approval', question: 'question', own: 'own' }),
+  status: Object.freeze({ ok: 200, badRequest: 400, notFound: 404 }),
+  code: Object.freeze({ invalid: 'invalid-input', notFound: 'not-found' }),
+  /** Card and question ids are opaque DSH strings; this only keeps one frame readable. */
+  idChars: 128,
+  copy: Object.freeze({
+    invalid: 'The approvals request is invalid.',
+    notFound: 'That approvals route does not exist.',
+  }),
+})
+
+/** Exact answer-body key sets; any key beyond the action's own names is refused. */
+const ANSWER_KEYS = Object.freeze({
+  [APPROVALS_API.action.approval]: Object.freeze(['action', 'approvalId', 'offerId', 'decision', 'risk', 'reason', 'question', 'grant']),
+  [APPROVALS_API.action.question]: Object.freeze(['action', 'questionId', 'answers', 'approve', 'feedback', 'toUser', 'note']),
+  [APPROVALS_API.action.own]: Object.freeze(['action', 'questionId', 'answers', 'approve', 'feedback']),
+})
+
+/**
+ * Fishball's own tool approvals (§8.4, D8). Its session is hard-wired read-only and this UI has
+ * no permission control, so no card can be answered here; without an answerer DSH's approval
+ * service would fall through to its fail-closed default. Registering the refusal explicitly
+ * keeps the outcome deterministic (the tool sees a rejection, not a missing channel) and keeps
+ * the request from waiting on a surface the child does not have. A future local answerer may
+ * prepend its own listener and win, because this one is registered last.
+ */
+const OWN_APPROVAL = Object.freeze({ waterfall: 'approval/request', outcome: 'rejected' })
+
+/**
  * The inbox marker for a question answer the user gave on the main DSH (§5.2, T09). The host
  * writes it with `text`; the child parses it and returns false for every other inbox item, so
  * the chat row's own consumer still owns those. Shared with src/slim/host/approvals.js.
@@ -323,6 +369,88 @@ function ownBatch(questions, { answers, approve, feedback }) {
       const custom = trimmed(item.custom)
       return { id: question.id, selected: [...item.selected], ...(custom === '' ? {} : { custom }) }
     }),
+  }
+}
+
+
+const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
+const isText = (value, max) => typeof value === 'string' && value !== '' && [...value].length <= max
+const optionalText = (value, max) => value === undefined || isText(value, max)
+const answersValue = (value) => {
+  if (!Array.isArray(value) || value.length > LIMITS.questionsPerRequest) return false
+  for (const item of value) {
+    if (!isRecord(item) || typeof item.id !== 'string' || item.id === '') return false
+    for (const key of Object.keys(item)) if (key !== 'id' && key !== 'selected' && key !== 'custom') return false
+    if (!Array.isArray(item.selected) || item.selected.length > LIMITS.selectedLabelsPerAnswer) return false
+    if (!item.selected.every((label) => isText(label, LIMITS.labelChars))) return false
+    if (!optionalText(item.custom, LIMITS.customChars)) return false
+  }
+  return true
+}
+const grantValue = (value) => {
+  if (!isRecord(value)) return false
+  for (const key of Object.keys(value)) if (key !== 'kind' && key !== 'prefix' && key !== 'expires_at') return false
+  if (value.kind !== GRANT_KIND.exact && value.kind !== GRANT_KIND.prefix) return false
+  if (!optionalText(value.prefix, LIMITS.grantPrefixChars)) return false
+  return typeof value.expires_at === 'string' && value.expires_at !== ''
+}
+
+/**
+ * Validate one answer body against its action's exact keys and the answer caps. A JSON body is
+ * untrusted input from the page, so the route refuses a wrong shape before the service (whose
+ * own rules then decide whether the card is still live).
+ *
+ * @returns {{action: string, args: object} | undefined}
+ */
+function parseAnswer(body) {
+  if (!isRecord(body) || typeof body.action !== 'string') return undefined
+  const allowed = ANSWER_KEYS[body.action]
+  if (allowed === undefined) return undefined
+  for (const key of Object.keys(body)) if (!allowed.includes(key)) return undefined
+  if (body.action === APPROVALS_API.action.approval) {
+    if (!isText(body.approvalId, APPROVALS_API.idChars) || !isText(body.offerId, APPROVALS_API.idChars)) return undefined
+    if (!Object.values(DECISION).includes(body.decision)) return undefined
+    if (body.risk !== undefined && !Object.values(RISK).includes(body.risk)) return undefined
+    if (!optionalText(body.reason, LIMITS.reasonChars) || !optionalText(body.question, LIMITS.questionChars)) return undefined
+    if (body.grant !== undefined && !grantValue(body.grant)) return undefined
+    return {
+      action: body.action,
+      args: {
+        approvalId: body.approvalId, offerId: body.offerId, decision: body.decision,
+        ...(body.risk === undefined ? {} : { risk: body.risk }),
+        ...(body.reason === undefined ? {} : { reason: body.reason }),
+        ...(body.question === undefined ? {} : { question: body.question }),
+        ...(body.grant === undefined ? {} : { grant: body.grant }),
+      },
+    }
+  }
+  if (!isText(body.questionId, APPROVALS_API.idChars)) return undefined
+  if (body.answers !== undefined && !answersValue(body.answers)) return undefined
+  if (body.approve !== undefined && typeof body.approve !== 'boolean') return undefined
+  if (!optionalText(body.feedback, LIMITS.feedbackChars)) return undefined
+  if (body.action === APPROVALS_API.action.own) {
+    return {
+      action: body.action,
+      args: {
+        questionId: body.questionId,
+        ...(body.answers === undefined ? {} : { answers: body.answers }),
+        ...(body.approve === undefined ? {} : { approve: body.approve }),
+        ...(body.feedback === undefined ? {} : { feedback: body.feedback }),
+      },
+    }
+  }
+  if (body.toUser !== undefined && typeof body.toUser !== 'boolean') return undefined
+  if (!optionalText(body.note, LIMITS.noteChars)) return undefined
+  return {
+    action: body.action,
+    args: {
+      questionId: body.questionId,
+      ...(body.answers === undefined ? {} : { answers: body.answers }),
+      ...(body.approve === undefined ? {} : { approve: body.approve }),
+      ...(body.feedback === undefined ? {} : { feedback: body.feedback }),
+      ...(body.toUser === undefined ? {} : { toUser: body.toUser }),
+      ...(body.note === undefined ? {} : { note: body.note }),
+    },
   }
 }
 
@@ -616,12 +744,61 @@ export function apply(ctx) {
   /** The same refusal mapping for the UI seam, whose callers pass no tool arguments. */
   const run = (body) => guard(body)({})
 
+  /**
+   * Serve one approvals route for the child app's JSON hook. A typed answer refusal is a normal
+   * 200 result (the service's {ok:false, code}); only a malformed body or a wrong method is the
+   * route's own 400, so the chat view can show the host's reason instead of a network error.
+   */
+  async function handle(route, request) {
+    if (route === APPROVALS_API.path) {
+      if (!APPROVALS_API.pageMethods.includes(request.method)) return refusalOfAnswer()
+      return { status: APPROVALS_API.status.ok, body: approvalsPage() }
+    }
+    if (route !== APPROVALS_API.answerPath) {
+      return {
+        status: APPROVALS_API.status.notFound,
+        body: { ok: false, code: APPROVALS_API.code.notFound, message: APPROVALS_API.copy.notFound },
+      }
+    }
+    if (!APPROVALS_API.answerMethods.includes(request.method)) return refusalOfAnswer()
+    const parsed = parseAnswer(request.body)
+    if (parsed === undefined) return refusalOfAnswer()
+    try {
+      const args = parsed.args
+      const result = parsed.action === APPROVALS_API.action.approval
+        ? await api.answerApproval(args)
+        : parsed.action === APPROVALS_API.action.question ? await api.answerQuestion(args) : api.answerOwnQuestion(args)
+      return { status: APPROVALS_API.status.ok, body: result }
+    } catch (error) {
+      return {
+        status: APPROVALS_API.status.ok,
+        body: refused(error instanceof ContractError ? error.code : ERROR.failed),
+      }
+    }
+  }
+
+  /** The chat view's page read: one snapshot of every surface the child holds. */
+  function approvalsPage() {
+    return {
+      cards: [...state.cards.values()].sort(byAt),
+      questions: api.questions(),
+      labels: [...state.labels.values()].sort(byAt),
+      answers: [...state.answers].sort(byAt),
+    }
+  }
+
+  const refusalOfAnswer = () => ({
+    status: APPROVALS_API.status.badRequest,
+    body: { ok: false, code: APPROVALS_API.code.invalid, message: APPROVALS_API.copy.invalid },
+  })
+
   const service = Object.freeze({
     event: APPROVALS.event,
     cards: () => [...state.cards.values()].sort(byAt),
     questions: () => api.questions(),
     labels: () => [...state.labels.values()].sort(byAt),
     answers: () => [...state.answers].sort(byAt),
+    handle,
     answerApproval: (input) => run(() => api.answerApproval(input)),
     answerQuestion: (input) => run(() => api.answerQuestion(input)),
     answerPrompt: (input) => run(() => api.answerPrompt(input)),
@@ -656,6 +833,10 @@ export function apply(ctx) {
   }))
   disposers.push(bridge.onInbox((item) => receiveAnswer(item)))
   disposers.push(ctx.on(QUESTION.waterfall, (request, next) => askUser(request, next), { prepend: true }))
+  // Fishball's own tool approvals have no card UI in this child; without a listener DSH falls
+  // through to its fail-closed default. This explicit refusal is deterministic and can be
+  // overridden by a future local answerer that prepends its own listener (D8).
+  disposers.push(ctx.on(OWN_APPROVAL.waterfall, () => OWN_APPROVAL.outcome))
   try {
     for (const definition of definitions(api, guard)) registrations.push(ctx.tools.register(defineTool(definition)))
   } catch (error) {

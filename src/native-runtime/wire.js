@@ -6,13 +6,16 @@ import { RUNTIME, NativeRuntimeError, fail } from './constants.js'
 /**
  * Payload channels that ride the authenticated lifecycle wire beside its own operations. Each
  * carries one JSON string per frame: the session bridge owns `control` exclusively
- * (src/slim/host/bridge.js, src/slim/child/bridge.js), and the T11 admin protocol owns `admin`
- * (`ADMIN.channel` in src/slim/child/admin.js). Any other channel still closes the connection,
- * so this list is the wire's protocol, not an open tunnel.
+ * (src/slim/host/bridge.js, src/slim/child/bridge.js), the T11 admin protocol owns `admin`
+ * (`ADMIN.channel` in src/slim/child/admin.js), and T16's provider-sync target owns
+ * `provider-sync` (`PROVIDER_SYNC_TARGET.channel` in src/slim/child/provider-sync-target.js).
+ * Any other channel still closes the connection, so this list is the wire's protocol, not an
+ * open tunnel.
  */
 const PAYLOAD_CHANNEL = Object.freeze({
   control: Object.freeze({ name: 'control', invalidFrame: 'INVALID_CONTROL_FRAME', ownsClose: true }),
   admin: Object.freeze({ name: 'admin', invalidFrame: 'INVALID_ADMIN_FRAME', ownsClose: false }),
+  providerSync: Object.freeze({ name: 'provider-sync', invalidFrame: 'INVALID_PROVIDER_SYNC_FRAME', ownsClose: false }),
 })
 
 export function proof(secret, role, identity, challenge) {
@@ -125,6 +128,12 @@ export class Wire extends EventEmitter {
    * must never drop delivery.
    */
   adminTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.admin.name)) }
+  /**
+   * T16's provider-sync channel: the same authenticated wire, its own payload channel, and no
+   * `close` for the same reason as the admin channel — the session bridge and lifecycle share
+   * this wire, so a sync problem must never drop delivery.
+   */
+  providerSyncTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.providerSync.name)) }
   close() { this.socket.destroy() }
 }
 

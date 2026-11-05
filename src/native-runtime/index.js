@@ -22,6 +22,8 @@ class NativeRuntime {
     this.listeners = new Set()
     // The T11 admin channel is attached once per authenticated wire, beside the control transport.
     this.adminListeners = new Set()
+    // T16's provider-sync channel rides the same wire on its own payload channel.
+    this.providerSyncListeners = new Set()
     this.pending = Promise.resolve()
     this.warnings = []
     this.paths = pathsFor(options.mainHome)
@@ -40,6 +42,16 @@ class NativeRuntime {
     this.adminListeners.add(listener)
     if (this.admin && !this.admin.wire.closed) listener(this.admin.transport)
     return () => this.adminListeners.delete(listener)
+  }
+  /**
+   * The provider-sync transport of the attached wire (T16). Its frames are authenticated by the
+   * same mutual HMAC proof as every lifecycle request; the instance id is offered beside the
+   * transport so the host's bridge can name the child a preview belongs to.
+   */
+  onProviderSyncTransport(listener) {
+    this.providerSyncListeners.add(listener)
+    if (this.providerSync && !this.providerSync.wire.closed) listener(this.providerSync.transport, this.providerSync.metadata)
+    return () => this.providerSyncListeners.delete(listener)
   }
   serial(action) {
     const next = this.pending.then(action, action)
@@ -170,6 +182,7 @@ class NativeRuntime {
     this.control?.wire.close()
     this.control = undefined
     this.admin = undefined
+    this.providerSync = undefined
   }
   async attach(record) {
     if (this.control && !this.control.wire.closed && this.control.metadata.instanceId === record.instanceId) return
@@ -181,10 +194,14 @@ class NativeRuntime {
       // The admin channel is the same authenticated wire, so it comes up with the control
       // transport and never adds an operation to health, readiness or stop.
       const admin = wire.adminTransport()
+      // T16's provider-sync target comes up with the control transport on the same wire.
+      const providerSync = wire.providerSyncTransport()
       this.control = { wire, transport, metadata }
       this.admin = { wire, transport: admin }
+      this.providerSync = { wire, transport: providerSync, metadata: { instanceId: metadata.instanceId } }
       for (const listener of this.listeners) listener(transport, metadata)
       for (const listener of this.adminListeners) listener(admin)
+      for (const listener of this.providerSyncListeners) listener(providerSync, this.providerSync.metadata)
     } catch (error) { wire.close(); throw error }
   }
   async startInternal(signal) {

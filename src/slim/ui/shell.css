@@ -320,6 +320,75 @@ button, select, textarea { font: inherit; }
 }
 .entry-user .fb-attachment-preview { align-self: flex-end; }
 
+/* T09's approvals in the chat (T07 renders): live cards, decision labels and own questions. */
+.entry-card, .entry-decision, .entry-question { align-items: stretch; }
+.decision {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  padding: 7px 10px;
+}
+.decision-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.decision-kind { font-weight: 600; overflow-wrap: anywhere; }
+.decision-status { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.decision-title { overflow-wrap: anywhere; }
+.decision-body { display: flex; flex-direction: column; gap: 6px; padding-top: 7px; font-size: 13px; }
+.decision-detail, .decision-note { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+.decision-error { margin: 0; color: var(--danger); }
+.decision-quote {
+  margin: 0;
+  padding: 4px 0 4px 10px;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.decision-choices, .decision-options, .decision-questions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.decision-choice, .decision-option { overflow-wrap: anywhere; }
+.decision-choice::before { content: "• "; color: var(--muted); }
+.decision-option { display: flex; align-items: flex-start; gap: 6px; }
+.decision-question { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 5px; }
+.decision-question legend { padding: 0; font-weight: 600; }
+.decision-question-text { margin: 0; overflow-wrap: anywhere; }
+.decision-custom {
+  width: 100%;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+.decision-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.decision-actions button {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.decision-actions button:hover:not(:disabled) { background: var(--surface-2); }
+.decision-actions button:disabled { opacity: 0.55; cursor: default; }
+.entry-answer .entry-text {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--ok) 9%, var(--surface));
+  border-color: color-mix(in srgb, var(--ok) 28%, var(--line));
+  font-size: 13px;
+}
+
 /* The reminder view (T10); it owns its classes, this file only places them. */
 .reminders { display: flex; flex-direction: column; gap: 6px; }
 .reminders-heading { margin: 0; font-size: 13px; font-weight: 600; }

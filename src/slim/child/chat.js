@@ -40,7 +40,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
-import { LIMITS, ROUTES } from '../contract.js'
+import { ERROR, LIMITS, ROUTES } from '../contract.js'
 
 /** The child serves the contract's /api/* tails; the broker adds /fishball/embed in front (3.1). */
 const API = (tail) => ROUTES.api.slice(ROUTES.prefix.length) + tail
@@ -516,7 +516,10 @@ export function createChat(ctx, options = {}) {
         blocks = await images.blocks(attachments)
       } catch (error) {
         if (error?.name === 'ContractError' && typeof error.code === 'string') {
-          throw new ChatApiError(error.code, MESSAGE.invalid)
+          // The chat API's own vocabulary: an oversize attachment is 400/too-large, a bad ref
+          // is 400/invalid; the bridge's transfer codes stay inside the child.
+          if (error.code === ERROR.tooLarge) throw new ChatApiError(CHAT_ERROR.tooLarge, MESSAGE.tooLarge)
+          throw new ChatApiError(CHAT_ERROR.invalid, MESSAGE.invalid)
         }
         throw error
       }

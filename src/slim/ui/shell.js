@@ -1,14 +1,16 @@
 /**
  * The slim shell's composition root (T07).
  *
- * It owns the page's one EventSource and wires the two views that live inside the child app:
- * the chat (this task) and the reminder list (T10). The chat view receives each SSE chat frame;
- * the reminder view re-reads its list when the child says reminders changed, so neither view
- * opens a second stream (Section 3.6).
+ * It owns the page's one EventSource and wires the views that live inside the child app: the
+ * chat (T07), the reminder list (T10) and the approvals view inside the chat (T09). The chat
+ * view receives each SSE chat frame; the reminder view re-reads its list when the child says
+ * reminders changed; the approvals view re-reads its snapshot on its own event, so no view opens
+ * a second stream (Section 3.6).
  *
  * Everything here is a same-origin /ui/ file: the CSP (default-src 'self') admits no inline
  * script or style, and the relative URLs keep the same page working under the broker.
  */
+import { APPROVALS_EVENT } from './approvals.js'
 import { createChatView } from './chat.js'
 import { createRemindersView } from './reminders.js'
 
@@ -50,6 +52,10 @@ events.addEventListener('open', () => {
 events.addEventListener('error', () => show('reconnecting'))
 
 events.addEventListener('reminders', () => { void reminders.refresh() })
+
+// The approvals event says only "something changed"; the view re-reads its snapshot, so the
+// card the user is typing into is left alone unless the child's data actually changed.
+events.addEventListener(APPROVALS_EVENT, () => { void chat.refreshApprovals() })
 
 events.addEventListener('chat', (event) => {
   let payload

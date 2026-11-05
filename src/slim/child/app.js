@@ -42,6 +42,8 @@ const APP = Object.freeze({
   chatService: 'fishballChat',
   /** T06's image service: the upload route and the chat's attachment blocks read it. */
   imagesService: 'fishballImages',
+  /** T09's approval bridge: its cards, labels, answers and the one answer route. */
+  approvalsService: 'fishballApprovals',
 })
 
 /**
@@ -72,6 +74,10 @@ export async function apply(ctx) {
   // The image service (T06) is created here, not mounted as its own row: the app row owns the
   // loopback upload route and the chat's own store reads, and both share this one store client.
   const images = mountImages(ctx)
+  // The approvals row is mounted by the lifecycle row before this one, so its service is
+  // provided by now. A composition without it still serves the chat; only /api/approvals is 404.
+  const approvals = ctx.get(APP.approvalsService)
+  if (approvals === undefined) ctx.logger(APP.logger).warn('the approval bridge is unavailable; /api/approvals is not served')
   // The chat row owns the one Session and publishes the two ports other rows read: the
   // Schedule runtime's resolver and the admin service's live-model applier (T10, T11).
   const chat = createChat(ctx, { images })
@@ -86,6 +92,7 @@ export async function apply(ctx) {
     reminders,
     chat,
     images,
+    approvals,
   })
   await server.start()
   ctx.effect(() => () => server.close(), name + ': loopback server')
