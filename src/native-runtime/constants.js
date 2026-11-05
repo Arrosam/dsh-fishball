@@ -10,6 +10,10 @@ export const RUNTIME = Object.freeze({
     // rewrites an existing manifest. The slim child must not run that Web UI, so its bundle is
     // dropped on start; every bundle the owner installed later is kept (§2.1, §2.3).
     legacyBundle: '@deepseek-ai/dsh-web-app',
+    manifest: 'package.json',
+    // The migration keeps the replaced manifest beside it as `package.json.pre-slim-<UTC time>`,
+    // so a rollback to the old build can restore its bundles from the child home itself.
+    manifestBackupInfix: '.pre-slim-',
   }),
   codeSnapshotPrefix: '.fishball-native-',
   host: '127.0.0.1',
