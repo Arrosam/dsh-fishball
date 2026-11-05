@@ -43,7 +43,6 @@ import { AssistantComposition } from './src/composition.js'
 import { CatalogError, PluginCatalog, fishballInstalledKey } from './src/plugin-catalog.js'
 import { ContextWindow } from './src/context-window.js'
 import { ModelSelection } from './src/model-selection.js'
-import { registerProviderSync } from './src/provider-sync-service.js'
 import { IntakeError, IntakeLedger } from './src/intake.js'
 import { MESSAGING_TOOL, registerInbound, registerOutbound, SOURCE_ID } from './src/messaging.js'
 import { MANAGED_TOOL, ManagedError, ManagedRegistry } from './src/managed.js'
@@ -99,7 +98,6 @@ const OWN_TOOL_PLUGIN = new Map([
 const unavailable = () => Promise.reject(new LifecycleStateError(API_CODE.unavailable))
 
 export async function apply(ctx, config) {
-  registerProviderSync(ctx)
   const logger = ctx.logger(PLUGIN.logger)
   const limits = () => readLimits(config)
   const feed = new StateFeed((error) => logger.warn('state listener failed (%s)', diagnosticOf(error)))

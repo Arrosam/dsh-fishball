@@ -37,17 +37,13 @@ These steps were verified on 2026-11-02 with the same mechanics, from branch `re
 
 Open **Fishball settings** from its chat header or the model-setting prompt above its composer. Under **Model for Fishball**, choose a model, optionally choose its reasoning effort, and press **Save**.
 
-Use **Refresh models** beside the picker after changing providers or models in DSH. It fetches the current host catalog without a page reload. Loading and provider failures are shown; a failed refresh keeps the previous list. If a saved model disappears, its provider/model identity remains visible as **Unavailable**, without clearing the saved choice or locking the composer. Refresh never saves a model or changes credentials.
+Use **Refresh models** beside the picker after changing providers or models in DSH. It fetches the current host catalog without a page reload. Loading and provider failures are shown; a failed refresh keeps the previous list. If a saved model disappears, its provider/model identity remains visible as **Unavailable**, without clearing the saved choice or locking the composer. Refresh never saves a model choice; in the isolated Fishball it also brings new API-key providers over from DSH (see below).
 
 Fishball’s composer stays blocked until a dedicated model is saved. An existing chat model or DSH default does not count as this explicit choice. The selection survives restarts and does not change ordinary sessions or DSH’s default model. The model switcher is no longer shown in Fishball’s composer.
 
-## Manually sync provider configuration and API keys
+## Bring your DSH models into Fishball
 
-Install this feature on both source and target profiles. In the target Fishball settings, choose **Create target invitation**. Paste that short-lived invitation into the source page and connect; approve the source on the target page, then confirm the target on the source page. Use **Check pairing status** as needed. The invitation is a scoped pairing capability, not a DSH Web or OAuth token; never paste it into chat or logs.
-
-Choose **Preview sync**, review the four groups, select additions, and explicitly confirm transfer of the selected configuration and current API keys. Only compatible official pi-ai API-key records are supported. Existing target providers/keys are skipped; OAuth, logins, environment-dependent credentials, secret references and custom secret-bearing settings are not copied. This does not change DSH defaults or Fishball’s dedicated model choice.
-
-Partial or unknown results require a new preview before any retry. There is no cross-store transaction or destructive rollback; model catalog presence is not proof of account authentication. Official credential-local storage is plaintext YAML with owner-only permissions, not encryption. Close the channel when finished; pairing expires automatically. See the [approved design and limits](<docs/model-provider-sync-design.md>).
+In **Plugins → Fishball → Settings**, press **Refresh models** in the model block. Fishball copies the API-key providers you set up in DSH that it does not have yet, then reloads its model list, so you can pick them straight away. It adds only: providers and keys Fishball already has are kept, and conflicting ones are skipped. OAuth and subscription logins are never copied; log in to those inside Fishball. One line under the button says what happened, and **Details** lists every skipped or failed provider with its reason. Keys never reach the page, logs or chat; Fishball stores them in DSH's standard `credential-local` store (plaintext YAML with owner-only permissions, not encryption). Fishball's model catalog then checks the new providers, which may also read keys set for its other providers.
 
 ## Choose a model for delegated work
 

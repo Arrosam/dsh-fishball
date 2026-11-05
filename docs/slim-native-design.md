@@ -18,7 +18,7 @@ unchanged and is not a separate target.
 | D2 | The child no longer runs a DSH Web UI. It runs the DSH **core** (`dsh-base`) plus one Fishball-owned app plugin. | user |
 | D3 | The isolated Fishball fully replaces legacy in-process Fishball; no automatic fallback. Lifecycle unchanged (starts/stops with the main DSH). | user |
 | D4 | Main DSH settings manage the child's model, plugins, settings, status and restart. | user |
-| D5 | Models and API keys arrive through the existing provider sync: preview, then confirm; API-key providers only; add-only; first real sync is separately approved. | user |
+| D5 | Models and API keys arrive through provider sync, run by **Refresh models** in the Model block with no preview or confirm step (amended 2026-11-06); API-key providers only, including keys on built-in routes; add-only; logins never copied. | user |
 | D6 | The narrow bridge keeps start/message/read/approve powers over main-DSH sessions and receives no main DSH credentials. | user |
 | D7 | Fishball must be able to see and send images, by reference, never by file path. | user |
 | D8 | Fishball's own session is hard-wired read-only; its composer has no permission control. | user |
@@ -76,8 +76,7 @@ roster. Disabling rows would still ship and mount the web shell, which is what D
 
 **Why not include `dsh-host-webserver` in the child:** that row requires `webStartup`
 (`dsh-web-app/cordis.patch.yml:175-184`), which belongs to the web app. The child app therefore
-binds its own `127.0.0.1:0` server — the same pattern this repository already uses for the
-provider-sync channel (`src/provider-sync-channel.js:1-20`). Route registration, SSE and
+binds its own `127.0.0.1:0` server. Route registration, SSE and
 backpressure are the child app's responsibility.
 
 ### 2.3 Child profile and launch overlay
@@ -276,7 +275,7 @@ no `SameSite=None; Secure` workaround, and no dependency on `127.0.0.1` vs `loca
 | Memory / web / X search plugins | main profile plugins, shared via the legacy composition | not installed in the child by default; installable per child | D2. |
 | Plugin hooks (`agent/created`, `session/event`, ...) | main profile plugins can inject into Fishball's agent | only plugins installed in the child see the child's agent | the isolation win. |
 | Model choice / context window | main settings | child settings applied through the admin API | §9. |
-| Provider sync | main to other profile (pairing channel) | main to child (same preview/confirm; child owns the write) | §10. |
+| Provider sync | main to other profile (pairing channel, removed) | main to child on Refresh models (child owns the write) | §10. |
 | Open isolated Fishball | new browser tab (`client.js:2403-2425`) | embed panel; `openUrl` route removed | §7. |
 | Unread count / brand mark | main `client.js` | main unchanged, plus the idle-slot marker with Fishball's unread / needs-action dots; the fish-under-spinner layout arrives after a DSH slot change (§8.2) | — |
 | Send / watch / hand over | three header buttons (`client.js:4138-4143`) | one hand-over button with a note (§8.3) | D10. |
@@ -292,7 +291,7 @@ Two independent channels; neither is a generic RPC tunnel.
 | Lifecycle + admin | existing unix/TCP control wire, framed HMAC (`src/native-runtime/wire.js`) | per-instance 256-bit secret, mutual HMAC proof, host/instance identity | the main host process only |
 | Session bridge | messages on the same authenticated wire, operation allowlist (`src/native-control/protocol.js:66-101`) | the wire identity plus a per-session authorization check on the main host | the child process only |
 | Embed | main DSH web route to child loopback | main browser session + parent bearer | the browser, through the main origin |
-| Provider sync | existing pairing channel, extended with a child target | pairing capability + preview token | the owner's settings page |
+| Provider sync | the `provider-sync` payload channel on the lifecycle wire | the wire identity; preview token held by the main host | the owner's settings page, through one owner-only route |
 
 Rules that do not change: every session operation carries an explicit `sessionId`; the main host
 checks it against `managedSessionIds`, the workspace registry and archived state
@@ -632,7 +631,7 @@ The Plugins → Fishball → settings page is rebuilt around the isolated Fishba
 - Plugins: list the child's installed packages, enable/disable, install (spec or market entry),
   uninstall; everything targets the child's profile; nothing touches the main profile.
 - Settings: the child plugin config forms that the page can render; limits that belong to Fishball.
-- Provider sync: preview/confirm for API-key providers (§10).
+- Provider sync: the Model block's **Refresh models** also syncs API-key providers from the main DSH (§10).
 - No legacy sections (intake, outbox, watches, approvals, hidden tools, main plugin catalog) —
   those concepts are either main-side or gone. The intake, outbox and watches blocks' leftover
   client code (renderers, strings and the unused watches/remove request) is removed; their
@@ -648,17 +647,49 @@ control channel and then to the child admin service. The child applies changes w
 
 ## 10. Provider sync into the isolated home
 
-Reuse `src/provider-sync*.js` unchanged in its rules: preview with metadata only, opaque preview
-id, confirm with `confirmed:true`, add-only, revision-checked `settings.mutate`, create-only
-credential record, per-item result, no retry after `unknown`. The only change is the target:
+**Flow (amended 2026-11-06).** The Model block's **Refresh models** button posts
+`/api/fishball/native/provider-sync/sync` (no body), then reloads the child's model list. The host
+previews and confirms in one step (`ChildProviderSync.sync()`, `src/provider-sync-service.js`), so
+the page holds no preview id and never selects anything. There is no separate sync card.
 
-- The **source** is the main DSH; the **target** is the child. The existing pairing channel is not
-  usable across the lifecycle (the child is not another user-visible profile), so the target side
-  becomes the child's `provider-sync` handler reached over the lifecycle channel with the same
-  payloads and the same `inventory` and `import` actions.
-- The child owns all writes in its own home; the main host only reads the selected API-key records
-  and streams them on the authenticated wire. The browser gets ids and status, never values.
-- First real sync remains gated on a separate user approval; design and tests never trigger it.
+**Why.** The first slim build kept the two-page flow: a target invitation, a pasted capability, a
+pairing approval, then a preview with checkboxes and a confirm. In slim the main DSH starts and
+owns the child and they already share an authenticated wire, so pairing proved nothing new, and
+the user found the card "a mess". The user then asked for "Refresh models" to bring DSH's models
+over with no extra work; the add-only rules below already make the write safe without a
+per-item choice, so the preview and confirm steps were dropped with it, and the first-real-sync
+approval was dropped too.
+
+Rules that stay (`src/provider-sync.js`, `src/provider-sync-host.js`, unchanged in substance):
+- API-key providers only. A login (grant record) is never copied; it is reported as
+  `oauth-login` ("log in inside Fishball"). Secret references, ambient/env keys and custom headers
+  are `unsupported-provider`.
+- Additions only: an existing or conflicting provider or key in the child is skipped and kept.
+- Re-checks: the coordinator re-reads the source inventory before and after reading records; the
+  engine re-checks the child's identity, version, schema, namespace revision and owner generation
+  before every write, and the record write is create-only inside the credential lock.
+- A child restart between preview and confirm voids the preview (`connectionId` changes).
+- Storage is DSH's `credential-local`. Keys travel only main host → wire → child host; the
+  browser gets `{id, name, outcome, reason?}` per provider, never a key, mask, endpoint or
+  preview id. Nothing is logged.
+- Built-in routes (added 2026-11-06, user decision): a key entered for a route the adapter ships
+  (no settings override, an API-key sign-in method, a fixed endpoint) is copied as a key-only
+  item, if the child has the same route with no override and no key. A route whose endpoint is
+  built from environment variables is not copied (the other home's environment differs).
+- Idempotent: a second Refresh finds everything present and writes nothing. Concurrent clicks
+  share one run (the button is disabled, and the host joins a run in flight).
+- An `unknown` item is never retried in the same run; the next Refresh previews afresh.
+
+Page outcome per provider: `added`, `present`, `skipped` (reason) or `failed` (reason). The page
+shows one quiet line ("Synced from DSH: 2 new · 3 already in Fishball") and a collapsed Details
+list of the skipped and failed items with their reasons. A whole-run failure shows inline with
+Retry. The button is disabled with a hint while the child is not running. One help line under the
+block says that the child's model catalog validates what was added, which may read keys set for
+its other providers (the SDK-global `modelCatalog` caveat).
+
+Removed: `src/provider-sync-channel.js` (the loopback pairing listener), `registerProviderSync`
+and its `/api/fishball/provider-sync` owner route in the main row (invite, begin, approve,
+finish, close), the `preview`/`confirm` routes, and `ProviderSyncSlot` with its strings.
 
 ## 11. Failure modes and UX
 
@@ -712,7 +743,8 @@ removed.
    attachment previews). It is Fishball-owned, so it can catch up incrementally.
 7. **No tests are written here.** Acceptance depends on the separate testing session.
 8. **Provider sync writes are not transactional across config and credentials** (already accepted
-   in the v1 design); the child adds one more hop, not a new guarantee.
+   in the v1 design); the child adds one more hop, not a new guarantee. Since 2026-11-06 the sync
+   runs on Refresh models with no confirmation step, at the user's request.
 
 ## 14. Open questions (each needs one answer)
 
@@ -919,6 +951,8 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
   focus-visible`; `-07 no legacy section remains`.
 
 **T16 — Provider sync into the child `[host]` plus `[child]`**
+- Amended 2026-11-06 (`feat/slim-psync-redesign`): the page flow is now Refresh models → one-step
+  sync (§10); the preview/confirm routes and the pairing code are gone.
 - Goal: preview and confirm of API-key providers into the child's own home, add-only.
 - Owns: `src/slim/child/provider-sync-target.js`, the target wiring in `src/provider-sync-service.js`
   (contract only; no behavior change to preview rules).
@@ -1138,4 +1172,4 @@ waves 5 and 6. T13b is blocked on the upstream slot and starts only after that s
 
 This document and the tasks above are development work. The testing session runs every named
 scenario in a disposable `DSH_HOME`, with a disposable main home and child home, never the user's
-real homes, never a real API key, and never the first real provider sync.
+real homes, never a real API key, and never a real provider sync with real keys.

@@ -158,20 +158,27 @@ window.__ModuleLoader__.load({
       errors: Object.freeze(['stale-revision', 'unavailable', 'timeout', 'disconnected', 'invalid-payload', 'read-only', 'unknown-namespace', 'unknown-provider', 'unknown-model', 'invalid-reasoning-effort', 'model-unavailable', 'unknown-plugin', 'invalid-spec', 'already-installed', 'not-removable', 'build-blocked', 'plugin-failed', 'too-large', 'operation-failed']),
     })
     /**
-     * T16's child provider-sync routes (§10; src/slim/host/provider-sync-routes.js). One exact
-     * path per action, every request a POST with ids, and every answer {ok:true,result} or
-     * {ok:false,error:{code}}. The page never sends or receives a key value, only the preview's
-     * opaque id and the selected provider ids.
+     * T16's provider sync (§10; src/slim/host/provider-sync-routes.js). "Refresh models" POSTs
+     * this one path with no body, then reloads the child's model list. The answer is
+     * {ok:true,result:{items:[{id,name,outcome,reason?}]}} or {ok:false,error:{code}}: provider
+     * names and reason codes only, never a key, a mask or an endpoint.
      */
     const CHILD_SYNC_UI = Object.freeze({
-      prefix: '/api/fishball/native/provider-sync/',
-      path: Object.freeze({ preview: 'preview', confirm: 'confirm' }),
-      groups: Object.freeze(['add', 'existsSkip', 'conflictSkip', 'unsupported']),
-      added: 'add',
-      unknown: 'unknown',
+      path: '/api/fishball/native/provider-sync/sync',
+      request: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin' }),
+      outcome: Object.freeze({ added: 'added', present: 'present', skipped: 'skipped', failed: 'failed' }),
+      /** The outcomes the details list names, in order: what needs attention first. */
+      detailOutcomes: Object.freeze(['failed', 'skipped']),
+      summarySeparator: ' · ',
+      /** Item reasons with their own words (src/provider-sync.js, src/provider-sync-service.js); any other shows the generic one. */
+      reasons: Object.freeze(['oauth-login', 'unsupported-provider', 'provider-conflict', 'incompatible-owner-or-schema',
+        'no-api-key', 'version-mismatch', 'credential-not-writable', 'missing-revision', 'repreview-required',
+        'result-unknown', 'key-not-saved', 'unsupported-record']),
+      /** Whole-sync refusals with their own words; any other shows the generic one with its code. */
+      errors: Object.freeze({ 'child-sync-unavailable': 'unavailable', 'child-sync-disconnected': 'unavailable',
+        'target-unavailable': 'unavailable', 'child-sync-timeout': 'timeout',
+        'repreview-required': 'changed', 'peer-mismatch': 'changed' }),
       failed: 'provider-sync-refused',
-      /** One slot state: no plan, no selection, no result, nothing busy or failed. */
-      empty: Object.freeze({ busy: false, plan: null, selected: [], result: null, error: null }),
     })
     const SLOT = Object.freeze({
       mark: 'sidebar.brand.mark',
@@ -591,12 +598,6 @@ window.__ModuleLoader__.load({
       'native.loading': 'Checking status…', 'native.disabled': 'Disabled', 'native.waiting': 'Waiting for host readiness',
       'native.starting': 'Starting', 'native.ready': 'Ready', 'native.stopping': 'Stopping', 'native.stopped': 'Stopped',
       'native.failed': 'Native runtime failed', 'native.unavailable': 'Unavailable or not enabled in this profile',
-      syncTitle: 'Sync model providers and API keys',
-      syncPreview: 'Preview sync', syncConfirm: 'Confirm selected additions',
-      syncIdentity: 'Runtime / profile', syncFailed: 'Sync was refused or could not be confirmed. Check pairing and create a new preview; no automatic retry.',
-      syncComplete: 'Selected additions completed. Catalog presence does not prove account authentication.',
-      syncPartial: 'Not all items completed. Review every result; create a new preview before retrying failed or unknown items.',
-      'syncGroup.add': 'Will add', 'syncGroup.existsSkip': 'Already exists — skip', 'syncGroup.conflictSkip': 'Conflict — skip', 'syncGroup.unsupported': 'Unsupported',
       handOver: 'Hand over to Fishball',
       handOverTitle: 'Hand over "{title}" to Fishball',
       handOverNoteLabel: 'Note for Fishball (optional)',
@@ -952,9 +953,36 @@ window.__ModuleLoader__.load({
       "adminError.plugin-failed": "The plugin change failed.",
       "adminError.too-large": "That answer was too large for the connection.",
       "adminError.operation-failed": "That operation failed.",
-      "syncChildHint": "Preview reads provider metadata from this DSH and lists what can be added to the isolated Fishball's own home. Confirm adds only the providers you tick; existing entries are skipped, and no key value is ever shown here.",
-      "syncUnknown": "result unknown, re-preview",
-      "syncRepreview": "Preview again",
+      "adminModelRefresh": "Refresh models",
+      "adminModelSyncing": "Syncing from DSH…",
+      "adminModelSyncHint": "Refresh models also copies new API-key providers from your main DSH into Fishball. OAuth logins are not copied, and providers Fishball already has are kept. Fishball's model catalog then checks them, which may also read keys set for its other providers.",
+      "adminModelNotRunning": "Start the isolated Fishball above to refresh its models.",
+      "syncSummary": "Synced from DSH: {added} new",
+      "syncSummaryPresent": "{count} already in Fishball",
+      "syncSummarySkipped": "{count} skipped",
+      "syncSummaryFailed": "{count} failed",
+      "syncNothing": "No API-key providers in DSH to sync.",
+      "syncDetails": "Details",
+      "syncOutcome.skipped": "Skipped",
+      "syncOutcome.failed": "Failed",
+      "syncReason.oauth-login": "Uses a login, not an API key: log in inside Fishball.",
+      "syncReason.unsupported-provider": "Not a plain API-key provider (custom headers, a secret reference or an environment key). Set it up inside Fishball.",
+      "syncReason.provider-conflict": "Fishball has a different provider with this name; it was kept.",
+      "syncReason.incompatible-owner-or-schema": "Fishball's model plugin for this provider is different; nothing was changed.",
+      "syncReason.version-mismatch": "Fishball runs a different DSH version. Restart Fishball, then refresh again.",
+      "syncReason.no-api-key": "Has no API key in DSH, so there is nothing to copy.",
+      "syncReason.credential-not-writable": "Fishball cannot store a key for this provider.",
+      "syncReason.missing-revision": "Fishball's model settings could not be read.",
+      "syncReason.repreview-required": "Changed while syncing; refresh again.",
+      "syncReason.result-unknown": "The result is unknown. Refresh again to check it.",
+      "syncReason.key-not-saved": "The provider was added but its key was not saved. Refresh again.",
+      "syncReason.unsupported-record": "Its key in DSH is not a plain API key.",
+      "syncReasonOther": "Could not be synced.",
+      "syncError.unavailable": "Fishball is not connected, so nothing was synced. Restart it and retry.",
+      "syncError.timeout": "Fishball did not answer in time. Some providers may already be in; retry to check.",
+      "syncError.changed": "DSH or Fishball changed while syncing, so nothing was written. Retry.",
+      "syncErrorOther": "Models could not be synced from DSH.",
+      "syncRetry": "Retry",
     }
     const zh = {
       brandName: 'FISHBALL',
@@ -987,12 +1015,6 @@ window.__ModuleLoader__.load({
       'native.loading': '正在检查状态…', 'native.disabled': '已禁用', 'native.waiting': '等待主端就绪',
       'native.starting': '正在启动', 'native.ready': '已就绪', 'native.stopping': '正在停止', 'native.stopped': '已停止',
       'native.failed': '原生运行时失败', 'native.unavailable': '不可用，或当前 profile 未启用',
-      syncTitle: '同步模型提供商和 API key',
-      syncPreview: '预览同步', syncConfirm: '确认所选新增项',
-      syncIdentity: '运行实例 / profile', syncFailed: '同步被拒绝或无法确认。请检查配对并重新预览，不会自动重试。',
-      syncComplete: '所选新增项已完成。模型在目录中不代表账户认证已验证。',
-      syncPartial: '部分项目未完成。请逐项检查；失败或未知项需重新预览再重试。',
-      'syncGroup.add': '将新增', 'syncGroup.existsSkip': '已存在，跳过', 'syncGroup.conflictSkip': '冲突，跳过', 'syncGroup.unsupported': '不支持',
       handOver: '交给 Fishball 管理',
       handOverTitle: '把“{title}”交给 Fishball 管理',
       handOverNoteLabel: '给 Fishball 的备注（可选）',
@@ -1346,9 +1368,36 @@ window.__ModuleLoader__.load({
       "adminError.plugin-failed": "插件更改失败。",
       "adminError.too-large": "该回答对于连接来说太大。",
       "adminError.operation-failed": "该操作失败。",
-      "syncChildHint": "预览只读取本 DSH 的提供商元数据，列出可以新增到隔离 Fishball 自己主目录的项。确认只会新增你勾选的提供商；已有项跳过，这里永远不显示 key 值。",
-      "syncUnknown": "结果未知，请重新预览。",
-      "syncRepreview": "重新预览",
+      "adminModelRefresh": "刷新模型",
+      "adminModelSyncing": "正在从 DSH 同步…",
+      "adminModelSyncHint": "刷新模型时，会把主 DSH 中新的 API key 提供商复制到 Fishball。OAuth 登录不会复制，Fishball 已有的提供商保持不变。之后 Fishball 的模型目录会检查它们，这可能同时读取它其他提供商设置的 key。",
+      "adminModelNotRunning": "请先在上方启动隔离 Fishball，再刷新它的模型。",
+      "syncSummary": "已从 DSH 同步：新增 {added} 个",
+      "syncSummaryPresent": "已存在 {count} 个",
+      "syncSummarySkipped": "跳过 {count} 个",
+      "syncSummaryFailed": "失败 {count} 个",
+      "syncNothing": "主 DSH 中没有可同步的 API key 提供商。",
+      "syncDetails": "详情",
+      "syncOutcome.skipped": "已跳过",
+      "syncOutcome.failed": "失败",
+      "syncReason.oauth-login": "使用登录而不是 API key：请在 Fishball 内登录。",
+      "syncReason.unsupported-provider": "不是普通的 API key 提供商（自定义 header、密钥引用或环境变量 key）。请在 Fishball 内设置。",
+      "syncReason.provider-conflict": "Fishball 中有同名但不同的提供商，已保留原样。",
+      "syncReason.incompatible-owner-or-schema": "Fishball 中这个提供商的模型插件不同，未做任何更改。",
+      "syncReason.version-mismatch": "Fishball 运行的 DSH 版本不同。请重启 Fishball 后再刷新。",
+      "syncReason.no-api-key": "它在 DSH 中没有 API key，无需复制。",
+      "syncReason.credential-not-writable": "Fishball 无法为这个提供商保存 key。",
+      "syncReason.missing-revision": "无法读取 Fishball 的模型设置。",
+      "syncReason.repreview-required": "同步期间发生了变化，请再刷新一次。",
+      "syncReason.result-unknown": "结果未知。请再刷新一次以确认。",
+      "syncReason.key-not-saved": "提供商已新增，但它的 key 没有保存。请再刷新一次。",
+      "syncReason.unsupported-record": "它在 DSH 中的 key 不是普通的 API key。",
+      "syncReasonOther": "无法同步。",
+      "syncError.unavailable": "Fishball 未连接，没有同步任何内容。请重启后重试。",
+      "syncError.timeout": "Fishball 未及时回答，部分提供商可能已经同步。请重试以确认。",
+      "syncError.changed": "同步期间 DSH 或 Fishball 发生了变化，因此没有写入任何内容。请重试。",
+      "syncErrorOther": "无法从 DSH 同步模型。",
+      "syncRetry": "重试",
     }
 
     const css = [
@@ -1593,6 +1642,52 @@ window.__ModuleLoader__.load({
         const error = answer?.ok === false && typeof answer.error?.code === 'string' ? answer.error : { code: 'operation-failed' }
         return { ok: false, error }
       } catch { return { ok: false, error: { code: 'unavailable' } } }
+    }
+
+    /**
+     * One provider sync from the main DSH into the child (§10). Never throws: a transport failure
+     * or a refusal is a typed error; a success is the per-provider list.
+     * @returns {{ok: true, items: Array} | {ok: false, code: string}}
+     */
+    async function syncProviders() {
+      try {
+        const response = await fetch(apiUrl(CHILD_SYNC_UI.path), CHILD_SYNC_UI.request)
+        const answer = await response.json().catch(() => null)
+        if (answer?.ok === true && Array.isArray(answer.result?.items)) return { ok: true, items: answer.result.items }
+        return { ok: false, code: answer?.ok === false && typeof answer.error?.code === 'string' ? answer.error.code : CHILD_SYNC_UI.failed }
+      } catch { return { ok: false, code: CHILD_SYNC_UI.failed } }
+    }
+
+    /** The sync's quiet one-line summary: new providers, then whatever else happened. */
+    function syncSummaryText(t, items) {
+      if (items.length === 0) return t('syncNothing')
+      const count = (outcome) => items.filter((item) => item.outcome === outcome).length
+      const O = CHILD_SYNC_UI.outcome
+      const parts = [t('syncSummary', { added: count(O.added) })]
+      for (const [outcome, key] of [[O.present, 'syncSummaryPresent'], [O.skipped, 'syncSummarySkipped'], [O.failed, 'syncSummaryFailed']]) {
+        if (count(outcome) > 0) parts.push(t(key, { count: count(outcome) }))
+      }
+      return parts.join(CHILD_SYNC_UI.summarySeparator)
+    }
+
+    /** What the last sync did: the summary line, and the skipped/failed providers with their reasons. */
+    function SyncOutcome({ items, t }) {
+      const noted = CHILD_SYNC_UI.detailOutcomes.flatMap((outcome) => items.filter((item) => item.outcome === outcome))
+      const reason = (code) => CHILD_SYNC_UI.reasons.includes(code) ? t('syncReason.' + code) : t('syncReasonOther')
+      return h('div', { 'data-fishball-sync-result': true },
+        h('p', { role: 'status', className: CLS.muted }, syncSummaryText(t, items)),
+        noted.length === 0 ? null : h('details', null,
+          h('summary', { className: CLS.muted }, t('syncDetails')),
+          h('ul', { className: CLS.entries }, noted.map((item) => h('li', { key: item.id, 'data-fishball-sync-item': item.id, 'data-sync-outcome': item.outcome },
+            h('strong', null, item.name), ' — ', t('syncOutcome.' + item.outcome), ': ', reason(item.reason))))))
+    }
+
+    /** A whole-sync refusal in words, its code, and Retry. */
+    function SyncProblem({ code, onRetry, t }) {
+      const words = CHILD_SYNC_UI.errors[code] ? t('syncError.' + CHILD_SYNC_UI.errors[code]) : t('syncErrorOther')
+      return h('div', { role: 'alert', className: CLS.row, 'data-fishball-sync-error': code },
+        h('span', null, words, ' ', h('code', { className: CLS.code }, code)),
+        h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: onRetry }, t('syncRetry')))
     }
 
     /** One Fishball-accent button (§8.5): DSH's Button with the shared magenta ring. */
@@ -2021,6 +2116,11 @@ window.__ModuleLoader__.load({
      * The child's model (§9): provider, model and reasoning effort from the child's own catalog,
      * saved with the settings revision the page read. A stale revision is a typed refusal, shown
      * with its code; Reload reads the child's current values instead of guessing.
+     *
+     * "Refresh models" first syncs the main DSH's new API-key providers into the child (§10), then
+     * reloads the list, so a provider added in DSH can be picked straight away. The user asked for
+     * this to need no extra step, so there is no preview or confirmation; the host still adds
+     * only, keeps what Fishball has and never copies a login. Clicks during a run are ignored.
      */
     function makeModelSettings(t) {
       return function FishballModelSettings() {
@@ -2030,6 +2130,11 @@ window.__ModuleLoader__.load({
         const [saving, setSaving] = React.useState(false)
         const [problem, setProblem] = React.useState(null)
         const [message, setMessage] = React.useState(null)
+        const [sync, setSync] = React.useState({ busy: false, items: null, error: null })
+        const syncing = React.useRef(false)
+        // Unknown (null) until the status block's first read: disabled, but no "not running" hint yet.
+        const nativeNow = useNativeState()
+        const running = nativeNow === NATIVE_UI.ready
         const load = React.useCallback(async () => {
           setMessage(null)
           const answer = await adminRequest('modelGet')
@@ -2039,6 +2144,18 @@ window.__ModuleLoader__.load({
           setSelection(answer.result.selection)
         }, [])
         React.useEffect(() => { void load() }, [load])
+        const refresh = async () => {
+          if (syncing.current) return
+          syncing.current = true
+          setSync({ busy: true, items: null, error: null })
+          try {
+            const answer = await syncProviders()
+            setSync({ busy: false, items: answer.ok ? answer.items : null, error: answer.ok ? null : answer.code })
+            // Reload either way: a failed run may still have added some providers.
+            await load()
+          } finally { syncing.current = false }
+        }
+        const busy = saving || sync.busy
         const providers = snapshot?.providers ?? []
         const models = snapshot?.models ?? []
         const offered = models.filter((model) => model.provider === selection?.provider)
@@ -2084,24 +2201,29 @@ window.__ModuleLoader__.load({
           h('p', { className: CLS.muted }, t('adminModelHint')),
           snapshot === null ? h('p', { role: 'status' }, t('modelLoading')) : h(React.Fragment, null,
             h('label', { htmlFor: baseId + '-provider' }, t('adminProvider')),
-            h('select', { id: baseId + '-provider', value: selection?.provider ?? '', disabled: saving, onChange: (event) => pickProvider(event.target.value) },
+            h('select', { id: baseId + '-provider', value: selection?.provider ?? '', disabled: busy, onChange: (event) => pickProvider(event.target.value) },
               providers.map((provider) => h('option', { key: provider.id, value: provider.id }, provider.name))),
             h('label', { htmlFor: baseId + '-model' }, t('adminModel')),
-            h('select', { id: baseId + '-model', value: selection?.model ?? '', disabled: saving, onChange: (event) => pickModel(event.target.value) },
+            h('select', { id: baseId + '-model', value: selection?.model ?? '', disabled: busy, onChange: (event) => pickModel(event.target.value) },
               offered.map((model) => h('option', { key: model.id, value: model.id }, model.name))),
             efforts.length > 0 ? h(React.Fragment, null,
               h('label', { htmlFor: baseId + '-effort' }, t('modelEffort')),
-              h('select', { id: baseId + '-effort', value: selection?.reasoningEffort ?? MODEL.empty, disabled: saving, onChange: (event) => pickEffort(event.target.value) },
+              h('select', { id: baseId + '-effort', value: selection?.reasoningEffort ?? MODEL.empty, disabled: busy, onChange: (event) => pickEffort(event.target.value) },
                 h('option', { value: MODEL.empty }, t('modelEffortDefault')),
                 efforts.map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name)))) : null,
             providers.length === 0 || models.length === 0 ? h('p', { role: 'status' }, t('modelEmpty')) : null,
             known ? null : h('p', { role: 'status' }, t('adminModelUnavailable'))),
           h(AdminProblem, { error: problem, t }),
           message ? h('p', { role: 'status', className: CLS.muted }, t(message)) : null,
+          sync.items === null ? null : h(SyncOutcome, { items: sync.items, t }),
+          sync.error === null ? null : h(SyncProblem, { code: sync.error, onRetry: () => void refresh(), t }),
           h('div', { className: CLS.row },
-            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: saving, onClick: () => void load() }, t('refresh')),
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: busy || !running, 'aria-busy': sync.busy, onClick: () => void refresh() },
+              sync.busy ? t('adminModelSyncing') : t('adminModelRefresh')),
             problem?.code === 'stale-revision' ? h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: () => void load() }, t('adminReload')) : null,
-            accentButton({ size: 'sm', disabled: !known || !dirty || saving, onClick: () => void save() }, saving ? t('saving') : t('save'))))
+            accentButton({ size: 'sm', disabled: !known || !dirty || busy, onClick: () => void save() }, saving ? t('saving') : t('save'))),
+          running || nativeNow === null ? null : h('p', { role: 'status', className: CLS.muted }, t('adminModelNotRunning')),
+          h('p', { className: CLS.muted }, t('adminModelSyncHint')))
       }
     }
 
@@ -2263,105 +2385,6 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /**
-     * T16's slot (§10): provider sync preview/confirm into the isolated child's own home.
-     *
-     * Preview asks the main host's bridge for metadata only (ids, names, masks, models): no
-     * credential value reaches this page. Nothing is selected for the user; Confirm stays
-     * disabled until they tick at least one "will add" item, and it sends that explicit id list
-     * with the preview's opaque token and confirmed:true. A completed confirm cannot be replayed
-     * (its preview is consumed), so the one recovery path is a fresh preview. An item whose
-     * status is "unknown" reads "Result unknown, re-preview." and is never retried here.
-     *
-     * The first real sync stays a separate user decision (§10); this page only offers it.
-     */
-    function ProviderSyncSlot({ t }) {
-      const [view, setView] = React.useState(CHILD_SYNC_UI.empty)
-      const active = React.useRef(false)
-      const invoke = async (action, payload = {}) => {
-        if (active.current) return
-        active.current = true
-        // A preview replaces the whole slot; a confirm keeps the error visible beside a result
-        // that may be partial, so only an explicit preview clears the previous plan.
-        setView((previous) => ({
-          ...previous, busy: true, error: null,
-          ...(action === CHILD_SYNC_UI.path.preview ? { plan: null, selected: [], result: null } : {}),
-        }))
-        try {
-          const response = await send(CHILD_SYNC_UI.prefix + CHILD_SYNC_UI.path[action], payload)
-          const answer = response.ok ? response.answer : null
-          if (!response.ok || answer?.ok !== true || answer.result === undefined) {
-            const code = answer?.ok === false && typeof answer.error?.code === 'string' ? answer.error.code : CHILD_SYNC_UI.failed
-            setView((previous) => ({ ...previous, busy: false, error: code }))
-            return
-          }
-          if (action === CHILD_SYNC_UI.path.preview) setView({ ...CHILD_SYNC_UI.empty, plan: answer.result })
-          else setView({ ...CHILD_SYNC_UI.empty, result: answer.result })
-        } catch {
-          // send() answers null on a transport failure; a thrown wiring error must not leave
-          // the slot permanently busy.
-          setView((previous) => ({ ...previous, busy: false, error: CHILD_SYNC_UI.failed }))
-        } finally {
-          active.current = false
-        }
-      }
-      const groups = view.plan?.groups ?? {}
-      const itemsOf = (group) => Array.isArray(groups[group]) ? groups[group] : []
-      const toggle = (id, checked) => setView((previous) => ({
-        ...previous,
-        selected: checked ? [...previous.selected, id] : previous.selected.filter((entry) => entry !== id),
-      }))
-      const detailsOf = (item) => [
-        item.api ? item.api : null,
-        item.endpoint ? item.endpoint : null,
-        Array.isArray(item.models) && item.models.length > 0 ? item.models.join(', ') : null,
-        item.reason ? item.reason : null,
-      ].filter((entry) => entry !== null).join(' · ')
-      const unknownResult = view.result !== null && Array.isArray(view.result.results)
-        && view.result.results.some((item) => item?.status === CHILD_SYNC_UI.unknown)
-      return h('section', { className: CLS.section, 'data-fishball-provider-sync': true, 'data-fishball-sync-target': 'child', 'aria-busy': view.busy },
-        h('h3', null, t('syncTitle')),
-        h('p', { className: CLS.muted }, t('syncChildHint')),
-        h('div', { className: CLS.row },
-          h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: view.busy, onClick: () => void invoke(CHILD_SYNC_UI.path.preview) }, t('syncPreview'))),
-        view.plan === null ? null : h('div', { 'data-fishball-sync-plan': true },
-          view.plan.target?.profileId ? h('p', { className: CLS.muted }, t('syncIdentity') + ': ' + view.plan.target.profileId) : null,
-          CHILD_SYNC_UI.groups.map((group) => h('section', { key: group, 'data-fishball-sync-group': group },
-            h('h4', null, t('syncGroup.' + group)),
-            h('ul', { className: CLS.list }, itemsOf(group).map((item) => h('li', {
-              key: item.id, 'data-fishball-sync-item': item.id, 'data-sync-group': group,
-            },
-            group === CHILD_SYNC_UI.added
-              ? h('label', null,
-                h('input', {
-                  type: 'checkbox', checked: view.selected.includes(item.id), disabled: view.busy,
-                  onChange: (event) => toggle(item.id, event.target.checked),
-                }),
-                ' ' + item.name + ' (' + item.id + ') — ' + item.keyMask)
-              : h('span', null, item.name + ' (' + item.id + ') — ' + item.keyMask),
-            detailsOf(item) === '' ? null : h('span', { className: CLS.muted }, ' — ' + detailsOf(item))))),
-            itemsOf(group).length === 0 ? h('p', { className: CLS.muted }, '—') : null)),
-          h('div', { className: CLS.row },
-            h(Button, {
-              type: 'button', size: 'sm', variant: 'primary', disabled: view.busy || view.selected.length === 0,
-              onClick: () => void invoke(CHILD_SYNC_UI.path.confirm, {
-                previewId: view.plan.previewId, ids: view.selected, confirmed: true,
-              }),
-            }, t('syncConfirm')))),
-        view.result === null ? null : h('div', { 'data-fishball-sync-result': true },
-          h('p', { role: 'status' }, t(view.result.complete === true ? 'syncComplete' : 'syncPartial')),
-          h('ul', { className: CLS.list }, (Array.isArray(view.result.results) ? view.result.results : []).map((item) => h('li', {
-            key: item.id, 'data-fishball-sync-result-item': item.id, 'data-sync-status': item.status,
-          },
-          item.id + ': ' + item.status + ' / ' + item.config + ' / ' + item.key,
-          item.reason ? ' — ' + item.reason : null,
-          item.status === CHILD_SYNC_UI.unknown ? h('strong', { 'data-fishball-sync-unknown': true }, t('syncUnknown')) : null))),
-          view.result.complete === true && !unknownResult ? null : h('div', { className: CLS.row },
-            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: view.busy, onClick: () => void invoke(CHILD_SYNC_UI.path.preview) }, t('syncRepreview')))),
-        view.error === null ? null : h('p', { role: 'alert', 'data-fishball-sync-error': view.error },
-          t('syncFailed') + ' ', h('code', { className: CLS.code }, view.error)))
-    }
-
     /** One read of the native status route; failures stay local to the caller. */
     async function nativeStatus(signal) {
       let next = { state: NATIVE_UI.unavailable, code: null }
@@ -2390,6 +2413,7 @@ window.__ModuleLoader__.load({
           const answer = await adminRequest('status')
           if (answer.ok) setView({ loading: false, state: answer.result.state, code: answer.result.code ?? null, error: null })
           else setView({ loading: false, state: NATIVE_UI.unavailable, code: null, error: answer.error })
+          nativeState.set(answer.ok ? answer.result.state : NATIVE_UI.unavailable)
         }, [])
         React.useEffect(() => { void load() }, [load])
         const restart = async () => {
@@ -2398,6 +2422,7 @@ window.__ModuleLoader__.load({
           setBusy(false)
           if (answer.ok) setView({ loading: false, state: answer.result.state, code: answer.result.code ?? null, error: null })
           else setView((previous) => ({ ...previous, loading: false, error: answer.error }))
+          if (answer.ok) nativeState.set(answer.result.state)
         }
         return h('div', { className: CLS.section, 'data-fishball-native': true },
           h('h3', null, t('nativeTitle')),
@@ -2496,6 +2521,12 @@ window.__ModuleLoader__.load({
       return { ...store, open: (sessionId, title) => store.set({ sessionId, title }), close: () => store.set(null) }
     })()
     const useHandOverRequest = () => React.useSyncExternalStore(handOverRequest.subscribe, handOverRequest.get)
+    /**
+     * The isolated Fishball's last known state (NATIVE_UI.states), published by the status block
+     * and read by the model block's Refresh models; null until the first status read.
+     */
+    const nativeState = valueStore(null)
+    const useNativeState = () => React.useSyncExternalStore(nativeState.subscribe, nativeState.get)
     /** The embed panel's open state, shared by the brand button and the shell-overlay panel (§7). */
     const embedPanel = valueStore(false)
     const useEmbedPanel = () => React.useSyncExternalStore(embedPanel.subscribe, embedPanel.get)
@@ -3280,8 +3311,8 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Fishball's whole settings page (§9): the isolated child's status and restart, model,
-     * plugins and settings, the T16 provider-sync slot, the brand switch and Fishball's own
+     * Fishball's whole settings page (§9): the isolated child's status and restart, model (whose
+     * Refresh models also syncs providers from DSH, §10), plugins and settings, the brand switch and Fishball's own
      * limits. The legacy sections (the old chat's status, context window, intake, watches,
      * approvals, sources, the main plugin catalog and hidden tools) are not rendered: those
      * concepts either belong to the child now or are retired with the legacy chat.
@@ -3303,7 +3334,6 @@ window.__ModuleLoader__.load({
           h(ModelSettings),
           h(ChildPlugins),
           h(ChildSettings),
-          h(ProviderSyncSlot, { t }),
           h(BrandStyle),
           h('div', { className: CLS.section }, h(QuestionMode, { state: fishball, t })),
           h('h3', null, t('limits')),
