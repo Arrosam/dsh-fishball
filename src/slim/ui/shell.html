@@ -8,14 +8,18 @@
 <link rel="stylesheet" href="ui/shell.css">
 </head>
 <body>
-<header>
-  <h1>Fishball</h1>
+<header class="topbar">
+  <h1 class="brand">Fishball</h1>
+  <div class="model-picker" id="model-picker"></div>
   <span class="status" id="status" data-state="connecting" role="status" aria-live="polite">Connecting…</span>
 </header>
-<main>
-  <p id="message">Connecting to Fishball…</p>
+<main class="layout">
+  <!-- The chat view builds the timeline, the read-only composer and the notice in here. -->
+  <section class="chat" id="chat" aria-label="Fishball chat"></section>
+  <!-- The reminder view (T10) mounts into this aside and refreshes on the SSE reminders event. -->
+  <aside class="sidebar" id="reminders" aria-label="Reminders"></aside>
 </main>
 <!-- Relative URLs keep the one shell working at the child's "/" and behind "/fishball/embed/". -->
-<script src="ui/shell.js"></script>
+<script type="module" src="ui/shell.js"></script>
 </body>
 </html>
