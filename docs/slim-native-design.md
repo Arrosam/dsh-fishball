@@ -673,9 +673,17 @@ Rules that stay (`src/provider-sync.js`, `src/provider-sync-host.js`, unchanged 
   browser gets `{id, name, outcome, reason?}` per provider, never a key, mask, endpoint or
   preview id. Nothing is logged.
 - Built-in routes (added 2026-11-06, user decision): a key entered for a route the adapter ships
-  (no settings override, an API-key sign-in method, a fixed endpoint) is copied as a key-only
-  item, if the child has the same route with no override and no key. A route whose endpoint is
-  built from environment variables is not copied (the other home's environment differs).
+  (no override, an API-key sign-in method, a fixed endpoint) is copied if the child has the same
+  route with no override and no key. pi-ai serves only routes listed under `providers`, so a
+  dormant child route is first adopted the way DSH's Models page does it (`providers.<route> =
+  {}`, revision-checked, create-only), then the key is written create-only; an already adopted
+  route gets the key only. A route whose endpoint is built from environment variables is not
+  copied (the other home's environment differs).
+- Schema comparison: `settings.describe()` serialises schemas with Schemastery's process-global
+  uids, which differ on every describe and between processes. The host fingerprints the schema
+  after renumbering those uids by the library's own rebuild walk, so identical schemas match and
+  any real difference still does not (fix of 2026-11-06; before it, every route was skipped as
+  `incompatible-owner-or-schema`).
 - Idempotent: a second Refresh finds everything present and writes nothing. Concurrent clicks
   share one run (the button is disabled, and the host joins a run in flight).
 - An `unknown` item is never retried in the same run; the next Refresh previews afresh.

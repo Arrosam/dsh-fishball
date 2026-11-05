@@ -15,6 +15,8 @@ export const PROVIDER_SYNC_HOST = Object.freeze({
   outcome: Object.freeze({ config: 'configOutcome', key: 'keyOutcome', added: 'added', unknown: 'unknown' }),
   referenceField: 'apiKeyEnv', query: '?', fragment: '#',
   hashAlgorithm: 'sha256', hashEncoding: 'hex',
+  /** Schemastery's serialised form: the root uid, the node table, and the fields that hold a node uid. */
+  schemaRefs: Object.freeze({ uid: 'uid', refs: 'refs', single: Object.freeze(['sKey', 'inner']), list: 'list', dict: 'dict' }),
   identityKeys: Object.freeze(['runtimeId', 'profileId', 'schemaVersion', 'version']),
   profileFields: Object.freeze(['displayName', 'api', 'baseURL', 'models']),
   modelFields: Object.freeze(['id', 'name', 'contextWindow', 'maxTokens', 'input']),
@@ -49,7 +51,48 @@ const namespaceId = (value) => typeof value === 'string' && H.identifier.test(va
 const revision = (value) => Number.isSafeInteger(value) && value >= H.minimumRevision
 const canonical = (value) => Array.isArray(value) ? value.map(canonical) : plain(value)
   ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])])) : value
-const fingerprint = (schema) => createHash(H.hashAlgorithm).update(JSON.stringify(canonical(schema))).digest(H.hashEncoding)
+/**
+ * A described schema's structure with Schemastery's uids renumbered by a fixed walk.
+ *
+ * `settings.describe()` serialises a schema as `{uid, refs}`, where every node's uid comes from
+ * a process-global counter (`globalThis.__schemastery_index__`) and every describe builds fresh
+ * nodes. The raw JSON therefore differs between two describes in one process, and between the
+ * main DSH and the child, for an identical schema; hashing it made every namespace look
+ * incompatible or stale. Renumbering by the walk the library itself uses to rebuild a schema
+ * (sKey, inner, list, dict: Schemastery 3.18.5 and 3.19.0, `new Schema({refs})`) keeps every
+ * real difference and drops only the counter. Any other shape is hashed raw, as before.
+ */
+function structuralSchema(schema) {
+  const S = H.schemaRefs
+  if (!Number.isSafeInteger(schema[S.uid]) || !plain(schema[S.refs])) return schema
+  const refs = schema[S.refs]
+  const order = new Map()
+  const children = (node) => [
+    ...S.single.map((key) => node[key]).filter((uid) => uid !== undefined && uid !== null),
+    ...(Array.isArray(node[S.list]) ? node[S.list] : []),
+    ...(plain(node[S.dict]) ? Object.keys(node[S.dict]).sort().map((key) => node[S.dict][key]) : []),
+  ]
+  const pending = [schema[S.uid]]
+  while (pending.length > H.minimumRevision) {
+    const uid = pending.shift()
+    if (order.has(uid)) continue
+    const node = refs[uid]
+    // A dangling reference is not a shape this walk knows: hash the raw form, which can only
+    // make the namespace look incompatible (a skip), never equal to another.
+    if (!plain(node)) return schema
+    order.set(uid, order.size)
+    pending.push(...children(node))
+  }
+  const renumber = (uid) => order.get(uid)
+  return [...order.keys()].map((uid) => {
+    const node = { ...refs[uid] }
+    for (const key of S.single) if (node[key] !== undefined && node[key] !== null) node[key] = renumber(node[key])
+    if (Array.isArray(node[S.list])) node[S.list] = node[S.list].map(renumber)
+    if (plain(node[S.dict])) node[S.dict] = Object.fromEntries(Object.entries(node[S.dict]).map(([key, uid]) => [key, renumber(uid)]))
+    return node
+  })
+}
+const fingerprint = (schema) => createHash(H.hashAlgorithm).update(JSON.stringify(canonical(structuralSchema(schema)))).digest(H.hashEncoding)
 const unwrap = (value) => isVolatile(value) ? unwrap(value.get()) : Array.isArray(value) ? value.map(unwrap)
   : plain(value) ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, unwrap(item)])) : value
 
@@ -146,8 +189,9 @@ const present = (descriptor, id) => plain(descriptor?.value?.providers) && Objec
 const emptyCredential = () => ({ configured: false, writable: false })
 const checkSignal = (signal) => { if (signal?.aborted) refuse(E.cancelled) }
 /**
- * A built-in route keyed by its API-key record alone: no settings override and an api-key sign-in
- * method. Its key may be copied without a profile (src/provider-sync.js builtinKey).
+ * A dormant built-in route keyed by its API-key record alone: no settings entry, an api-key
+ * sign-in method and a fixed endpoint. Its key may be read for the sync (src/provider-sync.js
+ * builtinKey); the target adopts the route with an empty profile before writing it.
  */
 const builtinKeyRoute = (provider) => provider.declared === false && provider.configured === false
   && provider.profile === null && provider.apiKeyMethod === true && provider.endpointFromEnv === false
@@ -330,11 +374,8 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       const previous = added.get(id) ?? last.namespaces.get(provider.settingsNs)
       currentNamespace(state, provider.settingsNs, previous)
       if (!keyedRoute(provider) || !provider.credential.writable) refuse(E.credential)
-      // A built-in key was approved for a route with no override; one appearing since then would
-      // send the key somewhere else, so it voids the approval like a changed profile does.
-      const sameRoute = (descriptor) => approved.profile === null
-        ? !present(descriptor, id)
-        : present(descriptor, id) && isDeepStrictEqual(safeProfile(descriptor.value.providers[id], provider.declared, defaults, protocols), approved.profile)
+      const sameRoute = (descriptor) => present(descriptor, id)
+        && isDeepStrictEqual(safeProfile(descriptor.value.providers[id], provider.declared, defaults, protocols), approved.profile)
       const checkApproved = (namespaces) => {
         if (approved === undefined) return
         const namespace = namespaces.get(provider.settingsNs)
