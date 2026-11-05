@@ -177,6 +177,22 @@ window.__ModuleLoader__.load({
       /** Admin refusal codes with their own words; any other code is shown with the code itself. */
       errors: Object.freeze(['stale-revision', 'unavailable', 'timeout', 'disconnected', 'invalid-payload', 'read-only', 'unknown-namespace', 'unknown-provider', 'unknown-model', 'invalid-reasoning-effort', 'model-unavailable', 'unknown-plugin', 'invalid-spec', 'already-installed', 'not-removable', 'build-blocked', 'plugin-failed', 'too-large', 'operation-failed']),
     })
+    /**
+     * T16's child provider-sync routes (§10; src/slim/host/provider-sync-routes.js). One exact
+     * path per action, every request a POST with ids, and every answer {ok:true,result} or
+     * {ok:false,error:{code}}. The page never sends or receives a key value, only the preview's
+     * opaque id and the selected provider ids.
+     */
+    const CHILD_SYNC_UI = Object.freeze({
+      prefix: '/api/fishball/native/provider-sync/',
+      path: Object.freeze({ preview: 'preview', confirm: 'confirm' }),
+      groups: Object.freeze(['add', 'existsSkip', 'conflictSkip', 'unsupported']),
+      added: 'add',
+      unknown: 'unknown',
+      failed: 'provider-sync-refused',
+      /** One slot state: no plan, no selection, no result, nothing busy or failed. */
+      empty: Object.freeze({ busy: false, plan: null, selected: [], result: null, error: null }),
+    })
     const SLOT = Object.freeze({
       mark: 'sidebar.brand.mark',
       name: 'sidebar.brand.name',
@@ -1070,6 +1086,9 @@ window.__ModuleLoader__.load({
       "adminError.plugin-failed": "The plugin change failed.",
       "adminError.too-large": "That answer was too large for the connection.",
       "adminError.operation-failed": "That operation failed.",
+      "syncChildHint": "Preview reads provider metadata from this DSH and lists what can be added to the isolated Fishball's own home. Confirm adds only the providers you tick; existing entries are skipped, and no key value is ever shown here.",
+      "syncUnknown": "result unknown, re-preview",
+      "syncRepreview": "Preview again",
     }
     const zh = {
       brandName: 'FISHBALL',
@@ -1602,6 +1621,9 @@ window.__ModuleLoader__.load({
       "adminError.plugin-failed": "插件更改失败。",
       "adminError.too-large": "该回答对于连接来说太大。",
       "adminError.operation-failed": "该操作失败。",
+      "syncChildHint": "预览只读取本 DSH 的提供商元数据，列出可以新增到隔离 Fishball 自己主目录的项。确认只会新增你勾选的提供商；已有项跳过，这里永远不显示 key 值。",
+      "syncUnknown": "结果未知，请重新预览。",
+      "syncRepreview": "重新预览",
     }
 
     const css = [
@@ -2684,11 +2706,103 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * T16's slot (§10): provider sync preview/confirm into the child's own home. T16 builds the
-     * preview/confirm body inside this component; this page deliberately renders nothing here,
-     * never reads an API key, and keeps the slot in its final position in the page.
+     * T16's slot (§10): provider sync preview/confirm into the isolated child's own home.
+     *
+     * Preview asks the main host's bridge for metadata only (ids, names, masks, models): no
+     * credential value reaches this page. Nothing is selected for the user; Confirm stays
+     * disabled until they tick at least one "will add" item, and it sends that explicit id list
+     * with the preview's opaque token and confirmed:true. A completed confirm cannot be replayed
+     * (its preview is consumed), so the one recovery path is a fresh preview. An item whose
+     * status is "unknown" reads "Result unknown, re-preview." and is never retried here.
+     *
+     * The first real sync stays a separate user decision (§10); this page only offers it.
      */
-    function ProviderSyncSlot() { return null }
+    function ProviderSyncSlot({ t }) {
+      const [view, setView] = React.useState(CHILD_SYNC_UI.empty)
+      const active = React.useRef(false)
+      const invoke = async (action, payload = {}) => {
+        if (active.current) return
+        active.current = true
+        // A preview replaces the whole slot; a confirm keeps the error visible beside a result
+        // that may be partial, so only an explicit preview clears the previous plan.
+        setView((previous) => ({
+          ...previous, busy: true, error: null,
+          ...(action === CHILD_SYNC_UI.path.preview ? { plan: null, selected: [], result: null } : {}),
+        }))
+        try {
+          const response = await send(CHILD_SYNC_UI.prefix + CHILD_SYNC_UI.path[action], payload)
+          const answer = response.ok ? response.answer : null
+          if (!response.ok || answer?.ok !== true || answer.result === undefined) {
+            const code = answer?.ok === false && typeof answer.error?.code === 'string' ? answer.error.code : CHILD_SYNC_UI.failed
+            setView((previous) => ({ ...previous, busy: false, error: code }))
+            return
+          }
+          if (action === CHILD_SYNC_UI.path.preview) setView({ ...CHILD_SYNC_UI.empty, plan: answer.result })
+          else setView({ ...CHILD_SYNC_UI.empty, result: answer.result })
+        } catch {
+          // send() answers null on a transport failure; a thrown wiring error must not leave
+          // the slot permanently busy.
+          setView((previous) => ({ ...previous, busy: false, error: CHILD_SYNC_UI.failed }))
+        } finally {
+          active.current = false
+        }
+      }
+      const groups = view.plan?.groups ?? {}
+      const itemsOf = (group) => Array.isArray(groups[group]) ? groups[group] : []
+      const toggle = (id, checked) => setView((previous) => ({
+        ...previous,
+        selected: checked ? [...previous.selected, id] : previous.selected.filter((entry) => entry !== id),
+      }))
+      const detailsOf = (item) => [
+        item.api ? item.api : null,
+        item.endpoint ? item.endpoint : null,
+        Array.isArray(item.models) && item.models.length > 0 ? item.models.join(', ') : null,
+        item.reason ? item.reason : null,
+      ].filter((entry) => entry !== null).join(' · ')
+      const unknownResult = view.result !== null && Array.isArray(view.result.results)
+        && view.result.results.some((item) => item?.status === CHILD_SYNC_UI.unknown)
+      return h('section', { className: CLS.section, 'data-fishball-provider-sync': true, 'data-fishball-sync-target': 'child', 'aria-busy': view.busy },
+        h('h3', null, t('syncTitle')),
+        h('p', { className: CLS.muted }, t('syncChildHint')),
+        h('div', { className: CLS.row },
+          h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: view.busy, onClick: () => void invoke(CHILD_SYNC_UI.path.preview) }, t('syncPreview'))),
+        view.plan === null ? null : h('div', { 'data-fishball-sync-plan': true },
+          view.plan.target?.profileId ? h('p', { className: CLS.muted }, t('syncIdentity') + ': ' + view.plan.target.profileId) : null,
+          CHILD_SYNC_UI.groups.map((group) => h('section', { key: group, 'data-fishball-sync-group': group },
+            h('h4', null, t('syncGroup.' + group)),
+            h('ul', { className: CLS.list }, itemsOf(group).map((item) => h('li', {
+              key: item.id, 'data-fishball-sync-item': item.id, 'data-sync-group': group,
+            },
+            group === CHILD_SYNC_UI.added
+              ? h('label', null,
+                h('input', {
+                  type: 'checkbox', checked: view.selected.includes(item.id), disabled: view.busy,
+                  onChange: (event) => toggle(item.id, event.target.checked),
+                }),
+                ' ' + item.name + ' (' + item.id + ') — ' + item.keyMask)
+              : h('span', null, item.name + ' (' + item.id + ') — ' + item.keyMask),
+            detailsOf(item) === '' ? null : h('span', { className: CLS.muted }, ' — ' + detailsOf(item))))),
+            itemsOf(group).length === 0 ? h('p', { className: CLS.muted }, '—') : null)),
+          h('div', { className: CLS.row },
+            h(Button, {
+              type: 'button', size: 'sm', variant: 'primary', disabled: view.busy || view.selected.length === 0,
+              onClick: () => void invoke(CHILD_SYNC_UI.path.confirm, {
+                previewId: view.plan.previewId, ids: view.selected, confirmed: true,
+              }),
+            }, t('syncConfirm')))),
+        view.result === null ? null : h('div', { 'data-fishball-sync-result': true },
+          h('p', { role: 'status' }, t(view.result.complete === true ? 'syncComplete' : 'syncPartial')),
+          h('ul', { className: CLS.list }, (Array.isArray(view.result.results) ? view.result.results : []).map((item) => h('li', {
+            key: item.id, 'data-fishball-sync-result-item': item.id, 'data-sync-status': item.status,
+          },
+          item.id + ': ' + item.status + ' / ' + item.config + ' / ' + item.key,
+          item.reason ? ' — ' + item.reason : null,
+          item.status === CHILD_SYNC_UI.unknown ? h('strong', { 'data-fishball-sync-unknown': true }, t('syncUnknown')) : null))),
+          view.result.complete === true && !unknownResult ? null : h('div', { className: CLS.row },
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: view.busy, onClick: () => void invoke(CHILD_SYNC_UI.path.preview) }, t('syncRepreview')))),
+        view.error === null ? null : h('p', { role: 'alert', 'data-fishball-sync-error': view.error },
+          t('syncFailed') + ' ', h('code', { className: CLS.code }, view.error)))
+    }
 
     /** One read of the native status route; failures stay local to the caller. */
     async function nativeStatus(signal) {
@@ -3847,7 +3961,7 @@ window.__ModuleLoader__.load({
           h(ModelSettings),
           h(ChildPlugins),
           h(ChildSettings),
-          h(ProviderSyncSlot),
+          h(ProviderSyncSlot, { t }),
           h(BrandStyle),
           h('h3', null, t('limits')),
           h(SettingsForm, {

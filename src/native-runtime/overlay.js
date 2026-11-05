@@ -9,6 +9,7 @@ const ROW = Object.freeze({
   lifecycle: 'fishball-native-child',
   app: 'fishball-native-app',
   admin: 'fishball-native-admin',
+  providerSync: 'fishball-native-provider-sync',
   schedule: 'schedule',
   toolSchedule: 'tool-schedule',
   timeContext: 'time-context',
@@ -26,6 +27,8 @@ const POLICY = Object.freeze({ sandboxMode: 'read-only', approval: 'ask' })
 const APP_MODULE = path.join('src', 'slim', 'child', 'app.js')
 /** The T11 admin row: the same tree, so the settings page's requests reach the child itself (§9). */
 const ADMIN_MODULE = path.join('src', 'slim', 'child', 'admin.js')
+/** T16's provider-sync target row: preview/confirm into the child's own home (§10). */
+const PROVIDER_SYNC_MODULE = path.join('src', 'slim', 'child', 'provider-sync-target.js')
 
 /** Whole-row replacement preserves standard native configuration and tool declarations. */
 export function launchOverlay(paths, record, childModule, limits, control, entries) {
@@ -85,6 +88,9 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       // pluginManager and llm; it takes no config and comes up on the lifecycle wire's admin
       // channel (T11, §9). It is not required, so an unready admin never fails the child boot.
       { id: ROW.admin, name: path.join(path.dirname(childModule), ADMIN_MODULE) },
+      // T16's target owns the child half of provider sync on the wire's provider-sync channel;
+      // like the admin row it is not required, so an unreachable target never blocks the boot.
+      { id: ROW.providerSync, name: path.join(path.dirname(childModule), PROVIDER_SYNC_MODULE) },
     ] },
   ]
 }

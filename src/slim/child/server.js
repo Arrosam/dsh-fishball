@@ -17,6 +17,7 @@ import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { BEARER, ERROR, LIMITS, ROUTES } from '../contract.js'
+import { APPROVALS_API } from './approvals.js'
 import { CHAT } from './chat.js'
 import { IMAGES, ImageApiError } from './images.js'
 import { REMINDERS } from './reminders.js'
@@ -38,6 +39,8 @@ const PATHS = Object.freeze({
   chat: CHAT.path,
   model: CHAT.modelPath,
   upload: IMAGES.uploadPath,
+  approvals: APPROVALS_API.path,
+  approvalAnswer: APPROVALS_API.answerPath,
 })
 
 /** Loopback only; port 0 lets the OS choose, and the parent learns the port from the service. */
@@ -107,6 +110,14 @@ function chatFrame(payload) {
 }
 
 /**
+ * One approvals change frame. Like reminders it says only "something changed" (the approvals
+ * module's own change payload), so the view re-reads and cannot drift from the child's state.
+ */
+function approvalFrame(payload) {
+  return 'event: ' + APPROVALS_API.event + '\ndata: ' + JSON.stringify(payload) + '\n\n'
+}
+
+/**
  * The JSON API routes' own body refusals. The parsed body is handed to the matched surface, but
  * a body that never parsed or was over the contract bound has no surface code of its own; these
  * two carry the shared 400 vocabulary and the contract's too-large.
@@ -140,6 +151,8 @@ const ALLOW = Object.freeze({
   events: Object.freeze([METHOD.get]),
   /** The chat routes read a page and accept one POST; their module refuses a wrong method too. */
   chat: CHAT.methods,
+  approvals: APPROVALS_API.pageMethods,
+  approvalAnswer: APPROVALS_API.answerMethods,
 })
 
 /** One response shape, so every status carries the security and cache headers. */
@@ -299,7 +312,7 @@ async function uiRoute(uiDir, pathname) {
  * heartbeat keeps a 30 s idle broker from closing it (§3.6). Closing the response, the client
  * dropping, or the server disposing all run the same cleanup exactly once.
  */
-function serveEvents(res, heartbeatMs, streams, reminders, chat) {
+function serveEvents(res, heartbeatMs, streams, reminders, chat, approvals) {
   res.writeHead(HTTP.ok, {
     ...SECURITY,
     'content-type': TYPE.eventStream,
@@ -311,6 +324,7 @@ function serveEvents(res, heartbeatMs, streams, reminders, chat) {
   let closed = false
   let unsubscribe = () => {}
   let unsubscribeChat = () => {}
+  let unsubscribeApprovals = () => {}
   const close = () => {
     if (closed) return
     closed = true
@@ -319,6 +333,7 @@ function serveEvents(res, heartbeatMs, streams, reminders, chat) {
     // a list it can no longer send.
     unsubscribe()
     unsubscribeChat()
+    unsubscribeApprovals()
     streams.delete(close)
     try { res.end() } catch { /* the client already closed the response */ }
   }
@@ -330,6 +345,7 @@ function serveEvents(res, heartbeatMs, streams, reminders, chat) {
   // The chat surface exists only when the app mounted it; without it the stream still carries
   // reminders, so a T03-only server keeps working.
   if (chat !== undefined) unsubscribeChat = chat.subscribe((payload) => write(chatFrame(payload)))
+  if (approvals !== undefined) unsubscribeApprovals = approvals.subscribe((payload) => write(approvalFrame(payload)))
   streams.add(close)
   res.on('close', close)
   res.on('error', close)
@@ -354,7 +370,7 @@ async function resolveRoute(pathname, options) {
   if (pathname === PATHS.events) {
     return {
       allow: ALLOW.events,
-      serve: (_req, res) => serveEvents(res, options.heartbeatMs, options.streams, options.reminders, options.chat),
+      serve: (_req, res) => serveEvents(res, options.heartbeatMs, options.streams, options.reminders, options.chat, options.approvals),
     }
   }
   if (pathname === PATHS.health) {
@@ -383,6 +399,13 @@ async function resolveRoute(pathname, options) {
     const chat = options.chat
     if (pathname === PATHS.chat) return { allow: ALLOW.chat, serve: (req, res) => serveApi(req, res, (request) => chat.handle(CHAT.path, request)) }
     if (pathname === PATHS.model) return { allow: ALLOW.chat, serve: (req, res) => serveApi(req, res, (request) => chat.handle(CHAT.modelPath, request)) }
+  }
+  if (options.approvals !== undefined) {
+    // The approvals page and its one answer route (T09's UI seam); the module owns validation,
+    // the live-offer check and the typed refusal, this hook only carries status and body.
+    const approvals = options.approvals
+    if (pathname === PATHS.approvals) return { allow: ALLOW.approvals, serve: (req, res) => serveApi(req, res, (request) => approvals.handle(APPROVALS_API.path, request)) }
+    if (pathname === PATHS.approvalAnswer) return { allow: ALLOW.approvalAnswer, serve: (req, res) => serveApi(req, res, (request) => approvals.handle(APPROVALS_API.answerPath, request)) }
   }
   return undefined
 }
@@ -420,11 +443,14 @@ async function handle(req, res, options) {
  * @param {{ upload: Function }} [options.images] - the image surface from src/slim/child/images.js
  *   (T06). The child app row supplies it beside the reminders surface; without it /api/upload is
  *   an ordinary 404 and no route claims the path.
+ * @param {{ handle: Function, subscribe: Function }} [options.approvals] - the approvals surface
+ *   from src/slim/child/approvals.js (T09): /api/approvals, its answer route and the SSE event.
+ *   Optional: a composition without the approvals row serves every other route.
  * @returns {{ readonly origin: string | undefined, start: () => Promise<string>, close: () => Promise<void> }}
  *   origin is undefined until start() resolves; start() binds 127.0.0.1:0 and returns the origin.
  */
 export function createAppServer(options) {
-  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs, reminders, chat, images } = options ?? {}
+  const { authority, uiDir, document, heartbeatMs = LIMITS.embedSseHeartbeatMs, reminders, chat, images, approvals } = options ?? {}
   if (!authority || typeof authority.accepts !== 'function') throw new TypeError('fishball-native-app: a bearer authority is required')
   if (typeof uiDir !== 'string' || !path.isAbsolute(uiDir)) throw new TypeError('fishball-native-app: an absolute UI directory is required')
   if (!Buffer.isBuffer(document)) throw new TypeError('fishball-native-app: the shell document must be a Buffer')
@@ -438,9 +464,12 @@ export function createAppServer(options) {
   if (images !== undefined && typeof images?.upload !== 'function') {
     throw new TypeError('fishball-native-app: the image surface must implement upload')
   }
+  if (approvals !== undefined && (typeof approvals.handle !== 'function' || typeof approvals.subscribe !== 'function')) {
+    throw new TypeError('fishball-native-app: the approvals surface must implement handle and subscribe')
+  }
 
   const streams = new Set()
-  const settings = { authority, uiDir, document, heartbeatMs, streams, reminders, chat, images }
+  const settings = { authority, uiDir, document, heartbeatMs, streams, reminders, chat, images, approvals }
   let origin
   let listening = false
   let closed = false

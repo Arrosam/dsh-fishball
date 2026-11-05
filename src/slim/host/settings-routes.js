@@ -17,6 +17,7 @@
  * that is not a JSON object is the one HTTP 400, with the same typed shape.
  */
 import { ADMIN_ERROR, ADMIN_OPERATION } from '../child/admin.js'
+import { registerPostRoutes } from './fetch-routes.js'
 
 const SLUGS = Object.freeze({
   [ADMIN_OPERATION.status]: 'status',
@@ -46,8 +47,6 @@ const HTTP = Object.freeze({
   ok: 200,
   badRequest: 400,
   json: 'application/json; charset=utf-8',
-  post: 'POST',
-  buffered: 'buffered',
 })
 const EMPTY = Object.freeze({})
 const HEADERS = Object.freeze({ 'content-type': HTTP.json, 'cache-control': 'no-store' })
@@ -93,26 +92,7 @@ function handlerFor(service, operation) {
  */
 export function registerAdminRoutes(ctx, service) {
   if (typeof service?.admin?.request !== 'function') return undefined
-  const register = ctx?.connection?.fetch?.register
-  if (typeof register !== 'function') return undefined
-  const removeAll = (removers) => { for (const remove of removers) { try { remove() } catch { /* already gone */ } } }
-  try {
-    return ctx.effect(() => {
-      const removers = []
-      try {
-        for (const { operation, path } of PATHS) {
-          removers.push(register({
-            path, methods: [HTTP.post], requestBody: HTTP.buffered, fetch: handlerFor(service, operation),
-          }))
-        }
-      } catch {
-        // A route another row already owns leaves none of this row's routes behind.
-        removeAll(removers)
-        return () => {}
-      }
-      return () => removeAll(removers)
-    }, 'fishball: admin routes')
-  } catch {
-    return undefined
-  }
+  return registerPostRoutes(ctx, PATHS.map(({ operation, path }) => ({
+    path, fetch: handlerFor(service, operation),
+  })), 'fishball: admin routes')
 }

@@ -82,8 +82,11 @@ export async function applyNativeChild(ctx, config) {
   const secret = await readPrivate(path.join(paths.root, RUNTIME.secret))
   const listeners = new Set()
   const adminListeners = new Set()
+  // T16's provider-sync target attaches to the same authenticated wire on its own payload channel.
+  const syncListeners = new Set()
   let current
   let currentAdmin
+  let currentSync
   let ready
   let stopped = false
   const identity = { hostId: marker.hostId, instanceId: record.instanceId }
@@ -105,6 +108,16 @@ export async function applyNativeChild(ctx, config) {
       if (currentAdmin && !currentAdmin.wire.closed) listener(currentAdmin.transport)
       return () => adminListeners.delete(listener)
     },
+    /**
+     * The provider-sync transport of the current authenticated connection (T16). Like the admin
+     * channel it exists only after the mutual HMAC proof and carries no operation of its own;
+     * the child's target row attaches its endpoint when this fires.
+     */
+    onProviderSyncTransport(listener) {
+      syncListeners.add(listener)
+      if (currentSync && !currentSync.wire.closed) listener(currentSync.transport)
+      return () => syncListeners.delete(listener)
+    },
   }
   ctx.provide('nativeRuntime', service)
   const connections = new Set()
@@ -118,6 +131,7 @@ export async function applyNativeChild(ctx, config) {
       clearTimeout(timer); connections.delete(wire)
       if (current?.wire === wire) current = undefined
       if (currentAdmin?.wire === wire) currentAdmin = undefined
+      if (currentSync?.wire === wire) currentSync = undefined
     })
     wire.on('auth', message => {
       if (message.channel !== 'auth' || message.step !== 'hello' || message.nonce !== nonce || message.hostId !== identity.hostId || message.instanceId !== identity.instanceId || typeof message.challenge !== 'string' || !sameProof(message.proof, proof(secret, 'main', identity, [nonce, message.challenge]))) return wire.close()
@@ -137,9 +151,13 @@ export async function applyNativeChild(ctx, config) {
           // transport on the same authenticated wire, and its frames are buffered until its row
           // attaches. Publish it before the control reply lets the main send one (§5.2, §9).
           currentAdmin = { wire, transport: wire.adminTransport() }
+          // T16's target comes up with the same control handshake; its frames are buffered until
+          // its child row attaches, so publishing here is enough.
+          currentSync = { wire, transport: wire.providerSyncTransport() }
           // Register receivers before the main logical host emits its protocol greeting.
           for (const listener of listeners) listener(current.transport, metadata)
           for (const listener of adminListeners) listener(currentAdmin.transport)
+          for (const listener of syncListeners) listener(currentSync.transport)
           payload = metadata
         } else if (message.operation === 'stop') payload = { stopping: true }
         else fail('UNKNOWN_LIFECYCLE_OPERATION')
@@ -166,7 +184,7 @@ export async function applyNativeChild(ctx, config) {
     authenticatedReadiness(ctx, limits).then(async result => { if (!stopped) { ready = result; await lifecycleLog(paths, 'CHILD_READY', limits.maxLogBytes) } }).catch(async () => { await lifecycleLog(paths, 'CHILD_FAILED', limits.maxLogBytes).catch(() => {}); ctx.appExit(1) })
   })
   ctx.on('dispose', async () => {
-    stopped = true; ready = undefined; cancelReady(); listeners.clear(); adminListeners.clear()
+    stopped = true; ready = undefined; cancelReady(); listeners.clear(); adminListeners.clear(); syncListeners.clear()
     for (const wire of connections) wire.close()
     await new Promise(resolve => server.close(resolve))
     await unlink(path.join(directory, RUNTIME.endpoint)).catch(error => { if (error.code !== 'ENOENT') throw error })

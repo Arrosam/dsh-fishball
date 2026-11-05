@@ -20,6 +20,7 @@
  * class or a data attribute, never element.style. Server entries are partial records merged by
  * id, so a tool/result completes the row its tool/call started.
  */
+import { createApprovalsView } from './approvals.js'
 import { attachmentPreview, createComposer } from './composer.js'
 
 /** Same resources as the child's CHAT; the broker strips its prefix before forwarding. */
@@ -120,7 +121,8 @@ function timeNode(at) {
  * @param {object} options
  * @param {Element} options.container - element the timeline and composer are appended to.
  * @param {Element} options.modelSlot - element the model picker is appended to.
- * @returns {{ refresh: () => Promise<void>, apply: (payload: object) => void, dispose: () => void }}
+ * @returns {{ refresh: () => Promise<void>, refreshApprovals: () => Promise<void>,
+ *   apply: (payload: object) => void, dispose: () => void }}
  */
 export function createChatView(options = {}) {
   const { container, modelSlot } = options ?? {}
@@ -148,6 +150,9 @@ export function createChatView(options = {}) {
   notice.hidden = true
 
   const composer = createComposer({ document, onSubmit: (value, attachments) => sendPrompt(value, attachments) })
+  // T09's cards, decision labels and the user's answers live in this same timeline, ordered by
+  // their own times; the view removes and re-inserts only its own rows.
+  const approvals = createApprovalsView({ document, timeline, insertRow, request })
   container.append(timeline, state, composer.element, notice)
 
   const modelLabel = document.createElement('label')
@@ -486,6 +491,9 @@ export function createChatView(options = {}) {
       setNotice(COPY.loadFailed)
     }
     if (modelPage.status === 'fulfilled') renderModel(modelPage.value)
+    // After the page swap, so label rows are inserted into the rebuilt timeline; an identical
+    // snapshot leaves the DOM alone and a half-typed question answer survives the SSE churn.
+    void approvals.refresh()
   }
 
   /** The page's metadata view of one uploaded attachment; the POST carries only the descriptor. */
@@ -559,11 +567,12 @@ export function createChatView(options = {}) {
   function dispose() {
     if (disposed) return
     disposed = true
+    approvals.dispose()
     previewUrls.clear()
     container.replaceChildren()
     modelSlot.replaceChildren()
   }
 
   void refresh()
-  return Object.freeze({ refresh, apply, dispose })
+  return Object.freeze({ refresh, refreshApprovals: () => approvals.refresh(), apply, dispose })
 }

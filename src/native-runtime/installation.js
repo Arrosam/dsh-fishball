@@ -167,5 +167,10 @@ export async function copyChildCode(paths, record) {
   await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
   if (await exists(path.join(sourceRoot, 'src', 'native-control'))) await copy(path.join(sourceRoot, 'src', 'native-control'), path.join(destination, 'src', 'native-control'), javascript)
   await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), everyFile)
+  // T16's child target imports the shared preview/confirm engine and dynamically imports the
+  // pi-ai host adapter beside it (src/slim/child/provider-sync-target.js: '../../provider-sync.js').
+  // Both modules ship with the slim tree so the target uses the same reviewed rules as pairing.
+  await copy(path.join(sourceRoot, 'src', 'provider-sync.js'), path.join(destination, 'src', 'provider-sync.js'), javascript)
+  await copy(path.join(sourceRoot, 'src', 'provider-sync-host.js'), path.join(destination, 'src', 'provider-sync-host.js'), javascript)
   return path.join(destination, 'native-child.js')
 }
