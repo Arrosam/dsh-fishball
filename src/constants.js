@@ -501,9 +501,15 @@ export const APPROVAL_RISK = Object.freeze({ low: 'low', high: 'high' })
 export const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
 /**
  * How a card left the pile: your answer, Fishball going off, the session leaving management, its
- * call cancelled, or (a direct call's card, rev11e) the prompt in its session answered first.
+ * call cancelled, its turn ended, or (a direct call's card, rev11e) the prompt in its session
+ * answered first. The reason words and the closure line are src/card-lifecycle.js's; a card in
+ * the pile has no end time, so none of these is a timer.
  */
-export const CARD_END = Object.freeze({ user: 'user', off: 'off', released: 'released', cancelled: 'cancelled', inSession: 'in-session' })
+export const CARD_END = Object.freeze({
+  user: 'user', off: 'off', released: 'released', cancelled: 'cancelled', sessionEnded: 'session-ended',
+  dismissed: 'dismissed', back: 'back-to-session', unavailable: 'unavailable', withdrawn: 'withdrawn',
+  inSession: 'in-session',
+})
 /**
  * Prompts already showing (DESIGN §7a.9, rev11e): the broker's pass-through registry, listed by
  * list_frozen_sessions and answered by answer_prompt (allow or reject only, §7a.9).

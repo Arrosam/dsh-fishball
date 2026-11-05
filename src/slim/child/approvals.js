@@ -13,6 +13,9 @@
  * - a question Fishball sends to the user (`to_user`) comes back as an inbox notice with the
  *   QUESTION_ANSWER marker. It becomes a timeline answer event for T07, because the frozen
  *   approval.settled payload cannot carry answer words;
+ * - a card the main row closed without the user's answer comes back the same way with the
+ *   CARD_CLOSED marker (src/slim/inbox-markers.js). It becomes one "closed: <reason>" row and ends
+ *   the waiting label, so a card the user never answered is never dropped silently;
  * - the root `user-questions/request` listener answers Fishball's OWN questions in its own chat.
  *   It takes the live request (never the userQuestions projection, which only records timed
  *   questions) and resolves it with the user's batch, exactly as the SDK adapter does.
@@ -39,6 +42,7 @@
 import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { APPROVAL_KIND, DECISION, ERROR, EVENT, GRANT_KIND, LIMITS, OPERATION, PLAN_REVIEW, RISK, SETTLED_BY, ContractError } from '../contract.js'
+import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
 
 /** Stable Cordis plugin name; native-child.js mounts it after the session-tools row. */
 export const name = 'fishball-native-approvals'
@@ -69,7 +73,10 @@ export const APPROVAL_REQUIRED = Object.freeze([
 export const APPROVALS = Object.freeze({
   event: 'approvals',
   change: Object.freeze({ changed: true }),
-  limits: Object.freeze({ cards: 64, retired: 64, prompts: 32, labels: 200, answers: 50, questions: 16 }),
+  // The host gates live requests globally (maxPendingApprovals), so this ceiling only bounds what a
+  // live offer left behind by a request that ended without a settlement can accumulate. A card the
+  // USER still has to answer is a label or a pile card, kept out of the caps below.
+  limits: Object.freeze({ cards: 128, retired: 64, prompts: 32, labels: 200, answers: 50, questions: 16, closed: 50 }),
 })
 
 /**
@@ -117,19 +124,6 @@ const ANSWER_KEYS = Object.freeze({
  * prepend its own listener and win, because this one is registered last.
  */
 const OWN_APPROVAL = Object.freeze({ waterfall: 'approval/request', outcome: 'rejected' })
-
-/**
- * The inbox marker for a question answer the user gave on the main DSH (§5.2, T09). The host
- * writes it with `text`; the child parses it and returns false for every other inbox item, so
- * the chat row's own consumer still owns those. Shared with src/slim/host/approvals.js.
- */
-export const QUESTION_ANSWER = Object.freeze({
-  kind: 'system',
-  dedupePrefix: 'question-answer:',
-  fallback: 'The user answered the question you sent them.',
-  text: (questionId, words) => '[question answer ' + questionId + '] ' + words,
-  pattern: /^\[question answer ([^\]\s]+)\] ([\s\S]*)$/,
-})
 
 /** The question id prefix this child mints for Fishball's own questions (never a bridge id). */
 const OWN_QUESTION_PREFIX = 'uq_'
@@ -222,9 +216,19 @@ const byAt = (a, b) => a.at - b.at
 /** DSH restores a UserQuestionError by name and code (dsh-user-questions), so no class import is needed. */
 const questionError = (message, code) => Object.assign(new Error(message), { name: QUESTION.errorName, code })
 
-/** Keep a bounded insertion-ordered map; the oldest entry leaves first. */
-function remember(map, key, value, max) {
-  if (!map.has(key) && map.size >= max) map.delete(map.keys().next().value)
+/**
+ * Keep a bounded insertion-ordered map; the oldest entry leaves first. `keep` marks entries that
+ * must not leave: a card or label still waiting for the user is bounded by the host's own pending
+ * requests, and dropping one would hide a card the user still has to answer.
+ */
+function remember(map, key, value, max, keep) {
+  if (!map.has(key) && map.size >= max) {
+    for (const [oldKey, oldValue] of map) {
+      if (keep?.(oldValue, oldKey) === true) continue
+      map.delete(oldKey)
+      break
+    }
+  }
   map.set(key, value)
 }
 
@@ -471,6 +475,7 @@ export function apply(ctx) {
     labels: new Map(),     // decisionId -> one settled decision record (T08)
     pending: new Map(),    // approvalId -> decisionId waiting for the user's answer
     answers: [],           // newest-first user answers to questions Fishball sent to the user
+    closed: [],            // newest-first cards the host closed without the user's answer
     questions: new Map(),  // questionId -> Fishball's own live question
     listeners: new Set(),
     closed: false,
@@ -492,16 +497,20 @@ export function apply(ctx) {
       prompt: card.prompt, choices: [...card.choices], reason: card.reason, quotes: [...card.quotes],
       ...(card.questions === undefined ? {} : { questions: card.questions }),
     }
+    // A label still waiting for the user is never dropped by the audit cap: the card would vanish
+    // from the chat before it is answered (APPROVALS.limits.labels bounds settled history only).
     remember(state.labels, decisionId, {
       decisionId, kind, sessionId: card?.sessionId ?? '', title: card?.title ?? '', at: Date.now(),
       request, answer: cutChars(trimmed(answer), LIMITS.reasonChars), outcome, settled: null, ...extra,
-    }, APPROVALS.limits.labels)
+    }, APPROVALS.limits.labels, (label) => label.waiting === true)
     return decisionId
   }
 
   const settleLabel = (decisionId, payload) => {
     const label = state.labels.get(decisionId)
-    if (label !== undefined) label.settled = { decision: payload.decision, by: payload.by, at: Date.now() }
+    if (label === undefined) return
+    label.settled = { decision: payload.decision, by: payload.by, at: Date.now() }
+    label.waiting = false
   }
 
   /** One `approval.settled`: close the card, update the waiting label or record the user's outcome. */
@@ -511,14 +520,16 @@ export function apply(ctx) {
     const pendingId = state.pending.get(payload.approvalId)
     const known = card ?? state.retired.get(payload.approvalId)
     if (payload.decision === DECISION.escalate) {
-      // The request is the user's card now; Fishball's label stays open until the user answers.
-      if (card !== undefined) remember(state.retired, payload.approvalId, card, APPROVALS.limits.retired)
-      if (pendingId !== undefined) settleLabel(pendingId, payload)
+      // The request is the user's card now; Fishball's label stays open (and keeps its place out
+      // of the audit cap) until the user answers it or the closure line ends it.
+      if (card !== undefined) remember(state.retired, payload.approvalId, card, APPROVALS.limits.retired, (value, key) => state.pending.has(key))
       publish()
       return
     }
     if (pendingId !== undefined) {
-      settleLabel(pendingId, payload)
+      // A question that went back to its session or closed settles with an ask by Fishball; that
+      // is not an answer, so the closure line below names the reason instead of a decision.
+      if (!(payload.decision === DECISION.ask && payload.by === SETTLED_BY.fishball)) settleLabel(pendingId, payload)
       state.pending.delete(payload.approvalId)
     } else if (known !== undefined && payload.by === SETTLED_BY.user) {
       // The user decided a card Fishball did not answer (an escalation): one label for that outcome.
@@ -539,6 +550,37 @@ export function apply(ctx) {
   const receiveCard = (sessionId, descriptor) => {
     remember(state.cards, descriptor.approvalId, Object.freeze({ ...descriptor, sessionId }), APPROVALS.limits.cards)
     publish()
+  }
+
+  /**
+   * One card the host closed without the user's answer (CARD_CLOSED, an inbox system item): the
+   * chat shows "closed: <reason>" instead of the card vanishing, and a label still waiting for the
+   * user stops waiting. The reason is the host's user-facing text; it is never markup.
+   */
+  const closeCard = ({ approvalId, reason, sessionId, at }) => {
+    const pendingId = state.pending.get(approvalId)
+    if (pendingId !== undefined) {
+      const label = state.labels.get(pendingId)
+      if (label !== undefined) {
+        label.waiting = false
+        label.closed = reason
+      }
+      state.pending.delete(approvalId)
+    }
+    state.retired.delete(approvalId)
+    state.cards.delete(approvalId)
+    state.closed.unshift({ approvalId, sessionId, at, reason })
+    state.closed.length = Math.min(state.closed.length, APPROVALS.limits.closed)
+    publish()
+  }
+
+  /** The host's closure notice: "[card closed <id>] <reason>" (src/card-lifecycle.js). */
+  const receiveClosed = (item) => {
+    if (item?.kind !== CARD_CLOSED.kind || typeof item.text !== 'string') return false
+    const match = CARD_CLOSED.pattern.exec(item.text)
+    if (match === null) return false
+    closeCard({ approvalId: match[1], reason: match[2].trim(), sessionId: item.sourceSessionId, at: item.at ?? Date.now() })
+    return true
   }
 
   /** The host's answer notice: the user's answer to a question Fishball sent them (§5.2, T09). */
@@ -585,7 +627,7 @@ export function apply(ctx) {
     })
     state.cards.delete(approvalId)
     const kind = decision === DECISION.grant ? LABEL.kind.grant : decision === DECISION.escalate ? LABEL.kind.escalation : decision === DECISION.ask ? LABEL.kind.question : LABEL.kind.approval
-    const decisionId = recordLabel(card, kind, reason ?? question ?? '', { decision, ...(result.grantId === undefined ? {} : { grantId: result.grantId }) })
+    const decisionId = recordLabel(card, kind, reason ?? question ?? '', { decision, ...(decision === DECISION.escalate ? { waiting: true } : {}), ...(result.grantId === undefined ? {} : { grantId: result.grantId }) })
     if (decision === DECISION.escalate) state.pending.set(approvalId, decisionId)
     publish()
     return ok({
@@ -616,13 +658,13 @@ export function apply(ctx) {
     }
     state.cards.delete(questionId)
     // A note may still be added while the question is the user's card (today's answer_question).
-    if (!answering) remember(state.retired, questionId, target, APPROVALS.limits.retired)
+    if (!answering) remember(state.retired, questionId, target, APPROVALS.limits.retired, (value, key) => state.pending.has(key))
     if (answering) {
       recordLabel(target, cardKind(target), answerWords({ answers, approve, feedback }), { answered: true })
       publish()
       return ok({ questionId, answered: true })
     }
-    const decisionId = recordLabel(target, cardKind(target), note ?? '', { toUser: true })
+    const decisionId = recordLabel(target, cardKind(target), note ?? '', { toUser: true, waiting: true })
     state.pending.set(questionId, decisionId)
     publish()
     return ok({ questionId, toUser: true })
@@ -784,6 +826,7 @@ export function apply(ctx) {
       questions: api.questions(),
       labels: [...state.labels.values()].sort(byAt),
       answers: [...state.answers].sort(byAt),
+      closed: [...state.closed].sort(byAt),
     }
   }
 
@@ -822,7 +865,7 @@ export function apply(ctx) {
     for (const dispose of registrations.splice(0)) { try { dispose() } catch { /* already gone */ } }
     state.listeners.clear()
     state.cards.clear(); state.retired.clear(); state.prompts.clear(); state.labels.clear()
-    state.pending.clear(); state.answers.length = 0
+    state.pending.clear(); state.answers.length = 0; state.closed.length = 0
   }
 
   ctx.provide(CHILD.service, service)
@@ -831,7 +874,7 @@ export function apply(ctx) {
     if (envelope.operation === EVENT.approvalRequest) receiveCard(envelope.sessionId, envelope.payload)
     else if (envelope.operation === EVENT.approvalSettled) settle(envelope.payload)
   }))
-  disposers.push(bridge.onInbox((item) => receiveAnswer(item)))
+  disposers.push(bridge.onInbox((item) => receiveClosed(item) || receiveAnswer(item)))
   disposers.push(ctx.on(QUESTION.waterfall, (request, next) => askUser(request, next), { prepend: true }))
   // Fishball's own tool approvals have no card UI in this child; without a listener DSH falls
   // through to its fail-closed default. This explicit refusal is deterministic and can be
