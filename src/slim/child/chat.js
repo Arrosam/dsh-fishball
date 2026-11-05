@@ -193,8 +193,8 @@ function textOfBlocks(content) {
 
 /**
  * The page's view of one attachment block: metadata only, never bytes or a path (§6.5). The
- * timeline shows the user's own upload under its id; the chat view keeps a data-URL preview for
- * the images it uploaded in this page, and an image without one reads "Preview unavailable".
+ * timeline shows the user's own upload under its id and fetches the preview from the child's
+ * read-only by-id route; an id the route does not know still reads "Preview unavailable".
  */
 function attachmentOf(block) {
   const ref = block?.attachment

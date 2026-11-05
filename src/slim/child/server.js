@@ -19,7 +19,7 @@ import path from 'node:path'
 import { BEARER, ERROR, LIMITS, ROUTES } from '../contract.js'
 import { APPROVALS_API } from './approvals.js'
 import { CHAT } from './chat.js'
-import { IMAGES, ImageApiError } from './images.js'
+import { IMAGES, ImageApiError, imageIdOf } from './images.js'
 import { REMINDERS } from './reminders.js'
 
 /**
@@ -39,6 +39,7 @@ const PATHS = Object.freeze({
   chat: CHAT.path,
   model: CHAT.modelPath,
   upload: IMAGES.uploadPath,
+  imagesRead: IMAGES.readPath,
   approvals: APPROVALS_API.path,
   approvalAnswer: APPROVALS_API.answerPath,
 })
@@ -259,6 +260,25 @@ async function serveUpload(req, res, images) {
 }
 
 /**
+ * The image read hook (T06 refresh fix): one content-addressed id, verified by the image
+ * service's own store read. A malformed, unknown, corrupt or vanished id is the same bodyless
+ * 404, so a probe cannot tell them apart; the store's verified media type is the only type sent.
+ * SECURITY's nosniff, frame-ancestors and same-origin resource policy apply like every route.
+ * The cache header is the child's; the T04 broker normalizes /api/* to no-store (host/embed.js).
+ * HEAD advertises the GET length through the explicit content-length and writes no body.
+ */
+async function serveImage(req, res, images, id) {
+  const image = await images.read(id)
+  if (image === undefined) { notFound(res); return }
+  const body = Buffer.from(image.data)
+  send(res, HTTP.ok, {
+    'content-type': image.mediaType,
+    'cache-control': IMAGES.readCacheControl,
+    'content-length': String(body.length),
+  }, req.method === METHOD.head ? undefined : body)
+}
+
+/**
  * Parse an origin-form request target and return its pathname. Absolute-form targets and
  * protocol-relative "//host/path" targets are refused here, as the broker refuses them (§3.6).
  */
@@ -379,6 +399,18 @@ async function resolveRoute(pathname, options) {
       serve: (_req, res) => send(res, HTTP.ok, { 'content-type': TYPE.json }, HEALTH),
     }
   }
+  if (pathname.startsWith(PATHS.imagesRead)) {
+    // One canonical image id under the read-only tail. The module owns the id shape and the
+    // store read; this hook only frames the verified bytes. Without a read-capable surface the
+    // tail is an ordinary 404, so a composition with only the upload route keeps working.
+    if (options.images === undefined || typeof options.images.read !== 'function') return undefined
+    const id = imageIdOf(pathname)
+    if (id === undefined) return undefined
+    return {
+      allow: ALLOW.readable,
+      serve: (req, res) => serveImage(req, res, options.images, id),
+    }
+  }
   if (pathname === PATHS.reminders) {
     // The reminder module's own method list: GET and HEAD list, POST mutates (T10).
     return {
@@ -440,9 +472,9 @@ async function handle(req, res, options) {
  * @param {{ handle: Function, subscribe: Function }} [options.chat] - the chat surface from
  *   src/slim/child/chat.js (T07): /api/chat, /api/model and the SSE chat event. Optional so a
  *   shell-only server still serves the document, reminders and liveness.
- * @param {{ upload: Function }} [options.images] - the image surface from src/slim/child/images.js
- *   (T06). The child app row supplies it beside the reminders surface; without it /api/upload is
- *   an ordinary 404 and no route claims the path.
+ * @param {{ upload: Function, read: Function }} [options.images] - the image surface from
+ *   src/slim/child/images.js (T06). The child app row supplies it beside the reminders surface;
+ *   without it /api/upload and /api/images/<id> are ordinary 404s and no route claims the paths.
  * @param {{ handle: Function, subscribe: Function }} [options.approvals] - the approvals surface
  *   from src/slim/child/approvals.js (T09): /api/approvals, its answer route and the SSE event.
  *   Optional: a composition without the approvals row serves every other route.
