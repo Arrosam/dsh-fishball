@@ -140,7 +140,7 @@ export async function apply(ctx, config) {
   const publish = () => { refreshSources(); feed.publish(snapshot()) }
   /** Replace the active lifecycle (the stand-ins and the real one share one contract). */
   const use = (next) => { lifecycle = next; publish() }
-  const commands = { setModel: unavailable, setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable, markWelcomeSeen: unavailable, setManaged: unavailable, answerRequest: unavailable, revokeGrant: unavailable, answerQuestion: unavailable, setQuestionMode: unavailable }
+  const commands = { setModel: unavailable, setPlugin: unavailable, removePlugin: unavailable, removeAllowance: unavailable, pluginDetail: unavailable, pluginIcon: unavailable, saveSettings: unavailable, inspectInstall: unavailable, install: unavailable, cancelInstall: unavailable, refreshPlugins: unavailable, setContextWindow: unavailable, send: unavailable, addWatch: unavailable, removeWatch: unavailable, markRead: unavailable, setBrandStyle: unavailable, setSidebarEntry: unavailable, markWelcomeSeen: unavailable, setManaged: unavailable, answerRequest: unavailable, revokeGrant: unavailable, answerQuestion: unavailable, setQuestionMode: unavailable }
   registerRoutes(ctx, {
     snapshot,
     modelCatalog: () => ctx.sessionController.modelCatalog(),
@@ -163,6 +163,7 @@ export async function apply(ctx, config) {
     removeWatch: (input) => commands.removeWatch(input),
     markRead: () => commands.markRead(),
     setBrandStyle: (style) => commands.setBrandStyle(style),
+    setSidebarEntry: (entry) => commands.setSidebarEntry(entry),
     markWelcomeSeen: () => commands.markWelcomeSeen(),
     setManaged: (input) => commands.setManaged(input),
     answerRequest: (input) => commands.answerRequest(input),
@@ -410,6 +411,7 @@ export async function apply(ctx, config) {
   const preferences = new Preferences(store, { onChange: () => publish() })
   preferencesView = () => preferences.snapshot()
   commands.setBrandStyle = (style) => preferences.setBrandStyle(style)
+  commands.setSidebarEntry = (entry) => preferences.setSidebarEntry(entry)
   // Requests Fishball sends you (rev11c, §7a.6, §9). A card that
   // leaves without your answer gets its closure line and the slim bridge's event from the broker
   // (src/card-lifecycle.js); the callback runs only after the broker exists.
