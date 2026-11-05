@@ -690,6 +690,9 @@ export function apply(ctx) {
     }
     state.retired.delete(approvalId)
     state.cards.delete(approvalId)
+    // Fishball's own ask_user card is over as well: drop the child's live copy so the question form
+    // leaves with the closed row, and a later answer finds no entry and is refused as expired.
+    if (state.questions.get(approvalId)?.card === true) state.questions.delete(approvalId)
     state.closed.unshift({ approvalId, sessionId, at, reason })
     state.closed.length = Math.min(state.closed.length, APPROVALS.limits.closed)
     persist()
