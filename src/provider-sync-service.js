@@ -1,10 +1,9 @@
 /** Owner-page entrypoints for the dedicated sync capability. Never mounted as agent tools. */
-import { createHash, randomUUID } from 'node:crypto'
-import { realpath } from 'node:fs/promises'
-import { getDshRuntimeVersion } from '@deepseek-ai/dsh-app-boot'
+import { randomUUID } from 'node:crypto'
 import { ProviderSyncChannel } from './provider-sync-channel.js'
 import { ProviderSyncEngine, ProviderSyncError } from './provider-sync.js'
 import { ProviderSyncCoordinator } from './provider-sync-coordinator.js'
+import { createProviderSyncCodec, providerSyncIdentity, PROVIDER_SYNC_TARGET } from './slim/child/provider-sync-target.js'
 
 export const SYNC_PAGE = Object.freeze({ path: '/api/fishball/provider-sync', schemaVersion: '1',
   maxBodyBytes: 16384, method: 'POST', contentType: 'application/json',
@@ -58,10 +57,9 @@ export function registerProviderSync(ctx, { createHost = defaultCreateHost,
     if (fixtureIdentity !== undefined) return fixtureIdentity
     const profile = ctx.get(P.profileContext)
     if (!profile?.dir) fail(P.code.profile)
-    // Only canonical path identity is read, not profile/config/credential contents.
-    const canonical = await realpath(profile.dir)
-    return { runtimeId, profileId: createHash(P.hash).update(canonical).digest(P.hashEncoding),
-      schemaVersion: P.schemaVersion, version: getDshRuntimeVersion() }
+    // Only canonical path identity is read, not profile/config/credential contents. The same
+    // helper is the child target's identity, so both ends describe a profile one way.
+    return providerSyncIdentity(profile, runtimeId)
   }
   const initialize = () => {
     if (disposed) fail(P.code.closed)
@@ -158,4 +156,281 @@ export function registerProviderSync(ctx, { createHost = defaultCreateHost,
     },
   }), P.routeEffect)
   return { close }
+}
+
+/* ---------------------------------------------------------------- the child target bridge */
+
+/**
+ * Host half of §10: the same preview/confirm flow with the isolated child as the target.
+ *
+ * The pairing channel cannot reach the child (it pairs two user-visible profiles over loopback),
+ * so this bridge replaces its `peer()` with a transport view of the authenticated lifecycle wire:
+ * the source host (this process) reads a selected record only inside the shared coordinator's
+ * confirmation, and the child's endpoint runs the same ProviderSyncEngine over its own services.
+ * The browser still receives only the preview metadata and per-item outcomes.
+ *
+ * T12 calls `nativeFishballRuntime.providerSync`:
+ * - `status()` → `{state: 'inactive'|'ready', instanceId?}`
+ * - `preview()` → `{ok:true, result:{previewId, source, target, groups, expiresAt}}`
+ *   or `{ok:false, error:{code}}`
+ * - `confirm({previewId, ids, confirmed:true}, {signal?})` →
+ *   `{ok:true, result:{results, complete}}` or `{ok:false, error:{code}}`
+ * Never retry an item whose status is `unknown`; start a fresh preview instead.
+ *
+ * Merge hooks (none of these files belong to T16):
+ * 1. src/native-runtime/wire.js adds `provider-sync` as a payload channel beside `control` and
+ *    `admin`, with the same per-channel backlog and byte bound.
+ * 2. src/native-runtime/index.js exposes `onProviderSyncTransport(listener)` on the main runtime
+ *    and publishes each authenticated wire's transport (with `{instanceId}` metadata).
+ * 3. src/native-runtime/child.js exposes the same hook on the child runtime and publishes its end
+ *    when the authenticated `control` request arrives.
+ * 4. native-host.js creates one bridge, attaches it from `owner.onProviderSyncTransport`, exposes
+ *    it as `service.providerSync`, and closes it in shutdown.
+ * 5. src/native-runtime/overlay.js inserts the child row for src/slim/child/provider-sync-target.js.
+ * 6. src/native-runtime/installation.js copyChildCode also copies src/provider-sync.js and
+ *    src/provider-sync-host.js beside the snapshot's src/slim tree.
+ */
+export const CHILD_SYNC = Object.freeze({
+  state: Object.freeze({ inactive: 'inactive', ready: 'ready' }),
+  code: Object.freeze({
+    failed: 'child-sync-failed',
+    timeout: 'child-sync-timeout',
+    disconnected: 'child-sync-disconnected',
+    invalidResponse: 'child-sync-invalid-response',
+    limit: 'child-sync-too-large',
+    cancelled: 'child-sync-cancelled',
+  }),
+  timeoutMs: PROVIDER_SYNC_TARGET.limits.requestTimeoutMs,
+  transportMethods: Object.freeze(['send', 'onMessage', 'onClose']),
+})
+const CHILD_ACTIONS = Object.freeze(Object.values(PROVIDER_SYNC_TARGET.actions))
+const CHILD_CODE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
+const childCode = (value) => typeof value === 'string' && value.length <= 128 && CHILD_CODE.test(value)
+const childRefusal = (error) => ({ ok: false, error: { code: childCode(error?.code) ? error.code : CHILD_SYNC.code.failed } })
+
+/** A transport failure, deliberately not a ProviderSyncError: a sent write may have committed. */
+class ChildSyncError extends Error {
+  constructor(code) {
+    super('Fishball child provider sync failed.')
+    this.name = 'ChildSyncError'
+    this.code = code
+  }
+}
+
+/** Create the main-side bridge. Pass `identity` in fixtures to avoid profile lookup. */
+export function createChildProviderSync(options = {}) { return new ChildProviderSync(options) }
+
+class ChildProviderSync {
+  #ctx
+  #createHost
+  #suppliedIdentity
+  #codec
+  #closed = false
+  #transport
+  #disposers = []
+  #pairId
+  #instanceId
+  #targetIdentity
+  #pending = new Map()
+  #busy = false
+  #sourceIdentityPromise
+  #sourceHostPromise
+  #coordinatorPromise
+
+  constructor({ ctx, identity, createHost = defaultCreateHost } = {}) {
+    if (typeof createHost !== 'function') throw new TypeError('fishball child provider sync: createHost must be a function')
+    this.#ctx = ctx
+    this.#createHost = createHost
+    this.#suppliedIdentity = identity
+    this.#codec = createProviderSyncCodec()
+  }
+
+  /** The page's availability probe; the lifecycle's own status stays service.status(). */
+  status() {
+    return Object.freeze({
+      state: this.#transport === undefined ? CHILD_SYNC.state.inactive : CHILD_SYNC.state.ready,
+      ...(this.#instanceId === undefined ? {} : { instanceId: this.#instanceId }),
+    })
+  }
+
+  /**
+   * Attach the provider-sync transport of one authenticated child connection. A replaced
+   * transport rejects whatever was in flight: the child restarted, so an answer cannot belong
+   * to this connection and is never retried.
+   */
+  attach(next, metadata = {}) {
+    if (this.#closed) throw new Error('fishball child provider sync: the bridge is closed')
+    for (const method of CHILD_SYNC.transportMethods) {
+      if (typeof next?.[method] !== 'function') throw new TypeError('fishball child provider sync: the transport must implement ' + method)
+    }
+    this.detach()
+    this.#transport = next
+    this.#pairId = randomUUID()
+    this.#instanceId = typeof metadata?.instanceId === 'string' && metadata.instanceId !== '' ? metadata.instanceId : undefined
+    this.#targetIdentity = undefined
+    this.#disposers.push(next.onMessage((encoded) => { this.#receive(encoded) }))
+    this.#disposers.push(next.onClose(() => { if (this.#transport === next) this.detach() }))
+  }
+
+  detach() {
+    for (const dispose of this.#disposers.splice(0)) { try { dispose() } catch { /* the wire is already gone */ } }
+    this.#transport = undefined
+    this.#pairId = undefined
+    this.#instanceId = undefined
+    this.#targetIdentity = undefined
+    this.#rejectPending(CHILD_SYNC.code.disconnected)
+  }
+
+  close() {
+    if (this.#closed) return
+    this.#closed = true
+    this.detach()
+    const coordinator = this.#coordinatorPromise
+    this.#coordinatorPromise = undefined
+    if (coordinator !== undefined) coordinator.then((value) => value.close()).catch(() => {})
+  }
+
+  /**
+   * The coordinator's channel view. The target identity is learned from the target engine's own
+   * inventory answer, so the preview's fingerprint check compares the child that answered with
+   * the child the plan names.
+   */
+  peer() {
+    if (this.#closed) throw new ProviderSyncError('sync-closed')
+    if (this.#transport === undefined) return undefined
+    const self = this
+    return Object.freeze({
+      pairId: this.#pairId,
+      get identity() { return self.#targetIdentity },
+      request: (action, payload, options) => self.request(action, payload, options),
+    })
+  }
+
+  request(action, payload, options = {}) {
+    if (this.#closed) return Promise.reject(new ProviderSyncError('sync-closed'))
+    if (!CHILD_ACTIONS.includes(action)) return Promise.reject(new ProviderSyncError('invalid-selection'))
+    if (this.#transport === undefined) return Promise.reject(new ProviderSyncError('not-paired'))
+    if (this.#busy) return Promise.reject(new ProviderSyncError('sync-busy'))
+    this.#busy = true
+    return this.#exchange(action, payload, options).finally(() => { this.#busy = false })
+  }
+
+  async preview() {
+    try { return { ok: true, result: await (await this.#coordinator()).preview() } }
+    catch (error) { return childRefusal(error) }
+  }
+
+  async confirm(input, options = {}) {
+    try {
+      const coordinator = await this.#coordinator()
+      return { ok: true, result: await coordinator.confirm({
+        previewId: input?.previewId,
+        ids: input?.ids,
+        confirmed: input?.confirmed,
+      }, options) }
+    } catch (error) { return childRefusal(error) }
+  }
+
+  async #sourceIdentity() {
+    this.#sourceIdentityPromise ??= (async () => {
+      if (this.#suppliedIdentity !== undefined) return Object.freeze({ ...this.#suppliedIdentity })
+      const profile = this.#ctx?.get(P.profileContext)
+      if (!profile?.dir) throw new ProviderSyncError(P.code.profile)
+      return providerSyncIdentity(profile, randomUUID())
+    })()
+    return this.#sourceIdentityPromise
+  }
+
+  #sourceHost() {
+    this.#sourceHostPromise ??= (async () => this.#createHost(this.#ctx, { identity: await this.#sourceIdentity() }))()
+    return this.#sourceHostPromise
+  }
+
+  async #coordinator() {
+    if (this.#closed) throw new ProviderSyncError('sync-closed')
+    if (this.#transport === undefined) throw new ProviderSyncError('not-paired')
+    this.#coordinatorPromise ??= (async () => new ProviderSyncCoordinator({ host: await this.#sourceHost(), channel: this }))()
+    return this.#coordinatorPromise
+  }
+
+  async #exchange(action, payload, { signal } = {}) {
+    if (signal !== undefined && !(signal instanceof AbortSignal)) throw new ChildSyncError(CHILD_SYNC.code.failed)
+    const peer = await this.#sourceIdentity()
+    if (signal?.aborted) throw new ProviderSyncError('cancelled')
+    const id = randomUUID()
+    let encoded
+    try { encoded = this.#codec.encode(this.#codec.request(action, peer, payload, id)) }
+    catch (error) {
+      throw new ChildSyncError(error?.code === PROVIDER_SYNC_TARGET.code.limit ? CHILD_SYNC.code.limit : CHILD_SYNC.code.failed)
+    }
+    return new Promise((resolve, reject) => {
+      const entry = { resolve, reject, action, timer: undefined, signal, abort: undefined }
+      entry.timer = setTimeout(() => {
+        if (!this.#pending.delete(id)) return
+        this.#detachAbort(entry)
+        reject(new ChildSyncError(CHILD_SYNC.code.timeout))
+      }, CHILD_SYNC.timeoutMs)
+      entry.timer.unref?.()
+      if (signal !== undefined) {
+        entry.abort = () => {
+          if (!this.#pending.delete(id)) return
+          clearTimeout(entry.timer)
+          // A request already sent may still commit; the coordinator reports that item as unknown.
+          reject(new ChildSyncError(CHILD_SYNC.code.cancelled))
+        }
+        signal.addEventListener('abort', entry.abort, { once: true })
+      }
+      this.#pending.set(id, entry)
+      if (signal?.aborted) { entry.abort(); return }
+      try { this.#transport.send(encoded) } catch {
+        if (!this.#pending.delete(id)) return
+        clearTimeout(entry.timer)
+        this.#detachAbort(entry)
+        reject(new ChildSyncError(CHILD_SYNC.code.disconnected))
+      }
+    })
+  }
+
+  #receive(encoded) {
+    if (this.#closed) return
+    let frame
+    try { frame = this.#codec.decode(encoded) } catch { return }
+    if (!frame || typeof frame !== 'object' || typeof frame.id !== 'string') return
+    const entry = this.#pending.get(frame.id)
+    // A reply to nothing: a late answer to a timed-out request, or another instance's frame.
+    // Dropping it is the only safe answer; nothing is retried.
+    if (entry === undefined) return
+    this.#pending.delete(frame.id)
+    clearTimeout(entry.timer)
+    this.#detachAbort(entry)
+    let outcome
+    try { outcome = this.#codec.acceptReply(frame, entry.action) } catch {
+      entry.reject(new ChildSyncError(CHILD_SYNC.code.invalidResponse))
+      return
+    }
+    if (!outcome.ok) {
+      const code = outcome.error.code
+      entry.reject(code === PROVIDER_SYNC_TARGET.code.failed ? new ChildSyncError(code) : new ProviderSyncError(code))
+      return
+    }
+    if (entry.action === PROVIDER_SYNC_TARGET.actions.inventory) {
+      this.#targetIdentity = Object.freeze({ ...outcome.result.target })
+    }
+    entry.resolve(outcome.result)
+  }
+
+  #rejectPending(code) {
+    for (const [id, entry] of [...this.#pending]) {
+      this.#pending.delete(id)
+      clearTimeout(entry.timer)
+      this.#detachAbort(entry)
+      entry.reject(new ChildSyncError(code))
+    }
+  }
+
+  #detachAbort(entry) {
+    if (entry.abort === undefined) return
+    try { entry.signal?.removeEventListener('abort', entry.abort) } catch { /* already aborted */ }
+    entry.abort = undefined
+  }
 }
