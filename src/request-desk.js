@@ -14,7 +14,7 @@
  *   with not-user-message and nothing is sent. The agent waits until the final answer (item 8);
  *   the broker (src/approvals.js) holds the request, its thread, the pass or the to-you ticket,
  *   and its card in your pile once Fishball sends it to you (rev11c). The call's own id is passed
- *   on: the running row shows your buttons by it, and the turn's tags are placed by it.
+ *   on: the running row shows your buttons by it, and the child's decision label carries it.
  *   ask_fishball({request_id, reply}) answers Fishball's question in the same thread.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'

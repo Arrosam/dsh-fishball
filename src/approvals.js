@@ -20,8 +20,8 @@
  *   root) -> next(): Fishball is not told and takes no step;
  * - a to-you ticket for the exact call -> next(), with your answer audited (§7a.6);
  * - a one-time pass for the exact call -> 'allowed-once' with no Fishball step (§7a.3);
- * - a standing grant that covers the call -> 'allowed-once' with no Fishball step, one tag in the
- *   asking turn (§7a.8, src/grants.js); grants pause while Fishball or Permission requests is off,
+ * - a standing grant that covers the call -> 'allowed-once' with no Fishball step (§7a.8,
+ *   src/grants.js); grants pause while Fishball or Permission requests is off,
  *   because the rule above already sent the call to your prompt;
  * - maxPendingApprovals open (waiting for Fishball, or cards in your pile; §7a.6 Reading) -> next();
  * - otherwise Fishball decides. Arguments are read from the asking session's log by callId (S11).
@@ -42,7 +42,6 @@
  *   first answer in either place wins (rev11e, S33). The window only decides that move: a card in
  *   your pile has no deadline, and every end without your answer leaves a closure line in the chat
  *   (src/card-lifecycle.js).
- * Each answer Fishball gives leaves a tag record for the asking turn's tail (src/tags.js, §7a.3).
  * Fishball stopping or Permission requests going off sends every waiting request, and every card,
  * to its session's stock prompt (§7a.5, Q-r11-release-pile); a session leaving management does the
  * same for its requests (§5e).
@@ -75,7 +74,7 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, PILE_NOTE, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SESSION_INFO, SOURCE, TAG_KIND, THREAD_FROM } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, PILE_NOTE, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SESSION_INFO, SOURCE, THREAD_FROM } from './constants.js'
 import { AuditLog } from './audit.js'
 import { CallPasses } from './passes.js'
 import { WORDING } from './result-wording.js'
@@ -305,7 +304,6 @@ export class ApprovalBroker {
   #passes
   #wording
   #pile
-  #tags
   #grants
   #manage
   #own
@@ -334,12 +332,12 @@ export class ApprovalBroker {
    * @param deps.isManaged - (sessionId) => whether Fishball manages that session (revision 11).
    * @param deps.passes - CallPasses (passes and to-you tickets).
    * @param deps.wording - ResultWording (what a direct call's agent reads after Fishball answered).
-   * @param deps.pile - Pile (your cards). @param deps.tags - TagRecords (one per Fishball answer).
+   * @param deps.pile - Pile (your cards).
    * @param deps.grants - Grants (standing grants: created by Fishball's grant answers, covering calls).
    * @param deps.manage - (sessionId, by) => Promise<whether it became managed now> (answer_prompt, §7a.9).
    * @param deps.own - OwnRequests (Fishball's own cards and their passes, §7a.11).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, redirectedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, tags, grants, manage, own }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, redirectedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, grants, manage, own }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -356,7 +354,6 @@ export class ApprovalBroker {
     this.#passes = passes
     this.#wording = wording
     this.#pile = pile
-    this.#tags = tags
     this.#grants = grants
     this.#manage = manage
     this.#own = own
@@ -502,7 +499,6 @@ export class ApprovalBroker {
     if (grantId !== undefined) await this.#grants.confirm(grantId)
     // The slim child learns the settlement even though it made the answer (its decision label, T08).
     this.#emit({ type: OFFER.event.settled, approvalId: id, sessionId: request.sessionId, decision, by: SETTLED_BY.fishball })
-    await this.#tag(request, decision, decision === APPROVAL_DECISION.escalate ? TAG_KIND.sentToYou : TAG_KIND.approval)
     return ok({ requestId: id, decision, ...(grantId === undefined ? {} : { grantId, expiresAt: granted.expiresAt }) })
   }
 
@@ -534,9 +530,6 @@ export class ApprovalBroker {
     try {
       // Set before the call goes on to DSH's post-execute: the agent reads the reason.
       if (outcome === APPROVAL_OUTCOME.rejected) this.#wording.mark(prompt.callId, prompt.sessionId, prompt.toolName, { kind: WORDING.reject, reason: rationale })
-      // Tagged while the answered call is still the session's latest event (a call the log does
-      // not show as a tool/call falls back to the latest seq, §7a.3 "Tags").
-      await this.#tag(prompt, decision, TAG_KIND.prompt)
       managed = (await this.#manage(prompt.sessionId, MANAGED_BY.promptAnswer)) ? PROMPT_MANAGED.now : PROMPT_MANAGED.already
     } catch (error) {
       this.#logger.warn('answer_prompt could not make %s managed (%s)', prompt.sessionId, diagnosticOf(error))
@@ -584,7 +577,7 @@ export class ApprovalBroker {
    * @param input.agent - the asking agent; input.sessionId - the session the user sees.
    * @param input.args - the parsed arguments of the intended call.
    * @param input.quotes - [{ id, text }] verified quotes (full text from the log).
-   * @param input.callId - the ask_fishball call's own id: its row shows your buttons, its turn the tags.
+   * @param input.callId - the ask_fishball call's own id: its row shows your buttons.
    * @returns { code, requestId?, reason?, question?, byUser? }: an ASK_RESULT, or an ASK_ERROR refusal.
    */
   async askFirst({ agent, sessionId, toolName, args, quotes, why, callId, signal }) {
@@ -592,7 +585,7 @@ export class ApprovalBroker {
     // Minted first: an answer given at once names its request too, and the ticket carries it, so
     // the call that then reaches your prompt is audited under the same id.
     // A call a standing grant covers is allowed at once, without a Fishball step (§7a.3 Reading,
-    // item 17); the call itself then runs on the grant and leaves its tag. Grants pause while off.
+    // item 17); the call itself then runs on the grant. Grants pause while off.
     if (this.#canAnswer() && this.#isManaged(sessionId) && this.#grants.cover(sessionId, toolName, args) !== undefined) return { code: ASK_RESULT.allowed, byGrant: true }
     const id = this.#mintId()
     const unanswerable = this.#unanswerable(sessionId)
@@ -978,7 +971,7 @@ export class ApprovalBroker {
     switch (result.answer) {
       case ROUND.undelivered:
         // The notice could not reach Fishball (queue full): to you, a card and the stock prompt as
-        // for a timeout, audited to-user, with no tag (the manager's decision, 2026-11-02; §16).
+        // for a timeout, audited to-user (the manager's decision, 2026-11-02; §16).
         return this.#sendOn(request, { answer: APPROVAL_ANSWER.toUser }, via, signal)
       case APPROVAL_ANSWER.allow:
       case APPROVAL_ANSWER.grant:
@@ -1002,13 +995,12 @@ export class ApprovalBroker {
   }
 
   /**
-   * A call a standing grant covers: allowed with no Fishball step (item 17), audited as grant-used,
-   * counted on the grant, and tagged once in its turn (§7a.3 "Tags").
+   * A call a standing grant covers: allowed with no Fishball step (item 17) and audited as grant-used,
+   * counted on the grant.
    */
-  async #onGrant(call, { id, record }) {
+  async #onGrant(call, { id }) {
     await this.#record({ ...call, kind: REQUEST_KIND.direct, answer: APPROVAL_ANSWER.grantUsed, grantId: id, finalOutcome: APPROVAL_OUTCOME.allowedOnce })
     await this.#grants.use(id)
-    await this.#tag(call, APPROVAL_DECISION.grant, TAG_KIND.grant, { kind: record.kind, toolName: record.toolName, ...(record.prefix === undefined ? {} : { prefix: record.prefix }) })
     return APPROVAL_OUTCOME.allowedOnce
   }
 
@@ -1329,15 +1321,6 @@ export class ApprovalBroker {
     } catch (error) {
       this.#logger.warn('decision audit failed (%s)', diagnosticOf(error))
     }
-  }
-
-  /**
-   * One tag record in the asking turn: the ask_fishball call of this round, or the direct call (§7a.3 "Tags").
-   * @param target - a request, or a call a grant covered: { session, sessionId, askCallId?, callId }.
-   * @param answer - an APPROVAL_DECISION; @param kind - a TAG_KIND; @param grant - what a grant tag names.
-   */
-  async #tag(target, answer, kind, grant) {
-    await this.#tags.addForCall({ session: target.session, sessionId: target.sessionId, callId: target.askCallId ?? target.callId, answer, kind, grant })
   }
 
   /** A short note to Fishball without waking it (DESIGN §7a: it learns from your choices). */
