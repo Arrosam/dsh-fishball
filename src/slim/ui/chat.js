@@ -209,7 +209,7 @@ export function createChatView(options = {}) {
   const composer = createComposer({ document, onSubmit: (value, attachments) => sendPrompt(value, attachments) })
   // T09's cards, decision labels and the user's answers live in this same timeline, ordered by
   // their own times; the view removes and re-inserts only its own rows.
-  const approvals = createApprovalsView({ document, timeline, insertRow, request })
+  const approvals = createApprovalsView({ document, timeline, insertRow: insertOrdered, request })
   container.append(timeline, loader, state, composer.element, notice)
 
   const modelLabel = document.createElement('label')
