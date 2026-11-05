@@ -196,9 +196,13 @@ export function createImages(ctx, options = {}) {
     }
   }
 
-  /** Queue one atomic rewrite; a failed write is diagnostic only, the in-memory refs still serve. */
+  /**
+   * Queue one atomic rewrite and return the chain that settles it. A failed write is
+   * diagnostic only: the in-memory refs still serve this process and the operation that
+   * admitted the image must not fail because the sidecar could not be updated.
+   */
   function persistIndex() {
-    if (indexPath === undefined || dirty) return
+    if (indexPath === undefined || dirty) return saving
     dirty = true
     saving = saving.then(async () => {
       // Merge the sidecar before the first write: an upload that happens before any read must
@@ -210,6 +214,7 @@ export function createImages(ctx, options = {}) {
       dirty = false
       warnIndex('the image ref index could not be written', error)
     })
+    return saving
   }
 
   async function writeIndex(values) {
@@ -224,10 +229,11 @@ export function createImages(ctx, options = {}) {
    * A malformed value is ignored: the ref came from the store or the page, so it is never a
    * reason to fail the turn that carried it.
    */
-  function remember(value) {
+  async function remember(value) {
     const ref = parsedRefOf(value)
     if (ref === undefined) return false
-    if (addRef(ref)) persistIndex()
+    if (!addRef(ref)) return true
+    await persistIndex()
     return true
   }
 
@@ -292,7 +298,7 @@ export function createImages(ctx, options = {}) {
           data, mediaType: request.mediaType,
           ...(request.name === undefined ? {} : { name: request.name }),
         })
-        remember(attachment)
+        await remember(attachment)
         return { kind: ATTACHMENT_KIND.image, attachment }
       }
       const attachment = await attachments.saveFile({
@@ -339,7 +345,7 @@ export function createImages(ctx, options = {}) {
       } catch (error) {
         throw refusalOf(error)
       }
-      remember(saved)
+      await remember(saved)
       stored.push(saved)
       blocks.push({ type: ATTACHMENT_KIND.image, attachment: saved })
     }
@@ -383,7 +389,7 @@ export function createImages(ctx, options = {}) {
       try {
         if (kind === ATTACHMENT_KIND.image) {
           const stored = await attachments.readImage(attachment)
-          remember(stored.ref)
+          await remember(stored.ref)
           blocks.push({ type: ATTACHMENT_KIND.image, attachment: stored.ref })
         } else {
           const ref = fileRefOf(attachment)
@@ -427,7 +433,7 @@ export function createImages(ctx, options = {}) {
     } catch (error) {
       throw refusalOf(error)
     }
-    remember(stored.ref)
+    await remember(stored.ref)
     const data = stored.data
     if (data.length > LIMITS.imageBytes) throw new ContractError(ERROR.tooLarge)
     return transferOf(data, stored.ref.mediaType, stored.ref.name)
