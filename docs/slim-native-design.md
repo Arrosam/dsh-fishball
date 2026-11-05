@@ -1107,7 +1107,8 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
      dictionary entries and now-unused CSS/helpers went too (`MODEL.pickerClass`, `countText`,
      the old model-catalog validators, the unused `API.model`/`API.models` paths).
      `makeNativeSettings`, `makeModelSettings`, `makeChildPlugins`, `makeChildSettings`,
-     `ProviderSyncSlot`, `makeBrandStyle`, the question mode and the limits form remain.
+     `makeBrandStyle`, the question mode and the limits form remain. (`ProviderSyncSlot` also
+     remained here; the 2026-11-06 redesign removed it, and Refresh models now runs the sync, §10.)
   3. T08's deferred cleanup is complete: `src/tags.js` is deleted; the store no longer defines the
      `tags` table or its record schema; `src/approvals.js` and `src/questions.js` no longer write
      tag records (`TAG_KIND` and `QUESTION_TAG_ANSWER` removed); and the state feed no longer
