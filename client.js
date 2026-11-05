@@ -52,12 +52,6 @@ window.__ModuleLoader__.load({
     const FEATURE = Object.freeze({ messages: 'messages' })
     /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
     const featureOn = (state, feature) => state.features?.[feature] !== false
-    const ACTION = Object.freeze({ retry: 'retry', adopt: 'adopt' })
-    const OFFERED = Object.freeze({
-      [STATUS.recovery]: Object.freeze([ACTION.retry, ACTION.adopt]),
-      [STATUS.archived]: Object.freeze([ACTION.retry]),
-      [STATUS.stopped]: Object.freeze([ACTION.retry]),
-    })
     const API = Object.freeze({ events: 'api/fishball/events', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', send: 'api/fishball/send', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
