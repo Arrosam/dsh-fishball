@@ -17,10 +17,11 @@
  * the same closure through the inbox marker (CARD_CLOSED in src/slim/inbox-markers.js). Nothing
  * here arms a timer: a card leaves only through the ends above.
  *
- * The pile is memory-only (src/pile.js; DSH's own approval and question requests never outlive
- * their turn). A card survives a page reload and a pile re-render because the browser re-reads the
- * host's snapshot; it does not survive a main-DSH restart, which ends every turn and so every
- * request a card could be answered with. Persisting it is deliberately out of scope.
+ * Cards are stored while they wait (src/pile.js, T08): a main-DSH restart ends every turn, so the
+ * request a card waited on is gone when the next process starts. The card is still rebuilt into
+ * the pile, and its owner closes it with `restarted` (src/pile.js, src/questions.js); the closure
+ * line says why. A question DSH still holds (a continued one, found by src/questions.js rebuild)
+ * is the one card that is answerable again: it is re-filed under its old id before it is closed.
  */
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { CARD_END, INTAKE_KIND, QUESTION_KIND, REQUEST_KIND, SOURCE } from './constants.js'
@@ -38,6 +39,7 @@ export const CARD_CLOSE = Object.freeze({
   [CARD_END.released]: 'the session left Fishball\'s management',
   [CARD_END.off]: 'Fishball or its permission requests were turned off',
   [CARD_END.withdrawn]: 'Fishball withdrew its own request',
+  [CARD_END.restarted]: 'DSH restarted, so the call it waited on ended',
 })
 
 /** What each card kind is called in the closure line (never a bare word at a call site). */

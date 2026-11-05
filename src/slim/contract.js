@@ -82,11 +82,13 @@ export const OPERATIONS = Object.freeze({
 export const EVENT = Object.freeze({
   approvalRequest: 'approval.request',
   approvalSettled: 'approval.settled',
+  /** T08: a call ran on an approval Fishball or the user already gave (the "ran on" label). */
+  approvalRan: 'approval.ran',
   watchStatus: 'watch.status',
   sessionState: 'session.state',
 })
 export const EVENTS = Object.freeze([
-  EVENT.approvalRequest, EVENT.approvalSettled, EVENT.watchStatus, EVENT.sessionState,
+  EVENT.approvalRequest, EVENT.approvalSettled, EVENT.approvalRan, EVENT.watchStatus, EVENT.sessionState,
 ])
 export const EVENT_DIRECTION = DIRECTION.mainToChild
 
@@ -118,6 +120,11 @@ export const WATCH_ERROR = Object.freeze({
   featureOff: 'feature-off',
 })
 export const SETTLED_BY = Object.freeze({ user: 'user', fishball: 'fishball' })
+/**
+ * What let a call run without asking (T08's decision label, §8.1): a one-time approval Fishball
+ * or the user gave, or Fishball's standing grant. The label says which and who gave it.
+ */
+export const RAN_VIA = Object.freeze({ pass: 'pass', grant: 'grant' })
 /** Mirrors today's intake ledger kinds (§4, INTAKE_KIND). */
 export const INBOX_KIND = Object.freeze({
   session: 'session', user: 'user', system: 'system', watch: 'watch', approval: 'approval', plugin: 'plugin',
@@ -404,17 +411,20 @@ function readMessage(value) {
 /**
  * The live request approval.list and approval.request carry. It keeps v1's fields and adds the
  * decision-label snapshot (§8.1); a question also carries its DSH question items, which the child
- * renders and answers with question.answer.
+ * renders and answers with question.answer. T08 adds the call's exact arguments as an optional
+ * pair (a label expands to the request the user is deciding), so a host that does not read them
+ * still offers a valid descriptor.
  */
 const APPROVAL_DESCRIPTOR_KEYS = Object.freeze([
   'approvalId', 'offerId', 'kind', 'prompt', 'choices', 'expiresAt',
   'title', 'at', 'toolName', 'callId', 'reason', 'quotes',
 ])
+const APPROVAL_DESCRIPTOR_OPTIONAL = Object.freeze(['arguments', 'argumentsStatus'])
 
 function approvalDescriptor(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail()
   const questioned = value.kind === APPROVAL_KIND.question
-  exact(value, questioned ? [...APPROVAL_DESCRIPTOR_KEYS, 'questions'] : APPROVAL_DESCRIPTOR_KEYS)
+  exact(value, questioned ? [...APPROVAL_DESCRIPTOR_KEYS, 'questions'] : APPROVAL_DESCRIPTOR_KEYS, APPROVAL_DESCRIPTOR_OPTIONAL)
   text(value.approvalId)
   text(value.offerId)
   member(value.kind, Object.values(APPROVAL_KIND))
@@ -427,6 +437,11 @@ function approvalDescriptor(value) {
   if (value.callId !== null) text(value.callId)
   chars(value.reason, LIMITS.reasonChars)
   arrayOf(value.quotes, (quote) => bytes(quote, LIMITS.quoteBytes))
+  // Both or neither: a status without the text it describes cannot be shown.
+  if (Object.hasOwn(value, 'arguments')) {
+    chars(value.arguments, LIMITS.argumentChars)
+    member(value.argumentsStatus, Object.values(ARGUMENTS_STATUS))
+  } else if (Object.hasOwn(value, 'argumentsStatus')) fail()
   if (questioned) questions(value.questions)
 }
 
@@ -840,6 +855,23 @@ function eventApprovalSettled(payload) {
   member(payload.by, Object.values(SETTLED_BY))
 }
 
+/**
+ * T08: one call ran without asking. It is not a decision by Fishball at that moment; it is the
+ * consequence of one it (or the user) already made, and the label says which approval let it run.
+ * The arguments are the exact call as the user's card shows it.
+ */
+function eventApprovalRan(payload) {
+  exact(payload, ['approvalId', 'via', 'by', 'toolName', 'reason', 'at', 'argumentsStatus'], ['arguments'])
+  text(payload.approvalId)
+  member(payload.via, Object.values(RAN_VIA))
+  member(payload.by, Object.values(SETTLED_BY))
+  text(payload.toolName)
+  chars(payload.reason, LIMITS.reasonChars)
+  natural(payload.at)
+  member(payload.argumentsStatus, Object.values(ARGUMENTS_STATUS))
+  if (Object.hasOwn(payload, 'arguments')) chars(payload.arguments, LIMITS.argumentChars)
+}
+
 function eventSessionState(payload) {
   exact(payload, ['sessionId', 'running', 'pendingInteraction'])
   text(payload.sessionId)
@@ -909,6 +941,7 @@ export const VALIDATORS = Object.freeze({
   [ENVELOPE.type.event]: Object.freeze({
     [EVENT.approvalRequest]: approvalDescriptor,
     [EVENT.approvalSettled]: eventApprovalSettled,
+    [EVENT.approvalRan]: eventApprovalRan,
     [EVENT.watchStatus]: eventWatchStatus,
     [EVENT.sessionState]: eventSessionState,
   }),
