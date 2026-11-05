@@ -6,16 +6,17 @@ import { LIFETIME } from './src/native-runtime/constants.js'
 import { CONTROL, ControlError, DEFAULT_CONTROL_LIMITS } from './src/native-control/index.js'
 import { createNativeHostAdapter, NATIVE_HOST } from './src/native-host-adapter.js'
 import { registerNativeWeb } from './src/native-web.js'
+import { registerEmbed } from './src/slim/host/embed.js'
 
 const PLUGIN = Object.freeze({
   name: 'fishball-native-host', service: 'nativeFishballRuntime',
-  dependencies: ['profileContext', 'workspaceRegistry', 'sessions', 'sessionController', 'appReady', 'connection'],
+  dependencies: ['profileContext', 'workspaceRegistry', 'sessions', 'sessionController', 'appReady', 'connection', 'webServer'],
   cleanup: 'fishball native host: stop owned child and retain private data',
   minimumLimit: 1,
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
   requestTimeoutMs: 750, stopTimeoutMs: 1000,
   state: Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', ready: 'ready', stopping: 'stopping', stopped: 'stopped', failed: 'failed' }),
-  code: Object.freeze({ failed: 'NATIVE_START_FAILED', stop: 'NATIVE_STOP_FAILED', exited: 'NATIVE_CHILD_EXITED', unavailable: 'NATIVE_UNAVAILABLE', open: 'NATIVE_OPEN_FAILED', timeout: 'NATIVE_TIMEOUT', disabled: 'NATIVE_DISABLED' }),
+  code: Object.freeze({ failed: 'NATIVE_START_FAILED', stop: 'NATIVE_STOP_FAILED', exited: 'NATIVE_CHILD_EXITED', unavailable: 'NATIVE_UNAVAILABLE', timeout: 'NATIVE_TIMEOUT', disabled: 'NATIVE_DISABLED' }),
 })
 const limitSchema = defaults => Schema.object(Object.fromEntries(Object.entries(defaults).map(([key, value]) =>
   [key, Schema.natural().min(PLUGIN.minimumLimit).default(value)])))
@@ -160,21 +161,15 @@ export async function apply(ctx, config) {
       } catch { set(PLUGIN.state.failed, PLUGIN.code.unavailable) }
       return status()
     },
-    async openUrl() {
-      if (closed || !owner || state !== PLUGIN.state.ready) throw unavailable(PLUGIN.code.unavailable)
-      try {
-        const url = await bounded(owner.openUrl(), PLUGIN.requestTimeoutMs)
-        if (closed || state !== PLUGIN.state.ready) throw unavailable(PLUGIN.code.unavailable)
-        return url
-      }
-      catch { throw unavailable(PLUGIN.code.open) }
-    },
+    // The embed broker reads the child origin and bearer from main-process memory only (§3.2).
+    embedAccess: () => owner.embedAccess(),
     registerApproval(input) {
       if (closed || !currentHost) throw new ControlError(CONTROL.error.disconnected)
       return currentHost.registerApproval(input)
     },
   })
   ctx.provide(PLUGIN.service, service)
+  registerEmbed(ctx, service)
   registerNativeWeb(ctx, service)
   cancelReady = ctx.appReady.onReady(() => { appReady = true; if (enabled && !closed) void start() })
 }
