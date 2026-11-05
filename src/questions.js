@@ -330,7 +330,7 @@ export function batchFor(kind, questions, { answers, approve, feedback }) {
  * A question answer's words for its tag: the chosen labels and typed text, item by item; skipped
  * items say nothing. Cut to `chars` characters (rationaleChars: Fishball's own words, Reading).
  */
-function answerWords(answers, chars) {
+export function answerWords(answers, chars) {
   const words = answers.map((item) => [...(item.selected ?? []), ...(item.custom === undefined ? [] : [item.custom])].join(WORDS.withinItem)).filter((text) => text !== '').join(WORDS.betweenItems)
   return [...words].slice(0, chars).join('')
 }

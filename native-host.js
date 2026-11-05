@@ -111,7 +111,7 @@ export async function apply(ctx, config) {
       let host = hosts.get(hostId)
       if (!host) {
         host = createBridgeHost({ hostId, sessions })
-        // The seven T09 operations enter this host's welcome; the relay also re-offers the live
+        // The nine T09 operations enter this host's welcome; the relay also re-offers the live
         // cards on every new connection (the host never replays an answer).
         approvals.attach(host)
         hosts.set(hostId, host)

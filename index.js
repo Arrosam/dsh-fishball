@@ -61,6 +61,7 @@ import { DESK_TOOL, requestDeskTools } from './src/request-desk.js'
 import { CallPasses } from './src/passes.js'
 import { Pile } from './src/pile.js'
 import { QUESTION_TOOL, QuestionRouter } from './src/questions.js'
+import { OwnQuestions } from './src/own-questions.js'
 import { OWN_TOOL, OwnRequests } from './src/own-requests.js'
 import { TagRecords } from './src/tags.js'
 import { GRANT_TOOL, Grants } from './src/grants.js'
@@ -290,6 +291,8 @@ export async function apply(ctx, config) {
   let broker
   let questions
   let grants
+  /** Fishball's own questions: the child files each card in the user's pile and never waits (T09). */
+  let ownQuestions
   const bridgeTools = new Map()
   const ledger = new IntakeLedger(ctx, store, logger, { readLimits: limits, onChange: () => publish() })
   composition.addAgentSetup((agentCtx, agent) => ledger.installAgent(agentCtx, agent))
@@ -375,6 +378,13 @@ export async function apply(ctx, config) {
     liveQuestions: (sessionId) => questions.liveQuestions(sessionId).map((descriptor) => withTitle(descriptor, sessionId)),
     answerQuestion: (input) => captured(QUESTION_TOOL.answer, input),
     questionSession: (questionId) => questions.questionSession(questionId),
+    // T09's own question: the child files the card and reads its id; the answer route is the
+    // pile's own (commands.answerQuestion), and this one accepts it from the child's card.
+    askQuestion: (input) => ownQuestions.ask(input),
+    answerOwnQuestion: (input) => {
+      const refusal = ownQuestions.answerCard(input)
+      return refusal === undefined ? { ok: true } : { ok: false, code: refusal.code, ...(refusal.reason === undefined ? {} : { reason: refusal.reason }) }
+    },
     listPrompts,
     answerPrompt: (input) => captured(APPROVAL_TOOL.answerPrompt, input),
     listGrants: () => grants.snapshot(),
@@ -388,7 +398,8 @@ export async function apply(ctx, config) {
       }
       const offBroker = broker.subscribe(wrapped)
       const offQuestions = questions.subscribe(wrapped)
-      return () => { offBroker(); offQuestions() }
+      const offOwn = ownQuestions.subscribe(wrapped)
+      return () => { offBroker(); offQuestions(); offOwn() }
     },
   })), 'fishball: native session state')
   managedView = () => managedRegistry.snapshot().map((entry) => ({ ...entry, title: sessionTitles.get(entry.sessionId) }))
@@ -411,6 +422,13 @@ export async function apply(ctx, config) {
   // card the user still had is rebuilt at the next start; src/pile.js explains why a rebuilt card
   // is then closed rather than answered.
   const pile = new Pile(() => publish(), (card, end) => broker.cardClosed(card, end), { stored: store.pile, scope: PILE_SCOPE.approvals, logger })
+  // Fishball's own questions have their own pile (§15 T09) in the same store under their own scope:
+  // their cards publish with it, draw as question cards, carry no deadline, and their closure rides
+  // the broker's onClose path. T08's persistence applies here too; a rebuilt own-question card is
+  // re-adopted at start (own-questions.js restore), not closed, because no call waited on it.
+  const ownPile = new Pile(() => publish(), (card, end) => broker.cardClosed(card, end), { stored: store.pile, scope: PILE_SCOPE.ownQuestions, logger })
+  ownQuestions = new OwnQuestions(ownPile, { readLimits: limits })
+  ownQuestions.restore()
   const tags = new TagRecords(store, limits, { logger, onChange: () => publish() })
   // Standing grants (rev11d, §7a.8): paused while Fishball is not live or Permission requests is off.
   grants = new Grants(store, logger, { readLimits: limits, isPaused: () => (assistantAgent() === undefined && !nativeBridgeReady) || !approvalsOn(), onChange: () => publish(), isManaged })
@@ -471,7 +489,7 @@ export async function apply(ctx, config) {
   approvalsView = () => broker.snapshot()
   // Session cards come only from managed sessions, whose titles are followed (session-titles.js);
   // Fishball's own cards are labelled Fishball. Text, never markup (§10e). Newest first (Reading).
-  pileView = () => [...[...pile.cards(), ...questions.cards()].map((card) => ({ ...card, title: sessionTitles.get(card.sessionId) })), ...own.cards()].sort((a, b) => latestFirst(a.since, b.since))
+  pileView = () => [...[...pile.cards(), ...questions.cards(), ...ownPile.cards()].map((card) => ({ ...card, title: card.title ?? sessionTitles.get(card.sessionId) })), ...own.cards()].sort((a, b) => latestFirst(a.since, b.since))
   // A question tag's words come from the session log, never from our tables (§9).
   tagsView = () => {
     const kept = tags.snapshot()
@@ -495,7 +513,9 @@ export async function apply(ctx, config) {
   // Your answer on a question card (§10e): 409 expired once it left (answered, closed, or back in its
   // session), already-settled or session-not-live for a continued one; 400 bad-answer for a batch that does not fit.
   commands.answerQuestion = async (input) => {
-    const refusal = await questions.answerCard(input)
+    // Fishball's own question cards answer through their own owner; a session's through the router
+    // (one route, two owners, as commands.answerRequest dispatches Fishball's own requests).
+    const refusal = ownQuestions.has(input.questionId) ? ownQuestions.answerCard(input) : await questions.answerCard(input)
     if (refusal === undefined) return
     if (refusal.code === QUESTION_ERROR.badAnswer) throw new LifecycleStateError(refusal.code, { status: HTTP.badRequest, fields: { reason: refusal.reason } })
     throw new LifecycleStateError(refusal.code)
