@@ -36,15 +36,15 @@ Rejected alternatives are recorded where they were rejected (§3.2, §6.2, §13)
 
 **Decision:** the child boots the shipped `dsh` launcher with a Fishball-owned profile whose only
 bundle is `dsh-base`, plus a launch overlay that inserts the rows base does not ship: the Fishball
-app row (`fishball-native-app`), the reminder rows (`schedule`, `tool-schedule`), and the restored
-web-standard row `time-context` (§2.3). The child app owns a loopback
+app row (`fishball-native-app`) and the restored web-standard row `time-context` (§2.3). The app
+row also owns reminders (T10), so no DSH schedule row is mounted. The child app owns a loopback
 `node:http` server (UI, JSON API, SSE) and wires the DSH core services to it.
 
 It runs: `agent`, `session` + JSONL persistence + projection + storage, `llm` + adapters
 (`llm-pi-ai`, `llm-deepseek-api-key`), `tools` (bash/fs/web search/web fetch/skill/goal/jobs/todo),
 `user-approval`, `user-questions` (the service base ships, with no question tool mounted),
 `system-prompt`, `time-context`, `settings`, `config-editor`, `plugin-manager`, plus the
-Fishball rows: `schedule` + `tool-schedule` (reminders) and our app row. Fishball asks the user
+Fishball app row, which also owns reminders (T10). Fishball asks the user
 with its own `ask_user` card tool instead of a DSH question tool (§2.3, T09).
 
 It does not run: `dsh-web-app`, the browser client kernel (`client-modules`, `web-frontend`), any
@@ -84,7 +84,7 @@ backpressure are the child app's responsibility.
 
 - Profile: `<child home>/profiles/fishball` with `dsh.profile.bundles = ["@deepseek-ai/dsh-base"]`
   (replaces today's `boot.PROFILE_TEMPLATES.web.bundles` at `src/native-runtime/installation.js:113`).
-- Overlay rows: `fishball-native-app` (required), `schedule`, `tool-schedule`, `time-context`;
+- Overlay rows: `fishball-native-app` (required), `time-context`;
   keep `hmr` disabled, set `sandbox-policy.mode = read-only`,
   `approval.policy = ask`, `bash-sandbox` unchanged. `time-context` is one of the web
   `standard` preset's rows (`dsh-web-app/presets/standard.patch.yml:19-20`); base already carries
@@ -265,7 +265,7 @@ no `SameSite=None; Secure` workaround, and no dependency on `127.0.0.1` vs `loca
 | User questions / plan reviews | main `src/questions.js` | child receives and answers over the bridge | same rules; Fishball's own question to the user is a pile card filed by `ask_user` (T09), never a DSH question. |
 | Pile/cards | main dock (`client.js:3242+`) | live cards stay in the main DSH on the session they belong to; Fishball's own requests appear in the child UI | Q1. |
 | Decision labels | main turn tail (`client.js:3376-3389`) | child timeline (§8.1) | host tag records removed (`src/tags.js`, `src/approvals.js:397,465,878,1182`). |
-| Reminders | main `dsh-schedule` | child `dsh-schedule` + `tool-schedule`, child UI list | §2.1. |
+| Reminders | main `dsh-schedule` | child-owned scheduler in the app row, child UI list | §2.1, T10. |
 | Memory / web / X search plugins | main profile plugins, shared via the legacy composition | not installed in the child by default; installable per child | D2. |
 | Plugin hooks (`agent/created`, `session/event`, ...) | main profile plugins can inject into Fishball's agent | only plugins installed in the child see the child's agent | the isolation win. |
 | Model choice / context window | main settings | child settings applied through the admin API | §9. |
@@ -819,9 +819,33 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
 
 **T10 — Reminders in the child `[child]`**
 - Goal: Fishball can create, list, update and delete reminders and see them in its UI.
-- Owns: `src/slim/child/reminders.js`, `src/slim/ui/reminders.js`, the overlay rows T02 composes.
-- Depends: T03. Acceptance: a reminder created from chat fires once at its time, is listed, and is
-  cancelled; no reminder is lost across a child restart.
+- Owns: `src/slim/child/reminders.js` (store, delivery, `/api/reminders`, agent tools),
+  `src/slim/child/reminder-schedule.js` (timing rules), `src/slim/ui/reminders.js`.
+- Depends: T03 and T07 (delivery goes through the chat's `resolveAgent`).
+- **Why the child does not mount `dsh-schedule` (fixed 2026-11-06):** on 0.2.1-rc.3/rc.5 the
+  `schedule` row hard-injects `sessionController`, which only the Web bundle provides
+  (`dsh-api-session-controller` in turn injects `fileUploads` and `workspaceRegistry`), so the row
+  stays pending in the base-only child and `/api/reminders` answers 503. A minimal child-local
+  `sessionController` would shadow a Web-owned DSH service, and the published service/tool
+  contract still differs between rc.3/rc.5 (`list`/`update`/`delete`) and 0.2.2-rc.1
+  (`list`/`view`/`edit`), so one HTTP adapter and one tool set cannot cover all three versions.
+  The child therefore owns the scheduler and repeats the schedule tool's timing semantics.
+- What runs: one JSON store at `<child home>/fishball/reminders.json`, written atomically before
+  an operation is acknowledged; a Node timer over active tasks; delivery through T07's
+  `resolveAgent` as a `source: { kind: "schedule" }` user message with the schedule service's
+  `[SCHEDULE REMINDER]` framing, committed with its receipt only after `sessions.flush()`
+  acknowledged the message; the agent tools `schedule_create`, `schedule_list`,
+  `schedule_update`, `schedule_delete` with the schedule tool's names and parameters; and the
+  `/api/reminders` list/update/cancel API the UI reads. Every durable write (create, update,
+  cancel, delivery) notifies the app's `reminders` SSE event.
+- Timing: one-shot `after`/`at`, fixed-rate `every` (at least 60 s, aligned to creation or the
+  save that changed it), wall-clock `daily`/`weekly` in an explicit IANA zone (a local time that
+  does not exist skips that date; a repeated local time fires once at the earlier instant), and
+  five-field Vixie `cron` (when both day fields are restricted, either may match). After downtime
+  a missed occurrence is delivered once: a one-shot task ends, a recurring task delivers its
+  latest missed occurrence and keeps its cadence.
+- Acceptance: a reminder created from chat fires once at its time, is listed, and is cancelled;
+  no reminder is lost across a child restart.
 - Tests: `REM-01 create and fire once`; `-02 list and update and delete`; `-03 survives restart`.
 
 **T11 — Admin relay and child admin service `[host]` plus `[child]`**

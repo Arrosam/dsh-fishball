@@ -36,7 +36,7 @@ const APP = Object.freeze({
   service: 'fishballApp',
   logger: 'fishball-native-app',
   /**
-   * The chat row's service (T07): the Schedule runtime's activation owner, the admin service's
+   * The chat row's service (T07): the reminder scheduler's activation owner, the admin service's
    * live-model port and the inbox row's delivery port read it by this name. It exists exactly
    * while this app row runs.
    */
@@ -80,12 +80,14 @@ export async function apply(ctx) {
   const approvals = ctx.get(APP.approvalsService)
   if (approvals === undefined) ctx.logger(APP.logger).warn('the approval bridge is unavailable; /api/approvals is not served')
   // The chat row owns the one Session and publishes the two ports other rows read: the
-  // Schedule runtime's resolver and the admin service's live-model applier (T10, T11).
+  // reminder scheduler's resolver and the admin service's live-model applier (T10, T11).
   const chat = createChat(ctx, { images })
   await chat.start()
   ctx.effect(() => () => chat.close(), name + ': chat session')
   ctx.provide(APP.chatService, chat.service)
-  const reminders = createReminders(ctx, { resolveAgent: (sessionId, next) => chat.resolveAgent(sessionId, next) })
+  // The published chat service is the activation owner; the closure itself is not a property of
+  // the chat handle, so T10 must go through the service port.
+  const reminders = createReminders(ctx, { resolveAgent: (sessionId, next) => chat.service.resolveAgent(sessionId, next) })
   const server = createAppServer({
     authority,
     document,
