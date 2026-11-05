@@ -36,7 +36,7 @@ import './src/tool-attribution.js'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Config, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER, HTTP, PACKAGE_ERROR, FEATURE_OFF, GRANT_END, GRANT_ERROR, QUESTION_ERROR } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, EVENT, SERVICE, API_CODE, CHANGED_BY, PLUGIN_ERROR, CONTEXT, WATCH_BY, AGENT_IDLE, MESSENGER, HTTP, PACKAGE_ERROR, FEATURE_OFF, GRANT_END, GRANT_ERROR, QUESTION_ERROR, CARD_END, PILE_SCOPE } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -407,7 +407,10 @@ export async function apply(ctx, config) {
   // Requests Fishball sends you, and the tags of its answers (rev11c, §7a.6, §9). A card that
   // leaves without your answer gets its closure line and the slim bridge's event from the broker
   // (src/card-lifecycle.js); the callback runs only after the broker exists.
-  const pile = new Pile(() => publish(), (card, end) => broker.cardClosed(card, end))
+  // T08: the pile keeps its cards in the plugin's own store (fishball.json, table pile), so a
+  // card the user still had is rebuilt at the next start; src/pile.js explains why a rebuilt card
+  // is then closed rather than answered.
+  const pile = new Pile(() => publish(), (card, end) => broker.cardClosed(card, end), { stored: store.pile, scope: PILE_SCOPE.approvals, logger })
   const tags = new TagRecords(store, limits, { logger, onChange: () => publish() })
   // Standing grants (rev11d, §7a.8): paused while Fishball is not live or Permission requests is off.
   grants = new Grants(store, logger, { readLimits: limits, isPaused: () => (assistantAgent() === undefined && !nativeBridgeReady) || !approvalsOn(), onChange: () => publish(), isManaged })
@@ -655,7 +658,16 @@ export async function apply(ctx, config) {
   // Fishball's own passes are settled first: one whose notice entered a turn before the restart has
   // ended, and the ledger may deliver a notice still pending right after (§7a.11).
   // Continued questions get their pile cards again once Fishball can answer (rev11g, §7a.10 "Restart").
+  /** T08: the broker's restored cards are closed on the first live moment, once. */
+  let restoredCardsClosed = false
   const onLive = () => {
+    // T08: cards rebuilt from the store are detached — DSH ended the turn each waited on at the
+    // restart, so none can be answered here (src/pile.js). Closed once Fishball is live, so the
+    // closure line lands in its chat; the question router closes its own in rebuild().
+    if (!restoredCardsClosed) {
+      restoredCardsClosed = true
+      pile.settleWhere((card) => card.restored === true, { end: CARD_END.restarted })
+    }
     void questions.rebuild().catch(logged('continued questions'))
     void Promise.resolve(assistantAgent() === undefined ? undefined : own.catchUp(assistantAgent().session)).then(() => ledger.reconcile()).then(() => watches.catchUp()).then(() => { if (catalog.isAppliedOn(FEATURE_KEY.plugins)) notifyUnchecked() }).catch(logged('intake reconcile'))
   }

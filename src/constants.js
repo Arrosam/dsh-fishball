@@ -502,14 +502,22 @@ export const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
 /**
  * How a card left the pile: your answer, Fishball going off, the session leaving management, its
  * call cancelled, its turn ended, or (a direct call's card, rev11e) the prompt in its session
- * answered first. The reason words and the closure line are src/card-lifecycle.js's; a card in
+ * answered first. `restarted` is the end of a card rebuilt from the store at start (T08, src/pile.js):
+ * the call it waited on ended with the restart, so it can never be answered in this process.
+ * The reason words and the closure line are src/card-lifecycle.js's; a card in
  * the pile has no end time, so none of these is a timer.
  */
 export const CARD_END = Object.freeze({
   user: 'user', off: 'off', released: 'released', cancelled: 'cancelled', sessionEnded: 'session-ended',
   dismissed: 'dismissed', back: 'back-to-session', unavailable: 'unavailable', withdrawn: 'withdrawn',
-  inSession: 'in-session',
+  inSession: 'in-session', restarted: 'restarted',
 })
+/**
+ * Which pile a stored card belongs to (T08, src/pile.js): the two piles a plugin instance runs,
+ * the broker's (approval and own cards) and the question router's. A card restored into a pile
+ * carries its scope, so the two cannot read each other's cards.
+ */
+export const PILE_SCOPE = Object.freeze({ approvals: 'approvals', questions: 'questions' })
 /**
  * Prompts already showing (DESIGN §7a.9, rev11e): the broker's pass-through registry, listed by
  * list_frozen_sessions and answered by answer_prompt (allow or reject only, §7a.9).

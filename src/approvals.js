@@ -142,7 +142,8 @@ const STATE = Object.freeze({ waiting: 'waiting', question: 'question' })
 const OFFER = Object.freeze({
   kind: 'approval',
   choices: Object.freeze(Object.values(APPROVAL_DECISION)),
-  event: Object.freeze({ offered: 'offered', settled: 'settled' }),
+  // `ran` is T08's "ran on an approval you already gave" row: not a decision now, its consequence.
+  event: Object.freeze({ offered: 'offered', settled: 'settled', ran: 'ran' }),
 })
 /** The contract's SETTLED_BY vocabulary; kept local so this legacy row imports no slim module. */
 const SETTLED_BY = Object.freeze({ user: 'user', fishball: 'fishball' })
@@ -680,6 +681,8 @@ export class ApprovalBroker {
       callId: (asked ? request.askCallId : request.callId) ?? null,
       reason: cutChars(reason, limits.rationaleChars),
       quotes: (request.quotes ?? []).map((quote) => cutToBytes(quote.text, limits.requestUserMessageBytes, ELLIPSIS)),
+      // T08's label expansion shows the exact call, as the user's pile card does.
+      ...(request.args === undefined ? {} : { arguments: request.args.text, argumentsStatus: request.args.status }),
     }
   }
 
@@ -1262,8 +1265,23 @@ export class ApprovalBroker {
     return { session: session_, turn: describe(firstOfTurn?.data?.source, turnText) }
   }
 
-  /** Audit one request (never the arguments or quoted text: a digest and message ids). */
+  /**
+   * Audit one request (never the arguments or quoted text: a digest and message ids).
+   * T08: a call that ran on an approval already given (a one-time pass or a standing grant) is
+   * reported as one `ran` event, because the settings audit list is gone and the child's inline
+   * label is now the only place that row can appear. Ordinary decisions travel as `settled`.
+   */
   async #record({ id, sessionId, toolName, callId, args, at, answer, risk, rationale, finalOutcome, kind, quotes, grantId, passBy }) {
+    if (answer === APPROVAL_ANSWER.pass || answer === APPROVAL_ANSWER.grantUsed) {
+      this.#emit({
+        // A grant-used row has no request id of its own; the label still needs one identity.
+        type: OFFER.event.ran, approvalId: id ?? this.#mintId(), sessionId, toolName, callId,
+        via: answer === APPROVAL_ANSWER.pass ? APPROVAL_ANSWER.pass : APPROVAL_ANSWER.grantUsed,
+        by: passBy ?? CHANGED_BY.fishball, at: Date.parse(at),
+        reason: rationale === undefined ? '' : cutChars(rationale, this.#readLimits().rationaleChars),
+        arguments: args.text, argumentsStatus: args.status,
+      })
+    }
     try {
       await this.#audit.append({
         sessionId, toolName, ...(callId === undefined ? {} : { callId }),

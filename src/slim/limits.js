@@ -51,6 +51,8 @@ export const LIMITS = Object.freeze({
   labelChars: 200,
   titleChars: 200,
   quoteBytes: 2048,
+  /** The exact arguments one expanded decision label shows (T08): enough for a real call, still one readable block. */
+  argumentChars: 2000,
   grantPrefixChars: 512,
   questionsPerRequest: 32,
   selectedLabelsPerAnswer: 32,

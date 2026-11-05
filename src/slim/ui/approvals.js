@@ -63,6 +63,8 @@ const COPY = Object.freeze({
   question: 'Fishball is waiting for your answer',
   tool: 'Tool',
   prompt: 'Prompt',
+  arguments: 'Arguments',
+  argumentsTruncated: 'truncated',
   reason: 'Reason',
   answer: 'Fishball answered',
   outcome: 'Outcome',
@@ -106,8 +108,22 @@ const METHOD = Object.freeze({ post: 'POST' })
 const ROW = Object.freeze({ marker: 'data-approval-row' })
 /** Card kinds: only a question card carries questions; every other kind is a permission request. */
 const CARD_KIND = Object.freeze({ question: 'question' })
-/** A settled label's outcome words for the outcome flags T09 records. */
+/** A settled label's outcome words for the outcome flags T09 and T08 record. */
 const OUTCOME_TEXT = Object.freeze({ revoked: 'grant revoked', toUser: 'sent to you', answered: 'answered', waiting: 'waiting' })
+
+/**
+ * A label for a call that ran on an approval already given (T08): one-time pass by Fishball or by
+ * the user, or Fishball's standing grant. The contract's RAN_VIA says which kind.
+ */
+const RAN_VIA = Object.freeze({ pass: 'pass', grant: 'grant' })
+const RAN_BY = Object.freeze({ user: 'user' })
+const RAN_TEXT = Object.freeze({
+  passFishball: 'ran on Fishball\'s one-time approval',
+  passUser: 'ran on your one-time approval',
+  grantFishball: 'ran on Fishball\'s standing grant',
+})
+/** The arguments' status that says the shown text is cut (src/slim/contract.js ARGUMENTS_STATUS). */
+const ARGUMENTS_TRUNCATED = 'truncated'
 
 const MS_PER_MINUTE = 60_000
 const text = (value) => (typeof value === 'string' ? value : '')
@@ -131,6 +147,13 @@ function requestDetails(document, request, { includeQuestions }) {
     const line = document.createElement('p')
     line.className = CLASS.detail
     line.textContent = COPY.prompt + ': ' + prompt
+    fragment.append(line)
+  }
+  const argumentsText = text(request?.arguments)
+  if (argumentsText !== '') {
+    const line = document.createElement('p')
+    line.className = CLASS.detail
+    line.textContent = COPY.arguments + ': ' + argumentsText + (request?.argumentsStatus === ARGUMENTS_TRUNCATED ? ' (' + COPY.argumentsTruncated + ')' : '')
     fragment.append(line)
   }
   const reason = text(request?.reason)
@@ -191,6 +214,22 @@ function requestDetails(document, request, { includeQuestions }) {
   return fragment
 }
 
+/**
+ * One label's outcome words, shared by its summary and its expansion: a closure first (it ended
+ * the label), then the flags an answer leaves, then the decision Fishball made, then a call that
+ * ran on an approval already given.
+ */
+function labelOutcome(label) {
+  const flags = label.outcome ?? {}
+  if (text(label.closed) !== '') return COPY.closed + ': ' + text(label.closed)
+  if (flags.revoked === true) return OUTCOME_TEXT.revoked
+  if (flags.toUser === true) return OUTCOME_TEXT.toUser
+  if (flags.answered === true) return OUTCOME_TEXT.answered
+  if (flags.ran === RAN_VIA.grant) return RAN_TEXT.grantFishball
+  if (flags.ran === RAN_VIA.pass) return flags.ranBy === RAN_BY.user ? RAN_TEXT.passUser : RAN_TEXT.passFishball
+  return DECISION_TEXT[flags.decision] ?? ''
+}
+
 /** One settled decision's expansion, shared by a single label and a merged group. */
 function labelBlock(document, label) {
   const fragment = document.createDocumentFragment()
@@ -202,14 +241,10 @@ function labelBlock(document, label) {
     line.textContent = COPY.answer + ': ' + answer
     fragment.append(line)
   }
-  const outcome = label.outcome ?? {}
-  const decision = DECISION_TEXT[outcome.decision] ?? ''
   const status = document.createElement('p')
   status.className = CLASS.status
-  status.textContent = COPY.outcome + ': ' + (outcome.revoked === true ? OUTCOME_TEXT.revoked
-    : outcome.toUser === true ? OUTCOME_TEXT.toUser
-      : outcome.answered === true ? OUTCOME_TEXT.answered
-        : decision === '' ? OUTCOME_TEXT.waiting : decision)
+  const words = labelOutcome(label)
+  status.textContent = COPY.outcome + ': ' + (words === '' ? OUTCOME_TEXT.waiting : words)
   fragment.append(status)
   if (label.settled !== null && label.settled !== undefined) {
     const settled = document.createElement('p')
@@ -232,13 +267,7 @@ function labelBlock(document, label) {
  */
 function labelSummary(label) {
   const kind = KIND_TEXT[label.kind] ?? KIND_TEXT.approval
-  const flags = label.outcome ?? {}
-  const outcome = text(label.closed) !== '' ? COPY.closed + ': ' + text(label.closed)
-    : flags.revoked === true ? OUTCOME_TEXT.revoked
-      : flags.toUser === true ? OUTCOME_TEXT.toUser
-        : flags.answered === true ? OUTCOME_TEXT.answered
-          : DECISION_TEXT[flags.decision] ?? ''
-  return COPY.single(kind, text(label.title) || text(label.sessionId), outcome)
+  return COPY.single(kind, text(label.title) || text(label.sessionId), labelOutcome(label))
 }
 
 /** Group consecutive labels: a chat entry whose time falls between them breaks the run. */
