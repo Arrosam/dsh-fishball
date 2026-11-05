@@ -106,15 +106,21 @@ async function validateStartupFiles(paths) {
  * The attached profile was first created with the Web bundle, and initProfile never rewrites an
  * existing manifest. The slim child must run the core only (§2.1, §2.3), so the configured base
  * bundle leads and the legacy Web bundle is dropped; every bundle the owner installed into the
- * child profile afterwards is kept in order.
+ * child profile afterwards is kept in order. The replaced manifest's exact bytes are kept first
+ * under a new private name (exclusive create, so no earlier backup is ever overwritten); a backup
+ * that cannot be written stops the start before the manifest changes.
  */
-function slimProfileBundles(boot, profileDir) {
+async function slimProfileBundles(boot, profileDir) {
   const manifest = boot.readProfileManifest(RUNTIME.profileName, profileDir)
   const current = manifest.dsh?.profile?.bundles ?? []
   const retained = current.filter(name => !RUNTIME.profile.bundles.includes(name) && name !== RUNTIME.profile.legacyBundle)
   const bundles = [...RUNTIME.profile.bundles, ...retained]
   const unchanged = current.length === bundles.length && current.every((name, index) => name === bundles[index])
-  if (!unchanged) boot.writeProfileBundles(profileDir, manifest, bundles)
+  if (unchanged) return
+  const file = path.join(profileDir, RUNTIME.profile.manifest)
+  const stamp = new Date().toISOString().replace(/[-:.]/g, '')
+  await writePrivate(file + RUNTIME.profile.manifestBackupInfix + stamp, await readFile(file), true)
+  boot.writeProfileBundles(profileDir, manifest, bundles)
 }
 
 export async function initializeProfile(paths, installation, preflight, mainWorkspaces) {
@@ -127,7 +133,7 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   const fresh = !await exists(path.join(paths.profile, 'package.json'))
   boot.initProfile(paths.profile, RUNTIME.profile.bundles)
   if (fresh) await privateTree(paths.profile)
-  slimProfileBundles(boot, paths.profile)
+  await slimProfileBundles(boot, paths.profile)
   await validateStartupFiles(paths)
   const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
   if (profile.skippedBundles.length) fail('PROFILE_INCOMPATIBLE', 'Private profile contains missing or incompatible bundles.')
