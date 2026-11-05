@@ -30,6 +30,13 @@ const CHILD = Object.freeze({
 /** The one upload route (§3.6). T06/T07 must keep this path or move the limit with it. */
 const UPLOAD = Object.freeze({ path: CHILD.api + 'upload' })
 
+/**
+ * The one API route whose child cache header survives the proxy: T06's read-only image route is
+ * content-addressed, so its immutable header is safe. Keep the path in step with
+ * IMAGES.readPath (src/slim/child/images.js); every other /api/* response stays no-store.
+ */
+const IMAGE_READ = Object.freeze({ path: CHILD.api + 'images/' })
+
 /** The contract's proxy methods; every other method is refused with 405 (§3.6). */
 const ALLOW = ROUTES.methods.join(', ')
 const METHOD = Object.freeze({ head: 'HEAD', post: 'POST' })
@@ -163,6 +170,9 @@ function rewriteLocation(value) {
 }
 
 function cacheFor(tail, current) {
+  // The child's own header is trusted only on the content-addressed image read route; a miss
+  // there (404/405) carries no header and still falls back to no-store.
+  if (tail.startsWith(IMAGE_READ.path)) return current ?? CACHE.noStore
   if (tail === CHILD.document || tail.startsWith(CHILD.api)) return CACHE.noStore
   if (tail.startsWith(CHILD.ui) && HASHED_NAME.test(tail)) return CACHE.immutable
   return current ?? CACHE.noStore

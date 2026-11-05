@@ -264,7 +264,8 @@ async function serveUpload(req, res, images) {
  * service's own store read. A malformed, unknown, corrupt or vanished id is the same bodyless
  * 404, so a probe cannot tell them apart; the store's verified media type is the only type sent.
  * SECURITY's nosniff, frame-ancestors and same-origin resource policy apply like every route.
- * The cache header is the child's; the T04 broker normalizes /api/* to no-store (host/embed.js).
+ * The cache header is the child's; the T04 broker preserves it on this read route only
+ * (host/embed.js), while every other /api/* response stays no-store.
  * HEAD advertises the GET length through the explicit content-length and writes no body.
  */
 async function serveImage(req, res, images, id) {
