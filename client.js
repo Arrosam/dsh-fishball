@@ -314,6 +314,18 @@ window.__ModuleLoader__.load({
       /** Values of data-fishball-row-state, so a running mark is distinguishable from an idle one. */
       state: Object.freeze({ idle: 'idle', running: 'running' }),
     })
+    /**
+     * The Host state one managed row's dots read. Both are per session, never Fishball-wide:
+     * - green: an open intake row whose source identity is this session (a message_fishball from
+     *   it that Fishball has not read). The prefix is src/messaging.js SOURCE_ID.session; the open
+     *   statuses are INTAKE_STATUS pending/accepted (src/constants.js).
+     * - yellow: a card or question in state.pile whose sessionId is this session.
+     * Fishball's own chat unread count stays on the top-left brand mark, where the design keeps it.
+     */
+    const ROW_STATE = Object.freeze({
+      unreadSource: 'session/',
+      unreadStatuses: new Set(['pending', 'accepted']),
+    })
     /** The ask_fishball row (S37): DSH has no view for this tool, so this entry draws the whole row. */
     const ASK_ROW = Object.freeze({ tool: 'ask_fishball', phaseStart: 'start', phaseResult: 'result' })
     /** ask_fishball's answer codes with their own words (keep in step with src/constants.js ASK_RESULT, ASK_ERROR). */
@@ -672,7 +684,7 @@ window.__ModuleLoader__.load({
       manageTitle: 'Managed by Fishball',
       // The banner's words. Same text as manageTitle (the refusal dialog's title) today, but a separate meaning.
       managedBanner: 'Managed by Fishball',
-      managedRowUnread: 'Managed by Fishball, {count} unread',
+      managedRowUnread: 'Managed by Fishball, unread input from this session',
       managedRowNeedsYou: 'Managed by Fishball, needs your action',
       managedRowRunning: 'Managed by Fishball, working',
       manageFailed: 'That did not work.',
@@ -1211,7 +1223,7 @@ window.__ModuleLoader__.load({
       takeBack: '从 Fishball 收回',
       manageTitle: '由 Fishball 管理',
       managedBanner: '由 Fishball 管理',
-      managedRowUnread: '由 Fishball 管理，{count} 条未读',
+      managedRowUnread: '由 Fishball 管理，此会话有未读输入',
       managedRowNeedsYou: '由 Fishball 管理，需要你处理',
       managedRowRunning: '由 Fishball 管理，正在工作',
       manageFailed: '操作未成功。',
@@ -1922,14 +1934,20 @@ window.__ModuleLoader__.load({
 
     /** Unread replies from the Host snapshot: a whole number, 0 until the first frame arrives. */
     const unreadCount = (state) => state.unread?.count ?? 0
-    /** The unread count in words: the pill and the row mark's label share one cap. */
+    /** The unread count in words, capped so the pill stays narrow. */
     const unreadText = (t, count) => count > UNREAD_BADGE.max ? t('unreadMany', { max: UNREAD_BADGE.max }) : String(count)
     /**
-     * The cards waiting for your answer: permission requests and questions in the snapshot's pile
-     * (the Host's one queue; no browser-side copy). It is Fishball-wide, like the unread count
-     * above: the row seat carries only a session id, so the mark describes Fishball, not that row.
+     * Whether this row's session has a card or question waiting for you: the Host's one pile,
+     * filtered by the card's own sessionId. A card from Fishball's own session has no managed row,
+     * so it lights no dot; the mark never borrows another session's card.
      */
-    const waitingCards = (state) => Array.isArray(state.pile) ? state.pile.length : 0
+    const needsAction = (state, sessionId) => (Array.isArray(state.pile) ? state.pile : []).some((card) => card?.sessionId === sessionId)
+    /**
+     * Whether Fishball has unread input from this row's session: an open intake row whose source
+     * identity is this session. The snapshot lists at most intakeRowsShown items, so a very old
+     * open item may be missing from the dot; the dot is a hint, not a queue count.
+     */
+    const unreadInput = (state, sessionId) => (Array.isArray(state.intake?.items) ? state.intake.items : []).some((item) => item?.sourceIdentity === ROW_STATE.unreadSource + sessionId && ROW_STATE.unreadStatuses.has(item.status))
 
     /** Which brand icon you chose; Fishball's own until the Host says otherwise. */
     const brandStyleOf = (state) => state.preferences?.brandStyle ?? BRAND_STYLE.fishball
@@ -3287,18 +3305,19 @@ window.__ModuleLoader__.load({
 
     /**
      * One managed row's mark, shared by the idle leading seat and the running trailing seat: the
-     * Sidebar icon setting's fish, a green unread dot, or a yellow needs-action dot. Needs-action
+     * Sidebar icon setting's fish, a green dot when this session has unread input for Fishball, or
+     * a yellow dot when this session has a card or question waiting. Both dots are per row; yellow
      * wins when both apply. The fish is still while idle and moves while the row runs; the dots and
      * the accessible label carry the state, so reduced motion loses no information.
      */
     function ManagedMark({ state, sessionId, t, running }) {
-      const count = unreadCount(state)
-      const needsYou = waitingCards(state) > 0
-      const dot = needsYou ? MANAGED_ROW.dot.action : count > 0 ? MANAGED_ROW.dot.unread : null
+      const needsYou = needsAction(state, sessionId)
+      const hasUnread = unreadInput(state, sessionId)
+      const dot = needsYou ? MANAGED_ROW.dot.action : hasUnread ? MANAGED_ROW.dot.unread : null
       const label = needsYou
         ? t('managedRowNeedsYou')
-        : count > 0
-          ? t('managedRowUnread', { count: unreadText(t, count) })
+        : hasUnread
+          ? t('managedRowUnread')
           : running ? t('managedRowRunning') : t('managedBanner')
       const Icon = brandIconOf(state)
       return h('span', {
