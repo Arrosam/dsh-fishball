@@ -983,7 +983,7 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
 
 ### Wave 6 — hand-over (one client task)
 
-**T14 — One hand-over button with a note `[client]` plus `[host]`**
+**T14 — One hand-over button with a note `[client]` plus `[host]` — DONE (2026-11-05)**
 - Goal: §8.3: one button, one optional note, hand over and forward; remove send-only and watch-only.
 - Owns: the header and menu components in `client.js`, `src/messaging.js` forward note path,
   `src/watches.js` user-facing entry points.
@@ -992,6 +992,25 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
   still works; the other two buttons and menu items are gone.
 - Tests: `HAND-01 hand over with a note`; `-02 hand over without a note`; `-03 note framing is the
   user's words`; `-04 take back`; `-05 no send or watch buttons or menu items`.
+- Done 2026-11-05 on `feat/slim-t14` (from `feat/slim-integration` 5b5b94d):
+  1. One entry. `client.js` registers the header action, the session-menu item and the dialog
+     under `HAND_OVER` (`fishball-hand-over`); the Take back refusal keeps its own overlay id.
+     Hand over opens the note dialog and posts the existing forward route (`API.send`,
+     `POST /api/fishball/send`); Take back keeps `POST /api/fishball/managed {managed:false}`.
+     The dialog's note is optional (empty still confirms) and DSH's plain `primary` confirm is
+     kept, as §8.5 lists the send dialog as not restyled.
+  2. The send-only and watch-only header actions, menu items, their refusal copy and the unused
+     client `api/fishball/watches` request are gone. The watch service, its HTTP route and
+     `commands.addWatch` stay (compatibility; §9 says services and routes stay), so no watch can
+     be started from the main DSH UI, and T15 decides whether that route is retired.
+  3. `src/messaging.js#forward` now records the managed session `by: 'hand-over'`
+     (`MANAGED_BY.handOver`) rather than `'send'`; old `send` rows keep their settings label.
+     The note bound (`maxMessageBytes`) and the `TEXT.forwarded` framing (the user's words
+     outside the untrusted block) are unchanged.
+  4. §8.5: the two recommended-plugin buttons (Install, Turn on) now go through the shared
+     `accentButton`/`fb-outline` ring; the other seven call sites already did. No filled
+     magenta button or `FISHBALL_COLOUR` rule remains, and the switch wrapper still keeps its
+     magenta knob.
 
 ### Wave 7 — cleanup (one task)
 

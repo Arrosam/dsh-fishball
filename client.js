@@ -49,7 +49,7 @@ window.__ModuleLoader__.load({
     /** Host statuses (src/constants.js STATUS) and the recovery actions each one offers. */
     const STATUS = Object.freeze({ starting: 'starting', live: 'live', recovery: 'recovery', archived: 'archived', stopped: 'stopped', failed: 'failed' })
     /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
-    const FEATURE = Object.freeze({ messages: 'messages', watching: 'watching' })
+    const FEATURE = Object.freeze({ messages: 'messages' })
     /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
     const featureOn = (state, feature) => state.features?.[feature] !== false
     const ACTION = Object.freeze({ retry: 'retry', adopt: 'adopt' })
@@ -58,25 +58,19 @@ window.__ModuleLoader__.load({
       [STATUS.archived]: Object.freeze([ACTION.retry]),
       [STATUS.stopped]: Object.freeze([ACTION.retry]),
     })
-    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', watches: 'api/fishball/watches', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', model: 'api/fishball/model', models: 'api/fishball/models', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
+    const API = Object.freeze({ events: 'api/fishball/events', recovery: 'api/fishball/recovery', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', contextWindow: 'api/fishball/context-window', send: 'api/fishball/send', read: 'api/fishball/read', brand: 'api/fishball/brand', welcomeSeen: 'api/fishball/welcome/seen', model: 'api/fishball/model', models: 'api/fishball/models', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
     /** The Messenger look's module id: its browser file registers it with DSH's module system. */
     const MESSENGER_MODULE = 'dsh-fishball-messenger'
-    /** "Tell Fishball when finished" entries (after Send to Fishball) and refusals with text (src/constants.js WATCH_ERROR). */
-    const WATCH_MENU = Object.freeze({ id: 'fishball-watch', order: 425 })
-    const WATCH_HEADER = Object.freeze({ id: 'fishball-watch', order: 3 })
-    const WATCH_ERRORS = new Set(['unknown-session', 'archived', 'is-fishball', 'limit-reached', 'unknown-watch', 'unavailable'])
-    const WATCH_ACTIVE = 'active'
-    const WATCH_BY_USER = 'user'
-    /** "Send to Fishball" refusals with their own text (keep in step with src/constants.js INTAKE_ERROR). */
-    const SEND_ERRORS = new Set(['queue-full', 'too-large', 'from-fishball', 'unknown-session', 'unavailable'])
-    /** Session-row menu entry and its place (after DSH's own pin/rename/fork/archive, before the id). */
-    const SEND_MENU = Object.freeze({ id: 'fishball-send', order: 420 })
-    const SEND_HEADER_ID = 'fishball-send'
-    /** Just before Fishball's own settings action. */
-    const SEND_HEADER_ORDER = 4
-    /** Hand over to Fishball / Take back from Fishball, beside Send to Fishball (DESIGN §10e, S37), and refusals with text (src/constants.js MANAGED_ERROR). */
-    const MANAGE_MENU = Object.freeze({ id: 'fishball-manage', order: 422 })
-    const MANAGE_HEADER = Object.freeze({ id: 'fishball-manage', order: 4.5 })
+    /**
+     * The one hand-over entry (§8.3): the session header and the session-row menu share it. Menu
+     * order: after DSH's own pin/rename/fork/archive, before the id; header order: just before
+     * Fishball's own settings action. The Take back refusal keeps its own overlay id, because the
+     * dialog and that notice are registered in the same slot.
+     */
+    const HAND_OVER = Object.freeze({ id: 'fishball-hand-over', noticeId: 'fishball-hand-over-notice', menuOrder: 422, headerOrder: 4.5 })
+    /** Hand-over refusals with their own text (keep in step with src/constants.js INTAKE_ERROR). */
+    const HAND_OVER_ERRORS = new Set(['queue-full', 'too-large', 'from-fishball', 'feature-off', 'unknown-session', 'unavailable'])
+    /** Take back refusals with their own text (src/constants.js MANAGED_ERROR). */
     const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'feature-off', 'unavailable'])
     /** The embed panel's fixed document path (§7): no query, fragment or token. Keep in step with contract ROUTES.document. */
     const EMBED_UI = Object.freeze({
@@ -658,21 +652,22 @@ window.__ModuleLoader__.load({
       'contextError.model-window-unknown': 'The model does not report its window, so a smaller one cannot be set.',
       contextSaveFailed: 'That value was not accepted.',
       contextInvalid: 'Enter a whole number, or leave it empty.',
-      sendToFishball: 'Send to Fishball',
-      sendTitle: 'Send "{title}" to Fishball',
-      sendNoteLabel: 'Note for Fishball (optional)',
-      sendHint: 'Fishball reads this session\'s last answer and your note.',
-      send: 'Send',
+      handOver: 'Hand over to Fishball',
+      handOverTitle: 'Hand over "{title}" to Fishball',
+      handOverNoteLabel: 'Note for Fishball (optional)',
+      handOverNotePlaceholder: 'For example: watch it and tell me when it is done, or approve builds and tests.',
+      handOverHint: 'Fishball reads this session\'s last answer and your note. Handing over makes Fishball look after this session.',
+      handOverConfirm: 'Hand over',
       cancel: 'Cancel',
       close: 'Close',
-      sending: 'Sending…',
-      'sendError.queue-full': 'Fishball\'s queue is full. Try again later.',
-      'sendError.too-large': 'The note is too long.',
-      'sendError.from-fishball': 'This is Fishball\'s own session.',
-      'sendError.unknown-session': 'This session could not be read.',
-      'sendError.unavailable': 'Fishball is not running.',
-      sendFailed: 'That did not work.',
-      handOver: 'Hand over to Fishball',
+      handingOver: 'Handing over…',
+      'handOverError.queue-full': 'Fishball\'s queue is full. Try again later.',
+      'handOverError.too-large': 'The note is too long.',
+      'handOverError.from-fishball': 'This is Fishball\'s own session.',
+      'handOverError.feature-off': 'Fishball\'s Session messages plugin is off.',
+      'handOverError.unknown-session': 'This session could not be read.',
+      'handOverError.unavailable': 'Fishball is not running.',
+      handOverFailed: 'That did not work.',
       takeBack: 'Take back from Fishball',
       manageTitle: 'Managed by Fishball',
       // The banner's words. Same text as manageTitle (the refusal dialog's title) today, but a separate meaning.
@@ -685,15 +680,6 @@ window.__ModuleLoader__.load({
       'manageError.is-fishball': 'This is Fishball\'s own session.',
       'manageError.feature-off': 'Fishball\'s Session messages plugin is off.',
       'manageError.unavailable': 'Fishball is not running.',
-      watchSession: 'Tell Fishball when finished',
-      watching: 'Fishball is watching',
-      watchFailed: 'Fishball could not watch this session.',
-      'watchError.unknown-session': 'This session could not be read.',
-      'watchError.archived': 'This session is archived.',
-      'watchError.is-fishball': 'This is Fishball\'s own session.',
-      'watchError.limit-reached': 'Fishball is watching as many sessions as it may.',
-      'watchError.unknown-watch': 'That watch is already closed.',
-      'watchError.unavailable': 'Fishball is not running.',
       nothingYet: 'Nothing yet.',
       sources: 'Plugin sources',
       sourcesHint: 'Plugins that send Fishball events through ctx.fishball. A source is off while Fishball is not running or has its plugin turned off.',
@@ -1130,21 +1116,22 @@ window.__ModuleLoader__.load({
       'contextError.model-window-unknown': '模型没有报告其窗口，因此无法设置更小的窗口。',
       contextSaveFailed: '该值未被接受。',
       contextInvalid: '请输入整数，或留空。',
-      sendToFishball: '发送给 Fishball',
-      sendTitle: '把“{title}”发送给 Fishball',
-      sendNoteLabel: '给 Fishball 的备注（可选）',
-      sendHint: 'Fishball 会读取此会话的最后一条回复和你的备注。',
-      send: '发送',
+      handOver: '交给 Fishball 管理',
+      handOverTitle: '把“{title}”交给 Fishball 管理',
+      handOverNoteLabel: '给 Fishball 的备注（可选）',
+      handOverNotePlaceholder: '例如：盯着它，完成时告诉我；或者批准构建和测试。',
+      handOverHint: 'Fishball 会读取此会话的最后一条回复和你的备注。交接后由 Fishball 照看此会话。',
+      handOverConfirm: '交给 Fishball',
       cancel: '取消',
       close: '关闭',
-      sending: '发送中…',
-      'sendError.queue-full': 'Fishball 的队列已满，请稍后再试。',
-      'sendError.too-large': '备注太长。',
-      'sendError.from-fishball': '这是 Fishball 自己的会话。',
-      'sendError.unknown-session': '无法读取此会话。',
-      'sendError.unavailable': 'Fishball 未在运行。',
-      sendFailed: '操作未成功。',
-      handOver: '交给 Fishball 管理',
+      handingOver: '交接中…',
+      'handOverError.queue-full': 'Fishball 的队列已满，请稍后再试。',
+      'handOverError.too-large': '备注太长。',
+      'handOverError.from-fishball': '这是 Fishball 自己的会话。',
+      'handOverError.feature-off': 'Fishball 的会话消息插件已关闭。',
+      'handOverError.unknown-session': '无法读取此会话。',
+      'handOverError.unavailable': 'Fishball 未在运行。',
+      handOverFailed: '操作未成功。',
       takeBack: '从 Fishball 收回',
       manageTitle: '由 Fishball 管理',
       managedBanner: '由 Fishball 管理',
@@ -1156,15 +1143,6 @@ window.__ModuleLoader__.load({
       'manageError.is-fishball': '这是 Fishball 自己的会话。',
       'manageError.feature-off': 'Fishball 的会话消息插件已关闭。',
       'manageError.unavailable': 'Fishball 未在运行。',
-      watchSession: '完成时通知 Fishball',
-      watching: 'Fishball 正在关注',
-      watchFailed: 'Fishball 无法关注此会话。',
-      'watchError.unknown-session': '无法读取此会话。',
-      'watchError.archived': '此会话已归档。',
-      'watchError.is-fishball': '这是 Fishball 自己的会话。',
-      'watchError.limit-reached': 'Fishball 关注的会话已达上限。',
-      'watchError.unknown-watch': '该关注已关闭。',
-      'watchError.unavailable': 'Fishball 未在运行。',
       nothingYet: '暂无。',
       sources: '插件信息源',
       sourcesHint: '通过 ctx.fishball 向 Fishball 发送事件的插件。Fishball 未运行或关闭了该插件时，信息源处于关闭状态。',
@@ -2013,14 +1991,14 @@ window.__ModuleLoader__.load({
     function RecommendedAction({ item, t, onFailed }) {
       if (item.blocked) return h(Tag, { tone: 'danger' }, pluginErrorText(t, item.blocked))
       if (item.state === RECOMMENDED.state.install) {
-        return h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', 'aria-label': t('recommendedInstallLabel', { name: item.packageName }), onClick: () => installRequest.open(INSTALL_FROM.settings, item.spec) }, t('install')))
+        return accentButton({ size: 'sm', 'aria-label': t('recommendedInstallLabel', { name: item.packageName }), onClick: () => installRequest.open(INSTALL_FROM.settings, item.spec) }, t('install'))
       }
       const state = h(Tag, { tone: 'neutral' }, t('recommendedState.' + item.state))
       if (item.state !== RECOMMENDED.state.dshOff) return state
       // Your own switch, as on the Fishball tab (POST plugins); it applies when Fishball's turn ends.
       const turnOn = async () => onFailed(!(await post(API.plugins, { plugin: item.plugin, on: true })))
       return h(React.Fragment, null, state,
-        h('span', { className: MCLS.accent }, h(Button, { type: 'button', size: 'sm', variant: 'primary', 'aria-label': t('recommendedTurnOnLabel', { name: item.packageName }), onClick: turnOn }, t('recommendedTurnOn'))))
+        accentButton({ size: 'sm', 'aria-label': t('recommendedTurnOnLabel', { name: item.packageName }), onClick: turnOn }, t('recommendedTurnOn')))
     }
 
     /** One compact row: package name, its description on one line (full text on hover), Source, and the action. */
@@ -2931,84 +2909,59 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * "Send to Fishball" (DESIGN §5b): one request store shared by the session-row menu entry
-     * and the header action; the dialog lives in the shell overlay so it outlives the menu.
+     * The hand-over dialog's request (§8.3): one store shared by the session-row menu entry and
+     * the header action; the dialog lives in the shell overlay so it outlives the menu.
      */
-    const sendRequest = (() => {
+    const handOverRequest = (() => {
       const store = valueStore(null)
       return { ...store, open: (sessionId, title) => store.set({ sessionId, title }), close: () => store.set(null) }
     })()
-    const useSendRequest = () => React.useSyncExternalStore(sendRequest.subscribe, sendRequest.get)
+    const useHandOverRequest = () => React.useSyncExternalStore(handOverRequest.subscribe, handOverRequest.get)
     /** The embed panel's open state, shared by the brand button and the shell-overlay panel (§7). */
     const embedPanel = valueStore(false)
     const useEmbedPanel = () => React.useSyncExternalStore(embedPanel.subscribe, embedPanel.get)
 
-    /** Whether a session can be sent: Fishball runs, and it is not Fishball's own session. */
+    /** Whether a session can be handed over: Fishball runs, it is not Fishball's own session, and Session messages is on. */
     const isOtherSession = (state, sessionId) => Boolean(sessionId) && sessionId !== state.sessionId
-    const canSend = (state, sessionId) => state.status === STATUS.live && isOtherSession(state, sessionId)
-    /** Your Send to Fishball and Tell Fishball when finished belong to their Fishball plugins, and hide while it is off (revision 10c). */
-    const canMessage = (state, sessionId) => canSend(state, sessionId) && featureOn(state, FEATURE.messages)
-    const canWatch = (state, sessionId) => canSend(state, sessionId) && featureOn(state, FEATURE.watching)
+    const canHandOver = (state, sessionId) => state.status === STATUS.live && isOtherSession(state, sessionId) && featureOn(state, FEATURE.messages)
 
-    function makeSendMenuItem(t) {
-      return function FishballSendMenuItem({ sessionId, displayTitle, useMenuOpenState }) {
-        const state = useFishball()
-        const [, setMenuOpen] = useMenuOpenState()
-        if (!canMessage(state, sessionId)) return null
-        return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); sendRequest.open(sessionId, displayTitle) } }, t('sendToFishball'))
-      }
-    }
-
-    function makeSendHeaderAction(t) {
-      return function FishballSendHeaderAction({ sessionId }) {
-        const state = useFishball()
-        if (!canMessage(state, sessionId)) return null
-        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => sendRequest.open(sessionId, '') }, t('sendToFishball'))
-      }
-    }
-
-    function makeSendDialog(t) {
-      return function FishballSendDialog() {
-        const request = useSendRequest()
+    function makeHandOverDialog(t) {
+      return function FishballHandOverDialog() {
+        const request = useHandOverRequest()
         if (request === null) return null
-        return h(SendForm, { key: request.sessionId, request, t })
+        return h(HandOverForm, { key: request.sessionId, request, t })
       }
     }
 
-    /** One request's dialog: the note and in-flight state die with it. */
-    function SendForm({ request, t }) {
+    /** One hand-over's dialog: the note and in-flight state die with it. */
+    function HandOverForm({ request, t }) {
       const [note, setNote] = React.useState('')
-      const [sending, setSending] = React.useState(false)
+      const [handingOver, setHandingOver] = React.useState(false)
       const [problem, setProblem] = React.useState(null)
-      const close = () => { if (!sending) sendRequest.close() }
+      const close = () => { if (!handingOver) handOverRequest.close() }
       const confirm = async () => {
-        setSending(true)
+        setHandingOver(true)
+        // The send route forwards the note as the user's words and makes the session managed.
         const { ok, code } = await send(API.send, { sessionId: request.sessionId, note })
-        setSending(false)
-        if (ok) sendRequest.close()
-        else setProblem(SEND_ERRORS.has(code) ? 'sendError.' + code : 'sendFailed')
+        setHandingOver(false)
+        if (ok) handOverRequest.close()
+        else setProblem(HAND_OVER_ERRORS.has(code) ? 'handOverError.' + code : 'handOverFailed')
       }
       return h(Modal, {
         open: true,
         onClose: close,
         closeLabel: t('close'),
-        title: request.title ? t('sendTitle', { title: request.title }) : t('sendToFishball'),
+        title: request.title ? t('handOverTitle', { title: request.title }) : t('handOver'),
         footer: h(React.Fragment, null,
-          h(Button, { type: 'button', variant: 'outline', disabled: sending, onClick: close }, t('cancel')),
-          h(Button, { type: 'button', variant: 'primary', disabled: sending, onClick: confirm }, sending ? t('sending') : t('send'))),
+          h(Button, { type: 'button', variant: 'outline', disabled: handingOver, onClick: close }, t('cancel')),
+          h(Button, { type: 'button', variant: 'primary', disabled: handingOver, onClick: confirm }, handingOver ? t('handingOver') : t('handOverConfirm'))),
       },
-        h('p', { className: CLS.muted }, t('sendHint')),
+        h('p', { className: CLS.muted }, t('handOverHint')),
         h('label', { className: CLS.field },
-          h('span', null, t('sendNoteLabel')),
-          h('textarea', { className: CLS.note, value: note, rows: 4, 'data-modal-autofocus': true, disabled: sending, onChange: (event) => { setNote(event.target.value); setProblem(null) } })),
+          h('span', null, t('handOverNoteLabel')),
+          h('textarea', { className: CLS.note, value: note, rows: 4, placeholder: t('handOverNotePlaceholder'), 'data-modal-autofocus': true, disabled: handingOver, onChange: (event) => { setNote(event.target.value); setProblem(null) } })),
         problem ? h('div', { role: 'alert' }, t(problem)) : null)
     }
-
-    /**
-     * Whether YOU have an active watch on a session (the entries then say so). A watch Fishball
-     * or the session set up (e.g. per-turn) is separate: yours is still offered.
-     */
-    const isWatched = (state, sessionId) => (state.watches?.watches ?? []).some((watch) => watch.targetSessionId === sessionId && watch.status === WATCH_ACTIVE && watch.createdBy?.kind === WATCH_BY_USER)
 
     /**
      * A request from a menu entry or header action and its refusal, in one store outside the menu:
@@ -3029,28 +2982,6 @@ window.__ModuleLoader__.load({
         dismiss: () => store.set(null),
       }
     }
-    const watchNotice = requestNotice(API.watches, WATCH_ERRORS, 'watchError.', 'watchFailed')
-
-    function makeWatchMenuItem(t) {
-      return function FishballWatchMenuItem({ sessionId, useMenuOpenState }) {
-        const state = useFishball()
-        const [, setMenuOpen] = useMenuOpenState()
-        if (!canWatch(state, sessionId)) return null
-        // Already watched: the entry says so; choosing it again returns the same watch.
-        const watched = isWatched(state, sessionId)
-        return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); void watchNotice.request({ sessionId }) } }, watched ? t('watching') : t('watchSession'))
-      }
-    }
-
-    function makeWatchHeaderAction(t) {
-      return function FishballWatchHeaderAction({ sessionId }) {
-        const state = useFishball()
-        if (!canWatch(state, sessionId)) return null
-        const watched = isWatched(state, sessionId)
-        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: watched, onClick: () => void watchNotice.request({ sessionId }) }, watched ? t('watching') : t('watchSession'))
-      }
-    }
-
     /** The refusal of a notice's last request, as a dialog in the shell overlay. */
     function makeRequestNotice(t, notice, titleKey) {
       return function FishballRequestNotice() {
@@ -3066,41 +2997,43 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** Hand over / Take back (DESIGN §5e, §10e) and its refusal. */
+    /** Take back (§8.3) and its refusal. */
     const manageNotice = requestNotice(API.managed, MANAGE_ERRORS, 'manageError.', 'manageFailed')
     const isManagedSession = (state, sessionId) => (state.managed ?? []).some((entry) => entry.sessionId === sessionId)
     /**
-     * Offered where Send to Fishball is (Fishball live, never its own session) once the Host lists
-     * managed sessions; hidden while Session messages is off (Q-r11-plugins-off; managed sessions stay managed).
+     * Offered where the hand-over can run, once the Host lists managed sessions; hidden while
+     * Session messages is off (managed sessions stay managed).
      */
-    const canManage = (state, sessionId) => Array.isArray(state.managed) && canMessage(state, sessionId)
-    /** The entry's text and action: Hand over on a session that is yours, Take back on a managed one. */
-    const manageChoice = (state, sessionId) => {
-      const managed = isManagedSession(state, sessionId)
-      return { label: managed ? 'takeBack' : 'handOver', run: () => manageNotice.request({ sessionId, managed: !managed }) }
-    }
+    const canManage = (state, sessionId) => Array.isArray(state.managed) && canHandOver(state, sessionId)
+    /**
+     * The one entry's text and action: Hand over opens the note dialog; Take back takes the
+     * session back at once, with no note (§8.3 keeps it a single click).
+     */
+    const handOverChoice = (state, sessionId, title) => isManagedSession(state, sessionId)
+      ? { label: 'takeBack', run: () => void manageNotice.request({ sessionId, managed: false }) }
+      : { label: 'handOver', run: () => handOverRequest.open(sessionId, title) }
 
-    function makeManageMenuItem(t) {
-      return function FishballManageMenuItem({ sessionId, useMenuOpenState }) {
+    function makeHandOverMenuItem(t) {
+      return function FishballHandOverMenuItem({ sessionId, displayTitle, useMenuOpenState }) {
         const state = useFishball()
         const [, setMenuOpen] = useMenuOpenState()
         if (!canManage(state, sessionId)) return null
-        const choice = manageChoice(state, sessionId)
+        const choice = handOverChoice(state, sessionId, displayTitle)
         return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); void choice.run() } }, t(choice.label))
       }
     }
 
-    /** The Hand over / Take back button, shared by the session header and the managed banner so they cannot drift. */
-    const manageButton = (t, state, sessionId) => {
-      const choice = manageChoice(state, sessionId)
+    /** Hand over / Take back, shared by the session header and the managed banner so they cannot drift. */
+    const handOverButton = (t, state, sessionId) => {
+      const choice = handOverChoice(state, sessionId, '')
       return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void choice.run() }, t(choice.label))
     }
 
-    function makeManageHeaderAction(t) {
-      return function FishballManageHeaderAction({ sessionId }) {
+    function makeHandOverHeaderAction(t) {
+      return function FishballHandOverHeaderAction({ sessionId }) {
         const state = useFishball()
         if (!canManage(state, sessionId)) return null
-        return manageButton(t, state, sessionId)
+        return handOverButton(t, state, sessionId)
       }
     }
 
@@ -3124,7 +3057,7 @@ window.__ModuleLoader__.load({
         return h('div', { className: CLS.managedBanner, 'data-fishball-managed-banner': sessionId },
           h(Icon, { size: MANAGED_BANNER.iconPx, unread: false }),
           h('span', { className: CLS.managedText }, t('managedBanner')),
-          manageButton(t, state, sessionId))
+          handOverButton(t, state, sessionId))
       }
     }
 
@@ -4551,19 +4484,14 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.headerActions, function* () {
         yield ctx.slots.register({ name: SLOT.headerActions, id: HEADER_ACTION_ID, order: HEADER_ACTION_ORDER, locale: NS }, HeaderAction)
         yield ctx.slots.register({ name: SLOT.headerActions, id: READ_HEADER.id, order: READ_HEADER.order, locale: NS }, FishballReadReporter)
-        yield ctx.slots.register({ name: SLOT.headerActions, id: SEND_HEADER_ID, order: SEND_HEADER_ORDER, locale: NS }, makeSendHeaderAction(t))
-        yield ctx.slots.register({ name: SLOT.headerActions, id: WATCH_HEADER.id, order: WATCH_HEADER.order, locale: NS }, makeWatchHeaderAction(t))
-        yield ctx.slots.register({ name: SLOT.headerActions, id: MANAGE_HEADER.id, order: MANAGE_HEADER.order, locale: NS }, makeManageHeaderAction(t))
+        yield ctx.slots.register({ name: SLOT.headerActions, id: HAND_OVER.id, order: HAND_OVER.headerOrder, locale: NS }, makeHandOverHeaderAction(t))
       }), 'fishball: header actions')
       ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, function* () {
-        yield ctx.slots.register({ name: SLOT.sessionMenu, id: SEND_MENU.id, order: SEND_MENU.order, locale: NS }, makeSendMenuItem(t))
-        yield ctx.slots.register({ name: SLOT.sessionMenu, id: WATCH_MENU.id, order: WATCH_MENU.order, locale: NS }, makeWatchMenuItem(t))
-        yield ctx.slots.register({ name: SLOT.sessionMenu, id: MANAGE_MENU.id, order: MANAGE_MENU.order, locale: NS }, makeManageMenuItem(t))
+        yield ctx.slots.register({ name: SLOT.sessionMenu, id: HAND_OVER.id, order: HAND_OVER.menuOrder, locale: NS }, makeHandOverMenuItem(t))
       }), 'fishball: session menu')
       ctx.effect(() => ctx.slots.inject(SLOT.overlay, function* () {
-        yield ctx.slots.register({ name: SLOT.overlay, id: SEND_MENU.id, locale: NS }, makeSendDialog(t))
-        yield ctx.slots.register({ name: SLOT.overlay, id: WATCH_MENU.id, locale: NS }, makeRequestNotice(t, watchNotice, 'watchSession'))
-        yield ctx.slots.register({ name: SLOT.overlay, id: MANAGE_MENU.id, locale: NS }, makeRequestNotice(t, manageNotice, 'manageTitle'))
+        yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.id, locale: NS }, makeHandOverDialog(t))
+        yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.noticeId, locale: NS }, makeRequestNotice(t, manageNotice, 'manageTitle'))
         yield ctx.slots.register({ name: SLOT.overlay, id: ADD_MENU.id, locale: NS }, makeInstallDialog(t, listenToHost))
         yield ctx.slots.register({ name: SLOT.overlay, id: EMBED_UI.id, locale: NS }, makeEmbedPanel(t))
       }), 'fishball: dialogs')
