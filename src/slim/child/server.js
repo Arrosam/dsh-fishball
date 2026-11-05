@@ -144,17 +144,25 @@ function uiFile(uiDir, pathname) {
   return file.startsWith(root + SEPARATOR) ? file : undefined
 }
 
-async function serveUi(res, uiDir, pathname) {
+/**
+ * Resolve one /ui/* target to its route by reading the file as part of resolution: only an
+ * existing file with a servable type is a route. A missing one is therefore a bodyless 404 for
+ * every method, and the read that decides existence also supplies the body, so no second lookup
+ * can race a 405 or a 200 against a file that changed in between.
+ */
+async function uiRoute(uiDir, pathname) {
   const file = uiFile(uiDir, pathname)
   const type = file === undefined ? undefined : UI_TYPES[path.extname(file)]
-  if (file === undefined || type === undefined) { notFound(res); return }
+  if (file === undefined || type === undefined) return undefined
   let body
   try { body = await readFile(file) } catch (error) {
-    if (error.code === 'ENOENT' || error.code === 'EISDIR') { notFound(res); return }
-    fail(res)
-    return
+    if (error.code === 'ENOENT' || error.code === 'EISDIR') return undefined
+    throw error
   }
-  send(res, HTTP.ok, { 'content-type': type }, body)
+  return {
+    allow: ALLOW.readable,
+    serve: (res) => send(res, HTTP.ok, { 'content-type': type }, body),
+  }
 }
 
 /**
@@ -193,21 +201,17 @@ function serveEvents(res, heartbeatMs, streams) {
 
 /**
  * Resolve one parsed pathname to its route, which owns both the methods that target supports and
- * its handler; undefined means no route, which is a bodyless 404 for every method.
+ * its handler; undefined means no target, which is a bodyless 404 for every method. A /ui/* target
+ * is resolved by reading its file first, so the method check only ever sees an existing resource.
  */
-function resolveRoute(pathname, options) {
+async function resolveRoute(pathname, options) {
   if (pathname === PATHS.document) {
     return {
       allow: ALLOW.readable,
       serve: (res) => send(res, HTTP.ok, { 'content-type': TYPE.html }, options.document),
     }
   }
-  if (pathname.startsWith(PATHS.ui)) {
-    return {
-      allow: ALLOW.readable,
-      serve: (res) => { void serveUi(res, options.uiDir, pathname).catch(() => fail(res)) },
-    }
-  }
+  if (pathname.startsWith(PATHS.ui)) return uiRoute(options.uiDir, pathname)
   if (pathname === PATHS.events) {
     return {
       allow: ALLOW.events,
@@ -223,7 +227,7 @@ function resolveRoute(pathname, options) {
   return undefined
 }
 
-function handle(req, res, options) {
+async function handle(req, res, options) {
   try {
     // Bearer first: an unauthenticated request learns nothing about paths or methods.
     if (!options.authority.accepts(req.headers.authorization)) {
@@ -233,7 +237,7 @@ function handle(req, res, options) {
     // Resolve before checking the method: Allow describes the target resource, and an unknown
     // path is a 404 whatever the method (RFC 9110 §10.2.1).
     const pathname = requestPath(req.url)
-    const route = pathname === undefined ? undefined : resolveRoute(pathname, options)
+    const route = pathname === undefined ? undefined : await resolveRoute(pathname, options)
     if (route === undefined) { notFound(res); return }
     if (!route.allow.includes(req.method)) { methodNotAllowed(res, route.allow); return }
     route.serve(res)
@@ -263,7 +267,7 @@ export function createAppServer(options) {
   let origin
   let listening = false
   let closed = false
-  const server = createServer({ maxHeaderSize: BIND.maxHeaderBytes }, (req, res) => handle(req, res, settings))
+  const server = createServer({ maxHeaderSize: BIND.maxHeaderBytes }, (req, res) => { void handle(req, res, settings).catch(() => fail(res)) })
   server.on('clientError', (_error, socket) => socket.destroy())
 
   async function start() {
