@@ -54,7 +54,7 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL_KIND, DECISION, ERROR, EVENT, GRANT_KIND, LIMITS, OPERATION, PLAN_REVIEW, RAN_VIA, RISK, SETTLED_BY, ContractError } from '../contract.js'
+import { ANSWER_PLACE, APPROVAL_KIND, DECISION, ERROR, EVENT, GRANT_KIND, LIMITS, OPERATION, PLAN_REVIEW, RAN_VIA, RISK, SETTLED_BY, ContractError } from '../contract.js'
 import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
 import { createDecisionStore } from './decisions.js'
 
@@ -160,11 +160,12 @@ const QUESTION = Object.freeze({ errorName: 'UserQuestionError', aborted: 'ASK_A
 
 /**
  * Where a session question left to the user is answered (7713 N6): only in its own session, on
- * DSH's question card (N3, docs/slim-native-design.md §12). Same words as src/questions.js.
- * 7713 N7: it also says where it is NOT, because Fishball told the user to answer "in this chat
- * (and in your pile)", mixing it up with its own ask_user card; neither place has a form for it.
+ * DSH's question card (N3, docs/slim-native-design.md §12). 7713 N7: it also says where it is NOT,
+ * because Fishball told the user to answer "in this chat (and in your pile)", mixing it up with its
+ * own ask_user card; neither place has a form for it. One text for the persona and every tool
+ * (the contract's pile-note.js), so the copies cannot drift (7713 N9-a).
  */
-const IN_SESSION = 'the user answers it only on that session\'s own question card, in that session, not in this chat or the user\'s pile'
+const IN_SESSION = ANSWER_PLACE.sessionQuestion
 /**
  * Where Fishball's own ask_user card is answered: in Fishball's chat, the one card the user
  * answers there (src/slim/ui/approvals.js). The main pile UI that also showed it is deleted (§12).
@@ -591,6 +592,7 @@ export function apply(ctx) {
     prompts: new Map(),    // promptId -> list_frozen_sessions summary
     labels: new Map(),     // decisionId -> one settled decision record (T08)
     pending: new Map(),    // approvalId -> decisionId waiting for the user's answer
+    answering: new Set(),  // question ids whose answer_question call is still in flight (O1 below)
     answers: [],           // newest-first user answers to questions Fishball sent to the user
     closed: [],            // newest-first cards the host closed without the user's answer
     questions: new Map(),  // questionId -> Fishball's own live question
@@ -661,6 +663,17 @@ export function apply(ctx) {
       // The request is the user's card now; Fishball's label stays open (and keeps its place out
       // of the audit cap) until the user answers it or the closure line ends it.
       if (card !== undefined) remember(state.retired, payload.approvalId, card, APPROVALS.limits.retired, (value, key) => state.pending.has(key))
+      // 7713 O1: a question that went to the user without Fishball's to_user (its answer window
+      // expired, or its notice was never delivered) left no trace in this chat: the card vanished
+      // and the next row was the user's answer. It gets the same waiting label a to_user leaves,
+      // so the user's answer settles it and a closure ends it (both above/below through pending),
+      // and the "user decided" branch below never adds a second one. A question whose own
+      // answer_question is still in flight is skipped: that call records the label itself, and the
+      // host may publish this escalation before the call returns.
+      if (card?.kind === APPROVAL_KIND.question && pendingId === undefined && !state.answering.has(payload.approvalId)) {
+        const decisionId = recordLabel(card, cardKind(card), '', { leftToUser: true }, { waiting: true })
+        state.pending.set(payload.approvalId, decisionId)
+      }
       publish()
       return
     }
@@ -829,12 +842,17 @@ export function apply(ctx) {
     if (!answering && toUser !== true && trimmed(note) === '') return refused(ERROR.badAnswer, { reason: TEXT.needsSomething })
     if (answering && toUser === true) return refused(ERROR.badAnswer, { reason: TEXT.bothWays })
     const target = card ?? retired
-    await bridge.request(OPERATION.questionAnswer, {
-      sessionId: target.sessionId, questionId,
-      ...(answers === undefined ? {} : { answers }), ...(approve === undefined ? {} : { approve }),
-      ...(feedback === undefined ? {} : { feedback }), ...(toUser === undefined ? {} : { toUser }),
-      ...(note === undefined ? {} : { note }),
-    })
+    // The host may publish this question's escalation before the answer returns: settle() must not
+    // take it for an expired window and label it a second time (7713 O1).
+    state.answering.add(questionId)
+    try {
+      await bridge.request(OPERATION.questionAnswer, {
+        sessionId: target.sessionId, questionId,
+        ...(answers === undefined ? {} : { answers }), ...(approve === undefined ? {} : { approve }),
+        ...(feedback === undefined ? {} : { feedback }), ...(toUser === undefined ? {} : { toUser }),
+        ...(note === undefined ? {} : { note }),
+      })
+    } finally { state.answering.delete(questionId) }
     if (!answering && toUser !== true) {
       // The note is kept with the question (host side); the question stays open for Fishball.
       publish()
@@ -1081,7 +1099,7 @@ export function apply(ctx) {
     for (const dispose of registrations.splice(0)) { try { dispose() } catch { /* already gone */ } }
     state.listeners.clear()
     state.cards.clear(); state.retired.clear(); state.prompts.clear(); state.labels.clear()
-    state.pending.clear(); state.answers.length = 0; state.closed.length = 0
+    state.pending.clear(); state.answering.clear(); state.answers.length = 0; state.closed.length = 0
   }
 
   ctx.provide(CHILD.service, service)

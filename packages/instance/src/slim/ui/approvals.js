@@ -109,7 +109,9 @@ const ROW = Object.freeze({ marker: 'data-approval-row' })
 /** Card kinds: only a question card carries questions; every other kind is a permission request. */
 const CARD_KIND = Object.freeze({ question: 'question' })
 /** A settled label's outcome words for the outcome flags T09 and T08 record. */
-const OUTCOME_TEXT = Object.freeze({ revoked: 'grant revoked', toUser: 'sent to you', answered: 'answered', waiting: 'waiting' })
+// leftToUser (7713 O1): a session's question that reached the user without Fishball's answer
+// (its window expired, or its notice was never delivered), so the words name neither cause.
+const OUTCOME_TEXT = Object.freeze({ revoked: 'grant revoked', toUser: 'sent to you', leftToUser: 'left to you, unanswered by Fishball', answered: 'answered', waiting: 'waiting' })
 
 /**
  * A label for a call that ran on an approval already given (T08): one-time pass by Fishball or by
@@ -224,6 +226,7 @@ function labelOutcome(label) {
   if (text(label.closed) !== '') return COPY.closed + ': ' + text(label.closed)
   if (flags.revoked === true) return OUTCOME_TEXT.revoked
   if (flags.toUser === true) return OUTCOME_TEXT.toUser
+  if (flags.leftToUser === true) return OUTCOME_TEXT.leftToUser
   if (flags.answered === true) return OUTCOME_TEXT.answered
   if (flags.ran === RAN_VIA.grant) return RAN_TEXT.grantFishball
   if (flags.ran === RAN_VIA.pass) return flags.ranBy === RAN_BY.user ? RAN_TEXT.passUser : RAN_TEXT.passFishball
