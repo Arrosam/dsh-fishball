@@ -10,12 +10,8 @@
  *   browser forwarder (spike S12), for a managed session's call that no pass covers (item 12).
  *
  * Code rules in the listener, in order (each can only send the request on to you):
- * - Fishball itself asking (rev11f, §7a.11, S35): the pass of an identical call you allowed ->
- *   'allowed-once'; else, below maxPendingApprovals, a card labelled Fishball in your pile and
- *   'rejected' at once, so it never freezes (src/own-requests.js); at the cap, 'rejected' at once
- *   with the too-many-waiting text (Q-r11-cap-own). Code never approves it without your Allow;
- * - no agent, Fishball not live, or its Permission requests plugin off -> next(): your stock
- *   prompt, unchanged DSH behaviour;
+ * - no agent, or the isolated Fishball not connected -> next(): your stock prompt, unchanged DSH
+ *   behaviour (Fishball runs in the child; nothing in the main process asks for itself any more);
  * - a session that is yours (judged by the session the user sees, so a subagent follows its
  *   root) -> next(): Fishball is not told and takes no step;
  * - a to-you ticket for the exact call -> next(), with your answer audited (§7a.6);
@@ -42,7 +38,7 @@
  *   first answer in either place wins (rev11e, S33). The window only decides that move: a card in
  *   your pile has no deadline, and every end without your answer leaves a closure line in the chat
  *   (src/card-lifecycle.js).
- * Fishball stopping or Permission requests going off sends every waiting request, and every card,
+ * The child disconnecting sends every waiting request, and every card,
  * to its session's stock prompt (§7a.5, Q-r11-release-pile); a session leaving management does the
  * same for its requests (§5e).
  *
@@ -63,8 +59,7 @@
  * S33's re-dispatch: the waterfall runs again with a marked copy that owns the signal.
  * Each prompt waiting this way is remembered in memory (prompts already showing, §7a.9): Fishball
  * is not told and takes no step, but list_frozen_sessions lists them and answer_prompt answers
- * one, which makes its session managed (the fifth way in, item 2). Fishball's own requests never
- * reach a prompt: they are its cards (§7a.11), which it can never answer (§7a.13).
+ * one, which makes its session managed (the fifth way in, item 2).
  *
  * The slim bridge (T09) observes the same live state through subscribe()/liveOffers() and calls
  * answerApproval(); it keeps no second request store and changes no decision rule here. The host
@@ -84,7 +79,7 @@ import { untrustedBlock, sessionFields } from './framing.js'
 import { byteLength, cutToBytes } from './text.js'
 import { diagnosticOf } from './errors.js'
 import { checkGrant } from './grants.js'
-import { closeCard, tellWithoutWake } from './card-lifecycle.js'
+import { closeCard } from './card-lifecycle.js'
 
 export const APPROVAL_TOOL = Object.freeze({ answer: 'answer_approval', listPrompts: 'list_frozen_sessions', answerPrompt: 'answer_prompt' })
 const SOURCE_IDENTITY = 'fishball/approval'
@@ -93,7 +88,6 @@ const PROVENANCE = Object.freeze({
   user: 'the user',
   fishballStart: 'Fishball (start_session)',
   fishballMessage: 'Fishball (message_session)',
-  fishballRedirect: 'Fishball (redirect_session)',
   other: 'another agent or a notice',
   unknown: 'unknown',
 })
@@ -177,12 +171,6 @@ const TEXT = Object.freeze({
     }),
   ].join('\n'),
   summary: (toolName) => `Permission request: ${JSON.stringify(toolName)}`,
-  /** The note after a request ended without Fishball's answer, or after you answered one it sent you. */
-  outcome: (id, what) => `Fishball notice: permission request ${id} ${what}.`,
-  escalatedOutcome: (outcome) => `was escalated; the user's answer in that session: ${outcome}`,
-  userOutcome: (outcome) => `went to the user in that session; the user's answer: ${outcome}`,
-  pileOutcome: (outcome) => `went to the user's pile; the user's answer: ${outcome}`,
-  timedOut: 'got no answer in time and went to the user',
   listPromptsDescription: 'List the prompts already showing in other sessions: permission requests waiting there for the user\'s Allow once or Reject that you are not deciding and that are not in the user\'s pile. Each has its prompt id, its session, the tool and the exact arguments.',
   answerPromptDescription: 'Answer one prompt from list_frozen_sessions. "allow" runs that call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "reject" refuses it with a reason the session sees. The prompt closes, the session continues, and that session becomes one you manage.',
   promptIdArg: 'The prompt id, e.g. prm_7f3c…, from list_frozen_sessions.',
@@ -196,7 +184,6 @@ const TEXT = Object.freeze({
     already: 'The prompt is closed and the session continues. You already manage that session.',
     failed: 'The prompt is closed and the session continues, but recording that session as managed failed: it stays the user\'s.',
   }),
-  withdrawn: 'was withdrawn: the asking session cancelled its call',
 })
 
 const JSON_OUTPUT = Object.freeze({ schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value, null, 2) }] })
@@ -295,18 +282,13 @@ export class ApprovalBroker {
   #readLimits
   #assistantId
   #isLive
-  #startedByFishball
-  #redirectedByFishball
-  #agentOf
   #onChange
-  #isEnabled
   #isManaged
   #passes
   #wording
   #pile
   #grants
   #manage
-  #own
   #audit
   #decisions
   /** apr id -> request (DESIGN §9 "Request threads"): waiting for Fishball, or owing a reply. */
@@ -323,21 +305,17 @@ export class ApprovalBroker {
   /**
    * @param ctx - fishball row context (approval, sandboxPolicy, sessions, workspaceRegistry, on).
    * @param store - Store (approvals and decisions audits). @param logger - plugin logger.
-   * @param deps.ledger, deps.readLimits, deps.assistantId, deps.isLive, deps.onChange.
-   * @param deps.startedByFishball - (sessionId) => whether Fishball started that session.
-   * @param deps.redirectedByFishball - (sessionId, text) => whether that text is a redirect_session instruction Fishball sent it.
-   * @param deps.agentOf - () => Fishball's agent (for notes without a wake).
-   * @param deps.isEnabled - () => whether Fishball's Permission requests plugin runs (revision 10c);
-   *   when it stops, the caller releases waiting requests (releaseAll).
+   * @param deps.ledger, deps.readLimits, deps.assistantId, deps.onChange.
+   * @param deps.isLive - () => whether the isolated Fishball can answer now (its bridge is up);
+   *   when it goes away, the caller releases waiting requests (releaseAll).
    * @param deps.isManaged - (sessionId) => whether Fishball manages that session (revision 11).
    * @param deps.passes - CallPasses (passes and to-you tickets).
    * @param deps.wording - ResultWording (what a direct call's agent reads after Fishball answered).
    * @param deps.pile - Pile (your cards).
    * @param deps.grants - Grants (standing grants: created by Fishball's grant answers, covering calls).
    * @param deps.manage - (sessionId, by) => Promise<whether it became managed now> (answer_prompt, §7a.9).
-   * @param deps.own - OwnRequests (Fishball's own cards and their passes, §7a.11).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, startedByFishball, redirectedByFishball, agentOf, onChange, isEnabled, isManaged, passes, wording, pile, grants, manage, own }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, onChange, isManaged, passes, wording, pile, grants, manage }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -345,18 +323,13 @@ export class ApprovalBroker {
     this.#readLimits = readLimits
     this.#assistantId = assistantId
     this.#isLive = isLive
-    this.#startedByFishball = startedByFishball
-    this.#redirectedByFishball = redirectedByFishball
-    this.#agentOf = agentOf
     this.#onChange = onChange
-    this.#isEnabled = isEnabled
     this.#isManaged = isManaged
     this.#passes = passes
     this.#wording = wording
     this.#pile = pile
     this.#grants = grants
     this.#manage = manage
-    this.#own = own
     this.#audit = new AuditLog(() => store.approvals, () => readLimits().auditEntriesKept)
     this.#decisions = new AuditLog(() => store.decisions, () => readLimits().auditEntriesKept)
     // A `function`, so the scope target (`this`) is at hand for S33's re-dispatch fallback.
@@ -632,15 +605,15 @@ export class ApprovalBroker {
 
   /**
    * Open requests, as maxPendingApprovals counts them: waiting for Fishball, or a card in your
-   * pile (Reading, §7a.6), Fishball's own cards included (Q-r11-cap-own).
+   * pile (Reading, §7a.6).
    */
   #openCount() {
-    return this.#waiting.size + this.#pile.size + this.#own.waitingCount()
+    return this.#waiting.size + this.#pile.size
   }
 
-  /** Fishball live with its Permission requests plugin on (item 10). */
+  /** The isolated Fishball is connected and can answer (item 10). */
   #canAnswer() {
-    return this.#isLive() && this.#isEnabled()
+    return this.#isLive()
   }
 
   #mintId(prefix = APPROVAL.idPrefix) {
@@ -703,8 +676,6 @@ export class ApprovalBroker {
         this.#openQuestion(request, result.question)
         return { code: ASK_RESULT.question, requestId: request.id, question: result.question }
       case APPROVAL_ANSWER.withdrawn:
-        // A call cancelled before its notice went out is not news to Fishball.
-        if (request.seen) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
         return end(ASK_ERROR.cancelled)
       case APPROVAL_ANSWER.released:
         return end(ASK_RESULT.noLongerManaged)
@@ -714,7 +685,6 @@ export class ApprovalBroker {
           this.#ticket(request)
           return end(ASK_RESULT.unavailable)
         }
-        if (result.answer === APPROVAL_ANSWER.timeout) this.#tell(TEXT.outcome(request.id, TEXT.timedOut))
         // Escalate, no answer in time, or a notice that could not be delivered: your card (§7a.6).
         return this.#awaitCard(request, { ...result, answer: result.answer === ROUND.undelivered ? APPROVAL_ANSWER.toUser : result.answer }, signal)
     }
@@ -766,7 +736,6 @@ export class ApprovalBroker {
         this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: allowed ? APPROVAL_DECISION.allow : APPROVAL_DECISION.reject, by: SETTLED_BY.user })
         const outcome = allowed ? APPROVAL_OUTCOME.allowedOnce : APPROVAL_OUTCOME.rejected
         await this.#clicked(request.sessionId, request.id, outcome, allowed ? undefined : card.note !== undefined)
-        if (request.seen) this.#tell(TEXT.outcome(request.id, TEXT.pileOutcome(outcome)))
         return { ...answer, byUser: true, ...(card.note === undefined ? {} : { reason: card.note }) }
       }
       case CARD_END.off:
@@ -855,6 +824,7 @@ export class ApprovalBroker {
           await this.#ledger.publish({
             kind: INTAKE_KIND.approval,
             sourceIdentity: SOURCE_IDENTITY,
+            sourceSessionId: request.sessionId,
             dedupeKey: request.round === 1 ? id : id + ROUND_KEY_SEPARATOR + request.round,
             message: createUserMessage({
               content: [{ type: 'text', text }],
@@ -885,7 +855,7 @@ export class ApprovalBroker {
    * @param end - a CARD_END.
    */
   cardClosed(card, end) {
-    closeCard(this.#agentOf(), card, end, this.#logger, (event) => this.#emit(event))
+    closeCard(card, end, (event) => this.#emit(event))
   }
 
   /** Answer a waiting request once; @returns whether it was still waiting. */
@@ -931,14 +901,11 @@ export class ApprovalBroker {
     const asker = req.agent
     // Code rules first: each can only send the request on to you.
     if (asker === undefined) return next()
-    if (asker.id === this.#assistantId()) return this.#ownRequest(req, next)
     // The asker's own signal, before the pass-through replaces req.signal.
     const signal = req.signal
     const via = { target, req, next }
     // A subagent asks for the session the user sees; its own session is named as detail (M2).
     const sessionId = rootSessionOf(this.#ctx, asker.id)
-    // A subagent of Fishball (its policy widened) asks for Fishball: never a prompt it may answer (§7a.13).
-    if (sessionId === this.#assistantId()) return this.#ownRequest(req, next)
     const limits = this.#readLimits()
     const args = argumentsOf(asker.session, req.callId, req.toolName, limits.argumentExcerptBytes)
     const key = CallPasses.keyOf(sessionId, req.toolName, args.value)
@@ -1005,70 +972,6 @@ export class ApprovalBroker {
   }
 
   /**
-   * Fishball's own request (§7a.11, S35): never your stock prompt, and never answered by Fishball.
-   * - The pass of an identical call you allowed (same tool, same canonical arguments) -> 'allowed-once'.
-   * - With maxPendingApprovals requests open -> 'rejected' at once with the too-many-waiting text
-   *   (Q-r11-cap-own).
-   * - Arguments that cannot be read (no pass could match a retry) -> 'rejected' with its own text.
-   * - Otherwise a card labelled Fishball in your pile, and 'rejected' at once. Fishball's own tool
-   *   reads the card's id and returns the waiting result itself; another plugin's tool gets the
-   *   waiting text through post-execute (variant A).
-   * Under a never-asking mode DSH answers before this listener, so no card is filed (S35).
-   * Without a call id neither the card nor the text can reach the call: your stock prompt, as before.
-   * @param req - DSH's request; its agent is Fishball or a subagent of it (widened policy).
-   */
-  async #ownRequest(req, next) {
-    if (req.callId === undefined) return next()
-    const limits = this.#readLimits()
-    const expected = this.#own.expected(req.callId)
-    // add_plugin's second step stands for set_plugin_enabled on the plugin it installed (own-requests.js expect).
-    const subject = expected?.subject
-    const toolName = subject?.toolName ?? req.toolName
-    const args = subject === undefined
-      ? argumentsOf(req.agent.session, req.callId, req.toolName, limits.argumentExcerptBytes)
-      : { ...argumentsText(JSON.stringify(subject.args), limits.argumentExcerptBytes), calledTool: toolName, value: subject.args }
-    const call = { sessionId: this.#assistantId(), toolName, callId: req.callId, args, at: new Date().toISOString() }
-    const passed = await this.#own.takePass(toolName, args.value)
-    if (passed !== undefined) {
-      // Only your Allow mints the retry pass of Fishball's own request (§7a.11).
-      await this.#record({ ...call, id: passed, kind: REQUEST_KIND.own, answer: APPROVAL_ANSWER.pass, passBy: CHANGED_BY.user, finalOutcome: APPROVAL_OUTCOME.allowedOnce })
-      return APPROVAL_OUTCOME.allowedOnce
-    }
-    // Arguments that could not be read give no pass key: Allow could never let a retry through,
-    // so no card is filed, and the call is refused with its own text (Reading).
-    if (args.value === undefined) {
-      this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.unreadable })
-      return APPROVAL_OUTCOME.rejected
-    }
-    let id
-    try {
-      // Only Fishball's own tool reads the filed id back (cardFor); another plugin's tool gets the text by its mark.
-      id = await this.#own.file({ callId: expected === undefined ? undefined : req.callId, toolName, args, reason: expected?.reason ?? req.reason ?? '', detail: expected?.detail }, () => this.#openCount() >= limits.maxPendingApprovals)
-    } catch (error) {
-      // No card could be stored: refused without one, never a prompt that freezes Fishball.
-      this.#logger.warn('own request could not be filed (%s)', diagnosticOf(error))
-      return APPROVAL_OUTCOME.rejected
-    }
-    if (id === undefined) {
-      // Fishball's own tool reads too-many-waiting back as JSON (cardFor); another plugin's tool gets the text by its mark.
-      if (expected === undefined) this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.tooManyWaiting })
-      return APPROVAL_OUTCOME.rejected
-    }
-    if (expected === undefined) this.#wording.mark(req.callId, this.#assistantId(), req.toolName, { kind: WORDING.waiting, requestId: id })
-    await this.#record({ ...call, id, kind: REQUEST_KIND.own, answer: APPROVAL_ANSWER.toUser, finalOutcome: APPROVAL_OUTCOME.rejected })
-    return APPROVAL_OUTCOME.rejected
-  }
-
-  /**
-   * Fishball's own tool, after its request was answered 'rejected': the waiting result when the
-   * request became a card (§7a.11), too-many-waiting past the cap, or undefined when it was
-   * refused without either (a never-asking mode, S35).
-   */
-  cardFor(callId) {
-    return this.#own.takeFiled(callId)
-  }
-
-  /**
    * A direct call Fishball did not decide (escalated, timed out, released, Fishball off, or
    * withdrawn): your stock prompt in the session, unless the call was cancelled meanwhile.
    * Escalated, timed out or undelivered while Fishball can still take requests and the session is
@@ -1080,7 +983,6 @@ export class ApprovalBroker {
     // Withdrawn, or the call was cancelled while Fishball's answer arrived: never next() (H1).
     if (result.answer === APPROVAL_ANSWER.withdrawn || signal?.aborted) {
       await this.#finish(request, { answer: APPROVAL_ANSWER.withdrawn }, APPROVAL_OUTCOME.cancelled)
-      if (request.seen) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn))
       return APPROVAL_OUTCOME.cancelled
     }
     // A request released because Fishball or Permission requests went off is not news to Fishball (review L2).
@@ -1094,8 +996,6 @@ export class ApprovalBroker {
     // escalate answer on a direct call takes its own tool path, but this is the one place a
     // timeout, an undelivered notice and an escalate all land.
     if (toPile) this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: APPROVAL_DECISION.escalate, by: SETTLED_BY.fishball })
-    // As for an asked request (rev11c): Fishball hears of the timeout at once, not after your answer.
-    if (timedOut) this.#tell(TEXT.outcome(request.id, TEXT.timedOut))
     const { outcome, by, note } = await this.#passOn(via, request, toPile ? this.#cardOf(request, result) : undefined)
     // Your Reject note on the card reaches the agent only through the post-execute rewrite (§7a.4 Reading).
     if (by === PROMPT_BY.pile && outcome === APPROVAL_OUTCOME.rejected && note !== undefined) this.#wording.mark(request.callId, request.sessionId, request.toolName, { kind: WORDING.userReject, note })
@@ -1103,23 +1003,15 @@ export class ApprovalBroker {
     await this.#finish(request, outcome === APPROVAL_OUTCOME.cancelled ? { answer: APPROVAL_ANSWER.withdrawn } : result, outcome)
     if (by === PROMPT_BY.session) await this.#clicked(request.sessionId, request.id, outcome)
     else if (by === PROMPT_BY.pile) await this.#clicked(request.sessionId, request.id, outcome, outcome === APPROVAL_OUTCOME.rejected ? note !== undefined : undefined)
-    // Fishball hears how it ended only for a request it saw (not an undelivered notice). A card's
-    // cancellation is announced by the pile itself (cardClosed), so it is not repeated here.
-    if (!request.seen) return outcome
-    if (outcome === APPROVAL_OUTCOME.cancelled) { if (!toPile) this.#tell(TEXT.outcome(request.id, TEXT.withdrawn)) }
-    else if (by === PROMPT_BY.pile) this.#tell(TEXT.outcome(request.id, TEXT.pileOutcome(outcome)))
-    else if (by === PROMPT_BY.session && result.answer === APPROVAL_ANSWER.escalate) this.#tell(TEXT.outcome(request.id, TEXT.escalatedOutcome(outcome)))
     return outcome
   }
 
   /** A call with a to-you ticket: your stock prompt, your answer audited (§7a.6). */
-  async #toYou(call, { requestId, seenByFishball }, via) {
+  async #toYou(call, { requestId }, via) {
     const { outcome, by } = await this.#passOn(via, call)
     await this.#record({ ...call, id: requestId, kind: REQUEST_KIND.asked, answer: APPROVAL_ANSWER.toUser, finalOutcome: outcome })
     if (by !== PROMPT_BY.session) return outcome
     await this.#clicked(call.sessionId, requestId, outcome)
-    // Fishball hears your answer only for a request it saw (not one refused at once, e.g. over capacity).
-    if (seenByFishball && outcome !== APPROVAL_OUTCOME.cancelled) this.#tell(TEXT.outcome(requestId, TEXT.userOutcome(outcome)))
     return outcome
   }
 
@@ -1251,10 +1143,10 @@ export class ApprovalBroker {
     for (let i = events.length - 1; i >= 0; i--) if (events[i].type === APPROVAL.turnStartEvent) { turnStart = i; break }
     const firstOfTurn = events.slice(turnStart + 1).find((event) => event.type === APPROVAL.userEvent)
     const firstOfSession = events.find((event) => event.type === APPROVAL.userEvent)?.data?.source
-    const session_ = this.#startedByFishball(session.id) ? PROVENANCE.fishballStart : describe(firstOfSession, PROVENANCE.fishballStart)
-    // A Fishball relay is a redirect when the outbox keeps a redirect of exactly that text (rev11h).
-    const turnText = firstOfTurn !== undefined && this.#redirectedByFishball(session.id, textOf(firstOfTurn)) ? PROVENANCE.fishballRedirect : PROVENANCE.fishballMessage
-    return { session: session_, turn: describe(firstOfTurn?.data?.source, turnText) }
+    // The log is the only evidence: the isolated Fishball's start and messages arrive as relays
+    // naming Fishball's id (src/slim/host/session-port.js). The in-process outbox that told a
+    // redirect from a message went with the in-process agent, so a redirect reads as a message.
+    return { session: describe(firstOfSession, PROVENANCE.fishballStart), turn: describe(firstOfTurn?.data?.source, PROVENANCE.fishballMessage) }
   }
 
   /**
@@ -1323,8 +1215,4 @@ export class ApprovalBroker {
     }
   }
 
-  /** A short note to Fishball without waking it (DESIGN §7a: it learns from your choices). */
-  #tell(text) {
-    tellWithoutWake(this.#agentOf(), text, this.#logger)
-  }
 }

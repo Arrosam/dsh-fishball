@@ -379,6 +379,28 @@ dedupe key. A hand-over note arrives the same way with `kind: user`: it is the u
 outside the untrusted block (§8.3). Take back is a main-page action; Fishball's own release is
 `session.release`.
 
+Delivery rules (2026-11-06, with the in-process Fishball removed, §12):
+- **Every producer is the ledger.** message_fishball (`kind: session`), the hand-over note
+  (`user`), a managed-session change (Hand over / Take back / release, `system`), a watch notice
+  (`watch`) and the notice of a permission request or question waiting for Fishball (`approval`)
+  all call `IntakeLedger.publish`. Card closures and the user's answers keep their own
+  `QUESTION_ANSWER` / `CARD_CLOSED` items from the approval relay (T09).
+- **Durable first, then pushed.** A row is written `pending` before anything is sent; `publish`
+  answers duplicate for the same source and key, and `maxQueuedInputs` bounds the open rows.
+- **The row id is the bridge's dedupe key.** The child remembers delivered keys, so a row pushed
+  twice (a reconnect, a restarted host) reaches Fishball's chat once.
+- **Ack consumes.** The child acks only after its chat queued the turn; the row then becomes
+  `consumed` and its message body is dropped (the digest stays).
+- **Child down: queue, never refuse.** Hand over, Take back, watches and message_fishball do not
+  answer 409 while the child is stopped. Their rows stay `pending`; on every bridge ready edge the
+  relay hands the ledger the new host's `pushInbox` (`attachInbox`), and every pending row goes to
+  it. The bridge host keeps an unacked item for its next connection itself.
+- **Wake-up belongs to the child.** The in-process wake guard and `wakeupsPerHour` cap went with the
+  in-process agent: the child's chat queues each item as a follow-up turn.
+- Permission requests and questions also need the child connected to be *answered*: while it is
+  down they go to the user at once (the broker's and router's `canAnswer` is the bridge's ready
+  state), and the child's ready edge re-offers the live cards.
+
 **Not in the bridge:** file writes, plugin or config changes on the main side, agent/session
 objects, model calls, main credentials, shell execution. The admin operations are on the lifecycle
 channel, not here.
@@ -740,23 +762,36 @@ No state ever falls back to legacy Fishball, and no error text includes a URL, t
 
 ## 12. Legacy retirement
 
-Removed or disabled when the embedded path is live:
+**Done 2026-11-06 (user: "旧版可以整个删除，直接全面转向新版"; "旧版不用去想怎么兼容").** The
+in-process Fishball is deleted, not adapted, and nothing migrates its state:
 
-- Fishball's own agent and session in the main process (`src/lifecycle.js`, its persona and prompt
-  rows).
-- Legacy chat surfaces in `client.js`: welcome card, model gate, Fishball pile, managed banner,
-  turn-tail tags, send/watch/hand-over trio, `SLOT.turnTail`, legacy settings sections.
-- `POST /api/fishball/native/open` and `openUrl`; the native "Open isolated Fishball" button.
-- Tag records and their store table (`src/tags.js`, `src/store.js` table), tag rendering.
-- Dead constants and CSS for the removed surfaces.
-
-Kept on the main side: the brand mark and button, the Fishball view (§7) and its sidebar row, the settings page, the sidebar
-mark, the hand-over button, the intake ledger and queue, the managed-session registry, the host
-bridge handlers, approvals and questions forwarding, and the pile (for main sessions).
-
-The `dsh-fishball` main row itself stays, because it owns the client UI and the plugin settings
-namespace (`ENTRY_ID`); only its agent/session composition, tools and legacy chat surfaces are
-removed.
+- Its agent and session (`src/lifecycle.js`, `src/composition.js` and the persona/prompt rows it
+  mounted), its private plugin tree and catalog (`src/plugin-catalog.js`, `plugin-defaults.js`,
+  `plugin-tools.js`, `plugin-settings.js`, `fishball-packages.js`, `fishball-plugin-manager.js`,
+  `builtins.js`, `bundle-rows.js`, `checked-tools.js`, `row-ids.js`, `tool-attribution.js` and its
+  `fishball-attribution` row), its context window and compaction (`context-window.js`,
+  `context-policy.js`, `compaction.js`), its own requests (`own-requests.js`), plugin sources
+  (`sources.js`, `ctx.fishball`), the unchecked-tools notice, the unread count and the welcome card.
+- Its outbound tools (message_session, start_session, stop_session, redirect_session) and their
+  outbox: the child does that through the bridge's `session.*` operations.
+- Why it had to go: with the main row composing again on 0.2.2 (B1), the in-process agent took every
+  hand-over note, message_fishball and permission request, set watches and escalated on its own,
+  while the child the user sees received nothing (B7). Two Fishballs is not a fallback; it is a bug.
+- Main-side UI removed with it (each existed only for the deleted agent): its chat's dock (the
+  pile, the grants list and Revoke, the welcome card, the model gate, the managed banner inside its
+  chat), its header Settings action and read reporter, the composer model-seat hiding and its own
+  row hiding, the Messenger look, and the Plugins page's Fishball tab, "Install for Fishball"
+  dialog and the Fishball tag/switch on each plugin's page. The user chose to delete the pile
+  (2026-11-06): a card that goes to the user is answered in its own session (the ask_fishball row's
+  Allow once / Reject, DSH's question card), and a standing grant is revoked by asking Fishball.
+- Kept on the main side, as the "body": the brand and the Fishball view (§7), the settings page
+  unchanged (native status, model, child plugins, child settings, brand, question mode, limits),
+  Hand over / Take back, the managed-session row marks, the ask_fishball row, and behind them the
+  intake ledger, managed registry, watches, approval broker, question router, grants, passes and
+  result wording. The four "feature" switches are gone: Hand over, watches and permission requests
+  are always on.
+- Stored data of the removed agent is not read: its tables are simply no longer declared, and a
+  record in a kept table that no longer parses is moved aside (`invalidRecords: 'backup-and-skip'`).
 
 ## 13. Risks
 
@@ -1157,6 +1192,13 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
   with only the new rows, and the main DSH is unaffected on restart.
 - Tests: `RET-01 no legacy chat surface`; `-02 plugin loads with the new rows`; `-03 restart is
   clean`; `-04 no orphaned storage table`.
+- **Follow-up (2026-11-06, `feat/slim-remove-legacy`).** T15 left the in-process `AssistantLifecycle`
+  running (`index.js:690`). Once 0.2.2 composed the main row again it took every inbound item (B7),
+  so the whole in-process Fishball is now deleted and every main-side entry point routes to the
+  child through the ledger and the bridge (§5.2 "Delivery rules", §12). The package patch also
+  inserts the `fishball-native-host` row with a PATH-derived Node default (B2,
+  `src/native-runtime/node-default.js`), and the preferences no longer wait for anything that can
+  fail (B4).
 
 ### Wave 8 — blocked on upstream (not scheduled)
 

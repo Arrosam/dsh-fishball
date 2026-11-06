@@ -77,12 +77,22 @@ export async function titleOf(ctx, sessionId) {
   }
 }
 
+/**
+ * A persisted session's events and header, read without making it live. dsh-base's sessionQuery
+ * is the one reader both 0.2.1 and 0.2.2 have: 0.2.2 removed sessionController.inspect(), which
+ * made every lookup of a stopped session answer unknown-session there. A missing session rejects
+ * with SESSION_QUERY_SESSION_NOT_FOUND (isNotFound).
+ */
+export async function persistedEventsOf(ctx, sessionId) {
+  const read = await ctx.sessionQuery.readSession(sessionId)
+  return { events: read.events, header: read.session }
+}
+
 /** Events and header of a session: the live one when attached, else the persisted log. */
 async function eventsOf(ctx, sessionId) {
   const live = ctx.sessions.get(sessionId)
   if (live !== undefined) return { events: live.snapshotEvents(), header: live.header }
-  const inspection = await ctx.sessionController.inspect(sessionId)
-  return { events: inspection.events, header: inspection.meta }
+  return persistedEventsOf(ctx, sessionId)
 }
 
 /**

@@ -85,7 +85,6 @@ export class ManagedRegistry {
   #readLimits
   #assistantId
   #onChange
-  #isEnabled
   #managedTools
   #onLeave
   #decisions
@@ -105,13 +104,12 @@ export class ManagedRegistry {
    * @param store - Store (managed, decisions). @param logger - plugin logger.
    * @param deps.ledger - IntakeLedger (the notes). @param deps.readLimits - () => limits.
    * @param deps.assistantId - () => Fishball's session id. @param deps.onChange - after a change.
-   * @param deps.isEnabled - () => whether Session messages runs (Hand over / Take back, release_session).
    * @param deps.managedTools - () => the tool definitions a managed agent has now.
    * @param deps.onLeave - (sessionId, change) => called when a session stops being managed (its waiting
    *   requests then go to you, and its grants end, §5e): change is MANAGED_CHANGE.takeBack or
    *   .release, or undefined for a session DSH no longer finds.
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, onChange, isEnabled, managedTools, onLeave }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, onChange, managedTools, onLeave }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -119,7 +117,6 @@ export class ManagedRegistry {
     this.#readLimits = readLimits
     this.#assistantId = assistantId
     this.#onChange = onChange
-    this.#isEnabled = isEnabled
     this.#managedTools = managedTools
     this.#onLeave = onLeave
     this.#decisions = new AuditLog(() => store.decisions, () => readLimits().auditEntriesKept)
@@ -157,7 +154,7 @@ export class ManagedRegistry {
 
   /**
    * Your Hand over to Fishball (POST managed {managed: true}).
-   * @throws ManagedError(featureOff | isFishball | unknownSession).
+   * @throws ManagedError(isFishball | unknownSession).
    */
   async handOver(sessionId) {
     const root = await this.#checkClick(sessionId)
@@ -169,7 +166,7 @@ export class ManagedRegistry {
   /**
    * Your Take back from Fishball (POST managed {managed: false}). A session that is already
    * yours is unchanged (no note).
-   * @throws ManagedError(featureOff | isFishball | unknownSession).
+   * @throws ManagedError(isFishball | unknownSession).
    */
   async takeBack(sessionId) {
     const root = await this.#checkClick(sessionId)
@@ -180,12 +177,10 @@ export class ManagedRegistry {
 
   /**
    * Fishball's release of a session (release_session and the slim bridge's session.release).
-   * @throws ManagedError(featureOff | isFishball | notManaged).
+   * @throws ManagedError(isFishball | notManaged).
    * @returns { sessionId, managed: false } once the session left management.
    */
   async release(sessionId, reason) {
-    // A call already in flight when Session messages went off (the tool leaves at the apply).
-    if (!this.#isEnabled()) throw new ManagedError(MANAGED_ERROR.featureOff)
     if (sessionId === this.#assistantId()) throw new ManagedError(MANAGED_ERROR.isFishball)
     if (!(await this.#drop(sessionId, MANAGED_CHANGE.release))) throw new ManagedError(MANAGED_ERROR.notManaged)
     await this.#audit(sessionId, reason)
@@ -227,7 +222,6 @@ export class ManagedRegistry {
 
   /** The checks every click shares; @returns the session the user sees. */
   async #checkClick(sessionId) {
-    if (!this.#isEnabled()) throw new ManagedError(MANAGED_ERROR.featureOff)
     const root = rootSessionOf(this.#ctx, sessionId)
     if (root === this.#assistantId()) throw new ManagedError(MANAGED_ERROR.isFishball)
     return root
@@ -314,6 +308,7 @@ export class ManagedRegistry {
       await this.#ledger.publish({
         kind,
         sourceIdentity: MANAGED.sourcePrefix + info.id,
+        sourceSessionId: info.id,
         // A fresh key per change: a later hand-over of the same session is its own note.
         dedupeKey: randomUUID(),
         message: createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(change)), author: sessionAuthor(kind, info) } }),
