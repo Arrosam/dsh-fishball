@@ -141,6 +141,9 @@ test('INST-06 Refresh models from the page (same-origin Origin header) is not re
   // The main side must be able to list its own providers (§10): a keyless home still has DSH's
   // built-in routes, so the answer names them (skipped: no key) instead of failing the inventory.
   assert.notEqual(body?.error?.code, 'provider-sync-inventory-failed', 'main-side provider inventory failed (B9)')
+  // fe25ea1 round: the sync itself succeeds and reports one outcome per provider it saw.
+  assert.equal(body?.ok, true, `sync refused: ${JSON.stringify(body?.error ?? null)}`)
+  assert.ok(Array.isArray(body?.result?.items), 'sync result has no items list')
 })
 
 test('INST-09 a plain install composes exactly one native-host row (B2)', { skip }, () => {
