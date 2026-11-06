@@ -807,6 +807,13 @@ in-process Fishball is deleted, not adapted, and nothing migrates its state:
   dialog and the Fishball tag/switch on each plugin's page. The user chose to delete the pile
   (2026-11-06): a card that goes to the user is answered in its own session (the ask_fishball row's
   Allow once / Reject, DSH's question card), and a standing grant is revoked by asking Fishball.
+- Session questions and plan reviews (N3, option A, 2026-11-06): the user answers them only in
+  their own session, on DSH's question card. The pile's question form went with the pile, so its
+  answer path is removed too (`client.js` `answerQuestionCard` and its `questionError.*` copy,
+  `QuestionRouter.answerCard`; the main row never served `POST questions/answer`). The card record's
+  `place: pile` is therefore unreachable for session questions; it stays in the schema for
+  permission cards and Fishball's own `ask_user` card, and `QUESTION_END.pile` stays only so older
+  audit rows still parse.
 - Kept on the main side, as the "body": the brand and the Fishball view (§7), the settings page
   unchanged (native status, model, child plugins, child settings, brand, question mode, limits),
   Hand over / Take back, the managed-session row marks, the ask_fishball row, and behind them the
@@ -1147,7 +1154,7 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
      (`plugin:fishball/card-record`, v1). The main row's owners call `src/card-records.js` at the
      point the answer is taken: `answerApproval` / `answer_prompt` (Fishball), the pile answer and
      the session prompt's answer (the user) in `src/approvals.js`; `#ended` in `src/questions.js`
-     (Fishball, pile, or the session's own card); `answerCard` in `src/own-questions.js`; and every
+     (Fishball, or the session's own card; the pile is unreachable for these since N3, §12); `answerCard` in `src/own-questions.js`; and every
      closure through the owners' `cardClosed`.
   3. Where: the asking session's log at that point, and Fishball's chat with the asking session
      named. Two exceptions, the user's decision 2026-11-06: an answer given in the session itself
