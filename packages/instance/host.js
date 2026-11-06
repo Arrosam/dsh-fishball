@@ -37,29 +37,46 @@ const PLUGIN = Object.freeze({
     // The session port moved to the connector row in M1, which now injects what its model path reads.
   ],
   cleanup: 'fishball native host: stop owned child and retain private data',
-  minimumLimit: 1,
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
   requestTimeoutMs: 750, stopTimeoutMs: 1000,
   state: Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', ready: 'ready', stopping: 'stopping', stopped: 'stopped', failed: 'failed' }),
   code: Object.freeze({ failed: 'NATIVE_START_FAILED', stop: 'NATIVE_STOP_FAILED', exited: 'NATIVE_CHILD_EXITED', unavailable: 'NATIVE_UNAVAILABLE', timeout: 'NATIVE_TIMEOUT', disabled: 'NATIVE_DISABLED' }),
 })
-const limitSchema = defaults => Schema.object(Object.fromEntries(Object.entries(defaults).map(([key, value]) =>
-  [key, Schema.natural().min(PLUGIN.minimumLimit).default(value)])))
+/**
+ * The child's fixed lifecycle limits (D23, §0.7): the runtime defaults with this row's stricter
+ * request and exit waits. They are constants, not row settings, so a stored `limits` value is
+ * ignored; the old `limits` and `controlLimits` fields left the schema with D23.
+ */
+const LIFECYCLE_LIMITS = Object.freeze({
+  ...RUNTIME_LIMITS,
+  requestTimeoutMs: Math.min(RUNTIME_LIMITS.requestTimeoutMs, PLUGIN.requestTimeoutMs),
+  stopTimeoutMs: Math.min(RUNTIME_LIMITS.stopTimeoutMs, PLUGIN.stopTimeoutMs),
+})
+/**
+ * A `.volatile()` config field arrives as a live reference (`{ get }`) so DSH's settings form can
+ * edit it without remounting the row; a plain value is accepted too, so this helper also serves
+ * direct construction. Only volatile fields appear in that form (§0.7).
+ */
+function fieldValue(field) {
+  return field !== null && typeof field === 'object' && typeof field.get === 'function' ? field.get() : field
+}
 export const name = PLUGIN.name
 export const inject = [...PLUGIN.dependencies]
+/**
+ * The main DSH's whole form for the instance, and nothing else of its settings (§0.7, D23,
+ * inst-OQ-04): the launch fields needed before the child exists. Volatile so DSH's Plugins form
+ * can write them (§0.7); model sync is the "Model for Fishball" button I6 adds, an action rather
+ * than a field, and there is no `providerSync` switch (D26).
+ */
 export const Config = Schema.object({
-  enabled: Schema.boolean().default(true).description('Start the private native child after main appReady. Disable to stop it; private data is retained.'),
+  enabled: Schema.boolean().default(true).volatile().description('Start the private native child after main appReady. Disable to stop it; private data is retained.'),
   // Optional so a plain install starts the child (B2): unset means the first `node` on the host's
   // PATH, which the runtime still verifies as plain Node 22+ (src/native-runtime/node-default.js).
-  nodeExecutable: Schema.string().description('Absolute plain Node 22+ executable for the private child. Empty: the first node on DSH\'s PATH (never Electron; it is verified before use).'),
-  executableSearchPath: Schema.string().description('Private PATH for the child, absolute components only. Empty: that node\'s folder plus DSH\'s absolute PATH entries.'),
+  nodeExecutable: Schema.string().volatile().description('Absolute plain Node 22+ executable for the private child. Empty: the first node on DSH\'s PATH (never Electron; it is verified before use).'),
+  executableSearchPath: Schema.string().volatile().description('Private PATH for the child, absolute components only. Empty: that node\'s folder plus DSH\'s absolute PATH entries.'),
   // Kept for configuration compatibility only: the slim bridge authorizes a session through the
   // main Fishball row's managed registry (§5.2), not through this v1 allowlist. T15 retires it.
   managedSessionIds: Schema.array(Schema.string()).default([]).volatile().description('Retained for configuration compatibility; the slim bridge uses the main Fishball row\'s managed sessions.'),
-  limits: limitSchema(RUNTIME_LIMITS),
-  // The v1 control row no longer mounts; the bridge keeps its own ceilings (src/slim/host/bridge.js).
-  // The key stays accepted so an installed profile config keeps loading.
-  controlLimits: limitSchema(DEFAULT_CONTROL_LIMITS),
 })
 const unavailable = code => Object.assign(new Error(code), { code })
 function bounded(promise, milliseconds) {
@@ -73,7 +90,7 @@ function bounded(promise, milliseconds) {
 const registry = globalThis[Symbol.for(LIFETIME.registryKey)] ??= new Map()
 
 export async function apply(ctx, config) {
-  const enabled = config.enabled !== false
+  const enabled = fieldValue(config.enabled) !== false
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
   let code = null
   let closed = false
@@ -106,16 +123,17 @@ export async function apply(ctx, config) {
     // T16: the child is the sync target. The source host reads the main profile's API-key
     // records only inside the sync's confirm step; the page never sees a value (§10).
     providerSync = createChildProviderSync({ ctx })
-    const launch = launchDefaults(config, process.env.PATH)
+    // The launch fields are volatile (§0.7); unwrap the live references before choosing defaults.
+    const launch = launchDefaults({
+      nodeExecutable: fieldValue(config.nodeExecutable),
+      executableSearchPath: fieldValue(config.executableSearchPath),
+    }, process.env.PATH)
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
       nodeExecutable: launch.nodeExecutable, executableSearchPath: launch.executableSearchPath,
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },
-      limits: { ...config.limits,
-        requestTimeoutMs: Math.min(config.limits?.requestTimeoutMs ?? RUNTIME_LIMITS.requestTimeoutMs, PLUGIN.requestTimeoutMs),
-        stopTimeoutMs: Math.min(config.limits?.stopTimeoutMs ?? RUNTIME_LIMITS.stopTimeoutMs, PLUGIN.stopTimeoutMs),
-      },
-      control: { limits: config.controlLimits },
+      limits: LIFECYCLE_LIMITS,
+      control: { limits: DEFAULT_CONTROL_LIMITS },
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
     // One authenticated control transport, one envelope-v2 bridge, now hosted by the connector row
