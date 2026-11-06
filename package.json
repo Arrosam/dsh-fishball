@@ -1,33 +1,12 @@
 {
   "name": "dsh-fishball",
-  "version": "0.1.0",
-  "description": "Fishball: an always-on personal assistant session for DeepSeek Harness. It gathers and sorts information, hands work to other sessions, and never writes local files.",
-  "icon": "./assets/icon.svg",
+  "private": true,
+  "description": "Fishball for DeepSeek Harness: two plugins in one repository, fishball-connector (packages/connector) and fishball-instance (packages/instance). The root is not a plugin package.",
   "license": "MIT",
   "type": "module",
-  "main": "./index.js",
-  "exports": {
-    ".": "./index.js",
-    "./native-host": "./native-host.js",
-    "./native-runtime": "./src/native-runtime/index.js",
-    "./native-control": "./src/native-control/index.js",
-    "./attribution": "./src/tool-attribution.js",
-    "./compaction": "./src/compaction.js",
-    "./client": "./client.js",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "index.js",
-    "native-host.js",
-    "native-child.js",
-    "src/",
-    "client.js",
-    "packages/messenger/",
-    "assets/icon.svg",
-    "cordis.patch.yml",
-    "README.md",
-    "LICENSE",
-    "THIRD_PARTY_NOTICES.md"
+  "workspaces": [
+    "packages/connector",
+    "packages/instance"
   ],
   "engines": {
     "node": ">=22",
@@ -35,46 +14,5 @@
   },
   "scripts": {
     "test": "node test/run.mjs"
-  },
-  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate.",
-  "peerDependencies": {
-    "@deepseek-ai/cordis-plugin-loader": "*",
-    "@deepseek-ai/cosmokit": "*",
-    "@deepseek-ai/dsh-agent": "*",
-    "@deepseek-ai/dsh-agent-preset-registry": "*",
-    "@deepseek-ai/dsh-app-boot": "*",
-    "@deepseek-ai/dsh-compaction-basic": "*",
-    "@deepseek-ai/dsh-home-paths": "*",
-    "@deepseek-ai/dsh-llm": "*",
-    "@deepseek-ai/dsh-llm-pi-ai": "*",
-    "@deepseek-ai/dsh-plugin-manager": "*",
-    "@deepseek-ai/dsh-sandbox-policy": "*",
-    "@deepseek-ai/dsh-scope": "*",
-    "@deepseek-ai/dsh-session-title": "*",
-    "@deepseek-ai/dsh-settings": "*",
-    "@deepseek-ai/dsh-storage-domain": "*",
-    "@deepseek-ai/dsh-system-prompt": "*",
-    "@deepseek-ai/dsh-tools": "*",
-    "@deepseek-ai/dsh-user-approval": "*",
-    "@deepseek-ai/schemastery": "*",
-    "zod": "*"
-  },
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-ui-renderer",
-        "@deepseek-ai/dsh-client-ui-sidebar",
-        "@deepseek-ai/dsh-client-ui-workspace",
-        "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-plugin-manager",
-        "@deepseek-ai/dsh-client-ui-conversation"
-      ]
-    }
   }
 }

@@ -7,7 +7,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { bootDsh, hostPkg, runSpike, until } from './harness.mjs'
-import { parametersDigest } from '../src/digest.js'
+import { parametersDigest } from '../packages/connector/src/digest.js'
 
 const SOURCE = '/Users/samuel/.dsh/profiles/web/node_modules'
 const PLUGINS = ['dsh-plugin-subscriptions', 'dsh-workspace-mover', '@michengai/dsh-code-review', '@wxg-prc-cpg/browser-skill-dsh-plugin', 'dsh-diff-approval', '@linxin666/dsh-client-ui-git-graph', 'dshmarket', '@openviking/dsh-memory-plugin', 'dsh-shell-command']

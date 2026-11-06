@@ -17,6 +17,14 @@ The current release uses a private agent scope inside the main DSH runtime, **no
 - DSH Web 0.2.1-rc.2 (Cordis 4.0.5), as installed by DSH-X.
 - Node 22.22.2.
 
+## Packages
+
+Since M1 the repository holds two plugins, each with its own manifest, entry and pack:
+`fishball-connector` in [packages/connector](packages/connector) (the body, in the main DSH) and
+`fishball-instance` in [packages/instance](packages/instance) (the built-in instance, its own DSH
+profile). The repository root is not a plugin package. See [docs/package-layout.md](docs/package-layout.md).
+The install steps below describe the v0.1.0 release, which predates the split.
+
 ## Install
 
 Fishball is not published to npm. Install it from GitHub into a DSH profile (here `web`) with DSH's own plugin command, then start DSH as usual:
@@ -66,6 +74,6 @@ The choice is committed before the first message runs and affects only the new s
 
 ## Licence
 
-[MIT](LICENSE). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE). See [THIRD_PARTY_NOTICES.md](packages/connector/THIRD_PARTY_NOTICES.md).
 
 The repository is public on GitHub. The package is not published to npm.
