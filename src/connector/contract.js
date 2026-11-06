@@ -1,8 +1,11 @@
 /**
- * The slim Fishball contract, envelope v2 (§15 T01).
+ * The `fishball-connector` contract v1 (docs/connector-contract.md; design §0.4), envelope v2
+ * (§15 T01). K1 moved it here from src/slim/contract.js, which now only re-exports this module.
  *
  * Contract only: this module imports no DSH package and holds no behaviour beyond validation
- * and constants. The main host and the child app validate every frame with it.
+ * and constants. The main host and the child app validate every frame with it, and the
+ * connector checks an instance's attachInstance() request with validateAttachment() below.
+ * Every name this module exports is listed in docs/connector-contract.md; keep the two in step.
  *
  * Envelope v2 keeps envelope v1's seven-key frame (src/native-control/protocol.js) and replaces
  * v1's operation set with §5.2's: attachment transfer, the full approval, question, prompt and
@@ -48,6 +51,10 @@ export const OPERATION = Object.freeze({
   attachmentRead: 'attachment.read',
   attachmentPut: 'attachment.put',
   inboxPush: 'inbox.push',
+  // Connector v1 over §5.2 (design §0.4): connector settings travel over the public contract,
+  // not over an instance's private admin channel, so a third-party instance can show them too.
+  settingsDescribe: 'settings.describe',
+  settingsUpdate: 'settings.update',
 })
 
 const spec = (direction, sessionScoped) => Object.freeze({ direction, sessionScoped })
@@ -82,6 +89,9 @@ export const OPERATIONS = Object.freeze({
   [OPERATION.attachmentRead]: spec(DIRECTION.childToMain, true),
   [OPERATION.attachmentPut]: spec(DIRECTION.childToMain, false),
   [OPERATION.inboxPush]: spec(DIRECTION.mainToChild, false),
+  // Connector settings belong to the connector row, not to any session.
+  [OPERATION.settingsDescribe]: spec(DIRECTION.childToMain, false),
+  [OPERATION.settingsUpdate]: spec(DIRECTION.childToMain, false),
 })
 
 /** The exact §5.2 event allowlist, plus the one direction every event takes. */
@@ -190,6 +200,9 @@ export const ERROR = Object.freeze({
   expiresPast: 'expires-at-past',
   grantUnknown: 'unknown',
   grantEnded: 'ended',
+  // settings.update (design §0.4): a stale revision, or a value the description does not admit.
+  settingsConflict: 'settings-conflict',
+  settingsInvalid: 'settings-invalid',
 })
 
 /**
@@ -269,6 +282,12 @@ function exact(value, required, optional = NO_KEYS) {
     if (!descriptor || !Object.hasOwn(descriptor, 'value')) fail()
   }
   for (const key of required) if (!Object.hasOwn(value, key)) fail()
+}
+
+/** A plain data object with any string keys: exact() over its own keys, so no accessor or symbol passes. */
+function record(value) {
+  if (!value || typeof value !== 'object') fail()
+  exact(value, Object.keys(value))
 }
 
 function list(values) {
@@ -528,15 +547,27 @@ function questions(values) {
   uniqueBy(values, (question) => question.id)
 }
 
-function capabilities(values) {
-  uniqueStrings(values, ERROR.capability)
+/**
+ * A capability list's shape: unique non-empty names. Membership is not checked here because a
+ * later minor version only adds operations, each advertised as a capability (design §0.4): a
+ * name this side does not know is a newer peer's optional addition and is ignored, never refused.
+ */
+function capabilities(values) { uniqueStrings(values, ERROR.capability) }
+
+/** A required capability must be an operation this side knows; an unknown required one is refused. */
+function knownCapabilities(values) {
   for (const capability of values) member(capability, Object.keys(OPERATIONS), ERROR.capability)
 }
 
-/** Capabilities are the §5.2 request names a peer implements; the handshake never admits an event. */
+/**
+ * Capabilities are the request names a peer implements; the handshake never admits an event.
+ * `available` may carry names this side does not know (ignored); every `required` name must be
+ * known here and be in `available`.
+ */
 export function requireCapabilities(available, required) {
   capabilities(available)
   capabilities(required)
+  knownCapabilities(required)
   if (required.some((capability) => !available.includes(capability))) fail(ERROR.capability)
 }
 
@@ -953,6 +984,90 @@ function eventSessionState(payload) {
   boolean(payload.pendingInteraction)
 }
 
+/**
+ * Connector settings (design §0.4, §0.7). Every connector setting is either a whole number with
+ * an optional minimum (the limits in src/config.js are all Schema.natural().min(…)) or one of a
+ * fixed list of strings (question mode, brand icon, sidebar entry). The revision is the
+ * connector's counter for optimistic concurrency: settings.update names the revision it was
+ * edited against, and the connector refuses a stale one instead of overwriting a newer change.
+ */
+export const SETTING_KIND = Object.freeze({ number: 'number', enum: 'enum' })
+
+/** The values a setting may hold, by kind; one predicate per kind so describe and update agree. */
+const SETTING_VALUE = Object.freeze({
+  [SETTING_KIND.number]: (value) => Number.isSafeInteger(value),
+  [SETTING_KIND.enum]: (value) => typeof value === 'string',
+})
+
+/** A value admitted by one described field: its kind, its minimum, its options. */
+function admits(field, value) {
+  if (!SETTING_VALUE[field.kind](value)) return false
+  if (field.kind === SETTING_KIND.number) return !Object.hasOwn(field, 'min') || value >= field.min
+  return field.options.includes(value)
+}
+
+function settingField(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) fail()
+  const numeric = value.kind === SETTING_KIND.number
+  // min belongs to a number and options to an enum; the other key is refused, not ignored.
+  exact(value, numeric ? ['key', 'kind', 'value', 'default'] : ['key', 'kind', 'value', 'default', 'options'], numeric ? ['min'] : NO_KEYS)
+  text(value.key)
+  member(value.kind, Object.values(SETTING_KIND))
+  if (numeric && Object.hasOwn(value, 'min')) { if (!Number.isSafeInteger(value.min)) fail() }
+  if (!numeric) {
+    uniqueStrings(value.options)
+    if (value.options.length === NUMBER.zero) fail()
+  }
+  // The connector never describes a current value or default its own update would refuse.
+  if (!admits(value, value.value) || !admits(value, value.default)) fail()
+}
+
+function requestSettingsDescribe(payload) { exact(payload, []) }
+
+function responseSettingsDescribe(payload) {
+  exact(payload, ['revision', 'fields'])
+  natural(payload.revision)
+  arrayOf(payload.fields, settingField)
+  uniqueBy(payload.fields, (field) => field.key)
+}
+
+/**
+ * The frame check is shape only: the values object must be a plain data object, and each value
+ * may be any JSON value. A wrong kind, an unknown key, a value below its minimum or outside its
+ * options is the connector's settings-invalid (checkSettingsUpdate below, an error reply); a
+ * frame failure would instead close the whole channel (the bridge disconnects on a bad frame).
+ */
+function requestSettingsUpdate(payload) {
+  exact(payload, ['revision', 'values'])
+  natural(payload.revision)
+  record(payload.values)
+}
+
+function responseSettingsUpdate(payload) {
+  exact(payload, ['revision'])
+  natural(payload.revision)
+}
+
+/**
+ * The connector's semantic check of a settings.update against its current description, before
+ * anything is written (all-or-nothing: one bad value refuses the whole update). A stale revision
+ * is checked first: values edited against an older description are not judged against the new one.
+ * @param {{revision: number, fields: object[]}} description - the connector's settings.describe result.
+ * @param {{revision: number, values: object}} payload - a frame-valid settings.update payload.
+ * @throws {ContractError} settings-conflict or settings-invalid.
+ */
+export function checkSettingsUpdate(description, payload) {
+  validateResponse(OPERATION.settingsDescribe, description)
+  validateRequest(OPERATION.settingsUpdate, payload)
+  if (payload.revision !== description.revision) fail(ERROR.settingsConflict)
+  const fields = new Map(description.fields.map((field) => [field.key, field]))
+  for (const [key, value] of Object.entries(payload.values)) {
+    const field = fields.get(key)
+    if (field === undefined || !admits(field, value)) fail(ERROR.settingsInvalid)
+  }
+  return payload
+}
+
 function requestHandshake(payload) {
   exact(payload, ['capabilities', 'requiredCapabilities'])
   requireCapabilities(payload.capabilities, payload.requiredCapabilities)
@@ -990,6 +1105,8 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.attachmentRead]: requestAttachmentRead,
     [OPERATION.attachmentPut]: requestAttachmentPut,
     [OPERATION.inboxPush]: requestInboxPush,
+    [OPERATION.settingsDescribe]: requestSettingsDescribe,
+    [OPERATION.settingsUpdate]: requestSettingsUpdate,
   }),
   [ENVELOPE.type.response]: Object.freeze({
     [ENVELOPE.handshake]: responseHandshake,
@@ -1015,6 +1132,8 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.attachmentRead]: responseAttachmentRead,
     [OPERATION.attachmentPut]: responseAttachmentPut,
     [OPERATION.inboxPush]: responseInboxPush,
+    [OPERATION.settingsDescribe]: responseSettingsDescribe,
+    [OPERATION.settingsUpdate]: responseSettingsUpdate,
   }),
   [ENVELOPE.type.event]: Object.freeze({
     [EVENT.approvalRequest]: approvalDescriptor,
@@ -1138,4 +1257,129 @@ export function decodeEnvelope(encoded, options = {}) {
   const type = envelope?.type
   if (Buffer.byteLength(encoded, 'utf8') > frameBytes(operation, type)) fail(ERROR.limit)
   return validateEnvelope(envelope, options)
+}
+
+/**
+ * The connector side of the in-process binding (design §0.4). The connector row provides the
+ * DSH service `fishballConnector` at apply, with or without an instance; an instance is any
+ * plugin in the same main profile that injects it and calls attachInstance(descriptor).
+ *
+ * `minor` is this module's minor version. A minor only adds operations, events or optional
+ * fields, each advertised as a handshake capability, so an instance of any minor of major 1 is
+ * accepted; which operations the two sides then use is decided by the handshake, not by `minor`.
+ */
+export const CONNECTOR_CONTRACT = Object.freeze({ id: 'fishball-connector', major: 1, minor: 0 })
+export const CONNECTOR_SERVICE = 'fishballConnector'
+
+/** attachInstance refusals; a refused attach changes nothing (design §18.2 K1). */
+export const ATTACH_ERROR = Object.freeze({
+  busy: 'instance-busy',
+  version: 'contract-version',
+  ui: 'ui-invalid',
+  transport: 'transport-invalid',
+  // Not named by design §0.4: a descriptor whose id, name, status, retry or keys are malformed.
+  // Pending the user's confirmation (docs/connector-contract.md, open points).
+  instance: 'instance-invalid',
+})
+
+const ATTACH_KEYS = Object.freeze({
+  required: Object.freeze(['id', 'name', 'contract', 'transport']),
+  optional: Object.freeze(['ui', 'status', 'retry']),
+  contract: Object.freeze(['id', 'major', 'minor']),
+  ui: Object.freeze(['chat', 'settings']),
+  hooks: Object.freeze(['status', 'retry']),
+})
+
+/** The bridge transport's methods; both bridge halves (src/slim/{host,child}/bridge.js) require these. */
+export const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose', 'close'])
+
+/**
+ * ui path rules (design §0.4). The parse base is any fixed origin: a path is accepted only if it
+ * resolves to that same origin, which refuses a scheme, `//host`, and the forms a browser also
+ * reads as another host (`/\host`, or a tab/newline the URL parser drops). `token` is DSH's own
+ * launch-token query name (dsh-client-connection lib/index.js TOKEN_QUERY, rc.5 and 0.2.2): a
+ * ui path must never carry a credential into the iframe's address.
+ */
+const UI_PATH = Object.freeze({ root: '/', base: 'http://connector.invalid', tokenParameter: 'token' })
+
+/** Throw an attach refusal unless the check holds. */
+function attachCheck(holds, code) { if (!holds) throw new ContractError(code) }
+
+/** Run a frame-style check and report its failure as one attach code. */
+function attachShape(check, code) {
+  try { check() } catch (error) {
+    if (error instanceof ContractError) throw new ContractError(code)
+    throw error
+  }
+}
+
+/**
+ * The version check attachInstance applies: accept any minor of this major, refuse anything else.
+ * A malformed declaration is a version refusal too, because the connector cannot tell which
+ * contract the instance speaks.
+ * @param {{id: string, major: number, minor: number}} contract - the instance's declaration.
+ * @returns {{id: string, major: number, minor: number}} the common version: this major and the
+ *   lower of the two minors. Informational: the handshake's capability lists still decide which
+ *   operations each side uses.
+ * @throws {ContractError} contract-version.
+ */
+export function negotiateContract(contract) {
+  attachShape(() => {
+    exact(contract, ATTACH_KEYS.contract)
+    natural(contract.major)
+    natural(contract.minor)
+  }, ATTACH_ERROR.version)
+  attachCheck(contract.id === CONNECTOR_CONTRACT.id && contract.major === CONNECTOR_CONTRACT.major, ATTACH_ERROR.version)
+  return Object.freeze({
+    id: CONNECTOR_CONTRACT.id, major: CONNECTOR_CONTRACT.major, minor: Math.min(contract.minor, CONNECTOR_CONTRACT.minor),
+  })
+}
+
+function uiPath(value) {
+  attachShape(() => chars(value, LIMITS.uiPathChars), ATTACH_ERROR.ui)
+  attachCheck(value.startsWith(UI_PATH.root) && !value.startsWith(UI_PATH.root + UI_PATH.root), ATTACH_ERROR.ui)
+  let url
+  try { url = new URL(value, UI_PATH.base) } catch { attachCheck(false, ATTACH_ERROR.ui) }
+  attachCheck(url.origin === UI_PATH.base && !url.searchParams.has(UI_PATH.tokenParameter), ATTACH_ERROR.ui)
+}
+
+function uiPaths(value) {
+  attachShape(() => exact(value, [], ATTACH_KEYS.ui), ATTACH_ERROR.ui)
+  for (const key of ATTACH_KEYS.ui) if (Object.hasOwn(value, key)) uiPath(value[key])
+}
+
+/**
+ * Validate one attachInstance() descriptor without touching it: no transport method is called
+ * and nothing is stored, so a refusal has no side effect. The order is fixed so one descriptor
+ * has one answer: the version first (a different major may shape everything else differently),
+ * then the transport, the ui paths, and the remaining fields. instance-busy depends on the
+ * connector's state, not the descriptor, so the service checks it after this returns.
+ * @param {object} descriptor - {id, name, contract, transport, ui?, status?, retry?}.
+ * @returns a frozen copy of the descriptor's fields plus `contract`: negotiateContract()'s result.
+ * @throws {ContractError} contract-version, transport-invalid, ui-invalid or instance-invalid.
+ */
+export function validateAttachment(descriptor) {
+  attachShape(() => exact(descriptor, [], [...ATTACH_KEYS.required, ...ATTACH_KEYS.optional]), ATTACH_ERROR.instance)
+  const contract = negotiateContract(descriptor.contract)
+  const { transport } = descriptor
+  attachCheck(transport !== null && typeof transport === 'object', ATTACH_ERROR.transport)
+  for (const method of TRANSPORT_METHODS) attachCheck(typeof transport[method] === 'function', ATTACH_ERROR.transport)
+  if (Object.hasOwn(descriptor, 'ui')) uiPaths(descriptor.ui)
+  attachShape(() => {
+    for (const key of ATTACH_KEYS.required) if (!Object.hasOwn(descriptor, key)) fail()
+    text(descriptor.id)
+    text(descriptor.name)
+  }, ATTACH_ERROR.instance)
+  for (const hook of ATTACH_KEYS.hooks) {
+    if (Object.hasOwn(descriptor, hook)) attachCheck(typeof descriptor[hook] === 'function', ATTACH_ERROR.instance)
+  }
+  return Object.freeze({
+    id: descriptor.id,
+    name: descriptor.name,
+    contract,
+    transport,
+    ui: Object.freeze({ ...(descriptor.ui ?? {}) }),
+    status: descriptor.status,
+    retry: descriptor.retry,
+  })
 }

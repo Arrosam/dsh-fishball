@@ -1,6 +1,6 @@
 /**
  * The inbox system items T09 adds on top of the frozen §5.2 `inbox.push` payload, shared by the
- * main host and the child. The child snapshot copies `src/slim`, so both sides import one copy:
+ * main host and the child. The child snapshot copies `src/connector`, so both sides import one copy:
  * a host-side module (src/approvals.js through src/card-lifecycle.js) must not be the only home,
  * because the child does not ship it.
  *
@@ -26,7 +26,7 @@ export const QUESTION_ANSWER = Object.freeze({
 export const OWN_ANSWER = Object.freeze({ event: 'own-answer' })
 
 /**
- * One card record for Fishball's chat (src/slim/card-record.js): the record's JSON after the
+ * One card record for Fishball's chat (src/connector/card-record.js): the record's JSON after the
  * marker. The child's inbox row takes it (src/slim/child/inbox.js), appends the record to
  * Fishball's session and, for the user's own answer, tells Fishball the answer's words.
  */
