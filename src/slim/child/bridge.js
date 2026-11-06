@@ -344,14 +344,17 @@ class BridgeClient {
  */
 function createSessionRequests(client) {
   const send = (operation, payload) => client.request(operation, payload)
+  /** notify_when_finished travels only when set, so an omitted flag keeps the frame unchanged. */
+  const notify = (notifyWhenFinished) => (notifyWhenFinished === undefined ? {} : { notifyWhenFinished })
   return Object.freeze({
     list: ({ workspaceId, limit } = {}) => send(OPERATION.sessionList, workspaceId === undefined ? { limit } : { workspaceId, limit }),
-    start: ({ folder, title, message, model, reasoningEffort }) => send(OPERATION.sessionStart, {
+    start: ({ folder, title, message, model, reasoningEffort, notifyWhenFinished }) => send(OPERATION.sessionStart, {
       folder, title, message, attachments: [],
       ...(model === undefined ? {} : { model }),
       ...(reasoningEffort === undefined ? {} : { reasoningEffort }),
+      ...notify(notifyWhenFinished),
     }),
-    message: ({ sessionId, message }) => send(OPERATION.sessionMessage, { sessionId, message, attachments: [] }),
+    message: ({ sessionId, message, notifyWhenFinished }) => send(OPERATION.sessionMessage, { sessionId, message, attachments: [], ...notify(notifyWhenFinished) }),
     redirect: ({ sessionId, message }) => send(OPERATION.sessionRedirect, { sessionId, message, attachments: [] }),
     stop: ({ sessionId, reason }) => send(OPERATION.sessionStop, reason === undefined ? { sessionId } : { sessionId, reason }),
     read: ({ sessionId, maxMessages, maxBytes }) => send(OPERATION.sessionRead, { sessionId, maxMessages, maxBytes }),

@@ -159,6 +159,17 @@ const DSH_TOOL = Object.freeze({ plan: 'exit_plan_mode' })
 const QUESTION = Object.freeze({ errorName: 'UserQuestionError', aborted: 'ASK_ABORTED', waterfall: 'user-questions/request' })
 
 /**
+ * Where a session question left to the user is answered (7713 N6): only in its own session, on
+ * DSH's question card (N3, docs/slim-native-design.md §12). Same words as src/questions.js.
+ */
+const IN_SESSION = 'the user answers it on that session\'s own question card'
+/**
+ * Where Fishball's own ask_user card is answered: in Fishball's chat, the one card the user
+ * answers there (src/slim/ui/approvals.js). The main pile UI that also showed it is deleted (§12).
+ */
+const OWN_CARD = 'a card in this chat, where the user answers it'
+
+/**
  * Model-facing texts (stable; no secrets). Verbatim from today's tools: src/approvals.js,
  * src/questions.js and src/grants.js, so the same power keeps the same discipline. A child
  * snapshot cannot import those rows (they own the main DSH store), so the words live here.
@@ -184,7 +195,7 @@ export const TEXT = Object.freeze({
     failed: 'The prompt is closed and the session continues, but recording that session as managed failed: it stays the user\'s.',
   }),
   promptDetails: (prompt) => '[untrusted: from session ' + prompt.sessionId + '] title: ' + prompt.title + '; tool: ' + prompt.toolName + '; arguments: ' + prompt.argumentsStatus + ' (the exact call stays in that session; read_session shows it).',
-  questionDescription: 'Answer a question or plan review from a session you manage ([question qst_…]). For a question give answers: one {id, selected, custom?} per question, every question id exactly once; selected holds labels of the offered options; a single-select question takes one label, or custom text alone; selected [] with no custom skips it. For a plan review give approve: true to approve the plan (plan mode ends), or feedback to keep planning with your feedback (approve: false without feedback keeps planning). to_user: true sends it to the user\'s pile instead; note adds a note the user sees on its card. Follow the mode the question names. A bad answer is refused and the question stays open.',
+  questionDescription: `Answer a question or plan review from a session you manage ([question qst_…]). For a question give answers: one {id, selected, custom?} per question, every question id exactly once; selected holds labels of the offered options; a single-select question takes one label, or custom text alone; selected [] with no custom skips it. For a plan review give approve: true to approve the plan (plan mode ends), or feedback to keep planning with your feedback (approve: false without feedback keeps planning). to_user: true leaves it to the user instead (${IN_SESSION}); note adds a note for the user. Follow the mode the question names. A bad answer is refused and the question stays open.`,
   questionIdArg: 'The question id, e.g. qst_7f3c….',
   answersArg: 'For a question: one item per question, in any order.',
   itemIdArg: 'The question\'s id.',
@@ -192,9 +203,9 @@ export const TEXT = Object.freeze({
   customArg: 'Your own text: the answer for a free-text question, or instead of a single-select choice.',
   approveArg: 'For a plan review: true approves the plan; false keeps planning.',
   feedbackArg: 'For a plan review: keep planning, with this feedback for the session.',
-  toUserArg: 'true: send it to the user\'s pile instead of answering.',
-  noteArg: 'A note for the user, shown on its card in the pile: one conversational sentence to the user saying what they need to decide and why it needs them.',
-  noteAdded: 'Your note is on the question\'s card.',
+  toUserArg: `true: leave it to the user instead of answering; ${IN_SESSION}.`,
+  noteArg: 'A note for the user: one conversational sentence to the user saying what they need to decide and why it needs them. With to_user it is shown on that decision in your chat.',
+  noteAdded: 'Your note is kept with the question.',
   needsSomething: 'Give answers (a question), approve or feedback (a plan review), to_user, or note.',
   bothWays: 'Answer it, or send it to the user (to_user), not both.',
   planOnly: 'a plan review takes approve or feedback, not answers',
@@ -207,7 +218,7 @@ export const TEXT = Object.freeze({
   custom: (id) => id + ': custom must be non-empty text',
   single: (id) => id + ': a single-select question takes one label, or custom text alone',
   /** T09's card ask: the words of DSH's own ask_user_question, plus how the answer arrives. */
-  askDescription: 'Ask the user brief, direct, self-contained questions about missing information, preferences, or decisions: one card in their pile, where their permission requests wait. Use user-facing terms; assume no knowledge of background work or internal names, and use distinct stable question ids. The call returns at once with the card id and never waits, so carry on with other work; the user\'s answer reaches you in this chat as a message, and a card never expires. If the user closes it unanswered, you are told.',
+  askDescription: `Ask the user brief, direct, self-contained questions about missing information, preferences, or decisions: ${OWN_CARD}. Use user-facing terms; assume no knowledge of background work or internal names, and use distinct stable question ids. The call returns at once with the card id and never waits, so carry on with other work; the user\'s answer reaches you in this chat as a message, and a card never expires. If the user closes it unanswered, you are told.`,
   questionsArg: 'The questions to ask the user.',
   askIdArg: 'Stable id for this question; the answer echoes it.',
   askQuestionArg: 'The specific question to ask the user.',
@@ -217,7 +228,7 @@ export const TEXT = Object.freeze({
   optionDescriptionArg: 'One sentence explaining the tradeoff or impact.',
   multiSelectArg: 'Whether the user may select more than one option. Defaults to false.',
   askShape: 'questions must be a non-empty list of {id, question, header?, options?, multi_select?} with distinct ids',
-  asked: (questionId) => 'The card ' + questionId + ' is in the user\'s pile. Nothing is waiting: carry on with other work, and the user\'s answer arrives in this chat as a message. A card never expires.',
+  asked: (questionId) => 'The card ' + questionId + ' is ' + OWN_CARD + '. Nothing is waiting: carry on with other work, and the user\'s answer arrives in this chat as a message. A card never expires.',
   listGrantsDescription: 'List your active standing grants: for each, its id, session, tool, kind (an exact call, or a command prefix), end time, how often it was used, and whether it is paused (while you are not live or Permission requests is off).',
   revokeDescription: 'End one of your standing grants before its end time, e.g. when the user narrows or withdraws the allowance it relied on. Its session\'s calls then come to you again.',
   grantIdArg: 'The grant id (grt_…), from list_grants or your answer_approval.',
@@ -806,7 +817,7 @@ export function apply(ctx) {
   const answerQuestion = async ({ questionId, answers, approve, feedback, toUser, note }) => {
     const card = requireCard(questionId, APPROVAL_KIND.question)
     const answering = answers !== undefined || approve !== undefined || feedback !== undefined
-    // A note on a question already in the user's pile is allowed today; its card left the live set.
+    // A note on a question already left to the user is allowed today; its card left the live set.
     const retired = card === undefined ? state.retired.get(questionId) : undefined
     if (card === undefined && (retired === undefined || retired.kind !== APPROVAL_KIND.question || answering || toUser === true)) return refused(ERROR.expired)
     if (!answering && toUser !== true && trimmed(note) === '') return refused(ERROR.badAnswer, { reason: TEXT.needsSomething })
@@ -819,12 +830,12 @@ export function apply(ctx) {
       ...(note === undefined ? {} : { note }),
     })
     if (!answering && toUser !== true) {
-      // The note is on the user's card; the question stays open for Fishball.
+      // The note is kept with the question (host side); the question stays open for Fishball.
       publish()
       return ok({ questionId, note: TEXT.noteAdded })
     }
     state.cards.delete(questionId)
-    // A note may still be added while the question is the user's card (today's answer_question).
+    // A note may still be added while the question is left to the user (today's answer_question).
     if (!answering) remember(state.retired, questionId, target, APPROVALS.limits.retired, (value, key) => state.pending.has(key))
     if (answering) {
       recordLabel(target, cardKind(target), answerWords({ answers, approve, feedback }), { answered: true })
