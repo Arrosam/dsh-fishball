@@ -565,6 +565,14 @@ export const API = Object.freeze({
   requestsAnswer: '/api/fishball/requests/answer',
   // The question mode, brand and sidebar-entry routes are retired (C2): the mode changes only in
   // DSH's own form of the row, and the icon is fixed (D22). Their paths answer 404.
+  /**
+   * GET: the attached instance as the connector's frame shows it (design §0.5 "The frame", D27):
+   * {attached, name, ui, state, code, canRetry, attachCount}. The browser reads the instance only
+   * here and in the state stream, never through an instance's own routes.
+   */
+  connectorInstance: '/api/fishball/connector/instance',
+  /** POST, no body: the frame's Retry, which awaits the attached instance's own retry(). */
+  connectorInstanceRetry: '/api/fishball/connector/instance/retry',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })

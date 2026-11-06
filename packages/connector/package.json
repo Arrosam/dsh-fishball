@@ -3,22 +3,25 @@
   "//version": "The major equals the contract major (CONNECTOR_CONTRACT.major, design §0.2).",
   "version": "1.0.0",
   "description": "Fishball's body in DeepSeek Harness: manages your sessions for Fishball (Hand over, message_fishball, permission requests, questions, watches) and connects an external Fishball instance through the documented fishball-connector contract (./contract).",
-  "icon": "./assets/icon.svg",
+  "icon": "./assets/connector-icon.svg",
   "license": "MIT",
   "type": "module",
   "main": "./index.js",
+  "//exports": "./records is the card record's browser module (design §0.2). It is the client bundle's package-local chunk client.records.js, because DSH serves only client.*.js siblings of client.js; importing it outside a DSH page registers nothing.",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
     "./contract": "./contract/index.js",
+    "./records": "./client.records.js",
     "./package.json": "./package.json"
   },
   "files": [
     "index.js",
     "client.js",
+    "client.records.js",
     "src/",
     "contract/",
-    "assets/icon.svg",
+    "assets/connector-icon.svg",
     "cordis.patch.yml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
