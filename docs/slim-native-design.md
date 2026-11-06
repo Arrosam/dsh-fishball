@@ -713,10 +713,21 @@ over with no extra work; the add-only rules below already make the write safe wi
 per-item choice, so the preview and confirm steps were dropped with it, and the first-real-sync
 approval was dropped too.
 
-Rules that stay (`src/provider-sync.js`, `src/provider-sync-host.js`, unchanged in substance):
+Rules that stay (`src/provider-sync.js`, `src/provider-sync-host.js`, unchanged in substance
+except the env-key change below):
 - API-key providers only. A login (grant record) is never copied; it is reported as
-  `oauth-login` ("log in inside Fishball"). Secret references, ambient/env keys and custom headers
+  `oauth-login` ("log in inside Fishball"). Custom headers and any other unknown profile field
   are `unsupported-provider`.
+- Env keys (changed 2026-11-06, user decision: "做成可以从main profile处model过去，包含key的配置";
+  this reverses the earlier "ambient/env keys are not copied" rule). A provider whose profile names
+  its key through `apiKeyEnv` is copied with its key. The child's environment differs, so the
+  reference itself is never written there: the main host resolves it in its own process through
+  `ctx.credentials.resolve` (the same order pi-ai uses: managed store, process environment, `.env`
+  files), and the child stores the value as a plain API-key record in its own `credential-local`
+  store, next to a profile without `apiKeyEnv`. Inventory only describes the reference
+  (`ctx.credentials.describe`); the value is read only in the coordinator's confirm step. While
+  the variable is unset or empty in the main process, the provider is skipped as
+  `api-key-env-unset`. An `apiKeyEnv` outside DSH's reference grammar is still refused, as before.
 - Additions only: an existing or conflicting provider or key in the child is skipped and kept.
 - Re-checks: the coordinator re-reads the source inventory before and after reading records; the
   engine re-checks the child's identity, version, schema, namespace revision and owner generation
