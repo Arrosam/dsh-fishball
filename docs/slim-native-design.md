@@ -83,8 +83,14 @@ backpressure are the child app's responsibility.
 
 - Profile: `<child home>/profiles/fishball` with `dsh.profile.bundles = ["@deepseek-ai/dsh-base"]`
   (replaces today's `boot.PROFILE_TEMPLATES.web.bundles` at `src/native-runtime/installation.js:113`).
-- Overlay rows: `fishball-native-app` (required), `time-context`;
-  keep `hmr` disabled, set `sandbox-policy.mode = read-only`,
+- Overlay rows: `fishball-native-child` (lifecycle, required), `fishball-native-session-tools`,
+  `fishball-native-approvals`, `fishball-native-app` (required), `fishball-native-inbox`,
+  `fishball-native-admin`, `fishball-native-provider-sync`, `time-context`. The bridge, approvals
+  and inbox modules are their own loader rows, not plugins the lifecycle row starts itself, and the
+  app row injects `attachments`, `llm` and `fishballApprovals`: Cordis then starts each row once
+  the services it reads exist, and the loader's boot settlement covers the whole chain before
+  `appReady` (2026-11-06 fix B5; before it, `/api/upload` and `/api/approvals` were 404 on 0.2.2).
+  Keep `hmr` disabled, set `sandbox-policy.mode = read-only`,
   `approval.policy = ask`, `bash-sandbox` unchanged. `time-context` is one of the web
   `standard` preset's rows (`dsh-web-app/presets/standard.patch.yml:19-20`); base already carries
   the `user-questions` service (`dsh-base/cordis.patch.yml:79-80`), web search and fetch
@@ -759,6 +765,12 @@ finish, close), the `preview`/`confirm` routes, and `ProviderSyncSlot` with its 
 | Main DSH shutting down | — | closed with the page | existing bounded child stop |
 
 No state ever falls back to legacy Fishball, and no error text includes a URL, token or path.
+
+Diagnostics: the child's stderr goes to `<DSH_HOME>/fishball/runtime/child-stderr.log` (private,
+0600), next to the code-only `lifecycle.log`. Each file is capped at `RUNTIME_LIMITS.maxLogBytes`
+(64 KiB) and rotates once to `child-stderr.log.1`. Lines are redacted before they are written:
+Authorization/Bearer values, key/token/secret/password assignments and any long opaque run are
+replaced with `[redacted]` (`src/native-runtime/stderr-log.js`). stdout stays discarded.
 
 ## 12. Legacy retirement
 

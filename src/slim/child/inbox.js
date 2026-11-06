@@ -21,7 +21,7 @@
 import { ContractError, ERROR } from '../contract.js'
 import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
 
-/** Stable Cordis plugin name; native-child.js mounts this row. */
+/** Stable Cordis plugin name; the launch overlay inserts this row. */
 export const name = 'fishball-native-inbox'
 
 /** Services the consumer needs: the shared bridge client and T07's chat row. */

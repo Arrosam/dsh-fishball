@@ -32,6 +32,17 @@ import { createReminders } from './reminders.js'
 /** Stable Cordis plugin name; T02's overlay row id is the same string (§2.3). */
 export const name = 'fishball-native-app'
 
+/**
+ * Services this row reads as Cordis properties or needs before it builds its routes. Cordis
+ * refuses `ctx.attachments` and `ctx.llm` (the image service's store and modality gate) on a row
+ * that did not inject them, and without waiting for `fishballApprovals` this row read it before
+ * the approvals row had provided it, so /api/upload and /api/approvals were 404s (B5). Injecting
+ * them makes Cordis start this row only once all three exist, on both Cordis 4.0 (DSH 0.2.1) and
+ * 4.1 (DSH 0.2.2). The approvals row is its own overlay row (overlay.js), so the loader's boot
+ * settlement waits for that chain and this row is up before appReady's readiness probe.
+ */
+export const inject = ['attachments', 'llm', 'fishballApprovals']
+
 const APP = Object.freeze({
   service: 'fishballApp',
   logger: 'fishball-native-app',
@@ -75,10 +86,8 @@ export async function apply(ctx) {
   // The image service (T06) is created here, not mounted as its own row: the app row owns the
   // loopback upload route and the chat's own store reads, and both share this one store client.
   const images = mountImages(ctx)
-  // The approvals row is mounted by the lifecycle row before this one, so its service is
-  // provided by now. A composition without it still serves the chat; only /api/approvals is 404.
+  // Injected above, so the approvals row's service exists whenever this row runs.
   const approvals = ctx.get(APP.approvalsService)
-  if (approvals === undefined) ctx.logger(APP.logger).warn('the approval bridge is unavailable; /api/approvals is not served')
   // The chat row owns the one Session and publishes the two ports other rows read: the
   // reminder scheduler's resolver and the admin service's live-model applier (T10, T11).
   const chat = createChat(ctx, { images })
