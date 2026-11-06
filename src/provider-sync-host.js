@@ -1,7 +1,7 @@
 /**
  * Host-only official-SDK boundary for one-shot provider migration. Inventory never
- * reads credential values; only the coordinator's confirmed readRecord call does.
- * Neither configuration files nor ambient credential references are accessed here.
+ * reads credential values (a profile's apiKeyEnv is only described); only the
+ * coordinator's confirmed readRecord call reads one. Configuration files are not accessed here.
  */
 import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
@@ -15,6 +15,8 @@ export const PROVIDER_SYNC_HOST = Object.freeze({
   imported: 'imported', exists: 'exists', https: 'https:', empty: '',
   outcome: Object.freeze({ config: 'configOutcome', key: 'keyOutcome', added: 'added', unknown: 'unknown' }),
   referenceField: 'apiKeyEnv', query: '?', fragment: '#',
+  /** dsh-credentials' CredentialRef grammar (a POSIX shell identifier), as `credentialRef()` checks it. */
+  referenceName: /^[A-Za-z_][A-Za-z0-9_]*$/,
   hashAlgorithm: 'sha256', hashEncoding: 'hex',
   /** Schemastery's serialised form: the root uid, the node table, and the fields that hold a node uid. */
   schemaRefs: Object.freeze({ uid: 'uid', refs: 'refs', single: Object.freeze(['sKey', 'inner']), list: 'list', dict: 'dict' }),
@@ -161,6 +163,18 @@ function projectFields(value, allowed, defaults) {
   }
   return result
 }
+/**
+ * A route profile's apiKeyEnv split from its transferable fields. The user asked on 2026-11-06 for
+ * Refresh models to bring a provider whose key comes from apiKeyEnv over with its key: the child's
+ * environment differs, so the reference itself is never written there (safeProfile still refuses
+ * it); readRecord resolves it here and the child stores the value as a plain API-key record.
+ */
+function splitReference(value) {
+  if (!plain(value) || !Object.hasOwn(value, H.referenceField)) return { profile: value }
+  const { [H.referenceField]: reference, ...profile } = value
+  if (typeof reference !== 'string' || !H.referenceName.test(reference)) refuse(E.reference)
+  return { profile, reference }
+}
 function endpointIsSafe(value) {
   if (!text(value) || H.template.test(value)) return false
   try {
@@ -238,6 +252,27 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       || (info.kind !== undefined && info.kind !== H.apiKey && info.kind !== H.grant)) refuse(E.describe)
     return { configured: info.configured, ...(info.kind === undefined ? {} : { kind: info.kind }), writable: info.writable }
   }
+  /**
+   * The key an apiKeyEnv reference supplies, described without its value: `configured` is false
+   * while the reference resolves to nothing (DSH treats an empty value as unset). pi-ai prefers
+   * the reference over the route's record, so the record is not described, and `writable` is
+   * false: a record written under this route would be shadowed by the reference.
+   */
+  async function describeReference(reference) {
+    const info = await ctx.credentials.describe(reference)
+    if (typeof info?.configured !== 'boolean') refuse(E.describe)
+    return { configured: info.configured, kind: H.apiKey, writable: false }
+  }
+  /**
+   * The reference's current value as an API-key record, resolved by DSH's credentials service
+   * exactly as pi-ai resolves apiKeyEnv in this process (llm-pi-ai resolveApiKey: the managed
+   * store, then the process environment, then .env files). Only the value is kept; nothing here
+   * logs or returns the resolution's source.
+   */
+  async function referenceRecord(reference) {
+    const hit = await ctx.credentials.resolve(reference)
+    return hit === undefined ? undefined : { kind: H.apiKey, key: hit.value }
+  }
   function namespaceDescriptors(descriptors, entries) {
     const namespaces = new Map()
     for (const descriptor of descriptors) {
@@ -264,6 +299,9 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       group.push(item); routes.set(item.provider, group)
     }
     const providers = []
+    // Host-only: the apiKeyEnv name of each route keyed by one. readRecord resolves it; the
+    // inventory says only that the key comes from a reference (keyFromEnv), never which one.
+    const references = new Map()
     for (const [id, group] of routes) {
       const item = group.find((candidate) => descriptors.some((descriptor) => descriptor.ns === candidate.settingsNs
         && validPath(candidate.settingsPath, id) && present(descriptor, id))) ?? group[H.firstIndex]
@@ -279,15 +317,22 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       else if (!namespace) reason = E.owner
       else if (!validPath(item.settingsPath, id)) reason = E.path
       else if (typeof item.declared !== 'boolean') reason = E.profile
+      let reference
       if (configured) {
-        try { profile = safeProfile(descriptor.value.providers[id], item.declared, defaults, protocols) }
-        catch (error) { reason ??= error instanceof ProviderSyncHostError ? error.code : E.profile }
+        try {
+          const split = splitReference(descriptor.value.providers[id])
+          reference = split.reference
+          profile = safeProfile(split.profile, item.declared, defaults, protocols)
+        } catch (error) { reason ??= error instanceof ProviderSyncHostError ? error.code : E.profile }
       }
+      if (reference !== undefined) references.set(id, reference)
+      // A route id outside the record grammar cannot hold a record in the target either, so a
+      // reference-keyed one stays unsupported too.
       if (!routeId(id)) reason ??= E.credential
       else {
         const key = recordKeyFor(id)
         try {
-          credential = await describeCredential(id)
+          credential = reference === undefined ? await describeCredential(id) : await describeReference(reference)
           if (credential.configured && credential.kind !== H.apiKey) reason ??= E.credential
         } catch { reason ??= E.describe }
         try { apiKeyMethod = (await ctx.authorization.describe(key))?.methods?.some((method) => method.id === H.apiKey) === true }
@@ -300,12 +345,12 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       // other home, so its key is never copied without a profile (src/provider-sync.js builtinKey).
       const endpointFromEnv = Array.isArray(item.baseURLEnv) && item.baseURLEnv.length > H.minimumRevision
       providers.push({ id, settingsNs: ns, settingsPath: providerPath(id), owner: H.owner,
-        ...(text(item.displayName) ? { label: item.displayName } : {}), endpointFromEnv,
+        ...(text(item.displayName) ? { label: item.displayName } : {}), endpointFromEnv, keyFromEnv: reference !== undefined,
         schema: namespace?.schema ?? H.empty, ownerGeneration: namespace?.ownerGeneration ?? H.empty,
         declared: item.declared === true, configured, profile, credential, supported: reason === undefined,
         ...(reason === undefined ? {} : { reason }), apiKeyMethod })
     }
-    return { namespaces, providers, descriptors }
+    return { namespaces, providers, descriptors, references }
   }
   const findProvider = (state, id) => {
     if (!routeId(id)) refuse(E.invalid)
@@ -345,7 +390,10 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       currentNamespace(state, provider.settingsNs, last.namespaces.get(previous.settingsNs))
       if (!keyedRoute(provider) || !provider.credential.configured || provider.credential.kind !== H.apiKey) refuse(E.credential)
       checkSignal(signal)
-      const record = await ctx.credentials.readRecord(recordKeyFor(id))
+      // The fresh snapshot names the reference, so a profile edited since preview is read as it
+      // is now; a reference unset since describe resolves to nothing and safeRecord refuses it.
+      const reference = state.references.get(id)
+      const record = reference === undefined ? await ctx.credentials.readRecord(recordKeyFor(id)) : await referenceRecord(reference)
       checkSignal(signal)
       return safeRecord(record)
     }),
