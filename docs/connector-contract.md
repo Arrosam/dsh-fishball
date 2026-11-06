@@ -1,16 +1,33 @@
 # `fishball-connector` contract, version 1.0
 
-Status: **frozen v1 (K1, 2026-11-06)**. Source of the decisions: `docs/slim-native-design.md` §0.2,
-§0.4, §0.7, §5 and §18 (K1). Items marked **pending user confirmation** may still change before
-the connector ships.
+Status: **frozen v1 (K1, 2026-11-06)**. Sources: `docs/slim-native-design.md` §0.2, §0.4, §5 and
+§18 (K1), and the user's decisions of 2026-11-06 (§0 below). Where those decisions and the design
+differ, the decisions win. The items in §11 are open points that still need the user's answer.
 
-This contract is what a Fishball **instance** implements to drive DSH sessions through the
-**connector** (`fishball-connector`, the plugin row `fishball` in the main DSH profile). The
-built-in instance (`fishball-instance`) is one implementation. A third-party instance needs only
-this document and the connector's `./contract` export (today `src/connector/contract.js`).
+This contract is what an **instance** implements to drive DSH sessions through the **connector**.
+A third-party instance needs only this document and the connector's `./contract` export (today
+`src/connector/contract.js`).
 
-Contents: 1 binding · 2 versions · 3 frames (envelope v2) · 4 operations · 5 events ·
-6 vocabularies · 7 errors · 8 limits · 9 no-instance behaviour · 10 module index · 11 open points.
+Contents: 0 terms and decisions · 1 binding · 2 versions · 3 frames (envelope v2) ·
+4 operations · 5 events · 6 vocabularies · 7 errors · 8 limits · 9 no-instance behaviour ·
+10 module index · 11 open points.
+
+## 0. Terms and decisions
+
+- **Plugins.** There are two plugins, and no plugin is called "Fishball":
+  - **`fishball-connector`** (the connector) runs in the main DSH profile and works on its sessions;
+  - **`fishball-instance`** (the built-in instance) is one implementation of this contract.
+  - Any other plugin that implements this contract is an instance too.
+- **Fishball** is the assistant an instance runs. The wire values that contain `fishball` name
+  that assistant, never a plugin: `ROLE.fishball`, `SETTLED_BY.fishball`, `is-fishball`, the
+  main-session tools `message_fishball` and `ask_fishball`, and the record type
+  `plugin:fishball/card-record`. They are frozen v1 names.
+- **Connector settings** (its limits, question mode, brand icon and sidebar entry) are changed
+  **only in DSH's own Plugins → settings form of `fishball-connector`**. This contract gives an
+  instance no operation that reads or changes them, attached or not.
+- **Instance settings** live inside the instance's own DSH profile and are edited on the
+  instance's own settings page (`ui.settings`, §1.2). The instance exposes to the main DSH only the
+  sync options it needs, through its own plugin. Neither is part of this contract.
 
 ## 1. Binding: the `fishballConnector` service
 
@@ -36,14 +53,14 @@ handle.detach()                              // back to no-instance mode
 
 | Field | Required | Rule | Refusal |
 | --- | --- | --- | --- |
-| `id` | yes | non-empty string | `instance-invalid` (pending, §11) |
-| `name` | yes | non-empty string | `instance-invalid` (pending) |
+| `id` | yes | non-empty string | `instance-invalid` (open point, §11) |
+| `name` | yes | non-empty string | `instance-invalid` |
 | `contract` | yes | exactly `{id, major, minor}`; `id` is `fishball-connector`; `major` is `1`; `major` and `minor` are whole numbers | `contract-version` |
 | `transport` | yes | an object with the four functions `send`, `onMessage`, `onClose`, `close` (`TRANSPORT_METHODS`) | `transport-invalid` |
 | `ui` | no | exactly the optional keys `chat` and `settings`; each value obeys §1.2 | `ui-invalid` |
-| `status` | no | a function; returns `{state, code}`, where `state` is a `STATUS` value and `code` a `STATUS_CODES` value or `null` | `instance-invalid` (pending) |
-| `retry` | no | a function returning a promise | `instance-invalid` (pending) |
-| any other key | — | refused | `instance-invalid` (pending) |
+| `status` | no | a function; returns `{state, code}`, where `state` is a `STATUS` value and `code` a `STATUS_CODES` value or `null` | `instance-invalid` |
+| `retry` | no | a function returning a promise | `instance-invalid` |
+| any other key | — | refused | `instance-invalid` |
 
 `transport` is the instance's end of one message channel. `send(string)` sends one encoded frame
 to the connector's peer, `onMessage(fn)` delivers each frame the instance sends, `onClose(fn)`
@@ -63,7 +80,10 @@ A `ui.chat` or `ui.settings` value is accepted only when all of these hold:
 - its query has no `token` parameter (`?token=…` anywhere in the query). `token` is DSH's own
   launch-token parameter, and a credential must never be in an iframe's address.
 
-A fragment (`/fishball/embed/#x`) is accepted (pending, §11). The built-in instance registers
+A fragment (`/fishball/embed/#x`) is accepted (open point, §11).
+
+`ui.chat` is the instance's chat page and `ui.settings` its own settings page; the connector
+frames the one it opens. The instance hosts both pages. The built-in instance registers
 `{chat: '/fishball/embed/', settings: '/fishball/embed/?view=settings'}`.
 
 ### 1.3 Attach outcomes
@@ -173,7 +193,7 @@ welcome lists only operations it serves; a request for an operation outside the 
 - Nothing is retried. A request that times out is answered `timeout` and the channel closes, so a
   late success cannot be mistaken for a retryable failure.
 - After a reconnect, the instance starts again with a fresh handshake. Unacknowledged
-  `inbox.push` items are delivered again, unchanged (§4.6).
+  `inbox.push` items are delivered again, unchanged (§4.5).
 
 ## 4. Operations
 
@@ -199,7 +219,7 @@ envelope's `sessionId` is `null`. `?` marks an optional key.
 watermark read **before** the delivery, so a turn that ends at once is still reported. The result
 then carries `watchId` or `watchError`, never both. A refused watch never undoes the message.
 
-`attachments` holds the `hostRef`s from `attachment.put` (§4.5): at most 20
+`attachments` holds the `hostRef`s from `attachment.put` (§4.4): at most 20
 (`LIMITS.attachmentsPerMessage`), unique, each consumed once. `title` and `message` may be empty
 strings. `folder`, `model` and `reasoningEffort` are non-empty.
 
@@ -254,42 +274,7 @@ The **`questions[]`** of `question.ask` and of a question descriptor hold 1–32
 | `grant.list` | – | `{}` | `{grants:[{grantId, sessionId, toolName, kind, prefix?, expiresAt, uses, lastUsedAt?, paused}]}` | — |
 | `grant.revoke` | – | `{grantId, reason}` | `{grantId, revoked: true}` | `reason-required`, `unknown`, `ended` |
 
-### 4.4 Settings (instance → connector), new in connector v1
-
-| Op | Scoped | Request | Response | Refusals |
-| --- | --- | --- | --- | --- |
-| `settings.describe` | – | `{}` | `{revision, fields:[field]}` | — |
-| `settings.update` | – | `{revision, values:{key: value}}` | `{revision}` | `settings-conflict`, `settings-invalid` |
-
-**`settings.update` is pending user confirmation:** whether *any* attached instance may change the
-connector's limits through it. The operation is defined and validated in v1; the connector may
-withhold it from its welcome until the user decides (it then answers `unsupported-operation`).
-
-`settings.describe` returns every connector setting: each limit in the connector's config, the
-question mode, the brand icon and the sidebar entry (design §0.7). `revision` is a whole number,
-the connector's counter for optimistic concurrency. Each field has this shape:
-
-| `kind` (`SETTING_KIND`) | Field keys | Admitted values |
-| --- | --- | --- |
-| `number` | `{key, kind, value, default, min?}` | a whole number, at least `min` if present |
-| `enum` | `{key, kind, value, default, options}` | one of `options` (a non-empty list of unique strings) |
-
-Keys are unique and non-empty. `value` and `default` are always admitted by the field itself. A
-number field carrying `options`, or an enum field carrying `min`, is refused.
-
-`settings.update` is **all-or-nothing**. The connector refuses the whole update, and writes
-nothing, when:
-
-- `revision` is not the current revision: `settings-conflict`. This is checked first, so values
-  edited against an old description are never judged against a new one;
-- any key is unknown, or any value has the wrong kind, is below `min` or is not an option:
-  `settings-invalid`.
-
-The frame check is shape only (`revision` is a whole number and `values` a plain object), so a bad
-value is an `error` reply and never closes the channel. `checkSettingsUpdate(description,
-payload)` is the shared semantic check. On success the response carries the new revision.
-
-### 4.5 Attachments (instance → connector)
+### 4.4 Attachments (instance → connector)
 
 | Op | Scoped | Request | Response | Refusals |
 | --- | --- | --- | --- | --- |
@@ -308,7 +293,7 @@ The transfer rules:
 - One transfer per message (`LIMITS.transfersPerMessage`).
 - A `hostRef` is single-use and expires 10 minutes after the put (`LIMITS.hostRefTtlMs`).
 
-### 4.6 Inbox (connector → instance)
+### 4.5 Inbox (connector → instance)
 
 | Op | Scoped | Request | Response |
 | --- | --- | --- | --- |
@@ -316,11 +301,11 @@ The transfer rules:
 
 `inbox.push` carries what reaches the instance:
 
-- a message a managed session sent to Fishball (`session`);
+- a message a managed session sent with `message_fishball` (`session`);
 - a hand-over note (`user`: the user's own words);
 - a managed-session change (`system`);
 - a watch notice (`watch`);
-- a request waiting for Fishball (`approval`);
+- a request waiting for the instance's answer (`approval`);
 - a plugin event (`plugin`).
 
 The connector's intake ledger is the durable queue. An item stays pending until acknowledged, and
@@ -394,7 +379,6 @@ requests again with a current `offerId`.
 | `SETTLED_BY` | `user`, `fishball` |
 | `RAN_VIA` | `pass`, `grant` |
 | `INBOX_KIND` | `session`, `user`, `system`, `watch`, `approval`, `plugin` |
-| `SETTING_KIND` | `number`, `enum` |
 | `MEDIA` / `IMAGE_TYPES` | `image/png`, `image/jpeg`, `image/webp`, `image/gif` |
 | `STATUS` (the `status()` state) | `disabled`, `waiting`, `starting`, `ready`, `stopping`, `stopped`, `failed` |
 | `STATUS_CODES` (the `status()` code) | `NATIVE_START_FAILED`, `NATIVE_STOP_FAILED`, `NATIVE_CHILD_EXITED`, `NATIVE_UNAVAILABLE`, `NATIVE_TIMEOUT`, `NATIVE_DISABLED` |
@@ -403,7 +387,7 @@ requests again with a current `offerId`.
 
 **Attach refusals** (`ATTACH_ERROR`; thrown by `attachInstance` as `ContractError.code`):
 `instance-busy`, `contract-version`, `ui-invalid`, `transport-invalid`, `instance-invalid`
-(pending, §11).
+(open point, §11).
 
 **Frame error codes** (`ERROR`; the only values an `error` frame's `{code}` may carry). Any other
 code is invalid, and an unexpected failure is always `operation-failed`.
@@ -415,7 +399,6 @@ code is invalid, and an unexpected failure is always `operation-failed`.
 | sessions | `unknown-session`, `is-fishball`, `not-managed`, `feature-off`, `session-not-live` |
 | answers | `expired`, `invalid-decision`, `risk-required`, `reason-required`, `allow-needs-low-risk`, `arguments-incomplete`, `question-required`, `mode-user`, `bad-answer`, `already-settled` |
 | grants | `grant-invalid`, `prefix-not-shell-tool`, `prefix-empty`, `prefix-not-in-call`, `expires-at-required`, `expires-at-invalid`, `expires-at-past`, `unknown`, `ended` |
-| settings | `settings-conflict`, `settings-invalid` |
 
 ## 8. Limits
 
@@ -450,8 +433,9 @@ at the limit is accepted; one above it is refused (`limit-exceeded`, or the code
 | `selectedLabelsPerAnswer` | 32 | `selected[]` |
 | `embedJsonBodyBytes`, `embedUploadBodyBytes`, `embedConcurrentStreams`, `embedStreamIdleTimeoutMs`, `embedSseHeartbeatMs` | 1 MiB, 8 MiB, 32, 30,000 ms, 15,000 ms | the built-in instance's embed proxy only; not part of the binding |
 
-The connector's own queue bound, `maxQueuedInputs` (default 200, a connector setting), caps the
-intake items waiting for an instance (§9).
+The connector's own queue bound, `maxQueuedInputs` (default 200), caps the intake items waiting
+for an instance (§9). It is a connector setting, so only DSH's Plugins form of
+`fishball-connector` changes it (§0).
 
 ## 9. No instance attached
 
@@ -461,11 +445,11 @@ The connector works alone. With no instance attached (never attached, after `det
 | Input | Behaviour |
 | --- | --- |
 | `message_fishball`, `ask_fishball`, a finished-session notice, a hand-over note | queued in the intake ledger, bounded by `maxQueuedInputs` (the existing refusal past it); delivered once each, in order, with `inbox.push` on the next attach |
-| a permission request or question from a managed session | not offered to Fishball; the user answers in that session, as with Fishball off |
+| a permission request or question from a managed session | not offered to any instance; the user answers in that session |
 | Hand over / Take back | work; the session becomes managed or unmanaged |
-| Fishball view (sidebar row, brand) | an empty state, "No Fishball instance is attached", with a link to the Plugins page; no iframe |
+| the connector's view (sidebar row, brand) | an empty state saying that no instance is attached, with a link to the Plugins page; no iframe |
 | managed-row marks | shown from the connector's own state |
-| connector settings | DSH's own Plugins → settings form for the `fishball` row |
+| connector settings | DSH's own Plugins → settings form of `fishball-connector`, the same place as with an instance attached (§0) |
 
 ## 10. Module index
 
@@ -477,7 +461,7 @@ from `src/slim/contract.js`):
 - frames: `ENVELOPE`, `SIDE`, `DIRECTION`, `OPERATION`, `OPERATIONS` (direction and scope per
   operation), `EVENT`, `EVENTS`, `EVENT_DIRECTION`, `VALIDATORS`, `validateRequest`,
   `validateResponse`, `validateEvent`, `validateEnvelope`, `makeEnvelope`, `encodeEnvelope`,
-  `decodeEnvelope`, `requireCapabilities`, `checkSettingsUpdate`;
+  `decodeEnvelope`, `requireCapabilities`;
 - vocabularies: those of §6, plus `DIGEST`;
 - errors: `ERROR`, `ContractError` (`.code`) and `fail(code)`;
 - limits: `LIMITS`;
@@ -490,13 +474,7 @@ The sibling modules `card-record.js` (`CARD_RECORD`), `inbox-markers.js` (`QUEST
 
 ## 11. Open points
 
-1. **`settings.update` permission (pending user confirmation):** may any attached instance change
-   the connector's limits, or only the built-in one, or only after the user agrees?
-2. **`instance-invalid` (pending):** design §0.4 names no code for a malformed `id`, `name`,
-   `status`, `retry` or an unknown descriptor key. v1 uses `instance-invalid` until the user
-   decides.
-3. **A fragment in a `ui` path (pending):** §18.2 lists "with fragment" as a test partition without
-   stating the outcome. v1 accepts it, because a fragment never reaches the server and carries no
-   host.
-4. **An empty `settings.update` (`values: {}`):** valid in v1. Whether it bumps the revision is
-   C2's to define with the user.
+1. **`instance-invalid`:** design §0.4 names no code for a malformed `id`, `name`, `status`,
+   `retry` or an unknown descriptor key. v1 uses `instance-invalid` until the user decides.
+2. **A fragment in a `ui` path:** §18.2 lists "with fragment" as a test partition without stating
+   the outcome. v1 accepts it, because a fragment never reaches the server and carries no host.
