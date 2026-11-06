@@ -11,17 +11,24 @@
  *    source and key again is a duplicate.
  * 3. Push it to the child. The child acks only after it queued the turn in Fishball's chat; the
  *    row is then consumed and its body dropped (the digest stays).
- * A child that is down never loses an item: the row stays pending, the bridge host keeps an
- * unacked item for its next connection, and a new host (the native row restarted, or the main
- * DSH restarted) gets every pending row again when it attaches. The child dedupes by the row id,
- * so an item pushed twice is delivered once. Wake-ups belong to the child's own chat now; the
- * in-process wake guard and its hourly cap went with the in-process agent.
+ * A child that is down never loses an item: the row stays pending, and a new attachment (a detach
+ * and a new attach, the connector row restarted, or the main DSH restarted) gets every pending
+ * row again when it is ready. The child dedupes by the row id (the dedupe key), so an item pushed
+ * twice is delivered once. Wake-ups belong to the child's own chat now; the in-process wake guard
+ * and its hourly cap went with the in-process agent.
  */
 import { createHash } from 'node:crypto'
-import { INTAKE_ERROR, INTAKE_OUTCOME, INTAKE_STATUS, INTAKE } from './constants.js'
+import { INTAKE_ERROR, INTAKE_KIND, INTAKE_OUTCOME, INTAKE_STATUS, INTAKE } from './constants.js'
 import { diagnosticOf } from './errors.js'
 /** Rows still waiting to be taken by the child (they count toward maxQueuedInputs). */
 const OPEN = new Set([INTAKE_STATUS.pending])
+
+/**
+ * Kinds the queue bound refuses when it is full (contract §9): every automated one. A `user` item
+ * is the user's own note (Hand over, Take back), so the bound never makes that action fail; it
+ * is always accepted, even past it (design §18.5 conn-OQ-03).
+ */
+const BOUNDED_KINDS = new Set(Object.values(INTAKE_KIND).filter((kind) => kind !== INTAKE_KIND.user))
 
 /** An input the ledger refused, with a stable INTAKE_ERROR code. */
 export class IntakeError extends Error {
@@ -80,7 +87,8 @@ export class IntakeLedger {
       const table = this.#store.intakeItems
       if (table.get(intakeId) !== undefined) return { intakeId, status: INTAKE_OUTCOME.duplicate }
       if (textOf(message).trim().length === 0) throw new IntakeError(INTAKE_ERROR.empty)
-      if (this.#openCount() >= this.#readLimits().maxQueuedInputs) throw new IntakeError(INTAKE_ERROR.queueFull)
+      // The user's own note is never refused by the bound (BOUNDED_KINDS); it still counts.
+      if (BOUNDED_KINDS.has(kind) && this.#openCount() >= this.#readLimits().maxQueuedInputs) throw new IntakeError(INTAKE_ERROR.queueFull)
       await table.put(intakeId, {
         kind, sourceIdentity, sourceSessionId, dedupeKey, messageId: message.id, status: INTAKE_STATUS.pending,
         createdAt: new Date().toISOString(), contentDigest: contentDigest(message), message: structuredClone(message),
@@ -92,12 +100,25 @@ export class IntakeLedger {
   }
 
   /**
-   * The native host's bridge is up (src/slim/host/approvals.js): every pending row goes to it.
+   * An instance is ready (src/slim/host/approvals.js): every pending row goes to it, oldest first.
+   * The order is the contract's global arrival order across kinds and sources (§9), so a note
+   * written before a message reaches Fishball before that message, as it did on the way in.
    * @param push - (item) => Promise<{acked: true}>, the bridge host's pushInbox.
    */
   attach(push) {
     this.#push = push
-    for (const [intakeId, row] of this.#store.intakeItems.entries()) if (row.status === INTAKE_STATUS.pending) this.#send(intakeId)
+    const pending = [...this.#store.intakeItems.entries()].filter(([, row]) => row.status === INTAKE_STATUS.pending)
+    pending.sort(([, a], [, b]) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0))
+    for (const [intakeId] of pending) this.#send(intakeId)
+  }
+
+  /**
+   * The attachment ended (contract §1.3): later rows wait for the next attach instead of being
+   * pushed to a channel that closed. Rows already pushed but unacknowledged stay pending, so the
+   * next attach re-sends exactly those (§4.5).
+   */
+  detach() {
+    this.#push = undefined
   }
 
   /** Detached view for the settings page and the row marks: counts and the newest rows (no content). */

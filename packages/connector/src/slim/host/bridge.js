@@ -249,6 +249,9 @@ class BridgeHost {
       connectionId: typeof metadata.connectionId === 'string' ? metadata.connectionId : randomUUID(),
       transport, closed: false, ready: false, handshaking: false, announced: new Set(),
       seen: new Map(), pending: new Map(), inflight: 0, inboxSending: false,
+      // Inbox keys the child refused on this connection: they stay queued for the next one, and
+      // are never retried here (contract §3.3, §4.5).
+      inboxRefused: new Set(),
       disposers: [], timer: undefined, abort: new AbortController(),
     }
     this.connection = connection
@@ -320,7 +323,6 @@ class BridgeHost {
 
   disconnect(connection = this.connection) {
     if (connection === undefined || connection.closed) return
-    const wasReady = connection.ready
     connection.closed = true
     if (this.connection === connection) this.connection = undefined
     clearTimeout(connection.timer)
@@ -331,8 +333,11 @@ class BridgeHost {
     connection.inboxSending = false
     try { connection.transport.close() } catch { /* already gone */ }
     // A closed ready channel means the child can no longer answer: the host-side cards stay live
-    // for the next connection, which is told them again by its own ready edge.
-    if (wasReady) this.emitConnection(connection, false)
+    // for the next connection, which is told them again by its own ready edge. A channel that
+    // never became ready closes the same way: the binding ends the attachment on either edge, so
+    // a handshake timeout or a frame that failed validation must report it too (contract §1.3,
+    // conn-OQ-48).
+    this.emitConnection(connection, false)
   }
 
   /** Tell observers once per edge; a listener cannot break the channel. */
@@ -484,7 +489,11 @@ class BridgeHost {
     connection.inboxSending = false
     if (envelope.type !== ENVELOPE.type.response) {
       // The child did not take it (no consumer yet). The item stays queued for the next
-      // connection; retrying on this one immediately would spin.
+      // connection; retrying on this one immediately would spin, and a later push on this same
+      // connection must not resend it either: nothing is retried here (contract §3.3, §4.5).
+      connection.inboxRefused.add(pending.key)
+      // The items behind it still go out on this connection, in order.
+      this.flushInbox()
       return
     }
     this.inboxPending.delete(pending.key)
@@ -504,7 +513,9 @@ class BridgeHost {
     const connection = this.connection
     if (connection === undefined || !connection.ready || connection.inboxSending) return
     if (!connection.announced.has(OPERATION.inboxPush)) return
-    const key = this.inboxOrder.find((candidate) => this.inboxPending.has(candidate))
+    // An item this connection already refused is skipped: it waits for the next connection, so a
+    // later push on this same one cannot resend it (contract §3.3, §4.5).
+    const key = this.inboxOrder.find((candidate) => this.inboxPending.has(candidate) && !connection.inboxRefused.has(candidate))
     if (key === undefined) return
     const entry = this.inboxPending.get(key)
     const requestId = randomUUID()
