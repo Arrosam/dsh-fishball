@@ -20,8 +20,11 @@ export function registerNativeWeb(ctx, service) {
       const value = service.status()
       return { enabled: value?.enabled === true,
         state: WEB.states.includes(value?.state) ? value.state : WEB.unavailable,
-        code: WEB.codes.includes(value?.code) ? value.code : null }
-    } catch { return { enabled: false, state: WEB.unavailable, code: null } }
+        code: WEB.codes.includes(value?.code) ? value.code : null,
+        // A launch-setting failure names the setting and the path it tried (host.js LAUNCH_ERROR);
+        // it carries no token or key.
+        detail: typeof value?.detail === 'string' ? value.detail : null }
+    } catch { return { enabled: false, state: WEB.unavailable, code: null, detail: null } }
   }
   try {
     return ctx.connection.fetch.register({

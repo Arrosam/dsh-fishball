@@ -7,12 +7,14 @@
   "main": "./host.js",
   "exports": {
     ".": "./host.js",
+    "./client": "./client.js",
     "./native-runtime": "./src/native-runtime/index.js",
     "./native-control": "./src/native-control/index.js",
     "./package.json": "./package.json"
   },
   "files": [
     "host.js",
+    "client.js",
     "native-child.js",
     "src/",
     "cordis.patch.yml",
@@ -31,14 +33,25 @@
     "@deepseek-ai/dsh-llm-pi-ai": "*",
     "@deepseek-ai/dsh-sandbox-policy": "*",
     "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
     "@deepseek-ai/dsh-system-prompt": "*",
     "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/dsh-user-approval": "*",
-    "@deepseek-ai/schemastery": "*"
+    "@deepseek-ai/schemastery": "*",
+    "zod": "*"
   },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "//client": "The instance's Plugins card in the main DSH (design §0.2, §0.7): the three launch fields. The injected packages are the client halves whose services the card uses: locale, the settings form (configForms) and the Plugins page slots.",
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
     }
   }
 }
