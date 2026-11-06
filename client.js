@@ -89,6 +89,13 @@ window.__ModuleLoader__.load({
       codes: Object.freeze(['NATIVE_START_FAILED', 'NATIVE_STOP_FAILED', 'NATIVE_CHILD_EXITED', 'NATIVE_UNAVAILABLE', 'NATIVE_TIMEOUT', 'NATIVE_DISABLED']),
       ready: 'ready', unavailable: 'unavailable', loading: 'loading',
       request: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
+      /**
+       * How often the open Fishball view re-reads statusPath (B8). Nothing pushes the lifecycle
+       * state: the main row's event stream carries no native state, and the child's own stream
+       * lives inside the iframe. One small GET per interval, only while the view is mounted and
+       * the tab visible, keeps the bar's state within a few seconds of a child exit.
+       */
+      pollMs: 5000,
     })
     /** Fishball's explicit model choice is independent of the host's last-used/default route. */
     const MODEL = Object.freeze({
@@ -1913,7 +1920,18 @@ window.__ModuleLoader__.load({
           const abort = new AbortController()
           setStatus({ state: NATIVE_UI.loading, code: null })
           void nativeStatus(abort.signal).then((next) => { if (!abort.signal.aborted) setStatus(next) })
-          return () => abort.abort()
+          // B8: a child that exits while the view is open must not leave the bar at Ready. The poll
+          // keeps the previous object when nothing changed, so a steady state re-renders nothing,
+          // and one read at a time is in flight.
+          let polling = false
+          const timer = setInterval(() => {
+            if (polling || document.hidden) return
+            polling = true
+            void nativeStatus(abort.signal).then((next) => {
+              if (!abort.signal.aborted) setStatus((previous) => (previous.state === next.state && previous.code === next.code ? previous : next))
+            }).finally(() => { polling = false })
+          }, NATIVE_UI.pollMs)
+          return () => { clearInterval(timer); abort.abort() }
         }, [generation])
         const loading = status.state === NATIVE_UI.loading
         const ready = status.state === NATIVE_UI.ready
