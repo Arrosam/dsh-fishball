@@ -106,6 +106,10 @@ export async function apply(ctx, config) {
    */
   let bridgeReady = false
   const isLive = () => bridgeReady
+  // `status` stays the store's lifecycle (live once the store opened, the page's Hand over relies
+  // on it); whether the child can answer is its own field, so a child exit is visible in the
+  // state (7713 N10: the state kept saying live and showed nothing of the release).
+  views.bridge = () => ({ connected: bridgeReady })
   /** Created below: the bridge reads their live state and reuses their tool bodies (T09). */
   let broker
   let questions

@@ -258,7 +258,9 @@ export const APPROVAL = Object.freeze({
 export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate' })
 /**
  * How a request ended, as audited (§9). released: the session left management while the
- * request waited (§5e). to-user: a call that went to your prompt through a to-you ticket.
+ * request waited (§5e), or Fishball went off (its child exited, Permission requests off) while it
+ * waited for Fishball, so it went to its session's own prompt (7713 N10). to-user: a call that
+ * went to your prompt through a to-you ticket.
  * pass: a call a one-time pass covered (no Fishball step). ask: the thread ended on Fishball's
  * question (the turn ended before the session replied). grant: Fishball answered with a standing
  * grant (the call itself runs as on allow). grant-used: a call a standing grant covered (no Fishball step).
