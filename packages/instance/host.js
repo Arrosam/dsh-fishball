@@ -12,16 +12,14 @@ import { registerEmbed } from './src/slim/host/embed.js'
 import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
 import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes.js'
 import { createChildProviderSync } from './src/provider-sync-service.js'
-import { ContractError, ERROR } from './src/slim/contract.js'
+import { CONNECTOR_CONTRACT, CONNECTOR_SERVICE, ContractError, ERROR } from './src/slim/contract.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
 
 const PLUGIN = Object.freeze({
   // The row id is the plugin's name (design §0.2, D22); the service keeps its name for its callers.
   name: 'fishball-instance', service: 'nativeFishballRuntime',
-  // INTERIM (M1): the connector's session bridge, read with ctx.get because the instance may import
-  // nothing of the connector but ./contract. C1/I1 replace it with fishballConnector.attachInstance;
-  // the connector names it in src/slim/host/interim-bridge.js (INTERIM_BRIDGE.service).
-  bridgeService: 'fishballConnectorBridge',
+  // The contract's display name for this instance (inst-OQ-06), shown by the connector's view.
+  displayName: 'Fishball instance',
   // Every service this row's ctx reads as a property must be listed: Cordis's context proxy
   // throws `cannot get property "<name>" without inject` for any other (0.2.1-rc.5 and
   // 0.2.2-rc.1 alike); ctx.get() is the only unchecked read. Each one below has the same name
@@ -74,6 +72,7 @@ const registry = globalThis[Symbol.for(LIFETIME.registryKey)] ??= new Map()
 
 export async function apply(ctx, config) {
   const enabled = config.enabled !== false
+  const logger = typeof ctx.logger === 'function' ? ctx.logger(PLUGIN.name) : undefined
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
   let code = null
   let closed = false
@@ -118,16 +117,28 @@ export async function apply(ctx, config) {
       control: { limits: config.controlLimits },
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
-    // One authenticated control transport, one envelope-v2 bridge, now hosted by the connector row
-    // (interim, M1). Without the connector the wire stays up unbridged: a throw here would fail the
-    // whole start (src/native-runtime/index.js attach), whereas before M1 a missing main row only
-    // made the bridge's operations answer feature-off. Defining connector-missing is I1's (§0.6).
-    unsubscribe = owner.onControlTransport((transport, { hostId, connectionId }) => {
+    // One authenticated control transport, one envelope-v2 bridge, attached through the contract's
+    // fishballConnector service (contract §1). The descriptor's `id` is the lifecycle host id this
+    // runtime minted, which is also the frame host identity its child stamps; the binding has no
+    // other identity to name the peer by. A replaced wire detaches before it attaches, because a
+    // child restart is a detach followed by a new attach (§1.3).
+    unsubscribe = owner.onControlTransport((transport, { hostId }) => {
       if (closed) throw unavailable(PLUGIN.code.unavailable)
       if (hostId !== owner.hostId) throw new ContractError(ERROR.host)
-      connection?.close(); connection = undefined
-      const bridge = ctx.get(PLUGIN.bridgeService)
-      if (typeof bridge?.open === 'function') connection = bridge.open(transport, { hostId, connectionId })
+      connection?.detach()
+      connection = undefined
+      // Without the connector the wire stays up unbridged, as M1 left it. A refused attach
+      // (another instance first, or a future major) leaves it unbridged too: failing the start
+      // here would take the child down, and I1 maps that refusal onto the instance's own status
+      // (inst-OQ-03).
+      const connector = ctx.get(CONNECTOR_SERVICE)
+      if (typeof connector?.attachInstance !== 'function') return
+      try {
+        connection = connector.attachInstance({ id: hostId, name: PLUGIN.displayName, contract: CONNECTOR_CONTRACT, transport })
+      } catch (error) {
+        connection = undefined
+        logger?.warn('attach refused (%s)', error?.code ?? String(error))
+      }
     })
     // The admin transport comes up with each authenticated wire (and again after a restart); the
     // relay replaces whatever it held, so a reply can never cross instances.
@@ -186,7 +197,9 @@ export async function apply(ctx, config) {
     unsubscribeProviderSync()
     admin.close()
     providerSync?.close()
-    connection?.close(); connection = undefined
+    // Disabling the instance ends its attachment; the connector returns to no-instance mode
+    // (contract §1.3, design §0.6).
+    connection?.detach(); connection = undefined
     set(PLUGIN.state.stopping)
     // Do not swallow here: HMR successor awaits confirmed teardown, not a UI status.
     disposal = (async () => {
@@ -230,8 +243,8 @@ export async function apply(ctx, config) {
     },
     // The embed broker reads the child origin and bearer from main-process memory only (§3.2).
     embedAccess: () => owner.embedAccess(),
-    // T09's approvals and T06's attachments are served by the connector's bridge (interim, M1);
-    // an operation neither supplies answers unsupported-operation (§5.2).
+    // T09's approvals and T06's attachments are served by the connector's bridge through the
+    // fishballConnector binding; an operation neither supplies answers unsupported-operation (§5.2).
   })
   ctx.provide(PLUGIN.service, service)
   registerEmbed(ctx, service)
