@@ -25,6 +25,18 @@ export const QUESTION_ANSWER = Object.freeze({
  */
 export const OWN_ANSWER = Object.freeze({ event: 'own-answer' })
 
+/**
+ * One card record for Fishball's chat (src/slim/card-record.js): the record's JSON after the
+ * marker. The child's inbox row takes it (src/slim/child/inbox.js), appends the record to
+ * Fishball's session and, for the user's own answer, tells Fishball the answer's words.
+ */
+export const RECORD_ITEM = Object.freeze({
+  kind: 'system',
+  dedupePrefix: 'card-record:',
+  text: (record) => '[card record] ' + JSON.stringify(record),
+  pattern: /^\[card record\] ([\s\S]+)$/,
+})
+
 /** A card's closure: it left the user's pile without being answered, and this is why. */
 export const CARD_CLOSED = Object.freeze({
   /** The slim relay's provider event and the inbox marker's name. */

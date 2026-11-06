@@ -31,7 +31,7 @@ window.__ModuleLoader__.load({
     const exports = module.exports
     const React = require('react')
     const {  } = require('react-dom')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconWarningOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, DisclosureRow, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconQuestionOutlineRegular, IconShieldOutlineRegular, IconWarningOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -170,6 +170,7 @@ window.__ModuleLoader__.load({
       main: 'main',
       panelList: 'sidebar.panellist',
       toolview: 'tool.call.toolview',
+      chatNode: 'conversation.chat.node',
       /** DSH's 16px cell before a session row's title, mounted only while the row is idle (dsh-client-ui-workspace, rc.2). */
       rowLeading: 'sidebar.session.row.leading',
       /**
@@ -446,7 +447,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', actions: 'fb-actions', askRow: 'fb-ask-row', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
+    const CLS = Object.freeze({ cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', actions: 'fb-actions', askRow: 'fb-ask-row', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', recordBody: 'fb-record-body', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -701,6 +702,11 @@ window.__ModuleLoader__.load({
       "syncError.changed": "DSH or Fishball changed while syncing, so nothing was written. Retry.",
       "syncErrorOther": "Models could not be synced from DSH.",
       "syncRetry": "Retry",
+      'record.question': 'Question', 'record.plan-review': 'Plan review', 'record.permission': 'Permission request',
+      'record.by.user': 'You', 'record.by.fishball': 'Fishball', 'record.place.pile': 'on the card', 'record.place.session': 'in the session',
+      'record.outcome.allowed': 'Allowed once', 'record.outcome.granted': 'Allowed and granted', 'record.outcome.rejected': 'Rejected',
+      'record.outcome.answered': 'Answered', 'record.outcome.skipped': 'Skipped', 'record.outcome.closed': 'Closed',
+      'record.from': 'From', 'record.answer': 'Answer', 'record.tool': 'Tool', 'record.arguments': 'Arguments', 'record.reason': 'Reason', 'record.note': 'Note', 'record.closed': 'Why it closed', 'record.own': 'Fishball asked you',
     }
     const zh = {
       brandName: 'FISHBALL',
@@ -953,6 +959,11 @@ window.__ModuleLoader__.load({
       "syncError.changed": "同步期间 DSH 或 Fishball 发生了变化，因此没有写入任何内容。请重试。",
       "syncErrorOther": "无法从 DSH 同步模型。",
       "syncRetry": "重试",
+      'record.question': '问题', 'record.plan-review': '计划审阅', 'record.permission': '权限请求',
+      'record.by.user': '你', 'record.by.fishball': 'Fishball', 'record.place.pile': '在卡片上', 'record.place.session': '在会话中',
+      'record.outcome.allowed': '已允许一次', 'record.outcome.granted': '已允许并授权', 'record.outcome.rejected': '已拒绝',
+      'record.outcome.answered': '已回答', 'record.outcome.skipped': '已跳过', 'record.outcome.closed': '已关闭',
+      'record.from': '来自', 'record.answer': '回答', 'record.tool': '工具', 'record.arguments': '参数', 'record.reason': '理由', 'record.note': '备注', 'record.closed': '关闭原因', 'record.own': 'Fishball 问你',
     }
 
     const css = [
@@ -980,6 +991,7 @@ window.__ModuleLoader__.load({
       `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} ${BRAND_TAG.fontFamily};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
       `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
+      `.${CLS.recordBody}{display:flex;flex-direction:column;gap:4px;padding:4px 0 4px 22px;font:var(--dsw-font-xs-13);color:var(--dsw-alias-label-secondary)}`,
       // The Fishball view (§7) fills DSH's main area as a session does: DSH's conversation root,
       // its header (border, padding, the leading clearance a hidden macOS sidebar leaves) and its
       // name style; the frame takes the rest.
@@ -2361,6 +2373,62 @@ window.__ModuleLoader__.load({
      * tool, so this entry is the whole row: what is asked, whether it waits for Fishball or for you,
      * and Allow once / Reject once the request is your card (Reading: not while Fishball decides).
      */
+    /**
+     * The card record (src/slim/card-record.js; keep CARD_RECORD in step with it): a plugin record
+     * DSH sends to the browser but never to the model. One conversation definition turns each record
+     * into a chat node at its own place in the log, in a managed session's view and in Fishball's
+     * (both are DSH's own session view), and the node is DSH's collapsed DisclosureRow: one line
+     * with the kind, the outcome, who and when; expanded, the questions or the call, the answer and
+     * the note. No new chat primitive: DSH's own row, its own icons and the existing fb-* classes.
+     */
+    const CARD_RECORD = Object.freeze({ type: 'plugin:fishball/card-record', version: 1, kind: 'fishball-card-record', node: 'fishball-card-record', permission: 'permission', iconPx: 14, separator: ' · ' })
+    /** Who and where, as one phrase: "You · on the card", or "Fishball". A closure names no one. */
+    const recordWho = (record, t) => record.by === undefined ? '' : [t('record.by.' + record.by), ...(record.place === undefined ? [] : [t('record.place.' + record.place)])].join(' ')
+    const cardRecordDefinition = Object.freeze({
+      kind: CARD_RECORD.kind,
+      target: 'chat',
+      match: (event) => event.type === CARD_RECORD.type && event.data?.v === CARD_RECORD.version && typeof event.data.id === 'string' ? { id: event.data.id, role: 'start' } : null,
+      start: (_context, match) => ({ seq: match.event.seq, record: match.event.data }),
+      update: (context) => context.state,
+      // Outside the turn's process group ("turn"), so a record written while the turn runs is not
+      // folded into its tool-call steps; at the record's own seq, so it reads where the card ended.
+      buildViewNode: (context) => context.state === undefined ? null : {
+        key: context.key, kind: CARD_RECORD.node, id: context.id, target: 'chat', anchorSeq: context.state.seq,
+        location: context.start?.location ?? { kind: 'unresolved' }, visibility: 'visible', groupTree: 'turn', data: context.state.record,
+      },
+    })
+    function makeCardRecordView(t) {
+      return function FishballCardRecord({ node }) {
+        const record = node.data
+        const [open, setOpen] = React.useState(false)
+        const questions = Array.isArray(record.questions) ? record.questions : []
+        const first = questions[0]
+        const title = record.own === true ? t('record.own') : t('record.' + record.kind)
+        const line = [
+          record.kind === CARD_RECORD.permission ? record.tool : first?.header || first?.question,
+          t('record.outcome.' + record.outcome) + (record.answer ? ': ' + record.answer : ''),
+          recordWho(record, t),
+          new Date(record.at).toLocaleString(),
+        ].filter(Boolean).join(CARD_RECORD.separator)
+        const from = record.from === undefined ? null : labelled(t('record.from'), record.from.title || record.from.sessionId)
+        return h(DisclosureRow, {
+          icon: h(record.kind === CARD_RECORD.permission ? IconShieldOutlineRegular : IconQuestionOutlineRegular, { size: CARD_RECORD.iconPx }),
+          title, collapsedContent: h('span', { className: CLS.muted }, CARD_RECORD.separator + line),
+          open, expandable: true, expandOnRowClick: true, onToggle: () => setOpen((value) => !value),
+        }, h('div', { className: CLS.recordBody, 'data-fishball-card-record': record.cardId },
+          from,
+          ...questions.map((item, index) => h('div', { key: index },
+            h('div', null, item.header ? item.header + ': ' + item.question : item.question),
+            Array.isArray(item.options) && item.options.length > 0 ? h('div', { className: CLS.muted }, item.options.join(CARD_RECORD.separator)) : null)),
+          record.tool ? labelled(t('record.tool'), record.tool) : null,
+          record.arguments ? h('pre', { className: CLS.pre, 'aria-label': t('record.arguments') }, record.arguments) : null,
+          record.reason ? labelled(t('record.reason'), record.reason) : null,
+          record.answer ? labelled(t('record.answer'), record.answer) : null,
+          record.note ? labelled(t('record.note'), record.note) : null,
+          record.closed ? labelled(t('record.closed'), record.closed) : null))
+      }
+    }
+
     function makeAskRow(t) {
       return function FishballAskRow({ callId, phase, block }) {
         const state = useFishball()
@@ -2509,6 +2577,11 @@ window.__ModuleLoader__.load({
       // 0.2.2 keeps a row's trailing seat mounted while it runs; rc.3 has no such seat and this waits.
       ctx.effect(() => ctx.slots.inject(SLOT.rowTrailing, () => ctx.slots.register({ name: SLOT.rowTrailing, id: MANAGED_ROW.id, locale: NS }, makeManagedRowRunningMark(t))), 'fishball: managed row running mark')
       ctx.effect(() => ctx.slots.inject(SLOT.toolview, () => ctx.slots.register({ name: SLOT.toolview, key: ASK_ROW.tool, locale: NS }, makeAskRow(t))), 'fishball: ask_fishball row')
+      // Card records in any DSH session view; read on demand, so an older DSH without the service keeps working.
+      ctx.inject(['uiConversation'], (scope) => {
+        scope.effect(() => scope.uiConversation.events.register(cardRecordDefinition), 'fishball: card record definition')
+      })
+      ctx.effect(() => ctx.slots.inject(SLOT.chatNode, () => ctx.slots.register({ name: SLOT.chatNode, key: CARD_RECORD.node, locale: NS }, makeCardRecordView(t))), 'fishball: card record row')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
         const Settings = makeSettingsPage(section, makeNativeSettings(t), makeModelSettings(t), makeChildPlugins(t), makeChildSettings(t, (text) => ctx.locale.resolveText(text)), makeBrandStyle(t), t)

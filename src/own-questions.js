@@ -23,6 +23,7 @@ import { randomUUID } from 'node:crypto'
 import { CARD_END, QUESTION_ERROR, QUESTION_KIND } from './constants.js'
 import { answerWords, batchFor } from './questions.js'
 import { OWN_ANSWER } from './slim/inbox-markers.js'
+import { CARD_RECORD } from './slim/card-record.js'
 
 /** What one own question's card shows and how it is answered; nothing here is a timer. */
 export const OWN_QUESTION = Object.freeze({
@@ -38,6 +39,7 @@ export const OWN_QUESTION = Object.freeze({
 export class OwnQuestions {
   #pile
   #readLimits
+  #records
   #listeners = new Set()
   /** questionId -> { sessionId, questions } for the cards still in the pile. */
   #open = new Map()
@@ -47,10 +49,13 @@ export class OwnQuestions {
    * settling a card needs no second notification from here.
    * @param pile - the user's pile (src/pile.js); its onClose announces a closure without an answer.
    * @param deps.readLimits - () => limits (rationaleChars bounds the answer's words).
+   * @param deps.records - CardRecords (src/card-records.js); Fishball's own question has only
+   *   Fishball's copy, because Fishball's chat is the session that asked.
    */
-  constructor(pile, { readLimits }) {
+  constructor(pile, { readLimits, records }) {
     this.#pile = pile
     this.#readLimits = readLimits
+    this.#records = records
   }
 
   /**
@@ -116,6 +121,7 @@ export class OwnQuestions {
     if (!settled) return { code: QUESTION_ERROR.expired }
     // The words travel like a question sent to the user: one inbox item, one chat row (§5.2, T09).
     this.#emit({ type: OWN_ANSWER.event, questionId, sessionId: entry.sessionId, words: answerWords(built.batch.answers, this.#readLimits().rationaleChars) })
+    this.#records.question({ id: questionId, sessionId: entry.sessionId, kind: OWN_QUESTION.kind, questions: entry.questions }, { by: CARD_RECORD.by.user, place: CARD_RECORD.place.pile, answers: built.batch.answers, own: true })
     return undefined
   }
 
