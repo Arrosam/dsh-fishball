@@ -7,7 +7,7 @@ decisions win. Nothing in this contract is open.
 
 This contract is what an **instance** implements to drive DSH sessions through the **connector**.
 A third-party instance needs only this document and the connector's `./contract` export (today
-`src/connector/contract.js`).
+`packages/connector/contract/contract.js`).
 
 Contents: 0 terms and decisions · 1 binding · 2 versions · 3 frames (envelope v2) ·
 4 operations · 5 events · 6 vocabularies · 7 errors · 8 limits · 9 no-instance behaviour ·
@@ -465,7 +465,7 @@ code is invalid, and an unexpected failure is always `operation-failed`.
 
 ## 8. Limits
 
-All limits are `LIMITS` in the connector's `./contract` (today `src/connector/limits.js`). A value
+All limits are `LIMITS` in the connector's `./contract` (today `packages/connector/contract/limits.js`). A value
 at the limit is accepted; one above it is refused (`limit-exceeded`, or the code named).
 
 | Limit | Value | Applies to |
@@ -526,8 +526,8 @@ still stands. `queue-full` is a connector intake code, not a frame code: no fram
 
 ## 10. Module index
 
-Everything the `./contract` module exports (`src/connector/contract.js`, re-exported unchanged
-from `src/slim/contract.js`):
+Everything the `./contract` module exports (`packages/connector/contract/contract.js`, re-exported
+unchanged from `packages/connector/contract/index.js`):
 
 - binding: `CONNECTOR_SERVICE`, `CONNECTOR_SERVICE_API`, `CONNECTOR_CONTRACT`, `ATTACH_ERROR`,
   `TRANSPORT_METHODS`, `BROWSER_MESSAGE`, `validateAttachment`, `negotiateContract`;
@@ -538,6 +538,7 @@ from `src/slim/contract.js`):
 - vocabularies: those of §6, plus `DIGEST`;
 - errors: `ERROR`, `ContractError` (`.code`) and `fail(code)`;
 - limits: `LIMITS`;
+- shared wording: `PILE_NOTE`, the pile-note guide the instance's persona and the connector's tools both use (`pile-note.js`);
 - built-in instance only, not needed by a third party: `ROUTES`, `ADMISSION`, `BEARER`.
 
 Every helper below **throws** `ContractError` (`.code`) on failure, except `makeEnvelope`, which

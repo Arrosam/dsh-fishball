@@ -25,7 +25,8 @@
  * State comes from GET /api/fishball/events (server-sent snapshots).
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-fishball',
+  // DSH's client module system registers a bundle under its package name (dsh-client-modules).
+  id: 'fishball-connector',
   factory(require) {
     const module = { exports: {} }
     const exports = module.exports
@@ -34,9 +35,9 @@ window.__ModuleLoader__.load({
     const { BrandWordmark, Button, DisclosureRow, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconQuestionOutlineRegular, IconShieldOutlineRegular, IconWarningOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
-    const PACKAGE_NAME = 'dsh-fishball'
-    /** Host row id; also the settings namespace configForms serves (cordis.patch.yml). */
-    const ENTRY_ID = 'fishball'
+    const PACKAGE_NAME = 'fishball-connector'
+    /** Host row id; also the settings namespace configForms serves (cordis.patch.yml, design §0.2 D22). */
+    const ENTRY_ID = 'fishball-connector'
     const NS = 'fishball'
     const BRAND_PRIORITY = -1
     /** Client services read on demand (not injected: Fishball works without each of them). */

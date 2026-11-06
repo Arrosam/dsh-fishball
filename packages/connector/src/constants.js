@@ -2,13 +2,13 @@
  * Fixed values owned by Fishball. Runtime-tunable safety limits are NOT here: they are
  * the row's config (src/config.js), which the user edits on the Plugins page.
  */
-// PILE_NOTE stays imported from this module for every existing caller. It lives in its own
-// file so the slim child can copy the persona's one text dependency without this whole module.
-export { PILE_NOTE } from './pile-note.js'
+// PILE_NOTE stays imported from this module for every existing caller. It is shared wording of
+// the contract (`./contract`), because the instance's persona reads the same text (M1).
+export { PILE_NOTE } from '../contract/pile-note.js'
 
-/** Package identity and log channel. */
+/** Package identity and log channel. The row id is the plugin's name (design §0.2, D22). */
 export const PLUGIN = Object.freeze({
-  name: 'dsh-fishball',
+  name: 'fishball-connector',
   logger: 'fishball',
 })
 
@@ -30,31 +30,8 @@ export const STATUS = Object.freeze({
 /** Stable error codes; message text never reaches logs or the browser. */
 export const ERROR = Object.freeze({ storeUnreadable: 'store-unreadable' })
 
-/** Where a catalog plugin runs (DESIGN §4 "Plugin states"). */
-export const PLUGIN_KIND = Object.freeze({
-  /** Enabled in the profile: runs for every session; Fishball can only mask it. */
-  profile: 'profile',
-  /** Installed but off in the profile: runs in Fishball's private tree when on. */
-  fishballOnly: 'fishball-only',
-  /** A DSH capability package Fishball mounts in its private tree when on. */
-  builtin: 'builtin',
-  /**
-   * Installed by Fishball for itself alone, in its own package folder (src/fishball-packages.js),
-   * never in the DSH profile; runs in its private tree when on. A package of the same name may
-   * also be a DSH plugin: the two are separate catalog entries.
-   */
-  fishballInstalled: 'fishball-installed',
-})
-
-/**
- * Catalog key prefix of a Fishball-installed plugin (DESIGN §4): its key is this plus the package
- * name, so it never collides with a DSH plugin of the same name (whose key is the bare name).
- */
-export const FISHBALL_INSTALLED_PREFIX = 'fishball:'
-
 /** Actions a catalog plugin offers; which ones depends on its status (src/plugin-catalog.js). */
 export const PLUGIN_OFFER = Object.freeze({ enable: 'enable', disable: 'disable', uninstall: 'uninstall' })
-
 
 /** Why installing or removing a Fishball-installed package failed (add_plugin's `reason`). */
 export const PACKAGE_ERROR = Object.freeze({
@@ -628,6 +605,12 @@ export const SERVICE = Object.freeze({
   sessions: 'sessions',
   /** Reads a stopped session's log without making it live (src/session-info.js persistedEventsOf). */
   sessionQuery: 'sessionQuery',
+  /**
+   * The bridge's start-with-a-model path reads ctx.llm (src/model-catalog.js). Before M1 the native
+   * host row injected it; the session port now lives on this row (src/slim/host/interim-bridge.js).
+   * sessionController already depends on llm, so this adds no new reason for the row to restart.
+   */
+  llm: 'llm',
 })
 
 /** Optional services read with ctx.get (Fishball works without them, with less shown). */
