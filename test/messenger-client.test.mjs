@@ -87,7 +87,9 @@ describe('P11 the messenger package', () => {
       const root = path.join(REPO, 'packages', dir)
       const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
       assert.ok(!(pkg.files ?? []).includes(MESSENGER.filesEntry), dir + ' files lists ' + MESSENGER.filesEntry + ': ' + JSON.stringify(pkg.files))
-      const r = spawnSync(NPM, ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: root, encoding: 'utf8', env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '' } })
+      // npm_config_cache passes through so a sandboxed run can point npm at a writable cache.
+      const cache = process.env.npm_config_cache ? { npm_config_cache: process.env.npm_config_cache } : {}
+      const r = spawnSync(NPM, ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: root, encoding: 'utf8', env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '', ...cache } })
       assert.equal(r.status, 0, dir + ' npm pack --dry-run: ' + (r.stderr ?? '').slice(-1000))
       const packed = JSON.parse(r.stdout)[0].files.map((f) => f.path)
       assert.ok(!packed.some((p) => p.startsWith(MESSENGER.filesEntry)), dir + ' packs ' + JSON.stringify(packed.filter((p) => p.startsWith('packages/'))))
