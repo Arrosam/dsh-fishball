@@ -1,4 +1,7 @@
-/** Native lifecycle host: enabled on appReady; failure never aborts main boot. */
+/**
+ * The fishball-instance row (was native-host.js): starts the built-in instance's private child DSH
+ * after main appReady; failure never aborts main boot.
+ */
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
 import { LIFETIME } from './src/native-runtime/constants.js'
@@ -10,13 +13,15 @@ import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
 import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes.js'
 import { createChildProviderSync } from './src/provider-sync-service.js'
 import { ContractError, ERROR } from './src/slim/contract.js'
-import { createBridgeHost } from './src/slim/host/bridge.js'
-import { createSessionPort } from './src/slim/host/session-port.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
-import { createApprovalRelay } from './src/slim/host/approvals.js'
 
 const PLUGIN = Object.freeze({
-  name: 'fishball-native-host', service: 'nativeFishballRuntime',
+  // The row id is the plugin's name (design §0.2, D22); the service keeps its name for its callers.
+  name: 'fishball-instance', service: 'nativeFishballRuntime',
+  // INTERIM (M1): the connector's session bridge, read with ctx.get because the instance may import
+  // nothing of the connector but ./contract. C1/I1 replace it with fishballConnector.attachInstance;
+  // the connector names it in src/slim/host/interim-bridge.js (INTERIM_BRIDGE.service).
+  bridgeService: 'fishballConnectorBridge',
   // Every service this row's ctx reads as a property must be listed: Cordis's context proxy
   // throws `cannot get property "<name>" without inject` for any other (0.2.1-rc.5 and
   // 0.2.2-rc.1 alike); ctx.get() is the only unchecked read. Each one below has the same name
@@ -29,9 +34,8 @@ const PLUGIN = Object.freeze({
     // above anyway. llm is already a dependency of sessionController and credentials of
     // connection, so listing them adds no new reason for this row (and its child) to restart.
     'llm', 'settings', 'configEditor', 'credentials', 'authorization',
-    // The session port's start-with-a-model path reads ctx.llm (src/model-catalog.js) and
-    // ctx.sessionProjections (src/session-model.js); sessionController already requires both.
-    'sessionProjections'],
+    // The session port moved to the connector row in M1, which now injects what its model path reads.
+  ],
   cleanup: 'fishball native host: stop owned child and retain private data',
   minimumLimit: 1,
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
@@ -78,15 +82,10 @@ export async function apply(ctx, config) {
   let startup
   let disposal
   let cancelReady = () => {}
-  const hosts = new Map()
   let connection
   let unsubscribe = () => {}
   let unsubscribeAdmin = () => {}
   let unsubscribeProviderSync = () => {}
-  /** The bridge's session service: the main Fishball row's registries plus the DSH services its tools use. */
-  let sessions
-  /** T09's approval/question/prompt/grant operations and the cards they offer the child. */
-  let approvals
   /** T16's source side: syncs the main profile's API-key providers into the child's own target. */
   let providerSync
   const status = () => ({ enabled, state, code })
@@ -104,8 +103,6 @@ export async function apply(ctx, config) {
   try {
     // Created once per host row and shared by every host object; a wiring failure is a native
     // failure, never a main-boot failure (the catch below keeps the row unready).
-    sessions = createSessionPort(ctx, { enabled: () => enabled && !closed })
-    approvals = createApprovalRelay({ ctx, sessions })
     // T16: the child is the sync target. The source host reads the main profile's API-key
     // records only inside the sync's confirm step; the page never sees a value (§10).
     providerSync = createChildProviderSync({ ctx })
@@ -121,21 +118,16 @@ export async function apply(ctx, config) {
       control: { limits: config.controlLimits },
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
-    // One authenticated control transport, one envelope-v2 bridge. The v1 control row is gone,
-    // so a foreign frame can no longer close the wire (src/slim/host/bridge.js's receive rule).
+    // One authenticated control transport, one envelope-v2 bridge, now hosted by the connector row
+    // (interim, M1). Without the connector the wire stays up unbridged: a throw here would fail the
+    // whole start (src/native-runtime/index.js attach), whereas before M1 a missing main row only
+    // made the bridge's operations answer feature-off. Defining connector-missing is I1's (§0.6).
     unsubscribe = owner.onControlTransport((transport, { hostId, connectionId }) => {
       if (closed) throw unavailable(PLUGIN.code.unavailable)
       if (hostId !== owner.hostId) throw new ContractError(ERROR.host)
-      let host = hosts.get(hostId)
-      if (!host) {
-        host = createBridgeHost({ hostId, sessions })
-        // The nine T09 operations enter this host's welcome; the relay also re-offers the live
-        // cards on every new connection (the host never replays an answer).
-        approvals.attach(host)
-        hosts.set(hostId, host)
-      }
-      connection?.close()
-      connection = host.attach(transport, { connectionId })
+      connection?.close(); connection = undefined
+      const bridge = ctx.get(PLUGIN.bridgeService)
+      if (typeof bridge?.open === 'function') connection = bridge.open(transport, { hostId, connectionId })
     })
     // The admin transport comes up with each authenticated wire (and again after a restart); the
     // relay replaces whatever it held, so a reply can never cross instances.
@@ -193,10 +185,8 @@ export async function apply(ctx, config) {
     unsubscribeAdmin()
     unsubscribeProviderSync()
     admin.close()
-    approvals?.close()
     providerSync?.close()
-    for (const host of hosts.values()) host.close()
-    hosts.clear(); connection = undefined
+    connection?.close(); connection = undefined
     set(PLUGIN.state.stopping)
     // Do not swallow here: HMR successor awaits confirmed teardown, not a UI status.
     disposal = (async () => {
@@ -240,9 +230,8 @@ export async function apply(ctx, config) {
     },
     // The embed broker reads the child origin and bearer from main-process memory only (§3.2).
     embedAccess: () => owner.embedAccess(),
-    // T09's approvals, questions, prompts and grants are registered on each host by the relay;
-    // T06's attachment.read/put come from the session port's image port. An operation neither
-    // supplies answers unsupported-operation (§5.2).
+    // T09's approvals and T06's attachments are served by the connector's bridge (interim, M1);
+    // an operation neither supplies answers unsupported-operation (§5.2).
   })
   ctx.provide(PLUGIN.service, service)
   registerEmbed(ctx, service)

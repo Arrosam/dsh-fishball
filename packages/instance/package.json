@@ -1,0 +1,44 @@
+{
+  "name": "fishball-instance",
+  "version": "0.1.0",
+  "description": "The built-in Fishball instance: runs Fishball in its own private DSH profile attached to the main DSH, and binds to fishball-connector through its contract.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./host.js",
+  "exports": {
+    ".": "./host.js",
+    "./native-runtime": "./src/native-runtime/index.js",
+    "./native-control": "./src/native-control/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "host.js",
+    "native-child.js",
+    "src/",
+    "cordis.patch.yml",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. fishball-connector is the connector this instance binds to: only its ./contract export is imported (design §0.2); ^1 is its contract major.",
+  "peerDependencies": {
+    "fishball-connector": "^1",
+    "@deepseek-ai/cosmokit": "*",
+    "@deepseek-ai/dsh-app-boot": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-llm-pi-ai": "*",
+    "@deepseek-ai/dsh-sandbox-policy": "*",
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-system-prompt": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/dsh-user-approval": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
