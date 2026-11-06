@@ -120,8 +120,9 @@ export function createInboxConsumer(options) {
   async function receive(item) {
     if (isApprovalsItem(item)) return false
     const record = recordOf(item)
-    // A card record is a visible row in Fishball's chat, never a turn; the user's own answer is
-    // also told to Fishball without a wake, so it reads the words at its next step.
+    // A card record is a visible row in Fishball's chat, never a turn by itself; the user's own
+    // answer is also told to Fishball as a notice that wakes it like any inbox item, so it reads
+    // the words (labels, custom text, a decision's note) at once (7713 N9-b).
     if (record !== undefined) {
       await chat.recordCard(record, record.by === CARD_RECORD.by.user ? TEXT.answered(record) : undefined)
       return true
