@@ -17,7 +17,8 @@
  * - src/grants.js          standing grants: calls they cover run without waking Fishball
  * - src/result-wording.js  what an agent reads after Fishball answered its direct call
  * - src/preferences.js     your display choices (the sidebar brand icon and entry)
- * - src/http.js            /api/fishball/* for the brand, the session-row marks and Hand over
+ * - src/http.js            /api/fishball/* for the brand, the session-row marks, Hand over and the
+ *                           connector's frame (the attached instance's view and its Retry)
  * An instance reaches all of this only through the contract's `fishballConnector` service
  * (src/connector-service.js), which binds one instance's transport to this row's own state
  * (fishballSessionState) and the bridge (src/slim/host/*).
@@ -65,7 +66,14 @@ export async function apply(ctx, config) {
   /** The row is live once its store is open; it never waits on the child (the bridge reports that). */
   let status = { status: STATUS.live, error: null }
   let views = {}
-  const snapshot = () => ({ ...status, sessionId: FISHBALL.sessionId, limits: limits(), ...Object.fromEntries(Object.entries(views).map(([key, view]) => [key, view()])) })
+  /**
+   * The row's internal view of the attached instance (src/connector-service.js), set just below.
+   * It feeds the frame's routes and the `instance` field of the snapshot, so an open view follows
+   * an attach or a detach at once (conn-OQ-26); status() itself has no event in v1, so the view
+   * also polls its route (conn-OQ-25).
+   */
+  let binding
+  const snapshot = () => ({ ...status, sessionId: FISHBALL.sessionId, limits: limits(), ...(binding === undefined ? {} : { instance: binding.view() }), ...Object.fromEntries(Object.entries(views).map(([key, view]) => [key, view()])) })
   const publish = () => feed.publish(snapshot())
   const commands = { send: unavailable, setManaged: unavailable, answerRequest: unavailable, setQuestionMode: unavailable, setBrandStyle: unavailable, setSidebarEntry: unavailable }
   registerRoutes(ctx, {
@@ -77,11 +85,13 @@ export async function apply(ctx, config) {
     setQuestionMode: (mode) => commands.setQuestionMode(mode),
     setBrandStyle: (style) => commands.setBrandStyle(style),
     setSidebarEntry: (entry) => commands.setSidebarEntry(entry),
+    instance: () => binding.view(),
+    retryInstance: () => binding.retry(),
   })
   // The binding exists from apply, independent of the store, so an instance can attach even
   // before this row's registries are up: with no session state the bridge answers feature-off
   // instead of the instance failing to connect (contract §1, §9).
-  provideConnectorService(ctx)
+  binding = provideConnectorService(ctx, { onChange: () => publish() })
 
   let store
   try {

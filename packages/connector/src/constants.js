@@ -547,6 +547,14 @@ export const API = Object.freeze({
   brand: '/api/fishball/brand',
   /** POST { entry }: whether the sidebar has a Fishball row or only the brand button (SIDEBAR_ENTRY). */
   sidebarEntry: '/api/fishball/sidebar-entry',
+  /**
+   * GET: the attached instance as the connector's frame shows it (design §0.5 "The frame", D27):
+   * {attached, name, ui, state, code, canRetry, attachCount}. The browser reads the instance only
+   * here and in the state stream, never through an instance's own routes.
+   */
+  connectorInstance: '/api/fishball/connector/instance',
+  /** POST, no body: the frame's Retry, which awaits the attached instance's own retry(). */
+  connectorInstanceRetry: '/api/fishball/connector/instance/retry',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
