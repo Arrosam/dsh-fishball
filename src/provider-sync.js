@@ -9,7 +9,7 @@ export const PROVIDER_SYNC = Object.freeze({
   unsafe: Object.freeze(['__proto__', 'prototype', 'constructor']),
   /** The DSH credential kind of a login (OAuth/subscription) record; never copied. */
   grantKind: 'grant',
-  reason: Object.freeze({ oauth: 'oauth-login', noKey: 'no-api-key', unsupported: 'unsupported-provider', credentialExists: 'credential-exists',
+  reason: Object.freeze({ oauth: 'oauth-login', noKey: 'no-api-key', envUnset: 'api-key-env-unset', unsupported: 'unsupported-provider', credentialExists: 'credential-exists',
     incompatible: 'incompatible-owner-or-schema', conflict: 'provider-conflict', notWritable: 'credential-not-writable',
     revision: 'missing-revision' }),
 })
@@ -65,6 +65,14 @@ const freshPeer = (source, peer) => identity(peer) && same(source.identity, peer
 const versionMatch = (a, b) => a.version === b.version && a.schemaVersion === b.schemaVersion
 const recordValid = (record) => plain(record) && record.kind === 'api-key' && text(record.key)
   && Object.keys(record).every((key) => ['kind', 'key'].includes(key))
+/**
+ * Why a provider with no copyable key is skipped. Since 2026-11-06 (user decision) a key from the
+ * profile's apiKeyEnv is copied like a stored one (src/provider-sync-host.js resolves it in the
+ * main process); while that variable is unset or empty there it gets its own reason, so the page
+ * can say which variable-side fix is needed instead of "no key".
+ */
+const missingKeyReason = (entry) => entry.credential?.configured ? PROVIDER_SYNC.reason.unsupported
+  : entry.keyFromEnv === true ? PROVIDER_SYNC.reason.envUnset : PROVIDER_SYNC.reason.noKey
 /** A login (grant record) is never copied; its own reason lets the page say "log in inside Fishball". */
 const oauthLogin = (entry) => entry.credential?.configured === true && entry.credential.kind === PROVIDER_SYNC.grantKind
 /**
@@ -116,7 +124,7 @@ export class ProviderSyncEngine {
       if ((!safe && !keyOnlyRoute) || !entry.supported || entry.owner !== PROVIDER_SYNC.owner || entry.credential?.kind !== 'api-key'
         || !entry.credential.configured || (!entry.declared && !entry.apiKeyMethod)) {
         if (!oauthLogin(entry)) {
-          groups.unsupported.push(dto(display, entry.credential?.configured ? PROVIDER_SYNC.reason.unsupported : PROVIDER_SYNC.reason.noKey))
+          groups.unsupported.push(dto(display, missingKeyReason(entry)))
           continue
         }
         // Already signed in inside the target: nothing to do there, so it reads as present.
