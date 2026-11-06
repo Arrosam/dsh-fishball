@@ -1007,7 +1007,7 @@ export class ApprovalBroker {
     // escalate answer on a direct call takes its own tool path, but this is the one place a
     // timeout, an undelivered notice and an escalate all land.
     if (toPile) this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: APPROVAL_DECISION.escalate, by: SETTLED_BY.fishball })
-    const { outcome, by, note } = await this.#passOn(via, request, toPile ? this.#cardOf(request, result) : undefined)
+    const { outcome, by, note, cardGone } = await this.#passOn(via, request, toPile ? this.#cardOf(request, result) : undefined)
     // Your Reject note on the card reaches the agent only through the post-execute rewrite (§7a.4 Reading).
     if (by === PROMPT_BY.pile && outcome === APPROVAL_OUTCOME.rejected && note !== undefined) this.#wording.mark(request.callId, request.sessionId, request.toolName, { kind: WORDING.userReject, note })
     // As in P7: a prompt that ended cancelled (Stop, the turn ended) is audited as withdrawn.
@@ -1016,7 +1016,11 @@ export class ApprovalBroker {
     else if (by === PROMPT_BY.pile) await this.#clicked(request.sessionId, request.id, outcome, outcome === APPROVAL_OUTCOME.rejected ? note !== undefined : undefined)
     // The user's own Allow once / Reject, on the card or on the session's prompt (a cancelled or
     // unavailable outcome is no answer; the card's closure, if any, is recorded by cardClosed).
-    if ((by === PROMPT_BY.pile || by === PROMPT_BY.session) && RECORD_OF_OUTCOME[outcome] !== undefined) {
+    // One record per card (7713 N1): a card that already closed beside the prompt (Take back,
+    // Fishball off, ...) was recorded then, so the user's later click on the still-open prompt
+    // adds none. DSH already shows that answer in the session itself.
+    const recorded = by === PROMPT_BY.pile || (by === PROMPT_BY.session && !cardGone)
+    if (recorded && RECORD_OF_OUTCOME[outcome] !== undefined) {
       this.#records.permission(request, { by: CARD_RECORD.by.user, place: by === PROMPT_BY.pile ? CARD_RECORD.place.pile : CARD_RECORD.place.session, outcome: RECORD_OF_OUTCOME[outcome], note })
     }
     return outcome
@@ -1048,7 +1052,9 @@ export class ApprovalBroker {
    * shows (after your click it does nothing); the next answerer's rejection then is expected.
    * @param call - { sessionId (the root), session, toolName, callId, args }.
    * @param card - the card to file beside the prompt (a direct call sent to you), or undefined.
-   * @returns Promise<{ outcome, by: PROMPT_BY, note? }>: `note` is your Reject note on the card.
+   * @returns Promise<{ outcome, by: PROMPT_BY, note?, cardGone }>: `note` is your Reject note on the
+   *   card; `cardGone` says the card filed beside the prompt had already left the pile when this
+   *   settle came (your answer on it, or a closure cardClosed already recorded).
    */
   #passOn({ target, req, next }, call, card) {
     const asker = req.signal
@@ -1072,8 +1078,9 @@ export class ApprovalBroker {
         // The card's end names how it really left: your answer in the session (or Fishball's
         // answer_prompt) settles it elsewhere, a cancelled call cancels it, and a prompt that
         // could take no answer (its browser gone, or the answerer failed) closes it visibly.
-        if (card !== undefined) this.#pile.settle(card.requestId, { end: cardEndOf(result) })
-        resolve(ready === undefined ? result : ready.then(() => result))
+        const cardGone = card !== undefined && !this.#pile.settle(card.requestId, { end: cardEndOf(result) })
+        const settledResult = { ...result, cardGone }
+        resolve(ready === undefined ? settledResult : ready.then(() => settledResult))
         return true
       }
       this.#prompts.set(id, {
