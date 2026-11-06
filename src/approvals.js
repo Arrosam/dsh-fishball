@@ -688,6 +688,7 @@ export class ApprovalBroker {
       case APPROVAL_ANSWER.withdrawn:
         return end(ASK_ERROR.cancelled)
       case APPROVAL_ANSWER.released:
+        this.#closeOffer(request, result, CARD_END.released)
         return end(ASK_RESULT.noLongerManaged)
       default:
         // Fishball going off: the agent makes the call itself and you are asked in the session (§7a.5).
@@ -831,6 +832,8 @@ export class ApprovalBroker {
         this.#onChange()
         // The slim child gets its card before the legacy notice: a slow ledger never delays it.
         this.#emit({ type: OFFER.event.offered, approvalId: id, sessionId: request.sessionId, descriptor: this.#offerOf(request) })
+        // The child holds a card for it now: a release must close that card (#closeOffer, 7713 N8).
+        request.offered = true
         try {
           await this.#ledger.publish({
             kind: INTAKE_KIND.approval,
@@ -867,6 +870,21 @@ export class ApprovalBroker {
    */
   cardClosed(card, end) {
     if (closeCard(card, end, (event) => this.#emit(event))) this.#records.closed(card, end)
+  }
+
+  /**
+   * A request that ended while still in Fishball's answer window (7713 N8). It was never filed in
+   * the pile, so the pile's closure (releaseSession's settleWhere) cannot reach it, and nothing
+   * else retracts the child's live card. Close it as a pile card closes: one CARD_CLOSED item to
+   * the child (queued on the host's inbox, so a child that is down gets it after Retry) and one
+   * closed record (cardClosed above).
+   * @param result - how the round ended (released). @param end - a CARD_END closure.
+   * @returns whether the child had the card (then its record is written here, once).
+   */
+  #closeOffer(request, result, end) {
+    if (request.offered !== true) return false
+    this.cardClosed(this.#cardOf(request, result), end)
+    return true
   }
 
   /** Answer a waiting request once; @returns whether it was still waiting. */
@@ -1007,6 +1025,12 @@ export class ApprovalBroker {
     // escalate answer on a direct call takes its own tool path, but this is the one place a
     // timeout, an undelivered notice and an escalate all land.
     if (toPile) this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: APPROVAL_DECISION.escalate, by: SETTLED_BY.fishball })
+    // Released (Take back, release_session) inside the answer window, or just after Fishball's
+    // escalate and before this ran: no pile card follows, so the child's card (or its waiting
+    // label) closes now, before the prompt shows, and that closure is the card's one record (7713 N8).
+    // Fishball's ask already settled the child's card (answerApproval), so it has nothing to close.
+    const childHolds = result.answer !== APPROVAL_ANSWER.ask
+    const offerClosed = childHolds && !toPile && !this.#isManaged(request.sessionId) && this.#closeOffer(request, result, CARD_END.released)
     const { outcome, by, note, cardGone } = await this.#passOn(via, request, toPile ? this.#cardOf(request, result) : undefined)
     // Your Reject note on the card reaches the agent only through the post-execute rewrite (§7a.4 Reading).
     if (by === PROMPT_BY.pile && outcome === APPROVAL_OUTCOME.rejected && note !== undefined) this.#wording.mark(request.callId, request.sessionId, request.toolName, { kind: WORDING.userReject, note })
@@ -1018,8 +1042,9 @@ export class ApprovalBroker {
     // unavailable outcome is no answer; the card's closure, if any, is recorded by cardClosed).
     // One record per card (7713 N1): a card that already closed beside the prompt (Take back,
     // Fishball off, ...) was recorded then, so the user's later click on the still-open prompt
-    // adds none. DSH already shows that answer in the session itself.
-    const recorded = by === PROMPT_BY.pile || (by === PROMPT_BY.session && !cardGone)
+    // adds none. DSH already shows that answer in the session itself. The same holds for a card
+    // closed in the answer window by a release (offerClosed, 7713 N8).
+    const recorded = by === PROMPT_BY.pile || (by === PROMPT_BY.session && !cardGone && !offerClosed)
     if (recorded && RECORD_OF_OUTCOME[outcome] !== undefined) {
       this.#records.permission(request, { by: CARD_RECORD.by.user, place: by === PROMPT_BY.pile ? CARD_RECORD.place.pile : CARD_RECORD.place.session, outcome: RECORD_OF_OUTCOME[outcome], note })
     }
