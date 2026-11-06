@@ -130,7 +130,11 @@ export class AssistantComposition {
     if (core.length > 0) throw new Error(core.join('\n'))
     this.#shadowPromptEntries(pctx)
     // Nearest scope wins, so this one declaration in P covers the agent joined under it.
-    pctx.tools.presentAs(ASSISTANT.toolPresentation)
+    // 0.2.2 removed tools.presentAs(): presentation became the executor a scope mounts, and
+    // dsh-base mounts the native executor at the root (tool-executor-ptc is disabled there), so
+    // an agent under P already runs native and nothing needs declaring. Calling the missing
+    // method threw and failed the whole fishball row on 0.2.2.
+    if (typeof pctx.tools.presentAs === 'function') pctx.tools.presentAs(ASSISTANT.toolPresentation)
     this.#installBskCopy(pctx)
   }
 
