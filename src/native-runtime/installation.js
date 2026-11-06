@@ -173,6 +173,9 @@ export async function copyChildCode(paths, record) {
   await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
   if (await exists(path.join(sourceRoot, 'src', 'native-control'))) await copy(path.join(sourceRoot, 'src', 'native-control'), path.join(destination, 'src', 'native-control'), javascript)
   await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), everyFile)
+  // K1 moved the contract to src/connector; src/slim keeps re-export shims that import it, so the
+  // child cannot resolve its contract without this tree (JavaScript only, like the lifecycle code).
+  await copy(path.join(sourceRoot, 'src', 'connector'), path.join(destination, 'src', 'connector'), javascript)
   // T07 registers Fishball's persona from src/persona.js in the chat agent's scope; the module
   // and its one text dependency ship beside the slim tree so the snapshot resolves them.
   await copy(path.join(sourceRoot, 'src', 'persona.js'), path.join(destination, 'src', 'persona.js'), javascript)
