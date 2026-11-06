@@ -39,11 +39,6 @@ export class AuditLog {
     return key
   }
 
-  /** Entries, newest first, at most `limit`. */
-  recent(limit) {
-    return [...this.#table().entries()].sort(([a], [b]) => (a < b ? 1 : -1)).slice(0, limit).map(([key, record]) => ({ key, ...record }))
-  }
-
   /** Entries whose `at` is at or after `since` (ISO time) and that match `filter`. */
   countSince(since, filter = () => true) {
     let count = 0
