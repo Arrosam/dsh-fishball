@@ -37,6 +37,8 @@ const PLUGIN = Object.freeze({
     // The session port moved to the connector row in M1, which now injects what its model path reads.
   ],
   cleanup: 'fishball native host: stop owned child and retain private data',
+  // The loader's event after a volatile-only config change (cordis-plugin-loader, both versions).
+  volatileUpdate: 'loader/volatile-update',
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
   requestTimeoutMs: 750, stopTimeoutMs: 1000,
   state: Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', ready: 'ready', stopping: 'stopping', stopped: 'stopped', failed: 'failed' }),
@@ -69,14 +71,29 @@ export const inject = [...PLUGIN.dependencies]
  * than a field, and there is no `providerSync` switch (D26).
  */
 export const Config = Schema.object({
-  enabled: Schema.boolean().default(true).volatile().description('Start the private native child after main appReady. Disable to stop it; private data is retained.'),
+  enabled: Schema.boolean().default(true).volatile().description('Start the private native child after main appReady. Turning it off stops the child at once and turning it on starts it, as the row switch does; private data is retained.'),
   // Optional so a plain install starts the child (B2): unset means the first `node` on the host's
   // PATH, which the runtime still verifies as plain Node 22+ (src/native-runtime/node-default.js).
-  nodeExecutable: Schema.string().volatile().description('Absolute plain Node 22+ executable for the private child. Empty: the first node on DSH\'s PATH (never Electron; it is verified before use).'),
-  executableSearchPath: Schema.string().volatile().description('Private PATH for the child, absolute components only. Empty: that node\'s folder plus DSH\'s absolute PATH entries.'),
-  // Kept for configuration compatibility only: the slim bridge authorizes a session through the
-  // main Fishball row's managed registry (§5.2), not through this v1 allowlist. T15 retires it.
-  managedSessionIds: Schema.array(Schema.string()).default([]).volatile().description('Retained for configuration compatibility; the slim bridge uses the main Fishball row\'s managed sessions.'),
+  nodeExecutable: Schema.string().volatile().description('Absolute plain Node 22+ executable for the private child. Empty: the first node on DSH\'s PATH (never Electron; it is verified before use). Applies at the next start.'),
+  executableSearchPath: Schema.string().volatile().description('Private PATH for the child, absolute components only. Empty: that node\'s folder plus DSH\'s absolute PATH entries. Applies at the next start.'),
+})
+/**
+ * A start refused because of a launch setting (decision 2026-11-07: no format check on save, a
+ * clear error at start). The runtime's codes below are thrown only while it checks these two
+ * settings (src/native-runtime/installation.js isolatedEnvironment and verifyNode), so each names
+ * its setting; a file-system error counts only when its path is the executable itself. The detail
+ * carries the setting's name and the path tried, never a token or key.
+ */
+const LAUNCH_ERROR = Object.freeze({
+  searchPathCodes: Object.freeze(['INVALID_EXECUTABLE_PATH']),
+  nodeCodes: Object.freeze(['INVALID_NODE', 'PROBE_FAILED', 'PROBE_TIMEOUT', 'PROBE_OUTPUT_LIMIT']),
+  defaultNote: ' (default)',
+  unset: '(none found)',
+  detail: Object.freeze({
+    nodeExecutable: (value) => `nodeExecutable: ${value} is not a plain Node 22+ executable that can be run.`,
+    executableSearchPath: (value) => `executableSearchPath: ${value} must be a non-empty PATH of absolute directories.`,
+  }),
+  logger: 'fishball-instance',
 })
 const unavailable = code => Object.assign(new Error(code), { code })
 function bounded(promise, milliseconds) {
@@ -89,10 +106,33 @@ function bounded(promise, milliseconds) {
 // a successor must never silently take over an uncertain live child.
 const registry = globalThis[Symbol.for(LIFETIME.registryKey)] ??= new Map()
 
+/**
+ * The launch settings for one start, read when the runtime asks (the getters below), so a value
+ * saved in DSH's form applies at the next start without reloading the row.
+ */
+function launchSettings(config) {
+  const configured = { nodeExecutable: fieldValue(config.nodeExecutable), executableSearchPath: fieldValue(config.executableSearchPath) }
+  return { configured, launch: launchDefaults(configured, process.env.PATH) }
+}
+/** The detail of a start refused by a launch setting, or null for any other failure. */
+function launchFailure(error, { configured, launch }) {
+  const tried = (field) => (launch[field] ?? LAUNCH_ERROR.unset) + (configured[field] === undefined ? LAUNCH_ERROR.defaultNote : '')
+  if (LAUNCH_ERROR.searchPathCodes.includes(error?.code)) return LAUNCH_ERROR.detail.executableSearchPath(tried('executableSearchPath'))
+  if (LAUNCH_ERROR.nodeCodes.includes(error?.code) || (error?.path !== undefined && error.path === launch.nodeExecutable)) return LAUNCH_ERROR.detail.nodeExecutable(tried('nodeExecutable'))
+  return null
+}
+
 export async function apply(ctx, config) {
-  const enabled = fieldValue(config.enabled) !== false
+  let enabled = fieldValue(config.enabled) !== false
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
   let code = null
+  /** Why the last start failed, when a launch setting was the cause (shown with the code). */
+  let detail = null
+  /** The settings the current start uses, so a failure names the values it actually tried. */
+  let attempt = launchSettings(config)
+  /** Serializes the `enabled` switch's starts and stops in the order the user toggled. */
+  let toggle = Promise.resolve()
+  const logger = ctx.logger(LAUNCH_ERROR.logger)
   let closed = false
   let appReady = false
   let owner
@@ -105,8 +145,8 @@ export async function apply(ctx, config) {
   let unsubscribeProviderSync = () => {}
   /** T16's source side: syncs the main profile's API-key providers into the child's own target. */
   let providerSync
-  const status = () => ({ enabled, state, code })
-  const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
+  const status = () => ({ enabled, state, code, detail })
+  const set = (next, nextCode = null, nextDetail = null) => { state = next; code = nextCode; detail = nextDetail; return status() }
   // T11's admin relay. Every page operation except status and restart travels to the child over
   // the lifecycle wire's own authenticated admin channel; the child applies it with its own
   // services, so the main process never writes a child file (§9). T12's routes call
@@ -123,14 +163,11 @@ export async function apply(ctx, config) {
     // T16: the child is the sync target. The source host reads the main profile's API-key
     // records only inside the sync's confirm step; the page never sees a value (§10).
     providerSync = createChildProviderSync({ ctx })
-    // The launch fields are volatile (§0.7); unwrap the live references before choosing defaults.
-    const launch = launchDefaults({
-      nodeExecutable: fieldValue(config.nodeExecutable),
-      executableSearchPath: fieldValue(config.executableSearchPath),
-    }, process.env.PATH)
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
-      nodeExecutable: launch.nodeExecutable, executableSearchPath: launch.executableSearchPath,
+      // Read at each start (attempt is renewed in start()), so the form's values apply at the next start.
+      get nodeExecutable() { return attempt.launch.nodeExecutable },
+      get executableSearchPath() { return attempt.launch.executableSearchPath },
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },
       limits: LIFECYCLE_LIMITS,
       control: { limits: DEFAULT_CONTROL_LIMITS },
@@ -166,16 +203,19 @@ export async function apply(ctx, config) {
     if (startup) return startup
     startup = (async () => {
       set(PLUGIN.state.starting)
+      attempt = launchSettings(config)
       try {
         await barrier
         if (closed) return status()
         await bounded(owner.start(), owner.limits.startupTimeoutMs)
         if (!closed && state === PLUGIN.state.starting) set(PLUGIN.state.ready)
-      } catch {
+      } catch (error) {
         owner.parentExit()
         // Abort any late startup continuation; retained ownership prevents a duplicate.
         await owner.shutdown().catch(() => {})
-        if (!closed && state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.failed)
+        const reason = launchFailure(error, attempt)
+        if (reason !== null) logger.warn('%s: %s', PLUGIN.code.failed, reason)
+        if (!closed && state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.failed, reason)
       }
       return status()
     })().finally(() => { startup = undefined })
@@ -260,4 +300,14 @@ export async function apply(ctx, config) {
   registerProviderSyncRoutes(ctx, service)
   registerNativeWeb(ctx, service)
   cancelReady = ctx.appReady.onReady(() => { appReady = true; if (enabled && !closed) void start() })
+  // DSH's form writes `enabled` as a volatile field, so the row is not reloaded; the loader only
+  // refreshes the live value and emits this event. Follow it as the row switch would: off stops
+  // the child (state disabled), on starts it once main is ready. The path fields need nothing
+  // here: the runtime reads them at the next start.
+  ctx.on(PLUGIN.volatileUpdate, () => {
+    const next = fieldValue(config.enabled) !== false
+    if (next === enabled || closed) return
+    enabled = next
+    toggle = toggle.then(() => (closed ? status() : enabled ? start() : stop())).catch(() => {})
+  })
 }
