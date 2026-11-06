@@ -18,7 +18,7 @@ const CASE = Object.freeze({
   selectAttribute: 'data-fishball-model-select',
   saveLabel: /save/i,
   configName: /config/,
-  bundle: 'dsh-fishball',
+  bundle: 'fishball-connector',
   option: 'option',
   empty: '',
   whitespace: ' ',

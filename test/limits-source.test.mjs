@@ -9,7 +9,7 @@
  *
  * | id     | technique          | expected |
  * |--------|--------------------|----------|
- * | L40 ×20 | EP (one per old name) | no `NAME.field` / `NAME?.field` / `NAME['field']` (or the bare `OUTBOX_SHOWN`) in index.js, client.js, packages/*\/client.js, src/**\/*.js |
+ * | L40 ×20 | EP (one per old name) | no `NAME.field` / `NAME?.field` / `NAME['field']` (or the bare `OUTBOX_SHOWN`) in each package's index.js, client.js and src tree (M1: packages/connector, packages/instance) |
  * | L41 ×19 | EP (one per staying name) | each constant §16 keeps is still named somewhere in the source |
  * | L42 ×3 | EP (one per size) | the author guide names the dedupe key with 256 bytes, the description with 1,024 bytes and the source title with 200 bytes |
  */
@@ -19,14 +19,18 @@ import path from 'node:path'
 import { describe, it } from 'node:test'
 import { LIMITS_R11, REMOVED_PACKAGE_CONSTANTS, REPO, STAYING_CONSTANTS } from './support/constants.mjs'
 
-/** Every implementation source file, as text, keyed by its path relative to the repo. */
+/** Every implementation source file of the two M1 packages, as text, keyed by its path relative to the repo. */
 function sources() {
   const files = []
-  for (const f of ['index.js', 'client.js']) if (fs.existsSync(path.join(REPO, f))) files.push(f)
-  const pkgs = path.join(REPO, 'packages')
-  if (fs.existsSync(pkgs)) for (const d of fs.readdirSync(pkgs)) if (fs.existsSync(path.join(pkgs, d, 'client.js'))) files.push(path.join('packages', d, 'client.js'))
-  const src = path.join(REPO, 'src')
-  if (fs.existsSync(src)) for (const f of fs.readdirSync(src, { recursive: true })) if (String(f).endsWith('.js')) files.push(path.join('src', String(f)))
+  for (const d of ['connector', 'instance']) {
+    const root = path.join(REPO, 'packages', d)
+    for (const f of ['index.js', 'client.js', 'host.js', 'native-child.js']) if (fs.existsSync(path.join(root, f))) files.push(path.join('packages', d, f))
+    const src = path.join(root, 'src')
+    if (fs.existsSync(src)) for (const f of fs.readdirSync(src, { recursive: true })) if (String(f).endsWith('.js')) files.push(path.join('packages', d, 'src', String(f)))
+    // The connector's contract is implementation too (src/connector became contract/ in M1).
+    const contract = path.join(root, 'contract')
+    if (fs.existsSync(contract)) for (const f of fs.readdirSync(contract, { recursive: true })) if (String(f).endsWith('.js')) files.push(path.join('packages', d, 'contract', String(f)))
+  }
   return files.map((f) => ({ file: f, text: fs.readFileSync(path.join(REPO, f), 'utf8') }))
 }
 const FILES = sources()
@@ -41,8 +45,8 @@ function patternFor(name) {
 
 describe('rev11-limits: source and documentation checks', () => {
   it('L40 precondition: the source tree is there', () => {
-    assert.ok(FILES.some((f) => f.file === 'index.js'), 'index.js found')
-    assert.ok(FILES.some((f) => f.file.startsWith('src' + path.sep)), 'src/*.js found')
+    assert.ok(FILES.some((f) => f.file === path.join('packages', 'connector', 'index.js')), 'connector index.js found')
+    assert.ok(FILES.some((f) => f.file.startsWith(path.join('packages', 'connector', 'src'))), 'connector src/*.js found')
   })
 
   const OLD = [...Object.values(LIMITS_R11).map((l) => l.old), ...REMOVED_PACKAGE_CONSTANTS]

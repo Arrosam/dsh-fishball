@@ -81,13 +81,17 @@ describe('P11 the messenger package', () => {
     assert.equal(pkg.name, MESSENGER.packageName)
   })
 
-  it('MCJ-06 dsh-fishball ships the messenger package (files and npm pack --dry-run)', { timeout: 60000 }, () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'))
-    assert.ok(pkg.files.includes(MESSENGER.filesEntry), 'files lists ' + MESSENGER.filesEntry + ': ' + JSON.stringify(pkg.files))
-    const r = spawnSync(NPM, ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: REPO, encoding: 'utf8', env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '' } })
-    assert.equal(r.status, 0, 'npm pack --dry-run: ' + (r.stderr ?? '').slice(-1000))
-    const packed = JSON.parse(r.stdout)[0].files.map((f) => f.path)
-    for (const want of MESSENGER.packed) assert.ok(packed.includes(want), 'packed ' + want + ': ' + JSON.stringify(packed.filter((p) => p.startsWith('packages/'))))
+  // M1 docs/package-layout.md: packages/messenger is unchanged but no plugin ships it (I8 retires it).
+  it('MCJ-06 neither plugin ships the messenger package (files and npm pack --dry-run)', { timeout: 60000 }, () => {
+    for (const dir of ['connector', 'instance']) {
+      const root = path.join(REPO, 'packages', dir)
+      const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
+      assert.ok(!(pkg.files ?? []).includes(MESSENGER.filesEntry), dir + ' files lists ' + MESSENGER.filesEntry + ': ' + JSON.stringify(pkg.files))
+      const r = spawnSync(NPM, ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: root, encoding: 'utf8', env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '' } })
+      assert.equal(r.status, 0, dir + ' npm pack --dry-run: ' + (r.stderr ?? '').slice(-1000))
+      const packed = JSON.parse(r.stdout)[0].files.map((f) => f.path)
+      assert.ok(!packed.some((p) => p.startsWith(MESSENGER.filesEntry)), dir + ' packs ' + JSON.stringify(packed.filter((p) => p.startsWith('packages/'))))
+    }
   })
 
   it('MCJ-07 client.js registers the module id dsh-fishball-messenger through window.__ModuleLoader__.load', () => {

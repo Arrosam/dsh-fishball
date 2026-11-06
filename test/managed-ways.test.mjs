@@ -457,7 +457,7 @@ describe('Revision 11 rev11a: yours or managed, and the ways in and out', () => 
 
   it('MGD-16 the client bundle has Hand over and Take back', T, async (t) => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references dsh-fishball/client.js')
+    assert.ok(bundle.found, 'index references fishball-connector/client.js')
     assert.equal(bundle.status, 200)
     assert.ok(bundle.text.includes(MANAGED_LABELS.handOver), MANAGED_LABELS.handOver)
     assert.ok(bundle.text.includes(MANAGED_LABELS.takeBack), MANAGED_LABELS.takeBack)
