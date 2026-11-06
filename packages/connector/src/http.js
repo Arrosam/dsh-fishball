@@ -14,6 +14,10 @@
  * POST question-mode          -> { mode: 'auto' | 'fishball' | 'user' } (who answers managed sessions' questions)
  * POST brand                  -> { style: 'fishball' | 'deepseek' } (the sidebar brand icon, DESIGN §10)
  * POST sidebar-entry          -> { entry: 'panel' | 'brand' } (a Fishball row in the sidebar, or the brand only; slim §7)
+ * GET  connector/instance     -> the attached instance as the frame shows it (design §0.5 "The frame"):
+ *                                { attached, name, ui, state, code, canRetry, attachCount }
+ * POST connector/instance/retry -> no body; awaits the instance's retry() -> { ok: true, instance };
+ *                                409 unavailable (no Retry offered) or NATIVE_UNAVAILABLE (it rejected)
  */
 import { API, API_CODE, BRAND_STYLE, CARD_DECISION, HTTP, HTTP_METHOD, QUESTION_MODE, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS, SIDEBAR_ENTRY } from './constants.js'
 import { LifecycleStateError } from './errors.js'
@@ -48,8 +52,9 @@ const BODY = Object.freeze({
  * Register the routes; they are removed with the plugin context.
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), send({ sessionId, note }), setManaged({ sessionId, managed }),
- *   answerRequest({ requestId, decision, note? }), setQuestionMode(mode), setBrandStyle(style), setSidebarEntry(entry) }; the commands reject
- *   LifecycleStateError for a refusal (409 unless it names another status).
+ *   answerRequest({ requestId, decision, note? }), setQuestionMode(mode), setBrandStyle(style), setSidebarEntry(entry),
+ *   instance(), retryInstance() }; the commands reject LifecycleStateError for a refusal (409 unless it names another
+ *   status). instance() is the frame's view; retryInstance() resolves { ok } or { ok: false, code } and never rejects.
  */
 export function registerRoutes(ctx, state) {
   const streams = new Set()
@@ -98,6 +103,12 @@ export function registerRoutes(ctx, state) {
   }
   /** A command: its answer is the new state. */
   const command = (read, run) => post(read, run, () => ({ state: state.snapshot() }))
+  /** The frame's Retry takes no body: a refusal keeps its code, an accepted one answers the new view. */
+  const retryInstance = () => result(async () => {
+    const answer = await state.retryInstance()
+    if (!answer.ok) throw new LifecycleStateError(answer.code)
+    return { instance: state.instance() }
+  })
 
   const routes = [
     { path: API.state, methods: [HTTP_METHOD.get], fetch: () => Promise.resolve(json(HTTP.ok, state.snapshot())) },
@@ -108,6 +119,8 @@ export function registerRoutes(ctx, state) {
     { path: API.questionMode, methods: [HTTP_METHOD.post], fetch: command(BODY.questionMode, (mode) => state.setQuestionMode(mode)) },
     { path: API.brand, methods: [HTTP_METHOD.post], fetch: command(BODY.brand, (style) => state.setBrandStyle(style)) },
     { path: API.sidebarEntry, methods: [HTTP_METHOD.post], fetch: command(BODY.sidebarEntry, (entry) => state.setSidebarEntry(entry)) },
+    { path: API.connectorInstance, methods: [HTTP_METHOD.get], fetch: () => Promise.resolve(json(HTTP.ok, state.instance())) },
+    { path: API.connectorInstanceRetry, methods: [HTTP_METHOD.post], fetch: retryInstance },
   ]
   for (const route of routes) {
     ctx.effect(() => ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }), `fishball: ${route.path}`)

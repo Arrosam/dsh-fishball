@@ -16,7 +16,9 @@
  * to know which peer a frame belongs to. The built-in instance passes its lifecycle host id,
  * which is the same value its child's bridge client stamps on frames.
  */
-import { ATTACH_ERROR, CONNECTOR_SERVICE, ERROR, ContractError, validateAttachment } from '../contract/index.js'
+import { ATTACH_ERROR, CONNECTOR_SERVICE, ERROR, STATUS, STATUS_CODES, ContractError, validateAttachment } from '../contract/index.js'
+import { API_CODE, PLUGIN } from './constants.js'
+import { diagnosticOf } from './errors.js'
 import { createApprovalRelay } from './slim/host/approvals.js'
 import { createBridgeHost } from './slim/host/bridge.js'
 import { createSessionPort } from './slim/host/session-port.js'
@@ -27,13 +29,53 @@ const BINDING = Object.freeze({
 })
 
 /**
+ * What the connector's frame shows as the instance's state (design §0.5 "The frame", D27,
+ * conn-OQ-25, conn-OQ-53). A `status()` state is shown as it is. Two display states are the
+ * connector's own and never contract STATUS values: `unattached` with no instance, `attached`
+ * for an instance that gave no `status`. A `status()` that throws or answers outside
+ * STATUS/STATUS_CODES shows `failed` with NATIVE_UNAVAILABLE.
+ */
+export const FRAME_STATE = Object.freeze({ unattached: 'unattached', attached: 'attached' })
+const STATUS_STATES = new Set(Object.values(STATUS))
+const STATUS_CODE_SET = new Set(Object.values(STATUS_CODES))
+/** Why a status() answer was not shown; logged by these codes only, never by value. */
+const STATUS_FAULT = Object.freeze({ threw: 'status-threw', invalid: 'status-invalid' })
+const RETRY_FAULT = 'retry-rejected'
+const UNSAFE_STATUS = Object.freeze({ state: STATUS.failed, code: STATUS_CODES.unavailable })
+
+/** The instance's status() as one safe {state, code, fault}; never throws. */
+function readStatus(status) {
+  if (status === undefined) return { state: FRAME_STATE.attached, code: null, fault: null }
+  let value
+  try { value = status() } catch { return { ...UNSAFE_STATUS, fault: STATUS_FAULT.threw } }
+  // The contract's `{state, code}`: a STATUS state and a STATUS_CODES code or null (§1.1).
+  const valid = value !== null && typeof value === 'object' && STATUS_STATES.has(value.state) &&
+    (value.code === null || STATUS_CODE_SET.has(value.code))
+  return valid ? { state: value.state, code: value.code, fault: null } : { ...UNSAFE_STATUS, fault: STATUS_FAULT.invalid }
+}
+
+/**
  * Provide the `fishballConnector` service on the connector row and dispose it with the row.
  *
+ * The returned object is the row's own internal view of the attachment, for its browser routes
+ * and its state snapshot only. It is deliberately not on the provided service: the service keeps
+ * exactly the contract's two members (`attachInstance`, `current`, conn-OQ-49), and `current()`
+ * keeps exactly CONNECTOR_SERVICE_API.currentKeys, so no instance can reach `ui`, `status` or
+ * `retry` of another (or its own) attachment through the connector.
+ *
  * @param {object} ctx - the connector row's Cordis context (provide, get, effect, logger).
- * @returns {void}
+ * @param {object} [options]
+ * @param {() => void} [options.onChange] - called after every attach and every end of an attachment.
+ * @returns {{view: () => object, retry: () => Promise<object>}} view(): the frame's
+ *   {attached, name, ui, state, code, canRetry, attachCount}; retry(): awaits the instance's
+ *   retry() when the frame offers Retry, and resolves {ok: true} or {ok: false, code} (never rejects).
  */
-export function provideConnectorService(ctx) {
+export function provideConnectorService(ctx, { onChange } = {}) {
   if (!ctx || typeof ctx.provide !== 'function') throw new TypeError('fishball connector: a Cordis context is required')
+  const logger = typeof ctx.logger === 'function' ? ctx.logger(PLUGIN.logger) : undefined
+  const changed = () => { try { onChange?.() } catch (error) { logger?.warn('instance change listener failed (%s)', diagnosticOf(error)) } }
+  /** The last status fault logged, so a bad status() is logged once per change (conn-OQ-53). */
+  let loggedFault = null
   /** The row is gone: no new attachment is possible and the service leaves the container. */
   let closed = false
   /** The live attachment record, or undefined in no-instance mode. */
@@ -60,6 +102,7 @@ export function provideConnectorService(ctx) {
     if (record === undefined || active !== record) return
     active = undefined
     closeRecord(record)
+    changed()
   }
 
   function attach(descriptor) {
@@ -73,6 +116,10 @@ export function provideConnectorService(ctx) {
     if (active !== undefined) throw new ContractError(ATTACH_ERROR.busy)
     const record = {
       snapshot: Object.freeze({ id: validated.id, name: validated.name, attachedAt: Date.now(), attachCount: attachCount + 1 }),
+      // Kept for the row's frame only (view, retry above), never handed back through current().
+      ui: validated.ui,
+      status: validated.status,
+      retry: validated.retry,
       approvals: undefined,
       host: undefined,
       connection: undefined,
@@ -100,7 +147,41 @@ export function provideConnectorService(ctx) {
     }
     // Counted even if the channel closed during the attach: the attach itself was accepted.
     attachCount = record.snapshot.attachCount
+    // A close during the attach already ended the record (and reported it); report only a live one.
+    if (active === record) changed()
     return Object.freeze({ detach: () => end(record) })
+  }
+
+  /** The attachment as the frame shows it; status() is read afresh on every call. */
+  function view() {
+    const record = active
+    if (record === undefined) {
+      return { attached: false, name: null, ui: {}, state: FRAME_STATE.unattached, code: null, canRetry: false, attachCount }
+    }
+    const { state, code, fault } = readStatus(record.status)
+    if (fault !== loggedFault) {
+      if (fault !== null) logger?.warn('instance status not shown (%s)', fault)
+      loggedFault = fault
+    }
+    return {
+      attached: true, name: record.snapshot.name, ui: { ...record.ui }, state, code,
+      // Retry only for a failed instance that gave retry (conn-OQ-25).
+      canRetry: state === STATUS.failed && record.retry !== undefined,
+      attachCount: record.snapshot.attachCount,
+    }
+  }
+
+  /** The frame's Retry: awaits the instance's own retry(); a rejection is NATIVE_UNAVAILABLE (conn-OQ-25). */
+  async function retry() {
+    const record = active
+    if (record === undefined || !view().canRetry) return { ok: false, code: API_CODE.unavailable }
+    try {
+      await record.retry()
+      return { ok: true }
+    } catch {
+      logger?.warn('instance retry failed (%s)', RETRY_FAULT)
+      return { ok: false, code: STATUS_CODES.unavailable }
+    }
   }
 
   ctx.effect(() => {
@@ -111,4 +192,5 @@ export function provideConnectorService(ctx) {
       dispose?.()
     }
   }, BINDING.cleanup)
+  return Object.freeze({ view, retry })
 }
