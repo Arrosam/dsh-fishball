@@ -197,6 +197,29 @@ test('INST-12 notify_when_finished rides only start/message, and question wordin
   assert.ok(childTexts.includes("on that session\\'s own question card"), 'child to_user text does not name the session card')
 })
 
+test('INST-13 a question left to the user is answered only on its own session card, in every shipped copy (N7)', { skip }, () => {
+  const pkg = path.join(home, 'profiles', CFG.profile, 'node_modules', 'dsh-fishball')
+  const read = (...parts) => fs.readFileSync(path.join(pkg, ...parts), 'utf8')
+  // The words must say where the answer is NOT (this chat, the pile), because Fishball told the
+  // user to answer "in this chat (and in your pile)" (7713 N7). Single-quoted JS: \' in source.
+  const NOT_HERE = "not in this chat or the user\\'s pile"
+  const main = read('src', 'questions.js')
+  const child = read('src', 'slim', 'child', 'approvals.js')
+  const inSession = (src) => src.match(/^const IN_SESSION = '(.*)'$/m)?.[1]
+  assert.ok(inSession(main)?.includes(NOT_HERE), 'main IN_SESSION does not exclude chat and pile')
+  assert.equal(inSession(child), inSession(main), 'the two IN_SESSION copies differ')
+  // The to_user result itself names the place, and the old "shown on that decision in your chat" is gone.
+  for (const [name, src] of [['main', main], ['child', child]]) {
+    assert.ok(/toUserResult: `Left to the user: \$\{IN_SESSION\}/.test(src), `${name} has no to_user result note`)
+    assert.ok(/toUser: true, note: TEXT\.toUserResult/.test(src), `${name} to_user result omits the note`)
+    assert.ok(!src.includes('it is shown on that decision in your chat'), `${name} noteArg still points to the chat`)
+  }
+  // ask_user is for Fishball's own questions only; the persona tells Fishball to send the user there.
+  assert.ok(/askDescription: `[^`]*\$\{OWN_ONLY\}/.test(child), 'ask_user does not say it is for own questions only')
+  // The persona is a template literal, so its apostrophe is not escaped.
+  assert.ok(read('src', 'persona.js').includes("not in this chat or the user's pile, so tell the user to answer it there"), 'persona does not send the user to the session card')
+})
+
 test('INST-07 the Sidebar entry switch saves', { skip }, async () => {
   for (const entry of ['brand', 'panel']) {
     const res = await req(ROUTE.sidebar, { method: 'POST', headers: { ...sameOrigin, 'content-type': 'application/json' }, body: JSON.stringify({ entry }) })
