@@ -18,7 +18,30 @@
  * Install goes through the ordinary "Install for Fishball" dialog with the entry's spec, so the
  * list grants nothing: the dialog installs any spec you type, after your click (revision 10a).
  */
-import { FISHBALL_INSTALLED_PREFIX, PLUGIN_KIND } from './constants.js'
+
+// PLUGIN_KIND and FISHBALL_INSTALLED_PREFIX moved here from the main row's src/constants.js
+// (M1): this module is their only reader, and the instance package cannot import that file.
+/** Where a catalog plugin runs (DESIGN §4 "Plugin states"). */
+export const PLUGIN_KIND = Object.freeze({
+  /** Enabled in the profile: runs for every session; Fishball can only mask it. */
+  profile: 'profile',
+  /** Installed but off in the profile: runs in Fishball's private tree when on. */
+  fishballOnly: 'fishball-only',
+  /** A DSH capability package Fishball mounts in its private tree when on. */
+  builtin: 'builtin',
+  /**
+   * Installed by Fishball for itself alone, in its own package folder (src/fishball-packages.js),
+   * never in the DSH profile; runs in its private tree when on. A package of the same name may
+   * also be a DSH plugin: the two are separate catalog entries.
+   */
+  fishballInstalled: 'fishball-installed',
+})
+
+/**
+ * Catalog key prefix of a Fishball-installed plugin (DESIGN §4): its key is this plus the package
+ * name, so it never collides with a DSH plugin of the same name (whose key is the bare name).
+ */
+export const FISHBALL_INSTALLED_PREFIX = 'fishball:'
 
 /** Category keys, in display order (the highlighted ones first). The browser keeps the same keys. */
 export const RECOMMENDED_CATEGORY = Object.freeze({ context: 'context', memory: 'memory', channel: 'channel', pet: 'pet' })

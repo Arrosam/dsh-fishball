@@ -16,6 +16,9 @@ export const RUNTIME = Object.freeze({
     manifestBackupInfix: '.pre-slim-',
   }),
   codeSnapshotPrefix: '.fishball-native-',
+  // The connector's contract package inside the snapshot (M1): the child's shims import
+  // `fishball-connector/contract`, and Node finds it in the snapshot's own node_modules.
+  contractPackage: Object.freeze({ name: 'fishball-connector', directory: 'contract', modules: 'node_modules', manifest: 'package.json' }),
   host: '127.0.0.1',
   socketName: 'control.sock',
   socketPathBytes: 100,

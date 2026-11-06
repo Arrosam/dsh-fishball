@@ -1,0 +1,10 @@
+# fishball-connector's profile footprint: one host row (design §0.2, §0.6).
+# - fishball-connector: Fishball's "body" in the main DSH. It manages your sessions for Fishball
+#   (Hand over, message_fishball, permission requests, questions, watches) and serves the brand and
+#   the session-row marks. Its id is also the settings namespace the Plugins page edits
+#   (client.js ENTRY_ID). It works with no instance installed.
+# The built-in instance inserts its own row from its own package (packages/instance).
+- insert:
+    - id: fishball-connector
+      name: 'fishball-connector'
+      config: {}
