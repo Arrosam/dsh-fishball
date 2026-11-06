@@ -693,6 +693,8 @@ export class ApprovalBroker {
       default:
         // Fishball going off: the agent makes the call itself and you are asked in the session (§7a.5).
         if (result.off) {
+          // Its card in Fishball's chat closes with the one "turned off" record (7713 N10).
+          this.#closeOffer(request, result, CARD_END.off)
           this.#ticket(request)
           return end(ASK_RESULT.unavailable)
         }
@@ -878,13 +880,27 @@ export class ApprovalBroker {
    * else retracts the child's live card. Close it as a pile card closes: one CARD_CLOSED item to
    * the child (queued on the host's inbox, so a child that is down gets it after Retry) and one
    * closed record (cardClosed above).
-   * @param result - how the round ended (released). @param end - a CARD_END closure.
+   * @param result - how the round ended (released, or off). @param end - a CARD_END closure.
    * @returns whether the child had the card (then its record is written here, once).
    */
   #closeOffer(request, result, end) {
     if (request.offered !== true) return false
     this.cardClosed(this.#cardOf(request, result), end)
     return true
+  }
+
+  /**
+   * How a round that files no pile card leaves the child's card, or undefined when it stays the
+   * child's to settle (7713 N10). The child exiting runs releaseAll at once, so a kill inside the
+   * answer window ends the round `off` there, and a later Take back finds nothing left to close:
+   * that one "turned off" closure is the request's record, as for a pile card (7713 N1-B). When
+   * both hold at the moment the round ends, the release is the more specific cause and names it.
+   * The `off` flag is releaseAll's (the round's own answer is then `timeout`, review L2).
+   */
+  #windowEnd(request, result) {
+    if (!this.#isManaged(request.sessionId)) return CARD_END.released
+    if (result.off === true || !this.#canAnswer()) return CARD_END.off
+    return undefined
   }
 
   /** Answer a waiting request once; @returns whether it was still waiting. */
@@ -1025,12 +1041,14 @@ export class ApprovalBroker {
     // escalate answer on a direct call takes its own tool path, but this is the one place a
     // timeout, an undelivered notice and an escalate all land.
     if (toPile) this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: APPROVAL_DECISION.escalate, by: SETTLED_BY.fishball })
-    // Released (Take back, release_session) inside the answer window, or just after Fishball's
-    // escalate and before this ran: no pile card follows, so the child's card (or its waiting
-    // label) closes now, before the prompt shows, and that closure is the card's one record (7713 N8).
-    // Fishball's ask already settled the child's card (answerApproval), so it has nothing to close.
+    // Released (Take back, release_session) or Fishball gone off (the child exited: releaseAll)
+    // inside the answer window, or just after Fishball's escalate and before this ran: no pile
+    // card follows, so the child's card (or its waiting label) closes now, before the prompt
+    // shows, and that closure is the card's one record (7713 N8, N10). Fishball's ask already
+    // settled the child's card (answerApproval), so it has nothing to close.
     const childHolds = result.answer !== APPROVAL_ANSWER.ask
-    const offerClosed = childHolds && !toPile && !this.#isManaged(request.sessionId) && this.#closeOffer(request, result, CARD_END.released)
+    const offerEnd = toPile || !childHolds ? undefined : this.#windowEnd(request, result)
+    const offerClosed = offerEnd !== undefined && this.#closeOffer(request, result, offerEnd)
     const { outcome, by, note, cardGone } = await this.#passOn(via, request, toPile ? this.#cardOf(request, result) : undefined)
     // Your Reject note on the card reaches the agent only through the post-execute rewrite (§7a.4 Reading).
     if (by === PROMPT_BY.pile && outcome === APPROVAL_OUTCOME.rejected && note !== undefined) this.#wording.mark(request.callId, request.sessionId, request.toolName, { kind: WORDING.userReject, note })
@@ -1141,11 +1159,13 @@ export class ApprovalBroker {
   }
 
   /** A request ended: forget it and audit it once. */
-  async #finish(request, { answer, risk, rationale, grantId }, finalOutcome) {
+  async #finish(request, { answer, risk, rationale, grantId, off }, finalOutcome) {
     // A turn end and a release can both reach an open thread; only the first audits it.
     if (this.#requests.get(request.id) !== request) return
     this.#requests.delete(request.id)
-    await this.#record({ ...request, answer, risk, rationale, grantId, finalOutcome })
+    // releaseAll ends the round with `timeout` only so the routing treats it as no answer; no timer
+    // ran out, so the row says the request was released to its session (7713 N10).
+    await this.#record({ ...request, answer: off === true ? APPROVAL_ANSWER.released : answer, risk, rationale, grantId, finalOutcome })
   }
 
   /**
