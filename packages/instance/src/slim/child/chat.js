@@ -613,13 +613,14 @@ export function createChat(ctx, options = {}) {
   /**
    * One card record in Fishball's session (src/slim/card-record.js): a log-only plugin record
    * that DSH's session view draws (client.js) and that never reaches the model. `tell`, when given,
-   * is a notice Fishball does read: injected without a wake, so a running turn sees it at its next
-   * step and an idle Fishball at its next turn, and it never starts a turn of its own.
+   * is a notice Fishball does read, queued as its own turn exactly as deliverInbox queues every
+   * other inbox item: it wakes an idle Fishball, and a running turn reads it when it ends (7713
+   * N9-b: injected without a wake, the user's answer sat unread until the user's next message).
    */
   async function recordCard(data, tell) {
     const live = await activate()
     appendPluginRecord(live.session, CARD_RECORD.type, data)
-    if (typeof tell === 'string' && tell !== '') live.inject(createUserMessage({ content: [{ type: 'text', text: clamp(tell, CHAT_LIMITS.entryChars) }], source: SOURCE.notice }))
+    if (typeof tell === 'string' && tell !== '') await queue(clamp(tell, CHAT_LIMITS.entryChars), [], SOURCE.notice)
     return { recorded: true }
   }
 

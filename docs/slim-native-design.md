@@ -1517,10 +1517,11 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
 - Revised 2026-11-06 (the user: "你看不到卡片记录的问题这也是个问题"): when the user answers a
   session's card themselves, on the pile card or in that session, Fishball now receives the words
   (the chosen labels or custom text, a permission decision and its note), not only "the user
-  answered it". They travel inside the T08 card record's inbox item to the child, which injects
-  one notice into its own session without a wake (`src/slim/child/inbox.js`), so a busy turn reads it at its next step and an
-  idle Fishball at its next turn. The session's question text is not repeated in the notice: it is
-  that session's words, and read_session shows it.
+  answered it". They travel inside the T08 card record's inbox item to the child, which queues
+  one notice as Fishball's own turn, as every other inbox item is (`src/slim/child/inbox.js`):
+  it wakes an idle Fishball, and a busy turn reads it when that turn ends (7713 N9-b; injected
+  without a wake, an idle Fishball saw it only at the user's next message). The session's
+  question text is not repeated in the notice: it is that session's words, and read_session shows it.
 
 **T12 — Settings page and one button style `[client]` plus `[host]`**
 - Goal: the rebuilt settings page (§9) and the §8.5 restyle of all nine accent buttons.

@@ -559,8 +559,7 @@ export class QuestionRouter {
   releaseSession(sessionId) {
     for (const entry of [...this.#entries.values()]) {
       if (entry.sessionId !== sessionId) continue
-      // Its card in Fishball's chat must close with a record even when it was never filed (#ended, 7713 N8).
-      entry.released = true
+      // Its card in Fishball's chat closes with a record even when it was never filed (#ended, 7713 N8).
       this.#goBack(entry)
     }
   }
@@ -885,10 +884,12 @@ export class QuestionRouter {
       // Back to its session's own card, or stopped/dismissed: this card is gone either way, so the
       // child's card closes; the pile's closure line below tells the user why it left.
       this.#emit({ type: OFFER.event.settled, approvalId: entry.id, sessionId: entry.sessionId, decision: APPROVAL_DECISION.ask, by: SETTLED_BY.fishball })
-      // Released (Take back, release_session) while still in Fishball's answer window (offered,
-      // never filed): the pile settle below finds no card, so the closure line and its one record
-      // come from here, as for a pile card (7713 N8). Fishball going off (releaseAll) is unchanged.
-      if (entry.released === true && entry.offered === true && !entry.inPile) this.#cardClosed(this.#pileCardOf(entry), PILE_END[end])
+      // Sent back (Take back, release_session, or Fishball going off when the child exits) while
+      // still in Fishball's answer window (offered, never filed): the pile settle below finds no
+      // card, and the settled event above is dropped while the child is down, so the closure line
+      // and its one record come from here, as for a pile card (7713 N8, N10). `back` comes only
+      // from #goBack, so it always means one of those releases.
+      if (end === QUESTION_END.back && entry.offered === true && !entry.inPile) this.#cardClosed(this.#pileCardOf(entry), PILE_END[end])
     }
     // The pile's closure line comes after the child's own event, so an escalated card is first
     // known to the child and then closed with its reason.
