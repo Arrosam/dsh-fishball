@@ -3,10 +3,12 @@
  * The browser reaches the child only through the embed broker (src/slim/host/embed.js); the old
  * capability-URL open route is gone, so this file exposes status and nothing else.
  */
+import { BINDING_STATE } from './host/binding.js'
+
 const WEB = Object.freeze({
   statusPath: '/api/fishball/native/status',
   get: 'GET', body: 'buffered', unavailable: 'unavailable',
-  states: Object.freeze(['disabled', 'waiting', 'starting', 'ready', 'stopping', 'stopped', 'failed']),
+  states: Object.freeze(['disabled', 'waiting', 'starting', 'ready', 'stopping', 'stopped', 'failed', BINDING_STATE.connectorMissing]),
   codes: Object.freeze(['NATIVE_START_FAILED', 'NATIVE_STOP_FAILED', 'NATIVE_CHILD_EXITED', 'NATIVE_UNAVAILABLE', 'NATIVE_TIMEOUT', 'NATIVE_DISABLED']),
   ok: 200, json: 'application/json; charset=utf-8',
   headers: Object.freeze({ 'cache-control': 'no-store', 'referrer-policy': 'no-referrer',

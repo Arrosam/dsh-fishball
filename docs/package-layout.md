@@ -95,14 +95,17 @@ unchanged; I8 retires it. No package ships it.
   its private profile.
 - **The binding (C1).** The connector row provides the contract's `fishballConnector` service
   (`src/connector-service.js`, contract §1) from apply, with or without an instance. The built-in
-  instance reads it with `ctx.get` on each authenticated wire and calls `attachInstance` with its
-  lifecycle host id as the descriptor's `id`; that id is also the bridge host's frame identity. A
-  replaced wire detaches before it attaches (a child restart is a detach and a new attach). M1's
-  interim `fishballConnectorBridge` is gone. The `ui`, `status` and `retry` fields are I1's.
+  instance follows it through an optional `ctx.inject(['fishballConnector'])` sub-scope
+  (`packages/instance/src/host/binding.js`, §0.6), and on each authenticated wire calls
+  `attachInstance` with its lifecycle host id as the descriptor's `id`; that id is also the bridge
+  host's frame identity. A replaced wire detaches before it attaches (a child restart is a detach
+  and a new attach). M1's interim `fishballConnectorBridge` is gone. The `ui`, `status` and
+  `retry` fields are I1's.
 - **Injects.** The connector row now injects `llm` (the session port's model path read it on the
   native host before). The instance row no longer injects `sessionProjections`.
-- **Without the connector**, the instance's wire comes up unbridged: no session operations, no
-  crash. `connector-missing` is I1's.
+- **Without the connector service** (the connector row disabled, or gone at runtime), the
+  instance starts no child and reports `connector-missing` from main appReady on; when the service
+  appears it starts, and when it leaves it stops its child, with no main restart (I1).
 - `PLUGIN_KIND` and `FISHBALL_INSTALLED_PREFIX` moved from the connector's `src/constants.js` into
   `packages/instance/src/recommended.js`, their only reader.
 - The two spikes that imported `src/approvals.js` and `src/digest.js` now import them from
