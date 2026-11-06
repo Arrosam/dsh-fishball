@@ -6,8 +6,8 @@ import { REPO } from './constants.mjs'
 import { MODEL_CASE as C } from './dedicated-model.mjs'
 
 const UI = Object.freeze({
-  file: path.join(REPO, 'client.js'), base: 'http://fishball.test/', fishball: 'dedicated-fishball', ordinary: 'ordinary-control',
-  moduleId: 'dsh-fishball', dock: 'conversation.input.dock', settings: 'plugins.bundle.config', empty: '', slash: '/',
+  file: path.join(REPO, 'packages', 'connector', 'client.js'), base: 'http://fishball.test/', fishball: 'dedicated-fishball', ordinary: 'ordinary-control',
+  moduleId: 'fishball-connector', dock: 'conversation.input.dock', settings: 'plugins.bundle.config', empty: '', slash: '/',
   defaultLocale: 'en',
   method: Object.freeze({ get: 'GET', post: 'POST' }),
   catalog: Object.freeze({ groups: [{ id: C.selection.provider, name: 'Test provider', models: [{ id: C.original.model, name: 'Original model' }, { id: C.selection.model, name: 'Dedicated model' }] }], failures: [], routableProviders: [C.selection.provider], default: C.original }),

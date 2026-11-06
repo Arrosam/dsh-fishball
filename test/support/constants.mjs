@@ -14,10 +14,17 @@ export const WORKER = path.join(SUPPORT, 'worker.mjs')
 
 /** Profile created inside each throwaway DSH_HOME (never a shipped profile name). */
 export const PROFILE = 'fbtest'
-export const PACKAGE_NAME = 'dsh-fishball'
-export const ROW_ID = 'fishball'
-/** P3: the bundle patch inserts this row before the fishball row. */
-export const ATTRIBUTION_ROW = { id: 'fishball-attribution', module: 'dsh-fishball/attribution' }
+/**
+ * After M1 (docs/package-layout.md) the repository holds two plugin packages and the root is not a
+ * plugin. The connector carries the row, client and settings namespace the host cases exercise;
+ * the instance is the built-in Fishball. Both are linked into every test profile.
+ */
+export const CONNECTOR = { name: 'fishball-connector', dir: path.join(REPO, 'packages', 'connector') }
+export const INSTANCE = { name: 'fishball-instance', dir: path.join(REPO, 'packages', 'instance') }
+export const PACKAGE_NAME = CONNECTOR.name
+export const INSTANCE_NAME = INSTANCE.name
+export const ROW_ID = CONNECTOR.name
+export const INSTANCE_ROW_ID = INSTANCE.name
 export const SENTINEL_PRESET = 'fishball:assistant'
 
 /** Fixture bundle linked into the test profile, before the plugin under test. */
@@ -906,7 +913,8 @@ export const PENDING = { key: 'pending' }
  * `baseline` is where the persona stood before the rule was added: the live branch.
  */
 export const PERSONA_BOLD = {
-  module: path.join(process.env.FBTEST_PLUGIN_DIR ?? REPO, 'src', 'persona.js'),
+  // M1: the persona is the instance's; FBTEST_PLUGIN_DIR still names a checkout of the repository.
+  module: path.join(process.env.FBTEST_PLUGIN_DIR ? path.join(process.env.FBTEST_PLUGIN_DIR, 'packages', 'instance') : INSTANCE.dir, 'src', 'persona.js'),
   baseline: { ref: 'rebuild/assistant', file: 'src/persona.js', moduleType: 'text/javascript' },
   exports: ['HIDDEN_PROMPT_ENTRIES', 'PERSONA_ROLE', 'PERSONA_ROW'],
   rowName: '@deepseek-ai/dsh-persona',

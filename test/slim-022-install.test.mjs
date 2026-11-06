@@ -1,15 +1,18 @@
 /**
  * Install-level smoke for the slim isolated Fishball on DSH 0.2.2-rc.1 (test session, 7713 round).
  *
- * Black-box: it installs a packed tarball (FBTEST_TGZ) into a throwaway DSH_HOME with DSH's own
- * `dsh plugin add`, boots `dsh <profile>` on a loopback port, signs in with the printed token and
- * calls only the HTTP surface a browser uses. Requirements come from docs/slim-native-design.md
- * (§7 entries, §9 settings, §10 Refresh models, §6.6 uploads, T09 approvals) and the task brief.
+ * Black-box: it installs the two packed tarballs of the M1 split (FBTEST_CONNECTOR_TGZ, then
+ * FBTEST_INSTANCE_TGZ) into a throwaway DSH_HOME with DSH's own `dsh plugin add`, boots
+ * `dsh <profile>` on a loopback port, signs in with the printed token and calls only the HTTP
+ * surface a browser uses. Requirements come from docs/slim-native-design.md (§7 entries, §9
+ * settings, §10 Refresh models, §6.6 uploads, T09 approvals), docs/package-layout.md and the task
+ * brief.
  *
- * Opt-in: set FBTEST_TGZ (absolute .tgz) and FBTEST_DSH_BIN (DSH-X's 0.2.2-rc.1 `dsh` wrapper).
- * FBTEST_NODE22 is the plain Node put first on DSH's PATH (the native host's default pick since
- * 0ee4d9e; the test no longer edits the profile). Without them every case is skipped.
- * Run it outside a file sandbox: the native runtime spawns /bin/ps, and a denial fails the child.
+ * Opt-in: set FBTEST_CONNECTOR_TGZ and FBTEST_INSTANCE_TGZ (absolute .tgz) and FBTEST_DSH_BIN
+ * (DSH-X's 0.2.2-rc.1 `dsh` wrapper). FBTEST_NODE22 is the plain Node put first on DSH's PATH (the
+ * native host's default pick since 0ee4d9e; the test no longer edits the profile). Without them
+ * every case is skipped. Run it outside a file sandbox: the native runtime spawns /bin/ps, and a
+ * denial fails the child.
  */
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -19,7 +22,8 @@ import os from 'node:os'
 import path from 'node:path'
 
 const ENV = Object.freeze({
-  tgz: process.env.FBTEST_TGZ,
+  connectorTgz: process.env.FBTEST_CONNECTOR_TGZ,
+  instanceTgz: process.env.FBTEST_INSTANCE_TGZ,
   dsh: process.env.FBTEST_DSH_BIN,
   node: process.env.FBTEST_NODE22 ?? '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node',
 })
@@ -44,7 +48,9 @@ const ROUTE = Object.freeze({
   // never served this route (docs/slim-native-design.md §12).
   questionsAnswer: '/api/fishball/questions/answer',
 })
-const skip = !ENV.tgz || !ENV.dsh ? 'set FBTEST_TGZ and FBTEST_DSH_BIN to run' : false
+const PACKAGE = Object.freeze({ connector: 'fishball-connector', instance: 'fishball-instance' })
+const installed = (name) => path.join(home, 'profiles', CFG.profile, 'node_modules', name)
+const skip = !ENV.connectorTgz || !ENV.instanceTgz || !ENV.dsh ? 'set FBTEST_CONNECTOR_TGZ, FBTEST_INSTANCE_TGZ and FBTEST_DSH_BIN to run' : false
 
 let home, proc, cookie, origin, composed
 
@@ -65,9 +71,13 @@ before(async () => {
   // As DSH-X creates a profile: without autoInstallPeers:false pnpm tries to fetch DSH's own
   // @deepseek-ai peers from the registry (prerelease-only) and the add fails.
   fs.writeFileSync(path.join(profileDir, 'pnpm-workspace.yaml'), 'packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n')
-  const add = spawnSync(ENV.dsh, ['plugin', '--profile', CFG.profile, 'add', ENV.tgz, '--ignore-scripts'],
-    { env: { ...process.env, DSH_HOME: home }, encoding: 'utf8' })
-  assert.equal(add.status, 0, 'dsh plugin add failed')
+  // Connector first, then instance: the instance imports fishball-connector/contract and resolves
+  // it as a sibling in this one profile (docs/package-layout.md §5, "Packing").
+  for (const tgz of [ENV.connectorTgz, ENV.instanceTgz]) {
+    const add = spawnSync(ENV.dsh, ['plugin', '--profile', CFG.profile, 'add', tgz, '--ignore-scripts'],
+      { env: { ...process.env, DSH_HOME: home }, encoding: 'utf8' })
+    assert.equal(add.status, 0, `dsh plugin add ${path.basename(tgz)} failed\n${add.stderr}`)
+  }
   // No profile edit (B2, 0ee4d9e): the package's own patch inserts the native-host row and picks
   // the first plain `node` on DSH's PATH, so the boot gets ENV.node's folder first on PATH.
   // The composed tree is read now, before the boot, from DSH's own --dump-config.
@@ -149,9 +159,24 @@ test('INST-06 Refresh models from the page (same-origin Origin header) is not re
   assert.ok(Array.isArray(body?.result?.items), 'sync result has no items list')
 })
 
-test('INST-09 a plain install composes exactly one native-host row (B2)', { skip }, () => {
-  const rows = composed.split('\n').filter((line) => /^\s*-?\s*id:\s*fishball-native-host\s*$/.test(line))
-  assert.equal(rows.length, 1, `native-host rows: ${rows.length}`)
+test('INST-09 a plain install composes one row per package, and no row named fishball (M1)', { skip }, () => {
+  const count = (id) => composed.split('\n').filter((line) => new RegExp('^\\s*-?\\s*id:\\s*' + id + '\\s*$').test(line)).length
+  for (const id of [PACKAGE.connector, PACKAGE.instance]) assert.equal(count(id), 1, `${id} rows: ${count(id)}`)
+  // The old single-package ids are gone: no row may still be called fishball or fishball-native-host.
+  for (const gone of ['fishball', 'fishball-native-host']) assert.equal(count(gone), 0, `old row still composed: ${gone}`)
+})
+
+test('INST-15 both packages install side by side and the instance resolves the connector contract (M1)', { skip }, async () => {
+  const connector = installed(PACKAGE.connector)
+  const instance = installed(PACKAGE.instance)
+  assert.ok(fs.existsSync(path.join(connector, 'contract', 'index.js')), 'connector ships contract/')
+  assert.ok(fs.existsSync(path.join(instance, 'host.js')), 'instance ships host.js')
+  // Neither tarball carries the other package (docs/package-layout.md, "Packing").
+  assert.ok(!fs.existsSync(path.join(instance, 'contract')), 'instance tarball carries the contract')
+  assert.ok(!fs.existsSync(path.join(connector, 'native-child.js')), 'connector tarball carries the instance')
+  // The instance reaches the contract only through the package export, resolved as a sibling here.
+  const { CONNECTOR_CONTRACT } = await import(path.join(instance, 'src', 'slim', 'contract.js'))
+  assert.equal(CONNECTOR_CONTRACT.major, 1)
 })
 
 test('INST-10 no in-process Fishball session is created in the main home (§12)', { skip }, () => {
@@ -166,15 +191,16 @@ test('INST-11 the removed pile question-answer path stays absent, and the page n
   const res = await req(ROUTE.questionsAnswer, { method: 'POST', headers: { ...sameOrigin, 'content-type': 'application/json' }, body: '{}' })
   assert.equal(res.status, 404)
   // The page's client module is the installed client.js; a leftover call would 404 in the browser.
-  const client = fs.readFileSync(path.join(home, 'profiles', CFG.profile, 'node_modules', 'dsh-fishball', 'client.js'), 'utf8')
+  const client = fs.readFileSync(path.join(installed(PACKAGE.connector), 'client.js'), 'utf8')
   assert.ok(!client.includes(ROUTE.questionsAnswer.slice(1)), 'client.js still names the removed route')
 })
 
 test('INST-12 notify_when_finished rides only start/message, and question wording keeps the user in the session (N5, N6)', { skip }, async () => {
-  const pkg = path.join(home, 'profiles', CFG.profile, 'node_modules', 'dsh-fishball')
+  const connector = installed(PACKAGE.connector)
+  const instance = installed(PACKAGE.instance)
   // N5 (DESIGN §5b, §5c): the bridge contract admits the flag on session.start/session.message only,
   // and a delivery result carries a watchId or a watchError, never both, and never on redirect.
-  const { VALIDATORS, OPERATION } = await import(path.join(pkg, 'src', 'slim', 'contract.js'))
+  const { VALIDATORS, OPERATION } = await import(path.join(connector, 'src', 'slim', 'contract.js'))
   const accepts = (fn, payload) => { try { fn(payload); return true } catch { return false } }
   const delivery = { sessionId: 's', message: 'm', attachments: [] }
   const NOTIFY = { notifyWhenFinished: true }
@@ -186,25 +212,26 @@ test('INST-12 notify_when_finished rides only start/message, and question wordin
   assert.ok(!accepts(VALIDATORS.response[OPERATION.sessionMessage], { status: 'delivered', watchId: 'w', watchError: 'limit-reached' }), 'both admitted')
   assert.ok(!accepts(VALIDATORS.response[OPERATION.sessionRedirect], { status: 'delivered', watchId: 'w' }), 'redirect result admits a watch')
   // N6: the settings hints (en + zh) and the child's question texts no longer send the user to the pile.
-  const client = fs.readFileSync(path.join(pkg, 'client.js'), 'utf8')
+  const client = fs.readFileSync(path.join(connector, 'client.js'), 'utf8')
   for (const gone of ['otherwise the question comes to your pile', 'Every question comes to your pile', '否则问题会进入你的待处理区', '每个问题都进入你的待处理区']) {
     assert.ok(!client.includes(gone), `old hint still shipped: ${gone}`)
   }
   for (const now of ['answer on its own question card', '该会话自己的问题卡片上回答']) assert.ok(client.includes(now), `new hint missing: ${now}`)
   // Source text of the child's model-facing strings (single-quoted JS, so the apostrophe is escaped).
-  const childTexts = fs.readFileSync(path.join(pkg, 'src', 'slim', 'child', 'approvals.js'), 'utf8')
+  const childTexts = fs.readFileSync(path.join(instance, 'src', 'slim', 'child', 'approvals.js'), 'utf8')
   assert.ok(!childTexts.includes("send it to the user\\'s pile"), 'child to_user text still names the pile')
   assert.ok(childTexts.includes("on that session\\'s own question card"), 'child to_user text does not name the session card')
 })
 
 test('INST-13 a question left to the user is answered only on its own session card, in every shipped copy (N7)', { skip }, async () => {
-  const pkg = path.join(home, 'profiles', CFG.profile, 'node_modules', 'dsh-fishball')
-  const read = (...parts) => fs.readFileSync(path.join(pkg, ...parts), 'utf8')
+  const connector = installed(PACKAGE.connector)
+  const instance = installed(PACKAGE.instance)
+  const read = (root, ...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8')
   // The words must say where the answer is NOT (this chat, the pile), because Fishball told the
   // user to answer "in this chat (and in your pile)" (7713 N7). Single-quoted JS: \' in source.
   const NOT_HERE = "not in this chat or the user\\'s pile"
-  const main = read('src', 'questions.js')
-  const child = read('src', 'slim', 'child', 'approvals.js')
+  const main = read(connector, 'src', 'questions.js')
+  const child = read(instance, 'src', 'slim', 'child', 'approvals.js')
   const inSession = (src) => src.match(/^const IN_SESSION = '(.*)'$/m)?.[1]
   assert.ok(inSession(main)?.includes(NOT_HERE), 'main IN_SESSION does not exclude chat and pile')
   assert.equal(inSession(child), inSession(main), 'the two IN_SESSION copies differ')
@@ -218,7 +245,7 @@ test('INST-13 a question left to the user is answered only on its own session ca
   assert.ok(/askDescription: `[^`]*\$\{OWN_ONLY\}/.test(child), 'ask_user does not say it is for own questions only')
   // The persona as the model reads it (since bf911d7 it is composed from pile-note.js, so the source
   // file alone no longer holds the sentence): the rendered PERSONA_ROLE string.
-  const { PERSONA_ROLE } = await import(path.join(pkg, 'src', 'persona.js'))
+  const { PERSONA_ROLE } = await import(path.join(instance, 'src', 'persona.js'))
   assert.ok(String(PERSONA_ROLE).includes("not in this chat or the user's pile, so tell the user to answer it there"), 'persona does not send the user to the session card')
 })
 
@@ -230,11 +257,11 @@ test('INST-14 the state reports whether the child can answer, and the persona na
   assert.equal(state.status, 'live', 'state.status is not the store lifecycle')
   // N9-a: Fishball read only the to_user wording after the question came, so before it came it
   // guessed "a card in this chat (and in your pile)". The persona must say where, up front.
-  const pkg = path.join(home, 'profiles', CFG.profile, 'node_modules', 'dsh-fishball')
-  const { PERSONA_ROLE } = await import(path.join(pkg, 'src', 'persona.js'))
+  const instance = installed(PACKAGE.instance)
+  const { PERSONA_ROLE } = await import(path.join(instance, 'src', 'persona.js'))
   // PERSONA_ROLE is the joined persona text (the system prompt prefix).
   const persona = String(PERSONA_ROLE)
-  const main = fs.readFileSync(path.join(pkg, 'src', 'questions.js'), 'utf8')
+  const main = fs.readFileSync(path.join(installed(PACKAGE.connector), 'src', 'questions.js'), 'utf8')
   // The source copy escapes the apostrophe; the persona text is the plain string.
   const inSession = main.match(/^const IN_SESSION = '(.*)'$/m)?.[1]?.replace(/\\'/g, "'")
   assert.ok(inSession, 'IN_SESSION not found in the shipped questions.js')

@@ -2,7 +2,7 @@
 export const PAGE = Object.freeze({
   api: '/api/fishball/provider-sync', origin: 'http://fishball.test', foreignOrigin: 'https://not-the-owner.test',
   selectors: Object.freeze({ panel: 'data-fishball-provider-sync', preview: 'data-fishball-sync-preview', result: 'data-fishball-sync-result', model: 'data-fishball-model-settings', gate: 'data-fishball-model-gate' }),
-  settingsKey: 'dsh-fishball', settingsSlot: /config/,
+  settingsKey: 'fishball-connector', settingsSlot: /config/,
   method: 'POST', contentType: 'application/json', bodyMode: 'buffered', refused: 'provider-sync-refused',
   actions: Object.freeze({ status: 'status', invite: 'invite', begin: 'begin', approve: 'approve', finish: 'finish', preview: 'preview', confirm: 'confirm', close: 'close' }),
   labels: Object.freeze({

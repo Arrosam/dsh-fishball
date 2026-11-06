@@ -3,8 +3,8 @@
  *
  * | id     | technique              | requirement                                             | expected |
  * |--------|------------------------|---------------------------------------------------------|----------|
- * | PKG-01 | EP                     | repo is an ESM npm package named dsh-fishball           | package.json name/type |
- * | PKG-02 | EP                     | bundle patch inserts two host rows (P3 amendment)       | listBundles rows == [fishball-attribution/dsh-fishball/attribution, fishball/dsh-fishball]; exports './attribution' |
+ * | PKG-01 | EP                     | M1: the root is not a plugin; two ESM packages carry the plugins | package.json names/types; root has no main/exports/dsh |
+ * | PKG-02 | EP                     | each package's patch inserts exactly one row (M1)       | rows == [fishball-connector], [fishball-instance]; no row named fishball |
  * | SGL-01 | EP (first start)       | exactly one Fishball session is created                 | 1 session with agentPreset fishball:assistant; 1 session in the folder; state.sessionId matches |
  * | SGL-02 | EP (folder missing)    | cwd is <DSH_HOME>/fishball/assistant, created if missing | folder exists; header cwd and state.cwd equal it |
  * | SGL-03 | EP                     | no DSH workspace registered for the folder              | no workspace path == realpath(folder); state.workspaceId null |
@@ -26,7 +26,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, ATTRIBUTION_ROW, MS, PACKAGE_NAME, REPO, ROW_ID, SENTINEL_PRESET, SETUP_SOURCE, STATUS, STORE, assistantDir } from './support/constants.mjs'
+import { API, INSTANCE_NAME, INSTANCE_ROW_ID, MS, PACKAGE_NAME, REPO, ROW_ID, SENTINEL_PRESET, SETUP_SOURCE, STATUS, STORE, assistantDir } from './support/constants.mjs'
 import { HOOK, T, realpath } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
 
@@ -58,19 +58,24 @@ describe('R-SINGLETON first start', () => {
   }, HOOK)
   after(async () => { await host?.stop() }, HOOK)
 
-  it('PKG-01 the repo is an ESM npm package named dsh-fishball', T, () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'))
-    assert.equal(pkg.name, PACKAGE_NAME)
-    assert.equal(pkg.type, 'module')
+  it('PKG-01 the root is not a plugin and the two M1 packages are ESM plugins (M1)', T, () => {
+    const root = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'))
+    for (const field of ['main', 'exports', 'dsh']) assert.ok(!Object.hasOwn(root, field), 'root still has ' + field)
+    for (const [name, dir] of [[PACKAGE_NAME, 'connector'], [INSTANCE_NAME, 'instance']]) {
+      const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'packages', dir, 'package.json'), 'utf8'))
+      assert.equal(pkg.name, name)
+      assert.equal(pkg.type, 'module')
+      assert.ok(pkg.dsh?.bundle?.patch, name + ' has no bundle patch')
+    }
   })
 
-  it('PKG-02 the bundle patch inserts the attribution row, then the fishball row (P3)', T, async () => {
-    const bundles = await host.call('bundles')
-    assert.equal(bundles.length, 1, 'bundle dsh-fishball listed once')
-    assert.equal(bundles[0].enabled, true)
-    assert.deepEqual(bundles[0].rows.map((r) => [r.rowId, r.moduleName]), [[ATTRIBUTION_ROW.id, ATTRIBUTION_ROW.module], [ROW_ID, PACKAGE_NAME]])
-    const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'))
-    assert.ok(Object.hasOwn(pkg.exports ?? {}, './attribution'), 'exports ./attribution')
+  it('PKG-02 each package patch inserts exactly one row, under its own id (M1)', T, async () => {
+    const all = (await host.call('allBundles')).filter((b) => b.name === PACKAGE_NAME || b.name === INSTANCE_NAME)
+    assert.deepEqual(all.map((b) => b.name).sort(), [PACKAGE_NAME, INSTANCE_NAME].sort())
+    for (const b of all) assert.equal(b.enabled, true, b.name + ' not enabled')
+    const rows = Object.fromEntries(all.map((b) => [b.name, b.rows]))
+    assert.deepEqual(rows[PACKAGE_NAME], [ROW_ID])
+    assert.deepEqual(rows[INSTANCE_NAME], [INSTANCE_ROW_ID])
   })
 
   it('SGL-07 Fishball is live right after start without user action', T, async () => {

@@ -55,7 +55,7 @@ function mountedSheets({ lang, navigator: nav }) {
     __ModuleLoader__: { load: (def) => { definition = def } }, document, navigator: { language: nav, languages: [nav] },
     addEventListener() {}, removeEventListener() {}, matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
   }
-  vm.runInNewContext(fs.readFileSync(path.join(REPO, 'client.js'), 'utf8'), { window, document, navigator: window.navigator, console, EventSource: class { close() {} }, fetch: async () => ({ ok: false, json: async () => ({}) }) })
+  vm.runInNewContext(fs.readFileSync(path.join(REPO, 'packages', 'connector', 'client.js'), 'utf8'), { window, document, navigator: window.navigator, console, EventSource: class { close() {} }, fetch: async () => ({ ok: false, json: async () => ({}) }) })
   const mod = definition.factory(() => inertHost())
   const ctx = { slots: inertHost(), locale: inertHost(), effect: (fn) => fn() }
   // The sheet may be mounted at load or on apply; a stub host can make apply throw after the sheet exists.

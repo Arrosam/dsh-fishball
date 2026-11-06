@@ -259,7 +259,7 @@ describe('Revision 11 rev11a follow-up: the managed sessions list', () => {
 
   it('MGL-11 the client bundle carries the list\'s labels', T, async (t) => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references dsh-fishball/client.js')
+    assert.ok(bundle.found, 'index references fishball-connector/client.js')
     assert.equal(bundle.status, 200)
     const labels = [MANAGED_LIST_LABELS.heading, ...Object.values(MANAGED_LIST_LABELS.by), MANAGED_LABELS.takeBack, MANAGED_LIST_LABELS.empty]
     for (const l of labels) assert.ok(bundle.text.includes(l), 'bundle lacks ' + JSON.stringify(l))

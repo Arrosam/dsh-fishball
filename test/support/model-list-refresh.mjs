@@ -6,7 +6,7 @@ import { MODEL_CASE as M } from './dedicated-model.mjs'
 export const REFRESH = Object.freeze({
   zero: 0, one: 1, two: 2, last: -1, settleTurns: 12,
   settings: 'data-fishball-model-settings', picker: 'data-fishball-model-select',
-  button: 'data-fishball-model-refresh', bundle: 'dsh-fishball', config: /config/,
+  button: 'data-fishball-model-refresh', bundle: 'fishball-connector', config: /config/,
   tag: Object.freeze({ option: 'option', select: 'select', button: 'button', label: 'label' }),
   method: Object.freeze({ get: 'GET', post: 'POST' }),
   empty: '', separator: ' ',
