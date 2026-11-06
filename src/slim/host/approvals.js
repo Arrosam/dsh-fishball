@@ -45,7 +45,8 @@ import { cutToBytes } from '../../text.js'
 import { diagnosticOf } from '../../errors.js'
 import { BridgeRefusal, ensureManaged } from './bridge.js'
 import { SESSION_STATE } from './session-port.js'
-import { CARD_CLOSED, OWN_ANSWER, QUESTION_ANSWER } from '../inbox-markers.js'
+import { CARD_CLOSED, OWN_ANSWER, QUESTION_ANSWER, RECORD_ITEM } from '../inbox-markers.js'
+import { CARD_RECORD } from '../card-record.js'
 
 /** The §5.2 operations this task registers; they enter the handshake's capability list. */
 export const APPROVAL_OPERATIONS = Object.freeze([
@@ -330,6 +331,19 @@ class ApprovalRelay {
     try { void this.host?.pushInbox(item).catch(() => {}) } catch { /* closed */ }
   }
 
+  /**
+   * One card record for Fishball's chat (src/card-records.js). It rides the inbox, not an event:
+   * events are dropped while the child is off the wire, and a record must survive that.
+   */
+  recorded(event) {
+    const record = event.record
+    if (record === null || typeof record !== 'object' || typeof record.id !== 'string' || record.id === '') return
+    this.queueInbox({
+      messageId: randomUUID(), kind: INBOX_KIND.system, sourceSessionId: event.sessionId,
+      text: RECORD_ITEM.text(record), images: [], dedupeKey: RECORD_ITEM.dedupePrefix + record.id, at: this.now(),
+    })
+  }
+
   /** Provider events: a card, a move to the user, a settlement, a call that ran on an approval, or Fishball's own answer. */
   notify(event) {
     if (this.disposed || event === null || typeof event !== 'object') return
@@ -340,6 +354,7 @@ class ApprovalRelay {
       else if (event.type === RELAY_EVENT.ran) this.ran(event)
       else if (event.type === OWN_ANSWER.event) this.answered(event)
       else if (event.type === CARD_CLOSED.event) this.closed(event)
+      else if (event.type === CARD_RECORD.event) this.recorded(event)
     } catch (error) {
       // A closed channel or an unrepresentable card is not the decision's failure, so the event
       // is dropped. Log the diagnostic: a silent swallow once hid a field shadowing closed().

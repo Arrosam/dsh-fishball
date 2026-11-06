@@ -19,7 +19,8 @@
  *   the bridge refuses the item and the host keeps it queued for redelivery (§5.2).
  */
 import { ContractError, ERROR } from '../contract.js'
-import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
+import { CARD_CLOSED, QUESTION_ANSWER, RECORD_ITEM } from '../inbox-markers.js'
+import { CARD_RECORD } from '../card-record.js'
 
 /** Stable Cordis plugin name; native-child.js mounts this row. */
 export const name = 'fishball-native-inbox'
@@ -53,7 +54,31 @@ const TRANSIENT = new Set([
 /** The one copy this row adds; the refused code stays visible, the message text is not lost. */
 const TEXT = Object.freeze({
   imageRefused: (code) => 'Fishball could not receive an image from another session (' + code + '). The message was delivered without its images.',
+  /**
+   * What Fishball reads when the user answered a card themselves (the user's request 2026-11-06:
+   * Fishball must see the answer, not only that it was answered). The session's own question text
+   * is left out: it is that session's words, and read_session shows it.
+   */
+  answered: (record) => 'Fishball notice: the user answered ' + (record.own === true ? 'your question ' : NOUN[record.kind] + ' ') + record.cardId
+    + (record.own === true ? '' : ' from session ' + JSON.stringify(record.from?.title || record.from?.sessionId || '') + ' (' + (record.from?.sessionId ?? '') + ')')
+    + (record.place === CARD_RECORD.place.session ? ' in that session' : ' on its card') + ': '
+    + (record.kind === CARD_RECORD.kind.permission ? OUTCOME_WORDS[record.outcome] + (record.note ? ', with the note ' + JSON.stringify(record.note) : '') : record.outcome === CARD_RECORD.outcome.skipped ? 'skipped' : record.answer === undefined ? TEXT_UNKNOWN_WORDS : JSON.stringify(record.answer)) + '.',
 })
+/** A late reply to a continued question carries no batch here; its words stay in that session's log. */
+const TEXT_UNKNOWN_WORDS = 'answered (read_session shows the words)'
+/** The card kinds and permission outcomes as Fishball's notice names them. */
+const NOUN = Object.freeze({ [CARD_RECORD.kind.permission]: 'permission request', [CARD_RECORD.kind.question]: 'question', [CARD_RECORD.kind.planReview]: 'plan review' })
+const OUTCOME_WORDS = Object.freeze({ [CARD_RECORD.outcome.allowed]: 'allowed once', [CARD_RECORD.outcome.granted]: 'allowed', [CARD_RECORD.outcome.rejected]: 'rejected' })
+
+/** The record an item carries, or undefined when it is not a well-formed card record item. */
+function recordOf(item) {
+  if (item?.kind !== RECORD_ITEM.kind || typeof item.text !== 'string') return undefined
+  const match = RECORD_ITEM.pattern.exec(item.text)
+  if (match === null) return undefined
+  let record
+  try { record = JSON.parse(match[1]) } catch { return undefined }
+  return record !== null && typeof record === 'object' && record.v === CARD_RECORD.version && typeof record.id === 'string' ? record : undefined
+}
 
 /**
  * Mount the consumer as its own child row. It waits for fishballChat, which app.js publishes
@@ -78,8 +103,8 @@ export function apply(ctx) {
 export function createInboxConsumer(options) {
   const { bridge, chat, logger } = options ?? {}
   if (typeof bridge?.onInbox !== 'function') throw new TypeError('fishball-native-inbox: the bridge must implement onInbox')
-  if (typeof chat?.deliverInbox !== 'function' || typeof chat?.notify !== 'function') {
-    throw new TypeError('fishball-native-inbox: the chat must implement deliverInbox and notify')
+  if (typeof chat?.deliverInbox !== 'function' || typeof chat?.notify !== 'function' || typeof chat?.recordCard !== 'function') {
+    throw new TypeError('fishball-native-inbox: the chat must implement deliverInbox, notify and recordCard')
   }
   let closed = false
 
@@ -94,6 +119,13 @@ export function createInboxConsumer(options) {
    */
   async function receive(item) {
     if (isApprovalsItem(item)) return false
+    const record = recordOf(item)
+    // A card record is a visible row in Fishball's chat, never a turn; the user's own answer is
+    // also told to Fishball without a wake, so it reads the words at its next step.
+    if (record !== undefined) {
+      await chat.recordCard(record, record.by === CARD_RECORD.by.user ? TEXT.answered(record) : undefined)
+      return true
+    }
     try {
       await chat.deliverInbox(item)
       return true

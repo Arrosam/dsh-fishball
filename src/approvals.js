@@ -80,6 +80,7 @@ import { byteLength, cutToBytes } from './text.js'
 import { diagnosticOf } from './errors.js'
 import { checkGrant } from './grants.js'
 import { closeCard } from './card-lifecycle.js'
+import { CARD_RECORD } from './slim/card-record.js'
 
 export const APPROVAL_TOOL = Object.freeze({ answer: 'answer_approval', listPrompts: 'list_frozen_sessions', answerPrompt: 'answer_prompt' })
 const SOURCE_IDENTITY = 'fishball/approval'
@@ -140,6 +141,9 @@ const OFFER = Object.freeze({
 })
 /** The contract's SETTLED_BY vocabulary; kept local so this legacy row imports no slim module. */
 const SETTLED_BY = Object.freeze({ user: 'user', fishball: 'fishball' })
+/** A decision or a call's outcome as its card record says it (src/card-records.js); others leave none. */
+const RECORD_OF_DECISION = Object.freeze({ [APPROVAL_DECISION.allow]: CARD_RECORD.outcome.allowed, [APPROVAL_DECISION.grant]: CARD_RECORD.outcome.granted, [APPROVAL_DECISION.reject]: CARD_RECORD.outcome.rejected })
+const RECORD_OF_OUTCOME = Object.freeze({ [APPROVAL_OUTCOME.allowedOnce]: CARD_RECORD.outcome.allowed, [APPROVAL_OUTCOME.rejected]: CARD_RECORD.outcome.rejected })
 
 const TEXT = Object.freeze({
   answerDescription: 'Answer a permission request from a session you manage ([permission request apr_…]). "allow" approves this one call once: only within an allowance the user gave you in their own messages, only for low risk, with a reason. "grant" approves it as "allow" does and also creates a standing grant, so that session\'s later calls it covers run without asking you: only when the user\'s allowance covers every call the grant covers; it needs `grant` with an end time. "reject" refuses it with a reason the session sees: only when the call goes beyond what the user asked that session to do AND it is dangerous. "ask" sends the session a question; its reply comes back as the same request. "escalate" hands it to the user; its reason is the line on the user\'s card: ' + PILE_NOTE.guide + '.',
@@ -291,6 +295,7 @@ export class ApprovalBroker {
   #manage
   #audit
   #decisions
+  #records
   /** apr id -> request (DESIGN §9 "Request threads"): waiting for Fishball, or owing a reply. */
   #requests = new Map()
   /** apr id -> settle(result) of each request Fishball decides now (maxPendingApprovals counts these). */
@@ -314,8 +319,9 @@ export class ApprovalBroker {
    * @param deps.pile - Pile (your cards).
    * @param deps.grants - Grants (standing grants: created by Fishball's grant answers, covering calls).
    * @param deps.manage - (sessionId, by) => Promise<whether it became managed now> (answer_prompt, §7a.9).
+   * @param deps.records - CardRecords (src/card-records.js): one record per decided or closed card.
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, onChange, isManaged, passes, wording, pile, grants, manage }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, isLive, onChange, isManaged, passes, wording, pile, grants, manage, records }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -330,6 +336,7 @@ export class ApprovalBroker {
     this.#pile = pile
     this.#grants = grants
     this.#manage = manage
+    this.#records = records
     this.#audit = new AuditLog(() => store.approvals, () => readLimits().auditEntriesKept)
     this.#decisions = new AuditLog(() => store.decisions, () => readLimits().auditEntriesKept)
     // A `function`, so the scope target (`this`) is at hand for S33's re-dispatch fallback.
@@ -472,6 +479,8 @@ export class ApprovalBroker {
     if (grantId !== undefined) await this.#grants.confirm(grantId)
     // The slim child learns the settlement even though it made the answer (its decision label, T08).
     this.#emit({ type: OFFER.event.settled, approvalId: id, sessionId: request.sessionId, decision, by: SETTLED_BY.fishball })
+    // Ask and escalate keep the request open, so only a final decision leaves a card record.
+    if (RECORD_OF_DECISION[decision] !== undefined) this.#records.permission(request, { by: CARD_RECORD.by.fishball, outcome: RECORD_OF_DECISION[decision], note: rationale })
     return ok({ requestId: id, decision, ...(grantId === undefined ? {} : { grantId, expiresAt: granted.expiresAt }) })
   }
 
@@ -513,6 +522,7 @@ export class ApprovalBroker {
     // Both audits (§9, the manager's decision 2026-11-02): the request's approvals row (kind prompt) and Fishball's decision.
     await this.#record({ ...prompt, at: prompt.since, answer: DECISION_ANSWER[decision], kind: REQUEST_KIND.prompt, risk, rationale, finalOutcome: outcome })
     await this.#decide({ action: DECISION_ACTION.answerPrompt, sessionId: prompt.sessionId, target: id, rationale, outcome })
+    this.#records.permission(prompt, { by: CARD_RECORD.by.fishball, outcome: RECORD_OF_OUTCOME[outcome], note: rationale })
     return ok({ promptId: id, decision, sessionId: prompt.sessionId, managed: managed !== PROMPT_MANAGED.failed, note: TEXT.promptManaged[managed] })
   }
 
@@ -736,6 +746,7 @@ export class ApprovalBroker {
         this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: allowed ? APPROVAL_DECISION.allow : APPROVAL_DECISION.reject, by: SETTLED_BY.user })
         const outcome = allowed ? APPROVAL_OUTCOME.allowedOnce : APPROVAL_OUTCOME.rejected
         await this.#clicked(request.sessionId, request.id, outcome, allowed ? undefined : card.note !== undefined)
+        this.#records.permission(request, { by: CARD_RECORD.by.user, place: CARD_RECORD.place.pile, outcome: RECORD_OF_OUTCOME[outcome], note: card.note })
         return { ...answer, byUser: true, ...(card.note === undefined ? {} : { reason: card.note }) }
       }
       case CARD_END.off:
@@ -855,7 +866,7 @@ export class ApprovalBroker {
    * @param end - a CARD_END.
    */
   cardClosed(card, end) {
-    closeCard(card, end, (event) => this.#emit(event))
+    if (closeCard(card, end, (event) => this.#emit(event))) this.#records.closed(card, end)
   }
 
   /** Answer a waiting request once; @returns whether it was still waiting. */
@@ -1003,6 +1014,11 @@ export class ApprovalBroker {
     await this.#finish(request, outcome === APPROVAL_OUTCOME.cancelled ? { answer: APPROVAL_ANSWER.withdrawn } : result, outcome)
     if (by === PROMPT_BY.session) await this.#clicked(request.sessionId, request.id, outcome)
     else if (by === PROMPT_BY.pile) await this.#clicked(request.sessionId, request.id, outcome, outcome === APPROVAL_OUTCOME.rejected ? note !== undefined : undefined)
+    // The user's own Allow once / Reject, on the card or on the session's prompt (a cancelled or
+    // unavailable outcome is no answer; the card's closure, if any, is recorded by cardClosed).
+    if ((by === PROMPT_BY.pile || by === PROMPT_BY.session) && RECORD_OF_OUTCOME[outcome] !== undefined) {
+      this.#records.permission(request, { by: CARD_RECORD.by.user, place: by === PROMPT_BY.pile ? CARD_RECORD.place.pile : CARD_RECORD.place.session, outcome: RECORD_OF_OUTCOME[outcome], note })
+    }
     return outcome
   }
 
