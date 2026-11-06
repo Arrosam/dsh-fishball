@@ -53,7 +53,7 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, PILE_SCOPE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, QUESTION_MODE_KEY, REQUEST_KIND, SOURCE } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, PILE_SCOPE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, REQUEST_KIND, SOURCE } from './constants.js'
 import { AuditLog } from './audit.js'
 import { Pile } from './pile.js'
 import { argumentsText, latestUserText, sha256 } from './approvals.js'
@@ -344,10 +344,10 @@ export function answerWords(answers, chars) {
 }
 export class QuestionRouter {
   #ctx
-  #store
   #logger
   #ledger
   #readLimits
+  #readQuestionMode
   #assistantId
   #canAnswer
   #isManaged
@@ -367,20 +367,21 @@ export class QuestionRouter {
 
   /**
    * @param ctx - fishball row context (sessions, sessionController, on, get).
-   * @param store - Store (settings, approvals and decisions audits). @param logger - plugin logger.
+   * @param store - Store (pile, approvals and decisions audits). @param logger - plugin logger.
    * @param deps.ledger - IntakeLedger (the question notice). @param deps.readLimits - () => limits.
+   * @param deps.readQuestionMode - () => the row config's question mode (src/config.js).
    * @param deps.assistantId - () => Fishball's session id.
    * @param deps.canAnswer - () => the isolated Fishball is connected and can answer (item 10).
    * @param deps.isManaged - (sessionId) => managed. @param deps.managedIds - () => every managed session id.
    * @param deps.onChange - state changed (the state feed publishes).
    * @param deps.records - CardRecords (src/card-records.js): one record per answered or closed card.
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, canAnswer, isManaged, managedIds, onChange, records }) {
+  constructor(ctx, store, logger, { ledger, readLimits, readQuestionMode, assistantId, canAnswer, isManaged, managedIds, onChange, records }) {
     this.#ctx = ctx
-    this.#store = store
     this.#logger = logger
     this.#ledger = ledger
     this.#readLimits = readLimits
+    this.#readQuestionMode = readQuestionMode
     this.#assistantId = assistantId
     this.#canAnswer = canAnswer
     this.#isManaged = isManaged
@@ -396,18 +397,18 @@ export class QuestionRouter {
     ctx.on(EVENT.sessionEvent, (session, event) => this.#onSessionEvent(session, event))
   }
 
-  /** Who answers questions now (§9 `settings['questions']`; absent means auto). */
+  /** Who answers questions now: the row config's `questionMode` (design §0.7, C2). */
   mode() {
-    return this.#store.settings.get(QUESTION_MODE_KEY)?.mode ?? QUESTION_MODE.auto
+    return this.#readQuestionMode()
   }
 
   /**
-   * Your choice on Fishball's settings page (the caller checked it is a QUESTION_MODE). In User
-   * mode a question waiting for Fishball becomes your card at once, as a new one would.
+   * The mode changed in DSH's form (the row's volatile update; the caller compares the old and
+   * new mode). In User mode a question waiting for Fishball becomes your card at once, as a new
+   * one would.
    */
-  async setMode(mode) {
-    await this.#store.settings.put(QUESTION_MODE_KEY, { mode, changedAt: new Date().toISOString() })
-    if (mode === QUESTION_MODE.user) for (const entry of [...this.#entries.values()]) this.#toPile(entry, APPROVAL_ANSWER.toUser)
+  modeChanged() {
+    if (this.mode() === QUESTION_MODE.user) for (const entry of [...this.#entries.values()]) this.#toPile(entry, APPROVAL_ANSWER.toUser)
     this.#onChange()
   }
 

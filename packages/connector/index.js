@@ -2,7 +2,9 @@
  * The fishball-connector row: Fishball's "body" in the main DSH (slim §12, design §0.2). Fishball
  * itself runs in an instance, the built-in one being the fishball-instance package; this row holds
  * what must stay in the main process because it touches main sessions:
- * - src/store.js           durable state: managed sessions, watches, intake, pile, grants, preferences
+ * - src/config.js          the connector's settings (limits, question mode), edited only in DSH's form
+ * - src/settings-migration.js  the one-time copy of the old `fishball` row's settings
+ * - src/store.js           durable state: managed sessions, watches, intake, pile, grants
  * - src/intake.js          every input for Fishball, durable, pushed to the child's inbox
  * - src/messaging.js       message_fishball (managed sessions) and the Hand over note
  * - src/managed.js         which sessions Fishball manages, their tools, Hand over / Take back
@@ -16,16 +18,15 @@
  * - src/own-questions.js   Fishball's own questions to you (the child's ask_user)
  * - src/grants.js          standing grants: calls they cover run without waking Fishball
  * - src/result-wording.js  what an agent reads after Fishball answered its direct call
- * - src/preferences.js     your display choices (the sidebar brand icon and entry)
- * - src/http.js            /api/fishball/* for the brand, the session-row marks and Hand over
+ * - src/http.js            /api/fishball/* for the state feed, the session-row marks and Hand over
  * An instance reaches all of this only through the contract's `fishballConnector` service
  * (src/connector-service.js), which binds one instance's transport to this row's own state
  * (fishballSessionState) and the bridge (src/slim/host/*).
  * There is no in-process Fishball agent or session: the legacy one was removed, because a second
  * Fishball in the main process took every input the user meant for the child.
  */
-import { Config, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL } from './src/constants.js'
+import { Config, QUESTION_MODE_SETTING, readLimits, readQuestionMode } from './src/config.js'
+import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -36,7 +37,7 @@ import { SESSION_STATE } from './src/slim/host/session-port.js'
 import { provideConnectorService } from './src/connector-service.js'
 import { SessionTitles } from './src/session-titles.js'
 import { Watches, WatchError } from './src/watches.js'
-import { Preferences } from './src/preferences.js'
+import { migrateSettings } from './src/settings-migration.js'
 import { APPROVAL_TOOL, ApprovalBroker } from './src/approvals.js'
 import { requestDeskTools } from './src/request-desk.js'
 import { CallPasses } from './src/passes.js'
@@ -61,23 +62,25 @@ const unavailable = () => Promise.reject(new LifecycleStateError(API_CODE.unavai
 export async function apply(ctx, config) {
   const logger = ctx.logger(PLUGIN.logger)
   const limits = () => readLimits(config)
+  const questionMode = () => readQuestionMode(config)
   const feed = new StateFeed((error) => logger.warn('state listener failed (%s)', diagnosticOf(error)))
   /** The row is live once its store is open; it never waits on the child (the bridge reports that). */
   let status = { status: STATUS.live, error: null }
   let views = {}
   const snapshot = () => ({ ...status, sessionId: FISHBALL.sessionId, limits: limits(), ...Object.fromEntries(Object.entries(views).map(([key, view]) => [key, view()])) })
   const publish = () => feed.publish(snapshot())
-  const commands = { send: unavailable, setManaged: unavailable, answerRequest: unavailable, setQuestionMode: unavailable, setBrandStyle: unavailable, setSidebarEntry: unavailable }
+  const commands = { send: unavailable, setManaged: unavailable, answerRequest: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
     send: (input) => commands.send(input),
     setManaged: (input) => commands.setManaged(input),
     answerRequest: (input) => commands.answerRequest(input),
-    setQuestionMode: (mode) => commands.setQuestionMode(mode),
-    setBrandStyle: (style) => commands.setBrandStyle(style),
-    setSidebarEntry: (entry) => commands.setSidebarEntry(entry),
   })
+  // An edit in DSH's form commits the row's volatile fields without a remount (spike S21); the
+  // limits are read live, so the page's snapshot is republished and a mode change acts at once.
+  let onSettingsChange = publish
+  ctx.on(EVENT.volatileUpdate, () => onSettingsChange())
   // The binding exists from apply, independent of the store, so an instance can attach even
   // before this row's registries are up: with no session state the bridge answers feature-off
   // instead of the instance failing to connect (contract §1, §9).
@@ -92,11 +95,11 @@ export async function apply(ctx, config) {
     publish()
     return
   }
-  // Your display choices need only the store, so they are wired before anything that can fail (B4).
-  const preferences = new Preferences(store, { onChange: () => publish() })
-  views.preferences = () => preferences.snapshot()
-  commands.setBrandStyle = (style) => preferences.setBrandStyle(style)
-  commands.setSidebarEntry = (entry) => preferences.setSidebarEntry(entry)
+  // The old rows' settings are copied once, after every row is applied (design §0.2); apply never
+  // waits on it, and a failure leaves the current values in force and is retried at the next boot.
+  let applied = true
+  ctx.effect(() => () => { applied = false }, 'fishball: settings migration')
+  void migrateSettings({ ctx, store, logger, namespace: PLUGIN.name, schema: Config, modeField: QUESTION_MODE_SETTING.field, isActive: () => applied })
 
   const logged = (label) => (error) => logger.warn('%s failed (%s)', label, diagnosticOf(error))
   const assistantId = () => FISHBALL.sessionId
@@ -181,7 +184,7 @@ export async function apply(ctx, config) {
   })
   // Managed sessions' questions and plan reviews go to Fishball (rev11g, §7a.10); yours stay in their chat.
   questions = new QuestionRouter(ctx, store, logger, {
-    ledger, readLimits: limits, assistantId, onChange: () => publish(), canAnswer: isLive, isManaged,
+    ledger, readLimits: limits, readQuestionMode: questionMode, assistantId, onChange: () => publish(), canAnswer: isLive, isManaged,
     managedIds: () => managedRegistry.snapshot().map((entry) => entry.sessionId),
     records: cardRecords,
   })
@@ -192,6 +195,14 @@ export async function apply(ctx, config) {
   questions.registerTools(capture)
   grants.registerTools(capture)
   views.questionMode = () => questions.mode()
+  // A mode changed in DSH's form: in User mode, questions waiting for Fishball become your cards.
+  let lastMode = questionMode()
+  onSettingsChange = () => {
+    const mode = questionMode()
+    if (mode === lastMode) { publish(); return }
+    lastMode = mode
+    questions.modeChanged()
+  }
   deskTools = requestDeskTools({ ctx, broker, readLimits: limits })
   // Managed agents already live get the two tools now that they exist.
   managedRegistry.sync()
@@ -204,7 +215,6 @@ export async function apply(ctx, config) {
     if (note !== undefined && byteLength(note) > limits().maxMessageBytes) throw new LifecycleStateError(API_CODE.tooLarge)
     if (!broker.answerCard({ requestId, decision, note })) throw new LifecycleStateError(API_CODE.expired)
   }
-  commands.setQuestionMode = (mode) => questions.setMode(mode)
   // When this row unloads nothing can answer: waiting requests go to you at once (P7 review M1).
   ctx.effect(() => () => { broker.releaseAll(); questions.releaseAll() }, 'fishball: release permission requests and questions')
   const asApiError = (ErrorClass) => async (task) => {

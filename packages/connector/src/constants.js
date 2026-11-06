@@ -366,7 +366,10 @@ export const QUESTION = Object.freeze({
 })
 /** Who answers a managed session's question (§7a.10 "The mode"); absent means auto. */
 export const QUESTION_MODE = Object.freeze({ auto: 'auto', fishball: 'fishball', user: 'user' })
-/** The stored mode's record key in `settings` (§9). */
+/**
+ * The old store record key of the mode in `settings` (§9). The mode now lives in the row config
+ * (src/config.js); only the one-time settings migration reads this record (design §0.2).
+ */
 export const QUESTION_MODE_KEY = 'questions'
 /** A question card's kind (and the open-question entry's, §9 "Open questions"). */
 export const QUESTION_KIND = Object.freeze({ question: 'question', planReview: 'plan-review' })
@@ -448,17 +451,30 @@ export const GRANT_ERROR = Object.freeze({
 })
 
 /**
- * Your display choices (src/preferences.js). The brand icon is Fishball's own mark, or DSH's
- * orca; the default is Fishball's, as before the choice existed.
+ * The vocabulary of the old display-choice record (the brand icon and the sidebar entry), retired
+ * by D22: the icon is fixed and there is no such setting. Kept only so the store still parses an
+ * old record, which is never read or migrated and stays for a rollback (src/store.js).
  */
 export const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
-/**
- * How the sidebar opens the Fishball view (slim §7): its own row in DSH's panel list plus the
- * top-left brand button, or the brand button only. The row is the default (owner's choice,
- * 2026-11-06), so Fishball sits in the sidebar like a session; settings can turn the row off.
- */
 export const SIDEBAR_ENTRY = Object.freeze({ panel: 'panel', brand: 'brand' })
-export const PREFERENCE = Object.freeze({ recordKey: 'display', defaultBrandStyle: BRAND_STYLE.fishball, defaultSidebarEntry: SIDEBAR_ENTRY.panel })
+
+/**
+ * The one-time copy of the old rows' settings into the `fishball-connector` row (design §0.2,
+ * src/settings-migration.js). The old row id is the pre-split `fishball` row of `dsh-fishball`.
+ */
+export const SETTINGS_MIGRATION = Object.freeze({
+  /** The store's `migrations` record that marks the copy done; it is never removed. */
+  key: 'connector-settings-v1',
+  oldRowId: 'fishball',
+  /** DSH's own services the migration reads with ctx.get (absent in a host without profiles). */
+  service: Object.freeze({ settings: 'settings', loader: 'loader' }),
+  /** `!!js` values in a profile patch: an unevaluated expression is never copied. */
+  jsTag: 'tag:yaml.org,2002:js',
+  encoding: 'utf8',
+  missingFile: 'ENOENT',
+  /** Where the copied values came from, for the log line (never a value). */
+  source: Object.freeze({ liveForm: 'live form', patch: 'profile patch', none: 'none' }),
+})
 
 /** Intake ledger parameters (src/intake.js). */
 export const INTAKE = Object.freeze({
@@ -466,6 +482,12 @@ export const INTAKE = Object.freeze({
   keySeparator: '\n',
   /** Delivery attempts before a row is marked failed (each restart or reconcile retries). */
   maxAttempts: 3,
+  /**
+   * Newest rows the state snapshot lists (the managed-row "unread input" dot reads them). Was
+   * the `intakeRowsShown` setting, at the same value; it bounds the state feed and is not a user
+   * setting (conn-OQ-20).
+   */
+  rowsShown: 20,
 })
 
 /** Outcome of handing one item to the ledger. */
@@ -541,12 +563,8 @@ export const API = Object.freeze({
   managed: '/api/fishball/managed',
   /** POST { requestId, decision, note? }: your Allow once / Reject on a card (the ask_fishball row). */
   requestsAnswer: '/api/fishball/requests/answer',
-  /** POST { mode }: who answers managed sessions' questions. */
-  questionMode: '/api/fishball/question-mode',
-  /** POST { style }: which brand icon the sidebar shows (BRAND_STYLE). */
-  brand: '/api/fishball/brand',
-  /** POST { entry }: whether the sidebar has a Fishball row or only the brand button (SIDEBAR_ENTRY). */
-  sidebarEntry: '/api/fishball/sidebar-entry',
+  // The question mode, brand and sidebar-entry routes are retired (C2): the mode changes only in
+  // DSH's own form of the row, and the icon is fixed (D22). Their paths answer 404.
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
