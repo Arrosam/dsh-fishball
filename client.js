@@ -46,7 +46,7 @@ window.__ModuleLoader__.load({
     const STATUS = Object.freeze({ starting: 'starting', live: 'live' })
     /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
     /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
-    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', brand: 'api/fishball/brand', sidebarEntry: 'api/fishball/sidebar-entry', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
+    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', brand: 'api/fishball/brand', sidebarEntry: 'api/fishball/sidebar-entry', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionMode: 'api/fishball/question-mode' })
     /**
      * The one hand-over entry (§8.3): the session header and the session-row menu share it. Menu
      * order: after DSH's own pin/rename/fork/archive, before the id; header order: just before
@@ -265,11 +265,11 @@ window.__ModuleLoader__.load({
     // ask_fishball's reason_from for Fishball's own reason (rev11-ui-fixes R3); a row from before the fix has none.
     const REASON_FROM_FISHBALL = 'fishball'
     /**
-     * Questions and plan reviews (rev11g, §7a.10; src/constants.js QUESTION_KIND, QUESTION_MODE,
-     * QUESTION_ERROR): their cards share the pile, the mode is set on the settings page.
+     * Questions and plan reviews (rev11g, §7a.10; src/constants.js QUESTION_KIND, QUESTION_MODE):
+     * the mode is set on the settings page. You answer them in their own session (DSH's question
+     * card); the pile that had a question form is gone (docs/slim-native-design.md §12).
      */
     const QUESTION_VIEW = Object.freeze({ question: 'question', planReview: 'plan-review', modes: Object.freeze(['auto', 'fishball', 'user']) })
-    const QUESTION_ERRORS = new Set(['expired', 'bad-answer', 'already-settled', 'session-not-live', 'unavailable'])
     const GRANT_ERRORS = new Set(['unknown', 'ended', 'unavailable'])
     const JSON_INDENT = 2
     /**
@@ -565,11 +565,6 @@ window.__ModuleLoader__.load({
       'field.userMessagesListed': 'Your messages list_user_messages shows a managed session',
       'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
       'field.pileMaxHeightVh': 'Height of your pile above Fishball\'s composer (% of the window)',
-      'questionError.expired': 'This question was already answered, has ended, or went back to its session.',
-      'questionError.bad-answer': 'That answer does not fit the question: {reason}',
-      'questionError.already-settled': 'Someone answered this question first.',
-      'questionError.session-not-live': 'The session could not be reached.',
-      'questionError.unavailable': 'Fishball is not running.',
       questionMode: 'Questions in managed sessions',
       questionModeHint: 'Who answers the questions and plan reviews of sessions Fishball manages. Your own sessions\' questions always stay with you.',
       'questionMode.auto': 'Auto',
@@ -824,11 +819,6 @@ window.__ModuleLoader__.load({
       'field.userMessagesListed': 'list_user_messages 向受管会话列出的你的消息条数',
       'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
       'field.pileMaxHeightVh': 'Fishball 输入框上方待处理请求区的高度（占窗口的百分比）',
-      'questionError.expired': '这个问题已被回答、已结束，或已回到它的会话。',
-      'questionError.bad-answer': '这个回答不符合问题：{reason}',
-      'questionError.already-settled': '已有人先回答了这个问题。',
-      'questionError.session-not-live': '无法连接到该会话。',
-      'questionError.unavailable': 'Fishball 未在运行。',
       questionMode: '受管会话中的问题',
       questionModeHint: '由谁回答 Fishball 管理的会话中的问题和计划审阅。你自己的会话中的问题始终由你回答。',
       'questionMode.auto': '自动',
@@ -2310,13 +2300,6 @@ window.__ModuleLoader__.load({
 
     /** A labelled line of text from another session or from Fishball (plain text, never markup: §10c framing rule). */
     const labelled = (label, text) => h('div', null, h('span', { className: CLS.muted }, label + ': '), text)
-
-    /** POST your answer on a question card. @returns null when accepted, else the refusal's text. */
-    async function answerQuestionCard(questionId, body, t) {
-      const { ok, code, answer } = await send(API.questionsAnswer, { questionId, ...body })
-      if (ok) return null
-      return QUESTION_ERRORS.has(code) ? t('questionError.' + code, { reason: answer?.reason ?? '' }) : t('cardFailed')
-    }
 
     /**
      * Who answers managed sessions' questions (item 25, §10e): Auto, Fishball or You, in the

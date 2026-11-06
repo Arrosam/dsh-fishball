@@ -11,8 +11,8 @@
  *   `intent.callId`, then the session log (a legacy question names no call, S36), replaces the
  *   request's signal with one it can also abort, and calls next() at once: the session's own card
  *   opens as usual while Fishball decides (Q-r11-question-card).
- * - The race, decided in one place (a settled flag): Fishball's answer, your answer on its pile
- *   card, or next() resolving (you answered in the session). The winner's batch is returned; our
+ * - The race, decided in one place (a settled flag): Fishball's answer, or next() resolving (you
+ *   answered in the session; there is no other place to answer, §12). The winner's batch is returned; our
  *   own signal is aborted, which makes DSH's gateway close the session's card in every browser.
  *   next() rejecting closes the question (Stop, Discuss's ASK_CANCELLED), and is re-thrown so DSH
  *   maps it; a timed question's ASK_TIMED_OUT makes it `continued` instead, unless the router
@@ -32,8 +32,8 @@
  * - Continued (timed) questions are answered with userQuestions.answer(liveRootAgent, callId,
  *   batch); your own late answer in the session is learnt from its `user-question-reply` message.
  * - Off, Take back, release: an open question goes back to its session's own card (next() alone),
- *   a continued one leaves the pile (it stays answerable in the session); the pile route then
- *   answers 409 expired (the manager's decision, 2026-11-02).
+ *   a continued one leaves the pile (it stays answerable in the session) (the manager's decision,
+ *   2026-11-02).
  * - Restart: blocking questions and plan reviews end with their turn; timed questions DSH keeps as
  *   `continued` get their pile cards again at start, eagerly, read from each managed session's log
  *   without resuming it (the manager's decision, 2026-11-02; S36 Q4).
@@ -70,24 +70,26 @@ export const QUESTION_TOOL = Object.freeze({ answer: 'answer_question' })
 const MS_PER_SECOND = 1000
 /** How the words of one answer item are joined, and the items of a batch, in a decision label. */
 const WORDS = Object.freeze({ withinItem: ', ', betweenItems: ' · ' })
-/** Who settled an open question. */
-const BY = Object.freeze({ fishball: 'fishball', pile: 'pile', session: 'session' })
+/**
+ * Who settled an open question. The user answers only in the session (DSH's question card): the
+ * pile's question form was deleted with the pile (docs/slim-native-design.md §12).
+ */
+const BY = Object.freeze({ fishball: 'fishball', session: 'session' })
 /** An entry's state (§9 "Open questions"): open while its tool call waits, continued after a timed one ended pending. */
 const STATE = Object.freeze({ open: 'open', continued: 'continued' })
 /**
- * How a question's end reads on its pile card: the card's own answer is CARD_END.user; an answer in
- * the session or by Fishball settled it elsewhere first (no closure line); the rest closed the card
- * without one, and each names its reason (src/card-lifecycle.js).
+ * How a question's end reads on its pile card: an answer in the session or by Fishball settled it
+ * elsewhere (no closure line); the rest closed the card without one, and each names its reason
+ * (src/card-lifecycle.js). QUESTION_END.pile stays in constants only for stored audit rows.
  */
 const PILE_END = Object.freeze({
   [QUESTION_END.fishball]: CARD_END.inSession,
-  [QUESTION_END.pile]: CARD_END.user,
   [QUESTION_END.session]: CARD_END.inSession,
   [QUESTION_END.closed]: CARD_END.dismissed,
   [QUESTION_END.back]: CARD_END.back,
 })
 /** How each winner ends a question in the audit. */
-const END_OF = Object.freeze({ [BY.fishball]: QUESTION_END.fishball, [BY.pile]: QUESTION_END.pile, [BY.session]: QUESTION_END.session })
+const END_OF = Object.freeze({ [BY.fishball]: QUESTION_END.fishball, [BY.session]: QUESTION_END.session })
 /**
  * The slim bridge's offer vocabulary (§5.2, §15 T09). This router owns the question's own facts:
  * its offered labels, its end time and who settled it; the host relay adds `title` and `offerId`.
@@ -300,7 +302,8 @@ function planDecision(question, { approve, feedback }) {
 }
 
 /**
- * The batch for one answer, from answer_question's or the pile route's input, validated before it
+ * The batch for one answer, from answer_question's input or Fishball's own question card
+ * (src/own-questions.js), validated before it
  * reaches DSH (a refused one leaves the question open).
  * @param input - { answers? } for a question; { approve?, feedback? } for a plan review.
  * @returns { batch } or { reason }.
@@ -500,22 +503,8 @@ export class QuestionRouter {
   }
 
   /**
-   * Your answer on a question card (§10e route): validated and composed as answer_question is.
-   * @param input - { questionId, answers } or { questionId, approve } / { questionId, feedback }.
-   * @returns undefined when it was taken, else { code: QUESTION_ERROR, reason? }.
-   */
-  async answerCard({ questionId, answers, approve, feedback }) {
-    const entry = this.#entries.get(questionId)
-    if (entry === undefined || !entry.inPile) return { code: QUESTION_ERROR.expired }
-    const built = batchFor(entry.kind, entry.questions, { answers, approve, feedback })
-    if (built.reason !== undefined) return { code: QUESTION_ERROR.badAnswer, reason: built.reason }
-    const code = await this.#answer(entry, built, BY.pile)
-    return code === undefined ? undefined : { code }
-  }
-
-  /**
-   * One answer, Fishball's or yours on the card: an open question wins the race (or loses it:
-   * expired); a continued one goes through userQuestions.answer, as the browser's RPC does.
+   * Fishball's answer: an open question wins the race (or loses it: expired); a continued one goes
+   * through userQuestions.answer, as the browser's RPC does.
    * @returns undefined when it was taken, else a QUESTION_ERROR.
    */
   async #answer(entry, built, by) {
@@ -699,7 +688,7 @@ export class QuestionRouter {
     const result = await first.promise
     original?.removeEventListener('abort', onAbort)
     if (result.batch !== undefined) {
-      // Fishball or your pile card won: the session's own card closes in every browser (S36 Q2).
+      // Fishball won: the session's own card closes in every browser (S36 Q2).
       own.abort(answeredElsewhere())
       await this.#ended(entry, END_OF[result.by], result)
       return result.batch
@@ -837,7 +826,7 @@ export class QuestionRouter {
   /**
    * A question ended: forget it, take its card out of your pile, audit it once, and tell Fishball
    * how it ended when it saw the question.
-   * @param end - a QUESTION_END. @param answered - { by, batch } for an answer from Fishball or your card.
+   * @param end - a QUESTION_END. @param answered - { by, batch } for an answer from Fishball or in the session.
    */
   async #ended(entry, end, answered) {
     if (this.#entries.get(entry.id) !== entry) return
@@ -845,27 +834,23 @@ export class QuestionRouter {
     clearTimeout(entry.timer)
     entry.releaseHold?.()
     const byFishball = answered?.by === BY.fishball
-    // Your answer, on the card or in the session's own card, is a decisions row by you, as Fishball's is by Fishball.
-    const byYou = answered?.by === BY.pile || end === QUESTION_END.session
+    // Your answer in the session's own card is a decisions row by you, as Fishball's is by Fishball.
+    const byYou = end === QUESTION_END.session
     if (byFishball || byYou) await this.#decide(entry, byFishball ? CHANGED_BY.fishball : CHANGED_BY.user)
     if (byFishball || byYou) {
       this.#records.question(entry, {
         by: byFishball ? CARD_RECORD.by.fishball : CARD_RECORD.by.user,
-        ...(byFishball ? {} : { place: end === QUESTION_END.session ? CARD_RECORD.place.session : CARD_RECORD.place.pile }),
+        ...(byFishball ? {} : { place: CARD_RECORD.place.session }),
         answers: Array.isArray(answered?.batch?.answers) ? answered.batch.answers : undefined,
       })
     }
     await this.#record(entry, this.#auditAnswer(entry, end, byFishball, byYou), end)
-    // The child learns the outcome, and the words of the user's answer when this router has them
-    // (a pile answer), so Fishball's chat can show the answer it was waiting for (§8.1, T08).
+    // The child learns the outcome. It carries no answer words: those came only from the deleted
+    // pile form; the host relay words a user's answer with its fallback (src/slim/host/approvals.js).
     if (byFishball || byYou) {
-      const words = answered?.by === BY.pile && Array.isArray(answered.batch?.answers)
-        ? answerWords(answered.batch.answers, this.#readLimits().rationaleChars)
-        : ''
       this.#emit({
         type: OFFER.event.settled, approvalId: entry.id, sessionId: entry.sessionId,
         decision: APPROVAL_DECISION.ask, by: byFishball ? SETTLED_BY.fishball : SETTLED_BY.user,
-        ...(words === '' ? {} : { words }),
         ...(entry.routed === undefined ? {} : { routed: entry.routed }),
       })
     } else if (end === QUESTION_END.back || end === QUESTION_END.closed) {
@@ -921,7 +906,7 @@ export class QuestionRouter {
     }
   }
 
-  /** One `decisions` row for an answer (§9 answer-question): Fishball's, or yours on the card. */
+  /** One `decisions` row for an answer (§9 answer-question): Fishball's, or yours in the session. */
   async #decide(entry, by) {
     try {
       await this.#decisions.append({ action: DECISION_ACTION.answerQuestion, sessionId: entry.sessionId, by, target: entry.id, at: new Date().toISOString(), outcome: DECISION_OK }, [DECISION_ACTION.answerQuestion])
