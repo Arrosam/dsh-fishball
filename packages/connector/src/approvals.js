@@ -346,14 +346,6 @@ export class ApprovalBroker {
     ctx.on(EVENT.sessionEvent, (session, event) => { if (event.type === APPROVAL.turnEndEvent) void this.#endTurn(session.id) })
   }
 
-  /** Requests waiting for Fishball, and the audit (the settings page shows them). */
-  snapshot() {
-    return {
-      pending: [...this.#waiting.keys()].map((id) => this.#requests.get(id)).filter(Boolean).map((r) => ({ id: r.id, sessionId: r.sessionId, toolName: r.toolName, at: r.at })),
-      recent: this.#audit.recent(this.#readLimits().approvalsShown).map(({ key, sessionId, toolName, at, answer, passBy, risk, rationale, finalOutcome, decidedAt, argumentsStatus }) => ({ key, sessionId, toolName, at, answer, passBy: passBy ?? null, risk: risk ?? null, rationale: rationale ?? null, finalOutcome, decidedAt, argumentsStatus })),
-    }
-  }
-
   /**
    * Observe a live request and its settlement for the slim bridge (§5.2 events, T09). A listener
    * owns its failure: the broker never lets one stop its own bookkeeping. The slim host maps this

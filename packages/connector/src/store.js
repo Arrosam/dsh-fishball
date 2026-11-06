@@ -12,7 +12,7 @@ import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import { DOMAIN, CHANGED_BY, INTAKE_STATUS, INTAKE_KIND, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, SIDEBAR_ENTRY, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, QUESTION_MODE, QUESTION_END } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ settings: 'settings', watches: 'watches', preferences: 'preferences', managed: 'managed', decisions: 'decisions', grants: 'grants', pile: 'pile' })
+const TABLE = Object.freeze({ settings: 'settings', watches: 'watches', preferences: 'preferences', managed: 'managed', decisions: 'decisions', grants: 'grants', pile: 'pile', migrations: 'migrations' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -30,8 +30,9 @@ const watchRecord = z.object({
 })
 
 /**
- * Your display choices; one record: the brand icon and the sidebar entry. The entry is optional
- * so a record saved before it existed still reads (and means the default, the panel row).
+ * The old display choices (the brand icon and the sidebar entry). Retired by D22 (the icon is
+ * fixed) and never read or migrated. The table stays declared so the record survives every write
+ * of this file, and a rollback to the old package still finds it (design §0.2).
  */
 const preferencesRecord = z.object({
   brandStyle: z.enum(Object.values(BRAND_STYLE)),
@@ -52,11 +53,18 @@ const pileCardRecord = z.object({
 })
 
 /**
- * Who answers managed sessions' questions (rev11g, §9 `settings['questions']`); absent means auto.
+ * The old store record of who answers managed sessions' questions (rev11g, §9
+ * `settings['questions']`). The mode now lives in the row config (src/config.js). This record is
+ * read once by the settings migration (src/settings-migration.js) and is left as it is.
  */
 const questionModeRecord = z.object({
   mode: z.enum(Object.values(QUESTION_MODE)),
   changedAt: z.string(),
+})
+
+/** One finished one-time migration (src/settings-migration.js), keyed by MIGRATION.key. */
+const migrationRecord = z.object({
+  at: z.string(),
 })
 
 /** A session Fishball manages, keyed by its (root) session id (revision 11, DESIGN §5e, §9). */
@@ -183,6 +191,7 @@ export const fishballDomain = defineDomain({
     [TABLE.decisions]: domainTable(decisionRecord),
     [TABLE.grants]: domainTable(grantRecord),
     [TABLE.pile]: domainTable(pileCardRecord),
+    [TABLE.migrations]: domainTable(migrationRecord),
   },
 })
 
@@ -208,11 +217,11 @@ export class Store {
   /** Table handles (KvTable: get/entries/put/delete/update), named as in the spec. */
   get settings() { return this.#domain.table(TABLE.settings) }
   get watches() { return this.#domain.table(TABLE.watches) }
-  get preferences() { return this.#domain.table(TABLE.preferences) }
   get managed() { return this.#domain.table(TABLE.managed) }
   get decisions() { return this.#domain.table(TABLE.decisions) }
   get grants() { return this.#domain.table(TABLE.grants) }
   get pile() { return this.#domain.table(TABLE.pile) }
+  get migrations() { return this.#domain.table(TABLE.migrations) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }
 }
