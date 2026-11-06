@@ -170,6 +170,33 @@ test('INST-11 the removed pile question-answer path stays absent, and the page n
   assert.ok(!client.includes(ROUTE.questionsAnswer.slice(1)), 'client.js still names the removed route')
 })
 
+test('INST-12 notify_when_finished rides only start/message, and question wording keeps the user in the session (N5, N6)', { skip }, async () => {
+  const pkg = path.join(home, 'profiles', CFG.profile, 'node_modules', 'dsh-fishball')
+  // N5 (DESIGN §5b, §5c): the bridge contract admits the flag on session.start/session.message only,
+  // and a delivery result carries a watchId or a watchError, never both, and never on redirect.
+  const { VALIDATORS, OPERATION } = await import(path.join(pkg, 'src', 'slim', 'contract.js'))
+  const accepts = (fn, payload) => { try { fn(payload); return true } catch { return false } }
+  const delivery = { sessionId: 's', message: 'm', attachments: [] }
+  const NOTIFY = { notifyWhenFinished: true }
+  assert.ok(accepts(VALIDATORS.request[OPERATION.sessionMessage], { ...delivery, ...NOTIFY }), 'message refuses notify')
+  assert.ok(accepts(VALIDATORS.request[OPERATION.sessionStart], { folder: '/x', title: 't', message: 'm', attachments: [], ...NOTIFY }), 'start refuses notify')
+  assert.ok(!accepts(VALIDATORS.request[OPERATION.sessionRedirect], { ...delivery, ...NOTIFY }), 'redirect admits notify')
+  assert.ok(!accepts(VALIDATORS.request[OPERATION.sessionMessage], { ...delivery, notifyWhenFinished: 'yes' }), 'non-boolean notify admitted')
+  assert.ok(accepts(VALIDATORS.response[OPERATION.sessionMessage], { status: 'delivered', watchError: 'limit-reached' }), 'watchError refused')
+  assert.ok(!accepts(VALIDATORS.response[OPERATION.sessionMessage], { status: 'delivered', watchId: 'w', watchError: 'limit-reached' }), 'both admitted')
+  assert.ok(!accepts(VALIDATORS.response[OPERATION.sessionRedirect], { status: 'delivered', watchId: 'w' }), 'redirect result admits a watch')
+  // N6: the settings hints (en + zh) and the child's question texts no longer send the user to the pile.
+  const client = fs.readFileSync(path.join(pkg, 'client.js'), 'utf8')
+  for (const gone of ['otherwise the question comes to your pile', 'Every question comes to your pile', '否则问题会进入你的待处理区', '每个问题都进入你的待处理区']) {
+    assert.ok(!client.includes(gone), `old hint still shipped: ${gone}`)
+  }
+  for (const now of ['answer on its own question card', '该会话自己的问题卡片上回答']) assert.ok(client.includes(now), `new hint missing: ${now}`)
+  // Source text of the child's model-facing strings (single-quoted JS, so the apostrophe is escaped).
+  const childTexts = fs.readFileSync(path.join(pkg, 'src', 'slim', 'child', 'approvals.js'), 'utf8')
+  assert.ok(!childTexts.includes("send it to the user\\'s pile"), 'child to_user text still names the pile')
+  assert.ok(childTexts.includes("on that session\\'s own question card"), 'child to_user text does not name the session card')
+})
+
 test('INST-07 the Sidebar entry switch saves', { skip }, async () => {
   for (const entry of ['brand', 'panel']) {
     const res = await req(ROUTE.sidebar, { method: 'POST', headers: { ...sameOrigin, 'content-type': 'application/json' }, body: JSON.stringify({ entry }) })
