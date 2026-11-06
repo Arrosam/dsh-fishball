@@ -1607,6 +1607,11 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
     restored as waiting, its decision id back in `pending`, so the host's later settlement still
     updates it. Closure and answer inbox items made while the child is off the wire wait in the
     relay (bounded), so a restart's closure reaches the child that holds the label.
+  - A session's question that reaches the user without Fishball's `to_user` (its answer window
+    expired, or its notice was never delivered) gets the same waiting label a `to_user` leaves,
+    outcome "left to you, unanswered by Fishball", when its escalation arrives (7713 O1). The
+    user's later answer settles that label and a closure ends it, so the question has exactly one
+    label in Fishball's chat, as an escalated permission request does.
 - Acceptance: each settled decision yields exactly one label; expansion shows the request card and
   Fishball's reply; no label appears in a managed session's turn tail; the user's escalation
   outcome updates the label; a decision the settings list used to show (including a call that ran

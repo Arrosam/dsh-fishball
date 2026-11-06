@@ -187,8 +187,8 @@ export async function copyChildCode(paths, record) {
   const contractExport = './' + contract.directory
   await writePrivate(path.join(contractTarget, contract.manifest), { name: contract.name, type: 'module', private: true, exports: { [contractExport]: contractExport + '/' + path.basename(contractEntry) } }, true)
   await copy(path.dirname(contractEntry), path.join(contractTarget, contract.directory), javascript)
-  // T07 registers Fishball's persona from src/persona.js in the chat agent's scope; its one text
-  // dependency (PILE_NOTE) is the contract's, copied above.
+  // T07 registers Fishball's persona from src/persona.js in the chat agent's scope; its text
+  // dependencies (PILE_NOTE, ANSWER_PLACE) are the contract's, copied above.
   await copy(path.join(sourceRoot, 'src', 'persona.js'), path.join(destination, 'src', 'persona.js'), javascript)
   // T16's child target imports the shared preview/confirm engine and dynamically imports the
   // pi-ai host adapter beside it (src/slim/child/provider-sync-target.js: '../../provider-sync.js').
