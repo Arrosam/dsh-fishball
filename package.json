@@ -43,6 +43,7 @@
     "@deepseek-ai/dsh-llm-pi-ai": "*",
     "@deepseek-ai/dsh-sandbox-policy": "*",
     "@deepseek-ai/dsh-scope": "*",
+    "@deepseek-ai/dsh-session": "*",
     "@deepseek-ai/dsh-session-title": "*",
     "@deepseek-ai/dsh-storage-domain": "*",
     "@deepseek-ai/dsh-system-prompt": "*",

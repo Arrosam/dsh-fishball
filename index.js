@@ -40,6 +40,7 @@ import { CallPasses } from './src/passes.js'
 import { Pile } from './src/pile.js'
 import { QUESTION_TOOL, QuestionRouter } from './src/questions.js'
 import { OwnQuestions } from './src/own-questions.js'
+import { CardRecords } from './src/card-records.js'
 import { GRANT_TOOL, Grants } from './src/grants.js'
 import { ResultWording } from './src/result-wording.js'
 import { byteLength, latestFirst } from './src/text.js'
@@ -145,10 +146,12 @@ export async function apply(ctx, config) {
   // Cards that went to you (rev11c, §7a.6, §9), kept in the plugin's store so a card you still had
   // is rebuilt at the next start (T08; src/pile.js explains why a rebuilt card is then closed). A
   // card that leaves without your answer reaches the child through the broker's closure event.
+  // One record per card that ends, in its session and in Fishball's chat (src/card-records.js).
+  const cardRecords = new CardRecords({ ctx, logger, titleOf: (sessionId) => sessionTitles.get(sessionId) })
   const pile = new Pile(() => publish(), (card, end) => broker.cardClosed(card, end), { stored: store.pile, scope: PILE_SCOPE.approvals, logger })
   // Fishball's own questions have their own pile (§15 T09): no deadline, closure through the broker.
   const ownPile = new Pile(() => publish(), (card, end) => broker.cardClosed(card, end), { stored: store.pile, scope: PILE_SCOPE.ownQuestions, logger })
-  const ownQuestions = new OwnQuestions(ownPile, { readLimits: limits })
+  const ownQuestions = new OwnQuestions(ownPile, { readLimits: limits, records: cardRecords })
   ownQuestions.restore()
   // Standing grants (rev11d, §7a.8): paused while the child is not connected.
   grants = new Grants(store, logger, { readLimits: limits, isPaused: () => !bridgeReady, onChange: () => publish(), isManaged })
@@ -163,11 +166,13 @@ export async function apply(ctx, config) {
     grants,
     // answer_prompt makes the prompt's session managed (the fifth way in, rev11e §7a.9).
     manage,
+    records: cardRecords,
   })
   // Managed sessions' questions and plan reviews go to Fishball (rev11g, §7a.10); yours stay in their chat.
   questions = new QuestionRouter(ctx, store, logger, {
     ledger, readLimits: limits, assistantId, onChange: () => publish(), canAnswer: isLive, isManaged,
     managedIds: () => managedRegistry.snapshot().map((entry) => entry.sessionId),
+    records: cardRecords,
   })
   // The bridge runs the same tool bodies through the provider below: the allowance, grant and
   // question rules are not written a second time, and a refusal keeps today's code.
@@ -278,7 +283,8 @@ export async function apply(ctx, config) {
       const offBroker = broker.subscribe(wrapped)
       const offQuestions = questions.subscribe(wrapped)
       const offOwn = ownQuestions.subscribe(wrapped)
-      return () => { offBroker(); offQuestions(); offOwn() }
+      const offRecords = cardRecords.subscribe(wrapped)
+      return () => { offBroker(); offQuestions(); offOwn(); offRecords() }
     },
   })), 'fishball: native session state')
   publish()

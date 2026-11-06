@@ -46,6 +46,7 @@ import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
 import { ERROR, INBOX_KIND, LIMITS, ROUTES } from '../contract.js'
 import { applyPersona } from './persona.js'
+import { CARD_RECORD } from '../card-record.js'
 
 /** The child serves the contract's /api/* tails; the broker adds /fishball/embed in front (3.1). */
 const API = (tail) => ROUTES.api.slice(ROUTES.prefix.length) + tail
@@ -610,6 +611,19 @@ export function createChat(ctx, options = {}) {
   }
 
   /**
+   * One card record in Fishball's session (src/slim/card-record.js): a log-only plugin record
+   * that DSH's session view draws (client.js) and that never reaches the model. `tell`, when given,
+   * is a notice Fishball does read: injected without a wake, so a running turn sees it at its next
+   * step and an idle Fishball at its next turn, and it never starts a turn of its own.
+   */
+  async function recordCard(data, tell) {
+    const live = await activate()
+    appendPluginRecord(live.session, CARD_RECORD.type, data)
+    if (typeof tell === 'string' && tell !== '') live.inject(createUserMessage({ content: [{ type: 'text', text: clamp(tell, CHAT_LIMITS.entryChars) }], source: SOURCE.notice }))
+    return { recorded: true }
+  }
+
+  /**
    * Append a visible system entry without starting a turn. Plugin records are log-only and
    * ignorable: DSH persists and forks them with the Session but never projects them into a
    * model request, so a typed inbox refusal stays visible without making Fishball answer it.
@@ -800,7 +814,7 @@ export function createChat(ctx, options = {}) {
   return Object.freeze({
     start,
     close,
-    service: Object.freeze({ resolveAgent, applyModel, deliverInbox, notify }),
+    service: Object.freeze({ resolveAgent, applyModel, deliverInbox, notify, recordCard }),
     handle,
     subscribe,
   })

@@ -63,6 +63,7 @@ import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { diagnosticOf } from './errors.js'
 import { JSON_OUTPUT, ok, refused } from './tool-results.js'
+import { CARD_RECORD } from './slim/card-record.js'
 
 export const QUESTION_TOOL = Object.freeze({ answer: 'answer_question' })
 
@@ -336,6 +337,7 @@ export class QuestionRouter {
   #isManaged
   #managedIds
   #onChange
+  #records
   #audit
   #decisions
   /** Question cards in your pile (beside the permission-request pile, src/pile.js). */
@@ -355,8 +357,9 @@ export class QuestionRouter {
    * @param deps.canAnswer - () => the isolated Fishball is connected and can answer (item 10).
    * @param deps.isManaged - (sessionId) => managed. @param deps.managedIds - () => every managed session id.
    * @param deps.onChange - state changed (the state feed publishes).
+   * @param deps.records - CardRecords (src/card-records.js): one record per answered or closed card.
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, canAnswer, isManaged, managedIds, onChange }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, canAnswer, isManaged, managedIds, onChange, records }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -367,6 +370,7 @@ export class QuestionRouter {
     this.#isManaged = isManaged
     this.#managedIds = managedIds
     this.#onChange = onChange
+    this.#records = records
     // T08: cards live in the plugin's store too, under this router's own scope, so a question the
     // user still had is rebuilt at the next start (rebuild() below re-files the ones DSH keeps).
     this.#pile = new Pile(onChange, (card, end) => this.#cardClosed(card, end), { stored: store.pile, scope: PILE_SCOPE.questions, logger })
@@ -706,7 +710,8 @@ export class QuestionRouter {
       return downstream
     }
     if (result.error === undefined) {
-      await this.#ended(entry, QUESTION_END.session)
+      // The user's own answer in the session: its batch is DSH's result, so the record has the words.
+      await this.#ended(entry, QUESTION_END.session, { by: BY.session, batch: result.value })
       return result.value
     }
     if (entry.timed && result.error?.code === QUESTION.timedOut && entry.callId !== undefined) {
@@ -843,6 +848,13 @@ export class QuestionRouter {
     // Your answer, on the card or in the session's own card, is a decisions row by you, as Fishball's is by Fishball.
     const byYou = answered?.by === BY.pile || end === QUESTION_END.session
     if (byFishball || byYou) await this.#decide(entry, byFishball ? CHANGED_BY.fishball : CHANGED_BY.user)
+    if (byFishball || byYou) {
+      this.#records.question(entry, {
+        by: byFishball ? CARD_RECORD.by.fishball : CARD_RECORD.by.user,
+        ...(byFishball ? {} : { place: end === QUESTION_END.session ? CARD_RECORD.place.session : CARD_RECORD.place.pile }),
+        answers: Array.isArray(answered?.batch?.answers) ? answered.batch.answers : undefined,
+      })
+    }
     await this.#record(entry, this.#auditAnswer(entry, end, byFishball, byYou), end)
     // The child learns the outcome, and the words of the user's answer when this router has them
     // (a pile answer), so Fishball's chat can show the answer it was waiting for (§8.1, T08).
@@ -880,7 +892,7 @@ export class QuestionRouter {
    * reaches the isolated Fishball, which no longer holds the card.
    */
   #cardClosed(card, end) {
-    closeCard(card, end, (event) => this.#emit(event))
+    if (closeCard(card, end, (event) => this.#emit(event))) this.#records.closed(card, end)
   }
 
   /**

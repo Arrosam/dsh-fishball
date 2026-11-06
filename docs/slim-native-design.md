@@ -1010,6 +1010,13 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
   card`; `-08 no ask_user_question tool in the child`; `-09 ask_user returns at once with the card
   id`; `-10 the card waits with no deadline and the answer comes back as a chat row`; `-11 an
   unanswered card closes with the child's closed line`.
+- Revised 2026-11-06 (the user: "你看不到卡片记录的问题这也是个问题"): when the user answers a
+  session's card themselves, on the pile card or in that session, Fishball now receives the words
+  (the chosen labels or custom text, a permission decision and its note), not only "the user
+  answered it". They travel inside the T08 card record's inbox item to the child, which injects
+  one notice into its own session without a wake (`src/slim/child/inbox.js`), so a busy turn reads it at its next step and an
+  idle Fishball at its next turn. The session's question text is not repeated in the notice: it is
+  that session's words, and read_session shows it.
 
 **T12 — Settings page and one button style `[client]` plus `[host]`**
 - Goal: the rebuilt settings page (§9) and the §8.5 restyle of all nine accent buttons.
@@ -1107,6 +1114,40 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
   `-07 ran-on-a-one-time-approval label`; `-08 pending approval card rebuilt and closed after a
   main restart`; `-09 continued question answerable after a restart, one card only`; `-10 labels
   and closed rows survive a child restart`; `-11 settings keeps the mode and has no audit list`.
+- Added 2026-11-06 — card records (the user: "卡片记录如果是session发出的问题，就留一个在提问的session那里；
+  然后鱼丸那里留一个卡牌提问记录，设置里面不需要留"):
+  1. Why: an answered card left no trace where it was asked. Answers reached Fishball only as
+     context for its next step (nothing on screen), and the asking session's log had nothing at
+     all. Settings stays without any history (the decision list left it above).
+  2. What: one record per card a session raised (question, plan review, permission request) when
+     it ends, answered by the user or Fishball, skipped, or closed. Schema `src/slim/card-record.js`
+     (`plugin:fishball/card-record`, v1). The main row's owners call `src/card-records.js` at the
+     point the answer is taken: `answerApproval` / `answer_prompt` (Fishball), the pile answer and
+     the session prompt's answer (the user) in `src/approvals.js`; `#ended` in `src/questions.js`
+     (Fishball, pile, or the session's own card); `answerCard` in `src/own-questions.js`; and every
+     closure through the owners' `cardClosed`.
+  3. Where: the asking session's log at that point, and Fishball's chat with the asking session
+     named. Two exceptions, the user's decision 2026-11-06: an answer given in the session itself
+     gets no session copy (DSH already shows it there), and Fishball's own `ask_user` card has only
+     Fishball's copy. Fishball's own answers also get a record, beside the decision label.
+  4. How: a DSH plugin record (`appendPluginRecord`). DSH persists, forks and sends it to the
+     browser but never projects it into a model request, so neither agent gets extra context. It is
+     written at once (queued one microtask, because a card can end inside DSH's own session/event
+     publication, which refuses a re-entrant append), even while the session's turn runs. Fishball's
+     copy rides the bridge inbox (`RECORD_ITEM`, through the relay's queue and the bridge host's
+     unacked queue), not an event: events drop while the child is off the wire, and a record must
+     survive that. Fishball's chat is the child's own session (the in-process Fishball is gone,
+     §12), so the child appends the record there (`fishballChat.recordCard`); the main row writes
+     nothing for Fishball itself.
+  5. Rendering: one conversation definition plus a `conversation.chat.node` view in `client.js`,
+     DSH's own `DisclosureRow` with its question/shield icons, collapsed to one line and expandable
+     to the full card. It works in any DSH session view, so it is the same row on both sides once
+     Fishball's chat is DSH's session view (the user's 2026-11-06 direction); nothing is built in the
+     custom child UI. Checked against DSH 0.2.1-rc.5 and 0.2.2-rc.1: both have `appendPluginRecord`,
+     the wire accepts `ignorable` events, `uiConversation.events.register` and `DisclosureRow`.
+  6. Limits: a session that is not loaded when its card closes (a closure at a main start) gets no
+     session copy; Fishball's copy still goes out. A late reply to a continued question records no
+     words (they are only in that session's log).
 
 **T13a — Sidebar idle marker with dots `[client]`**
 - Goal: the §8.2 "ships now" behaviour: the fish in DSH's idle leading slot, green unread / yellow
