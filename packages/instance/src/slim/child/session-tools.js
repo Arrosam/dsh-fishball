@@ -22,7 +22,7 @@
  * service rather than opening a second channel.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { DELIVERY, ERROR, LIMITS, OPERATION, WATCH_MODE, ContractError } from '../contract.js'
+import { ANSWER_PLACE, DELIVERY, ERROR, LIMITS, OPERATION, WATCH_MODE, ContractError } from '../contract.js'
 import { createBridgeClient } from './bridge.js'
 
 /** Stable Cordis plugin name; the child overlay inserts it as the session-tools row. */
@@ -65,17 +65,25 @@ const READ_DEFAULTS = Object.freeze({ messages: 12, bytes: 12_288 })
 /** The list is bounded by the contract, so asking for everything never silently cuts rows. */
 const DEFAULT_LIST_LIMIT = LIMITS.sessionsListed
 
+/**
+ * 7713 N9-a: where a session's question is answered, at the moment Fishball promises it. Fishball
+ * tells the user "it will ask you" right after handing work to a session, before any question
+ * exists; the persona line alone still let it say "a card in this chat (also in your pile)". The
+ * words are the persona's own (the contract's pile-note.js), so the three copies cannot drift.
+ */
+const ANSWER_PLACE_LINE = ANSWER_PLACE.sessionAsks
+
 /** Model-facing texts (stable; no secrets). Copied from today's Fishball tools where they apply. */
 export const TEXT = Object.freeze({
   listDescription: 'List the sessions related to you on the user\'s DSH: the ones you manage and the ones you watch, with their id, title, workspace, whether they are running, and whether a request waits on you.',
   workspaceArg: 'Optional workspace id to list only that workspace\'s sessions.',
   limitArg: 'How many sessions to return, at most ' + LIMITS.sessionsListed + '.',
-  startDescription: 'Start a new ordinary DSH session in an existing workspace or folder, give it a title and a first message, so it starts working at once. It runs DSH\'s default agent and permission mode. Optionally set model (provider/model) and reasoning_effort before the first message, for this session only, without changing DSH defaults or Fishball settings. Omit both to keep the default model behavior. Invalid choices return available values; never fall back. Fishball cannot create folders: the folder must exist.',
+  startDescription: 'Start a new ordinary DSH session in an existing workspace or folder, give it a title and a first message, so it starts working at once. It runs DSH\'s default agent and permission mode. Optionally set model (provider/model) and reasoning_effort before the first message, for this session only, without changing DSH defaults or Fishball settings. Omit both to keep the default model behavior. Invalid choices return available values; never fall back. Fishball cannot create folders: the folder must exist. ' + ANSWER_PLACE_LINE,
   folderArg: 'A DSH workspace id, or an absolute path of an existing folder.',
   titleArg: 'A short title for the new session, as the sidebar shows it: a few words naming the work.',
   modelArg: 'Optional full provider/model id, for example codex/gpt-6.1-sol. Must be in DSH\'s current model catalog. Errors list availableModels.',
   effortArg: 'Optional reasoning effort supported by the selected model (for example low, medium, high, xhigh or max; availability varies). Requires model. Omit for provider defaults; errors list availableReasoningEfforts.',
-  sendDescription: 'Send a message to another DSH session, which then works on it with its own tools and permission mode. The session sees it as a message from Fishball, not from the user. Use it to hand work off or ask for a status; follow up later.',
+  sendDescription: 'Send a message to another DSH session, which then works on it with its own tools and permission mode. The session sees it as a message from Fishball, not from the user. Use it to hand work off or ask for a status; follow up later. ' + ANSWER_PLACE_LINE,
   sessionArg: 'The id of the session to message.',
   messageArg: 'What the session should do or know, self-contained.',
   stopDescription: 'Stop the current turn of a session you manage, as the user\'s Stop button does: its waiting permission requests and questions are cancelled. It stays managed and idle until the next message. An idle session is left as it is.',
@@ -97,6 +105,8 @@ export const TEXT = Object.freeze({
   releaseSessionArg: 'The id of the managed session to release.',
   reasonArg: 'Why you release it, in one sentence (kept in your decisions audit).',
   unconfirmed: 'The session has the message, but saving it could not be confirmed. Do not send it again.',
+  /** On every delivery result (message, redirect, start): the line the model words its reply from. */
+  answerPlace: ANSWER_PLACE_LINE,
   /** Verbatim from the legacy message_session/start_session (git show e7ed7c3^:src/messaging.js). */
   notifyArg: 'true to be told when that session finishes the work (sets up a watch).',
 })
@@ -126,6 +136,7 @@ function definitions(client) {
     ok: true,
     status: result.status,
     ...(result.status === DELIVERY.unconfirmed ? { note: TEXT.unconfirmed } : {}),
+    answerPlace: TEXT.answerPlace,
     ...watched(result),
   })
   const notifyParameter = { type: 'boolean', description: TEXT.notifyArg }
@@ -168,6 +179,7 @@ function definitions(client) {
           reasoningEffort: args.reasoning_effort ?? undefined,
           notifyWhenFinished: args.notify_when_finished ?? undefined,
         })),
+        answerPlace: TEXT.answerPlace,
       })),
     },
     {

@@ -539,6 +539,7 @@ unchanged from `packages/connector/contract/index.js`):
 - errors: `ERROR`, `ContractError` (`.code`) and `fail(code)`;
 - limits: `LIMITS`;
 - shared wording: `PILE_NOTE`, the pile-note guide the instance's persona and the connector's tools both use (`pile-note.js`);
+- shared wording: `ANSWER_PLACE` (`sessionQuestion`, `promise`, `sessionAsks`), where the user answers a session's question, read by the persona and both packages' session and question tools (`pile-note.js`);
 - built-in instance only, not needed by a third party: `ROUTES`, `ADMISSION`, `BEARER`.
 
 Every helper below **throws** `ContractError` (`.code`) on failure, except `makeEnvelope`, which
