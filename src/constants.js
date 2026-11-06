@@ -2,8 +2,6 @@
  * Fixed values owned by Fishball. Runtime-tunable safety limits are NOT here: they are
  * the row's config (src/config.js), which the user edits on the Plugins page.
  */
-import { SAFE_SANDBOX_MODE } from './tool-rules.js'
-
 // PILE_NOTE stays imported from this module for every existing caller. It lives in its own
 // file so the slim child can copy the persona's one text dependency without this whole module.
 export { PILE_NOTE } from './pile-note.js'
@@ -15,71 +13,22 @@ export const PLUGIN = Object.freeze({
 })
 
 /**
- * Identity of the single assistant session. The preset id is written into the session
- * header but never registered, so DSH's picker cannot offer it and a GUI cold resume
- * fails closed instead of mounting a coding preset (spike S3).
+ * The main side's name for the isolated Fishball (slim §5.2). Fishball runs in the child, so the
+ * main DSH holds no session of its own: this one fixed id is what the bridge's relays name as the
+ * sender (src/slim/host/session-port.js) and what every "is this Fishball?" check compares with.
+ * It never names a main-DSH session, so no main session can be mistaken for Fishball's.
  */
-export const ASSISTANT = Object.freeze({
-  presetId: 'fishball:assistant',
-  /** Path segments under the DSH home: `$DSH_HOME/fishball/assistant` (Q-workspace). */
-  homeSegments: Object.freeze(['fishball', 'assistant']),
-  sessionIdPrefix: 'session-fishball-',
-  /** Fishball runs in the one mode where its shell tools may run (DESIGN §7). */
-  sandboxMode: SAFE_SANDBOX_MODE,
-  approvalPolicy: 'ask',
-  /**
-   * Fishball's tools are presented natively whatever the deployment's mode (DESIGN §4.4):
-   * under PTC it would otherwise see only run_code, which the guard allows only read-only.
-   */
-  toolPresentation: 'native',
-  /** `workspace/session-activity` family reported while the assistant is live. */
-  activityKind: 'fishball',
-  /** Bounded retries when a GUI resume holds the writer at boot (spike S7). */
-  resumeAttempts: 3,
-  resumeRetryMs: 500,
-})
+export const FISHBALL = Object.freeze({ sessionId: 'fishball-isolated' })
 
-/**
- * The setup turn Fishball runs while its session is still blank. DSH's GUI disables the
- * composer of a blank session that belongs to no workspace, and Fishball's session
- * deliberately has no workspace (DESIGN §5a). A session stops being blank when a turn
- * starts, so one turn makes it usable: one model call in the session's lifetime. A model
- * error still starts the turn, so the session becomes usable either way.
- *
- * The notice states a fact and asks for nothing: the persona (trusted) says what to do
- * with it, because the persona treats every non-user input as untrusted data.
- */
-export const SETUP_NOTICE = Object.freeze({
-  kind: 'fishball-notice',
-  form: 'notice',
-  summary: 'Fishball is set up',
-  text: 'Fishball has just been set up. This chat is where the user talks to Fishball.',
-})
-
-/** DSH session projection that says whether a session is still blank (no turn started). */
-export const PROJECTION = Object.freeze({ sessionListMetadata: 'sessionListMetadata' })
-
-/** Lifecycle states published to the settings view. */
+/** Lifecycle states published to the page: the main row is either up or its store failed. */
 export const STATUS = Object.freeze({
-  starting: 'starting',
   live: 'live',
-  recovery: 'recovery',
-  archived: 'archived',
-  stopped: 'stopped',
-  /** The core could not start (store unreadable, composition failed); DSH must restart. */
+  /** The store could not be opened; DSH must restart. */
   failed: 'failed',
 })
 
 /** Stable error codes; message text never reaches logs or the browser. */
-export const ERROR = Object.freeze({
-  storeUnreadable: 'store-unreadable',
-  resumeFailed: 'resume-failed',
-  createFailed: 'create-failed',
-  composeFailed: 'compose-failed',
-})
-
-/** Recovery actions the settings view may request. */
-export const RECOVERY_ACTION = Object.freeze({ retry: 'retry', adopt: 'adopt' })
+export const ERROR = Object.freeze({ storeUnreadable: 'store-unreadable' })
 
 /** Where a catalog plugin runs (DESIGN §4 "Plugin states"). */
 export const PLUGIN_KIND = Object.freeze({
@@ -103,48 +52,8 @@ export const PLUGIN_KIND = Object.freeze({
  */
 export const FISHBALL_INSTALLED_PREFIX = 'fishball:'
 
-/**
- * The status each catalog plugin shows on the settings page and in list_plugins (DESIGN §4
- * "Plugin statuses"). A DSH plugin's status follows its desired on/off state for Fishball.
- */
-export const PLUGIN_STATUS = Object.freeze({
-  installedInFishball: 'installed-in-fishball',
-  dshEnabled: 'dsh-enabled',
-  dshDisabled: 'dsh-disabled',
-  builtin: 'builtin',
-})
-
 /** Actions a catalog plugin offers; which ones depends on its status (src/plugin-catalog.js). */
 export const PLUGIN_OFFER = Object.freeze({ enable: 'enable', disable: 'disable', uninstall: 'uninstall' })
-
-/**
- * Fishball's own package folder (DESIGN §4 "Installed in Fishball only"): a pnpm project under
- * DSH's profiles directory, so DSH's runtime resolution gives its packages the host's peer
- * packages (spike S22). It is never a profile DSH boots.
- */
-export const FISHBALL_PACKAGES = Object.freeze({
-  folder: '.fishball-plugins',
-  nodeModules: 'node_modules',
-  manifest: 'package.json',
-  /** pnpm copies a local directory installed with this protocol (a bare path would be linked). */
-  fileProtocol: 'file:',
-  /** pnpm commands (run through DSH's own runner, dsh-plugin-manager/operations). */
-  add: 'add',
-  remove: 'remove',
-  /** Executable when the launcher supplies none (dsh-plugin-manager's pnpmCommand default). */
-  pnpmCommand: 'pnpm',
-  /** How DSH's runner runs pnpm for a service: secrets scrubbed, output captured. */
-  execution: 'service',
-  /** The patch file a profile-shaped folder would have; DSH's manager never writes it for installs (S31). */
-  patchFile: 'cordis.patch.yml',
-  /** How pnpm is told the registry a package came from, so its lockfile check passes on removal (DSH's removeBundle). */
-  registryOption: '--config.registry=',
-  /**
-   * After a refused or cancelled install DSH restores the manifest and lockfile but leaves the
-   * fetched files in node_modules; pnpm install with the restored files removes them again.
-   */
-  prune: Object.freeze(['install', '--prefer-offline']),
-})
 
 
 /** Why installing or removing a Fishball-installed package failed (add_plugin's `reason`). */
@@ -166,12 +75,6 @@ export const PACKAGE_ERROR = Object.freeze({
 
 /** Who last changed a plugin's Fishball state. */
 export const CHANGED_BY = Object.freeze({ fishball: 'fishball', user: 'user' })
-
-/** Plugin change audit outcome of a change that went through (failures store their code). */
-export const PLUGIN_CHANGE_OK = 'ok'
-
-/** Plugin change audit actions. */
-export const PLUGIN_ACTION = Object.freeze({ on: 'on', off: 'off', add: 'add', remove: 'remove', settings: 'settings' })
 
 /** Why a tool is not shown to Fishball, or that it is (list_plugins, settings). */
 export const TOOL_STATUS = Object.freeze({
@@ -234,66 +137,8 @@ export const PLUGIN_DSH = Object.freeze({ on: 'on', off: 'off', builtin: 'builti
   /** One of Fishball's own plugins (revision 10c): part of dsh-fishball itself, listed in the Fishball group. */
   fishball: 'fishball' })
 
-/** Where a catalog plugin runs, from both sides' desired state (snapshot `runs`, DESIGN §10d). */
-export const PLUGIN_RUNS = Object.freeze({ everywhere: 'everywhere', dsh: 'dsh', fishball: 'fishball', nowhere: 'nowhere' })
-
-/** A plugin's Fishball settings (snapshot `settings`, DESIGN §10d). */
-export const PLUGIN_SETTINGS_STATE = Object.freeze({ none: 'none', default: 'default', changed: 'changed', unused: 'unused' })
-
-/** The plugin manager's bounds and fixed strings (DESIGN §10d). */
-export const PLUGIN_MANAGER = Object.freeze({
-  /** Query parameter naming the plugin on the GET routes. */
-  pluginParam: 'plugin',
-  /** Schemastery's error path prefix (`$.a.b expected …`) and how its segments are written. */
-  errorPath: /^\$((?:\.[^\s.[\]]+|\[\d+\])*)/,
-  errorSegment: /\.([^\s.[\]]+)|\[(\d+)\]/g,
-  /** A data URL icon (DSH's metadata icons are base64 data URLs). */
-  dataUrl: /^data:([^;,]+);base64,(.*)$/s,
-  /** The settings role DSH's settings forms treat as secret. */
-  secretRole: 'secret',
-  /** The global symbol Schemastery sets on every schema (schemastery lib: Schema.prototype[kSchema]). */
-  schemaMark: Symbol.for('schemastery'),
-  /**
-   * Schemastery's error messages end with the rejected data (`… but got ${data}`, unions and
-   * intersections as JSON), which can hold a secret; everything from this marker on is dropped.
-   */
-  errorDataMarker: ' but got ',
-  /** Keys a stored value may never carry: they would change an object's prototype when merged. */
-  unsafeKeys: Object.freeze(['__proto__', 'constructor', 'prototype']),
-  /** Why a row has no usable settings form (detail `rows[].error` when there is no schema message). */
-  rowError: Object.freeze({ moduleUnavailable: 'module-unavailable', configUnresolved: 'config-unresolved', schemaUnreadable: 'schema-unreadable' }),
-})
-
-/**
- * Default on/off of DSH plugins for Fishball (DESIGN §4 "On at first start", src/plugin-defaults.js).
- * The one record in table plugin_defaults.
- */
-export const PLUGIN_DEFAULTS = Object.freeze({ recordKey: 'dsh' })
-
 /** Fishball's explicit model choice; never initialized from a session or the DSH default. */
 export const MODEL_SELECTION = Object.freeze({ settingsKey: 'model', minIdLength: 1, routeSeparator: '/' })
-
-/**
- * Context window (DESIGN §6). DSH_DEFAULTS mirror dsh-compaction-basic's own defaults
- * (lib/index.js DEFAULT_THRESHOLD_RATIO, DEFAULT_RETAIN_RATIO, headroomTokens ?? 65536),
- * which it does not export; they price the threshold shown when no smaller window is set.
- * How a smaller window is priced (replyCapShare, headroomShare, minWindowTokens and
- * defaultReplyCapTokens) is config: src/config.js LIMITS.
- */
-export const CONTEXT = Object.freeze({
-  dshDefaults: Object.freeze({ thresholdRatio: 0.8, retainRatio: 0.16, headroomTokens: 65536 }),
-  /** Smallest reply or summary cap: DSH requires a positive summary cap, a 0 reply is none. */
-  minCapTokens: 1,
-  /** Bound on asking the model adapter for its window, so a slow discovery never stalls boot. */
-  modelInfoTimeoutMs: 5000,
-  /** Settings record key in the settings table (DESIGN §9). */
-  settingsKey: 'assistant',
-  /** Catalog key of the built-in compaction plugin and its engine row's own id (src/builtins.js). */
-  compactionPlugin: 'builtin:compaction',
-  compactionRow: 'compaction-basic',
-  /** Fishball's compaction engine (DSH's, with an assistant-oriented summary). */
-  compactionModule: 'dsh-fishball/compaction',
-})
 
 /** Why a context-window value is refused, or why a stored one cannot apply now. */
 export const CONTEXT_ERROR = Object.freeze({
@@ -304,9 +149,6 @@ export const CONTEXT_ERROR = Object.freeze({
   /** The model reports no window, so a smaller one cannot be derived from it. */
   modelWindowUnknown: 'model-window-unknown',
 })
-
-/** DSH session projection with the latest request's system-prompt and tool sizes (dsh-token-meter). */
-export const CONTEXT_PROJECTION = Object.freeze({ breakdown: 'contextBreakdown' })
 
 /** Storage domain names and versions (fail closed on mismatch). */
 export const DOMAIN = Object.freeze({ main: 'fishball', version: 1, intake: 'fishball_intake' })
@@ -380,8 +222,6 @@ export const MANAGED_ERROR = Object.freeze({
  */
 export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke', answerPrompt: 'answer-prompt', withdraw: 'withdraw', answerQuestion: 'answer-question', stop: 'stop', redirect: 'redirect' })
 export const DECISION_OK = 'ok'
-/** A stop_session that found no turn running (rev11h): a no-op, told apart from a real stop in the audit. */
-export const DECISION_IDLE = 'idle'
 
 /** Watches (DESIGN §5c, §9 watches). */
 export const WATCH_CONDITION = Object.freeze({ finished: 'finished', perTurn: 'per-turn' })
@@ -418,18 +258,6 @@ export const SOURCES = Object.freeze({
   sourceTitleBytes: 200,
   separator: '/',
 })
-/** Stable codes ctx.fishball throws or rejects with (the error's code). */
-export const SOURCE_ERROR = Object.freeze({
-  duplicate: 'FISHBALL_SOURCE_DUPLICATE',
-  limit: 'FISHBALL_LIMIT',
-  invalid: 'FISHBALL_INVALID',
-  tooLarge: 'FISHBALL_TOO_LARGE',
-  queueFull: 'FISHBALL_QUEUE_FULL',
-  disposed: 'FISHBALL_SOURCE_DISPOSED',
-  unknownPlugin: 'FISHBALL_UNKNOWN_PLUGIN',
-})
-/** A source event's outcome (DESIGN §8). */
-export const SOURCE_STATUS = Object.freeze({ accepted: 'accepted', duplicate: 'duplicate', disabled: 'disabled' })
 
 /** Permission requests from other sessions (DESIGN §7a). */
 export const APPROVAL = Object.freeze({
@@ -524,28 +352,6 @@ export const PROMPT = Object.freeze({
   idPrefix: 'prm_',
   decisions: Object.freeze([APPROVAL_DECISION.allow, APPROVAL_DECISION.reject]),
 })
-/**
- * Fishball's own request past maxPendingApprovals returns at once with this code, so it never
- * freezes (your answer Q-r11-cap-own, §7a.6).
- */
-export const TOO_MANY_WAITING = 'too-many-waiting'
-/**
- * Fishball's own requests (DESIGN §7a.11, §9 `own_requests`, rev11f): each one is a card labelled
- * Fishball in your pile, and the call returns waiting-for-approval at once.
- */
-export const OWN_REQUEST = Object.freeze({
-  /** Request id prefix (own_<id>). */
-  idPrefix: 'own_',
-  /** The code of the result the call returns at once (§7a.11). */
-  waitingCode: 'waiting-for-approval',
-  /** Intake source of the "approved, run it again" notice (never wake-capped, Reading). */
-  sourceIdentity: 'fishball/own-request',
-})
-/**
- * One own request's state (§9): waiting is the card; approved is the retry pass; used, expired
- * (the turn the notice woke ended), rejected and withdrawn are settled.
- */
-export const OWN_STATUS = Object.freeze({ waiting: 'waiting', approved: 'approved', rejected: 'rejected', withdrawn: 'withdrawn', used: 'used', expired: 'expired' })
 /**
  * Managed sessions' questions and plan reviews (DESIGN §7a.10, rev11g, spike S36). DSH's own names
  * (dsh-user-questions, dsh-tool-ask-user, dsh-plan-mode) are kept here as data.
@@ -662,9 +468,6 @@ export const GRANT_ERROR = Object.freeze({
   ended: 'ended',
 })
 
-/** Unread replies from Fishball (src/unread.js): the one stored record's key. */
-export const UNREAD = Object.freeze({ recordKey: 'assistant' })
-
 /**
  * Your display choices (src/preferences.js). The brand icon is Fishball's own mark, or DSH's
  * orca; the default is Fishball's, as before the choice existed.
@@ -677,12 +480,6 @@ export const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deep
  */
 export const SIDEBAR_ENTRY = Object.freeze({ panel: 'panel', brand: 'brand' })
 export const PREFERENCE = Object.freeze({ recordKey: 'display', defaultBrandStyle: BRAND_STYLE.fishball, defaultSidebarEntry: SIDEBAR_ENTRY.panel })
-
-/** Keys of the notices table (DESIGN §9, revision 12): one record per one-time notice once it has shown. */
-export const NOTICE = Object.freeze({ welcome: 'welcome' })
-
-/** One hour, for the hourly caps (wake-ups, messages, sessions). */
-export const HOUR_MS = 60 * 60 * 1000
 
 /** Intake ledger parameters (src/intake.js). */
 export const INTAKE = Object.freeze({
@@ -699,18 +496,6 @@ export const INTAKE_OUTCOME = Object.freeze({ accepted: 'accepted', duplicate: '
 export const SOURCE = Object.freeze({
   relay: Object.freeze({ kind: 'agent-message', form: 'relay' }),
   notice: Object.freeze({ kind: 'fishball-notice', form: 'notice' }),
-})
-
-/**
- * The Messenger look (DESIGN §10c): a Fishball built-in with no rows. Its package ships inside
- * dsh-fishball, and this row serves its browser file, because DSH serves browser halves only
- * for rows its host Loader lists (spike S24).
- */
-export const MESSENGER = Object.freeze({
-  /** Catalog key (src/builtins.js builds it from the built-in prefix and 'messenger'). */
-  pluginKey: 'builtin:messenger',
-  /** The browser file, relative to the dsh-fishball package folder. */
-  clientFile: 'packages/messenger/client.js',
 })
 
 /**
@@ -743,29 +528,6 @@ export const SESSION_INFO = Object.freeze({
   maxSubagentDepth: 8,
 })
 
-/** What Fishball sent or started (DESIGN §9 outbox); rev11h adds redirect_session's message (the manager's decision, 2026-11-02). */
-export const OUTBOX_KIND = Object.freeze({ message: 'message', start: 'start', redirect: 'redirect' })
-/** unconfirmed: the session has the message, but its flush to disk could not be confirmed. */
-export const OUTBOX_STATUS = Object.freeze({ delivered: 'delivered', unconfirmed: 'unconfirmed', failed: 'failed' })
-
-/** Stable codes message_session, start_session, stop_session and redirect_session answer with. */
-export const OUTBOUND_ERROR = Object.freeze({
-  hourlyCap: 'hourly-cap',
-  tooLarge: 'too-large',
-  empty: 'empty',
-  unknownSession: 'unknown-session',
-  archived: 'archived',
-  isFishball: 'is-fishball',
-  noFolder: 'no-folder',
-  notAbsolute: 'not-absolute',
-  deliveryFailed: 'delivery-failed',
-  /** stop_session / redirect_session on a session that is yours (rev11h, §7a.12). */
-  notManaged: NOT_MANAGED,
-  /** stop_session / redirect_session in flight when Session messages went off (as release_session). */
-  featureOff: FEATURE_OFF,
-  noTitle: 'no-title',
-})
-
 /**
  * Why start_session could not name the session it started (the result's titleError; the
  * session still starts, like a refused watch).
@@ -790,69 +552,22 @@ export const WORKSPACE_ERROR = Object.freeze({
   dshCode: 'session/workspace-attach-failed',
 })
 
-/**
- * start_session's `managedError` (revision 11, DESIGN §5d): making the new session managed
- * failed (Fishball's store could not be written). The session still starts, as the user's:
- * its permission requests go to the user's own prompt and it has no message_fishball.
- */
-export const START_MANAGED_ERROR = Object.freeze({ failed: 'manage-failed' })
-
 /** Host API under DSH's authenticated /api channel. */
 export const API = Object.freeze({
   state: '/api/fishball/state',
   events: '/api/fishball/events',
-  /** GET: DSH's live provider/model catalog, without changing its default. */
-  models: '/api/fishball/models',
-  /** POST { provider, model, reasoningEffort? }: Fishball's own durable choice. */
-  model: '/api/fishball/model',
-  recovery: '/api/fishball/recovery',
-  /** POST { plugin, on }: your own on/off choice for one catalog plugin. */
-  plugins: '/api/fishball/plugins',
-  /** POST { plugin }: you uninstall a Fishball-installed plugin. */
-  pluginsRemove: '/api/fishball/plugins/remove',
-  /** POST { toolKey }: withdraw an allowance for a tool nobody had checked. */
-  toolApprovals: '/api/fishball/tool-approvals/remove',
-  /** POST { contextWindowTokens, maxOutputTokens }: each a positive whole number or null (unset). */
-  contextWindow: '/api/fishball/context-window',
-  /** POST { sessionId, note }: you forward a session to Fishball ("Send to Fishball"). */
+  /** POST { sessionId, note }: you hand a session over with a note. */
   send: '/api/fishball/send',
-  /** POST { sessionId }: "Tell Fishball when finished". */
-  watches: '/api/fishball/watches',
-  /** POST { watchId }: remove a watch. */
-  watchesRemove: '/api/fishball/watches/remove',
-  /** POST {}: Fishball's chat is on screen, so its unread replies are read. */
-  read: '/api/fishball/read',
+  /** POST { sessionId, managed }: Hand over / Take back. */
+  managed: '/api/fishball/managed',
+  /** POST { requestId, decision, note? }: your Allow once / Reject on a card (the ask_fishball row). */
+  requestsAnswer: '/api/fishball/requests/answer',
+  /** POST { mode }: who answers managed sessions' questions. */
+  questionMode: '/api/fishball/question-mode',
   /** POST { style }: which brand icon the sidebar shows (BRAND_STYLE). */
   brand: '/api/fishball/brand',
   /** POST { entry }: whether the sidebar has a Fishball row or only the brand button (SIDEBAR_ENTRY). */
   sidebarEntry: '/api/fishball/sidebar-entry',
-  /** POST {}: the welcome card has shown, so it never shows again (DESIGN §10f). */
-  welcomeSeen: '/api/fishball/welcome/seen',
-  /** GET: the Messenger look's browser file (DESIGN §10c; Fishball's browser half loads it). */
-  messengerClient: '/api/fishball/messenger/client.js',
-  /** GET ?plugin=: one plugin's page data (rows, settings form, history; DESIGN §10d). */
-  pluginsDetail: '/api/fishball/plugins/detail',
-  /** GET ?plugin=: one plugin's icon image. */
-  pluginsIcon: '/api/fishball/plugins/icon',
-  /** POST { plugin, row, values?, reset? }: your settings for a plugin Fishball runs itself. */
-  pluginsSettings: '/api/fishball/plugins/settings',
-  /** POST {}: read the plugin list again now (the Fishball tab's Refresh, as DSH's page has one). */
-  pluginsRefresh: '/api/fishball/plugins/refresh',
-  /** POST { spec }: what a spec names, read by DSH's inspect (revision 10a). */
-  installInspect: '/api/fishball/install/inspect',
-  /** POST { spec, requestId, approvedBuilds? }: install for Fishball through DSH's process, then turn it on. */
-  install: '/api/fishball/install',
-  /** POST { requestId }: cancel that install. */
-  installCancel: '/api/fishball/install/cancel',
-  /** POST { questionId, answers } | { questionId, approve } | { questionId, feedback }: your answer on a question card (rev11g). */
-  questionsAnswer: '/api/fishball/questions/answer',
-  /** POST { mode }: who answers managed sessions' questions (auto, fishball, user; rev11g). */
-  questionMode: '/api/fishball/question-mode',
-  /** POST { sessionId, managed }: Hand over to Fishball (true) / Take back from Fishball (false), DESIGN §10e. */
-  managed: '/api/fishball/managed',
-  /** POST { requestId, decision: 'allow' | 'reject', note? }: your answer on a card (DESIGN §10e). */
-  requestsAnswer: '/api/fishball/requests/answer',
-  grantsRevoke: '/api/fishball/grants/revoke',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -901,23 +616,18 @@ export const SERVICE = Object.freeze({
   agents: 'agents',
   workspaceRegistry: 'workspaceRegistry',
   storageDomain: 'storageDomain',
+  /** Managed sessions' own tools (message_fishball, ask_fishball, list_user_messages). */
   tools: 'tools',
   connection: 'connection',
   sandboxPolicy: 'sandboxPolicy',
-  agentDefaultModel: 'agentDefaultModel',
-  loader: 'loader',
-  systemPrompt: 'systemPrompt',
-  sessionPersistence: 'sessionPersistence',
   sessionProjections: 'sessionProjections',
   sessionController: 'sessionController',
-  /** Catalog (listBundles) and add_plugin's install. */
-  pluginManager: 'pluginManager',
-  /** Permission prompts for add_plugin and tools nobody has checked (DESIGN §7). */
+  /** Permission prompts the broker answers and the policy it reads (DESIGN §7a). */
   approval: 'approval',
-  /** The model's context window (resolveModelInfo) for the context-window setting (DESIGN §6). */
-  llm: 'llm',
-  /** Durable session flush after an inbox write (intake ledger, outbound messages). */
+  /** Durable session flush after a delivered message (the bridge's session.message). */
   sessions: 'sessions',
+  /** Reads a stopped session's log without making it live (src/session-info.js persistedEventsOf). */
+  sessionQuery: 'sessionQuery',
 })
 
 /** Optional services read with ctx.get (Fishball works without them, with less shown). */
@@ -971,12 +681,3 @@ export const POST_DECISION = Object.freeze({ accept: 'accept', block: 'block' })
 
 /** Agent status after a turn ends (dsh-agent). */
 export const AGENT_IDLE = 'idle'
-
-/** agent/request-error action that retries the request (dsh-agent-loop). */
-export const REQUEST_RETRY = 'retry'
-
-/** dsh-llm stream finish chunk and finish kinds. */
-export const LLM_FINISH = Object.freeze({ chunk: 'finish', error: 'error', aborted: 'aborted', maxTokens: 'max-tokens' })
-
-/** Approval outcome that grants the request; every other outcome refuses (dsh-user-approval). */
-export const APPROVAL_GRANTED = 'allowed-once'

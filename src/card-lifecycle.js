@@ -12,10 +12,9 @@
  *   question (dismissed), or the question goes back to its own card (back);
  * - Fishball or its Permission requests row goes off (off); or
  * - Fishball withdraws its own request (withdrawn).
- * Every end the user did not answer leaves one visible line in Fishball's chat (closedChat below),
- * so a card never disappears unseen; the slim child, whose chat is a different session, receives
- * the same closure through the inbox marker (CARD_CLOSED in src/slim/inbox-markers.js). Nothing
- * here arms a timer: a card leaves only through the ends above.
+ * Every end the user did not answer reaches the isolated Fishball through the inbox marker
+ * (CARD_CLOSED in src/slim/inbox-markers.js), whose chat shows "closed: <reason>", so a card never
+ * disappears unseen. Nothing here arms a timer: a card leaves only through the ends above.
  *
  * Cards are stored while they wait (src/pile.js, T08): a main-DSH restart ends every turn, so the
  * request a card waited on is gone when the next process starts. The card is still rebuilt into
@@ -23,10 +22,7 @@
  * line says why. A question DSH still holds (a continued one, found by src/questions.js rebuild)
  * is the one card that is answerable again: it is re-filed under its old id before it is closed.
  */
-import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
-import { CARD_END, INTAKE_KIND, QUESTION_KIND, REQUEST_KIND, SOURCE } from './constants.js'
-import { authorOf } from './author.js'
-import { diagnosticOf } from './errors.js'
+import { CARD_END } from './constants.js'
 import { CARD_CLOSED } from './slim/inbox-markers.js'
 
 /** Why a card ended without the user's answer, in the user's words. */
@@ -42,63 +38,18 @@ export const CARD_CLOSE = Object.freeze({
   [CARD_END.restarted]: 'DSH restarted, so the call it waited on ended',
 })
 
-/** What each card kind is called in the closure line (never a bare word at a call site). */
-const CARD_NOUN = Object.freeze({
-  [QUESTION_KIND.question]: 'question',
-  [QUESTION_KIND.planReview]: 'plan review',
-  [REQUEST_KIND.asked]: 'permission request',
-  [REQUEST_KIND.direct]: 'permission request',
-  [REQUEST_KIND.own]: 'Fishball\'s request',
-})
-
-/**
- * The user-facing closure line, in Fishball's own chat. The child's copy is the inbox item
- * `CARD_CLOSED.text` (src/slim/inbox-markers.js), because its chat is a different session's.
- */
-const closedChat = (what, reason) => 'Card closed: ' + what + ' left the pile before you answered: ' + reason + '. Nothing is waiting for an answer.'
-
 /** Whether this end is a closure without the user's answer (CARD_END.inSession is not: it was answered). */
 export const isClosed = (end) => Object.hasOwn(CARD_CLOSE, end)
 
 /**
- * The card's name in a closure line: its kind and the request id Fishball's own messages show.
- * An unknown kind still names the id, so a line never calls a card by the wrong noun.
- */
-export function cardName(card) {
-  const id = typeof card?.questionId === 'string' ? card.questionId : typeof card?.requestId === 'string' ? card.requestId : ''
-  const noun = CARD_NOUN[card?.kind]
-  if (noun === undefined) return id
-  return id === '' ? noun : noun + ' ' + id
-}
-
-/**
- * Tell Fishball one closure: a visible line in its chat (never a wake), and the slim child's own
- * copy through the bridge when a listener is given. Absent agent: the line cannot be shown, and
- * the bridge event still goes out.
+ * Tell the isolated Fishball one closure: the bridge's listener turns it into the CARD_CLOSED inbox
+ * item (src/slim/host/approvals.js).
  * @param card - the pile card that left: { kind, requestId/questionId, sessionId }.
  * @param end - a CARD_END; a non-closure end (the user's answer, a settlement elsewhere) says nothing.
- * @param notify - optional, receives { type, approvalId, sessionId, reason } (src/slim/host/approvals.js).
+ * @param notify - receives { type, approvalId, sessionId, reason }.
  */
-export function closeCard(agent, card, end, logger, notify) {
+export function closeCard(card, end, notify) {
   if (!isClosed(end)) return false
-  const reason = CARD_CLOSE[end]
-  tellWithoutWake(agent, closedChat(cardName(card), reason), logger)
-  notify?.({ type: CARD_CLOSED.event, approvalId: card?.requestId, sessionId: card?.sessionId, reason })
+  notify({ type: CARD_CLOSED.event, approvalId: card?.requestId, sessionId: card?.sessionId, reason: CARD_CLOSE[end] })
   return true
-}
-
-/**
- * A short Fishball notice injected without a wake (it reads it at its next turn), shared by the
- * broker, the question router and Fishball's own requests. @param agent - Fishball's agent, or
- * undefined (not live: the line is dropped; the bridge event still goes out).
- */
-export function tellWithoutWake(agent, text, logger) {
-  if (agent === undefined) return false
-  try {
-    agent.inject(createUserMessage({ content: [{ type: 'text', text }], source: { ...SOURCE.notice, summary: boundContextSummary(text), author: authorOf(INTAKE_KIND.system) } }))
-    return true
-  } catch (error) {
-    logger?.warn('Fishball note failed (%s)', diagnosticOf(error))
-    return false
-  }
 }
