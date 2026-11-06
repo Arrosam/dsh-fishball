@@ -105,8 +105,10 @@ const SETTLED_BY = Object.freeze({ user: 'user', fishball: 'fishball' })
  * Where a question left to the user is answered (7713 N6): only in its own session, on DSH's
  * question card, since the pile's question form was deleted (N3, docs/slim-native-design.md §12).
  * The pile still holds the entry as the "needs you" mark, but no surface answers it there.
+ * 7713 N7: the words also say where it is NOT, because Fishball told the user to answer "in this
+ * chat (and in your pile)"; same words as src/slim/child/approvals.js.
  */
-const IN_SESSION = 'the user answers it on that session\'s own question card'
+const IN_SESSION = 'the user answers it only on that session\'s own question card, in that session, not in this chat or the user\'s pile'
 
 const TEXT = Object.freeze({
   answerDescription: `Answer a question or plan review from a session you manage ([question qst_…]). For a question give answers: one {id, selected, custom?} per question, every question id exactly once; selected holds labels of the offered options; a single-select question takes one label, or custom text alone; selected [] with no custom skips it. For a plan review give approve: true to approve the plan (plan mode ends), or feedback to keep planning with your feedback (approve: false without feedback keeps planning). to_user: true leaves it to the user instead (${IN_SESSION}); note adds a note for the user. Follow the mode the question names. A bad answer is refused and the question stays open.`,
@@ -118,7 +120,9 @@ const TEXT = Object.freeze({
   approveArg: 'For a plan review: true approves the plan; false keeps planning.',
   feedbackArg: 'For a plan review: keep planning, with this feedback for the session.',
   toUserArg: `true: leave it to the user instead of answering; ${IN_SESSION}.`,
-  noteArg: `A note for the user: ${PILE_NOTE.guide}. With to_user it is shown on that decision in your chat.`,
+  noteArg: `A note for the user: ${PILE_NOTE.guide}. With to_user it is kept on your decision record in this chat; ${IN_SESSION}.`,
+  /** The to_user result names the answer place itself (7713 N7): the model words its reply from it. */
+  toUserResult: `Left to the user: ${IN_SESSION}. If you tell the user, send them to that session's question card.`,
   /** The question Fishball sees (DESIGN §7a.10, the §7 framing). */
   notice: (entry, info, userText, mode, seconds, questions) => [
     `[question ${entry.id}] Fishball: ${entry.kind === QUESTION_KIND.planReview ? 'a session you manage asks the user to review its plan (exit_plan_mode).' : 'a session you manage asks the user a question (ask_user_question).'}`,
@@ -498,7 +502,7 @@ export class QuestionRouter {
       if (toUser === true) {
         if (entry.inPile) return refused(QUESTION_ERROR.expired, { note: TEXT.expired })
         this.#toPile(entry, APPROVAL_ANSWER.escalate)
-        return ok({ questionId: id, toUser: true })
+        return ok({ questionId: id, toUser: true, note: TEXT.toUserResult })
       }
       return noted === '' ? refused(QUESTION_ERROR.badAnswer, { reason: TEXT.needsSomething }) : ok({ questionId: id, note: TEXT.noteAdded })
     }
@@ -552,7 +556,12 @@ export class QuestionRouter {
 
   /** A session left management (Take back, release_session): its questions go back to it (§5e). */
   releaseSession(sessionId) {
-    for (const entry of [...this.#entries.values()]) if (entry.sessionId === sessionId) this.#goBack(entry)
+    for (const entry of [...this.#entries.values()]) {
+      if (entry.sessionId !== sessionId) continue
+      // Its card in Fishball's chat must close with a record even when it was never filed (#ended, 7713 N8).
+      entry.released = true
+      this.#goBack(entry)
+    }
   }
 
   /** Back to the session's own card: an open question through next() alone; a continued one just leaves the pile. */
@@ -773,6 +782,8 @@ export class QuestionRouter {
         entry.timer.unref?.()
         // The child's card goes out before the legacy notice: a slow ledger never delays it.
         this.#emit({ type: OFFER.event.offered, approvalId: entry.id, sessionId: entry.sessionId, descriptor: this.#offerOf(entry) })
+        // The child holds a card for it now: an end before filing must close that card (#ended).
+        entry.offered = true
       }
       const info = (await describeSession(this.#ctx, entry.sessionId, limits.forwardExcerptBytes)) ?? { id: entry.sessionId, title: '', cwd: null }
       if (this.#entries.get(entry.id) !== entry) return
@@ -808,14 +819,22 @@ export class QuestionRouter {
     // The question is the user's card now: it carries no end time, because nothing may close it
     // on a timer (src/card-lifecycle.js).
     delete entry.expiresAt
-    // Plain data for the browser; every text comes from the session or from Fishball (§10e: never markup).
-    void this.#pile.file({
-      requestId: entry.id, questionId: entry.id, kind: entry.kind, sessionId: entry.sessionId, callId: entry.callId ?? null,
-      toolName: entry.toolName, questions: entry.questions, continued: entry.state === STATE.continued, note: entry.note, since: new Date().toISOString(),
-    })
+    void this.#pile.file(this.#pileCardOf(entry))
     // The slim child's answerable card closes: the question is the user's card now (Q1).
     this.#emit({ type: OFFER.event.escalated, approvalId: entry.id, sessionId: entry.sessionId })
     return true
+  }
+
+  /**
+   * The question's card as the pile holds it; also the closure record's source for a card that
+   * closes before it was filed (#ended, 7713 N8). Plain data for the browser; every text comes
+   * from the session or from Fishball (§10e: never markup).
+   */
+  #pileCardOf(entry) {
+    return {
+      requestId: entry.id, questionId: entry.id, kind: entry.kind, sessionId: entry.sessionId, callId: entry.callId ?? null,
+      toolName: entry.toolName, questions: entry.questions, continued: entry.state === STATE.continued, note: entry.note, since: new Date().toISOString(),
+    }
   }
 
   /** The question's card while it is in your pile (a plain object the snapshot publishes as it is). */
@@ -865,6 +884,10 @@ export class QuestionRouter {
       // Back to its session's own card, or stopped/dismissed: this card is gone either way, so the
       // child's card closes; the pile's closure line below tells the user why it left.
       this.#emit({ type: OFFER.event.settled, approvalId: entry.id, sessionId: entry.sessionId, decision: APPROVAL_DECISION.ask, by: SETTLED_BY.fishball })
+      // Released (Take back, release_session) while still in Fishball's answer window (offered,
+      // never filed): the pile settle below finds no card, so the closure line and its one record
+      // come from here, as for a pile card (7713 N8). Fishball going off (releaseAll) is unchanged.
+      if (entry.released === true && entry.offered === true && !entry.inPile) this.#cardClosed(this.#pileCardOf(entry), PILE_END[end])
     }
     // The pile's closure line comes after the child's own event, so an escalated card is first
     // known to the child and then closed with its reason.
