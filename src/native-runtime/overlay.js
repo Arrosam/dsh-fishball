@@ -7,7 +7,10 @@ const ROW = Object.freeze({
   sandboxPolicy: 'sandbox-policy',
   approval: 'approval',
   lifecycle: 'fishball-native-child',
+  sessionTools: 'fishball-native-session-tools',
+  approvals: 'fishball-native-approvals',
   app: 'fishball-native-app',
+  inbox: 'fishball-native-inbox',
   admin: 'fishball-native-admin',
   providerSync: 'fishball-native-provider-sync',
   timeContext: 'time-context',
@@ -28,6 +31,12 @@ const STALE_WEB_ROW = Object.freeze({
 const POLICY = Object.freeze({ sandboxMode: 'read-only', approval: 'ask' })
 /** copyChildCode copies this tree beside native-child.js, so the app row resolves inside the snapshot. */
 const APP_MODULE = path.join('src', 'slim', 'child', 'app.js')
+/** The shared bridge client and the session tools (T05); the approvals and inbox rows read its fishballBridge. */
+const SESSION_TOOLS_MODULE = path.join('src', 'slim', 'child', 'session-tools.js')
+/** T09's approval bridge: the app row injects its fishballApprovals for /api/approvals. */
+const APPROVALS_MODULE = path.join('src', 'slim', 'child', 'approvals.js')
+/** The inbox consumer: it injects the bridge and the app row's fishballChat. */
+const INBOX_MODULE = path.join('src', 'slim', 'child', 'inbox.js')
 /** The T11 admin row: the same tree, so the settings page's requests reach the child itself (§9). */
 const ADMIN_MODULE = path.join('src', 'slim', 'child', 'admin.js')
 /** T16's provider-sync target row: preview/confirm into the child's own home (§10). */
@@ -85,9 +94,18 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       // tool would block the call on an answer. present stays out: the slim UI is Fishball's own.
       { id: ROW.timeContext, name: PACKAGE.timeContext },
       { id: ROW.lifecycle, name: childModule, required: true, config },
+      // The bridge, approvals and inbox rows are loader rows, not plugins the lifecycle row
+      // starts itself: the loader's boot settlement only waits for its own entries, so a nested
+      // plugin's chain (nativeRuntime -> fishballBridge -> fishballApprovals -> the app row) could
+      // still be starting when appReady fires, and the readiness probe then finds no fishballApp.
+      // As rows, each one's start is handed to the next by Cordis's inject notification, which
+      // the settlement follows (B5).
+      { id: ROW.sessionTools, name: path.join(path.dirname(childModule), SESSION_TOOLS_MODULE) },
+      { id: ROW.approvals, name: path.join(path.dirname(childModule), APPROVALS_MODULE) },
       // The app row is T03's module. required:true makes a missing or inactive app row fail the
       // boot loudly instead of leaving a child that serves nothing (§15 LIFE-02).
       { id: ROW.app, name: path.join(path.dirname(childModule), APP_MODULE), required: true, config },
+      { id: ROW.inbox, name: path.join(path.dirname(childModule), INBOX_MODULE) },
       // The admin row applies the settings page's changes with the child's own settings,
       // pluginManager and llm; it takes no config and comes up on the lifecycle wire's admin
       // channel (T11, §9). It is not required, so an unready admin never fails the child boot.

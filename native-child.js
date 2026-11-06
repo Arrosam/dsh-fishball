@@ -1,12 +1,10 @@
 import { applyNativeChild } from './src/native-runtime/child.js'
-import * as sessionTools from './src/slim/child/session-tools.js'
-import * as approvals from './src/slim/child/approvals.js'
-import * as inbox from './src/slim/child/inbox.js'
 
 /**
  * The attached child's lifecycle row: identity checks, control wire and bounded shutdown.
- * launchOverlay inserts the slim app row (src/slim/child/app.js) beside it; that row provides
- * `fishballApp`, and this row's readiness probe requires it and its bearer (§2.3, §3.2).
+ * launchOverlay inserts the slim rows beside it (src/native-runtime/overlay.js): the session-tools
+ * row, the approvals row, the app row (src/slim/child/app.js) and the inbox row. The app row
+ * provides `fishballApp`, and this row's readiness probe requires it and its bearer (§2.3, §3.2).
  *
  * The authenticated control transport carries envelope v2 only (§5.1). The v1 control row
  * (src/native-control/child.js) is deliberately not mounted: its channel closes the wire on a
@@ -14,18 +12,13 @@ import * as inbox from './src/slim/child/inbox.js'
  * session-tools row attaches the v2 bridge client to that transport exactly as the v1 row did
  * (ctx.nativeRuntime.onControlTransport), and the lifecycle channel (health, readiness, stop,
  * the embed bearer) stays on the wire's own lifecycle operations, untouched by either.
+ *
+ * The slim rows used to be plugged here with ctx.plugin. They are overlay rows now, because the
+ * loader's boot settlement waits only for its own rows' chains: a plugin nested here could still
+ * be starting when appReady fired, and the app row then missed fishballApprovals (B5).
  */
 export const name = 'fishball-native-child'
 export const inject = ['profileContext', 'pluginPackages', 'agents', 'sessions', 'tools', 'appExit', 'appReady']
 export async function apply(ctx, config) {
   await applyNativeChild(ctx, config)
-  // The row injects the nativeRuntime this call has just provided and the child's tools.
-  ctx.plugin(sessionTools, {})
-  // The approval tools, their cards and Fishball's own question answerer share that row's one
-  // bridge client (fishballBridge); T09 opens no second channel.
-  ctx.plugin(approvals, {})
-  // The inbox consumer also shares that bridge client and delivers session messages, hand-over
-  // notes and notices into Fishball's chat. It waits for fishballChat, which the app row
-  // publishes; T09's own question-answer items are declined by both sides' listener rule.
-  ctx.plugin(inbox, {})
 }

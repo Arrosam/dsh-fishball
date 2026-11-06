@@ -8,6 +8,7 @@ import { pathsFor, prepareLayout, exists, jsonPrivate, writePrivate, privateDire
 import { resolveInstallation, isolatedEnvironment, verifyNode, initializeProfile, copyChildCode, runProbe } from './installation.js'
 import { connectWire } from './wire.js'
 import { launchOverlay } from './overlay.js'
+import { captureChildStderr } from './stderr-log.js'
 import { preflight as defaultPreflight } from '../native-preflight.js'
 
 export { RUNTIME_LIMITS, NativeRuntimeError }
@@ -243,7 +244,10 @@ class NativeRuntime {
       const preload = pathToFileURL(path.join(path.dirname(childModule), 'src/native-runtime/parent-watch.js')).href
       const args = ['--import', preload, this.installation.bin, '--profile', RUNTIME.profileName, '--patch', overlay, '--host', RUNTIME.host, '--port', '0', '--no-open']
       if (signal?.aborted) fail('START_INTERRUPTED')
-      const child = this.spawn(executable, args, { cwd: this.paths.workspace, env, detached: true, stdio: ['ignore', 'ignore', 'ignore', 'pipe'] })
+      // stderr is piped into a bounded, redacted private log (B6) so a row that fails to mount is
+      // diagnosable; stdout stays ignored as before.
+      const child = this.spawn(executable, args, { cwd: this.paths.workspace, env, detached: true, stdio: ['ignore', 'ignore', 'pipe', 'pipe'] })
+      captureChildStderr(child.stderr, this.paths, this.limits.maxLogBytes)
       this.child = child
       this.parentPipe = child.stdio[LIFETIME.parentFd]
       this.parentPipe?.on('error', () => {})
