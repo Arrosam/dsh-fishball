@@ -161,13 +161,17 @@ const QUESTION = Object.freeze({ errorName: 'UserQuestionError', aborted: 'ASK_A
 /**
  * Where a session question left to the user is answered (7713 N6): only in its own session, on
  * DSH's question card (N3, docs/slim-native-design.md §12). Same words as src/questions.js.
+ * 7713 N7: it also says where it is NOT, because Fishball told the user to answer "in this chat
+ * (and in your pile)", mixing it up with its own ask_user card; neither place has a form for it.
  */
-const IN_SESSION = 'the user answers it on that session\'s own question card'
+const IN_SESSION = 'the user answers it only on that session\'s own question card, in that session, not in this chat or the user\'s pile'
 /**
  * Where Fishball's own ask_user card is answered: in Fishball's chat, the one card the user
  * answers there (src/slim/ui/approvals.js). The main pile UI that also showed it is deleted (§12).
  */
 const OWN_CARD = 'a card in this chat, where the user answers it'
+/** ask_user is for Fishball's own questions only; a session's question stays in its session (7713 N7). */
+const OWN_ONLY = `This is only for your own questions: a session's question you leave to the user (to_user) is not shown here, and ${IN_SESSION}.`
 
 /**
  * Model-facing texts (stable; no secrets). Verbatim from today's tools: src/approvals.js,
@@ -204,7 +208,9 @@ export const TEXT = Object.freeze({
   approveArg: 'For a plan review: true approves the plan; false keeps planning.',
   feedbackArg: 'For a plan review: keep planning, with this feedback for the session.',
   toUserArg: `true: leave it to the user instead of answering; ${IN_SESSION}.`,
-  noteArg: 'A note for the user: one conversational sentence to the user saying what they need to decide and why it needs them. With to_user it is shown on that decision in your chat.',
+  noteArg: `A note for the user: one conversational sentence to the user saying what they need to decide and why it needs them. With to_user it is kept on your decision record in this chat; ${IN_SESSION}.`,
+  /** The to_user result names the answer place itself (7713 N7): the model words its reply from it. */
+  toUserResult: `Left to the user: ${IN_SESSION}. If you tell the user, send them to that session's question card.`,
   noteAdded: 'Your note is kept with the question.',
   needsSomething: 'Give answers (a question), approve or feedback (a plan review), to_user, or note.',
   bothWays: 'Answer it, or send it to the user (to_user), not both.',
@@ -218,7 +224,7 @@ export const TEXT = Object.freeze({
   custom: (id) => id + ': custom must be non-empty text',
   single: (id) => id + ': a single-select question takes one label, or custom text alone',
   /** T09's card ask: the words of DSH's own ask_user_question, plus how the answer arrives. */
-  askDescription: `Ask the user brief, direct, self-contained questions about missing information, preferences, or decisions: ${OWN_CARD}. Use user-facing terms; assume no knowledge of background work or internal names, and use distinct stable question ids. The call returns at once with the card id and never waits, so carry on with other work; the user\'s answer reaches you in this chat as a message, and a card never expires. If the user closes it unanswered, you are told.`,
+  askDescription: `Ask the user brief, direct, self-contained questions about missing information, preferences, or decisions: ${OWN_CARD}. ${OWN_ONLY} Use user-facing terms; assume no knowledge of background work or internal names, and use distinct stable question ids. The call returns at once with the card id and never waits, so carry on with other work; the user\'s answer reaches you in this chat as a message, and a card never expires. If the user closes it unanswered, you are told.`,
   questionsArg: 'The questions to ask the user.',
   askIdArg: 'Stable id for this question; the answer echoes it.',
   askQuestionArg: 'The specific question to ask the user.',
@@ -845,7 +851,7 @@ export function apply(ctx) {
     const decisionId = recordLabel(target, cardKind(target), note ?? '', { toUser: true }, { waiting: true })
     state.pending.set(questionId, decisionId)
     publish()
-    return ok({ questionId, toUser: true })
+    return ok({ questionId, toUser: true, note: TEXT.toUserResult })
   }
 
   /** The prompt list, stored so answer_prompt knows its session without a second lookup. */
