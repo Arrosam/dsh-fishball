@@ -33,10 +33,12 @@
     "@deepseek-ai/dsh-llm-pi-ai": "*",
     "@deepseek-ai/dsh-sandbox-policy": "*",
     "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
     "@deepseek-ai/dsh-system-prompt": "*",
     "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/dsh-user-approval": "*",
-    "@deepseek-ai/schemastery": "*"
+    "@deepseek-ai/schemastery": "*",
+    "zod": "*"
   },
   "dsh": {
     "bundle": {
