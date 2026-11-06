@@ -14,6 +14,7 @@ import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes
 import { createChildProviderSync } from './src/provider-sync-service.js'
 import { ContractError, ERROR } from './src/slim/contract.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
+import { migrateLaunchSettings } from './src/settings-migration.js'
 
 const PLUGIN = Object.freeze({
   // The row id is the plugin's name (design §0.2, D22); the service keeps its name for its callers.
@@ -34,6 +35,9 @@ const PLUGIN = Object.freeze({
     // above anyway. llm is already a dependency of sessionController and credentials of
     // connection, so listing them adds no new reason for this row (and its child) to restart.
     'llm', 'settings', 'configEditor', 'credentials', 'authorization',
+    // The one-time settings migration keeps its done-marker in its own storage domain
+    // (src/settings-migration.js); storage-domain is a dsh-base row in both versions.
+    'storageDomain',
     // The session port moved to the connector row in M1, which now injects what its model path reads.
   ],
   cleanup: 'fishball native host: stop owned child and retain private data',
@@ -299,7 +303,14 @@ export async function apply(ctx, config) {
   // owner-only Fetch registry and same-origin fence (§10).
   registerProviderSyncRoutes(ctx, service)
   registerNativeWeb(ctx, service)
-  cancelReady = ctx.appReady.onReady(() => { appReady = true; if (enabled && !closed) void start() })
+  // The one-time copy from the old row runs first (DSH writes settings only for an active row, so
+  // not during apply); it may change `enabled`, which the volatile-update handler below follows.
+  cancelReady = ctx.appReady.onReady(() => {
+    void migrateLaunchSettings(ctx, { namespace: PLUGIN.name, schema: Config }).then(() => {
+      appReady = true
+      if (enabled && !closed) void start()
+    })
+  })
   // DSH's form writes `enabled` as a volatile field, so the row is not reloaded; the loader only
   // refreshes the live value and emits this event. Follow it as the row switch would: off stops
   // the child (state disabled), on starts it once main is ready. The path fields need nothing
