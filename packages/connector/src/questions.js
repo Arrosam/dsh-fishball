@@ -64,6 +64,7 @@ import { untrustedBlock, sessionFields } from './framing.js'
 import { diagnosticOf } from './errors.js'
 import { JSON_OUTPUT, ok, refused } from './tool-results.js'
 import { CARD_RECORD } from './slim/card-record.js'
+import { ANSWER_PLACE } from '../contract/pile-note.js'
 
 export const QUESTION_TOOL = Object.freeze({ answer: 'answer_question' })
 
@@ -106,9 +107,9 @@ const SETTLED_BY = Object.freeze({ user: 'user', fishball: 'fishball' })
  * question card, since the pile's question form was deleted (N3, docs/slim-native-design.md §12).
  * The pile still holds the entry as the "needs you" mark, but no surface answers it there.
  * 7713 N7: the words also say where it is NOT, because Fishball told the user to answer "in this
- * chat (and in your pile)"; same words as src/slim/child/approvals.js.
+ * chat (and in your pile)". One text with the instance's persona and child tools (contract/pile-note.js).
  */
-const IN_SESSION = 'the user answers it only on that session\'s own question card, in that session, not in this chat or the user\'s pile'
+const IN_SESSION = ANSWER_PLACE.sessionQuestion
 
 const TEXT = Object.freeze({
   answerDescription: `Answer a question or plan review from a session you manage ([question qst_…]). For a question give answers: one {id, selected, custom?} per question, every question id exactly once; selected holds labels of the offered options; a single-select question takes one label, or custom text alone; selected [] with no custom skips it. For a plan review give approve: true to approve the plan (plan mode ends), or feedback to keep planning with your feedback (approve: false without feedback keeps planning). to_user: true leaves it to the user instead (${IN_SESSION}); note adds a note for the user. Follow the mode the question names. A bad answer is refused and the question stays open.`,
