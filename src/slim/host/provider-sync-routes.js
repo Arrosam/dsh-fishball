@@ -26,13 +26,21 @@ const json = (status, value) => new Response(JSON.stringify(value), { status, he
 const refusal = (code) => ({ ok: false, error: { code } })
 const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
 
-/** The admission rule: same origin, or no Origin with a same-site fetch. */
-function sameOrigin(request) {
-  const origin = request.headers.get(SYNC_PAGE.originHeader)
+/**
+ * The admission rule: same origin, or no Origin with a same-site fetch.
+ *
+ * The Origin is judged against the request's Host by DSH's own fence
+ * (`connection.requestRejection`, the check the embed broker also uses), never against
+ * `request.url`: DSH's /api bridge rebuilds every Request on a fixed internal base
+ * (`http://dsh.internal`, dsh-client-connection lib/index.js:46 on 0.2.1-rc.5 and 0.2.2-rc.1),
+ * so the URL never carries the browser's authority. A missing connection service or any
+ * rejection refuses the request.
+ */
+function sameOrigin(connection, request) {
   const site = request.headers.get(SYNC_PAGE.siteHeader)
-  if (origin && origin !== new URL(request.url).origin) return false
   if (site && !SYNC_PAGE.allowedSites.includes(site)) return false
-  return true
+  if (typeof connection?.requestRejection !== 'function') return false
+  try { return connection.requestRejection({ headers: request.headers }) === undefined } catch { return false }
 }
 
 /** The request has no payload; an oversized body is refused before the host is asked. */
@@ -40,8 +48,8 @@ async function oversized(request) {
   try { return Buffer.byteLength(await request.text()) > SYNC_PAGE.maxBodyBytes } catch { return true }
 }
 
-async function handleSync(service, request) {
-  if (!sameOrigin(request)) return json(HTTP.forbidden, refusal(SYNC_PAGE.code.refused))
+async function handleSync(connection, service, request) {
+  if (!sameOrigin(connection, request)) return json(HTTP.forbidden, refusal(SYNC_PAGE.code.refused))
   if (await oversized(request)) return json(HTTP.badRequest, refusal(SYNC_PAGE.code.large))
   let outcome
   try { outcome = await service.providerSync.sync() } catch { outcome = refusal(SYNC_PAGE.code.refused) }
@@ -58,6 +66,6 @@ async function handleSync(service, request) {
 export function registerProviderSyncRoutes(ctx, service) {
   if (typeof service?.providerSync?.sync !== 'function') return undefined
   return registerPostRoutes(ctx, [
-    { path: PROVIDER_SYNC_ROUTE.path, fetch: (request) => handleSync(service, request) },
+    { path: PROVIDER_SYNC_ROUTE.path, fetch: (request) => handleSync(ctx.connection, service, request) },
   ], 'fishball: provider-sync routes')
 }

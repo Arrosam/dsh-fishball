@@ -15,7 +15,7 @@ export const SYNC_PAGE = Object.freeze({
   maxBodyBytes: 16384,
   code: Object.freeze({ profile: 'profile-unavailable', large: 'sync-request-too-large', refused: 'provider-sync-refused' }),
   headers: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
-  allowedSites: Object.freeze(['same-origin', 'none']), originHeader: 'origin', siteHeader: 'sec-fetch-site',
+  allowedSites: Object.freeze(['same-origin', 'none']), siteHeader: 'sec-fetch-site',
   profileContext: 'profileContext',
 })
 const P = SYNC_PAGE
