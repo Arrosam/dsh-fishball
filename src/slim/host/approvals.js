@@ -56,7 +56,7 @@ export const APPROVAL_OPERATIONS = Object.freeze([
 
 /** The methods the main Fishball row's state provider must carry (index.js). */
 const STATE_METHODS = Object.freeze([
-  'bridgeReady', 'liveApprovals', 'answerApproval', 'liveQuestions', 'answerQuestion',
+  'bridgeReady', 'attachInbox', 'liveApprovals', 'answerApproval', 'liveQuestions', 'answerQuestion',
   'questionSession', 'askQuestion', 'answerOwnQuestion',
   'listPrompts', 'answerPrompt', 'listGrants', 'revokeGrant', 'subscribe',
 ])
@@ -192,11 +192,19 @@ class ApprovalRelay {
     this.unsubscribe = state.subscribe((event) => this.notify(event))
   }
 
-  /** A ready channel is a new offer generation; a closed one means the child can no longer answer. */
+  /**
+   * A ready channel is a new offer generation; a closed one means the child can no longer answer.
+   * Each ready edge also hands the main row's intake ledger this host's inbox.push, so every input
+   * still pending (a hand-over note, message_fishball, a watch or approval notice) goes to the
+   * child that is now connected. The host keeps an unacked item for the next connection itself.
+   */
   connection(ready) {
     if (this.disposed) return
     try {
-      this.state().bridgeReady(ready === true)
+      const state = this.state()
+      state.bridgeReady(ready === true)
+      const host = this.host
+      if (ready === true && host !== undefined) state.attachInbox((item) => host.pushInbox(item))
       this.observe()
     } catch { /* no provider yet: the next edge tries again */ }
     this.offers.clear()

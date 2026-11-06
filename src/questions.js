@@ -57,8 +57,8 @@ import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, 
 import { AuditLog } from './audit.js'
 import { Pile } from './pile.js'
 import { argumentsText, latestUserText, sha256 } from './approvals.js'
-import { closeCard, tellWithoutWake } from './card-lifecycle.js'
-import { describeSession, rootSessionOf } from './session-info.js'
+import { closeCard } from './card-lifecycle.js'
+import { describeSession, persistedEventsOf, rootSessionOf } from './session-info.js'
 import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { diagnosticOf } from './errors.js'
@@ -127,11 +127,6 @@ const TEXT = Object.freeze({
   /** The slim card's prompt names the mode today's answer_question description tells Fishball to follow. */
   prompt: (entry, mode) => `${TEXT.summary(entry)} (mode: ${mode})`,
   /** Notes to Fishball without a wake, as for permission requests (it learns how each ended). */
-  outcome: (id, what) => `Fishball notice: question ${id} ${what}.`,
-  inSession: 'was answered by the user in that session',
-  inPile: 'went to the user\'s pile; the user answered it',
-  closed: 'was closed in its session (stopped or dismissed); it needs no answer',
-  timedOut: 'got no answer in time and went to the user\'s pile',
   /** answer_question's refusals, so Fishball knows what to do next. */
   needsSomething: 'Give answers (a question), approve or feedback (a plan review), to_user, or note.',
   bothWays: 'Answer it, or send it to the user (to_user), not both.',
@@ -340,7 +335,6 @@ export class QuestionRouter {
   #canAnswer
   #isManaged
   #managedIds
-  #agentOf
   #onChange
   #audit
   #decisions
@@ -357,19 +351,18 @@ export class QuestionRouter {
    * @param ctx - fishball row context (sessions, sessionController, on, get).
    * @param store - Store (settings, approvals and decisions audits). @param logger - plugin logger.
    * @param deps.ledger - IntakeLedger (the question notice). @param deps.readLimits - () => limits.
-   * @param deps.assistantId - () => Fishball's session id. @param deps.agentOf - () => its agent (notes without a wake).
-   * @param deps.canAnswer - () => Fishball live with Permission requests on (item 10).
+   * @param deps.assistantId - () => Fishball's session id.
+   * @param deps.canAnswer - () => the isolated Fishball is connected and can answer (item 10).
    * @param deps.isManaged - (sessionId) => managed. @param deps.managedIds - () => every managed session id.
    * @param deps.onChange - state changed (the state feed publishes).
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, agentOf, canAnswer, isManaged, managedIds, onChange }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, canAnswer, isManaged, managedIds, onChange }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
     this.#ledger = ledger
     this.#readLimits = readLimits
     this.#assistantId = assistantId
-    this.#agentOf = agentOf
     this.#canAnswer = canAnswer
     this.#isManaged = isManaged
     this.#managedIds = managedIds
@@ -586,7 +579,7 @@ export class QuestionRouter {
         const live = this.#ctx.sessions.get(sessionId)
         // A live session may be waiting on a question in the foreground right now: DSH's projection
         // says which are continued (review M2). Only a session not loaded is read from its log.
-        const events = live !== undefined ? [] : (await this.#ctx.sessionController.inspect(sessionId)).events
+        const events = live !== undefined ? [] : (await persistedEventsOf(this.#ctx, sessionId)).events
         const found = live !== undefined
           ? (this.#ctx.sessionProjections.stateOf(live, QUESTION.projection)?.questions.active ?? []).filter((row) => row.state === QUESTION.continuedState)
           : continuedInLog(events)
@@ -774,9 +767,7 @@ export class QuestionRouter {
         const ttl = Math.min(limits.approvalAnswerSeconds * MS_PER_SECOND, APPROVAL.maxTimerMs)
         // The slim descriptor's end time is this question's own window (§5.2 expiresAt).
         entry.expiresAt = Date.now() + ttl
-        entry.timer = setTimeout(() => {
-          if (this.#toPile(entry, APPROVAL_ANSWER.timeout)) this.#tell(entry, TEXT.timedOut)
-        }, ttl)
+        entry.timer = setTimeout(() => { this.#toPile(entry, APPROVAL_ANSWER.timeout) }, ttl)
         entry.timer.unref?.()
         // The child's card goes out before the legacy notice: a slow ledger never delays it.
         this.#emit({ type: OFFER.event.offered, approvalId: entry.id, sessionId: entry.sessionId, descriptor: this.#offerOf(entry) })
@@ -787,6 +778,7 @@ export class QuestionRouter {
       await this.#ledger.publish({
         kind: INTAKE_KIND.approval,
         sourceIdentity: QUESTION.sourceIdentity,
+        sourceSessionId: entry.sessionId,
         dedupeKey: entry.id,
         message: createUserMessage({
           content: [{ type: SESSION_INFO.textBlock, text }],
@@ -872,10 +864,6 @@ export class QuestionRouter {
     // The pile's closure line comes after the child's own event, so an escalated card is first
     // known to the child and then closed with its reason.
     this.#pile.settle(entry.id, { end: PILE_END[end] })
-    if (!entry.seen) return
-    if (end === QUESTION_END.session) this.#tell(entry, TEXT.inSession)
-    else if (end === QUESTION_END.pile) this.#tell(entry, TEXT.inPile)
-    else if (end === QUESTION_END.closed && !entry.inPile) this.#tell(entry, TEXT.closed)
   }
 
   /** A late reply admitted into a session: your answer to a continued question there (S36 Q2). */
@@ -887,16 +875,12 @@ export class QuestionRouter {
     }
   }
 
-  #tell(entry, what) {
-    tellWithoutWake(this.#agentOf(), TEXT.outcome(entry.id, what), this.#logger)
-  }
-
   /**
    * One question card left the pile (src/pile.js's onClose): a closure without the user's answer
-   * leaves its line in Fishball's chat and reaches the slim child, which no longer holds the card.
+   * reaches the isolated Fishball, which no longer holds the card.
    */
   #cardClosed(card, end) {
-    closeCard(this.#agentOf(), card, end, this.#logger, (event) => this.#emit(event))
+    closeCard(card, end, (event) => this.#emit(event))
   }
 
   /**
