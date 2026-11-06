@@ -1,18 +1,18 @@
 /**
  * Fishball's durable state in its own storage domain (`$DSH_HOME/storages/fishball.json`,
- * spike S8). The domain is versioned and fails closed: DSH refuses to open a stored
- * version or record this code does not understand, and the lifecycle then reports
- * `store-unreadable` instead of overwriting anything.
+ * spike S8). The domain is versioned: DSH refuses to open a stored version this code does not
+ * understand, and the row then reports `store-unreadable` instead of overwriting anything. A
+ * single record that no longer parses is moved aside (`invalidRecords`, below).
  *
- * Tables added in P3, P4, P6, and the unread, preferences, plugin_defaults, plugin_settings, managed, decisions, grants, own_requests, notices and pile (T08) tables keep version 1 (as do the dedicated model selection and question-mode records and question audit ends, which only add values): the single-file layout reads a table missing from an
- * older file as empty (dsh-storage-json), and no existing record changes shape.
+ * Every table keeps version 1: the single-file layout reads a table missing from an older file as
+ * empty and ignores one this build no longer declares (dsh-storage-json).
  */
 import { z } from 'zod'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { DOMAIN, PLUGIN_KIND, CHANGED_BY, PLUGIN_ACTION, INTAKE_STATUS, INTAKE_KIND, OUTBOX_KIND, OUTBOX_STATUS, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, SIDEBAR_ENTRY, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, OWN_STATUS, QUESTION_MODE, QUESTION_END, MODEL_SELECTION } from './constants.js'
+import { DOMAIN, CHANGED_BY, INTAKE_STATUS, INTAKE_KIND, WATCH_BY, WATCH_CONDITION, WATCH_MODE, WATCH_STATUS, APPROVAL_ANSWER, APPROVAL_RISK, APPROVAL_OUTCOME, ARGUMENTS_STATUS, BRAND_STYLE, SIDEBAR_ENTRY, MANAGED_BY, DECISION_ACTION, REQUEST_KIND, GRANT_KIND, GRANT_STATUS, GRANT_END, QUESTION_MODE, QUESTION_END } from './constants.js'
 
 /** Table names; the spec and the accessors share them. DSH requires /^[a-z][a-z0-9_]*$/. */
-const TABLE = Object.freeze({ plugins: 'plugins', toolApprovals: 'tool_approvals', pluginChanges: 'plugin_changes', settings: 'settings', watches: 'watches', unread: 'unread', preferences: 'preferences', pluginDefaults: 'plugin_defaults', pluginSettings: 'plugin_settings', managed: 'managed', decisions: 'decisions', grants: 'grants', ownRequests: 'own_requests', notices: 'notices', pile: 'pile' })
+const TABLE = Object.freeze({ settings: 'settings', watches: 'watches', preferences: 'preferences', managed: 'managed', decisions: 'decisions', grants: 'grants', pile: 'pile' })
 
 /** One watch (DESIGN §5c, §9). */
 const watchRecord = z.object({
@@ -29,13 +29,6 @@ const watchRecord = z.object({
   lastReason: z.string().optional(),
 })
 
-/** Fishball's replies you have not seen yet; made for one assistant session, as the settings are. */
-const unreadRecord = z.object({
-  sessionId: z.string().min(1),
-  count: z.number().int().nonnegative(),
-  changedAt: z.string(),
-})
-
 /**
  * Your display choices; one record: the brand icon and the sidebar entry. The entry is optional
  * so a record saved before it existed still reads (and means the default, the panel row).
@@ -45,9 +38,6 @@ const preferencesRecord = z.object({
   sidebarEntry: z.enum(Object.values(SIDEBAR_ENTRY)).optional(),
   changedAt: z.string(),
 })
-
-/** A one-time notice that has shown (revision 12: the welcome card, DESIGN §10f); absent means not yet. */
-const noticeRecord = z.object({ seenAt: z.string() })
 
 /**
  * One card waiting in the user's pile (T08, src/pile.js). Plain card data, kept as published; the
@@ -61,76 +51,11 @@ const pileCardRecord = z.object({
   filedAt: z.string(),
 })
 
-/** A positive whole number of tokens (context-window settings). */
-export const tokenCount = z.number().int().positive()
-
-/** The context-window setting (DESIGN §6); an absent field is unset. */
-const settingsRecord = z.object({
-  /** The assistant session it was made for; another (adopted) session ignores it. */
-  sessionId: z.string().min(1),
-  contextWindowTokens: tokenCount.optional(),
-  maxOutputTokens: tokenCount.optional(),
-  changedAt: z.string(),
-})
-
 /**
  * Who answers managed sessions' questions (rev11g, §9 `settings['questions']`); absent means auto.
- * It shares the settings table with the context-window record, under its own key.
  */
 const questionModeRecord = z.object({
   mode: z.enum(Object.values(QUESTION_MODE)),
-  changedAt: z.string(),
-})
-
-/** A separate version-1 settings record; old headers/defaults do not establish explicit consent. */
-export const modelSelectionSchema = z.object({
-  provider: z.string().trim().min(MODEL_SELECTION.minIdLength),
-  model: z.string().trim().min(MODEL_SELECTION.minIdLength),
-  reasoningEffort: z.string().trim().min(MODEL_SELECTION.minIdLength).optional(),
-})
-const modelSelectionRecord = modelSelectionSchema.extend({ changedAt: z.string() })
-
-const assistantRecord = z.object({
-  /** The one assistant session; null before the first successful creation. */
-  sessionId: z.string().min(1).nullable(),
-  workspaceId: z.string().min(1).nullable(),
-  cwd: z.string().min(1).nullable(),
-  createdAt: z.string().nullable(),
-})
-
-/** Fishball's own on/off choice for one catalog plugin; absent means the catalog default. */
-const pluginRecord = z.object({
-  kind: z.enum(Object.values(PLUGIN_KIND)),
-  on: z.boolean(),
-  changedBy: z.enum(Object.values(CHANGED_BY)),
-  changedAt: z.string(),
-  /** Stable diagnostic when the plugin's rows could not run for Fishball. */
-  lastError: z.string().optional(),
-  /**
-   * A Fishball-installed plugin you or Fishball chose to uninstall; the uninstall runs after the
-   * next idle-phase apply, and a restart before it finishes it then. Absent on older records.
-   */
-  removing: z.boolean().optional(),
-})
-
-/**
- * Which DSH plugins keep the old default for Fishball (src/plugin-defaults.js). dshPlugins is
- * null until the first successful bundle listing.
- */
-const pluginDefaultsRecord = z.object({
-  existingInstall: z.boolean(),
-  dshPlugins: z.array(z.string().min(1)).nullable(),
-  recordedAt: z.string(),
-})
-
-/**
- * Settings for a plugin Fishball runs in its private tree (DESIGN §9, §10d): the changed values
- * per row id, by you or by Fishball after you allowed them. Secret values are kept here and never
- * leave the Host.
- */
-const pluginSettingsRecord = z.object({
-  rows: z.record(z.string().min(1), z.record(z.string(), z.unknown())),
-  changedBy: z.enum(Object.values(CHANGED_BY)),
   changedAt: z.string(),
 })
 
@@ -178,51 +103,6 @@ const grantRecord = z.object({
 })
 
 /**
- * One of Fishball's own requests (DESIGN §7a.11, §9 `own_requests`, rev11f), keyed by its own_ id.
- * The arguments are kept, cut to argumentExcerptBytes, because the card shows them across a
- * restart (item 24); the pass matches by the digest of the whole canonical arguments.
- */
-const ownRequestRecord = z.object({
-  toolName: z.string().min(1),
-  /** sha256 of the canonical arguments; absent when they could not be read (no pass can match then). */
-  argumentsDigest: z.string().min(1).optional(),
-  arguments: z.string(),
-  argumentsStatus: z.enum(Object.values(ARGUMENTS_STATUS)),
-  /** Fishball's reason, cut to rationaleChars. */
-  reason: z.string(),
-  /** The bounded detail list (the unchecked tools, or the changed settings), "and N more" included. */
-  detail: z.array(z.string()).optional(),
-  status: z.enum(Object.values(OWN_STATUS)),
-  createdAt: z.string(),
-  decidedAt: z.string().optional(),
-  /** Your Reject note, told to Fishball. */
-  note: z.string().optional(),
-  /** The id of the "run it again" notice, to find the turn it woke. */
-  noticeId: z.string().min(1).optional(),
-  /** The turn of Fishball's session the notice entered: the pass ends with it. */
-  wokenTurn: z.number().int().nonnegative().optional(),
-  /** Whether Fishball has been given the outcome: false for a rejection or run-again notice it could not be given yet (given at its next go-live). */
-  told: z.boolean().optional(),
-})
-
-/** You allowed a tool nobody had checked, for exactly these parameters (DESIGN §7). */
-const toolApprovalRecord = z.object({
-  module: z.string().min(1),
-  toolName: z.string().min(1),
-  paramsDigest: z.string().min(1),
-  allowedAt: z.string(),
-})
-
-/** Audit of plugin changes; the newest `auditEntriesKept` are kept. */
-const pluginChangeRecord = z.object({
-  plugin: z.string().min(1),
-  action: z.enum(Object.values(PLUGIN_ACTION)),
-  by: z.enum(Object.values(CHANGED_BY)),
-  at: z.string(),
-  outcome: z.string().min(1),
-})
-
-/**
  * One intake item (DESIGN §9 fishball_intake.items). The message is kept only until it is in
  * Fishball's inbox; its digest stays.
  */
@@ -231,27 +111,13 @@ const intakeItemRecord = z.object({
   sourceIdentity: z.string().min(1),
   dedupeKey: z.string().min(1),
   messageId: z.string().min(1),
+  /** The main session the input is about; the child names the sender and reads images by it. */
+  sourceSessionId: z.string().min(1).optional(),
   status: z.enum(Object.values(INTAKE_STATUS)),
-  attempts: z.number().int().nonnegative(),
   createdAt: z.string(),
-  acceptedAt: z.string().optional(),
-  /** The assistant session the item was delivered to (an adopted session does not inherit it). */
-  deliveredTo: z.string().min(1).optional(),
-  errorCode: z.string().optional(),
   contentDigest: z.string().min(1),
-  /** The UserMessage to deliver (DSH's own shape; validated by DSH when it is steered). */
+  /** The UserMessage whose text the child receives; dropped once the child acked it. */
   message: z.record(z.string(), z.unknown()).optional(),
-})
-
-/** One message Fishball sent or session it started (DESIGN §9 outbox). */
-const outboxRecord = z.object({
-  kind: z.enum(Object.values(OUTBOX_KIND)),
-  targetSessionId: z.string().nullable(),
-  folder: z.string().optional(),
-  messageDigest: z.string().min(1),
-  at: z.string(),
-  status: z.enum(Object.values(OUTBOX_STATUS)),
-  errorCode: z.string().optional(),
 })
 
 /** One permission request Fishball was asked (DESIGN §9 approvals); never the arguments. */
@@ -279,7 +145,7 @@ const approvalRecord = z.object({
 })
 
 /** Tables of the intake domain. */
-const INTAKE_TABLE = Object.freeze({ items: 'items', outbox: 'outbox', approvals: 'approvals' })
+const INTAKE_TABLE = Object.freeze({ items: 'items', approvals: 'approvals' })
 
 /**
  * The intake domain: frequent writes, so each record is its own document (per-record layout),
@@ -289,9 +155,12 @@ export const intakeDomain = defineDomain({
   name: DOMAIN.intake,
   version: DOMAIN.version,
   layout: 'per-record',
+  // A row that no longer parses (a status or kind this build dropped) is moved aside rather than
+  // failing the store; fields the removed in-process Fishball wrote (attempts, deliveredTo) are
+  // simply stripped on read. No migration is kept for it.
+  invalidRecords: 'backup-and-skip',
   tables: {
     [INTAKE_TABLE.items]: domainTable(intakeItemRecord),
-    [INTAKE_TABLE.outbox]: domainTable(outboxRecord),
     [INTAKE_TABLE.approvals]: domainTable(approvalRecord),
   },
 })
@@ -300,22 +169,19 @@ export const intakeDomain = defineDomain({
 export const fishballDomain = defineDomain({
   name: DOMAIN.main,
   version: DOMAIN.version,
-  global: { schema: assistantRecord, initial: { sessionId: null, workspaceId: null, cwd: null, createdAt: null } },
+  // The removed in-process Fishball left records this build no longer declares (its context-window
+  // and model choices in `settings`, whole tables such as plugins and unread). A table no longer
+  // declared is simply not read; a record in a kept table that no longer parses is moved aside by
+  // DSH and treated as absent, instead of failing the whole store closed. No migration is kept
+  // for the removed agent (the user's decision, 2026-11-06).
+  invalidRecords: 'backup-and-skip',
   tables: {
-    [TABLE.plugins]: domainTable(pluginRecord),
-    [TABLE.toolApprovals]: domainTable(toolApprovalRecord),
-    [TABLE.pluginChanges]: domainTable(pluginChangeRecord),
-    [TABLE.settings]: domainTable(z.union([settingsRecord, questionModeRecord, modelSelectionRecord])),
+    [TABLE.settings]: domainTable(questionModeRecord),
     [TABLE.watches]: domainTable(watchRecord),
-    [TABLE.unread]: domainTable(unreadRecord),
     [TABLE.preferences]: domainTable(preferencesRecord),
-    [TABLE.pluginDefaults]: domainTable(pluginDefaultsRecord),
-    [TABLE.pluginSettings]: domainTable(pluginSettingsRecord),
     [TABLE.managed]: domainTable(managedRecord),
     [TABLE.decisions]: domainTable(decisionRecord),
-      [TABLE.grants]: domainTable(grantRecord),
-    [TABLE.ownRequests]: domainTable(ownRequestRecord),
-    [TABLE.notices]: domainTable(noticeRecord),
+    [TABLE.grants]: domainTable(grantRecord),
     [TABLE.pile]: domainTable(pileCardRecord),
   },
 })
@@ -339,33 +205,14 @@ export class Store {
     return store
   }
 
-  /** @returns the assistant record (synchronous, from memory). */
-  assistant() {
-    return this.#domain.global.get()
-  }
-
-  /** Durably replace the assistant record. */
-  setAssistant(record) {
-    return this.#domain.global.set(record)
-  }
-
   /** Table handles (KvTable: get/entries/put/delete/update), named as in the spec. */
-  get plugins() { return this.#domain.table(TABLE.plugins) }
-  get toolApprovals() { return this.#domain.table(TABLE.toolApprovals) }
-  get pluginChanges() { return this.#domain.table(TABLE.pluginChanges) }
   get settings() { return this.#domain.table(TABLE.settings) }
   get watches() { return this.#domain.table(TABLE.watches) }
-  get unread() { return this.#domain.table(TABLE.unread) }
   get preferences() { return this.#domain.table(TABLE.preferences) }
-  get pluginDefaults() { return this.#domain.table(TABLE.pluginDefaults) }
-  get pluginSettings() { return this.#domain.table(TABLE.pluginSettings) }
   get managed() { return this.#domain.table(TABLE.managed) }
   get decisions() { return this.#domain.table(TABLE.decisions) }
   get grants() { return this.#domain.table(TABLE.grants) }
-  get ownRequests() { return this.#domain.table(TABLE.ownRequests) }
-  get notices() { return this.#domain.table(TABLE.notices) }
   get pile() { return this.#domain.table(TABLE.pile) }
   get intakeItems() { return this.#intake.table(INTAKE_TABLE.items) }
-  get outbox() { return this.#intake.table(INTAKE_TABLE.outbox) }
   get approvals() { return this.#intake.table(INTAKE_TABLE.approvals) }
 }

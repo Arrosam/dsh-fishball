@@ -9,15 +9,16 @@
  *    sidebar row.
  * 2. The Plugins → Fishball settings page is the isolated Fishball's console (§9): its
  *    status and restart, model, plugins and settings through the owner-only admin routes
- *    (src/slim/host/settings-routes.js), plus Fishball's own limits. The legacy page
- *    sections are no longer rendered; T15 removes their remaining code.
+ *    (src/slim/host/settings-routes.js), the brand switches, the question mode and Fishball's
+ *    own limits.
  * 3. The Fishball view (slim §7): the isolated Fishball's page framed in DSH's main area, the
  *    `main` slot where a session's conversation shows, opened by the brand and by a Fishball row
  *    in the sidebar's panel list (on by default; Settings can leave only the brand).
- * 4. Fishball's own session row is hidden from the sidebar's session list; the brand opens it.
- * 5. The Messenger look (DESIGN §10c): while the Host reports `look.messenger`, this half loads
- *    the dsh-fishball-messenger package's browser file from the Host and mounts it as a child
- *    plugin; it is disposed when the look is turned off (spike S24).
+ * 4. The body's marks on ordinary sessions (§8.2, §8.3): Hand over / Take back in the header and
+ *    row menu, the managed-session fish and dots on the row, and the ask_fishball row with your
+ *    Allow once / Reject once the request is yours.
+ * The in-process Fishball's own surfaces (its chat dock, pile, welcome card, model gate, the
+ * Plugins page's Fishball tab and install dialog, the Messenger look) were removed with it.
  *
  * The mark is FishMark from the owner's fishball app (assets/icon.svg, THIRD_PARTY_NOTICES).
  *
@@ -29,8 +30,8 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { createPortal } = require('react-dom')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronLeftOutlineRegular, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, IconWarningOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkDefault, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const {  } = require('react-dom')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconWarningOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'dsh-fishball'
@@ -38,24 +39,14 @@ window.__ModuleLoader__.load({
     const ENTRY_ID = 'fishball'
     const NS = 'fishball'
     const BRAND_PRIORITY = -1
-    const HEADER_ACTION_ORDER = 5
-    /** Plugins page main-panel id (dsh-client-ui-plugin-manager PANEL_ID) and its navigation service. */
-    const PLUGINS_PANEL = 'plugins'
     /** Client services read on demand (not injected: Fishball works without each of them). */
-    const SERVICE = Object.freeze({ pluginNavigation: 'pluginNavigation', layout: 'layout', remote: 'remote' })
+    const SERVICE = Object.freeze({ layout: 'layout' })
     const SUMMARY_VIEW = 'summary'
-    const HEADER_ACTION_ID = 'fishball-settings'
-    /** Renders nothing: while mounted for Fishball's session, that chat is on screen (see ReadReporter). */
-    const READ_HEADER = Object.freeze({ id: 'fishball-read', order: 6 })
     /** Host statuses (src/constants.js STATUS) the page compares against. */
-    const STATUS = Object.freeze({ starting: 'starting', live: 'live', recovery: 'recovery', archived: 'archived', stopped: 'stopped', failed: 'failed' })
+    const STATUS = Object.freeze({ starting: 'starting', live: 'live' })
     /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
-    const FEATURE = Object.freeze({ messages: 'messages' })
     /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
-    const featureOn = (state, feature) => state.features?.[feature] !== false
-    const API = Object.freeze({ events: 'api/fishball/events', plugins: 'api/fishball/plugins', pluginsRemove: 'api/fishball/plugins/remove', toolApprovals: 'api/fishball/tool-approvals/remove', send: 'api/fishball/send', read: 'api/fishball/read', brand: 'api/fishball/brand', sidebarEntry: 'api/fishball/sidebar-entry', welcomeSeen: 'api/fishball/welcome/seen', messengerClient: 'api/fishball/messenger/client.js', pluginsDetail: 'api/fishball/plugins/detail', pluginsIcon: 'api/fishball/plugins/icon', pluginsSettings: 'api/fishball/plugins/settings', pluginsRefresh: 'api/fishball/plugins/refresh', installInspect: 'api/fishball/install/inspect', install: 'api/fishball/install', installCancel: 'api/fishball/install/cancel', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
-    /** The Messenger look's module id: its browser file registers it with DSH's module system. */
-    const MESSENGER_MODULE = 'dsh-fishball-messenger'
+    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', brand: 'api/fishball/brand', sidebarEntry: 'api/fishball/sidebar-entry', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionsAnswer: 'api/fishball/questions/answer', questionMode: 'api/fishball/question-mode' })
     /**
      * The one hand-over entry (§8.3): the session header and the session-row menu share it. Menu
      * order: after DSH's own pin/rename/fork/archive, before the id; header order: just before
@@ -64,9 +55,9 @@ window.__ModuleLoader__.load({
      */
     const HAND_OVER = Object.freeze({ id: 'fishball-hand-over', noticeId: 'fishball-hand-over-notice', menuOrder: 422, headerOrder: 4.5 })
     /** Hand-over refusals with their own text (keep in step with src/constants.js INTAKE_ERROR). */
-    const HAND_OVER_ERRORS = new Set(['queue-full', 'too-large', 'from-fishball', 'feature-off', 'unknown-session', 'unavailable'])
+    const HAND_OVER_ERRORS = new Set(['queue-full', 'too-large', 'from-fishball', 'unknown-session', 'unavailable'])
     /** Take back refusals with their own text (src/constants.js MANAGED_ERROR). */
-    const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'feature-off', 'unavailable'])
+    const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'unavailable'])
     /**
      * The Fishball view (§7): the child page framed in DSH's main area, as a global panel.
      * `document` is the fixed embed path: no query, fragment or token (keep in step with contract
@@ -101,59 +92,16 @@ window.__ModuleLoader__.load({
     })
     /** Fishball's explicit model choice is independent of the host's last-used/default route. */
     const MODEL = Object.freeze({
-      gateId: 'fishball-model-required', gateOrder: -50, styleId: 'fishball-model-seat',
       settingsClass: 'fb-model-settings', gateClass: 'fb-model-gate', empty: '',
-      fieldSuffix: '-model', effortSuffix: '-effort',
-      request: Object.freeze({ cache: 'no-store' }), routeSeparator: '/', refreshStart: 0, refreshStep: 1,
-      seatSelector: (id) => `[data-conversation-session="${CSS.escape(id)}"] > [data-conversation-scroll] > [data-composer-seat] [data-slot="conversation.input.model"]`,
     })
     /** Context-window refusals with their own text (keep in step with src/constants.js CONTEXT_ERROR). */
     /** Host tool statuses (src/constants.js TOOL_STATUS) shown as tags, and the plugin kinds. */
     const TOOL_STATUS = Object.freeze({ visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked', otherSessions: 'other-sessions' })
-    /** Tag tones used by DSH's own plugin page (neutral, info, danger). */
-    const TAG_TONE = Object.freeze({ [TOOL_STATUS.unchecked]: 'danger', [TOOL_STATUS.hidden]: 'neutral', [TOOL_STATUS.pluginOff]: 'neutral' })
-    /**
-     * Plugin diagnostics with their own text; any other code shows the generic one. A separate
-     * client bundle cannot import the host's list: keep it in step with src/constants.js PLUGIN_ERROR.
-     */
-    const PLUGIN_ERRORS = new Set(['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached', 'remove-failed'])
-    /** A plugin diagnostic in words: its own text when it has one, else the generic one. */
-    const pluginErrorText = (t, code) => (PLUGIN_ERRORS.has(code) ? t('pluginError.' + code) : t('pluginErrorOther'))
     /**
      * Plugin actions the Host offers per plugin (src/constants.js PLUGIN_OFFER). The Host decides
      * which actions a plugin has; the page shows only those.
      */
     const PLUGIN_OFFER = Object.freeze({ enable: 'enable', disable: 'disable', uninstall: 'uninstall' })
-    /**
-     * Install for Fishball (DESIGN §10d revision 10a): refusals with their own text (src/constants.js
-     * PACKAGE_ERROR, API_CODE), DSH's inspection problems (dsh-plugin-manager PluginInspectProblem),
-     * and DSH's install events, which carry the request id the dialog chose.
-     */
-    const INSTALL_ERRORS = new Set(['too-large', 'invalid-spec', 'already-installed', 'not-bundle', 'ambiguous-install', 'incompatible-version', 'cancelled', 'build-blocked', 'operation-error', 'no-profile', 'unavailable'])
-    const INSPECT_PROBLEMS = new Set(['invalid-spec', 'already-installed', 'not-found', 'not-a-package', 'not-a-bundle', 'network', 'unknown'])
-    const INSTALL_EVENT = Object.freeze({ state: 'plugin-manager/install-state', log: 'plugin-manager/install-log' })
-    const INSPECT_ACCEPTED = 'accepted'
-    /**
-     * DSH's inspect in Fishball's scope answers `already-installed` for a name the DSH installation
-     * ships (its view is Fishball's folder plus the installation, never DSH's profile): Fishball can
-     * still install its own copy (review M5). A name installed in DSH's profile is read from the catalog.
-     */
-    const INSPECT_SHIPPED = 'already-installed'
-    /** DSH's inspection kind of a registry name (the other kinds name a folder or a host). */
-    const SPEC_KIND_REGISTRY = 'registry'
-    /** DSH's cancel answer once its install is applying. */
-    const CANCEL_TOO_LATE = 'too-late'
-    /** The phase in which DSH's install asks registries in turn (its `attempt` counts them). */
-    const INSTALL_PHASE_INSTALLING = 'installing'
-    const BUILD_BLOCKED = 'build-blocked'
-    /** The dialog's screens, in DSH's order: the spec, its check, the confirmation, progress, the result. */
-    const INSTALL_STEP = Object.freeze({ edit: 'edit', checking: 'checking', confirm: 'confirm', installing: 'installing', done: 'done', failed: 'failed' })
-    /** The newest output lines the progress screen keeps. */
-    const INSTALL_LOG_LINES = 200
-    /** Where the dialog was opened: the Fishball tab can open the new plugin's page, DSH's menu cannot (S28). */
-    const INSTALL_FROM = Object.freeze({ tab: 'tab', menu: 'menu' })
-    const VISIBLE = 'visible'
-    const VISIBILITY_EVENT = 'visibilitychange'
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
     const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
     /** Where the sidebar opens the Fishball view (src/constants.js SIDEBAR_ENTRY): its own row, or the brand only. */
@@ -214,14 +162,6 @@ window.__ModuleLoader__.load({
        */
       main: 'main',
       panelList: 'sidebar.panellist',
-      /** DSH's Plugins page (dsh-client-ui-plugin-manager): a page tab, and a tag and an action on each plugin's page (spike S28). */
-      pluginsTab: 'plugins.tab',
-      detailBadge: 'plugins.detail.badge',
-      detailActions: 'plugins.detail.actions',
-      /** DSH's Add plugin menu: plugin-contributed items after its own (revision 10a). */
-      addActions: 'plugins.add.actions',
-      /** Revision 11 (S37): the pile above a session's composer, and a tool's whole row by its name. */
-      dock: 'conversation.input.dock',
       toolview: 'tool.call.toolview',
       /** DSH's 16px cell before a session row's title, mounted only while the row is idle (dsh-client-ui-workspace, rc.2). */
       rowLeading: 'sidebar.session.row.leading',
@@ -232,14 +172,6 @@ window.__ModuleLoader__.load({
        */
       rowTrailing: 'sidebar.session.row.trailing',
     })
-    /**
-     * Your pile (DESIGN §10e, S37): a dock entry above Fishball's composer. Its order puts it
-     * before DSH's own docks, as in S37's fixture (the order beside DSH's Todo and Queue docks
-     * was not checked there).
-     */
-    // fill: the pile's background, shared by its pinned title rows, which must be opaque or the
-    // cards scrolling under them show through (rev11-ui-fixes R1).
-    const PILE = Object.freeze({ id: 'fishball-pile', order: -100, heightUnit: 'vh', fill: 'var(--dsw-alias-bg-layer-1)', requestsExpanded: true, grantsExpanded: false, chevronPx: 14, expandedRotationDeg: -90, collapsedRotationDeg: -180 })
     /**
      * Your pile as a list of rows with a detail view (DESIGN §10e, rev11-pile-list). The reveal's
      * length and easing are presentation, not settings (the manager's decision): short, so a switch
@@ -274,34 +206,9 @@ window.__ModuleLoader__.load({
     const DOCK_CARD_LOOK = 'border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);line-height:1.5'
     const dockCardWidth = (insets) => `box-sizing:border-box;flex:none;width:calc(100%${minusTimes(DSH_COMPOSER.sideClearance, DSH_COMPOSER.sideClearances)}${minusTimes(DSH_COMPOSER.dockInset, insets)});max-width:calc(${DSH_COMPOSER.cardMaxWidth}${minusTimes(DSH_COMPOSER.dockInset, insets)});margin:0 auto`
     const DOCK_CARD_WIDTH = dockCardWidth(DSH_COMPOSER.dockInsets)
-    // The pile matches the composer card itself, not the narrower Todo/Queue panels. Constrain
-    // Reveal's outer box: a width on its inner section would resolve against the wrong containing box.
-    const PILE_DOCK_WIDTH = dockCardWidth(DSH_COMPOSER.cardInsets)
-    /**
-     * The managed-session banner (DESIGN §10e item 30): a dock entry in a managed session's chat.
-     * Order 10 puts it after DSH's Todo dock (0) and before its Queue dock (20) (the builder's
-     * choice, per the Reading): the Queue dock must stay last, because its negative bottom
-     * margin tucks it into the composer card and would overlap anything placed between them.
-     * Sizes are in px.
-     */
-    const MANAGED_BANNER = Object.freeze({ id: 'fishball-managed', order: 10, iconPx: 16, gapPx: 8, paddingYPx: 4, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
-    /**
-     * The one-time welcome card (DESIGN §10f, revision 12): a dock entry in Fishball's chat. Order
-     * −200 puts it at the top of the composer area, above your pile (−100), as you chose
-     * (Q-rec-card-place). Sizes are in px.
-     */
-    const WELCOME = Object.freeze({ id: 'fishball-welcome', order: -200, iconPx: 16, closeIconPx: 14, gapPx: 6, headGapPx: 8, paddingYPx: 8, paddingStartPx: 12, paddingEndPx: 4, fontPx: 13 })
     /** Recommended plugins on the settings page (DESIGN §10f). States as src/recommended.js RECOMMENDED_STATE. Sizes in px. */
     const RECOMMENDED = Object.freeze({
       rowGapPx: 12, rowPaddingYPx: 6, categoryGapPx: 8,
-      /** How the section comes into view when the welcome card's link opens the page. */
-      scroll: Object.freeze({ behavior: 'smooth', block: 'start' }),
-      /**
-       * How long the welcome card's request to bring the section into view waits for the page to
-       * mount. Past it the request lapses, so a later visit to the settings page never jumps (when
-       * DSH could not open Fishball's page, or the page was already open).
-       */
-      focusMs: 5000,
     })
     /**
      * The managed mark in a sidebar row. cellPx copies DSH's leading cell (the seat's contract in
@@ -345,31 +252,16 @@ window.__ModuleLoader__.load({
     /** Your answer on a card (src/constants.js CARD_DECISION) and refusals with their own text. */
     const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
     const CARD_ERRORS = new Set(['expired', 'too-large', 'unavailable'])
-    /** Card kinds (src/constants.js REQUEST_KIND) and thread authors (THREAD_FROM) with their own words. */
-    const CARD_KINDS = new Set(['asked', 'direct', 'own'])
-    /** Fishball's own request (rev11f, §7a.11): its card is labelled Fishball instead of a session. */
-    const OWN_CARD_KIND = 'own'
     // The attribute Fishball keeps on DSH's brand button (rev11-ui-fixes R5).
     const BRAND_LABEL_ATTR = 'aria-label'
-    // The one use count English words apart ("used once", not "used 1 times"); the manager's decision, rev11-ui-fixes R2.
-    const GRANT_USES = Object.freeze({ once: 1 })
     // ask_fishball's reason_from for Fishball's own reason (rev11-ui-fixes R3); a row from before the fix has none.
     const REASON_FROM_FISHBALL = 'fishball'
-    const ARGUMENTS_COMPLETE = 'complete'
-    /** Joins two short facts on one line ("ends 12:00 · used once"), in the pile and the grant list. */
-    const SEPARATOR = ' · '
     /**
      * Questions and plan reviews (rev11g, §7a.10; src/constants.js QUESTION_KIND, QUESTION_MODE,
      * QUESTION_ERROR): their cards share the pile, the mode is set on the settings page.
      */
     const QUESTION_VIEW = Object.freeze({ question: 'question', planReview: 'plan-review', modes: Object.freeze(['auto', 'fishball', 'user']) })
-    const QUESTION_KINDS = new Set([QUESTION_VIEW.question, QUESTION_VIEW.planReview])
     const QUESTION_ERRORS = new Set(['expired', 'bad-answer', 'already-settled', 'session-not-live', 'unavailable'])
-    /**
-     * Standing grants (rev11d; src/constants.js GRANT_KIND, GRANT.wildcard): a prefix grant is shown
-     * as its prefix with the wildcard, an exact one by its tool. Revoke refusals with their own text.
-     */
-    const GRANT_VIEW = Object.freeze({ prefix: 'prefix', wildcard: '*' })
     const GRANT_ERRORS = new Set(['unknown', 'ended', 'unavailable'])
     const JSON_INDENT = 2
     /**
@@ -378,51 +270,15 @@ window.__ModuleLoader__.load({
      * page for each plugin. It changes Fishball's side only; DSH's side is shown, never changed.
      */
     const MANAGER = Object.freeze({
-      tabId: 'fishball',
-      badgeId: 'fishball-state',
-      actionId: 'fishball-use',
-      /** The subject kind of a bundle's page (plugins.detail.* props). */
-      bundleSubject: 'bundle',
-      /** Card groups in order, by the catalog's `dsh` field (src/constants.js PLUGIN_DSH). */
-      groups: Object.freeze([
-        // Fishball's own plugins first (revision 10c).
-        Object.freeze({ id: 'own', dsh: Object.freeze(['fishball']) }),
-        Object.freeze({ id: 'builtin', dsh: Object.freeze(['builtin']) }),
-        Object.freeze({ id: 'dsh', dsh: Object.freeze(['on', 'off']) }),
-        Object.freeze({ id: 'fishball', dsh: Object.freeze(['none']) }),
-      ]),
-      /** A DSH plugin that is off in DSH and on in Fishball runs only in Fishball (snapshot `runs`). */
-      dshOff: 'off',
-      runsInFishball: 'fishball',
-      /** Snapshot `settings` values the page words. */
-      settingsUnused: 'unused',
-      /** DSH's own artwork for the built-ins it has one for (dsh-client-ui-primitives); the rest take the default. */
-      builtinArt: Object.freeze({ 'builtin:web': PluginArtworkSearch, 'builtin:shell': PluginArtworkTerminal }),
-      messengerKey: 'builtin:messenger',
       artSize: 36,
-      /** The back link's chevron, and the fewest rows a list field shows. */
-      crumbIconSize: 14,
       listMinRows: 2,
-      /** The "+" before "Install for Fishball", as DSH's Add plugin draws it (13px). */
-      addIconSize: 13,
-      /** DSH's Refresh: a 16px icon; the spinner shows at least this long so it never flashes (DSH's 400 ms). */
-      refreshIconSize: 16,
-      refreshMinMs: 400,
-      /** The group of DSH plugins: DSH's Installed tab lists them, so only they open there. */
-      dshGroup: 'dsh',
-      /** DSH tags these packages "Experimental" on its own page (dsh-client-ui-plugin-manager, rc.2). */
-      experimentalPrefix: '@deepseek-ai/dsh-experimental-',
     })
-    /** What a settings form last said after Save. */
-    const FORM_MESSAGE = Object.freeze({ saved: 'saved', invalid: 'invalid', failed: 'failed' })
     /**
      * How the settings form draws each schema field (DESIGN §10d "The form"); anything else is
      * shown read-only. The form reads the Host's `schema.toJSON()` envelope ({ uid, refs }).
      */
     const FIELD_KIND = Object.freeze({ text: 'text', number: 'number', switch: 'switch', choice: 'choice', list: 'list', secret: 'secret', readOnly: 'read-only' })
     const SCHEMA = Object.freeze({ object: 'object', intersect: 'intersect', string: 'string', number: 'number', boolean: 'boolean', union: 'union', constant: 'const', array: 'array', secretRole: 'secret' })
-    /** Settings refusals: 400 `invalid` names the failing field's path. */
-    const SETTINGS_INVALID = 'invalid'
     const LIST_SEPARATOR = '\n'
     /**
      * The limit fields, in the order the Host declares them (src/config.js LIMITS). The
@@ -458,7 +314,6 @@ window.__ModuleLoader__.load({
      * transparent background and label colour, so this is the intended look either way.
      */
     const ACCENT_BUTTON = Object.freeze({ variant: 'secondary', className: 'fb-outline' })
-    const ADD_MENU = Object.freeze({ id: 'fishball-install', iconSize: 14 })
     /**
      * The knob of Fishball's switches: white, with the fish mark in magenta (its eye white), drawn as
      * a background image so DSH's own Switch is reused as it is.
@@ -573,14 +428,6 @@ window.__ModuleLoader__.load({
     /** Only animate for people who have not asked for less motion (DSH's hero checks the same query). */
     const MOTION_QUERY = '(prefers-reduced-motion: no-preference)'
     const STYLE_ID = 'fishball-style'
-    /**
-     * Fishball's own session is reached through the brand (or its Plugins page), not the
-     * session list (owner's choice, P9). DSH has no per-session hidden flag, so the row is
-     * hidden by a style rule on the workspace browser's row key. The key is
-     * dsh-client-ui-workspace markup (`data-row-key="session:<id>"`, rc.2), used by both the
-     * grouped and the flat list; if a DSH update renames it the row simply shows again.
-     */
-    const OWN_ROW = Object.freeze({ styleId: 'fishball-own-row', selector: (sessionId) => `[data-row-key="session:${CSS.escape(sessionId)}"]{display:none}` })
     /** The plugin manager's classes (styles below); `fbp-` keeps them apart from the settings page's. */
     const MCLS = Object.freeze({
       panel: 'fbp-panel', bar: 'fbp-bar', group: 'fbp-group', groupTitle: 'fbp-group-title', cards: 'fbp-cards', card: 'fbp-card', cardHead: 'fbp-card-head',
@@ -592,7 +439,7 @@ window.__ModuleLoader__.load({
       input: 'fbp-input', readOnly: 'fbp-read-only', formActions: 'fbp-form-actions', fields: 'fbp-fields', label: 'fbp-label', reset: 'fbp-reset',
       accent: 'fbp-accent', headerActions: 'fbp-header-actions', addButton: 'fbp-add-button', iconButton: 'fbp-icon-button', spin: 'fbp-spin', menuIcon: 'fbp-menu-icon', copy: 'fbp-copy', copyDesc: 'fbp-copy-desc', dialog: 'fbp-dialog', subject: 'fbp-subject', trust: 'fbp-trust', log: 'fbp-log',
     })
-    const CLS = Object.freeze({ pile: 'fb-pile', pileDock: 'fb-pile-dock', pileHead: 'fb-pile-head', card: 'fb-card', cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', quote: 'fb-quote', thread: 'fb-thread', actions: 'fb-actions', askRow: 'fb-ask-row', fishTag: 'fb-fish-tag', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', list: 'fb-list', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedBanner: 'fb-managed-banner', managedText: 'fb-managed-text', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', pileRow: 'fb-pile-row', rowMain: 'fb-row-main', rowLine: 'fb-row-line', rowControls: 'fb-row-controls', detail: 'fb-detail', detailBody: 'fb-detail-body', welcome: 'fb-welcome', welcomeLine: 'fb-welcome-line', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
+    const CLS = Object.freeze({ cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', actions: 'fb-actions', askRow: 'fb-ask-row', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', recCategory: 'fb-rec-category', recRow: 'fb-rec-row', recDesc: 'fb-rec-desc', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
 
     const en = {
       brandName: 'FISHBALL',
@@ -606,16 +453,7 @@ window.__ModuleLoader__.load({
       sidebarEntry: 'Sidebar entry',
       sidebarEntryHint: 'Fishball opens in the main area, as a session does. With this on, the sidebar has a Fishball row above Plugins; with it off, only the top-left Fishball button opens it. On macOS Desktop the top-left button cannot be clicked, so keep the row there.',
       sidebarEntryPanel: 'Show Fishball as a row in the sidebar',
-      'status.starting': 'Starting',
-      'status.live': 'Running',
-      'status.recovery': 'Needs your decision',
-      'status.archived': 'Archived',
-      'status.stopped': 'Stopped',
-      'status.failed': 'Could not start (restart DSH)',
-      retry: 'Try again',
       limits: 'Safety limits',
-      openSettings: 'Fishball settings',
-      modelRequired: 'Choose a model in Fishball settings before sending messages.',
       modelLoading: 'Loading models…',
       modelEffort: 'Reasoning effort',
       modelEffortDefault: 'Model default',
@@ -640,7 +478,6 @@ window.__ModuleLoader__.load({
       'handOverError.queue-full': 'Fishball\'s queue is full. Try again later.',
       'handOverError.too-large': 'The note is too long.',
       'handOverError.from-fishball': 'This is Fishball\'s own session.',
-      'handOverError.feature-off': 'Fishball\'s Session messages plugin is off.',
       'handOverError.unknown-session': 'This session could not be read.',
       'handOverError.unavailable': 'Fishball is not running.',
       handOverFailed: 'That did not work.',
@@ -652,87 +489,15 @@ window.__ModuleLoader__.load({
       managedRowNeedsYou: 'Managed by Fishball, needs your action',
       managedRowRunning: 'Managed by Fishball, working',
       manageFailed: 'That did not work.',
-      'manageError.unknown-session': 'This session could not be read.',
-      'manageError.is-fishball': 'This is Fishball\'s own session.',
-      'manageError.feature-off': 'Fishball\'s Session messages plugin is off.',
-      'manageError.unavailable': 'Fishball is not running.',
       plugins: 'Plugins for Fishball',
-      pluginToggle: 'Use {name} in Fishball',
       uninstall: 'Uninstall',
-      uninstallLabel: 'Uninstall {name} from Fishball',
-      removing: 'Uninstalling after this turn',
-      'pluginError.remove-failed': 'Could not be uninstalled; it stays installed and off',
-      installTitle: 'Install a plugin for Fishball only',
-      installHint: 'A package name with an optional version, a Git address, a tarball URL or an absolute folder path. It is installed in Fishball\'s own folder, not in DSH, and turned on for Fishball only.',
       installSpecLabel: 'Package',
       install: 'Install',
-      'installError.not-bundle': 'That package is not a DSH plugin.',
-      'installError.ambiguous-install': 'pnpm changed more than one package, so nothing was installed.',
-      'installError.incompatible-version': 'That package does not support this DSH version.',
-      'installError.cancelled': 'The install was cancelled.',
-      'installError.build-blocked': 'pnpm held back install scripts that need your approval.',
-      'installError.operation-error': 'pnpm could not install it. The output is below.',
-      'installError.no-profile': 'Installing needs a DSH profile.',
-      installForFishballOnly: 'Install for Fishball only',
-      installForFishballDescription: 'Installs into Fishball\'s own folder; other sessions do not get it',
       installPlaceholder: 'package-name, package-name@1.2.0, a Git address, or /absolute/path',
-      installTrust: 'A plugin runs with full access to this computer. Install only plugins you trust.',
-      installChecking: 'Checking the package…',
-      installConfirm: 'Install for Fishball',
-      installSource: 'From {source}',
-      defaultRegistry: 'the registry pnpm uses',
-      alsoInDsh: 'This package is installed in DSH too. Fishball installs its own copy, separate from DSH\'s.',
-      shippedByDsh: 'DSH ships a plugin with this name. Fishball installs its own copy, which Fishball uses instead of DSH\'s.',
-      cancelTooLate: 'It is too late to cancel: the install is finishing.',
-      'installError.too-large': 'That package spec is too long.',
-      'installPhase.waiting': 'Starting…',
-      'installPhase.installing': 'Installing…',
-      'installPhase.applying': 'Finishing…',
-      'installPhase.cancelling': 'Cancelling…',
-      installAttempt: '(registry {index} of {total})',
-      showOutput: 'Install output',
-      cancelInstall: 'Cancel install',
-      installDone: '{name} {version} is installed for Fishball and turned on.',
-      installDoneOff: 'It is installed but could not be turned on:',
-      openPluginPage: 'Open its page',
-      installRetry: 'Try again',
-      allowScripts: 'Allow these scripts and retry',
-      pendingScripts: 'Packages that want to run install scripts:',
-      back: 'Back',
-      'inspectProblem.invalid-spec': 'That is not a package spec DSH accepts.',
-      'inspectProblem.already-installed': 'That package is already installed.',
-      'inspectProblem.not-found': 'No package was found for that spec.',
-      'inspectProblem.not-a-package': 'That is not a package.',
-      'inspectProblem.not-a-bundle': 'That package is not a DSH plugin.',
-      'inspectProblem.network': 'The registry could not be reached.',
-      'inspectProblem.unknown': 'The package could not be checked.',
-      'installError.unavailable': 'Fishball is not running.',
-      'installError.invalid-spec': 'That is not a package spec DSH accepts. Use a package name, an absolute folder path, a git address or a tarball URL.',
-      'installError.already-installed': 'That plugin is already installed for Fishball.',
-      installFailed: 'That did not work.',
       pending: 'Applies after this turn',
       waiting: 'Starting…',
-      'pluginError.row-id-conflict': 'Two of its parts have the same name, so it cannot run for Fishball',
-      'pluginError.limit-reached': 'Too many plugins running only for Fishball',
-      pluginErrorOther: 'Could not start for Fishball',
-      changedByfishball: 'Changed by Fishball',
-      changedByuser: 'Changed by you',
-      'tool.unchecked': 'Not checked',
-      'tool.hidden': 'Hidden',
-      'tool.other-sessions': 'For other sessions',
-      'tool.plugin-off': 'Off',
-      remove: 'Remove',
-      'pluginError.edits-other-rows': 'Changes other plugins, so it cannot run for Fishball only',
-      'pluginError.no-rows': 'Adds nothing Fishball can run',
-      'pluginError.row-failed': 'Failed to start for Fishball',
-      'pluginError.leaks-service': 'Works only in DSH\'s own interface, so it cannot run for Fishball only',
-      'pluginError.no-profile': 'Needs a DSH profile',
       changeFailed: 'That change was not accepted.',
-      tabTitle: 'Fishball',
       refresh: 'Refresh',
-      refreshFailed: 'The plugin list could not be read again. Try Refresh again.',
-      recommendedFirst: 'Recommended first',
-      recommendedNote: 'These significantly improve how Fishball works.',
       'recommendedCategory.context': 'Context management',
       'recommendedCategory.memory': 'Memory',
       'recommendedCategory.channel': 'Channel',
@@ -749,69 +514,18 @@ window.__ModuleLoader__.load({
       'recommendedDesc.dsh-telegram-notify': 'Sends turn ends, questions and permission requests to a Telegram chat (one way).',
       'recommendedDesc.dsh-plugin-discord': 'Drive a session from Discord. Needs a Discord bot token and your user id in its allow list.',
       'recommendedDesc.dsh-dingtalk-channel': 'DingTalk Stream-mode bot: each chat drives its own agent. Needs a DingTalk client id and secret.',
-      welcomeTitle: 'Welcome to Fishball',
-      welcomeIntro: 'Plugins give Fishball more to work with:',
-      welcomeSee: 'See recommended plugins',
-      installForFishball: 'Install for Fishball',
-      'group.builtin': 'Built in',
-      'group.dsh': 'DSH plugins',
-      'group.fishball': 'Installed for Fishball only',
-      'group.own': 'Fishball',
-      'group.tools': 'Tools from an unknown plugin',
-      'dsh.on': 'On in DSH',
-      'dsh.off': 'Off in DSH',
-      'dsh.builtin': 'Built in',
-      'dsh.none': 'Fishball only',
-      'dsh.fishball': 'Fishball',
-      runsOnlyInFishball: 'Runs only in Fishball',
-      onInFishball: 'On in Fishball',
-      offInFishball: 'Off in Fishball',
-      toolsWait: '{count} waiting for you',
-      backToList: 'Plugins',
-      backToListLabel: 'Back to the Fishball list',
-      toolsCount: '{count} tools',
-      detailsTitle: 'Details',
-      viewPlugin: 'View {name}',
-      inDsh: 'In DSH',
-      'inDsh.on': 'On for every session',
-      'inDsh.off': 'Installed, off',
-      'inDsh.builtin': 'Built in',
-      'inDsh.none': 'Not installed in DSH',
-      'inDsh.fishball': 'Part of dsh-fishball',
-      openInDsh: 'Open in DSH',
-      lastChange: 'Changed',
-      neverChanged: 'Not changed yet',
-      changedAt: '{who} · {when}',
-      'who.user': 'By you',
-      'who.fishball': 'By Fishball',
-      tools: 'Tools',
-      noTools: 'No tools.',
-      'tool.visible': 'Visible',
-      'tool.allowed': 'Allowed by you',
-      settingsTitle: 'Settings for Fishball',
-      settingsShared: 'This plugin is on in DSH, so one copy runs for every session with DSH\'s settings. Change them on DSH\'s page.',
-      settingsUnused: 'Your Fishball settings are kept, but not used while this plugin runs in DSH.',
-      settingsNone: 'This plugin has no settings Fishball can change.',
-      settingsOwnError: 'The plugin\'s own settings are not valid: {message}',
       settingsChanged: 'Changed',
       settingsReset: 'Reset',
       settingsResetAll: 'Reset all',
-      settingsSaved: 'Saved. It applies when Fishball\'s current turn ends.',
-      settingsFailed: 'That was not saved.',
       settingsInvalid: 'This value is not accepted.',
       settingsReadOnly: 'Shown only: this kind of setting cannot be changed here.',
       settingsListHint: 'One per line.',
-      settingsRow: 'Part: {row}',
       secretSet: 'Set',
       secretUnset: 'Not set',
       secretHint: 'Type a new value to replace it. It is never shown, and Fishball cannot see it.',
       secretClear: 'Clear',
-      pageLoadFailed: 'This page could not be loaded.',
-      experimental: 'Experimental',
-      'group.allowed': 'Tools you allowed that are not listed above',
       resetField: 'Reset {name}',
       clearField: 'Clear {name}',
-      settingsRowUnavailable: 'The settings of part {row} could not be read.',
       'field.maxQueuedInputs': 'Queued inputs not yet read',
       'field.maxActiveWatches': 'Active "tell me when finished" watches',
       'field.maxSourcesPerPlugin': 'Feeds per plugin',
@@ -843,27 +557,6 @@ window.__ModuleLoader__.load({
       'field.userMessagesListed': 'Your messages list_user_messages shows a managed session',
       'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
       'field.pileMaxHeightVh': 'Height of your pile above Fishball\'s composer (% of the window)',
-      pileTitle: 'Waiting for you ({count})',
-      pileOwnName: 'Fishball',
-      pileBack: 'Back',
-      questionAnswer: 'Answer',
-      whyRun: '{who} wants to run {command}',
-      whyUseOn: '{who} wants to use {tool}: {argument}',
-      whyUse: '{who} wants to use {tool}',
-      whyQuestion: '{who} asks you: {question}',
-      whyPlan: '{who} asks you to review its plan',
-      'cardKind.asked': 'Asked first',
-      'cardKind.direct': 'Direct call',
-      'cardKind.own': 'Fishball',
-      cardOwnTitle: 'Fishball asks',
-      'cardKind.question': 'Question',
-      'cardKind.plan-review': 'Plan review',
-      cardContinued: 'The session went on; your answer reaches it as a reply',
-      questionOther: 'Your own answer (optional)',
-      questionSubmit: 'Send answer',
-      planApprove: 'Approve',
-      planKeep: 'Keep planning',
-      planFeedback: 'Feedback for the session (optional)',
       'questionError.expired': 'This question was already answered, has ended, or went back to its session.',
       'questionError.bad-answer': 'That answer does not fit the question: {reason}',
       'questionError.already-settled': 'Someone answered this question first.',
@@ -880,11 +573,6 @@ window.__ModuleLoader__.load({
       questionModeFailed: 'The mode was not changed. Fishball may not be running; try again.',
       cardReason: 'Reason',
       cardFishballNote: 'Fishball',
-      cardArgumentsCut: 'The arguments are cut.',
-      cardQuotes: 'You asked that session',
-      cardThread: 'Discussion with Fishball',
-      'threadFrom.agent': 'Session',
-      'threadFrom.fishball': 'Fishball',
       allowOnce: 'Allow once',
       reject: 'Reject',
       rejectNote: 'Note to the agent (optional)',
@@ -909,13 +597,6 @@ window.__ModuleLoader__.load({
       'askResult.invalid-request': 'Invalid request',
       'askResult.empty': 'Empty reply',
       'askResult.cancelled': 'Cancelled',
-      grantExact: 'exact {tool} call',
-      grantsTitle: 'Standing grants ({count})',
-      grantEnds: 'ends {at}',
-      grantUses: 'used {count} times',
-      grantUsedOnce: 'used once',
-      grantPaused: 'Paused while Fishball or Permission requests is off',
-      revoke: 'Revoke',
       'grantError.unknown': 'This grant does not exist.',
       'grantError.ended': 'This grant has already ended.',
       'grantError.unavailable': 'Fishball is not running.',
@@ -1026,16 +707,7 @@ window.__ModuleLoader__.load({
       sidebarEntry: '侧边栏入口',
       sidebarEntryHint: 'Fishball 像普通会话一样在主区域中打开。开启时，侧边栏在「插件」上方多一行 Fishball；关闭时，只有左上角的 Fishball 按钮能打开它。macOS 桌面版的左上角按钮不能点击，在那里请保持开启。',
       sidebarEntryPanel: '在侧边栏中显示 Fishball 一行',
-      'status.starting': '启动中',
-      'status.live': '运行中',
-      'status.recovery': '需要你的决定',
-      'status.archived': '已归档',
-      'status.stopped': '已停止',
-      'status.failed': '无法启动（请重启 DSH）',
-      retry: '重试',
       limits: '安全限制',
-      openSettings: 'Fishball 设置',
-      modelRequired: '请先在 Fishball 设置中选择模型，再发送消息。',
       modelLoading: '正在加载模型…',
       modelEffort: '推理强度',
       modelEffortDefault: '模型默认值',
@@ -1060,7 +732,6 @@ window.__ModuleLoader__.load({
       'handOverError.queue-full': 'Fishball 的队列已满，请稍后再试。',
       'handOverError.too-large': '备注太长。',
       'handOverError.from-fishball': '这是 Fishball 自己的会话。',
-      'handOverError.feature-off': 'Fishball 的会话消息插件已关闭。',
       'handOverError.unknown-session': '无法读取此会话。',
       'handOverError.unavailable': 'Fishball 未在运行。',
       handOverFailed: '操作未成功。',
@@ -1071,87 +742,15 @@ window.__ModuleLoader__.load({
       managedRowNeedsYou: '由 Fishball 管理，需要你处理',
       managedRowRunning: '由 Fishball 管理，正在工作',
       manageFailed: '操作未成功。',
-      'manageError.unknown-session': '无法读取此会话。',
-      'manageError.is-fishball': '这是 Fishball 自己的会话。',
-      'manageError.feature-off': 'Fishball 的会话消息插件已关闭。',
-      'manageError.unavailable': 'Fishball 未在运行。',
       plugins: 'Fishball 的插件',
-      pluginToggle: '在 Fishball 中使用 {name}',
       uninstall: '卸载',
-      uninstallLabel: '从 Fishball 卸载 {name}',
-      removing: '本回合结束后卸载',
-      'pluginError.remove-failed': '卸载失败；它仍已安装并保持关闭',
-      installTitle: '仅为 Fishball 安装插件',
-      installHint: '包名（可带版本）、Git 地址、tarball URL 或文件夹的绝对路径。它会安装到 Fishball 自己的文件夹，而不是 DSH，并只为 Fishball 开启。',
       installSpecLabel: '包',
       install: '安装',
-      'installError.not-bundle': '这个包不是 DSH 插件。',
-      'installError.ambiguous-install': 'pnpm 改动了不止一个包，因此没有安装。',
-      'installError.incompatible-version': '这个包不支持当前的 DSH 版本。',
-      'installError.cancelled': '安装已取消。',
-      'installError.build-blocked': 'pnpm 拦下了需要你批准的安装脚本。',
-      'installError.operation-error': 'pnpm 无法安装它，输出见下方。',
-      'installError.no-profile': '安装需要 DSH 配置。',
-      installForFishballOnly: '仅为 Fishball 安装',
-      installForFishballDescription: '安装到 Fishball 自己的文件夹；其他会话不会获得它',
       installPlaceholder: '包名、包名@1.2.0、Git 地址或 /绝对路径',
-      installTrust: '插件拥有这台电脑的完全访问权限。请只安装你信任的插件。',
-      installChecking: '正在检查这个包…',
-      installConfirm: '为 Fishball 安装',
-      installSource: '来源：{source}',
-      defaultRegistry: 'pnpm 使用的源',
-      alsoInDsh: '这个包也安装在 DSH 中。Fishball 会安装自己的一份，与 DSH 的分开。',
-      shippedByDsh: 'DSH 自带同名插件。Fishball 会安装自己的一份，并使用它而不是 DSH 的。',
-      cancelTooLate: '已无法取消：安装正在完成。',
-      'installError.too-large': '包名过长。',
-      'installPhase.waiting': '正在开始…',
-      'installPhase.installing': '正在安装…',
-      'installPhase.applying': '正在完成…',
-      'installPhase.cancelling': '正在取消…',
-      installAttempt: '（第 {index} 个源，共 {total} 个）',
-      showOutput: '安装输出',
-      cancelInstall: '取消安装',
-      installDone: '{name} {version} 已为 Fishball 安装并开启。',
-      installDoneOff: '已安装，但无法开启：',
-      openPluginPage: '打开它的页面',
-      installRetry: '重试',
-      allowScripts: '允许这些脚本并重试',
-      pendingScripts: '想要运行安装脚本的包：',
-      back: '返回',
-      'inspectProblem.invalid-spec': 'DSH 不接受这个包规格。',
-      'inspectProblem.already-installed': '这个包已经安装。',
-      'inspectProblem.not-found': '没有找到这个包。',
-      'inspectProblem.not-a-package': '这不是一个包。',
-      'inspectProblem.not-a-bundle': '这个包不是 DSH 插件。',
-      'inspectProblem.network': '无法连接到源。',
-      'inspectProblem.unknown': '无法检查这个包。',
-      'installError.unavailable': 'Fishball 未运行。',
-      'installError.invalid-spec': 'DSH 不接受这个包规格。请使用包名、文件夹的绝对路径、git 地址或 tarball URL。',
-      'installError.already-installed': '这个插件已为 Fishball 安装。',
-      installFailed: '操作未成功。',
       pending: '本回合结束后生效',
       waiting: '启动中…',
-      'pluginError.row-id-conflict': '它有两个部分同名，不能仅为 Fishball 运行',
-      'pluginError.limit-reached': '仅为 Fishball 运行的插件过多',
-      pluginErrorOther: '为 Fishball 启动失败',
-      changedByfishball: '由 Fishball 更改',
-      changedByuser: '由你更改',
-      'tool.unchecked': '未检查',
-      'tool.hidden': '已隐藏',
-      'tool.other-sessions': '供其他会话使用',
-      'tool.plugin-off': '已关闭',
-      remove: '移除',
-      'pluginError.edits-other-rows': '它会修改其他插件，不能仅为 Fishball 运行',
-      'pluginError.no-rows': '没有可为 Fishball 运行的内容',
-      'pluginError.row-failed': '为 Fishball 启动失败',
-      'pluginError.leaks-service': '只能在 DSH 自己的界面中使用，不能仅为 Fishball 运行',
-      'pluginError.no-profile': '需要 DSH 配置',
       changeFailed: '该更改未被接受。',
-      tabTitle: 'Fishball',
       refresh: '刷新',
-      refreshFailed: '无法重新读取插件列表。请再试一次刷新。',
-      recommendedFirst: '优先推荐',
-      recommendedNote: '它们能显著改善 Fishball 的使用体验。',
       'recommendedCategory.context': '上下文管理',
       'recommendedCategory.memory': '记忆',
       'recommendedCategory.channel': '渠道',
@@ -1168,69 +767,18 @@ window.__ModuleLoader__.load({
       'recommendedDesc.dsh-telegram-notify': '把回合结束、提问和权限请求发到 Telegram 聊天（单向）。',
       'recommendedDesc.dsh-plugin-discord': '从 Discord 操作会话。需要 Discord 机器人令牌，并把你的用户 ID 加入允许列表。',
       'recommendedDesc.dsh-dingtalk-channel': '钉钉 Stream 模式机器人：每个聊天驱动自己的智能体。需要钉钉的客户端 ID 和密钥。',
-      welcomeTitle: '欢迎使用 Fishball',
-      welcomeIntro: '插件能让 Fishball 做得更多：',
-      welcomeSee: '查看推荐插件',
-      installForFishball: '为 Fishball 安装',
-      'group.builtin': '内置',
-      'group.dsh': 'DSH 插件',
-      'group.fishball': '仅为 Fishball 安装',
-      'group.own': 'Fishball',
-      'group.tools': '来自未知插件的工具',
-      'dsh.on': 'DSH 中已开启',
-      'dsh.off': 'DSH 中已关闭',
-      'dsh.builtin': '内置',
-      'dsh.none': '仅 Fishball',
-      'dsh.fishball': 'Fishball',
-      runsOnlyInFishball: '仅在 Fishball 中运行',
-      onInFishball: 'Fishball 中已开启',
-      offInFishball: 'Fishball 中已关闭',
-      toolsWait: '{count} 个等待你处理',
-      backToList: '插件',
-      backToListLabel: '返回 Fishball 列表',
-      toolsCount: '{count} 个工具',
-      detailsTitle: '详情',
-      viewPlugin: '查看 {name}',
-      inDsh: '在 DSH 中',
-      'inDsh.on': '对所有会话开启',
-      'inDsh.off': '已安装，已关闭',
-      'inDsh.builtin': '内置',
-      'inDsh.none': '未安装在 DSH',
-      'inDsh.fishball': 'dsh-fishball 的一部分',
-      openInDsh: '在 DSH 中打开',
-      lastChange: '更改',
-      neverChanged: '尚未更改',
-      changedAt: '{who} · {when}',
-      'who.user': '由你',
-      'who.fishball': '由 Fishball',
-      tools: '工具',
-      noTools: '没有工具。',
-      'tool.visible': '可见',
-      'tool.allowed': '你已允许',
-      settingsTitle: 'Fishball 的设置',
-      settingsShared: '此插件在 DSH 中已开启，所有会话共用一份，使用 DSH 的设置。请在 DSH 的页面中修改。',
-      settingsUnused: '你为 Fishball 做的设置会保留，但此插件在 DSH 中运行时不会使用。',
-      settingsNone: '此插件没有可供 Fishball 修改的设置。',
-      settingsOwnError: '插件自身的设置无效：{message}',
       settingsChanged: '已更改',
       settingsReset: '重置',
       settingsResetAll: '全部重置',
-      settingsSaved: '已保存。在 Fishball 当前回合结束后生效。',
-      settingsFailed: '未能保存。',
       settingsInvalid: '此值不被接受。',
       settingsReadOnly: '仅显示：这类设置不能在这里修改。',
       settingsListHint: '每行一项。',
-      settingsRow: '部分：{row}',
       secretSet: '已设置',
       secretUnset: '未设置',
       secretHint: '输入新值以替换。它不会显示，Fishball 也看不到。',
       secretClear: '清除',
-      pageLoadFailed: '无法加载此页面。',
-      experimental: '实验性',
-      'group.allowed': '你允许的、未在上方列出的工具',
       resetField: '重置 {name}',
       clearField: '清除 {name}',
-      settingsRowUnavailable: '无法读取部分 {row} 的设置。',
       'field.maxQueuedInputs': '尚未读取的排队输入',
       'field.maxActiveWatches': '进行中的“完成时通知我”',
       'field.maxSourcesPerPlugin': '每个插件的信息源',
@@ -1262,27 +810,6 @@ window.__ModuleLoader__.load({
       'field.userMessagesListed': 'list_user_messages 向受管会话列出的你的消息条数',
       'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
       'field.pileMaxHeightVh': 'Fishball 输入框上方待处理请求区的高度（占窗口的百分比）',
-      pileTitle: '等你处理（{count}）',
-      pileOwnName: 'Fishball',
-      pileBack: '返回',
-      questionAnswer: '回答',
-      whyRun: '{who} 想运行 {command}',
-      whyUseOn: '{who} 想使用 {tool}：{argument}',
-      whyUse: '{who} 想使用 {tool}',
-      whyQuestion: '{who} 问你：{question}',
-      whyPlan: '{who} 请你审阅它的计划',
-      'cardKind.asked': '事先询问',
-      'cardKind.direct': '直接调用',
-      'cardKind.own': 'Fishball',
-      cardOwnTitle: 'Fishball 请求',
-      'cardKind.question': '问题',
-      'cardKind.plan-review': '计划审阅',
-      cardContinued: '会话已继续，你的回答会作为回复送达',
-      questionOther: '你自己的回答（可选）',
-      questionSubmit: '发送回答',
-      planApprove: '批准',
-      planKeep: '继续规划',
-      planFeedback: '给会话的反馈（可选）',
       'questionError.expired': '这个问题已被回答、已结束，或已回到它的会话。',
       'questionError.bad-answer': '这个回答不符合问题：{reason}',
       'questionError.already-settled': '已有人先回答了这个问题。',
@@ -1299,11 +826,6 @@ window.__ModuleLoader__.load({
       questionModeFailed: '模式未更改。Fishball 可能未在运行，请重试。',
       cardReason: '理由',
       cardFishballNote: 'Fishball',
-      cardArgumentsCut: '参数已截断。',
-      cardQuotes: '你在该会话中的要求',
-      cardThread: '与 Fishball 的讨论',
-      'threadFrom.agent': '会话',
-      'threadFrom.fishball': 'Fishball',
       allowOnce: '允许一次',
       reject: '拒绝',
       rejectNote: '给代理的说明（可选）',
@@ -1328,13 +850,6 @@ window.__ModuleLoader__.load({
       'askResult.invalid-request': '请求无效',
       'askResult.empty': '回复为空',
       'askResult.cancelled': '已取消',
-      grantExact: '完全相同的 {tool} 调用',
-      grantsTitle: '长期许可（{count}）',
-      grantEnds: '{at} 到期',
-      grantUses: '已使用 {count} 次',
-      grantUsedOnce: '已使用 1 次',
-      grantPaused: 'Fishball 或“权限请求”关闭期间暂停',
-      revoke: '撤销',
       'grantError.unknown': '这个许可不存在。',
       'grantError.ended': '这个许可已经结束。',
       'grantError.unavailable': 'Fishball 未在运行。',
@@ -1453,8 +968,6 @@ window.__ModuleLoader__.load({
       `.${CLS.row}{display:flex;gap:12px;align-items:baseline}`,
       `.${CLS.label}{min-width:120px;color:var(--dsw-alias-label-tertiary)}`,
       `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
-      `.${CLS.list}{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}`,
-      `.${CLS.list} li{padding:2px 8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--ds-font-family-code)}`,
       `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing};line-height:${WORDMARK.lineHeight};top:${WORDMARK.lift}}`,
       // Overlaid on the corner, so it takes no layout space and cannot push the sidebar controls.
       `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} ${BRAND_TAG.fontFamily};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
@@ -1480,11 +993,6 @@ window.__ModuleLoader__.load({
       `.${CLS.entries}{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}`,
       // The pile and the ask_fishball row (revision 11, S37's fixture look), in DSH's theme tokens
       // so they follow light and dark. The pile's height comes from pileMaxHeightVh, set inline.
-      `.${CLS.pileDock}{${PILE_DOCK_WIDTH};min-width:0}`,
-      `.${CLS.pile}{margin:0;overflow:auto;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:${PILE.fill};color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
-      `.${CLS.pileHead}{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;box-sizing:border-box;width:100%;padding:8px 12px;border:0;border-bottom:.5px solid var(--dsw-alias-border-l2);background:${PILE.fill};color:var(--dsw-alias-label-primary);font:inherit;font-weight:600;text-align:left;cursor:pointer}`,
-      `.${CLS.pileHead}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}`,
-      `.${CLS.card}{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-top:.5px solid var(--dsw-alias-border-l2)}`,
       `.${CLS.entries}>:first-child>.${CLS.revealInner}>.${CLS.card}{border-top:0}`,
       // The reveal (rev11-pile-list): a one-row grid from 0fr to 1fr, so the box's height moves and the
       // entries around it reflow with it. Its content is clipped only while it moves, so focus rings
@@ -1494,27 +1002,14 @@ window.__ModuleLoader__.load({
       `.${CLS.revealInner}{min-width:0;min-height:0}`,
       `.${CLS.reveal}:not([data-fishball-reveal="${PILE_LIST.reveal.open}"])>.${CLS.revealInner}{overflow:hidden}`,
       `@media (prefers-reduced-motion: reduce){.${CLS.reveal}{transition:none}}`,
-      `.${CLS.pileRow}{display:flex;align-items:center;gap:${PILE_LIST.rowGapPx}px;cursor:pointer}`,
-      `.${CLS.rowMain}{display:flex;flex:1;flex-direction:column;min-width:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}`,
-      `.${CLS.rowMain}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}`,
-      `.${CLS.rowLine}{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}`,
-      `.${CLS.rowControls}{display:flex;flex:none;flex-direction:column;align-items:flex-end;gap:4px;cursor:auto}`,
-      `.${CLS.detail},.${CLS.detailBody}{display:flex;flex-direction:column;gap:6px}`,
       `.${CLS.cardHead}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
       `.${CLS.title}{color:var(--dsw-alias-label-primary);font-weight:500;overflow-wrap:anywhere}`,
       `.${CLS.pre}{margin:0;padding:6px 8px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--ds-font-family-code);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
-      `.${CLS.quote}{margin:0;padding:2px 8px;border-left:3px solid color-mix(in srgb,${FISH_MARK.eyeColor} 50%,transparent);white-space:pre-wrap;overflow-wrap:anywhere}`,
-      `.${CLS.thread}{display:flex;flex-direction:column;gap:2px;margin:0;padding-left:16px;white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${CLS.actions}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
       `.${CLS.askRow}{display:flex;flex-direction:column;gap:6px;padding:6px 0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
-      `.${CLS.fishTag}{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:.5px solid color-mix(in srgb,${FISH_MARK.eyeColor} 35%,transparent);border-radius:999px;background:color-mix(in srgb,${FISH_MARK.eyeColor} 12%,transparent);color:var(--dsw-alias-label-primary);font-size:12px}`,
       // The managed-session banner and sidebar mark (item 30), in DSH's theme tokens for light and dark.
       // Width and spacing as DSH's Todo dock (DSH_COMPOSER): no margin of its own, so the composer stack's gap spaces it.
-      `.${CLS.managedBanner}{${DOCK_CARD_WIDTH};display:flex;align-items:center;gap:${MANAGED_BANNER.gapPx}px;padding:${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingEndPx}px ${MANAGED_BANNER.paddingYPx}px ${MANAGED_BANNER.paddingStartPx}px;${DOCK_CARD_LOOK};font-size:${MANAGED_BANNER.fontPx}px}`,
-      `.${CLS.managedText}{flex:1;min-width:0}`,
       // The welcome card (revision 12) shares the banner's width and look; it stacks its lines.
-      `.${CLS.welcome}{${DOCK_CARD_WIDTH};display:flex;flex-direction:column;gap:${WELCOME.gapPx}px;padding:${WELCOME.paddingYPx}px ${WELCOME.paddingEndPx}px ${WELCOME.paddingYPx}px ${WELCOME.paddingStartPx}px;${DOCK_CARD_LOOK};font-size:${WELCOME.fontPx}px}`,
-      `.${CLS.welcomeLine}{display:flex;align-items:center;gap:${WELCOME.headGapPx}px}`,
       // Recommended plugins on the settings page: one compact row per plugin, the description cut to one line.
       `.${CLS.recCategory}{display:flex;align-items:center;gap:${RECOMMENDED.categoryGapPx}px;margin:0}`,
       `.${CLS.recRow}{display:flex;align-items:center;gap:${RECOMMENDED.rowGapPx}px;padding:${RECOMMENDED.rowPaddingYPx}px 0;border-bottom:.5px solid var(--dsw-alias-border-l2)}`,
@@ -1838,18 +1333,6 @@ window.__ModuleLoader__.load({
       return () => { box.style.overflow = previous }
     }
 
-    /** How to open Fishball's page under Plugins, or undefined when no service can. */
-    function settingsOpener(ctx) {
-      const navigation = ctx.get(SERVICE.pluginNavigation)
-      if (navigation !== undefined) return () => navigation.openBundle(PACKAGE_NAME)
-      const layout = ctx.get(SERVICE.layout)
-      return layout === undefined ? undefined : () => layout.selectPanel(PLUGINS_PANEL)
-    }
-
-    function openSettings(ctx) {
-      settingsOpener(ctx)?.()
-    }
-
     function makeBrandName(ctx, t) {
       return function FishballBrandName() {
         const ref = React.useRef(null)
@@ -1898,260 +1381,6 @@ window.__ModuleLoader__.load({
           t('brandName'),
           h('span', { className: CLS.tag, 'data-fishball-tag': true }, t('brandTag')))
       }
-    }
-
-    /**
-     * The welcome card's link asks the settings page to bring "Recommended plugins" into view
-     * (DESIGN §10f). The page mounts only after DSH opens it, so the request waits here until the
-     * section takes it.
-     */
-    const recommendedFocus = (() => {
-      let requestedAt = null
-      return {
-        request: () => { requestedAt = Date.now() },
-        take: () => { const fresh = requestedAt !== null && Date.now() - requestedAt <= RECOMMENDED.focusMs; requestedAt = null; return fresh },
-      }
-    })()
-
-    /** The "Recommended first" badge in Fishball's colour. */
-    const recommendedBadge = (t) => h('span', { className: CLS.fishTag }, t('recommendedFirst'))
-
-    /**
-     * The welcome card's state for this page load: the session it was shown in, and whether it was
-     * closed. Kept outside the component because DSH draws the dock only inside its composer bar,
-     * which a panel (a question) can replace; the card must come back with it, while the Host's
-     * flag is already false (DESIGN §10f).
-     */
-    const welcomeState = valueStore({ shownIn: null, closed: false })
-    const useWelcomeState = () => React.useSyncExternalStore(welcomeState.subscribe, welcomeState.get)
-
-    /**
-     * The one-time welcome card above Fishball's composer (DESIGN §10f). It reports itself shown
-     * as soon as it renders, so it never comes back after this page load, and stays until you
-     * close it, follow its link, or open another session's chat.
-     */
-    function makeWelcome(ctx, t) {
-      return function FishballWelcome({ sessionId }) {
-        const state = useFishball()
-        const { shownIn, closed } = useWelcomeState()
-        const eligible = Boolean(sessionId) && sessionId === state.sessionId && state.status === STATUS.live && state.welcome?.show === true && Boolean(state.recommended)
-        React.useEffect(() => {
-          if (!eligible || shownIn !== null || closed) return
-          welcomeState.set({ shownIn: sessionId, closed: false })
-          // A report lost to a network failure only means the card shows once more next time.
-          void post(API.welcomeSeen, {})
-        }, [eligible, shownIn, closed])
-        // Another session's chat ends it: the dock is drawn per session.
-        React.useEffect(() => { if (shownIn !== null && sessionId !== shownIn && !closed) welcomeState.set({ shownIn, closed: true }) }, [sessionId, shownIn, closed])
-        if (shownIn === null || closed || sessionId !== shownIn || !state.recommended) return null
-        const close = () => welcomeState.set({ shownIn, closed: true })
-        // Read when drawn, as the other openers are: the service may arrive after this module.
-        const openPage = settingsOpener(ctx)
-        const Icon = brandIconOf(state)
-        const { categories, highlighted } = state.recommended
-        const see = () => { recommendedFocus.request(); close(); openPage() }
-        return h('section', { className: CLS.welcome, 'aria-label': t('welcomeTitle'), 'data-fishball-welcome': true },
-          h('div', { className: CLS.welcomeLine },
-            h(Icon, { size: WELCOME.iconPx, unread: false }),
-            h('strong', { className: CLS.managedText }, t('welcomeTitle')),
-            h('button', { type: 'button', className: MCLS.iconButton, 'aria-label': t('close'), onClick: close }, h(IconCloseOutlineRegular, { size: WELCOME.closeIconPx }))),
-          h('span', null, t('welcomeIntro')),
-          h('ul', { className: CLS.entries }, categories.map(({ category }) => h('li', { key: category, className: CLS.welcomeLine },
-            t('recommendedCategory.' + category), highlighted.includes(category) ? recommendedBadge(t) : null))),
-          h('span', { className: CLS.muted }, t('recommendedNote')),
-          // Where no service can open the settings page, there is nothing to link to (Reading, §10f).
-          openPage ? h('div', null, h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: see }, t('welcomeSee'))) : null)
-      }
-    }
-
-    /**
-     * Install for Fishball (DESIGN §10d revision 10a): one request store shared by the item in
-     * DSH's Add plugin menu and the Fishball tab's button. The dialog lives in the shell overlay,
-     * so it outlives the menu that opened it (as "Send to Fishball" does).
-     */
-    const installRequest = (() => {
-      const store = valueStore(null)
-      let count = 0
-      // spec: a package already chosen (a recommended plugin, DESIGN §10f); the dialog checks it at once.
-      return { ...store, open: (from, spec = null) => store.set({ from, spec, id: ++count }), close: () => store.set(null) }
-    })()
-    const useInstallRequest = () => React.useSyncExternalStore(installRequest.subscribe, installRequest.get)
-
-    /** Which plugin's page the Fishball tab shows (null: the list); the install dialog opens a new plugin's page through it. */
-    const managerView = (() => {
-      const store = valueStore(null)
-      return { ...store, show: store.set }
-    })()
-    const useManagerView = () => React.useSyncExternalStore(managerView.subscribe, managerView.get)
-    /** Counts the Fishball tab's refreshes, so an open plugin page reads its data again too. */
-    const managerRefreshes = valueStore(0)
-    const useManagerRefreshes = () => React.useSyncExternalStore(managerRefreshes.subscribe, managerRefreshes.get)
-
-    /** Where a checked package comes from, in words (DSH's inspection: registry, folder, Git host or tarball host). */
-    function installSource(subject, spec, t) {
-      if (subject.kind === SPEC_KIND_REGISTRY) return subject.registry ?? t('defaultRegistry')
-      return subject.host ?? spec
-    }
-
-    /** "Install for Fishball only" in DSH's Add plugin menu, laid out like DSH's own items, with Fishball's mark in its colour. */
-    function makeAddMenuItem(t) {
-      return function FishballAddMenuItem({ onDismiss }) {
-        return h(MenuItemButton, {
-          icon: h('span', { className: MCLS.menuIcon }, h(FishballIcon, { size: ADD_MENU.iconSize, unread: false })),
-          onSelect: () => { onDismiss?.(); installRequest.open(INSTALL_FROM.menu) },
-        }, h('span', { className: MCLS.copy },
-          h('span', null, t('installForFishballOnly')),
-          h('span', { className: MCLS.copyDesc }, t('installForFishballDescription'))))
-      }
-    }
-
-    /** The install dialog while one is open; a new request starts a fresh flow. */
-    function makeInstallDialog(t, listen) {
-      return function FishballInstallDialog() {
-        const request = useInstallRequest()
-        if (request === null) return null
-        return h(InstallFlow, { key: request.id, from: request.from, initialSpec: request.spec, t, listen })
-      }
-    }
-
-    /**
-     * One install, following DSH's own dialog: the spec, DSH's check of what it names, a
-     * confirmation, progress with DSH's install output and Cancel, then the result. DSH's dialog
-     * is not exported (S31), so its screens are rebuilt from DSH's components; the process behind
-     * them is DSH's own, inherited for Fishball's folder. Your click on Install approves it.
-     */
-    function InstallFlow({ from, initialSpec, t, listen }) {
-      const id = React.useId()
-      const [step, setStep] = React.useState(INSTALL_STEP.edit)
-      const [spec, setSpec] = React.useState(initialSpec ?? '')
-      const [problem, setProblem] = React.useState(null)
-      const [subject, setSubject] = React.useState(null)
-      const [progress, setProgress] = React.useState({ phase: null, attempt: null, output: '' })
-      const [outcome, setOutcome] = React.useState(null)
-      const [note, setNote] = React.useState(null)
-      const requestId = React.useRef(null)
-      const catalog = useFishball().catalog
-      const installing = step === INSTALL_STEP.installing
-      React.useEffect(() => {
-        if (!installing) return undefined
-        const own = (event) => event?.requestId === requestId.current
-        const offState = listen(INSTALL_EVENT.state, (event) => { if (own(event)) setProgress((previous) => ({ ...previous, phase: event.phase, attempt: event.attempt ?? previous.attempt })) })
-        // DSH sends output in chunks; the screen keeps the newest INSTALL_LOG_LINES lines (review L8).
-        const offLog = listen(INSTALL_EVENT.log, (event) => { if (own(event) && event.text) setProgress((previous) => ({ ...previous, output: (previous.output + event.text).split(LIST_SEPARATOR).slice(-INSTALL_LOG_LINES).join(LIST_SEPARATOR) })) })
-        return () => { offState(); offLog() }
-      }, [installing])
-      const cancel = async () => {
-        if (requestId.current === null) return
-        const answer = await send(API.installCancel, { requestId: requestId.current })
-        if (answer.answer?.outcome === CANCEL_TOO_LATE) setNote('cancelTooLate')
-      }
-      // Closing while it runs asks DSH's process to stop, as DSH's own dialog does.
-      const close = () => { if (installing) void cancel(); installRequest.close() }
-      const refuse = (key, reason) => { setProblem({ key, reason }); setStep(INSTALL_STEP.edit) }
-      const check = async () => {
-        if (spec.trim() === '') return
-        setProblem(null)
-        setStep(INSTALL_STEP.checking)
-        const answer = await send(API.installInspect, { spec: spec.trim() })
-        if (!answer.ok) return refuse(INSTALL_ERRORS.has(answer.code) ? 'installError.' + answer.code : 'installFailed')
-        const inspection = answer.answer.inspection
-        const shipped = inspection.status !== INSPECT_ACCEPTED && inspection.problem === INSPECT_SHIPPED
-        if (inspection.status !== INSPECT_ACCEPTED && !shipped) {
-          return refuse(INSPECT_PROBLEMS.has(inspection.problem) ? 'inspectProblem.' + inspection.problem : 'inspectProblem.unknown', inspection.reason)
-        }
-        if (inspection.bundle === false) return refuse('inspectProblem.not-a-bundle')
-        // Installed in DSH's profile too: read from the catalog's DSH plugins (review M5).
-        const inDsh = inspection.name !== undefined && catalog?.plugins.some((plugin) => DSH_LISTED.has(plugin.dsh) && plugin.packageName === inspection.name)
-        setSubject(shipped ? { kind: null, shipped: true } : { ...inspection, inDsh })
-        setStep(INSTALL_STEP.confirm)
-      }
-      // A chosen package goes straight to DSH's check, as if you had typed it and pressed Install (§10f).
-      React.useEffect(() => { if (initialSpec) void check() }, [])
-      const install = async (approvedBuilds) => {
-        requestId.current = crypto.randomUUID()
-        setProgress({ phase: null, attempt: null, output: '' })
-        setNote(null)
-        setStep(INSTALL_STEP.installing)
-        const answer = await send(API.install, { spec: spec.trim(), requestId: requestId.current, ...(approvedBuilds === undefined ? {} : { approvedBuilds }) })
-        setOutcome(answer.ok ? answer.answer : { code: answer.code, pendingBuilds: answer.answer?.pendingBuilds ?? [] })
-        setStep(answer.ok ? INSTALL_STEP.done : INSTALL_STEP.failed)
-      }
-      const outline = (props, label) => h(Button, { type: 'button', variant: 'outline', ...props }, label)
-      const title = subject?.name ?? spec.trim()
-      const screens = {
-        [INSTALL_STEP.edit]: () => ({
-          body: [
-            h('p', { key: 'hint', className: MCLS.hint }, t('installHint')),
-            h('div', { key: 'field', className: MCLS.field },
-              h('label', { htmlFor: id, className: MCLS.label }, t('installSpecLabel')),
-              h(Input, {
-                id, value: spec, placeholder: t('installPlaceholder'), 'data-modal-autofocus': true, 'aria-invalid': problem !== null || undefined,
-                onChange: (event) => { setSpec(event.target.value); setProblem(null) },
-                // Enter installs, except while an input method is composing (as DSH's field does).
-                onKeyDown: (event) => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) void check() },
-              }),
-              problem ? h('p', { role: 'alert', className: MCLS.hint }, t(problem.key), problem.reason ? ` ${problem.reason}` : '') : null),
-            h('p', { key: 'trust', className: MCLS.trust }, t('installTrust')),
-          ],
-          footer: [outline({ key: 'cancel', onClick: close }, t('cancel')), accentButton({ key: 'go', disabled: spec.trim() === '', onClick: check }, t('install'))],
-        }),
-        [INSTALL_STEP.checking]: () => ({
-          body: [h('p', { key: 'checking', role: 'status' }, t('installChecking'))],
-          footer: [outline({ key: 'cancel', onClick: close }, t('cancel'))],
-        }),
-        [INSTALL_STEP.confirm]: () => ({
-          body: [
-            h('div', { key: 'subject', className: MCLS.subject },
-              h('span', { className: MCLS.icon, 'aria-hidden': true }, h(PluginArtworkDefault, { size: MANAGER.artSize })),
-              h('div', { className: MCLS.main },
-                h('div', { className: MCLS.titleRow }, h('span', { className: MCLS.title }, title), subject.version ? h(Tag, { tone: 'neutral', className: MCLS.tag }, subject.version) : null),
-                subject.description ? h('p', { className: MCLS.detailDesc }, subject.description) : null,
-                subject.kind ? h('p', { className: MCLS.hint }, t('installSource', { source: installSource(subject, spec.trim(), t) })) : null)),
-            subject.inDsh ? h('p', { key: 'dsh', className: MCLS.hint }, t('alsoInDsh')) : null,
-            subject.shipped ? h('p', { key: 'shipped', className: MCLS.hint }, t('shippedByDsh')) : null,
-            h('p', { key: 'trust', className: MCLS.trust }, t('installTrust')),
-          ],
-          footer: [outline({ key: 'back', onClick: () => setStep(INSTALL_STEP.edit) }, t('back')), accentButton({ key: 'go', onClick: () => install() }, t('installConfirm'))],
-        }),
-        [INSTALL_STEP.installing]: () => ({
-          body: [
-            h('p', { key: 'phase', role: 'status' }, t('installPhase.' + (progress.phase ?? 'waiting')), progress.phase === INSTALL_PHASE_INSTALLING && progress.attempt?.total > 1 ? ` ${t('installAttempt', { index: progress.attempt.index, total: progress.attempt.total })}` : ''),
-            progress.output !== '' ? h('pre', { key: 'log', className: MCLS.log, 'aria-label': t('showOutput') }, progress.output) : null,
-            note ? h('p', { key: 'note', role: 'status', className: MCLS.hint }, t(note)) : null,
-          ],
-          footer: [outline({ key: 'cancel', onClick: () => void cancel() }, t('cancelInstall'))],
-        }),
-        [INSTALL_STEP.done]: () => ({
-          body: [
-            h('p', { key: 'done', role: 'status' }, t('installDone', { name: outcome.name, version: outcome.version ?? '' })),
-            outcome.on ? null : h('p', { key: 'off', role: 'alert' }, t('installDoneOff'), ' ', pluginErrorText(t, outcome.code)),
-          ],
-          footer: [
-            outline({ key: 'close', onClick: close }, t('close')),
-            // DSH offers no way to select the Fishball tab from its own menu (S28): only the tab opens the page.
-            // Only once the tab lists it, so the page never opens by surprise later (review L8).
-            from === INSTALL_FROM.tab && catalog?.plugins.some((plugin) => plugin.plugin === outcome.plugin)
-              ? accentButton({ key: 'open', onClick: () => { managerView.show(outcome.plugin); close() } }, t('openPluginPage'))
-              : null,
-          ],
-        }),
-        [INSTALL_STEP.failed]: () => ({
-          body: [
-            h('p', { key: 'failed', role: 'alert' }, t(INSTALL_ERRORS.has(outcome.code) ? 'installError.' + outcome.code : 'installFailed')),
-            outcome.code === BUILD_BLOCKED ? h('p', { key: 'scripts', className: MCLS.hint }, t('pendingScripts'), ' ', outcome.pendingBuilds.join(', ')) : null,
-            progress.output !== '' ? h('pre', { key: 'log', className: MCLS.log, 'aria-label': t('showOutput') }, progress.output) : null,
-          ],
-          footer: [
-            outline({ key: 'back', onClick: () => setStep(INSTALL_STEP.edit) }, t('back')),
-            outcome.code === BUILD_BLOCKED
-              ? accentButton({ key: 'scripts', onClick: () => install(outcome.pendingBuilds) }, t('allowScripts'))
-              : accentButton({ key: 'retry', onClick: () => install() }, t('installRetry')),
-          ],
-        }),
-      }
-      const screen = screens[step]()
-      return h(Modal, { open: true, onClose: close, closeLabel: t('close'), title: t('installTitle'), footer: h(React.Fragment, null, ...screen.footer) },
-        h('div', { className: MCLS.dialog, 'data-fishball-install': step }, ...screen.body))
     }
 
     /**
@@ -2278,7 +1507,6 @@ window.__ModuleLoader__.load({
     function makeChildPlugins(t) {
       return function FishballChildPlugins() {
         const baseId = React.useId()
-        const recommendedRef = React.useRef(null)
         const [view, setView] = React.useState({ loading: true, revision: null, bundles: [], recommended: [], error: null })
         const [busy, setBusy] = React.useState(false)
         const [spec, setSpec] = React.useState('')
@@ -2292,8 +1520,6 @@ window.__ModuleLoader__.load({
         }, [])
         React.useEffect(() => { void load() }, [load])
         const loaded = !view.loading && view.revision !== null
-        // The welcome card's link still asks for the recommended list (§10f); keep it scrollable.
-        React.useEffect(() => { if (loaded && recommendedFocus.take()) recommendedRef.current?.scrollIntoView(RECOMMENDED.scroll) }, [loaded])
         const run = async (operation, payload, done) => {
           setBusy(true)
           setProblem(null)
@@ -2340,7 +1566,7 @@ window.__ModuleLoader__.load({
           h('div', { className: CLS.row },
             h(Input, { id: baseId + '-spec', 'aria-label': t('installSpecLabel'), value: spec, placeholder: t('installPlaceholder'), disabled: busy, onChange: (event) => setSpec(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) void install(spec) } }),
             accentButton({ size: 'sm', disabled: busy || view.revision === null || spec.trim() === '', onClick: () => void install(spec) }, t('install'))),
-          h('div', { ref: recommendedRef, 'data-fishball-recommended-section': true },
+          h('div', { 'data-fishball-recommended-section': true },
             h('h4', null, t('adminRecommendedTitle')),
             h('p', { className: CLS.muted }, t('adminRecommendedHint')),
             groups.map((group) => h('div', { key: group.category, 'data-fishball-recommended-category': group.category },
@@ -2366,6 +1592,195 @@ window.__ModuleLoader__.load({
       }
       ops.push({ op: 'set', path, value })
       return ops
+    }
+
+    /** The value at a path of a plain value, or undefined. */
+    const valueAt = (value, path) => path.reduce((node, key) => (node === null || node === undefined ? undefined : node[key]), value)
+
+    /** Set a value at a path, creating the objects on the way. */
+    function setAt(target, path, value) {
+      let node = target
+      for (const key of path.slice(0, -1)) node = node[key] ??= {}
+      node[path[path.length - 1]] = value
+    }
+
+    /**
+     * The schema-driven settings fields, shared by the plugin manager's settings rows and the
+     * isolated child's settings namespaces (§9). Both receive DSH's own schemastery envelope
+     * ({ uid, refs }) and draw the same kinds: text, number, switch, choice, list, secret, and a
+     * shown-only value for anything else. Edits are drafts until Save; Save hands the caller the
+     * nested `values` and the `reset` paths, because the two destinations speak different wire
+     * shapes (the plugin-side route and the child's admin mutate).
+     */
+    function makeSchemaForm(t, resolveText) {
+      const localized = (text) => (text === undefined || text === null ? undefined : resolveText(text))
+
+      /** The fields of a schema JSON envelope, in declaration order, each with the way the form draws it. */
+      function formFields(json) {
+        const node = (ref) => (typeof ref === 'object' ? ref : json.refs?.[ref])
+        const kindOf = (field) => {
+          if (field.meta?.role === SCHEMA.secretRole) return FIELD_KIND.secret
+          if (field.type === SCHEMA.string) return FIELD_KIND.text
+          if (field.type === SCHEMA.number) return FIELD_KIND.number
+          if (field.type === SCHEMA.boolean) return FIELD_KIND.switch
+          if (field.type === SCHEMA.union && (field.list ?? []).length > 0 && field.list.every((ref) => node(ref)?.type === SCHEMA.constant)) return FIELD_KIND.choice
+          if (field.type === SCHEMA.array && [SCHEMA.string, SCHEMA.number].includes(node(field.inner)?.type)) return FIELD_KIND.list
+          return FIELD_KIND.readOnly
+        }
+        const walk = (ref, path) => {
+          const field = node(ref)
+          if (!field || field.meta?.hidden) return []
+          if (field.type === SCHEMA.object) return Object.entries(field.dict ?? {}).flatMap(([key, inner]) => walk(inner, [...path, key]))
+          if (field.type === SCHEMA.intersect) return (field.list ?? []).flatMap((inner) => walk(inner, path))
+          const kind = path.length === 0 ? FIELD_KIND.readOnly : kindOf(field)
+          return [{
+            path,
+            key: JSON.stringify(path),
+            kind,
+            description: localized(field.meta?.description),
+            numbers: kind === FIELD_KIND.list && node(field.inner)?.type === SCHEMA.number,
+            choices: kind === FIELD_KIND.choice ? field.list.map((choice) => node(choice).value) : undefined,
+          }]
+        }
+        return walk(json.uid ?? json, [])
+      }
+
+      /** A field's text in the form, from its current value. */
+      function fieldText(field, value) {
+        if (value === undefined || value === null) return ''
+        if (field.kind === FIELD_KIND.list) return Array.isArray(value) ? value.join(LIST_SEPARATOR) : ''
+        if (field.kind === FIELD_KIND.choice) return String(Math.max(0, field.choices.findIndex((choice) => choice === value)))
+        return String(value)
+      }
+
+      /** The value a field's draft stands for; undefined when it is not a valid value for its kind. */
+      function fieldValue(field, draft) {
+        if (field.kind === FIELD_KIND.switch) return draft === true
+        if (field.kind === FIELD_KIND.choice) return field.choices[Number(draft)]
+        if (field.kind === FIELD_KIND.number) {
+          const number = Number(String(draft).trim())
+          return String(draft).trim() !== '' && Number.isFinite(number) ? number : undefined
+        }
+        if (field.kind === FIELD_KIND.list) {
+          const items = String(draft).split(LIST_SEPARATOR).map((item) => item.trim()).filter((item) => item !== '')
+          if (!field.numbers) return items
+          const numbers = items.map(Number)
+          return numbers.every(Number.isFinite) ? numbers : undefined
+        }
+        return String(draft)
+      }
+
+      /** A field's label row: its name, and "Changed" with Reset for a field you changed. */
+      function FieldHead({ id, label, changed, onReset, disabled }) {
+        return h('div', { className: MCLS.fieldHead },
+          id === undefined ? h('span', { className: MCLS.label }, label) : h('label', { htmlFor: id, className: MCLS.label }, label),
+          changed ? h(React.Fragment, null, h(Tag, { tone: 'neutral' }, t('settingsChanged')), h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('resetField', { name: label }), onClick: onReset }, t('settingsReset'))) : null)
+      }
+
+      /** One field of the form, drawn for its kind. */
+      function SettingsField({ field, id, value, secrets, draft, changed, invalid, disabled, onEdit, onReset }) {
+        const label = field.path.join('.')
+        const current = valueAt(value, field.path)
+        const text = draft !== undefined ? draft : fieldText(field, current)
+        const labelled = field.kind === FIELD_KIND.choice || field.kind === FIELD_KIND.list
+        const head = h(FieldHead, { id: labelled ? id : undefined, label, changed, onReset, disabled })
+        const hint = field.description ? h('p', { className: MCLS.hint }, field.description) : null
+        if (field.kind === FIELD_KIND.text || field.kind === FIELD_KIND.number) {
+          return h(SettingsValueField, {
+            id, label, text, numeric: field.kind === FIELD_KIND.number, hint: field.description, invalid, invalidLabel: t('settingsInvalid'),
+            overridden: changed, overriddenLabel: t('settingsChanged'), resetLabel: t('settingsReset'), onReset, disabled, onEdit,
+          })
+        }
+        if (field.kind === FIELD_KIND.secret) {
+          const slot = secrets.find((candidate) => JSON.stringify(candidate.path) === field.key)
+          const set = slot?.set === true
+          // DSH's secret field draws its own padding; Clear sits under it.
+          return h('div', null,
+            h(SettingsSecretField, { id, label, configured: set, stateLabel: t(set ? 'secretSet' : 'secretUnset'), text: draft ?? '', hint: t('secretHint'), disabled, onEdit }),
+            // Clear drops the value you set; the plugin's own value, if any, then applies.
+            slot?.stored === true ? h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('clearField', { name: label }), onClick: onReset }, t('secretClear')) : null)
+        }
+        if (field.kind === FIELD_KIND.switch) {
+          return h('div', { className: MCLS.field }, head, h(Switch, { checked: draft !== undefined ? draft : current === true, label, onChange: onEdit }), hint)
+        }
+        if (field.kind === FIELD_KIND.choice) {
+          return h('div', { className: MCLS.field }, head,
+            h('select', { id, className: MCLS.input, value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) },
+              field.choices.map((choice, index) => h('option', { key: index, value: String(index) }, String(choice)))),
+            hint)
+        }
+        if (field.kind === FIELD_KIND.list) {
+          return h('div', { className: MCLS.field }, head,
+            h('textarea', { id, className: MCLS.input, rows: Math.max(MANAGER.listMinRows, text.split(LIST_SEPARATOR).length), value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) }),
+            h('p', { className: MCLS.hint }, [field.description, t('settingsListHint')].filter(Boolean).join(' ')))
+        }
+        return h('div', { className: MCLS.field }, head,
+          h('pre', { className: MCLS.readOnly }, JSON.stringify(current ?? null, null, 2)),
+          h('p', { className: MCLS.hint }, [field.description, t('settingsReadOnly')].filter(Boolean).join(' ')))
+      }
+
+      /**
+       * The fields, their drafts and the Save action. `onSave(edits)` returns whether the save was
+       * accepted; only then are the drafts cleared, so a refusal leaves your edits in place.
+       */
+      function SchemaForm({ schema, value, secrets, user, invalidPath, resetAll, disabled, onSave }) {
+        const baseId = React.useId()
+        const fields = React.useMemo(() => formFields(schema), [schema])
+        const [drafts, setDrafts] = React.useState({})
+        const [resets, setResets] = React.useState([])
+        const [saving, setSaving] = React.useState(false)
+        const [invalid, setInvalid] = React.useState(false)
+        const edit = (field, next) => { setDrafts({ ...drafts, [field.key]: next }); setResets(resets.filter((key) => key !== field.key)); setInvalid(false) }
+        const reset = (field) => {
+          const next = { ...drafts }
+          delete next[field.key]
+          setDrafts(next)
+          setResets([...new Set([...resets, field.key])])
+          setInvalid(false)
+        }
+        const submit = async (body = null) => {
+          const values = {}
+          if (body === null) {
+            for (const field of fields) {
+              if (!Object.hasOwn(drafts, field.key)) continue
+              // An empty secret field means "keep the stored secret".
+              if (field.kind === FIELD_KIND.secret && drafts[field.key] === '') continue
+              const next = fieldValue(field, drafts[field.key])
+              if (next === undefined) { setInvalid(true); return }
+              setAt(values, field.path, next)
+            }
+          }
+          const resetPaths = body?.reset ?? resets.map((key) => JSON.parse(key))
+          if (Object.keys(values).length === 0 && resetPaths.length === 0) { setDrafts({}); return }
+          setSaving(true)
+          const saved = await onSave({ ...(Object.keys(values).length > 0 ? { values } : {}), ...(resetPaths.length > 0 ? { reset: resetPaths } : {}) })
+          setSaving(false)
+          if (saved) { setDrafts({}); setResets([]) }
+        }
+        const dirty = Object.keys(drafts).length > 0 || resets.length > 0
+        // The Host names the failing field's path, which can lie inside a field (a list item): the field containing it is marked (review L7).
+        const isInvalid = (field) => invalidPath !== undefined && field.path.every((key, index) => invalidPath[index] === key)
+        return h(React.Fragment, null,
+          h('div', { className: MCLS.fields }, fields.map((field) => h(SettingsField, {
+            key: field.key,
+            field,
+            id: `${baseId}-${field.key}`,
+            value,
+            secrets,
+            draft: drafts[field.key],
+            changed: Object.hasOwn(drafts, field.key) || (valueAt(user, field.path) !== undefined && !resets.includes(field.key)),
+            invalid: isInvalid(field),
+            disabled: saving || disabled,
+            onEdit: (next) => edit(field, next),
+            onReset: () => reset(field),
+          }))),
+          invalid ? h('div', { role: 'alert' }, t('settingsInvalid')) : null,
+          h('div', { className: MCLS.formActions },
+            resetAll ? h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: saving || disabled, onClick: () => void submit({ reset: [[]] }) }, t('settingsResetAll')) : null,
+            accentButton({ size: 'sm', disabled: saving || disabled || !dirty, onClick: () => void submit() }, saving ? t('saving') : t('save'))))
+      }
+
+      return { formFields, SchemaForm }
     }
 
     /**
@@ -2558,16 +1973,6 @@ window.__ModuleLoader__.load({
       return () => { unsubscribe(); dispose?.(); dispose = undefined }
     }
 
-    function makeModelGate(ctx, t) {
-      return function FishballModelGate({ sessionId }) {
-        const state = useFishball()
-        if (!sessionId || sessionId !== state.sessionId || state.modelSelection) return null
-        return h('div', { className: MODEL.gateClass, 'data-fishball-model-gate': true },
-          h('span', { className: CLS.grow, role: 'status' }, t('modelRequired')),
-          h(Button, { type: 'button', size: 'sm', variant: 'primary', onClick: () => openSettings(ctx) }, t('openSettings')))
-      }
-    }
-
     /** One value components share and follow (dialog requests, the tab's open page); set() notifies them. */
     function valueStore(initial) {
       let current = initial
@@ -2595,9 +2000,10 @@ window.__ModuleLoader__.load({
     const nativeState = valueStore(null)
     const useNativeState = () => React.useSyncExternalStore(nativeState.subscribe, nativeState.get)
 
-    /** Whether a session can be handed over: Fishball runs, it is not Fishball's own session, and Session messages is on. */
+    /** Any session but Fishball's own id (which names no main session). */
     const isOtherSession = (state, sessionId) => Boolean(sessionId) && sessionId !== state.sessionId
-    const canHandOver = (state, sessionId) => state.status === STATUS.live && isOtherSession(state, sessionId) && featureOn(state, FEATURE.messages)
+    /** Whether a session can be handed over: the body is up, and it is not Fishball's own session. */
+    const canHandOver = (state, sessionId) => state.status === STATUS.live && isOtherSession(state, sessionId)
 
     function makeHandOverDialog(t) {
       return function FishballHandOverDialog() {
@@ -2674,10 +2080,7 @@ window.__ModuleLoader__.load({
     /** Take back (§8.3) and its refusal. */
     const manageNotice = requestNotice(API.managed, MANAGE_ERRORS, 'manageError.', 'manageFailed')
     const isManagedSession = (state, sessionId) => (state.managed ?? []).some((entry) => entry.sessionId === sessionId)
-    /**
-     * Offered where the hand-over can run, once the Host lists managed sessions; hidden while
-     * Session messages is off (managed sessions stay managed).
-     */
+    /** Offered where the hand-over can run, once the Host lists managed sessions. */
     const canManage = (state, sessionId) => Array.isArray(state.managed) && canHandOver(state, sessionId)
     /**
      * The one entry's text and action: Hand over opens the note dialog; Take back takes the
@@ -2713,27 +2116,10 @@ window.__ModuleLoader__.load({
 
     /**
      * Whether a session shows the managed-session marks (item 30): it is managed, and Take back is
-     * offered (canManage: Fishball live, Session messages on, never Fishball's own session). The
+     * offered (canManage: the body is up, never Fishball's own session). The
      * user's answers hide both the banner and the sidebar icon whenever Take back would be hidden.
      */
     const showsManagedMarks = (state, sessionId) => canManage(state, sessionId) && isManagedSession(state, sessionId)
-
-    /**
-     * The banner above a managed session's composer (DESIGN §10e item 30): the mark the Sidebar
-     * icon setting chose, "Managed by Fishball", and Take back, the menu entry's own action, so a
-     * refusal opens the same dialog. The mark never wags here: unread replies are Fishball's own.
-     */
-    function makeManagedBanner(t) {
-      return function FishballManagedBanner({ sessionId }) {
-        const state = useFishball()
-        if (!showsManagedMarks(state, sessionId)) return null
-        const Icon = brandIconOf(state)
-        return h('div', { className: CLS.managedBanner, 'data-fishball-managed-banner': sessionId },
-          h(Icon, { size: MANAGED_BANNER.iconPx, unread: false }),
-          h('span', { className: CLS.managedText }, t('managedBanner')),
-          handOverButton(t, state, sessionId))
-      }
-    }
 
     /**
      * One managed row's mark, shared by the idle leading seat and the running trailing seat: the
@@ -2867,38 +2253,6 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The entries to draw: the current ones, and for one reveal each one that just left, at its old
-     * place and marked leaving, so it closes instead of vanishing (DESIGN §10e: rows leaving).
-     * @returns [{ item, leaving }].
-     */
-    function useLeaving(items, keyOf) {
-      const [previous, setPrevious] = React.useState(items)
-      // [{ item, index, until }]: entries that left, with the time their close ends.
-      const [left, setLeft] = React.useState([])
-      if (items !== previous) {
-        // Adjusted while rendering (React's pattern for state derived from a prop change), so the entry
-        // that left is never unmounted first, which would lose its open state and skip its close.
-        const now = new Set(items.map(keyOf))
-        const until = Date.now() + revealMs()
-        const gone = previous.map((item, index) => ({ item, index, until })).filter(({ item }) => !now.has(keyOf(item)))
-        const goneKeys = new Set(gone.map(({ item }) => keyOf(item)))
-        setPrevious(items)
-        if (gone.length > 0) setLeft((current) => [...current.filter(({ item }) => !goneKeys.has(keyOf(item))), ...gone])
-      }
-      React.useEffect(() => {
-        if (left.length === 0) return undefined
-        const next = Math.min(...left.map((entry) => entry.until))
-        const timer = setTimeout(() => setLeft((current) => current.filter((entry) => entry.until > Date.now())), Math.max(0, next - Date.now()))
-        return () => clearTimeout(timer)
-      }, [left])
-      const now = new Set(items.map(keyOf))
-      const drawn = items.map((item) => ({ item, leaving: false }))
-      // An entry that came back is drawn once, as current.
-      for (const { item, index } of left) if (!now.has(keyOf(item))) drawn.splice(Math.min(index, drawn.length), 0, { item, leaving: true })
-      return drawn
-    }
-
-    /**
      * Allow once / Reject on one card, the same in your pile's detail and on the session's running
      * row (item 15). Both read the card from the Host's snapshot, so an answer in either place clears
      * both. Reject first opens an optional note to the agent (DESIGN §10e).
@@ -2922,218 +2276,14 @@ window.__ModuleLoader__.load({
         problemLine(problem))
     }
 
-    /** JSON text indented for reading; text that does not parse (cut arguments) as it is. */
-    function readableJson(text) {
-      try { return JSON.stringify(JSON.parse(text), null, JSON_INDENT) } catch { return text }
-    }
-
     /** A labelled line of text from another session or from Fishball (plain text, never markup: §10c framing rule). */
     const labelled = (label, text) => h('div', null, h('span', { className: CLS.muted }, label + ': '), text)
-
-    /** The session's title, or its id styled as code while it has none (as the managed list does). */
-    const sessionTitle = (card) => h('span', { className: card.title ? CLS.title : `${CLS.title} ${CLS.code}` }, card.title || card.sessionId)
-
-    /**
-     * One permission request in full, in your pile's detail (DESIGN §10e): the session, the tool,
-     * the exact arguments, the agent's reason, Fishball's note, the quoted messages and the thread.
-     * Every text comes from another session or from Fishball, so all of it is drawn as plain text.
-     * One of Fishball's own requests is labelled Fishball, with its list (the unchecked tools, or the
-     * changed settings) under the arguments, one entry per line.
-     */
-    function PileCard({ card, t, onDone }) {
-      const own = card.kind === OWN_CARD_KIND
-      return h('div', { className: CLS.detailBody },
-        h('div', { className: CLS.cardHead },
-          own ? h('span', { className: CLS.title }, t('cardOwnTitle')) : sessionTitle(card),
-          CARD_KINDS.has(card.kind) ? h(Tag, { tone: 'neutral' }, t('cardKind.' + card.kind)) : null,
-          h('span', { className: CLS.code }, card.toolName)),
-        h('pre', { className: CLS.pre }, readableJson(card.arguments)),
-        card.argumentsStatus === ARGUMENTS_COMPLETE ? null : h('span', { className: CLS.muted }, t('cardArgumentsCut')),
-        own && (card.detail ?? []).length > 0 ? h('ul', { className: CLS.thread, 'data-fishball-card-detail': card.detail.length }, card.detail.map((entry, index) => h('li', { key: index }, entry))) : null,
-        card.why ? labelled(t('cardReason'), card.why) : null,
-        card.note ? labelled(t('cardFishballNote'), card.note) : null,
-        card.quotes.length > 0 ? h('div', null, h('div', { className: CLS.muted }, t('cardQuotes')), card.quotes.map((quote) => h('blockquote', { key: quote.id, className: CLS.quote }, quote.text))) : null,
-        card.thread.length > 0 ? h('div', null, h('div', { className: CLS.muted }, t('cardThread')),
-          h('ol', { className: CLS.thread }, card.thread.map((entry, index) => h('li', { key: index }, labelled(t('threadFrom.' + entry.from), entry.text))))) : null,
-        h(CardAnswer, { requestId: card.requestId, t, onDone }))
-    }
 
     /** POST your answer on a question card. @returns null when accepted, else the refusal's text. */
     async function answerQuestionCard(questionId, body, t) {
       const { ok, code, answer } = await send(API.questionsAnswer, { questionId, ...body })
       if (ok) return null
       return QUESTION_ERRORS.has(code) ? t('questionError.' + code, { reason: answer?.reason ?? '' }) : t('cardFailed')
-    }
-
-    /**
-     * One question or plan review in full, in your pile's detail (DESIGN §10e, rev11g): a question
-     * shows its form with the answer controls DSH's own card has (one choice, several choices, your
-     * own text); a plan review shows the plan with Approve, and Keep planning with a feedback field,
-     * which the session's own panel does not offer (S36). Every text comes from the session or from
-     * Fishball, so it is drawn as plain text.
-     */
-    function QuestionCard({ card, t, onDone }) {
-      const [choices, setChoices] = React.useState({})
-      const [feedback, setFeedback] = React.useState('')
-      const { busy, problem, run } = useSubmit()
-      const planReview = card.kind === QUESTION_VIEW.planReview
-      const submit = (body) => run(() => answerQuestionCard(card.questionId, body, t), onDone)
-      const choiceOf = (id) => choices[id] ?? { selected: [], custom: '' }
-      // Functional, so two changes before a re-render (a toggle and typing) both count.
-      const update = (id, change) => setChoices((current) => {
-        const choice = current[id] ?? { selected: [], custom: '' }
-        return { ...current, [id]: { ...choice, ...change(choice) } }
-      })
-      const answers = () => card.questions.map((question) => {
-        const { selected, custom } = choiceOf(question.id)
-        const text = custom.trim()
-        // As DSH's card: on a single-select question your own text replaces the choice.
-        return { id: question.id, selected: text !== '' && question.multiSelect !== true ? [] : selected, ...(text === '' ? {} : { custom: text }) }
-      })
-      const button = (key, variant, onClick, label) => cardButton(t, busy, key, variant, onClick, label)
-      return h('div', { className: CLS.detailBody },
-        h('div', { className: CLS.cardHead },
-          sessionTitle(card),
-          h(Tag, { tone: 'neutral' }, t('cardKind.' + card.kind)),
-          card.continued ? h(Tag, { tone: 'info' }, t('cardContinued')) : null),
-        card.note ? labelled(t('cardFishballNote'), card.note) : null,
-        planReview ? h(React.Fragment, null,
-          h('div', null, card.questions[0].question),
-          card.questions[0].detail ? h('pre', { className: CLS.pre }, card.questions[0].detail) : null,
-          h('div', { className: CLS.field },
-            h('label', { htmlFor: card.requestId + '-feedback', className: CLS.muted }, t('planFeedback')),
-            h(Input, { id: card.requestId + '-feedback', value: feedback, onChange: (event) => setFeedback(event.target.value) })),
-          h('div', { className: CLS.actions },
-            button('approve', 'primary', () => void submit({ approve: true }), 'planApprove'),
-            button('keep', 'secondary', () => void submit(feedback.trim() === '' ? { approve: false } : { feedback: feedback.trim() }), 'planKeep')))
-          : h(React.Fragment, null,
-            card.questions.map((question) => {
-              const choice = choiceOf(question.id)
-              const multi = question.multiSelect === true
-              const toggle = (label, on) => update(question.id, (current) => ({ selected: multi ? (on ? [...current.selected, label] : current.selected.filter((entry) => entry !== label)) : (on ? [label] : []) }))
-              return h('fieldset', { key: question.id, className: CLS.field, 'data-fishball-question': question.id },
-                h('legend', null, question.header ? `${question.header}${SEPARATOR}${question.question}` : question.question),
-                (question.options ?? []).map((option) => h('label', { key: option.label, className: CLS.row },
-                  h('input', { type: multi ? 'checkbox' : 'radio', name: card.requestId + '-' + question.id, checked: choice.selected.includes(option.label), disabled: busy, onChange: (event) => toggle(option.label, event.target.checked) }),
-                  ' ', option.label, option.description ? h('span', { className: CLS.muted }, ` ${option.description}`) : null)),
-                h(Input, { 'aria-label': t('questionOther'), placeholder: t('questionOther'), value: choice.custom, onChange: (event) => { const custom = event.target.value; update(question.id, () => ({ custom })) } }))
-            }),
-            h('div', { className: CLS.actions }, button('send', 'primary', () => void submit({ answers: answers() }), 'questionSubmit'))),
-        problemLine(problem))
-    }
-
-    /**
-     * A card's main argument (DESIGN §10e row, the builder's reading): a shell tool's command, as
-     * prefix grants read it, otherwise its first text argument; none when the arguments are cut and
-     * do not parse.
-     */
-    function mainArgument(card) {
-      let value
-      try { value = JSON.parse(card.arguments) } catch { return '' }
-      if (value === null || typeof value !== 'object') return ''
-      const commandKey = PILE_LIST.commandArgument[card.toolName]
-      const text = commandKey === undefined ? Object.values(value).find((entry) => typeof entry === 'string') : value[commandKey]
-      return typeof text === 'string' ? text : ''
-    }
-
-    /** Who asks, in words: the session's title (its id while it has none), or Fishball for its own requests. */
-    const cardWho = (t, card) => (card.kind === OWN_CARD_KIND ? t('pileOwnName') : card.title || card.sessionId)
-
-    /** A row's first line after who asks: the tool and its main argument, the question's header, or "Plan review". */
-    function requestLine(t, card) {
-      if (card.kind === QUESTION_VIEW.planReview) return t('cardKind.' + card.kind)
-      if (card.kind === QUESTION_VIEW.question) return card.questions[0]?.header || t('cardKind.' + card.kind)
-      const argument = mainArgument(card)
-      return argument ? `${card.toolName} ${argument}` : card.toolName
-    }
-
-    /**
-     * A row's second line, why it needs you (DESIGN §10e): Fishball's note; on Fishball's own cards its
-     * request's reason; otherwise a plain line built from the request. Fishball's note replaces the
-     * plain line as soon as the snapshot carries it.
-     */
-    function whyLine(t, card) {
-      if (card.note) return card.note
-      if (card.kind === OWN_CARD_KIND && card.why) return card.why
-      const who = cardWho(t, card)
-      if (card.kind === QUESTION_VIEW.planReview) return t('whyPlan', { who })
-      if (card.kind === QUESTION_VIEW.question) return t('whyQuestion', { who, question: card.questions[0]?.question || requestLine(t, card) })
-      const argument = mainArgument(card)
-      if (argument && PILE_LIST.commandArgument[card.toolName] !== undefined) return t('whyRun', { who, command: argument })
-      return argument ? t('whyUseOn', { who, tool: card.toolName, argument }) : t('whyUse', { who, tool: card.toolName })
-    }
-
-    /**
-     * The buttons beside a row (DESIGN §10e): Allow once / Reject on a permission request (Reject at
-     * once, with no note: the note is only in the detail), Approve / Keep planning (no feedback) on a
-     * plan review, and Answer on a question, which opens the detail.
-     */
-    function RowButtons({ card, t, onOpen }) {
-      const { busy, problem, run } = useSubmit()
-      const button = (key, variant, onClick, label) => cardButton(t, busy, key, variant, onClick, label)
-      const plan = (body) => () => void run(() => answerQuestionCard(card.questionId, body, t))
-      const decide = (decision) => () => void run(() => answerCard(card.requestId, decision, '', t))
-      const buttons = card.kind === QUESTION_VIEW.question ? [button('answer', 'primary', onOpen, 'questionAnswer')]
-        : card.kind === QUESTION_VIEW.planReview ? [button('approve', 'primary', plan({ approve: true }), 'planApprove'), button('keep', 'secondary', plan({ approve: false }), 'planKeep')]
-          : [button('allow', 'primary', decide(CARD_DECISION.allow), 'allowOnce'), button('reject', 'secondary', decide(CARD_DECISION.reject), 'reject')]
-      return h(React.Fragment, null, h('div', { className: CLS.actions }, buttons), problemLine(problem))
-    }
-
-    /**
-     * One request as a compact row (DESIGN §10e): two lines cut with an ellipsis, and its buttons.
-     * A click anywhere on it but its buttons opens the detail; the lines are one button, so the
-     * keyboard opens it too. @param focus - take the focus when drawn (the detail just closed).
-     */
-    function PileRow({ card, t, onOpen, focus }) {
-      const main = React.useRef(null)
-      const controls = React.useRef(null)
-      React.useEffect(() => { if (focus) main.current?.focus() }, [focus])
-      const open = () => onOpen(card.requestId)
-      return h('div', { className: CLS.pileRow, 'data-fishball-row': card.requestId, onClick: (event) => { if (!controls.current?.contains(event.target)) open() } },
-        h('button', { ref: main, type: 'button', className: CLS.rowMain, 'aria-expanded': false },
-          h('span', { className: CLS.rowLine, 'data-fishball-row-request': true },
-            card.kind === OWN_CARD_KIND ? h('span', { className: CLS.title }, t('pileOwnName')) : sessionTitle(card), SEPARATOR, requestLine(t, card)),
-          h('span', { className: `${CLS.rowLine} ${CLS.muted}`, 'data-fishball-row-why': true }, whyLine(t, card))),
-        h('div', { ref: controls, className: CLS.rowControls }, h(RowButtons, { card, t, onOpen: open })))
-    }
-
-    /**
-     * One request opened in place of the list (DESIGN §10e detail): Back, a click anywhere outside it,
-     * Escape while the focus is in it, or an answer taken go back to the list. The focus moves to Back
-     * when it opens. @param onClose - (returnFocus) => void; a click outside keeps the focus where you
-     * clicked, so it never takes it back from the composer.
-     */
-    function PileDetail({ card, t, active, onClose }) {
-      const root = React.useRef(null)
-      React.useEffect(() => { root.current?.querySelector('button')?.focus({ preventScroll: true }) }, [])
-      React.useEffect(() => {
-        // Only while open: a closing detail stays drawn for its close, and must not close the next one.
-        if (!active) return undefined
-        // The card's own box (its padding) and the pile's (its scroll bar) belong to the detail's window.
-        const outside = (event) => {
-          const inside = root.current?.closest(PILE_LIST.cardBox)?.contains(event.target) || event.target.matches?.(PILE_LIST.scrollArea)
-          if (!inside) onClose(false)
-        }
-        document.addEventListener('pointerdown', outside, true)
-        return () => document.removeEventListener('pointerdown', outside, true)
-      }, [active, onClose])
-      const back = () => onClose(true)
-      // Escape while an input method composes (Chinese, for one) only ends the composition.
-      const onKeyDown = (event) => { if (event.key === PILE_LIST.escapeKey && !event.nativeEvent.isComposing) { event.stopPropagation(); back() } }
-      return h('div', { ref: root, role: 'region', 'aria-label': cardWho(t, card), className: CLS.detail, 'data-fishball-detail': card.requestId, onKeyDown },
-        h('button', { type: 'button', className: MCLS.crumb, onClick: back }, h(IconChevronLeftOutlineRegular, { size: MANAGER.crumbIconSize }), t('pileBack')),
-        h(QUESTION_KINDS.has(card.kind) ? QuestionCard : PileCard, { card, t, onDone: () => onClose(true, card.requestId) }))
-    }
-
-    /**
-     * One card's place in the list: its row, or its detail while it is open. It is drawn while the list
-     * shows, or while it is the open one, and closes when it leaves the pile.
-     */
-    function PileEntry({ card, t, leaving, listShown, isOpen, onOpen, onClose, focus }) {
-      return h(Reveal, { as: 'li', shown: !leaving && (listShown || isOpen), 'data-fishball-card': card.requestId, 'data-fishball-card-kind': card.kind },
-        h('div', { className: CLS.card },
-          h(Reveal, { shown: !isOpen }, h(PileRow, { card, t, onOpen, focus })),
-          h(Reveal, { shown: isOpen }, h(PileDetail, { card, t, active: isOpen, onClose }))))
     }
 
     /**
@@ -3162,111 +2312,11 @@ window.__ModuleLoader__.load({
         failed ? h('div', { role: 'alert' }, t('questionModeFailed')) : null)
     }
 
-    /** What a grant covers, in words: "npm test*", or "exact bash call" (never the arguments, which the Host does not keep). */
-    const grantWhat = (t, grant) => (grant.kind === GRANT_VIEW.prefix ? grant.prefix + GRANT_VIEW.wildcard : t('grantExact', { tool: grant.toolName }))
-
     /** POST your Revoke. @returns null when accepted, else the refusal's text. */
     async function revokeGrant(grantId, t) {
       const { ok, code } = await send(API.grantsRevoke, { grantId })
       if (ok) return null
       return t(GRANT_ERRORS.has(code) ? 'grantError.' + code : 'cardFailed')
-    }
-
-    /**
-     * One active grant beside the pile (DESIGN §10e, item 19): its session, tool, prefix or exact
-     * call, end time, uses and Revoke; a paused grant says so. The prefix is Fishball's text and the
-     * title another session's, so both are drawn as plain text.
-     */
-    function GrantRow({ grant, t }) {
-      const { busy, problem, run } = useSubmit()
-      return h('div', { className: CLS.card },
-        h('div', { className: CLS.cardHead },
-          sessionTitle(grant),
-          h('span', { className: CLS.code }, grant.toolName),
-          grant.paused ? h(Tag, { tone: 'neutral' }, t('grantPaused')) : null),
-        h('div', { className: CLS.code }, grantWhat(t, grant)),
-        h('div', { className: CLS.muted }, `${t('grantEnds', { at: new Date(grant.expiresAt).toLocaleString() })}${SEPARATOR}${grant.uses === GRANT_USES.once ? t('grantUsedOnce') : t('grantUses', { count: grant.uses })}`),
-        h('div', { className: CLS.actions }, cardButton(t, busy, 'revoke', 'secondary', () => void run(() => revokeGrant(grant.grantId, t)), 'revoke')),
-        problemLine(problem))
-    }
-
-    const cardKey = (card) => card.requestId
-    // One empty list for a snapshot without cards or grants: useLeaving compares lists by identity.
-    const NO_ENTRIES = Object.freeze([])
-    const grantKey = (grant) => grant.grantId
-
-    /** Shared section disclosure. A native button supplies Enter/Space without custom key handlers. */
-    function PileSection({ title, expanded, onToggle, children }) {
-      const id = React.useId()
-      return h('section', { 'aria-label': title },
-        h('button', { type: 'button', className: CLS.pileHead, 'aria-expanded': expanded, 'aria-controls': id, onClick: onToggle },
-          h(IconChevronLeftOutlineRegular, { size: PILE.chevronPx, 'aria-hidden': true, style: { transform: `rotate(${expanded ? PILE.expandedRotationDeg : PILE.collapsedRotationDeg}deg)` } }), title),
-        h('div', { id }, h(Reveal, { shown: expanded }, children)))
-    }
-
-    /**
-     * Your pile above Fishball's composer (DESIGN §10e, items 14-16; rev11-pile-list): "Waiting for
-     * you (n)" over a list of compact rows, shown only in Fishball's own session and only while it
-     * holds a card or a grant. One row at a time opens into its detail, in place of the list: the other
-     * rows and the grants hide until it closes, and a request that arrives meanwhile only changes the
-     * count. If the open request leaves the pile, the detail closes. The active grants are a second
-     * section in the same pinned area (Q-r11-grants-place). Its height is the limit pileMaxHeightVh;
-     * past it the area scrolls, the list and the detail alike, so the composer stays in view.
-     */
-    function makePile(t) {
-      return function FishballPile({ sessionId }) {
-        const state = useFishball()
-        const live = state.pile ?? NO_ENTRIES
-        const liveGrants = state.grants ?? NO_ENTRIES
-        // Cards you just answered in their detail: hidden at once, before the snapshot drops them, so
-        // the answered row never shows again with live buttons. Ids are unique, so none comes back.
-        const [answered, setAnswered] = React.useState(NO_ENTRIES)
-        const shownCards = React.useMemo(() => (answered.length === 0 ? live : live.filter((card) => !answered.includes(card.requestId))), [live, answered])
-        const cards = useLeaving(shownCards, cardKey)
-        const grants = useLeaving(liveGrants, grantKey)
-        const [openId, setOpenId] = React.useState(null)
-        const [focusId, setFocusId] = React.useState(null)
-        // Snapshot updates must not reopen a section the user folded. Keep these choices here,
-        // outside the reveals that temporarily hide grants while a request detail is open.
-        const [requestsExpanded, setRequestsExpanded] = React.useState(PILE.requestsExpanded)
-        const [grantsExpanded, setGrantsExpanded] = React.useState(PILE.grantsExpanded)
-        const scroller = React.useRef(null)
-        // Derived, so a request that left the pile closes its detail at once (P5).
-        const open = openId !== null && live.some((card) => card.requestId === openId) ? openId : null
-        // The detail starts at the top of the scrolling area once the rows above it have closed.
-        React.useEffect(() => {
-          if (open === null) return undefined
-          const timer = setTimeout(() => { if (scroller.current) scroller.current.scrollTop = 0 }, revealMs())
-          return () => clearTimeout(timer)
-        }, [open])
-        // The open id as last drawn, so closing knows which row takes the focus back.
-        const drawnOpen = React.useRef(open)
-        drawnOpen.current = open
-        const onOpen = React.useCallback((requestId) => { setFocusId(null); setOpenId(requestId) }, [])
-        /** @param answeredId - the card you answered in the detail: it leaves, so the pile takes the focus. */
-        const onClose = React.useCallback((returnFocus, answeredId) => {
-          setFocusId(returnFocus && answeredId === undefined ? drawnOpen.current : null)
-          if (answeredId !== undefined) {
-            setAnswered((current) => [...current, answeredId])
-            scroller.current?.focus({ preventScroll: true })
-          }
-          setOpenId(null)
-        }, [])
-        if (!sessionId || sessionId !== state.sessionId) return null
-        const title = t('pileTitle', { count: live.length })
-        const grantsTitle = t('grantsTitle', { count: liveGrants.length })
-        const toggleRequests = () => {
-          setRequestsExpanded((expanded) => !expanded)
-          setOpenId(null)
-          setFocusId(null)
-        }
-        return h(Reveal, { shown: live.length > 0 || liveGrants.length > 0, className: CLS.pileDock },
-          h('section', { ref: scroller, tabIndex: -1, className: CLS.pile, style: { maxHeight: `${state.limits.pileMaxHeightVh}${PILE.heightUnit}` }, 'data-fishball-pile': live.length, 'data-fishball-grants': liveGrants.length, 'data-fishball-pile-open': open ?? undefined },
-            h(Reveal, { shown: live.length > 0 }, h(PileSection, { title, expanded: requestsExpanded, onToggle: toggleRequests },
-              h('ul', { className: CLS.entries }, cards.map(({ item: card, leaving }) => h(PileEntry, { key: card.requestId, card, t, leaving, listShown: open === null, isOpen: open === card.requestId, onOpen, onClose, focus: open === null && focusId === card.requestId }))))),
-            h(Reveal, { shown: liveGrants.length > 0 && open === null }, h(PileSection, { title: grantsTitle, expanded: grantsExpanded, onToggle: () => setGrantsExpanded((expanded) => !expanded) },
-              h('ul', { className: CLS.entries }, grants.map(({ item: grant, leaving }) => h(Reveal, { as: 'li', key: grant.grantId, shown: !leaving, 'data-fishball-grant': grant.grantId }, h(GrantRow, { grant, t }))))))))
-      }
     }
 
     /** An ask_fishball call's arguments: a started block keeps them in argsRaw, a settled one on its call (S37). */
@@ -3319,29 +2369,6 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /**
-     * Reports that Fishball's chat is on screen. DSH has no "is this session shown" signal
-     * for plugins, but the session header's actions are rendered only for the session being
-     * shown, so this renders nothing and, while mounted for Fishball's own session in a visible
-     * tab, tells the Host that its replies are read: once on arrival and again for each reply
-     * that comes in while it stays open. A hidden tab does not count as reading.
-     */
-    function FishballReadReporter({ sessionId }) {
-      const state = useFishball()
-      const [visible, setVisible] = React.useState(document.visibilityState === VISIBLE)
-      React.useEffect(() => {
-        const update = () => setVisible(document.visibilityState === VISIBLE)
-        document.addEventListener(VISIBILITY_EVENT, update)
-        return () => document.removeEventListener(VISIBILITY_EVENT, update)
-      }, [])
-      const unread = unreadCount(state)
-      const shown = Boolean(sessionId) && sessionId === state.sessionId
-      React.useEffect(() => {
-        if (shown && visible && unread > 0) void post(API.read, {})
-      }, [shown, visible, unread])
-      return null
-    }
-
     /** Settings: switch the sidebar back to DeepSeek's icon and word logo (your choice, stored by the Host). */
     function makeBrandStyle(t) {
       return function FishballBrandStyle() {
@@ -3366,14 +2393,6 @@ window.__ModuleLoader__.load({
       }
     }
 
-    function makeHeaderAction(ctx, t) {
-      return function FishballHeaderAction({ sessionId }) {
-        const state = useFishball()
-        if (!sessionId || sessionId !== state.sessionId) return null
-        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => openSettings(ctx) }, t('openSettings'))
-      }
-    }
-
     /** DSH's staged form over the row's live config; Save writes through ctx.settings. */
     function limitsSection(scope) {
       const form = new SettingsFormModel(scope, LIMIT_FIELDS.map((field) => settingsNumberField(field)))
@@ -3384,9 +2403,7 @@ window.__ModuleLoader__.load({
     /**
      * Fishball's whole settings page (§9): the isolated child's status and restart, model (whose
      * Refresh models also syncs providers from DSH, §10), plugins and settings, the brand switch and Fishball's own
-     * limits. The legacy sections (the old chat's status, context window, intake, watches,
-     * approvals, sources, the main plugin catalog and hidden tools) are not rendered: those
-     * concepts either belong to the child now or are retired with the legacy chat.
+     * limits.
      */
     function makeSettingsPage(section, NativeSettings, ModelSettings, ChildPlugins, ChildSettings, BrandStyle, t) {
       const subscribe = section.store.subscribe.bind(section.store)
@@ -3442,701 +2459,38 @@ window.__ModuleLoader__.load({
       return () => style.remove()
     }
 
-    /** Keep the hide rule for Fishball's own row in step with the session id the Host reports. */
-    function hideOwnRow() {
-      const style = document.createElement('style')
-      style.id = OWN_ROW.styleId
-      document.head.appendChild(style)
-      const update = () => {
-        const { sessionId } = stateSource.get()
-        style.textContent = sessionId ? OWN_ROW.selector(sessionId) : ''
-      }
-      update()
-      const unsubscribe = stateSource.subscribe(update)
-      return () => { unsubscribe(); style.remove() }
-    }
-
-    /**
-     * DSH's single slots cannot elect per session. Hide its model seat by the public slot
-     * wrapper, scoped to Fishball's conversation, rather than replacing the host component
-     * (which would replace it in ordinary chats too). !important beats its inline display:contents.
-     */
-    function hideModelSeat() {
-      const style = document.createElement('style')
-      style.id = MODEL.styleId
-      document.head.appendChild(style)
-      const update = () => {
-        const { sessionId } = stateSource.get()
-        style.textContent = sessionId ? MODEL.seatSelector(sessionId) + '{display:none !important}' : MODEL.empty
-      }
-      update()
-      const unsubscribe = stateSource.subscribe(update)
-      return () => { unsubscribe(); style.remove() }
-    }
-
-    /** Keep the block alive even when the dock is not mounted (settings, dialogs, or another chat). */
-    function requireModel(conversation, t) {
-      let ownedSession
-      let ownedBlock
-      const clear = () => {
-        if (ownedSession && conversation.blocks.storeFor(ownedSession).getSnapshot() === ownedBlock) {
-          conversation.blocks.set(ownedSession, undefined)
-        }
-        ownedSession = undefined
-        ownedBlock = undefined
-      }
-      const update = () => {
-        const { sessionId, modelSelection } = stateSource.get()
-        if (sessionId !== ownedSession || modelSelection) clear()
-        if (sessionId && !modelSelection && ownedSession !== sessionId) {
-          ownedSession = sessionId
-          ownedBlock = { reason: t('modelRequired') }
-          conversation.blocks.set(sessionId, ownedBlock)
-        }
-      }
-      update()
-      const unsubscribe = stateSource.subscribe(update)
-      return () => { unsubscribe(); clear() }
-    }
-
-    /** Load a script once; the promise settles when it has run. */
-    function loadScript(src) {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement('script')
-        script.src = src
-        script.onload = () => resolve()
-        script.onerror = () => { script.remove(); reject(new Error(src)) }
-        document.head.appendChild(script)
-      })
-    }
-
-    /**
-     * Fishball's session id for the messenger's rows (a React hook). It selects the id alone, so
-     * rows in every session re-render only when the id changes, not on each state event.
-     */
-    const useAssistantSessionId = () => React.useSyncExternalStore(stateSource.subscribe, () => stateSource.get().sessionId)
-
-    /**
-     * Mount the Messenger look while the Host reports it on, dispose it when off. Its file is
-     * fetched at most once per page: a module already registered (a remount of this half) is
-     * reused, because DSH refuses a second registration of the same id; so a page keeps the
-     * messenger code it first loaded until it reloads. A failed load or mount is not retried on
-     * every state event (the same failure would repeat): it is tried again when the look is
-     * turned off and on, or on reload.
-     */
-    function followMessenger(ctx) {
-      let fork
-      let loading
-      let wanted = false
-      /** Bumped on every change, so a load that finishes after the look went off mounts nothing. */
-      let generation = 0
-      const messengerModule = () => {
-        try { return Promise.resolve(require(MESSENGER_MODULE)) } catch { /* not registered yet */ }
-        loading ??= loadScript(apiUrl(API.messengerClient)).then(() => require(MESSENGER_MODULE))
-        loading.catch(() => { loading = undefined })
-        return loading
-      }
-      const update = () => {
-        const on = stateSource.get().look?.messenger === true
-        if (on === wanted) return
-        wanted = on
-        const current = ++generation
-        if (!on) { fork?.dispose(); fork = undefined; return }
-        messengerModule()
-          .then((plugin) => { if (current === generation) fork = ctx.plugin(plugin, { useAssistantSessionId, mark: FISH_MARK }) })
-          .catch((error) => console.warn('fishball: the Messenger look could not be loaded', error))
-      }
-      update()
-      const unsubscribe = stateSource.subscribe(update)
-      return () => { unsubscribe(); generation++; fork?.dispose(); fork = undefined }
-    }
-
     // The plugin manager (DESIGN §10d): the Fishball tab of DSH's Plugins page, and a tag and a
     // switch on DSH's own page for each plugin. Every change goes to Fishball's side only.
-
-    /** Unchecked tools wait for your Allow (DESIGN §7); a plugin with any, or with an error, needs you. */
-    const waitingTools = (plugin) => plugin.tools.filter((tool) => tool.status === TOOL_STATUS.unchecked).length
-    const needsYou = (plugin) => waitingTools(plugin) > 0 || plugin.lastError !== null
-    const offersToggle = (plugin) => plugin.actions.includes(PLUGIN_OFFER.enable) || plugin.actions.includes(PLUGIN_OFFER.disable)
-    /** DSH's Installed tab lists DSH plugins only, so only they open there. */
-    const DSH_LISTED = new Set(MANAGER.groups.find((group) => group.id === MANAGER.dshGroup).dsh)
-    /** The value at a path of a plain value, or undefined. */
-    const valueAt = (value, path) => path.reduce((node, key) => (node === null || node === undefined ? undefined : node[key]), value)
-    /** Set a value at a path, creating the objects on the way. */
-    function setAt(target, path, value) {
-      let node = target
-      for (const key of path.slice(0, -1)) node = node[key] ??= {}
-      node[path[path.length - 1]] = value
-    }
-
-    /**
-     * The schema-driven settings fields, shared by the plugin manager's settings rows and the
-     * isolated child's settings namespaces (§9). Both receive DSH's own schemastery envelope
-     * ({ uid, refs }) and draw the same kinds: text, number, switch, choice, list, secret, and a
-     * shown-only value for anything else. Edits are drafts until Save; Save hands the caller the
-     * nested `values` and the `reset` paths, because the two destinations speak different wire
-     * shapes (the plugin-side route and the child's admin mutate).
-     */
-    function makeSchemaForm(t, resolveText) {
-      const localized = (text) => (text === undefined || text === null ? undefined : resolveText(text))
-
-      /** The fields of a schema JSON envelope, in declaration order, each with the way the form draws it. */
-      function formFields(json) {
-        const node = (ref) => (typeof ref === 'object' ? ref : json.refs?.[ref])
-        const kindOf = (field) => {
-          if (field.meta?.role === SCHEMA.secretRole) return FIELD_KIND.secret
-          if (field.type === SCHEMA.string) return FIELD_KIND.text
-          if (field.type === SCHEMA.number) return FIELD_KIND.number
-          if (field.type === SCHEMA.boolean) return FIELD_KIND.switch
-          if (field.type === SCHEMA.union && (field.list ?? []).length > 0 && field.list.every((ref) => node(ref)?.type === SCHEMA.constant)) return FIELD_KIND.choice
-          if (field.type === SCHEMA.array && [SCHEMA.string, SCHEMA.number].includes(node(field.inner)?.type)) return FIELD_KIND.list
-          return FIELD_KIND.readOnly
-        }
-        const walk = (ref, path) => {
-          const field = node(ref)
-          if (!field || field.meta?.hidden) return []
-          if (field.type === SCHEMA.object) return Object.entries(field.dict ?? {}).flatMap(([key, inner]) => walk(inner, [...path, key]))
-          if (field.type === SCHEMA.intersect) return (field.list ?? []).flatMap((inner) => walk(inner, path))
-          const kind = path.length === 0 ? FIELD_KIND.readOnly : kindOf(field)
-          return [{
-            path,
-            key: JSON.stringify(path),
-            kind,
-            description: localized(field.meta?.description),
-            numbers: kind === FIELD_KIND.list && node(field.inner)?.type === SCHEMA.number,
-            choices: kind === FIELD_KIND.choice ? field.list.map((choice) => node(choice).value) : undefined,
-          }]
-        }
-        return walk(json.uid ?? json, [])
-      }
-
-      /** A field's text in the form, from its current value. */
-      function fieldText(field, value) {
-        if (value === undefined || value === null) return ''
-        if (field.kind === FIELD_KIND.list) return Array.isArray(value) ? value.join(LIST_SEPARATOR) : ''
-        if (field.kind === FIELD_KIND.choice) return String(Math.max(0, field.choices.findIndex((choice) => choice === value)))
-        return String(value)
-      }
-
-      /** The value a field's draft stands for; undefined when it is not a valid value for its kind. */
-      function fieldValue(field, draft) {
-        if (field.kind === FIELD_KIND.switch) return draft === true
-        if (field.kind === FIELD_KIND.choice) return field.choices[Number(draft)]
-        if (field.kind === FIELD_KIND.number) {
-          const number = Number(String(draft).trim())
-          return String(draft).trim() !== '' && Number.isFinite(number) ? number : undefined
-        }
-        if (field.kind === FIELD_KIND.list) {
-          const items = String(draft).split(LIST_SEPARATOR).map((item) => item.trim()).filter((item) => item !== '')
-          if (!field.numbers) return items
-          const numbers = items.map(Number)
-          return numbers.every(Number.isFinite) ? numbers : undefined
-        }
-        return String(draft)
-      }
-
-      /** A field's label row: its name, and "Changed" with Reset for a field you changed. */
-      function FieldHead({ id, label, changed, onReset, disabled }) {
-        return h('div', { className: MCLS.fieldHead },
-          id === undefined ? h('span', { className: MCLS.label }, label) : h('label', { htmlFor: id, className: MCLS.label }, label),
-          changed ? h(React.Fragment, null, h(Tag, { tone: 'neutral' }, t('settingsChanged')), h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('resetField', { name: label }), onClick: onReset }, t('settingsReset'))) : null)
-      }
-
-      /** One field of the form, drawn for its kind. */
-      function SettingsField({ field, id, value, secrets, draft, changed, invalid, disabled, onEdit, onReset }) {
-        const label = field.path.join('.')
-        const current = valueAt(value, field.path)
-        const text = draft !== undefined ? draft : fieldText(field, current)
-        const labelled = field.kind === FIELD_KIND.choice || field.kind === FIELD_KIND.list
-        const head = h(FieldHead, { id: labelled ? id : undefined, label, changed, onReset, disabled })
-        const hint = field.description ? h('p', { className: MCLS.hint }, field.description) : null
-        if (field.kind === FIELD_KIND.text || field.kind === FIELD_KIND.number) {
-          return h(SettingsValueField, {
-            id, label, text, numeric: field.kind === FIELD_KIND.number, hint: field.description, invalid, invalidLabel: t('settingsInvalid'),
-            overridden: changed, overriddenLabel: t('settingsChanged'), resetLabel: t('settingsReset'), onReset, disabled, onEdit,
-          })
-        }
-        if (field.kind === FIELD_KIND.secret) {
-          const slot = secrets.find((candidate) => JSON.stringify(candidate.path) === field.key)
-          const set = slot?.set === true
-          // DSH's secret field draws its own padding; Clear sits under it.
-          return h('div', null,
-            h(SettingsSecretField, { id, label, configured: set, stateLabel: t(set ? 'secretSet' : 'secretUnset'), text: draft ?? '', hint: t('secretHint'), disabled, onEdit }),
-            // Clear drops the value you set; the plugin's own value, if any, then applies.
-            slot?.stored === true ? h('button', { type: 'button', className: MCLS.reset, disabled, 'aria-label': t('clearField', { name: label }), onClick: onReset }, t('secretClear')) : null)
-        }
-        if (field.kind === FIELD_KIND.switch) {
-          return h('div', { className: MCLS.field }, head, h(Switch, { checked: draft !== undefined ? draft : current === true, label, onChange: onEdit }), hint)
-        }
-        if (field.kind === FIELD_KIND.choice) {
-          return h('div', { className: MCLS.field }, head,
-            h('select', { id, className: MCLS.input, value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) },
-              field.choices.map((choice, index) => h('option', { key: index, value: String(index) }, String(choice)))),
-            hint)
-        }
-        if (field.kind === FIELD_KIND.list) {
-          return h('div', { className: MCLS.field }, head,
-            h('textarea', { id, className: MCLS.input, rows: Math.max(MANAGER.listMinRows, text.split(LIST_SEPARATOR).length), value: text, disabled, 'aria-invalid': invalid || undefined, onChange: (event) => onEdit(event.target.value) }),
-            h('p', { className: MCLS.hint }, [field.description, t('settingsListHint')].filter(Boolean).join(' ')))
-        }
-        return h('div', { className: MCLS.field }, head,
-          h('pre', { className: MCLS.readOnly }, JSON.stringify(current ?? null, null, 2)),
-          h('p', { className: MCLS.hint }, [field.description, t('settingsReadOnly')].filter(Boolean).join(' ')))
-      }
-
-      /**
-       * The fields, their drafts and the Save action. `onSave(edits)` returns whether the save was
-       * accepted; only then are the drafts cleared, so a refusal leaves your edits in place.
-       */
-      function SchemaForm({ schema, value, secrets, user, invalidPath, resetAll, disabled, onSave }) {
-        const baseId = React.useId()
-        const fields = React.useMemo(() => formFields(schema), [schema])
-        const [drafts, setDrafts] = React.useState({})
-        const [resets, setResets] = React.useState([])
-        const [saving, setSaving] = React.useState(false)
-        const [invalid, setInvalid] = React.useState(false)
-        const edit = (field, next) => { setDrafts({ ...drafts, [field.key]: next }); setResets(resets.filter((key) => key !== field.key)); setInvalid(false) }
-        const reset = (field) => {
-          const next = { ...drafts }
-          delete next[field.key]
-          setDrafts(next)
-          setResets([...new Set([...resets, field.key])])
-          setInvalid(false)
-        }
-        const submit = async (body = null) => {
-          const values = {}
-          if (body === null) {
-            for (const field of fields) {
-              if (!Object.hasOwn(drafts, field.key)) continue
-              // An empty secret field means "keep the stored secret".
-              if (field.kind === FIELD_KIND.secret && drafts[field.key] === '') continue
-              const next = fieldValue(field, drafts[field.key])
-              if (next === undefined) { setInvalid(true); return }
-              setAt(values, field.path, next)
-            }
-          }
-          const resetPaths = body?.reset ?? resets.map((key) => JSON.parse(key))
-          if (Object.keys(values).length === 0 && resetPaths.length === 0) { setDrafts({}); return }
-          setSaving(true)
-          const saved = await onSave({ ...(Object.keys(values).length > 0 ? { values } : {}), ...(resetPaths.length > 0 ? { reset: resetPaths } : {}) })
-          setSaving(false)
-          if (saved) { setDrafts({}); setResets([]) }
-        }
-        const dirty = Object.keys(drafts).length > 0 || resets.length > 0
-        // The Host names the failing field's path, which can lie inside a field (a list item): the field containing it is marked (review L7).
-        const isInvalid = (field) => invalidPath !== undefined && field.path.every((key, index) => invalidPath[index] === key)
-        return h(React.Fragment, null,
-          h('div', { className: MCLS.fields }, fields.map((field) => h(SettingsField, {
-            key: field.key,
-            field,
-            id: `${baseId}-${field.key}`,
-            value,
-            secrets,
-            draft: drafts[field.key],
-            changed: Object.hasOwn(drafts, field.key) || (valueAt(user, field.path) !== undefined && !resets.includes(field.key)),
-            invalid: isInvalid(field),
-            disabled: saving || disabled,
-            onEdit: (next) => edit(field, next),
-            onReset: () => reset(field),
-          }))),
-          invalid ? h('div', { role: 'alert' }, t('settingsInvalid')) : null,
-          h('div', { className: MCLS.formActions },
-            resetAll ? h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: saving || disabled, onClick: () => void submit({ reset: [[]] }) }, t('settingsResetAll')) : null,
-            accentButton({ size: 'sm', disabled: saving || disabled || !dirty, onClick: () => void submit() }, saving ? t('saving') : t('save'))))
-      }
-
-      return { formFields, SchemaForm }
-    }
-    /**
-     * The plugin manager's components (DESIGN §10d). Display text from DSH's metadata is read
-     * through DSH's own locale service, as its Plugins page reads it (review M3).
-     * @param resolveText - ctx.locale.resolveText (LocalizedText -> string in the UI language).
-     */
-    function makeManager(t, resolveText) {
-      const { formFields, SchemaForm } = makeSchemaForm(t, resolveText)
-      const localized = (text) => (text === undefined || text === null ? undefined : resolveText(text))
-      const pluginTitle = (plugin) => localized(plugin.meta?.title) || plugin.title
-      const pluginDescription = (plugin) => localized(plugin.meta?.description) || plugin.description || ''
-
-      /** One catalog plugin from the snapshot (undefined for no key or an unknown one). */
-      function useCatalogPlugin(key) {
-        const catalog = useFishball().catalog
-        return key === undefined ? undefined : catalog?.plugins.find((plugin) => plugin.plugin === key)
-      }
-
-      /** The plugin's icon tile: its own icon, DSH's artwork for some built-ins, the fish for the Messenger look, else DSH's default. */
-      function PluginIcon({ plugin }) {
-        const art = plugin.hasIcon ? h('img', { src: apiUrl(`${API.pluginsIcon}?plugin=${encodeURIComponent(plugin.plugin)}`), alt: '', loading: 'lazy' })
-          : plugin.plugin === MANAGER.messengerKey ? h(FishballIcon, { size: MANAGER.artSize, unread: false })
-            : h(MANAGER.builtinArt[plugin.plugin] ?? PluginArtworkDefault, { size: MANAGER.artSize })
-        return h('span', { className: MCLS.icon, 'aria-hidden': true }, art)
-      }
-
-      /** The tags after a plugin's title (DESIGN §10d): its DSH state, where it runs, and anything pending or wrong. */
-      function PluginTags({ plugin, t }) {
-        const tag = (tone, text) => h(Tag, { key: text, tone, className: MCLS.tag }, text)
-        const waiting = waitingTools(plugin)
-        return [
-          tag('neutral', t('dsh.' + plugin.dsh)),
-          plugin.packageName?.startsWith(MANAGER.experimentalPrefix) ? tag('info', t('experimental')) : null,
-          plugin.dsh === MANAGER.dshOff && plugin.runs === MANAGER.runsInFishball ? tag('info', t('runsOnlyInFishball')) : null,
-          plugin.removing ? tag('info', t('removing')) : null,
-          plugin.on !== plugin.applied && !plugin.removing ? tag('info', t('pending')) : null,
-          plugin.waiting ? tag('info', t('waiting')) : null,
-          // Why it cannot run in Fishball's tree, known before trying (the Host offers no switch then).
-          plugin.blocked && plugin.blocked !== plugin.lastError ? tag('danger', pluginErrorText(t, plugin.blocked)) : null,
-          plugin.lastError ? tag('danger', pluginErrorText(t, plugin.lastError)) : null,
-          waiting > 0 ? tag('danger', t('toolsWait', { count: waiting })) : null,
-        ]
-      }
-
-      /** Fishball's own on/off for one plugin (POST plugins); none while the Host offers no toggle. */
-      function FishballSwitch({ plugin, t, onResult }) {
-        if (!offersToggle(plugin)) return null
-        // Fishball's own switch, in Fishball's colour wherever it appears (revision 10a).
-        return h('span', { className: MCLS.accent }, h(Switch, { checked: plugin.on, label: t('pluginToggle', { name: pluginTitle(plugin) }), onChange: async (on) => onResult(await post(API.plugins, { plugin: plugin.plugin, on })) }))
-      }
-
-      /** One card of the list, like a card on DSH's Installed tab; the whole card opens the plugin's page. */
-      function PluginCard({ plugin, t, onOpen, onResult }) {
-        const title = pluginTitle(plugin)
-        const description = pluginDescription(plugin)
-        return h('li', { className: MCLS.card, 'data-fishball-plugin': plugin.plugin, onClick: () => onOpen(plugin.plugin) },
-          h('div', { className: MCLS.cardHead },
-            h(PluginIcon, { plugin }),
-            h('div', { className: MCLS.main },
-              h('div', { className: MCLS.titleRow },
-                h('button', { type: 'button', className: MCLS.title, 'aria-label': t('viewPlugin', { name: title }), onClick: (event) => { event.stopPropagation(); onOpen(plugin.plugin) } }, title),
-                h(PluginTags, { plugin, t })),
-              description ? h('div', { className: MCLS.desc }, description) : null),
-            // The switch acts on its own; a click on it must not also open the page.
-            h('span', { onClick: (event) => event.stopPropagation() }, h(FishballSwitch, { plugin, t, onResult }))))
-      }
-
-      /** One tool and its state for Fishball; an allowance you gave can be removed here (DESIGN §7). */
-      function ToolLine({ tool, allowance, t, onResult }) {
-        const allowed = allowance !== undefined && tool.status === TOOL_STATUS.visible
-        return h('li', { className: MCLS.row },
-          h('code', null, tool.name),
-          h(Tag, { tone: TAG_TONE[tool.status] ?? 'neutral', className: MCLS.tag }, t(allowed ? 'tool.allowed' : 'tool.' + tool.status)),
-          allowance !== undefined ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: async () => onResult(await post(API.toolApprovals, { toolKey: allowance })) }, t('remove')) : null)
-      }
-
-      /**
-       * "Install for Fishball" where DSH's own Add plugin sits: DSH hides its toolbar on a
-       * contributed tab and offers no slot in the page header, so the button is rendered into the
-       * header row through a portal (owner's request: the page looks like DSH's). The header is
-       * found from the tab panel: the row holding the page title (`h1`). If DSH's markup changes and
-       * it is not found, the button stays at the top of the tab instead.
-       */
-      /**
-       * Refresh, as on DSH's own list: reads Fishball's plugin list again (and an open plugin page).
-       * Disabled with a spinner until the read settles and at least refreshMinMs passed, so the
-       * spinner never flashes; repeated clicks meanwhile are ignored (DSH's rules).
-       */
-      function RefreshButton({ t, onResult }) {
-        const [busy, setBusy] = React.useState(false)
-        const refresh = async () => {
-          setBusy(true)
-          const [answer] = await Promise.all([send(API.pluginsRefresh, {}), new Promise((resolve) => setTimeout(resolve, MANAGER.refreshMinMs))])
-          managerRefreshes.set(managerRefreshes.get() + 1)
-          setBusy(false)
-          onResult(answer.ok, 'refreshFailed')
-        }
-        return h('button', { type: 'button', className: MCLS.iconButton, 'aria-label': t('refresh'), title: t('refresh'), 'aria-busy': busy, disabled: busy, onClick: refresh },
-          busy ? h('span', { className: MCLS.spin, 'aria-hidden': true }, h(IconLoadingOutlineRegular, { size: MANAGER.refreshIconSize })) : h(IconRefreshOutlineRegular, { size: MANAGER.refreshIconSize }))
-      }
-
-      function InstallHeaderAction({ t, onInstall, onResult }) {
-        const anchor = React.useRef(null)
-        const [slot, setSlot] = React.useState(null)
-        React.useLayoutEffect(() => {
-          const panel = anchor.current?.closest('[role=tabpanel]')
-          const head = panel?.parentElement?.querySelector('h1')?.parentElement?.parentElement
-          if (!head) return undefined
-          const container = document.createElement('div')
-          container.className = MCLS.headerActions
-          head.appendChild(container)
-          setSlot(container)
-          return () => { container.remove(); setSlot(null) }
-        }, [])
-        const button = h(React.Fragment, null,
-          h(RefreshButton, { t, onResult }),
-          accentButton({ size: 'sm', className: MCLS.addButton, onClick: onInstall }, h(IconPlusOutlineRegular, { size: MANAGER.addIconSize }), t('installForFishball')))
-        // The anchor stays in the tab only to find the header; its class sets display, so it is hidden inline once the button moved.
-        return h('span', { ref: anchor, className: MCLS.bar, style: slot === null ? undefined : { display: 'none' } }, slot === null ? button : createPortal(button, slot))
-      }
-
-      /** The list (version 1): groups by origin, like DSH's Installed tab, then any tool whose plugin is unknown. */
-      function PluginList({ catalog, t, onOpen, onResult, onInstall }) {
-        const allowances = new Map(catalog.allowedTools.map((tool) => [tool.toolName, tool.key]))
-        // Allowances whose tool is not listed anywhere (its plugin is off, or it registers later) keep a Remove here (review M2).
-        const shown = new Set([...catalog.plugins.flatMap((plugin) => plugin.tools.map((tool) => tool.name)), ...catalog.otherTools.map((tool) => tool.name)])
-        const unlisted = catalog.allowedTools.filter((tool) => !shown.has(tool.toolName))
-        return h(React.Fragment, null,
-          h(InstallHeaderAction, { t, onInstall, onResult }),
-          MANAGER.groups.map((group) => {
-            const plugins = catalog.plugins.filter((plugin) => group.dsh.includes(plugin.dsh))
-            if (plugins.length === 0) return null
-            return h('section', { key: group.id, className: MCLS.group },
-              h('h3', { className: MCLS.groupTitle }, t('group.' + group.id)),
-              h('ul', { className: MCLS.cards }, plugins.map((plugin) => h(PluginCard, { key: plugin.plugin, plugin, t, onOpen, onResult }))))
-          }),
-          catalog.otherTools.length === 0 ? null : h('section', { className: MCLS.group },
-            h('h3', { className: MCLS.groupTitle }, t('group.tools')),
-            h('ul', { className: MCLS.rows }, catalog.otherTools.map((tool) => h(ToolLine, { key: tool.name, tool, allowance: allowances.get(tool.name), t, onResult })))),
-          unlisted.length === 0 ? null : h('section', { className: MCLS.group },
-            h('h3', { className: MCLS.groupTitle }, t('group.allowed')),
-            h('ul', { className: MCLS.rows }, unlisted.map((tool) => h('li', { key: tool.key, className: MCLS.row },
-              h('code', null, tool.toolName),
-              h('span', { className: MCLS.hint }, tool.module),
-              h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: async () => onResult(await post(API.toolApprovals, { toolKey: tool.key })) }, t('remove')))))))
-      }
-
-      /**
-       * The plugin page's data from the Host (GET plugins/detail), read again when the plugin's
-       * snapshot entry changes (a switch, an apply, a save) and after a save of this page.
-       */
-      function usePluginDetail(plugin) {
-        const [result, setResult] = React.useState({ value: null, failed: false })
-        const [revision, setRevision] = React.useState(0)
-        const refreshes = useManagerRefreshes()
-        const stamp = JSON.stringify([plugin.on, plugin.applied, plugin.settings, plugin.changedBy, plugin.lastError, plugin.dsh])
-        React.useEffect(() => {
-          let current = true
-          fetch(apiUrl(`${API.pluginsDetail}?plugin=${encodeURIComponent(plugin.plugin)}`))
-            .then((response) => (response.ok ? response.json() : Promise.reject(new Error(String(response.status)))))
-            .then((body) => { if (current) setResult({ value: body.detail, failed: false }) })
-            .catch(() => { if (current) setResult((previous) => ({ value: previous.value, failed: true })) })
-          return () => { current = false }
-        }, [plugin.plugin, stamp, revision, refreshes])
-        return { ...result, reload: () => setRevision((count) => count + 1) }
-      }
-
-      /**
-       * One row's settings form (DESIGN §10d "The form"). The shared schema form owns the drafts
-       * and Save; this row hands them to the plugin-settings route and shows its messages.
-       */
-      function SettingsRowForm({ plugin, row, showRow, t, onSaved }) {
-        const [message, setMessage] = React.useState(null)
-        const save = async (body) => {
-          const answer = await send(API.pluginsSettings, { plugin, row: row.row, ...body })
-          if (answer.ok) { setMessage({ kind: FORM_MESSAGE.saved }); onSaved(); return true }
-          setMessage(answer.code === SETTINGS_INVALID ? { kind: FORM_MESSAGE.invalid, path: answer.path ?? [] } : { kind: FORM_MESSAGE.failed })
-          return false
-        }
-        // The Host names the failing field's path, which can lie inside a field (a list item): say it
-        // here whenever no drawn field contains it.
-        const marked = message?.kind === FORM_MESSAGE.invalid && formFields(row.schema).some(
-          (field) => field.path.every((key, index) => message.path[index] === key))
-        return h('div', { className: MCLS.section, 'data-fishball-settings-row': row.row },
-          showRow ? h('p', { className: MCLS.hint }, t('settingsRow', { row: row.row })) : null,
-          row.error ? h('p', { role: 'status', className: MCLS.hint }, t('settingsOwnError', { message: row.error })) : null,
-          h(SchemaForm, {
-            schema: row.schema,
-            value: row.value,
-            secrets: row.secrets,
-            user: row.user,
-            invalidPath: message?.kind === FORM_MESSAGE.invalid ? message.path : undefined,
-            resetAll: Object.keys(row.user).length > 0,
-            onSave: save,
-          }),
-          message?.kind === FORM_MESSAGE.saved ? h('div', { role: 'status', className: MCLS.hint }, t('settingsSaved')) : null,
-          message?.kind === FORM_MESSAGE.failed ? h('div', { role: 'alert' }, t('settingsFailed')) : null,
-          message?.kind === FORM_MESSAGE.invalid && !marked ? h('div', { role: 'alert' }, t('settingsInvalid')) : null)
-      }
-
-      /** Settings for Fishball on the plugin page; a plugin on in DSH uses DSH's settings (DESIGN §10d). */
-      function SettingsSection({ plugin, detail, t }) {
-        const body = (() => {
-          if (detail.value === null) return detail.failed ? h('p', { role: 'alert' }, t('pageLoadFailed')) : null
-          if (detail.value.shared) {
-            return h(React.Fragment, null,
-              h('p', { className: MCLS.hint }, t('settingsShared')),
-              plugin.settings === MANAGER.settingsUnused ? h('p', { className: MCLS.hint }, t('settingsUnused')) : null)
-          }
-          const rows = detail.value.rows.filter((row) => row.editable)
-          // A row whose module or config could not be read says so instead of disappearing (review M5).
-          const broken = detail.value.rows.filter((row) => !row.editable && row.error !== null)
-          const notes = broken.map((row) => h('p', { key: row.row, role: 'status', className: MCLS.hint }, t('settingsRowUnavailable', { row: row.row })))
-          if (rows.length === 0) return notes.length > 0 ? notes : h('p', { className: MCLS.hint }, t('settingsNone'))
-          return [...notes, ...rows.map((row) => h(SettingsRowForm, { key: row.row, plugin: plugin.plugin, row, showRow: rows.length > 1, t, onSaved: detail.reload }))]
-        })()
-        return h('section', { className: MCLS.section },
-          h('h4', { className: MCLS.sectionTitle }, t('settingsTitle')),
-          // A failed refresh keeps the last page on screen, and says it may be out of date (review L4).
-          detail.failed && detail.value !== null ? h('p', { role: 'alert' }, t('pageLoadFailed')) : null,
-          body)
-      }
-
-      /**
-       * While a plugin's page is open, DSH's page header and tab row are hidden, as DSH hides them
-       * on its own plugin pages (owner's request: the page looks like DSH's). They are the tab
-       * panel's siblings in DSH's page (dsh-client-ui-plugin-manager, rc.2); each gets its own
-       * display back when the page closes. If DSH's markup changes, nothing is hidden.
-       */
-      function useHiddenPageChrome(anchor) {
-        React.useLayoutEffect(() => {
-          const panel = anchor.current?.closest('[role=tabpanel]')
-          const siblings = panel?.parentElement ? [...panel.parentElement.children].filter((element) => element !== panel) : []
-          const before = siblings.map((element) => element.style.display)
-          for (const element of siblings) element.style.display = 'none'
-          return () => siblings.forEach((element, index) => { element.style.display = before[index] })
-        }, [])
-      }
-
-      /**
-       * A plugin's page (page A), laid out like DSH's own plugin page (dsh-client-ui-plugin-manager
-       * .detail, rc.2): the back link, the icon with the actions, the title block, then sections.
-       */
-      function PluginPage({ plugin, catalog, t, openPackage, onBack, onResult }) {
-        const anchor = React.useRef(null)
-        useHiddenPageChrome(anchor)
-        const detail = usePluginDetail(plugin)
-        const title = pluginTitle(plugin)
-        const description = pluginDescription(plugin)
-        const allowances = new Map(catalog.allowedTools.map((tool) => [tool.toolName, tool.key]))
-        const last = detail.value?.history[0]
-        const changed = last !== undefined ? t('changedAt', { who: t('who.' + last.by), when: new Date(last.at).toLocaleString() })
-          : plugin.changedBy ? t('changedBy' + plugin.changedBy) : t('neverChanged')
-        const fact = (label, value) => h('div', null, h('dt', null, label), h('dd', null, value))
-        return h('div', { ref: anchor, className: MCLS.detail, 'data-fishball-plugin-page': plugin.plugin },
-          h('div', { className: MCLS.detailTop },
-            h('button', { type: 'button', className: MCLS.crumb, 'aria-label': t('backToListLabel'), onClick: onBack }, h(IconChevronLeftOutlineRegular, { size: MANAGER.crumbIconSize }), t('backToList')),
-            h('div', { className: MCLS.detailHead },
-              h(PluginIcon, { plugin }),
-              h('div', { className: MCLS.detailActions },
-                plugin.actions.includes(PLUGIN_OFFER.uninstall)
-                  ? h(Button, { type: 'button', size: 'sm', variant: 'outline', 'aria-label': t('uninstallLabel', { name: title }), onClick: async () => onResult(await post(API.pluginsRemove, { plugin: plugin.plugin })) }, t('uninstall'))
-                  : null,
-                h(FishballSwitch, { plugin, t, onResult })))),
-          h('div', { className: MCLS.detailMain },
-            h('div', { className: MCLS.titleRow },
-              h('h3', { className: MCLS.detailTitle }, title),
-              plugin.version ? h(Tag, { tone: 'neutral', className: MCLS.tag }, plugin.version) : null,
-              h(PluginTags, { plugin, t })),
-            plugin.packageName ? h('p', { className: MCLS.detailName }, h('code', null, plugin.packageName)) : null,
-            description ? h('p', { className: MCLS.detailDesc }, description) : null),
-          h('div', { className: MCLS.sections },
-            h('section', { className: MCLS.detailSection },
-              h('div', { className: MCLS.sectionHead },
-                h('h4', { className: MCLS.sectionTitle }, t('tools')),
-                plugin.tools.length > 0 ? h('span', { className: MCLS.sectionCount }, t('toolsCount', { count: plugin.tools.length })) : null),
-              plugin.tools.length === 0 ? h('p', { className: MCLS.hint }, t('noTools'))
-                : h('ul', { className: MCLS.rows }, plugin.tools.map((tool) => h(ToolLine, { key: tool.name, tool, allowance: allowances.get(tool.name), t, onResult })))),
-            h(SettingsSection, { plugin, detail, t }),
-            h('section', { className: MCLS.detailSection },
-              h('h4', { className: MCLS.sectionTitle }, t('detailsTitle')),
-              h('dl', { className: MCLS.facts },
-                fact(t('inDsh'), h(React.Fragment, null, t('inDsh.' + plugin.dsh), DSH_LISTED.has(plugin.dsh) && plugin.packageName ? h(React.Fragment, null, ' · ', h('button', { type: 'button', className: MCLS.link, onClick: () => openPackage(plugin.packageName) }, t('openInDsh'))) : null)),
-                fact(t('lastChange'), changed)))))
-      }
-
-      /** The Fishball tab (`plugins.tab`): the list, or one plugin's page, and the install dialog. */
-      function makeFishballTab(t) {
-        return function FishballTab({ openPackage }) {
-          const state = useFishball()
-          const open = useManagerView()
-          // The text of the last action that failed, or null; a later success clears it.
-          const [failed, setFailed] = React.useState(null)
-          const catalog = state.catalog
-          if (!catalog) return h('div', { className: MCLS.panel }, h('p', { className: MCLS.hint }, t('status.' + (state.status ?? STATUS.starting))))
-          const onResult = (ok, failure = 'changeFailed') => setFailed(ok ? null : failure)
-          const plugin = open === null ? undefined : catalog.plugins.find((entry) => entry.plugin === open)
-          return h('div', { className: MCLS.panel, 'data-fishball-manager': true },
-            failed ? h('div', { role: 'alert' }, t(failed)) : null,
-            plugin !== undefined
-              ? h(PluginPage, { key: plugin.plugin, plugin, catalog, t, openPackage, onBack: () => managerView.show(null), onResult })
-              : h(PluginList, { catalog, t, onOpen: managerView.show, onResult, onInstall: () => installRequest.open(INSTALL_FROM.tab) }))
-        }
-      }
-
-      /** The DSH plugin a bundle page shows, as Fishball's catalog knows it (DSH plugins are keyed by package name). */
-      const bundlePlugin = (subject) => (subject?.kind === MANAGER.bundleSubject ? subject.pkg?.name : undefined)
-
-      /** DSH's page for a plugin: a tag with its state in Fishball (`plugins.detail.badge`). */
-      function makeDetailBadge(t) {
-        return function FishballDetailBadge({ subject }) {
-          const plugin = useCatalogPlugin(bundlePlugin(subject))
-          if (plugin === undefined) return null
-          // A plugin that cannot run in Fishball says why here too, as there is no switch (review 10b #9).
-          if (plugin.blocked && !plugin.on) return h(Tag, { tone: 'danger', className: MCLS.tag }, pluginErrorText(t, plugin.blocked))
-          const text = plugin.dsh === MANAGER.dshOff && plugin.runs === MANAGER.runsInFishball ? 'runsOnlyInFishball' : plugin.on ? 'onInFishball' : 'offInFishball'
-          return h(Tag, { tone: plugin.on ? 'info' : 'neutral', className: MCLS.tag }, t(text))
-        }
-      }
-
-      /** DSH's page for a plugin: Fishball's own switch at its head (`plugins.detail.actions`), labelled so it is not taken for DSH's. */
-      function makeDetailAction(t) {
-        return function FishballDetailAction({ subject }) {
-          const plugin = useCatalogPlugin(bundlePlugin(subject))
-          if (plugin === undefined || !offersToggle(plugin)) return null
-          // No caption: the fish on the knob marks it as Fishball's (its label names it for screen readers).
-          return h(FishballSwitch, { plugin, t, onResult: () => {} })
-        }
-      }
-
-      return { FishballTab: makeFishballTab(t), DetailBadge: makeDetailBadge(t), DetailAction: makeDetailAction(t) }
-    }
 
     exports.name = PACKAGE_NAME
     exports.inject = ['slots', 'locale', 'configForms']
     exports.apply = function apply(ctx) {
       const t = ctx.locale.bind(NS)
-      /**
-       * DSH's Host events the browser receives (its install progress, revision 10a), when the
-       * remote service is there; without it the dialog shows no progress lines.
-       */
-      const listenToHost = (name, listener) => {
-        const remote = ctx.get(SERVICE.remote)
-        return typeof remote?.$on === 'function' ? remote.$on(name, listener) : () => {}
-      }
       ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
       ctx.effect(mountStyles, 'fishball: styles')
-      ctx.effect(hideOwnRow, 'fishball: hide own session row')
-      ctx.effect(hideModelSeat, 'fishball: hide composer model seat')
-      ctx.inject(['conversation'], (scope) => {
-        scope.effect(() => requireModel(scope.conversation, t), 'fishball: require dedicated model')
-      })
-      ctx.effect(() => followMessenger(ctx), 'fishball: messenger look')
       const BrandName = makeBrandName(ctx, t)
       ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
         yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, makeMark(t))
         yield ctx.slots.register({ name: SLOT.name, priority: BRAND_PRIORITY }, BrandName)
       })), 'fishball: brand')
-      const HeaderAction = makeHeaderAction(ctx, t)
-      ctx.effect(() => ctx.slots.inject(SLOT.headerActions, function* () {
-        yield ctx.slots.register({ name: SLOT.headerActions, id: HEADER_ACTION_ID, order: HEADER_ACTION_ORDER, locale: NS }, HeaderAction)
-        yield ctx.slots.register({ name: SLOT.headerActions, id: READ_HEADER.id, order: READ_HEADER.order, locale: NS }, FishballReadReporter)
-        yield ctx.slots.register({ name: SLOT.headerActions, id: HAND_OVER.id, order: HAND_OVER.headerOrder, locale: NS }, makeHandOverHeaderAction(t))
-      }), 'fishball: header actions')
+      // Hand over / Take back on an ordinary session's header and row menu (§8.3).
+      ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => ctx.slots.register({ name: SLOT.headerActions, id: HAND_OVER.id, order: HAND_OVER.headerOrder, locale: NS }, makeHandOverHeaderAction(t))), 'fishball: hand-over header action')
       ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, function* () {
         yield ctx.slots.register({ name: SLOT.sessionMenu, id: HAND_OVER.id, order: HAND_OVER.menuOrder, locale: NS }, makeHandOverMenuItem(t))
       }), 'fishball: session menu')
       ctx.effect(() => ctx.slots.inject(SLOT.overlay, function* () {
         yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.id, locale: NS }, makeHandOverDialog(t))
         yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.noticeId, locale: NS }, makeRequestNotice(t, manageNotice, 'manageTitle'))
-        yield ctx.slots.register({ name: SLOT.overlay, id: ADD_MENU.id, locale: NS }, makeInstallDialog(t, listenToHost))
       }), 'fishball: dialogs')
       // The Fishball view in DSH's main area, as Plugins and Tasks register theirs (§7). The key is
       // registered for the plugin's life, so the brand button opens it even without the row.
       ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.register({ name: SLOT.main, key: EMBED_UI.panelId, locale: NS }, makeFishballView(t))), 'fishball: main view')
       ctx.effect(() => followSidebarEntry(ctx, makeMark(t), t), 'fishball: sidebar row')
-      // Revision 11 (DESIGN §10e, S37): your pile, the ask_fishball row with your buttons, and the tags in each turn's tail.
-      ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: MODEL.gateId, order: MODEL.gateOrder, locale: NS }, makeModelGate(ctx, t))), 'fishball: model setting prompt')
-      ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: PILE.id, order: PILE.order, locale: NS }, makePile(t))), 'fishball: pile')
-      ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: WELCOME.id, order: WELCOME.order, locale: NS }, makeWelcome(ctx, t))), 'fishball: welcome card')
-      ctx.effect(() => ctx.slots.inject(SLOT.dock, () => ctx.slots.register({ name: SLOT.dock, id: MANAGED_BANNER.id, order: MANAGED_BANNER.order, locale: NS }, makeManagedBanner(t))), 'fishball: managed banner')
+      // The managed-session marks (§8.2) and the ask_fishball row with your Allow once / Reject (S37).
       ctx.effect(() => ctx.slots.inject(SLOT.rowLeading, () => ctx.slots.register({ name: SLOT.rowLeading, id: MANAGED_ROW.id, locale: NS }, makeManagedRowMark(t))), 'fishball: managed row mark')
       // 0.2.2 keeps a row's trailing seat mounted while it runs; rc.3 has no such seat and this waits.
       ctx.effect(() => ctx.slots.inject(SLOT.rowTrailing, () => ctx.slots.register({ name: SLOT.rowTrailing, id: MANAGED_ROW.id, locale: NS }, makeManagedRowRunningMark(t))), 'fishball: managed row running mark')
       ctx.effect(() => ctx.slots.inject(SLOT.toolview, () => ctx.slots.register({ name: SLOT.toolview, key: ASK_ROW.tool, locale: NS }, makeAskRow(t))), 'fishball: ask_fishball row')
-      // The plugin manager (DESIGN §10d): the Fishball tab, and a tag and a switch on DSH's page for each plugin.
-      const manager = makeManager(t, (text) => ctx.locale.resolveText(text))
-      ctx.effect(() => ctx.slots.inject(SLOT.addActions, () => ctx.slots.register({ name: SLOT.addActions, id: ADD_MENU.id, locale: NS }, makeAddMenuItem(t))), 'fishball: Add plugin menu item')
-      ctx.effect(() => ctx.slots.inject(SLOT.pluginsTab, () => ctx.slots.register({ name: SLOT.pluginsTab, id: MANAGER.tabId, label: () => t('tabTitle'), locale: NS }, manager.FishballTab)), 'fishball: plugin manager tab')
-      ctx.effect(() => ctx.slots.inject(SLOT.detailBadge, () => ctx.slots.register({ name: SLOT.detailBadge, id: MANAGER.badgeId, locale: NS }, manager.DetailBadge)), 'fishball: plugin page tag')
-      ctx.effect(() => ctx.slots.inject(SLOT.detailActions, () => ctx.slots.register({ name: SLOT.detailActions, id: MANAGER.actionId, locale: NS }, manager.DetailAction)), 'fishball: plugin page switch')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
         const Settings = makeSettingsPage(section, makeNativeSettings(t), makeModelSettings(t), makeChildPlugins(t), makeChildSettings(t, (text) => ctx.locale.resolveText(text)), makeBrandStyle(t), t)

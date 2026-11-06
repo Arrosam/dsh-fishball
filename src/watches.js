@@ -39,7 +39,7 @@ import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { AGENT_IDLE, EVENT, INTAKE_KIND, SOURCE, WATCH, WATCH_BY, WATCH_CONDITION, WATCH_ERROR, WATCH_IGNORED_REASONS, WATCH_MODE, WATCH_STATUS } from './constants.js'
-import { describeSession, isNotFound, lastAnswerExcerpt, lastSeqOf, readSessionMessages } from './session-info.js'
+import { describeSession, isNotFound, lastAnswerExcerpt, lastSeqOf, persistedEventsOf, readSessionMessages } from './session-info.js'
 import { sessionAuthor } from './author.js'
 import { untrustedBlock, sessionFields } from './framing.js'
 import { diagnosticOf } from './errors.js'
@@ -87,7 +87,6 @@ export class Watches {
   #readLimits
   #assistantId
   #onChange
-  #isEnabled
   /** targetSessionId -> Set of watch ids (O(1) lookup in the event listener). */
   #byTarget = new Map()
   /** Serializes watch changes and firing. */
@@ -103,10 +102,9 @@ export class Watches {
    * @param store - Store (watches table).
    * @param logger - plugin logger.
    * @param deps.ledger - IntakeLedger; deps.readLimits - () => limits;
-   *   deps.assistantId - () => assistant session id; deps.onChange - state changed;
-   *   deps.isEnabled - () => whether Fishball's Session watching plugin runs (revision 10c).
+   *   deps.assistantId - () => Fishball's id; deps.onChange - state changed.
    */
-  constructor(ctx, store, logger, { ledger, readLimits, assistantId, onChange, isEnabled }) {
+  constructor(ctx, store, logger, { ledger, readLimits, assistantId, onChange }) {
     this.#ctx = ctx
     this.#store = store
     this.#logger = logger
@@ -114,7 +112,6 @@ export class Watches {
     this.#readLimits = readLimits
     this.#assistantId = assistantId
     this.#onChange = onChange
-    this.#isEnabled = isEnabled
     this.#index()
     ctx.on(EVENT.sessionEvent, (session, event) => { if (event.type === WATCH.turnEndEvent) this.#trigger(session.id) })
     ctx.on(EVENT.agentStatus, ({ agent, status }) => {
@@ -130,11 +127,10 @@ export class Watches {
    * @param input - { sessionId, condition?, mode?, by: { kind, id? }, since? }. since: the
    *   watermark (only turn ends after it count); default the target's last seq now.
    * @returns the watch view; an identical active watch is returned as is (not doubled).
-   * @throws WatchError(featureOff | unknownSession | archived | isFishball | limitReached).
+   * @throws WatchError(unknownSession | archived | isFishball | limitReached).
    */
   add({ sessionId, condition = WATCH_CONDITION.finished, mode = WATCH_MODE.once, by, since }) {
     return this.#serial(async () => {
-      if (!this.#isEnabled()) throw new WatchError(WATCH_ERROR.featureOff)
       if (sessionId === this.#assistantId()) throw new WatchError(WATCH_ERROR.isFishball)
       const info = await describeSession(this.#ctx, sessionId, this.#readLimits().forwardExcerptBytes)
       if (info === undefined) throw new WatchError(WATCH_ERROR.unknownSession)
@@ -301,7 +297,7 @@ export class Watches {
   /** A target's events, from the live session or its persisted log (read without activating it). */
   async #eventsOf(sessionId) {
     const live = this.#ctx.sessions.get(sessionId)
-    return live !== undefined ? live.snapshotEvents() : (await this.#ctx.sessionController.inspect(sessionId)).events
+    return live !== undefined ? live.snapshotEvents() : (await persistedEventsOf(this.#ctx, sessionId)).events
   }
 
   /**
@@ -349,21 +345,19 @@ export class Watches {
 
   /**
    * Publish the notice through the ledger and advance the watch. A notice refused by the
-   * ledger (queue full) keeps the watermark, so the next trigger or Fishball's idle retries it.
-   * While Session watching is off the turn end is passed over: the watermark moves on and the
-   * watch stays open, so turning it on again sends no late notice (revision 10c).
+   * ledger (queue full) keeps the watermark, so the next trigger retries it.
    * @returns whether it was published (or passed over).
    */
   async #fire(id, seq, reason, excerpt) {
     const record = this.#store.watches.get(id)
     if (record === undefined || record.status !== OPEN || seq <= record.lastSeenSeq) return true
-    if (!this.#isEnabled()) { await this.#advance(id, seq); return true }
     const described = (await describeSession(this.#ctx, record.targetSessionId, this.#readLimits().forwardExcerptBytes)) ?? { id: record.targetSessionId, title: '', cwd: null }
     const info = { ...described, excerpt }
     try {
       await this.#ledger.publish({
         kind: INTAKE_KIND.watch,
         sourceIdentity: WATCH.sourcePrefix + id,
+        sourceSessionId: record.targetSessionId,
         dedupeKey: `watch:${id}:${seq}`,
         message: createUserMessage({ content: [{ type: 'text', text: TEXT.notice(info, reason, { id, ...record }) }], source: { ...SOURCE.notice, summary: boundContextSummary(TEXT.summary(reason)), author: sessionAuthor(INTAKE_KIND.watch, info) } }),
       })

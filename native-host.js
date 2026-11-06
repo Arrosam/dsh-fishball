@@ -3,6 +3,7 @@ import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
 import { LIFETIME } from './src/native-runtime/constants.js'
 import { DEFAULT_CONTROL_LIMITS } from './src/native-control/index.js'
+import { launchDefaults } from './src/native-runtime/node-default.js'
 import { registerNativeWeb } from './src/native-web.js'
 import { registerEmbed } from './src/slim/host/embed.js'
 import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
@@ -30,8 +31,10 @@ export const name = PLUGIN.name
 export const inject = [...PLUGIN.dependencies]
 export const Config = Schema.object({
   enabled: Schema.boolean().default(true).description('Start the private native child after main appReady. Disable to stop it; private data is retained.'),
-  nodeExecutable: Schema.string().required().description('Explicit absolute plain Node executable; never infer from Electron or PATH.'),
-  executableSearchPath: Schema.string().required().description('Private PATH with absolute components only.'),
+  // Optional so a plain install starts the child (B2): unset means the first `node` on the host's
+  // PATH, which the runtime still verifies as plain Node 22+ (src/native-runtime/node-default.js).
+  nodeExecutable: Schema.string().description('Absolute plain Node 22+ executable for the private child. Empty: the first node on DSH\'s PATH (never Electron; it is verified before use).'),
+  executableSearchPath: Schema.string().description('Private PATH for the child, absolute components only. Empty: that node\'s folder plus DSH\'s absolute PATH entries.'),
   // Kept for configuration compatibility only: the slim bridge authorizes a session through the
   // main Fishball row's managed registry (§5.2), not through this v1 allowlist. T15 retires it.
   managedSessionIds: Schema.array(Schema.string()).default([]).volatile().description('Retained for configuration compatibility; the slim bridge uses the main Fishball row\'s managed sessions.'),
@@ -92,9 +95,10 @@ export async function apply(ctx, config) {
     // T16: the child is the sync target. The source host reads the main profile's API-key
     // records only inside the sync's confirm step; the page never sees a value (§10).
     providerSync = createChildProviderSync({ ctx })
+    const launch = launchDefaults(config, process.env.PATH)
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
-      nodeExecutable: config.nodeExecutable, executableSearchPath: config.executableSearchPath,
+      nodeExecutable: launch.nodeExecutable, executableSearchPath: launch.executableSearchPath,
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },
       limits: { ...config.limits,
         requestTimeoutMs: Math.min(config.limits?.requestTimeoutMs ?? RUNTIME_LIMITS.requestTimeoutMs, PLUGIN.requestTimeoutMs),

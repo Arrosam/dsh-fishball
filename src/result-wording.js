@@ -16,27 +16,19 @@
  * - your Reject with a note on a direct call's card: `block` with your note, the only way the note
  *   reaches the agent (§7a.4 Reading, S33: DSH's outcome carries no text);
  * - Fishball's question on a direct call: `block` naming the request id, so the agent continues
- *   the same thread with ask_fishball (your answer, Q-r11-direct-reply);
- * - another plugin's tool in Fishball's session past maxPendingApprovals: `block` with the
- *   too-many-waiting text, so its call returns at once instead of waiting on a prompt
- *   (Q-r11-cap-own). Fishball's own tools return it themselves, as JSON, and are never marked;
- * - another plugin's tool in Fishball's session whose request became Fishball's card (rev11f,
- *   §7a.11): `block` with the waiting text naming the request (S35 variant A). Fishball's own tools
- *   return that text themselves and are never marked. One whose arguments could not be read gets
- *   no card (no retry could match it) and says so.
+ *   the same thread with ask_fishball (your answer, Q-r11-direct-reply).
  * Inside run_code a block reaches the program as the thrown error's message.
  *
  * A call cancelled after its approval may never reach post-execute, so marks also end with the
  * asking session's turn (S35 risks; no count cap, §16).
  */
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
-import { EVENT, INTAKE_KIND, POST_DECISION, SOURCE, TOO_MANY_WAITING } from './constants.js'
+import { EVENT, INTAKE_KIND, POST_DECISION, SOURCE } from './constants.js'
 import { authorOf } from './author.js'
 import { rootSessionOf } from './session-info.js'
-import { tooManyWaitingText, waitingText } from './own-requests.js'
 
 /** What Fishball answered for one marked call. */
-export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', userReject: 'user-reject', question: 'question', tooManyWaiting: TOO_MANY_WAITING, waiting: 'waiting', unreadable: 'unreadable' })
+export const WORDING = Object.freeze({ allow: 'allow', reject: 'reject', userReject: 'user-reject', question: 'question' })
 
 /** Agent-visible texts (S35's proposal, kept as the plugin's constants). */
 const TEXT = Object.freeze({
@@ -46,7 +38,6 @@ const TEXT = Object.freeze({
   userRejected: (note) => `The user rejected this call: ${note}`,
   question: (requestId, question) => `Fishball did not run this call yet; it asks a question first (request ${requestId}): ${question}\nAnswer with ask_fishball({request_id: "${requestId}", reply: "…"}); that continues the same request. If Fishball then allows it, make this identical call again.`,
   summary: 'Fishball approved a call once',
-  unreadable: 'This call needs the user\'s approval, but its arguments could not be read, so it could not be put to the user as a request and it did not run.',
 })
 const SEPARATOR = '\n\n'
 const textBlock = (text) => ({ type: 'text', text })
@@ -92,9 +83,6 @@ export class ResultWording {
       if (exec.parent !== undefined) return { kind: POST_DECISION.accept, additionalContexts: [noticeMessage(notice)] }
       return { kind: POST_DECISION.accept, content: [...result.content, textBlock(SEPARATOR + notice)] }
     }
-    if (mark.kind === WORDING.unreadable) return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.unreadable)] }
-    if (mark.kind === WORDING.waiting) return { kind: POST_DECISION.block, feedback: [textBlock(waitingText(mark.requestId))] }
-    if (mark.kind === WORDING.tooManyWaiting) return { kind: POST_DECISION.block, feedback: [textBlock(tooManyWaitingText())] }
     if (mark.kind === WORDING.userReject) return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.userRejected(mark.note))] }
     if (mark.kind === WORDING.reject) return { kind: POST_DECISION.block, feedback: [textBlock(`${TEXT.rejected(mark.reason)}\n${TEXT.hint}`)] }
     return { kind: POST_DECISION.block, feedback: [textBlock(TEXT.question(mark.requestId, mark.question))] }
