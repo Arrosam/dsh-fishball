@@ -7,6 +7,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { isVolatile } from '@deepseek-ai/cosmokit'
 import { Config, recordKeyFor, supportedProtocols } from '@deepseek-ai/dsh-llm-pi-ai'
+import { redact } from './native-runtime/stderr-log.js'
 
 export const PROVIDER_SYNC_HOST = Object.freeze({
   owner: '@deepseek-ai/dsh-llm-pi-ai', activeState: 2, minimumRevision: 0, uniqueCount: 1, firstIndex: 0,
@@ -28,6 +29,12 @@ export const PROVIDER_SYNC_HOST = Object.freeze({
   identifier: /^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$/,
   template: /[{}$]|%7b|%7d/i,
   errorMessage: 'Provider sync host refused the operation.',
+  /**
+   * The host log for a wrapped failure's cause (B9: a missing inject hid behind inventory-failed).
+   * The cause's text is logged, redacted and cut, only for the codes whose operation never holds a
+   * key value (inventory describes records, never reads them); any other code logs its class only.
+   */
+  diagnostic: Object.freeze({ logger: 'fishball-provider-sync', maxChars: 240, unknown: 'Error' }),
   code: Object.freeze({
     invalid: 'provider-sync-invalid', inventory: 'provider-sync-inventory-failed',
     owner: 'provider-sync-unsupported-owner', schema: 'provider-sync-unsupported-schema',
@@ -105,10 +112,16 @@ const outcomeError = (error, field, outcome) => {
   sanitized[field] = outcome
   return sanitized
 }
-const protect = async (code, operation) => {
+/** A wrapped failure's cause for the host log only; see H.diagnostic for what may be logged. */
+const causeOf = (code, error) => code === E.inventory || code === E.describe
+  ? redact(String(error?.message ?? H.diagnostic.unknown)).slice(H.firstIndex, H.diagnostic.maxChars)
+  : error?.name ?? H.diagnostic.unknown
+const protect = async (code, operation, logger) => {
   try { return await operation() } catch (error) {
-    // SDK validation errors can echo configuration or credentials; never retain a cause.
+    // SDK validation errors can echo configuration or credentials: the refusal never carries a
+    // cause, and only the redacted host log keeps one.
     if (error instanceof ProviderSyncHostError) throw error
+    try { logger?.warn('%s (%s)', code, causeOf(code, error)) } catch { /* logging never changes the refusal */ }
     refuse(code)
   }
 }
@@ -208,6 +221,8 @@ const activeOwner = (entry) => entry.options?.name === H.owner && entry.disabled
  */
 export function createProviderSyncHost(ctx, { identity } = {}) {
   const runtimeIdentity = identityOf(identity)
+  const logger = typeof ctx.logger === 'function' ? ctx.logger(H.diagnostic.logger) : undefined
+  const guarded = (code, operation) => protect(code, operation, logger)
   let last
   let defaults
   let protocols
@@ -310,8 +325,8 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
   }
   return Object.freeze({
     identity: runtimeIdentity,
-    describeRecord: (id) => protect(E.describe, () => describeCredential(id)),
-    inventory: () => protect(E.inventory, async () => {
+    describeRecord: (id) => guarded(E.describe, () => describeCredential(id)),
+    inventory: () => guarded(E.inventory, async () => {
       const state = await snapshot()
       last = state
       const namespaces = [...state.namespaces.values()].map(({ ns, schema, ownerGeneration }) => ({ ns, schema, ownerGeneration }))
@@ -321,7 +336,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
         owners: Object.fromEntries(namespaces.map(({ ns, ownerGeneration }) => [ns, ownerGeneration])),
         providers: structuredClone(state.providers), namespaces }
     }),
-    readRecord: (id, { signal } = {}) => protect(E.read, async () => {
+    readRecord: (id, { signal } = {}) => guarded(E.read, async () => {
       checkSignal(signal)
       if (!last) refuse(E.preview)
       const previous = trustedProvider(last, id)
@@ -334,7 +349,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       checkSignal(signal)
       return safeRecord(record)
     }),
-    addProvider: (id, profile, expectedRevision, namespace, { signal } = {}) => protect(E.write, async () => {
+    addProvider: (id, profile, expectedRevision, namespace, { signal } = {}) => guarded(E.write, async () => {
       checkSignal(signal)
       if (!last) refuse(E.preview)
       if (!routeId(id) || !revision(expectedRevision)) refuse(E.invalid)
@@ -365,7 +380,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
         return { revision: updated.descriptor.revision }
       } catch (error) { throw outcomeError(error, H.outcome.config, configOutcome) }
     }),
-    importRecord: (id, record, { signal, expected: approved } = {}) => protect(E.write, async () => {
+    importRecord: (id, record, { signal, expected: approved } = {}) => guarded(E.write, async () => {
       checkSignal(signal)
       if (!last) refuse(E.preview)
       const normalized = safeRecord(record)
@@ -409,7 +424,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
         return { status: inserted ? H.imported : H.exists }
       } catch (error) { throw outcomeError(error, H.outcome.key, keyOutcome) }
     }),
-    verify: (id) => protect(E.verify, async () => {
+    verify: (id) => guarded(E.verify, async () => {
       const state = await snapshot()
       findProvider(state, id)
       const catalog = await ctx.sessionController.modelCatalog()

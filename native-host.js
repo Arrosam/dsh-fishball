@@ -17,7 +17,21 @@ import { createApprovalRelay } from './src/slim/host/approvals.js'
 
 const PLUGIN = Object.freeze({
   name: 'fishball-native-host', service: 'nativeFishballRuntime',
-  dependencies: ['profileContext', 'workspaceRegistry', 'sessions', 'sessionController', 'agents', 'appReady', 'connection', 'webServer'],
+  // Every service this row's ctx reads as a property must be listed: Cordis's context proxy
+  // throws `cannot get property "<name>" without inject` for any other (0.2.1-rc.5 and
+  // 0.2.2-rc.1 alike); ctx.get() is the only unchecked read. Each one below has the same name
+  // in both versions and is a dsh-base row there, so none is optional. Neither version has an
+  // optional inject form anyway: every listed key gates activation.
+  dependencies: ['profileContext', 'workspaceRegistry', 'sessions', 'sessionController', 'agents', 'appReady', 'connection', 'webServer',
+    // B9: the provider-sync source host is built on this row's ctx (createChildProviderSync) and
+    // reads llm, settings, configEditor, credentials and authorization (src/provider-sync-host.js).
+    // dsh-base turns settings/configEditor off only without profileContext, which is required
+    // above anyway. llm is already a dependency of sessionController and credentials of
+    // connection, so listing them adds no new reason for this row (and its child) to restart.
+    'llm', 'settings', 'configEditor', 'credentials', 'authorization',
+    // The session port's start-with-a-model path reads ctx.llm (src/model-catalog.js) and
+    // ctx.sessionProjections (src/session-model.js); sessionController already requires both.
+    'sessionProjections'],
   cleanup: 'fishball native host: stop owned child and retain private data',
   minimumLimit: 1,
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
