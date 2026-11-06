@@ -607,7 +607,7 @@ export const SERVICE = Object.freeze({
   sessionQuery: 'sessionQuery',
   /**
    * The bridge's start-with-a-model path reads ctx.llm (src/model-catalog.js). Before M1 the native
-   * host row injected it; the session port now lives on this row (src/slim/host/interim-bridge.js).
+   * host row injected it; the session port now lives on this row (src/connector-service.js).
    * sessionController already depends on llm, so this adds no new reason for the row to restart.
    */
   llm: 'llm',

@@ -18,9 +18,9 @@
  * - src/result-wording.js  what an agent reads after Fishball answered its direct call
  * - src/preferences.js     your display choices (the sidebar brand icon and entry)
  * - src/http.js            /api/fishball/* for the brand, the session-row marks and Hand over
- * The child reaches all of this only through `fishballSessionState` and the bridge
- * (src/slim/host/*), which the built-in instance opens through the INTERIM service of
- * src/slim/host/interim-bridge.js until C1 replaces it with `fishballConnector.attachInstance`.
+ * An instance reaches all of this only through the contract's `fishballConnector` service
+ * (src/connector-service.js), which binds one instance's transport to this row's own state
+ * (fishballSessionState) and the bridge (src/slim/host/*).
  * There is no in-process Fishball agent or session: the legacy one was removed, because a second
  * Fishball in the main process took every input the user meant for the child.
  */
@@ -33,7 +33,7 @@ import { IntakeError, IntakeLedger } from './src/intake.js'
 import { registerInbound } from './src/messaging.js'
 import { ManagedError, ManagedRegistry } from './src/managed.js'
 import { SESSION_STATE } from './src/slim/host/session-port.js'
-import { provideInterimBridge } from './src/slim/host/interim-bridge.js'
+import { provideConnectorService } from './src/connector-service.js'
 import { SessionTitles } from './src/session-titles.js'
 import { Watches, WatchError } from './src/watches.js'
 import { Preferences } from './src/preferences.js'
@@ -78,9 +78,10 @@ export async function apply(ctx, config) {
     setBrandStyle: (style) => commands.setBrandStyle(style),
     setSidebarEntry: (entry) => commands.setSidebarEntry(entry),
   })
-  // Independent of the store, as the native host row's bridge was before M1: with no session state
-  // the bridge answers feature-off instead of the instance failing to connect.
-  provideInterimBridge(ctx)
+  // The binding exists from apply, independent of the store, so an instance can attach even
+  // before this row's registries are up: with no session state the bridge answers feature-off
+  // instead of the instance failing to connect (contract §1, §9).
+  provideConnectorService(ctx)
 
   let store
   try {
@@ -259,8 +260,9 @@ export async function apply(ctx, config) {
     bridgeReady: (ready) => {
       const was = bridgeReady
       bridgeReady = ready === true
-      // The child can no longer answer: what waits for Fishball goes to you at once.
-      if (was && !bridgeReady) { broker.releaseAll(); questions.releaseAll() }
+      // The child can no longer answer: what waits for Fishball goes to you at once, and the
+      // ledger stops pushing to the channel that closed (its rows wait for the next attach).
+      if (was && !bridgeReady) { broker.releaseAll(); questions.releaseAll(); ledger.detach() }
       if (!was && bridgeReady) onConnected()
       publish()
     },
