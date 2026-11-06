@@ -8,6 +8,7 @@
  *
  * Opt-in: set FBTEST_TGZ (absolute .tgz) and FBTEST_DSH_BIN (DSH-X's 0.2.2-rc.1 `dsh` wrapper).
  * FBTEST_NODE22 is the plain Node the native host row needs. Without them every case is skipped.
+ * Run it outside a file sandbox: the native runtime spawns /bin/ps, and a denial fails the child.
  */
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -108,7 +109,10 @@ test('INST-01 the main Fishball row composes on 0.2.2-rc.1 (no compose-failed)',
 test('INST-02 the native host status route answers and the child is ready', { skip }, async () => {
   const res = await req(ROUTE.native)
   assert.equal(res.status, 200)
-  assert.equal((await res.json()).state, 'ready')
+  const body = await res.json()
+  // Name the code: under a file sandbox that denies /bin/ps the child's PID check fails and the
+  // state is failed/NATIVE_START_FAILED, an environment problem rather than a product one.
+  assert.equal(body.state, 'ready', `native ${body.state}/${body.code}`)
 })
 
 test('INST-03 the embed document is served same-origin', { skip }, async () => {
