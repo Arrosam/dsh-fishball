@@ -11,6 +11,10 @@
  * - read_session's default bounds come from Fishball's existing read limits, and the result
  *   says whether it was truncated.
  * - start_session can only name an existing workspace or folder; it never creates one.
+ * - notify_when_finished on start_session and message_session asks the host to set up the watch
+ *   itself, with the watermark read before the message is delivered (src/watches.js, 7713 N5):
+ *   watch_session called after the message could start after a fast turn had already ended.
+ *   The message is delivered either way; the result carries watchId, or a watchError.
  *
  * The row owning this module mounts it after the child runtime (T02) provides nativeRuntime:
  * it needs one authenticated control transport, which it attaches the shared bridge client to.
@@ -93,6 +97,8 @@ export const TEXT = Object.freeze({
   releaseSessionArg: 'The id of the managed session to release.',
   reasonArg: 'Why you release it, in one sentence (kept in your decisions audit).',
   unconfirmed: 'The session has the message, but saving it could not be confirmed. Do not send it again.',
+  /** Verbatim from the legacy message_session/start_session (git show e7ed7c3^:src/messaging.js). */
+  notifyArg: 'true to be told when that session finishes the work (sets up a watch).',
 })
 
 const STRING = Object.freeze({ type: 'string' })
@@ -111,11 +117,18 @@ function definitions(client) {
       return refused(error instanceof ContractError ? error.code : ERROR.failed)
     }
   }
+  /** The watch notify_when_finished set up, or why it was refused (the message still went out). */
+  const watched = (result) => ({
+    ...(typeof result.watchId === 'string' ? { watchId: result.watchId } : {}),
+    ...(typeof result.watchError === 'string' ? { watchError: result.watchError } : {}),
+  })
   const delivered = (result) => ({
     ok: true,
     status: result.status,
     ...(result.status === DELIVERY.unconfirmed ? { note: TEXT.unconfirmed } : {}),
+    ...watched(result),
   })
+  const notifyParameter = { type: 'boolean', description: TEXT.notifyArg }
   return [
     {
       name: SESSION_TOOL.list,
@@ -142,6 +155,7 @@ function definitions(client) {
         message: { ...STRING, required: true, description: TEXT.messageArg },
         model: { ...STRING, description: TEXT.modelArg },
         reasoning_effort: { ...STRING, description: TEXT.effortArg },
+        notify_when_finished: notifyParameter,
       },
       output: JSON_OUTPUT,
       execute: guard(async (args) => ({
@@ -152,6 +166,7 @@ function definitions(client) {
           message: args.message,
           model: args.model ?? undefined,
           reasoningEffort: args.reasoning_effort ?? undefined,
+          notifyWhenFinished: args.notify_when_finished ?? undefined,
         })),
       })),
     },
@@ -161,9 +176,12 @@ function definitions(client) {
       parameters: {
         session_id: { ...STRING, required: true, description: TEXT.sessionArg },
         message: { ...STRING, required: true, description: TEXT.messageArg },
+        notify_when_finished: notifyParameter,
       },
       output: JSON_OUTPUT,
-      execute: guard(async (args) => delivered(await client.session.message({ sessionId: args.session_id, message: args.message }))),
+      execute: guard(async (args) => delivered(await client.session.message({
+        sessionId: args.session_id, message: args.message, notifyWhenFinished: args.notify_when_finished ?? undefined,
+      }))),
     },
     {
       name: SESSION_TOOL.redirect,

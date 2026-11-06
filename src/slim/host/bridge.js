@@ -50,8 +50,9 @@
  * @property {(id: string) => Promise<SessionSummary|undefined>} describe  undefined = unknown or archived.
  * @property {() => Array<{id: string, path: string}>} workspaces
  * @property {(path: string) => Promise<{id: string}|undefined>} resolveWorkspacePath
- * @property {(input: {target: {workspaceId: string}|{cwd: string}, title: string, model?: string, reasoningEffort?: string, message: string, attachments?: string[]}) => Promise<{sessionId: string, managed: boolean, titleError?: string, workspaceError?: string}>} start
- * @property {(input: {sessionId: string, message: string, attachments?: string[]}) => Promise<{status: string}>} message
+ * @property {(input: {target: {workspaceId: string}|{cwd: string}, title: string, model?: string, reasoningEffort?: string, message: string, attachments?: string[], notifyWhenFinished?: boolean}) => Promise<{sessionId: string, managed: boolean, titleError?: string, workspaceError?: string, watchId?: string, watchError?: string}>} start
+ * @property {(input: {sessionId: string, message: string, attachments?: string[], notifyWhenFinished?: boolean}) => Promise<{status: string, watchId?: string, watchError?: string}>} message
+ *   notifyWhenFinished: the service sets the watch up with the watermark read before delivery (7713 N5).
  * @property {(input: {sessionId: string, message: string, attachments?: string[]}) => Promise<{status: string}>} redirect
  * @property {(input: {sessionId: string, reason?: string}) => Promise<{stopped: boolean}>} stop
  * @property {(input: {sessionId: string, maxMessages: number, maxBytes: number}) => Promise<{messages: object[], truncated: boolean}>} read
@@ -583,11 +584,18 @@ function sessionHandlers(service) {
     return boundRead(messages, result.truncated, request.maxMessages, request.maxBytes)
   }
 
-  const watch = (result) => {
+  /** A watch outcome in the contract's shape, or undefined when the result carries none. */
+  const watchOutcome = (result) => {
     if (result !== null && typeof result === 'object' && typeof result.watchId === 'string') return { watchId: result.watchId }
     if (result !== null && typeof result === 'object' && WATCH_ERROR_LIST.includes(result.watchError)) return { watchError: result.watchError }
-    refuse(ERROR.failed)
+    return undefined
   }
+
+  const watch = (result) => watchOutcome(result) ?? refuse(ERROR.failed)
+
+  /** notify_when_finished's request flag (only when asked) and the watch outcome it produced. */
+  const notifyFlag = (payload) => (payload.notifyWhenFinished === undefined ? {} : { notifyWhenFinished: payload.notifyWhenFinished })
+  const notified = (payload, result) => (payload.notifyWhenFinished === true ? watchOutcome(result) ?? {} : {})
 
   return [
     [OPERATION.sessionList, async ({ payload }) => {
@@ -612,6 +620,7 @@ function sessionHandlers(service) {
         ...(payload.reasoningEffort === undefined ? {} : { reasoningEffort: payload.reasoningEffort }),
         message: payload.message,
         attachments: payload.attachments,
+        ...notifyFlag(payload),
       })
       if (typeof result?.sessionId !== 'string' || result.sessionId.length === 0 || typeof result.managed !== 'boolean') refuse(ERROR.failed)
       return {
@@ -619,11 +628,13 @@ function sessionHandlers(service) {
         managed: result.managed,
         ...(typeof result.titleError === 'string' ? { titleError: result.titleError } : {}),
         ...(typeof result.workspaceError === 'string' ? { workspaceError: result.workspaceError } : {}),
+        ...notified(payload, result),
       }
     }],
-    [OPERATION.sessionMessage, async ({ payload }) => delivery(
-      await service.message({ sessionId: payload.sessionId, message: payload.message, attachments: payload.attachments }),
-    )],
+    [OPERATION.sessionMessage, async ({ payload }) => {
+      const result = await service.message({ sessionId: payload.sessionId, message: payload.message, attachments: payload.attachments, ...notifyFlag(payload) })
+      return { ...delivery(result), ...notified(payload, result) }
+    }],
     [OPERATION.sessionRedirect, async ({ payload }) => delivery(
       await service.redirect({ sessionId: payload.sessionId, message: payload.message, attachments: payload.attachments }),
     )],
