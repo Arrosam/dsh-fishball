@@ -4,6 +4,382 @@ Status: **design for approval, 2026-11-05**. No production code is written until
 user approved this design. Development and testing stay separate: this document names test
 scenarios; a separate testing session writes and runs them in a disposable environment.
 
+**Revision 2026-11-06 (connector and instance, §0):** the user chose Option A and split Fishball
+into two plugins, `fishball-connector` (the body, in the main DSH) and `fishball-instance` (the
+soul, its own attached DSH profile). §0 is the current design; where it conflicts with §1–§15 it
+wins. D1, D2 and D4 are superseded (marked in §1). The task list is §18; §15 stays as the
+record of the delivered waves. The follow-up of the same day adds the user's answers (D22–D25), K1's contract, the SP spike results and the resolved test-design questions (§18.3, §18.5, §18.6). Testing is TDD from this revision: every §18 task carries its
+test design, and a separate test-design session writes the cases before any dev session starts.
+
+## 0. Connector and instance (revision 2026-11-06)
+
+### 0.1 The user's decisions
+
+The user's words (2026-11-06): "Fishball分成两个大组件，一个是DSH内用于操纵session的组件，相当于是身体，
+这部分的设置在DSH内更改。然后一个额外的组件，用于启动一个独立的fishball profile来操纵DSH，作为Fishball的
+灵魂……灵魂组件承担大多数UI改动，DSH内的那个操纵DSH的Fishball身体组件只负责承接发送给fishball，和DSH内
+session显示fishball icon之类的DSH这边的工作。然后身体组件会请求打开fishball灵魂那边的会话UI，设置UI进行
+配置两边的组件。但是请求的UI的host都是在灵魂的profile那边的web页面", and later: "两个组件，就叫
+'fishball-connector'（身体）和 'fishball-instance'（灵魂）。这两个组件在一个Repo内，但是算作两个插件，
+用户可以只开一个connector，然后自己去实现一个instance来通过connector沟通DSH内的Session。我们内置的
+instance就做现在这些功能，独立的DSH profile但依附于DSH本体，提供聊天界面，提供设置界面，同步模型信息等。"
+
+| # | Decision | Source |
+| --- | --- | --- |
+| D14 | Two DSH plugins in one repository: **`fishball-connector`** (body) and **`fishball-instance`** (soul). Each installs and enables on its own. | user |
+| D15 | The connector works alone. Its interface to an instance (session tools, approvals, questions, inbox and records, status, hand-over, UI registration) is a **documented, versioned contract** (`fishball-connector` v1, §0.4) that a third-party instance can implement. The connector has no private coupling to our instance. | user |
+| D16 | The built-in instance is Option A: an independent DSH profile attached to the main DSH (`dsh-base` + `dsh-web-app`), whose own DSH session view is Fishball's chat, and which also hosts Fishball's settings page and syncs models. Fishball's chat page looks like a normal DSH session, and plugins that act on the DSH UI work there when they are installed into the instance's profile (§0.5). | user |
+| D17 | Installing both plugins binds them automatically; no profile edit, no hand-appended row (this also closes B2, §0.6). | user |
+| D18 | The connector only *requests* the instance's pages: the chat page and the settings page are web pages hosted by the instance profile and framed in the main DSH. The settings page configures the instance; connector limits stay in DSH's form (D24, §0.7). | user |
+| D19 | The about-56 px sidebar rail that DSH keeps beside a collapsed sidebar is accepted for now (§0.5). | user |
+| D20 | The chat composer has DSH's own model picker **with its reasoning-effort selector**, and Fishball's settings are reachable from the chat page (§0.5). Both were missing in the custom slim chat. | user |
+| D21 | The user's own main DSH keeps the old in-process Fishball for now. Every install and every test of this revision runs in disposable test environments only. | user |
+| D22 | There is no plugin called "Fishball" any more: only `fishball-connector` and `fishball-instance`. The connector only manages in-DSH sessions and connects an external instance. Its product icon is fixed: the Fishball fish logo with a wrench badge (no brand-style or sidebar-entry setting). "Fishball" stays the assistant's name. (2026-11-06) | user |
+| D23 | Every instance setting lives in the instance's own DSH profile and its own settings page. The instance exposes to the main DSH only what it needs before the child exists and the sync consent (§0.7). (2026-11-06) | user |
+| D24 | Connector limits change only in DSH's own plugin settings form of `fishball-connector`. No instance can read or change them through the contract; contract v1 has no settings operation. (Option B, 2026-11-06) | user |
+| D25 | An instance installed without the connector shows `connector-missing` and never installs the connector. (2026-11-06) | user |
+
+Superseded: D1 (the child's own custom chat page) and D2 (no DSH Web UI in the child) by D16;
+D4 (the main settings page manages the child) by D18. D3, D5–D13 stand, applied to the new owners
+below.
+
+### 0.2 Packages and what each owns
+
+One repository, two installable packages, one shared contract:
+
+```
+packages/connector/          npm name fishball-connector   (body; main DSH)
+  package.json               dsh.bundle.patch ./cordis.patch.yml, dsh.client ./client.js,
+                             exports ".", "./client", "./contract", "./package.json"
+  cordis.patch.yml           inserts one row: id fishball-connector, name fishball-connector
+  index.js                   the row (was the root index.js)
+  client.js                  fixed icon, opener view, managed-row marks, hand-over, the
+                             connector's Plugins card (limits form, instance line)
+  records.js                 the card-record conversation definition, exported as ./records
+  contract/                  the public contract (K1 put it in src/connector/: contract.js,
+                             limits.js, card-record.js, inbox-markers.js, attachment-transfer.js)
+  src/                       main-side session work (list below)
+packages/instance/           npm name fishball-instance    (soul; built-in instance)
+  package.json               dsh.bundle.patch ./cordis.patch.yml; peerDependency fishball-connector
+  cordis.patch.yml           inserts one row: id fishball-instance, name fishball-instance
+  host.js                    the main-side row (was native-host.js)
+  client.js                  the instance's Plugins card in the main DSH: status, Retry, the
+                             launch fields and the sync consent (§0.7); nothing else
+  src/host/                  launcher, embed proxy, provider-sync source (main side)
+  child/                     everything copied into the attached profile (was native-child.js,
+                             src/slim/child/**, persona, pile-note, provider-sync engine) plus
+                             child/ui/ (the instance's DSH client plugin, §0.5)
+docs/connector-contract.md   the contract a third-party instance implements
+```
+
+**Row ids (decided 2026-11-06, D22).** The connector row is renamed to `fishball-connector` and
+the instance row to `fishball-instance`; no row is called `fishball` or `fishball-native-host`.
+Why: (1) no plugin is called Fishball; the row id is the settings namespace DSH's form edits, so it
+should carry the plugin's name. (2) D21 keeps the old in-process `dsh-fishball` in real profiles
+until release. A test or a user who installs the connector into such a profile would otherwise get
+a duplicate `fishball` row, which the loader refuses. (3) The old id patches become inert after the
+old package goes: the loader only warns "patch: entry not found" (`dsh-app-boot/lib/index.js:97` /
+`:542`).
+
+**One-time settings migration.** At its first apply, each new row copies the user's old values once:
+
+| New row | Old source | What is copied |
+| --- | --- | --- |
+| `fishball-connector` | (a) the live `fishball` form, when `settings.describe()` still lists it; otherwise (b) the `- id: fishball` config patch in the profile's patch file (`settings.prepareDocument()`, parsed with DSH's own `yaml` dependency); (c) the question mode from the store record `settings/questions` | every field the connector's Config still has (§18.5 conn-OQ-20), plus `questionMode` |
+| `fishball-instance` | the same, for the old `fishball-native-host` row | `nodeExecutable`, `executableSearchPath`, `enabled` |
+
+Rules: the copy runs only when the new namespace has no user value yet and the store has no
+`migrated` marker. Each field is validated by the new schema, and an invalid field is skipped and
+logged by key, never by value. The copy is written with `settings.update(newId, values)` (one
+revisioned write), then the marker is stored. The old patch and the old store records are left as
+they are and ignored, so a rollback to the old package still finds them. The brand-style and
+sidebar-entry records are not migrated (D22: fixed icon). Moving a real install is still a release
+step (D21).
+
+**Imports between the packages.** The instance may import only the connector's `./contract` and
+`./records` exports. The connector imports nothing from the instance. Package versions are
+independent; the connector's major equals its contract major, and the instance declares
+`peerDependencies: {"fishball-connector": "^1"}`.
+
+Module ownership after the split (current paths, at `feat/slim-integration` 535a807):
+
+| Owner | Modules |
+| --- | --- |
+| connector | `index.js`, `client.js` (minus the settings renderers that move to the instance), `src/{approvals,audit,author,card-lifecycle,card-records,config,constants,digest,errors,framing,grants,http,intake,keys,managed,messaging,model-catalog,model-selection,session-model,own-questions,passes,pile,preferences,questions,request-desk,result-wording,session-info,session-titles,state-feed,store,text,tool-results,tool-rules,watches}.js`, `src/slim/host/{bridge,session-port,approvals,images}.js` |
+| contract (exported by the connector) | `src/connector/{contract,limits,card-record,inbox-markers,attachment-transfer}.js` (K1, `feat/k1-contract` bb0f756), `src/pile-note.js` (shared wording), `docs/connector-contract.md`; the browser record definition becomes `./records` |
+| instance, main half | `native-host.js`, `src/native-web.js`, `src/native-preflight.js`, `src/native-runtime/**`, `src/slim/host/{embed,fetch-routes,provider-sync-routes}.js`, `src/provider-sync-{service,coordinator,host}.js`, `src/provider-sync.js`, `src/recommended.js` |
+| instance, child half | `native-child.js`, `src/slim/child/**`, `src/persona.js`, and new `child/ui/` |
+| retired | `src/preferences.js` and the brand/sidebar-entry routes (D22), `src/slim/ui/**`, `src/slim/child/{server,auth}.js`, the custom chat's HTTP routes in `src/slim/child/{chat,images,reminders,approvals}.js`, `src/slim/host/{admin,settings-routes}.js` (the main-to-child admin relay: the settings page is now served by the child), `src/native-control/**` (v1, no longer mounted), `packages/messenger/` (no caller since legacy removal) |
+
+### 0.3 Option A: evidence
+
+Spike of 2026-11-06 (disposable `/tmp` homes, free ports, a throwaway prefix proxy at
+`/fishball/embed/*` and a throwaway child client plugin; all processes stopped afterwards).
+
+| Check | 0.2.2-rc.1 | 0.2.1-rc.5 |
+| --- | --- | --- |
+| Child Web UI through the prefix proxy: shell, `plugins/??…` combos, `api/*` RPC, `api/remote.mux` WebSocket | works | works |
+| No token in any browser URL: the proxy exchanges the launch token server-side and keeps the child cookie | works | works |
+| Session-only frame: priority −1 empty occupants of `sidebar` and `shell.leading`, `layout.toggleSidebar()`, then `uiWorkspace.openSession(id)` | works; a 56 px rail remains | works (SP1); the first spike's `webServer.register({resource})` route answered 400 on rc.5, a Connection Fetch route works on both |
+| Replace the `root` slot instead | refused: a child slot cannot be declared twice | — |
+| Permission picker gone by disabling the `ui-permission` row; model picker stays | works | works (SP1) |
+| Effort pane in the iframe; the chosen effort reaches the model | works (SP1) | works (SP1) |
+| A session shows in its workspace only after `workspaceRegistry.create(realpath)` and `workspace.attachSession(id)` | required | same code |
+| Ready time / memory footprint (base-only child, for comparison: 0.56 s / 65–113 MB) | plain Node: 1.36 s / 142 MB; 114 MB with three UI rows disabled. DSH-X wrapper (SP2): 1.05–1.65 s / RSS 174–253 MB | plain Node: 1.61 s / 139 MB |
+
+Code the design relies on (rc.5 line / 0.2.2 line, both read-only):
+
+- Document-relative app: `<base href="./">` in `dsh-host-frontend-static/lib/index.js:85` / `:132`;
+  combo references `dsh-client-modules/lib/index.js:217` / `:275`; RPC
+  `dsh-client-connection/lib/client.browser.js:1221` (both); stream mux
+  `dsh-api-gateway/lib/client.browser.js:106,761` (both).
+- Browser auth (both versions, same lines in `dsh-client-connection/lib/index.js`):
+  `authenticatedUrl` `:440`, token-to-cookie exchange on `GET /` `:464`, the cookie name bound to the
+  Host authority `:335`, loopback Host and same-authority Origin fence `:240`, `requestRejection`
+  `:737`, the exact Fetch-route registry `get fetch()` `:732`. The proxy therefore rewrites Host and
+  Origin to the child's authority.
+- WebSocket pass-through: `webServer.registerUpgrade` (exact path) `dsh-host-webserver/lib/index.js:340` /
+  `:389`; `register(route)` `:326` / `:375`; rc.5 dispatches named routes as `route.handler(req,res)`
+  (`:384`).
+- Session-only frame: sidebar slot `dsh-client-ui-sidebar/lib/client.js:611` / `:733`; layout
+  `computeColumns(..., collapsedWidth = 56)` `dsh-client-ui-layout/lib/client.js:38` / `:39`,
+  `selectPanel` `:468` / `:522`; conversation `main` key `dsh-client-ui-conversation/lib/client.js:20237` /
+  `:23105`; session header actions slot `conversation.session.header.actions` `:20058` / `:22924`;
+  workspace picker `conversation.hero.workspace` `dsh-client-ui-workspace/lib/client.js:5329` / `:6138`;
+  `openSession` `:1471` / `:1473` and `replaceMain` `:1652` / `:1661`.
+- Rows to disable in the child (`dsh-web-app/cordis.patch.yml`): `ui-permission` `:418` / `:420`,
+  `ui-agent-preset` `:423` / `:425`, `client-hmr` `:218` / `:214`; the `web-runtime` row `:197` / `:193`
+  takes `printUrl`/`openBrowser` (`dsh-web-app/lib/index.js:31-32`, both).
+- Model and effort: slot `conversation.input.model` `dsh-client-ui-model-selection/lib/client.js:1903` /
+  `:2064`; its effort pane `:1560` / `:1556`; the effort a selection uses `:872-873` (both).
+- Records and presets: `appendPluginRecord` `dsh-session/lib/types/index.d.ts:117` / `:121`;
+  `uiConversation.events.register` as DSH's goal plugin uses it `dsh-client-ui-goal/lib/client.js:571` /
+  `:661`; `AgentPresetRegistry.register` `dsh-agent-preset-registry/lib/types/index.d.ts:44` / `:52`;
+  `attachSession` `dsh-workspace/lib/index.js:111` (both).
+- Spike SP (`spike/body-soul-sp` 6f393d2, `docs/spikes/body-soul-sp.md`): child HTTP routes as
+  Connection Fetch routes (`get fetch()` `dsh-client-connection/lib/index.js:732`,
+  `registerFetchRoute` `:840`, the shared `/api` handler route `:1044,1048`, both); the DSH-X Node
+  wrapper and its environment (DSH-X `core/platform.js:41-61`, `app/shell/env.mjs:18-26`,
+  `core/server.js:2035-2038`); the `/permission` command from the core `permission` row
+  (`dsh-base/cordis.patch.yml:264`, `dsh-permission-presets/lib/index.js:209` / `:215`); the
+  settings pages registered inside `sidebar.settings`
+  (`dsh-client-ui-settings-general/lib/client.js:1186` / `:1469`); DSH's Plugins page as the `main`
+  key `plugins` (`dsh-client-ui-plugin-manager/lib/client.js:4355` / `:7680`).
+
+**Option B is rejected** (show the instance's session in the main DSH's own chat view). The main page
+connects to one backend only (the stream URL is document-relative, `client.browser.js:761`); a
+session id the main DSH does not know throws in `replaceMain` (`sessions.retain: unknown session`,
+seen in the spike); `dsh-api-remotes` selects its capabilities at build time; the only shipped way to
+show another host's session, LiveShare, needs a separately deployed relay with OAuth; and reading
+the instance's log from the main process would break one-writer-per-session.
+
+### 0.4 The connector contract (`fishball-connector` v1)
+
+The contract is what a third-party instance implements. It is written down in
+`docs/connector-contract.md` and its machine form is the connector's `./contract` export.
+
+**Binding (in process).** The connector row provides the service `fishballConnector` at apply,
+independent of any instance. An instance is any plugin in the same main profile that injects it and
+calls:
+
+```
+fishballConnector.attachInstance({
+  id, name,                         // stable instance id; display name
+  contract: { id: 'fishball-connector', major: 1, minor },
+  transport: { send(string), onMessage(fn), onClose(fn), close() },
+  ui?: { chat?: path, settings?: path },   // same-origin absolute paths, e.g. '/fishball/embed/'
+  status?: () => ({ state, code }),        // shown by the connector's opener
+  retry?: () => Promise<void>,             // the opener's Retry
+}) → { detach() }
+```
+
+Rules (frozen by K1, `docs/connector-contract.md` §1, with the §18.6 corrections): one instance
+at a time (a second attach while one is attached is refused `instance-busy`); a different contract
+id or `major` is refused `contract-version`; `ui` paths must start with exactly one `/`, carry no
+scheme, no `token` parameter in the query or the fragment, and be at most 512 characters, or the
+attach is refused `ui-invalid`; a fragment is otherwise accepted; a transport missing any of its
+four functions is refused `transport-invalid`; a malformed `id`, `name`, `status` or `retry`, or an
+unknown descriptor key, is refused `instance-invalid`. `detach()` and `transport.onClose` both
+return the connector to no-instance mode. The service has two members, `attachInstance` and the
+read-only `current()` (§18.5 conn-OQ-08).
+
+**Frames.** Over `transport` the instance and the connector exchange envelope-v2 frames exactly as
+§5 defines them (the instance is the "child" side). The handshake is unchanged; capability
+negotiation keeps minor versions compatible: a minor version only adds operations, events or
+optional fields, and each addition is advertised as a capability.
+
+**No settings operation (D24).** Contract v1 adds no operation over §5.2: there is no
+`settings.describe` and no `settings.update`. An instance never reads or changes connector limits.
+The instance interface is §5.2: session tools (`session.*`), approvals,
+questions, prompts and grants, attachments, `inbox.push` (hand-over notes, session messages,
+finished-session notices, card records), and the `approval.*`, `watch.status` and `session.state`
+events.
+
+**No instance attached (the connector alone):**
+
+| Input | Behaviour |
+| --- | --- |
+| `message_fishball`, a finished-session notice, a hand-over note, a managed-session change | queued in the intake ledger (bounded by `maxQueuedInputs`; past it `queue-full`), delivered once each, in global arrival order, on the next attach |
+| `ask_fishball`, a direct call that needs approval, a question or plan review from a managed session | not queued and not offered: `ask_fishball` returns `unavailable` at once and the session makes the call, so the user is asked in that session (DESIGN.md §7a.5); a question goes to its own session's prompt. A request answered there is never offered to a later instance |
+| Hand over / Take back | work; the session becomes managed or unmanaged |
+| Fishball view (sidebar row, brand) | an empty state, "No Fishball instance is attached", with a link that opens DSH's Plugins panel; no iframe |
+| managed-row marks | shown from the connector's own state |
+| connector settings | DSH's own Plugins → settings form of `fishball-connector`, the same place as with an instance attached (D24) |
+
+### 0.5 The built-in instance
+
+**Child profile.** Bundles `[dsh-base, dsh-web-app]` (the official `web` template). The launch
+overlay keeps today's rows (lifecycle, app, provider-sync target, time-context, read-only sandbox,
+approval ask) and adds:
+- disabled: `ui-permission`, `ui-agent-preset`, `client-hmr`, and the ten DSH settings page rows
+  `ui-settings-general`, `-models`, `-plugin-inventory`, `-session-log`, `-plugins`, `-shell`,
+  `-agent-loop`, `-subagent`, `-web-search`, `-account` (SP3). The `ui-settings` row itself stays,
+  because the Plugins page, the conversation, locale and theme inject its `configForms`
+  (`dsh-client-ui-settings/lib/client.js:1270`);
+- the core `permission` row restricted to the `read-only` preset (SP F3: the `/permission` command
+  comes from that core row, not from `ui-permission`, and would otherwise let the chat switch to
+  `danger-full-access`, breaking D8). The row is not disabled: `dsh-subagent` reads it and it pins
+  every session's initial preset;
+- `web-runtime` with `printUrl: false` and `openBrowser: false`, and the instance's client plugin
+  row (`child/ui`).
+
+An existing base-only child manifest gets `dsh-web-app` back, with the same backup rule as the
+earlier migration (§18.5 inst-OQ-08).
+
+**Child routes.** Every child HTTP route is a Connection Fetch route,
+`ctx.connection.fetch.register({path: '/api/fishball-instance/…', methods, fetch})` (SP F1). It sits
+behind DSH's own cookie and Host/Origin fence, and works on both versions. `webServer.register` is
+not used for child routes.
+
+**Child Node (SP2).** The child runs on this default order: (1) an explicit `nodeExecutable`;
+(2) the main process's own executable when it is plain Node and satisfies the installed DSH's
+`engines.node`; (3) under DSH-X, `DSH_RUNTIME_NODE`, else `<DSH.app>/Contents/Resources/core/node/node`
+located from `process.execPath` (`…/MacOS/DSH` ⇒ `../Resources/core/node/node`), never the Electron
+binary itself (spawned without `ELECTRON_RUN_AS_NODE` it opens a second DSH-X window); (4) the
+first `node` on PATH. `verifyNode` accepts Electron run as Node when the launcher sets
+`ELECTRON_RUN_AS_NODE=1` for the child, and checks the installed `@deepseek-ai/dsh`'s `engines.node`
+(0.2.2-rc.1: `>=24.9.0`; rc.5 declares none, so the floor is 22) instead of a fixed 22.
+
+**Auth and proxy.** The child app row reads `connection.authenticatedUrl(origin)` and returns the
+launch token over the authenticated lifecycle wire (it replaces today's `fishballApp {origin,
+bearer}`). The instance's main half exchanges it server-side, keeps the child cookie in memory,
+and proxies `/fishball/embed/*` with Host and Origin rewritten to the child authority. It strips
+`Set-Cookie`, passes `api/remote.mux` through `registerUpgrade`, and never forwards the main DSH's
+cookie. The §3.2 rules hold: no token in any URL or page storage, and same-origin admission on the
+main side.
+
+**Session-only frame (child UI plugin).** Priority −1 empty occupants for `sidebar`,
+`shell.leading` and `conversation.hero.workspace`; `layout.toggleSidebar()` once; then
+`uiWorkspace.openSession(fishballSessionId)` after the session is listed. The 56 px rail stays
+(D19). The empty-session hero still shows DSH's own workspace chip, which opens nothing (SP F2);
+it is accepted like the rail, and no CSS hides it.
+
+**Fishball's session.** It is created under an agent preset `fishball`, registered with
+`agentPresetRegistry.register` (persona, Fishball's tools, read-only and approval ask). Its id is
+`session-fishball-<uuid>` (today's prefix, `src/slim/child/chat.js:79`), so it never collides with a main session id in the shared localStorage. It
+belongs to the instance's private workspace, registered with `workspaceRegistry.create(realpath)`
+and `attachSession`. A resume by DSH's own session controller therefore gets the same composition.
+Every create and resume passes `agentOptions` from DSH's default model (SP F4: without them the
+first turn fails on the `{{model}}` prompt variable). On 0.2.2 they are live getters, so a later
+default change applies.
+
+**Model and reasoning effort (D20).** DSH's composer model picker (`conversation.input.model`)
+stays mounted. It offers the reasoning-effort pane for every model whose catalog entry declares
+reasoning efforts, and the selection applies to the next request. Models come from provider sync
+("Refresh models", §10).
+
+**Settings entry (D20).** The child UI plugin adds a "Settings" action to
+`conversation.session.header.actions`. It opens Fishball's settings panel, the `main` slot key
+`fishball-instance-settings` of the child UI (`layout.selectPanel`), and the panel has a Back action
+(`layout.selectPanel(null)`) to the chat. The same panel opens directly when the page loads with
+`?view=settings`, which is the URL the instance registers as `ui.settings`. Opening the panel from
+the header writes `?view=settings` into the frame's URL with `history.replaceState`, and Back
+removes it, so a reload keeps the view. Only the exact lowercase value `settings` of the first
+`view` parameter selects the panel; anything else shows the chat. The panel's Plugins block opens
+DSH's own Plugins page (`layout.selectPanel('plugins')`, SP3), whose back navigation returns to the
+chat.
+
+**Plugins.** Plugins installed into the instance profile through DSH's own Plugins page in the
+iframe load their browser half (`dsh.client`) in the child page and act on Fishball's chat.
+Main-DSH UI plugins never run in the iframe. The child's generic DSH settings pages are disabled
+(above), so neither the visible UI nor `⌘⌥,` reaches them (SP3).
+
+**Records.** Card records and inbox notices are DSH plugin records in Fishball's session (already
+written, `plugin:fishball/card-record`). The child UI plugin registers the same conversation
+definition the connector client registers for main sessions, from one shared browser module.
+
+### 0.6 Automatic binding (covers B2)
+
+- Each package's bundle patch inserts its own row (`fishball-connector`, `fishball-instance`), so
+  `dsh plugin add fishball-connector fishball-instance` needs no profile edit.
+- The instance row reads `fishballConnector` through an optional `ctx.inject` sub-scope. With no
+  connector, its status is `connector-missing`, it does not start the child, and its own Plugins
+  card in the main DSH states the reason. It never fails the main boot and never installs the
+  connector (D25). When the connector appears later, the sub-scope activates and the instance
+  starts without a main restart; when it goes away, the instance stops its child and returns to
+  `connector-missing`.
+- After main `appReady` the instance starts its child (launch defaults from
+  `node-default.js`; explicit config wins), and on every authenticated wire it calls
+  `attachInstance` with the wire's control channel as `transport` and
+  `ui = {chat: '/fishball/embed/', settings: '/fishball/embed/?view=settings'}`. A child restart is a
+  detach followed by a new attach.
+- Disabling or uninstalling either plugin detaches; the connector returns to no-instance mode, and
+  the instance stops its child.
+
+### 0.7 Settings: who stores what, who shows it
+
+| Setting | Stored in | Edited from |
+| --- | --- | --- |
+| Connector: its limits (§18.5 conn-OQ-20) and the question mode | the main DSH, the `fishball-connector` row's config (volatile fields) | **only** DSH's own Plugins → settings form of `fishball-connector`, rendered by the connector's client (D24). No instance reads or writes them |
+| Instance, needed before the child exists: `enabled`, `nodeExecutable`, `executableSearchPath` | the `fishball-instance` row config in the main DSH | DSH's own Plugins → settings form of `fishball-instance` |
+| Instance, sync consent: `providerSync` (`on` by default; `off` refuses every upward sync request) | the `fishball-instance` row config in the main DSH | the same form |
+| Instance: status, Retry/Restart | the instance's main half | the instance's settings page (header Restart, upward `instance.restart`) and its Plugins card in the main DSH (Retry) |
+| Instance: Refresh models (provider sync) | the child's own settings and credentials | settings page → child route → upward `providerSync.request` → the main half runs the existing one-step sync (§10), when the consent is `on` |
+| Instance: plugins, plugin settings, recommended plugins | the child profile | the settings page's Plugins block → DSH's own Plugins page inside the iframe |
+| Instance: runtime limits (startup, stop and request timeouts, frame and log sizes) | fixed constants of the instance (`RUNTIME_LIMITS`) | not exposed (D23) |
+
+**What the main DSH exposes for the instance (D23), exactly:** `enabled`, `nodeExecutable`,
+`executableSearchPath` and `providerSync`. Nothing else of the instance has a form field in the
+main DSH. The old `limits` and `controlLimits` keys are no longer in its schema; a stored value is
+ignored.
+
+The settings page is hosted by the instance. It is served by the child's own web server, framed
+through `/fishball/embed/?view=settings`, and opened from the chat header and from the connector's
+Plugins card (when the attached instance registered `ui.settings`). The main-to-child admin relay
+and its owner routes (`/api/fishball/native/admin/*`) are retired. The page shows no connector
+limits; it links to DSH's form of `fishball-connector` instead (§18.5 inst-OQ-05).
+
+### 0.8 Risks
+
+1. **R1 Internal seams.** The session-only frame depends on slot names (`sidebar`,
+   `shell.leading`, `conversation.hero.workspace`, `conversation.session.header.actions`) and on
+   "the lowest priority renders"; both versions checked. A DSH upgrade can move them, so a test
+   watches each one.
+2. **R2 Launch-token exchange.** The token-to-cookie exchange is identical in both versions but
+   semi-internal.
+3. **R3 rc.5 route form (closed by SP1).** Named `webServer` routes on rc.5 take
+   `handler(req,res)` only. Every child route is a Connection Fetch route, which works on both.
+4. **R4 Shared localStorage.** The iframe shares localStorage with the main page (shortcuts,
+   per-session drafts, panel widths). Session ids are prefixed; the rest is accepted, like D13.
+5. **R5 Cost.** About 30–50 MB more memory and about 1 s more start time than the base-only child
+   under plain Node; under the DSH-X wrapper RSS is 174–253 MB (SP2).
+6. **R6 Generic settings (closed by SP3).** The ten `ui-settings-*` page rows are disabled, so no
+   UI path and no shortcut reaches DSH's own settings in the iframe; `⌘/` no longer lists them.
+7. **R7 Preview notice (closed by SP3).** The notice is a step of `ui-settings-models`
+   (`dsh-client-ui-settings-models/lib/client.js:4503` / `:5483`), which is disabled, so it never
+   shows; no pre-acknowledgement is written. Side effect: the iframe has no UI for theme, language
+   and busy-Enter preferences (I9).
+8. **R8 Node default (revised by SP2).** "No plain `node`" no longer means "no Node": under DSH-X
+   the wrapper is the default. A PATH Node below the installed DSH's `engines.node` is refused with
+   `NATIVE_START_FAILED`.
+11. **R11 Electron-as-Node.** The DSH-X wrapper is a shell script that runs the Electron binary
+    with `ELECTRON_RUN_AS_NODE=1`. A DSH-X update can change it; I2's probe verifies it at every
+    start.
+9. **R9 Contract maintenance.** A public contract freezes names: a breaking change needs a major
+   bump, and both sides must keep the version check.
+10. **R10 Theme drift.** Theme and language can differ between the main page and the iframe
+    (optional task I9).
+
 Base: `d67e69f` on `integration/native-runtime-on-74fe6be`, branch `feat/slim-native-embedded-ui`.
 SDK baseline: DSH **0.2.2-rc.1**, the newest published 0.2.2 build (no final 0.2.2 exists; npm
 `latest` is 0.2.1-rc.5). Verified against a temporary install at `/tmp/dsh-022` (read-only for this
@@ -14,10 +390,10 @@ unchanged and is not a separate target.
 
 | # | Decision | Source |
 | --- | --- | --- |
-| D1 | The isolated Fishball serves its **own chat page**; the main DSH shows it in an iframe through a same-origin broker route on the main DSH. UI code lives in the child and changes without touching the main page or plugin. | user |
-| D2 | The child no longer runs a DSH Web UI. It runs the DSH **core** (`dsh-base`) plus one Fishball-owned app plugin. | user |
+| D1 | The isolated Fishball serves its **own chat page**; the main DSH shows it in an iframe through a same-origin broker route on the main DSH. UI code lives in the child and changes without touching the main page or plugin. **Superseded 2026-11-06 by §0 (D16/D18).** | user |
+| D2 | The child no longer runs a DSH Web UI. It runs the DSH **core** (`dsh-base`) plus one Fishball-owned app plugin. **Superseded 2026-11-06 by §0 (D16/D18).** | user |
 | D3 | The isolated Fishball fully replaces legacy in-process Fishball; no automatic fallback. Lifecycle unchanged (starts/stops with the main DSH). | user |
-| D4 | Main DSH settings manage the child's model, plugins, settings, status and restart. | user |
+| D4 | Main DSH settings manage the child's model, plugins, settings, status and restart. **Superseded 2026-11-06 by §0 (D16/D18).** | user |
 | D5 | Models and API keys arrive through provider sync, run by **Refresh models** in the Model block with no preview or confirm step (amended 2026-11-06); API-key providers only, including keys on built-in routes; add-only; logins never copied. | user |
 | D6 | The narrow bridge keeps start/message/read/approve powers over main-DSH sessions and receives no main DSH credentials. | user |
 | D7 | Fishball must be able to see and send images, by reference, never by file path. | user |
@@ -1326,3 +1702,480 @@ waves 5 and 6. T13b is blocked on the upstream slot and starts only after that s
 This document and the tasks above are development work. The testing session runs every named
 scenario in a disposable `DSH_HOME`, with a disposable main home and child home, never the user's
 real homes, never a real API key, and never a real provider sync with real keys.
+
+## 18. Connector and instance: tasks with test design (revision 2026-11-06)
+
+Base: `feat/slim-integration` at `535a807`, which already contains `feat/slim-remove-legacy`
+(e7ed7c3), `fix/slim-022-child` (6b7b750) and `feat/slim-card-record2` (2e96837). Every task below
+starts from that base or from its dependencies' merge. One task, one branch, one session.
+
+**Process (TDD, the user's rule of 2026-11-06).** A test-design session writes every task's cases
+from this section before any dev session starts, then a test-writing session implements them; the
+dev session codes against them without reading the test code. Each task's test design lists:
+
+- **R**: the requirements, as black-box observable behaviour;
+- **T**: the ISTQB techniques. **P** = positive tests, **EP** = negative tests by equivalence
+  partitioning, **ST** = state transition, **DT** = decision table, **BVA** = boundary value
+  analysis;
+- **AC**: the acceptance criteria the cases check.
+
+All tests run in disposable homes and on free ports, against DSH **0.2.2-rc.1** and
+**0.2.1-rc.5** (the installed versions under `~/Library/Application Support/DSH/data/versions/`,
+read-only). Never the user's homes or `:7713`/`:3081`, never a real API key (D21, §17).
+
+**Status (2026-11-06 follow-up).** The user's answers (D22–D25), K1 (`feat/k1-contract`
+bb0f756), the spikes SP1–SP3 (`spike/body-soul-sp` 6f393d2) and both test designs
+(`test-design/connector` 9e92622, `test-design/instance` c481dbe) are folded in. Their open
+questions are answered in §18.5, and nothing in this section waits on the user.
+
+**Rules:** a task touches only its own files; `client.js` belongs to one task per wave; the
+contract freeze (K1) merges before any task that uses the new contract operations.
+
+### 18.1 Task table
+
+| Task | Part | Owns | Depends | Done when |
+| --- | --- | --- | --- | --- |
+| **D0** design (this revision) | doc | `docs/slim-native-design.md`, `DESIGN.md` | — | committed on `design/body-soul`; approved by the user |
+| **SP** spikes SP1–SP3 — **DONE** (6f393d2) | instance | `spikes/body-soul-sp/`, `docs/spikes/body-soul-sp.md` | D0 | answered; findings in §18.3 |
+| **K1** contract v1 freeze — **DONE** (bb0f756) | contract | `src/connector/**`, `docs/connector-contract.md` | D0 | binding API, `fishballConnector` service and version rules defined and validated; no settings ops |
+| **K1b** contract corrections (§18.6 checklist) | contract | `src/connector/contract.js`, `docs/connector-contract.md` | K1 | every §18.6 item done; K1's cases re-pass |
+| **M1** repo split into two packages | both | `packages/connector/**`, `packages/instance/**` (moves only), root `package.json` workspaces, both `cordis.patch.yml` (row ids `fishball-connector`, `fishball-instance`) | K1b | both packages `node --check` and pack; the old tests pass on the moved files |
+| **C1** connector service + no-instance mode | connector | `packages/connector/index.js`, `src/connector-service.js` (new), `src/intake.js` delivery hook | M1 | §0.4 binding and no-instance table hold |
+| **C2** connector settings in DSH's form only, and the one-time migration | connector | `src/config.js` (the trimmed field set), `src/settings-migration.js` (new), the question mode moved into the row config, delete `src/preferences.js` and the brand/sidebar-entry routes | C1 | §18.2 C2 holds: limits only in DSH's form, no contract path, old values migrated once |
+| **C3** connector client: opener, Plugins card, fixed icon | connector | `packages/connector/client.js`, `packages/connector/records.js`, `assets/connector-icon.svg` | C1, C2 | the view frames `ui.chat`; the Plugins card holds the limits form and opens `ui.settings`; the empty state shows with no instance; the fixed icon |
+| **I1** instance row binds to the connector, its Plugins card | instance | `packages/instance/host.js`, `src/host/binding.js` (new), `packages/instance/client.js` (status card) | C1 | auto-attach, restart re-attach, `connector-missing`, refused-attach states |
+| **I2** child profile to Option A, child Node and `verifyNode` | instance | `src/native-runtime/{constants,installation,overlay,index,child,node-default}.js`, `child/native-child.js`, `child/app.js` | M1 | child boots `[base, web-app]` with the §0.5 overlay on both versions; the SP2 Node order; `verifyNode` accepts Electron-as-Node and checks `engines.node` |
+| **I3** proxy v2 (token exchange, WebSocket) | instance | `src/host/embed.js` | I2 | §0.5 auth rules hold through `/fishball/embed/*` on both versions |
+| **I4** child UI plugin: session-only frame, header Settings action | instance | `child/ui/**` (new), `child/package.json` `dsh.client` | I2 | only Fishball's session shows; effort selector present; Settings opens |
+| **I5** Fishball session via agent preset | instance | `child/{chat,persona,app}.js` | I2 | preset, id prefix and workspace rules of §0.5 hold across resume paths |
+| **I6** instance settings page | instance | `child/ui/settings/**`, `child/settings-routes.js` (new, Fetch routes), `child/admin.js` (re-homed), upward `instance.restart` / `providerSync.request` on the wire | I4 | the instance rows of §0.7 work end to end from the iframe; no connector limit is shown or edited |
+| **I7** card records and notices in DSH's chat view | instance | `child/ui/records.js`, the shared definition module (moved from `client.js`) | I4, I5 | records render in the child chat as in main sessions |
+| **I8** retire the custom chat | instance | delete `src/slim/ui/**`, `child/{server,auth}.js`, custom HTTP parts of `child/{chat,images,reminders,approvals}.js`, `child/decisions.js`, `src/slim/host/{admin,settings-routes}.js`, `src/native-control/**`, `packages/messenger/` | I3–I7 | no dead references; full suite green |
+| **I9** (optional) theme and language follow the main DSH | instance | `child/ui/theme.js` | I4 | the iframe matches the main page's theme and language |
+| **E1** end-to-end on both versions | both | test only | all | §18.4 scenarios pass |
+
+Dependency order: `D0 → SP (done), K1 (done) → K1b → M1 → {C1, I2} → {C2, I1, I3, I4, I5} → {C3, I6, I7} → I8 → E1`.
+`client.js` owners: C3 alone (connector). The child client lives in `child/ui/`, owned by I4, I6
+and I7 on separate files.
+
+### 18.2 Test design per task
+
+**SP — spikes (instance). DONE**, see §18.3.
+
+**K1 — contract v1 (contract).**
+- R: (1) `attachInstance` accepts a well-formed instance and returns a handle with `detach`.
+  (2) It refuses, with the stated code and no side effect: a second instance (`instance-busy`), a
+  different contract id or major (`contract-version`), a bad `ui` path (`ui-invalid`), a missing
+  transport method (`transport-invalid`), a malformed `id`, `name`, `status`, `retry` or an unknown
+  descriptor key (`instance-invalid`). (3) Contract v1 has no settings operation: a request named
+  `settings.describe` or `settings.update` is an unknown operation (§18.5 conn-OQ-44). (4) A minor
+  version may add only capabilities;
+  an unknown optional capability is ignored, an unknown required one refused. (5)
+  `docs/connector-contract.md` lists every operation, event, field, limit and error code that the
+  module exports.
+- T: P (valid attach; each op's minimal and maximal payload); EP (contract id: right / wrong;
+  major: equal / lower / higher; minor: equal / lower / higher; ui path: absent / valid /
+  relative / scheme / `//host` / with `token=` in query / with `token=` in fragment / with a plain
+  fragment (accepted) / `ui: {}` (accepted) / `ui: null` (refused)); BVA (ui path length 512 / 513;
+  every §5.2 limit at max and max+1, already in `LIMITS`); DT (attach outcome over {connector has
+  an instance} × {major matches} × {ui valid} × {transport complete}).
+- AC: every case returns the documented result or code; a refused attach leaves the connector in
+  its prior state; a doc-vs-module check finds no name in one and not the other; the §18.6
+  corrections are in both the doc and the module.
+
+**K1b — contract corrections (contract).**
+- R: every §18.6 item holds in `docs/connector-contract.md` and in `src/connector/contract.js`.
+- T: as K1, plus EP for each corrected rule (unknown request operation; handshake shape break /
+  unknown required name / unserved required name / no `inbox.push`; `token` in query or fragment,
+  any ASCII case, percent-encoded; `ui: {}` / `ui: null`; empty label / empty reason; image
+  `total` 0 / 1); ST (attached → closing failure → no-instance → new attach accepted; second
+  `detach()` and a stale `onClose` → no change).
+- AC: each corrected rule gives its stated frame, code and channel state; the doc-vs-module check
+  passes.
+
+**M1 — two packages (both).**
+- R: (1) Two packages pack separately with names `fishball-connector` and `fishball-instance`.
+  (2) Each bundle patch inserts exactly its own row (`fishball-connector`; `fishball-instance`);
+  no row is called `fishball`. (3) The instance declares `peerDependencies: {"fishball-connector":
+  "^1"}`, imports only the connector's `./contract` and `./records`, and the connector depends on
+  nothing of the instance. (4) Behaviour is unchanged: the existing suite passes on the moved files.
+- T: P (pack, install both into a disposable profile, rows present); EP (install connector only;
+  instance only; both); DT (installed set × rows mounted × errors).
+- AC: connector-only install boots with the `fishball-connector` row and no instance row; both
+  boot with both rows; static scans: no import from `packages/connector` into `packages/instance`,
+  and none from the instance into the connector other than `./contract` and `./records`. The
+  instance-only boot reaching `connector-missing` is I1's AC, not M1's (moves only).
+
+**C1 — connector service and no-instance mode (connector).**
+- R: the `fishballConnector` service exists from apply without any instance, with the members
+  `attachInstance` and `current()`; the §0.4 no-instance table; queued inputs are delivered once
+  each, in global arrival order, on the next attach; a detach mid-delivery re-delivers
+  unacknowledged items only; `ask_fishball` with no instance returns `unavailable` at once;
+  `maxQueuedInputs` counts every pending item, pushed-but-unacked included, and refuses only
+  automated inputs (`session`, `watch`, `system`, `plugin` kinds) with `queue-full`; the user's own
+  inputs (`user` kind: a hand-over note, a Take back note) are never refused (§18.5 conn-OQ-03).
+- T: P (attach, deliver, ack); ST (states none → attached → detached → attached; events attach,
+  transport close, detach, plugin disable; illegal: attach while attached); EP (input kinds:
+  message_fishball, ask_fishball, finished notice, hand-over note, Take back, managed release,
+  permission request, question); BVA (queue at `maxQueuedInputs` − 1, = , + 1 → `queue-full` for an
+  automated input, accepted for a user input); DT (input kind × instance attached × queue full →
+  queued / delivered / refused / `unavailable` / offered to user).
+- AC: with no instance, every input row of §0.4 behaves as listed; after attach the queued items
+  arrive exactly once in order; the 201st `message_fishball` with the default limit 200 is refused
+  `queue-full` (a hand-over with a note still succeeds then, and its note is delivered); `current()` reports `null` with no instance and
+  the descriptor's `{id, name}` plus the attach count when attached; no approval waits on an
+  absent instance.
+
+**C2 — connector settings in DSH's form only, and the migration (connector).**
+- R: (1) The connector's settings are exactly the §18.5 conn-OQ-20 field set plus `questionMode`
+  (`auto` / `fishball` / `user`), as volatile fields of the `fishball-connector` row, edited only
+  in DSH's own Plugins → settings form of that row (the connector's Plugins card renders it from
+  `configForms`). (2) No contract path reads or changes them: with an instance attached, a request
+  named `settings.describe` or `settings.update` is answered `unsupported-operation` and changes
+  nothing. (3) A change applies live, without remounting the row. (4) One-time migration per §0.2:
+  values from the old `fishball` row (live form or profile patch) and the stored question mode
+  are copied once into an empty `fishball-connector` namespace; invalid fields are skipped; the old
+  sources are left unchanged; a second boot copies nothing. (5) There is no brand-style or
+  sidebar-entry setting; the routes `POST /api/fishball/brand` and `/api/fishball/sidebar-entry`
+  answer 404.
+- T: P (edit one field, several fields, the question mode); EP (value: whole ≥ min / below min /
+  fraction / string; question mode: listed / unlisted; contract request: `settings.describe` /
+  `settings.update` / any other unknown name; migration source: live old form / patch only /
+  question-mode record only / none / old value invalid); BVA (each field at min − 1, min, min + 1;
+  the hourly caps at 0; no maximum exists); ST (migration: not migrated → migrated, never back; a
+  second boot is a no-op); DT (new namespace empty × old source present × marker present → copy or
+  not).
+- AC: every valid edit is visible in the form and in the live behaviour (for example the
+  `queue-full` boundary moves with `maxQueuedInputs`); every invalid edit is refused by DSH's form
+  and changes nothing; both settings requests over the contract give `unsupported-operation`;
+  after migration the new namespace holds the old values and the old patch is byte-identical;
+  the two retired routes answer 404.
+
+**C3 — connector client: opener, Plugins card and fixed icon (connector).**
+- R: (1) The sidebar panel-list row (always shown) and the brand button open the Fishball view.
+  (2) View outcomes: no instance → "No Fishball instance is attached" and a button that opens DSH's
+  Plugins panel; attached with `ui.chat` → an iframe whose `src` is exactly `ui.chat`; attached
+  without `ui.chat` → "<name> is attached and has no chat page", no iframe. (3) The view's header
+  keeps the title, the instance's state tag, Refresh and "Open in a tab" (to `ui.chat`, shown only
+  with `ui.chat`). It shows Retry when the state is `failed` and the instance gave `retry`. It
+  reads `status()` once a second while the view is open; a `status()` that throws or returns a
+  value outside `STATUS`/`STATUS_CODES` shows `failed` with `NATIVE_UNAVAILABLE`; no `status`
+  shows "attached" with no tag. (4) An attach or detach updates an open view without a reload.
+  (5) The connector's Plugins card holds DSH's limits form (C2) and an "Open instance settings"
+  button, shown only when the attached instance registered `ui.settings`; it opens that path
+  framed in the Fishball view. (6) The fixed icon, the fish logo built from DSH's
+  `FISH_LOGO_PATH` with a wrench badge, is on the sidebar row, the brand button and the Plugins
+  card. It keeps the unread count and, on managed session rows, the green and yellow dots, and it
+  uses the current text colour in light and dark. (7) Managed-row marks and Hand over keep their
+  current behaviour.
+- T: P; EP (instance: none / attached without ui / `ui: {}` / chat only / settings only / both;
+  status: none / valid / throws / out-of-vocabulary state / out-of-vocabulary code; retry:
+  present / absent); ST (view: empty → framed on attach → empty on detach, without reload); DT
+  (attached × ui.chat × ui.settings × status → view, header actions, card button).
+- AC: every DT rule shows its outcome; iframe `src` equals `ui.chat` exactly; the empty states
+  never render an iframe; the icon is identical in the three places; light and dark checked.
+
+**I1 — instance binds to the connector (instance).**
+- R: with both plugins enabled the instance attaches after main `appReady` with
+  `ui = {chat: '/fishball/embed/', settings: '/fishball/embed/?view=settings'}` and no profile
+  edit; each child restart detaches and re-attaches once; without the connector the instance
+  status is `connector-missing`, the child does not start, the main boot succeeds, and the
+  connector is never installed (D25); disabling the connector at runtime stops the child and
+  gives `connector-missing`, and enabling it again starts the instance without a main restart;
+  an attach refused `instance-busy` gives `failed` with `NATIVE_INSTANCE_BUSY` and an attach
+  refused `contract-version` gives `failed` with `NATIVE_CONTRACT_VERSION`, the child is stopped
+  in both and is not restarted by itself (Retry tries again); disabling the instance detaches and
+  stops the child. The instance's status and reason show on its own Plugins card in the main DSH.
+- T: P; ST (instance: waiting → starting → attached → restarting → attached; → stopped on
+  disable; connector-missing as its own state with enable-connector → waiting); EP (connector
+  present / absent / disabled later); DT (connector × instance enabled × child healthy → status).
+- AC: each transition observable through the instance's Plugins card and the connector's
+  `current()` (attach count); no orphan child process after any disable (process list in the
+  disposable home).
+
+**I2 — child profile to Option A (instance).**
+- R: a new child home gets bundles `[dsh-base, dsh-web-app]`; an existing base-only manifest gets
+  `dsh-web-app` back right after `dsh-base`, owner bundles kept in order after them, and the
+  replaced manifest is backed up once as `package.json.pre-option-a-<UTC stamp>`; a malformed
+  manifest fails the start with `NATIVE_START_FAILED` and is not changed; the overlay disables
+  `ui-permission`, `ui-agent-preset`, `client-hmr` and the ten `ui-settings-*` page rows (not
+  `ui-settings`), restricts the core `permission` row to `read-only`, sets `web-runtime`
+  `printUrl` and `openBrowser` false, and inserts the child UI row; readiness requires
+  `webServer`, `connection` and `sessionController` besides today's services, and a missing one
+  fails with `NATIVE_START_FAILED`; startup beyond 60 s fails with `NATIVE_TIMEOUT`; the launch
+  token reaches the main half over the wire and is never written to disk or logs; no DSH preview
+  notice appears in the iframe; child Node per §0.5 (SP2): explicit `nodeExecutable` first, then a
+  plain-Node main runtime that meets `engines.node`, then the DSH-X wrapper, then PATH; the
+  Electron binary is never spawned without `ELECTRON_RUN_AS_NODE=1`; `verifyNode` accepts the
+  wrapper and refuses a Node below the installed DSH's `engines.node` with `NATIVE_START_FAILED`.
+- T: P (fresh home; migrated home); EP (manifest: absent / base-only / base+web / base+web+owner
+  bundles / malformed; Node: explicit / plain main runtime / DSH-X wrapper / PATH 24.9+ / PATH 22
+  on 0.2.2 / PATH 22 on rc.5 / Electron binary / missing file); ST (lifecycle starting → ready →
+  stopping → stopped, crash → failed → Retry; no automatic restart); BVA (startup timeout at 60 s;
+  Node 24.8 / 24.9 against 0.2.2's `>=24.9.0`); DT (manifest form → resulting bundles and backup;
+  Node source × DSH version → accepted or refused).
+- AC: both DSH versions reach ready, under plain Node and under the DSH-X wrapper; owner-installed
+  bundles are kept in order; one backup per migration, never overwritten, and an unchanged
+  manifest makes none; no token string in any file or log under the child home; no preview notice
+  and no DSH settings page in the iframe; `/permission danger-full-access` in the chat is refused
+  and the session stays `read-only`; no second DSH-X window ever opens.
+
+**I3 — proxy v2 (instance).**
+- R: every `/fishball/embed/*` GET/HEAD/POST is forwarded with Host and Origin set to the child's
+  authority and the child cookie attached; `Set-Cookie` from the child never reaches the browser;
+  `api/remote.mux` upgrades are passed through; requests that fail the main DSH's admission get
+  the statuses of §18.5 inst-OQ-11 and never reach the child; the main DSH's cookie never reaches
+  the child; the iframe URL carries no token, and a browser-supplied `token` query parameter is
+  refused 400; a child not ready, or an instance in `connector-missing`, `failed` or `stopped`,
+  answers 503 with the error page (the route stays registered while the instance row is enabled;
+  a disabled instance has no route, so 404); `/fishball/embed` without the slash is redirected
+  308 to `/fishball/embed/`; the body and stream limits of §18.5 inst-OQ-12 hold.
+- T: P (page, assets, RPC, WebSocket); EP (method: GET / HEAD / POST / PUT / DELETE / PATCH;
+  `Sec-Fetch-Site`: same-origin / same-site / cross-site / none / absent; auth: valid main cookie /
+  none / expired; path: in prefix / traversal / encoded `..` / absolute URL / no trailing slash;
+  `token` query: absent / present); BVA (JSON body 1 MiB / +1; `api/session/uploadFileBinary` body
+  8 MiB / +1; concurrent streams 32 / 33; idle 30 s); ST (child ready → restarting → ready: the
+  proxy re-exchanges the token); DT (method × site × auth → status, per inst-OQ-11's order).
+- AC: the DSH page loads and the WebSocket connects through the proxy on both versions; each
+  refusal row gives its status and the child logs no request for it; no response to the browser
+  contains `Set-Cookie` from the child or the launch token.
+
+**I4 — child UI plugin (instance).**
+- R: the page shows only Fishball's session: no sidebar list, no New Session, no workspace picker,
+  no permission picker; the about-56 px rail is allowed; DSH's model picker is present and, for a
+  model with reasoning efforts, offers the effort pane, and the chosen effort is used by the next
+  request (no effort chosen: the catalog entry's `defaultEffort`; a model without efforts: none;
+  switching models applies the new model's default, a chosen effort does not carry over, which is
+  DSH's own picker behaviour); the session header has a Settings action that opens the settings
+  panel and writes `?view=settings`; Back removes it; loading `?view=settings` opens the panel
+  directly; only the first `view` parameter with the exact lowercase value `settings` selects the
+  panel; the session opens even when the session list arrives late; DSH's shortcuts for New
+  Session and settings do nothing in the iframe (their UI rows are absent or disabled); the empty
+  hero's inert workspace chip is allowed (SP F2).
+- T: P; EP (model: with efforts / without efforts; URL: no query / `?view=settings` /
+  `?view=Settings` / `?view=` / `?view=x` / `?view=settings&view=x` / `?view=x&view=settings`); ST
+  (chat ⇄ settings via the header action and Back, URL updated each way; reload keeps the view of
+  the URL); BVA (the rail: 56 px ± 1 px); DT (model has efforts × effort chosen × model switched →
+  request's effort).
+- AC: the hidden controls are absent from the DOM; the next request records the chosen effort (in
+  the session log's request header); Settings ⇄ chat works both ways; an unknown `view` shows the
+  chat; both DSH versions.
+
+**I5 — Fishball session via agent preset (instance).**
+- R: the session is created once with id `session-fishball-<uuid>`, preset `fishball`, sandbox
+  read-only, approval ask, inside the instance's private workspace, with `agentOptions` from DSH's
+  default model (SP F4); after a child restart, a resume by DSH's session controller, or a reload of
+  the page, the persona, Fishball's tools and the read-only mode are present; the preset is
+  registered before the session is created or resumed, so no resume runs without it; no permission
+  change is possible from the UI or the `/permission` command; the session never appears as
+  "Choose workspace"; archiving it is refused while the instance runs (as the legacy session
+  was), and a session found archived at start is unarchived and resumed, never replaced.
+- T: P; ST (none → created → live → child restart → resumed; archived at start → unarchived →
+  resumed); EP (resume path: Fishball's own / DSH's session controller / page reload; `/permission`
+  argument: read-only / workspace-write / danger-full-access); DT (resume path × found archived →
+  tools, persona and one session).
+- AC: every resume path shows the same tool list and persona section; a write tool call fails at
+  the sandbox; the id prefix holds; exactly one Fishball session exists after any number of
+  restarts.
+
+**I6 — instance settings page (instance).**
+- R: the page, the instance's own `main` panel in the iframe, shows: (1) instance status and
+  Restart; (2) the model block with Refresh models and its result line ("Synced from DSH: n new ·
+  m already in Fishball", with "Nothing new to sync" when n = 0 and nothing failed; skipped and
+  failed items in a collapsed Details list); Refresh is disabled with a hint when the main DSH's
+  `providerSync` consent is `off`; (3) a Plugins block whose button opens DSH's own Plugins page in
+  the iframe (`layout.selectPanel('plugins')`, SP3), which brings list, install, enable, disable,
+  remove and per-plugin settings; recommended plugins are listed with an Install button that opens
+  DSH's install for that spec; (4) one line "Connector limits are set in DSH's Plugins → Fishball
+  connector" with a link. The link posts the same-origin browser message
+  `{type: 'fishball-connector:open-settings'}` to its parent; the connector's opener answers it with
+  `pluginNavigation.openBundle('fishball-connector')`, which shows its Plugins card (§18.6 item 13). The page shows
+  no connector value and has no control that changes one. While the child restarts, the page shows
+  "Restarting…" and disables every control until it reconnects. Nothing on the page writes to the
+  main DSH except the two upward wire requests.
+- T: P (each block's main action); EP (plugin spec valid / unknown; provider sync with keys / none /
+  refused / consent off); ST (child ready → restarting → ready while the page is open); DT (block
+  action × instance state × consent → enabled or disabled control and result).
+- AC: no connector value appears on the page and none changes through it; Restart yields a new
+  child with the page reconnected; Refresh models fills the composer's model list; "Nothing new to
+  sync" appears on a second Refresh; refusals are shown with their codes; light and dark; tests
+  use a local fixture market index (no network).
+
+**I7 — records in DSH's chat view (instance).**
+- R: card records (`plugin:fishball/card-record`) and inbox notices in Fishball's session render
+  as one compact row each, in order, with the asking session named; the same records still render
+  in main sessions through the connector; both renderers come from one shared module; records
+  survive child restart and page reload; records never enter a model request.
+- T: P; EP (record kind: permission / question / plan review / own question / closure; field
+  present / absent); BVA (text at its cap / cap + 1 is already cut by the writer: display shows the
+  cut marker); ST (record written → shown → after restart still shown).
+- AC: each kind renders its fixed wording in both places; no duplicate rows after reconnect; the
+  request log of the next turn contains no record text. Which items are records and which are
+  turns: §18.5 inst-OQ-18.
+
+**I8 — retire the custom chat (instance).**
+- R: the custom UI, its server and auth, the admin relay and routes, v1 native-control and the
+  messenger package are gone; every remaining feature works through Option A.
+- T: P (regression run of the whole suite and E1 smoke); EP (the retired routes of §18.5
+  inst-OQ-19 → 404, while DSH's own `/fishball/embed/api/*` still pass through).
+- AC: static scan finds no import of a removed module; old routes answer 404; full suite green
+  on both versions.
+
+**I9 — theme and language (instance, optional).**
+- R: the iframe uses the main page's light/dark choice and language at open and after a change.
+- T: P; EP (theme light / dark / system; language zh / en); ST (change in main → iframe follows).
+- AC: four theme × language combinations match.
+
+**E1 — end to end (both).** §18.4 below, on both DSH versions, in a fresh disposable main home.
+
+### 18.3 Spike results (SP, `spike/body-soul-sp` 6f393d2)
+
+| Spike | Answer | Design change |
+| --- | --- | --- |
+| SP1 Option A on rc.5 | works on 0.2.1-rc.5 and 0.2.2-rc.1: shell, combos, RPC, `remote.mux`, server-side token exchange, session-only frame, header action, effort pane, and the chosen effort reaches the model | child routes are Connection Fetch routes (R3 closed); the inert hero workspace chip is accepted (F2); `/permission` restricted to `read-only` (F3); `agentOptions` always passed (F4) — all in §0.5 |
+| SP2 child Node under DSH.app | the DSH-X wrapper `core/node/node` (Electron 44.7 as Node 24.21) works; `process.execPath` opens a second GUI; Homebrew Node 22.22 is below 0.2.2's `engines.node >=24.9.0` | new default order and `verifyNode` rules (§0.5, I2); R5 and R8 revised |
+| SP3 DSH settings in the iframe | reachable only by `⌘⌥,`, and that opens nothing; disabling the ten `ui-settings-*` page rows (keeping `ui-settings`) removes them cleanly and also the preview notice | rows disabled (§0.5); R6 and R7 closed; I6 opens DSH's Plugins page with `layout.selectPanel('plugins')` |
+
+### 18.4 End-to-end scenarios (E1)
+
+`E2E-B1` install both plugins into a clean profile, restart, open Fishball: DSH's session view
+with Fishball's session, no profile edit. `E2E-B2` Refresh models with a fake API-key provider,
+choose a model and an effort, send a message: a reply streams. `E2E-B3` hand over a session with a
+note; Fishball messages it through its tools. `E2E-B4` a managed session's permission request is
+answered by Fishball; the card record appears in both chats. `E2E-B5` change `maxQueuedInputs` in
+DSH's own form of `fishball-connector`; the queue boundary moves accordingly, and the instance
+settings page shows no connector value and only links to that form. `E2E-B6` kill the child: the view shows the
+error and Retry; Retry restores the session. `E2E-B7` disable the instance: the connector shows
+the no-instance state and queues a `message_fishball`; re-enable: it is delivered once. `E2E-B8`
+connector alone with a stub instance (a minimal third-party implementation in the test tree that
+attaches over the documented contract): session tools and inbox work.
+
+### 18.5 Resolved test-design questions
+
+Answers to the open questions of `docs/test-design/connector.md` (`test-design/connector`
+9e92622, prefix `conn-`) and `docs/test-design/instance.md` (`test-design/instance` c481dbe, prefix
+`inst-`). They are design decisions; the test sessions update their cases to them. Entries the
+connector design already marked closed are listed once, as confirmed. A contract-doc change named
+here is also an item of §18.6.
+
+**Connector (conn-)**
+
+| Id | Decision |
+| --- | --- |
+| conn-OQ-01 | `ask_fishball` with no instance returns `unavailable` at once, with the existing text "Fishball cannot answer now. Make the call yourself; the user is asked in this session", and nothing is queued. DESIGN.md §7a.5 is right; design §0.4 and contract §9 were wrong to list it with the queued inputs, and both are corrected (§0.4 done here, §18.6 item 9). Why: `ask_fishball` is a blocking ask before a tool call, so a queued answer would come after the call it was about. The connector "works alone" by passing such requests to the user in their own session. The fire-and-forget inputs (`message_fishball`, notices, hand-over notes) are the ones it queues. |
+| conn-OQ-02 | Yes: `queue-full` is the one code for every producer that the bound refuses (the tool result's `code`, the HTTP route's `code`). Contract §9 names it (§18.6 item 9). |
+| conn-OQ-03 | Every intake item counts, of every kind. The bound refuses only automated items (`session`, `watch`, `system`, `plugin`, `approval`); a `user` item (a hand-over note, a Take back note) is always accepted, even past the bound, so the user's own action never fails because of Fishball's backlog. Hand over and Take back themselves never answer 409 for a full queue. A managed release note (`system`) refused at the bound is logged and the release still stands, as today. |
+| conn-OQ-04 | Closed, confirmed. |
+| conn-OQ-05 | No. A request the user is asked about in its own session (no instance attached, or at a detach) is settled there and never offered again. The re-offer after a handshake covers only requests still waiting for the instance, and these only exist while one is attached. A request waiting for the instance at a detach goes to its session's prompt at once (§7a.5, "going off while requests wait"). |
+| conn-OQ-06, -07, -09, -10, -12, -13 | Closed, confirmed. |
+| conn-OQ-08 | Yes. `fishballConnector.current()` returns `null` with no instance, else a frozen `{id, name, attachedAt, attachCount}`, where `attachCount` counts attaches since the connector row was applied. It is read-only and carries no transport. |
+| conn-OQ-11 | Closed: `instance-invalid` (K1). |
+| conn-OQ-14 | No-ops. A second `detach()`, a stale handle's `detach()` and a stale transport's `onClose` after a newer attach change nothing and do not throw. |
+| conn-OQ-15 | The connector calls `transport.close()` on its own dispose, then forgets the instance. The instance sees its `onClose` and goes to `connector-missing` (inst-OQ-02). |
+| conn-OQ-16, -17, -18 | Closed, confirmed (no settings operation, D24). |
+| conn-OQ-19 | Connector limits have no maximum; the schema bounds only the minimum (§16 of DESIGN.md), and BVA uses min − 1, min, min + 1. Contract lower bounds: `reason` in `approval.answer` with `allow`, `grant` or `reject`, and in `prompt.answer`, `grant.revoke` and `session.release`, is non-empty (the host already requires it, `reason-required`); option `label`, `header`, each `selected[]` label and `title` are non-empty; `selected[]` may be empty only with `custom` present; an image `total` is ≥ 1. The validators add these (§18.6 item 7). |
+| conn-OQ-20 | The connector form keeps the fields that connector code reads after the split: `maxQueuedInputs`, `maxActiveWatches`, `maxPendingApprovals`, `approvalAnswerSeconds`, `argumentExcerptBytes`, `maxMessageBytes`, `auditEntriesKept`, `requestUserMessageBytes`, `rationaleChars`, `watchesShown`, `readSessionMessages`, `readSessionBytes`, `forwardExcerptBytes`, `userMessagesListed`, `userMessageExcerptChars`, plus `questionMode`. Removed with no reader left: `maxSourcesPerPlugin`, `maxFishballOnlyPlugins`, `wakeupsPerHour`, `messagesPerHour`, `sessionsPerHour`, `approvalsShown`, `intakeRowsShown`, `outboxShown`, `pluginHistoryShown`, `settingsPromptValueBytes`, `replyCapShare`, `headroomShare`, `minWindowTokens`, `pluginManagerStartMs`, `defaultReplyCapTokens`, `pileMaxHeightVh`. `watchesShown` stays under its name: it also bounds `list_watches`. |
+| conn-OQ-21 | Closed: the fixed icon (D22). |
+| conn-OQ-22 | The migration carries the limits of conn-OQ-20 and the question mode (store record `settings/questions` → `questionMode`). The old brand and sidebar-entry record is left in the store and ignored. `POST /api/fishball/brand` and `POST /api/fishball/sidebar-entry` are removed (404). |
+| conn-OQ-23 | An attached instance without `ui.chat` (no `ui`, `ui: {}`, settings only): the view shows "<name> is attached and has no chat page" and no iframe; the header keeps the state tag and Retry rules. |
+| conn-OQ-24 | The entry is a button "Open instance settings" on the connector's own Plugins card (the `plugins.bundle.config` slot of `fishball-connector`), shown only when the attached instance registered `ui.settings`. It opens that path framed in the Fishball view (main area). The limits form is on the same card, above the button, so it is always reachable. The instance's own Plugins card (I1) shows only the instance's main-DSH fields. |
+| conn-OQ-25 | The header stays: title "Fishball", the instance's state tag, Refresh (reloads the frame), "Open in a tab" (opens `ui.chat`, only when present). The opener polls `status()` once a second while the view is open (no event in v1). Without `status`, the tag reads "attached". Retry shows only when the state is `failed` and the instance gave `retry`; Retry awaits it and shows its rejection as `NATIVE_UNAVAILABLE`. |
+| conn-OQ-26 | Yes, without a reload. |
+| conn-OQ-27 | I1. M1 is moves only; `connector-missing` is I1's acceptance. |
+| conn-OQ-28 | M1's dev session re-points the suite's links to the two packages (`packages/connector`, `packages/instance`), and the test session moves the cases. Cases of retired modules (§0.2 "retired") retire with I8, not with M1. |
+| conn-OQ-29 | Only `./contract` and `./records` (§0.2). |
+| conn-OQ-30 | Versions are independent; the connector's major equals its contract major; the instance declares `"fishball-connector": "^1"` as a peer dependency. A test checks the peer range against the contract major. |
+| conn-OQ-31 | It opens DSH's Plugins panel (`layout.selectPanel('plugins')`) at its list, with no plugin preselected. |
+| conn-OQ-32 | Yes, until acked. |
+| conn-OQ-33 | Global arrival order across all kinds and sources, by the ledger's creation order. |
+| conn-OQ-34 | One item: Hand over posts the forward (`POST /api/fishball/send`), which publishes one `user` item (the user's note, possibly empty, and the session excerpt) and then marks the session managed without a second note (`src/messaging.js` `forward`, `ManagedRegistry.manage`). The `user` change note exists only for Take back. |
+| conn-OQ-35 | Closed, confirmed. |
+| conn-OQ-36 | The row id is `fishball-connector` (§0.2, with the one-time migration). DSH's Plugins page shows "Fishball connector" for it, and "Fishball instance" for `fishball-instance`. |
+| conn-OQ-37 | The icon is built from DSH's `FISH_LOGO_PATH` and `FISH_LOGO_VIEWBOX` (`dsh-client-ui-primitives`) plus a wrench badge at the bottom right, one SVG in `assets/connector-icon.svg` (the package `icon`) and the same drawing in the client. It is on the sidebar row, the brand button and the connector's Plugins card. The unread count stays on the brand and the row, and the green and yellow dots stay on managed session rows (§8.2). It uses `currentColor` with the magenta eye (`--fb-accent`), so light and dark need no second asset. |
+| conn-OQ-38 | Closed, confirmed. |
+| conn-OQ-39 | Yes: the panel-list row is always shown; the brand button is a second way in. |
+| conn-OQ-40 | Confirmed: I6 shows no connector value and edits none (inst-OQ-05), and E2E-B5 is rewritten to change the limit in DSH's own form (§18.4). |
+| conn-OQ-41 | Done by this commit: §0.4, §0.7, §18.2 K1 and C2, and §18.4 no longer describe settings over the contract. §7's brand-style and "Sidebar entry" text are superseded by D22. |
+| conn-OQ-42 | Yes: contract §0 must list the connector settings as "its limits and question mode" only (§18.6 item 1). |
+| conn-OQ-43 | A handshake **shape** break (missing or unknown key, a non-string or empty name, duplicates) fails validation and closes the channel. A well-formed handshake whose `requiredCapabilities` is not a subset of `capabilities`, names an operation unknown to the connector, or names one it does not serve now, is answered with an `error` frame `unsupported-capability`, and the channel stays open for a corrected handshake. A `capabilities` list without `inbox.push` is answered `unsupported-capability` too: the connector cannot deliver. The validator's `knownCapabilities` check moves from payload validation to this answer (§18.6 item 4). |
+| conn-OQ-44 | A request whose `operation` is not a v1 operation name (for example `settings.update`) is answered with an `error` frame `unsupported-operation`, and the channel stays open. It is not a validation failure, because a newer minor may add names that an older peer must refuse politely (§2). The frame must otherwise be a valid envelope; its payload is not validated. A known operation outside the welcome stays `unsupported-operation` too (§18.6 item 3). |
+| conn-OQ-45 | `transfersPerMessage` is the number of **files** (non-image transfers) per message: 1. Images use one `attachment.put` each, up to `attachmentsPerMessage` (20) hostRefs per message. The doc says so (§18.6 item 8). |
+| conn-OQ-46 | `expired`, for a hostRef that is unknown, expired or already consumed, answered on the `session.start`, `session.message` or `session.redirect` that carries it; nothing is sent then (the bridge already throws it, `src/slim/host/images.js:160`). Contract §7 lists it (§18.6 item 8). |
+| conn-OQ-47 | The doc gives one signature line per helper with its failure form: every validator and helper **throws** `ContractError` with `.code` (`validateAttachment`, `negotiateContract`, `validateRequest`, `validateResponse`, `validateEvent`, `validateEnvelope`, `requireCapabilities`, `encodeEnvelope`, `decodeEnvelope`); `makeEnvelope` never throws; each returns what §10 names (§18.6 item 10). Module-level cases stay valid. |
+| conn-OQ-48 | Yes: after a channel the connector closes because a frame failed validation, or after a handshake timeout, it calls `transport.close()` and returns to no-instance mode, so a new attach is accepted. A refused but well-formed handshake (conn-OQ-43) keeps the channel and the attachment. |
+| conn-OQ-49 | Yes: `attachInstance` and `current()`, nothing else. |
+| conn-OQ-50 | A `ui` path is refused when its query or its fragment, parsed as URL search parameters, has a parameter named `token` in any ASCII case, after percent-decoding (`?Token=`, `?%74oken=`, `#token=`). `access_token` and other names are accepted: the rule guards DSH's own launch-token name, not every credential spelling (§18.6 item 5). |
+| conn-OQ-51 | Unused. |
+| conn-OQ-52 | `ui: {}` is accepted, the same as no `ui`. `ui: null` is refused `ui-invalid` (§18.6 item 6). |
+| conn-OQ-53 | The opener shows `failed` with `NATIVE_UNAVAILABLE`, and logs the reason once per change. |
+
+**Instance (inst-)**
+
+| Id | Decision |
+| --- | --- |
+| inst-OQ-01 | The connector's attach state and count: `fishballConnector.current()` (conn-OQ-08). The instance's own status and reason: its Plugins card in the main DSH (the `plugins.bundle.config` slot of `fishball-instance`, rendered by `packages/instance/client.js`), and `GET /api/fishball-instance/status` (owner-only Fetch route, `{state, code}`). The connector's Fishball view is not used when the connector is missing. |
+| inst-OQ-02 | Yes: `connector-missing`, the child stopped. Enabling the connector again needs no main restart: the instance's optional `ctx.inject(['fishballConnector'])` sub-scope activates when the service appears, and the instance starts. |
+| inst-OQ-03 | `instance-busy` → status `failed`, code `NATIVE_INSTANCE_BUSY`; `contract-version` → `failed`, `NATIVE_CONTRACT_VERSION`. In both the instance stops its child (no attach means nothing can use it) and does not retry by itself; Retry on its card tries again. The two codes join the instance's status codes; they are instance codes, not contract codes. |
+| inst-OQ-04 | The main DSH exposes exactly `enabled`, `nodeExecutable`, `executableSearchPath` and `providerSync` in the `fishball-instance` form (§0.7). They are needed before the child exists (the first three), or are a consent the main DSH must hold because the main host runs the sync (the fourth). Runtime limits are fixed constants and are no longer settings. The Node default is SP2's order (§0.5). |
+| inst-OQ-05 | I6 shows no connector value at all, only the line and link of §18.2 I6. |
+| inst-OQ-06 | Row ids `fishball-connector` and `fishball-instance`, with the one-time migration of §0.2. Display names "Fishball connector" and "Fishball instance". The assistant keeps the name Fishball: the Fishball view title, the sidebar row "Fishball", the preset id `fishball`, the `session-fishball-` prefix and the wire names `message_fishball`, `ask_fishball`, `ROLE.fishball` stay (contract §0). |
+| inst-OQ-07 | Startup timeout 60 s (`startupTimeoutMs`, a fixed constant now), code `NATIVE_TIMEOUT`. A missing required service fails at once with `NATIVE_START_FAILED` (the child reports `MISSING_CAPABILITY`, which the host maps to that safe code). |
+| inst-OQ-08 | A malformed manifest (unreadable JSON, or `dsh.profile.bundles` not an array of strings) fails the start with `NATIVE_START_FAILED` and is left unchanged. `dsh-web-app` goes right after `dsh-base`, then the owner bundles in their order. The backup is `package.json.pre-option-a-<UTC stamp>` (exclusive create). A second start finds the manifest already right and makes no backup; only a later change makes a new one. |
+| inst-OQ-09 | Failed until Retry; no automatic restart (§11 and the lifecycle rules). |
+| inst-OQ-10 | Yes, tests may pre-seed an owner bundle in the child home (the instance keeps owner bundles, inst-OQ-08). The launch token is constant within one child process (`processLaunchToken` keeps one per process owner, `dsh-client-connection/lib/index.js:294`); a restart makes a new one. |
+| inst-OQ-11 | Checked in this order, first failure wins: (1) method not GET, HEAD or POST → 405 with `Allow: GET, HEAD, POST`; (2) path: not under `/fishball/embed/`, a `..` segment (decoded or encoded), a backslash, or an absolute URL in the request target → 400; (3) the main DSH's own admission, `connection.requestRejection` → its status (403 for a foreign Host or Origin, 401 for no or expired cookie), so site beats auth as in DSH; `requestRejection` already answers 403 for `Sec-Fetch-Site: cross-site` (`dsh-client-connection/lib/index.js:246`); `same-origin`, `same-site`, `none` (a typed URL, a reload, "Open in a tab") and an absent header are accepted, because DSH's own fence accepts them and the cookie is `SameSite=Strict`, so §3.1's "requires same-origin" is relaxed to "refuses cross-site". (4) a `token` query parameter → 400; (5) a body over its limit → 413; (6) the 33rd concurrent stream → 503 with `Retry-After: 1`; (7) instance not ready → 503 error page. |
+| inst-OQ-12 | The §3.3 headers apply to the document response only: `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, and `Content-Security-Policy: frame-ancestors 'self'`. The other CSP directives are dropped, because DSH's own app sets its needs and a stricter policy would break `remote.mux`; assets keep the child's caching headers. Streams: `api/remote.mux` and DSH's SSE route `plugins/events` count toward the 32 concurrent streams; the 30 s idle timeout applies to that SSE route only, not to the WebSocket, which has its own ping. The 8 MiB route is `api/session/uploadFileBinary` (DSH's upload, `dsh-client-file-upload/lib/client.js:62`); every other POST is 1 MiB. `/fishball/embed` without the slash → 308 to `/fishball/embed/`. A browser `token` query → 400 (never forwarded, never stripped silently). |
+| inst-OQ-13 | Disabled instance: the route is removed, so 404. Enabled but `connector-missing`, `failed`, `stopped` or starting: 503 with the error page. |
+| inst-OQ-14 | Default effort: the catalog entry's `reasoning.defaultEffort`, as DSH's picker sets it (`dsh-client-ui-model-selection/lib/client.js:1184` / `:1201`); without one, the provider default (no effort sent). A chosen effort does not carry over to another model; the new model's default applies. The header action writes `?view=settings` with `replaceState`, and Back removes it. Only the first `view` parameter counts, and only the exact lowercase `settings`; anything else shows the chat. The rail is 56 px ± 1 px. |
+| inst-OQ-15 | Blocked by composition, not by key handlers: with the sidebar shadowed and the settings rows disabled, the New Session and Open settings shortcuts do nothing (SP3). The permission-mode command is restricted to `read-only` (SP F3). Tests assert "no effect", not "key consumed". |
+| inst-OQ-16 | Archiving Fishball's session is refused while the instance runs (the session reports activity), as the legacy session was. A session found archived at start (archived while the instance was off) is unarchived and resumed, never replaced. The preset is registered in the app row's apply, before the session is created or resumed, and DSH's own controller cannot resume it earlier, because the session is not listed before the workspace attach that follows the preset. |
+| inst-OQ-17 | Recommended plugins come from Fishball's own curated list (`src/recommended.js`), not from the market index, so tests need no network; an Install opens DSH's install for the listed spec, and tests point it at a local fixture pack. "Nothing new to sync" when no provider was added and none failed. During a restart the page shows "Restarting…" and disables its controls until it reconnects. |
+| inst-OQ-18 | Plugin records, never in a model request: card records (`plugin:fishball/card-record`) and inbox notices about refused or failed inbox items (`plugin:fishball/inbox-notice`). Turns or injected messages the model sees: `session`, `user`, `watch`, `approval` and `system` inbox items, and the `tell` text that accompanies a card record. Record texts are cut by their writer to the contract caps (`LIMITS`: 500, 200, 2,000 characters by field) with the marker `…` as the last character; a notice is cut at 8,000 characters with the same marker. |
+| inst-OQ-19 | Retired, 404 after I8: under `/fishball/embed/`, `api/health`, `api/chat`, `api/model`, `api/upload`, `api/images/*`, `api/approvals`, `api/approvals/answer`, `api/reminders`, `api/events` (the custom server; DSH's own `api/*` still pass through), and `ui/*`; on the main DSH, `/api/fishball/native/admin/*` and `/api/fishball/native/provider-sync/sync` (Refresh now goes child route → upward `providerSync.request`); `/api/fishball/brand` and `/api/fishball/sidebar-entry` (C2). `native-control` has no HTTP endpoint. |
+| inst-OQ-20 | Live, without a reload, within 2 s (I9). |
+| inst-OQ-21 | Yes: a package in the test tree, installed into the disposable main profile. An instance without `ui` shows conn-OQ-23's outcome. |
+| inst-OQ-22 | Blockers. SP1 proved the frame on rc.5, so an I4, I5 or E1 failure on either version blocks the task. |
+| inst-OQ-23 | Yes, the same notice and version (`dsh-client-ui-settings-models/lib/client.js:3051-3058` on rc.5). It is retired on both versions by disabling `ui-settings-models` (R7). |
+
+### 18.6 Contract-doc corrections (`docs/connector-contract.md` at `feat/k1-contract` bb0f756)
+
+For one dev session (task K1b), changing the doc and `src/connector/contract.js` together:
+
+- [ ] 1. §0: the connector settings are "its limits and question mode" only; delete "brand icon and
+  sidebar entry" (conn-OQ-42, D22).
+- [ ] 2. §0 and §11: close the two open points. `instance-invalid` is final (no "(open point,
+  §11)" in §1.1 and §7); fragments are accepted (no open-point mark in §1.2); remove §11 or leave it
+  empty.
+- [ ] 3. §3.1/§3.2: a request whose `operation` is not a v1 name is an `error` frame
+  `unsupported-operation` and the channel stays open; `validateEnvelope` no longer throws
+  `unsupported-operation` for an unknown name on a request, it returns the envelope with the
+  payload unvalidated for the bridge to refuse; responses and events with unknown names still
+  close (conn-OQ-44).
+- [ ] 4. §3.2: split handshake failures: shape breaks close the channel; a well-formed handshake
+  whose required set is not a subset of `capabilities`, names an unknown or unserved operation, or
+  whose `capabilities` lacks `inbox.push`, gets `unsupported-capability` and the channel stays
+  open. Move `knownCapabilities` out of payload validation (conn-OQ-43).
+- [ ] 5. §1.2: the `token` rule covers the query and the fragment, any ASCII case, after
+  percent-decoding; `access_token` stays accepted (conn-OQ-50).
+- [ ] 6. §1.1: `ui: {}` accepted, `ui: null` refused `ui-invalid` (conn-OQ-52).
+- [ ] 7. §4 and §8: lower bounds (conn-OQ-19): non-empty `reason` where the host requires a
+  reason, non-empty option `label`, `header`, selected labels and `title`; `selected[]` empty only
+  with `custom`; image `total` ≥ 1.
+- [ ] 8. §4.4, §7, §8: `transfersPerMessage` is files per message (1), images up to
+  `attachmentsPerMessage`; add `expired` as the refusal for an unknown, expired or consumed hostRef,
+  answered on the message that carries it (conn-OQ-45, -46).
+- [ ] 9. §9: `ask_fishball` and direct calls are not queued (`unavailable` at once, user asked in
+  the session); name `queue-full`; state the `user`-kind exemption and the global arrival order;
+  connector settings in the form of `fishball-connector` (conn-OQ-01, -02, -03, -33).
+- [ ] 10. §1 and §10: document `current()` and its shape (conn-OQ-08, -49); the no-op rule for a
+  second or stale `detach()` and a stale `onClose` (conn-OQ-14); the connector's `transport.close()`
+  on its dispose and after a closing failure (conn-OQ-15, -48); one signature line per helper with
+  "throws `ContractError`" or "never throws" (conn-OQ-47).
+- [ ] 11. §5.1: the re-offer after a handshake covers only requests still waiting for an instance;
+  a request settled in its own session is never offered again (conn-OQ-05).
+- [ ] 12. §0 terms: row ids `fishball-connector` and `fishball-instance`; no row `fishball`
+  (inst-OQ-06).
+- [ ] 13. §1: one browser message, part of v1: a page framed by the connector's opener may
+  `postMessage({type: 'fishball-connector:open-settings'}, location.origin)` to its parent; the
+  opener accepts it only from its own iframe and the same origin, and opens the connector's
+  Plugins card. No other message is accepted (inst-OQ-05).
