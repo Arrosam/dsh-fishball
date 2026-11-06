@@ -40,6 +40,9 @@ const ROUTE = Object.freeze({
   embedDoc: '/fishball/embed/',
   upload: '/fishball/embed/api/upload',
   approvals: '/fishball/embed/api/approvals',
+  // N3 (option A, 535a807): the pile question form and its answer path are gone; the main row
+  // never served this route (docs/slim-native-design.md §12).
+  questionsAnswer: '/api/fishball/questions/answer',
 })
 const skip = !ENV.tgz || !ENV.dsh ? 'set FBTEST_TGZ and FBTEST_DSH_BIN to run' : false
 
@@ -157,6 +160,14 @@ test('INST-10 no in-process Fishball session is created in the main home (§12)'
     ? fs.readdirSync(sessions, { recursive: true }).filter((name) => /(^|\/)session-fishball-/.test(String(name)))
     : []
   assert.deepEqual(found, [])
+})
+
+test('INST-11 the removed pile question-answer path stays absent, and the page no longer calls it (N3)', { skip }, async () => {
+  const res = await req(ROUTE.questionsAnswer, { method: 'POST', headers: { ...sameOrigin, 'content-type': 'application/json' }, body: '{}' })
+  assert.equal(res.status, 404)
+  // The page's client module is the installed client.js; a leftover call would 404 in the browser.
+  const client = fs.readFileSync(path.join(home, 'profiles', CFG.profile, 'node_modules', 'dsh-fishball', 'client.js'), 'utf8')
+  assert.ok(!client.includes(ROUTE.questionsAnswer.slice(1)), 'client.js still names the removed route')
 })
 
 test('INST-07 the Sidebar entry switch saves', { skip }, async () => {
