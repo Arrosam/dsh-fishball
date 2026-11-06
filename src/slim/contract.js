@@ -553,13 +553,33 @@ function responseSessionList(payload) {
   if (payload.sessions.length > LIMITS.sessionsListed) fail(ERROR.limit)
 }
 
+/**
+ * notify_when_finished on start_session and message_session (DESIGN §5b, §5c). The host sets the
+ * watch up itself, with the target's watermark read BEFORE the message is delivered, so a turn
+ * that ends before the child could call session.watch is still reported (7713 N5). The result
+ * then carries the watch's id, or its refusal; the message is delivered either way.
+ */
+const NOTIFY = Object.freeze({ request: Object.freeze(['notifyWhenFinished']), response: Object.freeze(['watchId', 'watchError']) })
+
+function notifyRequest(payload) {
+  if (Object.hasOwn(payload, 'notifyWhenFinished')) boolean(payload.notifyWhenFinished)
+}
+
+/** A watch outcome on a delivery result: its id or its refusal, never both. */
+function notifyResponse(payload) {
+  if (Object.hasOwn(payload, 'watchId') && Object.hasOwn(payload, 'watchError')) fail()
+  if (Object.hasOwn(payload, 'watchId')) text(payload.watchId)
+  if (Object.hasOwn(payload, 'watchError')) member(payload.watchError, Object.values(WATCH_ERROR))
+}
+
 function requestSessionStart(payload) {
-  exact(payload, ['folder', 'title', 'message', 'attachments'], ['model', 'reasoningEffort'])
+  exact(payload, ['folder', 'title', 'message', 'attachments'], ['model', 'reasoningEffort', ...NOTIFY.request])
   text(payload.folder)
   string(payload.title)
   string(payload.message)
   if (Object.hasOwn(payload, 'model')) text(payload.model)
   if (Object.hasOwn(payload, 'reasoningEffort')) text(payload.reasoningEffort)
+  notifyRequest(payload)
   attachments(payload.attachments)
 }
 
@@ -568,25 +588,41 @@ function requestSessionStart(payload) {
  * produced its session, so they are result fields rather than frame errors (§5.2).
  */
 function responseSessionStart(payload) {
-  exact(payload, ['sessionId', 'managed'], ['titleError', 'workspaceError'])
+  exact(payload, ['sessionId', 'managed'], ['titleError', 'workspaceError', ...NOTIFY.response])
   text(payload.sessionId)
   boolean(payload.managed)
   for (const key of ['titleError', 'workspaceError']) if (Object.hasOwn(payload, key)) text(payload[key])
+  notifyResponse(payload)
 }
 
-/** session.message and session.redirect send the same payload; redirect runs after a cancel. */
-function requestSessionMessage(payload) {
-  exact(payload, ['sessionId', 'message', 'attachments'])
+/** The payload session.message and session.redirect share; `optional` adds message's notify flag. */
+function deliveryRequest(payload, optional) {
+  exact(payload, ['sessionId', 'message', 'attachments'], optional)
   text(payload.sessionId)
   string(payload.message)
   attachments(payload.attachments)
 }
 
+function requestSessionMessage(payload) {
+  deliveryRequest(payload, NOTIFY.request)
+  notifyRequest(payload)
+}
+
+/** Redirect runs after a cancel; like the legacy redirect_session it sets no watch. */
+function requestSessionRedirect(payload) { deliveryRequest(payload, NO_KEYS) }
+
 /** An unconfirmed delivery is terminal for that messageId: it is never retried (§5.2). */
-function responseSessionDelivery(payload) {
-  exact(payload, ['status'])
+function deliveryResponse(payload, optional) {
+  exact(payload, ['status'], optional)
   member(payload.status, Object.values(DELIVERY))
 }
+
+function responseSessionMessage(payload) {
+  deliveryResponse(payload, NOTIFY.response)
+  notifyResponse(payload)
+}
+
+function responseSessionRedirect(payload) { deliveryResponse(payload, NO_KEYS) }
 
 function requestSessionStop(payload) {
   exact(payload, ['sessionId'], ['reason'])
@@ -935,7 +971,7 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.sessionList]: requestSessionList,
     [OPERATION.sessionStart]: requestSessionStart,
     [OPERATION.sessionMessage]: requestSessionMessage,
-    [OPERATION.sessionRedirect]: requestSessionMessage,
+    [OPERATION.sessionRedirect]: requestSessionRedirect,
     [OPERATION.sessionStop]: requestSessionStop,
     [OPERATION.sessionRead]: requestSessionRead,
     [OPERATION.sessionWatch]: requestSessionWatch,
@@ -959,8 +995,8 @@ export const VALIDATORS = Object.freeze({
     [ENVELOPE.handshake]: responseHandshake,
     [OPERATION.sessionList]: responseSessionList,
     [OPERATION.sessionStart]: responseSessionStart,
-    [OPERATION.sessionMessage]: responseSessionDelivery,
-    [OPERATION.sessionRedirect]: responseSessionDelivery,
+    [OPERATION.sessionMessage]: responseSessionMessage,
+    [OPERATION.sessionRedirect]: responseSessionRedirect,
     [OPERATION.sessionStop]: responseSessionStop,
     [OPERATION.sessionRead]: responseSessionRead,
     [OPERATION.sessionWatch]: responseSessionWatch,
