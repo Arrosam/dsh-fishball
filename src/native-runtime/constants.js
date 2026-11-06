@@ -28,6 +28,10 @@ export const RUNTIME = Object.freeze({
   pid: 'pid.json',
   endpoint: 'endpoint.json',
   log: 'lifecycle.log',
+  // The child's stderr (B6), bounded by RUNTIME_LIMITS.maxLogBytes; the previous file is kept
+  // once under the rotated suffix, so at most two caps of disk are used.
+  stderrLog: 'child-stderr.log',
+  rotatedLogSuffix: '.1',
   // Readiness is the base core plus the app server (§2.3). The old gate waited for webServer,
   // webApp, connection and sessionController, which only the Web UI bundle supplies.
   requiredServices: Object.freeze(['agents', 'sessions', 'tools', 'profileContext', 'appExit', 'appReady']),

@@ -47,7 +47,7 @@
  * Fishball's own question card, and the user's answer rows. T08 renders labels() as the inline
  * decision labels.
  *
- * The row is mounted by native-child.js after the session-tools row; it shares that row's
+ * The launch overlay inserts this row after the session-tools row; it shares that row's
  * `fishballBridge` service and opens no second channel. `require()` makes the nine operations
  * part of the next hello automatically (the SDK's own mechanism).
  */
@@ -58,7 +58,7 @@ import { APPROVAL_KIND, DECISION, ERROR, EVENT, GRANT_KIND, LIMITS, OPERATION, P
 import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
 import { createDecisionStore } from './decisions.js'
 
-/** Stable Cordis plugin name; native-child.js mounts it after the session-tools row. */
+/** Stable Cordis plugin name; the launch overlay inserts it after the session-tools row. */
 export const name = 'fishball-native-approvals'
 export const inject = ['tools', 'fishballBridge']
 
