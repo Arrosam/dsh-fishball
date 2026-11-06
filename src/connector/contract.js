@@ -255,6 +255,10 @@ export class ContractError extends Error {
   }
 }
 
+/**
+ * @param {string} [code] - an ERROR value; invalid-envelope by default.
+ * @throws {ContractError} always, with that code.
+ */
 export function fail(code = ERROR.invalid) { throw new ContractError(code) }
 
 const NUMBER = Object.freeze({ zero: 0, one: 1 })
@@ -483,12 +487,29 @@ function grantSpec(value, now) {
   } else if (Object.hasOwn(value, 'prefix')) fail(ERROR.grantInvalid)
 }
 
+/**
+ * A reason the host requires (design §18.5 conn-OQ-19): non-empty and within its cap. An empty one
+ * fails with the host's own code, reason-required, so a sender that validates before sending gets
+ * the same refusal the host would have answered.
+ */
+function requiredReason(value) {
+  chars(value, LIMITS.reasonChars)
+  if (value.length === NUMBER.zero) fail(ERROR.reasonRequired)
+}
+
+/** The decisions whose reason the host requires; ask and escalate may carry an empty one. */
+const REASONED_DECISIONS = Object.freeze([DECISION.allow, DECISION.grant, DECISION.reject])
+
 /** answer_approval's answer object (§5.2): the decision plus the fields that decision uses. */
 function approvalAnswer(value, context) {
   exact(value, ['decision'], ['risk', 'reason', 'question', 'grant'])
   member(value.decision, Object.values(DECISION))
   if (Object.hasOwn(value, 'risk')) member(value.risk, Object.values(RISK))
-  if (Object.hasOwn(value, 'reason')) chars(value.reason, LIMITS.reasonChars)
+  // An absent reason stays the host's refusal (it checks risk first, then the reason).
+  if (Object.hasOwn(value, 'reason')) {
+    if (REASONED_DECISIONS.includes(value.decision)) requiredReason(value.reason)
+    else chars(value.reason, LIMITS.reasonChars)
+  }
   if (Object.hasOwn(value, 'question')) {
     if (value.decision !== DECISION.ask) fail()
     chars(value.question, LIMITS.questionChars)
@@ -499,9 +520,15 @@ function approvalAnswer(value, context) {
   }
 }
 
+/** An option label or a header: non-empty (conn-OQ-19) and within the label cap. */
+function label(value) {
+  text(value)
+  chars(value, LIMITS.labelChars)
+}
+
 function questionOption(value) {
   exact(value, ['label'], ['description'])
-  chars(value.label, LIMITS.labelChars)
+  label(value.label)
   if (Object.hasOwn(value, 'description')) string(value.description)
 }
 
@@ -519,7 +546,7 @@ function questionItem(value) {
   text(value.id)
   chars(value.question, LIMITS.questionChars)
   if (Object.hasOwn(value, 'detail')) string(value.detail)
-  if (Object.hasOwn(value, 'header')) chars(value.header, LIMITS.labelChars)
+  if (Object.hasOwn(value, 'header')) label(value.header)
   if (Object.hasOwn(value, 'options')) arrayOf(value.options, questionOption)
   if (Object.hasOwn(value, 'multiSelect')) boolean(value.multiSelect)
   if (Object.hasOwn(value, 'intent')) planIntent(value.intent)
@@ -543,16 +570,38 @@ function knownCapabilities(values) {
   for (const capability of values) member(capability, Object.keys(OPERATIONS), ERROR.capability)
 }
 
+/** The one operation every instance must serve: the connector's only way to deliver to it. */
+const CONNECTOR_REQUIRES = Object.freeze([OPERATION.inboxPush])
+
 /**
  * Capabilities are the request names a peer implements; the handshake never admits an event.
  * `available` may carry names this side does not know (ignored); every `required` name must be
  * known here and be in `available`.
+ * @throws {ContractError} unsupported-capability (also for a duplicate name), invalid-envelope
+ *   for a list that is not a dense array of non-empty strings.
  */
 export function requireCapabilities(available, required) {
   capabilities(available)
   capabilities(required)
   knownCapabilities(required)
   if (required.some((capability) => !available.includes(capability))) fail(ERROR.capability)
+}
+
+/**
+ * The connector's answer to a well-formed handshake request (design §18.5 conn-OQ-43). The payload
+ * validator checks only the shape, so a frame that passes it keeps the channel open; this check
+ * then refuses, as an `unsupported-capability` error frame, a handshake whose required names are
+ * not all in its own `capabilities`, are unknown to the connector, or are not served now, and one
+ * whose `capabilities` lack `inbox.push` (without it the connector cannot deliver anything).
+ * The instance may correct its handshake on the same channel.
+ * @param {{capabilities: string[], requiredCapabilities: string[]}} payload - a validated handshake request.
+ * @param {string[]} served - the operations the connector serves now (its welcome).
+ * @throws {ContractError} unsupported-capability.
+ */
+export function checkHandshake(payload, served) {
+  requireCapabilities(payload.capabilities, payload.requiredCapabilities)
+  requireCapabilities(served, payload.requiredCapabilities)
+  requireCapabilities(payload.capabilities, CONNECTOR_REQUIRES)
 }
 
 function requestSessionList(payload) {
@@ -732,9 +781,12 @@ function responseApprovalAnswer(payload) {
 function questionAnswerItem(value) {
   exact(value, ['id', 'selected'], ['custom'])
   text(value.id)
+  // uniqueStrings already refuses an empty label. An empty list stays valid (it skips the
+  // question, as answer_question's tool text says); conn-OQ-19's "empty only with custom" is
+  // held back until the design settles that conflict.
   uniqueStrings(value.selected)
   if (value.selected.length > LIMITS.selectedLabelsPerAnswer) fail(ERROR.limit)
-  for (const label of value.selected) chars(label, LIMITS.labelChars)
+  for (const selected of value.selected) label(selected)
   if (Object.hasOwn(value, 'custom')) chars(value.custom, LIMITS.customChars)
 }
 
@@ -815,7 +867,7 @@ function requestPromptAnswer(payload) {
   text(payload.promptId)
   member(payload.decision, PROMPT_DECISIONS, ERROR.invalidDecision)
   if (Object.hasOwn(payload, 'risk')) member(payload.risk, Object.values(RISK))
-  chars(payload.reason, LIMITS.reasonChars)
+  requiredReason(payload.reason)
 }
 
 function responsePromptAnswer(payload) {
@@ -850,7 +902,7 @@ function responseGrantList(payload) {
 function requestGrantRevoke(payload) {
   exact(payload, ['grantId', 'reason'])
   text(payload.grantId)
-  chars(payload.reason, LIMITS.reasonChars)
+  requiredReason(payload.reason)
 }
 
 function responseGrantRevoke(payload) {
@@ -863,7 +915,7 @@ function responseGrantRevoke(payload) {
 function requestSessionRelease(payload) {
   exact(payload, ['sessionId', 'reason'])
   text(payload.sessionId)
-  chars(payload.reason, LIMITS.reasonChars)
+  requiredReason(payload.reason)
 }
 
 function responseSessionRelease(payload) {
@@ -893,9 +945,11 @@ function responseAttachmentRead(payload) {
 }
 
 /**
- * One transfer per message (§6.2). Images are capped at 4 MiB; files travel through the same
- * frame but carry an arbitrary media type. The host admits the bytes into its own store and
- * returns a single-use hostRef.
+ * One put per image or file. A message carries at most one file (transfersPerMessage) and up to
+ * attachmentsPerMessage hostRefs in all (design §18.5 conn-OQ-45). Images are capped at 4 MiB;
+ * files travel through the same frame but carry an arbitrary media type. The host admits the
+ * bytes into its own store and returns a single-use hostRef; a ref that is unknown, expired or
+ * already consumed is refused `expired` on the message that carries it (conn-OQ-46).
  */
 function requestAttachmentPut(payload) {
   exact(payload, ['transferId', 'total', 'sha256', 'mediaType', 'chunks'], ['name'])
@@ -968,9 +1022,14 @@ function eventSessionState(payload) {
   boolean(payload.pendingInteraction)
 }
 
+/**
+ * Shape only (conn-OQ-43): a break here closes the channel. Whether the connector can meet the
+ * required set is checkHandshake()'s answer, which keeps the channel open.
+ */
 function requestHandshake(payload) {
   exact(payload, ['capabilities', 'requiredCapabilities'])
-  requireCapabilities(payload.capabilities, payload.requiredCapabilities)
+  capabilities(payload.capabilities)
+  capabilities(payload.requiredCapabilities)
 }
 
 function responseHandshake(payload) {
@@ -1047,7 +1106,13 @@ function validatePayload(kind, operation, payload, context) {
   return payload
 }
 
-/** The answer validators take an optional { now } so a future grant expiry is checked deterministically. */
+/**
+ * Payload validators, by wire name. The answer validators take an optional { now } so a future
+ * grant expiry is checked deterministically.
+ * @returns {object} the same payload.
+ * @throws {ContractError} unsupported-operation for a name with no validator of that type, else
+ *   the first rule the payload breaks (invalid-envelope, limit-exceeded or an operation code).
+ */
 export function validateRequest(operation, payload, context = {}) { return validatePayload(ENVELOPE.type.request, operation, payload, context) }
 export function validateResponse(operation, payload) { return validatePayload(ENVELOPE.type.response, operation, payload) }
 export function validateEvent(operation, payload) { return validatePayload(ENVELOPE.type.event, operation, payload) }
@@ -1078,10 +1143,32 @@ function validateEventEnvelope(envelope) {
 }
 
 /**
+ * A request or error naming an operation this side does not know (design §18.5 conn-OQ-44). A
+ * newer minor may add operation names, so an older peer must refuse such a request politely: the
+ * envelope is returned with its payload unvalidated, and the receiver answers it with an
+ * `unsupported-operation` error frame (which echoes the same name, hence errors pass too) while
+ * the channel stays open. Its direction and scope are unknown, so only the session id's form is
+ * checked. A response or an event with an unknown name answers nothing this side asked for, so it
+ * still fails validation and closes the channel.
+ */
+function validateUnknownOperationEnvelope(envelope) {
+  if (envelope.type !== ENVELOPE.type.request && envelope.type !== ENVELOPE.type.error) fail(ERROR.operation)
+  if (envelope.sessionId !== null) text(envelope.sessionId)
+  if (envelope.type === ENVELOPE.type.error) errorPayload(envelope.payload)
+  return envelope
+}
+
+/**
  * Validate one complete envelope. options.receivingSide additionally enforces direction:
  * requests arrive at their target, responses and errors at their source, events at the child.
  * options.expectedHostId rejects a frame from another host (§5.1); options.now pins the clock
  * for a grant answer's future expiresAt.
+ * @param {object} envelope - a parsed frame.
+ * @param {{expectedHostId?: string, receivingSide?: string, now?: number}} [options]
+ * @returns {object} the same envelope. A request naming an unknown operation is returned with
+ *   its payload unvalidated, for the receiver to refuse with `unsupported-operation`.
+ * @throws {ContractError} the first rule the frame breaks (invalid-envelope, unsupported-version,
+ *   wrong-host, unsupported-operation, forbidden, limit-exceeded or an operation-specific code).
  */
 export function validateEnvelope(envelope, options = {}) {
   const { expectedHostId, receivingSide, now } = options ?? {}
@@ -1098,7 +1185,9 @@ export function validateEnvelope(envelope, options = {}) {
     return validateEventEnvelope(envelope)
   }
   if (envelope.operation === ENVELOPE.handshake) return validateHandshakeEnvelope(envelope)
-  if (typeof envelope.operation !== 'string' || !Object.hasOwn(OPERATIONS, envelope.operation)) fail(ERROR.operation)
+  // A missing or empty name is a broken frame, not a newer peer's operation.
+  if (typeof envelope.operation !== 'string' || envelope.operation.length === NUMBER.zero) fail(ERROR.operation)
+  if (!Object.hasOwn(OPERATIONS, envelope.operation)) return validateUnknownOperationEnvelope(envelope)
   const operation = OPERATIONS[envelope.operation]
   if (envelope.type === ENVELOPE.type.request) {
     if (receivingSide !== undefined && targetSide(operation.direction) !== receivingSide) fail(ERROR.forbidden)
@@ -1121,6 +1210,11 @@ export function validateEnvelope(envelope, options = {}) {
   return envelope
 }
 
+/**
+ * Assemble one frame from its seven fields. It checks nothing and never throws; encodeEnvelope
+ * validates.
+ * @returns {object} the envelope.
+ */
 export function makeEnvelope(hostId, sessionId, requestId, type, operation, payload) {
   return { version: ENVELOPE.version, hostId, sessionId, requestId, type, operation, payload }
 }
@@ -1132,6 +1226,12 @@ function frameBytes(operation, type) {
   return LIMITS.envelopeBytes
 }
 
+/**
+ * @param {object} envelope - a frame to send.
+ * @param {string} [expectedHostId]
+ * @returns {string} the JSON text, at most the operation's frame bound.
+ * @throws {ContractError} validateEnvelope's codes, or limit-exceeded for an oversized frame.
+ */
 export function encodeEnvelope(envelope, expectedHostId) {
   validateEnvelope(envelope, { expectedHostId })
   let encoded
@@ -1142,6 +1242,13 @@ export function encodeEnvelope(envelope, expectedHostId) {
   return encoded
 }
 
+/**
+ * @param {string} encoded - one received frame.
+ * @param {{expectedHostId?: string, receivingSide?: string, now?: number}} [options]
+ * @returns {object} the validated envelope (validateEnvelope's result).
+ * @throws {ContractError} limit-exceeded (bounded before parsing), invalid-envelope for text
+ *   that is not JSON, else validateEnvelope's codes.
+ */
 export function decodeEnvelope(encoded, options = {}) {
   if (typeof encoded !== 'string') fail()
   // Bound before parsing. The attachment ceiling is the largest legal frame, so a smaller
@@ -1167,14 +1274,34 @@ export function decodeEnvelope(encoded, options = {}) {
 export const CONNECTOR_CONTRACT = Object.freeze({ id: 'fishball-connector', major: 1, minor: 0 })
 export const CONNECTOR_SERVICE = 'fishballConnector'
 
+/**
+ * The `fishballConnector` service's members, and nothing else (design §18.5 conn-OQ-49).
+ * `current()` is read-only and carries no transport: it returns null with no instance, else a
+ * frozen object of exactly CONNECTOR_SERVICE_API.currentKeys (conn-OQ-08), where `attachedAt` is
+ * epoch ms and `attachCount` counts attaches since the connector row was applied. C1 implements
+ * the service; this module only names its surface.
+ */
+export const CONNECTOR_SERVICE_API = Object.freeze({
+  members: Object.freeze(['attachInstance', 'current']),
+  currentKeys: Object.freeze(['id', 'name', 'attachedAt', 'attachCount']),
+})
+
+/**
+ * The one browser message of v1 (design §18.6 item 13). A page the connector's opener frames may
+ * post `{type: BROWSER_MESSAGE.openSettings}` to its parent with `location.origin` as the target;
+ * the opener accepts it only from its own iframe and the same origin, and then opens the
+ * connector's Plugins card. Any other message is ignored.
+ */
+export const BROWSER_MESSAGE = Object.freeze({ keys: Object.freeze(['type']), openSettings: 'fishball-connector:open-settings' })
+
 /** attachInstance refusals; a refused attach changes nothing (design §18.2 K1). */
 export const ATTACH_ERROR = Object.freeze({
   busy: 'instance-busy',
   version: 'contract-version',
   ui: 'ui-invalid',
   transport: 'transport-invalid',
-  // Not named by design §0.4: a descriptor whose id, name, status, retry or keys are malformed.
-  // An open point (docs/connector-contract.md §11) until the user names the code.
+  // A descriptor whose id, name, status, retry or keys are malformed (final, design §18.5
+  // conn-OQ-11).
   instance: 'instance-invalid',
 })
 
@@ -1194,9 +1321,24 @@ export const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose', 
  * resolves to that same origin, which refuses a scheme, `//host`, and the forms a browser also
  * reads as another host (`/\host`, or a tab/newline the URL parser drops). `token` is DSH's own
  * launch-token query name (dsh-client-connection lib/index.js TOKEN_QUERY, rc.5 and 0.2.2): a
- * ui path must never carry a credential into the iframe's address.
+ * ui path must never carry a credential into the iframe's address. So the query and the fragment
+ * are both read as URL search parameters (which percent-decodes the names) and a parameter named
+ * `token` in any ASCII case is refused (design §18.5 conn-OQ-50). Only ASCII letters are folded:
+ * a Unicode case mapping (the Kelvin sign lower-cases to `k`) is a different name. Other
+ * credential spellings (`access_token`) are accepted; the rule guards DSH's own name only.
  */
-const UI_PATH = Object.freeze({ root: '/', base: 'http://connector.invalid', tokenParameter: 'token' })
+const UI_PATH = Object.freeze({
+  root: '/', base: 'http://connector.invalid', tokenParameter: 'token', fragmentMark: '#', asciiUpper: /[A-Z]/g,
+})
+
+/** Lower-case the ASCII letters only (see UI_PATH). */
+function asciiLower(value) { return value.replace(UI_PATH.asciiUpper, (letter) => letter.toLowerCase()) }
+
+/** Whether URL search parameters carry DSH's launch-token name. */
+function carriesToken(parameters) {
+  for (const name of parameters.keys()) if (asciiLower(name) === UI_PATH.tokenParameter) return true
+  return false
+}
 
 /** Throw an attach refusal unless the check holds. */
 function attachCheck(holds, code) { if (!holds) throw new ContractError(code) }
@@ -1236,9 +1378,15 @@ function uiPath(value) {
   attachCheck(value.startsWith(UI_PATH.root) && !value.startsWith(UI_PATH.root + UI_PATH.root), ATTACH_ERROR.ui)
   let url
   try { url = new URL(value, UI_PATH.base) } catch { attachCheck(false, ATTACH_ERROR.ui) }
-  attachCheck(url.origin === UI_PATH.base && !url.searchParams.has(UI_PATH.tokenParameter), ATTACH_ERROR.ui)
+  attachCheck(url.origin === UI_PATH.base, ATTACH_ERROR.ui)
+  const fragment = new URLSearchParams(url.hash.startsWith(UI_PATH.fragmentMark) ? url.hash.slice(UI_PATH.fragmentMark.length) : url.hash)
+  attachCheck(!carriesToken(url.searchParams) && !carriesToken(fragment), ATTACH_ERROR.ui)
 }
 
+/**
+ * `ui: {}` is accepted, the same as no `ui`; `ui: null` (or any non-object) is refused
+ * (design §18.5 conn-OQ-52): an absent key is the only way to say "no pages".
+ */
 function uiPaths(value) {
   attachShape(() => exact(value, [], ATTACH_KEYS.ui), ATTACH_ERROR.ui)
   for (const key of ATTACH_KEYS.ui) if (Object.hasOwn(value, key)) uiPath(value[key])

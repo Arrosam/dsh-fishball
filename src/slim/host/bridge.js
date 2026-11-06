@@ -69,7 +69,8 @@ import { stat } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
 import {
   DELIVERY, DIGEST, ENVELOPE, ERROR, EVENTS, IMAGE_TYPES, OPERATION, OPERATIONS, ROLE, SIDE, WATCH_ERROR,
-  WATCH_MODE, WATCH_STATUS, TRANSPORT_METHODS, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope, validateEvent, validateRequest,
+  WATCH_MODE, WATCH_STATUS, TRANSPORT_METHODS, ContractError, checkHandshake, decodeEnvelope, encodeEnvelope, makeEnvelope, validateEvent,
+  validateRequest,
 } from '../contract.js'
 import { LIMITS } from '../limits.js'
 
@@ -389,7 +390,9 @@ class BridgeHost {
   receiveHandshake(connection, envelope) {
     if (connection.ready || connection.handshaking) { this.reply(connection, envelope, { code: ERROR.conflict }, ENVELOPE.type.error); return }
     const available = this.capabilities
-    if (envelope.payload.requiredCapabilities.some((operation) => !available.includes(operation))) {
+    // The payload validator checks only the handshake's shape now; whether this host can meet
+    // it is the contract's answer, an error frame that keeps the channel open (conn-OQ-43).
+    try { checkHandshake(envelope.payload, available) } catch {
       this.reply(connection, envelope, { code: ERROR.capability }, ENVELOPE.type.error)
       return
     }
