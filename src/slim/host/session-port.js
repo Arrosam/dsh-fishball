@@ -18,6 +18,10 @@
  *   still boot without the legacy row and the session operations simply do nothing.
  *
  * start runs create -> title -> model (when the caller named one) -> manage -> first delivery.
+ * notifyWhenFinished on start and message sets up a watch on the target after a delivery, with
+ * the watermark read BEFORE that delivery, so a fast turn the message starts is never missed
+ * (src/watches.js, review H1; 7713 N5). This is the legacy src/messaging.js withWatch rule: a
+ * watch the child set up afterwards with session.watch would start after such a turn had ended.
  * It never creates a folder: bridge.js resolves the folder to an existing workspace or an
  * existing absolute directory before this port is called (§5.2).
  *
@@ -34,7 +38,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionTitleInvalidError } from '@deepseek-ai/dsh-session-title'
 import { ContractError, DELIVERY, ERROR, ROLE, WATCH_ERROR } from '../contract.js'
 import { MANAGED_BY, OPTIONAL_SERVICE, SESSION_INFO, SOURCE, TITLE_ERROR, WORKSPACE_ERROR } from '../../constants.js'
-import { senderOf, textOfEvent } from '../../session-info.js'
+import { NO_EVENTS_SEQ, senderOf, textOfEvent } from '../../session-info.js'
 import { prepareSessionModel, applySessionModel } from '../../session-model.js'
 import { createImagePort } from './images.js'
 import { byteLength, cutToBytes } from '../../text.js'
@@ -47,7 +51,7 @@ export const SESSION_STATE = Object.freeze({ service: 'fishballSessionState' })
 
 /** The service's own shape; index.js builds it from the row's live objects. */
 const STATE_METHODS = Object.freeze([
-  'assistantId', 'managedIds', 'isManaged', 'isFishball', 'manage', 'release', 'watch', 'watches', 'unwatch',
+  'assistantId', 'managedIds', 'isManaged', 'isFishball', 'manage', 'release', 'watch', 'watermark', 'watches', 'unwatch',
 ])
 
 /** The main-DSH services every operation needs; a missing one is a wiring error, not a refusal. */
@@ -272,8 +276,36 @@ export function createSessionPort(ctx, options = {}) {
     }
   }
 
+  /**
+   * Add a watch for Fishball (Watches' defaults: finished, once, DESIGN §5c).
+   * @param input - { sessionId, mode?, since? }; since is the watermark (src/watches.js add()).
+   * @returns { watchId } or { watchError }: a watch refusal is typed data in the §5.2 response.
+   */
+  async function addWatch(input) {
+    try {
+      return { watchId: (await state().watch(input)).id }
+    } catch (error) {
+      if (typeof error?.code === 'string' && WATCH_REFUSALS.has(error.code)) return { watchError: error.code }
+      throw error
+    }
+  }
+
+  /**
+   * notifyWhenFinished after a delivery that did not throw (delivered or unconfirmed: the session
+   * has the message either way). A refused watch never undoes the message (DESIGN §5b).
+   * @returns {} when not asked, else addWatch's result.
+   */
+  const notifyAfter = (notify, sessionId, since) => (notify === true ? addWatch({ sessionId, since }) : {})
+
+  /** message's delivery; with notifyWhenFinished the watermark is read before the message goes in. */
+  async function message({ sessionId, message: text, attachments, notifyWhenFinished: notify }) {
+    const since = notify === true ? await state().watermark(sessionId) : undefined
+    const delivered = await deliver(sessionId, text, (agent, input) => agent.steer(input), attachments)
+    return { ...delivered, ...(await notifyAfter(notify, sessionId, since)) }
+  }
+
   /** Create -> title -> model -> manage -> first delivery; the contract has no field for a failed start delivery. */
-  async function start({ target, title, model, reasoningEffort, message, attachments: hostRefs = [] }) {
+  async function start({ target, title, model, reasoningEffort, message, attachments: hostRefs = [], notifyWhenFinished: notify }) {
     const registry = state()
     // Validate the model before anything is created, so a refused choice leaves no session behind.
     const selection = await prepareSessionModel(ctx, model, reasoningEffort)
@@ -290,16 +322,25 @@ export function createSessionPort(ctx, options = {}) {
     // manage() writes the store first; a throw after that write leaves the session managed, so
     // the answer reports the registry's state rather than the call's outcome.
     const managed = registry.isManaged(created.sessionId)
+    // A new session: its log before the first message holds no turn end, so a read that finds
+    // nothing counts every turn end (legacy watermarkOfNew). Named before this is read.
+    const since = notify === true ? (await registry.watermark(created.sessionId)) ?? NO_EVENTS_SEQ : undefined
+    let delivered = false
     try {
       await deliverWith(created.sessionId, message, (agent, input) => agent.steer(input), attachments)
+      delivered = true
     } catch (error) {
       logger?.warn('first delivery to %s failed (%s)', created.sessionId, error?.code ?? ERROR.failed)
     }
+    // No watch on a session that never got its first message: no turn would ever end there
+    // (the legacy tool also watched only after a delivery that did not fail).
+    const watched = delivered ? await notifyAfter(notify, created.sessionId, since) : {}
     return {
       sessionId: created.sessionId,
       managed,
       ...(named.titleError === undefined ? {} : { titleError: named.titleError }),
       ...(created.workspaceError === undefined ? {} : { workspaceError: created.workspaceError }),
+      ...watched,
     }
   }
 
@@ -353,7 +394,7 @@ export function createSessionPort(ctx, options = {}) {
       return found === undefined ? undefined : { id: found.id }
     },
     start,
-    message: ({ sessionId, message, attachments }) => deliver(sessionId, message, (agent, input) => agent.steer(input), attachments),
+    message,
     redirect: ({ sessionId, message, attachments }) => deliver(sessionId, message, async (agent, input) => {
       // The Stop button's path, then the instruction as the next turn (src/messaging.js).
       await ctx.sessionController.cancel({ sessionId })
@@ -367,15 +408,7 @@ export function createSessionPort(ctx, options = {}) {
     // T06's two bridge operations. attachment.read answers metadata plus chunks; the image port
     // has already checked that this Session's log references the id.
     attachment,
-    async watch({ sessionId, mode }) {
-      try {
-        return { watchId: (await state().watch({ sessionId, mode })).id }
-      } catch (error) {
-        // A watch refusal is typed data in the §5.2 response, not an error frame.
-        if (typeof error?.code === 'string' && WATCH_REFUSALS.has(error.code)) return { watchError: error.code }
-        throw error
-      }
-    },
+    watch: ({ sessionId, mode }) => addWatch({ sessionId, mode }),
     async watches() {
       return state().watches().map((watch) => ({ watchId: watch.id, sessionId: watch.targetSessionId, mode: watch.mode, status: watch.status }))
     },

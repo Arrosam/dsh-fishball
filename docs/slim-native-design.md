@@ -315,8 +315,8 @@ with 32 selected labels each.
 | Op | Direction | Payload | Authorization | Result / errors |
 | --- | --- | --- | --- | --- |
 | `session.list` | child to main | `{workspaceId?, limit}` | related sessions only (managed, watched, messaged by, forwarded) | `{sessions:[{sessionId,title,workspaceId,running,pendingInteraction}]}`; bounded (100). |
-| `session.start` | child to main | `{folder, title, model?, reasoningEffort?, message, attachments[]}` | folder must exist and be a workspace or absolute path the user opened | `{sessionId, managed, titleError?, workspaceError?}`; never creates folders. |
-| `session.message` | child to main | `{sessionId, message, attachments[]}` | managed session, live or resumable | `{status: delivered or unconfirmed}`; never retried after an unconfirmed flush. |
+| `session.start` | child to main | `{folder, title, model?, reasoningEffort?, message, attachments[], notifyWhenFinished?}` | folder must exist and be a workspace or absolute path the user opened | `{sessionId, managed, titleError?, workspaceError?, watchId? or watchError?}`; never creates folders. |
+| `session.message` | child to main | `{sessionId, message, attachments[], notifyWhenFinished?}` | managed session, live or resumable | `{status: delivered or unconfirmed, watchId? or watchError?}`; never retried after an unconfirmed flush. `notifyWhenFinished: true` (here and on start) makes the host set the watch up with the target's watermark read before the delivery, so a turn that ends at once is still reported (DESIGN §5b/§5c, 7713 N5); a refused watch never undoes the message. |
 | `session.redirect` | child to main | `{sessionId, message, attachments[]}` | managed session | as `message`, after `cancel`. |
 | `session.stop` | child to main | `{sessionId, reason?}` | managed session | `{stopped:true}`. |
 | `session.read` | child to main | `{sessionId, maxMessages, maxBytes}` | related session (managed, watched, messaged by, or forwarded) | `{messages:[{seq,role,author,text,images:[...]}], truncated}`. |

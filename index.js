@@ -246,6 +246,8 @@ export async function apply(ctx, config) {
     manage: (sessionId, by) => managedRegistry.manage(sessionId, by),
     release: (sessionId, reason) => managedRegistry.release(sessionId, reason),
     watch: (input) => watches.add({ ...input, by: { kind: WATCH_BY.assistant } }),
+    // The target's last seq, read before a notify_when_finished message is delivered (§5c).
+    watermark: (sessionId) => watches.watermarkOf(sessionId),
     watches: () => watches.snapshot().watches,
     unwatch: (watchId) => watches.remove(watchId),
     bridgeReady: (ready) => {
