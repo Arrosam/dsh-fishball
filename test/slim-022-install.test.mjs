@@ -7,7 +7,8 @@
  * (§7 entries, §9 settings, §10 Refresh models, §6.6 uploads, T09 approvals) and the task brief.
  *
  * Opt-in: set FBTEST_TGZ (absolute .tgz) and FBTEST_DSH_BIN (DSH-X's 0.2.2-rc.1 `dsh` wrapper).
- * FBTEST_NODE22 is the plain Node the native host row needs. Without them every case is skipped.
+ * FBTEST_NODE22 is the plain Node put first on DSH's PATH (the native host's default pick since
+ * 0ee4d9e; the test no longer edits the profile). Without them every case is skipped.
  * Run it outside a file sandbox: the native runtime spawns /bin/ps, and a denial fails the child.
  */
 import { test, before, after } from 'node:test'
@@ -42,7 +43,7 @@ const ROUTE = Object.freeze({
 })
 const skip = !ENV.tgz || !ENV.dsh ? 'set FBTEST_TGZ and FBTEST_DSH_BIN to run' : false
 
-let home, proc, cookie, origin
+let home, proc, cookie, origin, composed
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const req = (p, init = {}) => fetch(origin + p, { redirect: 'manual', ...init, headers: { cookie, ...init.headers } })
@@ -64,16 +65,15 @@ before(async () => {
   const add = spawnSync(ENV.dsh, ['plugin', '--profile', CFG.profile, 'add', ENV.tgz, '--ignore-scripts'],
     { env: { ...process.env, DSH_HOME: home }, encoding: 'utf8' })
   assert.equal(add.status, 0, 'dsh plugin add failed')
-  // The documented opt-in row for the native host (docs/native-manual-handoff.md).
-  fs.writeFileSync(path.join(profileDir, 'cordis.patch.yml'), [
-    '- insert:', '    - id: fishball-native-host', '      name: dsh-fishball/native-host', '      config:',
-    '        enabled: true', `        nodeExecutable: ${ENV.node}`,
-    `        executableSearchPath: ${path.dirname(ENV.node)}:/usr/bin:/bin`, '        managedSessionIds: []', '',
-  ].join('\n'))
+  // No profile edit (B2, 0ee4d9e): the package's own patch inserts the native-host row and picks
+  // the first plain `node` on DSH's PATH, so the boot gets ENV.node's folder first on PATH.
+  // The composed tree is read now, before the boot, from DSH's own --dump-config.
+  const env = { ...process.env, DSH_HOME: home, PATH: `${path.dirname(ENV.node)}:${process.env.PATH}` }
+  composed = spawnSync(ENV.dsh, ['--profile', CFG.profile, '--dump-config'], { env, encoding: 'utf8' }).stdout ?? ''
   origin = `http://127.0.0.1:${CFG.port}`
   sameOrigin.origin = origin
   proc = spawn(ENV.dsh, [CFG.profile, '--host', '127.0.0.1', '--port', String(CFG.port), '--no-open'],
-    { env: { ...process.env, DSH_HOME: home }, stdio: ['ignore', 'pipe', 'pipe'] })
+    { env, stdio: ['ignore', 'pipe', 'pipe'] })
   let out = ''
   proc.stdout.on('data', (b) => { out += b })
   proc.stderr.on('data', (b) => { out += b })
@@ -138,6 +138,22 @@ test('INST-06 Refresh models from the page (same-origin Origin header) is not re
   const body = await res.json()
   assert.notEqual(body?.error?.code, 'provider-sync-refused')
   assert.equal(res.status, 200)
+  // The main side must be able to list its own providers (§10): a keyless home still has DSH's
+  // built-in routes, so the answer names them (skipped: no key) instead of failing the inventory.
+  assert.notEqual(body?.error?.code, 'provider-sync-inventory-failed', 'main-side provider inventory failed (B9)')
+})
+
+test('INST-09 a plain install composes exactly one native-host row (B2)', { skip }, () => {
+  const rows = composed.split('\n').filter((line) => /^\s*-?\s*id:\s*fishball-native-host\s*$/.test(line))
+  assert.equal(rows.length, 1, `native-host rows: ${rows.length}`)
+})
+
+test('INST-10 no in-process Fishball session is created in the main home (§12)', { skip }, () => {
+  const sessions = path.join(home, 'sessions')
+  const found = fs.existsSync(sessions)
+    ? fs.readdirSync(sessions, { recursive: true }).filter((name) => /(^|\/)session-fishball-/.test(String(name)))
+    : []
+  assert.deepEqual(found, [])
 })
 
 test('INST-07 the Sidebar entry switch saves', { skip }, async () => {
