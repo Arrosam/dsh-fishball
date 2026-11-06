@@ -51,10 +51,6 @@ export const OPERATION = Object.freeze({
   attachmentRead: 'attachment.read',
   attachmentPut: 'attachment.put',
   inboxPush: 'inbox.push',
-  // Connector v1 over §5.2 (design §0.4): connector settings travel over the public contract,
-  // not over an instance's private admin channel, so a third-party instance can show them too.
-  settingsDescribe: 'settings.describe',
-  settingsUpdate: 'settings.update',
 })
 
 const spec = (direction, sessionScoped) => Object.freeze({ direction, sessionScoped })
@@ -89,9 +85,6 @@ export const OPERATIONS = Object.freeze({
   [OPERATION.attachmentRead]: spec(DIRECTION.childToMain, true),
   [OPERATION.attachmentPut]: spec(DIRECTION.childToMain, false),
   [OPERATION.inboxPush]: spec(DIRECTION.mainToChild, false),
-  // Connector settings belong to the connector row, not to any session.
-  [OPERATION.settingsDescribe]: spec(DIRECTION.childToMain, false),
-  [OPERATION.settingsUpdate]: spec(DIRECTION.childToMain, false),
 })
 
 /** The exact §5.2 event allowlist, plus the one direction every event takes. */
@@ -200,9 +193,6 @@ export const ERROR = Object.freeze({
   expiresPast: 'expires-at-past',
   grantUnknown: 'unknown',
   grantEnded: 'ended',
-  // settings.update (design §0.4): a stale revision, or a value the description does not admit.
-  settingsConflict: 'settings-conflict',
-  settingsInvalid: 'settings-invalid',
 })
 
 /**
@@ -282,12 +272,6 @@ function exact(value, required, optional = NO_KEYS) {
     if (!descriptor || !Object.hasOwn(descriptor, 'value')) fail()
   }
   for (const key of required) if (!Object.hasOwn(value, key)) fail()
-}
-
-/** A plain data object with any string keys: exact() over its own keys, so no accessor or symbol passes. */
-function record(value) {
-  if (!value || typeof value !== 'object') fail()
-  exact(value, Object.keys(value))
 }
 
 function list(values) {
@@ -984,90 +968,6 @@ function eventSessionState(payload) {
   boolean(payload.pendingInteraction)
 }
 
-/**
- * Connector settings (design §0.4, §0.7). Every connector setting is either a whole number with
- * an optional minimum (the limits in src/config.js are all Schema.natural().min(…)) or one of a
- * fixed list of strings (question mode, brand icon, sidebar entry). The revision is the
- * connector's counter for optimistic concurrency: settings.update names the revision it was
- * edited against, and the connector refuses a stale one instead of overwriting a newer change.
- */
-export const SETTING_KIND = Object.freeze({ number: 'number', enum: 'enum' })
-
-/** The values a setting may hold, by kind; one predicate per kind so describe and update agree. */
-const SETTING_VALUE = Object.freeze({
-  [SETTING_KIND.number]: (value) => Number.isSafeInteger(value),
-  [SETTING_KIND.enum]: (value) => typeof value === 'string',
-})
-
-/** A value admitted by one described field: its kind, its minimum, its options. */
-function admits(field, value) {
-  if (!SETTING_VALUE[field.kind](value)) return false
-  if (field.kind === SETTING_KIND.number) return !Object.hasOwn(field, 'min') || value >= field.min
-  return field.options.includes(value)
-}
-
-function settingField(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) fail()
-  const numeric = value.kind === SETTING_KIND.number
-  // min belongs to a number and options to an enum; the other key is refused, not ignored.
-  exact(value, numeric ? ['key', 'kind', 'value', 'default'] : ['key', 'kind', 'value', 'default', 'options'], numeric ? ['min'] : NO_KEYS)
-  text(value.key)
-  member(value.kind, Object.values(SETTING_KIND))
-  if (numeric && Object.hasOwn(value, 'min')) { if (!Number.isSafeInteger(value.min)) fail() }
-  if (!numeric) {
-    uniqueStrings(value.options)
-    if (value.options.length === NUMBER.zero) fail()
-  }
-  // The connector never describes a current value or default its own update would refuse.
-  if (!admits(value, value.value) || !admits(value, value.default)) fail()
-}
-
-function requestSettingsDescribe(payload) { exact(payload, []) }
-
-function responseSettingsDescribe(payload) {
-  exact(payload, ['revision', 'fields'])
-  natural(payload.revision)
-  arrayOf(payload.fields, settingField)
-  uniqueBy(payload.fields, (field) => field.key)
-}
-
-/**
- * The frame check is shape only: the values object must be a plain data object, and each value
- * may be any JSON value. A wrong kind, an unknown key, a value below its minimum or outside its
- * options is the connector's settings-invalid (checkSettingsUpdate below, an error reply); a
- * frame failure would instead close the whole channel (the bridge disconnects on a bad frame).
- */
-function requestSettingsUpdate(payload) {
-  exact(payload, ['revision', 'values'])
-  natural(payload.revision)
-  record(payload.values)
-}
-
-function responseSettingsUpdate(payload) {
-  exact(payload, ['revision'])
-  natural(payload.revision)
-}
-
-/**
- * The connector's semantic check of a settings.update against its current description, before
- * anything is written (all-or-nothing: one bad value refuses the whole update). A stale revision
- * is checked first: values edited against an older description are not judged against the new one.
- * @param {{revision: number, fields: object[]}} description - the connector's settings.describe result.
- * @param {{revision: number, values: object}} payload - a frame-valid settings.update payload.
- * @throws {ContractError} settings-conflict or settings-invalid.
- */
-export function checkSettingsUpdate(description, payload) {
-  validateResponse(OPERATION.settingsDescribe, description)
-  validateRequest(OPERATION.settingsUpdate, payload)
-  if (payload.revision !== description.revision) fail(ERROR.settingsConflict)
-  const fields = new Map(description.fields.map((field) => [field.key, field]))
-  for (const [key, value] of Object.entries(payload.values)) {
-    const field = fields.get(key)
-    if (field === undefined || !admits(field, value)) fail(ERROR.settingsInvalid)
-  }
-  return payload
-}
-
 function requestHandshake(payload) {
   exact(payload, ['capabilities', 'requiredCapabilities'])
   requireCapabilities(payload.capabilities, payload.requiredCapabilities)
@@ -1105,8 +1005,6 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.attachmentRead]: requestAttachmentRead,
     [OPERATION.attachmentPut]: requestAttachmentPut,
     [OPERATION.inboxPush]: requestInboxPush,
-    [OPERATION.settingsDescribe]: requestSettingsDescribe,
-    [OPERATION.settingsUpdate]: requestSettingsUpdate,
   }),
   [ENVELOPE.type.response]: Object.freeze({
     [ENVELOPE.handshake]: responseHandshake,
@@ -1132,8 +1030,6 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.attachmentRead]: responseAttachmentRead,
     [OPERATION.attachmentPut]: responseAttachmentPut,
     [OPERATION.inboxPush]: responseInboxPush,
-    [OPERATION.settingsDescribe]: responseSettingsDescribe,
-    [OPERATION.settingsUpdate]: responseSettingsUpdate,
   }),
   [ENVELOPE.type.event]: Object.freeze({
     [EVENT.approvalRequest]: approvalDescriptor,
@@ -1278,7 +1174,7 @@ export const ATTACH_ERROR = Object.freeze({
   ui: 'ui-invalid',
   transport: 'transport-invalid',
   // Not named by design §0.4: a descriptor whose id, name, status, retry or keys are malformed.
-  // Pending the user's confirmation (docs/connector-contract.md, open points).
+  // An open point (docs/connector-contract.md §11) until the user names the code.
   instance: 'instance-invalid',
 })
 
