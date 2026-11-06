@@ -9,8 +9,8 @@
  *    sidebar row.
  * 2. The Plugins → Fishball settings page is the isolated Fishball's console (§9): its
  *    status and restart, model, plugins and settings through the owner-only admin routes
- *    (src/slim/host/settings-routes.js), the brand switches, the question mode and Fishball's
- *    own limits.
+ *    (src/slim/host/settings-routes.js), and DSH's form of the connector's settings (its limits
+ *    and the question mode, src/config.js; C2: the only place they change).
  * 3. The Fishball view (slim §7): the isolated Fishball's page framed in DSH's main area, the
  *    `main` slot where a session's conversation shows, opened by the brand and by a Fishball row
  *    in the sidebar's panel list (on by default; Settings can leave only the brand).
@@ -32,7 +32,7 @@ window.__ModuleLoader__.load({
     const exports = module.exports
     const React = require('react')
     const {  } = require('react-dom')
-    const { BrandWordmark, Button, DisclosureRow, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconQuestionOutlineRegular, IconShieldOutlineRegular, IconWarningOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, DisclosureRow, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconQuestionOutlineRegular, IconShieldOutlineRegular, IconWarningOutlineRegular, Input, MenuItemButton, Modal, PluginArtworkSearch, PluginArtworkTerminal, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, Switch, Tag, settingsNumberField, settingsTextField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'fishball-connector'
@@ -47,7 +47,7 @@ window.__ModuleLoader__.load({
     const STATUS = Object.freeze({ starting: 'starting', live: 'live' })
     /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
     /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
-    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', brand: 'api/fishball/brand', sidebarEntry: 'api/fishball/sidebar-entry', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', questionMode: 'api/fishball/question-mode' })
+    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke' })
     /**
      * The one hand-over entry (§8.3): the session header and the session-row menu share it. Menu
      * order: after DSH's own pin/rename/fork/archive, before the id; header order: just before
@@ -267,10 +267,11 @@ window.__ModuleLoader__.load({
     const REASON_FROM_FISHBALL = 'fishball'
     /**
      * Questions and plan reviews (rev11g, §7a.10; src/constants.js QUESTION_KIND, QUESTION_MODE):
-     * the mode is set on the settings page. You answer them in their own session (DSH's question
-     * card); the pile that had a question form is gone (docs/slim-native-design.md §12).
+     * the mode is a field of DSH's form of the row (src/config.js QUESTION_MODE_SETTING). You answer
+     * them in their own session (DSH's question card); the pile that had a question form is gone
+     * (docs/slim-native-design.md §12).
      */
-    const QUESTION_VIEW = Object.freeze({ question: 'question', planReview: 'plan-review', modes: Object.freeze(['auto', 'fishball', 'user']) })
+    const QUESTION_VIEW = Object.freeze({ question: 'question', planReview: 'plan-review', field: 'questionMode', modes: Object.freeze(['auto', 'fishball', 'user']) })
     const GRANT_ERRORS = new Set(['unknown', 'ended', 'unavailable'])
     const JSON_INDENT = 2
     /**
@@ -290,11 +291,11 @@ window.__ModuleLoader__.load({
     const SCHEMA = Object.freeze({ object: 'object', intersect: 'intersect', string: 'string', number: 'number', boolean: 'boolean', union: 'union', constant: 'const', array: 'array', secretRole: 'secret' })
     const LIST_SEPARATOR = '\n'
     /**
-     * The limit fields, in the order the Host declares them (src/config.js LIMITS). The
-     * form model needs its fields before the first state frame arrives, so the browser keeps
-     * this list; the Host schema still decides validity on save.
+     * The limit fields, in the order the Host declares them (src/config.js LIMITS, the
+     * conn-OQ-20 set). The form model needs its fields before the first state frame arrives, so
+     * the browser keeps this list; the Host schema still decides validity on save.
      */
-    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxSourcesPerPlugin', 'maxFishballOnlyPlugins', 'wakeupsPerHour', 'messagesPerHour', 'sessionsPerHour', 'maxPendingApprovals', 'approvalAnswerSeconds', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'approvalsShown', 'intakeRowsShown', 'outboxShown', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'pluginHistoryShown', 'settingsPromptValueBytes', 'replyCapShare', 'headroomShare', 'minWindowTokens', 'pluginManagerStartMs', 'defaultReplyCapTokens', 'userMessagesListed', 'userMessageExcerptChars', 'pileMaxHeightVh'])
+    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxPendingApprovals', 'approvalAnswerSeconds', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'userMessagesListed', 'userMessageExcerptChars'])
     /**
      * The one Fishball accent (§8.5): the app's magenta. It is declared once here and exposed
      * once as `--fb-accent` (the style sheet below); the ring, the switches and the brand's
@@ -456,12 +457,6 @@ window.__ModuleLoader__.load({
       brandLabel: 'Open Fishball',
       brandLabelUnread: 'Open Fishball, {count} unread',
       unreadMany: '{max}+',
-      brandStyle: 'Sidebar icon',
-      brandStyleHint: 'Fishball\'s own mark and word logo, or the DeepSeek orca and DeepSeek\'s word logo. A new message shows the number either way; Fishball\'s fish wags, and the orca swims as it does when you hover it in a new session.',
-      brandStyleDeepseek: 'Use the DeepSeek icon',
-      sidebarEntry: 'Sidebar entry',
-      sidebarEntryHint: 'Fishball opens in the main area, as a session does. With this on, the sidebar has a Fishball row above Plugins; with it off, only the top-left Fishball button opens it. On macOS Desktop the top-left button cannot be clicked, so keep the row there.',
-      sidebarEntryPanel: 'Show Fishball as a row in the sidebar',
       limits: 'Safety limits',
       modelLoading: 'Loading models…',
       modelEffort: 'Reasoning effort',
@@ -505,7 +500,6 @@ window.__ModuleLoader__.load({
       installPlaceholder: 'package-name, package-name@1.2.0, a Git address, or /absolute/path',
       pending: 'Applies after this turn',
       waiting: 'Starting…',
-      changeFailed: 'That change was not accepted.',
       refresh: 'Refresh',
       'recommendedCategory.context': 'Context management',
       'recommendedCategory.memory': 'Memory',
@@ -537,11 +531,6 @@ window.__ModuleLoader__.load({
       clearField: 'Clear {name}',
       'field.maxQueuedInputs': 'Queued inputs not yet read',
       'field.maxActiveWatches': 'Active "tell me when finished" watches',
-      'field.maxSourcesPerPlugin': 'Feeds per plugin',
-      'field.maxFishballOnlyPlugins': 'Plugins running only for Fishball',
-      'field.wakeupsPerHour': 'Wake-ups per hour from non-user inputs (0 = no cap)',
-      'field.messagesPerHour': 'Messages Fishball sends per hour (0 = no cap)',
-      'field.sessionsPerHour': 'Sessions Fishball starts per hour (0 = no cap)',
       'field.maxPendingApprovals': 'Permission requests open at once (waiting for Fishball or in your pile)',
       'field.approvalAnswerSeconds': 'Seconds Fishball has to answer a request',
       'field.argumentExcerptBytes': 'Bytes of a request\'s command Fishball sees',
@@ -549,23 +538,12 @@ window.__ModuleLoader__.load({
       'field.auditEntriesKept': 'Entries kept in each audit list',
       'field.requestUserMessageBytes': 'Bytes of your latest message a permission request shows Fishball',
       'field.rationaleChars': 'Characters of Fishball\'s reason kept in the approval audit',
-      'field.approvalsShown': 'Permission requests shown on this page',
-      'field.intakeRowsShown': 'Queue rows kept in the state snapshot',
-      'field.outboxShown': 'Outbox entries kept in the state snapshot',
       'field.watchesShown': 'Watches kept in the state snapshot and by list_watches',
       'field.readSessionMessages': 'Messages read_session returns',
       'field.readSessionBytes': 'Bytes read_session returns',
       'field.forwardExcerptBytes': 'Bytes of a session\'s last answer in a forward or watch notice',
-      'field.pluginHistoryShown': 'Changes shown on a plugin page',
-      'field.settingsPromptValueBytes': 'Bytes of each value in a plugin-settings request',
-      'field.replyCapShare': 'With a smaller window, automatic reply cap = window ÷ this',
-      'field.headroomShare': 'With a smaller window, compaction headroom = window ÷ this',
-      'field.minWindowTokens': 'Smallest context window you can set (tokens)',
-      'field.pluginManagerStartMs': 'Milliseconds Fishball\'s plugin manager may take to start',
-      'field.defaultReplyCapTokens': 'Largest automatic reply cap with a smaller window (tokens)',
       'field.userMessagesListed': 'Your messages list_user_messages shows a managed session',
       'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
-      'field.pileMaxHeightVh': 'Height of your pile above Fishball\'s composer (% of the window)',
       questionMode: 'Questions in managed sessions',
       questionModeHint: 'Who answers the questions and plan reviews of sessions Fishball manages. Your own sessions\' questions always stay with you.',
       'questionMode.auto': 'Auto',
@@ -574,7 +552,6 @@ window.__ModuleLoader__.load({
       'questionModeHint.auto': 'Fishball answers only when your own words cover it; otherwise the question stays in its session for you to answer on its own question card, not in your pile.',
       'questionModeHint.fishball': 'Fishball answers on its own judgement and sends you only what it cannot decide.',
       'questionModeHint.user': 'Every question stays in its session for you to answer on its own question card, not in your pile; Fishball may add a note.',
-      questionModeFailed: 'The mode was not changed. Fishball may not be running; try again.',
       cardReason: 'Reason',
       cardFishballNote: 'Fishball',
       allowOnce: 'Allow once',
@@ -711,12 +688,6 @@ window.__ModuleLoader__.load({
       brandLabel: '打开 Fishball',
       brandLabelUnread: '打开 Fishball，{count} 条未读',
       unreadMany: '{max}+',
-      brandStyle: '侧边栏图标',
-      brandStyleHint: 'Fishball 自己的标志和字标，或 DeepSeek 的鲸鱼和字标。新消息在两种图标上都会显示数字；Fishball 的小鱼会摆尾，鲸鱼则会像在新会话里悬停时那样游动。',
-      brandStyleDeepseek: '使用 DeepSeek 图标',
-      sidebarEntry: '侧边栏入口',
-      sidebarEntryHint: 'Fishball 像普通会话一样在主区域中打开。开启时，侧边栏在「插件」上方多一行 Fishball；关闭时，只有左上角的 Fishball 按钮能打开它。macOS 桌面版的左上角按钮不能点击，在那里请保持开启。',
-      sidebarEntryPanel: '在侧边栏中显示 Fishball 一行',
       limits: '安全限制',
       modelLoading: '正在加载模型…',
       modelEffort: '推理强度',
@@ -759,7 +730,6 @@ window.__ModuleLoader__.load({
       installPlaceholder: '包名、包名@1.2.0、Git 地址或 /绝对路径',
       pending: '本回合结束后生效',
       waiting: '启动中…',
-      changeFailed: '该更改未被接受。',
       refresh: '刷新',
       'recommendedCategory.context': '上下文管理',
       'recommendedCategory.memory': '记忆',
@@ -791,11 +761,6 @@ window.__ModuleLoader__.load({
       clearField: '清除 {name}',
       'field.maxQueuedInputs': '尚未读取的排队输入',
       'field.maxActiveWatches': '进行中的“完成时通知我”',
-      'field.maxSourcesPerPlugin': '每个插件的信息源',
-      'field.maxFishballOnlyPlugins': '仅为 Fishball 运行的插件',
-      'field.wakeupsPerHour': '每小时非用户输入唤醒次数（0 = 不限）',
-      'field.messagesPerHour': 'Fishball 每小时发送的消息（0 = 不限）',
-      'field.sessionsPerHour': 'Fishball 每小时新建的会话（0 = 不限）',
       'field.maxPendingApprovals': '同时打开的权限请求（等待 Fishball 或在你的待处理区）',
       'field.approvalAnswerSeconds': 'Fishball 回答请求的秒数',
       'field.argumentExcerptBytes': 'Fishball 可见的请求命令字节数',
@@ -803,23 +768,12 @@ window.__ModuleLoader__.load({
       'field.auditEntriesKept': '每个审计列表保留的条目',
       'field.requestUserMessageBytes': '权限请求向 Fishball 显示的你最近消息字节数',
       'field.rationaleChars': '审批记录中保留的 Fishball 理由字符数',
-      'field.approvalsShown': '本页显示的权限请求条目',
-      'field.intakeRowsShown': '状态快照中保留的队列行数',
-      'field.outboxShown': '状态快照中保留的发件箱条目',
       'field.watchesShown': '状态快照与 list_watches 中保留的关注数',
       'field.readSessionMessages': 'read_session 返回的消息数',
       'field.readSessionBytes': 'read_session 返回的字节数',
       'field.forwardExcerptBytes': '转发或关注通知中会话最后回答的字节数',
-      'field.pluginHistoryShown': '插件页面显示的变更数',
-      'field.settingsPromptValueBytes': '插件设置请求中每个值的字节数',
-      'field.replyCapShare': '较小窗口时，自动回复上限 = 窗口 ÷ 此值',
-      'field.headroomShare': '较小窗口时，压缩余量 = 窗口 ÷ 此值',
-      'field.minWindowTokens': '可设置的最小上下文窗口（token）',
-      'field.pluginManagerStartMs': 'Fishball 插件管理器启动可用的毫秒数',
-      'field.defaultReplyCapTokens': '较小窗口时自动回复上限的最大值（token）',
       'field.userMessagesListed': 'list_user_messages 向受管会话列出的你的消息条数',
       'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
-      'field.pileMaxHeightVh': 'Fishball 输入框上方待处理请求区的高度（占窗口的百分比）',
       questionMode: '受管会话中的问题',
       questionModeHint: '由谁回答 Fishball 管理的会话中的问题和计划审阅。你自己的会话中的问题始终由你回答。',
       'questionMode.auto': '自动',
@@ -828,7 +782,6 @@ window.__ModuleLoader__.load({
       'questionModeHint.auto': '只有在你自己的话涵盖时 Fishball 才回答；否则问题留在它所在的会话中，由你在该会话自己的问题卡片上回答，不会进入你的待处理区。',
       'questionModeHint.fishball': 'Fishball 按自己的判断回答，只把它无法决定的交给你。',
       'questionModeHint.user': '每个问题都留在它所在的会话中，由你在该会话自己的问题卡片上回答，不会进入你的待处理区；Fishball 可以附上备注。',
-      questionModeFailed: '模式未更改。Fishball 可能未在运行，请重试。',
       cardReason: '理由',
       cardFishballNote: 'Fishball',
       allowOnce: '允许一次',
@@ -1176,8 +1129,6 @@ window.__ModuleLoader__.load({
         return { ok: false, code: null, path: null, answer: null }
       }
     }
-    /** POST one command. @returns whether it was accepted. */
-    const post = async (path, body) => (await send(path, body)).ok
 
     /**
      * One child admin operation (§9). Never throws: a transport failure is a typed error, and a
@@ -1268,7 +1219,7 @@ window.__ModuleLoader__.load({
     const needsAction = (state, sessionId) => (Array.isArray(state.pile) ? state.pile : []).some((card) => card?.sessionId === sessionId)
     /**
      * Whether Fishball has unread input from this row's session: an open intake row whose source
-     * identity is this session. The snapshot lists at most intakeRowsShown items, so a very old
+     * identity is this session. The snapshot lists at most INTAKE.rowsShown items (src/constants.js), so a very old
      * open item may be missing from the dot; the dot is a hint, not a queue count.
      */
     const unreadInput = (state, sessionId) => (Array.isArray(state.intake?.items) ? state.intake.items : []).some((item) => item?.sourceIdentity === ROW_STATE.unreadSource + sessionId && ROW_STATE.unreadStatuses.has(item.status))
@@ -2303,29 +2254,20 @@ window.__ModuleLoader__.load({
     const labelled = (label, text) => h('div', null, h('span', { className: CLS.muted }, label + ': '), text)
 
     /**
-     * Who answers managed sessions' questions (item 25, §10e): Auto, Fishball or You, in the
-     * Permission requests section. The choice is the Host's (snapshot `questionMode`).
+     * Who answers managed sessions' questions (item 25, §10e): Auto, Fishball or You. It is a field
+     * of DSH's staged form of the row (C2), so a choice is staged like a limit and saved with the
+     * form's Save; the row's schema refuses anything outside QUESTION_VIEW.modes.
      */
-    function QuestionMode({ state, t }) {
-      const [busy, setBusy] = React.useState(false)
-      const [failed, setFailed] = React.useState(false)
-      const mode = state.questionMode
-      if (typeof mode !== 'string') return null
-      const choose = async (next) => {
-        setBusy(true)
-        const { ok } = await send(API.questionMode, { mode: next })
-        setFailed(!ok)
-        setBusy(false)
-      }
+    function QuestionMode({ value, disabled, onChoose, t }) {
+      const mode = value.text
       return h('div', { 'data-fishball-question-mode': mode },
         h('h4', null, t('questionMode')),
         h('p', { className: CLS.muted }, t('questionModeHint')),
         h('div', { className: CLS.actions, role: 'radiogroup', 'aria-label': t('questionMode') }, QUESTION_VIEW.modes.map((option) => h(Button, {
-          key: option, type: 'button', size: 'sm', variant: option === mode ? 'primary' : 'secondary', role: 'radio', 'aria-checked': option === mode, disabled: busy,
-          onClick: () => { if (option !== mode) void choose(option) },
+          key: option, type: 'button', size: 'sm', variant: option === mode ? 'primary' : 'secondary', role: 'radio', 'aria-checked': option === mode, disabled,
+          onClick: () => { if (option !== mode) onChoose(option) },
         }, t('questionMode.' + option)))),
-        h('p', { className: CLS.muted }, t('questionModeHint.' + mode)),
-        failed ? h('div', { role: 'alert' }, t('questionModeFailed')) : null)
+        QUESTION_VIEW.modes.includes(mode) ? h('p', { className: CLS.muted }, t('questionModeHint.' + mode)) : null)
     }
 
     /** POST your Revoke. @returns null when accepted, else the refusal's text. */
@@ -2441,51 +2383,26 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** Settings: switch the sidebar back to DeepSeek's icon and word logo (your choice, stored by the Host). */
-    function makeBrandStyle(t) {
-      return function FishballBrandStyle() {
-        const state = useFishball()
-        const [failed, setFailed] = React.useState(false)
-        const deepseek = brandStyleOf(state) === BRAND_STYLE.deepseek
-        const panel = sidebarEntryOf(state) === SIDEBAR_ENTRY.panel
-        const choose = async (on) => setFailed(!(await post(API.brand, { style: on ? BRAND_STYLE.deepseek : BRAND_STYLE.fishball })))
-        const chooseEntry = async (on) => setFailed(!(await post(API.sidebarEntry, { entry: on ? SIDEBAR_ENTRY.panel : SIDEBAR_ENTRY.brand })))
-        return h('div', { className: CLS.section, 'data-fishball-brand-style': brandStyleOf(state), 'data-fishball-sidebar-entry': sidebarEntryOf(state) },
-          h('h3', null, t('brandStyle')),
-          h('p', { className: CLS.muted }, t('brandStyleHint')),
-          h('div', { className: CLS.row },
-            h('span', { className: CLS.grow }, t('brandStyleDeepseek')),
-            h(Switch, { checked: deepseek, label: t('brandStyleDeepseek'), onChange: choose })),
-          h('h3', null, t('sidebarEntry')),
-          h('p', { className: CLS.muted }, t('sidebarEntryHint')),
-          h('div', { className: CLS.row },
-            h('span', { className: CLS.grow }, t('sidebarEntryPanel')),
-            h(Switch, { checked: panel, label: t('sidebarEntryPanel'), onChange: chooseEntry })),
-          failed ? h('div', { role: 'alert' }, t('changeFailed')) : null)
-      }
-    }
+    /** Every field of DSH's form of the row: the limits, then the question mode (src/config.js). */
+    const FORM_FIELDS = Object.freeze([...LIMIT_FIELDS, QUESTION_VIEW.field])
 
     /** DSH's staged form over the row's live config; Save writes through ctx.settings. */
     function limitsSection(scope) {
-      const form = new SettingsFormModel(scope, LIMIT_FIELDS.map((field) => settingsNumberField(field)))
-      const store = form.bind(() => ({ ...form.shell(), fields: Object.fromEntries(LIMIT_FIELDS.map((field) => [field, form.field(field)])) }))
+      const form = new SettingsFormModel(scope, [...LIMIT_FIELDS.map((field) => settingsNumberField(field)), settingsTextField(QUESTION_VIEW.field)])
+      const store = form.bind(() => ({ ...form.shell(), fields: Object.fromEntries(FORM_FIELDS.map((field) => [field, form.field(field)])) }))
       return { store, actions: form.actions(), dispose: () => form.dispose() }
     }
 
     /**
      * Fishball's whole settings page (§9): the isolated child's status and restart, model (whose
-     * Refresh models also syncs providers from DSH, §10), plugins and settings, the brand switch and Fishball's own
-     * limits.
+     * Refresh models also syncs providers from DSH, §10), plugins and settings, and DSH's form of
+     * the connector's settings: the question mode and the limits (C2).
      */
-    function makeSettingsPage(section, NativeSettings, ModelSettings, ChildPlugins, ChildSettings, BrandStyle, t) {
+    function makeSettingsPage(section, NativeSettings, ModelSettings, ChildPlugins, ChildSettings, t) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballSettings(props) {
         const state = React.useSyncExternalStore(subscribe, getSnapshot)
-        // The question mode is the one decision setting left on this page: the audit list that
-        // sat under it became inline labels in Fishball's chat (T08, §8.1). Its state is the
-        // live Fishball feed, not this form's, so the switch also works while the form is locked.
-        const fishball = useFishball()
         const baseId = React.useId()
         if (props.view === SUMMARY_VIEW) return null
         const disabled = !state.writable || state.saving
@@ -2494,15 +2411,16 @@ window.__ModuleLoader__.load({
           h(ModelSettings),
           h(ChildPlugins),
           h(ChildSettings),
-          h(BrandStyle),
-          h('div', { className: CLS.section }, h(QuestionMode, { state: fishball, t })),
           h('h3', null, t('limits')),
           h(SettingsForm, {
             labels: { unavailable: t('unavailable'), readOnly: t('readOnly'), saveFailed: t('saveFailed'), save: t('save'), saving: t('saving') },
             state,
             onSave: section.actions.save,
             onDiscard: section.actions.discard,
-          }, LIMIT_FIELDS.map((field) => {
+          }, h('div', { key: QUESTION_VIEW.field, className: CLS.section }, h(QuestionMode, {
+            value: state.fields[QUESTION_VIEW.field], disabled, t,
+            onChoose: (mode) => section.actions.edit(QUESTION_VIEW.field, mode),
+          })), LIMIT_FIELDS.map((field) => {
             const value = state.fields[field]
             return h(SettingsValueField, {
               key: field,
@@ -2570,7 +2488,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.slots.inject(SLOT.chatNode, () => ctx.slots.register({ name: SLOT.chatNode, key: CARD_RECORD.node, locale: NS }, makeCardRecordView(t))), 'fishball: card record row')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
-        const Settings = makeSettingsPage(section, makeNativeSettings(t), makeModelSettings(t), makeChildPlugins(t), makeChildSettings(t, (text) => ctx.locale.resolveText(text)), makeBrandStyle(t), t)
+        const Settings = makeSettingsPage(section, makeNativeSettings(t), makeModelSettings(t), makeChildPlugins(t), makeChildSettings(t, (text) => ctx.locale.resolveText(text)), t)
         const stopServing = ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(SLOT.bundleConfig, () => ctx.slots.register({ name: SLOT.bundleConfig, key: PACKAGE_NAME, locale: NS }, Settings)))
         return () => { stopServing(); section.dispose() }
       }, 'fishball: settings page')

@@ -59,7 +59,7 @@ unchanged; I8 retires it. No package ships it.
 | `packages/connector/contract/` | `packages/connector/contract/` (as designed) |
 | `src/connector/*.js` (K1) | `packages/connector/contract/*.js` |
 | `src/connector-service.js` (C1) | `packages/connector/src/connector-service.js` |
-| `src/intake.js`, `src/config.js`, `src/preferences.js`, `src/settings-migration.js` (C1, C2) | `packages/connector/src/…` |
+| `src/intake.js`, `src/config.js`, `src/settings-migration.js` (C1, C2) | `packages/connector/src/…`; `src/preferences.js` is deleted (C2, D22) |
 | `packages/instance/host.js` | `packages/instance/host.js` (as designed) |
 | `src/host/binding.js` (I1) | `packages/instance/src/host/binding.js` (new, I1) |
 | `src/host/embed.js` (I3) | `packages/instance/src/slim/host/embed.js` |

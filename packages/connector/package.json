@@ -37,6 +37,7 @@
     "@deepseek-ai/dsh-storage-domain": "*",
     "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/schemastery": "*",
+    "yaml": "*",
     "zod": "*"
   },
   "dsh": {

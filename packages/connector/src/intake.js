@@ -128,7 +128,7 @@ export class IntakeLedger {
     const count = (status) => rows.filter((row) => row.status === status).length
     return {
       queued: count(INTAKE_STATUS.pending),
-      items: rows.slice(0, this.#readLimits().intakeRowsShown).map(({ intakeId, kind, sourceIdentity, status, createdAt }) => ({ intakeId, kind, sourceIdentity, status, createdAt })),
+      items: rows.slice(0, INTAKE.rowsShown).map(({ intakeId, kind, sourceIdentity, status, createdAt }) => ({ intakeId, kind, sourceIdentity, status, createdAt })),
     }
   }
 
