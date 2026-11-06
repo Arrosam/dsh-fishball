@@ -21,6 +21,7 @@ import { CARD_CLOSE } from './card-lifecycle.js'
 import { answerWords } from './questions.js'
 import { OWN_QUESTION } from './own-questions.js'
 import { diagnosticOf } from './errors.js'
+import { titleOf as titleFromSession } from './session-info.js'
 import { CARD_RECORD } from './slim/card-record.js'
 import { LIMITS } from './slim/limits.js'
 
@@ -67,8 +68,10 @@ export class CardRecords {
   #listeners = new Set()
 
   /**
-   * @param deps.ctx - the row context; `sessions.get(id)` gives a loaded Session.
-   * @param deps.titleOf - (sessionId) => the session's title, or undefined.
+   * @param deps.ctx - the row context; `sessions.get(id)` gives a loaded Session, and
+   *   `sessionQuery` reads one that is not loaded (the title fallback below).
+   * @param deps.titleOf - (sessionId) => the session's title, or null/undefined when not known
+   *   synchronously (then it is read from the session's own log).
    * @param deps.now - clock (epoch ms).
    */
   constructor({ ctx, logger, titleOf, now = Date.now }) {
@@ -136,7 +139,20 @@ export class CardRecords {
 
   #write(sessionId, record, inSession) {
     if (inSession) queueMicrotask(() => this.#append(sessionId, record))
-    const copy = { ...record, from: { sessionId, title: cut(this.#titleOf(sessionId) ?? '', LIMITS.titleChars) } }
+    const known = this.#titleOf(sessionId)
+    if (known) {
+      this.#emit(sessionId, record, known)
+      return
+    }
+    // titleOf follows managed sessions only, so a session that just left management (or is
+    // untitled) has none there (7713 N1): read it from the session itself, live or persisted.
+    // That read never rejects ('' when unreadable), so Fishball's copy always goes out.
+    void titleFromSession(this.#ctx, sessionId).then((title) => this.#emit(sessionId, record, title))
+  }
+
+  /** Fishball's copy, naming the asking session, to every listener. */
+  #emit(sessionId, record, title) {
+    const copy = { ...record, from: { sessionId, title: cut(title ?? '', LIMITS.titleChars) } }
     for (const listener of this.#listeners) {
       try { listener({ type: CARD_RECORD.event, sessionId, record: copy }) } catch { /* its own failure */ }
     }
