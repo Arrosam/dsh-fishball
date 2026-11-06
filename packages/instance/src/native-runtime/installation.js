@@ -173,13 +173,23 @@ export async function copyChildCode(paths, record) {
   await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
   if (await exists(path.join(sourceRoot, 'src', 'native-control'))) await copy(path.join(sourceRoot, 'src', 'native-control'), path.join(destination, 'src', 'native-control'), javascript)
   await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), everyFile)
-  // K1 moved the contract to src/connector; src/slim keeps re-export shims that import it, so the
-  // child cannot resolve its contract without this tree (JavaScript only, like the lifecycle code).
-  await copy(path.join(sourceRoot, 'src', 'connector'), path.join(destination, 'src', 'connector'), javascript)
-  // T07 registers Fishball's persona from src/persona.js in the chat agent's scope; the module
-  // and its one text dependency ship beside the slim tree so the snapshot resolves them.
+  // M1: the instance's src/slim shims and persona import `fishball-connector/contract`. Node finds
+  // it in the snapshot's own node_modules, inside the private profile the preflight already
+  // accepted (DSH routes a bare name to a local node_modules under the profile natively). Only the
+  // contract directory and a manifest with that one export are copied, never the rest of the
+  // connector, so the child sees what a third-party instance sees. The source is the installed
+  // export, resolved by the same name the shims use (JavaScript only, like the lifecycle code).
+  const contract = RUNTIME.contractPackage
+  const contractEntry = fileURLToPath(import.meta.resolve(contract.name + '/' + contract.directory))
+  const contractTarget = path.join(destination, contract.modules, contract.name)
+  await mkdir(path.join(destination, contract.modules), { mode: RUNTIME.privateDirectoryMode })
+  await mkdir(contractTarget, { mode: RUNTIME.privateDirectoryMode })
+  const contractExport = './' + contract.directory
+  await writePrivate(path.join(contractTarget, contract.manifest), { name: contract.name, type: 'module', private: true, exports: { [contractExport]: contractExport + '/' + path.basename(contractEntry) } }, true)
+  await copy(path.dirname(contractEntry), path.join(contractTarget, contract.directory), javascript)
+  // T07 registers Fishball's persona from src/persona.js in the chat agent's scope; its one text
+  // dependency (PILE_NOTE) is the contract's, copied above.
   await copy(path.join(sourceRoot, 'src', 'persona.js'), path.join(destination, 'src', 'persona.js'), javascript)
-  await copy(path.join(sourceRoot, 'src', 'pile-note.js'), path.join(destination, 'src', 'pile-note.js'), javascript)
   // T16's child target imports the shared preview/confirm engine and dynamically imports the
   // pi-ai host adapter beside it (src/slim/child/provider-sync-target.js: '../../provider-sync.js').
   // Both modules ship with the slim tree so the target applies the same reviewed rules as the main host.

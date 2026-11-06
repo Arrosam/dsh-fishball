@@ -19,7 +19,7 @@
  * The registry (`globalThis.__s33.registry`) is the stand-in for list_frozen_sessions: session,
  * tool, exact arguments (src/approvals.js argumentsOf), time. It costs a Map entry; nothing wakes.
  */
-import { argumentsOf } from '../../src/approvals.js'
+import { argumentsOf } from '../../packages/connector/src/approvals.js'
 
 export const name = 'fishball-spike-prompt-closer'
 const EVENT = 'approval/request'

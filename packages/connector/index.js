@@ -1,7 +1,7 @@
 /**
- * Fishball's main-DSH row: the "body" (slim §12). Fishball itself runs in the isolated child DSH
- * (native-host.js, src/slim); this row holds what must stay in the main process because it
- * touches main sessions:
+ * The fishball-connector row: Fishball's "body" in the main DSH (slim §12, design §0.2). Fishball
+ * itself runs in an instance, the built-in one being the fishball-instance package; this row holds
+ * what must stay in the main process because it touches main sessions:
  * - src/store.js           durable state: managed sessions, watches, intake, pile, grants, preferences
  * - src/intake.js          every input for Fishball, durable, pushed to the child's inbox
  * - src/messaging.js       message_fishball (managed sessions) and the Hand over note
@@ -19,8 +19,10 @@
  * - src/preferences.js     your display choices (the sidebar brand icon and entry)
  * - src/http.js            /api/fishball/* for the brand, the session-row marks and Hand over
  * The child reaches all of this only through `fishballSessionState` and the bridge
- * (src/slim/host/*). There is no in-process Fishball agent or session: the legacy one was removed,
- * because a second Fishball in the main process took every input the user meant for the child.
+ * (src/slim/host/*), which the built-in instance opens through the INTERIM service of
+ * src/slim/host/interim-bridge.js until C1 replaces it with `fishballConnector.attachInstance`.
+ * There is no in-process Fishball agent or session: the legacy one was removed, because a second
+ * Fishball in the main process took every input the user meant for the child.
  */
 import { Config, readLimits } from './src/config.js'
 import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL } from './src/constants.js'
@@ -31,6 +33,7 @@ import { IntakeError, IntakeLedger } from './src/intake.js'
 import { registerInbound } from './src/messaging.js'
 import { ManagedError, ManagedRegistry } from './src/managed.js'
 import { SESSION_STATE } from './src/slim/host/session-port.js'
+import { provideInterimBridge } from './src/slim/host/interim-bridge.js'
 import { SessionTitles } from './src/session-titles.js'
 import { Watches, WatchError } from './src/watches.js'
 import { Preferences } from './src/preferences.js'
@@ -75,6 +78,9 @@ export async function apply(ctx, config) {
     setBrandStyle: (style) => commands.setBrandStyle(style),
     setSidebarEntry: (entry) => commands.setSidebarEntry(entry),
   })
+  // Independent of the store, as the native host row's bridge was before M1: with no session state
+  // the bridge answers feature-off instead of the instance failing to connect.
+  provideInterimBridge(ctx)
 
   let store
   try {

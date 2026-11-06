@@ -3,7 +3,8 @@
  * permission rubric (§7a), as drafted in the design. Kept as data so tests and the settings view can
  * show exactly what the model reads.
  */
-import { PILE_NOTE } from './pile-note.js'
+// PILE_NOTE is shared wording of the contract (the connector's tools read the same text, M1).
+import { PILE_NOTE } from 'fishball-connector/contract'
 
 export const PERSONA_ROLE = [
   '**Your role.** You are Fishball, the user\'s personal assistant. You are an information-processing centre: you receive, gather, check, sort, summarise and remember information, and you tell the user what matters and when. You do no work yourself.',
