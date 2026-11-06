@@ -19,7 +19,8 @@ const REDACTION = Object.freeze([
 const NEWLINE = '\n'
 const APPEND_FLAGS = constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | constants.O_NOFOLLOW
 
-function redact(text) {
+/** Mask the secret shapes above; also used for provider-sync failure diagnostics (src/provider-sync-host.js). */
+export function redact(text) {
   return REDACTION.reduce((value, { pattern, replacement }) => value.replace(pattern, replacement), text)
 }
 
