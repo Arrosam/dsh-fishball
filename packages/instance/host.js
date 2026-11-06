@@ -12,7 +12,8 @@ import { registerEmbed } from './src/slim/host/embed.js'
 import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
 import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes.js'
 import { createChildProviderSync } from './src/provider-sync-service.js'
-import { CONNECTOR_CONTRACT, CONNECTOR_SERVICE, ContractError, ERROR } from './src/slim/contract.js'
+import { CONNECTOR_CONTRACT, ContractError, ERROR } from './src/slim/contract.js'
+import { BINDING_STATE, followConnector } from './src/host/binding.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
 import { migrateLaunchSettings } from './src/settings-migration.js'
 
@@ -43,7 +44,7 @@ const PLUGIN = Object.freeze({
   volatileUpdate: 'loader/volatile-update',
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
   requestTimeoutMs: 750, stopTimeoutMs: 1000,
-  state: Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', ready: 'ready', stopping: 'stopping', stopped: 'stopped', failed: 'failed' }),
+  state: Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', ready: 'ready', stopping: 'stopping', stopped: 'stopped', failed: 'failed', connectorMissing: BINDING_STATE.connectorMissing }),
   code: Object.freeze({ failed: 'NATIVE_START_FAILED', stop: 'NATIVE_STOP_FAILED', exited: 'NATIVE_CHILD_EXITED', unavailable: 'NATIVE_UNAVAILABLE', timeout: 'NATIVE_TIMEOUT', disabled: 'NATIVE_DISABLED' }),
 })
 /**
@@ -95,7 +96,6 @@ const LAUNCH_ERROR = Object.freeze({
     nodeExecutable: (value) => `nodeExecutable: ${value} is not a plain Node 22+ executable that can be run.`,
     executableSearchPath: (value) => `executableSearchPath: ${value} must be a non-empty PATH of absolute directories.`,
   }),
-  logger: 'fishball-instance',
 })
 const unavailable = code => Object.assign(new Error(code), { code })
 function bounded(promise, milliseconds) {
@@ -133,8 +133,13 @@ export async function apply(ctx, config) {
   let detail = null
   /** The settings the current start uses, so a failure names the values it actually tried. */
   let attempt = launchSettings(config)
-  /** Serializes the `enabled` switch's starts and stops in the order the user toggled. */
+  /**
+   * Serializes the starts and stops that follow the `enabled` switch and the connector's arrivals
+   * and departures, in the order they happened.
+   */
   let toggle = Promise.resolve()
+  /** The `fishballConnector` service while it is provided (src/host/binding.js), else undefined. */
+  let connector
   let closed = false
   let appReady = false
   let owner
@@ -148,6 +153,8 @@ export async function apply(ctx, config) {
   /** T16's source side: syncs the main profile's API-key providers into the child's own target. */
   let providerSync
   const status = () => ({ enabled, state, code, detail })
+  /** End this row's attachment, if any; a stale detach changes nothing (contract §1.3). */
+  const release = () => { connection?.detach(); connection = undefined }
   const set = (next, nextCode = null, nextDetail = null) => { state = next; code = nextCode; detail = nextDetail; return status() }
   // T11's admin relay. Every page operation except status and restart travels to the child over
   // the lifecycle wire's own authenticated admin channel; the child applies it with its own
@@ -183,13 +190,12 @@ export async function apply(ctx, config) {
     unsubscribe = owner.onControlTransport((transport, { hostId }) => {
       if (closed) throw unavailable(PLUGIN.code.unavailable)
       if (hostId !== owner.hostId) throw new ContractError(ERROR.host)
-      connection?.detach()
-      connection = undefined
-      // Without the connector the wire stays up unbridged, as M1 left it. A refused attach
-      // (another instance first, or a future major) leaves it unbridged too: failing the start
-      // here would take the child down, and I1 maps that refusal onto the instance's own status
-      // (inst-OQ-03).
-      const connector = ctx.get(CONNECTOR_SERVICE)
+      release()
+      // No child starts without the connector (D25), so this is only a connector that left
+      // during the start: the departure's stop is already queued and ends this wire. A refused
+      // attach (another instance first, or a future major) leaves the wire unbridged: failing the
+      // start here would take the child down, and I1 maps that refusal onto the instance's own
+      // status (inst-OQ-03).
       if (typeof connector?.attachInstance !== 'function') return
       try {
         connection = connector.attachInstance({ id: hostId, name: PLUGIN.displayName, contract: CONNECTOR_CONTRACT, transport })
@@ -210,10 +216,15 @@ export async function apply(ctx, config) {
     })
   } catch { set(PLUGIN.state.failed, PLUGIN.code.failed) }
 
+  /** The state of an instance with no child: off, without the connector (D25), or stopped. */
+  const idleState = () => (!enabled ? PLUGIN.state.disabled : connector === undefined ? PLUGIN.state.connectorMissing : PLUGIN.state.stopped)
   async function start() {
     if (closed || !owner) return status()
     if (!enabled) return set(PLUGIN.state.disabled)
+    // Before main appReady an absent connector is not yet `connector-missing`: its row may still
+    // be loading in the same boot. From appReady on, no child starts without it (D25).
     if (!appReady) return set(PLUGIN.state.waiting)
+    if (connector === undefined) return set(PLUGIN.state.connectorMissing)
     if (startup) return startup
     startup = (async () => {
       set(PLUGIN.state.starting)
@@ -241,13 +252,17 @@ export async function apply(ctx, config) {
     try {
       await barrier
       await owner.shutdown()
-      return set(enabled ? PLUGIN.state.stopped : PLUGIN.state.disabled)
+      return set(idleState())
     } catch { return set(PLUGIN.state.failed, PLUGIN.code.stop) }
   }
   // The lifecycle's own restart, shared by the service and the admin relay (§9).
   async function restart() {
     const result = await stop()
     return result.state === PLUGIN.state.failed ? result : start()
+  }
+  /** Queue one start or stop behind the earlier ones; a closed row runs nothing more. */
+  function follow(action) {
+    toggle = toggle.then(() => (closed ? status() : action())).catch(() => {})
   }
   function shutdown() {
     if (disposal) return disposal
@@ -260,7 +275,7 @@ export async function apply(ctx, config) {
     providerSync?.close()
     // Disabling the instance ends its attachment; the connector returns to no-instance mode
     // (contract §1.3, design §0.6).
-    connection?.detach(); connection = undefined
+    release()
     set(PLUGIN.state.stopping)
     // Do not swallow here: HMR successor awaits confirmed teardown, not a UI status.
     disposal = (async () => {
@@ -331,6 +346,24 @@ export async function apply(ctx, config) {
     const next = fieldValue(config.enabled) !== false
     if (next === enabled || closed) return
     enabled = next
-    toggle = toggle.then(() => (closed ? status() : enabled ? start() : stop())).catch(() => {})
+    follow(() => (enabled ? start() : stop()))
+  })
+  // The connector's service arriving starts the instance and its leaving stops the child, with no
+  // main restart either way (§0.6, inst-OQ-02). Its departure has already closed the attached
+  // transport (contract §1.3); the stop ends the child itself and leaves `connector-missing`.
+  followConnector(ctx, {
+    appeared(service) {
+      connector = service
+      follow(start)
+    },
+    disappeared() {
+      connector = undefined
+      release()
+      // A start still waiting for readiness is ended now, not after that wait: parentExit is the
+      // first step of the stop's own shutdown, taken early. Leaving `starting` first keeps the
+      // interrupted start from reporting itself as NATIVE_START_FAILED.
+      if (state === PLUGIN.state.starting) { set(PLUGIN.state.stopping); owner?.parentExit() }
+      follow(stop)
+    },
   })
 }

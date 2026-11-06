@@ -13,6 +13,7 @@
  */
 import { request as httpRequest } from 'node:http'
 import { ADMISSION, BEARER, LIMITS, ROUTES, STATUS, STATUS_CODES } from '../contract.js'
+import { BINDING_STATE } from '../../host/binding.js'
 
 const PREFIX = ROUTES.prefix
 const DOCUMENT = ROUTES.document
@@ -97,8 +98,11 @@ const DROP_RESPONSE = new Set([
 
 const BASE_ORIGIN = 'http://embed.invalid'
 
-/** Contract states and codes are the only values the card may show (§11: safe code, no path). */
-const STATES = new Set(Object.values(STATUS))
+/**
+ * Contract states and codes, plus the instance's own `connector-missing` (D25, inst-OQ-13), are
+ * the only values the card may show (§11: safe code, no path).
+ */
+const STATES = new Set([...Object.values(STATUS), BINDING_STATE.connectorMissing])
 const CODES = new Set(Object.values(STATUS_CODES))
 
 const HTML_ESCAPE = Object.freeze({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })
