@@ -56,4 +56,8 @@ export const LIMITS = Object.freeze({
   grantPrefixChars: 512,
   questionsPerRequest: 32,
   selectedLabelsPerAnswer: 32,
+
+  // attachInstance (fishball-connector v1, design §0.4): one ui path (chat or settings). Equal to
+  // grantPrefixChars by coincidence only; the two change for different reasons.
+  uiPathChars: 512,
 })

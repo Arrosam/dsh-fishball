@@ -69,7 +69,7 @@ import { stat } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
 import {
   DELIVERY, DIGEST, ENVELOPE, ERROR, EVENTS, IMAGE_TYPES, OPERATION, OPERATIONS, ROLE, SIDE, WATCH_ERROR,
-  WATCH_MODE, WATCH_STATUS, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope, validateEvent, validateRequest,
+  WATCH_MODE, WATCH_STATUS, TRANSPORT_METHODS, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope, validateEvent, validateRequest,
 } from '../contract.js'
 import { LIMITS } from '../limits.js'
 
@@ -108,8 +108,10 @@ export const SESSION_OPERATIONS = Object.freeze([
  * prompt and grant handlers registered by src/slim/host/approvals.js. The list stays as the
  * explicit statement of that coverage; an operation that is unavailable at runtime (a missing
  * image port) answers the contract's unsupported-operation from dispatch, not from this list.
+ * K1 froze connector v1's settings.describe/update; their handlers belong to task C2, so until
+ * then no handler serves them, the welcome does not advertise them, and a request is refused.
  */
-export const UNIMPLEMENTED_OPERATIONS = Object.freeze([])
+export const UNIMPLEMENTED_OPERATIONS = Object.freeze([OPERATION.settingsDescribe, OPERATION.settingsUpdate])
 
 /** Operations whose authorization needs a managed session (§5.2). */
 const MANAGED_OPERATIONS = new Set([
@@ -125,7 +127,6 @@ const SERVICE_METHODS = Object.freeze([
   'enabled', 'managedIds', 'isManaged', 'isFishball', 'describe', 'workspaces', 'resolveWorkspacePath',
   'start', 'message', 'redirect', 'stop', 'read', 'watch', 'watches', 'unwatch', 'release',
 ])
-const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose', 'close'])
 const ENCODING = Object.freeze({ hex: 'hex' })
 
 /** A bounded comparison key for request dedupe: a digest, never the payload text itself. */

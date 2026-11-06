@@ -10,7 +10,7 @@
  * record adds no context to either agent. The browser draws it through one conversation
  * definition registered by client.js (keep the type and vocabularies there in step with these).
  *
- * The main host and the child both import this file (the child snapshot copies src/slim).
+ * The main host and the child both import this file (the child snapshot copies src/connector).
  *
  * Record data, version 1 (every text is plain text and already cut to the contract's caps):
  *   v          1
