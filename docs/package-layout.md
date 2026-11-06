@@ -26,7 +26,7 @@ packages/connector/          npm fishball-connector 1.0.0 (major = contract majo
     pile-note.js             PILE_NOTE (was src/pile-note.js), shared wording
   src/*.js                   main-side session work (was src/*.js; list in §0.2 "connector")
   src/slim/host/{bridge,session-port,approvals,images}.js
-  src/slim/host/interim-bridge.js   new, INTERIM (see below)
+  src/connector-service.js   the `fishballConnector` service, the contract's binding (C1)
   src/slim/{contract,limits,card-record,inbox-markers,attachment-transfer}.js
                              re-export shims of ../../contract/*, so old import paths keep working
   LICENSE THIRD_PARTY_NOTICES.md
@@ -93,13 +93,12 @@ unchanged; I8 retires it. No package ships it.
   places `node_modules/fishball-connector/` in the snapshot, holding a manifest with the one
   `./contract` export and the `contract/` directory, so the child resolves the same import inside
   its private profile.
-- **INTERIM bridge service.** Before M1, `native-host.js` built the bridge host, session port and
-  approval relay itself. Those modules belong to the connector (§0.2), and the instance may import
-  only `./contract`. The connector row now provides `fishballConnectorBridge` with
-  `open(transport, {hostId, connectionId}) → {close}` (`src/slim/host/interim-bridge.js`). The
-  instance reads it with `ctx.get` on each authenticated wire. It is not part of the contract and
-  `./contract` does not export it. **C1 replaces it with `fishballConnector.attachInstance`, and
-  I1 moves the instance to that.** Do not build on it.
+- **The binding (C1).** The connector row provides the contract's `fishballConnector` service
+  (`src/connector-service.js`, contract §1) from apply, with or without an instance. The built-in
+  instance reads it with `ctx.get` on each authenticated wire and calls `attachInstance` with its
+  lifecycle host id as the descriptor's `id`; that id is also the bridge host's frame identity. A
+  replaced wire detaches before it attaches (a child restart is a detach and a new attach). M1's
+  interim `fishballConnectorBridge` is gone. The `ui`, `status` and `retry` fields are I1's.
 - **Injects.** The connector row now injects `llm` (the session port's model path read it on the
   native host before). The instance row no longer injects `sessionProjections`.
 - **Without the connector**, the instance's wire comes up unbridged: no session operations, no
