@@ -26,7 +26,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import {
-  ENVELOPE, ERROR, OPERATION, OPERATIONS, SIDE, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope,
+  ENVELOPE, ERROR, OPERATION, OPERATIONS, SIDE, TRANSPORT_METHODS, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope,
 } from '../contract.js'
 
 /**
@@ -45,7 +45,6 @@ export const BRIDGE_CLIENT = Object.freeze({
   maxListeners: 32,
 })
 
-const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose', 'close'])
 const INBOX_OPERATIONS = Object.freeze([OPERATION.inboxPush])
 
 /**
