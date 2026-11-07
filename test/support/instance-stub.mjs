@@ -40,12 +40,15 @@ export async function stopStub(booted) {
   if (booted.home) removeStubHome(booted.home)
 }
 
-/** The worker environment of an H-STUB host: the connector alone, plus the stub linked and enabled. */
-export function stubEnv(env = {}) {
+/**
+ * The worker environment of an H-STUB host: the connector alone, plus the stub linked and enabled.
+ * `link` adds further bundles ({name, dir, enabled}) to the same FBTEST_LINK list.
+ */
+export function stubEnv(env = {}, link = []) {
   return {
     FBTEST_PLUGIN_DIR: CONNECTOR.dir,
-    FBTEST_LINK: JSON.stringify([{ name: STUB.row, dir: STUB.dir, enabled: true }]),
     ...env,
+    FBTEST_LINK: JSON.stringify([{ name: STUB.row, dir: STUB.dir, enabled: true }, ...link]),
   }
 }
 
@@ -105,9 +108,10 @@ export function stubClient(host) {
 /**
  * Boot an H-STUB host (H-BOOT + H-CONN + H-STUB) and wait until the connector row is live.
  * attach: true (default) attaches the stub with the default descriptor and handshake.
+ * Returns {host, home, stub}; pass the whole object to stopStub in after().
  */
-export async function bootStub(label, { env = {}, attach = true, home = stubHome(label) } = {}) {
-  const host = await bootHost(home, { env: stubEnv(env) })
+export async function bootStub(label, { env = {}, link = [], attach = true, home = stubHome(label) } = {}) {
+  const host = await bootHost(home, { env: stubEnv(env, link) })
   const state = await host.waitStatus('live')
   if (state?.status !== 'live') throw new Error('connector did not become live: ' + JSON.stringify(state) + '\n' + host.output.slice(-2000))
   const stub = stubClient(host)
@@ -120,9 +124,9 @@ export async function bootStub(label, { env = {}, attach = true, home = stubHome
 }
 
 /** Restart DSH on the same home (H-STUB again); returns the new host and stub client. */
-export async function restartStub(old, { env = {}, attach = true } = {}) {
+export async function restartStub(old, { env = {}, link = [], attach = true } = {}) {
   await old.host.stop()
-  return bootStub('restart', { env, attach, home: old.home })
+  return bootStub('restart', { env, link, attach, home: old.home })
 }
 
 // ---- H-SESS / H-MANAGED ----
