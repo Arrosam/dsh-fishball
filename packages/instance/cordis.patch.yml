@@ -1,8 +1,8 @@
 # fishball-instance's profile footprint: one host row (design §0.2, §0.6).
 # - fishball-instance: starts the isolated Fishball (its own private DSH profile) after the main DSH
 #   is ready, and stops it with DSH. Inserted here so a plain `dsh plugin add` needs no profile
-#   edit. nodeExecutable and executableSearchPath default to DSH's PATH
-#   (src/native-runtime/node-default.js); set them in this row's config to choose another Node.
+#   edit. The child runs on the same executable, exec arguments and runtime variables as the main
+#   DSH (src/native-runtime/constants.js HOST_LAUNCH); there is no launch setting.
 # It edits no other row. The connector is a separate plugin (packages/connector), never installed by
 # this one (D25).
 - insert:
