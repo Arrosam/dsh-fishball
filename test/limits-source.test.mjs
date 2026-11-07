@@ -10,14 +10,14 @@
  * | id     | technique          | expected |
  * |--------|--------------------|----------|
  * | L40 ×20 | EP (one per old name) | no `NAME.field` / `NAME?.field` / `NAME['field']` (or the bare `OUTBOX_SHOWN`) in each package's index.js, client.js and src tree (M1: packages/connector, packages/instance) |
- * | L41 ×19 | EP (one per staying name) | each constant §16 keeps is still named somewhere in the source |
+ * | L41 ×12 | EP (one per staying name) | each constant §16 keeps whose owner still exists is named somewhere in the source (the other seven went with the in-process Fishball, slim §12) |
  * | L42 ×3 | EP (one per size) | the author guide names the dedupe key with 256 bytes, the description with 1,024 bytes and the source title with 200 bytes |
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it } from 'node:test'
-import { LIMITS_R11, REMOVED_PACKAGE_CONSTANTS, REPO, STAYING_CONSTANTS } from './support/constants.mjs'
+import { LIMITS_R11, LIMITS_R11_REMOVED, REMOVED_PACKAGE_CONSTANTS, REPO, STAYING_CONSTANTS } from './support/constants.mjs'
 
 /** Every implementation source file of the two M1 packages, as text, keyed by its path relative to the repo. */
 function sources() {
@@ -49,7 +49,8 @@ describe('rev11-limits: source and documentation checks', () => {
     assert.ok(FILES.some((f) => f.file.startsWith(path.join('packages', 'connector', 'src'))), 'connector src/*.js found')
   })
 
-  const OLD = [...Object.values(LIMITS_R11).map((l) => l.old), ...REMOVED_PACKAGE_CONSTANTS]
+  // C2 removed ten of the sixteen fields from the row; their old constants must stay unread all the same.
+  const OLD = [...Object.values({ ...LIMITS_R11, ...LIMITS_R11_REMOVED }).map((l) => l.old), ...REMOVED_PACKAGE_CONSTANTS]
   for (const name of OLD) {
     it('L40 the old constant ' + name + ' is no longer read anywhere in the source', () => {
       const re = patternFor(name)
