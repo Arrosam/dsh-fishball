@@ -42,7 +42,7 @@ export function childExecArgv(execArgv) {
 
 /**
  * The child's whole environment: the main process's runtime variables (HOST_LAUNCH.runtimeEnv,
- * plus ELECTRON_RUN_AS_NODE=1 under an Electron host) and the isolated private set, which no main
+ * plus ELECTRON_RUN_AS_NODE=1 under an Electron host only) and the isolated private set, which no main
  * value can override. PATH follows the main process's: its absolute entries in order, because a
  * relative entry would resolve against the child's private workspace instead.
  * @param paths - the runtime's private layout (files.js pathsFor).
