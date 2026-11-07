@@ -160,7 +160,15 @@ export async function apply(ctx, config) {
           // The connector's frame shows these (design §0.5 "The frame"); status() answers in the
           // contract's vocabulary only (contract §1.1, binding.js contractStatus).
           status: () => contractStatus(status()),
-          retry: async () => { await retry() },
+          // The instance's restart (design §0.6), queued like the card's Retry but not limited to
+          // `failed`: the frame also offers it after the connector closed the channel itself, when
+          // this instance may still be `ready` on a wire that is gone (B1). Rejects when the restart
+          // ends `failed` (I1c R3), carrying that status's safe code, so the frame reports the Retry
+          // as failed instead of as done.
+          retry: async () => {
+            const result = await follow(restart)
+            if (result.state === PLUGIN.state.failed) throw unavailable(result.code ?? PLUGIN.code.failed)
+          },
         })
       } catch (error) {
         connection = undefined
@@ -334,6 +342,10 @@ export async function apply(ctx, config) {
     const next = fieldValue(config.enabled) !== false
     if (next === enabled || closed) return
     enabled = next
+    // Disabling detaches first (design §0.6), so the connector shows no instance: a channel that
+    // ends without detach() keeps this instance's status in the connector's frame (contract §1.3),
+    // which is what a dead child and a restart want, but not a disable.
+    if (!enabled) release()
     follow(() => (enabled ? start() : stop()))
   })
   // The connector's service arriving starts the instance and its leaving stops the child, with no
