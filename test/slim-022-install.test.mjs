@@ -39,7 +39,9 @@ const CFG = Object.freeze({
 const ROUTE = Object.freeze({
   state: '/api/fishball/state',
   native: '/api/fishball/native/status',
-  sync: '/api/fishball/native/provider-sync/sync',
+  // I6 (6a19e44): the one-step sync route became Check for new models / Add selected on the
+  // instance's own prefix; INST-06 drives the check, which writes nothing.
+  modelsCheck: '/api/fishball-instance/models/check',
   // C2 (474b876): the sidebar-entry switch is retired with the brand setting (D22); its route answers 404.
   sidebar: '/api/fishball/sidebar-entry',
   embedDoc: '/fishball/embed/',
@@ -155,18 +157,20 @@ test('INST-05 the child serves /api/approvals (approval bridge mounted)', { skip
   assert.notEqual(res.status, 404)
 })
 
-test('INST-06 Refresh models from the page (same-origin Origin header) is not refused', { skip }, async () => {
+test('INST-06 Check for new models from the page (same-origin Origin header) is not refused (I6)', { skip }, async () => {
   // A browser fetch POST always carries Origin; the page's own call must pass the fence.
-  const res = await req(ROUTE.sync, { method: 'POST', headers: sameOrigin })
+  const res = await req(ROUTE.modelsCheck, { method: 'POST', headers: sameOrigin })
   const body = await res.json()
   assert.notEqual(body?.error?.code, 'provider-sync-refused')
   assert.equal(res.status, 200)
   // The main side must be able to list its own providers (§10): a keyless home still has DSH's
-  // built-in routes, so the answer names them (skipped: no key) instead of failing the inventory.
+  // built-in routes, so the check answers instead of failing the inventory (B9).
   assert.notEqual(body?.error?.code, 'provider-sync-inventory-failed', 'main-side provider inventory failed (B9)')
-  // fe25ea1 round: the sync itself succeeds and reports one outcome per provider it saw.
-  assert.equal(body?.ok, true, `sync refused: ${JSON.stringify(body?.error ?? null)}`)
-  assert.ok(Array.isArray(body?.result?.items), 'sync result has no items list')
+  // I6: the check succeeds with a one-use check id and the missing / not-offered lists.
+  assert.equal(body?.ok, true, `check refused: ${JSON.stringify(body?.error ?? null)}`)
+  assert.equal(typeof body?.result?.checkId, 'string', 'check result has no checkId')
+  assert.ok(Array.isArray(body?.result?.missing), 'check result has no missing list')
+  assert.ok(Array.isArray(body?.result?.notOffered), 'check result has no notOffered list')
 })
 
 test('INST-09 a plain install composes one row per package, and no row named fishball (M1)', { skip }, () => {
