@@ -2,7 +2,8 @@
  * The slim shell's composition root (T07).
  *
  * It owns the page's one EventSource and wires the views that live inside the child app: the
- * chat (T07), the reminder list (T10) and the approvals view inside the chat (T09). The chat
+ * chat (T07), the reminder list (T10), the approvals view inside the chat (T09) and the settings
+ * view (I6), which the page shows instead of the chat at `?view=settings`. The chat
  * view receives each SSE chat frame; the reminder view re-reads its list when the child says
  * reminders changed; the approvals view re-reads its snapshot on its own event, so no view opens
  * a second stream (Section 3.6).
@@ -13,8 +14,24 @@
 import { APPROVALS_EVENT } from './approvals.js'
 import { createChatView } from './chat.js'
 import { createRemindersView } from './reminders.js'
+import { createSettingsView } from './settings.js'
 
 const COPY = { reconnecting: 'Reconnecting…' }
+/**
+ * The header actions' words, English and Chinese (D30's rule: the first `lang` parameter, exactly
+ * `zh`); I9 moves them into the page's dictionaries.
+ */
+const VIEW_COPY = Object.freeze({
+  en: Object.freeze({ settings: 'Settings', back: 'Back to chat' }),
+  zh: Object.freeze({ settings: '设置', back: '返回聊天' }),
+})
+/**
+ * The view switch (design §0.5 "Settings view"): only the first `view` parameter with the exact
+ * lowercase value `settings` selects the settings view; anything else shows the chat. Every other
+ * parameter (K2's `lang` among them) is kept as it is when the view changes.
+ */
+const VIEW = Object.freeze({ param: 'view', settings: 'settings', langParam: 'lang', zh: 'zh' })
+const VIEW_CLASS = Object.freeze({ action: 'header-action' })
 
 /**
  * DSH's palette switch (dsh-client-ui-theme ThemePresenter): dark is the body attribute that
@@ -45,6 +62,47 @@ const chat = createChatView({
 })
 const reminders = createRemindersView({ container: document.getElementById('reminders') })
 
+const viewCopy = new URLSearchParams(location.search).get(VIEW.langParam) === VIEW.zh ? VIEW_COPY.zh : VIEW_COPY.en
+const chatLayout = document.querySelector('.layout')
+const modelPicker = document.getElementById('model-picker')
+const settingsPage = document.getElementById('settings')
+const headerActions = document.getElementById('header-actions')
+/** Built on first open, so a page that never opens settings sends no admin request. */
+let settings
+
+const settingsSelected = () => new URLSearchParams(location.search).get(VIEW.param) === VIEW.settings
+
+/** Show one view and its header action; the chat's pickers belong to the chat only. */
+function showView() {
+  const open = settingsSelected()
+  chatLayout.hidden = open
+  modelPicker.hidden = open
+  settingsPage.hidden = !open
+  if (open && settings === undefined) settings = createSettingsView({ container: settingsPage })
+  const action = document.createElement('button')
+  action.type = 'button'
+  action.className = VIEW_CLASS.action
+  action.textContent = open ? viewCopy.back : viewCopy.settings
+  action.addEventListener('click', () => switchView(!open))
+  headerActions.replaceChildren(action)
+}
+
+/**
+ * Settings writes `view=settings`, Back removes the parameter, both with replaceState (§0.5), so
+ * a reload keeps the view and the frame's history gains no entry.
+ */
+function switchView(open) {
+  // A view built by this switch reads its blocks itself; an existing one re-reads on reopen.
+  const built = settings !== undefined
+  const url = new URL(location.href)
+  if (open) url.searchParams.set(VIEW.param, VIEW.settings)
+  else url.searchParams.delete(VIEW.param)
+  history.replaceState(history.state, '', url)
+  showView()
+  if (open && built) void settings.refresh()
+}
+showView()
+
 // Relative, so one shell works directly at the child's "/" and under the broker's
 // "/fishball/embed/" document URL (Section 3.1). EventSource reconnects on its own.
 const events = new EventSource('api/events')
@@ -54,6 +112,7 @@ let opened = false
 
 events.addEventListener('open', () => {
   showConnection(true)
+  settings?.connected(true)
   if (opened) {
     void chat.refresh()
     void reminders.refresh()
@@ -61,7 +120,10 @@ events.addEventListener('open', () => {
   opened = true
 })
 
-events.addEventListener('error', () => showConnection(false))
+events.addEventListener('error', () => {
+  showConnection(false)
+  settings?.connected(false)
+})
 
 events.addEventListener('reminders', () => { void reminders.refresh() })
 
