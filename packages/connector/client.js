@@ -71,9 +71,9 @@ window.__ModuleLoader__.load({
      * opens at its list (conn-OQ-31). `warningIconPx` is the glyph of DSH's own empty/error state
      * (dsh-client-ui-schedule's list error, 24px). `stateTone` maps the frame's state to DSH's Tag
      * tones (the ones its plugin page uses).
-     * The framed path is the attached instance's own `ui.chat` or `ui.settings`, used exactly as
-     * it registered it: the contract already refused a path with a scheme, a host or a token
-     * (contract §1.2), so nothing is appended or rewritten here.
+     * The framed path is the attached instance's own `ui.chat` or `ui.settings` as it registered
+     * it (the contract already refused a path with a scheme, a host or a token, contract §1.2),
+     * plus contract 1.1's `lang` parameter (FRAME_UI.lang); nothing else is appended or rewritten.
      */
     const EMBED_UI = Object.freeze({
       panelId: 'fishball', panelOrder: -10, pluginsPanelId: 'plugins', warningIconPx: 24,
@@ -112,6 +112,17 @@ window.__ModuleLoader__.load({
       page: Object.freeze({ chat: 'chat', settings: 'settings' }),
       /** DSH's pluginNavigation service and the row its Connector settings button opens (DSH's form of it). */
       navigation: 'pluginNavigation',
+      /**
+       * Contract 1.1's language parameter (keep in step with contract/contract.js UI_LANG; this
+       * bundle has no build step, so it cannot import the contract). `byLocale` is DSH's text map
+       * for ctx.locale.resolveText: DSH's locale id (lowercase, `en` required) to the `lang` value.
+       * resolveText walks the active language's fallback chain exactly as the connector's own
+       * `t` does, so the page opens in the same language as the connector's words: a language pack
+       * that falls back to `zh` frames `zh`, and any other language frames `en`.
+       */
+      lang: Object.freeze({ parameter: 'lang', byLocale: Object.freeze({ en: 'en', zh: 'zh' }) }),
+      /** The URL marks the framed address is cut at, so its path, other parameters and fragment stay verbatim. */
+      url: Object.freeze({ fragment: '#', query: '?', separator: '&', assign: '=' }),
     })
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
     const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
@@ -927,6 +938,42 @@ window.__ModuleLoader__.load({
         h(Tag, { tone: EMBED_UI.neutralTone }, unreadText(t, count)))
     }
 
+    /** Split text at the first mark: what is before it, and what follows it (null without the mark). */
+    function splitAt(text, mark) {
+      const at = text.indexOf(mark)
+      return at === -1 ? { head: text, tail: null } : { head: text.slice(0, at), tail: text.slice(at + mark.length) }
+    }
+
+    /**
+     * The address the frame loads (contract 1.1, §1.2): the registered path with one `lang`
+     * parameter at the end of its query, before its fragment. Every `lang` the path already has is
+     * dropped, so the page's "first `lang`" is always this one; a parameter's name is compared
+     * after URL decoding, as the page reads it. The rest is cut by string, not rebuilt through
+     * URLSearchParams, so the other parameters and the fragment keep their exact spelling.
+     */
+    function framedUrl(path, lang) {
+      const { parameter } = FRAME_UI.lang
+      const { fragment, query, separator, assign } = FRAME_UI.url
+      const address = splitAt(path, fragment)
+      const parts = splitAt(address.head, query)
+      const kept = (parts.tail?.split(separator) ?? []).filter((pair) => pair.length > 0 && !new URLSearchParams(pair).has(parameter))
+      const hash = address.tail === null ? '' : fragment + address.tail
+      return parts.head + query + [...kept, parameter + assign + encodeURIComponent(lang)].join(separator) + hash
+    }
+
+    /**
+     * The `lang` value for DSH's active language, followed live. resolveText walks the same
+     * fallback chain as the connector's own `t` (FRAME_UI.lang). The store's value is the string
+     * itself, so a dictionary registration (which also notifies) re-renders nothing, and only a
+     * real language change gives the frame a new address, which reloads it.
+     */
+    function frameLangStore(locale) {
+      return {
+        subscribe: (listener) => locale.subscribe(listener),
+        get: () => locale.resolveText(FRAME_UI.lang.byLocale),
+      }
+    }
+
     /** DSH's own empty/error state, centred in the view (dsh-client-ui-schedule .empty). */
     const emptyState = (...children) => h('div', { className: CLS.embedError }, ...children)
 
@@ -938,15 +985,18 @@ window.__ModuleLoader__.load({
      * the state tag, the unread count, Connector settings (always, so DSH's form of
      * fishball-connector is reachable in every state), Refresh, "Open in a tab" (with a framed
      * path) and Retry (failed and the instance gave retry). The content is the instance's own
-     * page, framed at exactly its registered path.
+     * page, framed at its registered path plus `lang` (framedUrl); "Open in a tab" opens the same
+     * address. The iframe's key holds that address, so a language change remounts it: a reload.
      * Nothing crosses the iframe: the view installs no `message` listener and acts on no
      * postMessage from the page (D27; the contract's former open-settings message is dropped).
      * Everything it shows comes from the connector's own state and routes.
      */
     function makeFishballView(ctx, t) {
+      const frameLang = frameLangStore(ctx.locale)
       return function FishballView() {
         const instance = useFrameInstance()
         const page = React.useSyncExternalStore(framedPage.subscribe, framedPage.get)
+        const lang = React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
         const [generation, setGeneration] = React.useState(0)
         const [retrying, setRetrying] = React.useState(false)
         const [retryCode, setRetryCode] = React.useState(null)
@@ -955,6 +1005,7 @@ window.__ModuleLoader__.load({
         const ui = instance?.ui ?? {}
         const path = (page === FRAME_UI.page.settings ? ui.settings : undefined) ?? ui.chat
         const framed = instance?.attached === true && path !== undefined && FRAME_UI.framedStates.includes(state)
+        const src = path === undefined ? undefined : framedUrl(path, lang)
         const retry = async () => {
           setRetrying(true)
           setRetryCode(null)
@@ -979,7 +1030,7 @@ window.__ModuleLoader__.load({
             : ui.chat === undefined
               ? emptyState(h('p', { 'data-fishball-embed-no-chat': true }, t('frameNoChat', { name: instance.name })))
               : framed
-                ? h('iframe', { key: `${generation}:${path}`, className: CLS.embedFrame, src: path, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, 'data-fishball-embed-frame': true })
+                ? h('iframe', { key: `${generation}:${src}`, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, 'data-fishball-embed-frame': true })
                 : emptyState(
                   h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
                   h('p', { role: 'alert' }, t('embedUnavailable', { name: instance.name })),
@@ -996,7 +1047,7 @@ window.__ModuleLoader__.load({
               h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !framed, onClick: () => setGeneration((value) => value + 1) }, t('embedRefresh')),
               // To the framed path, and only while there is one (conn-OQ-25).
               framed
-                ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => { window.open(path, EMBED_UI.target, EMBED_UI.features) } }, t('embedOpenTab'))
+                ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => { window.open(src, EMBED_UI.target, EMBED_UI.features) } }, t('embedOpenTab'))
                 : null,
               h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-connector-settings': true, onClick: openConnectorSettings }, t('frameConnectorSettings')))),
           body)
