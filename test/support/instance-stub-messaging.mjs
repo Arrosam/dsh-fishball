@@ -14,7 +14,6 @@ import { until } from './util.mjs'
 export const MSGF = Object.freeze({
   /** Skip reasons of what no stub can show. */
   skip: Object.freeze({
-    readSettingsCap: 'open question (parent to decide): DESIGN §16 says readSessionMessages/readSessionBytes bound what read_session returns and conn-OQ-20 keeps them as connector settings, but contract §4.1 lets the instance name maxMessages/maxBytes per request; observed, the connector ignores both settings (0.2.2-rc.1). Un-skip once the docs say whether the settings cap a session.read',
     personaPrompt: "the persona is the instance's own system prompt (packages/instance, slim §0.5, §12): no model request of Fishball's session exists on the main side, and the built-in instance does not boot under H-STUB, so no black-box path reaches it",
   }),
   /** Calls per scripted model response when a case needs many message_fishball calls (kept below DSH's step limits). */

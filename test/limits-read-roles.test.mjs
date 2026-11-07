@@ -18,7 +18,9 @@
  * | LRR-05  | ST + BVA (readSessionMessages 3 → 12, request 12) | DESIGN §16; conn-OQ-20 (Reading) | at most 3 messages while the setting is 3 (the newest, labels intact); the newest 12 again after it is back at 12, no restart |
  * | LRR-06  | BVA (readSessionBytes 2048, request 12288; the 4 messages of LRR-02) | DESIGN §16; conn-OQ-20 (Reading) | the newest 2 (2048 bytes of text); all 4 again at 12288 |
  *
- * LRR-05 and LRR-06 are skipped as an open question (MSGF.skip.readSettingsCap): the Reading above is not settled by the docs.
+ * Reading: conn-OQ-20 keeps readSessionMessages/readSessionBytes in the connector because connector code reads
+ * them, and DESIGN §16 says they bound what read_session returns; contract §4.1's request bounds can only cut
+ * further. So the effective bound of a session.read is the smaller of the request's and the setting's.
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
@@ -100,7 +102,7 @@ describe('session.read bounds with labelled messages', () => {
     assert.ok(bytes(m.text) <= maxBytes, 'bytes ' + bytes(m.text))
   })
 
-  it('LRR-05 readSessionMessages caps every read, and a change applies to the next read', { ...T, skip: MSGF.skip.readSettingsCap }, async () => {
+  it('LRR-05 readSessionMessages caps every read, and a change applies to the next read', T, async () => {
     const rows = fifteen()
     const sessionId = await holding('lrr-05', rows)
     const CAP = 3
@@ -111,7 +113,7 @@ describe('session.read bounds with labelled messages', () => {
     await assertRead(sessionId, DEFAULT, rows.slice(-DEFAULT.maxMessages), 'back to the default')
   })
 
-  it('LRR-06 readSessionBytes caps every read: 2048 keeps the newest 2 of 1024, the default all 4', { ...T, skip: MSGF.skip.readSettingsCap }, async () => {
+  it('LRR-06 readSessionBytes caps every read: 2048 keeps the newest 2 of 1024, the default all 4', T, async () => {
     const rows = four()
     const sessionId = await holding('lrr-06', rows)
     await setLimit(host, { readSessionBytes: 2 * SIZE })
