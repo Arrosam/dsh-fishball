@@ -47,6 +47,7 @@ const METHOD = Object.freeze({ head: 'HEAD', post: 'POST' })
 
 const HTTP = Object.freeze({
   seeOther: 303,
+  badRequest: 400,
   movedPermanently: 308,
   unauthorized: BEARER.unauthorizedStatus,
   forbidden: 403,
@@ -102,6 +103,37 @@ const DROP_RESPONSE = new Set([
 const BASE_ORIGIN = 'http://embed.invalid'
 
 /**
+ * Request-target rules (inst-OQ-11 (2)). Dot segments are read from the raw target, because the
+ * URL parser resolves `ui/../api/x` to `api/x` and would hide the traversal from a later check.
+ */
+const TARGET = Object.freeze({
+  separator: '/',
+  query: '?',
+  dotSegments: new Set(['.', '..']),
+  /** A malformed target, or one outside the prefix; refused before admission. */
+  malformed: Object.freeze({ status: HTTP.badRequest }),
+  /** Well formed and under the prefix, but not one of the §3.6 routes. */
+  unknown: Object.freeze({ status: HTTP.notFound }),
+})
+
+/**
+ * Only `cross-site` is refused (inst-OQ-11 (3)). `same-site`, `none` (a typed URL, a reload,
+ * "Open in a tab") and an absent header pass, as at DSH's own fence: the DSH cookie is
+ * SameSite=Strict and requestRejection still checks Host and Origin, which is the check a POST
+ * needs (§3.1's "requires same-origin" is relaxed to "refuses cross-site"). DSH's requestRejection
+ * refuses cross-site too; the rule is also stated here so the 403 does not depend on which
+ * admission service createEmbedBroker was given.
+ */
+const SITE = Object.freeze({ header: ADMISSION.siteHeader, refused: 'cross-site' })
+
+/**
+ * DSH's launch-token query name (dsh-client-connection lib/index.js TOKEN_QUERY). A browser
+ * request carrying it is refused 400 (inst-OQ-11 (4), -12): never forwarded to the child, never
+ * stripped silently, because a credential in the address must be visible as an error.
+ */
+const TOKEN_QUERY = 'token'
+
+/**
  * Contract states and codes, plus the instance's own `connector-missing` (D25, inst-OQ-13) and
  * refused-attach codes (inst-OQ-03), are the only values the card may show (§11: safe code, no path).
  */
@@ -130,27 +162,31 @@ const ready = (view) => view.enabled && view.state === STATUS.ready
 const inaccessible = () => ({ enabled: false, state: STATUS.failed, code: STATUS_CODES.unavailable })
 
 /**
- * One request target below the prefix. Absolute URLs, protocol-relative targets, backslashes, NULs
- * and encoded dot segments are refused; the parsed pathname then picks the child route. Query
- * parameters survive the prefix strip.
+ * One request target below the prefix. Absolute URLs, protocol-relative targets, backslashes, NULs,
+ * dot segments (raw or encoded) and paths outside the prefix are TARGET.malformed; an unknown
+ * route under the prefix is TARGET.unknown; the parsed pathname then picks the child route.
+ * Query parameters survive the prefix strip; `token` reports a launch-token query for the caller
+ * to refuse after admission.
  */
 function targetOf(rawUrl) {
-  if (typeof rawUrl !== 'string' || !rawUrl.startsWith('/') || rawUrl.startsWith('//')) return undefined
-  const rawPath = rawUrl.split('?')[0]
-  if (rawPath.includes('\\') || rawPath.includes('\0') || rawPath.toLowerCase().includes('%2e')) return undefined
+  if (typeof rawUrl !== 'string' || !rawUrl.startsWith('/') || rawUrl.startsWith('//')) return TARGET.malformed
+  const rawPath = rawUrl.split(TARGET.query)[0]
+  if (rawPath.includes('\\') || rawPath.includes('\0') || rawPath.toLowerCase().includes('%2e')) return TARGET.malformed
+  if (rawPath.split(TARGET.separator).some((segment) => TARGET.dotSegments.has(segment))) return TARGET.malformed
   let url
-  try { url = new URL(rawUrl, BASE_ORIGIN) } catch { return undefined }
-  if (url.origin !== BASE_ORIGIN) return undefined
+  try { url = new URL(rawUrl, BASE_ORIGIN) } catch { return TARGET.malformed }
+  if (url.origin !== BASE_ORIGIN) return TARGET.malformed
   const pathname = url.pathname
-  if (pathname.includes('\\') || pathname.includes('\0')) return undefined
-  if (pathname === PREFIX) return { redirect: DOCUMENT + url.search }
+  if (pathname.includes('\\') || pathname.includes('\0')) return TARGET.malformed
+  const token = url.searchParams.has(TOKEN_QUERY)
+  if (pathname === PREFIX) return { redirect: DOCUMENT + url.search, token }
+  if (!pathname.startsWith(DOCUMENT)) return TARGET.malformed
   let tail
   if (pathname === DOCUMENT) tail = CHILD.document
   else if (pathname.startsWith(UI)) tail = pathname.slice(PREFIX.length)
   else if (pathname.startsWith(API)) tail = pathname.slice(PREFIX.length)
-  else return undefined
-  if (tail.split('/').some((segment) => segment === '.' || segment === '..')) return undefined
-  return { tail, search: url.search }
+  else return TARGET.unknown
+  return { tail, search: url.search, token }
 }
 
 function bodyLimit(tail) {
@@ -338,6 +374,12 @@ export function createEmbedBroker({ service, connection }) {
     reply(response, method, HTTP.unavailable, { 'content-type': TYPE.text }, 'Fishball is not available.')
   }
 
+  /** An admission refusal: the body is drained and the answer is empty. */
+  function refuse(request, response, status, headers = {}) {
+    request.resume()
+    reply(response, request.method, status, { ...headers, 'content-type': TYPE.text }, '')
+  }
+
   function redirect(response, method, status, location) {
     reply(response, method, status, { location })
   }
@@ -466,30 +508,21 @@ export function createEmbedBroker({ service, connection }) {
     unavailable(response, request.method, view, CHILD.document, search)
   }
 
+  /**
+   * inst-OQ-11, first failure wins: (1) method, (2) request target, (3) site and the main DSH's
+   * admission, (4) a launch-token query. Site beats auth as in DSH, so a cross-site request learns
+   * nothing about authentication state; the token check follows admission so it never answers an
+   * unauthenticated caller with anything but 401 or 403.
+   */
   async function dispatch(request, response) {
+    if (!ROUTES.methods.includes(request.method)) { refuse(request, response, HTTP.methodNotAllowed, { allow: ALLOW }); return }
     const target = targetOf(request.url)
-    if (target === undefined) {
-      request.resume()
-      reply(response, request.method, HTTP.notFound, { 'content-type': TYPE.text }, '')
-      return
-    }
-    if (!ROUTES.methods.includes(request.method)) {
-      request.resume()
-      reply(response, request.method, HTTP.methodNotAllowed, { allow: ALLOW, 'content-type': TYPE.text }, '')
-      return
-    }
-    // Same-origin first: a cross-site request learns nothing about authentication state.
-    if (request.headers[ADMISSION.siteHeader] !== ADMISSION.sameOrigin) {
-      request.resume()
-      reply(response, request.method, HTTP.forbidden, { 'content-type': TYPE.text }, '')
-      return
-    }
+    if (target.status !== undefined) { refuse(request, response, target.status); return }
+    if (request.headers[SITE.header] === SITE.refused) { refuse(request, response, HTTP.forbidden); return }
     const rejection = connection.requestRejection({ headers: request.headers })
-    if (rejection !== undefined) {
-      request.resume()
-      reply(response, request.method, rejection, { 'content-type': TYPE.text }, '')
-      return
-    }
+    if (rejection !== undefined) { refuse(request, response, rejection); return }
+    // Before the 308 too: redirecting would carry the token on to the document address.
+    if (target.token) { refuse(request, response, HTTP.badRequest); return }
     if (target.redirect !== undefined) {
       request.resume()
       redirect(response, request.method, HTTP.movedPermanently, target.redirect)
