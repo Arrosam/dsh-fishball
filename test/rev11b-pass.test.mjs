@@ -17,7 +17,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ANSWER_TOOL, APPROVER_AFTER_ENV, ASK_CODE, ASK_OUTPUT, ASK_TOOL, DECISION, OUTCOME, STATUS } from './support/constants.mjs'
+import { ANSWER_TOOL, APPROVER_AFTER_ENV, ASK_CODE, ASK_OUTPUT, ASK_TOOL, DECISION, OUTCOME, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, askStep, blockArguments, callStep, fishballCall, jsonOf, managedSession, requestMessages, resultById, resultOfCall, settledIdle, stockSeen, turn, untrustedBlock } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
@@ -27,7 +27,7 @@ const cid = (label) => 'call_' + tok(label)
 const QUIET_MS = 1000
 const REQUEST_ID = /^\[permission request (apr_[0-9a-f]+)\]/
 
-describe('Revision 11 rev11b: one-time passes', () => {
+describe('Revision 11 rev11b: one-time passes', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   let x

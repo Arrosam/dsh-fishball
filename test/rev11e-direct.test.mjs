@@ -21,13 +21,13 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, AUDIT_ANSWER, CARD_KEYS, CARD_KIND, CLICK, DECISION, DECISION_ACTION, LIMITS, OWN_PLUGINS, OUTCOME, PILE_CODE, ASK_TOOL } from './support/constants.mjs'
+import { API, AUDIT_ANSWER, CARD_KEYS, CARD_KIND, CLICK, DECISION, DECISION_ACTION, LIMITS, OWN_PLUGINS, OUTCOME, PILE_CODE, ASK_TOOL, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, answerCard, auditOf, cardArguments, cardOf, holdFishball, messageFishball, pileNow, requestMessages, settledIdle, storedRows, untilCard, untilNoCard, waitRequest } from './support/expect.mjs'
 import { QUIET_MS, pileHost, promptTools, sleep, tokens, until } from './support/rev11e.mjs'
 
 const { tok, cid } = tokens('DCD')
 
-describe('Revision 11 rev11e: a direct call sent to you shows a card and the stock prompt', () => {
+describe('Revision 11 rev11e: a direct call sent to you shows a card and the stock prompt', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let p
   let t

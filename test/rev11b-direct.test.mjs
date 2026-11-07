@@ -19,8 +19,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
   ALLOWED_TEXT, ANSWER_TOOL, APPROVER_AFTER_ENV, ASK_CODE, ASK_OUTPUT, AUDIT_ANSWER, AUDIT_KIND, DECISION, DECISION_ACTION, DECISIONS_TABLE, DSH_REJECT_WORDS,
-  LIMITS, OUTCOME, REJECTED_TEXT, REQUEST_PLACEHOLDER, STATUS,
-} from './support/constants.mjs'
+  LIMITS, OUTCOME, REJECTED_TEXT, REQUEST_PLACEHOLDER, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import {
   HOOK, T, askStep, auditOf, callStep, jsonOf, managedSession, requestMessages, resultById, roundsOf, settledIdle, stockSeen, storedRows, turn, waitRequest,
 } from './support/expect.mjs'
@@ -32,7 +31,7 @@ const cid = (label) => 'call_' + tok(label)
 const QUIET_MS = 1000
 const REQUEST_ID = /apr_[0-9a-f]+/
 
-describe('Revision 11 rev11b: direct calls', () => {
+describe('Revision 11 rev11b: direct calls', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

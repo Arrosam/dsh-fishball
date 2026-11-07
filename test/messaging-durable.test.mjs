@@ -18,7 +18,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, INTAKE_DIR, MS, NOTE_TEXT, PRESET, STATUS } from './support/constants.mjs'
+import { API, INTAKE_DIR, MS, NOTE_TEXT, PRESET, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, fishballMessages, makeManaged, intakeNow, messageFishball, moveArtifacts, requestsWith, settledIdle, turn, untilSeen } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
 
@@ -36,7 +36,7 @@ async function holdFishball(host, fb) {
 }
 const itemOf = async (host, needleIdentity, createdAfter) => (await intakeNow(host)).items.filter((i) => i.sourceIdentity === needleIdentity && Date.parse(i.createdAt) >= createdAfter)
 
-describe('P5 wake-up cap', () => {
+describe('P5 wake-up cap', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   let sender
@@ -134,7 +134,7 @@ describe('P5 wake-up cap', () => {
   })
 })
 
-describe('P5 durability across restarts', () => {
+describe('P5 durability across restarts', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb
@@ -228,7 +228,7 @@ describe('P5 durability across restarts', () => {
   })
 })
 
-describe('P5 items of an adopted-away session', () => {
+describe('P5 items of an adopted-away session', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

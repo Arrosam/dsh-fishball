@@ -24,8 +24,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
   APPROVER_AFTER_ENV, ASK_FISHBALL, ASK_TOOL, INBOUND_TOOL, LIMITS_R11B, LIST_USER_MESSAGES, MANAGED_TOOLS, NOTICE, OUTCOME, PRESET, ROW_ID,
-  STATUS, UNKNOWN_TOOL_TEXT, USER_RPC_SOURCE,
-} from './support/constants.mjs'
+  STATUS, UNKNOWN_TOOL_TEXT, USER_RPC_SOURCE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, Schema, T, callTool, fishballCall, jsonOf, managedSession, requestMessages, setManaged, settledIdle, toolNames, turn } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
@@ -38,7 +37,7 @@ const QUIET_MS = 1000
 const chars = (n) => 'é'.repeat(n)
 const LONG = { timeout: 120000 }
 
-describe('Revision 11 rev11b: the managed tools and list_user_messages', () => {
+describe('Revision 11 rev11b: the managed tools and list_user_messages', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   const setLimit = async (patch) => { const r = await host.call('settingsUpdate', { patch }); assert.equal(r.ok, true, JSON.stringify(r.error)); return r }

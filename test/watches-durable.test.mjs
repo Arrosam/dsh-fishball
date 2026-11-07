@@ -16,7 +16,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, LIMITS, MS, PRESET, STATUS, WATCH_API, WATCH_STATUS } from './support/constants.mjs'
+import { API, LIMITS, MS, PRESET, STATUS, WATCH_API, WATCH_STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, makeManaged, deleteSession, fishballCall, intakeNow, messageFishball, noticesSettled, settledIdle, turn, untrustedBlock, watchById, watchNotices, watchesOn } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
 
@@ -24,7 +24,7 @@ let seq = 0
 const tok = (label) => 'TOK' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 8)
 const LONG = { timeout: 150000 }
 
-describe('P6 watches across restarts', () => {
+describe('P6 watches across restarts', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

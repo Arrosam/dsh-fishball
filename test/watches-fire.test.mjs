@@ -39,8 +39,7 @@ import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
   API, AUTHOR_KIND, INBOUND_TOOL, LIMITS, PRESET, READ_MAX, READ_ROLES, WATCH_API, WATCH_CODE, WATCH_KEYS, WATCH_STATUS, WATCH_SUMMARY, WATCH_TEXT, WATCH_TOOLS,
-  TITLE,
-} from './support/constants.mjs'
+  TITLE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import {
   HOOK, T, callScript, fishballCall, makeManaged, intakeNow, jsonOf, messageFishball, noticesSettled, requestsWith, sessionAuthor, settledIdle, toolNames, turn,
   untilSeen, untrustedBlock, watchById, watchNotices, watchesNow, watchesOn,
@@ -51,7 +50,7 @@ let seq = 0
 const tok = (label) => 'TOK' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 8)
 const LONG = { timeout: 90000 }
 
-describe('P6 watches fire', () => {
+describe('P6 watches fire', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

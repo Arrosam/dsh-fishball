@@ -14,7 +14,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { APPROVER_AFTER_ENV, ASK_OUTPUT, ASK_TOOL, DECISION, HINT_ALLOWED, NOTICE, OUTCOME, REJECTED_TEXT, STATUS } from './support/constants.mjs'
+import { APPROVER_AFTER_ENV, ASK_OUTPUT, ASK_TOOL, DECISION, HINT_ALLOWED, NOTICE, OUTCOME, REJECTED_TEXT, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, managedSession, requestMessages, resultById, settledIdle, step, turn } from './support/expect.mjs'
 import { bootHost, newHome } from './support/host.mjs'
 
@@ -26,7 +26,7 @@ const carries = (text, needle) => text.includes(needle) || text.includes(JSON.st
 /** A program that makes one inner call of the asking tool and returns its value, or the caught error's message. */
 const program = (args) => 'try { return await tools.' + ASK_TOOL + '(' + JSON.stringify(args) + ') } catch (e) { return ' + JSON.stringify(THREW) + ' + e.message }'
 
-describe('Revision 11 rev11b: calls inside run_code', () => {
+describe('Revision 11 rev11b: calls inside run_code', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   let x

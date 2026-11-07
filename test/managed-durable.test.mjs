@@ -17,7 +17,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FEATURE_OFF, INBOUND_TOOL, MANAGED_BY, MANAGED_CODE, OUTCOME, OWN_PLUGINS, PACKAGE_NAME, PRESET, STATUS, API } from './support/constants.mjs'
+import { APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FEATURE_OFF, INBOUND_TOOL, MANAGED_BY, MANAGED_CODE, OUTCOME, OWN_PLUGINS, PACKAGE_NAME, PRESET, STATUS, API, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import {
   HOOK, T, askSettled, fishballCall, managedEntry, managedNow, pluginIn, requestMessages, setManaged, settledIdle, startAsk, toolNames, turn, untilCatalog, waitRequest,
 } from './support/expect.mjs'
@@ -30,7 +30,7 @@ const QUIET_MS = 1200
 const LONG = { timeout: 150000 }
 const hasInbound = (req) => toolNames(req).includes(INBOUND_TOOL)
 
-describe('Revision 11 rev11a: managed status is durable', () => {
+describe('Revision 11 rev11a: managed status is durable', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

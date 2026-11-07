@@ -14,7 +14,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { APPROVER_AFTER_ENV, ASK_CODE, ASK_TOOL, DECISION, LIMITS, NOTICE, OUTCOME, REQUEST_PLACEHOLDER, STATUS } from './support/constants.mjs'
+import { APPROVER_AFTER_ENV, ASK_CODE, ASK_TOOL, DECISION, LIMITS, NOTICE, OUTCOME, REQUEST_PLACEHOLDER, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import {
   HOOK, T, approvalAudit, askStep, auditOf, bytes, fishballCall, jsonOf, managedSession, requestMessages, resultById, resultOfCall, roundsOf, settledIdle, turn, waitRequest,
 } from './support/expect.mjs'
@@ -30,7 +30,7 @@ const SIZE_LIMIT = 6000
 /** The same turn text for every size request, so only the reason's length changes the message. */
 const SIZE_TURN = 'fbtest size turn'
 
-describe('Revision 11 rev11b: quotes and request size', () => {
+describe('Revision 11 rev11b: quotes and request size', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

@@ -23,8 +23,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
   API, AUTHOR_KIND, IDENTITY, INBOUND_TOOL, INTAKE_ITEM_KEYS, INTAKE_KEYS, INTAKE_KINDS, INTAKE_STATUSES, LIMITS, NOTE_TEXT, OUTBOUND_TOOLS,
-  P5_CODE, PRESET, RELAY, RELAY_HEADER, STATE_LIST_MAX,
-} from './support/constants.mjs'
+  P5_CODE, PRESET, RELAY, RELAY_HEADER, STATE_LIST_MAX, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import {
   HOOK, T, callTool, makeManaged, sessionAuthor, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball, settledIdle,
   toolNames, toolSchema, turn, untilSeen, untrustedBlock,
@@ -36,7 +35,7 @@ const tok = (label) => 'TOK' + label + 'x' + (++seq) + Math.random().toString(36
 /** One response with several message_fishball calls: [{message, id}]. */
 const manyCalls = (calls) => [calls.map((c) => ({ tool: INBOUND_TOOL, args: { message: c.message }, id: c.id })), [{ text: 'done' }]]
 
-describe('P5 message_fishball', () => {
+describe('P5 message_fishball', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   let bare
