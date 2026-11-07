@@ -17,7 +17,8 @@ chat page, restyled to DSH's look (D29), launched exactly as the main DSH is lau
 served in two languages that the connector chooses between (D30). §0.5–§0.8 and §18 are rewritten
 for it. §2 and §3 (the base-only child, its loopback server and the bearer proxy) describe the
 current design again; §0.3 is kept as the record of the Option A spike. Where §0 and §2–§3 still
-disagree, §0 wins. Open points for the user are in §0.9.
+disagree, §0 wins. The user's answers to §0.9 (same day) are folded in: U1, U2, U4, U5, U6 and U7
+are closed; U3 (theme) is still open.
 
 ## 0. Connector and instance (revision 2026-11-06)
 
@@ -277,28 +278,38 @@ bound stays 60 s (`NATIVE_TIMEOUT`).
 main DSH process runs:
 
 - executable: the main process's own `process.execPath`. There is no `node` lookup on PATH, no
-  search order, no DSH-X wrapper lookup and no version probe;
-- exec arguments: the main process's `process.execArgv`, in order, before the child's own
+  search order, no DSH-X wrapper lookup, no version probe and no setting to choose another one
+  (U1: "不要指定node了……就跟随原本的寄宿的DSH就行了");
+- exec arguments: the main process's `process.execArgv`, in order, without `--inspect*` and
+  `--debug-port` flags, before the child's own
   `--import <parent-watch preload> <dsh bin> --profile fishball --patch <overlay> --host 127.0.0.1
   --port 0 --no-open`. Under DSH-X this carries `--use-system-ca`, `--max-http-header-size=131072`
   and its two `--import` hooks (`DSH.app/…/core/server.js` `dshArgs`), so the child gets the same
   session-log compatibility hook as the main DSH;
 - environment: the child's isolated variables as today (`HOME`, `DSH_HOME`, `XDG_*`, `TMPDIR`,
   `DSH_TELEMETRY_DISABLED`, `installation.js` `isolatedEnvironment`), plus the main process's
-  values of the runtime variables in one fixed constant list, `RUNTIME_ENV = [ELECTRON_RUN_AS_NODE,
-  NODE_OPTIONS]`, each copied only when set. `ELECTRON_RUN_AS_NODE=1` is what makes DSH-X's Electron
-  binary run as Node; `NODE_OPTIONS` carries DSH-X's worker-thread hook (`compat/worker-events.cjs`,
+  values of the runtime variables in one fixed constant list, `RUNTIME_ENV = [NODE_OPTIONS]`,
+  copied only when set, and `ELECTRON_RUN_AS_NODE=1` whenever the main process is Electron (below); `NODE_OPTIONS` carries DSH-X's worker-thread hook (`compat/worker-events.cjs`,
   needed by DSH's session-log worker) and its `instance-link.cjs`, which stays inert in the child
   because the child gets no `DSH_X_INSTANCE_LINK`. No other main variable is copied: no API key, no
   token, no `DSH_X_*` (D6);
 - `PATH`: the main process's absolute PATH entries, in order (today's rule, without the chosen
   node's folder in front).
 
-Safety rule (proposed, §0.9 U2): when the main process is Electron (`process.versions.electron`)
-and `ELECTRON_RUN_AS_NODE` is not `1` in its environment, the start fails with
-`NATIVE_START_FAILED` and nothing is spawned, because that binary would open a second DSH-X window
-(SP2 run 1). `verifyNode` and its probe are removed: the executable is the one already running DSH.
-The `nodeExecutable` and `executableSearchPath` fields are removed (recommended, §0.9 U1).
+**Electron host (U2: "如果是Electron进程，就改成后台子进程").** When the main process is Electron
+(`process.versions.electron` is set), the start never fails for that reason: the child is always
+spawned as a background Node process, with `ELECTRON_RUN_AS_NODE=1` set in its environment whatever
+the main process has, detached, with no window and no stdin (`stdio` as today: ignore, ignore, the
+stderr pipe, the lifetime pipe). Without that variable the Electron binary would open a second
+DSH-X window (SP2 run 1). Under DSH-X today the main process already has the variable, so the
+child's environment is unchanged there.
+
+**`--inspect*` / `--debug-port` are dropped from `execArgv`** (Fishball's own call, pending the
+user's confirmation): a debugger port the main DSH already holds would make the child fail to
+start, and the child has no debugger of its own. No other flag is touched.
+
+`verifyNode` and its probe are removed: the executable is the one already running DSH. The
+`nodeExecutable` and `executableSearchPath` fields are removed (U1).
 
 **Chat page (D29).** The child keeps its own page: `src/slim/ui/**` served by
 `src/slim/child/server.js` (document, `/ui/*`, `/api/*`, SSE `api/events`), behind the main
@@ -335,15 +346,24 @@ path, with two dictionaries (`src/slim/ui/i18n.js`, keys equal in both). The var
 the page URL's first `lang` parameter: exactly `zh` selects Chinese, anything else or no `lang`
 selects English (DSH's own fallback locale, `dsh-client-locale` `FALLBACK_LOCALE`). The page sets
 `<html lang>` (`zh-CN` or `en`, DSH's own mapping, `syncDocumentLanguage`). The main proxy's 503
-page follows the same parameter. The connector chooses the variant by the URL it frames: this needs
-contract 1.1 (task K2, **proposed, not made**; §0.9 U4). Until K2 is approved, the page shows
-English and the instance can already be tested with a hand-written `?lang=zh`.
+page follows the same parameter. The connector chooses the variant by the URL it frames: contract
+1.1 (task K2, approved by the user as U4) adds `lang` to the framed path. Until K2 is merged the
+page shows English, and the instance can already be tested with a hand-written `?lang=zh`.
 
-**Theme.** Theme is not part of D30. The page can draw both palettes from the copied tokens, but it
-cannot read DSH's chosen theme: the main page's custom properties and its `data-ds-dark-theme`
-attribute live in the parent document, and D27 lets nothing cross the frame. It therefore needs its
-own decision (§0.9 U3). Until then the page follows the OS scheme (`prefers-color-scheme`), which
-matches DSH when DSH's theme is `system` (its default, `dsh-client-ui-theme` `DEFAULT_PREFERENCE`).
+**Theme (open, §0.9 U3).** The user's direction: "类似一个web app的明暗模式跟随浏览器一样，内嵌窗口也跟随
+外框的进程进行修改" — the iframe follows the outer page's light or dark mode live, the way a web app
+follows the browser. **Proposed:** the page is same-origin with the main page (it is served under
+`/fishball/embed/` on the main origin), so it reads `window.parent.document.body`'s
+`data-ds-dark-theme` attribute, the one DSH's own layout sets for dark (`dsh-client-ui-layout`,
+§0.5 "Chat page"), sets the same attribute on its own `body`, and follows every change with a
+`MutationObserver` on that one attribute, with no reload. When the parent is not reachable (the
+page opened alone with "Open in a tab", or a cross-origin parent), it falls back to
+`prefers-color-scheme` and follows that live. Nothing is posted to the parent, so D27's "no browser
+message crosses the frame" still holds; the page only reads one attribute. Its cost: the attribute
+is a DSH-internal name (it is in both 0.2.1-rc.5 and 0.2.2-rc.1), so a test watches it (R1).
+**Alternative:** the connector adds `theme=light|dark` to the framed path (K2, like `lang`), and a
+theme change reloads the iframe, which loses an unsent draft. Until U3 is closed the page follows
+`prefers-color-scheme` only.
 
 **Child routes.** The child's HTTP surface stays its own loopback server (§3.1), not Connection
 Fetch routes: there is no DSH Web host in the child. The SP F1 rule applies to main-side routes
@@ -365,7 +385,8 @@ chat projects only the notices (`chat.js` `entriesOfEvents`); I7 adds the card r
 connector's browser module `packages/connector/client.records.js` cannot be reused there: it is a
 React component loaded through DSH's client module loader, and the child page has neither. The
 shared part is the record schema in the contract (`card-record.js`), which both sides already
-import (§0.9 U6).
+import (§0.9 U6). Fishball's own decision labels stay as they are, beside the card records (U5):
+I7 adds the records and changes nothing in the labels.
 
 **Plugins in the child.** Plugins installed into the child profile run in the child's core (their
 tools, hooks and settings). Their browser halves (`dsh.client`) have no host in the custom page,
@@ -384,16 +405,17 @@ stated for the user (§0.9).
   `connector-missing`. (Delivered by I1 and I1b.)
 - After main `appReady` the instance starts its child (§0.5 "Child launch"), and on every
   authenticated wire it calls `attachInstance` with the wire's control channel as `transport`,
-  `ui = {chat: '/fishball/embed/', settings: '/fishball/embed/?view=settings'}`, `status` and
-  `retry` (task I1c; today's attach passes neither `ui` nor `status` nor `retry`, `host.js:201`).
-  A child restart is a detach followed by a new attach. With K2, the connector adds `lang` (and,
-  if U3 chooses it, `theme`) to whichever path it frames.
+  `ui`, `status` and `retry` (I1c, delivered in 2d4b8ea). `ui` is `{chat: '/fishball/embed/'}`
+  today; I6 adds `settings: '/fishball/embed/?view=settings'` together with the settings view, so
+  "Open instance settings" never opens the chat. A child restart is a detach followed by a new
+  attach. With K2, the connector adds `lang` (and `theme`, if U3 chooses the alternative) to
+  whichever path it frames.
 - `status()` returns `{state, code}` from the instance's own status, whose states and codes are
   the contract's `STATUS` and `STATUS_CODES` while it is attached. `retry()` is the instance's
   restart and rejects when the restart ends `failed`.
 - An attach refused `instance-busy` gives `failed` with `NATIVE_INSTANCE_BUSY`, and one refused
   `contract-version` gives `failed` with `NATIVE_CONTRACT_VERSION`; in both the child is stopped and
-  not restarted by itself (inst-OQ-03; today only a warning is logged, `host.js:204`).
+  not restarted by itself (inst-OQ-03; delivered by I1c).
 - Disabling or uninstalling either plugin detaches; the connector returns to no-instance mode, and
   the instance stops its child.
 
@@ -403,7 +425,7 @@ stated for the user (§0.9).
 | --- | --- | --- |
 | Connector: its limits (§18.5 conn-OQ-20) and the question mode | the main DSH, the `fishball-connector` row's config (volatile fields) | **only** DSH's own Plugins → settings form of `fishball-connector`, rendered by the connector's client (D24). No instance reads or writes them |
 | Instance, needed before the child exists: `enabled` | the `fishball-instance` row config in the main DSH | DSH's own Plugins → settings form of `fishball-instance` |
-| Instance: status, Retry / Restart | the instance's main half | its Plugins card in the main DSH (state, code, Retry when `failed` or `stopped`; I1c), the connector's frame (Retry through `retry()`), and the settings view's Restart. All three use the main half's own restart; the settings view calls the existing admin route `admin.restart` (below), so no upward wire operation is needed |
+| Instance: status, Retry / Restart | the instance's main half | its Plugins card in the main DSH (state, code, Retry while `failed`; I1c, `POST /api/fishball-instance/retry`), the connector's frame (Retry through `retry()`), and the settings view's Restart. All three use the main half's own restart; the settings view calls the existing admin route `admin.restart` (below), so no upward wire operation is needed |
 | Instance: model sync (D26), a button, not a setting | the child's own settings and credentials (the result); nothing is stored in the main DSH | the "Model for Fishball" block of the `fishball-instance` Plugins card in the main DSH: **Check for new models** fetches once, the user ticks entries, and **Add selected** writes only those (§10). The instance's settings view has no sync button |
 | Instance: plugins, plugin settings, recommended plugins | the child profile | the settings view's Plugins block, which calls the existing admin routes (below): list, install, enable, disable, remove, recommended, and each plugin's settings. DSH's own Plugins page cannot be used: the child has no Web UI (D28) |
 | Instance: the chat's model and reasoning effort | the child's own settings | the composer's own pickers (D20) |
@@ -411,9 +433,9 @@ stated for the user (§0.9).
 
 **What the main DSH exposes for the instance (D23, D26, D28), exactly:** the form field `enabled`,
 plus the status line, Retry and the sync button on the same card, which are not fields. The old
-`limits`, `controlLimits` and `providerSync` keys are no longer in its schema, and (if U1 is
-accepted) neither are `nodeExecutable` and `executableSearchPath`; a stored value is ignored, and
-the one-time migration copies only `enabled`.
+`limits`, `controlLimits` and `providerSync` keys are no longer in its schema, and neither are
+`nodeExecutable` and `executableSearchPath` (U1, task I2); a stored value is ignored without a
+warning, and the one-time migration copies only `enabled` and drops the two old values silently.
 
 The settings view is hosted by the instance: it is the child page at `?view=settings`, framed
 through `/fishball/embed/?view=settings` inside the connector's frame (D27), and opened from the
@@ -426,8 +448,8 @@ operation over the authenticated wire to the child's admin service (`src/slim/ch
 11 operations). The settings view is framed on the main origin, so it calls these routes directly,
 with the main DSH's cookie, exactly as the connector's old settings page did; the browser never
 reaches the child's admin service any other way, and the main process still never writes a child
-file (§9). The relay's status check must accept the instance's own `connector-missing` state
-(today it answers `failed`, `admin.js` `statusOutcome`), I1c. The view shows no connector limits
+file (§9). The relay's status check accepts the instance's own `connector-missing` state and
+codes (I1c). The view shows no connector limits
 and has no link of its own to them: the frame's **Connector settings** button opens DSH's form of
 `fishball-connector` (inst-OQ-05).
 
@@ -436,9 +458,9 @@ and has no link of its own to them: the frame's **Connector settings** button op
 1. **R1 Copied tokens drift.** `dsh-tokens.css` is a copy; a DSH release can rename or retune
    tokens (rc.5 and 0.2.2-rc.1 already differ). A test compares every copied name with the
    installed DSH's theme module and reports names that are gone.
-2. **R2 The main runtime's arguments.** The child inherits `execArgv`, `NODE_OPTIONS` and
-   `ELECTRON_RUN_AS_NODE` as DSH-X sets them today. A DSH-X update can add a flag the child should
-   not have, for example a debugger port (§0.9 U2).
+2. **R2 The main runtime's arguments.** The child inherits `execArgv` and `NODE_OPTIONS` as DSH-X
+   sets them today. A DSH-X update can add a flag the child should not have; only the debugger
+   flags are dropped (§0.5).
 3. **R3 Electron as Node.** Under DSH-X the child is the Electron binary run as Node. Its cost for a
    base-only child is not measured (SP2 measured only the Web child: RSS 174–253 MB; the plain-Node
    base child was 65–113 MB).
@@ -447,20 +469,25 @@ and has no link of its own to them: the frame's **Connector settings** button op
 5. **R5 Plugins with only a browser half** do nothing in Fishball's chat (§0.5 "Plugins").
 6. **R6 Contract maintenance.** A public contract freezes names: a breaking change needs a major
    bump, and both sides must keep the version check. K2 is an additive minor (1.1).
-7. **R7 Theme mismatch** until U3 is decided: an explicit DSH light or dark theme against the
-   other OS scheme shows the iframe in the other palette.
+7. **R7 Theme mismatch** until U3 is closed: an explicit DSH light or dark theme against the
+   other OS scheme shows the iframe in the other palette. With U3's proposed form, a DSH rename of
+   `data-ds-dark-theme` would silently drop the page back to the OS scheme; a test watches it.
 
 ### 0.9 Decisions for the user (2026-11-07)
 
-| # | Question | Recommendation |
+The user answered on 2026-11-07: "1. 不要指定node了，我从来没说过这个要求。搜索路径也不需要，就跟随原本的寄宿的
+DSH就行了。2. 如果是Electron进程，就改成后台子进程 3. 类似一个web app的明暗模式跟随浏览器一样，内嵌窗口也
+跟随外框的进程进行修改。4.同意 5.具体是什么情况？6.同意 7.同意", and then on U5: "U5就这样也行".
+
+| # | Question | Answer |
 | --- | --- | --- |
-| U1 | `nodeExecutable` and `executableSearchPath`: keep as an override, or remove? | **Remove both.** D28 leaves nothing to choose: the child runs on whatever runs DSH. An override is the one way to bring back the failures SP2 found (Node 22 under 0.2.2's `engines.node >=24.9.0`, Electron without `ELECTRON_RUN_AS_NODE`), and guarding it needs the `verifyNode` probe that D28 drops. The form then has only `enabled`, and a stored value is ignored. Cost: no escape hatch, but a runtime that cannot run the child cannot run the main DSH either. |
-| U2 | Two exceptions to "launched exactly like the main DSH": (a) refuse to start when the main process is Electron without `ELECTRON_RUN_AS_NODE=1`; (b) drop `--inspect*` and `--debug-port` flags from `execArgv`. | **Both.** (a) can only happen if a future host runs DSH inside Electron's GUI process; without it the child opens a second DSH-X window (SP2 run 1). (b) a debugger port the main DSH already holds would make the child fail to start. No other flag is touched. |
-| U3 | Theme: how does the iframe follow DSH's light or dark choice? (a) OS scheme only; (b) the connector also adds `theme=light\|dark` to the framed URL (K2, like `lang`), and a change reloads the iframe; (c) the page reads the parent's `data-ds-dark-theme` attribute. | **(b).** It is D30's mechanism, keeps D27's "nothing crosses the frame", and a theme change is rare. (a) is wrong whenever DSH's theme is not `system`. (c) breaks D27 and ties the instance to an internal DSH attribute. Cost of (b): a reload loses an unsent draft in the composer. |
-| U4 | D30's form: contract 1.1 (K2) lets the connector add `lang` (DSH's active locale id, `zh` or `en`, from `locale.getLocale().active`) to the `ui` path it frames, replacing a `lang` the path already has, before the fragment; a locale change reloads the iframe with the new value. The alternative is per-language paths in the descriptor (`ui.chat: {zh, en}`). | **The `lang` parameter.** The descriptor stays as it is and no instance needs to change. A third-party page may ignore the parameter. It is still a contract change: C3's rule "the framed `src` is exactly `ui.chat`" becomes "`ui.chat` with `lang` set", so it waits for approval. |
-| U5 | Fishball's chat already shows Fishball's own decision labels (`approvals.js` labels). With I7, a card Fishball decided also gets a card record. Show both, or one row per card? | **One row per card.** The card record is the settled row, and a label with the same card id gives way to it. A label stays alone only while its card waits or when no record ever comes. I7 first checks that the label's `approvalId` and the record's `cardId` name the same card. |
-| U6 | I7's "one shared renderer" cannot hold: the connector's `client.records.js` is a React module for DSH's loader. | **Share the schema, not the renderer.** The custom chat draws its own row from the contract's `card-record.js` with the same English and Chinese words, and a test checks that both sides' `record.*` words are equal. Moving the words into the contract as data would be another contract change for little gain. |
-| U7 | "Two sets of UI" (D30): one page with two dictionaries, or two copies of the page? | **One page, two dictionaries.** Two copies would double every later UI change, and the coding rules forbid repeated code. The page is still served as two variants, `?lang=en` and `?lang=zh`. |
+| U1 | `nodeExecutable` and `executableSearchPath`: keep as an override, or remove? | **Closed: removed.** The child always follows the host DSH: its executable, its `execArgv` and its PATH (§0.5). The instance's card has only `enabled`; the migration drops the two old values silently. Task I2. |
+| U2 | What happens when the host process is Electron? | **Closed: never refuse.** The child is spawned as a windowless background Node child with `ELECTRON_RUN_AS_NODE=1` (§0.5 "Electron host"). Dropping `--inspect*` / `--debug-port` from `execArgv` is Fishball's own call and still waits for the user's confirmation. |
+| U3 | Theme: how does the iframe follow DSH's light or dark choice? | **Open.** Proposed: a live follow of the outer page's `data-ds-dark-theme` attribute (same origin, `MutationObserver`, no reload), falling back to `prefers-color-scheme` (§0.5 "Theme"). Alternative: a `theme` parameter in K2, with a reload on change. |
+| U4 | D30's form | **Closed: contract 1.1 (K2) with a `lang` query parameter** on the framed path: DSH's active locale id (`zh` or `en`), replacing a `lang` the path already has, before the fragment; a locale change reloads the iframe. The descriptor is unchanged. |
+| U5 | Fishball's decision labels and the card records both describe a card Fishball decided. Merge them? | **Closed: keep both as they are.** The label and the record may both show; there is no merge or replacement logic, and I7 does not de-duplicate. |
+| U6 | I7 cannot reuse the connector's React record module | **Closed: share the schema and the words, not the renderer.** The custom chat draws its own row from the contract's `card-record.js`; a test checks that both sides' `record.*` words are equal in both languages. |
+| U7 | "Two sets of UI" (D30) | **Closed: one page, two dictionaries,** served as two variants, `?lang=en` and `?lang=zh`. |
 
 Not a decision, for the record: D28 brings back work that Option A got from DSH. The settings
 view's model, plugins and plugin-settings blocks (I6) are built in the custom page over the kept
@@ -468,8 +495,8 @@ admin routes, as the connector's old settings page did before C3 removed it
 (`packages/connector/client.js` at `8fb79c2`, `makeModelSettings`, `makeChildPlugins`,
 `makeChildSettings`; React for DSH's loader, so a reference for behaviour and wording, not code to
 move). Browser-only DSH
-plugins do nothing in Fishball's chat (R5). `DESIGN.md` line 9 still describes Option A and should
-get the same amendment once the user approves this revision.
+plugins do nothing in Fishball's chat (R5). `DESIGN.md` line 9 carries the
+same amendment.
 
 Base: `d67e69f` on `integration/native-runtime-on-74fe6be`, branch `feat/slim-native-embedded-ui`.
 SDK baseline: DSH **0.2.2-rc.1**, the newest published 0.2.2 build (no final 0.2.2 exists; npm
@@ -1914,15 +1941,15 @@ Done rows keep their original text. Withdrawn rows are listed after the table.
 | **C2** connector settings in DSH's form only, and the one-time migration — **DONE** (474b876) | connector | `src/config.js`, `src/settings-migration.js`, question mode in the row config, `src/preferences.js` and the brand/sidebar-entry routes deleted | C1 | §18.2 C2 holds |
 | **C3** connector client: frame, Plugins card, fixed icon, records chunk — **DONE** (ec876df) | connector | `conn/client.js`, `conn/client.records.js`, `conn/assets/connector-icon.svg`, the frame routes in `conn/src/{connector-service,http,constants}.js` | C1, C2 | §18.2 C3 holds |
 | **I1** instance binds to the connector, its Plugins card fields — **DONE** (a2471a8, 810c338 as I1b) | instance | `inst/host.js`, `inst/src/host/binding.js`, `inst/client.js`, `inst/src/settings-migration.js` | C1 | auto-attach, re-attach, `connector-missing`, live follow of the connector service |
-| **I1c** the rest of I1: attach with `ui`/`status`/`retry`, refused-attach states, status and Retry on the instance's card; the launch fields leave the form (U1) | instance | `inst/host.js` (also: `nodeExecutable`/`executableSearchPath` out of `Config`, `launchSettings` and `LAUNCH_ERROR`), delete `inst/src/native-runtime/node-default.js` (its only importer is `host.js`), `inst/src/settings-migration.js` (copies only `enabled`), `inst/src/native-web.js` (the status route becomes `GET /api/fishball-instance/status`, plus `POST /api/fishball-instance/restart`), `inst/client.js` (status block), `inst/src/slim/host/admin.js` (`statusOutcome` accepts `connector-missing`, gap B of the audit) | I1 | §18.2 I1c |
-| **I2** child launch like the main DSH | instance | `inst/src/native-runtime/{installation,index,constants}.js` (spawn with `process.execPath` and `process.execArgv`, `RUNTIME_ENV`, the PATH rule, the U2 guard and filter; `verifyNode` and its probe removed). The runtime stops reading `nodeExecutable` and `executableSearchPath` options; `inst/host.js` is not I2's (see the rule below) | M1 | §18.2 I2 |
-| **I6** instance settings view (in the custom page) and the model-sync button | instance | `inst/src/slim/ui/settings.js` (new: status and Restart, model and effort default, plugins, recommended, plugin settings; over the kept admin routes), `inst/src/slim/ui/shell.js` (the `view=settings` switch and the header Settings/Back actions); the "Model for Fishball" block in `inst/client.js`; `inst/src/slim/host/provider-sync-routes.js` (`models/check`, `models/add` instead of `sync`), `inst/src/provider-sync-service.js` (`check`/`add` instead of `sync`) | I1c, I8 | §18.2 I6 |
-| **I7** card records in the custom chat | instance | `inst/src/slim/child/chat.js` (project `plugin:fishball/card-record` into entries), `inst/src/slim/ui/records.js` (new: the record row, both languages), `inst/src/slim/ui/approvals.js` (a label gives way to its card's record, U5) | I8 | §18.2 I7 |
+| **I1c** the rest of I1: attach with `ui`/`status`/`retry`, refused-attach states, status and Retry on the instance's card — **DONE** (2d4b8ea, merged 33c7efb) | instance | `inst/host.js`, `inst/src/host/binding.js`, `inst/src/native-web.js` (`GET /api/fishball-instance/status`, `POST /api/fishball-instance/retry`; the old `/api/fishball/native/status` kept for its readers), `inst/client.js` (status block), `inst/src/slim/host/admin.js`, `inst/src/slim/host/embed.js` (503 codes) | I1 | §18.2 I1c |
+| **I2** child launch like the host DSH, and the launch fields leave the form (U1, U2) | instance | `inst/src/native-runtime/{installation,index,constants}.js` (spawn with `process.execPath` and the filtered `process.execArgv`, `RUNTIME_ENV`, `ELECTRON_RUN_AS_NODE=1` under an Electron host, the PATH rule; `verifyNode` and its probe removed); `inst/host.js` (the two fields out of `Config`, `launchSettings`, `LAUNCH_ERROR` and the runtime options); `inst/client.js` (the field part only: `LAUNCH_FIELDS`, the two text fields and their strings); `inst/src/settings-migration.js` (copies only `enabled`); delete `inst/src/native-runtime/node-default.js` | M1 | §18.2 I2 |
+| **I6** instance settings view (in the custom page) and the model-sync button | instance | `inst/src/slim/ui/settings.js` (new: status and Restart, model and effort default, plugins, recommended, plugin settings; over the kept admin routes), `inst/src/slim/ui/shell.js` (the `view=settings` switch and the header Settings/Back actions); the "Model for Fishball" block in `inst/client.js`; `inst/src/slim/host/provider-sync-routes.js` (`models/check`, `models/add` instead of `sync`), `inst/src/provider-sync-service.js` (`check`/`add` instead of `sync`); `inst/host.js` (`PLUGIN.ui` gains `settings`) | I1c, I2, I8 | §18.2 I6 |
+| **I7** card records in the custom chat | instance | `inst/src/slim/child/chat.js` (project `plugin:fishball/card-record` into entries), `inst/src/slim/ui/records.js` (new: the record row, both languages); the decision labels are not touched (U5) | I8 | §18.2 I7 |
 | **I8** restyle the custom chat to DSH's look | instance | `inst/src/slim/ui/{shell.html,shell.css,chat.js,composer.js,approvals.js,reminders.js}`, `inst/src/slim/ui/dsh-tokens.css` (new), `inst/THIRD_PARTY_NOTICES.md` (new) | M1 | §18.2 I8 |
 | **I9** two language variants | instance | `inst/src/slim/ui/i18n.js` (new: `en` and `zh` dictionaries, the `lang` rule), `inst/src/slim/ui/shell.js` and every ui module's copy moved into the dictionaries, `inst/src/slim/host/embed.js` (the 503 page follows `lang`) | I6, I7 | §18.2 I9 |
-| **K2** (proposed, needs the user, U3/U4) contract 1.1: the connector appends `lang` (and `theme` if U3 = b) to the framed path | contract + connector | `conn/contract/contract.js` (minor 1, the parameter names), `docs/connector-contract.md` §1.2, `conn/client.js` (the frame's `src`, reload on a locale or theme change) | user approval, C3 | §18.2 K2 |
-| **I10** remove the truly dead code | both | delete `inst/src/native-control/**` and its `./native-control` export, the `native-control` copy in `installation.js` `copyChildCode`, the `DEFAULT_CONTROL_LIMITS` import and `control` option in `inst/host.js`; delete `packages/messenger/` and its tests; retire the tests of deleted modules | I1c, I2 | §18.2 I10 |
-| **E1** end-to-end on both versions | both | test only | I1c, I2, I6, I7, I8, I9 (and K2 when approved) | §18.4 scenarios pass |
+| **K2** contract 1.1: the connector appends `lang` to the framed path (approved, U4; `theme` only if U3 picks the alternative) | contract + connector | `conn/contract/contract.js` (minor 1, the parameter names), `docs/connector-contract.md` §1.2, `conn/client.js` (the frame's `src`, reload on a locale or theme change) | C3 | §18.2 K2 |
+| **I10** remove the truly dead code | both | delete `inst/src/native-control/**` and its `./native-control` export, the `native-control` copy in `installation.js` `copyChildCode`, the `DEFAULT_CONTROL_LIMITS` import and `control` option in `inst/host.js`; delete `packages/messenger/` and its tests; retire the tests of deleted modules | I2, I6 | §18.2 I10 |
+| **E1** end-to-end on both versions | both | test only | I2, I6, I7, I8, I9, I10, K2 | §18.4 scenarios pass |
 
 **Withdrawn by D28 (2026-11-07):** I3 (proxy v2: token-for-cookie exchange, Host/Origin rewrite,
 `api/remote.mux` WebSocket pass-through). Only DSH's Web UI needed them; the proxy stays the
@@ -1940,34 +1967,35 @@ dead code goes.
 own files; I7's records requirement, now rendered in the custom chat; the proxy's admission rules
 (inst-OQ-11 order, limits of §3.6), unchanged in `embed.js`.
 
-**Dependencies and parallel runs.**
+**Dependencies and parallel runs.** I1c is done (33c7efb).
 
 ```
-I1c ─┬─────────────▶ I6 ─┐
-I2  ─┼─▶ I10             ├─▶ I9 ─▶ E1
-I8  ─┴─▶ I7 ─────────────┘
-         (K2: after the user's U3/U4; parallel to everything above, before E1)
+I2 ─┬─────────▶ I6 ─┬─▶ I10 ───────┐
+I8 ─┴─▶ I7 ─────────┴─▶ I9 ────────┼─▶ E1
+K2 ────────────────────────────────┘
+(I6 needs I2 and I8; I9 needs I6 and I7. U3 decides whether K2 also carries `theme`, or I8 mirrors
+the parent page's attribute.)
 ```
 
-- Wave A, in parallel now: **I1c**, **I2**, **I8**. No shared file. `inst/host.js` and
-  `node-default.js` belong to I1c alone: it removes the two launch fields (U1), and I2 changes
-  only the runtime, which ignores those options whether or not `host.js` still passes them, so
-  either merge order works. If the user keeps the override (U1 = keep), I1c keeps the fields and
-  `node-default.js`, and I2 uses the configured executable only when it is set.
-- Wave B, in parallel: **I6** (after I1c and I8), **I7** (after I8), **I10** (after I1c and I2;
-  it touches `host.js` and `installation.js`, which are free then). I6 and I7 own different
-  `src/slim/ui/` files; I7 alone touches `approvals.js` in this wave, I6 alone `shell.js`.
+- Wave A, in parallel now: **I2**, **I8**, **K2**. No shared file: I2 owns `inst/host.js`,
+  `inst/client.js` (field part), `settings-migration.js`, `node-default.js` and the runtime; I8
+  owns `src/slim/ui/**` and its new files; K2 owns `conn/contract/contract.js`,
+  `docs/connector-contract.md` and `conn/client.js`.
+- Wave B, in parallel: **I6** (after I2 and I8: it adds to `inst/client.js` and `inst/host.js`
+  after I2), **I7** (after I8), **I10** (after I2: `inst/host.js` and `installation.js`). I6 and
+  I10 both touch `inst/host.js` in this wave, so I10 waits for I6's merge or takes only its
+  `native-control` lines on top of it: **I10 runs after I6**. I6 and I7 own different
+  `src/slim/ui/` files; I6 alone `shell.js`.
 - Wave C: **I9** after I6 and I7, because it moves every ui module's copy into the dictionaries
   and so owns those files last.
-- **K2** whenever the user approves it; it touches only connector and contract files.
 - **E1** last.
 
-File owners per wave: `inst/client.js`: I1c (wave A), then I6 (wave B). `inst/host.js`: I1c
-(A), then I10 (B). `inst/src/native-runtime/installation.js`: I2 (A), then I10 (B).
-`inst/src/slim/ui/shell.js`: I8 (A), I6 (B), I9 (C). `inst/src/slim/ui/approvals.js`: I8 (A), I7
-(B), I9 (C). `inst/src/slim/ui/{chat,composer,reminders}.js`: I8 (A), I9 (C).
-`inst/src/slim/child/chat.js`: I7 (B). `inst/src/slim/host/admin.js`: I1c (A).
-`inst/src/slim/host/embed.js`: I9 (C). `conn/client.js`: K2.
+File owners per wave: `inst/host.js`: I2 (A), I6 (B), then I10 (after I6). `inst/client.js`: I2
+(A, fields), I6 (B, sync block). `inst/src/native-runtime/installation.js`: I2 (A), I10 (after
+I6). `inst/src/slim/ui/shell.js`: I8 (A), I6 (B), I9 (C). `inst/src/slim/ui/approvals.js`: I8 (A),
+I9 (C). `inst/src/slim/ui/{chat,composer,reminders}.js`: I8 (A), I9 (C).
+`inst/src/slim/child/chat.js`: I7 (B). `inst/src/slim/host/embed.js`: I9 (C). `conn/client.js`:
+K2 (A).
 
 ### 18.2 Test design per task
 
@@ -2124,9 +2152,11 @@ File owners per wave: `inst/client.js`: I1c (wave A), then I6 (wave B). `inst/ho
   `current()` (attach count); no orphan child process after any disable (process list in the
   disposable home).
 
-**I1c — the rest of I1 (instance).**
-- R: (1) Every attach passes `ui = {chat: '/fishball/embed/', settings:
-  '/fishball/embed/?view=settings'}`, `status` and `retry`; the connector's frame then shows the
+**I1c — the rest of I1 (instance). DONE (2d4b8ea).** As delivered: `ui` is `{chat}` until I6
+adds `settings`; Retry on the card shows while `failed`; the retry route is
+`POST /api/fishball-instance/retry`, and `/api/fishball/native/status` stays for its readers; the
+launch fields moved to I2 (U1).
+- R: (1) Every attach passes `ui`, `status` and `retry`; the connector's frame then shows the
   instance's state (`ready` reads "running") instead of "attached", and its Retry appears when the
   state is `failed`. (2) `status()` returns `{state, code}` with `state` in `STATUS` and `code` in
   `STATUS_CODES` or `null`; it never throws. (3) `retry()` restarts the child and resolves when it
@@ -2136,44 +2166,46 @@ File owners per wave: `inst/client.js`: I1c (wave A), then I6 (wave B). `inst/ho
   the instance's card tries again. These two codes are the instance's own and appear only on its
   card and status route, never in `status()` (there is no attachment then). (5) The instance's
   Plugins card shows the state and the safe code (and the launch-failure detail when there is
-  one), live within 1 s, and a Retry button when the state is `failed` or `stopped`. (6)
-  `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{enabled, state, code,
-  detail}`; `POST /api/fishball-instance/restart` restarts and answers the new status;
-  `/api/fishball/native/status` answers 404. (7) The admin relay's `admin.status` answers
-  `connector-missing` as itself, not as `failed`. (8) U1 = remove: the form has exactly the field
-  `enabled`; a stored `nodeExecutable` or `executableSearchPath` changes nothing; the one-time
-  migration copies only `enabled`.
+  one), live within 1 s, and a Retry button while the state is `failed`. (6)
+  `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code}`;
+  `POST /api/fishball-instance/retry` retries and answers the new status. (7) The admin relay's
+  `admin.status` answers `connector-missing` as itself, not as `failed`.
 - T: P; EP (attach outcome: accepted / `instance-busy` / `contract-version`; state shown: each
-  instance state incl. `connector-missing`; Retry: from `failed` / `stopped` / not offered in
-  `ready`); ST (failed → Retry → starting → ready; busy-refused → the other instance detaches →
+  instance state incl. `connector-missing`; Retry: from `failed` / not offered otherwise); ST (failed → Retry → starting → ready; busy-refused → the other instance detaches →
   Retry → attached); DT (connector present × attach outcome × child healthy → card state, frame
   state, Retry offered).
 - AC: the frame's tag equals the card's state within the 1 s poll; the stub-busy run of E1-B8b
-  ends `failed` / `NATIVE_INSTANCE_BUSY` with no child process; both routes answer as stated and
-  the old one 404; no token, path or key in any status answer.
+  ends `failed` / `NATIVE_INSTANCE_BUSY` with no child process; both routes answer as stated; no token, path or key in any status answer.
 
-**I2 — child launch like the main DSH (instance).**
+**I2 — child launch like the host DSH (instance).**
 - R: (1) The child process's executable is the main process's `process.execPath`. (2) Its
   arguments start with the main process's `process.execArgv`, in order, without `--inspect*` and
-  `--debug-port` flags (U2 b), followed by the child's own arguments. (3) Its environment is the
-  isolated set plus each `RUNTIME_ENV` variable (`ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS`) exactly
-  as the main process has it, and nothing else of the main environment; `PATH` is the main
+  `--debug-port` flags (Fishball's call, pending the user), followed by the child's own
+  arguments. (3) Its environment is the isolated set plus `NODE_OPTIONS` exactly as the main
+  process has it (when set), and nothing else of the main environment; `PATH` is the main
   process's absolute entries in order. (4) No `node` is looked up and no version probe runs.
-  (5) A main process that is Electron without `ELECTRON_RUN_AS_NODE=1` fails the start with
-  `NATIVE_START_FAILED` and spawns nothing (U2 a). (6) The child profile, its slim migration and
-  the readiness rules stay as they are (§0.5).
+  (5) When the main process is Electron, the child always starts, as a background Node process
+  with `ELECTRON_RUN_AS_NODE=1`, detached, with no window and no stdin, whether or not the main
+  process has the variable (U2). (6) The `fishball-instance` form has exactly the field `enabled`;
+  a stored `nodeExecutable` or `executableSearchPath` changes nothing and logs nothing; the
+  one-time migration copies only `enabled` and drops the two old values silently (U1). (7) The
+  child profile, its slim migration and the readiness rules stay as they are (§0.5).
 - T: P (main under plain Node; main under the DSH-X wrapper, both versions); EP (main runtime:
   plain Node / Electron with `ELECTRON_RUN_AS_NODE=1` / Electron without it; `execArgv`: empty /
-  DSH-X's flags / with `--inspect=0`; `NODE_OPTIONS`: unset / set; a main variable outside
-  `RUNTIME_ENV` holding a fake key → absent in the child; PATH with relative entries → dropped);
-  DT (main runtime × `ELECTRON_RUN_AS_NODE` → spawned or refused).
+  DSH-X's flags / with `--inspect=0` / `--inspect-brk` / `--debug-port=9229`; `NODE_OPTIONS`:
+  unset / set; a main variable outside `RUNTIME_ENV` holding a fake key → absent in the child;
+  PATH with relative entries → dropped; old stored launch values: none / both / invalid ones → no
+  effect); DT (main runtime × `ELECTRON_RUN_AS_NODE` in the main → the child's variable and the
+  outcome, always spawned).
 - AC: what a test row in the child reports (its `process.execPath`, `process.execArgv` and the
-  listed variables) equals the main's, minus the filtered flags; the fake key is
+  listed variables) equals the main's, minus the filtered flags, with `ELECTRON_RUN_AS_NODE=1` under every Electron
+  host; the fake key is
   absent from the child's environment and logs; no second DSH-X window or GUI process ever starts;
   both versions reach ready under both runtimes.
 
 **I6 — the instance settings view and the model-sync button (instance).**
-- R, the view (the custom page at `view=settings`, inside the connector's frame, D27): (1) the
+- R, the view (the custom page at `view=settings`, inside the connector's frame, D27): (0) the
+  instance registers `ui.settings = '/fishball/embed/?view=settings'` from this task on. (1) the
   header Settings action opens it and writes `view=settings` with `replaceState`; Back removes the
   parameter; loading `?view=settings` opens it directly; only the first `view` parameter with the
   exact lowercase value `settings` selects it. (2) A status block with the state and Restart
@@ -2206,13 +2238,13 @@ File owners per wave: `inst/client.js`: I1c (wave A), then I6 (wave B). `inst/ho
 - R: (1) A card record in Fishball's session shows as one compact row at its place in the
   timeline: kind, outcome, who and where, the asking session's title, the time; expanded, the
   questions or the call, the answer, the note, the closure reason. (2) Its words equal the
-  connector's `record.*` words in the same language (U6). (3) One row per card (U5): a decision
-  label with the record's card id is not shown beside it; a label shows alone while its card
-  waits. (4) Inbox notices keep their row. (5) Rows survive a child restart and a page reload, with
+  connector's `record.*` words in the same language (U6). (3) Fishball's decision labels are
+  unchanged: a label and a record for the same card may both show, with no merge, replacement or
+  de-duplication (U5). (4) Inbox notices keep their row. (5) Rows survive a child restart and a page reload, with
   no duplicate after a reconnect. (6) Records never enter a model request; a user answer's notice
   still wakes Fishball (7713 N9-b).
 - T: P; EP (record kind: permission / question / plan review / own question / closure; optional
-  fields present / absent; label with and without a matching record); BVA (texts at their cap and
+  fields present / absent); BVA (texts at their cap and
   the writer's cut marker); ST (written → shown → restart → shown once).
 - AC: each kind's row matches the connector's row for the same record (same words, same fields);
   no duplicate after two restarts; the next request's log has no record text.
@@ -2220,8 +2252,10 @@ File owners per wave: `inst/client.js`: I1c (wave A), then I6 (wave B). `inst/ho
 **I8 — restyle the custom chat to DSH's look (instance).**
 - R: (1) The page loads `dsh-tokens.css` and draws every colour, radius, font and shadow from
   `--dsw-*` / `--dsh-*` tokens; no hard-coded colour remains in `shell.css` except the Fishball
-  accent ring (D12). (2) Light on `body`, dark on `body[data-ds-dark-theme]`; until U3 the page
-  sets that attribute from `prefers-color-scheme` and follows a change live. (3) The header, the
+  accent ring (D12). (2) Light on `body`, dark on `body[data-ds-dark-theme]`; until U3 is closed the
+  page sets that attribute from `prefers-color-scheme` and follows a change live. If U3 takes the
+  proposed form, I8 (or a follow-up) mirrors the parent page's attribute instead, live, with the
+  OS scheme as the fallback for "Open in a tab". (3) The header, the
   conversation, the user bubble, the composer and the buttons use DSH's measures (§0.5 "Chat
   page"). (4) The permanent title and status tag are gone (D27); a lost connection shows the
   "Reconnecting…" banner only while it lasts. (5) Every behaviour of the chat, the approvals rows,
@@ -2245,15 +2279,15 @@ File owners per wave: `inst/client.js`: I1c (wave A), then I6 (wave B). `inst/ho
 - AC: a key-set comparison of the two dictionaries finds no difference; a scan of `src/slim/ui/`
   finds no user-visible string outside them; both variants render on both versions.
 
-**K2 — contract 1.1: language (and theme) on the framed path (proposed; only after U3/U4).**
+**K2 — contract 1.1: language on the framed path (approved, U4).**
 - R: (1) The connector frames `ui.chat` or `ui.settings` with a `lang` search parameter equal to
   DSH's active locale id (`zh` or `en`), replacing a `lang` the path already has, before any
-  fragment; with U3 = b also `theme=light|dark`, the resolved DSH theme. (2) A locale or theme
-  change in the main DSH reloads the framed page with the new values. (3) "Open in a tab" opens
+  fragment; only if U3 takes the alternative, also `theme=light|dark`, the resolved DSH theme.
+  (2) A locale (or that theme) change in the main DSH reloads the framed page with the new values. (3) "Open in a tab" opens
   the same URL. (4) The contract doc states it; the descriptor and its validation are unchanged;
   `CONNECTOR_CONTRACT.minor` is 1; a 1.0 instance still attaches.
 - T: P; EP (path with no query / with a query / with `lang` already / with a fragment; locale zh /
-  en; theme light / dark / system resolving to each); ST (change locale while framed → reload with
+  en; theme only with U3's alternative); ST (change locale while framed → reload with
   the new `lang`).
 - AC: the iframe `src` equals the registered path with exactly the stated parameters; no other
   change to C3's behaviour.
@@ -2299,8 +2333,8 @@ own Retry (I1c); Retry restores the session with its history. `E2E-B7` disable t
 the no-instance state and queues a `message_fishball`; re-enable: it is delivered once. `E2E-B8`
 connector alone with a stub instance (a minimal third-party implementation in the test tree that
 attaches over the documented contract): session tools and inbox work. `E2E-B9` (D30) with DSH's
-language `zh`, the framed chat and settings view are Chinese, and with `en` English (with K2; before
-K2 the variant is opened by hand with `?lang=zh`).
+language `zh`, the framed chat and settings view are Chinese, and with `en` English (through K2's `lang`;
+before K2 merges, the variant is opened by hand with `?lang=zh`).
 
 ### 18.5 Resolved test-design questions
 
@@ -2542,15 +2576,16 @@ rewrite means the case keeps its idea against the new §18.2 text.
   write to the main DSH is `admin.restart`; there is no upward `instance.restart`. I6-P-12: the
   instance's form has only `enabled` (U1).
 - [ ] **I7 (§9):** I7-R2/R3, I7-P-04 "one shared module": now "the same words and fields as the
-  connector's row" (U6). New: label-and-record pairs (U5).
+  connector's row" (U6). U5: a label and a record for the same card both show; no
+  de-duplication case.
 - [ ] **I8 (§10), withdrawn:** I8-R1, R2, I8-P-01..03, I8-EP-01..04 (deleting the custom chat, the
   admin relay and their routes; D29 keeps them). I8-EP-05 and P-04, P-05 stay as regression.
   I8-P-01..03's static-scan idea moves to I10 for `native-control` and `messenger` only.
 - [ ] **I9 (§11), withdrawn:** I9-R1, R2 and I9-P-01, I9-DT-01..06, I9-ST-01..03, I9-AC1, AC2 (the
   iframe follows DSH's theme and language live). **New:** I9's language cases of §18.2; the theme
   cases wait for U3; the live-follow cases become K2's reload cases.
-- [ ] **I1 (§3):** I1-EP-04 and I1-EP-05 (`nodeExecutable` explicit or missing) are withdrawn if U1
-  removes the field; their idea moves to I2's runtime EP. I1-ST-02's "Fishball view" observation
+- [ ] **I1 (§3):** I1-EP-04 and I1-EP-05 (`nodeExecutable` explicit or missing) are withdrawn: U1
+  removed the field; their idea moves to I2's runtime EP and its "old stored values" case. I1-ST-02's "Fishball view" observation
   of `failed` and Retry needs I1c.
 - [ ] **E1 (§12):** E1-B1 "DSH's session view in the iframe" becomes "Fishball's chat page in DSH's
   look"; E1-B2 "choose `fake-effort` and `high`" uses the custom pickers; E1-SEC drops the launch
@@ -2561,6 +2596,6 @@ rewrite means the case keeps its idea against the new §18.2 text.
   OQ-23 are moot; OQ-04 and OQ-20 are replaced (§18.5 note above).
 
 **2026-11-07: `connector.md`.** No C-case is obsolete: C3 is delivered against D27 and unchanged.
-If K2 is approved, C3-P-03, C3-P-04, C3-P-05, C3-P-15, C3-ST-01, C3-ST-03 and C3-DT-03/-05
+K2 is approved (U4), so C3-P-03, C3-P-04, C3-P-05, C3-P-15, C3-ST-01, C3-ST-03 and C3-DT-03/-05
 ("`src` === `ui.chat` exactly") become "`ui.chat` with exactly the K2 parameters", and K2 gets its
 own cases (§18.2 K2).
