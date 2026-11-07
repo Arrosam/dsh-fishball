@@ -15,6 +15,7 @@
  *   composer module owns the image parts; a message without text still gets its bubble, and a
  *   tool row with only its call id still renders, so those seams fill the same structures. An
  *   image is fetched from the child's read-only by-id route, so its preview survives a reload.
+ * - Card records (I7) render through src/slim/ui/records.js, beside the decision labels (U5).
  *
  * Classes are the only styling hook, because the CSP admits no inline style; dynamic state is a
  * class or a data attribute, never element.style. Server entries are partial records merged by
@@ -22,12 +23,13 @@
  */
 import { createApprovalsView } from './approvals.js'
 import { attachmentPreview, createComposer } from './composer.js'
+import { createRecordRow } from './records.js'
 
 /** Same resources as the child's CHAT; the broker strips its prefix before forwarding. */
 const API = Object.freeze({ chat: 'api/chat', model: 'api/model', media: 'application/json' })
 
 /** Entry kinds the server sends; an unknown value is ignored rather than rendered as HTML. */
-const KIND = Object.freeze({ user: 'user', assistant: 'assistant', tool: 'tool', notice: 'notice' })
+const KIND = Object.freeze({ user: 'user', assistant: 'assistant', tool: 'tool', notice: 'notice', record: 'record' })
 
 const CLASS = Object.freeze({
   timeline: 'timeline',
@@ -36,6 +38,7 @@ const CLASS = Object.freeze({
   entryAssistant: 'entry-assistant',
   entryTool: 'entry-tool',
   entryNotice: 'entry-notice',
+  entryRecord: 'entry-record',
   pending: 'is-pending',
   author: 'entry-author',
   text: 'entry-text',
@@ -326,6 +329,10 @@ export function createChatView(options = {}) {
     if (entry.kind === KIND.notice) {
       body.textContent = textOf(entry.text)
       row.append(body)
+      return row
+    }
+    if (entry.kind === KIND.record) {
+      if (entry.record !== null && typeof entry.record === 'object') row.append(createRecordRow(document, entry.record))
       return row
     }
     // Tool: a collapsed row that still names the tool and its outcome, expanding to arguments

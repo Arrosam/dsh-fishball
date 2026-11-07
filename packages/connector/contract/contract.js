@@ -7,7 +7,7 @@
  * connector checks an instance's attachInstance() request with validateAttachment() below.
  * Every name this module exports is listed in docs/connector-contract.md; keep the two in step.
  *
- * Envelope v2 keeps envelope v1's seven-key frame (src/native-control/protocol.js) and replaces
+ * Envelope v2 keeps envelope v1's seven-key frame (the removed v1 control protocol) and replaces
  * v1's operation set with §5.2's: attachment transfer, the full approval, question, prompt and
  * grant answers today's Fishball tools carry, session release, and the inbox/session-state
  * messages. The lifecycle wire owns identity and its HMAC proof; the handshake here negotiates
@@ -1270,8 +1270,10 @@ export function decodeEnvelope(encoded, options = {}) {
  * `minor` is this module's minor version. A minor only adds operations, events or optional
  * fields, each advertised as a handshake capability, so an instance of any minor of major 1 is
  * accepted; which operations the two sides then use is decided by the handshake, not by `minor`.
+ * 1.1 (K2) adds only UI_LANG below, a browser-side addition with no frame or descriptor change,
+ * so a 1.0 instance still attaches (negotiateContract checks the id and the major only).
  */
-export const CONNECTOR_CONTRACT = Object.freeze({ id: 'fishball-connector', major: 1, minor: 0 })
+export const CONNECTOR_CONTRACT = Object.freeze({ id: 'fishball-connector', major: 1, minor: 1 })
 export const CONNECTOR_SERVICE = 'fishballConnector'
 
 /**
@@ -1293,6 +1295,16 @@ export const CONNECTOR_SERVICE_API = Object.freeze({
  * connector's Plugins card. Any other message is ignored.
  */
 export const BROWSER_MESSAGE = Object.freeze({ keys: Object.freeze(['type']), openSettings: 'fishball-connector:open-settings' })
+
+/**
+ * Contract 1.1 (K2; design D30, U4): the language the connector asks of the page it frames. The
+ * connector frames `ui.chat` or `ui.settings` with one `lang` search parameter whose value is one
+ * of `values`: the language the main DSH shows the connector's own words in. A `lang` the
+ * registered path already has is replaced; the path's other query parameters and its fragment
+ * are kept. A change of DSH's language reloads the framed page with the new value. The
+ * descriptor's validation is unchanged: a registered path may still carry `lang`.
+ */
+export const UI_LANG = Object.freeze({ parameter: 'lang', values: Object.freeze({ zh: 'zh', en: 'en' }) })
 
 /** attachInstance refusals; a refused attach changes nothing (design §18.2 K1). */
 export const ATTACH_ERROR = Object.freeze({

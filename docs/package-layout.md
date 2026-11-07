@@ -31,16 +31,16 @@ packages/connector/          npm fishball-connector 1.0.0 (major = contract majo
                              re-export shims of ../../contract/*, so old import paths keep working
   LICENSE THIRD_PARTY_NOTICES.md
 packages/instance/           npm fishball-instance 0.1.0
-  package.json               exports ".", "./native-runtime", "./native-control", "./package.json";
+  package.json               exports ".", "./client", "./native-runtime", "./package.json";
                              dsh.bundle.patch ./cordis.patch.yml; peerDependencies fishball-connector ^1
   cordis.patch.yml           inserts exactly one row: id fishball-instance, name fishball-instance
   host.js                    the row (was native-host.js)
   native-child.js            the child's lifecycle row (was native-child.js)
   src/native-web.js src/native-preflight.js src/recommended.js src/persona.js
   src/provider-sync{,-service,-coordinator,-host}.js
-  src/native-runtime/**  src/native-control/**
+  src/native-runtime/**
   src/slim/child/**          the child app (unchanged paths inside the package)
-  src/slim/ui/**             the custom chat UI (retired by I8)
+  src/slim/ui/**             the custom chat UI (kept and restyled by I8, D29)
   src/slim/host/{embed,fetch-routes,admin,settings-routes,provider-sync-routes}.js
   src/slim/{contract,limits,card-record,inbox-markers,attachment-transfer}.js
                              re-export shims of `fishball-connector/contract`
@@ -48,8 +48,8 @@ packages/instance/           npm fishball-instance 0.1.0
 ```
 
 Deleted with no replacement: the root `cordis.patch.yml`, root `index.js`, `client.js`,
-`native-host.js`, `native-child.js` (all moved) and the root `src/`. `packages/messenger/` is
-unchanged; I8 retires it. No package ships it.
+`native-host.js`, `native-child.js` (all moved) and the root `src/`. `packages/messenger/` and
+`src/native-control/**` were removed as dead code by I10.
 
 ## §0.2 / §18.1 path → real path
 
@@ -74,10 +74,10 @@ unchanged; I8 retires it. No package ships it.
 | `child/admin.js` (I6) | `packages/instance/src/slim/child/admin.js` |
 | `child/settings-routes.js` (I6) | `packages/instance/src/slim/child/settings-routes.js` (new; the old main-side one is `src/slim/host/settings-routes.js`) |
 | `child/{server,auth,decisions,images,reminders,approvals}.js` (I8) | `packages/instance/src/slim/child/…` |
-| `child/ui/**` (I4, I6, I7, I9) | `packages/instance/child/ui/**` (new; the reserved path, kept apart from the old `src/slim/ui/`) |
-| `child/package.json` `dsh.client` (I4) | `packages/instance/child/ui/package.json` or equivalent, I4 decides; the snapshot copy must include it (`copyChildCode`) |
-| `src/slim/ui/**` (I8) | `packages/instance/src/slim/ui/**` |
-| `src/native-control/**` (I8) | `packages/instance/src/native-control/**` |
+| `child/ui/**` (I4, I6, I7, I9) | withdrawn 2026-11-07 (D28): no child client plugin. I6, I7, I8 and I9 work in `packages/instance/src/slim/ui/**` (design §18.1) |
+| `child/package.json` `dsh.client` (I4) | withdrawn 2026-11-07 with I4 (D28) |
+| `src/slim/ui/**` (I8: kept and restyled since 2026-11-07, D29) | `packages/instance/src/slim/ui/**` |
+| `src/native-control/**` (I10) | removed (I10): never mounted |
 
 ## What changed in code (the cross-package edges)
 
