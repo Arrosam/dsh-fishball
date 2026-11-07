@@ -13,7 +13,7 @@
  */
 import { request as httpRequest } from 'node:http'
 import { ADMISSION, BEARER, LIMITS, ROUTES, STATUS, STATUS_CODES } from '../contract.js'
-import { BINDING_STATE } from '../../host/binding.js'
+import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
 
 const PREFIX = ROUTES.prefix
 const DOCUMENT = ROUTES.document
@@ -99,11 +99,11 @@ const DROP_RESPONSE = new Set([
 const BASE_ORIGIN = 'http://embed.invalid'
 
 /**
- * Contract states and codes, plus the instance's own `connector-missing` (D25, inst-OQ-13), are
- * the only values the card may show (§11: safe code, no path).
+ * Contract states and codes, plus the instance's own `connector-missing` (D25, inst-OQ-13) and
+ * refused-attach codes (inst-OQ-03), are the only values the card may show (§11: safe code, no path).
  */
-const STATES = new Set([...Object.values(STATUS), BINDING_STATE.connectorMissing])
-const CODES = new Set(Object.values(STATUS_CODES))
+const STATES = new Set(INSTANCE_STATES)
+const CODES = new Set(INSTANCE_CODES)
 
 const HTML_ESCAPE = Object.freeze({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => HTML_ESCAPE[character])
