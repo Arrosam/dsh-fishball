@@ -19,6 +19,8 @@
  * the page's stream connected again (inst-OQ-17).
  */
 
+import { DEFAULT_I18N } from './i18n.js'
+
 /** The admin routes' exact paths; keep the slugs in step with src/slim/host/settings-routes.js SLUGS. */
 const ADMIN = Object.freeze({
   prefix: '/api/fishball/native/admin/',
@@ -75,119 +77,8 @@ const CLASS = Object.freeze({
 
 const ARIA = Object.freeze({ label: 'aria-label', role: 'role', status: 'status', alert: 'alert', live: 'aria-live', polite: 'polite' })
 
-/**
- * Every string of the view, in English and Chinese (D30). I9 moves them into the page's
- * dictionaries; until then the variant follows the same rule: the page URL's first `lang`
- * parameter, exactly `zh` for Chinese, anything else English.
- */
-const COPY = Object.freeze({
-  en: Object.freeze({
-    region: 'Fishball settings',
-    statusTitle: 'Status',
-    statusHint: 'Restart stops Fishball\'s private instance and starts it again; its own home and settings are kept.',
-    restart: 'Restart',
-    restarting: 'Restarting…',
-    loading: 'Loading…',
-    reload: 'Reload',
-    save: 'Save',
-    saving: 'Saving…',
-    state: Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', ready: 'running', stopping: 'stopping', stopped: 'stopped', failed: 'failed', 'connector-missing': 'connector missing' }),
-    modelTitle: 'Model',
-    modelHint: 'Fishball\'s default model and reasoning effort, from its own catalog. A change applies to its next request and does not change the model your other sessions use.',
-    modelSyncHint: 'New models from DSH are added from Fishball instance → Model for Fishball in DSH\'s Plugins.',
-    provider: 'Provider',
-    model: 'Model',
-    effort: 'Reasoning effort',
-    effortDefault: 'Model default',
-    modelUnknown: 'The saved model is not in the current catalog. Choose another model to change it.',
-    modelSaved: 'Saved. Fishball uses it from its next request.',
-    modelSavedNotApplied: 'Saved as the default. The live chat could not take it now; its next request may still use the previous model.',
-    pluginsTitle: 'Plugins',
-    pluginsHint: 'Installed in Fishball\'s own profile; nothing here changes DSH\'s plugins.',
-    installed: 'Installed',
-    noPlugins: 'No plugins are installed in Fishball.',
-    enabled: 'On',
-    core: 'Core',
-    pluginToggle: (name) => `Use ${name} in Fishball`,
-    remove: 'Uninstall',
-    removeLabel: (name) => `Uninstall ${name} from Fishball`,
-    installTitle: 'Install a plugin',
-    installHint: 'A package name with an optional version, a Git address, a tarball URL or an absolute folder path.',
-    installSpec: 'Package spec',
-    install: 'Install',
-    installLabel: (name) => `Install ${name} for Fishball`,
-    recommendedTitle: 'Recommended plugins',
-    recommendedHint: 'A fixed list chosen for Fishball. Installing one changes only Fishball\'s profile.',
-    category: Object.freeze({ context: 'Context management', memory: 'Memory', channel: 'Channel', pet: 'Pet' }),
-    pluginDone: 'Done.',
-    settingsTitle: 'Plugin settings',
-    settingsHint: 'The settings Fishball\'s own plugins publish. Each Save sends the revision this page read, so a change made elsewhere is refused instead of overwritten.',
-    settingsReadOnly: 'Fishball stores settings read-only, so they cannot be changed here.',
-    settingsNone: 'No plugin in Fishball publishes a setting.',
-    settingsSaved: 'Saved.',
-    stale: 'This changed elsewhere since the page read it, so nothing was written. The current values were reloaded; review them and save again.',
-    settingsInvalid: 'A value is not valid for its field.',
-    secretSet: 'Set; type a new value to replace it.',
-    secretUnset: 'Not set.',
-    listHint: 'One item per line.',
-    readOnlyField: 'Shown only; it cannot be changed here.',
-    refused: (code) => `Refused: ${code}`,
-  }),
-  zh: Object.freeze({
-    region: 'Fishball 设置',
-    statusTitle: '状态',
-    statusHint: '重启会停止 Fishball 的私有实例并再次启动；它自己的主目录和设置会保留。',
-    restart: '重启',
-    restarting: '正在重启…',
-    loading: '正在读取…',
-    reload: '重新读取',
-    save: '保存',
-    saving: '保存中…',
-    state: Object.freeze({ disabled: '已禁用', waiting: '等待中', starting: '启动中', ready: '运行中', stopping: '停止中', stopped: '已停止', failed: '失败', 'connector-missing': '缺少连接器' }),
-    modelTitle: '模型',
-    modelHint: 'Fishball 的默认模型和推理强度，来自它自己的模型目录。更改会在它的下一次请求生效，不会改变你其他会话使用的模型。',
-    modelSyncHint: 'DSH 中的新模型请在 DSH 的插件页面 → Fishball instance → Model for Fishball 中添加。',
-    provider: '提供商',
-    model: '模型',
-    effort: '推理强度',
-    effortDefault: '模型默认',
-    modelUnknown: '已保存的模型不在当前目录中。要更改请选择另一个模型。',
-    modelSaved: '已保存。Fishball 会在下一次请求使用它。',
-    modelSavedNotApplied: '已保存为默认值。当前聊天未能立即采用；它的下一次请求可能仍使用此前的模型。',
-    pluginsTitle: '插件',
-    pluginsHint: '安装在 Fishball 自己的配置中；此处不会改变 DSH 的插件。',
-    installed: '已安装',
-    noPlugins: 'Fishball 中尚未安装插件。',
-    enabled: '开启',
-    core: '核心',
-    pluginToggle: (name) => `在 Fishball 中使用 ${name}`,
-    remove: '卸载',
-    removeLabel: (name) => `从 Fishball 卸载 ${name}`,
-    installTitle: '安装插件',
-    installHint: '包名（可带版本）、Git 地址、压缩包 URL 或绝对文件夹路径。',
-    installSpec: '包规格',
-    install: '安装',
-    installLabel: (name) => `为 Fishball 安装 ${name}`,
-    recommendedTitle: '推荐插件',
-    recommendedHint: '为 Fishball 选定的固定列表。安装只改 Fishball 的配置。',
-    category: Object.freeze({ context: '上下文管理', memory: '记忆', channel: '渠道', pet: '宠物' }),
-    pluginDone: '已完成。',
-    settingsTitle: '插件设置',
-    settingsHint: 'Fishball 自己的插件公开的设置。每次保存都会发送本页读取的修订号，因此在别处发生的更改会被拒绝，不会被覆盖。',
-    settingsReadOnly: 'Fishball 以只读方式存储设置，因此不能在这里修改。',
-    settingsNone: 'Fishball 中没有插件公开设置。',
-    settingsSaved: '已保存。',
-    stale: '自本页读取以来这里已在别处更改，因此没有写入任何内容。已重新读取当前值；请检查后再次保存。',
-    settingsInvalid: '有值不符合其字段。',
-    secretSet: '已设置；输入新值可替换。',
-    secretUnset: '未设置。',
-    listHint: '每行一项。',
-    readOnlyField: '仅显示，不能在这里修改。',
-    refused: (code) => `已拒绝：${code}`,
-  }),
-})
-/** D30's rule: the first `lang` parameter, exactly `zh`, selects Chinese. */
-const LANG = Object.freeze({ param: 'lang', zh: 'zh' })
+/** Dictionary key prefixes of the values a key is built from (ui/i18n.js `settings.*`). */
+const KEY = Object.freeze({ state: 'settings.state.', category: 'settings.category.' })
 
 /**
  * One admin call. Always resolves to `{ok:true,result}` or `{ok:false,error:{code}}`, like the
@@ -207,16 +98,17 @@ async function adminRequest(operation, payload = {}) {
  *
  * @param {object} options
  * @param {Element} options.container - element the view is built in.
+ * @param {object} [options.i18n] - the page's words (ui/i18n.js); English by default.
  * @returns {{ refresh: () => Promise<void>, connected: (on: boolean) => void }} `refresh` re-reads
  *   every block; `connected` is the shell's stream state, which ends a restart's "Restarting…".
  */
 export function createSettingsView(options = {}) {
-  const { container } = options ?? {}
+  const { container, i18n = DEFAULT_I18N } = options ?? {}
+  const { t } = i18n
   if (!container || typeof container.append !== 'function' || typeof container.ownerDocument?.createElement !== 'function') {
     throw new TypeError('fishball settings: a container element is required')
   }
   const document = container.ownerDocument
-  const copy = new URLSearchParams(document.location.search).get(LANG.param) === LANG.zh ? COPY.zh : COPY.en
 
   /** One element with an optional class and text. */
   function el(tag, className, text) {
@@ -275,12 +167,12 @@ export function createSettingsView(options = {}) {
         message.setAttribute(ARIA.role, error ? ARIA.alert : ARIA.status)
         message.hidden = !text
       },
-      refuse(error) { this.say(copy.refused(error.code), true) },
+      refuse(error) { this.say(t('settings.refused', { code: error.code }), true) },
     }
   }
 
   const root = el('div', CLASS.root)
-  root.setAttribute(ARIA.label, copy.region)
+  root.setAttribute(ARIA.label, t('settings.region'))
   container.append(root)
 
   /** While true, every control is disabled (inst-OQ-17); cleared when the stream reconnects. */
@@ -299,7 +191,7 @@ export function createSettingsView(options = {}) {
 
   /* ------------------------------------------------------------ status */
 
-  const status = block(copy.statusTitle, copy.statusHint)
+  const status = block(t('settings.statusTitle'), t('settings.statusHint'))
   async function loadStatus() {
     const answer = await adminRequest('status')
     if (!answer.ok) { status.refuse(answer.error); return }
@@ -307,9 +199,9 @@ export function createSettingsView(options = {}) {
   }
   function drawStatus({ state, code }) {
     const line = el('div', CLASS.row)
-    line.append(el('span', CLASS.tag, restarting ? copy.restarting : (copy.state[state] ?? state)))
+    line.append(el('span', CLASS.tag, restarting ? t('settings.restarting') : (t(KEY.state + state) ?? state)))
     if (code) line.append(el('code', CLASS.code, code))
-    line.append(button(restarting ? copy.restarting : copy.restart, restart))
+    line.append(button(restarting ? t('settings.restarting') : t('settings.restart'), restart))
     status.body.replaceChildren(line)
     lock()
   }
@@ -336,7 +228,7 @@ export function createSettingsView(options = {}) {
 
   /* ------------------------------------------------------------ model */
 
-  const model = block(copy.modelTitle, copy.modelHint, copy.modelSyncHint)
+  const model = block(t('settings.modelTitle'), t('settings.modelHint'), t('settings.modelSyncHint'))
   async function loadModel() {
     const answer = await adminRequest('modelGet')
     if (!answer.ok) { model.refuse(answer.error); model.body.replaceChildren(); return }
@@ -361,39 +253,39 @@ export function createSettingsView(options = {}) {
       const keepEffort = next?.efforts.some((effort) => effort.id === selection.reasoningEffort) === true
       redraw({ provider: selection.provider, model: modelSelect.value, ...(keepEffort ? { reasoningEffort: selection.reasoningEffort } : {}) })
     })
-    const fields = [labelled(copy.provider, provider), labelled(copy.model, modelSelect)]
+    const fields = [labelled(t('settings.provider'), provider), labelled(t('settings.model'), modelSelect)]
     const efforts = chosen?.efforts ?? []
     if (efforts.length > 0) {
-      const effort = selectOf([[DEFAULT_EFFORT, copy.effortDefault], ...efforts.map((entry) => [entry.id, entry.name])], selection.reasoningEffort ?? DEFAULT_EFFORT)
+      const effort = selectOf([[DEFAULT_EFFORT, t('settings.effortDefault')], ...efforts.map((entry) => [entry.id, entry.name])], selection.reasoningEffort ?? DEFAULT_EFFORT)
       effort.addEventListener('change', () => {
         const { reasoningEffort: _dropped, ...rest } = selection
         redraw(effort.value === DEFAULT_EFFORT ? rest : { ...rest, reasoningEffort: effort.value })
       })
-      fields.push(labelled(copy.effort, effort))
+      fields.push(labelled(t('settings.effort'), effort))
     }
     const row = el('div', CLASS.row)
     row.append(...fields)
     const dirty = JSON.stringify(selection) !== JSON.stringify(snapshot.selection)
-    const save = keep(button(copy.save, async () => {
-      save.textContent = copy.saving
+    const save = keep(button(t('settings.save'), async () => {
+      save.textContent = t('settings.saving')
       keep(save, true)
       const answer = await adminRequest('modelSet', { revision: snapshot.revision, provider: selection.provider, model: selection.model, ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }) })
       // A stale revision reloads the child's current selection instead of keeping the draft over it.
-      if (answer.error?.code === STALE) { await loadModel(); model.say(copy.stale, true); return }
+      if (answer.error?.code === STALE) { await loadModel(); model.say(t('settings.stale'), true); return }
       if (!answer.ok) { model.refuse(answer.error); drawModel(snapshot, selection); return }
       const next = { ...snapshot, revision: answer.result.revision, selection: answer.result.selection }
       drawModel(next, next.selection)
-      model.say(answer.result.sessionError ? copy.modelSavedNotApplied : copy.modelSaved)
+      model.say(answer.result.sessionError ? t('settings.modelSavedNotApplied') : t('settings.modelSaved'))
     }, { primary: true }), chosen === undefined || !dirty)
     const actions = el('div', CLASS.row)
-    actions.append(save, button(copy.reload, loadModel))
-    model.body.replaceChildren(row, ...(chosen === undefined ? [el('p', CLASS.hint, copy.modelUnknown)] : []), actions)
+    actions.append(save, button(t('settings.reload'), loadModel))
+    model.body.replaceChildren(row, ...(chosen === undefined ? [el('p', CLASS.hint, t('settings.modelUnknown'))] : []), actions)
     lock()
   }
 
   /* ------------------------------------------------------------ plugins */
 
-  const plugins = block(copy.pluginsTitle, copy.pluginsHint)
+  const plugins = block(t('settings.pluginsTitle'), t('settings.pluginsHint'))
   async function loadPlugins() {
     const answer = await adminRequest('pluginsGet')
     if (!answer.ok) { plugins.refuse(answer.error); plugins.body.replaceChildren(); return }
@@ -405,8 +297,8 @@ export function createSettingsView(options = {}) {
     for (const control of plugins.body.querySelectorAll('button, input')) keep(control, true)
     const answer = await adminRequest(operation, payload)
     await loadPlugins()
-    if (answer.ok) plugins.say(copy.pluginDone)
-    else if (answer.error.code === STALE) plugins.say(copy.stale, true)
+    if (answer.ok) plugins.say(t('settings.pluginDone'))
+    else if (answer.error.code === STALE) plugins.say(t('settings.stale'), true)
     else plugins.refuse(answer.error)
   }
   function drawPlugins({ inventoryRevision, bundles, recommended = [] }) {
@@ -423,17 +315,17 @@ export function createSettingsView(options = {}) {
         const toggle = el('input')
         toggle.type = 'checkbox'
         toggle.checked = bundle.enabled
-        toggle.setAttribute(ARIA.label, copy.pluginToggle(bundle.name))
+        toggle.setAttribute(ARIA.label, t('settings.pluginToggle', { name: bundle.name }))
         toggle.addEventListener('change', () => { void changePlugin(toggle.checked ? 'pluginEnable' : 'pluginDisable', { inventoryRevision, name: bundle.name }) })
-        item.append(labelled(copy.enabled, toggle),
-          button(copy.remove, () => changePlugin('pluginRemove', { inventoryRevision, name: bundle.name }), { label: copy.removeLabel(bundle.name) }))
-      } else item.append(el('span', CLASS.tag, copy.core))
+        item.append(labelled(t('settings.enabled'), toggle),
+          button(t('settings.remove'), () => changePlugin('pluginRemove', { inventoryRevision, name: bundle.name }), { label: t('settings.removeLabel', { name: bundle.name }) }))
+      } else item.append(el('span', CLASS.tag, t('settings.core')))
       list.append(item)
     }
     const spec = el('input', CLASS.input)
     spec.type = 'text'
-    spec.setAttribute(ARIA.label, copy.installSpec)
-    const installButton = keep(button(copy.install, () => install(spec.value.trim()), { primary: true }), true)
+    spec.setAttribute(ARIA.label, t('settings.installSpec'))
+    const installButton = keep(button(t('settings.install'), () => install(spec.value.trim()), { primary: true }), true)
     spec.addEventListener('input', () => keep(installButton, spec.value.trim() === ''))
     const installRow = el('div', CLASS.row)
     installRow.append(spec, installButton)
@@ -448,28 +340,28 @@ export function createSettingsView(options = {}) {
       for (const entry of entries) {
         const item = el('li', CLASS.item)
         item.append(el('code', CLASS.code + ' ' + CLASS.grow, entry.packageName),
-          installedNames.has(entry.packageName) ? el('span', CLASS.tag, copy.installed)
-            : button(copy.install, () => install(entry.spec), { label: copy.installLabel(entry.packageName) }))
+          installedNames.has(entry.packageName) ? el('span', CLASS.tag, t('settings.installed'))
+            : button(t('settings.install'), () => install(entry.spec), { label: t('settings.installLabel', { name: entry.packageName }) }))
         rows.append(item)
       }
-      return [el('h4', CLASS.label, copy.category[category] ?? category), rows]
+      return [el('h4', CLASS.label, t(KEY.category + category) ?? category), rows]
     })
     plugins.body.replaceChildren(
-      el('h3', CLASS.subtitle, copy.installed),
-      bundles.length === 0 ? el('p', CLASS.hint, copy.noPlugins) : list,
-      el('h3', CLASS.subtitle, copy.installTitle), el('p', CLASS.hint, copy.installHint), installRow,
-      el('h3', CLASS.subtitle, copy.recommendedTitle), el('p', CLASS.hint, copy.recommendedHint), ...recommendedNodes)
+      el('h3', CLASS.subtitle, t('settings.installed')),
+      bundles.length === 0 ? el('p', CLASS.hint, t('settings.noPlugins')) : list,
+      el('h3', CLASS.subtitle, t('settings.installTitle')), el('p', CLASS.hint, t('settings.installHint')), installRow,
+      el('h3', CLASS.subtitle, t('settings.recommendedTitle')), el('p', CLASS.hint, t('settings.recommendedHint')), ...recommendedNodes)
     lock()
   }
 
   /* ------------------------------------------------------------ plugin settings */
 
-  const settings = block(copy.settingsTitle, copy.settingsHint)
+  const settings = block(t('settings.settingsTitle'), t('settings.settingsHint'))
   async function loadSettings() {
     const answer = await adminRequest('settingsGet')
     if (!answer.ok) { settings.refuse(answer.error); settings.body.replaceChildren(); return }
     const { writable, namespaces } = answer.result
-    const notice = !writable ? copy.settingsReadOnly : namespaces.length === 0 ? copy.settingsNone : null
+    const notice = !writable ? t('settings.settingsReadOnly') : namespaces.length === 0 ? t('settings.settingsNone') : null
     settings.body.replaceChildren(...(notice ? [el('p', CLASS.hint, notice)] : []),
       ...(writable ? namespaces.map(namespaceForm) : []))
     lock()
@@ -530,7 +422,7 @@ export function createSettingsView(options = {}) {
       area.value = drawn
       return {
         control: area,
-        hint: copy.listHint,
+        hint: t('settings.listHint'),
         read: () => {
           if (area.value === drawn) return { changed: false }
           const items = area.value.split(LIST_SEPARATOR).map((item) => item.trim()).filter((item) => item !== '')
@@ -541,14 +433,14 @@ export function createSettingsView(options = {}) {
       }
     }
     if (field.kind === FIELD_KIND.readOnly) {
-      return { control: el('pre', CLASS.readOnly, JSON.stringify(current ?? null, null, 2)), hint: copy.readOnlyField, read: () => ({ changed: false }) }
+      return { control: el('pre', CLASS.readOnly, JSON.stringify(current ?? null, null, 2)), hint: t('settings.readOnlyField'), read: () => ({ changed: false }) }
     }
     const input = el('input', CLASS.input)
     if (field.kind === FIELD_KIND.secret) {
       // The admin never sends a secret, only whether it is set; the field is write-only.
       input.type = 'password'
       const set = secrets.some((slot) => JSON.stringify(slot.path) === key && slot.set)
-      return { control: input, hint: set ? copy.secretSet : copy.secretUnset, read: () => (input.value === '' ? { changed: false } : { changed: true, value: input.value }) }
+      return { control: input, hint: set ? t('settings.secretSet') : t('settings.secretUnset'), read: () => (input.value === '' ? { changed: false } : { changed: true, value: input.value }) }
     }
     input.type = 'text'
     const drawn = current === undefined || current === null ? '' : String(current)
@@ -583,24 +475,24 @@ export function createSettingsView(options = {}) {
     const message = el('p', CLASS.status)
     message.hidden = true
     const say = (text, error) => { message.textContent = text; message.className = error ? CLASS.error : CLASS.status; message.hidden = false }
-    const save = button(copy.save, async () => {
+    const save = button(t('settings.save'), async () => {
       const ops = []
       for (const { field, read } of readers) {
         const answer = read()
         if (!answer.changed) continue
-        if (answer.invalid) { say(copy.settingsInvalid, true); return }
+        if (answer.invalid) { say(t('settings.settingsInvalid'), true); return }
         ops.push({ op: SET_OP, path: field.path, value: answer.value })
       }
       if (ops.length === 0) return
-      save.textContent = copy.saving
+      save.textContent = t('settings.saving')
       keep(save, true)
       const answer = await adminRequest('settingsMutate', { ns: entry.ns, revision: entry.revision, ops })
       // A stale revision is never retried over the other writer: the forms are re-read and the
       // user is told, so they review the current values before saving again.
-      if (answer.error?.code === STALE) { await loadSettings(); settings.say(copy.stale, true); return }
-      if (!answer.ok) { save.textContent = copy.save; keep(save, false); say(copy.refused(answer.error.code), true); return }
+      if (answer.error?.code === STALE) { await loadSettings(); settings.say(t('settings.stale'), true); return }
+      if (!answer.ok) { save.textContent = t('settings.save'); keep(save, false); say(t('settings.refused', { code: answer.error.code }), true); return }
       await loadSettings()
-      settings.say(copy.settingsSaved)
+      settings.say(t('settings.settingsSaved'))
     }, { primary: true })
     section.append(save, message)
     return section

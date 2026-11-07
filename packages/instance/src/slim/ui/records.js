@@ -6,9 +6,9 @@
  * that expands to the card's details. The connector draws the same record in a managed session's
  * view (packages/connector/client.records.js), but that module is a React component loaded by
  * DSH's client module loader, and this page has neither (§0.9 U6). What the two share is the
- * record schema and the words: RECORD_WORDS repeats the connector's `record.*` dictionary
- * entries key for key in both languages, and the row shows the same fields in the same order.
- * Keep both in step; a test compares the two dictionaries.
+ * record schema and the words: the page's dictionaries (ui/i18n.js) repeat the connector's
+ * `record.*` entries key for key in both languages, and the row shows the same fields in the same
+ * order. Keep both in step; a test compares the two dictionaries.
  *
  * One difference is deliberate: the collapsed line also names the asking session (§18.2 I7 R1,
  * "the asking session's title"), because every record in Fishball's chat comes from another
@@ -21,27 +21,7 @@
  * only styling hook (the page's CSP admits no inline style).
  */
 
-/**
- * The connector's `record.*` words (packages/connector/client.js, its en and zh dictionaries),
- * with the same keys. I9 moves them into the page's dictionaries and picks the language; until
- * then the page is English like the rest of the custom chat.
- */
-export const RECORD_WORDS = Object.freeze({
-  en: Object.freeze({
-    'record.question': 'Question', 'record.plan-review': 'Plan review', 'record.permission': 'Permission request',
-    'record.by.user': 'You', 'record.by.fishball': 'Fishball', 'record.place.pile': 'on the card', 'record.place.session': 'in the session',
-    'record.outcome.allowed': 'Allowed once', 'record.outcome.granted': 'Allowed and granted', 'record.outcome.rejected': 'Rejected',
-    'record.outcome.answered': 'Answered', 'record.outcome.skipped': 'Skipped', 'record.outcome.closed': 'Closed',
-    'record.from': 'From', 'record.answer': 'Answer', 'record.tool': 'Tool', 'record.arguments': 'Arguments', 'record.reason': 'Reason', 'record.note': 'Note', 'record.closed': 'Why it closed', 'record.own': 'Fishball asked you',
-  }),
-  zh: Object.freeze({
-    'record.question': '问题', 'record.plan-review': '计划审阅', 'record.permission': '权限请求',
-    'record.by.user': '你', 'record.by.fishball': 'Fishball', 'record.place.pile': '在卡片上', 'record.place.session': '在会话中',
-    'record.outcome.allowed': '已允许一次', 'record.outcome.granted': '已允许并授权', 'record.outcome.rejected': '已拒绝',
-    'record.outcome.answered': '已回答', 'record.outcome.skipped': '已跳过', 'record.outcome.closed': '已关闭',
-    'record.from': '来自', 'record.answer': '回答', 'record.tool': '工具', 'record.arguments': '参数', 'record.reason': '理由', 'record.note': '备注', 'record.closed': '关闭原因', 'record.own': 'Fishball 问你',
-  }),
-})
+import { DEFAULT_I18N } from './i18n.js'
 
 /**
  * The record vocabulary the row reads (contract CARD_RECORD), the connector row's joiners and the
@@ -95,7 +75,7 @@ function fromOf(record) {
  * time: the subject (the tool, or the first question's header or text), the outcome with the
  * answer, who and where (a closure names no one), the asking session, the time.
  */
-function lineOf(record, questions, t) {
+function lineOf(record, questions, t, locale) {
   const first = questions[0]
   const answer = textOf(record.answer)
   const who = record.by === undefined ? '' : [t(RECORD.key.by + record.by), ...(record.place === undefined ? [] : [t(RECORD.key.place + record.place)])].join(RECORD.whoSeparator)
@@ -105,7 +85,7 @@ function lineOf(record, questions, t) {
     t(RECORD.key.outcome + record.outcome) + (answer === '' ? '' : RECORD.labelSeparator + answer),
     who,
     fromOf(record),
-    Number.isFinite(at.getTime()) ? at.toLocaleString() : '',
+    Number.isFinite(at.getTime()) ? at.toLocaleString(locale) : '',
   ].filter(Boolean).join(RECORD.separator)
 }
 
@@ -127,12 +107,12 @@ function questionNode(document, item) {
  * @param {Document} document - the page's document.
  * @param {object} record - the record data, v1 (contract card-record.js); its texts are already
  *   cut to the contract's caps by the writer.
- * @param {Record<string, string>} [words] - one of RECORD_WORDS; English by default.
+ * @param {object} [i18n] - the page's words (ui/i18n.js createI18n); English by default.
  * @returns {HTMLDetailsElement} the row content the chat view appends to its timeline row.
  */
-export function createRecordRow(document, record, words = RECORD_WORDS.en) {
+export function createRecordRow(document, record, i18n = DEFAULT_I18N) {
   // A key this version does not know (a future kind or outcome) shows nothing rather than a key.
-  const t = (key) => words[key] ?? ''
+  const t = (key) => i18n.t(key) ?? ''
   const questions = Array.isArray(record.questions) ? record.questions.filter((item) => item !== null && typeof item === 'object') : []
   /** The connector's "Label: text" line; an empty text means the field is absent. */
   const labelled = (key, value) => {
@@ -152,7 +132,7 @@ export function createRecordRow(document, record, words = RECORD_WORDS.en) {
   details.dataset.fishballCardRecord = textOf(record.cardId)
   details.dataset.recordKind = textOf(record.kind)
   const summary = node(document, 'summary', CLASS.summary)
-  const line = lineOf(record, questions, t)
+  const line = lineOf(record, questions, t, i18n.locale)
   summary.append(
     node(document, 'span', CLASS.title, record.own === true ? t(RECORD.key.own) : t(RECORD.key.kind + record.kind)),
     node(document, 'span', CLASS.line, line === '' ? '' : RECORD.separator + line),

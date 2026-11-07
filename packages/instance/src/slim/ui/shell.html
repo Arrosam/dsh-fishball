@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fishball</title>
+<!-- The title, <html lang> and the region names come from ui/i18n.js (I9); ui/shell.js sets them. -->
+<title></title>
 <link rel="icon" href="data:,">
 <!-- DSH's design tokens first (I8): shell.css draws every colour, radius, font and shadow from them. -->
 <link rel="stylesheet" href="ui/dsh-tokens.css">
@@ -20,9 +21,9 @@
 <p class="connection-banner" id="connection-banner" role="status" aria-live="polite" hidden></p>
 <main class="layout">
   <!-- The chat view builds the timeline, the read-only composer and the notice in here. -->
-  <section class="chat" id="chat" aria-label="Fishball chat"></section>
+  <section class="chat" id="chat"></section>
   <!-- The reminder view (T10) mounts into this aside and refreshes on the SSE reminders event. -->
-  <aside class="sidebar" id="reminders" aria-label="Reminders"></aside>
+  <aside class="sidebar" id="reminders"></aside>
 </main>
 <!-- The settings view (I6, ?view=settings); ui/settings.js builds it on first open. -->
 <main class="settings-page" id="settings" hidden></main>
