@@ -25,6 +25,7 @@
  * | K1-P-14 | ST (settled → repeat) | §3.3 | the identical request with the same requestId gets the same reply; the target has the message once |
  * | K1-EP-53 ×2 | DT (same id, other op / other payload) | §3.3 | conflict; the session is not stopped and gets no second message |
  * | K1-EP-52 | ST (running → repeat) | §3.3 | the second frame of a session.start still running gets duplicate-request; one session is created |
+ * | K1-EP-52b | ST (running → repeat) | §3.3 "one requestId has one terminal reply" | the original request still gets a `response` with the created sessionId (any order relative to the repeat's duplicate-request) |
  * | OUT-CAP | EP | slim §12, conn-OQ-20 | /api/fishball/state limits have no messagesPerHour or sessionsPerHour |
  *
  * Retired:
@@ -41,7 +42,7 @@ import { before, describe, it } from 'node:test'
 import { DELIVERY } from 'fishball-connector/contract'
 import { INBOUND_TOOL, OUTBOUND_TOOLS, PRESET } from './support/constants.mjs'
 import { HOOK, T, toolNames } from './support/expect.mjs'
-import { handOver, userSession } from './support/instance-stub.mjs'
+import { ENVELOPE, STUB, handOver, userSession } from './support/instance-stub.mjs'
 import { ERROR, G, OPERATION, assertError, assertNothingStarted, assertOnlyKeys, assertRelayedOnce, assertStarted, responseOf, sendTwice, tok, useStubHost, watchNoticesSettled } from './support/instance-stub-start.mjs'
 import { until } from './support/util.mjs'
 
@@ -296,15 +297,26 @@ describe('bridge session.message, redirect, stop and start', () => {
     const created = (await w.sessionIds()).filter((s) => !sessions.includes(s))
     assert.equal(created.length, 1, 'one session')
     await assertRelayedOnce(w, created[0], message)
-    // Not asserted: whether the first request also gets its own response on the wire. §3.3 "one
-    // requestId has one terminal reply" can be read as the duplicate-request frame being that reply;
-    // K1-EP-52 names only the repeat's error. The settled repeat below shows what was remembered.
+    // The first request's own response is K1-EP-52b's assertion.
     t.diagnostic('replies for the requestId while running: ' + replies.map((r) => r.type).join(', '))
     // §3.3: once settled, the same request gets the remembered reply, never a second start.
     const settled = await w.op(OPERATION.sessionStart, payload, null, { requestId })
     assert.equal(responseOf(settled).sessionId, created[0], 'the remembered reply names the one session: ' + JSON.stringify(settled))
     assert.deepEqual((await w.sessionIds()).filter((s) => !sessions.includes(s)), created, 'still one session')
     await assertRelayedOnce(w, created[0], message)
+  })
+
+  it('K1-EP-52b the original of a repeated session.start still gets its own response with the created sessionId', T, async () => {
+    const sessions = await w.sessionIds()
+    const { requestId } = await sendTwice(w, OPERATION.sessionStart, { folder: w.folder('dup-b'), title: G.title, message: tok('k1ep52b'), attachments: [] })
+    // §3.3 "one requestId has one terminal reply": the repeat's duplicate-request must not take the
+    // place of the original's reply, which succeeded. Any order relative to that error is accepted.
+    const responseFor = async () => (await w.stub.received()).find((f) => f.requestId === requestId && f.type === ENVELOPE.type.response)
+    const response = await until(responseFor, STUB.replyTimeoutMs, STUB.pollMs)
+    const created = (await w.sessionIds()).filter((s) => !sessions.includes(s))
+    assert.equal(created.length, 1, 'one session')
+    assert.ok(response, 'a response for ' + requestId + '; received only: ' + JSON.stringify((await w.stub.received()).filter((f) => f.requestId === requestId).map((f) => [f.type, f.payload])))
+    assert.equal(response.payload.sessionId, created[0])
   })
 
   it('OUT-CAP the hourly caps are gone from the connector limits', T, async () => {
