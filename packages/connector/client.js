@@ -106,6 +106,12 @@ window.__ModuleLoader__.load({
       pollMs: 1000,
       framedStates: Object.freeze(['ready', 'attached']),
       loading: 'loading',
+      /**
+       * No instance at all. An instance whose channel ended (a killed child) is not attached either,
+       * but keeps its own state, code and Retry (src/connector-service.js `kept`), so the view tells
+       * them apart by this state rather than by `attached`.
+       */
+      unattached: 'unattached',
       /** The frame's Retry refusal when the answer carried no code (contract STATUS_CODES.unavailable). */
       retryFailed: 'NATIVE_UNAVAILABLE',
       /** Which of the instance's pages the view frames: its chat, or its settings from the Plugins card. */
@@ -1022,12 +1028,14 @@ window.__ModuleLoader__.load({
         }
         const body = instance === undefined
           ? emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
-          : !instance.attached
+          : state === FRAME_UI.unattached
             ? emptyState(
               h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
               h('p', { 'data-fishball-embed-empty': true }, t('frameNoInstance')),
               accentButton({ onClick: openPlugins }, t('frameOpenPlugins')))
-            : ui.chat === undefined
+            // "is attached and has no chat page" fits only a live attachment; one whose channel ended
+            // shows its state below, whatever pages it registered.
+            : instance.attached && ui.chat === undefined
               ? emptyState(h('p', { 'data-fishball-embed-no-chat': true }, t('frameNoChat', { name: instance.name })))
               : framed
                 ? h('iframe', { key: `${generation}:${src}`, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, 'data-fishball-embed-frame': true })

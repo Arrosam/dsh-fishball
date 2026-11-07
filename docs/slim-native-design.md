@@ -2156,7 +2156,8 @@ K2 (A).
 **I1c — the rest of I1 (instance). DONE (2d4b8ea).** As delivered: `ui` is `{chat}` until I6
 adds `settings`; Retry on the card shows while `failed`; the retry route is
 `POST /api/fishball-instance/retry`, and `/api/fishball/native/status` stays for its readers; the
-launch fields moved to I2 (U1).
+launch fields moved to I2 (U1). B1 fix: a channel that ends without `detach()` (a killed child)
+keeps the instance's `status()`/`retry()` in the frame (contract §1.3, §9); disabling detaches first.
 - R: (1) Every attach passes `ui`, `status` and `retry`; the connector's frame then shows the
   instance's state (`ready` reads "running") instead of "attached", and its Retry appears when the
   state is `failed`. (2) `status()` returns `{state, code}` with `state` in `STATUS` and `code` in
