@@ -58,10 +58,12 @@ export const HOST_LAUNCH = Object.freeze({
   // Copied from the main process only when set; nothing else of its environment reaches the
   // child (no key, token or DSH_X_* variable, D6). DSH-X's NODE_OPTIONS also names its
   // instance-link hook, which stays inert because the child never gets DSH_X_INSTANCE_LINK.
-  runtimeEnv: Object.freeze(['ELECTRON_RUN_AS_NODE', 'NODE_OPTIONS']),
+  // ELECTRON_RUN_AS_NODE is deliberately not listed (B5, §0.5, §18.2 I2 R3): a plain-Node main
+  // that happens to carry it must not pass it on; only electronAsNode below sets it.
+  runtimeEnv: Object.freeze(['NODE_OPTIONS']),
   // An Electron main process (process.versions.electron) has an Electron binary as execPath. With
   // this variable it runs as a windowless Node process; without it, it would open a second app
-  // window. So it is always set for an Electron host, never refused.
+  // window. So it is always set for an Electron host, never refused, and set for no other host.
   electronAsNode: Object.freeze({ name: 'ELECTRON_RUN_AS_NODE', value: '1' }),
   // Debugger flags are dropped from execArgv: a port the main DSH already holds would stop the
   // child from starting. Prefixes: `--inspect` also covers --inspect-brk, --inspect-wait,

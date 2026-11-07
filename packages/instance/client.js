@@ -207,7 +207,7 @@ window.__ModuleLoader__.load({
       'reason.NATIVE_CONTRACT_VERSION': '已安装的连接器使用不同的契约版本，所以本实例已停止。',
       retry: '重试',
       retrying: '正在重试…',
-      'sync.title': 'Model for Fishball',
+      'sync.title': 'Fishball 的模型',
       'sync.check': '检查新模型',
       'sync.checking': '正在检查…',
       'sync.notRunning': 'Fishball 未在运行。',
