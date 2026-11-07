@@ -226,7 +226,7 @@ export const ROUTES = Object.freeze({
   methods: Object.freeze(['GET', 'HEAD', 'POST']),
 })
 
-/** The embed route admits only same-origin page fetches before it forwards (§3.1). */
+/** The embed route refuses cross-site page fetches before it forwards (§3.1, inst-OQ-11 (3)). */
 export const ADMISSION = Object.freeze({ siteHeader: 'sec-fetch-site', sameOrigin: 'same-origin' })
 
 /**
