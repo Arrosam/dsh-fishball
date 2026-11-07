@@ -146,7 +146,14 @@ A refused attach throws a `ContractError` whose `code` is the refusal. It has **
 no transport method is called, nothing is stored, and an attached instance stays attached.
 
 **One instance at a time.** `detach()` and the transport's `onClose` both return the connector to
-no-instance mode (§9). A restart of an instance is a detach followed by a new attach.
+no-instance mode (§9). A restart of an instance is a detach followed by a new attach. A channel
+that ends without `detach()` leaves the connector's opener showing that instance (§9). After the
+transport's `onClose` it shows the instance's own `status()` and offers its `retry()`, so an
+instance whose process died can say why and be restarted from the frame. After a close by the
+connector (below) it shows `connection-interrupted` with the instance's `retry()` instead, because
+the instance's own status may still say `ready`; a `failed` status is still shown as it is. This
+changes no routing, `current()` is `null` and a new attach is accepted. Its `detach()`, the next
+attach or the connector's dispose ends it.
 
 **Stale calls are no-ops.** A second `detach()`, a stale handle's `detach()`, and a stale
 transport's `onClose` after a newer attach change nothing and do not throw.
@@ -538,7 +545,7 @@ The connector works alone. With no instance attached (never attached, after `det
 | `ask_fishball` | **not queued**: answered `unavailable` at once ("Fishball cannot answer now. Make the call yourself; the user is asked in this session"); the user is asked in that session. A queued answer would come after the call it was about |
 | a direct call, a permission request or question from a managed session | **not queued** and not offered to any instance; the user answers in that session, and it is never offered again (§5.1) |
 | Hand over / Take back | work; the session becomes managed or unmanaged |
-| the connector's view (sidebar row, brand) | an empty state saying that no instance is attached, with a link to the Plugins page; no iframe |
+| the connector's view (sidebar row, brand) | an empty state saying that no instance is attached, with a link to the Plugins page; no iframe. After a channel ended without `detach()` (§1.3), the view instead shows that instance: its `status()` after the transport's `onClose` (for example `failed` with `NATIVE_CHILD_EXITED`; only when it gave `status`), or `connection-interrupted` after a close by the connector, with Retry for `failed` and `connection-interrupted` when it gave `retry`; still no iframe |
 | managed-row marks | shown from the connector's own state |
 | connector settings | DSH's own Plugins → settings form of `fishball-connector`, the same place as with an instance attached (§0) |
 

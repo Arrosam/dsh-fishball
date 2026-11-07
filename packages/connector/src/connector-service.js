@@ -20,7 +20,7 @@ import { ATTACH_ERROR, CONNECTOR_SERVICE, ERROR, STATUS, STATUS_CODES, ContractE
 import { API_CODE, PLUGIN } from './constants.js'
 import { diagnosticOf } from './errors.js'
 import { createApprovalRelay } from './slim/host/approvals.js'
-import { createBridgeHost } from './slim/host/bridge.js'
+import { CLOSE_CAUSE, createBridgeHost } from './slim/host/bridge.js'
 import { createSessionPort } from './slim/host/session-port.js'
 
 /** The row's own bookkeeping for the provided service; never a contract name. */
@@ -32,10 +32,11 @@ const BINDING = Object.freeze({
  * What the connector's frame shows as the instance's state (design §0.5 "The frame", D27,
  * conn-OQ-25, conn-OQ-53). A `status()` state is shown as it is. Two display states are the
  * connector's own and never contract STATUS values: `unattached` with no instance, `attached`
- * for an instance that gave no `status`. A `status()` that throws or answers outside
+ * for an instance that gave no `status`, and `connection-interrupted` after the connector itself
+ * closed the channel (see `kept` below). A `status()` that throws or answers outside
  * STATUS/STATUS_CODES shows `failed` with NATIVE_UNAVAILABLE.
  */
-export const FRAME_STATE = Object.freeze({ unattached: 'unattached', attached: 'attached' })
+export const FRAME_STATE = Object.freeze({ unattached: 'unattached', attached: 'attached', interrupted: 'connection-interrupted' })
 const STATUS_STATES = new Set(Object.values(STATUS))
 const STATUS_CODE_SET = new Set(Object.values(STATUS_CODES))
 /** Why a status() answer was not shown; logged by these codes only, never by value. */
@@ -67,7 +68,8 @@ function readStatus(status) {
  * @param {object} [options]
  * @param {() => void} [options.onChange] - called after every attach and every end of an attachment.
  * @returns {{view: () => object, retry: () => Promise<object>}} view(): the frame's
- *   {attached, name, ui, state, code, canRetry, attachCount}; retry(): awaits the instance's
+ *   {attached, name, ui, state, code, canRetry, attachCount}, where `attached` is false for an
+ *   instance whose channel ended (kept below) as for none; retry(): awaits the instance's
  *   retry() when the frame offers Retry, and resolves {ok: true} or {ok: false, code} (never rejects).
  */
 export function provideConnectorService(ctx, { onChange } = {}) {
@@ -80,6 +82,21 @@ export function provideConnectorService(ctx, { onChange } = {}) {
   let closed = false
   /** The live attachment record, or undefined in no-instance mode. */
   let active
+  /**
+   * The last attachment whose channel ended without its detach(), kept for the frame only
+   * (contract §1.3, §9). It plays no part in routing: current() stays null and a new attach is
+   * accepted. Its detach(), the next attach and the row's dispose forget it.
+   * - The transport reported the end (CLOSE_CAUSE.peer): a killed child closes its channel while
+   *   the instance stays the owner of the status that says why (`failed`, NATIVE_CHILD_EXITED) and
+   *   of the Retry that restarts it (design §18.4 E2E-B6). Kept only when it gave `status`, since
+   *   there is nothing to show otherwise.
+   * - The connector closed it (CLOSE_CAUSE.host: a bad frame, a timeout): the child may still be
+   *   running and its status may still say `ready`, which the frame must not show (the user's
+   *   call, B1). So it is kept as `interrupted` and shown as `connection-interrupted`.
+   */
+  let kept
+  /** Whether `kept` lost its channel to the connector's own close (CLOSE_CAUSE.host). */
+  let interrupted = false
   /** Attaches since the row was applied, reported by current() (contract §1, conn-OQ-08). */
   let attachCount = 0
   const service = Object.freeze({
@@ -97,11 +114,27 @@ export function provideConnectorService(ctx, { onChange } = {}) {
     try { record.approvals?.close() } catch { /* already gone */ }
   }
 
-  /** End the attachment this record owns. A stale detach or onClose changes nothing (§1.3). */
-  function end(record) {
-    if (record === undefined || active !== record) return
+  /** Leave the attachment this record owns; false when it is not the live one (a stale call, §1.3). */
+  function release(record) {
+    if (record === undefined || active !== record) return false
     active = undefined
     closeRecord(record)
+    return true
+  }
+
+  /** detach() and the row's dispose: no-instance mode, and the frame forgets this instance too. */
+  function end(record) {
+    const released = release(record)
+    const forgotten = record !== undefined && kept === record
+    if (forgotten) kept = undefined
+    if (released || forgotten) changed()
+  }
+
+  /** The channel ended without detach(): no-instance mode, with the instance kept for the frame (see `kept`). */
+  function lose(record, cause) {
+    if (!release(record)) return
+    interrupted = cause === CLOSE_CAUSE.host
+    kept = interrupted || record.status !== undefined ? record : undefined
     changed()
   }
 
@@ -127,6 +160,7 @@ export function provideConnectorService(ctx, { onChange } = {}) {
     // Reserve the one place before the transport can report a close: a synchronous onClose
     // during the attach below must end this record like any later close, not be lost.
     active = record
+    kept = undefined
     try {
       // The session port reads the row's own live registries through SESSION_STATE, and the
       // approval relay re-registers that row's tool bodies; neither is re-implemented here.
@@ -136,12 +170,14 @@ export function provideConnectorService(ctx, { onChange } = {}) {
       // The relay's handlers and connection edge must exist before the transport attaches, so the
       // handshake advertises them (approvals.js).
       approvals.attach(host)
-      host.onConnection(({ ready }) => { if (!ready) end(record) })
+      host.onConnection(({ ready, cause }) => { if (!ready) lose(record, cause) })
       record.approvals = approvals
       record.host = host
       record.connection = host.attach(validated.transport)
     } catch (error) {
       if (active === record) active = undefined
+      // A close reported during this failed attach may have kept it; a refused attach keeps nothing.
+      if (kept === record) kept = undefined
       closeRecord(record)
       throw error
     }
@@ -152,28 +188,35 @@ export function provideConnectorService(ctx, { onChange } = {}) {
     return Object.freeze({ detach: () => end(record) })
   }
 
-  /** The attachment as the frame shows it; status() is read afresh on every call. */
+  /**
+   * The attachment as the frame shows it, or the kept one with `attached: false`; status() is read
+   * afresh on every call.
+   */
   function view() {
-    const record = active
+    const record = active ?? kept
     if (record === undefined) {
       return { attached: false, name: null, ui: {}, state: FRAME_STATE.unattached, code: null, canRetry: false, attachCount }
     }
-    const { state, code, fault } = readStatus(record.status)
-    if (fault !== loggedFault) {
-      if (fault !== null) logger?.warn('instance status not shown (%s)', fault)
-      loggedFault = fault
+    const read = readStatus(record.status)
+    if (read.fault !== loggedFault) {
+      if (read.fault !== null) logger?.warn('instance status not shown (%s)', read.fault)
+      loggedFault = read.fault
     }
+    // An interrupted channel shows as such unless the instance itself reports `failed`: that is
+    // the more specific cause (a dying child can make a send fail before its own close arrives).
+    const lost = record === kept && interrupted && read.state !== STATUS.failed
+    const { state, code } = lost ? { state: FRAME_STATE.interrupted, code: null } : read
     return {
-      attached: true, name: record.snapshot.name, ui: { ...record.ui }, state, code,
-      // Retry only for a failed instance that gave retry (conn-OQ-25).
-      canRetry: state === STATUS.failed && record.retry !== undefined,
+      attached: record === active, name: record.snapshot.name, ui: { ...record.ui }, state, code,
+      // Retry only for a failed or interrupted instance that gave retry (conn-OQ-25, B1).
+      canRetry: (state === STATUS.failed || state === FRAME_STATE.interrupted) && record.retry !== undefined,
       attachCount: record.snapshot.attachCount,
     }
   }
 
   /** The frame's Retry: awaits the instance's own retry(); a rejection is NATIVE_UNAVAILABLE (conn-OQ-25). */
   async function retry() {
-    const record = active
+    const record = active ?? kept
     if (record === undefined || !view().canRetry) return { ok: false, code: API_CODE.unavailable }
     try {
       await record.retry()
@@ -188,7 +231,8 @@ export function provideConnectorService(ctx, { onChange } = {}) {
     const dispose = ctx.provide(CONNECTOR_SERVICE, service)
     return () => {
       closed = true
-      end(active)
+      // At most one of them exists: an attach forgets the kept one.
+      end(active ?? kept)
       dispose?.()
     }
   }, BINDING.cleanup)

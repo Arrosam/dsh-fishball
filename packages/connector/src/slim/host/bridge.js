@@ -96,6 +96,14 @@ export const BRIDGE_HOST = Object.freeze({
   readReserveBytes: 4096,
 })
 
+/**
+ * Who ended a connection, on its close edge: `peer` when the transport reported its own end
+ * (`onClose`: the instance closed it, or its process died), `host` when this bridge closed it (a
+ * frame that failed validation, a handshake or request timeout, a failed send, a reattach). The
+ * connector's frame tells the two apart (src/connector-service.js).
+ */
+export const CLOSE_CAUSE = Object.freeze({ peer: 'peer', host: 'host' })
+
 /** The §5.2 operations this task implements; the handshake advertises exactly these. */
 export const SESSION_OPERATIONS = Object.freeze([
   OPERATION.sessionList, OPERATION.sessionStart, OPERATION.sessionMessage, OPERATION.sessionRedirect,
@@ -218,7 +226,8 @@ class BridgeHost {
    * Observe the channel becoming ready and going away. T09 uses the ready edge to re-offer the
    * live approval and question cards after a reconnect (the host never replays a request), and
    * the close edge to stop treating the child as the live answerer. A listener owns its failure.
-   * @param {(connection: {ready: boolean, connectionId: string}) => void} listener
+   * The close edge also carries `cause` (CLOSE_CAUSE); the ready edge has none.
+   * @param {(connection: {ready: boolean, connectionId: string, cause?: string}) => void} listener
    * @returns {() => void} disposer
    */
   onConnection(listener) {
@@ -259,7 +268,7 @@ class BridgeHost {
     connection.timer.unref?.()
     try {
       connection.disposers.push(transport.onMessage((encoded) => this.receive(connection, encoded)))
-      connection.disposers.push(transport.onClose(() => this.disconnect(connection)))
+      connection.disposers.push(transport.onClose(() => this.disconnect(connection, CLOSE_CAUSE.peer)))
     } catch (error) { this.disconnect(connection); throw error }
     return Object.freeze({ connectionId: connection.connectionId, close: () => this.disconnect(connection) })
   }
@@ -321,7 +330,7 @@ class BridgeHost {
     return entry.promise
   }
 
-  disconnect(connection = this.connection) {
+  disconnect(connection = this.connection, cause = CLOSE_CAUSE.host) {
     if (connection === undefined || connection.closed) return
     connection.closed = true
     if (this.connection === connection) this.connection = undefined
@@ -337,13 +346,14 @@ class BridgeHost {
     // never became ready closes the same way: the binding ends the attachment on either edge, so
     // a handshake timeout or a frame that failed validation must report it too (contract §1.3,
     // conn-OQ-48).
-    this.emitConnection(connection, false)
+    this.emitConnection(connection, false, cause)
   }
 
   /** Tell observers once per edge; a listener cannot break the channel. */
-  emitConnection(connection, ready) {
+  emitConnection(connection, ready, cause) {
+    const edge = ready ? { ready, connectionId: connection.connectionId } : { ready, connectionId: connection.connectionId, cause }
     for (const listener of this.connectionListeners) {
-      try { listener({ ready, connectionId: connection.connectionId }) } catch { /* its own failure */ }
+      try { listener({ ...edge }) } catch { /* its own failure */ }
     }
   }
 

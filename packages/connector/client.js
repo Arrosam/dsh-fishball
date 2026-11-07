@@ -77,7 +77,7 @@ window.__ModuleLoader__.load({
      */
     const EMBED_UI = Object.freeze({
       panelId: 'fishball', panelOrder: -10, pluginsPanelId: 'plugins', warningIconPx: 24,
-      stateTone: Object.freeze({ ready: 'info', attached: 'info', failed: 'danger' }), neutralTone: 'neutral',
+      stateTone: Object.freeze({ ready: 'info', attached: 'info', failed: 'danger', 'connection-interrupted': 'danger' }), neutralTone: 'neutral',
       // noopener, but not noreferrer: the built-in instance's proxy admits same-origin fetches.
       target: '_blank', features: 'noopener',
       iframeAllow: 'clipboard-write',
@@ -97,7 +97,8 @@ window.__ModuleLoader__.load({
      * so the open view also re-reads the route once a second (conn-OQ-25), only while it is
      * mounted and the tab is visible, one read at a time.
      * `ready` and `attached` (an instance without `status`) are the states whose page is framed;
-     * `unattached` and `attached` are the connector's display states, not contract STATUS values.
+     * `unattached`, `attached` and `connection-interrupted` are the connector's display states, not
+     * contract STATUS values.
      */
     const FRAME_UI = Object.freeze({
       instancePath: 'api/fishball/connector/instance',
@@ -106,6 +107,14 @@ window.__ModuleLoader__.load({
       pollMs: 1000,
       framedStates: Object.freeze(['ready', 'attached']),
       loading: 'loading',
+      /**
+       * No instance at all. An instance whose channel ended (a killed child) is not attached either,
+       * but keeps its own state, code and Retry (src/connector-service.js `kept`), so the view tells
+       * them apart by this state rather than by `attached`.
+       */
+      unattached: 'unattached',
+      /** The connector closed the channel itself (src/connector-service.js FRAME_STATE.interrupted). */
+      interrupted: 'connection-interrupted',
       /** The frame's Retry refusal when the answer carried no code (contract STATUS_CODES.unavailable). */
       retryFailed: 'NATIVE_UNAVAILABLE',
       /** Which of the instance's pages the view frames: its chat, or its settings from the Plugins card. */
@@ -399,6 +408,7 @@ window.__ModuleLoader__.load({
       'frameState.loading': 'checking', 'frameState.unattached': 'unattached', 'frameState.attached': 'attached',
       'frameState.disabled': 'disabled', 'frameState.waiting': 'waiting', 'frameState.starting': 'starting', 'frameState.ready': 'running',
       'frameState.stopping': 'stopping', 'frameState.stopped': 'stopped', 'frameState.failed': 'failed',
+      'frameState.connection-interrupted': 'connection interrupted', frameInterrupted: 'The connection to {name} was interrupted.',
       frameUnread: '{count} unread', frameConnectorSettings: 'Connector settings',
       frameNoInstance: 'No Fishball instance is attached', frameOpenPlugins: 'Open Plugins',
       frameNoChat: '{name} is attached and has no chat page',
@@ -508,12 +518,13 @@ window.__ModuleLoader__.load({
       'frameState.loading': '检查中', 'frameState.unattached': '未连接', 'frameState.attached': '已连接',
       'frameState.disabled': '已禁用', 'frameState.waiting': '等待中', 'frameState.starting': '启动中', 'frameState.ready': '运行中',
       'frameState.stopping': '停止中', 'frameState.stopped': '已停止', 'frameState.failed': '失败',
+      'frameState.connection-interrupted': '连接中断', frameInterrupted: '与 {name} 的连接中断。',
       frameUnread: '{count} 条未读', frameConnectorSettings: 'Connector 设置',
-      frameNoInstance: '没有已连接的 Fishball instance', frameOpenPlugins: '打开插件',
+      frameNoInstance: '没有已连接的 Fishball 实例', frameOpenPlugins: '打开插件',
       frameNoChat: '{name} 已连接，但没有聊天页面',
       frameRetrying: '正在重试…', frameRetryFailed: '重试未成功。',
-      instanceTitle: 'Fishball instance', instanceHint: '{name} 已连接。它自己的设置页面会在 Fishball 视图中打开。',
-      instanceOpenSettings: '打开 instance 设置',
+      instanceTitle: 'Fishball 实例', instanceHint: '{name} 已连接。它自己的设置页面会在 Fishball 视图中打开。',
+      instanceOpenSettings: '打开 Fishball 实例设置',
       handOver: '交给 Fishball 管理',
       handOverTitle: '把“{title}”交给 Fishball 管理',
       handOverNoteLabel: '给 Fishball 的备注（可选）',
@@ -1022,18 +1033,21 @@ window.__ModuleLoader__.load({
         }
         const body = instance === undefined
           ? emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
-          : !instance.attached
+          : state === FRAME_UI.unattached
             ? emptyState(
               h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
               h('p', { 'data-fishball-embed-empty': true }, t('frameNoInstance')),
               accentButton({ onClick: openPlugins }, t('frameOpenPlugins')))
-            : ui.chat === undefined
+            // "is attached and has no chat page" fits only a live attachment; one whose channel ended
+            // shows its state below, whatever pages it registered.
+            : instance.attached && ui.chat === undefined
               ? emptyState(h('p', { 'data-fishball-embed-no-chat': true }, t('frameNoChat', { name: instance.name })))
               : framed
                 ? h('iframe', { key: `${generation}:${src}`, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, 'data-fishball-embed-frame': true })
                 : emptyState(
                   h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
-                  h('p', { role: 'alert' }, t('embedUnavailable', { name: instance.name })),
+                  // An interrupted channel says so: the instance may still be running (B1).
+                  h('p', { role: 'alert' }, t(state === FRAME_UI.interrupted ? 'frameInterrupted' : 'embedUnavailable', { name: instance.name })),
                   h('p', null, t('embedState'), ' ', h('code', { className: CLS.code }, state)),
                   instance.code ? h('p', null, t('embedCode'), ' ', h('code', { className: CLS.code }, instance.code)) : null)
         return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
