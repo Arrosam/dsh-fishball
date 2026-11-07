@@ -4,11 +4,14 @@
  *
  * Source: the old row's config as the profile composes it (bundle layers, the profile patch file,
  * the home patch and the launch overlays), read with DSH's own patch reader. The live form cannot
- * serve: the old row's three fields were not volatile, so `settings.describe()` never listed them.
+ * serve: the old row's fields were not volatile, so `settings.describe()` never listed them.
  *
  * Rules:
  * - it runs once: after the first pass a marker is stored and later boots copy nothing, so a value
  *   the user resets afterwards is not brought back;
+ * - it copies `enabled` only. The old row's `nodeExecutable` and `executableSearchPath` are left
+ *   behind without a word: the child now starts as the main DSH does (D28), so the new row has no
+ *   such fields, and an old value is neither copied, validated nor logged;
  * - it never overwrites: a field the new row already has a user value for is left as it is;
  * - each copied value must pass the new schema; an invalid one is skipped and logged by its key,
  *   never by its value;
@@ -22,8 +25,8 @@ import { composeEntries, readProfilePatches } from '@deepseek-ai/dsh-app-boot'
 export const MIGRATION = Object.freeze({
   /** The row the values come from (the instance row's id before D22). */
   source: 'fishball-native-host',
-  /** The only fields copied: the launch fields of §0.7. */
-  fields: Object.freeze(['enabled', 'nodeExecutable', 'executableSearchPath']),
+  /** The only field copied: the one field of the new row's form (§0.7, D28). */
+  fields: Object.freeze(['enabled']),
   /** The profile patches' binary name, as DSH's own config editor reads them. */
   binName: 'dsh',
   table: 'migrations',
