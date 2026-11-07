@@ -13,7 +13,7 @@
 <!-- No title and no status tag (D27): the connector's frame shows Fishball's name and state. -->
 <header class="topbar">
   <div class="model-picker" id="model-picker"></div>
-  <!-- Header actions, empty until I6 adds Settings and Back. -->
+  <!-- Header actions: Settings in the chat, Back in the settings view (I6; ui/shell.js). -->
   <div class="header-actions" id="header-actions"></div>
 </header>
 <!-- Shown only while the event stream is lost (§11). -->
@@ -24,6 +24,8 @@
   <!-- The reminder view (T10) mounts into this aside and refreshes on the SSE reminders event. -->
   <aside class="sidebar" id="reminders" aria-label="Reminders"></aside>
 </main>
+<!-- The settings view (I6, ?view=settings); ui/settings.js builds it on first open. -->
+<main class="settings-page" id="settings" hidden></main>
 <!-- Relative URLs keep the one shell working at the child's "/" and behind "/fishball/embed/". -->
 <script type="module" src="ui/shell.js"></script>
 </body>

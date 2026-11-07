@@ -1,9 +1,12 @@
 /**
- * The main host's half of provider sync into the isolated Fishball (§10).
+ * The main host's half of provider sync into the isolated Fishball (§10, D26).
  *
- * The page never selects anything: "Refresh models" asks `sync()`, which previews and confirms on
- * the host in one step (src/slim/host/provider-sync-routes.js). The browser receives only provider
- * names, outcomes and reason codes — never a preview id, an endpoint, a key or a mask.
+ * The "Model for Fishball" block on the instance's Plugins card (client.js) has one button, Check
+ * for new models. `check()` previews once and lists only what the child lacks; the user ticks
+ * whole providers and `add({checkId, ids})` confirms exactly those
+ * (src/slim/host/provider-sync-routes.js). The browser receives provider ids, names, model ids,
+ * outcomes, reason codes and the opaque one-use check id — never an endpoint, a protocol, a key, a
+ * mask or an environment variable's name.
  */
 import { randomUUID } from 'node:crypto'
 import { ProviderSyncError } from './provider-sync.js'
@@ -13,7 +16,7 @@ import { createProviderSyncCodec, providerSyncIdentity, PROVIDER_SYNC_TARGET } f
 /** The owner route's transport rules; the slim route module reads them (provider-sync-routes.js). */
 export const SYNC_PAGE = Object.freeze({
   maxBodyBytes: 16384,
-  code: Object.freeze({ profile: 'profile-unavailable', large: 'sync-request-too-large', refused: 'provider-sync-refused' }),
+  code: Object.freeze({ profile: 'profile-unavailable', large: 'sync-request-too-large', refused: 'provider-sync-refused', payload: 'invalid-payload' }),
   headers: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
   allowedSites: Object.freeze(['same-origin', 'none']), siteHeader: 'sec-fetch-site',
   profileContext: 'profileContext',
@@ -36,11 +39,14 @@ const defaultCreateHost = async (ctx, options) => {
  *
  * `nativeFishballRuntime.providerSync`:
  * - `status()` → `{state: 'inactive'|'ready', instanceId?}`
- * - `sync()` → `{ok:true, result:{items:[{id, name, outcome, reason?}]}}` or `{ok:false, error:{code}}`.
- *   It previews, then confirms every "will add" item in one step: the user asked for "Refresh
- *   models" to bring DSH's API-key providers over with no extra step (§10). Each item is `added`,
- *   `present` (Fishball already has it), `skipped` (with a reason: conflict, OAuth login, ...) or
- *   `failed` (with a reason). Concurrent calls share one run.
+ * - `check()` → `{ok:true, result:{checkId, missing:[{id, name, models}], notOffered:[{id, name,
+ *   reason}], present}}` or `{ok:false, error:{code}}`. One preview: `missing` is the engine's
+ *   `add` group, `notOffered` its conflict and unsupported groups, `present` the count of what the
+ *   child already has. Concurrent calls share the check in flight (D26: "Concurrent presses share
+ *   the check in flight").
+ * - `add({checkId, ids})` → `{ok:true, result:{items:[{id, outcome, reason?}]}}` or
+ *   `{ok:false, error:{code}}`. Confirms exactly `ids` of that check; each is `added`, `skipped`
+ *   or `failed`. Unchosen entries are neither written nor reported.
  *
  * Wiring: src/native-runtime/wire.js carries the `provider-sync` payload channel;
  * src/native-runtime/index.js and child.js publish each end through `onProviderSyncTransport`;
@@ -63,12 +69,12 @@ export const CHILD_SYNC = Object.freeze({
     busy: 'sync-busy',
     selection: 'invalid-selection',
   }),
-  /** What the page shows per provider; the engine's finer config/key outcomes stay on the host. */
-  outcome: Object.freeze({ added: 'added', present: 'present', skipped: 'skipped', failed: 'failed' }),
+  /** What the page shows per chosen provider (§10); the engine's finer config/key outcomes stay on the host. */
+  outcome: Object.freeze({ added: 'added', skipped: 'skipped', failed: 'failed' }),
   /** The engine's per-item statuses (src/provider-sync.js confirm). */
   status: Object.freeze({ succeeded: 'succeeded', skipped: 'skipped', partial: 'partial', unknown: 'unknown' }),
   /** Reasons the bridge adds when the engine's item carries none. */
-  reason: Object.freeze({ unknown: 'result-unknown', keyNotSaved: 'key-not-saved', failed: 'sync-failed' }),
+  reason: Object.freeze({ unknown: 'result-unknown', keyNotSaved: 'key-not-saved', failed: 'sync-failed', exists: 'provider-exists' }),
   timeoutMs: PROVIDER_SYNC_TARGET.limits.requestTimeoutMs,
   transportMethods: Object.freeze(['send', 'onMessage', 'onClose']),
 })
@@ -78,31 +84,37 @@ const CHILD_CODE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
 const childCode = (value) => typeof value === 'string' && value.length <= 128 && CHILD_CODE.test(value)
 const childRefusal = (error) => ({ ok: false, error: { code: childCode(error?.code) ? error.code : CHILD_SYNC.code.failed } })
 
-/** One confirmed item's page outcome. A `skipped` item without a reason lost a race to an existing entry. */
+/**
+ * One confirmed item's page outcome. The engine reports an entry created meanwhile (it lost the
+ * create-only race) as `skipped` with no reason; the page names that `provider-exists`, the
+ * engine's own refusal code for it.
+ */
 function resultOutcome(result) {
   const S = CHILD_SYNC.status
   const R = CHILD_SYNC.reason
   if (result.status === S.succeeded) return [O.added]
-  if (result.status === S.skipped) return result.reason ? [O.skipped, result.reason] : [O.present]
-  // An unknown result may have committed. It is never retried here; the next Refresh previews
-  // afresh, and the engine then lists it as present or offers its missing key again.
+  if (result.status === S.skipped) return [O.skipped, result.reason ?? R.exists]
+  // An unknown result may have committed. It is never retried here; the next Check previews
+  // afresh, and the engine then counts it as present or offers its missing key again.
   if (result.status === S.unknown) return [O.failed, R.unknown]
   if (result.status === S.partial) return [O.failed, result.reason ?? R.keyNotSaved]
   return [O.failed, result.reason ?? R.failed]
 }
 
-/**
- * The browser's view of one sync: provider id, display name, outcome and reason code only. The
- * preview's endpoints, protocols, model lists and fixed key mask stay on this host.
- */
-function syncSummary(groups, results) {
-  const names = new Map(Object.values(groups).flat().map((item) => [item.id, item.name]))
-  const entry = (id, outcome, reason) => ({ id, name: names.get(id) ?? id, outcome, ...(reason ? { reason } : {}) })
-  return [
-    ...results.map((result) => entry(result.id, ...resultOutcome(result))),
-    ...groups.existsSkip.map((item) => entry(item.id, O.present)),
-    ...[...groups.conflictSkip, ...groups.unsupported].map((item) => entry(item.id, O.skipped, item.reason)),
-  ]
+/** The browser's view of one check (§10): names and model ids only, never an endpoint or a mask. */
+function checkSummary(plan) {
+  const { add, existsSkip, conflictSkip, unsupported } = plan.groups
+  return {
+    checkId: plan.previewId,
+    missing: add.map(({ id, name, models }) => ({ id, name, models: [...models] })),
+    notOffered: [...conflictSkip, ...unsupported].map(({ id, name, reason }) => ({ id, name, reason })),
+    present: existsSkip.length,
+  }
+}
+
+const itemOf = (result) => {
+  const [outcome, reason] = resultOutcome(result)
+  return { id: result.id, outcome, ...(reason ? { reason } : {}) }
 }
 
 /** A transport failure, deliberately not a ProviderSyncError: a sent write may have committed. */
@@ -133,7 +145,7 @@ class ChildProviderSync {
   #sourceIdentityPromise
   #sourceHostPromise
   #coordinatorPromise
-  #running
+  #checking
 
   constructor({ ctx, identity, createHost = defaultCreateHost } = {}) {
     if (typeof createHost !== 'function') throw new TypeError('fishball child provider sync: createHost must be a function')
@@ -215,27 +227,38 @@ class ChildProviderSync {
   }
 
   /**
-   * Bring the main DSH's API-key providers into the child: preview, then confirm every "will add"
-   * item. The engine still re-checks both sides' identity, versions and revisions right before
-   * each write, and skips anything Fishball already has. Concurrent calls (a double click, two
-   * tabs) share the run in flight instead of being refused.
+   * Fetch once (§10 step 1): one preview against the child. The engine computes what the child
+   * lacks at this moment; nothing about a past check is kept, so each press lists only what is
+   * missing now. Concurrent calls (a double click, two tabs) share the check in flight.
+   */
+  check() {
+    this.#checking ??= this.#runCheck().finally(() => { this.#checking = undefined })
+    return this.#checking
+  }
+
+  async #runCheck() {
+    try { return { ok: true, result: checkSummary(await (await this.#coordinator()).preview()) } }
+    catch (error) { return childRefusal(error) }
+  }
+
+  /**
+   * Write only the chosen ones (§10 step 3). The coordinator consumes the check id, refuses an id
+   * outside its `add` group (`invalid-selection`), an expired or unknown id (`preview-expired`), a
+   * child that restarted since the check (`repreview-required`) and a second Add while one runs
+   * (`sync-busy`), all before any key is read. A lost answer to the import makes each sent entry
+   * `failed` `result-unknown`, never retried.
+   *
+   * An empty selection is refused here, before the coordinator, so it does not consume the check:
+   * the card disables Add while nothing is ticked, and an empty write has nothing to confirm.
    *
    * No caller signal is taken: abandoning a page mid-write would only turn committed writes into
    * "unknown". Each wire request is bounded by CHILD_SYNC.timeoutMs, and close() aborts the rest.
    */
-  sync() {
-    this.#running ??= this.#runSync().finally(() => { this.#running = undefined })
-    return this.#running
-  }
-
-  async #runSync() {
+  async add({ checkId, ids } = {}) {
+    if (!Array.isArray(ids) || ids.length === 0) return childRefusal({ code: CHILD_SYNC.code.selection })
     try {
-      const coordinator = await this.#coordinator()
-      const plan = await coordinator.preview()
-      const ids = plan.groups.add.map((item) => item.id)
-      const results = ids.length === 0 ? []
-        : (await coordinator.confirm({ previewId: plan.previewId, ids, confirmed: true })).results
-      return { ok: true, result: { items: syncSummary(plan.groups, results) } }
+      const { results } = await (await this.#coordinator()).confirm({ previewId: checkId, ids, confirmed: true })
+      return { ok: true, result: { items: results.map(itemOf) } }
     } catch (error) { return childRefusal(error) }
   }
 
