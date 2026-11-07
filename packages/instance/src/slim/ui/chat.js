@@ -23,6 +23,7 @@
  */
 import { createApprovalsView } from './approvals.js'
 import { attachmentPreview, createComposer } from './composer.js'
+import { DEFAULT_I18N } from './i18n.js'
 import { createRecordRow } from './records.js'
 
 /** Same resources as the child's CHAT; the broker strips its prefix before forwarding. */
@@ -61,23 +62,16 @@ const CLASS = Object.freeze({
   effortSelect: 'effort-select',
 })
 
-const COPY = Object.freeze({
-  you: 'You',
-  fishball: 'Fishball',
-  tool: 'Tool',
-  working: 'Fishball is working…',
-  idle: 'Ready',
-  running: 'Running',
-  done: 'Done',
-  failed: 'Failed',
-  model: 'Model',
-  effort: 'Reasoning effort',
-  defaultEffort: 'Default effort',
-  chooseModel: 'Choose a model',
-  noModels: 'No models',
-  loadFailed: 'The conversation could not be loaded.',
-  sendFailed: 'The message could not be sent.',
-  modelFailed: 'The model choice could not be applied.',
+/**
+ * The child names a user-role message's source kind (keep in step with src/slim/child/chat.js
+ * AUTHOR_KIND); the page words it in its own language (I9). An unknown kind reads as context,
+ * like the child's own fallback.
+ */
+const AUTHOR_KIND = Object.freeze({ user: 'user', schedule: 'schedule', other: 'other' })
+const AUTHOR_KEY = Object.freeze({
+  [AUTHOR_KIND.user]: 'chat.author.user',
+  [AUTHOR_KIND.schedule]: 'chat.author.schedule',
+  [AUTHOR_KIND.other]: 'chat.author.other',
 })
 
 /** Client-side transcript cap, matching the child's own view bound; the oldest row goes first. */
@@ -111,8 +105,17 @@ function selectionOf(value) {
   }
 }
 
-/** A request that failed with the child's typed JSON answer; the message is the child's copy. */
-class RequestError extends Error {}
+/**
+ * A request that failed with the child's typed JSON answer. It keeps only the code: the page
+ * shows its own words in its own language with that code (I9), never the child's English message.
+ */
+class RequestError extends Error {
+  constructor(code) {
+    super(code)
+    this.name = 'RequestError'
+    this.code = code
+  }
+}
 
 async function request(path, options = {}) {
   const headers = { accept: API.media }
@@ -120,17 +123,23 @@ async function request(path, options = {}) {
   const response = await fetch(path, { method: options.method ?? 'GET', headers, body: options.body, cache: 'no-store' })
   let answer
   try { answer = await response.json() } catch { answer = undefined }
-  if (!response.ok) throw new RequestError(typeof answer?.message === 'string' && answer.message !== '' ? answer.message : COPY.sendFailed)
+  if (!response.ok) throw new RequestError(typeof answer?.code === 'string' ? answer.code : undefined)
   return answer
 }
 
-/** One formatted time; an absent timestamp renders nothing instead of an invented clock. */
-function timeNode(at) {
+/** The code of a failed request, if the child named one. */
+const codeOf = (error) => (error instanceof RequestError ? error.code : undefined)
+
+/** Time of day, as the timeline shows it. */
+const TIME_OF_DAY = Object.freeze({ hour: '2-digit', minute: '2-digit' })
+
+/** One formatted time in the page's language; an absent timestamp renders nothing instead of an invented clock. */
+function timeNode(at, locale) {
   const time = document.createElement('time')
   time.className = CLASS.time
   if (typeof at !== 'number' || !Number.isFinite(at)) return time
   time.dateTime = new Date(at).toISOString()
-  time.textContent = new Date(at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  time.textContent = new Date(at).toLocaleTimeString(locale, TIME_OF_DAY)
   return time
 }
 
@@ -179,11 +188,13 @@ function createLoader(document) {
  * @param {object} options
  * @param {Element} options.container - element the timeline and composer are appended to.
  * @param {Element} options.modelSlot - element the model picker is appended to.
+ * @param {object} [options.i18n] - the page's words (ui/i18n.js); English by default.
  * @returns {{ refresh: () => Promise<void>, refreshApprovals: () => Promise<void>,
  *   apply: (payload: object) => void, dispose: () => void }}
  */
 export function createChatView(options = {}) {
-  const { container, modelSlot } = options ?? {}
+  const { container, modelSlot, i18n = DEFAULT_I18N } = options ?? {}
+  const { t } = i18n
   if (!container || typeof container.append !== 'function' || typeof container.ownerDocument?.createElement !== 'function') {
     throw new TypeError('fishball chat: a container element is required')
   }
@@ -200,7 +211,7 @@ export function createChatView(options = {}) {
   state.className = CLASS.state
   state.setAttribute(ARIA.role, ARIA.status)
   state.setAttribute(ARIA.live, ARIA.polite)
-  state.textContent = COPY.idle
+  state.textContent = t('chat.idle')
 
   const notice = document.createElement('p')
   notice.className = CLASS.notice
@@ -209,30 +220,30 @@ export function createChatView(options = {}) {
   // Under the timeline, so the fish stays at the bottom of the conversation while a turn runs.
   const loader = createLoader(document)
 
-  const composer = createComposer({ document, onSubmit: (value, attachments) => sendPrompt(value, attachments) })
+  const composer = createComposer({ document, i18n, onSubmit: (value, attachments) => sendPrompt(value, attachments) })
   // T09's cards, decision labels and the user's answers live in this same timeline, ordered by
   // their own times; the view removes and re-inserts only its own rows.
-  const approvals = createApprovalsView({ document, timeline, insertRow: insertOrdered, request })
+  const approvals = createApprovalsView({ document, timeline, insertRow: insertOrdered, request, i18n })
   container.append(timeline, loader, state, composer.element, notice)
 
   const modelLabel = document.createElement('label')
   modelLabel.className = CLASS.picker
   const modelCaption = document.createElement('span')
   modelCaption.className = CLASS.pickerLabel
-  modelCaption.textContent = COPY.model
+  modelCaption.textContent = t('chat.model')
   const modelSelect = document.createElement('select')
   modelSelect.className = CLASS.modelSelect
-  modelSelect.setAttribute(ARIA.label, COPY.model)
+  modelSelect.setAttribute(ARIA.label, t('chat.model'))
   modelLabel.append(modelCaption, modelSelect)
 
   const effortLabel = document.createElement('label')
   effortLabel.className = CLASS.picker
   const effortCaption = document.createElement('span')
   effortCaption.className = CLASS.pickerLabel
-  effortCaption.textContent = COPY.effort
+  effortCaption.textContent = t('chat.effort')
   const effortSelect = document.createElement('select')
   effortSelect.className = CLASS.effortSelect
-  effortSelect.setAttribute(ARIA.label, COPY.effort)
+  effortSelect.setAttribute(ARIA.label, t('chat.effort'))
   effortLabel.append(effortCaption, effortSelect)
   effortLabel.hidden = true
   modelSlot.append(modelLabel, effortLabel)
@@ -259,7 +270,7 @@ export function createChatView(options = {}) {
 
   function setRunning(running) {
     const wasNearBottom = nearBottom()
-    state.textContent = running ? COPY.working : COPY.idle
+    state.textContent = running ? t('chat.working') : t('chat.idle')
     state.dataset.state = running ? 'running' : 'idle'
     // One owner for the loading mark: the same running fact the state line shows. Its height
     // change must not push the last line out of view when the reader was already at the end.
@@ -297,7 +308,7 @@ export function createChatView(options = {}) {
           name: textOf(attachment.name),
           bytes: attachment.bytes,
         },
-        { document },
+        { document, i18n },
       ))
     }
   }
@@ -312,18 +323,18 @@ export function createChatView(options = {}) {
     const body = document.createElement('p')
     body.className = CLASS.text
     if (entry.kind === KIND.user) {
-      author.textContent = textOf(entry.author) || COPY.you
+      author.textContent = t(AUTHOR_KEY[Object.hasOwn(AUTHOR_KEY, entry.authorKind) ? entry.authorKind : AUTHOR_KIND.other])
       // An image- or file-only message has no text bubble (an empty one would be a blank row).
       if (textOf(entry.text) !== '') { body.textContent = textOf(entry.text); row.append(author, body) } else row.append(author)
       appendAttachments(row, entry)
-      row.append(timeNode(entry.at))
+      row.append(timeNode(entry.at, i18n.locale))
       return row
     }
     if (entry.kind === KIND.assistant) {
-      author.textContent = COPY.fishball
+      author.textContent = t('chat.fishball')
       if (textOf(entry.text) !== '') { body.textContent = textOf(entry.text); row.append(author, body) } else row.append(author)
       appendAttachments(row, entry)
-      row.append(timeNode(entry.at))
+      row.append(timeNode(entry.at, i18n.locale))
       return row
     }
     if (entry.kind === KIND.notice) {
@@ -332,7 +343,7 @@ export function createChatView(options = {}) {
       return row
     }
     if (entry.kind === KIND.record) {
-      if (entry.record !== null && typeof entry.record === 'object') row.append(createRecordRow(document, entry.record))
+      if (entry.record !== null && typeof entry.record === 'object') row.append(createRecordRow(document, entry.record, i18n))
       return row
     }
     // Tool: a collapsed row that still names the tool and its outcome, expanding to arguments
@@ -342,10 +353,10 @@ export function createChatView(options = {}) {
     const summary = document.createElement('summary')
     const name = document.createElement('span')
     name.className = CLASS.toolName
-    name.textContent = textOf(entry.name) || COPY.tool
+    name.textContent = textOf(entry.name) || t('chat.tool')
     const toolState = document.createElement('span')
     toolState.className = CLASS.toolState
-    toolState.textContent = entry.state === 'running' ? COPY.running : entry.isError ? COPY.failed : COPY.done
+    toolState.textContent = entry.state === 'running' ? t('chat.running') : entry.isError ? t('chat.failed') : t('chat.done')
     summary.append(name, toolState)
     details.append(summary)
     if (typeof entry.arguments === 'string' && entry.arguments !== '') {
@@ -423,7 +434,7 @@ export function createChatView(options = {}) {
       pendingRow.dataset.pending = 'true'
       const author = document.createElement('span')
       author.className = CLASS.author
-      author.textContent = COPY.fishball
+      author.textContent = t('chat.fishball')
       const body = document.createElement('p')
       body.className = CLASS.text
       pendingRow.append(author, body)
@@ -447,7 +458,7 @@ export function createChatView(options = {}) {
     modelSelect.replaceChildren()
     if (models.length === 0) {
       const option = document.createElement('option')
-      option.textContent = COPY.noModels
+      option.textContent = t('chat.noModels')
       option.value = '-1'
       modelSelect.append(option)
       modelSelect.disabled = true
@@ -455,7 +466,7 @@ export function createChatView(options = {}) {
     }
     modelSelect.disabled = false
     const placeholder = document.createElement('option')
-    placeholder.textContent = COPY.chooseModel
+    placeholder.textContent = t('chat.chooseModel')
     placeholder.value = '-1'
     modelSelect.append(placeholder)
     const groups = new Map()
@@ -498,7 +509,7 @@ export function createChatView(options = {}) {
     if (efforts.length === 0) return
     const fallback = document.createElement('option')
     fallback.value = ''
-    fallback.textContent = COPY.defaultEffort
+    fallback.textContent = t('chat.defaultEffort')
     effortSelect.append(fallback)
     for (const effort of efforts) {
       const option = document.createElement('option')
@@ -542,10 +553,10 @@ export function createChatView(options = {}) {
     clearNotice()
     try {
       const answer = await request(API.model, { method: 'POST', body: JSON.stringify(selection) })
-      if (selectionOf(answer?.selection) === undefined) throw new RequestError(COPY.modelFailed)
+      if (selectionOf(answer?.selection) === undefined) throw new RequestError(undefined)
       applySelection(answer.selection)
     } catch (error) {
-      setNotice(error instanceof RequestError ? error.message : COPY.modelFailed)
+      setNotice(i18n.failure('chat.modelFailed', codeOf(error)))
       syncModelSelect()
       syncEffortSelect()
     }
@@ -557,9 +568,9 @@ export function createChatView(options = {}) {
     const [chatPage, modelPage] = await Promise.allSettled([request(API.chat), request(API.model)])
     if (disposed || currentGeneration !== generation) return
     if (chatPage.status === 'fulfilled') {
-      try { renderPage(chatPage.value) } catch { setNotice(COPY.loadFailed) }
+      try { renderPage(chatPage.value) } catch { setNotice(t('chat.loadFailed')) }
     } else {
-      setNotice(COPY.loadFailed)
+      setNotice(i18n.failure('chat.loadFailed', codeOf(chatPage.reason)))
     }
     if (modelPage.status === 'fulfilled') renderModel(modelPage.value)
     // After the page swap, so label rows are inserted into the rebuilt timeline; an identical
@@ -598,13 +609,13 @@ export function createChatView(options = {}) {
         // The optimistic row shares the durable message id, so the committed user/message
         // replaces it instead of appearing twice.
         upsert({
-          id: 'm:' + answer.messageId, kind: KIND.user, at: Date.now(), author: COPY.you, text: value,
+          id: 'm:' + answer.messageId, kind: KIND.user, at: Date.now(), authorKind: AUTHOR_KIND.user, text: value,
           ...(entriesForMessage.length === 0 ? {} : { attachments: entriesForMessage }),
         })
       }
       return true
     } catch (error) {
-      setNotice(error instanceof RequestError ? error.message : COPY.sendFailed)
+      setNotice(i18n.failure('chat.sendFailed', codeOf(error)))
       return false
     }
   }

@@ -24,6 +24,8 @@
  * 404 behind the broker); the child still enforces the same rules authoritatively, so a stale
  * copy can only refuse early, never admit too much.
  */
+import { DEFAULT_I18N } from './i18n.js'
+
 const API = Object.freeze({
   upload: 'api/upload',
   /** The child's read-only image route; relative URLs work at "/" and under /fishball/embed/ (§3.1). */
@@ -72,21 +74,6 @@ const CLASS = Object.freeze({
 })
 
 const ARIA = Object.freeze({ label: 'aria-label' })
-const COPY = Object.freeze({
-  readOnly: 'Read Only',
-  readOnlyHint: 'Fishball\'s session is read-only. The composer has no permission control.',
-  prompt: 'Message Fishball',
-  send: 'Send',
-  attach: 'Attach',
-  attachHint: 'Add images or files',
-  image: 'Image',
-  file: 'File',
-  remove: 'Remove',
-  removeName: (name) => 'Remove attachment: ' + name,
-  noPreview: 'Preview unavailable.',
-  from: (session) => 'from ' + session,
-  bytes: (bytes) => String(bytes) + ' bytes',
-})
 const KEY = Object.freeze({ enter: 'Enter' })
 const EVENT = Object.freeze({ dragover: 'dragover', drop: 'drop', paste: 'paste', change: 'change' })
 /** One client-side refusal, in the child API's own code vocabulary. */
@@ -173,15 +160,17 @@ export function previewDataUrl(file) {
  * reads through the child's image route, so the same chip works on both sides of an upload.
  *
  * @param {{kind: string, name?: string, previewUrl?: string, attachmentId?: string}} attachment
- * @param {{document?: Document, onRemove?: () => void}} [options]
+ * @param {{document?: Document, onRemove?: () => void, i18n?: object}} [options] - `i18n` is the
+ *   page's words (ui/i18n.js); English by default.
  * @returns {HTMLElement}
  */
 export function attachmentChip(attachment, options = {}) {
   const document = options.document ?? globalThis.document
+  const { t } = options.i18n ?? DEFAULT_I18N
   const root = document.createElement('span')
   root.className = CLASS.chip
   root.dataset.kind = attachment.kind
-  const fallback = attachment.kind === KIND.image ? COPY.image : COPY.file
+  const fallback = attachment.kind === KIND.image ? t('composer.image') : t('composer.file')
   const name = typeof attachment.name === 'string' && attachment.name.length > 0 ? attachment.name : fallback
   const url = attachment.kind === KIND.image ? thumbnailUrl(attachment) : undefined
   if (url !== undefined) {
@@ -197,18 +186,18 @@ export function attachmentChip(attachment, options = {}) {
   const remove = document.createElement('button')
   remove.type = 'button'
   remove.className = CLASS.remove
-  remove.textContent = COPY.remove
-  remove.setAttribute(ARIA.label, COPY.removeName(name))
+  remove.textContent = t('composer.remove')
+  remove.setAttribute(ARIA.label, t('composer.removeName', { name }))
   if (typeof options.onRemove === 'function') remove.addEventListener('click', options.onRemove)
   root.append(label, remove)
   return root
 }
 
 /** The one fallback for an image the page cannot display; the same node serves both paths. */
-function missingPreview(document) {
+function missingPreview(document, t) {
   const missing = document.createElement('span')
   missing.className = CLASS.missing
-  missing.textContent = COPY.noPreview
+  missing.textContent = t('composer.noPreview')
   return missing
 }
 
@@ -221,11 +210,13 @@ function missingPreview(document) {
  * the attachment id; the route is what keeps the preview after a page reload.
  *
  * @param {{kind: string, name?: string, bytes?: number, attachmentId?: string}} attachment
- * @param {{document?: Document, url?: string, caption?: string}} [options]
+ * @param {{document?: Document, url?: string, caption?: string, i18n?: object}} [options] - `i18n`
+ *   is the page's words (ui/i18n.js); English by default.
  * @returns {HTMLElement}
  */
 export function attachmentPreview(attachment, options = {}) {
   const document = options.document ?? globalThis.document
+  const { t, locale } = options.i18n ?? DEFAULT_I18N
   const root = document.createElement('figure')
   root.className = CLASS.preview
   root.dataset.kind = attachment.kind
@@ -235,26 +226,26 @@ export function attachmentPreview(attachment, options = {}) {
       const image = document.createElement('img')
       image.className = CLASS.thumb
       image.src = url
-      image.alt = typeof attachment.name === 'string' ? attachment.name : COPY.image
+      image.alt = typeof attachment.name === 'string' ? attachment.name : t('composer.image')
       image.loading = 'lazy'
       // A 404 (an id this child did not admit) or a transient failure keeps the old readable
       // fallback instead of leaving a broken-image glyph in the timeline.
       image.addEventListener('error', () => {
         image.remove()
-        root.prepend(missingPreview(document))
+        root.prepend(missingPreview(document, t))
       })
       root.append(image)
     } else {
-      root.append(missingPreview(document))
+      root.append(missingPreview(document, t))
     }
   } else {
     const file = document.createElement('div')
     file.className = CLASS.file
-    file.textContent = typeof attachment.name === 'string' && attachment.name.length > 0 ? attachment.name : COPY.file
+    file.textContent = typeof attachment.name === 'string' && attachment.name.length > 0 ? attachment.name : t('composer.file')
     if (Number.isSafeInteger(attachment.bytes) && attachment.bytes > 0) {
       const size = document.createElement('span')
       size.className = CLASS.size
-      size.textContent = COPY.bytes(attachment.bytes)
+      size.textContent = t('composer.bytes', { bytes: attachment.bytes.toLocaleString(locale) })
       file.append(size)
     }
     root.append(file)
@@ -272,7 +263,7 @@ export function attachmentPreview(attachment, options = {}) {
 }
 
 /** The caption helper for a session image; the chat view passes the source session's title. */
-export function fromCaption(source) { return COPY.from(String(source)) }
+export function fromCaption(source, i18n = DEFAULT_I18N) { return i18n.t('composer.from', { session: String(source) }) }
 
 /**
  * Upload one browser File to the child's store. Never throws: a refusal is a typed {ok:false}.
@@ -352,6 +343,7 @@ function base64Of(buffer) {
  *
  * @param {object} options
  * @param {Document} options.document - the page document.
+ * @param {object} [options.i18n] - the page's words (ui/i18n.js); English by default.
  * @param {(text: string, attachments: Array<{kind: string, attachment: object}>)
  *   => Promise<boolean>} options.onSubmit - sends one prompt with its already-uploaded attachment
  *   descriptors; resolves true when it was accepted (the composer then clears), false when the
@@ -359,7 +351,8 @@ function base64Of(buffer) {
  * @returns {{ element: Element, setMode: (mode: string) => void, focus: () => void }}
  */
 export function createComposer(options = {}) {
-  const { document, onSubmit } = options ?? {}
+  const { document, onSubmit, i18n = DEFAULT_I18N } = options ?? {}
+  const { t } = i18n
   if (!document || typeof document.createElement !== 'function') {
     throw new TypeError('fishball chat: a document is required')
   }
@@ -372,16 +365,16 @@ export function createComposer(options = {}) {
   form.noValidate = true
   const mode = document.createElement('span')
   mode.className = CLASS.mode
-  mode.textContent = COPY.readOnly
-  mode.title = COPY.readOnlyHint
+  mode.textContent = t('composer.readOnly')
+  mode.title = t('composer.readOnlyHint')
   const chips = document.createElement('div')
   chips.className = CLASS.chips
   const attach = document.createElement('button')
   attach.type = 'button'
   attach.className = CLASS.attach
-  attach.textContent = COPY.attach
-  attach.title = COPY.attachHint
-  attach.setAttribute(ARIA.label, COPY.attachHint)
+  attach.textContent = t('composer.attach')
+  attach.title = t('composer.attachHint')
+  attach.setAttribute(ARIA.label, t('composer.attachHint'))
   const input = document.createElement('input')
   input.type = 'file'
   input.className = CLASS.input
@@ -390,12 +383,12 @@ export function createComposer(options = {}) {
   const prompt = document.createElement('textarea')
   prompt.className = CLASS.prompt
   prompt.rows = 2
-  prompt.placeholder = COPY.prompt
-  prompt.setAttribute(ARIA.label, COPY.prompt)
+  prompt.placeholder = t('composer.prompt')
+  prompt.setAttribute(ARIA.label, t('composer.prompt'))
   const send = document.createElement('button')
   send.className = CLASS.send
   send.type = 'submit'
-  send.textContent = COPY.send
+  send.textContent = t('composer.send')
   const notice = document.createElement('p')
   notice.className = CLASS.notice
   notice.hidden = true
@@ -417,7 +410,7 @@ export function createComposer(options = {}) {
     chips.replaceChildren()
     chips.hidden = pending.length === 0
     for (const item of pending) {
-      chips.append(attachmentChip(item, { document, onRemove: () => { pending = pending.filter((entry) => entry.id !== item.id); renderChips() } }))
+      chips.append(attachmentChip(item, { document, i18n, onRemove: () => { pending = pending.filter((entry) => entry.id !== item.id); renderChips() } }))
     }
   }
 
@@ -428,7 +421,7 @@ export function createComposer(options = {}) {
   function addFiles(files) {
     setNotice('')
     for (const file of files) {
-      if (pending.length >= MAX_ATTACHMENTS) { setNotice(REFUSAL.tooMany); break }
+      if (pending.length >= MAX_ATTACHMENTS) { setNotice(i18n.failure('composer.attachFailed', REFUSAL.tooMany)); break }
       const item = { ...pendingAttachment(file), id: nextId++ }
       pending.push(item)
       // The preview is cosmetic and may be unavailable; the upload never waits for it.
@@ -453,7 +446,8 @@ export function createComposer(options = {}) {
   async function uploadPending() {
     const results = await uploadFiles(pending.map((item) => item.file), { existing: 0 })
     const refused = results.find((result) => !result.ok)
-    if (refused !== undefined) { setNotice(refused.code); return undefined }
+    // The page's own words with the refusal code, never the child's English message (I9).
+    if (refused !== undefined) { setNotice(i18n.failure('composer.attachFailed', refused.code)); return undefined }
     const attachments = pending.map((item, index) => {
       const result = results[index]
       if (result.kind === KIND.image) {

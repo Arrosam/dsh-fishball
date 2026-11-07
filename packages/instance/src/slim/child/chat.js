@@ -148,8 +148,11 @@ const MESSAGE = Object.freeze({
   failed: 'The chat operation failed.',
 })
 
-/** The copy the page shows for a user-role message, from DSH's own source kind. */
-const AUTHOR = Object.freeze({ user: 'You', schedule: 'Reminder', other: 'Context' })
+/**
+ * Who wrote a user-role message, from DSH's own source kind. The page words it in its own
+ * language (src/slim/ui/i18n.js `chat.author.*`, I9), so the child sends the kind, not text.
+ */
+const AUTHOR_KIND = Object.freeze({ user: 'user', schedule: 'schedule', other: 'other' })
 
 /**
  * Sources for Fishball's queued turns. An inbox item keeps its origin: a session's message is an
@@ -226,11 +229,11 @@ function attachmentsOf(content) {
   return attachments
 }
 
-function authorOf(source) {
+function authorKindOf(source) {
   const kind = source?.kind
-  if (kind === 'user') return AUTHOR.user
-  if (kind === 'schedule') return AUTHOR.schedule
-  return AUTHOR.other
+  if (kind === 'user') return AUTHOR_KIND.user
+  if (kind === 'schedule') return AUTHOR_KIND.schedule
+  return AUTHOR_KIND.other
 }
 
 /**
@@ -263,7 +266,7 @@ function entryOfEvent(event, toolNames) {
         id: id === '' ? 'u:' + event.seq : 'm:' + id,
         kind: ENTRY_KIND.user,
         at: event.time,
-        author: authorOf(data.source),
+        authorKind: authorKindOf(data.source),
         text: clamp(textOfBlocks(data.content), CHAT_LIMITS.entryChars),
         ...(attachments.length === 0 ? {} : { attachments }),
       }
