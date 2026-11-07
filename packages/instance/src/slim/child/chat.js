@@ -35,7 +35,8 @@
  * The attachments are the descriptors /api/upload returned ({kind, attachment}); the image
  * service verifies each against the child's own store before the message is built (§6.6).
  * Entries are the page's timeline records (ENTRY_KIND); a partial entry is a merge by id, so
- * a tool/result completes the row its tool/call started.
+ * a tool/result completes the row its tool/call started. A card record entry (I7) carries the
+ * record's v1 data unchanged as `record`, for src/slim/ui/records.js to draw.
  */
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -70,6 +71,7 @@ export const ENTRY_KIND = Object.freeze({
   assistant: 'assistant',
   tool: 'tool',
   notice: 'notice',
+  record: 'record',
 })
 
 /** The one sandbox and approval policy Fishball's session is hard-wired to (8.4, D8). */
@@ -311,6 +313,14 @@ function entryOfEvent(event, toolNames) {
       if (value === '') return undefined
       return { id: 'n:' + event.seq, kind: ENTRY_KIND.notice, at: event.time, text: clamp(value, CHAT_LIMITS.entryChars) }
     }
+    case CARD_RECORD.type: {
+      // The connector's row matches the same way (client.records.js). The id is the record's own,
+      // not the event's seq: the bridge remembers dedupe keys for one child process only, so a
+      // record whose ack was lost is re-delivered after a child restart and appended a second
+      // time; the merge by id keeps one row, at the first place.
+      if (data.v !== CARD_RECORD.version || typeof data.id !== 'string' || data.id === '') return undefined
+      return { id: 'r:' + data.id, kind: ENTRY_KIND.record, at: event.time, record: data }
+    }
     case 'turn/end': {
       const reason = data.reason
       if (reason?.kind !== 'error') return undefined
@@ -333,7 +343,9 @@ function entriesOfEvents(events) {
     const entry = entryOfEvent(event, toolNames)
     if (entry === undefined) continue
     const prior = merged.get(entry.id)
-    merged.set(entry.id, prior === undefined ? entry : { ...prior, ...entry })
+    // A row keeps the time it first appeared at, as the page's upsert keeps a row's place, so a
+    // card record appended twice reads at its first place after a reload as well as live.
+    merged.set(entry.id, prior === undefined ? entry : { ...prior, ...entry, at: prior.at ?? entry.at })
   }
   return [...merged.values()].slice(-CHAT_LIMITS.entries)
 }
