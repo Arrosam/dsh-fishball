@@ -40,6 +40,7 @@ const ROUTE = Object.freeze({
   state: '/api/fishball/state',
   native: '/api/fishball/native/status',
   sync: '/api/fishball/native/provider-sync/sync',
+  // C2 (474b876): the sidebar-entry switch is retired with the brand setting (D22); its route answers 404.
   sidebar: '/api/fishball/sidebar-entry',
   embedDoc: '/fishball/embed/',
   upload: '/fishball/embed/api/upload',
@@ -50,6 +51,15 @@ const ROUTE = Object.freeze({
 })
 const PACKAGE = Object.freeze({ connector: 'fishball-connector', instance: 'fishball-instance' })
 const installed = (name) => path.join(home, 'profiles', CFG.profile, 'node_modules', name)
+/**
+ * Where a session's question is answered, as the model reads it. Since a6e0841 (N9-a port) the words sit
+ * once in the shipped contract (`ANSWER_PLACE`, packages/connector/contract/pile-note.js) and every copy
+ * (connector questions.js, the child's approvals.js, the persona) reads them, so the cases import the
+ * installed contract instead of matching a `const IN_SESSION = '…'` literal in each source file.
+ */
+const answerPlace = async () => (await import(path.join(installed(PACKAGE.connector), 'contract', 'index.js'))).ANSWER_PLACE
+/** A shipped source file reads its answer place from the contract (no private copy of the words). */
+const readsContractPlace = (src) => /^const IN_SESSION = ANSWER_PLACE\.sessionQuestion$/m.test(src)
 const skip = !ENV.connectorTgz || !ENV.instanceTgz || !ENV.dsh ? 'set FBTEST_CONNECTOR_TGZ, FBTEST_INSTANCE_TGZ and FBTEST_DSH_BIN to run' : false
 
 let home, proc, cookie, origin, composed
@@ -220,7 +230,8 @@ test('INST-12 notify_when_finished rides only start/message, and question wordin
   // Source text of the child's model-facing strings (single-quoted JS, so the apostrophe is escaped).
   const childTexts = fs.readFileSync(path.join(instance, 'src', 'slim', 'child', 'approvals.js'), 'utf8')
   assert.ok(!childTexts.includes("send it to the user\\'s pile"), 'child to_user text still names the pile')
-  assert.ok(childTexts.includes("on that session\\'s own question card"), 'child to_user text does not name the session card')
+  assert.ok(readsContractPlace(childTexts), 'child to_user text does not read the contract answer place')
+  assert.ok((await answerPlace()).sessionQuestion.includes("on that session's own question card"), 'the answer place does not name the session card')
 })
 
 test('INST-13 a question left to the user is answered only on its own session card, in every shipped copy (N7)', { skip }, async () => {
@@ -229,12 +240,13 @@ test('INST-13 a question left to the user is answered only on its own session ca
   const read = (root, ...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8')
   // The words must say where the answer is NOT (this chat, the pile), because Fishball told the
   // user to answer "in this chat (and in your pile)" (7713 N7). Single-quoted JS: \' in source.
-  const NOT_HERE = "not in this chat or the user\\'s pile"
+  const NOT_HERE = "not in this chat or the user's pile"
   const main = read(connector, 'src', 'questions.js')
   const child = read(instance, 'src', 'slim', 'child', 'approvals.js')
-  const inSession = (src) => src.match(/^const IN_SESSION = '(.*)'$/m)?.[1]
-  assert.ok(inSession(main)?.includes(NOT_HERE), 'main IN_SESSION does not exclude chat and pile')
-  assert.equal(inSession(child), inSession(main), 'the two IN_SESSION copies differ')
+  assert.ok((await answerPlace()).sessionQuestion.includes(NOT_HERE), 'the answer place does not exclude chat and pile')
+  // One text, not two copies: both shipped files read the contract's words.
+  assert.ok(readsContractPlace(main), 'main IN_SESSION is not the contract answer place')
+  assert.ok(readsContractPlace(child), 'child IN_SESSION is not the contract answer place')
   // The to_user result itself names the place, and the old "shown on that decision in your chat" is gone.
   for (const [name, src] of [['main', main], ['child', child]]) {
     assert.ok(/toUserResult: `Left to the user: \$\{IN_SESSION\}/.test(src), `${name} has no to_user result note`)
@@ -261,19 +273,17 @@ test('INST-14 the state reports whether the child can answer, and the persona na
   const { PERSONA_ROLE } = await import(path.join(instance, 'src', 'persona.js'))
   // PERSONA_ROLE is the joined persona text (the system prompt prefix).
   const persona = String(PERSONA_ROLE)
-  const main = fs.readFileSync(path.join(installed(PACKAGE.connector), 'src', 'questions.js'), 'utf8')
-  // The source copy escapes the apostrophe; the persona text is the plain string.
-  const inSession = main.match(/^const IN_SESSION = '(.*)'$/m)?.[1]?.replace(/\\'/g, "'")
-  assert.ok(inSession, 'IN_SESSION not found in the shipped questions.js')
+  const inSession = (await answerPlace()).sessionQuestion
+  assert.ok(inSession, 'ANSWER_PLACE.sessionQuestion not found in the shipped contract')
   assert.ok(persona.includes(`a question or plan review from a session you manage is never in either, ${inSession}`), 'persona answer places do not use the IN_SESSION words')
   assert.ok(persona.includes('even before it arrives, say on that session\'s own question card'), 'persona does not cover the time before the question arrives')
   assert.ok(persona.includes('a session\'s question never does'), 'ask_user paragraph still lets a session question show in this chat')
 })
 
-test('INST-07 the Sidebar entry switch saves', { skip }, async () => {
+test('INST-07 the retired Sidebar entry route answers 404 (C2, D22)', { skip }, async () => {
   for (const entry of ['brand', 'panel']) {
     const res = await req(ROUTE.sidebar, { method: 'POST', headers: { ...sameOrigin, 'content-type': 'application/json' }, body: JSON.stringify({ entry }) })
-    assert.equal(res.status, 200, `sidebar-entry ${entry}`)
+    assert.equal(res.status, 404, `sidebar-entry ${entry}`)
   }
 })
 
