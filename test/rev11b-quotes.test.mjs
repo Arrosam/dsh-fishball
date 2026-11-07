@@ -77,7 +77,8 @@ describe('Revision 11 rev11b: quotes and request size', () => {
   async function quotedRequest(text, quote) {
     const id = cid('q')
     const offer = await t.waiting(q, text, id, [], { quote })
-    const [notice] = await t.rounds(offer.approvalId)
+    // The notice is its own inbox.push, apart from the offer, so wait for it (a one-shot read once found none).
+    const [notice] = (await until(async () => { const r = await t.rounds(offer.approvalId); return r.length > 0 && r }, ASK_STUB.offerWaitMs, 100)) || []
     await t.accepted(q, offer, { decision: DECISION.reject, risk: RISK.high, reason: 'fbtest' })
     assertShape(await t.answered(q, id), ASK_CODE.rejected)
     await t.waitIdle(q)
