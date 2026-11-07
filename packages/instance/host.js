@@ -160,10 +160,13 @@ export async function apply(ctx, config) {
           // The connector's frame shows these (design §0.5 "The frame"); status() answers in the
           // contract's vocabulary only (contract §1.1, binding.js contractStatus).
           status: () => contractStatus(status()),
-          // Rejects when the restart ends `failed` (I1c R3), carrying that status's safe code, so the
-          // frame reports the Retry as failed instead of as done.
+          // The instance's restart (design §0.6), queued like the card's Retry but not limited to
+          // `failed`: the frame also offers it after the connector closed the channel itself, when
+          // this instance may still be `ready` on a wire that is gone (B1). Rejects when the restart
+          // ends `failed` (I1c R3), carrying that status's safe code, so the frame reports the Retry
+          // as failed instead of as done.
           retry: async () => {
-            const result = await retry()
+            const result = await follow(restart)
             if (result.state === PLUGIN.state.failed) throw unavailable(result.code ?? PLUGIN.code.failed)
           },
         })
