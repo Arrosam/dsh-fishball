@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { RUNTIME, RUNTIME_LIMITS, LIFETIME, NativeRuntimeError, fail, runtimeLimits, appAccess } from './constants.js'
 import { pathsFor, prepareLayout, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
-import { resolveInstallation, isolatedEnvironment, verifyNode, initializeProfile, copyChildCode, runProbe } from './installation.js'
+import { resolveInstallation, isolatedEnvironment, childExecArgv, initializeProfile, copyChildCode, runProbe } from './installation.js'
 import { connectWire } from './wire.js'
 import { launchOverlay } from './overlay.js'
 import { captureChildStderr } from './stderr-log.js'
@@ -19,6 +19,8 @@ class NativeRuntime {
     if (process.platform === 'win32') fail('UNSUPPORTED_PLATFORM', 'Attached native lifecycle currently requires POSIX.')
     this.options = options
     this.spawn = dependencies.spawn ?? nodeSpawn
+    // The process whose launch the child copies (D28): its execPath, execArgv, env and versions.
+    this.host = dependencies.host ?? process
     this.limits = runtimeLimits(options.limits)
     this.listeners = new Set()
     // The T11 admin channel is attached once per authenticated wire, beside the control transport.
@@ -227,8 +229,10 @@ class NativeRuntime {
         record = undefined
       }
     }
-    const env = isolatedEnvironment(this.paths, this.options.executableSearchPath)
-    const executable = await verifyNode(this.options.nodeExecutable, this.spawn, env, this.paths, this.limits)
+    // Launched as the main DSH is (D28, HOST_LAUNCH): its own executable and exec arguments, so
+    // there is nothing to look up or verify.
+    const env = isolatedEnvironment(this.paths, this.host)
+    const executable = this.host.execPath
     if (signal?.aborted) fail('START_INTERRUPTED')
     record = { format: RUNTIME.format, hostId: this.hostId, instanceId: randomUUID(), installAnchor: this.installation.installAnchor, installRoot: this.installation.installRoot, version: this.installation.version }
     try { await writePrivate(path.join(this.paths.root, RUNTIME.active), record, true) } catch (error) { if (error.code === 'EEXIST') fail('OWNERSHIP_BUSY'); throw error }
@@ -242,7 +246,7 @@ class NativeRuntime {
       const overlay = path.join(directory, 'launch.patch.yml')
       await writePrivate(overlay, launchOverlay(this.paths, record, childModule, this.limits, this.options.control ?? {}, profile.entries), true)
       const preload = pathToFileURL(path.join(path.dirname(childModule), 'src/native-runtime/parent-watch.js')).href
-      const args = ['--import', preload, this.installation.bin, '--profile', RUNTIME.profileName, '--patch', overlay, '--host', RUNTIME.host, '--port', '0', '--no-open']
+      const args = [...childExecArgv(this.host.execArgv), '--import', preload, this.installation.bin, '--profile', RUNTIME.profileName, '--patch', overlay, '--host', RUNTIME.host, '--port', '0', '--no-open']
       if (signal?.aborted) fail('START_INTERRUPTED')
       // stderr is piped into a bounded, redacted private log (B6) so a row that fails to mount is
       // diagnosable; stdout stays ignored as before.

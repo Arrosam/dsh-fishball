@@ -29,9 +29,9 @@ function safeStatus(value) {
   return { enabled: value?.enabled === true,
     state: STATES.has(value?.state) ? value.state : WEB.unavailable,
     code: CODES.has(value?.code) ? value.code : null,
-    // A launch-setting failure names the setting and the path it tried (host.js LAUNCH_ERROR);
-    // it carries no token or key.
-    detail: typeof value?.detail === 'string' ? value.detail : null }
+    // Always null: only the launch settings ever set it, and I2 removed them (D28). The field
+    // stays so this route keeps the shape its readers expect.
+    detail: null }
 }
 const UNREADABLE = Object.freeze({ enabled: false, state: WEB.unavailable, code: null, detail: null })
 const stateAndCode = ({ state, code }) => ({ state, code })

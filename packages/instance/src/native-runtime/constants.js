@@ -47,6 +47,32 @@ export const RUNTIME = Object.freeze({
 })
 
 /**
+ * How the child is launched (D28, design §0.5 "Child launch": "主DSH怎么启动，fishball就怎么
+ * 启动"): with the main process's own `process.execPath` and `process.execArgv`, and these runtime
+ * variables of its environment. There is no `node` lookup, no version probe and no launch setting:
+ * the executable is the one already running DSH. Under DSH-X (Electron 44 run as Node) execArgv
+ * carries `--use-system-ca`, `--max-http-header-size` and DSH-X's two `--import` hooks, and
+ * NODE_OPTIONS its worker-thread `--require` hook (DSH.app core/server.js dshArgs, dshEnv).
+ */
+export const HOST_LAUNCH = Object.freeze({
+  // Copied from the main process only when set; nothing else of its environment reaches the
+  // child (no key, token or DSH_X_* variable, D6). DSH-X's NODE_OPTIONS also names its
+  // instance-link hook, which stays inert because the child never gets DSH_X_INSTANCE_LINK.
+  runtimeEnv: Object.freeze(['ELECTRON_RUN_AS_NODE', 'NODE_OPTIONS']),
+  // An Electron main process (process.versions.electron) has an Electron binary as execPath. With
+  // this variable it runs as a windowless Node process; without it, it would open a second app
+  // window. So it is always set for an Electron host, never refused.
+  electronAsNode: Object.freeze({ name: 'ELECTRON_RUN_AS_NODE', value: '1' }),
+  // Debugger flags are dropped from execArgv: a port the main DSH already holds would stop the
+  // child from starting. Prefixes: `--inspect` also covers --inspect-brk, --inspect-wait,
+  // --inspect-port and --inspect-publish-uid. No other flag is touched.
+  debugFlagPrefixes: Object.freeze(['--inspect', '--debug-port']),
+  // The debugger flags whose value Node keeps as the next execArgv item when written without `=`
+  // (`--inspect-port 0` is two items); that value is dropped with its flag.
+  debugFlagsWithValue: Object.freeze(['--inspect-port', '--debug-port', '--inspect-publish-uid']),
+})
+
+/**
  * The app row's loopback surface (§2.3, §3.2): the origin it listens on and the bearer it minted.
  * The bearer stays opaque to the lifecycle — the app decides authentication — but it becomes an
  * Authorization header value, so a value that is not header-safe is refused before the probe.
