@@ -1,25 +1,35 @@
 /**
- * The provider-sync route for the settings page (§10).
+ * The model-sync routes of the "Model for Fishball" block (§10, D26).
  *
- * The page's "Refresh models" button calls this one route before it reloads the child's model
- * list; the route calls `service.providerSync.sync()` (src/provider-sync-service.js), which
- * previews and confirms on the host. The request carries no payload and the answer carries only
- * provider ids, names, outcomes and reason codes. Nothing here reads, logs or echoes a credential.
+ * The instance's Plugins card (client.js) posts `models/check` (no body) when the user presses
+ * Check for new models, and `models/add` `{checkId, ids}` when they press Add selected. The
+ * routes call `service.providerSync.check()` and `service.providerSync.add()`
+ * (src/provider-sync-service.js), which preview and confirm over the shared coordinator. The answer
+ * carries only provider ids, names, model ids, outcomes, reason codes and the opaque check id.
+ * Nothing here reads, logs or echoes a credential.
  *
- * The route is registered on DSH's owner-only Fetch registry through the same helper as the
+ * The routes are registered on DSH's owner-only Fetch registry through the same helper as the
  * admin routes (src/slim/host/fetch-routes.js). On top of the registry's authentication and
- * Host/Origin fence this handler applies an explicit same-origin check: an Origin that names
+ * Host/Origin fence each handler applies an explicit same-origin check: an Origin that names
  * another site, or a Sec-Fetch-Site outside the allowed pair, is refused.
  *
  * Every answer is HTTP 200 with `{ok:true,result}` or `{ok:false,error:{code}}`, because a
- * refusal is a page result. A body over the sync body bound is the one HTTP 400, with the same
- * typed shape.
+ * refusal is a page result. A body over the sync body bound, or an Add body that is not
+ * `{checkId: string, ids: string[]}`, is the one HTTP 400, with the same typed shape.
  */
 import { SYNC_PAGE } from '../../provider-sync-service.js'
 import { registerPostRoutes } from './fetch-routes.js'
 
-/** The route's exact path. Keep it in step with client.js CHILD_SYNC_UI.path. */
-export const PROVIDER_SYNC_ROUTE = Object.freeze({ path: '/api/fishball/native/provider-sync/sync' })
+/**
+ * The routes' exact paths, under the instance row's own prefix (§10, inst-OQ-19). Keep them in
+ * step with client.js MODEL_SYNC_UI.
+ */
+export const PROVIDER_SYNC_ROUTE = Object.freeze({
+  check: '/api/fishball-instance/models/check',
+  add: '/api/fishball-instance/models/add',
+})
+/** The Add body's exact keys (§10 step 3). */
+const ADD_KEYS = Object.freeze(['checkId', 'ids'])
 
 const HTTP = Object.freeze({ ok: 200, badRequest: 400, forbidden: 403 })
 const json = (status, value) => new Response(JSON.stringify(value), { status, headers: SYNC_PAGE.headers })
@@ -43,29 +53,58 @@ function sameOrigin(connection, request) {
   try { return connection.requestRejection({ headers: request.headers }) === undefined } catch { return false }
 }
 
-/** The request has no payload; an oversized body is refused before the host is asked. */
-async function oversized(request) {
-  try { return Buffer.byteLength(await request.text()) > SYNC_PAGE.maxBodyBytes } catch { return true }
-}
-
-async function handleSync(connection, service, request) {
-  if (!sameOrigin(connection, request)) return json(HTTP.forbidden, refusal(SYNC_PAGE.code.refused))
-  if (await oversized(request)) return json(HTTP.badRequest, refusal(SYNC_PAGE.code.large))
-  let outcome
-  try { outcome = await service.providerSync.sync() } catch { outcome = refusal(SYNC_PAGE.code.refused) }
-  return json(HTTP.ok, isRecord(outcome) ? outcome : refusal(SYNC_PAGE.code.refused))
+/** The request body as text, or undefined when it cannot be read or is over the bound. */
+async function bodyOf(request) {
+  let text
+  try { text = await request.text() } catch { return undefined }
+  return Buffer.byteLength(text) > SYNC_PAGE.maxBodyBytes ? undefined : text
 }
 
 /**
- * Register the sync route on DSH's owner-only Fetch registry.
+ * The Add body: exactly `{checkId, ids}`, a string and an array of strings. Whether the ids
+ * belong to the check is the coordinator's rule (`invalid-selection`), not this shape check.
+ */
+function addPayload(text) {
+  let value
+  try { value = JSON.parse(text) } catch { return undefined }
+  if (!isRecord(value) || Object.keys(value).length !== ADD_KEYS.length || !ADD_KEYS.every((key) => Object.hasOwn(value, key))) return undefined
+  if (typeof value.checkId !== 'string' || !Array.isArray(value.ids) || value.ids.some((id) => typeof id !== 'string')) return undefined
+  return { checkId: value.checkId, ids: [...value.ids] }
+}
+
+/**
+ * One route: admit, read the bounded body, let `decode` turn it into the call's argument (undefined
+ * refuses it with 400), then answer the service's typed outcome.
+ */
+function handlerFor(connection, decode, call) {
+  return async (request) => {
+    if (!sameOrigin(connection, request)) return json(HTTP.forbidden, refusal(SYNC_PAGE.code.refused))
+    const text = await bodyOf(request)
+    if (text === undefined) return json(HTTP.badRequest, refusal(SYNC_PAGE.code.large))
+    const argument = decode(text)
+    if (argument === undefined) return json(HTTP.badRequest, refusal(SYNC_PAGE.code.payload))
+    let outcome
+    try { outcome = await call(argument) } catch { outcome = refusal(SYNC_PAGE.code.refused) }
+    return json(HTTP.ok, isRecord(outcome) ? outcome : refusal(SYNC_PAGE.code.refused))
+  }
+}
+
+/** Check takes no payload; its body is only bounded, as the old sync route's was. */
+const noPayload = () => null
+
+/**
+ * Register the check and add routes on DSH's owner-only Fetch registry.
  *
  * @param {object} ctx - the native host row's context (needs `connection`).
- * @param {object} service - `nativeFishballRuntime`; `providerSync.sync` is the only method used.
+ * @param {object} service - `nativeFishballRuntime`; `providerSync.check` and `providerSync.add`
+ *   are the only methods used.
  * @returns a disposer when registered, otherwise undefined.
  */
 export function registerProviderSyncRoutes(ctx, service) {
-  if (typeof service?.providerSync?.sync !== 'function') return undefined
+  const sync = service?.providerSync
+  if (typeof sync?.check !== 'function' || typeof sync?.add !== 'function') return undefined
   return registerPostRoutes(ctx, [
-    { path: PROVIDER_SYNC_ROUTE.path, fetch: (request) => handleSync(ctx.connection, service, request) },
-  ], 'fishball: provider-sync routes')
+    { path: PROVIDER_SYNC_ROUTE.check, fetch: handlerFor(ctx.connection, noPayload, () => sync.check()) },
+    { path: PROVIDER_SYNC_ROUTE.add, fetch: handlerFor(ctx.connection, addPayload, (payload) => sync.add(payload)) },
+  ], 'fishball: model-sync routes')
 }

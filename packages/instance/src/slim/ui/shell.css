@@ -524,6 +524,88 @@ button, select, textarea, input { font: inherit; }
 .reminders-prompt { grid-column: 1 / -1; margin: 0; color: var(--dsw-alias-label-secondary); overflow-wrap: anywhere; }
 .reminders-action { grid-column: 2; justify-self: end; }
 
+/*
+ * The settings view (I6, ui/settings.js): the same page at ?view=settings. One centred column of
+ * blocks drawn as DSH's settings cards (base.css settings-card tokens), its fields as DSH's
+ * settings input, and its buttons as the page's DSH Button below.
+ */
+.layout[hidden], .model-picker[hidden], .settings-page[hidden] { display: none; }
+.settings-page { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; }
+.settings { width: 100%; max-width: var(--fb-chat-content-max-width); margin-inline: auto; display: flex; flex-direction: column; gap: 16px; }
+.settings-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 0.5px solid var(--dsw-alias-settings-card-stroke);
+  border-radius: var(--dsw-radius-md);
+  background: var(--dsw-alias-settings-card-fill);
+}
+.settings-block .settings-block { padding: 10px 12px; }
+.settings-title { margin: 0; font: var(--dsw-font-s-strong-14); color: var(--dsw-alias-label-primary); }
+.settings-subtitle { margin: 8px 0 0; font: var(--dsw-font-xs-13); font-weight: 500; color: var(--dsw-alias-label-primary); }
+.settings-hint, .settings-status { margin: 0; font: var(--dsw-font-xxs-12); color: var(--dsw-alias-label-tertiary); overflow-wrap: anywhere; }
+.settings-status[hidden], .settings-error[hidden] { display: none; }
+.settings-error { margin: 0; font: var(--dsw-font-xs-13); color: var(--dsw-alias-state-error-primary); }
+.settings-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.settings-grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.settings-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.settings-row .settings-field { flex-direction: row; align-items: center; }
+.settings-label { margin: 0; font: var(--dsw-font-xxs-12); color: var(--dsw-alias-label-secondary); }
+/* DSH's settings input (dsh-client-ui-primitives SettingsValueField), as .decision-custom above. */
+.settings-input {
+  min-width: 0;
+  padding: 6px 10px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: var(--dsw-radius-md);
+  background: var(--dsw-alias-bg-layer-3);
+  color: var(--dsw-alias-label-primary);
+}
+.settings-row .settings-input[type="text"] { flex: 1; }
+textarea.settings-input { min-height: 72px; resize: vertical; }
+.settings-input:disabled { opacity: 0.5; }
+.settings-field input[type="checkbox"] { accent-color: var(--dsw-alias-button-primary-fill); }
+.settings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.settings-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font: var(--dsw-font-xs-13); }
+.settings-code { font: var(--dsw-font-markdown-code-block); color: var(--dsw-alias-label-primary); }
+.settings-tag {
+  padding: 1px 6px;
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
+  font: var(--dsw-font-xxs-12);
+}
+.settings-readonly {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--dsw-radius-md);
+  background: var(--dsw-alias-markdown-code-block);
+  font: var(--dsw-font-markdown-code-block);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* DSH's small outline Button, and the primary variant for a block's main action; the header's
+   Settings/Back is the ghost variant, as DSH's session header actions are. */
+.settings-button, .header-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--fb-button-height-sm);
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: var(--dsw-font-xxs-12);
+  cursor: pointer;
+}
+.settings-button { box-shadow: inset 0 0 0 var(--dsh-hairline-width, 0.5px) var(--dsw-alias-border-l3); }
+.settings-button:hover:not(:disabled), .header-action:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+.settings-button.is-primary { box-shadow: none; background: var(--dsw-alias-button-primary-fill); color: var(--dsw-alias-label-primary-foreground); }
+.settings-button.is-primary:hover:not(:disabled) { background: var(--dsw-alias-button-primary-hover); }
+.settings-button:disabled, .header-action:disabled { opacity: 0.4; cursor: not-allowed; }
+.settings-block > .settings-button { align-self: flex-start; }
+
 @media (max-width: 860px) {
   .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 40%); }
   .sidebar { border-left: none; border-top: 0.5px solid var(--dsw-alias-border-l3); }
