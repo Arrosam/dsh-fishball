@@ -1,284 +1,241 @@
 /**
- * Revision 11 rev11g: how a managed session's question travels (DESIGN §7a.10 "The question router", "The race",
- * "Cards", "Time limit", §9 "Session cards"/"Open questions", §10e "Host API"; requirements items 25-26 and "Done when"
- * 8; S36). Blocking (legacy) ask_user_question in a managed session; the session's own card is the browser stand-in.
- * One host; cases run in order.
+ * Revision 11 rev11g on H-STUB: how a managed session's question travels (DESIGN §7a.10 "The question router",
+ * "The race", "Time limit", §9 "Open questions"; contract 1.1 §4.2 question.answer, §4.5 inbox markers, §5
+ * approval.request / approval.settled; connector.md C1-DT-06; slim §12). Blocking (legacy) ask_user_question in a
+ * managed session; the session's own card is the worker's stand-in; Fishball is the stub instance. One host;
+ * cases run in order.
  *
- * | id      | technique | expected |
- * |---------|-----------|----------|
- * | FLW-01  | EP (a session that is yours) | the question stays in its own card; Fishball takes no step and gets no intake item; no pile card; your answer is the result |
- * | FLW-02  | EP (managed: routing) | the session's own card opens at once; Fishball is notified with the question, its choices and your latest message in that session; nothing is a pile card yet |
- * | FLW-03  | EP (Fishball answers) | the call's result is the answer batch; the session's own card closes; no pile card; one decisions row answer-question by fishball |
- * | FLW-04  | EP (same batch from Fishball and from the browser) | the tool result texts are identical, byte for byte |
- * | FLW-05  | ST (you answer in the session first) | the result is your batch; Fishball's later answer is refused; no pile card; no tag; Fishball is told without a new step |
- * | FLW-06  | ST (Fishball answered, then you click in the stale own card) | the stand-in card is already closed, so your click finds nothing |
- * | FLW-07  | BVA (approvalAnswerSeconds 1 and 3) | no pile card before about the limit, a pile card after it; the agent keeps waiting; the own card stays open |
- * | FLW-08  | ST (card shown, you answer in the own card) | the pile card leaves; the result is your batch |
- * | FLW-09  | ST (card shown, you answer on the pile card) | the own card closes; the result is the batch; the route answered 200 |
- * | FLW-10  | EP (pile card contents) | kind question, session, the call id (recovered for a legacy call), the question text and choices, a time |
- * | FLW-11  | ST (the turn is stopped with the question open) | the own card closes; the pile card (if any) leaves; Fishball's answer is refused; no tag |
- * | FLW-12  | EP (to_user) | Fishball sends it to you with a note: a pile card at once carrying the note; the own card stays open |
- * | FLW-13  | EP (two questions open in two sessions) | two pile cards; answering one leaves the other |
- * | FLW-14  | DT (route bodies) | bad bodies 400 bad-body, an unknown or settled question id 409 expired; the card stays |
+ * | id      | technique | requirement | expected |
+ * |---------|-----------|-------------|----------|
+ * | FLW-01  | EP (a session that is yours) | §7a.10 Routing | the question stays in its own card; the instance gets no offer and no notice; your answer is the result |
+ * | FLW-02  | EP (managed: routing) | §7a.10 Routing; C1-DT-06 | the own card opens at once; the instance gets approval.request kind question with the questions and choices, and an approval notice carrying them and your latest message in that session |
+ * | FLW-03  | EP (the instance answers) | §4.2; §9 decisions | {accepted:true}; the call's result is the batch; the own card closes; approval.settled by fishball; one decisions row answer-question by fishball |
+ * | FLW-04  | EP (same batch from the instance and from the session's card) | §7a.10 "the browser's exact shape" | byte-identical tool results |
+ * | FLW-05  | ST (you answer in the session first) | §7a.10 The race; §4.2 | your batch is the result; the instance's later answer is refused (expired / already-settled); it is told: approval.settled by user and a card record by user with your label |
+ * | FLW-06  | ST (the instance answered, then you click the stale own card) | §7a.10 The race | the own card is already closed: your click finds nothing |
+ * | FLW-07  | BVA (approvalAnswerSeconds 1 and 3) | §7a.10 Time limit | still the instance's before about the limit (its answer is accepted up to then); after it the question leaves the instance (approval.settled; its answer is refused expired); the agent keeps waiting; the own card stays open |
+ * | FLW-08  | ST (after the limit, you answer in the own card) | §7a.10 Cards; slim §12 | the result is your batch |
+ * | FLW-10  | EP (offer contents) | §5.1; §7a.10 "Legacy questions name no call" | kind question; the envelope names the session; callId recovered for the legacy call; every question, option and the question text; at and expiresAt = at + approvalAnswerSeconds |
+ * | FLW-11  | ST (your Stop with the question open) | §7a.10 The race; slim T08/T09; instance.md I7-EP-06 | the own card closes; the instance's answer is refused; it gets a closure note (CARD_CLOSED or a card record with outcome closed) |
+ * | FLW-12  | EP (toUser with a note) | §4.2 toUser/note | {accepted:true}; the question leaves the instance (settled escalate) and stays in its own card; a later answer by the instance is refused; you answer there: the result is your batch; the instance gets QUESTION_ANSWER and a record carrying your words |
+ * | FLW-13  | EP (two questions open in two sessions) | §4.2; §4.2 approval.list | each session's approval.list holds its own question; answering one leaves the other answerable |
+ *
+ * Retired:
+ * - FLW-09: the pile's question form and its route are deleted (slim §12): the user answers a session question only on DSH's question card in its own session.
+ * - FLW-14: same reason: the `/api/fishball/questions/answer` route it exercised is gone (slim §12); refused answers are covered on question.answer (rev11g-validate).
+ * - The "no tag" and "Fishball takes no step" parts: tag records were removed (slim T15) and Fishball's in-process session with its model requests no longer exists (slim §12).
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ANSWER_QUESTION, LIMITS, PRESET, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
-import { HOOK, T, settledIdle } from './support/expect.mjs'
-import { A, Q, QUIET_MS, AT_ONCE_MS, cardId, cardMentions, qHost, qTools, refused, resultText, sleep, tokens, until } from './support/rev11g.mjs'
+import { ASK_USER_QUESTION, LIMITS } from './support/constants.mjs'
+import { HOOK, T, untrustedBlock } from './support/expect.mjs'
+import { stopStub } from './support/instance-stub.mjs'
+import { A, Q, QSTUB, assertStillOpen, bootQ, codeOf, qTools, quiet, resultText, sleep, tokens, turnText } from './support/instance-stub-questions.mjs'
 
 const { tok, cid } = tokens('FLW')
+const RED = [{ id: 'color', selected: ['Red'] }]
 
-describe('Revision 11 rev11g: how a managed session\'s question travels', { skip: NEEDS_INSTANCE_STUB }, () => {
-  let ctx
+describe('Revision 11 rev11g on H-STUB: how a managed session\'s question travels', () => {
+  const ctx = {}
   let q
   let x
   let y
   before(async () => {
-    ctx = await qHost('rev11g-flow')
-    q = qTools(ctx, { tok, cid })
+    Object.assign(ctx, await bootQ('rev11g-flow'))
+    q = qTools(ctx)
     x = await q.session('flw-x')
     y = await q.session('flw-y')
   }, HOOK)
-  after(async () => { await ctx.host?.stop() }, HOOK)
+  after(async () => { await stopStub(ctx.booted) }, HOOK)
 
-  it('FLW-01 a session that is yours: the question stays in its own card; Fishball takes no step', T, async () => {
+  it('FLW-01 a session that is yours: the question stays in its own card; the instance hears nothing', T, async () => {
     const own = await q.yours('flw-yours')
     const text = tok('01')
     const id = cid('01')
-    await settledIdle(ctx.host, ctx.fb)
-    const before = await q.fbWork()
-    await q.ask(own, text, id)
-    await sleep(QUIET_MS * 2)
-    assert.deepEqual(await q.fbWork(), before, 'no Fishball step, no intake item')
-    assert.equal((await q.notices(text)).length, 0)
-    assert.equal((await q.pile()).length, 0, 'no pile card')
-    assert.equal(await ctx.host.call('qAnswer', { sessionId: own, answers: A.single }), true)
+    await q.ask(own, text, id, { questions: Q.single(text), offer: false })
+    await quiet()
+    assert.equal(await q.toldAbout(text), false, 'no offer and no notice for a session that is yours')
+    assert.equal(await q.qAnswer(own, A.single), true)
     assert.equal((await q.result(own, id)).text, resultText(A.single))
-    await ctx.host.call('waitIdle', { sessionId: own })
-    assert.deepEqual(await q.fbWork(), before, 'still nothing for Fishball')
+    await q.waitIdle(own)
+    assert.equal(await q.toldAbout(text), false, 'still nothing for the instance')
   })
 
-  it('FLW-02 managed: the own card opens at once while Fishball is told the question, its choices and your latest message', T, async () => {
+  it('FLW-02 managed: the own card opens at once; the instance is offered the question and told your latest message', T, async () => {
     const text = tok('02')
     const id = cid('02')
     const t0 = Date.now()
-    const own = await q.ask(x, text, id)
-    assert.ok(Date.now() - t0 < AT_ONCE_MS + 3000, 'the own card opened without waiting for Fishball')
-    assert.equal(own.timed, false)
-    const qid = await q.questionId(text)
-    assert.match(qid, /^qst_/)
-    const [notice] = await q.notices(text)
-    for (const word of ['Which colour?', 'Red', 'Blue', 'ask ' + text]) assert.ok(notice.text.includes(word), 'the notice carries ' + word + ': ' + notice.text.slice(0, 1200))
-    assert.equal((await q.pile()).length, 0, 'not a pile card while Fishball decides')
-    await q.stop(x)
+    const { card, offer } = await q.ask(x, text, id, { questions: Q.single(text) })
+    assert.ok(Date.now() - t0 < QSTUB.atOnceMs, 'the own card opened without waiting for the instance')
+    assert.ok(offer, 'approval.request reached the instance')
+    assert.equal(offer.kind, QSTUB.kind.question)
+    assert.match(offer.approvalId, /^qst_/)
+    assert.deepEqual(offer.questions.map((x2) => x2.id), ['color'])
+    assert.deepEqual(offer.choices, ['Red', 'Blue'])
+    const [notice] = await q.notices(offer.approvalId)
+    assert.ok(notice, 'an approval notice names the question id')
+    assert.equal(notice.sourceSessionId, x)
+    const block = untrustedBlock(notice.text)
+    for (const word of ['Which colour?', 'Red', 'Blue']) assert.ok(block?.inner?.includes(word), 'the notice carries ' + word + ': ' + notice.text.slice(0, 1200))
+    assert.ok(block.inner.includes(turnText(ASK_USER_QUESTION, text)), 'the notice carries your latest message in that session')
+    assert.equal(await q.cardState(x, card.index), QSTUB.card.open)
+    await q.userStop(x)
   })
 
-  it('FLW-03 Fishball answers: the call\'s result is the batch; the own card closes; no pile card; a decisions row', T, async () => {
+  it('FLW-03 the instance answers: accepted; the result is the batch; the own card closes; settled by fishball; a decisions row', T, async () => {
     const text = tok('03')
     const id = cid('03')
-    await q.planAnswer(text, { answers: A.mixed })
-    const own = await q.ask(x, text, id, { questions: Q.mixed(text) })
-    const got = await q.result(x, id)
-    assert.equal(got.text, resultText(A.mixed))
-    await ctx.host.call('waitIdle', { sessionId: x })
-    await settledIdle(ctx.host, ctx.fb)
-    assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'closed', 'the session\'s own card closed')
-    assert.equal((await q.pile()).length, 0)
-    const qid = await q.questionId(text)
-    const rows = q.decisionsFor(qid)
+    const { card, offer } = await q.ask(x, text, id, { questions: Q.mixed(text) })
+    const r = await q.answer(x, offer.approvalId, { answers: A.mixed })
+    assert.deepEqual(r.payload, { accepted: true }, JSON.stringify(r))
+    assert.equal((await q.result(x, id)).text, resultText(A.mixed))
+    await q.waitIdle(x)
+    assert.notEqual(await q.cardState(x, card.index), QSTUB.card.open, 'the session\'s own card closed')
+    assert.ok(await q.settled(offer.approvalId, { by: QSTUB.by.fishball }), 'approval.settled by fishball')
+    const rows = q.decisions({ target: offer.approvalId })
     assert.equal(rows.length, 1, JSON.stringify(rows))
-    assert.equal(rows[0].action, 'answer-question')
-    assert.equal(rows[0].by, 'fishball')
+    assert.equal(rows[0].action, QSTUB.action.answer)
+    assert.equal(rows[0].by, QSTUB.by.fishball)
     assert.equal(rows[0].sessionId, x)
   })
 
-  it('FLW-04 the same batch from Fishball and from the browser gives byte-identical tool results', T, async () => {
-    const [viaFishball, viaBrowser] = [tok('04a'), tok('04b')]
+  it('FLW-04 the same batch from the instance and from the session\'s card gives byte-identical results', T, async () => {
+    const [ta, tb] = [tok('04a'), tok('04b')]
     const [ida, idb] = [cid('04a'), cid('04b')]
-    await q.planAnswer(viaFishball, { answers: A.mixed })
-    await q.ask(x, viaFishball, ida, { questions: Q.mixed(viaFishball), waitCard: false })
+    const { offer } = await q.ask(x, ta, ida, { questions: Q.mixed(ta) })
+    await q.answer(x, offer.approvalId, { answers: A.mixed })
     const a = await q.result(x, ida)
-    await ctx.host.call('waitIdle', { sessionId: x })
-    await q.ask(x, viaBrowser, idb, { questions: Q.mixed(viaBrowser) })
-    assert.equal(await ctx.host.call('qAnswer', { sessionId: x, answers: A.mixed }), true)
+    await q.waitIdle(x)
+    await q.ask(x, tb, idb, { questions: Q.mixed(tb) })
+    assert.equal(await q.qAnswer(x, A.mixed), true)
     const b = await q.result(x, idb)
     assert.equal(a.text, b.text)
     assert.equal(a.isError, b.isError)
     assert.equal(a.text, resultText(A.mixed))
-    await ctx.host.call('waitIdle', { sessionId: x })
+    await q.waitIdle(x)
   })
 
-  it('FLW-05 you answer in the session first: your batch is the result; Fishball\'s later answer is refused; no tag; no new Fishball step', T, async () => {
+  it('FLW-05 you answer in the session first: your batch; the instance\'s late answer is refused; it is told with your words', T, async () => {
     const text = tok('05')
     const id = cid('05')
-    await q.ask(y, text, id)
-    const qid = await q.questionId(text)
-    await settledIdle(ctx.host, ctx.fb)
-    const stepsBefore = (await q.fbWork()).steps
-    assert.equal(await ctx.host.call('qAnswer', { sessionId: y, answers: A.single }), true)
+    const { offer } = await q.ask(y, text, id, { questions: Q.single(text) })
+    assert.equal(await q.qAnswer(y, A.single), true)
     assert.equal((await q.result(y, id)).text, resultText(A.single))
-    await ctx.host.call('waitIdle', { sessionId: y })
-    await sleep(QUIET_MS * 2)
-    assert.equal((await q.fbWork()).steps, stepsBefore, 'Fishball is told that you answered without being woken')
-    const late = await q.fbAnswer({ question_id: qid, answers: [{ id: 'color', selected: ['Red'] }] })
-    assert.equal(refused(late), true, 'already settled: ' + late.result.text)
-    assert.equal((await q.pile()).length, 0)
-    assert.equal(q.tagsOf(id).length, 0, 'your answer is not Fishball\'s: no tag')
+    await q.waitIdle(y)
+    assert.ok(await q.settled(offer.approvalId, { by: QSTUB.by.user }), 'approval.settled by user')
+    const record = await q.record(offer.approvalId)
+    assert.equal(record?.by, QSTUB.record.by.user, JSON.stringify(record))
+    assert.equal(record.outcome, QSTUB.record.outcome.answered)
+    assert.ok(JSON.stringify(record).includes('Blue'), 'the record carries your words (slim T09 revised)')
+    const late = await q.answer(y, offer.approvalId, { answers: RED })
+    assert.ok(QSTUB.lateCodes.includes(codeOf(late)), 'refused: ' + JSON.stringify(late))
   })
 
-  it('FLW-06 Fishball answered; your click in the stale own card finds nothing', T, async () => {
+  it('FLW-06 the instance answered; your click in the stale own card finds nothing', T, async () => {
     const text = tok('06')
     const id = cid('06')
-    await q.planAnswer(text, { answers: A.single })
-    await q.ask(y, text, id, { waitCard: false })
+    const { offer } = await q.ask(y, text, id, { questions: Q.single(text) })
+    await q.answer(y, offer.approvalId, { answers: A.single })
     await q.result(y, id)
-    await ctx.host.call('waitIdle', { sessionId: y })
-    assert.equal(await ctx.host.call('qAnswer', { sessionId: y, answers: [{ id: 'color', selected: ['Red'] }] }), false, 'no open card to click')
+    await q.waitIdle(y)
+    assert.equal(await q.qAnswer(y, RED), false, 'no open card to click')
   })
 
   for (const seconds of [1, 3]) {
-    it(`FLW-07 approvalAnswerSeconds ${seconds}: your pile card only after about ${seconds} s; the agent keeps waiting`, T, async () => {
-      await q.t.setLimit({ approvalAnswerSeconds: seconds })
+    it(`FLW-07 approvalAnswerSeconds ${seconds}: the question leaves the instance only after about ${seconds} s; the agent keeps waiting`, T, async () => {
+      await q.setSeconds(seconds)
       try {
         const text = tok('07s' + seconds)
         const id = cid('07s' + seconds)
-        const t0 = Date.now()
-        const own = await q.ask(x, text, id)
-        const opened = Date.now()
-        await sleep(Math.max(0, seconds * 1000 * 0.6 - (opened - t0)))
-        assert.equal((await q.pile()).length, 0, 'no card at 60% of the limit')
-        const card = await q.pileCard(x, seconds * 1000 + 6000)
-        assert.ok(card, 'a card after the limit')
-        assert.ok(Date.now() - opened >= seconds * 1000 * 0.8 - 300, 'not long before the limit: ' + (Date.now() - opened) + ' ms')
-        assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'open', 'the own card stays open')
-        assert.equal((await q.allEvents(x)).some((e) => e.type === 'tool/result' && e.result.callId === id), false, 'the agent keeps waiting')
-        assert.equal((await q.route({ questionId: cardId(card), answers: A.single })).status, 200)
-        await q.result(x, id)
-        await ctx.host.call('waitIdle', { sessionId: x })
-      } finally { await q.t.setLimit({ approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }) }
+        const { card, offer } = await q.ask(x, text, id, { questions: Q.single(text) })
+        const limitMs = seconds * QSTUB.secondMs
+        assert.equal(offer.expiresAt - offer.at, limitMs, 'the offer expires at the limit')
+        const left = await q.settled(offer.approvalId, { timeoutMs: limitMs + QSTUB.limitLateMs })
+        assert.ok(left, 'the question left the instance after the limit')
+        const settledAt = (await q.stub().events(QSTUB.event.approvalSettled)).find((f) => f.payload.approvalId === offer.approvalId).at
+        assert.ok(settledAt - offer.at >= limitMs * QSTUB.limitEarlyShare - QSTUB.limitSlackMs, 'not long before the limit: ' + (settledAt - offer.at) + ' ms')
+        assert.equal(codeOf(await q.answer(x, offer.approvalId, { answers: A.single })), QSTUB.code.expired, 'the instance\'s late answer is refused')
+        await assertStillOpen(q, x, card, id, 'after the limit')
+        assert.equal(await q.qAnswer(x, A.single), true)
+        assert.equal((await q.result(x, id)).text, resultText(A.single))
+        await q.waitIdle(x)
+      } finally { await q.setSeconds(LIMITS.approvalAnswerSeconds.default) }
     })
   }
 
-  describe('a question that is a card in your pile', () => {
-    before(async () => { await q.t.setLimit({ approvalAnswerSeconds: 1 }) })
-    after(async () => { await q.t.setLimit({ approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }) })
-
-    it('FLW-08 you answer in the session\'s own card: the pile card leaves; the result is your batch', T, async () => {
+  it('FLW-08 after the limit, you answer in the session\'s own card: the result is your batch', T, async () => {
+    await q.setSeconds(1)
+    try {
       const text = tok('08')
       const id = cid('08')
-      await q.ask(x, text, id)
-      assert.ok(await q.pileCard(x, 6000))
-      assert.equal(await ctx.host.call('qAnswer', { sessionId: x, answers: A.single }), true)
-      assert.ok(await q.noPileCard(x), 'the pile card left')
-      assert.equal((await q.result(x, id)).text, resultText(A.single))
-      await ctx.host.call('waitIdle', { sessionId: x })
-    })
-
-    it('FLW-09 you answer on the pile card: the own card closes; the result is the batch', T, async () => {
-      const text = tok('09')
-      const id = cid('09')
-      const own = await q.ask(x, text, id)
-      const card = await q.pileCard(x, 6000)
-      const r = await q.route({ questionId: cardId(card), answers: A.single })
-      assert.equal(r.status, 200, r.text)
-      assert.equal((await q.result(x, id)).text, resultText(A.single))
-      await ctx.host.call('waitIdle', { sessionId: x })
-      assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'closed')
-      assert.ok(await q.noPileCard(x))
-    })
-
-    it('FLW-10 the pile card shows the session, the call, the question and its choices, and when', T, async () => {
-      const text = tok('10')
-      const id = cid('10')
-      await q.ask(x, text, id, { questions: Q.mixed(text) })
-      const card = await q.pileCard(x, 6000)
-      assert.equal(card.kind, 'question')
-      assert.equal(card.sessionId, x)
-      assert.equal(card.callId, id, 'a legacy call names no call id; the card carries the one recovered from the log')
-      for (const word of ['Which colour?', 'Red', 'Blue', 'Docs', 'Tests', 'Code', 'Branch name?', text]) assert.ok(cardMentions(card, word), 'the card shows ' + word + ': ' + JSON.stringify(card).slice(0, 800))
-      assert.ok(card.since, 'a time')
-      assert.ok(cardId(card), 'an id to answer by')
-      await q.stop(x)
-    })
-
-    it('FLW-11 the turn is stopped with the question open: the own card closes, the pile card leaves, Fishball\'s answer is refused, no tag', T, async () => {
-      const text = tok('11')
-      const id = cid('11')
-      const own = await q.ask(y, text, id)
-      const qid = await q.questionId(text)
-      const card = await q.pileCard(y, 6000)
-      await q.stop(y)
-      assert.ok(await q.noPileCard(y), 'the card left')
-      assert.equal((await q.cards(y)).find((c) => c.index === own.index).state, 'closed')
-      assert.equal(refused(await q.fbAnswer({ question_id: qid, answers: A.single })), true)
-      assert.equal((await q.route({ questionId: cardId(card), answers: A.single })).status, 409)
-      assert.equal(q.tagsOf(id).length, 0)
-    })
+      const { offer } = await q.ask(x, text, id, { questions: Q.single(text) })
+      assert.ok(await q.settled(offer.approvalId, { timeoutMs: QSTUB.limitLateMs }), 'the question left the instance')
+      assert.equal(await q.qAnswer(x, RED), true)
+      assert.equal((await q.result(x, id)).text, resultText(RED))
+      await q.waitIdle(x)
+    } finally { await q.setSeconds(LIMITS.approvalAnswerSeconds.default) }
   })
 
-  it('FLW-12 to_user with a note: a pile card at once carrying the note; the own card stays open; you answer on it', T, async () => {
+  it('FLW-10 the offer shows the session, the recovered call id, every question and choice, and when', T, async () => {
+    const text = tok('10')
+    const id = cid('10')
+    await q.ask(x, text, id, { questions: Q.mixed(text) })
+    const frame = await q.stub().waitEvent(QSTUB.event.approvalRequest, (p) => p.callId === id)
+    assert.equal(frame.sessionId, x, 'the envelope names the asking session')
+    const offer = frame.payload
+    assert.equal(offer.kind, QSTUB.kind.question)
+    assert.equal(offer.callId, id, 'a legacy call names no call id; the offer carries the one recovered from the log')
+    assert.equal(offer.toolName, ASK_USER_QUESTION)
+    for (const word of ['Which colour?', 'Red', 'Blue', 'Docs', 'Tests', 'Code', 'Branch name?', text]) assert.ok(JSON.stringify(offer.questions).includes(word), 'the offer shows ' + word)
+    assert.equal(offer.questions.find((x2) => x2.id === 'parts').multiSelect, true, 'multi_select travels as multiSelect')
+    assert.ok(Number.isInteger(offer.at) && offer.at > 0, 'a time')
+    assert.equal(offer.expiresAt - offer.at, LIMITS.approvalAnswerSeconds.default * QSTUB.secondMs)
+    await q.userStop(x)
+  })
+
+  it('FLW-11 your Stop with the question open: the own card closes; the instance\'s answer is refused; it gets a closure note', T, async () => {
+    const text = tok('11')
+    const id = cid('11')
+    const { card, offer } = await q.ask(y, text, id, { questions: Q.single(text) })
+    await q.userStop(y)
+    assert.equal(await q.cardState(y, card.index), QSTUB.card.closed)
+    assert.ok(QSTUB.lateCodes.includes(codeOf(await q.answer(y, offer.approvalId, { answers: A.single }))), 'refused')
+    // The connector's own notice promises it ("if the user answers there first, or the session stops, you get a
+    // note"), and a card closed without an answer reaches the instance as [card closed …] (slim T09, T08 records).
+    const closed = (await q.waitMarker('closed', offer.approvalId)) || (await q.record(offer.approvalId, QSTUB.quietMs))
+    assert.ok(closed, 'a CARD_CLOSED item or a closed card record for ' + offer.approvalId + ': ' + JSON.stringify((await q.stub().received()).slice(-4)))
+  })
+
+  it('FLW-12 toUser with a note: it leaves the instance and stays in its own card; you answer there; the instance gets your words', T, async () => {
     const text = tok('12')
     const id = cid('12')
     const note = 'only you can pick this ' + text
-    await q.planAnswer(text, { to_user: true, note })
-    const own = await q.ask(x, text, id)
-    const card = await q.pileCard(x, 8000)
-    assert.ok(card, 'a card at once, not after 120 s')
-    assert.ok(cardMentions(card, note), 'Fishball\'s note on the card: ' + JSON.stringify(card).slice(0, 600))
-    assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'open')
-    // The requirements do not order the tag record before the pile card, so wait for it (bounded) instead of reading it at once.
-    await until(async () => q.allTagsOf(id).some((t) => t.kind === 'sent-to-you'), 5000, 50)
-    assert.ok(q.allTagsOf(id).some((t) => t.kind === 'sent-to-you'), 'a "Sent to you" tag, as escalating a permission request gets (Q-r11-tag-scope): ' + JSON.stringify(q.allTagsOf(id)))
-    assert.equal(q.tagsOf(id).length, 0, 'but no answer tag')
-    assert.equal((await q.route({ questionId: cardId(card), answers: A.single })).status, 200)
+    const { card, offer } = await q.ask(x, text, id, { questions: Q.single(text) })
+    assert.deepEqual((await q.answer(x, offer.approvalId, { toUser: true, note })).payload, { accepted: true })
+    assert.ok(await q.settled(offer.approvalId, { decision: QSTUB.decision.escalate }), 'approval.settled escalate')
+    await assertStillOpen(q, x, card, id, 'sent to you')
+    assert.ok(QSTUB.lateCodes.includes(codeOf(await q.answer(x, offer.approvalId, { answers: A.single }))), 'no longer the instance\'s to answer')
+    assert.equal(await q.qAnswer(x, A.single), true)
     assert.equal((await q.result(x, id)).text, resultText(A.single))
-    await ctx.host.call('waitIdle', { sessionId: x })
+    await q.waitIdle(x)
+    assert.ok(await q.waitMarker('answer', offer.approvalId), 'a QUESTION_ANSWER item for the question it sent you')
+    const record = await q.record(offer.approvalId)
+    assert.ok(JSON.stringify(record ?? {}).includes('Blue'), 'the record carries your words: ' + JSON.stringify(record))
   })
 
-  it('FLW-13 two questions open in two sessions: two pile cards; answering one leaves the other', T, async () => {
+  it('FLW-13 two questions open in two sessions: each is listed for its session; answering one leaves the other', T, async () => {
     const [ta, tb] = [tok('13a'), tok('13b')]
-    await q.planAnswer(ta, { to_user: true, note: 'a ' + ta })
-    await q.planAnswer(tb, { to_user: true, note: 'b ' + tb })
     const [ia, ib] = [cid('13a'), cid('13b')]
-    await q.ask(x, ta, ia)
-    await q.ask(y, tb, ib)
-    const [ca, cb] = [await q.pileCard(x, 8000), await q.pileCard(y, 8000)]
-    assert.ok(ca && cb && cardId(ca) !== cardId(cb))
-    assert.equal((await q.pile()).filter((c) => c.kind === 'question').length >= 2, true)
-    assert.equal((await q.route({ questionId: cardId(ca), answers: A.single })).status, 200)
-    assert.ok(await q.noPileCard(x))
-    assert.ok(await q.pileCard(y, 1000), 'the other stays')
-    assert.equal((await q.route({ questionId: cardId(cb), answers: A.single })).status, 200)
+    const a = await q.ask(x, ta, ia, { questions: Q.single(ta) })
+    const b = await q.ask(y, tb, ib, { questions: Q.single(tb) })
+    assert.notEqual(a.offer.approvalId, b.offer.approvalId)
+    assert.deepEqual(await q.listed(x), [a.offer.approvalId], 'x lists its own question only')
+    assert.deepEqual(await q.listed(y), [b.offer.approvalId], 'y lists its own question only')
+    assert.deepEqual((await q.answer(x, a.offer.approvalId, { answers: A.single })).payload, { accepted: true })
+    await sleep(QSTUB.quietMs)
+    assert.deepEqual(await q.listed(y), [b.offer.approvalId], 'the other stays')
+    assert.deepEqual((await q.answer(y, b.offer.approvalId, { answers: A.single })).payload, { accepted: true })
     assert.ok(await q.result(x, ia)); assert.ok(await q.result(y, ib))
-    await ctx.host.call('waitIdle', { sessionId: x }); await ctx.host.call('waitIdle', { sessionId: y })
-  })
-
-  it('FLW-14 route bodies: bad bodies 400 bad-body; an unknown or settled question id 409 expired; the card stays', T, async () => {
-    const text = tok('14')
-    const id = cid('14')
-    await q.planAnswer(text, { to_user: true, note: 'n ' + text })
-    await q.ask(x, text, id)
-    const card = await q.pileCard(x, 8000)
-    const qid = cardId(card)
-    for (const body of [{}, { questionId: qid }, { questionId: 7, answers: A.single }, { questionId: qid, answers: 'no' }, { answers: A.single }]) {
-      const r = await q.route(body)
-      assert.equal(r.status, 400, JSON.stringify(body) + ' -> ' + r.text)
-      // A body of the wrong shape is bad-body; a well-shaped body whose answers are no valid batch is bad-answer (the route validates "as answer_question is", DESIGN §10e).
-      assert.ok(['bad-body', 'bad-answer'].includes(r.json?.code), JSON.stringify(body) + ' -> ' + r.text)
-      if (typeof body.questionId !== 'string') assert.equal(r.json?.code, 'bad-body', JSON.stringify(body))
-    }
-    const foreign = await q.route({ questionId: qid, answers: A.single }, { headers: { origin: 'http://evil.example' } })
-    assert.notEqual(foreign.status, 200, 'a foreign origin is refused')
-    const unknown = await q.route({ questionId: 'qst_0123456789abcdef', answers: A.single })
-    assert.equal(unknown.status, 409, unknown.text)
-    assert.equal(unknown.json?.code, 'expired')
-    assert.ok(await q.pileCard(x, 500), 'the card stayed through all of it')
-    assert.equal((await q.route({ questionId: qid, answers: A.single })).status, 200)
-    await q.result(x, id)
-    const again = await q.route({ questionId: qid, answers: A.single })
-    assert.equal(again.status, 409)
-    assert.equal(again.json?.code, 'expired')
-    await ctx.host.call('waitIdle', { sessionId: x })
+    await q.waitIdle(x); await q.waitIdle(y)
   })
 })

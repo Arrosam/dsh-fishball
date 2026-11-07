@@ -1,75 +1,72 @@
 /**
- * Revision 11 rev11g: the question mode (requirements item 25; DESIGN §7a.10 "The mode", §9 `settings['questions']`,
- * §10e "Question mode" and "Host API", §16 Q-r11-mode-place). Code enforces only User mode: there Fishball's answer
- * is refused with `mode-user` and a note is accepted. The Auto rule ("only when your words cover it") is prompt-only
- * and is not tested here. One host; the restart case is last.
+ * Revision 11 rev11g on H-STUB: the question mode (requirements item 25; DESIGN §7a.10 "The mode", §9; contract 1.1
+ * §0/§8 (connector settings only in DSH's form), §4.2 `mode-user`; connector.md C2-R1, C2-P-07; slim §0.7, D24).
+ * The mode is the volatile `questionMode` field of the fishball-connector row config, changed only in DSH's own
+ * settings form (here DSH's settings service, as the form saves it); the old question-mode route is gone (404).
+ * Code enforces only User mode: there the instance's answer is refused `mode-user` and a note is accepted. The Auto
+ * rule ("only when your words cover it") is prompt-only and not tested here. One host; the restart case is last.
  *
- * Decision table (blocking question in a managed session; approvalAnswerSeconds 1 so "no answer" is quick):
+ * Decision table (blocking question in a managed session; approvalAnswerSeconds 1 so "nobody answers" is quick):
  *
- * | mode     | Fishball answers | you answer in the session | nobody answers |
- * |----------|------------------|---------------------------|----------------|
- * | auto     | accepted: result, tag          | result, no tag | pile card after the limit |
- * | fishball | accepted: result, tag          | result, no tag | pile card after the limit |
- * | user     | refused mode-user; stays open  | result, no tag | pile card at once, stays    |
+ * | mode     | the instance answers | you answer in the session | nobody answers |
+ * |----------|----------------------|---------------------------|----------------|
+ * | auto     | accepted: the result | the result                | it leaves the instance after the limit; the agent keeps waiting |
+ * | fishball | accepted: the result | the result                | it leaves the instance after the limit; the agent keeps waiting |
+ * | user     | refused mode-user; the question stays open; a note is accepted | the result | the agent keeps waiting in its own card |
  *
- * | id      | technique | expected |
- * |---------|-----------|----------|
- * | MOD-01  | EP (fresh host) | the snapshot's questionMode is auto; nothing stored |
- * | MOD-02  | EP (each valid mode) | DSH's form of fishball-connector accepts questionMode; the snapshot shows it; the row config holds it |
- * | MOD-03 ×4 | DT (bad values; null is left out: DSH's settings service accepts a null field value as JSON data, so it is not a refusal case) | DSH's form refuses it; the mode is unchanged |
- * | MOD-08  | EP (retired route) | POST /api/fishball/question-mode answers 404 and changes nothing |
+ * | id      | technique | requirement | expected |
+ * |---------|-----------|-------------|----------|
+ * | MOD-01  | EP (fresh host) | §9 "absent means auto"; C2-P-01 | the snapshot's questionMode is auto; DSH's form shows auto; nothing stored in the row config |
+ * | MOD-02  | EP (each valid mode) | C2-R1 | DSH's form accepts questionMode; the snapshot shows it; the row config holds it |
+ * | MOD-03 ×4 | DT (bad values; null is left out: DSH's settings service accepts a null field value as JSON data) | C2-R1 | DSH's form refuses it; the mode is unchanged |
+ * | MOD-08  | EP (retired route) | slim §0.7, D24; C2-R2 | POST /api/fishball/question-mode answers 404 and changes nothing |
+ * | MOD-04  | DT (auto × 3 columns) | §7a.10 | as the table |
+ * | MOD-05  | DT (fishball × 3 columns) | §7a.10 | as the table |
+ * | MOD-06  | DT (user × 3 columns); C2-P-07 | §7a.10; §4.2 mode-user | as the table; the mode applies without a restart; the instance learns the question only to add a note |
+ * | MOD-07  | ST (restart) | C2-R1 "persist" | the mode survives |
  *
- * C2 (474b876, design §0.7, D24): the mode is the volatile `questionMode` field of the fishball-connector
- * row config, changed only in DSH's own settings form; the question-mode route is retired (404). MOD-02/03
- * therefore change it through DSH's settings service instead of the route, and MOD-08 checks the route is
- * gone. MOD-04..07 drive Fishball's answer_question through the deleted in-process session and are skipped
- * until the H-STUB harness exists.
- * | MOD-04  | DT (auto × 3 columns) | as the table |
- * | MOD-05  | DT (fishball × 3 columns) | as the table |
- * | MOD-06  | DT (user × 3 columns) | as the table; the note is accepted in User mode and shows on the card |
- * | MOD-07  | ST (restart) | the mode survives |
+ * Retired:
+ * - The "a question tag" / "no tag" parts of MOD-04..06: tag records were removed (slim T15).
+ * - MOD-06 "the note shows on the card" and every "pile card" column: the pile is deleted (slim §12); the user answers only in the session's own question card.
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { LIMITS, MODE_USER_CODE, NEEDS_INSTANCE_STUB, QUESTION_API, QUESTION_MODE, QUESTION_SETTINGS, QUESTION_TAG_KIND, ROW_ID } from './support/constants.mjs'
-import { HOOK, T, savedRowConfig, settledIdle, storedRows } from './support/expect.mjs'
-import { A, AT_ONCE_MS, QUIET_MS, boot, cardId, cardMentions, qHost, qTools, refused, resultText, sleep, tokens, until } from './support/rev11g.mjs'
-import fs from 'node:fs'
-import { STORE } from './support/constants.mjs'
+import { LIMITS, QUESTION_API, QUESTION_MODE } from './support/constants.mjs'
+import { HOOK, T, savedRowConfig } from './support/expect.mjs'
+import { stopStub } from './support/instance-stub.mjs'
+import { A, Q, QSTUB, assertStillOpen, bootQ, codeOf, qTools, quiet, restartQ, resultText, tokens, until } from './support/instance-stub-questions.mjs'
 
 const { tok, cid } = tokens('MOD')
 const LONG = { timeout: 120000 }
+const FIELD = QSTUB.field.mode
 
-/** The mode's field of the fishball-connector row config (design §0.7), set through DSH's settings service. */
-const FIELD = 'questionMode'
-
-describe('Revision 11 rev11g: the question mode', () => {
-  let ctx
+describe('Revision 11 rev11g on H-STUB: the question mode', () => {
+  const ctx = {}
   let q
   let x
-  const setFormMode = (mode) => ctx.host.call('settingsUpdateNs', { ns: ROW_ID, patch: { [FIELD]: mode } })
-  const storedMode = () => {
-    try { return JSON.parse(fs.readFileSync(STORE.file(ctx.home), 'utf8')).tables?.[QUESTION_SETTINGS.table]?.[QUESTION_SETTINGS.key]?.mode } catch { return undefined }
-  }
+  /** DSH's form of the fishball-connector row, as its Save does: returns {ok} or {ok:false, error}. */
+  const setFormMode = (mode) => q.host().call('settingsUpdate', { patch: { [FIELD]: mode } })
+  const snapshotMode = async () => (await q.host().state()).questionMode
   before(async () => {
-    ctx = await qHost('rev11g-modes')
-    q = qTools(ctx, { tok, cid })
+    Object.assign(ctx, await bootQ('rev11g-modes'))
+    q = qTools(ctx)
   }, HOOK)
-  /** The managed session MOD-04..06 ask in; made by Hand over, so only those (skipped) cases create it. */
+  /** The managed session MOD-04..06 ask in. */
   const needX = async () => { x ??= await q.session('mod-x') }
-  after(async () => { await ctx.host?.stop() }, HOOK)
+  after(async () => { await stopStub(ctx.booted) }, HOOK)
 
   it('MOD-01 the default mode is auto', T, async () => {
-    assert.equal((await ctx.host.state()).questionMode, QUESTION_MODE.auto)
-    assert.ok(storedMode() === undefined || storedMode() === QUESTION_MODE.auto)
+    assert.equal(await snapshotMode(), QUESTION_MODE.auto)
+    assert.equal((await q.rowConfig())?.value?.[FIELD], QUESTION_MODE.auto, 'DSH\'s form shows auto')
+    assert.equal(savedRowConfig(q.home())?.[FIELD], undefined, 'nothing stored before a change')
   })
 
   it('MOD-02 each valid mode: DSH\'s form accepts it, the snapshot shows it, the row config holds it', T, async () => {
     for (const mode of [QUESTION_MODE.fishball, QUESTION_MODE.user, QUESTION_MODE.auto]) {
       const r = await setFormMode(mode)
       assert.equal(r.ok, true, JSON.stringify(r.error))
-      assert.ok(await until(async () => (await ctx.host.state()).questionMode === mode, 5000, 50), 'the snapshot shows ' + mode)
-      assert.equal(savedRowConfig(ctx.home)?.[FIELD], mode, 'the row config holds ' + mode)
+      assert.ok(await until(async () => (await snapshotMode()) === mode, QSTUB.markerWaitMs, QSTUB.pollMs), 'the snapshot shows ' + mode)
+      assert.equal(savedRowConfig(q.home())?.[FIELD], mode, 'the row config holds ' + mode)
     }
   })
 
@@ -78,110 +75,90 @@ describe('Revision 11 rev11g: the question mode', () => {
       assert.equal((await setFormMode(QUESTION_MODE.fishball)).ok, true, 'precondition: fishball mode')
       const r = await setFormMode(value)
       assert.equal(r.ok, false, 'refused')
-      assert.equal((await ctx.host.state()).questionMode, QUESTION_MODE.fishball)
+      assert.equal(await snapshotMode(), QUESTION_MODE.fishball)
+      assert.equal(savedRowConfig(q.home())?.[FIELD], QUESTION_MODE.fishball)
       assert.equal((await setFormMode(QUESTION_MODE.auto)).ok, true)
     })
   }
 
   it('MOD-08 the retired question-mode route answers 404 and changes nothing', T, async () => {
-    const before = (await ctx.host.state()).questionMode
-    const r = await ctx.host.post(QUESTION_API.mode, { mode: QUESTION_MODE.user })
+    const before = await snapshotMode()
+    const r = await q.host().post(QUESTION_API.mode, { mode: QUESTION_MODE.user })
     assert.equal(r.status, 404, r.text)
-    assert.equal((await ctx.host.state()).questionMode, before)
+    assert.equal(await snapshotMode(), before)
   })
 
-  for (const [id, mode] of [['MOD-04', QUESTION_MODE.auto], ['MOD-05', QUESTION_MODE.fishball]]) {
-    describe(`${id} ${mode} mode`, { skip: NEEDS_INSTANCE_STUB }, () => {
-      before(async () => { await needX(); await q.mode(mode); await q.t.setLimit({ approvalAnswerSeconds: 1 }) })
-      after(async () => { await q.t.setLimit({ approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }) })
+  /** Ask in x; returns the own card, the call id and the question id the instance learned (offer, else its notice). */
+  async function askX(label) {
+    const text = tok(label)
+    const id = cid(label)
+    const { card, offer } = await q.ask(x, text, id, { questions: Q.single(text), offer: false })
+    return { card, id, text, qid: await q.learnedId(text, id) }
+  }
 
-      it('Fishball answers: accepted; the result is the batch; a question tag', T, async () => {
-        const text = tok(id + 'a')
-        const callId = cid(id + 'a')
-        await q.planAnswer(text, { answers: A.single })
-        await q.ask(x, text, callId, { waitCard: false })
+  for (const [id, mode] of [['MOD-04', QUESTION_MODE.auto], ['MOD-05', QUESTION_MODE.fishball]]) {
+    describe(`${id} ${mode} mode`, () => {
+      before(async () => { await needX(); await q.setMode(mode); await q.setSeconds(1) })
+      after(async () => { await q.setSeconds(LIMITS.approvalAnswerSeconds.default) })
+
+      it('the instance answers: accepted; the result is the batch', T, async () => {
+        const { id: callId, qid } = await askX(id + 'a')
+        assert.ok(qid, 'the instance was offered the question')
+        assert.deepEqual((await q.answer(x, qid, { answers: A.single })).payload, { accepted: true })
         assert.equal((await q.result(x, callId)).text, resultText(A.single))
-        const tag = await q.untilTag(callId)
-        assert.equal(tag?.kind, QUESTION_TAG_KIND.question)
-        await ctx.host.call('waitIdle', { sessionId: x })
+        await q.waitIdle(x)
       })
-      it('you answer in the session: the result is your batch; no tag', T, async () => {
-        const text = tok(id + 'b')
-        const callId = cid(id + 'b')
-        await q.ask(x, text, callId)
-        assert.equal(await ctx.host.call('qAnswer', { sessionId: x, answers: A.single }), true)
+      it('you answer in the session: the result is your batch', T, async () => {
+        const { id: callId } = await askX(id + 'b')
+        assert.equal(await q.qAnswer(x, A.single), true)
         assert.equal((await q.result(x, callId)).text, resultText(A.single))
-        await ctx.host.call('waitIdle', { sessionId: x })
-        assert.equal(q.tagsOf(callId).length, 0)
+        await q.waitIdle(x)
       })
-      it('nobody answers: a pile card after the limit; the agent keeps waiting', T, async () => {
-        const text = tok(id + 'c')
-        const callId = cid(id + 'c')
-        await q.ask(x, text, callId)
-        assert.ok(await q.pileCard(x, 8000))
-        assert.equal((await q.allEvents(x)).some((e) => e.type === 'tool/result' && e.result.callId === callId), false)
-        await q.stop(x)
+      it('nobody answers: it leaves the instance after the limit; the agent keeps waiting', T, async () => {
+        const { card, id: callId, qid } = await askX(id + 'c')
+        assert.ok(await q.settled(qid, { timeoutMs: QSTUB.limitLateMs }), 'it left the instance')
+        assert.equal(codeOf(await q.answer(x, qid, { answers: A.single })), QSTUB.code.expired)
+        await assertStillOpen(q, x, card, callId, 'after the limit')
+        await q.userStop(x)
       })
     })
   }
 
-  describe('MOD-06 user mode', { skip: NEEDS_INSTANCE_STUB }, () => {
-    before(async () => { await needX(); await q.mode(QUESTION_MODE.user) })
-    after(async () => { await q.mode(QUESTION_MODE.auto) })
+  describe('MOD-06 user mode (C2-P-07: set in DSH\'s form, no restart)', () => {
+    before(async () => { await needX(); await q.setMode(QUESTION_MODE.user) })
+    after(async () => { await q.setMode(QUESTION_MODE.auto) })
 
-    it('Fishball answers: refused with mode-user; the question stays open and is your card at once', T, async () => {
-      const text = tok('06a')
-      const callId = cid('06a')
-      const t0 = Date.now()
-      const own = await q.ask(x, text, callId)
-      const card = await q.pileCard(x, 8000)
-      assert.ok(card, 'always the pile')
-      assert.ok(Date.now() - t0 < AT_ONCE_MS + 6000, 'at once, not after approvalAnswerSeconds: ' + (Date.now() - t0))
-      const qid = cardId(card)
-      const r = await q.fbAnswer({ question_id: qid, answers: A.single })
-      assert.equal(refused(r), true, r.result.text)
-      assert.equal(r.json?.code ?? (/mode-user/.test(r.result.text) ? MODE_USER_CODE : undefined), MODE_USER_CODE)
-      assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'open', 'still open in the session')
-      assert.ok(await q.pileCard(x, 500), 'still your card')
-      assert.equal(q.tagsOf(callId).length, 0)
-      assert.equal((await q.allEvents(x)).some((e) => e.type === 'tool/result' && e.result.callId === callId), false)
-      // A note is accepted and shows on the card.
-      const note = 'my view: pick Blue ' + text
-      const n = await q.fbAnswer({ question_id: qid, note })
-      assert.equal(n.json?.ok, true, n.result.text)
-      assert.ok(cardMentions(await q.pileCard(x, 3000), note), 'the note is on the card')
-      assert.equal((await q.route({ questionId: qid, answers: A.single })).status, 200)
+    it('the instance answers: refused mode-user; the question stays open; a note is accepted; you answer', T, async () => {
+      const { card, id: callId, qid } = await askX('06a')
+      assert.ok(qid, 'the instance learned the question id (to add a note)')
+      const r = await q.answer(x, qid, { answers: A.single })
+      assert.equal(codeOf(r), QSTUB.code.modeUser, JSON.stringify(r))
+      await assertStillOpen(q, x, card, callId, 'after the refusal')
+      const n = await q.answer(x, qid, { note: 'my view: pick Blue ' + qid })
+      assert.deepEqual(n.payload, { accepted: true }, JSON.stringify(n))
+      assert.equal(await q.qAnswer(x, A.single), true)
       assert.equal((await q.result(x, callId)).text, resultText(A.single))
-      await ctx.host.call('waitIdle', { sessionId: x })
+      await q.waitIdle(x)
     })
-    it('you answer in the session: the result is your batch; the card leaves; no tag', T, async () => {
-      const text = tok('06b')
-      const callId = cid('06b')
-      await q.ask(x, text, callId)
-      assert.ok(await q.pileCard(x, 8000))
-      assert.equal(await ctx.host.call('qAnswer', { sessionId: x, answers: A.single }), true)
+    it('you answer in the session: the result is your batch', T, async () => {
+      const { id: callId } = await askX('06b')
+      assert.equal(await q.qAnswer(x, A.single), true)
       assert.equal((await q.result(x, callId)).text, resultText(A.single))
-      assert.ok(await q.noPileCard(x))
-      assert.equal(q.tagsOf(callId).length, 0)
-      await ctx.host.call('waitIdle', { sessionId: x })
+      await q.waitIdle(x)
     })
-    it('nobody answers: it stays in the pile and the agent keeps waiting', T, async () => {
-      const text = tok('06c')
-      const callId = cid('06c')
-      await q.ask(x, text, callId)
-      assert.ok(await q.pileCard(x, 8000))
-      await sleep(QUIET_MS * 2)
-      assert.ok(await q.pileCard(x, 500))
-      assert.equal((await q.allEvents(x)).some((e) => e.type === 'tool/result' && e.result.callId === callId), false)
-      await q.stop(x)
+    it('nobody answers: the agent keeps waiting in its own card', T, async () => {
+      const { card, id: callId } = await askX('06c')
+      await quiet(QSTUB.quietMs * 2)
+      await assertStillOpen(q, x, card, callId, 'nobody answered')
+      await q.userStop(x)
     })
   })
 
   it('MOD-07 a restart keeps the mode', LONG, async () => {
     assert.equal((await setFormMode(QUESTION_MODE.user)).ok, true)
-    await ctx.host.stop()
-    await boot(ctx)
-    assert.equal((await ctx.host.state()).questionMode, QUESTION_MODE.user)
-    assert.equal(savedRowConfig(ctx.home)?.[FIELD], QUESTION_MODE.user)
+    await restartQ(ctx)
+    assert.equal(await snapshotMode(), QUESTION_MODE.user)
+    assert.equal(savedRowConfig(q.home())?.[FIELD], QUESTION_MODE.user)
+    assert.equal((await q.rowConfig())?.value?.[FIELD], QUESTION_MODE.user, 'DSH\'s form shows it')
   })
 })
