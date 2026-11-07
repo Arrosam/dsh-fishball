@@ -1,7 +1,7 @@
 {
   "name": "fishball-connector",
-  "//version": "The major equals the contract major (CONNECTOR_CONTRACT.major, design §0.2).",
-  "version": "1.0.0",
+  "//version": "The package version is the release's (user decision 2026-11-07: 0.1.0-alpha.0 for both packages). It is independent of the contract version, which lives only in CONNECTOR_CONTRACT (1.1) and is checked when an instance attaches (design §0.2).",
+  "version": "0.1.0-alpha.0",
   "description": "Fishball's body in DeepSeek Harness: manages your sessions for Fishball (Hand over, message_fishball, permission requests, questions, watches) and connects an external Fishball instance through the documented fishball-connector contract (./contract).",
   "icon": "./assets/connector-icon.svg",
   "license": "MIT",
