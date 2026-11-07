@@ -5,7 +5,6 @@
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
 import { LIFETIME } from './src/native-runtime/constants.js'
-import { DEFAULT_CONTROL_LIMITS } from './src/native-control/index.js'
 import { registerNativeWeb } from './src/native-web.js'
 import { registerEmbed } from './src/slim/host/embed.js'
 import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
@@ -141,7 +140,6 @@ export async function apply(ctx, config) {
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },
       limits: LIFECYCLE_LIMITS,
-      control: { limits: DEFAULT_CONTROL_LIMITS },
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
     // One authenticated control transport, one envelope-v2 bridge, attached through the contract's
