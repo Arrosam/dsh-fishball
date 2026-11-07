@@ -5,14 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishball</title>
 <link rel="icon" href="data:,">
+<!-- DSH's design tokens first (I8): shell.css draws every colour, radius, font and shadow from them. -->
+<link rel="stylesheet" href="ui/dsh-tokens.css">
 <link rel="stylesheet" href="ui/shell.css">
 </head>
 <body>
+<!-- No title and no status tag (D27): the connector's frame shows Fishball's name and state. -->
 <header class="topbar">
-  <h1 class="brand">Fishball</h1>
   <div class="model-picker" id="model-picker"></div>
-  <span class="status" id="status" data-state="connecting" role="status" aria-live="polite">Connecting…</span>
+  <!-- Header actions, empty until I6 adds Settings and Back. -->
+  <div class="header-actions" id="header-actions"></div>
 </header>
+<!-- Shown only while the event stream is lost (§11). -->
+<p class="connection-banner" id="connection-banner" role="status" aria-live="polite" hidden></p>
 <main class="layout">
   <!-- The chat view builds the timeline, the read-only composer and the notice in here. -->
   <section class="chat" id="chat" aria-label="Fishball chat"></section>
