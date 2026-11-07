@@ -77,7 +77,7 @@ import { LIMITS } from '../limits.js'
 /**
  * Bridge resource ceilings. They are runtime configuration, not domain rules, so they are
  * separate from src/slim/limits.js (which is the frozen contract's own numeric set).
- * The four that mirror src/native-control/constants.js's v1 control limits keep those values
+ * The four that mirror the removed v1 control bridge's limits (I10) keep those values
  * until the slim contract owns a bridge timeout: one bridge, one set of numbers.
  */
 export const BRIDGE_HOST = Object.freeze({

@@ -14,7 +14,7 @@
  *   `fishballSessionState` (index.js). That provider is the only new wiring; nothing here
  *   re-implements the allowance, grant or question rules.
  *
- * Offer rules (§5.2, v1's native-control host):
+ * Offer rules (§5.2, as the removed v1 control host had them):
  * - An offer is connection-specific. `onConnection` clears every offer on a new handshake, so an
  *   answer from a previous wire can never be replayed; the live requests are re-offered to the
  *   new connection (APPR-07). `approval.list` reuses the current offer.
