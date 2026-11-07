@@ -9,6 +9,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, CONNECTOR, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTANCE, INSTALL_EVENTS, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { linkContractForSourceRun } from './contract-link.mjs'
 import { fixtureTool, plainConfig, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
 
@@ -85,21 +86,6 @@ function pluginPackages() {
   if (pkg.workspaces) return [{ name: CONNECTOR.name, dir: path.join(target, 'packages', 'connector') }, { name: INSTANCE.name, dir: path.join(target, 'packages', 'instance') }]
   // Old single-package checkout: one bundle holding both rows; there is no instance package to link.
   return [{ name: pkg.name, dir: target }]
-}
-/**
- * The instance imports `fishball-connector/contract` (docs/package-layout.md §5). In the repo the
- * connector is not installed as its dependency, so a source-linked run needs the workspace-shaped
- * link at the repo root; the tarball install test resolves it as a sibling in the profile instead.
- */
-function linkContractForSourceRun() {
-  const dir = path.join(REPO, 'node_modules')
-  const target = path.join(dir, CONNECTOR.name)
-  fs.mkdirSync(dir, { recursive: true })
-  let current = null
-  try { current = fs.readlinkSync(target) } catch { /* missing */ }
-  if (current === CONNECTOR.dir) return
-  fs.rmSync(target, { force: true })
-  fs.symlinkSync(CONNECTOR.dir, target)
 }
 /**
  * Plugin statuses: every boot re-points the links, so the same home can boot the old and the new
