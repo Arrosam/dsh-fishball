@@ -6,7 +6,7 @@
  * DSH's look, not DSH's classes (I8, §0.5 "Chat page"): DSH's component classes are build-hashed
  * CSS-module names, so this page keeps its own class names and draws them with DSH's tokens
  * (ui/dsh-tokens.css, loaded first) and with the measures of DSH 0.2.2-rc.1's own rules, named
- * below with the rule each comes from. Light and dark come from the tokens alone: shell.js sets
+ * below with the rule each comes from. Light and dark come from the tokens alone: ui/theme.js sets
  * body[data-ds-dark-theme], so no rule here needs a dark variant.
  */
 :root {

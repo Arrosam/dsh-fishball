@@ -12,6 +12,8 @@
  * opening a second stream (§3.6). Classes are the only styling hook, because the §3.3 CSP admits
  * no inline style; T07's stylesheet can style them.
  */
+import { DEFAULT_I18N } from './i18n.js'
+
 /** Same resource as the child's REMINDERS.relative; the broker strips its prefix before forwarding. */
 const API = Object.freeze({ path: 'api/reminders', read: 'GET', write: 'POST', action: 'cancel', media: 'application/json' })
 
@@ -33,22 +35,10 @@ const CLASS = Object.freeze({
 
 const ARIA = Object.freeze({ busy: 'aria-busy', label: 'aria-label', role: 'role', status: 'status', true: 'true', false: 'false' })
 
-/** Every visible string in one place. */
-const COPY = Object.freeze({
-  heading: 'Reminders',
-  loading: 'Loading reminders…',
-  empty: 'No reminders yet.',
-  loadFailed: 'Reminders could not be loaded.',
-  cancelFailed: 'The reminder could not be cancelled.',
-  cancel: 'Cancel',
-  delete: 'Delete',
-  cancelName: (title) => `Cancel reminder: ${title}`,
-  deleteName: (title) => `Delete reminder: ${title}`,
-  showing: (shown, total) => `Showing ${shown} of ${total} reminders.`,
-  status: Object.freeze({ active: 'Active', paused: 'Paused', ended: 'Ended' }),
-})
+/** The dictionary key of a reminder status (ui/i18n.js `reminders.status.*`). */
+const STATUS_KEY = 'reminders.status.'
 
-/** Schedule task statuses the view distinguishes; the copy map names the same values. */
+/** Schedule task statuses the view distinguishes; the dictionaries name the same values. */
 const STATUS = Object.freeze({ active: 'active' })
 
 const DATE_TIME = Object.freeze({ dateStyle: 'medium', timeStyle: 'short' })
@@ -65,20 +55,20 @@ function clamp(value) {
 }
 
 /**
- * Format one occurrence in the record's zone when it names one, otherwise in the viewer's zone.
+ * Format one occurrence, in the page's language, in the record's zone when it names one, otherwise in the viewer's zone.
  * An RRULE keeps its zone inside the rule text, so those rows show the viewer's zone; DSH's own
  * formatter would be needed for more, and it is not part of this no-build module.
  */
-function formatWhen(reminder) {
+function formatWhen(reminder, locale) {
   const raw = text(reminder.scheduledAt)
   const date = new Date(raw)
   if (raw === '' || Number.isNaN(date.getTime())) return raw
   const zone = text(reminder.timeZone)
   try {
-    return new Intl.DateTimeFormat(undefined, zone === '' ? DATE_TIME : { ...DATE_TIME, timeZone: zone }).format(date)
+    return new Intl.DateTimeFormat(locale, zone === '' ? DATE_TIME : { ...DATE_TIME, timeZone: zone }).format(date)
   } catch {
     // An unknown IANA zone must still render the instant rather than fail the whole list.
-    return new Intl.DateTimeFormat(undefined, DATE_TIME).format(date)
+    return new Intl.DateTimeFormat(locale, DATE_TIME).format(date)
   }
 }
 
@@ -87,11 +77,13 @@ function formatWhen(reminder) {
  *
  * @param {object} options
  * @param {Element} options.container - element the section is appended to.
+ * @param {object} [options.i18n] - the page's words (ui/i18n.js); English by default.
  * @returns {{ refresh: () => Promise<void>, dispose: () => void }} `refresh` re-reads the API
  *   (also used for the SSE change event); `dispose` removes the section and ignores late replies.
  */
 export function createRemindersView(options = {}) {
-  const { container } = options ?? {}
+  const { container, i18n = DEFAULT_I18N } = options ?? {}
+  const { t } = i18n
   if (!container || typeof container.append !== 'function' || typeof container.ownerDocument?.createElement !== 'function') {
     throw new TypeError('fishball-native-app: a container element is required')
   }
@@ -100,7 +92,7 @@ export function createRemindersView(options = {}) {
   root.className = CLASS.root
   const heading = document.createElement('h2')
   heading.className = CLASS.heading
-  heading.textContent = COPY.heading
+  heading.textContent = t('reminders.heading')
   const status = document.createElement('p')
   status.className = CLASS.status
   status.setAttribute(ARIA.role, ARIA.status)
@@ -110,7 +102,7 @@ export function createRemindersView(options = {}) {
   list.className = CLASS.list
   const empty = document.createElement('p')
   empty.className = CLASS.empty
-  empty.textContent = COPY.empty
+  empty.textContent = t('reminders.empty')
   empty.hidden = true
   root.append(heading, status, summary, list, empty)
   container.append(root)
@@ -132,7 +124,7 @@ export function createRemindersView(options = {}) {
     if (disposed) return
     const current = ++generation
     setBusy(true)
-    setStatus(COPY.loading)
+    setStatus(t('reminders.loading'))
     try {
       const response = await fetch(API.path, { method: API.read, headers: { accept: API.media }, cache: 'no-store' })
       if (!response.ok) throw new Error(String(response.status))
@@ -143,7 +135,7 @@ export function createRemindersView(options = {}) {
       setStatus('')
     } catch {
       if (disposed || current !== generation) return
-      setStatus(COPY.loadFailed)
+      setStatus(t('reminders.loadFailed'))
     } finally {
       if (!disposed && current === generation) setBusy(false)
     }
@@ -153,7 +145,7 @@ export function createRemindersView(options = {}) {
     list.replaceChildren(...page.items.map(renderReminder))
     empty.hidden = page.items.length !== 0
     summary.textContent = Number.isSafeInteger(page.total) && page.total > page.items.length
-      ? COPY.showing(page.items.length, page.total)
+      ? t('reminders.showing', { shown: page.items.length.toLocaleString(i18n.locale), total: page.total.toLocaleString(i18n.locale) })
       : ''
   }
 
@@ -168,11 +160,12 @@ export function createRemindersView(options = {}) {
     const when = document.createElement('time')
     when.className = CLASS.when
     when.dateTime = text(reminder.scheduledAt)
-    when.textContent = formatWhen(reminder)
+    when.textContent = formatWhen(reminder, i18n.locale)
     when.title = text(reminder.scheduledAt)
     const state = document.createElement('span')
     state.className = CLASS.state
-    state.textContent = Object.hasOwn(COPY.status, reminder.status) ? COPY.status[reminder.status] : text(reminder.status)
+    // A status this version does not know is shown as the child sent it.
+    state.textContent = t(STATUS_KEY + text(reminder.status)) ?? text(reminder.status)
     const prompt = document.createElement('span')
     prompt.className = CLASS.prompt
     prompt.textContent = clamp(text(reminder.prompt))
@@ -182,8 +175,8 @@ export function createRemindersView(options = {}) {
     // Paused and ended reminders cannot fire again; deleting them is the same request with a
     // label that says what the user is doing.
     const cancellable = reminder.status === STATUS.active
-    action.textContent = cancellable ? COPY.cancel : COPY.delete
-    action.setAttribute(ARIA.label, cancellable ? COPY.cancelName(title) : COPY.deleteName(title))
+    action.textContent = cancellable ? t('reminders.cancel') : t('reminders.delete')
+    action.setAttribute(ARIA.label, cancellable ? t('reminders.cancelName', { title }) : t('reminders.deleteName', { title }))
     action.addEventListener('click', () => { void cancel(text(reminder.id), action) })
     item.append(name, when, state, prompt, action)
     return item
@@ -204,7 +197,7 @@ export function createRemindersView(options = {}) {
       await refresh()
     } catch {
       if (disposed) return
-      setStatus(COPY.cancelFailed)
+      setStatus(t('reminders.cancelFailed'))
       action.disabled = false
     }
   }
