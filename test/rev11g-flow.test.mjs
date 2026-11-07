@@ -72,7 +72,7 @@ describe('Revision 11 rev11g on H-STUB: how a managed session\'s question travel
     assert.match(offer.approvalId, /^qst_/)
     assert.deepEqual(offer.questions.map((x2) => x2.id), ['color'])
     assert.deepEqual(offer.choices, ['Red', 'Blue'])
-    const [notice] = await q.notices(offer.approvalId)
+    const notice = await q.noticeOf(offer.approvalId)
     assert.ok(notice, 'an approval notice names the question id')
     assert.equal(notice.sourceSessionId, x)
     const block = untrustedBlock(notice.text)
