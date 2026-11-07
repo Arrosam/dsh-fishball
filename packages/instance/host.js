@@ -21,11 +21,10 @@ const PLUGIN = Object.freeze({
   name: 'fishball-instance', service: 'nativeFishballRuntime',
   // The contract's display name for this instance (inst-OQ-06), shown by the connector's view.
   displayName: 'Fishball instance',
-  // The pages this instance registers with the connector (contract §1.2): its chat, framed through
-  // the main-side embed broker. `settings` (design §0.6: '/fishball/embed/?view=settings') is added
-  // by I6 together with the settings view: today's child page has none, so registering it would make
-  // the connector's "Open instance settings" open the chat.
-  ui: Object.freeze({ chat: ROUTES.document }),
+  // The pages this instance registers with the connector (contract §1.2), both framed through the
+  // main-side embed broker: the chat, and the same page's settings view (design §0.6, I6), which
+  // the page selects by its `view=settings` query (src/slim/ui/shell.js).
+  ui: Object.freeze({ chat: ROUTES.document, settings: ROUTES.document + '?view=settings' }),
   // Every service this row's ctx reads as a property must be listed: Cordis's context proxy
   // throws `cannot get property "<name>" without inject` for any other (0.2.1-rc.5 and
   // 0.2.2-rc.1 alike); ctx.get() is the only unchecked read. Each one below has the same name
@@ -185,7 +184,7 @@ export async function apply(ctx, config) {
     unsubscribeAdmin = owner.onAdminTransport((transport) => { if (!closed) admin.attach(transport) })
     // T16's provider-sync transport comes up on the same authenticated wire; a replaced
     // transport rejects whatever was in flight (the child restarted, so an answer is never
-    // retried; the next Refresh models previews afresh).
+    // retried; the next Check previews afresh).
     unsubscribeProviderSync = owner.onProviderSyncTransport((transport, metadata) => {
       if (closed) return
       try { providerSync.attach(transport, metadata) } catch { /* the next wire replaces it */ }
@@ -294,11 +293,12 @@ export async function apply(ctx, config) {
     status, start, stop, restart, retry,
     // T12's settings routes reach the child only through this relay (§9).
     admin,
-    // T16's provider-sync page API (§10): only status and the one-step sync. The bridge's
-    // attach/request stay private to this row, so no other row can talk to the child target.
+    // The "Model for Fishball" API (§10, D26): status, Check and Add. The bridge's attach/request
+    // stay private to this row, so no other row can talk to the child target.
     providerSync: Object.freeze({
       status: () => providerSync.status(),
-      sync: () => providerSync.sync(),
+      check: () => providerSync.check(),
+      add: (payload) => providerSync.add(payload),
     }),
     async health() {
       if (closed || !owner || state !== PLUGIN.state.ready) return status()
@@ -317,8 +317,8 @@ export async function apply(ctx, config) {
   registerEmbed(ctx, service)
   // T12's settings page reaches the child only through the admin relay (§9).
   registerAdminRoutes(ctx, service)
-  // T16's provider-sync route sits beside the admin routes and is subject to the same
-  // owner-only Fetch registry and same-origin fence (§10).
+  // The model-sync routes (models/check, models/add) sit beside the admin routes and are subject
+  // to the same owner-only Fetch registry and same-origin fence (§10).
   registerProviderSyncRoutes(ctx, service)
   registerNativeWeb(ctx, service)
   // The one-time copy from the old row runs first (DSH writes settings only for an active row, so
