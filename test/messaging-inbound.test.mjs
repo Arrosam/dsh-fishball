@@ -315,7 +315,7 @@ describe('P5 message_fishball', () => {
 
   it('MSG-13 the client bundle is served and has the Send to Fishball entry', T, async (t) => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references dsh-fishball/client.js')
+    assert.ok(bundle.found, 'index references fishball-connector/client.js')
     assert.equal(bundle.status, 200)
     assert.ok(bundle.text.includes('Send to Fishball'), 'entry label')
     // How the client builds the route path is not specified; record whether it appears literally.

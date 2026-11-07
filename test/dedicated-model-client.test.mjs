@@ -14,7 +14,7 @@ import { UI, clientHarness, nodes, textOf } from './support/dedicated-model-clie
 const DOM = Object.freeze({ settings: 'data-fishball-model-settings', gate: 'data-fishball-model-gate', select: 'data-fishball-model-select', save: /save/i, modelSeat: 'conversation.input.model' })
 const has = (attribute) => (node) => node.props?.[attribute] !== undefined
 const gateEntry = (harness) => harness.registrations.find((entry) => entry.name === UI.dock && entry.id === 'fishball-model-required')
-const settingsEntry = (harness) => harness.registrations.find((entry) => entry.key === 'dsh-fishball' && /config/.test(entry.name))
+const settingsEntry = (harness) => harness.registrations.find((entry) => entry.key === 'fishball-connector' && /config/.test(entry.name))
 
 async function withClient(run) {
   const harness = await clientHarness()
