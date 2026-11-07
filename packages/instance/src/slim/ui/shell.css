@@ -177,10 +177,11 @@ button, select, textarea, input { font: inherit; }
 }
 @keyframes fb-caret { 50% { opacity: 0; } }
 
-/* Tool rows and decision labels: DSH's quiet one-line summary that expands (dsh-client-ui-chat). */
-.entry-tool { align-items: stretch; }
+/* Tool rows, decision labels and card records: DSH's quiet one-line summary that expands (dsh-client-ui-chat). */
+.entry-tool, .entry-record { align-items: stretch; }
 .tool summary,
-.decision-summary {
+.decision-summary,
+.record-summary {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -190,9 +191,16 @@ button, select, textarea, input { font: inherit; }
   font: var(--dsw-font-xs-13);
 }
 .tool summary:hover,
-.decision-summary:hover { color: var(--dsw-alias-label-secondary); }
+.decision-summary:hover,
+.record-summary:hover { color: var(--dsw-alias-label-secondary); }
 .tool-name { font-weight: 500; }
 .tool-state { margin-left: auto; font: var(--dsw-font-xxs-12); color: var(--dsw-alias-label-caption); }
+/* A card record (I7, ui/records.js): the connector's DisclosureRow, a title and a muted line. */
+.record-summary { gap: 0; }
+.record-title { font-weight: 500; flex: none; }
+.record-line, .record-label, .record-muted { color: var(--dsw-alias-label-caption); }
+.record-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.record-body { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; font: var(--dsw-font-xs-13); color: var(--dsw-alias-label-secondary); overflow-wrap: anywhere; }
 /* Arguments and output: DSH's code block (markdown code block tokens). */
 .tool-arguments, .tool-output {
   margin: 8px 0 0;
