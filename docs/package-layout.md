@@ -13,7 +13,7 @@ changed in code" below, every file moved unchanged (`git mv`).
 
 ```
 package.json                 root, private, not a plugin: workspaces packages/connector, packages/instance
-packages/connector/          npm fishball-connector 1.0.0 (major = contract major)
+packages/connector/          npm fishball-connector 0.1.0-alpha.0 (the release version; contract 1.1 is CONNECTOR_CONTRACT)
   package.json               exports ".", "./client", "./contract", "./package.json";
                              dsh.bundle.patch ./cordis.patch.yml; dsh.client (platform web)
   cordis.patch.yml           inserts exactly one row: id fishball-connector, name fishball-connector
@@ -30,12 +30,14 @@ packages/connector/          npm fishball-connector 1.0.0 (major = contract majo
   src/slim/{contract,limits,card-record,inbox-markers,attachment-transfer}.js
                              re-export shims of ../../contract/*, so old import paths keep working
   LICENSE THIRD_PARTY_NOTICES.md
-packages/instance/           npm fishball-instance 0.1.0
+packages/instance/           npm fishball-instance 0.1.0-alpha.0
   package.json               exports ".", "./client", "./native-runtime", "./package.json";
-                             dsh.bundle.patch ./cordis.patch.yml; peerDependencies fishball-connector ^1
+                             dsh.bundle.patch ./cordis.patch.yml;
+                             peerDependencies fishball-connector ">=0.1.0-alpha.0 <2"
   cordis.patch.yml           inserts exactly one row: id fishball-instance, name fishball-instance
   host.js                    the row (was native-host.js)
   native-child.js            the child's lifecycle row (was native-child.js)
+  uninstall.js               the uninstall cleanup command (Q3a, design §0.10; README "Uninstall")
   src/native-web.js src/native-preflight.js src/recommended.js src/persona.js
   src/provider-sync{,-service,-coordinator,-host}.js
   src/native-runtime/**
@@ -117,9 +119,12 @@ Deleted with no replacement: the root `cordis.patch.yml`, root `index.js`, `clie
 Pack each package from its own folder; the root is not packable as a plugin:
 
 ```bash
-(cd packages/connector && npm pack)     # fishball-connector-1.0.0.tgz, 58 entries
-(cd packages/instance  && npm pack)     # fishball-instance-0.1.0.tgz, 62 entries
+(cd packages/connector && npm pack)     # fishball-connector-0.1.0-alpha.0.tgz, 59 entries
+(cd packages/instance  && npm pack)     # fishball-instance-0.1.0-alpha.0.tgz, 64 entries
 ```
+
+Both packages carry the release version `0.1.0-alpha.0` (Q3, design §0.2). Install, uninstall and
+the supported DSH versions are in the [README](<../README.md>).
 
 Neither tarball contains the other package's files. The instance tarball does not contain the
 contract: at runtime it resolves `fishball-connector/contract` from the installed connector.

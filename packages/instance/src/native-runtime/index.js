@@ -3,8 +3,8 @@ import { pathToFileURL } from 'node:url'
 import { spawn as nodeSpawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { RUNTIME, RUNTIME_LIMITS, LIFETIME, NativeRuntimeError, fail, runtimeLimits, appAccess } from './constants.js'
-import { pathsFor, prepareLayout, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
+import { RUNTIME, RUNTIME_LIMITS, LIFETIME, UNINSTALL, NativeRuntimeError, fail, runtimeLimits, appAccess } from './constants.js'
+import { pathsFor, prepareLayout, existingLayout, removeRuntime, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
 import { resolveInstallation, isolatedEnvironment, childExecArgv, initializeProfile, copyChildCode, runProbe } from './installation.js'
 import { connectWire } from './wire.js'
 import { launchOverlay } from './overlay.js'
@@ -124,6 +124,27 @@ class NativeRuntime {
     if (!record) fail('NOT_RUNNING')
     const status = await this.authenticateReady(record)
     return appAccess(status.access)
+  }) }
+  /**
+   * Delete this home's runtime tree, `<home>/fishball/runtime` (uninstall, design §0.10). Nothing
+   * is created when the tree is absent. The tree must first be proven this home's: no symbolic
+   * link in its path or its layout directories, and an owner marker naming this home
+   * (existingLayout, then prepareLayout, which throws for a missing or foreign marker).
+   *
+   * The child must be stopped already: a recorded child that is alive, or whose state is unknown
+   * (no pid record, `ps` unreadable), is refused with CHILD_RUNNING and nothing is removed.
+   * Quitting DSH stops it: the parent pipe closes and the child exits by itself
+   * (parent-watch.js, LIFETIME.childExitTimeoutMs). The command does not stop the child itself:
+   * a main DSH that still runs owns it and could start it again into the tree being deleted.
+   * @returns {Promise<{removed: boolean, root: string}>}
+   */
+  uninstall() { return this.serial(async () => {
+    if (!await existingLayout(this.options.mainHome)) return { removed: false, root: this.paths.root }
+    await this.prepare()
+    const record = await this.active()
+    if (record && await this.alive(await this.pid(record)) !== false) fail(UNINSTALL.childRunning)
+    await removeRuntime(this.paths)
+    return { removed: true, root: this.paths.root }
   }) }
   async prepare() {
     const layout = await prepareLayout(this.options.mainHome)

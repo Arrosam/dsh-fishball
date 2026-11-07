@@ -11,10 +11,13 @@ export const inside = (root, file) => {
 export async function exists(file) {
   try { return await lstat(file) } catch (error) { if (error.code === 'ENOENT') return undefined; throw error }
 }
+/** A real directory (not a link to one), owned by this user and closed to everyone else. */
+function assertPrivate(info) {
+  if (!info.isDirectory() || info.isSymbolicLink() || (info.mode & 0o077) || info.uid !== process.getuid()) fail('UNSAFE_DIRECTORY', 'Attached directories must be owned private directories.')
+}
 export async function privateDirectory(directory) {
   try { await mkdir(directory, { mode: RUNTIME.privateDirectoryMode }) } catch (error) { if (error.code !== 'EEXIST') throw error }
-  const info = await lstat(directory)
-  if (!info.isDirectory() || info.isSymbolicLink() || (info.mode & 0o077) || info.uid !== process.getuid()) fail('UNSAFE_DIRECTORY', 'Attached directories must be owned private directories.')
+  assertPrivate(await lstat(directory))
   return directory
 }
 export async function readPrivate(file, limit = RUNTIME_LIMITS.maxMetadataBytes) {
@@ -45,14 +48,35 @@ export function pathsFor(mainHome) {
   const home = path.join(root, 'dsh-home')
   return { mainHome, root, home, profile: path.join(home, 'profiles', RUNTIME.profileName), workspace: path.join(root, 'workspace'), osHome: path.join(root, 'os-home'), agentsHome: path.join(root, 'agents-home'), tmp: path.join(root, 'tmp'), launches: path.join(root, 'launches') }
 }
-export async function prepareLayout(mainHome) {
+/**
+ * The layout for a canonical main home, and the runtime root's parent (`<home>/fishball`) if it
+ * exists. The home and that parent must be their own real paths, so no symbolic link anywhere
+ * above the root can send a later write or delete outside this home.
+ */
+async function homeLayout(mainHome) {
   if (!path.isAbsolute(mainHome) || await realpath(mainHome) !== mainHome) fail('INVALID_MAIN_HOME', 'Main home must be a canonical absolute directory.')
   const paths = pathsFor(mainHome)
   const parent = path.dirname(paths.root)
   const parentInfo = await exists(parent)
-  if (parentInfo) {
-    if (!parentInfo.isDirectory() || parentInfo.isSymbolicLink() || await realpath(parent) !== parent) fail('UNSAFE_DIRECTORY')
-  } else await privateDirectory(parent)
+  if (parentInfo && (!parentInfo.isDirectory() || parentInfo.isSymbolicLink() || await realpath(parent) !== parent)) fail('UNSAFE_DIRECTORY')
+  return { paths, parent, parentInfo }
+}
+/**
+ * The runtime layout when its root already exists, or undefined when it does not; it creates
+ * nothing (uninstall, design §0.10). The root must be a private directory of this user, not a
+ * link; its owner marker is checked by prepareLayout afterwards.
+ */
+export async function existingLayout(mainHome) {
+  const { paths, parentInfo } = await homeLayout(mainHome)
+  if (!parentInfo) return undefined
+  const rootInfo = await exists(paths.root)
+  if (!rootInfo) return undefined
+  assertPrivate(rootInfo)
+  return paths
+}
+export async function prepareLayout(mainHome) {
+  const { paths, parent, parentInfo } = await homeLayout(mainHome)
+  if (!parentInfo) await privateDirectory(parent)
   const rootInfo = await exists(paths.root)
   if (!rootInfo) {
     await privateDirectory(paths.root)
@@ -91,6 +115,21 @@ export async function removeLaunch(paths, record) {
   await unlink(path.join(paths.root, RUNTIME.active))
   // No data/profile cleanup: only the exact dead instance's retired launch directory.
   // Instance-bound code snapshots stay in the profile; never broaden deletion into user state.
+  await rm(retired, { recursive: true })
+}
+/**
+ * Delete the runtime root and everything in it (uninstall, design §0.10). The caller has already
+ * proved the tree is this home's (existingLayout, then prepareLayout's owner marker) and that its
+ * child is dead. The root is first renamed beside itself, as removeLaunch retires a launch: the rename
+ * is atomic, so the runtime path is either the whole proven tree or gone, and a later start or
+ * reinstall never meets a half-deleted tree it cannot prove. `rm` with `recursive` then removes a
+ * symbolic link itself, never what it points to, so nothing outside the root is reached. A crash
+ * during that `rm` leaves only the renamed folder, which nothing reads.
+ */
+export async function removeRuntime(paths) {
+  if (await realpath(paths.root) !== paths.root) fail('UNSAFE_DIRECTORY')
+  const retired = paths.root + RUNTIME.retiredRootInfix + randomUUID()
+  await rename(paths.root, retired)
   await rm(retired, { recursive: true })
 }
 export async function lifecycleLog(paths, code, limit) {

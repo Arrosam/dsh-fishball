@@ -26,6 +26,9 @@ export const RUNTIME = Object.freeze({
   privateFileMode: 0o600,
   secretBytes: 32,
   marker: 'owner.json',
+  // Uninstall renames the runtime root to `runtime.removing-<uuid>` beside it before deleting it
+  // (files.js removeRuntime), so the runtime path is never left half-deleted.
+  retiredRootInfix: '.removing-',
   secret: 'control.secret',
   active: 'active.json',
   pid: 'pid.json',
@@ -106,6 +109,35 @@ export const LIFETIME = Object.freeze({
   childExitTimeoutMs: 3000, successExitCode: 0, failureExitCode: 1,
   gracefulSignal: 'SIGTERM', forceSignal: 'SIGKILL',
   registryKey: 'dsh-fishball.native-lifecycle.v1',
+})
+
+/**
+ * The uninstall cleanup command, `uninstall.js` (design §0.10, Q3). Neither DSH 0.2.1-rc.5 nor
+ * 0.2.2-rc.1 runs plugin code on removal: the Plugins page disposes the row as a disable does, then
+ * runs `pnpm remove` (no lifecycle script), and `dsh plugin remove` only runs pnpm. So the user
+ * runs this command with DSH quit and before removing the package.
+ */
+export const UNINSTALL = Object.freeze({
+  homeFlag: '--home',
+  // DSH's own home rule (dsh-home-paths `resolveDshHome`, identical in 0.2.1-rc.5 and 0.2.2-rc.1):
+  // a given path, else a non-blank $DSH_HOME, else ~/.dsh, with a leading `~` expanded. It is
+  // repeated because the command runs under plain Node from the profile, where DSH's packages do
+  // not resolve (DSH profiles install no peers: autoInstallPeers false).
+  homeEnv: 'DSH_HOME',
+  defaultHomeDirectory: '.dsh',
+  tilde: '~',
+  tildePrefixes: Object.freeze(['~/', '~\\']),
+  // The recorded child is alive or its state is unknown: DSH has not been quit yet.
+  childRunning: 'CHILD_RUNNING',
+  // Not LIFETIME's codes: those are the child process's own exit; these are the command's.
+  exitCode: Object.freeze({ done: 0, refused: 1, usage: 2 }),
+  message: Object.freeze({
+    usage: 'Usage: node uninstall.js [--home <DSH_HOME>]\nQuit DSH first, then run this before removing fishball-instance.\n',
+    removed: 'Removed the Fishball instance data: {path}\n',
+    absent: 'Nothing to remove: {path} does not exist.\n',
+    // The codes are listed in the README ("Uninstall"); the most common is CHILD_RUNNING.
+    refused: 'Nothing was removed from {path} ({code}). Quit DSH, wait a few seconds and run it again.\n',
+  }),
 })
 
 export const RUNTIME_LIMITS = Object.freeze({
