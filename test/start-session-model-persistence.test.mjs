@@ -1,43 +1,45 @@
-/** Omitted effort is durable as omission; the provider still supplies model-local defaults after cold resume. */
+/**
+ * session.start with a model and no effort (contract §4.1 `model?`, `reasoningEffort?`; DESIGN §5d
+ * "omitted effort stays omitted so the provider's default is not pinned"), over the bridge (H-STUB):
+ * the omission is durable, so after a genuine cold resume the provider still supplies its own default.
+ *
+ * | id     | technique | expected |
+ * |--------|-----------|----------|
+ * | SSM-26 ×2 | ST (model-only start → host stops → cold resume) × EP (model with an adapter default effort / without reasoning) | every request after the resume uses the chosen provider/model, with the adapter's default effort (or none); DSH's default model and the connector's settings unchanged |
+ *
+ * Retired:
+ * - The `selected` reply field without reasoningEffort: contract §4.1's reply has no `selected`; the omission is checked on the requests instead.
+ */
 import assert from 'node:assert/strict'
-import { after, before, describe, it } from 'node:test'
-import { NEEDS_INSTANCE_STUB } from './support/constants.mjs'
-import { HOOK, T, turn } from './support/expect.mjs'
-import { selectionHost, START_MODEL as C, route } from './support/start-session-model.mjs'
+import { describe, it } from 'node:test'
+import { T, turn } from './support/expect.mjs'
+import { START_MODEL as C, route } from './support/start-session-model.mjs'
+import { assertModelStart, useModelHost } from './support/instance-stub-start.mjs'
 
 const cases = [
   { label: 'model with adapter default', model: C.models.analysis, effort: C.effort.default },
-  { label: 'model without reasoning', model: C.models.plain, effort: undefined },
+  { label: 'model without reasoning', model: C.models.plain, effort: null },
 ]
 
 for (const scenario of cases) {
-  describe('start_session model: omitted effort cold persistence, ' + scenario.label, { skip: NEEDS_INSTANCE_STUB }, () => {
-    let w
-    before(async () => { w = await selectionHost('start-model-omission-resume') }, HOOK)
-    after(async () => { await w?.stop() }, HOOK)
-    it('SSM-26 ST model-only start -> host stops -> cold resume: chosen route persists; no effort is invented in selected result', T, async () => {
+  describe('session.start with a model: omitted effort survives a cold resume, ' + scenario.label, () => {
+    const w = useModelHost('g-ssm-omission')
+    it('SSM-26 ST model-only start → host stops → cold resume: the chosen route persists and no effort is pinned', T, async () => {
       const before = await w.snapshots()
       await w.arm()
-      const answer = await w.start({ model: route(scenario.model) })
-      const sid = await w.assertSuccess(answer, { model: scenario.model, effort: scenario.effort, selectedEffort: null })
-      assert.equal(Object.hasOwn(answer.json.selected, 'reasoningEffort'), false)
-      const home = w.home
-      await w.disarm(); await w.stop()
-      w = await selectionHost('start-model-omission-resumed', { home })
-      assert.equal(await w.host.call('agentStatus', { sessionId: sid }), null, 'precondition: target genuinely cold')
-      assert.equal((await w.host.call('resume', { sessionId: sid })).error, null)
+      let json
+      try { json = await assertModelStart(w, await w.start({ model: route(scenario.model) }), { model: scenario.model, effort: scenario.effort }) } finally { await w.disarm() }
+      await w.restart()
+      assert.equal(await w.host.call('agentStatus', { sessionId: json.sessionId }), null, 'precondition: the target is cold')
+      assert.equal((await w.host.call('resume', { sessionId: json.sessionId })).error, null)
       await w.arm()
       try {
-        await turn(w.host, sid)
-        const requests = await w.requests(sid)
+        await turn(w.host, json.sessionId)
+        const requests = await w.requests(json.sessionId)
         assert.ok(requests.length)
-        for (const request of requests) {
-          assert.equal(request.provider, C.provider)
-          assert.equal(request.model, scenario.model)
-          assert.equal(request.reasoningEffort, scenario.effort ?? null)
-        }
-        await w.noMutation(before)
+        for (const r of requests) assert.deepEqual([r.provider, r.model, r.reasoningEffort], [C.provider, scenario.model, scenario.effort])
       } finally { await w.disarm() }
+      await w.noMutation(before)
     })
   })
 }

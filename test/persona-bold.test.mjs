@@ -25,7 +25,8 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { NEEDS_INSTANCE_STUB, PERSONA_BOLD, PRESET, STATUS } from './support/constants.mjs'
+import { PERSONA_BOLD, PRESET, STATUS } from './support/constants.mjs'
+import { MSGF } from './support/instance-stub-messaging.mjs'
 import { HOOK, T, turn } from './support/expect.mjs'
 import { bootHost, bootLive, newHome } from './support/host.mjs'
 import { baselineAvailable, countIn, isRuleLine, loadBaseline, loadCurrent, personaLines, textBefore } from './support/persona-bold.mjs'
@@ -141,7 +142,8 @@ describe('persona rule: Chinese punctuation outside bold text (static)', () => {
   })
 })
 
-describe('R-B3 the rule reaches the model: the system prompt of a Fishball request, and of an ordinary session', { skip: NEEDS_INSTANCE_STUB }, () => {
+// Still skipped (H-STUB rewrite): see MSGF.skip.personaPrompt. PBD-20 above keeps the static R-B3 check of the row.
+describe('R-B3 the rule reaches the model: the system prompt of a Fishball request, and of an ordinary session', { skip: MSGF.skip.personaPrompt }, () => {
   let home
   let host
   let fb

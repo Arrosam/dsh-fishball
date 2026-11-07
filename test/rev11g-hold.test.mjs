@@ -1,165 +1,158 @@
 /**
- * Revision 11 rev11g, FIRST: the held wait of a timed question (DESIGN §7a.10 "Time limit", §14 row rev11g "First,
- * before the rest of the phase", §16 Q-r11-timed-wait, Q-r11-timed-release, Q-r11-continued-cards; S36 choice 3). The
- * router attaches (`userQuestions.attachWait`) and holds a timed question's foreground wait through
- * `approvalAnswerSeconds` although the tool's own `timeout` is shorter, and keeps holding once the question is a card in
- * your pile, so the session waits in the SAME turn until you answer. Black-box: the tool result of the call never
- * becomes the `pending` result, no `user-question-reply` message starts a new turn, and the answer arrives as the call's
- * result. approvalAnswerSeconds and the call's `timeout` are in whole seconds, so the timings below are seconds.
+ * Revision 11 rev11g on H-STUB, FIRST: the held wait of a timed question (DESIGN §7a.10 "Time limit", §16
+ * Q-r11-timed-wait, Q-r11-timed-release; S36-attachWait). The router claims a timed question's foreground wait and
+ * passes it on to the session card untimed, so the tool's own shorter `timeout` does not end it: the instance's
+ * answer within `approvalAnswerSeconds` is the call's result in the same turn, and after the limit the session
+ * keeps waiting in the same turn until you answer. Fishball is the stub instance (contract 1.1 §4.2, §5);
+ * approvalAnswerSeconds and the call's `timeout` are whole seconds.
  *
- * | id      | technique | expected |
- * |---------|-----------|----------|
- * | HLD-01  | BVA (timeout 1 s < approvalAnswerSeconds 6 s; Fishball answers at about 3 s) | no pending result at 1 s+; the session's own card still open; Fishball's answer is the call's result in the same turn |
- * | HLD-02  | BVA (timeout 1 s, approvalAnswerSeconds 2 s; nobody answers) | the pile card exists after 2 s; the call has no result 3 s later (timeout passed twice); you answer on the card: the call's result, same turn, own card closed |
- * | HLD-03  | BVA (timeout 2 s > approvalAnswerSeconds 1 s) | card after 1 s; still no result after the tool's own 2 s; the answer is the same turn's result |
- * | HLD-04  | EP (timeout -1: the foreground wait has no limit) | Fishball's answer within approvalAnswerSeconds is the call's result |
- * | HLD-05  | EP (default timeout 120 s, Fishball answers at once) | the answer is the call's result in the same turn (no pending) |
- * | HLD-06  | ST (you answer in the session's own card while held) | the call's result; the pile card (if any) leaves; Fishball's late answer is refused |
- * | HLD-07  | ST (the turn is stopped while held) | the card leaves, the own card closes, a late answer is refused; no pending result is recorded as an answer |
+ * | id      | technique | requirement | expected |
+ * |---------|-----------|-------------|----------|
+ * | HLD-01  | BVA (timeout 1 s < approvalAnswerSeconds 6 s; the instance answers at about 2 s) | §7a.10 Time limit | the own card is untimed; no pending result after 1 s+; the own card still open; the offer is still listed; the instance's answer is the call's result in the same turn |
+ * | HLD-02  | BVA (timeout 1 s, approvalAnswerSeconds 2 s; nobody answers) | §7a.10 "keeps holding" | the question leaves the instance after about 2 s; the call has no result 3 s later; DSH never marked it continued; you answer in the own card: the result, same turn |
+ * | HLD-03  | BVA (timeout 2 s > approvalAnswerSeconds 1 s) | §7a.10 | it leaves the instance after 1 s; still no result after the tool's own 2 s; your answer is the same turn's result |
+ * | HLD-04  | EP (timeout -1: no foreground limit) | §7a.10 | the instance's answer within approvalAnswerSeconds is the call's result |
+ * | HLD-05  | EP (default timeout 120 s, the instance answers at once) | §7a.10 | the answer is the same turn's result (no pending) |
+ * | HLD-06  | ST (you answer in the own card while held) | §7a.10 The race | the call's result; the instance's late answer is refused |
+ * | HLD-07  | ST (your Stop while held, after the limit) | §7a.10 "Stop needs no handling" | the own card closes; a late answer is refused; no answer was recorded for the call |
+ *
+ * Retired:
+ * - HLD-02/03/07 pile parts ("the pile card exists", "you answer on the card", "the route answers 409"): the pile and its question route are deleted (slim §12); the user answers only in the session's own card, which these cases use instead.
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ASK_USER_QUESTION, LIMITS, PRESET, QUESTION_API, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
-import { HOOK, T, settledIdle } from './support/expect.mjs'
-import { A, Q, cardId, qHost, qTools, refused, resultText, sleep, tokens, until } from './support/rev11g.mjs'
+import { LIMITS, PRESET } from './support/constants.mjs'
+import { HOOK, T } from './support/expect.mjs'
+import { stopStub } from './support/instance-stub.mjs'
+import { A, Q, QSTUB, assertStillOpen, bootQ, codeOf, qTools, resultText, sleep, tokens } from './support/instance-stub-questions.mjs'
 
 const { tok, cid } = tokens('HLD')
+/** Waits measured from the moment the own card opened, in ms: past a 1 s and a 2 s tool timeout, and the 3 s re-check. */
+const WAIT = { pastOneSecond: 2200, pastTwoSeconds: 2800, afterMove: 3000, beforeAnswer: 1500, tolerance: 300 }
 
-describe('Revision 11 rev11g: the held wait of a timed question', { skip: NEEDS_INSTANCE_STUB }, () => {
-  let ctx
+describe('Revision 11 rev11g on H-STUB: the held wait of a timed question', () => {
+  const ctx = {}
   let q
   let x
   before(async () => {
-    ctx = await qHost('rev11g-hold')
-    q = qTools(ctx, { tok, cid })
+    Object.assign(ctx, await bootQ('rev11g-hold'))
+    q = qTools(ctx)
     x = await q.session('hld-x', PRESET.askTimed)
   }, HOOK)
-  after(async () => { await ctx.host?.stop() }, HOOK)
+  after(async () => { await q?.setSeconds(LIMITS.approvalAnswerSeconds.default).catch(() => {}); await stopStub(ctx.booted) }, HOOK)
 
-  const setSeconds = (n) => q.t.setLimit({ approvalAnswerSeconds: n })
-  /** The call's result event, or undefined while the call is still waiting. */
-  const resultNow = async (sid, id) => (await q.allEvents(sid)).find((e) => e.type === 'tool/result' && e.result.callId === id)
-  const replies = async (sid) => (await q.allEvents(sid)).filter((e) => e.type === 'user/message' && e.source?.kind === 'user-question-reply')
-  const turnEnds = async (sid) => (await q.allEvents(sid)).filter((e) => e.type === 'turn/end').length
-  const isPending = (r) => /"pending"\s*:\s*true/.test(r?.text ?? '')
-  after(async () => { await setSeconds(LIMITS.approvalAnswerSeconds.default).catch(() => {}) })
+  const replies = (sid) => q.replies(sid)
+  const isPending = (r) => QSTUB.pending.test(r?.text ?? '')
+  const ends = async (sid) => (await q.turnEnds(sid)).length
+  /** Ask with a tool timeout; returns the own card, the offer and when the card opened. */
+  async function askTimed(text, id, timeout) {
+    const r = await q.ask(x, text, id, { questions: Q.single(text), ...(timeout === undefined ? {} : { timeout }) })
+    return { ...r, opened: r.card.openedAt }
+  }
+  /** The question leaves the instance (approval.settled) within the limit plus slack; returns when it did. */
+  async function movedAt(offer, seconds) {
+    const frame = await q.stub().waitEvent(QSTUB.event.approvalSettled, (p) => p.approvalId === offer.approvalId, { timeoutMs: seconds * QSTUB.secondMs + QSTUB.limitLateMs })
+    assert.ok(frame, 'the question left the instance after approvalAnswerSeconds')
+    return frame.at
+  }
+  /** Your answer in the own card is the call's result in the same turn, and no late-reply message follows. */
+  async function answerHere(id, endsBefore) {
+    assert.equal(await q.qAnswer(x, A.single), true)
+    const got = await q.result(x, id)
+    assert.equal(got.text, resultText(A.single))
+    await q.waitIdle(x)
+    assert.equal((await replies(x)).length, 0, 'same turn: no late-reply message')
+    if (endsBefore !== undefined) assert.equal(await ends(x), endsBefore + 1, 'one turn')
+  }
 
-  it('HLD-01 timeout 1 s, approvalAnswerSeconds 6 s: the wait outlives the tool timeout; Fishball answers in the same turn', T, async () => {
-    await setSeconds(6)
+  it('HLD-01 timeout 1 s, approvalAnswerSeconds 6 s: the wait outlives the tool timeout; the instance answers in the same turn', T, async () => {
+    await q.setSeconds(6)
     const text = tok('01')
     const id = cid('01')
-    const endsBefore = await turnEnds(x)
-    const t0 = Date.now()
-    const own = await q.ask(x, text, id, { timeout: 1 })
-    assert.equal(own.timed, false, 'the session\'s own card is passed on untimed, so it shows no countdown (S36-attachWait amendment, manager 2026-11-02)')
-    await sleep(Math.max(0, 2200 - (Date.now() - t0)))
-    assert.equal(await resultNow(x, id), undefined, 'no result after the tool\'s own 1 s timeout')
-    assert.equal((await q.cards(x)).at(-1).state, 'open', 'the session\'s own card is still open')
-    assert.equal((await q.pile()).length, 0, 'not yet your card: Fishball still has until 6 s')
-    const r = await q.fbAnswer({ question_id: await q.questionId(text), answers: A.single })
-    assert.equal(r.json?.ok, true, JSON.stringify(r.json))
+    const endsBefore = await ends(x)
+    const { card, offer, opened } = await askTimed(text, id, 1)
+    assert.equal(card.timed, false, 'the session\'s own card is passed on untimed, so it shows no countdown (S36-attachWait amendment)')
+    await sleep(Math.max(0, opened + WAIT.pastOneSecond - Date.now()))
+    await assertStillOpen(q, x, card, id, 'after the tool\'s own 1 s')
+    assert.deepEqual(await q.listed(x), [offer.approvalId], 'still the instance\'s: it has until 6 s')
+    assert.deepEqual((await q.answer(x, offer.approvalId, { answers: A.single })).payload, { accepted: true })
     const got = await q.result(x, id)
     assert.equal(got.text, resultText(A.single), 'the answer, not the pending result')
     assert.equal(isPending(got), false)
-    await ctx.host.call('waitIdle', { sessionId: x })
+    await q.waitIdle(x)
     assert.equal((await replies(x)).length, 0, 'no late-reply message: the answer was the call\'s own result')
-    assert.equal(await turnEnds(x), endsBefore + 1, 'one turn')
+    assert.equal(await ends(x), endsBefore + 1, 'one turn')
   })
 
-  it('HLD-02 timeout 1 s, approvalAnswerSeconds 2 s: the question is your card after 2 s and the wait is still held after it', T, async () => {
-    await setSeconds(2)
+  it('HLD-02 timeout 1 s, approvalAnswerSeconds 2 s: it leaves the instance after 2 s and the wait is still held', T, async () => {
+    await q.setSeconds(2)
     const text = tok('02')
     const id = cid('02')
-    const t0 = Date.now()
-    const own = await q.ask(x, text, id, { timeout: 1 })
-    const card = await q.pileCard(x, 6000)
-    assert.ok(card, 'the question moved to your pile: ' + JSON.stringify(await q.pile()))
-    assert.ok(Date.now() - t0 >= 1700, 'not before about approvalAnswerSeconds: ' + (Date.now() - t0) + ' ms')
-    await sleep(3000)
-    assert.equal(await resultNow(x, id), undefined, 'still no result 3 s after the move (the tool timeout passed twice)')
-    assert.equal((await q.cards(x)).at(-1).state, 'open', 'the session\'s own card is still open')
-    assert.deepEqual((await ctx.host.call('qProjection', { sessionId: x }))?.active?.filter?.((c) => c.state === 'continued') ?? [], [], 'DSH never marked it continued')
-    const r = await q.route({ questionId: cardId(card), answers: A.single })
-    assert.equal(r.status, 200, r.text)
-    const got = await q.result(x, id)
-    assert.equal(got.text, resultText(A.single))
-    await ctx.host.call('waitIdle', { sessionId: x })
-    assert.equal((await replies(x)).length, 0, 'same turn, no reply message')
-    assert.ok(await q.noPileCard(x), 'the card left')
-    assert.equal((await q.cards(x)).at(-1).state, 'closed', 'your answer closed the session\'s own card')
-    assert.ok(own)
+    const endsBefore = await ends(x)
+    const { card, offer, opened } = await askTimed(text, id, 1)
+    const moved = await movedAt(offer, 2)
+    assert.ok(moved - opened >= 2 * QSTUB.secondMs * QSTUB.limitEarlyShare - WAIT.tolerance, 'not before about approvalAnswerSeconds: ' + (moved - opened) + ' ms')
+    await sleep(WAIT.afterMove)
+    await assertStillOpen(q, x, card, id, '3 s after the move (the tool timeout passed twice)')
+    const continued = ((await q.host().call('qProjection', { sessionId: x }))?.active ?? []).filter((c) => c.state === 'continued')
+    assert.deepEqual(continued, [], 'DSH never marked it continued')
+    await answerHere(id, endsBefore)
   })
 
-  it('HLD-03 timeout 2 s, approvalAnswerSeconds 1 s: card after 1 s; still held after the tool\'s own 2 s', T, async () => {
-    await setSeconds(1)
+  it('HLD-03 timeout 2 s, approvalAnswerSeconds 1 s: it leaves the instance after 1 s; still held after the tool\'s own 2 s', T, async () => {
+    await q.setSeconds(1)
     const text = tok('03')
     const id = cid('03')
-    await q.ask(x, text, id, { timeout: 2 })
-    const card = await q.pileCard(x, 5000)
-    assert.ok(card, 'your card')
-    await sleep(2800)
-    assert.equal(await resultNow(x, id), undefined, 'no result after the tool timeout')
-    assert.equal((await q.route({ questionId: cardId(card), answers: A.single })).status, 200)
+    const { card, offer, opened } = await askTimed(text, id, 2)
+    await movedAt(offer, 1)
+    await sleep(Math.max(0, opened + WAIT.pastTwoSeconds - Date.now()))
+    await assertStillOpen(q, x, card, id, 'after the tool\'s own 2 s')
+    await answerHere(id)
+  })
+
+  it('HLD-04 timeout -1 (no foreground limit): the instance answers within approvalAnswerSeconds', T, async () => {
+    await q.setSeconds(8)
+    const text = tok('04')
+    const id = cid('04')
+    const { offer } = await askTimed(text, id, -1)
+    assert.deepEqual((await q.answer(x, offer.approvalId, { answers: A.single })).payload, { accepted: true })
     assert.equal((await q.result(x, id)).text, resultText(A.single))
-    await ctx.host.call('waitIdle', { sessionId: x })
+    await q.waitIdle(x)
+  })
+
+  it('HLD-05 default timeout 120 s, the instance answers at once: the answer is the same turn\'s result', T, async () => {
+    await q.setSeconds(LIMITS.approvalAnswerSeconds.default)
+    const text = tok('05')
+    const id = cid('05')
+    const { offer } = await askTimed(text, id)
+    await q.answer(x, offer.approvalId, { answers: A.single })
+    const got = await q.result(x, id)
+    assert.equal(got.text, resultText(A.single))
+    assert.equal(isPending(got), false)
+    await q.waitIdle(x)
     assert.equal((await replies(x)).length, 0)
   })
 
-  it('HLD-04 timeout -1 (no foreground limit): a blocking-style wait; Fishball answers within approvalAnswerSeconds', T, async () => {
-    await setSeconds(8)
-    const text = tok('04')
-    const id = cid('04')
-    await q.ask(x, text, id, { timeout: -1 })
-    const r = await q.fbAnswer({ question_id: await q.questionId(text), answers: A.single })
-    assert.equal(r.json?.ok, true, JSON.stringify(r.json))
-    assert.equal((await q.result(x, id)).text, resultText(A.single))
-    await ctx.host.call('waitIdle', { sessionId: x })
-  })
-
-  it('HLD-05 default timeout 120 s, Fishball answers at once: the answer is the same turn\'s result', T, async () => {
-    await setSeconds(LIMITS.approvalAnswerSeconds.default)
-    const text = tok('05')
-    const id = cid('05')
-    await q.planAnswer(text, { answers: A.single })
-    const t0 = Date.now()
-    await q.ask(x, text, id, { waitCard: false })
-    const got = await q.result(x, id)
-    assert.equal(got.text, resultText(A.single))
-    assert.ok(Date.now() - t0 < 15000)
-    await ctx.host.call('waitIdle', { sessionId: x })
-    assert.equal((await replies(x)).filter((m) => m.text.includes(id)).length, 0)
-  })
-
-  it('HLD-06 you answer in the session\'s own card while the wait is held: the call\'s result; Fishball\'s late answer is refused', T, async () => {
-    await setSeconds(6)
+  it('HLD-06 you answer in the own card while the wait is held: the call\'s result; the instance\'s late answer is refused', T, async () => {
+    await q.setSeconds(6)
     const text = tok('06')
     const id = cid('06')
-    await q.ask(x, text, id, { timeout: 1 })
-    const qid = await q.questionId(text)
-    await sleep(1500)
-    assert.equal(await ctx.host.call('qAnswer', { sessionId: x, answers: A.single }), true)
-    assert.equal((await q.result(x, id)).text, resultText(A.single))
-    assert.equal(refused(await q.fbAnswer({ question_id: qid, answers: A.single })), true, 'already settled')
-    assert.equal((await q.pile()).filter((c) => c.sessionId === x).length, 0)
-    await ctx.host.call('waitIdle', { sessionId: x })
+    const { offer } = await askTimed(text, id, 1)
+    await sleep(WAIT.beforeAnswer)
+    await answerHere(id)
+    assert.ok(QSTUB.lateCodes.includes(codeOf(await q.answer(x, offer.approvalId, { answers: A.single }))), 'already settled')
   })
 
-  it('HLD-07 the turn is stopped while the wait is held: the card leaves, the own card closes, a late answer is refused', T, async () => {
-    await setSeconds(2)
+  it('HLD-07 your Stop while the wait is held (after the limit): the own card closes; a late answer is refused', T, async () => {
+    await q.setSeconds(2)
     const text = tok('07')
     const id = cid('07')
-    await q.ask(x, text, id, { timeout: 1 })
-    const qid = await q.questionId(text)
-    const card = await q.pileCard(x, 6000)
-    assert.ok(card)
-    await q.stop(x)
-    assert.ok(await q.noPileCard(x), 'the card left')
-    assert.equal((await q.cards(x)).at(-1).state, 'closed')
-    assert.equal(refused(await q.fbAnswer({ question_id: qid, answers: A.single })), true)
-    const r = await q.route({ questionId: cardId(card), answers: A.single })
-    assert.equal(r.status, 409, r.text)
-    assert.equal(r.json?.code, 'expired')
-    const result = await resultNow(x, id)
-    assert.ok(!result || !result.result.text.includes('"answers"'), 'no answer was recorded for the stopped call')
+    const { card, offer } = await askTimed(text, id, 1)
+    await movedAt(offer, 2)
+    await q.userStop(x)
+    assert.equal(await q.cardState(x, card.index), QSTUB.card.closed)
+    assert.ok(QSTUB.lateCodes.includes(codeOf(await q.answer(x, offer.approvalId, { answers: A.single }))), 'refused')
+    const result = await q.resultNow(x, id)
+    assert.ok(!result || !result.text.includes('"answers"'), 'no answer was recorded for the stopped call')
   })
 })

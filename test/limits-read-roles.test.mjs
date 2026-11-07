@@ -1,116 +1,142 @@
 /**
- * Revision 11: read_session's bounds are the settings `readSessionMessages` (default 12) and `readSessionBytes`
- * (default 12288), and they count message text only, whatever label the message has (DESIGN 5c, 14 "rev11-limits",
- * 16 "Hard-coded limits moved to config"; the read_session roles of Q-read-roles). limits-live L50/L51 cover the
- * settings with plain answers; these cases cover them with labelled messages (fishball, agent with `from`, context with
- * `source`), appended into a blank session's log (support/worker.mjs injectUserMessage). A change applies to the next
- * read without a restart.
+ * session.read's bounds with labelled messages (contract §4.1, §8; DESIGN §5c, §16 "readSessionMessages",
+ * "readSessionBytes"; conn-OQ-20). The instance names its bounds in each request
+ * (`{sessionId, maxMessages, maxBytes}`) and the connector cuts the reply to fit; the bounds count message
+ * text only, whatever label (role, author) the message has. The connector keeps the settings
+ * `readSessionMessages` (default 12) and `readSessionBytes` (default 12288) because its code reads them
+ * (conn-OQ-20). **Reading** (DESIGN §16: "Messages read_session returns", "Bytes read_session returns";
+ * contract §0: the connector's limits are its own): a reply never holds more than the setting, whatever
+ * the request asks, and a change applies to the next read without a restart. Messages are appended into
+ * a managed blank session's log (support/worker.mjs injectUserMessage).
  *
- * | id      | technique | expected |
- * |---------|-----------|----------|
- * | LRR-01  | ST + BVA (readSessionMessages 12 -> 3 -> 1 -> 12; 15 labelled messages) | the newest 12 / 3 / 1 / 12, in order, labels intact |
- * | LRR-02  | BVA (readSessionBytes 2048; 4 messages of exactly 1024 bytes with 300-character labels) | the newest 2 (2048 bytes): labels are not counted; at 3072 the newest 3; back at 12288 all 4 |
- * | LRR-03  | BVA (readSessionBytes 2047; the same 4 messages) | at most 2047 bytes of text; the newest whole with its label |
- * | LRR-04  | BVA (readSessionBytes 2048; one 5000-byte message from another session) | one entry, label kept, a prefix ending with an ellipsis, at most 2048 bytes |
+ * | id      | technique | requirement | expected |
+ * |---------|-----------|-------------|----------|
+ * | LRR-01  | ST + BVA (maxMessages 12 → 3 → 1 → 12; 15 labelled messages) | contract §4.1 | the newest 12 / 3 / 1 / 12, in order, roles and authors intact |
+ * | LRR-02  | BVA (maxBytes 2048 / 3072 / 12288; 4 messages of exactly 1024 bytes with 300-character labels) | contract §4.1 | the newest 2 / 3 / all 4: labels are not counted |
+ * | LRR-03  | BVA (maxBytes 2047; the same 4 messages) | contract §4.1 | at most 2047 bytes of text; the newest whole with its label |
+ * | LRR-04  | BVA (maxBytes 2048; one 5000-byte message from another session) | contract §4.1 | one entry, label kept, a prefix ending with an ellipsis, at most 2048 bytes |
+ * | LRR-05  | ST + BVA (readSessionMessages 3 → 12, request 12) | DESIGN §16; conn-OQ-20; user decision 2026-11-07 | while the setting is 3: either an error frame with a contract code (blocked), or a response of at most 3 messages, the newest with labels intact, with `truncated: true` (cut, with its reason); the newest 12 again after it is back at 12, no restart |
+ * | LRR-06  | BVA (readSessionBytes 2048, request 12288; the 4 messages of LRR-02) | DESIGN §16; conn-OQ-20; user decision 2026-11-07 | while the setting is 2048: an error code, or the newest 2 (2048 bytes of text) with `truncated: true`; all 4 again at 12288 |
+ *
+ * The settings' cap (user decision, 2026-11-07): the connector MUST enforce readSessionMessages and
+ * readSessionBytes on every session.read, whatever bounds the request names (they can only cut further), and a
+ * read the cap blocks or cuts must tell the instance why: an error frame with its code, or `truncated: true`
+ * (contract §4.1's own reason for a cut reply). A cut reply that says nothing is a failure.
  */
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
-import { LIMITS_R11, READ_ROLE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
-import { T } from './support/expect.mjs'
-import { readHelpers } from './support/read-session.mjs'
-import { tok, useHost } from './support/start-session.mjs'
+import { after, before, describe, it } from 'node:test'
+import { ENVELOPE, ERROR, ROLE } from 'fishball-connector/contract'
+import { ELLIPSIS, LIMITS_R11 } from './support/constants.mjs'
+import { HOOK, T } from './support/expect.mjs'
+import { bootStub, stopStub } from './support/instance-stub.mjs'
+import { MSGF, blankManaged, bytes, expectedAuthor, fishballId, inject, notice, padded, readOk, readSession, relay, roleOf, setLimit, textBytes, tok } from './support/instance-stub-messaging.mjs'
 
-const OTHER_SESSION = 'session-fbtest-another-agent'
-const ELLIPSIS = '…'
-const bytes = (s) => Buffer.byteLength(s)
-const textBytes = (messages) => messages.reduce((n, m) => n + bytes(m.text), 0)
-const padded = (token, n) => token + 'a'.repeat(n - bytes(token))
-const relay = (senderSessionId) => ({ kind: 'agent-message', form: 'relay', senderSessionId })
+const DEFAULT = { maxMessages: LIMITS_R11.readSessionMessages.default, maxBytes: LIMITS_R11.readSessionBytes.default }
+const SIZE = 1024
+/** [text, source] → the label a read must give it. */
+const labelOf = (fb) => ([text, source]) => ({ role: roleOf(source, fb), text, ...(expectedAuthor(source, fb) ? { author: expectedAuthor(source, fb) } : {}) })
+/** A read's messages reduced to what labelOf names (author only where the reading fixes it). */
+const labelsOfRead = (messages, wanted) => messages.map((m, i) => ({ role: m.role, text: m.text, ...(wanted[i]?.author !== undefined ? { author: m.author } : {}) }))
 
-describe('read_session bounds from the settings, with labelled messages', { skip: NEEDS_INSTANCE_STUB }, () => {
-  const w = useHost('lrr', {})
-  const h = readHelpers(w)
-  const DEFAULT = { messages: LIMITS_R11.readSessionMessages.default, bytes: LIMITS_R11.readSessionBytes.default }
-
-  /** Appends one message per label in turn (user, Fishball's relay, another session's relay, a notice, no source). */
-  async function inject15(sessionId) {
-    const kinds = [
-      [{ kind: 'user' }, (text) => ({ role: READ_ROLE.user, text })],
-      [relay(w.fb), (text) => ({ role: READ_ROLE.fishball, text })],
-      [relay(OTHER_SESSION), (text) => ({ role: READ_ROLE.agent, from: OTHER_SESSION, text })],
-      [{ kind: 'goal', form: 'notice', summary: 's' }, (text) => ({ role: READ_ROLE.context, source: 'goal', text })],
-      [undefined, (text) => ({ role: READ_ROLE.context, text })],
-    ]
-    const sent = []
-    for (let i = 0; i < 15; i++) {
-      const [source, build] = kinds[i % kinds.length]
-      const text = tok('lrr1n' + i)
-      await h.inject(sessionId, text, source, source === undefined)
-      sent.push(build(text))
-    }
-    return sent
+describe('session.read bounds with labelled messages', () => {
+  let booted
+  let host
+  let stub
+  let fb
+  /** A related blank session holding these [text, source] rows; returns its id. */
+  async function holding(name, rows) {
+    const sessionId = await blankManaged(host, name)
+    for (const [text, source] of rows) await inject(host, sessionId, text, source)
+    return sessionId
   }
-
-  it('LRR-01 readSessionMessages: 12 by default, then 3, then 1, then 12 again, labels intact', T, async () => {
-    const sessionId = await h.blank('lrr-01')
-    const sent = await inject15(sessionId)
-    assert.deepEqual(await h.read(sessionId), sent.slice(-DEFAULT.messages), 'the default')
-    for (const n of [3, 1]) {
-      await w.setLimit({ readSessionMessages: n })
-      assert.deepEqual(await h.readRelated(sessionId), sent.slice(-n), 'readSessionMessages ' + n)
-    }
-    await w.setLimit({ readSessionMessages: DEFAULT.messages })
-    assert.deepEqual(await h.readRelated(sessionId), sent.slice(-DEFAULT.messages), 'back to the default')
-  })
-
+  /** Read and compare with the labels of the expected rows. */
+  async function assertRead(sessionId, bounds, rows, label) {
+    const wanted = rows.map(labelOf(fb))
+    const { messages } = await readOk(stub, sessionId, bounds)
+    assert.deepEqual(labelsOfRead(messages, wanted), wanted, label)
+  }
+  /** One message per label in turn: user, Fishball's relay, another session's relay, a notice, runtime context. */
+  const fifteen = () => Array.from({ length: 15 }, (_, i) => [tok('lrr1n' + i), [{ kind: 'user' }, relay(fb), relay(MSGF.otherSession), notice('goal'), { kind: 'runtime-context' }][i % 5]])
   /** Four messages of exactly 1024 bytes with labels far longer than the text bound's unit. */
-  async function inject4(sessionId) {
-    const longKind = 'fbtest-kind-' + 'k'.repeat(300)
-    const longSender = OTHER_SESSION + '-' + 's'.repeat(300)
-    const sent = []
-    for (let i = 0; i < 4; i++) {
-      const text = padded(tok('lrr2n' + i), 1024)
-      if (i % 2 === 0) { await h.inject(sessionId, text, { kind: longKind }); sent.push({ role: READ_ROLE.context, source: longKind, text }) } else { await h.inject(sessionId, text, relay(longSender)); sent.push({ role: READ_ROLE.agent, from: longSender, text }) }
+  const four = () => Array.from({ length: 4 }, (_, i) => [padded(tok('lrr2n' + i), SIZE), i % 2 === 0 ? { kind: 'fbtest-kind-' + 'k'.repeat(300) } : relay(MSGF.otherSession + '-' + 's'.repeat(300))])
+
+  before(async () => {
+    booted = await bootStub('lrr')
+    ;({ host, stub } = booted)
+    fb = await fishballId(host)
+  }, HOOK)
+  after(() => stopStub(booted), HOOK)
+
+  it('LRR-01 maxMessages: 12, then 3, then 1, then 12 again, labels intact', T, async () => {
+    const rows = fifteen()
+    const sessionId = await holding('lrr-01', rows)
+    for (const n of [DEFAULT.maxMessages, 3, 1, DEFAULT.maxMessages]) await assertRead(sessionId, { ...DEFAULT, maxMessages: n }, rows.slice(-n), 'maxMessages ' + n)
+  })
+
+  it('LRR-02 maxBytes counts text only: 2048 keeps 2 messages of 1024, 3072 keeps 3, the default keeps all 4', T, async () => {
+    const rows = four()
+    const sessionId = await holding('lrr-02', rows)
+    for (const [maxBytes, kept] of [[2 * SIZE, 2], [3 * SIZE, 3], [DEFAULT.maxBytes, 4]]) await assertRead(sessionId, { ...DEFAULT, maxBytes }, rows.slice(-kept), 'maxBytes ' + maxBytes)
+  })
+
+  it('LRR-03 maxBytes one below two messages: at most that many bytes of text, the newest whole', T, async () => {
+    const rows = four()
+    const sessionId = await holding('lrr-03', rows)
+    const maxBytes = 2 * SIZE - 1
+    const { messages } = await readOk(stub, sessionId, { ...DEFAULT, maxBytes })
+    assert.ok(messages.length >= 1)
+    assert.ok(textBytes(messages) <= maxBytes, 'text bytes ' + textBytes(messages))
+    const newest = labelOf(fb)(rows.at(-1))
+    assert.deepEqual(labelsOfRead([messages.at(-1)], [newest])[0], newest, 'the newest message whole, with its label')
+  })
+
+  it('LRR-04 a message longer than maxBytes is cut with an ellipsis and keeps its label', T, async () => {
+    const head = tok('lrr4') + ' '
+    const sessionId = await holding('lrr-04', [[head + 'a'.repeat(5000 - bytes(head)), relay(MSGF.otherSession)]])
+    const maxBytes = 2 * SIZE
+    const { messages } = await readOk(stub, sessionId, { ...DEFAULT, maxBytes })
+    assert.equal(messages.length, 1)
+    const [m] = messages
+    assert.equal(m.role, ROLE.agent)
+    assert.equal(m.author, MSGF.otherSession)
+    assert.ok(m.text.startsWith(head) && m.text.endsWith(ELLIPSIS))
+    assert.ok(bytes(m.text) <= maxBytes, 'bytes ' + bytes(m.text))
+  })
+
+  /**
+   * One read while a setting caps it: blocked (an error frame naming its code) or cut to `rows` with
+   * `truncated: true`. Either way the instance is told why (the user's decision); silence fails.
+   */
+  async function assertCapped(sessionId, rows, label) {
+    const r = await readSession(stub, sessionId, DEFAULT)
+    if (r.type === ENVELOPE.type.error) {
+      assert.ok(Object.values(ERROR).includes(r.payload?.code), label + ': a blocked read names a contract code, got ' + JSON.stringify(r.payload))
+      return
     }
-    return sent
+    assert.equal(r.type, ENVELOPE.type.response, label + ': session.read answered ' + JSON.stringify(r))
+    const wanted = rows.map(labelOf(fb))
+    assert.deepEqual(labelsOfRead(r.payload.messages, wanted), wanted, label + ': the reply holds what the setting allows')
+    assert.equal(r.payload.truncated, true, label + ': a reply the setting cut reports truncated')
   }
 
-  it('LRR-02 readSessionBytes counts text only: 2048 keeps 2 messages of 1024, 3072 keeps 3, the default keeps all 4', T, async () => {
-    const sessionId = await h.blank('lrr-02')
-    const sent = await inject4(sessionId)
-    await w.setLimit({ readSessionBytes: 2048 })
-    assert.deepEqual(await h.read(sessionId), sent.slice(-2))
-    await w.setLimit({ readSessionBytes: 3072 })
-    assert.deepEqual(await h.readRelated(sessionId), sent.slice(-3))
-    await w.setLimit({ readSessionBytes: DEFAULT.bytes })
-    assert.deepEqual(await h.readRelated(sessionId), sent)
+  it('LRR-05 readSessionMessages caps every read with a reason, and a change applies to the next read', T, async () => {
+    const rows = fifteen()
+    const sessionId = await holding('lrr-05', rows)
+    const CAP = 3
+    await setLimit(host, { readSessionMessages: CAP })
+    try {
+      await assertCapped(sessionId, rows.slice(-CAP), 'readSessionMessages ' + CAP + ' with a request for ' + DEFAULT.maxMessages)
+    } finally { await setLimit(host, { readSessionMessages: DEFAULT.maxMessages }) }
+    await assertRead(sessionId, DEFAULT, rows.slice(-DEFAULT.maxMessages), 'back to the default')
   })
 
-  it('LRR-03 readSessionBytes one below two messages: at most that many bytes of text, the newest whole', T, async () => {
-    const sessionId = await h.blank('lrr-03')
-    const sent = await inject4(sessionId)
-    await w.setLimit({ readSessionBytes: 2047 })
+  it('LRR-06 readSessionBytes caps every read with a reason: 2048 keeps the newest 2 of 1024, the default all 4', T, async () => {
+    const rows = four()
+    const sessionId = await holding('lrr-06', rows)
+    await setLimit(host, { readSessionBytes: 2 * SIZE })
     try {
-      const messages = await h.read(sessionId)
-      assert.ok(messages.length >= 1)
-      assert.ok(textBytes(messages) <= 2047, 'text bytes ' + textBytes(messages))
-      assert.deepEqual(messages.at(-1), sent.at(-1), 'the newest message whole, with its label')
-    } finally { await w.setLimit({ readSessionBytes: DEFAULT.bytes }) }
-  })
-
-  it('LRR-04 a message longer than readSessionBytes is cut with an ellipsis and keeps its label', T, async () => {
-    const sessionId = await h.blank('lrr-04')
-    const head = tok('lrr4') + ' '
-    await h.inject(sessionId, head + 'a'.repeat(5000 - bytes(head)), relay(OTHER_SESSION))
-    await w.setLimit({ readSessionBytes: 2048 })
-    try {
-      const messages = await h.read(sessionId)
-      assert.equal(messages.length, 1)
-      const [m] = messages
-      assert.equal(m.role, READ_ROLE.agent)
-      assert.equal(m.from, OTHER_SESSION)
-      assert.ok(m.text.startsWith(head) && m.text.endsWith(ELLIPSIS))
-      assert.ok(bytes(m.text) <= 2048, 'bytes ' + bytes(m.text))
-    } finally { await w.setLimit({ readSessionBytes: DEFAULT.bytes }) }
+      await assertCapped(sessionId, rows.slice(-2), 'readSessionBytes ' + 2 * SIZE + ' with a request for ' + DEFAULT.maxBytes)
+    } finally { await setLimit(host, { readSessionBytes: DEFAULT.maxBytes }) }
+    await assertRead(sessionId, DEFAULT, rows, 'back to the default')
   })
 })
