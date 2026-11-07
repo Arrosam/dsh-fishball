@@ -19,14 +19,14 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, AUTHOR_KIND, ELLIPSIS, FORWARD_ANSWER_MAX_BYTES, FORWARD_HEADER, FORWARD_SUMMARY, IDENTITY, LIMITS, NOTE_PREFIX, NO_NOTE, NOTICE, P5_CODE, PRESET, STATE_KEYS, STATE_KEYS_OPTIONAL, STATUS, STORE } from './support/constants.mjs'
+import { API, AUTHOR_KIND, ELLIPSIS, FORWARD_ANSWER_MAX_BYTES, FORWARD_HEADER, FORWARD_SUMMARY, IDENTITY, LIMITS, NOTE_PREFIX, NO_NOTE, NOTICE, P5_CODE, PRESET, STATE_KEYS, STATE_KEYS_OPTIONAL, STATUS, STORE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, fishballMessages, sessionAuthor, intakeNow, settledIdle, turn, untilSeen, untrustedBlock } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, until } from './support/host.mjs'
 
 let seq = 0
 const tok = (label) => 'TOK' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 8)
 
-describe('P5 Send to Fishball', () => {
+describe('P5 Send to Fishball', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   let target
@@ -199,7 +199,7 @@ describe('P5 Send to Fishball', () => {
   })
 })
 
-describe('P5 Send to Fishball while the core failed', () => {
+describe('P5 Send to Fishball while the core failed', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   before(async () => {
     const home = newHome('msg-send-failed')

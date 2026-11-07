@@ -26,7 +26,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, ASK_TOOL, LIMITS, OWN_PLUGINS, P5_CODE, PILE_API, RELAY, TURN_BY } from './support/constants.mjs'
+import { API, ASK_TOOL, LIMITS, OWN_PLUGINS, P5_CODE, PILE_API, RELAY, TURN_BY, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, callScript, outboxNow, callStep, waitRequest, fishballCall, makeManaged, managedEntry, setManaged, settledIdle, storedRows } from './support/expect.mjs'
 import { A, MODES, cardId, qHost, qTools, refused, tokens, until } from './support/rev11g.mjs'
 
@@ -36,7 +36,7 @@ const REDIRECT = 'redirect_session'
 const AT_ONCE = 5000
 const QUIET = 1500
 
-describe('Revision 11 rev11h: stop_session and redirect_session', () => {
+describe('Revision 11 rev11h: stop_session and redirect_session', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let q
   let t
@@ -367,7 +367,7 @@ describe('Revision 11 rev11h: stop_session and redirect_session', () => {
   })
 })
 
-describe('Revision 11 rev11h: hourly cap', () => {
+describe('Revision 11 rev11h: hourly cap', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let q
   const host = () => ctx.host

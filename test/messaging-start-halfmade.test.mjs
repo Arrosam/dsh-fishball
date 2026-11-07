@@ -37,7 +37,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { before, describe, it } from 'node:test'
-import { HALF_MADE, P5_CODE, RELAY, TITLE } from './support/constants.mjs'
+import { HALF_MADE, P5_CODE, RELAY, TITLE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, fishballCall, noticesSettled, outboxNow, untrustedBlock, watchesOn } from './support/expect.mjs'
 import { until } from './support/host.mjs'
 import { assertDelivered, assertFailedDelivery, assertRenamedBeforeSteer, eventsOf, orderOf, tok, useHost } from './support/start-session.mjs'
@@ -83,7 +83,7 @@ function assertHalfMadeAnswer(answer, ws, normal) {
   assertOneFailedAttach(answer, ws)
 }
 
-describe('start_session keeps a half-made session (DSH session-title service present)', () => {
+describe('start_session keeps a half-made session (DSH session-title service present)', { skip: NEEDS_INSTANCE_STUB }, () => {
   const w = useHost('hm-main', { limits: { sessionsPerHour: 0 } })
   const ws = useWorkspace(w, 'hm-ws')
   /** A normal start in the workspace, per folder form: the reference for what a start reports and leaves. */
@@ -256,7 +256,7 @@ describe('start_session keeps a half-made session (DSH session-title service pre
   })
 })
 
-describe('start_session: other failures of create, and the hourly cap (sessionsPerHour 2)', () => {
+describe('start_session: other failures of create, and the hourly cap (sessionsPerHour 2)', { skip: NEEDS_INSTANCE_STUB }, () => {
   const w = useHost('hm-cap', { limits: { sessionsPerHour: 2 } })
   const ws = useWorkspace(w, 'hm-cap-ws')
 
@@ -327,7 +327,7 @@ describe('start_session: other failures of create, and the hourly cap (sessionsP
   })
 })
 
-describe('start_session keeps a half-made session without a DSH sessionTitle service', () => {
+describe('start_session keeps a half-made session without a DSH sessionTitle service', { skip: NEEDS_INSTANCE_STUB }, () => {
   const w = useHost('hm-none', { env: { FBTEST_NO_SESSION_TITLE: '1' }, limits: { sessionsPerHour: 0 } })
   const ws = useWorkspace(w, 'hm-none-ws')
 

@@ -41,8 +41,7 @@ import { after, before, describe, it } from 'node:test'
 import {
   ANSWER_TOOL, APPROVALS_KEYS, AUTHOR_KIND, APPROVAL_FIELDS, APPROVAL_ID, APPROVAL_PREFIX, APPROVAL_SUMMARY, APPROVER_AFTER_ENV, APPROVER_THROWS, APR_CODE, APR_NOTE,
   ASK_REASON, ASK_TOOL, ELLIPSIS, FINAL_OUTCOMES, INBOUND_TOOL, LATEST_USER_MAX_BYTES, LIMITS, NOTICE, OUTCOME, PENDING_KEYS, PRESET, RECENT_ANSWERS,
-  RECENT_KEYS, RECENT_MAX, REJECT_RULE, RUBRIC, RUBRIC_REMOVED, STARTED_BY, STARTED_BY_OTHER, TITLE, TURN_BY,
-} from './support/constants.mjs'
+  RECENT_KEYS, RECENT_MAX, REJECT_RULE, RUBRIC, RUBRIC_REMOVED, STARTED_BY, STARTED_BY_OTHER, TITLE, TURN_BY, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import {
   HOOK, T, makeManaged, approvalsNow, askSettled, bytes, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball,
   requestMessages, resultOfCall, sessionAuthor, settledIdle, startAsk, toolNames, turn, waitRequest,
@@ -54,7 +53,7 @@ const tok = (label) => 'APR' + label + 'x' + (++seq) + Math.random().toString(36
 const provenance = (text) => /Session started by: (.*?); its current turn started by: (.*?)\.?$/m.exec(text)?.slice(1) ?? [null, null]
 const secondsLine = (n) => new RegExp('\\b' + n + ' ?s(econds?)?\\b')
 
-describe('P7 ApprovalBroker', () => {
+describe('P7 ApprovalBroker', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

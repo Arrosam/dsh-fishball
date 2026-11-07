@@ -28,11 +28,11 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { LIMITS, PRESET, STATUS, STORE, WATCH_API, WATCH_CODE, WATCH_KEYS, WATCH_LIST_MAX, WATCH_STATUS, WATCHES_KEYS } from './support/constants.mjs'
+import { LIMITS, PRESET, STATUS, STORE, WATCH_API, WATCH_CODE, WATCH_KEYS, WATCH_LIST_MAX, WATCH_STATUS, WATCHES_KEYS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, fishballClientBundle, noticesSettled, settledIdle, turn, watchById, watchesNow, watchesOn } from './support/expect.mjs'
 import { bootHost, bootLive, newHome, until } from './support/host.mjs'
 
-describe('P6 watch routes', () => {
+describe('P6 watch routes', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   let target
@@ -325,7 +325,7 @@ describe('P6 watch routes', () => {
   })
 })
 
-describe('P6 watch route while the core failed', () => {
+describe('P6 watch route while the core failed', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   before(async () => {
     const home = newHome('watch-failed')

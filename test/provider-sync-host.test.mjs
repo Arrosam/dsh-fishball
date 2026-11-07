@@ -4,7 +4,9 @@ import { test } from 'node:test'
 import { CASE as C, clone, outcome } from './support/provider-sync-engine.mjs'
 import { hostFixture } from './support/provider-sync-host.mjs'
 
-const rawPartitions = Object.freeze(['apiKeyEnv', 'header', 'URL userinfo', 'URL query', 'model header', 'model endpoint', 'unknown secret-bearing field'])
+// apiKeyEnv is no longer refused: the user decided on 2026-11-06 that Refresh models copies such a provider with
+// its key (119c4e5, slim-native-design §10); the remaining partitions still carry a secret in the config.
+const rawPartitions = Object.freeze(['header', 'URL userinfo', 'URL query', 'model header', 'model endpoint', 'unknown secret-bearing field'])
 const noSecretReads = (fixture) => {
   assert.equal(fixture.calls.recordReads, 0)
   assert.equal(fixture.calls.resolves, 0)
@@ -33,7 +35,6 @@ for (const partition of rawPartitions) test('PS-H02 EP/security: reject ' + part
   const fixture = await hostFixture(t)
   const secret = fixture.credentials.opaque()
   const profile = fixture.state.profiles[C.ids.add]
-  if (partition === 'apiKeyEnv') profile.apiKeyEnv = 'FIXTURE_CREDENTIAL_REFERENCE'
   if (partition === 'header') profile.headers = { Authorization: secret }
   if (partition === 'URL userinfo') profile.baseURL = 'https://user:' + secret + '@models.example.invalid/v1'
   if (partition === 'URL query') profile.baseURL += '?access_token=' + secret
@@ -115,7 +116,7 @@ for (const stage of STAGE.cases) test('PS-H08 ST: ' + stage.name + ' is reported
   const originalTarget = target.credentials.record()
   await source.credentials.seed(C.ids.add, record)
   await target.credentials.seed(C.ids.exists, originalTarget)
-  const { ProviderSyncEngine } = await import('../src/provider-sync.js')
+  const { ProviderSyncEngine } = await import('../packages/instance/src/provider-sync.js')
   const engine = new ProviderSyncEngine({ host: target.host })
   t.after(() => engine.close())
   const plan = await engine.preview(await source.inventory(), clone(C.source))
@@ -146,7 +147,7 @@ for (const kind of ['api-key', 'grant']) test('PS-H09 DT: orphan target ' + kind
   await source.credentials.seed(C.ids.add, source.credentials.record())
   const original = kind === 'api-key' ? target.credentials.record() : { kind, payload: target.credentials.opaque() }
   await target.credentials.seed(C.ids.add, original)
-  const { ProviderSyncEngine } = await import('../src/provider-sync.js')
+  const { ProviderSyncEngine } = await import('../packages/instance/src/provider-sync.js')
   const engine = new ProviderSyncEngine({ host: target.host })
   t.after(() => engine.close())
   const preview = await source.safe(async () => engine.preview(await source.inventory(), clone(C.source)))
@@ -165,7 +166,7 @@ test('PS-H10 ST: orphan record appearing after preview blocks configuration muta
   const target = await hostFixture(t, { [C.ids.exists]: clone(C.profile) }, C.target)
   const sourceRecord = source.credentials.record()
   await source.credentials.seed(C.ids.add, sourceRecord)
-  const { ProviderSyncEngine } = await import('../src/provider-sync.js')
+  const { ProviderSyncEngine } = await import('../packages/instance/src/provider-sync.js')
   const engine = new ProviderSyncEngine({ host: target.host })
   t.after(() => engine.close())
   const preview = await source.safe(async () => engine.preview(await source.inventory(), clone(C.source)))
@@ -190,7 +191,7 @@ test('PS-H11 ST: owner activation store replacement invalidates preview despite 
   target.state.ownerStore = {}
   const record = source.credentials.record()
   await source.credentials.seed(C.ids.add, record)
-  const { ProviderSyncEngine } = await import('../src/provider-sync.js')
+  const { ProviderSyncEngine } = await import('../packages/instance/src/provider-sync.js')
   const engine = new ProviderSyncEngine({ host: target.host })
   t.after(() => engine.close())
   const sourceInventory = await source.inventory()

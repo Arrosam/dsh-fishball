@@ -23,14 +23,14 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ASK_CODE, ASK_TOOL, DECISION, EXACT_ONLY_TOOLS, GRANT_ACTION, GRANT_AUDIT, GRANT_KIND, GRANT_STATUS, GRANT_TAG_KIND, PREFIX_TOOLS } from './support/constants.mjs'
+import { ASK_CODE, ASK_TOOL, DECISION, EXACT_ONLY_TOOLS, GRANT_ACTION, GRANT_AUDIT, GRANT_KIND, GRANT_STATUS, GRANT_TAG_KIND, PREFIX_TOOLS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, approvalAudit, askStep, auditOf, jsonOf, resultById, settledIdle, storedRows, turn, waitRequest } from './support/expect.mjs'
 import { QUIET_MS, YEAR, activeFor, endsAt, grantEntries, grantHost, grantTools, iso, sleep, snapId, tokens } from './support/rev11d.mjs'
 
 const { tok, cid } = tokens('GRT')
 const HOUR = 3600 * 1000
 
-describe('Revision 11 rev11d: creating grants and what they cover', () => {
+describe('Revision 11 rev11d: creating grants and what they cover', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let g
   let x

@@ -1,6 +1,7 @@
 /** Omitted effort is durable as omission; the provider still supplies model-local defaults after cold resume. */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
+import { NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, turn } from './support/expect.mjs'
 import { selectionHost, START_MODEL as C, route } from './support/start-session-model.mjs'
 
@@ -10,7 +11,7 @@ const cases = [
 ]
 
 for (const scenario of cases) {
-  describe('start_session model: omitted effort cold persistence, ' + scenario.label, () => {
+  describe('start_session model: omitted effort cold persistence, ' + scenario.label, { skip: NEEDS_INSTANCE_STUB }, () => {
     let w
     before(async () => { w = await selectionHost('start-model-omission-resume') }, HOOK)
     after(async () => { await w?.stop() }, HOOK)

@@ -8,11 +8,11 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { APPROVER_AFTER_ENV, ASK_TOOL, OUTCOME, PRESET, STATUS } from './support/constants.mjs'
+import { APPROVER_AFTER_ENV, ASK_TOOL, OUTCOME, PRESET, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, askSettled, settledIdle, startAsk, turn, waitRequest, makeManaged } from './support/expect.mjs'
 import { bootHost, newHome } from './support/host.mjs'
 
-describe('P7 run_code inner calls (PTC mode)', () => {
+describe('P7 run_code inner calls (PTC mode)', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   let x

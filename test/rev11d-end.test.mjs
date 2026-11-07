@@ -18,7 +18,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, GRANT_API, GRANT_ACTION, GRANT_ENDED_BY, GRANT_KIND, GRANT_STATUS, GRANT_TAG_KIND, GRANT_TOOLS, OUTCOME, OWN_PLUGINS, RELEASE_TOOL, STATUS } from './support/constants.mjs'
+import { API, GRANT_API, GRANT_ACTION, GRANT_ENDED_BY, GRANT_KIND, GRANT_STATUS, GRANT_TAG_KIND, GRANT_TOOLS, OUTCOME, OWN_PLUGINS, RELEASE_TOOL, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, fishballCall, managedEntry, setManaged, settledIdle, stockSeen, storedRows, makeManaged, turn } from './support/expect.mjs'
 import { boot, activeFor, endsAt, grantEntries, grantHost, grantTools, iso, snapId, sleep, tokens, until } from './support/rev11d.mjs'
 
@@ -26,7 +26,7 @@ const { tok, cid } = tokens('END')
 const HOUR = 3600 * 1000
 const LONG = { timeout: 120000 }
 
-describe('Revision 11 rev11d: how grants end, pause and survive', () => {
+describe('Revision 11 rev11d: how grants end, pause and survive', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let g
   const decisions = () => storedRows(ctx.home, 'decisions')

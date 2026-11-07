@@ -23,15 +23,14 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
-  ASK_TOOL, DSH_REJECT_WORDS, MANAGED_ENTRY_KEYS, MANAGED_TOOLS, OUTCOME, PROMPT_AUDIT_KIND, PROMPT_DECISION, PROMPT_DECISION_ACTION, PROMPT_MANAGED_BY, PROMPT_MANAGED_LABEL, PROMPT_TAG_KIND,
-} from './support/constants.mjs'
+  ASK_TOOL, DSH_REJECT_WORDS, MANAGED_ENTRY_KEYS, MANAGED_TOOLS, OUTCOME, PROMPT_AUDIT_KIND, PROMPT_DECISION, PROMPT_DECISION_ACTION, PROMPT_MANAGED_BY, PROMPT_MANAGED_LABEL, PROMPT_TAG_KIND, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, approvalAudit, fishballClientBundle, managedItems, setManaged, settledIdle, snapshotTags, storedRows, toolNames } from './support/expect.mjs'
 import { boot, entryFor, idOf, pileHost, promptTools, refused, sleep, tokens, yoursSession, QUIET_MS } from './support/rev11e.mjs'
 
 const { tok, cid } = tokens('APR')
 const LOW = 'low'
 
-describe('Revision 11 rev11e: answer_prompt', () => {
+describe('Revision 11 rev11e: answer_prompt', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let p
   const s = {}

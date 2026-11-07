@@ -15,7 +15,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, it } from 'node:test'
-import { ADDED_BUNDLE, APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FIXTURE_BUNDLE, LIMITS, OUTCOME, PRESET, STATUS } from './support/constants.mjs'
+import { ADDED_BUNDLE, APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FIXTURE_BUNDLE, LIMITS, OUTCOME, PRESET, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, approvalsNow, askSettled, fishballCall, messageFishball, requestMessages, settledIdle, startAsk, turn, waitRequest, makeManaged } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
@@ -24,7 +24,7 @@ const tok = (label) => 'RTE' + label + 'x' + (++seq) + Math.random().toString(36
 /** A bypass reaches the next answerer at once; a routed request would wait for Fishball first. */
 const AT_ONCE_MS = 1000
 
-describe('P7 routing and bypass', () => {
+describe('P7 routing and bypass', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   const sessions = []

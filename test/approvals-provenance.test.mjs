@@ -20,7 +20,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { APPROVER_AFTER_ENV, ASK_TOOL, OUTCOME, PRESET, STARTED_BY, STARTED_BY_OTHER, TURN_BY } from './support/constants.mjs'
+import { APPROVER_AFTER_ENV, ASK_TOOL, OUTCOME, PRESET, STARTED_BY, STARTED_BY_OTHER, TURN_BY, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, askSettled, makeManaged, settledIdle, startAsk, turn, waitRequest } from './support/expect.mjs'
 import { bootHost, newHome } from './support/host.mjs'
 import { tok } from './support/start-session.mjs'
@@ -30,7 +30,7 @@ const provenance = (text) => /Session started by: (.*?); its current turn starte
 const relay = (senderSessionId) => ({ kind: 'agent-message', form: 'relay', senderSessionId })
 const notice = (kind) => ({ kind, form: 'notice', summary: 'fbtest ' + kind })
 
-describe('Permission-request provenance by source kind', () => {
+describe('Permission-request provenance by source kind', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   /** Sources that can start a session or a turn: [label, (fishballId) => source, the turn label they give]. */

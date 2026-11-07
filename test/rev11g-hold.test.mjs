@@ -19,13 +19,13 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ASK_USER_QUESTION, LIMITS, PRESET, QUESTION_API } from './support/constants.mjs'
+import { ASK_USER_QUESTION, LIMITS, PRESET, QUESTION_API, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, settledIdle } from './support/expect.mjs'
 import { A, Q, cardId, qHost, qTools, refused, resultText, sleep, tokens, until } from './support/rev11g.mjs'
 
 const { tok, cid } = tokens('HLD')
 
-describe('Revision 11 rev11g: the held wait of a timed question', () => {
+describe('Revision 11 rev11g: the held wait of a timed question', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let q
   let x

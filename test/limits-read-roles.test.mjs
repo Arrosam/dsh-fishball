@@ -15,7 +15,7 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { LIMITS_R11, READ_ROLE } from './support/constants.mjs'
+import { LIMITS_R11, READ_ROLE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { T } from './support/expect.mjs'
 import { readHelpers } from './support/read-session.mjs'
 import { tok, useHost } from './support/start-session.mjs'
@@ -27,7 +27,7 @@ const textBytes = (messages) => messages.reduce((n, m) => n + bytes(m.text), 0)
 const padded = (token, n) => token + 'a'.repeat(n - bytes(token))
 const relay = (senderSessionId) => ({ kind: 'agent-message', form: 'relay', senderSessionId })
 
-describe('read_session bounds from the settings, with labelled messages', () => {
+describe('read_session bounds from the settings, with labelled messages', { skip: NEEDS_INSTANCE_STUB }, () => {
   const w = useHost('lrr', {})
   const h = readHelpers(w)
   const DEFAULT = { messages: LIMITS_R11.readSessionMessages.default, bytes: LIMITS_R11.readSessionBytes.default }

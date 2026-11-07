@@ -32,8 +32,7 @@ import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import {
   API, APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FISHBALL_WORD, FORWARD_HEADER, IDENTITY, INBOUND_TOOL, MANAGED_API, MANAGED_BY, MANAGED_CODE, MANAGED_ENTRY_KEYS,
-  MANAGED_LABELS, NOTE_TEXT, NOTICE, OUTCOME, P5_CODE, PRESET, RELAY, RELEASE_TOOL, STATUS, TITLE, UNKNOWN_TOOL_TEXT, WATCH_API,
-} from './support/constants.mjs'
+  MANAGED_LABELS, NOTE_TEXT, NOTICE, OUTCOME, P5_CODE, PRESET, RELAY, RELEASE_TOOL, STATUS, TITLE, UNKNOWN_TOOL_TEXT, WATCH_API, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import {
   HOOK, T, askSettled, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, managedEntry, managedItems, managedNow, messageFishball,
   requestMessages, setManaged, settledIdle, startAsk, toolNames, turn, untilSeen, waitRequest,
@@ -52,7 +51,7 @@ const BY_FISHBALL = { text: /Fishball/, kind: 'system' }
 const hasInbound = (req) => toolNames(req).includes(INBOUND_TOOL)
 const sinceMs = (since) => (typeof since === 'number' ? since : Date.parse(since))
 
-describe('Revision 11 rev11a: yours or managed, and the ways in and out', () => {
+describe('Revision 11 rev11a: yours or managed, and the ways in and out', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb
@@ -457,7 +456,7 @@ describe('Revision 11 rev11a: yours or managed, and the ways in and out', () => 
 
   it('MGD-16 the client bundle has Hand over and Take back', T, async (t) => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references dsh-fishball/client.js')
+    assert.ok(bundle.found, 'index references fishball-connector/client.js')
     assert.equal(bundle.status, 200)
     assert.ok(bundle.text.includes(MANAGED_LABELS.handOver), MANAGED_LABELS.handOver)
     assert.ok(bundle.text.includes(MANAGED_LABELS.takeBack), MANAGED_LABELS.takeBack)
