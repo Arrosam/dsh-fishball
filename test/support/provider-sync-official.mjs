@@ -7,7 +7,8 @@ import { pathToFileURL } from 'node:url'
 
 export const FIXTURE = Object.freeze({
   runtime: process.env.FBTEST_DSH_RUNTIME ?? '/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.3/node_modules',
-  root: path.resolve(import.meta.dirname, '../../.runtime/provider-sync-homes'),
+  // FBTEST_PROVIDER_SYNC_HOMES moves the credential homes out of the checkout (e.g. under the OS temp dir).
+  root: process.env.FBTEST_PROVIDER_SYNC_HOMES ?? path.resolve(import.meta.dirname, '../../.runtime/provider-sync-homes'),
   prefix: 'provider-sync-', secretBytes: 48, suffixLength: 8, digest: 'sha256', ownerMode: 0o600,
   scope: 'llm-pi-ai', kind: 'api-key', encoding: 'base64url',
   noLeak: 'generated credential material must not occur in observable output',
