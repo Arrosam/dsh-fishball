@@ -61,7 +61,7 @@ export async function hostFixture(t, profiles = { [CASE.ids.add]: clone(CASE.pro
     },
   }
   resolveOfficialSDK()
-  const { createProviderSyncHost } = await import('../../src/provider-sync-host.js')
+  const { createProviderSyncHost } = await import('../../packages/instance/src/provider-sync-host.js')
   const host = createProviderSyncHost(ctx, { identity: clone(identity) })
   const safe = async (operation) => {
     try { const value = await operation(); credentials.assertNoLeak(value); return value }
