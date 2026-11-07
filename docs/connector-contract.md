@@ -1,6 +1,7 @@
-# `fishball-connector` contract, version 1.0
+# `fishball-connector` contract, version 1.1
 
-Status: **frozen v1 (K1, 2026-11-06), corrected by K1b**. Sources: `docs/slim-native-design.md`
+Status: **frozen v1 (K1, 2026-11-06), corrected by K1b; minor 1.1 (K2, 2026-11-07) adds the
+framed page's `lang` parameter (§1.2, §11)**. Sources: `docs/slim-native-design.md`
 §0.2, §0.4, §5 and §18 (K1; §18.5 answers the open questions, §18.6 lists K1b's corrections), and
 the user's decisions of 2026-11-06 (§0 below). Where those decisions and the design differ, the
 decisions win. Nothing in this contract is open.
@@ -11,7 +12,7 @@ A third-party instance needs only this document and the connector's `./contract`
 
 Contents: 0 terms and decisions · 1 binding · 2 versions · 3 frames (envelope v2) ·
 4 operations · 5 events · 6 vocabularies · 7 errors · 8 limits · 9 no-instance behaviour ·
-10 module index.
+10 module index · 11 version history.
 
 ## 0. Terms and decisions
 
@@ -101,6 +102,27 @@ carries no host.
 frames the one it opens. The instance hosts both pages. The built-in instance registers
 `{chat: '/fishball/embed/', settings: '/fishball/embed/?view=settings'}`.
 
+**The language parameter (1.1, `UI_LANG`).** The connector frames the registered path with one
+search parameter `lang` added, whose value is `zh` or `en` (`UI_LANG.values`): the language the
+main DSH currently shows the connector's own words in. DSH's `zh` gives `zh` and `en` gives `en`;
+a language added by a language pack gives what its fallback chain reaches first (`zh` or `en`),
+the same resolution DSH uses for the connector's own words. The framed address is built so:
+
+- every `lang` parameter the path already has is removed (names compared URL-decoded), and the new
+  one is appended last in the query, so the page's first `lang` is always the connector's;
+- the path's other query parameters keep their order and exact spelling (only empty `&`
+  segments are dropped), and its fragment is kept, after the query;
+- a path with no query gets one: `/fishball/embed/` is framed as `/fishball/embed/?lang=zh`, and
+  `/fishball/embed/?view=settings#x` as `/fishball/embed/?view=settings&lang=zh#x`.
+
+So the frame's `src` equals the registered path plus exactly this parameter. "Open in a tab"
+opens the same address. When DSH's language changes so that the value changes, the connector
+reloads the framed page at the address with the new value. The registration rules above are
+unchanged: a path may itself carry `lang`, and the connector replaces it.
+
+A page should read its first `lang` parameter and treat any value it does not know as its default
+language. A 1.0 instance's page ignores the parameter and keeps working.
+
 ### 1.3 Attach outcomes
 
 The connector checks in this fixed order, so one descriptor has one answer:
@@ -146,8 +168,8 @@ then opens the connector's Plugins card (where its limits form is). No other mes
 
 ## 2. Versions
 
-- The contract id is `fishball-connector`. This document is **1.0**: `CONNECTOR_CONTRACT =
-  {id: 'fishball-connector', major: 1, minor: 0}`.
+- The contract id is `fishball-connector`. This document is **1.1**: `CONNECTOR_CONTRACT =
+  {id: 'fishball-connector', major: 1, minor: 1}`.
 - **A different major is refused** (`contract-version`), lower or higher. A different id is refused
   the same way.
 - **A minor only adds.** A new minor may add operations, events or optional payload fields, and
@@ -162,6 +184,11 @@ then opens the connector's Plugins card (where its limits form is). No other mes
   list, is ignored (a newer minor's optional addition). An unknown **required** capability is
   refused with `unsupported-capability`.
 - A breaking change needs major 2, and both sides keep the version check.
+- **1.0 and 1.1 together.** 1.1 changes no frame, operation, capability or descriptor field;
+  it only adds the framed page's `lang` parameter (§1.2). A 1.0 instance declaring
+  `{major: 1, minor: 0}` attaches to a 1.1 connector (the common version is `minor: 0`), and its
+  page is framed with `lang` added. A 1.1 instance attaches to a 1.0 connector too; its page is
+  then framed without `lang` and shows its default language.
 
 ## 3. Frames: envelope v2
 
@@ -530,7 +557,7 @@ Everything the `./contract` module exports (`packages/connector/contract/contrac
 unchanged from `packages/connector/contract/index.js`):
 
 - binding: `CONNECTOR_SERVICE`, `CONNECTOR_SERVICE_API`, `CONNECTOR_CONTRACT`, `ATTACH_ERROR`,
-  `TRANSPORT_METHODS`, `BROWSER_MESSAGE`, `validateAttachment`, `negotiateContract`;
+  `TRANSPORT_METHODS`, `BROWSER_MESSAGE`, `UI_LANG` (1.1), `validateAttachment`, `negotiateContract`;
 - frames: `ENVELOPE`, `SIDE`, `DIRECTION`, `OPERATION`, `OPERATIONS` (direction and scope per
   operation), `EVENT`, `EVENTS`, `EVENT_DIRECTION`, `VALIDATORS`, `validateRequest`,
   `validateResponse`, `validateEvent`, `validateEnvelope`, `makeEnvelope`, `encodeEnvelope`,
@@ -564,3 +591,10 @@ The sibling modules `card-record.js` (`CARD_RECORD`), `inbox-markers.js` (`QUEST
 `OWN_ANSWER`, `RECORD_ITEM`, `CARD_CLOSED`) and `attachment-transfer.js` (`TRANSFER`,
 `isImageMediaType`, `sha256Hex`, `maxChunkedBytes`, `fromBase64`, `toBase64`, `chunksOf`,
 `verifyTransfer`) are part of the contract as well.
+
+## 11. Version history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 1.0 | 2026-11-06 | K1: the frozen v1 contract, corrected by K1b. |
+| 1.1 | 2026-11-07 | K2 (design D30, U4): the connector frames `ui.chat` / `ui.settings` with a `lang` parameter (`zh` or `en`) from the main DSH's language, replacing a `lang` the path has and keeping its other parameters and fragment, and reloads the page when the language changes (§1.2). New export `UI_LANG`. No frame, operation, capability, descriptor or service change; 1.0 instances attach unchanged (§2). |

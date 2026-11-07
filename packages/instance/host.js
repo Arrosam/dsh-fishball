@@ -5,15 +5,13 @@
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
 import { LIFETIME } from './src/native-runtime/constants.js'
-import { DEFAULT_CONTROL_LIMITS } from './src/native-control/index.js'
-import { launchDefaults } from './src/native-runtime/node-default.js'
 import { registerNativeWeb } from './src/native-web.js'
 import { registerEmbed } from './src/slim/host/embed.js'
 import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
 import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes.js'
 import { createChildProviderSync } from './src/provider-sync-service.js'
-import { CONNECTOR_CONTRACT, ContractError, ERROR } from './src/slim/contract.js'
-import { BINDING_STATE, followConnector } from './src/host/binding.js'
+import { CONNECTOR_CONTRACT, ContractError, ERROR, ROUTES } from './src/slim/contract.js'
+import { BINDING_STATE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
 import { migrateLaunchSettings } from './src/settings-migration.js'
 
@@ -22,6 +20,10 @@ const PLUGIN = Object.freeze({
   name: 'fishball-instance', service: 'nativeFishballRuntime',
   // The contract's display name for this instance (inst-OQ-06), shown by the connector's view.
   displayName: 'Fishball instance',
+  // The pages this instance registers with the connector (contract §1.2), both framed through the
+  // main-side embed broker: the chat, and the same page's settings view (design §0.6, I6), which
+  // the page selects by its `view=settings` query (src/slim/ui/shell.js).
+  ui: Object.freeze({ chat: ROUTES.document, settings: ROUTES.document + '?view=settings' }),
   // Every service this row's ctx reads as a property must be listed: Cordis's context proxy
   // throws `cannot get property "<name>" without inject` for any other (0.2.1-rc.5 and
   // 0.2.2-rc.1 alike); ctx.get() is the only unchecked read. Each one below has the same name
@@ -69,33 +71,15 @@ export const name = PLUGIN.name
 export const inject = [...PLUGIN.dependencies]
 /**
  * The main DSH's whole form for the instance, and nothing else of its settings (§0.7, D23,
- * inst-OQ-04): the launch fields needed before the child exists. Volatile so DSH's Plugins form
- * can write them (§0.7); model sync is the "Model for Fishball" button I6 adds, an action rather
- * than a field, and there is no `providerSync` switch (D26).
+ * inst-OQ-04): `enabled`, the one field needed before the child exists. Volatile so DSH's Plugins
+ * form can write it (§0.7); model sync is the "Model for Fishball" button I6 adds, an action
+ * rather than a field, and there is no `providerSync` switch (D26). There is no launch field: the
+ * child is started as the main DSH is (D28, src/native-runtime/constants.js HOST_LAUNCH), and an
+ * old stored `nodeExecutable` or `executableSearchPath` is ignored (the schema keeps unknown keys
+ * as they are and nothing reads them).
  */
 export const Config = Schema.object({
   enabled: Schema.boolean().default(true).volatile().description('Start the private native child after main appReady. Turning it off stops the child at once and turning it on starts it, as the row switch does; private data is retained.'),
-  // Optional so a plain install starts the child (B2): unset means the first `node` on the host's
-  // PATH, which the runtime still verifies as plain Node 22+ (src/native-runtime/node-default.js).
-  nodeExecutable: Schema.string().volatile().description('Absolute plain Node 22+ executable for the private child. Empty: the first node on DSH\'s PATH (never Electron; it is verified before use). Applies at the next start.'),
-  executableSearchPath: Schema.string().volatile().description('Private PATH for the child, absolute components only. Empty: that node\'s folder plus DSH\'s absolute PATH entries. Applies at the next start.'),
-})
-/**
- * A start refused because of a launch setting (decision 2026-11-07: no format check on save, a
- * clear error at start). The runtime's codes below are thrown only while it checks these two
- * settings (src/native-runtime/installation.js isolatedEnvironment and verifyNode), so each names
- * its setting; a file-system error counts only when its path is the executable itself. The detail
- * carries the setting's name and the path tried, never a token or key.
- */
-const LAUNCH_ERROR = Object.freeze({
-  searchPathCodes: Object.freeze(['INVALID_EXECUTABLE_PATH']),
-  nodeCodes: Object.freeze(['INVALID_NODE', 'PROBE_FAILED', 'PROBE_TIMEOUT', 'PROBE_OUTPUT_LIMIT']),
-  defaultNote: ' (default)',
-  unset: '(none found)',
-  detail: Object.freeze({
-    nodeExecutable: (value) => `nodeExecutable: ${value} is not a plain Node 22+ executable that can be run.`,
-    executableSearchPath: (value) => `executableSearchPath: ${value} must be a non-empty PATH of absolute directories.`,
-  }),
 })
 const unavailable = code => Object.assign(new Error(code), { code })
 function bounded(promise, milliseconds) {
@@ -108,31 +92,11 @@ function bounded(promise, milliseconds) {
 // a successor must never silently take over an uncertain live child.
 const registry = globalThis[Symbol.for(LIFETIME.registryKey)] ??= new Map()
 
-/**
- * The launch settings for one start, read when the runtime asks (the getters below), so a value
- * saved in DSH's form applies at the next start without reloading the row.
- */
-function launchSettings(config) {
-  const configured = { nodeExecutable: fieldValue(config.nodeExecutable), executableSearchPath: fieldValue(config.executableSearchPath) }
-  return { configured, launch: launchDefaults(configured, process.env.PATH) }
-}
-/** The detail of a start refused by a launch setting, or null for any other failure. */
-function launchFailure(error, { configured, launch }) {
-  const tried = (field) => (launch[field] ?? LAUNCH_ERROR.unset) + (configured[field] === undefined ? LAUNCH_ERROR.defaultNote : '')
-  if (LAUNCH_ERROR.searchPathCodes.includes(error?.code)) return LAUNCH_ERROR.detail.executableSearchPath(tried('executableSearchPath'))
-  if (LAUNCH_ERROR.nodeCodes.includes(error?.code) || (error?.path !== undefined && error.path === launch.nodeExecutable)) return LAUNCH_ERROR.detail.nodeExecutable(tried('nodeExecutable'))
-  return null
-}
-
 export async function apply(ctx, config) {
   let enabled = fieldValue(config.enabled) !== false
   const logger = typeof ctx.logger === 'function' ? ctx.logger(PLUGIN.name) : undefined
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
   let code = null
-  /** Why the last start failed, when a launch setting was the cause (shown with the code). */
-  let detail = null
-  /** The settings the current start uses, so a failure names the values it actually tried. */
-  let attempt = launchSettings(config)
   /**
    * Serializes the starts and stops that follow the `enabled` switch and the connector's arrivals
    * and departures, in the order they happened.
@@ -152,10 +116,10 @@ export async function apply(ctx, config) {
   let unsubscribeProviderSync = () => {}
   /** T16's source side: syncs the main profile's API-key providers into the child's own target. */
   let providerSync
-  const status = () => ({ enabled, state, code, detail })
+  const status = () => ({ enabled, state, code })
   /** End this row's attachment, if any; a stale detach changes nothing (contract §1.3). */
   const release = () => { connection?.detach(); connection = undefined }
-  const set = (next, nextCode = null, nextDetail = null) => { state = next; code = nextCode; detail = nextDetail; return status() }
+  const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
   // T11's admin relay. Every page operation except status and restart travels to the child over
   // the lifecycle wire's own authenticated admin channel; the child applies it with its own
   // services, so the main process never writes a child file (§9). T12's routes call
@@ -174,12 +138,8 @@ export async function apply(ctx, config) {
     providerSync = createChildProviderSync({ ctx })
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
-      // Read at each start (attempt is renewed in start()), so the form's values apply at the next start.
-      get nodeExecutable() { return attempt.launch.nodeExecutable },
-      get executableSearchPath() { return attempt.launch.executableSearchPath },
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },
       limits: LIFECYCLE_LIMITS,
-      control: { limits: DEFAULT_CONTROL_LIMITS },
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
     // One authenticated control transport, one envelope-v2 bridge, attached through the contract's
@@ -192,16 +152,29 @@ export async function apply(ctx, config) {
       if (hostId !== owner.hostId) throw new ContractError(ERROR.host)
       release()
       // No child starts without the connector (D25), so this is only a connector that left
-      // during the start: the departure's stop is already queued and ends this wire. A refused
-      // attach (another instance first, or a future major) leaves the wire unbridged: failing the
-      // start here would take the child down, and I1 maps that refusal onto the instance's own
-      // status (inst-OQ-03).
+      // during the start: the departure's stop is already queued and ends this wire.
       if (typeof connector?.attachInstance !== 'function') return
       try {
-        connection = connector.attachInstance({ id: hostId, name: PLUGIN.displayName, contract: CONNECTOR_CONTRACT, transport })
+        connection = connector.attachInstance({
+          id: hostId, name: PLUGIN.displayName, contract: CONNECTOR_CONTRACT, transport, ui: PLUGIN.ui,
+          // The connector's frame shows these (design §0.5 "The frame"); status() answers in the
+          // contract's vocabulary only (contract §1.1, binding.js contractStatus).
+          status: () => contractStatus(status()),
+          retry: async () => { await retry() },
+        })
       } catch (error) {
         connection = undefined
         logger?.warn('attach refused (%s)', error?.code ?? String(error))
+        // `instance-busy` and `contract-version` fail the start (inst-OQ-03). The state is set
+        // here, before the rethrow: the runtime then ends its attach and stops the child, whose
+        // exit would otherwise report a `starting` instance as NATIVE_CHILD_EXITED (onExit above),
+        // and start() below leaves a state that is no longer `starting` as it is. A stop that
+        // began meanwhile keeps its own state. Any other refusal leaves the wire unbridged, as
+        // before.
+        if (Object.hasOwn(REFUSAL_CODE, error?.code)) {
+          if (state === PLUGIN.state.starting) set(PLUGIN.state.failed, REFUSAL_CODE[error.code])
+          throw error
+        }
       }
     })
     // The admin transport comes up with each authenticated wire (and again after a restart); the
@@ -209,7 +182,7 @@ export async function apply(ctx, config) {
     unsubscribeAdmin = owner.onAdminTransport((transport) => { if (!closed) admin.attach(transport) })
     // T16's provider-sync transport comes up on the same authenticated wire; a replaced
     // transport rejects whatever was in flight (the child restarted, so an answer is never
-    // retried; the next Refresh models previews afresh).
+    // retried; the next Check previews afresh).
     unsubscribeProviderSync = owner.onProviderSyncTransport((transport, metadata) => {
       if (closed) return
       try { providerSync.attach(transport, metadata) } catch { /* the next wire replaces it */ }
@@ -228,19 +201,19 @@ export async function apply(ctx, config) {
     if (startup) return startup
     startup = (async () => {
       set(PLUGIN.state.starting)
-      attempt = launchSettings(config)
       try {
         await barrier
         if (closed) return status()
         await bounded(owner.start(), owner.limits.startupTimeoutMs)
         if (!closed && state === PLUGIN.state.starting) set(PLUGIN.state.ready)
-      } catch (error) {
+      } catch {
         owner.parentExit()
         // Abort any late startup continuation; retained ownership prevents a duplicate.
         await owner.shutdown().catch(() => {})
-        const reason = launchFailure(error, attempt)
-        if (reason !== null) logger?.warn('%s: %s', PLUGIN.code.failed, reason)
-        if (!closed && state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.failed, reason)
+        // A refused attach already left `starting` with its own code (the transport listener
+        // above), so only another failure is NATIVE_START_FAILED; nothing restarts either by
+        // itself (inst-OQ-03, inst-OQ-09).
+        if (!closed && state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.failed)
       }
       return status()
     })().finally(() => { startup = undefined })
@@ -260,9 +233,24 @@ export async function apply(ctx, config) {
     const result = await stop()
     return result.state === PLUGIN.state.failed ? result : start()
   }
-  /** Queue one start or stop behind the earlier ones; a closed row runs nothing more. */
+  /**
+   * Queue one start or stop behind the earlier ones; a closed row runs nothing more.
+   * @returns the action's own outcome; a failure there never breaks the queue.
+   */
   function follow(action) {
-    toggle = toggle.then(() => (closed ? status() : action())).catch(() => {})
+    const run = toggle.then(() => (closed ? status() : action()))
+    toggle = run.catch(() => {})
+    return run
+  }
+  /**
+   * Retry, for the instance's Plugins card and the connector's frame: a restart, only from
+   * `failed` (design §0.5: Retry only with `failed`; inst-OQ-09: failed until Retry). Queued like
+   * the switch and the connector's arrivals, so it never races them; in any other state it
+   * changes nothing.
+   * @returns {Promise<object>} the status once the retry has run.
+   */
+  function retry() {
+    return follow(() => (state === PLUGIN.state.failed ? restart() : status()))
   }
   function shutdown() {
     if (disposal) return disposal
@@ -300,14 +288,15 @@ export async function apply(ctx, config) {
   registry.set(key, { shutdown })
   ctx.effect(() => shutdown, PLUGIN.cleanup)
   const service = Object.freeze({
-    status, start, stop, restart,
+    status, start, stop, restart, retry,
     // T12's settings routes reach the child only through this relay (§9).
     admin,
-    // T16's provider-sync page API (§10): only status and the one-step sync. The bridge's
-    // attach/request stay private to this row, so no other row can talk to the child target.
+    // The "Model for Fishball" API (§10, D26): status, Check and Add. The bridge's attach/request
+    // stay private to this row, so no other row can talk to the child target.
     providerSync: Object.freeze({
       status: () => providerSync.status(),
-      sync: () => providerSync.sync(),
+      check: () => providerSync.check(),
+      add: (payload) => providerSync.add(payload),
     }),
     async health() {
       if (closed || !owner || state !== PLUGIN.state.ready) return status()
@@ -326,8 +315,8 @@ export async function apply(ctx, config) {
   registerEmbed(ctx, service)
   // T12's settings page reaches the child only through the admin relay (§9).
   registerAdminRoutes(ctx, service)
-  // T16's provider-sync route sits beside the admin routes and is subject to the same
-  // owner-only Fetch registry and same-origin fence (§10).
+  // The model-sync routes (models/check, models/add) sit beside the admin routes and are subject
+  // to the same owner-only Fetch registry and same-origin fence (§10).
   registerProviderSyncRoutes(ctx, service)
   registerNativeWeb(ctx, service)
   // The one-time copy from the old row runs first (DSH writes settings only for an active row, so
@@ -340,8 +329,7 @@ export async function apply(ctx, config) {
   })
   // DSH's form writes `enabled` as a volatile field, so the row is not reloaded; the loader only
   // refreshes the live value and emits this event. Follow it as the row switch would: off stops
-  // the child (state disabled), on starts it once main is ready. The path fields need nothing
-  // here: the runtime reads them at the next start.
+  // the child (state disabled), on starts it once main is ready.
   ctx.on(PLUGIN.volatileUpdate, () => {
     const next = fieldValue(config.enabled) !== false
     if (next === enabled || closed) return
