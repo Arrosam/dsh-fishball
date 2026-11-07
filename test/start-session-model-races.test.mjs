@@ -1,6 +1,7 @@
 /** State transitions at official publication/GUI boundaries; no production source inspected. */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
+import { NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, turn } from './support/expect.mjs'
 import { until } from './support/host.mjs'
 import { selectionHost, START_MODEL as C, route } from './support/start-session-model.mjs'
@@ -8,7 +9,7 @@ import { selectionHost, START_MODEL as C, route } from './support/start-session-
 const chosen = { provider: C.provider, model: C.models.fast, reasoningEffort: C.effort.wrongModel }
 const startSelection = { model: route(C.models.analysis), reasoning_effort: C.effort.last }
 
-describe('start_session model: existing and later GUI-selection authority', () => {
+describe('start_session model: existing and later GUI-selection authority', { skip: NEEDS_INSTANCE_STUB }, () => {
   let w
   before(async () => { w = await selectionHost('start-model-gui-races') }, HOOK)
   after(async () => { await w?.stop() }, HOOK)

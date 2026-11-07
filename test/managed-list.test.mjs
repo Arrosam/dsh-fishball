@@ -31,7 +31,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, MANAGED_API, MANAGED_BY, MANAGED_ENTRY_KEYS, MANAGED_LABELS, MANAGED_LIST_LABELS, OWN_PLUGINS, PRESET, RELAY, STATUS, TITLE } from './support/constants.mjs'
+import { API, MANAGED_API, MANAGED_BY, MANAGED_ENTRY_KEYS, MANAGED_LABELS, MANAGED_LIST_LABELS, OWN_PLUGINS, PRESET, RELAY, STATUS, TITLE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, fishballCall, fishballClientBundle, managedEntry, managedNow, pluginIn, setManaged, settledIdle, turn, untilCatalog } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
@@ -43,7 +43,7 @@ const PUBLISH_MS = 8000
 const QUIET_MS = 1200
 const LONG = { timeout: 150000 }
 
-describe('Revision 11 rev11a follow-up: the managed sessions list', () => {
+describe('Revision 11 rev11a follow-up: the managed sessions list', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

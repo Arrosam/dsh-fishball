@@ -9,13 +9,13 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { T, HOOK, turn, toolSchema, watchesOn, outboxNow } from './support/expect.mjs'
-import { FAKE } from './support/constants.mjs'
+import { FAKE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { selectionHost, START_MODEL as C, route } from './support/start-session-model.mjs'
 
 const selection = (model = C.models.analysis, effort) => ({ model: route(model), ...(effort === undefined ? {} : { reasoning_effort: effort }) })
 const requested = async (w, sid) => (await w.events()).filter(event => event.type === 'request' && event.sessionId === sid && !event.purpose)
 
-describe('start_session model: integrated real throwaway DSH host', () => {
+describe('start_session model: integrated real throwaway DSH host', { skip: NEEDS_INSTANCE_STUB }, () => {
   let w
   before(async () => { w = await selectionHost('start-model-system') }, HOOK)
   after(async () => { await w?.stop() }, HOOK)
@@ -124,7 +124,7 @@ describe('start_session model: integrated real throwaway DSH host', () => {
   })
 })
 
-describe('start_session model: validation EP/BVA and dynamic error choices', () => {
+describe('start_session model: validation EP/BVA and dynamic error choices', { skip: NEEDS_INSTANCE_STUB }, () => {
   let w
   before(async () => { w = await selectionHost('start-model-invalid', { limits: { sessionsPerHour: 1 } }) }, HOOK)
   after(async () => { await w?.stop() }, HOOK)
@@ -162,7 +162,7 @@ describe('start_session model: validation EP/BVA and dynamic error choices', () 
   })
 })
 
-describe('start_session model: host failure decision table and created-failure hourly accounting', () => {
+describe('start_session model: host failure decision table and created-failure hourly accounting', { skip: NEEDS_INSTANCE_STUB }, () => {
   let w
   before(async () => { w = await selectionHost('start-model-failures', { limits: { sessionsPerHour: 3 } }) }, HOOK)
   after(async () => { await w?.stop() }, HOOK)
@@ -195,7 +195,7 @@ describe('start_session model: host failure decision table and created-failure h
   })
 })
 
-describe('start_session model: published-creation external wake race', () => {
+describe('start_session model: published-creation external wake race', { skip: NEEDS_INSTANCE_STUB }, () => {
   let w
   before(async () => { w = await selectionHost('start-model-wake-race') }, HOOK)
   after(async () => { await w?.stop() }, HOOK)

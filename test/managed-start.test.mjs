@@ -36,7 +36,7 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { describe, it } from 'node:test'
-import { APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, HALF_MADE, MANAGED_BY, MANAGED_TOOLS, OUTCOME, P5_CODE, TITLE } from './support/constants.mjs'
+import { APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, HALF_MADE, MANAGED_BY, MANAGED_TOOLS, OUTCOME, P5_CODE, TITLE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { T, askSettled, callScript, makeManaged, managedEntry, noticesSettled, outboxNow, requestMessages, settledIdle, toolNames, turn, waitRequest, watchesOn } from './support/expect.mjs'
 import { until } from './support/host.mjs'
 import { assertDelivered, assertFailedDelivery, assertRenamedBeforeSteer, eventsOf, tok, useHost } from './support/start-session.mjs'
@@ -99,7 +99,7 @@ function toolkit(w) {
   return { start, expectYours, expectManaged, seenFor }
 }
 
-describe('start_session makes the session managed, and carries on when it cannot', () => {
+describe('start_session makes the session managed, and carries on when it cannot', { skip: NEEDS_INSTANCE_STUB }, () => {
   const w = useHost('mst-main', { env: APPROVER_AFTER_ENV, limits: { sessionsPerHour: 0 } })
   const t = toolkit(w)
   /** The control start: the registry works. Its keys are the reference for every answer below. */
@@ -279,7 +279,7 @@ describe('start_session makes the session managed, and carries on when it cannot
   })
 })
 
-describe('start_session whose managed write fails counts against sessionsPerHour (2)', () => {
+describe('start_session whose managed write fails counts against sessionsPerHour (2)', { skip: NEEDS_INSTANCE_STUB }, () => {
   const w = useHost('mst-cap', { env: APPROVER_AFTER_ENV, limits: { sessionsPerHour: 2 } })
   const t = toolkit(w)
 

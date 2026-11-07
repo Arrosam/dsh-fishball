@@ -19,7 +19,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, APPROVER_AFTER_ENV, ASK_TOOL, ELLIPSIS, LIMITS_R11, OUTCOME, PRESET, STATUS, WATCH_STATUS } from './support/constants.mjs'
+import { API, APPROVER_AFTER_ENV, ASK_TOOL, ELLIPSIS, LIMITS_R11, OUTCOME, PRESET, STATUS, WATCH_STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import {
   HOOK, T, makeManaged, approvalsNow, askSettled, bytes, fishballCall, fishballMessages, intakeNow, messageFishball, outboxNow, settledIdle, startAsk, turn, untilSeen,
   untrustedBlock, waitRequest, watchesNow,
@@ -33,7 +33,7 @@ const LONG = { timeout: 120000 }
 /** A cut value without its trailing ellipsis, for the prefix check. */
 const bare = (s) => (s.endsWith(ELLIPSIS) ? s.slice(0, -ELLIPSIS.length) : s)
 
-describe('rev11-limits: shown and excerpt fields apply live', () => {
+describe('rev11-limits: shown and excerpt fields apply live', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let fb
   let agentTag

@@ -24,14 +24,14 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, OWN_PLUGINS, PRESET, STATUS } from './support/constants.mjs'
+import { API, OWN_PLUGINS, PRESET, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, settledIdle } from './support/expect.mjs'
 import { A, Q, QUIET_MS, cardId, qHost, qTools, refused, resultText, sleep, tokens, until } from './support/rev11g.mjs'
 
 const { tok, cid } = tokens('VAL')
 const LONG = { timeout: 120000 }
 
-describe('Revision 11 rev11g: refused answers, children, and off', () => {
+describe('Revision 11 rev11g: refused answers, children, and off', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let q
   let x

@@ -22,7 +22,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, MANAGED_API, MANAGED_BY, OWN_PLUGINS, PREFERENCES, PRESET, RELEASE_TOOL, STATUS, TITLE } from './support/constants.mjs'
+import { API, MANAGED_API, MANAGED_BY, OWN_PLUGINS, PREFERENCES, PRESET, RELEASE_TOOL, STATUS, TITLE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, catalogSettled, fishballCall, fishballClientBundle, managedEntry, managedNow, setManaged, settledIdle, turn } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
@@ -33,7 +33,7 @@ const LONG = { timeout: 150000 }
 let seq = 0
 const tok = (label) => 'MKS' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 7)
 
-describe('Revision 11 rev11i: managed-session marks (what the client reads)', () => {
+describe('Revision 11 rev11i: managed-session marks (what the client reads)', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

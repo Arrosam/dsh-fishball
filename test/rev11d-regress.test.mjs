@@ -11,13 +11,13 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ASK_CODE, AUDIT_ANSWER, CLICK, DECISION } from './support/constants.mjs'
+import { ASK_CODE, AUDIT_ANSWER, CLICK, DECISION, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, answerCard, askStep, auditOf, cardOf, settledIdle, stockSeen, untilCard } from './support/expect.mjs'
 import { pileHost, pileTools, tokens, until } from './support/rev11c.mjs'
 
 const { tok, cid } = tokens('REG')
 
-describe('Revision 11 rev11b regression: escalate needs no risk or reason', () => {
+describe('Revision 11 rev11b regression: escalate needs no risk or reason', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let t
   let x

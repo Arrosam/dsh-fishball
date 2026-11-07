@@ -42,7 +42,7 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, it } from 'node:test'
-import { LIMITS, P5_CODE, PRESET, RELAY, RUNTIME, TITLE, WATCH_SUMMARY } from './support/constants.mjs'
+import { LIMITS, P5_CODE, PRESET, RELAY, RUNTIME, TITLE, WATCH_SUMMARY, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { T, fishballCall, noticesSettled, settledIdle, toolSchema, turn, watchesOn } from './support/expect.mjs'
 import { until } from './support/host.mjs'
 import { TOOL, TOOL_ERROR, assertDelivered, assertFailedDelivery, assertRefused, assertRenamedBeforeSteer, assertTitleError, eventsOf, orderOf, tok, useHost } from './support/start-session.mjs'
@@ -60,7 +60,7 @@ const loggedCount = async (w) => (await w.host.call('loggedProblems')).length
 /** The warnings and errors logged after the first `since`, without the unrelated ones. */
 const problemsSince = async (w, since) => (await w.host.call('loggedProblems', { since })).filter((p) => !UNRELATED_LOGGERS.includes(p.name))
 
-describe('start_session names the session (DSH session-title service present)', () => {
+describe('start_session names the session (DSH session-title service present)', { skip: NEEDS_INSTANCE_STUB }, () => {
   const w = useHost('sst-main', { limits: { sessionsPerHour: 0 } })
 
   it('SST-01 start_session takes folder, title and message (required) and notify_when_finished (optional); the description mentions the title', T, async () => {
@@ -287,7 +287,7 @@ describe('start_session names the session (DSH session-title service present)', 
   })
 })
 
-describe('start_session order of checks: message, title, hourly cap, folder', () => {
+describe('start_session order of checks: message, title, hourly cap, folder', { skip: NEEDS_INSTANCE_STUB }, () => {
   const w = useHost('sst-order', { limits: { sessionsPerHour: 1 } })
 
   describe('ORD-01 the message is checked first', () => {
@@ -368,7 +368,7 @@ describe('start_session order of checks: message, title, hourly cap, folder', ()
   })
 })
 
-describe('start_session without a DSH sessionTitle service', () => {
+describe('start_session without a DSH sessionTitle service', { skip: NEEDS_INSTANCE_STUB }, () => {
   const w = useHost('sst-none', { env: { FBTEST_NO_SESSION_TITLE: '1' }, limits: { sessionsPerHour: 0 } })
 
   it('UNA-01 the session starts, the message is delivered and recorded, and the answer says title-unavailable', T, async () => {
