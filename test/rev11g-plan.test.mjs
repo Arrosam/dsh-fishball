@@ -68,7 +68,7 @@ describe('Revision 11 rev11g on H-STUB: plan reviews', () => {
     assert.ok(JSON.stringify(review).includes(PLAN_BODY), 'the offer carries the plan')
     assert.deepEqual(review.options.map((o) => o.label), [PLAN.approve, PLAN.keep])
     assert.deepEqual(review.intent, { kind: PLAN_REVIEW_ID, approve: PLAN.approve, callId: id })
-    const [notice] = await q.notices(offer.approvalId)
+    const notice = await q.noticeOf(offer.approvalId)
     assert.ok(notice?.text.includes(PLAN_BODY), 'the notice carries the plan: ' + notice?.text.slice(0, 800))
     await q.userStop(x)
     await q.planOff(x)
