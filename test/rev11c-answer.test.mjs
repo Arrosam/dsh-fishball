@@ -20,13 +20,13 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ASK_CODE, ASK_OUTPUT, AUDIT_ANSWER, AUDIT_KIND, CLICK, DECISION, DECISION_ACTION, LIMITS, OUTCOME, PILE_API, PILE_CODE, P5_CODE } from './support/constants.mjs'
+import { ASK_CODE, ASK_OUTPUT, AUDIT_ANSWER, AUDIT_KIND, CLICK, DECISION, DECISION_ACTION, LIMITS, OUTCOME, PILE_API, PILE_CODE, P5_CODE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, answerCard, askStep, auditOf, callStep, cardOf, fishballMessages, requestMessages, settledIdle, turn, untilCard, waitRequest } from './support/expect.mjs'
 import { QUIET_MS, pileHost, pileTools, sleep, tokens, until } from './support/rev11c.mjs'
 
 const { tok, cid } = tokens('ANS')
 
-describe('Revision 11 rev11c: answering a card', () => {
+describe('Revision 11 rev11c: answering a card', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let t
   let x

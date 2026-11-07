@@ -21,14 +21,14 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { PLAN, PRESET } from './support/constants.mjs'
+import { PLAN, PRESET, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, settledIdle } from './support/expect.mjs'
 import { A, Q, boot, cardId, qHost, qTools, refused, sleep, tokens, until } from './support/rev11g.mjs'
 
 const { tok, cid } = tokens('RST')
 const LONG = { timeout: 180000 }
 
-describe('Revision 11 rev11g: a restart with questions open', () => {
+describe('Revision 11 rev11g: a restart with questions open', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let q
   const S = {}

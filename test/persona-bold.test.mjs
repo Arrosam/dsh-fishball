@@ -25,12 +25,18 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { PERSONA_BOLD, PRESET, STATUS } from './support/constants.mjs'
+import { NEEDS_INSTANCE_STUB, PERSONA_BOLD, PRESET, STATUS } from './support/constants.mjs'
 import { HOOK, T, turn } from './support/expect.mjs'
 import { bootHost, bootLive, newHome } from './support/host.mjs'
 import { baselineAvailable, countIn, isRuleLine, loadBaseline, loadCurrent, personaLines, textBefore } from './support/persona-bold.mjs'
 
 const BASELINE_MISSING = baselineAvailable() ? false : 'the baseline ref ' + PERSONA_BOLD.baseline.ref + ' is not in this clone'
+/**
+ * R-B2 compared the persona with the rebuild/assistant baseline ("nothing else changed"). The slim rounds
+ * have since changed the persona on purpose (N5 notify_when_finished, N6/N7 question wording, N9-a answer
+ * places), so the comparison is retired; R-B1 still pins the rule line itself.
+ */
+const BASELINE_RETIRED = 'the persona changed on purpose after the baseline (slim N5, N6, N7, N9-a)'
 
 describe('persona rule: Chinese punctuation outside bold text (static)', () => {
   let persona
@@ -74,7 +80,7 @@ describe('persona rule: Chinese punctuation outside bold text (static)', () => {
     })
   })
 
-  describe('R-B2 nothing else changed', { skip: BASELINE_MISSING }, () => {
+  describe('R-B2 nothing else changed', { skip: BASELINE_RETIRED || BASELINE_MISSING }, () => {
     let baseModule
     let currentModule
     let baseLines
@@ -135,7 +141,7 @@ describe('persona rule: Chinese punctuation outside bold text (static)', () => {
   })
 })
 
-describe('R-B3 the rule reaches the model: the system prompt of a Fishball request, and of an ordinary session', () => {
+describe('R-B3 the rule reaches the model: the system prompt of a Fishball request, and of an ordinary session', { skip: NEEDS_INSTANCE_STUB }, () => {
   let home
   let host
   let fb

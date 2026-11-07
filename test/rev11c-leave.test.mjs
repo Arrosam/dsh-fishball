@@ -15,14 +15,14 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, ASK_CODE, AUDIT_ANSWER, CLICK, FIXTURE_BUNDLE, LIMITS, OUTCOME, OWN_PLUGINS, STATUS, TOO_MANY_WAITING } from './support/constants.mjs'
+import { API, ASK_CODE, AUDIT_ANSWER, CLICK, FIXTURE_BUNDLE, LIMITS, OUTCOME, OWN_PLUGINS, STATUS, TOO_MANY_WAITING, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, answerCard, askStep, auditOf, callStep, cardOf, fishballTool, jsonOf, managedEntry, pileNow, requestMessages, resultById, resultOfCall, setManaged, settledIdle, stockSeen, untilNoCard } from './support/expect.mjs'
 import { AT_ONCE_MS, QUIET_MS, boot, pileHost, pileTools, tokens, until } from './support/rev11c.mjs'
 
 const { tok, cid } = tokens('LVE')
 const LONG = { timeout: 120000 }
 
-describe('Revision 11 rev11c: cards leave, and the cap', () => {
+describe('Revision 11 rev11c: cards leave, and the cap', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let t
   let x

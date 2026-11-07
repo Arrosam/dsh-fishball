@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { CASE, assertDisposableEnvironment, sandbox, sentinel } from './native-production-helpers.mjs'
 
 await assertDisposableEnvironment()
-const { preflight } = await import('../src/native-preflight.js')
+const { preflight } = await import('../packages/instance/src/native-preflight.js')
 
 const FIXTURE = Object.freeze({
   git: '.git', modules: 'node_modules', outside: 'outside',

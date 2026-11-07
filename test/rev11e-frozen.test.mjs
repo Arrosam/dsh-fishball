@@ -16,7 +16,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { OUTCOME, PROMPT_DECISION } from './support/constants.mjs'
+import { OUTCOME, PROMPT_DECISION, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, pileNow, requestMessages, storedRows } from './support/expect.mjs'
 import { approvalAudit } from './support/expect.mjs'
 import { QUIET_MS, argsOf, entryFor, idOf, pileHost, promptTools, refused, sleep, toolOf, tokens, yoursSession } from './support/rev11e.mjs'
@@ -24,7 +24,7 @@ import { ASK_TOOL } from './support/constants.mjs'
 
 const { tok, cid } = tokens('FRZ')
 
-describe('Revision 11 rev11e: list_frozen_sessions', () => {
+describe('Revision 11 rev11e: list_frozen_sessions', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let p
   let x

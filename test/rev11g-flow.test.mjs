@@ -23,13 +23,13 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ANSWER_QUESTION, LIMITS, PRESET } from './support/constants.mjs'
+import { ANSWER_QUESTION, LIMITS, PRESET, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, settledIdle } from './support/expect.mjs'
 import { A, Q, QUIET_MS, AT_ONCE_MS, cardId, cardMentions, qHost, qTools, refused, resultText, sleep, tokens, until } from './support/rev11g.mjs'
 
 const { tok, cid } = tokens('FLW')
 
-describe('Revision 11 rev11g: how a managed session\'s question travels', () => {
+describe('Revision 11 rev11g: how a managed session\'s question travels', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let q
   let x

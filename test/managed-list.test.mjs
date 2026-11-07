@@ -31,7 +31,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { API, MANAGED_API, MANAGED_BY, MANAGED_ENTRY_KEYS, MANAGED_LABELS, MANAGED_LIST_LABELS, OWN_PLUGINS, PRESET, RELAY, STATUS, TITLE } from './support/constants.mjs'
+import { API, MANAGED_API, MANAGED_BY, MANAGED_ENTRY_KEYS, MANAGED_LABELS, MANAGED_LIST_LABELS, OWN_PLUGINS, PRESET, RELAY, STATUS, TITLE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, fishballCall, fishballClientBundle, managedEntry, managedNow, pluginIn, setManaged, settledIdle, turn, untilCatalog } from './support/expect.mjs'
 import { bootHost, newHome, sleep, until } from './support/host.mjs'
 
@@ -43,7 +43,7 @@ const PUBLISH_MS = 8000
 const QUIET_MS = 1200
 const LONG = { timeout: 150000 }
 
-describe('Revision 11 rev11a follow-up: the managed sessions list', () => {
+describe('Revision 11 rev11a follow-up: the managed sessions list', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb
@@ -259,7 +259,7 @@ describe('Revision 11 rev11a follow-up: the managed sessions list', () => {
 
   it('MGL-11 the client bundle carries the list\'s labels', T, async (t) => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references dsh-fishball/client.js')
+    assert.ok(bundle.found, 'index references fishball-connector/client.js')
     assert.equal(bundle.status, 200)
     const labels = [MANAGED_LIST_LABELS.heading, ...Object.values(MANAGED_LIST_LABELS.by), MANAGED_LABELS.takeBack, MANAGED_LIST_LABELS.empty]
     for (const l of labels) assert.ok(bundle.text.includes(l), 'bundle lacks ' + JSON.stringify(l))

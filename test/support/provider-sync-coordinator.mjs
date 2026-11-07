@@ -2,13 +2,12 @@
 import { CASE, clone, engineFixture, inventory, provider } from './provider-sync-engine.mjs'
 import { officialCredentials } from './provider-sync-official.mjs'
 
-const COORDINATOR = Object.freeze({ pairId: 'paired-fixture' })
 export async function coordinatorFixture(t, source = inventory(CASE.source, [provider(), provider(CASE.ids.second)])) {
   const target = await engineFixture(t, source)
   const sourceCredentials = await officialCredentials()
   t.after(() => sourceCredentials.close())
   for (const entry of source.providers) await sourceCredentials.seed(entry.id, sourceCredentials.record())
-  const state = { source: clone(source), peerIdentity: clone(CASE.target), pairId: COORDINATOR.pairId, unpaired: false, readFailure: null, recordOverride: undefined, planToken: null, inventoryHook: null, readHook: null, importFailure: null }
+  const state = { source: clone(source), peerIdentity: clone(CASE.target), unpaired: false, readFailure: null, recordOverride: undefined, planToken: null, inventoryHook: null, readHook: null, importFailure: null }
   const calls = { sourceInventory: 0, sourceReads: [], requests: [] }
   const host = {
     async inventory() { calls.sourceInventory++; if (state.inventoryHook) await state.inventoryHook(calls.sourceInventory); return clone(state.source) },
@@ -21,7 +20,6 @@ export async function coordinatorFixture(t, source = inventory(CASE.source, [pro
   }
   const peer = {
     get identity() { return clone(state.peerIdentity) },
-    get pairId() { return state.pairId },
     async request(action, payload) {
       calls.requests.push({ action })
       if (action === 'inventory') {
@@ -37,7 +35,7 @@ export async function coordinatorFixture(t, source = inventory(CASE.source, [pro
     },
   }
   const channel = { peer: () => state.unpaired ? null : peer }
-  const { ProviderSyncCoordinator } = await import('../../src/provider-sync-coordinator.js')
+  const { ProviderSyncCoordinator } = await import('../../packages/instance/src/provider-sync-coordinator.js')
   const coordinator = new ProviderSyncCoordinator({ host, channel, ttlMs: CASE.ttlMs, now: () => target.state.now })
   t.after(() => coordinator.close())
   const safe = async (operation) => {

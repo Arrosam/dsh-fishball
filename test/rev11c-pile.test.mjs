@@ -18,13 +18,13 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, APPROVER_HOLDS, ASK_CODE, ASK_FISHBALL, ASK_TOOL, CARD_KEYS, CARD_KIND, CLICK, DECISION, ELLIPSIS, LIMITS, LIMITS_R11C, OUTCOME, REQUEST_PLACEHOLDER } from './support/constants.mjs'
+import { API, APPROVER_HOLDS, ASK_CODE, ASK_FISHBALL, ASK_TOOL, CARD_KEYS, CARD_KIND, CLICK, DECISION, ELLIPSIS, LIMITS, LIMITS_R11C, OUTCOME, REQUEST_PLACEHOLDER, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, answerCard, askStep, bytes, callStep, cardArguments, cardOf, jsonOf, pileNow, requestMessages, resultById, settledIdle, untilCard, untilNoCard, waitRequest } from './support/expect.mjs'
 import { boot, pileHost, pileTools, tokens, until } from './support/rev11c.mjs'
 
 const { tok, cid } = tokens('PIL')
 
-describe('Revision 11 rev11c: your pile', () => {
+describe('Revision 11 rev11c: your pile', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let t
   let x

@@ -25,7 +25,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { INBOUND_TOOL, LIMITS, OUTBOUND_TOOLS, OUTBOX_KEYS, OUTBOX_OPTIONAL, P5_CODE, PRESET, RELAY, SENTINEL_PRESET, STATE_LIST_MAX, TITLE } from './support/constants.mjs'
+import { INBOUND_TOOL, LIMITS, OUTBOUND_TOOLS, OUTBOX_KEYS, OUTBOX_OPTIONAL, P5_CODE, PRESET, RELAY, SENTINEL_PRESET, STATE_LIST_MAX, TITLE, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, fishballCall, jsonOf, outboxNow, settledIdle, toolNames, turn } from './support/expect.mjs'
 import { bootLive, newHome, until } from './support/host.mjs'
 
@@ -39,7 +39,7 @@ async function received(host, sessionId, needle) {
 }
 const stateText = async (host) => JSON.stringify(await host.state())
 
-describe('P5 message_session and start_session', () => {
+describe('P5 message_session and start_session', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb
@@ -239,7 +239,7 @@ describe('P5 message_session and start_session', () => {
   })
 })
 
-describe('P5 hourly caps and outbox bounds', () => {
+describe('P5 hourly caps and outbox bounds', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

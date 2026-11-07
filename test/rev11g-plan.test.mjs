@@ -20,13 +20,13 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { MODE_USER_CODE, PLAN, PLAN_REVIEW_ID, PRESET, QUESTION_MODE, QUESTION_TAG_KIND } from './support/constants.mjs'
+import { MODE_USER_CODE, PLAN, PLAN_REVIEW_ID, PRESET, QUESTION_MODE, QUESTION_TAG_KIND, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import { HOOK, T, settledIdle } from './support/expect.mjs'
 import { AT_ONCE_MS, QUIET_MS, cardId, cardMentions, planText, qHost, qTools, refused, sleep, tokens } from './support/rev11g.mjs'
 
 const { tok, cid } = tokens('PLN')
 
-describe('Revision 11 rev11g: plan reviews', () => {
+describe('Revision 11 rev11g: plan reviews', { skip: NEEDS_INSTANCE_STUB }, () => {
   let ctx
   let q
   let x

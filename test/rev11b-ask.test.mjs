@@ -28,8 +28,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import {
   ANSWER_TOOL, API, APPROVAL_ID, APPROVER_AFTER_ENV, APR_CODE, ASK_CODE, ASK_OUTPUT, ASK_REFUSALS, ASK_TOOL, AUDIT_ANSWER, AUDIT_KIND, DECISION, DECISION_ACTION, DECISIONS_TABLE,
-  LIMITS, OUTCOME, OWN_PLUGINS, QUESTION_REQUIRED, REQUEST_PLACEHOLDER, STATUS, UNKNOWN_TOOL_TEXT,
-} from './support/constants.mjs'
+  LIMITS, OUTCOME, OWN_PLUGINS, QUESTION_REQUIRED, REQUEST_PLACEHOLDER, STATUS, UNKNOWN_TOOL_TEXT, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
 import {
   HOOK, T, answerCard, approvalsNow, askStep, auditOf, blockArguments, callStep, fishballCall, jsonOf, managedSession, requestMessages, resultById, resultOfCall, roundsOf, setManaged, settledIdle,
   stockSeen, storedRows, turn, untilCard, waitRequest,
@@ -44,7 +43,7 @@ const AT_ONCE_MS = 3000
 const QUIET_MS = 1000
 const LONG = { timeout: 120000 }
 
-describe('Revision 11 rev11b: ask_fishball', () => {
+describe('Revision 11 rev11b: ask_fishball', { skip: NEEDS_INSTANCE_STUB }, () => {
   let host
   let home
   let fb

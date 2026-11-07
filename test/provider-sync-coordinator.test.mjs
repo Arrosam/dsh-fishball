@@ -39,7 +39,8 @@ for (const [label, change] of [
   ['revision', (state) => { state.source.revision[C.ns]++ }],
   ['provider protocol', (state) => { state.source.providers[0].profile.api = 'anthropic-messages' }],
   ['paired target', (state) => { state.peerIdentity.runtimeId += '-changed' }],
-  ['pairing', (state) => { state.pairId += '-changed' }],
+  // 'pairing' (a changed pair id) is retired: a72ad7e dropped pairing, Refresh models runs the sync in one step,
+  // and a changed target is still caught by 'paired target' (the peer identity).
 ]) test('PS-C03 ST: changed source/peer ' + label + ' rejects before key resolution', async (t) => {
   const fixture = await coordinatorFixture(t)
   const plan = await fixture.preview()
