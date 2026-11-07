@@ -14,17 +14,29 @@ import { APPROVALS_EVENT } from './approvals.js'
 import { createChatView } from './chat.js'
 import { createRemindersView } from './reminders.js'
 
-const COPY = {
-  connected: { status: 'Connected', message: 'Fishball is ready.' },
-  reconnecting: { status: 'Reconnecting…', message: 'Connection lost. Reconnecting…' },
-}
+const COPY = { reconnecting: 'Reconnecting…' }
 
-const status = document.getElementById('status')
+/**
+ * DSH's palette switch (dsh-client-ui-theme ThemePresenter): dark is the body attribute that
+ * ui/dsh-tokens.css keys its dark tokens on. The page cannot read DSH's own choice across the
+ * frame (D27), so until §0.9 U3 is decided it follows the OS scheme, which is what DSH shows
+ * with its default `system` preference, and it follows a change live.
+ */
+const THEME = Object.freeze({ darkAttribute: 'data-ds-dark-theme', darkQuery: '(prefers-color-scheme: dark)' })
 
-function show(state) {
-  const next = COPY[state]
-  status.textContent = next.status
-  status.dataset.state = state
+const darkScheme = window.matchMedia(THEME.darkQuery)
+function applyScheme() { document.body.toggleAttribute(THEME.darkAttribute, darkScheme.matches) }
+applyScheme()
+darkScheme.addEventListener('change', applyScheme)
+
+// No permanent status tag (D27: the connector's frame shows Fishball's state); a lost stream
+// shows the §11 banner only while it lasts.
+const banner = document.getElementById('connection-banner')
+
+// The text is written when the banner appears, so its live region announces the loss.
+function showConnection(connected) {
+  banner.textContent = connected ? '' : COPY.reconnecting
+  banner.hidden = connected
 }
 
 const chat = createChatView({
@@ -41,7 +53,7 @@ const events = new EventSource('api/events')
 let opened = false
 
 events.addEventListener('open', () => {
-  show('connected')
+  showConnection(true)
   if (opened) {
     void chat.refresh()
     void reminders.refresh()
@@ -49,7 +61,7 @@ events.addEventListener('open', () => {
   opened = true
 })
 
-events.addEventListener('error', () => show('reconnecting'))
+events.addEventListener('error', () => showConnection(false))
 
 events.addEventListener('reminders', () => { void reminders.refresh() })
 
