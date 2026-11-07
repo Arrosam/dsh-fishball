@@ -1,188 +1,169 @@
 /**
- * P7 routing: requests that bypass Fishball (P7 a-d) and Fishball stopping while requests wait (P12).
- * Same harness as approvals-broker.test.mjs (FBTEST_APPROVER_AFTER=1: the scripted answerer stands in
- * for the browser prompt after the broker). One host; the cases run in order.
+ * P7 routing on the H-STUB harness: requests that bypass the instance (P7 a-d; DESIGN §7a.1, §7a.5, §7a.6 "Cap";
+ * contract §5.1, §9) and the instance going away while requests wait (P12; connector.md C1-EP-05, C1-ST-08,
+ * K1-P-16). FBTEST_APPROVER_AFTER=1: the scripted stock prompt sits after the broker. One host; cases run in order.
  *
  * | id      | technique | req | expected |
  * |---------|-----------|-----|----------|
- * | RTE-01 ×2 | EP (Fishball's own request: set_plugin_enabled with unchecked tools, add_plugin) | P7a; rev11f | CHANGED by rev11f (DESIGN §7a.11): the stock prompt is NOT asked for Fishball's session; the call returns waiting-for-approval at once and a card of Fishball's session is in the pile; still no request message for Fishball and not in state.approvals |
- * | RTE-02 | BVA (maxPendingApprovals 2, Fishball busy: 1 pending → routed) | P7c | a request message; pending 2 |
- * | RTE-03 | BVA (2 pending = limit → bypass) | P7c | the next answerer is asked at once (< 1 s); no request message; not recorded |
- * | RTE-04 | BVA (maxQueuedInputs 1, queue full) | P7d | bypass: at once, no request message, not recorded |
- * | RTE-05 | ST (requests waiting –archive Fishball→) | P12 | each waiting request goes to the next answerer at once (well before the 120 s answer time); audit answer timeout |
- * | RTE-06 | EP (Fishball archived, not live) | P7b | bypass: at once, no request message |
- * | RTE-07 | ST (archived –unarchive + retry→ live) | P7b | requests reach Fishball again |
+ * | RTE-02 | BVA (maxPendingApprovals 2, 1 waiting → routed) | §7a.6 Cap | the second request is offered to the instance; 2 listed; not at the stock prompt |
+ * | RTE-03 | BVA (2 waiting = limit → bypass) | §7a.1 "over the cap → pass-through" | the stock prompt at once (< 1 s); no offer, no notice; not audited |
+ * | RTE-04 | BVA (maxQueuedInputs 1, queue full) | §7a.6 "a notice that cannot be delivered", contract §9 | the stock prompt at once; never offered as a live request (approval.list empty); audited once (`to-user`) |
+ * | RTE-05 ×2 | ST (requests waiting –detach / onClose→) | §7a.5, contract §5.1, C1-ST-08 | each waiting request goes to its own stock prompt at once (well before the 120 s answer time); no longer offered; audit names the release |
+ * | RTE-06 | EP (no instance) | contract §9, C1-EP-05 | the stock prompt in under 1 s; no offer and no notice reach the instance after the next attach; it is never offered again |
+ * | RTE-07 | ST (no instance –attach→ ready) | §7a.1 | requests reach the instance again |
+ * | RTE-08 | ST (offered –detach, attach→) | K1-P-16 `[OQ-05]`, contract §5.1 | a request that went to the user's prompt at the detach is not offered again after the new handshake (§5.1 "never offered again"; K1-P-16's other reading is ruled out by conn-OQ-05) |
+ *
+ * Retired:
+ * - RTE-01 ×2: Fishball's own requests (set_plugin_enabled, add_plugin) and their cards went with the in-process agent and its plugin tools (slim §12).
  */
 import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, it } from 'node:test'
-import { ADDED_BUNDLE, APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FIXTURE_BUNDLE, LIMITS, OUTCOME, PRESET, STATUS, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
-import { HOOK, T, approvalsNow, askSettled, fishballCall, messageFishball, requestMessages, settledIdle, startAsk, turn, waitRequest, makeManaged } from './support/expect.mjs'
-import { bootHost, newHome, sleep, until } from './support/host.mjs'
+import { ASK_REASON, LIMITS, OUTCOME } from './support/constants.mjs'
+import { HOOK, T } from './support/expect.mjs'
+import { managedSession, messageFishball, stopStub } from './support/instance-stub.mjs'
+import {
+  APPROVALS, ackAllAndReconnect, auditOfSession, auditedFor, bootApprovals, clearSession, listed, offerFor, offersWhere, outcomeOf, requestFor, setLimit, startCall, stockFor, tok, untilStock,
+} from './support/instance-stub-approvals.mjs'
+import { sleep } from './support/util.mjs'
 
-let seq = 0
-const tok = (label) => 'RTE' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 7)
-/** A bypass reaches the next answerer at once; a routed request would wait for Fishball first. */
-const AT_ONCE_MS = 1000
-
-describe('P7 routing and bypass', { skip: NEEDS_INSTANCE_STUB }, () => {
+describe('P7 routing and bypass (H-STUB)', () => {
+  let booted
   let host
-  let fb
+  let stub
   const sessions = []
-  const setLimit = async (patch) => { const r = await host.call('settingsUpdate', { patch }); assert.equal(r.ok, true, JSON.stringify(r.error)) }
-  const seenFor = async (text) => (await host.call('approvals', {})).filter((a) => a.reason === ASK_REASON(text))
-  const recentKeys = async () => ((await approvalsNow(host))?.recent ?? []).map((r) => r.key)
-  async function session(folder) {
-    const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
-    await turn(host, sid, [[{ text: 'hello' }]], 'first words')
-    // rev11a: only a managed session's permission requests reach Fishball (DESIGN §7a.1).
-    await makeManaged(host, fb, sid)
-    sessions.push(sid)
-    return sid
+  const offered = async (text) => offersWhere(stub, (d) => d.reason === ASK_REASON(text))
+  const noticed = async (text) => (await stub.pushTexts(ASK_REASON(text)))
+
+  /** Ask from sid and expect the bypass: the stock prompt at once and the instance gets no live request. */
+  async function expectBypass(sid, text) {
+    const t0 = Date.now()
+    await startCall(host, sid, { text })
+    const seen = await untilStock(host, text)
+    assert.equal(seen.length, 1, 'the stock prompt was asked once')
+    assert.ok(seen[0].at - t0 < APPROVALS.ms.atOnce, 'at once: ' + (seen[0].at - t0) + ' ms')
+    assert.equal((await outcomeOf(host, text)).outcome, APPROVALS.stock.default, "the stock prompt's outcome")
+    await clearSession(host, sid)
   }
-  async function holdFishball() {
-    await settledIdle(host, fb)
-    await host.call('holdNext', { sessionId: fb })
-    await host.call('driveStart', { sessionId: fb, text: 'busy turn' })
-    assert.ok(await until(() => host.call('isHeld', { sessionId: fb }), 5000, 50), 'Fishball is held in a turn')
-  }
-  async function releaseFishball() { await host.call('releaseHold', { sessionId: fb }); await settledIdle(host, fb) }
-  /** Ask from sid and expect the bypass: the next answerer is asked at once and Fishball gets no request. */
-  async function expectBypass(sid, text, { recorded = false } = {}) {
-    const keys = await recentKeys()
-    await startAsk(host, sid, ASK_TOOL, { text })
-    const done = await askSettled(host, text, 5000)
-    assert.equal(done.outcome, OUTCOME.reject, "the next answerer's outcome")
-    const seen = await seenFor(text)
-    assert.equal(seen.length, 1, 'the next answerer was asked once')
-    assert.ok(seen[0].at - done.askedAt < AT_ONCE_MS, 'at once: ' + (seen[0].at - done.askedAt) + ' ms')
-    await sleep(300)
-    assert.deepEqual(await requestMessages(host, fb, text), [], 'no request message for Fishball')
-    if (recorded) {
-      // rev11e (manager's decision, 2026-11-02; DESIGN §11 Reading): a notice that cannot be delivered is audited (`to-user`) and its request is also a card,
-      // so the request is recorded; Fishball still gets no request message.
-      assert.equal((await recentKeys()).length, keys.length + 1, 'an undelivered request is recorded once')
-    } else assert.deepEqual(await recentKeys(), keys, 'a bypassed request is not recorded')
-    await settledIdle(host, sid)
-  }
-  async function cancelAll() {
-    for (const a of await host.call('asks', {})) if (a.outcome === null) await host.call('cancel', { sessionId: a.sessionId })
-    for (const sid of sessions) await settledIdle(host, sid)
-  }
+  async function clearAll() { for (const sid of sessions) await clearSession(host, sid) }
 
   before(async () => {
-    host = await bootHost(newHome('approvals-route'), { env: APPROVER_AFTER_ENV })
-    fb = (await host.waitStatus(STATUS.live))?.sessionId
-    await settledIdle(host, fb)
-    await host.call('setApprover', { outcome: OUTCOME.reject })
+    booted = await bootApprovals('approvals-route')
+    ;({ host, stub } = booted)
+    for (const folder of ['rte-1', 'rte-2', 'rte-3']) sessions.push(await managedSession(host, folder))
   }, HOOK)
-  after(async () => { await host?.stop() }, HOOK)
+  after(() => stopStub(booted), HOOK)
+  afterEach(clearAll, HOOK)
 
-  describe('RTE-01 Fishball\'s own requests always go to the next answerer', () => {
-    // The cards would count toward the cap of the later cases: reject whatever is left, pass or fail.
-    afterEach(async () => { for (const c of ((await host.state()).pile ?? []).filter((x) => x.sessionId === fb)) await host.post('/api/fishball/requests/answer', { requestId: c.requestId, decision: 'reject' }) })
-    for (const [label, tool, args] of [
-      ['set_plugin_enabled with unchecked tools', 'set_plugin_enabled', { plugin: FIXTURE_BUNDLE.name, on: true }],
-      ['add_plugin', 'add_plugin', { spec: ADDED_BUNDLE.dir, reason: 'fbtest' }],
-    ]) {
-      it(label, T, async () => {
-        const before = (await host.call('approvals', { sessionId: fb })).length
-        const keys = await recentKeys()
-        const msgs = (await requestMessages(host, fb)).length
-        const { json } = await fishballCall(host, fb, tool, args)
-        // rev11f: no stock prompt; the request is a card of Fishball's session and the call returned "waiting".
-        assert.equal(json?.code, 'waiting-for-approval', 'a card, not a prompt: ' + JSON.stringify(json))
-        const seen = (await host.call('approvals', { sessionId: fb })).slice(before)
-        assert.deepEqual(seen, [], 'the stock prompt was not asked')
-        const cards = ((await host.state()).pile ?? []).filter((c) => c.sessionId === fb && c.toolName === tool)
-        assert.equal(cards.length, 1, 'one card in the pile: ' + JSON.stringify((await host.state()).pile))
-        assert.equal((await requestMessages(host, fb)).length, msgs, 'Fishball got no request message')
-        // rev11f (§9 Audit, kind 'own'): the filed request is recorded once, answer to-user; it is still not a state.approvals entry.
-        assert.equal((await recentKeys()).length, keys.length + 1, 'recorded once as an own request')
-      })
-    }
-  })
-
-  it('RTE-02 maxPendingApprovals 2 with 1 pending: the next request is routed to Fishball', T, async () => {
-    const s1 = await session('rte-1')
-    const s2 = await session('rte-2')
-    await session('rte-3')
-    await setLimit({ maxPendingApprovals: 2 })
-    await holdFishball()
+  it('RTE-02 maxPendingApprovals 2 with 1 waiting: the next request is offered to the instance', T, async () => {
+    const [s1, s2] = sessions
+    await setLimit(host, { maxPendingApprovals: 2 })
     const t1 = tok('02a')
-    await startAsk(host, s1, ASK_TOOL, { text: t1 })
-    assert.ok(await until(async () => (await approvalsNow(host)).pending.length === 1, 5000, 50), 'one pending')
+    await requestFor(booted, s1, t1)
     const t2 = tok('02b')
-    await startAsk(host, s2, ASK_TOOL, { text: t2 })
-    assert.ok(await until(async () => (await approvalsNow(host)).pending.length === 2, 5000, 50), 'two pending')
-    // Fishball is held inside a turn, so the request message waits in its inbox until the next step;
-    // being pending (bypassed requests never are) and not at the next answerer shows it was routed.
-    await sleep(AT_ONCE_MS)
-    assert.deepEqual(await seenFor(t2), [], 'not at the next answerer')
+    const second = await requestFor(booted, s2, t2)
+    assert.equal(second.sessionId, s2)
+    assert.equal((await listed(stub, s1)).length + (await listed(stub, s2)).length, 2, 'two waiting for the instance')
+    await sleep(APPROVALS.ms.atOnce)
+    assert.deepEqual(await stockFor(host, t2), [], 'not at the stock prompt')
   })
 
-  it('RTE-03 maxPendingApprovals 2 with 2 pending: the next request bypasses Fishball', T, async () => {
-    await expectBypass(sessions[2], tok('03'))
-    assert.equal((await approvalsNow(host)).pending.length, 2)
-    await cancelAll()
-    await releaseFishball()
-    await setLimit({ maxPendingApprovals: LIMITS.maxPendingApprovals.default })
-  })
-
-  it('RTE-04 Fishball\'s queue is full: the request bypasses Fishball', T, async () => {
-    const [s1, s2] = sessions
-    await setLimit({ maxQueuedInputs: 1 })
-    await holdFishball()
+  it('RTE-03 maxPendingApprovals 2 with 2 waiting: the next request bypasses the instance', T, async () => {
+    const [s1, s2, s3] = sessions
     try {
-      const m = await messageFishball(host, s1, { message: tok('04fill') })
-      assert.equal(m.json?.ok, true, 'precondition: one queued input')
-      const full = await messageFishball(host, s1, { message: tok('04full') })
-      assert.equal(full.json?.code, 'queue-full', 'precondition: the queue is full')
-      await expectBypass(s2, tok('04'), { recorded: true })
-    } finally {
-      await releaseFishball()
-      await setLimit({ maxQueuedInputs: LIMITS.maxQueuedInputs.default })
-    }
+      await requestFor(booted, s1, tok('03a'))
+      await requestFor(booted, s2, tok('03b'))
+      const text = tok('03')
+      await expectBypass(s3, text)
+      await sleep(APPROVALS.ms.quiet)
+      assert.deepEqual(await offered(text), [], 'no offer')
+      assert.deepEqual(await noticed(text), [], 'no notice')
+      assert.deepEqual(auditOfSession(booted.home, s3), [], 'a bypassed request is not recorded')
+    } finally { await setLimit(host, { maxPendingApprovals: LIMITS.maxPendingApprovals.default }) }
   })
 
-  it('RTE-05 Fishball archived while requests wait: each goes to the next answerer at once', T, async (t) => {
+  it('RTE-04 the connector\'s queue is full: the request goes to the user at once', T, async (t) => {
     const [s1, s2] = sessions
-    const texts = [tok('05a'), tok('05b')]
-    await startAsk(host, s1, ASK_TOOL, { text: texts[0] })
-    await startAsk(host, s2, ASK_TOOL, { text: texts[1] })
-    for (const text of texts) assert.ok(await waitRequest(host, fb, text), 'routed first')
-    await settledIdle(host, fb)
-    assert.equal((await approvalsNow(host)).pending.length, 2)
-    const at = Date.now()
-    const archived = await host.call('archive', { sessionId: fb, stopActivity: true })
-    assert.equal(archived.ok, true, JSON.stringify(archived))
-    for (const text of texts) {
-      const done = await askSettled(host, text, 10000)
-      assert.equal(done.outcome, OUTCOME.reject, "the next answerer's outcome")
-      const seen = await seenFor(text)
-      assert.equal(seen.length, 1)
-      t.diagnostic(text + ' went on ' + (seen[0].at - at) + ' ms after the archive')
-      assert.ok(seen[0].at - at < 5000, 'at once, not after the answer time')
+    await setLimit(host, { maxQueuedInputs: 1 })
+    // An unacknowledged item stays open, so it fills the one-item queue (contract §9 counts pushed-but-unacked items).
+    await stub.ackPolicy(0)
+    try {
+      assert.equal((await messageFishball(host, s1, { message: tok('04fill') })).json?.ok, true, 'precondition: one queued input')
+      const text = tok('04')
+      const auditBefore = auditOfSession(booted.home, s2).length
+      await expectBypass(s2, text)
+      assert.deepEqual(await listed(stub, s2), [], 'never offered as a live request')
+      // The design does not say whether the event is still sent for a request that goes to the user at once; recorded only.
+      t.diagnostic('approval.request events for it: ' + (await offered(text)).length)
+      // rev11e (DESIGN §7a.6, §16 manager's decision): a notice that cannot be delivered is audited once.
+      assert.equal(auditOfSession(booted.home, s2).length - auditBefore, 1, 'an undelivered request is recorded once')
+    } finally {
+      await setLimit(host, { maxQueuedInputs: LIMITS.maxQueuedInputs.default })
+      await ackAllAndReconnect(stub)
     }
-    const recent = (await approvalsNow(host))?.recent ?? []
-    t.diagnostic('audit after archive: ' + JSON.stringify(recent.slice(0, 2).map((r) => [r.answer, r.finalOutcome])))
-    for (const sid of [s1, s2]) assert.ok(recent.some((r) => r.sessionId === sid && r.answer === 'timeout' && r.finalOutcome === OUTCOME.reject), 'audit answer timeout for ' + sid)
-    for (const sid of [s1, s2]) await settledIdle(host, sid)
   })
 
-  it('RTE-06 Fishball not live (archived): a request bypasses Fishball', T, async () => {
-    assert.equal((await host.state()).status, STATUS.archived)
-    await expectBypass(sessions[0], tok('06'))
+  for (const [label, end] of [['detach', (s) => s.detach()], ['the transport closes (onClose)', (s) => s.fireClose()]]) {
+    it('RTE-05 the instance goes away while requests wait (' + label + '): each goes to its own prompt at once', T, async (t) => {
+      const [s1, s2] = sessions
+      const texts = [tok('05a'), tok('05b')]
+      const reqs = [await requestFor(booted, s1, texts[0]), await requestFor(booted, s2, texts[1])]
+      const at = Date.now()
+      await end(stub)
+      try {
+        for (const text of texts) {
+          const seen = await untilStock(host, text)
+          assert.equal(seen.length, 1)
+          t.diagnostic(text + ' went on ' + (seen[0].at - at) + ' ms after the end')
+          assert.ok(seen[0].at - at < APPROVALS.ms.atOnce * 5, 'at once, not after the answer time')
+          assert.equal((await outcomeOf(host, text)).outcome, APPROVALS.stock.default)
+        }
+        for (const req of reqs) assert.ok((await auditedFor(booted.home, req.descriptor.approvalId))[0]?.finalOutcome, 'audited with its outcome')
+      } finally {
+        const a = await stub.attach()
+        assert.ok(a.ok, 'reattach')
+      }
+      for (const req of reqs) assert.equal((await listed(stub, req.sessionId)).some((d) => d.approvalId === req.descriptor.approvalId), false, 'not offered after the reattach')
+    })
+  }
+
+  it('RTE-06 no instance attached: a request goes to the user in its session at once, and is never offered later', T, async () => {
+    const [s1] = sessions
+    await stub.detach()
+    const text = tok('06')
+    try { await expectBypass(s1, text) } finally {
+      const a = await stub.attach()
+      assert.ok(a.ok, 'reattach')
+    }
+    await sleep(APPROVALS.ms.quiet)
+    assert.deepEqual(await offered(text), [], 'no approval.request after the attach')
+    assert.deepEqual(await noticed(text), [], 'no approval inbox item after the attach')
+    assert.deepEqual(await listed(stub, s1), [])
   })
 
-  it('RTE-07 live again: requests reach Fishball again', T, async () => {
-    await host.call('unarchive', { sessionId: fb })
-    const r = await host.post('/api/fishball/recovery', { action: 'retry' })
-    assert.equal(r.status, 200, r.text)
-    await host.waitStatus(STATUS.live)
-    await settledIdle(host, fb)
+  it('RTE-07 attached again: requests reach the instance again', T, async () => {
     const text = tok('07')
-    await startAsk(host, sessions[0], ASK_TOOL, { text })
-    assert.ok(await waitRequest(host, fb, text), 'routed to Fishball')
-    await cancelAll()
+    const req = await requestFor(booted, sessions[0], text)
+    assert.equal(req.sessionId, sessions[0])
+  })
+
+  it('RTE-08 a request offered before a detach is not offered again after the new handshake', T, async () => {
+    const [s1] = sessions
+    // Hold the stock prompt open, so the request is still showing in its session when the new instance attaches.
+    await host.call('setApprover', { outcome: APPROVALS.stock.hold })
+    try {
+      const text = tok('08')
+      const req = await requestFor(booted, s1, text)
+      await stub.detach()
+      await untilStock(host, text)
+      const a = await stub.attach()
+      assert.ok(a.ok, 'reattach')
+      await sleep(APPROVALS.ms.quiet)
+      assert.deepEqual(await offerFor(stub, text, { timeoutMs: 0 }), undefined, 'not offered on the new channel')
+      assert.deepEqual(await listed(stub, s1), [], 'not listed')
+      assert.equal((await host.call('asks', {})).find((e) => e.text === text).outcome, null, 'still waiting at the stock prompt')
+      assert.equal(await host.call('releaseApproval', { outcome: OUTCOME.allow }), true)
+      assert.equal((await outcomeOf(host, text)).outcome, OUTCOME.allow, 'the user answered it in the session')
+      assert.ok(req)
+    } finally { await host.call('setApprover', { outcome: APPROVALS.stock.default }) }
   })
 })
