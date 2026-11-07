@@ -40,7 +40,7 @@ packages/instance/           npm fishball-instance 0.1.0
   src/provider-sync{,-service,-coordinator,-host}.js
   src/native-runtime/**  src/native-control/**
   src/slim/child/**          the child app (unchanged paths inside the package)
-  src/slim/ui/**             the custom chat UI (retired by I8)
+  src/slim/ui/**             the custom chat UI (kept and restyled by I8, D29)
   src/slim/host/{embed,fetch-routes,admin,settings-routes,provider-sync-routes}.js
   src/slim/{contract,limits,card-record,inbox-markers,attachment-transfer}.js
                              re-export shims of `fishball-connector/contract`
@@ -74,9 +74,9 @@ unchanged; I8 retires it. No package ships it.
 | `child/admin.js` (I6) | `packages/instance/src/slim/child/admin.js` |
 | `child/settings-routes.js` (I6) | `packages/instance/src/slim/child/settings-routes.js` (new; the old main-side one is `src/slim/host/settings-routes.js`) |
 | `child/{server,auth,decisions,images,reminders,approvals}.js` (I8) | `packages/instance/src/slim/child/…` |
-| `child/ui/**` (I4, I6, I7, I9) | `packages/instance/child/ui/**` (new; the reserved path, kept apart from the old `src/slim/ui/`) |
-| `child/package.json` `dsh.client` (I4) | `packages/instance/child/ui/package.json` or equivalent, I4 decides; the snapshot copy must include it (`copyChildCode`) |
-| `src/slim/ui/**` (I8) | `packages/instance/src/slim/ui/**` |
+| `child/ui/**` (I4, I6, I7, I9) | withdrawn 2026-11-07 (D28): no child client plugin. I6, I7, I8 and I9 work in `packages/instance/src/slim/ui/**` (design §18.1) |
+| `child/package.json` `dsh.client` (I4) | withdrawn 2026-11-07 with I4 (D28) |
+| `src/slim/ui/**` (I8: kept and restyled since 2026-11-07, D29) | `packages/instance/src/slim/ui/**` |
 | `src/native-control/**` (I8) | `packages/instance/src/native-control/**` |
 
 ## What changed in code (the cross-package edges)
