@@ -26,6 +26,13 @@ export const INSTANCE_NAME = INSTANCE.name
 export const ROW_ID = CONNECTOR.name
 export const INSTANCE_ROW_ID = INSTANCE.name
 export const SENTINEL_PRESET = 'fishball:assistant'
+/**
+ * Files whose requirement the connector still owns (docs/slim-native-design.md §12 "Kept on the main
+ * side") but whose cases drive it through the deleted in-process Fishball session: its live agent,
+ * its own tool calls and its model requests. They are skipped whole, kept as the requirement source,
+ * until they are rewritten on the attached-instance stub of docs/test-design/connector.md (H-STUB).
+ */
+export const NEEDS_INSTANCE_STUB = 'drives the removed in-process Fishball session (slim §12); rewrite on the connector H-STUB harness (docs/test-design/connector.md)'
 
 /** Fixture bundle linked into the test profile, before the plugin under test. */
 export const FIXTURE_BUNDLE = { name: 'fbtest-tools', dir: path.join(SUPPORT, 'fixtures', 'fbtest-tools') }
@@ -107,15 +114,14 @@ export const PRESET = {
 
 export const assistantDir = (home) => path.join(home, 'fishball', 'assistant')
 
-/** R-CONFIG: field -> default and minimum valid whole number. */
+/**
+ * R-CONFIG: field -> default and minimum valid whole number. C2 (conn-OQ-20, 474b876) keeps only the
+ * fields the connector still reads: maxSourcesPerPlugin, maxFishballOnlyPlugins and the three hourly
+ * caps went with the in-process agent (slim §12), and a stored value of one is ignored.
+ */
 export const LIMITS = {
   maxQueuedInputs: { default: 200, min: 1 },
   maxActiveWatches: { default: 50, min: 1 },
-  maxSourcesPerPlugin: { default: 8, min: 1 },
-  maxFishballOnlyPlugins: { default: 32, min: 1 },
-  wakeupsPerHour: { default: 60, min: 0 },
-  messagesPerHour: { default: 30, min: 0 },
-  sessionsPerHour: { default: 10, min: 0 },
   maxPendingApprovals: { default: 8, min: 1 },
   approvalAnswerSeconds: { default: 120, min: 1 },
   argumentExcerptBytes: { default: 8192, min: 1 },
@@ -128,30 +134,42 @@ export const LIMITS = {
  * the sixteen fields added to the fishball row's config, with today's value as the default. Every
  * value is a whole number of at least 1 (§16 "Rules"), except replyCapShare, whose minimum is 2 (user's
  * decision 2026-11-01: the automatic reply cap is never more than half the window); `old` is the
- * constant's name in "Today in code".
+ * constant's name in "Today in code". C2 (conn-OQ-20) keeps the six the connector still reads.
  */
 export const LIMITS_R11 = {
   requestUserMessageBytes: { default: 2048, min: 1, old: 'APPROVAL.userMessageBytes' },
   rationaleChars: { default: 500, min: 1, old: 'APPROVAL.rationaleChars' },
-  approvalsShown: { default: 20, min: 1, old: 'APPROVAL.shown' },
-  intakeRowsShown: { default: 20, min: 1, old: 'INTAKE.snapshotRows' },
-  outboxShown: { default: 20, min: 1, old: 'OUTBOX_SHOWN' },
   watchesShown: { default: 50, min: 1, old: 'WATCH.shown' },
   readSessionMessages: { default: 12, min: 1, old: 'WATCH.readMessages' },
   readSessionBytes: { default: 12288, min: 1, old: 'WATCH.readBytes' },
   forwardExcerptBytes: { default: 3072, min: 1, old: 'SESSION_INFO.excerptBytes' },
-  pluginHistoryShown: { default: 10, min: 1, old: 'PLUGIN_MANAGER.historyEntries' },
-  settingsPromptValueBytes: { default: 200, min: 1, old: 'PLUGIN_MANAGER.promptValueBytes' },
-  replyCapShare: { default: 8, min: 2, old: 'CONTEXT.outputShare' },
-  headroomShare: { default: 8, min: 1, old: 'CONTEXT.headroomShare' },
-  minWindowTokens: { default: 4096, min: 1, old: 'CONTEXT.minWindowTokens' },
-  pluginManagerStartMs: { default: 30000, min: 1, old: 'FISHBALL_PACKAGES.managerStartMs' },
-  defaultReplyCapTokens: { default: 32000, min: 1, old: 'CONTEXT.outputMax' },
+}
+/**
+ * rev11-limits fields C2 removed from the row config: the in-process agent's (context window, plugin
+ * manager, outbox) went with it (slim §12), approvalsShown with ApprovalBroker.snapshot() and
+ * intakeRowsShown became the fixed INTAKE.rowsShown (474b876). Their old constants must stay unread.
+ */
+export const LIMITS_R11_REMOVED = {
+  approvalsShown: { old: 'APPROVAL.shown' },
+  intakeRowsShown: { old: 'INTAKE.snapshotRows' },
+  outboxShown: { old: 'OUTBOX_SHOWN' },
+  pluginHistoryShown: { old: 'PLUGIN_MANAGER.historyEntries' },
+  settingsPromptValueBytes: { old: 'PLUGIN_MANAGER.promptValueBytes' },
+  replyCapShare: { old: 'CONTEXT.outputShare' },
+  headroomShare: { old: 'CONTEXT.headroomShare' },
+  minWindowTokens: { old: 'CONTEXT.minWindowTokens' },
+  pluginManagerStartMs: { old: 'FISHBALL_PACKAGES.managerStartMs' },
+  defaultReplyCapTokens: { old: 'CONTEXT.outputMax' },
 }
 /** rev11-limits: package-operation constants removed in favour of DSH's plugin-manager settings (§16 "Values that stay constants"). */
 export const REMOVED_PACKAGE_CONSTANTS = ['FISHBALL_PACKAGES.outputBytes', 'FISHBALL_PACKAGES.idleTimeoutMs', 'FISHBALL_PACKAGES.lockWaitMs', 'FISHBALL_PACKAGES.lookupTimeoutMs']
-/** rev11-limits: constants that stay (§16 "Values that stay constants"), by the name the table gives. */
-export const STAYING_CONSTANTS = ['maxTimerMs', 'HOUR_MS', 'idPattern', 'dshDefaults', 'minCapTokens', 'dedupeKeyBytes', 'descriptionBytes', 'sourceTitleBytes', 'nameBytes', 'maxSubagentDepth', 'resumeAttempts', 'resumeRetryMs', 'maxAttempts', 'modelInfoTimeoutMs', 'SEQ_DIGITS', 'DIGEST_HEX_CHARS', 'WORDS_PER_TOKEN', 'ROUNDING_GUARD', 'FIBER_ACTIVE']
+/**
+ * rev11-limits: constants that stay (§16 "Values that stay constants"), by the name the table gives.
+ * Not listed any more: HOUR_MS (the hourly caps), dshDefaults, minCapTokens, WORDS_PER_TOKEN and
+ * ROUNDING_GUARD (the context window), modelInfoTimeoutMs (the model gate) and FIBER_ACTIVE (the
+ * in-process agent's fiber): their owners were deleted with the in-process Fishball (slim §12).
+ */
+export const STAYING_CONSTANTS = ['maxTimerMs', 'idPattern', 'dedupeKeyBytes', 'descriptionBytes', 'sourceTitleBytes', 'nameBytes', 'maxSubagentDepth', 'resumeAttempts', 'resumeRetryMs', 'maxAttempts', 'SEQ_DIGITS', 'DIGEST_HEX_CHARS']
 
 /** R-COMPOSITION: names never shown to Fishball. */
 export const HIDDEN_TOOLS = [
