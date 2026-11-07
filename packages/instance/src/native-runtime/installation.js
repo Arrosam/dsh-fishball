@@ -2,7 +2,7 @@ import { readFile, realpath, lstat, chmod, readdir, mkdir } from 'node:fs/promis
 import { createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
-import { RUNTIME, fail, NativeRuntimeError } from './constants.js'
+import { RUNTIME, HOST_LAUNCH, fail, NativeRuntimeError } from './constants.js'
 import { inside, privateDirectory, writePrivate, exists, snapshotPath } from './files.js'
 
 export async function resolveInstallation(installAnchor) {
@@ -24,11 +24,36 @@ export async function resolveInstallation(installAnchor) {
   return { installAnchor: anchor, installRoot, bin, version: manifest.version, bootPath }
 }
 
-export function isolatedEnvironment(paths, executableSearchPath) {
-  if (typeof executableSearchPath !== 'string' || !executableSearchPath || executableSearchPath.split(path.delimiter).some(part => !path.isAbsolute(part))) fail('INVALID_EXECUTABLE_PATH')
+/**
+ * The child's exec arguments: the main process's own, in order, without debugger flags
+ * (HOST_LAUNCH). The child's preload and DSH arguments follow them.
+ * @param {string[]} execArgv - the main process's `process.execArgv`.
+ * @returns {string[]} a new array; the input is not changed.
+ */
+export function childExecArgv(execArgv) {
+  const kept = []
+  for (let index = 0; index < execArgv.length; index++) {
+    const argument = execArgv[index]
+    if (!HOST_LAUNCH.debugFlagPrefixes.some(prefix => argument.startsWith(prefix))) kept.push(argument)
+    else if (HOST_LAUNCH.debugFlagsWithValue.includes(argument)) index++
+  }
+  return kept
+}
+
+/**
+ * The child's whole environment: the main process's runtime variables (HOST_LAUNCH.runtimeEnv,
+ * plus ELECTRON_RUN_AS_NODE=1 under an Electron host) and the isolated private set, which no main
+ * value can override. PATH follows the main process's: its absolute entries in order, because a
+ * relative entry would resolve against the child's private workspace instead.
+ * @param paths - the runtime's private layout (files.js pathsFor).
+ * @param host - the running main process (`process`, or a stand-in with execPath/env/versions).
+ */
+export function isolatedEnvironment(paths, host) {
   const env = {}
+  for (const name of HOST_LAUNCH.runtimeEnv) if (host.env[name] !== undefined) env[name] = host.env[name]
+  if (host.versions.electron) env[HOST_LAUNCH.electronAsNode.name] = HOST_LAUNCH.electronAsNode.value
   Object.assign(env, {
-    PATH: executableSearchPath,
+    PATH: (host.env.PATH ?? '').split(path.delimiter).filter(part => path.isAbsolute(part)).join(path.delimiter),
     HOME: paths.osHome,
     USERPROFILE: paths.osHome,
     DSH_HOME: paths.home,
@@ -68,16 +93,6 @@ export async function runProbe(spawn, command, args, options, timeoutMs, maxByte
     // close commits both process exit and complete stdout; timeout also waits for owned-handle cleanup.
     child.on('close', code => finish(failure, code))
   })
-}
-
-export async function verifyNode(nodeExecutable, spawn, env, paths, limits) {
-  if (typeof nodeExecutable !== 'string' || !path.isAbsolute(nodeExecutable)) fail('INVALID_NODE')
-  const executable = await realpath(nodeExecutable)
-  const probe = await runProbe(spawn, executable, ['-e', 'process.stdout.write(JSON.stringify({node:process.versions.node,electron:!!process.versions.electron}))'], { env, cwd: paths.workspace }, limits.requestTimeoutMs, limits.maxMetadataBytes)
-  let result
-  try { result = JSON.parse(probe.output) } catch { fail('INVALID_NODE') }
-  if (probe.code !== 0 || result.electron || Number(result.node?.split('.')[0]) < 22) fail('INVALID_NODE', 'A verified plain Node 22+ executable is required.')
-  return executable
 }
 
 async function privateTree(directory) {

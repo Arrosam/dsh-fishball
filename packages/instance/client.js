@@ -1,17 +1,18 @@
 /**
  * The `fishball-instance` card in DSH's Plugins page (design §0.7, D23, D26; task I1).
  *
- * The main DSH holds only what the instance needs before its child exists: `enabled`,
- * `nodeExecutable` and `executableSearchPath`, edited in DSH's own form for the instance's row.
+ * The main DSH holds only what the instance needs before its child exists: `enabled`, edited in
+ * DSH's own form for the instance's row. There is no launch field: the child starts as the main
+ * DSH does (D28).
  * Every other instance setting lives in the instance's private profile and its own settings page,
  * so this card has no other field. Model sync is the "Model for Fishball" button I6 adds to this
  * same card, an action rather than a field, and there is no `providerSync` switch (D26).
  *
- * The fields are the row's volatile config: DSH's settings form can write volatile fields only,
- * and writes them into the profile's patch for the `fishball-instance` row (§0.7).
+ * The field is the row's volatile config: DSH's settings form can write volatile fields only,
+ * and writes it into the profile's patch for the `fishball-instance` row (§0.7).
  *
  * Above them the card shows the instance's own status and its reason (§18.2 I1, inst-OQ-01):
- * the state, the safe code, a launch setting's detail, and Retry while the instance is `failed`
+ * the state, the safe code, its reason, and Retry while the instance is `failed`
  * (§0.7 "Instance: status, Retry"; inst-OQ-03, inst-OQ-09: failed until Retry).
  */
 window.__ModuleLoader__.load({
@@ -20,7 +21,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { Button, SettingsForm, SettingsFormModel, SettingsValueField, Switch, Tag, settingsTextField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, SettingsForm, SettingsFormModel, Switch, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
 
     const h = React.createElement
 
@@ -38,10 +39,8 @@ window.__ModuleLoader__.load({
     /** The whole main-DSH surface of the instance settings (§0.7, inst-OQ-04). */
     const FIELD = Object.freeze({
       enabled: 'enabled',
-      nodeExecutable: 'nodeExecutable',
-      executableSearchPath: 'executableSearchPath',
     })
-    const LAUNCH_FIELDS = Object.freeze([FIELD.enabled, FIELD.nodeExecutable, FIELD.executableSearchPath])
+    const LAUNCH_FIELDS = Object.freeze([FIELD.enabled])
     /**
      * The staged spelling of the boolean field. `SettingsFormModel` stages every field as text and
      * parses it on save; DSH ships field factories for text and numbers only, so `enabled` names
@@ -88,14 +87,7 @@ window.__ModuleLoader__.load({
     const en = {
       summary: 'Fishball\'s private instance: how DSH starts it.',
       'field.enabled': 'Enabled',
-      'field.nodeExecutable': 'Node executable',
-      'field.executableSearchPath': 'Executable search path',
       enabledHint: 'Start Fishball\'s private instance after DSH is ready. Saving it off stops the instance at once and saving it on starts it; its private data is kept.',
-      nodeExecutableHint: 'Leave blank for the first `node` on DSH\'s PATH; it is verified as plain Node 22+ before use, never Electron. Applies at the next start.',
-      executableSearchPathHint: 'The PATH of Fishball\'s instance, absolute entries only. Leave blank for the chosen Node\'s folder plus DSH\'s absolute PATH entries. Applies at the next start.',
-      overridden: 'Overridden',
-      reset: 'Reset to default',
-      invalid: 'Enter true or false.',
       unavailable: 'This plugin is not loaded, so it cannot be configured right now.',
       readOnly: 'This deployment stores settings read-only.',
       save: 'Save',
@@ -121,14 +113,7 @@ window.__ModuleLoader__.load({
     const zh = {
       summary: 'Fishball 的私有实例：DSH 如何启动它。',
       'field.enabled': '启用',
-      'field.nodeExecutable': 'Node 可执行文件',
-      'field.executableSearchPath': '可执行文件搜索路径',
       enabledHint: 'DSH 就绪后启动 Fishball 的私有实例。保存为关闭会立即停止它，保存为开启会启动它；私有数据保留。',
-      nodeExecutableHint: '留空表示使用 DSH 的 PATH 上的第一个 node；启动前会验证它是 22 以上的普通 Node，而不是 Electron。下次启动时生效。',
-      executableSearchPathHint: 'Fishball 实例的 PATH，只接受绝对路径。留空表示所选 Node 所在的目录加上 DSH 的绝对 PATH 目录。下次启动时生效。',
-      overridden: '已覆盖',
-      reset: '恢复默认',
-      invalid: '请填 true 或 false。',
       unavailable: '该插件当前未加载，暂时无法配置。',
       readOnly: '本部署的设置为只读。',
       save: '保存',
@@ -179,16 +164,13 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The staged form over the row's live config: one Save writes the three fields, and Reset
-     * clears a stored value so the schema default applies again.
+     * The staged form over the row's live config: one Save writes `enabled`.
      * @param scope - the row's configuration form (`configForms.get`).
      * @returns the page's snapshot, its form actions and its disposer.
      */
     function launchSection(scope) {
       const form = new SettingsFormModel(scope, [
         enabledField,
-        settingsTextField(FIELD.nodeExecutable),
-        settingsTextField(FIELD.executableSearchPath),
       ])
       const store = form.bind(() => ({
         ...form.shell(),
@@ -232,7 +214,7 @@ window.__ModuleLoader__.load({
 
     /**
      * The status line: DSH's Tag with the state, the safe code beside it, the reason (the
-     * state's or the code's own text, else a launch setting's detail), and Retry for `failed`.
+     * state's or the code's own text), and Retry for `failed`.
      * @param t - this card's locale reader.
      */
     function InstanceStatus({ t }) {
@@ -241,7 +223,7 @@ window.__ModuleLoader__.load({
       const state = status?.state ?? STATUS_UI.loading
       const code = status?.code ?? null
       const reasonKey = ['reason.' + state, code === null ? null : 'reason.' + code].find((key) => key !== null && Object.hasOwn(en, key))
-      const reason = reasonKey !== undefined ? t(reasonKey) : status?.detail ?? null
+      const reason = reasonKey !== undefined ? t(reasonKey) : null
       const retry = async () => {
         setRetrying(true)
         const next = await statusRequest(STATUS_UI.retryPath, STATUS_UI.post)
@@ -260,8 +242,8 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The card: the status line, then the three launch fields and nothing else. The `enabled` switch stages a boolean;
-     * the two paths stage text, where an empty value clears the stored one (the PATH default).
+     * The card: the status line, then the `enabled` switch and nothing else. The switch stages a
+     * boolean.
      * @param section - the staged form from {@link launchSection}.
      * @param t - this card's locale reader.
      * @returns the row page component.
@@ -273,25 +255,6 @@ window.__ModuleLoader__.load({
         const state = React.useSyncExternalStore(subscribe, getSnapshot)
         if (props.view !== VIEW.page) return t('summary')
         const disabled = !state.writable || state.saving
-        const baseId = React.useId()
-        const textField = (field, hintKey) => {
-          const value = state.fields[field]
-          return h(SettingsValueField, {
-            key: field,
-            id: `${baseId}-${field}`,
-            label: t('field.' + field),
-            hint: t(hintKey),
-            text: value.text,
-            overridden: value.overridden,
-            invalid: value.invalid,
-            overriddenLabel: t('overridden'),
-            resetLabel: t('reset'),
-            invalidLabel: t('invalid'),
-            disabled,
-            onEdit: (text) => section.actions.edit(field, text),
-            onReset: () => section.actions.resetField(field),
-          })
-        }
         return h(React.Fragment, null, h(InstanceStatus, { t }), h(SettingsForm, {
           labels: formLabels(t),
           state,
@@ -307,9 +270,7 @@ window.__ModuleLoader__.load({
                 disabled,
                 onChange: (on) => section.actions.edit(FIELD.enabled, on ? FLAG.on : FLAG.off),
               })),
-            h('p', { className: CLS.hint }, t('enabledHint'))),
-          textField(FIELD.nodeExecutable, 'nodeExecutableHint'),
-          textField(FIELD.executableSearchPath, 'executableSearchPathHint')))
+            h('p', { className: CLS.hint }, t('enabledHint')))))
       }
     }
 
