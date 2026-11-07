@@ -18,7 +18,7 @@ served in two languages that the connector chooses between (D30). §0.5–§0.8 
 for it. §2 and §3 (the base-only child, its loopback server and the bearer proxy) describe the
 current design again; §0.3 is kept as the record of the Option A spike. Where §0 and §2–§3 still
 disagree, §0 wins. The user's answers to §0.9 (same day) are folded in: U1, U2, U4, U5, U6 and U7
-are closed; U3 (theme) is still open.
+are closed; U3 (theme) was closed later the same day with its proposed form ("可以").
 
 ## 0. Connector and instance (revision 2026-11-06)
 
@@ -350,9 +350,10 @@ page follows the same parameter. The connector chooses the variant by the URL it
 1.1 (task K2, approved by the user as U4) adds `lang` to the framed path. Until K2 is merged the
 page shows English, and the instance can already be tested with a hand-written `?lang=zh`.
 
-**Theme (open, §0.9 U3).** The user's direction: "类似一个web app的明暗模式跟随浏览器一样，内嵌窗口也跟随
+**Theme (decided, §0.9 U3).** The user's direction: "类似一个web app的明暗模式跟随浏览器一样，内嵌窗口也跟随
 外框的进程进行修改" — the iframe follows the outer page's light or dark mode live, the way a web app
-follows the browser. **Proposed:** the page is same-origin with the main page (it is served under
+follows the browser. **Decided** (the user's "可以" to the proposal, 2026-11-07; delivered by I9 in
+`src/slim/ui/theme.js`): the page is same-origin with the main page (it is served under
 `/fishball/embed/` on the main origin), so it reads `window.parent.document.body`'s
 `data-ds-dark-theme` attribute, the one DSH's own layout sets for dark (`dsh-client-ui-layout`,
 §0.5 "Chat page"), sets the same attribute on its own `body`, and follows every change with a
@@ -361,9 +362,9 @@ page opened alone with "Open in a tab", or a cross-origin parent), it falls back
 `prefers-color-scheme` and follows that live. Nothing is posted to the parent, so D27's "no browser
 message crosses the frame" still holds; the page only reads one attribute. Its cost: the attribute
 is a DSH-internal name (it is in both 0.2.1-rc.5 and 0.2.2-rc.1), so a test watches it (R1).
-**Alternative:** the connector adds `theme=light|dark` to the framed path (K2, like `lang`), and a
-theme change reloads the iframe, which loses an unsent draft. Until U3 is closed the page follows
-`prefers-color-scheme` only.
+Every access to the parent is guarded, so a cross-origin or missing parent never throws. There is
+no `theme` URL parameter and no contract change. *(The alternative, a `theme=light|dark`
+parameter in K2 with a reload on change, was not taken: it would lose an unsent draft.)*
 
 **Child routes.** The child's HTTP surface stays its own loopback server (§3.1), not Connection
 Fetch routes: there is no DSH Web host in the child. The SP F1 rule applies to main-side routes
@@ -408,8 +409,8 @@ stated for the user (§0.9).
   `ui`, `status` and `retry` (I1c, delivered in 2d4b8ea). `ui` is `{chat: '/fishball/embed/'}`
   today; I6 adds `settings: '/fishball/embed/?view=settings'` together with the settings view, so
   "Open instance settings" never opens the chat. A child restart is a detach followed by a new
-  attach. With K2, the connector adds `lang` (and `theme`, if U3 chooses the alternative) to
-  whichever path it frames.
+  attach. With K2, the connector adds `lang` to whichever path it frames; there is no `theme`
+  parameter (U3).
 - `status()` returns `{state, code}` from the instance's own status, whose states and codes are
   the contract's `STATUS` and `STATUS_CODES` while it is attached. `retry()` is the instance's
   restart and rejects when the restart ends `failed`.
@@ -469,9 +470,9 @@ and has no link of its own to them: the frame's **Connector settings** button op
 5. **R5 Plugins with only a browser half** do nothing in Fishball's chat (§0.5 "Plugins").
 6. **R6 Contract maintenance.** A public contract freezes names: a breaking change needs a major
    bump, and both sides must keep the version check. K2 is an additive minor (1.1).
-7. **R7 Theme mismatch** until U3 is closed: an explicit DSH light or dark theme against the
-   other OS scheme shows the iframe in the other palette. With U3's proposed form, a DSH rename of
-   `data-ds-dark-theme` would silently drop the page back to the OS scheme; a test watches it.
+7. **R7 Theme attribute** (U3 decided): the page mirrors DSH's `data-ds-dark-theme`; a DSH rename
+   of that attribute would silently show the framed page in light; a test watches the name. A
+   page opened in its own tab follows the OS scheme, not an explicit DSH choice.
 
 ### 0.9 Decisions for the user (2026-11-07)
 
@@ -483,7 +484,7 @@ DSH就行了。2. 如果是Electron进程，就改成后台子进程 3. 类似�
 | --- | --- | --- |
 | U1 | `nodeExecutable` and `executableSearchPath`: keep as an override, or remove? | **Closed: removed.** The child always follows the host DSH: its executable, its `execArgv` and its PATH (§0.5). The instance's card has only `enabled`; the migration drops the two old values silently. Task I2. |
 | U2 | What happens when the host process is Electron? | **Closed: never refuse.** The child is spawned as a windowless background Node child with `ELECTRON_RUN_AS_NODE=1` (§0.5 "Electron host"). Dropping `--inspect*` / `--debug-port` from `execArgv` is Fishball's own call and still waits for the user's confirmation. |
-| U3 | Theme: how does the iframe follow DSH's light or dark choice? | **Open.** Proposed: a live follow of the outer page's `data-ds-dark-theme` attribute (same origin, `MutationObserver`, no reload), falling back to `prefers-color-scheme` (§0.5 "Theme"). Alternative: a `theme` parameter in K2, with a reload on change. |
+| U3 | Theme: how does the iframe follow DSH's light or dark choice? | **Closed: decided ("可以", 2026-11-07).** The page follows the outer DSH page's `body[data-ds-dark-theme]` live, with no reload. The iframe is same-origin, so it reads `window.parent.document.body`, watches it with a `MutationObserver`, and mirrors the marker onto its own body. Every access is guarded: a cross-origin or missing parent must not throw. When there is no reachable parent (the page was opened in its own tab), it follows `prefers-color-scheme` through `matchMedia`, live. No `theme` URL parameter, and no contract change (§0.5 "Theme"; delivered by I9). |
 | U4 | D30's form | **Closed: contract 1.1 (K2) with a `lang` query parameter** on the framed path: DSH's active locale id (`zh` or `en`), replacing a `lang` the path already has, before the fragment; a locale change reloads the iframe. The descriptor is unchanged. |
 | U5 | Fishball's decision labels and the card records both describe a card Fishball decided. Merge them? | **Closed: keep both as they are.** The label and the record may both show; there is no merge or replacement logic, and I7 does not de-duplicate. |
 | U6 | I7 cannot reuse the connector's React record module | **Closed: share the schema and the words, not the renderer.** The custom chat draws its own row from the contract's `card-record.js`; a test checks that both sides' `record.*` words are equal in both languages. |
@@ -1946,8 +1947,8 @@ Done rows keep their original text. Withdrawn rows are listed after the table.
 | **I6** instance settings view (in the custom page) and the model-sync button | instance | `inst/src/slim/ui/settings.js` (new: status and Restart, model and effort default, plugins, recommended, plugin settings; over the kept admin routes), `inst/src/slim/ui/shell.js` (the `view=settings` switch and the header Settings/Back actions); the "Model for Fishball" block in `inst/client.js`; `inst/src/slim/host/provider-sync-routes.js` (`models/check`, `models/add` instead of `sync`), `inst/src/provider-sync-service.js` (`check`/`add` instead of `sync`); `inst/host.js` (`PLUGIN.ui` gains `settings`) | I1c, I2, I8 | §18.2 I6 |
 | **I7** card records in the custom chat | instance | `inst/src/slim/child/chat.js` (project `plugin:fishball/card-record` into entries), `inst/src/slim/ui/records.js` (new: the record row, both languages); the decision labels are not touched (U5) | I8 | §18.2 I7 |
 | **I8** restyle the custom chat to DSH's look | instance | `inst/src/slim/ui/{shell.html,shell.css,chat.js,composer.js,approvals.js,reminders.js}`, `inst/src/slim/ui/dsh-tokens.css` (new), `inst/THIRD_PARTY_NOTICES.md` (new) | M1 | §18.2 I8 |
-| **I9** two language variants | instance | `inst/src/slim/ui/i18n.js` (new: `en` and `zh` dictionaries, the `lang` rule), `inst/src/slim/ui/shell.js` and every ui module's copy moved into the dictionaries, `inst/src/slim/host/embed.js` (the 503 page follows `lang`) | I6, I7 | §18.2 I9 |
-| **K2** contract 1.1: the connector appends `lang` to the framed path (approved, U4; `theme` only if U3 picks the alternative) | contract + connector | `conn/contract/contract.js` (minor 1, the parameter names), `docs/connector-contract.md` §1.2, `conn/client.js` (the frame's `src`, reload on a locale or theme change) | C3 | §18.2 K2 |
+| **I9** two language variants, and the theme follow (U3) | instance | `inst/src/slim/ui/i18n.js` (new: `en` and `zh` dictionaries, the `lang` rule), `inst/src/slim/ui/theme.js` (new: U3's live mirror of the parent's `data-ds-dark-theme`, OS fallback), `inst/src/slim/ui/shell.js` and every ui module's copy moved into the dictionaries, `inst/src/slim/child/chat.js` (a user row's `authorKind` instead of English author text), `inst/src/slim/host/embed.js` (the 503 page follows `lang`) | I6, I7 | §18.2 I9 |
+| **K2** contract 1.1: the connector appends `lang` to the framed path (approved, U4; no `theme`, U3) | contract + connector | `conn/contract/contract.js` (minor 1, the parameter names), `docs/connector-contract.md` §1.2, `conn/client.js` (the frame's `src`, reload on a locale or theme change) | C3 | §18.2 K2 |
 | **I10** remove the truly dead code | both | delete `inst/src/native-control/**` and its `./native-control` export, the `native-control` copy in `installation.js` `copyChildCode`, the `DEFAULT_CONTROL_LIMITS` import and `control` option in `inst/host.js`; delete `packages/messenger/` and its tests; retire the tests of deleted modules | I2, I6 | §18.2 I10 |
 | **E1** end-to-end on both versions | both | test only | I2, I6, I7, I8, I9, I10, K2 | §18.4 scenarios pass |
 
@@ -1973,8 +1974,8 @@ own files; I7's records requirement, now rendered in the custom chat; the proxy'
 I2 ─┬─────────▶ I6 ─┬─▶ I10 ───────┐
 I8 ─┴─▶ I7 ─────────┴─▶ I9 ────────┼─▶ E1
 K2 ────────────────────────────────┘
-(I6 needs I2 and I8; I9 needs I6 and I7. U3 decides whether K2 also carries `theme`, or I8 mirrors
-the parent page's attribute.)
+(I6 needs I2 and I8; I9 needs I6 and I7. U3 is decided: K2 carries no `theme`, and I9 mirrors the
+parent page's attribute.)
 ```
 
 - Wave A, in parallel now: **I2**, **I8**, **K2**. No shared file: I2 owns `inst/host.js`,
@@ -2252,10 +2253,9 @@ launch fields moved to I2 (U1).
 **I8 — restyle the custom chat to DSH's look (instance).**
 - R: (1) The page loads `dsh-tokens.css` and draws every colour, radius, font and shadow from
   `--dsw-*` / `--dsh-*` tokens; no hard-coded colour remains in `shell.css` except the Fishball
-  accent ring (D12). (2) Light on `body`, dark on `body[data-ds-dark-theme]`; until U3 is closed the
-  page sets that attribute from `prefers-color-scheme` and follows a change live. If U3 takes the
-  proposed form, I8 (or a follow-up) mirrors the parent page's attribute instead, live, with the
-  OS scheme as the fallback for "Open in a tab". (3) The header, the
+  accent ring (D12). (2) Light on `body`, dark on `body[data-ds-dark-theme]`; I8 set that attribute
+  from `prefers-color-scheme`. U3 is decided: I9 mirrors the parent page's attribute instead, live,
+  with the OS scheme as the fallback for "Open in a tab". (3) The header, the
   conversation, the user bubble, the composer and the buttons use DSH's measures (§0.5 "Chat
   page"). (4) The permanent title and status tag are gone (D27); a lost connection shows the
   "Reconnecting…" banner only while it lasts. (5) Every behaviour of the chat, the approvals rows,
@@ -2273,21 +2273,27 @@ launch fields moved to I2 (U1).
   settings view, the approvals and reminders rows, the record rows and the proxy's 503 page in
   Chinese; anything else in English. (2) `<html lang>` is `zh-CN` or `en`. (3) The two
   dictionaries have the same keys. (4) Dates and numbers use the page's language. (5) Switching
-  the view (chat ⇄ settings) keeps `lang`.
-- T: P; EP (`lang`: absent / `en` / `zh` / `ZH` / `zh-CN` / empty / two values); ST (chat →
-  settings → chat keeps `lang`; reload keeps it); DT (lang × view → language shown).
+  the view (chat ⇄ settings) keeps `lang`. (6) Theme (U3): framed, the page's `body` carries
+  `data-ds-dark-theme` exactly while the parent's does, and follows a change live with no reload
+  (an unsent draft stays); with no reachable parent (own tab, cross-origin) it follows
+  `prefers-color-scheme` live; no parent access throws. (7) A failure the child refuses shows the
+  page's own words with the refusal code, not the child's English message; a user row's author is
+  the child's `authorKind` worded by the page.
+- T: P; EP (`lang`: absent / `en` / `zh` / `ZH` / `zh-CN` / empty / two values; parent: same-origin
+  / none / cross-origin); ST (chat → settings → chat keeps `lang`; reload keeps it; parent light →
+  dark → light); DT (lang × view → language shown).
 - AC: a key-set comparison of the two dictionaries finds no difference; a scan of `src/slim/ui/`
   finds no user-visible string outside them; both variants render on both versions.
 
 **K2 — contract 1.1: language on the framed path (approved, U4).**
 - R: (1) The connector frames `ui.chat` or `ui.settings` with a `lang` search parameter equal to
   DSH's active locale id (`zh` or `en`), replacing a `lang` the path already has, before any
-  fragment; only if U3 takes the alternative, also `theme=light|dark`, the resolved DSH theme.
-  (2) A locale (or that theme) change in the main DSH reloads the framed page with the new values. (3) "Open in a tab" opens
+  fragment; no `theme` parameter (U3 decided the live mirror instead).
+  (2) A locale change in the main DSH reloads the framed page with the new value. (3) "Open in a tab" opens
   the same URL. (4) The contract doc states it; the descriptor and its validation are unchanged;
   `CONNECTOR_CONTRACT.minor` is 1; a 1.0 instance still attaches.
 - T: P; EP (path with no query / with a query / with `lang` already / with a fragment; locale zh /
-  en; theme only with U3's alternative); ST (change locale while framed → reload with
+  en); ST (change locale while framed → reload with
   the new `lang`).
 - AC: the iframe `src` equals the registered path with exactly the stated parameters; no other
   change to C3's behaviour.
@@ -2582,8 +2588,8 @@ rewrite means the case keeps its idea against the new §18.2 text.
   admin relay and their routes; D29 keeps them). I8-EP-05 and P-04, P-05 stay as regression.
   I8-P-01..03's static-scan idea moves to I10 for `native-control` and `messenger` only.
 - [ ] **I9 (§11), withdrawn:** I9-R1, R2 and I9-P-01, I9-DT-01..06, I9-ST-01..03, I9-AC1, AC2 (the
-  iframe follows DSH's theme and language live). **New:** I9's language cases of §18.2; the theme
-  cases wait for U3; the live-follow cases become K2's reload cases.
+  iframe follows DSH's theme and language live). **New:** I9's language cases of §18.2 and its
+  theme cases (U3 decided: R6); the language live-follow cases become K2's reload cases.
 - [ ] **I1 (§3):** I1-EP-04 and I1-EP-05 (`nodeExecutable` explicit or missing) are withdrawn: U1
   removed the field; their idea moves to I2's runtime EP and its "old stored values" case. I1-ST-02's "Fishball view" observation
   of `failed` and Retry needs I1c.

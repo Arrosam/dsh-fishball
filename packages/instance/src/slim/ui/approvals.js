@@ -23,6 +23,8 @@
  * All text is textContent, never markup; classes are the only styling hook (the §3.3 CSP
  * admits no inline style).
  */
+import { DEFAULT_I18N } from './i18n.js'
+
 /** Same child resources the server serves under /fishball/embed; the broker strips its prefix. */
 const API = Object.freeze({ page: 'api/approvals', answer: 'api/approvals/answer', media: 'application/json' })
 
@@ -58,47 +60,21 @@ const CLASS = Object.freeze({
   text: 'entry-text',
 })
 
-const COPY = Object.freeze({
-  cardNote: 'Fishball decides this request with its own tools. This row is the view of the live card.',
-  question: 'Fishball is waiting for your answer',
-  tool: 'Tool',
-  prompt: 'Prompt',
-  arguments: 'Arguments',
-  argumentsTruncated: 'truncated',
-  reason: 'Reason',
-  answer: 'Fishball answered',
-  outcome: 'Outcome',
-  settled: 'You decided',
-  merged: (count) => 'Fishball made ' + String(count) + ' decisions',
-  single: (kind, title, decision) => kind + (title === '' ? '' : ' · ' + title) + (decision === '' ? '' : ' · ' + decision),
-  expires: (minutes) => 'expires in ' + String(minutes) + ' min',
-  expiring: 'expiring',
-  waiting: 'waiting',
-  custom: 'Your own answer',
-  submit: 'Answer',
-  approvePlan: 'Approve plan',
-  keepPlanning: 'Keep planning',
-  feedback: 'Feedback for the plan',
-  answered: (text) => 'The user answered: ' + text,
-  closed: 'closed',
-  closedReason: (reason) => 'Card closed before you answered: ' + String(reason),
-  failed: 'The answer was refused.',
-  noOption: 'No options',
+/**
+ * Dictionary key prefixes (ui/i18n.js `approvals.*`). A kind or decision built from data that this
+ * version has no word for falls back as each caller states.
+ */
+const KEY = Object.freeze({
+  kind: 'approvals.kind.',
+  decision: 'approvals.decision.',
+  outcome: 'approvals.outcome.',
+  ran: 'approvals.ran.',
 })
-
-const KIND_TEXT = Object.freeze({
-  approval: 'Permission request',
-  grant: 'Standing grant',
-  question: 'Question',
-  escalation: 'Escalation',
-  'plan-review': 'Plan review',
-})
-
-/** The decision words a label's outcome and a user's settlement can carry. */
-const DECISION_TEXT = Object.freeze({
-  allow: 'allowed once', grant: 'allowed and granted', reject: 'rejected', ask: 'asked a question',
-  escalate: 'escalated to you',
-})
+/** The card kind every unknown kind reads as: a permission request. */
+const KIND_APPROVAL = 'approval'
+/** The joiner of a row's kind, session title and outcome. */
+const SEPARATOR = ' · '
+const LABEL_SEPARATOR = ': '
 
 /** DSH's plan-review intent marker on one question. */
 const PLAN_REVIEW = Object.freeze({ kind: 'plan-review' })
@@ -108,10 +84,14 @@ const METHOD = Object.freeze({ post: 'POST' })
 const ROW = Object.freeze({ marker: 'data-approval-row' })
 /** Card kinds: only a question card carries questions; every other kind is a permission request. */
 const CARD_KIND = Object.freeze({ question: 'question' })
-/** A settled label's outcome words for the outcome flags T09 and T08 record. */
-// leftToUser (7713 O1): a session's question that reached the user without Fishball's answer
-// (its window expired, or its notice was never delivered), so the words name neither cause.
-const OUTCOME_TEXT = Object.freeze({ revoked: 'grant revoked', toUser: 'sent to you', leftToUser: 'left to you, unanswered by Fishball', answered: 'answered', waiting: 'waiting' })
+/**
+ * The outcome flags T09 and T08 record, in the order a label's words check them; each names its
+ * `approvals.outcome.*` word. leftToUser (7713 O1): a session's question that reached the user
+ * without Fishball's answer (its window expired, or its notice was never delivered), so the words
+ * name neither cause.
+ */
+const OUTCOME_FLAGS = Object.freeze(['revoked', 'toUser', 'leftToUser', 'answered'])
+const OUTCOME_WAITING = 'waiting'
 
 /**
  * A label for a call that ran on an approval already given (T08): one-time pass by Fishball or by
@@ -119,11 +99,8 @@ const OUTCOME_TEXT = Object.freeze({ revoked: 'grant revoked', toUser: 'sent to 
  */
 const RAN_VIA = Object.freeze({ pass: 'pass', grant: 'grant' })
 const RAN_BY = Object.freeze({ user: 'user' })
-const RAN_TEXT = Object.freeze({
-  passFishball: 'ran on Fishball\'s one-time approval',
-  passUser: 'ran on your one-time approval',
-  grantFishball: 'ran on Fishball\'s standing grant',
-})
+/** The `approvals.ran.*` word of each case. */
+const RAN_WORD = Object.freeze({ passFishball: 'passFishball', passUser: 'passUser', grantFishball: 'grantFishball' })
 /** The arguments' status that says the shown text is cut (src/slim/contract.js ARGUMENTS_STATUS). */
 const ARGUMENTS_TRUNCATED = 'truncated'
 
@@ -135,34 +112,34 @@ const minutesUntil = (expiresAt) => {
 }
 
 /** One request's shared detail block (card and label expansion). */
-function requestDetails(document, request, { includeQuestions }) {
+function requestDetails(document, t, request, { includeQuestions }) {
   const fragment = document.createDocumentFragment()
   const tool = text(request?.toolName)
   if (tool !== '') {
     const line = document.createElement('p')
     line.className = CLASS.detail
-    line.textContent = COPY.tool + ': ' + tool
+    line.textContent = t('approvals.tool') + LABEL_SEPARATOR + tool
     fragment.append(line)
   }
   const prompt = text(request?.prompt)
   if (prompt !== '') {
     const line = document.createElement('p')
     line.className = CLASS.detail
-    line.textContent = COPY.prompt + ': ' + prompt
+    line.textContent = t('approvals.prompt') + LABEL_SEPARATOR + prompt
     fragment.append(line)
   }
   const argumentsText = text(request?.arguments)
   if (argumentsText !== '') {
     const line = document.createElement('p')
     line.className = CLASS.detail
-    line.textContent = COPY.arguments + ': ' + argumentsText + (request?.argumentsStatus === ARGUMENTS_TRUNCATED ? ' (' + COPY.argumentsTruncated + ')' : '')
+    line.textContent = t('approvals.arguments') + LABEL_SEPARATOR + argumentsText + (request?.argumentsStatus === ARGUMENTS_TRUNCATED ? ' (' + t('approvals.argumentsTruncated') + ')' : '')
     fragment.append(line)
   }
   const reason = text(request?.reason)
   if (reason !== '') {
     const line = document.createElement('p')
     line.className = CLASS.detail
-    line.textContent = COPY.reason + ': ' + reason
+    line.textContent = t('approvals.reason') + LABEL_SEPARATOR + reason
     fragment.append(line)
   }
   const quotes = Array.isArray(request?.quotes) ? request.quotes : []
@@ -194,7 +171,7 @@ function requestDetails(document, request, { includeQuestions }) {
       item.className = CLASS.questionBlock
       const promptLine = document.createElement('p')
       promptLine.className = CLASS.questionText
-      promptLine.textContent = text(question?.header) !== '' ? text(question.header) + ': ' + text(question.question) : text(question?.question)
+      promptLine.textContent = text(question?.header) !== '' ? text(question.header) + LABEL_SEPARATOR + text(question.question) : text(question?.question)
       item.append(promptLine)
       const options = Array.isArray(question?.options) ? question.options : []
       if (options.length > 0) {
@@ -221,44 +198,42 @@ function requestDetails(document, request, { includeQuestions }) {
  * the label), then the flags an answer leaves, then the decision Fishball made, then a call that
  * ran on an approval already given.
  */
-function labelOutcome(label) {
+function labelOutcome(t, label) {
   const flags = label.outcome ?? {}
-  if (text(label.closed) !== '') return COPY.closed + ': ' + text(label.closed)
-  if (flags.revoked === true) return OUTCOME_TEXT.revoked
-  if (flags.toUser === true) return OUTCOME_TEXT.toUser
-  if (flags.leftToUser === true) return OUTCOME_TEXT.leftToUser
-  if (flags.answered === true) return OUTCOME_TEXT.answered
-  if (flags.ran === RAN_VIA.grant) return RAN_TEXT.grantFishball
-  if (flags.ran === RAN_VIA.pass) return flags.ranBy === RAN_BY.user ? RAN_TEXT.passUser : RAN_TEXT.passFishball
-  return DECISION_TEXT[flags.decision] ?? ''
+  if (text(label.closed) !== '') return t('approvals.closed') + LABEL_SEPARATOR + text(label.closed)
+  const flag = OUTCOME_FLAGS.find((name) => flags[name] === true)
+  if (flag !== undefined) return t(KEY.outcome + flag)
+  if (flags.ran === RAN_VIA.grant) return t(KEY.ran + RAN_WORD.grantFishball)
+  if (flags.ran === RAN_VIA.pass) return t(KEY.ran + (flags.ranBy === RAN_BY.user ? RAN_WORD.passUser : RAN_WORD.passFishball))
+  return t(KEY.decision + text(flags.decision)) ?? ''
 }
 
 /** One settled decision's expansion, shared by a single label and a merged group. */
-function labelBlock(document, label) {
+function labelBlock(document, t, label) {
   const fragment = document.createDocumentFragment()
-  fragment.append(requestDetails(document, label.request ?? {}, { includeQuestions: true }))
+  fragment.append(requestDetails(document, t, label.request ?? {}, { includeQuestions: true }))
   const answer = text(label.answer)
   if (answer !== '') {
     const line = document.createElement('p')
     line.className = CLASS.detail
-    line.textContent = COPY.answer + ': ' + answer
+    line.textContent = t('approvals.answer') + LABEL_SEPARATOR + answer
     fragment.append(line)
   }
   const status = document.createElement('p')
   status.className = CLASS.status
-  const words = labelOutcome(label)
-  status.textContent = COPY.outcome + ': ' + (words === '' ? OUTCOME_TEXT.waiting : words)
+  const words = labelOutcome(t, label)
+  status.textContent = t('approvals.outcome') + LABEL_SEPARATOR + (words === '' ? t(KEY.outcome + OUTCOME_WAITING) : words)
   fragment.append(status)
   if (label.settled !== null && label.settled !== undefined) {
     const settled = document.createElement('p')
     settled.className = CLASS.status
-    settled.textContent = COPY.settled + ': ' + (DECISION_TEXT[label.settled.decision] ?? text(label.settled.decision))
+    settled.textContent = t('approvals.settled') + LABEL_SEPARATOR + (t(KEY.decision + text(label.settled.decision)) ?? text(label.settled.decision))
     fragment.append(settled)
   }
   if (text(label.closed) !== '') {
     const closed = document.createElement('p')
     closed.className = CLASS.status
-    closed.textContent = COPY.closed + ': ' + text(label.closed)
+    closed.textContent = t('approvals.closed') + LABEL_SEPARATOR + text(label.closed)
     fragment.append(closed)
   }
   return fragment
@@ -268,9 +243,9 @@ function labelBlock(document, label) {
  * The label's one-line summary. A label's kind names the decision; its outcome says what
  * Fishball did, and the session title says where.
  */
-function labelSummary(label) {
-  const kind = KIND_TEXT[label.kind] ?? KIND_TEXT.approval
-  return COPY.single(kind, text(label.title) || text(label.sessionId), labelOutcome(label))
+function labelSummary(t, label) {
+  const kind = t(KEY.kind + text(label.kind)) ?? t(KEY.kind + KIND_APPROVAL)
+  return [kind, text(label.title) || text(label.sessionId), labelOutcome(t, label)].filter((part) => part !== '').join(SEPARATOR)
 }
 
 /** Group consecutive labels: a chat entry whose time falls between them breaks the run. */
@@ -302,10 +277,12 @@ function groupLabels(labels, entryTimes) {
  * @param {(row: Element, at: number) => void} options.insertRow - chronological insertion.
  * @param {(path: string, options?: object) => Promise<object>} options.request - the chat's
  *   JSON request helper (throws on a non-2xx or an unparsable answer).
+ * @param {object} [options.i18n] - the page's words (ui/i18n.js); English by default.
  * @returns {{ refresh: () => Promise<void>, dispose: () => void }}
  */
 export function createApprovalsView(options = {}) {
-  const { document, timeline, insertRow, request } = options ?? {}
+  const { document, timeline, insertRow, request, i18n = DEFAULT_I18N } = options ?? {}
+  const { t } = i18n
   if (!document || typeof document.createElement !== 'function') throw new TypeError('fishball approvals: a document is required')
   if (!timeline || typeof timeline.appendChild !== 'function') throw new TypeError('fishball approvals: a timeline is required')
   if (typeof insertRow !== 'function' || typeof request !== 'function') {
@@ -346,17 +323,17 @@ export function createApprovalsView(options = {}) {
   function buildCard(card) {
     const at = Number.isFinite(card?.at) ? card.at : Date.now()
     const element = row(CLASS.card + ' ' + CLASS.pending, at)
-    const kind = card.kind === CARD_KIND.question ? KIND_TEXT.question : KIND_TEXT.approval
+    const kind = t(KEY.kind + (card.kind === CARD_KIND.question ? CARD_KIND.question : KIND_APPROVAL))
     const title = text(card.title) || text(card.sessionId)
     const minutes = minutesUntil(card.expiresAt)
-    const details = summaryRow(element, kind + (title === '' ? '' : ' · ' + title),
-      minutes === undefined ? COPY.waiting : minutes <= 0 ? COPY.expiring : COPY.expires(minutes))
+    const details = summaryRow(element, kind + (title === '' ? '' : SEPARATOR + title),
+      minutes === undefined ? t('approvals.waiting') : minutes <= 0 ? t('approvals.expiring') : t('approvals.expires', { minutes: minutes.toLocaleString(i18n.locale) }))
     const body = document.createElement('div')
     body.className = CLASS.body
-    body.append(requestDetails(document, card, { includeQuestions: true }))
+    body.append(requestDetails(document, t, card, { includeQuestions: true }))
     const note = document.createElement('p')
     note.className = CLASS.note
-    note.textContent = COPY.cardNote
+    note.textContent = t('approvals.cardNote')
     body.append(note)
     details.append(body)
     return element
@@ -365,7 +342,7 @@ export function createApprovalsView(options = {}) {
   function buildLabelGroup(labels) {
     const at = Number.isFinite(labels[0]?.at) ? labels[0].at : Date.now()
     const element = row(CLASS.label, at)
-    const title = labels.length === 1 ? labelSummary(labels[0]) : COPY.merged(labels.length)
+    const title = labels.length === 1 ? labelSummary(t, labels[0]) : t('approvals.merged', { count: labels.length.toLocaleString(i18n.locale) })
     const details = summaryRow(element, title, '')
     const body = document.createElement('div')
     body.className = CLASS.body
@@ -373,10 +350,10 @@ export function createApprovalsView(options = {}) {
       if (labels.length > 1) {
         const heading = document.createElement('p')
         heading.className = CLASS.kind
-        heading.textContent = labelSummary(label)
+        heading.textContent = labelSummary(t, label)
         body.append(heading)
       }
-      body.append(labelBlock(document, label))
+      body.append(labelBlock(document, t, label))
     }
     details.append(body)
     return element
@@ -386,7 +363,7 @@ export function createApprovalsView(options = {}) {
   function buildQuestion(entry) {
     const at = Number.isFinite(entry?.at) ? entry.at : Date.now()
     const element = row(CLASS.question + ' ' + CLASS.pending, at)
-    const details = summaryRow(element, COPY.question, COPY.waiting)
+    const details = summaryRow(element, t('approvals.question'), t('approvals.waiting'))
     details.open = true
     const body = document.createElement('div')
     body.className = CLASS.body
@@ -433,14 +410,14 @@ export function createApprovalsView(options = {}) {
         if (options.length === 0) {
           const none = document.createElement('p')
           none.className = CLASS.note
-          none.textContent = COPY.noOption
+          none.textContent = t('approvals.noOption')
           list.append(none)
         }
         fieldset.append(list)
         const custom = document.createElement('input')
         custom.type = 'text'
         custom.className = CLASS.custom
-        custom.placeholder = COPY.custom
+        custom.placeholder = t('approvals.custom')
         custom.dataset.questionId = text(question.id)
         customs.push({ questionId: text(question.id), input: custom })
         fieldset.append(custom)
@@ -448,7 +425,7 @@ export function createApprovalsView(options = {}) {
         const feedback = document.createElement('input')
         feedback.type = 'text'
         feedback.className = CLASS.custom
-        feedback.placeholder = COPY.feedback
+        feedback.placeholder = t('approvals.feedback')
         feedback.dataset.planFeedback = 'true'
         fieldset.append(feedback)
       }
@@ -467,15 +444,16 @@ export function createApprovalsView(options = {}) {
       try {
         const answer = await request(API.answer, { method: METHOD.post, body: JSON.stringify({ action: ACTION.own, questionId: entry.questionId, ...payload }) })
         // The route answers 200 with a typed refusal; a refusal keeps the form for another try.
+        // The page's own words with the refusal code, never the child's English message (I9).
         if (answer?.ok !== true) {
-          error.textContent = typeof answer?.code === 'string' ? answer.code : COPY.failed
+          error.textContent = i18n.failure('approvals.failed', answer?.code)
           error.hidden = false
           return
         }
         signature = undefined
         await refresh()
       } catch (failure) {
-        error.textContent = (failure instanceof Error && failure.message !== '' ? failure.message : COPY.failed)
+        error.textContent = i18n.failure('approvals.failed', failure?.code)
         error.hidden = false
       } finally {
         button.disabled = false
@@ -486,11 +464,11 @@ export function createApprovalsView(options = {}) {
       const feedback = body.querySelector('[data-plan-feedback="true"]')
       const approve = document.createElement('button')
       approve.type = 'button'
-      approve.textContent = COPY.approvePlan
+      approve.textContent = t('approvals.approvePlan')
       approve.addEventListener('click', () => void submit({ approve: true }, approve))
       const keep = document.createElement('button')
       keep.type = 'button'
-      keep.textContent = COPY.keepPlanning
+      keep.textContent = t('approvals.keepPlanning')
       keep.addEventListener('click', () => {
         const words = text(feedback?.value).trim()
         void submit({ approve: false, ...(words === '' ? {} : { feedback: words }) }, keep)
@@ -499,7 +477,7 @@ export function createApprovalsView(options = {}) {
     } else {
       const answer = document.createElement('button')
       answer.type = 'button'
-      answer.textContent = COPY.submit
+      answer.textContent = t('approvals.submit')
       answer.addEventListener('click', () => {
         const answers = questions.map((question) => {
           const questionId = text(question.id)
@@ -527,7 +505,7 @@ export function createApprovalsView(options = {}) {
     const element = row(CLASS.answer, at)
     const body = document.createElement('p')
     body.className = CLASS.text
-    body.textContent = COPY.answered(text(answer?.text))
+    body.textContent = t('approvals.answered', { text: text(answer?.text) })
     element.append(body)
     return element
   }
@@ -538,7 +516,7 @@ export function createApprovalsView(options = {}) {
     const element = row(CLASS.closed, at)
     const body = document.createElement('p')
     body.className = CLASS.text
-    body.textContent = COPY.closedReason(text(entry?.reason))
+    body.textContent = t('approvals.closedReason', { reason: text(entry?.reason) })
     element.append(body)
     return element
   }

@@ -8,43 +8,38 @@
  * reminders changed; the approvals view re-reads its snapshot on its own event, so no view opens
  * a second stream (Section 3.6).
  *
+ * It also owns the page's two page-wide choices: the language (I9, ui/i18n.js), handed to every
+ * view, and the light or dark palette (U3, ui/theme.js).
+ *
  * Everything here is a same-origin /ui/ file: the CSP (default-src 'self') admits no inline
  * script or style, and the relative URLs keep the same page working under the broker.
  */
 import { APPROVALS_EVENT } from './approvals.js'
 import { createChatView } from './chat.js'
+import { i18nOf } from './i18n.js'
 import { createRemindersView } from './reminders.js'
 import { createSettingsView } from './settings.js'
+import { followTheme } from './theme.js'
 
-const COPY = { reconnecting: 'Reconnecting…' }
-/**
- * The header actions' words, English and Chinese (D30's rule: the first `lang` parameter, exactly
- * `zh`); I9 moves them into the page's dictionaries.
- */
-const VIEW_COPY = Object.freeze({
-  en: Object.freeze({ settings: 'Settings', back: 'Back to chat' }),
-  zh: Object.freeze({ settings: '设置', back: '返回聊天' }),
-})
 /**
  * The view switch (design §0.5 "Settings view"): only the first `view` parameter with the exact
  * lowercase value `settings` selects the settings view; anything else shows the chat. Every other
  * parameter (K2's `lang` among them) is kept as it is when the view changes.
  */
-const VIEW = Object.freeze({ param: 'view', settings: 'settings', langParam: 'lang', zh: 'zh' })
+const VIEW = Object.freeze({ param: 'view', settings: 'settings' })
 const VIEW_CLASS = Object.freeze({ action: 'header-action' })
+const ARIA = Object.freeze({ label: 'aria-label' })
+
+// The page's palette follows the DSH page around the frame, or the OS when opened alone (U3).
+followTheme(window)
 
 /**
- * DSH's palette switch (dsh-client-ui-theme ThemePresenter): dark is the body attribute that
- * ui/dsh-tokens.css keys its dark tokens on. The page cannot read DSH's own choice across the
- * frame (D27), so until §0.9 U3 is decided it follows the OS scheme, which is what DSH shows
- * with its default `system` preference, and it follows a change live.
+ * The page's words, chosen once from the URL's `lang` (D30). A DSH language change reloads the
+ * frame with the other `lang` (K2), so no view re-reads it; the view switch keeps the parameter.
  */
-const THEME = Object.freeze({ darkAttribute: 'data-ds-dark-theme', darkQuery: '(prefers-color-scheme: dark)' })
-
-const darkScheme = window.matchMedia(THEME.darkQuery)
-function applyScheme() { document.body.toggleAttribute(THEME.darkAttribute, darkScheme.matches) }
-applyScheme()
-darkScheme.addEventListener('change', applyScheme)
+const i18n = i18nOf(location.search)
+document.documentElement.lang = i18n.locale
+document.title = i18n.t('page.title')
 
 // No permanent status tag (D27: the connector's frame shows Fishball's state); a lost stream
 // shows the §11 banner only while it lasts.
@@ -52,17 +47,21 @@ const banner = document.getElementById('connection-banner')
 
 // The text is written when the banner appears, so its live region announces the loss.
 function showConnection(connected) {
-  banner.textContent = connected ? '' : COPY.reconnecting
+  banner.textContent = connected ? '' : i18n.t('shell.reconnecting')
   banner.hidden = connected
 }
 
+const chatRegion = document.getElementById('chat')
+const remindersRegion = document.getElementById('reminders')
+chatRegion.setAttribute(ARIA.label, i18n.t('shell.chatRegion'))
+remindersRegion.setAttribute(ARIA.label, i18n.t('shell.remindersRegion'))
 const chat = createChatView({
-  container: document.getElementById('chat'),
+  container: chatRegion,
   modelSlot: document.getElementById('model-picker'),
+  i18n,
 })
-const reminders = createRemindersView({ container: document.getElementById('reminders') })
+const reminders = createRemindersView({ container: remindersRegion, i18n })
 
-const viewCopy = new URLSearchParams(location.search).get(VIEW.langParam) === VIEW.zh ? VIEW_COPY.zh : VIEW_COPY.en
 const chatLayout = document.querySelector('.layout')
 const modelPicker = document.getElementById('model-picker')
 const settingsPage = document.getElementById('settings')
@@ -78,11 +77,11 @@ function showView() {
   chatLayout.hidden = open
   modelPicker.hidden = open
   settingsPage.hidden = !open
-  if (open && settings === undefined) settings = createSettingsView({ container: settingsPage })
+  if (open && settings === undefined) settings = createSettingsView({ container: settingsPage, i18n })
   const action = document.createElement('button')
   action.type = 'button'
   action.className = VIEW_CLASS.action
-  action.textContent = open ? viewCopy.back : viewCopy.settings
+  action.textContent = open ? i18n.t('shell.back') : i18n.t('shell.settings')
   action.addEventListener('click', () => switchView(!open))
   headerActions.replaceChildren(action)
 }

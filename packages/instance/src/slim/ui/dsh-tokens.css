@@ -6,7 +6,8 @@
  * gradient-shadow-text.css, in their order. Only the custom properties are copied; their few
  * plain rules (the body background, the focus outline) are drawn by shell.css from these tokens.
  * Light is on body and dark on body[data-ds-dark-theme], the attribute DSH's ThemePresenter sets;
- * shell.js sets it here, because an iframe document inherits nothing from the main page.
+ * ui/theme.js mirrors it here from the DSH page around the frame (U3), because an iframe document
+ * inherits nothing from the main page.
  *
  * Do not edit by hand: re-copy from the installed theme module when DSH retunes its tokens
  * (risk R1). rc.5's module lacks 12 of these names (the violet, illustration and "done" ones),
