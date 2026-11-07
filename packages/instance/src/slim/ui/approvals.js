@@ -67,6 +67,7 @@ const CLASS = Object.freeze({
 const KEY = Object.freeze({
   kind: 'approvals.kind.',
   decision: 'approvals.decision.',
+  choice: 'approvals.choice.',
   outcome: 'approvals.outcome.',
   ran: 'approvals.ran.',
 })
@@ -151,6 +152,11 @@ function requestDetails(document, t, request, { includeQuestions }) {
     fragment.append(block)
   }
   const choices = Array.isArray(request?.choices) ? request.choices : []
+  // A permission request's choices are the contract's DECISION words (allow, grant, reject, ask,
+  // escalate), so they read through `approvals.choice.*`. A question's choices are its options'
+  // own labels (only a question carries `questions`) and stay exactly as written. A word this
+  // version does not know is shown as it came.
+  const decisionChoices = !Array.isArray(request?.questions)
   if (choices.length > 0) {
     const list = document.createElement('ul')
     list.className = CLASS.choices
@@ -158,7 +164,7 @@ function requestDetails(document, t, request, { includeQuestions }) {
       if (typeof choice !== 'string' || choice === '') continue
       const item = document.createElement('li')
       item.className = CLASS.choice
-      item.textContent = choice
+      item.textContent = (decisionChoices ? t(KEY.choice + choice) : undefined) ?? choice
       list.append(item)
     }
     fragment.append(list)
