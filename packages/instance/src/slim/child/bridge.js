@@ -31,7 +31,7 @@ import {
 
 /**
  * Client resource ceilings. Like the host's, these are runtime configuration rather than
- * contract constants; the timeout mirrors src/native-control/constants.js's v1 control limit.
+ * contract constants; the timeout keeps the removed v1 control bridge's limit (I10).
  */
 export const BRIDGE_CLIENT = Object.freeze({
   /** A request with no answer by then is unknown: drop the connection instead of retrying. */

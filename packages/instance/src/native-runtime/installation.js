@@ -186,7 +186,6 @@ export async function copyChildCode(paths, record) {
   await mkdir(path.join(destination, 'src'), { mode: RUNTIME.privateDirectoryMode })
   await copy(path.join(sourceRoot, 'native-child.js'), path.join(destination, 'native-child.js'), javascript)
   await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
-  if (await exists(path.join(sourceRoot, 'src', 'native-control'))) await copy(path.join(sourceRoot, 'src', 'native-control'), path.join(destination, 'src', 'native-control'), javascript)
   await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), everyFile)
   // M1: the instance's src/slim shims and persona import `fishball-connector/contract`. Node finds
   // it in the snapshot's own node_modules, inside the private profile the preflight already
