@@ -1,233 +1,205 @@
 /**
- * Revision 11 rev11g: plan reviews in managed sessions (requirements item 26; DESIGN §7a.10 "Plan reviews", "Cards",
- * §10e; S36 Q3). exit_plan_mode presents a plan; Fishball (or you, on the pile card) approves it or keeps planning
- * with feedback; the session's own panel offers only Approve and Discuss, and Discuss ends the turn and closes the pile
- * card. Plan mode is entered with /plan as a user does. One host; cases run in order.
+ * Revision 11 rev11g on H-STUB: plan reviews in managed sessions (requirements item 26; DESIGN §7a.10 "Plan
+ * reviews", "The mode"; contract 1.1 §4.2 approve/feedback, `intent` plan-review; slim §12). exit_plan_mode
+ * presents a plan; the instance approves it or keeps planning (with feedback); the session's own panel offers
+ * only Approve and Discuss, and Discuss ends the turn. Plan mode is entered with /plan as a user does. One host;
+ * cases run in order.
  *
- * | id      | technique | expected |
- * |---------|-----------|----------|
- * | PLN-01  | EP (routing) | the session's own review opens at once; Fishball's notice carries the plan; no pile card yet |
- * | PLN-02  | EP (Fishball approves) | "Plan approved"; plan mode is off afterwards; the own review closes; a plan-review tag for the call |
- * | PLN-03  | EP (Fishball keeps planning with feedback) | the agent sees the feedback in the call's error; plan mode stays on; the own review closes; a plan-review tag |
- * | PLN-04  | BVA (keep planning, no feedback) | the agent is told to revise and present again; plan mode stays on |
- * | PLN-05  | EP (pile card: Approve) | to_user makes a card showing the plan; the route's approve answers; both places clear |
- * | PLN-06  | EP (pile card: Keep planning with feedback) | the route's feedback reaches the agent; plan mode stays on |
- * | PLN-07  | ST (you Approve in the session first) | approved; the pile card leaves; Fishball's late answer is refused; no tag |
- * | PLN-08  | ST (you Discuss in the session) | the review is dismissed (turn ends, plan mode stays on); the pile card leaves; Fishball's answer is refused; no tag |
- * | PLN-09  | DT (bad plan answers) | no decision; a label that is not offered; an answers batch for a non-offered label; an unknown question id: all refused, review stays open |
- * | PLN-10  | DT (modes) | user: Fishball's answer refused mode-user and the card is in the pile at once; fishball: accepted |
- * | PLN-11  | EP (a session that is yours) | its plan review stays in its own panel; Fishball takes no step |
+ * | id      | technique | requirement | expected |
+ * |---------|-----------|-------------|----------|
+ * | PLN-01  | EP (routing) | §7a.10; §4.2 questions[].intent | the own review opens at once; the offer is kind question with one plan-review question carrying the plan, Approve / Keep planning and intent {kind plan-review, approve 'Approve', callId}; the notice carries the plan |
+ * | PLN-02  | EP (the instance approves) | §4.2 approve | "Plan approved"; plan mode is off afterwards; the own review closes; a decisions row answer-question by fishball |
+ * | PLN-03  | EP (the instance keeps planning with feedback) | §4.2 feedback | the agent sees the feedback in the call's error; plan mode stays on; the own review closes |
+ * | PLN-04  | BVA (keep planning, no feedback: approve false) | §7a.10 Plan reviews | the agent is told to revise and present again; plan mode stays on |
+ * | PLN-12  | BVA (feedbackChars 500 accepted; 501 refused) | contract §8 feedbackChars | 500: accepted and reaches the agent; 501: not accepted, nothing reaches the agent, the review stays open |
+ * | PLN-07  | ST (you Approve in the session first) | §7a.10 The race | approved; the instance's late answer is refused |
+ * | PLN-08  | ST (you Discuss in the session) | §7a.10 Plan reviews | the review is dismissed and the turn ends; plan mode stays on; the instance's answer is refused; it is told the card closed |
+ * | PLN-09  | DT (bad plan answers) | §4.2 "at least one of the five", "answers cannot be combined with approve or feedback", bad-answer; §7a.10 | an answers batch, an unoffered label, an unknown question id: refused (bad-answer / expired), the review stays open and a good approve then works; answers + approve and an empty payload: refused (error frame or closed channel), the review stays open in its own panel |
+ * | PLN-10  | DT (modes) | §7a.10 "A plan review follows the same mode" | user: the instance's approve is refused mode-user and you approve in the session; fishball: accepted |
+ * | PLN-11  | EP (a session that is yours) | §7a.10 Routing | its plan review stays in its own panel; the instance hears nothing |
+ *
+ * Retired:
+ * - PLN-05, PLN-06 (Approve / Keep planning with feedback on the pile card) and the pile parts of PLN-07/08: the pile's question form and route are deleted (slim §12). The feedback that only the pile card offered is now the instance's, so its bounds are the new PLN-12.
+ * - The plan-review tag parts of PLN-02/03: tag records were removed (slim T15).
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { MODE_USER_CODE, PLAN, PLAN_REVIEW_ID, PRESET, QUESTION_MODE, QUESTION_TAG_KIND, NEEDS_INSTANCE_STUB } from './support/constants.mjs'
-import { HOOK, T, settledIdle } from './support/expect.mjs'
-import { AT_ONCE_MS, QUIET_MS, cardId, cardMentions, planText, qHost, qTools, refused, sleep, tokens } from './support/rev11g.mjs'
+import { PLAN, PLAN_REVIEW_ID, PRESET, QUESTION_MODE } from './support/constants.mjs'
+import { HOOK, T } from './support/expect.mjs'
+import { stopStub } from './support/instance-stub.mjs'
+import { QSTUB, REFUSAL, assertStillOpen, bootQ, codeOf, qTools, quiet, refuseShape, tokens } from './support/instance-stub-questions.mjs'
 
 const { tok, cid } = tokens('PLN')
+const APPROVE = [{ id: PLAN_REVIEW_ID, selected: [PLAN.approve] }]
+const PLAN_BODY = 'Step one. Step two.'
 
-describe('Revision 11 rev11g: plan reviews', { skip: NEEDS_INSTANCE_STUB }, () => {
-  let ctx
+describe('Revision 11 rev11g on H-STUB: plan reviews', () => {
+  const ctx = {}
   let q
   let x
   let y
-  const planOffText = async (sid) => (await q.planOff(sid)).text
-  const resultEvent = async (sid, id) => (await q.allEvents(sid)).find((e) => e.type === 'tool/result' && e.result.callId === id)
   before(async () => {
-    ctx = await qHost('rev11g-plan')
-    q = qTools(ctx, { tok, cid })
+    Object.assign(ctx, await bootQ('rev11g-plan'))
+    q = qTools(ctx)
     x = await q.session('pln-x', PRESET.standard)
     y = await q.session('pln-y', PRESET.standard)
   }, HOOK)
-  after(async () => { await ctx.host?.stop() }, HOOK)
+  after(async () => { await stopStub(ctx.booted) }, HOOK)
 
-  it('PLN-01 routing: the own review opens at once; Fishball\'s notice carries the plan; no pile card yet', T, async () => {
+  /** The instance answers the plan review; returns the call's result once the turn is idle. */
+  async function decide(sid, label, payload) {
+    const id = cid(label)
+    const { card, offer } = await q.plan(sid, tok(label), id)
+    assert.deepEqual((await q.answer(sid, offer.approvalId, payload)).payload, { accepted: true })
+    const got = await q.result(sid, id)
+    await q.waitIdle(sid)
+    return { got, card, offer, id }
+  }
+
+  it('PLN-01 routing: the own review opens at once; the offer carries the plan review and its intent', T, async () => {
     const text = tok('01')
-    const own = await q.plan(x, text, cid('01'))
-    assert.equal(own.questions[0].id, PLAN_REVIEW_ID)
-    const qid = await q.questionId(text)
-    assert.match(qid, /^qst_/)
-    const [notice] = await q.notices(text)
-    assert.ok(notice.text.includes('Step one. Step two.'), 'the notice carries the plan: ' + notice.text.slice(0, 800))
-    assert.equal((await q.pile()).length, 0)
-    await q.stop(x)
-    await planOffText(x)
+    const id = cid('01')
+    const { card, offer } = await q.plan(x, text, id)
+    assert.equal(card.questions[0].id, PLAN_REVIEW_ID)
+    assert.equal(offer.kind, QSTUB.kind.question)
+    assert.equal(offer.questions.length, 1)
+    const [review] = offer.questions
+    assert.equal(review.id, PLAN_REVIEW_ID)
+    assert.ok(JSON.stringify(review).includes(PLAN_BODY), 'the offer carries the plan')
+    assert.deepEqual(review.options.map((o) => o.label), [PLAN.approve, PLAN.keep])
+    assert.deepEqual(review.intent, { kind: PLAN_REVIEW_ID, approve: PLAN.approve, callId: id })
+    const [notice] = await q.notices(offer.approvalId)
+    assert.ok(notice?.text.includes(PLAN_BODY), 'the notice carries the plan: ' + notice?.text.slice(0, 800))
+    await q.userStop(x)
+    await q.planOff(x)
   })
 
-  it('PLN-02 Fishball approves: plan approved; plan mode off; the own review closes; a plan-review tag', T, async () => {
-    const text = tok('02')
-    const id = cid('02')
-    await q.planAnswer(text, { approve: true })
-    const own = await q.plan(x, text, id)
-    const got = await q.result(x, id)
+  it('PLN-02 the instance approves: plan approved; plan mode off; the own review closes; a decisions row', T, async () => {
+    const { got, card, offer } = await decide(x, '02', { approve: true })
     assert.match(got.text, PLAN.approved)
     assert.equal(got.isError, false)
-    await ctx.host.call('waitIdle', { sessionId: x })
-    assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'closed')
-    assert.match(await planOffText(x), /already inactive/i, 'approving left plan mode')
-    const tag = await q.untilTag(id)
-    assert.equal(tag?.kind, QUESTION_TAG_KIND.planReview)
-    assert.equal(tag.sessionId, x)
+    assert.notEqual(await q.cardState(x, card.index), QSTUB.card.open)
+    assert.match(await q.planOff(x), QSTUB.planInactive, 'approving left plan mode')
+    const rows = q.decisions({ target: offer.approvalId })
+    assert.equal(rows.length, 1, JSON.stringify(rows))
+    assert.equal(rows[0].action, QSTUB.action.answer)
+    assert.equal(rows[0].by, QSTUB.by.fishball)
   })
 
-  it('PLN-03 Fishball keeps planning with feedback: the agent sees the feedback; plan mode stays on; a plan-review tag', T, async () => {
-    const text = tok('03')
-    const id = cid('03')
-    const feedback = 'Add a restart test first. ' + text
-    await q.planAnswer(text, { feedback })
-    const own = await q.plan(x, text, id)
-    const got = await q.result(x, id)
+  it('PLN-03 the instance keeps planning with feedback: the agent sees it; plan mode stays on', T, async () => {
+    const feedback = 'Add a restart test first. ' + tok('03f')
+    const { got, card } = await decide(x, '03', { feedback })
     assert.equal(got.isError, true)
-    assert.equal(got.text.includes(PLAN.feedbackPrefix + feedback), true, got.text)
-    await ctx.host.call('waitIdle', { sessionId: x })
-    assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'closed')
-    assert.match(await planOffText(x), /Plan mode off\./, 'plan mode was still on')
-    assert.equal((await q.untilTag(id))?.kind, QUESTION_TAG_KIND.planReview)
+    assert.ok(got.text.includes(PLAN.feedbackPrefix + feedback), got.text)
+    assert.notEqual(await q.cardState(x, card.index), QSTUB.card.open)
+    assert.match(await q.planOff(x), QSTUB.planOff, 'plan mode was still on')
   })
 
   it('PLN-04 keep planning with no feedback: the agent is told to revise and present again; plan mode stays on', T, async () => {
-    const text = tok('04')
-    const id = cid('04')
-    await q.planAnswer(text, { approve: false })
-    await q.plan(x, text, id)
-    const got = await q.result(x, id)
+    const { got } = await decide(x, '04', { approve: false })
     assert.equal(got.isError, true)
-    assert.match(got.text, /chose to keep planning/)
-    assert.equal(got.text.includes('their feedback'), false, 'no feedback was given')
-    await ctx.host.call('waitIdle', { sessionId: x })
-    assert.match(await planOffText(x), /Plan mode off\./)
+    assert.match(got.text, QSTUB.keepPlanning)
+    assert.equal(got.text.includes(QSTUB.feedbackWords), false, 'no feedback was given')
+    assert.match(await q.planOff(x), QSTUB.planOff)
   })
 
-  describe('a plan review that is a card in your pile', () => {
-    it('PLN-05 Approve on the card: both places clear; the plan is approved', T, async () => {
-      const text = tok('05')
-      const id = cid('05')
-      await q.planAnswer(text, { to_user: true, note: 'your call ' + text })
-      const own = await q.plan(x, text, id)
-      const card = await q.pileCard(x, 8000)
-      assert.ok(card, 'a card for the plan review')
-      assert.ok(cardMentions(card, 'Step one. Step two.'), 'the card shows the plan')
-      assert.equal((await q.route({ questionId: cardId(card), approve: true })).status, 200)
-      assert.match((await q.result(x, id)).text, PLAN.approved)
-      await ctx.host.call('waitIdle', { sessionId: x })
-      assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'closed')
-      assert.ok(await q.noPileCard(x))
-      assert.match(await planOffText(x), /already inactive/i)
-    })
-
-    it('PLN-06 Keep planning with feedback on the card: the agent sees the feedback; plan mode stays on', T, async () => {
-      const text = tok('06')
-      const id = cid('06')
-      const feedback = 'smaller steps please ' + text
-      await q.planAnswer(text, { to_user: true, note: 'n ' + text })
-      await q.plan(x, text, id)
-      const card = await q.pileCard(x, 8000)
-      assert.equal((await q.route({ questionId: cardId(card), feedback })).status, 200)
-      const got = await q.result(x, id)
-      assert.equal(got.isError, true)
-      assert.equal(got.text.includes(PLAN.feedbackPrefix + feedback), true, got.text)
-      await ctx.host.call('waitIdle', { sessionId: x })
-      assert.match(await planOffText(x), /Plan mode off\./)
-    })
-
-    it('PLN-07 you Approve in the session\'s own panel first: approved; the pile card leaves; Fishball\'s late answer is refused; no tag', T, async () => {
-      const text = tok('07')
-      const id = cid('07')
-      await q.planAnswer(text, { to_user: true, note: 'n ' + text })
-      await q.plan(y, text, id)
-      const qid = await q.questionId(text)
-      assert.ok(await q.pileCard(y, 8000))
-      assert.equal(await ctx.host.call('qAnswer', { sessionId: y, answers: [{ id: PLAN_REVIEW_ID, selected: [PLAN.approve] }] }), true)
-      assert.match((await q.result(y, id)).text, PLAN.approved)
-      assert.ok(await q.noPileCard(y))
-      assert.equal(refused(await q.fbAnswer({ question_id: qid, approve: true })), true)
-      assert.equal(q.tagsOf(id).length, 0)
-      await ctx.host.call('waitIdle', { sessionId: y })
-      await planOffText(y)
-    })
-
-    it('PLN-08 you Discuss in the session: the review is dismissed and the turn ends; plan mode stays on; the pile card leaves; Fishball\'s answer is refused; no tag', T, async () => {
-      const text = tok('08')
-      const id = cid('08')
-      await q.planAnswer(text, { to_user: true, note: 'n ' + text })
-      await q.plan(y, text, id)
-      const qid = await q.questionId(text)
-      const card = await q.pileCard(y, 8000)
-      assert.ok(card)
-      assert.equal(await ctx.host.call('qDiscuss', { sessionId: y }), true)
-      assert.ok(await q.noPileCard(y), 'the pile card left')
-      await ctx.host.call('waitIdle', { sessionId: y })
-      const r = await resultEvent(y, id)
-      assert.match(r?.result.text ?? '', PLAN.dismissed)
-      assert.equal(await ctx.host.call('lastTurnEnd', { sessionId: y }) !== null, true, 'the turn ended')
-      assert.equal(refused(await q.fbAnswer({ question_id: qid, approve: true })), true)
-      assert.equal((await q.route({ questionId: cardId(card), approve: true })).status, 409)
-      assert.equal(q.tagsOf(id).length, 0)
-      assert.match(await planOffText(y), /Plan mode off\./, 'plan mode stayed on')
-    })
+  it('PLN-12 feedbackChars: 501 characters is refused, the review stays in its own panel; 500 is accepted and reaches the agent', T, async () => {
+    const over = cid('05o')
+    const first = await q.plan(x, tok('05o'), over)
+    await refuseShape(q, x, first, over, 'feedback of 501', { feedback: 'f'.repeat(QSTUB.limits.feedbackChars + 1) }, REFUSAL.shape)
+    assert.equal(await q.modelSaw(x, 'f'.repeat(QSTUB.limits.feedbackChars + 1)), 0, 'nothing reached the agent')
+    await q.userStop(x)
+    await q.planOff(x)
+    const feedback = 'f'.repeat(QSTUB.limits.feedbackChars)
+    const { got } = await decide(x, '05', { feedback })
+    assert.ok(got.text.includes(PLAN.feedbackPrefix + feedback), got.text.slice(0, 200))
+    await q.planOff(x)
   })
 
-  it('PLN-09 bad plan answers are refused and the review stays open', T, async () => {
-    const text = tok('09')
+  it('PLN-07 you Approve in the session\'s own panel first: approved; the instance\'s late answer is refused', T, async () => {
+    const id = cid('07')
+    const { offer } = await q.plan(y, tok('07'), id)
+    assert.equal(await q.qAnswer(y, APPROVE), true)
+    assert.match((await q.result(y, id)).text, PLAN.approved)
+    await q.waitIdle(y)
+    assert.ok(QSTUB.lateCodes.includes(codeOf(await q.answer(y, offer.approvalId, { approve: true }))), 'refused')
+    await q.planOff(y)
+  })
+
+  it('PLN-08 you Discuss in the session: dismissed and the turn ends; plan mode stays on; the instance\'s answer is refused; it is told', T, async () => {
+    const id = cid('08')
+    const { offer } = await q.plan(y, tok('08'), id)
+    assert.equal(await q.qDiscuss(y), true)
+    await q.waitIdle(y)
+    assert.match((await q.resultNow(y, id))?.text ?? '', PLAN.dismissed)
+    assert.notEqual(await q.host().call('lastTurnEnd', { sessionId: y }), null, 'the turn ended')
+    assert.ok(QSTUB.lateCodes.includes(codeOf(await q.answer(y, offer.approvalId, { approve: true }))), 'refused')
+    const closed = (await q.waitMarker('closed', offer.approvalId)) || (await q.record(offer.approvalId, QSTUB.quietMs))
+    assert.ok(closed, 'a CARD_CLOSED item or a closed card record (the notice promises a note when the session dismisses it)')
+    assert.match(await q.planOff(y), QSTUB.planOff, 'plan mode stayed on')
+  })
+
+  it('PLN-09 bad plan answers are refused and the review stays open; a good answer then works', T, async () => {
     const id = cid('09')
-    const own = await q.plan(x, text, id)
-    const qid = await q.questionId(text)
-    const bad = [
-      ['no decision at all', { question_id: qid }],
-      ['a label that is not offered', { question_id: qid, answers: [{ id: PLAN_REVIEW_ID, selected: ['Ship it'] }] }],
-      ['two labels', { question_id: qid, answers: [{ id: PLAN_REVIEW_ID, selected: [PLAN.approve, PLAN.keep] }] }],
-      ['another question id inside', { question_id: qid, answers: [{ id: 'color', selected: ['Blue'] }] }],
-      ['an unknown question', { question_id: 'qst_0123456789abcdef', approve: true }],
+    const { card, offer } = await q.plan(x, tok('09'), id)
+    // Well-formed payloads whose answer does not fit: an answer refusal (contract §4.2), the channel stays open.
+    const misfits = [
+      ['an answers batch on a plan review', offer.approvalId, { answers: APPROVE }],
+      ['a label that is not offered', offer.approvalId, { answers: [{ id: PLAN_REVIEW_ID, selected: ['Ship it'] }] }],
+      ['an unknown question', QSTUB.unknownQuestionId, { approve: true }],
     ]
-    for (const [label, args] of bad) assert.equal(refused(await q.fbAnswer(args)), true, label)
-    assert.equal((await q.cards(x)).find((c) => c.index === own.index).state, 'open', 'still open')
-    assert.equal(q.tagsOf(id).length, 0)
-    assert.equal((await q.fbAnswer({ question_id: qid, approve: true })).json?.ok, true, 'a good answer still works')
+    for (const [label, questionId, rest] of misfits) {
+      const r = await q.answer(x, questionId, rest)
+      assert.ok([QSTUB.code.badAnswer, QSTUB.code.expired].includes(codeOf(r)), label + ': ' + JSON.stringify(r))
+      await assertStillOpen(q, x, card, id, label)
+    }
+    assert.deepEqual((await q.answer(x, offer.approvalId, { approve: true })).payload, { accepted: true }, 'a good answer still works')
     assert.match((await q.result(x, id)).text, PLAN.approved)
-    await ctx.host.call('waitIdle', { sessionId: x })
-    await planOffText(x)
+    await q.waitIdle(x)
+    await q.planOff(x)
+    // Payload rules (answers cannot be combined with approve; at least one of the five keys): each on its own review.
+    for (const [label, rest] of [['answers combined with approve', { answers: APPROVE, approve: true }], ['no decision at all', {}]]) {
+      const shapeId = cid('09s')
+      const raised = await q.plan(x, tok('09s'), shapeId)
+      await refuseShape(q, x, raised, shapeId, label, rest, REFUSAL.shape)
+      assert.equal(await q.qAnswer(x, APPROVE), true, label + ': you still answer it in the session')
+      assert.match((await q.result(x, shapeId)).text, PLAN.approved)
+      await q.waitIdle(x)
+      await q.planOff(x)
+    }
   })
 
-  it('PLN-10 modes: user refuses Fishball\'s answer and shows the card at once; fishball accepts it', T, async () => {
-    await q.mode(QUESTION_MODE.user)
+  it('PLN-10 modes: user refuses the instance\'s approve (mode-user); fishball accepts it', T, async () => {
+    await q.setMode(QUESTION_MODE.user)
     try {
       const text = tok('10u')
       const id = cid('10u')
-      await q.plan(x, text, id)
-      const t0 = Date.now()
-      const card = await q.pileCard(x, 8000)
-      assert.ok(card, 'always the pile')
-      assert.ok(Date.now() - t0 < AT_ONCE_MS + 3000)
-      const r = await q.fbAnswer({ question_id: cardId(card), approve: true })
-      assert.equal(refused(r), true)
-      assert.equal(r.json?.code, MODE_USER_CODE, r.result.text)
-      assert.equal((await q.route({ questionId: cardId(card), approve: true })).status, 200)
+      const { card } = await q.plan(x, text, id, { offer: false })
+      const qid = await q.learnedId(text, id)
+      assert.ok(qid, 'the instance learned the review (to add a note)')
+      assert.equal(codeOf(await q.answer(x, qid, { approve: true })), QSTUB.code.modeUser)
+      await assertStillOpen(q, x, card, id, 'user mode')
+      assert.equal(await q.qAnswer(x, APPROVE), true)
       assert.match((await q.result(x, id)).text, PLAN.approved)
-      await ctx.host.call('waitIdle', { sessionId: x })
-      await planOffText(x)
-    } finally { await q.mode(QUESTION_MODE.fishball) }
-    const text = tok('10f')
-    const id = cid('10f')
-    await q.planAnswer(text, { approve: true })
-    await q.plan(x, text, id)
-    assert.match((await q.result(x, id)).text, PLAN.approved)
-    await ctx.host.call('waitIdle', { sessionId: x })
-    await planOffText(x)
-    await q.mode(QUESTION_MODE.auto)
+      await q.waitIdle(x)
+      await q.planOff(x)
+    } finally { await q.setMode(QUESTION_MODE.fishball) }
+    try {
+      const { got } = await decide(x, '10f', { approve: true })
+      assert.match(got.text, PLAN.approved)
+      await q.planOff(x)
+    } finally { await q.setMode(QUESTION_MODE.auto) }
   })
 
-  it('PLN-11 a session that is yours: its plan review stays in its own panel; Fishball takes no step', T, async () => {
+  it('PLN-11 a session that is yours: its plan review stays in its own panel; the instance hears nothing', T, async () => {
     const own = await q.yours('pln-yours', PRESET.standard)
-    await settledIdle(ctx.host, ctx.fb)
-    const before = await q.fbWork()
     const text = tok('11')
     const id = cid('11')
-    await q.plan(own, text, id)
-    await sleep(QUIET_MS * 2)
-    assert.deepEqual(await q.fbWork(), before)
-    assert.equal((await q.pile()).length, 0)
-    assert.equal(await ctx.host.call('qAnswer', { sessionId: own, answers: [{ id: PLAN_REVIEW_ID, selected: [PLAN.approve] }] }), true)
+    await q.plan(own, text, id, { offer: false })
+    await quiet()
+    assert.equal(await q.toldAbout(text), false)
+    assert.equal(await q.qAnswer(own, APPROVE), true)
     assert.match((await q.result(own, id)).text, PLAN.approved)
-    await ctx.host.call('waitIdle', { sessionId: own })
+    await q.waitIdle(own)
   })
 })
