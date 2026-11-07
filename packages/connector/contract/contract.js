@@ -7,7 +7,7 @@
  * connector checks an instance's attachInstance() request with validateAttachment() below.
  * Every name this module exports is listed in docs/connector-contract.md; keep the two in step.
  *
- * Envelope v2 keeps envelope v1's seven-key frame (src/native-control/protocol.js) and replaces
+ * Envelope v2 keeps envelope v1's seven-key frame (the removed v1 control protocol) and replaces
  * v1's operation set with §5.2's: attachment transfer, the full approval, question, prompt and
  * grant answers today's Fishball tools carry, session release, and the inbox/session-state
  * messages. The lifecycle wire owns identity and its HMAC proof; the handshake here negotiates

@@ -9,7 +9,6 @@
     ".": "./host.js",
     "./client": "./client.js",
     "./native-runtime": "./src/native-runtime/index.js",
-    "./native-control": "./src/native-control/index.js",
     "./package.json": "./package.json"
   },
   "files": [
