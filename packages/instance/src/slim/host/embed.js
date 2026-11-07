@@ -14,6 +14,9 @@
 import { request as httpRequest } from 'node:http'
 import { ADMISSION, BEARER, LIMITS, ROUTES, STATUS, STATUS_CODES } from '../contract.js'
 import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
+// The page's own dictionaries and language rule (I9, D30): the 503 card is the page's stand-in,
+// so it follows the same `lang` the framed page would. The module has no DOM or Node dependency.
+import { i18nOf } from '../ui/i18n.js'
 
 const PREFIX = ROUTES.prefix
 const DOCUMENT = ROUTES.document
@@ -203,24 +206,31 @@ const isEventStream = (headers) => {
   return typeof type === 'string' && type.toLowerCase().startsWith(EVENT_STREAM)
 }
 
-function errorDocument(view) {
+/**
+ * The 503 card in the language of the request's `lang` (the first one, exactly `zh` for Chinese;
+ * ui/i18n.js languageOf). The words are escaped like every other value.
+ */
+function errorDocument(view, search) {
+  const { t, locale } = i18nOf(search)
+  const word = (key) => escapeHtml(t(key))
   const lines = [
     '<!doctype html>',
-    '<html lang="en">',
+    '<html lang="' + escapeHtml(locale) + '">',
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     '<meta name="color-scheme" content="light dark">',
-    '<title>Fishball unavailable</title>',
+    '<title>' + word('unavailable.title') + '</title>',
     '</head>',
     '<body>',
     '<main>',
-    '<h1>Fishball is not available</h1>',
-    '<p>State: <code>' + escapeHtml(view.state) + '</code></p>',
-    view.code ? '<p>Code: <code>' + escapeHtml(view.code) + '</code></p>' : '',
-    '<p>Retry starts the isolated Fishball again.</p>',
-    // No action attribute: the form retries the current document URL, so the page carries no path.
-    '<form method="post"><button type="submit">Retry</button></form>',
+    '<h1>' + word('unavailable.heading') + '</h1>',
+    '<p>' + word('unavailable.state') + ' <code>' + escapeHtml(view.state) + '</code></p>',
+    view.code ? '<p>' + word('unavailable.code') + ' <code>' + escapeHtml(view.code) + '</code></p>' : '',
+    '<p>' + word('unavailable.retryHint') + '</p>',
+    // No action attribute: the form retries the current document URL (with its `lang`), so the
+    // page carries no path and the answer keeps the language.
+    '<form method="post"><button type="submit">' + word('unavailable.retry') + '</button></form>',
     '</main>',
     '</body>',
     '</html>',
@@ -314,9 +324,10 @@ export function createEmbedBroker({ service, connection }) {
     else response.end(payload)
   }
 
-  function unavailable(response, method, view, tail) {
+  /** `search` is the request's query, which picks the 503 card's language; '' is English. */
+  function unavailable(response, method, view, tail, search = '') {
     if (tail === CHILD.document) {
-      reply(response, method, HTTP.unavailable, { 'content-type': TYPE.html }, errorDocument(view))
+      reply(response, method, HTTP.unavailable, { 'content-type': TYPE.html }, errorDocument(view, search))
       return
     }
     if (tail.startsWith(CHILD.api)) {
@@ -337,7 +348,7 @@ export function createEmbedBroker({ service, connection }) {
    */
   function forward(request, response, target, access, body) {
     let origin
-    try { origin = new URL(access.origin) } catch { unavailable(response, request.method, inaccessible(), target.tail); return }
+    try { origin = new URL(access.origin) } catch { unavailable(response, request.method, inaccessible(), target.tail, target.search); return }
     let reserved = false
     let released = () => {}
     if (target.tail === CHILD.events) {
@@ -361,7 +372,7 @@ export function createEmbedBroker({ service, connection }) {
       })
     } catch {
       released()
-      unavailable(response, request.method, inaccessible(), target.tail)
+      unavailable(response, request.method, inaccessible(), target.tail, target.search)
       return
     }
 
@@ -393,7 +404,7 @@ export function createEmbedBroker({ service, connection }) {
       proxies.delete(abort)
       release()
       try { child.destroy() } catch { /* the child request already ended */ }
-      unavailable(response, request.method, inaccessible(), target.tail)
+      unavailable(response, request.method, inaccessible(), target.tail, target.search)
     })
 
     child.on('error', () => {
@@ -401,7 +412,7 @@ export function createEmbedBroker({ service, connection }) {
       responded = true
       proxies.delete(abort)
       release()
-      unavailable(response, request.method, inaccessible(), target.tail)
+      unavailable(response, request.method, inaccessible(), target.tail, target.search)
     })
     child.on('response', (upstream) => {
       responded = true
@@ -412,7 +423,7 @@ export function createEmbedBroker({ service, connection }) {
         release()
         upstream.resume()
         try { child.destroy() } catch { /* the child request already ended */ }
-        unavailable(response, request.method, inaccessible(), target.tail)
+        unavailable(response, request.method, inaccessible(), target.tail, target.search)
         return
       }
       if (isEventStream(upstream.headers) && !reserved) {
@@ -444,14 +455,15 @@ export function createEmbedBroker({ service, connection }) {
     child.end(body)
   }
 
-  async function retry(request, response) {
+  /** The Retry POST; it keeps the document's query, so the page after it keeps its `lang` and view. */
+  async function retry(request, response, search) {
     request.resume()
     let view = safeView(service)
-    if (ready(view)) { redirect(response, request.method, HTTP.seeOther, DOCUMENT); return }
+    if (ready(view)) { redirect(response, request.method, HTTP.seeOther, DOCUMENT + search); return }
     try { await service.restart() } catch { /* the status below is the safe answer */ }
     view = safeView(service)
-    if (ready(view)) { redirect(response, request.method, HTTP.seeOther, DOCUMENT); return }
-    unavailable(response, request.method, view, CHILD.document)
+    if (ready(view)) { redirect(response, request.method, HTTP.seeOther, DOCUMENT + search); return }
+    unavailable(response, request.method, view, CHILD.document, search)
   }
 
   async function dispatch(request, response) {
@@ -485,20 +497,20 @@ export function createEmbedBroker({ service, connection }) {
     }
     // POST to the document is the Retry action; the child never sees it.
     if (request.method === METHOD.post && target.tail === CHILD.document) {
-      await retry(request, response)
+      await retry(request, response, target.search)
       return
     }
     const view = safeView(service)
     if (!ready(view)) {
       request.resume()
-      unavailable(response, request.method, view, target.tail)
+      unavailable(response, request.method, view, target.tail, target.search)
       return
     }
     let access
     try { access = await service.embedAccess() } catch { access = undefined }
     if (access === undefined || response.destroyed || response.writableEnded) {
       request.resume()
-      unavailable(response, request.method, inaccessible(), target.tail)
+      unavailable(response, request.method, inaccessible(), target.tail, target.search)
       return
     }
     let body
