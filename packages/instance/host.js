@@ -12,8 +12,8 @@ import { registerEmbed } from './src/slim/host/embed.js'
 import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
 import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes.js'
 import { createChildProviderSync } from './src/provider-sync-service.js'
-import { CONNECTOR_CONTRACT, ContractError, ERROR } from './src/slim/contract.js'
-import { BINDING_STATE, followConnector } from './src/host/binding.js'
+import { CONNECTOR_CONTRACT, ContractError, ERROR, ROUTES } from './src/slim/contract.js'
+import { BINDING_STATE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
 import { migrateLaunchSettings } from './src/settings-migration.js'
 
@@ -22,6 +22,11 @@ const PLUGIN = Object.freeze({
   name: 'fishball-instance', service: 'nativeFishballRuntime',
   // The contract's display name for this instance (inst-OQ-06), shown by the connector's view.
   displayName: 'Fishball instance',
+  // The pages this instance registers with the connector (contract §1.2): its chat, framed through
+  // the main-side embed broker. `settings` (design §0.6: '/fishball/embed/?view=settings') is added
+  // by I6 together with the settings view: today's child page has none, so registering it would make
+  // the connector's "Open instance settings" open the chat.
+  ui: Object.freeze({ chat: ROUTES.document }),
   // Every service this row's ctx reads as a property must be listed: Cordis's context proxy
   // throws `cannot get property "<name>" without inject` for any other (0.2.1-rc.5 and
   // 0.2.2-rc.1 alike); ctx.get() is the only unchecked read. Each one below has the same name
@@ -192,16 +197,29 @@ export async function apply(ctx, config) {
       if (hostId !== owner.hostId) throw new ContractError(ERROR.host)
       release()
       // No child starts without the connector (D25), so this is only a connector that left
-      // during the start: the departure's stop is already queued and ends this wire. A refused
-      // attach (another instance first, or a future major) leaves the wire unbridged: failing the
-      // start here would take the child down, and I1 maps that refusal onto the instance's own
-      // status (inst-OQ-03).
+      // during the start: the departure's stop is already queued and ends this wire.
       if (typeof connector?.attachInstance !== 'function') return
       try {
-        connection = connector.attachInstance({ id: hostId, name: PLUGIN.displayName, contract: CONNECTOR_CONTRACT, transport })
+        connection = connector.attachInstance({
+          id: hostId, name: PLUGIN.displayName, contract: CONNECTOR_CONTRACT, transport, ui: PLUGIN.ui,
+          // The connector's frame shows these (design §0.5 "The frame"); status() answers in the
+          // contract's vocabulary only (contract §1.1, binding.js contractStatus).
+          status: () => contractStatus(status()),
+          retry: async () => { await retry() },
+        })
       } catch (error) {
         connection = undefined
         logger?.warn('attach refused (%s)', error?.code ?? String(error))
+        // `instance-busy` and `contract-version` fail the start (inst-OQ-03). The state is set
+        // here, before the rethrow: the runtime then ends its attach and stops the child, whose
+        // exit would otherwise report a `starting` instance as NATIVE_CHILD_EXITED (onExit above),
+        // and start() below leaves a state that is no longer `starting` as it is. A stop that
+        // began meanwhile keeps its own state. Any other refusal leaves the wire unbridged, as
+        // before.
+        if (Object.hasOwn(REFUSAL_CODE, error?.code)) {
+          if (state === PLUGIN.state.starting) set(PLUGIN.state.failed, REFUSAL_CODE[error.code])
+          throw error
+        }
       }
     })
     // The admin transport comes up with each authenticated wire (and again after a restart); the
@@ -240,6 +258,9 @@ export async function apply(ctx, config) {
         await owner.shutdown().catch(() => {})
         const reason = launchFailure(error, attempt)
         if (reason !== null) logger?.warn('%s: %s', PLUGIN.code.failed, reason)
+        // A refused attach already left `starting` with its own code (the transport listener
+        // above), so only another failure is NATIVE_START_FAILED; nothing restarts either by
+        // itself (inst-OQ-03, inst-OQ-09).
         if (!closed && state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.failed, reason)
       }
       return status()
@@ -260,9 +281,24 @@ export async function apply(ctx, config) {
     const result = await stop()
     return result.state === PLUGIN.state.failed ? result : start()
   }
-  /** Queue one start or stop behind the earlier ones; a closed row runs nothing more. */
+  /**
+   * Queue one start or stop behind the earlier ones; a closed row runs nothing more.
+   * @returns the action's own outcome; a failure there never breaks the queue.
+   */
   function follow(action) {
-    toggle = toggle.then(() => (closed ? status() : action())).catch(() => {})
+    const run = toggle.then(() => (closed ? status() : action()))
+    toggle = run.catch(() => {})
+    return run
+  }
+  /**
+   * Retry, for the instance's Plugins card and the connector's frame: a restart, only from
+   * `failed` (design §0.5: Retry only with `failed`; inst-OQ-09: failed until Retry). Queued like
+   * the switch and the connector's arrivals, so it never races them; in any other state it
+   * changes nothing.
+   * @returns {Promise<object>} the status once the retry has run.
+   */
+  function retry() {
+    return follow(() => (state === PLUGIN.state.failed ? restart() : status()))
   }
   function shutdown() {
     if (disposal) return disposal
@@ -300,7 +336,7 @@ export async function apply(ctx, config) {
   registry.set(key, { shutdown })
   ctx.effect(() => shutdown, PLUGIN.cleanup)
   const service = Object.freeze({
-    status, start, stop, restart,
+    status, start, stop, restart, retry,
     // T12's settings routes reach the child only through this relay (§9).
     admin,
     // T16's provider-sync page API (§10): only status and the one-step sync. The bridge's

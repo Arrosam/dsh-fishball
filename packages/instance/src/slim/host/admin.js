@@ -35,9 +35,10 @@
  *    directly and never write a file.
  */
 import { RECOMMENDED_CATEGORY, RECOMMENDED_PLUGINS } from '../../recommended.js'
+import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
 import {
   ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS, AdminFailure,
-  createAdminCodec, refusal, refusalOf, validateRequest, validateResult,
+  createAdminCodec, refusal, refusalOf, validateRequest,
 } from '../child/admin.js'
 
 export { ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS }
@@ -55,6 +56,15 @@ export const ADMIN_RECOMMENDED = Object.freeze(RECOMMENDED_PLUGINS.filter(
 ))
 
 const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose'])
+/**
+ * The states and codes `admin.status` and `admin.restart` may answer: the instance's own
+ * vocabulary, the contract's STATUS/STATUS_CODES plus `connector-missing` and the refused-attach
+ * codes (src/host/binding.js). Both operations are local, so this answer never crosses the wire and
+ * the child's contract-only result check does not apply to it; checking it against STATUS alone
+ * made a `connector-missing` instance answer `operation-failed`.
+ */
+const STATUS_STATES = new Set(INSTANCE_STATES)
+const STATUS_CODE_SET = new Set(INSTANCE_CODES)
 const EMPTY = Object.freeze({})
 
 /**
@@ -62,7 +72,7 @@ const EMPTY = Object.freeze({})
  *
  * @param {object} options
  * @param {() => {state: string, code?: string|null}} options.status - the lifecycle state in
- *   the contract's STATUS vocabulary, with the safe STATUS_CODES code or null.
+ *   the instance's vocabulary (INSTANCE_STATES), with its safe code (INSTANCE_CODES) or null.
  * @param {() => Promise<unknown>} [options.restart] - the lifecycle's restart; resolves once
  *   the child is started again (a new admin transport follows). Absent: restart is refused.
  * @returns the relay; see the methods below for the exact contract.
@@ -157,11 +167,11 @@ class AdminRelay {
     try {
       const reported = this.status()
       value = { state: reported?.state, code: reported?.code ?? null }
-      validateResult(ADMIN_OPERATION.status, value)
     } catch {
       return refusal(ADMIN_ERROR.failed)
     }
-    return { ok: true, result: value }
+    const known = STATUS_STATES.has(value.state) && (value.code === null || STATUS_CODE_SET.has(value.code))
+    return known ? { ok: true, result: value } : refusal(ADMIN_ERROR.failed)
   }
 
   /** Restart is the lifecycle's own operation; the admin only waits for it and reports the state. */
