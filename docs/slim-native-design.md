@@ -105,25 +105,31 @@ a duplicate `fishball` row, which the loader refuses. (3) The old id patches bec
 old package goes: the loader only warns "patch: entry not found" (`dsh-app-boot/lib/index.js:97` /
 `:542`).
 
-**One-time settings migration.** At its first apply, each new row copies the user's old values once:
+**No migration from the old `dsh-fishball` (Q3, decided 2026-11-07: "不从旧版迁移了").** The
+release does not move an install of the old in-process `dsh-fishball` to the two new plugins.
+No session, history, setting, grant or plugin of the old package is carried over, and there is no
+migration code. The user removes the old `dsh-fishball` first, then installs both packages
+(§0.10).
 
-| New row | Old source | What is copied |
-| --- | --- | --- |
-| `fishball-connector` | (a) the live `fishball` form, when `settings.describe()` still lists it; otherwise (b) the `- id: fishball` config patch in the profile's patch file (`settings.prepareDocument()`, parsed with DSH's own `yaml` dependency); (c) the question mode from the store record `settings/questions` | every field the connector's Config still has (§18.5 conn-OQ-20), plus `questionMode` |
-| `fishball-instance` | the same, for the old `fishball-native-host` row | `nodeExecutable`, `executableSearchPath`, `enabled` |
-
-Rules: the copy runs only when the new namespace has no user value yet and the store has no
-`migrated` marker. Each field is validated by the new schema, and an invalid field is skipped and
-logged by key, never by value. The copy is written with `settings.update(newId, values)` (one
-revisioned write), then the marker is stored. The old patch and the old store records are left as
-they are and ignored, so a rollback to the old package still finds them. The brand-style and
-sidebar-entry records are not migrated (D22: fixed icon). Moving a real install is still a release
-step (D21).
+**The settings copy that is still in code (reported, not changed by Q3).** Each row still runs the
+one-time settings copy from C2 and I1/I2, once per profile at first apply:
+`packages/connector/src/settings-migration.js` and `packages/instance/src/settings-migration.js`.
+Neither copies only the row's own earlier values: both read rows of the pre-split packages. The
+connector copies the old `fishball` row's limits (its live form, else the profile patch row) and
+the question mode from the store record `settings/questions`. The instance copies `enabled` from
+the old `fishball-native-host` row's composed config. Each field is checked by the new schema. The
+copy never overwrites a user value, and it stores a done-marker. With the old package removed
+first, they find nothing, store their marker and change nothing. Removing them is a separate
+decision for the user.
 
 **Imports between the packages.** The instance may import only the connector's `./contract` and
-`./records` exports. The connector imports nothing from the instance. Package versions are
-independent; the connector's major equals its contract major, and the instance declares
-`peerDependencies: {"fishball-connector": "^1"}`.
+`./records` exports. The connector imports nothing from the instance.
+
+**Versions (Q3, decided 2026-11-07).** Both packages are **`0.1.0-alpha.0`**. The user said
+"0.1.0a"; that is not valid semver, so npm would refuse it. The package version is the release's
+and no longer equals the contract version. The contract stays **1.1**: it lives only in
+`CONNECTOR_CONTRACT` and is checked when an instance attaches (contract §2). The instance declares
+`peerDependencies: {"fishball-connector": ">=0.1.0-alpha.0 <2"}`.
 
 Module ownership after the split (current paths, at `feat/slim-integration` 535a807):
 
@@ -498,6 +504,63 @@ admin routes, as the connector's old settings page did before C3 removed it
 move). Browser-only DSH
 plugins do nothing in Fishball's chat (R5). `DESIGN.md` line 9 carries the
 same amendment.
+
+### 0.10 Release: install, uninstall, versions (Q3, decided 2026-11-07)
+
+The user's words: "不从旧版迁移了，卸载时也需要清理子进程目录，版本号定0.1.0a。然后更新文档。" Then, on
+the open points: the version is `0.1.0-alpha.0` for both packages, uninstall cleanup is a command
+(below), and the peer range is `>=0.1.0-alpha.0 <2`. **Q3 is closed.**
+
+| # | Point | Decision |
+| --- | --- | --- |
+| Q3-1 | Migration from the old `dsh-fishball` | **None.** The old package is removed first; nothing of it is read or carried over (§0.2). |
+| Q3-2 | Uninstall | `fishball-instance` ships `uninstall.js`, which deletes the child's tree `<DSH_HOME>/fishball/runtime`. The user runs it with DSH quit, before removing the package. |
+| Q3-3 | Version | `0.1.0-alpha.0` for both packages (valid semver for "0.1.0a"). The contract stays 1.1 (§0.2). |
+| Q3-4 | Supported DSH | 0.2.1-rc.5 and 0.2.2-rc.1, the two versions every test runs on (§17). `engines.dsh` stays `>=0.2.1-rc.2`. |
+
+**Why a command, not a hook (read in 0.2.1-rc.5 and 0.2.2-rc.1, read-only).** DSH has no
+uninstall hook for a plugin row. The Plugins page's Remove is `PluginManager.removeBundle`
+(`dsh-plugin-manager/lib/index.js`, rc.5 `:2137`, 0.2.2-rc.1 `:2905`). It deselects the bundle,
+reloads (the row's fiber is disposed exactly as for a disable, an HMR reload or an app exit), then
+runs `pnpm remove`, which runs no uninstall script. `dsh plugin remove` (`dsh/lib/plugin-*.js`
+`runPlugin`) only runs pnpm in the profile, usually with DSH not running, so no plugin code runs
+at all. Only 0.2.2-rc.1 announces a remove beforehand (`plugin-manager/operation`, phase `started`,
+stage `remove`). That event is missing in rc.5, and the remove can still fail after it. So the row
+never deletes anything by itself: its cleanup on dispose stops the child and keeps the data, as
+before. Deleting at a row event could destroy data on a plain disable or on a remove that failed.
+
+**The command.** `node <profile>/node_modules/fishball-instance/uninstall.js [--home <DSH_HOME>]`.
+It picks the home by DSH's own rule: `--home`, else `$DSH_HOME`, else `~/.dsh`
+(`dsh-home-paths` `resolveDshHome`, the same in both versions). It deletes the runtime root of
+`files.js` `pathsFor` and nothing else: `dsh-home` (the child's profile, sessions, settings and
+keys), `launches`, `workspace`, `os-home`, `agents-home`, `tmp`, the owner marker, the secret and
+the logs. The connector's data (its storage domains in the main profile) and every other file under
+`<DSH_HOME>` stay. Safety rules (`NativeRuntime.uninstall`, `files.js`):
+
+- the path comes from the instance's own constants, never from an argument: only the home is
+  given;
+- the home must be a canonical absolute directory, and `<home>/fishball` and the root must be
+  real directories, not symbolic links. The root and every layout directory must be private
+  directories of this user (the same `prepareLayout` checks as a start). The owner marker must name
+  this home. Otherwise it refuses (`INVALID_MAIN_HOME`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`,
+  `UNSAFE_SECRET`) and deletes nothing;
+- the child must be stopped: when `active.json` names a child that is alive, or whose state is
+  unknown (no pid record, `ps` unreadable), it refuses with `CHILD_RUNNING` and deletes nothing.
+  It sends no signal. Quitting DSH stops the child: the parent pipe closes, and the child exits by
+  itself within `LIFETIME.childExitTimeoutMs`. A main DSH that still runs owns its child and could
+  start it again into the tree being deleted;
+- the root is first renamed atomically to `runtime.removing-<uuid>` beside it, then deleted.
+  `rm` removes a symbolic link inside the tree as a link and never follows it, so nothing outside
+  is reached. The runtime path is either the whole proven tree or gone, so a reinstall starts fresh;
+- an absent tree is not an error: "Nothing to remove", exit 0. Exit 1 is a refusal, exit 2 is
+  wrong arguments.
+
+**Install and uninstall order** (README "Install" and "Uninstall"). Install: remove the old
+`dsh-fishball` if present, then add `fishball-connector`, then `fishball-instance`, into the same
+profile. Uninstall the instance: quit DSH, run `uninstall.js`, then `dsh plugin remove
+fishball-instance` (or remove it on the Plugins page after starting DSH again). Removing the
+package without the command leaves the tree; the command still works afterwards from a copy of
+the package, or the tree can be deleted by hand.
 
 Base: `d67e69f` on `integration/native-runtime-on-74fe6be`, branch `feat/slim-native-embedded-ui`.
 SDK baseline: DSH **0.2.2-rc.1**, the newest published 0.2.2 build (no final 0.2.2 exists; npm
@@ -1951,6 +2014,7 @@ Done rows keep their original text. Withdrawn rows are listed after the table.
 | **K2** contract 1.1: the connector appends `lang` to the framed path (approved, U4; no `theme`, U3) | contract + connector | `conn/contract/contract.js` (minor 1, the parameter names), `docs/connector-contract.md` §1.2, `conn/client.js` (the frame's `src`, reload on a locale or theme change) | C3 | §18.2 K2 |
 | **I10** remove the truly dead code | both | delete `inst/src/native-control/**` and its `./native-control` export, the `native-control` copy in `installation.js` `copyChildCode`, the `DEFAULT_CONTROL_LIMITS` import and `control` option in `inst/host.js`; delete `packages/messenger/` and its tests; retire the tests of deleted modules | I2, I6 | §18.2 I10 |
 | **E1** end-to-end on both versions | both | test only | I2, I6, I7, I8, I9, I10, K2 | §18.4 scenarios pass |
+| **Q3a** release: uninstall cleanup, version, docs (Q3 decided, §0.10) | instance + docs | `inst/uninstall.js` (new), `inst/src/native-runtime/{index,files,constants}.js` (`uninstall`, `existingLayout`, `removeRuntime`, `UNINSTALL`), both `package.json` (`0.1.0-alpha.0`, the peer range, `uninstall.js` in `files`), README, `docs/package-layout.md`, this §0.2/§0.10, `DESIGN.md` line 9, `docs/connector-contract.md` §1.4 | — | §0.10's safety rules hold on both versions |
 
 **Withdrawn by D28 (2026-11-07):** I3 (proxy v2: token-for-cookie exchange, Host/Origin rewrite,
 `api/remote.mux` WebSocket pass-through). Only DSH's Web UI needed them; the proxy stays the
@@ -2037,7 +2101,7 @@ K2 (A).
 - R: (1) Two packages pack separately with names `fishball-connector` and `fishball-instance`.
   (2) Each bundle patch inserts exactly its own row (`fishball-connector`; `fishball-instance`);
   no row is called `fishball`. (3) The instance declares `peerDependencies: {"fishball-connector":
-  "^1"}`, imports only the connector's `./contract` and `./records`, and the connector depends on
+  ">=0.1.0-alpha.0 <2"}` (was `^1`; amended by Q3, §0.2), imports only the connector's `./contract` and `./records`, and the connector depends on
   nothing of the instance. (4) Behaviour is unchanged: the existing suite passes on the moved files.
 - T: P (pack, install both into a disposable profile, rows present); EP (install connector only;
   instance only; both); DT (installed set × rows mounted × errors).
@@ -2378,7 +2442,7 @@ here is also an item of §18.6.
 | conn-OQ-27 | I1. M1 is moves only; `connector-missing` is I1's acceptance. |
 | conn-OQ-28 | M1's dev session re-points the suite's links to the two packages (`packages/connector`, `packages/instance`), and the test session moves the cases. Cases of retired modules (§0.2 "retired") retire with I8, not with M1. |
 | conn-OQ-29 | Only `./contract` and `./records` (§0.2). |
-| conn-OQ-30 | Versions are independent; the connector's major equals its contract major; the instance declares `"fishball-connector": "^1"` as a peer dependency. A test checks the peer range against the contract major. |
+| conn-OQ-30 | **Amended by Q3 (2026-11-07, §0.2, §0.10).** Both packages are `0.1.0-alpha.0`; the package version is the release's and no longer equals the contract version, which stays 1.1 in `CONNECTOR_CONTRACT`. The instance declares `"fishball-connector": ">=0.1.0-alpha.0 <2"` as a peer dependency. The contract major is checked at attach (`contract-version`), not by the peer range. A test that checked the peer range against the contract major now checks it against this range. |
 | conn-OQ-31 | It opens DSH's Plugins panel (`layout.selectPanel('plugins')`) at its list, with no plugin preselected. |
 | conn-OQ-32 | Yes, until acked. |
 | conn-OQ-33 | Global arrival order across all kinds and sources, by the ledger's creation order. |

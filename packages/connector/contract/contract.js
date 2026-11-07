@@ -1289,10 +1289,11 @@ export const CONNECTOR_SERVICE_API = Object.freeze({
 })
 
 /**
- * The one browser message of v1 (design §18.6 item 13). A page the connector's opener frames may
- * post `{type: BROWSER_MESSAGE.openSettings}` to its parent with `location.origin` as the target;
- * the opener accepts it only from its own iframe and the same origin, and then opens the
- * connector's Plugins card. Any other message is ignored.
+ * Unused, kept only as a frozen v1 name (contract §1.4). The contract has no browser message
+ * (design D27, §18.6 item 13): the connector frames the instance's pages and listens to no
+ * `postMessage` from them, so posting this does nothing. Its own frame's "Connector settings"
+ * button opens DSH's form. It stays exported, with its value unchanged, because a minor never
+ * removes a name (contract §2); a major 2 may drop it.
  */
 export const BROWSER_MESSAGE = Object.freeze({ keys: Object.freeze(['type']), openSettings: 'fishball-connector:open-settings' })
 

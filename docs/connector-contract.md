@@ -166,12 +166,19 @@ returns to no-instance mode, so a new attach is accepted):
 
 A refused but well-formed handshake (§3.2) keeps the channel and the attachment.
 
-### 1.4 Browser message
+### 1.4 No browser messages
 
-v1 has one browser message. A page the connector's opener frames (`ui.chat` or `ui.settings`) may
-call `parent.postMessage({type: 'fishball-connector:open-settings'}, location.origin)`
-(`BROWSER_MESSAGE`). The opener accepts it only from its own iframe and from the same origin, and
-then opens the connector's Plugins card (where its limits form is). No other message is accepted.
+The contract has **no browser message** (design D27). The connector frames `ui.chat` and
+`ui.settings` in its own view and exchanges no `postMessage` with them. It installs no `message`
+listener and acts on no message from the frame, of any shape. The frame around the page is the
+connector's own: it shows the instance's `status()` and the connector's unread count, and its own
+**Connector settings** button opens DSH's form of `fishball-connector`. An instance's page needs
+no message to reach it, and should not draw its own status or connector controls (§1.2).
+
+`BROWSER_MESSAGE` (`{keys: ['type'], openSettings: 'fishball-connector:open-settings'}`) is still
+exported, unchanged, because contract names are frozen (§2) and a 1.0 importer must still find it.
+It is unused: posting it does nothing, and the connector never reads it. It will be removed only in
+a major 2.
 
 ## 2. Versions
 
@@ -564,7 +571,8 @@ Everything the `./contract` module exports (`packages/connector/contract/contrac
 unchanged from `packages/connector/contract/index.js`):
 
 - binding: `CONNECTOR_SERVICE`, `CONNECTOR_SERVICE_API`, `CONNECTOR_CONTRACT`, `ATTACH_ERROR`,
-  `TRANSPORT_METHODS`, `BROWSER_MESSAGE`, `UI_LANG` (1.1), `validateAttachment`, `negotiateContract`;
+  `TRANSPORT_METHODS`, `BROWSER_MESSAGE` (unused, kept as a frozen name, §1.4), `UI_LANG` (1.1),
+  `validateAttachment`, `negotiateContract`;
 - frames: `ENVELOPE`, `SIDE`, `DIRECTION`, `OPERATION`, `OPERATIONS` (direction and scope per
   operation), `EVENT`, `EVENTS`, `EVENT_DIRECTION`, `VALIDATORS`, `validateRequest`,
   `validateResponse`, `validateEvent`, `validateEnvelope`, `makeEnvelope`, `encodeEnvelope`,
