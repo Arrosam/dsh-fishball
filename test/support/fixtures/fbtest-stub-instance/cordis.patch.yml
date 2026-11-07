@@ -1,0 +1,5 @@
+# H-STUB (docs/test-design/connector.md): a fake instance. It inserts only its own row and edits no other.
+- insert:
+    - id: fbtest-stub-instance
+      name: 'fbtest-stub-instance'
+      config: {}
