@@ -15,20 +15,21 @@
  * | LRR-02  | BVA (maxBytes 2048 / 3072 / 12288; 4 messages of exactly 1024 bytes with 300-character labels) | contract §4.1 | the newest 2 / 3 / all 4: labels are not counted |
  * | LRR-03  | BVA (maxBytes 2047; the same 4 messages) | contract §4.1 | at most 2047 bytes of text; the newest whole with its label |
  * | LRR-04  | BVA (maxBytes 2048; one 5000-byte message from another session) | contract §4.1 | one entry, label kept, a prefix ending with an ellipsis, at most 2048 bytes |
- * | LRR-05  | ST + BVA (readSessionMessages 3 → 12, request 12) | DESIGN §16; conn-OQ-20 (Reading) | at most 3 messages while the setting is 3 (the newest, labels intact); the newest 12 again after it is back at 12, no restart |
- * | LRR-06  | BVA (readSessionBytes 2048, request 12288; the 4 messages of LRR-02) | DESIGN §16; conn-OQ-20 (Reading) | the newest 2 (2048 bytes of text); all 4 again at 12288 |
+ * | LRR-05  | ST + BVA (readSessionMessages 3 → 12, request 12) | DESIGN §16; conn-OQ-20; user decision 2026-11-07 | while the setting is 3: either an error frame with a contract code (blocked), or a response of at most 3 messages, the newest with labels intact, with `truncated: true` (cut, with its reason); the newest 12 again after it is back at 12, no restart |
+ * | LRR-06  | BVA (readSessionBytes 2048, request 12288; the 4 messages of LRR-02) | DESIGN §16; conn-OQ-20; user decision 2026-11-07 | while the setting is 2048: an error code, or the newest 2 (2048 bytes of text) with `truncated: true`; all 4 again at 12288 |
  *
- * Reading: conn-OQ-20 keeps readSessionMessages/readSessionBytes in the connector because connector code reads
- * them, and DESIGN §16 says they bound what read_session returns; contract §4.1's request bounds can only cut
- * further. So the effective bound of a session.read is the smaller of the request's and the setting's.
+ * The settings' cap (user decision, 2026-11-07): the connector MUST enforce readSessionMessages and
+ * readSessionBytes on every session.read, whatever bounds the request names (they can only cut further), and a
+ * read the cap blocks or cuts must tell the instance why: an error frame with its code, or `truncated: true`
+ * (contract §4.1's own reason for a cut reply). A cut reply that says nothing is a failure.
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ROLE } from 'fishball-connector/contract'
+import { ENVELOPE, ERROR, ROLE } from 'fishball-connector/contract'
 import { ELLIPSIS, LIMITS_R11 } from './support/constants.mjs'
 import { HOOK, T } from './support/expect.mjs'
 import { bootStub, stopStub } from './support/instance-stub.mjs'
-import { MSGF, blankManaged, bytes, expectedAuthor, fishballId, inject, notice, padded, readOk, relay, roleOf, setLimit, textBytes, tok } from './support/instance-stub-messaging.mjs'
+import { MSGF, blankManaged, bytes, expectedAuthor, fishballId, inject, notice, padded, readOk, readSession, relay, roleOf, setLimit, textBytes, tok } from './support/instance-stub-messaging.mjs'
 
 const DEFAULT = { maxMessages: LIMITS_R11.readSessionMessages.default, maxBytes: LIMITS_R11.readSessionBytes.default }
 const SIZE = 1024
@@ -102,23 +103,39 @@ describe('session.read bounds with labelled messages', () => {
     assert.ok(bytes(m.text) <= maxBytes, 'bytes ' + bytes(m.text))
   })
 
-  it('LRR-05 readSessionMessages caps every read, and a change applies to the next read', T, async () => {
+  /**
+   * One read while a setting caps it: blocked (an error frame naming its code) or cut to `rows` with
+   * `truncated: true`. Either way the instance is told why (the user's decision); silence fails.
+   */
+  async function assertCapped(sessionId, rows, label) {
+    const r = await readSession(stub, sessionId, DEFAULT)
+    if (r.type === ENVELOPE.type.error) {
+      assert.ok(Object.values(ERROR).includes(r.payload?.code), label + ': a blocked read names a contract code, got ' + JSON.stringify(r.payload))
+      return
+    }
+    assert.equal(r.type, ENVELOPE.type.response, label + ': session.read answered ' + JSON.stringify(r))
+    const wanted = rows.map(labelOf(fb))
+    assert.deepEqual(labelsOfRead(r.payload.messages, wanted), wanted, label + ': the reply holds what the setting allows')
+    assert.equal(r.payload.truncated, true, label + ': a reply the setting cut reports truncated')
+  }
+
+  it('LRR-05 readSessionMessages caps every read with a reason, and a change applies to the next read', T, async () => {
     const rows = fifteen()
     const sessionId = await holding('lrr-05', rows)
     const CAP = 3
     await setLimit(host, { readSessionMessages: CAP })
     try {
-      await assertRead(sessionId, DEFAULT, rows.slice(-CAP), 'readSessionMessages ' + CAP + ' with a request for ' + DEFAULT.maxMessages)
+      await assertCapped(sessionId, rows.slice(-CAP), 'readSessionMessages ' + CAP + ' with a request for ' + DEFAULT.maxMessages)
     } finally { await setLimit(host, { readSessionMessages: DEFAULT.maxMessages }) }
     await assertRead(sessionId, DEFAULT, rows.slice(-DEFAULT.maxMessages), 'back to the default')
   })
 
-  it('LRR-06 readSessionBytes caps every read: 2048 keeps the newest 2 of 1024, the default all 4', T, async () => {
+  it('LRR-06 readSessionBytes caps every read with a reason: 2048 keeps the newest 2 of 1024, the default all 4', T, async () => {
     const rows = four()
     const sessionId = await holding('lrr-06', rows)
     await setLimit(host, { readSessionBytes: 2 * SIZE })
     try {
-      await assertRead(sessionId, DEFAULT, rows.slice(-2), 'readSessionBytes ' + 2 * SIZE + ' with a request for ' + DEFAULT.maxBytes)
+      await assertCapped(sessionId, rows.slice(-2), 'readSessionBytes ' + 2 * SIZE + ' with a request for ' + DEFAULT.maxBytes)
     } finally { await setLimit(host, { readSessionBytes: DEFAULT.maxBytes }) }
     await assertRead(sessionId, DEFAULT, rows, 'back to the default')
   })
