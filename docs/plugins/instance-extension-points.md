@@ -553,6 +553,8 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 
 ### 5.4 A-lite page tasks (U10–U12, §11)
 
+**W0 task → test files:** see §5.6 below for the package-owned K1, X0-C, FN-1, WD-1 and B1 gates. This keeps the existing page-task table unchanged.
+
 | Task | Owns | Depends | Done when |
 | --- | --- | --- | --- |
 | **SP-PG** pre-start spike (W1 prerequisite) | `spikes/instance-ext/page/*`, `docs/spikes/instance-ext-page.md` | — | yes or no on both versions for: (1) DSH's shell through the connector's embed path: `__DSH_BOOT__`, `<base href="./">`, combos, `api/remote.mux`, the token-to-cookie exchange, and the CSP the broker sets (today `frame-ancestors 'self'; default-src 'self'…` at `host/embed.js:75`; DSH's index injects inline `<script>` rows, `dsh-host-webserver/lib/index.js:69-97`, so the broker's CSP must change); (2) a `dsh.client` overlay row from the snapshot is served (`resolveMeta`); (3) Q-F rail options; (4) the navigation guard bounces `openSession` and `selectPanel`; (5) where the child's shortcut document lives and that `null` unbinds `session.new` and `session.search`; (6) any pre-create hook for sessions (Q-G); (7) the Settings sandbox field under the read-only overlay; (8) a third-party `plugins.tab` entry gets the install face (§11.9); (9) the Remove button can be targeted per plugin without hashed classes (§11.10) |
@@ -651,6 +653,31 @@ lines.
 | PG-1, PANELS, SET | `child-web/fishball-page/` | PG-1 first; PANELS and SET add files only |
 | X0-B, RP | `src/native-runtime/constants.js` (`bundledPlugins`) | X0-B first; RP appends one entry |
 | WD-11, WD-13 | the coupling interface | shared stub, as watchdog §14 |
+
+### 5.6 W0 test files (definition of done per task)
+
+The tests are black-box and live outside `test/run.mjs`'s `test/*.test.mjs` glob, so the existing
+suite stays green and each task is selected by file. The full case table, the technique counts and
+the open questions are in `docs/test-design/instance-ext-w0.md`. The developer's check command is
+`node --test <file>` with `FBTEST_DSH_RUNTIME` naming the installed 0.2.2-rc.1 runtime.
+
+| Wave/task | Gating test file | Covers |
+| --- | --- | --- |
+| **W0 K1** | `packages/connector/test/instance-ext/k1.test.mjs` | contract 1.2 `instance.attention`, `LIMITS.unreadMax`, mixed peers, the host bridge and `state.unread` |
+| **W0 X0-C** | `packages/instance/test/instance-ext/x0-c.test.mjs` | X1, X2, X10, X11, durable dedupe/cap, typed stub refusal, disabled send paths and ordered array delivery (§12.5); no X3 (U15) |
+| **W0 FN-1** | `packages/fold-notify/test/instance-ext/fn-1.test.mjs` | package, row, config bounds, fixed constants |
+| **W0 WD-1** | `packages/watchdog/test/instance-ext/wd-1.test.mjs` | package, row, remaining config bounds; no approval timers/window-sum (U14), token-saving helper (U16), no `enabled` field (U7) |
+| **W0 B1** | `packages/board/test/instance-ext/b1.test.mjs` | package, row, config and public constants without a visibility-key assumption; load compatibility; U19 visibility/search/clear/export journeys are owned TODOs |
+| W1 X0-I | `test/instance-ext/x0-i.test.mjs` | X9 |
+| W1 X0-G | `test/instance-ext/x0-g.test.mjs` | X13 |
+| W1 X0-A | `test/instance-ext/x0-a.test.mjs` | X15 server half (claims and routing; tag/card are PANELS) |
+| W1 X0-S | `test/instance-ext/x0-s.test.mjs` | X14, X16, X19 (U7 gate source, U8 claims, §2.6) |
+| W1 X0-W | `test/instance-ext/x0-w.test.mjs` | X12, X8 (X8 also needs K1) |
+| W2 X0-B | `test/instance-ext/x0-b.test.mjs` | X17, X18, §2.2 start-up rules |
+
+~~X0-U~~ is withdrawn (U10); its test file is retired with it. The page cases move to PG-1's
+browser tests. K1's `state.unread` end-to-end case uses the existing H-STUB harness (one real DSH
+boot) and stays under `/private/tmp` (the W0 rule).
 
 ## 6. Test-design outline per task (black-box, for the tester)
 
