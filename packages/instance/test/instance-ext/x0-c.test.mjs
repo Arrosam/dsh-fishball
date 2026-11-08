@@ -28,7 +28,7 @@ function append(h, type, data) {
 }
 
 describe('X0-C service surface (X1–X16 stub contract)', () => {
-  it('XC-EP-V-01 the app row provides fishballInstance apiVersion 1 with every member', async (t) => {
+  it('XC-EP-V-01 Samuel continues work with Fishball plugin updates — W0: the app row provides fishballInstance apiVersion 1 with every member', async (t) => {
     const h = await bootChild(t)
     const service = h.requireInstance()
     assert.equal(service.apiVersion, 1)
@@ -37,7 +37,7 @@ describe('X0-C service surface (X1–X16 stub contract)', () => {
     }
   })
 
-  it('XC-EP-V-02 a registration returns dispose, and a second dispose is a no-op', async (t) => {
+  it('XC-EP-V-02 Samuel continues work with Fishball plugin updates — W0: a registration returns dispose, and a second dispose is a no-op', async (t) => {
     const { h, service } = await live(t)
     const dispose = service.manager.registerSetup(MANAGER, () => {})
     assert.equal(typeof dispose, 'function', 'X2 registerSetup must return dispose')
@@ -47,7 +47,7 @@ describe('X0-C service surface (X1–X16 stub contract)', () => {
   })
 
 
-  it('XC-EP-01 fishballChat stays internal: the plugin-facing service is fishballInstance', async (t) => {
+  it('XC-EP-01 Samuel continues work with Fishball plugin updates — W0: fishballChat stays internal: the plugin-facing service is fishballInstance', async (t) => {
     const h = await bootChild(t)
     assert.equal(h.ctx.get('fishballChat') !== undefined, true, 'the app row keeps its internal port')
     assert.equal(typeof h.requireInstance, 'function')
@@ -56,7 +56,7 @@ describe('X0-C service surface (X1–X16 stub contract)', () => {
     assert.equal(h.requireInstance().chat === h.ctx.get('fishballChat'), false, 'the service must not expose fishballChat itself')
   })
 
-  it('XC-EP-02 X1 reports the manager Session id, not another agent id', async (t) => {
+  it('XC-EP-02 Samuel continues work with Fishball plugin updates — W0: X1 reports the manager Session id, not another agent id', async (t) => {
     const { h, service } = await live(t)
     const managerId = h.manager().id
     assert.equal(service.manager.sessionId(), managerId)
@@ -66,7 +66,7 @@ describe('X0-C service surface (X1–X16 stub contract)', () => {
 })
 
 describe('X0-C X2 manager.registerSetup', () => {
-  it('XC-UC-01-M create: a registration made before the live Session is applied after the persona, in order', async (t) => {
+  it('XC-UC-01-M Samuel continues work with Fishball plugin updates — W0: create: a registration made before the live Session is applied after the persona, in order', async (t) => {
     const h = await bootChild(t, { activate: false })
     const service = h.requireInstance()
     service.manager.registerSetup(MANAGER, (agentCtx) => {
@@ -83,7 +83,7 @@ describe('X0-C X2 manager.registerSetup', () => {
     assert.deepEqual(ctx.order.slice(-2), ['fold-section', 'board-section'], 'both registrations run after the persona in registration order')
   })
 
-  it('XC-UC-01-A1 resume: the same registration is applied again on agents.resume', async (t) => {
+  it('XC-UC-01-A1 Samuel continues work with Fishball plugin updates — W0: resume: the same registration is applied again on agents.resume', async (t) => {
     const h = await bootChild(t, { activate: false })
     const service = h.requireInstance()
     service.manager.registerSetup(MANAGER, (agentCtx) => {
@@ -97,7 +97,7 @@ describe('X0-C X2 manager.registerSetup', () => {
     assert.ok(h.agentCtxs()[1].ctx.tools.names().includes('fold_resume'), 'the registration ran on resume')
   })
 
-  it('XC-UC-01-A2 live: a registration made while the agent is live is applied at once', async (t) => {
+  it('XC-UC-01-A2 Samuel continues work with Fishball plugin updates — W0: live: a registration made while the agent is live is applied at once', async (t) => {
     const { h, service } = await live(t)
     const { ctx } = h.agentCtxs()[0]
     assert.equal(ctx.tools.names().includes('fold_late'), false, 'precondition: not registered')
@@ -109,7 +109,7 @@ describe('X0-C X2 manager.registerSetup', () => {
     assert.ok(ctx.sections.has('fold-late-section'))
   })
 
-  it('XC-UC-01-E1 a throwing registration is logged and skipped; a later one still applies', async (t) => {
+  it('XC-UC-01-E1 Samuel continues work with Fishball plugin updates — W0: a throwing registration is logged and skipped; a later one still applies', async (t) => {
     const h = await bootChild(t, { activate: false })
     const service = h.requireInstance()
     service.manager.registerSetup(MANAGER, () => { throw new Error('setup boom') })
@@ -125,7 +125,7 @@ describe('X0-C X2 manager.registerSetup', () => {
     assert.equal(warningCount(), 1, 'the same plugin/point failure is not logged again on resume')
   })
 
-  it('XC-ST-01 registered → applied → disposed → registered again', async (t) => {
+  it('XC-ST-01 Samuel continues work with Fishball plugin updates — W0: registered → applied → disposed → registered again', async (t) => {
     const { h, service } = await live(t)
     const dispose = service.manager.registerSetup(MANAGER, (agentCtx) => {
       agentCtx.tools.register({ name: 'fold_toggle', description: 'toggle' })
@@ -143,7 +143,7 @@ describe('X0-C X2 manager.registerSetup', () => {
     again()
   })
 
-  it('XC-UC-01-A3 registration is immediately visible on a fixture manager marked running', async (t) => {
+  it('XC-UC-01-A3 Samuel continues work with Fishball plugin updates — W0: registration is immediately visible on a fixture manager marked running', async (t) => {
     const { h, service } = await live(t)
     const { ctx } = h.agentCtxs()[0]
     h.manager().status = 'running'
@@ -158,7 +158,7 @@ describe('X0-C X3 chat.registerRecordProjector', () => {
   const TYPE = 'plugin:fishball-fold-notify/notice'
 
 
-  it('XC-EP-V-06 a type in the plugin\'s own prefix is accepted; dispose removes the registration', async (t) => {
+  it('XC-EP-V-06 Samuel continues work with Fishball plugin updates — W0: a type in the plugin\'s own prefix is accepted; dispose removes the registration', async (t) => {
     const { service } = await live(t)
     const dispose = service.chat.registerRecordProjector(MANAGER, 'plugin:fishball-fold-notify/notice', () => undefined)
     assert.equal(typeof dispose, 'function', 'X3 keeps only the record-type rule (U10)')
@@ -166,7 +166,7 @@ describe('X0-C X3 chat.registerRecordProjector', () => {
     dispose()
   })
 
-  it('XC-EP-03 a type with a foreign plugin prefix is refused', async (t) => {
+  it('XC-EP-03 Samuel continues work with Fishball plugin updates — W0: a type with a foreign plugin prefix is refused', async (t) => {
     const { service } = await live(t)
     let refused
     try {
@@ -194,7 +194,7 @@ describe('X0-C X10 manager.notify', () => {
     ...overrides,
   })
 
-  it('XC-UC-02-M wake:true is one notice turn with the plugin source', async (t) => {
+  it('XC-UC-02-M Samuel continues work with Fishball plugin updates — W0: wake:true is one notice turn with the plugin source', async (t) => {
     const { h, service } = await live(t)
     const result = await notify(service)
     assert.equal(result.status ?? result, 'queued')
@@ -205,7 +205,7 @@ describe('X0-C X10 manager.notify', () => {
     assert.equal(h.manager().followups.length, 1)
   })
 
-  it('XC-UC-02-A1 wake:false is held and joins the next turn', async (t) => {
+  it('XC-UC-02-A1 Samuel continues work with Fishball plugin updates — W0: wake:false is held and joins the next turn', async (t) => {
     const { h, service } = await live(t)
     const result = await notify(service, { wake: false, text: 'held notice' })
     assert.equal(result.status ?? result, 'held')
@@ -215,7 +215,7 @@ describe('X0-C X10 manager.notify', () => {
     assert.match(queued, /held notice/, 'the held notice is in the next turn')
   })
 
-  it('XC-UC-02-E1 a duplicate dedupeKey is answered duplicate and starts no second turn', async (t) => {
+  it('XC-UC-02-E1 Samuel continues work with Fishball plugin updates — W0: a duplicate dedupeKey is answered duplicate and starts no second turn', async (t) => {
     const { h, service } = await live(t)
     const first = await notify(service, { dedupeKey: 'same-key' })
     const second = await notify(service, { dedupeKey: 'same-key', text: 'again' })
@@ -228,7 +228,7 @@ describe('X0-C X10 manager.notify', () => {
   // One independent flow per manager state; share the actor action and acceptance checks.
   for (const state of ['idle', 'running']) {
     const flowId = state === 'idle' ? 'XC-UC-02-A2' : 'XC-UC-02-A3'
-    it(`${flowId} X10 wake:true queues while manager is ${state}`, async (t) => {
+    it(`${flowId} Samuel gets one Fishball update — W0 fixture: X10 wake:true queues while manager is ${state}`, async (t) => {
       const { h, service } = await live(t)
       h.manager().status = state
       const result = await notify(service, { dedupeKey: state })
@@ -250,7 +250,7 @@ describe('X0-C X11 manager.userTexts', () => {
     append(h, 'user/message', other('g1', 'an agent relay', { kind: 'agent-message', form: 'relay' }))
   }
 
-  it('XC-EP-V-05 userTexts returns only user-written texts, newest first', async (t) => {
+  it('XC-EP-V-05 Samuel continues work with Fishball plugin updates — W0: userTexts returns only user-written texts, newest first', async (t) => {
     const { h, service } = await live(t)
     logMessages(h)
     const texts = service.manager.userTexts({ limit: 10, maxChars: 100 })
@@ -258,7 +258,7 @@ describe('X0-C X11 manager.userTexts', () => {
     assert.ok(texts.every((item) => Number.isFinite(item.at)))
   })
 
-  it('XC-BVA-02 limit 0, 1, available count 3 and count+1', async (t) => {
+  it('XC-BVA-02 Samuel continues work with Fishball plugin updates — W0: limit 0, 1, available count 3 and count+1', async (t) => {
     const { h, service } = await live(t)
     logMessages(h)
     assert.deepEqual(service.manager.userTexts({ limit: 0, maxChars: 100 }), [])
@@ -267,7 +267,7 @@ describe('X0-C X11 manager.userTexts', () => {
     assert.equal(service.manager.userTexts({ limit: 4, maxChars: 100 }).length, 3, 'a larger limit returns what exists')
   })
 
-  it('XC-BVA-03 maxChars cuts at a surrogate pair without a lone surrogate', async (t) => {
+  it('XC-BVA-03 Samuel continues work with Fishball plugin updates — W0: maxChars cuts at a surrogate pair without a lone surrogate', async (t) => {
     const { h, service } = await live(t)
     append(h, 'user/message', userMessage('pair', 'ab😀cd'))
     const [item] = service.manager.userTexts({ limit: 1, maxChars: 3 })
@@ -276,5 +276,5 @@ describe('X0-C X11 manager.userTexts', () => {
   })
 })
 
-it.todo('XC-UC-01-A4 [owner: X-E2E] register during a real model turn, offer on next request, dispose and omit on following request')
-it.todo('XC-UC-02-E2 [owner: X-E2E] restart the child and retry a durable dedupeKey without a second notice turn')
+it.todo('XC-UC-01-A4 Samuel continues work with Fishball plugin updates — deferred: [owner: X-E2E] register during a real model turn, offer on next request, dispose and omit on following request')
+it.todo('XC-UC-02-E2 Samuel continues work with Fishball plugin updates — deferred: [owner: X-E2E] restart the child and retry a durable dedupeKey without a second notice turn')

@@ -32,22 +32,22 @@ function requestFrame(payload, { operation = ATTENTION, sessionId = null, reques
 }
 
 describe('K1 contract 1.2 (§3)', () => {
-  it('K1-EP-V-01 the connector contract is still major 1, now minor 2', () => {
+  it('K1-EP-V-01 Samuel returns without stale Fishball alerts — W0: the connector contract is still major 1, now minor 2', () => {
     assert.equal(CONNECTOR_CONTRACT.id, 'fishball-connector')
     assert.equal(CONNECTOR_CONTRACT.major, 1)
     assert.equal(CONNECTOR_CONTRACT.minor, 2)
   })
 
-  it('K1-EP-V-02 LIMITS.unreadMax is 9999', () => {
+  it('K1-EP-V-02 Samuel returns without stale Fishball alerts — W0: LIMITS.unreadMax is 9999', () => {
     assert.equal(LIMITS.unreadMax, 9999)
   })
 
-  it('K1-EP-V-03 instance.attention exists, is child→main and is not session-scoped', () => {
+  it('K1-EP-V-03 Samuel returns without stale Fishball alerts — W0: instance.attention exists, is child→main and is not session-scoped', () => {
     assert.equal(OPERATION.instanceAttention, ATTENTION)
     assert.deepEqual(contract.OPERATIONS[ATTENTION], { direction: 'child-to-main', sessionScoped: false })
   })
 
-  it('K1-EP-V-04 a valid attention request and its accepted response validate and round-trip', () => {
+  it('K1-EP-V-04 Samuel returns without stale Fishball alerts — W0: a valid attention request and its accepted response validate and round-trip', () => {
     assert.doesNotThrow(() => validateRequest(ATTENTION, VALID))
     assert.doesNotThrow(() => validateResponse(ATTENTION, { accepted: true }))
     const encoded = encodeEnvelope(requestFrame(VALID), 'host-k1')
@@ -55,7 +55,7 @@ describe('K1 contract 1.2 (§3)', () => {
     assert.deepEqual(decoded.payload, VALID)
   })
 
-  it('K1-EP-01 a malformed attention payload is refused', () => {
+  it('K1-EP-01 Samuel returns without stale Fishball alerts — W0: a malformed attention payload is refused', () => {
     assert.equal(OPERATION.instanceAttention, ATTENTION, 'the operation exists first')
     const malformed = [
       {},
@@ -70,7 +70,7 @@ describe('K1 contract 1.2 (§3)', () => {
     for (const payload of malformed) assert.throws(() => validateRequest(ATTENTION, payload), JSON.stringify(payload))
   })
 
-  it('K1-BVA-01 unread −1, 0, 1, 9999 and 10000', () => {
+  it('K1-BVA-01 Samuel returns without stale Fishball alerts — W0: unread −1, 0, 1, 9999 and 10000', () => {
     for (const unread of [0, 1, 9999]) {
       assert.doesNotThrow(() => validateRequest(ATTENTION, { unread, importantUnread: 0, latestAt: null }), 'unread ' + unread)
     }
@@ -79,27 +79,27 @@ describe('K1 contract 1.2 (§3)', () => {
     }
   })
 
-  it('K1-BVA-02 importantUnread 0, = unread, unread+1 and −1', () => {
+  it('K1-BVA-02 Samuel returns without stale Fishball alerts — W0: importantUnread 0, = unread, unread+1 and −1', () => {
     assert.doesNotThrow(() => validateRequest(ATTENTION, { unread: 5, importantUnread: 0, latestAt: null }))
     assert.doesNotThrow(() => validateRequest(ATTENTION, { unread: 5, importantUnread: 5, latestAt: null }))
     assert.throws(() => validateRequest(ATTENTION, { unread: 5, importantUnread: 6, latestAt: null }))
     assert.throws(() => validateRequest(ATTENTION, { unread: 5, importantUnread: -1, latestAt: null }))
   })
 
-  it('K1-BVA-03 latestAt is null, 0 or an epoch-ms integer; a float is refused', () => {
+  it('K1-BVA-03 Samuel returns without stale Fishball alerts — W0: latestAt is null, 0 or an epoch-ms integer; a float is refused', () => {
     assert.doesNotThrow(() => validateRequest(ATTENTION, { unread: 1, importantUnread: 0, latestAt: null }))
     assert.doesNotThrow(() => validateRequest(ATTENTION, { unread: 1, importantUnread: 0, latestAt: 0 }))
     assert.doesNotThrow(() => validateRequest(ATTENTION, { unread: 1, importantUnread: 0, latestAt: 1_700_000_000_123 }))
     assert.throws(() => validateRequest(ATTENTION, { unread: 1, importantUnread: 0, latestAt: 1.5 }))
   })
 
-  it('K1-DT-01 a 1.1 instance still attaches; the common minor is the lower one', () => {
+  it('K1-DT-01 Samuel returns without stale Fishball alerts — W0: contract negotiation accepts minor 1 or 2 at their common minor; incompatible major is refused', () => {
     assert.deepEqual(negotiateContract({ id: 'fishball-connector', major: 1, minor: 1 }), { id: 'fishball-connector', major: 1, minor: 1 })
     assert.deepEqual(negotiateContract({ id: 'fishball-connector', major: 1, minor: 2 }), { id: 'fishball-connector', major: 1, minor: 2 })
     assert.throws(() => negotiateContract({ id: 'fishball-connector', major: 2, minor: 2 }))
   })
 
-  it('K1-EP-02 attention is an added capability, never one the connector requires', () => {
+  it('K1-EP-02 Samuel returns without stale Fishball alerts — W0: attention is an added capability, never one the connector requires', () => {
     assert.equal(OPERATION.instanceAttention, ATTENTION, 'the operation exists first')
     const served = [OPERATION.inboxPush]
     assert.doesNotThrow(() => checkHandshake({ capabilities: [OPERATION.inboxPush, ATTENTION], requiredCapabilities: [] }, served))
@@ -133,7 +133,7 @@ describe('K1 host bridge serves instance.attention', () => {
     }
   }
 
-  it('K1-EP-V-05 the host advertises the operation and answers a valid frame accepted', async () => {
+  it('K1-EP-V-05 Samuel returns without stale Fishball alerts — W0: the host advertises the operation and answers a valid frame accepted', async () => {
     const { createBridgeHost } = await loadConnector('src/slim/host/bridge.js')
     const host = createBridgeHost({ hostId: 'host-k1', sessions: SESSIONS })
     assert.ok(host.capabilities.includes(ATTENTION), 'the welcome lists instance.attention')
@@ -150,7 +150,7 @@ describe('K1 host bridge serves instance.attention', () => {
     host.close()
   })
 
-  it('K1-UC-01-E1 an invalid attention frame is an error and the connection remains usable for the next valid one', async () => {
+  it('K1-UC-01-E1 Samuel returns without stale Fishball alerts — W0: an invalid attention frame is an error and the connection remains usable for the next valid one', async () => {
     const { createBridgeHost } = await loadConnector('src/slim/host/bridge.js')
     const host = createBridgeHost({ hostId: 'host-k1', sessions: SESSIONS })
     const child = childTransport()
@@ -172,7 +172,7 @@ describe('K1 connector state.unread (H-STUB, real DSH boot)', () => {
     process.env.TMPDIR = process.env.FBTEST_STUB_TMP ?? '/private/tmp'
   })
 
-  it('K1-UC-01-M unread report → detach/reset → reconnect → report', async (t) => {
+  it('K1-UC-01-M Samuel returns without stale Fishball alerts — W0: unread report → detach/reset → reconnect → report', async (t) => {
     const { bootStub, stopStub } = await import('../../../../test/support/instance-stub.mjs')
     const booted = await bootStub('k1-unread')
     t.after(() => stopStub(booted))
@@ -201,7 +201,7 @@ describe('K1 connector state.unread (H-STUB, real DSH boot)', () => {
     assert.deepEqual((await host.state()).unread, { count: 7, important: true }, 'the child reports the current value again')
   })
 
-  it('K1-UC-01-A1 transport disconnect clears the last report', async (t) => {
+  it('K1-UC-01-A1 Samuel returns without stale Fishball alerts — W0: transport disconnect clears the last report', async (t) => {
     const { bootStub, stopStub } = await import('../../../../test/support/instance-stub.mjs')
     const booted = await bootStub('k1-disconnect')
     t.after(() => stopStub(booted))
@@ -213,7 +213,7 @@ describe('K1 connector state.unread (H-STUB, real DSH boot)', () => {
   })
 })
 
-it('K1-UC-01-E2 a 1.1 child attaches without attention and can list related sessions', async (t) => {
+it('K1-UC-01-E2 Samuel returns without stale Fishball alerts — W0: a 1.1 child attaches without attention and can list related sessions', async (t) => {
   const { bootStub, stopStub } = await import('../../../../test/support/instance-stub.mjs')
   const booted = await bootStub('k1-legacy', { attach: false })
   t.after(() => stopStub(booted))

@@ -258,9 +258,9 @@ Additional flow entries are enumerated in the linked Use Case ledgers (§9): K1-
 
 Primary technique is counted once per test entry. Use Case counts mean **flows**, not Use Case definitions, and include explicitly owned TODOs. The existing blocked/skipped WD1-BVA-02 is excluded from this table (78 W0 test entries including that block).
 
-W0 has **12 Use Case definitions**, **42 Use Case flows** = **29 executable + 13 TODO**. Together with 35 other executable cases, W0 has **64 executable cases + 13 TODO + 1 blocked/skipped**. Execution means an assertion body exists, not that it passes.
+W0 has **5 story-level Use Cases containing 12 retained flow groups**, **42 Use Case flows** = **29 executable + 13 TODO**. Together with 35 other executable cases, W0 has **64 executable cases + 13 TODO + 1 blocked/skipped**. Execution means an assertion body exists, not that it passes.
 
-| Task | UC definitions | UC executable flows | UC TODO flows | Other executable cases | Blocked |
+| Task | Retained UC flow groups | UC executable flows | UC TODO flows | Other executable cases | Blocked |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | K1 | 1 | 4 | 0 | 11 | 0 |
 | X0-C | 2 | 10 | 2 | 10 | 0 |
@@ -329,4 +329,4 @@ Use Cases are design constraints, not retrospective descriptions of implementati
 - FN/WD/B loading Decision Tables retain present/absent service rules. Config × raw `apply` rejection is not invented; invalid settings are exercised through the public Config schema.
 - Later-wave non-UC case tables remain existing gate coverage only, not a claim that later tasks have no Use Cases. Their integrated flows can be constrained by the written W0 Use Cases and extended in their own test plans.
 
-The four pending ambiguity decisions (window-sum, X3 validation seam, prune-age key, remaining X0-C gaps) are unchanged.
+The four pending ambiguity decisions (window-sum, X3 validation seam, prune-age key, remaining X0-C gaps) are unchanged. [Detailed decision explanations](instance-ext-w0-decisions.md) give exact immutable-source references, everyday examples, option effects, work/risk and recommendations; they do not select an option.
