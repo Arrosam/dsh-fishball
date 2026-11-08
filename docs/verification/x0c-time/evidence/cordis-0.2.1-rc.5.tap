@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: FN1-CORDIS-UC-LOAD-M: actual activation/disposal with optional fishballInstance present
+ok 1 - FN1-CORDIS-UC-LOAD-M: actual activation/disposal with optional fishballInstance present
+  ---
+  duration_ms: 14.540583
+  type: 'test'
+  ...
+# Actual Cordis 4.0.5, installed DSH 0.2.1-rc.5; in-memory peripherals only; no real tools/agents host API.
+# Subtest: FN1-CORDIS-UC-LOAD-A: actual activation/disposal with optional fishballInstance absent
+ok 2 - FN1-CORDIS-UC-LOAD-A: actual activation/disposal with optional fishballInstance absent
+  ---
+  duration_ms: 1.094125
+  type: 'test'
+  ...
+# Actual Cordis 4.0.5, installed DSH 0.2.1-rc.5; in-memory peripherals only; no real tools/agents host API.
+# Subtest: FN1-CORDIS-DT-TOOLS-MISSING: public instance alone cannot pass the required tools gate
+ok 3 - FN1-CORDIS-DT-TOOLS-MISSING: public instance alone cannot pass the required tools gate
+  ---
+  duration_ms: 1.145708
+  type: 'test'
+  ...
+# Actual Cordis 4.0.5, installed DSH 0.2.1-rc.5; in-memory peripherals only; no real tools/agents host API.
+# Subtest: B1-CORDIS-UC-LOAD-M: actual activation/disposal with optional fishballInstance present
+ok 4 - B1-CORDIS-UC-LOAD-M: actual activation/disposal with optional fishballInstance present
+  ---
+  duration_ms: 0.957958
+  type: 'test'
+  ...
+# Actual Cordis 4.0.5, installed DSH 0.2.1-rc.5; in-memory peripherals only; no real tools/agents host API.
+# Subtest: B1-CORDIS-UC-LOAD-A: actual activation/disposal with optional fishballInstance absent
+ok 5 - B1-CORDIS-UC-LOAD-A: actual activation/disposal with optional fishballInstance absent
+  ---
+  duration_ms: 1.076292
+  type: 'test'
+  ...
+# Actual Cordis 4.0.5, installed DSH 0.2.1-rc.5; in-memory peripherals only; no real tools/agents host API.
+# Subtest: B1-CORDIS-DT-TOOLS-MISSING: public instance alone cannot pass the required tools gate
+ok 6 - B1-CORDIS-DT-TOOLS-MISSING: public instance alone cannot pass the required tools gate
+  ---
+  duration_ms: 0.611083
+  type: 'test'
+  ...
+# Actual Cordis 4.0.5, installed DSH 0.2.1-rc.5; in-memory peripherals only; no real tools/agents host API.
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 50.247542

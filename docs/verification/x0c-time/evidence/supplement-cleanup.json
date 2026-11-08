@@ -1,0 +1,371 @@
+{
+  "recordedAt": "2026-11-08T23:30:38.497Z",
+  "agent": "session-delegated-supplementary-runner",
+  "workingDirectory": "/Volumes/SSD1/GitHub/dsh-fishball/.agents/worktrees/verify-x0c-time",
+  "branch": "verify/x0c-time",
+  "head": "6d26ab71828241f0e7c7d329a718dec54f69cfcc",
+  "baseline": "fd0f46aa3315b0e09bf937307c5410651a80d2a1",
+  "fix": "00d4cd2319ed01a2ef6ad6a67522aee389f5cd9b",
+  "node": {
+    "version": "v24.22.2",
+    "invokedPath": "/opt/homebrew/bin/node",
+    "resolvedExecutable": "/opt/homebrew/Cellar/node@24/24.22.2_2/bin/node"
+  },
+  "authority": "docs/verification/w0-first/commands.md sections Actual installed Cordis framework and Actual installed Session API regression",
+  "executionScope": "Only unchanged test/verification/w0-host-session.test.mjs and test/verification/w0-cordis.test.mjs once each on both installed SDKs. No approved task suite, 44-regression suite, full runner, or additional tests run by this agent.",
+  "results": [
+    {
+      "kind": "host-session",
+      "sdk": "0.2.1-rc.5",
+      "jobId": "bash-7b609cdc10624483",
+      "state": "completed",
+      "collectedWithJobOutput": true,
+      "exitCode": 0,
+      "startedAt": "2026-11-08T23:26:16Z",
+      "finishedAt": "2026-11-08T23:26:17Z",
+      "counts": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "todo": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "topLevelScenarios": 1,
+      "childSubtests": 3,
+      "durationMs": 236.213167,
+      "tap": {
+        "file": "docs/verification/x0c-time/evidence/host-session-0.2.1-rc.5.tap",
+        "sha256": "48894da40b5292caa60fbece0142975acb87970b211a8862a2f9bef2ca606e80"
+      },
+      "exit": {
+        "file": "docs/verification/x0c-time/evidence/host-session-0.2.1-rc.5.exit",
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      }
+    },
+    {
+      "kind": "host-session",
+      "sdk": "0.2.2-rc.1",
+      "jobId": "bash-d9a8965a4f03433d",
+      "state": "completed",
+      "collectedWithJobOutput": true,
+      "exitCode": 0,
+      "startedAt": "2026-11-08T23:26:16Z",
+      "finishedAt": "2026-11-08T23:26:17Z",
+      "counts": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "todo": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "topLevelScenarios": 1,
+      "childSubtests": 3,
+      "durationMs": 235.683458,
+      "tap": {
+        "file": "docs/verification/x0c-time/evidence/host-session-0.2.2-rc.1.tap",
+        "sha256": "f42990fc2a425468ecf3d2281354656140a83e80ce307ef93bec87b1d33fdbb6"
+      },
+      "exit": {
+        "file": "docs/verification/x0c-time/evidence/host-session-0.2.2-rc.1.exit",
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      }
+    },
+    {
+      "kind": "cordis",
+      "sdk": "0.2.1-rc.5",
+      "jobId": "bash-e8a9bf81d5cb4a98",
+      "state": "completed",
+      "collectedWithJobOutput": true,
+      "exitCode": 0,
+      "startedAt": "2026-11-08T23:26:16Z",
+      "finishedAt": "2026-11-08T23:26:16Z",
+      "counts": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "todo": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "topLevelScenarios": 6,
+      "childSubtests": 0,
+      "durationMs": 50.247542,
+      "tap": {
+        "file": "docs/verification/x0c-time/evidence/cordis-0.2.1-rc.5.tap",
+        "sha256": "cb00555f0e003b4b4dc5ff08c6a2409dc693acc46f29fca7c09530f9e967beda"
+      },
+      "exit": {
+        "file": "docs/verification/x0c-time/evidence/cordis-0.2.1-rc.5.exit",
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      }
+    },
+    {
+      "kind": "cordis",
+      "sdk": "0.2.2-rc.1",
+      "jobId": "bash-28510ccd9cb64431",
+      "state": "completed",
+      "collectedWithJobOutput": true,
+      "exitCode": 0,
+      "startedAt": "2026-11-08T23:26:16Z",
+      "finishedAt": "2026-11-08T23:26:16Z",
+      "counts": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "todo": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "topLevelScenarios": 6,
+      "childSubtests": 0,
+      "durationMs": 50.283,
+      "tap": {
+        "file": "docs/verification/x0c-time/evidence/cordis-0.2.2-rc.1.tap",
+        "sha256": "8833c929d5814f4db43de14df1ca8c2cba0f2dc80a096e7f7518bb044517f7ed"
+      },
+      "exit": {
+        "file": "docs/verification/x0c-time/evidence/cordis-0.2.2-rc.1.exit",
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      }
+    }
+  ],
+  "timestampEvidence": {
+    "finiteAtPassedBothSdks": true,
+    "exactAtEqualsOriginatingEventTimePassedBothSdks": true,
+    "actualHostEventAtAliasAbsent": true,
+    "numericEventTimesPrinted": false,
+    "rationale": "Unchanged test asserts exact finite timestamp equality but does not print numeric event times. No new probe or test was added."
+  },
+  "sessionCoverage": [
+    "Detached installed Session.create and real append validation; empty Session then two user-authored messages then later non-user producer message carrying user role",
+    "Only source.kind=user text retained; newest-first order; source filtering before limits 1 and 2",
+    "Repeated reads unchanged; event snapshots/order/messages/sources, session seq, manager followups and caller options read-only",
+    "Finite at exactly equals originating actual host event.time for both quoted messages; host has no fabricated event.at alias"
+  ],
+  "cordisCoverage": [
+    "Real Context.plugin activation to ACTIVE for FN1 and B1 with required tools and optional fishballInstance present or absent",
+    "Missing required tools yields PENDING with no contribution",
+    "B1 missing-hooks warning exactly once only when optional service absent; disposal adds no duplicate",
+    "Child fibers DISPOSED; effects, plugin registry, services and in-memory registrations drained; no startup/disposal error"
+  ],
+  "safety": {
+    "priorSkillAndAgentesAndSafetyDocsRead": true,
+    "sessionEnvironment": {
+      "TMPDIR": "/private/tmp",
+      "FBTEST_DSH_RUNTIME": "Explicit selected installed runtime per SDK"
+    },
+    "sessionNodeArguments": [
+      "--test",
+      "--test-reporter=tap",
+      "test/verification/w0-host-session.test.mjs"
+    ],
+    "cordisEnvironment": {
+      "mode": "env -i",
+      "PATH": "/opt/homebrew/bin",
+      "HOME": "/private/tmp/fbtest-w0-cordis-no-home",
+      "TMPDIR": "/private/tmp",
+      "LANG": "C",
+      "FBTEST_DSH_RUNTIME": "Explicit selected installed runtime per SDK"
+    },
+    "cordisNodeArguments": [
+      "--permission",
+      "--allow-fs-read=$PWD",
+      "--allow-fs-read=$FBTEST_DSH_RUNTIME",
+      "--test",
+      "--test-isolation=none",
+      "--test-concurrency=1",
+      "--test-reporter=tap",
+      "test/verification/w0-cordis.test.mjs"
+    ],
+    "noAllowFsWriteChildProcessWorkerOrAddonPermission": true,
+    "cordisNetworkTripwire": {
+      "existingUnchanged": true,
+      "zeroAttemptedCommonEntryPointsAsserted": true,
+      "afterHookPassedBothSdks": true,
+      "osNetworkSandboxClaimed": false
+    },
+    "evidenceCreation": "All new evidence destinations prechecked absent; shell set -o noclobber enabled for TAP, exit, and this record. No prior evidence overwritten.",
+    "correctExistingConnectorSymlinkUntouched": true,
+    "noProductOrTestEdits": true,
+    "noCommits": true,
+    "noDshLaunchRestartInstallPushOrRemoteOperations": true,
+    "noNpmrcOrCredentialReadCopyBackup": true
+  },
+  "cleanup": {
+    "allFourOwnedJobsCompletedAndCollected": true,
+    "finalJobListRemainingRunningOwnedJobs": 0,
+    "finalTerminalListOwnedSessions": 0,
+    "noRemainingOwnedTestProcesses": true,
+    "noRemainingOwnedListenersFibersOrTemporaryHomes": true,
+    "evidenceBasis": {
+      "listeners": "Session row harness after hook closes HTTP listeners/effects; both owned Node test processes exited successfully. No separate listener process was launched.",
+      "fibers": "Cordis test after hooks explicitly assert provider DISPOSED, empty registry, removed fixture services, empty in-memory registrations and no disposal errors; both passed.",
+      "temporaryHomes": "Session guarded /private/tmp helper installs an awaited t.after recursive removal for each mkdtemp home; both test processes exited 0 without hook failure. Individual temp paths are not printed and shared temp directories were not scanned or swept."
+    },
+    "cordisSentinelHome": {
+      "path": "/private/tmp/fbtest-w0-cordis-no-home",
+      "existsAfterRuns": false
+    },
+    "osWideProcessCensus": "Not attempted; no OS-wide clean claim.",
+    "noUnrelatedProcessKilled": true
+  },
+  "baselineHashes": {
+    "source": "docs/verification/w0-first/evidence/final-source-runtime.json",
+    "sixFilesUnchanged": true,
+    "files": [
+      {
+        "file": "packages/instance/test/instance-ext/x0-c.test.mjs",
+        "baselineSha256": "ea3294dca281f52d53e8101d97cf6051a16ec13e5c774779ab3b4ec725779158",
+        "currentSha256": "ea3294dca281f52d53e8101d97cf6051a16ec13e5c774779ab3b4ec725779158",
+        "unchanged": true
+      },
+      {
+        "file": "packages/fold-notify/test/instance-ext/fn-1.test.mjs",
+        "baselineSha256": "a1c96d4ac2312265260c85cb824e8e5a9b5c16825758e1fbf3af23c9e1819464",
+        "currentSha256": "a1c96d4ac2312265260c85cb824e8e5a9b5c16825758e1fbf3af23c9e1819464",
+        "unchanged": true
+      },
+      {
+        "file": "packages/board/test/instance-ext/b1.test.mjs",
+        "baselineSha256": "c364a63ea00cfeca6bcb98330ade7e86a0938d9c92ca6ce086f7656bce6c3b0d",
+        "currentSha256": "c364a63ea00cfeca6bcb98330ade7e86a0938d9c92ca6ce086f7656bce6c3b0d",
+        "unchanged": true
+      },
+      {
+        "file": "test/support/instance-ext.mjs",
+        "baselineSha256": "8a732e3c59e1fd4418d4ed9930b0f508685a770e51927c47f230b95f531d2526",
+        "currentSha256": "8a732e3c59e1fd4418d4ed9930b0f508685a770e51927c47f230b95f531d2526",
+        "unchanged": true
+      },
+      {
+        "file": "test/verification/w0-cordis.test.mjs",
+        "baselineSha256": "ca4eb5e726da262c8b8585eaa66fdce7b8d64a24b3975ddf9d946caf5162b244",
+        "currentSha256": "ca4eb5e726da262c8b8585eaa66fdce7b8d64a24b3975ddf9d946caf5162b244",
+        "unchanged": true
+      },
+      {
+        "file": "test/verification/w0-host-session.test.mjs",
+        "baselineSha256": "4a7256fc9c61a78fef34cca027235d67496ba703cea7c45ff5cebdc5b31f3bb3",
+        "currentSha256": "4a7256fc9c61a78fef34cca027235d67496ba703cea7c45ff5cebdc5b31f3bb3",
+        "unchanged": true
+      }
+    ]
+  },
+  "supportHashes": [
+    {
+      "file": "test/support/contract-link.mjs",
+      "sha256": "9e453e2851a8a5666ae8fdb9bc9ec15b8691a536591f09e8981b30c5b637ece4"
+    },
+    {
+      "file": "test/support/temp-path.mjs",
+      "sha256": "e7046c9e425fdcf5919a3d41c9902056695af3213edb3f589c6024bdd53df945"
+    },
+    {
+      "file": "test/support/body-soul-env.mjs",
+      "sha256": "db02ce99fd04d0e952b961d23814afdbf2d2920841e67fb9187daf7cf4e0f4a2"
+    },
+    {
+      "file": "test/support/provider-sync-sdk.mjs",
+      "sha256": "d3085ce1cd2f9e4f550788b74bd90c80ca79cb2d0fcab72efbf61d049060c649"
+    },
+    {
+      "file": "test/support/provider-sync-official.mjs",
+      "sha256": "30a2a4103c9a60a35087fdda1c8eff3cc4674b93b909d6fe15c7fbc2e85c8a70"
+    },
+    {
+      "file": "test/fixtures/runtime-isolation-support.mjs",
+      "sha256": "06f783963bc3cffc4240d4a05722c48fa93274f8396de70e9136120a4007e517"
+    }
+  ],
+  "productHash": {
+    "file": "packages/instance/src/slim/child/extensions.js",
+    "sha256": "bcba6f07c6a46bba5d3ec623441d1318b744bc66e5f44952f2cf7c16da4b9268",
+    "currentProductAndTestDiffFromHeadEmpty": true
+  },
+  "preservedAncestorCorrections": [
+    "720e6808469d19b1973dcab5daaff93a29094672",
+    "c38b97e820aef460c7b656f4d7740dc0bd525de0",
+    "79274fc57c2f51614e8d5e8411746195327a0f2c"
+  ],
+  "installedRuntimeHashes": [
+    {
+      "sdk": "0.2.1-rc.5",
+      "runtime": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules",
+      "cordis": "4.0.5",
+      "files": [
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/dsh/package.json",
+          "sha256": "b10673ea6c4e20cc10da6ef20130b6ece3142cba8003b50e0d5ded25fc388b5b"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/cordis/package.json",
+          "sha256": "b73831b926b16cbd684aa1b277461e7800a2b35e2dd351ad3c2c8c0db158589d"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/cordis/lib/index.js",
+          "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/dsh-session/package.json",
+          "sha256": "c8355a542c9cd2be07746445ba49c54b0bba0baf195fd39f95632d9dc8b7fa41"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+          "sha256": "2f5dd07cb5c744a29abbb8003a8a4cefd9e582c6e2538074ca299a0ddd02a3bf"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/dsh-llm/package.json",
+          "sha256": "228ece44843bf5458292c7dda285599188dd6d6137ea032749a8374d2cc7954b"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+          "sha256": "d18d8ae4c8d961e628708c1e4698e09716a0ebb80e55a672e0bde1029bec1155"
+        }
+      ]
+    },
+    {
+      "sdk": "0.2.2-rc.1",
+      "runtime": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules",
+      "cordis": "4.1.0",
+      "files": [
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/dsh/package.json",
+          "sha256": "3e14837ceb3bbc0ba419ed08e9b5ba164338369b1268b93c3c25d89f7b1c9953"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/cordis/package.json",
+          "sha256": "70be1056619663339433309474b1e6a2307088097af3cb082afe4b5ca2021b26"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/cordis/lib/index.js",
+          "sha256": "627409afa06a265f7253200d3bc4648e88805c39fd3768568eb9b9518a31fe8f"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/dsh-session/package.json",
+          "sha256": "18ebb957b762d7e2423f6650f629ad7b67daa233384e58d4c1a5576b5d919f52"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/dsh-session/lib/index.js",
+          "sha256": "6fad466aa1f7aa64bfa038681ead5721f66c88e9891e25d357d2b8edbccd5494"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/dsh-llm/package.json",
+          "sha256": "d7ca17b59abc24e2d7ecd7f3db64fd2dbb1eac183c62a6004ae70333d62d8df3"
+        },
+        {
+          "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/dsh-llm/lib/index.js",
+          "sha256": "8e541fc98a11897706a122fde1db42f8b2a41b3b354ba3fcb932e9a16929ac6a"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Session is detached actual installed in-process API with fake agent/Cordis/transport surroundings and disposable local HTTP fixture, not launched DSH, file persistence, real Agent/model turn, durable queue or wake.",
+    "Session maxChars=100 exceeds all fixture texts; clipping is not exercised by this supplement.",
+    "Cordis is actual framework activation with in-memory peripherals, not DSH profile or bundle loader, real tools/agents, persistence, UI or wake.",
+    "No exactly-once real wake or complete X0-C acceptance is inferred. Supplements remain separate from approved 137 IDs; two SDK runs are not extra unique cases.",
+    "Cleanup evidence is owned job completion and passed cleanup hooks, not OS-wide process/filesystem census."
+  ]
+}

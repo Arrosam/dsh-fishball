@@ -1,0 +1,126 @@
+{
+  "audit": "Independent W0 approved-inventory dry-registration review",
+  "reviewer": "Independent requirements/evidence reviewer, separate from parent execution and supplementary test author",
+  "date": "2026-11-09 (Pacific/Auckland)",
+  "branch": "verify/x0c-time",
+  "auditedHead": "6d26ab71828241f0e7c7d329a718dec54f69cfcc",
+  "baseline": "fd0f46aa3315b0e09bf937307c5410651a80d2a1",
+  "fix": "00d4cd2319ed01a2ef6ad6a67522aee389f5cd9b",
+  "requirementsCommit": "15d6f1f214144db3575f9bc0ba15238b1450c2a7",
+  "approvedInventory": "docs/test-design/instance-ext-w0-inventory.json",
+  "selectedTasks": ["X0-C", "FN-1", "B1"],
+  "method": {
+    "classification": "Static dry registration; not execution of case callbacks or acceptance tests",
+    "runtime": "Node vm.runInNewContext, bounded to 1000 milliseconds per source file",
+    "procedure": [
+      "Read the approved machine inventory and select its X0-C, FN-1 and B1 entries.",
+      "Read each of the three task test sources and remove import declarations only in an in-memory copy.",
+      "Evaluate the in-memory source with describe invoking registration callbacks, it recording titles only, and it.todo recording deferred titles; never invoke a registered test body.",
+      "Provide inert PACKAGE.fold and PACKAGE.board values for top-level declarations; do not import test helpers, product modules or installed SDKs.",
+      "Derive each case ID from the first space-delimited token in its registered full title; compare ID sets, uniqueness, task ownership, complete title strings and TODO booleans to the approved inventory.",
+      "Assert no it.skip registration is present in the selected source files.",
+      "Separately verify the new initial plan ledger has all approved IDs, tasks, techniques, complete titles and original approval states intact, with every current ledger status Not Run."
+    ],
+    "notPerformed": [
+      "No test body or product/SDK import executed by this audit",
+      "No task suite, fixture HTTP server, DSH process, model turn or browser launched",
+      "No product, test or harness source changed",
+      "No dependency installation, remote operation, credential or .npmrc access"
+    ],
+    "persistence": "This file records the already completed audit result; creating it did not rerun the audit or any tests."
+  },
+  "sources": [
+    {
+      "task": "X0-C",
+      "file": "packages/instance/test/instance-ext/x0-c.test.mjs",
+      "sha256": "ea3294dca281f52d53e8101d97cf6051a16ec13e5c774779ab3b4ec725779158"
+    },
+    {
+      "task": "FN-1",
+      "file": "packages/fold-notify/test/instance-ext/fn-1.test.mjs",
+      "sha256": "a1c96d4ac2312265260c85cb824e8e5a9b5c16825758e1fbf3af23c9e1819464"
+    },
+    {
+      "task": "B1",
+      "file": "packages/board/test/instance-ext/b1.test.mjs",
+      "sha256": "c364a63ea00cfeca6bcb98330ade7e86a0938d9c92ca6ce086f7656bce6c3b0d"
+    }
+  ],
+  "counts": {
+    "X0-C": {"total": 104, "executable": 95, "todo": 9},
+    "FN-1": {"total": 13, "executable": 10, "todo": 3},
+    "B1": {"total": 20, "executable": 10, "todo": 10},
+    "total": {"registered": 137, "uniqueIds": 137, "executable": 115, "todo": 22}
+  },
+  "comparisons": {
+    "approvedSelectedCount": 137,
+    "registeredCount": 137,
+    "uniqueRegisteredIds": 137,
+    "matchedIds": 137,
+    "missingIds": [],
+    "extraIds": [],
+    "duplicateIds": [],
+    "taskOwnershipMismatches": [],
+    "fullTitleMismatches": [],
+    "todoStateMismatches": [],
+    "removedApprovedCases": [],
+    "promotedTodos": [],
+    "itSkipRegistrations": 0,
+    "exactIdTaskTitleAndTodoComparisonPassed": true
+  },
+  "todoIds": {
+    "X0-C": [
+      "XC-UC-01-A4",
+      "XC-UC-01-A5",
+      "XC-UC-01-E2",
+      "XC-UC-02-E3",
+      "XC-UC-02-E4",
+      "XC-UC-02-A4",
+      "XC-UC-03-F",
+      "XC-UC-05-M",
+      "XC-UC-04-A1"
+    ],
+    "FN-1": [
+      "FN1-UC-BUNDLE-M",
+      "FN1-UC-BUNDLE-A",
+      "FN1-UC-BUNDLE-E"
+    ],
+    "B1": [
+      "B1-UC-BUNDLE-M",
+      "B1-UC-BUNDLE-A",
+      "B1-UC-BUNDLE-E",
+      "B1-UC-HISTORY-M",
+      "B1-UC-HISTORY-A",
+      "B1-UC-HISTORY-E",
+      "B1-UC-SEARCH-M",
+      "B1-UC-UNINSTALL-M",
+      "B1-UC-UNINSTALL-A",
+      "B1-UC-UNINSTALL-E"
+    ]
+  },
+  "initialPlanComparison": {
+    "file": "docs/verification/x0c-time/plan.json",
+    "count": 137,
+    "idTaskTechniqueTitleAndApprovedStatusMismatches": [],
+    "allCurrentStatusesNotRun": true,
+    "passed": true
+  },
+  "preservedCorrections": [
+    "720e6808469d19b1973dcab5daaff93a29094672",
+    "c38b97e820aef460c7b656f4d7740dc0bd525de0",
+    "79274fc57c2f51614e8d5e8411746195327a0f2c"
+  ],
+  "preservationChecks": {
+    "allCorrectionCommitsAreAncestorsOfAuditedHead": true,
+    "selectedTaskTestsHarnessSupplementsAndTestDesignUnchangedFromBaseline": true,
+    "sourceHashesMatchFrozenRuntimeRecord": true
+  },
+  "limitations": [
+    "Executable means a registered non-TODO case body, not an observed pass.",
+    "This audit does not certify the in-progress parent-owned timestamp-reverification task TAP or final per-case results.",
+    "All 22 approved TODOs remain unproved acceptance obligations, not passes or waivers.",
+    "Supplementary Cordis and detached Session checks are separate from the 137 approved case IDs; two SDK executions do not double the unique inventory.",
+    "No completed-X0-C, UI, real model-loop, profile-loader, persistence/restart/recovery or exactly-once real-wake readiness follows from dry registration."
+  ],
+  "conclusion": "PASS: all 137 unique approved IDs, task ownership, complete titles and 22 TODO states are preserved exactly; zero missing, extra, duplicate, removed or promoted cases."
+}
