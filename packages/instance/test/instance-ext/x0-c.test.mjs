@@ -6,7 +6,7 @@
  * tool/prompt registrations, `GET /api/chat` over the child's HTTP surface, and the turns the
  * manager agent is queued. No child module is imported for the expectations.
  *
- * Techniques: P (positive), EP (equivalence partitions), DT (decision table), ST (state
+ * Techniques: EP (equivalence partitions), DT (Decision Table), ST (State
  * transitions), BVA (boundary values). Every case names its X point.
  */
 import assert from 'node:assert/strict'
@@ -27,7 +27,7 @@ function append(h, type, data) {
 }
 
 describe('X0-C service surface (X1–X16 stub contract)', () => {
-  it('XC-P-01 the app row provides fishballInstance apiVersion 1 with every member', async (t) => {
+  it('XC-EP-V-01 the app row provides fishballInstance apiVersion 1 with every member', async (t) => {
     const h = await bootChild(t)
     const service = h.requireInstance()
     assert.equal(service.apiVersion, 1)
@@ -36,7 +36,7 @@ describe('X0-C service surface (X1–X16 stub contract)', () => {
     }
   })
 
-  it('XC-P-02 a registration returns dispose, and a second dispose is a no-op', async (t) => {
+  it('XC-EP-V-02 a registration returns dispose, and a second dispose is a no-op', async (t) => {
     const { h, service } = await live(t)
     const dispose = service.manager.registerSetup(MANAGER, () => {})
     assert.equal(typeof dispose, 'function', 'X2 registerSetup must return dispose')
@@ -142,7 +142,7 @@ describe('X0-C X2 manager.registerSetup', () => {
     again()
   })
 
-  it('XC-ST-02 a registration made during a turn is on the live agent before the next step', async (t) => {
+  it('XC-EP-V-07 a registration made during a turn is on the live agent before the next step', async (t) => {
     const { h, service } = await live(t)
     const { ctx } = h.agentCtxs()[0]
     h.manager().status = 'running'
@@ -157,7 +157,7 @@ describe('X0-C X3 chat.registerRecordProjector', () => {
   const TYPE = 'plugin:fishball-fold-notify/notice'
 
 
-  it('XC-P-06 a type in the plugin\'s own prefix is accepted; dispose removes the registration', async (t) => {
+  it('XC-EP-V-06 a type in the plugin\'s own prefix is accepted; dispose removes the registration', async (t) => {
     const { service } = await live(t)
     const dispose = service.chat.registerRecordProjector(MANAGER, 'plugin:fishball-fold-notify/notice', () => undefined)
     assert.equal(typeof dispose, 'function', 'X3 keeps only the record-type rule (U10)')
@@ -246,7 +246,7 @@ describe('X0-C X11 manager.userTexts', () => {
     append(h, 'user/message', other('g1', 'an agent relay', { kind: 'agent-message', form: 'relay' }))
   }
 
-  it('XC-P-05 userTexts returns only user-written texts, newest first', async (t) => {
+  it('XC-EP-V-05 userTexts returns only user-written texts, newest first', async (t) => {
     const { h, service } = await live(t)
     logMessages(h)
     const texts = service.manager.userTexts({ limit: 10, maxChars: 100 })

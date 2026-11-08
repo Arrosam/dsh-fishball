@@ -44,7 +44,7 @@ const NUMBERS = [
 const BOOLEANS = [['approvalsEnabled', true]]
 const TEXTS = [['model', ''], ['reasoningEffort', '']]
 
-function stubContext() {
+function stubContext({ withInstance = true } = {}) {
   const provided = new Map()
   const services = {
     agents: { create: async () => ({ agent: {} }), resume: async () => ({ agent: {} }), get: () => undefined },
@@ -63,6 +63,7 @@ function stubContext() {
       sessionStarts: { register: () => () => {} },
     },
   }
+  if (!withInstance) delete services.fishballInstance
   return {
     get: (name) => services[name] ?? provided.get(name),
     provide: (name, value) => { provided.set(name, value); return () => provided.delete(name) },
@@ -76,7 +77,7 @@ function stubContext() {
 }
 
 describe('WD-1 package and row', () => {
-  it('WD1-P-01 the package is fishball-watchdog 0.1.0-alpha.0 for DSH >=0.2.1-rc.5', async () => {
+  it('WD1-EP-V-01 the package is fishball-watchdog 0.1.0-alpha.0 for DSH >=0.2.1-rc.5', async () => {
     const manifest = await packageJson(WATCHDOG)
     assert.equal(manifest.name, 'fishball-watchdog')
     assert.equal(manifest.version, '0.1.0-alpha.0')
@@ -85,7 +86,7 @@ describe('WD-1 package and row', () => {
     assert.ok(manifest.peerDependencies?.['fishball-instance'], 'peerDependencies names the instance')
   })
 
-  it('WD1-P-02 the row exports name, inject, Config and apply', async () => {
+  it('WD1-EP-V-02 the row exports name, inject, Config and apply', async () => {
     const row = await packageModule(WATCHDOG, 'index.js')
     assert.equal(row.name, 'fishball-watchdog')
     for (const service of ['agents', 'tools', 'llm', 'profileContext', 'fishballInstance?']) {
@@ -95,14 +96,20 @@ describe('WD-1 package and row', () => {
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
 
-  it('WD1-P-03 the row loads over a stub fishballInstance', async () => {
+  it('WD1-DT-01 the row loads over a stub fishballInstance', async () => {
     const row = await packageModule(WATCHDOG, 'index.js')
     await assert.doesNotReject(async () => row.apply(stubContext(), {}))
+  })
+
+  // Canonical §1: optional injection treats an absent service as an older instance.
+  it('WD1-DT-02 the row loads without the optional fishballInstance service', async () => {
+    const row = await packageModule(WATCHDOG, 'index.js')
+    await assert.doesNotReject(async () => row.apply(stubContext({ withInstance: false }), {}))
   })
 })
 
 describe('WD-1 config defaults and bounds (§9, U7)', () => {
-  it('WD1-P-04 every §9 default is the designed value', async () => {
+  it('WD1-EP-V-04 every §9 default is the designed value', async () => {
     const { Config } = await packageModule(WATCHDOG, 'index.js')
     for (const [key, value] of [...BOOLEANS, ...TEXTS, ...NUMBERS.map(([key, value]) => [key, value])]) {
       assert.equal(configDefault(Config, key), value, key)

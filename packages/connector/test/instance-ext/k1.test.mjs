@@ -10,7 +10,7 @@
  * and wire answers, and the connector's real state endpoint on the H-STUB harness (a real DSH
  * boot with a stub instance; the only place `state.unread` is observable end to end).
  *
- * Techniques: P, EP, DT, ST, BVA.
+ * Techniques: EP, BVA, Decision Table, State Transition; Use Case is deferred to X-E2E.
  */
 import assert from 'node:assert/strict'
 import { after, describe, it } from 'node:test'
@@ -31,22 +31,22 @@ function requestFrame(payload, { operation = ATTENTION, sessionId = null, reques
 }
 
 describe('K1 contract 1.2 (§3)', () => {
-  it('K1-P-01 the connector contract is still major 1, now minor 2', () => {
+  it('K1-EP-V-01 the connector contract is still major 1, now minor 2', () => {
     assert.equal(CONNECTOR_CONTRACT.id, 'fishball-connector')
     assert.equal(CONNECTOR_CONTRACT.major, 1)
     assert.equal(CONNECTOR_CONTRACT.minor, 2)
   })
 
-  it('K1-P-02 LIMITS.unreadMax is 9999', () => {
+  it('K1-EP-V-02 LIMITS.unreadMax is 9999', () => {
     assert.equal(LIMITS.unreadMax, 9999)
   })
 
-  it('K1-P-03 instance.attention exists, is child→main and is not session-scoped', () => {
+  it('K1-EP-V-03 instance.attention exists, is child→main and is not session-scoped', () => {
     assert.equal(OPERATION.instanceAttention, ATTENTION)
     assert.deepEqual(contract.OPERATIONS[ATTENTION], { direction: 'child-to-main', sessionScoped: false })
   })
 
-  it('K1-P-04 a valid attention request and its accepted response validate and round-trip', () => {
+  it('K1-EP-V-04 a valid attention request and its accepted response validate and round-trip', () => {
     assert.doesNotThrow(() => validateRequest(ATTENTION, VALID))
     assert.doesNotThrow(() => validateResponse(ATTENTION, { accepted: true }))
     const encoded = encodeEnvelope(requestFrame(VALID), 'host-k1')
@@ -132,7 +132,7 @@ describe('K1 host bridge serves instance.attention', () => {
     }
   }
 
-  it('K1-P-05 the host advertises the operation and answers a valid frame accepted', async () => {
+  it('K1-EP-V-05 the host advertises the operation and answers a valid frame accepted', async () => {
     const { createBridgeHost } = await loadConnector('src/slim/host/bridge.js')
     const host = createBridgeHost({ hostId: 'host-k1', sessions: SESSIONS })
     assert.ok(host.capabilities.includes(ATTENTION), 'the welcome lists instance.attention')
