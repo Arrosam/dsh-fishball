@@ -97,21 +97,37 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 
 `configure` (create): sandbox, approval policy, persona, then each X2 registration in registration
 order. `composePersona` (resume): persona, then the same registrations. A registration made
-while the agent is live runs `agentCtx.plugin(...)` on the live agent's scope. Spike **SP-X1** (§5)
-must show that such a late registration is in effect from the next step, on both versions, before
-X0-C is called done.
+while the agent is live runs `agentCtx.plugin(...)` on the live agent's scope.
+**SP-X1 (done, yes on both versions, `docs/spikes/instance-ext.md`):** a late registration is
+offered from the next model request, even inside the running turn (the step after the tool result).
+`dispose` removes its tool and section from the next request.
 
 ### 2.2 Bundling (X17, X18)
 
-Fold §13 steps 1–7, unchanged, for each entry of `RUNTIME.bundledPlugins`, in list order:
+Fold §13 steps 1–7 for each entry of `RUNTIME.bundledPlugins`, in list order. Steps 2 and 6 are
+sharpened by **SP-FN1** (`docs/spikes/instance-ext.md`, yes on both versions with these two
+conditions):
 1. an exact-version `dependencies` entry in `packages/instance/package.json`;
-2. at every child start, a copy to `<child profile>/vendor/<name>` (temp directory, then rename);
+2. at every child start, a copy to `<child profile>/vendor/<name>` **and** to
+   `<child profile>/node_modules/<name>` (each to a temp directory, then renamed, with
+   `copyChildCode`'s rules; no pnpm run by the instance).
+   - *Why both.* DSH resolves a bundle only through `node_modules`, and a `file:` entry alone is
+     skipped. `vendor/` is the `file:` source that a later `admin.plugin.install` (`pnpm add`)
+     reinstalls from. The profile is `nodeLinker: hoisted`, so a real directory in `node_modules`
+     is what pnpm itself would place;
 3. the child manifest gets `dependencies[name] = "file:./vendor/<name>"`, and `dsh.profile.bundles`
    gets the name **only the first time** (runtime state `bundled: [...]`), so a disable survives
-   restarts and upgrades;
+   restarts and upgrades. *Required, not optional:* DSH's disable removes the name from
+   `dsh.profile.bundles` (`selectBundle`), so adding it on every start would turn the plugin on
+   again;
 4. it is on at the first placement;
 5. the settings view shows "Built in", the switch and the settings, with no Remove;
-6. a failed placement logs `BUNDLED_PLUGIN_UNAVAILABLE`, and the child starts without it;
+6. a failed placement logs `BUNDLED_PLUGIN_UNAVAILABLE`, and the child starts without it.
+   - DSH only skips an unresolvable bundle. But `initializeProfile` fails the start on any skipped
+     bundle (`installation.js:154`).
+   - So that check ignores exactly the bundled names whose placement failed **this** start; every
+     other skipped bundle stays fatal.
+   - The manifest is not edited on a failure, because its bundle list is the user's enable state;
 7. `uninstall.js` needs no change.
 
 Each name is placed **independently**: one failed placement does not stop the others.
@@ -315,12 +331,18 @@ Read under `~/Library/Application Support/DSH/data/versions/<v>/node_modules/@de
 | `initProfile`, `readProfileManifest`, `loadProfileDirectory`, `resolveProfileDir` | X17 | `dsh-app-boot/…/profile.d.ts:155,215,248,134` | `:137,197,231,129` |
 | `writeProfileBundles` | X17 | `dsh-app-boot/…/profile-plugins.d.ts:48` | `:48` |
 
-Not proven by types, so a spike is needed:
-- **SP-X1:** X2's late registration on a live agent takes effect at the next step.
+Not proven by types, so these were spiked (`docs/spikes/instance-ext.md`, 2026-11-08). The result on both versions is noted after each:
+- **SP-X1:** X2's late registration on a live agent takes effect at the next step. **Yes**,
+  including mid-turn; `dispose` removes it.
 - **SP-FN1 (fold §14):** a `file:` vendored bundle loads from the child profile, survives an
-  `admin.plugin.install`, and its disable persists.
+  `admin.plugin.install`, and its disable persists. **Yes**, if the package is also placed in
+  `node_modules` (§2.2 step 2). It survives `pnpm add` of another bundle, and a disable persists
+  across a restart.
 - **B0/S1 (board §12):** an agent-scoped context is re-materialised after a compaction and after a
-  resume.
+  resume. **Yes**: the provider is evaluated on every request, after `compactNow` and after
+  `agents.resume` with the same `setup`. *Note for B5:* earlier values remain in the history as
+  older `request/context` entries until a compaction, so the board guide says the newest board block
+  is the current one.
 
 No behaviour branches on the DSH version. `engines.dsh` is `>=0.2.1-rc.5` for the instance and all
 three plugins. The board's `>=0.2.1-rc.2` is raised to match, because X17 is tested only on rc.5
@@ -339,16 +361,16 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 
 | Task | Owns | Depends | Done when |
 | --- | --- | --- | --- |
-| **SP** spikes SP-X1, SP-FN1, B0/S1 | `spikes/instance-ext/*`, `docs/spikes/instance-ext.md` | — | yes or no for each, on both versions, with citations |
+| **SP** spikes SP-X1, SP-FN1, B0/S1 | `spikes/instance-ext/*`, `docs/spikes/instance-ext.md` | — | **done 2026-11-08: all yes on both versions** (§4) |
 | **K1** contract 1.2 + connector `unread` | `packages/connector/contract/{contract,limits}.js`, `docs/connector-contract.md`, `packages/connector/src/slim/host/bridge.js`, `src/connector-service.js`, `index.js` | — | §3 table holds; 1.1 instance attaches; `state.unread` follows the last valid value, `{0,false}` on detach and close |
-| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | SP-X1 for "done" | `fishballInstance` v1 provided; X1–X3, X10, X11 behave as §1; every other member a stub that refuses `not-implemented`; the X19 call sites exist and pass everything while `gateOn` is unset; the instance tests are unchanged and green with no plugin |
+| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — (SP-X1 done) | `fishballInstance` v1 provided; X1–X3, X10, X11 behave as §1; every other member a stub that refuses `not-implemented`; the X19 call sites exist and pass everything while `gateOn` is unset; the instance tests are unchanged and green with no plugin |
 | **X0-I** inbox pipeline | `child/inbox.js`, new `child/ext/inbox.js`, `src/slim/inbox-markers.js` | X0-C | X9: claims before the batcher, release re-enters, ack/refuse per item |
 | **X0-U** page modules | `child/server.js`, new `child/ext/ui.js`, `ui/shell.{js,html,css}`, `ui/chat.js` | X0-C | X4–X7; the X3 `text` fallback row; the CSP unchanged; with no module, the page is identical to today |
 | **X0-W** wire: scoped bridge + attention | `child/bridge.js`, new `child/ext/{bridge-scope,attention}.js` | X0-C, K1 | X12 local `forbidden`; X8 sent on set, on each handshake, zero on dispose, skipped without the capability |
 | **X0-G** side agents | new `child/ext/side-agents.js` | X0-C | X13 lock-down on both versions |
 | **X0-A** approvals seam + escalation card | `child/approvals.js`, `child/decisions.js`, `ui/approvals.js`, `ui/records.js` | X0-C | X15; old labels load as manager-decided; `delegate-no-grant`, `grant-off-supervised` |
 | **X0-S** supervision, start rule, send gate | `child/session-tools.js`, new `child/ext/{supervision,session-starts,send-gate}.js` | X0-C | X14 guard, managed changes, `dormant`, hand-over and re-enable (§2.4 steps 3–6); X16 (§2.3); X19 table and hand-over line (§2.5), on both send paths |
-| **X0-B** bundling + admin | `packages/instance/package.json`, `src/native-runtime/{constants,installation,files,index}.js`, `child/admin.js`, `ui/settings.js`, `ui/i18n.js` | SP-FN1, X0-S (the hand-over port, stubbed until merged) | X17, X18 for the three names; hand-over intent order (§2.4 step 1); a failed placement of one name leaves the others |
+| **X0-B** bundling + admin | `packages/instance/package.json`, `src/native-runtime/{constants,installation,files,index}.js`, `child/admin.js`, `ui/settings.js`, `ui/i18n.js` | X0-S (the hand-over port, stubbed until merged); SP-FN1 done | X17, X18 for the three names; hand-over intent order (§2.4 step 1); a failed placement of one name leaves the others |
 
 ### 5.2 Plugin tasks, re-based on the canonical names
 
@@ -379,7 +401,7 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 
 | Wave | In parallel |
 | --- | --- |
-| W0 | SP, K1, X0-C, FN-1, WD-1, B1 |
+| W0 | K1, X0-C, FN-1, WD-1, B1 (SP done) |
 | W1 | X0-I, X0-U, X0-G, X0-A, X0-S, X0-W (needs K1), FN-A (needs K1); WD-2, WD-3, WD-4, WD-5, WD-7; B2, B3 |
 | W2 | X0-B (needs SP, X0-S); FN-2, FN-4, FN-6; WD-6, WD-8, WD-9; B4 |
 | W3 | B6 (after X0-B); FN-3; WD-10, WD-11, WD-13 (shared stub, as watchdog §14); B5 |
@@ -421,7 +443,8 @@ decision table, **ST** state transitions.
   - DT for X2: create or resume × registered before or after live × `fn` ok, throws or async
     → whether it was applied, and the order (persona first, then the registrations in order).
   - ST for X2: registered → applied → disposed (its tools and section gone at the next step) →
-    registered again.
+    registered again; a registration made **during a turn** is offered at the turn's next step
+    (SP-X1).
   - X3: `type` with a foreign prefix is refused; `fn` returns `undefined` (dropped); `text`
     present or absent.
   - BVA: `text` at `EXT_LIMITS.recordTextChars` and +1.
@@ -504,6 +527,11 @@ decision table, **ST** state transitions.
   - ST per bundled name: absent → placed, on → off (user) → off (restart, upgrade) → on.
   - Remove is refused with `bundled-plugin`.
   - EP: placement ok, the package missing, a symlink, an unsafe path; one of three failing.
+  - Placement writes both `vendor/<name>` and `node_modules/<name>`; after an `admin.plugin.install`
+    of another package both are still there and the row is on.
+  - DT for the start check: a bundle is skipped × it is a bundled name whose placement failed this
+    start → the start goes on (`BUNDLED_PLUGIN_UNAVAILABLE`); any other skipped bundle →
+    `PROFILE_INCOMPATIBLE` as today.
   - DT for disabling `fishball-watchdog`: `setBundleEnabled` ok or failed × supervised set empty or
     not → hand-over or nothing changed.
   - BVA: `bundled` state file absent, empty, or listing an unknown name.
@@ -550,7 +578,7 @@ decision table, **ST** state transitions.
 | Design | Edit |
 | --- | --- |
 | fold-notify | service `fishballInstanceExtensions` → `fishballInstance`; fE1 `fishballChat.sessionId()` → `manager.sessionId()`; fE2 → X2 `manager.registerSetup(pluginId, fn)`; fE3 → X3 (add `pluginId` argument); fE4 → X4/X5/X7; fE5 → X7 `setTimelinePresenter`; fE6 → X8 + K1; fE7 → X9 `inbox.setBatcher`; fE8/9 → X17/X18; seen route `api/fold-notify/seen` and `api/ext/fold-notify/seen` → `api/ext/fishball-fold-notify/seen`; §14 FN-0, FN-E6, FN-K, FN-B point to X0-*/K1; inject list in §13 |
-| board | inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, X4–X7, X17/X18; `signal(namespace, type)` → `ui.signal(pluginId, type)`; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C/X0-U, B9 → X0-B |
+| board | inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, X4–X7, X17/X18; `signal(namespace, type)` → `ui.signal(pluginId, type)`; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C/X0-U, B9 → X0-B, B0 done (S1 yes); §5 guide text: "the newest board block is the current one" (S1 note) |
 | watchdog (U1–U6 **are** design changes) | §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate); §4.5.1 state table gains `dormant` (any running state allowed, sends refused) and the "no brief" row; §4.5.2's gate text → X19's `supervision-paused` row; §4.4 `watchdog_brief` result gains `sendUnlocked`, and on a dormant brief it supersedes instead of `brief-exists`; `watchdog_resume` accepts `dormant` as well as `paused`; the manager section states the U5 rule in one line; §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U6 |
 
 ## 9. Open questions for the user
