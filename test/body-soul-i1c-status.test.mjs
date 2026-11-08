@@ -10,7 +10,10 @@
  * - `connector-missing` is the instance's own state (D25) and `NATIVE_INSTANCE_BUSY` /
  *   `NATIVE_CONTRACT_VERSION` its own codes; they "appear only on its card and status route,
  *   never in `status()`" (R4, inst-OQ-03);
- * - the instance's own states and codes are the contract's plus those three (inst-OQ-03).
+ * - the instance's own states and codes are the contract's plus those three, and D2 adds the
+ *   launch code `INVALID_MAIN_HOME` to the instance's own codes (README Install; the card
+ *   explains it in en and zh);
+ * - the instance's own values never reach the connector through `status()` (R4).
  * The design does not say which contract value an instance-only value maps to, so those cases
  * assert only that the answer stays inside the contract and never carries the instance's own value.
  *
@@ -19,14 +22,14 @@
  * | I1c-ST-P-01 ×7 | EP (each STATUS state, code null) | answered unchanged |
  * | I1c-ST-P-02 ×6 | EP (failed × each STATUS_CODES code) | answered unchanged |
  * | I1c-ST-EP-01 | EP | `connector-missing` → a contract state, never `connector-missing` |
- * | I1c-ST-EP-02/03 | EP | failed + NATIVE_INSTANCE_BUSY / NATIVE_CONTRACT_VERSION → a contract code or null, never those two |
+ * | I1c-ST-EP-02/03/05 | EP | failed + NATIVE_INSTANCE_BUSY / NATIVE_CONTRACT_VERSION / INVALID_MAIN_HOME → a contract code or null, never those |
  * | I1c-ST-EP-04 | EP | an unknown state / an unknown code → inside the contract vocabulary |
  * | I1c-ST-P-03 | P | the answer has exactly the keys `state` and `code`, and is a new object |
  * | I1c-ST-DT-01 | DT (every instance state × every instance code and null) | always inside STATUS × (STATUS_CODES ∪ null) |
  * | I1c-V-01 | P | INSTANCE_STATES = STATUS values ∪ {connector-missing} |
- * | I1c-V-02 | P | INSTANCE_CODES = STATUS_CODES values ∪ {NATIVE_INSTANCE_BUSY, NATIVE_CONTRACT_VERSION} |
+ * | I1c-V-02 | P | INSTANCE_CODES = STATUS_CODES values ∪ {NATIVE_INSTANCE_BUSY, NATIVE_CONTRACT_VERSION, INVALID_MAIN_HOME} |
  * | I1c-V-03 | P | the contract's STATUS / STATUS_CODES are exactly contract §6's lists |
- * | I1c-V-04 | P | the three instance-only values are not in the contract vocabulary |
+ * | I1c-V-04 | P | the four instance-only values are not in the contract vocabulary |
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
@@ -37,8 +40,8 @@ const { contractStatus, INSTANCE_STATES, INSTANCE_CODES } = await loadInstance('
 /** Contract §6, verbatim. */
 const STATUS = Object.freeze(['disabled', 'waiting', 'starting', 'ready', 'stopping', 'stopped', 'failed'])
 const STATUS_CODES = Object.freeze(['NATIVE_START_FAILED', 'NATIVE_STOP_FAILED', 'NATIVE_CHILD_EXITED', 'NATIVE_UNAVAILABLE', 'NATIVE_TIMEOUT', 'NATIVE_DISABLED'])
-/** The instance's own values (D25, inst-OQ-03). */
-const OWN = Object.freeze({ state: 'connector-missing', codes: Object.freeze(['NATIVE_INSTANCE_BUSY', 'NATIVE_CONTRACT_VERSION']) })
+/** The instance's own values (D25, inst-OQ-03; D2 adds the launch code). */
+const OWN = Object.freeze({ state: 'connector-missing', codes: Object.freeze(['NATIVE_INSTANCE_BUSY', 'NATIVE_CONTRACT_VERSION', 'INVALID_MAIN_HOME']) })
 
 function assertInContract(answer) {
   assert.ok(STATUS.includes(answer.state), 'state ' + answer.state + ' is a STATUS value')
@@ -55,7 +58,7 @@ describe('I1c contractStatus', () => {
     it('I1c-ST-P-02 failed / ' + code + ' is answered unchanged', () => assert.deepEqual(contractStatus({ state: 'failed', code }), { state: 'failed', code }))
   }
   it('I1c-ST-EP-01 connector-missing never reaches status()', () => assertInContract(contractStatus({ state: OWN.state, code: null })))
-  for (const [id, code] of [['I1c-ST-EP-02', OWN.codes[0]], ['I1c-ST-EP-03', OWN.codes[1]]]) {
+  for (const [id, code] of [['I1c-ST-EP-02', OWN.codes[0]], ['I1c-ST-EP-03', OWN.codes[1]], ['I1c-ST-EP-05', OWN.codes[2]]]) {
     it(id + ' failed / ' + code + ' never reaches status()', () => assertInContract(contractStatus({ state: 'failed', code })))
   }
   for (const value of [{ state: 'fbtest-state', code: null }, { state: 'failed', code: 'FBTEST_CODE' }, { state: 'ready', code: 'FBTEST_CODE' }]) {
@@ -76,7 +79,7 @@ describe('I1c vocabularies', () => {
   it('I1c-V-01 INSTANCE_STATES = the contract states plus connector-missing', () => {
     assert.deepEqual([...INSTANCE_STATES].sort(), [...STATUS, OWN.state].sort())
   })
-  it('I1c-V-02 INSTANCE_CODES = the contract codes plus the two refused-attach codes', () => {
+  it('I1c-V-02 INSTANCE_CODES = the contract codes plus the two refused-attach codes and INVALID_MAIN_HOME', () => {
     assert.deepEqual([...INSTANCE_CODES].sort(), [...STATUS_CODES, ...OWN.codes].sort())
   })
   it('I1c-V-03 the contract exports exactly §6\'s STATUS and STATUS_CODES', async () => {
