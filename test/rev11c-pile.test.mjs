@@ -1,30 +1,44 @@
 /**
- * Revision 11 rev11c: your pile (DESIGN §14 row rev11c, §7a.6, §9 "Session cards", §10e; requirements items 14, 16).
- * The snapshot's `pile` holds a card per ask_fishball request that is yours (Fishball escalated it, or it timed out);
- * Fishball's fake model escalates from a plan. One host; cases run in order. Expected values come from the
- * requirements and DESIGN (CASES.md "Revision 11 rev11c cases"), never the implementation.
+ * Revision 11 rev11c: the cards that go to the user, in the snapshot, on the H-STUB harness (DESIGN §7a.6, §9
+ * "Session cards", §10e; slim-native-design §12). The pile UI above Fishball's composer is deleted (slim §12: a
+ * card that goes to the user is answered in its own session's ask_fishball row, a direct call on DSH's stock
+ * prompt), but the snapshot and the event stream keep `pile`, which is what the row's buttons read (§10e: buttons
+ * "while the snapshot holds a card for that callId"). The attached instance escalates with `approval.answer`.
+ * One host; cases run in order. Expected values come from the requirements and DESIGN.
  *
- * | id      | technique | expected |
- * |---------|-----------|----------|
- * | PIL-01  | EP (nothing waiting) | state.pile is an empty array; the SSE stream's frames carry it too |
- * | PIL-02  | EP (three managed sessions escalate) | three cards, newest first, one per session, each with CARD_KEYS; the three agents still wait |
- * | PIL-03  | EP (answering one) | only that card leaves; the others stay and their agents still wait |
- * | PIL-04  | EP (quote + thread + Fishball's note) | the card shows the quoted message's text, the thread so far, Fishball's reason as its note; callId is the running call's |
- * | PIL-05  | BVA (argumentExcerptBytes 16 / default) | cut arguments on the card to at most 16 bytes + an ellipsis; the default shows them whole |
- * | PIL-06  | EP (markup in text) | arguments, reason and note are in the snapshot verbatim (the client draws them as plain text) |
- * | PIL-07  | EP (a direct call sent to you) | rev11e (was: stock prompt only): a card of kind direct and the stock prompt both show; your click in the session clears the card |
- * | PIL-08  | ST (SSE) | a frame holds the card when it appears and a later frame no longer holds it after the answer |
- * | PIL-09 ×4 | BVA (pileMaxHeightVh) | default 45 in state.limits; 1 accepted live; 0, 1.5 refused and unchanged |
+ * Retired:
+ * PIL-09: pileMaxHeightVh went with the pile UI (slim-native-design §12, conn-OQ-20: removed from the connector form)
+ *
+ * | id      | technique | requirement | expected |
+ * |---------|-----------|-------------|----------|
+ * | PIL-01  | EP (nothing waiting) | §10e snapshot | state.pile is an empty array; the SSE stream's first frame carries it too |
+ * | PIL-02  | EP (three managed sessions escalate) | §9, §10e "Order and count" | three cards, newest first, one per session, each with CARD_KEYS, kind asked, the running call's callId; the three agents still wait |
+ * | PIL-03  | EP (answering one) | §7a.6 "Leaving" | only that card leaves; the others stay and their agents still wait |
+ * | PIL-04  | EP (quote + thread + the instance's note) | §7a.6, §9 | the card shows the quoted message's text and id, the thread so far, the escalate reason as its note; callId is the call waiting now |
+ * | PIL-05  | BVA (argumentExcerptBytes 16 / default) | §16, §9 "arguments (excerpt)" | cut arguments on the card are at most 16 bytes + an ellipsis and a prefix of the real ones; the default shows them whole |
+ * | PIL-06  | EP (markup in text) | §10e "plain text" | arguments, reason and note are in the snapshot verbatim |
+ * | PIL-07  | EP (a direct call sent to you) | §7a.6 "Both places" (rev11e); slim §8.1, §5.2 `approval.settled` | a card of kind direct and the stock prompt both show; your click in the session clears the card, and the instance is told your decision (approval.settled {decision:'allow', by:'user'}) |
+ * | PIL-08  | ST (SSE) | §10e "fed by the state stream" | a frame holds the card when it appears and a later frame no longer holds it after the answer |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, APPROVER_HOLDS, ASK_CODE, ASK_FISHBALL, ASK_TOOL, CARD_KEYS, CARD_KIND, CLICK, DECISION, ELLIPSIS, LIMITS, LIMITS_R11C, OUTCOME, REQUEST_PLACEHOLDER } from './support/constants.mjs'
-import { HOOK, T, answerCard, askStep, bytes, callStep, cardArguments, cardOf, jsonOf, pileNow, requestMessages, resultById, settledIdle, untilCard, untilNoCard, waitRequest } from './support/expect.mjs'
-import { boot, pileHost, pileTools, tokens, until } from './support/rev11c.mjs'
+import { DECISION, SETTLED_BY } from 'fishball-connector/contract'
+import { APPROVER_HOLDS, ASK_CODE, ASK_TOOL, CARD_KEYS, CARD_KIND, CLICK, ELLIPSIS, LIMITS, OUTCOME, REQUEST_PLACEHOLDER } from './support/constants.mjs'
+import { HOOK, T, bytes, cardArguments, cardOf, pileNow, untilCard, untilNoCard } from './support/expect.mjs'
+import { ASK_STUB, askHost, askTools, assertShape, stopAsk, tokens } from './support/instance-stub-ask.mjs'
+import { until } from './support/util.mjs'
 
 const { tok, cid } = tokens('PIL')
+/** PIL-05: a small excerpt bound and a long argument that exceeds it. */
+const EXCERPT_BYTES = 16
+const LONG_PAD = 200
+/** PIL-06: markup that must reach the snapshot as the same text. */
+const MARKUP = '<img src=x onerror=alert(1)>&amp;<b>bold</b>'
+/** The SSE waits (the stream sends a frame on each change). */
+const SSE_WAIT_MS = 5000
+const SSE_POLL_MS = 50
 
-describe('Revision 11 rev11c: your pile', () => {
+describe('Revision 11 rev11c: the cards that go to you', () => {
   let ctx
   let t
   let x
@@ -32,13 +46,20 @@ describe('Revision 11 rev11c: your pile', () => {
   let z
   const cards = {}
   before(async () => {
-    ctx = await pileHost('rev11c-pile')
-    t = pileTools(ctx, { tok, cid })
+    ctx = await askHost('rev11c-pile')
+    t = askTools(ctx, { tok, cid })
     x = await t.session('pile-x')
     y = await t.session('pile-y')
     z = await t.session('pile-z')
   }, HOOK)
-  after(async () => { await ctx.host?.stop() }, HOOK)
+  after(() => stopAsk(ctx), HOOK)
+
+  /** Reject a card on its row and wait until its session is idle again. */
+  async function rejectAndFree(sid, requestId, id) {
+    assert.equal((await t.click(requestId, CLICK.reject)).status, 200)
+    if (id) await t.answered(sid, id)
+    await t.waitIdle(sid)
+  }
 
   it('PIL-01 nothing waiting: state.pile is an empty array', T, async () => {
     const s = await ctx.host.state()
@@ -46,7 +67,7 @@ describe('Revision 11 rev11c: your pile', () => {
     assert.deepEqual(s.pile, [])
     const sse = await ctx.host.sse()
     try {
-      assert.ok(await until(() => sse.frames.length > 0, 5000, 50), 'a first frame')
+      assert.ok(await until(() => sse.frames.length > 0, SSE_WAIT_MS, SSE_POLL_MS), 'a first frame')
       assert.deepEqual(sse.frames[0].pile, [], 'the stream carries the pile')
     } finally { sse.close() }
   })
@@ -60,147 +81,120 @@ describe('Revision 11 rev11c: your pile', () => {
     const pile = await pileNow(ctx.host)
     assert.equal(pile.length, 3, 'three cards: ' + JSON.stringify(pile))
     assert.deepEqual(pile.map((c) => c.requestId), [cards.z.requestId, cards.y.requestId, cards.x.requestId], 'newest first (DESIGN §10e "Order and count")')
-    for (const [name, { sid, text, card }] of Object.entries(cards)) {
-      const c = await cardOf(ctx.host, card.requestId)
+    for (const [name, { sid, text, callId, requestId }] of Object.entries(cards)) {
+      const c = await cardOf(ctx.host, requestId)
       for (const key of CARD_KEYS) assert.ok(key in c, name + ' card has ' + key + ': ' + JSON.stringify(c))
       assert.equal(c.kind, CARD_KIND.asked)
       assert.equal(c.sessionId, sid)
-      assert.equal(c.callId, cards[name].callId, 'the ask_fishball call the running row matches on (S37)')
+      assert.equal(c.callId, callId, 'the ask_fishball call the running row matches on (S37)')
       assert.equal(c.toolName, ASK_TOOL, 'the tool the agent asks about')
       assert.deepEqual(cardArguments(c), { text }, 'the exact arguments')
       assert.equal(c.why, 'why ' + text, "the agent's reason")
       assert.ok(Number.isFinite(typeof c.since === 'number' ? c.since : Date.parse(c.since)), 'since is a time: ' + c.since)
-      assert.equal(await ctx.host.call('agentStatus', { sessionId: sid }), 'running', name + ' still waits')
+      assert.equal(await t.status(sid), ASK_STUB.running, name + ' still waits')
     }
   })
 
   it('PIL-03 answering one card: only that card leaves; the others stay and their agents still wait', T, async () => {
-    const r = await answerCard(ctx.host, cards.y.requestId, CLICK.reject, 'no thanks')
+    const r = await t.click(cards.y.requestId, CLICK.reject, 'no thanks')
     assert.equal(r.status, 200, r.text)
     assert.ok(await untilNoCard(ctx.host, cards.y.requestId), 'the answered card left')
-    const pile = await pileNow(ctx.host)
-    assert.deepEqual(pile.map((c) => c.requestId), [cards.z.requestId, cards.x.requestId])
-    const got = await t.answered(y, cards.y.callId)
-    assert.equal(got.code, ASK_CODE.rejected)
-    await ctx.host.call('waitIdle', { sessionId: y })
-    for (const sid of [x, z]) assert.equal(await ctx.host.call('agentStatus', { sessionId: sid }), 'running')
+    assert.deepEqual((await pileNow(ctx.host)).map((c) => c.requestId), [cards.z.requestId, cards.x.requestId])
+    assertShape(await t.answered(y, cards.y.callId), ASK_CODE.rejected)
+    await t.waitIdle(y)
+    for (const sid of [x, z]) assert.equal(await t.status(sid), ASK_STUB.running)
     // Free the other two for the following cases.
-    for (const name of ['x', 'z']) {
-      assert.equal((await answerCard(ctx.host, cards[name].requestId, CLICK.reject)).status, 200)
-      await t.answered(cards[name].sid, cards[name].callId)
-      await ctx.host.call('waitIdle', { sessionId: cards[name].sid })
-    }
+    for (const name of ['x', 'z']) await rejectAndFree(cards[name].sid, cards[name].requestId, cards[name].callId)
     assert.deepEqual(await pileNow(ctx.host), [])
   })
 
-  it("PIL-04 a card shows the quoted message, the thread and Fishball's note", T, async () => {
-    const log = await ctx.host.call('userMessageLog', { sessionId: x })
-    const quoted = log.find((m) => m.kind === 'user' && m.text === 'first words')
+  it("PIL-04 a card shows the quoted message, the thread and the instance's note", T, async () => {
+    const quoted = (await ctx.host.call('userMessageLog', { sessionId: x })).find((m) => m.kind === 'user' && m.text === 'first words')
     assert.ok(quoted?.id, 'precondition: a message to quote')
     const text = tok('04')
     const question = 'question ' + text
     const reply = tok('04reply')
     const [id0, id1] = [cid('04a'), cid('04b')]
     const note = 'fbtest note for ' + text
-    await t.plan(text, { decision: DECISION.ask, risk: 'high', reason: 'need more', question })
-    await t.plan(reply, { decision: DECISION.escalate, risk: 'high', reason: note })
-    await settledIdle(ctx.host, x)
-    await ctx.host.call('driveStart', {
-      sessionId: x,
-      script: [askStep(t.askArgs({ text }, { quote: [quoted.id], why: 'why ' + text }), id0), askStep({ request_id: REQUEST_PLACEHOLDER, reply }, id1), [{ text: 'done' }]],
-    })
-    const req = await waitRequest(ctx.host, ctx.fb, text)
-    const card = await untilCard(ctx.host, req.id, 20000)
+    await t.start(x, [t.ask({ text }, id0, { quote: [quoted.id], why: 'why ' + text }), t.reply(REQUEST_PLACEHOLDER, reply, id1)])
+    const first = await t.offerFor(text)
+    assert.ok(first, 'offered')
+    await t.accepted(x, first, { decision: DECISION.ask, question })
+    const second = await t.nextOffer(first.approvalId, [first.offerId])
+    assert.ok(second, 'the reply was offered')
+    await t.accepted(x, second, { decision: DECISION.escalate, reason: note })
+    const card = await untilCard(ctx.host, first.approvalId, ASK_STUB.offerWaitMs)
     assert.ok(card, 'a card after the second round')
     assert.equal(card.callId, id1, 'the card belongs to the call that is waiting now (the running row with the buttons)')
     assert.ok(JSON.stringify(card.quotes ?? null).includes('first words'), 'the quoted text: ' + JSON.stringify(card.quotes))
     assert.ok(JSON.stringify(card.quotes).includes(quoted.id), 'the quoted id')
-    const texts = (card.thread ?? []).map((m) => m.text)
-    assert.deepEqual(texts, [question, reply], 'the discussion thread so far, in order: ' + JSON.stringify(card.thread))
-    assert.ok(String(card.note ?? '').includes(note), "Fishball's note: " + JSON.stringify(card.note))
-    assert.equal((await answerCard(ctx.host, req.id, CLICK.allow)).status, 200)
-    assert.equal((await t.answered(x, id1)).code, ASK_CODE.allowed)
-    await ctx.host.call('waitIdle', { sessionId: x })
+    assert.deepEqual((card.thread ?? []).map((m) => m.text), [question, reply], 'the thread so far, in order: ' + JSON.stringify(card.thread))
+    assert.ok(String(card.note ?? '').includes(note), "the instance's note: " + JSON.stringify(card.note))
+    assert.equal((await t.click(first.approvalId, CLICK.allow)).status, 200)
+    assertShape(await t.answered(x, id1), ASK_CODE.allowed)
+    await t.waitIdle(x)
   })
 
   it('PIL-05 argumentExcerptBytes: a cut card shows at most the limit plus an ellipsis; the default shows the arguments whole', T, async () => {
-    const args = { text: tok('05') + 'k'.repeat(200) }
-    await t.setLimit({ argumentExcerptBytes: 16 })
+    const args = { text: tok('05') + 'k'.repeat(LONG_PAD) }
+    await t.setLimit({ argumentExcerptBytes: EXCERPT_BYTES })
     try {
       const { card, requestId } = await t.escalated(x, args.text, cid('05a'))
       assert.equal(typeof card.arguments, 'string', 'a cut excerpt is text: ' + JSON.stringify(card.arguments))
-      assert.ok(bytes(card.arguments) <= 16 + bytes(ELLIPSIS), 'at most 16 bytes and an ellipsis: ' + bytes(card.arguments))
+      assert.ok(bytes(card.arguments) <= EXCERPT_BYTES + bytes(ELLIPSIS), 'at most ' + EXCERPT_BYTES + ' bytes and an ellipsis: ' + bytes(card.arguments))
       assert.ok(JSON.stringify(args).startsWith(card.arguments.replace(ELLIPSIS, '')), 'a prefix of the real arguments')
-      await answerCard(ctx.host, requestId, CLICK.reject)
-      await ctx.host.call('waitIdle', { sessionId: x })
+      await rejectAndFree(x, requestId)
     } finally { await t.setLimit({ argumentExcerptBytes: LIMITS.argumentExcerptBytes.default }) }
-    const text = tok('05b') + 'k'.repeat(200)
+    const text = tok('05b') + 'k'.repeat(LONG_PAD)
     const { card, requestId } = await t.escalated(x, text, cid('05b'))
     assert.deepEqual(cardArguments(card), { text }, 'whole under the default')
-    await answerCard(ctx.host, requestId, CLICK.reject)
-    await ctx.host.call('waitIdle', { sessionId: x })
+    await rejectAndFree(x, requestId)
   })
 
-  it("PIL-06 markup in the arguments, the reason and Fishball's note reaches the snapshot as the same text", T, async () => {
-    const mark = '<img src=x onerror=alert(1)>&amp;<b>bold</b>'
-    const text = tok('06') + mark
-    const { card, requestId } = await t.escalated(x, text, cid('06'), { why: '<script>why()</script>' + mark, note: '<i>note</i>' + mark })
+  it("PIL-06 markup in the arguments, the reason and the instance's note reaches the snapshot as the same text", T, async () => {
+    const text = tok('06') + MARKUP
+    const why = '<script>why()</script>' + MARKUP
+    const note = '<i>note</i>' + MARKUP
+    const { card, requestId } = await t.escalated(x, text, cid('06'), { why, note })
     assert.deepEqual(cardArguments(card), { text })
-    assert.equal(card.why, '<script>why()</script>' + mark)
-    assert.ok(String(card.note).includes('<i>note</i>' + mark))
-    await answerCard(ctx.host, requestId, CLICK.reject)
-    await ctx.host.call('waitIdle', { sessionId: x })
+    assert.equal(card.why, why)
+    assert.ok(String(card.note).includes(note))
+    await rejectAndFree(x, requestId)
   })
 
-  it('PIL-07 a direct call sent to you shows a card AND the stock prompt (changed in rev11e: it was the stock prompt only)', T, async () => {
-    // rev11e (DESIGN §7a.6 "Built in rev11e"): the card for a direct call is built with the pass-through. The stock prompt
-    // is held here so the card and the prompt can be seen together; rev11e-direct.test.mjs covers the rest.
+  it('PIL-07 a direct call sent to you shows a card AND the stock prompt; your click in the session clears the card', T, async () => {
+    // rev11e (DESIGN §7a.6 "Both places"): the stock prompt is held so the card and the prompt can be seen together.
     const text = tok('07')
-    await t.plan(text, { decision: DECISION.escalate, risk: 'high', reason: 'to you' })
-    await settledIdle(ctx.host, x)
-    const id = cid('07')
+    let offer
     await ctx.host.call('setApprover', { outcome: APPROVER_HOLDS })
     try {
-      await ctx.host.call('driveStart', { sessionId: x, script: [callStep({ text }, id), [{ text: 'done' }]] })
-      const req = await waitRequest(ctx.host, ctx.fb, text)
-      const card = req && (await untilCard(ctx.host, req.id))
+      await t.start(x, [t.call(text, cid('07'))])
+      offer = await t.offerFor(text)
+      assert.ok(offer, 'the direct call was offered')
+      await t.accepted(x, offer, { decision: DECISION.escalate, reason: 'to you' })
+      const card = await untilCard(ctx.host, offer.approvalId)
       assert.ok(card, 'a card for the direct call')
       assert.equal(card.kind, CARD_KIND.direct)
-      assert.equal((await t.stockSeen(text)).length, 1, 'and the stock prompt')
+      assert.ok(await until(async () => (await t.stockSeen(text)).length === 1, ASK_STUB.offerWaitMs, SSE_POLL_MS), 'and the stock prompt')
     } finally { await ctx.host.call('setApprover', { outcome: OUTCOME.reject }) }
     assert.equal(await ctx.host.call('releaseApproval', { outcome: OUTCOME.allow }), true)
-    await ctx.host.call('waitIdle', { sessionId: x })
-    assert.deepEqual(await pileNow(ctx.host), [], 'your click in the session cleared the card')
+    await t.waitIdle(x)
+    assert.ok(await until(async () => (await pileNow(ctx.host)).length === 0, ASK_STUB.offerWaitMs, SSE_POLL_MS), 'your click in the session cleared the card')
+    // slim §8.1: "for escalations — the user's final decision delivered by approval.settled".
+    const want = { approvalId: offer.approvalId, decision: DECISION.allow, by: SETTLED_BY.user }
+    const settled = await until(async () => (await t.settled(offer.approvalId)).find((p) => p.by === SETTLED_BY.user) ?? false, ASK_STUB.offerWaitMs, SSE_POLL_MS)
+    assert.deepEqual(settled || undefined, want, 'the instance is told your decision: ' + JSON.stringify(await t.settled(offer.approvalId)))
   })
 
   it('PIL-08 the event stream: a frame holds the card while it waits, and a later frame no longer holds it', T, async () => {
     const sse = await ctx.host.sse()
     try {
-      const text = tok('08')
-      const { requestId } = await t.escalated(y, text, cid('08'))
-      assert.ok(await until(() => sse.frames.some((f) => f.pile?.some((c) => c.requestId === requestId)), 5000, 50), 'a frame with the card')
+      const { requestId } = await t.escalated(y, tok('08'), cid('08'))
+      assert.ok(await until(() => sse.frames.some((f) => f.pile?.some((c) => c.requestId === requestId)), SSE_WAIT_MS, SSE_POLL_MS), 'a frame with the card')
       const framesBefore = sse.frames.length
-      await answerCard(ctx.host, requestId, CLICK.reject)
-      assert.ok(await until(() => sse.frames.slice(framesBefore).some((f) => Array.isArray(f.pile) && !f.pile.some((c) => c.requestId === requestId)), 5000, 50), 'a frame without it')
-      await ctx.host.call('waitIdle', { sessionId: y })
+      await t.click(requestId, CLICK.reject)
+      assert.ok(await until(() => sse.frames.slice(framesBefore).some((f) => Array.isArray(f.pile) && !f.pile.some((c) => c.requestId === requestId)), SSE_WAIT_MS, SSE_POLL_MS), 'a frame without it')
+      await t.waitIdle(y)
     } finally { sse.close() }
-  })
-
-  describe('PIL-09 pileMaxHeightVh (a limits-form field)', () => {
-    const [field, spec] = Object.entries(LIMITS_R11C)[0]
-    it('default ' + spec.default + ' in state.limits', T, async () => {
-      assert.equal((await ctx.host.state()).limits?.[field], spec.default)
-    })
-    it('the minimum 1 is accepted and applies live', T, async () => {
-      await t.setLimit({ [field]: spec.min })
-      try { assert.ok(await until(async () => (await ctx.host.state()).limits?.[field] === spec.min, 5000, 50)) } finally { await t.setLimit({ [field]: spec.default }) }
-    })
-    for (const [label, bad] of [['0', 0], ['a fraction', 1.5]]) {
-      it(label + ' is refused and the value stays', T, async () => {
-        const r = await ctx.host.call('settingsUpdate', { patch: { [field]: bad } })
-        assert.equal(r.ok, false, JSON.stringify(r))
-        assert.equal((await ctx.host.state()).limits?.[field], spec.default)
-      })
-    }
   })
 })

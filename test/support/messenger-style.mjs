@@ -29,12 +29,13 @@ function makeDocument() {
  * Load the module once; `apply()` turns the look on (as DSH does when the plugin is enabled) and returns a handle whose
  * `dispose()` turns it off. Several `apply()` calls on one load model off -> on.
  */
-export function loadMessenger(file = process.env[MESSENGER_TABLE.fileEnv] ?? MESSENGER.clientFile) {
+export function loadMessenger(file = process.env[MESSENGER_TABLE.fileEnv] ?? MESSENGER.clientFile, services = {}) {
   const document = makeDocument()
   let definition
   const window = { __ModuleLoader__: { load: (def) => { definition = def } } }
   vm.runInNewContext(fs.readFileSync(file, 'utf8'), { window, document, console })
-  const mod = definition.factory(() => inertHost())
+  // Optional public host faces let integration cases drive slots without copying the module loader.
+  const mod = definition.factory(services.require ?? (() => inertHost()))
   return {
     document,
     moduleId: definition.id,
@@ -42,8 +43,8 @@ export function loadMessenger(file = process.env[MESSENGER_TABLE.fileEnv] ?? MES
     styles: () => document.head.children.filter((el) => el.id === MESSENGER_TABLE.styleId),
     apply() {
       const disposers = []
-      const ctx = { slots: inertHost(), locale: inertHost(), effect: (fn) => { const d = fn(); disposers.push(d); return d } }
-      mod.apply(ctx, { useAssistantSessionId: () => 'session', mark: MESSENGER_TABLE.mark })
+      const ctx = { slots: inertHost(), locale: inertHost(), ...services.ctx, effect: (fn) => { const d = fn(); disposers.push(d); return d } }
+      mod.apply(ctx, { useAssistantSessionId: () => 'session', mark: MESSENGER_TABLE.mark, ...services.config })
       return { dispose: () => { while (disposers.length) { const d = disposers.pop(); if (typeof d === 'function') d() } } }
     },
   }

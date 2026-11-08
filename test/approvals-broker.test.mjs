@@ -1,394 +1,374 @@
 /**
- * P7 ApprovalBroker (DESIGN §7a "As built (P7)", R4 "Approvals, code paths"), with the review update.
- * Host boots with FBTEST_APPROVER_AFTER=1: the scripted answerer stands in for the browser prompt
- * AFTER the broker (fbtest-tools, mounted before dsh-fishball, prepends it), and the root registers
- * the asking tool fbtest_ask for ordinary sessions. Fishball's model answers a request through a
- * plan (answer_approval with the id read from the request text). Expected values come from the
+ * P7 ApprovalBroker on the H-STUB harness (DESIGN §7a.1-§7a.5, §7a.13, §7a.14, §9 audit, §16 limits; contract
+ * §4.2, §5, §5.1). The stub is the instance: it gets the `approval.request` descriptor and the `approval` inbox
+ * item (the request notice, with the header and the untrusted block Fishball used to read), and answers with
+ * `approval.answer`. The host boots with FBTEST_APPROVER_AFTER=1: the scripted stock prompt sits after the
+ * connector's broker, and the root registers the asking tool fbtest_ask. Expected values come from the
  * requirements, never from the implementation.
  *
  * | id      | technique | req | expected |
  * |---------|-----------|-----|----------|
- * | APR-01  | EP (first request, no allowance) | P1 | one fishball-notice, summary 'Permission request: "fbtest_ask"'; text starts [permission request apr_<hex>]; answer time; 'Arguments: complete'; started by / turn by 'the user'; the 'expired is normal' line; block with the 9 fields once each; session_id, folder, tool, reason, arguments (the call's JSON), latest_user_message; Fishball woke |
- * | APR-02  | EP (permission mode) | P1 | permission_mode is the session's sandbox mode (read-only after a switch); approval_policy "ask" |
- * | APR-03  | EP | P2 | answer_approval only in Fishball's requests; not global; an ordinary call is an error |
- * | APR-04  | DT allow/low/reason → ok | P2, P3 | {ok:true, requestId, decision:'allow'}; outcome allowed-once; one approval/decided allowed-once in X; the next answerer never asked |
- * | APR-05 ×4 | DT (allow+high / ''  / whitespace / allow on truncated) | P2 | the code; still pending; a later valid answer works |
- * | APR-06 ×4 | DT (unknown id / answered / timed out / withdrawn) | P2 | expired |
- * | APR-07  | DT escalate | P4 | the next answerer is asked; its outcome (allowed-once) is X's; non-waking note naming the outcome, visible in the next turn |
- * | APR-08 ×2 | BVA (approvalAnswerSeconds 2 and 1) | P5 | no answer → the next answerer asked after about n s (not before); note 'got no answer in time…'; audit answer timeout |
- * | APR-09  | ST (Fishball busy when the request arrives) | P5 update | the answer time starts at arrival: the next answerer is asked after about 2 s while Fishball is still in its turn |
- * | APR-10  | ST (cancel after the notice) | P6 | cancelled; the next answerer not asked; note 'was withdrawn'; audit withdrawn/cancelled; later answer expired |
- * | APR-11  | ST (cancel before Fishball read the notice) | P6 update | the same |
- * | APR-12  | ST (cancel while the escalated request waits at the next answerer) | P6 update | cancelled (diagnostic: audit answer) |
- * | APR-13 ×3 | BVA (argumentExcerptBytes = L, L−1 with a 2-byte cut, L+1) | P1 | complete and whole at L and L+1; truncated below: prefix of the JSON, ≤ limit bytes before '…', no broken character, 'alone makes it high risk' |
- * | APR-14 ×3 | EP (no call id / call id not in the log / call to another tool) | P1, update | unavailable (high risk line); call_was_to_tool names the real tool only in the third; allow → arguments-incomplete |
- * | APR-15 ×3 | BVA (latest user message 2048 / 2049 / 3000 bytes of 2-byte chars) | P1 | whole at 2048; above it at most 2048 bytes |
- * | APR-16 ×5 | DT (provenance) | P1 update | user/user; relay from Fishball → turn 'Fishball (message_session)'; relay from another agent → 'another agent or a notice' and latest_user_message is the user's; start_session → 'Fishball (start_session)'; first message a relay from Fishball → 'Fishball (start_session)'; first message from another agent → other/unknown |
- * | APR-17  | EP (subagent of X) | P1 update | session_id X, asked_by_subagent_session child, X's latest user message |
- * | APR-18  | EP (wake cap reached) | P1 | the request still wakes Fishball and is answered |
- * | APR-19  | EP (policy never) | P7 | rejected; no message; no answerer; not recorded |
- * | APR-20  | EP (next answerer throws) | P13 | unavailable; in the audit with finalOutcome unavailable |
- * | APR-21  | EP | P8 | approvals keys; pending entry while waiting; recent entry keys and enums, newest first; never the arguments (state and audit files) |
- * | APR-22  | BVA (21 requests) | P8 | 20 listed, newest first |
- * | APR-23  | BVA (auditEntriesKept 2) | P8 | at most 2 audit records, the newest kept |
- * | APR-24  | EP | P9, rev11 §7a.7 | the rubric phrases (rules 1-5) in Fishball's system prompt; no "You cannot reject"; one line lets it reject only beyond the user's request and when dangerous |
- * | APR-25  | EP | P10 | the client bundle has 'Permission requests' |
+ * | APR-01  | EP (first request) | §5.1, §7a.2, P1 | one descriptor of exactly the §5.1 keys: approvalId apr_<hex>, prompt 'Permission request: "fbtest_ask"', toolName, callId, reason, title, quotes [], arguments (the call's JSON) and argumentsStatus complete, expiresAt − at = 120 s; one `approval` item: '[permission request <id>]', 'within 120 s', 'Arguments: complete.', started by / turn by 'the user', the 'expired is normal' line, the 9 block fields once each, no subagent or call_was_to_tool field |
+ * | APR-02  | EP (permission mode) | P1 | the item's permission_mode is the session's sandbox mode (read-only after a switch); approval_policy "ask" |
+ * | APR-03  | EP | §7a.13, P2 | answering belongs to the instance: no answer_approval tool in a managed session or globally; a call of it is an error |
+ * | APR-04  | DT allow/low/reason → ok | §4.2, P2, P3 | {accepted:true}; outcome allowed-once; one approval/asked and one approval/decided allowed-once in X; the stock prompt never asked; approval.settled {decision allow, by fishball} |
+ * | APR-05 ×4 | DT (allow+high / whitespace reason / allow on truncated) | §4.2 | the error code; still listed and X still waits; a later valid answer is accepted |
+ * | APR-05e | BVA (reason '' with allow) | §4.2 "a present reason must be non-empty (reason-required)", §7 answers | error reason-required; the channel stays open; still listed and X still waits; a later valid answer is accepted |
+ * | APR-06 ×2 | DT (unknown id / answered id) | §4.2, §7a.3 | expired |
+ * | APR-07  | DT escalate | §7a.3, slim §8.1 and T09 ("an escalation settles with the user's decision and emits approval.settled") | the stock prompt is asked; its outcome is X's; the instance gets approval.settled with the user's decision (by user) and a card record naming the request, by user, outcome allowed; audit escalate / allowed-once |
+ * | APR-08 ×2 | BVA (approvalAnswerSeconds 2 and 1) | §7a.5, §16 | expiresAt − at = n s; 'within n s'; the stock prompt after about n s (not before); never silence-approved; the instance is told it ended; a late answer expired; audit timeout |
+ * | APR-09  | ST (the instance has not taken the notice) | P5 update | the answer time starts at the request: the stock prompt after about 2 s although the item is unacknowledged |
+ * | APR-10  | ST (cancel after the notice) | §7a.1 "Fishball told", contract §4.5 CARD_CLOSED, slim T09 "a card closed without an answer reaches the child as [card closed …]", instance.md I7-EP-06, P6 | cancelled; the stock prompt not asked; no longer listed; the instance is told it ended; a later answer expired; audit withdrawn / cancelled |
+ * | APR-11  | ST (cancel before the instance took the notice) | P6 update | the same |
+ * | APR-12  | ST (cancel while the escalated request waits at the stock prompt) | P6 update | cancelled; audit finalOutcome cancelled |
+ * | APR-13 ×4 | BVA (argumentExcerptBytes = L, L+1, L−1, L−8 with 2-byte chars) | §16, §7a.14 | complete and whole at L and L+1; below: truncated, a prefix of the JSON within the limit, '…', no broken character, 'alone makes it high risk'; the descriptor's argumentsStatus and the audit agree |
+ * | APR-14 ×3 | EP (no call id / call id not in the log / call to another tool) | §7a.14, §5.1 | unavailable everywhere (descriptor, item, audit); callId null only without a call id; call_was_to_tool names the real tool only in the third; allow → arguments-incomplete and the request stays |
+ * | APR-15 ×3 | BVA (latest user message 2048 / 2049 / 3000 bytes) | §16 requestUserMessageBytes | whole at 2048; above it a prefix of at most 2048 bytes |
+ * | APR-16 ×5 | DT (provenance) | §7a.14 | relay from Fishball (session.message) → turn 'Fishball (message_session)'; relay from another agent → 'another agent or a notice' and the user's latest message; session.start → 'Fishball (start_session)' both; a blank session's first message from Fishball → 'Fishball (start_session)'; a first message from another agent → other/unknown |
+ * | APR-17  | EP (subagent of X) | §7a.1, §7a.14 | the request is X's (envelope and session_id), asked_by_subagent_session the child, X's latest user message |
+ * | APR-19  | EP (policy never) | P7 | rejected; no offer, no item, no stock prompt; not audited |
+ * | APR-20  | EP (the stock prompt throws) | §7a.14 | unavailable; audit finalOutcome unavailable |
+ * | APR-21  | EP | §9 "never stored" | the audit record's §9 fields with a digest; neither the audit files nor /api/fishball/state hold the argument text |
+ * | APR-23  | BVA (auditEntriesKept 2) | §9, §16 | at most 2 audit records, the newest kept |
+ *
+ * Retired:
+ * - APR-18: the wake-up cap went with the in-process agent (slim §5.2 "Wake-up belongs to the child"; wakeupsPerHour removed).
+ * - APR-22: state.approvals and its 20 recent entries are gone (slim §9 "no legacy sections", approvalsShown removed, H-STUB state keys).
+ * - APR-24: the permission rubric is the instance's persona now, not the connector's (slim §0.5, §12).
+ * - APR-25: the "Permission requests" settings section went with Fishball's in-process settings page (slim §9, §12); connector settings are DSH's Plugins form (contract §0).
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { after, before, describe, it } from 'node:test'
+import { after, afterEach, before, describe, it } from 'node:test'
+import { ERROR, SETTLED_BY, DECISION, CARD_RECORD } from 'fishball-connector/contract'
 import {
-  ANSWER_TOOL, APPROVALS_KEYS, AUTHOR_KIND, APPROVAL_FIELDS, APPROVAL_ID, APPROVAL_PREFIX, APPROVAL_SUMMARY, APPROVER_AFTER_ENV, APPROVER_THROWS, APR_CODE, APR_NOTE,
-  ASK_REASON, ASK_TOOL, ELLIPSIS, FINAL_OUTCOMES, INBOUND_TOOL, LATEST_USER_MAX_BYTES, LIMITS, NOTICE, OUTCOME, PENDING_KEYS, PRESET, RECENT_ANSWERS,
-  RECENT_KEYS, RECENT_MAX, REJECT_RULE, RUBRIC, RUBRIC_REMOVED, STARTED_BY, STARTED_BY_OTHER, TITLE, TURN_BY,
+  ANSWER_TOOL, APPROVAL_FIELDS, APPROVAL_ID, APPROVAL_SUMMARY, APPROVER_HOLDS, APPROVER_THROWS, ARGS_STATUS, ASK_REASON, ASK_TOOL, ELLIPSIS, LIMITS, LIMITS_R11,
+  OUTCOME, PRESET, STARTED_BY, STARTED_BY_OTHER, TITLE, TURN_BY, INTAKE_DIR,
 } from './support/constants.mjs'
+import { HOOK, T, bytes, callScript, callTool, toolNames, turn } from './support/expect.mjs'
+import { handOver, managedSession, stopStub } from './support/instance-stub.mjs'
 import {
-  HOOK, T, makeManaged, approvalsNow, askSettled, bytes, callScript, callTool, fishballCall, fishballClientBundle, fishballMessages, intakeNow, jsonOf, messageFishball,
-  requestMessages, resultOfCall, sessionAuthor, settledIdle, startAsk, toolNames, turn, waitRequest,
-} from './support/expect.mjs'
-import { bootHost, newHome, sleep, until } from './support/host.mjs'
+  APPROVALS, ackAllAndReconnect, answerOffer, auditFor, auditOfSession, auditedFor, bootApprovals, clearSession, ensureAttached, escalateAndSettle, itemFor, listed, offerFor, outcomeOf,
+  offersWhere, requestFor, setLimit, settledEvents, startCall, stockFor, tok, toldEnded, untilStock, cardRecordsFor,
+} from './support/instance-stub-approvals.mjs'
+import { sleep, until } from './support/util.mjs'
 
-let seq = 0
-const tok = (label) => 'APR' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 7)
-const provenance = (text) => /Session started by: (.*?); its current turn started by: (.*?)\.?$/m.exec(text)?.slice(1) ?? [null, null]
-const secondsLine = (n) => new RegExp('\\b' + n + ' ?s(econds?)?\\b')
-
-describe('P7 ApprovalBroker', () => {
+describe('P7 ApprovalBroker (H-STUB)', () => {
+  let booted
   let host
-  let home
-  let fb
+  let stub
   let x
   let xCwd
-  const setLimit = async (patch) => { const r = await host.call('settingsUpdate', { patch }); assert.equal(r.ok, true, JSON.stringify(r.error)) }
-  const plan = (needle, args, callId) => host.call('planApproval', { sessionId: fb, needle, args, callId })
-  const seenFor = async (text) => (await host.call('approvals', {})).filter((a) => a.reason === ASK_REASON(text))
-  const fresh = async (folder) => {
-    const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
-    await turn(host, sid, [[{ text: 'hello' }]], 'first words')
-    // rev11a: only a managed session's permission requests reach Fishball (DESIGN §7a.1); these cases are about those.
-    await makeManaged(host, fb, sid)
-    return sid
-  }
-  /** One Fishball turn answering a request directly; returns the parsed answer. */
-  const answer = async (requestId, args) => { await settledIdle(host, fb); return (await fishballCall(host, fb, ANSWER_TOOL, { request_id: requestId, ...args })).json }
-  const pendingIds = async () => (await approvalsNow(host)).pending.map((p) => p.id)
-  /**
-   * A non-waking note (inject) reaches Fishball's log and request only with its next turn: assert that
-   * no Fishball request starts on its own for a while, then that the next turn's request carries it.
-   */
-  async function noteInNextTurn(needle) {
-    await settledIdle(host, fb)
-    const count = (await host.call('requests', { sessionId: fb })).length
-    await sleep(1500)
-    assert.equal((await host.call('requests', { sessionId: fb })).length, count, 'the note did not wake Fishball')
-    const req = (await turn(host, fb, [[{ text: 'ok' }]])).requests.at(-1)
-    assert.ok(req.texts.includes(needle), "the note is in Fishball's next turn: " + needle)
-    return req
-  }
-  /** Fishball calls one hand-off tool in a turn that may also answer a planned request; returns the tool's JSON. */
-  async function fishballHandOff(tool, args) {
-    await settledIdle(host, fb)
-    const r = await turn(host, fb, callScript(tool, args))
-    return jsonOf(r.results[0])
-  }
-  /** Start an ask in sid and wait for its request message (Fishball answers per plan, or only 'ok'). */
-  async function asked(sid, text, extra = {}, turnText) {
-    await settledIdle(host, sid)
-    await startAsk(host, sid, ASK_TOOL, { text, ...extra }, turnText)
-    const req = await waitRequest(host, fb, text)
-    assert.ok(req, 'a permission request reached Fishball for ' + text)
-    return req
-  }
-  /** Stop a still-waiting ask so its session is free again. */
-  async function release(sid, text) {
-    const a = (await host.call('asks', {})).find((r) => r.text === text)
-    if (a && a.outcome === null) await host.call('cancel', { sessionId: sid })
-    await askSettled(host, text)
-    await settledIdle(host, sid)
-  }
+  /** Ask from sid and wait for the offer and its notice. */
+  const asked = (sid, text, opts) => requestFor(booted, sid, text, opts)
+  const answer = (req, a, opts) => answerOffer(stub, req.sessionId, req.descriptor, a, opts)
+  const done = async (sid) => clearSession(host, sid)
 
   before(async () => {
-    home = newHome('approvals')
-    host = await bootHost(home, { env: APPROVER_AFTER_ENV })
-    fb = (await host.waitStatus('live'))?.sessionId
-    await settledIdle(host, fb)
-    x = await fresh('apr-x')
+    booted = await bootApprovals('approvals')
+    ;({ host, stub } = booted)
+    x = await managedSession(host, 'apr-x')
     xCwd = (await host.call('header', { sessionId: x })).cwd
-    await host.call('setApprover', { outcome: OUTCOME.reject })
   }, HOOK)
-  after(async () => { await host?.stop() }, HOOK)
+  after(() => stopStub(booted), HOOK)
+  // A failed case must not leave X waiting on a request: the next case's call would queue behind it.
+  afterEach(() => clearSession(host, x), HOOK)
 
-  it('APR-01 the first request reaches Fishball with the documented message, before any allowance', T, async () => {
+  it('APR-01 the first request reaches the instance with the documented descriptor and notice', T, async () => {
     const text = tok('01')
-    const fbBefore = (await host.call('requests', { sessionId: fb })).length
-    await plan(text, { decision: 'escalate', risk: 'high', reason: 'no allowance' })
     const args = { text, pad: 'pad-01' }
-    const req = await asked(x, text, { pad: 'pad-01' }, 'please do the 01 thing')
-    // P11 R4: the asking session is the author.
-    assert.deepEqual(req.source, { ...NOTICE, summary: APPROVAL_SUMMARY(ASK_TOOL), author: await sessionAuthor(host, AUTHOR_KIND.approval, x) })
-    assert.match(req.text, APPROVAL_PREFIX)
-    assert.match(req.id, APPROVAL_ID)
-    const header = req.block.header
-    assert.match(header, secondsLine(LIMITS.approvalAnswerSeconds.default), 'answer time in seconds')
-    assert.ok(header.includes('Arguments: complete'), header)
-    assert.deepEqual(provenance(header), [STARTED_BY.user, TURN_BY.user])
-    assert.match(header, /expired/i, 'says a later expired answer is normal')
-    for (const f of APPROVAL_FIELDS) assert.equal(req.block.counts?.[f], 1, 'one ' + f + ' line: ' + req.text)
-    const f = req.block.fields
-    assert.equal(f.session_id, x)
-    assert.equal(typeof f.session_title, 'string')
-    assert.equal(f.session_folder, xCwd)
-    assert.equal(f.tool, ASK_TOOL)
-    assert.equal(f.reason_given, ASK_REASON(text))
-    assert.deepEqual(JSON.parse(f.arguments), args, 'the model-requested arguments of that call')
-    assert.equal(f.latest_user_message, 'please do the 01 thing')
-    assert.equal(f.asked_by_subagent_session, undefined)
-    assert.equal(f.call_was_to_tool, undefined)
-    assert.equal(req.block.closes, 1)
-    await askSettled(host, text)
-    assert.ok((await host.call('requests', { sessionId: fb })).length > fbBefore, 'Fishball woke')
+    const req = await asked(x, text, { args: { pad: 'pad-01' }, turnText: 'please do the 01 thing' })
+    const d = req.descriptor
+    assert.equal(req.sessionId, x, 'the event is about the asking session')
+    assert.deepEqual(Object.keys(d).sort(), [...APPROVALS.descriptorKeys].sort())
+    assert.match(d.approvalId, APPROVAL_ID)
+    assert.equal(d.prompt, APPROVAL_SUMMARY(ASK_TOOL))
+    assert.equal(d.toolName, ASK_TOOL)
+    assert.equal(typeof d.callId, 'string')
+    assert.equal(d.reason, ASK_REASON(text))
+    assert.equal(d.title, await host.call('sessionTitle', { sessionId: x }))
+    assert.deepEqual(d.quotes, [])
+    assert.deepEqual(JSON.parse(d.arguments), args, "the model-requested arguments of that call")
+    assert.equal(d.argumentsStatus, ARGS_STATUS.complete)
+    // `at` is when the request began and `expiresAt` is set when its round starts, a moment later (contract §5.1
+    // names no exact difference), so the window is the answer time plus at most the timer slack (once 120001).
+    const window = d.expiresAt - d.at
+    const answerMs = LIMITS.approvalAnswerSeconds.default * 1000
+    assert.ok(window >= answerMs && window <= answerMs + APPROVALS.ms.timerSlack, 'the answer time: ' + window)
+    const { header, block, fields } = req.item
+    assert.ok(req.item.payload.text.startsWith(APPROVALS.item.prefix(d.approvalId)))
+    assert.match(header, APPROVALS.item.seconds(LIMITS.approvalAnswerSeconds.default))
+    assert.ok(header.includes(APPROVALS.item.argumentsLine(ARGS_STATUS.complete)), header)
+    assert.deepEqual([req.item.started, req.item.turnBy], [STARTED_BY.user, TURN_BY.user])
+    assert.match(header, APPROVALS.item.expiredNormal, 'says a later expired answer is normal')
+    for (const f of APPROVAL_FIELDS) assert.equal(block.counts?.[f], 1, 'one ' + f + ' line: ' + req.item.payload.text)
+    assert.equal(fields.session_id, x)
+    assert.equal(fields.session_folder, xCwd)
+    assert.equal(fields.tool, ASK_TOOL)
+    assert.equal(fields.reason_given, ASK_REASON(text))
+    assert.deepEqual(JSON.parse(fields.arguments), args)
+    assert.equal(fields.latest_user_message, 'please do the 01 thing')
+    assert.equal(fields.asked_by_subagent_session, undefined)
+    assert.equal(fields.call_was_to_tool, undefined)
+    assert.equal(block.closes, 1)
+    assert.equal(req.item.payload.sourceSessionId, x)
+    await escalateAndSettle(booted, req, text)
+    assert.equal((await stub.pushTexts(APPROVALS.item.prefix(d.approvalId))).length, 1, 'one notice')
+    await done(x)
   })
 
   it('APR-02 permission_mode is the session sandbox mode; approval_policy the session policy', T, async () => {
-    const sid = await fresh('apr-02')
-    const mode = await host.call('setSandboxMode', { sessionId: sid, mode: 'read-only' })
-    assert.equal(mode, 'read-only')
+    const sid = await managedSession(host, 'apr-02')
+    assert.equal(await host.call('setSandboxMode', { sessionId: sid, mode: APPROVALS.mode.readOnly }), APPROVALS.mode.readOnly)
     const text = tok('02')
-    await plan(text, { decision: 'escalate', risk: 'high', reason: 'x' })
     const req = await asked(sid, text)
-    assert.equal(req.block.fields.permission_mode, 'read-only')
-    assert.equal(req.block.fields.approval_policy, 'ask')
-    await release(sid, text)
+    assert.equal(req.item.fields.permission_mode, APPROVALS.mode.readOnly)
+    assert.equal(req.item.fields.approval_policy, APPROVALS.policy.ask)
+    await escalateAndSettle(booted, req, text)
+    await done(sid)
   })
 
-  it('APR-03 answer_approval belongs to Fishball only', T, async () => {
-    for (const r of await host.call('requests', { sessionId: fb })) assert.ok(toolNames(r).includes(ANSWER_TOOL))
+  it('APR-03 answering is the instance\'s operation: no answer_approval tool in main sessions', T, async () => {
     const ord = (await turn(host, x, [[{ text: 'list' }]])).requests.at(-1)
-    assert.equal(toolNames(ord).includes(ANSWER_TOOL), false)
-    assert.equal((await host.call('globalToolNames')).includes(ANSWER_TOOL), false)
-    const { result } = await callTool(host, x, ANSWER_TOOL, { request_id: 'apr_00', decision: 'allow', risk: 'low', reason: 'x' })
+    assert.equal(toolNames(ord).includes(ANSWER_TOOL), false, 'not in a managed session')
+    assert.equal((await host.call('globalToolNames')).includes(ANSWER_TOOL), false, 'not global')
+    const { result } = await callTool(host, x, ANSWER_TOOL, { request_id: 'apr_00', decision: DECISION.allow, risk: 'low', reason: 'x' })
     assert.equal(result.isError, true)
   })
 
   it('APR-04 allow with low risk and a reason: one allowed-once, nobody else asked', T, async () => {
     const text = tok('04')
-    await plan(text, { decision: 'allow', risk: 'low', reason: 'tests in its own folder' }, 'call_apr04')
     const req = await asked(x, text)
-    const done = await askSettled(host, text)
-    assert.equal(done.outcome, OUTCOME.allow)
-    assert.deepEqual((await resultOfCall(host, fb, 'call_apr04')).json, { ok: true, requestId: req.id, decision: 'allow' })
-    await settledIdle(host, x)
+    assert.deepEqual((await answer(req, APPROVALS.answer.allow('tests in its own folder'))).payload, { accepted: true })
+    const call = await outcomeOf(host, text)
+    assert.equal(call.outcome, OUTCOME.allow)
+    await done(x)
     const ev = await host.call('approvalEvents', { sessionId: x })
-    const askedEv = ev.filter((e) => e.type === 'approval/asked' && e.callId === done.callId)
+    const askedEv = ev.filter((e) => e.type === 'approval/asked' && e.callId === call.callId)
     assert.equal(askedEv.length, 1)
     assert.deepEqual(ev.filter((e) => e.type === 'approval/decided' && e.id === askedEv[0].id).map((e) => e.outcome), [OUTCOME.allow])
-    assert.deepEqual(await seenFor(text), [], 'the next answerer was never asked')
+    assert.deepEqual(await stockFor(host, text), [], 'the stock prompt was never asked')
+    assert.ok(await until(async () => (await settledEvents(stub, req.descriptor.approvalId)).length > 0, APPROVALS.ms.settle, 50))
+    assert.deepEqual((await settledEvents(stub, req.descriptor.approvalId))[0], { approvalId: req.descriptor.approvalId, decision: DECISION.allow, by: SETTLED_BY.fishball })
   })
 
-  describe('APR-05 refused answers leave the request pending', () => {
+  describe('APR-05 refused answers leave the request waiting', () => {
     const rows = [
-      ['allow with risk high', { decision: 'allow', risk: 'high', reason: 'x' }, APR_CODE.lowRisk, {}],
-      ['allow with an empty reason', { decision: 'allow', risk: 'low', reason: '' }, APR_CODE.reason, {}],
-      ['allow with a whitespace reason', { decision: 'allow', risk: 'low', reason: ' \n\t ' }, APR_CODE.reason, {}],
-      ['allow when the arguments are truncated', { decision: 'allow', risk: 'low', reason: 'x' }, APR_CODE.incomplete, { pad: 'p'.repeat(200) }],
+      ['allow with risk high', { decision: DECISION.allow, risk: 'high', reason: 'x' }, ERROR.allowNeedsLowRisk, false],
+      ['allow with a whitespace reason', { decision: DECISION.allow, risk: 'low', reason: ' \n\t ' }, ERROR.reasonRequired, false],
+      ['allow when the arguments are truncated', APPROVALS.answer.allow('x'), ERROR.argumentsIncomplete, true],
     ]
-    for (const [label, args, code, extra] of rows) {
+    for (const [label, a, code, cut] of rows) {
       it(label + ' → ' + code, T, async () => {
-        if (extra.pad) await setLimit({ argumentExcerptBytes: 40 })
+        const text = tok('05')
+        // A 40-byte excerpt cuts the 200-byte pad (§16 argumentExcerptBytes).
+        if (cut) await setLimit(host, { argumentExcerptBytes: 40 })
         try {
-          const text = tok('05')
-          const callId = 'call_apr05_' + seq
-          await plan(text, args, callId)
-          const req = await asked(x, text, extra)
-          assert.deepEqual((await resultOfCall(host, fb, callId)).json, { ok: false, code })
-          await settledIdle(host, fb)
-          assert.ok((await pendingIds()).includes(req.id), 'still pending')
-          assert.equal((await host.call('asks', {})).find((a) => a.text === text).outcome, null, 'X still waits')
-          // A later valid answer still works.
-          const later = extra.pad ? { decision: 'escalate', risk: 'high', reason: 'cut arguments' } : { decision: 'allow', risk: 'low', reason: 'fine' }
-          assert.deepEqual(await answer(req.id, later), { ok: true, requestId: req.id, decision: later.decision })
-          assert.equal((await askSettled(host, text)).outcome, extra.pad ? OUTCOME.reject : OUTCOME.allow)
-          await settledIdle(host, x)
-        } finally { if (extra.pad) await setLimit({ argumentExcerptBytes: LIMITS.argumentExcerptBytes.default }) }
+          const req = await asked(x, text, { args: cut ? { pad: 'p'.repeat(200) } : {} })
+          const r = await answer(req, a)
+          assert.deepEqual({ type: r.type, payload: r.payload }, { type: 'error', payload: { code } })
+          assert.ok((await listed(stub, x)).some((e) => e.approvalId === req.descriptor.approvalId), 'still listed')
+          assert.equal((await host.call('asks', {})).find((e) => e.text === text).outcome, null, 'X still waits')
+          const later = cut ? APPROVALS.answer.escalate : APPROVALS.answer.allow('fine')
+          assert.deepEqual((await answer(req, later)).payload, { accepted: true }, 'a later valid answer works')
+          assert.equal((await outcomeOf(host, text)).outcome, cut ? APPROVALS.stock.default : OUTCOME.allow)
+        } finally {
+          if (cut) await setLimit(host, { argumentExcerptBytes: LIMITS.argumentExcerptBytes.default })
+          await done(x)
+        }
       })
     }
+    it('APR-05e allow with an empty reason → reason-required, and the request still waits', T, async () => {
+      const text = tok('05e')
+      const req = await asked(x, text)
+      try {
+        const r = await answer(req, { decision: DECISION.allow, risk: 'low', reason: '' })
+        assert.deepEqual({ type: r.type, payload: r.payload }, { type: 'error', payload: { code: ERROR.reasonRequired } })
+        assert.equal((await stub.transportCalls()).closedByConnector, false, 'a refusal is an error frame, the channel stays open (§3.1)')
+        assert.ok((await listed(stub, x)).some((e) => e.approvalId === req.descriptor.approvalId), 'still listed')
+        assert.deepEqual((await answer(req, APPROVALS.answer.allow('fine'))).payload, { accepted: true }, 'a later valid answer works')
+        assert.equal((await outcomeOf(host, text)).outcome, OUTCOME.allow)
+      } finally { await ensureAttached(stub); await done(x) }
+    })
   })
 
   describe('APR-06 expired ids', () => {
     it('an unknown id', T, async () => {
-      assert.deepEqual(await answer('apr_0123456789abcdef', { decision: 'escalate', risk: 'high', reason: 'x' }), { ok: false, code: APR_CODE.expired })
+      const text = tok('06u')
+      const req = await asked(x, text)
+      const r = await answer(req, APPROVALS.answer.escalate, { approvalId: 'apr_0123456789abcdef' })
+      assert.deepEqual(r.payload, { code: ERROR.expired })
+      await escalateAndSettle(booted, req, text)
+      await done(x)
     })
     it('an id already answered', T, async () => {
       const text = tok('06a')
-      await plan(text, { decision: 'allow', risk: 'low', reason: 'fine' })
       const req = await asked(x, text)
-      await askSettled(host, text)
-      await settledIdle(host, x)
-      assert.deepEqual(await answer(req.id, { decision: 'allow', risk: 'low', reason: 'again' }), { ok: false, code: APR_CODE.expired })
-      assert.deepEqual(await answer(req.id, { decision: 'escalate', risk: 'high', reason: 'again' }), { ok: false, code: APR_CODE.expired })
+      await answer(req, APPROVALS.answer.allow())
+      await outcomeOf(host, text)
+      await done(x)
+      assert.deepEqual((await answer(req, APPROVALS.answer.allow('again'))).payload, { code: ERROR.expired })
+      assert.deepEqual((await answer(req, APPROVALS.answer.escalate)).payload, { code: ERROR.expired })
     })
     // Timed out and withdrawn ids are covered in APR-08 and APR-10.
   })
 
-  it('APR-07 escalate: the next answerer decides; Fishball gets a non-waking note with its outcome', T, async () => {
+  it('APR-07 escalate: the stock prompt decides; the instance learns the user\'s decision', T, async () => {
     const text = tok('07')
-    // The stand-in holds the question, so its answer comes after Fishball's turn has ended.
-    await host.call('setApprover', { outcome: 'hold' })
+    // The stand-in holds the prompt, so the user's answer comes after the escalation.
+    await host.call('setApprover', { outcome: APPROVER_HOLDS })
     try {
-      await plan(text, { decision: 'escalate', risk: 'high', reason: 'leaves the machine' }, 'call_apr07')
       const req = await asked(x, text)
-      assert.deepEqual((await resultOfCall(host, fb, 'call_apr07')).json, { ok: true, requestId: req.id, decision: 'escalate' })
-      assert.ok(await until(async () => (await seenFor(text)).length === 1, 5000, 50), 'the next answerer is asked')
-      await settledIdle(host, fb)
-      const fbRequests = (await host.call('requests', { sessionId: fb })).length
+      const id = req.descriptor.approvalId
+      assert.deepEqual((await answer(req, { decision: DECISION.escalate, risk: 'high', reason: 'leaves the machine' })).payload, { accepted: true })
+      assert.equal((await untilStock(host, text)).length, 1, 'the stock prompt is asked')
       assert.equal(await host.call('releaseApproval', { outcome: OUTCOME.allow }), true)
-      assert.equal((await askSettled(host, text)).outcome, OUTCOME.allow, "the next answerer's outcome is the result")
-      await settledIdle(host, x)
-      const note = APR_NOTE.escalated(req.id, OUTCOME.allow)
-      assert.equal((await host.call('requests', { sessionId: fb })).length, fbRequests, 'no Fishball request since the escalation')
-      await noteInNextTurn(note)
-      assert.equal((await fishballMessages(host, fb, note)).length, 1, 'one note')
-      const rec = (await approvalsNow(host)).recent.find((r) => r.key.includes(req.id.replace('apr_', '')))
-      if (rec) { assert.equal(rec.answer, 'escalate'); assert.equal(rec.risk, 'high'); assert.equal(rec.finalOutcome, OUTCOME.allow) }
-    } finally { await host.call('setApprover', { outcome: OUTCOME.reject }); await settledIdle(host, x) }
+      assert.equal((await outcomeOf(host, text)).outcome, OUTCOME.allow, "the user's outcome is the result")
+      assert.ok((await toldEnded(stub, id)).length > 0, 'the instance is told the request ended')
+      const records = await cardRecordsFor(stub, id)
+      assert.equal(records.length, 1, 'one card record names the request')
+      assert.equal(records[0].by, CARD_RECORD.by.user)
+      assert.equal(records[0].outcome, CARD_RECORD.outcome.allowed)
+      const [audit] = await auditedFor(booted.home, id)
+      assert.equal(audit.answer, DECISION.escalate)
+      assert.equal(audit.finalOutcome, OUTCOME.allow)
+      // slim §8.1 and T09: "for escalations — the user's final decision delivered by approval.settled"; "an escalation settles with the user's decision and emits approval.settled".
+      // The card record has arrived, so the settled event is due by now.
+      assert.ok(await until(async () => (await settledEvents(stub, id)).some((s) => s.by === SETTLED_BY.user), APPROVALS.ms.quiet, 100),
+        "approval.settled with the user's decision: " + JSON.stringify(await settledEvents(stub, id)))
+      assert.equal((await settledEvents(stub, id)).find((s) => s.by === SETTLED_BY.user).decision, DECISION.allow)
+    } finally { await host.call('setApprover', { outcome: APPROVALS.stock.default }); await done(x) }
   })
 
   for (const n of [2, 1]) {
-    it('APR-08 approvalAnswerSeconds ' + n + ': silence goes to the next answerer after about ' + n + ' s', T, async () => {
-      await setLimit({ approvalAnswerSeconds: n })
+    it('APR-08 approvalAnswerSeconds ' + n + ': silence goes to the user after about ' + n + ' s', T, async () => {
+      await setLimit(host, { approvalAnswerSeconds: n })
       try {
         const text = tok('08')
         const req = await asked(x, text)
-        assert.match(req.block.header, secondsLine(n))
-        const done = await askSettled(host, text, 10000)
-        assert.equal(done.outcome, OUTCOME.reject, "the next answerer's outcome (never silence-approved)")
-        const seen = await seenFor(text)
+        // `at` is when the request began and `expiresAt` is set when its round starts, a moment later
+        // (contract §5.1 names no exact difference): the window is the answer time plus the timer slack.
+        const window = req.descriptor.expiresAt - req.descriptor.at
+        assert.ok(window >= n * 1000 && window <= n * 1000 + APPROVALS.ms.timerSlack, 'the answer time: ' + window)
+        assert.match(req.item.header, APPROVALS.item.seconds(n))
+        const call = await outcomeOf(host, text)
+        assert.equal(call.outcome, APPROVALS.stock.default, "the user's outcome (never silence-approved)")
+        const seen = await stockFor(host, text)
         assert.equal(seen.length, 1)
-        const waited = seen[0].at - done.askedAt
-        assert.ok(waited >= n * 1000 - 150, 'not before the answer time: ' + waited)
-        assert.ok(waited <= n * 1000 + 2500, 'soon after the answer time: ' + waited)
-        await settledIdle(host, x)
-        const next = await noteInNextTurn(APR_NOTE.timeout)
-        assert.ok(next.texts.includes(req.id), 'the note names the request')
-        assert.deepEqual(await answer(req.id, { decision: 'escalate', risk: 'high', reason: 'late' }), { ok: false, code: APR_CODE.expired })
-        const rec = (await approvalsNow(host)).recent.find((r) => r.sessionId === x && r.answer === 'timeout')
-        assert.ok(rec, 'audit answer timeout')
-        assert.equal(rec.finalOutcome, OUTCOME.reject)
-      } finally { await setLimit({ approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }) }
+        const waited = seen[0].at - call.askedAt
+        assert.ok(waited >= n * 1000 - APPROVALS.ms.timerSlack, 'not before the answer time: ' + waited)
+        assert.ok(waited <= n * 1000 + APPROVALS.ms.timerLate, 'soon after the answer time: ' + waited)
+        assert.ok((await toldEnded(stub, req.descriptor.approvalId)).length > 0, 'the instance is told the request ended')
+        assert.deepEqual((await answer(req, APPROVALS.answer.escalate)).payload, { code: ERROR.expired })
+        const [audit] = await auditedFor(booted.home, req.descriptor.approvalId)
+        assert.equal(audit.answer, 'timeout')
+        assert.equal(audit.finalOutcome, APPROVALS.stock.default)
+      } finally { await setLimit(host, { approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }); await done(x) }
     })
   }
 
-  it('APR-09 the answer time starts when the request arrives, even while Fishball is busy', T, async () => {
-    await setLimit({ approvalAnswerSeconds: 2 })
-    await settledIdle(host, fb)
-    await host.call('holdNext', { sessionId: fb })
-    await host.call('driveStart', { sessionId: fb, text: 'busy turn' })
+  it('APR-09 the answer time starts at the request, even while the instance has not taken the notice', T, async () => {
+    await setLimit(host, { approvalAnswerSeconds: 2 })
+    // The instance acks an item only after it queued the turn (contract §4.5): no ack = still busy.
+    await stub.ackPolicy(0)
     try {
-      assert.ok(await until(() => host.call('isHeld', { sessionId: fb }), 5000, 50))
       const text = tok('09')
-      await startAsk(host, x, ASK_TOOL, { text })
-      const done = await askSettled(host, text, 8000)
-      assert.ok(done.outcome !== null, 'settled while Fishball is still held')
-      assert.equal(await host.call('isHeld', { sessionId: fb }), true, 'Fishball was busy the whole time')
-      const waited = (await seenFor(text))[0].at - done.askedAt
-      assert.ok(waited >= 1850 && waited <= 4500, 'went to the next answerer about 2 s after arrival: ' + waited)
+      await asked(x, text)
+      const call = await outcomeOf(host, text, 8000)
+      assert.ok(call.outcome !== null, 'settled although the notice is unacknowledged')
+      const waited = (await stockFor(host, text))[0].at - call.askedAt
+      assert.ok(waited >= 2000 - APPROVALS.ms.timerSlack && waited <= 2000 + APPROVALS.ms.timerLate, 'went to the user about 2 s after the request: ' + waited)
     } finally {
-      await host.call('releaseHold', { sessionId: fb })
-      await settledIdle(host, fb)
-      await setLimit({ approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default })
-      await settledIdle(host, x)
+      // The unacknowledged item holds back every later push until a reconnect re-delivers it.
+      await ackAllAndReconnect(stub)
+      await setLimit(host, { approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default })
+      await done(x)
     }
   })
 
-  it('APR-10 a cancelled call is withdrawn: cancelled, nobody else asked, note, then expired', T, async () => {
-    const text = tok('10')
-    const req = await asked(x, text)
-    await settledIdle(host, fb)
+  /** Cancel X's waiting call and check the withdrawn path (APR-10, APR-11); afterCancel runs before the instance-side checks. */
+  async function expectWithdrawn(req, text, afterCancel = async () => {}) {
     await host.call('cancel', { sessionId: x })
-    assert.equal((await askSettled(host, text)).outcome, OUTCOME.cancelled)
-    await settledIdle(host, x)
-    assert.deepEqual(await seenFor(text), [], 'the next answerer is not asked')
-    const next = await noteInNextTurn(APR_NOTE.withdrawn)
-    assert.ok(next.texts.includes(req.id), 'the note names the request')
-    assert.deepEqual(await answer(req.id, { decision: 'allow', risk: 'low', reason: 'late' }), { ok: false, code: APR_CODE.expired })
-    const rec = (await approvalsNow(host)).recent[0]
-    assert.equal(rec.sessionId, x)
-    assert.equal(rec.answer, 'withdrawn')
-    assert.equal(rec.finalOutcome, OUTCOME.cancelled)
+    assert.equal((await outcomeOf(host, text)).outcome, OUTCOME.cancelled)
+    await afterCancel()
+    await done(x)
+    assert.deepEqual(await stockFor(host, text), [], 'the stock prompt is not asked')
+    assert.equal((await listed(stub, x)).some((e) => e.approvalId === req.descriptor.approvalId), false, 'no longer offered')
+    assert.ok((await toldEnded(stub, req.descriptor.approvalId)).length > 0, 'the instance is told the request was withdrawn (§7a.1 "Fishball told"; contract §4.5 CARD_CLOSED)')
+    assert.deepEqual((await answer(req, APPROVALS.answer.allow('late'))).payload, { code: ERROR.expired })
+    const [audit] = await auditedFor(booted.home, req.descriptor.approvalId)
+    assert.equal(audit.answer, 'withdrawn')
+    assert.equal(audit.finalOutcome, OUTCOME.cancelled)
+  }
+
+  it('APR-10 a cancelled call is withdrawn: cancelled, nobody else asked, the instance told, then expired', T, async () => {
+    const text = tok('10')
+    await expectWithdrawn(await asked(x, text), text)
   })
 
-  it('APR-11 cancelled before Fishball read the notice: still withdrawn', T, async () => {
-    await settledIdle(host, fb)
-    await host.call('holdNext', { sessionId: fb })
-    await host.call('driveStart', { sessionId: fb, text: 'busy turn' })
-    const text = tok('11')
+  it('APR-11 cancelled before the instance took the notice: still withdrawn', T, async () => {
+    // Start from a clean outbox: a previous case's unacknowledged push would hold this one on the
+    // connector side, which is the very backpressure this case does not mean to test.
+    await ackAllAndReconnect(stub)
+    // Let the re-delivered (and any attach-time) pushes drain under the reconnect's allow-all
+    // policy before the case starts holding acks; otherwise one of them would block the notice.
+    await sleep(APPROVALS.ms.quiet)
+    await stub.ackPolicy(0)
+    let reconnected = false
+    const reconnect = async () => { await ackAllAndReconnect(stub); reconnected = true }
     try {
-      assert.ok(await until(() => host.call('isHeld', { sessionId: fb }), 5000, 50))
-      await startAsk(host, x, ASK_TOOL, { text })
-      assert.ok(await until(async () => (await host.call('asks', {})).some((a) => a.text === text), 5000, 20))
-      await sleep(200)
-      await host.call('cancel', { sessionId: x })
-      assert.equal((await askSettled(host, text)).outcome, OUTCOME.cancelled)
-    } finally { await host.call('releaseHold', { sessionId: fb }); await settledIdle(host, fb) }
-    await settledIdle(host, x)
-    assert.deepEqual(await seenFor(text), [], 'the next answerer is not asked')
-    const rec = (await approvalsNow(host)).recent[0]
-    assert.equal(rec.answer, 'withdrawn')
-    assert.equal(rec.finalOutcome, OUTCOME.cancelled)
+      const text = tok('11')
+      // The withdrawal reaches the instance only after the notice it never took is delivered again.
+      await expectWithdrawn(await asked(x, text, { waitMs: APPROVALS.ms.noticeUnderLoad }), text, reconnect)
+    } finally { if (!reconnected) await reconnect() }
   })
 
-  it('APR-12 cancelled while the escalated request waits at the next answerer: cancelled', T, async (t) => {
+  it('APR-12 cancelled while the escalated request waits at the stock prompt: cancelled', T, async (t) => {
     const text = tok('12')
-    await host.call('setApprover', { outcome: 'hold' })
+    await host.call('setApprover', { outcome: APPROVER_HOLDS })
     try {
-      await plan(text, { decision: 'escalate', risk: 'high', reason: 'x' })
-      await asked(x, text)
-      assert.ok(await until(async () => (await seenFor(text)).length === 1, 5000, 50))
+      const req = await asked(x, text)
+      await answer(req, APPROVALS.answer.escalate)
+      await untilStock(host, text)
       await host.call('cancel', { sessionId: x })
-      assert.equal((await askSettled(host, text)).outcome, OUTCOME.cancelled)
+      assert.equal((await outcomeOf(host, text)).outcome, OUTCOME.cancelled)
       await host.call('releaseApproval', { outcome: OUTCOME.allow })
-      await settledIdle(host, x)
-      await sleep(300)
-      const rec = (await approvalsNow(host)).recent[0]
-      t.diagnostic('audit after cancel at the next answerer: ' + JSON.stringify({ answer: rec?.answer, finalOutcome: rec?.finalOutcome }))
-      assert.equal(rec.finalOutcome, OUTCOME.cancelled)
-    } finally { await host.call('setApprover', { outcome: OUTCOME.reject }) }
+      const [audit] = await auditedFor(booted.home, req.descriptor.approvalId)
+      t.diagnostic('audit after cancel at the stock prompt: ' + JSON.stringify({ answer: audit?.answer, finalOutcome: audit?.finalOutcome }))
+      assert.equal(audit.finalOutcome, OUTCOME.cancelled)
+    } finally { await host.call('setApprover', { outcome: APPROVALS.stock.default }); await done(x) }
   })
 
   describe('APR-13 argument excerpt boundaries', () => {
-    // pad of 2-byte characters, so a cut one byte below the length can fall inside a character.
+    // A pad of 2-byte characters, so a cut one byte below the length can fall inside a character.
     const pad = 'é'.repeat(30)
     const argsOf = (text) => ({ text, pad })
-    const lengthOf = (text) => bytes(JSON.stringify(argsOf(text)))
     for (const [label, delta] of [['at the length L', 0], ['one above (L+1)', 1], ['one below (L−1)', -1], ['inside the pad (L−8)', -8]]) {
       it(label, T, async (t) => {
         const text = tok('13')
-        const L = lengthOf(text)
-        await setLimit({ argumentExcerptBytes: L + delta })
+        const full = JSON.stringify(argsOf(text))
+        const L = bytes(full)
+        await setLimit(host, { argumentExcerptBytes: L + delta })
         try {
-          await plan(text, { decision: 'escalate', risk: 'high', reason: 'x' })
-          const req = await asked(x, text, { pad })
-          const shown = req.block.fields.arguments
-          const full = JSON.stringify(argsOf(text))
-          if (delta >= 0) {
-            assert.ok(req.block.header.includes('Arguments: complete'))
-            assert.equal(shown, full)
-          } else {
-            assert.ok(req.block.header.includes('Arguments: truncated'), req.block.header)
-            assert.match(req.block.header, /alone makes it high risk/)
+          const req = await asked(x, text, { args: { pad } })
+          const shown = req.item.fields.arguments
+          const status = delta >= 0 ? ARGS_STATUS.complete : ARGS_STATUS.truncated
+          assert.ok(req.item.header.includes(APPROVALS.item.argumentsLine(status)), req.item.header)
+          if (delta >= 0) assert.equal(shown, full)
+          else {
+            assert.match(req.item.header, APPROVALS.item.highRisk)
             assert.ok(shown.endsWith(ELLIPSIS), 'ends with …')
             const prefix = shown.slice(0, -ELLIPSIS.length)
             assert.ok(full.startsWith(prefix), 'a prefix of the call JSON')
             assert.ok(bytes(prefix) <= L + delta, 'the cut part is within the limit: ' + bytes(prefix))
             assert.equal(shown.includes('\uFFFD'), false, 'no broken character')
-            t.diagnostic('limit ' + (L + delta) + ': prefix ' + bytes(prefix) + ' bytes, shown ' + bytes(shown) + ' bytes')
+            t.diagnostic('limit ' + (L + delta) + ': prefix ' + bytes(prefix) + ' bytes; descriptor ' + req.descriptor.argumentsStatus)
           }
-          await askSettled(host, text)
-          await settledIdle(host, x)
-          const rec = (await approvalsNow(host)).recent[0]
-          assert.equal(rec.argumentsStatus, delta >= 0 ? 'complete' : 'truncated')
-        } finally { await setLimit({ argumentExcerptBytes: LIMITS.argumentExcerptBytes.default }) }
+          assert.equal(req.descriptor.argumentsStatus, status, "the descriptor's status matches what the instance is shown")
+          await escalateAndSettle(booted, req, text)
+          assert.equal((await auditedFor(booted.home, req.descriptor.approvalId))[0].argumentsStatus, status)
+        } finally { await setLimit(host, { argumentExcerptBytes: LIMITS.argumentExcerptBytes.default }); await done(x) }
       })
     }
   })
@@ -402,267 +382,199 @@ describe('P7 ApprovalBroker', () => {
     for (const [label, extra, otherTool] of rows) {
       it(label, T, async () => {
         const text = tok('14')
-        const callId = 'call_apr14_' + seq
-        await plan(text, { decision: 'allow', risk: 'low', reason: 'x' }, callId)
-        const req = await asked(x, text, extra)
-        assert.ok(req.block.header.includes('Arguments: unavailable'), req.block.header)
-        assert.match(req.block.header, /alone makes it high risk/)
-        assert.equal(String(req.block.fields.arguments ?? '').includes(text), false, 'no arguments shown')
+        const req = await asked(x, text, { args: extra })
+        const d = req.descriptor
+        assert.equal(d.argumentsStatus, ARGS_STATUS.unavailable)
+        assert.equal(String(d.arguments ?? '').includes(text), false, 'no arguments in the descriptor')
+        assert.equal(d.callId === null, Boolean(extra.nocall), 'callId null only when the request names no call: ' + d.callId)
+        assert.ok(req.item.header.includes(APPROVALS.item.argumentsLine(ARGS_STATUS.unavailable)), req.item.header)
+        assert.match(req.item.header, APPROVALS.item.highRisk)
+        assert.equal(String(req.item.fields.arguments ?? '').includes(text), false, 'no arguments shown')
         if (otherTool) {
-          assert.equal(req.block.fields.tool, extra.as)
-          assert.equal(req.block.fields.call_was_to_tool, ASK_TOOL)
-          assert.deepEqual(req.source, { ...NOTICE, summary: APPROVAL_SUMMARY(extra.as), author: await sessionAuthor(host, AUTHOR_KIND.approval, x) })
-        } else assert.equal(req.block.fields.call_was_to_tool, undefined)
-        assert.deepEqual((await resultOfCall(host, fb, callId)).json, { ok: false, code: APR_CODE.incomplete })
-        await settledIdle(host, fb)
-        assert.ok((await pendingIds()).includes(req.id))
-        await answer(req.id, { decision: 'escalate', risk: 'high', reason: 'no arguments' })
-        await askSettled(host, text)
-        await settledIdle(host, x)
-        assert.equal((await approvalsNow(host)).recent[0].argumentsStatus, 'unavailable')
+          assert.equal(d.toolName, extra.as)
+          assert.equal(d.prompt, APPROVAL_SUMMARY(extra.as))
+          assert.equal(req.item.fields.tool, extra.as)
+          assert.equal(req.item.fields.call_was_to_tool, ASK_TOOL)
+        } else assert.equal(req.item.fields.call_was_to_tool, undefined)
+        assert.deepEqual((await answer(req, APPROVALS.answer.allow('x'))).payload, { code: ERROR.argumentsIncomplete })
+        assert.ok((await listed(stub, x)).some((e) => e.approvalId === d.approvalId), 'still offered')
+        await escalateAndSettle(booted, req, text)
+        assert.equal((await auditedFor(booted.home, d.approvalId))[0].argumentsStatus, ARGS_STATUS.unavailable)
+        await done(x)
       })
     }
   })
 
-  describe('APR-15 latest_user_message bound', () => {
-    for (const n of [2048, 2049, 3000]) {
+  describe('APR-15 latest_user_message bound (requestUserMessageBytes)', () => {
+    const max = LIMITS_R11.requestUserMessageBytes.default
+    for (const n of [max, max + 1, 3000]) {
       it(n + ' bytes', T, async (t) => {
         const text = tok('15')
         const message = n % 2 === 0 ? 'é'.repeat(n / 2) : 'a' + 'é'.repeat((n - 1) / 2)
-        await plan(text, { decision: 'escalate', risk: 'high', reason: 'x' })
-        const req = await asked(x, text, {}, message)
-        const shown = req.block.fields.latest_user_message
-        if (n <= LATEST_USER_MAX_BYTES) assert.equal(shown, message)
+        const req = await asked(x, text, { turnText: message })
+        const shown = req.item.fields.latest_user_message
+        if (n <= max) assert.equal(shown, message)
         else {
           t.diagnostic('shown ' + bytes(shown) + ' bytes, ends with …: ' + shown.endsWith(ELLIPSIS))
-          assert.ok(bytes(shown) <= LATEST_USER_MAX_BYTES, 'at most 2048 bytes: ' + bytes(shown))
-          assert.ok(message.startsWith(shown.endsWith(ELLIPSIS) ? shown.slice(0, -1) : shown), 'a prefix')
+          assert.ok(bytes(shown) <= max, 'at most ' + max + ' bytes: ' + bytes(shown))
+          assert.ok(message.startsWith(shown.endsWith(ELLIPSIS) ? shown.slice(0, -ELLIPSIS.length) : shown), 'a prefix')
         }
-        await askSettled(host, text)
-        await settledIdle(host, x)
+        await escalateAndSettle(booted, req, text)
+        await done(x)
       })
     }
   })
 
   describe('APR-16 provenance', () => {
-    const escalateFor = (text) => plan(text, { decision: 'escalate', risk: 'high', reason: 'x' })
-    it('turn started by a relay from Fishball (message_session)', T, async () => {
+    /** A marker queued so the session's model calls the asking tool when its turn carries the marker. */
+    const queueAsk = (text, except = null) => host.call('queueMarker', { marker: text, except, script: callScript(ASK_TOOL, { text }) })
+    async function provenanceOf(text) {
+      const frame = await offerFor(stub, text)
+      assert.ok(frame, 'the request reached the instance')
+      const item = await itemFor(stub, frame.payload.approvalId)
+      await escalateAndSettle(booted, { sessionId: frame.sessionId, descriptor: frame.payload }, text)
+      await done(frame.sessionId)
+      return item
+    }
+    it('turn started by a relay from Fishball (session.message)', T, async () => {
+      // Its own session, like 16b/16c: x carries every earlier case's turns (APR-15's long ones); on
+      // 0.2.1 assembling that context can push the offer past this case's wait, which proves no provenance.
+      const sid = await managedSession(host, 'apr-16a')
       const text = tok('16a')
-      await escalateFor(text)
-      await host.call('queueMarker', { marker: text, except: fb, script: callScript(ASK_TOOL, { text }) })
-      assert.equal((await fishballHandOff('message_session', { session_id: x, message: text }))?.ok, true)
-      const req = await waitRequest(host, fb, text)
-      assert.deepEqual(provenance(req.block.header), [STARTED_BY.user, TURN_BY.fishball])
-      await askSettled(host, text)
-      await settledIdle(host, x)
+      await queueAsk(text)
+      assert.equal((await stub.op('session.message', { sessionId: sid, message: text, attachments: [] }, sid)).type, 'response')
+      const item = await provenanceOf(text)
+      assert.deepEqual([item.started, item.turnBy], [STARTED_BY.user, TURN_BY.fishball])
     })
     it('turn started by another agent: label and the user\'s latest message', T, async () => {
-      const sid = await fresh('apr-16b')
-      const other = await fresh('apr-16b-other')
+      const sid = await managedSession(host, 'apr-16b')
+      const other = await managedSession(host, 'apr-16b-other')
       await turn(host, sid, [[{ text: 'ok' }]], 'the user said this')
       const text = tok('16b')
-      await escalateFor(text)
-      await startAsk(host, sid, ASK_TOOL, { text }, 'relayed words ' + text, { kind: 'agent-message', form: 'relay', senderSessionId: other })
-      const req = await waitRequest(host, fb, text)
-      assert.deepEqual(provenance(req.block.header), [STARTED_BY.user, TURN_BY.other])
-      assert.equal(req.block.fields.latest_user_message, 'the user said this', 'your latest message, not the relay')
-      await askSettled(host, text)
+      await startCall(host, sid, { text }, { text: 'relayed words ' + text, source: { kind: 'agent-message', form: 'relay', senderSessionId: other } })
+      const item = await provenanceOf(text)
+      assert.deepEqual([item.started, item.turnBy], [STARTED_BY.user, TURN_BY.other])
+      assert.equal(item.fields.latest_user_message, 'the user said this', 'your latest message, not the relay')
     })
-    it('session started by start_session', T, async () => {
-      const folder = path.join(home, 'work', 'apr-16c')
+    it('session started by session.start', T, async () => {
+      const folder = path.join(booted.home, 'work', 'apr-16c')
       fs.mkdirSync(folder, { recursive: true })
       const text = tok('16c')
-      await escalateFor(text)
-      await host.call('queueMarker', { marker: text, except: fb, script: callScript(ASK_TOOL, { text }) })
-      assert.equal((await fishballHandOff('start_session', { folder, title: TITLE.plain, message: text }))?.ok, true)
-      const req = await waitRequest(host, fb, text)
-      assert.deepEqual(provenance(req.block.header), [STARTED_BY.fishball, TURN_BY.fishball])
-      await askSettled(host, text)
+      await queueAsk(text)
+      assert.equal((await stub.op('session.start', { folder, title: TITLE.plain, message: text, attachments: [] })).type, 'response')
+      const item = await provenanceOf(text)
+      assert.deepEqual([item.started, item.turnBy], [STARTED_BY.fishball, TURN_BY.fishball])
     })
-    it('first user message a relay from Fishball (message_session to a blank session)', T, async () => {
+    it('first user message a relay from Fishball (session.message to a blank session)', T, async () => {
       const sid = (await host.call('ordinary', { preset: PRESET.bare, folder: 'apr-16d' })).sessionId
+      assert.equal((await handOver(host, sid)).status, 200)
       const text = tok('16d')
-      await escalateFor(text)
-      await host.call('queueMarker', { marker: text, except: fb, script: callScript(ASK_TOOL, { text }) })
-      assert.equal((await fishballHandOff('message_session', { session_id: sid, message: text }))?.ok, true)
-      const req = await waitRequest(host, fb, text)
-      assert.deepEqual(provenance(req.block.header), [STARTED_BY.fishball, TURN_BY.fishball])
-      await askSettled(host, text)
+      await queueAsk(text)
+      assert.equal((await stub.op('session.message', { sessionId: sid, message: text, attachments: [] }, sid)).type, 'response')
+      const item = await provenanceOf(text)
+      assert.deepEqual([item.started, item.turnBy], [STARTED_BY.fishball, TURN_BY.fishball])
     })
     it('first user message from another agent: never "the user"', T, async () => {
       const sid = (await host.call('ordinary', { preset: PRESET.bare, folder: 'apr-16e' })).sessionId
-      await makeManaged(host, fb, sid)
+      assert.equal((await handOver(host, sid)).status, 200)
       const text = tok('16e')
-      await escalateFor(text)
-      await startAsk(host, sid, ASK_TOOL, { text }, 'agent words ' + text, { kind: 'agent-message', form: 'relay', senderSessionId: x })
-      const req = await waitRequest(host, fb, text)
-      const [started, turnBy] = provenance(req.block.header)
-      assert.ok(STARTED_BY_OTHER.includes(started), 'started by: ' + started)
-      assert.equal(turnBy, TURN_BY.other)
-      await askSettled(host, text)
+      await startCall(host, sid, { text }, { text: 'agent words ' + text, source: { kind: 'agent-message', form: 'relay', senderSessionId: x } })
+      const item = await provenanceOf(text)
+      assert.ok(STARTED_BY_OTHER.includes(item.started), 'started by: ' + item.started)
+      assert.equal(item.turnBy, TURN_BY.other)
     })
   })
 
   it('APR-17 a subagent\'s request is attributed to its parent session', T, async () => {
     // DSH pins a subagent's approval policy to 'never'; switch new agents back to 'ask' so it asks.
     await host.call('askInNewAgents', { on: true })
+    let std
     try {
-      const std = (await host.call('ordinary', { preset: PRESET.standard, folder: 'apr-17' })).sessionId
-      await makeManaged(host, fb, std)
+      std = await managedSession(host, 'apr-17', PRESET.standard)
       const marker = tok('17sub')
       const text = tok('17')
-      await host.call('queueMarker', { marker, except: std, script: [...callScript(ASK_TOOL, { text })] })
-      await plan(text, { decision: 'escalate', risk: 'high', reason: 'x' })
-      await turn(host, std, [[{ tool: 'subagent', args: { description: 'fbtest sub', prompt: marker + ' please' } }], [{ text: 'parent done' }]], 'parent typed 17')
-      const req = await waitRequest(host, fb, text)
-      assert.ok(req, 'request reached Fishball')
+      await host.call('queueMarker', { marker, except: std, script: callScript(ASK_TOOL, { text }) })
+      await host.call('driveStart', { sessionId: std, text: 'parent typed 17', script: [[{ tool: 'subagent', args: { description: 'fbtest sub', prompt: marker + ' please' } }], [{ text: 'parent done' }]] })
+      const frame = await offerFor(stub, text)
+      assert.ok(frame, 'the request reached the instance')
       const child = (await host.call('markerState', { marker })).sessions[0]
       assert.notEqual(child, std)
-      assert.equal(req.block.fields.session_id, std)
-      assert.equal(req.block.fields.asked_by_subagent_session, child)
-      assert.equal(req.block.fields.latest_user_message, 'parent typed 17')
-      assert.deepEqual(provenance(req.block.header), [STARTED_BY.user, TURN_BY.user])
-      await askSettled(host, text)
-      assert.equal((await approvalsNow(host)).recent[0].sessionId, std)
-    } finally { await host.call('askInNewAgents', { on: false }) }
-  })
-
-  it('APR-18 a request wakes Fishball even when the wake-up cap is reached', T, async () => {
-    await settledIdle(host, fb)
-    if ((await intakeNow(host)).wakeupsThisHour === 0) { await messageFishball(host, x, { message: tok('18wake') }); await settledIdle(host, fb) }
-    await setLimit({ wakeupsPerHour: (await intakeNow(host)).wakeupsThisHour })
-    try {
-      // Control: an ordinary message is parked at the cap.
-      const before = (await host.call('requests', { sessionId: fb })).length
-      await messageFishball(host, x, { message: tok('18parked') })
-      await sleep(1500)
-      assert.equal((await host.call('requests', { sessionId: fb })).length, before, 'precondition: the cap parks a message')
-      const text = tok('18')
-      await plan(text, { decision: 'allow', risk: 'low', reason: 'fine' })
-      await startAsk(host, x, ASK_TOOL, { text })
-      assert.equal((await askSettled(host, text)).outcome, OUTCOME.allow, 'Fishball woke and answered')
-    } finally { await setLimit({ wakeupsPerHour: LIMITS.wakeupsPerHour.default }); await settledIdle(host, x); await settledIdle(host, fb) }
+      assert.equal(frame.sessionId, std, "the event is about the root session")
+      const item = await itemFor(stub, frame.payload.approvalId)
+      assert.equal(item.fields.session_id, std)
+      assert.equal(item.fields.asked_by_subagent_session, child)
+      assert.equal(item.fields.latest_user_message, 'parent typed 17')
+      assert.deepEqual([item.started, item.turnBy], [STARTED_BY.user, TURN_BY.user])
+      await escalateAndSettle(booted, { sessionId: frame.sessionId, descriptor: frame.payload }, text)
+      assert.equal((await auditedFor(booted.home, frame.payload.approvalId))[0].sessionId, std)
+    } finally { await host.call('askInNewAgents', { on: false }); if (std) await done(std) }
   })
 
   it('APR-19 a session with approval policy never: rejected, never reaches the broker', T, async () => {
-    const sid = await fresh('apr-19')
-    assert.equal(await host.call('setApprovalPolicy', { sessionId: sid, policy: 'never' }), 'never')
-    const keyBefore = (await approvalsNow(host)).recent[0]?.key
+    const sid = await managedSession(host, 'apr-19')
+    assert.equal(await host.call('setApprovalPolicy', { sessionId: sid, policy: APPROVALS.policy.never }), APPROVALS.policy.never)
     const text = tok('19')
-    await startAsk(host, sid, ASK_TOOL, { text })
-    assert.equal((await askSettled(host, text)).outcome, OUTCOME.reject)
-    await settledIdle(host, sid)
-    await sleep(500)
-    assert.deepEqual(await requestMessages(host, fb, text), [])
-    assert.deepEqual(await seenFor(text), [])
-    assert.equal((await approvalsNow(host)).recent[0]?.key, keyBefore, 'not recorded')
+    await startCall(host, sid, { text })
+    assert.equal((await outcomeOf(host, text)).outcome, OUTCOME.reject)
+    await done(sid)
+    await sleep(APPROVALS.ms.quiet)
+    assert.deepEqual(await offersWhere(stub, (d) => d.reason === ASK_REASON(text)), [], 'no offer')
+    assert.deepEqual((await stub.pushTexts(ASK_REASON(text))), [], 'no notice')
+    assert.deepEqual(await stockFor(host, text), [])
+    assert.deepEqual(auditOfSession(booted.home, sid), [], 'not recorded')
   })
 
-  it('APR-20 a throwing next answerer gives unavailable, and the request is audited', T, async () => {
+  it('APR-20 a throwing stock prompt gives unavailable, and the request is audited', T, async () => {
     const text = tok('20')
     await host.call('setApprover', { outcome: APPROVER_THROWS })
     try {
-      await plan(text, { decision: 'escalate', risk: 'high', reason: 'x' })
       const req = await asked(x, text)
-      assert.equal((await askSettled(host, text)).outcome, OUTCOME.unavailable)
-      await settledIdle(host, x)
-      await sleep(300)
-      const rec = (await approvalsNow(host)).recent.find((r) => r.key.includes(req.id.slice(4)))
-      assert.ok(rec, 'in the audit: ' + JSON.stringify((await approvalsNow(host)).recent[0]))
-      assert.equal(rec.finalOutcome, OUTCOME.unavailable)
-    } finally { await host.call('setApprover', { outcome: OUTCOME.reject }) }
+      await answer(req, APPROVALS.answer.escalate)
+      assert.equal((await outcomeOf(host, text)).outcome, OUTCOME.unavailable)
+      const records = await auditedFor(booted.home, req.descriptor.approvalId)
+      assert.equal(records.length, 1, 'in the audit')
+      assert.equal(records[0].finalOutcome, OUTCOME.unavailable)
+    } finally { await host.call('setApprover', { outcome: APPROVALS.stock.default }); await done(x) }
   })
 
-  it('APR-21 state.approvals: pending while waiting, recent after, never the arguments', T, async () => {
-    const secret = 'SECRETARG' + Math.random().toString(36).slice(2)
+  it('APR-21 the audit and the state never hold the arguments', T, async () => {
+    const secret = APPROVALS.secretPrefix + Math.random().toString(36).slice(2)
     const text = tok('21')
-    const req = await asked(x, text, { pad: secret })
-    await settledIdle(host, fb)
-    const a = await approvalsNow(host)
-    assert.deepEqual(Object.keys(a).sort(), APPROVALS_KEYS)
-    const p = a.pending.find((e) => e.id === req.id)
-    assert.ok(p, 'listed as pending')
-    assert.deepEqual(Object.keys(p).sort(), PENDING_KEYS)
-    assert.equal(p.sessionId, x)
-    assert.equal(p.toolName, ASK_TOOL)
-    assert.ok(!Number.isNaN(Date.parse(p.at)) || Number.isFinite(p.at), 'at is a time')
-    await answer(req.id, { decision: 'allow', risk: 'low', reason: 'fine ' + text })
-    await askSettled(host, text)
-    await settledIdle(host, x)
-    const b = await approvalsNow(host)
-    assert.equal(b.pending.some((e) => e.id === req.id), false)
-    for (const r of b.recent) {
-      assert.deepEqual(Object.keys(r).sort(), RECENT_KEYS)
-      assert.ok(RECENT_ANSWERS.includes(r.answer), r.answer)
-      assert.ok(FINAL_OUTCOMES.includes(r.finalOutcome), r.finalOutcome)
-      assert.ok(r.risk === null || ['low', 'high'].includes(r.risk))
-      assert.ok(['complete', 'truncated', 'unavailable'].includes(r.argumentsStatus))
-    }
-    const top = b.recent[0]
-    assert.equal(top.answer, 'allow')
-    assert.equal(top.risk, 'low')
-    assert.equal(top.rationale, 'fine ' + text)
-    assert.equal(top.finalOutcome, OUTCOME.allow)
-    const times = b.recent.map((r) => Date.parse(r.at))
-    assert.deepEqual(times, [...times].sort((m, n) => n - m), 'newest first')
-    assert.equal(JSON.stringify(b).includes(secret), false, 'state never holds the arguments')
-    const dir = path.join(home, 'storages', 'fishball_intake', 'approvals')
-    const files = fs.existsSync(dir) ? fs.readdirSync(dir) : []
-    assert.ok(files.length > 0, 'audit records stored')
-    for (const f of files) assert.equal(fs.readFileSync(path.join(dir, f), 'utf8').includes(secret), false, 'audit never holds the arguments: ' + f)
+    const req = await asked(x, text, { args: { pad: secret } })
+    assert.ok(req.descriptor.arguments.includes(secret), 'precondition: the instance is shown the arguments')
+    assert.ok(!JSON.stringify(await host.state()).includes(secret), 'the state never holds them while the request waits')
+    await answer(req, APPROVALS.answer.allow('fine ' + text))
+    await outcomeOf(host, text)
+    const [record] = await auditedFor(booted.home, req.descriptor.approvalId)
+    for (const key of APPROVALS.auditKeys) assert.ok(Object.hasOwn(record, key), 'audit field ' + key + ': ' + JSON.stringify(record))
+    assert.match(record.argumentsDigest, APPROVALS.digest)
+    assert.ok(APPROVALS.auditAnswers.includes(record.answer), record.answer)
+    assert.equal(record.answer, DECISION.allow)
+    assert.equal(record.finalOutcome, OUTCOME.allow)
+    assert.equal(record.sessionId, x)
+    assert.equal(record.toolName, ASK_TOOL)
+    assert.ok(!JSON.stringify(await host.state()).includes(secret), 'the state never holds them')
+    const dir = path.join(INTAKE_DIR(booted.home), 'approvals')
+    for (const f of fs.readdirSync(dir)) assert.equal(fs.readFileSync(path.join(dir, f), 'utf8').includes(secret), false, 'audit never holds the arguments: ' + f)
+    await done(x)
   })
 
-  it('APR-22 the state lists 20 recent entries, newest first, after 21 requests', { timeout: 120000 }, async () => {
-    let last
-    for (let i = 0; i < RECENT_MAX + 1; i++) {
-      const text = tok('22')
-      await plan(text, { decision: 'allow', risk: 'low', reason: 'r' + i })
-      await startAsk(host, x, ASK_TOOL, { text })
-      assert.equal((await askSettled(host, text)).outcome, OUTCOME.allow)
-      await settledIdle(host, x)
-      last = 'r' + i
-    }
-    await settledIdle(host, fb)
-    const a = await approvalsNow(host)
-    assert.equal(a.recent.length, RECENT_MAX)
-    assert.equal(a.recent[0].rationale, last)
-    assert.equal(a.recent[RECENT_MAX - 1].rationale, 'r1')
-  })
-
-  it('APR-23 auditEntriesKept 2 keeps at most 2 audit records, the newest among them', T, async (t) => {
-    await setLimit({ auditEntriesKept: 2 })
+  it('APR-23 auditEntriesKept 2 keeps at most 2 audit records, the newest among them', T, async () => {
+    await setLimit(host, { auditEntriesKept: 2 })
     try {
+      let newest
       for (let i = 0; i < 3; i++) {
         const text = tok('23')
-        await plan(text, { decision: 'allow', risk: 'low', reason: 'k' + i })
-        await startAsk(host, x, ASK_TOOL, { text })
-        await askSettled(host, text)
-        await settledIdle(host, x)
+        const req = await asked(x, text)
+        await answer(req, APPROVALS.answer.allow('k' + i))
+        await outcomeOf(host, text)
+        await done(x)
+        newest = req.descriptor.approvalId
       }
-      await settledIdle(host, fb)
-      const dir = path.join(home, 'storages', 'fishball_intake', 'approvals')
-      const files = fs.readdirSync(dir)
+      await auditedFor(booted.home, newest)
+      const files = fs.readdirSync(path.join(INTAKE_DIR(booted.home), 'approvals'))
       assert.ok(files.length <= 2, 'at most 2 stored: ' + files.length)
-      assert.ok(files.some((f) => fs.readFileSync(path.join(dir, f), 'utf8').includes('k2')), 'the newest kept')
-      const recent = (await approvalsNow(host)).recent
-      t.diagnostic('state recent after pruning: ' + recent.length)
-      assert.equal(recent[0].rationale, 'k2')
-    } finally { await setLimit({ auditEntriesKept: LIMITS.auditEntriesKept.default }) }
-  })
-
-  it('APR-24 Fishball\'s system prompt carries the permission rubric (revision 11: may reject only beyond the request and dangerous)', T, async () => {
-    const system = (await host.call('requests', { sessionId: fb })).at(-1).system
-    for (const phrase of RUBRIC) assert.ok(system.includes(phrase), 'missing: ' + phrase)
-    for (const phrase of RUBRIC_REMOVED) assert.equal(system.includes(phrase), false, 'revision 11 removed: ' + phrase)
-    // One line (or sentence) carries the whole rule: both conditions must hold.
-    const units = system.split(/\n|(?<=[.;])\s+/)
-    const rule = units.find((u) => Object.values(REJECT_RULE).every((re) => re.test(u)))
-    assert.ok(rule, 'a line letting Fishball reject only beyond the user\'s request and when dangerous')
-  })
-
-  it('APR-25 the client bundle has a Permission requests section', T, async () => {
-    const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found)
-    assert.ok(bundle.text.includes('Permission requests'))
+      assert.ok(auditFor(booted.home, newest).length === 1, 'the newest kept')
+    } finally { await setLimit(host, { auditEntriesKept: LIMITS.auditEntriesKept.default }) }
   })
 })

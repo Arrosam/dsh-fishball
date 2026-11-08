@@ -1,242 +1,240 @@
 /**
- * P6 W3 (interrupted), W7, W8: watches across restarts, catch-up while Fishball was down, targets
- * that disappear, and a notice that meets a full queue. Requirements in CASES.md (P6 cases).
+ * P6 W3 (interrupted), W7, W8 on H-STUB: watches across restarts, catch-up while no instance is
+ * attached or the connector row was not running, targets that disappear, a notice that meets a full
+ * queue, and the no-instance queue (DESIGN.md §5c "Catch-up after restart", "One rule, every
+ * trigger", "Target gone", "When Fishball is not running"; §11 start order step 5; contract §4.5,
+ * §9; connector.md C1-EP-03, C1-P-06; slim §5.2 "Child down: queue, never refuse").
+ * "Fishball archived" of the old cases is now "no instance attached": the connector row keeps
+ * watching, and what it queued reaches the next instance (contract §9).
  *
- * | id     | technique | req | expected |
- * |--------|-----------|-----|----------|
- * | DWT-01 | ST (active watch –restart→) | W7 | the watch is still active with the same fields; it still fires once after the restart |
- * | DWT-02 | ST (Fishball archived → target finishes → unarchive + retry → live) | W7 | exactly one notice after Fishball is live again |
- * | DWT-03 | ST (per-turn watch; Fishball archived → target turn ends → DSH restart → live → another restart) | W7 | one notice after the first catch-up; none for the same turn end after the second restart; firedCount 1 |
- * | DWT-06 | ST (finished once; DSH booted with the Fishball row off → 3 target turns, the last ending max-tokens → row on again) | W3/W7 review | one notice for the last turn end: last_answer of the 3rd turn, lastReason max-tokens; closed |
- * | DWT-06b | ST (same, but Fishball archived with its row running) | W3/W7 review | one notice (which turn it reports is a diagnostic, A69) |
- * | DWT-04 | ST (per-turn watch; two target turns while Fishball is archived → live) | W7, re-review | one notice per missed turn end, in order, each with the answer as of that turn end |
- * | DWT-05 | ST (target files deleted while DSH is down → restart) | W7 | the watch becomes target-missing; no notice |
- * | INT-01 | ST (target's turn running → DSH killed → restart → the target's log is closed 'interrupted') | W3 | no notice for the interrupted end; the watch stays active |
- * | QFL-01 | ST (maxQueuedInputs 1 and the queue full while Fishball is held → target finishes → release, restart) | W8 | the notice is not lost: exactly one notice arrives later (diagnostic: when) |
+ * | id     | technique | requirement | expected |
+ * |--------|-----------|-------------|----------|
+ * | DWT-01 | ST (active watch –restart→) | DESIGN §5c, §11 | the same watch is listed active after the restart; it still fires once (the answer of the turn after the restart); closed |
+ * | DWT-02 | ST (no instance → target finishes → attach) | DESIGN §5c "reported once it is live again"; contract §9 | exactly one notice after the attach, with that answer; closed |
+ * | DWT-03 | ST (repeat watch; no instance → target turn ends → DSH restart → attach → another restart → attach) | DESIGN §5c catch-up, dedupe `watch:<id>:<seq>`; contract §4.5 | one notice after the first catch-up; nothing pushed again for it after the second restart |
+ * | DWT-04 | ST (repeat watch; two target turns with no instance → attach) | DESIGN §5c "each turn end in order" for repeat | two notices, in order, each with the answer as of its own turn end; still active |
+ * | DWT-06 | ST (once; DSH booted with the connector row off → 3 target turns, the last ending max-tokens → row on again) | DESIGN §5c "finished fires only for the last turn end" | one notice, for the last turn end: its answer and reason max-tokens; closed |
+ * | DWT-06b | ST (once; no instance, the row running → 3 settled turns → attach) | DESIGN §5c "as of the turn end the watch saw" | exactly one notice (which turn it reports is a diagnostic) |
+ * | DWT-05 | ST (target files deleted while DSH is down → restart) | DESIGN §5c "Target gone" | session.watches shows target-missing; no notice |
+ * | INT-01 | ST (target's turn running → DSH killed → restart → the target's log is closed 'interrupted') | DESIGN §5c "`interrupted` (a crash) does not count" | no notice for the interrupted end; the watch stays active |
+ * | QFL-01 | ST (maxQueuedInputs 1, one unacked item → target finishes → DSH restart → attach) | DESIGN §5c "keeps the watermark"; contract §9 | the notice is not lost: exactly one notice arrives after the restart |
+ * | C1-EP-03 | EP (finished notice, no instance) | connector.md C1-EP-03; contract §9 | message_fishball with notify_when_finished is ok and queued; after the attach the finished notice (`watch`) is delivered once, after `m1` (`session`) |
+ * | C1-P-06 | P (global arrival order) | connector.md C1-P-06; contract §9 | Hand over with note n1, then m1 with the flag, then the turn ends, then attach: `user` (n1 outside the untrusted block), `session` (m1), `watch`, each once |
+ * | NIA-01 | ST (delivered → detach → attach) | contract §4.5, §9 "delivered once" | an acked notice is not pushed again after a reconnect |
+ *
+ * Retired: none (every old case has its no-instance or restart form above).
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { API, LIMITS, MS, PRESET, STATUS, WATCH_API, WATCH_STATUS } from './support/constants.mjs'
-import { HOOK, makeManaged, deleteSession, fishballCall, intakeNow, messageFishball, noticesSettled, settledIdle, turn, untrustedBlock, watchById, watchNotices, watchesOn } from './support/expect.mjs'
-import { bootHost, bootLive, newHome, sleep, until } from './support/host.mjs'
+import { LIMITS } from './support/constants.mjs'
+import { HOOK, deleteSession, messageFishball, untrustedBlock } from './support/expect.mjs'
+import { bootHost } from './support/host.mjs'
+import { KIND, STUB, bootStub, managedSession, quietPushes, stopStub, stubEnv, userSession } from './support/instance-stub.mjs'
+import { sleep, until } from './support/util.mjs'
+import {
+  WATCHES, allPushes, answerTurn, attachReady, crashKeeping, noticeBlock, noticePushes, noticesSettled, restartKeeping, setLimit, tok, watchEntry, watched,
+} from './support/instance-stub-watches.mjs'
 
-let seq = 0
-const tok = (label) => 'TOK' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 8)
-const LONG = { timeout: 150000 }
+const { mode: WMODE, status: WSTATUS, reason: REASON } = WATCHES
+const LONG = WATCHES.longCase
+const catchUp = (extra = {}) => ({ timeoutMs: WATCHES.catchUpMs, ...extra })
 
-describe('P6 watches across restarts', () => {
-  let host
-  let home
-  let fb
-  const ordinary = async (folder) => (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
-  const setLimit = async (patch) => { const r = await host.call('settingsUpdate', { patch }); assert.equal(r.ok, true, JSON.stringify(r.error)) }
-  async function reboot(resume = []) {
-    await host.stop()
-    host = await bootHost(home)
-    const st = await host.waitStatus([STATUS.live, STATUS.archived, STATUS.recovery, STATUS.failed], MS.boot)
-    for (const sessionId of resume) await host.call('resume', { sessionId })
-    return st
-  }
-  async function userWatch(sid) {
-    assert.equal((await host.post(WATCH_API.add, { sessionId: sid })).status, 200)
-    return (await watchesOn(host, sid)).find((w) => w.status === WATCH_STATUS.active)
-  }
-  async function toolWatch(args) {
-    const { json } = await fishballCall(host, fb, 'watch_session', args)
-    assert.equal(json?.ok, true, JSON.stringify(json))
-    return json.watch
-  }
-  async function archiveFishball() {
-    await settledIdle(host, fb)
-    assert.equal((await host.call('archive', { sessionId: fb, stopActivity: true })).ok, true)
-    await host.waitStatus(STATUS.archived)
-  }
-  async function revive() {
-    await host.call('unarchive', { sessionId: fb })
-    assert.equal((await host.post(API.recovery, { action: 'retry' })).status, 200)
-    assert.equal((await host.waitStatus(STATUS.live))?.status, STATUS.live)
-  }
-
-  before(async () => {
-    home = newHome('watch-durable')
-    const booted = await bootLive(home)
-    host = booted.host
-    fb = booted.state?.sessionId
-    await setLimit({ wakeupsPerHour: 0 })
-    await settledIdle(host, fb)
-  }, HOOK)
-  after(async () => { await host?.stop() }, HOOK)
-
-  it('DWT-01 an active watch survives a restart and still fires once', LONG, async () => {
-    const sid = await ordinary('d-01')
-    await turn(host, sid, [[{ text: 'warm-up' }]])
-    const w = await userWatch(sid)
-    assert.equal((await reboot([sid]))?.status, STATUS.live)
-    assert.deepEqual(await watchById(host, w.id), w, 'same watch after the restart')
-    const answer = tok('dwt01')
-    await turn(host, sid, [[{ text: answer }]])
-    const got = await noticesSettled(host, fb, w.id, 1)
-    assert.equal(got.length, 1)
-    assert.equal(untrustedBlock(got[0].text).fields.last_answer, answer)
-    assert.equal((await watchById(host, w.id)).status, WATCH_STATUS.closed)
-  })
-
-  it('DWT-02 a target that finished while Fishball was archived gives one notice once it is live', LONG, async () => {
-    const sid = await ordinary('d-02')
-    await turn(host, sid, [[{ text: 'warm-up' }]])
-    const w = await userWatch(sid)
-    await archiveFishball()
-    const answer = tok('dwt02')
-    await turn(host, sid, [[{ text: answer }]])
-    await sleep(1000)
-    await revive()
-    const got = await noticesSettled(host, fb, w.id, 1, { timeoutMs: 20000 })
-    assert.equal(got.length, 1, 'one notice after Fishball is live')
-    assert.equal(untrustedBlock(got[0].text).fields.last_answer, answer)
-    assert.equal((await watchById(host, w.id)).status, WATCH_STATUS.closed)
-  })
-
+describe('P6 watches across restarts and without an instance (H-STUB)', () => {
+  let booted
+  /** Every push the stubs of earlier hosts of this home received (a restart starts a new journal). */
+  const history = []
+  const host = () => booted.host
+  const stub = () => booted.stub
+  /** Restart DSH on the same home; attach: false leaves the new host with no instance. */
+  const restart = async (opts = {}) => { booted = await restartKeeping(booted, history, opts) }
   /** Three settled turns of the target; the last ends max-tokens. Returns the answers. */
   async function threeTurns(sid) {
-    const answers = [tok('dwt06a'), tok('dwt06b'), tok('dwt06c')]
-    await turn(host, sid, [[{ text: answers[0] }]])
-    await turn(host, sid, [[{ text: answers[1] }]])
-    await host.call('drive', { sessionId: sid, script: [[{ text: answers[2], finish: 'max-tokens' }]] })
-    await host.call('flush', { sessionId: sid })
+    const answers = [await answerTurn(host(), sid, 'dwt06a'), await answerTurn(host(), sid, 'dwt06b'), tok('dwt06c')]
+    await host().call('drive', { sessionId: sid, script: [[{ text: answers[2], finish: 'max-tokens' }]] })
+    await host().call('flush', { sessionId: sid })
     return answers
   }
 
-  it('DWT-06 several turns while the Fishball row was not running (plugin off) give ONE notice, for the last turn end', LONG, async () => {
-    const sid = await ordinary('d-06-down')
-    await turn(host, sid, [[{ text: 'warm-up' }]])
-    const w = await userWatch(sid)
-    await host.stop()
-    // The row is not selected: nothing of Fishball runs while the target works.
-    host = await bootHost(home, { env: { FBTEST_PLUGIN: 'off' } })
-    await host.call('resume', { sessionId: sid })
-    const answers = await threeTurns(sid)
-    assert.equal((await reboot())?.status, STATUS.live)
-    const got = await noticesSettled(host, fb, w.id, 1, { timeoutMs: 20000, quietMs: 2500 })
-    assert.equal(got.length, 1, 'one notice, not one per turn')
-    assert.equal(untrustedBlock(got[0].text).fields.last_answer, answers[2])
-    const now = await watchById(host, w.id)
-    assert.equal(now.lastReason, 'max-tokens', 'the last turn end is reported')
-    assert.equal(now.status, WATCH_STATUS.closed)
+  before(async () => { booted = await bootStub('watch-durable') }, HOOK)
+  after(() => stopStub(booted), HOOK)
+
+  it('DWT-01 an active watch survives a restart and still fires once', LONG, async () => {
+    const { sid, watchId } = await watched(host(), stub(), 'd-01')
+    const listed = await watchEntry(stub(), watchId)
+    await restart()
+    assert.deepEqual(await watchEntry(stub(), watchId), listed, 'the same watch after the restart')
+    await host().call('resume', { sessionId: sid })
+    const answer = await answerTurn(host(), sid, 'dwt01')
+    const got = await noticesSettled(stub(), watchId, 1, { history })
+    assert.equal(got.length, 1)
+    assert.equal(noticeBlock(got[0]).fields.last_answer, answer)
+    assert.equal((await watchEntry(stub(), watchId)).status, WSTATUS.closed)
   })
 
-  it('DWT-06b several settled turns while Fishball is archived (row running) give ONE notice', LONG, async (t) => {
-    const sid = await ordinary('d-06-arch')
-    await turn(host, sid, [[{ text: 'warm-up' }]])
-    const w = await userWatch(sid)
-    await archiveFishball()
+  it('DWT-02 a target that finished while no instance was attached gives one notice after the attach', LONG, async () => {
+    const { sid, watchId } = await watched(host(), stub(), 'd-02')
+    await stub().detach()
+    const answer = await answerTurn(host(), sid, 'dwt02')
+    await sleep(STUB.quietMs)
+    await attachReady(stub())
+    const got = await noticesSettled(stub(), watchId, 1, catchUp({ history }))
+    assert.equal(got.length, 1, 'one notice after the attach')
+    assert.equal(noticeBlock(got[0]).fields.last_answer, answer)
+    assert.equal((await watchEntry(stub(), watchId)).status, WSTATUS.closed)
+  })
+
+  it('DWT-06 several turns while the connector row was not running give ONE notice, for the last turn end', LONG, async () => {
+    const { sid, watchId } = await watched(host(), stub(), 'd-06-off')
+    history.push(...(await allPushes(stub())))
+    await host().stop()
+    // The connector bundle is not selected on this boot: nothing of the connector runs while the target works.
+    const off = await bootHost(booted.home, { env: stubEnv({ FBTEST_PLUGIN: 'off' }) })
+    booted = { ...booted, host: off }
+    await off.call('resume', { sessionId: sid })
     const answers = await threeTurns(sid)
-    await revive()
-    const got = await noticesSettled(host, fb, w.id, 1, { timeoutMs: 20000, quietMs: 2500 })
+    assert.equal((await off.call('lastTurnEnd', { sessionId: sid }))?.kind, REASON.maxTokens, 'precondition: the last turn ended max-tokens')
+    await off.stop()
+    booted = await bootStub('watch-durable-on', { home: booted.home })
+    const got = await noticesSettled(stub(), watchId, 1, catchUp({ history, quietMs: WATCHES.longQuietMs }))
     assert.equal(got.length, 1, 'one notice, not one per turn')
-    // The row keeps watching while Fishball is archived, so the first settled turn end already counts (A69).
-    const which = answers.indexOf(untrustedBlock(got[0].text).fields.last_answer)
-    t.diagnostic('the notice reports turn ' + (which + 1) + ' of 3, lastReason ' + (await watchById(host, w.id)).lastReason)
+    assert.equal(noticeBlock(got[0]).fields.last_answer, answers[2])
+    assert.ok(got[0].text.includes(JSON.stringify(REASON.maxTokens)), 'the last turn end is reported: ' + got[0].text.slice(0, 200))
+    assert.equal((await watchEntry(stub(), watchId)).status, WSTATUS.closed)
+  })
+
+  it('DWT-06b several settled turns while no instance is attached (row running) give ONE notice', LONG, async (t) => {
+    const { sid, watchId } = await watched(host(), stub(), 'd-06-noinst')
+    await stub().detach()
+    const answers = await threeTurns(sid)
+    await attachReady(stub())
+    const got = await noticesSettled(stub(), watchId, 1, catchUp({ history, quietMs: WATCHES.longQuietMs }))
+    assert.equal(got.length, 1, 'one notice, not one per turn')
+    // The row keeps watching with no instance, so the first settled turn end already counts (A69).
+    const which = answers.indexOf(noticeBlock(got[0]).fields.last_answer)
+    t.diagnostic('the notice reports turn ' + (which + 1) + ' of 3')
     assert.ok(which >= 0)
   })
 
   it('DWT-03 a missed turn end caught up after a full DSH restart is noticed once, and not again after another restart', LONG, async () => {
-    const sid = await ordinary('d-03')
-    await turn(host, sid, [[{ text: 'warm-up' }]])
-    const w = await toolWatch({ session_id: sid, condition: 'per-turn', mode: 'repeat' })
-    await archiveFishball()
-    await turn(host, sid, [[{ text: tok('dwt03') }]])
-    await host.call('flush', { sessionId: sid })
-    const st = await reboot()
-    assert.equal(st?.status, STATUS.archived)
-    await revive()
-    assert.equal((await noticesSettled(host, fb, w.id, 1, { timeoutMs: 20000 })).length, 1, 'caught up once')
-    assert.equal((await reboot())?.status, STATUS.live)
-    await sleep(2000)
-    assert.equal((await noticesSettled(host, fb, w.id, 0)).length, 1, 'never twice for the same turn end')
-    assert.equal((await watchById(host, w.id)).firedCount, 1)
+    const { sid, watchId } = await watched(host(), stub(), 'd-03', WMODE.repeat)
+    await stub().detach()
+    await answerTurn(host(), sid, 'dwt03')
+    await host().call('flush', { sessionId: sid })
+    await restart({ attach: false })
+    await attachReady(stub())
+    assert.equal((await noticesSettled(stub(), watchId, 1, catchUp({ history }))).length, 1, 'caught up once')
+    await restart()
+    await sleep(WATCHES.longQuietMs)
+    assert.equal((await noticePushes(stub(), watchId, history)).length, 1, 'never pushed twice for the same turn end')
   })
 
-  it('DWT-04 a per-turn watch catches up one notice per missed turn end', LONG, async () => {
-    const sid = await ordinary('d-04')
-    await turn(host, sid, [[{ text: 'warm-up' }]])
-    const w = await toolWatch({ session_id: sid, condition: 'per-turn', mode: 'repeat' })
-    await archiveFishball()
-    const answers = [tok('dwt04a'), tok('dwt04b')]
-    for (const a of answers) await turn(host, sid, [[{ text: a }]])
-    await revive()
-    const got = await noticesSettled(host, fb, w.id, 2, { timeoutMs: 20000 })
-    assert.equal(got.length, 2)
-    assert.deepEqual(got.map((n) => untrustedBlock(n.text).fields.last_answer), answers, 'each notice has the answer as of its own turn end, in order')
-    assert.equal((await watchById(host, w.id)).status, WATCH_STATUS.active)
+  it('DWT-04 a repeat watch catches up one notice per missed turn end, in order', LONG, async () => {
+    const { sid, watchId } = await watched(host(), stub(), 'd-04', WMODE.repeat)
+    await stub().detach()
+    const answers = [await answerTurn(host(), sid, 'dwt04a'), await answerTurn(host(), sid, 'dwt04b')]
+    await attachReady(stub())
+    const got = await noticesSettled(stub(), watchId, answers.length, catchUp({ history }))
+    assert.deepEqual(got.map((n) => noticeBlock(n).fields.last_answer), answers, 'each notice has the answer as of its own turn end, in order')
+    assert.equal((await watchEntry(stub(), watchId)).status, WSTATUS.active)
   })
 
   it('DWT-05 a target whose files are gone becomes target-missing at catch-up', LONG, async () => {
-    const sid = await ordinary('d-05')
-    await turn(host, sid, [[{ text: 'warm-up' }]])
-    const w = await userWatch(sid)
-    await host.stop()
-    assert.ok(deleteSession(home, sid).length > 0, 'precondition: its files existed')
-    host = await bootHost(home)
-    assert.equal((await host.waitStatus(STATUS.live, MS.boot))?.status, STATUS.live)
-    const missing = await until(async () => (await watchById(host, w.id))?.status === WATCH_STATUS.targetMissing, 10000, 100)
-    const others = (await host.state()).watches.watches.filter((x) => x.status === WATCH_STATUS.active).map((x) => x.id === w.id ? 'this' : x.targetSessionId)
-    assert.ok(missing, 'got ' + (await watchById(host, w.id))?.status + '; active watches at catch-up: ' + JSON.stringify(others) + '; target header now: ' + JSON.stringify(await host.call('header', { sessionId: sid })))
-    assert.equal((await watchNotices(host, fb, w.id)).length, 0)
+    const { sid, watchId } = await watched(host(), stub(), 'd-05')
+    history.push(...(await allPushes(stub())))
+    await host().stop()
+    assert.ok(deleteSession(booted.home, sid).length > 0, 'precondition: its files existed')
+    booted = await bootStub('watch-durable-missing', { home: booted.home })
+    const missing = await until(async () => (await watchEntry(stub(), watchId))?.status === WSTATUS.targetMissing, WATCHES.catchUpMs, STUB.pollMs)
+    assert.ok(missing, 'got ' + (await watchEntry(stub(), watchId))?.status)
+    assert.equal((await noticesSettled(stub(), watchId, 0, { history })).length, 0)
   })
 
   it('INT-01 a turn closed as interrupted after a crash never fires', LONG, async (t) => {
-    const sid = await ordinary('i-01')
-    await turn(host, sid, [[{ text: 'warm-up' }]])
-    const w = await toolWatch({ session_id: sid, condition: 'per-turn', mode: 'repeat' })
-    await host.call('holdNext', { sessionId: sid })
-    await host.call('driveStart', { sessionId: sid, text: 'crash in the middle' })
-    assert.ok(await until(() => host.call('isHeld', { sessionId: sid }), 5000, 50))
-    await host.call('flush', { sessionId: sid })
-    await host.kill()
-    host = await bootHost(home)
-    assert.equal((await host.waitStatus(STATUS.live, MS.boot))?.status, STATUS.live)
-    await host.call('resume', { sessionId: sid })
-    const ends = await host.call('turnEnds', { sessionId: sid })
+    const { sid, watchId } = await watched(host(), stub(), 'i-01', WMODE.repeat)
+    await host().call('holdNext', { sessionId: sid })
+    await host().call('driveStart', { sessionId: sid, text: 'crash in the middle' })
+    assert.ok(await until(() => host().call('isHeld', { sessionId: sid }), STUB.waitMs, STUB.pollMs))
+    await host().call('flush', { sessionId: sid })
+    booted = await crashKeeping(booted, history)
+    await host().call('resume', { sessionId: sid })
+    const ends = await host().call('turnEnds', { sessionId: sid })
     t.diagnostic('turn ends after the crash: ' + JSON.stringify(ends))
-    assert.equal(ends.at(-1), 'interrupted', 'precondition: the open turn is closed interrupted')
-    await sleep(2500)
-    await settledIdle(host, fb)
-    assert.equal((await watchNotices(host, fb, w.id)).length, 0, 'no notice for interrupted')
-    const now = await watchById(host, w.id)
-    assert.equal(now.status, WATCH_STATUS.active)
-    assert.equal(now.firedCount, 0)
+    assert.equal(ends.at(-1), REASON.interrupted, 'precondition: the open turn is closed interrupted')
+    assert.equal((await noticesSettled(stub(), watchId, 0, { history, quietMs: WATCHES.longQuietMs })).length, 0, 'no notice for interrupted')
+    assert.equal((await watchEntry(stub(), watchId)).status, WSTATUS.active)
   })
 
-  it('QFL-01 a notice due while the queue is full is not lost', LONG, async (t) => {
-    const sid = await ordinary('q-01')
-    const sender = await ordinary('q-01-sender')
-    await makeManaged(host, fb, sender) // rev11a: only a managed session has message_fishball
-    await turn(host, sid, [[{ text: 'warm-up' }]])
-    const w = await userWatch(sid)
-    await settledIdle(host, fb)
-    await setLimit({ maxQueuedInputs: 1 })
+  it('QFL-01 a notice due while the queue is full is not lost across a restart', LONG, async () => {
+    const { sid, watchId } = await watched(host(), stub(), 'q-01')
+    const sender = await managedSession(host(), 'q-01-sender')
+    await quietPushes(stub())
+    await setLimit(host(), { maxQueuedInputs: 1 })
     try {
-      await host.call('holdNext', { sessionId: fb })
-      await host.call('driveStart', { sessionId: fb, text: 'held turn' })
-      assert.ok(await until(() => host.call('isHeld', { sessionId: fb }), 5000, 50))
-      assert.equal((await messageFishball(host, sender, { message: tok('qfill') })).json?.ok, true, 'fills the queue')
-      assert.equal((await intakeNow(host)).queued, 1)
-      await turn(host, sid, [[{ text: tok('qfl01') }]])
-      await sleep(1500)
-      t.diagnostic('while full: ' + JSON.stringify(await watchById(host, w.id)))
-      assert.equal((await watchById(host, w.id)).firedCount, 0, 'not fired while full')
-      await host.call('releaseHold', { sessionId: fb })
-      await settledIdle(host, fb)
-      await sleep(2000)
-      const afterRelease = (await watchNotices(host, fb, w.id)).length
-      t.diagnostic('notices after the queue drained, before a restart: ' + afterRelease)
-      await setLimit({ maxQueuedInputs: LIMITS.maxQueuedInputs.default })
-      if (afterRelease === 0) assert.equal((await reboot())?.status, STATUS.live)
-      const got = await noticesSettled(host, fb, w.id, 1, { timeoutMs: 20000 })
+      // One pushed but unacked item counts toward the bound (contract §9): the queue is full.
+      await stub().ackPolicy(0)
+      const fill = tok('qfill')
+      assert.equal((await messageFishball(host(), sender, { message: fill })).json?.ok, true, 'fills the queue')
+      assert.ok(await stub().waitPush(fill), 'precondition: pushed and not acked')
+      const answer = await answerTurn(host(), sid, 'qfl01')
+      await host().call('flush', { sessionId: sid })
+      assert.equal((await noticesSettled(stub(), watchId, 0, { history })).length, 0, 'not delivered while full')
+      await setLimit(host(), { maxQueuedInputs: LIMITS.maxQueuedInputs.default })
+      await restart()
+      const got = await noticesSettled(stub(), watchId, 1, catchUp({ history }))
       assert.equal(got.length, 1, 'exactly one notice arrives later')
+      assert.equal(noticeBlock(got[0]).fields.last_answer, answer)
     } finally {
-      await host.call('releaseHold', { sessionId: fb }).catch(() => {})
-      await setLimit({ maxQueuedInputs: LIMITS.maxQueuedInputs.default }).catch(() => {})
+      await stub().ackPolicy(null)
+      await setLimit(host(), { maxQueuedInputs: LIMITS.maxQueuedInputs.default })
     }
+  })
+
+  describe('no instance: the queued finished notice (contract §9)', () => {
+    /** The kinds of the pushes of the newest attachment whose text contains any needle, in push order. */
+    const kindsOf = async (needles) => (await stub().pushes()).map((f) => f.payload).filter((p) => needles.some((n) => p.text.includes(n)))
+
+    let delivered
+    it('C1-EP-03 message_fishball with the flag and no instance: the notice is delivered once after the attach, after m1', LONG, async () => {
+      const sid = await managedSession(host(), 'c1-ep-03')
+      await quietPushes(stub())
+      await stub().detach()
+      const m1 = tok('m1')
+      const { json } = await messageFishball(host(), sid, { message: m1, notify_when_finished: true })
+      assert.equal(json?.ok, true, JSON.stringify(json))
+      assert.ok(json.watch?.id, 'a watch: ' + JSON.stringify(json))
+      await sleep(STUB.quietMs)
+      await attachReady(stub())
+      await noticesSettled(stub(), json.watch.id, 1, catchUp({ history }))
+      const got = await kindsOf([m1, json.watch.id])
+      assert.deepEqual(got.map((p) => p.kind), [KIND.session, KIND.watch], 'm1, then the notice, each once')
+      delivered = { watchId: json.watch.id }
+    })
+
+    it('NIA-01 an acked notice is not pushed again after a reconnect', LONG, async () => {
+      assert.ok(delivered, 'precondition: C1-EP-03')
+      await quietPushes(stub())
+      await stub().detach()
+      await attachReady(stub())
+      await sleep(WATCHES.longQuietMs)
+      assert.equal((await stub().pushes()).filter((f) => f.payload.text.includes(delivered.watchId)).length, 0, 'nothing for it on the new attachment')
+    })
+
+    it('C1-P-06 the note, m1 and the finished notice arrive in arrival order, each once', LONG, async () => {
+      const sid = await userSession(host(), 'c1-p-06')
+      await quietPushes(stub())
+      await stub().detach()
+      const n1 = tok('n1')
+      assert.equal((await host().post(WATCHES.sendRoute, { sessionId: sid, note: n1 })).status, 200, 'Hand over with a note')
+      const m1 = tok('m1')
+      const { json } = await messageFishball(host(), sid, { message: m1, notify_when_finished: true })
+      assert.equal(json?.ok, true, JSON.stringify(json))
+      await sleep(STUB.quietMs)
+      await attachReady(stub())
+      await noticesSettled(stub(), json.watch.id, 1, catchUp({ history }))
+      const got = await kindsOf([n1, m1, json.watch.id])
+      assert.deepEqual(got.map((p) => p.kind), [KIND.user, KIND.session, KIND.watch])
+      const note = untrustedBlock(got[0].text)
+      assert.ok((note ? note.header : got[0].text).includes(n1), 'n1 is outside the untrusted block')
+    })
   })
 })

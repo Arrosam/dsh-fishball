@@ -1,134 +1,118 @@
 /**
- * Revision 11 rev11e: prompts already showing (DESIGN §7a.1 "Yours", §7a.9, §13d S33; requirements item 20 and
- * done-when for rev11e). The scripted stock prompt is HELD, standing in for a prompt showing in a browser. The
- * broker remembers each prompt it passed on; Fishball is told nothing; list_frozen_sessions lists them (session,
- * tool, exact arguments, a prompt id). One host; cases run in order; each case ends by freeing its sessions.
+ * Revision 11 rev11e on H-STUB: prompts already showing (DESIGN §7a.1 "Yours", §7a.9, §9 "Prompts already
+ * showing", §13d S33; requirements item 20 and done-when for rev11e; contract §4.3 `prompt.list` / `prompt.answer`).
+ * The scripted stock prompt is HELD, standing in for a prompt showing in a browser. The broker remembers each
+ * prompt it passed on; the instance is told nothing; `prompt.list` lists them.
  *
- * | id      | technique | expected |
- * |---------|-----------|----------|
- * | FRZ-01  | EP (nothing showing) | list_frozen_sessions answers ok with no entry |
- * | FRZ-02  | EP (a prompt in a session that is yours) | listed with the session, the tool and its exact arguments, a prompt id; Fishball took no step, no intake item, no notice, no audit row, no card; the session is still yours |
- * | FRZ-03  | EP (arguments with quotes, markup, unicode and several fields) | the listed arguments equal the call's arguments exactly |
- * | FRZ-04  | EP (two sessions) | two entries with different prompt ids, each with its own session and arguments |
- * | FRZ-05  | ST (your own click: Allow once) | the call runs; the entry leaves the list; Fishball is told nothing; the session is still yours; answer_prompt on the old id is refused |
- * | FRZ-06  | ST (your own click: Reject) | the entry leaves; the call got the rejection |
- * | FRZ-07  | ST (the turn is stopped) | the entry leaves; answer_prompt on its id is refused |
+ * | id      | technique | requirement | expected |
+ * |---------|-----------|-------------|----------|
+ * | FRZ-01  | EP (nothing showing) | §4.3 | `{prompts:[]}` |
+ * | FRZ-02  | EP (a prompt in a session that is yours) | §7a.9, §4.3 | one entry of exactly the §4.3 keys: a prompt id, the session, the tool, argumentsStatus complete, since, managed false; no approval.request, no inbox.push, no audit row, no card; the session is still yours |
+ * | FRZ-04  | EP (two sessions) | §7a.9 | two entries with different prompt ids, each with its own session |
+ * | FRZ-05  | ST (your own click: Allow once) | §7a.9 "an entry leaves on any settle" | the call runs; the entry leaves; nothing reaches the instance; still yours; prompt.answer on the old id `expired` |
+ * | FRZ-06  | ST (your own click: Reject) | §7a.9 | the entry leaves; the call got the rejection; as FRZ-05 |
+ * | FRZ-07  | ST (the turn is stopped) | §7a.9 | the entry leaves; prompt.answer on its id `expired`; no decisions row |
+ *
+ * Retired:
+ * - FRZ-02 "exact arguments" and FRZ-03 (quotes, markup, unicode listed exactly): prompt.list carries no arguments (contract §4.3: promptId, sessionId, title, toolName, argumentsStatus, since, managed).
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { OUTCOME, PROMPT_DECISION } from './support/constants.mjs'
-import { HOOK, T, pileNow, requestMessages, storedRows } from './support/expect.mjs'
-import { approvalAudit } from './support/expect.mjs'
-import { QUIET_MS, argsOf, entryFor, idOf, pileHost, promptTools, refused, sleep, toolOf, tokens, yoursSession } from './support/rev11e.mjs'
-import { ASK_TOOL } from './support/constants.mjs'
+import { ARGUMENTS_STATUS, ENVELOPE, EVENT, OPERATION } from 'fishball-connector/contract'
+import { ASK_TOOL, OUTCOME, PROMPT_DECISION } from './support/constants.mjs'
+import { HOOK, T, approvalAudit, pileNow } from './support/expect.mjs'
+import { stopStub } from './support/instance-stub.mjs'
+import {
+  GRANT_C, answerPrompt, assertRefused, click, decisions, grantStub, listedPrompts, managedOf, promptsOf, resultOf, show, sleep, stopTurn,
+  tokens, yours,
+} from './support/instance-stub-grants.mjs'
 
 const { tok, cid } = tokens('FRZ')
 
-describe('Revision 11 rev11e: list_frozen_sessions', () => {
+describe('Revision 11 rev11e on H-STUB: prompt.list', () => {
   let ctx
-  let p
   let x
   let y
+  /** Show a prompt in sid and return {text, callId, entry} for its single listed entry. */
+  async function showing(sid, label) {
+    const text = tok(label)
+    const callId = cid(label)
+    await show(ctx, sid, text, callId)
+    const mine = await promptsOf(ctx, sid)
+    assert.equal(mine.length, 1, 'one entry for the session: ' + JSON.stringify(mine))
+    return { text, callId, entry: mine[0] }
+  }
+  /** Nothing about sid's prompt reached the instance: no approval.request and no inbox item from sid. */
+  async function untold(sid) {
+    assert.deepEqual((await ctx.stub.events(EVENT.approvalRequest)).filter((f) => f.payload.callId?.includes('FRZ')), [], 'no approval.request')
+    assert.deepEqual((await ctx.stub.pushes()).filter((f) => f.payload.sourceSessionId === sid), [], 'no inbox.push about the session')
+  }
+  /** A late prompt.answer on an entry that left: expired, nothing changes. */
+  async function lateRefused(sid, promptId, text) {
+    await assertRefused(ctx, await answerPrompt(ctx, sid, promptId, { decision: PROMPT_DECISION.reject, reason: 'late ' + text }), 'expired')
+    assert.equal(await managedOf(ctx, sid), undefined, 'a refused answer does not make the session managed')
+    assert.deepEqual(decisions(ctx, promptId), [], 'nothing audited for a refused answer')
+  }
+
   before(async () => {
-    ctx = await pileHost('rev11e-frozen')
-    p = promptTools(ctx, { tok, cid })
-    x = await yoursSession(ctx, 'frz-x')
-    y = await yoursSession(ctx, 'frz-y')
+    ctx = await grantStub('rev11e-frozen')
+    x = await yours(ctx, 'frz-x')
+    y = await yours(ctx, 'frz-y')
   }, HOOK)
-  after(async () => { await ctx.host?.stop() }, HOOK)
+  after(() => stopStub(ctx), HOOK)
 
   it('FRZ-01 nothing showing: an empty list', T, async () => {
-    const { json, entries } = await p.frozen()
-    assert.equal(json?.ok, true, JSON.stringify(json))
-    assert.deepEqual(entries, [])
+    const r = await ctx.stub.op(OPERATION.promptList, {})
+    assert.deepEqual({ type: r.type, payload: r.payload }, { type: ENVELOPE.type.response, payload: { prompts: [] } })
   })
 
-  it('FRZ-02 a prompt in a session that is yours is listed with its tool and exact arguments; Fishball took no step', T, async () => {
-    const text = tok('02')
-    const before = await p.fbWork()
+  it('FRZ-02 a prompt in a session that is yours is listed; the instance is told nothing', T, async () => {
     const auditBefore = approvalAudit(ctx.home).length
-    await p.show(x, text, cid('02'))
-    await sleep(QUIET_MS)
-    assert.deepEqual(await p.fbWork(), before, 'no Fishball step and no intake item when the prompt appeared')
-    assert.equal((await requestMessages(ctx.host, ctx.fb, text)).length, 0, 'no notice about it')
+    const before = Date.now()
+    const { entry } = await showing(x, '02')
+    await sleep(GRANT_C.quietMs)
+    assert.deepEqual(Object.keys(entry).sort(), [...GRANT_C.promptKeys].sort(), 'exactly the contract keys')
+    assert.ok(typeof entry.promptId === 'string' && entry.promptId.length > 0, 'a prompt id')
+    assert.deepEqual({ sessionId: entry.sessionId, toolName: entry.toolName, argumentsStatus: entry.argumentsStatus, managed: entry.managed }, { sessionId: x, toolName: ASK_TOOL, argumentsStatus: ARGUMENTS_STATUS.complete, managed: false })
+    assert.ok(Number.isInteger(entry.since) && entry.since >= before - GRANT_C.endToleranceMs && entry.since <= Date.now(), 'since in epoch ms: ' + entry.since)
+    assert.equal(typeof entry.title, 'string')
+    await untold(x)
     assert.equal(approvalAudit(ctx.home).length, auditBefore, 'no audit row')
     assert.deepEqual(await pileNow(ctx.host), [], 'a prompt in your own session is not a card')
-    assert.equal(await p.managed(x), undefined, 'still yours')
-    const { json, entries } = await p.frozen()
-    assert.equal(json?.ok, true, JSON.stringify(json))
-    const e = entryFor(entries, text)
-    assert.ok(e, 'the prompt is listed: ' + JSON.stringify(json))
-    assert.ok(idOf(e), 'a prompt id: ' + JSON.stringify(e))
-    assert.equal(toolOf(e), ASK_TOOL)
-    assert.deepEqual(argsOf(e), { text }, 'the exact arguments')
-    assert.ok(JSON.stringify(e).includes(x), 'names the session: ' + JSON.stringify(e))
-    assert.equal(entries.filter((z) => JSON.stringify(z).includes(text)).length, 1, 'once')
-    await p.click(OUTCOME.reject)
+    assert.equal(await managedOf(ctx, x), undefined, 'still yours')
+    await click(ctx, OUTCOME.reject)
     await ctx.host.call('waitIdle', { sessionId: x })
   })
 
-  it('FRZ-03 arguments with quotes, markup, unicode and several fields are listed exactly', T, async () => {
-    const text = tok('03')
-    const extra = { justification: 'say "hi" <b>é世界</b> \\ \n second line' }
-    await p.show(x, text, cid('03'), extra)
-    const { entries } = await p.frozen()
-    const e = entryFor(entries, text)
-    assert.ok(e, 'listed')
-    assert.deepEqual(argsOf(e), { text, ...extra })
-    await p.click(OUTCOME.reject)
-    await ctx.host.call('waitIdle', { sessionId: x })
-  })
-
-  it('FRZ-04 two sessions with a prompt each: two entries with different ids, each with its own session and arguments', T, async () => {
-    const [a, b] = [tok('04a'), tok('04b')]
-    await p.show(x, a, cid('04a'))
-    await p.show(y, b, cid('04b'))
-    const { entries } = await p.frozen()
-    const [ea, eb] = [entryFor(entries, a), entryFor(entries, b)]
-    assert.ok(ea && eb, 'both listed: ' + JSON.stringify(entries))
-    assert.notEqual(idOf(ea), idOf(eb))
-    assert.ok(JSON.stringify(ea).includes(x) && !JSON.stringify(ea).includes(y))
-    assert.ok(JSON.stringify(eb).includes(y) && !JSON.stringify(eb).includes(x))
-    assert.deepEqual(argsOf(ea), { text: a })
-    assert.deepEqual(argsOf(eb), { text: b })
+  it('FRZ-04 two sessions with a prompt each: two entries with different ids, each with its own session', T, async () => {
+    const a = await showing(x, '04a')
+    const b = await showing(y, '04b')
+    assert.notEqual(a.entry.promptId, b.entry.promptId)
+    assert.equal((await listedPrompts(ctx)).length, 2)
     // Your click answers the oldest prompt (x's): only that entry leaves.
-    await p.click(OUTCOME.allow)
+    await click(ctx, OUTCOME.allow)
     await ctx.host.call('waitIdle', { sessionId: x })
-    const after = (await p.frozen()).entries
-    assert.equal(entryFor(after, a), undefined, 'the clicked prompt left')
-    assert.ok(entryFor(after, b), 'the other still showing')
-    await p.click(OUTCOME.reject)
+    assert.deepEqual(await promptsOf(ctx, x), [], 'the clicked prompt left')
+    assert.deepEqual((await promptsOf(ctx, y)).map((e) => e.promptId), [b.entry.promptId], 'the other still showing')
+    await click(ctx, OUTCOME.reject)
     await ctx.host.call('waitIdle', { sessionId: y })
   })
 
   for (const [id, label, outcome] of [['FRZ-05', 'Allow once', OUTCOME.allow], ['FRZ-06', 'Reject', OUTCOME.reject]]) {
-    it(id + ' your own click (' + label + '): the call gets it, the entry leaves, Fishball took no step, the session stays yours', T, async () => {
-      const text = tok(id)
-      const callId = cid(id)
-      await p.show(x, text, callId)
-      const { entries } = await p.frozen()
-      const promptId = idOf(entryFor(entries, text))
-      assert.ok(promptId)
-      await p.click(outcome)
-      assert.equal((await p.result(x, callId)).text, 'outcome=' + outcome)
-      assert.equal(entryFor((await p.frozen()).entries, text), undefined, 'the entry left the list')
-      const late = await p.answerPrompt({ prompt_id: promptId, decision: PROMPT_DECISION.reject, reason: 'late ' + text })
-      assert.ok(refused(late), 'an answer after your click is refused: ' + late.result?.text)
-      assert.equal(await p.managed(x), undefined, 'a refused answer does not make the session managed')
-      assert.equal((await requestMessages(ctx.host, ctx.fb, text)).length, 0, 'your click told Fishball nothing')
+    it(id + ' your own click (' + label + '): the call gets it, the entry leaves, the instance is told nothing, the session stays yours', T, async () => {
+      const s = await showing(x, id)
+      await click(ctx, outcome)
+      assert.equal((await resultOf(ctx, x, s.callId)).text, 'outcome=' + outcome)
+      assert.deepEqual(await promptsOf(ctx, x), [], 'the entry left the list')
+      await lateRefused(x, s.entry.promptId, s.text)
+      await untold(x)
     })
   }
 
-  it('FRZ-07 the turn is stopped while the prompt shows: the entry leaves and answer_prompt on its id is refused', T, async () => {
-    const text = tok('07')
-    await p.show(x, text, cid('07'))
-    const promptId = idOf(entryFor((await p.frozen()).entries, text))
-    assert.ok(promptId)
-    await p.stop(x)
-    assert.equal(entryFor((await p.frozen()).entries, text), undefined, 'the entry left')
-    const late = await p.answerPrompt({ prompt_id: promptId, decision: PROMPT_DECISION.reject, reason: 'late ' + text })
-    assert.ok(refused(late), 'refused: ' + late.result?.text)
-    assert.equal(await p.managed(x), undefined)
-    assert.deepEqual(storedRows(ctx.home, 'decisions').filter((d) => d.target === promptId), [], 'nothing audited for a refused answer')
+  it('FRZ-07 the turn is stopped while the prompt shows: the entry leaves and prompt.answer on its id is expired', T, async () => {
+    const s = await showing(x, '07')
+    await stopTurn(ctx, x)
+    assert.deepEqual(await promptsOf(ctx, x), [], 'the entry left')
+    await lateRefused(x, s.entry.promptId, s.text)
   })
 })

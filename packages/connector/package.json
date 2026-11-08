@@ -1,0 +1,67 @@
+{
+  "name": "fishball-connector",
+  "//version": "The package version is the release's (user decision 2026-11-07: 0.1.0-alpha.0 for both packages). It is independent of the contract version, which lives only in CONNECTOR_CONTRACT (1.1) and is checked when an instance attaches (design §0.2).",
+  "version": "0.1.0-alpha.0",
+  "description": "Fishball's body in DeepSeek Harness: manages your sessions for Fishball (Hand over, message_fishball, permission requests, questions, watches) and connects an external Fishball instance through the documented fishball-connector contract (./contract).",
+  "icon": "./assets/connector-icon.svg",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "//exports": "./records is the card record's browser module (design §0.2). It is the client bundle's package-local chunk client.records.js, because DSH serves only client.*.js siblings of client.js; importing it outside a DSH page registers nothing.",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The card's own runtime text stays in client.js.",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./contract": "./contract/index.js",
+    "./records": "./client.records.js",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "client.records.js",
+    "src/",
+    "contract/",
+    "assets/connector-icon.svg",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate.",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-scope": "*",
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-session-title": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*",
+    "yaml": "*",
+    "zod": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  }
+}

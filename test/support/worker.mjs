@@ -8,7 +8,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTALL_EVENTS, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, CONNECTOR, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTANCE, INSTALL_EVENTS, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { linkContractForSourceRun } from './contract-link.mjs'
 import { fixtureTool, plainConfig, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
 
@@ -60,7 +61,7 @@ const profileDir = path.join(home, 'profiles', PROFILE)
 if (!fs.existsSync(profileDir)) {
   initializeProfileFromDefault(PROFILE, 'web', home)
   link(profileDir, FIXTURE_BUNDLE.name, FIXTURE_BUNDLE.dir)
-  link(profileDir, PACKAGE_NAME, REPO)
+  for (const p of pluginPackages()) link(profileDir, p.name, p.dir)
   // P3: installed in the profile but not enabled there, so they are Fishball-only candidates.
   for (const b of Object.values(ONLY_BUNDLES)) link(profileDir, b.name, b.dir, false)
   // Post-review: the defective Fishball-only candidates, only in homes that ask for them.
@@ -73,39 +74,54 @@ if (!fs.existsSync(profileDir)) {
   if (process.env.FBTEST_MANAGER === '1') for (const b of Object.values(MANAGER_BUNDLES)) link(profileDir, b.name, b.dir, b.enabled)
 } else if (EXAMPLE_MODE) exampleDir()
 /**
- * Plugin statuses: FBTEST_PLUGIN_DIR links dsh-fishball to another checkout (the previous version, for the
- * existing-install cases); every boot re-points the link, so the same home can boot the old and the new version.
- * FBTEST_LINK (JSON [{name, dir, enabled}]) links further bundles on this boot when the profile lacks them
- * (a bundle installed while DSH was down).
+ * The two M1 plugin packages linked into every test profile (docs/package-layout.md): the connector
+ * (row, client, settings) and the instance (the built-in Fishball). The root is not a plugin.
+ * FBTEST_PLUGIN_DIR points the connector at another checkout for the existing-install cases; its
+ * `workspaces` field is what tells a split checkout from an old single-package one.
  */
-relinkPlugin(profileDir, process.env.FBTEST_PLUGIN_DIR ?? REPO)
+function pluginPackages() {
+  const target = process.env.FBTEST_PLUGIN_DIR
+  if (!target) return [CONNECTOR, INSTANCE]
+  const pkg = JSON.parse(fs.readFileSync(path.join(target, 'package.json'), 'utf8'))
+  if (pkg.workspaces) return [{ name: CONNECTOR.name, dir: path.join(target, 'packages', 'connector') }, { name: INSTANCE.name, dir: path.join(target, 'packages', 'instance') }]
+  // Old single-package checkout: one bundle holding both rows; there is no instance package to link.
+  return [{ name: pkg.name, dir: target }]
+}
+/**
+ * Plugin statuses: every boot re-points the links, so the same home can boot the old and the new
+ * version. FBTEST_LINK (JSON [{name, dir, enabled}]) links further bundles on this boot when the
+ * profile lacks them (a bundle installed while DSH was down).
+ */
+linkContractForSourceRun()
+for (const p of pluginPackages()) relinkPlugin(profileDir, p.name, p.dir)
 for (const b of JSON.parse(process.env.FBTEST_LINK ?? '[]')) {
   const deps = JSON.parse(fs.readFileSync(path.join(profileDir, 'package.json'), 'utf8')).dependencies ?? {}
   if (!Object.hasOwn(deps, b.name)) link(profileDir, b.name, b.dir, b.enabled)
 }
 
-function relinkPlugin(dir, target) {
+function relinkPlugin(dir, name, target) {
   const file = path.join(dir, 'package.json')
   const pkg = JSON.parse(fs.readFileSync(file, 'utf8'))
-  if (pkg.dependencies?.[PACKAGE_NAME] !== 'link:' + target) {
-    pkg.dependencies = { ...pkg.dependencies, [PACKAGE_NAME]: 'link:' + target }
+  if (pkg.dependencies?.[name] !== 'link:' + target) {
+    pkg.dependencies = { ...pkg.dependencies, [name]: 'link:' + target }
     fs.writeFileSync(file, JSON.stringify(pkg, null, 2))
   }
-  const linkPath = path.join(dir, 'node_modules', PACKAGE_NAME)
+  const linkPath = path.join(dir, 'node_modules', name)
   let current = null
   try { current = fs.readlinkSync(linkPath) } catch { /* missing */ }
   if (current === target) return
   fs.rmSync(linkPath, { force: true })
   fs.symlinkSync(target, linkPath)
 }
-// FBTEST_PLUGIN=off boots this home with the plugin installed but its bundle not selected (used to seed state).
-setBundleSelected(profileDir, PACKAGE_NAME, process.env.FBTEST_PLUGIN !== 'off')
+// FBTEST_PLUGIN=off boots this home with both plugins installed but their bundles not selected
+// (used to seed state).
+setBundleSelected(profileDir, pluginPackages().map((p) => p.name), process.env.FBTEST_PLUGIN !== 'off')
 
-function setBundleSelected(dir, name, selected) {
+function setBundleSelected(dir, names, selected) {
   const file = path.join(dir, 'package.json')
   const pkg = JSON.parse(fs.readFileSync(file, 'utf8'))
-  const bundles = pkg.dsh.profile.bundles.filter((b) => b !== name)
-  if (selected) bundles.push(name)
+  const bundles = pkg.dsh.profile.bundles.filter((b) => !names.includes(b))
+  if (selected) bundles.push(...names)
   if (JSON.stringify(bundles) === JSON.stringify(pkg.dsh.profile.bundles)) return
   pkg.dsh.profile.bundles = bundles
   fs.writeFileSync(file, JSON.stringify(pkg, null, 2))
