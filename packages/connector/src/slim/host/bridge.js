@@ -79,6 +79,7 @@ import {
   validateRequest,
 } from '../contract.js'
 import { LIMITS } from '../limits.js'
+import { hasVisibleCharacter } from '../../text.js'
 
 /**
  * Bridge resource ceilings. They are runtime configuration, not domain rules, so they are
@@ -670,10 +671,11 @@ function sessionHandlers(service) {
       return { sessions }
     }],
     [OPERATION.sessionStart, async ({ payload }) => {
-      // A session needs a title the sidebar can show (the user's decision, 2026-11-08): an empty or
-      // blank one is refused before anything is created. Contract 1.1 has no title code, so it is
-      // the title's lower bound of one character (§8 titleChars), limit-exceeded.
-      if (payload.title.trim().length === 0) refuse(ERROR.limit)
+      // A session needs a title the sidebar can show (the user's decision, 2026-11-08): a title
+      // without one visible character is refused before anything is created, including when DSH
+      // has no sessionTitle service. Contract 1.1 has no title code, so it is the title's lower
+      // bound of one character (§8 titleChars), limit-exceeded.
+      if (!hasVisibleCharacter(payload.title)) refuse(ERROR.limit)
       const target = await placeOf(service, payload.folder)
       const result = await service.start({
         target,
