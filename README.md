@@ -41,7 +41,7 @@ The commands use the profile `web`; use your own profile name after `--profile`.
 
    Install the connector first. The instance declares it as a peer (`fishball-connector >=0.1.0-alpha.0 <2`), and DSH does not install peers by itself. pnpm also lists DSH's own packages as missing peers; DSH provides them when it runs, so that warning is expected.
 
-3. **Start DSH** as usual. The two plugins find each other by themselves; no profile edit is needed. Fishball starts once DSH is ready. On its first start the instance creates its private profile under `<DSH_HOME>/fishball/runtime`.
+3. **Start DSH** as usual. The two plugins find each other by themselves; no profile edit is needed. Fishball starts once DSH is ready. On its first start the instance creates its private profile under `<DSH_HOME>/fishball/runtime`. The DSH home must be a canonical real path, not a path through a symbolic link such as `/tmp` (`/private/tmp` on macOS); otherwise the instance reports `INVALID_MAIN_HOME` and does not start.
 
 To use the connector with your own instance, install only the connector in step 2.
 

@@ -11,7 +11,7 @@ import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
 import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes.js'
 import { createChildProviderSync } from './src/provider-sync-service.js'
 import { CONNECTOR_CONTRACT, ContractError, ERROR, ROUTES } from './src/slim/contract.js'
-import { BINDING_STATE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
+import { BINDING_STATE, LAUNCH_CODE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
 import { migrateLaunchSettings } from './src/settings-migration.js'
 
@@ -214,14 +214,17 @@ export async function apply(ctx, config) {
         if (closed) return status()
         await bounded(owner.start(), owner.limits.startupTimeoutMs)
         if (!closed && state === PLUGIN.state.starting) set(PLUGIN.state.ready)
-      } catch {
+      } catch (error) {
         owner.parentExit()
         // Abort any late startup continuation; retained ownership prevents a duplicate.
         await owner.shutdown().catch(() => {})
         // A refused attach already left `starting` with its own code (the transport listener
-        // above), so only another failure is NATIVE_START_FAILED; nothing restarts either by
-        // itself (inst-OQ-03, inst-OQ-09).
-        if (!closed && state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.failed)
+        // above). A non-canonical main home is the one launch failure the user can act on, so it
+        // keeps INVALID_MAIN_HOME instead of the generic NATIVE_START_FAILED (D2); every other
+        // failure stays generic, and nothing restarts either by itself (inst-OQ-03, inst-OQ-09).
+        if (!closed && state === PLUGIN.state.starting) {
+          set(PLUGIN.state.failed, error?.code === LAUNCH_CODE.invalidMainHome ? LAUNCH_CODE.invalidMainHome : PLUGIN.code.failed)
+        }
       }
       return status()
     })().finally(() => { startup = undefined })
