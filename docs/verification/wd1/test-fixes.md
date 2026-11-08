@@ -10,4 +10,4 @@ Cause: the supplemental hook passed `runtimeRequire.resolve('@deepseek-ai/schema
 
 Correction: after the already-approved resolver hook is installed, import Cordis and Schemastery **sequentially by bare ESM specifier**. The explicit selected runtime still owns package resolution, and its ESM import condition now matches the product. Remove the unused file-URL helper. No assertions, expected values, cases, TODOs, product files or requirements change. Independent reviewer confirmed the fix from both installed export maps and the failure trace.
 
-Classification: **supplemental test-driver defect**, not a product failure. All initial hook failures remain preserved and excluded from acceptance/pass totals. The corrected suite must be rerun on both SDKs.
+Classification: **supplemental test-driver defect**, not a product failure. All initial hook failures remain preserved and excluded from acceptance/pass totals. The corrected suite was rerun on both SDKs: **83 Pass / 0 Fail / 0 TODO / 0 skipped / 0 cancelled**, exit 0 on each. Final evidence: [rc.5](<evidence/native-final-0.2.1-rc.5.tap#L512-L520>), [rc.1](<evidence/native-final-0.2.2-rc.1.tap#L512-L520>).

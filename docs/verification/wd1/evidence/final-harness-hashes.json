@@ -1,0 +1,10 @@
+[
+  {
+    "file": "test/verification/wd1-safe-preload.mjs",
+    "sha256": "9c7047ad51b7e327b7fddde16b5c391c2c22edde202fd86e2014cd227bd8bfd4"
+  },
+  {
+    "file": "test/verification/wd1-native.test.mjs",
+    "sha256": "dd913b1dcc7eb498d29b4807fad44a8509575d45f41ac55ac44d314ecd7dee63"
+  }
+]
