@@ -34,7 +34,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ASK_FISHBALL, ASK_REASON, ASK_TOOL, RELAY } from './support/constants.mjs'
+import { ASK_FISHBALL, ASK_REASON, ASK_TOOL, RELAY_REDIRECT } from './support/constants.mjs'
 import { HOOK, T, callStep, setManaged, step, untrustedBlock } from './support/expect.mjs'
 import { stopStub } from './support/instance-stub.mjs'
 import { A, Q, QSTUB, bootQ, codeOf, qTools, quiet, tokens, until } from './support/instance-stub-questions.mjs'
@@ -219,7 +219,8 @@ describe('Revision 11 rev11h on H-STUB: session.stop and session.redirect', () =
     assert.deepEqual((await ends(sid)).slice(-2), [ABORTED, COMPLETED])
     const got = (await q.userLog(sid)).filter((m) => m.text.includes(text))
     assert.equal(got.length, 1)
-    assert.deepEqual(got[0].source, { ...RELAY, senderSessionId: await q.fishballId() })
+    // The redirect tool is recorded in the relay's source (SOURCE.via.redirect, ORG-01).
+    assert.deepEqual(got[0].source, { ...RELAY_REDIRECT, senderSessionId: await q.fishballId() })
     assert.equal(await q.modelSaw(sid, QSTUB.neverText + 'rdr01'), 0, 'the old script did not continue')
     assert.ok(await q.isManaged(sid))
   })
