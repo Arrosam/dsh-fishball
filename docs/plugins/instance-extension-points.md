@@ -452,6 +452,8 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 
 ### 5.4 A-lite page tasks (U10–U12, §11)
 
+**W0 task → test files:** see §5.6 below for the package-owned K1, X0-C, FN-1, WD-1 and B1 gates. This keeps the existing page-task table unchanged.
+
 | Task | Owns | Depends | Done when |
 | --- | --- | --- | --- |
 | **SP-PG** pre-start spike (W1 prerequisite) | `spikes/instance-ext/page/*`, `docs/spikes/instance-ext-page.md` | — | yes or no on both versions for: (1) DSH's shell through the connector's embed path: `__DSH_BOOT__`, `<base href="./">`, combos, `api/remote.mux`, the token-to-cookie exchange, and the CSP the broker sets (today `frame-ancestors 'self'; default-src 'self'…` at `host/embed.js:75`; DSH's index injects inline `<script>` rows, `dsh-host-webserver/lib/index.js:69-97`, so the broker's CSP must change); (2) a `dsh.client` overlay row from the snapshot is served (`resolveMeta`); (3) Q-F rail options; (4) the navigation guard bounces `openSession` and `selectPanel`; (5) where the child's shortcut document lives and that `null` unbinds `session.new` and `session.search`; (6) any pre-create hook for sessions (Q-G); (7) the Settings sandbox field under the read-only overlay; (8) a third-party `plugins.tab` entry gets the install face (§11.9); (9) the Remove button can be targeted per plugin without hashed classes (§11.10) |

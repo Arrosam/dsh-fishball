@@ -72,11 +72,14 @@ describe('X0-C X2 manager.registerSetup', () => {
       agentCtx.tools.register({ name: 'fold_notice', description: 'fold' })
       agentCtx.systemPrompt.section({ name: 'fold-section', order: 10, text: 'fold text' })
     })
+    service.manager.registerSetup('fishball-board', (agentCtx) => {
+      agentCtx.systemPrompt.section({ name: 'board-section', order: 20, text: 'board text' })
+    })
     await h.http('/api/chat')
     const { ctx } = h.agentCtxs()[0]
     assert.ok(ctx.tools.names().includes('fold_notice'), 'the tool registered on create')
     assert.ok(ctx.sections.has('fold-section'), 'the section registered on create')
-    assert.equal(ctx.order.at(-1), 'fold-section', 'registrations run after the persona')
+    assert.deepEqual(ctx.order.slice(-2), ['fold-section', 'board-section'], 'both registrations run after the persona in registration order')
   })
 
   it('XC-DT-02 resume: the same registration is applied again on agents.resume', async (t) => {
@@ -114,7 +117,11 @@ describe('X0-C X2 manager.registerSetup', () => {
     })
     await h.http('/api/chat')
     assert.ok(h.agentCtxs()[0].ctx.tools.names().includes('board_after_throw'))
-    assert.ok(h.logs.some((entry) => entry.level === 'warn'), 'the throw was logged')
+    const warningCount = () => h.logs.filter((entry) => entry.level === 'warn').length
+    assert.equal(warningCount(), 1, 'the callback failure is logged once')
+    h.agentsById.delete(h.manager().id)
+    await h.http('/api/chat')
+    assert.equal(warningCount(), 1, 'the same plugin/point failure is not logged again on resume')
   })
 
   it('XC-ST-01 registered → applied → disposed → registered again', async (t) => {
@@ -138,6 +145,7 @@ describe('X0-C X2 manager.registerSetup', () => {
   it('XC-ST-02 a registration made during a turn is on the live agent before the next step', async (t) => {
     const { h, service } = await live(t)
     const { ctx } = h.agentCtxs()[0]
+    h.manager().status = 'running'
     service.manager.registerSetup(MANAGER, (agentCtx) => {
       agentCtx.tools.register({ name: 'fold_midturn', description: 'mid-turn' })
     })
@@ -246,7 +254,7 @@ describe('X0-C X11 manager.userTexts', () => {
     assert.ok(texts.every((item) => Number.isFinite(item.at)))
   })
 
-  it('XC-BVA-02 limit 0, 1, max and max+1', async (t) => {
+  it('XC-BVA-02 limit 0, 1, available count 3 and count+1', async (t) => {
     const { h, service } = await live(t)
     logMessages(h)
     assert.deepEqual(service.manager.userTexts({ limit: 0, maxChars: 100 }), [])
