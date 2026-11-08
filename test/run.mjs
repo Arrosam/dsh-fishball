@@ -19,6 +19,8 @@ fs.mkdirSync(TEST_HOMES, { recursive: true })
 // Before any file starts: files importing instance modules directly must not race the first worker's link.
 linkContractForSourceRun()
 
-const files = fs.readdirSync(dir).filter((f) => f.endsWith('.test.mjs')).sort().map((f) => path.join(dir, f))
+// native-production-*.test.mjs require their own disposable runner (support: test/native-production-runner.mjs)
+// and fail closed here; run them with `node test/native-production-runner.mjs preflight`.
+const files = fs.readdirSync(dir).filter((f) => f.endsWith('.test.mjs') && !f.startsWith('native-production-')).sort().map((f) => path.join(dir, f))
 const result = spawnSync(NODE, ['--test', '--test-concurrency=3', '--test-reporter=spec', ...process.argv.slice(2), ...files], { stdio: 'inherit' })
 process.exit(result.status ?? 1)

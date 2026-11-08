@@ -8,15 +8,16 @@
  * offered options of that question; a single-select question takes one label, or custom text alone; a multi-select
  * takes several labels and may add custom text; 1–32 answers, ≤ 32 selected labels of ≤ 200 characters, custom
  * ≤ 500, note ≤ 500. Two kinds of refusal: a well-formed payload whose answer does not fit is `bad-answer`
- * (channel open); a payload that breaks the frame's own rules (types, uniqueness, bounds, keys) fails validation and
- * the connector may close the channel (§3.1) — either way the answer is not taken and the question stays open.
+ * (channel open); a payload that breaks the frame's own rules (types, uniqueness, bounds, keys) is answered
+ * `limit-exceeded` or `invalid-envelope` in an error frame, and the channel stays open (§3.1) — either way the answer
+ * is not taken and the question stays open.
  * Fit rules (a label offered for that question, the single-select rule, every question id answered and no other)
  * have a named refusal, `bad-answer` (§4.2), so they must come back as an error frame with the channel open; the
  * list rules of §4.2/§8 (types, 1–32 items, unique ids and labels, counts and lengths) are payload validation.
  *
  * | id      | technique | requirement | expected |
  * |---------|-----------|-------------|----------|
- * | VAL-01 ×13 | DT (malformed batches, each on a three-question batch of its own) | §7a.10 "a bad batch is refused and the question stays open" | fit rules: a bad-answer error frame, channel open; shape rules: an error frame or a closed channel; either way the own card stays open and the agent still waits |
+ * | VAL-01 ×13 | DT (malformed batches, each on a three-question batch of its own) | §7a.10 "a bad batch is refused and the question stays open" | fit rules: a bad-answer error frame; shape rules: limit-exceeded or invalid-envelope error frame; the channel stays open, the own card stays open and the agent still waits |
  * | VAL-02  | EP (valid after refusals) | §7a.10; §4.2 bad-answer | an unoffered label, two labels on a single-select, an unknown id: each bad-answer with the channel open; the same question then accepts a good batch; the result is exactly that batch |
  * | VAL-03  | BVA (single-select: one label / label + custom / custom alone / no label and no custom / two labels) | §7a.10; §4.2 "an empty selected skips the question" | one label ok; label + custom refused; custom alone ok; skipped ok; two labels refused |
  * | VAL-04  | BVA (multi-select: zero / one / all labels, with and without custom; the same label twice) | §7a.10; §4.2 "unique labels" | all accepted; the same label twice refused |
@@ -99,7 +100,7 @@ describe('Revision 11 rev11g on H-STUB: refused answers, bounds, children, and n
       ['a multi-select label not offered', [ok[0], { id: 'parts', selected: ['Docs', 'Nope'] }, ok[2]], REFUSAL.fit],
     ]
     for (const [label, answers, kind] of malformed) {
-      it(`VAL-01 ${label}: refused (${kind === REFUSAL.fit ? 'bad-answer error frame' : 'error frame or closed channel'}); the question stays open`, T, async () => {
+      it(`VAL-01 ${label}: refused (${kind === REFUSAL.fit ? 'bad-answer error frame' : 'limit-exceeded or invalid-envelope error frame, channel open'}); the question stays open`, T, async () => {
         await refusedThenStop(await raised('v', Q.mixed), label, { answers }, kind)
       })
     }

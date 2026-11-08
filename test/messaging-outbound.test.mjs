@@ -26,12 +26,13 @@
  * | K1-EP-53 ×2 | DT (same id, other op / other payload) | §3.3 | conflict; the session is not stopped and gets no second message |
  * | K1-EP-52 | ST (running → repeat) | §3.3 | the second frame of a session.start still running gets duplicate-request; one session is created |
  * | K1-EP-52b | ST (running → repeat) | §3.3 "one requestId has one terminal reply" | the original request still gets a `response` with the created sessionId (any order relative to the repeat's duplicate-request) |
+ * | OUT-13 ×6 | BVA + EP (maxMessageBytes: at the bound / one byte over, ASCII and 2-byte; session.message and session.start) | contract §4.1, §8 | at 65,536 bytes: delivered / started and relayed; at 65,537: limit-exceeded, nothing delivered or created |
  * | OUT-CAP | EP | slim §12, conn-OQ-20 | /api/fishball/state limits have no messagesPerHour or sessionsPerHour |
  *
  * Retired:
  * - OUT-03 empty / whitespace message: contract §4.1 allows an empty message (OUT-03b).
- * - OUT-03 65-byte message (maxMessageBytes): contract §4.1 / §8 bound a bridge message only by the frame (envelopeBytes); maxMessageBytes is not named for session.message.
- * - OUT-07 empty / too-large message on start: the same two reasons.
+ * - The old reading that maxMessageBytes does not bound a bridge message: contract 1.1 §4.1 and §8 name it
+ *   for session.start and session.message; OUT-13 checks the bound (65,536 accepted, 65,537 refused).
  * - OUT-08: the outbox went with Fishball's outbound tools (slim §12); /api/fishball/state has no outbox.
  * - CAP-01..CAP-06: messagesPerHour / sessionsPerHour / the outbox bounds went with the in-process agent (slim §12, conn-OQ-20); OUT-CAP checks they are gone.
  */
@@ -40,7 +41,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { before, describe, it } from 'node:test'
 import { DELIVERY } from 'fishball-connector/contract'
-import { INBOUND_TOOL, OUTBOUND_TOOLS, PRESET } from './support/constants.mjs'
+import { INBOUND_TOOL, LIMITS, OUTBOUND_TOOLS, PRESET, RELAY } from './support/constants.mjs'
 import { HOOK, T, toolNames } from './support/expect.mjs'
 import { ENVELOPE, STUB, handOver, userSession } from './support/instance-stub.mjs'
 import { ERROR, G, OPERATION, assertError, assertNothingStarted, assertOnlyKeys, assertRelayedOnce, assertStarted, responseOf, sendTwice, tok, useStubHost, watchNoticesSettled } from './support/instance-stub-start.mjs'
@@ -178,7 +179,7 @@ describe('bridge session.message, redirect, stop and start', () => {
     const ws = await w.host.call('createWorkspace', { dir })
     fs.rmdirSync(dir)
     const sessions = await w.sessionIds()
-    assertError(await w.start({ folder: ws.id }), ANY_ERROR)
+    assertError(await w.start({ folder: ws.id }), [ERROR.unknownSession])
     assert.equal(fs.existsSync(dir), false, 'the folder is not created')
     assert.deepEqual(await w.sessionIds(), sessions)
   })
@@ -186,20 +187,22 @@ describe('bridge session.message, redirect, stop and start', () => {
   describe('OUT-07 session.start folder refusals', () => {
     // closes: the payload breaks the exact-key or non-empty rule (contract §3.1, §4.1), so the frame
     // fails validation and the channel closes; otherwise the connector answers an error frame.
+    // Contract §4.1's codes: a folder that is neither a workspace id nor an absolute path is forbidden;
+    // an absolute path that is not an existing directory is unknown-session. A shape break closes (§3.1).
     const rows = [
       ['no folder key', () => undefined, true],
       ['an empty folder', () => '', true],
-      ['a path that does not exist', () => w.missing(), false],
-      ['a path that is a file', () => path.join(w.home, 'fbtest.overlay.yml'), false],
-      ['a relative path', () => 'work/start-here', false],
-      ['an unknown non-path value', () => G.notAWorkspace, false],
+      ['an absolute path that does not exist', () => w.missing(), false, ERROR.unknownSession],
+      ['an absolute path that is a file', () => path.join(w.home, 'fbtest.overlay.yml'), false, ERROR.unknownSession],
+      ['a relative path', () => 'work/start-here', false, ERROR.forbidden],
+      ['an unknown non-path value', () => G.notAWorkspace, false, ERROR.forbidden],
     ]
-    for (const [label, folder, closes] of rows) {
-      it(label + ' → ' + (closes ? 'the channel closes' : 'an error frame'), T, async () => {
+    for (const [label, folder, closes, code] of rows) {
+      it(label + ' → ' + (closes ? 'the channel closes' : 'an error frame ' + code), T, async () => {
         const sessions = await w.sessionIds()
         const answer = await w.start({ folder: folder() })
         if (closes) assert.equal(answer.type, 'none', 'no reply: ' + JSON.stringify(answer))
-        else assertError(answer, ANY_ERROR)
+        else assertError(answer, [code])
         await assertNothingStarted(w, sessions)
       })
     }
@@ -244,7 +247,7 @@ describe('bridge session.message, redirect, stop and start', () => {
     await w.host.call('releaseHold', { sessionId: sid })
     assert.ok(await ranTurn(sid, text), 'the instruction ran as a new turn')
     assert.ok((await turnEnds(sid)).includes(G.aborted), 'the running turn was aborted')
-    await assertRelayedOnce(w, sid, text)
+    await assertRelayedOnce(w, sid, text, { via: 'redirect' })
   })
 
   describe('OUT-12 redirect and stop refuse a session that is not managed', () => {
@@ -317,6 +320,75 @@ describe('bridge session.message, redirect, stop and start', () => {
     assert.equal(created.length, 1, 'one session')
     assert.ok(response, 'a response for ' + requestId + '; received only: ' + JSON.stringify((await w.stub.received()).filter((f) => f.requestId === requestId).map((f) => [f.type, f.payload])))
     assert.equal(response.payload.sessionId, created[0])
+  })
+
+  describe('OUT-13 a message body at maxMessageBytes (65,536 bytes)', () => {
+    const MAX = LIMITS.maxMessageBytes.default
+    /** A body of exactly n UTF-8 bytes, starting with the marker so a case can find it. */
+    const body = (marker, n, unit = 'a') => {
+      const fill = n - Buffer.byteLength(marker)
+      const text = marker + (unit === 'a' ? 'a'.repeat(fill) : 'é'.repeat(Math.floor(fill / 2)) + (fill % 2 === 1 ? 'a' : ''))
+      assert.equal(Buffer.byteLength(text), n, 'precondition: exactly ' + n + ' bytes')
+      return text
+    }
+    /** Nothing with this marker reached the target after a quiet period. */
+    const notDelivered = async (sid, marker) => {
+      await new Promise((resolve) => setTimeout(resolve, G.quietMs))
+      assert.deepEqual((await w.received(sid, marker)) ?? [], [], 'not delivered')
+    }
+    /** The worker summarizes a user message to its first 12,000 characters, so a 64 KiB body is checked by
+     * length, that prefix and the source (assertRelayedOnce compares the whole text and cannot find it). */
+    const SUMMARY_CHARS = 12000
+    const assertWholeRelay = async (sessionId, text) => {
+      const head = text.slice(0, SUMMARY_CHARS)
+      const found = await until(async () => {
+        const all = (await w.host.call('userMessages', { sessionId })) ?? []
+        const mine = all.filter((m) => m.textLength === text.length && m.text === head)
+        return mine.length ? mine : false
+      }, G.settleMs, STUB.pollMs)
+      assert.ok(found, 'the whole message reached ' + sessionId)
+      assert.equal(found.length, 1, 'exactly one copy')
+      assert.deepEqual(found[0].source, { ...RELAY, senderSessionId: (await w.state()).sessionId, via: 'message' })
+    }
+    let sid
+    before(async () => { sid = await w.managedSession('out13-target') }, HOOK)
+
+    it('session.message at the bound is delivered whole (ASCII)', T, async () => {
+      const text = body(tok('out13a'), MAX)
+      assert.deepEqual(responseOf(await w.message(sid, text)), { status: DELIVERY.delivered })
+      await assertWholeRelay(sid, text)
+    })
+
+    it('session.message one byte over is refused limit-exceeded and nothing is delivered', T, async () => {
+      const marker = tok('out13b')
+      assertError(await w.message(sid, body(marker, MAX + 1)), [ERROR.limit])
+      await notDelivered(sid, marker)
+    })
+
+    it('session.message at the bound counts bytes, not characters (2-byte text)', T, async () => {
+      const text = body(tok('out13c'), MAX, 'é')
+      assert.deepEqual(responseOf(await w.message(sid, text)), { status: DELIVERY.delivered })
+      await assertWholeRelay(sid, text)
+    })
+
+    it('session.message one byte over with 2-byte text is refused and nothing is delivered', T, async () => {
+      const marker = tok('out13d')
+      assertError(await w.message(sid, body(marker, MAX + 1, 'é')), [ERROR.limit])
+      await notDelivered(sid, marker)
+    })
+
+    it('session.start at the bound starts the session and delivers its first message whole', T, async () => {
+      const text = body(tok('out13e'), MAX)
+      const json = await assertStarted(w, await w.start({ folder: w.folder('out13-start-ok'), message: text, title: 'size ' + tok('s') }), { relay: false })
+      assert.equal(typeof json.sessionId, 'string')
+      await assertWholeRelay(json.sessionId, text)
+    })
+
+    it('session.start one byte over is refused limit-exceeded and creates nothing', T, async () => {
+      const sessions = await w.sessionIds()
+      assertError(await w.start({ folder: w.folder('out13-start-bad'), message: body(tok('out13f'), MAX + 1) }), [ERROR.limit])
+      await assertNothingStarted(w, sessions)
+    })
   })
 
   it('OUT-CAP the hourly caps are gone from the connector limits', T, async () => {

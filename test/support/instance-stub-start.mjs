@@ -158,7 +158,7 @@ export function assertOnlyKeys(payload, keys) {
  * folder, it is listed as managed (by start), and its first message arrived once as a relay with
  * the text unchanged. Returns the payload.
  */
-export async function assertStarted(w, answer, { cwd = answer.call.folder } = {}) {
+export async function assertStarted(w, answer, { cwd = answer.call.folder, relay = true } = {}) {
   const json = responseOf(answer)
   assertOnlyKeys(json, G.startKeys)
   assert.equal(typeof json.sessionId, 'string')
@@ -167,12 +167,13 @@ export async function assertStarted(w, answer, { cwd = answer.call.folder } = {}
   const header = await w.host.call('header', { sessionId: json.sessionId })
   assert.equal(fs.realpathSync(header.cwd), fs.realpathSync(cwd), 'in the folder')
   assert.equal((await w.managedEntry(json.sessionId))?.by, G.managedBy, 'managed, by start')
-  await assertRelayedOnce(w, json.sessionId, answer.call.message)
+  // A body over the worker summary's size is checked by the caller itself (OUT-13).
+  if (relay) await assertRelayedOnce(w, json.sessionId, answer.call.message)
   return json
 }
 
 /** One relay message with exactly this text (DESIGN §5d: the relay source, not a user message). */
-export async function assertRelayedOnce(w, sessionId, text) {
+export async function assertRelayedOnce(w, sessionId, text, { via = RELAY.via } = {}) {
   const got = await until(async () => {
     const all = (await w.host.call('userMessages', { sessionId })) ?? []
     const mine = all.filter((m) => m.text === text && m.source?.kind === RELAY.kind)
@@ -181,7 +182,7 @@ export async function assertRelayedOnce(w, sessionId, text) {
   assert.ok(got, 'the message reached ' + sessionId)
   assert.equal(got.length, 1, 'exactly one copy')
   // The relay names Fishball's session as the sender: the state's sessionId on the main side.
-  assert.deepEqual(got[0].source, { ...RELAY, senderSessionId: (await w.state()).sessionId })
+  assert.deepEqual(got[0].source, { ...RELAY, senderSessionId: (await w.state()).sessionId, via })
 }
 
 /** Wait until n watch notices name the watch, then a quiet period; returns them (no more arrive). */
@@ -300,15 +301,16 @@ export async function assertModelStart(w, answer, { model, effort = null }) {
  * A start refused before anything was created (DESIGN §5d "Invalid choices fail before creation"):
  * an error frame whose code is a contract code (§7: the frame carries only {code}, so the old
  * availableModels / availableReasoningEfforts lists cannot travel), no session created, nothing
- * changed. `closes` marks a payload that breaks the frame rules (§3.1: the channel closes).
+ * changed. `closes` marks a payload that breaks the frame rules (§3.1: the channel closes);
+ * `codes` pins the refusal to the contract's specific code for that failure.
  */
-export async function assertRefusedBeforeCreate(w, args, { arm = {}, closes = false } = {}) {
+export async function assertRefusedBeforeCreate(w, args, { arm = {}, closes = false, codes = Object.values(ERROR) } = {}) {
   const before = { sessions: await w.sessionIds(), state: await w.snapshots() }
   await w.arm(arm)
   let answer
   try { answer = await w.start({ notifyWhenFinished: true, ...args }) } finally { await w.disarm() }
   if (closes) assert.deepEqual([answer.type, answer.code], ['none', STUB.noReply.closed], 'the frame fails validation and the channel closes: ' + JSON.stringify(answer))
-  else assertError(answer, Object.values(ERROR))
+  else assertError(answer, codes)
   await assertNothingStarted(w, before.sessions)
   await w.noMutation(before.state)
   return answer
