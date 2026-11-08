@@ -69,14 +69,14 @@ board). Black-box only: every expected result comes from those documents, never 
 | XC-DT-01 | DT | create: a registration made before the live Session is applied after the persona, in order |
 | XC-DT-02 | DT | resume: the same registration is applied again on `agents.resume` |
 | XC-DT-03 | DT | live: a registration made while the agent is live is applied at once |
-| XC-DT-04 | DT | a throwing registration is logged and skipped; a later one still applies |
+| XC-DT-04 | DT | a throwing registration is logged once across create/resume and skipped; a later one still applies |
 | XC-DT-05 | DT | `wake:true` is one notice turn with the plugin source |
 | XC-DT-06 | DT | `wake:false` is held and joins the next turn |
 | XC-DT-07 | DT | a duplicate `dedupeKey` is answered duplicate and starts no second turn |
 | XC-DT-08 | DT | `wake:true` queues whether the manager is idle or busy |
 | XC-ST-01 | ST | registered → applied → disposed → registered again |
 | XC-ST-02 | ST | a registration made during a turn is on the live agent before the next step |
-| XC-BVA-02 | BVA | `limit` 0, 1, max, max+1 |
+| XC-BVA-02 | BVA | `limit` 0, 1, available count 3, available count + 1; not an undocumented API maximum |
 | XC-BVA-03 | BVA | `maxChars` cuts at a surrogate pair without a lone surrogate |
 
 ### 2.3 FN-1 — `fishball-fold-notify` skeleton
@@ -277,7 +277,7 @@ W0 alone is **56 executable** cases (13 + 19 + 9 + 6 + 9), plus **1 blocked/skip
 | X0-U | all server/page cases | Withdrawn (U10). The module/list/route/signal/CSP cases have no successor; the page cases are PG-1's browser tests. |
 | X0-C X3 | projection into `GET api/chat`, SSE `entry`, fallback row, `recordTextChars` | Withdrawn (U10, §5.5). Only the record-type rule stays. |
 | X0-A | the "代批 / Watchdog" tag, the open escalation card | UI half moves to PANELS (U12). The server `card`/`onSettled`/claim cases stay here. |
-| X0-B | "Built in" tag, settings-page cases | The custom settings view is retired (§11.7, Q-K); X17/X18 server cases stay. |
+| X0-B | "Built in" tag, settings-page cases | Plugin management moves to DSH's Plugins page; Fishball's settings page is kept but slimmed (U13, §11.8). X17/X18 server cases stay. |
 | X0-I | a held item expiring at `expiresAt` | The frozen `inbox.push` has no expiry; the claim's expiry comes from an approval descriptor the claim does not receive. |
 | X0-G | `runTurn` result and timeout | Needs DSH's real agent loop; `open`/lock-down/`setSection`/`cancel` are covered. |
 | X0-B | BVA of the `bundled` state file; successful placement of all three; survival of `admin.plugin.install` | The real plugin packages arrive with their waves; the fixture packages cover one-failed-placement and the skipped-bundle decision. SP-FN1's install/reinstall remains X-E2E. |
