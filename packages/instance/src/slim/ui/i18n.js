@@ -38,6 +38,7 @@ const EN = Object.freeze({
   [WITH_CODE]: '{message} ({code})',
 
   'page.title': 'Fishball',
+  'shell.header': 'Fishball header',
   'shell.reconnecting': 'Reconnecting…',
   'shell.settings': 'Settings',
   'shell.back': 'Back to chat',
@@ -234,6 +235,7 @@ const ZH = Object.freeze({
   [WITH_CODE]: '{message}（{code}）',
 
   'page.title': 'Fishball',
+  'shell.header': 'Fishball 页头',
   'shell.reconnecting': '正在重新连接…',
   'shell.settings': '设置',
   'shell.back': '返回聊天',
