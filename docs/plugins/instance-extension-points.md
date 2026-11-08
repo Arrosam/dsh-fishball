@@ -558,8 +558,10 @@ decision table, **ST** state transitions.
   - *(X3 has no case here: U15, §12.2.)*
   - §12.5 cases: notify dedupe survives a child restart (same key after restart → `duplicate`);
     every stub member refuses `not-implemented` as §12.5 specifies (sync throws, async rejects);
-    with the watchdog disabled both `message_session` and `redirect_session` reach the connector;
-    `deliverInbox([a, b, c])` gives one turn with the three texts in order, none lost or doubled.
+    with the watchdog disabled both `message_session` and `redirect_session` reach the connector,
+    plus the distinct `fishballImages.message` path with exact request/result assertions (§12.5.1);
+    `deliverInbox([a, b, c])` queues one followup with the three texts in order and one `{messageId}`
+    receipt; §12.5.2 supplies the callable item shape, async error assertions and count/byte BVA.
   - X10 DT: `wake` × duplicate `dedupeKey` × agent busy or idle. X11 BVA: `limit` 0, 1, max, max+1;
     `maxChars` cut at a surrogate pair.
 - **X0-I.**
@@ -1389,13 +1391,186 @@ The tester's gaps did reveal four unspecified points. They are now specified:
    `ExtensionError` with `code: 'not-implemented'` and `member: '<area.member>'`. It never returns
    a value.
 3. **Disabled watchdog:** both send paths (the tools and `images.js`) reach the connector
-   unchanged. This is X19's "gate off" row.
-4. **`deliverInbox(items[])`:** exactly one followup turn. Texts are in arrival order, each in its
-   own sender framing, separated by one blank line. Each item's ack waits for that turn. An empty
-   array is refused `invalid-input`.
+   unchanged. This is X19's "gate off" row; §12.5.1 defines the callable images path and oracle.
+4. **`deliverInbox(items[])`:** exactly one followup message is queued, not one model completion
+   promised. Texts are in arrival order, each in its own sender framing, separated by one blank
+   line. Each item's ack waits for successful queueing. §12.5.2 defines inputs, receipt, rejection
+   and bounds, including the empty-array `invalid-input` rejection.
 
 Real-loop and real-loader integration stay with their later owners (X-E2E, X0-B), as the tester
-proposed.
+proposed. The following are authoritative public/test contracts: a test writer need not inspect
+implementation files. Source references identify the existing baseline, not extra requirements
+hidden in source. X0-C owns the new array behaviour and its documented refusals/limits.
+
+#### 12.5.1 Images-path send with the watchdog off
+
+The existing Cordis service is `ctx.get('fishballImages')`. Its callable send-to-existing-session
+method is **`message`**, not `send`. The latter word in the module overview is descriptive.
+
+```ts
+fishballImages.message(request: {
+  sessionId: string;
+  message: string;
+  attachments?: LocalAttachment[]; // default []
+}): Promise<{
+  status: 'delivered' | 'unconfirmed';
+  watchId?: string;
+  watchError?: string; // mutually exclusive with watchId, if returned by the connector
+}>;
+
+type LocalAttachment =
+  | { kind: 'image'; attachment: {
+      attachmentId: string; mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif';
+      bytes: number; width: number; height: number; name?: string;
+    } }
+  | { kind: 'file'; attachment: { attachmentId: string; name: string; bytes: number } };
+```
+
+`sessionId` names a managed target; `message` is passed verbatim, with no prefix/trim/watchdog
+brief requirement while the watchdog is off. Attachments are refs already admitted to the child's
+attachment store, **not** connector hostRefs, paths or raw bytes. The existing service verifies
+and uploads each ref through `attachment.put`, then sends the returned hostRefs in input order.
+At most 20 attachments; existing attachment/connector validation still applies. “Unchanged” means
+unchanged by X19, not bypassing attachment preparation or connector validation. This method has
+no `notifyWhenFinished` parameter and does not synthesize a watch.
+
+**Public W0 oracle, no attachment-store fixture required:** with the watchdog plugin absent or
+disabled, use a connected connector fixture with a valid managed target `ses-target` and observe
+its incoming requests (not a replacement for the child's gate-bearing bridge method):
+
+```ts
+const result = await fishballImages.message({
+  sessionId: 'ses-target', message: '  unchanged\nmessage  ', attachments: [],
+});
+// Exactly one connector request:
+// op = 'session.message'
+// payload = { sessionId: 'ses-target', message: '  unchanged\nmessage  ', attachments: [] }
+// If the connector responds { status: 'delivered' }, result deep-equals that response.
+```
+
+Omitting `attachments` gives the same payload. No `attachment.put` occurs for an empty list.
+Repeat with connector response `{status: 'unconfirmed'}`: it is returned unchanged and never
+retried. Assert one `session.message`, exact payload deep equality, and result deep equality;
+a success receipt alone does not prove that the text reached the connector unchanged. For a
+nonempty attachment fixture, expect its ordered `attachment.put` calls followed by exactly one
+`session.message` with those hostRefs; text and target remain exact. A connector refusal rejects
+the promise through the existing bridge contract, never a fabricated success.
+
+**Existing surface:** [images service](../../packages/instance/src/slim/child/images.js#L410-L413)
+(`message`), [attachment preparation](../../packages/instance/src/slim/child/images.js#L355-L373),
+[service registration](../../packages/instance/src/slim/child/images.js#L471-L485), and
+[connector contract §4.1](../connector-contract.md#L301-L328). X0-C adds the bridge gate call;
+this signature/result is not a new service API.
+
+#### 12.5.2 Inbox array delivery: shape, receipt and bounds
+
+The service is `ctx.get('fishballChat')`. Preserve the existing singleton form and options; add
+the array overload below. Optional means the field may be omitted, not supplied as `null`.
+
+```ts
+fishballChat.deliverInbox(
+  items: InboxItem[],
+  options?: { skipImages?: boolean }, // default {}, skipImages defaults to false
+): Promise<{ messageId: string }>;
+// Existing overload retained:
+fishballChat.deliverInbox(
+  item: InboxItem,
+  options?: { skipImages?: boolean },
+): Promise<{ messageId: string }>;
+
+type InboxItem = {
+  text: string; // required, nonempty, already sender-framed; never trim or re-frame
+  kind?: 'session' | 'user' | 'system' | 'watch' | 'approval' | 'plugin';
+  sourceSessionId?: string;
+  messageId?: string;
+  dedupeKey?: string;
+  at?: number; // nonnegative safe-integer epoch milliseconds
+  images?: InboxImage[]; // omitted means []
+};
+type InboxImage = {
+  attachmentId: string;
+  mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif';
+  width: number; height: number; bytes: number; // positive safe integers
+};
+```
+
+The **local chat service** accepts text-only items such as `{text: 'first'}`. Supplied ids/keys
+are nonempty strings. `sourceSessionId` is required when nonempty `images` are actually fetched;
+it identifies the source for `attachment.read`. Each image's five fields are required, width ×
+height ≤ 4,194,304, bytes ≤ 4,194,304, at most 20 images **per item** (connector §4.5). Optional
+metadata is not interpolated into text. Additional item metadata is ignored by chat, not treated
+as instructions. Callers must provide sender framing inside `text`; the service does not invent
+it. The connector's `inbox.push` wire envelope is stricter: **all seven** fields `messageId`,
+`kind`, `sourceSessionId`, `text`, `images`, `dedupeKey`, `at` are required there. Optional local
+fields do not relax that wire contract. Transport dedupe/acks belong to the inbox pipeline, not
+this chat method; duplicate texts in a direct call are not silently deduplicated.
+
+**Observable queue contract:** after validating the whole array and preparing all needed images,
+queue exactly one user-role followup message. Its text block is exactly
+`items.map(item => item.text).join('\n\n')`; preserve every character within each text, even
+existing leading/trailing newlines. Append image blocks in item order, then each item's image
+order. `skipImages: true` queues text only and performs no image fetch. A one-item array uses the
+singleton source mapping: a `session` item is `{kind: 'agent-message', form: 'relay',
+senderSessionId?: sourceSessionId}`, otherwise `{kind: 'fishball-notice', form: 'notice'}`. A
+multi-item array uses `{kind: 'fishball-notice', form: 'notice'}`; per-sender attribution remains
+in each text rather than falsely attributing a mixed batch to one sender.
+
+The promise resolves **after the one followup is queued**, to `{messageId}` with that queued
+message's nonempty id. It is not `{acked:true}`, a list of ids, a turn-completed signal, or a promise
+that a model call succeeds. For a public W0 agent fixture, record calls to its DSH
+`followup(message)` boundary: exactly one call, `message.role === 'user'`,
+`message.id === receipt.messageId`, and text content exactly the joined input. For a text-only
+batch its content is exactly `[{type: 'text', text: joinedText}]`. Observe through that supplied
+agent boundary or the resulting session message, not private chat functions or implementation
+counters. `[a,b,c]` therefore proves one queue operation and three texts in order, none lost or
+doubled; the receipt alone cannot prove either. No real model turn is required by W0.
+
+The inbox/batcher owner may acknowledge each original wire item with `{acked:true}` only after
+this shared promise fulfills; before fulfillment no item in that batch is acked. Rejection means
+none is acked by this delivery attempt. It does not wait for the model's reply. Later X0-I/FN-6
+owns the per-item wire-ack integration; W0 tests the chat receipt/queue boundary. Image preparation
+failure queues no partial turn; the existing inbox owner's image-refusal handling is separate.
+
+**Array validation and BVA:**
+- 1–20 items inclusive, using fold-notify's approved `BATCH.maxItems = 20`. An empty array rejects
+  with an error whose `name` is `ChatApiError` and `code` is **`invalid-input`**; it does not throw
+  synchronously. Non-record items, missing/empty/non-string text, invalid supplied typed metadata
+  or options also reject `invalid-input`, except the image-specific refusals below. Error message
+  wording is not an assertion surface.
+- Maximum joined text is **65,536 UTF-8 bytes**, including the `\n\n` separators, using existing
+  `CHAT_LIMITS.messageBytes`. 21 items or 65,537 bytes rejects `ChatApiError` with `code: 'too-large'`.
+  Validate shape first, then item count, then joined text size; no truncation, splitting or sorting.
+  Rejected validation queues zero followups, fetches zero images and leaves inputs unmodified.
+- After item shape/count/text checks and before fetching any image, validate each item's image
+  list in order. A supplied non-array `images` rejects `ChatApiError/invalid-input`. Malformed
+  image descriptors (including missing fields, invalid media type or nonpositive/non-safe integer
+  dimensions/bytes) reject `ContractError/invalid-envelope`; more than 20 images in an item,
+  pixel product > 4,194,304 or bytes > 4,194,304 rejects `ContractError/too-large`. These are the
+  existing image service's error names/codes, not chat-error normalization. Metadata validation
+  still applies with `skipImages: true`; that option skips fetching/model checks, not validation.
+  Without skipping, a missing source session id rejects `ContractError/invalid-envelope`.
+  Check image count before descriptors; image transfer/model failures after validation retain
+  their existing codes. All these failures reject the promise, not synchronously throw.
+- No additional total serialized-object limit or array-wide image count/byte cap is introduced
+  here: image bounds apply per item before fetching; there are no raw image bytes in `items`.
+  Existing transfer/model refusal codes remain unchanged. The array text/count caps do not
+  retroactively change the legacy singleton overload's size policy.
+- Required cases: item counts 0/1/19/20/21; joined bytes 65,535/65,536/65,537 (including multibyte
+  text and separator bytes); invalid middle item produces no partial turn; duplicate texts stay
+  duplicated; no caller object/array mutation; omitted versus empty `images`; image ordering and
+  `skipImages`. The zero-item promise must reject with `invalid-input`, not resolve an empty receipt.
+
+**Existing baseline and deliberate additions:**
+[chat delivery](../../packages/instance/src/slim/child/chat.js#L635-L655) supplies singleton
+`item/options`, unchanged text and image handling;
+[queue receipt](../../packages/instance/src/slim/child/chat.js#L598-L605) supplies `{messageId}`;
+[chat error vocabulary and byte limit](../../packages/instance/src/slim/child/chat.js#L88-L139)
+supply `invalid-input` / `too-large` and 65,536 bytes;
+[connector §4.5](../connector-contract.md#L415-L449) supplies the wire envelope/image metadata.
+Fold-notify design §7 (snapshot `7347c1f169e3f1072cfa77c136645a086647f160`) supplies 20 items,
+blank-line joining, image order and ack-after-queue rules. The array overload, validation errors
+and mixed-batch source mapping above are the normative U18 additions; the existing singleton's
+uncoded `TypeError` is **not** the empty-array test contract.
 
 ### 12.6 Board: never delete, 30-day visibility (U19)
 
