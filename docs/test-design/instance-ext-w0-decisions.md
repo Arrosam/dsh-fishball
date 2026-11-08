@@ -1,49 +1,46 @@
-# W0 review question — freeze callable contracts before executable MCP tests
+# W0 review decisions — approved B, A and A
 
-## A/B question
+The user approved the W0 cases and selected **B / A / A**. These are closed decisions, not open questions. This follow-up changes tests and their evidence only; no product implementation, plugin install, live DSH instance or restart is authorized by it.
 
-The pinned design approves the architecture and behavior, but intentionally assigns the exact tool/capability/result/error/event/ack schemas to MCP-S3 (after MCP-S1/MCP-S2), K1 publication, and X0-C typed transport-port alignment. It does not define a callable spike-report interface or public names/shapes for those ports. The old custom-control exports cannot stand in for the new MCP semantic contract.
+## 1. B — MCP callable contracts freeze with their owning tasks
 
-**A — Freeze proposed names and schemas as part of this test review.** Supply/approve the chosen server/spike interface, shared profile and conformance-fixture exports, result/error mapping, minimal push event/ack schema and typed local control/intake ports. The affected acceptance TODOs can then become executable contract cases. This would add specification work to the current test-only task; test authors must not silently choose it.
+Keep exact callable spike/report/profile/schema/result/error/tool/event/ack interfaces as explicit owner-named acceptance TODOs until MCP-S1/S2 → MCP-S3 → K1 produces the reviewed shared baseline. Typed X0-C control/intake ports align before W1. Do not invent imports, require parked custom-control exports to survive, or use false reds to manufacture executable evidence.
 
-**B — Keep these as explicit owner-named acceptance TODOs until MCP-S1/S2 → MCP-S3 → K1 produce the reviewed callable baseline (recommended).** Review the human stories, partitions, boundaries and required observable behavior now. Activate these cases against that approved boundary before the dependent W1 tasks. Existing specified local/skeleton contracts execute red now. This avoids false reds from invented imports or testing the parked custom control protocol.
+This is not a weaker definition of done: all reviewed acceptance remains required. MCP architecture, default-on external delegation without an off setting, first-committed settlement and coordinated old-control removal were already decided.
 
-**Recommendation: B.** It follows the revised task dependencies and preserves this delivery as cases for review before development. TODO counts remain visible; they are not passes, completed spikes or a narrower definition of done. A future owner must not skip the acceptance merely because execution was deferred here.
+## 2. A — deterministic watchdog growth and runtime budget
 
-## A/B question — retained watchdog growth-budget validation
+The approved exact oracle is now [§2.8](<../../../design-wd-budget/docs/plugins/instance-extension-points.md#L404-L456>) at **`design/wd-budget` `9cafd921be8a8e67f828ab225bf5fe636887c5c5`**:
 
-The incorporated watchdog settings requirements retain save-time validation of `turnGrowthTokens` against `readMaxBytes × (1 + readsPerTurn) / 3 + card + maxOutputTokens`. U14 removes the **approval-window** sum, not this separate growth-budget rule. The source fixes `readsPerTurn` to 2 but does not make the card-token term and rounding a deterministic config-validation oracle; its largest read bound also cannot necessarily fit the largest growth bound.
+- `T(bytes) = ceil(bytes / 3)`, `T(0)=0`, measuring RFC 8785 canonical provider-neutral JSON encoded as UTF-8, without Unicode normalization. Count whole context once; provider-reported usage is telemetry, not the oracle.
+- Shared card/non-read-input allowance: **768 tokens / 2,304 bytes inclusive**, including wrappers and all card fields. Above 2,304 bytes, route the intact permission request to Fishball without a model call or silent truncation; this individual-card fallback is not a plugin fault.
+- After integer field validation, require `turnGrowthTokens >= 3 * ceil(readMaxBytes / 3) + 768 + maxOutputTokens`. Round each bounded read upward. Equality passes; refusal retains the previous config atomically.
+- Default companion minimum: **9,985**, not 9,984; 9,985/9,986 pass. Output 2,048 requires growth **11,009**. Individually valid read/output fields may make every allowed whole-config growth value invalid.
+- `R = min(contextRolloverTokens, contextWindow - turnGrowthTokens - maxOutputTokens)`, default rollover **64,000**, not 65,536. Save requires `R >= 16000`. At `C >= R`, finish the turn and rotate before the next; preflight newly added input and remeasure one fresh epoch.
+- Within a turn, `C <= R + turnGrowthTokens`, measured growth `<= turnGrowthTokens`, and the sum of rounded canonical-response estimates `<= maxOutputTokens`. Equality fits. Never rotate mid-decision to hide an exceeded budget.
+- Fresh context still reaching `R`, measurement/model-window failure or provider rejection means **effective off / Fishball hand-over**, releasing claims and passing sends. No halt, watched-session stop, approval timer or rollover loop.
 
-**A — Specify a deterministic card-budget/rounding calculation and coherent aggregate vectors before WD-1 implementation (recommended).** Then exercise budget−1/budget/budget+1 with fixed read/output companions, and reject individually in-range combinations whose aggregate cannot fit. This preserves the retained save-time rule without inventing token estimates.
+The former WD1 aggregate-budget TODO is replaced by concrete save-time Config cases. Fully specified runtime/card/canonical-measurement/rotation scenarios remain actual owner-named TODOs under WD-8/WD-10/WD-12 and hand-over owners; their values and expected outcomes are no longer awaiting a budget decision. They must not become self-confirming tests of a test-owned estimator or invented public API.
 
-**B — Review the explicit owner-named WD-1 aggregate-validation TODO now and freeze that calculation before activating it.** Per-field bounds are tested through each public schema field, not by falsely expecting every endpoint to pass the whole Config with incompatible defaults. This defers the missing exact oracle, not the validation requirement.
+## 3. A — await asynchronous manager setup readiness
 
-**Recommendation: A before WD-1 development; no calculation is assumed in this test-only delivery.** The aggregate case remains TODO pending the answer. It does not restore approval timers or the retired approval-window sum.
+Await asynchronous setup before publishing the created/resumed manager. Late registration is usable after its callback completes. Explicit disposal/generation fencing prevents an old completion from restoring a disposed contribution; rejected callbacks are isolated and logged once, without breaking healthy registrations or producing unhandled rejection.
 
-## A/B question — asynchronous manager setup readiness
+The X0-C async scenario records this approved policy. Any remaining TODO is an execution/fixture obligation, **not** a renewed A/B question about await timing. Dynamic-context lifecycle/disposal remains separately assigned to X0-C/X-E2E.
 
-The pinned X2 test outline includes asynchronous callbacks, while its synchronous setup description does not define whether manager creation/resume must await them or how a late callback completion races disposal. Log-once/skip/isolate and scoped disposal remain required either way; returned promise rejection must not become an unhandled failure.
+## 4. Host-compatible optional service resolution
 
-**A — Await asynchronous setup before publishing the created/resumed manager; late registration becomes available after its callback completes (recommended).** Define the completion/disposal fence explicitly so an old completion cannot restore disposed contributions. This gives a clear readiness boundary but may delay activation for a slow callback.
+The user reports that **both DSH hosts interpret `inject: ['fishballInstance?']` as a literal required service**, preventing activation. Optionality is behavioral, not that string syntax.
 
-**B — Permit non-blocking async setup with an explicitly observable pending/ready boundary.** Callers must not assume the contribution is usable before readiness; rejection is isolated/logged and disposal still fences completion. This avoids activation delay but needs a specified readiness signal.
+FN-1 and B1 declare `tools` and resolve `fishballInstance` at runtime. Their export assertions accept this form and continue to prohibit internal `fishballChat` dependence; service-present and service-absent load cases remain. The equivalent literal-name requirement in WD-1 is corrected without dropping its required host services. No implementation is read or copied from the development branches to make these assertions.
 
-**Recommendation: A, subject to the approved DSH setup contract.** `XC-UC-01-E2` remains an X0-C-owned TODO until scheduling/completion policy is explicit; `XC-UC-01-A5` separately records dynamic-context lifecycle/disposal acceptance. No await timing or callback signature is silently invented by the cases.
+## 5. Unchanged decisions and provenance
 
-## Already decided — not reopened
+- One-way MCP controls for everyone; authenticated first-party push carries events/acks only. No reverse MCP or legacy dual-control/migration path.
+- External delegated permissions/questions/plan reviews are default-on with no disable setting, subject to authorization/intake/answer capability; idle non-polling offers wait.
+- First **committed** outcome wins; old attempts/acks cannot overwrite it.
+- Watchdog faults are effective off and never halt work. Questions/plan reviews never enter watchdog claims, queues or context. Recovery retains dormant briefs until explicit resume/rebrief.
+- Pending notify reservation is not acceptance; stable identity permits retry without losing or duplicating delivery.
+- U14 timer removal, U15 namespace ownership outside X0-C, U17 reached-layer transcript history and U19 archive/30-day visibility remain unchanged.
 
-- First-party authenticated push; MCP is the only control plane, with no reverse MCP.
-- External delegated approvals/questions default on, with **no off setting**, subject to authorization and intake/answer capabilities.
-- Idle never-polling delegated items wait; first **committed** outcome wins.
-- Coordinated old control endpoint/export removal and built-in peer/snapshot/binding upgrades, with no migration/dual-control release or downgrade.
-- Watchdog failure means effective off and Fishball hand-over, never halting. Questions/plan reviews never reach the watchdog. Recovery is dormant until explicit resume/rebrief.
-- Every notify dedupe key is pending until durable acceptance; a reservation is not delivered and cannot suppress retry. This is specified in §12.5, not an A/B choice between old suppression and retry behavior.
-- U14 approval timer removal, U15 namespace enforcement outside X0-C, U17 reached-layer transcript history and U19 archive/30-day board visibility.
-
-Exact npm release numbers remain release bookkeeping, not an unresolved compatibility decision. Engineering choice of server dependency/transport packaging belongs to the feasibility spike and must prove the acceptance on both hosts; this test rewrite does not require an arbitrary package choice.
-
-## Provenance
-
-Pinned requirement commit: **`15d6f1f214144db3575f9bc0ba15238b1450c2a7`**. See [extension task table](<../../../design-instance-ext/docs/plugins/instance-extension-points.md#L506-L524>), [mailbox proposal](<../../../design-instance-ext/docs/plugins/connector-mcp-option.md#L149-L172>), [schema/versioning boundary](<../../../design-instance-ext/docs/plugins/connector-mcp-option.md#L272-L290>) and [revised task dependencies](<../../../design-instance-ext/docs/plugins/connector-mcp-option.md#L301-L342>).
-
-This note replaces historical questions inherited from the old suite, which were already resolved by U14/U15/U18/U19. It changes neither requirements nor implementation.
+Original requirements: **`15d6f1f214144db3575f9bc0ba15238b1450c2a7`**, supplemented for budget by **`9cafd921be8a8e67f828ab225bf5fe636887c5c5` §2.8**, plus the user's host-injection correction. See the [review guide](<instance-ext-w0.md>) and [audit](<instance-ext-w0-audit.md>) for current cases, counts and actual safe-harness evidence. No question in this note remains open.

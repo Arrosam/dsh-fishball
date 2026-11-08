@@ -22,7 +22,7 @@ X0-C owns the local extension service, manager/chat, durable notification/intake
 | XC-UC-01-E1 | One setup callback throws; another healthy plugin registers; resume repeats the failing callback. | Log once per plugin/point, skip failure, retain healthy capability. Executable X0-C. |
 | XC-UC-01-A4 | Register/dispose during a real running model turn. | Next request includes then omits tool/section. TODO **X-E2E**. |
 | XC-UC-01-A5 | Board-like plugin registers dynamic `systemPrompt.context` on the live manager, then disposes. | Dynamic context is available then removed together with its setup fiber; no extra turn. TODO **X0-C/X-E2E** with approved DSH context callback fixture (current generic map stub does not evaluate a real dynamic context). |
-| XC-UC-01-E2 | Async setup callback fulfills after registration, or rejects while a healthy neighbor registers; exercise create/resume/live. | Complete/failed callback effects and failure isolation follow one declared async policy, log once, never leak disposed contributions. TODO **X0-C**: §6 lists async but does not freeze whether registration awaits completion or how rejected partial setup is unwound; clarify before asserting timing. |
+| XC-UC-01-E2 | Async setup callback fulfills after registration, or rejects while a healthy neighbor registers; exercise create/resume/live. | **Approved A:** await setup before publishing the created/resumed manager; late registration becomes ready after completion. Rejection is isolated/logged once and disposed completion cannot leak contributions. TODO **X0-C** for the asynchronous lifecycle execution fixture, not an unresolved await-policy choice. |
 | XC-UC-02-M | Plugin sends a fresh-key waking notice. | One queued turn with exact plugin source. Executable X0-C. |
 | XC-UC-02-A1 | Plugin sends a fresh-key quiet notice; Samuel later submits a turn. | No independent wake; held text joins that turn. Executable X0-C. |
 | XC-UC-02-A2 / A3 | Plugin sends waking notice while manager is idle / busy. | One supplied-agent followup in either state. Executable X0-C. |
@@ -86,7 +86,7 @@ First-party Fishball gets authenticated pushback/wake; MCP is the **only** contr
 
 The prior core document's contract-1.1 legacy attachment journey is **retired**, not a compatibility requirement. K1/MCP-SERVER own incompatible-peer rejection and optional attention schemas/projection. The connector attention human story is outside this owned file's executable inventory; no old custom attention frame or attach/minor negotiation is asserted here.
 
-**Port freeze A/B (unresolved, owner MCP-S3/K1/X0-C):** A — freeze explicit local typed control and intake registration interfaces in the shared profile now; B — keep those exact signatures deferred to the schema freeze before W1. Both must preserve the approved domain guarantees. Requirements specify purpose/ownership but not callable names, so XC-UC-05-M stays TODO; neither choice licenses invented ports or a second transport implementation.
+**Port freeze B approved (owner MCP-S3/K1/X0-C):** keep exact local typed control/intake signatures deferred to the schema freeze before W1 while preserving all approved domain guarantees. XC-UC-05-M remains an owner-named TODO until that callable boundary exists; no invented ports or second transport implementation. The user's separate **A** approval fixes asynchronous setup readiness as stated in XC-UC-01-E2; no question about await policy remains.
 
 ## Inventory and retired cases
 

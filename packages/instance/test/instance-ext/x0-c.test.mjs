@@ -462,7 +462,7 @@ describe('X0-C X11 manager.userTexts', () => {
 
 it.todo('XC-UC-01-A4 Samuel continues work with Fishball plugin updates — deferred: [owner: X-E2E] register during a real model turn, offer on next request, dispose and omit on following request')
 it.todo('XC-UC-01-A5 Samuel keeps current board context in Fishball — [owners: X0-C/X-E2E] approved dynamic systemPrompt.context callback fixture registers on create/resume/live, evaluates current data, dispose removes the contribution without a turn')
-it.todo('XC-UC-01-E2 Samuel keeps healthy capabilities when async setup fails — [owner: X0-C] freeze async completion/rejection policy at create/resume/live, log rejected callback once, isolate healthy registration, no disposed contribution leak; no invented await timing')
+it.todo('XC-UC-01-E2 Samuel keeps healthy capabilities when async setup fails — [owner: X0-C] approved A: await setup before create/resume publication; late registration ready after completion; log rejected callback once, isolate healthy registration and fence disposed completion so contributions cannot leak')
 it.todo('XC-UC-02-E3 Samuel retries after durable queue acceptance lost its receipt — [owners: X0-C/FB-PUSH/X-E2E] reconcile the persisted stable identity against durable queue after rebuild, deliver once; current fake agent has no durable queue ledger')
 it.todo('XC-UC-02-E4 Samuel recovers from notification reservation persistence failure — [owner: X0-C] freeze safe store-fault fixture; no accepted success without persistence, recovery retries one stable identity')
 it.todo('XC-UC-02-A4 Samuel continues after a quiet notice survived rebuild — [owners: X0-C/X-E2E] durable hold acceptance/recovery adds text once to next user turn, never an independent wake')

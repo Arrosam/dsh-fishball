@@ -15,6 +15,7 @@ import { describe, it } from 'node:test'
 import { PACKAGE, configDefault, packageFile, packageJson, packageModule } from '../../../../test/support/instance-ext-plugins.mjs'
 
 const FOLD = PACKAGE.fold
+const OPTIONAL_SERVICES = Object.freeze(['fishballInstance', 'fishballInstance?', 'fishballChat', 'fishballChat?'])
 
 function stubContext({ withInstance = true } = {}) {
   const provided = new Map()
@@ -58,8 +59,8 @@ describe('FN-1 package and row', () => {
     assert.equal(row.name, 'fishball-fold-notify')
     assert.ok(Array.isArray(row.inject), 'inject is a list')
     assert.ok(row.inject.includes('tools'), 'inject tools')
-    assert.ok(row.inject.includes('fishballInstance?'), 'inject optional public fishballInstance')
-    assert.ok(!row.inject.some((name) => name.replace(/\?$/, '') === 'fishballChat'), 'fishballChat is internal')
+    // Runtime lookup is optional; Cordis treats '?' as a literal required-service name.
+    for (const service of OPTIONAL_SERVICES) assert.ok(!row.inject.includes(service), service + ' must not gate activation')
     assert.equal(typeof row.apply, 'function')
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
