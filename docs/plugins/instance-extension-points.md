@@ -505,6 +505,27 @@ lines.
 | X0-B, RP | `src/native-runtime/constants.js` (`bundledPlugins`) | X0-B first; RP appends one entry |
 | WD-11, WD-13 | the coupling interface | shared stub, as watchdog §14 |
 
+### 5.4 W0 test files (definition of done per X0 task)
+
+The X0 tests are black-box and live outside `test/run.mjs`'s glob, so the existing suite is
+unchanged and each task can be selected alone (`node --test test/instance-ext/<file>`). The full
+case table, technique counts and open questions are in `docs/test-design/instance-ext-w0.md`.
+
+| Task | Gating test file | Hooks |
+| --- | --- | --- |
+| **X0-C** | `test/instance-ext/x0-c.test.mjs` | X1–X3, X10, X11 |
+| **X0-I** | `test/instance-ext/x0-i.test.mjs` | X9 |
+| **X0-U** | `test/instance-ext/x0-u.test.mjs` | X4–X7 (server/list/signal half) and the X3 fallback row |
+| **X0-W** | `test/instance-ext/x0-w.test.mjs` | X12, X8 (X8 also needs K1) |
+| **X0-G** | `test/instance-ext/x0-g.test.mjs` | X13 |
+| **X0-A** | `test/instance-ext/x0-a.test.mjs` | X15 |
+| **X0-S** | `test/instance-ext/x0-s.test.mjs` | X14, X16, X19 |
+| **X0-B** | `test/instance-ext/x0-b.test.mjs` | X17, X18, §2.2 start-up rules |
+
+K1 is a separate W0 task and has its own suite; it is not in these files. The X0-U page hook's
+browser-only cases (sidebar order, `onSignal` filter, presenter ownership) are listed as not yet
+runnable in `docs/test-design/instance-ext-w0.md` §6.
+
 ## 6. Test-design outline per task (black-box, for the tester)
 
 Each line names the technique: **EP** equivalence partitions, **BVA** boundary values, **DT**
