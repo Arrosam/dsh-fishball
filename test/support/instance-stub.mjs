@@ -10,6 +10,7 @@
  * (a checkout without `workspaces`), so the built-in instance is never installed.
  */
 import fs from 'node:fs'
+import { tempPath } from './temp-path.mjs'
 import path from 'node:path'
 import { ENVELOPE, INBOX_KIND, OPERATION } from 'fishball-connector/contract'
 import { CONNECTOR, PRESET } from './constants.mjs'
@@ -23,13 +24,13 @@ export { STUB } from './instance-stub-data.mjs'
 let homeCounter = 0
 /** A fresh home under the OS temp folder (removed by removeStubHomes or the OS). */
 export function stubHome(label) {
-  const home = path.join(STUB_HOMES.root, label + '-' + Date.now() + '-' + ++homeCounter)
+  const home = tempPath(path.join(STUB_HOMES.root, label + '-' + Date.now() + '-' + ++homeCounter), { root: STUB_HOMES.root })
   fs.mkdirSync(home, { recursive: true })
   return home
 }
 /** Remove one temp home; the guard refuses any path that is not below this process's own temp folder. */
 export function removeStubHome(home) {
-  const resolved = path.resolve(home)
+  const resolved = tempPath(home, { root: STUB_HOMES.root })
   if (!resolved.startsWith(STUB_HOMES.root + path.sep) || !path.basename(STUB_HOMES.temp).startsWith(STUB_HOMES.prefix)) throw new Error('refusing to remove ' + resolved)
   fs.rmSync(resolved, { recursive: true, force: true })
 }
@@ -111,6 +112,7 @@ export function stubClient(host) {
  * Returns {host, home, stub}; pass the whole object to stopStub in after().
  */
 export async function bootStub(label, { env = {}, link = [], attach = true, home = stubHome(label) } = {}) {
+  home = tempPath(home, { root: STUB_HOMES.root })
   const host = await bootHost(home, { env: stubEnv(env, link) })
   const state = await host.waitStatus('live')
   if (state?.status !== 'live') throw new Error('connector did not become live: ' + JSON.stringify(state) + '\n' + host.output.slice(-2000))
