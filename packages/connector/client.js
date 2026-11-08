@@ -70,7 +70,8 @@ window.__ModuleLoader__.load({
      * pinned session would. `pluginsPanelId` is DSH's own Plugins panel, which the empty state
      * opens at its list (conn-OQ-31). `warningIconPx` is the glyph of DSH's own empty/error state
      * (dsh-client-ui-schedule's list error, 24px). `stateTone` maps the frame's state to DSH's Tag
-     * tones (the ones its plugin page uses).
+     * tones (the ones its plugin page uses). DSH's Tag styles `danger`, not `error`, on
+     * 0.2.1-rc.5 and 0.2.2-rc.1 (dsh-web-frontend's `[data-tone=danger]`), so failed states keep `danger`.
      * The framed path is the attached instance's own `ui.chat` or `ui.settings` as it registered
      * it (the contract already refused a path with a scheme, a host or a token, contract §1.2),
      * plus contract 1.1's `lang` parameter (FRAME_UI.lang); nothing else is appended or rewritten.
@@ -78,8 +79,6 @@ window.__ModuleLoader__.load({
     const EMBED_UI = Object.freeze({
       panelId: 'fishball', panelOrder: -10, pluginsPanelId: 'plugins', warningIconPx: 24,
       stateTone: Object.freeze({ ready: 'info', attached: 'info', failed: 'danger', 'connection-interrupted': 'danger' }), neutralTone: 'neutral',
-      // noopener, but not noreferrer: the built-in instance's proxy admits same-origin fetches.
-      target: '_blank', features: 'noopener',
       iframeAllow: 'clipboard-write',
     })
     /**
@@ -400,7 +399,7 @@ window.__ModuleLoader__.load({
       brandLabelUnread: 'Open Fishball, {count} unread',
       unreadMany: '{max}+',
       limits: 'Safety limits',
-      viewTitle: 'Fishball', embedTitle: 'Fishball chat', embedRefresh: 'Refresh', embedOpenTab: 'Open in a tab',
+      viewTitle: 'Fishball', embedTitle: 'Fishball chat', embedRefresh: 'Refresh',
       embedUnavailable: '{name} is not running.', embedRetry: 'Retry',
       embedState: 'State', embedCode: 'Code',
       // The connector's frame (design §0.5 "The frame", D27). `ready` reads "running"; `attached`
@@ -512,7 +511,7 @@ window.__ModuleLoader__.load({
       brandLabelUnread: '打开 Fishball，{count} 条未读',
       unreadMany: '{max}+',
       limits: '安全限制',
-      viewTitle: 'Fishball', embedTitle: 'Fishball 聊天', embedRefresh: '刷新', embedOpenTab: '在标签页中打开',
+      viewTitle: 'Fishball', embedTitle: 'Fishball 聊天', embedRefresh: '刷新',
       embedUnavailable: '{name} 未在运行。', embedRetry: '重试',
       embedState: '状态', embedCode: '代码',
       'frameState.loading': '检查中', 'frameState.unattached': '未连接', 'frameState.attached': '已连接',
@@ -994,10 +993,9 @@ window.__ModuleLoader__.load({
      * DSH swaps it out when you open a session and back in when you select Fishball, so it has no
      * Close. The frame is the same around the instance's chat and its settings page: the title,
      * the state tag, the unread count, Connector settings (always, so DSH's form of
-     * fishball-connector is reachable in every state), Refresh, "Open in a tab" (with a framed
-     * path) and Retry (failed and the instance gave retry). The content is the instance's own
-     * page, framed at its registered path plus `lang` (framedUrl); "Open in a tab" opens the same
-     * address. The iframe's key holds that address, so a language change remounts it: a reload.
+     * fishball-connector is reachable in every state), Refresh and Retry (failed and the instance gave
+     * retry). There is no "Open in a tab" (the user's decision, 2026-11-07). The content is the
+     * instance's own page, framed at its registered path plus `lang` (framedUrl). The iframe's key holds that address, so a language change remounts it: a reload.
      * Nothing crosses the iframe: the view installs no `message` listener and acts on no
      * postMessage from the page (D27; the contract's former open-settings message is dropped).
      * Everything it shows comes from the connector's own state and routes.
@@ -1059,10 +1057,6 @@ window.__ModuleLoader__.load({
               retryCode ? h('span', { role: 'alert', 'data-fishball-retry-error': retryCode }, t('frameRetryFailed'), ' ', h('code', { className: CLS.code }, retryCode)) : null,
               instance?.canRetry ? accentButton({ size: 'sm', disabled: retrying, 'data-fishball-frame-retry': true, onClick: () => void retry() }, retrying ? t('frameRetrying') : t('embedRetry')) : null,
               h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !framed, onClick: () => setGeneration((value) => value + 1) }, t('embedRefresh')),
-              // To the framed path, and only while there is one (conn-OQ-25).
-              framed
-                ? h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => { window.open(src, EMBED_UI.target, EMBED_UI.features) } }, t('embedOpenTab'))
-                : null,
               h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-connector-settings': true, onClick: openConnectorSettings }, t('frameConnectorSettings')))),
           body)
       }

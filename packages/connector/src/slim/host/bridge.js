@@ -12,10 +12,15 @@
  *   related-session operation needs it managed or watched. Nothing else reaches the service.
  * - Delivery dedupe (§5.2): one requestId has one terminal answer per connection. A repeat
  *   after the answer is the remembered answer, never a second delivery; a repeat while the
- *   first is in flight is refused with duplicate-request and the original reply is dropped.
+ *   first is in flight is refused with duplicate-request, and the original still gets its own
+ *   reply (contract §3.3: one terminal reply per requestId, the repeat's being the refusal).
  *   The child never retries, so a reconnect starts with no remembered work.
- * - Bounded reading (§5.2): the caller's maxMessages/maxBytes are honoured and the reply is
+ * - Bounded reading (§5.2): the caller's maxMessages/maxBytes are honoured, under the connector's
+ *   own readSessionMessages/readSessionBytes caps (the port applies those), and the reply is
  *   cut to fit the contract's 1 MiB frame, reporting truncated instead of failing.
+ * - A named refusal in a request's payload (reason-required, grant-invalid, limit-exceeded, …;
+ *   any payload failure of question.answer) is answered with an error frame and the channel
+ *   stays open (contract §3.1); only a broken frame closes it.
  * - Start never creates a folder (§5.2): the folder is resolved to an existing workspace or an
  *   existing absolute directory before the service is called; a missing folder is refused.
  * - Attachments never travel as paths or bytes in a session frame (§6.2, §6.4): attachment.put
@@ -47,6 +52,7 @@
  * @property {() => string[]} managedIds        Every managed session (the §5.2 "related" core).
  * @property {(id: string) => boolean} isManaged
  * @property {(id: string) => boolean} isFishball
+ * @property {(id: string) => Promise<boolean>} isRelated  managed, watched now or before, messaged Fishball, or forwarded (§5.2).
  * @property {(id: string) => Promise<SessionSummary|undefined>} describe  undefined = unknown or archived.
  * @property {() => Array<{id: string, path: string}>} workspaces
  * @property {(path: string) => Promise<{id: string}|undefined>} resolveWorkspacePath
@@ -124,17 +130,28 @@ export const UNIMPLEMENTED_OPERATIONS = Object.freeze([])
 const MANAGED_OPERATIONS = new Set([
   OPERATION.sessionMessage, OPERATION.sessionRedirect, OPERATION.sessionStop, OPERATION.sessionRelease,
 ])
-/** Operations whose authorization needs a related session: managed, watched, messaged by or forwarded. */
-const RELATED_OPERATIONS = new Set([OPERATION.sessionRead, OPERATION.sessionWatch, OPERATION.attachmentRead])
+/**
+ * Operations whose authorization needs a related session: managed, watched, messaged by or
+ * forwarded. session.watch is not here: its refusals are the contract's watchError values
+ * (not-related, archived, unknown-session), so its handler answers them as data (§4.1, §6).
+ */
+const RELATED_OPERATIONS = new Set([OPERATION.sessionRead, OPERATION.attachmentRead])
 /** Message-carrying operations that consume attachment hostRefs (§6.4). */
 const ATTACHMENT_OPERATIONS = new Set([OPERATION.sessionStart, OPERATION.sessionMessage, OPERATION.sessionRedirect])
 
 const ERROR_CODES = new Set(Object.values(ERROR))
 const SERVICE_METHODS = Object.freeze([
-  'enabled', 'managedIds', 'isManaged', 'isFishball', 'describe', 'workspaces', 'resolveWorkspacePath',
+  'enabled', 'managedIds', 'isManaged', 'isFishball', 'isRelated', 'describe', 'workspaces', 'resolveWorkspacePath',
   'start', 'message', 'redirect', 'stop', 'read', 'watch', 'watches', 'unwatch', 'release',
 ])
 const ENCODING = Object.freeze({ hex: 'hex' })
+/**
+ * Payload refusals answered with an error frame instead of closing the channel (contract §3.1).
+ * A payload failure that carries a named code is an operation's refusal; a bare shape break
+ * (invalid-envelope) still closes, except for question.answer, whose every payload failure is
+ * answered so the instance learns which answer was malformed (the user's decision, 2026-11-08).
+ */
+const PAYLOAD_REFUSAL = Object.freeze({ shapeBreak: ERROR.invalid, answeredWhole: new Set([OPERATION.questionAnswer]) })
 
 /** A bounded comparison key for request dedupe: a digest, never the payload text itself. */
 const fingerprintOf = (payload) => createHash(DIGEST.algorithm).update(JSON.stringify(payload)).digest(ENCODING.hex)
@@ -363,9 +380,29 @@ class BridgeHost {
     try {
       // A foreign frame (v1, or the other direction) is a protocol violation: close, never guess.
       envelope = decodeEnvelope(encoded, { receivingSide: SIDE.main, expectedHostId: this.hostId, now: this.now() })
-    } catch { this.disconnect(connection); return }
+    } catch (error) {
+      if (!this.refusePayload(connection, encoded, error)) this.disconnect(connection)
+      return
+    }
     if (envelope.type === ENVELOPE.type.request) this.receiveRequest(connection, envelope)
     else this.receiveReply(connection, envelope)
+  }
+
+  /**
+   * A request whose envelope is valid but whose payload broke a rule (ContractError.inPayload):
+   * answer its code as an error frame when PAYLOAD_REFUSAL says so, and keep the channel.
+   * Before the handshake the request is refused handshake-required, as any request would be.
+   * @returns whether it was answered (false: the caller closes the channel).
+   */
+  refusePayload(connection, encoded, error) {
+    if (!(error instanceof ContractError) || error.inPayload !== true) return false
+    const envelope = JSON.parse(encoded)
+    if (error.code === PAYLOAD_REFUSAL.shapeBreak && !PAYLOAD_REFUSAL.answeredWhole.has(envelope.operation)) return false
+    // The scoped check runs after the payload, so the envelope's session may not match: an error
+    // frame may carry null or text (§3.1), and text is all that was checked.
+    const request = { ...envelope, sessionId: typeof envelope.sessionId === 'string' ? envelope.sessionId : null }
+    this.reply(connection, request, { code: connection.ready ? error.code : ERROR.handshakeRequired }, ENVELOPE.type.error)
+    return true
   }
 
   receiveRequest(connection, envelope) {
@@ -379,7 +416,7 @@ class BridgeHost {
     }
     const entry = {
       operation: envelope.operation, sessionId: envelope.sessionId,
-      fingerprint: fingerprintOf(envelope.payload), settled: false, suppressed: false, outcome: undefined,
+      fingerprint: fingerprintOf(envelope.payload), settled: false, outcome: undefined,
     }
     connection.seen.set(envelope.requestId, entry)
     void this.dispatchRequest(connection, envelope, entry)
@@ -388,7 +425,8 @@ class BridgeHost {
   /**
    * One requestId, one terminal outcome. A settled repeat receives the remembered outcome, so a
    * repeated delivery request cannot deliver twice. A repeat while the first is still running is
-   * refused with duplicate-request and the original reply is suppressed: one reply per id.
+   * refused with duplicate-request, and the original still gets its own reply when it settles:
+   * one terminal reply per delivery of the id (contract §3.3).
    */
   receiveDuplicate(connection, envelope, entry) {
     // An id names one operation on one target with one payload; anything else is a different
@@ -398,7 +436,6 @@ class BridgeHost {
       return
     }
     if (entry.settled) { this.sendOutcome(connection, envelope, entry.outcome); return }
-    entry.suppressed = true
     this.reply(connection, envelope, { code: ERROR.duplicate }, ENVELOPE.type.error)
   }
 
@@ -466,7 +503,7 @@ class BridgeHost {
     }
     entry.settled = true
     entry.outcome = outcome
-    if (!entry.suppressed) this.sendOutcome(connection, envelope, outcome)
+    this.sendOutcome(connection, envelope, outcome)
   }
 
   sendOutcome(connection, request, outcome) {
@@ -569,16 +606,14 @@ async function summaryOf(service, sessionId) {
   }
 }
 
-/** Related = managed, watched, messaged by or forwarded (§5.2); managed covers the last two. */
-async function isRelated(service, sessionId) {
-  if (service.isManaged(sessionId)) return true
-  return (await service.watches()).some((watch) => watch.sessionId === sessionId)
-}
-
+/**
+ * Related = managed, watched (now or before), messaged Fishball, or forwarded by the user (§5.2).
+ * The row's own records decide it, so a session stays related after Take back (DESIGN §5c).
+ */
 async function ensureRelated(service, sessionId) {
   if (service.isFishball(sessionId)) refuse(ERROR.isFishball)
   if ((await summaryOf(service, sessionId)) === undefined) refuse(ERROR.unknownSession)
-  if (!(await isRelated(service, sessionId))) refuse(ERROR.forbidden)
+  if (!(await service.isRelated(sessionId))) refuse(ERROR.forbidden)
 }
 
 export async function ensureManaged(service, sessionId) {
@@ -635,6 +670,10 @@ function sessionHandlers(service) {
       return { sessions }
     }],
     [OPERATION.sessionStart, async ({ payload }) => {
+      // A session needs a title the sidebar can show (the user's decision, 2026-11-08): an empty or
+      // blank one is refused before anything is created. Contract 1.1 has no title code, so it is
+      // the title's lower bound of one character (§8 titleChars), limit-exceeded.
+      if (payload.title.trim().length === 0) refuse(ERROR.limit)
       const target = await placeOf(service, payload.folder)
       const result = await service.start({
         target,
@@ -670,9 +709,14 @@ function sessionHandlers(service) {
       await service.read({ sessionId: payload.sessionId, maxMessages: payload.maxMessages, maxBytes: payload.maxBytes }),
       payload,
     )],
-    [OPERATION.sessionWatch, async ({ payload }) => watch(
-      await service.watch({ sessionId: payload.sessionId, mode: payload.mode }),
-    )],
+    [OPERATION.sessionWatch, async ({ payload }) => {
+      // An existing session that is not related is not-related. An unknown or archived one (no
+      // summary) goes to the watch service, which answers unknown-session, archived or
+      // is-fishball as watchError data, so nothing is watched in those cases either.
+      const known = (await summaryOf(service, payload.sessionId)) !== undefined
+      if (known && !(await service.isRelated(payload.sessionId))) return { watchError: WATCH_ERROR.notRelated }
+      return watch(await service.watch({ sessionId: payload.sessionId, mode: payload.mode }))
+    }],
     [OPERATION.sessionWatches, async () => ({ watches: (await service.watches()).map(watchRecordOf) })],
     [OPERATION.sessionUnwatch, async ({ payload }) => {
       // Closing is idempotent: the response has no refusal shape, and an unknown id closes nothing.
@@ -761,16 +805,20 @@ function boundRead(messages, alreadyTruncated, maxMessages, maxBytes) {
 /**
  * Where a new session goes (§5.2): an existing workspace by id, or an existing absolute
  * directory; a registered workspace keeps its path after the folder is gone, so the folder
- * must exist too. Nothing is ever created here.
+ * must exist too. Nothing is ever created here. The refusals name what was wrong, with the
+ * contract 1.1 codes the user chose (2026-11-08): a value that is neither a workspace id nor an
+ * absolute path is not allowed (forbidden); a workspace whose folder is gone, or an absolute path
+ * that is not an existing directory, is not found (unknown-session).
  */
 async function placeOf(service, folder) {
   const workspaces = await service.workspaces()
   const workspace = workspaces.find((entry) => entry.id === folder)
   if (workspace !== undefined) {
-    if (!(await isDirectory(workspace.path))) refuse(ERROR.forbidden)
+    if (!(await isDirectory(workspace.path))) refuse(ERROR.unknownSession)
     return { workspaceId: workspace.id }
   }
-  if (typeof folder !== 'string' || !isAbsolute(folder) || !(await isDirectory(folder))) refuse(ERROR.forbidden)
+  if (typeof folder !== 'string' || !isAbsolute(folder)) refuse(ERROR.forbidden)
+  if (!(await isDirectory(folder))) refuse(ERROR.unknownSession)
   const registered = await service.resolveWorkspacePath(folder)
   return registered === undefined ? { cwd: folder } : { workspaceId: registered.id }
 }

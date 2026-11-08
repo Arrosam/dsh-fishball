@@ -20,6 +20,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { APPROVAL, ASK_ERROR, ASK_RESULT, CHANGED_BY, SESSION_INFO } from './constants.js'
 import { rootSessionOf, senderOf, textOfEvent } from './session-info.js'
+import { byteLength } from './text.js'
 
 export const DESK_TOOL = Object.freeze({ ask: 'ask_fishball', list: 'list_user_messages' })
 
@@ -37,6 +38,7 @@ const NOTE = Object.freeze({
   [ASK_ERROR.invalid]: 'Give tool (a tool name) and arguments (an object of the exact arguments), or request_id with reply.',
   [ASK_ERROR.empty]: 'The reply is empty.',
   [ASK_ERROR.cancelled]: 'The call was cancelled.',
+  [ASK_ERROR.reasonTooLarge]: 'The reason (why) is longer than ' + APPROVAL.reasonBytes + ' bytes. Shorten it to one or two sentences and ask again. Nothing was sent.',
 })
 /** A call one of Fishball's standing grants covers: allowed at once, no Fishball step (§7a.3, §7a.8). */
 const GRANT_NOTE = 'A standing grant from Fishball covers this call. Make the call now with exactly these arguments.'
@@ -129,6 +131,7 @@ export function requestDeskTools({ ctx, broker, readLimits }) {
       }
       const ids = quote ?? []
       if (typeof tool !== 'string' || tool.trim().length === 0 || !isObject(args) || !Array.isArray(ids) || (why !== undefined && typeof why !== 'string')) return answer({ code: ASK_ERROR.invalid })
+      if (why !== undefined && byteLength(why) > APPROVAL.reasonBytes) return answer({ code: ASK_ERROR.reasonTooLarge })
       const typed = new Map(userMessages(session).map((message) => [message.id, message.text]))
       const quotes = []
       for (const id of new Set(ids)) {
