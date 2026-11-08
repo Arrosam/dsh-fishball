@@ -13,7 +13,7 @@ board). Black-box only: every expected result comes from those documents, never 
   their cases below match the final design.
 - **Withdrawn:** `X0-U` (U10). Its test file is removed; its page cases move to PG-1's browser
   tests (§6).
-- **Techniques:** EP = Equivalence Partitioning (valid and invalid); BVA = Boundary Value Analysis; DT = Decision Table; ST = State Transition; UC = Use Case (true e2e). Positive is not a technique.
+- **Techniques:** EP = Equivalence Partitioning (valid and invalid); BVA = Boundary Value Analysis; DT = Decision Table; ST = State Transition; UC = Use Case (actor-goal scenarios predicted from the design, with separately counted main, alternative and exception flows). Use Cases are defined now even when execution belongs to a later task. Positive is not a technique.
 - Former W0 positive IDs become collision-free EP-V-xx. Later-wave legacy P IDs stay unchanged in files; their corrected technique is EP below.
 - **Ids:** `<short task>-<technique>-<nn>`, e.g. `XS-DT-11`. Every case names the X point or the
   task's done-when in its title.
@@ -47,13 +47,13 @@ board). Black-box only: every expected result comes from those documents, never 
 | K1-EP-V-04 | EP | a valid attention request and its accepted response validate and round-trip |
 | K1-EP-01 | EP | a malformed attention payload is refused (missing/extra field, wrong type, important > unread, negative, float `latestAt`) |
 | K1-EP-02 | EP | attention is an added capability, never one the connector requires |
-| K1-EP-03 | EP | an invalid attention frame is an error and the connection stays usable for the next valid one |
+| K1-UC-01-E1 | UC | an invalid attention frame is an error and the connection stays usable for the next valid one |
 | K1-BVA-01 | BVA | `unread` −1, 0, 1, 9999, 10000 |
 | K1-BVA-02 | BVA | `importantUnread` 0, = `unread`, `unread` + 1, −1 |
 | K1-BVA-03 | BVA | `latestAt` null, 0, an epoch-ms integer, a float |
 | K1-DT-01 | DT | a 1.1 instance still attaches; the common minor is the lower one |
 | K1-EP-V-05 | EP | the host bridge advertises `instance.attention` and answers a valid frame accepted |
-| K1-ST-01 | ST | real connector state: none → value → newer value → detach `{0,false}` → reattach zero → report again |
+| K1-UC-01-M | UC | real connector state: none → value → newer value → detach `{0,false}` → reattach zero → report again |
 
 ### 2.2 X0-C — service, manager, chat (X1, X2, X10, X11; X3 type rule only)
 
@@ -66,16 +66,16 @@ board). Black-box only: every expected result comes from those documents, never 
 | XC-EP-01 | EP | `fishballChat` stays internal; the plugin-facing service is `fishballInstance` |
 | XC-EP-02 | EP | X1 reports the manager Session id, not another agent id |
 | XC-EP-03 | EP | a type with a foreign plugin prefix is refused |
-| XC-DT-01 | DT | create: a registration made before the live Session is applied after the persona, in order |
-| XC-DT-02 | DT | resume: the same registration is applied again on `agents.resume` |
-| XC-DT-03 | DT | live: a registration made while the agent is live is applied at once |
-| XC-DT-04 | DT | a throwing registration is logged once across create/resume and skipped; a later one still applies |
-| XC-DT-05 | DT | `wake:true` is one notice turn with the plugin source |
-| XC-DT-06 | DT | `wake:false` is held and joins the next turn |
-| XC-DT-07 | DT | a duplicate `dedupeKey` is answered duplicate and starts no second turn |
-| XC-DT-08 | DT | `wake:true` queues whether the manager is idle or busy |
+| XC-UC-01-M | UC | create: a registration made before the live Session is applied after the persona, in order |
+| XC-UC-01-A1 | UC | resume: the same registration is applied again on `agents.resume` |
+| XC-UC-01-A2 | UC | live: a registration made while the agent is live is applied at once |
+| XC-UC-01-E1 | UC | a throwing registration is logged once across create/resume and skipped; a later one still applies |
+| XC-UC-02-M | UC | `wake:true` is one notice turn with the plugin source |
+| XC-UC-02-A1 | UC | `wake:false` is held and joins the next turn |
+| XC-UC-02-E1 | UC | a duplicate `dedupeKey` is answered duplicate and starts no second turn |
+| XC-UC-02-A2 | UC | `wake:true` queues whether the manager is idle or busy |
 | XC-ST-01 | ST | registered → applied → disposed → registered again |
-| XC-EP-V-07 | EP | a registration made during a turn is on the live agent before the next step |
+| XC-UC-01-A3 | UC | running fixture: registration immediately appears in the live scope; real model-request behavior has a separate TODO |
 | XC-BVA-02 | BVA | `limit` 0, 1, available count 3, available count + 1; not an undocumented API maximum |
 | XC-BVA-03 | BVA | `maxChars` cuts at a surrogate pair without a lone surrogate |
 
@@ -85,13 +85,13 @@ board). Black-box only: every expected result comes from those documents, never 
 | --- | --- | --- |
 | FN1-EP-V-01 | EP | package `fishball-fold-notify` 0.1.0-alpha.0, bundle patch, files, `engines.dsh`, instance peer |
 | FN1-EP-V-02 | EP | row exports `name`, optional `fishballInstance?` inject, no internal `fishballChat` inject, `Config`, `apply` |
-| FN1-EP-V-03 | EP | config defaults: `foldDefault` true, `systemNotification` when-hidden, `batchWindowMs` 1500 |
+| FN1-UC-CONFIG-M | UC | config defaults: `foldDefault` true, `systemNotification` when-hidden, `batchWindowMs` 1500 |
 | FN1-EP-V-04 | EP | constants: `NOTIFY.maxChars` 4000, `NOTIFY.systemChars` 140, `FOLD.previewChars` 80, `FOLD.previewTools` 3, `BATCH.maxItems` 20, `SEEN.dwellMs` 600, `SEEN.threshold` 0.5 |
-| FN1-DT-01 | DT | the row loads over a stub `fishballInstance` |
+| FN1-UC-LOAD-M | UC | the row loads over a stub `fishballInstance` |
 | FN1-BVA-01 | BVA | `batchWindowMs` 0…10000; −1 and 10001 and a fraction refused |
 | FN1-EP-02 | EP | `systemNotification` off / when-hidden; another value refused |
-| FN1-EP-03 | EP | `foldDefault` boolean; a string refused |
-| FN1-DT-02 | DT | the row also loads without the optional instance service |
+| FN1-UC-CONFIG-A | UC | user chooses a valid `foldDefault` boolean; invalid string is separate CONFIG-E flow |
+| FN1-UC-LOAD-A | UC | the row also loads without the optional instance service |
 
 ### 2.4 WD-1 — `fishball-watchdog` skeleton
 
@@ -99,9 +99,9 @@ board). Black-box only: every expected result comes from those documents, never 
 | --- | --- | --- |
 | WD1-EP-V-01 | EP | package `fishball-watchdog` 0.1.0-alpha.0, bundle patch, `engines.dsh >=0.2.1-rc.5`, instance peer |
 | WD1-EP-V-02 | EP | row exports `name`, `inject` (agents, tools, llm, profileContext, fishballInstance?), `Config`, `apply` |
-| WD1-DT-01 | DT | the row loads over a stub `fishballInstance` |
-| WD1-DT-02 | DT | without optional instance service the row loads (canonical §1 older-instance compatibility) |
-| WD1-EP-V-04 | EP | every §9 default is the designed value (23 numeric, 2 text, 1 boolean) |
+| WD1-UC-LOAD-M | UC | the row loads over a stub `fishballInstance` |
+| WD1-UC-LOAD-A | UC | without optional instance service the row loads (canonical §1 older-instance compatibility) |
+| WD1-UC-CONFIG-M | UC | every §9 default is the designed value (23 numeric, 2 text, 1 boolean) |
 | WD1-BVA-01 | BVA | every numeric setting accepts its bounds and refuses min−1 and max+1 |
 | WD1-EP-01 | EP | there is no `enabled` setting (U7: DSH's bundle switch is the off switch) |
 | WD1-BVA-02 | BVA (blocked) | skipped: exact public Config window-sum relation, limits and invalid-input outcome need an authoritative specification; arithmetic over test defaults is not coverage |
@@ -112,13 +112,15 @@ board). Black-box only: every expected result comes from those documents, never 
 | --- | --- | --- |
 | B1-EP-V-01 | EP | package `fishball-board` 0.1.0-alpha.0, bundle patch, `engines.dsh`, instance peer, README |
 | B1-EP-V-02 | EP | row exports `name`, optional `fishballInstance?` inject, no internal `fishballChat` inject, `Config`, `apply` |
-| B1-EP-V-03 | EP | config defaults: `inject` true, `contextCards` 20, `doneWindowHours` 24 |
+| B1-UC-CONFIG-M | UC | config defaults: `inject` true, `contextCards` 20, `doneWindowHours` 24 |
 | B1-EP-V-04 | EP | constants: namespace, six statuses, `BOARD_LIMITS` cards 300 / links 8 / context 2000 / guide 900 |
-| B1-DT-01 | DT | the row loads with a stub `fishballInstance` |
+| B1-UC-LOAD-M | UC | the row loads with a stub `fishballInstance` |
 | B1-BVA-01 | BVA | `contextCards` 0…30; −1, 31 and a fraction refused |
 | B1-BVA-02 | BVA | `doneWindowHours` 0…168; −1 and 169 refused |
-| B1-EP-01 | EP | `inject` boolean; a string refused |
-| B1-DT-02 | DT | without the points the row loads and logs `instance-hooks-missing` once |
+| B1-UC-CONFIG-A | UC | user chooses a valid `inject` boolean; invalid string is separate CONFIG-E flow |
+| B1-UC-LOAD-A | UC | without the points the row loads and logs `instance-hooks-missing` once |
+
+Additional flow entries are enumerated in the linked Use Case ledgers (§9): K1-UC-01-A1/E2; XC-UC-02-A3; all CONFIG-E flows and WD1-CONFIG-A; all BUNDLE flows; and XC real-model/durable-restart TODOs. These are part of the counts, not merely prose examples. Each ledger records execution status and owner.
 
 ## 3. W1/W2 gate cases (kept consistent with e002ec3)
 
@@ -240,20 +242,33 @@ board). Black-box only: every expected result comes from those documents, never 
 
 | Task | EP | BVA | Decision Table | State Transition | Use Case | Total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| K1 | 8 | 3 | 1 | 1 | 0 | **13** |
-| X0-C | 8 | 2 | 8 | 1 | 0 | **19** |
-| FN-1 | 6 | 1 | 2 | 0 | 0 | **9** |
-| WD-1 | 4 | 1 | 2 | 0 | 0 | **7** |
-| B1 | 5 | 2 | 2 | 0 | 0 | **9** |
+| K1 | 7 | 3 | 1 | 0 | 4 | **15** |
+| X0-C | 7 | 2 | 0 | 1 | 12 | **22** |
+| FN-1 | 4 | 1 | 0 | 0 | 8 | **13** |
+| WD-1 | 3 | 1 | 0 | 0 | 10 | **14** |
+| B1 | 3 | 2 | 0 | 0 | 8 | **13** |
+| **W0 defined flows/cases** | **24** | **9** | **1** | **1** | **42** | **77** |
 | X0-I | 7 | 1 | 3 | 2 | 0 | **13** |
 | X0-G | 6 | 0 | 0 | 1 | 0 | **7** |
 | X0-A | 6 | 0 | 5 | 3 | 0 | **14** |
 | X0-S | 5 | 2 | 17 | 5 | 0 | **29** |
 | X0-W | 6 | 0 | 2 | 1 | 0 | **9** |
 | X0-B | 6 | 0 | 6 | 0 | 0 | **12** |
-| **All executable cases** | 67 | 12 | 48 | 14 | 0 | **141** |
+| **All defined cases including UC TODOs** | **60** | **12** | **34** | **13** | **42** | **161** |
 
-W0: **57 executable** (13 + 19 + 9 + 7 + 9); **1 blocked/skipped** WD1-BVA-02 is excluded. Counts are declared coverage, not verified passes.
+Primary technique is counted once per test entry. Use Case counts mean **flows**, not Use Case definitions, and include explicitly owned TODOs. The existing blocked/skipped WD1-BVA-02 is excluded from this table (78 W0 test entries including that block).
+
+W0 has **12 Use Case definitions**, **42 Use Case flows** = **29 executable + 13 TODO**. Together with 35 other executable cases, W0 has **64 executable cases + 13 TODO + 1 blocked/skipped**. Execution means an assertion body exists, not that it passes.
+
+| Task | UC definitions | UC executable flows | UC TODO flows | Other executable cases | Blocked |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| K1 | 1 | 4 | 0 | 11 | 0 |
+| X0-C | 2 | 10 | 2 | 10 | 0 |
+| FN-1 | 3 | 5 | 3 | 5 | 0 |
+| WD-1 | 3 | 5 | 5 | 4 | 1 |
+| B1 | 3 | 5 | 3 | 5 | 0 |
+
+Secondary DT/ST coverage in actor flows is recorded in the Use Case documents, not double-counted: service-presence loading rules, setup/notify decision rules, unread lifecycle transitions. No requirement was dropped just because its primary category changed.
 
 ## 5. Test-file → task map
 
@@ -303,15 +318,15 @@ These limitations mean the current files must not yet be advertised as a complet
 4. **B1 prune-age constant — uncovered naming ambiguity.** The design does not specify the public export key for the 30-day prune age. The invented `BOARD_LIMITS.pruneAgeDays` assertion is removed; no prune-age constant coverage is claimed pending a documented public name.
 5. **K1 host bridge attention port.** The design says the validated payload "goes to the attachment"; it does not name the host-side callback (`onAttention`, the session port, or the connector-service binding). The K1 case observes only the wire answer and the real `state.unread`; it does not assert an internal callback. **A.** leave the seam internal; **B.** name it in K1's done-when. Recommendation: **A**.
 
-## 9. Technique N/A and e2e owners
+## 9. Predicted Use Cases and execution ownership
 
-- K1: Use Case N/A — the real host/stub child lifecycle is State Transition, not a true user journey; X-E2E owns real child → connector → unread/important browser alert.
-- X0-C: Use Case N/A — fake manager sessions are point-contract coverage; X-E2E owns real plugin registration → model turn → visible delivery. XC-EP-V-07 is classified EP: setting a fake running status checks a valid partition, not a real state transition.
-- FN-1: State Transition N/A — no specified skeleton state machine/observable disposal contract; Use Case N/A — X-E2E/FN-A owns notify → folded timeline → seen → attention.
-- WD-1: State Transition N/A — supervision transitions belong to later WD tasks; Use Case N/A — X-E2E/WD-12 owns start → assign → supervise → approvals/hand-over.
-- B1: State Transition N/A — card transitions belong to B2; Use Case N/A — X-E2E/B8 owns write → compaction → context/panel → disable/restart.
-- FN/WD/B loading Decision Tables each have one condition (service present/absent) and two rules (load; B absent also logs once). No extra apiVersion branch is inferred.
-- FN/WD/B config × loading Decision Table N/A — independent schema checks are EP/BVA; no raw apply invalid-config contract defines a combined decision or refusal.
-- Later-wave absent techniques: X0-I Use Case; X0-G BVA/Decision Table/Use Case; X0-A BVA/Use Case; X0-S Use Case; X0-W BVA/Use Case; X0-B BVA/State Transition/Use Case. No additional specified boundaries/transitions/decisions justify those techniques in these fixtures; X-E2E owns integrated real runtime/browser journeys (side-agent loop, approvals, supervision, attention, bundled reinstall).
+Use Cases are design constraints, not retrospective descriptions of implementation. Each main, alternative and exception flow has its own test entry; executable and TODO flows are counted separately from the number of Use Case definitions.
 
-Added: WD1-DT-02 — absent optional instance service loads per canonical §1 older-instance compatibility. No invented config or lifecycle behavior. Window-sum, X3, prune-age and remaining core gaps remain unchanged.
+- [Core Use Cases](instance-ext-w0-core-use-cases.md): K1 and X0-C, actors, preconditions, success/alternative/exception flows, postconditions and task/X-id traceability.
+- [Skeleton Use Cases](instance-ext-w0-skeleton-use-cases.md): FN-1, WD-1 and B1, including user enable/disable, optional service, invalid settings and watchdog profile-bundle enablement.
+- Flows within W0 scope execute using existing stubs/harness. A flow needing later behavior is still specified now and has a `test.todo` naming its owning task. No W0 task has Use Case marked N/A.
+- Skeleton State Transition remains N/A as an independent W0 technique: no additional observable skeleton lifecycle contract is specified. User enable/disable flows are nevertheless predicted now as Use Cases, with later-task ownership where necessary.
+- FN/WD/B loading Decision Tables retain present/absent service rules. Config × raw `apply` rejection is not invented; invalid settings are exercised through the public Config schema.
+- Later-wave non-UC case tables remain existing gate coverage only, not a claim that later tasks have no Use Cases. Their integrated flows can be constrained by the written W0 Use Cases and extended in their own test plans.
+
+The four pending ambiguity decisions (window-sum, X3 validation seam, prune-age key, remaining X0-C gaps) are unchanged.

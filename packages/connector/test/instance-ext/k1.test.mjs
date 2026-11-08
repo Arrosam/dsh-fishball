@@ -10,7 +10,8 @@
  * and wire answers, and the connector's real state endpoint on the H-STUB harness (a real DSH
  * boot with a stub instance; the only place `state.unread` is observable end to end).
  *
- * Techniques: EP, BVA, Decision Table, State Transition; Use Case is deferred to X-E2E.
+ * Techniques: EP, BVA, Decision Table and Use Case; UC contracts live in
+ * docs/test-design/instance-ext-w0-core-use-cases.md (fixture-level, not browser sign-off).
  */
 import assert from 'node:assert/strict'
 import { after, describe, it } from 'node:test'
@@ -149,7 +150,7 @@ describe('K1 host bridge serves instance.attention', () => {
     host.close()
   })
 
-  it('K1-EP-03 an invalid attention frame is an error and the connection remains usable for the next valid one', async () => {
+  it('K1-UC-01-E1 an invalid attention frame is an error and the connection remains usable for the next valid one', async () => {
     const { createBridgeHost } = await loadConnector('src/slim/host/bridge.js')
     const host = createBridgeHost({ hostId: 'host-k1', sessions: SESSIONS })
     const child = childTransport()
@@ -171,7 +172,7 @@ describe('K1 connector state.unread (H-STUB, real DSH boot)', () => {
     process.env.TMPDIR = process.env.FBTEST_STUB_TMP ?? '/private/tmp'
   })
 
-  it('K1-ST-01 unread follows the last valid value; detach and close reset it to {0,false}', async (t) => {
+  it('K1-UC-01-M unread report → detach/reset → reconnect → report', async (t) => {
     const { bootStub, stopStub } = await import('../../../../test/support/instance-stub.mjs')
     const booted = await bootStub('k1-unread')
     t.after(() => stopStub(booted))
@@ -198,8 +199,35 @@ describe('K1 connector state.unread (H-STUB, real DSH boot)', () => {
     assert.deepEqual((await host.state()).unread, { count: 0, important: false }, 'reattach stays zero until a report')
     await stub.op(ATTENTION, { unread: 7, importantUnread: 2, latestAt: 1_700_000_001_000 })
     assert.deepEqual((await host.state()).unread, { count: 7, important: true }, 'the child reports the current value again')
-    // Transport loss is a different lifecycle event from an explicit detach.
+  })
+
+  it('K1-UC-01-A1 transport disconnect clears the last report', async (t) => {
+    const { bootStub, stopStub } = await import('../../../../test/support/instance-stub.mjs')
+    const booted = await bootStub('k1-disconnect')
+    t.after(() => stopStub(booted))
+    const { host, stub } = booted
+    await stub.op(ATTENTION, VALID)
+    assert.deepEqual((await host.state()).unread, { count: 3, important: true })
     await stub.fireClose()
     assert.deepEqual((await host.state()).unread, { count: 0, important: false }, 'transport close resets unread while the host remains observable')
   })
+})
+
+it('K1-UC-01-E2 a 1.1 child attaches without attention and can list related sessions', async (t) => {
+  const { bootStub, stopStub } = await import('../../../../test/support/instance-stub.mjs')
+  const booted = await bootStub('k1-legacy', { attach: false })
+  t.after(() => stopStub(booted))
+  const { host, stub } = booted
+  const legacy = await stub.attach({
+    fields: { contract: { ...CONNECTOR_CONTRACT, minor: 1 } },
+    capabilities: [OPERATION.inboxPush],
+    required: [],
+  })
+  assert.equal(legacy.ok, true)
+  assert.equal(legacy.handshake.type, type.response)
+  // Handshake is a one-time protocol step; use an ordinary 1.1 request for compatibility.
+  const listed = await stub.op(OPERATION.sessionList, { limit: 0 })
+  assert.equal(listed.type, type.response, 'ordinary session listing remains usable without attention')
+  assert.deepEqual(listed.payload, { sessions: [] })
+  assert.deepEqual((await host.state()).unread, { count: 0, important: false })
 })

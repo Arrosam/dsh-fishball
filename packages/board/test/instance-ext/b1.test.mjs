@@ -61,7 +61,7 @@ describe('B1 package and row', () => {
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
 
-  it('B1-EP-V-03 the config defaults are inject true, contextCards 20, doneWindowHours 24', async () => {
+  it('B1-UC-CONFIG-M [formerly B1-EP-V-03] the config defaults are inject true, contextCards 20, doneWindowHours 24', async () => {
     const { Config } = await packageModule(BOARD, 'index.js')
     assert.equal(configDefault(Config, 'inject'), true)
     assert.equal(configDefault(Config, 'contextCards'), 20)
@@ -81,11 +81,10 @@ describe('B1 package and row', () => {
     for (const value of [-1, 169]) assert.throws(() => Config({ doneWindowHours: value }))
   })
 
-  it('B1-EP-01 inject is a boolean', async () => {
+  it('B1-UC-CONFIG-A [formerly B1-EP-01] inject is a boolean', async () => {
     const { Config } = await packageModule(BOARD, 'index.js')
     assert.doesNotThrow(() => Config({ inject: true }))
     assert.doesNotThrow(() => Config({ inject: false }))
-    assert.throws(() => Config({ inject: 'true' }))
   })
 
   it('B1-EP-V-04 the constants carry the six statuses and the frozen limits', async () => {
@@ -100,15 +99,26 @@ describe('B1 package and row', () => {
 })
 
 describe('B1 loading with and without the instance points (§8)', () => {
-  it('B1-DT-01 the row loads with a stub fishballInstance', async () => {
+  it('B1-UC-LOAD-M [formerly B1-DT-01] the row loads with a stub fishballInstance', async () => {
     const row = await packageModule(BOARD, 'index.js')
     await assert.doesNotReject(async () => row.apply(stubContext({ withInstance: true }), {}))
   })
 
-  it('B1-DT-02 without the points the row loads and logs instance-hooks-missing once', async () => {
+  it('B1-UC-LOAD-A [formerly B1-DT-02] without the points the row loads and logs instance-hooks-missing once', async () => {
     const row = await packageModule(BOARD, 'index.js')
     const ctx = stubContext({ withInstance: false })
     await assert.doesNotReject(async () => row.apply(ctx, {}))
     assert.equal(ctx.logs.filter((line) => line.includes('instance-hooks-missing')).length, 1)
   })
+})
+
+// Flows defined before these tests in docs/test-design/instance-ext-w0-skeleton-use-cases.md.
+describe('B1 user configuration and deferred bundle journeys', () => {
+  it('B1-UC-CONFIG-E user submits an invalid setting and Config rejects it', async () => {
+    const { Config } = await packageModule(BOARD, 'index.js')
+    assert.throws(() => Config({ inject: 'true' }))
+  })
+  it.todo('B1-UC-BUNDLE-M [X0-B] user enables the bundled plugin')
+  it.todo('B1-UC-BUNDLE-A [X0-B] user disables and restart preserves the choice')
+  it.todo('B1-UC-BUNDLE-E [X0-B] unavailable placement permits child startup')
 })

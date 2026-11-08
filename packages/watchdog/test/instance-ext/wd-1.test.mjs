@@ -96,20 +96,20 @@ describe('WD-1 package and row', () => {
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
 
-  it('WD1-DT-01 the row loads over a stub fishballInstance', async () => {
+  it('WD1-UC-LOAD-M [formerly WD1-DT-01] the row loads over a stub fishballInstance', async () => {
     const row = await packageModule(WATCHDOG, 'index.js')
     await assert.doesNotReject(async () => row.apply(stubContext(), {}))
   })
 
   // Canonical §1: optional injection treats an absent service as an older instance.
-  it('WD1-DT-02 the row loads without the optional fishballInstance service', async () => {
+  it('WD1-UC-LOAD-A [formerly WD1-DT-02] the row loads without the optional fishballInstance service', async () => {
     const row = await packageModule(WATCHDOG, 'index.js')
     await assert.doesNotReject(async () => row.apply(stubContext({ withInstance: false }), {}))
   })
 })
 
 describe('WD-1 config defaults and bounds (§9, U7)', () => {
-  it('WD1-EP-V-04 every §9 default is the designed value', async () => {
+  it('WD1-UC-CONFIG-M [formerly WD1-EP-V-04] every §9 default is the designed value', async () => {
     const { Config } = await packageModule(WATCHDOG, 'index.js')
     for (const [key, value] of [...BOOLEANS, ...TEXTS, ...NUMBERS.map(([key, value]) => [key, value])]) {
       assert.equal(configDefault(Config, key), value, key)
@@ -121,7 +121,7 @@ describe('WD-1 config defaults and bounds (§9, U7)', () => {
     for (const [key, , min, max] of NUMBERS) {
       assert.doesNotThrow(() => Config({ [key]: min }), key + ' min')
       assert.doesNotThrow(() => Config({ [key]: max }), key + ' max')
-      assert.throws(() => Config({ [key]: min - 1 }), key + ' min-1')
+      if (key !== NUMBERS[0][0]) assert.throws(() => Config({ [key]: min - 1 }), key + ' min-1')
       assert.throws(() => Config({ [key]: max + 1 }), key + ' max+1')
     }
   })
@@ -133,4 +133,23 @@ describe('WD-1 config defaults and bounds (§9, U7)', () => {
 
   // No authoritative Config relation or invalid-input outcome is specified (test design §7.2).
   it.skip('WD1-BVA-02 BLOCKED: define the window-sum Config rules and refusal behavior', () => {})
+})
+
+// Flows defined before these tests in docs/test-design/instance-ext-w0-skeleton-use-cases.md.
+describe('WD1 user configuration and deferred bundle journeys', () => {
+  it('WD1-UC-CONFIG-A user chooses supported non-default maxOutputTokens', async () => {
+    const { Config } = await packageModule(WATCHDOG, 'index.js')
+    assert.doesNotThrow(() => Config({ maxOutputTokens: 2048 }))
+  })
+
+  it('WD1-UC-CONFIG-E user submits an invalid setting and Config rejects it', async () => {
+    const { Config } = await packageModule(WATCHDOG, 'index.js')
+    const [key, , min] = NUMBERS[0]
+    assert.throws(() => Config({ [key]: min - 1 }))
+  })
+  it.todo('WD1-UC-BUNDLE-M [X0-B/X0-S] enabled iff fishball-watchdog is in child dsh.profile.bundles; enabled-unregistered gate refuses')
+  it.todo('WD1-UC-BUNDLE-A [X0-B/X0-S/WD-13] user disable hands over without stopping or unwatching')
+  it.todo('WD1-UC-BUNDLE-E [X0-B/X0-S] enabled failed placement is plugin-gone; gated sends refuse')
+  it.todo('WD1-UC-BUNDLE-R [X0-S/WD-13] re-enable restores dormant briefs without automatic resume')
+  it.todo('WD1-UC-BUNDLE-F [X0-S/WD-13] disposal while bundle remains enabled is failure not hand-over')
 })
