@@ -40,7 +40,7 @@ function stubContext({ withInstance = true } = {}) {
 }
 
 describe('FN-1 package and row', () => {
-  it('FN1-EP-V-01 the package is fishball-fold-notify 0.1.0-alpha.0 with the designed files and bounds', async () => {
+  it('FN1-EP-V-01 Samuel keeps a busy Fishball conversation manageable — W0: the package is fishball-fold-notify 0.1.0-alpha.0 with the designed files and bounds', async () => {
     const manifest = await packageJson(FOLD)
     assert.equal(manifest.name, 'fishball-fold-notify')
     assert.equal(manifest.version, '0.1.0-alpha.0')
@@ -52,7 +52,7 @@ describe('FN-1 package and row', () => {
     assert.ok(manifest.peerDependencies?.['fishball-instance'], 'peerDependencies names the instance')
   })
 
-  it('FN1-EP-V-02 the row exports name, inject, Config and apply', async () => {
+  it('FN1-EP-V-02 Samuel keeps a busy Fishball conversation manageable — W0: the row exports name, inject, Config and apply', async () => {
     const row = await packageModule(FOLD, 'index.js')
     assert.equal(row.name, 'fishball-fold-notify')
     assert.ok(Array.isArray(row.inject), 'inject is a list')
@@ -63,14 +63,14 @@ describe('FN-1 package and row', () => {
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
 
-  it('FN1-UC-CONFIG-M [formerly FN1-EP-V-03] the config defaults are foldDefault true, systemNotification when-hidden, batchWindowMs 1500', async () => {
+  it('FN1-UC-CONFIG-M Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-EP-V-03] the config defaults are foldDefault true, systemNotification when-hidden, batchWindowMs 1500', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.equal(configDefault(Config, 'foldDefault'), true)
     assert.equal(configDefault(Config, 'systemNotification'), 'when-hidden')
     assert.equal(configDefault(Config, 'batchWindowMs'), 1500)
   })
 
-  it('FN1-BVA-01 batchWindowMs is an integer 0…10000 (0 = off)', async () => {
+  it('FN1-BVA-01 Samuel keeps a busy Fishball conversation manageable — W0: batchWindowMs is an integer 0…10000 (0 = off)', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.doesNotThrow(() => Config({ batchWindowMs: 0 }))
     assert.doesNotThrow(() => Config({ batchWindowMs: 1 }))
@@ -80,14 +80,14 @@ describe('FN-1 package and row', () => {
     assert.throws(() => Config({ batchWindowMs: 1.5 }))
   })
 
-  it('FN1-EP-02 systemNotification is off or when-hidden', async () => {
+  it('FN1-EP-02 Samuel keeps a busy Fishball conversation manageable — W0: systemNotification is off or when-hidden', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.doesNotThrow(() => Config({ systemNotification: 'off' }))
     assert.doesNotThrow(() => Config({ systemNotification: 'when-hidden' }))
     assert.throws(() => Config({ systemNotification: 'always' }))
   })
 
-  it('FN1-UC-CONFIG-A [formerly FN1-EP-03] foldDefault is a boolean', async () => {
+  it('FN1-UC-CONFIG-A Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-EP-03] foldDefault is a boolean', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.doesNotThrow(() => Config({ foldDefault: true }))
     assert.doesNotThrow(() => Config({ foldDefault: false }))
@@ -95,7 +95,7 @@ describe('FN-1 package and row', () => {
 })
 
 describe('FN-1 constants and loading', () => {
-  it('FN1-EP-V-04 the fixed constants are the designed values', async () => {
+  it('FN1-EP-V-04 Samuel keeps a busy Fishball conversation manageable — W0: the fixed constants are the designed values', async () => {
     const constants = await packageModule(FOLD, 'src/constants.js')
     assert.equal(constants.NOTIFY.maxChars, 4000)
     assert.equal(constants.NOTIFY.systemChars, 140)
@@ -106,13 +106,13 @@ describe('FN-1 constants and loading', () => {
     assert.equal(constants.SEEN.threshold, 0.5)
   })
 
-  it('FN1-UC-LOAD-M [formerly FN1-DT-01] the row loads over a stub fishballInstance', async () => {
+  it('FN1-UC-LOAD-M Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-DT-01] the row loads over a stub fishballInstance', async () => {
     const row = await packageModule(FOLD, 'index.js')
     const ctx = stubContext()
     await assert.doesNotReject(async () => row.apply(ctx, {}))
   })
 
-  it('FN1-UC-LOAD-A [formerly FN1-DT-02] the row also loads without the optional instance service', async () => {
+  it('FN1-UC-LOAD-A Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-DT-02] the row also loads without the optional instance service', async () => {
     const row = await packageModule(FOLD, 'index.js')
     const ctx = stubContext({ withInstance: false })
     await assert.doesNotReject(async () => row.apply(ctx, {}))
@@ -121,11 +121,11 @@ describe('FN-1 constants and loading', () => {
 
 // Flows defined before these tests in docs/test-design/instance-ext-w0-skeleton-use-cases.md.
 describe('FN1 user configuration and deferred bundle journeys', () => {
-  it('FN1-UC-CONFIG-E user submits an invalid setting and Config rejects it', async () => {
+  it('FN1-UC-CONFIG-E Samuel keeps a busy Fishball conversation manageable — W0: user submits an invalid setting and Config rejects it', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.throws(() => Config({ foldDefault: 'true' }))
   })
-  it.todo('FN1-UC-BUNDLE-M [X0-B] user enables the bundled plugin')
-  it.todo('FN1-UC-BUNDLE-A [X0-B] user disables and restart preserves the choice')
-  it.todo('FN1-UC-BUNDLE-E [X0-B] unavailable placement permits child startup')
+  it.todo('FN1-UC-BUNDLE-M Samuel keeps a busy Fishball conversation manageable — deferred: [X0-B] user enables the bundled plugin')
+  it.todo('FN1-UC-BUNDLE-A Samuel keeps a busy Fishball conversation manageable — deferred: [X0-B] user disables and restart preserves the choice')
+  it.todo('FN1-UC-BUNDLE-E Samuel keeps a busy Fishball conversation manageable — deferred: [X0-B] unavailable placement permits child startup')
 })

@@ -41,7 +41,7 @@ function stubContext({ withInstance = true } = {}) {
 }
 
 describe('B1 package and row', () => {
-  it('B1-EP-V-01 the package is fishball-board 0.1.0-alpha.0 with the designed files and bounds', async () => {
+  it('B1-EP-V-01 Samuel keeps his Fishball work board available — W0: the package is fishball-board 0.1.0-alpha.0 with the designed files and bounds', async () => {
     const manifest = await packageJson(BOARD)
     assert.equal(manifest.name, 'fishball-board')
     assert.equal(manifest.version, '0.1.0-alpha.0')
@@ -51,7 +51,7 @@ describe('B1 package and row', () => {
     for (const file of ['index.js', 'src/constants.js', 'src/config.js', 'README.md']) await packageFile(BOARD, file)
   })
 
-  it('B1-EP-V-02 the row exports name, inject, Config and apply', async () => {
+  it('B1-EP-V-02 Samuel keeps his Fishball work board available — W0: the row exports name, inject, Config and apply', async () => {
     const row = await packageModule(BOARD, 'index.js')
     assert.equal(row.name, 'fishball-board')
     assert.ok(row.inject?.includes('tools'), 'inject tools')
@@ -61,33 +61,33 @@ describe('B1 package and row', () => {
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
 
-  it('B1-UC-CONFIG-M [formerly B1-EP-V-03] the config defaults are inject true, contextCards 20, doneWindowHours 24', async () => {
+  it('B1-UC-CONFIG-M Samuel keeps his Fishball work board available — W0: [formerly B1-EP-V-03] the config defaults are inject true, contextCards 20, doneWindowHours 24', async () => {
     const { Config } = await packageModule(BOARD, 'index.js')
     assert.equal(configDefault(Config, 'inject'), true)
     assert.equal(configDefault(Config, 'contextCards'), 20)
     assert.equal(configDefault(Config, 'doneWindowHours'), 24)
   })
 
-  it('B1-BVA-01 contextCards is an integer 0…30 (0 = the counts line only)', async () => {
+  it('B1-BVA-01 Samuel keeps his Fishball work board available — W0: contextCards is an integer 0…30 (0 = the counts line only)', async () => {
     const { Config } = await packageModule(BOARD, 'index.js')
     for (const value of [0, 1, 30]) assert.doesNotThrow(() => Config({ contextCards: value }))
     for (const value of [-1, 31]) assert.throws(() => Config({ contextCards: value }))
     assert.throws(() => Config({ contextCards: 1.5 }))
   })
 
-  it('B1-BVA-02 doneWindowHours is an integer 0…168', async () => {
+  it('B1-BVA-02 Samuel keeps his Fishball work board available — W0: doneWindowHours is an integer 0…168', async () => {
     const { Config } = await packageModule(BOARD, 'index.js')
     for (const value of [0, 1, 168]) assert.doesNotThrow(() => Config({ doneWindowHours: value }))
     for (const value of [-1, 169]) assert.throws(() => Config({ doneWindowHours: value }))
   })
 
-  it('B1-UC-CONFIG-A [formerly B1-EP-01] inject is a boolean', async () => {
+  it('B1-UC-CONFIG-A Samuel keeps his Fishball work board available — W0: [formerly B1-EP-01] inject is a boolean', async () => {
     const { Config } = await packageModule(BOARD, 'index.js')
     assert.doesNotThrow(() => Config({ inject: true }))
     assert.doesNotThrow(() => Config({ inject: false }))
   })
 
-  it('B1-EP-V-04 the constants carry the six statuses and the frozen limits', async () => {
+  it('B1-EP-V-04 Samuel keeps his Fishball work board available — W0: the constants carry the six statuses and the frozen limits', async () => {
     const constants = await packageModule(BOARD, 'src/constants.js')
     assert.equal(constants.NAMESPACE, 'fishball-board')
     assert.deepEqual(Object.values(constants.STATUS).sort(), ['done', 'dropped', 'in_progress', 'paused', 'todo', 'waiting'])
@@ -99,12 +99,12 @@ describe('B1 package and row', () => {
 })
 
 describe('B1 loading with and without the instance points (§8)', () => {
-  it('B1-UC-LOAD-M [formerly B1-DT-01] the row loads with a stub fishballInstance', async () => {
+  it('B1-UC-LOAD-M Samuel keeps his Fishball work board available — W0: [formerly B1-DT-01] the row loads with a stub fishballInstance', async () => {
     const row = await packageModule(BOARD, 'index.js')
     await assert.doesNotReject(async () => row.apply(stubContext({ withInstance: true }), {}))
   })
 
-  it('B1-UC-LOAD-A [formerly B1-DT-02] without the points the row loads and logs instance-hooks-missing once', async () => {
+  it('B1-UC-LOAD-A Samuel keeps his Fishball work board available — W0: [formerly B1-DT-02] without the points the row loads and logs instance-hooks-missing once', async () => {
     const row = await packageModule(BOARD, 'index.js')
     const ctx = stubContext({ withInstance: false })
     await assert.doesNotReject(async () => row.apply(ctx, {}))
@@ -114,11 +114,11 @@ describe('B1 loading with and without the instance points (§8)', () => {
 
 // Flows defined before these tests in docs/test-design/instance-ext-w0-skeleton-use-cases.md.
 describe('B1 user configuration and deferred bundle journeys', () => {
-  it('B1-UC-CONFIG-E user submits an invalid setting and Config rejects it', async () => {
+  it('B1-UC-CONFIG-E Samuel keeps his Fishball work board available — W0: user submits an invalid setting and Config rejects it', async () => {
     const { Config } = await packageModule(BOARD, 'index.js')
     assert.throws(() => Config({ inject: 'true' }))
   })
-  it.todo('B1-UC-BUNDLE-M [X0-B] user enables the bundled plugin')
-  it.todo('B1-UC-BUNDLE-A [X0-B] user disables and restart preserves the choice')
-  it.todo('B1-UC-BUNDLE-E [X0-B] unavailable placement permits child startup')
+  it.todo('B1-UC-BUNDLE-M Samuel keeps his Fishball work board available — deferred: [X0-B] user enables the bundled plugin')
+  it.todo('B1-UC-BUNDLE-A Samuel keeps his Fishball work board available — deferred: [X0-B] user disables and restart preserves the choice')
+  it.todo('B1-UC-BUNDLE-E Samuel keeps his Fishball work board available — deferred: [X0-B] unavailable placement permits child startup')
 })

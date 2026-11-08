@@ -58,6 +58,14 @@ Corrected K1 rerun: `/private/tmp/fbtest-w0-uc-k1.iPztFw/k1.log`, exit 1, 15 fai
 
 No shared harness changed, so no new regression run was needed. No product code or pending ambiguity decision changed. Written TODOs constrain existing design behavior and do not implement or resolve the pending core-gap discussion.
 
+## Human story revision — 2026-11-09
+
+Five realistic Samuel/Fishball stories now frame the same 12 retained flow groups and 42 UC flows. The rewritten story context/goal/trigger/outcome and story-step tables distinguish executable W0 state/schema/scope evidence from owned TODOs. All existing test IDs, assertions and EP/BVA coverage remain; test changes are titles only.
+
+Fresh five-file run on 0.2.2-rc.1: `/private/tmp/fbtest-w0-stories.WcOLs8`. K1 15 failures; X0-C 20 failures +2 TODO; FN-1 10 failures +3 TODO; WD-1 9 failures +5 TODO +1 blocked skip; B1 10 failures +3 TODO. Each file exit 1. All failures are the expected missing contract/unread/service/package features; no ReferenceError, TypeError or ERR_MODULE_NOT_FOUND harness failure was observed. Total 64 failures, 13 TODO, 1 skip across 78 entries. No product/shared harness changes or push; no full regression rerun required.
+
+The four questions are explained in the separate decision document using immutable e002ec3 canonical line numbers plus its incorporated source-design revisions. They are not resolved or implemented.
+
 ## Acceptance questions
 
 1. **WD sum:** A — formally define Config acceptance at sum 120 and rejection at 121, including exact fields and model-window handling; B — define these as runtime deadline calculations, not Config refusal. Recommendation: B unless save-time validation is explicitly intended; keep the blocked case until the owner chooses.
