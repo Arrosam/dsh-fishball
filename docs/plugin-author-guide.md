@@ -1,5 +1,14 @@
 # Feeding Fishball from your plugin
 
+> **Removed in 0.1.0-alpha.0.** The `ctx.fishball` source service this guide documents was
+> retired with the in-process Fishball (`docs/slim-native-design.md` §12 "Legacy retirement",
+> which deletes `sources.js` / `ctx.fishball`). `fishball-connector` and `fishball-instance`
+> no longer provide the `fishball` service or `registerSource`, and the `maxSourcesPerPlugin`,
+> `wakeupsPerHour`, `messagesPerHour` and `sessionsPerHour` limits are gone from the connector
+> settings (`src/config.js`). The fixed sizes below survive only as unused constants
+> (`packages/connector/src/constants.js` `SOURCES`). The guide and the example are kept for the
+> record; a plugin following them today finds no `ctx.fishball` service.
+
 Fishball is a DSH plugin that keeps one always-on assistant session. Any standard DSH plugin can send it events through one service, `ctx.fishball`. There is no special package format: write an ordinary DSH plugin bundle. A working example is in [examples/fishball-source-example](../examples/fishball-source-example).
 
 ## Where your plugin runs

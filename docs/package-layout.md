@@ -14,14 +14,17 @@ changed in code" below, every file moved unchanged (`git mv`).
 ```
 package.json                 root, private, not a plugin: workspaces packages/connector, packages/instance
 packages/connector/          npm fishball-connector 0.1.0-alpha.0 (the release version; contract 1.1 is CONNECTOR_CONTRACT)
-  package.json               exports ".", "./client", "./contract", "./package.json";
+  package.json               exports ".", "./client", "./contract", "./records",
+                             "./locale/*.json", "./package.json";
                              dsh.bundle.patch ./cordis.patch.yml; dsh.client (platform web)
   cordis.patch.yml           inserts exactly one row: id fishball-connector, name fishball-connector
   index.js                   the row (was the root index.js)
   client.js                  the browser half (was the root client.js); module id fishball-connector
   assets/icon.svg            the package icon (was assets/icon.svg)
   contract/                  the public contract, the "./contract" export (was src/connector/)
-    index.js                 the export entry: re-exports the five modules below
+    index.js                 the export entry: re-exports contract.js, card-record.js,
+                             inbox-markers.js, attachment-transfer.js and pile-note.js
+                             (limits.js reaches the export through contract.js)
     contract.js limits.js card-record.js inbox-markers.js attachment-transfer.js
     pile-note.js             PILE_NOTE (was src/pile-note.js), shared wording
   src/*.js                   main-side session work (was src/*.js; list in §0.2 "connector")
@@ -31,7 +34,8 @@ packages/connector/          npm fishball-connector 0.1.0-alpha.0 (the release v
                              re-export shims of ../../contract/*, so old import paths keep working
   LICENSE THIRD_PARTY_NOTICES.md
 packages/instance/           npm fishball-instance 0.1.0-alpha.0
-  package.json               exports ".", "./client", "./native-runtime", "./package.json";
+  package.json               exports ".", "./client", "./native-runtime", "./locale/*.json",
+                             "./package.json";
                              dsh.bundle.patch ./cordis.patch.yml;
                              peerDependencies fishball-connector ">=0.1.0-alpha.0 <2"
   cordis.patch.yml           inserts exactly one row: id fishball-instance, name fishball-instance
@@ -57,7 +61,7 @@ Deleted with no replacement: the root `cordis.patch.yml`, root `index.js`, `clie
 
 | Design path | Real path |
 | --- | --- |
-| `packages/connector/records.js` (C3) | not created by M1; C3 creates it at that path |
+| `packages/connector/records.js` (C3) | not created by M1; C3 creates the browser record module at `packages/connector/client.records.js` (exported as `./records`) |
 | `packages/connector/contract/` | `packages/connector/contract/` (as designed) |
 | `src/connector/*.js` (K1) | `packages/connector/contract/*.js` |
 | `src/connector-service.js` (C1) | `packages/connector/src/connector-service.js` |
@@ -65,7 +69,7 @@ Deleted with no replacement: the root `cordis.patch.yml`, root `index.js`, `clie
 | `packages/instance/host.js` | `packages/instance/host.js` (as designed) |
 | `src/host/binding.js` (I1) | `packages/instance/src/host/binding.js` (new, I1) |
 | `src/host/embed.js` (I3) | `packages/instance/src/slim/host/embed.js` |
-| `src/host/model-sync-routes.js` (I6) | `packages/instance/src/slim/host/model-sync-routes.js`, beside `provider-sync-routes.js` |
+| `src/host/model-sync-routes.js` (I6) | `packages/instance/src/slim/host/provider-sync-routes.js` (the model-sync routes, `models/check` and `models/add`) |
 | `src/slim/host/provider-sync-routes.js` | `packages/instance/src/slim/host/provider-sync-routes.js` |
 | `src/provider-sync-service.js` | `packages/instance/src/provider-sync-service.js` |
 | `src/native-runtime/*.js` (I2) | `packages/instance/src/native-runtime/*.js` |
@@ -74,7 +78,7 @@ Deleted with no replacement: the root `cordis.patch.yml`, root `index.js`, `clie
 | `child/chat.js` (I5) | `packages/instance/src/slim/child/chat.js` |
 | `child/persona.js` (I5) | two files: the persona text is `packages/instance/src/persona.js`, the row that registers it `packages/instance/src/slim/child/persona.js` |
 | `child/admin.js` (I6) | `packages/instance/src/slim/child/admin.js` |
-| `child/settings-routes.js` (I6) | `packages/instance/src/slim/child/settings-routes.js` (new; the old main-side one is `src/slim/host/settings-routes.js`) |
+| `child/settings-routes.js` (I6) | `packages/instance/src/slim/child/admin.js` (the child half of the settings routes; the main-side one is `src/slim/host/settings-routes.js`) |
 | `child/{server,auth,decisions,images,reminders,approvals}.js` (I8) | `packages/instance/src/slim/child/…` |
 | `child/ui/**` (I4, I6, I7, I9) | withdrawn 2026-11-07 (D28): no child client plugin. I6, I7, I8 and I9 work in `packages/instance/src/slim/ui/**` (design §18.1) |
 | `child/package.json` `dsh.client` (I4) | withdrawn 2026-11-07 with I4 (D28) |
@@ -87,7 +91,7 @@ Deleted with no replacement: the root `cordis.patch.yml`, root `index.js`, `clie
   `fishball-instance` (§0.2, D22). The connector's `PLUGIN.name`, the client's module id,
   `PACKAGE_NAME` and `ENTRY_ID` (the settings namespace) follow. M1 does no settings migration;
   that is C2.
-- **Contract.** The `./contract` export is `packages/connector/contract/index.js`. Its 68 names are
+- **Contract.** The `./contract` export is `packages/connector/contract/index.js`. Its 70 names are
   K1b's five modules plus `PILE_NOTE`, as listed in `docs/connector-contract.md` §10. Connector
   code imports it by relative path. Instance code imports only `fishball-connector/contract`,
   through its own `src/slim/*` shims and `src/persona.js`.
@@ -112,7 +116,7 @@ Deleted with no replacement: the root `cordis.patch.yml`, root `index.js`, `clie
   `packages/instance/src/recommended.js`, their only reader.
 - The two spikes that imported `src/approvals.js` and `src/digest.js` now import them from
   `packages/connector/src/`.
-- Not touched: `test/`, `docs/slim-native-design.md`, `packages/messenger/`.
+- Not touched: `test/` and `docs/slim-native-design.md`.
 
 ## Packing
 
@@ -158,5 +162,4 @@ M1 left `test/` untouched. The harness must change as follows:
    instance.
 7. The child snapshot holds `node_modules/fishball-connector/` and no `src/connector/` or
    `src/pile-note.js`. Its other paths are unchanged.
-8. The client module registers as `fishball-connector`, not `dsh-fishball`. The messenger package
-   is still `dsh-fishball-messenger`, but no plugin ships it.
+8. The client module registers as `fishball-connector`, not `dsh-fishball`.

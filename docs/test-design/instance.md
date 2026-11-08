@@ -11,6 +11,15 @@ written against `3509859`; its case ids are kept, so a case that is gone stays a
 route paths and error codes (observation points), never for an expected result. K1, M1 and C1–C3
 are in `connector.md`; this document refers to them only where an instance case needs them.
 
+> **Release state (v0.1.0-alpha.0).** Where a case below contradicts the released code, the code
+> wins. Notable drift: a startup timeout reports `NATIVE_START_FAILED` (not `NATIVE_TIMEOUT`, which
+> the code defines but never reports); the 33rd concurrent embed stream answers **429** (no
+> `Retry-After`), not 503; the embed broker's "not ready" 503 runs before the body-size 413; a
+> disabled instance answers 503 (not 404); the child env also sets `USERPROFILE`, `DSH_AGENTS_HOME`,
+> `APPDATA`, `LOCALAPPDATA`, `TMP` and `TEMP`; the launch-failure `detail` is always `null`;
+> `INVALID_MAIN_HOME` is an additional reported status code; and Disable reports `stopping` then
+> `disabled` (not `stopped`).
+
 ## 0. The user's decisions of 2026-11-06 (22:31), and what supersedes them
 
 These came after `3509859`. The "Now" column says what later decisions changed; the cases below
