@@ -33,6 +33,8 @@ const U18 = Object.freeze({
   notImplemented: 'not-implemented',
   send: Object.freeze({ session_id: 'session-without-watchdog', message: 'unchanged message 😀' }),
   imageSend: Object.freeze({ sessionId: 'ses-target', message: '  unchanged\nmessage  ' }),
+  attachmentMethods: Object.freeze(['readImage', 'saveImage', 'saveFile', 'readFileStream']),
+  attachmentUseFailure: 'empty image send must not use attachment storage',
   batch: Object.freeze({ maxItems: 20, maxBytes: 65_536, separator: '\n\n', imageMax: 20, imagePixels: 4_194_304, imageBytes: 4_194_304 }),
 })
 
@@ -419,7 +421,7 @@ describe('X0-C U18/U20 effectively-off tool send path', () => {
         const operation = tool === 'message_session' ? 'session.message' : 'session.redirect'
         assert.deepEqual(h.host.requests.slice(before).map(({ operation, payload }) => ({ operation, payload })), [{
           operation,
-          payload: { sessionId: U18.send.session_id, message: U18.send.message },
+          payload: { sessionId: U18.send.session_id, message: U18.send.message, attachments: [] },
         }], 'effective-off passes the existing connector payload without rewriting it')
       })
     }
@@ -516,15 +518,27 @@ async function rejectBatch(h, chat, items, expected, options) {
 
 const sampleImage = (overrides = {}) => ({ attachmentId: 'image-1', mediaType: 'image/png', width: 1, height: 1, bytes: 1, ...overrides })
 
+/** Enable the real images service; §12.5.1 empty inputs must never touch storage. */
+async function imageSendPort(t, watchdogEnabled = false) {
+  const storageCalls = []
+  const attachments = Object.fromEntries(U18.attachmentMethods.map((method) => [method, () => {
+    storageCalls.push(method)
+    assert.fail(U18.attachmentUseFailure)
+  }]))
+  t.after(() => assert.deepEqual(storageCalls, [], U18.attachmentUseFailure))
+  const h = await bootChild(t, { activate: true, watchdogEnabled, attachments })
+  h.requireInstance()
+  const images = h.ctx.get('fishballImages')
+  assert.equal(typeof images?.message, 'function', 'fishballImages.message is missing')
+  return { h, images }
+}
+
 describe('X0-C U18/U20 images service sends with watchdog effectively off', () => {
   for (const watchdogEnabled of [false, true]) {
     for (const [index, attachments] of [[], undefined].entries()) {
       const id = watchdogEnabled ? `XC-DT-OFF-IMAGES-${index + 1}` : `XC-UC-03-A${index + 1}`
       it(`${id} Samuel sends through images.message with watchdog ${watchdogEnabled ? 'enabled but unregistered/not ready' : 'disabled'} — ${attachments === undefined ? 'omitted' : 'empty'} attachments preserve exact wire text and delivered result`, async (t) => {
-        const h = await bootChild(t, { activate: true, watchdogEnabled })
-        h.requireInstance()
-        const images = h.ctx.get('fishballImages')
-        assert.equal(typeof images?.message, 'function', 'fishballImages.message is missing')
+        const { h, images } = await imageSendPort(t, watchdogEnabled)
         const request = { ...U18.imageSend, ...(attachments === undefined ? {} : { attachments }) }
         const original = structuredClone(request)
         const before = h.host.requests.length
@@ -537,10 +551,7 @@ describe('X0-C U18/U20 images service sends with watchdog effectively off', () =
   }
 
   it('XC-DT-02 images.message returns unconfirmed unchanged and never retries or creates a watch', async (t) => {
-    const h = await bootChild(t, { activate: true, watchdogEnabled: false })
-    h.requireInstance()
-    const images = h.ctx.get('fishballImages')
-    assert.equal(typeof images?.message, 'function')
+    const { h, images } = await imageSendPort(t)
     h.host.responses.set('session.message', { status: 'unconfirmed' })
     const before = h.host.requests.length
     assert.deepEqual(await images.message({ ...U18.imageSend, attachments: [] }), { status: 'unconfirmed' })
@@ -548,10 +559,7 @@ describe('X0-C U18/U20 images service sends with watchdog effectively off', () =
   })
 
   it('XC-EP-IMAGE-01 images.message rejects a connector refusal rather than fabricating success', async (t) => {
-    const h = await bootChild(t, { activate: true, watchdogEnabled: false })
-    h.requireInstance()
-    const images = h.ctx.get('fishballImages')
-    assert.equal(typeof images?.message, 'function')
+    const { h, images } = await imageSendPort(t)
     h.host.fail.add('session.message')
     const before = h.host.requests.length
     await assert.rejects(images.message({ ...U18.imageSend, attachments: [] }), { code: 'operation-failed' })
