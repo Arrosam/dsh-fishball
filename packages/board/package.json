@@ -1,0 +1,32 @@
+{
+  "name": "fishball-board",
+  "version": "0.1.0-alpha.0",
+  "description": "The Fishball instance's persistent work board (W0 skeleton).",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "*",
+    "fishball-instance": ">=0.1.0-alpha.0 <2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
