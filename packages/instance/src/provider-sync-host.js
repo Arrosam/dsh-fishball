@@ -6,15 +6,16 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { isVolatile } from '@deepseek-ai/cosmokit'
-import { Config, recordKeyFor, supportedProtocols } from '@deepseek-ai/dsh-llm-pi-ai'
+import { Config, recordKeyFor } from '@deepseek-ai/dsh-llm-pi-ai'
 import { redact } from './native-runtime/stderr-log.js'
+import { unsafeProfileReason } from './provider-sync.js'
 
 export const PROVIDER_SYNC_HOST = Object.freeze({
   owner: '@deepseek-ai/dsh-llm-pi-ai', activeState: 2, minimumRevision: 0, uniqueCount: 1, firstIndex: 0,
   providers: 'providers', set: 'set', apiKey: 'api-key', grant: 'grant',
-  imported: 'imported', exists: 'exists', https: 'https:', empty: '',
+  imported: 'imported', exists: 'exists', empty: '',
   outcome: Object.freeze({ config: 'configOutcome', key: 'keyOutcome', added: 'added', unknown: 'unknown' }),
-  referenceField: 'apiKeyEnv', query: '?', fragment: '#',
+  referenceField: 'apiKeyEnv',
   /** dsh-credentials' CredentialRef grammar (a POSIX shell identifier), as `credentialRef()` checks it. */
   referenceName: /^[A-Za-z_][A-Za-z0-9_]*$/,
   hashAlgorithm: 'sha256', hashEncoding: 'hex',
@@ -23,13 +24,10 @@ export const PROVIDER_SYNC_HOST = Object.freeze({
   identityKeys: Object.freeze(['runtimeId', 'profileId', 'schemaVersion', 'version']),
   profileFields: Object.freeze(['displayName', 'api', 'baseURL', 'models']),
   modelFields: Object.freeze(['id', 'name', 'contextWindow', 'maxTokens', 'input']),
-  numericModelFields: Object.freeze(['contextWindow', 'maxTokens']),
-  modalities: Object.freeze(['text', 'image']),
   recordFields: Object.freeze(['kind', 'key']),
   defaultRoute: 'fishball-sync-default', defaultModel: 'fishball-sync-default-model',
   route: /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/,
   identifier: /^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$/,
-  template: /[{}$]|%7b|%7d/i,
   errorMessage: 'Provider sync host refused the operation.',
   /**
    * The host log for a wrapped failure's cause (B9: a missing inject hid behind inventory-failed).
@@ -106,9 +104,15 @@ const unwrap = (value) => isVolatile(value) ? unwrap(value.get()) : Array.isArra
   : plain(value) ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, unwrap(item)])) : value
 
 export class ProviderSyncHostError extends Error {
-  constructor(code) { super(H.errorMessage); this.code = code }
+  /** @param profileReason the shared profile verdict when this refusal is one (src/provider-sync.js). */
+  constructor(code, profileReason) { super(H.errorMessage); this.code = code; this.profileReason = profileReason }
 }
 const refuse = (code) => { throw new ProviderSyncHostError(code) }
+/**
+ * A refused profile keeps the host's provider-sync-unsupported-profile code, while the shared
+ * verdict travels with it as profileReason so the preview can report the exact reason.
+ */
+const refuseProfile = (profileReason) => { throw new ProviderSyncHostError(E.profile, profileReason) }
 const outcomeError = (error, field, outcome) => {
   const sanitized = new ProviderSyncHostError(error instanceof ProviderSyncHostError ? error.code : E.write)
   sanitized[field] = outcome
@@ -175,34 +179,18 @@ function splitReference(value) {
   if (typeof reference !== 'string' || !H.referenceName.test(reference)) refuse(E.reference)
   return { profile, reference }
 }
-function endpointIsSafe(value) {
-  if (!text(value) || H.template.test(value)) return false
-  try {
-    const url = new URL(value)
-    return url.protocol === H.https && !url.username && !url.password && !url.search && !url.hash
-      && !value.includes(H.query) && !value.includes(H.fragment)
-  } catch { return false }
-}
-function safeProfile(value, declared, defaults, protocols) {
+function safeProfile(value, declared, defaults) {
   const result = projectFields(value, H.profileFields, defaults.profile)
-  if (result.displayName !== undefined && !text(result.displayName)) refuse(E.profile)
-  if (result.api !== undefined && !protocols.has(result.api)) refuse(E.profile)
-  if (result.baseURL !== undefined && !endpointIsSafe(result.baseURL)) refuse(E.profile)
+  // Models are projected like the profile so canonical defaults are dropped before the shared
+  // rule sees them; it then owns every safety check, including the https-only endpoint.
   if (result.models !== undefined) {
     if (!Array.isArray(result.models)) refuse(E.profile)
-    const ids = new Set()
-    result.models = result.models.map((value) => {
-      const model = projectFields(value, H.modelFields, defaults.model)
-      if (!text(model.id) || ids.has(model.id) || (model.name !== undefined && !text(model.name))) refuse(E.profile)
-      ids.add(model.id)
-      if (H.numericModelFields.some((key) => model[key] !== undefined
-        && (!Number.isSafeInteger(model[key]) || model[key] <= H.minimumRevision))) refuse(E.profile)
-      if (model.input !== undefined && (!Array.isArray(model.input) || model.input.length === H.minimumRevision
-        || model.input.some((item) => !H.modalities.includes(item)))) refuse(E.profile)
-      return { ...model, ...(model.input === undefined ? {} : { input: [...model.input] }) }
-    })
+    result.models = result.models.map((model) => projectFields(model, H.modelFields, defaults.model))
   }
-  if (declared && (!text(result.api) || !text(result.baseURL) || !result.models?.length)) refuse(E.profile)
+  const refusal = unsafeProfileReason(result, declared)
+  if (refusal !== undefined) refuseProfile(refusal)
+  // Detach each model's input list from the settings value the descriptor still owns.
+  if (result.models !== undefined) result.models = result.models.map((model) => ({ ...model, ...(model.input === undefined ? {} : { input: [...model.input] }) }))
   return result
 }
 function safeRecord(record) {
@@ -239,12 +227,8 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
   const guarded = (code, operation) => protect(code, operation, logger)
   let last
   let defaults
-  let protocols
   const added = new Map()
-  const configuration = () => {
-    defaults ??= defaultsOf()
-    protocols ??= new Set(supportedProtocols())
-  }
+  const configuration = () => { defaults ??= defaultsOf() }
   async function describeCredential(id) {
     if (!routeId(id)) refuse(E.invalid)
     const info = await ctx.credentials.describeRecord(recordKeyFor(id))
@@ -310,6 +294,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       const descriptor = descriptors.find((candidate) => candidate.ns === ns)
       const configured = validPath(item.settingsPath, id) && present(descriptor, id)
       let reason
+      let profileReason
       let profile = null
       let credential = emptyCredential()
       let apiKeyMethod = false
@@ -322,8 +307,11 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
         try {
           const split = splitReference(descriptor.value.providers[id])
           reference = split.reference
-          profile = safeProfile(split.profile, item.declared, defaults, protocols)
-        } catch (error) { reason ??= error instanceof ProviderSyncHostError ? error.code : E.profile }
+          profile = safeProfile(split.profile, item.declared, defaults)
+        } catch (error) {
+          reason ??= error instanceof ProviderSyncHostError ? error.code : E.profile
+          profileReason = error instanceof ProviderSyncHostError ? error.profileReason : undefined
+        }
       }
       if (reference !== undefined) references.set(id, reference)
       // A route id outside the record grammar cannot hold a record in the target either, so a
@@ -346,6 +334,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       const endpointFromEnv = Array.isArray(item.baseURLEnv) && item.baseURLEnv.length > H.minimumRevision
       providers.push({ id, settingsNs: ns, settingsPath: providerPath(id), owner: H.owner,
         ...(text(item.displayName) ? { label: item.displayName } : {}), endpointFromEnv, keyFromEnv: reference !== undefined,
+        ...(profileReason === undefined ? {} : { profileReason }),
         schema: namespace?.schema ?? H.empty, ownerGeneration: namespace?.ownerGeneration ?? H.empty,
         declared: item.declared === true, configured, profile, credential, supported: reason === undefined,
         ...(reason === undefined ? {} : { reason }), apiKeyMethod })
@@ -411,7 +400,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       if (state.descriptors.some((descriptor) => present(descriptor, id))) refuse(E.exists)
       const provider = state.providers.find((item) => item.id === id)
       if (provider && (!provider.supported || provider.settingsNs !== ns)) refuse(provider.reason ?? E.ambiguous)
-      const normalized = safeProfile(profile, provider?.declared ?? true, defaults, protocols)
+      const normalized = safeProfile(profile, provider?.declared ?? true, defaults)
       // Orphan records are not in the model directory. Never fill a configuration onto
       // existing authentication merely because the route is absent from that directory.
       if ((await describeCredential(id)).configured) refuse(E.credentialExists)
@@ -438,7 +427,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       currentNamespace(state, provider.settingsNs, previous)
       if (!keyedRoute(provider) || !provider.credential.writable) refuse(E.credential)
       const sameRoute = (descriptor) => present(descriptor, id)
-        && isDeepStrictEqual(safeProfile(descriptor.value.providers[id], provider.declared, defaults, protocols), approved.profile)
+        && isDeepStrictEqual(safeProfile(descriptor.value.providers[id], provider.declared, defaults), approved.profile)
       const checkApproved = (namespaces) => {
         if (approved === undefined) return
         const namespace = namespaces.get(provider.settingsNs)
