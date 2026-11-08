@@ -20,7 +20,7 @@ import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, it } from 'node:test'
 import { ASK_REASON, LIMITS, OUTCOME } from './support/constants.mjs'
 import { HOOK, T } from './support/expect.mjs'
-import { managedSession, messageFishball, stopStub } from './support/instance-stub.mjs'
+import { managedSession, messageFishball, quietPushes, stopStub } from './support/instance-stub.mjs'
 import {
   APPROVALS, ackAllAndReconnect, auditOfSession, auditedFor, bootApprovals, clearSession, listed, offerFor, offersWhere, outcomeOf, requestFor, setLimit, startCall, stockFor, tok, untilStock,
 } from './support/instance-stub-approvals.mjs'
@@ -83,11 +83,15 @@ describe('P7 routing and bypass (H-STUB)', () => {
 
   it('RTE-04 the connector\'s queue is full: the request goes to the user at once', T, async (t) => {
     const [s1, s2] = sessions
+    // A push from the previous case's cleanup can still be waiting for its ack; freezing acks now
+    // would drop that ack and leave the row open, filling the one-item queue before the fill.
+    await quietPushes(stub)
     await setLimit(host, { maxQueuedInputs: 1 })
     // An unacknowledged item stays open, so it fills the one-item queue (contract §9 counts pushed-but-unacked items).
     await stub.ackPolicy(0)
     try {
-      assert.equal((await messageFishball(host, s1, { message: tok('04fill') })).json?.ok, true, 'precondition: one queued input')
+      const fill = await messageFishball(host, s1, { message: tok('04fill') })
+      assert.equal(fill.json?.ok, true, 'precondition: one queued input: ' + JSON.stringify(fill.json))
       const text = tok('04')
       const auditBefore = auditOfSession(booted.home, s2).length
       await expectBypass(s2, text)
