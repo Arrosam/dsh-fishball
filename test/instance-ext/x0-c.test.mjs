@@ -1,6 +1,6 @@
 /**
- * W0 / X0-C — the `fishballInstance` service, the manager, the chat projector and the manager
- * channel (X1–X3, X10, X11 of docs/plugins/instance-extension-points.md).
+ * W0 / X0-C — the `fishballInstance` service, the manager, X3's reduced record-type rule and the
+ * manager channel (X1, X2, X10, X11 and X3's type rule; §5.5 U10).
  *
  * Observation points: the service the child app row provides, the manager agent's own
  * tool/prompt registrations, `GET /api/chat` over the child's HTTP surface, and the turns the
@@ -12,7 +12,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { bootChild, messageSource, messageText } from '../support/instance-ext.mjs'
-import { loadInstance } from '../support/body-soul-env.mjs'
 
 const MANAGER = 'fishball-fold-notify'
 
@@ -46,19 +45,6 @@ describe('X0-C service surface (X1–X16 stub contract)', () => {
     assert.equal(h.manager().followups.length, 0, 'a dispose must not queue a turn')
   })
 
-  it('XC-P-03 a throwing X3 projector is logged once per plugin and point and never breaks the chat', async (t) => {
-    const { h, service } = await live(t)
-    const warnsBefore = h.logs.filter((entry) => entry.level === 'warn').length
-    service.chat.registerRecordProjector(MANAGER, 'plugin:fishball-fold-notify/notice', () => {
-      throw new Error('projector boom')
-    })
-    append(h, 'plugin:fishball-fold-notify/notice', { n: 1 })
-    append(h, 'plugin:fishball-fold-notify/notice', { n: 2 })
-    const page = await h.http('/api/chat')
-    assert.equal(page.status, 200, 'the chat page must survive a throwing projector')
-    const warnsAfter = h.logs.filter((entry) => entry.level === 'warn').length
-    assert.equal(warnsAfter - warnsBefore, 1, 'one log line per (pluginId, point), not per record')
-  })
 
   it('XC-EP-01 fishballChat stays internal: the plugin-facing service is fishballInstance', async (t) => {
     const h = await bootChild(t)
@@ -162,77 +148,32 @@ describe('X0-C X2 manager.registerSetup', () => {
 describe('X0-C X3 chat.registerRecordProjector', () => {
   const TYPE = 'plugin:fishball-fold-notify/notice'
 
-  it('XC-P-04 a projected record becomes a plugin entry with its data', async (t) => {
-    const { h, service } = await live(t)
-    const data = { n: 7, text: 'fold notice' }
-    service.chat.registerRecordProjector(MANAGER, TYPE, (value) => ({ id: 'fold-7', at: 1_700_000_000_700, data: value }))
-    append(h, TYPE, data)
-    const body = await (await h.http('/api/chat')).json()
-    const entry = body.entries.find((candidate) => candidate.kind === 'plugin')
-    assert.deepEqual(entry, {
-      id: 'fold-7',
-      kind: 'plugin',
-      plugin: MANAGER,
-      at: 1_700_000_000_700,
-      data,
-    })
-  })
 
-  it('XC-EP-03 a type with a foreign prefix is refused and projected by nobody', async (t) => {
-    const { h, service } = await live(t)
-    service.chat.registerRecordProjector(MANAGER, 'plugin:other-plugin/notice', (value) => ({ id: 'foreign', at: 1, data: value }))
-    append(h, 'plugin:other-plugin/notice', { n: 1 })
-    const body = await (await h.http('/api/chat')).json()
-    assert.equal(body.entries.some((entry) => entry.kind === 'plugin'), false)
-  })
-
-  it('XC-EP-04 a projector returning undefined drops the record', async (t) => {
-    const { h, service } = await live(t)
-    service.chat.registerRecordProjector(MANAGER, TYPE, () => undefined)
-    append(h, TYPE, { n: 1 })
-    const body = await (await h.http('/api/chat')).json()
-    assert.equal(body.entries.some((entry) => entry.kind === 'plugin'), false)
-  })
-
-  it('XC-EP-05 text is optional on the projected entry', async (t) => {
-    const { h, service } = await live(t)
-    service.chat.registerRecordProjector(MANAGER, TYPE, (value) => ({ id: 'no-text', at: 1, data: value }))
-    append(h, TYPE, { n: 1 })
-    const body = await (await h.http('/api/chat')).json()
-    const entry = body.entries.find((candidate) => candidate.kind === 'plugin')
-    assert.equal(Object.hasOwn(entry, 'text'), false, 'no text when the projector gives none')
-    service.chat.registerRecordProjector('fishball-board', 'plugin:fishball-board/notice', (value) => ({ id: 'with-text', at: 2, data: value, text: 'shown as a plain row' }))
-    append(h, 'plugin:fishball-board/notice', { n: 2 })
-    const again = await (await h.http('/api/chat')).json()
-    const withText = again.entries.find((entry) => entry.id === 'with-text')
-    assert.equal(withText.text, 'shown as a plain row')
-  })
-
-  it('XC-BVA-01 the record text is capped at EXT_LIMITS.recordTextChars (8000)', async (t) => {
-    const { h, service } = await live(t)
-    const module = await loadInstance('src/slim/child/extensions.js')
-    assert.equal(module.EXT_LIMITS.recordTextChars, 8000, 'the design names 8000 as the cap')
-    for (const [name, size] of [['at-cap', 8000], ['over-cap', 8001]]) {
-      service.chat.registerRecordProjector(MANAGER, 'plugin:fishball-fold-notify/' + name, (value) => ({ id: name, at: 1, data: value, text: 'x'.repeat(size) }))
-      append(h, 'plugin:fishball-fold-notify/' + name, {})
-    }
-    const body = await (await h.http('/api/chat')).json()
-    for (const name of ['at-cap', 'over-cap']) {
-      const entry = body.entries.find((candidate) => candidate.id === name)
-      assert.ok(entry.text.length <= 8000, name + ' is at most the cap, got ' + entry.text.length)
-    }
-  })
-
-  it('XC-ST-03 a disposed projector no longer projects', async (t) => {
-    const { h, service } = await live(t)
-    const dispose = service.chat.registerRecordProjector(MANAGER, TYPE, (value) => ({ id: 'once', at: 1, data: value }))
-    append(h, TYPE, { n: 1 })
-    assert.equal((await (await h.http('/api/chat')).json()).entries.some((entry) => entry.kind === 'plugin'), true)
+  it('XC-P-06 a type in the plugin\'s own prefix is accepted; dispose removes the registration', async (t) => {
+    const { service } = await live(t)
+    const dispose = service.chat.registerRecordProjector(MANAGER, 'plugin:fishball-fold-notify/notice', () => undefined)
+    assert.equal(typeof dispose, 'function', 'X3 keeps only the record-type rule (U10)')
     dispose()
-    append(h, TYPE, { n: 2 })
-    const body = await (await h.http('/api/chat')).json()
-    assert.equal(body.entries.filter((entry) => entry.kind === 'plugin').length, 1, 'only the pre-dispose record')
+    dispose()
   })
+
+  it('XC-EP-03 a type with a foreign plugin prefix is refused', async (t) => {
+    const { service } = await live(t)
+    let refused
+    try {
+      refused = service.chat.registerRecordProjector(MANAGER, 'plugin:other-plugin/notice', () => undefined)
+    } catch (error) {
+      refused = error
+    }
+    assert.notEqual(typeof refused, 'function', 'a foreign prefix is not accepted (the only X3 rule left, U10)')
+    const dispose = service.chat.registerRecordProjector(MANAGER, 'plugin:fishball-fold-notify/notice', () => undefined)
+    assert.equal(typeof dispose, 'function', 'a valid registration still works after the refusal')
+    dispose()
+  })
+
+
+
+
 })
 
 describe('X0-C X10 manager.notify', () => {

@@ -15,7 +15,7 @@
  * default is the version the rest of the body-soul suite uses.
  */
 import assert from 'node:assert/strict'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { linkContractForSourceRun } from './contract-link.mjs'
@@ -376,8 +376,13 @@ export function createFakeHost({ capabilities } = {}) {
  * Boot the child rows over a fake context. `activate: true` reads `/api/chat`, which activates
  * Fishball's manager Session (and runs X2's create setup) before a case starts.
  */
-export async function bootChild(t, { activate = false, configure, home: existingHome } = {}) {
+export async function bootChild(t, { activate = false, configure, home: existingHome, watchdogEnabled = true, extraBundles = [] } = {}) {
   const home = existingHome ?? await tempHome(t)
+  const profileDir = path.join(home, 'profiles', 'fishball')
+  await mkdir(profileDir, { recursive: true })
+  const profileFile = path.join(profileDir, 'package.json')
+  const profileBundles = ['@deepseek-ai/dsh-base', ...(watchdogEnabled ? ['fishball-watchdog'] : []), ...extraBundles]
+  await writeFile(profileFile, JSON.stringify({ name: 'fishball', private: true, dsh: { profile: { bundles: profileBundles } } }, null, 2) + '\n')
   const tools = createTools()
   const logs = []
   const agents = []
@@ -405,6 +410,13 @@ export async function bootChild(t, { activate = false, configure, home: existing
       if (bundle === undefined) return { application: 'failed', error: { code: 'unknown-plugin' } }
       if (bundle.canFail === true) return { application: 'failed', error: { code: 'operation-failed' } }
       bundle.enabled = enabled
+      // U7: DSH's own enable state IS the child profile's dsh.profile.bundles (no gateOn file).
+      const manifest = JSON.parse(await readFile(profileFile, 'utf8'))
+      const listed = new Set(manifest.dsh?.profile?.bundles ?? [])
+      if (enabled) listed.add(name)
+      else listed.delete(name)
+      manifest.dsh = { ...(manifest.dsh ?? {}), profile: { ...(manifest.dsh?.profile ?? {}), bundles: [...listed] } }
+      await writeFile(profileFile, JSON.stringify(manifest, null, 2) + '\n')
       return { application: 'applied' }
     },
   }
@@ -414,7 +426,7 @@ export async function bootChild(t, { activate = false, configure, home: existing
     async mutate() { return { applied: true } },
   }
   const services = {
-    profileContext: { home },
+    profileContext: { home, name: 'fishball', dir: profileDir },
     pluginManager,
     settings,
     sessionQuery: {
@@ -568,6 +580,15 @@ export async function bootChild(t, { activate = false, configure, home: existing
     },
     bundles,
     pluginManager,
+    profileDir,
+    profileFile,
+    async profileBundles() {
+      const manifest = JSON.parse(await readFile(profileFile, 'utf8'))
+      return manifest.dsh?.profile?.bundles ?? []
+    },
+    async setBundleEnabled(name, enabled) {
+      return pluginManager.setBundleEnabled(name, enabled)
+    },
     nativeRuntime,
     adminReplies,
     /** Replace the main host transport, as a child reconnect does. */

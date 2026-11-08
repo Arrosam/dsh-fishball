@@ -77,24 +77,32 @@ describe('X0-B X17/X18 bundled plugin identity', () => {
   })
 })
 
-describe('X0-B X18 disable is a hand-over (§2.4 step 1)', () => {
+describe('X0-B X18 disable is a hand-over (U7, §2.4)', () => {
   async function disable(h) {
     const op = operations(h)
     const snapshot = await h.admin(op.pluginsGet, {})
     return h.admin(op.pluginDisable, { name: WATCHDOG, inventoryRevision: snapshot.result.inventoryRevision })
   }
 
-  it('XB-DT-01 disable with a non-empty supervised set → hand-over, gate off, no stop', async (t) => {
+  it('XB-DT-01 disable with a non-empty supervised set → hand-over, gate off, claims dropped, no stop', async (t) => {
     const { h, service } = await live(t)
     const reg = service.supervision.register(WATCHDOG)
     reg.set('session-1', 'paused', 'brief-1')
+    const cards = []
+    service.approvals.claim('session-1', { id: WATCHDOG, name: 'Watchdog', onCard: (card) => cards.push(card) })
+    const noticesBefore = h.manager().followups.length
     const result = await disable(h)
     assert.equal(result.ok, true)
+    assert.equal((await h.profileBundles()).includes(WATCHDOG), false, 'DSH removed the name before the row disposed')
     reg.dispose()
     await new Promise((resolve) => setTimeout(resolve, 20))
     const send = await h.tool('message_session', { session_id: 'session-1', message: 'hello' })
     assert.equal(send.ok, true, 'the send gate is off after hand-over')
     assert.equal(h.host.requests.some((request) => request.operation === 'session.stop'), false, 'nothing is stopped')
+    assert.equal(h.manager().followups.length - noticesBefore, 1, 'one hand-over notice')
+    h.host.event('approval.request', { approvalId: 'apr-h', offerId: 'off-h', kind: 'approval', prompt: 'Allow?', choices: ['allow'], expiresAt: Date.now() + 60000, title: 'T', at: Date.now(), toolName: 'bash', callId: 'c', reason: 'r', quotes: [] }, 'session-1')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    assert.equal(cards.length, 0, 'the claim went with the hand-over')
   })
 
   it('XB-DT-02 a failed setBundleEnabled changes nothing', async (t) => {
@@ -105,9 +113,30 @@ describe('X0-B X18 disable is a hand-over (§2.4 step 1)', () => {
     watchdog.canFail = true
     const result = await disable(h)
     assert.equal(result.ok, false)
+    assert.equal((await h.profileBundles()).includes(WATCHDOG), true, 'the name stays in the bundles')
     const send = await h.tool('message_session', { session_id: 'session-1', message: 'hello' })
-    assert.equal(send.code, 'supervision-paused', 'the gate still holds the paused session')
+    assert.equal(send.code, 'supervision-paused', 'the registered row and its state still gate the session')
     reg.dispose()
+  })
+
+  it('XB-DT-05 a direct pluginManager disable is the same hand-over', async (t) => {
+    const { h, service } = await live(t)
+    const reg = service.supervision.register(WATCHDOG)
+    reg.set('session-1', 'paused', 'brief-1')
+    await h.setBundleEnabled(WATCHDOG, false)
+    reg.dispose()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    assert.equal((await h.tool('message_session', { session_id: 'session-1', message: 'hello' })).ok, true)
+  })
+
+  it('XB-DT-06 an empty supervised set hands over without a notice', async (t) => {
+    const { h, service } = await live(t)
+    const reg = service.supervision.register(WATCHDOG)
+    const noticesBefore = h.manager().followups.length
+    await h.setBundleEnabled(WATCHDOG, false)
+    reg.dispose()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    assert.equal(h.manager().followups.length, noticesBefore, 'nothing to list, no notice')
   })
 })
 
