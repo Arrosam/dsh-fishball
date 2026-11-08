@@ -247,7 +247,10 @@ describe('P7 ApprovalBroker (H-STUB)', () => {
       try {
         const text = tok('08')
         const req = await asked(x, text)
-        assert.equal(req.descriptor.expiresAt - req.descriptor.at, n * 1000)
+        // `at` is when the request began and `expiresAt` is set when its round starts, a moment later
+        // (contract §5.1 names no exact difference): the window is the answer time plus the timer slack.
+        const window = req.descriptor.expiresAt - req.descriptor.at
+        assert.ok(window >= n * 1000 && window <= n * 1000 + APPROVALS.ms.timerSlack, 'the answer time: ' + window)
         assert.match(req.item.header, APPROVALS.item.seconds(n))
         const call = await outcomeOf(host, text)
         assert.equal(call.outcome, APPROVALS.stock.default, "the user's outcome (never silence-approved)")
