@@ -1,0 +1,30 @@
+{
+  "name": "fishball-fold-notify",
+  "version": "0.1.0-alpha.0",
+  "description": "Fold and notification contributions for the Fishball instance.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "cordis.patch.yml"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "peerDependencies": {
+    "fishball-instance": ">=0.1.0-alpha.0 <2",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
