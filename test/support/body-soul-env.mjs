@@ -64,21 +64,33 @@ export async function tempDir(t) {
 }
 
 /**
- * The connector's `record.*` words per language, read from client.js's `const en = {` and
- * `const zh = {` dictionaries. Only single-quoted `'record.…': '…'` pairs are read.
+ * The page dictionary words of one package's browser bundle (`client.js`): its `const en = {`
+ * and `const zh = {` objects, keyed exactly as `t()` looks them up. Only single-quoted
+ * `'key': '…'` pairs are read. `keep` narrows the result for a feature's own prefix.
  */
-export function connectorRecordWords() {
-  const source = fs.readFileSync(path.join(BODY_SOUL.connector, 'client.js'), 'utf8')
+function clientWords(packageDir, keep) {
+  const source = fs.readFileSync(path.join(packageDir, 'client.js'), 'utf8')
   const enAt = source.indexOf('const en = {')
   const zhAt = source.indexOf('const zh = {')
-  if (enAt < 0 || zhAt < 0 || zhAt < enAt) throw new Error('connector dictionaries not found in client.js')
+  if (enAt < 0 || zhAt < 0 || zhAt < enAt) throw new Error('client.js dictionaries not found in ' + packageDir)
   const zhEnd = source.indexOf('\n    }\n', zhAt)
   const pairs = (text) => {
     const words = {}
-    for (const match of text.matchAll(/'(record\.[^']+)':\s*'((?:[^'\\]|\\.)*)'/g)) words[match[1]] = match[2].replace(/\\(.)/g, '$1')
+    for (const match of text.matchAll(/'([^']+)':\s*'((?:[^'\\]|\\.)*)'/g)) words[match[1]] = match[2].replace(/\\(.)/g, '$1')
     return words
   }
-  return { en: pairs(source.slice(enAt, zhAt)), zh: pairs(source.slice(zhAt, zhEnd < 0 ? undefined : zhEnd)) }
+  const narrow = (words) => (keep === undefined ? words : Object.fromEntries(Object.entries(words).filter(([key]) => keep(key))))
+  return { en: narrow(pairs(source.slice(enAt, zhAt))), zh: narrow(pairs(source.slice(zhAt, zhEnd < 0 ? undefined : zhEnd))) }
+}
+
+/** The connector's `record.*` words per language (the same observation point as its page). */
+export function connectorRecordWords() {
+  return clientWords(BODY_SOUL.connector, (key) => key.startsWith('record.'))
+}
+
+/** The instance card's words per language (sync reasons, state and failure explanations). */
+export function instanceClientWords() {
+  return clientWords(BODY_SOUL.instance)
 }
 
 /** CJK ideographs: the observable mark of the Chinese variant. */
