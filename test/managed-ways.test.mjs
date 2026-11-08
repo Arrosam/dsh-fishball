@@ -23,7 +23,7 @@
  * | MGD-10 ×2 | DT (message_fishball × yours / managed) | §5e "tools per session", contract §4.5 | yours: UNKNOWN_TOOL, no inbox item; managed: {ok:true, note:'Delivered to Fishball.'}, one `session` item from it |
  * | MGD-11 ×5 | DT (route × the instance's own / unknown session) | §10e, contract §4.1 | Hand over / Take back of the instance's own session: 409 is-fishball; session.message to it: is-fishball; unknown id (managed true / false): 409 unknown-session; the own session is never listed |
  * | MGD-12 ×8 | EP (bad body) | §10e | invalid JSON, array, {}, missing managed, missing sessionId, managed 'true', sessionId 1, sessionId '' → 400 bad-body; nothing changes |
- * | MGD-13 ×2 | EP (session.watch / session.read on a session that is yours) | §5e "Reading", contract §4.1 (related session) | refused; neither makes the session managed; no tool |
+ * | MGD-13 ×2 | EP (session.watch / session.read on a session that is yours) | §5e "Reading", contract §4.1 (related session), §7 WATCH_ERROR | watch: a response with watchError not-related; read: an error frame; neither makes the session managed; no tool |
  * | MGD-14  | EP (subagent of a managed session) | §5e "Subagents" | the parent's requests have the tools, the child's have none |
  * | MGD-15 ×2 | ST (Hand over / Take back while a turn is held at step 1) | §5e "tools per session" | step 1's request is as before; step 2 of the same turn has (hand over) / lacks (take back) the tools |
  * | MGD-16  | EP (client bundle) | §10e, slim §8.3 | carries "Hand over to Fishball" and "Take back from Fishball"; no "Send to Fishball" or "Tell Fishball when finished" button |
@@ -38,7 +38,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { DELIVERY, ERROR, WATCH_MODE } from 'fishball-connector/contract'
+import { DELIVERY, ERROR, WATCH_ERROR, WATCH_MODE } from 'fishball-connector/contract'
 import { FISHBALL_WORD, MANAGED_BY, MANAGED_CODE, MANAGED_TOOLS, NOTE_TEXT, P5_CODE, PRESET, RELAY, UNKNOWN_TOOL_TEXT } from './support/constants.mjs'
 import { HOOK, T, fishballClientBundle, settledIdle, toolNames, turn, untrustedBlock } from './support/expect.mjs'
 import { KIND, OPERATION, STUB, handOver, messageFishball, quietPushes, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
@@ -355,7 +355,10 @@ describe('yours or managed, and the ways in and out (H-STUB)', () => {
         const r = await op(sid)
         t.diagnostic(name + ': ' + JSON.stringify(r))
         // A session that is yours and was never watched, messaged or forwarded is not related (contract §4.1).
-        assert.equal(r.type, 'error', 'refused: ' + JSON.stringify(r))
+        // A watch reports its own refusal in the response's watchError (§4.1, WATCH_ERROR not-related); a read
+        // has no such field, so it is an ordinary error frame.
+        if (name === 'session.watch') assert.deepEqual([r.type, r.payload?.watchError], ['response', WATCH_ERROR.notRelated], 'not related: ' + JSON.stringify(r))
+        else assert.equal(r.type, 'error', 'refused: ' + JSON.stringify(r))
         assert.equal(await entryOf(host, sid), undefined, 'not managed after ' + name)
         assert.equal(hasAny(await nextRequest(host, sid)), false)
       })

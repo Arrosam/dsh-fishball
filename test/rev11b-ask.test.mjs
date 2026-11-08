@@ -28,7 +28,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { ARGUMENTS_STATUS, DECISION, ERROR, RISK, SETTLED_BY } from 'fishball-connector/contract'
-import { APR_CODE, ASK_CODE, ASK_OUTPUT, ASK_TOOL, AUDIT_ANSWER, AUDIT_KIND, CLICK, DECISION_ACTION, LIMITS, OUTCOME, QUESTION_REQUIRED, REQUEST_PLACEHOLDER } from './support/constants.mjs'
+import { APR_CODE, ASK_CODE, ASK_OUTPUT, ASK_TOOL, AUDIT_ANSWER, AUDIT_KIND, CLICK, DECISION_ACTION, LIMITS, LIMITS_R11, OUTCOME, QUESTION_REQUIRED, REQUEST_PLACEHOLDER } from './support/constants.mjs'
 import { HOOK, T, blockArguments, jsonOf, resultById, settledIdle, stockSeen, untilCard } from './support/expect.mjs'
 import { ASK_STUB, askHost, askTools, assertShape, stopAsk, tokens } from './support/instance-stub-ask.mjs'
 import { takeBack } from './support/instance-stub.mjs'
@@ -362,5 +362,65 @@ describe('Revision 11 rev11b: ask_fishball answered by an attached instance', ()
       await t.stop(y)
       await t.setLimit({ maxPendingApprovals: LIMITS.maxPendingApprovals.default })
     }
+  })
+
+  describe('ASK-14 the reason (why) is bounded in bytes and is not cut to rationaleChars', () => {
+    /** The user's decision (2026-11-08): an ask_fishball reason over 8 KiB is refused, never cut. */
+    const REASON_MAX_BYTES = 8192
+    after(() => t.setLimit({ rationaleChars: LIMITS_R11.rationaleChars.default }))
+
+    it('a reason longer than rationaleChars reaches the offer whole (only the descriptor 500-character cap applies)', T, async () => {
+      await t.setLimit({ rationaleChars: 10 })
+      const sid = await t.session('ask-14a')
+      const text = tok('14a')
+      const id = cid('14a')
+      const why = 'R'.repeat(40)
+      const offer = await t.waiting(sid, text, id, [], { why })
+      assert.equal(offer.reason, why, 'the request reason is not cut to rationaleChars=10')
+      await t.accepted(sid, offer, { decision: DECISION.reject, risk: RISK.high, reason: 'no ' + text })
+      assertShape(await t.answered(sid, id), ASK_CODE.rejected)
+      await t.waitIdle(sid)
+    })
+
+    it('a reason of exactly 8,192 bytes is accepted and only the descriptor cap cuts it', T, async () => {
+      const sid = await t.session('ask-14b')
+      const text = tok('14b')
+      const id = cid('14b')
+      const why = 'w'.repeat(REASON_MAX_BYTES)
+      const offer = await t.waiting(sid, text, id, [], { why })
+      assert.equal(Buffer.byteLength(why), REASON_MAX_BYTES, 'precondition: at the bound')
+      assert.ok(offer.reason.length <= 500, 'the descriptor carries at most 500 characters: ' + offer.reason.length)
+      assert.ok(why.startsWith(offer.reason.replace('…', '')), 'the descriptor is a prefix of the whole reason')
+      await t.accepted(sid, offer, { decision: DECISION.reject, risk: RISK.high, reason: 'too long' })
+      assertShape(await t.answered(sid, id), ASK_CODE.rejected)
+      await t.waitIdle(sid)
+    })
+
+    it('one byte over 8,192 is refused reason-too-large and nothing is sent', T, async () => {
+      const sid = await t.session('ask-14c')
+      const text = tok('14c')
+      const id = cid('14c')
+      const why = 'w'.repeat(REASON_MAX_BYTES + 1)
+      await t.start(sid, [t.ask({ text }, id, { why })])
+      const json = await t.answered(sid, id)
+      assert.equal(json.code, 'reason-too-large', JSON.stringify(json))
+      assert.equal(json.ok, false)
+      assert.equal(json.request_id, undefined, 'a refusal made before sending carries no request id')
+      await t.nothingSent(text)
+      await t.waitIdle(sid)
+    })
+
+    it('the bound counts UTF-8 bytes, not characters: 4,097 two-byte characters (8,193 bytes) is refused', T, async () => {
+      const sid = await t.session('ask-14d')
+      const text = tok('14d')
+      const id = cid('14d')
+      const why = 'é'.repeat(4096) + 'a'
+      assert.equal(Buffer.byteLength(why), REASON_MAX_BYTES + 1, 'precondition: 8,193 bytes, 4,097 characters')
+      await t.start(sid, [t.ask({ text }, id, { why })])
+      const json = await t.answered(sid, id)
+      assert.equal(json.code, 'reason-too-large', JSON.stringify(json))
+      await t.nothingSent(text)
+      await t.waitIdle(sid)
+    })
   })
 })

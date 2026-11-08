@@ -43,6 +43,7 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
+import { ERROR } from 'fishball-connector/contract'
 import { FAKE } from './support/constants.mjs'
 import { T, turn } from './support/expect.mjs'
 import { START_MODEL as C, route } from './support/start-session-model.mjs'
@@ -151,17 +152,17 @@ describe('session.start with a model: validation EP/BVA', () => {
   const w = useModelHost('g-ssm-invalid')
   const routes = [['blank', ' '], ['missing provider', '/' + C.models.analysis], ['missing model', C.provider + '/'], ['bare id', C.models.fast], ['unknown provider', 'unknown-provider/model'], ['unknown model', route('unavailable-model')]]
   for (const [label, model] of routes) {
-    it('SSM-10 EP/BVA invalid route ' + label + ' is refused before creation', T, async () => { await assertRefusedBeforeCreate(w, { model }) })
+    it('SSM-10 EP/BVA invalid route ' + label + ' is refused invalid-decision before creation', T, async () => { await assertRefusedBeforeCreate(w, { model }, { codes: ERROR.invalidDecision }) })
   }
   it('SSM-10b BVA an empty route breaks the non-empty rule: the channel closes', T, async () => { await assertRefusedBeforeCreate(w, { model: '' }, { closes: true }) })
 
   const efforts = [['blank', C.models.analysis, ' '], ['case mismatch', C.models.analysis, 'SKIM'], ["another model's effort", C.models.analysis, C.effort.wrongModel], ['an effort on a model without reasoning', C.models.plain, C.effort.first]]
   for (const [label, model, effort] of efforts) {
-    it('SSM-11 EP/BVA effort ' + label + ' is refused before creation', T, async () => { await assertRefusedBeforeCreate(w, selection(model, effort)) })
+    it('SSM-11 EP/BVA effort ' + label + ' is refused invalid-decision before creation', T, async () => { await assertRefusedBeforeCreate(w, selection(model, effort), { codes: ERROR.invalidDecision }) })
   }
   it('SSM-11b BVA an empty effort breaks the non-empty rule: the channel closes', T, async () => { await assertRefusedBeforeCreate(w, selection(C.models.analysis, ''), { closes: true }) })
 
-  it('SSM-12 DT an effort alone needs an explicit model', T, async () => { await assertRefusedBeforeCreate(w, { reasoningEffort: C.effort.first }) })
+  it('SSM-12 DT an effort alone needs an explicit model: invalid-decision', T, async () => { await assertRefusedBeforeCreate(w, { reasoningEffort: C.effort.first }, { codes: ERROR.invalidDecision }) })
 
   for (const [key, value] of [['model', null], ['model', 1], ['model', {}], ['reasoningEffort', null], ['reasoningEffort', false], ['reasoningEffort', []]]) {
     it('SSM-13 EP non-string ' + key + ' ' + JSON.stringify(value) + ': the channel closes, nothing created', T, async () => {
@@ -172,8 +173,10 @@ describe('session.start with a model: validation EP/BVA', () => {
 
 describe('session.start with a model: host failure decision table', () => {
   const w = useModelHost('g-ssm-failures')
-  for (const boundary of ['catalog', 'resolve']) {
-    it('SSM-20 EP ' + boundary + ' rejects: refused before creation', T, async () => { await assertRefusedBeforeCreate(w, selection(), { arm: { [boundary]: true } }) })
+  for (const [boundary, codes] of [['catalog', ERROR.featureOff], ['resolve', Object.values(ERROR)]]) {
+    it('SSM-20 EP ' + boundary + ' rejects: refused before creation' + (boundary === 'catalog' ? ' feature-off' : ''), T, async () => {
+      await assertRefusedBeforeCreate(w, selection(), { arm: { [boundary]: true }, codes })
+    })
   }
   for (const [label, substitute] of [['model', { model: C.models.fast }], ['provider', { provider: FAKE.provider }], ['explicit effort', { reasoningEffort: C.effort.last }]]) {
     it('SSM-20b DT the adapter silently substitutes the ' + label + ': fail closed', T, async () => {
