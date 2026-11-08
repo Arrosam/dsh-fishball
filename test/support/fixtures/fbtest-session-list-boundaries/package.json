@@ -1,0 +1,7 @@
+{
+  "name": "fbtest-session-list-boundaries",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./index.mjs",
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+}
