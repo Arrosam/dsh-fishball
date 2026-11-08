@@ -5,10 +5,12 @@
   "license": "MIT",
   "type": "module",
   "main": "./host.js",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The card's own runtime text stays in client.js.",
   "exports": {
     ".": "./host.js",
     "./client": "./client.js",
     "./native-runtime": "./src/native-runtime/index.js",
+    "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
   "files": [
@@ -17,6 +19,7 @@
     "native-child.js",
     "uninstall.js",
     "src/",
+    "locale/*.json",
     "cordis.patch.yml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
