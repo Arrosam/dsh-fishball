@@ -18,7 +18,9 @@
  * and its hourly cap went with the in-process agent.
  */
 import { createHash } from 'node:crypto'
-import { INTAKE_ERROR, INTAKE_KIND, INTAKE_OUTCOME, INTAKE_STATUS, INTAKE } from './constants.js'
+import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { INTAKE_ERROR, INTAKE_KIND, INTAKE_OUTCOME, INTAKE_STATUS, INTAKE, SOURCE } from './constants.js'
+import { authorOf } from './author.js'
 import { diagnosticOf } from './errors.js'
 /** Rows still waiting to be taken by the child (they count toward maxQueuedInputs). */
 const OPEN = new Set([INTAKE_STATUS.pending])
@@ -96,6 +98,27 @@ export class IntakeLedger {
       this.#onChange()
       this.#send(intakeId)
       return { intakeId, status: INTAKE_OUTCOME.accepted }
+    })
+  }
+
+  /**
+   * Take one already-shaped system inbox item into the same durable queue as every notice. The
+   * approval relay makes CARD_CLOSED, card records and question answers while the child may be
+   * away; the bridge host's own inbox queue dies with that host, so these items must be ledger
+   * rows to be redelivered after a reconnect (contract §4.5).
+   * @param item - the contract's inbox.push payload; its text carries the marker.
+   * @param sourceIdentity - whose input it is (the approval broker's INTAKE_SOURCE).
+   */
+  publishNotice(item, sourceIdentity) {
+    return this.publish({
+      kind: item.kind,
+      sourceIdentity,
+      sourceSessionId: item.sourceSessionId,
+      dedupeKey: item.dedupeKey,
+      message: createUserMessage({
+        content: [{ type: 'text', text: item.text }],
+        source: { ...SOURCE.notice, author: authorOf(item.kind) },
+      }),
     })
   }
 

@@ -69,7 +69,7 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, PILE_NOTE, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SESSION_INFO, SOURCE, THREAD_FROM } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, APPROVAL_DECISION, PILE_NOTE, APPROVAL_ERROR, APPROVAL_OUTCOME, APPROVAL_RISK, ARGUMENTS_STATUS, ASK_ERROR, ASK_RESULT, CARD_DECISION, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, GRANT_KIND, INTAKE_KIND, INTAKE_SOURCE, MANAGED_BY, PASS_KIND, PROMPT, REQUEST_KIND, SESSION_INFO, SOURCE, THREAD_FROM } from './constants.js'
 import { AuditLog } from './audit.js'
 import { CallPasses } from './passes.js'
 import { WORDING } from './result-wording.js'
@@ -83,7 +83,6 @@ import { closeCard } from './card-lifecycle.js'
 import { CARD_RECORD } from './slim/card-record.js'
 
 export const APPROVAL_TOOL = Object.freeze({ answer: 'answer_approval', listPrompts: 'list_frozen_sessions', answerPrompt: 'answer_prompt' })
-const SOURCE_IDENTITY = 'fishball/approval'
 /** Provenance phrases Fishball reads (rubric rule 5). */
 const PROVENANCE = Object.freeze({
   user: 'the user',
@@ -841,7 +840,7 @@ export class ApprovalBroker {
         try {
           await this.#ledger.publish({
             kind: INTAKE_KIND.approval,
-            sourceIdentity: SOURCE_IDENTITY,
+            sourceIdentity: INTAKE_SOURCE.approval,
             sourceSessionId: request.sessionId,
             dedupeKey: request.round === 1 ? id : id + ROUND_KEY_SEPARATOR + request.round,
             message: createUserMessage({
