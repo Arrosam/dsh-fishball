@@ -8,11 +8,13 @@
   "type": "module",
   "main": "./index.js",
   "//exports": "./records is the card record's browser module (design §0.2). It is the client bundle's package-local chunk client.records.js, because DSH serves only client.*.js siblings of client.js; importing it outside a DSH page registers nothing.",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The card's own runtime text stays in client.js.",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
     "./contract": "./contract/index.js",
     "./records": "./client.records.js",
+    "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
   "files": [
@@ -22,6 +24,7 @@
     "src/",
     "contract/",
     "assets/connector-icon.svg",
+    "locale/*.json",
     "cordis.patch.yml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
