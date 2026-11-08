@@ -6,7 +6,7 @@ The design is in [DESIGN.md](DESIGN.md) and [docs/slim-native-design.md](<docs/s
 
 ## Status
 
-Release **0.1.0-alpha.0**: two plugins, `fishball-connector` and `fishball-instance`, both at version `0.1.0-alpha.0`, connector contract 1.1. The packages are not published to npm.
+Release **0.1.0-alpha.0**: two plugins, `fishball-connector` and `fishball-instance`, both published to npm at version `0.1.0-alpha.0`, connector contract 1.1. Both packages' `alpha` and `latest` tags currently point to this version. This is an alpha release, not a stable release; the install commands below pin the version explicitly.
 
 The earlier single plugin `dsh-fishball` (v0.1.0, tag `v0.1.0`) is replaced. **There is no migration from it:** nothing of the old plugin (its session, history, settings, grants or plugins) is carried over. Remove it before installing this release (below). The older "dsh-fishball (df)" preview is archived at tag `archive/df-preview-2026-10-23`.
 
@@ -32,11 +32,11 @@ The commands use the profile `web`; use your own profile name after `--profile`.
    dsh plugin --profile web remove dsh-fishball
    ```
 
-2. **Install the connector, then the instance**, into the same profile, from the two tarballs `fishball-connector-0.1.0-alpha.0.tgz` and `fishball-instance-0.1.0-alpha.0.tgz` (build them with `npm pack` in each package folder; see [docs/package-layout.md](<docs/package-layout.md>)):
+2. **Install the connector, then the instance**, into the same profile, from npm:
 
    ```bash
-   dsh plugin --profile web add ./fishball-connector-0.1.0-alpha.0.tgz
-   dsh plugin --profile web add ./fishball-instance-0.1.0-alpha.0.tgz
+   dsh plugin --profile web add fishball-connector@0.1.0-alpha.0
+   dsh plugin --profile web add fishball-instance@0.1.0-alpha.0
    ```
 
    Install the connector first. The instance declares it as a peer (`fishball-connector >=0.1.0-alpha.0 <2`), and DSH does not install peers by itself. pnpm also lists DSH's own packages as missing peers; DSH provides them when it runs, so that warning is expected.
@@ -44,6 +44,19 @@ The commands use the profile `web`; use your own profile name after `--profile`.
 3. **Start DSH** as usual. The two plugins find each other by themselves; no profile edit is needed. Fishball starts once DSH is ready. On its first start the instance creates its private profile under `<DSH_HOME>/fishball/runtime`. The DSH home must be a canonical real path, not a path through a symbolic link such as `/tmp` (`/private/tmp` on macOS); otherwise the instance reports `INVALID_MAIN_HOME` and does not start.
 
 To use the connector with your own instance, install only the connector in step 2.
+
+### Install from local tarballs
+
+For a local build, pack each package from its own folder (see [docs/package-layout.md](<docs/package-layout.md>)), then use the resulting tarballs instead of the npm package names in step 2. From the repository root:
+
+```bash
+(cd packages/connector && npm pack)
+(cd packages/instance && npm pack)
+dsh plugin --profile web add ./packages/connector/fishball-connector-0.1.0-alpha.0.tgz
+dsh plugin --profile web add ./packages/instance/fishball-instance-0.1.0-alpha.0.tgz
+```
+
+The same installation order and startup steps apply.
 
 ## Uninstall
 
@@ -96,4 +109,4 @@ On the instance's card on DSH's Plugins page, **Model for Fishball** → **Check
 
 [MIT](LICENSE). See [packages/connector/THIRD_PARTY_NOTICES.md](packages/connector/THIRD_PARTY_NOTICES.md) and [packages/instance/THIRD_PARTY_NOTICES.md](packages/instance/THIRD_PARTY_NOTICES.md).
 
-The repository is public on GitHub. The packages are not published to npm.
+The repository is public on GitHub.
