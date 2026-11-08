@@ -32,6 +32,12 @@ open questions of the first cut (Q-A = B, Q-B = B) are U5 and U6; §9 now has no
 | U11 | "一打开就要是Fishball的页面，通过修改DSH的网页来删去其他的组件，只留下Fishball一个会话页。" and the mechanism: **one small `dsh.client` plugin, `fishball-page`, bundled inside fishball-instance, loaded only in the child's DSH web**, does every removal and layout change. Never installed into the main DSH; no patching of DSH code or bundles; CSS from the same plugin is the fallback | §11.2–§11.5 |
 | U12 | "Fishball instance内的设置页也用DSH自带的插件设置页，且可以打开instance内的DSH setting页面，只是删除了侧边栏和其他的session页面，查看session只允许查看Fishball的session，并且拒绝启动任何的新session，并且整个fishball instance的DSH都没有只读以外的权限。" DSH's own Settings and Plugins pages are allowed destinations; only Fishball's session can be viewed; no new session can be started; nothing in the child goes above read-only | §11.4, §11.6, §11.7 |
 | U13 | §9 answers (2026-11-08): Q-E A, Q-F A, Q-G B, Q-H A, Q-I A, Q-J A, Q-M A as recommended; **Q-K = B** (hide Remove for our bundled plugins with CSS in `fishball-page`); **Q-N = A** (the recommended tab only in the child's Plugins page); **Q-O = B** (label "Fishball 推荐" / "Fishball Recommended", id `fishball-recommended`); **Q-L changed**: "现在设置页还要，但是额外可以访问instance内的设置，推荐插件列表就放在DSH的插件页面内的这里的额外一个tab，也做成一个插件，就叫fishball- recommend-plugins。但是很多instance的设置，比如插件的开关可以依靠DSH自带的插件页面来实现。" | §11.8, §11.9 |
+| U14 | "审批的卡片，要么直接判断，要么无法判断交给Fishball，如果Fishball也无法判断，才会变成一个无限时间的留给用户的卡片。而在此中间要么向上提交请示，要么直接批注，没有等待时间。删除等待时间。" No approval step waits on a timer: watchdog decides or escalates at once; Fishball decides or escalates at once; the user's card has no time limit | §12.1 |
+| U15 | X3 namespace: option B. No validation API in X0-C; the prefix rule is enforced where plugins register their record types with DSH | §12.2 |
+| U16 | "watchdog是无论用户在不在都要激活的，原理是利用一个小上下文的小助理来处理工作中反复被唤起，需要允许权限，以及监督会话防止跑偏的。这是一个token节约器，而非一个额外的安全选项。" The watchdog is a **token saver** for Fishball, active whether or not the user is present; not a security layer | §12.3 |
+| U17 | *(draft, pending the user's confirmation)* A resolved approval card's result goes straight into the requesting session's, the watchdog's and Fishball's context (for the latter two a wake-up note that the user decided); then the card is cleared at once, no retention | §12.4 |
+| U18 | X0-C coverage gaps: option A. The tests cover them; behaviour they exposed as unspecified is specified in §12.5 | §12.5 |
+| U19 | "看板任务永不清理，永久都可以通过grep查询关键字来找到过去完成的看板。而看板上的任务一旦完成就留30天，除非主动清除。" Board records are never deleted and stay grep-able; a closed task stays **on the board** for 30 days unless cleared early, then it is archived, not deleted | §12.6 |
 | U9 | W0 tester Q1 = A, Q2 = A, Q5 = A: X7's page-hook behaviour is tested in the real browser later (W0 tests the server side only); an out-of-scope X12 call answers `forbidden` (the other refusals stay "observable effect only"); bundled placement runs inside `initializeProfile`, before `loadProfileDirectory` and the skipped-bundle check | X7, X12, §2.2, X0-B |
 
 ## 1. The canonical extension points
@@ -66,7 +72,7 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | --- | --- | --- | --- | --- |
 | X1 | `manager.sessionId() → string \| undefined` | Fishball's (the manager's) session id; refuse calls from other agents | fold, board, watchdog | fE1 = wE7 = b1 |
 | X2 | `manager.registerSetup(pluginId, fn(agentCtx, agent)) → dispose` | the **one** way into the manager's agent scope: tools (`agentCtx.tools.register`), static sections (`systemPrompt.section`), dynamic context (`systemPrompt.context`). Runs on create and every resume, after the persona, in registration order. A late registration is applied to the live agent at once. Each registration runs as its own fiber `agentCtx.plugin({apply: fn})`, so `dispose` removes everything `fn` registered | fold (tool + section), board (2 tools, guide, dynamic context), watchdog (11 tools + loop section) | fE2 = b2; **replaces** wE3 `registerManagerTools` and wE4's `addManagerPromptSection` |
-| X3 *(server projector withdrawn, U10: a plugin's own `uiConversation.events.register` definition renders its record, §11.3)* | `chat.registerRecordProjector(pluginId, type, fn(data, event) → {id, at, data, text?} \| undefined) → dispose` | show a plugin's log-only record in `GET api/chat` and the SSE `entry` frame as `{id, kind: 'plugin', plugin, at, data, text?}`; `type` must start `plugin:<pluginId>/`. **Added:** optional `text` (≤ `EXT_LIMITS.recordTextChars`, a new constant in `child/extensions.js`, equal to `CHAT_LIMITS.entryChars` (8000), the cap `chat.js` `notify` applies at `:679`), drawn by the instance as a plain record row when no page module renders the entry | fold (notice), watchdog (report, guard notices) | fE3; covers wE4's "shown in the manager's chat" |
+| X3 *(server projector withdrawn, U10; no validation API in X0-C, U15: the prefix rule is enforced where record types are registered, §12.2)* | `chat.registerRecordProjector(pluginId, type, fn(data, event) → {id, at, data, text?} \| undefined) → dispose` | show a plugin's log-only record in `GET api/chat` and the SSE `entry` frame as `{id, kind: 'plugin', plugin, at, data, text?}`; `type` must start `plugin:<pluginId>/`. **Added:** optional `text` (≤ `EXT_LIMITS.recordTextChars`, a new constant in `child/extensions.js`, equal to `CHAT_LIMITS.entryChars` (8000), the cap `chat.js` `notify` applies at `:679`), drawn by the instance as a plain record row when no page module renders the entry | fold (notice), watchdog (report, guard notices) | fE3; covers wE4's "shown in the manager's chat" |
 | X4 *(withdrawn, U10)* | `ui.register({pluginId, module, style?, dictionaries}) → dispose`; `GET api/ui-extensions → [{pluginId, module, style?}]`; files served at `ui/ext/<pluginId>/…` with the `/ui/*` checks | load a plugin's page module; CSP stays `'self'` | fold, board | fE4 (a–c) = b3 |
 | X5 *(withdrawn, U10: Connection Fetch routes, §11.3)* | `ui.registerRoute(pluginId, {method, path, handler(req) → {status, body}}) → dispose`, served at `api/ext/<pluginId>/<path>`, same bearer and body limits as `api/*` | a plugin's JSON routes | fold (`seen`), board (`board`, `export`) | fE4 (d) = b3 |
 | X6 *(withdrawn, U10)* | `ui.signal(pluginId, type)` → SSE event `ext` `{pluginId, type}`, data-free, coalesced per `(pluginId, type)` per tick | tell a module to re-read | board | b3 (b) |
@@ -415,7 +421,7 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | --- | --- | --- | --- |
 | **SP** spikes SP-X1, SP-FN1, B0/S1 | `spikes/instance-ext/*`, `docs/spikes/instance-ext.md` | — | **done 2026-11-08: all yes on both versions** (§4) |
 | **K1** contract 1.2 + connector `unread` | `packages/connector/contract/{contract,limits}.js`, `docs/connector-contract.md`, `packages/connector/src/slim/host/bridge.js`, `src/connector-service.js`, `index.js` | — | §3 table holds; 1.1 instance attaches; `state.unread` follows the last valid value, `{0,false}` on detach and close |
-| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — (SP-X1 done) | `fishballInstance` v1 provided; X1, X2, X10, X11 behave as §1, and X3 keeps only the record-type rule (`plugin:<pluginId>/…`; the server projection into `GET api/chat` is withdrawn, U10); every other member a stub that refuses `not-implemented`; the X19 call sites exist and pass everything while the watchdog is not enabled; the instance tests are unchanged and green with no plugin |
+| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — (SP-X1 done) | `fishballInstance` v1 provided; X1, X2, X10, X11 behave as §1 and §12.5 (durable dedupe, the array form); X3 has **no** member in X0-C (U15); every other member a stub that refuses `not-implemented` as §12.5 specifies; the X19 call sites exist and pass everything while the watchdog is not enabled; the instance tests are unchanged and green with no plugin |
 | **X0-I** inbox pipeline | `child/inbox.js`, new `child/ext/inbox.js`, `src/slim/inbox-markers.js` | X0-C | X9: claims before the batcher, release re-enters, ack/refuse per item |
 | ~~X0-U~~ | **withdrawn (U10)**; replaced by SP-PG, CHILD-WEB, EMB, PG-1, PANELS (§5.4) | — | — |
 | **X0-W** wire: scoped bridge + attention | `child/bridge.js`, new `child/ext/{bridge-scope,attention}.js` | X0-C, K1 | X12 local `forbidden`; X8 sent on set, on each handshake, zero on dispose, skipped without the capability |
@@ -436,12 +442,12 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | FN-6 turn batching | FN-6 | `src/batcher.js` | X0-I (X9 batcher), FN-1 |
 | FN-A connector alert | FN-A | `packages/connector/client.js` (fold §9.1 rows) | K1 |
 | — | FN-0, FN-E6, FN-K, FN-B | absorbed into X0-*, K1 | — |
-| WD-1 … WD-10 | same | `packages/watchdog/…` as watchdog §14 | WD-0 → the X0 task that owns the point (WD-8: X0-G; WD-10: X0-I, X0-A) |
+| WD-1 … WD-10 | same, with U14 edits: WD-1's done-when loses "including the window-sum check"; WD-8 keeps check timeouts only; WD-10 has no R4 | `packages/watchdog/…` as watchdog §14 | WD-0 → the X0 task that owns the point (WD-8: X0-G; WD-10: X0-I, X0-A) |
 | WD-11 manager tools | WD-11 | `src/manager-tools.js` | registers through **X2** (not wE3/wE4); X0-C, WD-2, WD-3, WD-6, WD-9, WD-13 |
 | WD-13 coupling | WD-13 | `src/coupling.js` | X0-S; **adds** `endingReason()` handling (§2.4 step 2), the `handedOver` → `dormant` list on register with the one notice (§2.4 step 6), `watchdog_resume` of a dormant brief, `watchdog_brief` superseding a dormant brief |
 | **WD-14** start-time assignment (new) | — | new `src/start-assign.js` | X0-S (X16), WD-2, WD-6, WD-13 |
 | WD-12 integration | WD-12 | `index.js` wiring, e2e | all WD, X0-B |
-| B1 … B4 | same | `packages/board/…` as board §14 | X0-C (X1, X2) |
+| B1 … B4 | same, with U19 edits: B1 the visibility window; B3 the archive and visibility (§12.6); B4 the `clear` item | `packages/board/…` as board §14, plus `src/archive.js` | X0-C (X1, X2) |
 | B5 board panel | B5 | `packages/board/client/` (`dsh.client`: a `rightbar` panel entry) and `src/routes.js` (Fetch routes) | B4, PG-1 |
 | B6 meow-memory recommended | B6 | `src/recommended.js` (the `noteKey` and the meow entry), DESIGN.md; the tab itself is RP | — (RP reads it) |
 | B7 meow in the child | B7 | test rig only | B6 |
@@ -458,6 +464,7 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | **CHILD-WEB** child profile and overlay | `src/native-runtime/{constants,overlay,installation}.js` (add `dsh-web-app` back, keep the existing migration's backup rule), the overlay rows of §11.3/§11.6, the read-only `permission` presets and `defaultPreset`, `sandbox-policy` read-only, the Q-J approval rule, `tool-subagent` per Q-I, the Fetch route `api/fishball/session` | SP-PG | the child boots DSH's web on both versions; every enabled `dsh.client` row is served; the disabled rows are absent; `/permission` refuses everything but `read-only`; a user setting cannot raise the sandbox |
 | **EMB** connector embed of the shell | `packages/instance/src/slim/host/embed.js` (prefix forwarding of `/`, `/plugins/*`, `/assets/*`, `/api/*` and the `api/remote.mux` upgrade; CSP from SP-PG(1)), `packages/connector/client.js` (the iframe unchanged except `allow` if SP-PG needs it) | SP-PG, CHILD-WEB | the Fishball view in the main DSH shows the child's shell with no token in any URL, as SP1 did; the main DSH's own pages are unaffected |
 | **PG-1** `fishball-page` plugin | new `packages/instance/child-web/fishball-page/{package.json,client.js,removals.js,guard.js,shortcuts.js,messenger.js,style.css,i18n.js}` | SP-PG, CHILD-WEB | §11.3 table holds; Remove is hidden for the bundled plugins (§11.10); the page opens on Fishball's session; §11.4 paths cannot leave it; DSH Settings and Plugins pages open and come back; grey bubbles and avatars as eaa33f5; composer plugins (a fixture plus voice input when installed) work |
+| **K2** connector: no approval timers (U14), immediate card clearing (U17) | `packages/connector/src/{approvals,questions,config,pile,card-lifecycle}.js`, `contract/contract.js` (`expiresAt` optional for approvals), `slim/host/approvals.js`, `docs/connector-contract.md`, `DESIGN.md` item 11 | K1 | no request or question moves on a timer; the user card has no deadline; a resolved card is gone from the pile at once; a 1.1 peer still interoperates |
 | **SET** slimmed Fishball settings page (§11.8) | `child-web/fishball-page/panels/settings.js`, its Fetch routes (status, restart, provider sync) | PG-1 | only the "stays" rows of §11.8 are on it; the links open DSH Settings and Plugins and come back; the moved items are not duplicated |
 | **RP** `fishball-recommend-plugins` (§11.9) | new `packages/recommend-plugins/{package.json,index.js,client.js,i18n.js}`; `RUNTIME.bundledPlugins` entry in `src/native-runtime/constants.js` | SP-PG (8), CHILD-WEB, X0-B | the child's Plugins page shows the "Fishball 推荐" / "Fishball Recommended" tab next to Installed, Marketplace and Discover; it lists the recommended plugins with meow-memory's note; Install installs into the child profile; an installed one shows "Installed"; the main DSH's Plugins page has no such tab |
 | **PANELS** our panels as DSH entries | `child-web/fishball-page/panels/{approvals,reminders}.js`, the "代批 / Watchdog" tag and the escalation card as chat-node definitions; their Fetch routes in `src/slim/child/` | PG-1, X0-A | approvals and reminders work as `main` panels; the escalation card renders in Fishball's chat |
@@ -468,7 +475,7 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | Wave | In parallel |
 | --- | --- |
 | W0 (start now) | K1, X0-C (X3 reduced, see §5.5), FN-1, WD-1, B1 |
-| W1 | **SP-PG first**; X0-I, X0-G, X0-A (server), X0-S, X0-W (needs K1), FN-A (needs K1); WD-2, WD-3, WD-4, WD-5, WD-7; B2, B3 |
+| W1 | **SP-PG first**; K2 (after K1); X0-I, X0-G, X0-A (server), X0-S, X0-W (needs K1), FN-A (needs K1); WD-2, WD-3, WD-4, WD-5, WD-7; B2, B3 |
 | W2 | CHILD-WEB, then EMB and PG-1 (all after SP-PG); X0-B (after X0-S); FN-2, FN-6; WD-6, WD-8, WD-9; B4 |
 | W3 | PANELS (after PG-1, X0-A), SET (after PG-1), RP (after X0-B); FN-3, FN-4 (after PG-1); B5 (after PG-1); B6 (W1 is fine: data only); WD-10, WD-11, WD-13 |
 | W4 | FN-5; WD-14; B7 (after RP); RETIRE (after PANELS, SET, RP, FN-4, B5) |
@@ -478,10 +485,9 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 
 - **Unaffected, start now:** K1, FN-1, WD-1, B1. Server-side X0 tasks X0-I, X0-G, X0-S and X0-W
   (W1) are unaffected as well. Their tests stand.
-- **X0-C changed in one point.** X3's server projection into `GET api/chat` and the SSE `entry`
-  frame is dropped; only the record-type rule remains (a foreign prefix is refused). Remove the
-  tester's X3 projection and fallback-row cases (the BVA on `recordTextChars` too); keep the X1,
-  X2, X10 and X11 cases.
+- **X0-C changed.** X3 is gone from X0-C entirely (U10, U15): remove every X3 case, including
+  the foreign-prefix refusal and the `recordTextChars` BVA; the rule moves to §12.2's owner. The
+  coverage gaps are closed by tests (U18), with the behaviour §12.5 specifies.
 - **X0-U withdrawn.** Its test file `x0-u.test.mjs` is retired. Its server-side cases (module
   serving, `api/ext/*` routes, the `ext` signal, the CSP) have no successor; the page cases move to
   PG-1's browser tests.
@@ -527,8 +533,11 @@ decision table, **ST** state transitions.
   - ST for X2: registered → applied → disposed (its tools and section gone at the next step) →
     registered again; a registration made **during a turn** is offered at the turn's next step
     (SP-X1).
-  - X3 (reduced, U10): a record `type` with a foreign prefix is refused. *(The projection and
-    fallback-row cases, and the `recordTextChars` BVA, are dropped.)*
+  - *(X3 has no case here: U15, §12.2.)*
+  - §12.5 cases: notify dedupe survives a child restart (same key after restart → `duplicate`);
+    every stub member refuses `not-implemented` as §12.5 specifies (sync throws, async rejects);
+    with the watchdog disabled both `message_session` and `redirect_session` reach the connector;
+    `deliverInbox([a, b, c])` gives one turn with the three texts in order, none lost or doubled.
   - X10 DT: `wake` × duplicate `dedupeKey` × agent busy or idle. X11 BVA: `limit` 0, 1, max, max+1;
     `maxChars` cut at a surrogate pair.
 - **X0-I.**
@@ -536,7 +545,7 @@ decision table, **ST** state transitions.
     record.
   - DT: claimed × batcher present × `user` kind → claimant, batch or direct.
   - ST: claim held → release `deliver:true` (re-enters the batcher) / `deliver:false` / card
-    settles (dropped) / `expiresAt` passes.
+    settles or closes (dropped). No time-based drop (U14).
   - BVA: `prefix` 500 and 501 chars.
   - Single owner: a second batcher gets `owner-busy`.
 - **X0-U.** *Withdrawn (U10); see PG-1.*
@@ -741,13 +750,13 @@ decision table, **ST** state transitions.
 - **Main DSH profile.** None of the three plugins is ever a bundle there.
 - **Without these plugins**, the instance behaves byte for byte as it does today.
 
-## 8. Doc edits the three designs need (names only, no design change except U1–U12)
+## 8. Doc edits the three designs need (names only, no design change except U1–U19)
 
 | Design | Edit |
 | --- | --- |
 | fold-notify | (U10) §5/§9 E3–E5 → the fold is a `dsh.client` conversation group/node plugin and `seen` is a Fetch route; §13 the package gains `client/`; service `fishballInstanceExtensions` → `fishballInstance`; fE1 `fishballChat.sessionId()` → `manager.sessionId()`; fE2 → X2 `manager.registerSetup(pluginId, fn)`; fE3 → X3 (add `pluginId` argument); fE4 → X4/X5/X7; fE5 → X7 `setTimelinePresenter`; fE6 → X8 + K1; fE7 → X9 `inbox.setBatcher`; fE8/9 → X17/X18; seen route `api/fold-notify/seen` and `api/ext/fold-notify/seen` → `api/ext/fishball-fold-notify/seen`; §14 FN-0, FN-E6, FN-K, FN-B point to X0-*/K1; inject list in §13 |
-| board | (U10) §10 the panel is a `dsh.client` `rightbar` panel entry with Fetch routes, not a page module; inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, X4–X7, X17/X18; `signal(namespace, type)` → `ui.signal(pluginId, type)`; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C/X0-U, B9 → X0-B, B0 done (S1 yes); §5 guide text: "the newest board block is the current one" (S1 note) |
-| watchdog (U1–U12 **are** design changes) | (U12) side sessions are instance-owned agent runs, allowed by the new-session refusal's exception (Q-H) and never viewable; the escalation card is a chat-node definition (PANELS); §6.2 R1 "no brief" → "session not claimed" (X15 `approvals.claim`, §2.6), R2 "plugin disabled" drops (a disabled plugin has no claims); E6 `setDelegate`/`supervised` → per-session `approvals.claim`; §9 has no `enabled` (U7); §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate); §4.5.1 state table gains `dormant` (any running state allowed, sends refused) and the "no brief" row; §4.5.2's gate text → X19's `supervision-paused` row; §4.4 `watchdog_brief` result gains `sendUnlocked`, and on a dormant brief it supersedes instead of `brief-exists`; `watchdog_resume` accepts `dormant` as well as `paused`; the manager section states the U5 rule in one line; §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U6 |
+| board | (U19) §6 storage: `board.json` (on-board cards) + append-only `archive.jsonl`; "prune age" → board visibility window; §3.2 `board_write` gains `{id, clear: true}`; §5 the guide names `grep` on the archive; §9 `BOARD_LIMITS` loses prune age; §6 uninstall per Q-S; (U10) §10 the panel is a `dsh.client` `rightbar` panel entry with Fetch routes, not a page module; inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, X4–X7, X17/X18; `signal(namespace, type)` → `ui.signal(pluginId, type)`; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C/X0-U, B9 → X0-B, B0 done (S1 yes); §5 guide text: "the newest board block is the current one" (S1 note) |
+| watchdog (U1–U19 **are** design changes) | (U14) remove the approval timers, R4, the window sum and the deadline wording (§12.1 list); (U16) reword as a token saver (§12.3); (U17) the claim's `onSettled` note (§12.4); (U12) side sessions are instance-owned agent runs, allowed by the new-session refusal's exception (Q-H) and never viewable; the escalation card is a chat-node definition (PANELS); §6.2 R1 "no brief" → "session not claimed" (X15 `approvals.claim`, §2.6), R2 "plugin disabled" drops (a disabled plugin has no claims); E6 `setDelegate`/`supervised` → per-session `approvals.claim`; §9 has no `enabled` (U7); §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate); §4.5.1 state table gains `dormant` (any running state allowed, sends refused) and the "no brief" row; §4.5.2's gate text → X19's `supervision-paused` row; §4.4 `watchdog_brief` result gains `sendUnlocked`, and on a dormant brief it supersedes instead of `brief-exists`; `watchdog_resume` accepts `dormant` as well as `paused`; the manager section states the U5 rule in one line; §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U6 |
 
 ## 9. Open questions for the user
 
@@ -756,6 +765,10 @@ decision table, **ST** state transitions.
 | Q-C | *(closed: A-lite, U10)* | | | |
 | Q-E … Q-M | *(closed by U13: E, F, G, H, I, J, M as recommended; K = B; L changed, §11.9)* | | | |
 | Q-N, Q-O | *(closed by U13: Q-N = A, Q-O = B)* | | | |
+| Q-P | U14 removes every approval timer. A **hung model call** in a watchdog or Fishball decision would then hold the card indefinitely. Is a technical guard allowed? | A **liveness guard, not a wait**: if a decision turn ends without a decision (model error, crash, cancel), or the model call itself fails per DSH's own transport timeout, escalate at once to the next step (watchdog → Fishball → user). No timer of ours | B: keep a single technical fail-safe timer on the decision turn (for example, a model call that streams nothing for N minutes) that escalates | **A.** It honours "no waiting time"; DSH's own transport errors already end a hung call |
+| Q-Q | U17 clears cards at once. Do the **settled-decision labels** (the record "who decided what", used by the 代批 tag and audit) also go? | Keep the labels (bounded audit, 200 newest); only the cards go | Clear labels with the card | **A.** A label is not a card, and the watchdog's criteria loop and Fishball's audit read it |
+| Q-R | How does Fishball search old board cards (U19)? | Plain-text `archive.jsonl`, searched with DSH's own `grep` tool | A `board_search {query}` tool | **A.** It is what the user said ("grep"), and it needs no new tool |
+| Q-S | Board §6/B-D6: `uninstall.js` deletes `fishball/runtime`, now including the board **archive**, against "永不清理" | Keep deleting on uninstall, with an export of `archive.jsonl` offered first (as B-D6's export) | Keep the archive: uninstall moves `fishball-board/` to `<DSH_HOME>/fishball-board-archive-<date>/` | **A.** Uninstall is the user's explicit removal of Fishball; "never" refers to Fishball's own housekeeping |
 
 **Conflicts with earlier decisions (listed, not chosen):**
 - **K-1 (closed by U10):** D28/I2 is superseded for the chat page.
@@ -1176,3 +1189,157 @@ spirit.
   inside `[data-plugin-detail=…]` relative to `plugins.detail.actions`. If neither is reliable,
   Q-K goes back to the user (A: accept Remove as "off", as before).
 
+
+## 12. Decisions of 2026-11-09 (U14–U19)
+
+### 12.1 No waiting time on approval cards (U14)
+
+**Flow.** A permission request of a managed session:
+1. **Watchdog**, if the session is claimed (§2.6): decides now (`allow` / `reject` / one `ask`) or
+   escalates now. It has no decision budget and no deadline.
+2. **Fishball**, if not claimed, or escalated to it: decides now with `answer_approval`, or
+   escalates now with `escalate`.
+3. **The user's card**: no time limit. It stays until the user answers, or until the request ends
+   for a reason that is not time (the session stopped, released or taken back, or the instance
+   detached, contract §9).
+
+No step moves a card on a timer. "Silence never approves" still holds, because nothing approves
+by itself: an unanswered card simply stays.
+
+**Removed (watchdog design):**
+- `decisionTimeoutSeconds`, `managerReserveSeconds`, `minDecisionSeconds` (watchdog §9 `:816-818`);
+- the "≤ 120 window-sum" paragraph (`:824-827`);
+- runtime rule R4 (`expiresAt` budgeting, `deadline-short`) and R6's `deadline = …` (§6.2
+  `:610-614`);
+- §6.6 "within the time left … `managerReserveSeconds` … the window runs out" (`:724-726`);
+- §6.7's "the connector's window sends the request to the user" (`:741`): an `act-failed` goes
+  TO-FISHBALL, and if that delivery also fails, the instance escalates the card to the user
+  (`escalate`) at once;
+- §3.5 "A permission request has a deadline; a check does not" (`:267`). Decisions still preempt
+  checks, because the requesting session is blocked, not because of a deadline;
+- §7 "Timeouts" row (`:759`): it keeps `checkTimeoutSeconds` only (checks are not approvals);
+- the WD-1 done-when "including the window-sum check" (`:927`), and the §15 BVA "Deadline" and
+  "Window sum" lines (`:972-974`).
+
+**Removed elsewhere in the chain** (the owners are below):
+
+| Item | Where today | Change | Task |
+| --- | --- | --- | --- |
+| `approvalAnswerSeconds` (120 s), and its timer that moves a request to the pile | connector `src/config.js:27`, `src/approvals.js:811-815`, `src/questions.js:779-782`; DESIGN §7a item 11, `:709`, `:1965` | removed. A request waits for the instance (watchdog or Fishball) until it answers or escalates. Questions and plan reviews too | **K2** (new, connector) |
+| Descriptor `expiresAt` (contract §5.1) | `contract.js:432,446`; host `slim/host/approvals.js:247,266` filters expired | the field becomes optional and is never set for approvals; the host stops filtering by it | K2 (contract 1.2, still additive: a 1.1 peer that sends `expiresAt` is accepted and ignored) |
+| The approvals view's countdown | `src/slim/ui/approvals.js:110-112,334` | removed (moves with PANELS anyway) | PANELS |
+| X9 "a held item is dropped when … its `expiresAt` passes" | wE2 | removed; dropped only when its card settles or closes | X0-I |
+
+**Not approval waits, kept:**
+- grant `expiresAt` (a grant must end, contract §4.4);
+- attachment `hostRef` expiry;
+- watchdog check timers (`every_seconds`, `stall_seconds`, `checkTimeoutSeconds`, guard
+  `guardSeconds`). These supervise sessions; they do not decide cards.
+
+**Technical guard (Q-P).** With no deadline, a hung model call in a decision turn would hold the
+card with the watchdog or Fishball indefinitely.
+
+### 12.2 X3 record-type namespace: option B (U15)
+
+- X0-C has **no** X3 member and no validation API.
+- DSH's `PluginRecordType` is only `plugin:${string}` (`dsh-session/lib/types/types.d.ts:520` rc.5,
+  `:527` rc.1), and `appendPluginRecord` checks nothing (`dsh-session/lib/index.js:1295` /
+  `:1297`). So no DSH registry enforces a prefix.
+- The rule is enforced **where each plugin registers its record types with DSH**: its chat-node
+  definition (`uiConversation.events.register`, matched by event type) only matches
+  `plugin:<its package name>/…`.
+- **Owner: PG-1.** PG-1 ships a shared helper used by every Fishball `dsh.client` plugin
+  (`fishball-page`, fold-notify, the watchdog's PANELS card, board):
+  `recordDefinition(packageName, suffix, render)`. It refuses (throws at registration) a type
+  outside `plugin:<packageName>/`.
+- Tests: in PG-1, a definition with a foreign prefix fails to register; an own-prefix one renders.
+
+### 12.3 What the watchdog is (U16)
+
+The watchdog is a **token saver for Fishball**:
+- It is a small-context helper that absorbs Fishball's frequent wake-ups: permission requests,
+  plus the routine supervision of sessions so they do not drift.
+- It runs **whether or not the user is present**.
+- It is **not** an extra security layer. The permission rules (the user's allowance, low risk)
+  are the same rules Fishball applies today. The watchdog only applies them in a smaller context.
+
+All on/off, claim, coupling and hand-over rules (U1–U8) stay. Wording to fix in the watchdog
+design:
+- §1's intro and R-table: R15 "The safety rules hold" becomes "The permission rules hold (the
+  same rules Fishball applies)";
+- §10's column "Why safe" becomes "Why";
+- §6.1 / §7: state the purpose as cost, as in this section.
+
+The canonical doc carries no security framing; checked.
+
+### 12.4 Approval-card cleanup (U17, draft pending the user's confirmation)
+
+When a card is resolved (by the watchdog, Fishball or the user):
+1. The result goes straight to the **requesting session** (the tool call ends with it).
+2. If the watchdog holds the session's claim, it gets a **wake-up note**: `[approval <id>]
+   decided by <user|fishball|watchdog>: <decision>`. This is the claim's `onSettled`, not a turn
+   unless it is waiting.
+3. **Fishball** gets the same note through X10 `manager.notify` (`wake: true` only when the user
+   decided; a watchdog or Fishball decision is already known to Fishball, `wake: false`).
+4. The **card is cleared at once**: from the pile, the session's card, Fishball's chat card and the
+   instance's card store. There is no retention period.
+   - `APPROVALS.limits.closed` and `.retired` (`child/approvals.js:95`) are no longer needed.
+   - The settled-decision **labels** (`labels: 200`) are the audit, not a card, and stay. Q-Q
+     asks whether they stay.
+
+Owners: X0-A (instance store and notes), K2 (connector pile clear), PANELS (UI).
+Test cases: ST card offered → resolved → cleared, with the note delivered once per target; DT
+decider × claimed → which targets get a note and whether it wakes.
+
+### 12.5 X0-C behaviour made explicit (U18)
+
+The tester's gaps did reveal four unspecified points. They are now specified:
+1. **Durable dedupe (X10):** `manager.notify` records each `dedupeKey` in the instance's
+   `notify-keys.jsonl` in the child home, appended before the turn is queued. A key seen before
+   answers `duplicate`, even after a child restart. The file is bounded to the newest
+   `EXT_LIMITS.notifyKeys` (10,000) keys.
+2. **Stub refusals:** an unimplemented member throws, or rejects for an async member,
+   `ExtensionError` with `code: 'not-implemented'` and `member: '<area.member>'`. It never returns
+   a value.
+3. **Disabled watchdog:** both send paths (the tools and `images.js`) reach the connector
+   unchanged. This is X19's "gate off" row.
+4. **`deliverInbox(items[])`:** exactly one followup turn. Texts are in arrival order, each in its
+   own sender framing, separated by one blank line. Each item's ack waits for that turn. An empty
+   array is refused `invalid-input`.
+
+Real-loop and real-loader integration stay with their later owners (X-E2E, X0-B), as the tester
+proposed.
+
+### 12.6 Board: never delete, 30-day visibility (U19)
+
+- **Records are never deleted.** Every card is kept forever in an **append-only archive**:
+  `<child home>/fishball-board/archive.jsonl`.
+  - Each line is one plain-JSON card snapshot, written at each change.
+  - The file is plain text, so grep finds past cards by keyword.
+  - Fishball searches it with DSH's own `grep` tool (`tool-fs-search`, `dsh-base/cordis.patch.yml`
+    `:298` rc.5, `:302` rc.1), which the board guide text names. Nothing new is needed: the
+    read-only agent can read it.
+  - This is option A of Q-R; B would be a board search tool.
+- **The board** (the panel and the `fishball-board:board` context) shows the open cards, plus the
+  closed cards (`done`, `dropped`) whose `closedAt` is within the **board visibility window**
+  (30 days). After that a closed card leaves the board. It is archived, not deleted, and stays
+  findable.
+  - The window replaces "prune age"; tests check the behaviour, not a constant name.
+  - `board.json` holds only what is on the board. The 300-card cap applies to it.
+  - A card that leaves the board, or is cleared, is no longer in `board.json`. Its full history is
+    in the archive.
+- **Active clearing:** `board_write` gains an item form `{id, clear: true}` for a closed card. It
+  takes the card off the board now, and it stays in the archive.
+  - Fishball can do it. The user does it by telling Fishball; the panel stays read-only (board Q3
+    A).
+  - Clearing an open card is refused `not-closed`.
+- **Reopen** of a card that is off the board: `board_write` with its `id` restores it from the
+  archive. The transitions of board §4 apply.
+- **Uninstall:** `uninstall.js` deletes `fishball/runtime`, which now includes the archive. That
+  conflicts with "never deleted". This is Q-S.
+- **Tests (B3/B4):**
+  - BVA: `closedAt` at 30 days − 1 ms, at 30 days, + 1 ms → on board, on board, off board.
+  - After it leaves, the archive has its last line.
+  - EP for clear: done, dropped → cleared; open → `not-closed`.
+  - ST: done → on board → (30 days or clear) off board → (reopen) on board.
+  - EP for grep: the keyword from the title or note of a card off the board for a year is found.
