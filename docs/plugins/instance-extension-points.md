@@ -26,6 +26,9 @@ open questions of the first cut (Q-A = B, Q-B = B) are U5 and U6; §9 now has no
 | U4 | "中途关掉会自动转交给Fishball": turning it off mid-way **hands the supervised sessions to Fishball**. Not a Q13 failure: the sessions keep running, nothing is halted. Fishball gets **one** notice listing them. Briefs and criteria are kept. Q13 halting applies only to failures while the watchdog is **on**. The coupling rule (R17) still holds, with Fishball as the supervisor | X14 hand-over, §2.4 |
 | U5 | Q-A = **B**: while the watchdog is on, **every** managed session must have an **active** brief before Fishball sends it anything: sessions Fishball starts, sessions the user hands over, and sessions Fishball messages or redirects. Enforced by the instance. Reading, answering approvals or questions, and release stay allowed without a brief | X19, §2.5 |
 | U6 | Q-B = **B**: turning the watchdog back on does **not** resume the kept briefs. They become `dormant`; Fishball gets one notice listing them and resumes each with `watchdog_resume`. A session whose brief is dormant has **no active brief**, so sends to it are refused (U5) until Fishball resumes that brief or writes a new one | X14, §2.4 step 6, §2.5 |
+| U7 | W0 tester Q4: "这个做成和普通的插件一样的管理". The watchdog is on exactly when `fishball-watchdog` is enabled in the child profile (in `dsh.profile.bundles`), switched like any DSH plugin. No separate `gateOn` file. Enabled but not registered yet (starting, crashed) → sends refused `watchdog-unavailable`. Turning it off is the hand-over (U4); on again gives dormant briefs (U6) | §2.4, §2.5, X19 |
+| U8 | W0 tester Q3: "一个watchdog的session只负责盯一个会话，这是一个一对一的关系。watchdog会将session的请求redirect到watchdog上，如果watchdog不存在，就会直接走向fishball。" One watchdog side session per watched session (1:1). The watchdog **claims** a session when it attaches and drops the claim when it detaches; a claimed session's requests go to the watchdog, every other session's go to Fishball | X15, §2.6 |
+| U9 | W0 tester Q1 = A, Q2 = A, Q5 = A: X7's page-hook behaviour is tested in the real browser later (W0 tests the server side only); an out-of-scope X12 call answers `forbidden` (the other refusals stay "observable effect only"); bundled placement runs inside `initializeProfile`, before `loadProfileDirectory` and the skipped-bundle check | X7, X12, §2.2, X0-B |
 
 ## 1. The canonical extension points
 
@@ -63,19 +66,19 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | X4 | `ui.register({pluginId, module, style?, dictionaries}) → dispose`; `GET api/ui-extensions → [{pluginId, module, style?}]`; files served at `ui/ext/<pluginId>/…` with the `/ui/*` checks | load a plugin's page module; CSP stays `'self'` | fold, board | fE4 (a–c) = b3 |
 | X5 | `ui.registerRoute(pluginId, {method, path, handler(req) → {status, body}}) → dispose`, served at `api/ext/<pluginId>/<path>`, same bearer and body limits as `api/*` | a plugin's JSON routes | fold (`seen`), board (`board`, `export`) | fE4 (d) = b3 |
 | X6 | `ui.signal(pluginId, type)` → SSE event `ext` `{pluginId, type}`, data-free, coalesced per `(pluginId, type)` per tick | tell a module to re-read | board | b3 (b) |
-| X7 | Page hook object passed to each module's default export: `{document, i18n, request, sidebar({order}) → HTMLElement, onSignal(type, fn) → dispose, setTimelinePresenter(presenter) → dispose}` | page-side reach: an aside container (mounted above `#reminders`, ordered by `order`), the signal filtered to the module's own `pluginId`, and the **single-owner** timeline presenter with fE5's exact shape | fold (presenter), board (sidebar, signal) | fE5 + b3 (a)(b) |
+| X7 | Page hook object passed to each module's default export: `{document, i18n, request, sidebar({order}) → HTMLElement, onSignal(type, fn) → dispose, setTimelinePresenter(presenter) → dispose}` | page-side reach: an aside container (mounted above `#reminders`, ordered by `order`), the signal filtered to the module's own `pluginId`, and the **single-owner** timeline presenter with fE5's exact shape | fold (presenter), board (sidebar, signal) | fE5 + b3 (a)(b). Tested in the real browser, not in W0 (U9) |
 | X8 | `attention.set(pluginId, {unread, importantUnread, latestAt}) → dispose`, single owner | the value sent as contract 1.2 `instance.attention` (§3) at once, after every handshake, and `{0, 0, null}` on dispose | fold | fE6 (instance half) |
 | X9 | `inbox.claim({pluginId, kind, match(item) → key?}, onItem(item, key)) → dispose`; `inbox.release(key, {deliver, prefix?})`; `inbox.setBatcher(pluginId, fn(item, deliver)) → dispose` (single owner) | **one inbox pipeline** in `inbox.js receive`: approvals-row items → **claims** (a claimed item is acked at once and held) → **batcher** → `deliverInbox`. `release(…, {deliver: true})` re-enters the pipeline after the claims, so a released item is batched like any notice. `deliverInbox` gains an array form (fE7). `PERMISSION_NOTICE` marker added to `inbox-markers.js` | watchdog (claims), fold (batcher) | wE2 + fE7 |
 | X10 | `manager.notify({pluginId, dedupeKey, text, record?: {type, data}, wake}) → Promise<{queued \| held \| duplicate}>` | a plugin's message to Fishball: `wake: true` is one notice turn (source `{kind: 'fishball-notice', form: 'plugin', pluginId}`); `wake: false` is held for the next turn; dedupe is durable. **Not batched** (fold §7 batches inbox items only) | watchdog | wE4 (notify half) |
 | X11 | `manager.userTexts({limit, maxChars}) → [{text, at}]` | newest-first texts written by the **user** in Fishball's session, read-only | watchdog (`userQuote`) | wE8 |
-| X12 | `bridge(pluginId, operations[]) → client` | a scoped connector client; an operation outside the list is refused `forbidden` locally; the list must lie within the instance's required set (no new handshake) | watchdog | wE1 |
+| X12 | `bridge(pluginId, operations[]) → client` | a scoped connector client; an operation outside the list is refused locally with the code `forbidden` (U9: tests assert the code), and no request leaves the child; the list must lie within the instance's required set (no new handshake) | watchdog | wE1 |
 | X13 | `sideAgents.open({…}) → {agent, sessionId, setSection}`, `sideAgents.runTurn(agent, message, {timeoutMs, signal})`, `sideAgents.cancel(agent)` | locked-down side sessions: read-only, approval `never`, every global tool denied | watchdog | wE5 (unchanged) |
-| X14 | `supervision.register(pluginId) → {set(sessionId, state, briefId), clear(sessionId), handedOver, dispose}` with `state` ∈ `active`, `paused`, `halted`, **`dormant`**; `supervision.onManagedChange(listener)`; `supervision.endingReason() → 'hand-over' \| 'failure' \| undefined` | the persisted supervised set, the `plugin-gone` guard, managed-change events; **added:** the user's-disable **hand-over** (§2.4) and the **`dormant`** state of a brief kept across off → on (U6). `set` is synchronous and persisted before it returns, so a send right after it is judged on the new state | watchdog | wE10 + U4 + U6 |
-| X15 | `approvals.setDelegate({id, name, onCard}) → dispose`, `card(approvalId)`, `onSettled`, `answerApproval({…, decidedBy})`, `supervised(sessionIds)`; the escalation card in the chat | the approval seam and its UI (the "代批 / Watchdog" tag; the open escalation card) | watchdog | wE6 + wE9 |
-| X16 | `sessionStarts.register(pluginId, {parameter, schema, validate(arg) → {ok:true} \| {code}, attach(sessionId, arg) → Promise<{ok:true} \| {code}>}) → dispose`, single owner | **new (U2)**: while registered, `start_session` has one more **required** argument and cannot start a session without it (§2.3). `attach` ends with `supervision.set(id, 'active')`, so the started session is sendable at once | watchdog | new |
-| X19 | **Send gate** (instance-internal; the plugin only feeds it through X14): one check `gate.send(operation, sessionId) → ok \| {code, reason}` called by the bridge client for every manager→session send operation (`SUPERVISION.sendOperations` = `session.message`, `session.redirect`), plus the hand-over hint (§2.5) | **new (U5)**: while the gate is on, no send reaches a session without an **active** brief; replaces wE10's gate, which only covered `paused`/`halted` | watchdog | wE10 gate + U5 |
+| X14 | `supervision.register(pluginId) → {set(sessionId, state, briefId), clear(sessionId), handedOver, dispose}` with `state` ∈ `active`, `paused`, `halted`, **`dormant`**; `supervision.onManagedChange(listener)`; `supervision.endingReason() → 'hand-over' \| 'failure' \| undefined` | the persisted supervised set, the `plugin-gone` guard, managed-change events; **added:** the hand-over when the plugin is disabled (§2.4) and the **`dormant`** state of a brief kept across off → on (U6). `set` is synchronous and persisted before it returns, so a send right after it is judged on the new state. **The one source of truth** for X15's claims and X19's gate (§2.6) | watchdog | wE10 + U4 + U6 |
+| X15 | `approvals.claim(sessionId, {id, name, onCard(card)}) → release`; `card(approvalId)`; `onSettled(listener)`; `answerApproval({…, decidedBy})`; the escalation card in the chat | **per-session claim (U8)**: a claimed session's `kind: approval` cards go to its claimant's `onCard`, every other session's to Fishball. At most one claim per session (a second → `owner-busy`). A claim is accepted only while X14 holds the session as `active`, `paused` or `halted` (else `not-supervised`), and the instance drops it itself when X14 moves the session to `dormant` or clears it (§2.6). While a session is claimed, Fishball's `answer_approval` `grant` on it is refused `grant-off-supervised`, and `answerApproval` with `decidedBy` answers only cards of sessions the caller has claimed. The "代批 / Watchdog" tag; the open escalation card | watchdog | wE6 + wE9; **replaces** the global `setDelegate` and `supervised(sessionIds)` |
+| X16 | `sessionStarts.register(pluginId, {parameter, schema, validate(arg) → {ok:true} \| {code}, attach(sessionId, arg) → Promise<{ok:true} \| {code}>}) → dispose`, single owner | **new (U2)**: while registered, `start_session` has one more **required** argument and cannot start a session without it (§2.3). `attach` ends with `supervision.set(id, 'active')` and `approvals.claim(id, …)`, so the started session is sendable and its cards go to its watchdog from the first card | watchdog | new |
+| X19 | **Send gate** (instance-internal; the plugin only feeds it through X14): one check `gate.send(operation, sessionId) → ok \| {code, reason}` called by the bridge client for every manager→session send operation (`SUPERVISION.sendOperations` = `session.message`, `session.redirect`), plus the hand-over hint (§2.5) | **new (U5)**: while the gate is on, no send reaches a session without an **active** brief; replaces wE10's gate, which only covered `paused`/`halted`. **The gate is on exactly while `fishball-watchdog` is enabled in the child profile** (U7) | watchdog | wE10 gate + U5 + U7 |
 | X17 | `RUNTIME.bundledPlugins = [{name: 'fishball-fold-notify'}, {name: 'fishball-board'}, {name: 'fishball-watchdog'}]` and placement at every child start | built in, on at first placement | all three | fE8 = b4 |
-| X18 | `admin.plugins.get` marks a bundled plugin `{bundled: true, removable: false}`; `admin.plugin.remove` refuses `bundled-plugin`; enable/disable work. **Added:** disabling `fishball-watchdog` is a hand-over (§2.4) | the off switch the user keeps | all three | fE9 + U4 |
+| X18 | `admin.plugins.get` marks a bundled plugin `{bundled: true, removable: false}`; `admin.plugin.remove` refuses `bundled-plugin`; enable/disable work. **Added:** disabling `fishball-watchdog`, through any path, is a hand-over (§2.4, U7) | the off switch the user keeps | all three | fE9 + U4 |
 | K1 | contract 1.2 `instance.attention` + connector `state.unread = {count, important}` | the brand mark and frame unread count (today always 0) and the important alert | fold | fE6 (wire half), fold §9.1 |
 
 ### 1.2 Disagreements and the pick
@@ -85,7 +88,7 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | Manager-scope mechanism | fE2 `registerAgentSetup(fn)` vs wE3 `registerManagerTools` + wE4 `addManagerPromptSection` | **X2 only** | wE4 takes a static `{name, text}`, so the board's per-turn context cannot use it (board §8 b2). The DSH scope already has `tools.register`, `systemPrompt.section` and `systemPrompt.context` (§4). Helpers would duplicate them. |
 | Service name | `fishballInstanceExtensions` vs `fishballInstance` | `fishballInstance` (`apiVersion: 1`) | versioned; one optional inject detects an older instance |
 | Manager identity | `fishballChat.sessionId()` vs `manager.sessionId()` | `manager.sessionId()` | keeps `fishballChat` internal; it sits next to the other manager members |
-| Single-owner refusal code | "first registered wins" (fE5) vs `delegate-busy` (wE6) | `owner-busy` for X7 presenter, X8, X9 batcher, X15 delegate, X16 | one rule, one test partition |
+| Single-owner refusal code | "first registered wins" (fE5) vs `delegate-busy` (wE6) | `owner-busy` for X7 presenter, X8, X9 batcher, X15 (per session), X16 | one rule, one test partition |
 | Namespace | `fold-notify` vs `fishball-board` | the package name | one rule for records, routes, files and signals |
 | Showing plugin records | fE3 needs a page module; the watchdog has none | X3 with an optional `text` fallback | the watchdog's guard notice must reach the user even with fold-notify off (watchdog §4.5.4 step 3) |
 | Inbox: claims vs batcher order | not stated by either | claims first, then the batcher; a released item re-enters after the claims | a claimed approval notice must never be delivered, batched or not; a released notice is an ordinary notice for fold §7 |
@@ -103,6 +106,8 @@ offered from the next model request, even inside the running turn (the step afte
 `dispose` removes its tool and section from the next request.
 
 ### 2.2 Bundling (X17, X18)
+
+**Where (U9).** Placement runs inside `initializeProfile` (`src/native-runtime/installation.js`), after `slimProfileBundles` and **before** `loadProfileDirectory` and its skipped-bundle check. This is the only order in which step 6 can tell "failed this start" from any other skipped bundle.
 
 Fold §13 steps 1–7 for each entry of `RUNTIME.bundledPlugins`, in list order. Steps 2 and 6 are
 sharpened by **SP-FN1** (`docs/spikes/instance-ext.md`, yes on both versions with these two
@@ -174,38 +179,47 @@ registrations exist. Inbox notices and permission cards reach Fishball as in v1.
 `watchdog_*` tools and no watchdog section, and `start_session` has no `watchdog` parameter. The
 instance's own persona never mentions the watchdog.
 
-**Turned off mid-way (U4): the hand-over.** The only off path is the Plugins block switch (X18),
-served by the instance's `admin.js`. So the instance knows a disable is the user's and not a
-failure.
+**Turned off mid-way (U4, U7): the hand-over.** The watchdog is switched like any DSH plugin: the
+settings view's switch (X18), or any other `pluginManager.setBundleEnabled`. There is no intent
+record.
 
-1. `admin.plugin.disable` of `fishball-watchdog`: the instance records the intent
-   `hand-over-pending`, then calls `pluginManager.setBundleEnabled(name, false)`. If that fails,
-   the intent is cleared and nothing else changes.
-2. While the row disposes, `supervision.endingReason()` returns `'hand-over'`. The plugin then
-   keeps its briefs, criteria and audit, and does **not** unwatch: its `finished` watches stay, and
-   their notices now reach Fishball, because the claims are gone. It does not stop any session.
-3. The instance, on the registrant's disposal with the intent set:
+*How the instance tells a disable from a failure.* DSH saves the manifest without the name
+**before** it reloads and disposes the row: `selectBundle` → `saveManifest` (rc.5
+`dsh-plugin-manager/lib/index.js:2304`, rc.1 `:3073`), then `reload` (rc.5 `:1952`, rc.1 `:2691`).
+So when the registrant disposes, the instance reads `dsh.profile.bundles` once:
+
+| `fishball-watchdog` in `dsh.profile.bundles` at disposal | Meaning | What the instance does |
+| --- | --- | --- |
+| absent | the user turned it off | hand-over, steps 2–3 |
+| present | crash, failed reload, child stop | `plugin-gone`: X14's grace timer (watchdog §4.5.4). The timer lives in the child process: a child stop discards it, and the next boot re-registers within the grace |
+
+1. (No step: the disable is DSH's own.)
+2. While the row disposes, `supervision.endingReason()` returns `'hand-over'` (computed from the
+   manifest as above). The plugin then:
+   - keeps its briefs, criteria and audit;
+   - does **not** unwatch: its `finished` watches stay, and their notices now reach Fishball,
+     because the claims are gone;
+   - stops no session.
+3. The instance:
    - moves every supervised entry into `handedOver: [{sessionId, briefId, state, at}]` in its own
-     supervision file and empties the supervised set;
-   - **turns the send gate off** (§2.5; `gateOn: false` in the supervision file), so paused or
-     halted sessions and sessions without a brief can all be messaged. A stopped session stays
-     stopped;
+     supervision file and empties the supervised set. This drops every X15 claim (§2.6);
+   - leaves the send gate off, because the plugin is disabled (§2.5). Paused or halted sessions and
+     sessions without a brief can all be messaged; a stopped session stays stopped;
    - starts **no** grace timer and stops nothing;
-   - sends **one** waking `manager.notify` (dedupe `watchdog-handover:<at>`) that lists the
-     sessions, their titles and their states, and says Fishball now handles their approvals and
-     supervision directly;
-   - clears the intent.
+   - sends **one** waking `manager.notify` (dedupe `watchdog-handover:<at>`). It lists the sessions,
+     their titles and their states, and says Fishball now handles their approvals and supervision
+     directly.
 4. From then on Fishball is the supervisor. Approvals go to Fishball (no delegate), finished
-   notices go to Fishball, and Fishball's `answer_approval` `grant` is allowed again (X15
-   `supervised` is empty). So R17 holds: no session runs without a supervisor.
-5. **Failures stay Q13.** A disposal **without** the intent (crash, a failed reload, a failed
-   placement) is `plugin-gone`. So are model unavailable, repeated failures, 900 s without a
+   notices go to Fishball, and Fishball's `answer_approval` `grant` is allowed again (no session is
+   claimed in X15). So R17 holds: no session runs without a supervisor.
+5. **Failures stay Q13.** A disposal while the name is still in `dsh.profile.bundles` (crash, a
+   failed reload), and a failed placement of an enabled watchdog (§2.2), are `plugin-gone`. So are model unavailable, repeated failures, 900 s without a
    successful check while running, and a broken store, all of which can happen only while the
    watchdog is on: those halt, stop and notify exactly as watchdog §4.5.4 says. The cause
    `disabled` is removed from the watchdog's halt causes.
 6. **Turning it on again (U6, no automatic resume).** The first `supervision.register` after a
    hand-over:
-   - turns the send gate on again (`gateOn: true`);
+   - (the send gate is on again because the plugin is enabled, §2.5);
    - moves every `handedOver` entry into the supervised set as **`dormant`** (same `briefId`) and
      returns the list to the plugin;
    - the plugin sets each kept brief to `dormant` in its own store, starts **no** timer, makes no
@@ -225,13 +239,15 @@ failure.
 
 ### 2.5 Every managed session needs an active brief (U5, X19)
 
-**When the gate is on.** `gateOn` is persisted in the instance's supervision file. It is set true
-by the first `supervision.register` and false only by the user's-disable hand-over (§2.4 step 3).
-*Why persisted, not "a registrant exists".* After a crash or during child boot the row may not be
-registered yet; a gate that opened then would let sends through unsupervised. With `gateOn` true
-and no registrant, sends are refused `watchdog-unavailable` (the plugin-gone guard of X14 covers the
-rest). With the watchdog off from the start, `gateOn` was never set, so v1 behaviour is untouched
-(U3).
+**When the gate is on (U7).** The gate is on exactly while `fishball-watchdog` is in the child
+profile's `dsh.profile.bundles`, which is DSH's own enable state. The instance reads the manifest
+through `boot.readProfileManifest`, the same read `slimProfileBundles` makes. There is no `gateOn`
+file.
+- **Enabled and registered:** the table below.
+- **Enabled but not registered** (child boot before the row is up, a crash, a failed placement):
+  every gated send is refused `watchdog-unavailable`. *Why.* A gate that opened while the row is
+  missing would let sends through unsupervised. The plugin-gone guard of X14 covers the rest.
+- **Not enabled** (off from the start, or turned off): the gate is off, and behaviour is v1's (U3).
 
 **Where it sits.** In the bridge client's one request path (`child/bridge.js`), for the operations
 in `SUPERVISION.sendOperations`. Both send paths go through it: the `message_session` /
@@ -245,7 +261,7 @@ refusal):
 | Gate | Brief of the target session | `message_session`, `redirect_session`, image sends |
 | --- | --- | --- |
 | off | any | allowed (v1) |
-| on, no registrant | any | refused `watchdog-unavailable` |
+| on (enabled), not registered | any | refused `watchdog-unavailable` |
 | on | `active` | allowed |
 | on | `paused`, `halted` | refused `supervision-paused` (watchdog §4.5.2, §4.5.4) |
 | on | none, `dormant` | refused **`watchdog-brief-required`** |
@@ -275,8 +291,40 @@ blocking it would stop Fishball from halting a session that misbehaves before it
 4. Fishball's next `message_session` to it is allowed. If Fishball replies first, it gets
    `watchdog-brief-required` with the same instruction, so the order is self-correcting.
 
-Approvals and questions of a session without an active brief reach Fishball in the meantime (no
-delegate covers it), so a hand-over never leaves a card unanswered.
+Approvals and questions of a session without an active brief reach Fishball in the meantime,
+because the session is not claimed (§2.6). So a hand-over never leaves a card unanswered.
+
+### 2.6 One watchdog per session: the claim (U8, X15)
+
+**Rule.** A `kind: approval` card of session *S* goes to the watchdog **if and only if** *S* is
+claimed in X15. Otherwise it goes to Fishball, as in v1.
+- The watchdog claims *S* when it attaches a brief to it, and releases the claim when it detaches.
+- The same claim governs the inbox. A `watch` or `approval` notice whose source session is claimed
+  may be taken by the plugin's X9 claim. A notice from an unclaimed session is never offered to X9
+  claims and goes to Fishball.
+
+**Kept in step with X14** (one source of truth):
+- `approvals.claim(S, …)` is accepted only while X14 holds *S* as `active`, `paused` or `halted`;
+  otherwise it is refused `not-supervised`.
+- The instance itself releases the claim when X14 moves *S* to `dormant` or clears it.
+- A disposed plugin loses all its claims with it.
+
+| X14 state of *S* | Claimed ("a watchdog exists", for routing) | A card of *S* goes to | Sends to *S* (X19) |
+| --- | --- | --- | --- |
+| none / ended | no | Fishball | `watchdog-brief-required` if the gate is on, else allowed |
+| `active` | **yes** | the watchdog (watchdog §6.2) | allowed |
+| `paused` | **yes** | the watchdog: a card means the session ran, so R1b auto-resumes first | `supervision-paused` |
+| `halted` | **yes** | the watchdog: under R1b the guard re-stops the session, which cancels the card; nothing is answered | `supervision-paused` |
+| `dormant` | **no** | Fishball (U6) | `watchdog-brief-required` |
+| any, plugin enabled but not registered | no (the claims went with the plugin) | Fishball | `watchdog-unavailable` |
+| any, plugin turned off | no (hand-over) | Fishball | allowed (gate off) |
+
+*Why paused and halted stay claimed.* The coupling rule (R17): those briefs still own the session,
+and the guard, not Fishball, decides what happens when it runs again. Handing a halted session's
+cards to Fishball would let Fishball answer work the guard is stopping.
+
+*The 1:1 relation.* There is one brief per session (watchdog §2.2, `brief-exists`) and one side
+session per brief, so one claim per session is the same relation seen from the approvals side.
 
 ## 3. Contract 1.2 scope (K1)
 
@@ -363,14 +411,14 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | --- | --- | --- | --- |
 | **SP** spikes SP-X1, SP-FN1, B0/S1 | `spikes/instance-ext/*`, `docs/spikes/instance-ext.md` | — | **done 2026-11-08: all yes on both versions** (§4) |
 | **K1** contract 1.2 + connector `unread` | `packages/connector/contract/{contract,limits}.js`, `docs/connector-contract.md`, `packages/connector/src/slim/host/bridge.js`, `src/connector-service.js`, `index.js` | — | §3 table holds; 1.1 instance attaches; `state.unread` follows the last valid value, `{0,false}` on detach and close |
-| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — (SP-X1 done) | `fishballInstance` v1 provided; X1–X3, X10, X11 behave as §1; every other member a stub that refuses `not-implemented`; the X19 call sites exist and pass everything while `gateOn` is unset; the instance tests are unchanged and green with no plugin |
+| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — (SP-X1 done) | `fishballInstance` v1 provided; X1–X3, X10, X11 behave as §1; every other member a stub that refuses `not-implemented`; the X19 call sites exist and pass everything while the watchdog is not enabled; the instance tests are unchanged and green with no plugin |
 | **X0-I** inbox pipeline | `child/inbox.js`, new `child/ext/inbox.js`, `src/slim/inbox-markers.js` | X0-C | X9: claims before the batcher, release re-enters, ack/refuse per item |
 | **X0-U** page modules | `child/server.js`, new `child/ext/ui.js`, `ui/shell.{js,html,css}`, `ui/chat.js` | X0-C | X4–X7; the X3 `text` fallback row; the CSP unchanged; with no module, the page is identical to today |
 | **X0-W** wire: scoped bridge + attention | `child/bridge.js`, new `child/ext/{bridge-scope,attention}.js` | X0-C, K1 | X12 local `forbidden`; X8 sent on set, on each handshake, zero on dispose, skipped without the capability |
 | **X0-G** side agents | new `child/ext/side-agents.js` | X0-C | X13 lock-down on both versions |
-| **X0-A** approvals seam + escalation card | `child/approvals.js`, `child/decisions.js`, `ui/approvals.js`, `ui/records.js` | X0-C | X15; old labels load as manager-decided; `delegate-no-grant`, `grant-off-supervised` |
-| **X0-S** supervision, start rule, send gate | `child/session-tools.js`, new `child/ext/{supervision,session-starts,send-gate}.js` | X0-C | X14 guard, managed changes, `dormant`, hand-over and re-enable (§2.4 steps 3–6); X16 (§2.3); X19 table and hand-over line (§2.5), on both send paths |
-| **X0-B** bundling + admin | `packages/instance/package.json`, `src/native-runtime/{constants,installation,files,index}.js`, `child/admin.js`, `ui/settings.js`, `ui/i18n.js` | X0-S (the hand-over port, stubbed until merged); SP-FN1 done | X17, X18 for the three names; hand-over intent order (§2.4 step 1); a failed placement of one name leaves the others |
+| **X0-A** approvals seam + escalation card | `child/approvals.js`, `child/decisions.js`, `ui/approvals.js`, `ui/records.js` | X0-C | X15 per-session claim and routing (§2.6); a claim is refused `not-supervised` unless X14 holds the session active, paused or halted, and the instance releases it on dormant or clear; old labels load as manager-decided; `delegate-no-grant`, `grant-off-supervised` |
+| **X0-S** supervision, start rule, send gate | `child/session-tools.js`, new `child/ext/{supervision,session-starts,send-gate}.js` | X0-C, X0-A (the claim port) | X14 guard, managed changes, `dormant`, the hand-over decided from `dsh.profile.bundles` at disposal (§2.4), and re-enable; X16 attach = set active + claim (§2.3); X19: the gate is on exactly while the plugin is enabled, `watchdog-unavailable` while enabled and unregistered, plus the table and the hand-over line (§2.5), on both send paths; no `gateOn` file exists anywhere in the child home |
+| **X0-B** bundling + admin | `packages/instance/package.json`, `src/native-runtime/{constants,installation,files,index}.js`, `child/admin.js`, `ui/settings.js`, `ui/i18n.js` | X0-S (the hand-over port, stubbed until merged); SP-FN1 done | X17, X18 for the three names; placement inside `initializeProfile` before `loadProfileDirectory` (U9); a failed placement of one name leaves the others |
 
 ### 5.2 Plugin tasks, re-based on the canonical names
 
@@ -403,10 +451,10 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | --- | --- |
 | W0 | K1, X0-C, FN-1, WD-1, B1 (SP done) |
 | W1 | X0-I, X0-U, X0-G, X0-A, X0-S, X0-W (needs K1), FN-A (needs K1); WD-2, WD-3, WD-4, WD-5, WD-7; B2, B3 |
-| W2 | X0-B (needs SP, X0-S); FN-2, FN-4, FN-6; WD-6, WD-8, WD-9; B4 |
+| W2 | X0-B (needs SP, X0-S); FN-2, FN-4, FN-6; WD-6, WD-8, WD-9; B4; UI-1 (after X0-U), UI-C' if Q-C = B |
 | W3 | B6 (after X0-B); FN-3; WD-10, WD-11, WD-13 (shared stub, as watchdog §14); B5 |
 | W4 | FN-5; WD-14; B7 |
-| W5 | FN-7, WD-12, B8, then X-E2E |
+| W5 | FN-7, WD-12, B8, then X-E2E; UI-C after it if Q-C = A |
 
 **File pairs that collide.** Merge each pair in the order shown, never in parallel on the same
 lines.
@@ -421,6 +469,8 @@ lines.
 | X0-U, X0-A | `ui/chat.js` vs `ui/records.js`; the escalation card stays in `records.js`/`approvals.js` | none if X0-A keeps out of `ui/chat.js` |
 | K1, FN-A | none (`client.js` is FN-A's only) | — |
 | FN-4, FN-5 | `ui/fold.css` | FN-4 first |
+| X0-U, UI-1 | `ui/chat.js` (`buildEntry`) | X0-U first |
+| UI-1, UI-C' | `ui/shell.css` | UI-1 first |
 | WD-11, WD-13 | the coupling interface | shared stub, as watchdog §14 |
 
 ## 6. Test-design outline per task (black-box, for the tester)
@@ -461,13 +511,13 @@ decision table, **ST** state transitions.
 - **X0-U.**
   - EP: 0, 1, 2 modules; a module file missing or a path escape (404); a route with a wrong method
     (405); a body over the limit.
-  - X6 coalescing: n signals in one tick give one event. `sidebar` order: equal orders and negative
-    orders.
-  - Presenter: a second one gets `owner-busy`.
+  - X6 coalescing: n signals in one tick give one event.
+  - **Server side only in W0 (U9).** These are tested later in the real browser: `sidebar` order,
+    `onSignal` filtering, and a second `setTimelinePresenter` → `owner-busy`.
   - CSP header unchanged. The X3 fallback row is drawn when no module renders the entry.
 - **X0-W.**
-  - EP: an operation in the scope list, outside it, or outside the instance's required set (refused
-    at `bridge()`).
+  - EP: an operation in the scope list; outside it (answer code `forbidden`, and no request leaves
+    the child; U9); or outside the instance's required set (refused at `bridge()`).
   - DT for X8: capability present × owner set or disposed × handshake again → sent or not, and the
     value.
   - ST: none → value → reconnect (the same value sent again) → dispose `{0,0,null}`.
@@ -475,7 +525,21 @@ decision table, **ST** state transitions.
   allowed, sandbox `read-only`, approval `never`. Resume after a restart.
 - **X0-A.**
   - DT: `decidedBy` present × decision `allow`, `reject`, `grant`, `ask` → `delegate-no-grant` on
-    `grant`; manager `grant` on a supervised session `grant-off-supervised`.
+    `grant`; the manager's `grant` on a claimed session → `grant-off-supervised`, on an unclaimed one
+    → allowed.
+  - **DT routing (§2.6):** X14 state of S (none, active, paused, halted, dormant) × the plugin
+    (registered, enabled but unregistered, disabled) → the card goes to the watchdog's `onCard` or
+    to Fishball, exactly as in the §2.6 table.
+  - EP for `claim`:
+    - S active, paused or halted → accepted;
+    - S none, dormant or ended → `not-supervised`;
+    - a second claim on S → `owner-busy`;
+    - claims on two different sessions → both accepted, and each card reaches only its own
+      claimant.
+  - ST per session: unclaimed → (a brief attaches, claim) claimed → (pause, halt) still claimed →
+    (dormant, clear, release, take-back, plugin disposed) unclaimed. After the release, the next card
+    goes to Fishball.
+  - `answerApproval` with `decidedBy` on a card of a session the caller has not claimed → refused.
   - EP: old labels without `decidedBy` load as manager-decided.
   - ST for the escalation card: open → settled or closed.
 - **X0-S.**
@@ -483,14 +547,22 @@ decision table, **ST** state transitions.
     `redirect_session`.
   - ST for the supervised entry: none → active ⇄ paused → halted; any → (release, take-back)
     cleared; any → handed-over (user disable).
-  - DT for disposal: intent set? × entries non-empty? → hand-over (one notice, no stop, gate lifted)
-    or guard after the grace (stop running and managed ones, `plugin-gone`).
+  - DT for disposal: `fishball-watchdog` in `dsh.profile.bundles` at disposal × supervised set
+    empty or not:
+    - name absent → hand-over: one notice, no stop, the gate off, the claims dropped;
+    - name present → the guard after the grace: it stops the running, managed sessions
+      (`plugin-gone`);
+    - an empty set → no notice either way.
+  - The disable path does not matter: the settings switch and a direct
+    `pluginManager.setBundleEnabled(name, false)` both give the hand-over.
   - BVA: re-register at 29 s, 30 s and 31 s.
   - X16 DT: owner present × `watchdog` argument absent, invalid or valid × start ok or failed ×
     attach ok, failed or timeout × stop ok or failed → the exact result code, and whether a
     session runs.
   - X16 ST: the `start_session` schema with and without the parameter, as the owner registers and
     disposes.
+  - X16: after a successful start the session is claimed (its first card reaches the watchdog) and
+    sendable; after `watchdog-assign-failed` it is neither.
   - **X19 DT: session origin × watchdog × brief → send result.** Origins: started by Fishball while
     on (brief from X16); started while off; handed over while on; handed over while off; made
     managed by `answer_prompt`; kept across off → on (dormant). Watchdog: off from the start; on;
@@ -509,7 +581,7 @@ decision table, **ST** state transitions.
     | kept across off → on | on | dormant | `watchdog-brief-required` (with `briefId`) |
     | kept across off → on | on | active (after `watchdog_resume`) | allowed |
     | any | on | paused / halted | `supervision-paused` |
-    | any | on, not registered | any | `watchdog-unavailable` |
+    | any | enabled, not registered | any | `watchdog-unavailable` |
   - X19 EP for **not gated** actions with the gate on and no brief: `read_session`,
     `answer_approval`, `answer_question`, `answer_prompt`, `release_session`, `stop_session`,
     `watch_session` → all allowed; and a refused send reaches **no** connector request.
@@ -520,15 +592,20 @@ decision table, **ST** state transitions.
     active → (user disable) handed-over/gate off → (re-enable) dormant → (`watchdog_resume`)
     active; dormant → (`watchdog_brief`) old superseded, new active. At each state, one send
     checks the gate.
-  - X19 BVA: a send immediately after `supervision.set(…, 'active')` returns (allowed), and
-    immediately after `set(…, 'paused')` (refused); `gateOn` file absent (gate off), `true`,
-    `false`, corrupt (`store-unavailable`, sends refused).
+  - X19 BVA: a send immediately after `supervision.set(…, 'active')` returns → allowed;
+    immediately after `set(…, 'paused')` → refused.
+  - X19 EP for the gate source (U7):
+    - `fishball-watchdog` absent from `dsh.profile.bundles` → gate off;
+    - present and registered → the table;
+    - present and not registered → `watchdog-unavailable`;
+    - a corrupt supervision file while enabled → `store-unavailable`, sends refused.
 - **X0-B.**
   - ST per bundled name: absent → placed, on → off (user) → off (restart, upgrade) → on.
   - Remove is refused with `bundled-plugin`.
   - EP: placement ok, the package missing, a symlink, an unsafe path; one of three failing.
   - Placement writes both `vendor/<name>` and `node_modules/<name>`; after an `admin.plugin.install`
     of another package both are still there and the row is on.
+  - Order (U9): placement has finished before `loadProfileDirectory` runs.
   - DT for the start check: a bundle is skipped × it is a bundled name whose placement failed this
     start → the start goes on (`BUNDLED_PLUGIN_UNAVAILABLE`); any other skipped bundle →
     `PROFILE_INCOMPATIBLE` as today.
@@ -573,14 +650,126 @@ decision table, **ST** state transitions.
 - **Main DSH profile.** None of the three plugins is ever a bundle there.
 - **Without these plugins**, the instance behaves byte for byte as it does today.
 
-## 8. Doc edits the three designs need (names only, no design change except U1–U6)
+## 8. Doc edits the three designs need (names only, no design change except U1–U8)
 
 | Design | Edit |
 | --- | --- |
 | fold-notify | service `fishballInstanceExtensions` → `fishballInstance`; fE1 `fishballChat.sessionId()` → `manager.sessionId()`; fE2 → X2 `manager.registerSetup(pluginId, fn)`; fE3 → X3 (add `pluginId` argument); fE4 → X4/X5/X7; fE5 → X7 `setTimelinePresenter`; fE6 → X8 + K1; fE7 → X9 `inbox.setBatcher`; fE8/9 → X17/X18; seen route `api/fold-notify/seen` and `api/ext/fold-notify/seen` → `api/ext/fishball-fold-notify/seen`; §14 FN-0, FN-E6, FN-K, FN-B point to X0-*/K1; inject list in §13 |
 | board | inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, X4–X7, X17/X18; `signal(namespace, type)` → `ui.signal(pluginId, type)`; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C/X0-U, B9 → X0-B, B0 done (S1 yes); §5 guide text: "the newest board block is the current one" (S1 note) |
-| watchdog (U1–U6 **are** design changes) | §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate); §4.5.1 state table gains `dormant` (any running state allowed, sends refused) and the "no brief" row; §4.5.2's gate text → X19's `supervision-paused` row; §4.4 `watchdog_brief` result gains `sendUnlocked`, and on a dormant brief it supersedes instead of `brief-exists`; `watchdog_resume` accepts `dormant` as well as `paused`; the manager section states the U5 rule in one line; §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U6 |
+| watchdog (U1–U8 **are** design changes) | §6.2 R1 "no brief" → "session not claimed" (X15 `approvals.claim`, §2.6), R2 "plugin disabled" drops (a disabled plugin has no claims); E6 `setDelegate`/`supervised` → per-session `approvals.claim`; §9 has no `enabled` (U7); §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate); §4.5.1 state table gains `dormant` (any running state allowed, sends refused) and the "no brief" row; §4.5.2's gate text → X19's `supervision-paused` row; §4.4 `watchdog_brief` result gains `sendUnlocked`, and on a dormant brief it supersedes instead of `brief-exists`; `watchdog_resume` accepts `dormant` as well as `paused`; the manager section states the U5 rule in one line; §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U6 |
 
 ## 9. Open questions for the user
 
-None. Q-A and Q-B of the first cut are decided (U5 = Q-A B, U6 = Q-B B, §0).
+| # | Question | A | B | Recommendation |
+| --- | --- | --- | --- | --- |
+| Q-C | How does Fishball's chat page reuse DSH's Composer (§10.2)? | Run DSH's own browser client in the child: put `dsh-web-app` back into the child profile, so DSH's Composer and the composer plugins really run there. This reverses D28/I2, costs about 175–250 MB of memory instead of 65–140 MB plus a slower start, and makes a new phase that rewrites the page. | Keep today's child page and rebuild its composer from DSH's composer **look** (layout, tokens, the Read Only chip, attachments, the resize corner), without DSH's code. DSH plugins that extend the composer still do **not** work in Fishball. | **Your call.** Only A gives "DSH 内改动 composer 的插件 Fishball 也可以拿来用"; B is cheap but misses it. If you want those plugins, choose A. |
+
+**Conflicts with earlier decisions (listed, not chosen):**
+- **K-1, the composer and D28/I2.**
+  - D28/I2: the child does **not** boot DSH's Web UI (`docs/slim-native-design.md:52`, `:608`).
+  - §0.5 "Plugins in the child": plugins' browser halves have no host in the child (`:398-401`).
+  - The composer request needs DSH's client kernel in the child page (§10.1). Q-C = A therefore
+    reverses D28 for the whole page, not only for the composer.
+- **K-2, X4–X7 page modules.** Under Q-C = A the page becomes DSH's own Web client.
+  - Fold's presenter (X7 `setTimelinePresenter`) and the board's panel (X7 `sidebar`) become DSH
+    client slots (`conversation.chat.node`, the sidebar), as eaa33f5's messenger was.
+  - X4–X7, FN-4, FN-5 and B5 would need a redesign for React slots.
+  - Under Q-C = B nothing changes.
+- **K-3, paused and halted cards (U8 against R17).**
+  - U8: "the watchdog exists → the request goes to the watchdog".
+  - §2.6 counts `paused` and `halted` as "exists", so their cards stay with the watchdog. This
+    follows the coupling rule and watchdog §6.2 R1b (auto-resume, or the guard re-stops).
+  - If the user means "a watchdog that is watching right now", paused and halted cards would go to
+    Fishball instead. That is a different rule, so please confirm §2.6.
+
+## 10. Chat page: DSH Composer, grey bubbles, avatars (user request 2026-11-08)
+
+User's words: "整个composer要复用DSH里的Composer，这样一些DSH内的改动composer的插件Fishball也可以拿来用。给Fishball聊天气泡，就用旧版里的这个灰色。也要有头像气泡，都复用旧版里的样式。" This partly overrides I2 (D28) for the composer.
+
+### 10.1 Findings (read only)
+
+**How DSH builds its Composer.** Line numbers are in `dsh-client-ui-conversation/lib/client.js`.
+
+| Fact | 0.2.1-rc.5 | 0.2.2-rc.1 |
+| --- | --- | --- |
+| The composer seat is the slot chain `conversation.composer`; its fallback is the single slot `conversation.composer.bar` | `:17885-17917` | `:20557-20589` |
+| The default bar is the React component `InputBar`, with a Lexical editor (`ComposerContentEditable`). It reads the session store (`useSession`, `useInput`, `useProjection`), the input hub, file uploads and the keymap through slot injection | `:18941-18955` | `:21743-21757` (adds `useAccess`) |
+| Composer plugins hook in as **slot entries**: `conversation.input.{attachments, overlay, permission, left, plan, right, model, activity}` and `conversation.composer.dock`, which the bar declares as its children. They do not import the Composer | `:20092-20131` | `:22958-22997` |
+| The packages that register entries there: approval, attachment, chat, commands, goal, input-trigger, message-feedback, model-selection, permission-presets, plan, subagent, user-questions and voice-input (`dsh-client-ui-*/lib/client.js`) | 13 packages | the same, plus forge and liveshare |
+| The `./client` export is a Cordis browser plugin, not a component library. Its `dsh.client.inject` needs the session controller, file upload, locale, layout, renderer, session, settings and workspace client services (`package.json`) | — | the same, plus context-menu |
+
+So the Composer is **not exported** as a component. It runs only inside DSH's browser client
+kernel: `dsh-client-modules`, the `connection` client, the session-controller API and the
+renderer. That kernel comes with `dsh-web-app` (`dsh-web-app/cordis.patch.yml:228,234` rc.5,
+`:224,230` rc.1). A composer plugin is a set of slot entries, and those exist only inside that
+kernel. An iframe page that loads no DSH module cannot host them.
+
+**Today's instance composer** (`packages/instance/src/slim/ui/composer.js`):
+- `createComposer` (`:353`) builds a plain `<form>` with a `<textarea class="prompt">`.
+- The resize corner is `resize: vertical` (`shell.css:297-300`).
+- "Read Only" is a text chip, `composer-mode` (`composer.js:366-369`, `shell.css:290`), with no
+  permission control (D8).
+- Attachments are the T06 chips plus the upload route.
+- The page loads no DSH module. The CSP is `default-src 'self'`, and the child boots no web app
+  (D28).
+
+**The old in-process look** (eaa33f5, `packages/messenger/client.js`):
+
+| Part | eaa33f5 | Style |
+| --- | --- | --- |
+| Fishball's reply bubble (**grey**) | `:162` (reply), `:137` (`.fbm-bubble`) | `padding:6px 12px; border-radius:4px 18px 18px 18px; background:var(--dsw-alias-bg-module-platform); border:1px solid var(--dsw-alias-border-l2)` |
+| Fishball's avatar | `:163` | a 28 px circle (`CIRCLE` `:84`, `border-radius:50%; corner-shape:round`) in the accent magenta, with the white FishMark at 60 % |
+| Name above the bubble | `:164` | "Fishball", 12 px/600, accent colour, an 18 px line; the bubble starts after the avatar and an 8 px gap (`REPLY_LAYOUT` `:54`) |
+| Other senders | `:133`, `makeAvatar` `:251` | initials on a hue from the sender's seed (`AVATAR` `:55`); sessions in green `hsl(142 70% 42%)` (`:76`); tinted bubble and edge (`SENDER_COLOUR` `:69`) |
+| Your messages | `:150` | right-aligned, the bubble tinted 10 % accent with a 40 % edge (`YOU_TINT` `:62`), no name |
+| Grouping | `makeBubble` `:260` | consecutive messages from one author show the avatar and name once |
+
+The tokens it used are already in the instance's `ui/dsh-tokens.css`. The old file was a React
+slot plugin on DSH's chat (`conversation.chat.node`, `:31`). Its CSS values can be reused; its
+React code cannot.
+
+### 10.2 Proposal
+
+**UI-1: bubbles and avatars.** No conflict. Wave **W2**, after X0-U, which owns `ui/chat.js`.
+
+*Files:*
+- `packages/instance/src/slim/ui/chat.js`: `buildEntry` wraps the assistant, user and inbox rows
+  in avatar + name + bubble, with grouping.
+- `ui/shell.css`: the classes.
+- `ui/i18n.js`: the sender words.
+- New `ui/bubble.js`: the author model, ported from eaa33f5 `:196-249` as plain DOM. It holds
+  `authorOf`, the initials, the hue from a seed, and green for sessions.
+
+*Values and constraints:*
+- One frozen `BUBBLE` object holds eaa33f5's numbers (`AVATAR`, `REPLY_LAYOUT`, `YOU_TINT`,
+  `SENDER_COLOUR`). Colours come from `dsh-tokens.css` only.
+- Fishball's avatar is the FishMark the page already draws (`chat.js:154-157`).
+- The CSP refuses inline styles, so a sender's hue is a `data-hue` bucket (12 classes), not
+  eaa33f5's inline `style`.
+
+*Done when:*
+- Fishball's replies are grey bubbles, with the round fish avatar and "Fishball" above.
+- Your messages are right-aligned and tinted.
+- Inbox senders have initials avatars, with sessions in green.
+- Consecutive rows group.
+- Light and dark themes both look right.
+- The bubble is the entry's inner element, so FN-4 still folds the entries.
+
+**The composer** depends on Q-C:
+- **Q-C = A: task UI-C**, a new phase after W5.
+  - The child profile gets `@deepseek-ai/dsh-web-app` back, with the rows the SP spike disabled
+    (`docs/spikes/body-soul-sp.md`).
+  - Fishball's chat becomes DSH's own session view of Fishball's session, as in D16's Option A.
+  - Composer plugins installed into the child then work.
+  - `slim-native-design.md` §0.5 and §2.1 are rewritten. The custom `ui/*`, X4–X7, FN-4, FN-5,
+    B5 and UI-1 move to DSH client slots, as eaa33f5's messenger did.
+  - The child's RSS rises to 174–253 MB (SP2), from 65–140 MB today.
+- **Q-C = B: task UI-C'**, in W2 after X0-U.
+  - Owns `ui/composer.js` and `ui/shell.css` (after UI-1).
+  - The page's composer takes DSH's composer layout and tokens: the card; the bottom row with the
+    Read Only chip on the left and attach and send on the right; the editor growing with its text;
+    the resize corner kept.
+  - No DSH code is loaded, and composer plugins do not work.
+
+UI-1 is useful under either answer: under A its CSS moves into a slot stylesheet, as eaa33f5's
+did. Decide Q-C before W2 starts.
