@@ -1,98 +1,115 @@
-# W0 test-only audit — 2026-11-09
+# Revised W0 test-only audit — pinned MCP design
 
-## Starting state
+Date: 2026-11-09. Status: **cases submitted for user review before development**. No product implementation delivered.
 
-Branch `test/instance-ext-w0` was clean at `cd2d32a`; previous commits were `c6873ce`, `e002ec3`. No leftovers existed and no stash was needed. `e002ec3` was already an ancestor, so no further rebase or merge was necessary. Existing history was preserved.
+## 1. Provenance and isolation
 
-## Executed package-local gates
+- Required base: `test/instance-ext-w0` at **`aad37b27df0f02160f96570e5124d94e9dfb9f5b`**, 154 prior W0 cases.
+- Created requested worktree `.agents/worktrees/test-w0-mcp` and branch **`test/w0-mcp`** directly from that branch. No reset/rewrite of existing history; no push.
+- Authoritative requirements: **`design/instance-ext` at `15d6f1f214144db3575f9bc0ba15238b1450c2a7`**. Verified exact HEAD and clean pinned requirement files in the sibling design worktree. Three authoritative documents: [extension points](<../../../design-instance-ext/docs/plugins/instance-extension-points.md>), [MCP option](<../../../design-instance-ext/docs/plugins/connector-mcp-option.md>) and [design](<../../../design-instance-ext/DESIGN.md>).
+- Retained skeleton detail comes from incorporated clean requirement snapshots: fold `7347c1f`, watchdog `1bef938`, board `fc9bc8d`. Canonical decisions override their earlier timer/halt/prune wording.
+- Two independent requirements-only test authors wrote the case changes. A third independent reviewer read requirements, tests and safe support only. No product implementation was read to derive expectations or edited.
+- Shared safe-harness helpers unchanged. No dependency installs, `.npmrc` reads, real credentials/profile reads or credential copies. No real DSH process launched, stopped or restarted. Only existing fake-row/resolver harnesses ran; no full runner or old K1 real-DSH boot path.
 
-Runtime: `/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules`.
+## 2. Review entry points and case inventory
 
-Evidence directory: `/private/tmp/fbtest-w0-verified.iU0DCH`.
+Use Cases lead all eight tasks. See [main review guide](<instance-ext-w0.md>), [MCP stories/case table](<instance-ext-w0-mcp-use-cases.md>), [core story](<instance-ext-w0-core-use-cases.md>) and [skeleton stories](<instance-ext-w0-skeleton-use-cases.md>).
 
-| Task | Cases | Failed | Skipped | Observed cause |
+Primary technique counts include executable and TODO entries, counted **once per registered top-level case**, not assertions, parameter samples, story definitions or each runtime run.
+
+| Task | EP | BVA | Decision Table | State Transition | Use Case | Total | Executable | TODO |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| MCP-S1 | 4 | 3 | 4 | 2 | 3 | 16 | 0 | 16 |
+| MCP-S2 | 5 | 2 | 6 | 6 | 3 | 22 | 0 | 22 |
+| MCP-S3 | 4 | 1 | 2 | 2 | 3 | 12 | 0 | 12 |
+| K1 | 8 | 4 | 4 | 4 | 4 | 24 | 0 | 24 |
+| X0-C | 41 | 22 | 12 | 3 | 26 | 104 | 95 | 9 |
+| FN-1 | 4 | 1 | 0 | 0 | 8 | 13 | 10 | 3 |
+| WD-1 | 3 | 1 | 1 | 0 | 13 | 18 | 9 | 9 |
+| B1 | 3 | 2 | 0 | 0 | 15 | 20 | 10 | 10 |
+| **Total** | **72** | **36** | **29** | **17** | **75** | **229** | **124** | **105** |
+
+Exactly **EP, BVA, Decision Table, State Transition and Use Case**; no sixth category. Eight human stories and 75 registered UC flows are different units; 75 is not a claim of 75 independent human goals.
+
+### Why MCP entries are TODO rather than artificial red
+
+All 74 MCP-S1/S2/S3/K1 entries are actionable owner-named acceptance obligations: concrete preconditions/data/outcomes with acceptance trace. The pinned design has not frozen the callable spike/report/profile/schema/result/error interfaces. Testing an invented import, old export or authored behavior mock would be the wrong failure reason. K1 contains **19 W0 shared-profile/fixture obligations + 5 W1 runtime continuations**. S1/S2/S3 have 50 W0 feasibility/freeze obligations. None is counted as a pass or completed spike.
+
+The remaining 31 TODOs belong to local/core/skeleton continuations: real model/loader, durable accepted-queue/hold fault reconciliation, typed port alignment, async/dynamic-context setup, aggregate growth-budget validation and later runtime/UI/archive behavior. Every registered TODO names its owner. [Decision questions](<instance-ext-w0-decisions.md>) preserve unresolved freeze/readiness/budget choices instead of silently fixing behavior.
+
+## 3. Requirement changes and retired oracles
+
+- Retired all 15 old K1 IDs and their custom framing/attach/minor negotiation, legacy-success and real-DSH boot assumptions. Optional attention domain/9999 limit survives as shared acceptance, without requiring an old export to survive W1 removal.
+- MCP is the only control plane; first-party push is authenticated event/ack only. Default-on external delegated approvals/questions have **no off setting**. Idle never-polling offers wait. First **committed** outcome wins, not first fetch/ack/attempt.
+- Actual old control endpoint/export deletion and built-in binding/peer/snapshot replacement are **MCP-SERVER W1**, coordinated with K2/X0-W/FB-PUSH. W0 defines removal requirements, not a premature runtime deletion.
+- U20 failure is effective off: no failure-induced halt, stop or plugin-gone grace. Enabled-but-not-ready passes both tool and image send paths. U21 questions/plan reviews never enter watchdog claims/queue/context.
+- X0-C pending notify reservation is not accepted delivery: retries preserve stable identity, including hand-over/recovery row reconstruction. Accepted history is capped at 10,000 without evicting pending work. Removed queue-failure→duplicate and serialized JSONL layout assumptions. Startup recovery may accept pending work; retention tests do not freeze acceptance ordering.
+- WD numeric field boundaries are checked through each public field schema; a full config with one field changed and incoherent defaults is not required to pass. Retained growth-budget validation has its own explicit TODO; U14 removed only approval-window budgeting. Mandatory `guardRestops` assertions retired with fault re-stopping, without inventing a requirement that the inert field must be absent.
+- U14 approval time settings/window-sum remain retired; U17 ordinary reached-layer history and immediate cleanup, U19 permanent installed archive/inclusive 30-day board visibility remain intact.
+- Inherited later-wave test files were neither executed nor certified by this W0-only rewrite.
+
+## 4. Final safe execution
+
+Node **v24.22.2**. Both installed DSH runtime directories were verified present. Runtime packages resolve from the selected installation using the existing resolver-only bridge; no DSH CLI/host process starts.
+
+Six package-local files only:
+
+- [MCP feasibility registration](<../../packages/connector/test/instance-ext/mcp-feasibility.test.mjs>)
+- [K1 registration](<../../packages/connector/test/instance-ext/k1.test.mjs>)
+- [X0-C cases](<../../packages/instance/test/instance-ext/x0-c.test.mjs>)
+- [FN-1 cases](<../../packages/fold-notify/test/instance-ext/fn-1.test.mjs>)
+- [WD-1 cases](<../../packages/watchdog/test/instance-ext/wd-1.test.mjs>)
+- [B1 cases](<../../packages/board/test/instance-ext/b1.test.mjs>)
+
+Command shape, once per requested version:
+
+```sh
+TMPDIR=/private/tmp \
+FBTEST_DSH_RUNTIME="/Users/samuel/Library/Application Support/DSH/data/versions/<version>/node_modules" \
+node --test --test-concurrency=1 --test-reporter=tap \
+  packages/connector/test/instance-ext/mcp-feasibility.test.mjs \
+  packages/connector/test/instance-ext/k1.test.mjs \
+  packages/instance/test/instance-ext/x0-c.test.mjs \
+  packages/fold-notify/test/instance-ext/fn-1.test.mjs \
+  packages/watchdog/test/instance-ext/wd-1.test.mjs \
+  packages/board/test/instance-ext/b1.test.mjs
+```
+
+| Selected DSH SDK | Pass | Expected red | TODO | Skipped | Cancelled | Registered | Node test exit |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.2.1-rc.5 | 0 | 124 | 105 | 0 | 0 | 229 | 1 |
+| 0.2.2-rc.1 | 0 | 124 | 105 | 0 | 0 | 229 | 1 |
+
+Per-version red classification is identical:
+
+| Task | Pass | Red | TODO | Observed legitimate missing-feature gate |
 | --- | ---: | ---: | ---: | --- |
-| K1 | 13 | 13 | 0 | contract minor/attention operation/limit/unread state absent |
-| X0-C | 19 | 19 | 0 | child app does not provide fishballInstance |
-| FN-1 | 9 | 9 | 0 | required skeleton package files absent |
-| WD-1 | 7 | 6 | 1 | required skeleton package files absent; window-sum requirement unresolved |
-| B1 | 9 | 9 | 0 | required skeleton package files absent |
+| MCP-S1 | 0 | 0 | 16 | Acceptance not yet executable; not spike evidence |
+| MCP-S2 | 0 | 0 | 22 | Acceptance not yet executable; not spike evidence |
+| MCP-S3 | 0 | 0 | 12 | Callable/schema freeze not supplied |
+| K1 | 0 | 0 | 24 | Shared binding and later runtime owners pending |
+| X0-C | 0 | 95 | 9 | Public `fishballInstance` service not provided by child app row |
+| FN-1 | 0 | 10 | 3 | Required skeleton files absent |
+| WD-1 | 0 | 9 | 9 | Required skeleton files absent |
+| B1 | 0 | 10 | 10 | Required skeleton files absent |
 
-X0-C was rerun after strengthening ordering, running-agent setup and once-only logging assertions: `/private/tmp/fbtest-core-final.zuGqL6/x0-c.log`, exit 1 for missing fishballInstance.
+No import/module-not-found/ReferenceError/TypeError or test-driver failure is included in the final 124 reds. Each executable stops at an actual requirement-backed missing-feature assertion or diagnostic, not an unconditional synthetic failure. Assertions downstream of these gates are statically reviewed but **not dynamically proven**; this is a red test-design baseline, not acceptance of the implementation.
 
-These expected failures do not independently prove that assertions after the missing-feature gate are harness-correct. Independent static review found remaining gaps recorded in the main test-design document; W0 acceptance sign-off is withheld.
+Evidence lives in guarded disposable [run evidence](</private/tmp/fbtest-w0-mcp.1OKu7p/>). **The final rerun after all four review corrections** is [rc.5 TAP](</private/tmp/fbtest-w0-mcp.1OKu7p/0.2.1-rc.5-committed-candidate.tap>) and [rc.1 TAP](</private/tmp/fbtest-w0-mcp.1OKu7p/0.2.2-rc.1-committed-candidate.tap>), with [rc.5 detailed inventory](</private/tmp/fbtest-w0-mcp.1OKu7p/0.2.1-rc.5-committed-candidate-inventory.json>) and [rc.1 detailed inventory](</private/tmp/fbtest-w0-mcp.1OKu7p/0.2.2-rc.1-committed-candidate-inventory.json>). The [source-hash record](</private/tmp/fbtest-w0-mcp.1OKu7p/committed-candidate-sha256.txt>) was checked against all seven final test/spec files; every hash matched. Both logs contain 229 unique case IDs and the exact totals above. The durable, committed [review inventory](<instance-ext-w0-inventory.json>) preserves all case IDs, task/technique classifications, per-version status totals and requirement-backed failure categories so review does not depend on temporary logs.
 
-## Regression history
+### Preliminary runs excluded
 
-The first full run was invalidated by concurrent helper editing: seven files loaded an intermediate `os.tmpdir()` reference after its import was removed. This was a test-harness error, not a missing-feature red and not a product defect. The stable helper uses a guarded `/private/tmp` root. The fresh stable full run passed: exit 0, 1484 tests, 1456 passed, 0 failed, 21 skipped, 7 existing TODO cases, 0 cancelled. Evidence: `/private/tmp/fbtest-w0-verified.iU0DCH/regression.log`. Existing TODO/skipped cases were not converted to passes.
+An ad hoc stdin Node event-stream counting attempt inherited `--input-type=module` into file workers (`ERR_INPUT_TYPE_NOT_ALLOWED`). It executed no cases, was diagnosed, and was replaced with the ordinary supported `node --test` CLI. This is not a product red. Initial concurrent-authoring runs included a temporary obsolete K1 locator assertion/duplicate ID; those runs are superseded, not included in final counts. No real DSH was launched by either attempt.
 
-## Safety and scope
+## 5. Independent review and checks
 
-Only tests, test helpers and test/design documentation changed. No product implementation was read to derive expectations or modified. All execution homes and npm caches were throwaway `/private/tmp` directories. No credential file was read, printed or copied; no push or publish occurred. Four direct temporary-path checks passed (outside root, root-as-home and relative paths refused; a safe descendant accepted).
+Independent reviewer found and authors corrected:
 
-## Technique correction rerun — 2026-11-09
+1. A temporary old K1 export locator would fail the approved coordinated removal: removed, replaced with shared owner TODO.
+2. WD per-field endpoints against whole-config defaults contradicted the retained growth-budget rule: isolated public field schemas and added the aggregate TODO/A-B question.
+3. X2 async/dynamic-context lifecycle coverage was omitted: explicit X0-C-owned acceptance TODOs added, without invented scheduling/signatures.
+4. Allowed startup pending-notice acceptance could legitimately evict an old accepted key: retention oracle checks the old boundary before rebuild and avoids forcing it after that new acceptance.
 
-Taxonomy is now exactly EP, BVA, Decision Table, State Transition and Use Case. Former positive cases are valid EP partitions or documented decision rules, not a sixth category. This historical revision incorrectly deferred Use Case definitions to later integration tasks; the subsequent Use Case revision supersedes that approach. Use Cases must constrain design before development, including flows driven through stubs and written flows awaiting later-task execution.
+Syntax validation covers all seven test/spec modules; `git diff --check` is clean. Four safe path-guard checks passed (unsafe root, outside-root, relative rejected; safe disposable descendant accepted). Shared safe harness and product files are unchanged, so no full regression suite was run; the full runner can boot DSH and is outside the user's safety instruction.
 
-All five package-local gates were rerun on 0.2.2-rc.1 with isolated homes and npm cache under `/private/tmp`. Evidence: `/private/tmp/fbtest-w0-techniques.Toq5QP`.
-
-| Task | Failed | Skipped | Exit | Cause |
-| --- | ---: | ---: | ---: | --- |
-| K1 | 13 | 0 | 1 | missing contract 1.2/attention/unread additions |
-| X0-C | 19 | 0 | 1 | missing public fishballInstance service |
-| FN-1 | 9 | 0 | 1 | missing package skeleton files |
-| WD-1 | 7 | 1 | 1 | missing package skeleton files; existing window-sum block unchanged |
-| B1 | 9 | 0 | 1 | missing package skeleton files |
-
-X0-C was additionally rerun after its final ID-only reclassification (`XC-ST-02` → `XC-EP-V-07`): `/private/tmp/fbtest-w0-core-techniques.xA3U9g/x0-c.log`, exit 1 for the same missing service.
-
-No shared harness code changed in this correction, so the regression suite was not rerun; the prior green regression above remains the latest full-suite evidence. No product code changed, and the four pending ambiguity decisions were left untouched.
-
-## Predicted Use Case revision — 2026-11-09
-
-Use Cases are now specified before development, not deferred as definitions: 12 actor-goal definitions, 42 individual flows (29 executable and 13 explicit owner-named TODOs). Each definition gives actors, preconditions, main/alternative/exception flows and observable postconditions, traced to task and X IDs. W0 totals exclude the unchanged blocked window-sum case: 64 executable + 13 TODO = 77; including that block, the five files register 78 tests. Secondary EP/DT/ST coverage is not double-counted.
-
-The five files were run on 0.2.2-rc.1 with isolated `/private/tmp` homes/cache. Initial evidence: `/private/tmp/fbtest-w0-usecases.VngM8W`. All five exited 1. K1 initially exposed a test mistake (attempting a second handshake on an already-handshaken connection); that is not accepted as a missing-feature red and requires the corrected K1 rerun evidence below. Other files: X0-C 20 missing-service failures + 2 TODO; FN-1 10 missing-package failures + 3 TODO; WD-1 9 missing-package failures + 5 TODO + 1 unchanged skip; B1 10 missing-package failures + 3 TODO.
-
-Corrected K1 rerun: `/private/tmp/fbtest-w0-uc-k1.iPztFw/k1.log`, exit 1, 15 failures. The legacy 1.1 child successfully attaches and lists related sessions; its remaining failure is the missing zero-valued `state.unread`, not protocol misuse. Final aggregate: **64 expected missing-feature failures, 13 TODO, 1 unchanged skip, 0 passes** across 78 registered test entries. All five task files are red.
-
-No shared harness changed, so no new regression run was needed. No product code or pending ambiguity decision changed. Written TODOs constrain existing design behavior and do not implement or resolve the pending core-gap discussion.
-
-## Human story revision — 2026-11-09
-
-Five realistic Samuel/Fishball stories now frame the same 12 retained flow groups and 42 UC flows. The rewritten story context/goal/trigger/outcome and story-step tables distinguish executable W0 state/schema/scope evidence from owned TODOs. All existing test IDs, assertions and EP/BVA coverage remain; test changes are titles only.
-
-Fresh five-file run on 0.2.2-rc.1: `/private/tmp/fbtest-w0-stories.WcOLs8`. K1 15 failures; X0-C 20 failures +2 TODO; FN-1 10 failures +3 TODO; WD-1 9 failures +5 TODO +1 blocked skip; B1 10 failures +3 TODO. Each file exit 1. All failures are the expected missing contract/unread/service/package features; no ReferenceError, TypeError or ERR_MODULE_NOT_FOUND harness failure was observed. Total 64 failures, 13 TODO, 1 skip across 78 entries. No product/shared harness changes or push; no full regression rerun required.
-
-The four questions are explained in the separate decision document using immutable e002ec3 canonical line numbers plus its incorporated source-design revisions. They are not resolved or implemented.
-
-## Final alignment — 6f7412b + 479df59
-
-The branch incorporates both final design commits using local merges, preserving test history. U14 retires the blocked window-sum test and approval-budget settings; U15 removes both X3 cases; U16 reframes watchdog as a token saver regardless of user presence; U17 uses immediate card cleanup and reached-layer history; U19 uses inclusive 30-day board visibility and permanent installed-plugin archive history. No product files were changed or read to derive behavior.
-
-U18 adds 16 typed-stub cases, persisted notify-key-before-queue observation, same-home child-row reboot dedupe, actual-notify cap BVA 9999/10000/10001, both tool send operations, exact images.message passthrough and inbox array queue/receipt/validation. Child-row reboot rebuilds services and retains only fixture DSH events/on-disk state; it is not an OS-process or loader integration proof. Real model and successful image-fetch/order integration remain owner-named TODOs. No awaiting-contract TODO remains.
-
-Final five-file run on 0.2.2-rc.1, evidence `/private/tmp/fbtest-w0-479df59.7A7RmO`:
-
-| Task | Executable failures | TODO | Skipped | Exit |
-| --- | ---: | ---: | ---: | ---: |
-| K1 | 15 | 0 | 0 | 1 |
-| X0-C | 89 | 2 | 0 | 1 |
-| FN-1 | 10 | 3 | 0 | 1 |
-| WD-1 | 9 | 6 | 0 | 1 |
-| B1 | 10 | 10 | 0 | 1 |
-| Total | 133 | 21 | 0 | — |
-
-Failures are expected missing contract/unread additions, public instance service and package skeletons. No import/ReferenceError/TypeError harness failures were observed. Since missing-service assertions run first, downstream new feature assertions are statically reviewed but cannot yet be demonstrated green. Touched X0-A was separately run: 16 expected missing-service failures + 3 TODO, exit 1.
-
-Shared harness changes retain fixture session events across reboot, observe the agent queue boundary and supply controlled connector responses; the original full suite was rerun after these changes: `/private/tmp/fbtest-w0-contract-regression.Plk3Rz/regression.log`, 0.2.2-rc.1, **1484 tests / 1456 passed / 0 failed / 21 skipped / 7 TODO / exit 0**. Existing skips/TODOs were not counted as passes. All homes and npm caches remain under `/private/tmp`, with no credential reads, push or publish.
-
-## Historical acceptance questions — closed by final design
-
-**Superseded by 6f7412b U14/U15/U18/U19 and 479df59 §12.5.1–2.** The text below is history, not active timers, prune requirements, blocked cases or open decisions. Current inventory and results are reported in the final alignment section appended below.
-
-
-1. **WD sum:** A — formally define Config acceptance at sum 120 and rejection at 121, including exact fields and model-window handling; B — define these as runtime deadline calculations, not Config refusal. Recommendation: B unless save-time validation is explicitly intended; keep the blocked case until the owner chooses.
-2. **X3 seam:** A — retain a public namespace validator with a documented signature; B — enforce the namespace through DSH's record registration later. Recommendation: A only if X0-C must reject foreign namespaces now; do not require a withdrawn projector implementation implicitly.
-3. **B1 prune age:** A — name a public exported constant for 30 days; B — test pruning behavior in the storage task without fixing skeleton export names. Recommendation: B unless skeleton constants are intended as public API.
-4. **Remaining W0 coverage:** A — complete durable dedupe, stub-refusal, pass-through, array-delivery and real-loader checks before using files as developer done criteria; B — explicitly narrow W0 acceptance to current coverage. Recommendation: A.
+No browser/model/real-loader/MCP feasibility pass is claimed. Local commit only; no push or publish. User review remains the next gate before development.

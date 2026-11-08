@@ -1,6 +1,7 @@
 /**
- * W0 / X0-C — the `fishballInstance` service, manager and manager channel
- * (X1, X2, X10, X11; final design §5.1/§5.5/§12.5, U18).
+ * W0 / X0-C — local `fishballInstance`, manager/chat and durable intake seams.
+ * Pinned requirements 15d6f1f214144db3575f9bc0ba15238b1450c2a7 §5.4/§12.5, U18/U20/U21.
+ * Typed W1 control/intake ports await MCP-S3/K1 freeze; no server or push implementation here.
  *
  * Observation points: the service the child app row provides, the manager agent's own
  * tool/prompt registrations, `GET /api/chat` over the child's HTTP surface, and the turns the
@@ -23,6 +24,11 @@ const U18 = Object.freeze({
   notifyKeys: 10_000,
   watchdog: 'fishball-watchdog',
   notice: 'a watchdog notice',
+  queueFailure: 'injected agent queue rejection before acceptance',
+  pendingKey: 'pending-notice-must-survive-accepted-history-trim',
+  handoverKey: 'watchdog-handover:fixture-episode',
+  recoveryKey: 'watchdog-recovery:fixture-episode',
+  handoverText: 'Watchdog unavailable; Fishball now handles supervision and approvals; no session was stopped.',
   errorName: 'ExtensionError',
   notImplemented: 'not-implemented',
   send: Object.freeze({ session_id: 'session-without-watchdog', message: 'unchanged message 😀' }),
@@ -34,6 +40,35 @@ const U18 = Object.freeze({
 async function live(t) {
   const h = await bootChild(t, { activate: true })
   return { h, service: h.requireInstance() }
+}
+
+/** Inject only at the supplied agent boundary; no fake notification/dedupe implementation. */
+async function pendingNotice(t, dedupeKey, text = U18.notice) {
+  const attempts = []
+  let persistedAtQueue
+  let queueLengthAtRejection
+  let rejectPending = true
+  const h = await bootChild(t, { activate: true, onFollowup(message, agent) {
+    attempts.push(structuredClone(message))
+    if (rejectPending && message.id === attempts[0].id) {
+      persistedAtQueue = readFileSync(path.join(h.home, U18.notifyFile), 'utf8')
+      queueLengthAtRejection = agent.followups.length
+      throw new Error(U18.queueFailure)
+    }
+  } })
+  // Error envelope is not specified; durable retry state and no accepted turn are specified.
+  await h.requireInstance().manager.notify({ pluginId: U18.watchdog, dedupeKey, text, wake: true }).catch(() => {})
+  assert.equal(attempts.length, 1, 'rejection injected at the actual followup boundary')
+  assert.equal(queueLengthAtRejection, 0)
+  assert.equal(h.manager().followups.length, 0, 'the rejected attempt was never accepted by the fixture queue')
+  const reservedId = attempts[0].id
+  assert.equal(typeof reservedId, 'string')
+  assert.ok(reservedId.length > 0, 'notification reserves a nonempty message identity')
+  assert.equal(typeof persistedAtQueue, 'string', 'notify-keys.jsonl exists before the queue attempt')
+  assert.ok(persistedAtQueue.includes(JSON.stringify(dedupeKey)), 'key was persisted before queue attempt')
+  assert.ok(persistedAtQueue.includes(JSON.stringify(reservedId)), 'stable identity was persisted with the pending work')
+  for (const line of persistedAtQueue.trimEnd().split('\n')) assert.doesNotThrow(() => JSON.parse(line))
+  return { h, attempts, reservedId, allowRetry: () => { rejectPending = false } }
 }
 
 /** Append one manager-session event, as DSH's session log would hold it. */
@@ -279,56 +314,77 @@ describe('X0-C X10 manager.notify', () => {
     assert.equal(restarted.manager().followups.length, 0, 'durable duplicate queues nothing in the new child rows')
   })
 
-  it('XC-DT-01 durable key is observable before the agent queue accepts a waking turn — injected queue failure cannot erase it', async (t) => {
-    const key = 'persist-before-queue'
-    const queueFailure = new Error('injected agent queue failure')
-    let queueCalls = 0
-    let persistedAtQueue
-    let queueLengthAtInjection
-    const h = await bootChild(t, { activate: true, onFollowup(message, agent) {
-      queueCalls += 1
-      persistedAtQueue = readFileSync(path.join(h.home, U18.notifyFile), 'utf8')
-      queueLengthAtInjection = agent.followups.length
-      throw queueFailure
-    } })
+  it('XC-DT-01 Samuel retries an update after queue rejection — pending key retries its reserved identity, only acceptance makes it duplicate', async (t) => {
+    const { h, attempts, reservedId, allowRetry } = await pendingNotice(t, U18.pendingKey)
     const service = h.requireInstance()
-    // Queue failure propagation is unspecified; the persisted key and absence of a turn are not.
-    await notify(service, { dedupeKey: key }).catch(() => {})
-    assert.equal(queueCalls, 1, 'injection ran at the real agent followup port')
-    assert.equal(queueLengthAtInjection, 0)
-    assert.ok(persistedAtQueue?.includes(JSON.stringify(key)), 'the key was on disk before any queue side effect')
-    assert.equal(h.manager().followups.length, 0)
-    assert.equal(await notifyStatus(service, { dedupeKey: key }), 'duplicate')
-    assert.equal(queueCalls, 1, 'retry never reaches the failed queue port again')
+    allowRetry()
+    assert.equal(await notifyStatus(service, { dedupeKey: U18.pendingKey }), 'queued', 'a pending reservation is not delivered/duplicate')
+    assert.equal(attempts.length, 2, 'the retry reaches the supplied agent boundary')
+    assert.equal(attempts[1].id, reservedId, 'retry uses the identity persisted before the rejected queue attempt')
+    assert.equal(h.manager().followups.length, 1)
+    assert.equal(h.lastFollowup().id, reservedId)
+    assert.equal(await notifyStatus(service, { dedupeKey: U18.pendingKey }), 'duplicate')
+    assert.equal(attempts.length, 2, 'accepted key never queues again')
   })
+
+  for (const [kind, dedupeKey] of [['HANDOVER', U18.handoverKey], ['RECOVERY', U18.recoveryKey]]) {
+    it(`XC-ST-NOTIFY-${kind} Samuel receives the missing ${kind.toLowerCase()} update after child rows rebuild — pending reservation reuses one message identity`, async (t) => {
+      const { h, reservedId } = await pendingNotice(t, dedupeKey, U18.handoverText)
+      const service = h.requireInstance()
+      await h.close()
+      const restarted = await bootChild(t, { home: h.home, activate: true, sessionLogs: h.sessionLogs })
+      const reloaded = restarted.requireInstance()
+      assert.notEqual(reloaded, service, 'a new service reads the same home')
+      const recoveredCount = restarted.manager().followups.length
+      assert.ok(recoveredCount === 0 || recoveredCount === 1, 'startup may retry pending work, but never twice')
+      assert.equal(await notifyStatus(reloaded, { dedupeKey, text: U18.handoverText }), recoveredCount === 0 ? 'queued' : 'duplicate', 'only an observed accepted recovery can make retry duplicate')
+      assert.equal(restarted.manager().followups.length, 1)
+      assert.equal(restarted.lastFollowup().id, reservedId, 'restart preserves the reserved identity')
+      assert.ok(messageText(restarted.lastFollowup()).includes(U18.handoverText))
+      assert.equal(await notifyStatus(reloaded, { dedupeKey, text: U18.handoverText }), 'duplicate')
+      assert.equal(restarted.manager().followups.length, 1)
+    })
+  }
 
   // Three-value BVA around the specified durable key retention cap, using only public notify.
   for (const count of [U18.notifyKeys - 1, U18.notifyKeys, U18.notifyKeys + 1]) {
     it(`XC-BVA-KEYS-${count} newest-key retention at ${count} accepted notices — file and reloaded duplicate behavior agree`, async (t) => {
-      const h = await bootChild(t, { activate: true })
+      const { h, reservedId } = await pendingNotice(t, U18.pendingKey)
       const service = h.requireInstance()
       const keys = Array.from({ length: count }, (_, index) => 'cap-key-' + index)
       for (const dedupeKey of keys) assert.equal(await notifyStatus(service, { dedupeKey }), 'queued')
       assert.equal(h.manager().followups.length, count)
       const file = await readFile(path.join(h.home, U18.notifyFile), 'utf8')
-      const lines = file.trimEnd().split('\n')
-      assert.equal(lines.length, Math.min(count, U18.notifyKeys), 'file contains only the newest 10000 keys')
-      for (const line of lines) assert.doesNotThrow(() => JSON.parse(line), 'store remains valid JSONL')
+      for (const line of file.trimEnd().split('\n')) assert.doesNotThrow(() => JSON.parse(line), 'store remains valid JSONL without imposing its field/line layout')
       const kept = keys.slice(-U18.notifyKeys)
-      const firstKept = JSON.stringify(kept[0])
-      const newest = JSON.stringify(keys.at(-1))
-      assert.ok(file.includes(firstKept))
-      assert.ok(file.includes(newest))
-      if (count > U18.notifyKeys) assert.equal(file.includes(JSON.stringify(keys[0])), false, 'oldest key is evicted, not newest')
+      assert.ok(file.includes(JSON.stringify(kept[0])))
+      assert.ok(file.includes(JSON.stringify(keys.at(-1))))
+      assert.ok(file.includes(JSON.stringify(U18.pendingKey)), 'accepted-history trimming never evicts pending work')
+      assert.ok(file.includes(JSON.stringify(reservedId)), 'pending identity survives accepted-history trimming')
+      for (const dedupeKey of [kept[0], keys.at(-1)]) assert.equal(await notifyStatus(service, { dedupeKey }), 'duplicate', 'newest accepted-history boundary keys are retained before recovery')
       await h.close()
       const reloaded = await bootChild(t, { home: h.home, activate: true, sessionLogs: h.sessionLogs })
       const fresh = reloaded.requireInstance()
-      for (const dedupeKey of [kept[0], keys.at(-1)]) assert.equal(await notifyStatus(fresh, { dedupeKey }), 'duplicate')
-      assert.equal(reloaded.manager().followups.length, 0)
+      const startupCalls = reloaded.manager().followups.slice()
+      assert.ok(startupCalls.length <= 1, 'startup cannot duplicate the only pending notice')
+      if (startupCalls.length) assert.equal(startupCalls[0].id, reservedId, 'only pending identity may be recovered')
+      assert.equal(await notifyStatus(fresh, { dedupeKey: keys.at(-1) }), 'duplicate', 'newest accepted key survives pending recovery')
+      // Accepting recovered pending work can evict the oldest accepted key at the cap.
+      if (startupCalls.length === 0 || count < U18.notifyKeys) {
+        assert.equal(await notifyStatus(fresh, { dedupeKey: kept[0] }), 'duplicate')
+      }
+      assert.equal(reloaded.manager().followups.length, startupCalls.length, 'retained accepted keys never requeue')
+      const beforePending = reloaded.manager().followups.length
+      assert.equal(await notifyStatus(fresh, { dedupeKey: U18.pendingKey }), startupCalls.length === 0 ? 'queued' : 'duplicate', 'pending work is retryable unless startup already accepted it')
+      const pendingMessages = reloaded.manager().followups.filter((message) => message.id === reservedId)
+      assert.equal(pendingMessages.length, 1)
+      const afterPending = beforePending + (startupCalls.length === 0 ? 1 : 0)
+      assert.equal(reloaded.manager().followups.length, afterPending)
+      assert.equal(await notifyStatus(fresh, { dedupeKey: U18.pendingKey }), 'duplicate')
+      assert.equal(reloaded.manager().followups.length, afterPending)
       if (count > U18.notifyKeys) {
-        assert.equal(await notifyStatus(fresh, { dedupeKey: keys[0] }), 'queued', 'evicted key can notify again after restart')
-        assert.equal(reloaded.manager().followups.length, 1)
-        assert.equal((await readFile(path.join(h.home, U18.notifyFile), 'utf8')).trimEnd().split('\n').length, U18.notifyKeys)
+        assert.equal(await notifyStatus(fresh, { dedupeKey: keys[0] }), 'queued', 'evicted accepted key can notify again after restart')
+        assert.equal(reloaded.manager().followups.length, afterPending + 1)
       }
     })
   }
@@ -347,20 +403,23 @@ describe('X0-C X10 manager.notify', () => {
   }
 })
 
-describe('X0-C U18 watchdog-disabled tool send path', () => {
-  for (const [index, tool] of ['message_session', 'redirect_session'].entries()) {
-    it(`XC-UC-03-M${index + 1} Samuel messages a session directly with watchdog disabled — ${tool} reaches connector unchanged`, async (t) => {
-      const h = await bootChild(t, { activate: true, watchdogEnabled: false })
-      h.requireInstance()
-      const before = h.host.requests.length
-      const result = await h.tool(tool, U18.send)
-      assert.equal(result.ok, true)
-      const operation = tool === 'message_session' ? 'session.message' : 'session.redirect'
-      assert.deepEqual(h.host.requests.slice(before).map(({ operation, payload }) => ({ operation, payload })), [{
-        operation,
-        payload: { sessionId: U18.send.session_id, message: U18.send.message },
-      }], 'watchdog-off passes the existing connector payload without rewriting it')
-    })
+describe('X0-C U18/U20 effectively-off tool send path', () => {
+  for (const watchdogEnabled of [false, true]) {
+    for (const [index, tool] of ['message_session', 'redirect_session'].entries()) {
+      const id = watchdogEnabled ? `XC-DT-OFF-${tool}` : `XC-UC-03-M${index + 1}`
+      it(`${id} Samuel messages a session directly with watchdog ${watchdogEnabled ? 'enabled but unregistered/not ready' : 'disabled'} — ${tool} reaches connector unchanged`, async (t) => {
+        const h = await bootChild(t, { activate: true, watchdogEnabled })
+        h.requireInstance()
+        const before = h.host.requests.length
+        const result = await h.tool(tool, U18.send)
+        assert.equal(result.ok, true)
+        const operation = tool === 'message_session' ? 'session.message' : 'session.redirect'
+        assert.deepEqual(h.host.requests.slice(before).map(({ operation, payload }) => ({ operation, payload })), [{
+          operation,
+          payload: { sessionId: U18.send.session_id, message: U18.send.message },
+        }], 'effective-off passes the existing connector payload without rewriting it')
+      })
+    }
   }
 })
 
@@ -402,6 +461,13 @@ describe('X0-C X11 manager.userTexts', () => {
 })
 
 it.todo('XC-UC-01-A4 Samuel continues work with Fishball plugin updates — deferred: [owner: X-E2E] register during a real model turn, offer on next request, dispose and omit on following request')
+it.todo('XC-UC-01-A5 Samuel keeps current board context in Fishball — [owners: X0-C/X-E2E] approved dynamic systemPrompt.context callback fixture registers on create/resume/live, evaluates current data, dispose removes the contribution without a turn')
+it.todo('XC-UC-01-E2 Samuel keeps healthy capabilities when async setup fails — [owner: X0-C] freeze async completion/rejection policy at create/resume/live, log rejected callback once, isolate healthy registration, no disposed contribution leak; no invented await timing')
+it.todo('XC-UC-02-E3 Samuel retries after durable queue acceptance lost its receipt — [owners: X0-C/FB-PUSH/X-E2E] reconcile the persisted stable identity against durable queue after rebuild, deliver once; current fake agent has no durable queue ledger')
+it.todo('XC-UC-02-E4 Samuel recovers from notification reservation persistence failure — [owner: X0-C] freeze safe store-fault fixture; no accepted success without persistence, recovery retries one stable identity')
+it.todo('XC-UC-02-A4 Samuel continues after a quiet notice survived rebuild — [owners: X0-C/X-E2E] durable hold acceptance/recovery adds text once to next user turn, never an independent wake')
+it.todo('XC-UC-03-F Samuel keeps working after watchdog failure — [owners: X0-S/X0-A/X0-I/WD-13] immediate whole-plugin Fishball handover, release claims, pass both send paths, no halt/stop, one durable retryable notice')
+it.todo('XC-UC-05-M Samuel receives routed updates while controlling sessions over MCP — [owners: MCP-S3/K1/X0-C/X0-W/FB-PUSH] freeze typed local control/intake port names/shapes before W1; no second control API, route before durable queue/wake/ack; no invented transport interface')
 
 /** All U18 observations stay at supplied services, agent queue and connector wire boundaries. */
 async function inboxPort(t) {
@@ -447,21 +513,24 @@ async function rejectBatch(h, chat, items, expected, options) {
 
 const sampleImage = (overrides = {}) => ({ attachmentId: 'image-1', mediaType: 'image/png', width: 1, height: 1, bytes: 1, ...overrides })
 
-describe('X0-C U18 images service sends with watchdog disabled', () => {
-  for (const [index, attachments] of [[], undefined].entries()) {
-    it(`XC-UC-03-A${index + 1} Samuel sends through images.message without watchdog — ${attachments === undefined ? 'omitted' : 'empty'} attachments preserve exact wire text and delivered result`, async (t) => {
-      const h = await bootChild(t, { activate: true, watchdogEnabled: false })
-      h.requireInstance()
-      const images = h.ctx.get('fishballImages')
-      assert.equal(typeof images?.message, 'function', 'fishballImages.message is missing')
-      const request = { ...U18.imageSend, ...(attachments === undefined ? {} : { attachments }) }
-      const original = structuredClone(request)
-      const before = h.host.requests.length
-      const result = await images.message(request)
-      assert.deepEqual(h.host.requests.slice(before).map(({ operation, payload }) => ({ operation, payload })), [{ operation: 'session.message', payload: { ...U18.imageSend, attachments: [] } }])
-      assert.deepEqual(result, { status: 'delivered' })
-      assert.deepEqual(request, original)
-    })
+describe('X0-C U18/U20 images service sends with watchdog effectively off', () => {
+  for (const watchdogEnabled of [false, true]) {
+    for (const [index, attachments] of [[], undefined].entries()) {
+      const id = watchdogEnabled ? `XC-DT-OFF-IMAGES-${index + 1}` : `XC-UC-03-A${index + 1}`
+      it(`${id} Samuel sends through images.message with watchdog ${watchdogEnabled ? 'enabled but unregistered/not ready' : 'disabled'} — ${attachments === undefined ? 'omitted' : 'empty'} attachments preserve exact wire text and delivered result`, async (t) => {
+        const h = await bootChild(t, { activate: true, watchdogEnabled })
+        h.requireInstance()
+        const images = h.ctx.get('fishballImages')
+        assert.equal(typeof images?.message, 'function', 'fishballImages.message is missing')
+        const request = { ...U18.imageSend, ...(attachments === undefined ? {} : { attachments }) }
+        const original = structuredClone(request)
+        const before = h.host.requests.length
+        const result = await images.message(request)
+        assert.deepEqual(h.host.requests.slice(before).map(({ operation, payload }) => ({ operation, payload })), [{ operation: 'session.message', payload: { ...U18.imageSend, attachments: [] } }])
+        assert.deepEqual(result, { status: 'delivered' })
+        assert.deepEqual(request, original)
+      })
+    }
   }
 
   it('XC-DT-02 images.message returns unconfirmed unchanged and never retries or creates a watch', async (t) => {

@@ -3,6 +3,8 @@
  *
  * Source: docs/plugins/fold-notify-design.md §10 (config and fixed constants), §13 (package and
  * bundling), §14 FN-1 ("loads in a test child profile; config bounds enforced").
+ * Pinned canonical 15d6f1f214144db3575f9bc0ba15238b1450c2a7 retains this local W0
+ * skeleton; MCP-SERVER/FB-PUSH own later transport, never an FN-1 server/push test.
  *
  * Observation points: the package's own files, the row's public exports, the Config schema and
  * its defaults, and `apply` over a stub child context. No product code is imported through an

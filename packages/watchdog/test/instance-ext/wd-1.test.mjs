@@ -3,7 +3,9 @@
  *
  * Source: docs/plugins/watchdog-design.md §9 (settings), §12 (package), §14 WD-1 ("the row loads
  * with a stub fishballInstance; §9 bounds enforced"), reconciled by the final instance design
- * U7/U14/U17: DSH's bundle switch is the off switch, approval timers/window sums are removed,
+ * Pinned 15d6f1f214144db3575f9bc0ba15238b1450c2a7 U7/U14/U17/U20/U21:
+ * DSH's bundle switch is the configured off switch; only healthy/ready is effective on.
+ * Failure hands over without stop/halt, questions always bypass watchdog, approval timers/window sums are removed,
  * and auditEntriesKept bounds non-decision operational audit only, never decision history.
  *
  * Observation points: the package files, the row exports, the Config schema defaults/bounds, and
@@ -29,7 +31,6 @@ const NUMBERS = [
   ['pausedPollSeconds', 30, 10, 300],
   ['guardFailures', 3, 1, 10],
   ['guardSeconds', 900, 300, 7200],
-  ['guardRestops', 3, 1, 10],
   ['maxChecksPerHour', 30, 1, 1000],
   ['maxChecksPerDay', 200, 1, 10_000],
   ['maxConcurrentDecisions', 2, 1, 10],
@@ -55,7 +56,7 @@ function stubContext({ withInstance = true } = {}) {
       approvals: { claim: () => () => {}, card: () => undefined, onSettled: () => () => {}, answerApproval: async () => ({ ok: true }) },
       bridge: () => ({ request: async () => ({}) }),
       sideAgents: { open: async () => ({ agent: {}, sessionId: 's', setSection: () => {} }), runTurn: async () => ({}), cancel: () => {} },
-      supervision: { register: () => ({ set: () => {}, clear: () => {}, handedOver: [], dispose: () => {} }), onManagedChange: () => () => {}, endingReason: () => undefined },
+      supervision: { register: () => ({ ready: () => {}, fail: () => {}, set: () => {}, clear: () => {}, handedOver: [], dispose: () => {} }), onManagedChange: () => () => {}, endingReason: () => undefined },
       sessionStarts: { register: () => () => {} },
     },
   }
@@ -112,13 +113,17 @@ describe('WD-1 config defaults and bounds (§9, U7/U14/U17)', () => {
     }
   })
 
-  it('WD1-BVA-01 Samuel saves Fishball tokens with a small-context helper — W0: every numeric setting accepts its bounds and refuses min−1 and max+1', async () => {
+  it('WD1-BVA-01 Samuel saves Fishball tokens with a small-context helper — W0: each numeric field schema accepts its bounds and refuses min−1 and max+1 independently of growth cross-field validation', async () => {
     const { Config } = await packageModule(WATCHDOG, 'index.js')
     for (const [key, , min, max] of NUMBERS) {
-      assert.doesNotThrow(() => Config({ [key]: min }), key + ' min')
-      assert.doesNotThrow(() => Config({ [key]: max }), key + ' max')
-      if (key !== NUMBERS[0][0]) assert.throws(() => Config({ [key]: min - 1 }), key + ' min-1')
-      assert.throws(() => Config({ [key]: max + 1 }), key + ' max+1')
+      const field = Config.dict?.[key]
+      assert.equal(typeof field, 'function', key + ' exposes its public field schema')
+      // A valid field endpoint may be incoherent with another field's default (§9 growth rule).
+      // Isolate the declared field bound, rather than invent companion token/read budgets.
+      assert.doesNotThrow(() => field(min), key + ' min')
+      assert.doesNotThrow(() => field(max), key + ' max')
+      assert.throws(() => field(min - 1), key + ' min-1')
+      assert.throws(() => field(max + 1), key + ' max+1')
     }
   })
 
@@ -142,12 +147,16 @@ describe('WD1 token-saving helper configuration and deferred bundle journeys', (
     const [key, , min] = NUMBERS[0]
     assert.throws(() => Config({ [key]: min - 1 }))
   })
-  it.todo('WD1-UC-BUNDLE-M Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] helper enabled with user present or absent iff fishball-watchdog is in child dsh.profile.bundles; enabled-unregistered gate refuses')
-  it.todo('WD1-UC-BUNDLE-A Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S/WD-13] user disable hands over without stopping or unwatching')
-  it.todo('WD1-UC-BUNDLE-E Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] enabled failed placement is plugin-gone; gated sends refuse')
-  it.todo('WD1-UC-BUNDLE-R Samuel saves Fishball tokens with a small-context helper — deferred: [X0-S/WD-13] re-enable restores dormant briefs without automatic resume')
-  it.todo('WD1-UC-BUNDLE-F Samuel saves Fishball tokens with a small-context helper — deferred: [X0-S/WD-13] disposal while bundle remains enabled is failure not hand-over')
+  it.todo('WD1-UC-BUNDLE-M Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] configured bundle membership is not readiness; enabled-unregistered is effective off, pass sends and route permissions to Fishball regardless of user presence')
+  it.todo('WD1-UC-BUNDLE-A Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S/WD-13] user disable invalidates generation and hands over once without stop/halt/unwatch or erasing briefs')
+  it.todo('WD1-UC-BUNDLE-E Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] enabled failed placement is plugin-gone, immediate effective-off Fishball handover and visible fault even for zero sessions; sends pass, setting unchanged')
+  it.todo('WD1-UC-BUNDLE-R Samuel saves Fishball tokens with a small-context helper — deferred: [X0-S/WD-13] model/store/hook checks and persisted dormant briefs precede ready; no automatic resume/reclaim, stale generation cannot set/claim/answer')
+  it.todo('WD1-UC-BUNDLE-F Samuel saves Fishball tokens with a small-context helper — deferred: [X0-C/X0-S/WD-13] disposal/reload while enabled has failure endingReason but same immediate Fishball handover, no grace or stop; storage fault opens routes/gate in memory first, one stable retryable notice')
+  it.todo('WD1-UC-QUESTION-M Samuel gets an answer from Fishball without waking the permission helper — deferred: [X0-I/X0-A/WD-10/WD-11/WD-12] active/paused claims never receive independent questions or plan reviews in onCard, decision queue or context')
+  it.todo('WD1-UC-QUESTION-A Samuel refines direction separately while Fishball answers — deferred: [X0-A/WD-3/WD-4/WD-6/WD-11/WD-12] refinement failure never withholds/repeats answer; paused/dormant refinement cannot check/resume/claim')
 })
+
+it.todo('WD1-DT-GROWTH Samuel chooses coherent helper read/output budgets — [owner: WD-1] retained growth cross-field rule below/equal/above readMaxBytes*(1+readsPerTurn)/3 + card + maxOutputTokens; readsPerTurn is 2; freeze card-token measurement and rounding, no invented companion vector')
 
 // Story continuation only: W0 config/load does not exercise connector or rendered cards.
 it.todo('WD1-UC-APPROVAL-M Samuel relies on the token-saving helper while present or away — deferred: [WD-8/WD-10/K2/PANELS] decide or escalate immediately on decision-turn end, no approval timers/R4 expiresAt budget; user card waits without time limit, resolved cards clear with reached-layer transcript result')

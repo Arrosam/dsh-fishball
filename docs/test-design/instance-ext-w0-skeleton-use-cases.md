@@ -1,8 +1,8 @@
-# W0 skeleton use cases — final U14–U19 reconciliation
+# W0 skeleton use cases — pinned U14–U22 reconciliation
 
 ## Authority and boundary
 
-Requirements only: canonical [instance extension design](<../plugins/instance-extension-points.md>) at final design `6f7412b`, §0 U14–U19, §12 and task rows §5.4/§5.5, reconciled with the fold-notify/watchdog/board source designs. Canonical decisions override old source wording. No product source was read or changed. Existing package-loading support and per-file Cordis stubs are reused; no shared harness changed.
+Requirements only: canonical [instance extension design](<../../../design-instance-ext/docs/plugins/instance-extension-points.md>) pinned **`15d6f1f214144db3575f9bc0ba15238b1450c2a7`**, §0 U14–U22, §12 and task rows §5.4/§5.5, plus [one-way MCP decisions](<../../../design-instance-ext/docs/plugins/connector-mcp-option.md>) and [approved design](<../../../design-instance-ext/DESIGN.md>), incorporating fold-notify/watchdog/board source designs. Canonical decisions override old source wording. FN-1/WD-1/B1 remain local W0 skeletons with no new transport dependency. No product source was read or changed. Existing package-loading support and per-file Cordis stubs are reused; no shared harness changed. Use Cases below are the human stories defined before test edits; executable skeleton observations are not the later live outcomes.
 
 A row `apply` test is a skeleton load, not proof that Samuel's bundle switch, supervision, board, browser or real model loop works. Later journeys are defined below and remain named `it.todo` with their owners. U14 removes approval-time settings, R4 `expiresAt` budgeting and the window-sum test: **WD1-BVA-02 is retired, not blocked**. U15 removes X3 from skeleton stubs; namespace registration belongs to PG-1. U17 removes decision-audit/label retention, not non-decision operational audit. U19 is board **visibility**, not archive pruning.
 
@@ -44,14 +44,15 @@ Samuel is the primary actor; Fishball is his assistant. LOAD/CONFIG/BUNDLE IDs a
 
 **Everyday trigger:** Samuel delegates work and sometimes stays at his desk, sometimes leaves. The watchdog absorbs frequent permission wake-ups and routine supervision in a smaller context in **both** cases; it applies Fishball's existing permission rules, not an extra security layer. Midway Samuel may choose Fishball's direct handling, then deliberately enable the helper again.
 
-**Outcome / never happens:** Routine decisions cost less context regardless of Samuel's presence. A request is decided or escalated immediately, not budgeted against a deadline. Turning the helper off hands work to Fishball without stopping it or erasing briefs. Re-enabling never silently resumes kept briefs; failure while enabled is not a voluntary hand-over. W0 proves schema/stub load only, not these live outcomes.
+**Outcome / never happens:** Routine permission decisions cost less context regardless of Samuel's presence. A request is decided or escalated immediately, not budgeted against a deadline. Turning the helper off **or any detected failure** immediately hands work to Fishball without stopping sessions or erasing briefs. Only enabled **and healthy/ready** is effective on; configured but unregistered/failed is effective off, never a send refusal. Recovery never silently resumes or reclaims kept briefs. Questions and plan reviews always go to Fishball, never watchdog claims/context. W0 proves schema/stub load only, not these live outcomes.
 
 | Story step | Existing IDs | Evidence / owner |
 | --- | --- | --- |
 | Load the helper with or without the optional instance service. | WD1-UC-LOAD-M, WD1-UC-LOAD-A | Executable WD-1 stub load, not supervision proof. |
 | Keep supported defaults, change output budget, or submit an invalid value. | WD1-UC-CONFIG-M, WD1-UC-CONFIG-A, WD1-UC-CONFIG-E | Executable schema checks under U7/U14/U17. |
 | Use the helper while present or away; disable it or encounter failed placement. | WD1-UC-BUNDLE-M, WD1-UC-BUNDLE-A, WD1-UC-BUNDLE-E | TODO X0-B/X0-S/WD-13 as below. |
-| Re-enable deliberately, or encounter enabled-plugin failure. | WD1-UC-BUNDLE-R, WD1-UC-BUNDLE-F | TODO X0-S/WD-13; dormant recovery, never automatic resume. |
+| Re-enable deliberately, or encounter enabled-plugin failure. | WD1-UC-BUNDLE-R, WD1-UC-BUNDLE-F | TODO X0-C/X0-S/WD-13; immediate effective-off handover and dormant recovery, never fault-induced stop or automatic resume. |
+| Ask a question or review a plan, optionally refining direction independently. | WD1-UC-QUESTION-M, WD1-UC-QUESTION-A | TODO X0-I/X0-A/WD-3/WD-4/WD-6/WD-10/WD-11/WD-12; questions never reach watchdog claims/context. |
 | Rely on immediate decide/escalate without an approval timeout; answer the unlimited user card and later find the result. | WD1-UC-APPROVAL-M; XA-UC-SETTLE-M, XA-UC-HISTORY-M, XA-UC-HISTORY-A | Named W0 WD continuation TODO WD-8/WD-10/K2/PANELS; U17 server DT checks are executable test bodies only. |
 
 ### WD1-UC-LOAD — load the helper (WD-1, X1/X2)
@@ -62,18 +63,24 @@ Samuel is the primary actor; Fishball is his assistant. LOAD/CONFIG/BUNDLE IDs a
 
 ### WD1-UC-CONFIG — choose helper settings (WD-1, U7/U14/U17)
 - M: all **remaining** §9 defaults are declared. `enabled`, `decisionTimeoutSeconds`, `managerReserveSeconds` and `minDecisionSeconds` are absent.
-- A: `maxOutputTokens=2048` is accepted; WD1-BVA-01 independently covers numeric endpoints.
+- A: `maxOutputTokens=2048` is accepted; WD1-BVA-01 independently calls each public field schema at min/max and min−1/max+1, not a whole Config with potentially incompatible defaults.
+- WD1-DT-GROWTH TODO **WD-1**: retain the non-approval growth constraint `turnGrowthTokens ≥ readMaxBytes × (1 + readsPerTurn) / 3 + card + maxOutputTokens`; with `readsPerTurn=2` (source §2.2), once card-token measurement and rounding are specified, exercise below/equal/above threshold with coherent vectors. A — freeze those deterministic terms now (recommended); B — keep aggregate case deferred to WD-1 freeze. Do not assert every individual field maximum can coexist with defaults, or silently delete this retained constraint.
 - E: `maxOutputTokens=255` is rejected.
-- Postconditions: check/guard timers remain. `auditEntriesKept=2000`, bounds 100–100000, remains for **non-decision operational audit**; it never limits ordinary decision transcripts or defines a decision-retention store. WD-4/WD-8/WD-9/WD-10 own that history behavior, not this schema test. No approval window sum or R4 deadline is asserted.
+- Postconditions: check timeouts, intentional-pause polling and `guardFailures`/`guardSeconds` health detection remain. Mandatory `guardRestops` default/bounds assertions are retired: their source-only fault-halted re-stop loop is superseded by U20; no unapproved schema absence/presence is asserted. `auditEntriesKept=2000`, bounds 100–100000, remains for **non-decision operational audit**; it never limits ordinary decision transcripts or defines a decision-retention store. WD-4/WD-8/WD-9/WD-10 own that history behavior, not this schema test. No approval window sum or R4 deadline is asserted.
 
-### WD1-UC-BUNDLE — switch the helper (X0-B/X0-S/WD-13, U1–U8/U16)
+### WD1-UC-BUNDLE — switch or recover the helper (X0-B/X0-S/WD-13, U1–U8/U16/U20)
 - Preconditions: disposable child, bundled helper, supervised entries, briefs/criteria, operational history, ordinary decision transcripts and watches.
-- M: first placement enables; manifest membership is the enable state regardless of user presence. Enabled but unregistered sends refuse `watchdog-unavailable`; registration activates the X19 brief table.
-- A: manifest removal precedes disposal; `endingReason` is hand-over. No stop/unwatch/grace timer; preserve briefs/criteria/operational history and ordinary transcripts, move entries to `handedOver`, remove claims and issue one waking hand-over notice. Fishball handles cards/notices directly; gate off; choice survives restart/upgrade.
-- E: enabled package unavailable logs `BUNDLED_PLUGIN_UNAVAILABLE`; child starts, gate refuses; failure is `plugin-gone`, not hand-over.
-- R: re-enable restores kept briefs dormant, with no check/timer/stop and one nonempty-list notice. Sends require explicit resume/new brief; empty list produces no notice.
-- F: disposal with manifest membership retained is failure/reload; apply guard grace, not hand-over.
-- Postconditions: no separate enabled Config or `gateOn` file. M/E TODO X0-B + X0-S; A/R/F TODO X0-S + WD-13 (A also switch path X0-B).
+- M: first placement enables; manifest membership is configured enablement regardless of user presence. Enabled but unregistered/not ready is **effective off**: both send paths pass, Fishball owns permissions/supervision. Only verified current-generation readiness activates the brief gate; registration alone is not readiness.
+- A: manifest removal precedes disposal; `endingReason` is `hand-over`. Immediately invalidate old generation, remove claims/hooks, re-route open permission cards/held items once, preserve briefs/criteria/history, move entries to `handedOver`, and issue one durable/retryable waking notice when sessions are affected. No stop/halt/unwatch/grace timer; gate off; choice survives restart/upgrade.
+- E: enabled package unavailable logs `BUNDLED_PLUGIN_UNAVAILABLE`; child starts, effective-off sends pass. Cause is `plugin-gone`, `endingReason` is `failure`, **same hand-over** and one visible fault notice even with zero affected sessions. Configured enablement stays unchanged.
+- R: re-enable/repair verifies model/stores/hooks, persists retained briefs dormant before `ready()`, and never reclaims/checks/resumes them automatically. One recovery notice lists nonempty retained briefs; healthy sends then require explicit resume/new brief. Failure to persist stays effective off; stale generation cannot set/claim/answer.
+- F: disposal/reload while manifest remains enabled is `failure`: immediate whole-plugin Fishball hand-over, pass sends and one durable cause/session notice, **no grace or fault-induced stop**. Pending notification retry reuses a stable message identity, including same-home recovery; no lost/duplicate delivery. Storage failure opens gate/routes in memory first, then retries persistence/notification.
+- Postconditions: no separate enabled Config or `gateOn` file. M/E TODO X0-B + X0-S; A/R/F TODO X0-S + WD-13 (A also switch path X0-B, F local notice persistence X0-C).
+
+### WD1-UC-QUESTION — Fishball answers independently of the helper (U21)
+- M: independent question or plan review arrives for an active or paused claimed session. It goes directly to Fishball and never enters watchdog `onCard`, decision queue, X9 claim or side-session context. Fishball may answer/escalate immediately without a timer.
+- A: Fishball separately refines direction with the existing `watchdog_refine` revision contract. Failed refinement never withholds, repeats or undoes the answer. Paused/dormant refinement does not resume/check/claim; an active next turn uses the revised section. Failed/off watchdog has no refine authority; direct Fishball handling continues.
+- Ownership: both named TODO **X0-I/X0-A/WD-10/WD-11/WD-12** (A also WD-3/WD-4/WD-6). No external watchdog endpoint or callback-MCP topology.
 
 ### WD1-UC-APPROVAL — use the helper without waiting on approval timers (U14/U17)
 - M: whether Samuel is present or away, watchdog decides/escalates immediately; if a decision turn ends without an answer, the still-open request escalates at once. Fishball similarly decides/escalates, and the user's card waits without a time limit. There is no R4 `expiresAt` budget or custom fail-safe timer. On resolution the normal tool result returns, cards clear, and only reached-layer ordinary history remains.
@@ -139,14 +146,16 @@ Samuel is the primary actor; Fishball is his assistant. LOAD/CONFIG/BUNDLE IDs a
 
 Counts are top-level test bodies, not assertions or parameter values. Primary techniques are mutually exclusive; LOAD M/A supply secondary DT present/absent rules without double counting. TODO is a defined deferred journey, never executable W0 proof.
 
-| Skeleton task | EP executable | BVA executable | UC executable | UC TODO | Blocked/skip | Total |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| FN-1 | 4 | 1 | 5 | 3 | 0 | 13 |
-| WD-1 | 3 | 1 | 5 | 6 | 0 | 15 |
-| B1 | 3 | 2 | 5 | 10 | 0 | 20 |
-| Skeleton total | 10 | 4 | 15 | 19 | 0 | 48 |
+Each cell is **executable / TODO**. Only five primary techniques are used; load/config stories have secondary Decision Table rules but are counted once as Use Case.
 
-B1 has 10 declared executable bodies; the optional-field BVA asserts retained bounds only when `doneWindowHours` exists. No runtime test was executed in this edit. Additional owned X0-A file: EP/P 6 + ST 3 + DT 7 = **16 executable**, plus **3 UC TODO**, **19 total** (U14 completion cases are separate later-owner work, not silently claimed here).
+| Task | EP | BVA | Decision Table | State Transition | Use Case | Total executable / TODO |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| FN-1 | 4 / 0 | 1 / 0 | 0 / 0 | 0 / 0 | 5 / 3 | 10 / 3 |
+| WD-1 | 3 / 0 | 1 / 0 | 0 / 1 | 0 / 0 | 5 / 8 | 9 / 9 |
+| B1 | 3 / 0 | 2 / 0 | 0 / 0 | 0 / 0 | 5 / 10 | 10 / 10 |
+| Skeleton total | 10 / 0 | 4 / 0 | 0 / 1 | 0 / 0 | 15 / 21 | 29 / 22 |
+
+B1 has 10 executable bodies; the optional-field BVA asserts retained bounds only when `doneWindowHours` exists. Counts come from dry registration of test bodies without executing callbacks/importing product code. `node --check` passes all four owned test files; no runtime test was executed by this author. X0-A is parent-owned; the approval continuations below are explanatory stories, not additional cases/counts owned here.
 
 | UC flow group | Executable IDs | Deferred IDs |
 | --- | --- | --- |
@@ -156,6 +165,7 @@ B1 has 10 declared executable bodies; the optional-field BVA asserts retained bo
 | FN1-UC-BUNDLE | — | M/A/E |
 | WD1-UC-BUNDLE | — | M/A/E/R/F |
 | WD1-UC-APPROVAL | — | M |
+| WD1-UC-QUESTION | — | M/A |
 | B1-UC-BUNDLE | — | M/A/E |
 | B1-UC-HISTORY | — | M/A/E |
 | B1-UC-SEARCH | — | M |
@@ -165,4 +175,6 @@ B1 has 10 declared executable bodies; the optional-field BVA asserts retained bo
 
 **ID migration:** all existing FN1/WD1/B1 UC IDs remain. WD1-BVA-02 → **retired by U14**, not renamed/blocked. WD1-EP-01 now also excludes the three removed approval-time settings. B1-BVA-02 → same ID, conditional recent-done-count bounds, never a presence requirement or panel cutoff. XA-EP-05 → same ID, **discard legacy labels/closed/retired**, replacing “load as manager-decided.” XA-ST-03 → same ID, once-only clear/no labels. New executable IDs: XA-DT-06/07. New TODO IDs: WD1-UC-APPROVAL-M, B1-UC-HISTORY-M/A/E, B1-UC-SEARCH-M, B1-UC-UNINSTALL-M/A/E, XA-UC-SETTLE-M, XA-UC-HISTORY-M/A. Previous DT/default/boolean-to-UC aliases in existing titles remain unchanged; reclassification is not extra coverage.
 
-These 3 human stories contain 15 flow-group definitions (13 skeleton groups plus 2 approval continuations), 37 defined UC flows = 15 executable + 22 TODO. Skeleton-only totals are 34 UC flows = 15 executable + 19 TODO. [Core use cases](<instance-ext-w0-core-use-cases.md>) owns K1/X0-C inventory independently; do not infer combined totals from outdated inventories. No product, shared harness or parent-owned main test-design doc changes; syntax checks are not runtime passes.
+These 3 human stories contain 16 flow-group definitions (14 skeleton groups plus 2 parent-owned approval continuations), 39 defined UC flows = 15 executable + 24 deferred. Skeleton-only totals are 36 UC flows = 15 executable + 21 TODO. New deferred IDs WD1-UC-QUESTION-M/A cover U21; WD1-UC-BUNDLE-M/E/F replace obsolete enabled-no-owner refusal and fault grace-stop oracles with immediate effective-off behavior. `guardRestops` mandatory assertions are retired, not changed into a new field-removal requirement. [Core use cases](<instance-ext-w0-core-use-cases.md>) owns X0-C inventory independently; K1 and X0-A inventories remain parent-owned. No product, shared harness or parent-owned main test-design doc changes by this author; syntax checks are not runtime passes.
+
+One-way MCP is not a new skeleton feature: external delegated approvals/questions are default-on with no off setting, idle non-polling items wait, first committed outcome wins, and W1 MCP-SERVER removes old control endpoints/exports in the coordinated upgrade with no legacy path. Watchdog `approvalsEnabled` controls its own permission helper only, not an external-delegation off switch. Full transport/settlement tests belong to K1/K2/MCP-SERVER/FB-PUSH and local routing owners, never fabricated FN-1/WD-1/B1 implementation tests.
