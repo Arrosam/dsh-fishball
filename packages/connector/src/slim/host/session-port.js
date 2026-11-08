@@ -71,6 +71,15 @@ const SESSION_ADDRESS = 'session'
 /** dsh-agent's status for a Session with a turn in progress; 0.2.1 exposes it on the live agent. */
 const RUNNING_AGENT = 'running'
 
+const LIST_ACTIVITY = Object.freeze({
+  event: 'api-session/activity',
+  stepMs: 1,
+  failed: 'delivery activity for %s failed (%s)',
+})
+// Live activity watermarks only, never DSH's projection/cache: retain across instance
+// reattachments on this connector context, not across connector reloads.
+const deliveryActivityByContext = new WeakMap()
+
 const LOG = 'fishball-session-port'
 const IMAGE_BLOCK = 'image'
 /** Watch refusals the contract's watchError vocabulary can carry (§5.2). */
@@ -176,6 +185,16 @@ export function createSessionPort(ctx, options = {}) {
     return found
   }
   const workspaces = () => ctx.workspaceRegistry.list()
+  let activityWatermarks = deliveryActivityByContext.get(ctx)
+  if (activityWatermarks === undefined) {
+    activityWatermarks = new Map()
+    deliveryActivityByContext.set(ctx, activityWatermarks)
+    // The public list read may yield. Observe native activity too so a human message during
+    // that read cannot leave our baseline behind the row already seen by connected clients.
+    ctx.on(LIST_ACTIVITY.event, (sessionId, timestamp) => {
+      activityWatermarks.set(sessionId, Math.max(timestamp, activityWatermarks.get(sessionId) ?? timestamp))
+    })
+  }
 
   /**
    * The image port needs the full log (sessionQuery.readSession) and the attachment store. Both
@@ -246,11 +265,31 @@ export function createSessionPort(ctx, options = {}) {
     return (await ctx.sessionController.inspect(sessionId, NEVER_ABORTED)).events
   }
 
+  /** Live-only ordering: use the public row baseline shared by both supported DSH versions. */
+  async function emitDeliveryActivity(sessionId) {
+    const { items } = await ctx.sessionController.list({}, NEVER_ABORTED)
+    const row = items.find((item) => item.sessionId === sessionId)
+    // Recheck after the asynchronous delivery/read: a target may have been archived meanwhile.
+    if (row === undefined || ctx.workspaceRegistry.archivedSessionIds.includes(sessionId)) return
+    // No await between reading and advancing the watermark: concurrent deliveries must also
+    // advance when the clock ties or moves backwards. No authoritative row is changed.
+    const previous = Math.max(row.updatedAt, activityWatermarks.get(sessionId) ?? row.updatedAt)
+    const timestamp = Math.max(now(), previous + LIST_ACTIVITY.stepMs)
+    activityWatermarks.set(sessionId, timestamp)
+    ctx.emit(LIST_ACTIVITY.event, sessionId, timestamp)
+  }
+
   /** Hand a message to a session's agent and flush it; false on the flush is unconfirmed, never failed. */
   async function handOver(agent, text, assistantId, send, attachments, via) {
     await send(agent, userMessageOf(text, assistantId, attachments, via))
     let flushed = false
     try { flushed = await ctx.sessions.flush(agent.session) === true } catch { /* Unconfirmed, not undelivered. */ }
+    if (flushed) {
+      // A list read or notification failure cannot undo a confirmed relay, its watch or audit.
+      try { await emitDeliveryActivity(agent.session.id) } catch (error) {
+        logger?.warn(LIST_ACTIVITY.failed, agent.session.id, error?.code ?? ERROR.failed)
+      }
+    }
     return { status: flushed ? DELIVERY.delivered : DELIVERY.unconfirmed }
   }
 
