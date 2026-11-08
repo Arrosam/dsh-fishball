@@ -207,17 +207,20 @@ describe('X0-C X2 manager.registerSetup', () => {
   it('XC-UC-01-E1 Samuel continues work with Fishball plugin updates — W0: a throwing registration is logged and skipped; a later one still applies', async (t) => {
     const h = await bootChild(t, { activate: false })
     const service = h.requireInstance()
+    const warningCount = () => h.logs.filter((entry) => entry.level === 'warn').length
+    // Boot warnings are outside the registered callback's log-once contract.
+    const warningsBeforeSetup = warningCount()
     service.manager.registerSetup(MANAGER, () => { throw new Error('setup boom') })
     service.manager.registerSetup('fishball-board', (agentCtx) => {
       agentCtx.tools.register({ name: 'board_after_throw', description: 'board' })
     })
     await h.http('/api/chat')
     assert.ok(h.agentCtxs()[0].ctx.tools.names().includes('board_after_throw'))
-    const warningCount = () => h.logs.filter((entry) => entry.level === 'warn').length
-    assert.equal(warningCount(), 1, 'the callback failure is logged once')
+    assert.equal(warningCount() - warningsBeforeSetup, 1, 'the callback failure is logged once')
     h.agentsById.delete(h.manager().id)
     await h.http('/api/chat')
-    assert.equal(warningCount(), 1, 'the same plugin/point failure is not logged again on resume')
+    assert.equal(warningCount() - warningsBeforeSetup, 1, 'the same plugin/point failure is not logged again on resume')
+    assert.ok(h.agentCtxs()[1].ctx.tools.names().includes('board_after_throw'), 'the healthy registration still applies on resume')
   })
 
   it('XC-ST-01 Samuel continues work with Fishball plugin updates — W0: registered → applied → disposed → registered again', async (t) => {
