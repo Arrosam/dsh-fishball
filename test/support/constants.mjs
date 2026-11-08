@@ -264,7 +264,9 @@ export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepsee
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
 export const INBOUND_TOOL = 'message_fishball'
 export const OUTBOUND_TOOLS = ['message_session', 'start_session']
-export const RELAY = { kind: 'agent-message', form: 'relay' }
+export const RELAY = { kind: 'agent-message', form: 'relay', via: 'message' }
+/** A relay a redirect sent: the tool is recorded in its source (SOURCE.via.redirect, ORG-01). */
+export const RELAY_REDIRECT = { ...RELAY, via: 'redirect' }
 export const NOTICE = { kind: 'fishball-notice', form: 'notice' }
 /** P5 result and route codes. */
 export const P5_CODE = {

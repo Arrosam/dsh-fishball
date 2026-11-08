@@ -51,12 +51,12 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { ERROR, OPERATION, ROLE } from 'fishball-connector/contract'
-import { ELLIPSIS, READ_MAX } from './support/constants.mjs'
+import { ELLIPSIS, LIMITS_R11, READ_MAX } from './support/constants.mjs'
 import { HOOK, T, turn } from './support/expect.mjs'
 import { bootStub, restartStub, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
 import {
   MSGF, READ_DEFAULT, assertMessageShape, blankManaged, bytes, eventsOf, expectedAuthor, expectedFromLog, fishballId, forward, inject, notice, padded,
-  readOk, readSession, relay, roleOf, rolesAndTexts, textBytes, tok,
+  readOk, readSession, relay, roleOf, rolesAndTexts, setLimit, textBytes, tok,
 } from './support/instance-stub-messaging.mjs'
 import { until } from './support/util.mjs'
 
@@ -127,8 +127,12 @@ describe('session.read labels who wrote each message', () => {
 
     before(async () => {
       table = rows(fb).map(([label, source], i) => ({ label, source, text: textFor(i) }))
+      // The connector caps every read at its readSessionMessages setting, so a request bound alone cannot
+      // return 25 messages (contract §4.1). Raise the setting for this table, then restore the default.
+      await setLimit(host, { readSessionMessages: table.length })
       ;({ read } = await injected('rol-table', table.map((r) => [r.text, r.source])))
     }, HOOK)
+    after(() => setLimit(host, { readSessionMessages: LIMITS_R11.readSessionMessages.default }))
 
     rows('stand-in-session-id').forEach(([label], i) => {
       it(label, T, () => assertLabel(read.messages.find((m) => m.text === table[i].text), table[i].text, table[i].source, fb))

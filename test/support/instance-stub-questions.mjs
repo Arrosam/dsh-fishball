@@ -266,10 +266,11 @@ export async function assertStillOpen(q, sid, card, callId, label) {
 /**
  * A payload the instance must not get accepted. Two kinds (contract §3.1, §4.2, §8):
  * - `fit` (default): a rule of §4.2's answers or a §8 bound, for which the contract names the refusal
- *   (`bad-answer`, "a batch that does not fit", slim §5.2; `limit-exceeded` or the named code, §8). It must come back
+ *   (`bad-answer`, "a batch that does not fit", slim §5.2; `limit-exceeded` or the named code, §8). It comes back
  *   as an ordinary error frame with the channel open, so the instance can correct itself and the question stays its own.
- * - `shape`: a break of the frame's own types or key rules, with no named code; §3.1 lets the connector close the
- *   channel instead (a detach: the question then goes to its own session, §5.1).
+ * - `shape`: a break of the frame's own types or key rules. A `question.answer` whose payload breaks any rule is
+ *   answered the same way — an `error` frame (`limit-exceeded` or `invalid-envelope`) and the channel stays open
+ *   (contract §3.1) — so the instance can correct it; the old close-the-channel reading is gone.
  * Either way the question stays open in its session and the agent waits. The stub is re-attached when the connector
  * closed the channel, before any assertion, so one failure does not break the cases after it. Returns the reply.
  */
@@ -280,7 +281,10 @@ export async function refuseShape(q, sid, { card, offer }, callId, label, rest, 
   if (kind === REFUSAL.fit) {
     assert.equal(reattached, false, label + ': the connector closed the channel instead of refusing with an error frame')
     assert.ok(QSTUB.fitCodes.includes(codeOf(r)), label + ': an error frame with ' + QSTUB.fitCodes.join(' or ') + ': ' + JSON.stringify(r))
-  } else assert.ok(closedChannel(r) || codeOf(r), label + ': a refusal frame or a closed channel')
+  } else {
+    assert.equal(reattached, false, label + ': the connector closed the channel instead of refusing with an error frame')
+    assert.ok([...QSTUB.fitCodes, ERROR.invalid].includes(codeOf(r)), label + ': an error frame with ' + [...QSTUB.fitCodes, ERROR.invalid].join(' or ') + ': ' + JSON.stringify(r))
+  }
   await assertStillOpen(q, sid, card, callId, label)
   return r
 }

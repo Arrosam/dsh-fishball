@@ -11,11 +11,11 @@
  * and the flushes of sessions created while it is armed, and can make rename throw the real
  * SessionTitleInvalidError or a plain Error, make the steer throw, or make the flush after the steer fail.
  *
- * Contract §4.1 changes two rules of the old tool: `title` and `message` may be empty strings, and the
- * reply is `{sessionId, managed, titleError?, workspaceError?, watchId? or watchError?}` (no title, no
- * folder). A title with no visible characters therefore starts the session with a titleError (DESIGN
- * §5d: "DSH refuses the title" → titleError, "the session still starts"); the contract wins over the
- * old `no-title` refusal (contract §0: "Where those decisions and the design differ, the decisions win").
+ * Contract §4.1 requires a `title` with a visible character: an empty or blank one (or one made only
+ * of invisible formatting characters) is refused `limit-exceeded` before anything is created, so no
+ * session exists and the rename is never called. `message` may still be empty. The reply is
+ * `{sessionId, managed, titleError?, workspaceError?, watchId? or watchError?}` (no title, no folder);
+ * `titleError` now only reports a title DSH itself refuses or cannot set (DESIGN §5d).
  *
  * Host A: DSH's session-title service present. Host C: DSH without its session-title row.
  *
@@ -32,12 +32,12 @@
  * | SST-06 ×2 | EP (flush after the steer throws / answers false) | R6 | started; the message steered once (never sent twice) |
  * | SST-07 ×3 | DT (steer throws × rename outcome) | R6 | the reply carries the sessionId and the title outcome; rename happened once, before the steer; the session exists |
  * | SST-08  | EP (session.message, live and cold managed targets) | R7 | rename is never called; titles unchanged |
- * | ORD-02 ×12 | EP (empty or invisible-only title) × BVA | R2 + contract §4.1 | the session starts (title may be empty); titleError title-invalid; DSH keeps no title |
+ * | ORD-02 ×12 | EP (empty or invisible-only title) × BVA | R2 + contract §4.1 | refused `limit-exceeded`; nothing created, no rename |
  * | ORD-02b ×5 | EP (title not a string or missing) | contract §3.1 | the frame fails validation: the channel closes, nothing is created |
  * | ORD-03 ×2 | DT (title ok × folder) | R2 | a missing folder and a relative path are refused with an error frame, nothing created |
  * | UNA-01  | EP (no sessionTitle service) | R5 | started, titleError title-unavailable; message delivered; no title set |
  * | UNA-02  | DT (no service × notifyWhenFinished) | R6 | watchId next to titleError; one watch notice |
- * | UNA-03 ×2 | DT (no service × empty / invisible title) | R2 | started, titleError title-unavailable (the service is missing whatever the title) |
+ * | UNA-03 ×2 | DT (no service × empty / invisible title) | R2 | refused `limit-exceeded` before the service is consulted; nothing created |
  * | UNA-04  | EP (steer throws, no service) | R6 | the reply carries the sessionId and titleError title-unavailable |
  *
  * Retired:
@@ -268,12 +268,13 @@ describe('session.start names the session (DSH session-title service present)', 
     assert.equal(await w.titleOf(cold), '', 'the resumed session still has no title')
   })
 
-  describe('ORD-02 a title that is empty after normalizing still starts the session, untitled (title may be empty)', () => {
+  describe('ORD-02 a title with no visible character is refused before anything is created', () => {
     for (const [label, title] of EMPTY_TITLES) {
-      it(label + ' → started, titleError ' + G.titleError.invalid, T, async () => {
+      it(label + ' → an error frame limit-exceeded, nothing created', T, async () => {
         assert.equal(emptyTitle(title), true, 'precondition: DSH reduces this title to empty')
-        const json = await assertTitleError(w, await w.start({ title }), G.titleError.invalid)
-        assert.equal(await w.titleOf(json.sessionId), '', 'no title kept')
+        const sessions = await w.sessionIds()
+        assertError(await w.start({ title }), [ERROR.limit])
+        await assertNothingStarted(w, sessions)
       })
     }
   })
@@ -315,9 +316,13 @@ describe('session.start without a DSH sessionTitle service', () => {
     assert.equal((await watchNoticesSettled(w, json.watchId, 1)).length, 1, 'one notice after the first turn')
   })
 
-  describe('UNA-03 an empty title still starts the session; titles cannot be set at all', () => {
+  describe('UNA-03 an empty title is refused before the service is consulted, so the service cannot change it', () => {
     for (const [label, title] of [['an empty title', ''], ['a zero-width space', '\u200b']]) {
-      it(label, T, async () => { await assertTitleError(w, await w.start({ title }), G.titleError.unavailable) })
+      it(label + ' → limit-exceeded, nothing created', T, async () => {
+        const sessions = await w.sessionIds()
+        assertError(await w.start({ title }), [ERROR.limit])
+        await assertNothingStarted(w, sessions)
+      })
     }
   })
 
