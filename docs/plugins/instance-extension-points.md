@@ -28,6 +28,9 @@ open questions of the first cut (Q-A = B, Q-B = B) are U5 and U6; §9 now has no
 | U6 | Q-B = **B**: turning the watchdog back on does **not** resume the kept briefs. They become `dormant`; Fishball gets one notice listing them and resumes each with `watchdog_resume`. A session whose brief is dormant has **no active brief**, so sends to it are refused (U5) until Fishball resumes that brief or writes a new one | X14, §2.4 step 6, §2.5 |
 | U7 | W0 tester Q4: "这个做成和普通的插件一样的管理". The watchdog is on exactly when `fishball-watchdog` is enabled in the child profile (in `dsh.profile.bundles`), switched like any DSH plugin. No separate `gateOn` file. Enabled but not registered yet (starting, crashed) → sends refused `watchdog-unavailable`. Turning it off is the hand-over (U4); on again gives dormant briefs (U6) | §2.4, §2.5, X19 |
 | U8 | W0 tester Q3: "一个watchdog的session只负责盯一个会话，这是一个一对一的关系。watchdog会将session的请求redirect到watchdog上，如果watchdog不存在，就会直接走向fishball。" One watchdog side session per watched session (1:1). The watchdog **claims** a session when it attaches and drops the claim when it detaches; a claimed session's requests go to the watchdog, every other session's go to Fishball | X15, §2.6 |
+| U10 | Q-C = **A-lite**: "A，优先保全DSH的拓展性和对DSH的生态的兼容能力". The child profile gets `dsh-web-app` back; the Fishball page is DSH's own web shell booted into Fishball's session with a minimal layout. **Guiding rule from now on: preserve DSH extensibility and ecosystem compatibility first.** Supersedes D28/I2 ("borrow styles only") for the chat page | §11 |
+| U11 | "一打开就要是Fishball的页面，通过修改DSH的网页来删去其他的组件，只留下Fishball一个会话页。" and the mechanism: **one small `dsh.client` plugin, `fishball-page`, bundled inside fishball-instance, loaded only in the child's DSH web**, does every removal and layout change. Never installed into the main DSH; no patching of DSH code or bundles; CSS from the same plugin is the fallback | §11.2–§11.5 |
+| U12 | "Fishball instance内的设置页也用DSH自带的插件设置页，且可以打开instance内的DSH setting页面，只是删除了侧边栏和其他的session页面，查看session只允许查看Fishball的session，并且拒绝启动任何的新session，并且整个fishball instance的DSH都没有只读以外的权限。" DSH's own Settings and Plugins pages are allowed destinations; only Fishball's session can be viewed; no new session can be started; nothing in the child goes above read-only | §11.4, §11.6, §11.7 |
 | U9 | W0 tester Q1 = A, Q2 = A, Q5 = A: X7's page-hook behaviour is tested in the real browser later (W0 tests the server side only); an out-of-scope X12 call answers `forbidden` (the other refusals stay "observable effect only"); bundled placement runs inside `initializeProfile`, before `loadProfileDirectory` and the skipped-bundle check | X7, X12, §2.2, X0-B |
 
 ## 1. The canonical extension points
@@ -62,11 +65,11 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | --- | --- | --- | --- | --- |
 | X1 | `manager.sessionId() → string \| undefined` | Fishball's (the manager's) session id; refuse calls from other agents | fold, board, watchdog | fE1 = wE7 = b1 |
 | X2 | `manager.registerSetup(pluginId, fn(agentCtx, agent)) → dispose` | the **one** way into the manager's agent scope: tools (`agentCtx.tools.register`), static sections (`systemPrompt.section`), dynamic context (`systemPrompt.context`). Runs on create and every resume, after the persona, in registration order. A late registration is applied to the live agent at once. Each registration runs as its own fiber `agentCtx.plugin({apply: fn})`, so `dispose` removes everything `fn` registered | fold (tool + section), board (2 tools, guide, dynamic context), watchdog (11 tools + loop section) | fE2 = b2; **replaces** wE3 `registerManagerTools` and wE4's `addManagerPromptSection` |
-| X3 | `chat.registerRecordProjector(pluginId, type, fn(data, event) → {id, at, data, text?} \| undefined) → dispose` | show a plugin's log-only record in `GET api/chat` and the SSE `entry` frame as `{id, kind: 'plugin', plugin, at, data, text?}`; `type` must start `plugin:<pluginId>/`. **Added:** optional `text` (≤ `EXT_LIMITS.recordTextChars`, a new constant in `child/extensions.js`, equal to `CHAT_LIMITS.entryChars` (8000), the cap `chat.js` `notify` applies at `:679`), drawn by the instance as a plain record row when no page module renders the entry | fold (notice), watchdog (report, guard notices) | fE3; covers wE4's "shown in the manager's chat" |
-| X4 | `ui.register({pluginId, module, style?, dictionaries}) → dispose`; `GET api/ui-extensions → [{pluginId, module, style?}]`; files served at `ui/ext/<pluginId>/…` with the `/ui/*` checks | load a plugin's page module; CSP stays `'self'` | fold, board | fE4 (a–c) = b3 |
-| X5 | `ui.registerRoute(pluginId, {method, path, handler(req) → {status, body}}) → dispose`, served at `api/ext/<pluginId>/<path>`, same bearer and body limits as `api/*` | a plugin's JSON routes | fold (`seen`), board (`board`, `export`) | fE4 (d) = b3 |
-| X6 | `ui.signal(pluginId, type)` → SSE event `ext` `{pluginId, type}`, data-free, coalesced per `(pluginId, type)` per tick | tell a module to re-read | board | b3 (b) |
-| X7 | Page hook object passed to each module's default export: `{document, i18n, request, sidebar({order}) → HTMLElement, onSignal(type, fn) → dispose, setTimelinePresenter(presenter) → dispose}` | page-side reach: an aside container (mounted above `#reminders`, ordered by `order`), the signal filtered to the module's own `pluginId`, and the **single-owner** timeline presenter with fE5's exact shape | fold (presenter), board (sidebar, signal) | fE5 + b3 (a)(b). Tested in the real browser, not in W0 (U9) |
+| X3 *(server projector withdrawn, U10: a plugin's own `uiConversation.events.register` definition renders its record, §11.3)* | `chat.registerRecordProjector(pluginId, type, fn(data, event) → {id, at, data, text?} \| undefined) → dispose` | show a plugin's log-only record in `GET api/chat` and the SSE `entry` frame as `{id, kind: 'plugin', plugin, at, data, text?}`; `type` must start `plugin:<pluginId>/`. **Added:** optional `text` (≤ `EXT_LIMITS.recordTextChars`, a new constant in `child/extensions.js`, equal to `CHAT_LIMITS.entryChars` (8000), the cap `chat.js` `notify` applies at `:679`), drawn by the instance as a plain record row when no page module renders the entry | fold (notice), watchdog (report, guard notices) | fE3; covers wE4's "shown in the manager's chat" |
+| X4 *(withdrawn, U10)* | `ui.register({pluginId, module, style?, dictionaries}) → dispose`; `GET api/ui-extensions → [{pluginId, module, style?}]`; files served at `ui/ext/<pluginId>/…` with the `/ui/*` checks | load a plugin's page module; CSP stays `'self'` | fold, board | fE4 (a–c) = b3 |
+| X5 *(withdrawn, U10: Connection Fetch routes, §11.3)* | `ui.registerRoute(pluginId, {method, path, handler(req) → {status, body}}) → dispose`, served at `api/ext/<pluginId>/<path>`, same bearer and body limits as `api/*` | a plugin's JSON routes | fold (`seen`), board (`board`, `export`) | fE4 (d) = b3 |
+| X6 *(withdrawn, U10)* | `ui.signal(pluginId, type)` → SSE event `ext` `{pluginId, type}`, data-free, coalesced per `(pluginId, type)` per tick | tell a module to re-read | board | b3 (b) |
+| X7 *(withdrawn, U10)* | Page hook object passed to each module's default export: `{document, i18n, request, sidebar({order}) → HTMLElement, onSignal(type, fn) → dispose, setTimelinePresenter(presenter) → dispose}` | page-side reach: an aside container (mounted above `#reminders`, ordered by `order`), the signal filtered to the module's own `pluginId`, and the **single-owner** timeline presenter with fE5's exact shape | fold (presenter), board (sidebar, signal) | fE5 + b3 (a)(b). Tested in the real browser, not in W0 (U9) |
 | X8 | `attention.set(pluginId, {unread, importantUnread, latestAt}) → dispose`, single owner | the value sent as contract 1.2 `instance.attention` (§3) at once, after every handshake, and `{0, 0, null}` on dispose | fold | fE6 (instance half) |
 | X9 | `inbox.claim({pluginId, kind, match(item) → key?}, onItem(item, key)) → dispose`; `inbox.release(key, {deliver, prefix?})`; `inbox.setBatcher(pluginId, fn(item, deliver)) → dispose` (single owner) | **one inbox pipeline** in `inbox.js receive`: approvals-row items → **claims** (a claimed item is acked at once and held) → **batcher** → `deliverInbox`. `release(…, {deliver: true})` re-enters the pipeline after the claims, so a released item is batched like any notice. `deliverInbox` gains an array form (fE7). `PERMISSION_NOTICE` marker added to `inbox-markers.js` | watchdog (claims), fold (batcher) | wE2 + fE7 |
 | X10 | `manager.notify({pluginId, dedupeKey, text, record?: {type, data}, wake}) → Promise<{queued \| held \| duplicate}>` | a plugin's message to Fishball: `wake: true` is one notice turn (source `{kind: 'fishball-notice', form: 'plugin', pluginId}`); `wake: false` is held for the next turn; dedupe is durable. **Not batched** (fold §7 batches inbox items only) | watchdog | wE4 (notify half) |
@@ -411,14 +414,14 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | --- | --- | --- | --- |
 | **SP** spikes SP-X1, SP-FN1, B0/S1 | `spikes/instance-ext/*`, `docs/spikes/instance-ext.md` | — | **done 2026-11-08: all yes on both versions** (§4) |
 | **K1** contract 1.2 + connector `unread` | `packages/connector/contract/{contract,limits}.js`, `docs/connector-contract.md`, `packages/connector/src/slim/host/bridge.js`, `src/connector-service.js`, `index.js` | — | §3 table holds; 1.1 instance attaches; `state.unread` follows the last valid value, `{0,false}` on detach and close |
-| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — (SP-X1 done) | `fishballInstance` v1 provided; X1–X3, X10, X11 behave as §1; every other member a stub that refuses `not-implemented`; the X19 call sites exist and pass everything while the watchdog is not enabled; the instance tests are unchanged and green with no plugin |
+| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — (SP-X1 done) | `fishballInstance` v1 provided; X1, X2, X10, X11 behave as §1, and X3 keeps only the record-type rule (`plugin:<pluginId>/…`; the server projection into `GET api/chat` is withdrawn, U10); every other member a stub that refuses `not-implemented`; the X19 call sites exist and pass everything while the watchdog is not enabled; the instance tests are unchanged and green with no plugin |
 | **X0-I** inbox pipeline | `child/inbox.js`, new `child/ext/inbox.js`, `src/slim/inbox-markers.js` | X0-C | X9: claims before the batcher, release re-enters, ack/refuse per item |
-| **X0-U** page modules | `child/server.js`, new `child/ext/ui.js`, `ui/shell.{js,html,css}`, `ui/chat.js` | X0-C | X4–X7; the X3 `text` fallback row; the CSP unchanged; with no module, the page is identical to today |
+| ~~X0-U~~ | **withdrawn (U10)**; replaced by SP-PG, CHILD-WEB, EMB, PG-1, PANELS (§5.4) | — | — |
 | **X0-W** wire: scoped bridge + attention | `child/bridge.js`, new `child/ext/{bridge-scope,attention}.js` | X0-C, K1 | X12 local `forbidden`; X8 sent on set, on each handshake, zero on dispose, skipped without the capability |
 | **X0-G** side agents | new `child/ext/side-agents.js` | X0-C | X13 lock-down on both versions |
-| **X0-A** approvals seam + escalation card | `child/approvals.js`, `child/decisions.js`, `ui/approvals.js`, `ui/records.js` | X0-C | X15 per-session claim and routing (§2.6); a claim is refused `not-supervised` unless X14 holds the session active, paused or halted, and the instance releases it on dormant or clear; old labels load as manager-decided; `delegate-no-grant`, `grant-off-supervised` |
+| **X0-A** approvals seam (server) | `child/approvals.js`, `child/decisions.js` (the UI files move to PANELS) | X0-C | X15 per-session claim and routing (server half only; the tag and the escalation card move to PANELS) (§2.6); a claim is refused `not-supervised` unless X14 holds the session active, paused or halted, and the instance releases it on dormant or clear; old labels load as manager-decided; `delegate-no-grant`, `grant-off-supervised` |
 | **X0-S** supervision, start rule, send gate | `child/session-tools.js`, new `child/ext/{supervision,session-starts,send-gate}.js` | X0-C, X0-A (the claim port) | X14 guard, managed changes, `dormant`, the hand-over decided from `dsh.profile.bundles` at disposal (§2.4), and re-enable; X16 attach = set active + claim (§2.3); X19: the gate is on exactly while the plugin is enabled, `watchdog-unavailable` while enabled and unregistered, plus the table and the hand-over line (§2.5), on both send paths; no `gateOn` file exists anywhere in the child home |
-| **X0-B** bundling + admin | `packages/instance/package.json`, `src/native-runtime/{constants,installation,files,index}.js`, `child/admin.js`, `ui/settings.js`, `ui/i18n.js` | X0-S (the hand-over port, stubbed until merged); SP-FN1 done | X17, X18 for the three names; placement inside `initializeProfile` before `loadProfileDirectory` (U9); a failed placement of one name leaves the others |
+| **X0-B** bundling + admin | `packages/instance/package.json`, `src/native-runtime/{constants,installation,files,index}.js`, `child/admin.js` | X0-S (the hand-over port, stubbed until merged); SP-FN1 done | X17, X18 for the three names (the "Built in" tag is gone with the custom settings view, §11.7; Q-K); placement inside `initializeProfile` before `loadProfileDirectory` (U9); a failed placement of one name leaves the others |
 
 ### 5.2 Plugin tasks, re-based on the canonical names
 
@@ -426,9 +429,9 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | --- | --- | --- | --- |
 | FN-1 skeleton | FN-1 | `packages/fold-notify/{package.json,cordis.patch.yml,index.js,src/constants.js,src/config.js}` | — |
 | FN-2 tool + section | FN-2 | `src/tool.js` | X0-C (X1, X2), FN-1 |
-| FN-3 notices, seen, attention | FN-3 | `src/notices.js` | X0-C (X3), X0-U (X5), X0-W (X8), FN-1 |
-| FN-4 presenter | FN-4 | `ui/fold.js`, `ui/fold.css`, `ui/i18n.js` | X0-U (X4, X7) |
-| FN-5 page notify side | FN-5 | `ui/notify.js` (+ `ui/fold.css` after FN-4) | FN-3, FN-4 |
+| FN-3 notices, seen, attention | FN-3 | `src/notices.js`, the `seen` Fetch route | X0-C, X0-W (X8), FN-1, CHILD-WEB (Fetch routes) |
+| FN-4 fold as a DSH conversation plugin | FN-4 | `packages/fold-notify/client/` (`dsh.client`: a group/node definition on `uiConversation`, its CSS, i18n) | PG-1 |
+| FN-5 notify side (viewed, title, system notification, important bar) | FN-5 | `packages/fold-notify/client/notify.js` (+ its CSS after FN-4) | FN-3, FN-4 |
 | FN-6 turn batching | FN-6 | `src/batcher.js` | X0-I (X9 batcher), FN-1 |
 | FN-A connector alert | FN-A | `packages/connector/client.js` (fold §9.1 rows) | K1 |
 | — | FN-0, FN-E6, FN-K, FN-B | absorbed into X0-*, K1 | — |
@@ -437,40 +440,65 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | WD-13 coupling | WD-13 | `src/coupling.js` | X0-S; **adds** `endingReason()` handling (§2.4 step 2), the `handedOver` → `dormant` list on register with the one notice (§2.4 step 6), `watchdog_resume` of a dormant brief, `watchdog_brief` superseding a dormant brief |
 | **WD-14** start-time assignment (new) | — | new `src/start-assign.js` | X0-S (X16), WD-2, WD-6, WD-13 |
 | WD-12 integration | WD-12 | `index.js` wiring, e2e | all WD, X0-B |
-| B1 … B5 | same | `packages/board/…` as board §14 | X0 → X0-C (X1, X2), X0-U (X4–X7) |
-| B6 meow-memory recommended | B6 | `src/recommended.js`, `src/slim/host/admin.js`, `ui/settings.js`, `ui/i18n.js`, DESIGN.md | **after X0-B** (shares `settings.js`, `i18n.js`) |
+| B1 … B4 | same | `packages/board/…` as board §14 | X0-C (X1, X2) |
+| B5 board panel | B5 | `packages/board/client/` (`dsh.client`: a `rightbar` panel entry) and `src/routes.js` (Fetch routes) | B4, PG-1 |
+| B6 meow-memory recommended | B6 | `src/recommended.js`, the recommended panel of `fishball-page` (Q-L A), DESIGN.md | PG-1 |
 | B7 meow in the child | B7 | test rig only | B6 |
 | B8 board e2e | B8 | `test/e2e/board.*` | B1–B5, X0-B |
 | — | B9 | absorbed into X0-B (all three names) | — |
 | **X-E2E** three bundled together | new | `test/e2e/bundled.*` | X0-*, FN-7, WD-12, B8 |
 | FN-7 docs | FN-7 | README, contract cross-check | all FN |
 
+### 5.4 A-lite page tasks (U10–U12, §11)
+
+| Task | Owns | Depends | Done when |
+| --- | --- | --- | --- |
+| **SP-PG** pre-start spike (W1 prerequisite) | `spikes/instance-ext/page/*`, `docs/spikes/instance-ext-page.md` | — | yes or no on both versions for: (1) DSH's shell through the connector's embed path: `__DSH_BOOT__`, `<base href="./">`, combos, `api/remote.mux`, the token-to-cookie exchange, and the CSP the broker sets (today `frame-ancestors 'self'; default-src 'self'…` at `host/embed.js:75`; DSH's index injects inline `<script>` rows, `dsh-host-webserver/lib/index.js:69-97`, so the broker's CSP must change); (2) a `dsh.client` overlay row from the snapshot is served (`resolveMeta`); (3) Q-F rail options; (4) the navigation guard bounces `openSession` and `selectPanel`; (5) where the child's shortcut document lives and that `null` unbinds `session.new` and `session.search`; (6) any pre-create hook for sessions (Q-G); (7) the Settings sandbox field under the read-only overlay |
+| **CHILD-WEB** child profile and overlay | `src/native-runtime/{constants,overlay,installation}.js` (add `dsh-web-app` back, keep the existing migration's backup rule), the overlay rows of §11.3/§11.6, the read-only `permission` presets and `defaultPreset`, `sandbox-policy` read-only, the Q-J approval rule, `tool-subagent` per Q-I, the Fetch route `api/fishball/session` | SP-PG | the child boots DSH's web on both versions; every enabled `dsh.client` row is served; the disabled rows are absent; `/permission` refuses everything but `read-only`; a user setting cannot raise the sandbox |
+| **EMB** connector embed of the shell | `packages/instance/src/slim/host/embed.js` (prefix forwarding of `/`, `/plugins/*`, `/assets/*`, `/api/*` and the `api/remote.mux` upgrade; CSP from SP-PG(1)), `packages/connector/client.js` (the iframe unchanged except `allow` if SP-PG needs it) | SP-PG, CHILD-WEB | the Fishball view in the main DSH shows the child's shell with no token in any URL, as SP1 did; the main DSH's own pages are unaffected |
+| **PG-1** `fishball-page` plugin | new `packages/instance/child-web/fishball-page/{package.json,client.js,removals.js,guard.js,shortcuts.js,messenger.js,style.css,i18n.js}` | SP-PG, CHILD-WEB | §11.3 table holds; the page opens on Fishball's session; §11.4 paths cannot leave it; DSH Settings and Plugins pages open and come back; grey bubbles and avatars as eaa33f5; composer plugins (a fixture plus voice input when installed) work |
+| **PANELS** our panels as DSH entries | `child-web/fishball-page/panels/{approvals,reminders,recommended}.js`, the "代批 / Watchdog" tag and the escalation card as chat-node definitions; their Fetch routes in `src/slim/child/` | PG-1, X0-A | approvals, reminders and the recommended list work as `main` panels; the escalation card renders in Fishball's chat |
+| **RETIRE** remove the custom page | delete `src/slim/ui/{shell.*,chat.js,composer.js,approvals.js,records.js,reminders.js,settings.js}` and their server routes once nothing uses them; keep `dsh-tokens.css` only if a panel still needs it | PANELS, FN-4, B5 | no route serves the old page; the instance tests for the old page are retired with it |
+
 ### 5.3 Waves
 
 | Wave | In parallel |
 | --- | --- |
-| W0 | K1, X0-C, FN-1, WD-1, B1 (SP done) |
-| W1 | X0-I, X0-U, X0-G, X0-A, X0-S, X0-W (needs K1), FN-A (needs K1); WD-2, WD-3, WD-4, WD-5, WD-7; B2, B3 |
-| W2 | X0-B (needs SP, X0-S); FN-2, FN-4, FN-6; WD-6, WD-8, WD-9; B4; UI-1 (after X0-U), UI-C' if Q-C = B |
-| W3 | B6 (after X0-B); FN-3; WD-10, WD-11, WD-13 (shared stub, as watchdog §14); B5 |
-| W4 | FN-5; WD-14; B7 |
-| W5 | FN-7, WD-12, B8, then X-E2E; UI-C after it if Q-C = A |
+| W0 (start now) | K1, X0-C (X3 reduced, see §5.5), FN-1, WD-1, B1 |
+| W1 | **SP-PG first**; X0-I, X0-G, X0-A (server), X0-S, X0-W (needs K1), FN-A (needs K1); WD-2, WD-3, WD-4, WD-5, WD-7; B2, B3 |
+| W2 | CHILD-WEB, then EMB and PG-1 (all after SP-PG); X0-B (after X0-S); FN-2, FN-6; WD-6, WD-8, WD-9; B4 |
+| W3 | PANELS (after PG-1, X0-A); FN-3, FN-4 (after PG-1); B5, B6 (after PG-1); WD-10, WD-11, WD-13 |
+| W4 | FN-5; WD-14; B7; RETIRE (after PANELS, FN-4, B5) |
+| W5 | FN-7, WD-12, B8, then X-E2E |
+
+### 5.5 What changed for W0 and X0 (U10–U12)
+
+- **Unaffected, start now:** K1, FN-1, WD-1, B1. Server-side X0 tasks X0-I, X0-G, X0-S and X0-W
+  (W1) are unaffected as well. Their tests stand.
+- **X0-C changed in one point.** X3's server projection into `GET api/chat` and the SSE `entry`
+  frame is dropped; only the record-type rule remains (a foreign prefix is refused). Remove the
+  tester's X3 projection and fallback-row cases (the BVA on `recordTextChars` too); keep the X1,
+  X2, X10 and X11 cases.
+- **X0-U withdrawn.** Its test file `x0-u.test.mjs` is retired. Its server-side cases (module
+  serving, `api/ext/*` routes, the `ext` signal, the CSP) have no successor; the page cases move to
+  PG-1's browser tests.
+- **X0-A:** server cases unchanged; the UI cases (tag, escalation card) move to PANELS.
+- **X0-B:** the "Built in" tag case and the settings-view cases are dropped; X17/X18 server cases
+  stand.
 
 **File pairs that collide.** Merge each pair in the order shown, never in parallel on the same
 lines.
 
 | Pair | Shared file | Order |
 | --- | --- | --- |
-| X0-B, B6 | `ui/settings.js`, `ui/i18n.js` | X0-B first |
-| X0-B, X0-A | `ui/i18n.js` (`settings.builtIn` vs `approvals.by.watchdog`) | append-only keys; X0-A first, X0-B rebases |
 | X0-S, X0-B | the hand-over port | X0-S first, or X0-B against X0-C's stub |
 | X0-C, X0-I | `deliverInbox` array form lives in `chat.js` | X0-C first (it owns `chat.js`) |
 | X0-C, X0-W | `child/bridge.js` (X0-C adds only the X19 call; X0-W the scope and attention) | X0-C first |
-| X0-U, X0-A | `ui/chat.js` vs `ui/records.js`; the escalation card stays in `records.js`/`approvals.js` | none if X0-A keeps out of `ui/chat.js` |
 | K1, FN-A | none (`client.js` is FN-A's only) | — |
-| FN-4, FN-5 | `ui/fold.css` | FN-4 first |
-| X0-U, UI-1 | `ui/chat.js` (`buildEntry`) | X0-U first |
-| UI-1, UI-C' | `ui/shell.css` | UI-1 first |
+| FN-4, FN-5 | `packages/fold-notify/client/*.css` | FN-4 first |
+| CHILD-WEB, X0-B | `src/native-runtime/{constants,installation}.js` | X0-B first (placement), CHILD-WEB rebases |
+| CHILD-WEB, EMB | none (child vs host), but EMB tests need CHILD-WEB | CHILD-WEB first |
+| PG-1, PANELS, B6 | `child-web/fishball-page/` | PG-1 first; PANELS and B6 add files only |
 | WD-11, WD-13 | the coupling interface | shared stub, as watchdog §14 |
 
 ## 6. Test-design outline per task (black-box, for the tester)
@@ -495,9 +523,8 @@ decision table, **ST** state transitions.
   - ST for X2: registered → applied → disposed (its tools and section gone at the next step) →
     registered again; a registration made **during a turn** is offered at the turn's next step
     (SP-X1).
-  - X3: `type` with a foreign prefix is refused; `fn` returns `undefined` (dropped); `text`
-    present or absent.
-  - BVA: `text` at `EXT_LIMITS.recordTextChars` and +1.
+  - X3 (reduced, U10): a record `type` with a foreign prefix is refused. *(The projection and
+    fallback-row cases, and the `recordTextChars` BVA, are dropped.)*
   - X10 DT: `wake` × duplicate `dedupeKey` × agent busy or idle. X11 BVA: `limit` 0, 1, max, max+1;
     `maxChars` cut at a surrogate pair.
 - **X0-I.**
@@ -508,13 +535,7 @@ decision table, **ST** state transitions.
     settles (dropped) / `expiresAt` passes.
   - BVA: `prefix` 500 and 501 chars.
   - Single owner: a second batcher gets `owner-busy`.
-- **X0-U.**
-  - EP: 0, 1, 2 modules; a module file missing or a path escape (404); a route with a wrong method
-    (405); a body over the limit.
-  - X6 coalescing: n signals in one tick give one event.
-  - **Server side only in W0 (U9).** These are tested later in the real browser: `sidebar` order,
-    `onSignal` filtering, and a second `setTimelinePresenter` → `owner-busy`.
-  - CSP header unchanged. The X3 fallback row is drawn when no module renders the entry.
+- **X0-U.** *Withdrawn (U10); see PG-1.*
 - **X0-W.**
   - EP: an operation in the scope list; outside it (answer code `forbidden`, and no request leaves
     the child; U9); or outside the instance's required set (refused at `bridge()`).
@@ -625,13 +646,61 @@ decision table, **ST** state transitions.
       check runs and no session is stopped at re-enable;
     - `watchdog_brief` on a session with a dormant brief: old `superseded`, result
       `sendUnlocked: true`; on a session with an active, paused or halted brief: `brief-exists`.
+- **SP-PG.** The spike's yes/no questions only; no TDD.
+- **CHILD-WEB.**
+  - EP for rows: each row of §11.3/§11.6's disabled list is absent; a fixture `dsh.client` bundle
+    enabled in the child profile is served by `client-modules`.
+  - DT for permissions: preset requested (`read-only`, `workspace-write`, `danger-full-access`,
+    unknown) × path (`/permission`, settings, `DSH_PERMISSION_MODE` in the env) → only `read-only`
+    is accepted; the sandbox mode is `read-only` after each.
+  - DT for widening (Q-J A): a denied write × the agent retries with a widening request → refused,
+    and no approval card asks the user.
+  - EP for plugin storage (b): a bundled plugin writing its own file through `node:fs` succeeds;
+    the agent writing the same path through DSH's file tools is refused.
+- **EMB.**
+  - EP for routes under the embed prefix: `/`, `/assets/*`, `/plugins/*`, `/api/*`, the
+    `api/remote.mux` upgrade → forwarded; a path outside the prefix → refused as today.
+  - No token appears in any URL the iframe sees; the main DSH's own pages render unchanged.
+- **PG-1** (real browser, both versions; U9 Q1):
+  - EP for destinations (allowed): Fishball's session; DSH Settings; DSH Plugins page; a plugin's
+    settings form; our panels (approvals, reminders, recommended, board).
+  - EP for destinations (blocked): another session by `openSession`; the empty new-session view;
+    the session search; a panel id not on the allow list; a session reference link in a message.
+  - DT navigation guard: destination (each EP above) × trigger (UI click, shortcut, programmatic
+    call from a fixture plugin, session-reference click) → stays or bounces to Fishball within one
+    frame.
+  - EP for shortcuts: `session.new`, `session.search`, `session.fork`, `session.archive`,
+    `workspace.add`, `session.rename` → unbound (no effect); `settings.open` and `shortcuts.open` →
+    allowed.
+  - Removed components (§11.3): sidebar, `shell.leading`, the rail (per Q-F), the hero workspace
+    picker, header lineage, the permission picker, the agent preset picker → absent or not visible;
+    the conversation, the Composer and every `conversation.input.*` and `conversation.composer.dock`
+    entry from a fixture composer plugin → present and working.
+  - ST page: load → Fishball opened → (open Settings) settings → (back) Fishball → (attempt another
+    session) Fishball; reload → Fishball.
+  - Browser Back after each step stays on the Fishball page.
+  - Bubbles and avatars: Fishball's reply is the grey bubble with the fish avatar and name; your
+    message is right-aligned and tinted; a session sender is green; consecutive rows group; light
+    and dark themes.
+  - BVA for viewport width: 767, 768 and 1024 px (rc.1's drawer threshold) → no rail, no drawer
+    toggle.
+- **Session-start refusal** (CHILD-WEB, PG-1, Q-G/Q-H/Q-I):
+  - DT: origin (the UI, a shortcut, the session-controller RPC `create` from the page, a subagent
+    tool call, the schedule, the instance's own `agents.create` for Fishball, the watchdog's X13
+    `open`) → refused or allowed exactly per Q-G/Q-H/Q-I. With Q-G B, an RPC-created session ends
+    archived and is never shown.
+  - EP: after every refused start the Fishball page is still shown and no new session is listed.
+- **PANELS.** The approvals and reminders panels show the same data as the server API; the
+  escalation card renders for a `decidedBy.kind = watchdog` label; the recommended panel lists
+  meow-memory with its note (B6).
+- **RETIRE.** No old page route answers; the instance's other routes still do.
 - **WD-14.**
   - EP: arg valid / each `invalid-brief:<field>`.
   - DT: §2.3 steps 2–5.
   - ST: no brief → brief active at start, with the window case (a card before attach goes to
     Fishball).
 - **X-E2E**, one per DSH version:
-  - a fresh child shows all three as "Built in" and on;
+  - a fresh child has all three bundled plugins on, and the Fishball page opens directly on Fishball's session, with no sidebar or other sessions reachable;
   - Fishball starts a session (a brief is required) → the watchdog supervises it;
   - the user hands over a session → the notice carries the brief-required line; a reply is
     refused `watchdog-brief-required`; after `watchdog_brief` the reply is delivered;
@@ -650,27 +719,38 @@ decision table, **ST** state transitions.
 - **Main DSH profile.** None of the three plugins is ever a bundle there.
 - **Without these plugins**, the instance behaves byte for byte as it does today.
 
-## 8. Doc edits the three designs need (names only, no design change except U1–U8)
+## 8. Doc edits the three designs need (names only, no design change except U1–U12)
 
 | Design | Edit |
 | --- | --- |
-| fold-notify | service `fishballInstanceExtensions` → `fishballInstance`; fE1 `fishballChat.sessionId()` → `manager.sessionId()`; fE2 → X2 `manager.registerSetup(pluginId, fn)`; fE3 → X3 (add `pluginId` argument); fE4 → X4/X5/X7; fE5 → X7 `setTimelinePresenter`; fE6 → X8 + K1; fE7 → X9 `inbox.setBatcher`; fE8/9 → X17/X18; seen route `api/fold-notify/seen` and `api/ext/fold-notify/seen` → `api/ext/fishball-fold-notify/seen`; §14 FN-0, FN-E6, FN-K, FN-B point to X0-*/K1; inject list in §13 |
-| board | inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, X4–X7, X17/X18; `signal(namespace, type)` → `ui.signal(pluginId, type)`; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C/X0-U, B9 → X0-B, B0 done (S1 yes); §5 guide text: "the newest board block is the current one" (S1 note) |
-| watchdog (U1–U8 **are** design changes) | §6.2 R1 "no brief" → "session not claimed" (X15 `approvals.claim`, §2.6), R2 "plugin disabled" drops (a disabled plugin has no claims); E6 `setDelegate`/`supervised` → per-session `approvals.claim`; §9 has no `enabled` (U7); §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate); §4.5.1 state table gains `dormant` (any running state allowed, sends refused) and the "no brief" row; §4.5.2's gate text → X19's `supervision-paused` row; §4.4 `watchdog_brief` result gains `sendUnlocked`, and on a dormant brief it supersedes instead of `brief-exists`; `watchdog_resume` accepts `dormant` as well as `paused`; the manager section states the U5 rule in one line; §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U6 |
+| fold-notify | (U10) §5/§9 E3–E5 → the fold is a `dsh.client` conversation group/node plugin and `seen` is a Fetch route; §13 the package gains `client/`; service `fishballInstanceExtensions` → `fishballInstance`; fE1 `fishballChat.sessionId()` → `manager.sessionId()`; fE2 → X2 `manager.registerSetup(pluginId, fn)`; fE3 → X3 (add `pluginId` argument); fE4 → X4/X5/X7; fE5 → X7 `setTimelinePresenter`; fE6 → X8 + K1; fE7 → X9 `inbox.setBatcher`; fE8/9 → X17/X18; seen route `api/fold-notify/seen` and `api/ext/fold-notify/seen` → `api/ext/fishball-fold-notify/seen`; §14 FN-0, FN-E6, FN-K, FN-B point to X0-*/K1; inject list in §13 |
+| board | (U10) §10 the panel is a `dsh.client` `rightbar` panel entry with Fetch routes, not a page module; inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, X4–X7, X17/X18; `signal(namespace, type)` → `ui.signal(pluginId, type)`; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C/X0-U, B9 → X0-B, B0 done (S1 yes); §5 guide text: "the newest board block is the current one" (S1 note) |
+| watchdog (U1–U12 **are** design changes) | (U12) side sessions are instance-owned agent runs, allowed by the new-session refusal's exception (Q-H) and never viewable; the escalation card is a chat-node definition (PANELS); §6.2 R1 "no brief" → "session not claimed" (X15 `approvals.claim`, §2.6), R2 "plugin disabled" drops (a disabled plugin has no claims); E6 `setDelegate`/`supervised` → per-session `approvals.claim`; §9 has no `enabled` (U7); §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate); §4.5.1 state table gains `dormant` (any running state allowed, sends refused) and the "no brief" row; §4.5.2's gate text → X19's `supervision-paused` row; §4.4 `watchdog_brief` result gains `sendUnlocked`, and on a dormant brief it supersedes instead of `brief-exists`; `watchdog_resume` accepts `dormant` as well as `paused`; the manager section states the U5 rule in one line; §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U6 |
 
 ## 9. Open questions for the user
 
 | # | Question | A | B | Recommendation |
 | --- | --- | --- | --- | --- |
-| Q-C | How does Fishball's chat page get DSH's real Composer (§10.2, §10.3)? | **A-lite** (recommended): the child profile gets `dsh-web-app` back, with every row a single session does not need disabled, and the page is DSH's own shell, booted straight into Fishball's session with the sidebar and shell slots shadowed (§10.3). This is the smallest working form: about +90–100 MB RSS (measured 229–244 MB against 141–144 MB). Composer plugins work. The custom page is retired and its parts become slot plugins. | **B**: keep today's page and copy DSH's composer look only. No extra memory, but no composer plugins. | **A-lite** if the plugins matter; "only the session page, without the web app" is **not** possible (§10.3) |
+| Q-C | *(closed: A-lite, U10)* | | | |
+| Q-E | How does `fishball-page` load? | As a **row of the instance's launch overlay**, always on, not shown as a switchable plugin. The page is always "Fishball only" (U11). | As a **bundled plugin** (§2.2), on by default and switchable in DSH's Plugins page, like the other three. Off would bring back the full DSH UI (option A). | **A.** U11 says the page *is* Fishball only; a switch would undo it. Option A later is still a one-line overlay change (§11.1 rule 5) |
+| Q-F | The **56 px rail**: DSH has no switch for it except the platform attributes (`dsh-client-ui-layout/lib/client.js:242` / `:267`) | Hide it with **CSS from `fishball-page`**: collapse the sidebar column through the frame's data attributes (`[data-sidebar-collapsed]`), never the hashed class names | Set `data-platform="darwin"` on the document so DSH computes 0 px itself. Side effects: the macOS paddings and backgrounds (for example `--dsh-frame-leading-clearance:160px`) | **A**, decided after SP-PG(3) shows it holds on both versions. If neither works cleanly, accept the rail (C) |
+| Q-G | Server-side refusal of new sessions. DSH has **no pre-create veto hook** (§11.5) | Client only: no entry points, the shortcuts unbound, the navigation guard. The RPC `create` stays reachable only from the page itself | Client **plus** an instance row that closes and archives any session created outside the instance's own rows, right after `agent/created` | **B**, defence in depth, after SP-PG(6) confirms no earlier hook exists. Cost: a refused session can leave an empty, archived log |
+| Q-H | Conflict (a): "refuse any new session" against **instance-owned sessions**: Fishball's own session (first run or replacement) and the watchdog's side session per brief (X13) | Exception: sessions created by the instance's own rows through `ctx.agents.create` are allowed, are never viewable (the guard), and are read-only | Move the watchdog out of the child. There is nowhere else to run it without a contract change | **A.** These are internal agent runs, not user sessions; U12 is about what the user and the agent can start |
+| Q-I | Conflict: DSH **subagents** (`tool-subagent`, `provider: spawn`) create child sessions in the child DSH | Disable `tool-subagent` in the child. Fishball delegates through managed sessions in the main DSH, as today | Allow subagent sessions as a second exception; they inherit read-only and are not viewable | **A**, matching U12 literally. Note that it removes one DSH capability from Fishball (U10 tension) |
+| Q-J | Conflict with D8 ("read-only + **ask**"): under `ask`, a denied tool may retry with a widening request the user can approve (`dsh-sandbox-policy/lib/index.js:74`), which goes above read-only | The child's approval policy refuses widening: approval `never` for sandbox escalation, while ordinary permission cards still go through the connector | Keep `ask`; the user may approve a one-off widening | **A.** U12 says "没有只读以外的权限" |
+| Q-K | DSH's Plugins page shows **Remove** for the bundled plugins (`removable: true`, SP-FN1). DSH protects only its own management bundles (`protectsManager`, `dsh-plugin-manager/lib/index.js:2312` / `:3081`) | Accept it. A Remove acts as "off": at the next start §2.2 places the package and the dependency again, and the `bundled` record keeps it off until the user enables it | `fishball-page` hides the Remove button for the three names with CSS or a slot shadow | **A.** No fragile UI patch; the user's choice is kept, and the plugin can come back |
+| Q-L | Where does the **recommended plugins** list (B6, meow-memory) go once the custom settings view is gone? | A small `main` panel "Recommended for Fishball" inside `fishball-page`, linked from the session header | Drop it; the user installs from DSH's Plugins page by name | **A**, small, and it keeps B6 |
+| Q-M | Conflict K-4: U12 disables `schedule`/`ui-schedule`, `terminal-controller`/`ui-sidebar-terminal` and `open-in-app`/`ui-open-in-app` in the child, which removes DSH features (U10) | Disable them (they start sessions, run a shell, or launch native apps) | Keep them on | **A**: U12 is explicit, and Fishball has its own reminders |
 
 **Conflicts with earlier decisions (listed, not chosen):**
-- **K-1, the composer and D28/I2.**
+- **K-1 (closed by U10):** D28/I2 is superseded for the chat page.
+- *(history)* **K-1, the composer and D28/I2.**
   - D28/I2: the child does **not** boot DSH's Web UI (`docs/slim-native-design.md:52`, `:608`).
   - §0.5 "Plugins in the child": plugins' browser halves have no host in the child (`:398-401`).
   - The composer request needs DSH's client kernel in the child page (§10.1). Q-C = A therefore
     reverses D28 for the whole page, not only for the composer.
-- **K-2, X4–X7 page modules.** Under Q-C = A the page becomes DSH's own Web client.
+- **K-2 (closed by U10):** X4–X7 are withdrawn (§11.7).
+- *(history)* **K-2, X4–X7 page modules.** Under Q-C = A the page becomes DSH's own Web client.
   - Fold's presenter (X7 `setTimelinePresenter`) and the board's panel (X7 `sidebar`) become DSH
     client slots (`conversation.chat.node`, the sidebar), as eaa33f5's messenger was.
   - X4–X7, FN-4, FN-5 and B5 would need a redesign for React slots.
@@ -804,7 +884,7 @@ each, so this is indicative only. The homes were deleted, and no process was lef
 | The instance settings view, approvals view, reminders | today's custom page; under A-lite, a `main` panel (SP3 showed DSH's Plugins page renders there) | **redo** as panel slot entries |
 | X4–X6 (`ui.register`, `ui.registerRoute`, `ui.signal`) | plugins ship their own `dsh.client` half and use Connection Fetch routes (SP spike F1) | **replaced** by DSH's own mechanism; X4–X7 are withdrawn |
 
-### 10.2 Proposal (Q-C still open; §10.3 adds A-lite)
+### 10.2 Proposal *(superseded by §11, U10; kept as history)*
 
 Under **A-lite**, UI-1 below becomes "re-enable eaa33f5's messenger stylesheet as the instance's
 child client plugin", and task UI-C is the A-lite page (W1–W2, before FN-4, FN-5 and B5, which then
@@ -853,3 +933,157 @@ target DSH slots). Under **B**, UI-1 and UI-C' stand as written.
 
 UI-1 is useful under either answer: under A its CSS moves into a slot stylesheet, as eaa33f5's
 did. Decide Q-C before W2 starts.
+
+## 11. The Fishball page under A-lite (U10, U11, U12)
+
+§10.2's UI-1 / UI-C / UI-C' tasks are replaced by this section. Line numbers are in the installed
+DSH packages (rc.5 / rc.1), read only.
+
+### 11.1 Rules
+
+1. **Ecosystem first (U10).** Every `dsh.client` plugin enabled in the child profile loads as in
+   any DSH. This holds because `dsh-client-modules` scans the loader rows for `dsh.client`
+   (`dsh-client-modules/lib/index.js:732` / `:789`) and serves them all. We shadow slots; we never
+   filter that scan.
+2. **Removal only through DSH's own mechanisms.** In this order of preference:
+   1. a slot occupant at priority −1 (an empty component);
+   2. the layout and shortcut APIs;
+   3. disabling a child UI row in the launch overlay;
+   4. as the fallback, CSS from the same plugin.
+
+   No fork of DSH, and no patching of its code or bundles.
+3. **Native mechanisms for our own UI.**
+   - Chat rows: `uiConversation.events.register` (as `dsh-client-ui-goal/lib/client.js:571` / `:661`).
+   - Panels: `main` or `rightbar` slot entries (as `dsh-client-ui-plugin-manager` and
+     `dsh-client-ui-schedule` do).
+   - Settings: DSH's Settings and Plugins pages.
+   - HTTP: Connection Fetch routes (SP spike F1).
+
+   The custom page (`src/slim/ui/*`, X4–X7) is retired.
+4. **Read Only by configuration** (§11.6). The user cannot switch it in the UI.
+5. **The door to full option A stays open.** Everything is a shadow or a disabled row in the
+   **child's** overlay. Turning off `fishball-page` and re-enabling the rows gives DSH's full UI
+   back, with no data migration: the session, its log and the plugins are the same.
+6. **The main DSH is untouched.** Its profile, web, plugins and settings are never changed. The
+   only main-side change is the connector's embed frame and broker (task EMB).
+
+### 11.2 The `fishball-page` plugin (U11)
+
+- **Package:** `packages/instance/child-web/fishball-page/` (its own `package.json` with
+  `dsh.client: {platform: 'web', inject: [...]}` and `exports["./client"]`), shipped inside
+  `fishball-instance`.
+  - *Why a sub-package.* `fishball-instance`'s own `package.json` is read by the **main** DSH's
+    client-modules, so the page plugin must not be declared there.
+  - The main DSH never has a row for it, so it can never load there.
+- **How it loads in the child:** as a **row in the instance's launch overlay**
+  (`src/native-runtime/overlay.js`), the way `fishball-native-app` is inserted today. It comes from
+  the snapshot that `copyChildCode` writes.
+  - *Why not the §2.2 bundled placement.* A bundle is listed in DSH's Plugins page and can be
+    switched off. Switching this one off would put the sidebar and the other sessions back, which
+    U11 rules out.
+  - This is Q-E (§9). The spike SP-PG checks that `client-modules` serves a `dsh.client` row whose
+    package lives in the snapshot (`resolveMeta`, `dsh-client-modules/lib/index.js:720-745` rc.5).
+- **Inject:** `slots`, `layout`, `uiWorkspace`, `sessions`, `shortcuts`, `uiConversation`, `locale`.
+- **One more module in the same package:** eaa33f5's messenger (grey bubbles and avatars, UI-1),
+  taken almost verbatim (eaa33f5 `packages/messenger/client.js:122-180`, `:251-320`).
+
+### 11.3 What it removes, and how
+
+| Component | Mechanism (first choice) | rc.5 / rc.1 source | Fallback |
+| --- | --- | --- | --- |
+| Left sidebar (workspaces, session list, panel list, new chat) | empty occupant of `sidebar` at priority −1 (SP1 proven) | root children `dsh-client-ui-layout/lib/client.js:624-650` / `:706-732`; `sidebar.workspaces` `dsh-client-ui-workspace/lib/client.js:5222` / `:6051` | CSS `display:none` on the sidebar column |
+| `shell.leading` (sidebar toggle and the controls beside it) | empty occupant of `shell.leading` (SP1) | `dsh-client-ui-sidebar/lib/client.js:651` / `:773` | CSS |
+| **56 px rail** | **no DSH mechanism**: `collapsedWidth` is 56 unless `data-platform="darwin"`, `data-windows-titlebar`, or (rc.1 only) the viewport is < 768 px | `dsh-client-ui-layout/lib/client.js:242` / `:267` (`computeColumns` `:38` / `:39`) | CSS from the plugin; see Q-F |
+| Collapse the sidebar once | `layout.toggleSidebar()` at start (SP1) | `selectPanel` `:468` / `:522` | — |
+| Hero workspace picker (empty session only) | empty occupant of `conversation.hero.workspace`; the inert chip stays (SP F2) | `dsh-client-ui-workspace` | CSS hides the chip |
+| Header lineage links (parent/child sessions) | empty occupant of `conversation.session.header.lineage` | `dsh-client-ui-subagent/lib/client.js:979` / `:1262` | CSS |
+| Header utilities that leave the page (open-in-app) | the row is disabled (read-only, §11.6) | `dsh-web-app/cordis.patch.yml` `open-in-app`, `ui-open-in-app` (rc.1 `:73,:84`) | — |
+| Permission picker | `ui-permission` row disabled (SP1) | `cordis.patch.yml:418` / `:420` | — |
+| Agent preset picker | `ui-agent-preset` row disabled (SP1) | `:423` / `:425` | — |
+| **Kept:** conversation view, Composer, all `conversation.input.*` and `conversation.composer.dock` entries, chat nodes, header actions of other plugins, `rightbar` panels (except terminal, §11.6), DSH Settings and Plugins pages | — | — | — |
+
+### 11.4 Allowed destinations and escape prevention
+
+**Allowed:** Fishball's session view, plus the `main` panels for DSH Settings, Plugins and any
+plugin's settings (U12), plus our own panels (approvals, reminders, board). **Blocked:** every other
+session, the session list or search, the new-session view, and any other panel.
+
+Every path ends in one **navigation guard** in `fishball-page`. *Why one guard.* A guard on the
+result catches paths we have not listed, including other plugins.
+- It subscribes to the sessions store. The session in the main view is the one whose
+  `retainedBy.mainView > 0`; the workspace shortcuts read the same fact
+  (`dsh-client-ui-workspace/lib/client.js:89` / `:100`).
+- It subscribes to the layout's active panel.
+- When the main view shows a session other than Fishball's, or a panel not on the allow list, it
+  calls `uiWorkspace.openSession(fishballId)` or `layout.selectPanel(null)` within the same frame.
+
+| Path | Handled by | Notes |
+| --- | --- | --- |
+| Opening the page | the plugin opens Fishball's session at start (SP1); the session id comes from a child Fetch route | lands directly on Fishball |
+| Deep link to another session or page | **none exists**: DSH's client keeps no route in the URL (no `history.pushState`, `location.hash` or `popstate` handling in the client packages; the only `popstate` string in the bundle is React's event table) | the guard covers anything a future version adds |
+| Browser Back | the iframe's history has no DSH entries (same reason), so Back cannot reach another DSH view | Back inside the iframe only reloads the page, which opens on Fishball |
+| `Cmd+K` (`session.search`), `Cmd+N` (`session.new`), fork, archive, add workspace, rename | (1) unbound through DSH's shortcut preferences, where "null explicitly unbinds" (`dsh-client-shortcuts/lib/types/configuration.d.ts:2-5`), written once by the instance into the child's shortcut document; (2) the guard catches whatever still opens | ids from `dsh-client-ui-workspace/lib/client.js:123-176` / `:134-187`. The registry refuses a second registration of the same id (`dsh-client-shortcuts/lib/client.js:1211`), so overriding by registering is impossible. Where the document lives is spike item SP-PG(5) |
+| Session references inside messages (`session-reference`, `ui-reference`) | the guard bounces back | the rows stay, for ecosystem compatibility |
+| A plugin that calls `openSession` or `selectPanel` | the guard | — |
+| `/new`-like commands in the composer | the server refusal (§11.5) and the guard | — |
+
+### 11.5 No new sessions (U12)
+
+| Layer | What refuses | Proven? |
+| --- | --- | --- |
+| UI | the sidebar and new-chat entry are gone, the shortcuts are unbound, the guard bounces | design (SP-PG) |
+| Server, session-controller RPC `create` | **no veto hook found**: `create` goes straight to `agents.createSession` (`dsh-api-session-controller/lib/index.js:755-786` / `:666-697`); `agent/created` fires only after creation (`dsh-agent/lib/index.js:581` / `:710`) | gap, Q-G |
+| Fishball's own tools | the child has no tool that starts a child session (`start_session` targets the **main** DSH through the connector) | yes |
+| DSH subagents (`tool-subagent`, `provider: spawn`) | create child sessions in the child DSH (`dsh-base/cordis.patch.yml:380-383` / `:381-384`) | conflict, Q-I |
+| DSH schedule (`schedule`, `ui-schedule` rows) | runs scheduled prompts as new sessions | disabled in the child (derived from U12; K-4) |
+| Instance-owned agents: Fishball's own session (first run or replacement), watchdog side sessions (X13) | created by the instance's rows through `ctx.agents.create` | the exception, Q-H |
+
+### 11.6 Read-only everywhere (U12)
+
+All of these are set in the **launch overlay**, which is applied after the profile's own patch layer
+and so outranks anything the user saves in Settings (`dsh/lib/profile-boot.js` `composeProfile`
+order: bundles, profile layer, home layer, `--patch` overlays).
+- `sandbox-policy.mode = read-only` (today: `overlay.js:31`).
+- The `permission` row's `presets` contain `read-only` only, and `defaultPreset: read-only`. Then
+  `/permission` refuses any other name (SP spike F3).
+- `ui-permission` disabled.
+- Rows that act outside read-only are disabled: `terminal-controller` and `ui-sidebar-terminal` (a
+  shell); `open-in-app` and `ui-open-in-app` (native launches); `schedule` and `ui-schedule` (new
+  sessions). This is K-4.
+- **Escalation.** In read-only mode a denied tool may retry with a widening request that asks for
+  approval (`dsh-sandbox-policy/lib/index.js:74`). Under U12 nothing may widen, so the child's
+  approval policy must refuse widening. This is Q-J.
+
+**What read-only does and does not cover.** Read-only is the **agent's tool and file permission**:
+what the model can make DSH's tools do. A plugin's **own storage**, written by its own Node code
+through `node:fs`, is not a tool call and is not sandboxed. So these keep working:
+- `board.json`, the watchdog's brief, criteria and supervision files, fold-notify's `seen.json`;
+- `chat.json`, reminders, approval labels;
+- provider/model sync (X0 code, D-series);
+- meow-memory's library (`.dsh-meow`, written by its own code).
+
+A plugin feature that asks **the agent** to write through DSH's file tools is refused. That is the
+intent of U12.
+
+**Settings (U12, (c)).** Opening Settings, installing, removing and switching plugins, and changing
+providers or models are **the user's** actions, not the agent's, so read-only does not restrict
+them. The risks:
+- A user setting that tries to raise the sandbox is overridden by the overlay. The field may still
+  show the user's value, which is misleading; SP-PG checks how DSH shows it.
+- DSH's Plugins page offers **Remove** for the bundled plugins (`removable: true`, SP-FN1), which
+  bypasses X18's refusal in our relay. This is Q-K.
+
+### 11.7 What changes for the earlier plan
+
+| Item | Change |
+| --- | --- |
+| X3 | the server-side projector into `GET api/chat` is withdrawn. A plugin renders its own record with a chat-node definition (`uiConversation.events.register`). X3's record **type rule** (`plugin:<pluginId>/…`) stays as a convention |
+| X4–X7 | withdrawn. Plugins ship their own `dsh.client` half; routes are Fetch routes; refresh uses DSH's own state or the plugin's route |
+| X0-U | **withdrawn**, replaced by CHILD-WEB, EMB and PG-1 |
+| X0-A | the server half is unchanged; its UI half (the "代批" tag, the escalation card in `ui/approvals.js` and `ui/records.js`) moves to PANELS |
+| X0-B | X17/X18 server half unchanged; the "Built in" tag in `ui/settings.js` is gone with the custom settings view; Q-K |
+| Custom settings view (I6) | retired. Status and Restart stay on the main-side instance card. Model and effort defaults move to DSH's Settings. Plugins and plugin settings move to DSH's Plugins page. The recommended list (B6) is Q-L |
+| FN-4/FN-5 | the fold presenter becomes a conversation group/node plugin (`ConversationGroupRegistry`, `dsh-client-ui-conversation/lib/types/client/index.d.ts:25`); `seen` uses a Fetch route |
+| B5 | the board panel is a `rightbar` panel entry, with its read and export Fetch routes |
+| UI-1 | becomes the messenger module of `fishball-page` (§11.2) |
+| Connector embed | the broker forwards DSH's shell (EMB, SP-PG(1)) |
