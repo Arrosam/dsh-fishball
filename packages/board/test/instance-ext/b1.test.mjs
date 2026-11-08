@@ -3,7 +3,8 @@
  *
  * Source: docs/plugins/board-design.md §9 (Config ranges), §13 (package), §14 B1 ("the row loads
  * with and without the points; the Config ranges are as in §9"), §8 (the four instance points),
- * and final instance design U19/§12.6: 30-day board visibility, never installed archive pruning.
+ * and pinned 15d6f1f214144db3575f9bc0ba15238b1450c2a7 U19/§12.6:
+ * 30-day board visibility, never installed archive pruning; local W0 has no MCP transport dependency.
  * doneWindowHours may remain for a recent-done count only; its presence is not required.
  *
  * Observation points: the package files, the row exports, the Config schema, `src/constants.js`
