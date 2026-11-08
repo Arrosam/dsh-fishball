@@ -277,7 +277,7 @@ lower bound that can be built.
 | K1-BVA-13 | BVA | K1-R13 | `imagesPerMessage`: `inbox.push` `images[]` 0, 20, 21 | n/a | 0 valid | 20 valid | 21 invalid | static |
 | K1-BVA-14 | BVA | K1-R13 | `attachmentsPerMessage`: `session.message` `attachments[]` with 0, 20, 21 unique refs; and 2 equal refs | n/a | 0 valid | 20 valid | 21 invalid; 2 equal refs invalid (unique) | static |
 | K1-BVA-15 | BVA | K1-R13 | `chunkBytes`: one chunk decoding to 524 288, then 524 289 bytes | n/a | — | valid | invalid | static |
-| K1-BVA-16 | BVA | K1-R13 | `transfersPerMessage` = 1: one message using the refs of 1, then 2 transfers | n/a | — | 1 accepted | 2 `[OQ-45]` | both |
+| K1-BVA-16 | BVA | K1-R13 | `transfersPerMessage` = 1 is declared but not enforced: one message using the refs of 2 non-image transfers | n/a | — | accepted (only the 20-`hostRef` bound applies) | — | both |
 | K1-BVA-17 | BVA | K1-R13 | `hostRefTtlMs` 600 000: use a fresh `hostRef` in `session.message` at 590 s, and another at 610 s after its put (a slow case) | n/a | — | 590 s accepted | 610 s refused (code `[OQ-46]`); a reused ref is refused as well | both |
 | K1-BVA-18 | BVA | K1-R13 | `reasonChars` 500, on `approval.answer` `answer.reason`, `session.release` `reason`, `grant.revoke` `reason`, `prompt.answer` `reason` and the descriptor `reason`; also 500 × `😀` | n/a `[OQ-19]` | — | 500 valid; 500 astral valid | 501 invalid | static |
 | K1-BVA-19 | BVA | K1-R13 | `questionChars` 500: `answer.question` (with `ask`), `questions[].question` | n/a | — | 500 valid | 501 invalid | static |
@@ -498,6 +498,10 @@ Events:
 The default is 200 and the minimum 1 (DESIGN.md §16: whole numbers ≥ 1; it counts open rows,
 `pending` and `accepted`). The limit is set only in DSH's form (U2, contract §8). Inputs are
 `message_fishball` calls with no instance attached, unless a case says otherwise.
+
+> **Known bug (fix pending in code).** The code currently counts only `pending` rows toward the
+> bound — `INTAKE_STATUS.accepted` is defined but never assigned — so the "`pending` and
+> `accepted`" reading above is the intended behaviour, not what the code does today.
 
 | ID | T | R | Preconditions | Steps | Expected | Ver |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -820,7 +824,7 @@ Each entry is a gap or a conflict in design §0 / §18.2 at `3509859`, in the co
 | OQ-42 | **New. Conflict between contract §0 and U1.** Contract §0 at `bb0f756` lists the connector settings as "its limits, question mode, **brand icon and sidebar entry**", edited in DSH's form; U1 says the icon is fixed and no branding or sidebar setting exists. These cases follow U1. Should contract §0 be corrected? | C2-EP-09, C2-EP-10, C3-P-13, C3-EP-07 |
 | OQ-43 | **New.** Contract §3.2 lists "each required name is a §4 operation the receiver knows" as a handshake payload rule, which would make it a validation failure that closes the channel. It also says "if the connector cannot serve every required one, it answers `unsupported-capability`". Which applies to an unknown required name, and which to the other payload-rule breaks (required ⊄ capabilities, no `inbox.push`, duplicates)? | K1-EP-37, K1-EP-39, C2-EP-05 |
 | OQ-44 | **New.** A request for an operation name that does not exist in v1 (for example `settings.update`): is it an `error` frame `unsupported-operation` (contract §3.2, "outside the welcome") or an envelope validation failure that closes the channel (contract §3.1, `operation` must be a known name)? | K1-EP-56, K1-EP-57, C2-EP-01..03, C2-ST-01 |
-| OQ-45 | **New.** `transfersPerMessage` is 1 (contract §4.4, §8), but `attachmentsPerMessage` allows 20 `hostRef`s, each from its own `attachment.put`. How can a message carry more than one attachment? | K1-BVA-14, K1-BVA-16 |
+| OQ-45 | **Resolved** (contract §4.4, §8): `transfersPerMessage` is declared but not enforced — a message may carry several files; only the 20-`hostRef` `attachmentsPerMessage` bound applies. | K1-BVA-16 |
 | OQ-46 | **New.** Which code refuses an expired or already-consumed `hostRef`? Contract §7 lists none for it. | K1-BVA-17 |
 | OQ-47 | **New.** Contract §10 names `validateAttachment`, `negotiateContract`, `validateRequest`/`Response`/`Event`, `requireCapabilities`, `encodeEnvelope`, `decodeEnvelope` and `makeEnvelope`, but the doc gives no signatures or failure forms (throw vs result). The module-level cases need them; otherwise they move to the service level. | K1-P-03, K1-P-05, K1-P-11, K1-P-13, K1-EP-38, all `static` K1 cases |
 | OQ-48 | **New.** After a refused handshake, or a channel the connector closes because a frame failed validation: is the instance detached (no-instance mode, so a new attach is accepted), and does the connector call `transport.close()`? | K1-EP-37, K1-EP-43, K1-EP-51, C1-ST-11 |
