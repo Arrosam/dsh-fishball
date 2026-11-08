@@ -178,6 +178,9 @@ describe('Hand over with a note to the attached instance', () => {
       assert.equal(res.status, 200, res.text)
     })
     it('a 65-byte note answers 409 too-large', T, async () => {
+      // The 64-byte case's accepted note may still be pending: its ack changes the intake count
+      // (a pending row becomes consumed), so drain it before using the count as the baseline.
+      assert.ok(await untilQueued(host, 0), 'precondition: the previous note was acked')
       const before = await intakeCount(host)
       const res = await forward(host, target, 'é'.repeat(LIMIT / 2) + 'a')
       assert.equal(res.status, 409, res.text)
