@@ -91,7 +91,11 @@ describe('P7 ApprovalBroker (H-STUB)', () => {
     assert.deepEqual(d.quotes, [])
     assert.deepEqual(JSON.parse(d.arguments), args, "the model-requested arguments of that call")
     assert.equal(d.argumentsStatus, ARGS_STATUS.complete)
-    assert.equal(d.expiresAt - d.at, LIMITS.approvalAnswerSeconds.default * 1000, 'the answer time')
+    // `at` is when the request began and `expiresAt` is set when its round starts, a moment later (contract §5.1
+    // names no exact difference), so the window is the answer time plus at most the timer slack (once 120001).
+    const window = d.expiresAt - d.at
+    const answerMs = LIMITS.approvalAnswerSeconds.default * 1000
+    assert.ok(window >= answerMs && window <= answerMs + APPROVALS.ms.timerSlack, 'the answer time: ' + window)
     const { header, block, fields } = req.item
     assert.ok(req.item.payload.text.startsWith(APPROVALS.item.prefix(d.approvalId)))
     assert.match(header, APPROVALS.item.seconds(LIMITS.approvalAnswerSeconds.default))

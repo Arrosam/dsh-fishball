@@ -202,13 +202,18 @@ export function qTools(ctx) {
     /** The approval inbox items (notices) whose text contains needle. */
     notices: async (needle) => (await stub().pushes()).map((f) => f.payload).filter((p) => p.kind === INBOX_KIND.approval && p.text.includes(needle)),
     /**
+     * The first notice containing needle, waiting for it; or undefined. The notice is its own inbox.push, sent apart
+     * from the approval.request offer, so it can arrive after the offer (a one-shot read raced it on 0.2.2-rc.1).
+     */
+    noticeOf: (needle, timeoutMs = QSTUB.markerWaitMs) => until(async () => (await q.notices(needle))[0] ?? false, timeoutMs, STUB.pollMs).then((n) => n || undefined),
+    /**
      * The question id the instance learned for a call: from its offer, else from its approval notice (in User mode
      * the question is never the instance's to answer, so no offer may come, but the notice names it for a note).
      */
     async learnedId(text, callId) {
       const offered = (await q.offer(callId, QSTUB.quietMs))?.approvalId
       if (offered) return offered
-      const notice = await until(async () => (await q.notices(text))[0] ?? false, QSTUB.markerWaitMs, STUB.pollMs)
+      const notice = await q.noticeOf(text)
       return QSTUB.noticeId.exec(notice?.text ?? '')?.[1]
     },
     /** Everything the instance received about sessions so far: offers and approval notices (for "Fishball was not told"). */

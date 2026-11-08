@@ -11,13 +11,13 @@
  */
 import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
-import { createRequire, registerHooks } from 'node:module'
+import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { REPO } from './constants.mjs'
 import { FIXTURE } from './provider-sync-official.mjs'
-import { resolveOfficialSDK } from './provider-sync-sdk.mjs'
+import { resolveFromRuntime, resolveOfficialSDK } from './provider-sync-sdk.mjs'
 
 export const BODY_SOUL = Object.freeze({
   instance: path.join(REPO, 'packages', 'instance'),
@@ -32,13 +32,7 @@ function installHooks() {
   if (hooked) return
   hooked = true
   resolveOfficialSDK()
-  const requireRuntime = createRequire(path.join(FIXTURE.runtime, '../package.json'))
-  registerHooks({
-    resolve(specifier, context, nextResolve) {
-      if (!BODY_SOUL.runtimePackages.includes(specifier)) return nextResolve(specifier, context)
-      return { url: pathToFileURL(requireRuntime.resolve(specifier)).href, shortCircuit: true }
-    },
-  })
+  resolveFromRuntime((specifier) => BODY_SOUL.runtimePackages.includes(specifier))
 }
 
 /** Import a module of packages/instance by its path relative to that package. */

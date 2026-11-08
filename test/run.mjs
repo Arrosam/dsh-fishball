@@ -9,12 +9,15 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { NODE, TEST_HOMES } from './support/constants.mjs'
+import { linkContractForSourceRun } from './support/contract-link.mjs'
 
 const dir = import.meta.dirname
 // Guard the one recursive delete: it may only ever target <repo>/.runtime/test-homes.
 if (path.basename(TEST_HOMES) !== 'test-homes' || path.basename(path.dirname(TEST_HOMES)) !== '.runtime') throw new Error('unexpected test home root ' + TEST_HOMES)
 fs.rmSync(TEST_HOMES, { recursive: true, force: true })
 fs.mkdirSync(TEST_HOMES, { recursive: true })
+// Before any file starts: files importing instance modules directly must not race the first worker's link.
+linkContractForSourceRun()
 
 const files = fs.readdirSync(dir).filter((f) => f.endsWith('.test.mjs')).sort().map((f) => path.join(dir, f))
 const result = spawnSync(NODE, ['--test', '--test-concurrency=3', '--test-reporter=spec', ...process.argv.slice(2), ...files], { stdio: 'inherit' })
