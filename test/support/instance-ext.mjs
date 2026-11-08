@@ -16,7 +16,7 @@
  */
 import assert from 'node:assert/strict'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import os from 'node:os'
+import { tempPath } from './temp-path.mjs'
 import path from 'node:path'
 import { linkContractForSourceRun } from './contract-link.mjs'
 import { loadConnector, loadInstance } from './body-soul-env.mjs'
@@ -43,14 +43,17 @@ export { SERVICES }
  * Every home this suite creates is a throwaway directory under /private/tmp (the user's rule);
  * `FBTEST_INSTANCE_EXT_TMP` moves it, but it must still be an absolute throwaway root.
  */
-export const TEMP_ROOT = process.env.FBTEST_INSTANCE_EXT_TMP ?? '/private/tmp'
+export const TEMP_ROOT = tempPath(process.env.FBTEST_INSTANCE_EXT_TMP ?? '/private/tmp', { allowRoot: true })
 
 /** One throwaway directory under TEMP_ROOT, removed when the test ends. */
 export async function tempDir(t, prefix = 'fbtest-instance-ext-') {
-  const dir = await mkdtemp(path.join(TEMP_ROOT, prefix))
+  if (!prefix || path.basename(prefix) !== prefix) throw new Error('invalid temp prefix ' + prefix)
+  const root = tempPath(TEMP_ROOT, { allowRoot: true })
+  const dir = await mkdtemp(tempPath(path.join(root, prefix), { root }))
   t.after(async () => {
-    if (path.dirname(dir) !== TEMP_ROOT || !path.basename(dir).startsWith(prefix)) throw new Error('unexpected temp dir ' + dir)
-    await rm(dir, { recursive: true, force: true })
+    const target = tempPath(dir, { root })
+    if (path.dirname(target) !== root || !path.basename(target).startsWith(prefix)) throw new Error('unexpected temp dir ' + dir)
+    await rm(target, { recursive: true, force: true })
   })
   return dir
 }
@@ -377,12 +380,12 @@ export function createFakeHost({ capabilities } = {}) {
  * Fishball's manager Session (and runs X2's create setup) before a case starts.
  */
 export async function bootChild(t, { activate = false, configure, home: existingHome, watchdogEnabled = true, extraBundles = [] } = {}) {
-  const home = existingHome ?? await tempHome(t)
-  const profileDir = path.join(home, 'profiles', 'fishball')
+  const home = tempPath(existingHome ?? await tempHome(t))
+  const profileDir = tempPath(path.join(home, 'profiles', 'fishball'), { root: home })
   await mkdir(profileDir, { recursive: true })
-  const profileFile = path.join(profileDir, 'package.json')
+  const profileFile = tempPath(path.join(profileDir, 'package.json'), { root: home })
   const profileBundles = ['@deepseek-ai/dsh-base', ...(watchdogEnabled ? ['fishball-watchdog'] : []), ...extraBundles]
-  await writeFile(profileFile, JSON.stringify({ name: 'fishball', private: true, dsh: { profile: { bundles: profileBundles } } }, null, 2) + '\n')
+  await writeFile(tempPath(profileFile, { root: home }), JSON.stringify({ name: 'fishball', private: true, dsh: { profile: { bundles: profileBundles } } }, null, 2) + '\n')
   const tools = createTools()
   const logs = []
   const agents = []
@@ -416,7 +419,7 @@ export async function bootChild(t, { activate = false, configure, home: existing
       if (enabled) listed.add(name)
       else listed.delete(name)
       manifest.dsh = { ...(manifest.dsh ?? {}), profile: { ...(manifest.dsh?.profile ?? {}), bundles: [...listed] } }
-      await writeFile(profileFile, JSON.stringify(manifest, null, 2) + '\n')
+      await writeFile(tempPath(profileFile, { root: home }), JSON.stringify(manifest, null, 2) + '\n')
       return { application: 'applied' }
     },
   }
