@@ -11,6 +11,9 @@
  *                                DESIGN §10e); 409 unknown-session, is-fishball
  * POST requests/answer        -> { requestId: string, decision: 'allow' | 'reject', note?: string } (your
  *                                answer on a card, DESIGN §10e); 409 expired, too-large
+ * POST watches                -> { sessionId: string } (tell Fishball when it finishes, DESIGN §5c);
+ *                                409 unknown-session, is-fishball, archived, limit-reached
+ * POST watches/remove         -> { watchId: string }; 409 unknown-watch
  * GET  connector/instance     -> the attached instance as the frame shows it (design §0.5 "The frame"):
  *                                { attached, name, ui, state, code, canRetry, attachCount }
  * POST connector/instance/retry -> no body; awaits the instance's retry() -> { ok: true, instance };
@@ -39,6 +42,8 @@ const BODY = Object.freeze({
   requestAnswer: (body) => (isRecord(body) && isName(body.requestId) && CARD_DECISIONS.has(body.decision) && (body.note === undefined || typeof body.note === 'string')
     ? { requestId: body.requestId, decision: body.decision, ...(isText(body.note) ? { note: body.note.trim() } : {}) }
     : undefined),
+  watch: (body) => (isRecord(body) && isName(body.sessionId) ? { sessionId: body.sessionId } : undefined),
+  unwatch: (body) => (isRecord(body) && isName(body.watchId) ? { watchId: body.watchId } : undefined),
   send: (body) => (isRecord(body) && isName(body.sessionId) && typeof body.note === 'string' ? { sessionId: body.sessionId, note: body.note } : undefined),
 })
 
@@ -46,7 +51,7 @@ const BODY = Object.freeze({
  * Register the routes; they are removed with the plugin context.
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), send({ sessionId, note }), setManaged({ sessionId, managed }),
- *   answerRequest({ requestId, decision, note? }), instance(), retryInstance() }; the commands reject
+ *   answerRequest({ requestId, decision, note? }), addWatch({ sessionId }), removeWatch({ watchId }), instance(), retryInstance() }; the commands reject
  *   LifecycleStateError for a refusal (409 unless it names another status). instance() is the frame's
  *   view; retryInstance() resolves { ok } or { ok: false, code } and never rejects.
  */
@@ -110,6 +115,8 @@ export function registerRoutes(ctx, state) {
     { path: API.send, methods: [HTTP_METHOD.post], fetch: command(BODY.send, (input) => state.send(input)) },
     { path: API.managed, methods: [HTTP_METHOD.post], fetch: command(BODY.managed, (input) => state.setManaged(input)) },
     { path: API.requestsAnswer, methods: [HTTP_METHOD.post], fetch: command(BODY.requestAnswer, (input) => state.answerRequest(input)) },
+    { path: API.watches, methods: [HTTP_METHOD.post], fetch: command(BODY.watch, (input) => state.addWatch(input)) },
+    { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
     { path: API.connectorInstance, methods: [HTTP_METHOD.get], fetch: () => Promise.resolve(json(HTTP.ok, state.instance())) },
     { path: API.connectorInstanceRetry, methods: [HTTP_METHOD.post], fetch: retryInstance },
   ]

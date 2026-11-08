@@ -38,7 +38,8 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionTitleInvalidError } from '@deepseek-ai/dsh-session-title'
 import { ContractError, DELIVERY, ERROR, ROLE, WATCH_ERROR } from '../contract.js'
 import { MANAGED_BY, OPTIONAL_SERVICE, SESSION_INFO, SOURCE, TITLE_ERROR, WORKSPACE_ERROR } from '../../constants.js'
-import { NO_EVENTS_SEQ, senderOf, textOfEvent } from '../../session-info.js'
+import { MODEL_ERROR, ModelChoiceError } from '../../model-catalog.js'
+import { NO_EVENTS_SEQ, isSessionGone, senderOf, textOfEvent } from '../../session-info.js'
 import { prepareSessionModel, applySessionModel } from '../../session-model.js'
 import { createImagePort } from './images.js'
 import { byteLength, cutToBytes } from '../../text.js'
@@ -51,7 +52,8 @@ export const SESSION_STATE = Object.freeze({ service: 'fishballSessionState' })
 
 /** The service's own shape; index.js builds it from the row's live objects. */
 const STATE_METHODS = Object.freeze([
-  'assistantId', 'managedIds', 'isManaged', 'isFishball', 'manage', 'release', 'watch', 'watermark', 'watches', 'unwatch',
+  'assistantId', 'managedIds', 'isManaged', 'isFishball', 'isRelated', 'readLimits', 'manage', 'release', 'stopped', 'redirected',
+  'watch', 'watermark', 'watches', 'unwatch',
 ])
 
 /** The main-DSH services every operation needs; a missing one is a wiring error, not a refusal. */
@@ -62,7 +64,7 @@ const NEVER_ABORTED = new AbortController().signal
 
 /** The title projection (dsh-session-title) folded into every Session summary; absent is no title. */
 const TITLE_PROJECTION = 'title'
-/** DSH's history page needs a message budget of at least one (its request validator refuses 0). */
+/** DSH's history page needs a message budget of at least one (its request validator refuses 0, and a new session's cursor is -1). */
 const MIN_PAGE_MESSAGES = 1
 /** The session address kind every ordinary managed/watchable Session uses. */
 const SESSION_ADDRESS = 'session'
@@ -80,12 +82,42 @@ const stateOf = (ctx) => {
   return found
 }
 
-/** One user message with Fishball as the sender, as src/messaging.js builds it. */
-function userMessageOf(text, assistantId, attachments = []) {
+/**
+ * One user message with Fishball as the sender, as src/messaging.js builds it. `via` names the
+ * tool that sent it (SOURCE.via): a redirect is told apart from a message by it, so a permission
+ * request from the redirected turn names redirect_session as its origin (DESIGN §7a.12, ORG-01).
+ * DSH keeps a source's extra fields in the log; the relay's kind and sender are unchanged.
+ */
+function userMessageOf(text, assistantId, attachments = [], via = SOURCE.via.message) {
   return createUserMessage({
     content: [{ type: 'text', text }, ...attachments],
-    source: { ...SOURCE.relay, senderSessionId: assistantId },
+    source: { ...SOURCE.relay, senderSessionId: assistantId, via },
   })
+}
+
+/**
+ * The message-size cap (the user's decision, 2026-11-08): a session.message or session.start body
+ * over maxMessageBytes (64 KiB by default, the connector's own setting) is refused before anything
+ * is delivered or created. Contract 1.1's code for an oversized value is limit-exceeded (§8).
+ */
+function boundMessage(text, limits) {
+  if (byteLength(text) > limits.maxMessageBytes) throw new ContractError(ERROR.limit)
+}
+
+/**
+ * Why a start failed, as a contract 1.1 code (the user's decision, 2026-11-08: no new codes,
+ * operation-failed only for what is truly unexpected). A refused model or effort is an invalid
+ * choice the caller can correct (invalid-decision); a catalog that cannot be read is
+ * feature-off; a contract refusal keeps its own code.
+ */
+const MODEL_REFUSAL = Object.freeze({
+  [MODEL_ERROR.invalid]: ERROR.invalidDecision, [MODEL_ERROR.effort]: ERROR.invalidDecision,
+  [MODEL_ERROR.required]: ERROR.invalidDecision, [MODEL_ERROR.unavailable]: ERROR.featureOff,
+})
+function startRefusal(error) {
+  if (error instanceof ContractError) return error
+  if (error instanceof ModelChoiceError && MODEL_REFUSAL[error.code] !== undefined) return new ContractError(MODEL_REFUSAL[error.code])
+  return new ContractError(ERROR.failed)
 }
 
 /** The content blocks of a user or assistant message event. */
@@ -200,23 +232,23 @@ export function createSessionPort(ctx, options = {}) {
   }
 
   /**
-   * The events a bounded read scans. 0.2.2 reads a page up to the passive cursor; 0.2.1 has no
-   * passive state read but its inspection returns the whole log, and the caller's bounds still
-   * cut it below.
+   * The events a bounded read scans: the whole log, so empty-text messages and the caps are
+   * counted by read() alone. 0.2.2 reads one page up to the passive cursor with a budget of every
+   * event (a page counts messages, and the log has no more messages than events); 0.2.1 has no
+   * passive state read but its inspection returns the whole log.
    */
-  async function readEventsOf(sessionId, maxMessages) {
+  async function readEventsOf(sessionId) {
     if (typeof ctx.sessionController.state === 'function') {
       const { cursor } = await ctx.sessionController.state({ sessionId }, NEVER_ABORTED)
-      const page = await pageOf(sessionId, cursor, maxMessages)
-      return { events: (page.records ?? []).map((record) => record.event ?? record), hasMore: page.hasMore === true }
+      const page = await pageOf(sessionId, cursor, Math.max(MIN_PAGE_MESSAGES, cursor + 1))
+      return (page.records ?? []).map((record) => record.event ?? record)
     }
-    const inspection = await ctx.sessionController.inspect(sessionId, NEVER_ABORTED)
-    return { events: inspection.events, hasMore: false }
+    return (await ctx.sessionController.inspect(sessionId, NEVER_ABORTED)).events
   }
 
   /** Hand a message to a session's agent and flush it; false on the flush is unconfirmed, never failed. */
-  async function handOver(agent, text, assistantId, send, attachments) {
-    await send(agent, userMessageOf(text, assistantId, attachments))
+  async function handOver(agent, text, assistantId, send, attachments, via) {
+    await send(agent, userMessageOf(text, assistantId, attachments, via))
     let flushed = false
     try { flushed = await ctx.sessions.flush(agent.session) === true } catch { /* Unconfirmed, not undelivered. */ }
     return { status: flushed ? DELIVERY.delivered : DELIVERY.unconfirmed }
@@ -232,20 +264,20 @@ export function createSessionPort(ctx, options = {}) {
   }
 
   /** Resolve and deliver one message with already-consumed attachment blocks. */
-  async function deliverWith(sessionId, text, send, attachments) {
+  async function deliverWith(sessionId, text, send, attachments, via) {
     const { assistantId } = state()
     const resolved = await ctx.sessionController.resolveAgent(sessionId)
     if (resolved.agent === undefined) throw new ContractError(ERROR.unknownSession)
-    return handOver(resolved.agent, text, assistantId(), send, attachments)
+    return handOver(resolved.agent, text, assistantId(), send, attachments, via)
   }
 
   /**
    * Consume hostRefs and deliver. A refused hostRef fails before resolveAgent, so an invalid
    * or expired ref cannot activate a session or leave a half-built message behind.
    */
-  async function deliver(sessionId, text, send, hostRefs = []) {
+  async function deliver(sessionId, text, send, hostRefs = [], via = SOURCE.via.message) {
     const attachments = await attachmentsOf(hostRefs)
-    return deliverWith(sessionId, text, send, attachments)
+    return deliverWith(sessionId, text, send, attachments, via)
   }
 
   /**
@@ -258,7 +290,7 @@ export function createSessionPort(ctx, options = {}) {
       return { sessionId: (await ctx.sessionController.create(target)).sessionId }
     } catch (error) {
       const sessionId = error?.code === WORKSPACE_ERROR.dshCode ? error.details?.sessionId : undefined
-      if (typeof sessionId !== 'string' || sessionId.length === 0) throw new ContractError(ERROR.failed)
+      if (typeof sessionId !== 'string' || sessionId.length === 0) throw startRefusal(error)
       return { sessionId, workspaceError: WORKSPACE_ERROR.attachFailed }
     }
   }
@@ -299,6 +331,7 @@ export function createSessionPort(ctx, options = {}) {
 
   /** message's delivery; with notifyWhenFinished the watermark is read before the message goes in. */
   async function message({ sessionId, message: text, attachments, notifyWhenFinished: notify }) {
+    boundMessage(text, state().readLimits())
     const since = notify === true ? await state().watermark(sessionId) : undefined
     const delivered = await deliver(sessionId, text, (agent, input) => agent.steer(input), attachments)
     return { ...delivered, ...(await notifyAfter(notify, sessionId, since)) }
@@ -307,8 +340,11 @@ export function createSessionPort(ctx, options = {}) {
   /** Create -> title -> model -> manage -> first delivery; the contract has no field for a failed start delivery. */
   async function start({ target, title, model, reasoningEffort, message, attachments: hostRefs = [], notifyWhenFinished: notify }) {
     const registry = state()
+    // Bounded first: an oversized first message creates no session.
+    boundMessage(message, registry.readLimits())
     // Validate the model before anything is created, so a refused choice leaves no session behind.
-    const selection = await prepareSessionModel(ctx, model, reasoningEffort)
+    let selection
+    try { selection = await prepareSessionModel(ctx, model, reasoningEffort) } catch (error) { throw startRefusal(error) }
     // Consume hostRefs only after the model check: a refused model keeps the refs usable.
     const attachments = await attachmentsOf(hostRefs)
     const created = await createSession(target)
@@ -344,30 +380,42 @@ export function createSessionPort(ctx, options = {}) {
     }
   }
 
-  /** One bounded read page, newest messages kept; reports whether the caller's bounds cut it. */
+  /**
+   * One bounded read, newest messages kept. The bounds are the caller's maxMessages/maxBytes,
+   * each capped by the connector's own readSessionMessages/readSessionBytes (the user's decision,
+   * 2026-11-07: the caps are enforced here, connector-side only). A read the caps or the caller's
+   * bounds cut reports `truncated: true`, the contract's explicit reason (§4.1); nothing is cut
+   * silently, and an uncut read reports false.
+   *
+   * Only messages with text count: an empty-text message is skipped and takes no place under
+   * maxMessages (DESIGN §5c). DSH's history page counts every message, so the page is read with
+   * the whole log's budget and the count is taken here (ROL-24, 0.2.2's page read).
+   */
   async function read({ sessionId, maxMessages, maxBytes }) {
-    const { assistantId } = state()
-    // The history request refuses a zero message budget; a caller asking for none gets none.
-    if (maxMessages < MIN_PAGE_MESSAGES) return { messages: [], truncated: false }
-    const { events, hasMore } = await readEventsOf(sessionId, maxMessages)
+    const { assistantId, readLimits } = state()
+    const limits = readLimits()
+    const messageBudget = Math.min(maxMessages, limits.readSessionMessages)
+    const byteBudget = Math.min(maxBytes, limits.readSessionBytes)
+    const events = await readEventsOf(sessionId)
     const messages = []
     let used = 0
     let truncated = false
     for (let index = events.length - 1; index >= 0; index--) {
-      if (messages.length >= maxMessages) { truncated = true; break }
       const event = events[index]
       if (event.type !== SESSION_INFO.assistantEvent && event.type !== SESSION_INFO.userEvent) continue
       const text = textOfEvent(event)
       if (text.length === 0) continue
-      const room = maxBytes - used
-      // Too little room for even the ellipsis: stop rather than exceed the caller's bound.
-      if (room <= byteLength(SESSION_INFO.ellipsis)) { truncated = true; break }
+      // A message with text is left out from here on: the read is cut.
+      if (messages.length >= messageBudget) { truncated = true; break }
+      const room = byteBudget - used
+      // Too little room for even the ellipsis: stop rather than exceed the bound.
+      if (room <= byteLength(SESSION_INFO.ellipsis) && byteLength(text) > room) { truncated = true; break }
       const cut = cutToBytes(text, room, SESSION_INFO.ellipsis)
+      if (cut !== text) truncated = true
       messages.unshift(messageOf(event, cut, assistantId()))
       used += byteLength(cut)
     }
-    // A page that cut older messages reports it; the bridge's own frame bound may cut further.
-    return { messages, truncated: truncated || hasMore }
+    return { messages, truncated }
   }
 
   const port = {
@@ -375,10 +423,21 @@ export function createSessionPort(ctx, options = {}) {
     managedIds: () => [...state().managedIds()],
     isManaged: (sessionId) => state().isManaged(sessionId) === true,
     isFishball: (sessionId) => state().isFishball(sessionId) === true,
+    isRelated: async (sessionId) => (await state().isRelated(sessionId)) === true,
     async describe(sessionId) {
       // The title projection is cold-safe and exists on both host versions; null means no such
       // session (DSH's own not-found answer), not a read failure.
-      const projection = await ctx.sessionController.projections({ sessionId }, NEVER_ABORTED)
+      let projection
+      try {
+        projection = await ctx.sessionController.projections({ sessionId }, NEVER_ABORTED)
+      } catch {
+        // DSH's title fold reads every user message's source.kind, so one message with no source
+        // makes the projection throw on both hosts (ROL-06), and it stays cached that way. The
+        // session still exists and is described without a title; only DSH's own not-found means
+        // there is no such session.
+        if (await isSessionGone(ctx, sessionId)) return undefined
+        projection = { values: {} }
+      }
       if (projection === null || projection === undefined) return undefined
       // An archived session is unknown to the bridge: its rows disappear with the archive (§5.2).
       if (ctx.workspaceRegistry.archivedSessionIds.includes(sessionId)) return undefined
@@ -395,14 +454,22 @@ export function createSessionPort(ctx, options = {}) {
     },
     start,
     message,
-    redirect: ({ sessionId, message, attachments }) => deliver(sessionId, message, async (agent, input) => {
-      // The Stop button's path, then the instruction as the next turn (src/messaging.js).
-      await ctx.sessionController.cancel({ sessionId })
-      agent.followup(input)
-    }, attachments),
-    async stop({ sessionId }) {
+    async redirect({ sessionId, message, attachments }) {
+      const delivered = await deliver(sessionId, message, async (agent, input) => {
+        // The Stop button's path, then the instruction as the next turn (src/messaging.js).
+        await ctx.sessionController.cancel({ sessionId })
+        agent.followup(input)
+      }, attachments, SOURCE.via.redirect)
+      // Audited once it was handed over (DESIGN §7a.12, §9); a failed redirect has no row.
+      await state().redirected(sessionId)
+      return delivered
+    },
+    async stop({ sessionId, reason }) {
       // An idle session has no live agent and nothing to stop; DSH's cancel is the Stop button.
-      if (ctx.agents.get(sessionId) !== undefined) await ctx.sessionController.cancel({ sessionId })
+      const running = ctx.agents.get(sessionId) !== undefined
+      if (running) await ctx.sessionController.cancel({ sessionId })
+      // One decisions row either way; its outcome says whether a turn was running (DESIGN §9).
+      await state().stopped(sessionId, reason, running)
     },
     read,
     // T06's two bridge operations. attachment.read answers metadata plus chunks; the image port

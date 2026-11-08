@@ -89,6 +89,7 @@ const PROVENANCE = Object.freeze({
   user: 'the user',
   fishballStart: 'Fishball (start_session)',
   fishballMessage: 'Fishball (message_session)',
+  fishballRedirect: 'Fishball (redirect_session)',
   other: 'another agent or a notice',
   unknown: 'unknown',
 })
@@ -120,6 +121,8 @@ const PROMPT_OUTCOME = Object.freeze({ [APPROVAL_DECISION.allow]: APPROVAL_OUTCO
  * request elsewhere; a cancelled call cancels it; a prompt that could take no answer closes it
  * with its own reason, so a closed browser never makes a card vanish unannounced.
  */
+/** The user's DSH outcome as the contract's settled decision (only a real answer has one). */
+const USER_DECISION = Object.freeze({ [APPROVAL_OUTCOME.allowedOnce]: APPROVAL_DECISION.allow, [APPROVAL_OUTCOME.rejected]: APPROVAL_DECISION.reject })
 const cardEndOf = ({ outcome }) => outcome === APPROVAL_OUTCOME.cancelled ? CARD_END.cancelled
   : outcome === APPROVAL_OUTCOME.unavailable ? CARD_END.unavailable
     : CARD_END.inSession
@@ -647,7 +650,11 @@ export class ApprovalBroker {
       at: Date.parse(request.at),
       toolName: request.toolName,
       callId: (asked ? request.askCallId : request.callId) ?? null,
-      reason: cutChars(reason, limits.rationaleChars),
+      // Whole: rationaleChars bounds Fishball's own rationale in the audit, never the asking
+      // session's reason (the user's decision, 2026-11-08). The relay fits it to the contract's
+      // descriptor cap (§5.1, src/slim/host/approvals.js); ask_fishball refuses one over
+      // APPROVAL.reasonBytes before it gets here (src/request-desk.js).
+      reason,
       quotes: (request.quotes ?? []).map((quote) => cutToBytes(quote.text, limits.requestUserMessageBytes, ELLIPSIS)),
       // T08's label expansion shows the exact call, as the user's pile card does.
       ...(request.args === undefined ? {} : { arguments: request.args.text, argumentsStatus: request.args.status }),
@@ -678,6 +685,9 @@ export class ApprovalBroker {
         this.#openQuestion(request, result.question)
         return { code: ASK_RESULT.question, requestId: request.id, question: result.question }
       case APPROVAL_ANSWER.withdrawn:
+        // The call was cancelled in Fishball's answer window: no pile card follows, so the child's
+        // card closes here with its one record (contract §4.5 CARD_CLOSED; APR-10/11).
+        this.#closeOffer(request, result, CARD_END.cancelled)
         return end(ASK_ERROR.cancelled)
       case APPROVAL_ANSWER.released:
         this.#closeOffer(request, result, CARD_END.released)
@@ -1019,6 +1029,9 @@ export class ApprovalBroker {
   async #sendOn(request, result, via, signal) {
     // Withdrawn, or the call was cancelled while Fishball's answer arrived: never next() (H1).
     if (result.answer === APPROVAL_ANSWER.withdrawn || signal?.aborted) {
+      // Never filed, so the child's card (or its waiting label) closes here (APR-10/11). Fishball's
+      // ask already settled that card (answerApproval), so it has nothing to close.
+      if (result.answer !== APPROVAL_ANSWER.ask) this.#closeOffer(request, result, CARD_END.cancelled)
       await this.#finish(request, { answer: APPROVAL_ANSWER.withdrawn }, APPROVAL_OUTCOME.cancelled)
       return APPROVAL_OUTCOME.cancelled
     }
@@ -1029,10 +1042,10 @@ export class ApprovalBroker {
     const toPile = sentToYou && this.#canAnswer() && this.#isManaged(request.sessionId)
     // The answer window is over: a card filed here carries no end time.
     if (toPile) delete request.expiresAt
-    // A direct call sent to the user closes the slim child's answerable card (Q1); a fishball
-    // escalate answer on a direct call takes its own tool path, but this is the one place a
-    // timeout, an undelivered notice and an escalate all land.
-    if (toPile) this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: APPROVAL_DECISION.escalate, by: SETTLED_BY.fishball })
+    // A direct call sent to the user closes the slim child's answerable card (Q1). Fishball's own
+    // escalate answer already published this settlement (answerApproval), so only a timeout or an
+    // undelivered notice publishes it here: one move to the user, one event.
+    if (toPile && result.answer !== APPROVAL_ANSWER.escalate) this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: APPROVAL_DECISION.escalate, by: SETTLED_BY.fishball })
     // Released (Take back, release_session) or Fishball gone off (the child exited: releaseAll)
     // inside the answer window, or just after Fishball's escalate and before this ran: no pile
     // card follows, so the child's card (or its waiting label) closes now, before the prompt
@@ -1046,6 +1059,13 @@ export class ApprovalBroker {
     if (by === PROMPT_BY.pile && outcome === APPROVAL_OUTCOME.rejected && note !== undefined) this.#wording.mark(request.callId, request.sessionId, request.toolName, { kind: WORDING.userReject, note })
     // As in P7: a prompt that ended cancelled (Stop, the turn ended) is audited as withdrawn.
     await this.#finish(request, outcome === APPROVAL_OUTCOME.cancelled ? { answer: APPROVAL_ANSWER.withdrawn } : result, outcome)
+    // The user's final decision on a request that went to them reaches the child's label (slim
+    // §8.1, T09), as an asked request's does in #awaitCard: on the card or on the session's prompt.
+    const userDecision = USER_DECISION[outcome]
+    // Only a request filed as your card: one released or off already closed with its record.
+    if (toPile && userDecision !== undefined && (by === PROMPT_BY.pile || by === PROMPT_BY.session)) {
+      this.#emit({ type: OFFER.event.settled, approvalId: request.id, sessionId: request.sessionId, decision: userDecision, by: SETTLED_BY.user })
+    }
     if (by === PROMPT_BY.session) await this.#clicked(request.sessionId, request.id, outcome)
     else if (by === PROMPT_BY.pile) await this.#clicked(request.sessionId, request.id, outcome, outcome === APPROVAL_OUTCOME.rejected ? note !== undefined : undefined)
     // The user's own Allow once / Reject, on the card or on the session's prompt (a cancelled or
@@ -1197,16 +1217,17 @@ export class ApprovalBroker {
     const describe = (source, fishballText) => {
       if (source === undefined) return PROVENANCE.unknown
       const sender = senderOf(source, fishball)
-      return sender === SESSION_INFO.roles.user ? PROVENANCE.user : sender === SESSION_INFO.roles.fishball ? fishballText : PROVENANCE.other
+      return sender === SESSION_INFO.roles.user ? PROVENANCE.user : sender === SESSION_INFO.roles.fishball ? fishballText(source) : PROVENANCE.other
     }
+    /** A turn Fishball started names the tool its relay records (SOURCE.via; none means a message). */
+    const turnBy = (source) => (source.via === SOURCE.via.redirect ? PROVENANCE.fishballRedirect : PROVENANCE.fishballMessage)
     let turnStart = -1
     for (let i = events.length - 1; i >= 0; i--) if (events[i].type === APPROVAL.turnStartEvent) { turnStart = i; break }
     const firstOfTurn = events.slice(turnStart + 1).find((event) => event.type === APPROVAL.userEvent)
     const firstOfSession = events.find((event) => event.type === APPROVAL.userEvent)?.data?.source
-    // The log is the only evidence: the isolated Fishball's start and messages arrive as relays
-    // naming Fishball's id (src/slim/host/session-port.js). The in-process outbox that told a
-    // redirect from a message went with the in-process agent, so a redirect reads as a message.
-    return { session: describe(firstOfSession, PROVENANCE.fishballStart), turn: describe(firstOfTurn?.data?.source, PROVENANCE.fishballMessage) }
+    // The log is the only evidence: the isolated Fishball's start, messages and redirects arrive
+    // as relays naming Fishball's id, and each says which tool sent it (src/slim/host/session-port.js).
+    return { session: describe(firstOfSession, () => PROVENANCE.fishballStart), turn: describe(firstOfTurn?.data?.source, turnBy) }
   }
 
   /**
