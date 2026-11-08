@@ -31,7 +31,7 @@ open questions of the first cut (Q-A = B, Q-B = B) are U5 and U6; §9 now has no
 | U10 | Q-C = **A-lite**: "A，优先保全DSH的拓展性和对DSH的生态的兼容能力". The child profile gets `dsh-web-app` back; the Fishball page is DSH's own web shell booted into Fishball's session with a minimal layout. **Guiding rule from now on: preserve DSH extensibility and ecosystem compatibility first.** Supersedes D28/I2 ("borrow styles only") for the chat page | §11 |
 | U11 | "一打开就要是Fishball的页面，通过修改DSH的网页来删去其他的组件，只留下Fishball一个会话页。" and the mechanism: **one small `dsh.client` plugin, `fishball-page`, bundled inside fishball-instance, loaded only in the child's DSH web**, does every removal and layout change. Never installed into the main DSH; no patching of DSH code or bundles; CSS from the same plugin is the fallback | §11.2–§11.5 |
 | U12 | "Fishball instance内的设置页也用DSH自带的插件设置页，且可以打开instance内的DSH setting页面，只是删除了侧边栏和其他的session页面，查看session只允许查看Fishball的session，并且拒绝启动任何的新session，并且整个fishball instance的DSH都没有只读以外的权限。" DSH's own Settings and Plugins pages are allowed destinations; only Fishball's session can be viewed; no new session can be started; nothing in the child goes above read-only | §11.4, §11.6, §11.7 |
-| U13 | §9 answers (2026-11-08): Q-E A, Q-F A, Q-G B, Q-H A, Q-I A, Q-J A, Q-M A as recommended; **Q-K = B** (hide Remove for our bundled plugins with CSS in `fishball-page`); **Q-L changed**: "现在设置页还要，但是额外可以访问instance内的设置，推荐插件列表就放在DSH的插件页面内的这里的额外一个tab，也做成一个插件，就叫fishball- recommend-plugins。但是很多instance的设置，比如插件的开关可以依靠DSH自带的插件页面来实现。" | §11.8, §11.9 |
+| U13 | §9 answers (2026-11-08): Q-E A, Q-F A, Q-G B, Q-H A, Q-I A, Q-J A, Q-M A as recommended; **Q-K = B** (hide Remove for our bundled plugins with CSS in `fishball-page`); **Q-N = A** (the recommended tab only in the child's Plugins page); **Q-O = B** (label "Fishball 推荐" / "Fishball Recommended", id `fishball-recommended`); **Q-L changed**: "现在设置页还要，但是额外可以访问instance内的设置，推荐插件列表就放在DSH的插件页面内的这里的额外一个tab，也做成一个插件，就叫fishball- recommend-plugins。但是很多instance的设置，比如插件的开关可以依靠DSH自带的插件页面来实现。" | §11.8, §11.9 |
 | U9 | W0 tester Q1 = A, Q2 = A, Q5 = A: X7's page-hook behaviour is tested in the real browser later (W0 tests the server side only); an out-of-scope X12 call answers `forbidden` (the other refusals stay "observable effect only"); bundled placement runs inside `initializeProfile`, before `loadProfileDirectory` and the skipped-bundle check | X7, X12, §2.2, X0-B |
 
 ## 1. The canonical extension points
@@ -459,7 +459,7 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | **EMB** connector embed of the shell | `packages/instance/src/slim/host/embed.js` (prefix forwarding of `/`, `/plugins/*`, `/assets/*`, `/api/*` and the `api/remote.mux` upgrade; CSP from SP-PG(1)), `packages/connector/client.js` (the iframe unchanged except `allow` if SP-PG needs it) | SP-PG, CHILD-WEB | the Fishball view in the main DSH shows the child's shell with no token in any URL, as SP1 did; the main DSH's own pages are unaffected |
 | **PG-1** `fishball-page` plugin | new `packages/instance/child-web/fishball-page/{package.json,client.js,removals.js,guard.js,shortcuts.js,messenger.js,style.css,i18n.js}` | SP-PG, CHILD-WEB | §11.3 table holds; Remove is hidden for the bundled plugins (§11.10); the page opens on Fishball's session; §11.4 paths cannot leave it; DSH Settings and Plugins pages open and come back; grey bubbles and avatars as eaa33f5; composer plugins (a fixture plus voice input when installed) work |
 | **SET** slimmed Fishball settings page (§11.8) | `child-web/fishball-page/panels/settings.js`, its Fetch routes (status, restart, provider sync) | PG-1 | only the "stays" rows of §11.8 are on it; the links open DSH Settings and Plugins and come back; the moved items are not duplicated |
-| **RP** `fishball-recommend-plugins` (§11.9) | new `packages/recommend-plugins/{package.json,index.js,client.js,i18n.js}`; `RUNTIME.bundledPlugins` entry in `src/native-runtime/constants.js` | SP-PG (8), CHILD-WEB, X0-B | the child's Plugins page shows the `Fishball` tab next to Installed, Marketplace and Discover; it lists the recommended plugins with meow-memory's note; Install installs into the child profile; an installed one shows "Installed"; the main DSH's Plugins page has no such tab |
+| **RP** `fishball-recommend-plugins` (§11.9) | new `packages/recommend-plugins/{package.json,index.js,client.js,i18n.js}`; `RUNTIME.bundledPlugins` entry in `src/native-runtime/constants.js` | SP-PG (8), CHILD-WEB, X0-B | the child's Plugins page shows the "Fishball 推荐" / "Fishball Recommended" tab next to Installed, Marketplace and Discover; it lists the recommended plugins with meow-memory's note; Install installs into the child profile; an installed one shows "Installed"; the main DSH's Plugins page has no such tab |
 | **PANELS** our panels as DSH entries | `child-web/fishball-page/panels/{approvals,reminders}.js`, the "代批 / Watchdog" tag and the escalation card as chat-node definitions; their Fetch routes in `src/slim/child/` | PG-1, X0-A | approvals and reminders work as `main` panels; the escalation card renders in Fishball's chat |
 | **RETIRE** remove the custom page | delete `src/slim/ui/{shell.*,chat.js,composer.js,approvals.js,records.js,reminders.js,settings.js}` and their server routes once nothing uses them; keep `dsh-tokens.css` only if a panel still needs it | PANELS, SET, RP, FN-4, B5 | no route serves the old page; the instance tests for the old page are retired with it |
 
@@ -701,6 +701,7 @@ decision table, **ST** state transitions.
 - **RP.**
   - EP for where the tab shows: the child's Plugins page (present, between the DSH tabs as DSH
     orders them); the main DSH's Plugins page (absent).
+  - EP for the label: zh → "Fishball 推荐", en → "Fishball Recommended"; the tab id is `fishball-recommended` in both.
   - EP for a row: not installed (Install); installed (Installed); install fails (DSH's own error,
     no change); the meow-memory row shows its note in en and zh.
   - DT: plugin `fishball-recommend-plugins` enabled or disabled × tab present or absent; disabled →
@@ -721,7 +722,7 @@ decision table, **ST** state transitions.
   - ST: no brief → brief active at start, with the window case (a card before attach goes to
     Fishball).
 - **X-E2E**, one per DSH version:
-  - a fresh child has all four bundled plugins on (no Remove shown), the `Fishball` tab in its Plugins page, and the Fishball page opens directly on Fishball's session, with no sidebar or other sessions reachable;
+  - a fresh child has all four bundled plugins on (no Remove shown), the "Fishball 推荐" tab in its Plugins page, and the Fishball page opens directly on Fishball's session, with no sidebar or other sessions reachable;
   - Fishball starts a session (a brief is required) → the watchdog supervises it;
   - the user hands over a session → the notice carries the brief-required line; a reply is
     refused `watchdog-brief-required`; after `watchdog_brief` the reply is delivered;
@@ -754,8 +755,7 @@ decision table, **ST** state transitions.
 | --- | --- | --- | --- | --- |
 | Q-C | *(closed: A-lite, U10)* | | | |
 | Q-E … Q-M | *(closed by U13: E, F, G, H, I, J, M as recommended; K = B; L changed, §11.9)* | | | |
-| Q-N | Where does the `Fishball` tab of `fishball-recommend-plugins` show? | In the **child** DSH's Plugins page only: the recommendations are plugins to install into the instance, and that page installs into the child profile | In both the child's and the main DSH's Plugins pages | **A.** In the main DSH, an Install button there would install into the **main** profile, which is wrong. The main DSH keeps reaching Fishball's settings through the connector's Fishball view |
-| Q-O | The tab's **label**. The screenshot's `Fishball` tab comes from the **legacy** in-process Fishball (old root `client.js`, `feat/slim-native-embedded-ui` 106e93c `:4166`, tab id `fishball`), not from today's connector or instance | Label it `Fishball` (id `fishball-recommended`), as in the screenshot | Label it `Recommended for Fishball` / `Fishball 推荐` | **A**, as the user's screenshot shows; the id differs from the legacy `fishball`, so the two never clash if a legacy install is still around |
+| Q-N, Q-O | *(closed by U13: Q-N = A, Q-O = B)* | | | |
 
 **Conflicts with earlier decisions (listed, not chosen):**
 - **K-1 (closed by U10):** D28/I2 is superseded for the chat page.
@@ -1149,8 +1149,8 @@ spirit.
 - **Package:** `packages/recommend-plugins/`, npm name `fishball-recommend-plugins`, `dsh.client`
   (web) only, plus a tiny Node row that serves the list through a Fetch route.
 - **Bundled** like the other three (§2.2): `RUNTIME.bundledPlugins` gains
-  `{name: 'fishball-recommend-plugins'}`. It is in the **child** profile only (Q-N A).
-- **The tab:** `plugins.tab` entry with id `fishball-recommended` and label `Fishball` (Q-O A). It
+  `{name: 'fishball-recommend-plugins'}`. It is in the **child** profile only (Q-N = A).
+- **The tab:** `plugins.tab` entry with id `fishball-recommended` and label "Fishball 推荐" (zh) / "Fishball Recommended" (en) (Q-O = B). It
   lists `RECOMMENDED_PLUGINS` (`src/recommended.js`), with B6's meow-memory note. Each row has
   **Install**, which calls DSH's own install flow (`pluginManager.installBundle` through the page's
   injected face, as the Discover tab does), or shows "Installed" when a bundle of that name exists.
