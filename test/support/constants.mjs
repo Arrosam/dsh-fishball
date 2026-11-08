@@ -8,17 +8,36 @@ import path from 'node:path'
 export const REPO = path.resolve(import.meta.dirname, '..', '..')
 export const NODE = '/opt/homebrew/bin/node'
 export const RUNTIME = process.env.FBTEST_DSH_RUNTIME ?? '/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.2/node_modules'
-export const TEST_HOMES = path.join(REPO, '.runtime', 'test-homes')
+/**
+ * Root of the throwaway DSH homes. FBTEST_TEST_HOMES moves it (e.g. under the OS temp dir, so a
+ * baseline run writes no home into the checkout); it must still end in `.runtime/test-homes`,
+ * because run.mjs's delete guard and the worker's home check both require that suffix.
+ */
+export const TEST_HOMES = process.env.FBTEST_TEST_HOMES ?? path.join(REPO, '.runtime', 'test-homes')
 export const SUPPORT = import.meta.dirname
 export const WORKER = path.join(SUPPORT, 'worker.mjs')
 
 /** Profile created inside each throwaway DSH_HOME (never a shipped profile name). */
 export const PROFILE = 'fbtest'
-export const PACKAGE_NAME = 'dsh-fishball'
-export const ROW_ID = 'fishball'
-/** P3: the bundle patch inserts this row before the fishball row. */
-export const ATTRIBUTION_ROW = { id: 'fishball-attribution', module: 'dsh-fishball/attribution' }
+/**
+ * After M1 (docs/package-layout.md) the repository holds two plugin packages and the root is not a
+ * plugin. The connector carries the row, client and settings namespace the host cases exercise;
+ * the instance is the built-in Fishball. Both are linked into every test profile.
+ */
+export const CONNECTOR = { name: 'fishball-connector', dir: path.join(REPO, 'packages', 'connector') }
+export const INSTANCE = { name: 'fishball-instance', dir: path.join(REPO, 'packages', 'instance') }
+export const PACKAGE_NAME = CONNECTOR.name
+export const INSTANCE_NAME = INSTANCE.name
+export const ROW_ID = CONNECTOR.name
+export const INSTANCE_ROW_ID = INSTANCE.name
 export const SENTINEL_PRESET = 'fishball:assistant'
+/**
+ * Files whose requirement the connector still owns (docs/slim-native-design.md §12 "Kept on the main
+ * side") but whose cases drive it through the deleted in-process Fishball session: its live agent,
+ * its own tool calls and its model requests. They are skipped whole, kept as the requirement source,
+ * until they are rewritten on the attached-instance stub of docs/test-design/connector.md (H-STUB).
+ */
+export const NEEDS_INSTANCE_STUB = 'drives the removed in-process Fishball session (slim §12); rewrite on the connector H-STUB harness (docs/test-design/connector.md)'
 
 /** Fixture bundle linked into the test profile, before the plugin under test. */
 export const FIXTURE_BUNDLE = { name: 'fbtest-tools', dir: path.join(SUPPORT, 'fixtures', 'fbtest-tools') }
@@ -100,15 +119,14 @@ export const PRESET = {
 
 export const assistantDir = (home) => path.join(home, 'fishball', 'assistant')
 
-/** R-CONFIG: field -> default and minimum valid whole number. */
+/**
+ * R-CONFIG: field -> default and minimum valid whole number. C2 (conn-OQ-20, 474b876) keeps only the
+ * fields the connector still reads: maxSourcesPerPlugin, maxFishballOnlyPlugins and the three hourly
+ * caps went with the in-process agent (slim §12), and a stored value of one is ignored.
+ */
 export const LIMITS = {
   maxQueuedInputs: { default: 200, min: 1 },
   maxActiveWatches: { default: 50, min: 1 },
-  maxSourcesPerPlugin: { default: 8, min: 1 },
-  maxFishballOnlyPlugins: { default: 32, min: 1 },
-  wakeupsPerHour: { default: 60, min: 0 },
-  messagesPerHour: { default: 30, min: 0 },
-  sessionsPerHour: { default: 10, min: 0 },
   maxPendingApprovals: { default: 8, min: 1 },
   approvalAnswerSeconds: { default: 120, min: 1 },
   argumentExcerptBytes: { default: 8192, min: 1 },
@@ -121,30 +139,42 @@ export const LIMITS = {
  * the sixteen fields added to the fishball row's config, with today's value as the default. Every
  * value is a whole number of at least 1 (§16 "Rules"), except replyCapShare, whose minimum is 2 (user's
  * decision 2026-11-01: the automatic reply cap is never more than half the window); `old` is the
- * constant's name in "Today in code".
+ * constant's name in "Today in code". C2 (conn-OQ-20) keeps the six the connector still reads.
  */
 export const LIMITS_R11 = {
   requestUserMessageBytes: { default: 2048, min: 1, old: 'APPROVAL.userMessageBytes' },
   rationaleChars: { default: 500, min: 1, old: 'APPROVAL.rationaleChars' },
-  approvalsShown: { default: 20, min: 1, old: 'APPROVAL.shown' },
-  intakeRowsShown: { default: 20, min: 1, old: 'INTAKE.snapshotRows' },
-  outboxShown: { default: 20, min: 1, old: 'OUTBOX_SHOWN' },
   watchesShown: { default: 50, min: 1, old: 'WATCH.shown' },
   readSessionMessages: { default: 12, min: 1, old: 'WATCH.readMessages' },
   readSessionBytes: { default: 12288, min: 1, old: 'WATCH.readBytes' },
   forwardExcerptBytes: { default: 3072, min: 1, old: 'SESSION_INFO.excerptBytes' },
-  pluginHistoryShown: { default: 10, min: 1, old: 'PLUGIN_MANAGER.historyEntries' },
-  settingsPromptValueBytes: { default: 200, min: 1, old: 'PLUGIN_MANAGER.promptValueBytes' },
-  replyCapShare: { default: 8, min: 2, old: 'CONTEXT.outputShare' },
-  headroomShare: { default: 8, min: 1, old: 'CONTEXT.headroomShare' },
-  minWindowTokens: { default: 4096, min: 1, old: 'CONTEXT.minWindowTokens' },
-  pluginManagerStartMs: { default: 30000, min: 1, old: 'FISHBALL_PACKAGES.managerStartMs' },
-  defaultReplyCapTokens: { default: 32000, min: 1, old: 'CONTEXT.outputMax' },
+}
+/**
+ * rev11-limits fields C2 removed from the row config: the in-process agent's (context window, plugin
+ * manager, outbox) went with it (slim §12), approvalsShown with ApprovalBroker.snapshot() and
+ * intakeRowsShown became the fixed INTAKE.rowsShown (474b876). Their old constants must stay unread.
+ */
+export const LIMITS_R11_REMOVED = {
+  approvalsShown: { old: 'APPROVAL.shown' },
+  intakeRowsShown: { old: 'INTAKE.snapshotRows' },
+  outboxShown: { old: 'OUTBOX_SHOWN' },
+  pluginHistoryShown: { old: 'PLUGIN_MANAGER.historyEntries' },
+  settingsPromptValueBytes: { old: 'PLUGIN_MANAGER.promptValueBytes' },
+  replyCapShare: { old: 'CONTEXT.outputShare' },
+  headroomShare: { old: 'CONTEXT.headroomShare' },
+  minWindowTokens: { old: 'CONTEXT.minWindowTokens' },
+  pluginManagerStartMs: { old: 'FISHBALL_PACKAGES.managerStartMs' },
+  defaultReplyCapTokens: { old: 'CONTEXT.outputMax' },
 }
 /** rev11-limits: package-operation constants removed in favour of DSH's plugin-manager settings (§16 "Values that stay constants"). */
 export const REMOVED_PACKAGE_CONSTANTS = ['FISHBALL_PACKAGES.outputBytes', 'FISHBALL_PACKAGES.idleTimeoutMs', 'FISHBALL_PACKAGES.lockWaitMs', 'FISHBALL_PACKAGES.lookupTimeoutMs']
-/** rev11-limits: constants that stay (§16 "Values that stay constants"), by the name the table gives. */
-export const STAYING_CONSTANTS = ['maxTimerMs', 'HOUR_MS', 'idPattern', 'dshDefaults', 'minCapTokens', 'dedupeKeyBytes', 'descriptionBytes', 'sourceTitleBytes', 'nameBytes', 'maxSubagentDepth', 'resumeAttempts', 'resumeRetryMs', 'maxAttempts', 'modelInfoTimeoutMs', 'SEQ_DIGITS', 'DIGEST_HEX_CHARS', 'WORDS_PER_TOKEN', 'ROUNDING_GUARD', 'FIBER_ACTIVE']
+/**
+ * rev11-limits: constants that stay (§16 "Values that stay constants"), by the name the table gives.
+ * Not listed any more: HOUR_MS (the hourly caps), dshDefaults, minCapTokens, WORDS_PER_TOKEN and
+ * ROUNDING_GUARD (the context window), modelInfoTimeoutMs (the model gate) and FIBER_ACTIVE (the
+ * in-process agent's fiber): their owners were deleted with the in-process Fishball (slim §12).
+ */
+export const STAYING_CONSTANTS = ['maxTimerMs', 'idPattern', 'dedupeKeyBytes', 'descriptionBytes', 'sourceTitleBytes', 'nameBytes', 'maxSubagentDepth', 'resumeAttempts', 'resumeRetryMs', 'maxAttempts', 'SEQ_DIGITS', 'DIGEST_HEX_CHARS']
 
 /** R-COMPOSITION: names never shown to Fishball. */
 export const HIDDEN_TOOLS = [
@@ -227,14 +257,16 @@ export const API = {
 /** P5: the state snapshot's 11 keys; P6 adds 'watches' (12), P7 'approvals' (13), P8 'sources' (14), unread replies 'unread' (15), brand icon 'preferences' (16); rev11g 'questionMode' (DESIGN §10e snapshot). */
 /** P11 R2 adds 'look' (17). */
 /** Revision 10c adds 'features' (18). Revision 12 adds 'recommended' and 'welcome' (22, DESIGN §10f "Host API"). Revision 11 rev11a adds 'managed' (19, DESIGN §10e "Snapshot"); rev11c adds 'pile' (20). The tag records the Host publishes (§9 "Tag records") may add a 'tags' key, whose name the design leaves open: tests drop it before comparing (STATE_KEYS_OPTIONAL). */
-export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'grants', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'outbox', 'pile', 'preferences', 'questionMode', 'recommended', 'sessionId', 'sources', 'status', 'unread', 'watches', 'welcome', 'workspaceId']
+export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'error', 'features', 'grants', 'hiddenTools', 'intake', 'limits', 'look', 'managed', 'modelSelection', 'outbox', 'pile', 'preferences', 'questionMode', 'recommended', 'sessionId', 'sources', 'status', 'unread', 'watches', 'welcome', 'workspaceId']
 /** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
 export const STATE_KEYS_OPTIONAL = ['tags']
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
 export const INBOUND_TOOL = 'message_fishball'
 export const OUTBOUND_TOOLS = ['message_session', 'start_session']
-export const RELAY = { kind: 'agent-message', form: 'relay' }
+export const RELAY = { kind: 'agent-message', form: 'relay', via: 'message' }
+/** A relay a redirect sent: the tool is recorded in its source (SOURCE.via.redirect, ORG-01). */
+export const RELAY_REDIRECT = { ...RELAY, via: 'redirect' }
 export const NOTICE = { kind: 'fishball-notice', form: 'notice' }
 /** P5 result and route codes. */
 export const P5_CODE = {
@@ -906,7 +938,8 @@ export const PENDING = { key: 'pending' }
  * `baseline` is where the persona stood before the rule was added: the live branch.
  */
 export const PERSONA_BOLD = {
-  module: path.join(process.env.FBTEST_PLUGIN_DIR ?? REPO, 'src', 'persona.js'),
+  // M1: the persona is the instance's; FBTEST_PLUGIN_DIR still names a checkout of the repository.
+  module: path.join(process.env.FBTEST_PLUGIN_DIR ? path.join(process.env.FBTEST_PLUGIN_DIR, 'packages', 'instance') : INSTANCE.dir, 'src', 'persona.js'),
   baseline: { ref: 'rebuild/assistant', file: 'src/persona.js', moduleType: 'text/javascript' },
   exports: ['HIDDEN_PROMPT_ENTRIES', 'PERSONA_ROLE', 'PERSONA_ROW'],
   rowName: '@deepseek-ai/dsh-persona',

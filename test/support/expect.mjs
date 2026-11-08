@@ -401,11 +401,11 @@ export const outboxNow = async (host) => (await host.state()).outbox.entries
 /** A string of exactly n UTF-8 bytes made of 2-byte characters (n even), or ASCII when ascii is set. */
 export const bytesOf = (n, ascii = false) => (ascii ? 'b'.repeat(n) : 'é'.repeat(n / 2))
 
-/** The served client combo script that carries dsh-fishball/client.js, read like a browser (M5). */
+/** The served client combo script that carries fishball-connector/client.js, read like a browser (M5). */
 export async function fishballClientBundle(host) {
   const index = await host.get('/')
   // Bootstrap batches load with <script src>, application batches are preloaded with <link href>.
-  const urls = [...index.text.matchAll(/(?:src|href)="([^"]*dsh-fishball\/client\.js[^"]*)"/g)].map((m) => m[1].replaceAll('&amp;', '&'))
+  const urls = [...index.text.matchAll(/(?:src|href)="([^"]*fishball-connector\/client\.js[^"]*)"/g)].map((m) => m[1].replaceAll('&amp;', '&'))
   if (urls.length === 0) return { found: false, status: index.status }
   const res = await host.get('/' + urls[0])
   return { found: true, status: res.status, text: res.text }

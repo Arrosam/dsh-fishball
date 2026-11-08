@@ -1,114 +1,63 @@
 /**
- * Revision 11 rev11a: managed status across agent re-creation, plugin switches and a restart (DESIGN §5b, §5e
- * "Tools per session", "Durable", "Which Fishball plugin", §7a.1, §9, §10d, §10e; Q-r11-plugins-off; S34).
- * In rev11a the per-agent registration holds message_fishball only (the user's amendment).
- * Host boots with FBTEST_APPROVER_AFTER=1 (the scripted answerer stands in for the stock prompt after the
- * broker). One home; the cases run in order; the restart and the bundle switch come last.
+ * Managed status across agent re-creation, no instance, a restart and the connector's bundle switch (DESIGN §5b, §5e
+ * "Tools per session", "Durable", §9 managed registry, §11 "Restart"; contract §9; connector.md C1-EP-04), on the H-STUB
+ * harness. Host boots with FBTEST_APPROVER_AFTER=1 (the scripted answerer stands in for the stock prompt after the
+ * connector's broker). One home; the cases run in order; the restart and the bundle switch come last.
  *
- * | id      | technique | expected |
- * |---------|-----------|----------|
- * | DUR-01  | ST (managed –agent disposed→ –resume→ new agent) | a new agent is created; its next request has message_fishball again |
- * | DUR-02  | DT (Session messages off × managed / yours × route) | features.messages false; the managed entry is kept unchanged; the managed session's next request lacks message_fishball; Hand over and Take back answer 409 feature-off and change nothing; the managed session's permission request still reaches Fishball (Permission requests is on) |
- * | DUR-03  | ST (Session messages back on) | the still-managed session's next request has message_fishball again; Hand over works again |
- * | DUR-04  | DT (Permission requests off × managed) | the managed session's permission request reaches its stock prompt at once with zero Fishball steps; it stays managed and keeps message_fishball; back on: its request reaches Fishball again |
- * | DUR-05  | EP (Fishball archived, not live) | POST managed answers 409 unavailable and changes nothing; after unarchive + retry the managed entries are unchanged |
- * | DUR-06  | ST (restart) | the snapshot lists the same managed entries (same since and by); resumed managed sessions have message_fishball and their requests reach Fishball; a taken-back session and a session that is yours have none and reach the stock prompt |
- * | DUR-07  | ST (Fishball's bundle off → on) | while off, a managed session's next request lacks message_fishball; back on, the session is still managed and has it again |
+ * | id      | technique | requirement | expected |
+ * |---------|-----------|-------------|----------|
+ * | DUR-01  | ST (managed –agent disposed→ –resume→ new agent) | §5e "New agents" | a new agent is created; its next request has the three managed tools again; the entry is unchanged |
+ * | DUR-05  | ST (no instance –Hand over→ managed –attach→) | contract §9, C1-EP-04 | Hand over answers 200 with no instance (never unavailable); the entry is listed; the note is queued and delivered once as `user` after the attach; entries otherwise unchanged |
+ * | DUR-06  | ST (restart) | §5e "Durable", §11 | the snapshot lists the same entries (same since, by and title); resumed managed sessions (hand-over, start) have the tools and their requests reach the instance; a taken-back session and a session that is yours have none and reach the stock prompt |
+ * | DUR-07  | ST (the connector's bundle off → on) | §5e "Ownership" | while off, a managed session's next request lacks the tools; back on (instance attached again), the session is still managed and has them again; a session that is yours still has none |
+ *
+ * Retired:
+ * - DUR-02, DUR-03 (Session messages off / on), DUR-04 (Permission requests off): the four feature switches are gone; Hand over, watches and permission requests are always on (slim-native-design §12).
+ * - DUR-05 (409 unavailable while Fishball is not live): replaced by contract §9: with no instance Hand over and Take back work; there is no in-process Fishball to archive (slim §12).
+ * - DUR-06 (message_session, by message): session.message serves managed sessions only (contract §4.1) and refuses one that is yours with not-managed, so messaging is no longer a way in; the restart case uses session.start instead.
  */
 import assert from 'node:assert/strict'
-import { after, before, describe, it } from 'node:test'
-import { APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, FEATURE_OFF, INBOUND_TOOL, MANAGED_BY, MANAGED_CODE, OUTCOME, OWN_PLUGINS, PACKAGE_NAME, PRESET, STATUS, API } from './support/constants.mjs'
+import { after, before, it, describe } from 'node:test'
+import { MANAGED_BY, MANAGED_TOOLS, PACKAGE_NAME, TITLE } from './support/constants.mjs'
+import { HOOK, T, settledIdle, turn } from './support/expect.mjs'
+import { KIND, STUB, handOver, quietPushes, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
 import {
-  HOOK, T, askSettled, fishballCall, managedEntry, managedNow, pluginIn, requestMessages, setManaged, settledIdle, startAsk, toolNames, turn, untilCatalog, waitRequest,
-} from './support/expect.mjs'
-import { bootHost, newHome, sleep, until } from './support/host.mjs'
+  MANAGED_STUB, bootManaged, restartManaged, detachStub, entryOf, expectStock, expectToInstance, folderIn, hasTool, itemsAbout, managedNow, nextRequest, reattach, startSession,
+} from './support/instance-stub-managed.mjs'
+import { until } from './support/util.mjs'
 
 let seq = 0
 const tok = (label) => 'DUR' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 7)
-const AT_ONCE_MS = 1000
-const QUIET_MS = 1200
-const LONG = { timeout: 150000 }
-const hasInbound = (req) => toolNames(req).includes(INBOUND_TOOL)
+const hasAll = (req) => MANAGED_TOOLS.every((n) => hasTool(req, n))
+const hasAny = (req) => MANAGED_TOOLS.some((n) => hasTool(req, n))
+const sortById = (list) => [...list].sort((a, b) => a.sessionId.localeCompare(b.sessionId))
+/** DSH's plugin manager reloads the profile when a bundle is switched; that takes a while. */
+const BUNDLE_MS = 90000
+/** How long a switched bundle may take to show in a session's next request. */
+const SWITCH_MS = 15000
+const SWITCH_POLL_MS = 500
 
-describe('Revision 11 rev11a: managed status is durable', () => {
+describe('managed status is durable (H-STUB)', () => {
+  let booted
   let host
-  let home
-  let fb
-  const seenFor = async (text) => (await host.call('approvals', {})).filter((a) => a.reason === ASK_REASON(text))
-  const boot = async () => {
-    host = await bootHost(home, { env: APPROVER_AFTER_ENV })
-    const st = await host.waitStatus(STATUS.live)
-    assert.equal(st?.status, STATUS.live, 'live: ' + JSON.stringify(st?.status))
-    fb = st.sessionId
-    await settledIdle(host, fb)
-    await host.call('setApprover', { outcome: OUTCOME.reject })
-  }
-  async function userSession(folder) {
-    const sid = (await host.call('ordinary', { preset: PRESET.bare, folder })).sessionId
-    await turn(host, sid, [[{ text: 'hello' }]], 'first words')
-    return sid
-  }
-  async function handOver(sid) {
-    const r = await setManaged(host, sid, true)
-    assert.equal(r.status, 200, r.text)
-    await sleep(300)
-    await settledIdle(host, fb)
-  }
-  const nextRequest = async (sid) => (await turn(host, sid, [[{ text: 'next' }]])).requests.at(-1)
-  const toggle = async (plugin, on) => {
-    await settledIdle(host, fb)
-    const r = await host.post(API.plugins, { plugin, on })
-    assert.equal(r.status, 200, r.text)
-    assert.ok(await untilCatalog(host, (c) => pluginIn(c, plugin)?.applied === on), plugin + ' applied ' + on)
-  }
-  async function expectStock(sid) {
-    await settledIdle(host, fb)
-    await settledIdle(host, sid)
-    const text = tok('stock')
-    const fbBefore = (await host.call('requests', { sessionId: fb })).length
-    await startAsk(host, sid, ASK_TOOL, { text })
-    const done = await askSettled(host, text, 5000)
-    assert.equal(done?.outcome, OUTCOME.reject)
-    const seen = await seenFor(text)
-    assert.equal(seen.length, 1, 'the stock prompt was asked once')
-    assert.ok(seen[0].at - done.askedAt < AT_ONCE_MS, 'at once: ' + (seen[0].at - done.askedAt) + ' ms')
-    await sleep(QUIET_MS)
-    assert.deepEqual(await requestMessages(host, fb, text), [], 'Fishball is not told')
-    assert.equal((await host.call('requests', { sessionId: fb })).length, fbBefore, 'zero Fishball model steps')
-    await settledIdle(host, sid)
-  }
-  async function expectFishball(sid) {
-    await settledIdle(host, fb)
-    await settledIdle(host, sid)
-    const text = tok('tofb')
-    await startAsk(host, sid, ASK_TOOL, { text })
-    const req = await waitRequest(host, fb, text)
-    assert.ok(req, 'a permission request reached Fishball')
-    assert.equal(req.block?.fields?.session_id, sid)
-    assert.deepEqual(await seenFor(text), [], 'not at the stock prompt while Fishball decides')
-    await host.call('cancel', { sessionId: sid })
-    await askSettled(host, text)
-    await settledIdle(host, sid)
-    await settledIdle(host, fb)
-  }
-
-  // The sessions the restart case reads back.
-  let handed
-  let messaged
-  let takenBack
-  let mine
 
   before(async () => {
-    home = newHome('managed-durable')
-    await boot()
+    booted = await bootManaged('managed-durable')
+    host = booted.host
   }, HOOK)
-  after(async () => { await host?.stop() }, HOOK)
+  after(() => stopStub(booted), HOOK)
 
-  it('DUR-01 a managed session whose agent is re-created by resume has message_fishball again', T, async () => {
+  async function hand(sid) {
+    const r = await handOver(host, sid)
+    assert.equal(r.status, 200, r.text)
+  }
+
+  it('DUR-01 a managed session whose agent is re-created by resume has the tools again', T, async () => {
     const { sessionId: sid } = await host.call('createKept', { folder: 'dur01' })
     await turn(host, sid, [[{ text: 'hello' }]], 'first words')
-    await handOver(sid)
-    assert.ok(hasInbound(await nextRequest(sid)), 'precondition: managed agent has the tool')
+    await hand(sid)
+    const entry = await entryOf(host, sid)
+    assert.ok(hasAll(await nextRequest(host, sid)), 'precondition: the managed agent has the tools')
     const created = (await host.call('lifecycle')).filter((e) => e.type === 'created' && e.id === sid).length
     const d = await host.call('disposeKept', { sessionId: sid })
     assert.equal(d.disposed, true)
@@ -116,136 +65,87 @@ describe('Revision 11 rev11a: managed status is durable', () => {
     const r = await host.call('resume', { sessionId: sid })
     assert.equal(r.live, true, JSON.stringify(r))
     assert.equal((await host.call('lifecycle')).filter((e) => e.type === 'created' && e.id === sid).length, created + 1, 'a new agent was created')
-    assert.ok(hasInbound(await nextRequest(sid)), 'the new agent has ' + INBOUND_TOOL)
-    assert.equal((await managedEntry(host, sid))?.by, MANAGED_BY.handOver)
+    assert.ok(hasAll(await nextRequest(host, sid)), 'the new agent has ' + MANAGED_TOOLS)
+    assert.deepEqual(await entryOf(host, sid), entry)
   })
 
-  describe('Session messages off and on', () => {
-    const spec = OWN_PLUGINS.messages
-    let m
-    let u
-    let entryBefore
-    before(async () => {
-      m = await userSession('dur02-managed')
-      u = await userSession('dur02-yours')
-      await handOver(m)
-      entryBefore = await managedEntry(host, m)
-      await toggle(spec.key, false)
-    }, HOOK)
-
-    it('DUR-02 off: managed status kept, the tool gone, Hand over / Take back refused feature-off, requests still reach Fishball', T, async () => {
-      const s = await host.state()
-      assert.equal(s.features.messages, false, 'features.messages false (the client hides Hand over / Take back)')
-      assert.deepEqual(await managedEntry(host, m), entryBefore, 'still managed, entry unchanged')
-      assert.equal(hasInbound(await nextRequest(m)), false, 'message_fishball removed from the managed session')
-      for (const [sid, managed] of [[u, true], [m, false]]) {
-        const before = await managedNow(host)
-        const r = await setManaged(host, sid, managed)
-        assert.equal(r.status, 409, r.text)
-        assert.equal(r.json?.code, FEATURE_OFF)
-        assert.deepEqual(await managedNow(host), before, 'nothing changed')
-      }
-      assert.equal(await managedEntry(host, u), undefined)
-      await expectFishball(m)
-    })
-
-    it('DUR-03 on again: the still-managed session has message_fishball again; Hand over works', T, async () => {
-      await toggle(spec.key, true)
-      assert.equal((await host.state()).features.messages, true)
-      assert.deepEqual(await managedEntry(host, m), entryBefore)
-      assert.ok(hasInbound(await nextRequest(m)), 'message_fishball back')
-      assert.equal((await setManaged(host, u, true)).status, 200)
-      await settledIdle(host, fb)
-      assert.equal((await managedEntry(host, u))?.by, MANAGED_BY.handOver)
-    })
-  })
-
-  it('DUR-04 Permission requests off: a managed session\'s request reaches its stock prompt; back on, Fishball again', T, async () => {
-    const spec = OWN_PLUGINS.approvals
-    const m = await userSession('dur04')
-    await handOver(m)
-    await toggle(spec.key, false)
-    try {
-      await expectStock(m)
-      assert.ok(await managedEntry(host, m), 'still managed')
-      assert.ok(hasInbound(await nextRequest(m)), 'message_fishball stays (it belongs to Session messages)')
-    } finally {
-      await toggle(spec.key, true)
-    }
-    await expectFishball(m)
-  })
-
-  it('DUR-05 Fishball not live: POST managed answers 409 unavailable', LONG, async () => {
-    const u = await userSession('dur05')
+  it('DUR-05 with no instance attached Hand over works and its note waits for the next attach', T, async () => {
+    const sid = await userSession(host, 'dur05')
+    await quietPushes(booted.stub)
     const before = await managedNow(host)
-    const archived = await host.call('archive', { sessionId: fb, stopActivity: true })
-    assert.equal(archived.ok, true, JSON.stringify(archived))
+    await detachStub(booted)
+    let r
     try {
-      await host.waitStatus(STATUS.archived)
-      const r = await setManaged(host, u, true)
-      assert.equal(r.status, 409, r.text)
-      assert.equal(r.json?.code, MANAGED_CODE.unavailable)
+      r = await handOver(host, sid)
+      assert.equal(r.status, 200, 'never unavailable with no instance: ' + r.text)
+      assert.equal(r.json?.ok, true)
+      assert.equal((await entryOf(host, sid))?.by, MANAGED_BY.handOver)
+      assert.deepEqual(sortById((await managedNow(host)).filter((e) => e.sessionId !== sid)), sortById(before), 'the other entries unchanged')
     } finally {
-      await host.call('unarchive', { sessionId: fb })
-      const rec = await host.post(API.recovery, { action: 'retry' })
-      assert.equal(rec.status, 200, rec.text)
-      await host.waitStatus(STATUS.live)
-      await settledIdle(host, fb)
+      await reattach(booted)
     }
-    assert.deepEqual(await managedNow(host), before, 'managed entries unchanged')
+    assert.ok(await until(async () => (await itemsAbout(booted.stub, sid)).length > 0, STUB.waitMs, 100), 'the queued note arrives after the attach')
+    await quietPushes(booted.stub)
+    const items = await itemsAbout(booted.stub, sid)
+    assert.deepEqual(items.map((i) => i.kind), [KIND.user], 'delivered once, as the user\'s')
   })
 
-  it('DUR-06 managed status survives a restart', LONG, async () => {
-    handed = await userSession('dur06-handed')
-    await handOver(handed)
-    messaged = await userSession('dur06-messaged')
-    const { json } = await fishballCall(host, fb, 'message_session', { session_id: messaged, message: tok('06') })
-    assert.equal(json?.ok, true, JSON.stringify(json))
-    await settledIdle(host, messaged)
-    takenBack = await userSession('dur06-taken')
-    await handOver(takenBack)
-    assert.equal((await setManaged(host, takenBack, false)).status, 200)
-    mine = await userSession('dur06-mine')
-    await settledIdle(host, fb)
+  /** The sessions the restart case and the bundle case read back. */
+  const s = {}
+
+  it('DUR-06 managed status survives a restart', MANAGED_STUB.long, async () => {
+    s.handed = await userSession(host, 'dur06-handed')
+    await hand(s.handed)
+    const marker = tok('06')
+    await host.call('queueMarker', { marker, except: null, script: [[{ text: 'started' }]] })
+    const { reply } = await startSession(booted, { folder: folderIn(booted.home, 'dur06-started'), title: TITLE.plain, message: marker })
+    assert.equal(reply.payload?.managed, true, JSON.stringify(reply))
+    s.started = reply.payload.sessionId
+    await until(async () => (await host.call('markerState', { marker })).left === 0, STUB.waitMs, 100)
+    await settledIdle(host, s.started)
+    s.taken = await userSession(host, 'dur06-taken')
+    await hand(s.taken)
+    assert.equal((await takeBack(host, s.taken)).status, 200)
+    s.mine = await userSession(host, 'dur06-mine')
     const entries = await managedNow(host)
     const byId = Object.fromEntries(entries.map((e) => [e.sessionId, e]))
-    assert.equal(byId[handed]?.by, MANAGED_BY.handOver)
-    assert.equal(byId[messaged]?.by, MANAGED_BY.message)
-    assert.equal(byId[takenBack], undefined)
-    for (const sid of [handed, messaged, takenBack, mine]) await host.call('flush', { sessionId: sid })
+    assert.equal(byId[s.handed]?.by, MANAGED_BY.handOver)
+    assert.equal(byId[s.started]?.by, MANAGED_BY.start)
+    assert.equal(byId[s.taken], undefined)
+    const all = [s.handed, s.started, s.taken, s.mine]
+    for (const sid of all) await host.call('flush', { sessionId: sid })
 
-    await host.stop()
-    await boot()
+    booted = await restartManaged(booted)
+    host = booted.host
 
-    const after = await managedNow(host)
-    const sort = (list) => [...list].sort((a, b) => a.sessionId.localeCompare(b.sessionId))
-    assert.deepEqual(sort(after), sort(entries), 'the same entries, same since and by')
-    for (const sid of [handed, messaged, takenBack, mine]) {
+    // The titles are read fresh for each snapshot (§10e), so they may take a moment after the boot.
+    let now
+    await until(async () => { now = sortById(await managedNow(host)); return JSON.stringify(now) === JSON.stringify(sortById(entries)) }, MANAGED_STUB.publishMs, 200)
+    assert.deepEqual(now, sortById(entries), 'the same entries, same since, by and title')
+    for (const sid of all) {
       const r = await host.call('resume', { sessionId: sid })
       assert.equal(r.live, true, sid + ': ' + JSON.stringify(r))
     }
-    for (const sid of [handed, messaged]) assert.ok(hasInbound(await nextRequest(sid)), sid + ' lacks ' + INBOUND_TOOL + ' after the restart')
-    for (const sid of [takenBack, mine]) assert.equal(hasInbound(await nextRequest(sid)), false, sid + ' has ' + INBOUND_TOOL + ' after the restart')
-    await expectFishball(handed)
-    await expectFishball(messaged)
-    await expectStock(takenBack)
-    await expectStock(mine)
+    for (const sid of [s.handed, s.started]) assert.ok(hasAll(await nextRequest(host, sid)), sid + ' lacks the tools after the restart')
+    for (const sid of [s.taken, s.mine]) assert.equal(hasAny(await nextRequest(host, sid)), false, sid + ' has a managed tool after the restart')
+    await expectToInstance(booted, s.handed)
+    await expectToInstance(booted, s.started)
+    await expectStock(booted, s.taken)
+    await expectStock(booted, s.mine)
   })
 
-  it('DUR-07 turning Fishball\'s plugin off removes message_fishball everywhere; back on, it returns', LONG, async () => {
-    await settledIdle(host, fb)
-    const entries = await managedNow(host)
-    assert.ok(entries.some((e) => e.sessionId === handed), 'precondition: managed (DUR-06)')
-    const off = await host.call('setBundleEnabled', { name: PACKAGE_NAME, enabled: false }, 90000)
+  it('DUR-07 turning the connector\'s bundle off removes the tools everywhere; back on, they return', MANAGED_STUB.long, async () => {
+    assert.ok(await entryOf(host, s.handed), 'precondition: managed (DUR-06)')
+    const off = await host.call('setBundleEnabled', { name: PACKAGE_NAME, enabled: false }, BUNDLE_MS)
     assert.equal(off.error, null, JSON.stringify(off))
-    assert.ok(await until(async () => !hasInbound(await nextRequest(handed)), 15000, 500), 'message_fishball gone from the managed session')
-    assert.equal(hasInbound(await nextRequest(messaged)), false)
-    const on = await host.call('setBundleEnabled', { name: PACKAGE_NAME, enabled: true }, 90000)
+    assert.ok(await until(async () => !hasAny(await nextRequest(host, s.handed)), SWITCH_MS, SWITCH_POLL_MS), 'the tools are gone from the managed session')
+    assert.equal(hasAny(await nextRequest(host, s.started)), false)
+    const on = await host.call('setBundleEnabled', { name: PACKAGE_NAME, enabled: true }, BUNDLE_MS)
     assert.equal(on.error, null, JSON.stringify(on))
-    assert.equal((await host.waitStatus(STATUS.live))?.status, STATUS.live)
-    await settledIdle(host, fb)
-    assert.ok((await managedNow(host)).some((e) => e.sessionId === handed), 'still managed')
-    assert.ok(await until(async () => hasInbound(await nextRequest(handed)), 15000, 500), 'message_fishball back in the managed session')
-    assert.equal(hasInbound(await nextRequest(mine)), false, 'and still not in yours')
+    assert.ok(await until(async () => (await booted.stub.service()).present, SWITCH_MS, SWITCH_POLL_MS), 'the connector service is back')
+    await reattach(booted)
+    assert.ok((await managedNow(host)).some((e) => e.sessionId === s.handed), 'still managed')
+    assert.ok(await until(async () => hasAll(await nextRequest(host, s.handed)), SWITCH_MS, SWITCH_POLL_MS), 'the tools are back in the managed session')
+    assert.equal(hasAny(await nextRequest(host, s.mine)), false, 'and still not in yours')
   })
 })

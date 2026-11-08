@@ -1,0 +1,14 @@
+{
+  "name": "fbtest-start-session-model",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

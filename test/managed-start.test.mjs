@@ -1,177 +1,157 @@
 /**
- * Revision 11, R3: start_session makes the new session managed, and still starts a session it could not make managed
- * (DESIGN 5d "Not made managed", 5e, Q-start-half-made; the manager's requirement of 2026-11-02).
+ * session.start makes the new session managed, and still starts a session it could not make managed (DESIGN §5b
+ * "Managed", §5e; contract §4.1 `session.start` → `{sessionId, managed, titleError?, workspaceError?, watchId? or
+ * watchError?}`; Q-start-half-made), on the H-STUB harness. The instance's start_session tool is now the stub's
+ * session.start request (slim §12), and its `managedError: 'manage-failed'` is the response's `managed: false`.
  *
- * start_session makes the new session managed (5e) after naming it and before it delivers the first message. If making
- * it managed throws (Fishball's store write for the managed list fails) and the session is not managed afterwards,
- * start_session carries on: it names the session, delivers the first message, records and counts it, and sets up the
- * watch. The ok result, or a delivery-failed refusal, carries `managedError: 'manage-failed'`. The session is then the
- * user's: not in the managed list, no Fishball tool, and its permission requests go to its own stock prompt. If the throw
- * comes only after the session became managed there is no managedError and the session is managed. A normal start has no
- * managedError. It combines with the other outcomes: a start can carry both workspaceError and managedError.
+ * session.start names the new session, makes it managed and only then delivers the first message. If making it managed
+ * fails (the connector's write of the managed registry fails) and the session is not managed afterwards, the start
+ * carries on: it names the session, delivers the first message once, and sets up the watch. The response says
+ * `managed: false`; the session is then the user's: not listed, no managed tool, and its permission requests go to its
+ * own stock prompt. If the failure comes only after the session became managed, the response says `managed: true` and
+ * the session is managed. It combines with the other outcomes (titleError, workspaceError).
  *
- * Fault injection (support/worker.mjs): `failStoreTable` makes writes to one table of Fishball's own store (here the
- * `managed` registry) fail, leaving its other tables (the outbox the same start writes to) alone. Mode 'reject': the
- * write fails before anything is stored. Mode 'after': the write is stored and then the call rejects. `failAttach` and the
- * startProbe are those of the half-made and title cases. The new session's first message makes it ask for permission at
- * once (the asking fixture tool), so where its request goes shows whether it is yours (its own stock prompt, answered by
- * the scripted approver after the broker) or managed (a permission request to Fishball).
+ * Fault injection (support/worker.mjs): `failStoreTable` makes writes to one table of the connector's store (here the
+ * `managed` registry) fail: 'reject' before anything is stored, 'after' once it is stored. The start probe stamps the
+ * rename, the first steer and the flushes, and can make one of them fail; `failAttach` makes a workspace refuse the
+ * session. The first message makes the new session call the asking tool at once, so where its request goes shows
+ * whether it is yours (its own stock prompt, the scripted answerer after the broker) or managed (approval.request).
  *
- * Host A: no cap, DSH's session-title service present. Host B: sessionsPerHour 2.
+ * | id      | technique | requirement | expected |
+ * |---------|-----------|-------------|----------|
+ * | MST-01  | EP (control: the store works) | contract §4.1, §5e | response exactly {sessionId, managed:true}; listed by 'start'; every request has the three managed tools; its permission request goes to the instance |
+ * | MST-02  | EP (the write fails before storing) | Q-start-half-made | {sessionId, managed:false}; the write was tried after the rename and before the first message; renamed once, first message delivered once as a relay from the instance's session, the session ran its first turn; not listed or stored; no managed tool in any request; its permission request goes to the stock prompt and is not offered |
+ * | MST-03  | EP (the write is stored, then the call fails) | Q-start-half-made | managed:true; listed by 'start'; its permission request goes to the instance |
+ * | MST-04 ×2 | DT (notifyWhenFinished × write fails) | contract §4.1 | watchId and one watch item after the first turn, or neither without the flag; managed:false either way |
+ * | MST-05 ×3 | DT (write fails × rename ok / invalid / fails) | contract §4.1 titleError | managed:false next to no titleError / title-invalid / title-failed; delivered once; yours |
+ * | MST-06 ×2 | DT (flush rejects / answers false × write fails) | §5b "never twice" | a response with managed:false; steered once, so never delivered twice; yours |
+ * | MST-07 ×2 | DT (steer throws × write fails / stored then fails) | §5e "managed before the message is delivered" | the session is yours (first) or managed (second); the reply is recorded |
+ * | MST-08  | EP (control: steer throws, store works) | §5e | the session is managed (the managed step comes before the delivery) |
+ * | MST-09 ×2 | DT (workspace attach fails × write fails / works) | contract §4.1 workspaceError | workspaceError with managed:false (yours, in no workspace) / workspaceError with managed:true (managed) |
+ * | MST-10  | ST (a session that is yours after a failed write → Hand over) | §5e | 200, managed by 'hand-over', and its next request has the tools |
  *
- * | id      | technique | expected |
- * |---------|-----------|----------|
- * | MST-01  | EP (control: the store works) | no managedError; the session is in the managed list by 'start'; every request has the three managed tools; its permission request goes to Fishball; keys are the reference for the rest |
- * | MST-02  | EP (the write fails before storing) | ok, managedError 'manage-failed', same keys plus managedError; the write was tried after the rename and before the first message; renamed once, first message delivered once as a relay from Fishball, outbox start/delivered, the session ran its first turn; not in the managed list or the store; no Fishball tool in any request; its permission request goes to the stock prompt and Fishball is not told |
- * | MST-03  | EP (the write is stored, then the call fails) | no managedError; same keys as the control; in the managed list by 'start'; its permission request goes to Fishball |
- * | MST-04 ×2 | DT (notify_when_finished × write fails) | the watch (createdBy assistant) and one notice after the first turn, or none without the flag; managedError either way |
- * | MST-05 ×3 | DT (write fails × rename ok / invalid / fails) | managedError next to title or titleError; delivered and recorded |
- * | MST-06 ×2 | DT (flush rejects / answers false × write fails) | ok, unconfirmed, managedError; steered once; outbox unconfirmed |
- * | MST-07 ×2 | DT (write fails × steer throws; write stored-then-fails × steer throws) | delivery-failed with sessionId, title, no folder, and managedError (first) or none (second); outbox failed; the session is yours (first) or managed (second) |
- * | MST-08  | EP (control: steer throws, store works) | delivery-failed without managedError; the session is managed (the managed step comes before the delivery) |
- * | MST-09 ×2 | DT (workspace attach fails × write fails / works) | workspaceError with managedError (the session is yours and in no workspace) / workspaceError alone (the session is managed) |
- * | MST-10  | ST (a session that is yours after a failed write → Hand over) | 200, managed by 'hand-over', and its next request has the tools |
- * | MST-20..22 | ST (sessionsPerHour 2) | a start whose managed write fails succeeds (1 of 2); one whose delivery also fails is refused with managedError (2 of 2); the next start is refused hourly-cap, creating nothing: both were counted |
+ * Retired:
+ * - MST-06/07/08 (ok/unconfirmed/delivery-failed answer fields and outbox status): contract §4.1 gives session.start no delivered/unconfirmed/delivery-failed answer; those outcomes were start_session tool results of the removed in-process session (slim §12). The managed half of each case is kept.
+ * - MST-20..22: sessionsPerHour is removed from the connector (slim conn-OQ-20).
  */
 import assert from 'node:assert/strict'
-import path from 'node:path'
-import { describe, it } from 'node:test'
-import { APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, HALF_MADE, MANAGED_BY, MANAGED_TOOLS, OUTCOME, P5_CODE, TITLE } from './support/constants.mjs'
-import { T, askSettled, callScript, makeManaged, managedEntry, noticesSettled, outboxNow, requestMessages, settledIdle, toolNames, turn, waitRequest, watchesOn } from './support/expect.mjs'
-import { until } from './support/host.mjs'
-import { assertDelivered, assertFailedDelivery, assertRenamedBeforeSteer, eventsOf, tok, useHost } from './support/start-session.mjs'
+import { after, before, describe, it } from 'node:test'
+import { HALF_MADE, MANAGED_BY, MANAGED_TOOLS, RELAY, TITLE } from './support/constants.mjs'
+import { HOOK, T, settledIdle } from './support/expect.mjs'
+import { KIND, handOver, stopStub } from './support/instance-stub.mjs'
+import {
+  MANAGED_STUB, bootManaged, entryOf, expectStock, expectToInstance, folderIn, hasTool, intakeIds, itemsAbout, nextRequest, startAsking,
+} from './support/instance-stub-managed.mjs'
+import { sleep, until } from './support/util.mjs'
 
-const MANAGE_FAILED = 'manage-failed'
-const FISHBALL_TOOL = /fishball|list_user_messages/i
+let seq = 0
+const tok = (label) => 'MST' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 7)
+const STORE = Object.freeze({ reject: 'reject', after: 'after' })
+const START_KEYS = ['managed', 'sessionId']
+const RUN_MS = 10000
 
-function toolkit(w) {
-  const seenFor = async (text) => (await w.host.call('approvals', {})).filter((a) => a.reason === ASK_REASON(text))
+describe('session.start makes the session managed, and carries on when it cannot (H-STUB)', () => {
+  let booted
+  let host
 
-  /**
-   * start_session with the managed registry's writes failing as asked (store: null | 'reject' | 'after'), whose first
-   * message (a fresh marker) makes the new session ask for permission at once. Returns the answer, the marker and the
-   * writes the registry tried.
-   */
-  async function start({ store = null, attach = null, ...args } = {}, probe = {}) {
-    const marker = tok('mst')
-    await w.host.call('queueMarker', { marker, except: w.fb, script: callScript(ASK_TOOL, { text: marker }) })
-    const written = (await w.host.call('storeWriteCalls')).length
-    await w.host.call('failStoreTable', { table: 'managed', mode: store })
-    if (attach) await attach.failing(true)
-    let answer
-    try { answer = await w.start({ message: marker, ...args }, probe) } finally {
-      await w.host.call('failStoreTable', { mode: null })
-      if (attach) await attach.failing(false)
-    }
-    return { ...answer, marker, writes: (await w.host.call('storeWriteCalls')).slice(written) }
+  before(async () => {
+    booted = await bootManaged('managed-start')
+    host = booted.host
+  }, HOOK)
+  after(() => stopStub(booted), HOOK)
+
+  /** A start whose first message is a fresh marker that makes the new session ask for permission at once. */
+  async function start(opts = {}) {
+    const marker = tok('m')
+    const ids = await intakeIds(host)
+    const answer = await startAsking(booted, marker, { title: TITLE.plain, ...opts })
+    assert.equal(answer.reply.type, 'response', JSON.stringify(answer.reply))
+    return { ...answer, marker, ids, payload: answer.reply.payload, sid: answer.reply.payload.sessionId }
   }
+  const eventsOf = (events, sid, type) => events.filter((e) => e.sessionId === sid && e.type === type)
 
-  /** The session is the user's: not listed, not stored, no Fishball tool, and its request went to its own stock prompt. */
-  async function expectYours(sid, marker, { ran = true } = {}) {
-    assert.equal(await managedEntry(w.host, sid), undefined, 'not in the managed list')
-    assert.equal(await w.host.call('storeRecord', { table: 'managed', key: sid }), null, 'not in Fishball\'s store')
-    for (const [i, r] of (await w.host.call('requests', { sessionId: sid })).entries()) assert.equal(toolNames(r).some((n) => FISHBALL_TOOL.test(n)), false, 'request ' + i + ' has a Fishball tool')
-    if (!ran) return
-    const done = await askSettled(w.host, marker, 8000)
-    assert.equal(done?.outcome, OUTCOME.reject, "its own stock prompt's answer")
-    const seen = await seenFor(marker)
-    assert.equal(seen.length, 1, 'the stock prompt was asked once')
-    assert.equal(seen[0].sessionId, sid)
-    assert.deepEqual(await requestMessages(w.host, w.fb, marker), [], 'Fishball is not told')
-    await settledIdle(w.host, sid)
+  /** The first message reached the new session once, as a relay from the instance's session, text unchanged. */
+  async function assertDelivered(answer) {
+    const copies = async () => ((await host.call('userMessages', { sessionId: answer.sid })) ?? []).filter((m) => m.text.includes(answer.marker))
+    // The response may come before the new agent's log shows the steered message; wait for it, then for any second copy.
+    await until(async () => (await copies()).length > 0, RUN_MS, 50)
+    await sleep(MANAGED_STUB.quietMs)
+    const got = await copies()
+    assert.equal(got.length, 1, 'exactly one copy of the first message')
+    assert.deepEqual(got[0].source, { ...RELAY, senderSessionId: booted.fb })
+    assert.equal(got[0].text, answer.marker, 'the text is unchanged')
   }
-
-  /** The session is managed (listed by 'start'): its permission request goes to Fishball, not to the stock prompt. */
-  async function expectManaged(sid, marker, { ran = true } = {}) {
-    const entry = await managedEntry(w.host, sid)
-    assert.ok(entry, 'in the managed list')
-    assert.equal(entry.by, MANAGED_BY.start)
-    if (!ran) return
-    const req = await waitRequest(w.host, w.fb, marker)
-    assert.ok(req, 'a permission request reached Fishball')
-    assert.equal(req.block?.fields?.session_id, sid)
-    assert.deepEqual(await seenFor(marker), [], 'not at the stock prompt while Fishball decides')
-    await w.host.call('cancel', { sessionId: sid })
-    await askSettled(w.host, marker, 8000)
-    await settledIdle(w.host, sid)
-    await settledIdle(w.host, w.fb)
-  }
-  return { start, expectYours, expectManaged, seenFor }
-}
-
-describe('start_session makes the session managed, and carries on when it cannot', () => {
-  const w = useHost('mst-main', { env: APPROVER_AFTER_ENV, limits: { sessionsPerHour: 0 } })
-  const t = toolkit(w)
-  /** The control start: the registry works. Its keys are the reference for every answer below. */
-  let control
-
-  it('MST-01 control: a normal start has no managedError, the session is managed by start and its requests go to Fishball', T, async () => {
-    control = await t.start()
-    const { json, marker } = control
-    assert.equal(json?.ok, true, JSON.stringify(json))
-    assert.equal('managedError' in json, false)
-    await assertDelivered(w, control)
-    await t.expectManaged(json.sessionId, marker)
-    const reqs = await w.host.call('requests', { sessionId: json.sessionId })
-    assert.ok(reqs.length > 0)
-    for (const r of reqs) for (const tool of MANAGED_TOOLS) assert.ok(toolNames(r).includes(tool), tool + ' in every request')
-    assert.ok(control.writes.length === 0, 'precondition: no write was armed')
-  })
-
-  /** The answer is the control's plus managedError, and everything else a start does was done. */
-  async function assertCarriedOn(answer, { sameKeys = true } = {}) {
-    const { json, call, events, writes, marker } = answer
-    assert.equal(json?.ok, true, JSON.stringify(json))
-    assert.equal(json.managedError, MANAGE_FAILED)
-    assert.equal(typeof json.sessionId, 'string')
-    assert.equal(json.folder, call.folder)
-    assert.equal(json.title, call.title)
-    if (sameKeys) assert.deepEqual(Object.keys(json).sort(), [...Object.keys(control.json), 'managedError'].sort())
-    assert.ok(writes.some((x) => x.key === json.sessionId), 'the registry tried to record this session')
-    assertRenamedBeforeSteer(events, json.sessionId)
-    const [rename] = eventsOf(events, json.sessionId, 'rename')
-    const [steer] = eventsOf(events, json.sessionId, 'steer')
-    const write = writes.find((x) => x.key === json.sessionId)
+  /** The registry write was tried for this session, after the rename and before the first steer; renamed once. */
+  function assertOrder(answer) {
+    const [rename] = eventsOf(answer.events, answer.sid, 'rename')
+    const [steer] = eventsOf(answer.events, answer.sid, 'steer')
+    assert.equal(eventsOf(answer.events, answer.sid, 'rename').length, 1, 'renamed once')
+    const write = answer.writes.find((x) => x.key === answer.sid)
+    assert.ok(write, 'the registry tried to record this session')
     assert.ok(rename.at <= write.at && write.at <= steer.at, 'rename → managed → first message: ' + [rename.at, write.at, steer.at])
-    await assertDelivered(w, answer)
-    assert.ok(await until(async () => (await w.host.call('markerState', { marker })).left === 0, 10000, 100), 'the new session ran its first turn')
   }
 
-  it('MST-02 the write fails before storing: the session starts as the user\'s and the answer says manage-failed', T, async () => {
-    const answer = await t.start({ store: 'reject' })
-    await assertCarriedOn(answer)
-    await t.expectYours(answer.json.sessionId, answer.marker)
-    assert.equal(await w.titleOf(answer.json.sessionId), answer.call.title, 'DSH reports the title')
+  /** The session is the user's: not listed, not stored, no managed tool, and its request went to its own stock prompt. */
+  async function expectYours(answer, { ran = true, allowKinds } = {}) {
+    assert.equal(await entryOf(host, answer.sid), undefined, 'not in the managed list')
+    assert.equal(await host.call('storeRecord', { table: 'managed', key: answer.sid }), null, 'not in the registry')
+    for (const [i, r] of (await host.call('requests', { sessionId: answer.sid })).entries()) {
+      for (const n of MANAGED_TOOLS) assert.equal(hasTool(r, n), false, 'request ' + i + ' has ' + n)
+    }
+    if (ran) await expectStock(booted, answer.sid, { asked: answer.marker, intakeBefore: answer.ids, allowKinds })
+  }
+  /** The session is managed (listed by 'start'): its permission request goes to the instance, not to the stock prompt. */
+  async function expectManaged(answer, { ran = true } = {}) {
+    assert.equal((await entryOf(host, answer.sid))?.by, MANAGED_BY.start, 'in the managed list by start')
+    if (ran) await expectToInstance(booted, answer.sid, { asked: answer.marker })
+  }
+  const ranFirstTurn = (answer) => until(async () => (await host.call('markerState', { marker: answer.marker })).left === 0, RUN_MS, 100)
+
+  it('MST-01 control: managed:true, listed by start, every request has the tools, its requests go to the instance', T, async () => {
+    const answer = await start({ probe: {} })
+    assert.deepEqual(Object.keys(answer.payload).sort(), START_KEYS)
+    assert.equal(answer.payload.managed, true)
+    await assertDelivered(answer)
+    await expectManaged(answer)
+    const reqs = await host.call('requests', { sessionId: answer.sid })
+    assert.ok(reqs.length > 0)
+    for (const r of reqs) for (const n of MANAGED_TOOLS) assert.ok(hasTool(r, n), n + ' in every request')
   })
 
-  it('MST-03 the write is stored and then the call fails: managed, and not reported', T, async () => {
-    const answer = await t.start({ store: 'after' })
-    const { json, marker, writes } = answer
-    assert.equal(json?.ok, true, JSON.stringify(json))
-    assert.equal('managedError' in json, false)
-    assert.deepEqual(Object.keys(json).sort(), Object.keys(control.json).sort())
-    assert.ok(writes.some((x) => x.key === json.sessionId), 'precondition: the registry wrote this session')
-    assertRenamedBeforeSteer(answer.events, json.sessionId)
-    await assertDelivered(w, answer)
-    await t.expectManaged(json.sessionId, marker)
+  it('MST-02 the write fails before storing: the session starts as the user\'s and the answer says managed:false', T, async () => {
+    const answer = await start({ store: STORE.reject, probe: {} })
+    assert.deepEqual(answer.payload, { sessionId: answer.sid, managed: false })
+    assertOrder(answer)
+    await assertDelivered(answer)
+    assert.ok(await ranFirstTurn(answer), 'the new session ran its first turn')
+    await expectYours(answer)
+    assert.equal(await host.call('sessionTitle', { sessionId: answer.sid }), TITLE.plain, 'DSH reports the title')
   })
 
-  describe('MST-04 the watch from notify_when_finished', () => {
+  it('MST-03 the write is stored and then the call fails: managed:true', T, async () => {
+    const answer = await start({ store: STORE.after, probe: {} })
+    assert.deepEqual(answer.payload, { sessionId: answer.sid, managed: true })
+    assert.ok(answer.writes.some((x) => x.key === answer.sid), 'precondition: the registry wrote this session')
+    await assertDelivered(answer)
+    await expectManaged(answer)
+  })
+
+  describe('MST-04 the watch from notifyWhenFinished', () => {
     for (const notify of [true, false]) {
-      it(notify ? 'flag: a watch on the new session and one notice after its first turn' : 'no flag: no watch', T, async () => {
-        const answer = await t.start({ store: 'reject', ...(notify ? { notify_when_finished: true } : {}) })
-        const { json } = answer
-        await assertCarriedOn(answer, { sameKeys: !notify })
+      it(notify ? 'flag: a watch on the new session and one watch item after its first turn' : 'no flag: no watch', T, async () => {
+        const answer = await start({ store: STORE.reject, extra: notify ? { notifyWhenFinished: true } : {} })
+        assert.equal(answer.payload.managed, false, JSON.stringify(answer.payload))
+        assert.equal('watchError' in answer.payload, false, JSON.stringify(answer.payload))
+        await expectYours(answer, { allowKinds: [KIND.watch] })
+        const watchItems = () => itemsAbout(booted.stub, answer.sid, KIND.watch)
         if (notify) {
-          assert.equal(json.watch?.targetSessionId, json.sessionId, JSON.stringify(json))
-          assert.deepEqual(json.watch.createdBy, { kind: 'assistant' })
-          assert.equal('watchError' in json, false)
-          assert.equal((await noticesSettled(w.host, w.fb, json.watch.id, 1)).length, 1, 'one notice after its first turn')
+          assert.equal(typeof answer.payload.watchId, 'string', JSON.stringify(answer.payload))
+          assert.ok(await until(async () => (await watchItems()).length > 0, RUN_MS, 100), 'a watch item after the first turn')
+          assert.equal((await watchItems()).length, 1, 'one watch item')
         } else {
-          assert.equal('watch' in json, false)
-          assert.equal((await watchesOn(w.host, json.sessionId)).length, 0)
+          assert.equal('watchId' in answer.payload, false)
+          assert.deepEqual(await watchItems(), [])
         }
-        await t.expectYours(json.sessionId, answer.marker)
       })
     }
   })
@@ -180,125 +160,82 @@ describe('start_session makes the session managed, and carries on when it cannot
     const rows = [['named', null, null], ['title-invalid', 'invalid', TITLE.invalid], ['title-failed', 'fail', TITLE.failed]]
     for (const [label, rename, titleError] of rows) {
       it(label, T, async () => {
-        const answer = await t.start({ store: 'reject' }, { rename })
-        const { json, call } = answer
-        assert.equal(json?.ok, true, JSON.stringify(json))
-        assert.equal(json.managedError, MANAGE_FAILED)
-        if (titleError) {
-          assert.equal(json.titleError, titleError)
-          assert.equal('title' in json, false, 'no title key next to titleError')
-        } else {
-          assert.equal(json.title, call.title)
-          assert.equal('titleError' in json, false)
-        }
-        assertRenamedBeforeSteer(answer.events, json.sessionId)
-        await assertDelivered(w, answer)
-        await t.expectYours(json.sessionId, answer.marker)
+        const answer = await start({ store: STORE.reject, probe: { rename } })
+        assert.deepEqual(answer.payload, { sessionId: answer.sid, managed: false, ...(titleError ? { titleError } : {}) })
+        assertOrder(answer)
+        await assertDelivered(answer)
+        await expectYours(answer)
       })
     }
   })
 
-  describe('MST-06 a flush that cannot be confirmed still answers ok, unconfirmed', () => {
+  describe('MST-06 a flush that cannot be confirmed never delivers twice', () => {
     for (const [id, flush] of [['MST-06', 'throw'], ['MST-06b', 'false']]) {
-      it(id + ' the flush ' + (flush === 'throw' ? 'rejects' : 'answers false'), T, async () => {
-        // The same unconfirmed start with a working registry is the reference for the answer's fields.
-        const normal = await t.start({}, { flush })
-        assert.equal(normal.json?.unconfirmed, true, JSON.stringify(normal.json))
-        await t.expectManaged(normal.json.sessionId, normal.marker)
-        const answer = await t.start({ store: 'reject' }, { flush })
-        const { json } = answer
-        assert.equal(json?.ok, true, JSON.stringify(json))
-        assert.equal(json.unconfirmed, true)
-        assert.equal(json.managedError, MANAGE_FAILED)
-        assert.deepEqual(Object.keys(json).sort(), [...Object.keys(normal.json), 'managedError'].sort())
-        assert.equal(eventsOf(answer.events, json.sessionId, 'steer').length, 1, 'steered once, so never delivered twice')
-        await assertDelivered(w, answer, 'unconfirmed')
-        await t.expectYours(json.sessionId, answer.marker)
+      it(id + ' the flush ' + (flush === 'throw' ? 'rejects' : 'answers false'), T, async (t) => {
+        const answer = await start({ store: STORE.reject, probe: { flush } })
+        t.diagnostic('reply: ' + JSON.stringify(answer.payload))
+        assert.equal(answer.payload.managed, false)
+        assert.equal(eventsOf(answer.events, answer.sid, 'steer').length, 1, 'steered once, so never delivered twice')
+        await assertDelivered(answer)
+        await expectYours(answer)
       })
     }
   })
 
-  describe('MST-07 a failed delivery is refused delivery-failed', () => {
-    it('the write fails: the refusal carries managedError, the session is the user\'s', T, async () => {
-      const normal = await t.start({}, { steer: true })
-      await assertFailedDelivery(w, normal, null)
-      const answer = await t.start({ store: 'reject' }, { steer: true })
-      await assertFailedDelivery(w, answer, null)
-      assert.equal(answer.json.managedError, MANAGE_FAILED)
-      assert.deepEqual(Object.keys(answer.json).sort(), [...Object.keys(normal.json), 'managedError'].sort())
-      assertRenamedBeforeSteer(answer.events, answer.json.sessionId)
-      await t.expectYours(answer.json.sessionId, answer.marker, { ran: false })
-    })
-    it('the write is stored, then the call fails: no managedError, the session is managed', T, async () => {
-      const answer = await t.start({ store: 'after' }, { steer: true })
-      await assertFailedDelivery(w, answer, null)
-      assert.equal('managedError' in answer.json, false)
-      await t.expectManaged(answer.json.sessionId, answer.marker, { ran: false })
-    })
+  describe('MST-07 a failed delivery: the managed step came first', () => {
+    for (const [label, store, managed] of [['the write fails: the session is yours', STORE.reject, false], ['the write is stored, then fails: managed', STORE.after, true]]) {
+      it(label, T, async (t) => {
+        const marker = tok('07')
+        const { reply } = await startAsking(booted, marker, { title: TITLE.plain, store, probe: { steer: true } })
+        t.diagnostic('reply: ' + JSON.stringify(reply))
+        const sid = reply.payload?.sessionId
+        assert.ok(sid, 'the session was created: ' + JSON.stringify(reply))
+        const answer = { sid, marker }
+        if (managed) await expectManaged(answer, { ran: false })
+        else await expectYours(answer, { ran: false })
+      })
+    }
   })
 
-  it('MST-08 control: a failed delivery with a working registry has no managedError and the session is managed', T, async () => {
-    const answer = await t.start({}, { steer: true })
-    await assertFailedDelivery(w, answer, null)
-    assert.equal('managedError' in answer.json, false)
-    await t.expectManaged(answer.json.sessionId, answer.marker, { ran: false })
+  it('MST-08 control: a failed delivery with a working registry leaves the session managed', T, async (t) => {
+    const marker = tok('08')
+    const { reply } = await startAsking(booted, marker, { title: TITLE.plain, probe: { steer: true } })
+    t.diagnostic('reply: ' + JSON.stringify(reply))
+    assert.ok(reply.payload?.sessionId, JSON.stringify(reply))
+    await expectManaged({ sid: reply.payload.sessionId, marker }, { ran: false })
   })
 
   describe('MST-09 together with a workspace that did not take the session', () => {
-    const ws = { id: null, path: null, failing: (on) => w.host.call('failAttach', { workspaceId: ws.id, on }) }
-    it('the write fails too: both markers; the session is the user\'s and in no workspace', T, async () => {
-      Object.assign(ws, await w.host.call('createWorkspace', { dir: path.join(w.home, 'work', 'mst-ws') }))
-      const answer = await t.start({ store: 'reject', attach: ws, folder: ws.id })
-      const { json } = answer
-      assert.equal(json?.ok, true, JSON.stringify(json))
-      assert.equal(json.workspaceError, HALF_MADE.workspaceError)
-      assert.equal(json.managedError, MANAGE_FAILED)
-      assert.equal((await w.host.call('workspaces')).list.some((x) => x.sessionIds.includes(json.sessionId)), false, 'in no workspace')
-      await assertDelivered(w, answer, 'delivered', json.folder)
-      await t.expectYours(json.sessionId, answer.marker)
+    const ws = { id: null }
+    const failing = (on) => host.call('failAttach', { workspaceId: ws.id, on })
+    /** A start into the workspace while it refuses the session. */
+    async function startInWorkspace(store) {
+      await failing(true)
+      try { return await start({ folder: ws.id, store }) } finally { await failing(false) }
+    }
+    it('the write fails too: workspaceError and managed:false; the session is yours and in no workspace', T, async () => {
+      Object.assign(ws, await host.call('createWorkspace', { dir: folderIn(booted.home, 'mst-ws') }))
+      const answer = await startInWorkspace(STORE.reject)
+      assert.deepEqual(answer.payload, { sessionId: answer.sid, managed: false, workspaceError: HALF_MADE.workspaceError })
+      assert.equal((await host.call('workspaces')).list.some((x) => x.sessionIds.includes(answer.sid)), false, 'in no workspace')
+      await assertDelivered(answer)
+      await expectYours(answer)
     })
-    it('only the workspace fails: workspaceError alone; the session is managed', T, async () => {
-      const answer = await t.start({ attach: ws, folder: ws.id })
-      const { json } = answer
-      assert.equal(json?.ok, true, JSON.stringify(json))
-      assert.equal(json.workspaceError, HALF_MADE.workspaceError)
-      assert.equal('managedError' in json, false)
-      await t.expectManaged(json.sessionId, answer.marker)
+    it('only the workspace fails: workspaceError and managed:true', T, async () => {
+      const answer = await startInWorkspace(null)
+      assert.deepEqual(answer.payload, { sessionId: answer.sid, managed: true, workspaceError: HALF_MADE.workspaceError })
+      await expectManaged(answer)
     })
   })
 
   it('MST-10 a session that is the user\'s after a failed write can be handed over later', T, async () => {
-    const answer = await t.start({ store: 'reject' })
-    const sid = answer.json.sessionId
-    await assertCarriedOn(answer)
-    await t.expectYours(sid, answer.marker)
-    await makeManaged(w.host, w.fb, sid)
-    assert.equal((await managedEntry(w.host, sid))?.by, MANAGED_BY.handOver)
-    const req = (await turn(w.host, sid, [[{ text: 'next' }]])).requests.at(-1)
-    for (const tool of MANAGED_TOOLS) assert.ok(toolNames(req).includes(tool), tool + ' after the hand over')
-  })
-})
-
-describe('start_session whose managed write fails counts against sessionsPerHour (2)', () => {
-  const w = useHost('mst-cap', { env: APPROVER_AFTER_ENV, limits: { sessionsPerHour: 2 } })
-  const t = toolkit(w)
-
-  it('MST-20 the first (the write fails) succeeds', T, async () => {
-    const answer = await t.start({ store: 'reject' })
-    assert.equal(answer.json?.ok, true, JSON.stringify(answer.json))
-    assert.equal(answer.json.managedError, MANAGE_FAILED)
-  })
-  it('MST-21 the second (the write fails and the delivery fails) is refused with managedError', T, async () => {
-    const answer = await t.start({ store: 'reject' }, { steer: true })
-    await assertFailedDelivery(w, answer, null)
-    assert.equal(answer.json.managedError, MANAGE_FAILED)
-  })
-  it('MST-22 the cap is spent: the next start is refused hourly-cap and creates nothing', T, async () => {
-    const sessions = await w.sessionCount()
-    const outbox = await outboxNow(w.host)
-    const answer = await t.start({})
-    assert.deepEqual(answer.json, { ok: false, code: P5_CODE.hourlyCap })
-    assert.equal(await w.sessionCount(), sessions)
-    assert.deepEqual(await outboxNow(w.host), outbox)
+    const answer = await start({ store: STORE.reject })
+    await expectYours(answer)
+    const r = await handOver(host, answer.sid)
+    assert.equal(r.status, 200, r.text)
+    assert.equal((await entryOf(host, answer.sid))?.by, MANAGED_BY.handOver)
+    await settledIdle(host, answer.sid)
+    const req = await nextRequest(host, answer.sid)
+    for (const n of MANAGED_TOOLS) assert.ok(hasTool(req, n), n + ' after the hand over')
   })
 })

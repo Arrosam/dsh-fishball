@@ -1,0 +1,656 @@
+/**
+ * Fishball's chat view for the slim shell (T07).
+ *
+ * A no-build ES module the shell imports. It owns the timeline and the model picker, mounts the
+ * read-only composer (src/slim/ui/composer.js), and reads the child's own API with relative
+ * URLs, so the same module works at the child's "/" and behind the broker's
+ * "/fishball/embed/" (Section 3.1).
+ *
+ * Deliberate limits at v1:
+ * - The composer is fixed to Read Only (D8): there is no permission control, no preset change
+ *   and no request that could carry one. The label is text, not a selector.
+ * - Messages are plain text, never HTML: Fishball's chat renders untrusted content from other
+ *   sessions as text.
+ * - Attachments (T06) and decision labels (T08, via T09) render into this timeline. The
+ *   composer module owns the image parts; a message without text still gets its bubble, and a
+ *   tool row with only its call id still renders, so those seams fill the same structures. An
+ *   image is fetched from the child's read-only by-id route, so its preview survives a reload.
+ * - Card records (I7) render through src/slim/ui/records.js, beside the decision labels (U5).
+ *
+ * Classes are the only styling hook, because the CSP admits no inline style; dynamic state is a
+ * class or a data attribute, never element.style. Server entries are partial records merged by
+ * id, so a tool/result completes the row its tool/call started.
+ */
+import { createApprovalsView } from './approvals.js'
+import { attachmentPreview, createComposer } from './composer.js'
+import { DEFAULT_I18N } from './i18n.js'
+import { createRecordRow } from './records.js'
+
+/** Same resources as the child's CHAT; the broker strips its prefix before forwarding. */
+const API = Object.freeze({ chat: 'api/chat', model: 'api/model', media: 'application/json' })
+
+/** Entry kinds the server sends; an unknown value is ignored rather than rendered as HTML. */
+const KIND = Object.freeze({ user: 'user', assistant: 'assistant', tool: 'tool', notice: 'notice', record: 'record' })
+
+const CLASS = Object.freeze({
+  timeline: 'timeline',
+  entry: 'entry',
+  entryUser: 'entry-user',
+  entryAssistant: 'entry-assistant',
+  entryTool: 'entry-tool',
+  entryNotice: 'entry-notice',
+  entryRecord: 'entry-record',
+  pending: 'is-pending',
+  author: 'entry-author',
+  text: 'entry-text',
+  time: 'entry-time',
+  tool: 'tool',
+  toolName: 'tool-name',
+  toolState: 'tool-state',
+  toolArguments: 'tool-arguments',
+  toolOutput: 'tool-output',
+  state: 'chat-state',
+  notice: 'chat-notice',
+  loader: 'chat-loader',
+  loaderRing: 'chat-loader-ring',
+  loaderFish: 'chat-loader-fish',
+  fishBody: 'fish-body',
+  fishEye: 'fish-eye',
+  picker: 'picker',
+  pickerLabel: 'picker-label',
+  modelSelect: 'model-select',
+  effortSelect: 'effort-select',
+})
+
+/**
+ * The child names a user-role message's source kind (keep in step with src/slim/child/chat.js
+ * AUTHOR_KIND); the page words it in its own language (I9). An unknown kind reads as context,
+ * like the child's own fallback.
+ */
+const AUTHOR_KIND = Object.freeze({ user: 'user', schedule: 'schedule', other: 'other' })
+const AUTHOR_KEY = Object.freeze({
+  [AUTHOR_KIND.user]: 'chat.author.user',
+  [AUTHOR_KIND.schedule]: 'chat.author.schedule',
+  [AUTHOR_KIND.other]: 'chat.author.other',
+})
+
+/** Client-side transcript cap, matching the child's own view bound; the oldest row goes first. */
+const LIMIT = Object.freeze({ entries: 300, scrollThresholdPx: 48 })
+
+/**
+ * The Fishball fish on a 24-unit grid (the same Surfaces.kt mark the main sidebar draws). The
+ * shell needs its own copy: it is a separately served page and imports no main-client module.
+ */
+const FISH = Object.freeze({
+  namespace: 'http://www.w3.org/2000/svg',
+  viewBox: '0 0 24 24',
+  body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
+  eye: 'M14.6 7.4 h2 v2 h-2 Z',
+})
+
+const ARIA = Object.freeze({ live: 'aria-live', label: 'aria-label', role: 'role', status: 'status', alert: 'alert', polite: 'polite' })
+
+function textOf(value) { return typeof value === 'string' ? value : '' }
+
+function isSelection(value) {
+  return typeof value?.provider === 'string' && value.provider !== '' && typeof value?.model === 'string' && value.model !== ''
+}
+
+function selectionOf(value) {
+  if (!isSelection(value)) return undefined
+  return {
+    provider: value.provider,
+    model: value.model,
+    ...(typeof value.reasoningEffort === 'string' && value.reasoningEffort !== '' ? { reasoningEffort: value.reasoningEffort } : {}),
+  }
+}
+
+/**
+ * A request that failed with the child's typed JSON answer. It keeps only the code: the page
+ * shows its own words in its own language with that code (I9), never the child's English message.
+ */
+class RequestError extends Error {
+  constructor(code) {
+    super(code)
+    this.name = 'RequestError'
+    this.code = code
+  }
+}
+
+async function request(path, options = {}) {
+  const headers = { accept: API.media }
+  if (options.body !== undefined) headers['content-type'] = API.media
+  const response = await fetch(path, { method: options.method ?? 'GET', headers, body: options.body, cache: 'no-store' })
+  let answer
+  try { answer = await response.json() } catch { answer = undefined }
+  if (!response.ok) throw new RequestError(typeof answer?.code === 'string' ? answer.code : undefined)
+  return answer
+}
+
+/** The code of a failed request, if the child named one. */
+const codeOf = (error) => (error instanceof RequestError ? error.code : undefined)
+
+/** Time of day, as the timeline shows it. */
+const TIME_OF_DAY = Object.freeze({ hour: '2-digit', minute: '2-digit' })
+
+/** One formatted time in the page's language; an absent timestamp renders nothing instead of an invented clock. */
+function timeNode(at, locale) {
+  const time = document.createElement('time')
+  time.className = CLASS.time
+  if (typeof at !== 'number' || !Number.isFinite(at)) return time
+  time.dateTime = new Date(at).toISOString()
+  time.textContent = new Date(at).toLocaleTimeString(locale, TIME_OF_DAY)
+  return time
+}
+
+/** The fish as an SVG node; trusted static paths, built with DOM APIs like every other row. */
+function fishNode(document) {
+  const svg = document.createElementNS(FISH.namespace, 'svg')
+  svg.setAttribute('viewBox', FISH.viewBox)
+  svg.setAttribute('aria-hidden', 'true')
+  svg.setAttribute('focusable', 'false')
+  const body = document.createElementNS(FISH.namespace, 'path')
+  body.setAttribute('d', FISH.body)
+  body.setAttribute('class', CLASS.fishBody)
+  const eye = document.createElementNS(FISH.namespace, 'path')
+  eye.setAttribute('d', FISH.eye)
+  eye.setAttribute('class', CLASS.fishEye)
+  svg.append(body, eye)
+  return svg
+}
+
+/**
+ * The loading mark at the bottom of the conversation (Q5): a hollow ring with the fish turning
+ * underneath it. The adjacent chat-state line already announces "Fishball is working…", so the
+ * mark itself is decorative and never a second live region. CSS stops both turns under
+ * prefers-reduced-motion.
+ */
+function createLoader(document) {
+  const loader = document.createElement('div')
+  loader.className = CLASS.loader
+  loader.dataset.fishballLoader = 'true'
+  loader.setAttribute('aria-hidden', 'true')
+  loader.hidden = true
+  const ring = document.createElement('span')
+  ring.className = CLASS.loaderRing
+  ring.dataset.fishballLoaderRing = 'true'
+  const fish = document.createElement('span')
+  fish.className = CLASS.loaderFish
+  fish.dataset.fishballLoaderFish = 'true'
+  fish.append(fishNode(document))
+  loader.append(ring, fish)
+  return loader
+}
+
+/**
+ * Mount the chat view in the shell.
+ *
+ * @param {object} options
+ * @param {Element} options.container - element the timeline and composer are appended to.
+ * @param {Element} options.modelSlot - element the model picker is appended to.
+ * @param {object} [options.i18n] - the page's words (ui/i18n.js); English by default.
+ * @returns {{ refresh: () => Promise<void>, refreshApprovals: () => Promise<void>,
+ *   apply: (payload: object) => void, dispose: () => void }}
+ */
+export function createChatView(options = {}) {
+  const { container, modelSlot, i18n = DEFAULT_I18N } = options ?? {}
+  const { t } = i18n
+  if (!container || typeof container.append !== 'function' || typeof container.ownerDocument?.createElement !== 'function') {
+    throw new TypeError('fishball chat: a container element is required')
+  }
+  if (!modelSlot || typeof modelSlot.append !== 'function') {
+    throw new TypeError('fishball chat: a model picker slot is required')
+  }
+  const document = container.ownerDocument
+
+  const timeline = document.createElement('ol')
+  timeline.className = CLASS.timeline
+  timeline.setAttribute(ARIA.live, ARIA.polite)
+
+  const state = document.createElement('p')
+  state.className = CLASS.state
+  state.setAttribute(ARIA.role, ARIA.status)
+  state.setAttribute(ARIA.live, ARIA.polite)
+  state.textContent = t('chat.idle')
+
+  const notice = document.createElement('p')
+  notice.className = CLASS.notice
+  notice.setAttribute(ARIA.role, ARIA.alert)
+  notice.hidden = true
+  // Under the timeline, so the fish stays at the bottom of the conversation while a turn runs.
+  const loader = createLoader(document)
+
+  const composer = createComposer({ document, i18n, onSubmit: (value, attachments) => sendPrompt(value, attachments) })
+  // T09's cards, decision labels and the user's answers live in this same timeline, ordered by
+  // their own times; the view removes and re-inserts only its own rows.
+  const approvals = createApprovalsView({ document, timeline, insertRow: insertOrdered, request, i18n })
+  container.append(timeline, loader, state, composer.element, notice)
+
+  const modelLabel = document.createElement('label')
+  modelLabel.className = CLASS.picker
+  const modelCaption = document.createElement('span')
+  modelCaption.className = CLASS.pickerLabel
+  modelCaption.textContent = t('chat.model')
+  const modelSelect = document.createElement('select')
+  modelSelect.className = CLASS.modelSelect
+  modelSelect.setAttribute(ARIA.label, t('chat.model'))
+  modelLabel.append(modelCaption, modelSelect)
+
+  const effortLabel = document.createElement('label')
+  effortLabel.className = CLASS.picker
+  const effortCaption = document.createElement('span')
+  effortCaption.className = CLASS.pickerLabel
+  effortCaption.textContent = t('chat.effort')
+  const effortSelect = document.createElement('select')
+  effortSelect.className = CLASS.effortSelect
+  effortSelect.setAttribute(ARIA.label, t('chat.effort'))
+  effortLabel.append(effortCaption, effortSelect)
+  effortLabel.hidden = true
+  modelSlot.append(modelLabel, effortLabel)
+
+  /** Entry data by id, and the rendered row, so a partial update replaces one row in place. */
+  const entries = new Map()
+  const rows = new Map()
+  let providers = []
+  let models = []
+  let current = undefined
+  let pendingRow
+  let disposed = false
+  let generation = 0
+
+  function clearNotice() {
+    notice.textContent = ''
+    notice.hidden = true
+  }
+
+  function setNotice(message) {
+    notice.textContent = message
+    notice.hidden = message === ''
+  }
+
+  function setRunning(running) {
+    const wasNearBottom = nearBottom()
+    state.textContent = running ? t('chat.working') : t('chat.idle')
+    state.dataset.state = running ? 'running' : 'idle'
+    // One owner for the loading mark: the same running fact the state line shows. Its height
+    // change must not push the last line out of view when the reader was already at the end.
+    loader.hidden = !running
+    scrollToEnd(wasNearBottom)
+  }
+
+  /** Scroll only when the reader was already at the end, so reading history is not yanked. */
+  function nearBottom() {
+    return timeline.scrollHeight - timeline.scrollTop - timeline.clientHeight < LIMIT.scrollThresholdPx
+  }
+
+  function scrollToEnd(wasNearBottom) {
+    if (wasNearBottom) timeline.scrollTop = timeline.scrollHeight
+  }
+
+  /** The attachment metadata of one entry, filtered to the two kinds the page renders. */
+  function entryAttachments(entry) {
+    if (!Array.isArray(entry.attachments)) return []
+    return entry.attachments.filter((item) => item !== null && typeof item === 'object'
+      && (item.kind === 'image' || item.kind === 'file') && typeof item.attachmentId === 'string')
+  }
+
+  /**
+   * Append one message's image/file blocks; the caller's text bubble may be empty or absent.
+   * An image carries its content-addressed id, so the preview helper builds the child's
+   * read-only api/images/<id> URL; that is what survives a page reload.
+   */
+  function appendAttachments(row, entry) {
+    for (const attachment of entryAttachments(entry)) {
+      row.append(attachmentPreview(
+        {
+          kind: attachment.kind,
+          attachmentId: attachment.attachmentId,
+          name: textOf(attachment.name),
+          bytes: attachment.bytes,
+        },
+        { document, i18n },
+      ))
+    }
+  }
+
+  /** Build one row; text is always assigned as textContent, never as markup. */
+  function buildEntry(entry) {
+    const row = document.createElement('li')
+    row.className = CLASS.entry + ' ' + (CLASS['entry' + entry.kind[0].toUpperCase() + entry.kind.slice(1)] ?? '')
+    row.dataset.entryKind = entry.kind
+    const author = document.createElement('span')
+    author.className = CLASS.author
+    const body = document.createElement('p')
+    body.className = CLASS.text
+    if (entry.kind === KIND.user) {
+      author.textContent = t(AUTHOR_KEY[Object.hasOwn(AUTHOR_KEY, entry.authorKind) ? entry.authorKind : AUTHOR_KIND.other])
+      // An image- or file-only message has no text bubble (an empty one would be a blank row).
+      if (textOf(entry.text) !== '') { body.textContent = textOf(entry.text); row.append(author, body) } else row.append(author)
+      appendAttachments(row, entry)
+      row.append(timeNode(entry.at, i18n.locale))
+      return row
+    }
+    if (entry.kind === KIND.assistant) {
+      author.textContent = t('chat.fishball')
+      if (textOf(entry.text) !== '') { body.textContent = textOf(entry.text); row.append(author, body) } else row.append(author)
+      appendAttachments(row, entry)
+      row.append(timeNode(entry.at, i18n.locale))
+      return row
+    }
+    if (entry.kind === KIND.notice) {
+      body.textContent = textOf(entry.text)
+      row.append(body)
+      return row
+    }
+    if (entry.kind === KIND.record) {
+      if (entry.record !== null && typeof entry.record === 'object') row.append(createRecordRow(document, entry.record, i18n))
+      return row
+    }
+    // Tool: a collapsed row that still names the tool and its outcome, expanding to arguments
+    // and the bounded result.
+    const details = document.createElement('details')
+    details.className = CLASS.tool
+    const summary = document.createElement('summary')
+    const name = document.createElement('span')
+    name.className = CLASS.toolName
+    name.textContent = textOf(entry.name) || t('chat.tool')
+    const toolState = document.createElement('span')
+    toolState.className = CLASS.toolState
+    toolState.textContent = entry.state === 'running' ? t('chat.running') : entry.isError ? t('chat.failed') : t('chat.done')
+    summary.append(name, toolState)
+    details.append(summary)
+    if (typeof entry.arguments === 'string' && entry.arguments !== '') {
+      const args = document.createElement('pre')
+      args.className = CLASS.toolArguments
+      args.textContent = entry.arguments
+      details.append(args)
+    }
+    if (typeof entry.output === 'string' && entry.output !== '') {
+      const output = document.createElement('pre')
+      output.className = CLASS.toolOutput
+      output.textContent = entry.output
+      details.append(output)
+    }
+    row.dataset.toolName = textOf(entry.name)
+    row.dataset.toolState = textOf(entry.state)
+    row.append(details)
+    return row
+  }
+
+  /**
+   * Insert one row by its message time. A late entry (a resumed log, a slow tool) belongs where
+   * it happened, not at the end; equal times keep insertion order.
+   */
+  function insertOrdered(row, at) {
+    const value = Number.isFinite(at) ? at : Date.now()
+    row.dataset.at = String(value)
+    const next = [...timeline.children].find((child) => Number(child.dataset.at) > value)
+    if (next === undefined) timeline.append(row)
+    else timeline.insertBefore(row, next)
+  }
+
+  function trimTimeline() {
+    while (timeline.children.length > LIMIT.entries) {
+      const oldest = timeline.firstElementChild
+      if (oldest === null) return
+      const id = oldest.dataset.entryId
+      oldest.remove()
+      if (typeof id === 'string') { entries.delete(id); rows.delete(id) }
+    }
+  }
+
+  /** Merge one entry by id: a tool/result and a user twin update the row they belong to. */
+  function upsert(entry) {
+    if (!entry || typeof entry !== 'object' || typeof entry.id !== 'string' || entry.id === '') return
+    if (!Object.values(KIND).includes(entry.kind)) return
+    const prior = entries.get(entry.id)
+    const merged = prior === undefined ? entry : { ...prior, ...entry }
+    entries.set(entry.id, merged)
+    // A committed assistant message finalises the live stream; the durable row replaces it.
+    if (merged.kind === KIND.assistant) clearPending()
+    const next = buildEntry(merged)
+    next.dataset.entryId = merged.id
+    const wasNearBottom = nearBottom()
+    const existing = rows.get(merged.id)
+    if (existing !== undefined) { next.dataset.at = existing.dataset.at; existing.replaceWith(next) }
+    else insertOrdered(next, merged.at)
+    rows.set(merged.id, next)
+    trimTimeline()
+    scrollToEnd(wasNearBottom)
+  }
+
+  function clearPending() {
+    if (pendingRow !== undefined) pendingRow.remove()
+    pendingRow = undefined
+  }
+
+  function appendStream(value) {
+    if (typeof value !== 'string' || value === '') return
+    const wasNearBottom = nearBottom()
+    if (pendingRow === undefined) {
+      pendingRow = document.createElement('li')
+      pendingRow.className = CLASS.entry + ' ' + CLASS.entryAssistant + ' ' + CLASS.pending
+      pendingRow.dataset.entryKind = KIND.assistant
+      pendingRow.dataset.pending = 'true'
+      const author = document.createElement('span')
+      author.className = CLASS.author
+      author.textContent = t('chat.fishball')
+      const body = document.createElement('p')
+      body.className = CLASS.text
+      pendingRow.append(author, body)
+      insertOrdered(pendingRow, Date.now())
+    }
+    const body = pendingRow.querySelector('.' + CLASS.text)
+    if (body !== null) body.textContent += value
+    trimTimeline()
+    scrollToEnd(wasNearBottom)
+  }
+
+  function applySelection(selection) {
+    const next = selectionOf(selection)
+    if (next === undefined) return
+    current = next
+    syncModelSelect()
+    syncEffortSelect()
+  }
+
+  function rebuildModelSelect() {
+    modelSelect.replaceChildren()
+    if (models.length === 0) {
+      const option = document.createElement('option')
+      option.textContent = t('chat.noModels')
+      option.value = '-1'
+      modelSelect.append(option)
+      modelSelect.disabled = true
+      return
+    }
+    modelSelect.disabled = false
+    const placeholder = document.createElement('option')
+    placeholder.textContent = t('chat.chooseModel')
+    placeholder.value = '-1'
+    modelSelect.append(placeholder)
+    const groups = new Map()
+    for (const model of models) {
+      if (!groups.has(model.provider)) groups.set(model.provider, [])
+      groups.get(model.provider).push(model)
+    }
+    for (const [providerId, list] of groups) {
+      const group = document.createElement('optgroup')
+      const provider = providers.find((candidate) => candidate.id === providerId)
+      group.label = textOf(provider?.name) || providerId
+      for (const model of list) {
+        const index = models.indexOf(model)
+        const option = document.createElement('option')
+        option.value = String(index)
+        option.textContent = textOf(model.name) || model.id
+        group.append(option)
+      }
+      modelSelect.append(group)
+    }
+  }
+
+  function selectedModel() {
+    if (current === undefined) return undefined
+    return models.find((model) => model.provider === current.provider && model.id === current.model)
+  }
+
+  function syncModelSelect() {
+    const model = selectedModel()
+    if (model === undefined) { modelSelect.value = '-1'; return }
+    modelSelect.value = String(models.indexOf(model))
+  }
+
+  /** The effort select follows the chosen model's advertised efforts; none means no control. */
+  function syncEffortSelect() {
+    const model = selectedModel()
+    const efforts = Array.isArray(model?.efforts) ? model.efforts.filter((effort) => typeof effort?.id === 'string' && effort.id !== '') : []
+    effortSelect.replaceChildren()
+    effortLabel.hidden = efforts.length === 0
+    if (efforts.length === 0) return
+    const fallback = document.createElement('option')
+    fallback.value = ''
+    fallback.textContent = t('chat.defaultEffort')
+    effortSelect.append(fallback)
+    for (const effort of efforts) {
+      const option = document.createElement('option')
+      option.value = effort.id
+      option.textContent = textOf(effort.name) || effort.id
+      effortSelect.append(option)
+    }
+    effortSelect.value = current?.reasoningEffort !== undefined && efforts.some((effort) => effort.id === current.reasoningEffort)
+      ? current.reasoningEffort
+      : ''
+  }
+
+  function renderModel(page) {
+    if (!page || typeof page !== 'object') return
+    providers = Array.isArray(page.providers)
+      ? page.providers.filter((provider) => typeof provider?.id === 'string' && provider.id !== '')
+      : []
+    models = Array.isArray(page.models)
+      ? page.models.filter((model) => typeof model?.id === 'string' && model.id !== '' && typeof model.provider === 'string' && model.provider !== '')
+      : []
+    current = selectionOf(page.selection)
+    rebuildModelSelect()
+    syncModelSelect()
+    syncEffortSelect()
+  }
+
+  function renderPage(page) {
+    if (!page || !Array.isArray(page.entries)) throw new TypeError('fishball chat: the page has no entries')
+    const wasNearBottom = nearBottom()
+    entries.clear()
+    rows.clear()
+    timeline.replaceChildren()
+    for (const entry of page.entries) upsert(entry)
+    setRunning(Boolean(page.running))
+    composer.setMode(typeof page.permission?.mode === 'string' ? page.permission.mode : 'read-only')
+    clearPending()
+    scrollToEnd(wasNearBottom)
+  }
+
+  async function commitSelection(selection) {
+    clearNotice()
+    try {
+      const answer = await request(API.model, { method: 'POST', body: JSON.stringify(selection) })
+      if (selectionOf(answer?.selection) === undefined) throw new RequestError(undefined)
+      applySelection(answer.selection)
+    } catch (error) {
+      setNotice(i18n.failure('chat.modelFailed', codeOf(error)))
+      syncModelSelect()
+      syncEffortSelect()
+    }
+  }
+
+  async function refresh() {
+    if (disposed) return
+    const currentGeneration = ++generation
+    const [chatPage, modelPage] = await Promise.allSettled([request(API.chat), request(API.model)])
+    if (disposed || currentGeneration !== generation) return
+    if (chatPage.status === 'fulfilled') {
+      try { renderPage(chatPage.value) } catch { setNotice(t('chat.loadFailed')) }
+    } else {
+      setNotice(i18n.failure('chat.loadFailed', codeOf(chatPage.reason)))
+    }
+    if (modelPage.status === 'fulfilled') renderModel(modelPage.value)
+    // After the page swap, so label rows are inserted into the rebuilt timeline; an identical
+    // snapshot leaves the DOM alone and a half-typed question answer survives the SSE churn.
+    void approvals.refresh()
+  }
+
+  /** The page's metadata view of one uploaded attachment; the POST carries only the descriptor. */
+  function attachmentEntry(attachment) {
+    const ref = attachment.attachment
+    return {
+      kind: attachment.kind,
+      attachmentId: ref.attachmentId,
+      ...(typeof ref.mediaType === 'string' ? { mediaType: ref.mediaType } : {}),
+      ...(Number.isSafeInteger(ref.width) ? { width: ref.width } : {}),
+      ...(Number.isSafeInteger(ref.height) ? { height: ref.height } : {}),
+      ...(typeof ref.name === 'string' ? { name: ref.name } : {}),
+      ...(Number.isSafeInteger(ref.bytes) ? { bytes: ref.bytes } : {}),
+    }
+  }
+
+  /**
+   * Send one prompt through the composer's callback; false keeps the text and files for a retry.
+   * The attachment descriptors are the upload answers; their durable ids are all a row needs,
+   * because the read-only image route resolves the bytes after a reload.
+   */
+  async function sendPrompt(value, attachments = []) {
+    clearNotice()
+    try {
+      const body = { text: value, ...(attachments.length === 0 ? {} : {
+        attachments: attachments.map(({ kind, attachment }) => ({ kind, attachment })),
+      }) }
+      const answer = await request(API.chat, { method: 'POST', body: JSON.stringify(body) })
+      if (typeof answer?.messageId === 'string' && answer.messageId !== '') {
+        const entriesForMessage = attachments.map(attachmentEntry)
+        // The optimistic row shares the durable message id, so the committed user/message
+        // replaces it instead of appearing twice.
+        upsert({
+          id: 'm:' + answer.messageId, kind: KIND.user, at: Date.now(), authorKind: AUTHOR_KIND.user, text: value,
+          ...(entriesForMessage.length === 0 ? {} : { attachments: entriesForMessage }),
+        })
+      }
+      return true
+    } catch (error) {
+      setNotice(i18n.failure('chat.sendFailed', codeOf(error)))
+      return false
+    }
+  }
+
+  modelSelect.addEventListener('change', () => {
+    const model = models[Number(modelSelect.value)]
+    if (model === undefined) return
+    void commitSelection({ provider: model.provider, model: model.id })
+  })
+
+  effortSelect.addEventListener('change', () => {
+    const model = selectedModel()
+    if (model === undefined) return
+    const effort = effortSelect.value
+    void commitSelection({ provider: model.provider, model: model.id, ...(effort === '' ? {} : { reasoningEffort: effort }) })
+  })
+
+  /** Apply one SSE chat frame; unknown types and malformed entries are ignored. */
+  function apply(payload) {
+    if (disposed || !payload || typeof payload !== 'object') return
+    if (payload.type === 'entry') { upsert(payload.entry); return }
+    if (payload.type === 'stream') { appendStream(payload.text); return }
+    if (payload.type === 'stream-end') { clearPending(); return }
+    if (payload.type === 'state') { setRunning(Boolean(payload.running)); return }
+    if (payload.type === 'model') { applySelection(payload.selection) }
+  }
+
+  function dispose() {
+    if (disposed) return
+    disposed = true
+    approvals.dispose()
+    container.replaceChildren()
+    modelSlot.replaceChildren()
+  }
+
+  void refresh()
+  return Object.freeze({ refresh, refreshApprovals: () => approvals.refresh(), apply, dispose })
+}

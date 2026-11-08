@@ -1,0 +1,62 @@
+{
+  "name": "fishball-instance",
+  "version": "0.1.0-alpha.0",
+  "description": "The built-in Fishball instance: runs Fishball in its own private DSH profile attached to the main DSH, and binds to fishball-connector through its contract.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./host.js",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The card's own runtime text stays in client.js.",
+  "exports": {
+    ".": "./host.js",
+    "./client": "./client.js",
+    "./native-runtime": "./src/native-runtime/index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "host.js",
+    "client.js",
+    "native-child.js",
+    "uninstall.js",
+    "src/",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. fishball-connector is the connector this instance binds to: only its ./contract export is imported (design §0.2). The range is package versions (user decision 2026-11-07): from this release's 0.1.0-alpha.0 up to, not including, 2. The contract version is checked separately when the instance attaches (CONNECTOR_CONTRACT, major 1).",
+  "peerDependencies": {
+    "fishball-connector": ">=0.1.0-alpha.0 <2",
+    "@deepseek-ai/cosmokit": "*",
+    "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-app-boot": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-llm-pi-ai": "*",
+    "@deepseek-ai/dsh-sandbox-policy": "*",
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/dsh-system-prompt": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/dsh-user-approval": "*",
+    "@deepseek-ai/schemastery": "*",
+    "zod": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "//client": "The instance's Plugins card in the main DSH (design §0.2, §0.7): the instance's status, Retry and its one field, `enabled`. The injected packages are the client halves whose services the card uses: locale, the settings form (configForms) and the Plugins page slots.",
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    }
+  }
+}
