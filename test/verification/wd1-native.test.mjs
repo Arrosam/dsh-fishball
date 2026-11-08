@@ -28,7 +28,6 @@ import { assertNoForbiddenAttempts } from './wd1-safe-preload.mjs'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { pathToFileURL } from 'node:url'
 import { after, before, test } from 'node:test'
 import { resolveOfficialSDK, RUNTIME_PARENT_URL } from '../support/provider-sync-sdk.mjs'
 
@@ -101,10 +100,10 @@ before(async () => {
   const cordis = await manifest('@deepseek-ai/cordis')
   assert.ok(WD.sdkVersions.includes(dsh.version), 'only the requested installed SDK versions may run this suite')
   resolveOfficialSDK()
-  const [native, schemaModule] = await Promise.all([
-    import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/cordis')).href),
-    import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/schemastery')).href),
-  ])
+  // Use import conditions like the product: require.resolve selects Schemastery's CJS
+  // entry, which races Cordis's ESM dependency graph during concurrent SDK imports.
+  const native = await import('@deepseek-ai/cordis')
+  const schemaModule = await import('@deepseek-ai/schemastery')
   host = { ...native, Schema: schemaModule.default, dshVersion: dsh.version, cordisVersion: cordis.version }
   // Import only the public row; no package-linking helper or DSH launcher is invoked.
   row = await import(WD.module)
