@@ -29,6 +29,7 @@
   "peerDependencies": {
     "fishball-connector": ">=0.1.0-alpha.0 <2",
     "@deepseek-ai/cosmokit": "*",
+    "@deepseek-ai/dsh-agent": "*",
     "@deepseek-ai/dsh-app-boot": "*",
     "@deepseek-ai/dsh-llm": "*",
     "@deepseek-ai/dsh-llm-pi-ai": "*",
