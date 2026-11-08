@@ -388,8 +388,9 @@ export function createFakeHost({ capabilities } = {}) {
  * Fishball's manager Session (and runs X2's create setup) before a case starts.
  * `sessionLogs` optionally retains fake DSH session events across child-row restarts;
  * `onFollowup` observes/injects at the agent queue port, before the turn is recorded.
+ * `attachments` opts into the host attachment peripheral; other callers keep no store.
  */
-export async function bootChild(t, { activate = false, configure, home: existingHome, watchdogEnabled = true, extraBundles = [], sessionLogs = new Map(), onFollowup } = {}) {
+export async function bootChild(t, { activate = false, attachments = undefined, configure, home: existingHome, watchdogEnabled = true, extraBundles = [], sessionLogs = new Map(), onFollowup } = {}) {
   const home = tempPath(existingHome ?? await tempHome(t))
   const profileDir = tempPath(path.join(home, 'profiles', 'fishball'), { root: home })
   await mkdir(profileDir, { recursive: true })
@@ -451,7 +452,7 @@ export async function bootChild(t, { activate = false, configure, home: existing
     sandboxPolicy: { resolve: () => ({ mode: 'read-only' }) },
     llm: { listProviders: () => [], listModels: () => [], resolveModelInfo: () => ({}), resolveCallConfig: (value) => value },
     // The image service is optional at the app row; without a store an upload is refused.
-    attachments: undefined,
+    attachments,
   }
   // A caller may retain this map across child-row boots, just as DSH retains session logs.
   // It is fixture-owned persistence only; no extension state is reconstructed by the harness.
@@ -486,6 +487,8 @@ export async function bootChild(t, { activate = false, configure, home: existing
   ctx.settings = settings
   ctx.pluginManager = pluginManager
   ctx.llm = services.llm
+  // AttachmentStore is also the documented direct Cordis property (`ctx.attachments`).
+  ctx.attachments = attachments
   const rowDisposers = []
   const rows = {}
   async function applyRow(name, modulePath) {
