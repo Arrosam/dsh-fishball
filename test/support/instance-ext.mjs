@@ -211,21 +211,26 @@ function createAgentCtx(agent) {
 }
 
 /** The minimum live shape the child reads: id, status, followup, session log and model port. */
-function createLiveAgent(sessionId, { events = [], onFollowup } = {}) {
+function createLiveAgent(sessionId, { events = [], onFollowup, onAppend } = {}) {
   const log = structuredClone(events)
   const live = {
     id: sessionId,
     status: 'idle',
     followups: [],
     followup(message) {
+      // Observe/inject at the agent port, before a turn becomes visible in the fixture queue.
+      const result = onFollowup?.(message, live)
       live.followups.push(message)
-      if (onFollowup !== undefined) onFollowup(message)
+      return result
     },
     cancel() { live.cancelled = true },
     session: {
       id: sessionId,
       appended: log,
-      append(type, data) { log.push({ seq: log.length + 1, time: 1_700_000_000_000 + log.length + 1, type, data }) },
+      append(type, data) {
+        log.push({ seq: log.length + 1, time: 1_700_000_000_000 + log.length + 1, type, data })
+        onAppend?.(structuredClone(log))
+      },
       snapshotEvents: () => structuredClone(log),
     },
   }
@@ -244,6 +249,8 @@ export function createFakeHost({ capabilities } = {}) {
   const frames = []
   const raw = []
   const fail = new Set()
+  // Public host reply injection: preserve the child's real bridge request/response path.
+  const responses = new Map()
   const sessions = []
   let send
   let onClose
@@ -295,6 +302,7 @@ export function createFakeHost({ capabilities } = {}) {
 
   function answerFor(frame) {
     if (fail.has(frame.operation)) return undefined
+    if (responses.has(frame.operation)) return responses.get(frame.operation)
     const payload = frame.payload
     switch (frame.operation) {
       case OPERATION.sessionList: return { sessions: sessions.map((session) => ({ ...session })) }
@@ -372,14 +380,16 @@ export function createFakeHost({ capabilities } = {}) {
     return requestId
   }
 
-  return { transport, requests, handshakes, inboxAcks, frames, raw, fail, sessions, inbox, event, rawAttention, served }
+  return { transport, requests, handshakes, inboxAcks, frames, raw, fail, responses, sessions, inbox, event, rawAttention, served }
 }
 
 /**
  * Boot the child rows over a fake context. `activate: true` reads `/api/chat`, which activates
  * Fishball's manager Session (and runs X2's create setup) before a case starts.
+ * `sessionLogs` optionally retains fake DSH session events across child-row restarts;
+ * `onFollowup` observes/injects at the agent queue port, before the turn is recorded.
  */
-export async function bootChild(t, { activate = false, configure, home: existingHome, watchdogEnabled = true, extraBundles = [] } = {}) {
+export async function bootChild(t, { activate = false, configure, home: existingHome, watchdogEnabled = true, extraBundles = [], sessionLogs = new Map(), onFollowup } = {}) {
   const home = tempPath(existingHome ?? await tempHome(t))
   const profileDir = tempPath(path.join(home, 'profiles', 'fishball'), { root: home })
   await mkdir(profileDir, { recursive: true })
@@ -434,7 +444,7 @@ export async function bootChild(t, { activate = false, configure, home: existing
     sessionQuery: {
       async readSession(id) {
         const agent = agentsById.get(id)
-        return { events: structuredClone(agent?.session.snapshotEvents?.() ?? []) }
+        return { events: structuredClone(agent?.session.snapshotEvents?.() ?? sessionLogs.get(id) ?? []) }
       },
     },
     agentDefaultModel: { currentSelection: () => undefined },
@@ -443,24 +453,23 @@ export async function bootChild(t, { activate = false, configure, home: existing
     // The image service is optional at the app row; without a store an upload is refused.
     attachments: undefined,
   }
+  // A caller may retain this map across child-row boots, just as DSH retains session logs.
+  // It is fixture-owned persistence only; no extension state is reconstructed by the harness.
+  function activateAgent(options, sessionId) {
+    const live = createLiveAgent(sessionId, {
+      events: sessionLogs.get(sessionId) ?? [],
+      onAppend: (events) => sessionLogs.set(sessionId, events),
+      onFollowup,
+    })
+    const agentCtx = createAgentCtx(live)
+    if (typeof options.setup === 'function') options.setup(agentCtx, live)
+    agents.push({ live, agentCtx, options })
+    agentsById.set(live.id, live)
+    return { agent: live }
+  }
   const agentsService = {
-    async create(options) {
-      const live = createLiveAgent(options.sessionId)
-      const agentCtx = createAgentCtx(live)
-      if (typeof options.setup === 'function') options.setup(agentCtx, live)
-      agents.push({ live, agentCtx, options })
-      agentsById.set(live.id, live)
-      return { agent: live }
-    },
-    async resume(options) {
-      const id = options.resumeSessionId
-      const live = createLiveAgent(id)
-      const agentCtx = createAgentCtx(live)
-      if (typeof options.setup === 'function') options.setup(agentCtx, live)
-      agents.push({ live, agentCtx, options })
-      agentsById.set(live.id, live)
-      return { agent: live }
-    },
+    async create(options) { return activateAgent(options, options.sessionId) },
+    async resume(options) { return activateAgent(options, options.resumeSessionId) },
     get: (id) => agentsById.get(id),
   }
   services.agents = agentsService
@@ -551,6 +560,7 @@ export async function bootChild(t, { activate = false, configure, home: existing
     tools,
     agents,
     agentsById,
+    sessionLogs,
     host,
     logs: context.logs,
     context,

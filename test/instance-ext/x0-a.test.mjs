@@ -2,8 +2,9 @@
  * W0 / X0-A (server half) — the approvals seam and per-session claims (X15, §2.6).
  *
  * Observation points: `fishballInstance.approvals` (claim, card, onSettled, answerApproval), the
- * manager's `answer_approval` tool, the bridge requests the child sends, and the durable decision
- * record. The tag and the escalation card are PANELS' UI cases, not here (U10/U12).
+ * manager's `answer_approval` tool, bridge requests, open cards and reached-layer ordinary
+ * transcript entries (U17/§12.4). There is no retained decision-label/closed-card store.
+ * Connector tool-result/card clearing and rendered attribution remain K2/PANELS TODOs.
  *
  * Techniques: DT (routing and decisions), EP (claim acceptance), ST (claim lifecycle), P.
  */
@@ -11,7 +12,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, it } from 'node:test'
-import { bootChild, tempDir } from '../support/instance-ext.mjs'
+import { bootChild, messageText, tempDir } from '../support/instance-ext.mjs'
 
 const OWNER = 'fishball-watchdog'
 const SID = 'session-asker'
@@ -32,7 +33,6 @@ function descriptor(changes = {}) {
     kind: 'approval',
     prompt: 'Allow bash?',
     choices: ['allow', 'reject'],
-    expiresAt: Date.now() + 60_000,
     title: 'Asking session',
     at: Date.now(),
     toolName: 'bash',
@@ -45,6 +45,13 @@ function descriptor(changes = {}) {
 
 const seenBy = (list) => (card) => list.push(card)
 const approvalRequests = (h) => h.host.requests.filter((request) => request.operation === 'approval.answer')
+const managerHistory = (h) => JSON.stringify(h.manager().session.snapshotEvents())
+const managerTurns = (h) => h.manager().followups.map(messageText).join('\n')
+
+/** U17 removes labels, not necessarily an old empty compatibility accessor. */
+function noRetainedLabels(service) {
+  assert.deepEqual(service.approvals.labels?.() ?? [], [], 'no retained decision-attribution labels')
+}
 
 /** X14 must hold a session before X15 can claim it. */
 function supervise(service) {
@@ -172,7 +179,7 @@ describe('X0-A X15 claim lifecycle (ST)', () => {
     reg.dispose()
   })
 
-  it('XA-ST-03 an open card is settled or closed', async (t) => {
+  it('XA-ST-03 U17 an open card settles once and is cleared, not retained as a closed card', async (t) => {
     const { h, service } = await live(t)
     const reg = supervise(service)
     reg.set(SID, 'active', BRIEF)
@@ -183,6 +190,10 @@ describe('X0-A X15 claim lifecycle (ST)', () => {
     h.host.event('approval.settled', { approvalId: 'apr_1', decision: 'reject', by: 'user' })
     await tick()
     assert.equal(service.approvals.card('apr_1'), undefined)
+    h.host.event('approval.settled', { approvalId: 'apr_1', decision: 'reject', by: 'user' })
+    await tick()
+    assert.equal(service.approvals.card('apr_1'), undefined, 'repeated settlement cannot restore a closed card')
+    noRetainedLabels(service)
     reg.dispose()
   })
 })
@@ -284,17 +295,84 @@ describe('X0-A X15 decisions', () => {
     reg.dispose()
   })
 
-  it('XA-EP-05 an old label without decidedBy loads as manager-decided', async (t) => {
+  it('XA-EP-05 U17 legacy labels and closed/retired cards are not restored or imported into Fishball history', async (t) => {
     const home = await tempDir(t, 'fbtest-instance-ext-approval-')
     await mkdir(path.join(home, 'fishball'), { recursive: true })
     const old = {
-      decisionId: 'dec-old', kind: 'approval', sessionId: SID, title: 'Old', at: 1,
+      decisionId: 'dec-old', kind: 'approval', sessionId: SID, title: 'legacy-label-do-not-import', at: 1,
       request: {}, answer: 'allow', outcome: 'allow', settled: { decision: 'allow', by: 'user', at: 2 }, waiting: false,
     }
-    await writeFile(path.join(home, 'fishball', 'decisions.json'), JSON.stringify({ labels: [old], closed: [] }))
+    // Exercise the existing legacy input only; U17 specifies no replacement storage filename.
+    await writeFile(path.join(home, 'fishball', 'decisions.json'), JSON.stringify({
+      labels: [old], closed: [{ ...descriptor(), ...old }], retired: [{ ...old, approvalId: 'apr-retired' }],
+    }))
     const h = await bootChild(t, { activate: true, home })
-    const labels = h.requireInstance().approvals.labels()
-    assert.equal(labels.length, 1)
-    assert.notEqual(labels[0].decidedBy?.kind, 'watchdog', 'never loaded as a watchdog decision')
+    const service = h.requireInstance()
+    noRetainedLabels(service)
+    assert.equal(service.approvals.card('apr_1'), undefined)
+    assert.equal(service.approvals.card('apr-retired'), undefined)
+    assert.doesNotMatch(managerHistory(h) + managerTurns(h), /legacy-label-do-not-import/)
+    const page = await h.http('/api/chat')
+    assert.doesNotMatch(await page.text(), /legacy-label-do-not-import/, 'legacy labels do not become transcript entries')
   })
 })
+
+
+describe('X0-A U17 reached-layer settlement records (server boundary)', () => {
+  it('XA-DT-06 watchdog-only settlement clears the instance card without a Fishball record or wake', async (t) => {
+    const { h, service } = await live(t)
+    const reg = supervise(service)
+    reg.set(SID, 'active', BRIEF)
+    const handled = []
+    claim(h, service, SID, seenBy(handled))
+    const settled = []
+    service.approvals.onSettled((event) => settled.push(event))
+    h.host.event('approval.request', descriptor(), SID)
+    await tick()
+    assert.equal(handled.length, 1, 'watchdog actually handled this request')
+    const beforeHistory = managerHistory(h)
+    const beforeTurns = h.manager().followups.length
+    const answer = await service.approvals.answerApproval({
+      approvalId: 'apr_1', offerId: 'off_1', decision: 'allow', reason: 'allowed by the existing permission rules',
+      decidedBy: { kind: 'watchdog', id: OWNER, name: 'Watchdog' },
+    })
+    assert.notEqual(answer.ok, false)
+    assert.equal(approvalRequests(h).at(-1)?.payload.decision, 'allow', 'normal connector answer path')
+    for (let delivery = 0; delivery < 2; delivery++) {
+      h.host.event('approval.settled', { approvalId: 'apr_1', decision: 'allow', by: 'fishball' })
+      await tick()
+    }
+    assert.equal(service.approvals.card('apr_1'), undefined)
+    noRetainedLabels(service)
+    assert.equal(managerHistory(h), beforeHistory, 'unreached Fishball transcript receives no automatic decision')
+    assert.equal(h.manager().followups.length, beforeTurns, 'no Fishball wake or held automatic import')
+    assert.equal(settled.length, 1, 'repeated settlement does not duplicate the callback')
+    reg.dispose()
+  })
+
+  it('XA-DT-07 a user settlement reaching Fishball records attribution and wakes it once under repeated delivery', async (t) => {
+    const { h, service } = await live(t)
+    h.host.event('approval.request', descriptor(), SID)
+    await tick()
+    await h.tool('answer_approval', { request_id: 'apr_1', decision: 'escalate', reason: 'Samuel must decide' })
+    const beforeTurns = h.manager().followups.length
+    h.host.event('approval.settled', { approvalId: 'apr_1', decision: 'allow', by: 'user' })
+    await tick()
+    assert.equal(service.approvals.card('apr_1'), undefined)
+    assert.equal(h.manager().followups.length, beforeTurns + 1, 'one waking resolution note for the user decision')
+    const onceHistory = managerHistory(h)
+    const onceTurns = managerTurns(h)
+    assert.match(onceHistory + onceTurns, /\[approval apr_1\] decided by user: allow/, 'ordinary reached-layer result carries attribution')
+    noRetainedLabels(service)
+    h.host.event('approval.settled', { approvalId: 'apr_1', decision: 'allow', by: 'user' })
+    await tick()
+    assert.equal(managerHistory(h), onceHistory, 'no duplicate transcript record')
+    assert.equal(managerTurns(h), onceTurns, 'no duplicate resolution turn')
+    assert.equal(service.approvals.card('apr_1'), undefined)
+  })
+})
+
+// Defined continuations of the approval story; not claims of W0 UI/real-session coverage.
+it.todo('XA-UC-SETTLE-M Samuel answers an escalated request — deferred: [K2/PANELS] normal requesting-tool result returns; pile/session/Fishball/user-result cards clear immediately and never return on repeated callbacks or reload')
+it.todo('XA-UC-HISTORY-M Samuel can find a reached decision later — deferred: [PANELS/WD-9/WD-10] each reached layer records once with transcript attribution, watchdog-only never imports automatically, claim without handling adds no watchdog history')
+it.todo('XA-UC-HISTORY-A Samuel continues after compaction — deferred: [PANELS/WD-8] decision leaves model context but remains searchable in reached transcripts; reload restores neither cards nor retained labels; explicit watchdog_decisions pull alone may return watchdog-only history')

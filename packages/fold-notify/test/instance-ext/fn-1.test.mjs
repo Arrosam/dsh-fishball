@@ -21,7 +21,6 @@ function stubContext({ withInstance = true } = {}) {
     fishballInstance: {
       apiVersion: 1,
       manager: { sessionId: () => 'session-fishball', registerSetup: () => () => {} },
-      chat: { registerRecordProjector: () => () => {} },
       inbox: { setBatcher: () => () => {}, claim: () => () => {} },
       attention: { set: () => () => {} },
     },

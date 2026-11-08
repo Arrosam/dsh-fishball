@@ -1,25 +1,22 @@
 # Test design: `fishballInstance` extension points, W0 and the X0 gate files
 
-Status: **test design and red suite, 2026-11-08, against `design/instance-ext` e002ec3.**
-Source: `docs/plugins/instance-extension-points.md` at e002ec3 (§1, §2, §2.6, §3, §5.1, §5.3,
-§5.5, §6), plus the three plugin designs at their §9/§13/§14 and §15 (fold-notify, watchdog,
-board). Black-box only: every expected result comes from those documents, never from product code.
+Status: **test design and red suite aligned to `design/instance-ext` 479df59 (including 6f7412b U14–U19), 2026-11-09.**
+Source: `docs/plugins/instance-extension-points.md` at 479df59, especially §0 U14–U19, §12.5.1–§12.5.2, task rows/done-when and §5.4/§5.5. Its final reconciliation overrides the incorporated plugin designs. Black-box only: expected results come from requirements, never product implementation. Historical reports below are superseded where U14–U19 changed acceptance.
 
 ## 1. Scope and conventions
 
 - **W0 (start now, per §5.3):** `K1`, `X0-C`, `FN-1`, `WD-1`, `B1`.
 - **W1/W2 gate files kept in place:** `X0-I`, `X0-G`, `X0-A` (server half), `X0-S`, `X0-W`,
-  `X0-B`. They are not W0 work, but their design changed in e002ec3 (U7, U8, §2.6, U10–U12), so
-  their cases below match the final design.
+  `X0-B`. They are not W0 work, but their existing gates remain in place; touched approval cases are realigned for U14/U17. This W0 revision does not claim to implement all newly added later-wave acceptance.
 - **Withdrawn:** `X0-U` (U10). Its test file is removed; its page cases move to PG-1's browser
   tests (§6).
 - **Techniques:** EP = Equivalence Partitioning (valid and invalid); BVA = Boundary Value Analysis; DT = Decision Table; ST = State Transition; UC = Use Case (actor-goal scenarios predicted from the design, with separately counted main, alternative and exception flows). Use Cases are defined now even when execution belongs to a later task. Positive is not a technique.
 - Former W0 positive IDs become collision-free EP-V-xx. Later-wave legacy P IDs stay unchanged in files; their corrected technique is EP below.
 - **Ids:** `<short task>-<technique>-<nn>`, e.g. `XS-DT-11`. Every case names the X point or the
   task's done-when in its title.
-- **Historical red baseline:** the original suite targeted missing services/packages/contracts.
-  This test-only correction was not executed; no current pass/fail claim is made.
-  WD1-BVA-02 is explicitly skipped as blocked, not counted as executable coverage.
+- **U14:** the old blocked WD1-BVA-02 is deleted, not skipped. Approval time budgets and window-sum validation are not requirements. Check/guard timers remain, because they do not decide approval cards.
+- **U15/U18:** no X3 namespace test or member in X0-C; typed refusals, restart-durable dedupe and its 10,000-key cap, both disabled send paths and ordered array delivery are executable acceptance requirements.
+- **U17/U19:** clear settled cards immediately and keep ordinary records only at reached layers; archive board records while installed and apply a 30-day inclusive visibility window, not age-based deletion.
 - **Skeleton service boundary:** all three loading stubs expose public services as direct Cordis
   context properties and through `services`/`get`. FN/B absent-instance cases omit the service
   from both surfaces. No skeleton stub provides the internal `fishballChat` port; inject assertions
@@ -55,17 +52,15 @@ board). Black-box only: every expected result comes from those documents, never 
 | K1-EP-V-05 | EP | the host bridge advertises `instance.attention` and answers a valid frame accepted |
 | K1-UC-01-M | UC | real connector state: none → value → newer value → detach `{0,false}` → reattach zero → report again |
 
-### 2.2 X0-C — service, manager, chat (X1, X2, X10, X11; X3 type rule only)
+### 2.2 X0-C — service, manager, chat (X1, X2, X10, X11; U18 §12.5, no X3)
 
 | ID | T | Expected |
 | --- | --- | --- |
 | XC-EP-V-01 | EP | the app row provides `fishballInstance` apiVersion 1 with every member |
 | XC-EP-V-02 | EP | a registration returns `dispose`; a second dispose is a no-op |
-| XC-EP-V-06 | EP | a type in the plugin's own prefix is accepted; dispose removes the registration |
 | XC-EP-V-05 | EP | `userTexts` returns only user-written texts, newest first |
 | XC-EP-01 | EP | `fishballChat` stays internal; the plugin-facing service is `fishballInstance` |
 | XC-EP-02 | EP | X1 reports the manager Session id, not another agent id |
-| XC-EP-03 | EP | a type with a foreign plugin prefix is refused |
 | XC-UC-01-M | UC | create: a registration made before the live Session is applied after the persona, in order |
 | XC-UC-01-A1 | UC | resume: the same registration is applied again on `agents.resume` |
 | XC-UC-01-A2 | UC | live: a registration made while the agent is live is applied at once |
@@ -101,10 +96,9 @@ board). Black-box only: every expected result comes from those documents, never 
 | WD1-EP-V-02 | EP | row exports `name`, `inject` (agents, tools, llm, profileContext, fishballInstance?), `Config`, `apply` |
 | WD1-UC-LOAD-M | UC | the row loads over a stub `fishballInstance` |
 | WD1-UC-LOAD-A | UC | without optional instance service the row loads (canonical §1 older-instance compatibility) |
-| WD1-UC-CONFIG-M | UC | every §9 default is the designed value (23 numeric, 2 text, 1 boolean) |
+| WD1-UC-CONFIG-M | UC | remaining §9 defaults after U14: 20 numeric, 2 text, 1 boolean; auditEntriesKept is operational audit only |
 | WD1-BVA-01 | BVA | every numeric setting accepts its bounds and refuses min−1 and max+1 |
-| WD1-EP-01 | EP | there is no `enabled` setting (U7: DSH's bundle switch is the off switch) |
-| WD1-BVA-02 | BVA (blocked) | skipped: exact public Config window-sum relation, limits and invalid-input outcome need an authoritative specification; arithmetic over test defaults is not coverage |
+| WD1-EP-01 | EP | no separate enabled switch or removed approval-time schema fields; only supervision/check timers remain |
 
 ### 2.5 B1 — `fishball-board` skeleton
 
@@ -112,15 +106,17 @@ board). Black-box only: every expected result comes from those documents, never 
 | --- | --- | --- |
 | B1-EP-V-01 | EP | package `fishball-board` 0.1.0-alpha.0, bundle patch, `engines.dsh`, instance peer, README |
 | B1-EP-V-02 | EP | row exports `name`, optional `fishballInstance?` inject, no internal `fishballChat` inject, `Config`, `apply` |
-| B1-UC-CONFIG-M | UC | config defaults: `inject` true, `contextCards` 20, `doneWindowHours` 24 |
+| B1-UC-CONFIG-M | UC | config defaults: inject=true and contextCards=20; if retained, doneWindowHours=24 is recent-done counting only |
 | B1-EP-V-04 | EP | constants: namespace, six statuses, `BOARD_LIMITS` cards 300 / links 8 / context 2000 / guide 900 |
 | B1-UC-LOAD-M | UC | the row loads with a stub `fishballInstance` |
 | B1-BVA-01 | BVA | `contextCards` 0…30; −1, 31 and a fraction refused |
-| B1-BVA-02 | BVA | `doneWindowHours` 0…168; −1 and 169 refused |
+| B1-BVA-02 | BVA | optional recent-done counter doneWindowHours, if exposed: 0…168; outside values refused; never a panel visibility cutoff |
 | B1-UC-CONFIG-A | UC | user chooses a valid `inject` boolean; invalid string is separate CONFIG-E flow |
 | B1-UC-LOAD-A | UC | without the points the row loads and logs `instance-hooks-missing` once |
 
-Additional flow entries are enumerated in the linked Use Case ledgers (§9): K1-UC-01-A1/E2; XC-UC-02-A3; all CONFIG-E flows and WD1-CONFIG-A; all BUNDLE flows; and XC real-model/durable-restart TODOs. These are part of the counts, not merely prose examples. Each ledger records execution status and owner.
+U18 added entries: XC-EP-STUB-01…16; XC-DT-01 durable-key-before-queue; XC-BVA-KEYS-9999/10000/10001; XC-UC-02-E2 restart persistence; XC-UC-03-M1/M2 disabled tool sends; XC-UC-03-A1/A2 and XC-UC-04-M executable contract flows; additional image/array EP, DT and count/byte/image-bound BVA below. XA-DT-06/07 add reached-layer settlement and once-only wake checks; XA UC continuations name K2/PANELS.
+
+Additional flow entries are enumerated in the linked Use Case ledgers (§9): K1-UC-01-A1/E2; XC-UC-02-A3; all CONFIG-E flows and WD1-CONFIG-A; all BUNDLE flows; and XC real-model/interface-contract TODOs. These are part of the counts, not merely prose examples. Each ledger records execution status and owner.
 
 ## 3. W1/W2 gate cases (kept consistent with e002ec3)
 
@@ -163,7 +159,7 @@ Additional flow entries are enumerated in the linked Use Case ledgers (§9): K1-
 | XA-EP-02 | EP | none, dormant and cleared are refused `not-supervised` |
 | XA-EP-03 | EP | a second claim on one session gets `owner-busy` |
 | XA-EP-04 | EP | two sessions are independent: each card reaches only its own claimant |
-| XA-EP-05 | EP | an old label without `decidedBy` loads as manager-decided |
+| XA-EP-05 | EP | U17 legacy labels and closed/retired cards are not restored or copied into ordinary history |
 | XA-DT-01 | DT | X14 state × claim → the card goes to the watchdog or to Fishball (§2.6) |
 | XA-DT-02 | DT | enabled but not registered, and disabled, route cards to Fishball |
 | XA-DT-03 | DT | a `decidedBy` answer on a card of an unclaimed session is refused and reaches no connector |
@@ -171,7 +167,7 @@ Additional flow entries are enumerated in the linked Use Case ledgers (§9): K1-
 | XA-DT-05 | DT | the manager grant on a claimed session is `grant-off-supervised`; on an unclaimed one it is not |
 | XA-ST-01 | ST | active → paused/halted keep the claim; dormant or clear drops it; the next card goes to Fishball |
 | XA-ST-02 | ST | `release()` drops the claim; the next card goes to Fishball |
-| XA-ST-03 | ST | an open card is settled or closed |
+| XA-ST-03 | ST | resolution clears card immediately; duplicate settlement does not restore card or retain labels |
 
 ### 3.4 X0-S — supervision, start rule, send gate (X14, X16, X19; U7, U8)
 
@@ -243,39 +239,46 @@ Additional flow entries are enumerated in the linked Use Case ledgers (§9): K1-
 | Task | EP | BVA | Decision Table | State Transition | Use Case | Total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | K1 | 7 | 3 | 1 | 0 | 4 | **15** |
-| X0-C | 7 | 2 | 0 | 1 | 12 | **22** |
+| X0-C | 41 | 22 | 8 | 1 | 19 | **91** |
 | FN-1 | 4 | 1 | 0 | 0 | 8 | **13** |
-| WD-1 | 3 | 1 | 0 | 0 | 10 | **14** |
-| B1 | 3 | 2 | 0 | 0 | 8 | **13** |
-| **W0 defined flows/cases** | **24** | **9** | **1** | **1** | **42** | **77** |
+| WD-1 | 3 | 1 | 0 | 0 | 11 | **15** |
+| B1 | 3 | 2 | 0 | 0 | 15 | **20** |
+| **W0 defined flows/cases** | **58** | **29** | **9** | **1** | **57** | **154** |
 | X0-I | 7 | 1 | 3 | 2 | 0 | **13** |
 | X0-G | 6 | 0 | 0 | 1 | 0 | **7** |
-| X0-A | 6 | 0 | 5 | 3 | 0 | **14** |
+| X0-A | 6 | 0 | 7 | 3 | 3 | **19** |
 | X0-S | 5 | 2 | 17 | 5 | 0 | **29** |
 | X0-W | 6 | 0 | 2 | 1 | 0 | **9** |
 | X0-B | 6 | 0 | 6 | 0 | 0 | **12** |
-| **All defined cases including UC TODOs** | **60** | **12** | **34** | **13** | **42** | **161** |
+| **All defined cases including UC TODOs** | **94** | **32** | **44** | **13** | **60** | **243** |
 
-Primary technique is counted once per test entry. Use Case counts mean **flows**, not Use Case definitions, and include explicitly owned TODOs. The existing blocked/skipped WD1-BVA-02 is excluded from this table (78 W0 test entries including that block).
+Primary technique is counted once per entry. Use Case counts mean flows (main, alternative and exception), including explicit TODOs, not story definitions. No blocked/skipped approval-window case remains.
 
-W0 has **5 story-level Use Cases containing 12 retained flow groups**, **42 Use Case flows** = **29 executable + 13 TODO**. Together with 35 other executable cases, W0 has **64 executable cases + 13 TODO + 1 blocked/skipped**. Execution means an assertion body exists, not that it passes.
+W0 has **5 story-level Use Cases**, **57 UC flows = 36 executable + 21 TODO**. With 97 non-UC executable cases: **133 executable + 21 TODO = 154 entries**. No awaiting-contract TODO remains; remaining TODOs have explicit integration/later-task owners.
 
-| Task | Retained UC flow groups | UC executable flows | UC TODO flows | Other executable cases | Blocked |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| K1 | 1 | 4 | 0 | 11 | 0 |
-| X0-C | 2 | 10 | 2 | 10 | 0 |
-| FN-1 | 3 | 5 | 3 | 5 | 0 |
-| WD-1 | 3 | 5 | 5 | 4 | 1 |
-| B1 | 3 | 5 | 3 | 5 | 0 |
+| Task | Executable | TODO | UC executable | UC TODO |
+| --- | ---: | ---: | ---: | ---: |
+| K1 | 15 | 0 | 4 | 0 |
+| X0-C | 89 | 2 | 17 | 2 |
+| FN-1 | 10 | 3 | 5 | 3 |
+| WD-1 | 9 | 6 | 5 | 6 |
+| B1 | 10 | 10 | 5 | 10 |
 
 Secondary DT/ST coverage in actor flows is recorded in the Use Case documents, not double-counted: service-presence loading rules, setup/notify decision rules, unread lifecycle transitions. No requirement was dropped just because its primary category changed.
+
+### 4.1 Published callable contracts (479df59 §12.5.1–2)
+
+- **Images:** empty and omitted attachments each produce one exact session.message payload and an unchanged delivered result; unconfirmed is returned without retries or a fabricated watch; connector refusal rejects. UC03-A1/A2, DT02, EP-IMAGE01.
+- **Inbox array:** UC04-M observes one user-role followup and exact caller-framed text joined with two newline characters; receipt messageId equals queued id. UC04-E1 rejects an invalid middle item with no partial queue/fetch. EP covers duplicate text, mutation, typed metadata/options/image validation; DT covers singleton source/legacy overload, skipImages, and shape→count→text→image validation order.
+- **BVA:** counts 0/1/19/20/21; joined UTF-8 bytes 65,535/65,536/65,537 including emoji and separators; per-item image counts 19/20/21, pixel/byte caps ±1 under skipImages validation. Async error name/code and unchanged input/zero queue are asserted.
+- **Acknowledgement scope:** W0 proves queue receipt, not per-item wire ack or model completion. X0-I/FN-6 owns wire acknowledgements and successful actual image-fetch/order integration; XC-UC-04-A1 is a named TODO, not an unresolved API.
 
 ## 5. Test-file → task map
 
 | Task | File | Covers |
 | --- | --- | --- |
 | W0 K1 | `packages/connector/test/instance-ext/k1.test.mjs` | contract 1.2, `instance.attention`, `state.unread` |
-| W0 X0-C | `packages/instance/test/instance-ext/x0-c.test.mjs` | X1, X2, X10, X11, X3 type rule |
+| W0 X0-C | `packages/instance/test/instance-ext/x0-c.test.mjs` | X1, X2, X10, X11, U18 durable dedupe/stubs/tool pass-through |
 | W0 FN-1 | `packages/fold-notify/test/instance-ext/fn-1.test.mjs` | fold skeleton |
 | W0 WD-1 | `packages/watchdog/test/instance-ext/wd-1.test.mjs` | watchdog skeleton |
 | W0 B1 | `packages/board/test/instance-ext/b1.test.mjs` | board skeleton |
@@ -291,7 +294,7 @@ Secondary DT/ST coverage in actor flows is recorded in the Use Case documents, n
 | Area | Omitted case | Why |
 | --- | --- | --- |
 | X0-U | all server/page cases | Withdrawn (U10). The module/list/route/signal/CSP cases have no successor; the page cases are PG-1's browser tests. |
-| X0-C X3 | projection into `GET api/chat`, SSE `entry`, fallback row, `recordTextChars` | Withdrawn (U10, §5.5). Only the record-type rule stays. |
+| X0-C X3 | projection into `GET api/chat`, SSE `entry`, fallback row, `recordTextChars` | Entirely outside X0-C (U15): PG-1 owns registration-time namespace enforcement. |
 | X0-A | the "代批 / Watchdog" tag, the open escalation card | UI half moves to PANELS (U12). The server `card`/`onSettled`/claim cases stay here. |
 | X0-B | "Built in" tag, settings-page cases | Plugin management moves to DSH's Plugins page; Fishball's settings page is kept but slimmed (U13, §11.8). X17/X18 server cases stay. |
 | X0-I | a held item expiring at `expiresAt` | The frozen `inbox.push` has no expiry; the claim's expiry comes from an approval descriptor the claim does not receive. |
@@ -299,24 +302,18 @@ Secondary DT/ST coverage in actor flows is recorded in the Use Case documents, n
 | X0-B | BVA of the `bundled` state file; successful placement of all three; survival of `admin.plugin.install` | The real plugin packages arrive with their waves; the fixture packages cover one-failed-placement and the skipped-bundle decision. SP-FN1's install/reinstall remains X-E2E. |
 | K1 | a browser check of the important brand alert | The connector `client.js` DOM is a browser case (FN-A/E2E); the wire and `state.unread` are covered here. |
 
-## 7. Remaining coverage limitations (not acceptance sign-off)
+## 7. Final decisions and remaining execution ownership
 
-Independent review identified gaps that remain despite the expected red results:
-- X10 duplicate coverage is same-process only; restart-durable dedupe is not demonstrated by this fake-session harness.
-- X0-C checks member presence, not every later-wave stub's `not-implemented` refusal. Explicit watchdog-off send-path pass-through and array delivery coverage still need dedicated W0 cases.
-- The running-agent registration case checks immediate public tool visibility with a running status; it does not drive a real model's next request. SP-X1 is prior spike evidence, not this case's execution.
-- Package skeleton `apply` is exercised with public-service stubs, not a real Cordis bundle-loader smoke test. Bundle patch contents are not yet validated.
-- X3 retains a namespace rule, but the precise public validation seam after projector withdrawal is unclear; the current two cases still use the old registration signature and require owner confirmation.
+U14–U19 at 6f7412b resolve the former four questions. There is no blocked window-sum test; X3 namespace belongs to PG-1; U18 core behavior is specified; U19 is visibility, not pruning. The old decision document is retained as explicitly superseded history.
 
-These limitations mean the current files must not yet be advertised as a complete definition of done for all W0 acceptance criteria.
+- The two callable contracts are now resolved by 479df59 §12.5.1–§12.5.2: images.message with exact target/text/empty attachments and delivered/unconfirmed passthrough; deliverInbox local text-only items, one queue receipt, async validation, 20-item and 65,536 UTF-8-byte bounds. The earlier awaiting-contract TODOs are replaced with executable tests. Per-wire-item ack integration remains X0-I/FN-6, not a chat-method receipt.
+- Real model next-request/disposal and real loader integration retain later owners X-E2E/X0-B (§12.5).
+- K2 and PANELS own connector/UI timer removal and immediate card cleanup; W0 stories constrain them with TODO flows rather than asserting UI behavior from stubs.
+- B2/B3/B4/B5/B10/B11 own visibility, reopen/clear transitions, archive/search and uninstall/export; B1 does not fix a visibility constant name or require doneWindowHours as a panel cutoff.
 
-## 8. Open design questions
+## 8. Open questions
 
-1. **K1 `state.unread` reset on close — coverage added.** The H-STUB case covers detach and reattach, reports attention again, then calls `stub.fireClose()` and observes `host.state` reset to `{count: 0, important: false}`. Transport close is exercised directly rather than inferred from detach; no detach-proxy ambiguity remains. This describes the declared coverage, not an execution result.
-2. **WD-1 "window-sum check" — blocked ambiguity.** The task mentions a check without an authoritative exact Config relation, fixed/model-dependent window limit, or invalid-input outcome. The previously asserted sums over test-owned defaults exercised no product behavior and are removed. The authoritative watchdog design §9 says the approval sum fits 120 seconds “at the defaults” and uses each card’s `expiresAt`; §15 lists sums 120/121 but does not specify Config rejection. Its context threshold is model-dependent `min(config, contextWindow − growth − output)`, not a fixed 200k sum. Source designs were read from local design branches via temporary document extracts. WD1-BVA-02 remains explicitly skipped until the requirement owner specifies valid/invalid Config inputs and expected outcomes; neither a 120-second sum nor a fixed 200k model window is invented as a rule.
-3. **Skeleton inject form — resolved by canonical §1.** Require `fishballInstance?` in FN-1, B1 and WD-1. `fishballChat` is internal and must not be injected by FN/B; it is not stubbed. Missing-instance load cases use a genuinely absent public service, not a hidden direct-property copy.
-4. **B1 prune-age constant — uncovered naming ambiguity.** The design does not specify the public export key for the 30-day prune age. The invented `BOARD_LIMITS.pruneAgeDays` assertion is removed; no prune-age constant coverage is claimed pending a documented public name.
-5. **K1 host bridge attention port.** The design says the validated payload "goes to the attachment"; it does not name the host-side callback (`onAttention`, the session port, or the connector-service binding). The K1 case observes only the wire answer and the real `state.unread`; it does not assert an internal callback. **A.** leave the seam internal; **B.** name it in K1's done-when. Recommendation: **A**.
+No undecided product options are inferred here. The two former interface questions are answered by 479df59; the previous four A/B questions are closed by U14/U15/U18/U19. Any remaining integration evidence is explicitly assigned to later tasks rather than treated as an unspecified contract.
 
 ## 9. Predicted Use Cases and execution ownership
 
@@ -329,4 +326,4 @@ Use Cases are design constraints, not retrospective descriptions of implementati
 - FN/WD/B loading Decision Tables retain present/absent service rules. Config × raw `apply` rejection is not invented; invalid settings are exercised through the public Config schema.
 - Later-wave non-UC case tables remain existing gate coverage only, not a claim that later tasks have no Use Cases. Their integrated flows can be constrained by the written W0 Use Cases and extended in their own test plans.
 
-The four pending ambiguity decisions (window-sum, X3 validation seam, prune-age key, remaining X0-C gaps) are unchanged. [Detailed decision explanations](instance-ext-w0-decisions.md) give exact immutable-source references, everyday examples, option effects, work/risk and recommendations; they do not select an option.
+The former four ambiguity decisions are resolved by U14/U15/U18/U19. [Historical explanations](instance-ext-w0-decisions.md) are superseded; current acceptance is 6f7412b §12.

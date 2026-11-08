@@ -66,7 +66,31 @@ Fresh five-file run on 0.2.2-rc.1: `/private/tmp/fbtest-w0-stories.WcOLs8`. K1 1
 
 The four questions are explained in the separate decision document using immutable e002ec3 canonical line numbers plus its incorporated source-design revisions. They are not resolved or implemented.
 
-## Acceptance questions
+## Final alignment — 6f7412b + 479df59
+
+The branch incorporates both final design commits using local merges, preserving test history. U14 retires the blocked window-sum test and approval-budget settings; U15 removes both X3 cases; U16 reframes watchdog as a token saver regardless of user presence; U17 uses immediate card cleanup and reached-layer history; U19 uses inclusive 30-day board visibility and permanent installed-plugin archive history. No product files were changed or read to derive behavior.
+
+U18 adds 16 typed-stub cases, persisted notify-key-before-queue observation, same-home child-row reboot dedupe, actual-notify cap BVA 9999/10000/10001, both tool send operations, exact images.message passthrough and inbox array queue/receipt/validation. Child-row reboot rebuilds services and retains only fixture DSH events/on-disk state; it is not an OS-process or loader integration proof. Real model and successful image-fetch/order integration remain owner-named TODOs. No awaiting-contract TODO remains.
+
+Final five-file run on 0.2.2-rc.1, evidence `/private/tmp/fbtest-w0-479df59.7A7RmO`:
+
+| Task | Executable failures | TODO | Skipped | Exit |
+| --- | ---: | ---: | ---: | ---: |
+| K1 | 15 | 0 | 0 | 1 |
+| X0-C | 89 | 2 | 0 | 1 |
+| FN-1 | 10 | 3 | 0 | 1 |
+| WD-1 | 9 | 6 | 0 | 1 |
+| B1 | 10 | 10 | 0 | 1 |
+| Total | 133 | 21 | 0 | — |
+
+Failures are expected missing contract/unread additions, public instance service and package skeletons. No import/ReferenceError/TypeError harness failures were observed. Since missing-service assertions run first, downstream new feature assertions are statically reviewed but cannot yet be demonstrated green. Touched X0-A was separately run: 16 expected missing-service failures + 3 TODO, exit 1.
+
+Shared harness changes retain fixture session events across reboot, observe the agent queue boundary and supply controlled connector responses; the original full suite was rerun after these changes: `/private/tmp/fbtest-w0-contract-regression.Plk3Rz/regression.log`, 0.2.2-rc.1, **1484 tests / 1456 passed / 0 failed / 21 skipped / 7 TODO / exit 0**. Existing skips/TODOs were not counted as passes. All homes and npm caches remain under `/private/tmp`, with no credential reads, push or publish.
+
+## Historical acceptance questions — closed by final design
+
+**Superseded by 6f7412b U14/U15/U18/U19 and 479df59 §12.5.1–2.** The text below is history, not active timers, prune requirements, blocked cases or open decisions. Current inventory and results are reported in the final alignment section appended below.
+
 
 1. **WD sum:** A — formally define Config acceptance at sum 120 and rejection at 121, including exact fields and model-window handling; B — define these as runtime deadline calculations, not Config refusal. Recommendation: B unless save-time validation is explicitly intended; keep the blocked case until the owner chooses.
 2. **X3 seam:** A — retain a public namespace validator with a documented signature; B — enforce the namespace through DSH's record registration later. Recommendation: A only if X0-C must reject foreign namespaces now; do not require a withdrawn projector implementation implicitly.
