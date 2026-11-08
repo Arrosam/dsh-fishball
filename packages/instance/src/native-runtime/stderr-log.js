@@ -50,6 +50,7 @@ export function captureChildStderr(stream, paths, limitBytes) {
   if (!stream) return
   const file = path.join(paths.root, RUNTIME.stderrLog)
   let pending = ''
+  let firstLine
   let queue = Promise.resolve()
   const write = (text) => { queue = queue.then(() => append(file, text, limitBytes)).catch(() => {}) }
   // Create the file at spawn, so its path exists even while a healthy child writes nothing.
@@ -57,12 +58,15 @@ export function captureChildStderr(stream, paths, limitBytes) {
   stream.setEncoding('utf8')
   stream.on('data', (chunk) => {
     pending += chunk
+    // Retain only one bounded line in memory for failed startup; the public boundary sanitizes it.
+    if (firstLine === undefined && pending.includes(NEWLINE)) firstLine = pending.slice(0, pending.lastIndexOf(NEWLINE)).split(NEWLINE).find(line => line.trim())?.slice(0, limitBytes)
     const end = pending.lastIndexOf(NEWLINE)
     if (end >= 0) { write(pending.slice(0, end + 1)); pending = pending.slice(end + 1) }
     // An unterminated run is flushed at the cap so memory stays bounded too.
-    else if (Buffer.byteLength(pending) > limitBytes) { write(pending + NEWLINE); pending = '' }
+    else if (Buffer.byteLength(pending) > limitBytes) { firstLine ??= pending.slice(0, limitBytes); write(pending + NEWLINE); pending = '' }
   })
-  stream.once('end', () => { if (pending !== '') write(pending + NEWLINE); pending = '' })
+  stream.once('end', () => { firstLine ??= pending.slice(0, limitBytes); if (pending !== '') write(pending + NEWLINE); pending = '' })
   stream.on('error', () => {})
   stream.unref?.()
+  return () => firstLine ?? pending.slice(0, limitBytes)
 }
