@@ -1,6 +1,8 @@
-# Revised W0 test-only audit — pinned MCP design
+# Revised W0 test-only audit — approved cases and budget follow-up
 
-Date: 2026-11-09. Status: **cases submitted for user review before development**. No product implementation delivered.
+Date: 2026-11-09. **Current follow-up: §6 below.** The user approved the original cases with decisions **B / A / A**, then supplied budget specification `9cafd92` and the host-injection correction. This remains a test-only delivery; no product implementation delivered.
+
+**Sections 1–5 preserve the original `1673391` baseline and its historical counts/results. The follow-up inventory and §6 supersede them for current execution.**
 
 ## 1. Provenance and isolation
 
@@ -112,4 +114,56 @@ Independent reviewer found and authors corrected:
 
 Syntax validation covers all seven test/spec modules; `git diff --check` is clean. Four safe path-guard checks passed (unsafe root, outside-root, relative rejected; safe disposable descendant accepted). Shared safe harness and product files are unchanged, so no full regression suite was run; the full runner can boot DSH and is outside the user's safety instruction.
 
-No browser/model/real-loader/MCP feasibility pass is claimed. Local commit only; no push or publish. User review remains the next gate before development.
+No browser/model/real-loader/MCP feasibility pass was claimed for this historical baseline. Local commit only; no push or publish. The user subsequently approved the cases with B / A / A; current follow-up evidence follows.
+
+## 6. Approved budget and host-injection follow-up — current results
+
+### Authority and changes
+
+Previous test commit: **`1673391bab8add2fc2072960412012297714ce53`**. The user approved the cases, choosing **B / A / A**. Exact budget authority: **`design/wd-budget` at `9cafd921be8a8e67f828ab225bf5fe636887c5c5`**, [§2.8](<../../../design-wd-budget/docs/plugins/instance-extension-points.md#L404-L456>), verified at exact HEAD with the requirement file clean. Original MCP/domain requirements remain pinned as above.
+
+- Removed the vague `WD1-DT-GROWTH` freeze TODO. Added **11 executable Config cases**: default growth 9,984/9,985/9,986; per-read rounding at 8,190–8,194 bytes; coherent output-2,048 companions requiring 11,009; individually valid read-cap/output/growth fields that cannot form a valid full config; fractional budget/byte-field refusal. The existing non-default-output UC now supplies coherent growth 11,009.
+- Added **16 fully specified, owner-named TODO cases**, replacing the one removed TODO for **+15 net TODO**. They cover save atomicity, canonical byte/token measurement, Unicode/property order, whole-context-once accounting, 2,303/2,304/2,305-byte card inputs, shared non-read allowance, minimum R, 64,000 rollover/preflight/fresh-epoch boundaries, same-turn growth/ceiling and per-response-rounded aggregate output, and effective-off failure hand-over. These are future runtime/save-interface obligations, not unresolved budget decisions or tests of a test-authored estimator.
+- Card fixture is **127 UTF-8 bytes** before padding, including multibyte quotes; padding **2,176/2,177/2,178** produces exactly **2,303/2,304/2,305 bytes**. Equality fits; oversize goes intact to Fishball without model call, truncation or plugin fault.
+- Per-response output-rounding discriminator: **1,535 + 1,537 bytes** rounds separately to **512 + 513 = 1,025** and fails at output 1,024, although incorrectly rounding combined 3,072 bytes gives 1,024. Read-rounding cases similarly reject rounding combined read bytes instead of each read.
+- Corrected `FN1-EP-V-02` and `B1-EP-V-02` to accept `tools` injection with optional runtime public-service lookup; neither literal `fishballInstance?`, required `fishballInstance`, nor internal `fishballChat` may gate activation. The same obsolete WD assertion was corrected narrowly while preserving `agents`, `tools`, `llm` and `profileContext`. Existing service-present/absent load cases remain; **FN-1/B1 counts do not change**.
+- Recorded approved async policy A in the existing XC TODO title and core story: await setup before publication, late readiness after completion, rejection isolation, disposed-completion fence. No XC case was added or promoted. Approved MCP freeze B remains unchanged with named owners. All prior A/B questions are closed in the [decision record](<instance-ext-w0-decisions.md>).
+
+### Changed counts
+
+| Scope | Before | Current | Delta |
+| --- | ---: | ---: | ---: |
+| WD-1 total | 18 | **44** | **+26** |
+| WD-1 executable | 9 | **20** | **+11** |
+| WD-1 TODO | 9 | **24** | **+15 net** |
+| All W0 total | 229 | **255** | **+26** |
+| All W0 executable | 124 | **135** | **+11** |
+| All W0 TODO | 105 | **120** | **+15 net** |
+
+| Primary technique | WD-1 current | W0 current | W0 delta |
+| --- | ---: | ---: | ---: |
+| EP | 6 | **75** | +3 |
+| BVA | 16 | **51** | +15 |
+| Decision Table | 4 | **32** | +3 |
+| State Transition | 4 | **21** | +4 |
+| Use Case | 14 | **76** | +1 |
+| **Total** | **44** | **255** | **+26** |
+
+Other task totals remain **MCP-S1 16, MCP-S2 22, MCP-S3 12, K1 24, X0-C 104, FN-1 13, B1 20**. Counting remains once per registered case, not assertions/samples/versions. The committed [machine inventory](<instance-ext-w0-inventory.json>) is current and preserves all IDs, techniques and version totals.
+
+### Final safe runs on both DSH versions
+
+Used the same six-file command shape in §4 with `TMPDIR=/private/tmp`, explicit per-version `FBTEST_DSH_RUNTIME`, `node --test --test-concurrency=1 --test-reporter=tap`. Node **v24.22.2**; both installed runtime directories present. No real DSH instance, launcher, restart, full runner, dependency install or credential access. Shared harness/product files unchanged. Runtime package imports are through the existing resolver-only safe harness.
+
+| Selected DSH SDK | Pass | Requirement-backed red | TODO | Skipped | Cancelled | Registered | Test exit |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **0.2.1-rc.5** | **0** | **135** | **120** | **0** | **0** | **255** | **1** |
+| **0.2.2-rc.1** | **0** | **135** | **120** | **0** | **0** | **255** | **1** |
+
+Each final log contains 255 unique case IDs. Reds on each version: **X0-C 95** missing public `fishballInstance`; **FN-1 10, WD-1 20, B1 10** missing required skeleton files. All executable cases remain red on this test branch for those actual missing-feature gates, not import, type, invented-export or synthetic failures. New Config assertions behind the absent skeleton gate are statically reviewed, **not dynamically proved**. Card/runtime/save TODOs are not passes and no implementation from the FN/B development branches was read, copied, merged or tested here.
+
+Final evidence: [rc.5 TAP](</private/tmp/fbtest-w0-budget.NJzSnE/final/0.2.1-rc.5.tap>), [rc.1 TAP](</private/tmp/fbtest-w0-budget.NJzSnE/final/0.2.2-rc.1.tap>), [rc.5 detailed inventory](</private/tmp/fbtest-w0-budget.NJzSnE/final/0.2.1-rc.5-inventory.json>), [rc.1 detailed inventory](</private/tmp/fbtest-w0-budget.NJzSnE/final/0.2.2-rc.1-inventory.json>). All seven test/spec source hashes match the final [source-hash record](</private/tmp/fbtest-w0-budget.NJzSnE/final/test-sha256.txt>).
+
+### Independent review
+
+A separate requirements-only author made the test changes. Independent reviewer approved the final source/story candidate after correcting the exact card-wrapper byte arithmetic and adding the separate-response rounding discriminator. Parent independently verified byte arithmetic and all growth thresholds; no test-owned budget behavior was promoted to product evidence. Syntax checks for all seven modules and `git diff --check` pass. Four safe-path guard assertions pass. No remaining substantive review finding. This is a local test-only commit, **no push**; no `.npmrc` or real credential was read or copied.

@@ -1,6 +1,6 @@
 # Revised W0 test cases — one-way MCP, review before development
 
-Status: **test-only review candidate**, 2026-11-09. This is not approval to develop, execute the feasibility spikes, install plugins, or change a running DSH instance.
+Status: **user-approved cases, B / A / A; budget and host-injection follow-up**, 2026-11-09. This delivery changes tests only. It does not implement the feature, execute feasibility spikes, install plugins, or change a running DSH instance.
 
 ## 1. Use Cases first
 
@@ -20,7 +20,7 @@ Requirements are pinned to **`design/instance-ext` at `15d6f1f214144db3575f9bc0b
 - [One-way MCP decisions and revised waves](<../../../design-instance-ext/docs/plugins/connector-mcp-option.md>): capability matrix, delivery/auth/fencing and acceptance.
 - [Design](<../../../design-instance-ext/DESIGN.md#L39-L54>): approved direction.
 
-The sibling design worktree was verified at that exact commit and these three files were clean. The older design copies inherited by this test branch are **not** the authority for this rewrite. Incorporated plugin requirements supply retained skeleton settings only where the pinned canonical decisions do not supersede them.
+The sibling design worktree was verified at that exact commit and these three files were clean. The budget follow-up additionally pins **`design/wd-budget` at `9cafd921be8a8e67f828ab225bf5fe636887c5c5`**, [§2.8](<../../../design-wd-budget/docs/plugins/instance-extension-points.md#L404-L456>), verified exact and clean. The user's host correction supersedes literal optional-injection syntax: FN-1/B1 require `tools` and resolve `fishballInstance` at runtime, rather than requiring the nonexistent literal service `fishballInstance?`. The older design copies inherited by this test branch are **not** the authority for this rewrite. Incorporated plugin requirements supply retained skeleton settings only where these approved decisions do not supersede them.
 
 Starting point: `test/instance-ext-w0` at **`aad37b27df0f02160f96570e5124d94e9dfb9f5b`**, 154 W0 cases. This rewrite is on **`test/w0-mcp`**, in the requested worktree. It does not merge product implementation or alter requirements to fit current code.
 
@@ -48,6 +48,8 @@ S1/S2 → S3 → K1 is an acceptance dependency, not eight wholly parallel devel
 7. Attention is optional. Logical authenticated-session loss/detach clears the projection; ordinary HTTP/TCP or optional SSE closure does not. Invalid input preserves the last valid value.
 8. Every `manager.notify` key is reserved pending with a stable identity before queue/hold acceptance. Only accepted keys return `duplicate`. Pending failures/rebuild recovery retry that identity; accepted history is capped at 10,000 without evicting pending work.
 9. U14 approval timers/window-sum validation remain removed; check/transport/health timers are different. U17 keeps reached-layer ordinary transcript history, not closed-card/label retention. U19 keeps installed board archive history with inclusive 30-day board visibility.
+10. Budget tokens are `ceil(canonical JSON UTF-8 bytes / 3)`; total card/non-read input allowance is 768 tokens / 2,304 bytes inclusive. Full-config growth requires `3 * ceil(readMaxBytes / 3) + 768 + maxOutputTokens`, default minimum 9,985. Default rollover is 64,000, equality rotates between turns; a fresh context still too large or a measurement/provider failure hands over effective off without halting.
+11. Approved async setup policy A awaits completion before publishing a created/resumed manager; late registration becomes usable after completion, with rejection isolation and disposed-completion fencing. Exact MCP callable freeze B remains with its owning tasks.
 
 ## 4. Techniques and counting
 
@@ -59,7 +61,7 @@ Exactly five primary techniques: **EP, BVA, Decision Table, State Transition, Us
 - State Transition: allowed/invalid transitions and critical sequences, especially authority loss, settlement and durable intake recovery.
 - Use Case: human-goal main/alternative/exception flows, including deferred journeys.
 
-The [machine-readable review inventory](<instance-ext-w0-inventory.json>) and [run audit](<instance-ext-w0-audit.md>) record **229 cases: 124 executable and 105 TODO**. Technique totals are **EP 72, BVA 36, Decision Table 29, State Transition 17, Use Case 75**. Both requested SDK runs produced **0 pass, 124 requirement-backed red, 105 TODO, 0 skipped/cancelled**. Executable, TODO and pass/red counts are kept separate.
+The [machine-readable review inventory](<instance-ext-w0-inventory.json>) and [run audit §6](<instance-ext-w0-audit.md#L119>) record **255 cases: 135 executable and 120 TODO** after the approved budget follow-up (**+26 cases: +11 executable, +15 net TODO**). Technique totals are **EP 75, BVA 51, Decision Table 32, State Transition 21, Use Case 76**. Both requested SDK runs produced **0 pass, 135 requirement-backed red, 120 TODO, 0 skipped/cancelled**. Executable, TODO and pass/red counts are kept separate.
 
 ## 5. Executable and deferred evidence
 
@@ -86,4 +88,4 @@ FBTEST_DSH_RUNTIME="/Users/samuel/Library/Application Support/DSH/data/versions/
 node --test packages/instance/test/instance-ext/x0-c.test.mjs
 ```
 
-Exact commands, exit status, task/technique totals, legitimate-red classification and verification limitations are in the [audit](<instance-ext-w0-audit.md>). Remaining freeze questions, with A/B choices and recommendations, are in the [decision note](<instance-ext-w0-decisions.md>). The cases are submitted for review **before development**.
+Exact commands, exit status, task/technique totals, legitimate-red classification and verification limitations are in the [audit](<instance-ext-w0-audit.md>). The user's **B / A / A** approvals and concrete budget/injection amendments are in the [decision note](<instance-ext-w0-decisions.md>). Cases were reviewed **before development**; remaining named TODOs are execution/owner obligations, not reopened product decisions.

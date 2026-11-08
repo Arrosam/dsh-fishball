@@ -1,39 +1,46 @@
 {
   "requirementsCommit": "15d6f1f214144db3575f9bc0ba15238b1450c2a7",
+  "budgetRequirementsCommit": "9cafd921be8a8e67f828ab225bf5fe636887c5c5",
+  "approvedDecisions": [
+    "B",
+    "A",
+    "A"
+  ],
   "baseCommit": "aad37b27df0f02160f96570e5124d94e9dfb9f5b",
+  "previousTestCommit": "1673391bab8add2fc2072960412012297714ce53",
   "versions": [
     {
       "version": "0.2.1-rc.5",
       "totals": {
-        "tests": 229,
+        "tests": 255,
         "pass": 0,
-        "fail": 124,
+        "fail": 135,
         "cancelled": 0,
         "skipped": 0,
-        "todo": 105
+        "todo": 120
       },
       "failureCategories": {
         "B1: missing required skeleton files": 10,
         "FN-1: missing required skeleton files": 10,
         "X0-C: missing public fishballInstance service": 95,
-        "WD-1: missing required skeleton files": 9
+        "WD-1: missing required skeleton files": 20
       }
     },
     {
       "version": "0.2.2-rc.1",
       "totals": {
-        "tests": 229,
+        "tests": 255,
         "pass": 0,
-        "fail": 124,
+        "fail": 135,
         "cancelled": 0,
         "skipped": 0,
-        "todo": 105
+        "todo": 120
       },
       "failureCategories": {
         "B1: missing required skeleton files": 10,
         "FN-1: missing required skeleton files": 10,
         "X0-C: missing public fishballInstance service": 95,
-        "WD-1: missing required skeleton files": 9
+        "WD-1: missing required skeleton files": 20
       }
     }
   ],
@@ -117,16 +124,17 @@
       }
     },
     "WD-1": {
-      "total": 18,
+      "total": 44,
       "status": {
-        "Red": 9,
-        "TODO": 9
+        "Red": 20,
+        "TODO": 24
       },
       "technique": {
-        "EP": 3,
-        "Use Case": 13,
-        "BVA": 1,
-        "Decision Table": 1
+        "EP": 6,
+        "Use Case": 14,
+        "BVA": 16,
+        "Decision Table": 4,
+        "State Transition": 4
       }
     },
     "B1": {
@@ -143,11 +151,11 @@
     }
   },
   "techniqueTotals": {
-    "EP": 72,
-    "Use Case": 75,
-    "BVA": 36,
-    "Decision Table": 29,
-    "State Transition": 17
+    "EP": 75,
+    "Use Case": 76,
+    "BVA": 51,
+    "Decision Table": 32,
+    "State Transition": 21
   },
   "cases": [
     {
@@ -1233,7 +1241,7 @@
       "task": "X0-C",
       "technique": "Use Case",
       "status": "TODO",
-      "name": "XC-UC-01-E2 Samuel keeps healthy capabilities when async setup fails \u2014 [owner: X0-C] freeze async completion/rejection policy at create/resume/live, log rejected callback once, isolate healthy registration, no disposed contribution leak; no invented await timing"
+      "name": "XC-UC-01-E2 Samuel keeps healthy capabilities when async setup fails \u2014 [owner: X0-C] approved A: await setup before create/resume publication; late registration ready after completion; log rejected callback once, isolate healthy registration and fence disposed completion so contributions cannot leak"
     },
     {
       "id": "XC-UC-02-E3",
@@ -1740,11 +1748,193 @@
       "name": "WD1-UC-QUESTION-A Samuel refines direction separately while Fishball answers \u2014 deferred: [X0-A/WD-3/WD-4/WD-6/WD-11/WD-12] refinement failure never withholds/repeats answer; paused/dormant refinement cannot check/resume/claim"
     },
     {
-      "id": "WD1-DT-GROWTH",
+      "id": "WD1-BVA-GROWTH-DEFAULT-9984",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "Red",
+      "name": "WD1-BVA-GROWTH-DEFAULT-9984 Samuel saves coherent default budgets \u2014 W0: growth 9984 fails required 9985"
+    },
+    {
+      "id": "WD1-BVA-GROWTH-DEFAULT-9985",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "Red",
+      "name": "WD1-BVA-GROWTH-DEFAULT-9985 Samuel saves coherent default budgets \u2014 W0: growth 9985 passes required 9985"
+    },
+    {
+      "id": "WD1-BVA-GROWTH-DEFAULT-9986",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "Red",
+      "name": "WD1-BVA-GROWTH-DEFAULT-9986 Samuel saves coherent default budgets \u2014 W0: growth 9986 passes required 9985"
+    },
+    {
+      "id": "WD1-BVA-GROWTH-READ-8190",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "Red",
+      "name": "WD1-BVA-GROWTH-READ-8190 Samuel saves rounded read budgets \u2014 W0: each read is 2730 tokens, growth 9981/9982/9983 rejects/accepts/accepts"
+    },
+    {
+      "id": "WD1-BVA-GROWTH-READ-8191",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "Red",
+      "name": "WD1-BVA-GROWTH-READ-8191 Samuel saves rounded read budgets \u2014 W0: each read is 2731 tokens, growth 9984/9985/9986 rejects/accepts/accepts"
+    },
+    {
+      "id": "WD1-BVA-GROWTH-READ-8192",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "Red",
+      "name": "WD1-BVA-GROWTH-READ-8192 Samuel saves rounded read budgets \u2014 W0: each read is 2731 tokens, growth 9984/9985/9986 rejects/accepts/accepts"
+    },
+    {
+      "id": "WD1-BVA-GROWTH-READ-8193",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "Red",
+      "name": "WD1-BVA-GROWTH-READ-8193 Samuel saves rounded read budgets \u2014 W0: each read is 2731 tokens, growth 9984/9985/9986 rejects/accepts/accepts"
+    },
+    {
+      "id": "WD1-BVA-GROWTH-READ-8194",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "Red",
+      "name": "WD1-BVA-GROWTH-READ-8194 Samuel saves rounded read budgets \u2014 W0: each read is 2732 tokens, growth 9987/9988/9989 rejects/accepts/accepts"
+    },
+    {
+      "id": "WD1-DT-GROWTH-OUTPUT",
+      "task": "WD-1",
+      "technique": "Decision Table",
+      "status": "Red",
+      "name": "WD1-DT-GROWTH-OUTPUT Samuel raises output to 2048 \u2014 W0: R1/R2 growth10000/11008 reject, R3/R4 growth11009/11010 pass"
+    },
+    {
+      "id": "WD1-DT-GROWTH-FIELD-VALID",
+      "task": "WD-1",
+      "technique": "Decision Table",
+      "status": "Red",
+      "name": "WD1-DT-GROWTH-FIELD-VALID Samuel cannot combine every valid field \u2014 W0: R5 read1048576/output256/growth50000 individually pass but full Config needs1049602 and rejects"
+    },
+    {
+      "id": "WD1-EP-BUDGET-INTEGER",
+      "task": "WD-1",
+      "technique": "EP",
+      "status": "Red",
+      "name": "WD1-EP-BUDGET-INTEGER Samuel supplies numeric budget/byte settings \u2014 W0: fractions reject independently with otherwise coherent companions"
+    },
+    {
+      "id": "WD1-ST-BUDGET-SAVE",
+      "task": "WD-1",
+      "technique": "State Transition",
+      "status": "TODO",
+      "name": "WD1-ST-BUDGET-SAVE Samuel corrects a rejected save \u2014 [WD-1/WD-12] saved growth10000, reject9984 atomically retaining10000, accept9985; read8192/output1024"
+    },
+    {
+      "id": "WD1-EP-BUDGET-MEASURE",
+      "task": "WD-1",
+      "technique": "EP",
+      "status": "TODO",
+      "name": "WD1-EP-BUDGET-MEASURE Samuel counts canonical UTF8 bytes \u2014 [WD-8/WD-10/WD-12] bytes0/1/2/3/4/6/7/9/10 => tokens0/1/1/1/2/2/3/3/4; canonical primitives and objects in story; no provider usage oracle"
+    },
+    {
+      "id": "WD1-EP-BUDGET-CANONICAL",
+      "task": "WD-1",
+      "technique": "EP",
+      "status": "TODO",
+      "name": "WD1-EP-BUDGET-CANONICAL Samuel keeps Unicode evidence intact \u2014 [WD-8/WD-10/WD-12] key order canonicalizes to16bytes/6tokens; composed \u00e94bytes vs decomposed e+U0301 5bytes, emoji6bytes; no normalization or UTF16 measurement"
+    },
+    {
+      "id": "WD1-UC-BUDGET-CONTEXT-M",
+      "task": "WD-1",
+      "technique": "Use Case",
+      "status": "TODO",
+      "name": "WD1-UC-BUDGET-CONTEXT-M Samuel pays for one full context \u2014 [WD-8/WD-10/WD-12] system/brief/criteria/tools/digest/messages/calls/results/proposed input once; C60000 then63000 atR64000 keeps epoch, not sum123000; provider usage1/999999 irrelevant"
+    },
+    {
+      "id": "WD1-BVA-CARD-2303",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "TODO",
+      "name": "WD1-BVA-CARD-2303 Samuel submits an intact bounded card \u2014 [WD-10/WD-12] canonical complete127byte wrapper plus2176 ASCII bytes =>2303bytes/768tokens fits including all fields, labels and multibyte quotes"
+    },
+    {
+      "id": "WD1-BVA-CARD-2304",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "TODO",
+      "name": "WD1-BVA-CARD-2304 Samuel submits an exact-limit card \u2014 [WD-10/WD-12] same127byte wrapper plus2177 =>2304bytes/768tokens fits inclusive"
+    },
+    {
+      "id": "WD1-BVA-CARD-2305",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "TODO",
+      "name": "WD1-BVA-CARD-2305 Samuel submits an oversized card \u2014 [WD-10/WD-12] same127byte wrapper plus2178 =>2305bytes/769tokens; intact Fishball route, zero model calls/truncation/plugin fault"
+    },
+    {
+      "id": "WD1-DT-BUDGET-NONREAD",
       "task": "WD-1",
       "technique": "Decision Table",
       "status": "TODO",
-      "name": "WD1-DT-GROWTH Samuel chooses coherent helper read/output budgets \u2014 [owner: WD-1] retained growth cross-field rule below/equal/above readMaxBytes*(1+readsPerTurn)/3 + card + maxOutputTokens; readsPerTurn is 2; freeze card-token measurement and rounding, no invented companion vector"
+      "name": "WD1-DT-BUDGET-NONREAD Samuel shares one turn allowance \u2014 [WD-8/WD-10/WD-12] complete measured nonread total2304 fits,2305 does not despite independent field validity; no allowance per quote/reply/trigger; card intact to Fishball vs check fails off; read caps include wrappers"
+    },
+    {
+      "id": "WD1-BVA-CONTEXT-MIN",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "TODO",
+      "name": "WD1-BVA-CONTEXT-MIN Samuel saves a resolvable model budget \u2014 [WD-1/WD-8/WD-12] rollover64000/growth10000/output1024 windows27023/27024/27025 =>R15999/16000/16001; reject model-context-too-small/pass/pass, no invented model-window setting"
+    },
+    {
+      "id": "WD1-ST-BUDGET-ROLLOVER",
+      "task": "WD-1",
+      "technique": "State Transition",
+      "status": "TODO",
+      "name": "WD1-ST-BUDGET-ROLLOVER Samuel continues after a full turn \u2014 [WD-8/WD-12] R64000 largestC63999/64000/64001 keeps/rotates/rotates; finish turn, new epoch before next; rebuiltC1000, no midturn rotation or65536 threshold"
+    },
+    {
+      "id": "WD1-ST-BUDGET-PREFLIGHT",
+      "task": "WD-1",
+      "technique": "State Transition",
+      "status": "TODO",
+      "name": "WD1-ST-BUDGET-PREFLIGHT Samuel adds input or revises a brief \u2014 [WD-8/WD-12] priorC63000 then proposed nextC63999/64000/64001 keeps/rotates/rotates before dispatch; rebuild once to1000, no boundary skip"
+    },
+    {
+      "id": "WD1-ST-BUDGET-FRESH",
+      "task": "WD-1",
+      "technique": "State Transition",
+      "status": "TODO",
+      "name": "WD1-ST-BUDGET-FRESH Samuel cannot fit a fresh epoch \u2014 [WD-8/WD-12] rebuiltC63999 dispatches;64000/64001 atR64000 fail off once, no loop/dispatch/stop, release claims/pass sends/recover dormant, no compacted decisions in digest"
+    },
+    {
+      "id": "WD1-BVA-CONTEXT-TURN",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "TODO",
+      "name": "WD1-BVA-CONTEXT-TURN Samuel finishes one decision without midturn rotation \u2014 [WD-8/WD-10/WD-12] R64000+growth10000 ceiling74000 fits C73999/74000, refuses74001; with initial63999 independent growth10000/10001/10002 means full conjunction pass/fail/fail"
+    },
+    {
+      "id": "WD1-BVA-BUDGET-GROWTH",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "TODO",
+      "name": "WD1-BVA-BUDGET-GROWTH Samuel bounds measured turn growth \u2014 [WD-8/WD-10/WD-12] initialC63000 later72999/73000/73001 =>growth9999/10000/10001 pass/pass/fail off before request; same-turn crossingR64000 does not rotate"
+    },
+    {
+      "id": "WD1-BVA-BUDGET-OUTPUT",
+      "task": "WD-1",
+      "technique": "BVA",
+      "status": "TODO",
+      "name": "WD1-BVA-BUDGET-OUTPUT Samuel bounds all responses in a turn \u2014 [WD-8/WD-10/WD-12] canonical response bytes1535 then1533/1536/1539 separately round512+511/512/513 =>sum1023/1024/1025 pass/pass/fail before request or verdict; discriminator1535+1537bytes =>512+513=1025fails though combined rounding1024; include tool calls"
+    },
+    {
+      "id": "WD1-DT-BUDGET-FAILURE",
+      "task": "WD-1",
+      "technique": "Decision Table",
+      "status": "TODO",
+      "name": "WD1-DT-BUDGET-FAILURE Samuel retains Fishball supervision on budget failure \u2014 [WD-8/WD-9/WD-10/WD-12/X0-S/WD-13] measurement failure/window unresolved or noninteger/provider context rejection/exceeded check-growth-output allowance fail whole plugin off, release claims/pass sends/recovery dormant, no stop/halt; normal rollover and oversized individual card not faults"
     },
     {
       "id": "WD1-UC-APPROVAL-M",
