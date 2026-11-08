@@ -1,0 +1,31 @@
+{
+  "name": "fishball-watchdog",
+  "version": "0.1.0-alpha.0",
+  "description": "Fishball's small-context supervision and permission helper (WD-1 skeleton).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": ["index.js", "src/", "cordis.patch.yml"],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-scope": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*",
+    "fishball-instance": "0.1.0-alpha.0"
+  },
+  "peerDependenciesMeta": {
+    "fishball-instance": { "optional": true }
+  },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" }
+  }
+}
