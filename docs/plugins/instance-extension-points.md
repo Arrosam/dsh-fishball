@@ -319,7 +319,7 @@ claimed in X15. Otherwise it goes to Fishball, as in v1.
 | any, plugin enabled but not registered | no (the claims went with the plugin) | Fishball | `watchdog-unavailable` |
 | any, plugin turned off | no (hand-over) | Fishball | allowed (gate off) |
 
-*Why paused and halted stay claimed.* The coupling rule (R17): those briefs still own the session,
+*Why paused and halted stay claimed* (confirmed by the user, K-3 = A). The coupling rule (R17): those briefs still own the session,
 and the guard, not Fishball, decides what happens when it runs again. Handing a halted session's
 cards to Fishball would let Fishball answer work the guard is stopping.
 
@@ -662,7 +662,7 @@ decision table, **ST** state transitions.
 
 | # | Question | A | B | Recommendation |
 | --- | --- | --- | --- | --- |
-| Q-C | How does Fishball's chat page reuse DSH's Composer (§10.2)? | Run DSH's own browser client in the child: put `dsh-web-app` back into the child profile, so DSH's Composer and the composer plugins really run there. This reverses D28/I2, costs about 175–250 MB of memory instead of 65–140 MB plus a slower start, and makes a new phase that rewrites the page. | Keep today's child page and rebuild its composer from DSH's composer **look** (layout, tokens, the Read Only chip, attachments, the resize corner), without DSH's code. DSH plugins that extend the composer still do **not** work in Fishball. | **Your call.** Only A gives "DSH 内改动 composer 的插件 Fishball 也可以拿来用"; B is cheap but misses it. If you want those plugins, choose A. |
+| Q-C | How does Fishball's chat page get DSH's real Composer (§10.2, §10.3)? | **A-lite** (recommended): the child profile gets `dsh-web-app` back, with every row a single session does not need disabled, and the page is DSH's own shell, booted straight into Fishball's session with the sidebar and shell slots shadowed (§10.3). This is the smallest working form: about +90–100 MB RSS (measured 229–244 MB against 141–144 MB). Composer plugins work. The custom page is retired and its parts become slot plugins. | **B**: keep today's page and copy DSH's composer look only. No extra memory, but no composer plugins. | **A-lite** if the plugins matter; "only the session page, without the web app" is **not** possible (§10.3) |
 
 **Conflicts with earlier decisions (listed, not chosen):**
 - **K-1, the composer and D28/I2.**
@@ -675,12 +675,9 @@ decision table, **ST** state transitions.
     client slots (`conversation.chat.node`, the sidebar), as eaa33f5's messenger was.
   - X4–X7, FN-4, FN-5 and B5 would need a redesign for React slots.
   - Under Q-C = B nothing changes.
-- **K-3, paused and halted cards (U8 against R17).**
-  - U8: "the watchdog exists → the request goes to the watchdog".
-  - §2.6 counts `paused` and `halted` as "exists", so their cards stay with the watchdog. This
-    follows the coupling rule and watchdog §6.2 R1b (auto-resume, or the guard re-stops).
-  - If the user means "a watchdog that is watching right now", paused and halted cards would go to
-    Fishball instead. That is a different rule, so please confirm §2.6.
+- **K-3 (closed, user answer A, 2026-11-08):** while a session's brief is paused or halted, its
+  requests still go to that session's own watchdog (it stays claimed), not to Fishball. The §2.6
+  table stands as written.
 
 ## 10. Chat page: DSH Composer, grey bubbles, avatars (user request 2026-11-08)
 
@@ -728,7 +725,90 @@ The tokens it used are already in the instance's `ui/dsh-tokens.css`. The old fi
 slot plugin on DSH's chat (`conversation.chat.node`, `:31`). Its CSS values can be reused; its
 React code cannot.
 
-### 10.2 Proposal
+### 10.3 Can we take only the session page and keep plugin compatibility? (user question 2026-11-08)
+
+User's words: "不能单独拆会话页面，又维持对DSH插件兼容性吗？"
+
+**Short answer: not without the web app's client half.** A composer plugin is not a component the
+page can import. It is a **browser Cordis plugin** that registers slot entries into the Composer's
+slots, inside DSH's browser kernel. To keep that compatibility, the page has to run that kernel and
+load the plugins' `./client` bundles. Only `dsh-web-app` serves those (§10.3.2). What we *can* do is
+run the web app and show only the session view. That is A-lite.
+
+#### 10.3.1 How composer plugins hook in
+
+They hook in on **both sides**: a server-side row (a node plugin) plus a browser half declared as
+`dsh.client` and loaded by the web shell. The browser half registers **slot entries**. There is no
+separate composer registry, except for a few typed input events.
+
+| Example | Server side | Browser side | rc.5 | rc.1 |
+| --- | --- | --- | --- | --- |
+| Voice input (`dsh-experimental-voice-input-bundle`) | rows `speech-to-text`, `-sensevoice`, `api-speech-to-text` (`cordis.patch.yml`) | row `ui-voice-input`, package `dsh-experimental-client-ui-voice-input`, `dsh.client.inject` = remotes, session-controller, locale, **`dsh-client-ui-conversation`**, primitives, gateway, plugin-manager (`package.json`); it registers slot `conversation.input.activity` and writes into the editor through the bar's `inputActions.insertText` | `lib/client.js:2920`, `:1832-1947` | `:3653`, `:1832-1948` |
+| Model picker (`dsh-client-ui-model-selection`) | `agent-default-model` and the session controller's model API | registers slot `conversation.input.model` | `lib/client.js:1903` | `:2064` |
+| Goal (`dsh-client-ui-goal`) | goal tool | registers an input event through `ctx.uiConversation.events.register` | `lib/client.js:571` | `:661` |
+
+The slot names are declared by the bar entry (`dsh-client-ui-conversation/lib/client.js:20092-20131`
+rc.5, `:22958-22997` rc.1). The browser halves are found by `dsh-client-modules`' node half, which
+scans the loader's rows for `dsh.client` (`dsh-client-modules/lib/index.js:732` rc.5, `:789` rc.1),
+composes `window.__DSH_BOOT__` and serves `/plugins/<id>/client.js` (`dsh-web-app/cordis.patch.yml`
+row `modules` `:227` rc.5, `:223` rc.1).
+
+#### 10.3.2 The smallest thing that gives the real Composer
+
+| Candidate | Finding | Verdict |
+| --- | --- | --- |
+| Load the Composer component alone into today's page | not exported (§10.1); `InputBar` needs `useSession`, `useInput`, the input hub, file uploads and the keymap through slot injection from the kernel (`:18955` rc.5, `:21757` rc.1) | impossible |
+| Load only `dsh-web-frontend`'s bundle | `dist/` (5.3 MB rc.5, 5.5 MB rc.1) is the shell kernel. It only runs with `window.__DSH_BOOT__`, which the node half of `modules` composes, plus `/api` from the `connection` row, the session controller, file upload and the web server. Those are all rows of `dsh-web-app` (`cordis.patch.yml:121,179,197,227,234,245` rc.5; `:117,175,193,223,230,241` rc.1) | needs the web app's node rows anyway |
+| An existing "embed", "focus" or single-session route in the shell | none found. No client package reads `location.search` or `location.hash` for a mode; the only `URLSearchParams` in the conversation client are Lexical's error links (`:5292` rc.5, `:5488` rc.1). "zen" in the bundle is a markdown renderer field, not a layout mode | does not exist |
+| The web shell, booted into one session with a minimal layout | proven by the 2026-11-06 SP spike (`docs/spikes/body-soul-sp.md`, SP1): priority −1 empty occupants of `sidebar` and `shell.leading`, `layout.toggleSidebar()`, `uiWorkspace.openSession(id)`. The root slot has the children `sidebar`, `main`, `rightbar`, `shell.bottom`, `shell.overlay`, `shell.leading` (`dsh-client-ui-layout/lib/client.js:624-650` rc.5, `:706-732` rc.1); `root` itself cannot be replaced. A 56 px rail remains (`computeColumns`, `:38` rc.5, `:39` rc.1) | **works**: A-lite |
+
+So the smallest working form is: `dsh-web-app` in the child profile; the rows a single session does
+not need disabled (the list is in `spikes/instance-ext/measure-web.mjs` `LITE_OFF`: right sidebar,
+document preview, browser, terminal, files, the ten `ui-settings-*` pages, `ui-permission`,
+`ui-agent-preset`, workflow run, trajectory, telemetry, open-in-app, HMR); and one child client
+plugin of the instance that shadows `sidebar`, `shell.leading` and the hero workspace picker, opens
+Fishball's session, and hides the rail.
+
+#### 10.3.3 Memory (measured 2026-11-08)
+
+Method: `spikes/instance-ext/measure-web.mjs`, in-process `runProfile` in a throwaway
+`/private/tmp/spx-mem-*` home, the fake model, Homebrew Node 22.22.2, RSS 4 s after ready. One run
+each, so this is indicative only. The homes were deleted, and no process was left running.
+
+| Variant | rc.5 RSS / ready | rc.1 RSS / ready |
+| --- | --- | --- |
+| base only (today's child) | 144 MB / 0.65 s | 141 MB / 0.62 s |
+| + `dsh-web-app`, every row | 247 MB / 1.04 s | 248 MB / 0.99 s |
+| + `dsh-web-app`, `LITE_OFF` disabled (A-lite) | 229 MB / 0.91 s | 244 MB / 0.89 s |
+
+- A-lite costs **about +85–105 MB RSS** and about +0.3 s to start. Disabling the rows a single
+  session does not need saves only 4–18 MB, because the kernel, the web server and the client
+  module table are what weigh.
+- Under the DSH-X wrapper (Electron as Node), SP2 measured 174–253 MB for the Web child.
+- The browser side also loads the 5.3–5.5 MB shell bundle into the iframe once. That memory is the
+  browser's, not the child's.
+
+#### 10.3.4 What of today's planned page survives under A-lite
+
+| Part | Under A-lite | Keep or redo |
+| --- | --- | --- |
+| Sidebar fish, dots, unread (`packages/connector/client.js`, main DSH) | not in the child page at all; it lives in the **main** DSH's connector client | **kept** unchanged |
+| K1 `instance.attention` and the connector alert | instance → connector wire | **kept** |
+| Every X point on the server side (X1–X3, X8–X19), the watchdog, the board's tools and context | child core, not the page | **kept** |
+| X3 record projection | DSH's chat renders session records through its own projection; a plugin record needs a DSH chat node renderer | **redo**, as a slot entry on `conversation.chat.node` |
+| Fold-notify's presenter (FN-4/FN-5) and X7 `setTimelinePresenter` | DSH's chat list is React and slot-driven; folding becomes a chat-node or group plugin (`ConversationGroupRegistry` is exported, `dsh-client-ui-conversation/lib/types/client/index.d.ts:25`) | **redo** |
+| Board panel (B5) and X7 `sidebar` | a `rightbar` or `main` panel slot entry instead of our aside | **redo** (small) |
+| Bubbles and avatars (UI-1) | eaa33f5's messenger **was** this, as a slot plugin with a stylesheet on `conversation.chat.node` (§10.1) | **reuse eaa33f5** almost as it is, instead of porting it to plain DOM |
+| Read Only chip (D8) | disable `ui-permission`; the `/permission` command still works, so the core `permission` row must be limited to `read-only` (SP spike F3) | **redo** as configuration |
+| Hand over and Take back | main-DSH connector UI | **kept** |
+| The instance settings view, approvals view, reminders | today's custom page; under A-lite, a `main` panel (SP3 showed DSH's Plugins page renders there) | **redo** as panel slot entries |
+| X4–X6 (`ui.register`, `ui.registerRoute`, `ui.signal`) | plugins ship their own `dsh.client` half and use Connection Fetch routes (SP spike F1) | **replaced** by DSH's own mechanism; X4–X7 are withdrawn |
+
+### 10.2 Proposal (Q-C still open; §10.3 adds A-lite)
+
+Under **A-lite**, UI-1 below becomes "re-enable eaa33f5's messenger stylesheet as the instance's
+child client plugin", and task UI-C is the A-lite page (W1–W2, before FN-4, FN-5 and B5, which then
+target DSH slots). Under **B**, UI-1 and UI-C' stand as written.
 
 **UI-1: bubbles and avatars.** No conflict. Wave **W2**, after X0-U, which owns `ui/chat.js`.
 
