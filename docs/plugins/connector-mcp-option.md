@@ -11,7 +11,23 @@ The [custom contract 2.0 baseline](<../connector-contract-2.0.md>) is preserved 
 its domain guarantees, not its full custom control framing. [Watchdog decisions](<instance-extension-points.md>)
 remain: questions/plan reviews always Fishball; watchdog failure means effective off.
 
-## 1. Recommendation and scope
+## 0. User decisions (2026-11-09)
+
+Verbatim answer: **“1aA，1b能，1cB”**.
+
+| Answer | Decided scope | Consequence |
+| --- | --- | --- |
+| **1a = A** (closes OQ-M1) | First-party Fishball gets a custom authenticated push channel for pushback and wake-up | MCP remains the control plane for **every** client; push carries events/acks only, not another control API |
+| **1b = 能 / yes**, clarified “1b那条默认开启，设置也没有关闭的选项” (closes OQ-M2) | External MCP agents handle delegated approvals and questions (including plan reviews) **on by default, with no setting to turn them off** | No opt-in or delegation-disable setting; authorization and intake/answer capability checks still apply |
+| **1c = B** (closes OQ-M3) | Remove the old custom control endpoint and exports in one coordinated change | Built-in consumers upgrade together; **no legacy migration path**, compatibility adapter, dual-control period or downgrade |
+
+An idle client that never polls leaves delegated items **waiting**; no approval timer or automatic
+escalation is invented. **The first committed outcome wins (OQ-14)**: user/agent races cannot settle
+twice, and late/stale outcomes cannot replace the committed result. Watchdog failure = effective off
+and **OQ-04 = B** remain unchanged: within Fishball, questions/plan reviews bypass the watchdog.
+External delegation does not route questions to a Fishball watchdog.
+
+## 1. Selected direction and scope
 
 Use **one-way MCP for all control and answer tools**, with a durable connector mailbox available
 through bounded pull tools. Optional notification/subscription support is a hint to fetch, never
@@ -19,7 +35,7 @@ required for attachment or correctness. A polling-capable external integration c
 acknowledge offers; an ordinary tool-only agent that runs only when prompted cannot be assumed to
 wake itself or poll while idle.
 
-For first-party Fishball, recommend **an authenticated custom pushback adapter** reusing the
+For first-party Fishball, the user selected **an authenticated custom pushback adapter** reusing the
 existing transport/intake infrastructure. It commits incoming items durably, routes before manager
 queueing and explicitly wakes the right agent. This is not reverse MCP and does not carry a second
 session-control API. MCP remains the control plane for everyone. Lack of first-party push support
@@ -92,7 +108,9 @@ requires a durable acceptance/dedupe/reconciliation design; MCP/`followup` alone
 
 “Notifications client” below means a client with the **specific applicable** event/resource handler,
 not merely support for standard tools/list_changed. SDK capability does not prove autonomous wake.
-“Opt-in poll adapter” means deterministic scheduling/durable acceptance outside an idle model.
+A polling adapter means deterministic scheduling/durable acceptance outside an idle model.
+External delegated approvals/questions are **on by default, with no setting to turn them off**
+(1b clarification). Missing authorization/capability is not a user-configurable delegation switch.
 
 | Capability | MCP-only external agent | MCP + supported notifications/subscriptions | First-party Fishball: MCP + custom push |
 | --- | --- | --- | --- |
@@ -100,12 +118,13 @@ not merely support for standard tools/list_changed. SDK capability does not prov
 | Tool results during current call | Yes | Yes | Yes |
 | Durable inbox retrieval | Bounded poll/cursor tools | Same; hints prompt fetch | Custom push + same ledger/recovery semantics |
 | Real-time idle-agent wake | **No guarantee**; needs external poll scheduler/wake API | **No guarantee**; handler must enqueue/wake; hints alone insufficient | Required adapter behavior via instance intake/followup |
-| Permission/question/plan offers | Off by default; main-user fallback. Opt-in only with declared polling/intake/answer capability | Same opt-in; notification support alone insufficient | Full delivery; question/plan bypass watchdog |
+| Permission/question/plan offers | **On by default; no setting to turn off**, subject to authorized intake/answer capability | Same default-on/no-off-setting rule; notifications alone confer no answer authority | Full delivery; question/plan bypass watchdog (OQ-04 = B) |
 | Settlement/user-answer notification | Available at next fetch; no guaranteed wake | Fetch after hint; wake client-dependent | Correlated exactly-once wake where required |
 | Attention/unread publication | Optional attention tool; absent means zero UI projection | Same | Supported from instance unread source |
 | Watchdog routing/refinement | Not supplied to arbitrary external agent | Not supplied just by notifications | Local session-id routing + healthy claims; failure→Fishball |
 | Embedded Fishball chat/settings | Not supplied by MCP; connector status/control surface only | Same | Existing trusted UI/embed lifecycle |
-| Disconnected/idle behavior | Notices retained within bounds; nondelegated cards to user | Same; notifications can be missed | Push loss disables delegation; fallback/recovery below |
+| Disconnected/idle behavior | Idle and never polling: delegated items **wait**; nondelegated cards stay user-owned; actual authority loss triggers fallback (§5) | Same; hints can be missed and do not settle items | Push loss disables delegation; fallback/recovery below |
+| Concurrent user/agent outcomes | **First committed outcome wins (OQ-14)**; later outcomes cannot overwrite it | Same | Same, including watchdog/Fishball/user races |
 
 External agents can control sessions without receiving offers. Do not attach them as full approval
 managers merely because they list/call tools. Claims, local watchdog services, specialized UI and
@@ -122,8 +141,8 @@ transports/auth, polling, event handlers and wake APIs is **unverified**; no cal
 | MCP notifications/resource subscriptions | Optional change hint, then fetch ledger | Client-specific handling, subscriptions/replay and wake required; stock DSH lacks mapping |
 | First-party custom push | Reliable targeted delivery plus explicit enqueue/wake | Small maintained event/ack contract; implement durable acceptance and reconnect safety |
 
-**Recommend:** bounded poll for every client; bounded long-poll optional; notifications/subscriptions
-optional bonus; first-party custom push for Fishball's timely intake. Do not require sampling,
+**Selected:** bounded poll for every client; bounded long-poll optional; notifications/subscriptions
+optional bonus; custom authenticated push for first-party Fishball's timely intake (1a = A). Do not require sampling,
 elicitation, resources or reverse MCP. A companion may provide an external polling/wake adapter,
 but that is agent-specific and not assumed installed.
 
@@ -145,9 +164,12 @@ but that is agent-specific and not assumed installed.
   pending→accepted reconciliation with queue storage, and startup reactivation. Never treat a
   pending reservation as delivered or promise history-wide dedupe from DSH pending IDs alone.
 - Poll/long-poll timers govern retrieval only, not approval decisions. No timeout-induced approve,
-  reject or model escalation. Opt-in delegated offers may wait if a client remains attached but
-  stops polling; document that tradeoff rather than inventing an approval deadline. User take-back
-  and explicit detach remain available.
+  reject or model escalation. An idle external client that never polls leaves delegated items
+  **waiting** under default-on delegation; there is no setting to disable delegation. User take-back
+  and explicit detach remain available; silence alone does not withdraw authority.
+- Settlement is atomic: **first committed outcome wins (OQ-14)**, not first fetch, ack or attempted
+  answer. Concurrent user/agent answers settle/clear/notify once; subsequent attempts cannot replace
+  the result. Retired offers still fail the ownership checks in §5.
 
 ## 5. Attachment, failure and session routing
 
@@ -163,7 +185,7 @@ DETACHED -- approved auth + initialize + required controls --> CONTROL_READY
 CONTROL_READY -- declared supported intake becomes ready --> OFFER_CAPABLE
 OFFER_CAPABLE -- intake unavailable / capability withdrawn --> CONTROL_READY + user fallback
 CONTROL_READY / OFFER_CAPABLE -- MCP loss --> DISCONNECTED
-DISCONNECTED -- same owner reauth + capability check --> CONTROL_READY [then opt-in intake]
+DISCONNECTED -- same owner reauth + capability check --> CONTROL_READY [then authorized intake]
 ANY -- detach/revoke/owner replacement --> DETACHED (old generation invalid)
 ```
 
@@ -260,9 +282,12 @@ The custom [2.0 draft](<../connector-contract-2.0.md>) is **parked as a complete
 Do not implement its custom control envelope/attach negotiation in parallel with MCP. Reuse timer
 removal, limits, errors, no closed-card retention and reached-layer history requirements. The
 first-party event/ack channel needs a **small explicit contract**, not the full custom control API.
-If legacy custom attach remains during migration, reject 1.x as specified; if removed, fail old
-consumers before delegation. No downgrade or legacy timer exception. MCP does not make old 1.x
-packages compatible automatically.
+**1c = B removes the old custom control endpoint and exports**; there is no migration interval,
+legacy attach implementation, adapter or downgrade. Upgrade built-in consumers and child snapshot
+composition in the same change. Old consumers fail incompatibility/preflight before delegation;
+MCP does not make old 1.x consumers compatible. The old custom `ContractError`/envelope negotiation
+is historical, not a second live compatibility mechanism. Retain unrelated lifecycle/embed/admin
+services, not old control exports disguised as compatibility shims.
 
 UI is orthogonal: fish, managed marks, dots and unread projections remain connector UI; optional
 attention is client→connector, not a pushback requirement. No publication means zero counts;
@@ -277,40 +302,55 @@ No arbitrary remote-agent HTML is implicitly trusted as a Fishball embedded page
 
 | Wave / owner | Revised work | Gate |
 | --- | --- | --- |
-| MCP-S1 feasibility | New connector MCP server SDK/transport packaging on both hosts; one-way list/call, private auth/discovery, manager scopes, limits/errors | No reverse MCP server; verified controls and secret isolation |
-| MCP-S2 delivery | Durable poll/cursor/ack ledger; optional bounded wait; first-party push/intake/wake with reconnect/dedupe; capability downgrade/user fallback | Idle Fishball wakes once; external plain client works without callbacks; no lost/duplicate notices |
-| MCP-S3 freeze | Required control and optional offer/attention/hint capabilities; result/error/tool/event schemas; ownership/migration rules | Reviewed shared baseline before parallel implementation |
-| K1 | Replace custom control framing with MCP server/profile, attachment and optional attention; independent capability checks | Shared conformance fixtures |
-| K2 | Keep timer/settings/descriptor-expiry removal, terminal vs handoff, live-card clearing/history and non-time fallback | No timer or closed-card-store regression |
-| X0-W/C/I/A | MCP control adapter, first-party push lifecycle, durable intake, per-session routing and approval delivery | One ledger, no duplicate control API |
-| X0-G/X12/X13, X0-S | Tool isolation/gates, healthy-only start/fault handover, claim generation/incarnation | Side agents cannot invoke raw controls; questions bypass watchdog |
-| WD / FN-3 / X8 / FN-A | Existing watchdog policy/refine/dormancy; attention producer and connector fish/dots | No dependency on external client watchdog or callback server |
-| UI / CHILD-WEB / PG | Keep first-party trusted lifecycle/embed; remove countdown/retained-card UI | MCP-only clients do not promise embedded UI |
+| **W0 / MCP-S1** (added feasibility spike) | Connector MCP server SDK/transport packaging on both hosts; one-way list/call, private auth/discovery, manager scopes, limits/errors | Verified controls and secret isolation; no reverse MCP |
+| **W0 / MCP-S2** (added delivery spike) | Durable poll/cursor/ack and first-party authenticated push/intake/wake feasibility, reconnect/dedupe and fallback | Plain client needs no callback; idle non-polling offers wait; Fishball wake/acceptance reconciles without duplicates |
+| **W0 / MCP-S3** (added freeze, after S1/S2) | Control/offer/attention capabilities; result/error/tool/event/ack schemas; ownership fencing, OQ-14, coordinated removal inventory; external delegation default-on with no disable setting | Reviewed shared baseline; no legacy migration path |
+| **W0 / K1** (changed, after S3) | Publish shared MCP semantic profile, minimal push event/ack contract and conformance fixtures; define old-export removal and built-in peer/snapshot upgrade requirements | No custom control-envelope/attach implementation; independent behavioral compatibility checks |
+| **W0 / X0-C** (changed) | Local extension service, manager/chat and durable notification/intake seams; X19 pass-through hook; typed transport ports for W1 adapters | May start local-only work now; transport-facing interfaces align with K1 before W1; no duplicate control or push implementation |
+| **W0 / FN-1, WD-1, B1** (retained) | Plugin skeletons/configuration with existing U14/U19 changes | No new transport dependency |
+| **W1 / MCP-SERVER** (added) | Connector MCP server, authenticated owner/capability attachment, scoped controls, durable mailbox/poll/ack, optional attention projection; remove old control endpoint/exports and upgrade built-in bindings/snapshot/peers | After K1; coordinate with K2, X0-W and FB-PUSH; one control plane, both old/new mismatch directions refuse before delegation |
+| **W1 / FB-PUSH** (added) | First-party authenticated event/ack adapter and channel lifecycle, durable acceptance/dedupe/reconciliation, explicit wake, outage/recovery | After K1 and X0-C; integrate MCP-SERVER ledger and X0-I/X0-A routing; no control tools on push |
+| **W1 / K2** (changed transport, retained domain work) | Timer/settings/descriptor-expiry removal, terminal vs handoff, live-card clearing/history, non-time fallback and atomic first-committed settlement | K1 baseline; ship with server/adapters; no timer or closed-card-store regression |
+| **W1 / X0-W, X0-I, X0-A, FN-A** (changed integration) | X0-W owns scoped MCP client/control/attention adapter; X0-I/X0-A own local intake/claims/answer routing; FN-A owns connector fish/dots | K1/X0-C seams, integrate server/push; raw tools cannot bypass gates; questions bypass watchdog |
+| **W1 / SP-PG, X0-G, X0-S, WD-2/3/4/5/7, B2/B3** (retained) | Existing page spike, isolation, healthy-only start/fault handover, claim generations and plugin work | Existing dependencies still apply; SP-PG precedes page implementation |
+| **W2–W5 / WD, FN-3, UI, CHILD-WEB, PG and other plugin tasks** | Existing watchdog/refine/dormancy, attention producer and trusted lifecycle/embed work | Existing waves retained; integration uses the new server/push, not external watchdog/callback servers |
 
-After MCP-S3, connector/core and instance/plugin work can proceed in parallel against shared schemas.
-Acceptance includes both host versions, no notification support, no polling while idle, wait cancellation,
-cursor gaps/replay/lost ack, push outage with MCP alive, retired offers, second-owner refusal, revoked
-auth, exact byte boundaries, no time-advanced decisions, question bypass and no watchdog-only wake.
-These are planned acceptance tests, not tests executed here.
+**Dropped:** old K1 custom-2.0 control framing, custom attach/minor negotiation and export-retention
+work; any legacy migration/dual-control track, polling-only Fishball return-path alternative, or
+external-delegation prohibition. This does not drop K2's timer-free domain guarantees or X0-C's local
+service work. Existing X0-U withdrawal remains unchanged.
+
+W0 is not wholly parallel: S1/S2 precede S3, then K1 freezes fixtures; X0-C local work and FN-1/WD-1/B1
+can proceed independently. W1 server and instance adapters develop against that shared baseline,
+then land as a coordinated breaking change, not as individually compatible releases.
+Acceptance includes both host versions, no notification support, idle never-polling items waiting,
+first-committed user/agent races, wait cancellation, cursor gaps/replay/lost ack, push outage with MCP
+alive, retired offers, second-owner refusal, revoked auth, exact byte boundaries, no time-advanced
+decisions, question bypass and no watchdog-only wake. These are planned tests, not tests run here.
 
 Both packages currently `0.1.0-alpha.0`, instance peer `>=0.1.0-alpha.0 <2`.
 The earlier proposed both-`2.0.0`/peer-`>=2.0.0 <3.0.0` remains **unapproved release numbering**.
-MCP dictates neither npm versions nor removal of built-in lifecycle coupling. A breaking public
-binding needs coordinated release/old-export migration. Explicitly package server dependencies and
-update [child snapshot composition](<../../packages/instance/src/native-runtime/installation.js#L186-L203>),
-which currently copies the contract export; do not rely on host development dependencies.
+MCP dictates neither npm versions nor removal of built-in lifecycle coupling. **The coordinated
+breaking removal is approved (1c = B); the numeric release proposal is not.** Set the built-in
+instance peer range to the chosen compatible connector release, excluding old custom-control
+packages; verify runtime semantic capabilities independently of npm ranges. Do not advertise a
+broad peer range as a legacy path. Upgrade all built-in imports/bindings together, remove old control
+exports, explicitly package server dependencies and update
+[child snapshot composition](<../../packages/instance/src/native-runtime/installation.js#L186-L203>),
+which currently copies the contract export. Snapshot the new shared profile/event contract instead;
+do not rely on host development dependencies. Exact release numbers remain release bookkeeping,
+not another unresolved transport/migration choice.
 [Connector manifest](<../../packages/connector/package.json>),
 [instance manifest](<../../packages/instance/package.json>). No manifests changed.
 
 ## 9. Remaining A/B choices
 
-| Open question | A | B | Recommendation |
-| --- | --- | --- | --- |
-| OQ-M1: first-party return path | Custom authenticated push + durable ledger, MCP controls | Poll scheduler only, using same ledger and explicit enqueue | **A** for timely wake and reuse; B can work but adds polling/liveness machinery |
-| OQ-M2: external delegated offers | Off by default; explicit intake/answer capability opt-in | Always user-owned; external agents receive ordinary notices only | **A** preserves optional richer integrations; B is simpler and cannot strand offers in an idle external client |
-| OQ-M3: migration | Retain old exports for a bounded migration with one shared owner; never accept 1.x timer semantics | Coordinated breaking release removes old custom control endpoint/exports | **B** if built-in consumers upgrade together; A only for an identified external consumer |
-
-The single-direction architecture is decided; these recommendations are not implementation approval.
+**None from these decisions.** OQ-M1 is closed **A** (authenticated Fishball push); OQ-M2 is closed
+by the user's clarification: external delegated approvals/questions are **on by default, with no
+setting to turn them off**; OQ-M3 is closed **B** (coordinated removal, no legacy migration path).
+The former opt-in recommendation/question is withdrawn. Idle non-polling items still wait and
+OQ-14 first-committed settlement remains mandatory. Architecture decisions are recorded, not a
+claim of implementation approval.
 External agent transport/auth/wake support, exact server SDK wiring and durable enqueue reconciliation
 remain unverified. No agent is required to host an MCP server, and optional notifications never become
 an implicit prerequisite for the basic control toolset.

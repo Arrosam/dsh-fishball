@@ -38,9 +38,15 @@ Evidence markers:
 
 **One-way MCP direction (user-selected, not implemented):** connector hosts the MCP server;
 Fishball/external managers are plain clients controlling DSH. No agent callback MCP server is
-required. Use durable poll tools with optional notification hints; recommend a custom first-party
-pushback adapter for Fishball's explicit idle-agent wake. External capability loss is accepted.
-See [capability matrix, delivery options and A/B questions](<docs/plugins/connector-mcp-option.md>).
+required. **2026-11-09 decisions, verbatim “1aA，1b能，1cB”:** use a custom authenticated
+first-party Fishball pushback/wake channel while MCP remains every client's control plane; external
+MCP agents **can** handle delegated approvals and questions; remove the old custom control endpoint
+and exports in a coordinated built-in upgrade, **no legacy migration path**. Durable poll tools and
+optional notification hints remain available. An idle client that never polls leaves delegated items
+waiting; **first committed outcome wins (OQ-14)**. The user's clarification, **“1b那条默认开启，设置也没有关闭的选项”**,
+sets external delegation **on by default, with no setting to turn it off**; the opt-in question is
+closed. No A/B choice remains from these decisions. See the
+[decisions, capability matrix and revised waves](<docs/plugins/connector-mcp-option.md>).
 The [custom contract 2.0 baseline](<docs/connector-contract-2.0.md>) is preserved but parked;
 protocol-dependent core/plugin tracks wait for MCP feasibility and schema freeze. The earlier
 bidirectional idea is rejected. Watchdog failure means effective off/Fishball fallback; questions/
