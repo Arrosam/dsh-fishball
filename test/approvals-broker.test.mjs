@@ -431,9 +431,12 @@ describe('P7 ApprovalBroker (H-STUB)', () => {
       return item
     }
     it('turn started by a relay from Fishball (session.message)', T, async () => {
+      // Its own session, like 16b/16c: x carries every earlier case's turns (APR-15's long ones); on
+      // 0.2.1 assembling that context can push the offer past this case's wait, which proves no provenance.
+      const sid = await managedSession(host, 'apr-16a')
       const text = tok('16a')
       await queueAsk(text)
-      assert.equal((await stub.op('session.message', { sessionId: x, message: text, attachments: [] }, x)).type, 'response')
+      assert.equal((await stub.op('session.message', { sessionId: sid, message: text, attachments: [] }, sid)).type, 'response')
       const item = await provenanceOf(text)
       assert.deepEqual([item.started, item.turnBy], [STARTED_BY.user, TURN_BY.fishball])
     })
