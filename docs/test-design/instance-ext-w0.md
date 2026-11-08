@@ -283,7 +283,18 @@ W0 alone is **56 executable** cases (13 + 19 + 9 + 6 + 9), plus **1 blocked/skip
 | X0-B | BVA of the `bundled` state file; successful placement of all three; survival of `admin.plugin.install` | The real plugin packages arrive with their waves; the fixture packages cover one-failed-placement and the skipped-bundle decision. SP-FN1's install/reinstall remains X-E2E. |
 | K1 | a browser check of the important brand alert | The connector `client.js` DOM is a browser case (FN-A/E2E); the wire and `state.unread` are covered here. |
 
-## 7. Open design questions
+## 7. Remaining coverage limitations (not acceptance sign-off)
+
+Independent review identified gaps that remain despite the expected red results:
+- X10 duplicate coverage is same-process only; restart-durable dedupe is not demonstrated by this fake-session harness.
+- X0-C checks member presence, not every later-wave stub's `not-implemented` refusal. Explicit watchdog-off send-path pass-through and array delivery coverage still need dedicated W0 cases.
+- The running-agent registration case checks immediate public tool visibility with a running status; it does not drive a real model's next request. SP-X1 is prior spike evidence, not this case's execution.
+- Package skeleton `apply` is exercised with public-service stubs, not a real Cordis bundle-loader smoke test. Bundle patch contents are not yet validated.
+- X3 retains a namespace rule, but the precise public validation seam after projector withdrawal is unclear; the current two cases still use the old registration signature and require owner confirmation.
+
+These limitations mean the current files must not yet be advertised as a complete definition of done for all W0 acceptance criteria.
+
+## 8. Open design questions
 
 1. **K1 `state.unread` reset on close — coverage added.** The H-STUB case covers detach and reattach, reports attention again, then calls `stub.fireClose()` and observes `host.state` reset to `{count: 0, important: false}`. Transport close is exercised directly rather than inferred from detach; no detach-proxy ambiguity remains. This describes the declared coverage, not an execution result.
 2. **WD-1 "window-sum check" — blocked ambiguity.** The task mentions a check without an authoritative exact Config relation, fixed/model-dependent window limit, or invalid-input outcome. The previously asserted sums over test-owned defaults exercised no product behavior and are removed. The authoritative watchdog design §9 says the approval sum fits 120 seconds “at the defaults” and uses each card’s `expiresAt`; §15 lists sums 120/121 but does not specify Config rejection. Its context threshold is model-dependent `min(config, contextWindow − growth − output)`, not a fixed 200k sum. Source designs were read from local design branches via temporary document extracts. WD1-BVA-02 remains explicitly skipped until the requirement owner specifies valid/invalid Config inputs and expected outcomes; neither a 120-second sum nor a fixed 200k model window is invented as a rule.
