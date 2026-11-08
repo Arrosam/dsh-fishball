@@ -27,12 +27,12 @@
  * Fishball in the main process took every input the user meant for the child.
  */
 import { Config, QUESTION_MODE_SETTING, readLimits, readQuestionMode } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT, DECISION_ACTION, DECISION_IDLE, DECISION_OK } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
 import { IntakeError, IntakeLedger } from './src/intake.js'
-import { registerInbound } from './src/messaging.js'
+import { SOURCE_ID, registerInbound } from './src/messaging.js'
 import { ManagedError, ManagedRegistry } from './src/managed.js'
 import { SESSION_STATE } from './src/slim/host/session-port.js'
 import { provideConnectorService } from './src/connector-service.js'
@@ -76,14 +76,25 @@ export async function apply(ctx, config) {
    */
   let binding
   const snapshot = () => ({ ...status, sessionId: FISHBALL.sessionId, limits: limits(), ...(binding === undefined ? {} : { instance: binding.view() }), ...Object.fromEntries(Object.entries(views).map(([key, view]) => [key, view()])) })
-  const publish = () => feed.publish(snapshot())
-  const commands = { send: unavailable, setManaged: unavailable, answerRequest: unavailable }
+  /**
+   * Publish the state. Never throws into its caller: on unload the store's domains close while DSH
+   * still settles the turns it interrupted, and a listener's onChange that read a closed domain
+   * ("domain 'fishball_intake' is closed") became that tool call's result instead of DSH's own
+   * interrupted/unknown result (RST-01, 0.2.2's dispose order). The state is published again on
+   * the next change.
+   */
+  const publish = () => {
+    try { feed.publish(snapshot()) } catch (error) { logger.warn('state not published (%s)', diagnosticOf(error)) }
+  }
+  const commands = { send: unavailable, setManaged: unavailable, answerRequest: unavailable, addWatch: unavailable, removeWatch: unavailable }
   registerRoutes(ctx, {
     snapshot,
     subscribe: (listener) => feed.subscribe(listener),
     send: (input) => commands.send(input),
     setManaged: (input) => commands.setManaged(input),
     answerRequest: (input) => commands.answerRequest(input),
+    addWatch: (input) => commands.addWatch(input),
+    removeWatch: (input) => commands.removeWatch(input),
     instance: () => binding.view(),
     retryInstance: () => binding.retry(),
   })
@@ -236,6 +247,10 @@ export async function apply(ctx, config) {
   // Hand over with a note, and Hand over / Take back (§8.3, §10e). Neither needs the child to be
   // up: the note waits in the ledger and reaches the child when it connects (§5.2 "Inbox").
   commands.send = ({ sessionId, note }) => asApiError(IntakeError)(() => inbound.forward(sessionId, note))
+  // The user's own watch routes (DESIGN §5c, §10; slim §9 "their services and HTTP routes stay"):
+  // a watch the user set up reports to whichever instance attaches next (child down: queue).
+  commands.addWatch = ({ sessionId }) => asApiError(WatchError)(() => watches.add({ sessionId, by: { kind: WATCH_BY.user } }))
+  commands.removeWatch = ({ watchId }) => asApiError(WatchError)(() => watches.remove(watchId))
   commands.setManaged = ({ sessionId, managed }) => asApiError(ManagedError)(() => (managed ? managedRegistry.handOver(sessionId) : managedRegistry.takeBack(sessionId)))
   // Sessions DSH no longer finds leave the registry (§9), and their grants end. Grants that ended
   // while DSH was down end now (§11 "Restart").
@@ -274,6 +289,14 @@ export async function apply(ctx, config) {
     managedIds: () => managedRegistry.snapshot().map((entry) => entry.sessionId),
     isManaged: (sessionId) => managedRegistry.isManaged(sessionId),
     isFishball: (sessionId) => sessionId === assistantId(),
+    // Related (DESIGN §5c): managed now, watched now or before, messaged Fishball, or forwarded by
+    // the user; the last three still hold after Take back.
+    isRelated: (sessionId) => managedRegistry.isManaged(sessionId) || watches.watched(sessionId) || ledger.hasSource(sessionId, Object.values(SOURCE_ID)),
+    // The connector's own limits, read live: the bridge enforces them (contract §0).
+    readLimits: limits,
+    // Fishball's stop and redirect in its decisions audit (DESIGN §7a.12, §9).
+    stopped: (sessionId, reason, running) => managedRegistry.audited(DECISION_ACTION.stop, sessionId, reason, running ? DECISION_OK : DECISION_IDLE),
+    redirected: (sessionId) => managedRegistry.audited(DECISION_ACTION.redirect, sessionId),
     manage: (sessionId, by) => managedRegistry.manage(sessionId, by),
     release: (sessionId, reason) => managedRegistry.release(sessionId, reason),
     watch: (input) => watches.add({ ...input, by: { kind: WATCH_BY.assistant } }),

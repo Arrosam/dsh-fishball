@@ -1159,6 +1159,19 @@ function validateUnknownOperationEnvelope(envelope) {
 }
 
 /**
+ * A known request's payload, checked after its version, host, id and direction. A failure here is
+ * marked `inPayload`: the request is addressed correctly and only its payload broke a rule, so a
+ * receiver can answer an operation's own refusal (reason-required, grant-invalid, …) with an
+ * `error` frame instead of closing the channel (§3.1). The thrown code is unchanged.
+ */
+function requestPayload(envelope, now) {
+  try { validateRequest(envelope.operation, envelope.payload, { now }) } catch (error) {
+    if (error instanceof ContractError) error.inPayload = true
+    throw error
+  }
+}
+
+/**
  * Validate one complete envelope. options.receivingSide additionally enforces direction:
  * requests arrive at their target, responses and errors at their source, events at the child.
  * options.expectedHostId rejects a frame from another host (§5.1); options.now pins the clock
@@ -1191,7 +1204,7 @@ export function validateEnvelope(envelope, options = {}) {
   const operation = OPERATIONS[envelope.operation]
   if (envelope.type === ENVELOPE.type.request) {
     if (receivingSide !== undefined && targetSide(operation.direction) !== receivingSide) fail(ERROR.forbidden)
-    validateRequest(envelope.operation, envelope.payload, { now })
+    requestPayload(envelope, now)
     if (operation.sessionScoped) {
       text(envelope.sessionId)
       if (envelope.sessionId !== envelope.payload.sessionId) fail()

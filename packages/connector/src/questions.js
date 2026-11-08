@@ -881,16 +881,14 @@ export class QuestionRouter {
         decision: APPROVAL_DECISION.ask, by: byFishball ? SETTLED_BY.fishball : SETTLED_BY.user,
         ...(entry.routed === undefined ? {} : { routed: entry.routed }),
       })
-    } else if (end === QUESTION_END.back || end === QUESTION_END.closed) {
-      // Back to its session's own card, or stopped/dismissed: this card is gone either way, so the
-      // child's card closes; the pile's closure line below tells the user why it left.
-      this.#emit({ type: OFFER.event.settled, approvalId: entry.id, sessionId: entry.sessionId, decision: APPROVAL_DECISION.ask, by: SETTLED_BY.fishball })
-      // Sent back (Take back, release_session, or Fishball going off when the child exits) while
-      // still in Fishball's answer window (offered, never filed): the pile settle below finds no
-      // card, and the settled event above is dropped while the child is down, so the closure line
-      // and its one record come from here, as for a pile card (7713 N8, N10). `back` comes only
-      // from #goBack, so it always means one of those releases.
-      if (end === QUESTION_END.back && entry.offered === true && !entry.inPile) this.#cardClosed(this.#pileCardOf(entry), PILE_END[end])
+    } else if ((end === QUESTION_END.back || end === QUESTION_END.closed) && entry.offered === true && !entry.inPile) {
+      // Back to its session's own card (Take back, release_session, Fishball going off), or
+      // stopped/dismissed (your Stop, plan mode's Discuss), while still in Fishball's answer window
+      // (offered, never filed): the pile settle below finds no card, so the child's card closes
+      // here with the closure line and its one record, as for a pile card (7713 N8, N10; FLW-11,
+      // PLN-08). No settlement is published: nobody answered it, and calling it Fishball's
+      // `ask` misnamed the closure. A filed card closes through the pile below.
+      this.#cardClosed(this.#pileCardOf(entry), PILE_END[end])
     }
     // The pile's closure line comes after the child's own event, so an escalated card is first
     // known to the child and then closed with its reason.

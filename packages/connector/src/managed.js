@@ -320,6 +320,18 @@ export class ManagedRegistry {
 
   /** Fishball's release in its decisions audit (§9; Q-r11-defaults "every Fishball decision audited"). */
   #audit(sessionId, reason) {
-    return recordDecision(this.#decisions, this.#logger, { action: DECISION_ACTION.release, sessionId, by: CHANGED_BY.fishball, reason, rationaleChars: this.#readLimits().rationaleChars })
+    return this.#auditFishball(DECISION_ACTION.release, sessionId, reason)
+  }
+
+  /**
+   * Fishball's stop_session (session.stop) in its decisions audit (DESIGN §7a.12, §9): the reason
+   * is kept when given, and the outcome says `idle` for a stop that found nothing running.
+   */
+  audited(action, sessionId, reason, outcome) {
+    return this.#auditFishball(action, sessionId, reason, outcome)
+  }
+
+  #auditFishball(action, sessionId, reason, outcome) {
+    return recordDecision(this.#decisions, this.#logger, { action, sessionId, by: CHANGED_BY.fishball, reason, rationaleChars: this.#readLimits().rationaleChars, ...(outcome === undefined ? {} : { outcome }) })
   }
 }
