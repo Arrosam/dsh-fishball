@@ -17,6 +17,12 @@ export const BINDING_STATE = Object.freeze({ connectorMissing: 'connector-missin
  */
 export const BINDING_CODE = Object.freeze({ instanceBusy: 'NATIVE_INSTANCE_BUSY', contractVersion: 'NATIVE_CONTRACT_VERSION' })
 /**
+ * Launch refusals this row reports as their own code instead of the generic NATIVE_START_FAILED
+ * (D2). INVALID_MAIN_HOME is the one the user can act on: the DSH home is not a canonical real
+ * path (README Install).
+ */
+export const LAUNCH_CODE = Object.freeze({ invalidMainHome: 'INVALID_MAIN_HOME' })
+/**
  * The attach refusals that fail the start and stop the child, each with the code it reports
  * (inst-OQ-03: no attach means nothing can use the child). The other refusals (`ui-invalid`,
  * `transport-invalid`, `instance-invalid`) would be this row's own descriptor bug; the design
@@ -28,7 +34,7 @@ export const REFUSAL_CODE = Object.freeze({
 })
 /** Every state and code the instance itself reports: the contract's plus the binding's. */
 export const INSTANCE_STATES = Object.freeze([...Object.values(STATUS), ...Object.values(BINDING_STATE)])
-export const INSTANCE_CODES = Object.freeze([...Object.values(STATUS_CODES), ...Object.values(BINDING_CODE)])
+export const INSTANCE_CODES = Object.freeze([...Object.values(STATUS_CODES), ...Object.values(BINDING_CODE), ...Object.values(LAUNCH_CODE)])
 
 const CONTRACT_STATES = new Set(Object.values(STATUS))
 const CONTRACT_CODES = new Set(Object.values(STATUS_CODES))
@@ -67,6 +73,11 @@ export function contractStatus({ state, code }) {
 export function followConnector(ctx, { appeared, disappeared }) {
   ctx.inject([CONNECTOR_SERVICE], function fishballConnectorBinding(scope) {
     appeared(scope[CONNECTOR_SERVICE])
-    return disappeared
+    // Register the departure as an effect of the sub-scope instead of returning it. Cordis treats
+    // any callback with a prototype as a class: it calls `new callback(...)` and discards the
+    // constructor's return value, so a returned disposer never runs on either target version
+    // (@deepseek-ai/cordis 4.0.5, isConstructor and the plugin runner). The effect is collected
+    // by the sub-scope's own fiber and runs when the injected service goes away.
+    scope.effect(() => disappeared, 'fishball-instance: connector departure')
   })
 }
