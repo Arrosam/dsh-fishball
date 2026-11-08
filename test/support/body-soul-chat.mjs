@@ -19,18 +19,42 @@ export const CHAT_EVENT = Object.freeze({ user: 'user/message', live: 'session/e
  * `currentModel` is the live agent's model reader; a test passes one to exercise
  * `chat.service.currentModel()`, the admin model snapshot's `active` source. `start: false`
  * leaves the chat unstarted, when a test needs the state before activation.
+ *
+ * The stand-in agent gets a complete model port (`current` + `select`): the chat accepts a
+ * version's own Agent.model only when both methods exist. `model: null` models 0.2.1's Agent,
+ * which has no model port and selects through `agentContext` (the scoped context). `llm`
+ * supplies the child's model catalog when a case sets a model; `append` replaces the session log
+ * writer, e.g. to make a write fail. All are opt-in, so existing cases keep their shape.
  */
-export async function chatHarness(t, { loadChat, currentModel = () => undefined, start = true }) {
+export async function chatHarness(t, { loadChat, currentModel = () => undefined, start = true, model, agentContext, llm, append } = {}) {
   const { createChat, CHAT } = await loadChat()
   const home = await tempDir(t)
   const listeners = new Map()
   const log = []
+  const appended = []
   let agent
+  const modelPort = model === undefined
+    ? { current: () => currentModel(), select(selection) { currentModel = () => selection } }
+    : model
   const services = {
     profileContext: { home },
     agents: {
       async create({ sessionId }) {
-        agent = { id: sessionId, status: 'idle', session: { id: sessionId }, followup() {}, model: { current: currentModel } }
+        agent = {
+          id: sessionId,
+          status: 'idle',
+          followup() {},
+          ...(modelPort === null ? {} : { model: modelPort }),
+          ...(agentContext === undefined ? {} : { ctx: agentContext }),
+          session: {
+            id: sessionId,
+            append(type, data) {
+              if (append !== undefined) return append(type, data)
+              appended.push({ type, data })
+            },
+            snapshotEvents: () => structuredClone(appended),
+          },
+        }
         return { agent }
       },
       get: (id) => (agent !== undefined && agent.id === id ? agent : undefined),
@@ -39,6 +63,7 @@ export async function chatHarness(t, { loadChat, currentModel = () => undefined,
     sessionQuery: { async readSession() { return { events: structuredClone(log) } } },
     agentDefaultModel: { currentSelection: () => undefined },
     sandboxPolicy: { resolve: () => ({ mode: 'read-only' }) },
+    ...(llm === undefined ? {} : { llm }),
   }
   const ctx = {
     get: (name) => services[name],
