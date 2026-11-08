@@ -9,7 +9,8 @@ export const PROVIDER_SYNC = Object.freeze({
   unsafe: Object.freeze(['__proto__', 'prototype', 'constructor']),
   /** The DSH credential kind of a login (OAuth/subscription) record; never copied. */
   grantKind: 'grant',
-  reason: Object.freeze({ oauth: 'oauth-login', noKey: 'no-api-key', envUnset: 'api-key-env-unset', unsupported: 'unsupported-provider', credentialExists: 'credential-exists',
+  reason: Object.freeze({ oauth: 'oauth-login', noKey: 'no-api-key', envUnset: 'api-key-env-unset', unsupported: 'unsupported-provider',
+    nonHttps: 'non-https-endpoint', credentialExists: 'credential-exists',
     incompatible: 'incompatible-owner-or-schema', conflict: 'provider-conflict', notWritable: 'credential-not-writable',
     revision: 'missing-revision' }),
 })
@@ -26,25 +27,31 @@ const identifier = (value) => typeof value === 'string' && /^[a-z][a-z0-9]*(?:-[
 const text = (value) => typeof value === 'string' && value.trim().length > 0
 const identity = (value) => plain(value) && ['runtimeId', 'profileId', 'schemaVersion', 'version'].every((key) => text(value[key]))
 
-/** Conservative transferable subset; reject unknown behavior instead of silently dropping it. */
-export function safeSyncProfile(profile, declared) {
-  if (!plain(profile) || Object.keys(profile).some((key) => !PROVIDER_SYNC.profileFields.includes(key))) return false
-  if (profile.displayName !== undefined && !text(profile.displayName)) return false
-  if (profile.api !== undefined && !PROVIDER_SYNC.protocols.includes(profile.api)) return false
+/**
+ * Why a profile cannot be copied, or undefined when it can. A non-https endpoint is its own
+ * reason because the user can fix it in the URL; custom headers and any other unknown profile
+ * field stay `unsupported`, which the page explains as "for example custom headers".
+ */
+function unsafeProfileReason(profile, declared) {
+  if (!plain(profile) || Object.keys(profile).some((key) => !PROVIDER_SYNC.profileFields.includes(key))) return PROVIDER_SYNC.reason.unsupported
+  if (profile.displayName !== undefined && !text(profile.displayName)) return PROVIDER_SYNC.reason.unsupported
+  if (profile.api !== undefined && !PROVIDER_SYNC.protocols.includes(profile.api)) return PROVIDER_SYNC.reason.unsupported
   if (profile.baseURL !== undefined) {
     try {
       const url = new URL(profile.baseURL)
-      if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash
-        || /[{}$]/.test(profile.baseURL)) return false
-    } catch { return false }
+      if (url.protocol !== 'https:') return PROVIDER_SYNC.reason.nonHttps
+      if (url.username || url.password || url.search || url.hash || /[{}$]/.test(profile.baseURL)) return PROVIDER_SYNC.reason.unsupported
+    } catch { return PROVIDER_SYNC.reason.unsupported }
   }
   if (profile.models !== undefined && (!Array.isArray(profile.models) || profile.models.some((model) =>
     !plain(model) || !text(model.id) || Object.keys(model).some((key) => !PROVIDER_SYNC.modelFields.includes(key))
     || (model.name !== undefined && !text(model.name))
     || ['contextWindow', 'maxTokens'].some((key) => model[key] !== undefined && (!Number.isSafeInteger(model[key]) || model[key] <= 0))
-    || (model.input !== undefined && (!Array.isArray(model.input) || model.input.some((value) => !['text', 'image'].includes(value))))))) return false
-  return !declared || (text(profile.api) && text(profile.baseURL) && profile.models?.length > 0)
+    || (model.input !== undefined && (!Array.isArray(model.input) || model.input.some((value) => !['text', 'image'].includes(value))))))) return PROVIDER_SYNC.reason.unsupported
+  return !declared || (text(profile.api) && text(profile.baseURL) && profile.models?.length > 0) ? undefined : PROVIDER_SYNC.reason.unsupported
 }
+/** Conservative transferable subset; reject unknown behavior instead of silently dropping it. */
+export function safeSyncProfile(profile, declared) { return unsafeProfileReason(profile, declared) === undefined }
 const validateInventory = (inventory) => {
   if (!plain(inventory) || !identity(inventory.identity) || !Array.isArray(inventory.providers)
     || !Array.isArray(inventory.namespaces) || !plain(inventory.revision) || !plain(inventory.schemas) || !plain(inventory.owners)
@@ -116,7 +123,8 @@ export class ProviderSyncEngine {
     // built-in key may be added, and a login is named so the user can sign in inside Fishball.
     for (const entry of source.providers.filter((entry) => entry.profile !== null || entry.configured || entry.credential?.configured)) {
       // Never send unknown-profile fields into a preview; only whitelisted metadata is eligible.
-      const safe = safeSyncProfile(entry.profile, entry.declared)
+      const unsafe = unsafeProfileReason(entry.profile, entry.declared)
+      const safe = unsafe === undefined
       const display = safe ? entry : { ...entry, profile: null }
       if (sameProfile) { groups.existsSkip.push(dto(display, 'same-profile')); continue }
       if (!versionMatch(source.identity, target.identity)) { groups.unsupported.push(dto(display, 'version-mismatch')); continue }
@@ -124,7 +132,10 @@ export class ProviderSyncEngine {
       if ((!safe && !keyOnlyRoute) || !entry.supported || entry.owner !== PROVIDER_SYNC.owner || entry.credential?.kind !== 'api-key'
         || !entry.credential.configured || (!entry.declared && !entry.apiKeyMethod)) {
         if (!oauthLogin(entry)) {
-          groups.unsupported.push(dto(display, missingKeyReason(entry)))
+          // A non-https endpoint is the one profile refusal the user can fix in the URL; keep the
+          // key-based reason for every other unsafe profile (custom headers included).
+          const refusal = unsafe === PROVIDER_SYNC.reason.nonHttps ? unsafe : missingKeyReason(entry)
+          groups.unsupported.push(dto(display, refusal))
           continue
         }
         // Already signed in inside the target: nothing to do there, so it reads as present.

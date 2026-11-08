@@ -12,9 +12,10 @@
 </head>
 <body>
 <!-- No title and no status tag (D27): the connector's frame shows Fishball's name and state. -->
+<!-- Header actions: Settings in the chat, Back in the settings view (I6; ui/shell.js). The comment
+     stays outside <header> so it cannot leak into the header's accessible name. -->
 <header class="topbar">
   <div class="model-picker" id="model-picker"></div>
-  <!-- Header actions: Settings in the chat, Back in the settings view (I6; ui/shell.js). -->
   <div class="header-actions" id="header-actions"></div>
 </header>
 <!-- Shown only while the event stream is lost (§11). -->
