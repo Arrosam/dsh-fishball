@@ -434,7 +434,7 @@ the old wire handshake/envelope:
 | Item | Shape |
 | --- | --- |
 | Optional attention tool (client → connector; historical name `instance.attention`) | `{unread, importantUnread, latestAt}` → `{accepted: true}`; integers with `0 ≤ importantUnread ≤ unread ≤ LIMITS.unreadMax` (9999); `latestAt` an epoch-ms integer or `null`. Invalid input is refused without changing the last valid value; K1 freezes the domain error mapping |
-| Connector view `state.unread = {count, important}` | `count = unread`, `important = importantUnread > 0`; `{0, false}` when no value, on detach and on transport close. This fixes today's bug: `client.js:740` reads `state.unread?.count`, but `index.js:137-232` has no `unread` view, so the count is always 0 |
+| Connector view `state.unread = {count, important}` | `count = unread`, `important = importantUnread > 0`; `{0, false}` when no value, on detach and on logical authenticated-session loss, not ordinary HTTP/TCP or optional SSE close. This fixes today's bug: `client.js:740` reads `state.unread?.count`, but `index.js:137-232` has no `unread` view, so the count is always 0 |
 
 - `LIMITS.unreadMax` remains 9999. Attention stays optional: publish only when supported; missing
   attention means zero count, never permission to restore timer-based approvals.
@@ -675,7 +675,8 @@ decision table, **ST** state transitions.
     `latestAt` null, 0, a float.
   - DT: §3 mixed-peers table.
   - ST: `unread` view none → value → newer value → detach `{0,false}` → reattach (stays `{0,false}`
-    until a report) → close.
+    until a report) → logical authenticated-session loss resets `{0,false}`; ordinary HTTP/TCP or
+    optional SSE close preserves the last valid value.
 - **FB-PUSH.**
   - ST: authenticated delivery → durable acceptance → lost ack/replay → restart/reconcile → one
     routed wake; a pending reservation is not delivered. Poll/push handover has one ledger owner.

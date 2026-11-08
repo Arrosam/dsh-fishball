@@ -291,7 +291,7 @@ services, not old control exports disguised as compatibility shims.
 
 UI is orthogonal: fish, managed marks, dots and unread projections remain connector UI; optional
 attention is client→connector, not a pushback requirement. No publication means zero counts;
-detach/close resets them. External MCP clients need not provide a chat/settings iframe. First-party
+detach/logical authenticated-session loss resets them, not ordinary HTTP/TCP or optional SSE close. External MCP clients need not provide a chat/settings iframe. First-party
 secure embed, status/retry, locale, child lifecycle/admin/provider-sync remain separate services.
 [Existing iframe](<../../packages/connector/client.js#L994-L1044>),
 [embed broker](<../../packages/instance/src/slim/host/embed.js#L1-L12>),
