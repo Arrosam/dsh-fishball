@@ -1,0 +1,24 @@
+6d26ab71828241f0e7c7d329a718dec54f69cfcc fd0f46aa3315b0e09bf937307c5410651a80d2a1 00d4cd2319ed01a2ef6ad6a67522aee389f5cd9b merge: verify X0-C host timestamp fix on W0 baseline
+fd0f46aa3315b0e09bf937307c5410651a80d2a1 verify/w0-first docs: record independent W0 verification on both supported SDKs
+00d4cd2319ed01a2ef6ad6a67522aee389f5cd9b fix/x0c-time fix(instance): use host event time for userTexts
+c5099d4429ed0bd64fb461031294c7ffd2b845da dev/x0-c feat(instance): add local X0-C manager extension seams
+572f9e4803078568412b7979ec2525ad74355e7e dev/fn-1 feat(fold-notify): add FN-1 plugin skeleton
+3cce06c984272dc61b0784390f0579e1aa963ba8 dev/b1 feat(board): add W0 B1 plugin skeleton
+ab24c84daa32dec7105bd25f5ec4cb78399f1f2d test/w0-mcp test: concretize watchdog budget and fix optional injection cases
+15d6f1f214144db3575f9bc0ba15238b1450c2a7 design/instance-ext docs: clarify unread reset on logical MCP session loss
+diff --git a/packages/instance/src/slim/child/extensions.js b/packages/instance/src/slim/child/extensions.js
+index 0992d62..242aab4 100644
+--- a/packages/instance/src/slim/child/extensions.js
++++ b/packages/instance/src/slim/child/extensions.js
+@@ -171,7 +171,7 @@ export function createExtensions(ctx) {
+       const text = (event.data.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('')
+       let clipped = text.slice(0, maxChars)
+       if (/[\uD800-\uDBFF]$/.test(clipped)) clipped = clipped.slice(0, -1)
+-      return { text: clipped, at: event.at }
++      return { text: clipped, at: event.time }
+     })
+   }
+   async function notify(input) {
+720e6808469d19b1973dcab5daaff93a29094672 test: isolate X0-C callback warning count from boot warnings
+c38b97e820aef460c7b656f4d7740dc0bd525de0 test: repair required attachment payload and image service fixture
+79274fc57c2f51614e8d5e8411746195327a0f2c test: independently verify Cordis loading and real Session timestamps

@@ -1,0 +1,2576 @@
+{
+  "baseline": "fd0f46aa3315b0e09bf937307c5410651a80d2a1",
+  "fix": "00d4cd2319ed01a2ef6ad6a67522aee389f5cd9b",
+  "testedMerge": "6d26ab71828241f0e7c7d329a718dec54f69cfcc",
+  "requirementsCommit": "15d6f1f214144db3575f9bc0ba15238b1450c2a7",
+  "approvedTestCommit": "ab24c84daa32dec7105bd25f5ec4cb78399f1f2d",
+  "preservedCorrectionCommits": [
+    "720e6808469d19b1973dcab5daaff93a29094672",
+    "c38b97e820aef460c7b656f4d7740dc0bd525de0"
+  ],
+  "node": "v24.22.2",
+  "versions": [
+    {
+      "version": "0.2.1-rc.5",
+      "evidence": "docs/verification/x0c-time/evidence/tasks-0.2.1-rc.5.tap",
+      "tapSha256": "628572fca2b0c56d850a7d48e2ca6e32be2b302f4fe2747a0948ad5b65199389",
+      "exit": 0,
+      "startedAt": "2026-11-08T23:25:06Z",
+      "finishedAt": "2026-11-08T23:31:19Z",
+      "durationMs": 372888.806292,
+      "registered": 137,
+      "duplicateIds": [],
+      "missingIds": [],
+      "extraIds": [],
+      "promotedTodos": [],
+      "totals": {
+        "tests": 137,
+        "pass": 115,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 22
+      },
+      "tasks": {
+        "X0-C": {
+          "Pass": 95,
+          "Fail": 0,
+          "TODO": 9
+        },
+        "FN-1": {
+          "Pass": 10,
+          "Fail": 0,
+          "TODO": 3
+        },
+        "B1": {
+          "Pass": 10,
+          "Fail": 0,
+          "TODO": 10
+        }
+      },
+      "changesFromBaseline": [
+        {
+          "id": "XC-EP-V-05",
+          "from": "Fail",
+          "to": "Pass"
+        }
+      ],
+      "rows": [
+        {
+          "id": "B1-EP-V-01",
+          "task": "B1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "B1-EP-V-01 Samuel keeps his Fishball work board available — W0: the package is fishball-board 0.1.0-alpha.0 with the designed files and bounds",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-EP-V-02",
+          "task": "B1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "B1-EP-V-02 Samuel keeps his Fishball work board available — W0: the row exports name, inject, Config and apply",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-CONFIG-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-CONFIG-M Samuel keeps his Fishball work board available — W0: [formerly B1-EP-V-03] required defaults are inject true and contextCards 20; optional recent-done count is not visibility",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-BVA-01",
+          "task": "B1",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "B1-BVA-01 Samuel keeps his Fishball work board available — W0: contextCards is an integer 0…30 (0 = the counts line only)",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-BVA-02",
+          "task": "B1",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "B1-BVA-02 Samuel keeps his Fishball work board available — W0: if retained, recent-done count doneWindowHours is an integer 0…168, never the panel cutoff",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-CONFIG-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-CONFIG-A Samuel keeps his Fishball work board available — W0: [formerly B1-EP-01] inject is a boolean",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-EP-V-04",
+          "task": "B1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "B1-EP-V-04 Samuel keeps his Fishball work board available — W0: the constants carry the six statuses and the frozen limits",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-LOAD-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-LOAD-M Samuel keeps his Fishball work board available — W0: [formerly B1-DT-01] the row loads with a stub fishballInstance",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-LOAD-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-LOAD-A Samuel keeps his Fishball work board available — W0: [formerly B1-DT-02] without the points the row loads and logs instance-hooks-missing once",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-CONFIG-E",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-CONFIG-E Samuel keeps his Fishball work board available — W0: user submits an invalid setting and Config rejects it",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-BUNDLE-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-BUNDLE-M Samuel keeps his Fishball work board available — deferred: [X0-B] user enables the bundled plugin",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-BUNDLE-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-BUNDLE-A Samuel keeps his Fishball work board available — deferred: [X0-B] user disables and restart preserves the choice",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-BUNDLE-E",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-BUNDLE-E Samuel keeps his Fishball work board available — deferred: [X0-B] unavailable placement permits child startup",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-HISTORY-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-HISTORY-M Samuel revisits completed work — deferred: [B2/B3/B5] Done and Dropped stay on board/panel/context at 30 days−1ms and day30, leave at +1ms; archive remains",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-HISTORY-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-HISTORY-A Samuel clears and later reopens finished work — deferred: [B2/B3/B4/B5] clear Done or Dropped early, keep archive, reopen off-board card and restore open panel/context together",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-HISTORY-E",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-HISTORY-E Samuel cannot clear unfinished work — deferred: [B2/B4] clear each open status refuses not-closed and changes neither board nor archive",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-SEARCH-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-SEARCH-M Samuel finds old work by keyword — deferred: [B11] board_search finds title/note keyword in a year-old off-board or cleared card without changing visibility",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-UNINSTALL-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-UNINSTALL-M Samuel keeps an archive before uninstall — deferred: [B10] accepted complete archive export finishes outside runtime before deletion, including off-board/cleared history",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-UNINSTALL-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-UNINSTALL-A Samuel declines archive export — deferred: [B10] explicit decline permits runtime and archive deletion",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-UNINSTALL-E",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-UNINSTALL-E Samuel retries failed archive export — deferred: [B10] export failure preserves runtime and archive; explicit decline may later permit deletion",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "FN1-EP-V-01",
+          "task": "FN-1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "FN1-EP-V-01 Samuel keeps a busy Fishball conversation manageable — W0: the package is fishball-fold-notify 0.1.0-alpha.0 with the designed files and bounds",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-EP-V-02",
+          "task": "FN-1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "FN1-EP-V-02 Samuel keeps a busy Fishball conversation manageable — W0: the row exports name, inject, Config and apply",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-CONFIG-M",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-CONFIG-M Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-EP-V-03] the config defaults are foldDefault true, systemNotification when-hidden, batchWindowMs 1500",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-BVA-01",
+          "task": "FN-1",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "FN1-BVA-01 Samuel keeps a busy Fishball conversation manageable — W0: batchWindowMs is an integer 0…10000 (0 = off)",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-EP-02",
+          "task": "FN-1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "FN1-EP-02 Samuel keeps a busy Fishball conversation manageable — W0: systemNotification is off or when-hidden",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-CONFIG-A",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-CONFIG-A Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-EP-03] foldDefault is a boolean",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-EP-V-04",
+          "task": "FN-1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "FN1-EP-V-04 Samuel keeps a busy Fishball conversation manageable — W0: the fixed constants are the designed values",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-LOAD-M",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-LOAD-M Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-DT-01] the row loads over a stub fishballInstance",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-LOAD-A",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-LOAD-A Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-DT-02] the row also loads without the optional instance service",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-CONFIG-E",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-CONFIG-E Samuel keeps a busy Fishball conversation manageable — W0: user submits an invalid setting and Config rejects it",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-BUNDLE-M",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "FN1-UC-BUNDLE-M Samuel keeps a busy Fishball conversation manageable — deferred: [X0-B] user enables the bundled plugin",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "FN1-UC-BUNDLE-A",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "FN1-UC-BUNDLE-A Samuel keeps a busy Fishball conversation manageable — deferred: [X0-B] user disables and restart preserves the choice",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "FN1-UC-BUNDLE-E",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "FN1-UC-BUNDLE-E Samuel keeps a busy Fishball conversation manageable — deferred: [X0-B] unavailable placement permits child startup",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-EP-V-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-V-01 Samuel continues work with Fishball plugin updates — W0: the app row provides fishballInstance apiVersion 1 with every member",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-V-02",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-V-02 Samuel continues work with Fishball plugin updates — W0: a registration returns dispose, and a second dispose is a no-op",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-01 Samuel continues work with Fishball plugin updates — W0: fishballChat stays internal: the plugin-facing service is fishballInstance",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-02",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-02 Samuel continues work with Fishball plugin updates — W0: X1 reports the manager Session id, not another agent id",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-01 Samuel never mistakes an unavailable capability for success — inbox.claim refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-02",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-02 Samuel never mistakes an unavailable capability for success — inbox.release refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-03",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-03 Samuel never mistakes an unavailable capability for success — inbox.setBatcher refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-04",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-04 Samuel never mistakes an unavailable capability for success — attention.set refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-05",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-05 Samuel never mistakes an unavailable capability for success — sideAgents.open refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-06",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-06 Samuel never mistakes an unavailable capability for success — sideAgents.runTurn refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-07",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-07 Samuel never mistakes an unavailable capability for success — sideAgents.cancel refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-08",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-08 Samuel never mistakes an unavailable capability for success — approvals.claim refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-09",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-09 Samuel never mistakes an unavailable capability for success — approvals.card refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-10",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-10 Samuel never mistakes an unavailable capability for success — approvals.onSettled refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-11",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-11 Samuel never mistakes an unavailable capability for success — approvals.answerApproval refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-12",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-12 Samuel never mistakes an unavailable capability for success — supervision.register refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-13",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-13 Samuel never mistakes an unavailable capability for success — supervision.onManagedChange refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-14",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-14 Samuel never mistakes an unavailable capability for success — supervision.endingReason refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-15",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-15 Samuel never mistakes an unavailable capability for success — sessionStarts.register refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-16",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-16 Samuel never mistakes a scoped connector stub for success — bridge refuses ExtensionError/not-implemented",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-M",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-M Samuel continues work with Fishball plugin updates — W0: create: a registration made before the live Session is applied after the persona, in order",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-A1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-A1 Samuel continues work with Fishball plugin updates — W0: resume: the same registration is applied again on agents.resume",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-A2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-A2 Samuel continues work with Fishball plugin updates — W0: live: a registration made while the agent is live is applied at once",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-E1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-E1 Samuel continues work with Fishball plugin updates — W0: a throwing registration is logged and skipped; a later one still applies",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-ST-01",
+          "task": "X0-C",
+          "technique": "State Transition",
+          "status": "Pass",
+          "name": "XC-ST-01 Samuel continues work with Fishball plugin updates — W0: registered → applied → disposed → registered again",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-A3",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-A3 Samuel continues work with Fishball plugin updates — W0: registration is immediately visible on a fixture manager marked running",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-M",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-M Samuel continues work with Fishball plugin updates — W0: wake:true is one notice turn with the plugin source",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-A1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-A1 Samuel continues work with Fishball plugin updates — W0: wake:false is held and joins the next turn",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-E1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-E1 Samuel continues work with Fishball plugin updates — W0: a duplicate dedupeKey is answered duplicate and starts no second turn",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-E2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-E2 Samuel retries an update after child rows reboot on the same home — durable key refuses a second notice turn",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-01",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-01 Samuel retries an update after queue rejection — pending key retries its reserved identity, only acceptance makes it duplicate",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-ST-NOTIFY-HANDOVER",
+          "task": "X0-C",
+          "technique": "State Transition",
+          "status": "Pass",
+          "name": "XC-ST-NOTIFY-HANDOVER Samuel receives the missing handover update after child rows rebuild — pending reservation reuses one message identity",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-ST-NOTIFY-RECOVERY",
+          "task": "X0-C",
+          "technique": "State Transition",
+          "status": "Pass",
+          "name": "XC-ST-NOTIFY-RECOVERY Samuel receives the missing recovery update after child rows rebuild — pending reservation reuses one message identity",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-KEYS-9999",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-KEYS-9999 newest-key retention at 9999 accepted notices — file and reloaded duplicate behavior agree",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-KEYS-10000",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-KEYS-10000 newest-key retention at 10000 accepted notices — file and reloaded duplicate behavior agree",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-KEYS-10001",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-KEYS-10001 newest-key retention at 10001 accepted notices — file and reloaded duplicate behavior agree",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-A2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-A2 Samuel gets one Fishball update — W0 fixture: X10 wake:true queues while manager is idle",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-A3",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-A3 Samuel gets one Fishball update — W0 fixture: X10 wake:true queues while manager is running",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-03-M1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-03-M1 Samuel messages a session directly with watchdog disabled — message_session reaches connector unchanged",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-03-M2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-03-M2 Samuel messages a session directly with watchdog disabled — redirect_session reaches connector unchanged",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-OFF-message_session",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-OFF-message_session Samuel messages a session directly with watchdog enabled but unregistered/not ready — message_session reaches connector unchanged",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-OFF-redirect_session",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-OFF-redirect_session Samuel messages a session directly with watchdog enabled but unregistered/not ready — redirect_session reaches connector unchanged",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-V-05",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-V-05 Samuel continues work with Fishball plugin updates — W0: userTexts returns only user-written texts, newest first",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-02",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-02 Samuel continues work with Fishball plugin updates — W0: limit 0, 1, available count 3 and count+1",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-03",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-03 Samuel continues work with Fishball plugin updates — W0: maxChars cuts at a surrogate pair without a lone surrogate",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-A4",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-01-A4 Samuel continues work with Fishball plugin updates — deferred: [owner: X-E2E] register during a real model turn, offer on next request, dispose and omit on following request",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-01-A5",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-01-A5 Samuel keeps current board context in Fishball — [owners: X0-C/X-E2E] approved dynamic systemPrompt.context callback fixture registers on create/resume/live, evaluates current data, dispose removes the contribution without a turn",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-01-E2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-01-E2 Samuel keeps healthy capabilities when async setup fails — [owner: X0-C] approved A: await setup before create/resume publication; late registration ready after completion; log rejected callback once, isolate healthy registration and fence disposed completion so contributions cannot leak",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-02-E3",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-02-E3 Samuel retries after durable queue acceptance lost its receipt — [owners: X0-C/FB-PUSH/X-E2E] reconcile the persisted stable identity against durable queue after rebuild, deliver once; current fake agent has no durable queue ledger",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-02-E4",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-02-E4 Samuel recovers from notification reservation persistence failure — [owner: X0-C] freeze safe store-fault fixture; no accepted success without persistence, recovery retries one stable identity",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-02-A4",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-02-A4 Samuel continues after a quiet notice survived rebuild — [owners: X0-C/X-E2E] durable hold acceptance/recovery adds text once to next user turn, never an independent wake",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-03-F",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-03-F Samuel keeps working after watchdog failure — [owners: X0-S/X0-A/X0-I/WD-13] immediate whole-plugin Fishball handover, release claims, pass both send paths, no halt/stop, one durable retryable notice",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-05-M",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-05-M Samuel receives routed updates while controlling sessions over MCP — [owners: MCP-S3/K1/X0-C/X0-W/FB-PUSH] freeze typed local control/intake port names/shapes before W1; no second control API, route before durable queue/wake/ack; no invented transport interface",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-03-A1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-03-A1 Samuel sends through images.message with watchdog disabled — empty attachments preserve exact wire text and delivered result",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-03-A2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-03-A2 Samuel sends through images.message with watchdog disabled — omitted attachments preserve exact wire text and delivered result",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-OFF-IMAGES-1",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-OFF-IMAGES-1 Samuel sends through images.message with watchdog enabled but unregistered/not ready — empty attachments preserve exact wire text and delivered result",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-OFF-IMAGES-2",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-OFF-IMAGES-2 Samuel sends through images.message with watchdog enabled but unregistered/not ready — omitted attachments preserve exact wire text and delivered result",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-02",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-02 images.message returns unconfirmed unchanged and never retries or creates a watch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-IMAGE-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-IMAGE-01 images.message rejects a connector refusal rather than fabricating success",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-04-M",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-04-M Samuel receives three independently sender-framed updates in one queued message in arrival order",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-0",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-0 array count 0 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-1",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-1 array count 1 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-19",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-19 array count 19 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-20",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-20 array count 20 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-21",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-21 array count 21 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-BYTES-65535",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-BYTES-65535 joined UTF-8 byte size includes multibyte text and blank-line separator",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-BYTES-65536",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-BYTES-65536 joined UTF-8 byte size includes multibyte text and blank-line separator",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-BYTES-65537",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-BYTES-65537 joined UTF-8 byte size includes multibyte text and blank-line separator",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-04-E1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-04-E1 invalid middle text refuses the entire batch before fetching any images",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-01 duplicate texts stay duplicated, extra metadata never enters text, input remains unmodified",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-03",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-03 singleton array retains session relay source; singleton overload is preserved",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-04",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-04 skipImages queues text only without fetching, even without sourceSessionId",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-non-record",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-non-record invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-missing-text",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-missing-text invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-non-string-text",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-non-string-text invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-invalid-kind",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-invalid-kind invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-empty-id",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-empty-id invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-empty-key",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-empty-key invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-null-source",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-null-source invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-negative-at",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-negative-at invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-fractional-at",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-fractional-at invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-null-images",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-null-images invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-OPTIONS-null",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-OPTIONS-null invalid delivery options reject asynchronously without queueing",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-OPTIONS-non-boolean-skip",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-OPTIONS-non-boolean-skip invalid delivery options reject asynchronously without queueing",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-missing-field",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-missing-field skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-unsupported-type",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-unsupported-type skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-zero-dimension",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-zero-dimension skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-fractional-dimension",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-fractional-dimension skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-unsafe-byte-count",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-unsafe-byte-count skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-source",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-source missing source rejects before fetching images when skipImages is false",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGECOUNT-19",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGECOUNT-19 image count is bounded per item and validated while skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGECOUNT-20",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGECOUNT-20 image count is bounded per item and validated while skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGECOUNT-21",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGECOUNT-21 image count is bounded per item and validated while skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-pixels-4194303",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-pixels-4194303 image pixels cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-pixels-4194304",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-pixels-4194304 image pixels cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-pixels-4194305",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-pixels-4194305 image pixels cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-bytes-4194303",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-bytes-4194303 image bytes cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-bytes-4194304",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-bytes-4194304 image bytes cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-bytes-4194305",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-bytes-4194305 image bytes cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-05",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-05 whole-array shape validation precedes item count and never partially delivers",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-06",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-06 item count precedes joined size and image descriptors",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-07",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-07 joined text size precedes image validation and fetches",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-08",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-08 image count precedes malformed descriptors",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-04-A1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-04-A1 Samuel receives images in item/image order — [owner: X0-I/FN-6 image integration] valid attachment.read/model fixture; image preparation failure queues no partial turn; W0 skipImages validates metadata and proves no fetch",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        }
+      ]
+    },
+    {
+      "version": "0.2.2-rc.1",
+      "evidence": "docs/verification/x0c-time/evidence/tasks-0.2.2-rc.1.tap",
+      "tapSha256": "8321638f0f892e8bfe20870ba621d4cecfa795b4668884e03e96e601ff1bb65e",
+      "exit": 0,
+      "startedAt": "2026-11-08T23:25:06Z",
+      "finishedAt": "2026-11-08T23:31:19Z",
+      "durationMs": 372983.165417,
+      "registered": 137,
+      "duplicateIds": [],
+      "missingIds": [],
+      "extraIds": [],
+      "promotedTodos": [],
+      "totals": {
+        "tests": 137,
+        "pass": 115,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 22
+      },
+      "tasks": {
+        "X0-C": {
+          "Pass": 95,
+          "Fail": 0,
+          "TODO": 9
+        },
+        "FN-1": {
+          "Pass": 10,
+          "Fail": 0,
+          "TODO": 3
+        },
+        "B1": {
+          "Pass": 10,
+          "Fail": 0,
+          "TODO": 10
+        }
+      },
+      "changesFromBaseline": [
+        {
+          "id": "XC-EP-V-05",
+          "from": "Fail",
+          "to": "Pass"
+        }
+      ],
+      "rows": [
+        {
+          "id": "B1-EP-V-01",
+          "task": "B1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "B1-EP-V-01 Samuel keeps his Fishball work board available — W0: the package is fishball-board 0.1.0-alpha.0 with the designed files and bounds",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-EP-V-02",
+          "task": "B1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "B1-EP-V-02 Samuel keeps his Fishball work board available — W0: the row exports name, inject, Config and apply",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-CONFIG-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-CONFIG-M Samuel keeps his Fishball work board available — W0: [formerly B1-EP-V-03] required defaults are inject true and contextCards 20; optional recent-done count is not visibility",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-BVA-01",
+          "task": "B1",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "B1-BVA-01 Samuel keeps his Fishball work board available — W0: contextCards is an integer 0…30 (0 = the counts line only)",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-BVA-02",
+          "task": "B1",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "B1-BVA-02 Samuel keeps his Fishball work board available — W0: if retained, recent-done count doneWindowHours is an integer 0…168, never the panel cutoff",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-CONFIG-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-CONFIG-A Samuel keeps his Fishball work board available — W0: [formerly B1-EP-01] inject is a boolean",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-EP-V-04",
+          "task": "B1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "B1-EP-V-04 Samuel keeps his Fishball work board available — W0: the constants carry the six statuses and the frozen limits",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-LOAD-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-LOAD-M Samuel keeps his Fishball work board available — W0: [formerly B1-DT-01] the row loads with a stub fishballInstance",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-LOAD-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-LOAD-A Samuel keeps his Fishball work board available — W0: [formerly B1-DT-02] without the points the row loads and logs instance-hooks-missing once",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-CONFIG-E",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "B1-UC-CONFIG-E Samuel keeps his Fishball work board available — W0: user submits an invalid setting and Config rejects it",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "B1-UC-BUNDLE-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-BUNDLE-M Samuel keeps his Fishball work board available — deferred: [X0-B] user enables the bundled plugin",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-BUNDLE-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-BUNDLE-A Samuel keeps his Fishball work board available — deferred: [X0-B] user disables and restart preserves the choice",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-BUNDLE-E",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-BUNDLE-E Samuel keeps his Fishball work board available — deferred: [X0-B] unavailable placement permits child startup",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-HISTORY-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-HISTORY-M Samuel revisits completed work — deferred: [B2/B3/B5] Done and Dropped stay on board/panel/context at 30 days−1ms and day30, leave at +1ms; archive remains",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-HISTORY-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-HISTORY-A Samuel clears and later reopens finished work — deferred: [B2/B3/B4/B5] clear Done or Dropped early, keep archive, reopen off-board card and restore open panel/context together",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-HISTORY-E",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-HISTORY-E Samuel cannot clear unfinished work — deferred: [B2/B4] clear each open status refuses not-closed and changes neither board nor archive",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-SEARCH-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-SEARCH-M Samuel finds old work by keyword — deferred: [B11] board_search finds title/note keyword in a year-old off-board or cleared card without changing visibility",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-UNINSTALL-M",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-UNINSTALL-M Samuel keeps an archive before uninstall — deferred: [B10] accepted complete archive export finishes outside runtime before deletion, including off-board/cleared history",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-UNINSTALL-A",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-UNINSTALL-A Samuel declines archive export — deferred: [B10] explicit decline permits runtime and archive deletion",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "B1-UC-UNINSTALL-E",
+          "task": "B1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "B1-UC-UNINSTALL-E Samuel retries failed archive export — deferred: [B10] export failure preserves runtime and archive; explicit decline may later permit deletion",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "FN1-EP-V-01",
+          "task": "FN-1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "FN1-EP-V-01 Samuel keeps a busy Fishball conversation manageable — W0: the package is fishball-fold-notify 0.1.0-alpha.0 with the designed files and bounds",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-EP-V-02",
+          "task": "FN-1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "FN1-EP-V-02 Samuel keeps a busy Fishball conversation manageable — W0: the row exports name, inject, Config and apply",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-CONFIG-M",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-CONFIG-M Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-EP-V-03] the config defaults are foldDefault true, systemNotification when-hidden, batchWindowMs 1500",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-BVA-01",
+          "task": "FN-1",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "FN1-BVA-01 Samuel keeps a busy Fishball conversation manageable — W0: batchWindowMs is an integer 0…10000 (0 = off)",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-EP-02",
+          "task": "FN-1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "FN1-EP-02 Samuel keeps a busy Fishball conversation manageable — W0: systemNotification is off or when-hidden",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-CONFIG-A",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-CONFIG-A Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-EP-03] foldDefault is a boolean",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-EP-V-04",
+          "task": "FN-1",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "FN1-EP-V-04 Samuel keeps a busy Fishball conversation manageable — W0: the fixed constants are the designed values",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-LOAD-M",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-LOAD-M Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-DT-01] the row loads over a stub fishballInstance",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-LOAD-A",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-LOAD-A Samuel keeps a busy Fishball conversation manageable — W0: [formerly FN1-DT-02] the row also loads without the optional instance service",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-CONFIG-E",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "FN1-UC-CONFIG-E Samuel keeps a busy Fishball conversation manageable — W0: user submits an invalid setting and Config rejects it",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "FN1-UC-BUNDLE-M",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "FN1-UC-BUNDLE-M Samuel keeps a busy Fishball conversation manageable — deferred: [X0-B] user enables the bundled plugin",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "FN1-UC-BUNDLE-A",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "FN1-UC-BUNDLE-A Samuel keeps a busy Fishball conversation manageable — deferred: [X0-B] user disables and restart preserves the choice",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "FN1-UC-BUNDLE-E",
+          "task": "FN-1",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "FN1-UC-BUNDLE-E Samuel keeps a busy Fishball conversation manageable — deferred: [X0-B] unavailable placement permits child startup",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-EP-V-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-V-01 Samuel continues work with Fishball plugin updates — W0: the app row provides fishballInstance apiVersion 1 with every member",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-V-02",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-V-02 Samuel continues work with Fishball plugin updates — W0: a registration returns dispose, and a second dispose is a no-op",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-01 Samuel continues work with Fishball plugin updates — W0: fishballChat stays internal: the plugin-facing service is fishballInstance",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-02",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-02 Samuel continues work with Fishball plugin updates — W0: X1 reports the manager Session id, not another agent id",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-01 Samuel never mistakes an unavailable capability for success — inbox.claim refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-02",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-02 Samuel never mistakes an unavailable capability for success — inbox.release refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-03",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-03 Samuel never mistakes an unavailable capability for success — inbox.setBatcher refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-04",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-04 Samuel never mistakes an unavailable capability for success — attention.set refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-05",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-05 Samuel never mistakes an unavailable capability for success — sideAgents.open refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-06",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-06 Samuel never mistakes an unavailable capability for success — sideAgents.runTurn refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-07",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-07 Samuel never mistakes an unavailable capability for success — sideAgents.cancel refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-08",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-08 Samuel never mistakes an unavailable capability for success — approvals.claim refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-09",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-09 Samuel never mistakes an unavailable capability for success — approvals.card refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-10",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-10 Samuel never mistakes an unavailable capability for success — approvals.onSettled refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-11",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-11 Samuel never mistakes an unavailable capability for success — approvals.answerApproval refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-12",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-12 Samuel never mistakes an unavailable capability for success — supervision.register refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-13",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-13 Samuel never mistakes an unavailable capability for success — supervision.onManagedChange refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-14",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-14 Samuel never mistakes an unavailable capability for success — supervision.endingReason refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-15",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-15 Samuel never mistakes an unavailable capability for success — sessionStarts.register refuses with typed metadata",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-STUB-16",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-STUB-16 Samuel never mistakes a scoped connector stub for success — bridge refuses ExtensionError/not-implemented",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-M",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-M Samuel continues work with Fishball plugin updates — W0: create: a registration made before the live Session is applied after the persona, in order",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-A1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-A1 Samuel continues work with Fishball plugin updates — W0: resume: the same registration is applied again on agents.resume",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-A2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-A2 Samuel continues work with Fishball plugin updates — W0: live: a registration made while the agent is live is applied at once",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-E1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-E1 Samuel continues work with Fishball plugin updates — W0: a throwing registration is logged and skipped; a later one still applies",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-ST-01",
+          "task": "X0-C",
+          "technique": "State Transition",
+          "status": "Pass",
+          "name": "XC-ST-01 Samuel continues work with Fishball plugin updates — W0: registered → applied → disposed → registered again",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-A3",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-01-A3 Samuel continues work with Fishball plugin updates — W0: registration is immediately visible on a fixture manager marked running",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-M",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-M Samuel continues work with Fishball plugin updates — W0: wake:true is one notice turn with the plugin source",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-A1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-A1 Samuel continues work with Fishball plugin updates — W0: wake:false is held and joins the next turn",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-E1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-E1 Samuel continues work with Fishball plugin updates — W0: a duplicate dedupeKey is answered duplicate and starts no second turn",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-E2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-E2 Samuel retries an update after child rows reboot on the same home — durable key refuses a second notice turn",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-01",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-01 Samuel retries an update after queue rejection — pending key retries its reserved identity, only acceptance makes it duplicate",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-ST-NOTIFY-HANDOVER",
+          "task": "X0-C",
+          "technique": "State Transition",
+          "status": "Pass",
+          "name": "XC-ST-NOTIFY-HANDOVER Samuel receives the missing handover update after child rows rebuild — pending reservation reuses one message identity",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-ST-NOTIFY-RECOVERY",
+          "task": "X0-C",
+          "technique": "State Transition",
+          "status": "Pass",
+          "name": "XC-ST-NOTIFY-RECOVERY Samuel receives the missing recovery update after child rows rebuild — pending reservation reuses one message identity",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-KEYS-9999",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-KEYS-9999 newest-key retention at 9999 accepted notices — file and reloaded duplicate behavior agree",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-KEYS-10000",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-KEYS-10000 newest-key retention at 10000 accepted notices — file and reloaded duplicate behavior agree",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-KEYS-10001",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-KEYS-10001 newest-key retention at 10001 accepted notices — file and reloaded duplicate behavior agree",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-A2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-A2 Samuel gets one Fishball update — W0 fixture: X10 wake:true queues while manager is idle",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-02-A3",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-02-A3 Samuel gets one Fishball update — W0 fixture: X10 wake:true queues while manager is running",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-03-M1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-03-M1 Samuel messages a session directly with watchdog disabled — message_session reaches connector unchanged",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-03-M2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-03-M2 Samuel messages a session directly with watchdog disabled — redirect_session reaches connector unchanged",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-OFF-message_session",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-OFF-message_session Samuel messages a session directly with watchdog enabled but unregistered/not ready — message_session reaches connector unchanged",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-OFF-redirect_session",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-OFF-redirect_session Samuel messages a session directly with watchdog enabled but unregistered/not ready — redirect_session reaches connector unchanged",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-V-05",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-V-05 Samuel continues work with Fishball plugin updates — W0: userTexts returns only user-written texts, newest first",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-02",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-02 Samuel continues work with Fishball plugin updates — W0: limit 0, 1, available count 3 and count+1",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-03",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-03 Samuel continues work with Fishball plugin updates — W0: maxChars cuts at a surrogate pair without a lone surrogate",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-01-A4",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-01-A4 Samuel continues work with Fishball plugin updates — deferred: [owner: X-E2E] register during a real model turn, offer on next request, dispose and omit on following request",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-01-A5",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-01-A5 Samuel keeps current board context in Fishball — [owners: X0-C/X-E2E] approved dynamic systemPrompt.context callback fixture registers on create/resume/live, evaluates current data, dispose removes the contribution without a turn",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-01-E2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-01-E2 Samuel keeps healthy capabilities when async setup fails — [owner: X0-C] approved A: await setup before create/resume publication; late registration ready after completion; log rejected callback once, isolate healthy registration and fence disposed completion so contributions cannot leak",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-02-E3",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-02-E3 Samuel retries after durable queue acceptance lost its receipt — [owners: X0-C/FB-PUSH/X-E2E] reconcile the persisted stable identity against durable queue after rebuild, deliver once; current fake agent has no durable queue ledger",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-02-E4",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-02-E4 Samuel recovers from notification reservation persistence failure — [owner: X0-C] freeze safe store-fault fixture; no accepted success without persistence, recovery retries one stable identity",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-02-A4",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-02-A4 Samuel continues after a quiet notice survived rebuild — [owners: X0-C/X-E2E] durable hold acceptance/recovery adds text once to next user turn, never an independent wake",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-03-F",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-03-F Samuel keeps working after watchdog failure — [owners: X0-S/X0-A/X0-I/WD-13] immediate whole-plugin Fishball handover, release claims, pass both send paths, no halt/stop, one durable retryable notice",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-05-M",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-05-M Samuel receives routed updates while controlling sessions over MCP — [owners: MCP-S3/K1/X0-C/X0-W/FB-PUSH] freeze typed local control/intake port names/shapes before W1; no second control API, route before durable queue/wake/ack; no invented transport interface",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        },
+        {
+          "id": "XC-UC-03-A1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-03-A1 Samuel sends through images.message with watchdog disabled — empty attachments preserve exact wire text and delivered result",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-03-A2",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-03-A2 Samuel sends through images.message with watchdog disabled — omitted attachments preserve exact wire text and delivered result",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-OFF-IMAGES-1",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-OFF-IMAGES-1 Samuel sends through images.message with watchdog enabled but unregistered/not ready — empty attachments preserve exact wire text and delivered result",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-OFF-IMAGES-2",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-OFF-IMAGES-2 Samuel sends through images.message with watchdog enabled but unregistered/not ready — omitted attachments preserve exact wire text and delivered result",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-02",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-02 images.message returns unconfirmed unchanged and never retries or creates a watch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-IMAGE-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-IMAGE-01 images.message rejects a connector refusal rather than fabricating success",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-04-M",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-04-M Samuel receives three independently sender-framed updates in one queued message in arrival order",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-0",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-0 array count 0 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-1",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-1 array count 1 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-19",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-19 array count 19 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-20",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-20 array count 20 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-COUNT-21",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-COUNT-21 array count 21 obeys the 1–20 item contract without splitting",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-BYTES-65535",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-BYTES-65535 joined UTF-8 byte size includes multibyte text and blank-line separator",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-BYTES-65536",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-BYTES-65536 joined UTF-8 byte size includes multibyte text and blank-line separator",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-BYTES-65537",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-BYTES-65537 joined UTF-8 byte size includes multibyte text and blank-line separator",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-04-E1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "Pass",
+          "name": "XC-UC-04-E1 invalid middle text refuses the entire batch before fetching any images",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-01",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-01 duplicate texts stay duplicated, extra metadata never enters text, input remains unmodified",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-03",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-03 singleton array retains session relay source; singleton overload is preserved",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-04",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-04 skipImages queues text only without fetching, even without sourceSessionId",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-non-record",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-non-record invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-missing-text",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-missing-text invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-non-string-text",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-non-string-text invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-invalid-kind",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-invalid-kind invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-empty-id",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-empty-id invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-empty-key",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-empty-key invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-null-source",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-null-source invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-negative-at",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-negative-at invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-fractional-at",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-fractional-at invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-INVALID-null-images",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-INVALID-null-images invalid supplied local item metadata rejects before queue/fetch",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-OPTIONS-null",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-OPTIONS-null invalid delivery options reject asynchronously without queueing",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-OPTIONS-non-boolean-skip",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-OPTIONS-non-boolean-skip invalid delivery options reject asynchronously without queueing",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-missing-field",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-missing-field skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-unsupported-type",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-unsupported-type skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-zero-dimension",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-zero-dimension skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-fractional-dimension",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-fractional-dimension skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-unsafe-byte-count",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-unsafe-byte-count skipImages does not bypass image descriptor validation",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-EP-BATCH-IMAGE-source",
+          "task": "X0-C",
+          "technique": "EP",
+          "status": "Pass",
+          "name": "XC-EP-BATCH-IMAGE-source missing source rejects before fetching images when skipImages is false",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGECOUNT-19",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGECOUNT-19 image count is bounded per item and validated while skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGECOUNT-20",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGECOUNT-20 image count is bounded per item and validated while skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGECOUNT-21",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGECOUNT-21 image count is bounded per item and validated while skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-pixels-4194303",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-pixels-4194303 image pixels cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-pixels-4194304",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-pixels-4194304 image pixels cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-pixels-4194305",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-pixels-4194305 image pixels cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-bytes-4194303",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-bytes-4194303 image bytes cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-bytes-4194304",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-bytes-4194304 image bytes cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-BVA-BATCH-IMAGE-bytes-4194305",
+          "task": "X0-C",
+          "technique": "BVA",
+          "status": "Pass",
+          "name": "XC-BVA-BATCH-IMAGE-bytes-4194305 image bytes cap applies even when fetches are skipped",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-05",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-05 whole-array shape validation precedes item count and never partially delivers",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-06",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-06 item count precedes joined size and image descriptors",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-07",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-07 joined text size precedes image validation and fetches",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-DT-08",
+          "task": "X0-C",
+          "technique": "Decision Table",
+          "status": "Pass",
+          "name": "XC-DT-08 image count precedes malformed descriptors",
+          "approvedStatus": "Red",
+          "actual": "All unchanged approved case assertions passed at the supplied harness boundary."
+        },
+        {
+          "id": "XC-UC-04-A1",
+          "task": "X0-C",
+          "technique": "Use Case",
+          "status": "TODO",
+          "name": "XC-UC-04-A1 Samuel receives images in item/image order — [owner: X0-I/FN-6 image integration] valid attachment.read/model fixture; image preparation failure queues no partial turn; W0 skipImages validates metadata and proves no fetch",
+          "approvedStatus": "TODO",
+          "actual": "Inherited acceptance TODO retained; not executed or accepted."
+        }
+      ]
+    }
+  ]
+}
