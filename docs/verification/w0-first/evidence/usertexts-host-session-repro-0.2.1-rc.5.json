@@ -1,0 +1,14 @@
+{
+  "hostEvent": {
+    "type": "user/message",
+    "time": 1794178700901,
+    "hasAt": false
+  },
+  "publicTexts": [
+    {
+      "text": "user-authored host session event"
+    }
+  ],
+  "finiteAt": false,
+  "expectedAt": 1794178700901
+}
