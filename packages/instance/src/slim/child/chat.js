@@ -738,6 +738,11 @@ export function createChat(ctx, options = {}) {
     return activate().then((live) => { selectModel(live, selection) })
   }
 
+  /** The live session's model, or null before this chat has activated a Session. */
+  function currentModel() {
+    return selectionOf(agent?.model?.current?.()) ?? null
+  }
+
   /**
    * The reminder scheduler's activation owner (T10). A Session this chat does not own is
    * delegated to next(); Fishball's own is returned live or resumed here.
@@ -830,7 +835,7 @@ export function createChat(ctx, options = {}) {
   return Object.freeze({
     start,
     close,
-    service: Object.freeze({ resolveAgent, applyModel, deliverInbox, notify, recordCard }),
+    service: Object.freeze({ resolveAgent, applyModel, currentModel, deliverInbox, notify, recordCard }),
     handle,
     subscribe,
   })
