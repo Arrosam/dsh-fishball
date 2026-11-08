@@ -90,7 +90,7 @@ Install both packages again as above. After the cleanup command, the instance st
 
 ## Bring your DSH models into Fishball
 
-On the instance's card on DSH's Plugins page, **Model for Fishball** → **Check for new models** lists the API-key providers you set up in DSH that Fishball does not have yet. Tick the ones to add, then press **Add selected**. Only what you tick is added. Providers and keys Fishball already has are kept. Logins (OAuth, subscriptions) are never copied: log in to those inside Fishball. Keys never reach the page, the logs or the chat.
+On the instance's card on DSH's Plugins page, **Model for Fishball** → **Check for new models** lists only the API-key providers you set up in DSH that Fishball does not have yet and whose endpoint uses https. OAuth/login providers, providers with custom headers and non-https endpoints are not offered; log in to OAuth/login providers inside Fishball. Tick the ones to add, then press **Add selected**. Only what you tick is added. Providers and keys Fishball already has are kept. Keys never reach the page, the logs or the chat.
 
 ## Licence
 
