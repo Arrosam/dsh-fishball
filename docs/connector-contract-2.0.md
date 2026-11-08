@@ -4,11 +4,17 @@ Status: **coherent preserved baseline, parked by the selected one-way MCP contro
 [the MCP design](<plugins/connector-mcp-option.md>)**. The user chose breaking contract 2.0 instead
 of additive 1.2 before changing the control transport to MCP; bidirectional MCP is rejected.
 Do not implement this full custom control protocol. Protocol-dependent work waits for MCP feasibility
-and schema freeze; first-party custom pushback may retain a small event/ack contract. Reuse the
+and schema freeze; first-party custom pushback **will** use a small event/ack contract (1a = A). Reuse the
 timer-free lifecycle/limit requirements regardless of transport. This document preserves the 2.0 option;
 it does not claim a shipped release or silently select it over MCP.
 
-This is a normative delta: the [1.1 contract](connector-contract.md), including its complete
+**2026-11-09: 1c = B closes migration.** Remove the old custom control endpoint and exports with
+all built-in consumer upgrades; no legacy migration path. The attach/export/minor-negotiation rules
+below are the **historical custom-2.0 option**, not an implementation track or a live MCP fallback.
+External delegated approvals/questions are **on by default, with no setting to turn them off**
+(1b = yes and subsequent clarification); no opt-in question remains. See [current decisions and task ownership](<plugins/connector-mcp-option.md>).
+
+Within that parked option, this is a normative delta: the [1.1 contract](connector-contract.md), including its complete
 operation tables, validation order and module index, is incorporated unchanged **except** for the
 explicit replacements below. No unspecified wire additions or legacy exceptions are implied.
 [The extension plan](plugins/instance-extension-points.md) defines instance-local behavior.
@@ -204,10 +210,19 @@ Current packages are both `0.1.0-alpha.0`; instance connector peer range is
 published old instance range and old connectors, while runtime contract checks remain mandatory.
 Update package comments/docs that currently conflate importing the connector constant with
 implementing its contract. Package-major matching is a deliberate release choice, not a protocol
-requirement. With one-way MCP now selected, revisit this parked release proposal with its migration
-plan, not by claiming MCP makes old installations compatible. No manifest is edited by this design.
+requirement. With one-way MCP and **coordinated removal without migration** now selected, the
+numeric version/peer range above remains an unapproved release proposal. Choose a peer range for
+the new compatible connector release that excludes old custom-control packages, upgrade built-in
+imports and child snapshot composition together, and retain independent runtime semantic checks.
+MCP does not make old installations compatible. No manifest is edited by this design.
 
-## 7. Task ownership, freeze gate and acceptance
+## 7. Historical custom-option task ownership, freeze gate and acceptance
+
+**Superseded for execution:** use [the revised W0/W1 tasks](<plugins/connector-mcp-option.md#8-tasks-waves-and-package-impact>)
+and [extension task table](<plugins/instance-extension-points.md#5-tasks>). K1 now publishes shared
+MCP/push schemas and fixtures; W1 MCP-SERVER and FB-PUSH implement the server and return adapter,
+with X0-W the scoped control client. No old control endpoint/export retention task survives.
+The table/sequence below preserve the parked option only; domain lifecycle requirements still apply.
 
 | Owner | Implementation responsibility |
 | --- | --- |
