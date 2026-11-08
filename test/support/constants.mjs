@@ -8,7 +8,12 @@ import path from 'node:path'
 export const REPO = path.resolve(import.meta.dirname, '..', '..')
 export const NODE = '/opt/homebrew/bin/node'
 export const RUNTIME = process.env.FBTEST_DSH_RUNTIME ?? '/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.2/node_modules'
-export const TEST_HOMES = path.join(REPO, '.runtime', 'test-homes')
+/**
+ * Root of the throwaway DSH homes. FBTEST_TEST_HOMES moves it (e.g. under the OS temp dir, so a
+ * baseline run writes no home into the checkout); it must still end in `.runtime/test-homes`,
+ * because run.mjs's delete guard and the worker's home check both require that suffix.
+ */
+export const TEST_HOMES = process.env.FBTEST_TEST_HOMES ?? path.join(REPO, '.runtime', 'test-homes')
 export const SUPPORT = import.meta.dirname
 export const WORKER = path.join(SUPPORT, 'worker.mjs')
 
