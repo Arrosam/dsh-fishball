@@ -465,8 +465,10 @@ export function createSessionPort(ctx, options = {}) {
       return delivered
     },
     async stop({ sessionId, reason }) {
-      // An idle session has no live agent and nothing to stop; DSH's cancel is the Stop button.
-      const running = ctx.agents.get(sessionId) !== undefined
+      // A loaded but idle agent still sits in ctx.agents, so its presence is not "something is
+      // running"; the host's passive state (0.2.2) or the live agent's status (0.2.1) decides.
+      // DSH's cancel is the Stop button, and an idle stop is a no-op.
+      const { running } = await activityOf(sessionId)
       if (running) await ctx.sessionController.cancel({ sessionId })
       // One decisions row either way; its outcome says whether a turn was running (DESIGN §9).
       await state().stopped(sessionId, reason, running)

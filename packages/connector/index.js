@@ -27,7 +27,7 @@
  * Fishball in the main process took every input the user meant for the child.
  */
 import { Config, QUESTION_MODE_SETTING, readLimits, readQuestionMode } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT, DECISION_ACTION, DECISION_IDLE, DECISION_OK } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT, DECISION_ACTION, DECISION_IDLE, DECISION_OK, INTAKE_SOURCE } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -315,6 +315,9 @@ export async function apply(ctx, config) {
     },
     // Every input waiting in the ledger goes to the child that just connected (§5.2 "Inbox").
     attachInbox: (push) => ledger.attach(push),
+    // The approval relay's card markers are notices too: the ledger keeps an unacked one and
+    // pushes it on the next attach, exactly as it does for a message or an approval notice.
+    publishNotice: (item) => ledger.publishNotice(item, INTAKE_SOURCE.approval),
     liveApprovals: (sessionId) => broker.liveOffers(sessionId).map((descriptor) => withTitle(descriptor, sessionId)),
     answerApproval: (input) => captured(APPROVAL_TOOL.answer, input),
     liveQuestions: (sessionId) => questions.liveQuestions(sessionId).map((descriptor) => withTitle(descriptor, sessionId)),
