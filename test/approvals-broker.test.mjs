@@ -314,7 +314,7 @@ describe('P7 ApprovalBroker (H-STUB)', () => {
     try {
       const text = tok('11')
       // The withdrawal reaches the instance only after the notice it never took is delivered again.
-      await expectWithdrawn(await asked(x, text), text, reconnect)
+      await expectWithdrawn(await asked(x, text, { waitMs: APPROVALS.ms.noticeUnderLoad }), text, reconnect)
     } finally { if (!reconnected) await reconnect() }
   })
 

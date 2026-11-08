@@ -55,7 +55,12 @@ export const APPROVALS = Object.freeze({
     ask: (question) => ({ decision: DECISION.ask, question }),
   }),
   /** Waits and bounds of these cases. */
-  ms: Object.freeze({ atOnce: 1000, quiet: 1500, settle: 15000, timerSlack: 150, timerLate: 2500 }),
+  /**
+   * noticeUnderLoad: the withdrawn-notice case (APR-11) holds the stub's ack and waits for the one
+   * push; the full suite runs three DSH hosts at once, and 0.2.2-rc.1 can take longer than the
+   * default 10 s to deliver that push. Only the failure wait grows.
+   */
+  ms: Object.freeze({ atOnce: 1000, quiet: 1500, settle: 15000, timerSlack: 150, timerLate: 2500, noticeUnderLoad: 20000 }),
   /** A string that never appears in a session's own words, to look for leaks of argument text. */
   secretPrefix: 'SECRETARG',
   /** The approval descriptor's keys for a permission request (contract §5.1; `questions` only for kind question). */
@@ -120,9 +125,9 @@ export const offerFor = (stub, text, opts) => offerWhere(stub, (d) => d.reason =
 export const offersWhere = async (stub, pred) => (await stub.events(EVENT.approvalRequest)).filter((f) => pred(f.payload))
 
 /** The `approval` inbox item of one request (the notice), with its parsed header and untrusted block. */
-export async function itemFor(stub, approvalId, { last = false } = {}) {
+export async function itemFor(stub, approvalId, { last = false, waitMs } = {}) {
   const needle = APPROVALS.item.prefix(approvalId)
-  await stub.waitPush(needle, { kind: KIND.approval })
+  await stub.waitPush(needle, { kind: KIND.approval, ...(waitMs === undefined ? {} : { timeoutMs: waitMs }) })
   const items = (await stub.pushTexts(needle)).filter((p) => p.kind === KIND.approval)
   const payload = last ? items.at(-1) : items[0]
   if (!payload) return undefined
@@ -135,11 +140,11 @@ export async function itemFor(stub, approvalId, { last = false } = {}) {
 export const itemsFor = async (stub, approvalId) => (await stub.pushTexts(APPROVALS.item.prefix(approvalId))).filter((p) => p.kind === KIND.approval)
 
 /** The asking session starts the call and the stub waits for its offer and notice. */
-export async function requestFor(booted, sid, text, { args = {}, turnText, source } = {}) {
+export async function requestFor(booted, sid, text, { args = {}, turnText, source, waitMs } = {}) {
   await startCall(booted.host, sid, { text, ...args }, { text: turnText, source })
   const frame = await offerFor(booted.stub, text)
   assert.ok(frame, 'an approval.request reached the stub for ' + text)
-  const item = await itemFor(booted.stub, frame.payload.approvalId)
+  const item = await itemFor(booted.stub, frame.payload.approvalId, waitMs === undefined ? {} : { waitMs })
   assert.ok(item, 'an approval inbox item reached the stub for ' + text)
   return { frame, descriptor: frame.payload, sessionId: frame.sessionId, item }
 }
