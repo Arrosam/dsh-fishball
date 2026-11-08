@@ -41,6 +41,7 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { appendPluginRecord } from '@deepseek-ai/dsh-session'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
@@ -117,6 +118,12 @@ const CHILD = Object.freeze({
 })
 
 const METHOD = Object.freeze({ get: 'GET', head: 'HEAD', post: 'POST' })
+
+/** The durable model-selection event and request header DSH records for a Session. */
+const MODEL_EVENT = Object.freeze({ selection: 'model/selection', header: 'request/header' })
+
+/** Bounds and fallbacks for the unexpected-error detail a failed route returns. */
+const FAILURE = Object.freeze({ detailChars: 300, unknownName: 'Error' })
 const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, unavailable: 503, failed: 500 })
 const ELLIPSIS = '…'
 
@@ -376,6 +383,28 @@ function selectionOf(value) {
   const { provider, model, reasoningEffort } = value
   if (typeof provider !== 'string' || provider === '' || typeof model !== 'string' || model === '') return undefined
   return { provider, model, ...(typeof reasoningEffort === 'string' && reasoningEffort !== '' ? { reasoningEffort } : {}) }
+}
+
+/**
+ * The last model choice DSH recorded in this Session's log, or undefined. 0.2.1 has no
+ * Agent-owned selector, so a child restart restores the choice from the same durable events
+ * the 0.2.2 AgentModel reads through its projection.
+ */
+function recordedSelection(live) {
+  let selection
+  for (const event of live.session.snapshotEvents()) {
+    if (event.type === MODEL_EVENT.selection) selection = selectionOf(event.data)
+    else if (event.type === MODEL_EVENT.header) selection = selectionOf(event.data?.header?.config) ?? selection
+  }
+  return selection
+}
+
+/** The diagnosable part of an unexpected failure: name, code and message only, never request data. */
+function failureDetail(error) {
+  const name = typeof error?.name === 'string' && error.name !== '' ? error.name : FAILURE.unknownName
+  const message = typeof error?.message === 'string' ? error.message : String(error)
+  const code = typeof error?.code === 'string' && error.code !== '' ? error.code : undefined
+  return { name, ...(code === undefined ? {} : { code }), message: clamp(message, FAILURE.detailChars) }
 }
 
 /**
@@ -683,7 +712,7 @@ export function createChat(ctx, options = {}) {
     const llm = requireLlm()
     const live = await activate()
     const { providers, models } = await catalog(llm)
-    return { selection: selectionOf(live.model?.current?.()) ?? null, providers, models }
+    return { selection: selectionOf(modelPortOf(live).current()) ?? null, providers, models }
   }
 
   /** Refuse a pair this child cannot route before it reaches the live Session. */
@@ -707,8 +736,34 @@ export function createChat(ctx, options = {}) {
     if (selection.reasoningEffort !== undefined && prepared.reasoningEffort !== selection.reasoningEffort) modelUnavailable()
   }
 
+  /**
+   * One current/select port over the Agent's real model API. 0.2.1 has no Agent.model; its
+   * selection seam is installModelSelection over the Agent's scoped context. Keeping both
+   * behind this port means callers never branch on the DSH version.
+   */
+  const legacyModels = new WeakMap()
+  function modelPortOf(live) {
+    if (typeof live.model?.select === 'function' && typeof live.model?.current === 'function') return live.model
+    const installed = legacyModels.get(live)
+    if (installed !== undefined) return installed
+    const ref = {
+      current: recordedSelection(live) ?? selectionOf(ctx.get(CHILD.defaultModel)?.currentSelection?.()),
+      assembled: undefined,
+    }
+    installModelSelection(live.ctx, ref)
+    const port = {
+      current: () => ref.current,
+      select(selection) {
+        live.session.append(MODEL_EVENT.selection, selection)
+        ref.current = selection
+      },
+    }
+    legacyModels.set(live, port)
+    return port
+  }
+
   function selectModel(live, selection) {
-    live.model.select(selection)
+    modelPortOf(live).select(selection)
     publish({ type: 'model', selection })
   }
 
@@ -740,7 +795,7 @@ export function createChat(ctx, options = {}) {
 
   /** The live session's model, or null before this chat has activated a Session. */
   function currentModel() {
-    return selectionOf(agent?.model?.current?.()) ?? null
+    return agent === undefined ? null : (selectionOf(modelPortOf(agent).current()) ?? null)
   }
 
   /**
@@ -781,7 +836,10 @@ export function createChat(ctx, options = {}) {
     if (error instanceof ChatApiError) {
       return { status: ERROR_STATUS[error.code] ?? HTTP.failed, body: { code: error.code, message: error.message } }
     }
-    return { status: HTTP.failed, body: { code: CHAT_ERROR.failed, message: MESSAGE.failed } }
+    // Keep the underlying failure diagnosable without echoing request data or configuration.
+    const detail = failureDetail(error)
+    logger?.error('the chat request failed: %s', `${detail.name}${detail.code === undefined ? '' : ` [${detail.code}]`}: ${detail.message}`)
+    return { status: HTTP.failed, body: { code: CHAT_ERROR.failed, message: MESSAGE.failed, detail } }
   }
 
   /** Serve one JSON route; the HTTP hook has already matched the path and read any body. */
