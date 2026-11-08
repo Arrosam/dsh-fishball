@@ -121,6 +121,17 @@ export class IntakeLedger {
     this.#push = undefined
   }
 
+  /**
+   * Whether an input from or about this session was taken (DESIGN §5c "Relatedness": it messaged
+   * Fishball, or the user forwarded it). Rows kept to auditEntriesKept, as before e7ed7c3.
+   * @param prefixes - source identity prefixes; each is joined with the session id.
+   */
+  hasSource(sessionId, prefixes) {
+    const identities = new Set(prefixes.map((prefix) => prefix + sessionId))
+    for (const [, row] of this.#store.intakeItems.entries()) if (identities.has(row.sourceIdentity)) return true
+    return false
+  }
+
   /** Detached view for the settings page and the row marks: counts and the newest rows (no content). */
   snapshot() {
     const rows = [...this.#store.intakeItems.entries()].map(([intakeId, row]) => ({ intakeId, ...row }))

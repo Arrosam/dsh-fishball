@@ -115,8 +115,7 @@ the same resolution DSH uses for the connector's own words. The framed address i
 - a path with no query gets one: `/fishball/embed/` is framed as `/fishball/embed/?lang=zh`, and
   `/fishball/embed/?view=settings#x` as `/fishball/embed/?view=settings&lang=zh#x`.
 
-So the frame's `src` equals the registered path plus exactly this parameter. "Open in a tab"
-opens the same address. When DSH's language changes so that the value changes, the connector
+So the frame's `src` equals the registered path plus exactly this parameter. When DSH's language changes so that the value changes, the connector
 reloads the framed page at the address with the new value. The registration rules above are
 unchanged: a path may itself carry `lang`, and the connector replaces it.
 
@@ -233,7 +232,12 @@ The rules for every payload:
 - Direction is enforced: an instance sends instance-to-connector requests and receives
   connector-to-instance requests and events. A frame in the wrong direction is `forbidden`.
 - A frame that fails validation closes the channel; the receiver does not guess what it meant.
-  An operation's refusal is an ordinary `error` frame.
+  An operation's refusal is an ordinary `error` frame. A request whose envelope is valid but
+  whose payload breaks a rule with a named code (`reason-required`, `grant-invalid`,
+  `expires-at-past`, `prefix-empty`, `invalid-decision`, `limit-exceeded`, …) is such a refusal: the
+  connector answers that code in an `error` frame and the channel stays open. A `question.answer`
+  whose payload breaks any rule (empty `answers`, a duplicate id, too many answers, an over-long
+  text) is answered the same way, with `limit-exceeded` or `invalid-envelope`.
 - **An unknown operation name is not a validation failure in a request.** A newer minor may add
   names that an older peer must refuse politely (§2). So a request whose `operation` is not a v1
   name (for example `settings.update`) is answered with an `error` frame
@@ -280,7 +284,7 @@ name (§3.1).
 
 - One `requestId` has one terminal reply. A repeat of a request whose reply is already settled
   gets the remembered reply, never a second delivery. A repeat while the first is still running is
-  `duplicate-request`. The same id reused for a different operation, session or payload is
+  `duplicate-request`, and the first still gets its own reply when it settles. The same id reused for a different operation, session or payload is
   `conflict`.
 - Nothing is retried. A request that times out is answered `timeout` and the channel closes, so a
   late success cannot be mistaken for a retryable failure.
@@ -301,7 +305,7 @@ envelope's `sessionId` is `null`. `?` marks an optional key.
 | `session.message` | yes | `{sessionId, message, attachments[], notifyWhenFinished?}` | `{status, watchId? or watchError?}`; `status` is `delivered` or `unconfirmed` (`DELIVERY`) | managed session; an `unconfirmed` delivery is never retried; `expired` (a `hostRef`) |
 | `session.redirect` | yes | `{sessionId, message, attachments[]}` | `{status}` | managed session; runs after a cancel; sets no watch; `expired` (a `hostRef`) |
 | `session.stop` | yes | `{sessionId, reason?}` | `{stopped: true}` | managed session |
-| `session.read` | yes | `{sessionId, maxMessages, maxBytes}` (whole numbers) | `{messages:[{seq, role, author, text, images[]}], truncated}` | related session; the connector cuts the reply to fit and reports `truncated` |
+| `session.read` | yes | `{sessionId, maxMessages, maxBytes}` (whole numbers) | `{messages:[{seq, role, author, text, images[]}], truncated}` | related session; the connector cuts the reply to fit and reports `truncated`. Each bound is also capped by the connector's `readSessionMessages` / `readSessionBytes` (§8); a read either cap or the request cut has `truncated: true`. Only messages with text count. |
 | `session.watch` | yes | `{sessionId, mode}`; `mode` from `WATCH_MODE` | `{watchId}` or `{watchError}` (`WATCH_ERROR`) | related session |
 | `session.watches` | – | `{}` | `{watches:[{watchId, sessionId, mode, status}]}`; `status` from `WATCH_STATUS` | — |
 | `session.unwatch` | – | `{watchId}` | `{ok: true}` | — |
@@ -315,7 +319,20 @@ then carries `watchId` or `watchError`, never both. A refused watch never undoes
 (`LIMITS.attachmentsPerMessage`), unique, each consumed once. A `hostRef` that is unknown,
 expired or already consumed is refused `expired` on the `session.start`, `session.message` or
 `session.redirect` that carries it, and nothing is sent then. `title` and `message` may be empty
-strings. `folder`, `model` and `reasoningEffort` are non-empty. `session.release` `reason` is
+strings, with these connector refusals:
+
+- `session.start` needs a `title` with a visible character: an empty or blank one is refused
+  `limit-exceeded` (the lower bound of `titleChars`) and no session is created.
+- The `message` of `session.start` and `session.message` is at most the connector's
+  `maxMessageBytes` (65,536 bytes by default, §8); a longer one is refused `limit-exceeded` and
+  nothing is created or delivered.
+- `session.start`'s `folder` that is neither a workspace id nor an absolute path is `forbidden`;
+  a workspace whose folder is gone, or an absolute path that is not an existing directory, is
+  `unknown-session`; a `model` or `reasoningEffort` that is not available is
+  `invalid-decision`; a model catalog DSH cannot read is `feature-off`. `operation-failed` is left
+  for an unexpected failure (§7).
+
+`folder`, `model` and `reasoningEffort` are non-empty. `session.release` `reason` is
 non-empty (`reason-required`).
 
 ### 4.2 Approvals and questions (instance → connector)
@@ -452,7 +469,10 @@ quotes[], arguments?, argumentsStatus?, questions?}`
   `questions[]` (§4.2) and answers with `question.answer`; an `approval` answers with
   `approval.answer`.
 - `choices` are unique non-empty strings.
-- `title` is at most 200 characters, `reason` at most 500.
+- `title` is at most 200 characters, `reason` at most 500. The connector never cuts a session's
+  reason to its own `rationaleChars`; a reason over the descriptor's 500 characters is cut only to
+  fit this field. A session's `ask_fishball` reason over 8,192 bytes is refused to that session
+  (`reason-too-large`, a tool code, not a frame code) and no request is made.
 - Each of `quotes` is at most 2,048 bytes (`LIMITS.quoteBytes`).
 - `callId` is a string, or `null` when the request names no tool call.
 - `arguments` (at most 2,000 characters, `LIMITS.argumentChars`) and `argumentsStatus`
@@ -535,6 +555,7 @@ at the limit is accepted; one above it is refused (`limit-exceeded`, or the code
 | `grantPrefixChars` | 512 | a grant's `prefix` |
 | `questionsPerRequest` | 32 | `questions[]`, `answers[]` |
 | `selectedLabelsPerAnswer` | 32 | `selected[]` |
+| `maxMessageBytes`, `readSessionMessages`, `readSessionBytes` | 65,536 bytes, 12, 12,288 bytes (connector settings) | `session.start` / `session.message` `message`; `session.read`'s result (§4.1). Connector settings, changed only in DSH's form (§0) |
 | `embedJsonBodyBytes`, `embedUploadBodyBytes`, `embedConcurrentStreams`, `embedStreamIdleTimeoutMs`, `embedSseHeartbeatMs` | 1 MiB, 8 MiB, 32, 30,000 ms, 15,000 ms | the built-in instance's embed proxy only; not part of the binding |
 
 The connector's own queue bound, `maxQueuedInputs` (default 200), caps the intake items waiting

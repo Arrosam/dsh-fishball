@@ -199,6 +199,8 @@ export const MANAGED_ERROR = Object.freeze({
  */
 export const DECISION_ACTION = Object.freeze({ release: 'release', allowOnce: 'allow-once', reject: 'reject', grant: 'grant', revoke: 'revoke', answerPrompt: 'answer-prompt', withdraw: 'withdraw', answerQuestion: 'answer-question', stop: 'stop', redirect: 'redirect' })
 export const DECISION_OK = 'ok'
+/** A stop_session that found no turn running (DESIGN §9 decisions `outcome`). */
+export const DECISION_IDLE = 'idle'
 
 /** Watches (DESIGN §5c, §9 watches). */
 export const WATCH_CONDITION = Object.freeze({ finished: 'finished', perTurn: 'per-turn' })
@@ -253,6 +255,11 @@ export const APPROVAL = Object.freeze({
   turnEndEvent: 'turn/end',
   userEvent: 'user/message',
   userSources: Object.freeze(['user', 'user-rpc']),
+  /**
+   * The largest reason (`why`) a session may give ask_fishball, in UTF-8 bytes (the user's
+   * decision, 2026-11-08: 8 KiB). A longer one is refused with ASK_ERROR.reasonTooLarge, never cut.
+   */
+  reasonBytes: 8192,
 })
 /** Fishball's answer (answer_approval, DESIGN §7a.3). */
 export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate' })
@@ -299,6 +306,8 @@ export const ASK_ERROR = Object.freeze({
   invalid: 'invalid-request',
   empty: 'empty',
   cancelled: 'cancelled',
+  /** The reason (`why`) is over APPROVAL.reasonBytes; nothing was sent. */
+  reasonTooLarge: 'reason-too-large',
 })
 export const APPROVAL_RISK = Object.freeze({ low: 'low', high: 'high' })
 /** Your answer on a card in the pile or on the running ask_fishball row (§7a.6, §10e). */
@@ -496,6 +505,12 @@ export const INTAKE_OUTCOME = Object.freeze({ accepted: 'accepted', duplicate: '
 /** Message sources Fishball uses (spike S4; DSH's agent-message relay is S16). */
 export const SOURCE = Object.freeze({
   relay: Object.freeze({ kind: 'agent-message', form: 'relay' }),
+  /**
+   * Which of Fishball's tools sent a relay (the relay's `via`, kept in the log): a redirect's
+   * turn then reads "Fishball (redirect_session)" as its origin (DESIGN §7a.12). Relays written
+   * before it have none and read as message_session, as before.
+   */
+  via: Object.freeze({ message: 'message', redirect: 'redirect' }),
   notice: Object.freeze({ kind: 'fishball-notice', form: 'notice' }),
 })
 
@@ -563,6 +578,10 @@ export const API = Object.freeze({
   managed: '/api/fishball/managed',
   /** POST { requestId, decision, note? }: your Allow once / Reject on a card (the ask_fishball row). */
   requestsAnswer: '/api/fishball/requests/answer',
+  /** POST { sessionId }: you ask to be told when a session finishes (DESIGN §5c, §10). */
+  watches: '/api/fishball/watches',
+  /** POST { watchId }: you close one watch. */
+  watchesRemove: '/api/fishball/watches/remove',
   // The question mode, brand and sidebar-entry routes are retired (C2): the mode changes only in
   // DSH's own form of the row, and the icon is fixed (D22). Their paths answer 404.
   /**
