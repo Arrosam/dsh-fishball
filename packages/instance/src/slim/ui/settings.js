@@ -19,7 +19,7 @@
  * the page's stream connected again (inst-OQ-17).
  */
 
-import { DEFAULT_I18N } from './i18n.js'
+import { DEFAULT_I18N, LANG } from './i18n.js'
 
 /** The admin routes' exact paths; keep the slugs in step with src/slim/host/settings-routes.js SLUGS. */
 const ADMIN = Object.freeze({
@@ -78,7 +78,7 @@ const CLASS = Object.freeze({
 const ARIA = Object.freeze({ label: 'aria-label', role: 'role', status: 'status', alert: 'alert', live: 'aria-live', polite: 'polite' })
 
 /** Dictionary key prefixes of the values a key is built from (ui/i18n.js `settings.*`). */
-const KEY = Object.freeze({ state: 'settings.state.', category: 'settings.category.' })
+const KEY = Object.freeze({ state: 'settings.state.', category: 'settings.category.', namespace: 'settings.ns.', field: 'settings.field.' })
 
 /**
  * One admin call. Always resolves to `{ok:true,result}` or `{ok:false,error:{code}}`, like the
@@ -109,6 +109,49 @@ export function createSettingsView(options = {}) {
     throw new TypeError('fishball settings: a container element is required')
   }
   const document = container.ownerDocument
+
+  /**
+   * A schema's own meta text (DSH's `schema.meta.title`/`description`): either a plain string
+   * or one string per locale, as DSH's locale dictionaries write it.
+   */
+  function metaText(value) {
+    if (typeof value === 'string') return value.trim() === '' ? undefined : value
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
+    const text = value[i18n.lang] ?? value[LANG.en]
+    return typeof text === 'string' && text.trim() !== '' ? text : undefined
+  }
+
+  /** DSH's technical-name fallback: drop the scope and the harness prefixes a module name carries. */
+  function shortName(name) {
+    return (name.startsWith('@') ? name.slice(name.indexOf('/') + 1) : name)
+      .replace(/^cordis:/, '')
+      .replace(/^cordis-plugin-/, '')
+      .replace(/^dsh-(?:host-|client-)?/, '')
+  }
+
+  /** A schema key as words; camelCase splits too, so `reasoningEffort` reads `Reasoning effort`. */
+  function humanizedKey(key) {
+    return shortName(key)
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .split(/[^A-Za-z0-9]+/)
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
+  /** The root node of a serialized schema envelope (`{uid, refs}`) or of a live node. */
+  function schemaRoot(json) {
+    if (json === null || typeof json !== 'object') return undefined
+    return typeof json.uid === 'number' && json.refs?.[json.uid] !== undefined ? json.refs[json.uid] : json
+  }
+
+  /**
+   * A settings label: the schema's own localized title, else the page dictionary, else a
+   * readable form of the key. A schema that ships no metadata never shows a raw key.
+   */
+  function labelOf(meta, key, prefix) {
+    return metaText(meta) ?? t(prefix + key) ?? humanizedKey(key)
+  }
 
   /** One element with an optional class and text. */
   function el(tag, className, text) {
@@ -241,6 +284,13 @@ export function createSettingsView(options = {}) {
   function drawModel(snapshot, selection) {
     const offered = snapshot.models.filter((entry) => entry.provider === selection.provider)
     const chosen = offered.find((entry) => entry.id === selection.model)
+    const providerName = (id) => snapshot.providers.find((entry) => entry.id === id)?.name ?? id
+    // The live session's model, when the child's chat has one. A stale saved default is shown
+    // beside it so the page never claims Fishball runs what it actually does not.
+    const active = snapshot.active ?? null
+    const activeModel = active === null ? undefined : snapshot.models.find((entry) => entry.provider === active.provider && entry.id === active.model)
+    const activeDiffers = active !== null && (active.provider !== selection.provider || active.model !== selection.model)
+    const activeName = activeModel?.name ?? `${active?.provider ?? ''} / ${active?.model ?? ''}`
     const redraw = (next) => { model.say(null); drawModel(snapshot, next) }
     const provider = selectOf(snapshot.providers.map((entry) => [entry.id, entry.name]), selection.provider)
     provider.addEventListener('change', () => {
@@ -277,9 +327,25 @@ export function createSettingsView(options = {}) {
       drawModel(next, next.selection)
       model.say(answer.result.sessionError ? t('settings.modelSavedNotApplied') : t('settings.modelSaved'))
     }, { primary: true }), chosen === undefined || !dirty)
+    const notes = []
+    if (chosen === undefined) {
+      const providerKnown = snapshot.providers.some((entry) => entry.id === selection.provider)
+      if (!providerKnown) notes.push(el('p', CLASS.hint, t('settings.modelProviderUnknown', { provider: selection.provider })))
+      else if (offered.length === 0) notes.push(el('p', CLASS.hint, t('settings.modelCatalogEmpty', { provider: providerName(selection.provider) })))
+      else notes.push(el('p', CLASS.hint, t('settings.modelUnknown', { provider: providerName(selection.provider), model: selection.model })))
+      if (activeDiffers) notes.push(el('p', CLASS.hint, t('settings.modelRunning', { provider: providerName(active.provider), model: activeName })))
+    }
     const actions = el('div', CLASS.row)
     actions.append(save, button(t('settings.reload'), loadModel))
-    model.body.replaceChildren(row, ...(chosen === undefined ? [el('p', CLASS.hint, t('settings.modelUnknown'))] : []), actions)
+    if (chosen === undefined && activeDiffers && activeModel !== undefined) {
+      // The running model is only a draft: the person still presses Save, so the stored default
+      // is never silently rewritten.
+      actions.append(button(t('settings.useRunningModel'), () => {
+        const keepEffort = active.reasoningEffort !== undefined && activeModel.efforts.some((effort) => effort.id === active.reasoningEffort)
+        redraw({ provider: active.provider, model: active.model, ...(keepEffort ? { reasoningEffort: active.reasoningEffort } : {}) })
+      }))
+    }
+    model.body.replaceChildren(row, ...notes, actions)
     lock()
   }
 
@@ -388,7 +454,8 @@ export function createSettingsView(options = {}) {
       const kind = path.length === 0 ? FIELD_KIND.readOnly : kindOf(field)
       return [{
         path, kind,
-        description: typeof field.meta?.description === 'string' ? field.meta.description : undefined,
+        title: metaText(field.meta?.title),
+        description: metaText(field.meta?.description),
         numbers: kind === FIELD_KIND.list && node(field.inner)?.type === SCHEMA.number,
         choices: kind === FIELD_KIND.choice ? field.list.map((choice) => node(choice).value) : undefined,
       }]
@@ -463,10 +530,11 @@ export function createSettingsView(options = {}) {
    */
   function namespaceForm(entry) {
     const section = el('div', CLASS.block)
-    section.append(el('h3', CLASS.subtitle, entry.ns))
+    section.append(el('h3', CLASS.subtitle, labelOf(schemaRoot(entry.schema)?.meta?.title, entry.ns, KEY.namespace)))
     const readers = formFields(entry.schema).map((field) => {
       const { control, hint, read } = fieldControl(field, valueAt(entry.value, field.path), entry.secrets)
-      const caption = field.path.join('.') || entry.ns
+      const path = field.path.join('.')
+      const caption = field.title ?? t(KEY.field + path) ?? t(KEY.field + field.path[field.path.length - 1]) ?? humanizedKey(field.path[field.path.length - 1] ?? entry.ns)
       const node = labelled(caption, control)
       for (const text of [field.description, hint]) if (text) node.append(el('span', CLASS.hint, text))
       section.append(node)
