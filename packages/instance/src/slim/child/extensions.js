@@ -171,7 +171,7 @@ export function createExtensions(ctx) {
       const text = (event.data.content ?? []).filter((block) => block.type === 'text').map((block) => block.text).join('')
       let clipped = text.slice(0, maxChars)
       if (/[\uD800-\uDBFF]$/.test(clipped)) clipped = clipped.slice(0, -1)
-      return { text: clipped, at: event.at }
+      return { text: clipped, at: event.time }
     })
   }
   async function notify(input) {
