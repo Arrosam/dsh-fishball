@@ -346,9 +346,10 @@ function modelShape(value) {
 }
 
 function modelResult(value) {
-  exact(value, ['revision', 'selection', 'providers', 'models'])
+  exact(value, ['revision', 'selection', 'providers', 'models'], ['active'])
   natural(value.revision)
   selectionShape(value.selection)
+  if (has(value, 'active') && value.active !== null) selectionShape(value.active)
   list(value.providers)
   for (const provider of value.providers) {
     exact(provider, ['id', 'name'])
@@ -594,18 +595,25 @@ function portOf(name, service) {
  *   request uses it (§9); it resolves once the session took it and rejects when it could not.
  *   The T07 chat row owns that session and supplies this port. Without it the persisted default
  *   is the whole effect, and the next created agent uses the new model.
+ * @param {() => ({provider: string, model: string, reasoningEffort?: string}|null)} [options.currentModel]
+ *   - the live session's model when the T07 chat has one; `null` before activation. The page
+ *   shows it beside a saved default the catalog no longer offers.
  * @returns {{handle: (operation: string, payload: object) => Promise<{ok: true, result: object}|{ok: false, error: object}>}}
  */
 export function createAdminService(options) {
-  const { settings, plugins, llm, applyModel } = options ?? {}
+  const { settings, plugins, llm, applyModel, currentModel } = options ?? {}
   if (applyModel !== undefined && typeof applyModel !== 'function') {
     throw new TypeError('fishball admin: applyModel must be a function')
+  }
+  if (currentModel !== undefined && typeof currentModel !== 'function') {
+    throw new TypeError('fishball admin: currentModel must be a function')
   }
   const ports = Object.freeze({
     settings: portOf('settings', settings),
     plugins: portOf('plugins', plugins),
     llm: portOf('llm', llm),
     applyModel,
+    currentModel,
   })
   return Object.freeze({
     /**
@@ -712,10 +720,16 @@ async function catalog(llm) {
   return { providers, models }
 }
 
+/** The live session's selection, or null when the chat has not activated a session yet. */
+function currentSelection(ports) {
+  if (ports.currentModel === undefined) return null
+  try { return selectionOfValue(ports.currentModel()) ?? null } catch { return null }
+}
+
 async function modelSnapshot(ports) {
   const { entry, selection } = modelEntry(ports.settings)
   const { providers, models } = await catalog(ports.llm)
-  return { revision: entry.revision, selection, providers, models }
+  return { revision: entry.revision, selection, providers, models, active: currentSelection(ports) }
 }
 
 /** Refuse a pair the child's catalog does not offer, before any write can persist it. */
@@ -1051,6 +1065,10 @@ export function apply(ctx) {
     applyModel: (selection) => {
       const chat = ctx.get(CHAT_SERVICE)
       return chat?.applyModel === undefined ? Promise.resolve() : chat.applyModel(selection)
+    },
+    currentModel: () => {
+      const chat = ctx.get(CHAT_SERVICE)
+      return chat?.currentModel?.() ?? null
     },
   })
   const endpoint = createAdminEndpoint({ service })
