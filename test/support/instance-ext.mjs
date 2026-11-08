@@ -387,7 +387,6 @@ export async function bootChild(t, { activate = false, configure, home: existing
   const profileBundles = ['@deepseek-ai/dsh-base', ...(watchdogEnabled ? ['fishball-watchdog'] : []), ...extraBundles]
   await writeFile(tempPath(profileFile, { root: home }), JSON.stringify({ name: 'fishball', private: true, dsh: { profile: { bundles: profileBundles } } }, null, 2) + '\n')
   const tools = createTools()
-  const logs = []
   const agents = []
   const agentsById = new Map()
   const bundles = [
@@ -553,7 +552,7 @@ export async function bootChild(t, { activate = false, configure, home: existing
     agents,
     agentsById,
     host,
-    logs,
+    logs: context.logs,
     context,
     rows,
     bridge,
