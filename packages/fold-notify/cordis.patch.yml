@@ -1,0 +1,5 @@
+# Child-profile row; placement and bundle enablement belong to X0-B.
+- insert:
+    - id: fishball-fold-notify
+      name: 'fishball-fold-notify'
+      config: {}
