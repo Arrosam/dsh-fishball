@@ -36,6 +36,17 @@ Evidence markers:
 - **[V]**: verified by reading the installed package files under `~/Library/Application Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/`. Paths below are relative to that directory.
 - **[I]**: inferred, not yet run. Every [I] that the design depends on is listed as a spike in §13 and must pass before the dependent phase is built.
 
+**One-way MCP direction (user-selected, not implemented):** connector hosts the MCP server;
+Fishball/external managers are plain clients controlling DSH. No agent callback MCP server is
+required. Use durable poll tools with optional notification hints; recommend a custom first-party
+pushback adapter for Fishball's explicit idle-agent wake. External capability loss is accepted.
+See [capability matrix, delivery options and A/B questions](<docs/plugins/connector-mcp-option.md>).
+The [custom contract 2.0 baseline](<docs/connector-contract-2.0.md>) is preserved but parked;
+protocol-dependent core/plugin tracks wait for MCP feasibility and schema freeze. The earlier
+bidirectional idea is rejected. Watchdog failure means effective off/Fishball fallback; questions/
+plan reviews always reach Fishball (OQ-04 = B). These [routing decisions](<docs/plugins/instance-extension-points.md>)
+remain local to the Fishball instance, not a callback-MCP topology.
+
 ## 0. Summary
 
 - **One package, one profile row.** `dsh-fishball` is a single DSH plugin bundle. It is installed like any other plugin, into whichever profile you choose (Q1), and serves the sessions in the same DSH process.
