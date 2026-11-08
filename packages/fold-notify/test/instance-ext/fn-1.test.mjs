@@ -10,15 +10,14 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { PACKAGE, configDefault, packageFile, packageJson, packageModule } from '../support/instance-ext-plugins.mjs'
+import { PACKAGE, configDefault, packageFile, packageJson, packageModule } from '../../../../test/support/instance-ext-plugins.mjs'
 
 const FOLD = PACKAGE.fold
 
-function stubContext() {
+function stubContext({ withInstance = true } = {}) {
   const provided = new Map()
   const services = {
     tools: { register: () => () => {} },
-    fishballChat: { sessionId: () => 'session-fishball', deliverInbox: async () => {}, notify: async () => {} },
     fishballInstance: {
       apiVersion: 1,
       manager: { sessionId: () => 'session-fishball', registerSetup: () => () => {} },
@@ -27,13 +26,14 @@ function stubContext() {
       attention: { set: () => () => {} },
     },
   }
+  if (!withInstance) delete services.fishballInstance
   return {
     get: (name) => services[name] ?? provided.get(name),
     provide: (name, value) => { provided.set(name, value); return () => provided.delete(name) },
     effect: (execute) => { const dispose = execute(); return dispose },
     logger: () => ({ info() {}, warn() {}, error() {}, debug() {} }),
     on: () => () => {},
-    tools: services.tools,
+    ...services,
     provided,
     services,
   }
@@ -46,7 +46,7 @@ describe('FN-1 package and row', () => {
     assert.equal(manifest.version, '0.1.0-alpha.0')
     assert.equal(manifest.dsh?.bundle?.patch, './cordis.patch.yml')
     for (const file of ['index.js', 'src/constants.js', 'src/config.js', 'cordis.patch.yml']) {
-      assert.ok(manifest.files?.includes(file) || manifest.files?.includes('src/'), 'package.json files list covers ' + file)
+      assert.ok(manifest.files?.includes(file) || (file.startsWith('src/') && manifest.files?.includes('src/')), 'package.json files list covers ' + file)
     }
     assert.match(manifest.engines?.dsh ?? '', />=0\.2\.1-rc\.5/)
     assert.ok(manifest.peerDependencies?.['fishball-instance'], 'peerDependencies names the instance')
@@ -57,8 +57,8 @@ describe('FN-1 package and row', () => {
     assert.equal(row.name, 'fishball-fold-notify')
     assert.ok(Array.isArray(row.inject), 'inject is a list')
     assert.ok(row.inject.includes('tools'), 'inject tools')
-    assert.ok(row.inject.some((name) => name.startsWith('fishballChat')), 'inject fishballChat')
-    assert.ok(row.inject.some((name) => name.startsWith('fishballInstance')), 'inject fishballInstance')
+    assert.ok(row.inject.includes('fishballInstance?'), 'inject optional public fishballInstance')
+    assert.ok(!row.inject.some((name) => name.replace(/\?$/, '') === 'fishballChat'), 'fishballChat is internal')
     assert.equal(typeof row.apply, 'function')
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
@@ -80,14 +80,14 @@ describe('FN-1 package and row', () => {
     assert.throws(() => Config({ batchWindowMs: 1.5 }))
   })
 
-  it('FN1-BVA-02 systemNotification is off or when-hidden', async () => {
+  it('FN1-EP-02 systemNotification is off or when-hidden', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.doesNotThrow(() => Config({ systemNotification: 'off' }))
     assert.doesNotThrow(() => Config({ systemNotification: 'when-hidden' }))
     assert.throws(() => Config({ systemNotification: 'always' }))
   })
 
-  it('FN1-BVA-03 foldDefault is a boolean', async () => {
+  it('FN1-EP-03 foldDefault is a boolean', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.doesNotThrow(() => Config({ foldDefault: true }))
     assert.doesNotThrow(() => Config({ foldDefault: false }))
@@ -115,8 +115,7 @@ describe('FN-1 constants and loading', () => {
 
   it('FN1-EP-01 the row also loads without the optional instance service', async () => {
     const row = await packageModule(FOLD, 'index.js')
-    const ctx = stubContext()
-    delete ctx.services.fishballInstance
+    const ctx = stubContext({ withInstance: false })
     await assert.doesNotReject(async () => row.apply(ctx, {}))
   })
 })

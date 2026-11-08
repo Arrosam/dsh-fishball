@@ -11,7 +11,7 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { bootChild, messageSource, messageText } from '../support/instance-ext.mjs'
+import { bootChild, messageSource, messageText } from '../../../../test/support/instance-ext.mjs'
 
 const MANAGER = 'fishball-fold-notify'
 

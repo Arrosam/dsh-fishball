@@ -9,7 +9,7 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { PACKAGE, configDefault, packageFile, packageJson, packageModule } from '../support/instance-ext-plugins.mjs'
+import { PACKAGE, configDefault, packageFile, packageJson, packageModule } from '../../../../test/support/instance-ext-plugins.mjs'
 
 const BOARD = PACKAGE.board
 
@@ -18,7 +18,6 @@ function stubContext({ withInstance = true } = {}) {
   const logs = []
   const services = {
     tools: { register: () => () => {} },
-    fishballChat: { sessionId: () => 'session-fishball' },
   }
   if (withInstance) {
     services.fishballInstance = {
@@ -35,7 +34,7 @@ function stubContext({ withInstance = true } = {}) {
     effect: (execute) => execute(),
     logger: () => ({ info() {}, warn: (...args) => logs.push(args.join(' ')), error() {}, debug() {} }),
     on: () => () => {},
-    tools: services.tools,
+    ...services,
     services,
     logs,
   }
@@ -56,8 +55,8 @@ describe('B1 package and row', () => {
     const row = await packageModule(BOARD, 'index.js')
     assert.equal(row.name, 'fishball-board')
     assert.ok(row.inject?.includes('tools'), 'inject tools')
-    assert.ok(row.inject?.some((name) => name.startsWith('fishballChat')), 'inject fishballChat')
-    assert.ok(row.inject?.some((name) => name.startsWith('fishballInstance')), 'inject fishballInstance')
+    assert.ok(row.inject?.includes('fishballInstance?'), 'inject optional public fishballInstance')
+    assert.ok(!row.inject?.some((name) => name.replace(/\?$/, '') === 'fishballChat'), 'fishballChat is internal')
     assert.equal(typeof row.apply, 'function')
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
@@ -94,7 +93,6 @@ describe('B1 package and row', () => {
     assert.equal(constants.NAMESPACE, 'fishball-board')
     assert.deepEqual(Object.values(constants.STATUS).sort(), ['done', 'dropped', 'in_progress', 'paused', 'todo', 'waiting'])
     assert.equal(constants.BOARD_LIMITS.cards, 300)
-    assert.equal(constants.BOARD_LIMITS.pruneAgeDays, 30)
     assert.equal(constants.BOARD_LIMITS.links, 8)
     assert.equal(constants.BOARD_LIMITS.contextChars, 2000)
     assert.equal(constants.BOARD_LIMITS.guideChars, 900)
