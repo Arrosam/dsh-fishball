@@ -46,9 +46,10 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { appendPluginRecord } from '@deepseek-ai/dsh-session'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
-import { ERROR, INBOX_KIND, LIMITS, ROUTES } from '../contract.js'
+import { ContractError, ERROR, INBOX_KIND, LIMITS, OPERATION, ROUTES, validateRequest } from '../contract.js'
 import { applyPersona } from './persona.js'
 import { CARD_RECORD } from '../card-record.js'
+import { gate } from './extensions.js'
 
 /** The child serves the contract's /api/* tails; the broker adds /fishball/embed in front (3.1). */
 const API = (tail) => ROUTES.api.slice(ROUTES.prefix.length) + tail
@@ -170,6 +171,21 @@ const SOURCE = Object.freeze({
   user: Object.freeze({ kind: 'user' }),
   relay: Object.freeze({ kind: 'agent-message', form: 'relay' }),
   notice: Object.freeze({ kind: 'fishball-notice', form: 'notice' }),
+})
+
+/** Local batching bounds; the wire envelope below is only a carrier for its image validator. */
+const INBOX_BATCH = Object.freeze({
+  minItems: 1,
+  maxItems: 20,
+  separator: '\n\n',
+  encoding: 'utf8',
+  minimumTimestamp: 0,
+  stringFields: Object.freeze(['sourceSessionId', 'messageId', 'dedupeKey']),
+  optionKeys: Object.freeze(['skipImages']),
+  imageEnvelope: Object.freeze({
+    messageId: 'local-image-validation', kind: INBOX_KIND.system,
+    sourceSessionId: 'local-image-validation', text: '', dedupeKey: 'local-image-validation', at: 0,
+  }),
 })
 
 const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -498,8 +514,9 @@ export function createChat(ctx, options = {}) {
   }
 
   /** Fishball's persona in the agent's own scope, on create and on every resume (T07). */
-  function composePersona(agentCtx) {
+  async function composePersona(agentCtx, live) {
     applyPersona(agentCtx.systemPrompt)
+    await options.extensions?.setup(agentCtx, live)
   }
 
   /**
@@ -510,7 +527,7 @@ export function createChat(ctx, options = {}) {
   function configure(agentCtx, live) {
     setSandboxMode(live.session, POLICY.sandbox)
     setApprovalPolicy(live.session, POLICY.approval)
-    composePersona(agentCtx)
+    return composePersona(agentCtx, live)
   }
 
   async function createSession(agents) {
@@ -542,18 +559,15 @@ export function createChat(ctx, options = {}) {
   }
 
   async function open() {
+    if (closed) unavailable()
     const agents = requireAgents()
-    if (sessionId === undefined) {
-      agent = await createSession(agents)
-      return agent
-    }
-    const live = agents.get(sessionId)
-    if (live !== undefined) {
-      agent = live
-      return live
-    }
-    agent = await resumeSession(agents, sessionId)
-    return agent
+    const existing = sessionId === undefined ? undefined : agents.get(sessionId)
+    const live = existing ?? await (sessionId === undefined ? createSession(agents) : resumeSession(agents, sessionId))
+    if (closed) unavailable()
+    if (existing && agent !== existing) await composePersona(existing.ctx, existing)
+    if (closed) unavailable()
+    agent = live
+    return live
   }
 
   /** One activation owner: concurrent reads, sends and reminder deliveries share the attempt. */
@@ -601,7 +615,9 @@ export function createChat(ctx, options = {}) {
     if (content.length === 0) invalid()
     const live = await activate()
     const message = createUserMessage({ content, source })
-    live.followup(message)
+    if (options.extensions) return options.extensions.queue(live, message)
+    await live.followup(message)
+    await ctx.get('sessionPersistence')?.flush()
     return { messageId: message.id }
   }
 
@@ -633,25 +649,62 @@ export function createChat(ctx, options = {}) {
   }
 
   /**
-   * Queue one inbox item as Fishball's own turn (§5.2, §6.3). The host's text is forwarded as it
-   * arrived, so the sender's framing and untrusted block stay intact; this method never
-   * re-frames content. Images are pulled into the child's own store first, and a model that
-   * cannot accept them refuses before any turn is queued.
+   * Queue one inbox item or a batch as Fishball's own turn (§5.2, §6.3, §12.5.2). The host's
+   * text keeps its framing and untrusted block; batches join texts with one blank line.
+   * Images are pulled into the child's own store first, and a model that cannot accept them
+   * refuses before any turn is queued. Array bounds do not change the singleton size policy.
    */
   async function deliverInbox(item, options = {}) {
-    if (!isRecord(item) || typeof item.text !== 'string' || item.text === '') {
-      throw new TypeError('fishball-native-chat: an inbox item needs text')
-    }
-    let blocks = []
-    if (options.skipImages !== true && Array.isArray(item.images) && item.images.length > 0) {
+    async function prepareImages(entry) {
+      if (options.skipImages === true || !Array.isArray(entry.images) || entry.images.length === 0) return []
       if (typeof images?.receiveInbox !== 'function') {
         throw new TypeError('fishball-native-chat: the image service is required for inbox images')
       }
       const live = await activate()
-      const received = await images.receiveInbox(item, { agent: live })
-      blocks = received.blocks
+      return (await images.receiveInbox(entry, { agent: live })).blocks
     }
-    return queue(item.text, blocks, inboxSourceOf(item))
+
+    if (Array.isArray(item)) {
+      if (!isRecord(options) || Object.keys(options).some((key) => !INBOX_BATCH.optionKeys.includes(key))) invalid()
+      if (Object.hasOwn(options, 'skipImages') && typeof options.skipImages !== 'boolean') invalid()
+      for (const entry of item) {
+        if (!isRecord(entry) || typeof entry.text !== 'string' || entry.text === '') invalid()
+        if (Object.hasOwn(entry, 'kind') && !Object.values(INBOX_KIND).includes(entry.kind)) invalid()
+        for (const key of INBOX_BATCH.stringFields) {
+          if (Object.hasOwn(entry, key) && (typeof entry[key] !== 'string' || entry[key] === '')) invalid()
+        }
+        if (Object.hasOwn(entry, 'at') && (!Number.isSafeInteger(entry.at) || entry.at < INBOX_BATCH.minimumTimestamp)) invalid()
+      }
+      if (item.length < INBOX_BATCH.minItems) invalid()
+      if (item.length > INBOX_BATCH.maxItems) throw new ChatApiError(CHAT_ERROR.tooLarge, MESSAGE.tooLarge)
+      const value = item.map((entry) => gate.prefix(entry) + entry.text).join(INBOX_BATCH.separator)
+      if (Buffer.byteLength(value, INBOX_BATCH.encoding) > CHAT_LIMITS.messageBytes) {
+        throw new ChatApiError(CHAT_ERROR.tooLarge, MESSAGE.tooLarge)
+      }
+      // Validate every image before activation or transfer: a later bad item cannot leave a
+      // partially fetched batch. Reuse the wire image rules without imposing its required ids.
+      for (const entry of item) {
+        if (!Object.hasOwn(entry, 'images')) continue
+        if (!Array.isArray(entry.images)) invalid()
+        if (entry.images.length > LIMITS.imagesPerMessage) throw new ContractError(ERROR.tooLarge)
+        try {
+          validateRequest(OPERATION.inboxPush, { ...INBOX_BATCH.imageEnvelope, images: entry.images })
+        } catch (error) {
+          if (error instanceof ContractError && error.code === ERROR.limit) throw new ContractError(ERROR.tooLarge)
+          throw error
+        }
+        if (options.skipImages !== true && entry.images.length > 0 && !Object.hasOwn(entry, 'sourceSessionId')) {
+          throw new ContractError(ERROR.invalid)
+        }
+      }
+      const blocks = []
+      for (const entry of item) blocks.push(...await prepareImages(entry))
+      return queue(value, blocks, item.length === INBOX_BATCH.minItems ? inboxSourceOf(item[0]) : SOURCE.notice)
+    }
+    if (!isRecord(item) || typeof item.text !== 'string' || item.text === '') {
+      throw new TypeError('fishball-native-chat: an inbox item needs text')
+    }
+    return queue(gate.prefix(item) + item.text, await prepareImages(item), inboxSourceOf(item))
   }
 
   /**
@@ -889,6 +942,8 @@ export function createChat(ctx, options = {}) {
     listeners.clear()
     for (const dispose of disposers.splice(0)) { try { dispose() } catch { /* the row is going away */ } }
   }
+
+  options.extensions?.bind({ activate, sessionId: () => agent?.id })
 
   return Object.freeze({
     start,
