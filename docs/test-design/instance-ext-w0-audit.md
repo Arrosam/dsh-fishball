@@ -32,7 +32,7 @@ Only tests, test helpers and test/design documentation changed. No product imple
 
 ## Technique correction rerun — 2026-11-09
 
-Taxonomy is now exactly EP, BVA, Decision Table, State Transition and Use Case. Former positive cases are valid EP partitions or documented decision rules, not a sixth category. W0 true user e2e flows remain assigned to later integration tasks; the K1 H-STUB scenario remains State Transition because the child is a fixture.
+Taxonomy is now exactly EP, BVA, Decision Table, State Transition and Use Case. Former positive cases are valid EP partitions or documented decision rules, not a sixth category. This historical revision incorrectly deferred Use Case definitions to later integration tasks; the subsequent Use Case revision supersedes that approach. Use Cases must constrain design before development, including flows driven through stubs and written flows awaiting later-task execution.
 
 All five package-local gates were rerun on 0.2.2-rc.1 with isolated homes and npm cache under `/private/tmp`. Evidence: `/private/tmp/fbtest-w0-techniques.Toq5QP`.
 
@@ -47,6 +47,16 @@ All five package-local gates were rerun on 0.2.2-rc.1 with isolated homes and np
 X0-C was additionally rerun after its final ID-only reclassification (`XC-ST-02` → `XC-EP-V-07`): `/private/tmp/fbtest-w0-core-techniques.xA3U9g/x0-c.log`, exit 1 for the same missing service.
 
 No shared harness code changed in this correction, so the regression suite was not rerun; the prior green regression above remains the latest full-suite evidence. No product code changed, and the four pending ambiguity decisions were left untouched.
+
+## Predicted Use Case revision — 2026-11-09
+
+Use Cases are now specified before development, not deferred as definitions: 12 actor-goal definitions, 42 individual flows (29 executable and 13 explicit owner-named TODOs). Each definition gives actors, preconditions, main/alternative/exception flows and observable postconditions, traced to task and X IDs. W0 totals exclude the unchanged blocked window-sum case: 64 executable + 13 TODO = 77; including that block, the five files register 78 tests. Secondary EP/DT/ST coverage is not double-counted.
+
+The five files were run on 0.2.2-rc.1 with isolated `/private/tmp` homes/cache. Initial evidence: `/private/tmp/fbtest-w0-usecases.VngM8W`. All five exited 1. K1 initially exposed a test mistake (attempting a second handshake on an already-handshaken connection); that is not accepted as a missing-feature red and requires the corrected K1 rerun evidence below. Other files: X0-C 20 missing-service failures + 2 TODO; FN-1 10 missing-package failures + 3 TODO; WD-1 9 missing-package failures + 5 TODO + 1 unchanged skip; B1 10 missing-package failures + 3 TODO.
+
+Corrected K1 rerun: `/private/tmp/fbtest-w0-uc-k1.iPztFw/k1.log`, exit 1, 15 failures. The legacy 1.1 child successfully attaches and lists related sessions; its remaining failure is the missing zero-valued `state.unread`, not protocol misuse. Final aggregate: **64 expected missing-feature failures, 13 TODO, 1 unchanged skip, 0 passes** across 78 registered test entries. All five task files are red.
+
+No shared harness changed, so no new regression run was needed. No product code or pending ambiguity decision changed. Written TODOs constrain existing design behavior and do not implement or resolve the pending core-gap discussion.
 
 ## Acceptance questions
 

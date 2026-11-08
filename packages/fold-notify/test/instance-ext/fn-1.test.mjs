@@ -63,7 +63,7 @@ describe('FN-1 package and row', () => {
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
 
-  it('FN1-EP-V-03 the config defaults are foldDefault true, systemNotification when-hidden, batchWindowMs 1500', async () => {
+  it('FN1-UC-CONFIG-M [formerly FN1-EP-V-03] the config defaults are foldDefault true, systemNotification when-hidden, batchWindowMs 1500', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.equal(configDefault(Config, 'foldDefault'), true)
     assert.equal(configDefault(Config, 'systemNotification'), 'when-hidden')
@@ -87,11 +87,10 @@ describe('FN-1 package and row', () => {
     assert.throws(() => Config({ systemNotification: 'always' }))
   })
 
-  it('FN1-EP-03 foldDefault is a boolean', async () => {
+  it('FN1-UC-CONFIG-A [formerly FN1-EP-03] foldDefault is a boolean', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.doesNotThrow(() => Config({ foldDefault: true }))
     assert.doesNotThrow(() => Config({ foldDefault: false }))
-    assert.throws(() => Config({ foldDefault: 'true' }))
   })
 })
 
@@ -107,15 +106,26 @@ describe('FN-1 constants and loading', () => {
     assert.equal(constants.SEEN.threshold, 0.5)
   })
 
-  it('FN1-DT-01 the row loads over a stub fishballInstance', async () => {
+  it('FN1-UC-LOAD-M [formerly FN1-DT-01] the row loads over a stub fishballInstance', async () => {
     const row = await packageModule(FOLD, 'index.js')
     const ctx = stubContext()
     await assert.doesNotReject(async () => row.apply(ctx, {}))
   })
 
-  it('FN1-DT-02 the row also loads without the optional instance service', async () => {
+  it('FN1-UC-LOAD-A [formerly FN1-DT-02] the row also loads without the optional instance service', async () => {
     const row = await packageModule(FOLD, 'index.js')
     const ctx = stubContext({ withInstance: false })
     await assert.doesNotReject(async () => row.apply(ctx, {}))
   })
+})
+
+// Flows defined before these tests in docs/test-design/instance-ext-w0-skeleton-use-cases.md.
+describe('FN1 user configuration and deferred bundle journeys', () => {
+  it('FN1-UC-CONFIG-E user submits an invalid setting and Config rejects it', async () => {
+    const { Config } = await packageModule(FOLD, 'index.js')
+    assert.throws(() => Config({ foldDefault: 'true' }))
+  })
+  it.todo('FN1-UC-BUNDLE-M [X0-B] user enables the bundled plugin')
+  it.todo('FN1-UC-BUNDLE-A [X0-B] user disables and restart preserves the choice')
+  it.todo('FN1-UC-BUNDLE-E [X0-B] unavailable placement permits child startup')
 })

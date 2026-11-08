@@ -7,7 +7,8 @@
  * manager agent is queued. No child module is imported for the expectations.
  *
  * Techniques: EP (equivalence partitions), DT (Decision Table), ST (State
- * transitions), BVA (boundary values). Every case names its X point.
+ * transitions), BVA (boundary values), UC (actor-goal flows at the fixture boundary).
+ * UC contracts: docs/test-design/instance-ext-w0-core-use-cases.md. Every case names its X point.
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
@@ -65,7 +66,7 @@ describe('X0-C service surface (X1–X16 stub contract)', () => {
 })
 
 describe('X0-C X2 manager.registerSetup', () => {
-  it('XC-DT-01 create: a registration made before the live Session is applied after the persona, in order', async (t) => {
+  it('XC-UC-01-M create: a registration made before the live Session is applied after the persona, in order', async (t) => {
     const h = await bootChild(t, { activate: false })
     const service = h.requireInstance()
     service.manager.registerSetup(MANAGER, (agentCtx) => {
@@ -82,7 +83,7 @@ describe('X0-C X2 manager.registerSetup', () => {
     assert.deepEqual(ctx.order.slice(-2), ['fold-section', 'board-section'], 'both registrations run after the persona in registration order')
   })
 
-  it('XC-DT-02 resume: the same registration is applied again on agents.resume', async (t) => {
+  it('XC-UC-01-A1 resume: the same registration is applied again on agents.resume', async (t) => {
     const h = await bootChild(t, { activate: false })
     const service = h.requireInstance()
     service.manager.registerSetup(MANAGER, (agentCtx) => {
@@ -96,7 +97,7 @@ describe('X0-C X2 manager.registerSetup', () => {
     assert.ok(h.agentCtxs()[1].ctx.tools.names().includes('fold_resume'), 'the registration ran on resume')
   })
 
-  it('XC-DT-03 live: a registration made while the agent is live is applied at once', async (t) => {
+  it('XC-UC-01-A2 live: a registration made while the agent is live is applied at once', async (t) => {
     const { h, service } = await live(t)
     const { ctx } = h.agentCtxs()[0]
     assert.equal(ctx.tools.names().includes('fold_late'), false, 'precondition: not registered')
@@ -108,7 +109,7 @@ describe('X0-C X2 manager.registerSetup', () => {
     assert.ok(ctx.sections.has('fold-late-section'))
   })
 
-  it('XC-DT-04 a throwing registration is logged and skipped; a later one still applies', async (t) => {
+  it('XC-UC-01-E1 a throwing registration is logged and skipped; a later one still applies', async (t) => {
     const h = await bootChild(t, { activate: false })
     const service = h.requireInstance()
     service.manager.registerSetup(MANAGER, () => { throw new Error('setup boom') })
@@ -142,14 +143,14 @@ describe('X0-C X2 manager.registerSetup', () => {
     again()
   })
 
-  it('XC-EP-V-07 a registration made during a turn is on the live agent before the next step', async (t) => {
+  it('XC-UC-01-A3 registration is immediately visible on a fixture manager marked running', async (t) => {
     const { h, service } = await live(t)
     const { ctx } = h.agentCtxs()[0]
     h.manager().status = 'running'
     service.manager.registerSetup(MANAGER, (agentCtx) => {
       agentCtx.tools.register({ name: 'fold_midturn', description: 'mid-turn' })
     })
-    assert.ok(ctx.tools.names().includes('fold_midturn'), 'SP-X1: visible to the step after the tool result')
+    assert.ok(ctx.tools.names().includes('fold_midturn'), 'tool is installed in the running fixture scope; real next-request proof belongs to X-E2E')
   })
 })
 
@@ -193,7 +194,7 @@ describe('X0-C X10 manager.notify', () => {
     ...overrides,
   })
 
-  it('XC-DT-05 wake:true is one notice turn with the plugin source', async (t) => {
+  it('XC-UC-02-M wake:true is one notice turn with the plugin source', async (t) => {
     const { h, service } = await live(t)
     const result = await notify(service)
     assert.equal(result.status ?? result, 'queued')
@@ -204,7 +205,7 @@ describe('X0-C X10 manager.notify', () => {
     assert.equal(h.manager().followups.length, 1)
   })
 
-  it('XC-DT-06 wake:false is held and joins the next turn', async (t) => {
+  it('XC-UC-02-A1 wake:false is held and joins the next turn', async (t) => {
     const { h, service } = await live(t)
     const result = await notify(service, { wake: false, text: 'held notice' })
     assert.equal(result.status ?? result, 'held')
@@ -214,7 +215,7 @@ describe('X0-C X10 manager.notify', () => {
     assert.match(queued, /held notice/, 'the held notice is in the next turn')
   })
 
-  it('XC-DT-07 a duplicate dedupeKey is answered duplicate and starts no second turn', async (t) => {
+  it('XC-UC-02-E1 a duplicate dedupeKey is answered duplicate and starts no second turn', async (t) => {
     const { h, service } = await live(t)
     const first = await notify(service, { dedupeKey: 'same-key' })
     const second = await notify(service, { dedupeKey: 'same-key', text: 'again' })
@@ -224,15 +225,18 @@ describe('X0-C X10 manager.notify', () => {
     assert.doesNotMatch(h.manager().followups.map(messageText).join('\n'), /again/)
   })
 
-  it('XC-DT-08 wake:true queues whether the manager is idle or busy', async (t) => {
-    const { h, service } = await live(t)
-    const idle = await notify(service, { dedupeKey: 'idle' })
-    assert.equal(idle.status ?? idle, 'queued')
-    h.manager().status = 'running'
-    const busy = await notify(service, { dedupeKey: 'busy', text: 'while busy' })
-    assert.equal(busy.status ?? busy, 'queued')
-    assert.equal(h.manager().followups.length, 2)
-  })
+  // One independent flow per manager state; share the actor action and acceptance checks.
+  for (const state of ['idle', 'running']) {
+    const flowId = state === 'idle' ? 'XC-UC-02-A2' : 'XC-UC-02-A3'
+    it(`${flowId} X10 wake:true queues while manager is ${state}`, async (t) => {
+      const { h, service } = await live(t)
+      h.manager().status = state
+      const result = await notify(service, { dedupeKey: state })
+      assert.equal(result.status ?? result, 'queued')
+      assert.equal(h.manager().followups.length, 1)
+      assert.match(messageText(h.lastFollowup()), /a watchdog notice/)
+    })
+  }
 })
 
 describe('X0-C X11 manager.userTexts', () => {
@@ -271,3 +275,6 @@ describe('X0-C X11 manager.userTexts', () => {
     assert.ok(item.text.length <= 3)
   })
 })
+
+it.todo('XC-UC-01-A4 [owner: X-E2E] register during a real model turn, offer on next request, dispose and omit on following request')
+it.todo('XC-UC-02-E2 [owner: X-E2E] restart the child and retry a durable dedupeKey without a second notice turn')
