@@ -505,26 +505,30 @@ lines.
 | X0-B, RP | `src/native-runtime/constants.js` (`bundledPlugins`) | X0-B first; RP appends one entry |
 | WD-11, WD-13 | the coupling interface | shared stub, as watchdog §14 |
 
-### 5.4 W0 test files (definition of done per X0 task)
+### 5.6 W0 test files (definition of done per task)
 
-The X0 tests are black-box and live outside `test/run.mjs`'s glob, so the existing suite is
-unchanged and each task can be selected alone (`node --test test/instance-ext/<file>`). The full
-case table, technique counts and open questions are in `docs/test-design/instance-ext-w0.md`.
+The tests are black-box and live outside `test/run.mjs`'s `test/*.test.mjs` glob, so the existing
+suite stays green and each task is selected by file. The full case table, the technique counts and
+the open questions are in `docs/test-design/instance-ext-w0.md`. The developer's check command is
+`node --test <file>` with `FBTEST_DSH_RUNTIME` naming the installed 0.2.2-rc.1 runtime.
 
-| Task | Gating test file | Hooks |
+| Wave/task | Gating test file | Covers |
 | --- | --- | --- |
-| **X0-C** | `test/instance-ext/x0-c.test.mjs` | X1–X3, X10, X11 |
-| **X0-I** | `test/instance-ext/x0-i.test.mjs` | X9 |
-| **X0-U** | `test/instance-ext/x0-u.test.mjs` | X4–X7 (server/list/signal half) and the X3 fallback row |
-| **X0-W** | `test/instance-ext/x0-w.test.mjs` | X12, X8 (X8 also needs K1) |
-| **X0-G** | `test/instance-ext/x0-g.test.mjs` | X13 |
-| **X0-A** | `test/instance-ext/x0-a.test.mjs` | X15 |
-| **X0-S** | `test/instance-ext/x0-s.test.mjs` | X14, X16, X19 |
-| **X0-B** | `test/instance-ext/x0-b.test.mjs` | X17, X18, §2.2 start-up rules |
+| **W0 K1** | `test/instance-ext/k1.test.mjs` | contract 1.2 `instance.attention`, `LIMITS.unreadMax`, mixed peers, the host bridge and `state.unread` |
+| **W0 X0-C** | `test/instance-ext/x0-c.test.mjs` | X1, X2, X10, X11 and X3's record-type rule only (§5.5) |
+| **W0 FN-1** | `test/instance-ext/fn-1.test.mjs` | package, row, config bounds, fixed constants |
+| **W0 WD-1** | `test/instance-ext/wd-1.test.mjs` | package, row, §9 config bounds (no `enabled`, U7), window sums |
+| **W0 B1** | `test/instance-ext/b1.test.mjs` | package, row, Config ranges, constants, loads with and without the points |
+| W1 X0-I | `test/instance-ext/x0-i.test.mjs` | X9 |
+| W1 X0-G | `test/instance-ext/x0-g.test.mjs` | X13 |
+| W1 X0-A | `test/instance-ext/x0-a.test.mjs` | X15 server half (claims and routing; tag/card are PANELS) |
+| W1 X0-S | `test/instance-ext/x0-s.test.mjs` | X14, X16, X19 (U7 gate source, U8 claims, §2.6) |
+| W1 X0-W | `test/instance-ext/x0-w.test.mjs` | X12, X8 (X8 also needs K1) |
+| W2 X0-B | `test/instance-ext/x0-b.test.mjs` | X17, X18, §2.2 start-up rules |
 
-K1 is a separate W0 task and has its own suite; it is not in these files. The X0-U page hook's
-browser-only cases (sidebar order, `onSignal` filter, presenter ownership) are listed as not yet
-runnable in `docs/test-design/instance-ext-w0.md` §6.
+~~X0-U~~ is withdrawn (U10); its test file is retired with it. The page cases move to PG-1's
+browser tests. K1's `state.unread` end-to-end case uses the existing H-STUB harness (one real DSH
+boot) and stays under `/private/tmp` (the W0 rule).
 
 ## 6. Test-design outline per task (black-box, for the tester)
 

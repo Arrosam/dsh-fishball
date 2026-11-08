@@ -19,10 +19,12 @@ const SID = 'session-managed-1'
 const BRIEF = 'brief-1'
 const GATE_REFUSALS = ['watchdog-brief-required', 'watchdog-unavailable', 'supervision-paused', 'store-unavailable']
 
-async function live(t, options) {
+async function live(t, options = {}) {
   const h = await bootChild(t, { activate: true, ...options })
   return { h, service: h.requireInstance() }
 }
+
+const tick = (ms = 20) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function register(h, pluginId = OWNER) {
   const service = h.requireInstance()
@@ -89,8 +91,9 @@ describe('X0-S X14 supervision state', () => {
     const reg = await register(h)
     assert.equal(service.supervision.endingReason(), undefined, 'registered')
     reg.dispose()
-    await new Promise((resolve) => setTimeout(resolve, 10))
-    assert.equal(service.supervision.endingReason(), 'failure', 'a disposal without the user intent is plugin-gone')
+    await tick(10)
+    assert.equal(service.supervision.endingReason(), 'failure', 'the name is still in dsh.profile.bundles: plugin-gone')
+    await tick()
   })
 })
 
@@ -126,6 +129,7 @@ describe('X0-S X14 hand-over and re-enable (§2.4)', () => {
     const first = await register(h)
     first.set(SID, 'paused', BRIEF)
     await handOver(h, first)
+    await h.setBundleEnabled(OWNER, true)
     const noticesBefore = h.manager().followups.length
     const second = await register(h)
     await new Promise((resolve) => setTimeout(resolve, 20))
@@ -140,7 +144,7 @@ describe('X0-S X14 hand-over and re-enable (§2.4)', () => {
     second.dispose()
   })
 
-  it('XS-DT-01 disposals: intent → hand-over; no intent → the grace guard', async (t) => {
+  it('XS-DT-01 the manifest decides a disposal: name present → plugin-gone and the grace guard', async (t) => {
     const { h, service } = await live(t)
     t.mock.timers.enable({ apis: ['setTimeout'] })
     h.host.sessions.push({ sessionId: SID, title: 'managed', workspaceId: null, running: true, pendingInteraction: false })
@@ -148,10 +152,25 @@ describe('X0-S X14 hand-over and re-enable (§2.4)', () => {
     reg.set(SID, 'active', BRIEF)
     reg.dispose()
     assert.equal(service.supervision.endingReason(), 'failure')
-    assert.deepEqual((await sendTool(h)).code, 'watchdog-unavailable', 'gateOn stays true without a registrant')
+    assert.deepEqual((await sendTool(h)).code, 'watchdog-unavailable', 'enabled but no registrant')
     await t.mock.timers.tickAsync(30_000)
     assert.ok(h.host.requests.some((request) => request.operation === 'session.stop'), 'the guard stops a running managed session')
     t.mock.timers.reset()
+  })
+
+  it('XS-DT-01b the manifest decides a disposal: name absent → hand-over, no stop, gate off', async (t) => {
+    const { h, service } = await live(t)
+    const reg = await register(h)
+    reg.set(SID, 'paused', BRIEF)
+    const noticesBefore = h.manager().followups.length
+    await h.setBundleEnabled(OWNER, false)
+    reg.dispose()
+    await tick()
+    assert.equal(service.supervision.endingReason(), 'hand-over')
+    assert.equal(h.host.requests.some((request) => request.operation === 'session.stop'), false)
+    assert.equal((await sendTool(h)).ok, true, 'the gate is off with the plugin disabled')
+    assert.equal(h.manager().followups.length - noticesBefore, 1, 'one hand-over notice')
+    assert.equal(reg.handedOver.length, 1)
   })
 
   it('XS-BVA-01 re-register at 29 s cancels the guard; 30 s and 31 s fire it', async (t) => {
@@ -182,6 +201,12 @@ describe('X0-S X16 start rule (§2.3)', () => {
     }
   }
 
+  const cardOf = () => ({
+    approvalId: 'apr-start', offerId: 'off-start', kind: 'approval', prompt: 'Allow?', choices: ['allow', 'reject'],
+    expiresAt: Date.now() + 60_000, title: 'Started', at: Date.now(), toolName: 'bash', callId: 'call-start',
+    reason: 'first card', quotes: [],
+  })
+
   it('XS-DT-02 the start_session schema gains a required watchdog parameter only while an owner is registered', async (t) => {
     const { h } = await live(t)
     assert.equal(h.tools.get('start_session').parameters.watchdog, undefined, 'v1 schema before an owner')
@@ -211,17 +236,29 @@ describe('X0-S X16 start rule (§2.3)', () => {
     assert.equal(h.host.requests.some((request) => request.operation === 'session.start'), false)
   })
 
-  it('XS-DT-05 valid + start ok + attach ok returns the brief and is sendable at once', async (t) => {
+  it('XS-DT-05 valid + start ok + attach ok returns the brief and is sendable and claimed at once', async (t) => {
     const { h } = await live(t)
     let attached
-    h.requireInstance().sessionStarts.register(OWNER, owner({ attach: async (sessionId, arg) => { attached = { sessionId, arg }; return { ok: true, briefId: BRIEF } } }))
+    const seen = []
+    const reg = h.requireInstance().supervision.register(OWNER)
+    h.requireInstance().sessionStarts.register(OWNER, owner({
+      attach: async (sessionId, arg) => {
+        attached = { sessionId, arg }
+        reg.set(sessionId, 'active', BRIEF)
+        h.requireInstance().approvals.claim(sessionId, { id: OWNER, name: 'Watchdog', onCard: (card) => seen.push(card) })
+        return { ok: true, briefId: BRIEF }
+      },
+    }))
     const result = await h.tool('start_session', { folder: '/tmp/work', title: 't', message: 'm', watchdog: { goal: 'watch it' } })
     assert.equal(result.ok, true)
     assert.equal(result.sessionId, 'session-from-start')
     assert.deepEqual(result.watchdog, { briefId: BRIEF })
     assert.equal(attached.sessionId, 'session-from-start')
     assert.deepEqual(attached.arg, { goal: 'watch it' })
-    assert.equal((await sendTool(h, 'message_session', 'session-from-start')).ok, true, 'supervision.set(active) already ran')
+    assert.equal((await sendTool(h, 'message_session', 'session-from-start')).ok, true, 'supervision.set(active) ran in attach')
+    h.host.event('approval.request', cardOf(), 'session-from-start')
+    await tick()
+    assert.equal(seen.length, 1, 'the first card reaches the watchdog claim (U8)')
   })
 
   it('XS-DT-06 attach failed → watchdog-assign-failed and the session is stopped', async (t) => {
@@ -233,6 +270,7 @@ describe('X0-S X16 start rule (§2.3)', () => {
     assert.equal(result.sessionId, 'session-from-start')
     assert.equal(result.stopped, true)
     assert.ok(h.host.requests.some((request) => request.operation === 'session.stop'), 'the coupling rule stops it')
+    assert.deepEqual((await sendTool(h, 'message_session', 'session-from-start')).code, 'watchdog-brief-required', 'not active, not claimed')
   })
 
   it('XS-DT-07 attach failed and stop failed → stopped:false, the session stays managed', async (t) => {
@@ -244,6 +282,7 @@ describe('X0-S X16 start rule (§2.3)', () => {
     assert.equal(result.code, 'watchdog-assign-failed')
     assert.equal(result.stopped, false)
     assert.equal(result.sessionId, 'session-from-start')
+    assert.deepEqual((await sendTool(h, 'message_session', 'session-from-start')).code, 'watchdog-brief-required', 'neither active nor claimed')
   })
 
   it('XS-DT-08 attach timeout → watchdog-assign-failed and a stop attempt', async (t) => {
@@ -278,12 +317,16 @@ describe('X0-S X16 start rule (§2.3)', () => {
 })
 
 describe('X0-S X19 send gate (§2.5)', () => {
-  it('XS-DT-10 the gate table: gate × brief state → send result', async (t) => {
-    const { h, service } = await live(t)
-    // Off from the start: no registrant, no gateOn.
+  it('XS-DT-10 the gate is off when fishball-watchdog is not in dsh.profile.bundles', async (t) => {
+    const { h } = await live(t, { watchdogEnabled: false })
     assert.equal((await sendTool(h)).ok, true, 'off → allowed')
     assert.equal((await sendTool(h, 'redirect_session')).ok, true, 'redirect is a send operation too')
+    const bridge = await sendBridge(h)
+    assert.equal(bridge.ok, true, 'the image path too')
+  })
 
+  it('XS-DT-11 enabled × registered × brief state → the §2.5 send table', async (t) => {
+    const { h, service } = await live(t)
     const reg = service.supervision.register(OWNER)
     assert.deepEqual((await sendTool(h)).code, 'watchdog-brief-required', 'on, no brief')
     reg.set(SID, 'active', BRIEF)
@@ -299,11 +342,8 @@ describe('X0-S X19 send gate (§2.5)', () => {
     reg.dispose()
   })
 
-  it('XS-DT-11 gateOn true with no registrant refuses watchdog-unavailable', async (t) => {
-    const { h, service } = await live(t)
-    const reg = service.supervision.register(OWNER)
-    reg.set(SID, 'active', BRIEF)
-    reg.dispose()
+  it('XS-DT-11b enabled but not registered refuses watchdog-unavailable', async (t) => {
+    const { h } = await live(t)
     const result = await sendTool(h)
     assert.deepEqual(result.code, 'watchdog-unavailable')
   })
@@ -370,9 +410,12 @@ describe('X0-S X19 send gate (§2.5)', () => {
   })
 
   it('XS-DT-15 the hand-over line is absent with an active brief, with the gate off, and on other kinds', async (t) => {
+    const off = await live(t, { watchdogEnabled: false })
+    assert.equal((await off.h.host.inbox({ kind: 'user', text: 'gate off', sourceSessionId: SID })).payload?.acked, true)
+    assert.doesNotMatch(messageText(off.h.manager().followups.at(-1)), /watchdog_brief/, 'gate off')
+    await off.h.close()
+
     const { h, service } = await live(t)
-    assert.equal((await h.host.inbox({ kind: 'user', text: 'gate off', sourceSessionId: SID })).payload?.acked, true)
-    assert.doesNotMatch(messageText(h.manager().followups.at(-1)), /watchdog_brief/, 'gate off')
     const reg = service.supervision.register(OWNER)
     reg.set(SID, 'active', BRIEF)
     await h.host.inbox({ kind: 'user', text: 'active brief', sourceSessionId: SID })
@@ -411,32 +454,28 @@ describe('X0-S X19 send gate (§2.5)', () => {
     reg.dispose()
   })
 
-  it('XS-BVA-03 gateOn absent is off; true is on; false is the hand-over; corrupt refuses store-unavailable', async (t) => {
-    // Absent: no registrant.
-    const first = await live(t)
-    assert.equal((await sendTool(first.h)).ok, true, 'absent gateOn = v1 behaviour')
-    // True: a registrant sets it.
-    const second = await live(t)
-    second.service.supervision.register(OWNER)
-    assert.deepEqual((await sendTool(second.h)).code, 'watchdog-brief-required', 'true gateOn')
-    // False: the user disable writes it.
-    const third = await live(t)
-    const reg = third.service.supervision.register(OWNER)
-    reg.set(SID, 'paused', BRIEF)
-    const op = third.h.rows.admin.ADMIN_OPERATION
-    const snapshot = await third.h.admin(op.pluginsGet, {})
-    await third.h.admin(op.pluginDisable, { name: OWNER, inventoryRevision: snapshot.result.inventoryRevision })
-    reg.dispose()
-    await new Promise((resolve) => setTimeout(resolve, 20))
-    assert.equal((await sendTool(third.h)).ok, true, 'false gateOn allows sends')
-    // Corrupt: locate the documented supervision file and break it.
-    const files = await filesContaining(third.h.home, '"gateOn"')
-    assert.equal(files.length >= 1, true, 'the supervision file records gateOn')
+  it('XS-BVA-03 the U7 gate source: absent = off, present = on, registered = the table, corrupt = store-unavailable', async (t) => {
+    // Absent from dsh.profile.bundles: v1 behaviour.
+    const off = await live(t, { watchdogEnabled: false })
+    assert.equal((await sendTool(off.h)).ok, true, 'the plugin is not in the bundles: gate off')
+    // Present, not registered: enabled but the row is not up.
+    const enabled = await live(t)
+    assert.deepEqual((await sendTool(enabled.h)).code, 'watchdog-unavailable')
+    // Present and registered: the table.
+    const registered = await live(t)
+    registered.service.supervision.register(OWNER)
+    assert.deepEqual((await sendTool(registered.h)).code, 'watchdog-brief-required')
+    assert.deepEqual(await filesContaining(registered.h.home, 'gateOn'), [], 'there is no gateOn file (U7)')
+    // Corrupt supervision store while enabled: sends refuse store-unavailable.
+    const corrupt = await live(t)
+    const reg = corrupt.service.supervision.register(OWNER)
+    reg.set(SID, 'active', BRIEF)
+    const files = await filesContaining(corrupt.h.home, SID)
+    assert.ok(files.length >= 1, 'the supervision file records the session')
     await writeFile(files[0], '{not json')
-    await third.h.close()
-    const fourth = await bootChild(t, { activate: true, home: third.h.home })
-    const result = await sendTool(fourth)
-    assert.deepEqual(result.code, 'store-unavailable', 'a corrupt store refuses sends')
-    await fourth.close()
+    await corrupt.h.close()
+    const restarted = await bootChild(t, { activate: true, home: corrupt.h.home })
+    assert.deepEqual((await sendTool(restarted)).code, 'store-unavailable', 'a corrupt store refuses sends')
+    await restarted.close()
   })
 })
