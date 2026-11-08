@@ -2,9 +2,9 @@
  * W0 / WD-1 — the `fishball-watchdog` skeleton: package, row, typed config and constants.
  *
  * Source: docs/plugins/watchdog-design.md §9 (settings), §12 (package), §14 WD-1 ("the row loads
- * with a stub fishballInstance; §9 bounds enforced, including the window-sum check"), plus the
- * instance design U7 (the row's `enabled` setting is removed; DSH's bundle switch is the off
- * switch).
+ * with a stub fishballInstance; §9 bounds enforced"), reconciled by the final instance design
+ * U7/U14/U17: DSH's bundle switch is the off switch, approval timers/window sums are removed,
+ * and auditEntriesKept bounds non-decision operational audit only, never decision history.
  *
  * Observation points: the package files, the row exports, the Config schema defaults/bounds, and
  * `apply` over a stub child context.
@@ -15,7 +15,7 @@ import { PACKAGE, configDefault, packageJson, packageModule } from '../../../../
 
 const WATCHDOG = PACKAGE.watchdog
 
-/** §9 table: every numeric setting, its default and its inclusive bounds. */
+/** Final §9 settings: check/guard timers remain; decision history has no bounded audit store. */
 const NUMBERS = [
   ['maxOutputTokens', 1024, 256, 8192],
   ['contextRolloverTokens', 64_000, 16_000, 200_000],
@@ -32,14 +32,11 @@ const NUMBERS = [
   ['guardRestops', 3, 1, 10],
   ['maxChecksPerHour', 30, 1, 1000],
   ['maxChecksPerDay', 200, 1, 10_000],
-  ['decisionTimeoutSeconds', 30, 5, 110],
-  ['managerReserveSeconds', 60, 0, 110],
-  ['minDecisionSeconds', 10, 1, 60],
   ['maxConcurrentDecisions', 2, 1, 10],
   ['maxQuoteChars', 500, 50, 2048],
   ['maxCriteria', 20, 1, 100],
   ['maxCriteriaChars', 8000, 1000, 32_000],
-  ['auditEntriesKept', 2000, 100, 100_000],
+  ['auditEntriesKept', 2000, 100, 100_000], // Operational audit only (U17); not decisions.
 ]
 const BOOLEANS = [['approvalsEnabled', true]]
 const TEXTS = [['model', ''], ['reasoningEffort', '']]
@@ -54,7 +51,6 @@ function stubContext({ withInstance = true } = {}) {
     fishballInstance: {
       apiVersion: 1,
       manager: { sessionId: () => 'session-fishball', registerSetup: () => () => {}, notify: async () => ({ status: 'queued' }), userTexts: () => [] },
-      chat: { registerRecordProjector: () => () => {} },
       inbox: { claim: () => () => {}, release: () => {}, setBatcher: () => () => {} },
       approvals: { claim: () => () => {}, card: () => undefined, onSettled: () => () => {}, answerApproval: async () => ({ ok: true }) },
       bridge: () => ({ request: async () => ({}) }),
@@ -77,7 +73,7 @@ function stubContext({ withInstance = true } = {}) {
 }
 
 describe('WD-1 package and row', () => {
-  it('WD1-EP-V-01 Samuel keeps supervision under his control — W0: the package is fishball-watchdog 0.1.0-alpha.0 for DSH >=0.2.1-rc.5', async () => {
+  it('WD1-EP-V-01 Samuel saves Fishball tokens with a small-context helper — W0: the package is fishball-watchdog 0.1.0-alpha.0 for DSH >=0.2.1-rc.5', async () => {
     const manifest = await packageJson(WATCHDOG)
     assert.equal(manifest.name, 'fishball-watchdog')
     assert.equal(manifest.version, '0.1.0-alpha.0')
@@ -86,7 +82,7 @@ describe('WD-1 package and row', () => {
     assert.ok(manifest.peerDependencies?.['fishball-instance'], 'peerDependencies names the instance')
   })
 
-  it('WD1-EP-V-02 Samuel keeps supervision under his control — W0: the row exports name, inject, Config and apply', async () => {
+  it('WD1-EP-V-02 Samuel saves Fishball tokens with a small-context helper — W0: the row exports name, inject, Config and apply', async () => {
     const row = await packageModule(WATCHDOG, 'index.js')
     assert.equal(row.name, 'fishball-watchdog')
     for (const service of ['agents', 'tools', 'llm', 'profileContext', 'fishballInstance?']) {
@@ -96,27 +92,27 @@ describe('WD-1 package and row', () => {
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
 
-  it('WD1-UC-LOAD-M Samuel keeps supervision under his control — W0: [formerly WD1-DT-01] the row loads over a stub fishballInstance', async () => {
+  it('WD1-UC-LOAD-M Samuel saves Fishball tokens with a small-context helper — W0: [formerly WD1-DT-01] the row loads over a stub fishballInstance', async () => {
     const row = await packageModule(WATCHDOG, 'index.js')
     await assert.doesNotReject(async () => row.apply(stubContext(), {}))
   })
 
   // Canonical §1: optional injection treats an absent service as an older instance.
-  it('WD1-UC-LOAD-A Samuel keeps supervision under his control — W0: [formerly WD1-DT-02] the row loads without the optional fishballInstance service', async () => {
+  it('WD1-UC-LOAD-A Samuel saves Fishball tokens with a small-context helper — W0: [formerly WD1-DT-02] the row loads without the optional fishballInstance service', async () => {
     const row = await packageModule(WATCHDOG, 'index.js')
     await assert.doesNotReject(async () => row.apply(stubContext({ withInstance: false }), {}))
   })
 })
 
-describe('WD-1 config defaults and bounds (§9, U7)', () => {
-  it('WD1-UC-CONFIG-M Samuel keeps supervision under his control — W0: [formerly WD1-EP-V-04] every §9 default is the designed value', async () => {
+describe('WD-1 config defaults and bounds (§9, U7/U14/U17)', () => {
+  it('WD1-UC-CONFIG-M Samuel saves Fishball tokens with a small-context helper — W0: [formerly WD1-EP-V-04] remaining settings declare designed defaults; operational audit retention is not decision retention', async () => {
     const { Config } = await packageModule(WATCHDOG, 'index.js')
     for (const [key, value] of [...BOOLEANS, ...TEXTS, ...NUMBERS.map(([key, value]) => [key, value])]) {
       assert.equal(configDefault(Config, key), value, key)
     }
   })
 
-  it('WD1-BVA-01 Samuel keeps supervision under his control — W0: every numeric setting accepts its bounds and refuses min−1 and max+1', async () => {
+  it('WD1-BVA-01 Samuel saves Fishball tokens with a small-context helper — W0: every numeric setting accepts its bounds and refuses min−1 and max+1', async () => {
     const { Config } = await packageModule(WATCHDOG, 'index.js')
     for (const [key, , min, max] of NUMBERS) {
       assert.doesNotThrow(() => Config({ [key]: min }), key + ' min')
@@ -126,30 +122,32 @@ describe('WD-1 config defaults and bounds (§9, U7)', () => {
     }
   })
 
-  it('WD1-EP-01 Samuel keeps supervision under his control — W0: the row has no `enabled` setting (U7: DSH bundle switch is the off switch)', async () => {
+  it('WD1-EP-01 Samuel saves Fishball tokens with a small-context helper — W0: no enabled control or approval-time settings remain (U7/U14)', async () => {
     const { Config } = await packageModule(WATCHDOG, 'index.js')
-    assert.equal(Config.dict?.enabled, undefined, '§9 enabled is removed')
+    for (const key of ['enabled', 'decisionTimeoutSeconds', 'managerReserveSeconds', 'minDecisionSeconds']) {
+      assert.equal(Config.dict?.[key], undefined, key + ' is removed')
+    }
   })
-
-  // No authoritative Config relation or invalid-input outcome is specified (test design §7.2).
-  it.skip('WD1-BVA-02 Samuel keeps supervision under his control — W0: BLOCKED: define the window-sum Config rules and refusal behavior', () => {})
 })
 
 // Flows defined before these tests in docs/test-design/instance-ext-w0-skeleton-use-cases.md.
-describe('WD1 user configuration and deferred bundle journeys', () => {
-  it('WD1-UC-CONFIG-A Samuel keeps supervision under his control — W0: user chooses supported non-default maxOutputTokens', async () => {
+describe('WD1 token-saving helper configuration and deferred bundle journeys', () => {
+  it('WD1-UC-CONFIG-A Samuel saves Fishball tokens with a small-context helper — W0: user chooses supported non-default maxOutputTokens', async () => {
     const { Config } = await packageModule(WATCHDOG, 'index.js')
     assert.doesNotThrow(() => Config({ maxOutputTokens: 2048 }))
   })
 
-  it('WD1-UC-CONFIG-E Samuel keeps supervision under his control — W0: user submits an invalid setting and Config rejects it', async () => {
+  it('WD1-UC-CONFIG-E Samuel saves Fishball tokens with a small-context helper — W0: user submits an invalid setting and Config rejects it', async () => {
     const { Config } = await packageModule(WATCHDOG, 'index.js')
     const [key, , min] = NUMBERS[0]
     assert.throws(() => Config({ [key]: min - 1 }))
   })
-  it.todo('WD1-UC-BUNDLE-M Samuel keeps supervision under his control — deferred: [X0-B/X0-S] enabled iff fishball-watchdog is in child dsh.profile.bundles; enabled-unregistered gate refuses')
-  it.todo('WD1-UC-BUNDLE-A Samuel keeps supervision under his control — deferred: [X0-B/X0-S/WD-13] user disable hands over without stopping or unwatching')
-  it.todo('WD1-UC-BUNDLE-E Samuel keeps supervision under his control — deferred: [X0-B/X0-S] enabled failed placement is plugin-gone; gated sends refuse')
-  it.todo('WD1-UC-BUNDLE-R Samuel keeps supervision under his control — deferred: [X0-S/WD-13] re-enable restores dormant briefs without automatic resume')
-  it.todo('WD1-UC-BUNDLE-F Samuel keeps supervision under his control — deferred: [X0-S/WD-13] disposal while bundle remains enabled is failure not hand-over')
+  it.todo('WD1-UC-BUNDLE-M Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] helper enabled with user present or absent iff fishball-watchdog is in child dsh.profile.bundles; enabled-unregistered gate refuses')
+  it.todo('WD1-UC-BUNDLE-A Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S/WD-13] user disable hands over without stopping or unwatching')
+  it.todo('WD1-UC-BUNDLE-E Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] enabled failed placement is plugin-gone; gated sends refuse')
+  it.todo('WD1-UC-BUNDLE-R Samuel saves Fishball tokens with a small-context helper — deferred: [X0-S/WD-13] re-enable restores dormant briefs without automatic resume')
+  it.todo('WD1-UC-BUNDLE-F Samuel saves Fishball tokens with a small-context helper — deferred: [X0-S/WD-13] disposal while bundle remains enabled is failure not hand-over')
 })
+
+// Story continuation only: W0 config/load does not exercise connector or rendered cards.
+it.todo('WD1-UC-APPROVAL-M Samuel relies on the token-saving helper while present or away — deferred: [WD-8/WD-10/K2/PANELS] decide or escalate immediately on decision-turn end, no approval timers/R4 expiresAt budget; user card waits without time limit, resolved cards clear with reached-layer transcript result')

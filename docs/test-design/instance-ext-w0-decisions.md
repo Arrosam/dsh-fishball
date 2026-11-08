@@ -1,6 +1,6 @@
-# Four W0 acceptance questions — explanation, not decisions
+# Historical W0 acceptance questions — superseded by 6f7412b
 
-No option is implemented here. This document explains the pending choices for the requirement owner.
+**Historical record only, not current test acceptance.** All four questions below were answered in the final design: U14 removes approval budgets/window-sum checks; U15 assigns namespace validation to PG-1; U18 requires the concrete core tests in §12.5; U19 replaces prune age with inclusive board visibility and permanent installed-plugin archive history. Current tests follow those decisions. The old explanation is retained for provenance, not as active approval/timer or prune requirements.
 
 ## Source provenance
 

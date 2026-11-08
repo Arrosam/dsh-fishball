@@ -2,7 +2,9 @@
  * W0 / B1 — the `fishball-board` skeleton: package, row, typed config and constants.
  *
  * Source: docs/plugins/board-design.md §9 (Config ranges), §13 (package), §14 B1 ("the row loads
- * with and without the points; the Config ranges are as in §9"), §8 (the four instance points).
+ * with and without the points; the Config ranges are as in §9"), §8 (the four instance points),
+ * and final instance design U19/§12.6: 30-day board visibility, never installed archive pruning.
+ * doneWindowHours may remain for a recent-done count only; its presence is not required.
  *
  * Observation points: the package files, the row exports, the Config schema, `src/constants.js`
  * and `apply` over a stub context with and without `fishballInstance`.
@@ -61,11 +63,11 @@ describe('B1 package and row', () => {
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
 
-  it('B1-UC-CONFIG-M Samuel keeps his Fishball work board available — W0: [formerly B1-EP-V-03] the config defaults are inject true, contextCards 20, doneWindowHours 24', async () => {
+  it('B1-UC-CONFIG-M Samuel keeps his Fishball work board available — W0: [formerly B1-EP-V-03] required defaults are inject true and contextCards 20; optional recent-done count is not visibility', async () => {
     const { Config } = await packageModule(BOARD, 'index.js')
     assert.equal(configDefault(Config, 'inject'), true)
     assert.equal(configDefault(Config, 'contextCards'), 20)
-    assert.equal(configDefault(Config, 'doneWindowHours'), 24)
+    if (Config.dict?.doneWindowHours !== undefined) assert.equal(configDefault(Config, 'doneWindowHours'), 24)
   })
 
   it('B1-BVA-01 Samuel keeps his Fishball work board available — W0: contextCards is an integer 0…30 (0 = the counts line only)', async () => {
@@ -75,8 +77,9 @@ describe('B1 package and row', () => {
     assert.throws(() => Config({ contextCards: 1.5 }))
   })
 
-  it('B1-BVA-02 Samuel keeps his Fishball work board available — W0: doneWindowHours is an integer 0…168', async () => {
+  it('B1-BVA-02 Samuel keeps his Fishball work board available — W0: if retained, recent-done count doneWindowHours is an integer 0…168, never the panel cutoff', async () => {
     const { Config } = await packageModule(BOARD, 'index.js')
+    if (Config.dict?.doneWindowHours === undefined) return // U19 permits removal or count-only retention.
     for (const value of [0, 1, 168]) assert.doesNotThrow(() => Config({ doneWindowHours: value }))
     for (const value of [-1, 169]) assert.throws(() => Config({ doneWindowHours: value }))
   })
@@ -121,4 +124,15 @@ describe('B1 user configuration and deferred bundle journeys', () => {
   it.todo('B1-UC-BUNDLE-M Samuel keeps his Fishball work board available — deferred: [X0-B] user enables the bundled plugin')
   it.todo('B1-UC-BUNDLE-A Samuel keeps his Fishball work board available — deferred: [X0-B] user disables and restart preserves the choice')
   it.todo('B1-UC-BUNDLE-E Samuel keeps his Fishball work board available — deferred: [X0-B] unavailable placement permits child startup')
+})
+
+// Defined story continuations, not skeleton proof of storage, tools, context or UI.
+describe('B1 Samuel revisits completed work — U19 deferred archive journeys', () => {
+  it.todo('B1-UC-HISTORY-M Samuel revisits completed work — deferred: [B2/B3/B5] Done and Dropped stay on board/panel/context at 30 days−1ms and day30, leave at +1ms; archive remains')
+  it.todo('B1-UC-HISTORY-A Samuel clears and later reopens finished work — deferred: [B2/B3/B4/B5] clear Done or Dropped early, keep archive, reopen off-board card and restore open panel/context together')
+  it.todo('B1-UC-HISTORY-E Samuel cannot clear unfinished work — deferred: [B2/B4] clear each open status refuses not-closed and changes neither board nor archive')
+  it.todo('B1-UC-SEARCH-M Samuel finds old work by keyword — deferred: [B11] board_search finds title/note keyword in a year-old off-board or cleared card without changing visibility')
+  it.todo('B1-UC-UNINSTALL-M Samuel keeps an archive before uninstall — deferred: [B10] accepted complete archive export finishes outside runtime before deletion, including off-board/cleared history')
+  it.todo('B1-UC-UNINSTALL-A Samuel declines archive export — deferred: [B10] explicit decline permits runtime and archive deletion')
+  it.todo('B1-UC-UNINSTALL-E Samuel retries failed archive export — deferred: [B10] export failure preserves runtime and archive; explicit decline may later permit deletion')
 })
