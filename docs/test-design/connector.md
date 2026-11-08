@@ -2,6 +2,19 @@
 
 Status: black-box test cases written **before** development (TDD, §18 of the design).
 
+> **Release state (v0.1.0-alpha.0).** The released code is contract 1.1
+> (`CONNECTOR_CONTRACT.minor` is `1`, not `0`) and the connector row/service are fully
+> implemented. The cases below were written against the frozen contract at `bb0f756` (minor 0)
+> and the pre-split design; where a case contradicts the released code, the code and
+> `docs/connector-contract.md` 1.1 win. Notable drift: `minor` is `1`; the `ui` path's `token`
+> check folds ASCII case and also scans the fragment; `ask_fishball` with no instance answers
+> `unavailable` at once (never queued); a `user`-kind hand-over note is never refused by the
+> queue bound; the connector form no longer has hourly caps (`messagesPerHour`,
+> `sessionsPerHour`, `wakeupsPerHour`); the C2 migration leaves the old settings record in place;
+> the frame adds the 1.1 `lang` parameter; the limits form and question-mode renderer remain in
+> DSH's form; the bundle-patch row id is `fishball-connector`; and `dsh.client` is an object with
+> six `exports` entries.
+
 Sources, in order of precedence:
 1. The user's decisions U1–U4 below (2026-11-06).
 2. **The frozen contract** `docs/connector-contract.md` at `bb0f756` (branch `feat/k1-contract`),
@@ -122,9 +135,9 @@ and `docs/connector-contract.md`. Source: contract §0–§11 at `bb0f756`.
 | --- | --- |
 | K1-R1 | The connector row provides the service `fishballConnector` (`CONNECTOR_SERVICE`) whether or not an instance exists. `attachInstance(descriptor)` accepts a well-formed descriptor and returns `{detach()}` (contract §1; design §18.2 K1 R1). |
 | K1-R2 | Descriptor fields (contract §1.1): `id` and `name` are non-empty strings; `status` and `retry`, if present, are functions; any other key is refused. Each violation gives `instance-invalid` (U4). |
-| K1-R3 | `contract` is exactly `{id, major, minor}`, with `id` `fishball-connector`, `major` `1`, and both `major` and `minor` whole numbers; otherwise `contract-version`. Any minor of major 1 is accepted. `negotiateContract` returns `{id, major:1, minor: min(instance minor, connector minor)}`. `CONNECTOR_CONTRACT` is `{id:'fishball-connector', major:1, minor:0}` (contract §1.1, §2). |
+| K1-R3 | `contract` is exactly `{id, major, minor}`, with `id` `fishball-connector`, `major` `1`, and both `major` and `minor` whole numbers; otherwise `contract-version`. Any minor of major 1 is accepted. `negotiateContract` returns `{id, major:1, minor: min(instance minor, connector minor)}`. `CONNECTOR_CONTRACT` is `{id:'fishball-connector', major:1, minor:1}` (contract §1.1, §2). |
 | K1-R4 | `transport` is an object with the four functions `send`, `onMessage`, `onClose`, `close` (`TRANSPORT_METHODS`); otherwise `transport-invalid` (contract §1.1). |
-| K1-R5 | `ui` holds exactly the optional keys `chat` and `settings`. Each value is a string of at most 512 code points (`LIMITS.uiPathChars`) that starts with exactly one `/`. It carries no scheme, resolves to the main origin (no `/\host`, and no host revealed after a tab or newline is dropped), and has no `token` query parameter. A fragment is accepted. A violation gives `ui-invalid` (contract §1.2, U4). |
+| K1-R5 | `ui` holds exactly the optional keys `chat` and `settings`. Each value is a string of at most 512 code points (`LIMITS.uiPathChars`) that starts with exactly one `/`. It carries no scheme, resolves to the main origin (no `/\host`, and no host revealed after a tab or newline is dropped), and has no `token` parameter (any ASCII case) in its query or fragment. Any other fragment is accepted. A violation gives `ui-invalid` (contract §1.2, U4). |
 | K1-R6 | The checks run in a fixed order, so one descriptor has one answer: (1) shape and keys → `instance-invalid`; (2) contract → `contract-version`; (3) transport → `transport-invalid`; (4) ui → `ui-invalid`; (5) `id`, `name`, `status`, `retry` → `instance-invalid`; (6) the connector already has an instance → `instance-busy`. A refusal throws a `ContractError` whose `code` is the refusal, and it has no side effect: no transport method is called, nothing is stored, and an attached instance stays attached (contract §1.3). |
 | K1-R7 | One instance at a time. `detach()` and the transport's `onClose` both return the connector to no-instance mode (contract §1.3, §9). |
 | K1-R8 | Handshake and capabilities (contract §2, §3.2): the instance opens with `handshake` `{capabilities, requiredCapabilities}`. The connector answers `{capabilities, hostInstanceId}`, where `hostInstanceId` is new for each connector object. An unknown optional capability is ignored; an unknown required one is refused `unsupported-capability`. Before the handshake, any other request gets `handshake-required`; a second handshake gets `conflict`; a request outside the welcome gets `unsupported-operation`. The connector never sends before the instance's handshake. |
@@ -142,8 +155,8 @@ and `docs/connector-contract.md`. Source: contract §0–§11 at `bb0f756`.
 | K1-P-01 | P | K1-R1 | H-BOOT, H-CONN, H-STUB, H-MANAGED; no instance | `stub.attach({id:'stub-a', name:'Stub A', contract:{id:'fishball-connector', major:1, minor:0}, transport:<the four functions>})`; handshake; `S1` calls `message_fishball('m1')` | `attach` returns an object whose `detach` is a function; nothing is thrown. `stub.received()` gets the handshake response and then an `inbox.push` with `m1`. | both |
 | K1-P-02 | P | K1-R1 | as K1-P-01 | Attach with every optional field: `ui:{chat:'/fbtest/chat/', settings:'/fbtest/settings/?view=settings'}`, `status:()=>({state:'ready', code:null})`, `retry:async()=>{}` | Accepted; a handle with `detach`. | both |
 | K1-P-03 | P | K1-R2..R5 | H-MOD | `validateAttachment` on the minimal descriptor of K1-P-01 and on the maximal one of K1-P-02 | Neither throws `[OQ-47]`. | static |
-| K1-P-04 | P | K1-R1, K1-R3, K1-R4, K1-R12 | H-MOD | Read the binding constants | `CONNECTOR_SERVICE` = `'fishballConnector'`; `CONNECTOR_CONTRACT` deep-equals `{id:'fishball-connector', major:1, minor:0}`; `TRANSPORT_METHODS` holds exactly `send`, `onMessage`, `onClose`, `close`; `ATTACH_ERROR` holds exactly `instance-busy`, `contract-version`, `ui-invalid`, `transport-invalid`, `instance-invalid`. | static |
-| K1-P-05 | P | K1-R3 | H-MOD | `negotiateContract({id:'fishball-connector', major:1, minor:0})`; then with `minor:3` | Both return `{id:'fishball-connector', major:1, minor:0}` (the minimum of 0 and 0, and of 3 and 0). | static |
+| K1-P-04 | P | K1-R1, K1-R3, K1-R4, K1-R12 | H-MOD | Read the binding constants | `CONNECTOR_SERVICE` = `'fishballConnector'`; `CONNECTOR_CONTRACT` deep-equals `{id:'fishball-connector', major:1, minor:1}`; `TRANSPORT_METHODS` holds exactly `send`, `onMessage`, `onClose`, `close`; `ATTACH_ERROR` holds exactly `instance-busy`, `contract-version`, `ui-invalid`, `transport-invalid`, `instance-invalid`. | static |
+| K1-P-05 | P | K1-R3 | H-MOD | `negotiateContract({id:'fishball-connector', major:1, minor:0})`; then with `minor:3` | Both return `{id:'fishball-connector', major:1, minor:0}` for a `minor:0` instance and `{id:'fishball-connector', major:1, minor:1}` for `minor:3` (the minimum of 0 and 1, and of 3 and 1). | static |
 | K1-P-06 | P | K1-R7 | K1-P-01 done (stub-a attached) | `stub.detach()`; then attach `id:'stub-b'` | The second attach is accepted (no `instance-busy`). | both |
 | K1-P-07 | P | K1-R7 | K1-P-01 done | `stub.fireClose()`; then attach `id:'stub-b'` | Accepted. | both |
 | K1-P-08 | P | K1-R8, K1-R11 | H-STUB attached | `handshake(['inbox.push'], [])` | One `response` frame with the same `requestId`. Its payload is exactly `{capabilities, hostInstanceId}`: `hostInstanceId` is a non-empty string, and `capabilities` is a list of unique names, each an instance → connector operation of contract §4, none starting with `settings.`. Then a `session.list` `{limit:10}` request gets a `response`. | both |

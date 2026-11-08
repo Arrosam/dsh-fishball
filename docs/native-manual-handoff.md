@@ -2,6 +2,13 @@
 
 This is development code with syntax-only validation, not production acceptance. No automated tests, native launches, package/install or live restarts are performed for this change. The original delivery features and legacy Fishball remain in place.
 
+> **Stale in 0.1.0-alpha.0.** This document describes the pre-D22/D28 manual handoff. The released
+> row is `fishball-instance` (not `fishball-native-host`), its `Config` has only `enabled`
+> (`nodeExecutable`, `executableSearchPath` and `managedSessionIds` are gone, and the retired
+> `autoStart` no longer exists), and "Open isolated Fishball" is no longer a capability-URL +
+> blank-tab/`window.open` flow: the child is framed in the main area through the embed broker at
+> `/fishball/embed/`.
+
 ## Installation and one-switch control
 
 The separate install session should append this entry to the main web profile using the normal profile composition mechanism, preserving every existing entry and setting. Do not add it to the isolated child profile. Verify the explicit Node binary exists on the target host.

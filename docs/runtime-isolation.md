@@ -2,6 +2,13 @@
 
 Status: investigation and proposed migration, 2026-11-03. **The running Fishball has not been migrated.** This document replaces the assumption that a private agent scope provides independence from main-profile plugins; it does not mark the migration complete. Host API baseline inspected: DSH 0.2.1-rc.3.
 
+> **Later state (0.1.0-alpha.0).** The migration this document proposes has since landed: the
+> built-in instance runs Fishball as a separate child DSH process with its own home/profile/env
+> (`packages/instance/src/native-runtime/**`), an authenticated lifecycle wire and the slim session
+> bridge (`packages/connector/src/slim/host/bridge.js`). The release targets DSH 0.2.1-rc.5 and
+> 0.2.2-rc.1 (not rc.3). The "Existing model accounts" open question was resolved by provider sync
+> (`packages/instance/src/provider-sync*.js`), which copies API-key records into the child home.
+
 ## Requirement and decisions
 
 The owner requests Fishball to be unaffected by the main DSH profile’s plugins, while reusing the existing DSH installation rather than downloading another DSH. The owner selected reuse of existing model accounts through an explicit bridge.

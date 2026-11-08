@@ -1,5 +1,9 @@
 # fishball-source-example
 
+> **Removed in 0.1.0-alpha.0.** This example targets the retired `ctx.fishball` source service
+> (see `docs/plugin-author-guide.md`). `fishball-connector` and `fishball-instance` no longer
+> provide that service, so `index.js` below no longer runs as written.
+
 A small DSH plugin that feeds Fishball through `ctx.fishball`. Use it as a template for your own source (mail, calendar, a feed, a build server).
 
 - **Install:** from DSH's Plugins page, install this folder (an absolute path is a valid package spec), or install it for Fishball alone with "Install a plugin for Fishball only" on Fishball's settings page. Either way, turn it on under "Plugins for Fishball": DSH plugins start off there. Leave the DSH bundle off to run it for Fishball only.
