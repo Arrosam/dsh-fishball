@@ -308,6 +308,12 @@ describe('P7 ApprovalBroker (H-STUB)', () => {
   })
 
   it('APR-11 cancelled before the instance took the notice: still withdrawn', T, async () => {
+    // Start from a clean outbox: a previous case's unacknowledged push would hold this one on the
+    // connector side, which is the very backpressure this case does not mean to test.
+    await ackAllAndReconnect(stub)
+    // Let the re-delivered (and any attach-time) pushes drain under the reconnect's allow-all
+    // policy before the case starts holding acks; otherwise one of them would block the notice.
+    await sleep(APPROVALS.ms.quiet)
     await stub.ackPolicy(0)
     let reconnected = false
     const reconnect = async () => { await ackAllAndReconnect(stub); reconnected = true }
