@@ -17,17 +17,20 @@ board). Black-box only: every expected result comes from those documents, never 
   ST = state transition; BVA = boundary values.
 - **Ids:** `<short task>-<technique>-<nn>`, e.g. `XS-DT-11`. Every case names the X point or the
   task's done-when in its title.
-- **Red now:** every case fails because the service, package or contract addition does not
-  exist. The plugin packages fail with `FN-1/WD-1/B1: <package> has no <file> yet`; the instance
-  cases fail with `fishballInstance is not provided by the child app row (X0-C)`; K1's contract
-  cases fail on the missing operation/constant.
+- **Historical red baseline:** the original suite targeted missing services/packages/contracts.
+  This test-only correction was not executed; no current pass/fail claim is made.
+  WD1-BVA-02 is explicitly skipped as blocked, not counted as executable coverage.
+- **Skeleton service boundary:** all three loading stubs expose public services as direct Cordis
+  context properties and through `services`/`get`. FN/B absent-instance cases omit the service
+  from both surfaces. No skeleton stub provides the internal `fishballChat` port; inject assertions
+  require the canonical optional `fishballInstance?` (§1).
 - **Homes:** every boot uses a throwaway directory under `/private/tmp` (the K1 H-STUB harness is
   run with `TMPDIR=/private/tmp`; the instance harness has an explicit `/private/tmp` guard).
   No real DSH home, credential file or port is touched.
 - **Run.** One task at a time (the developer's check command):
   ```sh
   TMPDIR=/private/tmp FBTEST_DSH_RUNTIME="…/0.2.2-rc.1/node_modules" \
-    node --test test/instance-ext/<file>.test.mjs
+    node --test packages/<package>/test/instance-ext/<file>.test.mjs
   ```
   The files live outside `test/run.mjs`'s `test/*.test.mjs` glob, so the existing suite stays
   green.
@@ -81,13 +84,13 @@ board). Black-box only: every expected result comes from those documents, never 
 | ID | T | Expected |
 | --- | --- | --- |
 | FN1-P-01 | P | package `fishball-fold-notify` 0.1.0-alpha.0, bundle patch, files, `engines.dsh`, instance peer |
-| FN1-P-02 | P | row exports `name`, `inject`, `Config`, `apply` |
+| FN1-P-02 | P | row exports `name`, optional `fishballInstance?` inject, no internal `fishballChat` inject, `Config`, `apply` |
 | FN1-P-03 | P | config defaults: `foldDefault` true, `systemNotification` when-hidden, `batchWindowMs` 1500 |
 | FN1-P-04 | P | constants: `NOTIFY.maxChars` 4000, `NOTIFY.systemChars` 140, `FOLD.previewChars` 80, `FOLD.previewTools` 3, `BATCH.maxItems` 20, `SEEN.dwellMs` 600, `SEEN.threshold` 0.5 |
 | FN1-P-05 | P | the row loads over a stub `fishballInstance` |
 | FN1-BVA-01 | BVA | `batchWindowMs` 0…10000; −1 and 10001 and a fraction refused |
-| FN1-BVA-02 | BVA | `systemNotification` off / when-hidden; another value refused |
-| FN1-BVA-03 | BVA | `foldDefault` boolean; a string refused |
+| FN1-EP-02 | EP | `systemNotification` off / when-hidden; another value refused |
+| FN1-EP-03 | EP | `foldDefault` boolean; a string refused |
 | FN1-EP-01 | EP | the row also loads without the optional instance service |
 
 ### 2.4 WD-1 — `fishball-watchdog` skeleton
@@ -95,21 +98,21 @@ board). Black-box only: every expected result comes from those documents, never 
 | ID | T | Expected |
 | --- | --- | --- |
 | WD1-P-01 | P | package `fishball-watchdog` 0.1.0-alpha.0, bundle patch, `engines.dsh >=0.2.1-rc.5`, instance peer |
-| WD1-P-02 | P | row exports `name`, `inject` (agents, tools, llm, profileContext, fishballInstance), `Config`, `apply` |
+| WD1-P-02 | P | row exports `name`, `inject` (agents, tools, llm, profileContext, fishballInstance?), `Config`, `apply` |
 | WD1-P-03 | P | the row loads over a stub `fishballInstance` |
 | WD1-P-04 | P | every §9 default is the designed value (23 numeric, 2 text, 1 boolean) |
 | WD1-BVA-01 | BVA | every numeric setting accepts its bounds and refuses min−1 and max+1 |
 | WD1-EP-01 | EP | there is no `enabled` setting (U7: DSH's bundle switch is the off switch) |
-| WD1-BVA-02 | BVA | window sums: decision + reserve + min ≤ 120 s; rollover + growth + output fit a 200k window |
+| WD1-BVA-02 | BVA (blocked) | skipped: exact public Config window-sum relation, limits and invalid-input outcome need an authoritative specification; arithmetic over test defaults is not coverage |
 
 ### 2.5 B1 — `fishball-board` skeleton
 
 | ID | T | Expected |
 | --- | --- | --- |
 | B1-P-01 | P | package `fishball-board` 0.1.0-alpha.0, bundle patch, `engines.dsh`, instance peer, README |
-| B1-P-02 | P | row exports `name`, `inject`, `Config`, `apply` |
+| B1-P-02 | P | row exports `name`, optional `fishballInstance?` inject, no internal `fishballChat` inject, `Config`, `apply` |
 | B1-P-03 | P | config defaults: `inject` true, `contextCards` 20, `doneWindowHours` 24 |
-| B1-P-04 | P | constants: namespace, six statuses, `BOARD_LIMITS` cards 300 / prune 30 d / links 8 / context 2000 / guide 900 |
+| B1-P-04 | P | constants: namespace, six statuses, `BOARD_LIMITS` cards 300 / links 8 / context 2000 / guide 900 |
 | B1-P-05 | P | the row loads with a stub `fishballInstance` |
 | B1-BVA-01 | BVA | `contextCards` 0…30; −1, 31 and a fraction refused |
 | B1-BVA-02 | BVA | `doneWindowHours` 0…168; −1 and 169 refused |
@@ -238,8 +241,8 @@ board). Black-box only: every expected result comes from those documents, never 
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | K1 (W0) | 5 | 3 | 1 | 1 | 3 | **13** |
 | X0-C (W0) | 4 | 3 | 8 | 2 | 2 | **19** |
-| FN-1 (W0) | 5 | 1 | 0 | 0 | 3 | **9** |
-| WD-1 (W0) | 4 | 1 | 0 | 0 | 2 | **7** |
+| FN-1 (W0) | 5 | 3 | 0 | 0 | 1 | **9** |
+| WD-1 (W0) | 4 | 1 | 0 | 0 | 1 | **6** |
 | B1 (W0) | 5 | 2 | 0 | 0 | 2 | **9** |
 | X0-I (W1) | 3 | 3 | 3 | 3 | 1 | **13** |
 | X0-G (W1) | 5 | 1 | 0 | 1 | 0 | **7** |
@@ -247,19 +250,19 @@ board). Black-box only: every expected result comes from those documents, never 
 | X0-S (W1) | 3 | 1 | 17 | 5 | 3 | **29** |
 | X0-W (W1) | 3 | 3 | 2 | 1 | 0 | **9** |
 | X0-B (W2) | 4 | 1 | 6 | 1 | 0 | **12** |
-| **All** | **42** | **24** | **42** | **17** | **16** | **141** |
+| **All executable cases** | **42** | **26** | **42** | **17** | **13** | **140** |
 
-W0 alone is **57** cases (13 + 19 + 9 + 7 + 9).
+W0 alone is **56 executable** cases (13 + 19 + 9 + 6 + 9), plus **1 blocked/skipped** WD1-BVA-02. Counts describe declared cases, not verified passes.
 
 ## 5. Test-file → task map
 
 | Task | File | Covers |
 | --- | --- | --- |
-| W0 K1 | `test/instance-ext/k1.test.mjs` | contract 1.2, `instance.attention`, `state.unread` |
-| W0 X0-C | `test/instance-ext/x0-c.test.mjs` | X1, X2, X10, X11, X3 type rule |
-| W0 FN-1 | `test/instance-ext/fn-1.test.mjs` | fold skeleton |
-| W0 WD-1 | `test/instance-ext/wd-1.test.mjs` | watchdog skeleton |
-| W0 B1 | `test/instance-ext/b1.test.mjs` | board skeleton |
+| W0 K1 | `packages/connector/test/instance-ext/k1.test.mjs` | contract 1.2, `instance.attention`, `state.unread` |
+| W0 X0-C | `packages/instance/test/instance-ext/x0-c.test.mjs` | X1, X2, X10, X11, X3 type rule |
+| W0 FN-1 | `packages/fold-notify/test/instance-ext/fn-1.test.mjs` | fold skeleton |
+| W0 WD-1 | `packages/watchdog/test/instance-ext/wd-1.test.mjs` | watchdog skeleton |
+| W0 B1 | `packages/board/test/instance-ext/b1.test.mjs` | board skeleton |
 | W1 X0-I | `test/instance-ext/x0-i.test.mjs` | X9 |
 | W1 X0-G | `test/instance-ext/x0-g.test.mjs` | X13 |
 | W1 X0-A | `test/instance-ext/x0-a.test.mjs` | X15 server half |
@@ -283,7 +286,7 @@ W0 alone is **57** cases (13 + 19 + 9 + 7 + 9).
 ## 7. Open design questions
 
 1. **K1 `state.unread` reset on close.** §3 says `{0,false}` on detach **and on transport close**. The H-STUB case asserts detach and reattach; a real child transport close is covered by the connector's existing lifecycle tests, but the exact state after `host.stop()` is not observable through the stopped server. **A.** accept detach as the close proxy; **B.** add a harness that closes the transport without detaching and reads the in-process view. Recommendation: **A** for W0.
-2. **WD-1 "window-sum check".** The design says §9 bounds "including the window-sum check" but does not name a relation. The case checks the two sums the design states (`decisionTimeoutSeconds + managerReserveSeconds + minDecisionSeconds ≤ 120`; `contextRolloverTokens + turnGrowthTokens + maxOutputTokens ≤ 200k`). **A.** make these the formal window-sum rules; **B.** add a save-time validator with its own refusal code. Recommendation: **A** for the skeleton; **B** belongs to WD-8/WD-13.
-3. **FN-1 inject form.** The row's inject list must name `fishballInstance` optionally (the service may be absent). The case accepts `fishballInstance` or `fishballInstance?`. **A.** fix the optional form in FN-1's done-when; **B.** keep the tolerant assertion. Recommendation: **A**, `fishballInstance?`.
-4. **B1 constants names.** `BOARD_LIMITS.pruneAgeDays` is the case's name for the "prune age 30 days" constant; the design does not spell the key. **A.** name the key in B1's done-when; **B.** let the implementation choose and relax the test. Recommendation: **A**.
+2. **WD-1 "window-sum check" — blocked ambiguity.** The task mentions a check without an authoritative exact Config relation, fixed/model-dependent window limit, or invalid-input outcome. The previously asserted sums over test-owned defaults exercised no product behavior and are removed. The authoritative watchdog design §9 says the approval sum fits 120 seconds “at the defaults” and uses each card’s `expiresAt`; §15 lists sums 120/121 but does not specify Config rejection. Its context threshold is model-dependent `min(config, contextWindow − growth − output)`, not a fixed 200k sum. Source designs were read from local design branches via temporary document extracts. WD1-BVA-02 remains explicitly skipped until the requirement owner specifies valid/invalid Config inputs and expected outcomes; neither a 120-second sum nor a fixed 200k model window is invented as a rule.
+3. **Skeleton inject form — resolved by canonical §1.** Require `fishballInstance?` in FN-1, B1 and WD-1. `fishballChat` is internal and must not be injected by FN/B; it is not stubbed. Missing-instance load cases use a genuinely absent public service, not a hidden direct-property copy.
+4. **B1 prune-age constant — uncovered naming ambiguity.** The design does not specify the public export key for the 30-day prune age. The invented `BOARD_LIMITS.pruneAgeDays` assertion is removed; no prune-age constant coverage is claimed pending a documented public name.
 5. **K1 host bridge attention port.** The design says the validated payload "goes to the attachment"; it does not name the host-side callback (`onAttention`, the session port, or the connector-service binding). The K1 case observes only the wire answer and the real `state.unread`; it does not assert an internal callback. **A.** leave the seam internal; **B.** name it in K1's done-when. Recommendation: **A**.

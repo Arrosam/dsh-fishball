@@ -514,11 +514,11 @@ the open questions are in `docs/test-design/instance-ext-w0.md`. The developer's
 
 | Wave/task | Gating test file | Covers |
 | --- | --- | --- |
-| **W0 K1** | `test/instance-ext/k1.test.mjs` | contract 1.2 `instance.attention`, `LIMITS.unreadMax`, mixed peers, the host bridge and `state.unread` |
-| **W0 X0-C** | `test/instance-ext/x0-c.test.mjs` | X1, X2, X10, X11 and X3's record-type rule only (§5.5) |
-| **W0 FN-1** | `test/instance-ext/fn-1.test.mjs` | package, row, config bounds, fixed constants |
-| **W0 WD-1** | `test/instance-ext/wd-1.test.mjs` | package, row, §9 config bounds (no `enabled`, U7), window sums |
-| **W0 B1** | `test/instance-ext/b1.test.mjs` | package, row, Config ranges, constants, loads with and without the points |
+| **W0 K1** | `packages/connector/test/instance-ext/k1.test.mjs` | contract 1.2 `instance.attention`, `LIMITS.unreadMax`, mixed peers, the host bridge and `state.unread` |
+| **W0 X0-C** | `packages/instance/test/instance-ext/x0-c.test.mjs` | X1, X2, X10, X11 and X3's record-type rule only (§5.5) |
+| **W0 FN-1** | `packages/fold-notify/test/instance-ext/fn-1.test.mjs` | package, row, config bounds, fixed constants |
+| **W0 WD-1** | `packages/watchdog/test/instance-ext/wd-1.test.mjs` | package, row, §9 config bounds (no `enabled`, U7), window-sum check blocked pending exact Config rules (test-design §7.2) |
+| **W0 B1** | `packages/board/test/instance-ext/b1.test.mjs` | package, row, Config ranges, constants, loads with and without the points |
 | W1 X0-I | `test/instance-ext/x0-i.test.mjs` | X9 |
 | W1 X0-G | `test/instance-ext/x0-g.test.mjs` | X13 |
 | W1 X0-A | `test/instance-ext/x0-a.test.mjs` | X15 server half (claims and routing; tag/card are PANELS) |

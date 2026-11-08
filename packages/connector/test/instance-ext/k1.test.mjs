@@ -14,7 +14,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, describe, it } from 'node:test'
-import { loadConnector } from '../support/body-soul-env.mjs'
+import { loadConnector } from '../../../../test/support/body-soul-env.mjs'
 
 // The H-STUB homes must stay under /private/tmp (the W0 rule); os.tmpdir() is read when the
 // harness loads, so set it before the dynamic import below.
@@ -172,7 +172,7 @@ describe('K1 connector state.unread (H-STUB, real DSH boot)', () => {
   })
 
   it('K1-ST-01 unread follows the last valid value; detach and close reset it to {0,false}', async (t) => {
-    const { bootStub, stopStub } = await import('../support/instance-stub.mjs')
+    const { bootStub, stopStub } = await import('../../../../test/support/instance-stub.mjs')
     const booted = await bootStub('k1-unread')
     t.after(() => stopStub(booted))
     const { host, stub } = booted
@@ -198,5 +198,8 @@ describe('K1 connector state.unread (H-STUB, real DSH boot)', () => {
     assert.deepEqual((await host.state()).unread, { count: 0, important: false }, 'reattach stays zero until a report')
     await stub.op(ATTENTION, { unread: 7, importantUnread: 2, latestAt: 1_700_000_001_000 })
     assert.deepEqual((await host.state()).unread, { count: 7, important: true }, 'the child reports the current value again')
+    // Transport loss is a different lifecycle event from an explicit detach.
+    await stub.fireClose()
+    assert.deepEqual((await host.state()).unread, { count: 0, important: false }, 'transport close resets unread while the host remains observable')
   })
 })
