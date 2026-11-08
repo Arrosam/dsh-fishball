@@ -4,7 +4,7 @@
  * `fishball-connector/contract` export, never from the connector's own source; the values here are
  * the harness's own: its row, its IPC message types, its default descriptor and its timings.
  */
-import os from 'node:os'
+import { tempPath } from './temp-path.mjs'
 import path from 'node:path'
 
 export const STUB = Object.freeze({
@@ -42,7 +42,7 @@ export const STUB = Object.freeze({
  * part (support/worker.mjs), so the temp root keeps that suffix; nothing is written in the repo.
  */
 const STUB_TEMP_PREFIX = 'fbtest-hstub-'
-const STUB_TEMP = path.join(os.tmpdir(), STUB_TEMP_PREFIX + process.pid)
+const STUB_TEMP = tempPath(path.join('/private/tmp', STUB_TEMP_PREFIX + process.pid))
 export const STUB_HOMES = Object.freeze({
   /** This process's own temp folder; every home of the process sits below it. */
   temp: STUB_TEMP,
