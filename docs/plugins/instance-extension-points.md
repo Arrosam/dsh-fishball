@@ -23,11 +23,11 @@ open questions of the first cut (Q-A = B, Q-B = B) are U5 and U6; §9 now has no
 | U1 | The watchdog is **bundled** with `fishball-instance`, like fold-notify and board: on by default, can be turned off, cannot be removed | X17, X18 |
 | U2 | "开着时Fishball在启动会话时必须一并Assign Watchdog": while the watchdog is on, every session Fishball starts gets a brief at start | X16, enforced in code (§2.3) |
 | U3 | With the watchdog **off**, Fishball runs everything directly, as v1 does today: permission requests and supervision go to Fishball; no watchdog tools, no watchdog prompt sections | §2.4 |
-| U4 | "中途关掉会自动转交给Fishball": turning it off mid-way **hands the supervised sessions to Fishball**. Not a Q13 failure: the sessions keep running, nothing is halted. Fishball gets **one** notice listing them. Briefs and criteria are kept. Q13 halting applies only to failures while the watchdog is **on**. The coupling rule (R17) still holds, with Fishball as the supervisor | X14 hand-over, §2.4 |
-| U5 | Q-A = **B**: while the watchdog is on, **every** managed session must have an **active** brief before Fishball sends it anything: sessions Fishball starts, sessions the user hands over, and sessions Fishball messages or redirects. Enforced by the instance. Reading, answering approvals or questions, and release stay allowed without a brief | X19, §2.5 |
-| U6 | Q-B = **B**: turning the watchdog back on does **not** resume the kept briefs. They become `dormant`; Fishball gets one notice listing them and resumes each with `watchdog_resume`. A session whose brief is dormant has **no active brief**, so sends to it are refused (U5) until Fishball resumes that brief or writes a new one | X14, §2.4 step 6, §2.5 |
-| U7 | W0 tester Q4: "这个做成和普通的插件一样的管理". The watchdog is on exactly when `fishball-watchdog` is enabled in the child profile (in `dsh.profile.bundles`), switched like any DSH plugin. No separate `gateOn` file. Enabled but not registered yet (starting, crashed) → sends refused `watchdog-unavailable`. Turning it off is the hand-over (U4); on again gives dormant briefs (U6) | §2.4, §2.5, X19 |
-| U8 | W0 tester Q3: "一个watchdog的session只负责盯一个会话，这是一个一对一的关系。watchdog会将session的请求redirect到watchdog上，如果watchdog不存在，就会直接走向fishball。" One watchdog side session per watched session (1:1). The watchdog **claims** a session when it attaches and drops the claim when it detaches; a claimed session's requests go to the watchdog, every other session's go to Fishball | X15, §2.6 |
+| U4 | "中途关掉会自动转交给Fishball": turning it off mid-way **hands the supervised sessions to Fishball**. The sessions keep running, nothing is halted. Fishball gets **one** notice listing them. Briefs and criteria are kept. U20 extends this same hand-over to watchdog faults and supersedes Q13 halting. The coupling rule (R17) still holds, with Fishball as the supervisor | X14 hand-over, §2.4 |
+| U5 | Q-A = **B**, narrowed by U20: only while the watchdog is **enabled and healthy**, **every** managed session must have an **active** brief before Fishball sends it anything: sessions Fishball starts, sessions the user hands over, and sessions Fishball messages or redirects. Enforced by the instance. Reading, answering approvals or questions, and release stay allowed without a brief | X19, §2.5 |
+| U6 | Q-B = **B**: turning the watchdog back on does **not** resume the kept briefs. They become `dormant`; Fishball gets one notice listing them and resumes each with `watchdog_resume`. A session whose brief is dormant has **no active brief**, so sends to it are refused (U5) until Fishball resumes that brief or writes a new one | X14, §2.4 Recovery, §2.5 |
+| U7 | W0 tester Q4: "这个做成和普通的插件一样的管理". Configured enablement is `fishball-watchdog` in the child profile (`dsh.profile.bundles`), switched like any DSH plugin. No separate `gateOn` file. U20 distinguishes effective readiness: enabled but failed/not registered → gate off and Fishball hand-over, not `watchdog-unavailable` sends. Recovery gives dormant briefs (U6) | §2.4, §2.5, X19 |
+| U8 | W0 tester Q3: "一个watchdog的session只负责盯一个会话，这是一个一对一的关系。watchdog会将session的请求redirect到watchdog上，如果watchdog不存在，就会直接走向fishball。" One watchdog side session per watched session (1:1). The watchdog **claims** a session when it attaches and drops the claim when it detaches; a claimed session's **permission requests only** go to the healthy watchdog, every other permission request goes to Fishball; questions/plan reviews always go to Fishball (U21) | X15, §2.6 |
 | U10 | Q-C = **A-lite**: "A，优先保全DSH的拓展性和对DSH的生态的兼容能力". The child profile gets `dsh-web-app` back; the Fishball page is DSH's own web shell booted into Fishball's session with a minimal layout. **Guiding rule from now on: preserve DSH extensibility and ecosystem compatibility first.** Supersedes D28/I2 ("borrow styles only") for the chat page | §11 |
 | U11 | "一打开就要是Fishball的页面，通过修改DSH的网页来删去其他的组件，只留下Fishball一个会话页。" and the mechanism: **one small `dsh.client` plugin, `fishball-page`, bundled inside fishball-instance, loaded only in the child's DSH web**, does every removal and layout change. Never installed into the main DSH; no patching of DSH code or bundles; CSS from the same plugin is the fallback | §11.2–§11.5 |
 | U12 | "Fishball instance内的设置页也用DSH自带的插件设置页，且可以打开instance内的DSH setting页面，只是删除了侧边栏和其他的session页面，查看session只允许查看Fishball的session，并且拒绝启动任何的新session，并且整个fishball instance的DSH都没有只读以外的权限。" DSH's own Settings and Plugins pages are allowed destinations; only Fishball's session can be viewed; no new session can be started; nothing in the child goes above read-only | §11.4, §11.6, §11.7 |
@@ -38,6 +38,9 @@ open questions of the first cut (Q-A = B, Q-B = B) are U5 and U6; §9 now has no
 | U17 | **Final, Q-Q clarified.** Clear a resolved card at once; return the requesting tool's result. Decision records are ordinary chat-history entries only at the layers the request reached: watchdog-only decisions never enter Fishball's context or transcript **automatically**; requests escalated to Fishball or the user do. Q-T permits an explicit `watchdog_decisions` pull, including watchdog-only decisions (§12.8). Compaction removes the record from model context, not the searchable transcript. No separate decision-audit or attribution-label retention store | §12.4 |
 | U18 | X0-C coverage gaps: option A. The tests cover them; behaviour they exposed as unspecified is specified in §12.5 | §12.5 |
 | U19 | "看板任务永不清理，永久都可以通过grep查询关键字来找到过去完成的看板。而看板上的任务一旦完成就留30天，除非主动清除。" Board records are never deleted **while installed**; a closed task stays **on the board** for 30 days unless cleared early, then remains archived. Q-R = B: `board_search` searches the archive. Q-S = A: uninstall offers an archive export first, then deletes the runtime including the archive | §12.6 |
+| U20 | "如果是watchdog的故障，视作没有开启Watchdog插件": watchdog faults are effective off. Fishball takes supervision/permissions; X19 passes sends. Supersedes Q13 stop/halt and narrows Q-A=B and K-3 to a healthy enabled watchdog. Recovery preserves U6 dormant briefs, not automatic re-claim | §2.3–§2.6 |
+| U21 | Questions and plan reviews are never claimed by the watchdog; Fishball always handles them and may separately refine the watched session's direction while answering | §2.7, WD-11 |
+| U22 | Old timer-contract third-party instances (1.1) are incompatible; no legacy exception. Negotiate timer-free contract 2.0 and reject 1.x at attach with `contract-version` | §3, §12.1, K1/K2 |
 | U9 | W0 tester Q1 = A, Q2 = A, Q5 = A: X7's page-hook behaviour is tested in the real browser later (W0 tests the server side only); an out-of-scope X12 call answers `forbidden` (the other refusals stay "observable effect only"); bundled placement runs inside `initializeProfile`, before `loadProfileDirectory` and the skipped-bundle check | X7, X12, §2.2, X0-B |
 
 ## 1. The canonical extension points
@@ -77,19 +80,19 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | X5 *(withdrawn, U10: Connection Fetch routes, §11.3)* | `ui.registerRoute(pluginId, {method, path, handler(req) → {status, body}}) → dispose`, served at `api/ext/<pluginId>/<path>`, same bearer and body limits as `api/*` | a plugin's JSON routes | fold (`seen`), board (`board`, `export`) | fE4 (d) = b3 |
 | X6 *(withdrawn, U10)* | `ui.signal(pluginId, type)` → SSE event `ext` `{pluginId, type}`, data-free, coalesced per `(pluginId, type)` per tick | tell a module to re-read | board | b3 (b) |
 | X7 *(withdrawn, U10)* | Page hook object passed to each module's default export: `{document, i18n, request, sidebar({order}) → HTMLElement, onSignal(type, fn) → dispose, setTimelinePresenter(presenter) → dispose}` | page-side reach: an aside container (mounted above `#reminders`, ordered by `order`), the signal filtered to the module's own `pluginId`, and the **single-owner** timeline presenter with fE5's exact shape | fold (presenter), board (sidebar, signal) | fE5 + b3 (a)(b). Tested in the real browser, not in W0 (U9) |
-| X8 | `attention.set(pluginId, {unread, importantUnread, latestAt}) → dispose`, single owner | the value sent as contract 1.2 `instance.attention` (§3) at once, after every handshake, and `{0, 0, null}` on dispose | fold | fE6 (instance half) |
+| X8 | `attention.set(pluginId, {unread, importantUnread, latestAt}) → dispose`, single owner | the value sent as contract 2.0 `instance.attention` (§3) at once, after every handshake, and `{0, 0, null}` on dispose | fold | fE6 (instance half) |
 | X9 | `inbox.claim({pluginId, kind, match(item) → key?}, onItem(item, key)) → dispose`; `inbox.release(key, {deliver, prefix?})`; `inbox.setBatcher(pluginId, fn(item, deliver)) → dispose` (single owner) | **one inbox pipeline** in `inbox.js receive`: approvals-row items → **claims** (a claimed item is acked at once and held) → **batcher** → `deliverInbox`. `release(…, {deliver: true})` re-enters the pipeline after the claims, so a released item is batched like any notice. `deliverInbox` gains an array form (fE7). `PERMISSION_NOTICE` marker added to `inbox-markers.js` | watchdog (claims), fold (batcher) | wE2 + fE7 |
 | X10 | `manager.notify({pluginId, dedupeKey, text, record?: {type, data}, wake}) → Promise<{queued \| held \| duplicate}>` | a plugin's message to Fishball: `wake: true` is one notice turn (source `{kind: 'fishball-notice', form: 'plugin', pluginId}`); `wake: false` is held for the next turn; dedupe is durable. **Not batched** (fold §7 batches inbox items only) | watchdog | wE4 (notify half) |
 | X11 | `manager.userTexts({limit, maxChars}) → [{text, at}]` | newest-first texts written by the **user** in Fishball's session, read-only | watchdog (`userQuote`) | wE8 |
 | X12 | `bridge(pluginId, operations[]) → client` | a scoped connector client; an operation outside the list is refused locally with the code `forbidden` (U9: tests assert the code), and no request leaves the child; the list must lie within the instance's required set (no new handshake) | watchdog | wE1 |
 | X13 | `sideAgents.open({…}) → {agent, sessionId, setSection}`, `sideAgents.runTurn(agent, message, {timeoutMs?, signal})`, `sideAgents.cancel(agent)` | locked-down side sessions: read-only, approval `never`, every global tool denied; check turns may set a timeout, decision turns omit it with no default timer (U14/Q-P) | watchdog | wE5 with U14/Q-P timeout change |
-| X14 | `supervision.register(pluginId) → {set(sessionId, state, briefId), clear(sessionId), handedOver, dispose}` with `state` ∈ `active`, `paused`, `halted`, **`dormant`**; `supervision.onManagedChange(listener)`; `supervision.endingReason() → 'hand-over' \| 'failure' \| undefined` | the persisted supervised set, the `plugin-gone` guard, managed-change events; **added:** the hand-over when the plugin is disabled (§2.4) and the **`dormant`** state of a brief kept across off → on (U6). `set` is synchronous and persisted before it returns, so a send right after it is judged on the new state. **The one source of truth** for X15's claims and X19's gate (§2.6) | watchdog | wE10 + U4 + U6 |
-| X15 | `approvals.claim(sessionId, {id, name, onCard(card)}) → release`; `card(approvalId)`; `onSettled(listener)`; `answerApproval({…, decidedBy})`; the escalation card in the chat | **per-session claim (U8)**: a claimed session's `kind: approval` cards go to its claimant's `onCard`, every other session's to Fishball. At most one claim per session (a second → `owner-busy`). A claim is accepted only while X14 holds the session as `active`, `paused` or `halted` (else `not-supervised`), and the instance drops it itself when X14 moves the session to `dormant` or clears it (§2.6). While a session is claimed, Fishball's `answer_approval` `grant` on it is refused `grant-off-supervised`, and `answerApproval` with `decidedBy` answers only cards of sessions the caller has claimed. The "代批 / Watchdog" tag; the open escalation card | watchdog | wE6 + wE9; **replaces** the global `setDelegate` and `supervised(sessionIds)` |
-| X16 | `sessionStarts.register(pluginId, {parameter, schema, validate(arg) → {ok:true} \| {code}, attach(sessionId, arg) → Promise<{ok:true} \| {code}>}) → dispose`, single owner | **new (U2)**: while registered, `start_session` has one more **required** argument and cannot start a session without it (§2.3). `attach` ends with `supervision.set(id, 'active')` and `approvals.claim(id, …)`, so the started session is sendable and its cards go to its watchdog from the first card | watchdog | new |
-| X19 | **Send gate** (instance-internal; the plugin only feeds it through X14): one check `gate.send(operation, sessionId) → ok \| {code, reason}` called by the bridge client for every manager→session send operation (`SUPERVISION.sendOperations` = `session.message`, `session.redirect`), plus the hand-over hint (§2.5) | **new (U5)**: while the gate is on, no send reaches a session without an **active** brief; replaces wE10's gate, which only covered `paused`/`halted`. **The gate is on exactly while `fishball-watchdog` is enabled in the child profile** (U7) | watchdog | wE10 gate + U5 + U7 |
+| X14 | `supervision.register(pluginId) → {ready(), fail(cause), set(sessionId, state, briefId), clear(sessionId), handedOver, dispose}` with `state` ∈ `active`, `paused`, **`dormant`**; `supervision.onManagedChange(listener)`; `supervision.endingReason() → 'hand-over' \| 'failure' \| undefined` | the persisted supervised set, instance-owned effective health/ownership generation, managed-change events; hand-over on disable **or failure**, never a fault-induced stop (§2.4, U20); **`dormant`** retained briefs on recovery (U6). `set` is synchronous and persisted before it returns, so a send right after it is judged on the new state. **The one source of truth** for X15's claims and X19's gate (§2.6) | watchdog | wE10 + U4 + U6 |
+| X15 | `approvals.claim(sessionId, {id, name, onCard(card)}) → release`; `card(approvalId)`; `onSettled(listener)`; `answerApproval({…, decidedBy})`; the escalation card in the chat | **per-session claim (U8)**: a claimed session's `kind: approval` cards go to its claimant's `onCard`, every other session's to Fishball. At most one claim per session (a second → `owner-busy`). Questions/plan reviews never enter this claim (U21). A claim is accepted only while X14 is healthy and holds the session as `active` or `paused` (else `not-supervised`), and the instance drops it itself when X14 moves the session to `dormant` or clears it (§2.6). While a session is claimed, Fishball's `answer_approval` `grant` on it is refused `grant-off-supervised`, and `answerApproval` with `decidedBy` answers only cards of sessions the caller has claimed. The "代批 / Watchdog" tag; the open escalation card | watchdog | wE6 + wE9; **replaces** the global `setDelegate` and `supervised(sessionIds)` |
+| X16 | `sessionStarts.register(pluginId, {parameter, schema, validate(arg) → {ok:true} \| {code}, attach(sessionId, arg) → Promise<{ok:true} \| {code}>}) → dispose`, single owner | **new (U2/U20)**: while registered **and effective on**, `start_session` has one more **required** argument and cannot start a session without it (§2.3). `attach` ends with `supervision.set(id, 'active')` and `approvals.claim(id, …)`, so the started session is sendable and subsequent permission cards go to its watchdog; pre-attach cards go to Fishball (§2.3) | watchdog | new |
+| X19 | **Send gate** (instance-internal; the plugin only feeds it through X14): one check `gate.send(operation, sessionId) → ok \| {code, reason}` called by the bridge client for every manager→session send operation (`SUPERVISION.sendOperations` = `session.message`, `session.redirect`), plus the hand-over hint (§2.5) | **new (U5)**: while the gate is on, no send reaches a session without an **active** brief; replaces wE10's gate, which only covered `paused`/`halted`. **The gate is on only while `fishball-watchdog` is enabled AND healthy** (U7/U20); faults hand over to Fishball and pass sends | watchdog | wE10 gate + U5 + U7 |
 | X17 | `RUNTIME.bundledPlugins = [{name: 'fishball-fold-notify'}, {name: 'fishball-board'}, {name: 'fishball-watchdog'}]` and placement at every child start | built in, on at first placement | all three | fE8 = b4 |
 | X18 | `admin.plugins.get` marks a bundled plugin `{bundled: true, removable: false}`; `admin.plugin.remove` refuses `bundled-plugin`; enable/disable work. **Added:** disabling `fishball-watchdog`, through any path, is a hand-over (§2.4, U7) | the off switch the user keeps | all three | fE9 + U4 |
-| K1 | contract 1.2 `instance.attention` + connector `state.unread = {count, important}` | the brand mark and frame unread count (today always 0) and the important alert | fold | fE6 (wire half), fold §9.1 |
+| K1 | contract 2.0 `instance.attention` + connector `state.unread = {count, important}` | the brand mark and frame unread count (today always 0) and the important alert | fold | fE6 (wire half), fold §9.1 |
 
 ### 1.2 Disagreements and the pick
 
@@ -148,32 +151,37 @@ conditions):
 
 Each name is placed **independently**: one failed placement does not stop the others.
 
-**Watchdog bundled (U1).** For the watchdog, a failed placement while the persisted supervised set
-is non-empty is the Q13 cause `plugin-gone`. The instance's guard stops those sessions after
-`guardGraceSeconds`. The user listed "plugin missing" as a failure, so this is not a hand-over.
+**Watchdog bundled (U1/U20).** Failed placement of an enabled watchdog is `plugin-gone` and
+means **effective off**, not a stop: X14 hands the persisted supervised set to Fishball (§2.4).
+The persisted plugin enable setting is unchanged; no `guardGraceSeconds` stop is scheduled.
 
 ### 2.3 A watchdog at every start (U2, X16)
 
-While a `sessionStarts` owner exists:
+While a **current-generation, enabled and healthy** `sessionStarts` owner exists:
 
 1. `start_session` is registered again with one more parameter, `watchdog` (the owner's
    `schema`), and it is **required**. In the watchdog this is the `watchdog_brief` fields without
    `session_id`. The tool's description gets one line saying a watchdog brief is required.
    *Why the schema and not prompt text alone.* The model cannot leave out a required argument
    without the call failing validation, and step 2 checks it again in code.
-2. `execute`: first `validate(arg)`. If it fails, the call answers
+2. At dispatch, recheck effective readiness and capture its generation **before schema/argument
+   validation**, so a pre-fault advertised schema cannot impose an off-mode requirement. If off,
+   use the ordinary start path without requiring a brief. If healthy, call `validate(arg)`, then
+   recheck the captured generation before `session.start`; a lost owner switches to the ordinary
+   start path, never creates twice. If validation fails while still healthy, the call answers
    `{ok: false, code: 'watchdog-brief-required' | <validate code>}` and **no session is started**.
 3. Then `session.start` as today. A failed start answers as today, and nothing is attached.
 4. Then `attach(sessionId, arg)`, which creates the brief, its watch and the supervised entry
    (`supervision.set(id, 'active')`, so the session is sendable as soon as the call returns). On
    success the result also carries `{watchdog: {briefId}}`.
-5. If `attach` fails or times out (`SESSION_STARTS.attachTimeoutMs`, a new constant in `child/ext/session-starts.js`, equal to the bridge's `requestTimeoutMs` (30 s, `child/bridge.js:38`)), the instance calls
-   `session.stop` on the new session and answers
-   `{ok: false, code: 'watchdog-assign-failed', sessionId, stopped: true | false}`.
-   *Why stop.* The coupling rule (R17): a session with no watchdog would otherwise run on, in a
-   state the user ruled out. If the stop fails as well, the result says `stopped: false`, and the
-   session stays managed for Fishball to handle. That is the same visible failure the guard
-   reports.
+5. If `attach` fails or times out (`SESSION_STARTS.attachTimeoutMs` = the bridge's 30 s request
+   timeout), classify it as watchdog failure and perform §2.4's hand-over, including this newly
+   created session. Never call `session.stop` because assignment failed. Return the successful
+   connector start result with `watchdog: {assigned: false, code: 'watchdog-assign-failed',
+   supervisor: 'fishball'}` instead of `{briefId}`; the `sessionId` proves it already exists, so
+   Fishball must not retry the start. Validation errors before creation still create nothing.
+   An owner lost during start uses this same successful-start/fallback result. A late attach
+   completion from the failed ownership generation cannot set active or re-claim the session.
 6. **The start-to-attach window.** The session is running before step 4 ends. A permission card in
    that window has no brief yet, so it goes to Fishball (watchdog §6 "no brief → Fishball"),
    which is safe.
@@ -190,76 +198,87 @@ registrations exist. Inbox notices and permission cards reach Fishball as in v1.
 `watchdog_*` tools and no watchdog section, and `start_session` has no `watchdog` parameter. The
 instance's own persona never mentions the watchdog.
 
-**Turned off mid-way (U4, U7): the hand-over.** The watchdog is switched like any DSH plugin: the
-settings view's switch (X18), or any other `pluginManager.setBundleEnabled`. There is no intent
-record.
+**Effective state (U20).** Configuration and availability are distinct. The watchdog is
+**effective on** only when enabled in `dsh.profile.bundles` AND its current X14 owner has declared
+ready after model resolution, readable/writable stores and registration of its routing/start
+hooks. Disabled, absent, starting/not registered, crashed or failed means **effective off**.
+No separate `gateOn` file and no automatic edit of the user's plugin enable setting. A registration
+alone is not readiness; the instance owns the health latch and ownership generation.
 
-*How the instance tells a disable from a failure.* DSH saves the manifest without the name
-**before** it reloads and disposes the row: `selectBundle` → `saveManifest` (rc.5
-`dsh-plugin-manager/lib/index.js:2304`, rc.1 `:3073`), then `reload` (rc.5 `:1952`, rc.1 `:2691`).
-So when the registrant disposes, the instance reads `dsh.profile.bundles` once:
+**Detection, not approval deadlines.** X0-S detects missing/failed bundle placement, owner disposal
+or loss immediately (`plugin-gone`), and start-attach rejection/30 s timeout
+(`watchdog-assign-failed`). WD-9 reports `model-unavailable` on resolution/open failure,
+`store-unavailable` on failed read/write, or `failing` after the existing guard thresholds:
+3 consecutive failed checks/decisions (preempted checks do not count), or 900 s without a successful
+check while a watched session is running. These are health/check thresholds, not card wait timers;
+a single failed decision still escalates its own card immediately under Q-P. Once a health fault
+is detected it disables the **whole watchdog plugin's effective authority**, not merely one
+brief. No 30 s plugin-gone grace retains claims or blocks sends. An unending model call with no
+reported failure is not itself a new failure detector; Q-P's no-approval-timer rule stands.
 
-| `fishball-watchdog` in `dsh.profile.bundles` at disposal | Meaning | What the instance does |
-| --- | --- | --- |
-| absent | the user turned it off | hand-over, steps 2–3 |
-| present | crash, failed reload, child stop | `plugin-gone`: X14's grace timer (watchdog §4.5.4). The timer lives in the child process: a child stop discards it, and the next boot re-registers within the grace |
+X14's registration handle adds `ready()` and `fail(cause)` (synchronous, generation-scoped);
+`ready()` is permitted only after the checks above and successful dormant-state persistence.
+`fail` or owner loss atomically clears effective readiness before any subsequent route/gate
+check; repeat reports for the same failure episode are idempotent. `endingReason()` remains
+`'hand-over'` for explicit disable and `'failure'` for faults; **both use the same hand-over**:
 
-1. (No step: the disable is DSH's own.)
-2. While the row disposes, `supervision.endingReason()` returns `'hand-over'` (computed from the
-   manifest as above). The plugin then:
-   - keeps its briefs, criteria, operational history and ordinary decision transcripts (no
-     separate decision-audit/label retention under U17);
-   - does **not** unwatch: its `finished` watches stay, and their notices now reach Fishball,
-     because the claims are gone;
-   - stops no session.
-3. The instance:
-   - moves every supervised entry into `handedOver: [{sessionId, briefId, state, at}]` in its own
-     supervision file and empties the supervised set. This drops every X15 claim (§2.6);
-   - leaves the send gate off, because the plugin is disabled (§2.5). Paused or halted sessions and
-     sessions without a brief can all be messaged; a stopped session stays stopped;
-   - starts **no** grace timer and stops nothing;
-   - sends **one** waking `manager.notify` (dedupe `watchdog-handover:<at>`). It lists the sessions,
-     their titles and their states, and says Fishball now handles their approvals and supervision
-     directly.
-4. From then on Fishball is the supervisor. Approvals go to Fishball (no delegate), finished
-   notices go to Fishball, and Fishball's `answer_approval` `grant` is allowed again (no session is
-   claimed in X15). So R17 holds: no session runs without a supervisor.
-5. **Failures stay Q13.** A disposal while the name is still in `dsh.profile.bundles` (crash, a
-   failed reload), and a failed placement of an enabled watchdog (§2.2), are `plugin-gone`. So are model unavailable, repeated failures, 900 s without a
-   successful check while running, and a broken store, all of which can happen only while the
-   watchdog is on: those halt, stop and notify exactly as watchdog §4.5.4 says. The cause
-   `disabled` is removed from the watchdog's halt causes.
-6. **Turning it on again (U6, no automatic resume).** The first `supervision.register` after a
-   hand-over:
-   - (the send gate is on again because the plugin is enabled, §2.5);
-   - moves every `handedOver` entry into the supervised set as **`dormant`** (same `briefId`) and
-     returns the list to the plugin;
-   - the plugin sets each kept brief to `dormant` in its own store, starts **no** timer, makes no
-     check and stops nothing, then sends **one** waking `manager.notify` (dedupe
-     `watchdog-reenabled:<at>`) listing the dormant briefs (brief id, session, title) with "resume
-     each with `watchdog_resume`, or write a new brief with `watchdog_brief`; until then Fishball
-     cannot send to these sessions". With an empty list, no notice.
-   - **Dormant means "no active brief"** for U5. The session may keep running: Fishball is still
-     its supervisor (its approvals go to Fishball, watchdog §6 "no brief → Fishball"; its finished
-     notices reach Fishball). Only sends to it are refused until the brief is active.
-   - `watchdog_resume` on a dormant brief runs watchdog §4.5.3 steps 1–4 and then
-     `supervision.set(id, 'active')`. `watchdog_brief` on a session whose brief is dormant ends the
-     dormant brief (`endedReason: 'superseded'`) and creates the new one active. Both unlock sends
-     at once.
-   - Sessions Fishball started, or the user handed over, while the watchdog was off have **no**
-     brief at all. They are treated as in §2.5: sends are refused until Fishball writes one.
+1. Invalidate the old ownership generation, cancel its side-agent work, release X15/X9 claims,
+   and disable its X2 tools/sections and X16 start schema. The instance does this even if plugin
+   cleanup never runs. A stale callback cannot answer a card, set active, or re-claim. Re-route
+   still-open watchdog-held permission cards and held inbox items to Fishball once; settled cards
+   stay settled, and an item already queued to Fishball is not queued again.
+2. Keep briefs, criteria and ordinary history. Move supervised entries to
+   `handedOver: [{sessionId, briefId, state, at}]`, clear the supervised set and leave existing
+   finished watches delivering to Fishball. Never stop a managed session because of watchdog
+   failure, and never mark its brief `halted`. An already stopped session is not automatically
+   resumed. Legacy halted briefs are retained as hand-over records, not re-stopped.
+3. X19 passes sends exactly as when disabled; new starts take no watchdog argument. Fishball is
+   now the direct supervisor, permission recipient and question/plan-review recipient; grants are
+   no longer blocked by a watchdog claim. R17 now means **execution has an owner: watchdog or
+   Fishball**, not “watchdog failure must stop execution”. An intentional `watchdog_pause` while
+   healthy still stops before marking paused; that user/manager action is not a plugin fault.
+4. Send one waking `manager.notify` per transition (`watchdog-handover:<episodeId>`), rendered
+   as an ordinary visible Fishball notice for the user. Include cause, affected session ids/titles
+   and prior states, explicit “watchdog unavailable/off; Fishball now handles supervision and
+   approvals; no session was stopped”, and retained-brief recovery instructions. A failure notice
+   is emitted even for zero affected sessions; a disable with none needs none. Repeated faults do
+   not spam. Record the recovery episode in the instance's supervision state for retry/dedupe.
+   If that store fails, open the gate and route to Fishball **in memory first**, emit the visible
+   fault via the available manager/log channel, and retry persistence/notification on recovery;
+   do not wait for a broken store to permit hand-over or claim a durable notice that was not saved.
+
+**Recovery (U6 extended, no automatic re-claim).** Re-registration after restart/reload or repair
+must first verify model/stores/hooks. `fail()` retires the old X14 owner slot and its generation-owned
+registrations; the still-loaded repaired row may call `register` again without a process restart,
+reinstall X2/X9/X16 hooks under the new generation, then finish recovery before `ready()`. Old
+`ready`/`set`/claim callbacks cannot mutate the new generation; old `dispose` is a no-op against it.
+Keep effective off until success. Persist every retained
+brief as `dormant`, with the same id, before `ready()` turns the gate on. No check timer or approval
+claim starts for dormant briefs. Send one recovery notice listing them and telling Fishball/user
+that sends now require `watchdog_resume` or a new `watchdog_brief`; sessions continue under
+Fishball until explicitly resumed. Even a quick reload has no grace-period auto-reclaim. Resume
+runs its existing readiness/watch/check steps and then sets active + claims permission cards;
+new brief creation supersedes a dormant brief. Sessions created during failure have no brief and
+need one once healthy. Questions/plan reviews still stay with Fishball after recovery (§2.7).
+If persistence cannot be restored, stay effective off; never discard a damaged store to invent
+an active brief. On child boot, retained supervision is treated as handed over/dormant until
+readiness and explicit resume, not silently restored active.
+
+**Whole instance unavailable.** A dead/detached child cannot execute Fishball hand-over or send a
+notice. Existing connector unavailable-instance/user routing applies until reconnect; no automatic
+approval or session stop is added. Reconnect performs the recovery above and reports any interval
+of unavailable supervision. This operational boundary is not an exception allowing a live but
+failed watchdog to retain authority.
 
 ### 2.5 Every managed session needs an active brief (U5, X19)
 
-**When the gate is on (U7).** The gate is on exactly while `fishball-watchdog` is in the child
-profile's `dsh.profile.bundles`, which is DSH's own enable state. The instance reads the manifest
-through `boot.readProfileManifest`, the same read `slimProfileBundles` makes. There is no `gateOn`
-file.
-- **Enabled and registered:** the table below.
-- **Enabled but not registered** (child boot before the row is up, a crash, a failed placement):
-  every gated send is refused `watchdog-unavailable`. *Why.* A gate that opened while the row is
-  missing would let sends through unsupervised. The plugin-gone guard of X14 covers the rest.
-- **Not enabled** (off from the start, or turned off): the gate is off, and behaviour is v1's (U3).
+**When the gate is on (U7 narrowed by U20).** Read the configured enable state through
+`boot.readProfileManifest`, but activate X19 only while the watchdog is **enabled and healthy**
+(§2.4's instance-owned readiness latch). There is no `gateOn` file.
+- **Enabled and ready:** the table below; Q-A=B applies only here.
+- **Enabled but failed/not registered/not ready:** effective off; sends pass and Fishball owns
+  supervision. Neither `watchdog-unavailable` nor `store-unavailable` blocks an ordinary send.
+- **Not enabled:** effective off, as in v1 (U3).
 
 **Where it sits.** In the bridge client's one request path (`child/bridge.js`), for the operations
 in `SUPERVISION.sendOperations`. Both send paths go through it: the `message_session` /
@@ -273,9 +292,9 @@ refusal):
 | Gate | Brief of the target session | `message_session`, `redirect_session`, image sends |
 | --- | --- | --- |
 | off | any | allowed (v1) |
-| on (enabled), not registered | any | refused `watchdog-unavailable` |
-| on | `active` | allowed |
-| on | `paused`, `halted` | refused `supervision-paused` (watchdog §4.5.2, §4.5.4) |
+| off (enabled but failed/not ready) | any retained | allowed; Fishball owns supervision |
+| on (enabled and healthy) | `active` | allowed |
+| on | `paused` | refused `supervision-paused` (intentional pause, watchdog §4.5.2) |
 | on | none, `dormant` | refused **`watchdog-brief-required`** |
 
 The `watchdog-brief-required` result is `{ok: false, code, sessionId, briefId?, reason}`, and the
@@ -316,7 +335,7 @@ claimed in X15. Otherwise it goes to Fishball, as in v1.
   claims and goes to Fishball.
 
 **Kept in step with X14** (one source of truth):
-- `approvals.claim(S, …)` is accepted only while X14 holds *S* as `active`, `paused` or `halted`;
+- `approvals.claim(S, …)` is accepted only while X14 is healthy and holds *S* as `active` or `paused`;
   otherwise it is refused `not-supervised`.
 - The instance itself releases the claim when X14 moves *S* to `dormant` or clears it.
 - A disposed plugin loses all its claims with it.
@@ -326,41 +345,94 @@ claimed in X15. Otherwise it goes to Fishball, as in v1.
 | none / ended | no | Fishball | `watchdog-brief-required` if the gate is on, else allowed |
 | `active` | **yes** | the watchdog (watchdog §6.2) | allowed |
 | `paused` | **yes** | the watchdog: a card means the session ran, so R1b auto-resumes first | `supervision-paused` |
-| `halted` | **yes** | the watchdog: under R1b the guard re-stops the session, which cancels the card; nothing is answered | `supervision-paused` |
-| `dormant` | **no** | Fishball (U6) | `watchdog-brief-required` |
-| any, plugin enabled but not registered | no (the claims went with the plugin) | Fishball | `watchdog-unavailable` |
+| `dormant`, healthy owner | **no** | Fishball (U6) | `watchdog-brief-required` |
+| any, plugin failed/not registered/not ready | no (hand-over) | Fishball | allowed (gate off) |
 | any, plugin turned off | no (hand-over) | Fishball | allowed (gate off) |
 
-*Why paused and halted stay claimed* (confirmed by the user, K-3 = A). The coupling rule (R17): those briefs still own the session,
-and the guard, not Fishball, decides what happens when it runs again. Handing a halted session's
-cards to Fishball would let Fishball answer work the guard is stopping.
+*Paused stays claimed only while healthy* (K-3 narrowed by U20). A deliberate pause still owns
+its brief; a permission card caused by renewed execution invokes the existing auto-resume path.
+If readiness fails, hand over to Fishball instead of halting/re-stopping. `halted` is no longer a
+live X14 state: migrate old halted records through hand-over to dormant on recovery. All routing
+rows above refer to **permission cards only**; questions and plan reviews bypass claims (§2.7).
 
 *The 1:1 relation.* There is one brief per session (watchdog §2.2, `brief-exists`) and one side
 session per brief, so one claim per session is the same relation seen from the approvals side.
 
-## 3. Contract 1.2 scope (K1)
+X15 also binds each `onCard`/answer callback and `release` closure to its **claim incarnation**, not
+only the plugin generation and session id. Detach → re-claim within one healthy generation cannot
+revive an old decision or let an old release remove the replacement claim. Stale answers fail
+`not-supervised`; a stale release is a no-op. This is internal handle identity, not a new wire field.
 
-Exactly two additions. Both are additive, and nothing else changes:
+### 2.7 Questions and plan reviews belong to Fishball (U21)
+
+X15 claims only `kind: approval` **permission requests**. Questions and plan reviews always
+route directly to Fishball, even for active/paused briefs; they are never offered to watchdog
+`onCard`, its decision queue, X9 claim, or side-agent context. A watchdog `ask` decision on a
+permission request remains a connector clarification of that approval, not authority to handle
+independent question/plan-review cards. Fishball answers with the existing question/prompt ports
+or escalates to the user under U14/Q-P, without any deadline.
+
+**Direction update: reuse `watchdog_refine`, not a new parallel tool.** While answering, Fishball
+may separately call the manager-only tool with `{brief_id, expected_revision, reason, <fields>}`
+to replace `goal`, `progress_signs`, `drift_signs`, `done_when`, `ignore` or `notes` using the
+existing brief bounds. `reason` is 1–500 characters; result is `{ok:true, briefId, revision}`.
+The update persists a new revision and replaces that brief's side-session instruction section
+before its next turn. It does not send work to the managed session, change permission criteria,
+auto-approve, or claim the question/plan review. WD-11 owns the tool and answer-path guide; WD-3
+owns optimistic persistence, WD-4/WD-6 the section refresh/revised trigger, and WD-12 the tests.
+
+Answer and refinement are two independent operations: an update failure never withholds, undoes,
+or repeats an answer. Use `watchdog_view` to obtain the current revision; on `stale-revision`,
+re-read and explicitly reconcile rather than overwrite. Keep existing `unknown-brief`,
+`brief-ended`, `invalid-brief:<field>` and `reason-required` refusals. A failed/off watchdog has no
+refine tool/authority: Fishball keeps direction in its ordinary conversation and can refine after
+recovery. Refining a dormant/paused brief stores direction without a check, resume or claim; only
+an active brief gets the existing `revised` trigger. A running turn may finish on its captured
+revision; the next turn must use the new one, with no extra watchdog conversation or automatic
+history delivery to Fishball. This reuses the source design's revision/section mechanism.
+
+## 3. Timer-free contract 2.0 scope (K1 + K2, U22)
+
+The complete version/delta/package/task baseline is [connector contract 2.0](../connector-contract-2.0.md).
+The later [selected one-way MCP control direction](<connector-mcp-option.md>) parks custom-2.0
+implementation pending MCP feasibility/schema freeze. No callback MCP server is required; optional
+first-party custom pushback and external capability degradation are explicit. Preserve the baseline
+below as requirements/history; §8 of the MCP design supersedes transport-dependent K1/K2 sequencing.
+
+U14 removes timer semantics, so the release is **breaking**, not the previously proposed additive
+1.2. Keep the existing contract id, set `CONNECTOR_CONTRACT.major = 2`, `minor = 0`; the wire
+envelope's independently versioned `version: 2` is unchanged. The two attention additions remain:
 
 | Item | Shape |
 | --- | --- |
 | Operation `instance.attention` (instance → connector), capability `instance.attention` | `{unread, importantUnread, latestAt}` → `{accepted: true}`; integers with `0 ≤ importantUnread ≤ unread ≤ LIMITS.unreadMax` (9999); `latestAt` an epoch-ms integer or `null`. An invalid frame fails validation as contract §3.1 says, and the last valid value stays |
 | Connector view `state.unread = {count, important}` | `count = unread`, `important = importantUnread > 0`; `{0, false}` when no value, on detach and on transport close. This fixes today's bug: `client.js:740` reads `state.unread?.count`, but `index.js:137-232` has no `unread` view, so the count is always 0 |
 
-- `CONNECTOR_CONTRACT.minor` 1 → 2 (`packages/connector/contract/contract.js:1289`).
-  `LIMITS.unreadMax` goes in `limits.js`.
-- The instance **never** lists `instance.attention` in `requiredCapabilities`. It sends the value
-  only when the welcome lists the capability.
-- **Not in 1.2:** watchdog F1 (`session.supervise`) and F2 (a user-answer operation). The watchdog
-  stays child-side, and its hand-over and start rule (§2.3–§2.4) need no wire change.
-
-**Mixed peers** (from `contract.js` itself):
+- `LIMITS.unreadMax` goes in `limits.js`. `instance.attention` stays optional: never list it in
+  `requiredCapabilities`, send only when welcome advertises it. Without it the count is zero;
+  this optional UI capability does **not** negotiate away timer-free approvals.
+- K1 owns attach negotiation/descriptors and rejection fixtures; K2 owns mandatory timer-free
+  approval/question/plan-review semantics. Ship these together with the matching instance, never
+  advertise 2.0 while retaining timer behavior. No legacy adapter, expiry exception or downgrade.
+- `negotiateContract` validates id and major before attaching/routing any instance traffic.
+  A 1.x declaration (including third-party 1.1), wrong id/major or malformed declaration fails
+  with the existing attach error **`ContractError` / `contract-version`**; no instance attaches,
+  no managed approval is delegated to it. Surface “incompatible contract: requires timer-free
+  2.x; upgrade the instance/connector” to the caller/user. This is not an operation-level
+  `unsupported-operation` or envelope-level `unsupported-version` error.
+- Within 2.x retain the existing lower-minor negotiation and capability checks; missing required
+  operation capabilities fail `unsupported-capability` at handshake. Timer-free behavior is
+  mandatory for every 2.x peer, including third-party peers. A peer falsely declaring 2.x is
+  nonconformant, not a supported legacy case. Contract conformance tests cover no timers.
+- **Not in 2.0:** watchdog F1 (`session.supervise`) or F2 (user-answer operation). The watchdog
+  hand-over/start rules stay child-side.
 
 | Instance | Connector | Result |
 | --- | --- | --- |
-| 1.2 | 1.2 | attention sent; brand count and alert work |
-| 1.2 | 1.1 | attaches (`:1381` "accept any minor of this major"). The welcome lacks the capability, so nothing is sent. If it were sent, the 1.1 side answers `unsupported-operation` and keeps the channel open (`:1146-1150`). The count stays as on 1.1 today; the chat page's own important bar still shows |
-| 1.1 | 1.2 | attaches; the unknown-capability rule (`:560-564`) does not apply because the 1.1 instance announces nothing new; it never sends attention, so `state.unread = {0, false}` |
+| 2.0 | 2.0 | attaches; timer-free cards; attention if advertised |
+| 1.1 (or any 1.x third-party instance) | 2.0 | attach refused `contract-version`; never delegated cards |
+| 2.0 | 1.1 (or any 1.x connector) | attach refused `contract-version`; no downgrade |
+| 2.x without optional attention | 2.x | attaches if required operation capabilities match; timer-free cards, zero brand count |
 
 ## 4. Compatibility: DSH 0.2.1-rc.5 and 0.2.2-rc.1
 
@@ -422,15 +494,15 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | Task | Owns | Depends | Done when |
 | --- | --- | --- | --- |
 | **SP** spikes SP-X1, SP-FN1, B0/S1 | `spikes/instance-ext/*`, `docs/spikes/instance-ext.md` | — | **done 2026-11-08: all yes on both versions** (§4) |
-| **K1** contract 1.2 + connector `unread` | `packages/connector/contract/{contract,limits}.js`, `docs/connector-contract.md`, `packages/connector/src/slim/host/bridge.js`, `src/connector-service.js`, `index.js` | — | §3 table holds; 1.1 instance attaches; `state.unread` follows the last valid value, `{0,false}` on detach and close |
-| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — (SP-X1 done) | `fishballInstance` v1 provided; X1, X2, X10, X11 behave as §1 and §12.5 (durable dedupe, the array form); X3 has **no** member in X0-C (U15); every other member a stub that refuses `not-implemented` as §12.5 specifies; the X19 call sites exist and pass everything while the watchdog is not enabled; the instance tests are unchanged and green with no plugin |
-| **X0-I** inbox pipeline | `child/inbox.js`, new `child/ext/inbox.js`, `src/slim/inbox-markers.js` | X0-C | X9: claims before the batcher, release re-enters, ack/refuse per item; U14: held cards never expire by time, and are dropped only on settlement/closure |
+| **K1** contract 2.0 negotiation + connector `unread` | `packages/connector/contract/{contract,limits}.js`, `docs/connector-contract.md`, `packages/connector/src/slim/host/bridge.js`, `src/connector-service.js`, `index.js` | —; release together with K2 | §3 table holds: same contract id, major 2/minor 0, envelope v2 unchanged; every 1.x peer (including third-party 1.1) is rejected at attach with `ContractError` / `contract-version`, no downgrade or traffic/card delegation; 2.x minor/capability negotiation remains; attention is optional, timer-free behavior mandatory; `state.unread` follows the last valid value, `{0,false}` on detach and close |
+| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — (SP-X1 done) | `fishballInstance` v1 provided; X1, X2, X10, X11 behave as §1 and §12.5 (durable dedupe, the array form); X3 has **no** member in X0-C (U15); every other member a stub that refuses `not-implemented` as §12.5 specifies; the X19 call sites exist and pass everything while the watchdog is effectively off; X10 retries pending hand-over notifications after reservation/queue failure using one stable message identity, without losing or duplicating delivery (§12.5); existing no-plugin behavior holds except the approved lifecycle/contract changes |
+| **X0-I** inbox pipeline | `child/inbox.js`, new `child/ext/inbox.js`, `src/slim/inbox-markers.js` | X0-C | X9: claims before the batcher, release re-enters, ack/refuse per item; U14: held cards never expire by time, and are dropped only on settlement/closure; U20: whole-plugin hand-over releases held items to Fishball once, invalidating stale callbacks; U21: questions/plan reviews bypass watchdog claims and always reach Fishball |
 | ~~X0-U~~ | **withdrawn (U10)**; replaced by SP-PG, CHILD-WEB, EMB, PG-1, PANELS (§5.4) | — | — |
 | **X0-W** wire: scoped bridge + attention | `child/bridge.js`, new `child/ext/{bridge-scope,attention}.js` | X0-C, K1 | X12 local `forbidden`; X8 sent on set, on each handshake, zero on dispose, skipped without the capability |
 | **X0-G** side agents | new `child/ext/side-agents.js` | X0-C | X13 lock-down on both versions; U14/Q-P: omitted decision `timeoutMs` installs no timer, while explicit check timeouts still work |
-| **X0-A** approvals seam (server) | `child/approvals.js`, `child/decisions.js` (the UI files move to PANELS) | X0-C | X15 per-session claim and routing (server half only; the tag and the escalation card move to PANELS) (§2.6); a claim is refused `not-supervised` unless X14 holds the session active, paused or halted, and the instance releases it on dormant or clear; `delegate-no-grant`, `grant-off-supervised`; U14/Q-P: a Fishball decision turn ending without a decision escalates at once, with no timer; final U17/Q-Q: track reached layers, return the requesting tool result, record/notify once only at reached layers, wake Fishball once for a user decision and never for a watchdog-only decision; immediately clear instance cards, remove closed/retired and attribution-label retention, and retain only searchable transcript entries subject to normal compaction (§12.4); K2/PANELS own the corresponding connector/UI clear |
-| **X0-S** supervision, start rule, send gate | `child/session-tools.js`, new `child/ext/{supervision,session-starts,send-gate}.js` | X0-C, X0-A (the claim port) | X14 guard, managed changes, `dormant`, the hand-over decided from `dsh.profile.bundles` at disposal (§2.4), and re-enable; X16 attach = set active + claim (§2.3); X19: the gate is on exactly while the plugin is enabled, `watchdog-unavailable` while enabled and unregistered, plus the table and the hand-over line (§2.5), on both send paths; no `gateOn` file exists anywhere in the child home |
-| **X0-B** bundling + admin | `packages/instance/package.json`, `src/native-runtime/{constants,installation,files,index}.js`, `child/admin.js` | X0-S (the hand-over port, stubbed until merged); SP-FN1 done | X17, X18 for the three names (the "Built in" tag is gone with the custom settings view, §11.7; Q-K); placement inside `initializeProfile` before `loadProfileDirectory` (U9); a failed placement of one name leaves the others |
+| **X0-A** approvals seam (server) | `child/approvals.js`, `child/decisions.js` (the UI files move to PANELS) | X0-C | X15 per-session claim and routing (server half only; the tag and the escalation card move to PANELS) (§2.6); a claim is refused `not-supervised` unless the current X14 owner is ready and holds the session active or paused; dormant, clear or whole-plugin failure releases it immediately, with generation checks and once-only rerouting of open permission cards; U21 questions/plan reviews always bypass claims and watchdog context (§2.7); `delegate-no-grant`, `grant-off-supervised`; U14/Q-P: a Fishball decision turn ending without a decision escalates at once, with no timer; final U17/Q-Q: track reached layers, return the requesting tool result, record/notify once only at reached layers, wake Fishball once for a user decision and never for a watchdog-only decision; immediately clear instance cards, remove closed/retired and attribution-label retention, and retain only searchable transcript entries subject to normal compaction (§12.4); K2/PANELS own the corresponding connector/UI clear |
+| **X0-S** supervision, start rule, send gate | `child/session-tools.js`, new `child/ext/{supervision,session-starts,send-gate}.js` | X0-C, X0-A (the claim port) | X14 owns synchronous generation-scoped `ready()` / `fail(cause)`, readiness and managed changes; disable or any detected fault immediately hands the whole supervised set to Fishball, releases claims/hooks and passes sends, with one durable/retryable notice and no stop/halt or plugin-gone grace (§2.4); storage failure opens routing/gate in memory first; recovery verifies model/stores/hooks and persists retained briefs as dormant before readiness, never auto-reclaims; X16 schema and execution both require a healthy current-generation owner, rechecking validation/start races; failed/timed-out/lost-owner attach preserves the successful start with `watchdog.assigned:false` and Fishball ownership (§2.3); X19 uses enabled AND healthy plus §2.5's table/prefix on both send paths; stale generations cannot set active, claim or answer; no `gateOn` file |
+| **X0-B** bundling + admin | `packages/instance/package.json`, `src/native-runtime/{constants,installation,files,index}.js`, `child/admin.js` | X0-S (the hand-over port, stubbed until merged); SP-FN1 done | X17, X18 for the three names (the "Built in" tag is gone with the custom settings view, §11.7; Q-K); placement inside `initializeProfile` before `loadProfileDirectory` (U9); a failed placement of one name leaves the others; failed watchdog placement invokes effective-off hand-over immediately without changing configured enablement or stopping sessions (U20) |
 
 ### 5.2 Plugin tasks, re-based on the canonical names
 
@@ -444,11 +516,11 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | FN-6 turn batching | FN-6 | `src/batcher.js` | X0-I (X9 batcher), FN-1 |
 | FN-A connector alert | FN-A | `packages/connector/client.js` (fold §9.1 rows) | K1 |
 | — | FN-0, FN-E6, FN-K, FN-B | absorbed into X0-*, K1 | — |
-| WD-1 … WD-10 | same, with U14/Q-P edits: WD-1 loses approval-time settings and the window-sum check; WD-8 keeps check timeouts only and WD-10 has no R4, escalating immediately on any decision-turn end without a decision; U17/Q-Q: WD-4 excludes decision records from its audit/rotation (operational audit remains); WD-8's rollover digest does not retain compacted decision entries; WD-9/WD-10 replace decision-audit/manager-label copies with reached-layer transcript records (§12.4) | `packages/watchdog/…` as watchdog §14 | WD-0 → the X0 task that owns the point (WD-8: X0-G; WD-10: X0-I, X0-A) |
-| WD-11 manager tools | WD-11; Q-T = modified B: keep `watchdog_decisions {offset?, limit?, session_id?}`; done when §12.8's count-range defaults/bounds, newest-first order, result fields, refusals and EP/BVA cases hold, including watchdog-only and compacted history; explicit pull only, no automatic delivery or separate audit store | `src/manager-tools.js` | registers through **X2** (not wE3/wE4); X0-C, WD-2, WD-3, WD-6, WD-9, WD-13; reads WD-8/WD-10's ordinary decision transcripts |
-| WD-13 coupling | WD-13 | `src/coupling.js` | X0-S; **adds** `endingReason()` handling (§2.4 step 2), the `handedOver` → `dormant` list on register with the one notice (§2.4 step 6), `watchdog_resume` of a dormant brief, `watchdog_brief` superseding a dormant brief |
-| **WD-14** start-time assignment (new) | — | new `src/start-assign.js` | X0-S (X16), WD-2, WD-6, WD-13 |
-| WD-12 integration | WD-12 | `index.js` wiring, e2e | all WD, X0-B |
+| WD-1 … WD-10 | same, with U14/Q-P edits: WD-1 loses approval-time settings and the window-sum check; WD-8 keeps check timeouts only and WD-10 has no R4, escalating immediately on any decision-turn end without a decision; U17/Q-Q: WD-4 excludes decision records from its audit/rotation (operational audit remains); WD-8's rollover digest does not retain compacted decision entries; WD-9/WD-10 replace decision-audit/manager-label copies with reached-layer transcript records (§12.4); U20: WD-9 reports model/store failure or the retained 3-failure/900 s health thresholds through X14 `fail(cause)`, not stop/halt; remove plugin-gone grace-stop logic; U21: WD-3 persists optimistic refine revisions, WD-4 refreshes the brief section, WD-6 triggers `revised` only for active briefs, WD-10 never queues questions/plan reviews (§2.7) | `packages/watchdog/…` as watchdog §14 | WD-0 → the X0 task that owns the point (WD-8: X0-G; WD-10: X0-I, X0-A) |
+| WD-11 manager tools | WD-11; Q-T = modified B: keep `watchdog_decisions {offset?, limit?, session_id?}`; done when §12.8's count-range defaults/bounds, newest-first order, result fields, refusals and EP/BVA cases hold, including watchdog-only and compacted history; explicit pull only, no automatic delivery or separate audit store; U21: reuse `watchdog_refine {brief_id, expected_revision, reason, <fields>}` and its answer-path guide (§2.7), with revision/refusal/bounds handling; answering questions/plan reviews is independent of optional refinement, stale revisions require explicit reconciliation, dormant/paused refinements do not check/resume/claim | `src/manager-tools.js` | registers through **X2** (not wE3/wE4); X0-C, WD-2, WD-3, WD-6, WD-9, WD-13; reads WD-8/WD-10's ordinary decision transcripts |
+| WD-13 coupling | WD-13; U20 replaces Q13 halt coupling with continuous Fishball/watchdog ownership | `src/coupling.js` | X0-S; both `endingReason()` values use §2.4 hand-over with no stop/halt; readiness checks and durable `handedOver` → `dormant` recovery precede `ready()`, with one recovery notice; only explicit `watchdog_resume` or new `watchdog_brief` restores active/claims; old halted records migrate via hand-over, no automatic re-stop |
+| **WD-14** start-time assignment (new) | U20: attach failure/timeout/lost generation hands over rather than stopping or retrying a successful start | new `src/start-assign.js` | X0-S (X16), WD-2, WD-6, WD-13; late completions cannot restore authority |
+| WD-12 integration | WD-12; adds U20 whole-plugin failure/recovery and U21 routing/refine coverage (§6) | `index.js` wiring, e2e | all WD, X0-B |
 | B1 … B4 | same, with U19 edits: B1 the visibility window; B3 the archive and visibility (§12.6); B4 the `clear` item | `packages/board/…` as board §14, plus `src/archive.js` | X0-C (X1, X2) |
 | B5 board context + panel | B5 | `src/{inject,routes}.js` and `packages/board/client/` (`dsh.client`: a `rightbar` panel entry); U19 acceptance: one visibility projection for panel/context, Done **and Dropped** through 30 days inclusive, early clear removes either, reopen restores it; existing context budgets remain; `doneWindowHours` is only a recent-done count, never the panel cutoff | B4, PG-1 |
 | **B10** archive export before uninstall | new, Q-S = A | `uninstall.js` and its existing removal entry point; complete archive export, not just `board.json`; export offered before removal, accepted export completes outside runtime, failure preserves runtime, decline permits deletion (§12.6) | B3, X0-B |
@@ -468,7 +540,7 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | **CHILD-WEB** child profile and overlay | `src/native-runtime/{constants,overlay,installation}.js` (add `dsh-web-app` back, keep the existing migration's backup rule), the overlay rows of §11.3/§11.6, the read-only `permission` presets and `defaultPreset`, `sandbox-policy` read-only, the Q-J approval rule, `tool-subagent` per Q-I, the Fetch route `api/fishball/session` | SP-PG | the child boots DSH's web on both versions; every enabled `dsh.client` row is served; the disabled rows are absent; `/permission` refuses everything but `read-only`; a user setting cannot raise the sandbox |
 | **EMB** connector embed of the shell | `packages/instance/src/slim/host/embed.js` (prefix forwarding of `/`, `/plugins/*`, `/assets/*`, `/api/*` and the `api/remote.mux` upgrade; CSP from SP-PG(1)), `packages/connector/client.js` (the iframe unchanged except `allow` if SP-PG needs it) | SP-PG, CHILD-WEB | the Fishball view in the main DSH shows the child's shell with no token in any URL, as SP1 did; the main DSH's own pages are unaffected |
 | **PG-1** `fishball-page` plugin | new `packages/instance/child-web/fishball-page/{package.json,client.js,removals.js,guard.js,shortcuts.js,messenger.js,record-definition.js,style.css,i18n.js}` | SP-PG, CHILD-WEB | U15: shared `recordDefinition(packageName, suffix, render)` used by Fishball client plugins; foreign-prefix registration throws, own-prefix records render (§12.2); §11.3 table holds; Remove is hidden for the bundled plugins (§11.10); the page opens on Fishball's session; §11.4 paths cannot leave it; DSH Settings and Plugins pages open and come back; grey bubbles and avatars as eaa33f5; composer plugins (a fixture plus voice input when installed) work |
-| **K2** connector: no approval timers (U14/Q-P), immediate card clearing (U17 now final) | `packages/connector/src/{approvals,questions,config,pile,card-lifecycle}.js`, `contract/contract.js` (`expiresAt` optional for approvals), `slim/host/approvals.js`, `docs/connector-contract.md`, `DESIGN.md` item 11 | K1 | no approval, question or plan-review request moves on a timer; the user card has no deadline; explicit escalation advances it immediately; final U17: settlement returns the tool result and clears pile/session cards at once without a retained decision-label store; reached-layer transcript results survive (§12.4); a 1.1 peer still interoperates |
+| **K2** connector: mandatory timer-free 2.0 (U14/U22), immediate card clearing (U17 final) | `packages/connector/src/{approvals,questions,config,pile,card-lifecycle}.js`, `contract/contract.js` (remove approval/question/plan-review `expiresAt` descriptors), `slim/host/approvals.js`, `docs/connector-contract.md`, `DESIGN.md` item 11 | K1; coordinated 2.0 release | no approval, question or plan-review request moves on a timer; no deadline or expiry filtering, including for third-party 2.x peers; a 2.x descriptor carrying `expiresAt` fails `invalid-envelope`; explicit escalation advances immediately; no legacy expiry exception or downgrade, and K1 rejects every 1.x peer at attach; final U17 settlement returns the tool result and clears pile/session cards immediately without retained decision labels; reached-layer transcript results survive (§12.4) |
 | **SET** slimmed Fishball settings page (§11.8) | `child-web/fishball-page/panels/settings.js`, its Fetch routes (status, restart, provider sync) | PG-1 | only the "stays" rows of §11.8 are on it; the links open DSH Settings and Plugins and come back; the moved items are not duplicated |
 | **RP** `fishball-recommend-plugins` (§11.9) | new `packages/recommend-plugins/{package.json,index.js,client.js,i18n.js}`; `RUNTIME.bundledPlugins` entry in `src/native-runtime/constants.js` | SP-PG (8), CHILD-WEB, X0-B | the child's Plugins page shows the "Fishball 推荐" / "Fishball Recommended" tab next to Installed, Marketplace and Discover; it lists the recommended plugins with meow-memory's note; Install installs into the child profile; an installed one shows "Installed"; the main DSH's Plugins page has no such tab |
 | **PANELS** our panels as DSH entries | `child-web/fishball-page/panels/{approvals,reminders}.js`, transcript attribution and the open escalation card as chat-node definitions; their Fetch routes in `src/slim/child/` | PG-1, X0-A, K2 | approvals and reminders work as `main` panels; open escalations render in Fishball's chat; U14: no approval countdown; final U17/Q-Q: settlement immediately removes all card UI (including the user's result card), repeated callbacks/reload never restore it, and eligible ordinary transcript results remain searchable with attribution; no watchdog-only decision appears in Fishball automatically; a Q-T explicit pull renders as an ordinary tool result, not an approval card or unsolicited notice (§12.8); user settlement wakes Fishball once, other settlements create no duplicate wake/entry; compaction drops context entries without deleting transcripts (§12.4) |
@@ -485,9 +557,21 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | W4 | FN-5; WD-14; B7 (after RP); RETIRE (after PANELS, SET, RP, FN-4, B5) |
 | W5 | FN-7, WD-12, B8, then X-E2E |
 
-### 5.5 What changed for W0 and X0 (U10–U19, Q-P–Q-T)
+### 5.5 What changed for W0 and X0 (U10–U22, Q-P–Q-T)
 
-- **Unaffected by the new approval/board decisions:** K1, FN-1, X0-S and X0-W.
+- **K1/K2 changed (U22):** breaking contract 2.0 replaces additive 1.2; keep contract id and
+  envelope v2, reject all 1.x peers at attach (`ContractError` / `contract-version`), and ship
+  negotiation plus mandatory timer-free semantics together. Remove `expiresAt` descriptors;
+  2.x cards carrying the field fail `invalid-envelope`. No downgrade/legacy expiry tests survive.
+  X0-W/FN-A consume the new contract fixtures while retaining optional attention behavior.
+- **X0-S/WD-9/WD-13/WD-14 changed (U20):** enabled is not readiness. X14 adds synchronous,
+  generation-scoped `ready()` / `fail(cause)`; every detected fault, failed placement, missing
+  owner or failed attach means whole-plugin effective off, immediate Fishball hand-over, released
+  claims and a passing X19 gate. Remove plugin-gone grace stops and Q13 fault halts; keep 3 failed
+  checks/decisions and 900 s health thresholds, not approval deadlines. Recover model/stores/hooks,
+  persist dormant briefs, then declare ready; no automatic re-claim, checks or resume.
+- **X0-A/X0-I/WD-10 changed (U21):** questions/plan reviews always reach Fishball and never the
+  watchdog queue/context or claims. Permission claims remain per-session while enabled and healthy.
 - **WD-1 changed (U14):** remove approval-time settings and window-sum validation; check timers
   remain. WD-8/WD-10 and X0-A implement Q-P's immediate escalation on decision-turn completion
   without an answer. X0-G/X13 must allow an omitted decision timeout, not apply a default one.
@@ -509,6 +593,11 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
   defaults, maximum page size, ordering, result shape and invalid-range cases. Explicit tool results
   use normal turn context/history; they do not change settlement routing, wake Fishball, recreate
   cards or establish a separate decision store. PANELS uses ordinary tool-result rendering.
+- **WD-11/WD-3/WD-4/WD-6/WD-12 changed (U21):** WD-11 reuses `watchdog_refine` and guides
+  optional direction updates separately from Fishball's question/plan-review answer; WD-3 owns
+  expected-revision persistence; WD-4/WD-6 own next-turn section refresh and active-only `revised`
+  trigger; WD-12 covers refusal/race/state cases. Failed refinement never holds or repeats the
+  answer; dormant/paused refinement neither checks, resumes nor claims. No parallel update tool.
 - **K2/PANELS:** their U17 scope is final, not conditional on draft approval; K2 clears connector
   cards, X0-A clears instance cards, PANELS removes UI cards without erasing transcript results.
 - **B5/B10/B11:** B5 shares the 30-day Done/Dropped visibility projection between panel/context
@@ -526,6 +615,7 @@ lines.
 | X0-C, X0-I | `deliverInbox` array form lives in `chat.js` | X0-C first (it owns `chat.js`) |
 | X0-C, X0-W | `child/bridge.js` (X0-C adds only the X19 call; X0-W the scope and attention) | X0-C first |
 | K1, FN-A | none (`client.js` is FN-A's only) | — |
+| K1, K2 | `contract/contract.js`, `docs/connector-contract.md` | K1 negotiation/descriptors first, K2 timer removal rebases; release together as 2.0 |
 | FN-4, FN-5 | `packages/fold-notify/client/*.css` | FN-4 first |
 | CHILD-WEB, X0-B | `src/native-runtime/{constants,installation}.js` | X0-B first (placement), CHILD-WEB rebases |
 | CHILD-WEB, EMB | none (child vs host), but EMB tests need CHILD-WEB | CHILD-WEB first |
@@ -540,8 +630,13 @@ decision table, **ST** state transitions.
 
 - **SP.** Only the spike's yes/no questions; no TDD.
 - **K1.**
-  - EP: instance 1.1 / 1.2 × connector 1.1 / 1.2; a valid frame, a malformed frame, an unknown
-    extra field.
+  - EP: instance 2.0 / another 2.x minor / every 1.x (including third-party 1.1) × connector
+    2.0 / 1.x; wrong contract id, malformed declaration, missing required capability, optional
+    attention absent; a valid attention frame, malformed frame and unknown extra field.
+  - DT: incompatible id/major/declaration fails attach `ContractError` / `contract-version`,
+    before traffic or approval delegation, with an upgrade message and no downgrade; a missing
+    required operation fails `unsupported-capability`; 2.x lower-minor negotiation remains.
+    Contract major 2 does not change envelope `version: 2` or create `unsupported-version` here.
   - BVA: `unread` −1, 0, 1, 9999, 10000; `importantUnread` 0, `= unread`, `unread + 1`;
     `latestAt` null, 0, a float.
   - DT: §3 mixed-peers table.
@@ -562,6 +657,9 @@ decision table, **ST** state transitions.
     plus the distinct `fishballImages.message` path with exact request/result assertions (§12.5.1);
     `deliverInbox([a, b, c])` queues one followup with the three texts in order and one `{messageId}`
     receipt; §12.5.2 supplies the callable item shape, async error assertions and count/byte BVA.
+  - X10 ST: reserve hand-over notification → queue failure/restart → retry pending with the same
+    message identity → delivered once; a pending reservation is not a successfully delivered
+    duplicate, and a delivered/queued identity is never requeued (§12.5).
   - X10 DT: `wake` × duplicate `dedupeKey` × agent busy or idle. X11 BVA: `limit` 0, 1, max, max+1;
     `maxChars` cut at a surrogate pair.
 - **X0-I.**
@@ -570,6 +668,10 @@ decision table, **ST** state transitions.
   - DT: claimed × batcher present × `user` kind → claimant, batch or direct.
   - ST: claim held → release `deliver:true` (re-enters the batcher) / `deliver:false` / card
     settles or closes (dropped). No time-based drop (U14).
+  - U20 ST: held item → whole-plugin failure → Fishball queued once, including settlement/release
+    races and a stale-generation callback; settled/already queued items never reappear.
+  - U21 DT: permission/watch notice or independent question/plan review × claimed/unclaimed ×
+    active/paused/dormant × ready/failed → questions/plan reviews always bypass watchdog claims.
   - BVA: `prefix` 500 and 501 chars.
   - Single owner: a second batcher gets `owner-busy`.
 - **X0-U.** *Withdrawn (U10); see PG-1.*
@@ -585,18 +687,22 @@ decision table, **ST** state transitions.
   - DT: `decidedBy` present × decision `allow`, `reject`, `grant`, `ask` → `delegate-no-grant` on
     `grant`; the manager's `grant` on a claimed session → `grant-off-supervised`, on an unclaimed one
     → allowed.
-  - **DT routing (§2.6):** X14 state of S (none, active, paused, halted, dormant) × the plugin
-    (registered, enabled but unregistered, disabled) → the card goes to the watchdog's `onCard` or
-    to Fishball, exactly as in the §2.6 table.
+  - **DT routing (§2.6/§2.7):** X14 state of S (none, active, paused, dormant) × plugin
+    (enabled and ready, registered but not ready, failed/unregistered, disabled) × request kind
+    (permission, question, plan review). Only permission cards with a valid current-generation
+    claim go to watchdog `onCard`; questions/plan reviews always go directly to Fishball and never
+    enter watchdog queue/context. Legacy halted entries migrate via hand-over, not live claims.
   - EP for `claim`:
-    - S active, paused or halted → accepted;
+    - S active or paused, current owner ready → accepted;
     - S none, dormant or ended → `not-supervised`;
     - a second claim on S → `owner-busy`;
-    - claims on two different sessions → both accepted, and each card reaches only its own
-      claimant.
-  - ST per session: unclaimed → (a brief attaches, claim) claimed → (pause, halt) still claimed →
-    (dormant, clear, release, take-back, plugin disposed) unclaimed. After the release, the next card
-    goes to Fishball.
+    - failed/not-ready or stale-generation owner cannot claim or answer;
+    - claims on two different sessions → both accepted, each permission card reaches only its
+      own claimant, and independent questions/plan reviews still bypass both.
+  - ST per session: unclaimed → (brief attaches, claim) claimed → (intentional pause) still
+    claimed → (dormant, clear, release, take-back, plugin failure/disposal) unclaimed. After release,
+    open permission cards and the next card reach Fishball once; settlement races do not resurrect
+    closed cards. No plugin fault stops or halts the session.
   - `answerApproval` with `decidedBy` on a card of a session the caller has not claimed → refused.
   - U14/Q-P: every Fishball decision-turn end without a decision escalates immediately; no
     approval timer is installed; settlement racing completion never escalates a closed request.
@@ -607,31 +713,39 @@ decision table, **ST** state transitions.
   - ST: open → settled/closed → card cleared immediately; repeated callbacks and reload do not
     restore it. Coordinate connector/UI coverage with K2 and PANELS.
 - **X0-S.**
-  - DT for the gate: state `active`, `paused`, `halted`, handed-over × `message_session`,
-    `redirect_session`.
-  - ST for the supervised entry: none → active ⇄ paused → halted; any → (release, take-back)
-    cleared; any → handed-over (user disable).
-  - DT for disposal: `fishball-watchdog` in `dsh.profile.bundles` at disposal × supervised set
-    empty or not:
-    - name absent → hand-over: one notice, no stop, the gate off, the claims dropped;
-    - name present → the guard after the grace: it stops the running, managed sessions
-      (`plugin-gone`);
-    - an empty set → no notice either way.
-  - The disable path does not matter: the settings switch and a direct
-    `pluginManager.setBundleEnabled(name, false)` both give the hand-over.
-  - BVA: re-register at 29 s, 30 s and 31 s.
-  - X16 DT: owner present × `watchdog` argument absent, invalid or valid × start ok or failed ×
-    attach ok, failed or timeout × stop ok or failed → the exact result code, and whether a
-    session runs.
-  - X16 ST: the `start_session` schema with and without the parameter, as the owner registers and
-    disposes.
-  - X16: after a successful start the session is claimed (its first card reaches the watchdog) and
-    sendable; after `watchdog-assign-failed` it is neither.
-  - **X19 DT: session origin × watchdog × brief → send result.** Origins: started by Fishball while
-    on (brief from X16); started while off; handed over while on; handed over while off; made
-    managed by `answer_prompt`; kept across off → on (dormant). Watchdog: off from the start; on;
-    on but not registered (boot or crash); turned off (hand-over). Brief: none, active, paused,
-    halted, dormant. Expected results by the §2.5 table; in particular:
+  - DT for effective state: configured enabled/disabled × owner absent/registered-not-ready/ready/
+    failed × supervised set empty/nonempty. Only enabled + ready gates sends. Every detected
+    fault hands over the whole set immediately, not only the failed brief; no stop/halt, grace
+    timer, retained claim or unavailable-send refusal. Explicit disable with no sessions needs no
+    notice; faults notify even with zero sessions, once per episode.
+  - ST: none → active ⇄ intentionally paused; any → (release/take-back) cleared; active/paused →
+    (disable/fault) handed-over → (model/stores/hooks verified, dormant persisted, `ready()`)
+    dormant → (explicit resume/new brief) active. Running sessions keep running, already stopped
+    sessions are not auto-resumed. Old halted records migrate via hand-over to dormant.
+  - DT failure causes: failed placement, owner loss/disposal, attach rejection/timeout, model
+    resolution/open failure, store read/write failure and health-threshold failure → same
+    whole-plugin hand-over with the cause in one visible notice. The profile enable setting stays.
+  - ST for a broken supervision store: clear readiness/routing/gate in memory first → notify via
+    available channel → persistence/notification retry; never fabricate durable success or active
+    recovery. Failure repeated within an episode is idempotent; late old-generation `ready`,
+    `set`, claim, answer and attach callbacks cannot regain authority.
+  - The disable path does not matter: settings switch or direct `setBundleEnabled(name, false)`
+    both hand over. Quick reload has the same dormant/explicit-resume recovery, no grace reclaim.
+  - X16 DT: effective-ready current owner × argument absent/invalid/valid × validation/start
+    ownership race × connector start success/failure × attach success/rejection/timeout/owner loss.
+    Before creation, invalid arguments create nothing; after successful creation, attach failure
+    returns the original session id with `watchdog: {assigned:false, code:'watchdog-assign-failed',
+    supervisor:'fishball'}`, leaves it running/sendable and hands over all sessions, without stop
+    or retrying start. A lost owner during start follows the same fallback.
+  - X16 ST: schema and execution use readiness, not mere registration; registration-not-ready is
+    off. Ready → failed removes the required parameter; recovery makes it required only at ready.
+    Attach timeout boundary is 30 s; a later completion cannot set active or claim.
+  - X16: successful current-generation attach makes the session claimed and sendable; a permission
+    card before attach goes to Fishball. Failed attach leaves the session unclaimed and sendable.
+  - **X19 DT: session origin × watchdog × brief → send result.** Origins: started while healthy;
+    started while off/failed; handed over; made managed by `answer_prompt`; kept across recovery.
+    Watchdog: disabled, enabled-ready, enabled-not-ready/unregistered/failed. Brief: none, active,
+    paused, dormant. “On” below means enabled AND healthy. Expected results by §2.5:
 
     | Origin | Watchdog | Brief | `message_session` / `redirect_session` / image send |
     | --- | --- | --- | --- |
@@ -644,8 +758,9 @@ decision table, **ST** state transitions.
     | `answer_prompt` made managed | on | none | `watchdog-brief-required` |
     | kept across off → on | on | dormant | `watchdog-brief-required` (with `briefId`) |
     | kept across off → on | on | active (after `watchdog_resume`) | allowed |
-    | any | on | paused / halted | `supervision-paused` |
-    | any | enabled, not registered | any | `watchdog-unavailable` |
+    | any | on | paused | `supervision-paused` |
+    | any | enabled, not registered / not ready / failed | any | allowed; Fishball owns supervision |
+    | any | enabled, store corrupt/unavailable | any retained | allowed in memory; Fishball owns supervision |
   - X19 EP for **not gated** actions with the gate on and no brief: `read_session`,
     `answer_approval`, `answer_question`, `answer_prompt`, `release_session`, `stop_session`,
     `watch_session` → all allowed; and a refused send reaches **no** connector request.
@@ -653,16 +768,22 @@ decision table, **ST** state transitions.
     brief while the gate is on; absent with an active brief, with the gate off, and on `watch`,
     `system`, `approval` items; the item is still acked only after its turn is queued.
   - X19 ST per session: no brief → (`watchdog_brief`) active → (pause) paused → (resume) active;
-    active → (user disable) handed-over/gate off → (re-enable) dormant → (`watchdog_resume`)
-    active; dormant → (`watchdog_brief`) old superseded, new active. At each state, one send
-    checks the gate.
-  - X19 BVA: a send immediately after `supervision.set(…, 'active')` returns → allowed;
-    immediately after `set(…, 'paused')` → refused.
-  - X19 EP for the gate source (U7):
+    active → (disable/fault) handed-over/gate off → (verified recovery + dormant persistence)
+    dormant/gate on → (`watchdog_resume`) active; dormant → (`watchdog_brief`) old superseded,
+    new active. At each state, one send checks the gate; failed recovery stays gate off.
+  - X19 BVA: a send immediately after current-owner `set(…, 'active')` → allowed; immediately
+    after `set(…, 'paused')` → refused; immediately after `fail(cause)`/owner loss → allowed.
+  - X19 EP for the gate source (U7/U20):
     - `fishball-watchdog` absent from `dsh.profile.bundles` → gate off;
-    - present and registered → the table;
-    - present and not registered → `watchdog-unavailable`;
-    - a corrupt supervision file while enabled → `store-unavailable`, sends refused.
+    - present, registered and ready → the table;
+    - present but not registered/not ready/failed → gate off, sends pass;
+    - corrupt/unwritable supervision store → gate off in memory, Fishball routing, retry recovery.
+  - Recovery-generation ST: fail retires the owner slot → a still-loaded row registers a fresh
+    handle and reinstalls hooks → verifies/persists dormant state → ready; stale handle disposal
+    cannot clear the replacement. Per-claim incarnation also changes on same-session re-claim:
+    callbacks, answers and releases from the previous claim cannot affect its replacement.
+  - Whole-child unavailable/reconnect follows existing connector unavailable-instance routing;
+    no automatic approval/stop. Reconnect reports the supervision gap and requires dormant recovery.
 - **X0-B.**
   - ST per bundled name: absent → placed, on → off (user) → off (restart, upgrade) → on.
   - Remove is refused with `bundled-plugin`.
@@ -682,14 +803,30 @@ decision table, **ST** state transitions.
   - fold: the namespace is `fishball-fold-notify`; a second presenter or attention owner gets
     `owner-busy`.
   - board: the inject is `fishballInstance?`, and a missing service gives `instance-hooks-missing`.
-  - watchdog:
-    - the `disabled` halt cause is removed;
-    - add a DT "disable with briefs → hand-over, not halt";
-    - add an ST "brief active → handed-over → (re-enable) dormant → (`watchdog_resume`) active";
-    - re-enable with n dormant briefs: n = 0 (no notice), 1, many (one notice listing all); no
-      check runs and no session is stopped at re-enable;
-    - `watchdog_brief` on a session with a dormant brief: old `superseded`, result
-      `sendUnlocked: true`; on a session with an active, paused or halted brief: `brief-exists`.
+  - watchdog (WD-12 integrates these U20/U21 cases):
+    - DT disable/fault with zero/one/many briefs → effective off, whole-plugin hand-over, no halt;
+      one failure notice even at zero, no repeated fault spam; recovery lists retained dormant briefs.
+    - ST active/paused → handed-over → verified readiness/dormant → explicit resume → active;
+      no check, claim or automatic session restart on recovery; intentional pause still stops first.
+    - WD-9 BVA: 2/3/4 consecutive failures and just below/at/above 900 s since a successful check
+      while running; preempted checks do not count, success resets health tracking; model/store
+      failures report immediately. One failed decision escalates its card immediately, independent
+      of health thresholds; no unreported long call becomes a new approval timeout.
+    - `watchdog_brief` on dormant: old `superseded`, result `sendUnlocked:true`; on active/paused:
+      `brief-exists`; legacy halted records recover through hand-over, never as live halt state.
+    - U21 DT permission/question/plan-review × active/paused/dormant/no brief × healthy/failed:
+      independent questions/plan reviews always reach Fishball, never watchdog context or checks.
+    - WD-11/WD-3 refine EP: manager/non-manager; known/unknown/ended brief; current/stale revision;
+      each supported field (`goal`, `progress_signs`, `drift_signs`, `done_when`, `ignore`, `notes`)
+      and invalid bounds; reason length 0/1/500/501. Verify §2.7 refusal codes and persisted
+      `{ok:true, briefId, revision}`; no permission-criteria update or managed-session send.
+    - Refine ST: view revision → optional update → new persisted revision/section; stale revision
+      requires re-read/reconcile, never blind overwrite. Answer success × update failure/success:
+      refinement never withholds, undoes or repeats the question/plan-review answer.
+    - WD-4/WD-6 DT active/paused/dormant × refine: only active gets `revised`; paused/dormant store
+      direction without check/resume/claim. A running turn may finish on its captured revision;
+      its next turn uses the new section, with no extra side conversation or history push.
+      Failed/off watchdog has no refine authority; Fishball retains direction in normal history.
 - **SP-PG.** The spike's yes/no questions only; no TDD.
 - **CHILD-WEB.**
   - EP for rows: each row of §11.3/§11.6's disabled list is absent; a fixture `dsh.client` bundle
@@ -760,15 +897,21 @@ decision table, **ST** state transitions.
   The recommended tab lists meow-memory with its note (B6).
 - **PG-1 (U15).** Foreign-prefix record definitions throw at registration; own-prefix definitions
   render using the shared helper in each Fishball client plugin.
-- **K2/B5/B10/B11.** Use the explicit acceptance cases in §12.1/§12.4/§12.6/§12.7: no connector
-  timers, immediate settlement cleanup, shared board visibility, full export before uninstall,
-  and historical keyword search. These are required coverage, not unchanged source-design tests.
+- **K2.** DT permission/question/plan-review × instance/third-party 2.x × watchdog/Fishball/user
+  layer: no timers, deadline, expiry filtering or wait-based transition; decisions or explicit
+  escalation advance immediately, user cards wait indefinitely. Descriptor `expiresAt` absent →
+  valid, present (past/future/null) → `invalid-envelope`; no legacy exception. K1 rejects 1.x
+  before delegation. Settlement clears cards and returns the tool result once (§12.1/§12.4).
+- **B5/B10/B11.** Use §12.6/§12.7's shared board visibility, full export before uninstall and
+  historical keyword search cases. These are required coverage, not unchanged source-design tests.
 - **RETIRE.** No old page route answers; the instance's other routes still do.
 - **WD-14.**
   - EP: arg valid / each `invalid-brief:<field>`.
   - DT: §2.3 steps 2–5.
-  - ST: no brief → brief active at start, with the window case (a card before attach goes to
-    Fishball).
+  - ST: no brief → brief active at start, with the window case (a permission card before attach
+    goes to Fishball; questions/plan reviews always do). Attach failure/timeout or owner loss after
+    successful start returns the existing session with unassigned/Fishball metadata, no stop or
+    duplicate start; a stale attach completion cannot restore claims.
 - **X-E2E**, one per DSH version:
   - a fresh child has all four bundled plugins on (no Remove shown), the "Fishball 推荐" tab in its Plugins page, and the Fishball page opens directly on Fishball's session, with no sidebar or other sessions reachable;
   - Fishball starts a session (a brief is required) → the watchdog supervises it;
@@ -776,30 +919,49 @@ decision table, **ST** state transitions.
     refused `watchdog-brief-required`; after `watchdog_brief` the reply is delivered;
   - the user turns the watchdog off → one hand-over notice, and the session keeps running;
   - the next `start_session` takes no `watchdog` argument, and sends need no brief;
-  - the user turns it on again → one notice listing the dormant briefs; a send is refused until
-    `watchdog_resume`, then allowed;
+  - the user turns it on again → verify readiness, persist dormant briefs, then one recovery
+    notice; a send is refused until `watchdog_resume`, then allowed;
+  - with multiple supervised sessions, one detected watchdog fault → whole-plugin effective off,
+    one visible hand-over notice, all claims released, open permissions routed to Fishball once,
+    sends/new starts pass with no watchdog argument, no session stopped; recovery stays dormant
+    until explicit resume even after a quick reload;
+  - an active/paused watched session asks a question or requests plan review → Fishball answers;
+    an optional refine updates direction independently, no watchdog claim/check for the card;
+    paused/dormant refinement remains paused/dormant;
+  - a third-party 1.1 instance cannot attach (`contract-version`), while a conforming 2.x peer
+    without attention attaches with timer-free cards and zero unread count;
   - an important notify gives the brand alert;
   - the board panel refreshes;
   - uninstall offers full archive export first, then leaves no runtime data; an accepted export
     survives outside runtime, and export failure prevents deletion (B10).
 
-## 7. What does not change
+## 7. Compatibility boundaries and unchanged scope
 
-- **Contract.** §3 plus K2's optional/ignored approval `expiresAt` compatibility change (§12.1).
-- **Connector.** K1, FN-A and K2: remove approval/question/plan-review wait timers and expiry
-  filtering; immediately clear settled pile/session cards, keeping only the layer-local transcript
-  results specified by final U17 (§12.4).
-- **Main DSH profile.** None of the three plugins is ever a bundle there.
-- **Without these plugins**, extension hooks preserve the existing instance behaviour except for
-  the explicitly approved U14/U17 connector and approval-lifecycle changes.
+- **Contract changes deliberately (U22).** K1/K2 ship timer-free 2.0 together (§3/§12.1): same
+  contract id and envelope v2, all 1.x attach attempts rejected, no downgrade/legacy expiry
+  exception. Remove approval/question/plan-review `expiresAt`; presence in 2.x is `invalid-envelope`.
+  Attention remains optional; timer-free behavior does not.
+- **Connector.** K1, FN-A and K2 remove wait timers and expiry filtering and immediately clear
+  settled cards, retaining only reached-layer transcript results (U17, §12.4). Whole-child
+  unavailability still uses existing connector unavailable-instance/user routing, not auto-approval
+  or a watchdog-failure stop.
+- **Watchdog (U20/U21).** Enabled AND healthy owns supervision; faults mean effective off and
+  whole-plugin Fishball hand-over, not stop/halt. Recovery requires dormant persistence/readiness
+  then explicit resume. Questions/plan reviews always belong to Fishball; optional `watchdog_refine`
+  is independent of answering and never gives watchdog ownership of those cards.
+- **Main DSH profile.** None of the child-bundled plugins is installed there by this design.
+- **Without these plugins**, extension hooks preserve ordinary instance behavior except the
+  explicit U14/U17/U22 lifecycle and contract changes. Explicitly disabled or unavailable watchdog
+  means Fishball directly supervises; absence of readiness never blocks an ordinary send (U20).
 
-## 8. Doc edits the three designs need (names only, no design change except U1–U19)
+## 8. Doc edits the three designs need (canonical names and U1–U22 behavior changes)
 
 | Design | Edit |
 | --- | --- |
-| fold-notify | (U10) §5/§9 E3–E5 → the fold is a `dsh.client` conversation group/node plugin and `seen` is a Fetch route; §13 the package gains `client/`; service `fishballInstanceExtensions` → `fishballInstance`; fE1 `fishballChat.sessionId()` → `manager.sessionId()`; fE2 → X2 `manager.registerSetup(pluginId, fn)`; fE3/fE5 → DSH conversation record/group definitions using PG-1's U15 namespace helper (no X3 projector or X7 presenter API); fE4 → DSH client slots, Fetch routes and notifications (§11); fE6 → X8 + K1; fE7 → X9 `inbox.setBatcher`; fE8/9 → X17/X18; seen route `api/fold-notify/seen` and `api/ext/fold-notify/seen` → `api/ext/fishball-fold-notify/seen`; §14 FN-0, FN-E6, FN-K, FN-B point to X0-*/K1; inject list in §13 |
+| fold-notify | (U10) §5/§9 E3–E5 → the fold is a `dsh.client` conversation group/node plugin and `seen` is a Fetch route; §13 the package gains `client/`; service `fishballInstanceExtensions` → `fishballInstance`; fE1 `fishballChat.sessionId()` → `manager.sessionId()`; fE2 → X2 `manager.registerSetup(pluginId, fn)`; fE3/fE5 → DSH conversation record/group definitions using PG-1's U15 namespace helper (no X3 projector or X7 presenter API); fE4 → DSH client slots, Fetch routes and notifications (§11); fE6 → X8 + K1 under contract 2.0 (U22), with optional attention but no 1.x attach compatibility; update mixed-peer tests to §3 and keep envelope v2; fE7 → X9 `inbox.setBatcher`; fE8/9 → X17/X18; seen route `api/fold-notify/seen` and `api/ext/fold-notify/seen` → `api/ext/fishball-fold-notify/seen`; §14 FN-0, FN-E6, FN-K, FN-B point to X0-*/K1; inject list in §13 |
 | board | (U19) §6 storage: `board.json` (on-board cards) + append-only `archive.jsonl`; "prune age" → board visibility window; §3.2 `board_write` gains `{id, clear: true}`; §3.2/§5 add `board_search` and its guide/contract (§12.7, B11), not a grep instruction; §9 `BOARD_LIMITS` replaces prune age with visibility and adds search bounds; §5/§9/§10 replace `doneWindowHours` as panel cutoff with the inclusive 30-day visibility window (keep it only for the recent-done count), show Dropped as well as Done, and share clear/reopen visibility between context and panel within existing budgets; §6/B-D6 uninstall offers full archive export first, then deletes runtime (Q-S = A, B10); “never delete” applies while installed; (U10) §10 the panel is a `dsh.client` `rightbar` panel entry with Fetch routes, not a page module; inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, DSH client slots/Fetch/notifications (§11), X17/X18; remove the withdrawn `ui.signal`/custom-page APIs; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C plus CHILD-WEB/PG-1 for native UI, B9 → X0-B, B0 done (S1 yes), add B10/B11 and update B5/B8; §5 guide text: "the newest board block is the current one" (S1 note) |
-| watchdog (U1–U19 **are** design changes) | (U14) remove the approval timers, R4, the window sum and the deadline wording (§12.1 list); (U16) reword as a token saver (§12.3); (U14/Q-P) any decision-turn end without a decision escalates at once, no custom fail-safe timer; (final U17/Q-Q) §8/§9 and WD-9/WD-10 remove retained decision-audit/label copies and associated decision-retention settings; ordinary decision entries stay only at reached layers, survive in searchable transcripts after compaction, and never re-enter context automatically; no watchdog-only X10 notification to Fishball, one wake for a user decision, and `onSettled` only updates a watchdog that handled the request (§12.4); WD-4 excludes decisions from its rotated audit, WD-8 removes decision retention from rollover digests, and WD-11 keeps `watchdog_decisions` under Q-T = modified B: §4.4 replaces its limit-only parameters with §12.8's count-range contract, including watchdog-only transcript decisions on explicit pull, not automatic delivery; update §14 WD-11 done-when and §15 EP/BVA accordingly; (U12) side sessions are instance-owned agent runs, allowed by the new-session refusal's exception (Q-H) and never viewable; the escalation card is a chat-node definition (PANELS); §6.2 R1 "no brief" → "session not claimed" (X15 `approvals.claim`, §2.6), R2 "plugin disabled" drops (a disabled plugin has no claims); E6 `setDelegate`/`supervised` → per-session `approvals.claim`; §9 has no `enabled` (U7); §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate); §4.5.1 state table gains `dormant` (any running state allowed, sends refused) and the "no brief" row; §4.5.2's gate text → X19's `supervision-paused` row; §4.4 `watchdog_brief` result gains `sendUnlocked`, and on a dormant brief it supersedes instead of `brief-exists`; `watchdog_resume` accepts `dormant` as well as `paused`; the manager section states the U5 rule in one line; §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U6 |
+| watchdog (U1–U22 **are** design changes) | (U20) §4.5/§6/§9/§13–§15 and WD-9/WD-13/WD-14 replace Q13 fault stops, plugin-gone grace and live `halted` state with whole-plugin effective-off hand-over: X14 `ready()`/`fail(cause)`, generation-bound authority, X19 passes, X15/X9 release, one visible cause/session notice, no managed-session stop; keep 3-failure/900 s health detectors and intentional pause, distinguish them from forbidden approval timers; failed start attach returns the successful session with Fishball/unassigned metadata; verified model/stores/hooks and persisted dormant briefs precede readiness, explicit resume/new brief precedes re-claim; migrate old halted records; (U21) §6 routing restricts watchdog to permission cards, questions/plan reviews always Fishball; §4.4/§5/§14–§15 reuse `watchdog_refine {brief_id, expected_revision, reason, <fields>}` independently of answers, WD-11 tool/guide, WD-3 optimistic persistence, WD-4/WD-6 section/active-only trigger, WD-12 race/refusal/state coverage (§2.7); no check/resume/claim for dormant/paused refinement; (U22) require timer-free contract 2.x and reject all 1.x at attach, no old expiry exceptions; (U14) remove the approval timers, R4, the window sum and the deadline wording (§12.1 list); (U16) reword as a token saver (§12.3); (U14/Q-P) any decision-turn end without a decision escalates at once, no custom fail-safe timer; (final U17/Q-Q) §8/§9 and WD-9/WD-10 remove retained decision-audit/label copies and associated decision-retention settings; ordinary decision entries stay only at reached layers, survive in searchable transcripts after compaction, and never re-enter context automatically; no watchdog-only X10 notification to Fishball, one wake for a user decision, and `onSettled` only updates a watchdog that handled the request (§12.4); WD-4 excludes decisions from its rotated audit, WD-8 removes decision retention from rollover digests, and WD-11 keeps `watchdog_decisions` under Q-T = modified B: §4.4 replaces its limit-only parameters with §12.8's count-range contract, including watchdog-only transcript decisions on explicit pull, not automatic delivery; update §14 WD-11 done-when and §15 EP/BVA accordingly; (U12) side sessions are instance-owned agent runs, allowed by the new-session refusal's exception (Q-H) and never viewable; the escalation card is a chat-node definition (PANELS); §6.2 R1 "no brief" → "session not claimed" (X15 `approvals.claim`, §2.6), R2 "plugin disabled" drops (a disabled plugin has no claims); E6 `setDelegate`/`supervised` → per-session `approvals.claim`; §9 has no `enabled` (U7); §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate) |
+| watchdog (state mapping continued) | §4.5.1 gains `dormant` (any running state allowed; sends refused only when enabled and healthy), hand-over/effective-off and “no brief” rows, removes live `halted` fault state; §4.5.2's intentional-pause gate → X19 `supervision-paused`; §4.4 `watchdog_brief` gains `sendUnlocked` and supersedes dormant rather than `brief-exists`; `watchdog_resume` accepts dormant/paused only through readiness/check steps; manager section narrows U5 to enabled AND healthy; §10 “Plugin uninstalled” → “not removable; failed placement is immediate effective-off Fishball hand-over, no stop”; §14 WD-0 → X0-*, add WD-14 and all revised done-when rows above; §15 adopts §6 cases here; §16.1 records U1–U22 |
 
 ## 9. Open questions for the user
 
@@ -829,9 +991,9 @@ No open user questions remain from Q-P–Q-T.
     client slots (`conversation.chat.node`, the sidebar), as eaa33f5's messenger was.
   - X4–X7, FN-4, FN-5 and B5 would need a redesign for React slots.
   - Under Q-C = B nothing changes.
-- **K-3 (closed, user answer A, 2026-11-08):** while a session's brief is paused or halted, its
-  requests still go to that session's own watchdog (it stays claimed), not to Fishball. The §2.6
-  table stands as written.
+- **K-3 (closed, narrowed by U20/U21):** healthy paused briefs still claim **permission**
+  requests. Fault-induced halted/guard re-stop behavior is superseded: failure hands over to
+  Fishball. Questions/plan reviews always belong to Fishball, including while paused (§2.6–§2.7).
 
 ## 10. Chat page: DSH Composer, grey bubbles, avatars (user request 2026-11-08)
 
@@ -1274,7 +1436,7 @@ by itself: an unanswered card simply stays.
 | Item | Where today | Change | Task |
 | --- | --- | --- | --- |
 | `approvalAnswerSeconds` (120 s), and its timer that moves a request to the pile | connector `src/config.js:27`, `src/approvals.js:811-815`, `src/questions.js:779-782`; DESIGN §7a item 11, `:709`, `:1965` | removed. A request waits for the instance (watchdog or Fishball) until it answers or escalates. Questions and plan reviews too | **K2** (new, connector) |
-| Descriptor `expiresAt` (contract §5.1) | `contract.js:432,446`; host `slim/host/approvals.js:247,266` filters expired | the field becomes optional and is never set for approvals; the host stops filtering by it | K2 (contract 1.2, still additive: a 1.1 peer that sends `expiresAt` is accepted and ignored) |
+| Descriptor `expiresAt` (contract §5.1) | `contract.js:432,446`; host `slim/host/approvals.js:247,266` filters expired | remove the field from permission/question/plan-review descriptors and remove expiry filtering; a 2.x card carrying this removed field fails `invalid-envelope`, not an ignored legacy deadline | K2 (mandatory timer-free contract 2.0; K1 rejects all 1.x peers at attach, §3/U22) |
 | The approvals view's countdown | `src/slim/ui/approvals.js:110-112,334` | removed (moves with PANELS anyway) | PANELS |
 | X9 "a held item is dropped when … its `expiresAt` passes" | wE2 | removed; dropped only when its card settles or closes | X0-I |
 
@@ -1319,7 +1481,7 @@ The watchdog is a **token saver for Fishball**:
 - It is **not** an extra security layer. The permission rules (the user's allowance, low risk)
   are the same rules Fishball applies today. The watchdog only applies them in a smaller context.
 
-All on/off, claim, coupling and hand-over rules (U1–U8) stay. Wording to fix in the watchdog
+The on/off, claim, coupling and hand-over rules (U1–U8) apply as narrowed by U20/U21 (§2.4–§2.7). Wording to fix in the watchdog
 design:
 - §1's intro and R-table: R15 "The safety rules hold" becomes "The permission rules hold (the
   same rules Fishball applies)";
@@ -1350,7 +1512,13 @@ content entering Fishball is superseded by this explicit user-requested exceptio
 | Fishball (including an unclaimed request delivered directly to it) | Fishball context/transcript, plus the watchdog's if it handled the request before escalation | settle the tool; any waiting watchdog receives `onSettled`; Fishball's own decision is already in its turn, so no duplicate note or wake |
 | User | Fishball context/transcript and the user's card result, plus the watchdog's if it handled the request before escalation | settle the tool; notify any waiting watchdog through `onSettled`; one X10 resolution note to Fishball with `wake: true` |
 
-At resolution:
+**Offer handoff is not terminal resolution.** The existing wire `approval.settled` with
+`decision: 'escalate'` retires the instance offer, not the user's unresolved request. Preserve its
+user card and reached-layer correlation until a terminal answer/closure. X15 must distinguish
+this handoff from its terminal `onSettled` notification; no terminal cleanup/wake is inferred from
+the event name alone. Correlate later answer/closure markers and avoid duplicate history/wakes.
+
+At terminal resolution:
 1. The **requesting session** receives the normal tool result. This is not a copy of the
    supervisor's decision-audit entry into the requesting session.
 2. Record the outcome once per reached agent layer: `[approval <id>] decided by
@@ -1384,9 +1552,12 @@ or a label-retention store. PANELS renders attribution from eligible transcript 
 
 The tester's gaps did reveal four unspecified points. They are now specified:
 1. **Durable dedupe (X10):** `manager.notify` records each `dedupeKey` in the instance's
-   `notify-keys.jsonl` in the child home, appended before the turn is queued. A key seen before
-   answers `duplicate`, even after a child restart. The file is bounded to the newest
-   `EXT_LIMITS.notifyKeys` (10,000) keys.
+   `notify-keys.jsonl` in the child home, reserved as **pending** before queueing/holding with a stable
+   message identity, then marked accepted only after durable queue/hold acceptance. A pending key
+   retries that same identity (including restart recovery); only an accepted key answers `duplicate`.
+   Crash after reservation or queue acceptance cannot lose the notice or create two turns. Bound
+   accepted history to the newest `EXT_LIMITS.notifyKeys` (10,000) keys; never evict pending work to
+   pretend success. This applies to both watchdog hand-over and recovery notices.
 2. **Stub refusals:** an unimplemented member throws, or rejects for an async member,
    `ExtensionError` with `code: 'not-implemented'` and `member: '<area.member>'`. It never returns
    a value.
