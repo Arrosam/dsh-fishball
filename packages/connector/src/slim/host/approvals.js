@@ -140,10 +140,31 @@ class ApprovalRelay {
   }
 
   /**
-   * Queue one inbox item until a host can take it. The bridge host itself keeps unacked items for
-   * the next ready connection, so only the window before the first attach needs this.
+   * Queue one inbox item. A card closure, a card record or an answer must survive a reconnect
+   * (§4.5), and the bridge host's own queue dies with that host, so the row's intake ledger takes
+   * it whenever the provider is up. The host queue remains for the window before the first attach
+   * and for a row that does not carry the durable publisher.
    */
   queueInbox(item) {
+    const publish = this.noticePublisher()
+    if (publish !== undefined) {
+      const failed = (error) => this.logger?.warn('inbox item %s not queued (%s)', item.dedupeKey, diagnosticOf(error))
+      try { void publish(item).catch(failed) } catch (error) { failed(error) }
+      return
+    }
+    this.queueOnHost(item)
+  }
+
+  /** The row's durable notice publisher (index.js); absent before the row is up, or in an old row. */
+  noticePublisher() {
+    try {
+      const state = this.ctx.get(SESSION_STATE.service)
+      return typeof state?.publishNotice === 'function' ? state.publishNotice : undefined
+    } catch { return undefined }
+  }
+
+  /** The fallback queue: the host's own unacked queue, or the local list before the first host. */
+  queueOnHost(item) {
     if (this.host !== undefined) {
       try { void this.host.pushInbox(item).catch(() => {}) } catch { /* closed */ }
       return
@@ -152,13 +173,10 @@ class ApprovalRelay {
     if (this.queuedInbox.length > QUEUED_INBOX.max) this.queuedInbox.shift()
   }
 
-  /** Send what waited for the first host; failures stay the host's own (a closed wire drops it). */
+  /** Send what waited for the first host; now that the row is up, it takes the durable path. */
   flushQueuedInbox() {
-    const host = this.host
-    if (host === undefined) return
-    for (const item of this.queuedInbox.splice(0)) {
-      try { void host.pushInbox(item).catch(() => {}) } catch { /* closed */ }
-    }
+    if (this.host === undefined) return
+    for (const item of this.queuedInbox.splice(0)) this.queueInbox(item)
   }
 
   /** Stop observing and make every later operation answer feature-off. */

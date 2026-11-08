@@ -502,6 +502,13 @@ export const INTAKE = Object.freeze({
 /** Outcome of handing one item to the ledger. */
 export const INTAKE_OUTCOME = Object.freeze({ accepted: 'accepted', duplicate: 'duplicate' })
 
+/**
+ * Intake source identities for inputs that are not a session's own message. The approval broker's
+ * notices and the relay's card-lifecycle markers share one identity; their dedupe keys keep the
+ * two apart, and a marker is never counted as "this session messaged Fishball" (DESIGN §5c).
+ */
+export const INTAKE_SOURCE = Object.freeze({ approval: 'fishball/approval' })
+
 /** Message sources Fishball uses (spike S4; DSH's agent-message relay is S16). */
 export const SOURCE = Object.freeze({
   relay: Object.freeze({ kind: 'agent-message', form: 'relay' }),
