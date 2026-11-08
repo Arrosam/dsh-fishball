@@ -1,9 +1,8 @@
 # `fishball-instance` extension points: one change for fold-notify, board and watchdog
 
-Status: design, 2026-11-08. Branch `design/instance-ext`, created from `feat/body-soul` at
-**003db61** ("Merge branch 'fix/e1-model'"). While this was written, `feat/body-soul` moved on to
-90ec004 (the `test/e1-fixes` merge); that merge adds tests and fixes, not extension points, so this
-plan applies to either base. Rebase before X0 starts.
+Status: design, 2026-11-08. Branch `design/instance-ext`, first cut from `feat/body-soul` at
+003db61, **rebased onto `feat/body-soul` 1425384** ("Merge branch 'fix/e1-p3'"; it includes
+90ec004). The file references below were checked against 1425384.
 
 Sources, kept as they are (§8 lists the doc edits each one needs to use the canonical names):
 
@@ -14,7 +13,8 @@ Sources, kept as they are (§8 lists the doc edits each one needs to use the can
 | board | `design/recall-memory` fc9bc8d | `docs/plugins/board-design.md` §8, §7 | 4 needs (b1…b4) built on fE1, fE2, fE4, fE8/9 |
 
 This file also records the user's decisions of 2026-11-08 on the watchdog (§0), which change the
-watchdog design. They replace the earlier open question "is the watchdog bundled?".
+watchdog design. They replace the earlier open question "is the watchdog bundled?". The user's answers to the two
+open questions of the first cut (Q-A = B, Q-B = B) are U5 and U6; §9 now has none.
 
 ## 0. The user's watchdog decisions (2026-11-08)
 
@@ -24,6 +24,8 @@ watchdog design. They replace the earlier open question "is the watchdog bundled
 | U2 | "开着时Fishball在启动会话时必须一并Assign Watchdog": while the watchdog is on, every session Fishball starts gets a brief at start | X16, enforced in code (§2.3) |
 | U3 | With the watchdog **off**, Fishball runs everything directly, as v1 does today: permission requests and supervision go to Fishball; no watchdog tools, no watchdog prompt sections | §2.4 |
 | U4 | "中途关掉会自动转交给Fishball": turning it off mid-way **hands the supervised sessions to Fishball**. Not a Q13 failure: the sessions keep running, nothing is halted. Fishball gets **one** notice listing them. Briefs and criteria are kept. Q13 halting applies only to failures while the watchdog is **on**. The coupling rule (R17) still holds, with Fishball as the supervisor | X14 hand-over, §2.4 |
+| U5 | Q-A = **B**: while the watchdog is on, **every** managed session must have an **active** brief before Fishball sends it anything: sessions Fishball starts, sessions the user hands over, and sessions Fishball messages or redirects. Enforced by the instance. Reading, answering approvals or questions, and release stay allowed without a brief | X19, §2.5 |
+| U6 | Q-B = **B**: turning the watchdog back on does **not** resume the kept briefs. They become `dormant`; Fishball gets one notice listing them and resumes each with `watchdog_resume`. A session whose brief is dormant has **no active brief**, so sends to it are refused (U5) until Fishball resumes that brief or writes a new one | X14, §2.4 step 6, §2.5 |
 
 ## 1. The canonical extension points
 
@@ -68,9 +70,10 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | X11 | `manager.userTexts({limit, maxChars}) → [{text, at}]` | newest-first texts written by the **user** in Fishball's session, read-only | watchdog (`userQuote`) | wE8 |
 | X12 | `bridge(pluginId, operations[]) → client` | a scoped connector client; an operation outside the list is refused `forbidden` locally; the list must lie within the instance's required set (no new handshake) | watchdog | wE1 |
 | X13 | `sideAgents.open({…}) → {agent, sessionId, setSection}`, `sideAgents.runTurn(agent, message, {timeoutMs, signal})`, `sideAgents.cancel(agent)` | locked-down side sessions: read-only, approval `never`, every global tool denied | watchdog | wE5 (unchanged) |
-| X14 | `supervision.register(pluginId) → {set(sessionId, state), clear(sessionId), handedOver, dispose}`; `supervision.onManagedChange(listener)`; `supervision.endingReason() → 'hand-over' \| 'failure' \| undefined` | the persisted supervised set, the message gate (`supervision-paused`), the `plugin-gone` guard, managed-change events; **added:** the user's-disable **hand-over** (§2.4) | watchdog | wE10 + U4 |
+| X14 | `supervision.register(pluginId) → {set(sessionId, state, briefId), clear(sessionId), handedOver, dispose}` with `state` ∈ `active`, `paused`, `halted`, **`dormant`**; `supervision.onManagedChange(listener)`; `supervision.endingReason() → 'hand-over' \| 'failure' \| undefined` | the persisted supervised set, the `plugin-gone` guard, managed-change events; **added:** the user's-disable **hand-over** (§2.4) and the **`dormant`** state of a brief kept across off → on (U6). `set` is synchronous and persisted before it returns, so a send right after it is judged on the new state | watchdog | wE10 + U4 + U6 |
 | X15 | `approvals.setDelegate({id, name, onCard}) → dispose`, `card(approvalId)`, `onSettled`, `answerApproval({…, decidedBy})`, `supervised(sessionIds)`; the escalation card in the chat | the approval seam and its UI (the "代批 / Watchdog" tag; the open escalation card) | watchdog | wE6 + wE9 |
-| X16 | `sessionStarts.register(pluginId, {parameter, schema, validate(arg) → {ok:true} \| {code}, attach(sessionId, arg) → Promise<{ok:true} \| {code}>}) → dispose`, single owner | **new (U2)**: while registered, `start_session` has one more **required** argument and cannot start a session without it (§2.3) | watchdog | new |
+| X16 | `sessionStarts.register(pluginId, {parameter, schema, validate(arg) → {ok:true} \| {code}, attach(sessionId, arg) → Promise<{ok:true} \| {code}>}) → dispose`, single owner | **new (U2)**: while registered, `start_session` has one more **required** argument and cannot start a session without it (§2.3). `attach` ends with `supervision.set(id, 'active')`, so the started session is sendable at once | watchdog | new |
+| X19 | **Send gate** (instance-internal; the plugin only feeds it through X14): one check `gate.send(operation, sessionId) → ok \| {code, reason}` called by the bridge client for every manager→session send operation (`SUPERVISION.sendOperations` = `session.message`, `session.redirect`), plus the hand-over hint (§2.5) | **new (U5)**: while the gate is on, no send reaches a session without an **active** brief; replaces wE10's gate, which only covered `paused`/`halted` | watchdog | wE10 gate + U5 |
 | X17 | `RUNTIME.bundledPlugins = [{name: 'fishball-fold-notify'}, {name: 'fishball-board'}, {name: 'fishball-watchdog'}]` and placement at every child start | built in, on at first placement | all three | fE8 = b4 |
 | X18 | `admin.plugins.get` marks a bundled plugin `{bundled: true, removable: false}`; `admin.plugin.remove` refuses `bundled-plugin`; enable/disable work. **Added:** disabling `fishball-watchdog` is a hand-over (§2.4) | the off switch the user keeps | all three | fE9 + U4 |
 | K1 | contract 1.2 `instance.attention` + connector `state.unread = {count, important}` | the brand mark and frame unread count (today always 0) and the important alert | fold | fE6 (wire half), fold §9.1 |
@@ -129,7 +132,8 @@ While a `sessionStarts` owner exists:
 2. `execute`: first `validate(arg)`. If it fails, the call answers
    `{ok: false, code: 'watchdog-brief-required' | <validate code>}` and **no session is started**.
 3. Then `session.start` as today. A failed start answers as today, and nothing is attached.
-4. Then `attach(sessionId, arg)`, which creates the brief, its watch and the supervised entry. On
+4. Then `attach(sessionId, arg)`, which creates the brief, its watch and the supervised entry
+   (`supervision.set(id, 'active')`, so the session is sendable as soon as the call returns). On
    success the result also carries `{watchdog: {briefId}}`.
 5. If `attach` fails or times out (`SESSION_STARTS.attachTimeoutMs`, a new constant in `child/ext/session-starts.js`, equal to the bridge's `requestTimeoutMs` (30 s, `child/bridge.js:38`)), the instance calls
    `session.stop` on the new session and answers
@@ -144,8 +148,8 @@ While a `sessionStarts` owner exists:
 7. When the owner disposes (watchdog off), `start_session` is registered again **without** the
    parameter, exactly as in v1.
 
-*Scope.* Q-A (§9) asks whether U2 also covers sessions the user hands over or that Fishball only
-messages. Until it is answered, only `start_session` is enforced.
+*Scope.* `start_session` is where a session **gets** its brief. Every later send to any managed
+session is checked by the send gate (§2.5, U5).
 
 ### 2.4 Watchdog off: what Fishball does (U3) and the hand-over (U4)
 
@@ -167,8 +171,9 @@ failure.
 3. The instance, on the registrant's disposal with the intent set:
    - moves every supervised entry into `handedOver: [{sessionId, briefId, state, at}]` in its own
      supervision file and empties the supervised set;
-   - **lifts the message gate** for paused or halted sessions. A stopped session stays stopped, and
-     Fishball may now message it;
+   - **turns the send gate off** (§2.5; `gateOn: false` in the supervision file), so paused or
+     halted sessions and sessions without a brief can all be messaged. A stopped session stays
+     stopped;
    - starts **no** grace timer and stops nothing;
    - sends **one** waking `manager.notify` (dedupe `watchdog-handover:<at>`) that lists the
      sessions, their titles and their states, and says Fishball now handles their approvals and
@@ -182,9 +187,80 @@ failure.
    successful check while running, and a broken store, all of which can happen only while the
    watchdog is on: those halt, stop and notify exactly as watchdog §4.5.4 says. The cause
    `disabled` is removed from the watchdog's halt causes.
-6. **Turning it on again.** `supervision.register` returns `handedOver` to the plugin. What the
-   plugin does with that list is Q-B (§9). Sessions Fishball started while the watchdog was off
-   have no brief, and U2 does not reach back to them (U2 is about starting).
+6. **Turning it on again (U6, no automatic resume).** The first `supervision.register` after a
+   hand-over:
+   - turns the send gate on again (`gateOn: true`);
+   - moves every `handedOver` entry into the supervised set as **`dormant`** (same `briefId`) and
+     returns the list to the plugin;
+   - the plugin sets each kept brief to `dormant` in its own store, starts **no** timer, makes no
+     check and stops nothing, then sends **one** waking `manager.notify` (dedupe
+     `watchdog-reenabled:<at>`) listing the dormant briefs (brief id, session, title) with "resume
+     each with `watchdog_resume`, or write a new brief with `watchdog_brief`; until then Fishball
+     cannot send to these sessions". With an empty list, no notice.
+   - **Dormant means "no active brief"** for U5. The session may keep running: Fishball is still
+     its supervisor (its approvals go to Fishball, watchdog §6 "no brief → Fishball"; its finished
+     notices reach Fishball). Only sends to it are refused until the brief is active.
+   - `watchdog_resume` on a dormant brief runs watchdog §4.5.3 steps 1–4 and then
+     `supervision.set(id, 'active')`. `watchdog_brief` on a session whose brief is dormant ends the
+     dormant brief (`endedReason: 'superseded'`) and creates the new one active. Both unlock sends
+     at once.
+   - Sessions Fishball started, or the user handed over, while the watchdog was off have **no**
+     brief at all. They are treated as in §2.5: sends are refused until Fishball writes one.
+
+### 2.5 Every managed session needs an active brief (U5, X19)
+
+**When the gate is on.** `gateOn` is persisted in the instance's supervision file. It is set true
+by the first `supervision.register` and false only by the user's-disable hand-over (§2.4 step 3).
+*Why persisted, not "a registrant exists".* After a crash or during child boot the row may not be
+registered yet; a gate that opened then would let sends through unsupervised. With `gateOn` true
+and no registrant, sends are refused `watchdog-unavailable` (the plugin-gone guard of X14 covers the
+rest). With the watchdog off from the start, `gateOn` was never set, so v1 behaviour is untouched
+(U3).
+
+**Where it sits.** In the bridge client's one request path (`child/bridge.js`), for the operations
+in `SUPERVISION.sendOperations`. Both send paths go through it: the `message_session` /
+`redirect_session` tools (`session-tools.js:195,207`) and the image-carrying sends
+(`images.js:412,417`). *Why there and not in each tool.* A later send path cannot skip it, and the
+watchdog's own scoped bridge (X12) is never given a send operation anyway.
+
+**The rule** (checked before the request leaves the child; nothing reaches the connector on a
+refusal):
+
+| Gate | Brief of the target session | `message_session`, `redirect_session`, image sends |
+| --- | --- | --- |
+| off | any | allowed (v1) |
+| on, no registrant | any | refused `watchdog-unavailable` |
+| on | `active` | allowed |
+| on | `paused`, `halted` | refused `supervision-paused` (watchdog §4.5.2, §4.5.4) |
+| on | none, `dormant` | refused **`watchdog-brief-required`** |
+
+The `watchdog-brief-required` result is `{ok: false, code, sessionId, briefId?, reason}`, and the
+`reason` tells Fishball the next step: "This session has no active watchdog. Call `watchdog_brief`
+for it (or `watchdog_resume` for brief `<briefId>`), then send again."
+
+**Not gated** (no brief needed): `read_session`, `list_sessions`, `watch_session`,
+`unwatch_session`, `list_watches`, `answer_approval`, `answer_question`, `answer_prompt`,
+`ask_user`, `list_grants`, `revoke_grant`, `release_session`, and `stop_session`. *Why
+`stop_session` too.* It only ends execution, so it can never let work run unsupervised, and
+blocking it would stop Fishball from halting a session that misbehaves before it has a brief.
+`start_session` is governed by X16 instead.
+
+**The hand-over path (smooth, one extra call).**
+1. The user hands a session over. The connector pushes the `user` inbox item (contract §4.5).
+2. While the gate is on and that session has no active brief, the instance's `deliverInbox`
+   **prepends one fixed line** to the item's text, `TEXT.briefRequired(sessionId)`: "This session
+   has no watchdog yet. Call `watchdog_brief` with session_id `<id>` before replying to it." The
+   same line is prepended to a `session` item (a message the session sent with
+   `message_fishball`) from a session without an active brief. *Why the instance and not an X9
+   claim.* A claimed item is acked at once; a hand-over note is the user's words and must keep the
+   normal ack-after-queue rule.
+3. Fishball calls `watchdog_brief({session_id, …})` once. It creates the brief, its watch and
+   `supervision.set(id, 'active')` before it returns; the result carries `sendUnlocked: true`.
+4. Fishball's next `message_session` to it is allowed. If Fishball replies first, it gets
+   `watchdog-brief-required` with the same instruction, so the order is self-correcting.
+
+Approvals and questions of a session without an active brief reach Fishball in the meantime (no
+delegate covers it), so a hand-over never leaves a card unanswered.
 
 ## 3. Contract 1.2 scope (K1)
 
@@ -265,13 +341,13 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | --- | --- | --- | --- |
 | **SP** spikes SP-X1, SP-FN1, B0/S1 | `spikes/instance-ext/*`, `docs/spikes/instance-ext.md` | — | yes or no for each, on both versions, with citations |
 | **K1** contract 1.2 + connector `unread` | `packages/connector/contract/{contract,limits}.js`, `docs/connector-contract.md`, `packages/connector/src/slim/host/bridge.js`, `src/connector-service.js`, `index.js` | — | §3 table holds; 1.1 instance attaches; `state.unread` follows the last valid value, `{0,false}` on detach and close |
-| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form) | SP-X1 for "done" | `fishballInstance` v1 provided; X1–X3, X10, X11 behave as §1; every other member a stub that refuses `not-implemented`; the instance tests are unchanged and green with no plugin |
+| **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X3 in `entryOfEvent`, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | SP-X1 for "done" | `fishballInstance` v1 provided; X1–X3, X10, X11 behave as §1; every other member a stub that refuses `not-implemented`; the X19 call sites exist and pass everything while `gateOn` is unset; the instance tests are unchanged and green with no plugin |
 | **X0-I** inbox pipeline | `child/inbox.js`, new `child/ext/inbox.js`, `src/slim/inbox-markers.js` | X0-C | X9: claims before the batcher, release re-enters, ack/refuse per item |
 | **X0-U** page modules | `child/server.js`, new `child/ext/ui.js`, `ui/shell.{js,html,css}`, `ui/chat.js` | X0-C | X4–X7; the X3 `text` fallback row; the CSP unchanged; with no module, the page is identical to today |
 | **X0-W** wire: scoped bridge + attention | `child/bridge.js`, new `child/ext/{bridge-scope,attention}.js` | X0-C, K1 | X12 local `forbidden`; X8 sent on set, on each handshake, zero on dispose, skipped without the capability |
 | **X0-G** side agents | new `child/ext/side-agents.js` | X0-C | X13 lock-down on both versions |
 | **X0-A** approvals seam + escalation card | `child/approvals.js`, `child/decisions.js`, `ui/approvals.js`, `ui/records.js` | X0-C | X15; old labels load as manager-decided; `delegate-no-grant`, `grant-off-supervised` |
-| **X0-S** supervision + start rule | `child/session-tools.js`, new `child/ext/{supervision,session-starts}.js` | X0-C | X14 gate, guard, managed changes, hand-over (§2.4 steps 3–6); X16 (§2.3) |
+| **X0-S** supervision, start rule, send gate | `child/session-tools.js`, new `child/ext/{supervision,session-starts,send-gate}.js` | X0-C | X14 guard, managed changes, `dormant`, hand-over and re-enable (§2.4 steps 3–6); X16 (§2.3); X19 table and hand-over line (§2.5), on both send paths |
 | **X0-B** bundling + admin | `packages/instance/package.json`, `src/native-runtime/{constants,installation,files,index}.js`, `child/admin.js`, `ui/settings.js`, `ui/i18n.js` | SP-FN1, X0-S (the hand-over port, stubbed until merged) | X17, X18 for the three names; hand-over intent order (§2.4 step 1); a failed placement of one name leaves the others |
 
 ### 5.2 Plugin tasks, re-based on the canonical names
@@ -288,7 +364,7 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | — | FN-0, FN-E6, FN-K, FN-B | absorbed into X0-*, K1 | — |
 | WD-1 … WD-10 | same | `packages/watchdog/…` as watchdog §14 | WD-0 → the X0 task that owns the point (WD-8: X0-G; WD-10: X0-I, X0-A) |
 | WD-11 manager tools | WD-11 | `src/manager-tools.js` | registers through **X2** (not wE3/wE4); X0-C, WD-2, WD-3, WD-6, WD-9, WD-13 |
-| WD-13 coupling | WD-13 | `src/coupling.js` | X0-S; **adds** `endingReason()` handling (§2.4 step 2) and the `handedOver` list on register (§2.4 step 6) |
+| WD-13 coupling | WD-13 | `src/coupling.js` | X0-S; **adds** `endingReason()` handling (§2.4 step 2), the `handedOver` → `dormant` list on register with the one notice (§2.4 step 6), `watchdog_resume` of a dormant brief, `watchdog_brief` superseding a dormant brief |
 | **WD-14** start-time assignment (new) | — | new `src/start-assign.js` | X0-S (X16), WD-2, WD-6, WD-13 |
 | WD-12 integration | WD-12 | `index.js` wiring, e2e | all WD, X0-B |
 | B1 … B5 | same | `packages/board/…` as board §14 | X0 → X0-C (X1, X2), X0-U (X4–X7) |
@@ -319,6 +395,7 @@ lines.
 | X0-B, X0-A | `ui/i18n.js` (`settings.builtIn` vs `approvals.by.watchdog`) | append-only keys; X0-A first, X0-B rebases |
 | X0-S, X0-B | the hand-over port | X0-S first, or X0-B against X0-C's stub |
 | X0-C, X0-I | `deliverInbox` array form lives in `chat.js` | X0-C first (it owns `chat.js`) |
+| X0-C, X0-W | `child/bridge.js` (X0-C adds only the X19 call; X0-W the scope and attention) | X0-C first |
 | X0-U, X0-A | `ui/chat.js` vs `ui/records.js`; the escalation card stays in `records.js`/`approvals.js` | none if X0-A keeps out of `ui/chat.js` |
 | K1, FN-A | none (`client.js` is FN-A's only) | — |
 | FN-4, FN-5 | `ui/fold.css` | FN-4 first |
@@ -391,6 +468,38 @@ decision table, **ST** state transitions.
     session runs.
   - X16 ST: the `start_session` schema with and without the parameter, as the owner registers and
     disposes.
+  - **X19 DT: session origin × watchdog × brief → send result.** Origins: started by Fishball while
+    on (brief from X16); started while off; handed over while on; handed over while off; made
+    managed by `answer_prompt`; kept across off → on (dormant). Watchdog: off from the start; on;
+    on but not registered (boot or crash); turned off (hand-over). Brief: none, active, paused,
+    halted, dormant. Expected results by the §2.5 table; in particular:
+
+    | Origin | Watchdog | Brief | `message_session` / `redirect_session` / image send |
+    | --- | --- | --- | --- |
+    | any | off from the start | — | allowed |
+    | any | turned off (hand-over) | any kept | allowed |
+    | started by Fishball | on | active | allowed |
+    | started while off | on | none | `watchdog-brief-required` |
+    | handed over | on | none | `watchdog-brief-required` |
+    | handed over | on | active (after `watchdog_brief`) | allowed |
+    | `answer_prompt` made managed | on | none | `watchdog-brief-required` |
+    | kept across off → on | on | dormant | `watchdog-brief-required` (with `briefId`) |
+    | kept across off → on | on | active (after `watchdog_resume`) | allowed |
+    | any | on | paused / halted | `supervision-paused` |
+    | any | on, not registered | any | `watchdog-unavailable` |
+  - X19 EP for **not gated** actions with the gate on and no brief: `read_session`,
+    `answer_approval`, `answer_question`, `answer_prompt`, `release_session`, `stop_session`,
+    `watch_session` → all allowed; and a refused send reaches **no** connector request.
+  - X19 hand-over line: present on `user` and `session` items from a session without an active
+    brief while the gate is on; absent with an active brief, with the gate off, and on `watch`,
+    `system`, `approval` items; the item is still acked only after its turn is queued.
+  - X19 ST per session: no brief → (`watchdog_brief`) active → (pause) paused → (resume) active;
+    active → (user disable) handed-over/gate off → (re-enable) dormant → (`watchdog_resume`)
+    active; dormant → (`watchdog_brief`) old superseded, new active. At each state, one send
+    checks the gate.
+  - X19 BVA: a send immediately after `supervision.set(…, 'active')` returns (allowed), and
+    immediately after `set(…, 'paused')` (refused); `gateOn` file absent (gate off), `true`,
+    `false`, corrupt (`store-unavailable`, sends refused).
 - **X0-B.**
   - ST per bundled name: absent → placed, on → off (user) → off (restart, upgrade) → on.
   - Remove is refused with `bundled-plugin`.
@@ -406,7 +515,11 @@ decision table, **ST** state transitions.
   - watchdog:
     - the `disabled` halt cause is removed;
     - add a DT "disable with briefs → hand-over, not halt";
-    - add an ST "brief active → handed-over → (re-enable) per Q-B".
+    - add an ST "brief active → handed-over → (re-enable) dormant → (`watchdog_resume`) active";
+    - re-enable with n dormant briefs: n = 0 (no notice), 1, many (one notice listing all); no
+      check runs and no session is stopped at re-enable;
+    - `watchdog_brief` on a session with a dormant brief: old `superseded`, result
+      `sendUnlocked: true`; on a session with an active, paused or halted brief: `brief-exists`.
 - **WD-14.**
   - EP: arg valid / each `invalid-brief:<field>`.
   - DT: §2.3 steps 2–5.
@@ -415,8 +528,12 @@ decision table, **ST** state transitions.
 - **X-E2E**, one per DSH version:
   - a fresh child shows all three as "Built in" and on;
   - Fishball starts a session (a brief is required) → the watchdog supervises it;
+  - the user hands over a session → the notice carries the brief-required line; a reply is
+    refused `watchdog-brief-required`; after `watchdog_brief` the reply is delivered;
   - the user turns the watchdog off → one hand-over notice, and the session keeps running;
-  - the next `start_session` takes no `watchdog` argument;
+  - the next `start_session` takes no `watchdog` argument, and sends need no brief;
+  - the user turns it on again → one notice listing the dormant briefs; a send is refused until
+    `watchdog_resume`, then allowed;
   - an important notify gives the brand alert;
   - the board panel refreshes;
   - `uninstall.js` leaves nothing.
@@ -428,17 +545,14 @@ decision table, **ST** state transitions.
 - **Main DSH profile.** None of the three plugins is ever a bundle there.
 - **Without these plugins**, the instance behaves byte for byte as it does today.
 
-## 8. Doc edits the three designs need (names only, no design change except U1–U4)
+## 8. Doc edits the three designs need (names only, no design change except U1–U6)
 
 | Design | Edit |
 | --- | --- |
 | fold-notify | service `fishballInstanceExtensions` → `fishballInstance`; fE1 `fishballChat.sessionId()` → `manager.sessionId()`; fE2 → X2 `manager.registerSetup(pluginId, fn)`; fE3 → X3 (add `pluginId` argument); fE4 → X4/X5/X7; fE5 → X7 `setTimelinePresenter`; fE6 → X8 + K1; fE7 → X9 `inbox.setBatcher`; fE8/9 → X17/X18; seen route `api/fold-notify/seen` and `api/ext/fold-notify/seen` → `api/ext/fishball-fold-notify/seen`; §14 FN-0, FN-E6, FN-K, FN-B point to X0-*/K1; inject list in §13 |
 | board | inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, X4–X7, X17/X18; `signal(namespace, type)` → `ui.signal(pluginId, type)`; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C/X0-U, B9 → X0-B |
-| watchdog (U1–U4 **are** design changes) | §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here) and "A watchdog at every start" (§2.3, `start_session.watchdog`); §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U4 |
+| watchdog (U1–U6 **are** design changes) | §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate); §4.5.1 state table gains `dormant` (any running state allowed, sends refused) and the "no brief" row; §4.5.2's gate text → X19's `supervision-paused` row; §4.4 `watchdog_brief` result gains `sendUnlocked`, and on a dormant brief it supersedes instead of `brief-exists`; `watchdog_resume` accepts `dormant` as well as `paused`; the manager section states the U5 rule in one line; §10 "Plugin uninstalled" row → "not removable; a failed placement = `plugin-gone`"; §14 WD-0 → X0-*, add WD-14; §15 test edits of §6 here; §16.1 add U1–U6 |
 
 ## 9. Open questions for the user
 
-| # | Question | A | B | Recommendation |
-| --- | --- | --- | --- | --- |
-| Q-A | "启动会话时必须一并 Assign Watchdog": does this also cover sessions **you hand over** to Fishball, and sessions Fishball only **messages** (for example, ones started while the watchdog was off)? | Only sessions Fishball **starts** must have a watchdog; this is enforced in code. For the others, Fishball is asked in its prompt to add one, but it is not forced. | Every managed session must have a watchdog: Fishball's messages and redirects to a managed session without one are refused (`watchdog-brief-required`) until Fishball assigns one. A handed-over session gets a notice asking Fishball to assign one. | **A.** Your words are about starting. B would block Fishball from answering a session you just handed over until a brief is written. |
-| Q-B | After the watchdog is turned on again, what happens to the briefs it handed over? | They start again on their own, for every session Fishball still manages: supervision restarts first, then one check. Fishball gets one notice listing them. | They are kept but stay asleep. Fishball restarts each one with `watchdog_resume` when it wants. | **A.** You said they are kept "for when it is turned on again", and A brings back what was there before. |
+None. Q-A and Q-B of the first cut are decided (U5 = Q-A B, U6 = Q-B B, §0).
