@@ -55,6 +55,10 @@ const chatRegion = document.getElementById('chat')
 const remindersRegion = document.getElementById('reminders')
 chatRegion.setAttribute(ARIA.label, i18n.t('shell.chatRegion'))
 remindersRegion.setAttribute(ARIA.label, i18n.t('shell.remindersRegion'))
+// The header's content is only controls, so name the landmark instead of letting the browser
+// derive "Model Reasoning effort" from them.
+const topbar = document.querySelector('.topbar')
+topbar.setAttribute(ARIA.label, i18n.t('shell.header'))
 const chat = createChatView({
   container: chatRegion,
   modelSlot: document.getElementById('model-picker'),
