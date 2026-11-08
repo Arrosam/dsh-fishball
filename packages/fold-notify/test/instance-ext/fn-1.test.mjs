@@ -40,7 +40,7 @@ function stubContext({ withInstance = true } = {}) {
 }
 
 describe('FN-1 package and row', () => {
-  it('FN1-P-01 the package is fishball-fold-notify 0.1.0-alpha.0 with the designed files and bounds', async () => {
+  it('FN1-EP-V-01 the package is fishball-fold-notify 0.1.0-alpha.0 with the designed files and bounds', async () => {
     const manifest = await packageJson(FOLD)
     assert.equal(manifest.name, 'fishball-fold-notify')
     assert.equal(manifest.version, '0.1.0-alpha.0')
@@ -52,7 +52,7 @@ describe('FN-1 package and row', () => {
     assert.ok(manifest.peerDependencies?.['fishball-instance'], 'peerDependencies names the instance')
   })
 
-  it('FN1-P-02 the row exports name, inject, Config and apply', async () => {
+  it('FN1-EP-V-02 the row exports name, inject, Config and apply', async () => {
     const row = await packageModule(FOLD, 'index.js')
     assert.equal(row.name, 'fishball-fold-notify')
     assert.ok(Array.isArray(row.inject), 'inject is a list')
@@ -63,7 +63,7 @@ describe('FN-1 package and row', () => {
     assert.equal(typeof row.Config, 'function', 'DSH reads the Config schema export')
   })
 
-  it('FN1-P-03 the config defaults are foldDefault true, systemNotification when-hidden, batchWindowMs 1500', async () => {
+  it('FN1-EP-V-03 the config defaults are foldDefault true, systemNotification when-hidden, batchWindowMs 1500', async () => {
     const { Config } = await packageModule(FOLD, 'index.js')
     assert.equal(configDefault(Config, 'foldDefault'), true)
     assert.equal(configDefault(Config, 'systemNotification'), 'when-hidden')
@@ -96,7 +96,7 @@ describe('FN-1 package and row', () => {
 })
 
 describe('FN-1 constants and loading', () => {
-  it('FN1-P-04 the fixed constants are the designed values', async () => {
+  it('FN1-EP-V-04 the fixed constants are the designed values', async () => {
     const constants = await packageModule(FOLD, 'src/constants.js')
     assert.equal(constants.NOTIFY.maxChars, 4000)
     assert.equal(constants.NOTIFY.systemChars, 140)
@@ -107,13 +107,13 @@ describe('FN-1 constants and loading', () => {
     assert.equal(constants.SEEN.threshold, 0.5)
   })
 
-  it('FN1-P-05 the row loads over a stub fishballInstance', async () => {
+  it('FN1-DT-01 the row loads over a stub fishballInstance', async () => {
     const row = await packageModule(FOLD, 'index.js')
     const ctx = stubContext()
     await assert.doesNotReject(async () => row.apply(ctx, {}))
   })
 
-  it('FN1-EP-01 the row also loads without the optional instance service', async () => {
+  it('FN1-DT-02 the row also loads without the optional instance service', async () => {
     const row = await packageModule(FOLD, 'index.js')
     const ctx = stubContext({ withInstance: false })
     await assert.doesNotReject(async () => row.apply(ctx, {}))
