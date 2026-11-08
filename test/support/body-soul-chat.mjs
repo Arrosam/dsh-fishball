@@ -1,6 +1,6 @@
 /**
- * Stand-ins for the child chat (createChat in packages/instance/src/slim/child/chat.js) and a tiny
- * fake document for DOM-builder functions (ui/records.js createRecordRow).
+ * Stand-ins for the child chat (createChat in packages/instance/src/slim/child/chat.js). The fake
+ * document lives in body-soul-dom.mjs, shared with the settings-view tests.
  *
  * The chat stand-in is the Cordis-like context createChat's JSDoc names: `get(name)` for
  * agents, profileContext, sessionQuery, agentDefaultModel and sandboxPolicy, `on(event, fn)` for
@@ -9,10 +9,18 @@
  * committed log the test supplies, so GET /api/chat shows exactly how those events are projected.
  */
 import { tempDir } from './body-soul-env.mjs'
+import { fakeDocument } from './body-soul-dom.mjs'
+
+export { fakeDocument }
 
 export const CHAT_EVENT = Object.freeze({ user: 'user/message', live: 'session/event', cardRecord: 'plugin:fishball/card-record' })
 
-export async function chatHarness(t, { loadChat }) {
+/**
+ * `currentModel` is the live agent's model reader; a test passes one to exercise
+ * `chat.service.currentModel()`, the admin model snapshot's `active` source. `start: false`
+ * leaves the chat unstarted, when a test needs the state before activation.
+ */
+export async function chatHarness(t, { loadChat, currentModel = () => undefined, start = true }) {
   const { createChat, CHAT } = await loadChat()
   const home = await tempDir(t)
   const listeners = new Map()
@@ -22,7 +30,7 @@ export async function chatHarness(t, { loadChat }) {
     profileContext: { home },
     agents: {
       async create({ sessionId }) {
-        agent = { id: sessionId, status: 'idle', session: { id: sessionId }, followup() {}, model: { current: () => undefined } }
+        agent = { id: sessionId, status: 'idle', session: { id: sessionId }, followup() {}, model: { current: currentModel } }
         return { agent }
       },
       get: (id) => (agent !== undefined && agent.id === id ? agent : undefined),
@@ -41,7 +49,7 @@ export async function chatHarness(t, { loadChat }) {
     },
   }
   const chat = createChat(ctx, {})
-  await chat.start()
+  if (start) await chat.start()
   t.after(() => chat.close())
   let seq = 0
   return {
@@ -64,29 +72,3 @@ export async function chatHarness(t, { loadChat }) {
     },
   }
 }
-
-/* ------------------------------------------------------------------ fake document */
-
-class FakeElement {
-  constructor(tag) {
-    this.tagName = tag.toUpperCase()
-    this.className = ''
-    this.childNodes = []
-    this.attributes = {}
-    this.dataset = {}
-  }
-  append(...nodes) { for (const node of nodes) this.childNodes.push(node) }
-  appendChild(node) { this.childNodes.push(node); return node }
-  setAttribute(name, value) { this.attributes[name] = String(value) }
-  getAttribute(name) { return Object.hasOwn(this.attributes, name) ? this.attributes[name] : null }
-  set textContent(value) { this.childNodes = [String(value)] }
-  get textContent() { return this.childNodes.map((node) => (typeof node === 'string' ? node : node.textContent)).join('') }
-  /** Every element below this one, depth first. */
-  *walk() { for (const node of this.childNodes) if (typeof node !== 'string') { yield node; yield* node.walk() } }
-}
-
-/** The small part of `document` a DOM builder needs: createElement and createTextNode. */
-export const fakeDocument = Object.freeze({
-  createElement: (tag) => new FakeElement(tag),
-  createTextNode: (text) => String(text),
-})
