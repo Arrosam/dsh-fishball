@@ -52,6 +52,9 @@ protocol-dependent core/plugin tracks wait for MCP feasibility and schema freeze
 bidirectional idea is rejected. Watchdog failure means effective off/Fishball fallback; questions/
 plan reviews always reach Fishball (OQ-04 = B). These [routing decisions](<docs/plugins/instance-extension-points.md>)
 remain local to the Fishball instance, not a callback-MCP topology.
+**W0 watchdog budget question 2 = A (2026-11-09):** freeze provider-independent UTF-8 byte
+accounting, upward rounding, aggregate config validation and the 64,000-token rollover boundary
+before WD-1; [canonical budget rule](<docs/plugins/instance-extension-points.md#28-deterministic-watchdog-token-budget-w0-question-2--a>).
 
 ## 0. Summary
 
