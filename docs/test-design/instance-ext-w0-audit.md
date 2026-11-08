@@ -30,6 +30,24 @@ The first full run was invalidated by concurrent helper editing: seven files loa
 
 Only tests, test helpers and test/design documentation changed. No product implementation was read to derive expectations or modified. All execution homes and npm caches were throwaway `/private/tmp` directories. No credential file was read, printed or copied; no push or publish occurred. Four direct temporary-path checks passed (outside root, root-as-home and relative paths refused; a safe descendant accepted).
 
+## Technique correction rerun — 2026-11-09
+
+Taxonomy is now exactly EP, BVA, Decision Table, State Transition and Use Case. Former positive cases are valid EP partitions or documented decision rules, not a sixth category. W0 true user e2e flows remain assigned to later integration tasks; the K1 H-STUB scenario remains State Transition because the child is a fixture.
+
+All five package-local gates were rerun on 0.2.2-rc.1 with isolated homes and npm cache under `/private/tmp`. Evidence: `/private/tmp/fbtest-w0-techniques.Toq5QP`.
+
+| Task | Failed | Skipped | Exit | Cause |
+| --- | ---: | ---: | ---: | --- |
+| K1 | 13 | 0 | 1 | missing contract 1.2/attention/unread additions |
+| X0-C | 19 | 0 | 1 | missing public fishballInstance service |
+| FN-1 | 9 | 0 | 1 | missing package skeleton files |
+| WD-1 | 7 | 1 | 1 | missing package skeleton files; existing window-sum block unchanged |
+| B1 | 9 | 0 | 1 | missing package skeleton files |
+
+X0-C was additionally rerun after its final ID-only reclassification (`XC-ST-02` → `XC-EP-V-07`): `/private/tmp/fbtest-w0-core-techniques.xA3U9g/x0-c.log`, exit 1 for the same missing service.
+
+No shared harness code changed in this correction, so the regression suite was not rerun; the prior green regression above remains the latest full-suite evidence. No product code changed, and the four pending ambiguity decisions were left untouched.
+
 ## Acceptance questions
 
 1. **WD sum:** A — formally define Config acceptance at sum 120 and rejection at 121, including exact fields and model-window handling; B — define these as runtime deadline calculations, not Config refusal. Recommendation: B unless save-time validation is explicitly intended; keep the blocked case until the owner chooses.
