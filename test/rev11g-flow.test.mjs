@@ -149,7 +149,10 @@ describe('Revision 11 rev11g on H-STUB: how a managed session\'s question travel
         const id = cid('07s' + seconds)
         const { card, offer } = await q.ask(x, text, id, { questions: Q.single(text) })
         const limitMs = seconds * QSTUB.secondMs
-        assert.equal(offer.expiresAt - offer.at, limitMs, 'the offer expires at the limit')
+        // `at` is when the request began and `expiresAt` when its round started, a moment later (contract
+        // §5.1 fixes no difference); allow the same timer slack the approval cases use (once 1001 for 1 s).
+        const window = offer.expiresAt - offer.at
+        assert.ok(window >= limitMs && window <= limitMs + QSTUB.limitSlackMs, 'the offer expires at the limit: ' + window)
         const left = await q.settled(offer.approvalId, { timeoutMs: limitMs + QSTUB.limitLateMs })
         assert.ok(left, 'the question left the instance after the limit')
         const settledAt = (await q.stub().events(QSTUB.event.approvalSettled)).find((f) => f.payload.approvalId === offer.approvalId).at
@@ -189,7 +192,9 @@ describe('Revision 11 rev11g on H-STUB: how a managed session\'s question travel
     for (const word of ['Which colour?', 'Red', 'Blue', 'Docs', 'Tests', 'Code', 'Branch name?', text]) assert.ok(JSON.stringify(offer.questions).includes(word), 'the offer shows ' + word)
     assert.equal(offer.questions.find((x2) => x2.id === 'parts').multiSelect, true, 'multi_select travels as multiSelect')
     assert.ok(Number.isInteger(offer.at) && offer.at > 0, 'a time')
-    assert.equal(offer.expiresAt - offer.at, LIMITS.approvalAnswerSeconds.default * QSTUB.secondMs)
+    const window = offer.expiresAt - offer.at
+    const limitMs = LIMITS.approvalAnswerSeconds.default * QSTUB.secondMs
+    assert.ok(window >= limitMs && window <= limitMs + QSTUB.limitSlackMs, 'the offer expires at the limit: ' + window)
     await q.userStop(x)
   })
 
