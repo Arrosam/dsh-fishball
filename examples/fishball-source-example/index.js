@@ -1,58 +1,24 @@
 /**
- * Example ctx.fishball source (dsh-fishball DESIGN §8).
- *
- * It registers one source, "notes", and publishes each note of its config once: a note's id is
- * its dedupe key, so restarting DSH or saving the same list again sends nothing twice. Its list
- * is short; a source with a long history should publish only items newer than what it last sent
- * (dedupe covers the recent past, not everything ever sent; see the author guide).
- * The notes come from this plugin's row config and are read when the plugin loads: the list is
- * not a live (.volatile()) setting, so a change takes effect after a restart or reload.
- *
- * The 'fishball' service is optional here: the plugin declares no static inject for it and
- * waits with ctx.inject(['fishball'], …), so without Fishball (or before it is loaded) it does
- * nothing, and it starts publishing once the service appears.
+ * Read-only connector example using the shipped public contract (1.1).
+ * The historical package name is retained; there is no source-publishing API in this release.
+ * Optional injection lets this row load while the connector row is disabled or still loading.
  */
-import Schema from '@deepseek-ai/schemastery'
+import { CONNECTOR_SERVICE } from 'fishball-connector/contract'
 
-export const name = 'fishball-source-example'
-
-
-export const Config = Schema.object({
-  notes: Schema.array(Schema.object({
-    id: Schema.string().required().description('Unique id; the dedupe key.'),
-    title: Schema.string().required().description('One line, at most 120 characters.'),
-    body: Schema.string().required().description('The note text.'),
-    occurredAt: Schema.string().description('When it happened: ISO 8601 with an offset (optional).'),
-  })).default([]).description('Notes to tell Fishball about, once each.'),
+const EXAMPLE = Object.freeze({
+  name: 'fishball-source-example',
+  unattached: 'No Fishball instance is attached.',
+  attached: 'Attached Fishball instance: %s (%s).',
 })
 
-/** What this source is called on Fishball's settings page and in its notices. */
-const SOURCE = Object.freeze({ id: 'notes', title: 'Example notes' })
+export const name = EXAMPLE.name
 
-export function apply(ctx, config) {
-  const logger = ctx.logger('fishball-source-example')
-  ctx.inject(['fishball'], (fishballCtx) => {
-    let source
-    try {
-      source = fishballCtx.fishball.registerSource({ ...SOURCE, description: 'Notes from the example plugin config.' })
-    } catch (error) {
-      logger.warn('source not registered (%s)', error?.code ?? 'error')
-      return
-    }
-    const publishAll = async () => {
-      for (const note of config.notes ?? []) {
-        try {
-          const result = await source.publish({ dedupeKey: note.id, title: note.title, body: note.body, ...(note.occurredAt ? { occurredAt: note.occurredAt } : {}) })
-          logger.info('note %s: %s', note.id, result.status)
-        } catch (error) {
-          // A stable code (e.g. FISHBALL_TOO_LARGE, FISHBALL_QUEUE_FULL); try again on the next change.
-          logger.warn('note %s refused (%s)', note.id, error?.code ?? 'error')
-        }
-      }
-    }
-    // Fishball may not be live yet when this loads (or may turn this plugin on later): publish
-    // whenever the source becomes enabled; dedupe keys make republishing this short list safe.
-    source.onEnabled(() => { void publishAll() })
-    if (source.enabled) void publishAll()
+export function apply(ctx) {
+  const logger = ctx.logger(EXAMPLE.name)
+  ctx.inject([CONNECTOR_SERVICE], (scope) => {
+    // current() is a snapshot, not a subscription or permission to access the instance transport.
+    const current = scope[CONNECTOR_SERVICE].current()
+    if (current === null) logger.info(EXAMPLE.unattached)
+    else logger.info(EXAMPLE.attached, current.name, current.id)
   })
 }

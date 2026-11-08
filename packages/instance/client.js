@@ -352,7 +352,8 @@ window.__ModuleLoader__.load({
           state === STATUS_UI.failed
             ? h(Button, { type: 'button', size: 'sm', variant: 'secondary', disabled: retrying, 'data-fishball-instance-retry': true, onClick: () => void retry() }, retrying ? t('retrying') : t('retry'))
             : null),
-        reason ? h('p', { className: CLS.hint }, reason) : null)
+        reason ? h('p', { className: CLS.hint }, reason) : null,
+        typeof status?.detail === 'string' && status.detail ? h('p', { className: CLS.hint }, status.detail) : null)
     }
 
     /** One model-sync call. @returns `{ok, result|error}`; an unreadable answer is a typed refusal. */

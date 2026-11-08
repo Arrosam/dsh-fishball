@@ -14,6 +14,7 @@ import { CONNECTOR_CONTRACT, ContractError, ERROR, ROUTES } from './src/slim/con
 import { BINDING_STATE, LAUNCH_CODE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
 import { migrateLaunchSettings } from './src/settings-migration.js'
+import { launchDetail } from './src/host/launch-detail.js'
 
 const PLUGIN = Object.freeze({
   // The row id is the plugin's name (design §0.2, D22); the service keeps its name for its callers.
@@ -97,6 +98,7 @@ export async function apply(ctx, config) {
   const logger = typeof ctx.logger === 'function' ? ctx.logger(PLUGIN.name) : undefined
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
   let code = null
+  let detail = null
   /**
    * Serializes the starts and stops that follow the `enabled` switch and the connector's arrivals
    * and departures, in the order they happened.
@@ -116,10 +118,10 @@ export async function apply(ctx, config) {
   let unsubscribeProviderSync = () => {}
   /** T16's source side: syncs the main profile's API-key providers into the child's own target. */
   let providerSync
-  const status = () => ({ enabled, state, code })
+  const status = () => ({ enabled, state, code, detail })
   /** End this row's attachment, if any; a stale detach changes nothing (contract §1.3). */
   const release = () => { connection?.detach(); connection = undefined }
-  const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
+  const set = (next, nextCode = null, nextDetail = null) => { state = next; code = nextCode; detail = nextDetail; return status() }
   // T11's admin relay. Every page operation except status and restart travels to the child over
   // the lifecycle wire's own authenticated admin channel; the child applies it with its own
   // services, so the main process never writes a child file (§9). T12's routes call
@@ -140,7 +142,7 @@ export async function apply(ctx, config) {
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },
       limits: LIFECYCLE_LIMITS,
-      onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
+      onExit(evidence) { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited, evidence ? launchDetail(evidence) : null) },
     })
     // One authenticated control transport, one envelope-v2 bridge, attached through the contract's
     // fishballConnector service (contract §1). The descriptor's `id` is the lifecycle host id this
@@ -195,7 +197,7 @@ export async function apply(ctx, config) {
       if (closed) return
       try { providerSync.attach(transport, metadata) } catch { /* the next wire replaces it */ }
     })
-  } catch { set(PLUGIN.state.failed, PLUGIN.code.failed) }
+  } catch (error) { set(PLUGIN.state.failed, PLUGIN.code.failed, launchDetail(error)) }
 
   /** The state of an instance with no child: off, without the connector (D25), or stopped. */
   const idleState = () => (!enabled ? PLUGIN.state.disabled : connector === undefined ? PLUGIN.state.connectorMissing : PLUGIN.state.stopped)
@@ -223,7 +225,10 @@ export async function apply(ctx, config) {
         // keeps INVALID_MAIN_HOME instead of the generic NATIVE_START_FAILED (D2); every other
         // failure stays generic, and nothing restarts either by itself (inst-OQ-03, inst-OQ-09).
         if (!closed && state === PLUGIN.state.starting) {
-          set(PLUGIN.state.failed, error?.code === LAUNCH_CODE.invalidMainHome ? LAUNCH_CODE.invalidMainHome : PLUGIN.code.failed)
+          set(PLUGIN.state.failed, error?.code === LAUNCH_CODE.invalidMainHome ? LAUNCH_CODE.invalidMainHome : PLUGIN.code.failed, launchDetail(error))
+        } else if (!closed && state === PLUGIN.state.failed && code === PLUGIN.code.exited) {
+          // The exit callback can win the race with start's rejection; keep its canonical code.
+          detail ??= launchDetail(error)
         }
       }
       return status()
@@ -241,6 +246,7 @@ export async function apply(ctx, config) {
   }
   // The lifecycle's own restart, shared by the service and the admin relay (§9).
   async function restart() {
+    if (!enabled) return status()
     const result = await stop()
     return result.state === PLUGIN.state.failed ? result : start()
   }
