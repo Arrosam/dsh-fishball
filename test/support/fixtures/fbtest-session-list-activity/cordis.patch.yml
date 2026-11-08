@@ -1,0 +1,4 @@
+# Opt-in observer only: no existing row is edited.
+- insert:
+    - id: fbtest-session-list-activity
+      name: fbtest-session-list-activity
