@@ -20,9 +20,10 @@ const PLUGIN = Object.freeze({
   name: 'fishball-instance', service: 'nativeFishballRuntime',
   // The contract's display name for this instance (inst-OQ-06), shown by the connector's view.
   displayName: 'Fishball instance',
-  // The pages this instance registers with the connector (contract §1.2), both framed through the
-  // main-side embed broker: the chat, and the same page's settings view (design §0.6, I6), which
-  // the page selects by its `view=settings` query (src/slim/ui/shell.js).
+  // The pages this instance registers with the connector (contract §1.2): the chat, and the same
+  // page's settings view (design §0.6, I6), selected by its `view=settings` query. Both stay
+  // relative, credential-free main-origin paths; the embed broker turns them into the native
+  // child's own-origin admission (PG-ORIGIN) and carries `view`/`lang` across it.
   ui: Object.freeze({ chat: ROUTES.document, settings: ROUTES.document + '?view=settings' }),
   // Every service this row's ctx reads as a property must be listed: Cordis's context proxy
   // throws `cannot get property "<name>" without inject` for any other (0.2.1-rc.5 and
@@ -328,7 +329,8 @@ export async function apply(ctx, config) {
     },
     // The embed broker reads the child origin and bearer from main-process memory only (§3.2).
     embedAccess: () => owner.embedAccess(),
-    // Server-private delegation preserves the runtime's admission object and generation signal.
+    // Server-private delegation preserves the runtime's admission object and generation signal;
+    // the broker redirects the browser to it and never serializes it (PG-ORIGIN).
     nativeEmbedAccess: () => owner.nativeEmbedAccess(),
     // T09's approvals and T06's attachments are served by the connector's bridge through the
     // fishballConnector binding; an operation neither supplies answers unsupported-operation (§5.2).
