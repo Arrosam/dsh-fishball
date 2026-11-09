@@ -24,11 +24,16 @@ import { loadConnector, loadInstance } from './body-soul-env.mjs'
 linkContractForSourceRun()
 
 const contract = await loadConnector('contract/index.js')
-const { CONNECTOR_CONTRACT, ENVELOPE, INBOX_KIND, OPERATIONS, OPERATION, SIDE, decodeEnvelope, encodeEnvelope, makeEnvelope } = contract
+const { CONNECTOR_CONTRACT, ENVELOPE, INBOX_KIND, OPERATIONS, OPERATION, SEMANTIC_CAPABILITY, SIDE, checkHandshake, decodeEnvelope, encodeEnvelope, makeEnvelope } = contract
 
 export { CONNECTOR_CONTRACT, ENVELOPE, INBOX_KIND, OPERATION, SIDE, contract }
 
-const HOST = Object.freeze({ id: 'host-instance-ext', instanceId: 'host-instance-1' })
+const HOST = Object.freeze({
+  id: 'host-instance-ext',
+  instanceId: 'host-instance-1',
+  capabilities: Object.freeze([...Object.keys(OPERATIONS), SEMANTIC_CAPABILITY.interactionTimerfree]),
+  legacyCapabilities: Object.freeze(Object.keys(OPERATIONS).filter((operation) => operation !== OPERATION.attentionSignal)),
+})
 const SERVICES = Object.freeze({
   instance: 'fishballInstance',
   chat: 'fishballChat',
@@ -240,9 +245,10 @@ function createLiveAgent(sessionId, { events = [], onFollowup, onAppend } = {}) 
 /**
  * The child's fake host: it answers the bridge handshake and every request with a contract-shaped
  * success payload, records what actually left the child, and pushes inbox items and events.
+ * Defaults are contemporary; explicit capabilities are exact, including deliberate legacy peers.
  */
-export function createFakeHost({ capabilities } = {}) {
-  const served = capabilities ?? Object.keys(OPERATIONS)
+export function createFakeHost({ capabilities = HOST.capabilities } = {}) {
+  const served = [...capabilities]
   const requests = []
   const handshakes = []
   const inboxAcks = []
@@ -256,6 +262,10 @@ export function createFakeHost({ capabilities } = {}) {
   let onClose
   let requestSeq = 0
   const pending = new Map()
+  // Descriptor schemas change only after both peers advertise the semantic capability.
+  let interactionTimerfree = false
+  const validationContext = () => ({ interactionTimerfree })
+  const encode = (frame) => encodeEnvelope(frame, HOST.id, validationContext())
 
   const transport = {
     send(encoded) {
@@ -263,17 +273,12 @@ export function createFakeHost({ capabilities } = {}) {
       let parsed
       try { parsed = JSON.parse(encoded) } catch { parsed = undefined }
       if (parsed !== undefined) raw.push(parsed)
-      // K1's instance.attention is not in the frozen contract yet; the fake host still records
-      // it and answers its acceptance so an implementation that sends it does not hang.
-      if (parsed?.operation === 'instance.attention' && parsed.type === ENVELOPE.type.request) {
-        requests.push({ operation: parsed.operation, payload: parsed.payload, sessionId: parsed.sessionId })
-        send?.(JSON.stringify({ ...parsed, type: ENVELOPE.type.response, payload: { accepted: true } }))
-        return
-      }
       let frame
-      try { frame = decodeEnvelope(encoded, { receivingSide: SIDE.main, expectedHostId: HOST.id }) } catch { return }
+      try { frame = decodeEnvelope(encoded, { receivingSide: SIDE.main, expectedHostId: HOST.id, ...validationContext() }) } catch { return }
       if (frame.type === ENVELOPE.type.request && frame.operation === ENVELOPE.handshake) {
         handshakes.push(frame)
+        try { checkHandshake(frame.payload, served) } catch (error) { replyError(frame, error.code); return }
+        interactionTimerfree = served.includes(SEMANTIC_CAPABILITY.interactionTimerfree) && frame.payload.capabilities.includes(SEMANTIC_CAPABILITY.interactionTimerfree)
         reply(frame, ENVELOPE.type.response, {
           capabilities: served,
           hostInstanceId: HOST.instanceId,
@@ -320,6 +325,7 @@ export function createFakeHost({ capabilities } = {}) {
       case OPERATION.questionAnswer: return { accepted: true }
       case OPERATION.questionAsk: return { questionId: 'question-1' }
       case OPERATION.questionAnswerOwn: return { accepted: true }
+      case OPERATION.attentionSignal: return { accepted: true }
       case OPERATION.promptList: return { prompts: [] }
       case OPERATION.promptAnswer: return { promptId: payload.promptId, decision: payload.decision, managed: true }
       case OPERATION.grantList: return { grants: [] }
@@ -332,12 +338,12 @@ export function createFakeHost({ capabilities } = {}) {
 
   function reply(request, type, payload) {
     const envelope = makeEnvelope(HOST.id, request.sessionId, request.requestId, type, request.operation, payload)
-    send?.(encodeEnvelope(envelope, HOST.id))
+    send?.(encode(envelope))
   }
 
   function replyError(request, code) {
     const envelope = makeEnvelope(HOST.id, request.sessionId, request.requestId, ENVELOPE.type.error, request.operation, { code })
-    send?.(encodeEnvelope(envelope, HOST.id))
+    send?.(encode(envelope))
   }
 
   /** Push one inbox item to the child; resolves with the child's answer frame. */
@@ -358,7 +364,7 @@ export function createFakeHost({ capabilities } = {}) {
     // The contract's inbox.push is exact: the extra marker fields are part of the item text,
     // not the frame, so they are removed before encoding.
     for (const extra of ['expiresAt', 'title', 'watchId']) delete payload[extra]
-    const encoded = encodeEnvelope(makeEnvelope(HOST.id, null, requestId, ENVELOPE.type.request, OPERATION.inboxPush, payload), HOST.id)
+    const encoded = encode(makeEnvelope(HOST.id, null, requestId, ENVELOPE.type.request, OPERATION.inboxPush, payload))
     return new Promise((resolve) => {
       pending.set(requestId, (frame) => { inboxAcks.push({ item: payload, frame }); resolve(frame) })
       send?.(encoded)
@@ -368,7 +374,7 @@ export function createFakeHost({ capabilities } = {}) {
   /** Push a main-to-child event (approval.request, approval.settled, ...). */
   function event(operation, payload, sessionId = null) {
     const envelope = makeEnvelope(HOST.id, sessionId, 'host-event-' + (++requestSeq), ENVELOPE.type.event, operation, payload)
-    send?.(encodeEnvelope(envelope, HOST.id))
+    send?.(encode(envelope))
   }
 
   /** An unknown operation is recorded, not answered; the child's own validator decides its fate. */
@@ -380,7 +386,12 @@ export function createFakeHost({ capabilities } = {}) {
     return requestId
   }
 
-  return { transport, requests, handshakes, inboxAcks, frames, raw, fail, responses, sessions, inbox, event, rawAttention, served }
+  return { transport, requests, handshakes, inboxAcks, frames, raw, fail, responses, sessions, inbox, event, rawAttention, served, get interactionTimerfree() { return interactionTimerfree } }
+}
+
+/** An old connector's welcome for explicit upgrade/refusal cases; shares the same wire fixture. */
+export function createLegacyFakeHost({ capabilities = HOST.legacyCapabilities } = {}) {
+  return createFakeHost({ capabilities })
 }
 
 /**

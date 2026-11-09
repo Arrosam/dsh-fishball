@@ -1,6 +1,6 @@
 /**
  * Revision 11 rev11b on the H-STUB harness: direct calls in a managed session (no ask_fishball first), their
- * wording, retries, the instance's question on a direct call, escalate and timeout, and your clicks' audit
+ * wording, retries, the instance's question on a direct call, explicit escalation and timerfree waiting, and your clicks' audit
  * (DESIGN §7a.3 "ask on a direct call", §7a.4, §7a.5, §9 decisions; contract §4.2, §5). The stub is the instance and
  * answers with `approval.answer` while the session's turn runs; FBTEST_APPROVER_AFTER=1 puts the scripted stock
  * prompt after the broker, and the asking fixture tool fbtest_ask returns 'outcome=<DSH outcome>'. One host; cases
@@ -13,18 +13,18 @@
  * | DIR-03  | ST (rejected –retry→) | the retried call reaches the instance again as a new request; allowed this time, with the hint |
  * | DIR-04  | ST (the instance asks on a direct call → agent replies with ask_fishball → allow) | an error result naming the request id and the question and telling the agent to use ask_fishball; the reply continues the same request (offered again with the same id; its notice has the thread); allowed; the call made again runs on the pass (its own output, no stock prompt, no further offer; approval.ran via pass) |
  * | DIR-05  | EP (escalate) | the stock prompt shows in the session and answers the call; no further offer; your Allow once → decisions row allow-once, by user, target the request id; audit escalate |
- * | DIR-06  | BVA (approvalAnswerSeconds 1, no answer) | the stock prompt after about 1 s (not before); your Reject → decisions row reject; audit answer timeout |
+ * | DIR-06  | BVA (approvalAnswerSeconds 1, no answer) | no stock prompt/result/timeout audit past the stored one-second minimum; explicit escalation preserves user Reject and decisions/audit |
  */
 import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, it } from 'node:test'
 import { RAN_VIA } from 'fishball-connector/contract'
 import {
-  ALLOWED_TEXT, ASK_CODE, ASK_OUTPUT, AUDIT_ANSWER, AUDIT_KIND, DECISION_ACTION, DECISIONS_TABLE, DSH_REJECT_WORDS, LIMITS, OUTCOME, REJECTED_TEXT, REQUEST_PLACEHOLDER,
+  ALLOWED_TEXT, ASK_CODE, ASK_OUTPUT, AUDIT_ANSWER, AUDIT_KIND, DECISION_ACTION, DECISIONS_TABLE, DSH_REJECT_WORDS, OUTCOME, REJECTED_TEXT, REQUEST_PLACEHOLDER,
 } from './support/constants.mjs'
-import { HOOK, T, askStep, callStep, jsonOf, resultById, storedRows, turn } from './support/expect.mjs'
-import { managedSession, stopStub } from './support/instance-stub.mjs'
+import { HOOK, T, askStep, callStep, jsonOf, resultById, resultOfCall, storedRows, turn } from './support/expect.mjs'
+import { managedSession, seedStoredInteractionConfig, stopStub } from './support/instance-stub.mjs'
 import {
-  APPROVALS, answerWhen, auditedFor, bootApprovals, clearSession, itemFor, itemsFor, mentions, offersWhere, ranEvents, setLimit, stockFor, tok,
+  APPROVALS, answerOffer, answerWhen, auditFor, auditedFor, bootApprovals, clearSession, itemFor, itemsFor, mentions, offersWhere, outcomeOf, ranEvents, requestFor, stockFor, tok,
 } from './support/instance-stub-approvals.mjs'
 import { sleep, until } from './support/util.mjs'
 
@@ -150,25 +150,25 @@ describe('Revision 11 rev11b: direct calls (H-STUB)', () => {
     assert.equal((await auditedFor(booted.home, requestId))[0]?.answer, AUDIT_ANSWER.escalate)
   })
 
-  it('DIR-06 approvalAnswerSeconds 1 with no answer: the stock prompt after about 1 s; your Reject is audited', T, async () => {
-    await setLimit(host, { approvalAnswerSeconds: 1 })
-    try {
-      const text = tok('06')
-      const id = cid('06')
-      const t0 = Date.now()
-      const r = await run([callStep({ text }, id)])
-      assert.equal(resultById(r, id)?.text?.startsWith(ASK_OUTPUT(OUTCOME.reject)), true, resultById(r, id)?.text)
-      const [seen] = await stockFor(host, text)
-      assert.ok(seen, 'the stock prompt showed')
-      assert.ok(seen.at - t0 >= 1000, 'not before the answer time: ' + (seen.at - t0) + ' ms')
-      assert.ok(seen.at - t0 < 10000)
-      const [offer] = await offersOf(text)
-      assert.ok(offer, 'the request was offered first')
-      const requestId = offer.payload.approvalId
-      assert.ok(await until(() => decisionsFor(requestId).length > 0, APPROVALS.ms.settle, 100), 'a decisions row')
-      assert.equal(decisionsFor(requestId)[0].action, DECISION_ACTION.reject)
-      assert.equal(decisionsFor(requestId)[0].by, 'user')
-      assert.equal((await auditedFor(booted.home, requestId))[0]?.answer, AUDIT_ANSWER.timeout)
-    } finally { await setLimit(host, { approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }) }
+  it('DIR-06 stored one-second minimum is inert; only explicit escalation reaches the stock prompt', T, async () => {
+    await seedStoredInteractionConfig(booted, { approvalAnswerSeconds: 1 }, { resume: [x] })
+    ;({ host, stub } = booted)
+    const text = tok('06')
+    const req = await requestFor(booted, x, text)
+    await sleep(1000 + APPROVALS.ms.quiet)
+    assert.equal(Object.hasOwn(req.descriptor, 'expiresAt'), false)
+    assert.deepEqual(await stockFor(host, text), [], 'silence does not show the stock prompt')
+    assert.equal(auditFor(booted.home, req.descriptor.approvalId).some((row) => row.answer === 'timeout'), false, 'no timeout audit')
+    assert.equal((await host.call('asks', {})).find((call) => call.text === text).outcome, null)
+    assert.deepEqual((await answerOffer(stub, x, req.descriptor, APPROVALS.answer.escalate)).payload, { accepted: true })
+    assert.equal((await outcomeOf(host, text)).outcome, OUTCOME.reject)
+    const result = await resultOfCall(host, x, req.descriptor.callId)
+    assert.equal(result?.text?.startsWith(ASK_OUTPUT(OUTCOME.reject)), true, result?.text)
+    assert.equal((await stockFor(host, text)).length, 1)
+    const requestId = req.descriptor.approvalId
+    assert.ok(await until(() => decisionsFor(requestId).length > 0, APPROVALS.ms.settle, 100))
+    assert.equal(decisionsFor(requestId)[0].action, DECISION_ACTION.reject)
+    assert.equal(decisionsFor(requestId)[0].by, 'user')
+    assert.equal((await auditedFor(booted.home, requestId))[0]?.answer, AUDIT_ANSWER.escalate)
   })
 })

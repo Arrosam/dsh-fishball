@@ -3,7 +3,7 @@
  * answering clears both (DESIGN §7a.1 pass-through, §7a.4, §7a.5, §7a.6 "Both places", "Leaving", "Cap", §9
  * "Session cards", "Fishball's other decisions"; S33; requirements items 11, 15, 16 and the default "Card cap";
  * contract §4.2 `approval.answer` escalate, §5 `approval.settled`, §9 the queue bound). "Sent to you" is the
- * instance's escalate, the answer timeout, or a notice the queue cannot take. The scripted stock prompt is HELD
+ * instance's explicit escalate, or a notice the queue cannot take. The scripted stock prompt is HELD
  * (it "shows" until someone clicks or the plugin closes it). A card is answered through the route behind the
  * session's buttons (`/api/fishball/requests/answer`). One host; cases run in order; every case ends with a free
  * session.
@@ -15,7 +15,7 @@
  * | DCD-03  | ST (Reject on the card, with a note) | §7a.4 "Your Reject note" | 200; the prompt closes; the card leaves; the agent's result carries the note, not allowed-once; decisions row reject by user |
  * | DCD-04  | ST (your click in the session: Allow once) | §7a.1 race, §7a.6 | the card leaves; the call runs; the card's route answers 409 expired afterwards; decisions row allow-once by user; settled by user |
  * | DCD-05  | ST (your click in the session: Reject) | as DCD-04 | the card leaves; the call is rejected; decisions row reject by user |
- * | DCD-06  | BVA (approvalAnswerSeconds 1, no answer) | §7a.5 Slow | card and stock prompt appear about 1 s after the request, not before; the card's Reject closes both; audit timeout |
+ * | DCD-06  | BVA (approvalAnswerSeconds 1, no answer) | §7a.5 Slow | neither card nor prompt appears past stored one-second minimum; explicit escalation creates both; Reject closes both and audit is escalate |
  * | DCD-07  | ST (turn stopped while both show) | §7a.6 Leaving | card leaves, prompt closes; a later click on the card is 409 expired |
  * | DCD-08  | BVA (maxPendingApprovals 2: an ask_fishball card + a direct card, then a third direct call) | §7a.6 Cap | the third shows the stock prompt only: no approval.request, no card; pile unchanged; your click answers it |
  * | DCD-09  | ST (instance detached while both show) | §7a.5 "keeps the prompt" | the stock prompt keeps showing and your click answers the call; no card remains |
@@ -30,7 +30,7 @@ import { after, afterEach, before, describe, it } from 'node:test'
 import { ENVELOPE, INBOX_KIND } from 'fishball-connector/contract'
 import { ASK_FISHBALL, ASK_TOOL, CARD_KEYS, CARD_KIND, CLICK, DECISION, LIMITS, OUTCOME, PILE_CODE, APPROVER_HOLDS } from './support/constants.mjs'
 import { HOOK, T, answerCard, cardArguments, cardOf, messageFishball, pileNow, untilCard, untilNoCard } from './support/expect.mjs'
-import { STUB, managedSession, stopStub } from './support/instance-stub.mjs'
+import { STUB, managedSession, seedStoredInteractionConfig, stopStub } from './support/instance-stub.mjs'
 import {
   GRANT_C, answer, auditOf, click, decisions, direct, grantStub, promptOf, requestsFor, resultOf, settledFor, sleep, startCall,
   stopTurn, tokens, until,
@@ -150,27 +150,30 @@ describe('Revision 11 rev11e on H-STUB: a direct call sent to you shows a card a
     })
   }
 
-  it('DCD-06 approvalAnswerSeconds 1, no answer: card and stock prompt after about 1 s; one click clears both; audit timeout', T, async () => {
-    await setLimit({ approvalAnswerSeconds: 1 })
-    try {
-      const text = tok('06')
-      const callId = cid('06')
-      const seen = await holding(async () => {
-        const desc = await direct(ctx, x, ASK_TOOL, { text }, callId)
-        const p = await promptShows(text)
-        assert.ok(p, 'the stock prompt shows after the answer time')
-        assert.ok(p.at - desc.at >= GRANT_C.answerSecondsMs, 'not before the answer time: ' + (p.at - desc.at) + ' ms')
-        return desc
-      })
-      const card = await untilCard(ctx.host, seen.approvalId)
-      assert.ok(card, 'a card with the prompt')
-      assert.equal(card.kind, CARD_KIND.direct)
-      assert.equal((await answerCard(ctx.host, seen.approvalId, CLICK.reject)).status, 200)
-      assert.equal((await promptOf(ctx, text)).closed, true)
-      assert.ok(await untilNoCard(ctx.host, seen.approvalId))
-      assert.ok((await resultOf(ctx, x, callId)).text.startsWith('outcome=' + OUTCOME.reject))
-      assert.equal(auditOf(ctx.home, seen.approvalId)[0]?.answer, GRANT_C.audit.timeout)
-    } finally { await setLimit({ approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }) }
+  it('DCD-06 stored one-second minimum creates neither card nor prompt; explicit escalation still clears both', T, async () => {
+    await seedStoredInteractionConfig(ctx, { approvalAnswerSeconds: 1 }, { resume: [x, y, z] })
+    const text = tok('06')
+    const callId = cid('06')
+    const seen = await holding(async () => {
+      const desc = await direct(ctx, x, ASK_TOOL, { text }, callId)
+      await sleep(GRANT_C.answerSecondsMs + GRANT_C.quietMs)
+      assert.equal(Object.hasOwn(desc, 'expiresAt'), false)
+      assert.equal(await cardOf(ctx.host, desc.approvalId), undefined, 'no timer-created card')
+      assert.equal(await promptOf(ctx, text), undefined, 'no timer-created stock prompt')
+      assert.equal(await ctx.host.call('agentStatus', { sessionId: x }), 'running')
+      assert.equal(auditOf(ctx.home, desc.approvalId).some((row) => row.answer === GRANT_C.audit.timeout), false, 'no timeout audit')
+      assert.equal((await answer(ctx, x, desc, { decision: DECISION.escalate })).type, ENVELOPE.type.response)
+      assert.ok(await promptShows(text), 'explicit escalation shows the stock prompt')
+      return desc
+    })
+    const card = await untilCard(ctx.host, seen.approvalId)
+    assert.ok(card, 'a card with the explicitly requested prompt')
+    assert.equal(card.kind, CARD_KIND.direct)
+    assert.equal((await answerCard(ctx.host, seen.approvalId, CLICK.reject)).status, 200)
+    assert.equal((await promptOf(ctx, text)).closed, true)
+    assert.ok(await untilNoCard(ctx.host, seen.approvalId))
+    assert.ok((await resultOf(ctx, x, callId)).text.startsWith('outcome=' + OUTCOME.reject))
+    assert.equal(auditOf(ctx.home, seen.approvalId)[0]?.answer, GRANT_C.audit.escalate)
   })
 
   it('DCD-07 the turn is stopped while both show: the card leaves, the prompt closes, a later click is expired', T, async () => {

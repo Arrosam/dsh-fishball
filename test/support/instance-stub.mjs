@@ -12,14 +12,22 @@
 import fs from 'node:fs'
 import { tempPath } from './temp-path.mjs'
 import path from 'node:path'
-import { ENVELOPE, INBOX_KIND, OPERATION } from 'fishball-connector/contract'
-import { CONNECTOR, PRESET } from './constants.mjs'
-import { callScript, jsonOf, turn } from './expect.mjs'
+import { createRequire } from 'node:module'
+import { CONNECTOR_CONTRACT, ENVELOPE, INBOX_KIND, OPERATION } from 'fishball-connector/contract'
+import { CONNECTOR, LEGACY_INTERACTION, PRESET, ROW_ID, RUNTIME } from './constants.mjs'
+import { callScript, jsonOf, patchFile, turn } from './expect.mjs'
 import { bootHost } from './host.mjs'
 import { STUB, STUB_HOMES } from './instance-stub-data.mjs'
 import { sleep, until } from './util.mjs'
 
 export { STUB } from './instance-stub-data.mjs'
+
+const YAML = createRequire(path.join(RUNTIME, 'noop.js'))('yaml')
+const LEGACY_ATTACHMENT = Object.freeze({
+  capabilities: STUB.legacy.capabilities,
+  fields: Object.freeze({ contract: Object.freeze({ ...CONNECTOR_CONTRACT, minor: STUB.legacy.minor }) }),
+})
+const bootOptions = new WeakMap()
 
 let homeCounter = 0
 /** A fresh home under the OS temp folder (removed by removeStubHomes or the OS). */
@@ -53,8 +61,9 @@ export function stubEnv(env = {}, link = []) {
   }
 }
 
-/** The client of one stub inside a booted host. */
-export function stubClient(host) {
+/** The client of one stub inside a booted host; variants share IPC and observation helpers. */
+function createStubClient(host, defaults = {}) {
+  const attachmentArgs = (base, args = {}) => ({ ...base, ...args, fields: { ...base.fields, ...args.fields } })
   let ipcId = 0
   const call = (op, args = {}) => new Promise((resolve, reject) => {
     const id = ++ipcId
@@ -71,12 +80,13 @@ export function stubClient(host) {
   })
   const client = {
     call,
-    attach: (args) => call('attach', args),
+    attach: (args) => call('attach', attachmentArgs(defaults, args)),
+    attachLegacy: (args) => call('attach', attachmentArgs(LEGACY_ATTACHMENT, args)),
     detach: (index) => call('detach', { index }),
     fireClose: (index) => call('fireClose', { index }),
     send: (frame, index) => call('send', { frame, index }),
     request: (input) => call('request', input),
-    handshake: (args) => call('handshake', args),
+    handshake: (args) => call('handshake', { ...(defaults.capabilities ? { capabilities: defaults.capabilities } : {}), ...args }),
     received: (index) => call('received', { index }),
     transportCalls: (index) => call('transportCalls', { index }),
     ackPolicy: (n = null) => call('ackPolicy', { n }),
@@ -106,29 +116,78 @@ export function stubClient(host) {
   return client
 }
 
+/** Contract-current defaults for interaction cases. */
+export const stubClient = (host) => createStubClient(host)
+/** Contract 1.1 and no semantic marker by default; callers can still override either independently. */
+export const legacyStubClient = (host) => createStubClient(host, LEGACY_ATTACHMENT)
+
 /**
  * Boot an H-STUB host (H-BOOT + H-CONN + H-STUB) and wait until the connector row is live.
  * attach: true (default) attaches the stub with the default descriptor and handshake.
  * Returns {host, home, stub}; pass the whole object to stopStub in after().
  */
-export async function bootStub(label, { env = {}, link = [], attach = true, home = stubHome(label) } = {}) {
+async function bootStubWithClient(label, { env = {}, link = [], attach = true, home = stubHome(label) } = {}, makeClient = stubClient) {
   home = tempPath(home, { root: STUB_HOMES.root })
   const host = await bootHost(home, { env: stubEnv(env, link) })
   const state = await host.waitStatus('live')
   if (state?.status !== 'live') throw new Error('connector did not become live: ' + JSON.stringify(state) + '\n' + host.output.slice(-2000))
-  const stub = stubClient(host)
+  const stub = makeClient(host)
   await until(async () => (await stub.service()).present, 10000, STUB.pollMs)
   if (attach) {
     const a = await stub.attach()
     if (!a.ok || a.handshake?.type !== ENVELOPE.type.response) throw new Error('stub attach failed: ' + JSON.stringify(a))
   }
-  return { host, home, stub }
+  const booted = { host, home, stub }
+  // Some group helpers copy {host, home, stub} onto their own context object, so key by the host.
+  bootOptions.set(host, { env: { ...env }, link: [...link], attach, makeClient })
+  return booted
 }
 
-/** Restart DSH on the same home (H-STUB again); returns the new host and stub client. */
-export async function restartStub(old, { env = {}, link = [], attach = true } = {}) {
+export const bootStub = (label, options) => bootStubWithClient(label, options)
+/** Explicit legacy peer for tests whose purpose is control-only/user-fallback behavior. */
+export const bootLegacyStub = (label, options) => bootStubWithClient(label, options, legacyStubClient)
+
+/** Restart DSH on the same home, preserving the fixture environment and peer variant. */
+export async function restartStub(old, options = {}) {
   await old.host.stop()
-  return bootStub('restart', { env, link, attach, home: old.home })
+  const { makeClient = stubClient, ...previous } = bootOptions.get(old.host) ?? {}
+  return bootStubWithClient('restart', { ...previous, ...options, home: old.home }, makeClient)
+}
+
+/**
+ * Seed only D2's retired fields into the disposable profile patch while DSH is stopped, then
+ * restart with the same environment. The settings editor intentionally cannot write these fields.
+ * Mutate the booted handle so existing cleanup hooks and context-bound tools follow the new host.
+ * Only explicitly listed session ids are resumed; no session discovery or in-flight turn replay occurs.
+ */
+export async function seedStoredInteractionConfig(booted, patch, { resume = [] } = {}) {
+  const fields = Object.values(LEGACY_INTERACTION.fields)
+  if (!patch || Array.isArray(patch) || Object.getPrototypeOf(patch) !== Object.prototype || Object.keys(patch).some((key) => !fields.includes(key))) throw new Error('only retired interaction settings may be seeded')
+  if (!Array.isArray(resume) || resume.some((sessionId) => typeof sessionId !== 'string' || sessionId.length === 0)) throw new Error('resume must list non-empty session ids')
+  const home = tempPath(booted.home, { root: STUB_HOMES.root })
+  await booted.host.stop()
+  const file = tempPath(patchFile(home), { root: home })
+  const doc = fs.existsSync(file) ? YAML.parse(fs.readFileSync(file, 'utf8')) ?? [] : []
+  if (!Array.isArray(doc)) throw new Error('expected a profile patch list')
+  const findRow = (rows) => {
+    for (const row of rows) {
+      if (row?.id === ROW_ID) return row
+      const nested = Array.isArray(row?.insert) ? findRow(row.insert) : undefined
+      if (nested) return nested
+    }
+  }
+  let row = findRow(doc)
+  if (!row) { row = { id: ROW_ID }; doc.push(row) }
+  row.config = { ...row.config, ...patch }
+  fs.writeFileSync(file, YAML.stringify(doc))
+  const { makeClient = stubClient, ...previous } = bootOptions.get(booted.host) ?? {}
+  const next = await bootStubWithClient('stored-interaction', { ...previous, home }, makeClient)
+  Object.assign(booted, next)
+  for (const sessionId of resume) {
+    const result = await booted.host.call('resume', { sessionId })
+    if (result?.live !== true) throw new Error('session did not resume: ' + sessionId + ' ' + JSON.stringify(result))
+  }
+  return booted
 }
 
 // ---- H-SESS / H-MANAGED ----

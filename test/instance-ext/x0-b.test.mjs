@@ -100,7 +100,7 @@ describe('X0-B X18 disable is a hand-over (U7, §2.4)', () => {
     assert.equal(send.ok, true, 'the send gate is off after hand-over')
     assert.equal(h.host.requests.some((request) => request.operation === 'session.stop'), false, 'nothing is stopped')
     assert.equal(h.manager().followups.length - noticesBefore, 1, 'one hand-over notice')
-    h.host.event('approval.request', { approvalId: 'apr-h', offerId: 'off-h', kind: 'approval', prompt: 'Allow?', choices: ['allow'], expiresAt: Date.now() + 60000, title: 'T', at: Date.now(), toolName: 'bash', callId: 'c', reason: 'r', quotes: [] }, 'session-1')
+    h.host.event('approval.request', { approvalId: 'apr-h', offerId: 'off-h', kind: 'approval', prompt: 'Allow?', choices: ['allow'], title: 'T', at: Date.now(), toolName: 'bash', callId: 'c', reason: 'r', quotes: [] }, 'session-1')
     await new Promise((resolve) => setTimeout(resolve, 20))
     assert.equal(cards.length, 0, 'the claim went with the hand-over')
   })
