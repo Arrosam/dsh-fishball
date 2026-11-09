@@ -1283,7 +1283,7 @@ The Host state and routes below need no spike.
 - **Reading:** a failed check returns to the dialog's first screen with the spec still in the field and the reason shown, as when you type it; the result screen has no "Open its page" when opened from the settings page, as from DSH's Add menu (DSH cannot open the Fishball tab from outside, S28).
 - While Fishball is not ready the install routes answer 409 `unavailable`, as today; the dialog says so.
 
-**The list** (`src/recommended.js`, data in code, read into the snapshot). Each entry: category, package name, the spec the dialog installs, and its source link. Checked on npm with `npm view` (metadata only) on 2026-11-02. Every entry was installed through Fishball's own install route in a throwaway sandbox and ran for Fishball alone (your answer Q-rec-recheck; `spikes/rev12-recheck.mjs`, §16 "Revision 12 sandbox re-check"). Two of P10's entries no longer do and are left out: OpenViking and `dsh-slack`; a third, `@zaofan/dsh-qqbot`, is left out by your answer Q-rec-qqbot (below).
+**The list** (`src/recommended.js`, data in code, read into the snapshot). Each entry: category, package name, the spec the dialog installs, and its source link, plus an optional `noteKey` naming a message key for a note under the entry; only `meow-memory` has one, `settings.recommendedNote.meowMemory` (board design §7, task B6; data only: the dictionaries, the note's drawing and which memory entries are offered belong to the recommend-plugins (RP) presentation, and the list, catalog precedence and states are unchanged). Checked on npm with `npm view` (metadata only) on 2026-11-02. Every entry was installed through Fishball's own install route in a throwaway sandbox and ran for Fishball alone (your answer Q-rec-recheck; `spikes/rev12-recheck.mjs`, §16 "Revision 12 sandbox re-check"). Two of P10's entries no longer do and are left out: OpenViking and `dsh-slack`; a third, `@zaofan/dsh-qqbot`, is left out by your answer Q-rec-qqbot (below).
 
 | Category | Package (spec) | Version checked on 2026-11-02 (P10's) | Note |
 |---|---|---|---|
@@ -1315,7 +1315,7 @@ The Host state and routes below need no spike.
 - It is a card in the page, never a message in the session log, so it adds nothing to Fishball's context.
 
 **Host API.** Same authentication, same-origin fence and boundary checks as §10.
-- Snapshot: `recommended: {highlighted: [category], categories: [{category, plugins: [{packageName, spec, source, plugin, state, blocked}]}]}`, where `state` is `install`, `installed`, `dsh-on` or `dsh-off` (the table above), `plugin` is the catalog key or null, and `blocked` the catalog's reason or null; `welcome: {show}`.
+- Snapshot: `recommended: {highlighted: [category], categories: [{category, plugins: [{packageName, spec, source, plugin, state, blocked, noteKey?}]}]}`, where `noteKey` is present only on an entry with a note, and `state` is `install`, `installed`, `dsh-on` or `dsh-off` (the table above), `plugin` is the catalog key or null, and `blocked` the catalog's reason or null; `welcome: {show}`.
 - `POST /api/fishball/welcome/seen` (`{}`): stores the notice and answers 200 with the state; a repeat answers the same and changes nothing; 400 `bad-body` for a body that is not a JSON object, as `read` (extra fields are ignored). It answers while Fishball is not live too, since the store does not need the session.
 - No new install route: the list uses `install/inspect`, `install` and `install/cancel` (§10d) and the plugin switch (§10).
 

@@ -54,15 +54,25 @@ export const RECOMMENDED_STATE = Object.freeze({ install: 'install', installed: 
 
 const NPM_PAGE = 'https://www.npmjs.com/package/'
 
-/** One npm entry: its spec is its package name, and its source is its npm page. */
-const npm = (category, packageName) => Object.freeze({ category, packageName, spec: packageName, source: NPM_PAGE + packageName })
+/** The optional note metadata of an entry, as an object to spread: empty when there is no note. */
+const noteOf = (item) => (item.noteKey === undefined ? {} : { noteKey: item.noteKey })
+
+/**
+ * One npm entry: its spec is its package name, and its source is its npm page.
+ * `options.noteKey` (optional) names a message-dictionary key for a note shown under the entry
+ * (board design §7, task B6). The key is data only: the dictionaries and its drawing belong to the
+ * presentation owner (RP), so an entry without it keeps exactly its earlier shape.
+ */
+const npm = (category, packageName, options = {}) => Object.freeze({
+  category, packageName, spec: packageName, source: NPM_PAGE + packageName, ...noteOf(options),
+})
 
 /** The list, in display order within each category. */
 export const RECOMMENDED_PLUGINS = Object.freeze([
   npm(RECOMMENDED_CATEGORY.context, 'dsh-idle-compact'),
   npm(RECOMMENDED_CATEGORY.context, 'dsh-plugin-save-token'),
   npm(RECOMMENDED_CATEGORY.context, 'smart-compaction'),
-  npm(RECOMMENDED_CATEGORY.memory, 'meow-memory'),
+  npm(RECOMMENDED_CATEGORY.memory, 'meow-memory', { noteKey: 'settings.recommendedNote.meowMemory' }),
   npm(RECOMMENDED_CATEGORY.memory, '@a9i5k4/dsh-auto-memory'),
   npm(RECOMMENDED_CATEGORY.memory, '@zilliz/memsearch-dsh'),
   npm(RECOMMENDED_CATEGORY.channel, '@michengai/dsh-im-connect'),
@@ -93,8 +103,8 @@ function stateOf(entry) {
  * The list as the settings page shows it (snapshot field `recommended`).
  * @param catalog - the catalog snapshot (`{plugins}`), or null before the catalog exists.
  * @returns null without a catalog, else {highlighted, categories: [{category, plugins: [{packageName,
- *   spec, source, plugin, state, blocked}]}]}; `plugin` is the catalog key or null, `blocked` the
- *   catalog's reason or null.
+ *   spec, source, plugin, state, blocked, noteKey?}]}]}; `plugin` is the catalog key or null, `blocked` the
+ *   catalog's reason or null, and `noteKey` is present only on an entry that has a note.
  */
 export function recommendedView(catalog) {
   if (catalog === null) return null
@@ -104,7 +114,7 @@ export function recommendedView(catalog) {
       category,
       plugins: RECOMMENDED_PLUGINS.filter((item) => item.category === category).map((item) => {
         const entry = catalogEntryOf(catalog.plugins, item.packageName)
-        return { packageName: item.packageName, spec: item.spec, source: item.source, plugin: entry?.plugin ?? null, state: stateOf(entry), blocked: entry?.blocked ?? null }
+        return { packageName: item.packageName, spec: item.spec, source: item.source, plugin: entry?.plugin ?? null, state: stateOf(entry), blocked: entry?.blocked ?? null, ...noteOf(item) }
       }),
     })),
   }
