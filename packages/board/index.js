@@ -1,6 +1,7 @@
 import { LOG, NAMESPACE } from './src/constants.js'
 import { createBoardStore } from './src/store.js'
 import { createBoardTools } from './src/board.js'
+import { createBoardSearch } from './src/search.js'
 
 export { Config } from './src/config.js'
 export const name = NAMESPACE
@@ -27,6 +28,7 @@ export function apply(ctx) {
   const dispose = instance.manager.registerSetup(NAMESPACE, (agentCtx) => {
     // Tools registered in the X2 fiber are removed by its disposal. B5 adds guide/context here.
     for (const tool of createBoardTools({ openStore, sessionId, now })) agentCtx.tools.register(tool)
+    agentCtx.tools.register(createBoardSearch({ openStore, sessionId }))
   })
   // Disabling the row removes every manager-scope contribution with the X2 registration.
   return dispose
