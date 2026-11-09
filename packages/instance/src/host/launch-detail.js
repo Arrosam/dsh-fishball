@@ -12,16 +12,20 @@ const DETAIL = Object.freeze({
   nameSeparator: '_',
   // Complete components only; bare KEY / CACHE_KEY are not credential names.
   secretEnvKey: /(?:^|_)(?:passwords?|passwd|tokens?|secrets?|credentials?|authorization|(?:api|access|private|secret)_?keys?)(?:_|$)/,
-  regexCharacters: /[.*+?^${}()|[\]\\]/g,
-  regexEscape: '\\$&',
+  occurrenceStep: 1,
   newline: /[\r\n]/,
   // Consume escaped characters as pairs so an escaped quote cannot end a credential value.
   // An unterminated quoted value extends to the end of this already isolated first line.
   // Look ahead so an ordinary outer assignment cannot swallow a nested credential assignment.
-  assignment: /(?=(["']?\b([\w.-]+)["']?\s*[:=]\s*(?:"(?:\\[^\r\n]|[^"\\\r\n])*(?:"|\\?$)|'(?:\\[^\r\n]|[^'\\\r\n])*(?:'|\\?$)|[^\s,;]+)))/g,
+  assignment: /(?=((?:"(?<doubleName>(?:\\[^\r\n]|[^"\\\r\n])*)"|'(?<singleName>(?:\\[^\r\n]|[^'\\\r\n])*)'|\b(?<bareName>[\w.-]+))\s*[:=]\s*(?:"(?:\\[^\r\n]|[^"\\\r\n])*(?:"|\\?$)|'(?:\\[^\r\n]|[^'\\\r\n])*(?:'|\\?$)|[^\s,;]+)))/g,
   authorization: /\b(?:basic|bearer)\s+[^\s"',;]+/gi,
   // Userinfo ends at the last @ in the authority, not an @ embedded in the password.
-  urlCredentials: /\b[a-z][a-z0-9+.-]*:\/\/[^\s/?#]+@/gi,
+  urlStart: /\b[a-z][a-z0-9+.-]*:\/\//gi,
+  urlCredentials: /^[a-z][a-z0-9+.-]*:\/\/[^\s/?#]+@/i,
+  jsonContainerStart: /[\[{]/g,
+  jsonTokens: /"(?:\\[^\r\n]|[^"\\\r\n])*"|[\[\]{}]/g,
+  jsonOpening: new Set(['[', '{']),
+  jsonQuote: '"',
   home: /(?:\/(?:Users|home)\/[^\s"'<>]+|\/root(?:\/[^\s"'<>]*)?|[A-Z]:[\\/]Users[\\/][^\s"'<>]+)/gi,
   // Stop at a credential label: schemes and quoted/multi-word values cannot escape masking.
   secret: /\b(?:bearer|api[ _-]?key|token|secret|password|credential|authorization)s?\b.*$/gi,
@@ -36,25 +40,68 @@ function isSensitiveParameterName(name) {
   return DETAIL.secretEnvKey.test(normalized)
 }
 
+/** Bound URLs by string tokens only inside validated JSON containers, never by raw quotes. */
+function urlCredentialSpans(text) {
+  const stringSpans = []
+  let containerEnd = 0
+  for (const opening of text.matchAll(DETAIL.jsonContainerStart)) {
+    if (opening.index < containerEnd) continue
+    let depth = 0
+    const strings = []
+    for (const token of text.slice(opening.index).matchAll(DETAIL.jsonTokens)) {
+      const start = opening.index + token.index
+      const end = start + token[0].length
+      if (token[0].startsWith(DETAIL.jsonQuote)) strings.push({ start, end })
+      else if (DETAIL.jsonOpening.has(token[0])) depth++
+      else depth--
+      if (depth !== 0) continue
+      try {
+        // Only validated containers establish string bounds; punctuation alone is not evidence.
+        // This is lexical containment only, not recursive discovery inside serialized strings.
+        JSON.parse(text.slice(opening.index, end))
+        stringSpans.push(...strings)
+        containerEnd = end
+      } catch { /* Not a JSON container: retain the ordinary URL authority grammar. */ }
+      break
+    }
+  }
+  return [...text.matchAll(DETAIL.urlStart)].flatMap(candidate => {
+    const start = candidate.index
+    // A JSON-looking substring inside plain userinfo must not split that URL's authority.
+    // Only the string containing the scheme can bound its last-@ search.
+    const enclosing = stringSpans.find(span => span.start < start && start < span.end)
+    const match = text.slice(start, enclosing?.end ?? text.length).match(DETAIL.urlCredentials)
+    return match ? [{ start, end: start + match[0].length }] : []
+  })
+}
+
 /** Only this bounded, sanitized first line may leave the main process; never publish a stack. */
 export function safeLaunchDetail(value, env = process.env) {
   if (typeof value !== 'string' || !value.trim()) return null
   let text = value.split(DETAIL.newline)[0]
   // Environment membership and value length do not imply secrecy; credential names do.
-  const environment = Object.entries(env)
+  const environment = new Set(Object.entries(env)
     .filter(([key, value]) => typeof value === 'string' && value && isSensitiveParameterName(key))
-    .sort(([, a], [, b]) => b.length - a.length)
-    .map(([, value]) => value.replace(DETAIL.regexCharacters, DETAIL.regexEscape))
+    .map(([, value]) => value))
+  const environmentSpans = []
+  for (const credential of environment) {
+    // Search each literal independently, including occurrences beginning inside a prior one.
+    // A consuming alternation misses crossing overlaps; advancing by length misses self-overlaps.
+    let start = text.indexOf(credential)
+    while (start !== -1) {
+      environmentSpans.push({ start, end: start + credential.length })
+      start = text.indexOf(credential, start + DETAIL.occurrenceStep)
+    }
+  }
   // Discover every private span on the original line: replacing a short credential first could
   // destroy an Authorization label, while replacing a home first could expose an env prefix.
-  const patterns = [DETAIL.secret, DETAIL.home, DETAIL.authorization, DETAIL.urlCredentials]
-  if (environment.length) patterns.push(new RegExp(environment.join('|'), 'g'))
+  const patterns = [DETAIL.secret, DETAIL.home, DETAIL.authorization]
   const assignments = [...text.matchAll(DETAIL.assignment)]
-    .filter(match => isSensitiveParameterName(match[2]))
+    .filter(match => isSensitiveParameterName(match.groups.doubleName ?? match.groups.singleName ?? match.groups.bareName))
     .map(match => ({ start: match.index, end: match.index + match[1].length }))
   const spans = patterns.flatMap(pattern => [...text.matchAll(pattern)]
     .map(match => ({ start: match.index, end: match.index + match[0].length })))
-    .concat(assignments)
+    .concat(assignments, environmentSpans, urlCredentialSpans(text))
     .sort((a, b) => a.start - b.start || b.end - a.end)
   const merged = []
   for (const span of spans) {
