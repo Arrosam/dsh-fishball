@@ -1,0 +1,190 @@
+{
+  "recordedAt": "2026-11-08T23:34:44.168Z",
+  "testedMerge": "6d26ab71828241f0e7c7d329a718dec54f69cfcc",
+  "branch": "verify/x0c-time",
+  "refs": [
+    {
+      "ref": "verify/w0-first",
+      "sha": "fd0f46aa3315b0e09bf937307c5410651a80d2a1",
+      "unchanged": true
+    },
+    {
+      "ref": "fix/x0c-time",
+      "sha": "00d4cd2319ed01a2ef6ad6a67522aee389f5cd9b",
+      "unchanged": true
+    },
+    {
+      "ref": "dev/x0-c",
+      "sha": "c5099d4429ed0bd64fb461031294c7ffd2b845da",
+      "unchanged": true
+    },
+    {
+      "ref": "dev/fn-1",
+      "sha": "572f9e4803078568412b7979ec2525ad74355e7e",
+      "unchanged": true
+    },
+    {
+      "ref": "dev/b1",
+      "sha": "3cce06c984272dc61b0784390f0579e1aa963ba8",
+      "unchanged": true
+    },
+    {
+      "ref": "test/w0-mcp",
+      "sha": "ab24c84daa32dec7105bd25f5ec4cb78399f1f2d",
+      "unchanged": true
+    },
+    {
+      "ref": "design/instance-ext",
+      "sha": "15d6f1f214144db3575f9bc0ba15238b1450c2a7",
+      "unchanged": true
+    }
+  ],
+  "parentJobs": [
+    {
+      "jobId": "bash-e8adef77b76f40c2",
+      "scope": "137 approved cases, SDK 0.2.1-rc.5",
+      "state": "completed",
+      "exitCode": 0,
+      "collectedWithJobOutput": true
+    },
+    {
+      "jobId": "bash-acaee32e73a04c67",
+      "scope": "137 approved cases, SDK 0.2.2-rc.1",
+      "state": "completed",
+      "exitCode": 0,
+      "collectedWithJobOutput": true
+    },
+    {
+      "jobId": "bash-8c602d5401304e2b",
+      "scope": "44 safe regressions + existing TODO on both SDKs",
+      "state": "completed",
+      "exitCode": 0,
+      "collectedWithJobOutput": true
+    }
+  ],
+  "supplementJobs": [
+    {
+      "jobId": "bash-7b609cdc10624483",
+      "scope": "host-session 0.2.1-rc.5",
+      "state": "completed",
+      "exitCode": 0,
+      "collectedWithJobOutput": true
+    },
+    {
+      "jobId": "bash-d9a8965a4f03433d",
+      "scope": "host-session 0.2.2-rc.1",
+      "state": "completed",
+      "exitCode": 0,
+      "collectedWithJobOutput": true
+    },
+    {
+      "jobId": "bash-e8a9bf81d5cb4a98",
+      "scope": "cordis 0.2.1-rc.5",
+      "state": "completed",
+      "exitCode": 0,
+      "collectedWithJobOutput": true
+    },
+    {
+      "jobId": "bash-28510ccd9cb64431",
+      "scope": "cordis 0.2.2-rc.1",
+      "state": "completed",
+      "exitCode": 0,
+      "collectedWithJobOutput": true
+    }
+  ],
+  "runningOwnedJobs": 0,
+  "ownedTerminalSessions": 0,
+  "cleanup": {
+    "basis": "Parent job_list shows three completed jobs, explicitly collected via job_output; terminal_list empty. Supplement executor separately collected its four jobs and reported no owned terminals. Every owned Node process exited successfully; existing awaited after hooks close listeners/effects and remove guarded fixture homes. Cordis hooks explicitly assert fiber/service/registry cleanup. No shared temp sweep or OS-wide process census.",
+    "noUnrelatedProcessKilled": true,
+    "noSeparateHostProcessStarted": true,
+    "worktreeDependencyLink": "Retained worktree-local source link, no package install."
+  },
+  "productDiffFromTestedMergeEmpty": true,
+  "priorTestsAndEvidenceUnchanged": true,
+  "verifiedFiles": [
+    {
+      "file": "packages/instance/test/instance-ext/x0-c.test.mjs",
+      "sha256": "ea3294dca281f52d53e8101d97cf6051a16ec13e5c774779ab3b4ec725779158",
+      "matchesPrior": true,
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "packages/fold-notify/test/instance-ext/fn-1.test.mjs",
+      "sha256": "a1c96d4ac2312265260c85cb824e8e5a9b5c16825758e1fbf3af23c9e1819464",
+      "matchesPrior": true,
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "packages/board/test/instance-ext/b1.test.mjs",
+      "sha256": "c364a63ea00cfeca6bcb98330ade7e86a0938d9c92ca6ce086f7656bce6c3b0d",
+      "matchesPrior": true,
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "test/support/instance-ext.mjs",
+      "sha256": "8a732e3c59e1fd4418d4ed9930b0f508685a770e51927c47f230b95f531d2526",
+      "matchesPrior": true,
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "test/verification/w0-cordis.test.mjs",
+      "sha256": "ca4eb5e726da262c8b8585eaa66fdce7b8d64a24b3975ddf9d946caf5162b244",
+      "matchesPrior": true,
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "test/verification/w0-host-session.test.mjs",
+      "sha256": "4a7256fc9c61a78fef34cca027235d67496ba703cea7c45ff5cebdc5b31f3bb3",
+      "matchesPrior": true,
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "packages/instance/src/slim/child/extensions.js",
+      "sha256": "bcba6f07c6a46bba5d3ec623441d1318b744bc66e5f44952f2cf7c16da4b9268",
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "packages/instance/src/slim/child/chat.js",
+      "sha256": "e998365504c96035d62c442f6bcee3442fa69ad02ca51f7c8d65d648316bb2f4",
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "packages/instance/src/slim/child/app.js",
+      "sha256": "10d9243952768e4289d86c62e63b64c6843918def99c9dfea643fa6b872f610f",
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "packages/instance/src/slim/child/bridge.js",
+      "sha256": "28f086b6813da1d0c6d60edf0173caadbf9aff8dc6adc56d04a7f44703bb15ce",
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "packages/fold-notify/index.js",
+      "sha256": "b77c2c4ae62e55202d703d3b12bcc2e37992ebba446f91d5ddda210dd7b1c486",
+      "unchangedAfterRuns": true
+    },
+    {
+      "file": "packages/board/index.js",
+      "sha256": "fe1271b935c331afcf51590625619c132cda2297ad0f4fe1e956664f00e87950",
+      "unchangedAfterRuns": true
+    }
+  ],
+  "checks": {
+    "sevenSyntaxChecks": true,
+    "selectedRuntimeManifestHashesUnchanged": true,
+    "all137ExactIdsAndTitlesEachSdk": true,
+    "noPromotedTodo": true,
+    "noMissingExtraDuplicateSkipCancel": true,
+    "onlyBaselineStatusChange": "XC-EP-V-05 Fail -> Pass on both SDKs",
+    "authoredMarkdownWhitespace": true,
+    "fullStagedWhitespaceIncludingRawTap": true,
+    "rawTapWhitespaceExclusionNeeded": false
+  },
+  "safety": {
+    "noDshLaunchRestartInstallPush": true,
+    "noRemoteChanges": true,
+    "noNpmrcOrCredentialReadCopyBackup": true,
+    "noProductOrTestEdits": true
+  }
+}
