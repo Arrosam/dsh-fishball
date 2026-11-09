@@ -1,0 +1,17 @@
+{
+  "scratchRoot": "/private/tmp/verify-wd1.Oz7FGf",
+  "scratchDirectoriesEmptyBeforeRemoval": true,
+  "scratchRemoved": true,
+  "sourceLink": "/Volumes/SSD1/GitHub/dsh-fishball/.agents/worktrees/verify-wd1/node_modules/fishball-connector",
+  "sourceLinkRemoved": true,
+  "emptyOwnedNodeModulesRemoved": true,
+  "foregroundRunsExited": true,
+  "nativeRegistriesAndRowEffectsDrained": "asserted by all native Context fixture teardown hooks",
+  "backgroundJobs": "none (job_list)",
+  "terminalSessions": "none (terminal_list)",
+  "liveDSHAccess": false,
+  "remoteChanges": false,
+  "installs": false,
+  "credentialAccess": false,
+  "productChanges": false
+}

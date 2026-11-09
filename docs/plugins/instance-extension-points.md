@@ -401,6 +401,60 @@ an active brief gets the existing `revised` trigger. A running turn may finish o
 revision; the next turn must use the new one, with no extra watchdog conversation or automatic
 history delivery to Fishball. This reuses the source design's revision/section mechanism.
 
+### 2.8 Deterministic watchdog token budget (W0 question 2 = A)
+
+This freezes WD-1's save-time oracle and WD-8/WD-10's runtime accounting, superseding the
+approximate counts and provider-usage rollover in watchdog §2.2/§9. U14 removed the approval
+**time-window** sum, not the growth-budget check. No tokenizer dependency or new setting is added.
+
+- **Measurement.** One budget token is three UTF-8 bytes: `T(bytes) = ceil(bytes / 3)`, with
+  `T(0) = 0`. Count the provider-neutral model input before provider adaptation, serialized as
+  RFC 8785 canonical JSON (no Unicode normalization). Context includes system instructions,
+  current brief/criteria, tool schemas, digest, retained messages, tool calls/results and the
+  proposed input; exclude transport headers and provider-only framing. Count the entire context
+  once, not the sum of usage across requests. Provider token/usage reports are telemetry only;
+  this deterministic estimate is **not** a guarantee of any provider's actual token count.
+- **Card allowance.** Fix `cardBudgetTokens = 768` (2,304 bytes). Measure the complete serialized
+  card input, including labels/untrusted wrapper, title/tool, arguments, reason, all quotes and
+  any clarification reply; existing per-field caps still apply first. This is also the shared
+  allowance for other non-read input additions in that turn (e.g. check trigger/calibrations),
+  not 768 per field or per quote. This bounded allowance keeps the default 10,000-token growth
+  valid without assuming a maximum quote count; field maxima need not fit together. Brief/criteria
+  already in the system section are not duplicated.
+  Accept exactly 2,304 bytes; above it, immediately route the intact permission request to Fishball
+  without a model call or silently truncating arguments/evidence. A check that cannot fit follows
+  the watchdog-failure hand-over below. Read byte caps include serialized result wrappers.
+- **Save-time validation.** All numeric budget/byte fields are integers; their existing inclusive
+  field bounds/defaults remain. After field validation, require
+  `turnGrowthTokens >= (1 + readsPerTurn) * ceil(readMaxBytes / 3) + 768 + maxOutputTokens`,
+  with `readsPerTurn = 2`. Round **each** bounded read upward before addition; never round down
+  or round the combined read bytes instead. Equality passes; one token below fails atomically,
+  retaining the previous config. Defaults require `3 * 2731 + 768 + 1024 = 9985`, so 9,984 fails
+  and 9,985/9,986 pass with those companions. `maxOutputTokens = 2048` requires growth ≥ 11,009,
+  not default growth 10,000. Individual field validity does not imply full-config validity:
+  `readMaxBytes = 1,048,576` passes its field schema but needs at least 1,049,602 growth tokens
+  even with output 256, so no allowed growth value (maximum 50,000) makes that combination valid.
+- **Rollover boundary.** `64k` means **64,000**, not 65,536; keep the existing configurable
+  threshold/default. Let `R = min(contextRolloverTokens, contextWindow - turnGrowthTokens -
+  maxOutputTokens)` using the resolved model's integer window. Refuse a save with `R < 16000`
+  (`model-context-too-small`); equality is valid. Track the largest measured request context in
+  a turn, not cumulative usage. At `C >= R`, finish that turn and use a new epoch before the next;
+  also preflight the proposed next-turn context so newly added input/brief revisions cannot skip
+  the boundary. At `C < R` keep the epoch; equality rotates. Rebuild once with the existing
+  deterministic digest (no compacted decision records, §12.4), then remeasure before dispatch.
+  `R` is a **between-turn** threshold, not a mid-turn stop: before every model request within
+  the same turn, require `C <= R + turnGrowthTokens` (equality fits); otherwise fail off rather
+  than rotate mid-decision. Across all responses in one turn, the sum of `T` of each canonical
+  provider-neutral response (including tool calls) must be ≤ `maxOutputTokens`; check before another request or
+  acting on a verdict. Also require measured context growth above that turn's initial context
+  to be ≤ `turnGrowthTokens`. The provider's output limit is an additional per-request cap,
+  not the accounting oracle. Any exceeded runtime allowance follows the failure path below.
+- **Cannot fit / failure.** If the fresh epoch still reaches `R`, measurement/model-window
+  resolution fails, or the provider rejects the context, do not loop, dispatch over budget or
+  stop the watched session: invoke §2.4's effective-off Fishball hand-over, releasing claims and
+  passing sends; recovery keeps briefs dormant. Ordinary rollover and an oversized individual
+  card are not plugin faults. No approval deadline, auto-approval or fault-induced halt is added.
+
 ## 3. One-way MCP compatibility and timer-free scope (K1 + K2, U22)
 
 The [one-way MCP decisions](<connector-mcp-option.md#0-user-decisions-2026-11-09>) supersede the
@@ -601,8 +655,8 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
   persist dormant briefs, then declare ready; no automatic re-claim, checks or resume.
 - **X0-A/X0-I/WD-10 changed (U21):** questions/plan reviews always reach Fishball and never the
   watchdog queue/context or claims. Permission claims remain per-session while enabled and healthy.
-- **WD-1 changed (U14):** remove approval-time settings and window-sum validation; check timers
-  remain. WD-8/WD-10 and X0-A implement Q-P's immediate escalation on decision-turn completion
+- **WD-1 changed (U14; W0 question 2 = A):** remove approval-time settings and window-sum
+  validation; check timers and §2.8's deterministic growth-budget validation remain. WD-8/WD-10 and X0-A implement Q-P's immediate escalation on decision-turn completion
   without an answer. X0-G/X13 must allow an omitted decision timeout, not apply a default one.
 - **B1 changed (U19):** use the 30-day board visibility window instead of deletion/prune age;
   `doneWindowHours` is not a panel cutoff. B11 adds the search bounds of §12.7.

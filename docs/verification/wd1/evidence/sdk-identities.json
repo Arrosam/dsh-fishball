@@ -1,0 +1,90 @@
+[
+  {
+    "version": "0.2.1-rc.5",
+    "runtime": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules",
+    "packages": [
+      {
+        "name": "@deepseek-ai/dsh",
+        "version": "0.2.1-rc.5"
+      },
+      {
+        "name": "@deepseek-ai/cordis",
+        "version": "4.0.5"
+      },
+      {
+        "name": "@deepseek-ai/schemastery",
+        "version": "3.18.5"
+      },
+      {
+        "name": "@deepseek-ai/dsh-settings",
+        "version": "0.2.1-rc.5"
+      },
+      {
+        "name": "@deepseek-ai/dsh-config-editor",
+        "version": "0.2.1-rc.5"
+      }
+    ],
+    "sourceHashes": [
+      {
+        "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/cordis/lib/index.js",
+        "sha256": "6a9394c0877ff45218818c6e815edd038f8057e1a1deb390a8d43ec81c57691e"
+      },
+      {
+        "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/schemastery/lib/index.mjs",
+        "sha256": "cfcbe46c7416bdb35ce891c252152bbf519e08199bede5930dd7cb880c65f1ef"
+      },
+      {
+        "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/dsh-settings/lib/index.js",
+        "sha256": "9432b872597b7a31473072eb38a55979ab23375c76bd1d86d751388a692a0136"
+      },
+      {
+        "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.5/node_modules/@deepseek-ai/dsh-config-editor/lib/index.js",
+        "sha256": "373e05c8250d25dda983ccf6e214a55e3792a211d1a7b883affcd66de47b5bf8"
+      }
+    ]
+  },
+  {
+    "version": "0.2.2-rc.1",
+    "runtime": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules",
+    "packages": [
+      {
+        "name": "@deepseek-ai/dsh",
+        "version": "0.2.2-rc.1"
+      },
+      {
+        "name": "@deepseek-ai/cordis",
+        "version": "4.1.0"
+      },
+      {
+        "name": "@deepseek-ai/schemastery",
+        "version": "3.19.0"
+      },
+      {
+        "name": "@deepseek-ai/dsh-settings",
+        "version": "0.2.2-rc.1"
+      },
+      {
+        "name": "@deepseek-ai/dsh-config-editor",
+        "version": "0.2.2-rc.1"
+      }
+    ],
+    "sourceHashes": [
+      {
+        "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/cordis/lib/index.js",
+        "sha256": "627409afa06a265f7253200d3bc4648e88805c39fd3768568eb9b9518a31fe8f"
+      },
+      {
+        "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/schemastery/lib/index.mjs",
+        "sha256": "cfcbe46c7416bdb35ce891c252152bbf519e08199bede5930dd7cb880c65f1ef"
+      },
+      {
+        "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/dsh-settings/lib/index.js",
+        "sha256": "041a2682ed77a7025ceb9bf659b80db8b788c338cd1aa644f0bcc6bc122a4091"
+      },
+      {
+        "file": "/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.1/node_modules/@deepseek-ai/dsh-config-editor/lib/index.js",
+        "sha256": "17e953c5ef913d368b288e3d64e952276ea08a46967bfdd430534b69b9d0c039"
+      }
+    ]
+  }
+]
