@@ -11,6 +11,18 @@ written against `3509859`; its case ids are kept, so a case that is gone stays a
 route paths and error codes (observation points), never for an expected result. K1, M1 and C1–C3
 are in `connector.md`; this document refers to them only where an instance case needs them.
 
+> **Release state (v0.1.0-alpha.0).** Where a case below contradicts the released code, the code
+> wins. Notable drift: a startup timeout reports `NATIVE_START_FAILED` (`NATIVE_TIMEOUT` is
+> reserved and unused); the 33rd concurrent embed stream answers **429** (no `Retry-After`), not
+> 503; the embed broker's "not ready" 503 runs before the body-size 413; the child env also sets
+> `USERPROFILE`, `DSH_AGENTS_HOME`, `APPDATA`, `LOCALAPPDATA`, `TMP` and `TEMP`;
+> `INVALID_MAIN_HOME` is an additional reported status code; and Disable reports `stopping` then
+> `disabled` (not `stopped`).
+>
+> **Known bugs (fix pending in code — keep the cases' intended behaviour below).** A disabled
+> instance currently answers 503 (the cases expect 404), and the launch-failure `detail` is
+> currently always `null` (the cases expect a diagnostic).
+
 ## 0. The user's decisions of 2026-11-06 (22:31), and what supersedes them
 
 These came after `3509859`. The "Now" column says what later decisions changed; the cases below
@@ -263,7 +275,7 @@ profile (unchanged from today)", §18.1 "Withdrawn"). The existing slim-migratio
 - I2-R7: ~~the preview notice is pre-acknowledged~~ **Withdrawn (D28: no DSH Web UI in the child).**
 - I2-R8: lifecycle: starting → ready → stopping → stopped; a crash → failed → Retry (no automatic
   restart, inst-OQ-09).
-- I2-R9: a startup timeout bounds readiness: 60 s, code `NATIVE_TIMEOUT` (§0.5, inst-OQ-07).
+- I2-R9: a startup timeout bounds readiness: 60 s, reported as `NATIVE_START_FAILED` (`NATIVE_TIMEOUT` is reserved and unused; §0.5, inst-OQ-07).
 - I2-R10: the child's executable is the main process's `process.execPath` (§18.2 I2 R1).
 - I2-R11: the child's arguments start with the main's `process.execArgv`, in order, without
   `--inspect*` and `--debug-port` flags, then the child's own
@@ -327,8 +339,8 @@ bound), DT (main runtime × `ELECTRON_RUN_AS_NODE` in the main).
 | I2-ST-X2 | ST (invalid) | R8 | Failed after a SIGKILL | Do nothing for 30 s. | It stays `failed` with no new child: no automatic restart (inst-OQ-09). | both | node |
 | I2-ST-X3 | ST (invalid) | R8 | Stopping (F4 slows shutdown to 3 s) | Press Retry during stopping. | No second child while the first process is alive. | both | node |
 | I2-BVA-01 | BVA (timeout − 1 s = 59 s) | R9 | F4 delays readiness to 59 s | Boot. | `ready`. | both | node |
-| I2-BVA-02 | BVA (timeout, exact = 60 s) | R9 | F4 delays readiness to 60 s | Boot. | One defined outcome, either `ready` or `failed` / `NATIVE_TIMEOUT`; no orphan; the state stays consistent with O2. Recorded, not asserted (an exact boundary races). | both | node |
-| I2-BVA-03 | BVA (timeout + 1 s = 61 s) | R9 | F4 delays readiness to 61 s | Boot. | `failed` / `NATIVE_TIMEOUT` (inst-OQ-07); the child is stopped; no attach. | both | node |
+| I2-BVA-02 | BVA (timeout, exact = 60 s) | R9 | F4 delays readiness to 60 s | Boot. | One defined outcome, either `ready` or `failed` / `NATIVE_START_FAILED`; no orphan; the state stays consistent with O2. Recorded, not asserted (an exact boundary races). | both | node |
+| I2-BVA-03 | BVA (timeout + 1 s = 61 s) | R9 | F4 delays readiness to 61 s | Boot. | `failed` / `NATIVE_START_FAILED` (inst-OQ-07); the child is stopped; no attach. | both | node |
 | I2-BVA-04 | BVA | ~~R2~~ | — | ~~migrations: 0~~ | **Withdrawn (D28, §18.7).** | — | — |
 | I2-BVA-05 | BVA | ~~R2~~ | — | ~~migrations: 1~~ | **Withdrawn (D28, §18.7).** | — | — |
 | I2-BVA-06 | BVA | ~~R2~~ | — | ~~migrations: 2~~ | **Withdrawn (D28, §18.7).** | — | — |
@@ -1219,8 +1231,8 @@ here. OQ-01..23 are the first version's; their state is from §18.5 and §18.7.
 - **OQ-04** UD2 vs §0.7. **Replaced** (§18.5 note): §0.7 and U1, the form has only `enabled`.
 - **OQ-05** Connector values on I6. **Answered** (inst-OQ-05): none, and no link.
 - **OQ-06** Naming. **Answered** (inst-OQ-06).
-- **OQ-07** Startup timeout. **Answered** (inst-OQ-07): 60 s, `NATIVE_TIMEOUT`; a missing core
-  service or app server `NATIVE_START_FAILED`.
+- **OQ-07** Startup timeout. **Answered** (inst-OQ-07): 60 s, reported as `NATIVE_START_FAILED`
+  (as is a missing core service or app server); `NATIVE_TIMEOUT` is reserved and unused.
 - **OQ-08** Manifest migration. **Moot** (D28, §18.7).
 - **OQ-09** Crash. **Answered** (inst-OQ-09): failed until Retry.
 - **OQ-10** Test fixtures in the child profile. **Answered** for owner bundles (inst-OQ-10); the

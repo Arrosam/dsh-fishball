@@ -406,9 +406,10 @@ The transfer rules:
   `image/webp`, `image/gif`) and at most 4 MiB (`LIMITS.imageBytes`). Any other media type
   travels as a file inside the 8 MiB frame.
 - `name` is a display name with no NUL, no `/` or `\` and no `://`.
-- One `attachment.put` per image or file. A message carries at most **one file** (a non-image
-  transfer, `LIMITS.transfersPerMessage`) and up to 20 `hostRef`s in all
-  (`LIMITS.attachmentsPerMessage`), so up to 20 images.
+- One `attachment.put` per image or file. A message carries up to 20 `hostRef`s in all
+  (`LIMITS.attachmentsPerMessage`), each unique and single-use; images and files count the same.
+  `LIMITS.transfersPerMessage` (1) is declared but **not enforced**: the connector does not cap
+  the number of files one message carries.
 - A `hostRef` is single-use and expires 10 minutes after the put (`LIMITS.hostRefTtlMs`). An
   unknown, expired or consumed one is refused `expired` on the message that carries it (§4.1).
 
@@ -506,7 +507,9 @@ attached, or at a detach) is settled there and never offered again.
 | `INBOX_KIND` | `session`, `user`, `system`, `watch`, `approval`, `plugin` |
 | `MEDIA` / `IMAGE_TYPES` | `image/png`, `image/jpeg`, `image/webp`, `image/gif` |
 | `STATUS` (the `status()` state) | `disabled`, `waiting`, `starting`, `ready`, `stopping`, `stopped`, `failed` |
-| `STATUS_CODES` (the `status()` code) | `NATIVE_START_FAILED`, `NATIVE_STOP_FAILED`, `NATIVE_CHILD_EXITED`, `NATIVE_UNAVAILABLE`, `NATIVE_TIMEOUT`, `NATIVE_DISABLED` |
+| `STATUS_CODES` (the `status()` code) | `NATIVE_START_FAILED`, `NATIVE_STOP_FAILED`, `NATIVE_CHILD_EXITED`, `NATIVE_UNAVAILABLE`, `NATIVE_TIMEOUT` (reserved, unused), `NATIVE_DISABLED` |
+
+Every start failure — a timeout included — reports `NATIVE_START_FAILED`; `NATIVE_TIMEOUT` is reserved and is not currently reported.
 
 ## 7. Errors
 
@@ -541,7 +544,7 @@ at the limit is accepted; one above it is refused (`limit-exceeded`, or the code
 | `imagesPerMessage` | 20 | `images[]` |
 | `attachmentsPerMessage` | 20 | `attachments[]` |
 | `chunkBytes` | 512 KiB | one decoded chunk |
-| `transfersPerMessage` | 1 | files (non-image transfers) per message; images count only toward `attachmentsPerMessage` |
+| `transfersPerMessage` | 1 | declared for a one-file-per-message rule but **not enforced**; images and files both count only toward `attachmentsPerMessage` (20) |
 | `hostRefTtlMs` | 600,000 ms | `hostRef` lifetime |
 | `reasonChars` | 500 | approval, prompt, grant-revoke and release `reason`; descriptor `reason`. Lower bound: 1 where the connector requires a reason (§4.1–§4.3) |
 | `questionChars` | 500 | `question` text, `answer.question` |
