@@ -20,7 +20,9 @@
   },
   "peerDependencies": {
     "fishball-instance": ">=0.1.0-alpha.0 <2",
-    "@deepseek-ai/schemastery": "*"
+    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-llm": "*"
   },
   "dsh": {
     "bundle": {
