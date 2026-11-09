@@ -1,6 +1,6 @@
 /**
  * Parent-side handle on one booted DSH test process (support/worker.mjs).
- * - newHome(): a fresh throwaway DSH_HOME under .runtime/test-homes.
+ * - newHome(): a fresh throwaway DSH_HOME under the OS-temp test-homes root.
  * - bootHost(home): spawn the worker with stdin held open, wait for the
  *   printed "dsh web:" URL, and log in with its token like a browser does.
  * The handle exposes worker operations (call) and the HTTP API (get, post, sse).
