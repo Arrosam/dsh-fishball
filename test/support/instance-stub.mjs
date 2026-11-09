@@ -139,7 +139,8 @@ async function bootStubWithClient(label, { env = {}, link = [], attach = true, h
   }
   const booted = { host, home, stub }
   // Some group helpers copy {host, home, stub} onto their own context object, so key by the host.
-  bootOptions.set(host, { env: { ...env }, link: [...link], attach, makeClient })
+  // Attachment suppression is per boot; a later restart defaults to attaching again.
+  bootOptions.set(host, { env: { ...env }, link: [...link], makeClient })
   return booted
 }
 

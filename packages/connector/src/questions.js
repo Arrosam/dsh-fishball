@@ -51,7 +51,7 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, PILE_SCOPE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, REQUEST_KIND, SOURCE } from './constants.js'
+import { APPROVAL, APPROVAL_ANSWER, PILE_NOTE, SESSION_INFO, APPROVAL_DECISION, ARGUMENTS_STATUS, CARD_END, CHANGED_BY, DECISION_ACTION, DECISION_OK, EVENT, INTAKE_KIND, OPTIONAL_SERVICE, PILE_SCOPE, QUESTION, QUESTION_END, QUESTION_ERROR, QUESTION_KIND, QUESTION_MODE, REQUEST_KIND, SOURCE } from './constants.js'
 import { AuditLog } from './audit.js'
 import { Pile } from './pile.js'
 import { argumentsText, latestUserText, sha256 } from './approvals.js'
