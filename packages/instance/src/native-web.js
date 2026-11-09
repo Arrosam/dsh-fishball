@@ -5,13 +5,14 @@
  * (the instance's Plugins card, client.js) and nothing else.
  */
 import { INSTANCE_CODES, INSTANCE_STATES } from './host/binding.js'
+import { statusLaunchDetail } from './host/launch-detail.js'
 import { registerPostRoutes } from './slim/host/fetch-routes.js'
 
 const WEB = Object.freeze({
   // The original route, kept with its shape ({enabled, state, code, detail}) for its existing
   // readers (the slim test suites read it).
   statusPath: '/api/fishball/native/status',
-  // The route design §18.5 inst-OQ-01 names: exactly {state, code}.
+  // The Plugins card also receives the bounded, sanitized launch detail.
   instanceStatusPath: '/api/fishball-instance/status',
   // The card's Retry (design §0.7: "its Plugins card in the main DSH (Retry)"); answers the
   // status once the retry has run, in the instanceStatusPath shape.
@@ -29,12 +30,10 @@ function safeStatus(value) {
   return { enabled: value?.enabled === true,
     state: STATES.has(value?.state) ? value.state : WEB.unavailable,
     code: CODES.has(value?.code) ? value.code : null,
-    // Always null: only the launch settings ever set it, and I2 removed them (D28). The field
-    // stays so this route keeps the shape its readers expect.
-    detail: null }
+    detail: statusLaunchDetail(value) }
 }
 const UNREADABLE = Object.freeze({ enabled: false, state: WEB.unavailable, code: null, detail: null })
-const stateAndCode = ({ state, code }) => ({ state, code })
+const stateAndCode = ({ state, code, detail }) => ({ state, code, detail })
 const json = value => new Response(JSON.stringify(value), { status: WEB.ok, headers: { ...WEB.headers, 'content-type': WEB.json } })
 
 /** Requires connection; service.status() is synchronous and carries no token. */
