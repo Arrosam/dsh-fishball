@@ -302,13 +302,96 @@ describe('X0-C X10 manager.notify', () => {
   })
 
   it('XC-UC-02-A1 Samuel continues work with Fishball plugin updates — W0: wake:false is held and joins the next turn', async (t) => {
+    const flow = Object.freeze({
+      notice: 'held notice XC-UC-02-A1', dedupeKey: 'quiet-busy-XC-UC-02-A1',
+      nextUser: 'next user turn XC-UC-02-A1', laterUser: 'later user turn XC-UC-02-A1',
+      running: 'running', idle: 'idle', held: 'held', none: 0, once: 1,
+      chat: '/api/chat', post: 'POST', sessionEvent: 'session/event',
+      turnStart: 'turn/start', stepStart: 'step/start', stepEnd: 'step/end',
+      splice: 'agent/inbox/spliced', nextStep: 'next-step', userMessage: 'user/message', surfaceAppend: 'append',
+    })
+    // One UC/A1, with secondary EP/DT: fresh + quiet + busy => hold, no wake.
+    // BVA/ST: zero admissions while held -> one at the next step -> still one later.
     const { h, service } = await live(t)
-    const result = await notify(service, { wake: false, text: 'held notice' })
-    assert.equal(result.status ?? result, 'held')
-    assert.equal(h.manager().followups.length, 0, 'it starts no turn of its own')
-    await h.http('/api/chat', { method: 'POST', body: { text: 'next user turn' } })
-    const queued = h.manager().followups.map(messageText).join('\n')
-    assert.match(queued, /held notice/, 'the held notice is in the next turn')
+    const manager = h.manager()
+    assert.equal(service.manager.sessionId(), manager.session.id, 'observe the actual manager Session')
+    const notices = (messages) => messages.filter((message) => messageText(message).includes(flow.notice))
+    const admissions = (events) => events.filter((event) => event.type === flow.userMessage && notices([event.data]).length)
+    const insertedNotices = () => notices(manager.session.snapshotEvents().filter((event) => event.type === flow.splice && event.data.target === flow.nextStep).flatMap((event) => event.data.inserted))
+    const textOccurrences = (messages) => messages.reduce((count, message) => count + messageText(message).split(flow.notice).length - flow.once, flow.none)
+    const injections = []
+    const noticeInjections = () => injections.filter(({ message }) => notices([message]).length)
+    const inject = manager.inject
+    // Delegate unchanged: capture refusals even when SessionStore contains a throwing
+    // observer. Never defer/retry injection or bypass the SDK's append guard.
+    manager.inject = function (message) {
+      const attempt = { message: structuredClone(message) }
+      injections.push(attempt)
+      try { return inject.call(this, message) }
+      catch (error) { attempt.error = error; throw error }
+    }
+    t.after(() => { manager.inject = inject })
+    const steps = []
+    let start
+    const dispose = h.ctx.on(flow.sessionEvent, (session, event) => {
+      if (session !== manager.session) return
+      if (event.type === flow.stepStart) start = event
+      if (event.type === flow.stepEnd) steps.push({ start, end: event, messages: session.deriveMessages() })
+    })
+    t.after(dispose)
+    async function userStep(text) {
+      const response = await h.http(flow.chat, { method: flow.post, body: { text } })
+      assert.equal(response.ok, true, 'user-step trigger must be accepted before judging held context')
+      await manager.whenIdle()
+      assert.ok(steps.at(-flow.once)?.messages.some((message) => messageText(message).includes(text)), 'step-observation unavailable: triggering user text was not admitted to the manager')
+    }
+    function acceptedInjections() {
+      const attempts = noticeInjections()
+      const accepted = attempts.filter((attempt) => !attempt.error)
+      if (accepted.length === flow.none) assert.deepEqual(attempts.map((attempt) => String(attempt.error)), [], 'inject-refused: manager.inject rejected held context; this is not a followup-only text oracle')
+      assert.ok(accepted.length > flow.none, 'inject-path missing: held context must use the supported manager.inject boundary')
+      return accepted
+    }
+
+    await manager.whenIdle()
+    const beforeHold = manager.session.seq
+    manager.status = flow.running // Established fixture busy seam, not a real provider turn.
+    const result = await notify(service, { wake: false, dedupeKey: flow.dedupeKey, text: flow.notice })
+    assert.equal(result.status ?? result, flow.held)
+    assert.equal(manager.followups.length, flow.none, 'quiet notice queues no independent followup')
+    assert.equal(manager.inbox.nextTurn.length, flow.none, 'quiet notice does not queue an ordinary turn by another path')
+    assert.equal(manager.session.snapshotEvents(beforeHold).filter((event) => event.type === flow.turnStart).length, flow.none, 'holding never opens a turn')
+    assert.equal(admissions(manager.session.snapshotEvents()).length, flow.none, 'held is not yet admitted model context')
+
+    manager.status = flow.idle
+    await userStep(flow.nextUser)
+    const accepted = acceptedInjections()
+    assert.equal(steps.length, flow.once, 'the first later manager step must see the held notice, not an extra notice turn')
+    const [next] = steps
+    assert.ok(next.start, 'step-observation unavailable: no matching step/start')
+    // SDK agent-loop/lib/index.js: rc.5:800–813,1066–1073; rc.1:564–577,859–866.
+    // inject is separate next-step context, then user/message surface admission;
+    // deriveMessages is the request history, not the original followup argument.
+    const inserted = insertedNotices()
+    assert.equal(inserted.length, flow.once, 'one durable next-step insertion, not merely a successful inject call')
+    const { message } = accepted.find(({ message }) => message.id === inserted[flow.none].id) ?? {}
+    assert.ok(message?.id, 'durable next-step identity must come from a successful supported injection')
+    const [admitted] = admissions(manager.session.snapshotEvents())
+    assert.equal(admissions(manager.session.snapshotEvents()).length, flow.once, 'one manager-session admission, not merely an inject call')
+    assert.equal(admitted.data.id, message.id)
+    assert.equal(admitted.surfaceOp, flow.surfaceAppend, 'notice enters the model-visible surface')
+    assert.ok(next.start.seq < admitted.seq && admitted.seq < next.end.seq, 'held notice is admitted within the very next manager step')
+    assert.deepEqual(notices(next.messages).map((item) => item.id), [message.id], 'next-step model-facing history contains that same notice once')
+    assert.equal(textOccurrences(next.messages), flow.once, 'a single message must not repeat the notice text')
+
+    await h.ctx.sessionPersistence.flush()
+    assert.deepEqual(admissions(h.sessionLogs.get(manager.id) ?? []).map((event) => event.data.id), [message.id], 'explicit flush makes the single admitted context durable')
+    await userStep(flow.laterUser)
+    assert.deepEqual(insertedNotices().map((item) => item.id), [message.id], 'later boundary never reinserts the held notice')
+    assert.equal(textOccurrences(steps.at(-flow.once).messages), flow.once, 'later context retains one notice, never a replayed copy')
+    assert.equal(admissions(manager.session.snapshotEvents()).length, flow.once, 'crossing a later boundary never re-admits held work')
+    await h.ctx.sessionPersistence.flush()
+    assert.deepEqual(admissions(h.sessionLogs.get(manager.id) ?? []).map((event) => event.data.id), [message.id], 'durable admission remains exactly once after the later step')
   })
 
   it('XC-UC-02-E1 Samuel continues work with Fishball plugin updates — W0: a duplicate dedupeKey is answered duplicate and starts no second turn', async (t) => {
