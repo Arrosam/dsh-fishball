@@ -1,17 +1,19 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { BOARD_LIMITS, REFUSAL, STATUS } from './constants.js'
+import { BOARD_LIMITS, CONTEXT_ORDER, REFUSAL, STATUS } from './constants.js'
 import { createBoardGuard } from './board.js'
 
 const SEARCH = Object.freeze({
   name: 'board_search',
+  sectionName: 'fishball-board-search',
   keys: Object.freeze(['query', 'status', 'limit']),
   fields: Object.freeze(['title', 'note']),
   first: 0,
   absent: -1,
 })
 const TEXT = Object.freeze({
+  guide: 'Use board_search to find past work by a literal title/note keyword, including old or cleared cards. Optional status filters the historical snapshot; limit bounds the results. Each hit is the newest matching snapshot, not necessarily the current card. onBoard indicates current visibility. Search does not put cards back on the board. A truncated result omits further matching cards.',
   description: 'Search permanent board history, including cleared and old off-board cards. Literal case-insensitive title/note matching; one newest matching snapshot per card, ordered by updatedAt then archive line descending. Results are historical, not necessarily current. Does not change board visibility.',
-  query: 'Required string, trimmed, 1–200 Unicode characters. Literal substring, not a regex.',
+  query: 'Required string, trimmed, 1–200 Unicode code points. Literal substring, not a regex.',
   status: 'Optional single status: todo, in_progress, waiting, paused, done, dropped. Filters the historical matching snapshot.',
   limit: 'Optional integer 1–50; default 20. More distinct matching cards sets truncated.',
 })
@@ -34,9 +36,8 @@ const newestFirst = (left, right) => right.card.updatedAt - left.card.updatedAt 
 
 /**
  * §12.7: only top `limit` snapshots are retained; there is no all-id set or archive buffer.
- * Fishball coordination choice (not user-approved): select each id's hit by the same
- * updatedAt/line ordering as results. This differs from append order only after clock
- * rollback (open board item R3). The cutoff can therefore only improve during the scan.
+ * R3: select each id's hit by the same updatedAt/line ordering as results, even after
+ * clock rollback. The cutoff can therefore only improve during the scan.
  * B3 still materialises a giant individual line and rejects interrupted-write mismatches;
  * this tool does not repair those limits or turn a failed scan into partial success.
  */
@@ -70,6 +71,15 @@ async function search(store, { query, status, limit }, signal) {
   signal?.throwIfAborted()
   // Completion, not the last callback, certifies B3's stable committed boundary.
   return { ok: true, query, results, truncated }
+}
+
+/**
+ * X2 owns disposal; search guidance stays available even when board context injection is off.
+ * A search-owned section leaves B5's full board guide independently registerable.
+ */
+export function registerBoardSearch(agentCtx, options) {
+  agentCtx.systemPrompt.section({ name: SEARCH.sectionName, order: CONTEXT_ORDER.guide, text: TEXT.guide })
+  agentCtx.tools.register(createBoardSearch(options))
 }
 
 /** Manager-scoped definition; the shared guard runs before validation or store access. */

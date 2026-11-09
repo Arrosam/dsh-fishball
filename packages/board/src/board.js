@@ -66,13 +66,8 @@ const refuse = code => { throw Object.assign(new Error(code), { code }) }
 const refused = code => ({ ok: false, code })
 const optional = (value, type) => value === undefined || typeof value === type
 
-/**
- * PENDING user decision (title/note Unicode): "chars" is unspecified (UTF-16 units, code points
- * or graphemes). UTF-16 length is the LARGEST of the three counts, so using it never stores a
- * text over the bound under any reading; it may refuse some astral/combining text a looser
- * reading would accept. Replace only this function when the unit is decided.
- */
-const textLength = text => text.length
+// R1: field bounds count Unicode code points, not UTF-16 units or grapheme clusters.
+const textLength = text => [...text].length
 
 // §3 names todo_write's `content` rule for titles: trim(), then exact equality. No case folding
 // or Unicode normalization, because that rule applies none.
