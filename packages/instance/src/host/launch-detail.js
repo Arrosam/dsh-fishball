@@ -1,3 +1,5 @@
+import { jsonStringSpans } from './json-string-spans.js'
+
 const DETAIL = Object.freeze({
   maxCharacters: 2000,
   redacted: '[redacted]',
@@ -22,10 +24,6 @@ const DETAIL = Object.freeze({
   // Userinfo ends at the last @ in the authority, not an @ embedded in the password.
   urlStart: /\b[a-z][a-z0-9+.-]*:\/\//gi,
   urlCredentials: /^[a-z][a-z0-9+.-]*:\/\/[^\s/?#]+@/i,
-  jsonContainerStart: /[\[{]/g,
-  jsonTokens: /"(?:\\[^\r\n]|[^"\\\r\n])*"|[\[\]{}]/g,
-  jsonOpening: new Set(['[', '{']),
-  jsonQuote: '"',
   home: /(?:\/(?:Users|home)\/[^\s"'<>]+|\/root(?:\/[^\s"'<>]*)?|[A-Z]:[\\/]Users[\\/][^\s"'<>]+)/gi,
   // Stop at a credential label: schemes and quoted/multi-word values cannot escape masking.
   secret: /\b(?:bearer|api[ _-]?key|token|secret|password|credential|authorization)s?\b.*$/gi,
@@ -42,29 +40,7 @@ function isSensitiveParameterName(name) {
 
 /** Bound URLs by string tokens only inside validated JSON containers, never by raw quotes. */
 function urlCredentialSpans(text) {
-  const stringSpans = []
-  let containerEnd = 0
-  for (const opening of text.matchAll(DETAIL.jsonContainerStart)) {
-    if (opening.index < containerEnd) continue
-    let depth = 0
-    const strings = []
-    for (const token of text.slice(opening.index).matchAll(DETAIL.jsonTokens)) {
-      const start = opening.index + token.index
-      const end = start + token[0].length
-      if (token[0].startsWith(DETAIL.jsonQuote)) strings.push({ start, end })
-      else if (DETAIL.jsonOpening.has(token[0])) depth++
-      else depth--
-      if (depth !== 0) continue
-      try {
-        // Only validated containers establish string bounds; punctuation alone is not evidence.
-        // This is lexical containment only, not recursive discovery inside serialized strings.
-        JSON.parse(text.slice(opening.index, end))
-        stringSpans.push(...strings)
-        containerEnd = end
-      } catch { /* Not a JSON container: retain the ordinary URL authority grammar. */ }
-      break
-    }
-  }
+  const stringSpans = jsonStringSpans(text)
   return [...text.matchAll(DETAIL.urlStart)].flatMap(candidate => {
     const start = candidate.index
     // A JSON-looking substring inside plain userinfo must not split that URL's authority.
