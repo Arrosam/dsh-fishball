@@ -2,7 +2,7 @@ import { readFile, realpath, lstat, chmod, readdir, mkdir } from 'node:fs/promis
 import { createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
-import { RUNTIME, HOST_LAUNCH, fail, NativeRuntimeError } from './constants.js'
+import { RUNTIME, NATIVE_WEB, HOST_LAUNCH, fail, NativeRuntimeError } from './constants.js'
 import { inside, privateDirectory, writePrivate, exists, snapshotPath } from './files.js'
 
 export async function resolveInstallation(installAnchor) {
@@ -119,16 +119,15 @@ async function validateStartupFiles(paths) {
 
 /**
  * The attached profile was first created with the Web bundle, and initProfile never rewrites an
- * existing manifest. The slim child must run the core only (§2.1, §2.3), so the configured base
- * bundle leads and the legacy Web bundle is dropped; every bundle the owner installed into the
+ * existing manifest. Restore the native Web bundle after base; every bundle installed into the
  * child profile afterwards is kept in order. The replaced manifest's exact bytes are kept first
  * under a new private name (exclusive create, so no earlier backup is ever overwritten); a backup
  * that cannot be written stops the start before the manifest changes.
  */
-async function slimProfileBundles(boot, profileDir) {
+async function nativeProfileBundles(boot, profileDir) {
   const manifest = boot.readProfileManifest(RUNTIME.profileName, profileDir)
   const current = manifest.dsh?.profile?.bundles ?? []
-  const retained = current.filter(name => !RUNTIME.profile.bundles.includes(name) && name !== RUNTIME.profile.legacyBundle)
+  const retained = current.filter(name => !RUNTIME.profile.bundles.includes(name))
   const bundles = [...RUNTIME.profile.bundles, ...retained]
   const unchanged = current.length === bundles.length && current.every((name, index) => name === bundles[index])
   if (unchanged) return
@@ -148,7 +147,7 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   const fresh = !await exists(path.join(paths.profile, 'package.json'))
   boot.initProfile(paths.profile, RUNTIME.profile.bundles)
   if (fresh) await privateTree(paths.profile)
-  await slimProfileBundles(boot, paths.profile)
+  await nativeProfileBundles(boot, paths.profile)
   await validateStartupFiles(paths)
   const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
   if (profile.skippedBundles.length) fail('PROFILE_INCOMPATIBLE', 'Private profile contains missing or incompatible bundles.')
@@ -185,6 +184,10 @@ export async function copyChildCode(paths, record) {
   }
   await mkdir(path.join(destination, 'src'), { mode: RUNTIME.privateDirectoryMode })
   await copy(path.join(sourceRoot, 'native-child.js'), path.join(destination, 'native-child.js'), javascript)
+  await copy(path.join(sourceRoot, NATIVE_WEB.adapterModule), path.join(destination, NATIVE_WEB.adapterModule), javascript)
+  // Keep the named manifest and ./client export together. Native modules discovers every
+  // enabled client row itself; copying a hand-picked browser roster would omit ecosystem rows.
+  await copy(path.join(sourceRoot, NATIVE_WEB.pageDirectory), path.join(destination, NATIVE_WEB.pageDirectory), everyFile)
   await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
   await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), everyFile)
   // M1: the instance's src/slim shims and persona import `fishball-connector/contract`. Node finds
