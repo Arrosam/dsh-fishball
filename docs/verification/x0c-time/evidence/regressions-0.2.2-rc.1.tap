@@ -1,0 +1,315 @@
+TAP version 13
+# Subtest: I3 regression: the bearer proxy admission order (inst-OQ-11)
+    # Subtest: I3-ADM-01 PUT → 405 with Allow: GET, HEAD, POST
+    ok 1 - I3-ADM-01 PUT → 405 with Allow: GET, HEAD, POST
+      ---
+      duration_ms: 20.945084
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-02 PUT with a bad path → 405 (the method is checked first)
+    ok 2 - I3-ADM-02 PUT with a bad path → 405 (the method is checked first)
+      ---
+      duration_ms: 3.547792
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-03 path /fishball/embed/ui/%2e%2e/secret → 400
+    ok 3 - I3-ADM-03 path /fishball/embed/ui/%2e%2e/secret → 400
+      ---
+      duration_ms: 1.149042
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-03 path /fishball/embed/ui/%2E%2E/secret → 400
+    ok 4 - I3-ADM-03 path /fishball/embed/ui/%2E%2E/secret → 400
+      ---
+      duration_ms: 1.349625
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-03 path /fishball/embed/ui/a\\b → 400
+    ok 5 - I3-ADM-03 path /fishball/embed/ui/a\\b → 400
+      ---
+      duration_ms: 1.157333
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-04 Sec-Fetch-Site: cross-site → 403, no error page
+    ok 6 - I3-ADM-04 Sec-Fetch-Site: cross-site → 403, no error page
+      ---
+      duration_ms: 0.963167
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-05 Sec-Fetch-Site same-site is accepted (the 503 page, not 403)
+    ok 7 - I3-ADM-05 Sec-Fetch-Site same-site is accepted (the 503 page, not 403)
+      ---
+      duration_ms: 1.086
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-06 Sec-Fetch-Site none (typed URL, Open in a tab) is accepted (the 503 page, not 403)
+    ok 8 - I3-ADM-06 Sec-Fetch-Site none (typed URL, Open in a tab) is accepted (the 503 page, not 403)
+      ---
+      duration_ms: 0.890666
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-07 Sec-Fetch-Site absent is accepted (the 503 page, not 403)
+    ok 9 - I3-ADM-07 Sec-Fetch-Site absent is accepted (the 503 page, not 403)
+      ---
+      duration_ms: 1.308334
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-08 a token query → 400, never forwarded
+    ok 10 - I3-ADM-08 a token query → 400, never forwarded
+      ---
+      duration_ms: 1.237667
+      type: 'test'
+      ...
+    # Subtest: I3-ADM-09 /fishball/embed without the slash → 308 to /fishball/embed/
+    ok 11 - I3-ADM-09 /fishball/embed without the slash → 308 to /fishball/embed/
+      ---
+      duration_ms: 1.1615
+      type: 'test'
+      ...
+    1..11
+ok 1 - I3 regression: the bearer proxy admission order (inst-OQ-11)
+  ---
+  duration_ms: 35.872667
+  type: 'suite'
+  ...
+# Subtest: I9 R7 user rows carry authorKind, not author text
+    # Subtest: I9-AK-01 source.kind user → authorKind user
+    ok 1 - I9-AK-01 source.kind user → authorKind user
+      ---
+      duration_ms: 7.270166
+      type: 'test'
+      ...
+    # Subtest: I9-AK-02 source.kind schedule → authorKind schedule
+    ok 2 - I9-AK-02 source.kind schedule → authorKind schedule
+      ---
+      duration_ms: 1.889541
+      type: 'test'
+      ...
+    # Subtest: I9-AK-03a source.kind agent-message → authorKind other
+    ok 3 - I9-AK-03a source.kind agent-message → authorKind other
+      ---
+      duration_ms: 2.442709
+      type: 'test'
+      ...
+    # Subtest: I9-AK-03b source.kind fishball-notice → authorKind other
+    ok 4 - I9-AK-03b source.kind fishball-notice → authorKind other
+      ---
+      duration_ms: 2.329666
+      type: 'test'
+      ...
+    # Subtest: I9-AK-03c source.kind fbtest-future-kind → authorKind other
+    ok 5 - I9-AK-03c source.kind fbtest-future-kind → authorKind other
+      ---
+      duration_ms: 1.909833
+      type: 'test'
+      ...
+    # Subtest: I9-AK-04 source.kind absent → authorKind other
+    ok 6 - I9-AK-04 source.kind absent → authorKind other
+      ---
+      duration_ms: 1.695458
+      type: 'test'
+      ...
+    # Subtest: I9-AK-06 the live relay publishes the same authorKind
+    ok 7 - I9-AK-06 the live relay publishes the same authorKind
+      ---
+      duration_ms: 1.999958
+      type: 'test'
+      ...
+    1..7
+ok 2 - I9 R7 user rows carry authorKind, not author text
+  ---
+  duration_ms: 20.612959
+  type: 'suite'
+  ...
+# Subtest: I7 the chat projects card records
+    # Subtest: I7-P-01 one card-record event → one record entry with the data unchanged
+    ok 1 - I7-P-01 one card-record event → one record entry with the data unchanged
+      ---
+      duration_ms: 2.279208
+      type: 'test'
+      ...
+    # Subtest: I7-ST-01 the same record id appended twice (re-delivered) → one entry, at its first place
+    ok 2 - I7-ST-01 the same record id appended twice (re-delivered) → one entry, at its first place
+      ---
+      duration_ms: 1.4625
+      type: 'test'
+      ...
+    # Subtest: I7-EP-01 two records with different ids → two entries in log order
+    ok 3 - I7-EP-01 two records with different ids → two entries in log order
+      ---
+      duration_ms: 1.763125
+      type: 'test'
+      ...
+    # Subtest: I7-EP-02 a record without an id or with another version
+    ok 4 - I7-EP-02 a record without an id or with another version # TODO open question: the design states no outcome for a malformed v1 record in the custom chat
+      ---
+      duration_ms: 0.149667
+      type: 'test'
+      ...
+    # Subtest: I7-R3-01 a record and an inbox notice both stay (no merge, U5)
+    ok 5 - I7-R3-01 a record and an inbox notice both stay (no merge, U5)
+      ---
+      duration_ms: 1.811
+      type: 'test'
+      ...
+    1..5
+ok 3 - I7 the chat projects card records
+  ---
+  duration_ms: 7.796916
+  type: 'suite'
+  ...
+# Subtest: I7 the record row (createRecordRow, fake document)
+    # Subtest: I7-ROW-EP-01 permission (en): title is the connector's word, outcome word shown, nothing undefined
+    ok 1 - I7-ROW-EP-01 permission (en): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 13.774709
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-02 question (en): title is the connector's word, outcome word shown, nothing undefined
+    ok 2 - I7-ROW-EP-02 question (en): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 0.18325
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-03 plan review (en): title is the connector's word, outcome word shown, nothing undefined
+    ok 3 - I7-ROW-EP-03 plan review (en): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 0.046333
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-04 own question (en): title is the connector's word, outcome word shown, nothing undefined
+    ok 4 - I7-ROW-EP-04 own question (en): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 0.038458
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-05 closure (en): title is the connector's word, outcome word shown, nothing undefined
+    ok 5 - I7-ROW-EP-05 closure (en): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 0.033291
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-06 minimal records of each kind show no undefined/null (en)
+    ok 6 - I7-ROW-EP-06 minimal records of each kind show no undefined/null (en)
+      ---
+      duration_ms: 0.094291
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-07 every label shown is the connector's word (en)
+    ok 7 - I7-ROW-EP-07 every label shown is the connector's word (en)
+      ---
+      duration_ms: 0.095417
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-01 permission (zh): title is the connector's word, outcome word shown, nothing undefined
+    ok 8 - I7-ROW-EP-01 permission (zh): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 0.496875
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-02 question (zh): title is the connector's word, outcome word shown, nothing undefined
+    ok 9 - I7-ROW-EP-02 question (zh): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 0.049417
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-03 plan review (zh): title is the connector's word, outcome word shown, nothing undefined
+    ok 10 - I7-ROW-EP-03 plan review (zh): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 0.036791
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-04 own question (zh): title is the connector's word, outcome word shown, nothing undefined
+    ok 11 - I7-ROW-EP-04 own question (zh): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 0.053333
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-05 closure (zh): title is the connector's word, outcome word shown, nothing undefined
+    ok 12 - I7-ROW-EP-05 closure (zh): title is the connector's word, outcome word shown, nothing undefined
+      ---
+      duration_ms: 0.039375
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-06 minimal records of each kind show no undefined/null (zh)
+    ok 13 - I7-ROW-EP-06 minimal records of each kind show no undefined/null (zh)
+      ---
+      duration_ms: 0.062833
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-07 every label shown is the connector's word (zh)
+    ok 14 - I7-ROW-EP-07 every label shown is the connector's word (zh)
+      ---
+      duration_ms: 0.038417
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-EP-06b a record at an unparsable time shows no Invalid Date
+    ok 15 - I7-ROW-EP-06b a record at an unparsable time shows no Invalid Date
+      ---
+      duration_ms: 0.053291
+      type: 'test'
+      ...
+    # Subtest: I7-ROW-BVA-01 a text cut by its writer (ends in …) is shown whole
+    ok 16 - I7-ROW-BVA-01 a text cut by its writer (ends in …) is shown whole
+      ---
+      duration_ms: 0.10025
+      type: 'test'
+      ...
+    1..16
+ok 4 - I7 the record row (createRecordRow, fake document)
+  ---
+  duration_ms: 15.40225
+  type: 'suite'
+  ...
+# Subtest: P2 the chat applies a model choice on the running DSH host
+    # Subtest: P2-ST-01 choosing a model returns it, and the page and request see it
+    ok 1 - P2-ST-01 choosing a model returns it, and the page and request see it
+      ---
+      duration_ms: 20.992209
+      type: 'test'
+      ...
+    # Subtest: P2-DT-01 the effort travels with the choice and a lower effort replaces it
+    ok 2 - P2-DT-01 the effort travels with the choice and a lower effort replaces it
+      ---
+      duration_ms: 7.0135
+      type: 'test'
+      ...
+    # Subtest: P2-EP-01 an unknown model is a typed 400 model-unavailable, without a detail
+    ok 3 - P2-EP-01 an unknown model is a typed 400 model-unavailable, without a detail
+      ---
+      duration_ms: 4.805584
+      type: 'test'
+      ...
+    # Subtest: P2-P-01 an unexpected failure keeps the underlying name, code and message in a detail
+    ok 4 - P2-P-01 an unexpected failure keeps the underlying name, code and message in a detail
+      ---
+      duration_ms: 14.83375
+      type: 'test'
+      ...
+    # Subtest: P2-BVA-01 a very long failure message is clamped in the detail
+    ok 5 - P2-BVA-01 a very long failure message is clamped in the detail
+      ---
+      duration_ms: 2.79025
+      type: 'test'
+      ...
+    # Subtest: P2-P-02 the instance declares the host agent package it imports
+    ok 6 - P2-P-02 the instance declares the host agent package it imports
+      ---
+      duration_ms: 0.311
+      type: 'test'
+      ...
+    1..6
+ok 5 - P2 the chat applies a model choice on the running DSH host
+  ---
+  duration_ms: 51.755667
+  type: 'suite'
+  ...
+1..5
+# tests 45
+# suites 5
+# pass 44
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 1
+# duration_ms 442.500166

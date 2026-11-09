@@ -1,0 +1,52 @@
+{
+  "before": [
+    {
+      "name": "fishball-native-app",
+      "level": "warn",
+      "args": [
+        "the image service is unavailable (%s)",
+        "TypeError"
+      ]
+    }
+  ],
+  "afterCreate": [
+    {
+      "name": "fishball-native-app",
+      "level": "warn",
+      "args": [
+        "the image service is unavailable (%s)",
+        "TypeError"
+      ]
+    },
+    {
+      "name": "fishballInstance",
+      "level": "warn",
+      "args": [
+        "extension callback failed (%s, %s)",
+        "fishball-fold-notify",
+        "manager.registerSetup"
+      ]
+    }
+  ],
+  "afterResume": [
+    {
+      "name": "fishball-native-app",
+      "level": "warn",
+      "args": [
+        "the image service is unavailable (%s)",
+        "TypeError"
+      ]
+    },
+    {
+      "name": "fishballInstance",
+      "level": "warn",
+      "args": [
+        "extension callback failed (%s, %s)",
+        "fishball-fold-notify",
+        "manager.registerSetup"
+      ]
+    }
+  ],
+  "healthyCreate": true,
+  "healthyResume": true
+}

@@ -25,6 +25,7 @@
  * (contract.js:516-520); the host refuses a hello naming an operation it cannot serve.
  */
 import { randomUUID } from 'node:crypto'
+import { gate } from './extensions.js'
 import {
   ENVELOPE, ERROR, OPERATION, OPERATIONS, SIDE, TRANSPORT_METHODS, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope,
 } from '../contract.js'
@@ -157,6 +158,8 @@ class BridgeClient {
     if (connection.pending.size >= this.limits.maxInflight) throw new ContractError(ERROR.limit)
     const sessionId = OPERATIONS[operation].sessionScoped === true ? payload?.sessionId : null
     if (OPERATIONS[operation].sessionScoped === true && typeof sessionId !== 'string') throw new ContractError(ERROR.invalid)
+    const permission = gate.send(operation, sessionId)
+    if (!permission.ok) throw new ContractError(permission.code, permission.reason)
     const requestId = randomUUID()
     const envelope = makeEnvelope(this.hostId, sessionId, requestId, ENVELOPE.type.request, operation, payload)
     // Validate before reserving: an invalid payload has no side effect on the connection.

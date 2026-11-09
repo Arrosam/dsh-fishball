@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url'
 import { createAppServer } from './server.js'
 import { createAuthority } from './auth.js'
 import { createChat } from './chat.js'
+import { createExtensions, EXTENSION_SERVICE } from './extensions.js'
 import { createImages } from './images.js'
 import { createReminders } from './reminders.js'
 
@@ -90,8 +91,12 @@ export async function apply(ctx) {
   const approvals = ctx.get(APP.approvalsService)
   // The chat row owns the one Session and publishes the two ports other rows read: the
   // reminder scheduler's resolver and the admin service's live-model applier (T10, T11).
-  const chat = createChat(ctx, { images })
+  const extensions = createExtensions(ctx)
+  await extensions.start()
+  const chat = createChat(ctx, { images, extensions })
   await chat.start()
+  ctx.effect(() => () => extensions.close(), name + ': extensions')
+  ctx.provide(EXTENSION_SERVICE, extensions.service)
   ctx.effect(() => () => chat.close(), name + ': chat session')
   ctx.provide(APP.chatService, chat.service)
   // The published chat service is the activation owner; the closure itself is not a property of
