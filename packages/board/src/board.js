@@ -2,7 +2,9 @@
  * B4: the manager-only `board_write` and `board_read` tools (board design §3.2, §4; U19 §12.6).
  *
  * Contract:
- * - Both tools answer `{ok: true, ...}` or a typed `{ok: false, code}`; they never throw.
+ * - `board_write` succeeds with exactly `{cards: [{id, title, status}], counts}` (§3.2) and
+ *   `board_read` with `{cards}`. A refusal is `{ok: false, code}` (the instance tools' typed
+ *   refusal convention); neither tool throws.
  *   `board-unavailable` also carries the store's `outcome`: `interrupted-write` means the
  *   archive may hold a snapshot that the board does not, so it must NOT be reported as "nothing
  *   changed" (B3 cannot make archive+board crash-atomic).
@@ -11,11 +13,10 @@
  * - `board_write` validates the WHOLE call inside ONE `store.transact` callback and returns the
  *   complete candidate array, or throws before any disk mutation. Clears are omissions from that
  *   array: never `store.clear` followed by `transact`, which would commit a partial call.
- * - A refused call reports the FIRST item's code (§15 decision table 2): every item's own
- *   conditions (decision table 1, including title uniqueness and its links) are checked in item
- *   order. `card-missing` (an omitted open card) is checked here after all item codes; that
- *   precedence is PENDING. Omitted Done/Dropped cards are kept. The store enforces the card cap
- *   (`board-full`) last, before writing.
+ * - A refused call reports the FIRST item's code (§15 decision table 2), over every phase (see
+ *   planWrite). `card-missing` (an omitted open card) is reported only when no item has a code;
+ *   that precedence is PENDING (R5a). Omitted Done/Dropped cards are kept. The store enforces
+ *   the card cap (`board-full`) last, before writing.
  *
  * B2 owns transitions and link rules, B3 owns persistence, projection and archive lookup.
  * Pending user decisions are marked PENDING; their provisional behaviour fails closed.
@@ -72,8 +73,8 @@ const optional = (value, type) => value === undefined || typeof value === type
  */
 const textLength = text => text.length
 
-// Trimming and exact equality follow todo_write's `content` rule, which the design names for
-// titles (§3). No case folding or Unicode normalization is applied (PENDING confirmation).
+// §3 names todo_write's `content` rule for titles: trim(), then exact equality. No case folding
+// or Unicode normalization, because that rule applies none.
 const canonicalTitle = title => title.trim()
 
 /** Pure shape and field-bound check of one item; state-dependent checks happen in the transact. */
@@ -159,70 +160,79 @@ async function linkGraph(next, changed, getCard) {
   return graph
 }
 
+/** Run one staging step; a coded refusal becomes that item's error instead of ending the call. */
+async function stage(item, step) {
+  if (item.error) return
+  try { await step() } catch (error) {
+    if (!error.code) throw error
+    item.error = error.code
+  }
+}
+
 /**
- * The transact callback: resolves every item against the board (then the archive), applies B2,
- * and validates titles and links over the resolved candidate before returning it.
+ * The transact callback. It stages EVERY item without writing anything, then reports the
+ * earliest item's error over all phases (§15 decision table 2: "the first item code"):
+ *   1. per item, in order: shape, id lookup, clear, B2 transition/target, title uniqueness;
+ *   2. per item: B2 links, checked over the whole staged graph, since a later item can add a
+ *      reciprocal edge;
+ *   3. the call: an omitted open card (`card-missing`), only when no item has an error
+ *      (PENDING R5a; see the module comment).
+ * A refused item contributes nothing; the graph keeps its current card. Any refusal throws
+ * before the store writes, so an invalid call never mutates the board or the archive.
  */
 function planWrite(items, now) {
   return async ({ cards, getCard }) => {
     const at = now()
     const board = new Map(cards.map(card => [card.id, card]))
     const resolved = new Map()
-    const changed = []
-    const find = async id => board.get(id) ?? await getCard(id)
-    // Pass 1, in item order: each item's own conditions (shape, id, clear, transition, target,
-    // title uniqueness).
     const openTitles = new Set()
-    // Title uniqueness is an item condition (decision table 1). Open board cards not named by an
-    // item are refused card-missing below, so comparing with earlier items is complete.
-    const claimTitle = card => {
-      if (!isOpen(card.status)) return
-      if (openTitles.has(card.title)) refuse(REFUSAL.duplicateTitle)
-      openTitles.add(card.title)
-    }
     for (const item of items) {
-      if (item.error) refuse(item.error)
-      if (item.id === undefined) {
-        const id = await mintId(at, async candidate => board.has(candidate) || resolved.has(candidate) || Boolean(await getCard(candidate)))
-        const card = transitionCard(undefined, { id, ...BOARD_TOOL.createDefaults(), ...item.changes }, at)
-        claimTitle(card)
-        item.card = card
-        resolved.set(id, card)
-        changed.push(card)
-        continue
-      }
-      const previous = await find(item.id)
-      if (!previous) refuse(REFUSAL.unknownCard)
-      if (item.clear) {
-        if (!isClosed(previous)) refuse(REFUSAL.notClosed)
-        resolved.set(item.id, null)
-        continue
-      }
-      const card = unchangedOr(previous, transitionCard(previous, item.changes, at))
-      claimTitle(card)
-      item.card = card
-      item.changed = card !== previous
-      resolved.set(item.id, card)
-      if (item.changed) changed.push(card)
+      await stage(item, async () => {
+        let previous
+        if (item.id !== undefined) {
+          previous = board.get(item.id) ?? await getCard(item.id)
+          if (!previous) refuse(REFUSAL.unknownCard)
+          if (item.clear) {
+            if (!isClosed(previous)) refuse(REFUSAL.notClosed)
+            item.resolved = null
+            return
+          }
+        }
+        const card = previous
+          ? unchangedOr(previous, transitionCard(previous, item.changes, at))
+          : transitionCard(undefined, {
+            id: await mintId(at, async id => board.has(id) || resolved.has(id) || Boolean(await getCard(id))),
+            ...BOARD_TOOL.createDefaults(), ...item.changes,
+          }, at)
+        // Title uniqueness is an item condition (decision table 1). An open board card that no
+        // item names is refused card-missing, so comparing with earlier items is complete.
+        if (isOpen(card.status) && openTitles.has(card.title)) refuse(REFUSAL.duplicateTitle)
+        item.resolved = card
+        item.changed = card !== previous
+      })
+      if (item.error) continue
+      const card = item.resolved
+      if (card) {
+        if (isOpen(card.status)) openTitles.add(card.title)
+        resolved.set(card.id, card)
+      } else resolved.set(item.id, null)
     }
     // Keep the board's order, then new cards and changed archive cards in item order. An unchanged
     // off-board card is not put back, so restating an early-cleared card cannot undo its clear;
-    // only a change (reopen) brings it back (§12.6). PENDING: a changed but still closed off-board
-    // card returns while its 30-day window lasts, because B3 archives only candidate cards and
-    // leaving it out would silently lose the edit.
+    // only a change (reopen) brings it back (§12.6). PENDING (R6): a changed but still closed
+    // off-board card returns while its 30-day window lasts, because B3 archives only candidate
+    // cards and leaving it out would silently lose the edit.
     const next = cards.map(card => resolved.has(card.id) ? resolved.get(card.id) : card)
+    const changed = items.filter(item => !item.error && item.changed).map(item => item.resolved)
     for (const card of changed) if (!board.has(card.id)) next.push(card)
     const candidate = next.filter(Boolean)
-    // Pass 2, in item order: links need the whole resolved candidate (a later item can add the
-    // reciprocal edge). PENDING: so a later item's pass-1 code wins over an earlier item's
-    // link-invalid; checking links first would need a candidate that a refused item cannot give.
     const graph = await linkGraph(candidate, changed, getCard)
-    for (const { card, changed: edited } of items) {
-      if (!card) continue
-      // Only new or edited cards are link-checked; an unchanged card keeps its committed links.
-      const code = (edited ?? true) ? validateLinks(card, graph) : null
-      if (code) refuse(code)
+    // Only new or edited cards are link-checked; an unchanged card keeps its committed links.
+    for (const item of items) {
+      if (!item.error && item.changed) await stage(item, () => { const code = validateLinks(item.resolved, graph); if (code) refuse(code) })
     }
+    const failed = items.find(item => item.error)
+    if (failed) refuse(failed.error)
     // §3.2: B3 would keep an omitted open card in this candidate, so omission is refused here.
     if (cards.some(card => isOpen(card.status) && !resolved.has(card.id))) refuse(REFUSAL.cardMissing)
     return candidate
@@ -282,14 +292,13 @@ export function createBoardTools({ openStore, sessionId, now = Date.now }) {
       parameters: { cards: { type: 'array', required: true, items: ITEM_SCHEMA, description: TEXT.cards } },
       output: {
         schema: JSON_OUTPUT,
-        render: (args, value) => value.ok ? [{ type: 'text', text: TEXT.written(value.counts) }] : renderJson(args, value),
+        render: (args, value) => value.counts ? [{ type: 'text', text: TEXT.written(value.counts) }] : renderJson(args, value),
       },
       execute: guarded(async args => {
         const items = parseWrite(args)
         // B3 projects with its own clock read; index.js injects the same `now` into both.
         const result = await openStore().transact(planWrite(items, now))
         return {
-          ok: true,
           cards: result.cards.map(({ id, title, status }) => ({ id, title, status })),
           counts: counts(result.cards),
         }
@@ -305,7 +314,7 @@ export function createBoardTools({ openStore, sessionId, now = Date.now }) {
           refuse(REFUSAL.invalidInput)
         }
         const { cards } = await openStore().read()
-        return { ok: true, cards: args.includeClosed ? cards : cards.filter(card => isOpen(card.status)) }
+        return { cards: args.includeClosed ? cards : cards.filter(card => isOpen(card.status)) }
       }),
     }),
   ]
