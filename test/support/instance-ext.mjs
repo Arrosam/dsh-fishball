@@ -24,11 +24,31 @@ import { loadConnector, loadInstance } from './body-soul-env.mjs'
 linkContractForSourceRun()
 
 const contract = await loadConnector('contract/index.js')
+// Reuse the selected SDK's real Session brand, validation and observer containment.
+const { Context } = await import('@deepseek-ai/cordis')
+const { SessionStore } = await import('@deepseek-ai/dsh-session')
+const { default: sessionPackage } = await import('@deepseek-ai/dsh-session/package.json', { with: { type: 'json' } })
+const { createAssistantMessage } = await import('@deepseek-ai/dsh-llm')
 const { CONNECTOR_CONTRACT, ENVELOPE, INBOX_KIND, OPERATIONS, OPERATION, SIDE, decodeEnvelope, encodeEnvelope, makeEnvelope } = contract
 
 export { CONNECTOR_CONTRACT, ENVELOPE, INBOX_KIND, OPERATION, SIDE, contract }
 
 const HOST = Object.freeze({ id: 'host-instance-ext', instanceId: 'host-instance-1' })
+const AGENT = Object.freeze({
+  idle: 'idle', running: 'running',
+  nextTurn: 'next-turn', nextStep: 'next-step',
+  splice: 'agent/inbox/spliced', userMessage: 'user/message',
+  turnStart: 'turn/start', turnEnd: 'turn/end', stepStart: 'step/start', stepEnd: 'step/end', sessionEvent: 'session/event',
+  sessionFlush: 'session/flush', appendSurface: 'append', completed: 'completed', canceled: 'canceled',
+  duplicatePending: 'message is already pending',
+  setupBeforeSessionPublicationVersion: '0.2.1-rc.5',
+  supportedVersions: Object.freeze(['0.2.1-rc.5', '0.2.2-rc.1']),
+  unsupportedVersion: 'unmodelled SDK session lifecycle: ',
+  aborted: 'aborted', disposed: 'disposed', statusEvent: 'agent/status',
+  closedAgent: 'fixture agent is disposed',
+  assistantMessage: 'assistant/message', fixtureProvider: 'fixture', fixtureModel: 'history-only',
+  rejected: 'rejected', teardownFailed: 'fake child teardown failed',
+})
 const SERVICES = Object.freeze({
   instance: 'fishballInstance',
   chat: 'fishballChat',
@@ -61,7 +81,7 @@ export async function tempDir(t, prefix = 'fbtest-instance-ext-') {
 const tempHome = (t) => tempDir(t)
 
 /** The Cordis-like child context: service lookup, provision, effects, events and the host rows. */
-function createContext({ home, tools, nativeRuntime, services }) {
+function createContext({ home, tools, nativeRuntime, services, sessionContext }) {
   const provided = new Map()
   const listeners = new Map()
   const effects = []
@@ -85,13 +105,22 @@ function createContext({ home, tools, nativeRuntime, services }) {
     },
     logger,
     on(event, fn) {
+      if (event === AGENT.sessionEvent || event === AGENT.sessionFlush) return sessionContext.on(event, fn)
       if (!listeners.has(event)) listeners.set(event, new Set())
       listeners.get(event).add(fn)
       return () => listeners.get(event)?.delete(fn)
     },
-    emit(event, ...args) { for (const fn of [...(listeners.get(event) ?? [])]) fn(...args) },
+    emit(event, ...args) {
+      for (const fn of [...(listeners.get(event) ?? [])]) {
+        if (event !== AGENT.statusEvent) { fn(...args); continue }
+        try { Promise.resolve(fn(...args)).catch((error) => logger(event).warn(error)) }
+        catch (error) { logger(event).warn(error) }
+      }
+    },
     tools,
     nativeRuntime,
+    sessions: sessionContext.sessions,
+    sessionPersistence: services.sessionPersistence,
     plugin: (plugin, config) => applyPlugin(ctx, plugin, config),
   }
   return { ctx, provided, listeners, effects, logs }
@@ -137,7 +166,11 @@ function createTools(track) {
   }
 }
 
-/** One agent-scoped context; X2 registrations and dispose are observed here. */
+/**
+ * Existing synchronous registration simulator. This does not model Cordis async
+ * plugin-fiber ownership; do not use it as evidence for callbacks spanning awaits.
+ * Session publication/inbox fidelity below uses the real SDK instead.
+ */
 function createAgentCtx(agent) {
   /** The effect list of the registration currently applying; Cordis disposes it as one fiber. */
   let current = undefined
@@ -210,28 +243,132 @@ function createAgentCtx(agent) {
   return agentCtx
 }
 
-/** The minimum live shape the child reads: id, status, followup, session log and model port. */
-function createLiveAgent(sessionId, { events = [], onFollowup, onAppend } = {}) {
-  const log = structuredClone(events)
+/**
+ * Model-free driver for the shared SDK inbox contract (rc.5: agent-loop:800–813,
+ * 938–959; rc.1:564–577,724–745). Turns stop after input admission: this does
+ * not model tool execution, prompt assembly or provider/model requests. SessionStore
+ * owns event validation/publication: in particular a turn/start observer cannot
+ * reenter append through inject. Do not move that event outside its publication.
+ */
+function createLiveAgent(session, { onFollowup, onStatus } = {}) {
+  let activity = Promise.resolve()
+  let published = false
+  let disposed = false
+  let wakeRequested = false
+  let cancelCause
+  let lastClaimed = []
+  let turn = session.snapshotEvents().filter((event) => event.type === AGENT.turnStart).at(-1)?.data.turn ?? 0
+  const state = { [AGENT.nextTurn]: [], [AGENT.nextStep]: [] }
+  function observe(event) {
+    if (event.type !== AGENT.splice) return
+    const { target, start, removedCount = 0, inserted } = event.data
+    state[target].splice(start, removedCount, ...inserted)
+  }
+  let observedSeq = 0
+  function pending() {
+    if (observedSeq === session.seq) return state
+    // Read committed deltas on demand: observer registration order cannot make
+    // the inbox stale, and rejected/reentrant appends never advance this fold.
+    for (const event of session.snapshotEvents(observedSeq)) observe(event)
+    observedSeq = session.seq
+    return state
+  }
+  function splice(target, start, removedCount, inserted, canceled = false) {
+    pending()
+    const removed = state[target].slice(start, start + removedCount)
+    const candidate = state[target].toSpliced(start, removedCount, ...inserted)
+    const other = state[target === AGENT.nextTurn ? AGENT.nextStep : AGENT.nextTurn]
+    const ids = [...candidate, ...other].map((message) => message.id)
+    if (new Set(ids).size !== ids.length) throw new Error(AGENT.duplicatePending)
+    if (removedCount || inserted.length) session.append(AGENT.splice, {
+      target, start, ...(removedCount ? { removedCount } : {}), inserted,
+      ...(canceled && removedCount ? { outcome: AGENT.canceled } : {}),
+    })
+    pending()
+    return removed
+  }
+  async function drive() {
+    try {
+      do {
+        session.append(AGENT.turnStart, { turn: ++turn })
+        // The SDK awaits pre-step assembly after publishing turn/start and claiming.
+        let step = 0
+        do {
+          lastClaimed = [
+            ...splice(AGENT.nextStep, 0, state[AGENT.nextStep].length, []),
+            ...(step ? [] : splice(AGENT.nextTurn, 0, Math.min(state[AGENT.nextTurn].length, 1), [])),
+          ]
+          await Promise.resolve()
+          if (live.cancelled || lastClaimed.length === 0) break
+          session.append(AGENT.stepStart, { turn, step: ++step })
+          for (const message of lastClaimed) session.append(AGENT.userMessage, message, { surfaceOp: AGENT.appendSurface })
+          session.append(AGENT.stepEnd, { turn, step })
+        } while (state[AGENT.nextStep].length && !live.cancelled)
+        session.append(AGENT.turnEnd, { turn, reason: live.cancelled ? { kind: AGENT.aborted, reason: cancelCause } : { kind: AGENT.completed } })
+      } while (live.inbox.hasPending && !live.cancelled)
+    } finally {
+      live.status = AGENT.idle
+      onStatus?.(live)
+      if (wakeRequested && live.inbox.hasPending && cancelCause?.kind !== AGENT.disposed) wake()
+    }
+  }
+  function wake() {
+    if (!published || !wakeRequested || live.status !== AGENT.idle) return
+    wakeRequested = false
+    live.cancelled = false
+    cancelCause = undefined
+    live.status = AGENT.running
+    const completion = Promise.withResolvers()
+    activity = completion.promise
+    onStatus?.(live)
+    drive().then(completion.resolve, completion.reject)
+  }
   const live = {
-    id: sessionId,
-    status: 'idle',
+    id: session.id,
+    status: AGENT.idle,
     followups: [],
-    followup(message) {
-      // Observe/inject at the agent port, before a turn becomes visible in the fixture queue.
-      const result = onFollowup?.(message, live)
-      live.followups.push(message)
-      return result
-    },
-    cancel() { live.cancelled = true },
-    session: {
-      id: sessionId,
-      appended: log,
-      append(type, data) {
-        log.push({ seq: log.length + 1, time: 1_700_000_000_000 + log.length + 1, type, data })
-        onAppend?.(structuredClone(log))
+    session,
+    inbox: {
+      get nextTurn() { return Object.freeze([...pending()[AGENT.nextTurn]]) },
+      get nextStep() { return Object.freeze([...pending()[AGENT.nextStep]]) },
+      get hasPending() { const state = pending(); return Object.values(state).some((list) => list.length) },
+      clear() {
+        for (const target of [AGENT.nextStep, AGENT.nextTurn]) splice(target, 0, pending()[target].length, [], true)
       },
-      snapshotEvents: () => structuredClone(log),
+    },
+    send(message, target, wakeup) {
+      if (disposed) throw new Error(AGENT.closedAgent)
+      const afterCancel = wakeup && live.cancelled && live.status !== AGENT.idle
+      const destination = afterCancel ? AGENT.nextTurn : target
+      splice(destination, pending()[destination].length, 0, [message])
+      if (wakeup && cancelCause?.kind !== AGENT.disposed) {
+        if (live.status === AGENT.idle || afterCancel || !published) wakeRequested = true
+        wake()
+      }
+    },
+    followup(message) {
+      // Fixture fault injection is before acceptance, never an alternate queue.
+      onFollowup?.(message, live)
+      live.send(message, AGENT.nextTurn, true)
+      live.followups.push(message)
+    },
+    inject(message) { live.send(message, AGENT.nextStep, false) },
+    steer(message) { live.send(message, AGENT.nextStep, true) },
+    cancel(cause, { keepInbox = false } = {}) {
+      if (!keepInbox) { live.inbox.clear(); wakeRequested = false }
+      if (live.status !== AGENT.idle && !live.cancelled) {
+        live.cancelled = true
+        cancelCause = cause
+      }
+    },
+    async whenIdle() { let observed; do { await (observed = activity) } while (observed !== activity) },
+    async driveTurn() { await live.whenIdle(); return lastClaimed },
+    publish() { published = true; wake() },
+    dispose() {
+      if (disposed) return
+      live.cancel({ kind: AGENT.disposed })
+      disposed = true
+      published = false
     },
   }
   return live
@@ -391,6 +528,7 @@ export function createFakeHost({ capabilities } = {}) {
  * `attachments` opts into the host attachment peripheral; other callers keep no store.
  */
 export async function bootChild(t, { activate = false, attachments = undefined, configure, home: existingHome, watchdogEnabled = true, extraBundles = [], sessionLogs = new Map(), onFollowup } = {}) {
+  if (!AGENT.supportedVersions.includes(sessionPackage.version)) throw new Error(AGENT.unsupportedVersion + sessionPackage.version)
   const home = tempPath(existingHome ?? await tempHome(t))
   const profileDir = tempPath(path.join(home, 'profiles', 'fishball'), { root: home })
   await mkdir(profileDir, { recursive: true })
@@ -400,6 +538,7 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   const tools = createTools()
   const agents = []
   const agentsById = new Map()
+  const sessionDisposers = new Map()
   const bundles = [
     { name: '@deepseek-ai/dsh-base', version: '0.2.2', enabled: true, installed: true, removable: false },
     ...['fishball-fold-notify', 'fishball-board', 'fishball-watchdog'].map((name) => ({ name, version: '0.1.0-alpha.0', enabled: true, installed: true, removable: true })),
@@ -438,7 +577,26 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     describe() { return [] },
     async mutate() { return { applied: true } },
   }
+  const sessionContext = new Context()
+  // Register teardown at acquisition, including failed setup/row boot.
+  let closeHost
+  t.after(() => closeHost ? closeHost() : sessionContext.fiber.dispose())
+  const sessionFiber = sessionContext.plugin(SessionStore)
+  await sessionFiber
   const services = {
+    // In-memory durable backend: only flush advances the restart-visible prefix,
+    // across ALL active sessions, as SessionPersistence.flush promises on both SDKs.
+    sessionPersistence: {
+      async flush() {
+        for (const session of sessionContext.sessions.list()) {
+          const committed = sessionLogs.get(session.id) ?? []
+          const appended = session.snapshotEvents(committed.length)
+          committed.push(...structuredClone(appended))
+          sessionLogs.set(session.id, committed)
+        }
+      },
+    },
+    sessions: sessionContext.sessions,
     profileContext: { home, name: 'fishball', dir: profileDir },
     pluginManager,
     settings,
@@ -456,17 +614,54 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   }
   // A caller may retain this map across child-row boots, just as DSH retains session logs.
   // It is fixture-owned persistence only; no extension state is reconstructed by the harness.
-  function activateAgent(options, sessionId) {
-    const live = createLiveAgent(sessionId, {
-      events: sessionLogs.get(sessionId) ?? [],
-      onAppend: (events) => sessionLogs.set(sessionId, events),
-      onFollowup,
-    })
+  async function activateAgent(options, sessionId) {
+    const previous = sessionContext.sessions.get(sessionId)
+    // A fixture registry deletion models a detached agent; its stored prefix is
+    // resumed, not its old mutable live object.
+    if (previous) {
+      const previousAgent = agents.find((entry) => entry.live.session === previous)?.live
+      previousAgent?.dispose()
+      await previousAgent?.whenIdle()
+      await services.sessionPersistence.flush()
+      sessionDisposers.get(sessionId)?.()
+    }
+    const session = sessionContext.sessions.prepare(sessionId, { ...options, ...(sessionLogs.has(sessionId) ? { seed: sessionLogs.get(sessionId) } : {}) })
+    function enterSession() {
+      sessionDisposers.set(sessionId, sessionContext.sessions.enter(session))
+      sessionContext.sessions.announce(session)
+    }
+    // rc.5 composes before Session publication; rc.1 announces Session first but
+    // holds the agent in maintenance. Both must finish setup before waking input.
+    const setupBeforePublication = sessionPackage.version === AGENT.setupBeforeSessionPublicationVersion
+    if (!setupBeforePublication) enterSession()
+    Object.defineProperty(session, 'appended', { get: () => session.snapshotEvents() })
+    const append = session.append.bind(session)
+    // Historical two-argument calls are fixture history builders, not SDK event
+    // payloads. Normalize their observation-only assistant seeds with the SDK
+    // constructor; never bypass real validation or fabricate a provider request.
+    session.append = (type, data, options) => {
+      if (options === undefined && type === AGENT.assistantMessage && !data.message?.id && Array.isArray(data.message?.content)) data = {
+        turn: 0, step: 0, stream: [], ...data,
+        message: createAssistantMessage({ content: data.message.content, source: { provider: AGENT.fixtureProvider, model: AGENT.fixtureModel } }),
+      }
+      const surface = type === AGENT.userMessage || type === AGENT.assistantMessage
+      return append(type, data, options ?? (surface ? { surfaceOp: AGENT.appendSurface } : undefined))
+    }
+    const live = createLiveAgent(session, { onFollowup, onStatus: (agent) => context.ctx.emit(AGENT.statusEvent, { agent, status: agent.status }) })
     const agentCtx = createAgentCtx(live)
-    if (typeof options.setup === 'function') options.setup(agentCtx, live)
-    agents.push({ live, agentCtx, options })
-    agentsById.set(live.id, live)
-    return { agent: live }
+    live.ctx = agentCtx
+    try {
+      if (typeof options.setup === 'function') await options.setup(agentCtx, live)
+      if (setupBeforePublication) enterSession()
+      agents.push({ live, agentCtx, options })
+      agentsById.set(live.id, live)
+      live.publish()
+      return { agent: live }
+    } catch (error) {
+      live.dispose()
+      sessionDisposers.get(sessionId)?.()
+      throw error
+    }
   }
   const agentsService = {
     async create(options) { return activateAgent(options, options.sessionId) },
@@ -481,7 +676,12 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     onControlTransport(callback) { nativeRuntime.control = callback; return () => { if (nativeRuntime.control === callback) nativeRuntime.control = undefined } },
     onAdminTransport(callback) { nativeRuntime.admin = callback; return () => { if (nativeRuntime.admin === callback) nativeRuntime.admin = undefined } },
   }
-  const context = createContext({ home, tools, nativeRuntime, services })
+  const context = createContext({ home, tools, nativeRuntime, services, sessionContext })
+  sessionContext.on(AGENT.sessionFlush, () => services.sessionPersistence.flush())
+  const disposeSessionLogs = sessionContext.logger.exporter({
+    levels: { default: 2 },
+    export: ({ name, type: level, args }) => context.logs.push({ name, level, args }),
+  })
   const { ctx } = context
   // The admin row reads ctx.settings / ctx.pluginManager / ctx.llm as services, not through get().
   ctx.settings = settings
@@ -490,6 +690,24 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   // AttachmentStore is also the documented direct Cordis property (`ctx.attachments`).
   ctx.attachments = attachments
   const rowDisposers = []
+  let closed = false
+  closeHost = async () => {
+    if (closed) return
+    closed = true
+    const errors = []
+    async function attempt(operation) { try { await operation() } catch (error) { errors.push(error) } }
+    for (const dispose of rowDisposers.reverse()) await attempt(dispose)
+    for (const dispose of context.effects.reverse()) if (typeof dispose === 'function') await attempt(dispose)
+    for (const { live } of agents) await attempt(() => live.dispose())
+    for (const result of await Promise.allSettled(agents.map(({ live }) => live.whenIdle()))) {
+      if (result.status === AGENT.rejected) errors.push(result.reason)
+    }
+    await attempt(() => services.sessionPersistence.flush())
+    for (const dispose of sessionDisposers.values()) await attempt(dispose)
+    await attempt(() => sessionContext.fiber.dispose())
+    if (typeof disposeSessionLogs === 'function') await attempt(disposeSessionLogs)
+    if (errors.length) throw new AggregateError(errors, AGENT.teardownFailed)
+  }
   const rows = {}
   async function applyRow(name, modulePath) {
     const row = await loadInstance(modulePath)
@@ -639,19 +857,15 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
       })
       return answer
     },
+    /** Finish the model-free driver; return its most recent single-turn claim. */
+    async driveTurn(agent = harness.manager()) { return agent.driveTurn() },
     /** The manager's next queued turn, as the fake agent received it. */
     lastFollowup() {
       return agents[0]?.live.followups.at(-1)
     },
-    async close() {
-      if (harness.closed === true) return
-      harness.closed = true
-      for (const dispose of rowDisposers.reverse()) { try { await dispose() } catch { /* already gone */ } }
-      for (const dispose of context.effects.reverse()) { try { await dispose() } catch { /* already gone */ } }
-    },
+    async close() { harness.closed = true; await closeHost() },
   }
   if (typeof configure === 'function') await configure(harness)
-  t.after(() => harness.close())
   return harness
 }
 
