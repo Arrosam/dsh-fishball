@@ -69,7 +69,8 @@ async function oldValues(settings, descriptors, store, modeField) {
 
 /**
  * Keep only the fields the new schema declares and accepts. An absent or null value is no user
- * value and is not copied. A refused one is skipped by key.
+ * value and is not copied. A refused one is skipped by key. Retired question mode and
+ * decision timer fields are not declared: their old records remain untouched, not migrated.
  * @returns {{ accepted: object, skipped: string[] }}
  */
 function checked(schema, values) {

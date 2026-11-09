@@ -26,7 +26,7 @@
  * There is no in-process Fishball agent or session: the legacy one was removed, because a second
  * Fishball in the main process took every input the user meant for the child.
  */
-import { Config, QUESTION_MODE_SETTING, readLimits, readQuestionMode } from './src/config.js'
+import { Config, QUESTION_MODE_SETTING, readLimits } from './src/config.js'
 import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT, DECISION_ACTION, DECISION_IDLE, DECISION_OK, INTAKE_SOURCE } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
@@ -63,7 +63,6 @@ const unavailable = () => Promise.reject(new LifecycleStateError(API_CODE.unavai
 export async function apply(ctx, config) {
   const logger = ctx.logger(PLUGIN.logger)
   const limits = () => readLimits(config)
-  const questionMode = () => readQuestionMode(config)
   const feed = new StateFeed((error) => logger.warn('state listener failed (%s)', diagnosticOf(error)))
   /** The row is live once its store is open; it never waits on the child (the bridge reports that). */
   let status = { status: STATUS.live, error: null }
@@ -75,7 +74,7 @@ export async function apply(ctx, config) {
    * also polls its route (conn-OQ-25).
    */
   let binding
-  const snapshot = () => ({ ...status, sessionId: FISHBALL.sessionId, limits: limits(), ...(binding === undefined ? {} : { instance: binding.view() }), ...Object.fromEntries(Object.entries(views).map(([key, view]) => [key, view()])) })
+  const snapshot = () => ({ ...status, sessionId: FISHBALL.sessionId, limits: limits(), ...(binding === undefined ? {} : { instance: binding.view(), unread: binding.attention() }), ...Object.fromEntries(Object.entries(views).map(([key, view]) => [key, view()])) })
   /**
    * Publish the state. Never throws into its caller: on unload the store's domains close while DSH
    * still settles the turns it interrupted, and a listener's onChange that read a closed domain
@@ -97,11 +96,11 @@ export async function apply(ctx, config) {
     removeWatch: (input) => commands.removeWatch(input),
     instance: () => binding.view(),
     retryInstance: () => binding.retry(),
+    readAttention: () => binding.clearAttention(),
   })
   // An edit in DSH's form commits the row's volatile fields without a remount (spike S21); the
-  // limits are read live, so the page's snapshot is republished and a mode change acts at once.
-  let onSettingsChange = publish
-  ctx.on(EVENT.volatileUpdate, () => onSettingsChange())
+  // remaining limits are read live; retired settings never affect routing.
+  ctx.on(EVENT.volatileUpdate, publish)
   // The binding exists from apply, independent of the store, so an instance can attach even
   // before this row's registries are up: with no session state the bridge answers feature-off
   // instead of the instance failing to connect (contract §1, §9).
@@ -205,7 +204,7 @@ export async function apply(ctx, config) {
   })
   // Managed sessions' questions and plan reviews go to Fishball (rev11g, §7a.10); yours stay in their chat.
   questions = new QuestionRouter(ctx, store, logger, {
-    ledger, readLimits: limits, readQuestionMode: questionMode, assistantId, onChange: () => publish(), canAnswer: isLive, isManaged,
+    ledger, readLimits: limits, assistantId, onChange: () => publish(), canAnswer: isLive, isManaged,
     managedIds: () => managedRegistry.snapshot().map((entry) => entry.sessionId),
     records: cardRecords,
   })
@@ -215,15 +214,6 @@ export async function apply(ctx, config) {
   broker.registerTools(capture)
   questions.registerTools(capture)
   grants.registerTools(capture)
-  views.questionMode = () => questions.mode()
-  // A mode changed in DSH's form: in User mode, questions waiting for Fishball become your cards.
-  let lastMode = questionMode()
-  onSettingsChange = () => {
-    const mode = questionMode()
-    if (mode === lastMode) { publish(); return }
-    lastMode = mode
-    questions.modeChanged()
-  }
   deskTools = requestDeskTools({ ctx, broker, readLimits: limits })
   // Managed agents already live get the two tools now that they exist.
   managedRegistry.sync()
@@ -307,14 +297,14 @@ export async function apply(ctx, config) {
     bridgeReady: (ready) => {
       const was = bridgeReady
       bridgeReady = ready === true
-      // The child can no longer answer: what waits for Fishball goes to you at once, and the
-      // ledger stops pushing to the channel that closed (its rows wait for the next attach).
-      if (was && !bridgeReady) { broker.releaseAll(); questions.releaseAll(); ledger.detach() }
+      // Delegation is negotiated separately from ordinary inbox/session control.
+      if (was && !bridgeReady) { broker.releaseAll(); questions.releaseAll() }
       if (!was && bridgeReady) onConnected()
       publish()
     },
     // Every input waiting in the ledger goes to the child that just connected (§5.2 "Inbox").
-    attachInbox: (push) => ledger.attach(push),
+    inboxReady: (ready) => { if (!ready) ledger.detach() },
+    attachInbox: (push, canDeliver) => ledger.attach(push, canDeliver),
     // The approval relay's card markers are notices too: the ledger keeps an unacked one and
     // pushes it on the next attach, exactly as it does for a message or an approval notice.
     publishNotice: (item) => ledger.publishNotice(item, INTAKE_SOURCE.approval),

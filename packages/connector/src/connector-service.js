@@ -16,7 +16,7 @@
  * to know which peer a frame belongs to. The built-in instance passes its lifecycle host id,
  * which is the same value its child's bridge client stamps on frames.
  */
-import { ATTACH_ERROR, CONNECTOR_SERVICE, ERROR, STATUS, STATUS_CODES, ContractError, validateAttachment } from '../contract/index.js'
+import { ATTACH_ERROR, CONNECTOR_SERVICE, ERROR, OPERATION, STATUS, STATUS_CODES, ContractError, validateAttachment } from '../contract/index.js'
 import { API_CODE, PLUGIN } from './constants.js'
 import { diagnosticOf } from './errors.js'
 import { createApprovalRelay } from './slim/host/approvals.js'
@@ -66,8 +66,8 @@ function readStatus(status) {
  *
  * @param {object} ctx - the connector row's Cordis context (provide, get, effect, logger).
  * @param {object} [options]
- * @param {() => void} [options.onChange] - called after every attach and every end of an attachment.
- * @returns {{view: () => object, retry: () => Promise<object>}} view(): the frame's
+ * @param {() => void} [options.onChange] - called after attachment and connector attention changes.
+ * @returns {{view: () => object, retry: () => Promise<object>, attention: () => object, clearAttention: () => object}} view(): the frame's
  *   {attached, name, ui, state, code, canRetry, attachCount}, where `attached` is false for an
  *   instance whose channel ended (kept below) as for none; retry(): awaits the instance's
  *   retry() when the frame offers Retry, and resolves {ok: true} or {ok: false, code} (never rejects).
@@ -82,6 +82,15 @@ export function provideConnectorService(ctx, { onChange } = {}) {
   let closed = false
   /** The live attachment record, or undefined in no-instance mode. */
   let active
+  // The connector owns this latch. Signals carry no unread state and are never replayed.
+  let unread = false
+  let important = false
+  const attention = () => ({ count: Number(unread), important })
+  function clearAttention() {
+    unread = important = false
+    changed()
+    return { ok: true }
+  }
   /**
    * The last attachment whose channel ended without its detach(), kept for the frame only
    * (contract §1.3, §9). It plays no part in routing: current() stays null and a new attach is
@@ -118,6 +127,7 @@ export function provideConnectorService(ctx, { onChange } = {}) {
   function release(record) {
     if (record === undefined || active !== record) return false
     active = undefined
+    unread = important = false
     closeRecord(record)
     return true
   }
@@ -170,6 +180,13 @@ export function provideConnectorService(ctx, { onChange } = {}) {
       // The relay's handlers and connection edge must exist before the transport attaches, so the
       // handshake advertises them (approvals.js).
       approvals.attach(host)
+      host.register(OPERATION.attentionSignal, ({ payload }) => {
+        if (closed || active !== record) throw new ContractError(ERROR.disconnected)
+        unread = true
+        important ||= payload.important
+        changed()
+        return { accepted: true }
+      })
       host.onConnection(({ ready, cause }) => { if (!ready) lose(record, cause) })
       record.approvals = approvals
       record.host = host
@@ -236,5 +253,5 @@ export function provideConnectorService(ctx, { onChange } = {}) {
       dispose?.()
     }
   }, BINDING.cleanup)
-  return Object.freeze({ view, retry })
+  return Object.freeze({ view, retry, attention, clearAttention })
 }

@@ -3,6 +3,7 @@ import path from 'node:path'
 import { appendFile, open, readFile, rename, writeFile } from 'node:fs/promises'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { appendPluginRecord } from '@deepseek-ai/dsh-session'
+import { ContractError, ERROR, OPERATION, validateRequest } from '../contract.js'
 
 export const EXT_LIMITS = Object.freeze({ notifyKeys: 10_000, recordTextChars: 8000 })
 const EXT = Object.freeze({
@@ -305,7 +306,18 @@ export function createExtensions(ctx) {
       return scope(pluginId, operations)
     },
     inbox: stubs('inbox', ['claim', 'release', 'setBatcher'], ['release']),
-    attention: stubs('attention', ['set']),
+    attention: Object.freeze({
+      async signal(pluginId, input) {
+        if (closed) throw new ContractError(ERROR.disconnected)
+        const payload = { ...validateRequest(OPERATION.attentionSignal, input) }
+        const scope = ctx.get(EXT.scopeService)
+        if (typeof scope !== 'function') throw new ContractError(ERROR.disconnected)
+        const port = scope(pluginId, [OPERATION.attentionSignal])
+        if (!port.supports(OPERATION.attentionSignal)) throw new ContractError(ERROR.operation)
+        // No instance state, retry or reconnect replay: only the connector owns unread.
+        return port.request(OPERATION.attentionSignal, payload)
+      },
+    }),
     sideAgents: stubs('sideAgents', ['open', 'runTurn', 'cancel'], ['open', 'runTurn']),
     approvals: stubs('approvals', ['claim', 'card', 'onSettled', 'answerApproval'], ['answerApproval']),
     supervision: stubs('supervision', ['register', 'onManagedChange', 'endingReason']),
