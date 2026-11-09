@@ -133,7 +133,8 @@ class NativeRuntime {
    * Promise<{generation: string, origin: string, authenticatedUrl: string, signal: AbortSignal}>.
    * Resolves only when ready. NOT_RUNNING means no active child; NOT_READY means starting;
    * NATIVE_ACCESS_UNAVAILABLE covers invalid/lost admission without leaking SDK error values.
-   * EMB exchanges the URL privately, fences async results with signal, and owns cookie expiry.
+   * The embed broker redirects the browser to authenticatedUrl (PG-ORIGIN) only while signal is
+   * live; stop/restart/control loss aborts it, so a retired generation is never a launch target.
    */
   nativeEmbedAccess() {
     const epoch = this.nativeEpoch

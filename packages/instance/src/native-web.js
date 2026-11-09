@@ -1,8 +1,9 @@
 /** Native lifecycle status over rc3's exact, authenticated Connection route.
  * Do not move this to webServer: that would bypass Connection's admission and owner checks.
- * The browser reaches the child only through the embed broker (src/slim/host/embed.js); the old
- * capability-URL open route is gone, so this file exposes the instance's status and its Retry
- * (the instance's Plugins card, client.js) and nothing else.
+ * The browser is admitted to the child only through the embed broker's launch redirect
+ * (src/slim/host/embed.js); the old capability-URL open route is gone, so this file exposes the
+ * instance's status and its Retry (the instance's Plugins card, client.js) and nothing else.
+ * Neither answer ever carries the child's origin or launch token.
  */
 import { INSTANCE_CODES, INSTANCE_STATES } from './host/binding.js'
 import { registerPostRoutes } from './slim/host/fetch-routes.js'
