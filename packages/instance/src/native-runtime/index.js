@@ -71,7 +71,7 @@ class NativeRuntime {
   invalidateNativeAccess() { this.nativeEpoch++; this.nativeAdmission?.abort(); this.nativeAdmission = undefined }
   // Synchronous process-exit hook can close a private pipe but cannot await.
   // EOF lets the child request graceful appExit and enforce its own deadline.
-  parentExit() { this.invalidateNativeAccess(); this.startup?.abort(); this.parentPipe?.destroy() }
+  parentExit() { this.parentExited = true; this.invalidateNativeAccess(); this.startup?.abort(); this.parentPipe?.destroy() }
   forceOwned() {
     const identity = this.childIdentity
     const child = this.child
@@ -139,7 +139,7 @@ class NativeRuntime {
     const epoch = this.nativeEpoch
     return this.serial(async () => {
       try {
-        if (epoch !== this.nativeEpoch) fail('NATIVE_ACCESS_UNAVAILABLE')
+        if (this.parentExited || epoch !== this.nativeEpoch) fail('NATIVE_ACCESS_UNAVAILABLE')
         if (!await exists(path.join(this.paths.root, RUNTIME.marker))) fail('NOT_RUNNING')
         await this.prepare()
         const record = await this.active()
@@ -149,7 +149,7 @@ class NativeRuntime {
         await this.attach(record)
         const control = this.control
         const admission = await control.wire.request(NATIVE_WEB.operation)
-        if (epoch !== this.nativeEpoch || control !== this.control || control.wire.closed || admission.generation !== record.instanceId) fail('NATIVE_ACCESS_UNAVAILABLE')
+        if (this.parentExited || epoch !== this.nativeEpoch || control !== this.control || control.wire.closed || admission.generation !== record.instanceId) fail('NATIVE_ACCESS_UNAVAILABLE')
         const access = nativeAccess(admission)
         if (access.origin === status.access.origin) fail('NATIVE_ACCESS_UNAVAILABLE')
         this.nativeAdmission ??= new AbortController()
