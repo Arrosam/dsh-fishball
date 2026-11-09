@@ -25,6 +25,8 @@ Conflicts: **none**. No manual source resolutions or additional behaviour change
 
 The [session route](../packages/instance/src/native-runtime/session-route.js) and [PG-1 lookup](../packages/instance/child-web/fishball-page/client.js#L117-L129) agree: document-relative `api/fishball/session`, default GET, same-origin credentials, no-store; 200 `{sessionId:string|null}`; 405 `METHOD_NOT_ALLOWED`; 503 `MANAGER_UNAVAILABLE`. PG-1 accepts a nonblank ID, treats null/503 as unavailable, and rejects other non-success/malformed responses without guessing an ID. This is code review, not browser end-to-end verification.
 
+> Superseded on `dev/v2-page-open-session` (user decision 7.A, 2026-11-09): the route also accepts `POST`, which ensures the manager through `manager.ensureSession()` (X1a) and returns 200 `{sessionId}`; PG-1 calls it once on page open or Retry when GET reads null. GET is unchanged; 405 now advertises `Allow: GET, POST`. This addresses gap 2 below.
+
 The [board index](../packages/board/index.js) registers board_write, board_read and board_search through the same manager X2 setup and lazy store. The [fold index](../packages/fold-notify/index.js) registers notify_user through reactive service injection and X2, not globally. No registration-name conflicts were found.
 
 Independent read-only review identified these unresolved gaps; none was repaired because this task permits integration only, not new behaviour:

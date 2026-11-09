@@ -6,7 +6,8 @@ window.__ModuleLoader__.load({
     const h = React.createElement
     const { createPortal } = require('react-dom')
     const PAGE = Object.freeze({
-      name: 'fishball-page', route: 'api/fishball/session', unavailable: 503,
+      name: 'fishball-page', route: 'api/fishball/session', read: 'GET', ensure: 'POST',
+      requestFailed: 'FISHBALL_SESSION_REQUEST_FAILED', invalidSession: 'FISHBALL_SESSION_INVALID',
       priority: -1, plugins: 'plugins', overlay: 'shell.overlay',
       root: 'data-fishball-page', ready: 'data-fishball-session',
       hidden: 'data-fishball-hidden', navigation: 'fishball-page-navigation',
@@ -114,17 +115,18 @@ window.__ModuleLoader__.load({
       }
     }
 
-    // Producer contract 8e49a51: document-relative, native cookie auth, live no-store lookup.
-    // Null/503/auth/transport/malformed responses never select a guessed or stale session.
-    async function lookupSession(signal) {
+    // Producer contract (session-route.js): document-relative, native cookie auth, no-store.
+    // GET is a read-only lookup (null = no manager yet); POST ensures THE manager and must
+    // return an ID. 503/auth/transport/malformed responses reject and never select a guessed
+    // or stale session.
+    async function requestSession(method, signal) {
       const response = await fetch(new URL(PAGE.route, document.baseURI), {
-        credentials: 'same-origin', cache: 'no-store', signal,
+        method, credentials: 'same-origin', cache: 'no-store', signal,
       })
-      if (response.status === PAGE.unavailable) return null
-      if (!response.ok) throw new Error('FISHBALL_SESSION_LOOKUP_FAILED')
+      if (!response.ok) throw new Error(PAGE.requestFailed)
       const body = await response.json()
-      if (body?.sessionId === null) return null
-      if (typeof body?.sessionId !== 'string' || !body.sessionId.trim()) throw new Error('FISHBALL_SESSION_INVALID')
+      if (method === PAGE.read && body?.sessionId === null) return null
+      if (typeof body?.sessionId !== 'string' || !body.sessionId.trim()) throw new Error(PAGE.invalidSession)
       return body.sessionId
     }
 
@@ -162,27 +164,37 @@ window.__ModuleLoader__.load({
         pending = true
         queueMicrotask(() => { pending = false; reconcile() })
       }
-      function refresh() {
+      // User decision 7.A (2026-11-09): with no manager yet, ensure it so the native composer
+      // has a real Session. Only the page-open lookup and an explicit Retry pass ensure; any
+      // other refresh (sessions.list, focus) only re-reads, so an unavailable state (GET or
+      // POST 503) waits for Retry instead of re-posting. ensure is a per-call argument, not
+      // shared state, so a coalesced call can never leave an allowance for a later refresh.
+      function refresh(ensure = false) {
         if (disposed) return Promise.resolve()
-        if (lookup) return lookup
-        lookup = lookupSession(abort.signal).catch(() => null).then(value => {
+        if (lookup) return ensure ? lookup.then(() => refresh(true)) : lookup
+        lookup = requestSession(PAGE.read, abort.signal).then(value => {
+          if (value !== null || !ensure || disposed) return value
+          return requestSession(PAGE.ensure, abort.signal)
+        }).catch(() => null).then(value => {
           if (!disposed) { manager = value; publish(manager); schedule() }
         }).finally(() => { lookup = null })
         return lookup
       }
       const unsubscribers = [source.subscribe(schedule), ctx.layout.panelInfo.subscribe(schedule),
         ctx.sessions.list.subscribe(() => { void refresh() })]
-      window.addEventListener('focus', refresh)
-      void refresh()
+      // A listener wrapper: addEventListener would otherwise pass the Event as ensure.
+      const reread = () => { void refresh() }
+      window.addEventListener('focus', reread)
+      void refresh(true)
       schedule()
       return {
-        refresh,
+        retry() { return refresh(true) },
         back() { ctx.layout.selectPanel(null); void refresh().then(schedule) },
         dispose() {
           disposed = true
           abort.abort()
           unsubscribers.forEach(dispose => dispose())
-          window.removeEventListener('focus', refresh)
+          window.removeEventListener('focus', reread)
           document.documentElement.removeAttribute(PAGE.ready)
         },
       }
@@ -225,7 +237,7 @@ window.__ModuleLoader__.load({
             h('button', { type: 'button', onClick: () => ctx.layout.selectPanel(PAGE.plugins) }, text.plugins),
             session === null ? h(React.Fragment, null,
               h('span', { role: 'status' }, text.unavailable),
-              h('button', { type: 'button', onClick: () => guard.refresh() }, text.retry)) : null)
+              h('button', { type: 'button', onClick: () => guard.retry() }, text.retry)) : null)
         }
         // Consume the native launcher owner callback instead of inventing a global settings API.
         // A portal keeps the trigger usable outside the rc.1 drawer's inert subtree and Windows
