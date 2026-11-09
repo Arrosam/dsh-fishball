@@ -1,12 +1,12 @@
-import { PLUGIN } from './src/constants.js'
+import { PLUGIN, TOOL } from './src/constants.js'
+import { registerManagerNotify } from './src/tool.js'
 
 export { Config } from './src/config.js'
 export const name = PLUGIN.name
 // Cordis on both supported hosts treats '?' literally, not as optional injection.
-// Later contributions can use ctx.inject(['fishballInstance'], ...) without blocking this row.
+// Optional instance injection leaves the FN1 settings row loadable without X0-C.
 export const inject = ['tools']
 
-export function apply(ctx, config) {
-  // FN-1 is only the loadable row and config. Contributions are added by FN-2/3/6;
-  // do not require the optional instance hooks merely to load on an older instance.
+export function apply(ctx) {
+  ctx.inject([TOOL.service], registerManagerNotify)
 }
