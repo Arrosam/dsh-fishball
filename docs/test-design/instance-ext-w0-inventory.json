@@ -1045,7 +1045,7 @@
       "task": "X0-C",
       "technique": "EP",
       "status": "Red",
-      "name": "XC-EP-STUB-16 Samuel never mistakes a scoped connector stub for success \u2014 bridge refuses ExtensionError/not-implemented"
+      "name": "XC-EP-STUB-16 Samuel uses only the scoped connector operations \u2014 X12 EP/DT: in-list read delegates; out-of-list list is forbidden locally without a new handshake"
     },
     {
       "id": "XC-UC-01-M",

@@ -151,14 +151,37 @@ describe('X0-C U18 typed stub refusals', () => {
     })
   }
 
-  it('XC-EP-STUB-16 Samuel never mistakes a scoped connector stub for success — bridge refuses ExtensionError/not-implemented', async (t) => {
-    const service = (await bootChild(t)).requireInstance()
-    assert.equal(typeof service.bridge, 'function')
-    // The top-level bridge signature has no declared <area.member> spelling; do not invent one.
-    await assert.rejects(Promise.resolve().then(() => service.bridge(U18.watchdog, ['session.list'])), {
-      name: U18.errorName,
-      code: U18.notImplemented,
+  it('XC-EP-STUB-16 Samuel uses only the scoped connector operations — X12 EP/DT: in-list read delegates; out-of-list list is forbidden locally without a new handshake', async (t) => {
+    const scope = Object.freeze({
+      allowed: 'session.read',
+      denied: 'session.list',
+      forbidden: 'forbidden',
+      read: Object.freeze({ sessionId: 'scope-session', maxMessages: 1, maxBytes: 1 }),
+      list: Object.freeze({ limit: 1 }),
+      reply: Object.freeze({ messages: [], truncated: false }),
     })
+    const h = await bootChild(t)
+    const service = h.requireInstance()
+    const handshakes = h.host.handshakes.length
+    const client = service.bridge(U18.watchdog, [scope.allowed])
+    // X12/U9 and X0-W (§1.1, §5.1, §6): membership, not payload validity, decides
+    // these EP/DT rows. Both requests are valid per connector contract §4.1.
+    const beforeAllowed = h.host.requests.length
+    assert.deepEqual(await client.request(scope.allowed, scope.read), scope.reply)
+    assert.deepEqual(h.host.requests.slice(beforeAllowed).map(({ operation, payload }) => ({ operation, payload })), [
+      { operation: scope.allowed, payload: scope.read },
+    ])
+    const beforeDenied = h.host.requests.length
+    const framesBeforeDenied = h.host.frames.length
+    // U9 fixes the refusal code, not a sync/async error envelope or error class.
+    const code = await Promise.resolve().then(() => client.request(scope.denied, scope.list)).then(
+      (value) => value?.code ?? value,
+      (error) => error?.code ?? error,
+    )
+    assert.equal(code, scope.forbidden)
+    assert.equal(h.host.requests.length, beforeDenied, 'out-of-list refusal never reaches the connector')
+    assert.equal(h.host.frames.length, framesBeforeDenied, 'no request leaves the child on denial')
+    assert.equal(h.host.handshakes.length, handshakes, 'the scoped client reuses the instance handshake')
   })
 })
 
