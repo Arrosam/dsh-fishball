@@ -2,6 +2,8 @@
 
 状态：**用户已批准 v1 实现；开发/测试仅限 SDK 夹具与 disposable DSH_HOME，真实同步仍需另行提交用户批准**。刷新列表是独立只读功能，不需要批准任何凭据传输。本调查只读仓库及已安装 DSH rc.3 的 SDK/程序源码，未读取真实配置、环境变量、密钥文件或 API key。
 
+> **0.1.0-alpha.0 现状。** 本设计中的“两端页面配对”流程（邀请/pair capability、独立 loopback 通道、10 秒 deadline）未按此实现：child 由本 host 启动并拥有，provider 同步走生命周期线上的 host 端 “Model for Fishball” Check → Add 块，无配对。§2/§6.3 说 “不支持 reference/ambient 认证复制” 也已变化：`apiKeyEnv` 引用先在来源环境解析成值，再作为普通 API-key record 复制（2026-11-06 用户决定）。
+
 ## 1. 当前能力与隔离方案
 
 - 现在专用模型设置只保存 `provider/model/reasoningEffort?` 选择；这不是提供商定义，也不包含 API key。[模型选择](<../src/model-selection.js>)、[选择记录](<../src/store.js#L69-L75>)。
