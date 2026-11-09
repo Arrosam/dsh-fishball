@@ -8,9 +8,9 @@
  *
  * | id     | technique                     | expected |
  * |--------|-------------------------------|----------|
- * | L1     | EP (form)                     | the settings schema has a field for each of the 6 kept names and the 7 original ones; rebuilt with Schemastery it resolves {} to every documented default |
+ * | L1     | EP (form)                     | the settings schema has a field for each of the 6 kept names and the 6 active original ones; rebuilt with Schemastery it resolves {} to every documented default |
  * | L1b    | EP (removed fields)           | none of the 10 removed rev11-limits names is a form field |
- * | L2     | EP (value, nothing saved)     | the settings value shows each kept field at its default; the 7 original at theirs |
+ * | L2     | EP (value, nothing saved)     | the settings value shows each kept field at its default; the 6 active original at theirs |
  * | L3     | EP (existing install: saved config without the new fields) | after saving one old field, the saved row config has none of the 6 names, and the value still shows each default |
  * | L4 ×6  | BVA (min: 1)                  | accepted; value shows min; saved in the profile patch |
  * | L5 ×24 | BVA (min-1: 0) / EP (negative -1, fraction min+0.5, string "5") | refused; patch file and value unchanged |
@@ -75,7 +75,7 @@ describe('rev11-limits: the kept fields in the fishball-connector row config', (
     for (const [k, x] of Object.entries(patch)) assert.equal(saved[k], x, 'saved row config ' + k)
   }
 
-  it('L1 the settings form has the 6 kept fields and the 7 original ones, with the documented defaults', T, async () => {
+  it('L1 the settings form has the 6 kept fields and the 6 active original ones, with the documented defaults', T, async () => {
     // The row's form is described once its entry is active; poll briefly rather than read it once.
     let json
     await until(async () => { json = await host.call('settingsSchema', { ns: ROW_ID }); return formKeys(json).length > 0 }, 5000, 100)

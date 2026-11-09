@@ -12,10 +12,10 @@
  *
  * | id | technique | expected |
  * |----|-----------|----------|
- * | K2-V-01 | P | CONNECTOR_CONTRACT = {id: fishball-connector, major 1, minor 1} |
+ * | K2-V-01 | P | CONNECTOR_CONTRACT = {id: fishball-connector, major 1, minor 2} |
  * | K2-V-02 | P | UI_LANG.parameter = `lang`, values exactly {zh, en} |
  * | K2-V-03 | P | negotiateContract 1.0 → {major 1, minor 0} (a 1.0 instance still attaches) |
- * | K2-V-04 | P | negotiateContract 1.1 → minor 1; 1.5 → minor 1 (lower of the two) |
+ * | K2-V-04 | P | negotiateContract 1.1 → minor 1; 1.5 → minor 2 (lower of the two) |
  * | K2-V-05 | EP | major 0 / 2, another id → contract-version |
  * | K2-V-06 | P | validateAttachment of a 1.0 descriptor with ui {chat, settings} → accepted, ui unchanged |
  * | K2-V-07 | EP | a registered ui path that already carries `lang` is still accepted (descriptor rules unchanged) |
@@ -65,9 +65,9 @@ function loadFramedUrl() {
 }
 const framedUrl = loadFramedUrl()
 
-describe('K2 contract 1.1', () => {
-  it('K2-V-01 CONNECTOR_CONTRACT is 1.1 of fishball-connector', () => {
-    assert.deepEqual({ ...contract.CONNECTOR_CONTRACT }, { id: 'fishball-connector', major: 1, minor: 1 })
+describe('K2 language compatibility under contract 1.2', () => {
+  it('K2-V-01 CONNECTOR_CONTRACT is 1.2 of fishball-connector', () => {
+    assert.deepEqual({ ...contract.CONNECTOR_CONTRACT }, { id: 'fishball-connector', major: 1, minor: 2 })
   })
   it('K2-V-02 UI_LANG names `lang` with exactly the values zh and en', () => {
     assert.equal(contract.UI_LANG.parameter, 'lang')
@@ -78,7 +78,7 @@ describe('K2 contract 1.1', () => {
   })
   it('K2-V-04 the common minor is the lower of the two', () => {
     assert.equal(contract.negotiateContract({ id: 'fishball-connector', major: 1, minor: 1 }).minor, 1)
-    assert.equal(contract.negotiateContract({ id: 'fishball-connector', major: 1, minor: 5 }).minor, 1)
+    assert.equal(contract.negotiateContract({ id: 'fishball-connector', major: 1, minor: 5 }).minor, 2)
   })
   for (const declared of [{ id: 'fishball-connector', major: 0, minor: 1 }, { id: 'fishball-connector', major: 2, minor: 0 }, { id: 'other', major: 1, minor: 1 }]) {
     it('K2-V-05 ' + JSON.stringify(declared) + ' → contract-version', () => {

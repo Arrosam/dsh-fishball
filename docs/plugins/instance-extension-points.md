@@ -26,6 +26,12 @@ migration path**. These decisions supersede custom-2.0 transport work, not U20 w
 off or U21 / OQ-04 = B (questions/plan reviews bypass watchdog within Fishball). See the
 [decisions and capability matrix](<connector-mcp-option.md>) and revised §3/§5 below.
 
+**V2 COMPAT amendment (2026-11-09, D1–D3):** the accepted V2 native scope retains the
+existing connector, contract 1.2 and envelope v2. MCP/custom-2.0 topology and old attention-count
+proposals elsewhere in this historical design are superseded for V2. §3 below and the
+[connector contract](<../connector-contract.md>) govern compatibility and attention; historical
+verification plans below are not current attention acceptance criteria or execution results.
+
 ## 0. The user's watchdog decisions (2026-11-08)
 
 | # | Decision (user's words where given) | Where it lands |
@@ -90,7 +96,7 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | X5 *(withdrawn, U10: Connection Fetch routes, §11.3)* | `ui.registerRoute(pluginId, {method, path, handler(req) → {status, body}}) → dispose`, served at `api/ext/<pluginId>/<path>`, same bearer and body limits as `api/*` | a plugin's JSON routes | fold (`seen`), board (`board`, `export`) | fE4 (d) = b3 |
 | X6 *(withdrawn, U10)* | `ui.signal(pluginId, type)` → SSE event `ext` `{pluginId, type}`, data-free, coalesced per `(pluginId, type)` per tick | tell a module to re-read | board | b3 (b) |
 | X7 *(withdrawn, U10)* | Page hook object passed to each module's default export: `{document, i18n, request, sidebar({order}) → HTMLElement, onSignal(type, fn) → dispose, setTimelinePresenter(presenter) → dispose}` | page-side reach: an aside container (mounted above `#reminders`, ordered by `order`), the signal filtered to the module's own `pluginId`, and the **single-owner** timeline presenter with fE5's exact shape | fold (presenter), board (sidebar, signal) | fE5 + b3 (a)(b). Tested in the real browser, not in W0 (U9) |
-| X8 | `attention.set(pluginId, {unread, importantUnread, latestAt}) → dispose`, single owner | the value published through the optional MCP attention tool (§3) at once, after authenticated reattachment, and `{0, 0, null}` on dispose | fold | fE6 (instance half) |
+| X8 | async `attention.signal(pluginId, {important})` | stateless optional intent (§3); returns `{accepted:true}` only on connector acceptance; unsupported/disconnected refuses; no producer unread owner, disposer or reconnect replay | fold | fE6 (instance half) |
 | X9 | `inbox.claim({pluginId, kind, match(item) → key?}, onItem(item, key)) → dispose`; `inbox.release(key, {deliver, prefix?})`; `inbox.setBatcher(pluginId, fn(item, deliver)) → dispose` (single owner) | **one inbox pipeline** in `inbox.js receive`: approvals-row items → **claims** (a claimed item is acked at once and held) → **batcher** → `deliverInbox`. `release(…, {deliver: true})` re-enters the pipeline after the claims, so a released item is batched like any notice. `deliverInbox` gains an array form (fE7). `PERMISSION_NOTICE` marker added to `inbox-markers.js` | watchdog (claims), fold (batcher) | wE2 + fE7 |
 | X10 | `manager.notify({pluginId, dedupeKey, text, record?: {type, data}, wake}) → Promise<{queued \| held \| duplicate}>` | a plugin's message to Fishball: `wake: true` is one notice turn (source `{kind: 'fishball-notice', form: 'plugin', pluginId}`); `wake: false` is held for the next turn; dedupe is durable. **Not batched** (fold §7 batches inbox items only) | watchdog | wE4 (notify half) |
 | X11 | `manager.userTexts({limit, maxChars}) → [{text, at}]` | newest-first texts written by the **user** in Fishball's session, read-only | watchdog (`userQuote`) | wE8 |
@@ -102,7 +108,7 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | X19 | **Send gate** (instance-internal; the plugin only feeds it through X14): one check `gate.send(operation, sessionId) → ok \| {code, reason}` called by the bridge client for every manager→session send operation (`SUPERVISION.sendOperations` = `session.message`, `session.redirect`), plus the hand-over hint (§2.5) | **new (U5)**: while the gate is on, no send reaches a session without an **active** brief; replaces wE10's gate, which only covered `paused`/`halted`. **The gate is on only while `fishball-watchdog` is enabled AND healthy** (U7/U20); faults hand over to Fishball and pass sends | watchdog | wE10 gate + U5 + U7 |
 | X17 | `RUNTIME.bundledPlugins = [{name: 'fishball-fold-notify'}, {name: 'fishball-board'}, {name: 'fishball-watchdog'}]` and placement at every child start | built in, on at first placement | all three | fE8 = b4 |
 | X18 | `admin.plugins.get` marks a bundled plugin `{bundled: true, removable: false}`; `admin.plugin.remove` refuses `bundled-plugin`; enable/disable work. **Added:** disabling `fishball-watchdog`, through any path, is a hand-over (§2.4, U7) | the off switch the user keeps | all three | fE9 + U4 |
-| K1 / MCP-SERVER | shared optional MCP attention schema + connector `state.unread = {count, important}` | the brand mark and frame unread count (today always 0) and the important alert | fold | fE6 (wire half), fold §9.1 |
+| K1 / connector | optional `attention.signal` + connector-owned `state.unread = {count, important}` | green sidebar dot, existing important animation; count is a 0/1 latch reset on page open and detach | fold | fE6 (wire half), fold §9.1 |
 
 ### 1.2 Disagreements and the pick
 
@@ -111,7 +117,7 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | Manager-scope mechanism | fE2 `registerAgentSetup(fn)` vs wE3 `registerManagerTools` + wE4 `addManagerPromptSection` | **X2 only** | wE4 takes a static `{name, text}`, so the board's per-turn context cannot use it (board §8 b2). The DSH scope already has `tools.register`, `systemPrompt.section` and `systemPrompt.context` (§4). Helpers would duplicate them. |
 | Service name | `fishballInstanceExtensions` vs `fishballInstance` | `fishballInstance` (`apiVersion: 1`) | versioned; one optional inject detects an older instance |
 | Manager identity | `fishballChat.sessionId()` vs `manager.sessionId()` | `manager.sessionId()` | keeps `fishballChat` internal; it sits next to the other manager members |
-| Single-owner refusal code | "first registered wins" (fE5) vs `delegate-busy` (wE6) | `owner-busy` for X7 presenter, X8, X9 batcher, X15 (per session), X16 | one rule, one test partition |
+| Single-owner refusal code | "first registered wins" (fE5) vs `delegate-busy` (wE6) | `owner-busy` for X7 presenter, X9 batcher, X15 (per session), X16 | one rule, one test partition |
 | Namespace | `fold-notify` vs `fishball-board` | the package name | one rule for records, routes, files and signals |
 | Showing plugin records | fE3 needs a page module; the watchdog has none | X3 with an optional `text` fallback | the watchdog's guard notice must reach the user even with fold-notify off (watchdog §4.5.4 step 3) |
 | Inbox: claims vs batcher order | not stated by either | claims first, then the batcher; a released item re-enters after the claims | a claimed approval notice must never be delivered, batched or not; a released notice is an ordinary notice for fold §7 |
@@ -455,52 +461,50 @@ approximate counts and provider-usage rollover in watchdog §2.2/§9. U14 remove
   passing sends; recovery keeps briefs dormant. Ordinary rollover and an oversized individual
   card are not plugin faults. No approval deadline, auto-approval or fault-induced halt is added.
 
-## 3. One-way MCP compatibility and timer-free scope (K1 + K2, U22)
+## 3. V2 retained connector compatibility (D1–D3)
 
-The [one-way MCP decisions](<connector-mcp-option.md#0-user-decisions-2026-11-09>) supersede the
-parked [custom contract 2.0 baseline](<../connector-contract-2.0.md>). MCP is the only control plane;
-first-party authenticated push is selected, not optional work. External delegated approvals/questions
-are on by default with no setting to turn them off; authorization/capability checks remain. K1 freezes the semantic profile and small event/ack
-contract, MCP-SERVER implements the connector server, X0-W the scoped client adapter, and FB-PUSH
-the Fishball return channel. K2 retains mandatory timer-free settlement/lifecycle behavior.
+V2 keeps `fishball-connector/contract`, the two-member attachment service, operation names and
+envelope v2. Public contract **1.2** adds explicit `interaction.timerfree` semantic negotiation;
+minor version alone never enables it. Both peers advertise the marker; the built-in requires it.
+The strict descriptor validator receives `{interactionTimerfree: true}` only on that negotiated
+channel: interaction `expiresAt` must be absent. Default/legacy context still requires its numeric
+value. This is an explicit bounded amendment to the additive-minor rules, not globally optional
+expiry. Grant/attachment expiry and envelope/authority checks are unchanged.
 
-**Peers/release:** remove old custom control endpoint/exports and upgrade all built-in consumers and
-child snapshot imports in the same breaking change. No legacy migration, dual-control release or
-old attach negotiation. Current packages are `0.1.0-alpha.0`, with instance peer
-`>=0.1.0-alpha.0 <2`; the earlier both-`2.0.0` / peer-`>=2.0.0 <3.0.0` is still only a numbering
-proposal. Set the eventual peer range to the compatible new connector release, excluding old control
-packages. Runtime semantic capability checks remain mandatory; MCP protocol negotiation or npm
-versions alone do not prove timer-free behavior. No manifest changes are part of this doc update.
-
-| Manager / instance | Connector | Result under selected design |
+| Instance | Connector | Result |
 | --- | --- | --- |
-| New MCP client with required semantic capabilities | New MCP server | Scoped control; optional attention; offers only with authorized intake/answer capability |
-| Old custom-control consumer (including third-party 1.1) | New connector | Incompatible before delegation; old endpoint/exports removed, no adapter |
-| New built-in instance | Old custom-control connector | Peer/runtime preflight incompatibility before delegation; no downgrade |
-| MCP client without optional attention or offer intake | New MCP server | Controls remain usable; zero unread projection / user-owned nondelegated cards |
-| External offer-capable client, idle and never polling | New MCP server | Delegated items wait; no timer-based transfer; first committed outcome wins (OQ-14) |
+| Legacy or marker absent | New | Ordinary controls retained; no delegated approvals/questions/plans; source-user fallback |
+| New built-in requiring marker | Old | `unsupported-capability`; actionable connector-upgrade message and own detach; no downgrade |
+| Both advertise marker | New | Timer-free interactions when relevant authority/intake/answer capabilities also hold |
+| Attention unsupported | Either | No attention request, truthful local refusal; attachment/control capability independent |
 
-### 3.1 Retained attention domain behavior
+Eligible managed questions/plans go directly to Fishball, bypass watchdog enrollment and need no
+refine prerequisite. Source-user answer races and explicit escalation remain. No timeout-based
+transfer or fabricated outcome is introduced. Stored `questionMode` and `approvalAnswerSeconds`
+remain load-compatible but inert; controls/copy disappear without rewriting saved values or adding
+a replacement switch. Saved `user` no longer blocks eligible question delegation.
 
-The payload and projection below survive; K1 freezes their MCP tool/schema names instead of reviving
-the old wire handshake/envelope:
+### 3.1 Optional attention intent and connector ownership (X8)
 
-| Item | Shape |
-| --- | --- |
-| Optional attention tool (client → connector; historical name `instance.attention`) | `{unread, importantUnread, latestAt}` → `{accepted: true}`; integers with `0 ≤ importantUnread ≤ unread ≤ LIMITS.unreadMax` (9999); `latestAt` an epoch-ms integer or `null`. Invalid input is refused without changing the last valid value; K1 freezes the domain error mapping |
-| Connector view `state.unread = {count, important}` | `count = unread`, `important = importantUnread > 0`; `{0, false}` when no value, on detach and on logical authenticated-session loss, not ordinary HTTP/TCP or optional SSE close. This fixes today's bug: `client.js:740` reads `state.unread?.count`, but `index.js:137-232` has no `unread` view, so the count is always 0 |
+- Local API: async `attention.signal(pluginId, {important: boolean})`. Plugin scoping remains local;
+  no plugin identity is added to the wire. This is intent, not an unread-state setter or registration.
+- Wire: optional child→main `attention.signal`, `sessionId:null`, exactly `{important:boolean}` →
+  exactly `{accepted:true}`. Send only when the ready authenticated connector advertises it.
+  Invalid payload is `invalid-envelope` without channel closure or latch mutation; unsupported and
+  disconnected are truthful failures, never fabricated acceptance.
+- No count, timestamp, unset, producer-owned unread state, disposal clear or reconnect replay.
+  The child retains no attention report. A response acknowledges current in-memory acceptance only.
+- The connector alone owns `state.unread = {count, important}`. Initial/reset state is
+  `{count:0, important:false}`; a signal sets count to 1 and latches importance with logical OR.
+  Repeated ordinary signals cannot downgrade important attention before reset.
+- FishballView mount posts `{}` once to `/api/fishball/connector/attention/read`. This and
+  detach/channel loss reset the latch; stale-owner results cannot affect a replacement attachment.
+  There is no feedback to the instance and no reset on every snapshot/iframe refresh.
+- Sidebar fish reuses the existing green dot, with the existing animation only for important
+  attention. No attention timers. Frame count is the same 0/1 latch, not producer unread totals.
 
-- `LIMITS.unreadMax` remains 9999. Attention stays optional: publish only when supported; missing
-  attention means zero count, never permission to restore timer-based approvals.
-- K1 owns shared compatibility/capability and rejection fixtures; MCP-SERVER implements runtime
-  checks. K2 owns mandatory timer-free approval/question/plan-review semantics. Ship the server,
-  K2 and matching built-in adapters together; no expiry exception or downgrade.
-- Required control/behavioral capability mismatch refuses attachment before traffic/delegation.
-  Copying server declarations is not implementing them. Exact identifiers/errors freeze in K1;
-  custom `CONNECTOR_CONTRACT.major = 2`, envelope v2 and lower-minor negotiation are **parked
-  history**, not tasks or live MCP compatibility rules.
-- Watchdog claims, hand-over/start rules and question bypass remain child-side. No reverse MCP
-  server, per-watchdog endpoint or external watchdog route mutation is introduced.
+Watchdog claims, hand-over/start rules and question bypass stay child-side. This work adds no new
+public connector service member, transport, event or MCP component.
 
 ## 4. Compatibility: DSH 0.2.1-rc.5 and 0.2.2-rc.1
 
@@ -571,7 +575,7 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | **X0-C** core: service, manager, chat | new `child/extensions.js`; `child/app.js` (provide); `child/chat.js` (X1, X2 chain in `configure`/`composePersona` + live apply, X10, X11, `deliverInbox` array form and the X19 prefix call); `child/bridge.js` (**only** the one X19 `gate.send` call in the request path, a pass-through stub) | — for local work (SP-X1 done); align transport ports with K1 before W1 | Typed control/intake ports for X0-W/FB-PUSH, not a second control or push implementation; `fishballInstance` v1 provided; X1, X2, X10, X11 behave as §1 and §12.5 (durable dedupe, the array form); X3 has **no** member in X0-C (U15); every other member a stub that refuses `not-implemented` as §12.5 specifies; the X19 call sites exist and pass everything while the watchdog is effectively off; X10 retries pending hand-over notifications after reservation/queue failure using one stable message identity, without losing or duplicating delivery (§12.5); existing no-plugin behavior holds except the approved lifecycle/contract changes |
 | **X0-I** inbox pipeline | `child/inbox.js`, new `child/ext/inbox.js`, `src/slim/inbox-markers.js` | X0-C | X9: claims before the batcher, release re-enters, ack/refuse per item; U14: held cards never expire by time, and are dropped only on settlement/closure; U20: whole-plugin hand-over releases held items to Fishball once, invalidating stale callbacks; U21: questions/plan reviews bypass watchdog claims and always reach Fishball |
 | ~~X0-U~~ | **withdrawn (U10)**; replaced by SP-PG, CHILD-WEB, EMB, PG-1, PANELS (§5.4) | — | — |
-| **X0-W** scoped MCP client/control + attention adapter | `child/bridge.js`, new `child/ext/{bridge-scope,attention}.js` | X0-C, K1; integrate MCP-SERVER | X12 local `forbidden`; raw MCP tools cannot bypass X12/X13/X19; X8 publishes on set and authenticated reattachment, zero on dispose, skipped without capability; no legacy control framing or push implementation (FB-PUSH owns push) |
+| **X0-W** scoped MCP client/control + attention adapter | `child/bridge.js`, new `child/ext/{bridge-scope,attention}.js` | X0-C, K1; integrate MCP-SERVER | X12 local `forbidden`; raw MCP tools cannot bypass X12/X13/X19; X8 sends stateless attention signals only with capability, never replays or clears on dispose (V2 §3 supersedes the historical MCP task); no legacy control framing or push implementation (FB-PUSH owns push) |
 | **X0-G** side agents | new `child/ext/side-agents.js` | X0-C | X13 lock-down on both versions; U14/Q-P: omitted decision `timeoutMs` installs no timer, while explicit check timeouts still work |
 | **X0-A** approvals seam (server) | `child/approvals.js`, `child/decisions.js` (the UI files move to PANELS) | X0-C | X15 per-session claim and routing (server half only; the tag and the escalation card move to PANELS) (§2.6); a claim is refused `not-supervised` unless the current X14 owner is ready and holds the session active or paused; dormant, clear or whole-plugin failure releases it immediately, with generation checks and once-only rerouting of open permission cards; U21 questions/plan reviews always bypass claims and watchdog context (§2.7); `delegate-no-grant`, `grant-off-supervised`; U14/Q-P: a Fishball decision turn ending without a decision escalates at once, with no timer; final U17/Q-Q: track reached layers, return the requesting tool result, record/notify once only at reached layers, wake Fishball once for a user decision and never for a watchdog-only decision; immediately clear instance cards, remove closed/retired and attribution-label retention, and retain only searchable transcript entries subject to normal compaction (§12.4); K2/PANELS own the corresponding connector/UI clear |
 | **X0-S** supervision, start rule, send gate | `child/session-tools.js`, new `child/ext/{supervision,session-starts,send-gate}.js` | X0-C, X0-A (the claim port) | X14 owns synchronous generation-scoped `ready()` / `fail(cause)`, readiness and managed changes; disable or any detected fault immediately hands the whole supervised set to Fishball, releases claims/hooks and passes sends, with one durable/retryable notice and no stop/halt or plugin-gone grace (§2.4); storage failure opens routing/gate in memory first; recovery verifies model/stores/hooks and persists retained briefs as dormant before readiness, never auto-reclaims; X16 schema and execution both require a healthy current-generation owner, rechecking validation/start races; failed/timed-out/lost-owner attach preserves the successful start with `watchdog.assigned:false` and Fishball ownership (§2.3); X19 uses enabled AND healthy plus §2.5's table/prefix on both send paths; stale generations cannot set active, claim or answer; no `gateOn` file |

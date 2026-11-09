@@ -7,6 +7,9 @@
 import { tempPath } from './temp-path.mjs'
 import path from 'node:path'
 
+const LEGACY_STUB_CAPABILITIES = Object.freeze(['inbox.push'])
+const INTERACTION_TIMERFREE = 'interaction.timerfree'
+
 export const STUB = Object.freeze({
   /** The fixture plugin (one row, its own id) and its folder. */
   row: 'fbtest-stub-instance',
@@ -15,8 +18,10 @@ export const STUB = Object.freeze({
   ipc: Object.freeze({ request: 'fbtest-stub', response: 'fbtest-stub-reply' }),
   /** The default descriptor fields; a case overrides any of them. */
   descriptor: Object.freeze({ id: 'stub-a', name: 'Stub A' }),
-  /** What the stub serves and requires by default (contract §3.2: at least inbox.push). */
-  capabilities: Object.freeze(['inbox.push']),
+  /** Contemporary interaction paths negotiate explicitly; the stub does not require the marker. */
+  capabilities: Object.freeze([...LEGACY_STUB_CAPABILITIES, INTERACTION_TIMERFREE]),
+  /** A pre-1.2 peer remains available for control-only and user-fallback cases. */
+  legacy: Object.freeze({ minor: 1, capabilities: LEGACY_STUB_CAPABILITIES }),
   /** status() answer before a case sets one (contract §6 STATUS). */
   status: Object.freeze({ state: 'ready', code: null }),
   /** Status modes beside a plain value: no status function at all, or one that throws. */

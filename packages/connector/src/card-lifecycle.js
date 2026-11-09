@@ -1,10 +1,8 @@
 /**
  * A decision card's life in the user's pile (DESIGN §7a.6, §10e; the slim child's T09 cards).
  *
- * One rule owns every card: once it is in the user's pile, nothing schedules a timer. The only
- * window Fishball's code puts on a card is `approvalAnswerSeconds` (src/config.js), and it decides
- * only whether the card moves from Fishball to the user at all; a card that moved has no deadline.
- * A card therefore ends only when:
+ * Decision cards have no deadline, whether waiting for Fishball or the user.
+ * A card ends only when:
  * - the user answers it, on the card or earlier in the session's own prompt (CARD_END.user,
  *   CARD_END.inSession);
  * - the originating session cancels or withdraws the call (cancelled), its turn ends

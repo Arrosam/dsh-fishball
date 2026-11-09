@@ -74,7 +74,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { stat } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
 import {
-  DELIVERY, DIGEST, ENVELOPE, ERROR, EVENTS, IMAGE_TYPES, OPERATION, OPERATIONS, ROLE, SIDE, WATCH_ERROR,
+  DELIVERY, DIGEST, ENVELOPE, ERROR, EVENT, EVENTS, SEMANTIC_CAPABILITY, INBOX_KIND, IMAGE_TYPES, OPERATION, OPERATIONS, ROLE, SIDE, WATCH_ERROR,
   WATCH_MODE, WATCH_STATUS, TRANSPORT_METHODS, ContractError, checkHandshake, decodeEnvelope, encodeEnvelope, makeEnvelope, validateEvent,
   validateRequest,
 } from '../contract.js'
@@ -140,6 +140,12 @@ const RELATED_OPERATIONS = new Set([OPERATION.sessionRead, OPERATION.attachmentR
 /** Message-carrying operations that consume attachment hostRefs (§6.4). */
 const ATTACHMENT_OPERATIONS = new Set([OPERATION.sessionStart, OPERATION.sessionMessage, OPERATION.sessionRedirect])
 
+const INTERACTION_MUTATIONS = new Set([
+  OPERATION.approvalAnswer, OPERATION.questionAnswer, OPERATION.questionAsk,
+  OPERATION.questionAnswerOwn, OPERATION.promptList, OPERATION.promptAnswer,
+])
+const INTERACTION_EVENTS = new Set([EVENT.approvalRequest, EVENT.approvalSettled, EVENT.approvalRan])
+
 const ERROR_CODES = new Set(Object.values(ERROR))
 const SERVICE_METHODS = Object.freeze([
   'enabled', 'managedIds', 'isManaged', 'isFishball', 'isRelated', 'describe', 'workspaces', 'resolveWorkspacePath',
@@ -152,7 +158,7 @@ const ENCODING = Object.freeze({ hex: 'hex' })
  * (invalid-envelope) still closes, except for question.answer, whose every payload failure is
  * answered so the instance learns which answer was malformed (the user's decision, 2026-11-08).
  */
-const PAYLOAD_REFUSAL = Object.freeze({ shapeBreak: ERROR.invalid, answeredWhole: new Set([OPERATION.questionAnswer]) })
+const PAYLOAD_REFUSAL = Object.freeze({ shapeBreak: ERROR.invalid, answeredWhole: new Set([OPERATION.questionAnswer, OPERATION.attentionSignal]) })
 
 /** A bounded comparison key for request dedupe: a digest, never the payload text itself. */
 const fingerprintOf = (payload) => createHash(DIGEST.algorithm).update(JSON.stringify(payload)).digest(ENCODING.hex)
@@ -222,7 +228,9 @@ class BridgeHost {
   }
 
   /** The operations this host answers now; the handshake's welcome is built from it. */
-  get capabilities() { return Object.freeze([...this.handlers.keys()]) }
+  get capabilities() { return Object.freeze([...this.handlers.keys(), SEMANTIC_CAPABILITY.interactionTimerfree]) }
+
+  get interactionReady() { return this.connection?.ready === true && this.connection.interactionTimerfree === true }
 
   /**
    * Add one §5.2 operation. T09 and T06 call this for their own operations before a transport
@@ -274,7 +282,7 @@ class BridgeHost {
     this.disconnect()
     const connection = {
       connectionId: typeof metadata.connectionId === 'string' ? metadata.connectionId : randomUUID(),
-      transport, closed: false, ready: false, handshaking: false, announced: new Set(),
+      transport, closed: false, ready: false, interactionTimerfree: false, handshaking: false, announced: new Set(),
       seen: new Map(), pending: new Map(), inflight: 0, inboxSending: false,
       // Inbox keys the child refused on this connection: they stay queued for the next one, and
       // are never retried here (contract §3.3, §4.5).
@@ -311,12 +319,14 @@ class BridgeHost {
   publish(operation, sessionId, payload) {
     if (this.closed) throw new ContractError(ERROR.disconnected)
     if (!EVENTS.includes(operation)) throw new ContractError(ERROR.operation)
-    validateEvent(operation, payload)
     const connection = this.connection
+    // Never project changed interaction semantics to control-only peers.
+    if (INTERACTION_EVENTS.has(operation) && !this.interactionReady) return false
+    validateEvent(operation, payload, connection)
     if (!connection?.ready) return false
     const envelope = makeEnvelope(this.hostId, sessionId, randomUUID(), ENVELOPE.type.event, operation, payload)
     try {
-      connection.transport.send(encodeEnvelope(envelope, this.hostId))
+      connection.transport.send(encodeEnvelope(envelope, this.hostId, connection))
     } catch {
       this.disconnect(connection)
       return false
@@ -369,7 +379,7 @@ class BridgeHost {
 
   /** Tell observers once per edge; a listener cannot break the channel. */
   emitConnection(connection, ready, cause) {
-    const edge = ready ? { ready, connectionId: connection.connectionId } : { ready, connectionId: connection.connectionId, cause }
+    const edge = ready ? { ready, interactionTimerfree: connection.interactionTimerfree, connectionId: connection.connectionId } : { ready, connectionId: connection.connectionId, cause }
     for (const listener of this.connectionListeners) {
       try { listener({ ...edge }) } catch { /* its own failure */ }
     }
@@ -380,7 +390,7 @@ class BridgeHost {
     let envelope
     try {
       // A foreign frame (v1, or the other direction) is a protocol violation: close, never guess.
-      envelope = decodeEnvelope(encoded, { receivingSide: SIDE.main, expectedHostId: this.hostId, now: this.now() })
+      envelope = decodeEnvelope(encoded, { receivingSide: SIDE.main, expectedHostId: this.hostId, now: this.now(), interactionTimerfree: connection.interactionTimerfree })
     } catch (error) {
       if (!this.refusePayload(connection, encoded, error)) this.disconnect(connection)
       return
@@ -451,6 +461,7 @@ class BridgeHost {
     }
     connection.handshaking = true
     connection.announced = new Set(envelope.payload.capabilities)
+    connection.interactionTimerfree = connection.announced.has(SEMANTIC_CAPABILITY.interactionTimerfree)
     connection.ready = true
     clearTimeout(connection.timer)
     this.reply(connection, envelope, { capabilities: [...available], hostInstanceId: this.hostInstanceId }, ENVELOPE.type.response)
@@ -475,7 +486,11 @@ class BridgeHost {
   async dispatchRequest(connection, envelope, entry) {
     const handler = this.handlers.get(envelope.operation)
     let outcome
-    if (handler === undefined) outcome = { type: ENVELOPE.type.error, code: ERROR.operation }
+    if (!connection.interactionTimerfree && envelope.operation === OPERATION.approvalList) {
+      outcome = { type: ENVELOPE.type.response, payload: { approvals: [] } }
+    } else if (!connection.interactionTimerfree && INTERACTION_MUTATIONS.has(envelope.operation)) {
+      outcome = { type: ENVELOPE.type.error, code: ERROR.featureOff }
+    } else if (handler === undefined) outcome = { type: ENVELOPE.type.error, code: ERROR.operation }
     else if (connection.inflight >= this.limits.maxInflight) outcome = { type: ENVELOPE.type.error, code: ERROR.limit }
     else {
       connection.inflight++
@@ -517,7 +532,7 @@ class BridgeHost {
     const send = (frame) => { try { connection.transport.send(frame) } catch { this.disconnect(connection) } }
     const envelope = makeEnvelope(this.hostId, request.sessionId, request.requestId, type, request.operation, payload)
     let encoded
-    try { encoded = encodeEnvelope(envelope, this.hostId) }
+    try { encoded = encodeEnvelope(envelope, this.hostId, connection) }
     catch (error) {
       // A response too large for its frame is answered as a typed refusal while the connection lives.
       if (type === ENVELOPE.type.response) this.reply(connection, request, { code: errorCode(error) }, ENVELOPE.type.error)
@@ -563,7 +578,13 @@ class BridgeHost {
     if (!connection.announced.has(OPERATION.inboxPush)) return
     // An item this connection already refused is skipped: it waits for the next connection, so a
     // later push on this same one cannot resend it (contract §3.3, §4.5).
-    const key = this.inboxOrder.find((candidate) => this.inboxPending.has(candidate) && !connection.inboxRefused.has(candidate))
+    const key = this.inboxOrder.find((candidate) => {
+      const entry = this.inboxPending.get(candidate)
+      // Pending items survive reconnects; a legacy replacement must not inherit interaction
+      // delivery authority. Keep these pending without an ack while ordinary items pass.
+      return entry !== undefined && !connection.inboxRefused.has(candidate)
+        && (entry.item.kind !== INBOX_KIND.approval || this.interactionReady)
+    })
     if (key === undefined) return
     const entry = this.inboxPending.get(key)
     const requestId = randomUUID()
@@ -572,7 +593,7 @@ class BridgeHost {
     connection.pending.set(requestId, { operation: OPERATION.inboxPush, key, timer })
     connection.inboxSending = true
     const envelope = makeEnvelope(this.hostId, null, requestId, ENVELOPE.type.request, OPERATION.inboxPush, entry.item)
-    try { connection.transport.send(encodeEnvelope(envelope, this.hostId)) }
+    try { connection.transport.send(encodeEnvelope(envelope, this.hostId, connection)) }
     catch {
       connection.inboxSending = false
       this.disconnect(connection)

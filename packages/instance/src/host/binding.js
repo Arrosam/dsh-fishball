@@ -7,7 +7,7 @@
  * (disable, uninstall, reload), on 0.2.1-rc.5 and 0.2.2-rc.1 alike. That is how a connector
  * enabled at runtime is noticed with no main restart, and how a disabled one is noticed at once.
  */
-import { ATTACH_ERROR, CONNECTOR_SERVICE, STATUS, STATUS_CODES } from '../slim/contract.js'
+import { ATTACH_ERROR, CONNECTOR_SERVICE, STATUS, STATUS_CODES, ENVELOPE, ERROR, SIDE, SEMANTIC_CAPABILITY, decodeEnvelope } from '../slim/contract.js'
 
 /** The instance's own state while the connector service is absent (D25); not a contract value. */
 export const BINDING_STATE = Object.freeze({ connectorMissing: 'connector-missing' })
@@ -15,7 +15,7 @@ export const BINDING_STATE = Object.freeze({ connectorMissing: 'connector-missin
  * The instance's own codes for a refused attach (design §18.5 inst-OQ-03). They are instance
  * codes, not contract STATUS_CODES, so they never reach the connector through `status()`.
  */
-export const BINDING_CODE = Object.freeze({ instanceBusy: 'NATIVE_INSTANCE_BUSY', contractVersion: 'NATIVE_CONTRACT_VERSION' })
+export const BINDING_CODE = Object.freeze({ instanceBusy: 'NATIVE_INSTANCE_BUSY', contractVersion: 'NATIVE_CONTRACT_VERSION', connectorUpgrade: 'NATIVE_CONNECTOR_UPGRADE_REQUIRED' })
 /**
  * Launch refusals this row reports as their own code instead of the generic NATIVE_START_FAILED
  * (D2). INVALID_MAIN_HOME is the one the user can act on: the DSH home is not a canonical real
@@ -79,5 +79,38 @@ export function followConnector(ctx, { appeared, disappeared }) {
     // (@deepseek-ai/cordis 4.0.5, isConstructor and the plugin runner). The effect is collected
     // by the sub-scope's own fiber and runs when the injected service goes away.
     scope.effect(() => disappeared, 'fishball-instance: connector departure')
+  })
+}
+
+/** Instance-owned observation only: the connector service remains the frozen two-member API. */
+export const CONNECTOR_UPGRADE_MESSAGE = 'Upgrade Fishball connector to contract 1.2 with interaction.timerfree support before starting this Fishball instance.'
+
+export function observeConnectorUpgrade(transport, hostId, refused) {
+  let helloId
+  let reported = false
+  return Object.freeze({
+    onMessage(listener) {
+      return transport.onMessage((encoded) => {
+        try {
+          const frame = decodeEnvelope(encoded, { expectedHostId: hostId, receivingSide: SIDE.main })
+          if (frame.operation === ENVELOPE.handshake && frame.type === ENVELOPE.type.request) helloId = frame.requestId
+        } catch { /* The bridge owns malformed-frame handling. */ }
+        listener(encoded)
+      })
+    },
+    send(encoded) {
+      let incompatible = false
+      try {
+        const frame = decodeEnvelope(encoded, { expectedHostId: hostId, receivingSide: SIDE.child })
+        incompatible = frame.operation === ENVELOPE.handshake && frame.requestId === helloId
+          && ((frame.type === ENVELOPE.type.error && frame.payload.code === ERROR.capability)
+            || (frame.type === ENVELOPE.type.response && !frame.payload.capabilities.includes(SEMANTIC_CAPABILITY.interactionTimerfree)))
+      } catch { /* The bridge owns malformed-frame handling. */ }
+      // Record before forwarding: the child can synchronously close on refusal.
+      if (incompatible && !reported) { reported = true; refused() }
+      return transport.send(encoded)
+    },
+    onClose: (listener) => transport.onClose(listener),
+    close: () => transport.close(),
   })
 }

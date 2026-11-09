@@ -86,7 +86,7 @@ const LOG = 'fishball-approval-relay'
  * @param {object} options
  * @param {object} options.ctx - the native host's Cordis context (only `get` and `logger` are used).
  * @param {object} options.sessions - the SessionService port (src/slim/host/session-port.js).
- * @param {() => number} [options.now] - clock for offer expiry and inbox times.
+ * @param {() => number} [options.now] - clock for inbox times.
  */
 export function createApprovalRelay(options) {
   const { ctx, sessions, now = Date.now } = options ?? {}
@@ -134,7 +134,7 @@ class ApprovalRelay {
     this.attached.add(host)
     this.host = host
     for (const operation of APPROVAL_OPERATIONS) host.register(operation, (request) => this.handle(operation, request))
-    this.disposers.push(host.onConnection(({ ready }) => this.connection(ready)))
+    this.disposers.push(host.onConnection(({ ready, interactionTimerfree }) => this.connection(ready, interactionTimerfree)))
     try { this.observe() } catch { /* the row is not up: feature-off until it is */ }
     this.flushQueuedInbox()
   }
@@ -184,6 +184,7 @@ class ApprovalRelay {
     if (this.disposed) return
     this.disposed = true
     try { this.observed?.bridgeReady?.(false) } catch { /* the row is already gone */ }
+    try { this.observed?.inboxReady?.(false) } catch { /* the row is already gone */ }
     this.unsubscribe?.()
     this.unsubscribe = undefined
     this.observed = undefined
@@ -217,17 +218,21 @@ class ApprovalRelay {
    * still pending (a hand-over note, message_fishball, a watch or approval notice) goes to the
    * child that is now connected. The host keeps an unacked item for the next connection itself.
    */
-  connection(ready) {
+  connection(ready, interactionTimerfree) {
     if (this.disposed) return
     try {
       const state = this.state()
-      state.bridgeReady(ready === true)
+      state.bridgeReady(ready === true && interactionTimerfree === true)
+      state.inboxReady?.(ready === true)
       const host = this.host
-      if (ready === true && host !== undefined) state.attachInbox((item) => host.pushInbox(item))
+      if (ready === true && host !== undefined) state.attachInbox(
+        (item) => host.pushInbox(item),
+        (row) => row.kind !== INBOX_KIND.approval || host.interactionReady === true,
+      )
       this.observe()
     } catch { /* no provider yet: the next edge tries again */ }
     this.offers.clear()
-    if (ready === true) this.reoffer()
+    if (ready === true && interactionTimerfree === true) this.reoffer()
   }
 
   /** Re-offer every live card of every managed session; the host never replays an answer. */
@@ -244,7 +249,7 @@ class ApprovalRelay {
     const state = this.state()
     return [...state.liveApprovals(sessionId), ...state.liveQuestions(sessionId)]
       .map((descriptor) => fitDescriptor(descriptor))
-      .filter((descriptor) => descriptor !== undefined && descriptor.expiresAt > this.now())
+      .filter((descriptor) => descriptor !== undefined)
       .sort((a, b) => a.at - b.at)
   }
 
@@ -263,7 +268,7 @@ class ApprovalRelay {
   /** Push one live card; a descriptor the contract cannot represent is not offered at all. */
   offer(descriptor, sessionId) {
     const fitted = fitDescriptor(descriptor)
-    if (fitted === undefined || fitted.expiresAt <= this.now()) return
+    if (fitted === undefined || this.host?.interactionReady !== true) return
     // A re-offer (a new round, or a reconnect) invalidates the offer the child may still hold.
     this.offers.delete(fitted.approvalId)
     try { this.host?.publish(EVENT.approvalRequest, sessionId, this.withOffer(fitted)) } catch { /* closed */ }
@@ -386,6 +391,14 @@ class ApprovalRelay {
    */
   async handle(operation, { sessionId, payload }) {
     const state = this.state()
+    // Legacy connections retain control surfaces, never delegated decision authority.
+    if (this.host?.interactionReady !== true) {
+      if (operation === OPERATION.approvalList) {
+        await ensureManaged(this.sessions, sessionId)
+        return { approvals: [] }
+      }
+      if (operation !== OPERATION.grantList && operation !== OPERATION.grantRevoke) throw new BridgeRefusal(ERROR.featureOff)
+    }
     switch (operation) {
       case OPERATION.approvalList: {
         await ensureManaged(this.sessions, sessionId)
@@ -565,18 +578,18 @@ function grantOf(grant) {
  */
 function fitDescriptor(descriptor) {
   if (descriptor === null || typeof descriptor !== 'object' || Array.isArray(descriptor)) return undefined
-  const { approvalId, kind, prompt, choices, expiresAt, at, toolName, callId, reason, quotes, title, questions } = descriptor
+  const { approvalId, kind, prompt, choices, at, toolName, callId, reason, quotes, title, questions } = descriptor
   if (typeof approvalId !== 'string' || approvalId.length === 0) return undefined
   if (kind !== APPROVAL_KIND.approval && kind !== APPROVAL_KIND.question) return undefined
   if (typeof prompt !== 'string' || prompt.length === 0) return undefined
   if (!Array.isArray(choices) || choices.some((choice) => typeof choice !== 'string' || choice.length === 0)) return undefined
   if (new Set(choices).size !== choices.length) return undefined
-  if (!Number.isSafeInteger(expiresAt) || !Number.isSafeInteger(at)) return undefined
+  if (!Number.isSafeInteger(at)) return undefined
   if (typeof toolName !== 'string' || toolName.length === 0) return undefined
   if (callId !== null && (typeof callId !== 'string' || callId.length === 0)) return undefined
   if (typeof reason !== 'string' || !Array.isArray(quotes) || quotes.some((quote) => typeof quote !== 'string')) return undefined
   const base = {
-    approvalId, kind, prompt, choices: [...choices], expiresAt, at, toolName, callId,
+    approvalId, kind, prompt, choices: [...choices], at, toolName, callId,
     reason: cutChars(reason, LIMITS.reasonChars),
     quotes: quotes.map((quote) => cutToBytes(quote, LIMITS.quoteBytes, ELLIPSIS)),
     title: cutChars(typeof title === 'string' ? title : '', LIMITS.titleChars),

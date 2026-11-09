@@ -7,8 +7,8 @@
  *    the shell's New Session handler) and opens the Fishball view (item 3). On macOS Desktop
  *    the brand row is a drag region without a button; there Fishball opens from its
  *    sidebar row.
- * 2. The connector's Plugins card (§0.7, D24): DSH's form of the connector's settings (its limits
- *    and the question mode, src/config.js; C2: the only place they change), and "Open instance
+ * 2. The connector's Plugins card (§0.7, D24): DSH's form of the connector's active limits
+ *    (src/config.js; C2: the only place they change), and "Open instance
  *    settings" while the attached instance registered `ui.settings`. The instance's own status,
  *    model, plugins and settings are the instance's pages, not this card.
  * 3. The Fishball view (slim §7) inside the connector's frame (§0.5 "The frame", D27): the
@@ -35,7 +35,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconWarningOutlineRegular, Input, MenuItemButton, Modal, SettingsForm, SettingsFormModel, SettingsValueField, Tag, settingsNumberField, settingsTextField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconWarningOutlineRegular, Input, MenuItemButton, Modal, SettingsForm, SettingsFormModel, SettingsValueField, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'fishball-connector'
@@ -50,7 +50,7 @@ window.__ModuleLoader__.load({
     const STATUS = Object.freeze({ starting: 'starting', live: 'live' })
     /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
     /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
-    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke' })
+    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', attentionRead: '/api/fishball/connector/attention/read' })
     /**
      * The one hand-over entry (§8.3): the session header and the session-row menu share it. Menu
      * order: after DSH's own pin/rename/fork/archive, before the id; header order: just before
@@ -233,7 +233,6 @@ window.__ModuleLoader__.load({
      * them in their own session (DSH's question card); the pile that had a question form is gone
      * (docs/slim-native-design.md §12).
      */
-    const QUESTION_VIEW = Object.freeze({ question: 'question', planReview: 'plan-review', field: 'questionMode', modes: Object.freeze(['auto', 'fishball', 'user']) })
     const GRANT_ERRORS = new Set(['unknown', 'ended', 'unavailable'])
     const JSON_INDENT = 2
     /**
@@ -241,7 +240,7 @@ window.__ModuleLoader__.load({
      * conn-OQ-20 set). The form model needs its fields before the first state frame arrives, so
      * the browser keeps this list; the Host schema still decides validity on save.
      */
-    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxPendingApprovals', 'approvalAnswerSeconds', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'userMessagesListed', 'userMessageExcerptChars'])
+    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxPendingApprovals', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'userMessagesListed', 'userMessageExcerptChars'])
     /**
      * The one Fishball accent (§8.5): the app's magenta. It is declared once here and exposed
      * once as `--fb-accent` (the style sheet below); the ring, the switches and the brand's
@@ -440,7 +439,6 @@ window.__ModuleLoader__.load({
       'field.maxQueuedInputs': 'Queued inputs not yet read',
       'field.maxActiveWatches': 'Active "tell me when finished" watches',
       'field.maxPendingApprovals': 'Permission requests open at once (waiting for Fishball or in your pile)',
-      'field.approvalAnswerSeconds': 'Seconds Fishball has to answer a request',
       'field.argumentExcerptBytes': 'Bytes of a request\'s command Fishball sees',
       'field.maxMessageBytes': 'Bytes in one message',
       'field.auditEntriesKept': 'Entries kept in each audit list',
@@ -452,14 +450,6 @@ window.__ModuleLoader__.load({
       'field.forwardExcerptBytes': 'Bytes of a session\'s last answer in a forward or watch notice',
       'field.userMessagesListed': 'Your messages list_user_messages shows a managed session',
       'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
-      questionMode: 'Questions in managed sessions',
-      questionModeHint: 'Who answers the questions and plan reviews of sessions Fishball manages. Your own sessions\' questions always stay with you.',
-      'questionMode.auto': 'Auto',
-      'questionMode.fishball': 'Fishball',
-      'questionMode.user': 'You',
-      'questionModeHint.auto': 'Fishball answers only when your own words cover it; otherwise the question stays in its session for you to answer on its own question card, not in your pile.',
-      'questionModeHint.fishball': 'Fishball answers on its own judgement and sends you only what it cannot decide.',
-      'questionModeHint.user': 'Every question stays in its session for you to answer on its own question card, not in your pile; Fishball may add a note.',
       cardReason: 'Reason',
       cardFishballNote: 'Fishball',
       allowOnce: 'Allow once',
@@ -549,7 +539,6 @@ window.__ModuleLoader__.load({
       'field.maxQueuedInputs': '尚未读取的排队输入',
       'field.maxActiveWatches': '进行中的“完成时通知我”',
       'field.maxPendingApprovals': '同时打开的权限请求（等待 Fishball 或在你的待处理区）',
-      'field.approvalAnswerSeconds': 'Fishball 回答请求的秒数',
       'field.argumentExcerptBytes': 'Fishball 可见的请求命令字节数',
       'field.maxMessageBytes': '单条消息字节数',
       'field.auditEntriesKept': '每个审计列表保留的条目',
@@ -561,14 +550,6 @@ window.__ModuleLoader__.load({
       'field.forwardExcerptBytes': '转发或关注通知中会话最后回答的字节数',
       'field.userMessagesListed': 'list_user_messages 向受管会话列出的你的消息条数',
       'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
-      questionMode: '受管会话中的问题',
-      questionModeHint: '由谁回答 Fishball 管理的会话中的问题和计划审阅。你自己的会话中的问题始终由你回答。',
-      'questionMode.auto': '自动',
-      'questionMode.fishball': 'Fishball',
-      'questionMode.user': '你',
-      'questionModeHint.auto': '只有在你自己的话涵盖时 Fishball 才回答；否则问题留在它所在的会话中，由你在该会话自己的问题卡片上回答，不会进入你的待处理区。',
-      'questionModeHint.fishball': 'Fishball 按自己的判断回答，只把它无法决定的交给你。',
-      'questionModeHint.user': '每个问题都留在它所在的会话中，由你在该会话自己的问题卡片上回答，不会进入你的待处理区；Fishball 可以附上备注。',
       cardReason: '理由',
       cardFishballNote: 'Fishball',
       allowOnce: '允许一次',
@@ -736,7 +717,7 @@ window.__ModuleLoader__.load({
       className: [ACCENT_BUTTON.className, props.className].filter(Boolean).join(' '),
     }, ...children)
 
-    /** Unread replies from the Host snapshot: a whole number, 0 until the first frame arrives. */
+    /** Connector-owned attention latch: count is 0 or 1; no producer unread state. */
     const unreadCount = (state) => state.unread?.count ?? 0
     /** The unread count in words, capped so the pill stays narrow. */
     const unreadText = (t, count) => count > UNREAD_BADGE.max ? t('unreadMany', { max: UNREAD_BADGE.max }) : String(count)
@@ -810,14 +791,17 @@ window.__ModuleLoader__.load({
     /** The icon the Sidebar icon setting chose: the brand mark and the managed-session marks share it. */
     const brandIconOf = (state) => BRAND_ICON[brandStyleOf(state)] ?? FishballIcon
 
+    /** Reuse the existing row dot; attention adds no timer or separate animation. */
+    const attentionDot = (dot) => h('span', { className: CLS.managedRowDot, 'data-fishball-dot': dot, 'aria-hidden': true })
+
     function makeMark(t) {
       return function Mark({ size }) {
         const state = useFishball()
         const count = unreadCount(state)
         const Icon = brandIconOf(state)
         return h('span', { className: CLS.markBox, 'data-fishball-unread': count },
-          h(Icon, { size, unread: count > 0, badge: true }),
-          count > 0 ? h('span', { className: CLS.badge, 'data-fishball-badge': true }, unreadText(t, count)) : null)
+          h(Icon, { size, unread: count > 0 && state.unread?.important === true, badge: true }),
+          count > 0 ? attentionDot(MANAGED_ROW.dot.unread) : null)
       }
     }
 
@@ -1009,6 +993,13 @@ window.__ModuleLoader__.load({
         const [generation, setGeneration] = React.useState(0)
         const [retrying, setRetrying] = React.useState(false)
         const [retryCode, setRetryCode] = React.useState(null)
+        const attentionRead = React.useRef(false)
+        React.useEffect(() => {
+          // Clear once on page open, not on every snapshot or iframe refresh. No instance feedback.
+          if (attentionRead.current) return
+          attentionRead.current = true
+          void send(API.attentionRead, {})
+        }, [])
         React.useEffect(() => () => framedPage.set(FRAME_UI.page.chat), [])
         const state = instance?.state ?? FRAME_UI.loading
         const ui = instance?.ui ?? {}
@@ -1267,7 +1258,7 @@ window.__ModuleLoader__.load({
         'data-fishball-row-state': running ? MANAGED_ROW.state.running : MANAGED_ROW.state.idle,
       },
         h(Icon, { size: MANAGED_ROW.iconPx, unread: false, moving: running, badge: true }),
-        dot === null ? null : h('span', { className: CLS.managedRowDot, 'data-fishball-dot': dot, 'aria-hidden': true }))
+        dot === null ? null : attentionDot(dot))
     }
 
     /**
@@ -1402,23 +1393,6 @@ window.__ModuleLoader__.load({
     /** A labelled line of text from another session or from Fishball (plain text, never markup: §10c framing rule). */
     const labelled = (label, text) => h('div', null, h('span', { className: CLS.muted }, label + ': '), text)
 
-    /**
-     * Who answers managed sessions' questions (item 25, §10e): Auto, Fishball or You. It is a field
-     * of DSH's staged form of the row (C2), so a choice is staged like a limit and saved with the
-     * form's Save; the row's schema refuses anything outside QUESTION_VIEW.modes.
-     */
-    function QuestionMode({ value, disabled, onChoose, t }) {
-      const mode = value.text
-      return h('div', { 'data-fishball-question-mode': mode },
-        h('h4', null, t('questionMode')),
-        h('p', { className: CLS.muted }, t('questionModeHint')),
-        h('div', { className: CLS.actions, role: 'radiogroup', 'aria-label': t('questionMode') }, QUESTION_VIEW.modes.map((option) => h(Button, {
-          key: option, type: 'button', size: 'sm', variant: option === mode ? 'primary' : 'secondary', role: 'radio', 'aria-checked': option === mode, disabled,
-          onClick: () => { if (option !== mode) onChoose(option) },
-        }, t('questionMode.' + option)))),
-        QUESTION_VIEW.modes.includes(mode) ? h('p', { className: CLS.muted }, t('questionModeHint.' + mode)) : null)
-    }
-
     /** POST your Revoke. @returns null when accepted, else the refusal's text. */
     async function revokeGrant(grantId, t) {
       const { ok, code } = await send(API.grantsRevoke, { grantId })
@@ -1484,24 +1458,16 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** Every field of DSH's form of the row: the limits, then the question mode (src/config.js). */
-    const FORM_FIELDS = Object.freeze([...LIMIT_FIELDS, QUESTION_VIEW.field])
-
-    /**
-     * DSH's staged form over the row's live config; Save writes through ctx.settings. The field set
-     * is LIMIT_FIELDS as it stands: C2 (feat/c2) owns it and trims it to conn-OQ-20's set with
-     * questionMode as a form field, so C3 leaves it, the question-mode buttons and the brand/sidebar
-     * switches as they are; on a merge, C2's side of these lines wins.
-     */
+    /** Only active limits are edited; legacy stored mode/deadline values remain untouched. */
     function limitsSection(scope) {
-      const form = new SettingsFormModel(scope, [...LIMIT_FIELDS.map((field) => settingsNumberField(field)), settingsTextField(QUESTION_VIEW.field)])
-      const store = form.bind(() => ({ ...form.shell(), fields: Object.fromEntries(FORM_FIELDS.map((field) => [field, form.field(field)])) }))
+      const form = new SettingsFormModel(scope, LIMIT_FIELDS.map((field) => settingsNumberField(field)))
+      const store = form.bind(() => ({ ...form.shell(), fields: Object.fromEntries(LIMIT_FIELDS.map((field) => [field, form.field(field)])) }))
       return { store, actions: form.actions(), dispose: () => form.dispose() }
     }
 
     /**
      * The connector's Plugins card (the `plugins.bundle.config` slot of fishball-connector): its
-     * limits form and question mode, edited only here (D24), and "Open instance settings" below them
+     * limits form, edited only here (D24), and "Open instance settings" below them
      * while the attached instance registered `ui.settings` (conn-OQ-24). The isolated child's
      * status, model, plugins, settings and model sync are no longer here: they belong to the
      * instance's own pages and its own Plugins card (design §0.7, D23, D26).
@@ -1521,10 +1487,7 @@ window.__ModuleLoader__.load({
             state,
             onSave: section.actions.save,
             onDiscard: section.actions.discard,
-          }, h('div', { key: QUESTION_VIEW.field, className: CLS.section }, h(QuestionMode, {
-            value: state.fields[QUESTION_VIEW.field], disabled, t,
-            onChoose: (mode) => section.actions.edit(QUESTION_VIEW.field, mode),
-          })), LIMIT_FIELDS.map((field) => {
+          }, LIMIT_FIELDS.map((field) => {
             const value = state.fields[field]
             return h(SettingsValueField, {
               key: field,

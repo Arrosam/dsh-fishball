@@ -1,13 +1,12 @@
 /**
  * The row's config: the connector's settings (design §0.7, §18.5 conn-OQ-20). They are its
- * safety limits (DESIGN §16) and the question mode. Every field is `.volatile()`, so DSH's
+ * safety limits (DESIGN §16). Every active field is `.volatile()`, so DSH's
  * settings service edits it live without remounting the row (spike S21). DSH's own Plugins →
  * settings form of `fishball-connector` is the only place they change (D24). No instance reads
  * or writes them: contract v1 has no settings operation.
  *
  * Each field is declared once here with its default, minimum and meaning. Every other module
- * reads the limits through `readLimits()` and the mode through `readQuestionMode()`, so a value
- * is never copied.
+ * reads the limits through `readLimits()`, so a value is never copied.
  */
 import Schema from '@deepseek-ai/schemastery'
 import { QUESTION_MODE } from './constants.js'
@@ -24,7 +23,6 @@ export const LIMITS = Object.freeze([
   ['maxQueuedInputs', 200, MIN.count, 'Inputs (messages, finish notices, plugin events) that have arrived but Fishball has not read yet.'],
   ['maxActiveWatches', 50, MIN.count, 'Open "tell Fishball when this session finishes" requests.'],
   ['maxPendingApprovals', 8, MIN.count, 'Permission requests open at the same time: waiting for Fishball, or waiting for you in your pile; extra requests go to you in their session.'],
-  ['approvalAnswerSeconds', 120, MIN.count, 'How long another session\'s permission request waits for Fishball before it goes to you.'],
   ['argumentExcerptBytes', 8192, MIN.count, 'How much of a requested tool call Fishball sees.'],
   ['maxMessageBytes', 65536, MIN.count, 'Size of one message to or from Fishball, and of one plugin event.'],
   ['auditEntriesKept', 500, MIN.count, 'Entries kept in each audit list (approvals, outbox, plugin changes).'],
@@ -40,26 +38,19 @@ export const LIMITS = Object.freeze([
   ['userMessageExcerptChars', 1000, MIN.count, 'Characters of each excerpt list_user_messages returns.'],
 ].map(([field, defaultValue, min, description]) => Object.freeze({ field, defaultValue, min, description })))
 
-/** The question mode's field (design §0.7): who answers managed sessions' questions. */
+/** Deprecated metadata retained for old importers; no active config control or routing effect. */
 export const QUESTION_MODE_SETTING = Object.freeze({
   field: 'questionMode',
   defaultValue: QUESTION_MODE.auto,
   description: 'Who answers the questions and plan reviews of sessions Fishball manages: auto (Fishball, when your own words cover it), fishball (Fishball\'s judgement) or user (you).',
 })
 
-/** The modes DSH's form accepts; anything else is refused by the schema. */
-const QUESTION_MODES = Object.freeze(Object.values(QUESTION_MODE))
-
-/**
- * Limits: whole numbers at or above the limit's minimum. The mode: one of QUESTION_MODE.
- * schemastery refuses anything else, so DSH's form refuses it too.
- */
+/** Active limits only; saved questionMode and approvalAnswerSeconds are inert legacy data. */
 export const Config = Schema.object({
   ...Object.fromEntries(LIMITS.map(({ field, defaultValue, min, description }) => [
     field,
     Schema.natural().min(min).default(defaultValue).description(description).volatile(),
   ])),
-  [QUESTION_MODE_SETTING.field]: Schema.union(QUESTION_MODES).default(QUESTION_MODE_SETTING.defaultValue).description(QUESTION_MODE_SETTING.description).volatile(),
 })
 
 /**
@@ -85,14 +76,9 @@ export function readLimits(config) {
   })))
 }
 
-/**
- * The question mode now. An unlisted value reads as the default, as readLimits does for a limit.
- * @param config - the row config Cordis passed to apply().
- * @returns one of QUESTION_MODE.
- */
-export function readQuestionMode(config) {
-  const value = liveValue(config, QUESTION_MODE_SETTING.field)
-  return QUESTION_MODES.includes(value) ? value : QUESTION_MODE_SETTING.defaultValue
+/** Compatibility accessor: eligible questions go directly to Fishball, ignoring saved mode. */
+export function readQuestionMode() {
+  return QUESTION_MODE.fishball
 }
 
 /** Every limit at its default: what applies before any config exists (module-level state). */

@@ -24,7 +24,7 @@ function noticeInput(args) {
 }
 
 /** X0-C owns the real agent fiber, including teardown on disable and setup on resume. */
-export function registerNotify(manager, agentCtx, agent) {
+export function registerNotify(manager, agentCtx, agent, attention) {
   let active = true
   // Cordis 4 has no 'dispose' event on either SDK; a fiber effect runs on X2 disposal.
   agentCtx.effect(() => () => { active = false })
@@ -63,13 +63,16 @@ export function registerNotify(manager, agentCtx, agent) {
       const id = randomUUID()
       try {
         // Log-only: never enqueue an inbox message or conclude the manager turn.
-        // FN3+ consume this record; attention and rendering do not belong to FN2.
+        // Rendering consumes this record; unread belongs only to the connector.
         appendPluginRecord(agent.session, TOOL.recordType, {
           v: TOOL.recordVersion, id, text, important, at: Date.now(), callId: exec.callId,
         })
       } catch {
         throw new NotifyError(ERROR.unavailable)
       }
+      // Attention is optional and best-effort; a disconnected connector must not
+      // turn an already appended notice into a failed/retryable tool result.
+      try { await attention?.signal(PLUGIN.name, { important }) } catch { /* no replay */ }
       return { notified: true, id, important }
     },
   })
@@ -78,5 +81,5 @@ export function registerNotify(manager, agentCtx, agent) {
 /** Registers into one compatible instance; the caller owns the returned dispose. */
 export function registerManagerNotify(instance) {
   const { manager } = instance
-  return manager.registerSetup(PLUGIN.name, (agentCtx, agent) => registerNotify(manager, agentCtx, agent))
+  return manager.registerSetup(PLUGIN.name, (agentCtx, agent) => registerNotify(manager, agentCtx, agent, instance.attention))
 }
