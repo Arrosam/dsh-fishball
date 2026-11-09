@@ -1,13 +1,13 @@
 /**
  * R-CONFIG: safety limits in the fishball-connector row config, edited live through ctx.settings.
- * C2 (conn-OQ-20, 474b876): the row keeps only the 15 limits the connector still reads; the
+ * C2 (conn-OQ-20, 474b876): the row keeps only the 14 active limits the connector still reads; the
  * in-process agent's fields (sources, Fishball-only plugins, hourly caps, context window, plugin
  * manager, outbox, pile height) went with it (slim §12). CFG-09 (Fishball's session never
  * remounted) is retired: there is no in-process session to remount.
  *
  * | id     | technique          | requirement                                        | expected |
  * |--------|--------------------|----------------------------------------------------|----------|
- * | CFG-01 | EP (defaults)      | 15 fields (7 + rev11-limits' 6 + rev11b's 2) with their defaults | settings value and state.limits equal the default table; applies live |
+ * | CFG-01 | EP (defaults)      | 14 fields (6 + rev11-limits' 6 + rev11b's 2) with their defaults | settings value and state.limits equal the default table; applies live |
  * | CFG-02 | BVA (min valid)    | each field accepts its minimum (1) | update ok; state.limits shows it; saved in the profile patch |
  * | CFG-03 | BVA (min - 1)      | 0 is rejected                      | update throws; patch file and live value unchanged |
  * | CFG-04 | EP (negative)      | -1 rejected for ">= 1" fields                       | rejected; unchanged |
@@ -22,7 +22,7 @@ import { LIMITS, LIMITS_R11, LIMITS_R11B } from './support/constants.mjs'
 import { HOOK, T, readPatch, savedRowConfig } from './support/expect.mjs'
 import { bootLive, newHome } from './support/host.mjs'
 
-// The default table after C2: the 7 original fields the connector still reads, the 6 kept rev11-limits fields
+// The default table after C2: the 6 active original fields the connector still reads, the 6 kept rev11-limits fields
 // and rev11b's userMessagesListed and userMessageExcerptChars (packages/connector config, conn-OQ-20).
 const DEFAULTS = Object.fromEntries(Object.entries({ ...LIMITS, ...LIMITS_R11, ...LIMITS_R11B }).map(([k, v]) => [k, v.default]))
 
@@ -51,7 +51,7 @@ describe('R-CONFIG limits', () => {
     for (const [k, v] of Object.entries(patch)) assert.equal(saved[k], v, 'saved row config ' + k)
   }
 
-  it('CFG-01 defaults: all 15 limit fields with the documented defaults, editable live', T, async () => {
+  it('CFG-01 defaults: all 14 active limit fields with the documented defaults, editable live', T, async () => {
     const d = await host.call('settingsDescribe')
     assert.ok(d, 'settings entry "fishball-connector" exists')
     assert.equal(d.applies, 'live')

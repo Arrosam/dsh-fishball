@@ -121,7 +121,7 @@ const STUB_CASES = [
   ['inbox.claim', (s) => s.inbox.claim({ pluginId: MANAGER, kind: 'user', match: () => undefined }, () => {})],
   ['inbox.release', (s) => s.inbox.release('held-key', { deliver: true })],
   ['inbox.setBatcher', (s) => s.inbox.setBatcher(MANAGER, () => {})],
-  ['attention.set', (s) => s.attention.set(MANAGER, { unread: 0, importantUnread: 0, latestAt: null })],
+  // XC-EP-STUB-04 retired: attention.set was removed, not another not-implemented stub.
   ['sideAgents.open', (s) => s.sideAgents.open({})],
   ['sideAgents.runTurn', (s) => s.sideAgents.runTurn({}, 'decision', {})],
   ['sideAgents.cancel', (s) => s.sideAgents.cancel({})],
@@ -137,7 +137,7 @@ const STUB_CASES = [
 
 describe('X0-C U18 typed stub refusals', () => {
   for (const [index, [member, invoke]] of STUB_CASES.entries()) {
-    it(`XC-EP-STUB-${String(index + 1).padStart(2, '0')} Samuel never mistakes an unavailable capability for success — ${member} refuses with typed metadata`, async (t) => {
+    it(`XC-EP-STUB-${String(index + (index < 3 ? 1 : 2)).padStart(2, '0')} Samuel never mistakes an unavailable capability for success — ${member} refuses with typed metadata`, async (t) => {
       const h = await bootChild(t)
       const service = h.requireInstance()
       const [area, method] = member.split('.')

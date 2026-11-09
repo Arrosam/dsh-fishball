@@ -15,20 +15,21 @@
  * | ANS-05  | ST (a second click / unknown / settled id) | §10e | 409 expired; the first answer stands |
  * | ANS-06 ×10 | DT (bad bodies; foreign origin) | §10e "boundary checks", "same-origin fence" | 400 bad-body (foreign origin: not 200); the card stays; the agent still waits |
  * | ANS-07  | ST (the instance answers a request that is already a card) | §7a.3 "each request is answered in one place", contract §4.2 | approval.answer refused expired; the card stays; the agent still waits |
- * | ANS-08  | BVA (approvalAnswerSeconds 1, no answer) | §7a.5 "Slow" | no card before the answer time; then a card and the agent keeps waiting (no stock prompt); Allow once gives allowed; audit timeout (final allowed-once) |
+ * | ANS-08  | BVA (approvalAnswerSeconds 1, no answer) | §7a.5 "Slow" | no card before or after former minimum, still offered/running and no timeout audit; explicit escalation then Allow once gives allowed and escalate audit |
  * | ANS-09  | ST (after your click) | §7a.14 "Fishball gets a short note without being woken", contract §5 | the instance gets approval.settled {decision, by:'user'} and no new offer |
  * | ANS-10  | EP (reply round then escalate then Allow once) | §7a.2 thread, §7a.6 | allowed with the same request_id |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { DECISION, RAN_VIA, RISK, SETTLED_BY } from 'fishball-connector/contract'
-import { APR_CODE, ASK_CODE, ASK_OUTPUT, AUDIT_ANSWER, AUDIT_KIND, CLICK, DECISION_ACTION, LIMITS, OUTCOME, P5_CODE, PILE_API, PILE_CODE, REQUEST_PLACEHOLDER } from './support/constants.mjs'
+import { APR_CODE, ASK_CODE, ASK_OUTPUT, AUDIT_ANSWER, AUDIT_KIND, CLICK, DECISION_ACTION, OUTCOME, P5_CODE, PILE_API, PILE_CODE, REQUEST_PLACEHOLDER } from './support/constants.mjs'
 import { HOOK, T, cardOf, untilCard, untilNoCard } from './support/expect.mjs'
 import { ASK_STUB, askHost, askTools, assertShape, stopAsk, tokens } from './support/instance-stub-ask.mjs'
+import { seedStoredInteractionConfig } from './support/instance-stub.mjs'
 import { sleep } from './support/util.mjs'
 
 const { tok, cid } = tokens('ANS')
-/** ANS-08: the answer time, and a check well inside it that no card exists yet. */
+/** ANS-08: observe before and beyond the retained former one-second minimum. */
 const ANSWER_SECONDS = 1
 const BEFORE_ANSWER_MS = 400
 
@@ -179,28 +180,27 @@ describe('Revision 11 rev11c: answering a card', () => {
     })
   })
 
-  it('ANS-08 approvalAnswerSeconds 1 with no answer: a card after the answer time, the agent keeps waiting; Allow once then allows', T, async () => {
-    await t.setLimit({ approvalAnswerSeconds: ANSWER_SECONDS })
-    try {
-      const text = tok('08')
-      const [id, callId] = [cid('08'), cid('08call')]
-      const offer = await t.waiting(y, text, id, [t.call(text, callId)])
-      const t0 = Date.now()
-      await sleep(BEFORE_ANSWER_MS)
-      assert.equal(await cardOf(ctx.host, offer.approvalId), undefined, 'no card before the answer time')
-      const card = await untilCard(ctx.host, offer.approvalId, ASK_STUB.offerWaitMs)
-      assert.ok(card, 'a card after the answer time')
-      assert.ok(Date.now() - t0 >= BEFORE_ANSWER_MS, 'not before the answer time')
-      await t.quiet()
-      assert.equal(await t.status(y), ASK_STUB.running, 'the agent keeps waiting')
-      assert.deepEqual(await t.stockSeen(text), [], 'no stock prompt')
-      const got = await clickAndAnswer(y, id, offer.approvalId, CLICK.allow)
-      assertShape(got, ASK_CODE.allowed)
-      assert.equal(got.request_id, offer.approvalId)
-      const audit = t.auditOf(offer.approvalId)
-      assert.equal(audit[0].answer, AUDIT_ANSWER.timeout)
-      assert.equal(audit[0].finalOutcome, OUTCOME.allow)
-    } finally { await t.setLimit({ approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }) }
+  it('ANS-08 no timed card before or after the old boundary; explicit escalation then Allow once still works', T, async () => {
+    await seedStoredInteractionConfig(ctx, { approvalAnswerSeconds: ANSWER_SECONDS }, { resume: [x, y] })
+    const text = tok('08')
+    const [id, callId] = [cid('08'), cid('08call')]
+    const offer = await t.waiting(y, text, id, [t.call(text, callId)])
+    await sleep(BEFORE_ANSWER_MS)
+    assert.equal(await cardOf(ctx.host, offer.approvalId), undefined, 'no card before the former boundary')
+    await sleep(ANSWER_SECONDS * 1000 + ASK_STUB.quietMs)
+    assert.equal(await cardOf(ctx.host, offer.approvalId), undefined, 'no card after the former boundary')
+    assert.ok(await t.liveOffer(y, offer.approvalId))
+    assert.equal(await t.status(y), ASK_STUB.running)
+    assert.deepEqual(await t.stockSeen(text), [])
+    assert.equal(t.auditOf(offer.approvalId).some((row) => row.answer === AUDIT_ANSWER.timeout), false, 'no timeout audit')
+    await t.accepted(y, offer, { decision: DECISION.escalate })
+    assert.ok(await untilCard(ctx.host, offer.approvalId))
+    const got = await clickAndAnswer(y, id, offer.approvalId, CLICK.allow)
+    assertShape(got, ASK_CODE.allowed)
+    assert.equal(got.request_id, offer.approvalId)
+    const audit = t.auditOf(offer.approvalId)
+    assert.equal(audit[0].answer, AUDIT_ANSWER.escalate)
+    assert.equal(audit[0].finalOutcome, OUTCOME.allow)
   })
 
   it('ANS-09 after your click the instance is told who decided, and gets no new offer', T, async () => {

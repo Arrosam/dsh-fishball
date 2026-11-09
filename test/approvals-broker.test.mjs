@@ -8,7 +8,7 @@
  *
  * | id      | technique | req | expected |
  * |---------|-----------|-----|----------|
- * | APR-01  | EP (first request) | §5.1, §7a.2, P1 | one descriptor of exactly the §5.1 keys: approvalId apr_<hex>, prompt 'Permission request: "fbtest_ask"', toolName, callId, reason, title, quotes [], arguments (the call's JSON) and argumentsStatus complete, expiresAt − at = 120 s; one `approval` item: '[permission request <id>]', 'within 120 s', 'Arguments: complete.', started by / turn by 'the user', the 'expired is normal' line, the 9 block fields once each, no subagent or call_was_to_tool field |
+ * | APR-01  | EP (first request) | §5.1, §7a.2, P1 | one descriptor of exactly the §5.1 keys: approvalId apr_<hex>, prompt 'Permission request: "fbtest_ask"', toolName, callId, reason, title, quotes [], arguments (the call's JSON) and argumentsStatus complete, no expiresAt; one `approval` item: '[permission request <id>]', no countdown instruction, 'Arguments: complete.', started by / turn by 'the user', the 'expired is normal' line, the 9 block fields once each, no subagent or call_was_to_tool field |
  * | APR-02  | EP (permission mode) | P1 | the item's permission_mode is the session's sandbox mode (read-only after a switch); approval_policy "ask" |
  * | APR-03  | EP | §7a.13, P2 | answering belongs to the instance: no answer_approval tool in a managed session or globally; a call of it is an error |
  * | APR-04  | DT allow/low/reason → ok | §4.2, P2, P3 | {accepted:true}; outcome allowed-once; one approval/asked and one approval/decided allowed-once in X; the stock prompt never asked; approval.settled {decision allow, by fishball} |
@@ -16,8 +16,8 @@
  * | APR-05e | BVA (reason '' with allow) | §4.2 "a present reason must be non-empty (reason-required)", §7 answers | error reason-required; the channel stays open; still listed and X still waits; a later valid answer is accepted |
  * | APR-06 ×2 | DT (unknown id / answered id) | §4.2, §7a.3 | expired |
  * | APR-07  | DT escalate | §7a.3, slim §8.1 and T09 ("an escalation settles with the user's decision and emits approval.settled") | the stock prompt is asked; its outcome is X's; the instance gets approval.settled with the user's decision (by user) and a card record naming the request, by user, outcome allowed; audit escalate / allowed-once |
- * | APR-08 ×2 | BVA (approvalAnswerSeconds 2 and 1) | §7a.5, §16 | expiresAt − at = n s; 'within n s'; the stock prompt after about n s (not before); never silence-approved; the instance is told it ended; a late answer expired; audit timeout |
- * | APR-09  | ST (the instance has not taken the notice) | P5 update | the answer time starts at the request: the stock prompt after about 2 s although the item is unacknowledged |
+ * | APR-08 ×2 | BVA (approvalAnswerSeconds 2 and 1) | §7a.5, §16 | no deadline; still offered after the former n-second window, no stock prompt/result/timeout audit; explicit escalation keeps user settlement and late-answer refusal |
+ * | APR-09  | ST (the instance has not taken the notice) | P5 update | unacknowledged notice remains pending beyond the former window; explicit answer still settles |
  * | APR-10  | ST (cancel after the notice) | §7a.1 "Fishball told", contract §4.5 CARD_CLOSED, slim T09 "a card closed without an answer reaches the child as [card closed …]", instance.md I7-EP-06, P6 | cancelled; the stock prompt not asked; no longer listed; the instance is told it ended; a later answer expired; audit withdrawn / cancelled |
  * | APR-11  | ST (cancel before the instance took the notice) | P6 update | the same |
  * | APR-12  | ST (cancel while the escalated request waits at the stock prompt) | P6 update | cancelled; audit finalOutcome cancelled |
@@ -47,7 +47,7 @@ import {
   OUTCOME, PRESET, STARTED_BY, STARTED_BY_OTHER, TITLE, TURN_BY, INTAKE_DIR,
 } from './support/constants.mjs'
 import { HOOK, T, bytes, callScript, callTool, toolNames, turn } from './support/expect.mjs'
-import { handOver, managedSession, stopStub } from './support/instance-stub.mjs'
+import { handOver, managedSession, seedStoredInteractionConfig, stopStub } from './support/instance-stub.mjs'
 import {
   APPROVALS, ackAllAndReconnect, answerOffer, auditFor, auditOfSession, auditedFor, bootApprovals, clearSession, ensureAttached, escalateAndSettle, itemFor, listed, offerFor, outcomeOf,
   offersWhere, requestFor, setLimit, settledEvents, startCall, stockFor, tok, toldEnded, untilStock, cardRecordsFor,
@@ -91,14 +91,10 @@ describe('P7 ApprovalBroker (H-STUB)', () => {
     assert.deepEqual(d.quotes, [])
     assert.deepEqual(JSON.parse(d.arguments), args, "the model-requested arguments of that call")
     assert.equal(d.argumentsStatus, ARGS_STATUS.complete)
-    // `at` is when the request began and `expiresAt` is set when its round starts, a moment later (contract §5.1
-    // names no exact difference), so the window is the answer time plus at most the timer slack (once 120001).
-    const window = d.expiresAt - d.at
-    const answerMs = LIMITS.approvalAnswerSeconds.default * 1000
-    assert.ok(window >= answerMs && window <= answerMs + APPROVALS.ms.timerSlack, 'the answer time: ' + window)
+    assert.equal(Object.hasOwn(d, 'expiresAt'), false, 'negotiated descriptors carry no answer deadline')
     const { header, block, fields } = req.item
     assert.ok(req.item.payload.text.startsWith(APPROVALS.item.prefix(d.approvalId)))
-    assert.match(header, APPROVALS.item.seconds(LIMITS.approvalAnswerSeconds.default))
+    assert.doesNotMatch(header, /within \d+ s\b/, 'no retired answer-countdown instruction')
     assert.ok(header.includes(APPROVALS.item.argumentsLine(ARGS_STATUS.complete)), header)
     assert.deepEqual([req.item.started, req.item.turnBy], [STARTED_BY.user, TURN_BY.user])
     assert.match(header, APPROVALS.item.expiredNormal, 'says a later expired answer is normal')
@@ -211,7 +207,7 @@ describe('P7 ApprovalBroker (H-STUB)', () => {
       assert.deepEqual((await answer(req, APPROVALS.answer.allow('again'))).payload, { code: ERROR.expired })
       assert.deepEqual((await answer(req, APPROVALS.answer.escalate)).payload, { code: ERROR.expired })
     })
-    // Timed out and withdrawn ids are covered in APR-08 and APR-10.
+    // Explicitly escalated and withdrawn ids are covered in APR-08 and APR-10.
   })
 
   it('APR-07 escalate: the stock prompt decides; the instance learns the user\'s decision', T, async () => {
@@ -242,47 +238,45 @@ describe('P7 ApprovalBroker (H-STUB)', () => {
   })
 
   for (const n of [2, 1]) {
-    it('APR-08 approvalAnswerSeconds ' + n + ': silence goes to the user after about ' + n + ' s', T, async () => {
-      await setLimit(host, { approvalAnswerSeconds: n })
+    it('APR-08 retained approvalAnswerSeconds ' + n + ': silence stays pending beyond the former boundary', T, async () => {
+      await seedStoredInteractionConfig(booted, { approvalAnswerSeconds: n }, { resume: [x] })
+      ;({ host, stub } = booted)
       try {
         const text = tok('08')
         const req = await asked(x, text)
-        // `at` is when the request began and `expiresAt` is set when its round starts, a moment later
-        // (contract §5.1 names no exact difference): the window is the answer time plus the timer slack.
-        const window = req.descriptor.expiresAt - req.descriptor.at
-        assert.ok(window >= n * 1000 && window <= n * 1000 + APPROVALS.ms.timerSlack, 'the answer time: ' + window)
-        assert.match(req.item.header, APPROVALS.item.seconds(n))
-        const call = await outcomeOf(host, text)
-        assert.equal(call.outcome, APPROVALS.stock.default, "the user's outcome (never silence-approved)")
-        const seen = await stockFor(host, text)
-        assert.equal(seen.length, 1)
-        const waited = seen[0].at - call.askedAt
-        assert.ok(waited >= n * 1000 - APPROVALS.ms.timerSlack, 'not before the answer time: ' + waited)
-        assert.ok(waited <= n * 1000 + APPROVALS.ms.timerLate, 'soon after the answer time: ' + waited)
-        assert.ok((await toldEnded(stub, req.descriptor.approvalId)).length > 0, 'the instance is told the request ended')
-        assert.deepEqual((await answer(req, APPROVALS.answer.escalate)).payload, { code: ERROR.expired })
+        assert.equal(Object.hasOwn(req.descriptor, 'expiresAt'), false)
+        assert.doesNotMatch(req.item.header, /within \d+ s\b/)
+        await sleep(n * 1000 + APPROVALS.ms.quiet)
+        assert.equal((await host.call('asks', {})).find((call) => call.text === text).outcome, null, 'silence never settles the call')
+        assert.deepEqual(await stockFor(host, text), [], 'no timer-based transfer to the user')
+        assert.ok((await listed(stub, x)).some((offer) => offer.approvalId === req.descriptor.approvalId), 'still offered after the former limit')
+        assert.equal(auditFor(booted.home, req.descriptor.approvalId).some((row) => row.answer === 'timeout'), false, 'no fabricated timeout audit')
+        await escalateAndSettle(booted, req, text)
+        assert.equal((await outcomeOf(host, text)).outcome, APPROVALS.stock.default, 'explicit escalation still uses the user outcome')
+        assert.ok((await toldEnded(stub, req.descriptor.approvalId)).length > 0)
+        assert.deepEqual((await answer(req, APPROVALS.answer.allow('late'))).payload, { code: ERROR.expired })
         const [audit] = await auditedFor(booted.home, req.descriptor.approvalId)
-        assert.equal(audit.answer, 'timeout')
+        assert.equal(audit.answer, DECISION.escalate)
         assert.equal(audit.finalOutcome, APPROVALS.stock.default)
-      } finally { await setLimit(host, { approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }); await done(x) }
+      } finally { await done(x) }
     })
   }
 
-  it('APR-09 the answer time starts at the request, even while the instance has not taken the notice', T, async () => {
-    await setLimit(host, { approvalAnswerSeconds: 2 })
-    // The instance acks an item only after it queued the turn (contract §4.5): no ack = still busy.
+  it('APR-09 unacknowledged notice → former window passes → explicit answer settles once', T, async () => {
+    await seedStoredInteractionConfig(booted, { approvalAnswerSeconds: 2 }, { resume: [x] })
+    ;({ host, stub } = booted)
     await stub.ackPolicy(0)
     try {
       const text = tok('09')
-      await asked(x, text)
-      const call = await outcomeOf(host, text, 8000)
-      assert.ok(call.outcome !== null, 'settled although the notice is unacknowledged')
-      const waited = (await stockFor(host, text))[0].at - call.askedAt
-      assert.ok(waited >= 2000 - APPROVALS.ms.timerSlack && waited <= 2000 + APPROVALS.ms.timerLate, 'went to the user about 2 s after the request: ' + waited)
+      const req = await asked(x, text)
+      await sleep(2 * 1000 + APPROVALS.ms.quiet)
+      assert.equal((await host.call('asks', {})).find((call) => call.text === text).outcome, null, 'no ack and no answer remain pending')
+      assert.deepEqual(await stockFor(host, text), [])
+      assert.equal(auditFor(booted.home, req.descriptor.approvalId).some((row) => row.answer === 'timeout'), false)
+      assert.deepEqual((await answer(req, APPROVALS.answer.allow('after the old window'))).payload, { accepted: true })
+      assert.equal((await outcomeOf(host, text)).outcome, OUTCOME.allow)
     } finally {
-      // The unacknowledged item holds back every later push until a reconnect re-delivers it.
       await ackAllAndReconnect(stub)
-      await setLimit(host, { approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default })
       await done(x)
     }
   })

@@ -203,7 +203,7 @@ describe('X0-S X16 start rule (§2.3)', () => {
 
   const cardOf = () => ({
     approvalId: 'apr-start', offerId: 'off-start', kind: 'approval', prompt: 'Allow?', choices: ['allow', 'reject'],
-    expiresAt: Date.now() + 60_000, title: 'Started', at: Date.now(), toolName: 'bash', callId: 'call-start',
+    title: 'Started', at: Date.now(), toolName: 'bash', callId: 'call-start',
     reason: 'first card', quotes: [],
   })
 

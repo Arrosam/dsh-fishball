@@ -16,7 +16,7 @@
  * | ASK-03 ×9 | DT (approval.answer refusals) | contract §4.2 | allow+high → allow-needs-low-risk; allow without risk → risk-required; allow without / '' / '   ' reason → reason-required; reject '' reason → reason-required; ask with no / '' question → question-required; unknown id → expired; each leaves the request listed by approval.list and the agent waiting |
  * | ASK-04  | DT (escalate needs nothing) | §7a.3, §7a.6, §10e | accepted with no risk and no reason; a card, the agent keeps waiting, no stock prompt; your Allow once → allowed, the identical call runs on the pass; decisions row allow-once by user; audit escalate (final allowed-once) then pass |
  * | ASK-05  | DT (allow with truncated arguments) | §7a.3 | the offer says truncated; allow refused arguments-incomplete; still pending; a reject then answers rejected |
- * | ASK-06  | BVA (approvalAnswerSeconds 1, no answer) | §7a.5 "Slow" | a card after about 1 s, the agent keeps waiting; your Reject → rejected with your note; decisions row reject by user; audit timeout |
+ * | ASK-06  | BVA (approvalAnswerSeconds 1, no answer) | §7a.5 "Slow" | no card/result/timeout audit past the stored one-second minimum; explicit escalation preserves Reject/note/user decisions and escalate audit |
  * | ASK-07  | ST (thread: 3 question rounds, then allow) | §7a.2 "question", §7a.3 `ask`, contract §4.2 | each `ask` answer (with reason '', which ask allows) reaches the agent as {code:'question', request_id, question}; each reply is offered again as the same request with a new offerId and a notice holding the whole thread so far, in order; the final allow covers the call (it runs with no prompt and no further offer); audit allow then pass |
  * | ASK-08 ×3 | EP (request_id unknown / settled / another session's) | §7a.2, §7a.3 "Only pending ids" | {ok:false, code:'expired'}, no request_id, nothing sent to the instance |
  * | ASK-09  | EP (no instance attached; C1-EP-02) | contract §9, §7a.5 "Off" | unavailable at once with a request_id, nothing queued (no offer and no notice after a new attach); the identical call goes to the stock prompt |
@@ -29,10 +29,10 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { ARGUMENTS_STATUS, DECISION, ERROR, RISK, SETTLED_BY } from 'fishball-connector/contract'
 import { APR_CODE, ASK_CODE, ASK_OUTPUT, ASK_TOOL, AUDIT_ANSWER, AUDIT_KIND, CLICK, DECISION_ACTION, LIMITS, LIMITS_R11, OUTCOME, QUESTION_REQUIRED, REQUEST_PLACEHOLDER } from './support/constants.mjs'
-import { HOOK, T, blockArguments, jsonOf, resultById, settledIdle, stockSeen, untilCard } from './support/expect.mjs'
+import { HOOK, T, blockArguments, jsonOf, resultById, settledIdle, stockSeen, cardOf, untilCard } from './support/expect.mjs'
 import { ASK_STUB, askHost, askTools, assertShape, stopAsk, tokens } from './support/instance-stub-ask.mjs'
-import { takeBack } from './support/instance-stub.mjs'
-import { until } from './support/util.mjs'
+import { seedStoredInteractionConfig, takeBack } from './support/instance-stub.mjs'
+import { sleep, until } from './support/util.mjs'
 
 const { tok, cid } = tokens('ASK')
 
@@ -177,29 +177,30 @@ describe('Revision 11 rev11b: ask_fishball answered by an attached instance', ()
     } finally { await t.setLimit({ argumentExcerptBytes: LIMITS.argumentExcerptBytes.default }) }
   })
 
-  it('ASK-06 approvalAnswerSeconds 1 with no answer: a card after about 1 s and the agent keeps waiting; your Reject then answers rejected', T, async () => {
-    const seconds = 1
-    await t.setLimit({ approvalAnswerSeconds: seconds })
-    try {
-      const text = tok('06')
-      const id = cid('06')
-      const offer = await t.waiting(x, text, id)
-      const card = await untilCard(ctx.host, offer.approvalId, ASK_STUB.offerWaitMs)
-      assert.ok(card, 'a card')
-      await t.quiet()
-      assert.equal(await t.status(x), ASK_STUB.running, 'the agent keeps waiting')
-      assert.deepEqual(await stockSeen(ctx.host, text), [], 'no stock prompt')
-      const note = 'timed out note ' + text
-      assert.equal((await t.click(offer.approvalId, CLICK.reject, note)).status, 200)
-      const json = await t.answered(x, id)
-      assertShape(json, ASK_CODE.rejected)
-      assert.equal(json.reason, note)
-      await t.waitIdle(x)
-      const row = await t.decisionOf(json.request_id)
-      assert.equal(row.action, DECISION_ACTION.reject)
-      assert.equal(row.by, SETTLED_BY.user)
-      assert.deepEqual(t.answersOf(json.request_id), [AUDIT_ANSWER.timeout])
-    } finally { await t.setLimit({ approvalAnswerSeconds: LIMITS.approvalAnswerSeconds.default }) }
+  it('ASK-06 stored one-second minimum does not create a card; explicit escalation keeps your Reject path', T, async () => {
+    await seedStoredInteractionConfig(ctx, { approvalAnswerSeconds: 1 }, { resume: [x, y] })
+    const text = tok('06')
+    const id = cid('06')
+    const offer = await t.waiting(x, text, id)
+    await sleep(1000 + ASK_STUB.quietMs)
+    assert.equal(Object.hasOwn(offer, 'expiresAt'), false)
+    assert.equal(await cardOf(ctx.host, offer.approvalId), undefined, 'no timer-created card')
+    assert.ok(await t.liveOffer(x, offer.approvalId), 'still offered')
+    assert.equal(await t.status(x), ASK_STUB.running)
+    assert.deepEqual(await stockSeen(ctx.host, text), [])
+    assert.equal(t.auditOf(offer.approvalId).some((row) => row.answer === AUDIT_ANSWER.timeout), false, 'no fabricated timeout decision')
+    await t.accepted(x, offer, { decision: DECISION.escalate })
+    assert.ok(await untilCard(ctx.host, offer.approvalId))
+    const note = 'explicit escalation note ' + text
+    assert.equal((await t.click(offer.approvalId, CLICK.reject, note)).status, 200)
+    const json = await t.answered(x, id)
+    assertShape(json, ASK_CODE.rejected)
+    assert.equal(json.reason, note)
+    await t.waitIdle(x)
+    const row = await t.decisionOf(json.request_id)
+    assert.equal(row.action, DECISION_ACTION.reject)
+    assert.equal(row.by, SETTLED_BY.user)
+    assert.deepEqual(t.answersOf(json.request_id), [AUDIT_ANSWER.escalate])
   })
 
   it("ASK-07 a thread of three question rounds, then allow: the question travels back to the agent, one request, the whole thread each round, the call covered", ASK_STUB.long, async () => {

@@ -63,8 +63,8 @@ export const APPROVALS = Object.freeze({
   ms: Object.freeze({ atOnce: 1000, quiet: 1500, settle: 15000, timerSlack: 150, timerLate: 2500, noticeUnderLoad: 20000 }),
   /** A string that never appears in a session's own words, to look for leaks of argument text. */
   secretPrefix: 'SECRETARG',
-  /** The approval descriptor's keys for a permission request (contract §5.1; `questions` only for kind question). */
-  descriptorKeys: Object.freeze(['approvalId', 'arguments', 'argumentsStatus', 'at', 'callId', 'choices', 'expiresAt', 'kind', 'offerId', 'prompt', 'quotes', 'reason', 'title', 'toolName']),
+  /** Negotiated timer-free permission descriptor (contract §3.2.1/§5.1; questions only for kind question). */
+  descriptorKeys: Object.freeze(['approvalId', 'arguments', 'argumentsStatus', 'at', 'callId', 'choices', 'kind', 'offerId', 'prompt', 'quotes', 'reason', 'title', 'toolName']),
   /** The audit record's fields (DESIGN §9 approvals table and its revision 11 additions). */
   auditKeys: Object.freeze(['answer', 'argumentsDigest', 'argumentsStatus', 'at', 'callId', 'decidedAt', 'finalOutcome', 'kind', 'sessionId', 'toolName']),
   auditAnswers: Object.freeze(['allow', 'escalate', 'timeout', 'withdrawn', 'grant', 'reject', 'ask', 'to-user', 'pass', 'grant-used', 'released']),
