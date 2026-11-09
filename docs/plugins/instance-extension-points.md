@@ -1922,12 +1922,14 @@ uncoded `TypeError` is **not** the empty-array test contract.
 ### 12.7 Archive search contract (Q-R = B)
 
 **Owner: B11** (archive-search tool/guide, new `src/search.js`), using B3's archive reader. Register through
-X2 and enforce X1's manager identity, just like `board_write`; a read-only search never changes
-cards, visibility, timestamps or the archive. The tool remains available when context injection
+X2 and retain the existing X1 manager guard, just like `board_write`. The Fishball instance has
+one session; no additional caller-identity checks are required. Search of a healthy board never
+changes cards, visibility, timestamps or the archive; first use may migrate a legacy board or
+repair a corrupt board through B3's existing initialization. The tool remains available when context injection
 is off; disabling the plugin removes it with the other board tools.
 
 `board_search {query, status?, limit?}`:
-- `query`: required string, trimmed, 1–200 Unicode characters. Literal case-insensitive substring
+- `query`: required string, trimmed, 1–200 Unicode code points (R1; title/note field bounds also count code points, not UTF-16 units or graphemes). Literal case-insensitive substring
   matching of `title` or `note` in each archived snapshot; no regex, shell execution, path input,
   tokenisation or fuzzy search. Case folding uses the same deterministic Unicode lowercase
   conversion for the query and fields, not the UI locale.
@@ -1936,8 +1938,9 @@ is off; disabling the plugin removes it with the other board tools.
 - `limit`: integer 1–50, default 20. Reject unknown fields, wrong types and out-of-bound inputs as
   `invalid-input`; never silently clamp. Put these bounds in `BOARD_LIMITS.search`.
 - Search all committed archive lines, including snapshots of cleared/off-board cards and old
-  text later edited away. Return **one hit per card id**, its newest matching snapshot. Order by
-  that snapshot's `updatedAt` descending, then archive line number descending to break ties.
+  text later edited away. Return **one hit per card id**, its newest matching snapshot: highest
+  `updatedAt`, then highest archive line, even after clock rollback (R3). Order results by that
+  same `updatedAt` descending, then archive line number descending.
   These are historical matches, not a promise about the card's current state.
 - Success: `{ok: true, query, results: [{card, archiveLine, matchedFields, onBoard}], truncated}`.
   `card` is the complete matching snapshot with the existing bounded board fields;
