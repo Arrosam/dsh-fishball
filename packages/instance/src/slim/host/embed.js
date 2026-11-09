@@ -3,15 +3,28 @@
  *
  * The browser never addresses the child's loopback port. It loads /fishball/embed/ from the main
  * DSH origin; this module authenticates that request as the main DSH session, strips the prefix,
- * and forwards it to the child with the parent-only bearer. The child's CSP forbids framing and
- * its own cookies never reach this origin: the broker replaces the framing policy, drops browser
- * credentials, and adds the bearer only on the child side.
+ * and forwards it using private child admission. Slim retains its parent-only bearer and framing
+ * policy. Native uses the ready-only lifecycle capability and a generation-private cookie; its
+ * policies are retained pending the native inline-boot CSP decision. Browser credentials never
+ * go upstream and native cookies never reach the main origin.
  *
  * The route answers the static error card (with a Retry that calls the lifecycle restart service)
  * when the child is not ready, so a stopped child is never redirected to legacy Fishball. SSE is
  * piped as it arrives; Node's pipe pauses the child when the browser stops reading.
  */
 import { request as httpRequest } from 'node:http'
+import { createHash } from 'node:crypto'
+import { createNativeWebAccess } from './native-web-access.js'
+
+const NATIVE = Object.freeze({
+  mux: '/api/remote.mux', get: 'GET', websocket: 'websocket', upgrade: 'Upgrade',
+  switching: 101, redirectMin: 300, redirectMax: 399, notModified: 304, version: '13', guid: '258EAFA5-E914-47DA-95CA-C5AB0DC85B11',
+  hash: 'sha1', encoding: 'base64', keyBytes: 16,
+  handshake: 'HTTP/1.1 101 Switching Protocols\r\n', lineEnd: '\r\n',
+  refusal: 'HTTP/1.1 ', refusalEnd: ' Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n',
+  requestHeaders: new Set(['accept', 'accept-language', 'accept-encoding', 'content-type', 'content-encoding', 'range', 'if-range', 'if-none-match', 'if-modified-since', 'sec-websocket-key', 'sec-websocket-version', 'sec-websocket-protocol']),
+  responseHeaders: new Set(['content-type', 'content-encoding', 'content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified', 'vary', 'allow']),
+})
 import { ADMISSION, BEARER, LIMITS, ROUTES, STATUS, STATUS_CODES } from '../contract.js'
 import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
 // The page's own dictionaries and language rule (I9, D30): the 503 card is the page's stand-in,
@@ -168,7 +181,7 @@ const inaccessible = () => ({ enabled: false, state: STATUS.failed, code: STATUS
  * Query parameters survive the prefix strip; `token` reports a launch-token query for the caller
  * to refuse after admission.
  */
-function targetOf(rawUrl) {
+function targetOf(rawUrl, native = false) {
   if (typeof rawUrl !== 'string' || !rawUrl.startsWith('/') || rawUrl.startsWith('//')) return TARGET.malformed
   const rawPath = rawUrl.split(TARGET.query)[0]
   if (rawPath.includes('\\') || rawPath.includes('\0') || rawPath.toLowerCase().includes('%2e')) return TARGET.malformed
@@ -182,7 +195,8 @@ function targetOf(rawUrl) {
   if (pathname === PREFIX) return { redirect: DOCUMENT + url.search, token }
   if (!pathname.startsWith(DOCUMENT)) return TARGET.malformed
   let tail
-  if (pathname === DOCUMENT) tail = CHILD.document
+  if (native) tail = pathname.slice(PREFIX.length)
+  else if (pathname === DOCUMENT) tail = CHILD.document
   else if (pathname.startsWith(UI)) tail = pathname.slice(PREFIX.length)
   else if (pathname.startsWith(API)) tail = pathname.slice(PREFIX.length)
   else return TARGET.unknown
@@ -195,11 +209,17 @@ function bodyLimit(tail) {
 
 function upstreamHeaders(request, access, body) {
   const headers = {}
+  const hop = new Set(String(request.headers.connection ?? '').toLowerCase().split(',').map((name) => name.trim()))
   for (const [name, value] of Object.entries(request.headers)) {
-    if (value === undefined || DROP_REQUEST.has(name)) continue
+    if (value === undefined || DROP_REQUEST.has(name) || hop.has(name) || name.startsWith('proxy-') || name.startsWith('x-forwarded-') || name === 'forwarded') continue
+    if (access.valid && !NATIVE.requestHeaders.has(name)) continue
     headers[name] = value
   }
-  headers[BEARER.header] = BEARER.scheme + BEARER.separator + access.bearer
+  if (access.cookie !== undefined) {
+    headers.host = access.host
+    headers.cookie = access.cookie
+    headers.origin = access.origin
+  } else headers[BEARER.header] = BEARER.scheme + BEARER.separator + access.bearer
   if (body !== undefined) headers['content-length'] = String(body.length)
   return headers
 }
@@ -334,6 +354,8 @@ export function createEmbedBroker({ service, connection }) {
   let activeStreams = 0
   const proxies = new Set()
   const tokens = new Set()
+  const nativeAccess = typeof service.nativeEmbedAccess === 'function' ? createNativeWebAccess(service) : undefined
+  let closed = false
 
   function reserve() {
     if (activeStreams >= LIMITS.embedConcurrentStreams) return undefined
@@ -389,6 +411,10 @@ export function createEmbedBroker({ service, connection }) {
    * piped so SSE stays unbuffered and pipe supplies backpressure to the child.
    */
   function forward(request, response, target, access, body) {
+    if (closed || (access.valid && !access.valid())) {
+      unavailable(response, request.method, inaccessible(), target.tail, target.search)
+      return
+    }
     let origin
     try { origin = new URL(access.origin) } catch { unavailable(response, request.method, inaccessible(), target.tail, target.search); return }
     let reserved = false
@@ -411,6 +437,7 @@ export function createEmbedBroker({ service, connection }) {
         method: request.method,
         path: target.tail + target.search,
         headers: upstreamHeaders(request, access, body),
+        signal: access.signal,
       })
     } catch {
       released()
@@ -421,17 +448,22 @@ export function createEmbedBroker({ service, connection }) {
     let responded = false
     let ended = false
     const release = () => { released(); released = () => {} }
+    const cleanup = () => {
+      proxies.delete(abort)
+      access.signal?.removeEventListener('abort', abort)
+      release()
+    }
     const abort = () => {
+      cleanup()
       if (ended) return
       ended = true
-      proxies.delete(abort)
-      release()
       try { child.destroy() } catch { /* the child request already ended */ }
       if (!response.destroyed && !response.writableEnded) {
-        try { response.end() } catch { /* the browser already went away */ }
+        try { if (access.signal?.aborted) response.destroy(); else response.end() } catch { /* the browser already went away */ }
       }
     }
     proxies.add(abort)
+    access.signal?.addEventListener('abort', abort, { once: true })
     response.on('close', abort)
     response.on('error', abort)
     request.on('aborted', abort)
@@ -443,8 +475,7 @@ export function createEmbedBroker({ service, connection }) {
       if (responded) { abort(); return }
       responded = true
       ended = true
-      proxies.delete(abort)
-      release()
+      cleanup()
       try { child.destroy() } catch { /* the child request already ended */ }
       unavailable(response, request.method, inaccessible(), target.tail, target.search)
     })
@@ -452,17 +483,19 @@ export function createEmbedBroker({ service, connection }) {
     child.on('error', () => {
       if (responded) { abort(); return }
       responded = true
-      proxies.delete(abort)
-      release()
+      cleanup()
       unavailable(response, request.method, inaccessible(), target.tail, target.search)
     })
     child.on('response', (upstream) => {
       responded = true
-      if (upstream.statusCode === HTTP.unauthorized) {
-        // The bearer rotated under us: report the child as unavailable, not as a browser 401.
+      if (upstream.statusCode === HTTP.unauthorized || (access.valid && (!access.valid() ||
+          (upstream.statusCode >= NATIVE.redirectMin && upstream.statusCode <= NATIVE.redirectMax && upstream.statusCode !== NATIVE.notModified)))) {
+        // Detach this response before retiring shared access, so it gets the safe error
+        // card while sibling streams are destroyed synchronously. Never replay a mutation.
         ended = true
-        proxies.delete(abort)
-        release()
+        cleanup()
+        access.invalidate?.()
+        // Report child admission loss as unavailable, not as a main-browser 401.
         upstream.resume()
         try { child.destroy() } catch { /* the child request already ended */ }
         unavailable(response, request.method, inaccessible(), target.tail, target.search)
@@ -472,8 +505,7 @@ export function createEmbedBroker({ service, connection }) {
         const reserveStream = reserve()
         if (reserveStream === undefined) {
           ended = true
-          proxies.delete(abort)
-          release()
+          cleanup()
           upstream.resume()
           try { child.destroy() } catch { /* the child request already ended */ }
           reply(response, request.method, HTTP.tooManyRequests, { 'content-type': TYPE.text }, 'Too many open Fishball streams.')
@@ -483,6 +515,20 @@ export function createEmbedBroker({ service, connection }) {
         reserved = true
       }
       const headers = responseHeaders(upstream.headers, target.tail)
+      if (access.valid) {
+        for (const name of Object.keys(headers)) {
+          if (!NATIVE.responseHeaders.has(name) && !Object.hasOwn(SECURITY, name)) delete headers[name]
+        }
+        if (upstream.headers['content-security-policy-report-only']) headers['content-security-policy-report-only'] = upstream.headers['content-security-policy-report-only']
+        // Native inline boot CSP is NOT approved. Retain both policies (intersection), never
+        // strip the native policy to make the iframe appear functional. Same-origin is not
+        // hostile-plugin isolation. This deliberately holds native document acceptance.
+        if (upstream.headers['content-security-policy']) headers['content-security-policy'] = [CSP, ...[].concat(upstream.headers['content-security-policy'])]
+        if (upstream.headers['x-frame-options']) headers['x-frame-options'] = upstream.headers['x-frame-options']
+        delete headers.location
+        delete headers.refresh
+        headers['cache-control'] = CACHE.noStore
+      }
       try { response.writeHead(upstream.statusCode ?? HTTP.serverError, headers) } catch { abort(); return }
       if (isEventStream(upstream.headers)) response.flushHeaders()
       if (request.method === METHOD.head) {
@@ -516,7 +562,8 @@ export function createEmbedBroker({ service, connection }) {
    */
   async function dispatch(request, response) {
     if (!ROUTES.methods.includes(request.method)) { refuse(request, response, HTTP.methodNotAllowed, { allow: ALLOW }); return }
-    const target = targetOf(request.url)
+    if (closed) { refuse(request, response, HTTP.unavailable); return }
+    const target = targetOf(request.url, Boolean(nativeAccess))
     if (target.status !== undefined) { refuse(request, response, target.status); return }
     if (request.headers[SITE.header] === SITE.refused) { refuse(request, response, HTTP.forbidden); return }
     const rejection = connection.requestRejection({ headers: request.headers })
@@ -540,7 +587,7 @@ export function createEmbedBroker({ service, connection }) {
       return
     }
     let access
-    try { access = await service.embedAccess() } catch { access = undefined }
+    try { access = nativeAccess ? await nativeAccess.acquire() : await service.embedAccess() } catch { access = undefined }
     if (access === undefined || response.destroyed || response.writableEnded) {
       request.resume()
       unavailable(response, request.method, inaccessible(), target.tail, target.search)
@@ -567,9 +614,96 @@ export function createEmbedBroker({ service, connection }) {
     }
   }
 
+  /** Exact public upgrade seat; no fallback path or private webserver hooks. */
+  async function upgrade(request, socket, head) {
+    socket.on('error', () => socket.destroy())
+    socket.pause()
+    const reject = (status) => socket.end(NATIVE.refusal + status + NATIVE.refusalEnd)
+    try {
+      const target = targetOf(request.url, true)
+      if (request.method !== NATIVE.get) { reject(HTTP.methodNotAllowed); return }
+      if (target.status !== undefined || target.tail !== NATIVE.mux) { reject(HTTP.notFound); return }
+      if (request.headers[SITE.header] === SITE.refused) { reject(HTTP.forbidden); return }
+      const rejection = connection.requestRejection({ headers: request.headers })
+      if (rejection !== undefined) { reject(rejection); return }
+      if (target.token) { reject(HTTP.badRequest); return }
+      const key = request.headers['sec-websocket-key']
+      if (request.headers.upgrade?.toLowerCase() !== NATIVE.websocket ||
+          !String(request.headers.connection).toLowerCase().split(',').map((v) => v.trim()).includes('upgrade') ||
+          request.headers['sec-websocket-version'] !== NATIVE.version || typeof key !== 'string' ||
+          Buffer.from(key, NATIVE.encoding).length !== NATIVE.keyBytes || Buffer.from(key, NATIVE.encoding).toString(NATIVE.encoding) !== key) {
+        reject(HTTP.badRequest); return
+      }
+      if (closed || !nativeAccess || !ready(safeView(service))) { reject(HTTP.unavailable); return }
+      const access = await nativeAccess.acquire()
+      if (closed || socket.destroyed || !access.valid()) { reject(HTTP.unavailable); return }
+      const release = reserve()
+      if (!release) { reject(HTTP.tooManyRequests); return }
+      let child
+      let peer
+      const dispose = () => {
+        proxies.delete(dispose)
+        access.signal.removeEventListener('abort', dispose)
+        release()
+        child?.destroy()
+        peer?.destroy()
+        socket.destroy()
+      }
+      proxies.add(dispose)
+      access.signal.addEventListener('abort', dispose, { once: true })
+      socket.on('close', dispose)
+      const headers = upstreamHeaders(request, access)
+      headers.connection = NATIVE.upgrade
+      headers.upgrade = NATIVE.websocket
+      // Do not negotiate extensions: the broker relays frames without transforming them.
+      delete headers['sec-websocket-extensions']
+      try {
+        child = httpRequest(access.origin, { method: NATIVE.get, path: NATIVE.mux + target.search, headers, signal: access.signal })
+      } catch { dispose(); return }
+      child.setTimeout(LIMITS.embedStreamIdleTimeoutMs, dispose)
+      child.on('error', dispose)
+      child.on('response', (response) => {
+        response.resume()
+        if (response.statusCode === HTTP.unauthorized) access.invalidate()
+        dispose()
+      })
+      child.on('upgrade', (response, upstream, upstreamHead) => {
+        peer = upstream
+        peer.pause()
+        peer.on('error', dispose)
+        peer.on('close', dispose)
+        const accept = createHash(NATIVE.hash).update(key + NATIVE.guid).digest(NATIVE.encoding)
+        const protocol = response.headers['sec-websocket-protocol']
+        const offered = String(request.headers['sec-websocket-protocol'] ?? '').split(',').map((v) => v.trim())
+        if (!access.valid() || closed || socket.destroyed || response.statusCode !== NATIVE.switching ||
+            response.headers.upgrade?.toLowerCase() !== NATIVE.websocket ||
+            !String(response.headers.connection).toLowerCase().split(',').map((v) => v.trim()).includes('upgrade') ||
+            response.headers['sec-websocket-accept'] !== accept || response.headers['sec-websocket-extensions'] ||
+            (protocol !== undefined && (typeof protocol !== 'string' || !offered.includes(protocol)))) { dispose(); return }
+        // Only negotiated protocol headers leave this process, never native cookies/redirects.
+        const handshake = NATIVE.handshake + 'Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: ' + accept + NATIVE.lineEnd +
+          (protocol ? 'Sec-WebSocket-Protocol: ' + protocol + NATIVE.lineEnd : '') + NATIVE.lineEnd
+        // Keep both readable sides paused until the handshake and both initial heads drain.
+        // Starting pipe before these writes complete can overrun a blocked browser/child.
+        socket.write(Buffer.concat([Buffer.from(handshake), upstreamHead]), () => {
+          if (!access.valid() || socket.destroyed || peer.destroyed) { dispose(); return }
+          peer.write(head, () => {
+            if (!access.valid() || socket.destroyed || peer.destroyed) { dispose(); return }
+            socket.pipe(peer)
+            peer.pipe(socket)
+          })
+        })
+      })
+      child.end()
+    } catch { reject(HTTP.unavailable) }
+  }
+
   return Object.freeze({
     handle,
+    upgrade,
     close() {
+      closed = true
+      nativeAccess?.close()
       for (const abort of [...proxies]) abort()
       proxies.clear()
     },
@@ -593,7 +727,17 @@ export function registerEmbed(ctx, service) {
         path: PREFIX,
         handler: (request, response) => broker.handle(request, response),
       })
+      let removeUpgrade
+      try {
+        if (typeof service.nativeEmbedAccess === 'function') {
+          removeUpgrade = webServer.registerUpgrade({
+            path: PREFIX + NATIVE.mux,
+            handler: (request, socket, head) => broker.upgrade(request, socket, head),
+          })
+        }
+      } catch { remove(); broker.close(); throw new Error('fishball embed: upgrade unavailable') }
       return () => {
+        removeUpgrade?.()
         remove()
         broker.close()
       }
