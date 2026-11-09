@@ -12,9 +12,10 @@
  * UC contracts: docs/test-design/instance-ext-w0-core-use-cases.md. Every case names its X point.
  */
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { describe, it } from 'node:test'
 import { readFileSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { bootChild, messageSource, messageText } from '../../../../test/support/instance-ext.mjs'
 
@@ -22,6 +23,9 @@ const MANAGER = 'fishball-fold-notify'
 const U18 = Object.freeze({
   notifyFile: 'notify-keys.jsonl',
   notifyKeys: 10_000,
+  retentionSeedKeys: 9_998,
+  retentionKeyPrefix: 'cap-key-',
+  event: Object.freeze({ splice: 'agent/inbox/spliced', user: 'user/message', turnStart: 'turn/start', turnEnd: 'turn/end', stepStart: 'step/start', stepEnd: 'step/end' }),
   watchdog: 'fishball-watchdog',
   notice: 'a watchdog notice',
   queueFailure: 'injected agent queue rejection before acceptance',
@@ -45,12 +49,12 @@ async function live(t) {
 }
 
 /** Inject only at the supplied agent boundary; no fake notification/dedupe implementation. */
-async function pendingNotice(t, dedupeKey, text = U18.notice) {
+async function pendingNotice(t, dedupeKey, text = U18.notice, { activate = true } = {}) {
   const attempts = []
   let persistedAtQueue
   let queueLengthAtRejection
   let rejectPending = true
-  const h = await bootChild(t, { activate: true, onFollowup(message, agent) {
+  const h = await bootChild(t, { activate, onFollowup(message, agent) {
     attempts.push(structuredClone(message))
     if (rejectPending && message.id === attempts[0].id) {
       persistedAtQueue = readFileSync(path.join(h.home, U18.notifyFile), 'utf8')
@@ -151,14 +155,37 @@ describe('X0-C U18 typed stub refusals', () => {
     })
   }
 
-  it('XC-EP-STUB-16 Samuel never mistakes a scoped connector stub for success — bridge refuses ExtensionError/not-implemented', async (t) => {
-    const service = (await bootChild(t)).requireInstance()
-    assert.equal(typeof service.bridge, 'function')
-    // The top-level bridge signature has no declared <area.member> spelling; do not invent one.
-    await assert.rejects(Promise.resolve().then(() => service.bridge(U18.watchdog, ['session.list'])), {
-      name: U18.errorName,
-      code: U18.notImplemented,
+  it('XC-EP-STUB-16 Samuel uses only the scoped connector operations — X12 EP/DT: in-list read delegates; out-of-list list is forbidden locally without a new handshake', async (t) => {
+    const scope = Object.freeze({
+      allowed: 'session.read',
+      denied: 'session.list',
+      forbidden: 'forbidden',
+      read: Object.freeze({ sessionId: 'scope-session', maxMessages: 1, maxBytes: 1 }),
+      list: Object.freeze({ limit: 1 }),
+      reply: Object.freeze({ messages: [], truncated: false }),
     })
+    const h = await bootChild(t)
+    const service = h.requireInstance()
+    const handshakes = h.host.handshakes.length
+    const client = service.bridge(U18.watchdog, [scope.allowed])
+    // X12/U9 and X0-W (§1.1, §5.1, §6): membership, not payload validity, decides
+    // these EP/DT rows. Both requests are valid per connector contract §4.1.
+    const beforeAllowed = h.host.requests.length
+    assert.deepEqual(await client.request(scope.allowed, scope.read), scope.reply)
+    assert.deepEqual(h.host.requests.slice(beforeAllowed).map(({ operation, payload }) => ({ operation, payload })), [
+      { operation: scope.allowed, payload: scope.read },
+    ])
+    const beforeDenied = h.host.requests.length
+    const framesBeforeDenied = h.host.frames.length
+    // U9 fixes the refusal code, not a sync/async error envelope or error class.
+    const code = await Promise.resolve().then(() => client.request(scope.denied, scope.list)).then(
+      (value) => value?.code ?? value,
+      (error) => error?.code ?? error,
+    )
+    assert.equal(code, scope.forbidden)
+    assert.equal(h.host.requests.length, beforeDenied, 'out-of-list refusal never reaches the connector')
+    assert.equal(h.host.frames.length, framesBeforeDenied, 'no request leaves the child on denial')
+    assert.equal(h.host.handshakes.length, handshakes, 'the scoped client reuses the instance handshake')
   })
 })
 
@@ -279,13 +306,96 @@ describe('X0-C X10 manager.notify', () => {
   })
 
   it('XC-UC-02-A1 Samuel continues work with Fishball plugin updates — W0: wake:false is held and joins the next turn', async (t) => {
+    const flow = Object.freeze({
+      notice: 'held notice XC-UC-02-A1', dedupeKey: 'quiet-busy-XC-UC-02-A1',
+      nextUser: 'next user turn XC-UC-02-A1', laterUser: 'later user turn XC-UC-02-A1',
+      running: 'running', idle: 'idle', held: 'held', none: 0, once: 1,
+      chat: '/api/chat', post: 'POST', sessionEvent: 'session/event',
+      turnStart: 'turn/start', stepStart: 'step/start', stepEnd: 'step/end',
+      splice: 'agent/inbox/spliced', nextStep: 'next-step', userMessage: 'user/message', surfaceAppend: 'append',
+    })
+    // One UC/A1, with secondary EP/DT: fresh + quiet + busy => hold, no wake.
+    // BVA/ST: zero admissions while held -> one at the next step -> still one later.
     const { h, service } = await live(t)
-    const result = await notify(service, { wake: false, text: 'held notice' })
-    assert.equal(result.status ?? result, 'held')
-    assert.equal(h.manager().followups.length, 0, 'it starts no turn of its own')
-    await h.http('/api/chat', { method: 'POST', body: { text: 'next user turn' } })
-    const queued = h.manager().followups.map(messageText).join('\n')
-    assert.match(queued, /held notice/, 'the held notice is in the next turn')
+    const manager = h.manager()
+    assert.equal(service.manager.sessionId(), manager.session.id, 'observe the actual manager Session')
+    const notices = (messages) => messages.filter((message) => messageText(message).includes(flow.notice))
+    const admissions = (events) => events.filter((event) => event.type === flow.userMessage && notices([event.data]).length)
+    const insertedNotices = () => notices(manager.session.snapshotEvents().filter((event) => event.type === flow.splice && event.data.target === flow.nextStep).flatMap((event) => event.data.inserted))
+    const textOccurrences = (messages) => messages.reduce((count, message) => count + messageText(message).split(flow.notice).length - flow.once, flow.none)
+    const injections = []
+    const noticeInjections = () => injections.filter(({ message }) => notices([message]).length)
+    const inject = manager.inject
+    // Delegate unchanged: capture refusals even when SessionStore contains a throwing
+    // observer. Never defer/retry injection or bypass the SDK's append guard.
+    manager.inject = function (message) {
+      const attempt = { message: structuredClone(message) }
+      injections.push(attempt)
+      try { return inject.call(this, message) }
+      catch (error) { attempt.error = error; throw error }
+    }
+    t.after(() => { manager.inject = inject })
+    const steps = []
+    let start
+    const dispose = h.ctx.on(flow.sessionEvent, (session, event) => {
+      if (session !== manager.session) return
+      if (event.type === flow.stepStart) start = event
+      if (event.type === flow.stepEnd) steps.push({ start, end: event, messages: session.deriveMessages() })
+    })
+    t.after(dispose)
+    async function userStep(text) {
+      const response = await h.http(flow.chat, { method: flow.post, body: { text } })
+      assert.equal(response.ok, true, 'user-step trigger must be accepted before judging held context')
+      await manager.whenIdle()
+      assert.ok(steps.at(-flow.once)?.messages.some((message) => messageText(message).includes(text)), 'step-observation unavailable: triggering user text was not admitted to the manager')
+    }
+    function acceptedInjections() {
+      const attempts = noticeInjections()
+      const accepted = attempts.filter((attempt) => !attempt.error)
+      if (accepted.length === flow.none) assert.deepEqual(attempts.map((attempt) => String(attempt.error)), [], 'inject-refused: manager.inject rejected held context; this is not a followup-only text oracle')
+      assert.ok(accepted.length > flow.none, 'inject-path missing: held context must use the supported manager.inject boundary')
+      return accepted
+    }
+
+    await manager.whenIdle()
+    const beforeHold = manager.session.seq
+    manager.status = flow.running // Established fixture busy seam, not a real provider turn.
+    const result = await notify(service, { wake: false, dedupeKey: flow.dedupeKey, text: flow.notice })
+    assert.equal(result.status ?? result, flow.held)
+    assert.equal(manager.followups.length, flow.none, 'quiet notice queues no independent followup')
+    assert.equal(manager.inbox.nextTurn.length, flow.none, 'quiet notice does not queue an ordinary turn by another path')
+    assert.equal(manager.session.snapshotEvents(beforeHold).filter((event) => event.type === flow.turnStart).length, flow.none, 'holding never opens a turn')
+    assert.equal(admissions(manager.session.snapshotEvents()).length, flow.none, 'held is not yet admitted model context')
+
+    manager.status = flow.idle
+    await userStep(flow.nextUser)
+    const accepted = acceptedInjections()
+    assert.equal(steps.length, flow.once, 'the first later manager step must see the held notice, not an extra notice turn')
+    const [next] = steps
+    assert.ok(next.start, 'step-observation unavailable: no matching step/start')
+    // SDK agent-loop/lib/index.js: rc.5:800–813,1066–1073; rc.1:564–577,859–866.
+    // inject is separate next-step context, then user/message surface admission;
+    // deriveMessages is the request history, not the original followup argument.
+    const inserted = insertedNotices()
+    assert.equal(inserted.length, flow.once, 'one durable next-step insertion, not merely a successful inject call')
+    const { message } = accepted.find(({ message }) => message.id === inserted[flow.none].id) ?? {}
+    assert.ok(message?.id, 'durable next-step identity must come from a successful supported injection')
+    const [admitted] = admissions(manager.session.snapshotEvents())
+    assert.equal(admissions(manager.session.snapshotEvents()).length, flow.once, 'one manager-session admission, not merely an inject call')
+    assert.equal(admitted.data.id, message.id)
+    assert.equal(admitted.surfaceOp, flow.surfaceAppend, 'notice enters the model-visible surface')
+    assert.ok(next.start.seq < admitted.seq && admitted.seq < next.end.seq, 'held notice is admitted within the very next manager step')
+    assert.deepEqual(notices(next.messages).map((item) => item.id), [message.id], 'next-step model-facing history contains that same notice once')
+    assert.equal(textOccurrences(next.messages), flow.once, 'a single message must not repeat the notice text')
+
+    await h.ctx.sessionPersistence.flush()
+    assert.deepEqual(admissions(h.sessionLogs.get(manager.id) ?? []).map((event) => event.data.id), [message.id], 'explicit flush makes the single admitted context durable')
+    await userStep(flow.laterUser)
+    assert.deepEqual(insertedNotices().map((item) => item.id), [message.id], 'later boundary never reinserts the held notice')
+    assert.equal(textOccurrences(steps.at(-flow.once).messages), flow.once, 'later context retains one notice, never a replayed copy')
+    assert.equal(admissions(manager.session.snapshotEvents()).length, flow.once, 'crossing a later boundary never re-admits held work')
+    await h.ctx.sessionPersistence.flush()
+    assert.deepEqual(admissions(h.sessionLogs.get(manager.id) ?? []).map((event) => event.data.id), [message.id], 'durable admission remains exactly once after the later step')
   })
 
   it('XC-UC-02-E1 Samuel continues work with Fishball plugin updates — W0: a duplicate dedupeKey is answered duplicate and starts no second turn', async (t) => {
@@ -351,45 +461,110 @@ describe('X0-C X10 manager.notify', () => {
     })
   }
 
-  // Three-value BVA around the specified durable key retention cap, using only public notify.
+  /** Bulk setup only: clone storage emitted by a real accepted notice, never a guessed schema. */
+  async function seedRetentionHistory(t, keys) {
+    const pending = await pendingNotice(t, U18.pendingKey, U18.notice, { activate: false })
+    const { h, reservedId } = pending
+    const service = h.requireInstance()
+    const manager = h.manager()
+    await manager.whenIdle()
+    const firstNoticeSeq = manager.session.seq
+    assert.equal(await notifyStatus(service, { dedupeKey: keys[0] }), 'queued')
+    await manager.whenIdle()
+    const templateId = h.lastFollowup().id
+    await h.ctx.sessionPersistence.flush()
+    await h.close()
+
+    // The committed store, not product source, supplies all pending/accepted fields and order.
+    // Fail explicitly if its per-notice records cannot be isolated; do not invent a new format.
+    const storePath = path.join(h.home, U18.notifyFile)
+    const lines = (await readFile(storePath, 'utf8')).trimEnd().split('\n')
+    for (const line of lines) JSON.parse(line)
+    const keyToken = JSON.stringify(keys[0])
+    const firstTemplateLine = lines.findIndex((line) => line.includes(keyToken))
+    assert.ok(firstTemplateLine >= 0, 'ordinary notify produced committed key records')
+    const prefix = lines.slice(0, firstTemplateLine)
+    const template = lines.slice(firstTemplateLine)
+    assert.ok(template.every((line) => line.includes(keyToken) && !line.includes(JSON.stringify(U18.pendingKey))), 'accepted notice records form the isolated tail of this two-notice fixture')
+    assert.ok(prefix.join('\n').includes(JSON.stringify(reservedId)), 'pending reservation is preserved verbatim')
+    assert.ok(template.join('\n').includes(JSON.stringify(templateId)), 'committed accepted records correlate with the real queued identity')
+
+    const events = h.sessionLogs.get(manager.id)
+    const history = structuredClone(events.slice(0, firstNoticeSeq))
+    const noticeEvents = events.slice(firstNoticeSeq)
+    const allowedEvents = Object.values(U18.event)
+    assert.ok(noticeEvents.every(({ type, surfaceOp, sourceEventSeqs }) => allowedEvents.includes(type) && (surfaceOp === undefined || surfaceOp === 'append') && sourceEventSeqs === undefined), 'template is one complete ordinary admission, without external sequence references')
+    for (const type of [U18.event.turnStart, U18.event.turnEnd, U18.event.user]) assert.equal(noticeEvents.filter((event) => event.type === type).length, 1)
+    assert.equal(noticeEvents.find(({ type }) => type === U18.event.user).data.id, templateId)
+    assert.equal(noticeEvents.at(-1).type, U18.event.turnEnd)
+    const templateTurn = noticeEvents.find(({ type }) => type === U18.event.turnStart).data.turn
+    const serializedEvents = JSON.stringify(noticeEvents)
+    const seededLines = [...prefix]
+    const seededIds = new Set()
+    for (const [index, dedupeKey] of keys.entries()) {
+      const id = randomUUID()
+      seededIds.add(id)
+      const replacements = new Map([[keys[0], dedupeKey], [templateId, id]])
+      const clone = (json) => JSON.parse(json, (_field, value) => replacements.get(value) ?? value)
+      seededLines.push(...template.map((line) => JSON.stringify(clone(line))))
+      // Keep the same manager Session and full inbox-splice/admission/closed-turn history.
+      // Only opaque message identities and SDK-owned seq/turn counters vary between copies.
+      for (const event of clone(serializedEvents)) {
+        event.seq = history.length
+        if (Object.hasOwn(event.data, 'turn')) event.data.turn = templateTurn + index
+        history.push(event)
+      }
+    }
+    assert.equal(seededIds.size, keys.length)
+    assert.equal(history.filter(({ type }) => type === U18.event.user).length, keys.length)
+    h.sessionLogs.set(manager.id, history)
+    await writeFile(storePath, seededLines.join('\n') + '\n')
+
+    // Bulk writes happen only while child rows are closed. Real notify keeps its real fsyncs.
+    const queued = []
+    const seeded = await bootChild(t, { home: h.home, activate: false, sessionLogs: h.sessionLogs, onFollowup(message) {
+      if (message.id === reservedId) throw new Error(U18.queueFailure)
+      queued.push(message)
+    } })
+    for (const dedupeKey of [keys[0], keys.at(-1)]) assert.equal(await notifyStatus(seeded.requireInstance(), { dedupeKey }), 'duplicate', 'seeded history is loaded, not an ignored file')
+    assert.equal(queued.length, 0, 'loaded accepted keys do not requeue')
+    return { h: seeded, reservedId }
+  }
+
+  // §12.5 caps accepted history, not load: 9,998 committed keys + 1/2/3 real notifications.
   for (const count of [U18.notifyKeys - 1, U18.notifyKeys, U18.notifyKeys + 1]) {
     it(`XC-BVA-KEYS-${count} newest-key retention at ${count} accepted notices — file and reloaded duplicate behavior agree`, async (t) => {
-      const { h, reservedId } = await pendingNotice(t, U18.pendingKey)
+      const keys = Array.from({ length: count }, (_, index) => U18.retentionKeyPrefix + index)
+      const { h, reservedId } = await seedRetentionHistory(t, keys.slice(0, U18.retentionSeedKeys))
       const service = h.requireInstance()
-      const keys = Array.from({ length: count }, (_, index) => 'cap-key-' + index)
-      for (const dedupeKey of keys) assert.equal(await notifyStatus(service, { dedupeKey }), 'queued')
-      assert.equal(h.manager().followups.length, count)
+      const boundaryKeys = keys.slice(U18.retentionSeedKeys)
+      for (const dedupeKey of boundaryKeys) assert.equal(await notifyStatus(service, { dedupeKey }), 'queued')
+      assert.equal(h.manager().followups.length, boundaryKeys.length, 'only boundary notifications traverse the real queue and per-notification persistence')
       const file = await readFile(path.join(h.home, U18.notifyFile), 'utf8')
       for (const line of file.trimEnd().split('\n')) assert.doesNotThrow(() => JSON.parse(line), 'store remains valid JSONL without imposing its field/line layout')
       const kept = keys.slice(-U18.notifyKeys)
       assert.ok(file.includes(JSON.stringify(kept[0])))
       assert.ok(file.includes(JSON.stringify(keys.at(-1))))
+      if (count > U18.notifyKeys) assert.equal(file.includes(JSON.stringify(keys[0])), false, 'oldest accepted key is evicted at the actual 10001 boundary before pending acceptance')
       assert.ok(file.includes(JSON.stringify(U18.pendingKey)), 'accepted-history trimming never evicts pending work')
       assert.ok(file.includes(JSON.stringify(reservedId)), 'pending identity survives accepted-history trimming')
       for (const dedupeKey of [kept[0], keys.at(-1)]) assert.equal(await notifyStatus(service, { dedupeKey }), 'duplicate', 'newest accepted-history boundary keys are retained before recovery')
       await h.close()
-      const reloaded = await bootChild(t, { home: h.home, activate: true, sessionLogs: h.sessionLogs })
+      const reloaded = await bootChild(t, { home: h.home, activate: false, sessionLogs: h.sessionLogs })
       const fresh = reloaded.requireInstance()
-      const startupCalls = reloaded.manager().followups.slice()
-      assert.ok(startupCalls.length <= 1, 'startup cannot duplicate the only pending notice')
-      if (startupCalls.length) assert.equal(startupCalls[0].id, reservedId, 'only pending identity may be recovered')
+      // Public retry activates the manager without HTTP; startup may already have accepted it.
+      const recoveredStatus = await notifyStatus(fresh, { dedupeKey: U18.pendingKey })
+      assert.ok(recoveredStatus === 'queued' || recoveredStatus === 'duplicate', 'pending work retries unless startup already accepted it')
+      assert.deepEqual(reloaded.manager().followups.map((message) => message.id), [reservedId], 'restart accepts pending work exactly once with its reserved identity')
       assert.equal(await notifyStatus(fresh, { dedupeKey: keys.at(-1) }), 'duplicate', 'newest accepted key survives pending recovery')
       // Accepting recovered pending work can evict the oldest accepted key at the cap.
-      if (startupCalls.length === 0 || count < U18.notifyKeys) {
-        assert.equal(await notifyStatus(fresh, { dedupeKey: kept[0] }), 'duplicate')
-      }
-      assert.equal(reloaded.manager().followups.length, startupCalls.length, 'retained accepted keys never requeue')
-      const beforePending = reloaded.manager().followups.length
-      assert.equal(await notifyStatus(fresh, { dedupeKey: U18.pendingKey }), startupCalls.length === 0 ? 'queued' : 'duplicate', 'pending work is retryable unless startup already accepted it')
-      const pendingMessages = reloaded.manager().followups.filter((message) => message.id === reservedId)
-      assert.equal(pendingMessages.length, 1)
-      const afterPending = beforePending + (startupCalls.length === 0 ? 1 : 0)
-      assert.equal(reloaded.manager().followups.length, afterPending)
+      const retainedAfterRecovery = count < U18.notifyKeys ? kept[0] : kept[1]
+      assert.equal(await notifyStatus(fresh, { dedupeKey: retainedAfterRecovery }), 'duplicate', 'the retained accepted-history edge survives at most one pending acceptance')
       assert.equal(await notifyStatus(fresh, { dedupeKey: U18.pendingKey }), 'duplicate')
-      assert.equal(reloaded.manager().followups.length, afterPending)
+      assert.equal(reloaded.manager().followups.length, 1, 'retained accepted keys never requeue')
       if (count > U18.notifyKeys) {
         assert.equal(await notifyStatus(fresh, { dedupeKey: keys[0] }), 'queued', 'evicted accepted key can notify again after restart')
-        assert.equal(reloaded.manager().followups.length, afterPending + 1)
+        assert.equal(reloaded.manager().followups.length, 2)
       }
     })
   }
