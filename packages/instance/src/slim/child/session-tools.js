@@ -293,6 +293,7 @@ function definitions(client) {
  */
 export function apply(ctx) {
   const client = createBridgeClient({ hostId: ctx.nativeRuntime.hostId, requiredCapabilities: SESSION_REQUIRED })
+  ctx.provide('fishballBridgeScope', client.scope.bind(client))
   let disposed = false
   const registrations = []
   // The control transport arrives when the main host attaches; the client never opens a socket.

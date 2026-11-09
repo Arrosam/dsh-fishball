@@ -26,6 +26,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import { gate } from './extensions.js'
+import { createBridgeScope } from './ext/bridge-scope.js'
 import {
   ENVELOPE, ERROR, OPERATION, OPERATIONS, SIDE, TRANSPORT_METHODS, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope,
 } from '../contract.js'
@@ -81,6 +82,9 @@ class BridgeClient {
     // through the capabilities getter below.
     this.ownCapabilities = Object.freeze([...INBOX_OPERATIONS])
     this.session = createSessionRequests(this)
+    // Only the narrow handles returned here belong in extension/side-agent consumers.
+    // Creating a scope never declares capabilities or changes the existing handshake.
+    this.scope = createBridgeScope(this)
   }
 
   /** Operations this child needs from the main host; extend before a transport attaches. */
