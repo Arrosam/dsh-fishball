@@ -134,8 +134,6 @@ export const DOMAIN = Object.freeze({ main: 'fishball', version: 1, intake: 'fis
 export const INTAKE_STATUS = Object.freeze({
   /** Recorded durably, not yet in Fishball's inbox. */
   pending: 'pending',
-  /** In the inbox and flushed to the session log. */
-  accepted: 'accepted',
   /** Fishball's turn took it. */
   consumed: 'consumed',
   /** DSH discarded it from the inbox (a cancel cleared it). */

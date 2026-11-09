@@ -2234,7 +2234,8 @@ A close by the connector itself shows `connection-interrupted` ("连接中断") 
   card and status route, never in `status()` (there is no attachment then). (5) The instance's
   Plugins card shows the state and the safe code (and the launch-failure detail when there is
   one), live within 1 s, and a Retry button while the state is `failed`. (6)
-  `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code}`;
+  `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code, detail}`,
+  where `detail` is a bounded launch diagnostic string or `null`;
   `POST /api/fishball-instance/retry` retries and answers the new status. (7) The admin relay's
   `admin.status` answers `connector-missing` as itself, not as `failed`.
 - T: P; EP (attach outcome: accepted / `instance-busy` / `contract-version`; state shown: each
@@ -2483,7 +2484,7 @@ view. inst-OQ-19 is replaced: the custom chat's routes and the admin routes stay
 
 | Id | Decision |
 | --- | --- |
-| inst-OQ-01 | The connector's attach state and count: `fishballConnector.current()` (conn-OQ-08). The instance's own status and reason: its Plugins card in the main DSH (the `plugins.bundle.config` slot of `fishball-instance`, rendered by `packages/instance/client.js`), and `GET /api/fishball-instance/status` (owner-only Fetch route, `{state, code}`). The connector's Fishball view is not used when the connector is missing. |
+| inst-OQ-01 | The connector's attach state and count: `fishballConnector.current()` (conn-OQ-08). The instance's own status and reason: its Plugins card in the main DSH (the `plugins.bundle.config` slot of `fishball-instance`, rendered by `packages/instance/client.js`), and `GET /api/fishball-instance/status` (owner-only Fetch route, `{state, code, detail}`, with a bounded launch diagnostic string or `null` in `detail`). The connector's Fishball view is not used when the connector is missing. |
 | inst-OQ-02 | Yes: `connector-missing`, the child stopped. Enabling the connector again needs no main restart: the instance's optional `ctx.inject(['fishballConnector'])` sub-scope activates when the service appears, and the instance starts. |
 | inst-OQ-03 | `instance-busy` → status `failed`, code `NATIVE_INSTANCE_BUSY`; `contract-version` → `failed`, `NATIVE_CONTRACT_VERSION`. In both the instance stops its child (no attach means nothing can use it) and does not retry by itself; Retry on its card tries again. The two codes join the instance's status codes; they are instance codes, not contract codes. |
 | inst-OQ-04 | The main DSH exposes exactly `enabled`, `nodeExecutable` and `executableSearchPath` in the `fishball-instance` form (§0.7), because they are needed before the child exists. The same card has the "Model for Fishball" sync button (D26), an action and not a field; `providerSync` is gone. Runtime limits are fixed constants and are no longer settings. The Node default is SP2's order (§0.5). |
