@@ -22,6 +22,7 @@ const NATIVE = Object.freeze({
   hash: 'sha1', encoding: 'base64', keyBytes: 16,
   handshake: 'HTTP/1.1 101 Switching Protocols\r\n', lineEnd: '\r\n',
   refusal: 'HTTP/1.1 ', refusalEnd: ' Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n',
+  registrationError: 'fishball embed: registration unavailable',
   requestHeaders: new Set(['accept', 'accept-language', 'accept-encoding', 'content-type', 'content-encoding', 'range', 'if-range', 'if-none-match', 'if-modified-since', 'sec-websocket-key', 'sec-websocket-version', 'sec-websocket-protocol']),
   responseHeaders: new Set(['content-type', 'content-encoding', 'content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified', 'vary', 'allow']),
 })
@@ -713,13 +714,15 @@ export function createEmbedBroker({ service, connection }) {
 /**
  * Mount the broker on the main DSH web server. The route is registered only when both the web
  * server and connection admission exist; a missing service leaves the main DSH running.
+ * Once registration is attempted, failures throw a value-free error to the host activation
+ * caller: returning undefined there would allow it to publish readiness without embed routes.
  */
 export function registerEmbed(ctx, service) {
   const webServer = ctx?.webServer
   const connection = ctx?.connection
   if (!webServer || !connection) return undefined
   let broker
-  try { broker = createEmbedBroker({ service, connection }) } catch { return undefined }
+  try { broker = createEmbedBroker({ service, connection }) } catch { throw new Error(NATIVE.registrationError) }
   try {
     ctx.effect(() => {
       const remove = webServer.register({
@@ -735,16 +738,20 @@ export function registerEmbed(ctx, service) {
             handler: (request, socket, head) => broker.upgrade(request, socket, head),
           })
         }
-      } catch { remove(); broker.close(); throw new Error('fishball embed: upgrade unavailable') }
+      } catch {
+        try { remove() } finally { broker.close() }
+        throw new Error(NATIVE.registrationError)
+      }
       return () => {
-        removeUpgrade?.()
-        remove()
-        broker.close()
+        try { removeUpgrade?.() } finally {
+          try { remove() } finally { broker.close() }
+        }
       }
     }, 'fishball: embed broker')
   } catch {
     broker.close()
-    return undefined
+    // Do not retain a cause: host errors can include private URLs or admission material.
+    throw new Error(NATIVE.registrationError)
   }
   return broker
 }
