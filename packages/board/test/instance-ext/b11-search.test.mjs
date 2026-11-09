@@ -14,8 +14,9 @@
  * newest matching snapshot per id with provenance, fields and current visibility.
  * Alternative flows: match title, note or both; filter a historical status;
  * return an empty list; omit limit for 20; truncate only distinct matching ids.
- * Exception flows: invalid arguments -> invalid-input; unavailable history ->
- * board-unavailable. Postconditions on a healthy board: board, archive and
+ * Exception flows: JSON-safe invalid field arguments -> invalid-input; SDK-invalid
+ * root/non-JSON values -> ToolArgsError/INVALID_ARGS before search; unavailable
+ * history -> board-unavailable. Postconditions on a healthy board: board, archive and
  * visibility unchanged.
  *
  * UC-02 — Manager searches independently of context injection.
@@ -70,9 +71,11 @@ import path from 'node:path';
 const DRIVER = Object.freeze({
   pluginId: 'fishball-board', managerId: 'session-fishball',
   tempPrefix: 'fbtest-b11-search-', boardFile: 'board.json', archiveFile: 'archive.jsonl',
-  tool: 'board_search', readTool: 'board_read', guide: 'fishball-board:guide',
+  tool: 'board_search', readTool: 'board_read',
   context: 'fishball-board:board', boardVersion: 1, contextCards: 20,
   directoryMode: 0o700, fileMode: 0o600, createdAt: 100,
+  encoding: 'utf8', newline: '\n',
+  sdkArgumentError: Object.freeze({ name: 'ToolArgsError', code: 'INVALID_ARGS' }),
 });
 
 const CASE = Object.freeze({
@@ -181,15 +184,15 @@ test('EP B11-EP-QSPACE whitespace-only query is invalid after trim', async (t) =
 });
 
 const invalidQueries = [
-  ['MISSING', {}], ['UNDEFINED', { query: undefined }], ['NULL', { query: null }],
+  ['MISSING', {}], ['UNDEFINED', { query: undefined }, sdkInvalidInput], ['NULL', { query: null }],
   ['NUMBER', { query: 1 }], ['BOOLEAN', { query: true }], ['ARRAY', { query: ['needle'] }],
   ['OBJECT', { query: { text: 'needle' } }],
 ];
-for (const [id, input] of invalidQueries) {
-  test(`EP B11-EP-Q${id} query must be a required string`, async (t) => invalidInput(t, input));
+for (const [id, input, refuse = invalidInput] of invalidQueries) {
+  test(`EP B11-EP-Q${id} query must be a required string`, async (t) => refuse(t, input));
 }
 for (const [id, input] of [['NULL', null], ['ARRAY', []], ['STRING', 'needle'], ['ABSENT', undefined]]) {
-  test(`EP B11-EP-ROOT${id} tool input must be an argument object`, async (t) => invalidInput(t, input));
+  test(`EP B11-EP-ROOT${id} tool input must be an argument object`, async (t) => sdkInvalidInput(t, input));
 }
 for (const field of ['path', 'regex', 'offset', 'unknown']) {
   test(`EP B11-EP-U${field.toUpperCase()} unknown ${field} argument is refused`, async (t) => {
@@ -214,13 +217,13 @@ for (const value of [0, 1, 2, 19, 20, 21, 49, 50, 51]) {
     });
   });
 }
-for (const [id, value] of [
-  ['NEGATIVE', -1], ['FRACTIONLOW', 0.5], ['FRACTION', 20.5], ['NAN', NaN],
-  ['INFINITY', Infinity], ['STRING', '20'], ['NULL', null], ['BOOLEAN', true],
+for (const [id, value, refuse = invalidInput] of [
+  ['NEGATIVE', -1], ['FRACTIONLOW', 0.5], ['FRACTION', 20.5], ['NAN', NaN, sdkInvalidInput],
+  ['INFINITY', Infinity, sdkInvalidInput], ['STRING', '20'], ['NULL', null], ['BOOLEAN', true],
   ['ARRAY', [20]], ['OBJECT', { value: 20 }],
 ]) {
   test(`EP B11-EP-L${id} limit rejects noninteger or wrong-type partition`, async (t) => {
-    await invalidInput(t, { query: CASE.marker, limit: value });
+    await refuse(t, { query: CASE.marker, limit: value });
   });
 }
 
@@ -484,16 +487,7 @@ async function withRig(_t, options, run) {
   let fixture;
   try {
     await mkdir(boardDir, { mode: DRIVER.directoryMode });
-    // Avoid exercising legacy migration while testing the independent B11 reader.
-    await writeFile(path.join(boardDir, DRIVER.boardFile), JSON.stringify({
-      v: DRIVER.boardVersion, cards: options.board ?? [],
-    }), { mode: DRIVER.fileMode });
-    const archiveFile = path.join(boardDir, DRIVER.archiveFile);
-    if (options.archiveAsDirectory) await mkdir(archiveFile);
-    else if (options.archiveText !== undefined || options.archive !== undefined) {
-      const text = options.archiveText ?? options.archive.map((card) => JSON.stringify(card)).join('\n') + '\n';
-      await writeFile(archiveFile, text, { mode: DRIVER.fileMode });
-    }
+    await writeCommittedFixture(boardDir, options);
     fixture = createRegistrationFixture(home);
     const { PACKAGE, packageModule } = await import('../../../../test/support/instance-ext-plugins.mjs');
     const row = await packageModule(PACKAGE.board, 'index.js');
@@ -507,11 +501,16 @@ async function withRig(_t, options, run) {
       tools: managerScope.tools,
       globalTools: fixture.globalScope.tools,
       setupPluginIds: fixture.setups.map((entry) => entry.pluginId),
-      guideRegistered: () => managerScope.sections.has(DRIVER.guide),
+      guideRegistered: () => [...managerScope.sections.values()].some((section) => {
+        // X2 owns the manager scope; §12.7 requires search guidance, not a section id.
+        const text = typeof section.text === 'function' ? section.text({}) : section.text;
+        return typeof text === 'string' && text.includes(DRIVER.tool);
+      }),
       contextDescriptors: () => [...managerScope.contexts.entries()],
       captureHome: () => captureTree(home),
       readBoard: () => invoke(managerScope, DRIVER.readTool, {}, DRIVER.managerId),
       search: (input, caller = DRIVER.managerId, signal) => invoke(managerScope, DRIVER.tool, input, caller, signal),
+      searchRaw: (input) => executeTool(managerScope, DRIVER.tool, input, DRIVER.managerId),
       resume: async () => {
         const resumed = await fixture.activate(DRIVER.managerId);
         return { tools: resumed.tools, search: (input) => invoke(resumed, DRIVER.tool, input, DRIVER.managerId) };
@@ -527,6 +526,22 @@ async function withRig(_t, options, run) {
     assert.equal(path.basename(target).startsWith(DRIVER.tempPrefix), true);
     await rm(target, { recursive: true, force: true });
   }
+}
+
+async function writeCommittedFixture(boardDir, options) {
+  const archiveFile = path.join(boardDir, DRIVER.archiveFile);
+  const text = options.archiveText ?? (options.archive ?? [])
+    .map((card) => JSON.stringify(card) + DRIVER.newline).join('');
+  const archive = Buffer.from(text, DRIVER.encoding);
+  if (options.archiveAsDirectory) await mkdir(archiveFile);
+  else if (options.archiveText !== undefined || options.archive !== undefined) {
+    await writeFile(archiveFile, archive, { mode: DRIVER.fileMode });
+  }
+  // B3's persisted commit boundary is UTF-8 bytes, not JS string length. Publish
+  // the projection after those exact bytes so healthy histories need no migration.
+  await writeFile(path.join(boardDir, DRIVER.boardFile), JSON.stringify({
+    v: DRIVER.boardVersion, cards: options.board ?? [], archiveBytes: archive.byteLength,
+  }) + DRIVER.newline, { mode: DRIVER.fileMode, encoding: DRIVER.encoding });
 }
 
 function createRegistrationFixture(home) {
@@ -615,11 +630,15 @@ function createScope() {
   };
 }
 
-async function invoke(scope, name, input, caller, signal) {
+async function executeTool(scope, name, input, caller, signal) {
   const definition = scope.tools.get(name);
   assert.ok(definition, `public tool was not registered: ${name}`);
+  return definition.execute(input, { agent: { id: caller, session: { id: caller } }, signal });
+}
+
+async function invoke(scope, name, input, caller, signal) {
   try {
-    return await definition.execute(input, { agent: { id: caller, session: { id: caller } }, signal });
+    return await executeTool(scope, name, input, caller, signal);
   } catch (error) {
     // The requirement defines a refusal code, not thrown versus returned transport.
     // Preserve an untyped exception as an actual failing test, not a fabricated code.
@@ -653,6 +672,17 @@ function assertRefusal(result, code) {
 async function invalidInput(t, input) {
   await withRig(t, { archive: [snapshot(1)] }, async (rig) => {
     assertRefusal(await rig.search(input), 'invalid-input');
+  });
+}
+
+async function sdkInvalidInput(t, input) {
+  await withRig(t, { archive: [snapshot(1)] }, async (rig) => {
+    const before = await rig.captureHome();
+    // QUNDEFINED, ROOTNULL/ARRAY/STRING/ABSENT and LNAN/INFINITY are rejected by
+    // the real defineTool JSON/object guard before userExecute, so no search runs.
+    // Keep the rejection intact instead of inventing a product invalid-input result.
+    await assert.rejects(() => rig.searchRaw(input), DRIVER.sdkArgumentError);
+    assert.deepEqual(await rig.captureHome(), before);
   });
 }
 
