@@ -23,7 +23,8 @@ are in `connector.md`; this document refers to them only where an instance case 
 > the 503 used when it is otherwise unavailable. The instance HTTP status and retry responses
 > include `detail`: `null` when absent, or a diagnostic bounded to 2,000 Unicode code points.
 > Typed child exit-code/signal facts are preserved; arbitrary diagnostic text uses only its
-> first line, with credential/home-path masking and control-character removal. The connector
+> first line, with credential/home-path masking and removal of control characters other than
+> U+0009 horizontal tab (an embedded tab is kept; leading/trailing whitespace is trimmed). The connector
 > attachment's `status()` still returns only `{state, code}`.
 
 ## 0. The user's decisions of 2026-11-06 (22:31), and what supersedes them
