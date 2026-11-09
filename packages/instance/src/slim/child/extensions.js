@@ -10,7 +10,9 @@ const EXT = Object.freeze({
   pending: 'pending', accepted: 'accepted', queued: 'queued', held: 'held', duplicate: 'duplicate',
   setup: 'manager.registerSetup', notImplemented: 'not-implemented',
   userMessage: 'user/message', inboxSplice: 'agent/inbox/spliced', turnStart: 'turn/start',
-  separator: '\n\n',
+  scopeService: 'fishballBridgeScope', notifyMember: 'manager.notify',
+  queueUnavailable: 'durable-queue-unavailable', wakeUnsupported: 'pending-wake-unsupported',
+  notReady: 'manager-not-ready', closed: 'closed', running: 'running',
 })
 export const EXTENSION_SERVICE = EXT.service
 
@@ -34,9 +36,9 @@ export const gate = Object.freeze({
  * @typedef {{request(operation: string, payload: object): Promise<object>}} ControlPort
  * @typedef {{text: string, kind?: string, sourceSessionId?: string, images?: object[]}} IntakeItem
  * @typedef {{deliverInbox(items: IntakeItem|IntakeItem[], options?: {skipImages?: boolean}): Promise<{messageId: string}>}} IntakePort
- * These are local domain ports, NOT MCP callables or a push protocol. X0-W/K1
- * supplies scoped control; FB-PUSH routes before invoking intake and acknowledges
- * only its fulfilled durable receipt. K1 freezes wire schemas after MCP-S3.
+ * These are local domain ports, NOT MCP callables or a push protocol. X0-W
+ * supplies scoped control over the retained connector. MCP adapters are deferred
+ * to V3; a local receipt promises queue acceptance, not completed model work.
  */
 
 function stub(member, asynchronous = false) {
@@ -74,7 +76,12 @@ export function createExtensions(ctx) {
     serial = result.catch(() => {})
     return result
   }
-  async function flush() { await ctx.get('sessionPersistence')?.flush() }
+  function persistence() {
+    const service = ctx.get('sessionPersistence')
+    if (typeof service?.flush !== 'function') throw new ExtensionError(EXT.queueUnavailable, EXT.notifyMember)
+    return service
+  }
+  async function flush() { await persistence().flush() }
   async function syncFile(file) {
     const handle = await open(file, 'r')
     try { await handle.sync() } finally { await handle.close() }
@@ -125,30 +132,34 @@ export function createExtensions(ctx) {
     warned.add(pluginId)
     logger?.warn('extension callback failed (%s, %s)', pluginId, EXT.setup)
   }
-  function apply(registration, agentCtx, live) {
-    let completion = Promise.resolve()
+  async function apply(registration, agentCtx, live) {
+    if (registration.disposed || closed) return
+    let fiber
     let failed = false
-    const fiber = agentCtx.plugin({ apply(scope) {
-      try {
-        const result = registration.fn(scope, live)
-        completion = Promise.resolve(result).catch(() => { failed = true; warn(registration.pluginId) })
-        return result instanceof Promise ? completion : result
-      } catch {
-        failed = true
-        warn(registration.pluginId)
+    try {
+      // Await the real Cordis fiber, including thenable callbacks. Providers stay in
+      // this scope: systemPrompt.context is evaluated by DSH on every assembly,
+      // never snapshotted here, and disposal removes tools and dynamic context alike.
+      fiber = agentCtx.plugin({ async apply(scope) {
+        try { return await registration.fn(scope, live) }
+        catch { failed = true; warn(registration.pluginId) }
+      } })
+      registration.fibers.add(fiber)
+      await fiber
+    } catch { failed = true; warn(registration.pluginId) }
+    finally {
+      if (fiber && (failed || registration.disposed || closed)) {
+        await fiber.dispose()
+        registration.fibers.delete(fiber)
       }
-    } })
-    registration.fibers.add(fiber)
-    // Cordis fibers are thenable; the local fixture is not. Await callback work as
-    // well, rather than mistaking fiber creation for async setup completion.
-    return Promise.resolve(fiber).then(() => completion).catch(() => { failed = true; warn(registration.pluginId) }).finally(async () => {
-      if (failed || registration.disposed || closed) await fiber.dispose()
-    })
+    }
   }
   function registerSetup(pluginId, fn) {
     const registration = { pluginId, fn, fibers: new Set(), disposed: false }
     registrations.add(registration)
-    if (current && !current.settingUp) void apply(registration, current.ctx, current.live)
+    if (current && !current.settingUp) {
+      void apply(registration, current.ctx, current.live).catch(() => { warn(pluginId) })
+    }
     return () => {
       if (registration.disposed) return
       registration.disposed = true
@@ -158,7 +169,7 @@ export function createExtensions(ctx) {
     }
   }
   async function setup(agentCtx, live) {
-    const state = { ctx: agentCtx, live, settingUp: true }
+    const state = { ctx: agentCtx, live, settingUp: true, published: false }
     current = state
     try {
       for (const registration of registrations) await apply(registration, agentCtx, live)
@@ -174,50 +185,84 @@ export function createExtensions(ctx) {
       return { text: clipped, at: event.time }
     })
   }
+  function requirePublished() {
+    if (closed) throw new ExtensionError(EXT.closed, EXT.notifyMember)
+    // Host setup is composition-only. Awaiting activation here would deadlock
+    // publication; driving the unpublished agent would violate the factory contract.
+    if (current && !current.published) throw new ExtensionError(EXT.notReady, EXT.notifyMember)
+  }
+  function pendingMessage(live, id) {
+    return [...live.inbox.nextTurn, ...live.inbox.nextStep].some((message) => message.id === id)
+  }
+  function requireQueue(live) {
+    persistence()
+    if (!live.inbox || !Array.isArray(live.inbox.nextTurn) || !Array.isArray(live.inbox.nextStep)) {
+      throw new ExtensionError(EXT.queueUnavailable, EXT.notifyMember)
+    }
+  }
+  async function accept(live, entry) {
+    requireQueue(live)
+    if (entry.wake) {
+      if (!acceptedIds(live).has(entry.message.id)) await live.followup(entry.message)
+      else if (pendingMessage(live, entry.message.id) && live.status !== EXT.running) {
+        // No public wake-existing primitive: replaying followup inserts the same
+        // identity twice. Keep pending, expose the gap, and never fake acceptance.
+        throw new ExtensionError(EXT.wakeUnsupported, EXT.notifyMember)
+      }
+      if (!acceptedIds(live).has(entry.message.id)) throw new ExtensionError(EXT.queueUnavailable, EXT.notifyMember)
+      await flush()
+    }
+    if (entry.record && !live.session.snapshotEvents().some((event) => event.type === entry.record.type && event.data?.notificationId === entry.message.id)) {
+      appendPluginRecord(live.session, entry.record.type, { ...entry.record.data, notificationId: entry.message.id })
+      await flush()
+    }
+    await save({ ...entry, state: EXT.accepted, holding: !entry.wake })
+    return { status: entry.wake ? EXT.queued : EXT.held }
+  }
   async function notify(input) {
-    // Activate outside the store lock: setup callbacks may themselves notify.
-    const live = current?.settingUp ? current.live : await chat.activate()
+    requirePublished()
+    input = JSON.parse(JSON.stringify(input))
+    const live = await chat.activate()
     return exclusive(async () => {
+      requireQueue(live)
       let entry = notices.get(input.dedupeKey)
       if (dirty) await compact()
       if (entry?.state === EXT.accepted) return { status: EXT.duplicate }
       if (!entry) {
         const message = createUserMessage({ content: [{ type: 'text', text: input.text }], source: { kind: 'fishball-notice', form: 'plugin', pluginId: input.pluginId } })
-        entry = { ...input, message, state: EXT.pending }
+        // Snapshot caller-owned data before the first disk await.
+        entry = JSON.parse(JSON.stringify({ ...input, message, state: EXT.pending }))
         await save(entry)
       }
-      if (entry.wake) {
-        if (!acceptedIds(live).has(entry.message.id)) await live.followup(entry.message)
-        await flush()
+      return accept(live, entry)
+    })
+  }
+  async function recover(live) {
+    return exclusive(async () => {
+      for (const entry of [...notices.values()]) {
+        if (entry.state !== EXT.pending) continue
+        try { await accept(live, entry) }
+        catch (error) { logger?.warn('notification recovery remains pending (%s)', error?.code ?? error?.name) }
       }
-      if (entry.record && !live.session.snapshotEvents().some((event) => event.type === entry.record.type && event.data?.notificationId === entry.message.id)) {
-        appendPluginRecord(live.session, entry.record.type, { ...entry.record.data, notificationId: entry.message.id })
-        await flush()
+      // Accepted means durable queue acceptance, not completed model work. Detect
+      // the restart cut even when the accepted marker itself survived.
+      for (const entry of notices.values()) {
+        if (entry.wake && entry.state === EXT.accepted && live.status !== EXT.running && live.inbox && pendingMessage(live, entry.message.id)) {
+          logger?.warn('notification recovery requires host wake-existing support (%s)', EXT.wakeUnsupported)
+        }
       }
-      await save({ ...entry, state: EXT.accepted, holding: !entry.wake })
-      return { status: entry.wake ? EXT.queued : EXT.held }
     })
   }
 
-  // Held notices stay in our durable store until a waking message owns them. The
-  // mapping is reserved before queueing, so receipt loss can be reconciled by ID.
+  // Held notices retain their own stable identities and are injected at turn/start.
+  // Do not merge them into a new followup identity: a crash between mapping and
+  // insertion would otherwise leave no recoverable copy of that followup.
   async function queue(live, message) {
     return exclusive(async () => {
-      const ids = acceptedIds(live)
-      const held = [...notices.values()].filter((entry) => entry.holding)
-      const include = []
-      for (const entry of held) {
-        if (ids.has(entry.message.id) || (entry.deliveryId && ids.has(entry.deliveryId))) {
-          await flush()
-          await save({ ...entry, holding: false })
-        } else include.push(entry)
-      }
-      const content = include.map((entry) => entry.text).join(EXT.separator)
-      if (content) message = { ...message, content: [...message.content, { type: 'text', text: content }] }
-      for (const entry of include) await save({ ...entry, deliveryId: message.id })
+      requireQueue(live)
       await live.followup(message)
+      if (!acceptedIds(live).has(message.id)) throw new ExtensionError(EXT.queueUnavailable, EXT.notifyMember)
       await flush()
-      for (const entry of include) await save({ ...entry, holding: false, deliveryId: message.id })
       return { messageId: message.id }
     })
   }
@@ -254,7 +299,11 @@ export function createExtensions(ctx) {
     manager: Object.freeze({ sessionId: () => chat?.sessionId(), registerSetup, notify, userTexts }),
     chat: Object.freeze({}),
     ui: Object.freeze({}),
-    bridge: stub('bridge'),
+    bridge(pluginId, operations) {
+      const scope = ctx.get(EXT.scopeService)
+      if (typeof scope !== 'function') return stub('bridge')()
+      return scope(pluginId, operations)
+    },
     inbox: stubs('inbox', ['claim', 'release', 'setBatcher'], ['release']),
     attention: stubs('attention', ['set']),
     sideAgents: stubs('sideAgents', ['open', 'runTurn', 'cancel'], ['open', 'runTurn']),
@@ -262,5 +311,15 @@ export function createExtensions(ctx) {
     supervision: stubs('supervision', ['register', 'onManagedChange', 'endingReason']),
     sessionStarts: stubs('sessionStarts', ['register']),
   })
-  return { service, start, setup, queue, close, bind(port) { chat = port } }
+  return {
+    service, start, setup, queue, close,
+    async published(live) {
+      if (current?.live === live) current.published = true
+      await recover(live)
+    },
+    async resumePending() {
+      if ([...notices.values()].some((entry) => entry.state === EXT.pending || entry.wake)) await chat.activate()
+    },
+    bind(port) { chat = port },
+  }
 }

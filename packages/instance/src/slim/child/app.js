@@ -92,13 +92,21 @@ export async function apply(ctx) {
   // The chat row owns the one Session and publishes the two ports other rows read: the
   // reminder scheduler's resolver and the admin service's live-model applier (T10, T11).
   const extensions = createExtensions(ctx)
+  ctx.effect(() => () => extensions.close(), name + ': extensions')
   await extensions.start()
   const chat = createChat(ctx, { images, extensions })
   await chat.start()
-  ctx.effect(() => () => extensions.close(), name + ': extensions')
   ctx.provide(EXTENSION_SERVICE, extensions.service)
   ctx.effect(() => () => chat.close(), name + ': chat session')
   ctx.provide(APP.chatService, chat.service)
+  // Wait for dependent plugin rows to register their manager setup before recovery
+  // can wake a restored notification. Ordinary empty startup remains lazy.
+  const ready = ctx.get('appReady')
+  if (ready) ctx.effect(() => ready.onReady(() => {
+    void extensions.resumePending().catch((error) => {
+      ctx.logger(APP.logger).warn('notification recovery unavailable (%s)', error?.code ?? error?.name)
+    })
+  }), name + ': notification recovery')
   // The published chat service is the activation owner; the closure itself is not a property of
   // the chat handle, so T10 must go through the service port.
   const reminders = createReminders(ctx, { resolveAgent: (sessionId, next) => chat.service.resolveAgent(sessionId, next) })
