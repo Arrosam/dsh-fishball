@@ -567,6 +567,9 @@ export function createChat(ctx, options = {}) {
     if (existing && agent !== existing) await composePersona(existing.ctx, existing)
     if (closed) unavailable()
     agent = live
+    // The factory has now published the fully configured scope. Recovery may drive
+    // the agent, so it must never run inside the composition-only setup callback.
+    await options.extensions?.published(live)
     return live
   }
 
@@ -697,9 +700,13 @@ export function createChat(ctx, options = {}) {
           throw new ContractError(ERROR.invalid)
         }
       }
+      // Keep the validated envelope stable across asynchronous image transfers;
+      // caller mutation must not smuggle an unvalidated later item into preparation.
+      const batch = item.map((entry) => ({ ...entry, ...(entry.images ? { images: entry.images.map((image) => ({ ...image })) } : {}) }))
+      options = { ...options }
       const blocks = []
-      for (const entry of item) blocks.push(...await prepareImages(entry))
-      return queue(value, blocks, item.length === INBOX_BATCH.minItems ? inboxSourceOf(item[0]) : SOURCE.notice)
+      for (const entry of batch) blocks.push(...await prepareImages(entry))
+      return queue(value, blocks, batch.length === INBOX_BATCH.minItems ? inboxSourceOf(batch[0]) : SOURCE.notice)
     }
     if (!isRecord(item) || typeof item.text !== 'string' || item.text === '') {
       throw new TypeError('fishball-native-chat: an inbox item needs text')
