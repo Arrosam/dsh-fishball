@@ -292,7 +292,7 @@ function definitions(client) {
  * main host is an ordinary state, not a boot failure.
  */
 export function apply(ctx) {
-  const client = createBridgeClient({ hostId: ctx.nativeRuntime.hostId, requiredCapabilities: SESSION_REQUIRED })
+  const client = createBridgeClient({ hostId: ctx.nativeRuntime.hostId, requiredCapabilities: SESSION_REQUIRED, allowedOptionalCapabilities: [OPERATION.attentionSignal] })
   ctx.provide('fishballBridgeScope', client.scope.bind(client))
   let disposed = false
   const registrations = []

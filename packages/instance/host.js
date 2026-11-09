@@ -11,7 +11,7 @@ import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
 import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes.js'
 import { createChildProviderSync } from './src/provider-sync-service.js'
 import { CONNECTOR_CONTRACT, ContractError, ERROR, ROUTES } from './src/slim/contract.js'
-import { BINDING_STATE, LAUNCH_CODE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
+import { BINDING_STATE, BINDING_CODE, CONNECTOR_UPGRADE_MESSAGE, observeConnectorUpgrade, LAUNCH_CODE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
 import { migrateLaunchSettings } from './src/settings-migration.js'
 
@@ -111,6 +111,7 @@ export async function apply(ctx, config) {
   let disposal
   let cancelReady = () => {}
   let connection
+  let bindingGeneration = 0
   let unsubscribe = () => {}
   let unsubscribeAdmin = () => {}
   let unsubscribeProviderSync = () => {}
@@ -118,7 +119,7 @@ export async function apply(ctx, config) {
   let providerSync
   const status = () => ({ enabled, state, code })
   /** End this row's attachment, if any; a stale detach changes nothing (contract §1.3). */
-  const release = () => { connection?.detach(); connection = undefined }
+  const release = () => { bindingGeneration++; const attached = connection; connection = undefined; attached?.detach() }
   const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
   // T11's admin relay. Every page operation except status and restart travels to the child over
   // the lifecycle wire's own authenticated admin channel; the child applies it with its own
@@ -151,12 +152,20 @@ export async function apply(ctx, config) {
       if (closed) throw unavailable(PLUGIN.code.unavailable)
       if (hostId !== owner.hostId) throw new ContractError(ERROR.host)
       release()
+      const generation = ++bindingGeneration
+      const observedTransport = observeConnectorUpgrade(transport, hostId, () => {
+        if (closed || generation !== bindingGeneration) return
+        set(PLUGIN.state.failed, BINDING_CODE.connectorUpgrade)
+        logger?.warn(CONNECTOR_UPGRADE_MESSAGE)
+        // attachInstance can answer synchronously, before returning this row's handle.
+        queueMicrotask(() => { if (!closed && generation === bindingGeneration) release() })
+      })
       // No child starts without the connector (D25), so this is only a connector that left
       // during the start: the departure's stop is already queued and ends this wire.
       if (typeof connector?.attachInstance !== 'function') return
       try {
         connection = connector.attachInstance({
-          id: hostId, name: PLUGIN.displayName, contract: CONNECTOR_CONTRACT, transport, ui: PLUGIN.ui,
+          id: hostId, name: PLUGIN.displayName, contract: CONNECTOR_CONTRACT, transport: observedTransport, ui: PLUGIN.ui,
           // The connector's frame shows these (design §0.5 "The frame"); status() answers in the
           // contract's vocabulary only (contract §1.1, binding.js contractStatus).
           status: () => contractStatus(status()),

@@ -19,8 +19,8 @@
  * POST connector/instance/retry -> no body; awaits the instance's retry() -> { ok: true, instance };
  *                                409 unavailable (no Retry offered) or NATIVE_UNAVAILABLE (it rejected)
  *
- * Retired by C2, so they answer 404: question-mode (the mode changes only in DSH's own form of the
- * row, design §0.7), brand and sidebar-entry (the icon is fixed, D22).
+ * Retired by C2/D2, so they answer 404: question-mode (stored values are inert),
+ * brand and sidebar-entry (the icon is fixed, D22).
  */
 import { API, API_CODE, CARD_DECISION, HTTP, HTTP_METHOD, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from './constants.js'
 import { LifecycleStateError } from './errors.js'
@@ -51,7 +51,7 @@ const BODY = Object.freeze({
  * Register the routes; they are removed with the plugin context.
  * @param ctx - fishball row context (needs connection).
  * @param state - { snapshot(), subscribe(fn), send({ sessionId, note }), setManaged({ sessionId, managed }),
- *   answerRequest({ requestId, decision, note? }), addWatch({ sessionId }), removeWatch({ watchId }), instance(), retryInstance() }; the commands reject
+ *   answerRequest({ requestId, decision, note? }), addWatch({ sessionId }), removeWatch({ watchId }), instance(), retryInstance(), readAttention() }; the commands reject
  *   LifecycleStateError for a refusal (409 unless it names another status). instance() is the frame's
  *   view; retryInstance() resolves { ok } or { ok: false, code } and never rejects.
  */
@@ -119,6 +119,7 @@ export function registerRoutes(ctx, state) {
     { path: API.watchesRemove, methods: [HTTP_METHOD.post], fetch: command(BODY.unwatch, (input) => state.removeWatch(input)) },
     { path: API.connectorInstance, methods: [HTTP_METHOD.get], fetch: () => Promise.resolve(json(HTTP.ok, state.instance())) },
     { path: API.connectorInstanceRetry, methods: [HTTP_METHOD.post], fetch: retryInstance },
+    { path: API.connectorAttentionRead, methods: [HTTP_METHOD.post], fetch: () => Promise.resolve(json(HTTP.ok, state.readAttention())) },
   ]
   for (const route of routes) {
     ctx.effect(() => ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }), `fishball: ${route.path}`)

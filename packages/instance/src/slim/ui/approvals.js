@@ -105,12 +105,7 @@ const RAN_WORD = Object.freeze({ passFishball: 'passFishball', passUser: 'passUs
 /** The arguments' status that says the shown text is cut (src/slim/contract.js ARGUMENTS_STATUS). */
 const ARGUMENTS_TRUNCATED = 'truncated'
 
-const MS_PER_MINUTE = 60_000
 const text = (value) => (typeof value === 'string' ? value : '')
-const minutesUntil = (expiresAt) => {
-  if (!Number.isFinite(expiresAt)) return undefined
-  return Math.max(0, Math.ceil((expiresAt - Date.now()) / MS_PER_MINUTE))
-}
 
 /** One request's shared detail block (card and label expansion). */
 function requestDetails(document, t, request, { includeQuestions }) {
@@ -331,9 +326,8 @@ export function createApprovalsView(options = {}) {
     const element = row(CLASS.card + ' ' + CLASS.pending, at)
     const kind = t(KEY.kind + (card.kind === CARD_KIND.question ? CARD_KIND.question : KIND_APPROVAL))
     const title = text(card.title) || text(card.sessionId)
-    const minutes = minutesUntil(card.expiresAt)
     const details = summaryRow(element, kind + (title === '' ? '' : SEPARATOR + title),
-      minutes === undefined ? t('approvals.waiting') : minutes <= 0 ? t('approvals.expiring') : t('approvals.expires', { minutes: minutes.toLocaleString(i18n.locale) }))
+      t('approvals.waiting'))
     const body = document.createElement('div')
     body.className = CLASS.body
     body.append(requestDetails(document, t, card, { includeQuestions: true }))

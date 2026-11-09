@@ -28,7 +28,7 @@ import { randomUUID } from 'node:crypto'
 import { gate } from './extensions.js'
 import { createBridgeScope } from './ext/bridge-scope.js'
 import {
-  ENVELOPE, ERROR, OPERATION, OPERATIONS, SIDE, TRANSPORT_METHODS, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope,
+  ENVELOPE, ERROR, SEMANTIC_CAPABILITY, OPERATION, OPERATIONS, SIDE, TRANSPORT_METHODS, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope,
 } from '../contract.js'
 
 /**
@@ -60,18 +60,20 @@ const INBOX_OPERATIONS = Object.freeze([OPERATION.inboxPush])
  * @param {() => number} [options.now] - validation clock (T09 grant answers).
  */
 export function createBridgeClient(options) {
-  const { hostId, requiredCapabilities = [], limits, now = Date.now } = options ?? {}
+  const { hostId, requiredCapabilities = [], allowedOptionalCapabilities = [], limits, now = Date.now } = options ?? {}
   if (typeof hostId !== 'string' || hostId.length === 0) throw new TypeError('fishball bridge: a host id is required')
   if (typeof now !== 'function') throw new TypeError('fishball bridge: now must be a function')
-  return new BridgeClient({ hostId, requiredCapabilities, limits, now })
+  return new BridgeClient({ hostId, requiredCapabilities, allowedOptionalCapabilities, limits, now })
 }
 
 class BridgeClient {
-  constructor({ hostId, requiredCapabilities, limits, now }) {
+  constructor({ hostId, requiredCapabilities, allowedOptionalCapabilities, limits, now }) {
     this.hostId = hostId
     this.now = now
     this.limits = freezeLimits(limits)
-    this.required = new Set()
+    this.required = new Set([SEMANTIC_CAPABILITY.interactionTimerfree])
+    this.optional = new Set()
+    this.allowOptional(allowedOptionalCapabilities)
     this.events = new Set()
     this.inboxListeners = new Set()
     this.inboxKeys = new Set()
@@ -96,8 +98,23 @@ class BridgeClient {
    * announced next to the one it serves. What proves the host implements them is the welcome;
    * a hello requiring an operation the host has not registered is still refused.
    */
-  get capabilities() { return Object.freeze([...new Set([...this.ownCapabilities, ...this.required])]) }
+  get capabilities() { return Object.freeze([...new Set([...this.ownCapabilities, ...this.required, ...this.optional])]) }
   get status() { return this.state }
+  get allowedOptionalCapabilities() { return Object.freeze([...this.optional]) }
+
+  allowOptional(operations) {
+    if (!Array.isArray(operations)) throw new TypeError('fishball bridge: operations must be a list')
+    for (const operation of operations) {
+      if (!Object.hasOwn(OPERATIONS, operation)) throw new ContractError(ERROR.operation)
+      this.optional.add(operation)
+    }
+  }
+
+  supports(operation) {
+    return (this.required.has(operation) || this.optional.has(operation))
+      && Object.hasOwn(OPERATIONS, operation) && this.connection?.ready === true
+      && this.connection.capabilities.has(operation)
+  }
 
   /**
    * Declare one or more main-host operations this child needs. The handshake advertises them;
@@ -107,7 +124,7 @@ class BridgeClient {
   require(operations) {
     if (!Array.isArray(operations)) throw new TypeError('fishball bridge: operations must be a list')
     for (const operation of operations) {
-      if (typeof operation !== 'string' || !Object.hasOwn(OPERATIONS, operation)) throw new ContractError(ERROR.operation)
+      if (typeof operation !== 'string' || (!Object.hasOwn(OPERATIONS, operation) && !Object.values(SEMANTIC_CAPABILITY).includes(operation))) throw new ContractError(ERROR.operation)
       this.required.add(operation)
     }
   }
@@ -129,7 +146,7 @@ class BridgeClient {
     }
     this.close()
     const connection = {
-      transport, closed: false, ready: false, capabilities: new Set(), hostInstanceId: null,
+      transport, closed: false, ready: false, interactionTimerfree: false, capabilities: new Set(), hostInstanceId: null,
       pending: new Map(), disposers: [], abort: new AbortController(),
     }
     this.connection = connection
@@ -157,7 +174,7 @@ class BridgeClient {
     if (!Object.hasOwn(OPERATIONS, operation)) throw new ContractError(ERROR.operation)
     if (connection === undefined || connection.closed) throw new ContractError(ERROR.disconnected)
     if (!connection.ready) throw new ContractError(ERROR.handshakeRequired)
-    if (!this.required.has(operation)) throw new ContractError(ERROR.capability)
+    if (!this.required.has(operation) && !this.optional.has(operation)) throw new ContractError(ERROR.capability)
     if (!connection.capabilities.has(operation)) throw new ContractError(ERROR.capability)
     if (connection.pending.size >= this.limits.maxInflight) throw new ContractError(ERROR.limit)
     const sessionId = OPERATIONS[operation].sessionScoped === true ? payload?.sessionId : null
@@ -167,7 +184,7 @@ class BridgeClient {
     const requestId = randomUUID()
     const envelope = makeEnvelope(this.hostId, sessionId, requestId, ENVELOPE.type.request, operation, payload)
     // Validate before reserving: an invalid payload has no side effect on the connection.
-    const encoded = encodeEnvelope(envelope, this.hostId)
+    const encoded = encodeEnvelope(envelope, this.hostId, connection)
     return new Promise((resolve, reject) => {
       const entry = { operation, resolve, reject, timer: undefined }
       entry.timer = setTimeout(() => {
@@ -232,7 +249,7 @@ class BridgeClient {
       capabilities: this.capabilities,
       requiredCapabilities: this.requiredCapabilities,
     })
-    const encoded = encodeEnvelope(envelope, this.hostId)
+    const encoded = encodeEnvelope(envelope, this.hostId, connection)
     return new Promise((resolve, reject) => {
       const entry = {
         operation: ENVELOPE.handshake,
@@ -243,6 +260,7 @@ class BridgeClient {
             reject(new ContractError(ERROR.capability))
             return
           }
+          connection.interactionTimerfree = welcome.capabilities.includes(SEMANTIC_CAPABILITY.interactionTimerfree)
           connection.ready = true
           connection.capabilities = new Set(welcome.capabilities)
           connection.hostInstanceId = welcome.hostInstanceId
@@ -269,7 +287,7 @@ class BridgeClient {
     if (connection.closed) return
     let envelope
     try {
-      envelope = decodeEnvelope(encoded, { receivingSide: SIDE.child, expectedHostId: this.hostId, now: this.now() })
+      envelope = decodeEnvelope(encoded, { receivingSide: SIDE.child, expectedHostId: this.hostId, now: this.now(), interactionTimerfree: connection.interactionTimerfree })
     } catch (error) {
       this.disconnect(connection, error instanceof ContractError ? error.code : ERROR.invalid)
       return
@@ -339,7 +357,7 @@ class BridgeClient {
 
   sendFrame(connection, envelope) {
     if (connection.closed) return
-    try { connection.transport.send(encodeEnvelope(envelope, this.hostId)) }
+    try { connection.transport.send(encodeEnvelope(envelope, this.hostId, connection)) }
     catch { this.disconnect(connection, ERROR.disconnected) }
   }
 }

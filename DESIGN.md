@@ -1,5 +1,22 @@
 # dsh-fishball rebuild: always-on personal assistant on DSH
 
+**2026-11-09 V2 COMPAT amendment (D1–D3, approved):** retain the connector's public
+contract/export names and envelope v2; contract **1.2** negotiates `interaction.timerfree`
+explicitly, with `{interactionTimerfree: true}` validation context and no `expiresAt` in negotiated
+interaction descriptors. Default validation remains legacy. Legacy peers retain controls but receive
+no delegated interactions; the built-in requires timer-free support, reports an upgrade instruction
+and detaches from old connectors. Eligible questions/plans go directly to Fishball; source-user
+race and explicit escalation remain. Stored `questionMode`/`approvalAnswerSeconds` are kept inert,
+with controls/copy removed and no replacement switch. Optional `attention.signal({important})`
+is stateless: no counts, timestamps, unset or replay. Only the connector owns the unread 0/1 latch
+and accumulated important bit, reset on page open and detach, never fed back to the instance.
+Sidebar attention reuses the green dot and existing important animation, not timers. X8 is async
+`attention.signal(pluginId, {important})`, with truthful unsupported/disconnected refusal and no
+producer unread ownership. This supersedes contrary historical MCP/attention/timer proposals below;
+see [contract 1.2](<docs/connector-contract.md#321-negotiated-timer-free-interactions-d1>) and
+[extension points](<docs/plugins/instance-extension-points.md#3-v2-retained-connector-compatibility-d1d3>).
+
+
 **Status: approved 2026-10-24; revision 9 approved 2026-10-31; revision 10 approved 2026-10-31; revision 10a (Install for Fishball) decided and delivered 2026-10-31; revision 10b (private services) 2026-10-31; revision 10c (Fishball's own plugins) decided 2026-10-31 and delivered 2026-11-01; revision 11 (Fishball-managed sessions) requirements approved 2026-11-01, design folded in the same day, and delivered 2026-11-02 on `rebuild/managed-sessions`, then merged into `rebuild/assistant` with your OK and pushed the same day; revision 12 (recommended plugins and the one-time welcome card) designed 2026-11-02, your answers recorded and built the same day (§16).** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
 
 **2026-11-04 provider-sync amendment (owner-approved v1):** manual two-page pairing, metadata preview and explicit selected-provider/API-key-record transfer use a dedicated short-lived loopback capability channel and official settings/credential APIs. Existing target profiles/records are preserved, unsupported auth is refused, and partial/unknown outcomes are reported without rollback or automatic retry. No new session-tool authority or default-model change; see [approved design](<docs/model-provider-sync-design.md>). Development uses only disposable SDK fixtures; real sync requires separate approval. **2026-11-06 slim amendment:** in the slim build the pairing channel is removed; the Model block's **Refresh models** syncs API-key providers from the main DSH into the isolated Fishball in one step, with the same add-only rules (see [slim design §10](<docs/slim-native-design.md>)).

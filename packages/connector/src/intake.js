@@ -56,6 +56,8 @@ export class IntakeLedger {
   #onChange
   /** The bridge's inbox.push for the attached host; undefined while no native host is up. */
   #push
+  /** Connection policy: withheld rows remain pending, never acknowledged or discarded. */
+  #canDeliver
   /** Serializes every row change, so a row is never written twice at once. */
   #queue = Promise.resolve()
 
@@ -127,9 +129,12 @@ export class IntakeLedger {
    * The order is the contract's global arrival order across kinds and sources (§9), so a note
    * written before a message reaches Fishball before that message, as it did on the way in.
    * @param push - (item) => Promise<{acked: true}>, the bridge host's pushInbox.
+   * @param canDeliver - optional (row) => boolean connection policy, checked before every push.
+   *   Withheld rows stay pending; eligible rows retain arrival order without head-of-line blocking.
    */
-  attach(push) {
+  attach(push, canDeliver) {
     this.#push = push
+    this.#canDeliver = canDeliver
     const pending = [...this.#store.intakeItems.entries()].filter(([, row]) => row.status === INTAKE_STATUS.pending)
     pending.sort(([, a], [, b]) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0))
     for (const [intakeId] of pending) this.#send(intakeId)
@@ -142,6 +147,7 @@ export class IntakeLedger {
    */
   detach() {
     this.#push = undefined
+    this.#canDeliver = undefined
   }
 
   /**
@@ -185,6 +191,7 @@ export class IntakeLedger {
   #send(intakeId) {
     const row = this.#store.intakeItems.get(intakeId)
     if (this.#push === undefined || row?.status !== INTAKE_STATUS.pending || row.message === undefined) return
+    if (this.#canDeliver !== undefined && this.#canDeliver(row) !== true) return
     const item = {
       // The row id is the bridge's dedupe key: one input is delivered once, however often it is pushed.
       messageId: row.messageId, kind: row.kind, sourceSessionId: row.sourceSessionId,
