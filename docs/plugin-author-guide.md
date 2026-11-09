@@ -5,11 +5,12 @@
 > which deletes `sources.js` / `ctx.fishball`). `fishball-connector` and `fishball-instance`
 > no longer provide the `fishball` service or `registerSource`, and the `maxSourcesPerPlugin`,
 > `wakeupsPerHour`, `messagesPerHour` and `sessionsPerHour` limits are gone from the connector
-> settings (`src/config.js`). The fixed sizes below survive only as unused constants
-> (`packages/connector/src/constants.js` `SOURCES`). The guide and the example are kept for the
-> record; a plugin following them today finds no `ctx.fishball` service.
+> settings (`src/config.js`). The legacy `SOURCES` constants remain in
+> `packages/connector/src/constants.js`; `AUTHOR.nameBytes` still reuses `SOURCES.sourceTitleBytes`.
+> Their presence does not provide a source service. This guide is retained as historical
+> documentation; its source-publishing instructions do not describe a supported API.
 
-Fishball is a DSH plugin that keeps one always-on assistant session. Any standard DSH plugin can send it events through one service, `ctx.fishball`. There is no special package format: write an ordinary DSH plugin bundle. A working example is in [examples/fishball-source-example](../examples/fishball-source-example).
+The [current example](../examples/fishball-source-example) is instead a read-only connector snapshot example. It optionally injects `CONNECTOR_SERVICE` from `fishball-connector/contract`, calls `current()` when the service becomes available, and logs the attached instance's name/id or that none is attached. It does not register a source, publish events, or subscribe to attachment changes.
 
 ## Where your plugin runs
 
