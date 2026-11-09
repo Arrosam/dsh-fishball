@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url'
 import { spawn as nodeSpawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { RUNTIME, RUNTIME_LIMITS, LIFETIME, UNINSTALL, NativeRuntimeError, fail, runtimeLimits, appAccess } from './constants.js'
+import { RUNTIME, RUNTIME_LIMITS, LIFETIME, UNINSTALL, NativeRuntimeError, fail, runtimeLimits, appAccess, NATIVE_WEB, nativeAccess } from './constants.js'
 import { pathsFor, prepareLayout, existingLayout, removeRuntime, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
 import { resolveInstallation, isolatedEnvironment, childExecArgv, initializeProfile, copyChildCode, runProbe } from './installation.js'
 import { connectWire } from './wire.js'
@@ -22,6 +22,7 @@ class NativeRuntime {
     // The process whose launch the child copies (D28): its execPath, execArgv, env and versions.
     this.host = dependencies.host ?? process
     this.limits = runtimeLimits(options.limits)
+    this.nativeEpoch = 0
     this.listeners = new Set()
     // The T11 admin channel is attached once per authenticated wire, beside the control transport.
     this.adminListeners = new Set()
@@ -66,10 +67,11 @@ class NativeRuntime {
     this.startup = startup
     return this.serial(() => this.startInternal(startup.signal))
   }
-  stop() { this.startup?.abort(); return this.serial(() => this.stopInternal()) }
+  stop() { this.invalidateNativeAccess(); this.startup?.abort(); return this.serial(() => this.stopInternal()) }
+  invalidateNativeAccess() { this.nativeEpoch++; this.nativeAdmission?.abort(); this.nativeAdmission = undefined }
   // Synchronous process-exit hook can close a private pipe but cannot await.
   // EOF lets the child request graceful appExit and enforce its own deadline.
-  parentExit() { this.startup?.abort(); this.parentPipe?.destroy() }
+  parentExit() { this.invalidateNativeAccess(); this.startup?.abort(); this.parentPipe?.destroy() }
   forceOwned() {
     const identity = this.childIdentity
     const child = this.child
@@ -97,6 +99,7 @@ class NativeRuntime {
     return Promise.race([stopped, deadline]).finally(() => { clearTimeout(forceTimer); clearTimeout(deadlineTimer) })
   }
   restart() {
+    this.invalidateNativeAccess()
     this.startup?.abort()
     const startup = new AbortController()
     this.startup = startup
@@ -125,6 +128,38 @@ class NativeRuntime {
     const status = await this.authenticateReady(record)
     return appAccess(status.access)
   }) }
+  /**
+   * Server-private native admission; never serialize this object or include it in diagnostics.
+   * Promise<{generation: string, origin: string, authenticatedUrl: string, signal: AbortSignal}>.
+   * Resolves only when ready. NOT_RUNNING means no active child; NOT_READY means starting;
+   * NATIVE_ACCESS_UNAVAILABLE covers invalid/lost admission without leaking SDK error values.
+   * EMB exchanges the URL privately, fences async results with signal, and owns cookie expiry.
+   */
+  nativeEmbedAccess() {
+    const epoch = this.nativeEpoch
+    return this.serial(async () => {
+      try {
+        if (epoch !== this.nativeEpoch) fail('NATIVE_ACCESS_UNAVAILABLE')
+        if (!await exists(path.join(this.paths.root, RUNTIME.marker))) fail('NOT_RUNNING')
+        await this.prepare()
+        const record = await this.active()
+        if (!record) fail('NOT_RUNNING')
+        const status = await this.authenticateReady(record)
+        if (!status.capabilities.includes(NATIVE_WEB.capability)) fail('NATIVE_ACCESS_UNAVAILABLE')
+        await this.attach(record)
+        const control = this.control
+        const admission = await control.wire.request(NATIVE_WEB.operation)
+        if (epoch !== this.nativeEpoch || control !== this.control || control.wire.closed || admission.generation !== record.instanceId) fail('NATIVE_ACCESS_UNAVAILABLE')
+        const access = nativeAccess(admission)
+        if (access.origin === status.access.origin) fail('NATIVE_ACCESS_UNAVAILABLE')
+        this.nativeAdmission ??= new AbortController()
+        return Object.freeze({ generation: record.instanceId, ...access, signal: this.nativeAdmission.signal })
+      } catch (error) {
+        if (error instanceof NativeRuntimeError && ['NOT_RUNNING', 'NOT_READY'].includes(error.code)) throw error
+        fail('NATIVE_ACCESS_UNAVAILABLE')
+      }
+    })
+  }
   /**
    * Delete this home's runtime tree, `<home>/fishball/runtime` (uninstall, design §0.10). Nothing
    * is created when the tree is absent. The tree must first be proven this home's: no symbolic
@@ -196,13 +231,14 @@ class NativeRuntime {
     const status = await this.query(record, 'health')
     if (status.hostId !== this.hostId || status.instanceId !== record.instanceId || status.pid !== await this.pid(record) || status.version !== record.version || status.installAnchor !== record.installAnchor) fail('CHILD_IDENTITY_MISMATCH')
     if (status.state !== 'ready') fail('NOT_READY')
-    if (!RUNTIME.requiredServices.every(service => status.capabilities.includes(service)) || !status.capabilities.includes(RUNTIME.capabilities.authenticatedApp)) fail('MISSING_CAPABILITY')
+    if (!RUNTIME.requiredServices.every(service => status.capabilities.includes(service)) || !status.capabilities.includes(RUNTIME.capabilities.authenticatedApp) || !status.capabilities.includes(NATIVE_WEB.capability)) fail('MISSING_CAPABILITY')
     // A ready child always reports the app surface it is reachable through; validate it here so
     // the startup loop and the embed broker share one rule (§2.3, §3.2).
     appAccess(status.access)
     return status
   }
   dropControl() {
+    if (this.control || this.nativeAdmission) this.invalidateNativeAccess()
     this.control?.wire.close()
     this.control = undefined
     this.admin = undefined
@@ -221,6 +257,7 @@ class NativeRuntime {
       // T16's provider-sync target comes up with the control transport on the same wire.
       const providerSync = wire.providerSyncTransport()
       this.control = { wire, transport, metadata }
+      wire.once('closed', () => { if (this.control?.wire === wire) this.dropControl() })
       this.admin = { wire, transport: admin }
       this.providerSync = { wire, transport: providerSync, metadata: { instanceId: metadata.instanceId } }
       for (const listener of this.listeners) listener(transport, metadata)

@@ -3,17 +3,12 @@ export const RUNTIME = Object.freeze({
   protocol: 'fishball-lifecycle/1',
   packageName: '@deepseek-ai/dsh',
   profileName: 'fishball',
-  // The slim child is the DSH core only: the app row supplies the transport and UI (§2.1).
+  // Native Web and the legacy slim transport coexist until EMB migrates its callers.
   profile: Object.freeze({
-    bundles: Object.freeze(['@deepseek-ai/dsh-base']),
-    // Earlier attached runtimes created this profile with the Web bundle, and initProfile never
-    // rewrites an existing manifest. The slim child must not run that Web UI, so its bundle is
-    // dropped on start; every bundle the owner installed later is kept (§2.1, §2.3).
-    legacyBundle: '@deepseek-ai/dsh-web-app',
+    bundles: Object.freeze(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']),
     manifest: 'package.json',
-    // The migration keeps the replaced manifest beside it as `package.json.pre-slim-<UTC time>`,
-    // so a rollback to the old build can restore its bundles from the child home itself.
-    manifestBackupInfix: '.pre-slim-',
+    // Preserve exact old bytes before restoring native composition; never overwrite a backup.
+    manifestBackupInfix: '.pre-native-web-',
   }),
   codeSnapshotPrefix: '.fishball-native-',
   // The connector's contract package inside the snapshot (M1): the child's shims import
@@ -141,6 +136,32 @@ export const UNINSTALL = Object.freeze({
     refused: 'Nothing was removed from {path} ({code}). Quit DSH, wait a few seconds and run it again.\n',
   }),
 })
+
+export const NATIVE_WEB = Object.freeze({
+  service: 'fishballNativeWeb',
+  services: Object.freeze(['webServer', 'webApp', 'connection', 'sessionController', 'clientModules']),
+  capability: 'authenticated-native-web',
+  operation: 'native-access',
+  protocol: 'http:',
+  root: '/',
+  unauthorized: 401,
+  redirect: 303,
+  redirectLocation: './',
+  success: 200,
+  pageDirectory: 'child-web',
+  pagePackage: 'fishball-page',
+  adapterModule: 'native-web.js',
+})
+
+/** Validate without including private admission values in exceptions. */
+export function nativeAccess(value) {
+  try {
+    const origin = new URL(value.origin)
+    const admission = new URL(value.authenticatedUrl)
+    if (origin.protocol !== NATIVE_WEB.protocol || origin.hostname !== RUNTIME.host || !origin.port || origin.username || origin.password || origin.pathname !== NATIVE_WEB.root || origin.search || origin.hash || value.origin !== origin.origin || admission.origin !== origin.origin || admission.pathname !== NATIVE_WEB.root || admission.username || admission.password || admission.hash || !admission.search) throw new Error()
+    return { origin: origin.origin, authenticatedUrl: admission.href }
+  } catch { fail('NATIVE_ACCESS_UNAVAILABLE') }
+}
 
 export const RUNTIME_LIMITS = Object.freeze({
   startupTimeoutMs: 60000,

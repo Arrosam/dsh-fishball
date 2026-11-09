@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { fail } from './constants.js'
+import { fail, RUNTIME, NATIVE_WEB } from './constants.js'
 
 /** Row identities the attached profile composes; each id is also the patch target below. */
 const ROW = Object.freeze({
@@ -13,20 +13,13 @@ const ROW = Object.freeze({
   inbox: 'fishball-native-inbox',
   admin: 'fishball-native-admin',
   providerSync: 'fishball-native-provider-sync',
-  timeContext: 'time-context',
+  webserver: 'webserver',
+  webRuntime: 'web-runtime',
+  nativeWeb: 'fishball-native-web',
+  page: 'fishball-page',
 })
-const PACKAGE = Object.freeze({
-  timeContext: '@deepseek-ai/dsh-time-context',
-})
-/**
- * The old native build seeded the child profile's user patch with this Web UI row. The slim
- * child runs no web UI, so its client-only package must never mount. A loader patch cannot
- * remove a row, so the launch layer disables it and leaves the profile patch byte-identical.
- */
-const STALE_WEB_ROW = Object.freeze({
-  id: 'ui-settings-general',
-  name: '@deepseek-ai/dsh-client-ui-settings-general',
-})
+const WEB_CONFIG = Object.freeze({ host: RUNTIME.host, port: 0, tls: undefined })
+const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, publicUrl: undefined })
 /** Policies the slim child fixes independently of the main deployment (§2.3). */
 const POLICY = Object.freeze({ sandboxMode: 'read-only', approval: 'ask' })
 /** copyChildCode copies this tree beside native-child.js, so the app row resolves inside the snapshot. */
@@ -72,27 +65,21 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
     else if (row.name === '@deepseek-ai/dsh-agent-instructions') overlays.push({ id: row.id, config: instructionConfig(row.config) })
     else if (row.name === '@deepseek-ai/dsh-skill-filesystem') overlays.push({ id: row.id, config: skillConfig(row.config) })
   }
-  // The stale row survives in an existing child profile's patch; disable it in the last layer.
-  if (rows.get(STALE_WEB_ROW.id)?.name === STALE_WEB_ROW.name) overlays.push({ id: STALE_WEB_ROW.id, disabled: true })
-  // The profile is base-only (§2.3), so only the rows this overlay rewrites must be present;
-  // webserver, web-runtime and preset-standard belonged to the Web UI bundle and are gone.
-  for (const id of [ROW.hmr, ROW.sandboxPolicy, ROW.approval]) if (!rows.has(id)) fail('UNSUPPORTED_PROFILE')
+  // Settings and enabled native client rows are deliberately preserved, not roster-filtered.
+  for (const id of [ROW.hmr, ROW.sandboxPolicy, ROW.approval, ROW.webserver, ROW.webRuntime]) if (!rows.has(id)) fail('UNSUPPORTED_PROFILE')
   const config = { mainHome: paths.mainHome, hostId: record.hostId, instanceId: record.instanceId, limits, control }
   return [
     ...overlays,
     { id: ROW.hmr, disabled: true },
+    { id: ROW.webserver, disabled: false, config: { ...rows.get(ROW.webserver).config, ...WEB_CONFIG } },
+    { id: ROW.webRuntime, disabled: false, config: { ...rows.get(ROW.webRuntime).config, ...WEB_RUNTIME_CONFIG } },
     { id: ROW.sandboxPolicy, config: { ...rows.get(ROW.sandboxPolicy).config, mode: POLICY.sandboxMode } },
     { id: ROW.approval, config: { ...rows.get(ROW.approval).config, policy: POLICY.approval } },
     { insert: [
-      // Reminders are not a row: the slim child owns them inside the app row
-      // (src/slim/child/reminders.js), because DSH's schedule service hard-injects the Web
-      // bundle's sessionController on 0.2.1-rc.3/rc.5 (§2.1, §2.3, T10).
-      // The Web standard preset also supplied the current time; base ships the service but no
-      // row (§2.1, §2.3), and the non-web SDK app mounts the same row at its root
-      // (dsh-sdk-app/cordis.patch.yml:61-68). The preset's ask-user row stays out: Fishball asks
-      // the user through a pile card that never waits (the ask_user tool, T09), and a DSH question
-      // tool would block the call on an answer. present stays out: the slim UI is Fishball's own.
-      { id: ROW.timeContext, name: PACKAGE.timeContext },
+      // Native Web supplies its standard services. PG-1 owns navigation and permission
+      // enforcement; this composition alone is not a read-only or session-isolation boundary.
+      { id: ROW.nativeWeb, name: path.join(path.dirname(childModule), NATIVE_WEB.adapterModule), required: true, config },
+      { id: ROW.page, name: path.join(path.dirname(childModule), NATIVE_WEB.pageDirectory, NATIVE_WEB.pagePackage, 'index.js'), required: true },
       { id: ROW.lifecycle, name: childModule, required: true, config },
       // The bridge, approvals and inbox rows are loader rows, not plugins the lifecycle row
       // starts itself: the loader's boot settlement only waits for its own entries, so a nested

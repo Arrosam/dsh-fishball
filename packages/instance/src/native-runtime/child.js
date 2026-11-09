@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { realpath, readFile, chmod, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { registerParentShutdown } from './parent-watch.js'
-import { RUNTIME, runtimeLimits, fail, NativeRuntimeError, appAccess } from './constants.js'
+import { RUNTIME, runtimeLimits, fail, NativeRuntimeError, appAccess, NATIVE_WEB } from './constants.js'
 import { BEARER, ROUTES } from '../slim/contract.js'
 import { jsonPrivate, readPrivate, writePrivate, privateDirectory, launchPath, snapshotPath, pathsFor, inside, lifecycleLog } from './files.js'
 import { Wire, proof, sameProof } from './wire.js'
@@ -43,7 +43,11 @@ async function authenticatedReadiness(ctx, limits) {
   if (anonymous.status !== BEARER.unauthorizedStatus) fail('APP_AUTH_NOT_READY')
   const authenticated = await probeHttp(health, limits.requestTimeoutMs, access.bearer)
   if (authenticated.status !== HTTP.success) fail('APP_AUTH_NOT_READY')
-  return { access, capabilities: [...RUNTIME.requiredServices, RUNTIME.capabilities.authenticatedApp, RUNTIME.capabilities.lifecycle, RUNTIME.capabilities.control] }
+  const native = ctx.get(NATIVE_WEB.service)
+  if (!native) fail('MISSING_CAPABILITY')
+  await native.ready()
+  if (native.access().origin === access.origin) fail('NATIVE_ACCESS_UNAVAILABLE')
+  return { access, capabilities: [...RUNTIME.requiredServices, RUNTIME.capabilities.authenticatedApp, NATIVE_WEB.capability, RUNTIME.capabilities.lifecycle, RUNTIME.capabilities.control] }
 }
 
 /** Mounted only by the explicit private CLI overlay, not the legacy Fishball entrypoint. */
@@ -159,7 +163,14 @@ export async function applyNativeChild(ctx, config) {
           for (const listener of adminListeners) listener(currentAdmin.transport)
           for (const listener of syncListeners) listener(currentSync.transport)
           payload = metadata
-        } else if (message.operation === 'stop') payload = { stopping: true }
+        } else if (message.operation === NATIVE_WEB.operation) {
+          if (!ready || stopped) fail('NOT_READY')
+          payload = { generation: record.instanceId, ...ctx.get(NATIVE_WEB.service).access() }
+        } else if (message.operation === 'stop') {
+          stopped = true
+          ready = undefined
+          payload = { stopping: true }
+        }
         else fail('UNKNOWN_LIFECYCLE_OPERATION')
         wire.send({ channel: 'lifecycle', replyTo: message.id, payload })
         if (message.operation === 'stop') setImmediate(() => ctx.appExit(0))
