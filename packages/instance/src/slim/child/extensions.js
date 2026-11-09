@@ -1,6 +1,6 @@
 /** Local X0-C service. Transport adapters own MCP names, authentication and routing. */
 import path from 'node:path'
-import { appendFile, open, readFile, rename, writeFile } from 'node:fs/promises'
+import { open, readFile, rename, writeFile } from 'node:fs/promises'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { appendPluginRecord } from '@deepseek-ai/dsh-session'
 
@@ -50,13 +50,14 @@ function stubs(area, members, asynchronous = []) {
 }
 
 /** Any insertion is acceptance, including an already consumed/discarded message. */
-function acceptedIds(live) {
-  const ids = new Set()
-  for (const event of live.session.snapshotEvents()) {
-    if (event.type === EXT.inboxSplice) for (const message of event.data.inserted ?? []) ids.add(message.id)
-    if (event.type === EXT.userMessage) ids.add(event.data.id)
+function observeAcceptance(index, event) {
+  if (event.type === EXT.inboxSplice) for (const message of event.data.inserted ?? []) index.ids.add(message.id)
+  if (event.type === EXT.userMessage) index.ids.add(event.data.id)
+  if (event.data?.notificationId) {
+    let ids = index.records.get(event.type)
+    if (!ids) index.records.set(event.type, ids = new Set())
+    ids.add(event.data.notificationId)
   }
-  return ids
 }
 
 export function createExtensions(ctx) {
@@ -65,10 +66,35 @@ export function createExtensions(ctx) {
   const registrations = new Set()
   const warned = new Set()
   const notices = new Map()
+  const evictable = new Set()
+  const held = new Set()
+  const releasing = new Set()
+  // Seed once per Session object, then fold its synchronous publication stream.
+  // Consumed/discarded identities still count as accepted; retain them for the
+  // live Session rather than rescanning its growing history for each receipt.
+  const acceptance = new WeakMap()
+  function indexFor(live) {
+    let index = acceptance.get(live.session)
+    if (!index) {
+      index = { ids: new Set(), records: new Map() }
+      for (const event of live.session.snapshotEvents()) observeAcceptance(index, event)
+      acceptance.set(live.session, index)
+    }
+    return index
+  }
+  function remember(entry) {
+    notices.delete(entry.dedupeKey)
+    notices.set(entry.dedupeKey, entry)
+    evictable.delete(entry.dedupeKey)
+    held.delete(entry.dedupeKey)
+    if (entry.holding) held.add(entry.dedupeKey)
+    if (entry.state === EXT.accepted && !entry.holding) evictable.add(entry.dedupeKey)
+  }
   let chat
   let current
   let serial = Promise.resolve()
   let dirty = false
+  let linked = false
   let closed = false
 
   function exclusive(fn) {
@@ -92,6 +118,7 @@ export function createExtensions(ctx) {
     await syncFile(temp)
     await rename(temp, filename)
     await syncFile(path.dirname(filename))
+    linked = true
     dirty = false
   }
   async function save(entry) {
@@ -99,15 +126,25 @@ export function createExtensions(ctx) {
     // before another append if an earlier write/rename had an uncertain outcome.
     if (dirty) await compact()
     dirty = true
-    await appendFile(filename, JSON.stringify(entry) + '\n', { mode: EXT.mode })
-    await syncFile(filename)
-    await syncFile(path.dirname(filename))
-    notices.delete(entry.dedupeKey)
-    notices.set(entry.dedupeKey, entry)
+    const handle = await open(filename, 'a', EXT.mode)
+    try {
+      await handle.writeFile(JSON.stringify(entry) + '\n')
+      await handle.sync()
+    } finally { await handle.close() }
+    // Appending changes the inode, not its directory entry. Sync the directory
+    // only to establish the initial link (and after compaction's rename).
+    if (!linked) {
+      await syncFile(path.dirname(filename))
+      linked = true
+    }
+    remember(entry)
     dirty = false
-    const accepted = [...notices.values()].filter((item) => item.state === EXT.accepted && !item.holding)
-    if (accepted.length > EXT_LIMITS.notifyKeys) {
-      for (const item of accepted.slice(0, accepted.length - EXT_LIMITS.notifyKeys)) notices.delete(item.dedupeKey)
+    if (evictable.size > EXT_LIMITS.notifyKeys) {
+      while (evictable.size > EXT_LIMITS.notifyKeys) {
+        const key = evictable.values().next().value
+        evictable.delete(key)
+        notices.delete(key)
+      }
       dirty = true
       await compact()
     }
@@ -122,8 +159,7 @@ export function createExtensions(ctx) {
     for (const line of lines) {
       if (!line) continue
       const entry = JSON.parse(line)
-      notices.delete(entry.dedupeKey)
-      notices.set(entry.dedupeKey, entry)
+      remember(entry)
     }
     if (dirty) await compact()
   }
@@ -203,16 +239,16 @@ export function createExtensions(ctx) {
   async function accept(live, entry) {
     requireQueue(live)
     if (entry.wake) {
-      if (!acceptedIds(live).has(entry.message.id)) await live.followup(entry.message)
+      if (!indexFor(live).ids.has(entry.message.id)) await live.followup(entry.message)
       else if (pendingMessage(live, entry.message.id) && live.status !== EXT.running) {
         // No public wake-existing primitive: replaying followup inserts the same
         // identity twice. Keep pending, expose the gap, and never fake acceptance.
         throw new ExtensionError(EXT.wakeUnsupported, EXT.notifyMember)
       }
-      if (!acceptedIds(live).has(entry.message.id)) throw new ExtensionError(EXT.queueUnavailable, EXT.notifyMember)
+      if (!indexFor(live).ids.has(entry.message.id)) throw new ExtensionError(EXT.queueUnavailable, EXT.notifyMember)
       await flush()
     }
-    if (entry.record && !live.session.snapshotEvents().some((event) => event.type === entry.record.type && event.data?.notificationId === entry.message.id)) {
+    if (entry.record && !indexFor(live).records.get(entry.record.type)?.has(entry.message.id)) {
       appendPluginRecord(live.session, entry.record.type, { ...entry.record.data, notificationId: entry.message.id })
       await flush()
     }
@@ -254,34 +290,49 @@ export function createExtensions(ctx) {
     })
   }
 
-  // Held notices retain their own stable identities and are injected at turn/start.
+  // Stage held identities before an owned idle wake; external wakes defer below.
   // Do not merge them into a new followup identity: a crash between mapping and
   // insertion would otherwise leave no recoverable copy of that followup.
   async function queue(live, message) {
     return exclusive(async () => {
       requireQueue(live)
+      // This owned wake path can stage next-step context before the SDK's
+      // synchronous first claim. External wakes use the deferred observer below.
+      if (live.status !== EXT.running) injectHeld(live)
       await live.followup(message)
-      if (!acceptedIds(live).has(message.id)) throw new ExtensionError(EXT.queueUnavailable, EXT.notifyMember)
+      if (!indexFor(live).ids.has(message.id)) throw new ExtensionError(EXT.queueUnavailable, EXT.notifyMember)
       await flush()
       return { messageId: message.id }
     })
   }
-  // A scheduler or steering input can wake the manager without chat.queue. The
-  // host emits turn/start synchronously before its first inbox claim; only this
-  // synchronous promotion can join that turn without starting an extra one.
-  const offTurn = ctx.on('session/event', (session, event) => {
-    const live = current?.live
-    if (closed || session.id !== live?.id || event.type !== EXT.turnStart) return
-    const ids = acceptedIds(live)
-    for (const entry of notices.values()) {
-      if (!entry.holding) continue
-      if (entry.deliveryId && ids.has(entry.deliveryId)) continue
+  function injectHeld(live) {
+    const ids = indexFor(live).ids
+    for (const key of held) {
+      const entry = notices.get(key)
+      if (releasing.has(entry.message.id) || (entry.deliveryId && ids.has(entry.deliveryId))) continue
       if (!ids.has(entry.message.id)) live.inject(entry.message)
+      releasing.add(entry.message.id)
       void exclusive(async () => {
         await flush()
         await save({ ...entry, holding: false })
       }).catch(() => { logger?.warn('held notification acceptance could not be persisted') })
+        .finally(() => { releasing.delete(entry.message.id) })
     }
+  }
+  // Session publication forbids reentrant appends. Defer only the injection to
+  // the microtask boundary: the first claim may already have happened, so the SDK
+  // admits this context on its next step in the same turn, without another wake.
+  // Do not put injection behind disk I/O in the serial queue: the turn could end.
+  const offTurn = ctx.on('session/event', (session, event) => {
+    const index = acceptance.get(session)
+    if (index) observeAcceptance(index, event)
+    const live = current?.live
+    if (closed || session !== live?.session || event.type !== EXT.turnStart || !held.size) return
+    queueMicrotask(() => {
+      if (closed || current?.live !== live) return
+      try { injectHeld(live) }
+      catch { logger?.warn('held notification injection failed') }
+    })
   })
 
   function close() {
