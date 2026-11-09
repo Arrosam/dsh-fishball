@@ -3,6 +3,7 @@
  * the P2 requirements given to the test author (see test/CASES.md), never from
  * the implementation.
  */
+import os from 'node:os'
 import path from 'node:path'
 
 export const REPO = path.resolve(import.meta.dirname, '..', '..')
@@ -12,8 +13,9 @@ export const RUNTIME = process.env.FBTEST_DSH_RUNTIME ?? '/Users/samuel/Library/
  * Root of the throwaway DSH homes. FBTEST_TEST_HOMES moves it (e.g. under the OS temp dir, so a
  * baseline run writes no home into the checkout); it must still end in `.runtime/test-homes`,
  * because run.mjs's delete guard and the worker's home check both require that suffix.
+ * The default is process-isolated outside Git: native child preflight rejects Git ancestors.
  */
-export const TEST_HOMES = process.env.FBTEST_TEST_HOMES ?? path.join(REPO, '.runtime', 'test-homes')
+export const TEST_HOMES = process.env.FBTEST_TEST_HOMES ?? path.join(os.tmpdir(), 'fbtest-' + process.pid, '.runtime', 'test-homes')
 export const SUPPORT = import.meta.dirname
 export const WORKER = path.join(SUPPORT, 'worker.mjs')
 
