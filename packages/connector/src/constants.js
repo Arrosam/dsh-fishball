@@ -589,8 +589,8 @@ export const API = Object.freeze({
   watches: '/api/fishball/watches',
   /** POST { watchId }: you close one watch. */
   watchesRemove: '/api/fishball/watches/remove',
-  // The question mode, brand and sidebar-entry routes are retired (C2): the mode changes only in
-  // DSH's own form of the row, and the icon is fixed (D22). Their paths answer 404.
+  // The question mode, brand and sidebar-entry routes are retired (C2/D2): question mode
+  // is inert, and the icon is fixed (D22). Their paths answer 404.
   /**
    * GET: the attached instance as the connector's frame shows it (design §0.5 "The frame", D27):
    * {attached, name, ui, state, code, canRetry, attachCount}. The browser reads the instance only
@@ -599,6 +599,8 @@ export const API = Object.freeze({
   connectorInstance: '/api/fishball/connector/instance',
   /** POST, no body: the frame's Retry, which awaits the attached instance's own retry(). */
   connectorInstanceRetry: '/api/fishball/connector/instance/retry',
+  /** POST: the connector page was opened; never sent to the instance. */
+  connectorAttentionRead: '/api/fishball/connector/attention/read',
 })
 export const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, serverError: 500 })
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })

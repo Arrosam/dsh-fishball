@@ -13,9 +13,9 @@
  * | FLW-04  | EP (same batch from the instance and from the session's card) | §7a.10 "the browser's exact shape" | byte-identical tool results |
  * | FLW-05  | ST (you answer in the session first) | §7a.10 The race; §4.2 | your batch is the result; the instance's later answer is refused (expired / already-settled); it is told: approval.settled by user and a card record by user with your label |
  * | FLW-06  | ST (the instance answered, then you click the stale own card) | §7a.10 The race | the own card is already closed: your click finds nothing |
- * | FLW-07  | BVA (approvalAnswerSeconds 1 and 3) | §7a.10 Time limit | still the instance's before about the limit (its answer is accepted up to then); after it the question leaves the instance (approval.settled; its answer is refused expired); the agent keeps waiting; the own card stays open |
- * | FLW-08  | ST (after the limit, you answer in the own card) | §7a.10 Cards; slim §12 | the result is your batch |
- * | FLW-10  | EP (offer contents) | §5.1; §7a.10 "Legacy questions name no call" | kind question; the envelope names the session; callId recovered for the legacy call; every question, option and the question text; at and expiresAt = at + approvalAnswerSeconds |
+ * | FLW-07  | BVA (approvalAnswerSeconds 1 and 3) | §7a.10 Time limit | still offered and own card open after the former window; no timed settled event; instance answer accepted |
+ * | FLW-08  | ST (former window passes, then you answer in the own card) | §7a.10 Cards; slim §12 | the result is your batch |
+ * | FLW-10  | EP (offer contents) | §5.1; §7a.10 "Legacy questions name no call" | kind question; the envelope names the session; callId recovered for the legacy call; every question, option and the question text; at retained, expiresAt absent |
  * | FLW-11  | ST (your Stop with the question open) | §7a.10 The race; slim T08/T09; instance.md I7-EP-06 | the own card closes; the instance's answer is refused; it gets a closure note (CARD_CLOSED or a card record with outcome closed) |
  * | FLW-12  | EP (toUser with a note) | §4.2 toUser/note | {accepted:true}; the question leaves the instance (settled escalate) and stays in its own card; a later answer by the instance is refused; you answer there: the result is your batch; the instance gets QUESTION_ANSWER and a record carrying your words |
  * | FLW-13  | EP (two questions open in two sessions) | §4.2; §4.2 approval.list | each session's approval.list holds its own question; answering one leaves the other answerable |
@@ -27,7 +27,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ASK_USER_QUESTION, LIMITS } from './support/constants.mjs'
+import { ASK_USER_QUESTION } from './support/constants.mjs'
 import { HOOK, T, untrustedBlock } from './support/expect.mjs'
 import { stopStub } from './support/instance-stub.mjs'
 import { A, Q, QSTUB, assertStillOpen, bootQ, codeOf, qTools, quiet, resultText, sleep, tokens, turnText } from './support/instance-stub-questions.mjs'
@@ -142,41 +142,36 @@ describe('Revision 11 rev11g on H-STUB: how a managed session\'s question travel
   })
 
   for (const seconds of [1, 3]) {
-    it(`FLW-07 approvalAnswerSeconds ${seconds}: the question leaves the instance only after about ${seconds} s; the agent keeps waiting`, T, async () => {
-      await q.setSeconds(seconds)
-      try {
-        const text = tok('07s' + seconds)
-        const id = cid('07s' + seconds)
-        const { card, offer } = await q.ask(x, text, id, { questions: Q.single(text) })
-        const limitMs = seconds * QSTUB.secondMs
-        // `at` is when the request began and `expiresAt` when its round started, a moment later (contract
-        // §5.1 fixes no difference); allow the same timer slack the approval cases use (once 1001 for 1 s).
-        const window = offer.expiresAt - offer.at
-        assert.ok(window >= limitMs && window <= limitMs + QSTUB.limitSlackMs, 'the offer expires at the limit: ' + window)
-        const left = await q.settled(offer.approvalId, { timeoutMs: limitMs + QSTUB.limitLateMs })
-        assert.ok(left, 'the question left the instance after the limit')
-        const settledAt = (await q.stub().events(QSTUB.event.approvalSettled)).find((f) => f.payload.approvalId === offer.approvalId).at
-        assert.ok(settledAt - offer.at >= limitMs * QSTUB.limitEarlyShare - QSTUB.limitSlackMs, 'not long before the limit: ' + (settledAt - offer.at) + ' ms')
-        assert.equal(codeOf(await q.answer(x, offer.approvalId, { answers: A.single })), QSTUB.code.expired, 'the instance\'s late answer is refused')
-        await assertStillOpen(q, x, card, id, 'after the limit')
-        assert.equal(await q.qAnswer(x, A.single), true)
-        assert.equal((await q.result(x, id)).text, resultText(A.single))
-        await q.waitIdle(x)
-      } finally { await q.setSeconds(LIMITS.approvalAnswerSeconds.default) }
+    it(`FLW-07 retained approvalAnswerSeconds ${seconds}: question stays offered beyond the former boundary`, T, async () => {
+      await q.seedStoredConfig({ approvalAnswerSeconds: seconds }, { resume: [x, y].filter(Boolean) })
+      const text = tok('07s' + seconds)
+      const id = cid('07s' + seconds)
+      const { card, offer } = await q.ask(x, text, id, { questions: Q.single(text) })
+      assert.equal(Object.hasOwn(offer, 'expiresAt'), false)
+      await sleep(seconds * QSTUB.secondMs + QSTUB.quietMs)
+      assert.deepEqual(await q.settledNow(offer.approvalId), [], 'time alone does not withdraw the offer')
+      assert.deepEqual(await q.listed(x), [offer.approvalId])
+      await assertStillOpen(q, x, card, id, 'after the former limit')
+      assert.deepEqual((await q.answer(x, offer.approvalId, { answers: A.single })).payload, { accepted: true }, 'still answerable')
+      assert.equal((await q.result(x, id)).text, resultText(A.single))
+      await q.waitIdle(x)
+      assert.ok(await q.settled(offer.approvalId, { by: QSTUB.by.fishball }))
     })
   }
 
-  it('FLW-08 after the limit, you answer in the session\'s own card: the result is your batch', T, async () => {
-    await q.setSeconds(1)
-    try {
-      const text = tok('08')
-      const id = cid('08')
-      const { offer } = await q.ask(x, text, id, { questions: Q.single(text) })
-      assert.ok(await q.settled(offer.approvalId, { timeoutMs: QSTUB.limitLateMs }), 'the question left the instance')
-      assert.equal(await q.qAnswer(x, RED), true)
-      assert.equal((await q.result(x, id)).text, resultText(RED))
-      await q.waitIdle(x)
-    } finally { await q.setSeconds(LIMITS.approvalAnswerSeconds.default) }
+  it('FLW-08 after the former window, your own-card answer wins and the stale instance answer is refused', T, async () => {
+    await q.seedStoredConfig({ approvalAnswerSeconds: 1 }, { resume: [x, y].filter(Boolean) })
+    const text = tok('08')
+    const id = cid('08')
+    const { card, offer } = await q.ask(x, text, id, { questions: Q.single(text) })
+    await sleep(QSTUB.secondMs + QSTUB.quietMs)
+    await assertStillOpen(q, x, card, id, 'no timer-driven transfer')
+    assert.deepEqual(await q.settledNow(offer.approvalId), [])
+    assert.equal(await q.qAnswer(x, RED), true)
+    assert.equal((await q.result(x, id)).text, resultText(RED))
+    await q.waitIdle(x)
+    assert.ok(await q.settled(offer.approvalId, { by: QSTUB.by.user }))
+    assert.ok(QSTUB.lateCodes.includes(codeOf(await q.answer(x, offer.approvalId, { answers: A.single }))))
   })
 
   it('FLW-10 the offer shows the session, the recovered call id, every question and choice, and when', T, async () => {
@@ -192,9 +187,7 @@ describe('Revision 11 rev11g on H-STUB: how a managed session\'s question travel
     for (const word of ['Which colour?', 'Red', 'Blue', 'Docs', 'Tests', 'Code', 'Branch name?', text]) assert.ok(JSON.stringify(offer.questions).includes(word), 'the offer shows ' + word)
     assert.equal(offer.questions.find((x2) => x2.id === 'parts').multiSelect, true, 'multi_select travels as multiSelect')
     assert.ok(Number.isInteger(offer.at) && offer.at > 0, 'a time')
-    const window = offer.expiresAt - offer.at
-    const limitMs = LIMITS.approvalAnswerSeconds.default * QSTUB.secondMs
-    assert.ok(window >= limitMs && window <= limitMs + QSTUB.limitSlackMs, 'the offer expires at the limit: ' + window)
+    assert.equal(Object.hasOwn(offer, 'expiresAt'), false, 'timerfree offer omits the deadline')
     await q.userStop(x)
   })
 

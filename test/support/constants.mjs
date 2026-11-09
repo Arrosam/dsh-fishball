@@ -130,7 +130,6 @@ export const LIMITS = {
   maxQueuedInputs: { default: 200, min: 1 },
   maxActiveWatches: { default: 50, min: 1 },
   maxPendingApprovals: { default: 8, min: 1 },
-  approvalAnswerSeconds: { default: 120, min: 1 },
   argumentExcerptBytes: { default: 8192, min: 1 },
   maxMessageBytes: { default: 65536, min: 1 },
   auditEntriesKept: { default: 500, min: 1 },
@@ -919,6 +918,12 @@ export const ANSWER_QUESTION = 'answer_question'
 export const QUESTION_API = { answer: '/api/fishball/questions/answer', mode: '/api/fishball/question-mode' }
 /** The three modes (item 25); `auto` is the default. */
 export const QUESTION_MODE = { auto: 'auto', fishball: 'fishball', user: 'user' }
+/** D2 load-only settings: retain stored values, but never include these in active form/limit loops. */
+export const LEGACY_INTERACTION = Object.freeze({
+  fields: Object.freeze({ mode: 'questionMode', seconds: 'approvalAnswerSeconds' }),
+  approvalAnswerSeconds: Object.freeze({ default: 120, min: 1 }),
+  questionMode: Object.freeze({ default: QUESTION_MODE.auto }),
+})
 /** The code answer_question gives in User mode (§7a.10 "Code enforces only User mode"). */
 export const MODE_USER_CODE = 'mode-user'
 /** Table `settings`, key `questions`: {mode, changedAt} (§9). */

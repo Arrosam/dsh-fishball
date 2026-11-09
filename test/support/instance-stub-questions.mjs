@@ -1,7 +1,7 @@
 /**
  * Group D on H-STUB: the question router (questions and plan reviews of managed sessions, the question
  * mode) and stop / redirect of managed sessions. The in-process Fishball session is gone (slim §12), so
- * Fishball's side of every case is the stub instance speaking contract 1.1: a question reaches it as the
+ * Fishball's side of every case is the stub instance negotiating timer-free contract 1.2: a question reaches it as the
  * `approval.request` event (kind `question`, contract §5.1) plus an `approval` inbox item, it answers with
  * `question.answer` (§4.2), it stops and redirects with `session.stop` / `session.redirect` (§4.1), and it
  * hears of answers and closures as `approval.settled` events and `QUESTION_ANSWER` / `CARD_CLOSED` /
@@ -11,9 +11,9 @@
  */
 import assert from 'node:assert/strict'
 import { APPROVAL_KIND, CARD_CLOSED, CARD_RECORD, DECISION, ERROR, EVENT, INBOX_KIND, LIMITS, QUESTION_ANSWER, RECORD_ITEM, SETTLED_BY } from 'fishball-connector/contract'
-import { ASK_USER_QUESTION, PLAN, PRESET, ROW_ID } from './constants.mjs'
+import { ASK_USER_QUESTION, LEGACY_INTERACTION, PLAN, PRESET, ROW_ID } from './constants.mjs'
 import { resultOfCall, settledIdle, step, storedRows } from './expect.mjs'
-import { ENVELOPE, OPERATION, bootStub, managedSession, restartStub, userSession } from './instance-stub.mjs'
+import { ENVELOPE, OPERATION, bootStub, managedSession, restartStub, seedStoredInteractionConfig, userSession } from './instance-stub.mjs'
 import { STUB } from './instance-stub-data.mjs'
 import { planText } from './rev11g.mjs'
 import { sleep, until } from './util.mjs'
@@ -25,8 +25,8 @@ export const QSTUB = Object.freeze({
   /** Worker env: the question-card stand-in; with `approver` also the scripted stock prompt after the broker and fbtest_ask. */
   env: Object.freeze({ FBTEST_QUESTIONS: '1' }),
   approverEnv: Object.freeze({ FBTEST_QUESTIONS: '1', FBTEST_APPROVER_AFTER: '1' }),
-  /** The fishball-connector row fields this group sets through DSH's settings service (settingsSchema lists both). */
-  field: Object.freeze({ mode: 'questionMode', seconds: 'approvalAnswerSeconds' }),
+  /** Retired load-only fields; seedStoredConfig bypasses the removed editor controls. */
+  field: LEGACY_INTERACTION.fields,
   /** The stand-in card's states (support/fixtures/fbtest-tools). */
   card: Object.freeze({ open: 'open', closed: 'closed', answered: 'answered' }),
   /** The worker's turn/end reason kinds. */
@@ -124,6 +124,8 @@ export function qTools(ctx) {
     fishballId: async () => (await host().state()).sessionId,
     /** Change connector settings through DSH's settings service (DSH's form of the fishball-connector row). */
     async settings(patch) { const r = await host().call('settingsUpdate', { patch }); assert.equal(r.ok, true, JSON.stringify(r.error)); return r },
+    /** Restart after seeding retained values; host()/stub() resolve the replacement at call time. */
+    seedStoredConfig: (patch, options) => seedStoredInteractionConfig(ctx.booted, patch, options),
     setSeconds: (seconds) => q.settings({ [QSTUB.field.seconds]: seconds }),
     setMode: (mode) => q.settings({ [QSTUB.field.mode]: mode }),
     /** The session's own question cards (stand-in), oldest first. */

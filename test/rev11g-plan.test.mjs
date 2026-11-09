@@ -15,7 +15,7 @@
  * | PLN-07  | ST (you Approve in the session first) | §7a.10 The race | approved; the instance's late answer is refused |
  * | PLN-08  | ST (you Discuss in the session) | §7a.10 Plan reviews | the review is dismissed and the turn ends; plan mode stays on; the instance's answer is refused; it is told the card closed |
  * | PLN-09  | DT (bad plan answers) | §4.2 "at least one of the five", "answers cannot be combined with approve or feedback", bad-answer; §7a.10 | an answers batch, an unoffered label, an unknown question id: refused (bad-answer / expired), the review stays open and a good approve then works; answers + approve and an empty payload: refused (error frame or closed channel), the review stays open in its own panel |
- * | PLN-10  | DT (modes) | §7a.10 "A plan review follows the same mode" | user: the instance's approve is refused mode-user and you approve in the session; fishball: accepted |
+ * | PLN-10  | DT (modes) | §7a.10 "A plan review follows the same mode" | stored user/fishball/auto: eligible plan offered, instance approve accepted, source-user approval remains available |
  * | PLN-11  | EP (a session that is yours) | §7a.10 Routing | its plan review stays in its own panel; the instance hears nothing |
  *
  * Retired:
@@ -169,26 +169,25 @@ describe('Revision 11 rev11g on H-STUB: plan reviews', () => {
     }
   })
 
-  it('PLN-10 modes: user refuses the instance\'s approve (mode-user); fishball accepts it', T, async () => {
-    await q.setMode(QUESTION_MODE.user)
-    try {
-      const text = tok('10u')
-      const id = cid('10u')
-      const { card } = await q.plan(x, text, id, { offer: false })
-      const qid = await q.learnedId(text, id)
-      assert.ok(qid, 'the instance learned the review (to add a note)')
-      assert.equal(codeOf(await q.answer(x, qid, { approve: true })), QSTUB.code.modeUser)
-      await assertStillOpen(q, x, card, id, 'user mode')
-      assert.equal(await q.qAnswer(x, APPROVE), true)
-      assert.match((await q.result(x, id)).text, PLAN.approved)
-      await q.waitIdle(x)
-      await q.planOff(x)
-    } finally { await q.setMode(QUESTION_MODE.fishball) }
-    try {
-      const { got } = await decide(x, '10f', { approve: true })
-      assert.match(got.text, PLAN.approved)
-      await q.planOff(x)
-    } finally { await q.setMode(QUESTION_MODE.auto) }
+  it('PLN-10 retained user/fishball/auto modes all offer eligible reviews and allow either actor to answer', T, async () => {
+    for (const mode of [QUESTION_MODE.user, QUESTION_MODE.fishball, QUESTION_MODE.auto]) {
+      await q.seedStoredConfig({ questionMode: mode }, { resume: [x, y].filter(Boolean) })
+      const sid = await q.session('pln-10-' + mode, PRESET.standard)
+      const id = cid('10-' + mode)
+      const { card, offer } = await q.plan(sid, tok('10-' + mode), id)
+      assert.ok(offer, 'eligible review is offered for saved ' + mode)
+      await assertStillOpen(q, sid, card, id, 'before an explicit answer')
+      assert.deepEqual((await q.answer(sid, offer.approvalId, { approve: true })).payload, { accepted: true })
+      assert.match((await q.result(sid, id)).text, PLAN.approved)
+      await q.waitIdle(sid)
+      await q.planOff(sid)
+      const userId = cid('10-user-' + mode)
+      await q.plan(sid, tok('10-user-' + mode), userId)
+      assert.equal(await q.qAnswer(sid, APPROVE), true, 'source user can still approve')
+      assert.match((await q.result(sid, userId)).text, PLAN.approved)
+      await q.waitIdle(sid)
+      await q.planOff(sid)
+    }
   })
 
   it('PLN-11 a session that is yours: its plan review stays in its own panel; the instance hears nothing', T, async () => {

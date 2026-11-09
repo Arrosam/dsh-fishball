@@ -25,7 +25,7 @@ function stubContext({ withInstance = true } = {}) {
       apiVersion: 1,
       manager: { sessionId: () => 'session-fishball', registerSetup: () => () => {} },
       inbox: { setBatcher: () => () => {}, claim: () => () => {} },
-      attention: { set: () => () => {} },
+      attention: { signal: async () => ({ accepted: true }) },
     },
   }
   if (!withInstance) delete services.fishballInstance

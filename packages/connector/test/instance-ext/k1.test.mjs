@@ -4,14 +4,11 @@
  * connector-mcp-option §§4.1–8 and DESIGN's 2026-11-09 amendment.
  * Human use cases FIRST: docs/test-design/instance-ext-w0-mcp-use-cases.md.
  *
- * No new shared profile/schema/validator location is frozen, and the old contract export must
- * not be required to survive MCP-SERVER removal. The meaningful unreadMax/payload fixtures are
- * retained as actionable shared acceptance TODOs, not old-control loader assertions. We assert
- * no contract major/minor, tool identifier, envelope, attach API, manifest version or export survival.
- *
- * These are real owner-named TODOs: S3 has not frozen an MCP tool/schema/validator
- * interface or error mapping. Runtime unread projection/removal are MCP-SERVER's W1 work. Never
- * revive the old real-DSH boot/custom-wire harness merely to make these tests executable.
+ * V2 D1–D3 supersedes K1's prior MCP-removal and producer-owned attention proposal.
+ * Public contract 1.2/envelope v2 and legacy control-only compatibility remain. The catalog
+ * now requires stateless attention.signal and connector-owned unread/page-open reset.
+ * These remain owner-named TODOs, not executed conformance or browser evidence.
+ * Historical S1/S2/S3 future-task inventories are not V2 acceptance authority.
  */
 import { describe, it } from 'node:test'
 import { MCP_W0_CASES, todoTitle } from './mcp-w0-cases.spec.mjs'

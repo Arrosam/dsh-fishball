@@ -1,4 +1,4 @@
-# `fishball-connector` contract, version 1.1
+# `fishball-connector` contract, version 1.2
 
 Status: **frozen v1 (K1, 2026-11-06), corrected by K1b; minor 1.1 (K2, 2026-11-07) adds the
 framed page's `lang` parameter (§1.2, §11)**. Sources: `docs/slim-native-design.md`
@@ -14,6 +14,12 @@ Contents: 0 terms and decisions · 1 binding · 2 versions · 3 frames (envelope
 4 operations · 5 events · 6 vocabularies · 7 errors · 8 limits · 9 no-instance behaviour ·
 10 module index · 11 version history.
 
+**2026-11-09 V2 amendment (D1–D3):** contract 1.2 retains the public service, exports,
+operation names and envelope v2. The explicit `interaction.timerfree` negotiation below is a
+bounded exception to the old additive-minor rule, not an implicit version-based schema relaxation.
+Optional `attention.signal` is independent. These decisions supersede historical custom-2.0/MCP
+and producer-owned attention proposals for V2.
+
 ## 0. Terms and decisions
 
 - **Plugins.** There are two plugins, and no plugin is called "Fishball":
@@ -27,7 +33,7 @@ Contents: 0 terms and decisions · 1 binding · 2 versions · 3 frames (envelope
   that assistant, never a plugin: `ROLE.fishball`, `SETTLED_BY.fishball`, `is-fishball`, the
   main-session tools `message_fishball` and `ask_fishball`, and the record type
   `plugin:fishball/card-record`. They are frozen v1 names.
-- **Connector settings** (its limits and question mode only) are changed
+- **Connector settings** (its active limits only) are changed
   **only in DSH's own Plugins → settings form of `fishball-connector`**. This contract gives an
   instance no operation that reads or changes them, attached or not.
 - **Instance settings** live inside the instance's own DSH profile and are edited on the
@@ -181,11 +187,11 @@ a major 2.
 
 ## 2. Versions
 
-- The contract id is `fishball-connector`. This document is **1.1**: `CONNECTOR_CONTRACT =
-  {id: 'fishball-connector', major: 1, minor: 1}`.
+- The contract id is `fishball-connector`. This document is **1.2**: `CONNECTOR_CONTRACT =
+  {id: 'fishball-connector', major: 1, minor: 2}`.
 - **A different major is refused** (`contract-version`), lower or higher. A different id is refused
   the same way.
-- **A minor only adds.** A new minor may add operations, events or optional payload fields, and
+- **A minor normally only adds (the explicitly negotiated 1.2 exception is §3.2.1).** A new minor may add operations, events or optional payload fields, and
   each addition is advertised as a capability in the handshake (§3.2). It never removes or renames
   a name, changes a field's type, or makes an optional field required. So any minor of major 1 is
   accepted, lower, equal or higher.
@@ -276,9 +282,45 @@ it **requires**. Handshake failures are of two kinds:
   its building block.
 
 Before the handshake, any other request is answered `handshake-required`, and a second handshake
-on one channel is `conflict`. The connector's welcome lists only operations it serves; a request
+on one channel is `conflict`. The connector's welcome lists operations it serves and supported
+semantic capabilities; a request
 for a known operation outside the welcome is `unsupported-operation`, as is one for an unknown
 name (§3.1).
+
+### 3.2.1 Negotiated timer-free interactions (D1)
+
+`interaction.timerfree` is a semantic capability, not an operation. Both peers must advertise it;
+neither a minor number nor an attachment alone enables it. The built-in instance requires it in
+`requiredCapabilities`. An old connector refuses that requirement with `unsupported-capability`;
+the built-in reports that the connector must be upgraded and detaches its own attachment. It does
+not downgrade or leave itself occupying the connector.
+
+A new connector accepts legacy instances for ordinary controls, but never delegates approvals,
+questions or plan reviews without this marker.
+Those interactions remain with the source user. A new instance omitting the marker is likewise
+control-only. No timer-bearing fallback offer is emitted.
+
+For a negotiated channel, validators and envelope helpers receive explicit context
+`{interactionTimerfree: true}`. The approval descriptor used by `approval.list` and
+`approval.request` then **omits** `expiresAt`; a present value (including `null`) is invalid.
+Without that context the legacy descriptor still **requires** numeric `expiresAt`. This applies
+to request/response/event validation and encoding/decoding, not just rendering. Strict exact-key
+validation remains in both branches. Grant and attachment expiry fields are unchanged.
+
+Timer-free interactions have no countdown, timeout-based transfer or fabricated terminal result.
+Eligible managed questions and plan reviews go directly to Fishball, bypassing watchdog enrollment
+and without a refine prerequisite. The source user can still answer; first committed outcome wins,
+and explicit escalation and authority/liveness checks remain.
+
+### 3.2.2 Stored legacy settings (D2)
+
+`questionMode` and `approvalAnswerSeconds` remain accepted on config load and retain their stored
+values, but are deprecated and inert for V2 routing/deadlines. Their editor controls and instructions
+are removed, with no replacement switch or silent config rewrite. In particular, saved `user` no
+longer prevents eligible questions being offered to Fishball. Public constants/error vocabulary
+remain for import compatibility; an eligible answer is not refused merely for a saved `user` mode.
+The pre-split settings migration copies active declared fields only; inert legacy mode/timer values
+remain untouched in their original patch/store records rather than being copied to the new namespace.
 
 ### 3.3 Requests and replies
 
@@ -448,6 +490,32 @@ Some `system` items carry a marker in `text` (`inbox-markers.js`, §10):
 
 The bytes are fetched with `attachment.read`.
 
+### 4.6 Optional attention signal (instance → connector, D3)
+
+`attention.signal`, with envelope `sessionId: null`, accepts exactly `{important: boolean}` and
+returns exactly `{accepted: true}`. It is advertised only when served and is never required for
+attachment. Send only after the authenticated handshake advertises support. Missing/unserved
+support is `unsupported-operation`; a disconnected or retired channel is `disconnected`, never
+fabricated acceptance. Invalid payloads receive `invalid-envelope` as an ordinary operation refusal
+without closing the otherwise valid channel or changing the latch. Envelope/direction/auth rules
+remain unchanged.
+
+The request is stateless: no count, timestamp, unset/clear command, retained producer value or
+reconnect replay. A successful response acknowledges acceptance into the current connector's
+in-memory latch, not durable delivery. Existing same-request deduplication still applies.
+
+The connector alone owns `state.unread = {count, important}`. Initially `{count: 0, important: false}`;
+each valid signal sets count to 1 and latches importance (`oldImportant || important`) until reset.
+Opening the Fishball view posts `{}` once to `/api/fishball/connector/attention/read`, clearing both
+fields. Detach/channel loss also clears both, with stale-owner callbacks fenced out. Neither reset
+feeds back to the instance, and iframe reload/ordinary state updates do not repeatedly clear it.
+The sidebar fish reuses the existing green dot; only important attention enables its existing
+animation. There is no attention timer. The frame may show the same 0/1 latch, not a message count.
+
+The local X8 API is asynchronous `attention.signal(pluginId, {important})`; it sends intent, not
+producer unread state. Unsupported/disconnected calls report refusal; they cannot claim acceptance,
+register an unread owner, return an unset disposer or replay a saved signal on reconnect.
+
 ## 5. Events (connector → instance)
 
 | Event | Payload |
@@ -460,7 +528,8 @@ The bytes are fetched with `attachment.read`.
 
 ### 5.1 Approval descriptor
 
-The descriptor is used by `approval.list` and `approval.request`:
+The descriptor is used by `approval.list` and `approval.request`. The shape below is the legacy
+default; negotiated timer-free validation (§3.2.1) removes `expiresAt` entirely:
 
 `{approvalId, offerId, kind, prompt, choices[], expiresAt, title, at, toolName, callId, reason,
 quotes[], arguments?, argumentsStatus?, questions?}`
@@ -634,3 +703,5 @@ The sibling modules `card-record.js` (`CARD_RECORD`), `inbox-markers.js` (`QUEST
 | --- | --- | --- |
 | 1.0 | 2026-11-06 | K1: the frozen v1 contract, corrected by K1b. |
 | 1.1 | 2026-11-07 | K2 (design D30, U4): the connector frames `ui.chat` / `ui.settings` with a `lang` parameter (`zh` or `en`) from the main DSH's language, replacing a `lang` the path has and keeping its other parameters and fragment, and reloads the page when the language changes (§1.2). New export `UI_LANG`. No frame, operation, capability, descriptor or service change; 1.0 instances attach unchanged (§2). |
+
+| 1.2 | 2026-11-09 | D1 explicit `interaction.timerfree` semantic negotiation and strict context-dependent descriptors, legacy control-only fallback; D2 inert retained settings; D3 optional stateless `attention.signal` and connector-owned page-open/detach-reset latch. Envelope v2 and public service unchanged. |

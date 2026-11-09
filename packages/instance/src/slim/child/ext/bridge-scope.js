@@ -1,5 +1,5 @@
 /** X12 is a local restriction over the retained authenticated bridge, not a transport. */
-import { ContractError, ERROR } from '../../contract.js'
+import { ContractError, ERROR, OPERATIONS } from '../../contract.js'
 
 const SCOPE = Object.freeze({
   invalidPlugin: 'fishball bridge scope: a plugin id is required',
@@ -20,11 +20,15 @@ export function createBridgeScope(client) {
     if (!Array.isArray(operations)) throw new TypeError(SCOPE.invalidOperations)
     // Copy before checking: changing the caller's list must never widen a live handle.
     const allowed = new Set(operations)
-    const required = new Set(client.requiredCapabilities)
+    const required = new Set([...client.requiredCapabilities, ...(client.allowedOptionalCapabilities ?? [])].filter((operation) => Object.hasOwn(OPERATIONS, operation)))
     for (const operation of allowed) {
       if (!required.has(operation)) throw new ContractError(ERROR.forbidden)
     }
     return Object.freeze({
+      supports(operation) {
+        if (!allowed.has(operation)) throw new ContractError(ERROR.forbidden)
+        return client.supports(operation)
+      },
       async request(operation, payload) {
         // Refuse before invoking any bridge method, even while detached. The ordinary
         // request path still owns validation, X19, reservation, timeout and transport.

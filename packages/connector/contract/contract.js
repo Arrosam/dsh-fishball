@@ -51,7 +51,10 @@ export const OPERATION = Object.freeze({
   attachmentRead: 'attachment.read',
   attachmentPut: 'attachment.put',
   inboxPush: 'inbox.push',
+  attentionSignal: 'attention.signal',
 })
+
+export const SEMANTIC_CAPABILITY = Object.freeze({ interactionTimerfree: 'interaction.timerfree' })
 
 const spec = (direction, sessionScoped) => Object.freeze({ direction, sessionScoped })
 
@@ -61,6 +64,7 @@ const spec = (direction, sessionScoped) => Object.freeze({ direction, sessionSco
  * a cross-session or instance-scoped operation carries a null envelope sessionId.
  */
 export const OPERATIONS = Object.freeze({
+  [OPERATION.attentionSignal]: spec(DIRECTION.childToMain, false),
   [OPERATION.sessionList]: spec(DIRECTION.childToMain, false),
   [OPERATION.sessionStart]: spec(DIRECTION.childToMain, false),
   [OPERATION.sessionMessage]: spec(DIRECTION.childToMain, true),
@@ -434,16 +438,17 @@ const APPROVAL_DESCRIPTOR_KEYS = Object.freeze([
 ])
 const APPROVAL_DESCRIPTOR_OPTIONAL = Object.freeze(['arguments', 'argumentsStatus'])
 
-function approvalDescriptor(value) {
+function approvalDescriptor(value, context = {}) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail()
   const questioned = value.kind === APPROVAL_KIND.question
-  exact(value, questioned ? [...APPROVAL_DESCRIPTOR_KEYS, 'questions'] : APPROVAL_DESCRIPTOR_KEYS, APPROVAL_DESCRIPTOR_OPTIONAL)
+  const keys = context.interactionTimerfree === true ? APPROVAL_DESCRIPTOR_KEYS.filter((key) => key !== 'expiresAt') : APPROVAL_DESCRIPTOR_KEYS
+  exact(value, questioned ? [...keys, 'questions'] : keys, APPROVAL_DESCRIPTOR_OPTIONAL)
   text(value.approvalId)
   text(value.offerId)
   member(value.kind, Object.values(APPROVAL_KIND))
   text(value.prompt)
   uniqueStrings(value.choices)
-  natural(value.expiresAt)
+  if (context.interactionTimerfree !== true) natural(value.expiresAt)
   chars(value.title, LIMITS.titleChars)
   natural(value.at)
   text(value.toolName)
@@ -567,7 +572,7 @@ function capabilities(values) { uniqueStrings(values, ERROR.capability) }
 
 /** A required capability must be an operation this side knows; an unknown required one is refused. */
 function knownCapabilities(values) {
-  for (const capability of values) member(capability, Object.keys(OPERATIONS), ERROR.capability)
+  for (const capability of values) member(capability, [...Object.keys(OPERATIONS), ...Object.values(SEMANTIC_CAPABILITY)], ERROR.capability)
 }
 
 /** The one operation every instance must serve: the connector's only way to deliver to it. */
@@ -754,9 +759,9 @@ function requestApprovalList(payload) {
   text(payload.sessionId)
 }
 
-function responseApprovalList(payload) {
+function responseApprovalList(payload, context) {
   exact(payload, ['approvals'])
-  arrayOf(payload.approvals, approvalDescriptor)
+  arrayOf(payload.approvals, (approval) => approvalDescriptor(approval, context))
   uniqueBy(payload.approvals, (approval) => approval.approvalId)
 }
 
@@ -1038,6 +1043,13 @@ function responseHandshake(payload) {
   text(payload.hostInstanceId)
 }
 
+function requestAttentionSignal(payload) {
+  exact(payload, ['important'])
+  boolean(payload.important)
+}
+
+function responseAttentionSignal(payload) { trueFlag(payload, 'accepted') }
+
 /** Every request, response and event validator, addressable by wire name. */
 export const VALIDATORS = Object.freeze({
   [ENVELOPE.type.request]: Object.freeze({
@@ -1064,6 +1076,7 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.attachmentRead]: requestAttachmentRead,
     [OPERATION.attachmentPut]: requestAttachmentPut,
     [OPERATION.inboxPush]: requestInboxPush,
+    [OPERATION.attentionSignal]: requestAttentionSignal,
   }),
   [ENVELOPE.type.response]: Object.freeze({
     [ENVELOPE.handshake]: responseHandshake,
@@ -1089,6 +1102,7 @@ export const VALIDATORS = Object.freeze({
     [OPERATION.attachmentRead]: responseAttachmentRead,
     [OPERATION.attachmentPut]: responseAttachmentPut,
     [OPERATION.inboxPush]: responseInboxPush,
+    [OPERATION.attentionSignal]: responseAttentionSignal,
   }),
   [ENVELOPE.type.event]: Object.freeze({
     [EVENT.approvalRequest]: approvalDescriptor,
@@ -1114,8 +1128,8 @@ function validatePayload(kind, operation, payload, context) {
  *   the first rule the payload breaks (invalid-envelope, limit-exceeded or an operation code).
  */
 export function validateRequest(operation, payload, context = {}) { return validatePayload(ENVELOPE.type.request, operation, payload, context) }
-export function validateResponse(operation, payload) { return validatePayload(ENVELOPE.type.response, operation, payload) }
-export function validateEvent(operation, payload) { return validatePayload(ENVELOPE.type.event, operation, payload) }
+export function validateResponse(operation, payload, context = {}) { return validatePayload(ENVELOPE.type.response, operation, payload, context) }
+export function validateEvent(operation, payload, context = {}) { return validatePayload(ENVELOPE.type.event, operation, payload, context) }
 
 function sourceSide(direction) { return direction === DIRECTION.childToMain ? SIDE.child : SIDE.main }
 function targetSide(direction) { return direction === DIRECTION.childToMain ? SIDE.main : SIDE.child }
@@ -1135,10 +1149,10 @@ function validateHandshakeEnvelope(envelope) {
   return envelope
 }
 
-function validateEventEnvelope(envelope) {
+function validateEventEnvelope(envelope, context) {
   if (!EVENTS.includes(envelope.operation)) fail(ERROR.operation)
   text(envelope.sessionId)
-  validateEvent(envelope.operation, envelope.payload)
+  validateEvent(envelope.operation, envelope.payload, context)
   return envelope
 }
 
@@ -1195,7 +1209,7 @@ export function validateEnvelope(envelope, options = {}) {
   member(envelope.type, Object.values(ENVELOPE.type))
   if (envelope.type === ENVELOPE.type.event) {
     if (receivingSide !== undefined && targetSide(EVENT_DIRECTION) !== receivingSide) fail(ERROR.forbidden)
-    return validateEventEnvelope(envelope)
+    return validateEventEnvelope(envelope, options)
   }
   if (envelope.operation === ENVELOPE.handshake) return validateHandshakeEnvelope(envelope)
   // A missing or empty name is a broken frame, not a newer peer's operation.
@@ -1204,6 +1218,8 @@ export function validateEnvelope(envelope, options = {}) {
   const operation = OPERATIONS[envelope.operation]
   if (envelope.type === ENVELOPE.type.request) {
     if (receivingSide !== undefined && targetSide(operation.direction) !== receivingSide) fail(ERROR.forbidden)
+    // Attention payload refusals stay on-channel only for a correctly scoped envelope.
+    if (envelope.operation === OPERATION.attentionSignal && envelope.sessionId !== null) fail()
     requestPayload(envelope, now)
     if (operation.sessionScoped) {
       text(envelope.sessionId)
@@ -1217,7 +1233,7 @@ export function validateEnvelope(envelope, options = {}) {
     errorPayload(envelope.payload)
     return envelope
   }
-  validateResponse(envelope.operation, envelope.payload)
+  validateResponse(envelope.operation, envelope.payload, options)
   if (operation.sessionScoped) text(envelope.sessionId)
   else if (envelope.sessionId !== null) fail()
   return envelope
@@ -1245,13 +1261,13 @@ function frameBytes(operation, type) {
  * @returns {string} the JSON text, at most the operation's frame bound.
  * @throws {ContractError} validateEnvelope's codes, or limit-exceeded for an oversized frame.
  */
-export function encodeEnvelope(envelope, expectedHostId) {
-  validateEnvelope(envelope, { expectedHostId })
+export function encodeEnvelope(envelope, expectedHostId, context = {}) {
+  validateEnvelope(envelope, { ...context, expectedHostId })
   let encoded
   try { encoded = JSON.stringify(envelope) } catch { fail() }
   if (Buffer.byteLength(encoded, 'utf8') > frameBytes(envelope.operation, envelope.type)) fail(ERROR.limit)
   // Getters and toJSON must not smuggle a shape past the validated one.
-  decodeEnvelope(encoded, { expectedHostId })
+  decodeEnvelope(encoded, { ...context, expectedHostId })
   return encoded
 }
 
@@ -1286,7 +1302,7 @@ export function decodeEnvelope(encoded, options = {}) {
  * 1.1 (K2) adds only UI_LANG below, a browser-side addition with no frame or descriptor change,
  * so a 1.0 instance still attaches (negotiateContract checks the id and the major only).
  */
-export const CONNECTOR_CONTRACT = Object.freeze({ id: 'fishball-connector', major: 1, minor: 1 })
+export const CONNECTOR_CONTRACT = Object.freeze({ id: 'fishball-connector', major: 1, minor: 2 })
 export const CONNECTOR_SERVICE = 'fishballConnector'
 
 /**

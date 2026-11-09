@@ -1,6 +1,6 @@
 /**
  * The connector's limits take effect live, read at their next use (DESIGN §16 "Today's constants", "Revision 11's new
- * limits"; contract §0, §8, §9; slim conn-OQ-20), on the H-STUB harness. The connector form keeps the 15 fields its own
+ * limits"; contract §0, §8, §9; slim conn-OQ-20), on the H-STUB harness. The connector form keeps the 14 active fields its own
  * code reads (state.limits; support/constants.mjs LIMITS, LIMITS_R11, LIMITS_R11B, as test/config.test.mjs checks), and
  * an instance has no operation that reads them (contract §0), so each one is shown where the connector applies it: in a
  * contract reply or frame, in a managed session's own tool result, or in the connector's store. Each case goes default
@@ -18,12 +18,12 @@
  * | L60    | BVA/ST (maxMessageBytes 65536 → 100 → 65536) | §16, §5b | message_fishball of 100 bytes ok, 101 bytes too-large; back at the default 101 bytes ok |
  * | L61    | ST (maxActiveWatches 50 → active+1 → 50) | §16, contract §6 WATCH_ERROR | one more watch is accepted, the next is watchError limit-reached; back at the default it is accepted |
  * | L62    | ST (maxPendingApprovals 8 → 1 → 8) | §16, §7a | with one request offered, a second session's request goes to its stock prompt at once and is not offered; back at the default it is offered |
- * | L63    | ST (approvalAnswerSeconds 120 → 2 → 120) | §16, contract §5.1 expiresAt | the offer's expiresAt − at is 2000 ms and the unanswered request reaches the stock prompt after about 2 s; back at the default 120000 ms |
+ * | L63    | ST (stored approvalAnswerSeconds 120 → 2 → 120) | contract §3.2.2 | stored values reload without deadlines; the former 2-second boundary causes no prompt/audit; explicit rejection still settles |
  * | L64    | ST (argumentExcerptBytes 8192 → 10 → 8192) | §16, contract §5.1 | the descriptor's arguments are cut to ≤ 10 bytes with argumentsStatus truncated and allow is refused arguments-incomplete; back at the default the arguments are complete and whole |
  * | L65    | ST (auditEntriesKept 500 → 1 → 500) | §16 (audit lists) | after one more decision at 1, one audit record is kept; back at the default the next decision is kept beside it |
  * | L66    | BVA/ST (maxQueuedInputs 200 → 1 → 200, no instance) | §16, contract §9 | at 1 the first message_fishball is queued, the second refused queue-full; back at 200 the next is queued; after the attach both queued items arrive |
  * | L67    | ST (userMessagesListed 20 → 2 → 20, userMessageExcerptChars 1000 → 5 → 1000) | §16, §7a.2 | list_user_messages returns every message (≤ 20), then the 2 newest with excerpts of ≤ 5 characters (prefixes), then all whole again |
- * | L59    | ST (no restart) | §16 "applied without a restart" | the instance stayed attached through every change: the same attachment, never closed by the connector, attachCount unchanged, status live |
+ * | L59    | ST (no restart) | §16 "applied without a restart" | active changes do not reattach/close the instance; L63 explicitly reloads inert raw storage and resets this comparison baseline |
  *
  * Retired:
  * - L53 (intakeRowsShown), L54 (outboxShown), L58 (approvalsShown): the field is removed from the connector form with no reader left (slim conn-OQ-20).
@@ -32,15 +32,15 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { ARGUMENTS_STATUS, DECISION, ERROR, EVENT, RISK, WATCH_ERROR, WATCH_MODE, WATCH_STATUS } from 'fishball-connector/contract'
-import { ASK_REASON, ELLIPSIS, LIMITS, LIMITS_R11, LIMITS_R11B, LIST_USER_MESSAGES, OUTCOME, P5_CODE } from './support/constants.mjs'
+import { ASK_REASON, ELLIPSIS, LEGACY_INTERACTION, LIMITS, LIMITS_R11, LIMITS_R11B, LIST_USER_MESSAGES, OUTCOME, P5_CODE } from './support/constants.mjs'
 import { HOOK, T, askSettled, auditOf, approvalAudit, bytes, settledIdle, stockSeen, turn, untrustedBlock } from './support/expect.mjs'
-import { KIND, OPERATION, STUB, handOver, messageFishball, quietPushes, sessionCall, stopStub, userSession } from './support/instance-stub.mjs'
+import { KIND, OPERATION, STUB, handOver, messageFishball, quietPushes, sessionCall, seedStoredInteractionConfig, stopStub, userSession } from './support/instance-stub.mjs'
 import {
   MANAGED_STUB, answerOffer, askFrom, bootManaged, detachStub, handOverWithNote, offerOf, reattach, scoped, setLimit,
 } from './support/instance-stub-managed.mjs'
-import { until } from './support/util.mjs'
+import { sleep, until } from './support/util.mjs'
 
-/** The defaults of the 15 fields (DESIGN §16). */
+/** The defaults of the 14 active fields (DESIGN §16). */
 const D = Object.fromEntries(Object.entries({ ...LIMITS, ...LIMITS_R11, ...LIMITS_R11B }).map(([k, v]) => [k, v.default]))
 /** The changed values each case sets (small enough to cut what the case produces). */
 const SET = Object.freeze({
@@ -52,12 +52,6 @@ const MAKE = Object.freeze({ turns: 8, answerPad: 1500, forwardAnswerBytes: 500,
 /** session.read asks for far more than any limit, so the connector's limit is what cuts the reply. */
 const READ_ALL = Object.freeze({ maxMessages: 100, maxBytes: 1000000, fewer: 5 })
 const MS_PER_S = 1000
-/** approvalAnswerSeconds' wait: the stock prompt comes after the deadline, give or take this. */
-const DEADLINE_SLACK_MS = 1500
-/** `at` and `expiresAt` are stamped by two clock reads, which may lie a millisecond or two apart. */
-const STAMP_SKEW_MS = 5
-/** The offer's lifetime equals the setting, within the stamp skew. */
-const assertLifetime = (offer, seconds) => assert.ok(Math.abs(offer.expiresAt - offer.at - seconds * MS_PER_S) <= STAMP_SKEW_MS, 'expiresAt − at = ' + (offer.expiresAt - offer.at) + ' ms for ' + seconds + ' s')
 const LONG = { timeout: 120000 }
 /** A cut value without its trailing ellipsis, for the prefix check. */
 const bare = (s) => (s.endsWith(ELLIPSIS) ? s.slice(0, -ELLIPSIS.length) : s)
@@ -256,24 +250,29 @@ describe('the connector limits apply live (H-STUB)', () => {
       await decided(y, { decision: DECISION.reject, risk: RISK.high, reason: MANAGED_STUB.rejectReason })
     })
 
-    it('L63 approvalAnswerSeconds: at 2 the offer expires 2000 ms after it is made and the request reaches the stock prompt then; 120000 ms after', LONG, async () => {
-      await withLimit({ approvalAnswerSeconds: SET.answerSeconds }, async () => {
+    it('L63 stored approvalAnswerSeconds 120 → 2 → 120 stays inert across reloads', LONG, async () => {
+      const beforeReload = await host.state()
+      assert.equal(beforeReload.status, 'live', 'prior active-limit changes kept the connector live')
+      assert.equal(beforeReload.instance.attached, true, 'prior active-limit changes kept the instance attached')
+      assert.equal(beforeReload.instance.attachCount, attachCount, 'prior active-limit changes never reattached')
+      assert.equal((await stub.transportCalls()).closedByConnector, false, 'prior active-limit changes never closed the channel')
+      for (const seconds of [LEGACY_INTERACTION.approvalAnswerSeconds.default, SET.answerSeconds, LEGACY_INTERACTION.approvalAnswerSeconds.default]) {
+        await seedStoredInteractionConfig(booted, { approvalAnswerSeconds: seconds }, { resume: [x, y] })
+        ;({ host, stub } = booted)
+        attachCount = (await host.state()).instance.attachCount
         const text = await askFrom(host, x)
         const offer = await offerOf(booted, text)
-        assertLifetime(offer, SET.answerSeconds)
-        const done = await askSettled(host, text, SET.answerSeconds * MS_PER_S + STUB.waitMs)
-        assert.equal(done?.outcome, OUTCOME.reject, 'the stock prompt answered')
-        const [seen] = await stockSeen(host, text)
-        const waited = seen.at - offer.at
-        assert.ok(waited >= SET.answerSeconds * MS_PER_S - DEADLINE_SLACK_MS && waited <= SET.answerSeconds * MS_PER_S + DEADLINE_SLACK_MS, 'about the deadline: ' + waited + ' ms')
+        assert.equal(Object.hasOwn(offer, 'expiresAt'), false, 'no deadline at any retained value')
+        assert.equal(Object.hasOwn((await host.state()).limits, 'approvalAnswerSeconds'), false, 'retired value is not an active limit')
+        if (seconds === SET.answerSeconds) await sleep(seconds * MS_PER_S + STUB.quietMs)
+        assert.deepEqual(await stockSeen(host, text), [], 'no automatic user transfer')
+        const listed = await scoped(stub, OPERATION.approvalList, { sessionId: x })
+        assert.ok(listed.payload?.approvals?.some((entry) => entry.approvalId === offer.approvalId), 'still offered')
+        assert.equal(auditOf(booted.home, offer.approvalId).some((row) => row.answer === 'timeout'), false, 'no timeout audit')
+        await reject(x, offer)
+        assert.equal((await askSettled(host, text)).outcome, OUTCOME.reject)
         await settledIdle(host, x)
-      })
-      const text = await askFrom(host, x)
-      const offer = await offerOf(booted, text)
-      assertLifetime(offer, D.approvalAnswerSeconds)
-      await reject(x, offer)
-      await askSettled(host, text)
-      await settledIdle(host, x)
+      }
     })
 
     it('L64 argumentExcerptBytes: at 10 the arguments are cut and allow is refused; whole after', LONG, async () => {
