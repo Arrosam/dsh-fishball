@@ -162,3 +162,62 @@ The two supplemental sets are now consolidated with one shared fixture into [sup
 ### Guide registration: initial omission, final exact-name assumption (1)
 
 - Decision Table B11-DT-01 X2 installs board_search in manager setup, never global tools
+
+## User-approved fixture maintenance
+
+Branch `test/v2-board-search-fixtures` starts at
+`19d02d691b3ed609792a268d644e4320b82d1f90`. The baseline and failure labels above
+remain the historical record; this follow-up changes test setup and the explicitly
+approved observation boundaries only, not product code.
+
+- The shared committed-storage fixture serializes history once and writes the board's
+  `archiveBytes` from those exact UTF-8 bytes. It preserves historical snapshot order,
+  blank lines, explicit malformed-history fixtures, and the caller's current projection.
+  The 60 previously blocked cases retain their assertions.
+- All seven SDK-boundary cases are retained: `QUNDEFINED`, `ROOTNULL`, `ROOTARRAY`,
+  `ROOTSTRING`, `ROOTABSENT`, `LNAN`, and `LINFINITY`. None are dropped. They expect
+  the registered SDK definition to reject with `ToolArgsError` / `INVALID_ARGS`,
+  rather than a product `invalid-input` result. Undefined and nonfinite values are
+  exercised only as direct SDK-boundary inputs, not claimed as model JSON inputs.
+  Both installed SDKs validate and reject before invoking the tool body; unchanged
+  fixture files provide an additional no-write observation. No new product handling
+  for these unrepresentable inputs is required.
+- `B11-DT-01` observes manager-scoped section text containing `board_search`, without
+  fixing the section id. Existing global-scope and resume checks remain in place.
+
+Verification uses Node v24.22.2 in workspace-write with an empty environment and a
+non-user HOME, plus resolver-only `FBTEST_DSH_RUNTIME`. The SDK package manifests
+at the authorized installed paths identify `0.2.1-rc.5` and `0.2.2-rc.1`.
+
+```sh
+env -i PATH=/opt/homebrew/bin:/usr/bin:/bin \
+  HOME=/private/tmp/fbtest-b11-no-home TMPDIR=/private/tmp \
+  FBTEST_DSH_RUNTIME="/Users/samuel/Library/Application Support/DSH/data/versions/$VERSION/node_modules" \
+  node --test --test-concurrency=1 --test-timeout=60000 \
+  packages/board/test/instance-ext/b11-search.test.mjs
+```
+
+The connector source link is verified to point only to this worktree's connector
+before the suite runs; no installation, DSH boot, browser, network, credentials,
+`.npmrc`, live profile/home access or push is involved. The search implementation
+is not read or edited.
+
+### Maintenance verification results
+
+| SDK | Tests | Pass | Fail | TODO | Skipped | Cancelled | Exit |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 0.2.1-rc.5 | 102 | 102 | 0 | 0 | 0 | 0 | 0 |
+| 0.2.2-rc.1 | 102 | 102 | 0 | 0 | 0 | 0 | 0 |
+
+All existing labels are retained. There are no remaining product or fixture failures
+to classify. The representative corrupt-history case still passes as a refusal.
+Local ignored execution logs are
+[rc.5 output](<../../.runtime/b11-fixtures/rc5-b11.tap>) and
+[rc.1 output](<../../.runtime/b11-fixtures/rc1-b11.tap>); the suffix denotes evidence,
+not an extra Node reporter option. The commands above use the default reporter.
+Syntax and whitespace checks pass. Product sources are unchanged from the base.
+Independent static review found no issues and confirmed all 102 original labels,
+the 60 unchanged success-case assertions, damaged-history coverage, and the existing
+manager-scope/resume checks. Runtime results above were run by the parent, not
+independently rerun by the reviewer. The earlier UC-04 rendered-context limitation
+still applies; this delivery makes no live-child or rendered-prompt coverage claim.
