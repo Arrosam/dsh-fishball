@@ -319,6 +319,8 @@ export async function apply(ctx, config) {
     },
     // The embed broker reads the child origin and bearer from main-process memory only (§3.2).
     embedAccess: () => owner.embedAccess(),
+    // Server-private delegation preserves the runtime's admission object and generation signal.
+    nativeEmbedAccess: () => owner.nativeEmbedAccess(),
     // T09's approvals and T06's attachments are served by the connector's bridge through the
     // fishballConnector binding; an operation neither supplies answers unsupported-operation (§5.2).
   })
