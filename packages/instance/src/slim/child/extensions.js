@@ -11,7 +11,7 @@ const EXT = Object.freeze({
   pending: 'pending', accepted: 'accepted', queued: 'queued', held: 'held', duplicate: 'duplicate',
   setup: 'manager.registerSetup', notImplemented: 'not-implemented',
   userMessage: 'user/message', inboxSplice: 'agent/inbox/spliced', turnStart: 'turn/start',
-  scopeService: 'fishballBridgeScope', notifyMember: 'manager.notify',
+  scopeService: 'fishballBridgeScope', notifyMember: 'manager.notify', ensureMember: 'manager.ensureSession',
   queueUnavailable: 'durable-queue-unavailable', wakeUnsupported: 'pending-wake-unsupported',
   notReady: 'manager-not-ready', closed: 'closed', running: 'running',
 })
@@ -274,6 +274,23 @@ export function createExtensions(ctx) {
       return accept(live, entry)
     })
   }
+  /**
+   * Create or resume THE manager session without a turn (user decision 7.A, 2026-11-09: the
+   * native page needs a real Session before its composer is editable). It joins the chat's
+   * single activation, so a page open racing notify/handover/send never makes a second
+   * Session. Unlike notify it does not refuse during an unpublished setup: its caller is the
+   * page route, never a setup callback, so joining the in-flight activation cannot deadlock.
+   * Recovery inside activation may still queue previously pending notices; that is existing
+   * work, not a setup turn. Readiness seam (final scope §4 READY, a separate task): page-open
+   * activation must wait for the child's actual appReady signal. That gate belongs here, in
+   * front of chat.activate(), so the route and the page stay unchanged; until READY lands a
+   * call before appReady activates at once, like the existing GET api/chat page activation.
+   * Resolves to the live session id; the route validates it rather than coercing it here.
+   */
+  async function ensureSession() {
+    if (closed) throw new ExtensionError(EXT.closed, EXT.ensureMember)
+    return (await chat.activate()).id
+  }
   async function recover(live) {
     return exclusive(async () => {
       for (const entry of [...notices.values()]) {
@@ -348,7 +365,7 @@ export function createExtensions(ctx) {
   }
   const service = Object.freeze({
     apiVersion: 1,
-    manager: Object.freeze({ sessionId: () => chat?.sessionId(), registerSetup, notify, userTexts }),
+    manager: Object.freeze({ sessionId: () => chat?.sessionId(), ensureSession, registerSetup, notify, userTexts }),
     chat: Object.freeze({}),
     ui: Object.freeze({}),
     bridge(pluginId, operations) {
