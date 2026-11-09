@@ -6,7 +6,9 @@ export const BATCH = Object.freeze({ maxItems: 20 })
 export const SEEN = Object.freeze({ dwellMs: 600, threshold: 0.5 })
 
 export const TOOL = Object.freeze({
-  name: 'notify_user', service: 'fishballInstance', disposeEvent: 'dispose',
+  name: 'notify_user',
+  // Extension points §1: a missing service OR another apiVersion is an "older instance".
+  host: Object.freeze({ service: 'fishballInstance', apiVersion: 1, serviceEvent: 'internal/service' }),
   recordType: 'plugin:fishball-fold-notify/notice', recordVersion: 1,
   sectionName: 'fishball-fold-notify', sectionOrder: 90,
   argumentKeys: Object.freeze(['message', 'important']),

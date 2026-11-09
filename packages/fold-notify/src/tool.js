@@ -26,7 +26,8 @@ function noticeInput(args) {
 /** X0-C owns the real agent fiber, including teardown on disable and setup on resume. */
 export function registerNotify(manager, agentCtx, agent) {
   let active = true
-  agentCtx.on(TOOL.disposeEvent, () => { active = false })
+  // Cordis 4 has no 'dispose' event on either SDK; a fiber effect runs on X2 disposal.
+  agentCtx.effect(() => () => { active = false })
   agentCtx.systemPrompt.section({
     name: TOOL.sectionName, order: TOOL.sectionOrder, text: TEXT.section,
   })
@@ -74,8 +75,8 @@ export function registerNotify(manager, agentCtx, agent) {
   })
 }
 
-export function registerManagerNotify(ctx) {
-  const manager = ctx.get(TOOL.service).manager
-  const dispose = manager.registerSetup(PLUGIN.name, (agentCtx, agent) => registerNotify(manager, agentCtx, agent))
-  ctx.on(TOOL.disposeEvent, dispose)
+/** Registers into one compatible instance; the caller owns the returned dispose. */
+export function registerManagerNotify(instance) {
+  const { manager } = instance
+  return manager.registerSetup(PLUGIN.name, (agentCtx, agent) => registerNotify(manager, agentCtx, agent))
 }
