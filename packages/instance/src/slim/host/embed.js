@@ -7,7 +7,7 @@
  * its own cookies never reach this origin: the broker replaces the framing policy, drops browser
  * credentials, and adds the bearer only on the child side.
  *
- * The route answers the static error card (with a Retry that calls the lifecycle restart service)
+ * The route answers a 404 without Retry when disabled, otherwise a 503 error card with a Retry
  * when the child is not ready, so a stopped child is never redirected to legacy Fishball. SSE is
  * piped as it arrives; Node's pipe pauses the child when the browser stops reading.
  */
@@ -66,6 +66,7 @@ const TYPE = Object.freeze({
 })
 
 const EVENT_STREAM = 'text/event-stream'
+const UNAVAILABLE_TEXT = Object.freeze({ disabled: 'Fishball is disabled.', unavailable: 'Fishball is not available.' })
 
 /**
  * Exact §3.3 response policy: framing by the main origin only, and default-src 'self' so no
@@ -147,19 +148,19 @@ function safeView(service) {
   try {
     const value = service.status()
     return {
-      enabled: value?.enabled === true,
-      state: STATES.has(value?.state) ? value.state : STATUS.failed,
+      enabled: typeof value?.enabled === 'boolean' ? value.enabled : undefined,
+      state: value?.enabled === false ? STATUS.disabled : STATES.has(value?.state) ? value.state : STATUS.failed,
       code: CODES.has(value?.code) ? value.code : null,
     }
   } catch {
-    return { enabled: false, state: STATUS.failed, code: STATUS_CODES.unavailable }
+    return inaccessible()
   }
 }
 
 const ready = (view) => view.enabled && view.state === STATUS.ready
 
-/** A ready status whose access lookup failed is reported as unavailable, never with a token. */
-const inaccessible = () => ({ enabled: false, state: STATUS.failed, code: STATUS_CODES.unavailable })
+/** An access/status failure is unavailable, not proof that the instance was disabled. */
+const inaccessible = () => ({ enabled: undefined, state: STATUS.failed, code: STATUS_CODES.unavailable })
 
 /**
  * One request target below the prefix. Absolute URLs, protocol-relative targets, backslashes, NULs,
@@ -243,7 +244,7 @@ const isEventStream = (headers) => {
 }
 
 /**
- * The 503 card in the language of the request's `lang` (the first one, exactly `zh` for Chinese;
+ * The error card in the language of the request's `lang` (the first one, exactly `zh` for Chinese;
  * ui/i18n.js languageOf). The words are escaped like every other value.
  */
 function errorDocument(view, search) {
@@ -263,10 +264,10 @@ function errorDocument(view, search) {
     '<h1>' + word('unavailable.heading') + '</h1>',
     '<p>' + word('unavailable.state') + ' <code>' + escapeHtml(view.state) + '</code></p>',
     view.code ? '<p>' + word('unavailable.code') + ' <code>' + escapeHtml(view.code) + '</code></p>' : '',
-    '<p>' + word('unavailable.retryHint') + '</p>',
+    view.enabled !== false ? '<p>' + word('unavailable.retryHint') + '</p>' : '',
     // No action attribute: the form retries the current document URL (with its `lang`), so the
     // page carries no path and the answer keeps the language.
-    '<form method="post"><button type="submit">' + word('unavailable.retry') + '</button></form>',
+    view.enabled !== false ? '<form method="post"><button type="submit">' + word('unavailable.retry') + '</button></form>' : '',
     '</main>',
     '</body>',
     '</html>',
@@ -360,18 +361,22 @@ export function createEmbedBroker({ service, connection }) {
     else response.end(payload)
   }
 
-  /** `search` is the request's query, which picks the 503 card's language; '' is English. */
+  /** `search` picks the error card's language; disabled is a 404, not a restartable failure. */
   function unavailable(response, method, view, tail, search = '') {
+    // Disable may have arrived while child access or an upstream response was pending.
+    const current = safeView(service)
+    if (current.enabled === false) view = current
+    const status = view.enabled === false ? HTTP.notFound : HTTP.unavailable
     if (tail === CHILD.document) {
-      reply(response, method, HTTP.unavailable, { 'content-type': TYPE.html }, errorDocument(view, search))
+      reply(response, method, status, { 'content-type': TYPE.html }, errorDocument(view, search))
       return
     }
     if (tail.startsWith(CHILD.api)) {
       const body = JSON.stringify({ ok: false, state: view.state, code: view.code })
-      reply(response, method, HTTP.unavailable, { 'content-type': TYPE.json }, body)
+      reply(response, method, status, { 'content-type': TYPE.json }, body)
       return
     }
-    reply(response, method, HTTP.unavailable, { 'content-type': TYPE.text }, 'Fishball is not available.')
+    reply(response, method, status, { 'content-type': TYPE.text }, view.enabled === false ? UNAVAILABLE_TEXT.disabled : UNAVAILABLE_TEXT.unavailable)
   }
 
   /** An admission refusal: the body is drained and the answer is empty. */
@@ -501,6 +506,8 @@ export function createEmbedBroker({ service, connection }) {
   async function retry(request, response, search) {
     request.resume()
     let view = safeView(service)
+    // A stale error-card form must not restart an instance switched off since it was rendered.
+    if (view.enabled === false) { unavailable(response, request.method, view, CHILD.document, search); return }
     if (ready(view)) { redirect(response, request.method, HTTP.seeOther, DOCUMENT + search); return }
     try { await service.restart() } catch { /* the status below is the safe answer */ }
     view = safeView(service)
@@ -523,6 +530,12 @@ export function createEmbedBroker({ service, connection }) {
     if (rejection !== undefined) { refuse(request, response, rejection); return }
     // Before the 308 too: redirecting would carry the token on to the document address.
     if (target.token) { refuse(request, response, HTTP.badRequest); return }
+    const view = safeView(service)
+    if (view.enabled === false) {
+      request.resume()
+      unavailable(response, request.method, view, target.tail ?? CHILD.document, target.search)
+      return
+    }
     if (target.redirect !== undefined) {
       request.resume()
       redirect(response, request.method, HTTP.movedPermanently, target.redirect)
@@ -533,7 +546,6 @@ export function createEmbedBroker({ service, connection }) {
       await retry(request, response, target.search)
       return
     }
-    const view = safeView(service)
     if (!ready(view)) {
       request.resume()
       unavailable(response, request.method, view, target.tail, target.search)
@@ -541,9 +553,10 @@ export function createEmbedBroker({ service, connection }) {
     }
     let access
     try { access = await service.embedAccess() } catch { access = undefined }
-    if (access === undefined || response.destroyed || response.writableEnded) {
+    const accessView = safeView(service)
+    if (!ready(accessView) || access === undefined || response.destroyed || response.writableEnded) {
       request.resume()
-      unavailable(response, request.method, inaccessible(), target.tail, target.search)
+      unavailable(response, request.method, ready(accessView) ? inaccessible() : accessView, target.tail, target.search)
       return
     }
     let body
@@ -552,6 +565,12 @@ export function createEmbedBroker({ service, connection }) {
       return
     }
     if (response.destroyed || response.writableEnded) return
+    // Access lookup and body reads yield; never forward a request after the switch turns off.
+    const current = safeView(service)
+    if (!ready(current)) {
+      unavailable(response, request.method, current, target.tail, target.search)
+      return
+    }
     forward(request, response, target, access, body)
   }
 

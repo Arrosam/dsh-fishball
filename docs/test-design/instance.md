@@ -11,6 +11,22 @@ written against `3509859`; its case ids are kept, so a case that is gone stays a
 route paths and error codes (observation points), never for an expected result. K1, M1 and C1–C3
 are in `connector.md`; this document refers to them only where an instance case needs them.
 
+> **Release state (v0.1.0-alpha.0).** Where a case below contradicts the released code, the code
+> wins. Notable drift: a startup timeout reports `NATIVE_START_FAILED` (`NATIVE_TIMEOUT` is
+> reserved and unused); the 33rd concurrent embed stream answers **429** (no `Retry-After`), not
+> 503; the embed broker's "not ready" 503 runs before the body-size 413; the child env also sets
+> `USERPROFILE`, `DSH_AGENTS_HOME`, `APPDATA`, `LOCALAPPDATA`, `TMP` and `TEMP`;
+> `INVALID_MAIN_HOME` is an additional reported status code; and Disable reports `stopping` then
+> `disabled` (not `stopped`).
+>
+> **Integrated fixes.** The embed broker answers 404 when the instance is disabled, rather than
+> the 503 used when it is otherwise unavailable. The instance HTTP status and retry responses
+> include `detail`: `null` when absent, or a diagnostic bounded to 2,000 Unicode code points.
+> Typed child exit-code/signal facts are preserved; arbitrary diagnostic text uses only its
+> first line, with credential/home-path masking and removal of control characters other than
+> U+0009 horizontal tab (an embedded tab is kept; leading/trailing whitespace is trimmed). The connector
+> attachment's `status()` still returns only `{state, code}`.
+
 ## 0. The user's decisions of 2026-11-06 (22:31), and what supersedes them
 
 These came after `3509859`. The "Now" column says what later decisions changed; the cases below
@@ -192,7 +208,7 @@ The status after the connector is disabled at runtime is `connector-missing` (in
   and the status route, never in `status()`.
 - I1c-R5: the card shows the state and the safe code (and the launch-failure detail when there is
   one), live within 1 s, and a Retry button while the state is `failed`.
-- I1c-R6: `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code}`;
+- I1c-R6: `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code, detail}`;
   `POST /api/fishball-instance/retry` retries and answers the new status.
 - I1c-R7: the admin relay's `admin.status` answers `connector-missing` as itself, not as `failed`.
 - I1c-AC: the frame's tag equals the card's state within the 1 s poll; the stub-busy run ends
@@ -204,12 +220,12 @@ The status after the connector is disabled at runtime is `connector-missing` (in
 | ID | T | R | Preconditions | Steps | Expected | V | Runs |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | I1c-P-01 | P | R1 | F10; both enabled | Boot; wait for ready. Read F10's journal of the descriptor. | Keys exactly `id`, `name`, `contract`, `transport`, `ui`, `status`, `retry`. `contract.id` `fishball-connector`, `contract.major` 1. `ui` is `{chat: '/fishball/embed/', settings: '/fishball/embed/?view=settings'}` (§0.6, I6-R0). `status` and `retry` are functions. | both | node |
-| I1c-P-02 | P | R2 | F10; F4 holds readiness for 10 s once | Ask F10 to call `status()` while starting, ready, during a restart, and after a SIGKILL. | Each answer is an object with exactly the keys `state` and `code`; `state` is a `STATUS` value; `code` is a `STATUS_CODES` value or `null`. After the kill: `failed` / `NATIVE_CHILD_EXITED`. | both | node |
+| I1c-P-02 | P | R2 | F10; F4 holds readiness for 10 s once | Ask F10 to call `status()` while starting, ready, during a restart, and after a SIGKILL. | Each attachment `status()` answer is an object with exactly the keys `state` and `code` (not the HTTP response, which also includes `detail`); `state` is a `STATUS` value; `code` is a `STATUS_CODES` value or `null`. After the kill: `failed` / `NATIVE_CHILD_EXITED`. | both | node |
 | I1c-P-03 | P | R2 | As I1c-P-02 | Call `status()` 100 times spread over a restart, a kill and a Retry. | No call throws. | both | node |
 | I1c-P-04 | P | R2, R4 | As I1c-P-02, plus the runs of I1c-EP-02 and I1c-EP-03 | Collect every `status()` answer of all runs. | None has `state` `connector-missing`, or `code` `NATIVE_INSTANCE_BUSY` or `NATIVE_CONTRACT_VERSION`. | both | node |
 | I1c-P-05 | P | R3 | F10; attached; then SIGKILL the child | Ask F10 to call `retry()`; await it. | The promise resolves; when it resolves, O1 is `ready`. | both | node |
-| I1c-P-06 | P | R6 | Attached; then the same in `failed` and in `connector-missing` (instance-only boot) | `GET /api/fishball-instance/status` with the main cookie, same-origin. | Each answer is `{state, code}` with the state of that run. The body holds no bearer, no file path under either home, no port of the child, no F3 key (F5 over the bodies). | both | node |
-| I1c-P-07 | P | R6 | O1 `failed` after a SIGKILL | `POST /api/fishball-instance/retry`. | It answers the new status (`{state, code}`, not `failed` / `NATIVE_CHILD_EXITED` any more); then O1 reaches `ready` and O2 `attachCount` +1. | both | node |
+| I1c-P-06 | P | R6 | Attached; then the same in `failed` and in `connector-missing` (instance-only boot) | `GET /api/fishball-instance/status` with the main cookie, same-origin. | Each answer is `{state, code, detail}` with the state of that run; `detail` is a bounded diagnostic string or `null`. The body holds no bearer, no file path under either home, no port of the child, no F3 key (F5 over the bodies). | both | node |
+| I1c-P-07 | P | R6 | O1 `failed` after a SIGKILL | `POST /api/fishball-instance/retry`. | It answers the new status (`{state, code, detail}`, not `failed` / `NATIVE_CHILD_EXITED` any more); then O1 reaches `ready` and O2 `attachCount` +1. | both | node |
 | I1c-P-08 | P | R7 | Instance only (`connector-missing`) | `POST /api/fishball/native/admin/status` (O7). | `{ok:true}` with the state `connector-missing`, not `failed`. | both | node |
 | I1c-P-09 | P | R5 | Attached; F2 on DSH's Plugins page, the instance's card open | SIGKILL the child; watch the card without reloading. Then make a start fail with F4d and press the card's Retry. | Within 1 s of the kill the card shows `failed` and `NATIVE_CHILD_EXITED`, and a Retry button. After the failed start: `failed`, `NATIVE_START_FAILED` and the launch-failure detail. | both | browser |
 | I1c-P-10 | P | R1, AC | F2: the Fishball view and the instance's card in two tabs | Go through ready → SIGKILL → Retry → ready. Every 250 ms compare the frame's tag with the card's state. | In `ready` the frame reads "running"; in `failed` it shows `failed` with the code and its Retry. The two agree within 1 s after each change (the frame's 1 s poll, C3). | both | browser |
@@ -263,7 +279,7 @@ profile (unchanged from today)", §18.1 "Withdrawn"). The existing slim-migratio
 - I2-R7: ~~the preview notice is pre-acknowledged~~ **Withdrawn (D28: no DSH Web UI in the child).**
 - I2-R8: lifecycle: starting → ready → stopping → stopped; a crash → failed → Retry (no automatic
   restart, inst-OQ-09).
-- I2-R9: a startup timeout bounds readiness: 60 s, code `NATIVE_TIMEOUT` (§0.5, inst-OQ-07).
+- I2-R9: a startup timeout bounds readiness: 60 s, reported as `NATIVE_START_FAILED` (`NATIVE_TIMEOUT` is reserved and unused; §0.5, inst-OQ-07).
 - I2-R10: the child's executable is the main process's `process.execPath` (§18.2 I2 R1).
 - I2-R11: the child's arguments start with the main's `process.execArgv`, in order, without
   `--inspect*` and `--debug-port` flags, then the child's own
@@ -327,8 +343,8 @@ bound), DT (main runtime × `ELECTRON_RUN_AS_NODE` in the main).
 | I2-ST-X2 | ST (invalid) | R8 | Failed after a SIGKILL | Do nothing for 30 s. | It stays `failed` with no new child: no automatic restart (inst-OQ-09). | both | node |
 | I2-ST-X3 | ST (invalid) | R8 | Stopping (F4 slows shutdown to 3 s) | Press Retry during stopping. | No second child while the first process is alive. | both | node |
 | I2-BVA-01 | BVA (timeout − 1 s = 59 s) | R9 | F4 delays readiness to 59 s | Boot. | `ready`. | both | node |
-| I2-BVA-02 | BVA (timeout, exact = 60 s) | R9 | F4 delays readiness to 60 s | Boot. | One defined outcome, either `ready` or `failed` / `NATIVE_TIMEOUT`; no orphan; the state stays consistent with O2. Recorded, not asserted (an exact boundary races). | both | node |
-| I2-BVA-03 | BVA (timeout + 1 s = 61 s) | R9 | F4 delays readiness to 61 s | Boot. | `failed` / `NATIVE_TIMEOUT` (inst-OQ-07); the child is stopped; no attach. | both | node |
+| I2-BVA-02 | BVA (timeout, exact = 60 s) | R9 | F4 delays readiness to 60 s | Boot. | One defined outcome, either `ready` or `failed` / `NATIVE_START_FAILED`; no orphan; the state stays consistent with O2. Recorded, not asserted (an exact boundary races). | both | node |
+| I2-BVA-03 | BVA (timeout + 1 s = 61 s) | R9 | F4 delays readiness to 61 s | Boot. | `failed` / `NATIVE_START_FAILED` (inst-OQ-07); the child is stopped; no attach. | both | node |
 | I2-BVA-04 | BVA | ~~R2~~ | — | ~~migrations: 0~~ | **Withdrawn (D28, §18.7).** | — | — |
 | I2-BVA-05 | BVA | ~~R2~~ | — | ~~migrations: 1~~ | **Withdrawn (D28, §18.7).** | — | — |
 | I2-BVA-06 | BVA | ~~R2~~ | — | ~~migrations: 2~~ | **Withdrawn (D28, §18.7).** | — | — |
@@ -1219,8 +1235,8 @@ here. OQ-01..23 are the first version's; their state is from §18.5 and §18.7.
 - **OQ-04** UD2 vs §0.7. **Replaced** (§18.5 note): §0.7 and U1, the form has only `enabled`.
 - **OQ-05** Connector values on I6. **Answered** (inst-OQ-05): none, and no link.
 - **OQ-06** Naming. **Answered** (inst-OQ-06).
-- **OQ-07** Startup timeout. **Answered** (inst-OQ-07): 60 s, `NATIVE_TIMEOUT`; a missing core
-  service or app server `NATIVE_START_FAILED`.
+- **OQ-07** Startup timeout. **Answered** (inst-OQ-07): 60 s, reported as `NATIVE_START_FAILED`
+  (as is a missing core service or app server); `NATIVE_TIMEOUT` is reserved and unused.
 - **OQ-08** Manifest migration. **Moot** (D28, §18.7).
 - **OQ-09** Crash. **Answered** (inst-OQ-09): failed until Retry.
 - **OQ-10** Test fixtures in the child profile. **Answered** for owner bundles (inst-OQ-10); the

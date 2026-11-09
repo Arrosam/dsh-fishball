@@ -1,7 +1,7 @@
 {
   "name": "fishball-source-example",
   "version": "0.1.0",
-  "description": "Example ctx.fishball source: publishes one event per note dropped into its config, to show how a plugin feeds Fishball.",
+  "description": "Read-only Fishball connector example using the public contract to report the currently attached instance.",
   "license": "MIT",
   "type": "module",
   "main": "./index.js",
@@ -15,7 +15,7 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@deepseek-ai/schemastery": "*"
+    "fishball-connector": "0.1.0-alpha.0"
   },
   "dsh": {
     "bundle": {

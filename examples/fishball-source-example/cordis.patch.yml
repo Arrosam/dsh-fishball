@@ -1,5 +1,4 @@
-# One host row. Leave the bundle off in the profile and turn it on for Fishball only on
-# Fishball's Plugins page ("Plugins for Fishball"), or enable it for everyone.
+# One read-only example row in the main DSH profile; enable this bundle from Plugins.
 - insert:
     - id: fishball-source-example
       name: 'fishball-source-example'

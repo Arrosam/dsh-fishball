@@ -272,18 +272,19 @@ class NativeRuntime {
       // stderr is piped into a bounded, redacted private log (B6) so a row that fails to mount is
       // diagnosable; stdout stays ignored as before.
       const child = this.spawn(executable, args, { cwd: this.paths.workspace, env, detached: true, stdio: ['ignore', 'ignore', 'pipe', 'pipe'] })
-      captureChildStderr(child.stderr, this.paths, this.limits.maxLogBytes)
+      const stderrLine = captureChildStderr(child.stderr, this.paths, this.limits.maxLogBytes)
       this.child = child
       this.parentPipe = child.stdio[LIFETIME.parentFd]
       this.parentPipe?.on('error', () => {})
       this.parentPipe?.unref()
       this.childIdentity = { hostId: record.hostId, instanceId: record.instanceId, pid: child.pid }
-      let spawnFailed = false
-      child.once('error', () => { spawnFailed = true })
-      child.once('exit', () => {
-        if (this.child === child) this.options.onExit?.()
+      let spawnFailure
+      const exitFailure = () => Object.assign(new NativeRuntimeError('CHILD_EXITED', stderrLine?.() || undefined), { exitCode: child.exitCode, signal: child.signalCode })
+      child.once('error', error => { spawnFailure = new NativeRuntimeError('SPAWN_FAILED', error.message) })
+      child.once('exit', (exitCode, signal) => {
+        if (this.child === child) this.options.onExit?.({ exitCode, signal, message: stderrLine?.() })
       })
-      await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', () => reject(new NativeRuntimeError('SPAWN_FAILED'))) })
+      await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', () => reject(spawnFailure)) })
       child.unref()
       await writePrivate(path.join(directory, RUNTIME.pid), { hostId: this.hostId, instanceId: record.instanceId, pid: child.pid })
       await this.log('START')
@@ -291,7 +292,8 @@ class NativeRuntime {
       let status
       while (Date.now() < deadline) {
         if (signal?.aborted) fail('START_INTERRUPTED')
-        if (spawnFailed || child.exitCode !== null || child.signalCode !== null) fail('CHILD_EXITED')
+        if (spawnFailure) throw spawnFailure
+        if (child.exitCode !== null || child.signalCode !== null) throw exitFailure()
         try { status = await this.authenticateReady(record); break } catch (error) {
           if (RUNTIME.fatalStartupCodes.includes(error.code)) throw error
         }
@@ -301,7 +303,7 @@ class NativeRuntime {
       await this.attach(record)
       await this.log('READY')
       if (signal?.aborted) fail('START_INTERRUPTED')
-      if (child.exitCode !== null || child.signalCode !== null) fail('CHILD_EXITED')
+      if (child.exitCode !== null || child.signalCode !== null) throw exitFailure()
       return this.publicHealth(status)
     } catch (error) {
       await this.log('FAILED').catch(() => {})
