@@ -37,6 +37,7 @@ const BOARD_TOOL = Object.freeze({
   linkKeys: Object.freeze(['to', 'relation']),
   writeArgs: Object.freeze(['cards']),
   boardKind: 'board',
+  eventKind: 'event',
   titleMinChars: 1,
   idSuffixBytes: 3,
   idSuffixEncoding: 'hex',
@@ -160,6 +161,27 @@ async function linkGraph(next, changed, getCard) {
   return graph
 }
 
+/**
+ * §3.1: an `ev:` link is stored with the manager session id, as `{to, relation, session}`. The
+ * model sends only `{to, relation}` (parseItem refuses any other key); `session` is the
+ * authenticated manager id that passed the caller check of this call. A link the item restates
+ * keeps the provenance it was stored with, including NONE: a legacy link stored without
+ * `session` stays without it, because the session that created it is unknown and must not be
+ * attributed to the current manager. Only a link not already on the card gets `session`.
+ * Non-`ev:` links are stored as sent.
+ * B10 CONFLICT (unresolved, no export here): board design §6 exports cards "without the manager
+ * session id", while U19 exports the complete archive.jsonl, which now holds `session`. B10 must
+ * not ship until that is reconciled; this storage does not broaden any export.
+ */
+function withProvenance(links, previousLinks, session) {
+  if (links === undefined) return undefined
+  return links.map(link => {
+    if (parseRef(link.to)?.kind !== BOARD_TOOL.eventKind) return link
+    const kept = previousLinks?.find(old => old?.to === link.to && old?.relation === link.relation)
+    return kept ? { ...link, ...(Object.hasOwn(kept, 'session') ? { session: kept.session } : {}) } : { ...link, session }
+  })
+}
+
 /** Run one staging step; a coded refusal becomes that item's error instead of ending the call. */
 async function stage(item, step) {
   if (item.error) return
@@ -180,9 +202,11 @@ async function stage(item, step) {
  * A refused item contributes nothing; the graph keeps its current card. Any refusal throws
  * before the store writes, so an invalid call never mutates the board or the archive.
  */
-function planWrite(items, now) {
+function planWrite(items, now, session) {
   return async ({ cards, getCard }) => {
     const at = now()
+    const stamped = (changes, previous) => changes.links === undefined ? changes
+      : { ...changes, links: withProvenance(changes.links, previous?.links, session) }
     const board = new Map(cards.map(card => [card.id, card]))
     const resolved = new Map()
     const openTitles = new Set()
@@ -199,10 +223,10 @@ function planWrite(items, now) {
           }
         }
         const card = previous
-          ? unchangedOr(previous, transitionCard(previous, item.changes, at))
+          ? unchangedOr(previous, transitionCard(previous, stamped(item.changes, previous), at))
           : transitionCard(undefined, {
             id: await mintId(at, async id => board.has(id) || resolved.has(id) || Boolean(await getCard(id))),
-            ...BOARD_TOOL.createDefaults(), ...item.changes,
+            ...BOARD_TOOL.createDefaults(), ...stamped(item.changes),
           }, at)
         // Title uniqueness is an item condition (decision table 1). An open board card that no
         // item names is refused card-missing, so comparing with earlier items is complete.
@@ -277,13 +301,16 @@ const ITEM_SCHEMA = Object.freeze({
  * @returns {object[]} registry-ready definitions for `agentCtx.tools.register`.
  */
 export function createBoardTools({ openStore, sessionId, now = Date.now }) {
-  const isManager = exec => {
+  // Returns the manager id the caller was authenticated as, or undefined.
+  const authenticated = exec => {
     const manager = sessionId()
     return typeof manager === 'string' && manager !== '' && String(exec?.agent?.session?.id) === manager
+      ? manager : undefined
   }
   const guarded = work => async (args, exec) => {
-    if (!isManager(exec)) return refused(REFUSAL.notManager)
-    try { return await work(args) } catch (error) { return failure(error) }
+    const manager = authenticated(exec)
+    if (manager === undefined) return refused(REFUSAL.notManager)
+    try { return await work(args, manager) } catch (error) { return failure(error) }
   }
   return [
     defineTool({
@@ -294,10 +321,10 @@ export function createBoardTools({ openStore, sessionId, now = Date.now }) {
         schema: JSON_OUTPUT,
         render: (args, value) => value.counts ? [{ type: 'text', text: TEXT.written(value.counts) }] : renderJson(args, value),
       },
-      execute: guarded(async args => {
+      execute: guarded(async (args, manager) => {
         const items = parseWrite(args)
         // B3 projects with its own clock read; index.js injects the same `now` into both.
-        const result = await openStore().transact(planWrite(items, now))
+        const result = await openStore().transact(planWrite(items, now, manager))
         return {
           cards: result.cards.map(({ id, title, status }) => ({ id, title, status })),
           counts: counts(result.cards),
