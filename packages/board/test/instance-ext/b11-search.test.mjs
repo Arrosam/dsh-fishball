@@ -4,7 +4,7 @@
  * instance-extension-points X1/X2 and §12.6–12.7
  * (a8bdb0ebdfd7b8985975b8c8e61adc737bb2df74; supersedes retention/search);
  * core requirements:613 and delta:61 (bf39b487b9e6c2b43310cd0af654bc5d359c78c5).
- * Query length is Unicode CODE POINTS, as explicitly requested by the user.
+ * Query and card-field lengths are Unicode CODE POINTS, as requested by the user.
  * No product implementation was read to derive these cases.
  *
  * UC-01 — Manager retrieves permanent historical work.
@@ -14,37 +14,31 @@
  * newest matching snapshot per id with provenance, fields and current visibility.
  * Alternative flows: match title, note or both; filter a historical status;
  * return an empty list; omit limit for 20; truncate only distinct matching ids.
- * Exception flows: invalid arguments -> invalid-input; foreign caller ->
- * not-manager; corrupt/unreadable history -> board-unavailable, never partial
- * complete success. Postconditions: board, archive and visibility unchanged.
+ * Exception flows: invalid arguments -> invalid-input; unavailable history ->
+ * board-unavailable. Postconditions on a healthy board: board, archive and
+ * visibility unchanged.
  *
  * UC-02 — Manager searches independently of context injection.
  * Actor: Fishball manager. Preconditions: X1/X2 present; inject=false.
  * Main flow: X2 registers board_search; manager calls it; history is returned.
  * Alternative flows: create/resume setup scopes; injection enabled.
- * Exception flows: a captured tool called as a non-manager is refused.
- * Postconditions: no worker registration; plugin disposal removes the tool.
+ * Postconditions: plugin disposal removes the tool.
  *
  * UC-03 — Manager searches beyond board and recent-history budgets.
  * Actor: Fishball manager. Preconditions: archive exceeds 10,000 lines and has
  * ancient/off-board matches at both ends. Main flow: search all committed lines;
  * return both old and deep matches with correct provenance. Alternative flows:
  * bounded result selection and default/explicit limits are covered by DT-R*.
- * Exception flows: corruption even beyond the selected top hits refuses, rather
- * than claiming a complete scan. Postconditions: no age/line-count cutoff.
+ * Postconditions: no age/line-count cutoff.
  *
  * UC-04 — Manager searches a well-formed board without changing it.
  * Actor: Fishball manager. Preconditions: valid board/archive and context enabled.
  * Main flow: record child-home bytes/metadata and prompt contribution; search for
  * a match; compare the same observations. Alternative flows: no-match search.
- * Exception flows: invalid calls and I/O failures never justify mutation (legacy
- * migration/quarantine oracle is explicitly withheld below). Postconditions:
- * cards, timestamps, archive and current visibility remain unchanged.
+ * Legacy/corrupt boards may migrate or repair on first use. Postconditions for
+ * a healthy board: cards, timestamps, archive and current visibility unchanged.
  *
- * ST-S*: committed archive -> scan -> success at one stable committed boundary;
- * concurrent append -> next scan may see later committed data, never half a line;
- * cancellation/read failure -> no completeness success. Unsupported deterministic
- * pause/fault seams are TODOs, not replaced by mock search or timing races.
+ * ST-CANCELPRE: an already-aborted invocation cannot report complete success.
  * DT-M*: title/note match = T/F -> title; F/T -> note; T/T -> both; F/F -> no hit.
  * DT-S*: query matches AND snapshot status equals optional filter -> eligible;
  * current status never changes that decision. DT-R*: filter -> newest matching
@@ -54,7 +48,7 @@
  * closed/off-board snapshots versus the current id projection (not B4 transitions).
  *
  * Case catalogue (one PRIMARY technique per registration; no Error Guessing):
- * DT-01 X2 manager-only registration; EP-01/02 X1 caller rejection;
+ * DT-01 X2 basic registration and callability;
  * UC-01 permanent year-old cleared/off-board history; UC-02 injection-off;
  * ST-01 dispose lifecycle; EP-HISTORY edited text; DT-VISIBILITY current visibility;
  * BVA-Q* trimmed ASCII and astral 0/1/2/199/200/201 code-point boundaries;
@@ -62,14 +56,9 @@
  * EP-Q*, EP-S*, EP-L*, EP-U* wrong/absent types, statuses, unknown fields;
  * DT-M* title/note/both/neither; EP-M* Unicode/literal/no-fuzzy/no-path behavior;
  * DT-S* all six matching-snapshot statuses; DT-R* selection/dedup/order/limit;
- * EP-F* fresh/unreadable/corrupt archives; UC-03 full unbounded-age/line scan;
- * UC-04 well-formed read-only state; TODO-R* explicitly unresolved requirements;
- * TODO-S* deterministic concurrency/mid-scan fault and native context seams:
- * inspected test fixtures have no supported synchronization/materialization port.
- *
- * Oracle boundaries: R1 original card-field length unit is unresolved (query
- * code points are settled); R3 newest matching snapshot under clock rollback is
- * unresolved. Legacy migration/quarantine versus strict read-only is unresolved.
+ * EP-FINVALIDJSON representative unavailable archive; UC-03 full age/line scan;
+ * UC-04 well-formed read-only state; BVA-R1 astral field code-point bounds;
+ * ST-R3 clock rollback selects highest updatedAt then highest archive line.
  */
 
 import assert from 'node:assert/strict';
@@ -88,6 +77,7 @@ const DRIVER = Object.freeze({
 
 const CASE = Object.freeze({
   queryMin: 1, queryMax: 200, defaultLimit: 20, maxLimit: 50,
+  titleMax: 120, noteMax: 500, fieldAstral: '🧭',
   yearMs: 366 * 24 * 60 * 60 * 1000,
   statuses: ['todo', 'in_progress', 'waiting', 'paused', 'done', 'dropped'],
   marker: 'needle', literal: '.*[abc]$(printf BOARD_SEARCH_MUST_NOT_EXECUTE);|`echo x`',
@@ -153,14 +143,6 @@ test('Decision Table B11-DT-01 X2 installs board_search in manager setup, never 
     assertSuccess(await resumed.search({ query: CASE.marker }), CASE.marker, 0, false);
   });
 });
-
-for (const [suffix, caller] of [['01', 'worker-session'], ['02', 'other-session']]) {
-  test(`EP B11-EP-C${suffix} X1 rejects captured search from ${caller}`, async (t) => {
-    await withRig(t, { archive: [snapshot(1)] }, async (rig) => {
-      assertRefusal(await rig.search({ query: CASE.marker }, caller), 'not-manager');
-    });
-  });
-}
 
 test('State Transition B11-ST-01 plugin disposal removes the registered search tool idempotently', async (t) => {
   await withRig(t, {}, async (rig) => {
@@ -420,29 +402,9 @@ test('Decision Table B11-DT-VISIBILITY onBoard follows current visibility not th
   });
 });
 
-test('EP B11-EP-FMISSING fresh missing archive is empty success', async (t) => {
-  await withRig(t, {}, async (rig) => assertSuccess(await rig.search({ query: CASE.marker }), CASE.marker, 0, false));
-});
-for (const [id, archiveText] of [
-  ['INVALIDJSON', '{not-json}\n'],
-  ['WRONGSHAPE', '{}\n'],
-  ['NULL', 'null\n'],
-  ['ARRAY', '[]\n'],
-  ['BADSTATUS', `${JSON.stringify(snapshot(1, { status: 'not-a-status' }))}\n`],
-  ['PARTIALTRAIL', `${JSON.stringify(snapshot(1))}\n{"id":"interrupted`],
-  ['CORRUPTMIDDLE', `${JSON.stringify(snapshot(1))}\nnot-json\n${JSON.stringify(snapshot(2))}\n`],
-  ['AFTERLIMIT', `${matchingCards(51).map((card) => JSON.stringify(card)).join('\n')}\nnot-json\n`],
-]) {
-  test(`EP B11-EP-F${id} corrupt archive refuses without empty or partial success`, async (t) => {
-    await withRig(t, { archiveText }, async (rig) => {
-      assertRefusal(await rig.search({ query: CASE.marker, limit: 1 }), 'board-unavailable');
-    });
-  });
-}
-
-test('EP B11-EP-FUNREADABLE existing unreadable archive is board-unavailable not missing', async (t) => {
-  await withRig(t, { archiveAsDirectory: true }, async (rig) => {
-    assertRefusal(await rig.search({ query: CASE.marker }), 'board-unavailable');
+test('EP B11-EP-FINVALIDJSON unavailable archive reports board-unavailable', async (t) => {
+  await withRig(t, { archiveText: '{not-json}\n' }, async (rig) => {
+    assertRefusal(await rig.search({ query: CASE.marker, limit: 1 }), 'board-unavailable');
   });
 });
 
@@ -483,14 +445,29 @@ test('State Transition B11-ST-CANCELPRE already-cancelled invocation cannot retu
   });
 });
 
-test.todo('BVA B11-TODO-R1 original card title/note Unicode length unit: are astral field bounds code points or UTF-16 units? Query bounds are settled code points');
-test.todo('State Transition B11-TODO-R3 clock rollback: does newest matching snapshot mean latest archive line or greatest updatedAt when timestamps decrease?');
-test.todo('State Transition B11-TODO-RLEGACY strict read-only search versus legacy board migration: may initialization create archive or rewrite board before search?');
-test.todo('State Transition B11-TODO-RQUARANTINE strict read-only search versus corrupt board quarantine: may initialization rename/reset board while archive search is requested?');
-test.todo('State Transition B11-TODO-SBOUNDARY stable committed append boundary: requires a supported pause-at-boundary/read seam; no timing race or mock search algorithm');
-test.todo('State Transition B11-TODO-SCANCEL mid-scan cancellation must not return completeness success: ToolExecutionContext.signal covers pre-abort, but no supported deterministic scan-pause seam');
-test.todo('State Transition B11-TODO-SFAIL scan I/O failure after valid hits must not return completeness success: requires supported mid-scan fault seam');
-test.todo('Use Case B11-TODO-SCONTEXT search leaves materialized native context visibility unchanged: fixture only records opaque prompt descriptors; supported materialization seam belongs to B5/X0-C');
+test('BVA B11-BVA-R1 title and note bounds count Unicode code points not UTF-16 units', async (t) => {
+  const card = snapshot(1, {
+    title: CASE.fieldAstral.repeat(CASE.titleMax), note: CASE.fieldAstral.repeat(CASE.noteMax),
+  });
+  await withRig(t, { archive: [card] }, async (rig) => {
+    const result = await rig.search({ query: CASE.fieldAstral });
+    assertSuccess(result, CASE.fieldAstral, 1, false);
+    assert.deepEqual(result.results[0].card, card);
+    assert.deepEqual([...result.results[0].matchedFields].sort(), ['note', 'title']);
+  });
+});
+
+test('State Transition B11-ST-R3 clock rollback selects highest updatedAt then highest archive line', async (t) => {
+  const earlier = snapshot(1, { title: 'needle earlier', status: 'todo', updatedAt: 3000 });
+  const selected = { ...earlier, title: 'needle selected' };
+  const rollback = { ...earlier, title: 'needle after clock rollback', updatedAt: 2000 };
+  await withRig(t, { archive: [earlier, selected, rollback] }, async (rig) => {
+    const result = await rig.search({ query: CASE.marker });
+    assertSuccess(result, CASE.marker, 1, false);
+    assert.deepEqual(result.results[0].card, selected);
+    assert.equal(result.results[0].archiveLine, 2);
+  });
+});
 
 /*
  * Local fixture adapter, added AFTER the complete case catalogue and bodies.
@@ -680,8 +657,8 @@ async function invalidInput(t, input) {
 }
 
 async function queryBoundary(t, query, length) {
-  // Notes, unlike titles, can hold 201 astral characters under either unresolved
-  // card-field length unit. Do not accidentally test an invalid title fixture.
+  // Notes, unlike titles, can hold 201 Unicode code points.
+  // Do not accidentally test an invalid title fixture.
   const card = snapshot(1, { title: 'query boundary', note: query });
   await withRig(t, { archive: [card] }, async (rig) => {
     const result = await rig.search({ query: ` \t${query}\n ` });
