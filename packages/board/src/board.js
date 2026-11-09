@@ -11,8 +11,11 @@
  * - `board_write` validates the WHOLE call inside ONE `store.transact` callback and returns the
  *   complete candidate array, or throws before any disk mutation. Clears are omissions from that
  *   array: never `store.clear` followed by `transact`, which would commit a partial call.
- * - Omitted Done/Dropped cards are kept; an omitted open card is refused by the store
- *   (`card-missing`). The store also enforces the card cap (`board-full`) before writing.
+ * - A refused call reports the FIRST item's code (§15 decision table 2): every item's own
+ *   conditions (decision table 1, including title uniqueness and its links) are checked in item
+ *   order. `card-missing` (an omitted open card) is checked here after all item codes; that
+ *   precedence is PENDING. Omitted Done/Dropped cards are kept. The store enforces the card cap
+ *   (`board-full`) last, before writing.
  *
  * B2 owns transitions and link rules, B3 owns persistence, projection and archive lookup.
  * Pending user decisions are marked PENDING; their provisional behaviour fails closed.
@@ -102,13 +105,25 @@ function parseItem(raw) {
   return { id, changes }
 }
 
+/**
+ * Call-level shape is refused at once. Item shape errors are captured, not thrown, so that an
+ * earlier item's state code (which needs the store) still takes precedence (first item code).
+ */
 function parseWrite(args) {
   if (!isRecord(args) || !hasOnly(args, BOARD_TOOL.writeArgs) || !Array.isArray(args.cards)) refuse(REFUSAL.invalidInput)
-  const items = args.cards.map(parseItem)
-  // PENDING confirmation: one card named by two items is ambiguous, so the call is refused.
-  const ids = items.filter(item => item.id !== undefined).map(item => item.id)
-  if (new Set(ids).size !== ids.length) refuse(REFUSAL.invalidInput)
-  return items
+  const seen = new Set()
+  return args.cards.map(raw => {
+    try {
+      const item = parseItem(raw)
+      // PENDING (R4): one card named by two items is ambiguous; the repeat is refused.
+      if (item.id !== undefined && seen.has(item.id)) refuse(REFUSAL.invalidInput)
+      if (item.id !== undefined) seen.add(item.id)
+      return item
+    } catch (error) {
+      if (!error.code) throw error
+      return { error: error.code }
+    }
+  })
 }
 
 // Key order differs between a stored card and a fresh transition, so compare sorted keys.
@@ -155,10 +170,23 @@ function planWrite(items, now) {
     const resolved = new Map()
     const changed = []
     const find = async id => board.get(id) ?? await getCard(id)
+    // Pass 1, in item order: each item's own conditions (shape, id, clear, transition, target,
+    // title uniqueness).
+    const openTitles = new Set()
+    // Title uniqueness is an item condition (decision table 1). Open board cards not named by an
+    // item are refused card-missing below, so comparing with earlier items is complete.
+    const claimTitle = card => {
+      if (!isOpen(card.status)) return
+      if (openTitles.has(card.title)) refuse(REFUSAL.duplicateTitle)
+      openTitles.add(card.title)
+    }
     for (const item of items) {
+      if (item.error) refuse(item.error)
       if (item.id === undefined) {
         const id = await mintId(at, async candidate => board.has(candidate) || resolved.has(candidate) || Boolean(await getCard(candidate)))
         const card = transitionCard(undefined, { id, ...BOARD_TOOL.createDefaults(), ...item.changes }, at)
+        claimTitle(card)
+        item.card = card
         resolved.set(id, card)
         changed.push(card)
         continue
@@ -171,8 +199,11 @@ function planWrite(items, now) {
         continue
       }
       const card = unchangedOr(previous, transitionCard(previous, item.changes, at))
+      claimTitle(card)
+      item.card = card
+      item.changed = card !== previous
       resolved.set(item.id, card)
-      if (card !== previous) changed.push(card)
+      if (item.changed) changed.push(card)
     }
     // Keep the board's order, then new cards and changed archive cards in item order. An unchanged
     // off-board card is not put back, so restating an early-cleared card cannot undo its clear;
@@ -181,17 +212,19 @@ function planWrite(items, now) {
     // leaving it out would silently lose the edit.
     const next = cards.map(card => resolved.has(card.id) ? resolved.get(card.id) : card)
     for (const card of changed) if (!board.has(card.id)) next.push(card)
-    // §3.2: B3 would keep an omitted open card in our candidate, so omission is checked here,
-    // after the items (PENDING: the precedence between item codes and card-missing).
-    if (cards.some(card => isOpen(card.status) && !resolved.has(card.id))) refuse(REFUSAL.cardMissing)
     const candidate = next.filter(Boolean)
-    const openTitles = candidate.filter(card => isOpen(card.status)).map(card => card.title)
-    if (new Set(openTitles).size !== openTitles.length) refuse(REFUSAL.duplicateTitle)
+    // Pass 2, in item order: links need the whole resolved candidate (a later item can add the
+    // reciprocal edge). PENDING: so a later item's pass-1 code wins over an earlier item's
+    // link-invalid; checking links first would need a candidate that a refused item cannot give.
     const graph = await linkGraph(candidate, changed, getCard)
-    for (const card of changed) {
-      const code = validateLinks(card, graph)
+    for (const { card, changed: edited } of items) {
+      if (!card) continue
+      // Only new or edited cards are link-checked; an unchanged card keeps its committed links.
+      const code = (edited ?? true) ? validateLinks(card, graph) : null
       if (code) refuse(code)
     }
+    // §3.2: B3 would keep an omitted open card in this candidate, so omission is refused here.
+    if (cards.some(card => isOpen(card.status) && !resolved.has(card.id))) refuse(REFUSAL.cardMissing)
     return candidate
   }
 }
