@@ -1,5 +1,3 @@
-import { redact } from '../native-runtime/stderr-log.js'
-
 const DETAIL = Object.freeze({
   maxCharacters: 2000,
   redacted: '[redacted]',
@@ -17,8 +15,13 @@ const DETAIL = Object.freeze({
   regexCharacters: /[.*+?^${}()|[\]\\]/g,
   regexEscape: '\\$&',
   newline: /[\r\n]/,
-  // Public diagnostics are stricter than the private stderr log: omit assignments and homes.
-  assignment: /["']?\b([\w.-]+)["']?\s*[:=]\s*(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/g,
+  // Consume escaped characters as pairs so an escaped quote cannot end a credential value.
+  // An unterminated quoted value extends to the end of this already isolated first line.
+  // Look ahead so an ordinary outer assignment cannot swallow a nested credential assignment.
+  assignment: /(?=(["']?\b([\w.-]+)["']?\s*[:=]\s*(?:"(?:\\[^\r\n]|[^"\\\r\n])*(?:"|\\?$)|'(?:\\[^\r\n]|[^'\\\r\n])*(?:'|\\?$)|[^\s,;]+)))/g,
+  authorization: /\b(?:basic|bearer)\s+[^\s"',;]+/gi,
+  // Userinfo ends at the last @ in the authority, not an @ embedded in the password.
+  urlCredentials: /\b[a-z][a-z0-9+.-]*:\/\/[^\s/?#]+@/gi,
   home: /(?:\/(?:Users|home)\/[^\s"'<>]+|\/root(?:\/[^\s"'<>]*)?|[A-Z]:[\\/]Users[\\/][^\s"'<>]+)/gi,
   // Stop at a credential label: schemes and quoted/multi-word values cannot escape masking.
   secret: /\b(?:bearer|api[ _-]?key|token|secret|password|credential|authorization)s?\b.*$/gi,
@@ -26,7 +29,7 @@ const DETAIL = Object.freeze({
 })
 
 /** Normalize delimited, camelCase and acronym names before matching credential components. */
-function isSensitiveEnvironmentName(name) {
+function isSensitiveParameterName(name) {
   const normalized = name.replace(DETAIL.nameAcronymBoundary, DETAIL.nameBoundaryReplacement)
     .replace(DETAIL.nameCamelBoundary, DETAIL.nameBoundaryReplacement).toLowerCase()
     .replace(DETAIL.nameSeparators, DETAIL.nameSeparator)
@@ -39,15 +42,19 @@ export function safeLaunchDetail(value, env = process.env) {
   let text = value.split(DETAIL.newline)[0]
   // Environment membership and value length do not imply secrecy; credential names do.
   const environment = Object.entries(env)
-    .filter(([key, value]) => typeof value === 'string' && value && isSensitiveEnvironmentName(key))
+    .filter(([key, value]) => typeof value === 'string' && value && isSensitiveParameterName(key))
     .sort(([, a], [, b]) => b.length - a.length)
     .map(([, value]) => value.replace(DETAIL.regexCharacters, DETAIL.regexEscape))
   // Discover every private span on the original line: replacing a short credential first could
   // destroy an Authorization label, while replacing a home first could expose an env prefix.
-  const patterns = [DETAIL.secret, DETAIL.home, DETAIL.assignment]
+  const patterns = [DETAIL.secret, DETAIL.home, DETAIL.authorization, DETAIL.urlCredentials]
   if (environment.length) patterns.push(new RegExp(environment.join('|'), 'g'))
+  const assignments = [...text.matchAll(DETAIL.assignment)]
+    .filter(match => isSensitiveParameterName(match[2]))
+    .map(match => ({ start: match.index, end: match.index + match[1].length }))
   const spans = patterns.flatMap(pattern => [...text.matchAll(pattern)]
     .map(match => ({ start: match.index, end: match.index + match[0].length })))
+    .concat(assignments)
     .sort((a, b) => a.start - b.start || b.end - a.end)
   const merged = []
   for (const span of spans) {
@@ -56,13 +63,14 @@ export function safeLaunchDetail(value, env = process.env) {
     else merged.push(span)
   }
   // Emit masks only after collecting overlaps; neither masks nor credential syntax are rescanned.
+  // Do not reuse the private-log redactor: generic opaque runs and ordinary assignments are public.
   let cursor = 0
   const parts = []
   for (const span of merged) {
-    parts.push(redact(text.slice(cursor, span.start)), DETAIL.redacted)
+    parts.push(text.slice(cursor, span.start), DETAIL.redacted)
     cursor = span.end
   }
-  parts.push(redact(text.slice(cursor)))
+  parts.push(text.slice(cursor))
   text = parts.join('').replace(DETAIL.controls, '').trim()
   return Array.from(text || DETAIL.fallback).slice(0, DETAIL.maxCharacters).join('')
 }
