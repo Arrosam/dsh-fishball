@@ -13,6 +13,7 @@
     "dsh": ">=0.2.1-rc.2"
   },
   "scripts": {
-    "test": "node test/run.mjs"
+    "test": "node test/run.mjs",
+    "test:v2": "node test/run-v2.mjs"
   }
 }
