@@ -292,15 +292,8 @@ const ITEM_SCHEMA = Object.freeze({
   },
 })
 
-/**
- * Build the two tool definitions.
- * @param {{openStore: () => object, sessionId: () => string | undefined, now?: () => number}} options
- *   `openStore` returns the row's single B3 store (the caller memoizes it, so all manager setups
- *   share one write queue); `sessionId` is X1; `now` gives epoch milliseconds and must be the
- *   store's clock too.
- * @returns {object[]} registry-ready definitions for `agentCtx.tools.register`.
- */
-export function createBoardTools({ openStore, sessionId, now = Date.now }) {
+/** Shared execution-time authorization and typed failure boundary for board tools. */
+export function createBoardGuard(sessionId) {
   // Returns the manager id the caller was authenticated as, or undefined.
   const authenticated = exec => {
     const manager = sessionId()
@@ -312,6 +305,19 @@ export function createBoardTools({ openStore, sessionId, now = Date.now }) {
     if (manager === undefined) return refused(REFUSAL.notManager)
     try { return await work(args, manager) } catch (error) { return failure(error) }
   }
+  return guarded
+}
+
+/**
+ * Build the two tool definitions.
+ * @param {{openStore: () => object, sessionId: () => string | undefined, now?: () => number}} options
+ *   `openStore` returns the row's single B3 store (the caller memoizes it, so all manager setups
+ *   share one write queue); `sessionId` is X1; `now` gives epoch milliseconds and must be the
+ *   store's clock too.
+ * @returns {object[]} registry-ready definitions for `agentCtx.tools.register`.
+ */
+export function createBoardTools({ openStore, sessionId, now = Date.now }) {
+  const guarded = createBoardGuard(sessionId)
   return [
     defineTool({
       name: BOARD_TOOL.write,
