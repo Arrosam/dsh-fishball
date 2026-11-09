@@ -1,7 +1,7 @@
 import { LOG, NAMESPACE } from './src/constants.js'
 import { createBoardStore } from './src/store.js'
 import { createBoardTools } from './src/board.js'
-import { createBoardSearch } from './src/search.js'
+import { registerBoardSearch } from './src/search.js'
 import { followInstance } from './src/instance.js'
 
 export { Config } from './src/config.js'
@@ -25,9 +25,9 @@ export function apply(ctx) {
   const binding = followInstance(ctx, HOST, (instance) => {
     const sessionId = () => instance.manager.sessionId()
     return instance.manager.registerSetup(NAMESPACE, (agentCtx) => {
-      // Tools registered in the X2 fiber are removed by its disposal. B5 adds guide/context here.
+      // X2 disposal removes tools and search guidance. B5 owns the remaining board guide/context.
       for (const tool of createBoardTools({ openStore, sessionId, now })) agentCtx.tools.register(tool)
-      agentCtx.tools.register(createBoardSearch({ openStore, sessionId }))
+      registerBoardSearch(agentCtx, { openStore, sessionId })
     })
   })
   // Once per load; a later arrival attaches without a further log line. Disabling the row

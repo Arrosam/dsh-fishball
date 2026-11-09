@@ -75,6 +75,13 @@ remain local to the Fishball instance, not a callback-MCP topology.
 accounting, upward rounding, aggregate config validation and the 64,000-token rollover boundary
 before WD-1; [canonical budget rule](<docs/plugins/instance-extension-points.md#28-deterministic-watchdog-token-budget-w0-question-2--a>).
 
+**2026-11-09 board-search acceptance clarification:** R1 counts query and board text field bounds
+in Unicode code points. R3 selects each card's newest matching snapshot by highest `updatedAt`,
+then highest archive line (also the result ordering). First search may use existing legacy migration
+or corrupt-board repair; healthy-board searches remain read-only. The single-session Fishball
+instance needs no additional caller-identity checks; existing guards stay. See the
+[archive-search contract](<docs/plugins/instance-extension-points.md#127-archive-search-contract-q-r--b>).
+
 ## 0. Summary
 
 - **One package, one profile row.** `dsh-fishball` is a single DSH plugin bundle. It is installed like any other plugin, into whichever profile you choose (Q1), and serves the sessions in the same DSH process.
