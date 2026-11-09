@@ -1,0 +1,696 @@
+{
+  "versions": [
+    {
+      "sdk": "0.2.1-rc.5",
+      "counts": {
+        "registered": 83,
+        "pass": 83,
+        "fail": 0,
+        "todo": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "exit": 0,
+      "cases": [
+        {
+          "name": "WD1-NATIVE-native-DEFAULTS: full Schema.resolve supplies the required integer defaults",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8190-growth9981",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8190-growth9982",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8190-growth9983",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8191-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8191-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8191-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8192-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8192-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8192-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8193-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8193-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8193-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8194-growth9987",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8194-growth9988",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8194-growth9989",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-output2048-growth11008",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-output2048-growth11009",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-output2048-growth11010",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-DEFAULTED-CROSS-FIELD: omitted reads/output still participate in validation",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-DEFAULTS: full Schema.resolve supplies the required integer defaults",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8190-growth9981",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8190-growth9982",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8190-growth9983",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8191-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8191-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8191-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8192-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8192-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8192-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8193-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8193-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8193-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8194-growth9987",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8194-growth9988",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8194-growth9989",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-output2048-growth11008",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-output2048-growth11009",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-output2048-growth11010",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-DEFAULTED-CROSS-FIELD: omitted reads/output still participate in validation",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-METADATA: native host declares mandatory services but never gates on the optional instance",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-absent: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-api1: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-older-api0: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-mismatched-api2: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-string-api1: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-missing-api: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-ST-agents: mandatory absence gates activation and native availability drives lifecycle",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-ST-tools: mandatory absence gates activation and native availability drives lifecycle",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-ST-llm: mandatory absence gates activation and native availability drives lifecycle",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-ST-profileContext: mandatory absence gates activation and native availability drives lifecycle",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-ST-OPTIONAL: optional service arrival, upgrade, and disappearance never gate the active skeleton",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-HOST-CONFIG: actual Cordis rejects insufficient full config before row activation",
+          "status": "Pass"
+        }
+      ]
+    },
+    {
+      "sdk": "0.2.2-rc.1",
+      "counts": {
+        "registered": 83,
+        "pass": 83,
+        "fail": 0,
+        "todo": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "exit": 0,
+      "cases": [
+        {
+          "name": "WD1-NATIVE-native-DEFAULTS: full Schema.resolve supplies the required integer defaults",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8190-growth9981",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8190-growth9982",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8190-growth9983",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8191-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8191-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8191-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8192-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8192-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8192-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8193-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8193-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8193-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8194-growth9987",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8194-growth9988",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-read8194-growth9989",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-output2048-growth11008",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-output2048-growth11009",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-BVA-output2048-growth11010",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-DEFAULTED-CROSS-FIELD: omitted reads/output still participate in validation",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-readMaxBytes-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-maxOutputTokens-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-native-EP-turnGrowthTokens-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-DEFAULTS: full Schema.resolve supplies the required integer defaults",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8190-growth9981",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8190-growth9982",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8190-growth9983",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8191-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8191-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8191-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8192-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8192-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8192-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8193-growth9984",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8193-growth9985",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8193-growth9986",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8194-growth9987",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8194-growth9988",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-read8194-growth9989",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-output2048-growth11008",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-output2048-growth11009",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-BVA-output2048-growth11010",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-DEFAULTED-CROSS-FIELD: omitted reads/output still participate in validation",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-readMaxBytes-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-maxOutputTokens-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-fraction",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-numeric-string",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-boolean",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-NaN",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-json-restored-EP-turnGrowthTokens-infinity",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-METADATA: native host declares mandatory services but never gates on the optional instance",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-absent: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-api1: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-older-api0: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-mismatched-api2: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-string-api1: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-missing-api: all mandatory services activate without runtime registrations",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-ST-agents: mandatory absence gates activation and native availability drives lifecycle",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-ST-tools: mandatory absence gates activation and native availability drives lifecycle",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-ST-llm: mandatory absence gates activation and native availability drives lifecycle",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-DT-ST-profileContext: mandatory absence gates activation and native availability drives lifecycle",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-ST-OPTIONAL: optional service arrival, upgrade, and disappearance never gate the active skeleton",
+          "status": "Pass"
+        },
+        {
+          "name": "WD1-NATIVE-HOST-CONFIG: actual Cordis rejects insufficient full config before row activation",
+          "status": "Pass"
+        }
+      ]
+    }
+  ]
+}

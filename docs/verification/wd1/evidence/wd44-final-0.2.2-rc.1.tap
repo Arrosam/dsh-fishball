@@ -1,0 +1,309 @@
+TAP version 13
+# Subtest: WD-1 package and row
+    # Subtest: WD1-EP-V-01 Samuel saves Fishball tokens with a small-context helper — W0: the package is fishball-watchdog 0.1.0-alpha.0 for DSH >=0.2.1-rc.5
+    ok 1 - WD1-EP-V-01 Samuel saves Fishball tokens with a small-context helper — W0: the package is fishball-watchdog 0.1.0-alpha.0 for DSH >=0.2.1-rc.5
+      ---
+      duration_ms: 2.197833
+      type: 'test'
+      ...
+    # Subtest: WD1-EP-V-02 Samuel saves Fishball tokens with a small-context helper — W0: the row exports name, inject, Config and apply
+    ok 2 - WD1-EP-V-02 Samuel saves Fishball tokens with a small-context helper — W0: the row exports name, inject, Config and apply
+      ---
+      duration_ms: 8.199417
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-LOAD-M Samuel saves Fishball tokens with a small-context helper — W0: [formerly WD1-DT-01] the row loads over a stub fishballInstance
+    ok 3 - WD1-UC-LOAD-M Samuel saves Fishball tokens with a small-context helper — W0: [formerly WD1-DT-01] the row loads over a stub fishballInstance
+      ---
+      duration_ms: 0.910667
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-LOAD-A Samuel saves Fishball tokens with a small-context helper — W0: [formerly WD1-DT-02] the row loads without the optional fishballInstance service
+    ok 4 - WD1-UC-LOAD-A Samuel saves Fishball tokens with a small-context helper — W0: [formerly WD1-DT-02] the row loads without the optional fishballInstance service
+      ---
+      duration_ms: 0.707416
+      type: 'test'
+      ...
+    1..4
+ok 1 - WD-1 package and row
+  ---
+  duration_ms: 12.760375
+  type: 'suite'
+  ...
+# Subtest: WD-1 config defaults and bounds (§9, U7/U14/U17)
+    # Subtest: WD1-UC-CONFIG-M Samuel saves Fishball tokens with a small-context helper — W0: [formerly WD1-EP-V-04] remaining settings declare designed defaults; operational audit retention is not decision retention
+    ok 1 - WD1-UC-CONFIG-M Samuel saves Fishball tokens with a small-context helper — W0: [formerly WD1-EP-V-04] remaining settings declare designed defaults; operational audit retention is not decision retention
+      ---
+      duration_ms: 0.869833
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-01 Samuel saves Fishball tokens with a small-context helper — W0: each numeric field schema accepts its bounds and refuses min−1 and max+1 independently of growth cross-field validation
+    ok 2 - WD1-BVA-01 Samuel saves Fishball tokens with a small-context helper — W0: each numeric field schema accepts its bounds and refuses min−1 and max+1 independently of growth cross-field validation
+      ---
+      duration_ms: 1.180459
+      type: 'test'
+      ...
+    # Subtest: WD1-EP-01 Samuel saves Fishball tokens with a small-context helper — W0: no enabled control or approval-time settings remain (U7/U14)
+    ok 3 - WD1-EP-01 Samuel saves Fishball tokens with a small-context helper — W0: no enabled control or approval-time settings remain (U7/U14)
+      ---
+      duration_ms: 0.400541
+      type: 'test'
+      ...
+    1..3
+ok 2 - WD-1 config defaults and bounds (§9, U7/U14/U17)
+  ---
+  duration_ms: 2.653291
+  type: 'suite'
+  ...
+# Subtest: WD1 token-saving helper configuration and deferred bundle journeys
+    # Subtest: WD1-UC-CONFIG-A Samuel saves Fishball tokens with a small-context helper — W0: user chooses supported non-default maxOutputTokens
+    ok 1 - WD1-UC-CONFIG-A Samuel saves Fishball tokens with a small-context helper — W0: user chooses supported non-default maxOutputTokens
+      ---
+      duration_ms: 0.749083
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-CONFIG-E Samuel saves Fishball tokens with a small-context helper — W0: user submits an invalid setting and Config rejects it
+    ok 2 - WD1-UC-CONFIG-E Samuel saves Fishball tokens with a small-context helper — W0: user submits an invalid setting and Config rejects it
+      ---
+      duration_ms: 0.454083
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-BUNDLE-M Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] configured bundle membership is not readiness; enabled-unregistered is effective off, pass sends and route permissions to Fishball regardless of user presence
+    ok 3 - WD1-UC-BUNDLE-M Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] configured bundle membership is not readiness; enabled-unregistered is effective off, pass sends and route permissions to Fishball regardless of user presence # TODO
+      ---
+      duration_ms: 0.075625
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-BUNDLE-A Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S/WD-13] user disable invalidates generation and hands over once without stop/halt/unwatch or erasing briefs
+    ok 4 - WD1-UC-BUNDLE-A Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S/WD-13] user disable invalidates generation and hands over once without stop/halt/unwatch or erasing briefs # TODO
+      ---
+      duration_ms: 0.031291
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-BUNDLE-E Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] enabled failed placement is plugin-gone, immediate effective-off Fishball handover and visible fault even for zero sessions; sends pass, setting unchanged
+    ok 5 - WD1-UC-BUNDLE-E Samuel saves Fishball tokens with a small-context helper — deferred: [X0-B/X0-S] enabled failed placement is plugin-gone, immediate effective-off Fishball handover and visible fault even for zero sessions; sends pass, setting unchanged # TODO
+      ---
+      duration_ms: 0.020334
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-BUNDLE-R Samuel saves Fishball tokens with a small-context helper — deferred: [X0-S/WD-13] model/store/hook checks and persisted dormant briefs precede ready; no automatic resume/reclaim, stale generation cannot set/claim/answer
+    ok 6 - WD1-UC-BUNDLE-R Samuel saves Fishball tokens with a small-context helper — deferred: [X0-S/WD-13] model/store/hook checks and persisted dormant briefs precede ready; no automatic resume/reclaim, stale generation cannot set/claim/answer # TODO
+      ---
+      duration_ms: 0.016959
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-BUNDLE-F Samuel saves Fishball tokens with a small-context helper — deferred: [X0-C/X0-S/WD-13] disposal/reload while enabled has failure endingReason but same immediate Fishball handover, no grace or stop; storage fault opens routes/gate in memory first, one stable retryable notice
+    ok 7 - WD1-UC-BUNDLE-F Samuel saves Fishball tokens with a small-context helper — deferred: [X0-C/X0-S/WD-13] disposal/reload while enabled has failure endingReason but same immediate Fishball handover, no grace or stop; storage fault opens routes/gate in memory first, one stable retryable notice # TODO
+      ---
+      duration_ms: 0.01875
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-QUESTION-M Samuel gets an answer from Fishball without waking the permission helper — deferred: [X0-I/X0-A/WD-10/WD-11/WD-12] active/paused claims never receive independent questions or plan reviews in onCard, decision queue or context
+    ok 8 - WD1-UC-QUESTION-M Samuel gets an answer from Fishball without waking the permission helper — deferred: [X0-I/X0-A/WD-10/WD-11/WD-12] active/paused claims never receive independent questions or plan reviews in onCard, decision queue or context # TODO
+      ---
+      duration_ms: 0.023375
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-QUESTION-A Samuel refines direction separately while Fishball answers — deferred: [X0-A/WD-3/WD-4/WD-6/WD-11/WD-12] refinement failure never withholds/repeats answer; paused/dormant refinement cannot check/resume/claim
+    ok 9 - WD1-UC-QUESTION-A Samuel refines direction separately while Fishball answers — deferred: [X0-A/WD-3/WD-4/WD-6/WD-11/WD-12] refinement failure never withholds/repeats answer; paused/dormant refinement cannot check/resume/claim # TODO
+      ---
+      duration_ms: 0.015875
+      type: 'test'
+      ...
+    1..9
+ok 3 - WD1 token-saving helper configuration and deferred bundle journeys
+  ---
+  duration_ms: 1.635042
+  type: 'suite'
+  ...
+# Subtest: WD1 deterministic budget Config acceptance (§2.8)
+    # Subtest: WD1-BVA-GROWTH-DEFAULT-9984 Samuel saves coherent default budgets — W0: growth 9984 fails required 9985
+    ok 1 - WD1-BVA-GROWTH-DEFAULT-9984 Samuel saves coherent default budgets — W0: growth 9984 fails required 9985
+      ---
+      duration_ms: 1.183042
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-GROWTH-DEFAULT-9985 Samuel saves coherent default budgets — W0: growth 9985 passes required 9985
+    ok 2 - WD1-BVA-GROWTH-DEFAULT-9985 Samuel saves coherent default budgets — W0: growth 9985 passes required 9985
+      ---
+      duration_ms: 0.359583
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-GROWTH-DEFAULT-9986 Samuel saves coherent default budgets — W0: growth 9986 passes required 9985
+    ok 3 - WD1-BVA-GROWTH-DEFAULT-9986 Samuel saves coherent default budgets — W0: growth 9986 passes required 9985
+      ---
+      duration_ms: 0.548542
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-GROWTH-READ-8190 Samuel saves rounded read budgets — W0: each read is 2730 tokens, growth 9981/9982/9983 rejects/accepts/accepts
+    ok 4 - WD1-BVA-GROWTH-READ-8190 Samuel saves rounded read budgets — W0: each read is 2730 tokens, growth 9981/9982/9983 rejects/accepts/accepts
+      ---
+      duration_ms: 0.677917
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-GROWTH-READ-8191 Samuel saves rounded read budgets — W0: each read is 2731 tokens, growth 9984/9985/9986 rejects/accepts/accepts
+    ok 5 - WD1-BVA-GROWTH-READ-8191 Samuel saves rounded read budgets — W0: each read is 2731 tokens, growth 9984/9985/9986 rejects/accepts/accepts
+      ---
+      duration_ms: 0.679958
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-GROWTH-READ-8192 Samuel saves rounded read budgets — W0: each read is 2731 tokens, growth 9984/9985/9986 rejects/accepts/accepts
+    ok 6 - WD1-BVA-GROWTH-READ-8192 Samuel saves rounded read budgets — W0: each read is 2731 tokens, growth 9984/9985/9986 rejects/accepts/accepts
+      ---
+      duration_ms: 0.523166
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-GROWTH-READ-8193 Samuel saves rounded read budgets — W0: each read is 2731 tokens, growth 9984/9985/9986 rejects/accepts/accepts
+    ok 7 - WD1-BVA-GROWTH-READ-8193 Samuel saves rounded read budgets — W0: each read is 2731 tokens, growth 9984/9985/9986 rejects/accepts/accepts
+      ---
+      duration_ms: 1.19025
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-GROWTH-READ-8194 Samuel saves rounded read budgets — W0: each read is 2732 tokens, growth 9987/9988/9989 rejects/accepts/accepts
+    ok 8 - WD1-BVA-GROWTH-READ-8194 Samuel saves rounded read budgets — W0: each read is 2732 tokens, growth 9987/9988/9989 rejects/accepts/accepts
+      ---
+      duration_ms: 0.352708
+      type: 'test'
+      ...
+    # Subtest: WD1-DT-GROWTH-OUTPUT Samuel raises output to 2048 — W0: R1/R2 growth10000/11008 reject, R3/R4 growth11009/11010 pass
+    ok 9 - WD1-DT-GROWTH-OUTPUT Samuel raises output to 2048 — W0: R1/R2 growth10000/11008 reject, R3/R4 growth11009/11010 pass
+      ---
+      duration_ms: 0.361042
+      type: 'test'
+      ...
+    # Subtest: WD1-DT-GROWTH-FIELD-VALID Samuel cannot combine every valid field — W0: R5 read1048576/output256/growth50000 individually pass but full Config needs1049602 and rejects
+    ok 10 - WD1-DT-GROWTH-FIELD-VALID Samuel cannot combine every valid field — W0: R5 read1048576/output256/growth50000 individually pass but full Config needs1049602 and rejects
+      ---
+      duration_ms: 0.336041
+      type: 'test'
+      ...
+    # Subtest: WD1-EP-BUDGET-INTEGER Samuel supplies numeric budget/byte settings — W0: fractions reject independently with otherwise coherent companions
+    ok 11 - WD1-EP-BUDGET-INTEGER Samuel supplies numeric budget/byte settings — W0: fractions reject independently with otherwise coherent companions
+      ---
+      duration_ms: 0.494875
+      type: 'test'
+      ...
+    1..11
+ok 4 - WD1 deterministic budget Config acceptance (§2.8)
+  ---
+  duration_ms: 7.074333
+  type: 'suite'
+  ...
+# Subtest: WD1 fully specified later budget journeys, not W0 runtime evidence
+    # Subtest: WD1-ST-BUDGET-SAVE Samuel corrects a rejected save — [WD-1/WD-12] saved growth10000, reject9984 atomically retaining10000, accept9985; read8192/output1024
+    ok 1 - WD1-ST-BUDGET-SAVE Samuel corrects a rejected save — [WD-1/WD-12] saved growth10000, reject9984 atomically retaining10000, accept9985; read8192/output1024 # TODO
+      ---
+      duration_ms: 0.100041
+      type: 'test'
+      ...
+    # Subtest: WD1-EP-BUDGET-MEASURE Samuel counts canonical UTF8 bytes — [WD-8/WD-10/WD-12] bytes0/1/2/3/4/6/7/9/10 => tokens0/1/1/1/2/2/3/3/4; canonical primitives and objects in story; no provider usage oracle
+    ok 2 - WD1-EP-BUDGET-MEASURE Samuel counts canonical UTF8 bytes — [WD-8/WD-10/WD-12] bytes0/1/2/3/4/6/7/9/10 => tokens0/1/1/1/2/2/3/3/4; canonical primitives and objects in story; no provider usage oracle # TODO
+      ---
+      duration_ms: 0.015625
+      type: 'test'
+      ...
+    # Subtest: WD1-EP-BUDGET-CANONICAL Samuel keeps Unicode evidence intact — [WD-8/WD-10/WD-12] key order canonicalizes to16bytes/6tokens; composed é4bytes vs decomposed e+U0301 5bytes, emoji6bytes; no normalization or UTF16 measurement
+    ok 3 - WD1-EP-BUDGET-CANONICAL Samuel keeps Unicode evidence intact — [WD-8/WD-10/WD-12] key order canonicalizes to16bytes/6tokens; composed é4bytes vs decomposed e+U0301 5bytes, emoji6bytes; no normalization or UTF16 measurement # TODO
+      ---
+      duration_ms: 0.018958
+      type: 'test'
+      ...
+    # Subtest: WD1-UC-BUDGET-CONTEXT-M Samuel pays for one full context — [WD-8/WD-10/WD-12] system/brief/criteria/tools/digest/messages/calls/results/proposed input once; C60000 then63000 atR64000 keeps epoch, not sum123000; provider usage1/999999 irrelevant
+    ok 4 - WD1-UC-BUDGET-CONTEXT-M Samuel pays for one full context — [WD-8/WD-10/WD-12] system/brief/criteria/tools/digest/messages/calls/results/proposed input once; C60000 then63000 atR64000 keeps epoch, not sum123000; provider usage1/999999 irrelevant # TODO
+      ---
+      duration_ms: 0.013375
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-CARD-2303 Samuel submits an intact bounded card — [WD-10/WD-12] canonical complete127byte wrapper plus2176 ASCII bytes =>2303bytes/768tokens fits including all fields, labels and multibyte quotes
+    ok 5 - WD1-BVA-CARD-2303 Samuel submits an intact bounded card — [WD-10/WD-12] canonical complete127byte wrapper plus2176 ASCII bytes =>2303bytes/768tokens fits including all fields, labels and multibyte quotes # TODO
+      ---
+      duration_ms: 0.012458
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-CARD-2304 Samuel submits an exact-limit card — [WD-10/WD-12] same127byte wrapper plus2177 =>2304bytes/768tokens fits inclusive
+    ok 6 - WD1-BVA-CARD-2304 Samuel submits an exact-limit card — [WD-10/WD-12] same127byte wrapper plus2177 =>2304bytes/768tokens fits inclusive # TODO
+      ---
+      duration_ms: 0.014583
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-CARD-2305 Samuel submits an oversized card — [WD-10/WD-12] same127byte wrapper plus2178 =>2305bytes/769tokens; intact Fishball route, zero model calls/truncation/plugin fault
+    ok 7 - WD1-BVA-CARD-2305 Samuel submits an oversized card — [WD-10/WD-12] same127byte wrapper plus2178 =>2305bytes/769tokens; intact Fishball route, zero model calls/truncation/plugin fault # TODO
+      ---
+      duration_ms: 0.012125
+      type: 'test'
+      ...
+    # Subtest: WD1-DT-BUDGET-NONREAD Samuel shares one turn allowance — [WD-8/WD-10/WD-12] complete measured nonread total2304 fits,2305 does not despite independent field validity; no allowance per quote/reply/trigger; card intact to Fishball vs check fails off; read caps include wrappers
+    ok 8 - WD1-DT-BUDGET-NONREAD Samuel shares one turn allowance — [WD-8/WD-10/WD-12] complete measured nonread total2304 fits,2305 does not despite independent field validity; no allowance per quote/reply/trigger; card intact to Fishball vs check fails off; read caps include wrappers # TODO
+      ---
+      duration_ms: 0.011708
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-CONTEXT-MIN Samuel saves a resolvable model budget — [WD-1/WD-8/WD-12] rollover64000/growth10000/output1024 windows27023/27024/27025 =>R15999/16000/16001; reject model-context-too-small/pass/pass, no invented model-window setting
+    ok 9 - WD1-BVA-CONTEXT-MIN Samuel saves a resolvable model budget — [WD-1/WD-8/WD-12] rollover64000/growth10000/output1024 windows27023/27024/27025 =>R15999/16000/16001; reject model-context-too-small/pass/pass, no invented model-window setting # TODO
+      ---
+      duration_ms: 0.012166
+      type: 'test'
+      ...
+    # Subtest: WD1-ST-BUDGET-ROLLOVER Samuel continues after a full turn — [WD-8/WD-12] R64000 largestC63999/64000/64001 keeps/rotates/rotates; finish turn, new epoch before next; rebuiltC1000, no midturn rotation or65536 threshold
+    ok 10 - WD1-ST-BUDGET-ROLLOVER Samuel continues after a full turn — [WD-8/WD-12] R64000 largestC63999/64000/64001 keeps/rotates/rotates; finish turn, new epoch before next; rebuiltC1000, no midturn rotation or65536 threshold # TODO
+      ---
+      duration_ms: 0.011541
+      type: 'test'
+      ...
+    # Subtest: WD1-ST-BUDGET-PREFLIGHT Samuel adds input or revises a brief — [WD-8/WD-12] priorC63000 then proposed nextC63999/64000/64001 keeps/rotates/rotates before dispatch; rebuild once to1000, no boundary skip
+    ok 11 - WD1-ST-BUDGET-PREFLIGHT Samuel adds input or revises a brief — [WD-8/WD-12] priorC63000 then proposed nextC63999/64000/64001 keeps/rotates/rotates before dispatch; rebuild once to1000, no boundary skip # TODO
+      ---
+      duration_ms: 0.012584
+      type: 'test'
+      ...
+    # Subtest: WD1-ST-BUDGET-FRESH Samuel cannot fit a fresh epoch — [WD-8/WD-12] rebuiltC63999 dispatches;64000/64001 atR64000 fail off once, no loop/dispatch/stop, release claims/pass sends/recover dormant, no compacted decisions in digest
+    ok 12 - WD1-ST-BUDGET-FRESH Samuel cannot fit a fresh epoch — [WD-8/WD-12] rebuiltC63999 dispatches;64000/64001 atR64000 fail off once, no loop/dispatch/stop, release claims/pass sends/recover dormant, no compacted decisions in digest # TODO
+      ---
+      duration_ms: 0.013167
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-CONTEXT-TURN Samuel finishes one decision without midturn rotation — [WD-8/WD-10/WD-12] R64000+growth10000 ceiling74000 fits C73999/74000, refuses74001; with initial63999 independent growth10000/10001/10002 means full conjunction pass/fail/fail
+    ok 13 - WD1-BVA-CONTEXT-TURN Samuel finishes one decision without midturn rotation — [WD-8/WD-10/WD-12] R64000+growth10000 ceiling74000 fits C73999/74000, refuses74001; with initial63999 independent growth10000/10001/10002 means full conjunction pass/fail/fail # TODO
+      ---
+      duration_ms: 0.011666
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-BUDGET-GROWTH Samuel bounds measured turn growth — [WD-8/WD-10/WD-12] initialC63000 later72999/73000/73001 =>growth9999/10000/10001 pass/pass/fail off before request; same-turn crossingR64000 does not rotate
+    ok 14 - WD1-BVA-BUDGET-GROWTH Samuel bounds measured turn growth — [WD-8/WD-10/WD-12] initialC63000 later72999/73000/73001 =>growth9999/10000/10001 pass/pass/fail off before request; same-turn crossingR64000 does not rotate # TODO
+      ---
+      duration_ms: 0.011375
+      type: 'test'
+      ...
+    # Subtest: WD1-BVA-BUDGET-OUTPUT Samuel bounds all responses in a turn — [WD-8/WD-10/WD-12] canonical response bytes1535 then1533/1536/1539 separately round512+511/512/513 =>sum1023/1024/1025 pass/pass/fail before request or verdict; discriminator1535+1537bytes =>512+513=1025fails though combined rounding1024; include tool calls
+    ok 15 - WD1-BVA-BUDGET-OUTPUT Samuel bounds all responses in a turn — [WD-8/WD-10/WD-12] canonical response bytes1535 then1533/1536/1539 separately round512+511/512/513 =>sum1023/1024/1025 pass/pass/fail before request or verdict; discriminator1535+1537bytes =>512+513=1025fails though combined rounding1024; include tool calls # TODO
+      ---
+      duration_ms: 0.011625
+      type: 'test'
+      ...
+    # Subtest: WD1-DT-BUDGET-FAILURE Samuel retains Fishball supervision on budget failure — [WD-8/WD-9/WD-10/WD-12/X0-S/WD-13] measurement failure/window unresolved or noninteger/provider context rejection/exceeded check-growth-output allowance fail whole plugin off, release claims/pass sends/recovery dormant, no stop/halt; normal rollover and oversized individual card not faults
+    ok 16 - WD1-DT-BUDGET-FAILURE Samuel retains Fishball supervision on budget failure — [WD-8/WD-9/WD-10/WD-12/X0-S/WD-13] measurement failure/window unresolved or noninteger/provider context rejection/exceeded check-growth-output allowance fail whole plugin off, release claims/pass sends/recovery dormant, no stop/halt; normal rollover and oversized individual card not faults # TODO
+      ---
+      duration_ms: 0.011833
+      type: 'test'
+      ...
+    1..16
+ok 5 - WD1 fully specified later budget journeys, not W0 runtime evidence
+  ---
+  duration_ms: 0.487083
+  type: 'suite'
+  ...
+# Subtest: WD1-UC-APPROVAL-M Samuel relies on the token-saving helper while present or away — deferred: [WD-8/WD-10/K2/PANELS] decide or escalate immediately on decision-turn end, no approval timers/R4 expiresAt budget; user card waits without time limit, resolved cards clear with reached-layer transcript result
+ok 6 - WD1-UC-APPROVAL-M Samuel relies on the token-saving helper while present or away — deferred: [WD-8/WD-10/K2/PANELS] decide or escalate immediately on decision-turn end, no approval timers/R4 expiresAt budget; user card waits without time limit, resolved cards clear with reached-layer transcript result # TODO
+  ---
+  duration_ms: 0.015458
+  type: 'test'
+  ...
+1..6
+# tests 44
+# suites 5
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 24
+# duration_ms 53.582583

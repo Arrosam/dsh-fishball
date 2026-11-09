@@ -1,0 +1,5 @@
+# Package-local footprint only; child bundled placement belongs to X0-B.
+- insert:
+    - id: fishball-watchdog
+      name: 'fishball-watchdog'
+      config: {}
