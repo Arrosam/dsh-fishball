@@ -7,7 +7,6 @@ const DETAIL = Object.freeze({
   exit: 'Child exited with code ',
   signal: 'Child exited with signal ',
   signals: /^SIG[A-Z0-9]+$/,
-  processFact: /^Child exited with (?:code -?\d+|signal SIG[A-Z0-9]+)$/,
   minEnvSubstringCharacters: 4,
   secretEnvKey: /(?:key|token|secret|password|passwd|credential|authorization)/i,
   regexCharacters: /[.*+?^${}()|[\]\\]/g,
@@ -15,7 +14,6 @@ const DETAIL = Object.freeze({
   newline: /[\r\n]/,
   // Public diagnostics are stricter than the private stderr log: omit assignments and homes.
   assignment: /["']?\b([\w.-]+)["']?\s*[:=]\s*(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/g,
-  assignmentMask: '$1=[redacted]',
   home: /(?:\/(?:Users|home)\/[^\s"'<>]+|\/root(?:\/[^\s"'<>]*)?|[A-Z]:[\\/]Users[\\/][^\s"'<>]+)/gi,
   // Stop at a credential label: schemes and quoted/multi-word values cannot escape masking.
   secret: /\b(?:bearer|api[ _-]?key|token|secret|password|credential|authorization)s?\b.*$/gi,
@@ -26,25 +24,63 @@ const DETAIL = Object.freeze({
 export function safeLaunchDetail(value, env = process.env) {
   if (typeof value !== 'string' || !value.trim()) return null
   let text = value.split(DETAIL.newline)[0]
-  // Re-sanitization at the Web boundary must not reinterpret canonical process facts as secrets.
-  if (text.length <= DETAIL.maxCharacters && DETAIL.processFact.test(text)) return text
-  // Ignore tiny ordinary settings (such as worker IDs), but never exempt a named secret by size.
+  // Ordinary short settings are not secrets; credential-named values remain private at any size.
   const environment = Object.entries(env)
     .filter(([key, value]) => typeof value === 'string' && value &&
       (DETAIL.secretEnvKey.test(key) || value.length >= DETAIL.minEnvSubstringCharacters))
     .sort(([, a], [, b]) => b.length - a.length)
     .map(([, value]) => value.replace(DETAIL.regexCharacters, DETAIL.regexEscape))
-  // Match longest values on the original text, before home masking destroys overlapping values.
-  // One pass also prevents a later environment match from corrupting a replacement marker.
-  if (environment.length) text = text.replace(new RegExp(environment.join('|'), 'g'), DETAIL.redacted)
-  text = redact(text.replace(DETAIL.secret, DETAIL.redacted)).replace(DETAIL.home, DETAIL.redacted).replace(DETAIL.assignment, DETAIL.assignmentMask)
-    .replace(DETAIL.controls, '').trim()
+  // Discover every private span on the original line: replacing a short credential first could
+  // destroy an Authorization label, while replacing a home first could expose an env prefix.
+  const patterns = [DETAIL.secret, DETAIL.home, DETAIL.assignment]
+  if (environment.length) patterns.push(new RegExp(environment.join('|'), 'g'))
+  const spans = patterns.flatMap(pattern => [...text.matchAll(pattern)]
+    .map(match => ({ start: match.index, end: match.index + match[0].length })))
+    .sort((a, b) => a.start - b.start || b.end - a.end)
+  const merged = []
+  for (const span of spans) {
+    const previous = merged.at(-1)
+    if (previous && span.start <= previous.end) previous.end = Math.max(previous.end, span.end)
+    else merged.push(span)
+  }
+  // Emit masks only after collecting overlaps; neither masks nor credential syntax are rescanned.
+  let cursor = 0
+  const parts = []
+  for (const span of merged) {
+    parts.push(redact(text.slice(cursor, span.start)), DETAIL.redacted)
+    cursor = span.end
+  }
+  parts.push(redact(text.slice(cursor)))
+  text = parts.join('').replace(DETAIL.controls, '').trim()
   return Array.from(text || DETAIL.fallback).slice(0, DETAIL.maxCharacters).join('')
+}
+
+// Object identity, not matching prose, carries typed evidence across the in-process boundary.
+// Neither raw error objects nor serialized/copied status objects can acquire this provenance.
+const processFacts = new WeakMap()
+
+/** Project internal evidence to the existing public string shape, retaining provenance locally. */
+export function launchStatus(value) {
+  const fact = processFacts.get(value.detail)
+  const status = { ...value, detail: fact ?? value.detail }
+  if (fact !== undefined) processFacts.set(status, fact)
+  return status
+}
+
+/** Only snapshots produced from typed evidence may bypass textual redaction. */
+export function statusLaunchDetail(status) {
+  return processFacts.get(status) ?? safeLaunchDetail(status?.detail)
 }
 
 /** Prefer typed process evidence; arbitrary error messages must pass the public redactor. */
 export function launchDetail(error) {
-  if (Number.isInteger(error?.exitCode)) return DETAIL.exit + error.exitCode
-  if (typeof error?.signal === 'string' && DETAIL.signals.test(error.signal)) return DETAIL.signal + error.signal
+  let fact
+  if (Number.isInteger(error?.exitCode)) fact = DETAIL.exit + error.exitCode
+  else if (typeof error?.signal === 'string' && DETAIL.signals.test(error.signal)) fact = DETAIL.signal + error.signal
+  if (fact !== undefined) {
+    const evidence = Object.freeze({})
+    processFacts.set(evidence, Array.from(fact).slice(0, DETAIL.maxCharacters).join(''))
+    return evidence
+  }
   return safeLaunchDetail(error?.message) ?? DETAIL.fallback
 }

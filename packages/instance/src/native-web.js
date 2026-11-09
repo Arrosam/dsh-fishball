@@ -5,7 +5,7 @@
  * (the instance's Plugins card, client.js) and nothing else.
  */
 import { INSTANCE_CODES, INSTANCE_STATES } from './host/binding.js'
-import { safeLaunchDetail } from './host/launch-detail.js'
+import { statusLaunchDetail } from './host/launch-detail.js'
 import { registerPostRoutes } from './slim/host/fetch-routes.js'
 
 const WEB = Object.freeze({
@@ -30,7 +30,7 @@ function safeStatus(value) {
   return { enabled: value?.enabled === true,
     state: STATES.has(value?.state) ? value.state : WEB.unavailable,
     code: CODES.has(value?.code) ? value.code : null,
-    detail: safeLaunchDetail(value?.detail) }
+    detail: statusLaunchDetail(value) }
 }
 const UNREADABLE = Object.freeze({ enabled: false, state: WEB.unavailable, code: null, detail: null })
 const stateAndCode = ({ state, code, detail }) => ({ state, code, detail })

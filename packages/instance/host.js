@@ -14,7 +14,7 @@ import { CONNECTOR_CONTRACT, ContractError, ERROR, ROUTES } from './src/slim/con
 import { BINDING_STATE, LAUNCH_CODE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
 import { migrateLaunchSettings } from './src/settings-migration.js'
-import { launchDetail } from './src/host/launch-detail.js'
+import { launchDetail, launchStatus } from './src/host/launch-detail.js'
 
 const PLUGIN = Object.freeze({
   // The row id is the plugin's name (design §0.2, D22); the service keeps its name for its callers.
@@ -118,7 +118,7 @@ export async function apply(ctx, config) {
   let unsubscribeProviderSync = () => {}
   /** T16's source side: syncs the main profile's API-key providers into the child's own target. */
   let providerSync
-  const status = () => ({ enabled, state, code, detail })
+  const status = () => launchStatus({ enabled, state, code, detail })
   /** End this row's attachment, if any; a stale detach changes nothing (contract §1.3). */
   const release = () => { connection?.detach(); connection = undefined }
   const set = (next, nextCode = null, nextDetail = null) => { state = next; code = nextCode; detail = nextDetail; return status() }
