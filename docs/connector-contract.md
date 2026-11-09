@@ -509,7 +509,7 @@ attached, or at a detach) is settled there and never offered again.
 | `STATUS` (the `status()` state) | `disabled`, `waiting`, `starting`, `ready`, `stopping`, `stopped`, `failed` |
 | `STATUS_CODES` (the `status()` code) | `NATIVE_START_FAILED`, `NATIVE_STOP_FAILED`, `NATIVE_CHILD_EXITED`, `NATIVE_UNAVAILABLE`, `NATIVE_TIMEOUT` (reserved, unused), `NATIVE_DISABLED` |
 
-Every start failure — a timeout included — reports `NATIVE_START_FAILED`; `NATIVE_TIMEOUT` is reserved and is not currently reported.
+A start failure — a startup timeout included — reports `NATIVE_START_FAILED`, with these exceptions: a child that exits while starting reports `NATIVE_CHILD_EXITED`; the instance's own `INVALID_MAIN_HOME` (non-canonical DSH home) and attach-refusal codes `NATIVE_INSTANCE_BUSY` / `NATIVE_CONTRACT_VERSION` stay on the instance's row and are not `STATUS_CODES`, so an attachment's `status()` would show such an out-of-vocabulary code as `failed` with `NATIVE_UNAVAILABLE`. `NATIVE_TIMEOUT` is reserved and is not currently reported.
 
 ## 7. Errors
 

@@ -12,8 +12,9 @@ Status: black-box test cases written **before** development (TDD, §18 of the de
 > queue bound; the connector form no longer has hourly caps (`messagesPerHour`,
 > `sessionsPerHour`, `wakeupsPerHour`); the C2 migration leaves the old settings record in place;
 > the frame adds the 1.1 `lang` parameter; the limits form and question-mode renderer remain in
-> DSH's form; the bundle-patch row id is `fishball-connector`; and `dsh.client` is an object with
-> six `exports` entries.
+> DSH's form; the bundle-patch row id is `fishball-connector`; the package has six top-level `exports`
+> entries; and `dsh.client` is an object with `platform` (`web`) and an `inject` list of eight
+> DSH client packages (it has no `exports` member).
 
 Sources, in order of precedence:
 1. The user's decisions U1–U4 below (2026-11-06).
@@ -495,13 +496,14 @@ Events:
 
 ### BVA — queue bound `maxQueuedInputs`
 
-The default is 200 and the minimum 1 (DESIGN.md §16: whole numbers ≥ 1; it counts open rows,
-`pending` and `accepted`). The limit is set only in DSH's form (U2, contract §8). Inputs are
-`message_fishball` calls with no instance attached, unless a case says otherwise.
+The default is 200 and the minimum 1 (DESIGN.md §16: whole numbers ≥ 1; it counts open rows).
+The limit is set only in DSH's form (U2, contract §8). Inputs are `message_fishball` calls with
+no instance attached, unless a case says otherwise.
 
-> **Known bug (fix pending in code).** The code currently counts only `pending` rows toward the
-> bound — `INTAKE_STATUS.accepted` is defined but never assigned — so the "`pending` and
-> `accepted`" reading above is the intended behaviour, not what the code does today.
+> **Open rows are `pending` rows.** The intake lifecycle (`INTAKE_STATUS`) is `pending`,
+> `consumed`, `discarded`, `failed`; it has no `accepted` status. An admitted input is stored as
+> `pending` and counts toward the bound until it becomes `consumed`, `discarded` or `failed`. `accepted` is only the
+> admission result (`INTAKE_OUTCOME.accepted`, beside `duplicate`), never a stored row status.
 
 | ID | T | R | Preconditions | Steps | Expected | Ver |
 | --- | --- | --- | --- | --- | --- | --- |
