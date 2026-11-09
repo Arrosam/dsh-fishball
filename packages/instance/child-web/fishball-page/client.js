@@ -10,10 +10,9 @@ window.__ModuleLoader__.load({
       priority: -1, plugins: 'plugins', overlay: 'shell.overlay',
       root: 'data-fishball-page', ready: 'data-fishball-session',
       hidden: 'data-fishball-hidden', navigation: 'fishball-page-navigation',
-      bundles: ['fishball-fold-notify', 'fishball-board', 'fishball-watchdog'],
       // Main-replacement contributions need an explicit reviewed ID; rightbar/composer stay native.
       panels: ['plugins'],
-      detail: '[data-plugin-detail]', button: 'button', title: 'h3',
+      button: 'button',
       main: '[data-slot="main.conversation"]',
       frame: '.pI_x6G_frame', sidebar: '.pI_x6G_sidebarCol',
       settings: '[data-slot="sidebar.settings"]',
@@ -70,23 +69,14 @@ window.__ModuleLoader__.load({
       }
     }
 
-    // Match native localized accessibility labels inside exact owned package details. Never match
-    // an English substring or hide third-party uninstall controls. Native dictionaries can arrive late.
+    // Match the native localized accessibility label, never an English substring. Native
+    // dictionaries can arrive late. V2 ships no bundled plugins (v2-final-scope §1), so no
+    // plugin's Remove control is hidden: every child plugin keeps its native uninstall.
     function mountRemovals(ctx, styles) {
       const marked = new Set()
-      const pluginText = ctx.locale.bind('pluginManager')
       const sidebarText = ctx.locale.bind('sidebar')
       function reconcile() {
         const next = new Set()
-        for (const detail of document.querySelectorAll(PAGE.detail)) {
-          if (!PAGE.bundles.includes(detail.getAttribute('data-plugin-detail'))) continue
-          const title = detail.querySelector(PAGE.title)?.textContent
-          if (!title) continue
-          const label = pluginText('uninstallLabel', { name: title })
-          for (const button of detail.querySelectorAll(PAGE.button)) {
-            if (button.getAttribute('aria-label') === label) next.add(button)
-          }
-        }
         const newSession = sidebarText('session.new.label')
         for (const button of document.querySelectorAll(PAGE.button)) {
           if (button.getAttribute('aria-label') === newSession) next.add(button)
@@ -104,7 +94,7 @@ window.__ModuleLoader__.load({
       }
       const observer = new MutationObserver(reconcile)
       observer.observe(document.body, { subtree: true, childList: true, characterData: true,
-        attributes: true, attributeFilter: ['aria-label', 'data-plugin-detail', 'style', 'data-sidebar-drawer', 'data-sidebar-collapsed'] })
+        attributes: true, attributeFilter: ['aria-label', 'style', 'data-sidebar-drawer', 'data-sidebar-collapsed'] })
       const unsubscribe = ctx.locale.subscribe(reconcile)
       reconcile()
       return () => {
