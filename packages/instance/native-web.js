@@ -1,5 +1,6 @@
 import http from 'node:http'
 import { NATIVE_WEB, nativeAccess, fail } from './src/native-runtime/constants.js'
+import { registerSessionRoute } from './src/native-runtime/session-route.js'
 
 export const name = 'fishball-native-web'
 export const inject = [...NATIVE_WEB.services]
@@ -19,8 +20,9 @@ function probe(url, timeout, cookie) {
   })
 }
 
-/** Private SDK adapter, not an embed broker or a browser-facing service. */
+/** Native SDK adapter: private admission plus the authenticated X1 identity route. */
 export function apply(ctx, config) {
+  registerSessionRoute(ctx)
   let disposed = false
   ctx.effect(() => () => { disposed = true })
   function access() {
