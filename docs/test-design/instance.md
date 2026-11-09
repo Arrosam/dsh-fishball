@@ -19,9 +19,12 @@ are in `connector.md`; this document refers to them only where an instance case 
 > `INVALID_MAIN_HOME` is an additional reported status code; and Disable reports `stopping` then
 > `disabled` (not `stopped`).
 >
-> **Known bugs (fix pending in code — keep the cases' intended behaviour below).** A disabled
-> instance currently answers 503 (the cases expect 404), and the launch-failure `detail` is
-> currently always `null` (the cases expect a diagnostic).
+> **Integrated fixes.** The embed broker answers 404 when the instance is disabled, rather than
+> the 503 used when it is otherwise unavailable. The instance HTTP status and retry responses
+> include `detail`: `null` when absent, or a diagnostic bounded to 2,000 Unicode code points.
+> Typed child exit-code/signal facts are preserved; arbitrary diagnostic text uses only its
+> first line, with credential/home-path masking and control-character removal. The connector
+> attachment's `status()` still returns only `{state, code}`.
 
 ## 0. The user's decisions of 2026-11-06 (22:31), and what supersedes them
 
@@ -204,7 +207,7 @@ The status after the connector is disabled at runtime is `connector-missing` (in
   and the status route, never in `status()`.
 - I1c-R5: the card shows the state and the safe code (and the launch-failure detail when there is
   one), live within 1 s, and a Retry button while the state is `failed`.
-- I1c-R6: `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code}`;
+- I1c-R6: `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code, detail}`;
   `POST /api/fishball-instance/retry` retries and answers the new status.
 - I1c-R7: the admin relay's `admin.status` answers `connector-missing` as itself, not as `failed`.
 - I1c-AC: the frame's tag equals the card's state within the 1 s poll; the stub-busy run ends
@@ -216,12 +219,12 @@ The status after the connector is disabled at runtime is `connector-missing` (in
 | ID | T | R | Preconditions | Steps | Expected | V | Runs |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | I1c-P-01 | P | R1 | F10; both enabled | Boot; wait for ready. Read F10's journal of the descriptor. | Keys exactly `id`, `name`, `contract`, `transport`, `ui`, `status`, `retry`. `contract.id` `fishball-connector`, `contract.major` 1. `ui` is `{chat: '/fishball/embed/', settings: '/fishball/embed/?view=settings'}` (§0.6, I6-R0). `status` and `retry` are functions. | both | node |
-| I1c-P-02 | P | R2 | F10; F4 holds readiness for 10 s once | Ask F10 to call `status()` while starting, ready, during a restart, and after a SIGKILL. | Each answer is an object with exactly the keys `state` and `code`; `state` is a `STATUS` value; `code` is a `STATUS_CODES` value or `null`. After the kill: `failed` / `NATIVE_CHILD_EXITED`. | both | node |
+| I1c-P-02 | P | R2 | F10; F4 holds readiness for 10 s once | Ask F10 to call `status()` while starting, ready, during a restart, and after a SIGKILL. | Each attachment `status()` answer is an object with exactly the keys `state` and `code` (not the HTTP response, which also includes `detail`); `state` is a `STATUS` value; `code` is a `STATUS_CODES` value or `null`. After the kill: `failed` / `NATIVE_CHILD_EXITED`. | both | node |
 | I1c-P-03 | P | R2 | As I1c-P-02 | Call `status()` 100 times spread over a restart, a kill and a Retry. | No call throws. | both | node |
 | I1c-P-04 | P | R2, R4 | As I1c-P-02, plus the runs of I1c-EP-02 and I1c-EP-03 | Collect every `status()` answer of all runs. | None has `state` `connector-missing`, or `code` `NATIVE_INSTANCE_BUSY` or `NATIVE_CONTRACT_VERSION`. | both | node |
 | I1c-P-05 | P | R3 | F10; attached; then SIGKILL the child | Ask F10 to call `retry()`; await it. | The promise resolves; when it resolves, O1 is `ready`. | both | node |
-| I1c-P-06 | P | R6 | Attached; then the same in `failed` and in `connector-missing` (instance-only boot) | `GET /api/fishball-instance/status` with the main cookie, same-origin. | Each answer is `{state, code}` with the state of that run. The body holds no bearer, no file path under either home, no port of the child, no F3 key (F5 over the bodies). | both | node |
-| I1c-P-07 | P | R6 | O1 `failed` after a SIGKILL | `POST /api/fishball-instance/retry`. | It answers the new status (`{state, code}`, not `failed` / `NATIVE_CHILD_EXITED` any more); then O1 reaches `ready` and O2 `attachCount` +1. | both | node |
+| I1c-P-06 | P | R6 | Attached; then the same in `failed` and in `connector-missing` (instance-only boot) | `GET /api/fishball-instance/status` with the main cookie, same-origin. | Each answer is `{state, code, detail}` with the state of that run; `detail` is a bounded diagnostic string or `null`. The body holds no bearer, no file path under either home, no port of the child, no F3 key (F5 over the bodies). | both | node |
+| I1c-P-07 | P | R6 | O1 `failed` after a SIGKILL | `POST /api/fishball-instance/retry`. | It answers the new status (`{state, code, detail}`, not `failed` / `NATIVE_CHILD_EXITED` any more); then O1 reaches `ready` and O2 `attachCount` +1. | both | node |
 | I1c-P-08 | P | R7 | Instance only (`connector-missing`) | `POST /api/fishball/native/admin/status` (O7). | `{ok:true}` with the state `connector-missing`, not `failed`. | both | node |
 | I1c-P-09 | P | R5 | Attached; F2 on DSH's Plugins page, the instance's card open | SIGKILL the child; watch the card without reloading. Then make a start fail with F4d and press the card's Retry. | Within 1 s of the kill the card shows `failed` and `NATIVE_CHILD_EXITED`, and a Retry button. After the failed start: `failed`, `NATIVE_START_FAILED` and the launch-failure detail. | both | browser |
 | I1c-P-10 | P | R1, AC | F2: the Fishball view and the instance's card in two tabs | Go through ready → SIGKILL → Retry → ready. Every 250 ms compare the frame's tag with the card's state. | In `ready` the frame reads "running"; in `failed` it shows `failed` with the code and its Retry. The two agree within 1 s after each change (the frame's 1 s poll, C3). | both | browser |
