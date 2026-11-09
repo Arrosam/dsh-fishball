@@ -7,8 +7,13 @@ const DETAIL = Object.freeze({
   exit: 'Child exited with code ',
   signal: 'Child exited with signal ',
   signals: /^SIG[A-Z0-9]+$/,
-  minEnvSubstringCharacters: 4,
-  secretEnvKey: /(?:key|token|secret|password|passwd|credential|authorization)/i,
+  nameCamelBoundary: /([a-z0-9])([A-Z])/g,
+  nameAcronymBoundary: /([A-Z])([A-Z][a-z])/g,
+  nameBoundaryReplacement: '$1_$2',
+  nameSeparators: /[^a-z0-9]+/g,
+  nameSeparator: '_',
+  // Complete components only; bare KEY / CACHE_KEY are not credential names.
+  secretEnvKey: /(?:^|_)(?:passwords?|passwd|tokens?|secrets?|credentials?|authorization|(?:api|access|private|secret)_?keys?)(?:_|$)/,
   regexCharacters: /[.*+?^${}()|[\]\\]/g,
   regexEscape: '\\$&',
   newline: /[\r\n]/,
@@ -20,14 +25,21 @@ const DETAIL = Object.freeze({
   controls: /[\u0000-\u0008\u000b-\u001f\u007f]/g,
 })
 
+/** Normalize delimited, camelCase and acronym names before matching credential components. */
+function isSensitiveEnvironmentName(name) {
+  const normalized = name.replace(DETAIL.nameAcronymBoundary, DETAIL.nameBoundaryReplacement)
+    .replace(DETAIL.nameCamelBoundary, DETAIL.nameBoundaryReplacement).toLowerCase()
+    .replace(DETAIL.nameSeparators, DETAIL.nameSeparator)
+  return DETAIL.secretEnvKey.test(normalized)
+}
+
 /** Only this bounded, sanitized first line may leave the main process; never publish a stack. */
 export function safeLaunchDetail(value, env = process.env) {
   if (typeof value !== 'string' || !value.trim()) return null
   let text = value.split(DETAIL.newline)[0]
-  // Ordinary short settings are not secrets; credential-named values remain private at any size.
+  // Environment membership and value length do not imply secrecy; credential names do.
   const environment = Object.entries(env)
-    .filter(([key, value]) => typeof value === 'string' && value &&
-      (DETAIL.secretEnvKey.test(key) || value.length >= DETAIL.minEnvSubstringCharacters))
+    .filter(([key, value]) => typeof value === 'string' && value && isSensitiveEnvironmentName(key))
     .sort(([, a], [, b]) => b.length - a.length)
     .map(([, value]) => value.replace(DETAIL.regexCharacters, DETAIL.regexEscape))
   // Discover every private span on the original line: replacing a short credential first could
