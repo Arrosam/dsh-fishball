@@ -3,11 +3,16 @@
  * main profile (support/host.mjs) with the instance row, its owner-only routes, the instance's
  * runtime directory and two real ways to make the child start fail. Values come from the round-2
  * requirements (R2.x, R3), never from the implementation.
+ *
+ * Decision A (2026-11-11, test/v2-r4-core-copy.test.mjs): a private @deepseek-ai copy in the child
+ * profile no longer fails a start, so the planted start failure is now an invalid package.json of a
+ * dependency under the child profile's node_modules, which the preflight still refuses.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { TEST_HOMES } from './constants.mjs'
+import { RUNTIME, TEST_HOMES } from './constants.mjs'
+import { bootHost } from './host.mjs'
 import { until } from './util.mjs'
 
 export const R2 = Object.freeze({
@@ -22,8 +27,10 @@ export const R2 = Object.freeze({
   state: Object.freeze({ ready: 'ready', failed: 'failed' }),
   /** Unchanged contract vocabulary (R2.1). */
   code: Object.freeze({ startFailed: 'NATIVE_START_FAILED' }),
-  /** The specific preflight refusal of a private core-package shadow (R2.1 example, e2e symptom). */
-  shadowCode: 'PREFLIGHT_CORE_SHADOW',
+  /** The specific preflight refusal of an invalid dependency manifest (R2.1 example; decision A, C3). */
+  faultCode: 'PREFLIGHT_MANIFEST',
+  /** The refusal decision A retired (C1): never reported for an @deepseek-ai copy. */
+  retiredCoreShadow: 'PREFLIGHT_CORE_SHADOW',
   lifecycle: Object.freeze({ failed: 'FAILED', stop: 'STOP', ready: 'READY' }),
   /** An UPPER_SNAKE identifier (R2.2's reason; the code part of R2.1's detail). */
   identifier: /^[A-Z][A-Z0-9_]*$/,
@@ -37,10 +44,11 @@ export const R2 = Object.freeze({
   lifecycleFile: 'lifecycle.log',
   launches: 'launches',
   childProfile: Object.freeze(['fishball', 'runtime', 'dsh-home', 'profiles', 'fishball']),
-  /** The planted core identity (a real DSH core package name). */
-  shadowSlot: Object.freeze(['node_modules', '@deepseek-ai', 'schemastery']),
-  shadowManifest: Object.freeze({ name: '@deepseek-ai/schemastery', version: '0.0.0-fbtest-shadow' }),
+  /** The planted start failure: a dependency under the child profile whose package.json is not JSON. */
+  faultSlot: Object.freeze(['node_modules', 'fbtest-invalid-manifest']),
+  faultManifest: '{',
   manifestFile: 'package.json',
+  modules: 'node_modules',
   sameOrigin: Object.freeze({ 'sec-fetch-site': 'same-origin' }),
   seeOther: 303,
   loopback: '127.0.0.1',
@@ -79,15 +87,49 @@ export async function settledStatus(host, states = [R2.state.ready, R2.state.fai
 }
 
 /**
- * Plant the private core-package shadow in the child profile (the reported e2e symptom). The slot
- * is planted after a first ready boot, when the child profile exists, so the real preflight is
+ * Write one package directory under the child profile (`segments` relative to it) whose
+ * package.json is `manifestText`; returns the function that removes it again.
+ */
+export function plantProfilePackage(home, segments, manifestText) {
+  const slot = path.join(childProfileDir(home), ...segments)
+  fs.mkdirSync(slot, { recursive: true })
+  fs.writeFileSync(path.join(slot, R2.manifestFile), manifestText)
+  return () => fs.rmSync(slot, { recursive: true, force: true })
+}
+
+/**
+ * Plant the real start failure: an invalid package.json under the child profile's node_modules.
+ * It is planted after a first ready boot, when the child profile exists, so the real preflight is
  * what refuses it.
  */
-export function plantShadow(home) {
-  const slot = path.join(childProfileDir(home), ...R2.shadowSlot)
-  fs.mkdirSync(slot, { recursive: true })
-  fs.writeFileSync(path.join(slot, R2.manifestFile), JSON.stringify(R2.shadowManifest))
+export const plantInvalidManifest = (home) => plantProfilePackage(home, R2.faultSlot, R2.faultManifest)
+
+/**
+ * Copy a package of the selected SDK installation (`name`, e.g. '@deepseek-ai/schemastery') to
+ * `segments` under the child profile: a real copy, same files and version. Returns the remover.
+ */
+export function copySdkPackage(home, name, segments) {
+  const slot = path.join(childProfileDir(home), ...segments)
+  fs.cpSync(path.join(RUNTIME, name), slot, { recursive: true })
   return () => fs.rmSync(slot, { recursive: true, force: true })
+}
+
+/**
+ * One home's fault sequence: a first ready boot (it creates the child profile; `onFirst` may check
+ * more on it), stop, `fault(home)`, then a second boot that stays up until the case ends.
+ * Returns that host and the fault's restore function.
+ */
+export async function bootAfterFault(t, home, fault, onFirst = () => {}) {
+  const first = await bootHost(home)
+  try {
+    const status = await settledStatus(first)
+    assert.equal(status?.state, R2.state.ready, 'precondition: first boot ready, got ' + JSON.stringify(status))
+    await onFirst(first, status)
+  } finally { await first.stop() }
+  const restore = fault(home)
+  const host = await bootHost(home)
+  t.after(async () => { await host.stop().catch(() => {}) })
+  return { host, restore }
 }
 
 /** Replace the child profile manifest; returns the restore function. */
