@@ -253,11 +253,15 @@ window.__ModuleLoader__.load({
       ctx.effect(() => {
         loader.load()
         // The shared card's dictionaries and styles are registered by this page once they arrive.
-        let disposers = []
+        // Each disposer is kept as soon as its part is mounted: if a later mount throws, the parts
+        // already mounted are still removed by this effect's cleanup instead of outliving the row.
+        const disposers = []
         const unsubscribe = loader.subscribe(() => {
           const { state, shared } = loader.get()
           if (state !== SHARED_STATE.ready || disposers.length > 0) return
-          disposers = [ctx.locale.register(shared.locale, shared.dictionaries), shared.mountStyles(), shared.mountStyle(PANEL.css.id, css)]
+          disposers.push(ctx.locale.register(shared.locale, shared.dictionaries))
+          disposers.push(shared.mountStyles())
+          disposers.push(shared.mountStyle(PANEL.css.id, css))
         })
         return () => { unsubscribe(); disposers.forEach((dispose) => dispose()) }
       }, 'fishball settings: shared card')

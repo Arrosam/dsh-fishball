@@ -526,19 +526,37 @@ window.__ModuleLoader__.load({
      * part-way, the parts already mounted are disposed before the error propagates: cordis then
      * marks the entry failed and its context inactive, and an observer, subscriber or listener
      * left behind would keep reading ctx.locale/ctx.layout and throw "in inactive context" on
-     * every later event (B1). Cordis's iterable effects unwind the same way, but this is a plain
-     * function effect so the page keeps the one-callback effect shape it has always had.
+     * every later event (B1).
+     *
+     * Every disposer runs even when one throws, or the parts after it in the loop would leak the
+     * same way. The error that propagates is the setup's own, so cordis reports the real cause;
+     * on teardown it is the first disposer's. Any other disposer error is rethrown on its own
+     * microtask, which reaches the page's uncaught-error reporting without breaking the
+     * unwinding. Not a cordis iterable effect: its dispose loop (both SDKs) stops at the first
+     * throwing disposer and lets that error replace the setup error.
      */
     function mountAll(setup) {
       const disposers = []
-      const disposeAll = () => { for (const dispose of disposers.splice(0).reverse()) dispose() }
+      const disposeAll = () => {
+        const errors = []
+        for (const dispose of disposers.splice(0).reverse()) {
+          try { dispose() } catch (error) { errors.push(error) }
+        }
+        return errors
+      }
+      const raise = (primary, others) => {
+        for (const error of others) queueMicrotask(() => { throw error })
+        throw primary
+      }
       try {
         setup(dispose => { disposers.push(dispose) })
       } catch (error) {
-        disposeAll()
-        throw error
+        raise(error, disposeAll())
       }
-      return disposeAll
+      return () => {
+        const errors = disposeAll()
+        if (errors.length > 0) raise(errors[0], errors.slice(1))
+      }
     }
 
     // Native conversation rows, composer, header actions and rightbar remain mounted: no
