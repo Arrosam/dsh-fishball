@@ -97,9 +97,14 @@ class Devtools {
     this.socket = socket
     this.next = 0
     this.pending = new Map()
+    this.listeners = new Set()
     socket.addEventListener('message', (message) => {
       const data = JSON.parse(String(message.data))
-      if (data.id === undefined) return
+      // Protocol events (no id) go to onEvent listeners; replies settle their request.
+      if (data.id === undefined) {
+        for (const listener of this.listeners) listener(data)
+        return
+      }
       const waiter = this.pending.get(data.id)
       this.pending.delete(data.id)
       if (data.error) waiter?.reject(new Error(data.error.message))
@@ -112,6 +117,11 @@ class Devtools {
       this.pending.set(id, { resolve, reject })
       this.socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }))
     })
+  }
+  /** Subscribe to protocol events ({method, params, sessionId}); returns the unsubscribe. */
+  onEvent(listener) {
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
   }
 }
 
@@ -144,6 +154,45 @@ async function teardown({ socket, proc, servers, dir }) {
 }
 
 /**
+ * Spawn Chromium on a fresh temp profile and connect DevTools. Fills `parts` (proc, dir, socket) as
+ * each piece starts, so the caller's teardown(parts) cleans up whatever did start.
+ */
+async function launchInto(parts, binary) {
+  parts.dir = mkdtempSync(path.join(os.tmpdir(), LITE_ENV.tempPrefix))
+  parts.proc = spawn(binary, ['--no-first-run', '--no-default-browser-check', '--disable-gpu', '--no-sandbox', '--remote-allow-origins=*', '--remote-debugging-port=0', '--user-data-dir=' + parts.dir, 'about:blank'], { stdio: 'ignore' })
+  let spawnError = null
+  parts.proc.once('error', (error) => { spawnError = error })
+  const portFile = path.join(parts.dir, 'DevToolsActivePort')
+  const [port, wsPath] = await until(() => {
+    if (spawnError) throw spawnError
+    if (parts.proc.exitCode !== null || parts.proc.signalCode !== null) throw new Error('Chromium exited during startup (' + (parts.proc.exitCode ?? parts.proc.signalCode) + ')')
+    const lines = existsSync(portFile) ? readFileSync(portFile, 'utf8').trim().split('\n') : []
+    return lines.length === 2 ? lines : null
+  }, LITE_ENV.startBudgetMs, 'Chromium DevTools port')
+  const socket = new WebSocket(`ws://127.0.0.1:${port}${wsPath}`)
+  parts.socket = socket
+  await new Promise((resolve, reject) => { socket.addEventListener('open', resolve, { once: true }); socket.addEventListener('error', () => reject(new Error('DevTools socket failed')), { once: true }) })
+  return new Devtools(socket)
+}
+
+/**
+ * Start a bare headless Chromium (no servers). Returns null when no Chromium binary exists; a
+ * Chromium that cannot start rejects after cleanup. `devtools.onEvent` sees protocol events.
+ */
+export async function launchChromium() {
+  const binary = chromeBinary()
+  if (!binary) return null
+  const parts = { servers: [] }
+  try {
+    const devtools = await launchInto(parts, binary)
+    return { devtools, stop: () => teardown(parts) }
+  } catch (error) {
+    await teardown(parts)
+    throw error
+  }
+}
+
+/**
  * Start the browser and both origins. Returns null when no Chromium binary exists. A Chromium that
  * exists but cannot start rejects after every started part is cleaned up; callers skip with that
  * reason.
@@ -168,21 +217,7 @@ export async function startEnvironment() {
     parts.servers.push(child)
     const main = await serve((req, res) => send(res, 'text/html', '<!doctype html><title>main</title>'))
     parts.servers.push(main)
-    parts.dir = mkdtempSync(path.join(os.tmpdir(), LITE_ENV.tempPrefix))
-    parts.proc = spawn(binary, ['--no-first-run', '--no-default-browser-check', '--disable-gpu', '--no-sandbox', '--remote-allow-origins=*', '--remote-debugging-port=0', '--user-data-dir=' + parts.dir, 'about:blank'], { stdio: 'ignore' })
-    let spawnError = null
-    parts.proc.once('error', (error) => { spawnError = error })
-    const portFile = path.join(parts.dir, 'DevToolsActivePort')
-    const [port, wsPath] = await until(() => {
-      if (spawnError) throw spawnError
-      if (parts.proc.exitCode !== null || parts.proc.signalCode !== null) throw new Error('Chromium exited during startup (' + (parts.proc.exitCode ?? parts.proc.signalCode) + ')')
-      const lines = existsSync(portFile) ? readFileSync(portFile, 'utf8').trim().split('\n') : []
-      return lines.length === 2 ? lines : null
-    }, LITE_ENV.startBudgetMs, 'Chromium DevTools port')
-    const socket = new WebSocket(`ws://127.0.0.1:${port}${wsPath}`)
-    parts.socket = socket
-    await new Promise((resolve, reject) => { socket.addEventListener('open', resolve, { once: true }); socket.addEventListener('error', () => reject(new Error('DevTools socket failed')), { once: true }) })
-    const devtools = new Devtools(socket)
+    const devtools = await launchInto(parts, binary)
     const { userAgent } = await devtools.send('Browser.getVersion')
     const origin = (server) => `http://127.0.0.1:${server.address().port}`
     // A port that was just free and is closed again: a navigation there can never load content.

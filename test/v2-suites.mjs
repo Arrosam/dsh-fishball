@@ -43,6 +43,8 @@ export const V2_SUITES = Object.freeze({
     'test/private-skills/sk-ep.test.mjs',
     'test/private-skills/sk-st.test.mjs',
     'test/private-skills/sk-uc.test.mjs',
+    // CHILD-BOOT: the child page rows in the real SDK web boot and headless Chromium, both SDKs.
+    'test/v2-page-cases/child-boot.test.mjs',
     // Final V2 page/readiness/origin/lite/settings cases (070b88e). Unobservable seams stay TODO.
     'test/v2-page-cases/lite.test.mjs',
     'test/v2-page-cases/page.test.mjs',

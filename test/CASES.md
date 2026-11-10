@@ -2443,3 +2443,18 @@ Hand-check list (not tested here; checked in a sandbox DSH with the fake model, 
 - The welcome card above the "Waiting for you" pile: shows once, not after a reload or a restart, never in another session; × closes it; See recommended plugins opens the settings page with the section in view; hidden under a question panel.
 
 Persona baseline loader (final release run): `support/persona-bold.mjs` `loadBaseline()` now exports the baseline ref's `src/` and `package.json` with `git archive` into a fresh temp folder outside the repo (removed on exit), because the baseline `persona.js` imports `./constants.js` and a lone `data:` URL could not resolve it (PBD-10..15 and R-B2 failed for that reason only). No assertion and no baseline ref changed.
+
+### [v2-page-cases/child-boot.test.mjs](v2-page-cases/child-boot.test.mjs): the Fishball child page in the real SDK web boot (CHILD-BOOT-nn, both SDKs)
+
+Regression for "Failed to load plugins / fishball-page: failed" with `in inactive context` errors. A real SDK `web` profile (profile-boot `runProfile`, [child-boot-host.mjs](v2-page-cases/child-boot-host.mjs)) gets the child-web rows appended by an overlay, loaded from a staged copy of `<FBTEST_PLUGIN_DIR or repo>/packages/instance` (with `client.instance.js` copied as the install does); headless Chromium opens DSH's own URL and records console calls and exceptions. No fake SDK context. Observation window after the boot settles: `BUDGET.observeAfterBootMs` (5 s, harness budget). fishball-settings needs `nativeRuntime`; the fixture row `child-native-runtime-row.mjs` provides an empty one, so its relay stays unattached (not observed here).
+
+| id | technique | requirement | expected result |
+|---|---|---|---|
+| CHILD-BOOT-01 | EP (native rows only) | control | boot mounts (`[data-slot="root"]`), no failure screen, no inactive-context error, no `data-fishball-page` |
+| CHILD-BOOT-02 | EP (all three Fishball rows) | R1 | no `[data-dsh-boot]` "Failed to load plugins", no "did not activate" console error, application mounted |
+| CHILD-BOOT-03 | EP (all three) | R2 | `<html data-fishball-page>`; `nav[aria-label="fishball-page"].fishball-page-navigation` with a "Fishball" button, inside `shell.overlay` |
+| CHILD-BOOT-04 | EP (all three) | R3 | no console error/exception with `in inactive context` or `locale subscriber crashed`, during boot and the window |
+| CHILD-BOOT-05 | BVA (fishball-page alone) | R1–R3 | as 02–04 |
+| CHILD-BOOT-06 | ST setup → failed → disposed | R4 | fixture `fbtest-slot-occupant` takes the page's `shell.overlay` entry id first (native list-slot refusal); precondition: boot names `fishball-page: failed`; then no inactive-context error, no `data-fishball-page`, no page nav |
+
+Fail before the fix (baseline 7d6c9a8, `FBTEST_PLUGIN_DIR` = its `git archive`): 02–06 on both SDKs (06: 6 `locale` inactive-context exceptions after the failed setup). 01 passes on both sides.
