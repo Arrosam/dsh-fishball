@@ -95,8 +95,11 @@ function walk(nodes, visit) {
 /**
  * Load and apply the page. `respond({method, url})` returns {status, body} for each fetch.
  * Returns observation handles: fetch calls, openSession calls, timers, UI queries.
+ * Optional `hooks` let a suite observe or fault the fakes without a second harness:
+ * `beforeScript({sandbox, window, document})` runs before client.js is evaluated (globals the
+ * page may read at load time), `beforeApply(ctx, env)` right before `plugin.apply(ctx)`.
  */
-export function loadPage({ respond }) {
+export function loadPage({ respond, hooks = {} }) {
   const fetches = []
   const opened = []
   const timers = { setTimeout: 0, setInterval: 0 }
@@ -168,6 +171,7 @@ export function loadPage({ respond }) {
   }
   sandbox.globalThis = sandbox
   window.document = document
+  hooks.beforeScript?.({ sandbox, window, document })
   vm.createContext(sandbox)
   vm.runInContext(readFileSync(CLIENT, 'utf8'), sandbox, { filename: CLIENT })
   if (!registered || typeof registered.factory !== 'function') throw new Error('client.js did not register through __ModuleLoader__.load')
@@ -210,6 +214,7 @@ export function loadPage({ respond }) {
     },
     shortcuts: neutralShortcuts(),
   }
+  hooks.beforeApply?.(ctx, { sandbox, window, document })
   plugin.apply(ctx)
 
   function view() { return slots.flatMap((entry) => render({ type: entry.Component, props: {}, children: [] })) }

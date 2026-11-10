@@ -28,9 +28,14 @@ export const V2_SUITES = Object.freeze({
     // (review-opus/v2-manager-ws-2).
     'packages/instance/test/instance-ext/manager-attach-background.test.mjs',
     'packages/instance/test/instance-ext/manager-workspace.test.mjs',
+    // PB/PBS: page setup unwinding and teardown (R-A1–R-A3), settings shared-card mount ownership (R-B1/R-B2);
+    // review-opus/v2-page-boot findings F1/F2.
+    'packages/instance/test/instance-ext/page-boot-unwind.test.mjs',
     // PAGE (7.A page-open ensure) and READY (appReady gate) implementation suites, plan §3 owners.
     'packages/instance/test/instance-ext/page-open-session.test.mjs',
     'packages/instance/test/instance-ext/ready-gate.test.mjs',
+    // PBS: the settings half of the PB pair (shared main-card mounts, R-B1/R-B2).
+    'packages/instance/test/instance-ext/settings-shared-mount.test.mjs',
     'packages/instance/test/instance-ext/x0-c-held-context.test.mjs',
     'packages/instance/test/instance-ext/x0-c.test.mjs',
     'test/instance-ext/x0-i.test.mjs',
