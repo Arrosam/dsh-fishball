@@ -2236,7 +2236,8 @@ A close by the connector itself shows `connection-interrupted` ("连接中断") 
   card and status route, never in `status()` (there is no attachment then). (5) The instance's
   Plugins card shows the state and the safe code (and the launch-failure detail when there is
   one), live within 1 s, and a Retry button while the state is `failed`. (6)
-  `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code}`;
+  `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code, detail}`
+  (`detail` as in inst-OQ-01);
   `POST /api/fishball-instance/retry` retries and answers the new status. (7) The admin relay's
   `admin.status` answers `connector-missing` as itself, not as `failed`.
 - T: P; EP (attach outcome: accepted / `instance-busy` / `contract-version`; state shown: each

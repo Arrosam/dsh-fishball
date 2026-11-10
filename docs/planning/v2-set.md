@@ -79,7 +79,9 @@ Check and add keep the main routes' Origin/Sec-Fetch-Site and body rules (same h
 - **Main host.**
   - `status`, `retry` and `restart` answer the instance's public `{state, code, detail}`; restart is queued like every other start and stop.
   - `check` and `add` are the same `providerSync.check()` / `add()` calls the main card uses.
-  - No key, endpoint, path or token ever crosses toward the child page.
+  - No key, endpoint, path or token ever crosses toward the child page. The one exception is a failed
+    start's sanitized `detail`, which may name a non-home path; it is set only once the child is
+    stopped, so no live child page reads it.
 - **Child client.** Each request has a time bound. A detached, closed or timed-out request answers
   a typed refusal and is never retried.
   - Bounds come from existing limits:
