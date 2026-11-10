@@ -22,6 +22,8 @@ const WEB_CONFIG = Object.freeze({ host: RUNTIME.host, port: 0, tls: undefined }
 const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, publicUrl: undefined })
 /** Policies the slim child fixes independently of the main deployment (§2.3). */
 const POLICY = Object.freeze({ sandboxMode: 'read-only', approval: 'ask' })
+/** The one permission preset the child keeps; its policy is the child's fixed POLICY. */
+const READ_ONLY_PRESET = 'read-only'
 /**
  * LITE effective read-only (instance-extension-points §11.3/§11.6; U13 Q-I A; K-4). The approval
  * policy stays `ask`: `never` would mean "allowed without asking". Widening requests from the
@@ -41,7 +43,8 @@ const POLICY = Object.freeze({ sandboxMode: 'read-only', approval: 'ask' })
  *   schedule tool create ordinary child sessions. The child's own reminders tools are unaffected.
  */
 const LITE = Object.freeze({
-  permission: Object.freeze({ row: 'permission', preset: 'read-only', presets: Object.freeze({ 'read-only': Object.freeze({ sandbox: 'read-only', approval: 'ask' }) }) }),
+  permission: Object.freeze({ row: 'permission', preset: READ_ONLY_PRESET,
+    presets: Object.freeze({ [READ_ONLY_PRESET]: Object.freeze({ sandbox: POLICY.sandboxMode, approval: POLICY.approval }) }) }),
   disabledRows: Object.freeze(['ui-subagent', 'ui-schedule', 'schedule', 'ui-permission', 'ui-agent-preset',
     'entry-customization', 'ui-open-in-app', 'open-in-app', 'ui-sidebar-terminal', 'terminal-controller']),
   disabledPresetPlugins: Object.freeze(['tool-subagent', 'tool-subagent-fork', 'workflow-ptc', 'tool-workflow',

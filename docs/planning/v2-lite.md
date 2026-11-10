@@ -60,7 +60,7 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
        still-unsatisfied command is a failure. Repeated `stale` results reread without a bound;
        each one needs a real concurrent edit.
      - `loading` or `not-ready` waits for the next native event. No timer is used.
-     - `unreadable`, `conflict`, `write-failed`, `unreadable` config or a thrown `edit` fails the gate.
+     - An `unreadable`, `conflict` or `write-failed` result, an `unreadable` config or a thrown `edit` fails the gate.
    - A failed gate shows the status "Fishball shortcut protection unavailable" / "Fishball 快捷键保护不可用"
      with Retry, and holds: later catalog/config notifications neither write nor change it until
      Retry.
