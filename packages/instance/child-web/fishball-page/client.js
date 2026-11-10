@@ -8,7 +8,10 @@ window.__ModuleLoader__.load({
     const PAGE = Object.freeze({
       name: 'fishball-page', route: 'api/fishball/session', read: 'GET', ensure: 'POST',
       requestFailed: 'FISHBALL_SESSION_REQUEST_FAILED', invalidSession: 'FISHBALL_SESSION_INVALID',
-      priority: -1, plugins: 'plugins', overlay: 'shell.overlay',
+      priority: -1, plugins: 'plugins',
+      // shell.overlay is a `list` slot in both SDKs (ui-layout root children): every entry needs
+      // its own id, else register() throws and the whole page entry fails to activate.
+      overlay: Object.freeze({ name: 'shell.overlay', id: 'fishball-page.navigation' }),
       root: 'data-fishball-page', ready: 'data-fishball-session',
       hidden: 'data-fishball-hidden', navigation: 'fishball-page-navigation', label: 'aria-label',
       settingsSlot: 'settings.launcher', settingsButton: 'fishball-settings-launcher',
@@ -517,22 +520,48 @@ window.__ModuleLoader__.load({
       return null
     }
 
+    /**
+     * Run `setup(own)`, where `own(dispose)` records each part's disposer right after the part is
+     * mounted. Returns one disposer for every owned part, in reverse order. When setup throws
+     * part-way, the parts already mounted are disposed before the error propagates: cordis then
+     * marks the entry failed and its context inactive, and an observer, subscriber or listener
+     * left behind would keep reading ctx.locale/ctx.layout and throw "in inactive context" on
+     * every later event (B1). Cordis's iterable effects unwind the same way, but this is a plain
+     * function effect so the page keeps the one-callback effect shape it has always had.
+     */
+    function mountAll(setup) {
+      const disposers = []
+      const disposeAll = () => { for (const dispose of disposers.splice(0).reverse()) dispose() }
+      try {
+        setup(dispose => { disposers.push(dispose) })
+      } catch (error) {
+        disposeAll()
+        throw error
+      }
+      return disposeAll
+    }
+
     // Native conversation rows, composer, header actions and rightbar remain mounted: no
     // replacement chat engine or unsupported readonlySettings prop. Beyond CSS presentation the
     // page adds only the shortcut gate, the frame guard, the manager selection and empty occupants
     // of the shadowed slots.
     function apply(ctx) {
-      ctx.effect(() => {
+      ctx.effect(() => mountAll(own => {
         const continuation = readContinuation()
         applyLanguage(ctx, continuation.lang)
         const styles = mountStyles()
+        own(styles.dispose)
         document.documentElement.setAttribute(PAGE.root, '')
+        own(() => document.documentElement.removeAttribute(PAGE.root))
         const manager = createCell(null)
         const gate = createCell(GATE.pending)
+        own(() => { manager.clear(); gate.clear() })
         const shortcuts = mountShortcuts(ctx, gate)
+        own(shortcuts.dispose)
         const session = mountSession(ctx, manager, gate, shortcuts)
-        const removals = mountRemovals(ctx, styles)
-        const frameGuard = mountFrameGuard()
+        own(session.dispose)
+        own(mountRemovals(ctx, styles))
+        own(mountFrameGuard())
         // Stable across renders, so React subscribes once; LocaleRuntime methods need `this`.
         const locale = { subscribe: listener => ctx.locale.subscribe(listener), get: () => ctx.locale.getLocale() }
         function Navigation() {
@@ -564,23 +593,10 @@ window.__ModuleLoader__.load({
         // Every page occupant (Settings launcher, shadowed slots) takes its single slot's seat
         // at PAGE.priority, through inject so the registration follows the slot's own lifetime.
         const occupy = (name, Component) => ctx.slots.inject(name, () => ctx.slots.register({ name, priority: PAGE.priority }, Component))
-        const unregisterSettings = occupy(PAGE.settingsSlot, SettingsLauncher)
-        const unshadow = SHADOWED_SLOTS.map(name => occupy(name, Empty))
-        const unregister = ctx.slots.register({ name: PAGE.overlay }, Navigation)
-        return () => {
-          unregister()
-          unshadow.forEach(dispose => dispose())
-          unregisterSettings()
-          frameGuard()
-          session.dispose()
-          shortcuts.dispose()
-          removals()
-          styles.dispose()
-          manager.clear()
-          gate.clear()
-          document.documentElement.removeAttribute(PAGE.root)
-        }
-      })
+        own(occupy(PAGE.settingsSlot, SettingsLauncher))
+        for (const name of SHADOWED_SLOTS) own(occupy(name, Empty))
+        own(ctx.slots.register(PAGE.overlay, Navigation))
+      }))
     }
 
     return {

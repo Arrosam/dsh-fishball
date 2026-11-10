@@ -1,0 +1,15 @@
+{
+  "name": "fbtest-slot-occupant",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CHILD-BOOT fixture: a child web plugin that takes fishball-page's shell.overlay entry id before fishball-page can, so the page's setup fails natively.",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": { "platform": "web" }
+  }
+}
