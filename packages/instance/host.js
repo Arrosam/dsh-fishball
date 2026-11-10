@@ -52,6 +52,8 @@ const PLUGIN = Object.freeze({
   state: Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', ready: 'ready', stopping: 'stopping', stopped: 'stopped', failed: 'failed', connectorMissing: BINDING_STATE.connectorMissing }),
   // Between a failed start's specific code and its message in the card's detail.
   detailSeparator: ': ',
+  // The row's log line for a failed start: its specific code only, never the message (bug 2).
+  startFailedLog: 'start failed (%s)',
   code: Object.freeze({ failed: 'NATIVE_START_FAILED', stop: 'NATIVE_STOP_FAILED', exited: 'NATIVE_CHILD_EXITED', unavailable: 'NATIVE_UNAVAILABLE', timeout: 'NATIVE_TIMEOUT', disabled: 'NATIVE_DISABLED' }),
 })
 /**
@@ -146,6 +148,11 @@ export async function apply(ctx, config) {
   /** End this row's attachment, if any; a stale detach changes nothing (contract §1.3). */
   const release = () => { bindingGeneration++; const attached = connection; connection = undefined; attached?.detach() }
   const set = (next, nextCode = null, nextDetail = null) => { state = next; code = nextCode; detail = nextDetail; return status() }
+  /** A failed start (bug 2): the row's log names its specific code; the status carries its cause. */
+  const failStart = (error, failedCode) => {
+    logger?.warn(PLUGIN.startFailedLog, error?.code ?? PLUGIN.code.failed)
+    return set(PLUGIN.state.failed, failedCode, startFailureDetail(error))
+  }
   // T11's admin relay. Every page operation except status and restart travels to the child over
   // the lifecycle wire's own authenticated admin channel; the child applies it with its own
   // services, so the main process never writes a child file (§9). T12's routes call
@@ -259,10 +266,7 @@ export async function apply(ctx, config) {
       if (closed) return
       try { settingsRelay.attach(transport) } catch { /* the next wire replaces it */ }
     })
-  } catch (error) {
-    logger?.warn('start failed (%s)', error?.code ?? PLUGIN.code.failed)
-    set(PLUGIN.state.failed, PLUGIN.code.failed, startFailureDetail(error))
-  }
+  } catch (error) { failStart(error, PLUGIN.code.failed) }
 
   /** The state of an instance with no child: off, without the connector (D25), or stopped. */
   const idleState = () => (!enabled ? PLUGIN.state.disabled : connector === undefined ? PLUGIN.state.connectorMissing : PLUGIN.state.stopped)
@@ -291,8 +295,12 @@ export async function apply(ctx, config) {
         // failure keeps the generic code, and nothing restarts either by itself (inst-OQ-03,
         // inst-OQ-09). The specific cause goes to the row's log and the status's detail (bug 2).
         if (!closed && state === PLUGIN.state.starting) {
-          logger?.warn('start failed (%s)', error?.code ?? PLUGIN.code.failed)
-          set(PLUGIN.state.failed, error?.code === LAUNCH_CODE.invalidMainHome ? LAUNCH_CODE.invalidMainHome : PLUGIN.code.failed, startFailureDetail(error))
+          failStart(error, error?.code === LAUNCH_CODE.invalidMainHome ? LAUNCH_CODE.invalidMainHome : PLUGIN.code.failed)
+        } else if (!closed && state === PLUGIN.state.failed && code === PLUGIN.code.exited) {
+          // A child that dies during the start fires onExit (above) before the launch loop sees
+          // the exit, so this start is already failed / NATIVE_CHILD_EXITED. Keep that canonical
+          // code but still log and publish the start's cause, as main's host.js does.
+          failStart(error, PLUGIN.code.exited)
         }
       }
       return status()

@@ -192,7 +192,8 @@ The status after the connector is disabled at runtime is `connector-missing` (in
   and the status route, never in `status()`.
 - I1c-R5: the card shows the state and the safe code (and the launch-failure detail when there is
   one), live within 1 s, and a Retry button while the state is `failed`.
-- I1c-R6: `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code}`;
+- I1c-R6: `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code, detail}`
+  (`detail`: a failed start's sanitized cause, else null; design §18.5 inst-OQ-01);
   `POST /api/fishball-instance/retry` retries and answers the new status.
 - I1c-R7: the admin relay's `admin.status` answers `connector-missing` as itself, not as `failed`.
 - I1c-AC: the frame's tag equals the card's state within the 1 s poll; the stub-busy run ends
