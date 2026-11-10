@@ -1,6 +1,7 @@
+import path from 'node:path';
 import test from 'node:test';
 
-// These are requirements, not a product adapter or an executable product oracle.
+// These are requirements, not a product adapter; executable oracles live in ./checks.mjs.
 // Keep nested case data immutable so the two SDK registrations cannot diverge.
 function freezeData(value) {
   if (value !== null && typeof value === 'object') {
@@ -12,7 +13,7 @@ function freezeData(value) {
 
 export const RECOMMENDATION_TEST_DATA = freezeData({
   feature: 'T-RP',
-  status: 'Not Run',
+  status: 'Automated where a component/artifact seam exists; otherwise TODO (post-merge e2e)',
   sdks: { rc5: '0.2.1-rc.5', rc1: '0.2.2-rc.1' },
   title: { separator: ' | ', sdk: 'SDK=', owners: 'TODO ', ownerSeparator: '+' },
   contract: {
@@ -244,17 +245,28 @@ export const RECOMMENDATION_TEST_DATA = freezeData({
   ],
 });
 
-// All product execution is forbidden in T-RP. A TODO has no callback and cannot
-// accidentally pass by comparing this requirements catalogue to itself.
-export function registerRecommendationCases(sdk) {
-  const data = RECOMMENDATION_TEST_DATA;
+// One registrar for both SDKs. A case with an executable check in ./checks.mjs runs it against
+// this SDK's own install (FBTEST_DSH_RUNTIME must name it); every other case stays a real
+// test.todo with the post-merge e2e reason, so a TODO can never pass by comparing this
+// requirements catalogue to itself.
+export async function registerRecommendationCases(sdk) {
+  const data = RECOMMENDATION_TEST_DATA
+  const { CHECKS, RP_CHECK } = await import('./checks.mjs')
+  const sdkModules = process.env.FBTEST_DSH_RUNTIME
   for (const caseData of data.cases) {
-    test.todo([
+    const title = [
       data.feature,
       caseData.id,
       data.title.sdk + sdk,
       data.title.owners + caseData.owners.join(data.title.ownerSeparator),
       caseData.intent,
-    ].join(data.title.separator));
+    ].join(data.title.separator)
+    const check = CHECKS[caseData.id]
+    if (!check) { test(title, { todo: RP_CHECK.todoE2E }); continue }
+    // Each SDK file reads its own install. When the run selects the other SDK (product modules
+    // resolve @deepseek-ai/* from FBTEST_DSH_RUNTIME process-wide), this file's checks are skipped
+    // with that reason rather than passed with the wrong SDK; run once per SDK.
+    if (!sdkModules || !sdkModules.split(path.sep).includes(sdk)) { test(title, { skip: data.title.sdk + sdk + ' not selected by FBTEST_DSH_RUNTIME' }); continue }
+    test(title, (t) => check({ sdk, sdkModules }, t))
   }
 }

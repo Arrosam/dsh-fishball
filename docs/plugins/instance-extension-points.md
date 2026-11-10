@@ -1498,7 +1498,16 @@ register any `plugins.tab` (`git grep` on `feat/body-soul` `packages/` finds non
 screenshot is from a DSH where the legacy package is still installed; the new tab replaces it in
 spirit.
 
-**The plugin.**
+**As built in V2 (RP, 2026-11-11), superseding the package/placement bullets below:** the package is
+`packages/instance/child-web/fishball-recommend-plugins/`, an instance-owned child asset beside
+`fishball-page`, mounted only by the child's launch overlay as a non-required row. It is not a
+bundled or placed plugin, and there is no `RUNTIME.bundledPlugins` entry (V2 ships no bundled
+plugins). The tab reads presence from `remote.pluginManager.listBundles()`. Install first reads the
+registry's current version with `pluginManager.inspect(spec)`, then calls the documented owner prop
+`install({spec: name@version, registry?, title, version})`, so DSH's own dialog runs the install.
+The admin relay's `ADMIN_RECOMMENDED` is not retired by this increment.
+
+**The plugin (original proposal).**
 - **Package:** `packages/recommend-plugins/`, npm name `fishball-recommend-plugins`, `dsh.client`
   (web) only, plus a tiny Node row that serves the list through a Fetch route.
 - **Bundled** like the other three (§2.2): `RUNTIME.bundledPlugins` gains

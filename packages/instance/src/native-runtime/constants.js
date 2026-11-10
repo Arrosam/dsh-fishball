@@ -150,6 +150,8 @@ export const NATIVE_WEB = Object.freeze({
   success: 200,
   pageDirectory: 'child-web',
   pagePackage: 'fishball-page',
+  /** V2 RP: the child-only Fishball Recommended Plugins tab, a sibling package under pageDirectory. */
+  recommendPackage: 'fishball-recommend-plugins',
   adapterModule: 'native-web.js',
 })
 
