@@ -114,6 +114,8 @@ const CHILD = Object.freeze({
   defaultModel: 'agentDefaultModel',
   sandboxPolicy: 'sandboxPolicy',
   images: 'fishballImages',
+  // dsh-workspace's registry, composed by the child's dsh-web-app bundle in both SDKs.
+  workspaceRegistry: 'workspaceRegistry',
   logger: 'fishball-native-chat',
   writerHeld: 'SessionAlreadyOwnedError',
 })
@@ -154,6 +156,8 @@ const MESSAGE = Object.freeze({
   model: 'The model choice is not available.',
   method: 'The chat API accepts GET, HEAD and POST.',
   failed: 'The chat operation failed.',
+  // Log-only diagnostic; the page sees MESSAGE.session.
+  noWorkspaces: 'the workspace registry is not composed in this child',
 })
 
 /**
@@ -458,6 +462,9 @@ export function createChat(ctx, options = {}) {
   const disposers = []
   let sessionId
   let agent
+  // The live agent whose persona this chat composed. It can differ from `agent` only while its
+  // workspace attach has not succeeded yet; a retried activation must not compose it again.
+  let composed
   let activation
   let started = false
   let closed = false
@@ -530,9 +537,13 @@ export function createChat(ctx, options = {}) {
     return composePersona(agentCtx, live)
   }
 
+  function ensureFolder() {
+    return mkdir(cwd, { recursive: true, mode: CHAT_LIMITS.directoryMode })
+  }
+
   async function createSession(agents) {
     const id = SESSION_PREFIX + randomUUID()
-    await mkdir(cwd, { recursive: true, mode: CHAT_LIMITS.directoryMode })
+    await ensureFolder()
     await record(id)
     const handle = await agents.create({ sessionId: id, meta: { cwd }, agentOptions: agentOptions(), setup: configure })
     return handle.agent
@@ -558,14 +569,45 @@ export function createChat(ctx, options = {}) {
     }
   }
 
+  /**
+   * Make the manager's Session a member of the workspace over its own folder (user decision
+   * 7.A: the page opens straight into a blank, typable session). Native ui-conversation keeps
+   * the empty-session composer inert until the session's workspace resolves a title, and
+   * dsh-workspace adds members only through attachSession: its path-grouped bootstrap runs
+   * once, at the child's first boot, before this Session exists. Both public calls are
+   * idempotent (create reuses the workspace of the same canonical path, attachSession resolves
+   * without writing for an accounted id), so this runs on every create and resume, and an
+   * existing manager that was never attached is attached too. The folder is recreated first
+   * because both calls refuse a missing directory. Every failure is reported, never skipped:
+   * without the attach the page is unusable, so the activation fails (route 503, page Retry).
+   */
+  async function attach(live) {
+    const registry = ctx.get(CHILD.workspaceRegistry)
+    try {
+      if (typeof registry?.create !== 'function') throw new TypeError(MESSAGE.noWorkspaces)
+      await ensureFolder()
+      const workspace = await registry.create(cwd)
+      await workspace.attachSession(live.id)
+    } catch (error) {
+      const detail = failureDetail(error)
+      logger?.warn('Fishball session %s could not join its workspace (%s: %s)', live.id, detail.name, detail.message)
+      sessionFailed()
+    }
+  }
+
   async function open() {
     if (closed) unavailable()
     const agents = requireAgents()
     const existing = sessionId === undefined ? undefined : agents.get(sessionId)
     const live = existing ?? await (sessionId === undefined ? createSession(agents) : resumeSession(agents, sessionId))
     if (closed) unavailable()
-    if (existing && agent !== existing) await composePersona(existing.ctx, existing)
+    if (existing && composed !== existing) await composePersona(existing.ctx, existing)
+    composed = live
     if (closed) unavailable()
+    await attach(live)
+    if (closed) unavailable()
+    // Published only after the attach: manager.sessionId() (GET api/fishball/session) reads
+    // `agent`, so a manager whose attach failed reads as absent and Retry's POST attaches it.
     agent = live
     // The factory has now published the fully configured scope. Recovery may drive
     // the agent, so it must never run inside the composition-only setup callback.
