@@ -188,8 +188,9 @@ export async function copyChildCode(paths, record) {
   // Keep the named manifest and ./client export together. Native modules discovers every
   // enabled client row itself; copying a hand-picked browser roster would omit ecosystem rows.
   await copy(path.join(sourceRoot, NATIVE_WEB.pageDirectory), path.join(destination, NATIVE_WEB.pageDirectory), everyFile)
-  // SET: the settings panel shows the instance card's status line and model block from that card's
-  // own source, which client-modules can serve only as one of the panel package's local chunks.
+  // SET: the settings panel shows the instance card's status line (not its model block: sync is
+  // main-only) from that card's own source, which client-modules can serve only as one of the panel
+  // package's local chunks.
   await copy(path.join(sourceRoot, NATIVE_WEB.sharedClient), path.join(destination, NATIVE_WEB.pageDirectory, NATIVE_WEB.settingsPackage, NATIVE_WEB.sharedClientChunk), javascript)
   // The settings row's host half reads the public status shape and route tables of these main modules.
   await copy(path.join(sourceRoot, 'src', 'native-web.js'), path.join(destination, 'src', 'native-web.js'), javascript)

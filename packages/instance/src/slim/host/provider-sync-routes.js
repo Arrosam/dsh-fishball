@@ -22,7 +22,8 @@ import { registerPostRoutes } from './fetch-routes.js'
 /**
  * The owner route's transport rules (src/provider-sync-service.js re-exports them). They live
  * here, not in the host-only sync service, so the child settings row
- * (child-web/fishball-settings/index.js) builds the same routes without importing it.
+ * (child-web/fishball-settings/index.js) answers with the same JSON headers without importing it.
+ * That row has no model-sync route: only the main DSH's card starts a sync.
  */
 export const SYNC_PAGE = Object.freeze({
   maxBodyBytes: 16384,
@@ -84,9 +85,9 @@ function addPayload(text) {
 
 /**
  * The Add selection shape, exactly `{checkId: string, ids: string[]}`, as a copy, or undefined.
- * One rule for both Add routes and the child settings relay (src/slim/settings-relay.js).
+ * Module-private: the main Add route is its only reader (the child has no Add route or relay op).
  */
-export function addSelection(value) {
+function addSelection(value) {
   if (!isRecord(value) || Object.keys(value).length !== ADD_KEYS.length || !ADD_KEYS.every((key) => Object.hasOwn(value, key))) return undefined
   if (typeof value.checkId !== 'string' || !Array.isArray(value.ids) || value.ids.some((id) => typeof id !== 'string')) return undefined
   return { checkId: value.checkId, ids: [...value.ids] }
@@ -127,13 +128,14 @@ export function registerProviderSyncRoutes(ctx, service) {
 }
 
 /**
- * The check and add route table over any `{check(), add(payload)}`: the main row's own sync
- * service, or the child settings panel's relay to it (child-web/fishball-settings/index.js). Both
- * pages therefore get the same admission, body bound and Add shape check.
+ * The check and add route table over the main row's own `{check(), add(payload)}` sync service.
+ * Module-private: registerProviderSyncRoutes is its one caller. It was exported only so the child
+ * settings row could build the same routes; with main-only sync (2026-11-11) nothing outside the
+ * main row may build a sync route.
  * @param {object} connection - DSH's connection service (its Host/Origin fence).
  * @param {{check: Function, add: Function}} sync
  */
-export function providerSyncRoutes(connection, sync) {
+function providerSyncRoutes(connection, sync) {
   return [
     { path: PROVIDER_SYNC_ROUTE.check, fetch: handlerFor(connection, noPayload, () => sync.check()) },
     { path: PROVIDER_SYNC_ROUTE.add, fetch: handlerFor(connection, addPayload, (payload) => sync.add(payload)) },
