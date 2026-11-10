@@ -4,7 +4,7 @@
 
 ## Authority, scope and execution boundary
 
-The [final V2 plan](<../planning/v2-final-scope.md#L138-L296>) overrides conflicting historical material. Applicable historical requirements are [A-lite and slim SET](<../plugins/instance-extension-points.md#L1302-L1478>), [retained provider-sync semantics](<../slim-native-design.md#L1263-L1390>) and the [DESIGN amendments](<../../DESIGN.md#L5-L30>). In particular, the old bounce-back navigation guard, ordinary-session archiving, main-origin content proxy, bundled-plugin editors and main-card-only sync placement are **not** current oracles.
+The [final V2 plan](<../planning/v2-final-scope.md#L138-L296>) overrides conflicting historical material. Applicable historical requirements are [A-lite and slim SET](<../plugins/instance-extension-points.md#L1302-L1478>), [retained provider-sync semantics](<../slim-native-design.md#L1263-L1390>) and the [DESIGN amendments](<../../DESIGN.md#L5-L30>). In particular, the old bounce-back navigation guard, ordinary-session archiving, main-origin content proxy, bundled-plugin editors are **not** current oracles. Main-card-only sync placement **is** the oracle again (the user's decision of 2026-11-11: "不允许子实例发起模型同步，只能主实例主动同步给子实例"): only the main DSH's `fishball-instance` card starts a sync, and nothing in the child can.
 
 Exactly five techniques are used: **Use Case, EP, BVA, Decision Table, State Transition**. Each task starts with Use Cases. All cases apply independently to **0.2.1-rc.5 and 0.2.2-rc.1**; a logical case and its two SDK registrations are counted separately. Every case currently has status **Not Run**. Ordinary cases register task-named `test.todo` through the parent-owned helper; SET-BVA-02 implements an opt-in executable HTTP case with absent-fixture TODO. TODO is not a successful behavioral check. There is no optional adapter contract, fake model, product import, speculative export or metadata-as-pass assertion.
 
@@ -158,15 +158,15 @@ Full case IDs are `LITE-DT-01` … `LITE-DT-09`. Each rule requires unchanged ma
 
 ## 3. SET
 
-Sources: [final SET scope](<../planning/v2-final-scope.md#L154>), [native slim panel allocation](<../plugins/instance-extension-points.md#L1458-L1478>), [retained sync semantics only](<../slim-native-design.md#L1270-L1389>). Historical sync placement/exclusivity is superseded by final SET. D2 saved values remain inert and unchanged under the [approved amendment](<../../DESIGN.md#L5-L19>).
+Sources: [final SET scope](<../planning/v2-final-scope.md#L154>), [native slim panel allocation](<../plugins/instance-extension-points.md#L1458-L1478>), [retained sync semantics only](<../slim-native-design.md#L1270-L1389>). Sync placement: main card only (user decision 2026-11-11, superseding SET 8e9a658's child sync); the [SET contract](<../planning/v2-set.md>) removes the child's `models/check|add` routes and the relay's `check`/`add` ops. The sync rows below (SET-UC-03, EP-03..10, EP-13 sync part, BVA, DT, ST) are exercised through the main card's owner routes; SET-EP-14 and [set-main-only-sync](<../../test/v2-page-cases/set-main-only-sync.test.mjs>) cover the child-side refusals. D2 saved values remain inert and unchanged under the [approved amendment](<../../DESIGN.md#L5-L19>).
 
 ### 3.1 Use Case — first
 
 | ID | Actor | Preconditions | Main flow | Alternative flow | Exception flow | Postconditions |
 |---|---|---|---|---|---|---|
-| SET-UC-01 | Owner using slim Fishball settings | Protected child manager, native panel composition available | Open SET from conversation/connector → see status, Restart, model/provider check-and-select sync, one-line effective Read Only notice, native Settings and Plugins links → explicit Fishball return | Native Settings changes models/effort/plugins; use native composer picker | Loading/unavailable/error is visible with Retry where meaningful; no dead or misleading ready control | No duplicate plugin/model/config editor, no Watchdog/D2 controls, main settings unchanged |
+| SET-UC-01 | Owner using slim Fishball settings | Protected child manager, native panel composition available | Open SET from conversation/connector → see status, Restart, the read-only model sync note pointing to the main card (no sync control), one-line effective Read Only notice, native Settings and Plugins links → explicit Fishball return | Native Settings changes models/effort/plugins; use native composer picker | Loading/unavailable/error is visible with Retry where meaningful; no dead or misleading ready control | No duplicate plugin/model/config editor, no Watchdog/D2 controls, main settings unchanged |
 | SET-UC-02 | Owner restarting child | Exact current child handle A owned by host; main and unrelated child fixture also tracked | Invoke existing lifecycle restart → stop-confirmed A → start B → refresh status and re-admit current generation | Restart from failed state via explicit Retry; child absent while main shell remains | Unauthorized/uncertain ownership, stop/start failure: refuse unsafe signals/second writer and show error; do not say ready | Only exact owned child affected; main/unrelated processes unchanged; pending/stale completion cannot replace B |
-| SET-UC-03 | Owner adding selected API-key providers | Ready child; synthetic main inventory `provider-missing-a` with two models and `provider-missing-b`; target has separate present provider | Check once → missing provider metadata listed, initially selected → deselect b → Add selected → a profile/key created once → per-entry result | Cancel/zero selection writes nothing; fresh check lists only still-missing entries; existing/conflicting records kept | Unsupported auth, stale preview/source/child, concurrent Add, write failure or lost answer handled honestly; no rollback/automatic retry | Only selected entries read for transfer/written; native child catalog reflects adds; no default-model/main-profile mutation; browser gets no credential |
+| SET-UC-03 | Owner adding selected API-key providers from the main DSH's `fishball-instance` card | Ready child; synthetic main inventory `provider-missing-a` with two models and `provider-missing-b`; target has separate present provider | Check once → missing provider metadata listed, initially selected → deselect b → Add selected → a profile/key created once → per-entry result | Cancel/zero selection writes nothing; fresh check lists only still-missing entries; existing/conflicting records kept | Unsupported auth, stale preview/source/child, concurrent Add, write failure or lost answer handled honestly; no rollback/automatic retry | Only selected entries read for transfer/written; native child catalog reflects adds; no default-model/main-profile mutation; browser gets no credential |
 
 ### 3.2 EP
 
@@ -184,18 +184,19 @@ Sources: [final SET scope](<../planning/v2-final-scope.md#L154>), [native slim p
 | SET-EP-10 | Synthetic key, mask, endpoint, protocol and env-name sentinels | Inspect browser preview/results/errors/logs | Browser receives only allowed provider id/name/models/outcome/reason and opaque checkId; no sensitive values or inventory logging. Native catalog caveat help line retained |
 | SET-EP-11 | Saved D2 `questionMode=user`, `approvalAnswerSeconds=old value` | Render SET and relevant native forms | No mode/seconds controls/copy/replacement switch; stored values unchanged; no duplicate model/plugin/config/recommendation/Watchdog editor |
 | SET-EP-12 | Native Settings/Plugins links and higher sandbox preference | Open via mouse/keyboard, alter user setting, return explicitly | Native pages and return work; effective one-line Read Only remains truthful even if stored preference differs; no permission-mode editor added to SET |
-| SET-EP-13 | No owner auth or unrelated runtime ownership | Invoke restart and sync protected operations separately | No lifecycle mutation, key transfer or public capability leak; clear refusal rather than apparent success |
+| SET-EP-13 | No owner auth or unrelated runtime ownership | Invoke restart (child route) and sync (main owner routes) protected operations separately | No lifecycle mutation, key transfer or public capability leak; clear refusal rather than apparent success |
+| SET-EP-14 | Child-initiated sync: child `models/check|add` routes, relay frames `op: check|add`, relay client `request('check'|'add')`, unsolicited `provider-sync`/`admin` frames | Attempt each from the child | No child `models/*` route (DSH answers 404); frames answered `invalid-request` (no id: dropped); client refuses locally and sends nothing; unsolicited frames start nothing; the main sync never runs (no inventory/key read, no write) |
 
 ### 3.3 BVA
 
 | ID | Ordered boundary / fixture | Expected behavior |
 |---|---|---|
-| SET-BVA-01 | Two missing provider entries; select 0, 1, 2; one provider contains 2 models | Zero selection disables Add and writes nothing; one selects entire provider/profile/key, not one model; two writes only both chosen entries; no implicit default-model change |
-| SET-BVA-02 | Frozen-clock preview age 299,999 / 300,000 / 300,001 ms; ready current wire and source unchanged; missing selected synthetic provider | **Direct user decision during case authoring:** valid only for age <300,000 ms; equality is expired. Opt-in executable POST `/api/fishball-instance/models/add` with `{checkId, ids}` against separately configured disposable fixtures per SDK: before boundary adds chosen entry; equality/after refuses `preview-expired` before transfer-key read/write; require fresh check. No invented clock/seed product API or sleeping; absent fixtures retain task-named TODO |
+| SET-BVA-01 | Main card; two missing provider entries; select 0, 1, 2; one provider contains 2 models | Zero selection disables Add and writes nothing; one selects entire provider/profile/key, not one model; two writes only both chosen entries; no implicit default-model change |
+| SET-BVA-02 | Frozen-clock preview age 299,999 / 300,000 / 300,001 ms; ready current wire and source unchanged; missing selected synthetic provider | **Direct user decision during case authoring:** valid only for age <300,000 ms; equality is expired. Opt-in executable POST to the **main DSH's** `/api/fishball-instance/models/add` with `{checkId, ids}` against separately configured disposable fixtures per SDK: before boundary adds chosen entry; equality/after refuses `preview-expired` before transfer-key read/write; require fresh check. No invented clock/seed product API or sleeping; absent fixtures retain task-named TODO |
 
 ### 3.3.1 Executable SET expiry fixture contract
 
-[SET-BVA-02 executable assertions](<../../test/v2-page-cases/set.test.mjs>) use the [shared safe HTTP transport](<../../test/v2-page-cases/http-fixtures.mjs>) and only the documented `POST /api/fishball-instance/models/add` with `{checkId, ids}`. They do not start DSH, seed product state through an invented API, advance a product clock or resolve credentials.
+[SET-BVA-02 executable assertions](<../../test/v2-page-cases/set.test.mjs>) use the [shared safe HTTP transport](<../../test/v2-page-cases/http-fixtures.mjs>) and only the documented main-DSH owner route `POST /api/fishball-instance/models/add` with `{checkId, ids}` (the child has no such route). They do not start DSH, seed product state through an invented API, advance a product clock or resolve credentials.
 
 `FBTEST_V2_SET_HTTP_FIXTURES` is optional JSON keyed by exact SDK version (`0.2.1-rc.5`, `0.2.2-rc.1`). Each SDK needs three independently provisioned scenarios: `previewAge299999`, `previewAge300000`, `previewAge300001`. Each supplies `baseUrl`, `disposable: true`, `syntheticAuth: true`, printable-ASCII synthetic `cookie`, `checkId`, selected `providerId`, exact `frozenAgeMs`, and `clockFrozenThroughConfirm: true`. The base URL must be an explicit separately allocated numeric loopback HTTP origin, with no credentials/query/fragment/proxy path; known live ports 7713/3081/54679 are refused. The provisioner guarantees a ready unchanged source/child wire, no Add in flight, supported missing selected provider, only synthetic fixture credentials, and a clock frozen at the stated age until confirmation. An environment label is not SDK/build attestation; record the actual fixture build independently.
 
@@ -203,7 +204,7 @@ At 299999 ms JSON must contain the selected provider's `id` and `outcome: added`
 
 ### 3.4 Decision Table
 
-A fresh preview contains a and b; selected a unless the rule says otherwise. Each refusal row is a **single-fault fixture**, with every other applicable guard valid. `—` means not exercised/not applicable, not an assertion of precedence for multiple faults; error ordering for multi-invalid inputs is not specified or tested. All refusal rows require no transfer-key read and no child write before the applicable guard.
+All rows run on the main card's owner routes (the only sync entry point). A fresh preview contains a and b; selected a unless the rule says otherwise. Each refusal row is a **single-fault fixture**, with every other applicable guard valid. `—` means not exercised/not applicable, not an assertion of precedence for multiple faults; error ordering for multi-invalid inputs is not specified or tested. All refusal rows require no transfer-key read and no child write before the applicable guard.
 
 | Condition / action | R1 / SET-DT-01 | R2 / SET-DT-02 | R3 / SET-DT-03 | R4 / SET-DT-04 | R5 / SET-DT-05 | R6 / SET-DT-06 |
 |---|---|---|---|---|---|---|
@@ -212,11 +213,13 @@ A fresh preview contains a and b; selected a unless the rule says otherwise. Eac
 | Preview live and same child | — | — | No | Yes | Yes | Yes |
 | Source inventory unchanged | — | — | — | No | Yes | Yes |
 | Selection entirely offered | — | — | — | — | No | Yes |
-| Action | Disabled/hint, no write | sync-busy, no second import | Repreview/expired/closed; check again | Repreview-required | Invalid-selection | Read chosen records only; add-only import; per-entry outcome |
+| Action | Refused on the main card (disabled/hint), no write | sync-busy, no second import | Repreview/expired/closed; check again | Repreview-required | Invalid-selection | Read chosen records only; add-only import; per-entry outcome |
 
 SET-DT-05 uses `{a, not-offered-id}` in one request: refusal must not partially add a before noticing invalid selection. SET-DT-06 uses a only; b is neither transferred/written nor included as an outcome.
 
 ### 3.5 State Transition
+
+All rows run on the main card's owner routes; the child cannot start any of these transitions.
 
 | ID | Start → events → next state | Expected action / invariant |
 |---|---|---|
