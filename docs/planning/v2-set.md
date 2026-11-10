@@ -60,9 +60,9 @@ These are the same paths and answer shapes as the main card's routes, so the sha
 
 | Route | Answer |
 |---|---|
-| `GET api/fishball-instance/status` | `{state, code}`. `{state: 'unavailable', code: null}` while the relay to the main host is down |
-| `POST api/fishball-instance/retry` | `{state, code}` after the main host's Retry (a restart only from `failed`) |
-| `POST api/fishball-instance/restart` | `{ok:true,result:{state,code}}` or `{ok:false,error:{code}}` |
+| `GET api/fishball-instance/status` | `{state, code, detail}` (`detail`: a failed start's sanitized cause, else null). `{state: 'unavailable', code: null, detail: null}` while the relay to the main host is down |
+| `POST api/fishball-instance/retry` | `{state, code, detail}` after the main host's Retry (a restart only from `failed`) |
+| `POST api/fishball-instance/restart` | `{ok:true,result:{state,code,detail}}` or `{ok:false,error:{code}}` |
 | `POST api/fishball-instance/models/check` | as on the main card: `{ok,result:{checkId,missing,notOffered,present}}` or `{ok:false,error:{code}}` |
 | `POST api/fishball-instance/models/add` `{checkId, ids}` | as on the main card: `{ok,result:{items:[{id,outcome,reason?}]}}`. A lost answer reports every requested id `failed` `result-unknown` |
 
@@ -77,7 +77,7 @@ Check and add keep the main routes' Origin/Sec-Fetch-Site and body rules (same h
   - An invalid frame is answered `invalid-request` when it carries an id, and dropped otherwise.
 - **Reply frame:** `{v: 1, id, ok: true, result}` or `{v: 1, id, ok: false, error: {code}}`.
 - **Main host.**
-  - `status`, `retry` and `restart` answer the instance's public `{state, code}`; restart is queued like every other start and stop.
+  - `status`, `retry` and `restart` answer the instance's public `{state, code, detail}`; restart is queued like every other start and stop.
   - `check` and `add` are the same `providerSync.check()` / `add()` calls the main card uses.
   - No key, endpoint, path or token ever crosses toward the child page.
 - **Child client.** Each request has a time bound. A detached, closed or timed-out request answers

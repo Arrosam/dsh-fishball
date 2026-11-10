@@ -29,6 +29,10 @@ export const RUNTIME = Object.freeze({
   pid: 'pid.json',
   endpoint: 'endpoint.json',
   log: 'lifecycle.log',
+  // The only shape a log line's `reason` may have: an error code identifier (files.js lifecycleLog).
+  logReason: /^[A-Z][A-Z0-9_]{0,63}$/,
+  // A start failure that carried no code of its own (index.js startInternal).
+  startFailedCode: 'START_FAILED',
   // The child's stderr (B6), bounded by RUNTIME_LIMITS.maxLogBytes; the previous file is kept
   // once under the rotated suffix, so at most two caps of disk are used.
   stderrLog: 'child-stderr.log',
