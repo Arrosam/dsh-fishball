@@ -1035,11 +1035,15 @@ lite('LITE-ST-04', 'Allow initial selection and explicit return but never correc
 })
 
 // ---------------------------------------------------------------------------------------------
-// Hash continuation (contract §1) — part of UC-02's allowed Settings path, kept as its own checks
-// under LITE-UC-02 to preserve the case catalogue.
+// Hash continuation (contract §1) — kept as its own checks under LITE-UC-02 to preserve the case
+// catalogue. Since instance-extension-points §11.8 (superseding LITE's earlier "opens native
+// Settings"), `view=settings` never opens native DSH Settings: it requests Fishball's slim
+// `fishball-settings` main panel, owned by the separate child package child-web/fishball-settings.
+// This harness loads only fishball-page, so here only the 0 native opens is observable; the slim
+// panel opening is a todo verified in browser e2e.
 // ---------------------------------------------------------------------------------------------
 const HASH_CASES = Object.freeze([
-  { hash: '#view=settings&lang=zh', settings: 1, locale: ['zh'] },
+  { hash: '#view=settings&lang=zh', settings: 0, locale: ['zh'] },
   { hash: '#lang=en', settings: 0, locale: [] },
   { hash: '#view=plugins&lang=fr', settings: 0, locale: [] },
   { hash: '', settings: 0, locale: [] },
@@ -1071,8 +1075,9 @@ for (const sdk of SDK_VERSIONS) {
         await page.eval('__lite.facade.notify(), true')
         await page.click(STATUS.fishball)
         await page.settled()
-        assert.equal((await page.log()).openSettings, item.settings, `${item.hash}: Settings opens at most once per page load`)
+        assert.equal((await page.log()).openSettings, item.settings, `${item.hash}: native Settings opens ${item.settings} time(s) after the Fishball button`)
       }
     })
+    test.todo(`${CONTEXT.task} LITE-UC-02 [${sdk}] hash continuation view=settings opens the slim fishball-settings panel — verified in browser e2e (superseded by SET §11.8)`)
   })
 }
