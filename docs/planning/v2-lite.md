@@ -145,28 +145,53 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
   deliverables' open action ask the child host to reveal or open a file in a desktop app. They
   leave neither the page nor the session and touch no session, so they stay enabled; the
   desktop app opens outside the browser.
-- **Empty composer (fixed on `dev/v2-manager-ws`, not verified in a browser).** Native content
-  makes the hero composer inert while the session is blank and no workspace title resolves
-  (ui-conversation `inert = … || hero && chipTitle === undefined`, both SDKs), and dsh-workspace
-  adds members only through `attachSession`. Every manager activation (create or resume, chat.js
-  `attach`) now ensures the child workspace over the manager's folder (`workspaceRegistry.create`,
-  idempotent per path) and attaches the manager to it (idempotent). A failed attach fails the
-  activation: POST answers 503, GET still reads null, and the page shows "Fishball session
-  unavailable" with Retry. The hidden hero picker stays closed. Consequences, open for a user
-  decision: the failure also stops every other activation caller (inbox, cards, reminders,
-  model changes) until an attach succeeds, including the permanent case of a resumed header
-  cwd that no longer matches the folder (a moved child home); and a workspace the user deleted
-  is recreated, with the SDK default title `assistant`, on the next activation.
-  Also open (static reading of ui-workspace `restoreSelection`/`createInWorkspace`, both SDKs;
-  not verified in a browser): each child generation is a new origin with no saved selection,
-  so native startup navigation now targets the most recent workspace, which is the manager's,
-  and calls `connectWorkspace` on it. While the manager is blank that names the manager
-  (`session.create` reuse; with an `agentPresets` service it may select the default preset on
-  it). Once the manager has a turn it creates one ordinary blank Session in the manager's
-  workspace (later generations reuse that blank). Whether native then opens it depends on
-  whether the page's own selection (`selectPanel(null)`) aborts that navigation first. Before
-  this fix, the empty registry left native with no target once a manager existed. Avoiding it
-  needs a decision; no host patch is allowed.
+- **Empty composer (fixed on `dev/v2-manager-ws`, attach policy on `dev/v2-manager-ws-2`; not
+  verified in a browser).** Native content makes the hero composer inert while the session is
+  blank and no workspace title resolves (ui-conversation `inert = … || hero && chipTitle ===
+  undefined`, both SDKs), and dsh-workspace adds members only through `attachSession`. Every
+  manager activation (create or resume, chat.js `attach`) ensures the child workspace over the
+  manager's folder (`workspaceRegistry.create`, idempotent per path) and attaches the manager to
+  it (idempotent). The hidden hero picker stays closed. Attach policy (Fishball's decision,
+  2026-11-11):
+  - The page path (`POST api/fishball/session`, `manager.ensureSession`) requires the attach. A
+    failure answers 503 and the page shows "Fishball session unavailable" with Retry.
+  - Background activations (inbox delivery, reminders, cards, model changes) do not block on the
+    attach. Each makes one attempt, logs a failure, proceeds and leaves the manager unattached.
+    `manager.sessionId()` (and so GET) names the manager only once it is attached, so the page's
+    next open reads null, POSTs, retries the attach and surfaces any error; the page protocol is
+    unchanged. Cost: manager tools that authenticate against `sessionId()` (fold, board)
+    refuse during a turn queued while the attach is failing.
+  - Moved child home: when the stored session folder no longer resolves to the current
+    `<home>/fishball/assistant`, the activation still creates the workspace for the current
+    folder, logs the mismatch and counts as attached. The manager stays outside that
+    workspace: DSH has no public call that changes a session's cwd (the header is frozen
+    creation metadata, resume takes no cwd), and `attachSession` refuses a cwd that does not
+    resolve to the workspace path (dsh-workspace, both SDKs). The hero composer of such a manager stays inert while it
+    is blank; a manager with a turn renders no hero.
+  - A workspace the user deleted is recreated, with the SDK default title `assistant`, on the
+    next activation.
+- **Native startup on a reopened page (open; no up-front mechanism in either SDK; not verified
+  in a browser).** Each child generation is a new origin, so ui-workspace's persisted selection
+  (`dsh.sessions.current`, a localStorage snapshot store) is empty, and its startup
+  `restoreSelection` (identical in 0.2.1-rc.5 and 0.2.2-rc.1) runs once the workspace and
+  session lists are ready, before any page selection is known. With no saved selection it
+  targets the most recent workspace, which is the manager's, and calls `connectWorkspace`.
+  While the manager is blank that names the manager (`session.create` reuse); once it has a
+  turn the host creates one ordinary blank Session in that workspace. Neither SDK exposes a
+  public way to seed that selection or veto the startup target deterministically:
+  `UiWorkspace` has no selection setter; `layout.beginNavigation` and `selectPanel` abort only
+  the final open, after `connectWorkspace` has already created the Session; and the host
+  `session.create` has no creation hook. The one public call that skips the restore is
+  `uiWorkspace.openSession(manager)` issued before both lists are ready (it sets the main
+  reference, and `watchNavigation` then marks startup done), but the page learns the manager id
+  only from its own HTTP route, so whether it wins is a race with the native list streams, not
+  a guarantee. Options, for a user decision: (a) the page calls `openSession` as early as it
+  knows the id (public, but racy: the extra Session still appears when the lists win);
+  (b) seed the `dsh.sessions.current` localStorage key before ui-workspace constructs (a
+  private store format, and the id would have to reach the child document before boot, for
+  example in the admission fragment); (c) do not attach the manager to a workspace (the
+  composer is inert while it is blank, the 7.A problem); (d) an upstream DSH interface (a
+  startup selection hook or a "no auto session" option).
 - **Plugin inventory.** `ui-settings-plugin-inventory` stays enabled and lists `ui-agent-preset`
   as an optional client dependency; with that row disabled, preset names it shows may fall back
   to their raw keys.
