@@ -19,8 +19,6 @@ import path from 'node:path'
 const REGISTRY = Object.freeze({
   service: 'workspaceRegistry',
   backend: 'json',
-  startBudgetMs: 5000,
-  pollMs: 5,
 })
 
 /**
@@ -40,9 +38,9 @@ export async function startWorkspaceRegistry({ root, sessions, storedHeaders }) 
   await context.plugin(storageDomain, { backend: REGISTRY.backend })
   context.provide('sessionPersistence', { async list() { return storedHeaders().map((header) => ({ header })) } })
   context.provide('sessions', sessions)
-  context.plugin(WorkspaceRegistry)
-  const deadline = Date.now() + REGISTRY.startBudgetMs
-  while (context.get(REGISTRY.service) === undefined && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, REGISTRY.pollMs))
+  // The fiber settles once the Service's init has finished (checked on both SDKs) and rejects
+  // with init's own error, so a failed start reports its cause instead of an exhausted poll.
+  await context.plugin(WorkspaceRegistry)
   const registry = context.get(REGISTRY.service)
   if (registry === undefined) throw new Error('the SDK WorkspaceRegistry did not start')
   return { registry, dispose: () => context.fiber.dispose() }
