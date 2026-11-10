@@ -93,6 +93,18 @@ export function createExtensions(ctx) {
   }
   let chat
   let current
+  // READY gate (final scope §4 READY): `readiness` is resolved only by this generation's
+  // actual child appReady.onReady (markReady). close(), the disposal path a failed or
+  // replaced generation also takes, rejects every page-open wait in `releases` at once,
+  // whether it is still before ready or joined to an activation a disposed chat may never
+  // complete. Per-call releases, each removed when its wait settles, keep no reaction
+  // alive for the generation's lifetime, as a shared retirement promise would per POST.
+  // One gate per createExtensions call is the generation fence: a restart builds new
+  // extensions with a fresh gate, so an old signal can neither ready the new generation
+  // nor be inherited by it. No timer: a signal that never fires leaves page-open ensures
+  // honestly pending.
+  const readiness = Promise.withResolvers()
+  const releases = new Set()
   let serial = Promise.resolve()
   let dirty = false
   let linked = false
@@ -281,15 +293,34 @@ export function createExtensions(ctx) {
    * Session. Unlike notify it does not refuse during an unpublished setup: its caller is the
    * page route, never a setup callback, so joining the in-flight activation cannot deadlock.
    * Recovery inside activation may still queue previously pending notices; that is existing
-   * work, not a setup turn. Readiness seam (final scope §4 READY, a separate task): page-open
-   * activation must wait for the child's actual appReady signal. That gate belongs here, in
-   * front of chat.activate(), so the route and the page stay unchanged; until READY lands a
-   * call before appReady activates at once, like the existing GET api/chat page activation.
-   * Resolves to the live session id; the route validates it rather than coercing it here.
+   * work, not a setup turn. READY (final scope §4): activation waits for this generation's
+   * actual child appReady signal, so a call before it stays pending and a call after it
+   * proceeds without another signal or timer. Waiting here, at request time, never blocks
+   * boot or plugin apply, which must settle before appReady can fire. Concurrent waiters are
+   * released together and join chat.activate()'s single activation. Disposal refuses pending
+   * and in-flight calls at once (route: 503); the activation itself is not cancelled, since
+   * the chat owns it and other callers may share it. After each wait `closed` is checked
+   * again, so a stale generation never starts an activation or reports one as finished
+   * after it was retired. Only this page-open path is gated; notices keep their own
+   * existing activation. Resolves to the live session id; the route validates it rather
+   * than coercing it here.
    */
   async function ensureSession() {
+    refuseClosed()
+    await untilRetired(readiness.promise)
+    refuseClosed()
+    const live = await untilRetired(chat.activate())
+    refuseClosed()
+    return live.id
+  }
+  function refuseClosed() {
     if (closed) throw new ExtensionError(EXT.closed, EXT.ensureMember)
-    return (await chat.activate()).id
+  }
+  /** Settle like `work`, unless this generation is retired first; then refuse. */
+  function untilRetired(work) {
+    const release = Promise.withResolvers()
+    releases.add(release.reject)
+    return Promise.race([work, release.promise]).finally(() => { releases.delete(release.reject) })
   }
   async function recover(live) {
     return exclusive(async () => {
@@ -355,6 +386,8 @@ export function createExtensions(ctx) {
 
   function close() {
     closed = true
+    for (const release of releases) release(new ExtensionError(EXT.closed, EXT.ensureMember))
+    releases.clear()
     offTurn()
     for (const registration of registrations) {
       registration.disposed = true
@@ -397,6 +430,8 @@ export function createExtensions(ctx) {
       if (current?.live === live) current.published = true
       await recover(live)
     },
+    /** Wire to this generation's appReady.onReady only; inert once closed (or repeated). */
+    markReady() { if (!closed) readiness.resolve() },
     async resumePending() {
       if ([...notices.values()].some((entry) => entry.state === EXT.pending || entry.wake)) await chat.activate()
     },

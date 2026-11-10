@@ -85,6 +85,41 @@ export async function tempDir(t, prefix = 'fbtest-instance-ext-') {
 
 const tempHome = (t) => tempDir(t)
 
+/**
+ * Minimal model of the launcher's `appReady` service (SDK `profile-boot` `createAppReady`, the
+ * same in 0.2.1-rc.5 and 0.2.2-rc.1): `onReady(listener) → disposer` runs the listener once when
+ * the launcher commits, or at once when it already has; the disposer cancels a pending listener;
+ * `commit()` is idempotent and a failed boot never commits.
+ * `captured` additionally keeps every listener ever registered, so a case can replay a stale
+ * continuation after disposal. That is a test-driver technique only: the SDK never calls a
+ * listener whose disposer ran.
+ */
+function createAppReady() {
+  let committed = false
+  const listeners = new Set()
+  const captured = []
+  return {
+    service: {
+      onReady(listener) {
+        captured.push(listener)
+        if (committed) { listener(); return () => {} }
+        listeners.add(listener)
+        return () => { listeners.delete(listener) }
+      },
+    },
+    commit() {
+      if (committed) return
+      committed = true
+      for (const listener of [...listeners]) listener()
+      listeners.clear()
+    },
+    get committed() { return committed },
+    /** Listeners registered and not yet run or cancelled. */
+    get pending() { return listeners.size },
+    captured,
+  }
+}
+
 /** The Cordis-like child context: service lookup, provision, effects, events and the host rows. */
 function createContext({ home, tools, nativeRuntime, services, sessionContext }) {
   const provided = new Map()
@@ -537,8 +572,14 @@ export function createLegacyFakeHost({ capabilities = HOST.legacyCapabilities } 
  * `sessionLogs` optionally retains fake DSH session events across child-row restarts;
  * `onFollowup` observes/injects at the agent queue port, before the turn is recorded.
  * `attachments` opts into the host attachment peripheral; other callers keep no store.
+ * `ready` (default true) commits the fake launcher `appReady` once every child row has applied,
+ * as the launcher commits after boot settles; `ready: false` withholds it, and the case commits
+ * through `harness.appReady.commit()` (the controller is exposed in both modes).
+ * With `ready: false` the fake host still attaches before the commit, which production cannot do
+ * (the parent's readiness probe, and so its attach, runs only after child ready): "attach before
+ * ready" cases exercise a superset state.
  */
-export async function bootChild(t, { activate = false, attachments = undefined, configure, home: existingHome, watchdogEnabled = true, extraBundles = [], sessionLogs = new Map(), onFollowup } = {}) {
+export async function bootChild(t, { activate = false, attachments = undefined, configure, home: existingHome, watchdogEnabled = true, extraBundles = [], sessionLogs = new Map(), onFollowup, ready = true } = {}) {
   if (!AGENT.supportedVersions.includes(sessionPackage.version)) throw new Error(AGENT.unsupportedVersion + sessionPackage.version)
   const home = tempPath(existingHome ?? await tempHome(t))
   const profileDir = tempPath(path.join(home, 'profiles', 'fishball'), { root: home })
@@ -588,6 +629,7 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     describe() { return [] },
     async mutate() { return { applied: true } },
   }
+  const appReady = createAppReady()
   const sessionContext = new Context()
   // Register teardown at acquisition, including failed setup/row boot.
   let closeHost
@@ -622,6 +664,7 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     llm: { listProviders: () => [], listModels: () => [], resolveModelInfo: () => ({}), resolveCallConfig: (value) => value },
     // The image service is optional at the app row; without a store an upload is refused.
     attachments,
+    appReady: appReady.service,
   }
   // A caller may retain this map across child-row boots, just as DSH retains session logs.
   // It is fixture-owned persistence only; no extension state is reconstructed by the harness.
@@ -741,6 +784,9 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     const adminDispose = admin.apply(ctx)
     if (typeof adminDispose === 'function') rowDisposers.push(adminDispose)
   }
+  // The launcher commits once the tree has applied; the main host attaches its transport only
+  // after the child's readiness probe, so the commit precedes the fake host attach below.
+  if (ready) appReady.commit()
 
   const host = createFakeHost()
   if (nativeRuntime.control !== undefined) nativeRuntime.control(host.transport, { hostId: HOST.id })
@@ -799,6 +845,8 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     rows,
     bridge,
     chat,
+    /** The fake launcher readiness controller: commit(), committed, pending, captured. */
+    appReady,
     get instance() { return ctx.get(SERVICES.instance) },
     get app() { return ctx.get(SERVICES.app) },
     get approvals() { return ctx.get(SERVICES.approvals) },
