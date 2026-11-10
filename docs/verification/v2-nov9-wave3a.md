@@ -65,3 +65,16 @@ The source ledger is [D1–D3 maintenance results](../test-design/v2-d1-d3-super
 - `XC-EP-STUB-16`: the old not-implemented oracle was already superseded on the supplied X0-C branch by in-scope delegation and out-of-scope local refusal/no-wire/no-new-handshake assertions. A pass is not a repair of the retired stub requirement.
 
 **None of the 28 remain as failures in the current selection on either SDK:** 275 total, 190 pass, 0 fail, 85 TODO versus 162 pass, 28 fail, 85 TODO before integration. The 24 non-superseded cases pass; three KEYS cases and the scoped-stub case pass their already-supplied replacement requirements. Thus this is not a claim that all 28 historical assertions were preserved and repaired. No remaining failure in that selection needs a product-versus-fixture disposition. The separate full-root run did expose the missing-import product defect described above. Integration does not alter the supplied assertions.
+
+## LEDGER addendum: I1c-V-02 (2026-11-10, append-only)
+
+This adds to the results above without changing them: the two root runs at `b5b1475` exited 1 only because of `I1c-V-02`. Branch `test/v2-ledger-i1c` updates the stale oracle. It adds `NATIVE_CONNECTOR_UPGRADE_REQUIRED` (D1, named in final-scope §4.1, confirmed by Fishball as an instance-only status code) to the exact instance vocabulary. It also adds the explicit partition `I1c-ST-EP-06` and explicit `I1c-V-04` non-leak coverage. These are test changes only, no product edit. Reason and scope: [D1–D3 results addendum](<../test-design/v2-d1-d3-superseded-results.md#ledger-addendum-i1c-v-02-connector-upgrade-code-2026-11-10-append-only>).
+
+The method is the same as above, except the test-home root is set explicitly with `FBTEST_TEST_HOMES`. Plain `node --test --test-concurrency=1 --test-timeout=60000` runs every `test/*.test.mjs` except `native-production-*`, the same file set as `test/run.mjs`. The run uses `env -i`, a disposable HOME/DSH_HOME/DSH_AGENTS_HOME/TMPDIR under `/private/tmp`, and an explicit `FBTEST_DSH_RUNTIME`. Raw logs are under the ignored `.runtime/ledger/`.
+
+| SDK | Suite | Total | Pass | Fail | TODO | Skip | Cancelled | Exit |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 0.2.1-rc.5 | Full root | 1571 | 1547 | 0 | 7 | 17 | 0 | 0 |
+| 0.2.2-rc.1 | Full root | 1571 | 1543 | 0 | 7 | 21 | 0 | 0 |
+
+The total rises from 1570 to 1571 because of the one new case, `I1c-ST-EP-06`. `P3-H-DT-01` is still the existing TODO with a failing diagnostic, not a pass. Inventory TC-04 (rendered upgrade message, owner-fenced detach, Retry) stays Not Run.
