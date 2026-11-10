@@ -59,10 +59,16 @@ export const SKILL_FIELD = Object.freeze({
 })
 
 /** Error codes the native provider reads as "absent" or "not text"; anything else is a failure. */
-const FS_CODE = Object.freeze({ notFound: 'FS_NOT_FOUND', notText: 'FS_NOT_TEXT', unsafeRoot: 'SKILLS_ROOT_UNSAFE', absent: 'ENOENT', notDirectory: 'ENOTDIR', exists: 'EEXIST' })
+const NATIVE_FS_CODE = Object.freeze({ notFound: 'FS_NOT_FOUND', notText: 'FS_NOT_TEXT' })
+/** The store's own failure for a library root that is not a real directory (mapped to unsafe-entry). */
+const UNSAFE_ROOT_CODE = 'SKILLS_ROOT_UNSAFE'
+/** Node errno codes the store branches on. */
+const ERRNO = Object.freeze({ absent: 'ENOENT', notDirectory: 'ENOTDIR', exists: 'EEXIST' })
 /** The service name the native provider reads its filesystem from. */
 export const FS_SERVICE = 'fs'
 const FS_TYPE = Object.freeze({ file: 'file', directory: 'directory', other: 'other' })
+/** The stat `version` of an entry with no inode of its own to describe (the virtual draft, the root). */
+const UNVERSIONED = ''
 const ENTRY = Object.freeze({ absent: 'absent', link: 'link', directory: 'directory', file: 'file', other: 'other' })
 
 export class SkillError extends Error {
@@ -92,10 +98,28 @@ export function assertSkillName(name) {
   return name
 }
 
+const DRAFT_DIRECTORY = path.join(path.sep, 'draft')
+const DRAFT_FILE = path.join(DRAFT_DIRECTORY, SKILL_STORE.file)
+
 /** The one-file world a draft is parsed in: the native provider reads it through `fs`. */
 const DRAFT = Object.freeze({
-  directory: path.sep + 'draft', source: 'custom', rank: 0,
-  /** A top-level `description:` key whose value is an empty scalar (bare, "" or ''). */
+  file: DRAFT_FILE,
+  target: Object.freeze({ targetKey: DRAFT_FILE, displayPath: DRAFT_FILE }),
+  /**
+   * The candidate handed to native `get`. Native get reads only `locator` and `source` (a
+   * non-bundled source keeps it on the supplied `fs`); the summary fields are placeholders it
+   * replaces with what it parses.
+   */
+  candidate: Object.freeze({
+    name: '', description: '', invocation: Object.freeze({}), source: 'custom', rank: 0,
+    locator: Object.freeze({ path: DRAFT_FILE, directory: DRAFT_DIRECTORY }),
+  }),
+  lookup: Object.freeze({}),
+  provider: Object.freeze({ includeDefaultRoots: false, customSkillDirs: Object.freeze([]), watch: false }),
+  /**
+   * A top-level `description:` key whose value is an empty scalar (bare, "" or ''). JS `$` in
+   * multiline mode also stops before `\r`, so a CRLF document keeps its line ends.
+   */
   emptyDescription: /^(description:[ \t]*)(?:""|'')?[ \t]*$/m,
   placeholder: 'x',
 })
@@ -107,20 +131,20 @@ const DRAFT = Object.freeze({
  * or undefined when native discovery would ignore the document.
  */
 async function parseNatively(document) {
-  const file = path.join(DRAFT.directory, SKILL_STORE.file)
-  const draft = Object.freeze({ targetKey: file, displayPath: file })
   const fs = Object.freeze({
-    resolve: async () => draft,
-    processPath: () => file,
-    stat: async () => ({ type: FS_TYPE.file, version: '', size: document.length }),
+    resolve: async () => DRAFT.target,
+    processPath: () => DRAFT.file,
+    stat: async () => ({ type: FS_TYPE.file, version: UNVERSIONED, size: Buffer.byteLength(document, SKILL_STORE.encoding) }),
     readText: async () => document,
   })
+  // Native logs why it ignores a document; validateDocument turns that outcome into a typed
+  // field refusal instead, so the draft's warnings would only duplicate it in the child log.
   const ignore = () => {}
   const ctx = { get: (service) => (service === FS_SERVICE ? fs : undefined), logger: { warn: ignore, info: ignore, debug: ignore } }
   const lifetime = new AbortController()
-  const provider = new FileSystemSkillProvider(ctx, { signal: lifetime.signal, invalidate: ignore }, { includeDefaultRoots: false, customSkillDirs: [], watch: false })
+  const provider = new FileSystemSkillProvider(ctx, { signal: lifetime.signal, invalidate: ignore }, DRAFT.provider)
   try {
-    return await provider.get({ name: '', description: '', invocation: {}, source: DRAFT.source, provider: provider.name, rank: DRAFT.rank, locator: { path: file, directory: DRAFT.directory } }, {})
+    return await provider.get({ ...DRAFT.candidate, provider: provider.name }, DRAFT.lookup)
   } finally {
     lifetime.abort()
     await provider.dispose()
@@ -158,7 +182,9 @@ export async function validateDocument(name, document) {
   return { description: parsed.description, body: parsed.content }
 }
 
-const absentCode = (error) => error?.code === FS_CODE.absent || error?.code === FS_CODE.notDirectory
+const absentCode = (error) => error?.code === ERRNO.absent || error?.code === ERRNO.notDirectory
+/** A regular file with exactly one name: a hardlink could alias a file outside the root. */
+const isSingleLinkFile = (info) => info.isFile() && info.nlink === SKILL_STORE.singleLink
 
 async function lstatOrAbsent(file) {
   try { return await lstat(file) } catch (error) { if (absentCode(error)) return undefined; throw error }
@@ -188,7 +214,11 @@ export function createSkillStore({ home }) {
     return anchored
   }
 
-  /** One cooperating writer at a time, so validate-then-publish never interleaves (Q5). */
+  /**
+   * One cooperating writer at a time, so validate-then-publish never interleaves (Q5). The chain
+   * swallows each outcome so one failed write never rejects the writes queued behind it; the
+   * caller still receives its own `result`.
+   */
   function exclusive(work) {
     const result = serial.then(work)
     serial = result.catch(() => {})
@@ -205,7 +235,7 @@ export function createSkillStore({ home }) {
     if (!inside(base, file)) return { kind: ENTRY.absent }
     const rootKind = kindOf(await lstatOrAbsent(base))
     if (rootKind === ENTRY.absent) return { kind: ENTRY.absent }
-    if (rootKind !== ENTRY.directory) throw fsError(FS_CODE.unsafeRoot, 'the private skills root is not a real directory')
+    if (rootKind !== ENTRY.directory) throw fsError(UNSAFE_ROOT_CODE, 'the private skills root is not a real directory')
     let current = base
     let info
     for (const segment of path.relative(base, file).split(path.sep).filter(Boolean)) {
@@ -219,21 +249,21 @@ export function createSkillStore({ home }) {
   }
 
   const target = (file) => Object.freeze({ targetKey: file, displayPath: file })
-  const safeFile = (walked) => walked.kind === ENTRY.file && walked.info.nlink === SKILL_STORE.singleLink
+  const safeFile = (walked) => walked.kind === ENTRY.file && isSingleLinkFile(walked.info)
 
   /** Read one confined regular file without following a final link; the open must be the walked inode. */
   async function readConfined(file, signal) {
     signal?.throwIfAborted()
     const walked = await walk(file)
-    if (!safeFile(walked)) throw fsError(FS_CODE.notFound, 'not a confined skill file')
+    if (!safeFile(walked)) throw fsError(NATIVE_FS_CODE.notFound, 'not a confined skill file')
     // O_NONBLOCK: a FIFO swapped in after the walk must not block the open; the inode check refuses it.
     const handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK)
     try {
       const info = await handle.stat()
-      if (!info.isFile() || info.ino !== walked.info.ino || info.nlink !== SKILL_STORE.singleLink) throw fsError(FS_CODE.notFound, 'the skill file changed while it was opened')
+      if (!isSingleLinkFile(info) || info.ino !== walked.info.ino) throw fsError(NATIVE_FS_CODE.notFound, 'the skill file changed while it was opened')
       const bytes = await handle.readFile({ signal })
       try { return new TextDecoder(SKILL_STORE.encoding, { fatal: true }).decode(bytes) }
-      catch { throw fsError(FS_CODE.notText, 'the skill file is not UTF-8 text') }
+      catch { throw fsError(NATIVE_FS_CODE.notText, 'the skill file is not UTF-8 text') }
     } finally { await handle.close() }
   }
 
@@ -241,7 +271,7 @@ export function createSkillStore({ home }) {
   const fileSystem = Object.freeze({
     async resolve(file) {
       const resolved = path.resolve(file)
-      if (!inside(await root(), resolved)) throw fsError(FS_CODE.notFound, 'outside the private skills root')
+      if (!inside(await root(), resolved)) throw fsError(NATIVE_FS_CODE.notFound, 'outside the private skills root')
       return target(resolved)
     },
     processPath: (resolved) => resolved.displayPath,
@@ -250,20 +280,20 @@ export function createSkillStore({ home }) {
       const walked = await walk(resolved.displayPath)
       if (walked.kind === ENTRY.absent) return undefined
       const type = walked.kind === ENTRY.directory ? FS_TYPE.directory : safeFile(walked) ? FS_TYPE.file : FS_TYPE.other
-      return { type, version: walked.info ? `${walked.info.ino}:${walked.info.mtimeMs}:${walked.info.size}` : '', size: walked.info?.size }
+      return { type, version: walked.info ? `${walked.info.ino}:${walked.info.mtimeMs}:${walked.info.size}` : UNVERSIONED, size: walked.info?.size }
     },
     readText: (resolved, signal) => readConfined(resolved.displayPath, signal),
     async listDir(resolved, signal) {
       signal?.throwIfAborted()
       const walked = await walk(resolved.displayPath)
-      if (walked.kind !== ENTRY.directory) throw fsError(FS_CODE.notFound, 'not a confined directory')
+      if (walked.kind !== ENTRY.directory) throw fsError(NATIVE_FS_CODE.notFound, 'not a confined directory')
       // Dirents describe the entry itself, never a link target: a link lists as "other" and
       // native discovery skips it without opening it. At the root only directories count: the
       // library is `<name>/SKILL.md` (S5), so a stray flat `*.md` there is never a skill that
-      // update and remove could not address.
+      // update and remove could not address. Order is left to native discovery, which sorts.
       const atRoot = resolved.displayPath === await root()
       const entries = await readdir(resolved.displayPath, { withFileTypes: true })
-      return entries.sort((a, b) => a.name.localeCompare(b.name)).map((entry) => ({
+      return entries.map((entry) => ({
         name: entry.name,
         type: entry.isDirectory() ? FS_TYPE.directory : entry.isFile() && !atRoot ? FS_TYPE.file : FS_TYPE.other,
         target: target(path.join(resolved.displayPath, entry.name)),
@@ -277,25 +307,19 @@ export function createSkillStore({ home }) {
     return { base, directory, file: path.join(directory, SKILL_STORE.file) }
   }
 
-  /** The skill directory must be a real directory (or absent); a link or file there is unsafe. */
-  async function directoryState(directory) {
-    const walked = await walk(directory)
-    if (walked.kind !== ENTRY.absent && walked.kind !== ENTRY.directory) refuse(SKILL_ERROR.unsafeEntry)
-    return walked.kind
+  /**
+   * The walked kind of `entry`, which must be absent or `expected`: the skill directory a real
+   * directory, SKILL.md a plain file. A link or any other kind there is unsafe and never touched.
+   */
+  async function stateOf(entry, expected) {
+    const { kind } = await walk(entry)
+    if (kind !== ENTRY.absent && kind !== expected) refuse(SKILL_ERROR.unsafeEntry)
+    return kind
   }
 
-  /** The located skill, which must exist as a real directory holding a plain SKILL.md (Q5 not-found). */
-  async function requirePresent(name) {
-    const located = await locate(name)
-    if (await directoryState(located.directory) === ENTRY.absent || await fileState(located.file) === ENTRY.absent) refuse(SKILL_ERROR.notFound)
-    return located
-  }
-
-  /** SKILL.md must be a plain file (present) or absent; a link or special file is never touched. */
-  async function fileState(file) {
-    const walked = await walk(file)
-    if (walked.kind !== ENTRY.absent && walked.kind !== ENTRY.file) refuse(SKILL_ERROR.unsafeEntry)
-    return walked.kind
+  /** The located skill must exist as a real directory holding a plain SKILL.md (Q5 not-found). */
+  async function requirePresent(located) {
+    if (await stateOf(located.directory, ENTRY.directory) === ENTRY.absent || await stateOf(located.file, ENTRY.file) === ENTRY.absent) refuse(SKILL_ERROR.notFound)
   }
 
   /**
@@ -320,33 +344,44 @@ export function createSkillStore({ home }) {
   /** Map a pre-commit failure to a typed, not-committed outcome. */
   function notCommitted(error, signal) {
     if (error instanceof SkillError) return error
-    if (error?.code === FS_CODE.unsafeRoot) return new SkillError(SKILL_ERROR.unsafeEntry, { cause: error })
+    if (error?.code === UNSAFE_ROOT_CODE) return new SkillError(SKILL_ERROR.unsafeEntry, { cause: error })
     return new SkillError(signal?.aborted ? SKILL_ERROR.cancelled : SKILL_ERROR.writeFailed, { cause: error })
   }
+
+  /**
+   * The one write boundary of create, update and remove: name gate first, then one queued attempt
+   * whose every failure becomes a typed not-committed SkillError. `work(located)` must throw only
+   * before its commit point; whatever it does after committing must not throw.
+   */
+  async function mutate(name, signal, work) {
+    assertSkillName(name)
+    return exclusive(async () => {
+      try {
+        signal?.throwIfAborted()
+        return await work(await locate(name))
+      } catch (error) { throw notCommitted(error, signal) }
+    })
+  }
+
+  // create and update validate before queueing: validation reads nothing on disk, so a refused
+  // document never waits behind, or holds up, another write.
 
   /** Create a new skill; an existing SKILL.md is a conflict and is left byte-identical. */
   async function create(name, document, signal) {
     assertSkillName(name)
     await validateDocument(name, document)
-    return exclusive(async () => {
-      let made = false
-      let directory
+    return mutate(name, signal, async (located) => {
+      // The first create makes the root; the home itself must already exist.
+      try { await mkdir(located.base, { mode: SKILL_STORE.directoryMode }) } catch (error) { if (error?.code !== ERRNO.exists) throw error }
+      const made = await stateOf(located.directory, ENTRY.directory) === ENTRY.absent
+      if (made) await mkdir(located.directory, { mode: SKILL_STORE.directoryMode })
       try {
-        signal?.throwIfAborted()
-        const located = await locate(name)
-        directory = located.directory
-        // The first create makes the root; the home itself must already exist.
-        try { await mkdir(located.base, { mode: SKILL_STORE.directoryMode }) } catch (error) { if (error?.code !== FS_CODE.exists) throw error }
-        if (await directoryState(directory) === ENTRY.absent) {
-          await mkdir(directory, { mode: SKILL_STORE.directoryMode })
-          made = true
-        }
-        if (await fileState(located.file) === ENTRY.file) refuse(SKILL_ERROR.conflict)
+        if (await stateOf(located.file, ENTRY.file) === ENTRY.file) refuse(SKILL_ERROR.conflict)
         await publish(located.file, document, signal)
       } catch (error) {
         // A directory this call made and could not fill is removed, so no leftover blocks a retry.
-        if (made) await rmdir(directory).catch(() => {})
-        throw notCommitted(error, signal)
+        if (made) await rmdir(located.directory).catch(() => {})
+        throw error
       }
     })
   }
@@ -355,12 +390,9 @@ export function createSkillStore({ home }) {
   async function update(name, document, signal) {
     assertSkillName(name)
     await validateDocument(name, document)
-    return exclusive(async () => {
-      try {
-        signal?.throwIfAborted()
-        const located = await requirePresent(name)
-        await publish(located.file, document, signal)
-      } catch (error) { throw notCommitted(error, signal) }
+    return mutate(name, signal, async (located) => {
+      await requirePresent(located)
+      await publish(located.file, document, signal)
     })
   }
 
@@ -369,16 +401,11 @@ export function createSkillStore({ home }) {
    * only if that leaves it empty; extra files stay (Q2). Nothing outside `<root>/<name>/` is touched.
    */
   function remove(name, signal) {
-    assertSkillName(name)
-    return exclusive(async () => {
-      let directory
-      try {
-        signal?.throwIfAborted()
-        const located = await requirePresent(name)
-        directory = located.directory
-        await unlink(located.file)
-      } catch (error) { throw notCommitted(error, signal) }
-      await rmdir(directory).catch(() => {})
+    return mutate(name, signal, async (located) => {
+      await requirePresent(located)
+      await unlink(located.file)
+      // After the commit: a failure here (extra files, Q2) leaves the removal committed.
+      await rmdir(located.directory).catch(() => {})
     })
   }
 
