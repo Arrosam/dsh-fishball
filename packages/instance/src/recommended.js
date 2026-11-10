@@ -13,10 +13,12 @@
  * - your answer after the re-check: @zaofan/dsh-qqbot wrote a folder into DSH's working directory
  *   while it ran for Fishball, which promises never to write local files (QQ stays reachable
  *   through @michengai/dsh-im-connect).
- * Pet lists none: a Fishball-only plugin's browser part is never served (P10-S22).
+ * Pet lists none (P10-S22).
  *
  * Install goes through the ordinary "Install for Fishball" dialog with the entry's spec, so the
  * list grants nothing: the dialog installs any spec you type, after your click (revision 10a).
+ * In V2 the child's Fishball Recommended tab (child-web/fishball-recommend-plugins) reads the same
+ * list through recommendedList() and installs through DSH's own Plugins page dialog instead.
  */
 
 // PLUGIN_KIND and FISHBALL_INSTALLED_PREFIX moved here from the main row's src/constants.js
@@ -81,6 +83,36 @@ export const RECOMMENDED_PLUGINS = Object.freeze([
   npm(RECOMMENDED_CATEGORY.channel, 'dsh-dingtalk-channel'),
 ])
 
+/** The fields every reader shows for an entry, before its own state and its optional note. */
+const identityOf = (item) => ({ packageName: item.packageName, spec: item.spec, source: item.source })
+
+/**
+ * The list grouped by category in display order, each item mapped by `mapItem`: the one grouping
+ * rule for every view of the list, so the child's Fishball Recommended tab (recommendedList) and
+ * the older catalog view (recommendedView) never order or group differently. recommendedView has
+ * no caller left in this repository since the M1 split (the admin relay reads ADMIN_RECOMMENDED);
+ * deleting it is outside the RP increment, which only shares this rule with it.
+ */
+function grouped(mapItem) {
+  return {
+    highlighted: [...HIGHLIGHTED],
+    categories: Object.values(RECOMMENDED_CATEGORY).map((category) => ({
+      category,
+      plugins: RECOMMENDED_PLUGINS.filter((item) => item.category === category).map(mapItem),
+    })),
+  }
+}
+
+/**
+ * The fixed list as the child's Fishball Recommended tab reads it (V2 RP). It carries no catalog
+ * state: the tab decides Install/Installed from the child's own native bundle inventory.
+ * @returns {{highlighted: string[], categories: {category: string, plugins: {packageName: string,
+ *   spec: string, source: string, noteKey?: string}[]}[]}} a fresh JSON-safe copy.
+ */
+export function recommendedList() {
+  return grouped((item) => ({ ...identityOf(item), ...noteOf(item) }))
+}
+
 /** Catalog kinds that are DSH plugins (installed in the profile, on or off there). */
 const DSH_KINDS = new Set([PLUGIN_KIND.profile, PLUGIN_KIND.fishballOnly])
 
@@ -108,14 +140,8 @@ function stateOf(entry) {
  */
 export function recommendedView(catalog) {
   if (catalog === null) return null
-  return {
-    highlighted: [...HIGHLIGHTED],
-    categories: Object.values(RECOMMENDED_CATEGORY).map((category) => ({
-      category,
-      plugins: RECOMMENDED_PLUGINS.filter((item) => item.category === category).map((item) => {
-        const entry = catalogEntryOf(catalog.plugins, item.packageName)
-        return { packageName: item.packageName, spec: item.spec, source: item.source, plugin: entry?.plugin ?? null, state: stateOf(entry), blocked: entry?.blocked ?? null, ...noteOf(item) }
-      }),
-    })),
-  }
+  return grouped((item) => {
+    const entry = catalogEntryOf(catalog.plugins, item.packageName)
+    return { ...identityOf(item), plugin: entry?.plugin ?? null, state: stateOf(entry), blocked: entry?.blocked ?? null, ...noteOf(item) }
+  })
 }

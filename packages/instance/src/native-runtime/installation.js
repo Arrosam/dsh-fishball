@@ -219,7 +219,8 @@ export async function copyChildCode(paths, record) {
   // Both modules ship with the slim tree so the target applies the same reviewed rules as the main host.
   await copy(path.join(sourceRoot, 'src', 'provider-sync.js'), path.join(destination, 'src', 'provider-sync.js'), javascript)
   await copy(path.join(sourceRoot, 'src', 'provider-sync-host.js'), path.join(destination, 'src', 'provider-sync-host.js'), javascript)
-  // Only so the snapshot's copy of src/slim/host/admin.js has no dangling import; the list reaches the page through the main-side relay (admin.plugins.get), never from the child.
+  // Read by the child-only Fishball Recommended tab's Node row (child-web/fishball-recommend-plugins,
+  // V2 RP), and keeps the snapshot's copy of src/slim/host/admin.js free of a dangling import.
   await copy(path.join(sourceRoot, 'src', 'recommended.js'), path.join(destination, 'src', 'recommended.js'), javascript)
   return path.join(destination, 'native-child.js')
 }
