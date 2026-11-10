@@ -13,15 +13,20 @@
  *
  * Observation: a REAL DSH boot of the main profile (support/host.mjs) per SDK selected by
  * FBTEST_DSH_RUNTIME, its owner-only routes and <home>/fishball/runtime/lifecycle.log. Failures are
- * real: (a) a planted @deepseek-ai/schemastery package in the child profile, refused by the real
- * preflight (the reported e2e symptom); (b) an unparsable child profile manifest whose JSON error
- * quotes the planted text, which is how home paths and multi-line text reach a real message.
- * The child profile only exists after a first start, so every plant follows a first ready boot.
+ * real: (a) a dependency with an invalid package.json under the child profile's node_modules,
+ * refused by the real preflight as PREFLIGHT_MANIFEST; (b) an unparsable child profile manifest
+ * whose JSON error quotes the planted text, which is how home paths and multi-line text reach a
+ * real message. The child profile only exists after a first start, so every plant follows a first
+ * ready boot.
+ * Moved fault (decision A, 2026-11-11): R2-UC-01..03, R2-DT-01, R2-ST-01 and R2-EP-01 used a
+ * planted @deepseek-ai/schemastery shadow (PREFLIGHT_CORE_SHADOW, the round-2 e2e symptom). That
+ * copy no longer fails a start (test/v2-r4-core-copy.test.mjs), so they use fault (a) instead; the
+ * R2.x requirements they check are unchanged.
  *
  * | id | technique | requirement | expected |
  * |----|-----------|-------------|----------|
- * | R2-UC-01 | Use Case (e2e symptom) | R2.1, R2.4 | shadow → failed / NATIVE_START_FAILED / detail 'PREFLIGHT_CORE_SHADOW: <one line>' on both status routes |
- * | R2-UC-02 | Use Case | R2.2 | lifecycle FAILED line with reason PREFLIGHT_CORE_SHADOW; no message, path or URL in the line |
+ * | R2-UC-01 | Use Case (preflight refusal) | R2.1, R2.4 | invalid dependency manifest → failed / NATIVE_START_FAILED / detail 'PREFLIGHT_MANIFEST: <one line>' on both status routes |
+ * | R2-UC-02 | Use Case | R2.2 | lifecycle FAILED line with reason PREFLIGHT_MANIFEST; no message, path or URL in the line |
  * | R2-UC-03 | Use Case | R2.3 | Retry while the cause persists answers {state, code, detail} with the same detail |
  * | R2-EP-01 | EP (not failed) | R2.1 | ready → detail null on both routes and on Retry |
  * | R2-ST-01 | State Transition ready → failed → (Retry, cause removed) → ready | R2.1 | detail appears with failed and returns to null with ready |
@@ -37,8 +42,8 @@
 import assert from 'node:assert/strict'
 import { after, describe, it, test } from 'node:test'
 import { RUNTIME } from './support/constants.mjs'
-import { bootHost, newHome } from './support/host.mjs'
-import { R2, R2_BUDGET, lifecycleLines, plantShadow, removeHome, replaceChildManifest, selectedSdk, settledStatus } from './support/v2-r2.mjs'
+import { newHome } from './support/host.mjs'
+import { R2, R2_BUDGET, bootAfterFault, lifecycleLines, plantInvalidManifest, removeHome, replaceChildManifest, selectedSdk, settledStatus } from './support/v2-r2.mjs'
 
 const SDK = selectedSdk(RUNTIME)
 const LIMIT = Object.freeze({ detailCodePoints: 2000 })
@@ -95,11 +100,7 @@ after(() => { for (const home of homes.splice(0)) removeHome(home) })
 async function failedBoot(t, label, fault) {
   const home = newHome('v2-r2-' + label)
   homes.push(home)
-  const first = await bootHost(home)
-  try { assertReady(await settledStatus(first), 'precondition: first boot ready') } finally { await first.stop() }
-  const restore = fault(home)
-  const host = await bootHost(home)
-  t.after(async () => { await host.stop().catch(() => {}) })
+  const { host, restore } = await bootAfterFault(t, home, fault, (_first, status) => assertReady(status, 'precondition: first boot ready'))
   return { home, host, restore }
 }
 const read = async (host) => ({
@@ -108,19 +109,19 @@ const read = async (host) => ({
 })
 
 describe(`R2 [${SDK}] a failed start reports its specific reason`, { timeout: R2_BUDGET.caseMs * 3 }, () => {
-  it('R2-UC-01/02/03 + R2-DT-01 + R2-ST-01 + R2-EP-01 the planted core shadow (e2e symptom), through status, native/status, lifecycle and Retry', { timeout: R2_BUDGET.caseMs }, async (t) => {
-    const { home, host, restore } = await failedBoot(t, 'shadow', plantShadow)
+  it('R2-UC-01/02/03 + R2-DT-01 + R2-ST-01 + R2-EP-01 a dependency with an invalid package.json in the child profile, through status, native/status, lifecycle and Retry', { timeout: R2_BUDGET.caseMs }, async (t) => {
+    const { home, host, restore } = await failedBoot(t, 'bad-dep-manifest', plantInvalidManifest)
     // R2-UC-01 / R2.4: both status routes.
     const failed = await settledStatus(host)
     const detail = assertFailed(failed, 'R2-UC-01 status')
-    assert.equal(detail.code, R2.shadowCode, 'R2-UC-01: the specific preflight code: ' + failed.detail)
+    assert.equal(detail.code, R2.faultCode, 'R2-UC-01: the specific preflight code: ' + failed.detail)
     assert.ok(detail.message, 'R2-UC-01: the preflight refusal has a message, so detail carries ": <first line>"')
     const native = (await host.get(R2.route.nativeStatus)).json
     assert.equal(native.state, R2.state.failed)
     assert.equal(native.code, R2.code.startFailed)
     assert.equal(native.detail, failed.detail, 'R2-DT-01: native/status carries the same detail')
     // R2-UC-02 / R2.2.
-    assertFailureLogged(home, R2.shadowCode, detail.message)
+    assertFailureLogged(home, R2.faultCode, detail.message)
     // R2-UC-03 / R2.3: Retry with the cause still there answers the same shape and detail.
     const retried = await host.post(R2.route.retry, {})
     assert.deepEqual(Object.keys(retried.json ?? {}).sort(), [...R2.publicKeys], 'R2-UC-03: Retry answers exactly {state, code, detail}: ' + retried.text)

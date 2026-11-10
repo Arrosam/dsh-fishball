@@ -13,6 +13,8 @@
  * Observation: a REAL child DSH of the SDK selected by FBTEST_DSH_RUNTIME, started and stopped by
  * one runtime object over a throwaway canonical main home (no mocks, no spawn seam); the row cases
  * use a real main DSH boot (support/host.mjs) and the child's own native admission.
+ * Moved fault (decision A, 2026-11-11): R3-UC-01's failed start was a planted @deepseek-ai shadow;
+ * that copy no longer fails a start, so it plants an invalid dependency package.json instead.
  *
  * | id | technique | requirement | expected |
  * |----|-----------|-------------|----------|
@@ -20,7 +22,7 @@
  * | R3-ST-02 | State Transition ready → parentExit+shutdown → start | R3 | same as R3-ST-01 after the parent-exit flag was set |
  * | R3-ST-03 | State Transition ready → restart → ready (twice) | R3 | each restart's access names its own new instance id; earlier signals aborted |
  * | R3-DT-01 | DT (stopped × started) | R3 | refused while stopped (code is not a resolved access), resolved while ready |
- * | R3-UC-01 | Use Case (row Retry from failed) | R3 | failed → Retry → ready; embed 303 to the child and the child admits |
+ * | R3-UC-01 | Use Case (row Retry from failed; invalid dependency manifest) | R3 | failed → Retry → ready; embed 303 to the child and the child admits |
  * | R3-UC-02 | Use Case (row restart from the child's settings view) | R3 | restart → ready with a new child; embed 303 to the new child |
  */
 import assert from 'node:assert/strict'
@@ -30,7 +32,7 @@ import { RUNTIME } from './support/constants.mjs'
 import { loadInstance, runtimeAnchor } from './support/body-soul-env.mjs'
 import { bootHost, newHome } from './support/host.mjs'
 import { until } from './support/util.mjs'
-import { R2, R2_BUDGET, assertEmbedAdmits, launchRecords, plantShadow, removeHome, selectedSdk, settledStatus } from './support/v2-r2.mjs'
+import { R2, R2_BUDGET, assertEmbedAdmits, bootAfterFault, launchRecords, plantInvalidManifest, removeHome, selectedSdk, settledStatus } from './support/v2-r2.mjs'
 
 const SDK = selectedSdk(RUNTIME)
 const R3 = Object.freeze({
@@ -115,15 +117,8 @@ describe(`R3 [${SDK}] native access after an in-process stop and start`, { timeo
   it('R3-UC-01 row: failed → Retry → ready, and /fishball/embed/ redirects (303) to the child again', { timeout: R2_BUDGET.caseMs }, async (t) => {
     const home = newHome('v2-r3-row-retry')
     homes.push(home)
-    const first = await bootHost(home)
-    try {
-      assert.equal((await settledStatus(first)).state, R2.state.ready, 'precondition: first boot ready')
-      await assertEmbedAdmits(first, 'first boot')
-    } finally { await first.stop() }
-    const restore = plantShadow(home)
-    const host = await bootHost(home)
-    t.after(async () => { await host.stop().catch(() => {}) })
-    assert.equal((await settledStatus(host)).state, R2.state.failed, 'precondition: the planted shadow fails the start')
+    const { host, restore } = await bootAfterFault(t, home, plantInvalidManifest, (first) => assertEmbedAdmits(first, 'first boot'))
+    assert.equal((await settledStatus(host)).state, R2.state.failed, 'precondition: the invalid dependency manifest fails the start')
     restore()
     const retried = (await host.post(R2.route.retry, {})).json
     const ready = retried?.state === R2.state.ready ? retried : await settledStatus(host, [R2.state.ready])
