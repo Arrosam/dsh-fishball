@@ -24,6 +24,10 @@ export const V2_SUITES = Object.freeze({
   /** Non-root suites in the V2 run; test/*.test.mjs come from the root runner's own rule. */
   nested: Object.freeze([
     'packages/connector/test/instance-ext/k1.test.mjs',
+    // Manager workspace attach (7.A blank composer) and its background-activation policy
+    // (review-opus/v2-manager-ws-2).
+    'packages/instance/test/instance-ext/manager-attach-background.test.mjs',
+    'packages/instance/test/instance-ext/manager-workspace.test.mjs',
     // PAGE (7.A page-open ensure) and READY (appReady gate) implementation suites, plan §3 owners.
     'packages/instance/test/instance-ext/page-open-session.test.mjs',
     'packages/instance/test/instance-ext/ready-gate.test.mjs',
@@ -45,6 +49,9 @@ export const V2_SUITES = Object.freeze({
     'test/v2-page-cases/pg-origin.test.mjs',
     'test/v2-page-cases/ready.test.mjs',
     'test/v2-page-cases/set.test.mjs',
+    // RP: the child-only Fishball Recommended tab (T-RP cases 6cbe9e3), one registration per SDK.
+    'test/v2-recommendation/sdk-0.2.1-rc.5.test.mjs',
+    'test/v2-recommendation/sdk-0.2.2-rc.1.test.mjs',
     'test/verification/w0-host-session.test.mjs',
   ]),
   excludedFiles: Object.freeze([

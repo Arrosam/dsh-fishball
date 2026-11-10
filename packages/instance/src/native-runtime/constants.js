@@ -155,6 +155,8 @@ export const NATIVE_WEB = Object.freeze({
   settingsPackage: 'fishball-settings',
   sharedClient: 'client.js',
   sharedClientChunk: 'client.instance.js',
+  /** V2 RP: the child-only Fishball Recommended Plugins tab, a sibling package under pageDirectory. */
+  recommendPackage: 'fishball-recommend-plugins',
   adapterModule: 'native-web.js',
 })
 

@@ -622,7 +622,7 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | **PG-1** `fishball-page` plugin | new `packages/instance/child-web/fishball-page/{package.json,client.js,removals.js,guard.js,shortcuts.js,messenger.js,record-definition.js,style.css,i18n.js}` | SP-PG, CHILD-WEB | U15: shared `recordDefinition(packageName, suffix, render)` used by Fishball client plugins; foreign-prefix registration throws, own-prefix records render (§12.2); §11.3 table holds; Remove is hidden for the bundled plugins (§11.10); the page opens on Fishball's session; §11.4 paths cannot leave it; DSH Settings and Plugins pages open and come back; grey bubbles and avatars as eaa33f5; composer plugins (a fixture plus voice input when installed) work |
 | **K2** connector: mandatory timer-free semantics (U14/U22), immediate card clearing (U17 final) | `packages/connector/src/{approvals,questions,config,pile,card-lifecycle}.js`, shared descriptor validation, `slim/host/approvals.js`, contract docs, `DESIGN.md` item 11 | K1; coordinated release with MCP-SERVER/X0-W/FB-PUSH | no approval/question/plan-review timer, deadline or expiry filtering for any client; reject removed descriptor `expiresAt` using K1's domain-error mapping; explicit escalation advances immediately, idle never-polling offers wait; **first committed outcome wins (OQ-14)**; no legacy exception/downgrade; final U17 settlement returns the tool result and clears pile/session cards once without retained labels, preserving reached-layer transcript results (§12.4) |
 | **SET** slimmed Fishball settings page (§11.8) | `child-web/fishball-settings/` (own child package and overlay row, delivered as [v2-set](<../planning/v2-set.md>)), its Fetch routes (status, restart, provider sync) | PG-1 | only the "stays" rows of §11.8 are on it; the links open DSH Settings and Plugins and come back; the moved items are not duplicated |
-| **RP** `fishball-recommend-plugins` (§11.9) | new `packages/recommend-plugins/{package.json,index.js,client.js,i18n.js}`; `RUNTIME.bundledPlugins` entry in `src/native-runtime/constants.js` | SP-PG (8), CHILD-WEB, X0-B | the child's Plugins page shows the "Fishball 推荐" / "Fishball Recommended" tab next to Installed, Marketplace and Discover; it lists the recommended plugins with meow-memory's note; Install installs into the child profile; an installed one shows "Installed"; the main DSH's Plugins page has no such tab |
+| **RP** `fishball-recommend-plugins` (§11.9) | *(as built, 2026-11-11)* new `packages/instance/child-web/fishball-recommend-plugins/{package.json,index.js,client.js}`, one non-required child row in `src/native-runtime/overlay.js`, `recommendedList()` in `src/recommended.js`; no `RUNTIME.bundledPlugins` entry | SP-PG (8), CHILD-WEB, X0-B | the child's Plugins page shows the "Fishball 推荐" / "Fishball Recommended" tab next to Installed, Marketplace and Discover; it lists the recommended plugins with meow-memory's note; Install installs into the child profile; an installed one shows "Installed"; the main DSH's Plugins page has no such tab |
 | **PANELS** our panels as DSH entries | `child-web/fishball-page/panels/{approvals,reminders}.js`, transcript attribution and the open escalation card as chat-node definitions; their Fetch routes in `src/slim/child/` | PG-1, X0-A, K2 | approvals and reminders work as `main` panels; open escalations render in Fishball's chat; U14: no approval countdown; final U17/Q-Q: settlement immediately removes all card UI (including the user's result card), repeated callbacks/reload never restore it, and eligible ordinary transcript results remain searchable with attribution; no watchdog-only decision appears in Fishball automatically; a Q-T explicit pull renders as an ordinary tool result, not an approval card or unsolicited notice (§12.8); user settlement wakes Fishball once, other settlements create no duplicate wake/entry; compaction drops context entries without deleting transcripts (§12.4) |
 | **RETIRE** remove the custom page | delete `src/slim/ui/{shell.*,chat.js,composer.js,approvals.js,records.js,reminders.js,settings.js}` and their server routes once nothing uses them; keep `dsh-tokens.css` only if a panel still needs it | PANELS, SET, RP, FN-4, B5 | no route serves the old page; the instance tests for the old page are retired with it |
 
@@ -1505,7 +1505,24 @@ register any `plugins.tab` (`git grep` on `feat/body-soul` `packages/` finds non
 screenshot is from a DSH where the legacy package is still installed; the new tab replaces it in
 spirit.
 
-**The plugin.**
+**As built in V2 (RP, 2026-11-11), superseding the package/placement bullets below:** the package is
+`packages/instance/child-web/fishball-recommend-plugins/`, an instance-owned child asset beside
+`fishball-page`, mounted only by the child's launch overlay as a non-required row. It is not a
+bundled or placed plugin, and there is no `RUNTIME.bundledPlugins` entry (V2 ships no bundled
+plugins). The tab reads presence from `remote.pluginManager.listBundles()`. A bundle is present
+when the profile declares it (`installed`) and its files are readable (`availability` not
+`missing`), whether enabled or not. Until the first read answers, each row shows "Loading…" and no
+button. Install first reads the
+registry's current version with `pluginManager.inspect(spec)`, then calls the documented owner prop
+`install({spec: name@version, registry?, title, version})`, so DSH's own dialog runs the install.
+Registry limit: `registry` is passed only when the inspection names a URL. When it names `null`
+(pnpm's own configured registry), the owner prop has no form for it, so the dialog asks its
+remembered registry choice. If that registry lacks the exact version, the native dialog shows the
+refusal and its own Retry/registry change; the tab adds no fallback. Only the pre-install read is
+de-duplicated per row; the native dialog owns pending/unconfirmed blocking after the handoff.
+The admin relay's `ADMIN_RECOMMENDED` is not retired by this increment.
+
+**The plugin (original proposal).**
 - **Package:** `packages/recommend-plugins/`, npm name `fishball-recommend-plugins`, `dsh.client`
   (web) only, plus a tiny Node row that serves the list through a Fetch route.
 - **Bundled** like the other three (§2.2): `RUNTIME.bundledPlugins` gains
