@@ -1,15 +1,27 @@
-/** Server-private native admission. Never serialize this adapter or its returned access. */
-import { request } from 'node:http'
-import { LIMITS } from '../contract.js'
-
+/**
+ * Server-private native admission target (PG-ORIGIN, docs/planning/v2-final-scope.md §4.3 (4)).
+ *
+ * The browser now consumes native admission itself: the embed broker answers the authenticated
+ * launch route with a 303 to the exact URL built here, native DSH mints its own cookie on the
+ * child's origin and redirects to clean `./`. The child document therefore runs at its own
+ * browser origin (own localStorage), not behind a main-origin proxy.
+ *
+ * The reusable native launch token is in that one redirect's Location, so it is visible in the
+ * browser's redirect trace; native DSH has no one-use launch id in 0.2.1-rc.5 or 0.2.2-rc.1. Never
+ * log, serialize or echo the URL, and never put it in status, descriptors or error text.
+ */
 const AUTH = Object.freeze({
   protocol: 'http:', hostname: '127.0.0.1', root: '/', token: 'token',
-  method: 'GET', redirectStatus: 303, redirect: './', unavailable: 'NATIVE_ACCESS_UNAVAILABLE',
-  separator: ';', equals: '=', maxAge: 'max-age', expires: 'expires',
-  millisecondsPerSecond: 1000, maxTimerMs: 2147483647, cookiePair: /^[!#$%&'*+.^_`|~\w-]+=[A-Za-z0-9._~-]+$/,
+  unavailable: 'NATIVE_ACCESS_UNAVAILABLE',
 })
 const unavailable = () => new Error(AUTH.unavailable)
 
+/**
+ * The exact owned target: plain-HTTP loopback child origin at its root, and an authenticated URL
+ * on that same origin whose only query is one non-empty `token`. Anything else (another host,
+ * credentials, a path, a fragment, extra parameters) is refused, so the broker can never be made
+ * to redirect a browser anywhere but the current child's native admission.
+ */
 function validate(value) {
   try {
     const origin = new URL(value.origin)
@@ -21,105 +33,33 @@ function validate(value) {
         login.origin !== origin.origin || login.username || login.password || login.hash ||
         login.pathname !== AUTH.root || login.searchParams.getAll(AUTH.token).length !== 1 ||
         !login.searchParams.get(AUTH.token) || [...login.searchParams.keys()].some((key) => key !== AUTH.token)) throw unavailable()
-    return { ...value, origin: origin.origin, host: origin.host, login }
+    return { signal: value.signal, login }
   } catch { throw unavailable() }
 }
 
-/** Parse only the native session cookie, not a general cross-origin cookie jar. */
-function cookieOf(headers) {
-  const rows = headers['set-cookie']
-  if (!Array.isArray(rows) || rows.length !== 1) throw unavailable()
-  const [pair, ...attributes] = rows[0].split(AUTH.separator).map((part) => part.trim())
-  if (!AUTH.cookiePair.test(pair)) throw unavailable()
-  const fields = new Map(attributes.map((part) => {
-    const at = part.indexOf(AUTH.equals)
-    return at < 0 ? [part.toLowerCase(), ''] : [part.slice(0, at).toLowerCase(), part.slice(at + 1)]
-  }))
-  const seconds = Number(fields.get(AUTH.maxAge))
-  const expires = Date.parse(fields.get(AUTH.expires))
-  if (!Number.isSafeInteger(seconds) || seconds <= 0 || !Number.isFinite(expires)) throw unavailable()
-  const expiresAt = Math.min(Date.now() + seconds * AUTH.millisecondsPerSecond, expires)
-  if (expiresAt <= Date.now()) throw unavailable()
-  return { cookie: pair, expiresAt }
-}
-
 /**
- * Producer contract: ready-only nativeEmbedAccess() -> {generation, origin, authenticatedUrl,
- * signal}. Its signal fences stop/restart/control loss synchronously. Cookie invalidation is
- * broker-local: it must not turn an embed authentication failure into control attachment loss.
+ * Producer contract: ready-only service.nativeEmbedAccess() -> {generation, origin,
+ * authenticatedUrl, signal}. Its signal fences stop/restart/control loss synchronously, so a
+ * late answer for a retired generation is refused here rather than redirected to.
  */
-export function createNativeWebAccess(service) {
-  let current
+export function createNativeAdmission(service) {
   let closed = false
-  function retire(state) {
-    if (!state) return
-    state.controller.abort()
-    clearTimeout(state.expiryTimer)
-    state.cookie = undefined
-    state.source.signal.removeEventListener('abort', state.onAbort)
-    if (current === state) current = undefined
-  }
-  function scheduleExpiry(state) {
-    const remaining = state.expiresAt - Date.now()
-    if (remaining <= 0) { retire(state); return }
-    state.expiryTimer = setTimeout(() => scheduleExpiry(state), Math.min(remaining, AUTH.maxTimerMs))
-    state.expiryTimer.unref?.()
-  }
-  function exchange(state) {
-    return new Promise((resolve, reject) => {
-      let child
-      const fail = () => { retire(state); reject(unavailable()) }
-      try {
-        child = request(state.source.login, {
-          method: AUTH.method, headers: { host: state.source.host }, signal: state.controller.signal,
-        })
-      } catch { fail(); return }
-      child.setTimeout(LIMITS.embedStreamIdleTimeoutMs, () => child.destroy())
-      child.on('error', fail)
-      child.on('response', (response) => {
-        // Consume the native relative login redirect here. Neither its headers nor its body
-        // can reach a browser; do not follow arbitrary redirect destinations with credentials.
-        response.on('error', fail)
-        response.resume()
-        try {
-          if (response.statusCode !== AUTH.redirectStatus || response.headers.location !== AUTH.redirect ||
-              state.controller.signal.aborted || current !== state) throw unavailable()
-          Object.assign(state, cookieOf(response.headers))
-          scheduleExpiry(state)
-          resolve()
-        } catch { child.destroy(); fail() }
-      })
-      child.end()
-    })
-  }
   return Object.freeze({
-    async acquire() {
+    /**
+     * The 303 target for one launch. `fragment` is an already-validated, non-secret continuation
+     * ('' for none): browsers carry a redirect's fragment across a Location without one (RFC 9110
+     * §10.2.2), so it survives native's `303 ./` while the token query does not, and a fragment
+     * is never sent to any server or written to its request log.
+     * @returns {Promise<string>} never logged or serialized by the caller.
+     */
+    async location(fragment) {
       if (closed) throw unavailable()
       let source
       try { source = validate(await service.nativeEmbedAccess()) } catch { throw unavailable() }
       if (closed || source.signal.aborted) throw unavailable()
-      if (current && (current.source.generation !== source.generation || current.source.origin !== source.origin ||
-          current.source.signal !== source.signal || (current.expiresAt !== undefined && current.expiresAt <= Date.now()))) retire(current)
-      if (!current) {
-        const state = { source, controller: new AbortController() }
-        state.onAbort = () => retire(state)
-        current = state
-        source.signal.addEventListener('abort', state.onAbort, { once: true })
-        state.pending = exchange(state)
-      }
-      const state = current
-      await state.pending
-      if (closed || current !== state || state.controller.signal.aborted || state.expiresAt <= Date.now()) {
-        retire(state)
-        throw unavailable()
-      }
-      return Object.freeze({
-        origin: source.origin, host: source.host, cookie: state.cookie,
-        signal: state.controller.signal,
-        valid: () => !closed && current === state && !state.controller.signal.aborted && state.expiresAt > Date.now(),
-        invalidate: () => retire(state),
-      })
+      source.login.hash = fragment
+      return source.login.href
     },
-    close() { closed = true; retire(current) },
+    close() { closed = true },
   })
 }

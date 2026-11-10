@@ -79,7 +79,21 @@ window.__ModuleLoader__.load({
     const EMBED_UI = Object.freeze({
       panelId: 'fishball', panelOrder: -10, pluginsPanelId: 'plugins', warningIconPx: 24,
       stateTone: Object.freeze({ ready: 'info', attached: 'info', failed: 'danger', 'connection-interrupted': 'danger' }), neutralTone: 'neutral',
-      iframeAllow: 'clipboard-write',
+      /**
+       * Clipboard write only, for every origin the frame lands on. A bare feature means the src
+       * origin, which is the main origin's launch path; the instance's launch then redirects the
+       * frame to its own child origin (PG-ORIGIN), where native copy actions would otherwise be
+       * refused. The wildcard is safe here because src is only an instance-registered relative
+       * path on the main origin (contract 1.2 refuses absolute or token-bearing paths). Its
+       * authenticated launch redirects only to the exact owned child, and the grant is write-only:
+       * no clipboard-read or any other feature (Fishball's decision, 2026-11-10).
+       */
+      iframeAllow: 'clipboard-write *',
+      /**
+       * The framed page is an admission launch: the instance may redirect it to another origin on
+       * this host (PG-ORIGIN), so the frame sends no referrer onward (docs/planning/v2-final-scope.md §4.3 (4)).
+       */
+      iframeReferrerPolicy: 'no-referrer',
     })
     /**
      * DSH's session header (dsh-client-ui-conversation ConversationRoot .header/.titleRow/
@@ -980,6 +994,10 @@ window.__ModuleLoader__.load({
      * fishball-connector is reachable in every state), Refresh and Retry (failed and the instance gave
      * retry). There is no "Open in a tab" (the user's decision, 2026-11-07). The content is the
      * instance's own page, framed at its registered path plus `lang` (framedUrl). The iframe's key holds that address, so a language change remounts it: a reload.
+     * The key also holds the attachment's `attachCount`: a restarted instance attaches anew, and
+     * its page may be a launch that admits the browser to that generation only (PG-ORIGIN), so a
+     * new attachment always loads the registered path afresh instead of keeping an old document.
+     * The page can end at another origin, so the view never reads the frame's document.
      * Nothing crosses the iframe: the view installs no `message` listener and acts on no
      * postMessage from the page (D27; the contract's former open-settings message is dropped).
      * Everything it shows comes from the connector's own state and routes.
@@ -1032,7 +1050,8 @@ window.__ModuleLoader__.load({
             : instance.attached && ui.chat === undefined
               ? emptyState(h('p', { 'data-fishball-embed-no-chat': true }, t('frameNoChat', { name: instance.name })))
               : framed
-                ? h('iframe', { key: `${generation}:${src}`, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, 'data-fishball-embed-frame': true })
+                // allow: clipboard-write for the child's own origin too, see EMBED_UI.iframeAllow.
+                ? h('iframe', { key: `${instance.attachCount}:${generation}:${src}`, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
                 : emptyState(
                   h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
                   // An interrupted channel says so: the instance may still be running (B1).
