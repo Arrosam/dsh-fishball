@@ -24,11 +24,20 @@ export const V2_SUITES = Object.freeze({
   /** Non-root suites in the V2 run; test/*.test.mjs come from the root runner's own rule. */
   nested: Object.freeze([
     'packages/connector/test/instance-ext/k1.test.mjs',
+    // PAGE (7.A page-open ensure) and READY (appReady gate) implementation suites, plan §3 owners.
+    'packages/instance/test/instance-ext/page-open-session.test.mjs',
+    'packages/instance/test/instance-ext/ready-gate.test.mjs',
     'packages/instance/test/instance-ext/x0-c-held-context.test.mjs',
     'packages/instance/test/instance-ext/x0-c.test.mjs',
     'test/instance-ext/x0-i.test.mjs',
     'test/instance-ext/x0-s.test.mjs',
     'test/instance-ext/x0-w.test.mjs',
+    // Final V2 page/readiness/origin/lite/settings cases (070b88e). Unobservable seams stay TODO.
+    'test/v2-page-cases/lite.test.mjs',
+    'test/v2-page-cases/page.test.mjs',
+    'test/v2-page-cases/pg-origin.test.mjs',
+    'test/v2-page-cases/ready.test.mjs',
+    'test/v2-page-cases/set.test.mjs',
     'test/verification/w0-host-session.test.mjs',
   ]),
   excludedFiles: Object.freeze([
