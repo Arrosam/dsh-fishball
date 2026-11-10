@@ -260,6 +260,15 @@ export class ProviderSyncEngine {
         }
         try {
           if (signal.aborted) throw new ProviderSyncError('cancelled')
+          // The preview's key check, again just before the first write: a key the child gained
+          // since the check is kept and the entry is skipped with nothing written, rather than
+          // writing a profile and then finding the key (§10 "an existing ... key in the child is
+          // skipped and kept"). A key created between this read and the write is still caught by
+          // the create-only import below.
+          if (!operation.keyOnly && this.#host.describeRecord && (await this.#host.describeRecord(item.id)).configured) {
+            // No reason, as for the create-only race below: the page names it provider-exists.
+            results.push({ ...result, config: 'unchanged', status: 'skipped' }); continue
+          }
           if (!operation.keyOnly) {
             await this.#host.addProvider(item.id, operation.profile, expected.revision[operation.namespace], operation.namespace, { signal })
             result.config = 'added'

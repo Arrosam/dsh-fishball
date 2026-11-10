@@ -28,6 +28,8 @@ class NativeRuntime {
     this.adminListeners = new Set()
     // T16's provider-sync channel rides the same wire on its own payload channel.
     this.providerSyncListeners = new Set()
+    // SET's settings relay: the child panel's requests to this host, on the same wire.
+    this.instanceSettingsListeners = new Set()
     this.pending = Promise.resolve()
     this.warnings = []
     this.paths = pathsFor(options.mainHome)
@@ -56,6 +58,12 @@ class NativeRuntime {
     this.providerSyncListeners.add(listener)
     if (this.providerSync && !this.providerSync.wire.closed) listener(this.providerSync.transport, this.providerSync.metadata)
     return () => this.providerSyncListeners.delete(listener)
+  }
+  /** SET's settings relay transport of the attached wire; same authentication as every channel. */
+  onInstanceSettingsTransport(listener) {
+    this.instanceSettingsListeners.add(listener)
+    if (this.instanceSettings && !this.instanceSettings.wire.closed) listener(this.instanceSettings.transport)
+    return () => this.instanceSettingsListeners.delete(listener)
   }
   serial(action) {
     const next = this.pending.then(action, action)
@@ -244,6 +252,7 @@ class NativeRuntime {
     this.control = undefined
     this.admin = undefined
     this.providerSync = undefined
+    this.instanceSettings = undefined
   }
   async attach(record) {
     if (this.control && !this.control.wire.closed && this.control.metadata.instanceId === record.instanceId) return
@@ -257,13 +266,16 @@ class NativeRuntime {
       const admin = wire.adminTransport()
       // T16's provider-sync target comes up with the control transport on the same wire.
       const providerSync = wire.providerSyncTransport()
+      const instanceSettings = wire.instanceSettingsTransport()
       this.control = { wire, transport, metadata }
       wire.once('closed', () => { if (this.control?.wire === wire) this.dropControl() })
       this.admin = { wire, transport: admin }
       this.providerSync = { wire, transport: providerSync, metadata: { instanceId: metadata.instanceId } }
+      this.instanceSettings = { wire, transport: instanceSettings }
       for (const listener of this.listeners) listener(transport, metadata)
       for (const listener of this.adminListeners) listener(admin)
       for (const listener of this.providerSyncListeners) listener(providerSync, this.providerSync.metadata)
+      for (const listener of this.instanceSettingsListeners) listener(instanceSettings)
     } catch (error) { wire.close(); throw error }
   }
   async startInternal(signal) {

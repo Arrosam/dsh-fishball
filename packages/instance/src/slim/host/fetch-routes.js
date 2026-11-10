@@ -8,7 +8,18 @@
  * without that route rather than failing the native row — the page then shows its typed
  * "unavailable" refusal, the same rule the status route and the embed broker follow.
  */
-const FETCH = Object.freeze({ method: 'POST', body: 'buffered' })
+const FETCH = Object.freeze({ method: 'POST', get: 'GET', body: 'buffered' })
+
+/**
+ * Register one exact GET route. An absent registry or a path another row already claimed leaves
+ * the page without it (the page then reads "unavailable"), never failing the row.
+ * @param {object} ctx - the row's context (needs `connection`).
+ * @param {{path: string, fetch: (request: Request) => Promise<Response>|Response}} route
+ * @returns a disposer; a no-op when nothing was registered.
+ */
+export function registerGetRoute(ctx, route) {
+  try { return ctx.connection.fetch.register({ methods: [FETCH.get], requestBody: FETCH.body, ...route }) } catch { return () => {} }
+}
 
 /**
  * Register exact POST routes for one feature.
