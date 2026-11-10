@@ -28,7 +28,6 @@ function freezeData(value) {
 
 const C = RECOMMENDATION_TEST_DATA.contract
 export const RP_CHECK = freezeData({
-  versionsRoot: path.join(os.homedir(), 'Library', 'Application Support', 'DSH', 'data', 'versions'),
   nodeModules: 'node_modules',
   sdkFiles: {
     slotContract: ['@deepseek-ai', 'dsh-client-ui-plugin-manager', 'lib', 'types', 'client', 'slot-contract.d.ts'],

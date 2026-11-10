@@ -87,9 +87,11 @@ export const RECOMMENDED_PLUGINS = Object.freeze([
 const identityOf = (item) => ({ packageName: item.packageName, spec: item.spec, source: item.source })
 
 /**
- * The list grouped by category in display order, each item mapped by `mapItem`. The one grouping
- * rule both readers share: the main-side settings snapshot (recommendedView) and the child's
- * Fishball Recommended tab (recommendedList), so the two never order or group differently.
+ * The list grouped by category in display order, each item mapped by `mapItem`: the one grouping
+ * rule for every view of the list, so the child's Fishball Recommended tab (recommendedList) and
+ * the older catalog view (recommendedView) never order or group differently. recommendedView has
+ * no caller left in this repository since the M1 split (the admin relay reads ADMIN_RECOMMENDED);
+ * deleting it is outside the RP increment, which only shares this rule with it.
  */
 function grouped(mapItem) {
   return {

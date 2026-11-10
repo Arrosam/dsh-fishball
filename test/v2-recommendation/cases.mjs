@@ -251,6 +251,8 @@ export const RECOMMENDATION_TEST_DATA = freezeData({
 // requirements catalogue to itself.
 export async function registerRecommendationCases(sdk) {
   const data = RECOMMENDATION_TEST_DATA
+  // Dynamic, not a static import: checks.mjs reads RECOMMENDATION_TEST_DATA at module top level,
+  // so a static cycle would evaluate it before this module's data is initialised.
   const { CHECKS, RP_CHECK } = await import('./checks.mjs')
   const sdkModules = process.env.FBTEST_DSH_RUNTIME
   for (const caseData of data.cases) {
