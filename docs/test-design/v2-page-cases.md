@@ -25,7 +25,7 @@ Each logical ID counts once in the summary, regardless of how many fixtures/boun
 
 ## 3. Task summary and module ownership
 
-**137 logical cases / 274 SDK-specific registrations.** Seven logical cases have opt-in HTTP assertion bodies (six PAGE, one SET); 130 require task-owned component/browser seams. With no HTTP fixtures configured, all 272 registrations remain TODO. With both SDKs' complete fixtures, 14 registrations can execute HTTP assertions and 258 remain TODO. Runnable does **not** mean executed.
+**137 logical cases / 274 SDK-specific registrations.** Seven logical cases have opt-in HTTP assertion bodies (six PAGE, one SET); 130 require task-owned component/browser seams. With no HTTP fixtures configured, all 274 registrations remain TODO. With both SDKs' complete fixtures, 14 registrations can execute HTTP assertions and 260 remain TODO. Runnable does **not** mean executed.
 
 | Task | What it tests | Logical cases | Key scenarios | Module |
 |---|---|---:|---|---|
