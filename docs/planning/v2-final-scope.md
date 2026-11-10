@@ -100,7 +100,7 @@ Use requirement clauses, not filenames, branch labels or historical totals. The 
 | Mixed | UC-06/07 | Keep existing connector handover/start/message semantics; defer supervised brief/attach/gate/assignment. |
 | Mixed | UC-08/10/17 | Keep timer-free approval, connector authorization/reason/risk/scope, first committed settlement, source results/card clearing; defer Watchdog claimant/incarnation/layer/history/grant specifics. |
 | Mixed | UC-12 | Keep current attachment/reconnect/control safety and D3; defer Watchdog recovery and MCP-session-loss rules. |
-| Mixed | UC-14 | Slim status/restart/sync/native links, effective Read Only notice and D2 inert fields only; retire obsolete custom page routes without removing still-used APIs. Defer Watchdog/bundled editors. |
+| Mixed | UC-14 | Slim status/restart/native links, a read-only model sync note (sync is started only from the main DSH's Plugins card, 2026-11-11), effective Read Only notice and D2 inert fields only; retire obsolete custom page routes without removing still-used APIs. Defer Watchdog/bundled editors. |
 | Mixed | UC-18 | Keep required existing manager/connector delivery and local guards; defer fold batching, Watchdog claim/hold, MCP mailbox. Full X0-C expansion is not a slim-V2 gate. |
 | Mixed | UC-19 | Defer supervision side agents; retain no ordinary child subagent/schedule/global-write escape under UC-04/05. |
 | Mixed | UC-20 | Keep connector-only/no-instance behavior; defer Watchdog/plugin branches. |
