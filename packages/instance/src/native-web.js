@@ -6,7 +6,7 @@
  * Neither answer ever carries the child's origin or launch token.
  */
 import { INSTANCE_CODES, INSTANCE_STATES } from './host/binding.js'
-import { registerPostRoutes } from './slim/host/fetch-routes.js'
+import { registerGetRoute, registerPostRoutes } from './slim/host/fetch-routes.js'
 
 const WEB = Object.freeze({
   // The original route, kept with its shape ({enabled, state, code, detail}) for its existing
@@ -17,7 +17,7 @@ const WEB = Object.freeze({
   // The card's Retry (design §0.7: "its Plugins card in the main DSH (Retry)"); answers the
   // status once the retry has run, in the instanceStatusPath shape.
   retryPath: '/api/fishball-instance/retry',
-  get: 'GET', body: 'buffered', unavailable: 'unavailable',
+  unavailable: 'unavailable',
   ok: 200, json: 'application/json; charset=utf-8',
   headers: Object.freeze({ 'cache-control': 'no-store', 'referrer-policy': 'no-referrer',
     'x-content-type-options': 'nosniff' }),
@@ -36,6 +36,11 @@ function safeStatus(value) {
 }
 const UNREADABLE = Object.freeze({ enabled: false, state: WEB.unavailable, code: null, detail: null })
 const stateAndCode = ({ state, code }) => ({ state, code })
+/**
+ * The instance's public `{state, code}`, as the card's status route answers it. SET's settings
+ * relay answers the child panel in the same shape, so both pages read one vocabulary.
+ */
+export const publicStatus = (value) => stateAndCode(safeStatus(value))
 const json = value => new Response(JSON.stringify(value), { status: WEB.ok, headers: { ...WEB.headers, 'content-type': WEB.json } })
 
 /** Requires connection; service.status() is synchronous and carries no token. */
@@ -43,20 +48,27 @@ export function registerNativeWeb(ctx, service) {
   const status = () => {
     try { return safeStatus(service.status()) } catch { return UNREADABLE }
   }
-  const register = route => {
-    try { return ctx.connection.fetch.register({ methods: [WEB.get], requestBody: WEB.body, ...route }) } catch {
-      // An absent or duplicate status route must not take down the native service.
-      return () => {}
-    }
-  }
+  // An absent or duplicate status route must not take down the native service.
+  const register = route => registerGetRoute(ctx, route)
   register({ path: WEB.statusPath, fetch: () => json(status()) })
-  register({ path: WEB.instanceStatusPath, fetch: () => json(stateAndCode(status())) })
   // service.retry() restarts only a failed instance and is queued behind the row's other starts
   // and stops (host.js), so a repeated click cannot start a second child.
-  registerPostRoutes(ctx, [{
-    path: WEB.retryPath,
-    fetch: async () => {
-      try { return json(stateAndCode(safeStatus(await service.retry()))) } catch { return json(stateAndCode(status())) }
-    },
-  }], 'fishball instance: retry route')
+  const [statusRoute, retryRoute] = instanceStatusRoutes(() => service.status(), () => service.retry())
+  register(statusRoute)
+  registerPostRoutes(ctx, [retryRoute], 'fishball instance: retry route')
+}
+
+/**
+ * The card's status and Retry routes, `{state, code}` each, over any status reader and Retry: the
+ * main row's own lifecycle, or the child settings panel's relay to it
+ * (child-web/fishball-settings/index.js), so the status line reads the same answers on both pages.
+ * A failed Retry answers the status as it now reads. Either reader may be async.
+ * @returns {[{path, fetch}, {path, fetch}]} the GET status route and the POST Retry route.
+ */
+export function instanceStatusRoutes(read, retry) {
+  const current = async () => { try { return publicStatus(await read()) } catch { return publicStatus(UNREADABLE) } }
+  return [
+    { path: WEB.instanceStatusPath, fetch: async () => json(await current()) },
+    { path: WEB.retryPath, fetch: async () => { try { return json(publicStatus(await retry())) } catch { return json(await current()) } } },
+  ]
 }

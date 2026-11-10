@@ -13,14 +13,11 @@ import { ProviderSyncError } from './provider-sync.js'
 import { ProviderSyncCoordinator } from './provider-sync-coordinator.js'
 import { createProviderSyncCodec, providerSyncIdentity, PROVIDER_SYNC_TARGET } from './slim/child/provider-sync-target.js'
 
-/** The owner route's transport rules; the slim route module reads them (provider-sync-routes.js). */
-export const SYNC_PAGE = Object.freeze({
-  maxBodyBytes: 16384,
-  code: Object.freeze({ profile: 'profile-unavailable', large: 'sync-request-too-large', refused: 'provider-sync-refused', payload: 'invalid-payload' }),
-  headers: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
-  allowedSites: Object.freeze(['same-origin', 'none']), siteHeader: 'sec-fetch-site',
-  profileContext: 'profileContext',
-})
+// The owner route's transport rules live with the routes (src/slim/host/provider-sync-routes.js),
+// so the child settings row can build the same routes without this host-only module; re-exported
+// here for this module's existing readers.
+import { SYNC_PAGE } from './slim/host/provider-sync-routes.js'
+export { SYNC_PAGE }
 const P = SYNC_PAGE
 const defaultCreateHost = async (ctx, options) => {
   const { createProviderSyncHost } = await import('./provider-sync-host.js')
@@ -73,6 +70,10 @@ export const CHILD_SYNC = Object.freeze({
   outcome: Object.freeze({ added: 'added', skipped: 'skipped', failed: 'failed' }),
   /** The engine's per-item statuses (src/provider-sync.js confirm). */
   status: Object.freeze({ succeeded: 'succeeded', skipped: 'skipped', partial: 'partial', unknown: 'unknown' }),
+  /** The engine's per-item key outcome for a key that was already there (src/provider-sync.js confirm). */
+  key: Object.freeze({ exists: 'exists' }),
+  /** The engine's per-item profile outcome for an item whose profile this run did not write. */
+  config: Object.freeze({ unchanged: 'unchanged' }),
   /** Reasons the bridge adds when the engine's item carries none. */
   reason: Object.freeze({ unknown: 'result-unknown', keyNotSaved: 'key-not-saved', failed: 'sync-failed', exists: 'provider-exists' }),
   timeoutMs: PROVIDER_SYNC_TARGET.limits.requestTimeoutMs,
@@ -97,6 +98,11 @@ function resultOutcome(result) {
   // An unknown result may have committed. It is never retried here; the next Check previews
   // afresh, and the engine then counts it as present or offers its missing key again.
   if (result.status === S.unknown) return [O.failed, R.unknown]
+  // Only this run wrote nothing and found the child's own key (the engine's create-only write
+  // answers `exists`, config `unchanged`): the entry lost a race and the kept key is untouched, so
+  // it is skipped, as §10 and the decision "existing and conflicting entries are skipped" say. A
+  // profile this run did write with a raced key stays a partial failure below.
+  if (result.status === S.partial && result.config === CHILD_SYNC.config.unchanged && result.key === CHILD_SYNC.key.exists) return [O.skipped, R.exists]
   if (result.status === S.partial) return [O.failed, result.reason ?? R.keyNotSaved]
   return [O.failed, result.reason ?? R.failed]
 }
