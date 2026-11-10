@@ -17,6 +17,7 @@ const ROW = Object.freeze({
   webRuntime: 'web-runtime',
   nativeWeb: 'fishball-native-web',
   page: 'fishball-page',
+  settings: 'fishball-settings',
 })
 const WEB_CONFIG = Object.freeze({ host: RUNTIME.host, port: 0, tls: undefined })
 const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, publicUrl: undefined })
@@ -80,6 +81,9 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       // enforcement; this composition alone is not a read-only or session-isolation boundary.
       { id: ROW.nativeWeb, name: path.join(path.dirname(childModule), NATIVE_WEB.adapterModule), required: true, config },
       { id: ROW.page, name: path.join(path.dirname(childModule), NATIVE_WEB.pageDirectory, NATIVE_WEB.pagePackage, 'index.js'), required: true },
+      // SET's slim settings panel and its relay routes. Not required: a settings fault must not
+      // take the Fishball conversation down with it.
+      { id: ROW.settings, name: path.join(path.dirname(childModule), NATIVE_WEB.pageDirectory, NATIVE_WEB.settingsPackage, 'index.js') },
       { id: ROW.lifecycle, name: childModule, required: true, config },
       // The bridge, approvals and inbox rows are loader rows, not plugins the lifecycle row
       // starts itself: the loader's boot settlement only waits for its own entries, so a nested

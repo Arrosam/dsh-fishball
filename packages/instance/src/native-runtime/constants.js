@@ -150,6 +150,11 @@ export const NATIVE_WEB = Object.freeze({
   success: 200,
   pageDirectory: 'child-web',
   pagePackage: 'fishball-page',
+  // SET's slim settings panel package, and the name its copy of the instance's client.js takes
+  // there as a package-local chunk (client-modules accepts `client.<name>.js` chunks only).
+  settingsPackage: 'fishball-settings',
+  sharedClient: 'client.js',
+  sharedClientChunk: 'client.instance.js',
   adapterModule: 'native-web.js',
 })
 
