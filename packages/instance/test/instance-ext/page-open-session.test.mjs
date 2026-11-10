@@ -440,6 +440,9 @@ describe('B. ensureSession over a fake chat port (createExtensions().bind)', () 
     const ext = createExtensions({ on: () => () => {}, effect: (execute) => execute(), get: (name) => (name === 'profileContext' ? { home } : undefined), logger: () => ({ info() {}, warn() {}, error() {}, debug() {} }) })
     const chat = port()
     ext.bind(chat)
+    // READY precondition: the app row delivers the child's appReady.onReady as markReady(); this
+    // direct construction has no app row, so the case delivers that signal itself.
+    ext.markReady()
     const [a, b] = await Promise.all([ext.service.manager.ensureSession(), ext.service.manager.ensureSession()])
     assert.equal(a, ID)
     assert.equal(b, ID)

@@ -100,9 +100,14 @@ export async function apply(ctx) {
   ctx.effect(() => () => chat.close(), name + ': chat session')
   ctx.provide(APP.chatService, chat.service)
   // Wait for dependent plugin rows to register their manager setup before recovery
-  // can wake a restored notification. Ordinary empty startup remains lazy.
+  // can wake a restored notification. Ordinary empty startup remains lazy: the same
+  // signal only opens the page-open ensure gate (READY) and activates nothing itself.
+  // The effect's disposer cancels a listener that has not fired yet. The native child
+  // requires appReady (RUNTIME.requiredServices); a composition without it never opens the
+  // gate, so page-open ensures stay pending rather than activating on an invented signal.
   const ready = ctx.get('appReady')
   if (ready) ctx.effect(() => ready.onReady(() => {
+    extensions.markReady()
     void extensions.resumePending().catch((error) => {
       ctx.logger(APP.logger).warn('notification recovery unavailable (%s)', error?.code ?? error?.name)
     })
