@@ -136,7 +136,9 @@ export async function apply(ctx, config) {
    * the settings relay). The main card's own routes call providerSync directly and never pass here.
    * OPEN SECURITY DECISION (docs/planning/v2-set.md "Child-side authority"): any code in the child
    * can reach this without an owner click. A future owner gate belongs here, in this one place:
-   * refuse or hold the request before providerSync is called.
+   * refuse or hold the request before providerSync is called. The relay's status, Retry and
+   * Restart below are lifecycle requests and do not pass here; the same decision's restart power
+   * is recorded beside it in v2-set.md.
    */
   const childInitiatedSync = Object.freeze({
     check: () => providerSync?.check() ?? syncUnavailable,
