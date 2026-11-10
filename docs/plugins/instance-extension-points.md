@@ -1502,7 +1502,10 @@ spirit.
 `packages/instance/child-web/fishball-recommend-plugins/`, an instance-owned child asset beside
 `fishball-page`, mounted only by the child's launch overlay as a non-required row. It is not a
 bundled or placed plugin, and there is no `RUNTIME.bundledPlugins` entry (V2 ships no bundled
-plugins). The tab reads presence from `remote.pluginManager.listBundles()`. Install first reads the
+plugins). The tab reads presence from `remote.pluginManager.listBundles()`. A bundle is present
+when the profile declares it (`installed`) and its files are readable (`availability` not
+`missing`), whether enabled or not. Until the first read answers, each row shows "Loading…" and no
+button. Install first reads the
 registry's current version with `pluginManager.inspect(spec)`, then calls the documented owner prop
 `install({spec: name@version, registry?, title, version})`, so DSH's own dialog runs the install.
 Registry limit: `registry` is passed only when the inspection names a URL. When it names `null`

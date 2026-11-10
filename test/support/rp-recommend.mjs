@@ -312,6 +312,8 @@ export async function createWorld({ locale = RP.locales.en, bundles = [], respon
     bundles: [...bundles],
     fetches: [],
     installs: [],
+    /** The same owner.install targets uncloned: `installs` goes through JSON, which drops a field set to undefined. */
+    installTargets: [],
     opened: [],
     inspects: [],
     listCalls: 0,
@@ -454,7 +456,7 @@ export async function createWorld({ locale = RP.locales.en, bundles = [], respon
   // ---- page ----------------------------------------------------------------------------------
   const page = { visible: false, selected: RP.tabId }
   const owner = {
-    install(target) { world.installs.push(JSON.parse(JSON.stringify(target))) },
+    install(target) { world.installs.push(JSON.parse(JSON.stringify(target))); world.installTargets.push(target) },
     openPackage(name) { world.opened.push(name) },
   }
   function PageRoot() {
