@@ -214,20 +214,24 @@ export function createSettingsRelayClient(options = {}) {
     // A replaced wire means the main host reconnected: nothing in flight can be answered, and
     // detaching the old transport (RelayEnd.onDetach) reports exactly that.
     attach(transport) { end.attach(transport, receive) },
-    close() { end.closed = true; end.detach(); failAll(R.code.closed) },
+    // In-flight requests answer `closed` before the detach could name them `disconnected`.
+    close() { end.closed = true; failAll(R.code.closed); end.detach() },
     request(op, payload = {}) {
       if (!OPS.has(op) || !validPayload(op, payload)) return Promise.resolve(refusal(R.code.invalid))
       if (end.closed) return Promise.resolve(refusal(R.code.closed))
       if (end.transport === undefined) return Promise.resolve(refusal(R.code.unavailable))
       if (pending.size >= R.limits.maxPending) return Promise.resolve(refusal(R.code.unavailable))
       const id = randomUUID()
+      // Sent before it is pending: a send that throws detaches this end (RelayEnd.send), and the
+      // detach must not report this request as a lost answer — it never left, so it is
+      // `unavailable` and an Add is not "may have committed". A reply can only arrive on a later
+      // message event, so registering right after the synchronous send misses none.
+      if (!end.send(end.transport, encode({ v: R.version, id, op, payload }))) return Promise.resolve(refusal(R.code.unavailable))
       return new Promise((resolve) => {
         const entry = { op, payload, resolve, timer: undefined }
         entry.timer = setTimeout(() => settle(id, lost(entry, R.code.timeout)), timeoutMs ?? TIMEOUT_MS[op])
         entry.timer.unref?.()
         pending.set(id, entry)
-        // A request that never left was not sent at all: `unavailable`, not a lost answer.
-        if (!end.send(end.transport, encode({ v: R.version, id, op, payload }))) settle(id, refusal(R.code.unavailable))
       })
     },
   })

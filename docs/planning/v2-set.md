@@ -120,8 +120,9 @@ Check and add keep the main routes' Origin/Sec-Fetch-Site and body rules (same h
   (LITE's `fishball-page`) holds the only `openSettings` callback, so the link presses that
   launcher's button, looked up on each press. When the launcher is absent, the panel shows an alert instead.
 - **OPEN SECURITY DECISION: child-side authority. Not accepted; the user decides before anything ships.**
-  The code provisionally keeps option (a), "allow". The one main-side entry point for a gate is
-  `childInitiatedSync` in `host.js`.
+  The code provisionally keeps option (a), "allow". The one main-side entry point for a sync gate is
+  `childInitiatedSync` in `host.js`. The relay's Restart and Retry are lifecycle requests beside it
+  and do not pass that gate; a gate on them would sit on the same relay handler table.
   Before SET, only an owner click on the main card could start a sync (slim-native-design §10).
   Now any code running in the child process can call the relay as the panel does, without an
   owner click. That includes a third-party plugin the user installed into the child. It can:

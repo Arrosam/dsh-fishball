@@ -65,6 +65,7 @@ window.__ModuleLoader__.load({
       restarting: 'Restarting…',
       restartHint: 'Stops Fishball\'s private instance and starts it again; this page reloads when it is back.',
       restartFailed: 'Restart was refused: {code}',
+      restartEnded: 'Fishball restarted but did not come back: {code}',
       readOnly: 'Read Only: Fishball\'s tools run read-only in its instance. This is fixed and not a setting.',
       nativeTitle: 'More settings',
       nativeHint: 'Models, reasoning effort, plugins and their settings are in DSH\'s own pages.',
@@ -82,6 +83,7 @@ window.__ModuleLoader__.load({
       restarting: '正在重启…',
       restartHint: '停止 Fishball 的私有实例并重新启动；恢复后本页会重新加载。',
       restartFailed: '重启被拒绝：{code}',
+      restartEnded: 'Fishball 已重启但未能恢复：{code}',
       readOnly: '只读：Fishball 的工具在其实例中以只读方式运行。这是固定的，不是可调设置。',
       nativeTitle: '更多设置',
       nativeHint: '模型、推理强度、插件及其设置在 DSH 自己的页面中。',
@@ -120,12 +122,15 @@ window.__ModuleLoader__.load({
       return { load, get: () => snapshot, subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) } }
     }
 
-    /** One restart request. @returns the route's typed outcome; a lost answer is `undefined`. */
+    /**
+     * One restart request. @returns the route's typed outcome; `undefined` when no answer came (the
+     * request failed on the network); `null` when an answer came but is not readable JSON (for
+     * example a missing route or an owner refusal), which is a refusal, not a lost answer.
+     */
     async function restartRequest() {
-      try {
-        const response = await fetch(new URL(PANEL.restartPath, document.baseURI).toString(), PANEL.request)
-        return await response.json()
-      } catch { return undefined }
+      let response
+      try { response = await fetch(new URL(PANEL.restartPath, document.baseURI).toString(), PANEL.request) } catch { return undefined }
+      try { return await response.json() } catch { return null }
     }
 
     /**
@@ -142,7 +147,7 @@ window.__ModuleLoader__.load({
         if (answer?.ok === true) {
           setStatus(answer.result)
           // The restart ran but the instance did not come back: say so beside the status line.
-          setView(answer.result?.state === RESTART.failedState ? { phase: RESTART.idle, error: answer.result.code ?? RESTART.failedState } : { phase: RESTART.idle })
+          setView(answer.result?.state === RESTART.failedState ? { phase: RESTART.idle, error: answer.result.code ?? RESTART.failedState, ended: true } : { phase: RESTART.idle })
           return
         }
         setView({ phase: RESTART.idle, error: typeof answer?.error?.code === 'string' ? answer.error.code : RESTART.unreadable })
@@ -153,7 +158,7 @@ window.__ModuleLoader__.load({
           h(Button, { type: 'button', size: 'sm', variant: 'secondary', disabled: running, 'aria-busy': running, 'data-fishball-settings-restart': true, onClick: () => void run() },
             running ? t('restarting') : t('restart'))),
         h('p', { className: PANEL.css.hint }, t('restartHint')),
-        view.error ? h('p', { className: PANEL.css.error, role: 'alert', 'data-fishball-settings-restart-error': view.error }, t('restartFailed', { code: view.error })) : null)
+        view.error ? h('p', { className: PANEL.css.error, role: 'alert', 'data-fishball-settings-restart-error': view.error }, t(view.ended ? 'restartEnded' : 'restartFailed', { code: view.error })) : null)
     }
 
     /** The links to the child's native pages; both return through the page's own navigation. */
