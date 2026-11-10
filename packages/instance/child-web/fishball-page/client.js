@@ -10,18 +10,23 @@ window.__ModuleLoader__.load({
       requestFailed: 'FISHBALL_SESSION_REQUEST_FAILED', invalidSession: 'FISHBALL_SESSION_INVALID',
       priority: -1, plugins: 'plugins', overlay: 'shell.overlay',
       root: 'data-fishball-page', ready: 'data-fishball-session',
-      hidden: 'data-fishball-hidden', navigation: 'fishball-page-navigation',
-      button: 'button', topNavigation: 'nav[aria-label]',
-      main: '[data-slot="main.conversation"]',
+      hidden: 'data-fishball-hidden', navigation: 'fishball-page-navigation', label: 'aria-label',
+      settingsSlot: 'settings.launcher', settingsButton: 'fishball-settings-launcher',
+      // The active-locale prefix that selects TEXT.zh; every other language reads TEXT.en.
+      chinese: 'zh',
+      main: '[data-slot="main.conversation"]', sidebarSlot: '[data-slot="sidebar"]',
       frame: '.pI_x6G_frame', sidebar: '.pI_x6G_sidebarCol',
+      // Window focus re-reads the manager (GET only, never ensure); see refresh.
+      reread: 'focus',
     })
     /**
      * The non-secret continuation PG-ORIGIN carries across native admission in the fragment
-     * (src/slim/host/embed.js CONTINUATION; host.js PLUGIN.ui; keep the three in step). Any other
-     * name or value is ignored, never acted on.
+     * (src/slim/host/embed.js CONTINUATION, host.js PLUGIN.ui and src/slim/ui/shell.js VIEW; keep
+     * all four in step). Any other name or value is ignored, never acted on.
      */
+    const SETTINGS_VIEW = 'settings'
     const CONTINUATION = Object.freeze({
-      view: Object.freeze({ name: 'view', settings: 'settings', values: Object.freeze(['settings']) }),
+      view: Object.freeze({ name: 'view', settings: SETTINGS_VIEW, values: Object.freeze([SETTINGS_VIEW]) }),
       lang: Object.freeze({ name: 'lang', values: Object.freeze(['zh', 'en']) }),
       query: '?',
     })
@@ -53,20 +58,24 @@ window.__ModuleLoader__.load({
       keydown: 'keydown',
     })
     /**
-     * Native localized accessibility labels of launchers that leave the Fishball session, by SDK
-     * dictionary namespace (same keys in 0.2.1-rc.5 and 0.2.2-rc.1). Matched exactly, never as an
-     * English substring, because dictionaries can arrive late and follow the active language.
+     * Native localized accessibility labels of launchers that leave the Fishball session, grouped
+     * by the element they label, by SDK dictionary namespace (same keys in 0.2.1-rc.5 and
+     * 0.2.2-rc.1). Matched exactly, never as an English substring, because dictionaries can
+     * arrive late and follow the active language.
      */
-    const LABELS = Object.freeze({
-      buttons: Object.freeze([
+    const LABELS = Object.freeze([
+      Object.freeze({ selector: 'button', keys: Object.freeze([
         Object.freeze({ namespace: 'sidebar', key: 'session.new.label' }),
         // The reply's branch action: forkAt -> uiWorkspace.openSession.
         Object.freeze({ namespace: 'chat', key: 'message.branch' }),
         // The empty-session hero chip; its picker slot is shadowed (SHADOWED_SLOTS), and the chip is hidden.
         Object.freeze({ namespace: 'conversation', key: 'hero.chooseWorkspace' }),
-      ]),
-      topNavigation: Object.freeze({ namespace: 'conversation', key: 'session.hierarchy' }),
-    })
+      ]) }),
+      // The conversation's top navigation, hidden whole; see mountRemovals.
+      Object.freeze({ selector: 'nav[aria-label]', keys: Object.freeze([
+        Object.freeze({ namespace: 'conversation', key: 'session.hierarchy' }),
+      ]) }),
+    ])
     /**
      * Slots shadowed by an empty occupant (A-lite §11.3, first-choice mechanism): the empty-session
      * hero's workspace picker. Picking a workspace connects or creates another blank session and
@@ -103,9 +112,9 @@ window.__ModuleLoader__.load({
         `${root} ${PAGE.sidebar}{visibility:hidden!important;min-width:0!important;pointer-events:none}`,
         // Descendants too: native ui-workspace CSS sets visibility:visible on the workspace header
         // actions (Add workspace), which would otherwise stay Tab-focusable inside the hidden column.
-        `${root} ${PAGE.sidebar} *,${root} [data-slot="sidebar"] *{visibility:hidden!important}`,
-        `${root} .fishball-settings-launcher{position:fixed;bottom:8px;left:8px;z-index:100;visibility:visible;pointer-events:auto}`,
-        `${root} .pI_x6G_drawerMask,${root} [data-slot="sidebar"]{visibility:hidden!important;pointer-events:none!important}`,
+        `${root} ${PAGE.sidebar} *,${root} ${PAGE.sidebarSlot} *{visibility:hidden!important}`,
+        `${root} .${PAGE.settingsButton}{position:fixed;bottom:8px;left:8px;z-index:100;visibility:visible;pointer-events:auto}`,
+        `${root} .pI_x6G_drawerMask,${root} ${PAGE.sidebarSlot}{visibility:hidden!important;pointer-events:none!important}`,
         `${root} [data-shell-leading],${root} [data-sidebar-toggle],${root} [data-sidebar-drawer-mask],${root} [${PAGE.hidden}]{display:none!important}`,
         `${root} [data-conversation-header-leading],${root} [data-slot="conversation.session.header.lineage"],${root} [data-slot="conversation.hero.workspace"]{display:none!important}`,
         `${root}:not([${PAGE.ready}]) ${PAGE.main}{visibility:hidden!important;pointer-events:none!important}`,
@@ -137,13 +146,12 @@ window.__ModuleLoader__.load({
       const text = ({ namespace, key }) => ctx.locale.bind(namespace)(key)
       function reconcile() {
         const next = new Set()
-        const labels = new Set(LABELS.buttons.map(text))
-        for (const button of document.querySelectorAll(PAGE.button)) {
-          if (labels.has(button.getAttribute('aria-label'))) next.add(button)
-        }
-        const hierarchy = text(LABELS.topNavigation)
-        for (const nav of document.querySelectorAll(PAGE.topNavigation)) {
-          if (nav.getAttribute('aria-label') === hierarchy) next.add(nav)
+        // One query per element kind, not per label: this runs on every observed mutation.
+        for (const { selector, keys } of LABELS) {
+          const labels = new Set(keys.map(text))
+          for (const node of document.querySelectorAll(selector)) {
+            if (labels.has(node.getAttribute(PAGE.label))) next.add(node)
+          }
         }
         for (const node of marked) if (!next.has(node)) node.removeAttribute(PAGE.hidden)
         for (const node of next) if (!marked.has(node)) node.setAttribute(PAGE.hidden, '')
@@ -158,7 +166,7 @@ window.__ModuleLoader__.load({
       }
       const observer = new MutationObserver(reconcile)
       observer.observe(document.body, { subtree: true, childList: true, characterData: true,
-        attributes: true, attributeFilter: ['aria-label', 'style', 'data-sidebar-drawer', 'data-sidebar-collapsed'] })
+        attributes: true, attributeFilter: [PAGE.label, 'style', 'data-sidebar-drawer', 'data-sidebar-collapsed'] })
       const unsubscribe = ctx.locale.subscribe(reconcile)
       reconcile()
       return () => {
@@ -217,6 +225,8 @@ window.__ModuleLoader__.load({
       }
     }
 
+    // Normalized bindings (code-sorted, canonical modifier order), so field equality is binding
+    // equality; null is "unbound" and equals only null.
     const sameBinding = (left, right) => left === null || right === null
       ? left === right
       : left.code === right.code && left.secondCode === right.secondCode && left.modifiers.join('+') === right.modifiers.join('+')
@@ -243,15 +253,15 @@ window.__ModuleLoader__.load({
       let started = false
       let disposed = false
       let running = false
-      let again = false
-      let againRetry = false
+      // Requests that arrived during a run; a Retry outranks a plain notification.
+      let rerun = false
+      let retryQueued = false
+      /** The native-normalized desired binding, or null when this device rejects or occupies it. */
       function desired(target) {
-        const candidate = { code: target.code, modifiers: SHORTCUTS.modifiers }
-        const described = shortcuts.describeBinding(candidate)
+        const described = shortcuts.describeBinding({ code: target.code, modifiers: SHORTCUTS.modifiers })
         const free = described.conflicts.every(id => id === target.id)
-        return described.issue === null && free ? candidate : null
+        return described.issue === null && free ? described.binding : null
       }
-      function normalized(binding) { return binding === null ? null : shortcuts.describeBinding(binding).binding }
       /** Registered relevant commands whose current binding differs from the desired one. */
       function unsatisfied() {
         const catalog = shortcuts.catalog.getSnapshot()
@@ -259,7 +269,7 @@ window.__ModuleLoader__.load({
           const entry = catalog.find(row => row.id === target.id)
           if (entry === undefined) return []
           const binding = desired(target)
-          return sameBinding(entry.binding, normalized(binding)) ? [] : [{ target, entry, binding }]
+          return sameBinding(entry.binding, binding) ? [] : [{ target, entry, binding }]
         })
       }
       async function reconcile() {
@@ -281,23 +291,31 @@ window.__ModuleLoader__.load({
           } else if (result.status !== SHORTCUTS.result.stale) throw new Error(result.status)
         }
       }
-      // A failed gate holds unavailable (DT-08): only Retry reconciles again, so unrelated
-      // catalog/config notifications neither write nor flip the status.
-      function schedule(retry = false) {
-        if (!started || disposed) return
-        // Queue first, so a Retry pressed during a run that then fails still reruns.
-        if (running) { again = true; againRetry ||= retry; return }
-        if (gate.get() === GATE.failed && !retry) return
+      function run() {
         running = true
-        if (retry) gate.set(GATE.pending)
         reconcile().catch(() => { if (!disposed) gate.set(GATE.failed) }).finally(() => {
           running = false
-          if (!again) return
-          const retried = againRetry
-          again = false
-          againRetry = false
-          schedule(retried)
+          const retried = retryQueued
+          const notified = rerun
+          retryQueued = false
+          rerun = false
+          if (retried) retry()
+          else if (notified) schedule()
         })
+      }
+      // A failed gate holds unavailable (DT-08): only Retry reconciles again, so unrelated
+      // catalog/config notifications neither write nor flip the status.
+      function schedule() {
+        if (!started || disposed) return
+        if (running) { rerun = true; return }
+        if (gate.get() !== GATE.failed) run()
+      }
+      function retry() {
+        if (!started || disposed) return
+        // Queued, not dropped, so a Retry pressed during a run that then fails still reruns.
+        if (running) { retryQueued = true; return }
+        gate.set(GATE.pending)
+        run()
       }
       function matches(binding, event) {
         return binding !== null && binding.secondCode === undefined && binding.code === event.code &&
@@ -315,7 +333,7 @@ window.__ModuleLoader__.load({
       const unsubscribe = shortcuts.catalog.subscribe(() => schedule())
       return {
         start() { started = true; schedule() },
-        retry() { schedule(true) },
+        retry,
         dispose() {
           disposed = true
           unsubscribe()
@@ -381,6 +399,7 @@ window.__ModuleLoader__.load({
       const source = ctx.uiSession.adapter.current
       let disposed = false
       let lookup = null
+      // The manager the one intended selection was made for; Retry clears it to select again.
       let selectedFor = null
       // Two owners: a background refresh may clear a lookup failure, never a failed selection.
       const lookupFailed = createCell(false)
@@ -394,11 +413,20 @@ window.__ModuleLoader__.load({
         if (source.getSnapshot().key === target) return
         Promise.resolve().then(() => ctx.uiWorkspace.openSession(target)).catch(() => { if (!disposed) selectFailed.set(true) })
       }
-      function mark() {
-        if (disposed) return
+      /** The first selection of a newly known manager; select() itself waits for protection. */
+      function selectOnce() {
         const target = manager.get()
         if (target !== null && target !== selectedFor) select()
+      }
+      function markReady() {
+        const target = manager.get()
         document.documentElement.toggleAttribute(PAGE.ready, target !== null && gate.get() === GATE.protected && source.getSnapshot().key === target)
+      }
+      /** Every manager, gate or main-view change: the pending first selection, then the ready mark. */
+      function mark() {
+        if (disposed) return
+        selectOnce()
+        markReady()
       }
       // User decision 7.A (2026-11-09): with no manager yet, ensure it so the native composer
       // has a real Session. Only the page-open lookup and an explicit Retry pass ensure; any
@@ -428,7 +456,7 @@ window.__ModuleLoader__.load({
         ctx.sessions.list.subscribe(() => { void refresh() })]
       // A listener wrapper: addEventListener would otherwise pass the Event as ensure.
       const reread = () => { void refresh() }
-      window.addEventListener('focus', reread)
+      window.addEventListener(PAGE.reread, reread)
       void refresh(true)
       mark()
       return {
@@ -436,6 +464,8 @@ window.__ModuleLoader__.load({
         selectFailed,
         retry() {
           shortcuts.retry()
+          // Re-arm the selection only after the lookup answered, so it uses that answer, never
+          // the previous manager. select() skips openSession when the main view already shows it.
           return refresh(true).then(() => { selectedFor = null; mark() })
         },
         back() { select() },
@@ -443,7 +473,7 @@ window.__ModuleLoader__.load({
           disposed = true
           abort.abort()
           unsubscribers.forEach(dispose => dispose())
-          window.removeEventListener('focus', reread)
+          window.removeEventListener(PAGE.reread, reread)
           lookupFailed.clear()
           selectFailed.clear()
           document.documentElement.removeAttribute(PAGE.ready)
@@ -470,14 +500,27 @@ window.__ModuleLoader__.load({
 
     /** The active language's copy; `locale` is one stable {subscribe, get} pair per apply. */
     function useText(locale) {
-      return React.useSyncExternalStore(locale.subscribe, locale.get).active.startsWith('zh') ? TEXT.zh : TEXT.en
+      return React.useSyncExternalStore(locale.subscribe, locale.get).active.startsWith(PAGE.chinese) ? TEXT.zh : TEXT.en
     }
     const useCell = cell => React.useSyncExternalStore(cell.subscribe, cell.get)
     /** The empty occupant of a shadowed slot. */
     const Empty = () => null
+    /**
+     * The navigation status, or null when the page is protected and needs none. Session trouble
+     * outranks the shortcut gate; a known manager behind a pending gate is shown as pending,
+     * never as a blank page.
+     */
+    function statusText(text, { unavailable, gate }) {
+      if (unavailable) return text.unavailable
+      if (gate === GATE.failed) return text.shortcuts
+      if (gate === GATE.pending) return text.pending
+      return null
+    }
 
-    // Native conversation rows, composer, header actions and rightbar remain mounted. Only CSS
-    // presentation changes; no replacement chat engine or unsupported readonlySettings prop.
+    // Native conversation rows, composer, header actions and rightbar remain mounted: no
+    // replacement chat engine or unsupported readonlySettings prop. Beyond CSS presentation the
+    // page adds only the shortcut gate, the frame guard, the manager selection and empty occupants
+    // of the shadowed slots.
     function apply(ctx) {
       ctx.effect(() => {
         const continuation = readContinuation()
@@ -500,9 +543,7 @@ window.__ModuleLoader__.load({
           const selectFailed = useCell(session.selectFailed)
           const assigned = useCell(manager)
           const state = useCell(gate)
-          // A known manager behind a pending gate is shown as pending, never as a blank page.
-          const status = lookupFailed || selectFailed || assigned === null ? text.unavailable
-            : state === GATE.failed ? text.shortcuts : state === GATE.pending ? text.pending : null
+          const status = statusText(text, { unavailable: lookupFailed || selectFailed || assigned === null, gate: state })
           return h('nav', { className: PAGE.navigation, 'aria-label': PAGE.name },
             h('button', { type: 'button', onClick: () => session.back() }, text.back),
             h('button', { type: 'button', onClick: () => ctx.layout.selectPanel(PAGE.plugins) }, text.plugins),
@@ -522,13 +563,14 @@ window.__ModuleLoader__.load({
             settingsPending = false
             openSettings()
           }, [openSettings])
-          return createPortal(h('button', { className: 'fishball-settings-launcher', type: 'button',
+          return createPortal(h('button', { className: PAGE.settingsButton, type: 'button',
             'aria-haspopup': 'dialog', 'aria-expanded': settingsOpen, onClick: openSettings }, text.settings), document.body)
         }
-        const unregisterSettings = ctx.slots.inject('settings.launcher', () => ctx.slots.register({
-          name: 'settings.launcher', priority: PAGE.priority,
-        }, SettingsLauncher))
-        const unshadow = SHADOWED_SLOTS.map(name => ctx.slots.inject(name, () => ctx.slots.register({ name, priority: PAGE.priority }, Empty)))
+        // Every page occupant (Settings launcher, shadowed slots) takes its single slot's seat
+        // at PAGE.priority, through inject so the registration follows the slot's own lifetime.
+        const occupy = (name, Component) => ctx.slots.inject(name, () => ctx.slots.register({ name, priority: PAGE.priority }, Component))
+        const unregisterSettings = occupy(PAGE.settingsSlot, SettingsLauncher)
+        const unshadow = SHADOWED_SLOTS.map(name => occupy(name, Empty))
         const unregister = ctx.slots.register({ name: PAGE.overlay }, Navigation)
         return () => {
           unregister()

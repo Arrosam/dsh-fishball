@@ -1370,6 +1370,11 @@ DSH packages (rc.5 / rc.1), read only.
 
 ### 11.4 Allowed destinations and escape prevention
 
+> **Superseded for V2 (LITE).** The user rejected the navigation guard below, and its bounce-back
+> rows, together with archive cleanup ([v2-final-scope §4.3](<../planning/v2-final-scope.md#L181>)).
+> V2 prevents the escape instead: remapped shortcuts, hidden surfaces, a frame guard and one
+> intended manager selection ([v2-lite](<../planning/v2-lite.md>)). The allowed destinations stay.
+
 **Allowed:** Fishball's session view, plus the `main` panels for DSH Settings, Plugins and any
 plugin's settings (U12), plus our own panels (approvals, reminders, board). **Blocked:** every other
 session, the session list or search, the new-session view, and any other panel.
