@@ -4,13 +4,15 @@
  * specified, so none is tested (BVA-12 forbids inventing one).
  *
  * `SK-BVA-*-N` executable premises check each value against the installed SDK's own
- * `isSkillName`, because S6 adopts DSH's grammar. The matching SK cases are todos.
+ * `isSkillName`, because S6 adopts DSH's grammar. The matching SK cases run against the SK
+ * implementation through support/scenarios.mjs.
  */
 import assert from 'node:assert/strict'
 import { it } from 'node:test'
-import { NAME_BVA } from './support/constants.mjs'
-import { perSdk, todoSk } from './support/fixtures.mjs'
+import { CASE, NAME_BVA } from './support/constants.mjs'
+import { perSdk, skCases } from './support/fixtures.mjs'
 import { loadSdk } from './support/native-oracle.mjs'
+import * as S from './support/scenarios.mjs'
 
 const label = (value) => JSON.stringify(value)
 
@@ -32,7 +34,21 @@ const CONTENT_CASES = [
   ['SK-BVA-C-03', 'library with 2 skills: removing one leaves exactly the other, byte-identical.'],
 ]
 
-perSdk('T-SK BVA (SK-owned)', () => todoSk([...NAME_CASES, ...CONTENT_CASES]))
+const SCENARIOS = {
+  ...Object.fromEntries(NAME_CASES.map(([id], index) => [id, S.nameBoundary(NAME_BVA[index])])),
+  'SK-BVA-D-01': S.invalidDocuments('emptyDescription'),
+  'SK-BVA-D-02': S.invalidDocuments('blankDescription'),
+  'SK-BVA-D-03': S.acceptedContent({ description: CASE.description.one }),
+  'SK-BVA-D-04': S.acceptedContent({ description: CASE.description.padded, trimmed: true }),
+  'SK-BVA-B-01': S.invalidDocuments('emptyBody'),
+  'SK-BVA-B-02': S.invalidDocuments('whitespaceBody'),
+  'SK-BVA-B-03': S.acceptedContent({ body: CASE.body.one }),
+  'SK-BVA-C-01': S.emptyLibrary,
+  'SK-BVA-C-02': S.oneThenZero,
+  'SK-BVA-C-03': S.removeLeavesOthers,
+}
+
+perSdk('T-SK BVA (SK-owned)', (version) => skCases(version, [...NAME_CASES, ...CONTENT_CASES], SCENARIOS))
 
 perSdk('T-SK BVA native-oracle premises', (version) => {
   NAME_BVA.forEach(([value, valid, boundary], index) => {

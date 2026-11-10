@@ -1,7 +1,8 @@
 /**
  * T-SK State Transitions (docs/test-design/private-skills.md §6): ST-09 library lifecycle, ST-10
  * failure and recovery, ST-SK-11 catalog visibility (SK-SEAM decision 3) and ST-SK-12 manager
- * lifecycle (decision 2). Each transition the SK implementation owns is a todo.
+ * lifecycle (decision 2). Each transition the SK implementation owns runs against it through
+ * support/scenarios.mjs; "restart" is a disposed child plus a new one booted over the same home.
  *
  * `SK-ST-*-N` executable premises show, through the installed public provider, the native states
  * the SK oracle rests on: a held candidate rereads its file, and a removed file stops loading.
@@ -10,8 +11,9 @@ import assert from 'node:assert/strict'
 import { rm, writeFile } from 'node:fs/promises'
 import { it } from 'node:test'
 import { SAMPLE } from './support/constants.mjs'
-import { perSdk, placeSkill, skillDocument, skillWorkspace, todoSk } from './support/fixtures.mjs'
+import { perSdk, placeSkill, skCases, skillDocument, skillWorkspace } from './support/fixtures.mjs'
 import { openNative } from './support/native-oracle.mjs'
+import * as S from './support/scenarios.mjs'
 
 // ST-09 — Absent → Committed → Visible → (restart) Visible → Updated → Visible(new) → Removed → Absent.
 const ST_09 = [
@@ -53,7 +55,34 @@ const ST_MANAGER = [
   ['SK-ST-12-T4', 'Throughout, no worker composition, standing preset or main DSH gains the provider or the tool.'],
 ]
 
-perSdk('T-SK State Transitions (SK-owned)', () => todoSk([...ST_09, ...ST_10, ...ST_CATALOG, ...ST_MANAGER]))
+const SCENARIOS = {
+  'SK-ST-09-T1': S.createPublishes,
+  'SK-ST-09-T2': S.restartKeepsLibrary,
+  'SK-ST-09-T3': S.updatePublishes,
+  'SK-ST-09-T4': S.removeLeavesOthers,
+  'SK-ST-09-T5': S.recreateAfterRemove,
+  'SK-ST-09-X1': S.invalidTransitions,
+  'SK-ST-10-T1': S.updatePreCommitFault,
+  'SK-ST-10-T2': S.createPreCommitFault,
+  'SK-ST-10-T3': S.refreshFailure,
+  'SK-ST-10-T4': S.refreshFailure,
+  'SK-ST-10-T5': S.refreshFailure,
+  'SK-ST-10-T6': S.cancellationTruthful,
+  'SK-ST-10-T7': S.concurrencyOneWinner,
+  'SK-ST-10-X1': S.forbiddenStatesAbsent,
+  'SK-ST-11-T1': S.nextCallFresh,
+  'SK-ST-11-T2': S.updatePublishes,
+  'SK-ST-11-T3': S.watcherOffBypass,
+  'SK-ST-11-T4': S.noWakeOnInvalidate,
+  'SK-ST-11-T5': S.noUiObligation,
+  'SK-ST-11-T6': S.incompleteNeverSuccess,
+  'SK-ST-12-T1': S.setupManagerOnly,
+  'SK-ST-12-T2': S.disposalFences,
+  'SK-ST-12-T3': S.restartKeepsLibrary,
+  'SK-ST-12-T4': S.neverOutsideManager,
+}
+
+perSdk('T-SK State Transitions (SK-owned)', (version) => skCases(version, [...ST_09, ...ST_10, ...ST_CATALOG, ...ST_MANAGER], SCENARIOS))
 
 perSdk('T-SK ST native-oracle premises', (version) => {
   async function heldCandidate(t) {
