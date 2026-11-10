@@ -11,34 +11,88 @@ window.__ModuleLoader__.load({
       priority: -1, plugins: 'plugins', overlay: 'shell.overlay',
       root: 'data-fishball-page', ready: 'data-fishball-session',
       hidden: 'data-fishball-hidden', navigation: 'fishball-page-navigation',
-      // Main-replacement contributions need an explicit reviewed ID; rightbar/composer stay native.
-      panels: ['plugins'],
-      button: 'button',
+      button: 'button', topNavigation: 'nav[aria-label]',
       main: '[data-slot="main.conversation"]',
       frame: '.pI_x6G_frame', sidebar: '.pI_x6G_sidebarCol',
-      settings: '[data-slot="sidebar.settings"]',
     })
-    /** @typedef {{code:string, options:readonly string[]}} CapabilityGap */
-    /** No edit(clear)/restore: both web adapters persist dsh.keybindings.v1 across same-origin frames. */
-    const gaps = Object.freeze({
-      shortcuts: Object.freeze({ code: 'NON_PERSISTENT_SHORTCUT_UNBIND_UNAVAILABLE', options: Object.freeze([
-        'Add a supported SDK instance-local shortcut override API.',
-        'Give the child an isolated shortcut storage namespace/origin before using persisted null overrides.',
-        'Explicitly accept active shortcuts plus corrective navigation (not a creation veto).',
-      ]) }),
-      readonlySettings: Object.freeze({ code: 'READONLY_SETTINGS_PROP_UNAVAILABLE', options: Object.freeze([
-        'Keep permissions enforced by the separate server/overlay owner; do not pass an invented prop.',
-      ]) }),
+    /**
+     * The non-secret continuation PG-ORIGIN carries across native admission in the fragment
+     * (src/slim/host/embed.js CONTINUATION; host.js PLUGIN.ui; keep the three in step). Any other
+     * name or value is ignored, never acted on.
+     */
+    const CONTINUATION = Object.freeze({
+      view: Object.freeze({ name: 'view', settings: 'settings', values: Object.freeze(['settings']) }),
+      lang: Object.freeze({ name: 'lang', values: Object.freeze(['zh', 'en']) }),
+      query: '?',
+    })
+    /**
+     * LITE shortcut policy (v2-final-scope §4.3, the user's rule "全部设置到一个非常复杂的键位作为临时解决方案").
+     * Every editable command that leaves the Fishball page, opens the sidebar navigation or
+     * creates/opens/switches/archives a session gets its own very complex binding in the child's
+     * own origin storage (`dsh.keybindings.v1`, isolated by PG-ORIGIN). Native validation rejects
+     * one binding on two commands, so each command has a distinct key. IDs: ui-workspace and
+     * ui-layout in 0.2.1-rc.5 and 0.2.2-rc.1. settings.open/shortcuts.open are allowed native
+     * destinations and stay unchanged (LITE-EP-07).
+     */
+    const SHORTCUTS = Object.freeze({
+      modifiers: Object.freeze(['control', 'alt', 'shift', 'meta']),
+      remap: Object.freeze([
+        Object.freeze({ id: 'session.new', code: 'F13' }),
+        Object.freeze({ id: 'session.search', code: 'F14' }),
+        Object.freeze({ id: 'session.fork', code: 'F15' }),
+        Object.freeze({ id: 'session.archive', code: 'F16' }),
+        Object.freeze({ id: 'workspace.add', code: 'F17' }),
+        Object.freeze({ id: 'session.rename', code: 'F18' }),
+        Object.freeze({ id: 'sidebar.left.toggle', code: 'F19' }),
+      ]),
+      edit: 'set',
+      config: Object.freeze({ loading: 'loading', unreadable: 'unreadable' }),
+      result: Object.freeze({ saved: 'saved', stale: 'stale', notReady: 'not-ready' }),
+      // Gesture flags in the normalized binding's modifier vocabulary.
+      gesture: Object.freeze({ control: 'ctrlKey', alt: 'altKey', shift: 'shiftKey', meta: 'metaKey' }),
+      keydown: 'keydown',
+    })
+    /**
+     * Native localized accessibility labels of launchers that leave the Fishball session, by SDK
+     * dictionary namespace (same keys in 0.2.1-rc.5 and 0.2.2-rc.1). Matched exactly, never as an
+     * English substring, because dictionaries can arrive late and follow the active language.
+     */
+    const LABELS = Object.freeze({
+      buttons: Object.freeze([
+        Object.freeze({ namespace: 'sidebar', key: 'session.new.label' }),
+        // The reply's branch action: forkAt -> uiWorkspace.openSession.
+        Object.freeze({ namespace: 'chat', key: 'message.branch' }),
+        // The empty-session hero chip; its picker slot is shadowed (SHADOWED_SLOTS), and the chip is hidden.
+        Object.freeze({ namespace: 'conversation', key: 'hero.chooseWorkspace' }),
+      ]),
+      topNavigation: Object.freeze({ namespace: 'conversation', key: 'session.hierarchy' }),
+    })
+    /**
+     * Slots shadowed by an empty occupant (A-lite §11.3, first-choice mechanism): the empty-session
+     * hero's workspace picker. Picking a workspace connects or creates another blank session and
+     * opens it (ui-workspace connectBlank -> replaceMain); the menu is portalled to the body, so
+     * hiding its wrapper would not hide it. Both the chip and the inert composer's "choose
+     * workspace" trigger only open this slot, so with the shadow neither can leave the session.
+     */
+    const SHADOWED_SLOTS = Object.freeze(['conversation.hero.workspace'])
+    /** Gate states: pending waits for real native events, never for a timer. */
+    const GATE = Object.freeze({ pending: 'pending', protected: 'protected', failed: 'failed' })
+    /** In-frame navigation policy; see mountFrameGuard. */
+    const FRAME = Object.freeze({
+      navigate: 'navigate', click: 'click', anchor: 'a[href],area[href]', blank: '_blank', frame: 'iframe',
+      features: 'noopener,noreferrer', web: Object.freeze(['http:', 'https:']),
+      passTypes: Object.freeze(['reload', 'traverse']), primaryButton: 0,
     })
     const TEXT = Object.freeze({
-      en: { back: 'Fishball', plugins: 'Plugins', settings: 'Settings', unavailable: 'Fishball session unavailable', retry: 'Retry' },
-      zh: { back: 'Fishball', plugins: '插件', settings: '设置', unavailable: 'Fishball 会话不可用', retry: '重试' },
+      en: { back: 'Fishball', plugins: 'Plugins', settings: 'Settings', unavailable: 'Fishball session unavailable', shortcuts: 'Fishball shortcut protection unavailable', pending: 'Preparing Fishball shortcut protection', retry: 'Retry' },
+      zh: { back: 'Fishball', plugins: '插件', settings: '设置', unavailable: 'Fishball 会话不可用', shortcuts: 'Fishball 快捷键保护不可用', pending: '正在准备 Fishball 快捷键保护', retry: '重试' },
     })
 
     // Browser CSSOM, not a style element: shipped precedent in both SDKs' sidebar-documentpreview
     // client.pdf.js:7749–7777. No nonce, eval, external asset, or CSP relaxation. Native boot itself
     // remains a separate CSP integration gate. Hashed layout hooks below are version-bounded fallbacks,
-    // verified in rc.5/rc.1, not a promise of stable SDK selectors.
+    // verified in rc.5/rc.1, not a promise of stable SDK selectors. visibility:hidden (not opacity)
+    // keeps hidden controls out of Tab order and pointer hit-testing.
     function mountStyles() {
       if (typeof CSSStyleSheet !== 'function' || !('adoptedStyleSheets' in document)) {
         throw new Error('FISHBALL_CONSTRUCTED_STYLESHEET_UNAVAILABLE')
@@ -47,6 +101,9 @@ window.__ModuleLoader__.load({
       const root = `[${PAGE.root}]`
       const rules = [
         `${root} ${PAGE.sidebar}{visibility:hidden!important;min-width:0!important;pointer-events:none}`,
+        // Descendants too: native ui-workspace CSS sets visibility:visible on the workspace header
+        // actions (Add workspace), which would otherwise stay Tab-focusable inside the hidden column.
+        `${root} ${PAGE.sidebar} *,${root} [data-slot="sidebar"] *{visibility:hidden!important}`,
         `${root} .fishball-settings-launcher{position:fixed;bottom:8px;left:8px;z-index:100;visibility:visible;pointer-events:auto}`,
         `${root} .pI_x6G_drawerMask,${root} [data-slot="sidebar"]{visibility:hidden!important;pointer-events:none!important}`,
         `${root} [data-shell-leading],${root} [data-sidebar-toggle],${root} [data-sidebar-drawer-mask],${root} [${PAGE.hidden}]{display:none!important}`,
@@ -70,17 +127,23 @@ window.__ModuleLoader__.load({
       }
     }
 
-    // Match the native localized accessibility label, never an English substring. Native
-    // dictionaries can arrive late. V2 ships no bundled plugins (v2-final-scope §1), so no
-    // plugin's Remove control is hidden: every child plugin keeps its native uninstall.
+    // Hide the LABELS launchers. V2 ships no bundled plugins (v2-final-scope §1), so no plugin's
+    // Remove control is hidden: every child plugin keeps its native uninstall. The conversation's
+    // top navigation, the session-hierarchy nav, is hidden whole: its crumb buttons open other
+    // sessions (ui-conversation open(id)) and in 0.2.2-rc.1 every crumb, the current title too, is
+    // a tabIndex 0 context-menu trigger for Fork/Archive/Rename/Pin (ui-workspace session menus).
     function mountRemovals(ctx, styles) {
       const marked = new Set()
-      const sidebarText = ctx.locale.bind('sidebar')
+      const text = ({ namespace, key }) => ctx.locale.bind(namespace)(key)
       function reconcile() {
         const next = new Set()
-        const newSession = sidebarText('session.new.label')
+        const labels = new Set(LABELS.buttons.map(text))
         for (const button of document.querySelectorAll(PAGE.button)) {
-          if (button.getAttribute('aria-label') === newSession) next.add(button)
+          if (labels.has(button.getAttribute('aria-label'))) next.add(button)
+        }
+        const hierarchy = text(LABELS.topNavigation)
+        for (const nav of document.querySelectorAll(PAGE.topNavigation)) {
+          if (nav.getAttribute('aria-label') === hierarchy) next.add(nav)
         }
         for (const node of marked) if (!next.has(node)) node.removeAttribute(PAGE.hidden)
         for (const node of next) if (!marked.has(node)) node.setAttribute(PAGE.hidden, '')
@@ -105,6 +168,28 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** The validated fragment continuation; an absent or unlisted value is null. */
+    function readContinuation() {
+      // The fragment body is a query string (`view=settings&lang=zh`); URL parses it as one.
+      const query = new URL(CONTINUATION.query + window.location.hash.slice(1), document.baseURI).searchParams
+      const pick = ({ name, values }) => {
+        const value = query.get(name)
+        return values.includes(value) ? value : null
+      }
+      return Object.freeze({ view: pick(CONTINUATION.view), lang: pick(CONTINUATION.lang) })
+    }
+
+    /**
+     * The connector chose the frame's language (contract 1.1 UI_LANG). setLocale is the only
+     * native write entry and always persists, so it is called only when the language differs
+     * and is registered; it persists into the child's own home, never main's.
+     */
+    function applyLanguage(ctx, lang) {
+      const snapshot = ctx.locale.getLocale()
+      if (lang === null || snapshot.active === lang || !snapshot.locales.some(locale => locale.id === lang)) return
+      ctx.locale.setLocale(lang)
+    }
+
     // Producer contract (session-route.js): document-relative, native cookie auth, no-store.
     // GET is a read-only lookup (null = no manager yet); POST ensures THE manager and must
     // return an ID. 503/auth/transport/malformed responses reject and never select a guessed
@@ -120,39 +205,200 @@ window.__ModuleLoader__.load({
       return body.sessionId
     }
 
-    // One corrective guard, not a global navigation veto or server authorization mechanism.
-    // adapter.current is the public renderer-facing binding source in both versions; key is the ID.
-    // Coalesce notifications so retain-new/release-old navigation cannot cause recursive correction.
-    function mountGuard(ctx, publish) {
-      const abort = new AbortController()
-      const source = ctx.uiSession.adapter.current
-      let manager = null
+    /** One observable value with change listeners; React reads it through useSyncExternalStore. */
+    function createCell(initial) {
+      let value = initial
+      const listeners = new Set()
+      return {
+        get: () => value,
+        set(next) { if (next === value) return; value = next; listeners.forEach(listener => listener()) },
+        subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener) },
+        clear() { listeners.clear() },
+      }
+    }
+
+    const sameBinding = (left, right) => left === null || right === null
+      ? left === right
+      : left.code === right.code && left.secondCode === right.secondCode && left.modifiers.join('+') === right.modifiers.join('+')
+
+    /**
+     * Child-only shortcut reconciliation through the public `shortcuts` service (LITE-UC-01,
+     * DT-01..09, ST-01..03). Contract:
+     * - start() is called only after the child's own session route answered at this document's
+     *   origin, the proof that writes land in the isolated child origin (DT-01).
+     * - One serialized runner; notifications during a run schedule exactly one rerun (ST-01).
+     * - The desired binding is the distinct complex one when the native validator accepts it
+     *   for this device; otherwise explicit null (Web Linux admits no such combination; there
+     *   these commands have no default binding at all). No numeric "complexity" is invented.
+     * - Satisfied commands are never edited, so a satisfied map costs zero writes (DT-04).
+     * - saved/stale reread the live snapshot (DT-05/06); loading/not-ready wait for the next
+     *   native catalog/config event (DT-02); unreadable/conflict/write-failed/throw fail the gate
+     *   with Retry and no reset-all, direct storage write or rollback (DT-03/07/08/09).
+     * - Gesture guard: until a relevant command is satisfied, a keydown exactly matching its
+     *   current native binding is withheld from DSH's window-level dispatch. Only those
+     *   gestures, never blanket Enter/Escape (EP-11). The guard is prevention before activation.
+     */
+    function mountShortcuts(ctx, gate) {
+      const shortcuts = ctx.shortcuts
+      let started = false
       let disposed = false
-      let pending = false
-      let opening = false
-      let lookup = null
-      function reconcile() {
-        if (disposed) return
-        const selected = source.getSnapshot().key
-        const panel = ctx.layout.panelInfo.getSnapshot().activePanelId
-        const allowed = panel !== null && PAGE.panels.includes(panel)
-        document.documentElement.toggleAttribute(PAGE.ready, manager !== null && selected === manager)
-        if (allowed) return
-        if (panel !== null) ctx.layout.selectPanel(null)
-        if (manager !== null && selected !== manager && !opening) {
-          opening = true
-          const target = manager
-          Promise.resolve().then(() => {
-            if (!disposed && manager === target && ctx.layout.panelInfo.getSnapshot().activePanelId === null) return ctx.uiWorkspace.openSession(target)
-          }).catch(() => {
-            if (!disposed && manager === target) { manager = null; publish(manager); schedule() }
-          }).finally(() => { opening = false; schedule() })
+      let running = false
+      let again = false
+      let againRetry = false
+      function desired(target) {
+        const candidate = { code: target.code, modifiers: SHORTCUTS.modifiers }
+        const described = shortcuts.describeBinding(candidate)
+        const free = described.conflicts.every(id => id === target.id)
+        return described.issue === null && free ? candidate : null
+      }
+      function normalized(binding) { return binding === null ? null : shortcuts.describeBinding(binding).binding }
+      /** Registered relevant commands whose current binding differs from the desired one. */
+      function unsatisfied() {
+        const catalog = shortcuts.catalog.getSnapshot()
+        return SHORTCUTS.remap.flatMap(target => {
+          const entry = catalog.find(row => row.id === target.id)
+          if (entry === undefined) return []
+          const binding = desired(target)
+          return sameBinding(entry.binding, normalized(binding)) ? [] : [{ target, entry, binding }]
+        })
+      }
+      async function reconcile() {
+        // A command saved once and still unsatisfied would loop forever; that is a failure.
+        const saved = new Set()
+        for (;;) {
+          if (disposed) return
+          const config = shortcuts.config.getSnapshot()
+          if (config.status === SHORTCUTS.config.unreadable) throw new Error(config.error ?? config.status)
+          if (config.status === SHORTCUTS.config.loading) { gate.set(GATE.pending); return }
+          const [next] = unsatisfied()
+          if (next === undefined) { gate.set(GATE.protected); return }
+          gate.set(GATE.pending)
+          const result = await shortcuts.edit({ type: SHORTCUTS.edit, id: next.target.id, binding: next.binding }, config.revision)
+          if (result.status === SHORTCUTS.result.notReady) return
+          if (result.status === SHORTCUTS.result.saved) {
+            if (saved.has(next.target.id)) throw new Error(result.status)
+            saved.add(next.target.id)
+          } else if (result.status !== SHORTCUTS.result.stale) throw new Error(result.status)
         }
       }
-      function schedule() {
-        if (pending || disposed) return
-        pending = true
-        queueMicrotask(() => { pending = false; reconcile() })
+      // A failed gate holds unavailable (DT-08): only Retry reconciles again, so unrelated
+      // catalog/config notifications neither write nor flip the status.
+      function schedule(retry = false) {
+        if (!started || disposed) return
+        // Queue first, so a Retry pressed during a run that then fails still reruns.
+        if (running) { again = true; againRetry ||= retry; return }
+        if (gate.get() === GATE.failed && !retry) return
+        running = true
+        if (retry) gate.set(GATE.pending)
+        reconcile().catch(() => { if (!disposed) gate.set(GATE.failed) }).finally(() => {
+          running = false
+          if (!again) return
+          const retried = againRetry
+          again = false
+          againRetry = false
+          schedule(retried)
+        })
+      }
+      function matches(binding, event) {
+        return binding !== null && binding.secondCode === undefined && binding.code === event.code &&
+          Object.entries(SHORTCUTS.gesture).every(([modifier, flag]) => binding.modifiers.includes(modifier) === event[flag])
+      }
+      function guard(event) {
+        if (unsatisfied().some(({ entry }) => matches(entry.binding, event))) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+      }
+      // Capture on window runs before DSH's bubbling window listener and the target's handlers.
+      window.addEventListener(SHORTCUTS.keydown, guard, true)
+      // catalog and config share one native store, so one subscription sees both.
+      const unsubscribe = shortcuts.catalog.subscribe(() => schedule())
+      return {
+        start() { started = true; schedule() },
+        retry() { schedule(true) },
+        dispose() {
+          disposed = true
+          unsubscribe()
+          window.removeEventListener(SHORTCUTS.keydown, guard, true)
+        },
+      }
+    }
+
+    /**
+     * Keep the child document on the Fishball page (rc.1 liveshare viewer and third-party child
+     * plugins can navigate this frame). Prevention, not correction: an away navigation is
+     * cancelled before it happens; a user-initiated web link opens in a new window instead, like
+     * native chat links. Hash changes, downloads, reloads, history traversal and navigations to
+     * this same document (they land on Fishball again) pass. The Navigation API covers script
+     * `location` writes where the browser has it; the anchor click capture covers links in every
+     * browser, including _top/_parent targets. Documented limits: script writes in browsers without
+     * the Navigation API, and script writes to `top`/`parent` location, which this frame cannot veto.
+     */
+    function mountFrameGuard() {
+      const here = () => new URL(window.location.href)
+      const sameDocument = url => { const current = here(); return url.origin === current.origin && url.pathname === current.pathname && url.search === current.search }
+      const openAside = url => { if (FRAME.web.includes(url.protocol)) window.open(url.href, FRAME.blank, FRAME.features) }
+      // A new window, or a named frame inside this document, does not navigate this document.
+      // Empty, _self, _top, _parent and unknown names navigate this document or the main DSH.
+      const keepsTarget = target => target.toLowerCase() === FRAME.blank ||
+        (target !== '' && [...document.getElementsByName(target)].some(node => node.localName === FRAME.frame))
+      function navigate(event) {
+        if (!event.cancelable || event.hashChange || typeof event.downloadRequest === 'string' || FRAME.passTypes.includes(event.navigationType)) return
+        const url = new URL(event.destination.url)
+        if (sameDocument(url)) return
+        event.preventDefault()
+        if (event.userInitiated) openAside(url)
+      }
+      function click(event) {
+        if (event.defaultPrevented || event.button !== FRAME.primaryButton || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+        // HTML anchors only: an SVG <a> has no string href and DSH renders none as a link.
+        const anchor = event.composedPath().find(node => node instanceof Element && node.matches(FRAME.anchor) && typeof node.href === 'string') ?? null
+        if (anchor === null || anchor.hasAttribute('download') || keepsTarget(anchor.target)) return
+        const url = new URL(anchor.href, document.baseURI)
+        if (sameDocument(url)) return
+        event.preventDefault()
+        openAside(url)
+      }
+      const navigation = window.navigation
+      navigation?.addEventListener(FRAME.navigate, navigate)
+      document.addEventListener(FRAME.click, click, true)
+      return () => {
+        navigation?.removeEventListener(FRAME.navigate, navigate)
+        document.removeEventListener(FRAME.click, click, true)
+      }
+    }
+
+    /**
+     * The manager session: lookup/ensure, the one intended selection and explicit return.
+     * No drift correction and no archive cleanup (the user rejected both: "这个方案听起来就很不稳定。不要").
+     * The assigned manager is opened once when it first becomes known and the shortcut gate is
+     * protected, and again only when the user asks (Fishball button, Retry). Whatever else the
+     * main view shows is left alone; the conversation surface is simply not marked ready.
+     * adapter.current is the public renderer-facing binding source in both versions; key is the ID.
+     */
+    function mountSession(ctx, manager, gate, shortcuts) {
+      const abort = new AbortController()
+      const source = ctx.uiSession.adapter.current
+      let disposed = false
+      let lookup = null
+      let selectedFor = null
+      // Two owners: a background refresh may clear a lookup failure, never a failed selection.
+      const lookupFailed = createCell(false)
+      const selectFailed = createCell(false)
+      function select() {
+        const target = manager.get()
+        if (disposed || target === null || gate.get() !== GATE.protected) return
+        selectedFor = target
+        selectFailed.set(false)
+        ctx.layout.selectPanel(null)
+        if (source.getSnapshot().key === target) return
+        Promise.resolve().then(() => ctx.uiWorkspace.openSession(target)).catch(() => { if (!disposed) selectFailed.set(true) })
+      }
+      function mark() {
+        if (disposed) return
+        const target = manager.get()
+        if (target !== null && target !== selectedFor) select()
+        document.documentElement.toggleAttribute(PAGE.ready, target !== null && gate.get() === GATE.protected && source.getSnapshot().key === target)
       }
       // User decision 7.A (2026-11-09): with no manager yet, ensure it so the native composer
       // has a real Session. Only the page-open lookup and an explicit Retry pass ensure; any
@@ -165,26 +411,41 @@ window.__ModuleLoader__.load({
         lookup = requestSession(PAGE.read, abort.signal).then(value => {
           if (value !== null || !ensure || disposed) return value
           return requestSession(PAGE.ensure, abort.signal)
-        }).catch(() => null).then(value => {
-          if (!disposed) { manager = value; publish(manager); schedule() }
+        }).then(value => {
+          if (disposed) return
+          lookupFailed.set(false)
+          // A successful answer from the child's own route proves this document is the
+          // child's origin; only then may the child's shortcut preferences be written.
+          shortcuts.start()
+          manager.set(value)
+          mark()
+        }, () => {
+          if (!disposed) { lookupFailed.set(true); manager.set(null); mark() }
         }).finally(() => { lookup = null })
         return lookup
       }
-      const unsubscribers = [source.subscribe(schedule), ctx.layout.panelInfo.subscribe(schedule),
+      const unsubscribers = [source.subscribe(mark), gate.subscribe(mark),
         ctx.sessions.list.subscribe(() => { void refresh() })]
       // A listener wrapper: addEventListener would otherwise pass the Event as ensure.
       const reread = () => { void refresh() }
       window.addEventListener('focus', reread)
       void refresh(true)
-      schedule()
+      mark()
       return {
-        retry() { return refresh(true) },
-        back() { ctx.layout.selectPanel(null); void refresh().then(schedule) },
+        lookupFailed,
+        selectFailed,
+        retry() {
+          shortcuts.retry()
+          return refresh(true).then(() => { selectedFor = null; mark() })
+        },
+        back() { select() },
         dispose() {
           disposed = true
           abort.abort()
           unsubscribers.forEach(dispose => dispose())
           window.removeEventListener('focus', reread)
+          lookupFailed.clear()
+          selectFailed.clear()
           document.documentElement.removeAttribute(PAGE.ready)
         },
       }
@@ -207,48 +468,79 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** The active language's copy; `locale` is one stable {subscribe, get} pair per apply. */
+    function useText(locale) {
+      return React.useSyncExternalStore(locale.subscribe, locale.get).active.startsWith('zh') ? TEXT.zh : TEXT.en
+    }
+    const useCell = cell => React.useSyncExternalStore(cell.subscribe, cell.get)
+    /** The empty occupant of a shadowed slot. */
+    const Empty = () => null
+
     // Native conversation rows, composer, header actions and rightbar remain mounted. Only CSS
     // presentation changes; no replacement chat engine or unsupported readonlySettings prop.
     function apply(ctx) {
       ctx.effect(() => {
+        const continuation = readContinuation()
+        applyLanguage(ctx, continuation.lang)
         const styles = mountStyles()
         document.documentElement.setAttribute(PAGE.root, '')
-        let manager = null
-        const listeners = new Set()
-        const publish = value => { manager = value; listeners.forEach(listener => listener()) }
-        const guard = mountGuard(ctx, publish)
+        const manager = createCell(null)
+        const gate = createCell(GATE.pending)
+        const shortcuts = mountShortcuts(ctx, gate)
+        const session = mountSession(ctx, manager, gate, shortcuts)
         const removals = mountRemovals(ctx, styles)
+        const frameGuard = mountFrameGuard()
+        let settingsPending = continuation.view === CONTINUATION.view.settings
+        // Stable across renders, so React subscribes once; LocaleRuntime methods need `this`.
+        const locale = { subscribe: listener => ctx.locale.subscribe(listener), get: () => ctx.locale.getLocale() }
         function Navigation() {
-          const session = React.useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener) }, () => manager)
-          React.useSyncExternalStore(listener => ctx.locale.subscribe(listener), () => ctx.locale.getSnapshot())
-          const text = ctx.locale.getLocale().active.startsWith('zh') ? TEXT.zh : TEXT.en
+          const text = useText(locale)
+          // Every hook runs on every render (no short-circuit between them).
+          const lookupFailed = useCell(session.lookupFailed)
+          const selectFailed = useCell(session.selectFailed)
+          const assigned = useCell(manager)
+          const state = useCell(gate)
+          // A known manager behind a pending gate is shown as pending, never as a blank page.
+          const status = lookupFailed || selectFailed || assigned === null ? text.unavailable
+            : state === GATE.failed ? text.shortcuts : state === GATE.pending ? text.pending : null
           return h('nav', { className: PAGE.navigation, 'aria-label': PAGE.name },
-            h('button', { type: 'button', onClick: () => guard.back() }, text.back),
+            h('button', { type: 'button', onClick: () => session.back() }, text.back),
             h('button', { type: 'button', onClick: () => ctx.layout.selectPanel(PAGE.plugins) }, text.plugins),
-            session === null ? h(React.Fragment, null,
-              h('span', { role: 'status' }, text.unavailable),
-              h('button', { type: 'button', onClick: () => guard.retry() }, text.retry)) : null)
+            status === null ? null : h(React.Fragment, null,
+              h('span', { role: 'status' }, status),
+              h('button', { type: 'button', onClick: () => session.retry() }, text.retry)))
         }
         // Consume the native launcher owner callback instead of inventing a global settings API.
         // A portal keeps the trigger usable outside the rc.1 drawer's inert subtree and Windows
         // collapsed footer; the native settings modal/state and all settings contributions stay owned.
+        // `view=settings` opens that same native Settings once per page load (SET owns any later
+        // Fishball settings panel).
         function SettingsLauncher({ openSettings, settingsOpen }) {
-          React.useSyncExternalStore(listener => ctx.locale.subscribe(listener), () => ctx.locale.getSnapshot())
-          const text = ctx.locale.getLocale().active.startsWith('zh') ? TEXT.zh : TEXT.en
+          const text = useText(locale)
+          React.useEffect(() => {
+            if (!settingsPending) return
+            settingsPending = false
+            openSettings()
+          }, [openSettings])
           return createPortal(h('button', { className: 'fishball-settings-launcher', type: 'button',
             'aria-haspopup': 'dialog', 'aria-expanded': settingsOpen, onClick: openSettings }, text.settings), document.body)
         }
         const unregisterSettings = ctx.slots.inject('settings.launcher', () => ctx.slots.register({
           name: 'settings.launcher', priority: PAGE.priority,
         }, SettingsLauncher))
+        const unshadow = SHADOWED_SLOTS.map(name => ctx.slots.inject(name, () => ctx.slots.register({ name, priority: PAGE.priority }, Empty)))
         const unregister = ctx.slots.register({ name: PAGE.overlay }, Navigation)
         return () => {
           unregister()
+          unshadow.forEach(dispose => dispose())
           unregisterSettings()
-          guard.dispose()
+          frameGuard()
+          session.dispose()
+          shortcuts.dispose()
           removals()
           styles.dispose()
-          listeners.clear()
+          manager.clear()
+          gate.clear()
           document.documentElement.removeAttribute(PAGE.root)
         }
       })
@@ -256,10 +548,9 @@ window.__ModuleLoader__.load({
 
     return {
       name: PAGE.name,
-      inject: ['slots', 'layout', 'uiWorkspace', 'uiSession', 'sessions', 'locale'],
+      inject: ['slots', 'layout', 'uiWorkspace', 'uiSession', 'sessions', 'locale', 'shortcuts'],
       apply,
       recordDefinition,
-      gaps,
     }
   },
 })
