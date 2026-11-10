@@ -12,6 +12,9 @@ Delivers the SET row of [final V2 scope §4](<v2-final-scope.md#L154>) and
   sync):** "不允许子实例发起模型同步，只能主实例主动同步给子实例，也就是放在connector那". The child
   never starts a sync. Only the owner's click in the main DSH's "Model for Fishball" block on the
   `fishball-instance` Plugins card does. The child's panel shows a read-only note pointing there.
+  - **"connector" means the main side, not the `fishball-connector` row** (the user confirmed this
+    on 2026-11-11). The sync control stays on the main DSH's `fishball-instance` card as it is. It
+    is not moved to the `fishball-connector` card.
 - Plugin toggles and plugin settings live on DSH's native Plugins page. "现在的UI不要改，原来怎么配置插件现在就还怎么配置":
   the main DSH's `fishball-instance` Plugins card is unchanged, and so are its "Model for Fishball" block and routes.
 - Bundled plugins: V2 ships none ("第二版的附带插件也全都放到第三版"), so no Remove button is
@@ -124,14 +127,18 @@ those paths. They exist only as the main DSH's owner routes behind the main card
 - **Child-side authority (decided 2026-11-11 for model sync).** The user chose "main only" for
   model sync. 8e9a658's `childInitiatedSync` entry point in `host.js`, the relay's `check`/`add`
   ops and the child's `models/check|add` routes are removed rather than gated. A gate would leave a
-  child-reachable path to the main DSH's provider inventory whose safety rests on one check. With
-  no op and no handler, nothing on the lifecycle wire lets code in the child reach it. That is a
-  wire boundary only: child plugins run as the same OS user, which no relay rule can fence.
+  child-reachable path to the main DSH's provider inventory whose safety rests on one check.
   It is back to the pre-SET rule: only an owner click on the main card starts a sync
-  (slim-native-design §10). Still open: any code in the child process can call the relay's
-  status, Retry and Restart as the panel does. That includes a plugin the user installed into
-  the child. These are lifecycle requests only and copy nothing. A restart does end an Add the
-  owner started on the main card, which then reports `failed` `result-unknown` per entry.
+  (slim-native-design §10).
+  - **Scope of that claim: the lifecycle wire only.** With no op and no handler, nothing on the
+    lifecycle wire lets code in the child start a sync or reach the main DSH's providers or keys.
+    It is not an OS boundary: child plugins run as the same OS user, which no relay rule can fence.
+  - **Still open:** any code in the child process can call the relay's status, Retry and Restart
+    as the panel does. That includes a plugin the user installed into the child. These are
+    lifecycle requests only and copy nothing.
+  - **Still open, accepted for V2:** a child-requested Restart (or Retry from `failed`) ends an Add
+    the owner started on the main card. That run reports its entries `failed` `result-unknown`, and
+    the owner presses Check again. Nothing is copied by the child, and nothing is retried.
 - **Chunk delivery.** The shared source registers as the panel's chunk by its own script URL
   (`document.currentScript`). That holds for the default DSH bundle loader in both SDKs.
   A deployment `__DSH_TRANSPORT__.loadBundle` that inserts no `<script>` leaves the panel on its
