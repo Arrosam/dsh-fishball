@@ -20,21 +20,36 @@ window.__ModuleLoader__.load({
     const h = React.createElement
     const { Button, StateDot } = require('@deepseek-ai/dsh-client-ui-primitives')
 
+    /** The tab's identity on the Plugins page (Q-O = B) and its locale namespace. */
     const TAB = Object.freeze({
       name: 'fishball-recommend-plugins',
       slot: 'plugins.tab',
       id: 'fishball-recommended',
       ns: 'fishballRecommended',
+    })
+    /** The Node half's list route (index.js). */
+    const LIST = Object.freeze({
       // Document-relative, like fishball-page's session route: the child may be mounted below a path.
       route: 'api/fishball/recommended',
-      changed: 'plugin-manager/changed',
-      reset: 'connection/reset',
-      inspectAccepted: 'accepted',
+      request: Object.freeze({ credentials: 'same-origin', cache: 'no-store' }),
+    })
+    /** Host events after which the native page re-reads its inventory; the tab follows the same two. */
+    const HOST_EVENT = Object.freeze({ changed: 'plugin-manager/changed', reset: 'connection/reset' })
+    /** The vocabulary of `pluginManager.inspect` (PluginSpecInspection) this tab reads. */
+    const INSPECT = Object.freeze({
+      accepted: 'accepted',
       // Only a registry name has an exact `name@version` form; the curated specs are all npm names.
       registryKind: 'registry',
       networkProblem: 'network',
       versionSeparator: '@',
+    })
+    /** Stable markup hooks and fixed attribute values of the rendered tab. */
+    const DOM = Object.freeze({
       installedState: 'installed',
+      alertRole: 'alert',
+      statusRole: 'status',
+      linkTarget: '_blank',
+      linkRel: 'noopener noreferrer',
     })
     /** The native primitive Button look the Discover tab uses for row actions. */
     const BUTTON = Object.freeze({ variant: 'outline', size: 'sm' })
@@ -104,11 +119,50 @@ window.__ModuleLoader__.load({
     const useStore = store => React.useSyncExternalStore(store.subscribe, store.getSnapshot)
 
     async function readList(signal) {
-      const response = await fetch(new URL(TAB.route, document.baseURI), { credentials: 'same-origin', cache: 'no-store', signal })
-      if (!response.ok) throw new Error(TAB.route)
+      const response = await fetch(new URL(LIST.route, document.baseURI), { ...LIST.request, signal })
+      if (!response.ok) throw new Error(LIST.route)
       const body = await response.json()
-      if (!Array.isArray(body?.categories) || !Array.isArray(body.highlighted)) throw new Error(TAB.route)
+      if (!Array.isArray(body?.categories) || !Array.isArray(body.highlighted)) throw new Error(LIST.route)
       return body
+    }
+
+    /** The settled value of an inspection answer, or undefined for a transport error or lost reply. */
+    const inspectionOf = answer => (answer?.ok ? answer.value : undefined)
+
+    /**
+     * The owner prop's target for an accepted registry answer, or null for any other answer. The
+     * curated list names packages, not versions, and the owner's `install` takes an exact version,
+     * so the version the registry reports now is the target the person confirms in DSH's dialog.
+     */
+    function installTarget(item, answer) {
+      const value = inspectionOf(answer)
+      if (value?.status !== INSPECT.accepted || value.kind !== INSPECT.registryKind || typeof value.version !== 'string' || !value.version) return null
+      // Ask the registry that answered first, for this install only (the owner never remembers it).
+      // Limit: null (pnpm's own configured registry) has no owner-prop form, so the dialog then asks
+      // its remembered registry choice, which may be another registry. The dialog re-inspects the
+      // exact `name@version` there; if that registry lacks the version, the native dialog shows the
+      // refusal and offers its own Retry / registry change. The tab adds no fallback of its own.
+      const registry = typeof value.registry === 'string' ? { registry: value.registry } : {}
+      return { spec: (value.name ?? item.packageName) + INSPECT.versionSeparator + value.version, ...registry, title: item.packageName, version: value.version }
+    }
+
+    /** The row's failure record: the Host's problem and reason when it gave them. */
+    function failedCheck(answer) {
+      const value = inspectionOf(answer)
+      return { kind: CHECK.failed, problem: value?.problem ?? null, reason: value?.reason ?? answer?.error?.message ?? '' }
+    }
+
+    /**
+     * Newest-wins bookkeeping for one kind of read: a later read supersedes an earlier one's answer,
+     * and `inFlight` lets a remount or Retry join a read already running instead of sending another.
+     */
+    class ReadFence {
+      constructor() { this.started = 0; this.settled = 0 }
+      begin() { return ++this.started }
+      /** Whether `read` is the newest read; it then counts as settled. */
+      finish(read) { if (read !== this.started) return false; this.settled = read; return true }
+      get inFlight() { return this.settled !== this.started }
+      get used() { return this.started > 0 }
     }
 
     /**
@@ -121,25 +175,26 @@ window.__ModuleLoader__.load({
         this.ctx = ctx
         this.abort = new AbortController()
         this.disposed = false
-        this.listRead = 0
-        this.inventoryRead = 0
+        this.listReads = new ReadFence()
+        this.inventoryReads = new ReadFence()
         this.store = createStore({ list: STATUS.loading, categories: [], highlighted: [], inventory: STATUS.loading, installed: new Set(), checks: {} })
       }
       dispose() { this.disposed = true; this.abort.abort() }
-      live(read, current) { return !this.disposed && read === current }
+      live(fence, read) { return fence.finish(read) && !this.disposed }
+      /** Start each read that has no answer yet and is not already running (mount and Retry). */
       ensure() {
         const { list, inventory } = this.store.getSnapshot()
-        if (list !== STATUS.ready) void this.loadList()
-        if (inventory !== STATUS.ready) void this.loadInventory()
+        if (list !== STATUS.ready && !this.listReads.inFlight) void this.loadList()
+        if (inventory !== STATUS.ready && !this.inventoryReads.inFlight) void this.loadInventory()
       }
       async loadList() {
-        const read = ++this.listRead
+        const read = this.listReads.begin()
         this.store.set({ list: STATUS.loading })
         try {
           const body = await readList(this.abort.signal)
-          if (this.live(read, this.listRead)) this.store.set({ list: STATUS.ready, categories: body.categories, highlighted: body.highlighted })
+          if (this.live(this.listReads, read)) this.store.set({ list: STATUS.ready, categories: body.categories, highlighted: body.highlighted })
         } catch {
-          if (this.live(read, this.listRead)) this.store.set({ list: STATUS.error })
+          if (this.live(this.listReads, read)) this.store.set({ list: STATUS.error })
         }
       }
       /**
@@ -148,23 +203,24 @@ window.__ModuleLoader__.load({
        * the profile; it shows Install and the native check then refuses it as already installed.
        */
       async loadInventory() {
-        const read = ++this.inventoryRead
+        const read = this.inventoryReads.begin()
         // Retry after a failed read shows progress; a background refresh keeps the shown rows.
         if (this.store.getSnapshot().inventory === STATUS.error) this.store.set({ inventory: STATUS.loading })
         try {
           const answer = await this.ctx.remote.pluginManager.listBundles()
-          if (!this.live(read, this.inventoryRead)) return
+          if (!this.live(this.inventoryReads, read)) return
           if (!answer?.ok) { this.store.set({ inventory: STATUS.error }); return }
           this.store.set({ inventory: STATUS.ready, installed: new Set(answer.value.filter(bundle => bundle.installed).map(bundle => bundle.name)) })
         } catch {
-          if (this.live(read, this.inventoryRead)) this.store.set({ inventory: STATUS.error })
+          if (this.live(this.inventoryReads, read)) this.store.set({ inventory: STATUS.error })
         }
       }
       /**
-       * A Host change only matters once the tab has read the inventory at least once. A disposed
-       * generation starts no Host read: a listener captured before disposal can still fire once.
+       * A Host change only matters once the tab has read the inventory at least once; it always
+       * starts a fresh read, superseding one in flight, because that one may predate the change. A
+       * disposed generation starts no Host read: a listener captured before disposal can still fire.
        */
-      changed() { if (!this.disposed && this.inventoryRead > 0) void this.loadInventory() }
+      changed() { if (!this.disposed && this.inventoryReads.used) void this.loadInventory() }
       setCheck(packageName, check) {
         const checks = { ...this.store.getSnapshot().checks }
         if (check === null) delete checks[packageName]
@@ -174,8 +230,10 @@ window.__ModuleLoader__.load({
       /**
        * Read the curated name's current version, then hand the exact target to the native dialog.
        * A refusal stays on the row with the Host's reason; Install again is the user's own retry.
+       * Only this pre-install read is de-duplicated per row; after the handoff the native dialog
+       * owns pending/unconfirmed blocking, so the tab keeps no install lock.
        */
-      async install(item, title, owner) {
+      async install(item, owner) {
         if (this.store.getSnapshot().checks[item.packageName]?.kind === CHECK.checking) return
         this.setCheck(item.packageName, { kind: CHECK.checking })
         let answer
@@ -185,30 +243,26 @@ window.__ModuleLoader__.load({
           answer = undefined
         }
         if (this.disposed) return
-        const value = answer?.ok ? answer.value : undefined
-        if (value?.status === TAB.inspectAccepted && value.kind === TAB.registryKind && typeof value.version === 'string' && value.version) {
-          this.setCheck(item.packageName, null)
-          // Ask the registry that answered first, for this install only (the owner never remembers
-          // it). Limitation: null (pnpm's own configured registry) has no owner-prop form, and an
-          // absent `registry` keeps the dialog's remembered choice. If that registry lacks this exact
-          // version, the native dialog refuses it and offers Retry/Change registry itself.
-          const registry = typeof value.registry === 'string' ? { registry: value.registry } : {}
-          owner.install({ spec: (value.name ?? item.packageName) + TAB.versionSeparator + value.version, ...registry, title, version: value.version })
-          return
-        }
-        this.setCheck(item.packageName, { kind: CHECK.failed, problem: value?.problem ?? null, reason: value?.reason ?? answer?.error?.message ?? '' })
+        const target = installTarget(item, answer)
+        this.setCheck(item.packageName, target === null ? failedCheck(answer) : null)
+        if (target !== null) owner.install(target)
       }
     }
 
     function checkMessage(t, packageName, check) {
-      if (check.problem === TAB.networkProblem) return t('checkNetwork')
+      if (check.problem === INSPECT.networkProblem) return t('checkNetwork')
       // A lost or reasonless answer (transport drop, reset in flight) still says what to do.
       if (!check.reason) return t('checkUnknown', { name: packageName })
       return t('checkRefused', { name: packageName, reason: check.reason })
     }
 
     function Status({ state, children, alert }) {
-      return h('p', { style: STYLE.status, role: alert ? 'alert' : 'status' }, h(StateDot, { state }), children)
+      return h('p', { style: STYLE.status, role: alert ? DOM.alertRole : DOM.statusRole }, h(StateDot, { state }), children)
+    }
+
+    /** A failed read's alert with the tab's Retry, which re-runs only the reads that failed. */
+    function ReadFailure({ message, retry }) {
+      return h('div', null, h(Status, { state: STATE_DOT.error, alert: true }, message), retry)
     }
 
     function Row({ item, t, snapshot, controller, owner }) {
@@ -218,14 +272,14 @@ window.__ModuleLoader__.load({
       let action = null
       if (snapshot.inventory === STATUS.ready) {
         action = installed
-          ? h('span', { style: STYLE.status, 'data-recommended-state': TAB.installedState }, h(StateDot, { state: STATE_DOT.done }), t('installed'))
+          ? h('span', { style: STYLE.status, 'data-recommended-state': DOM.installedState }, h(StateDot, { state: STATE_DOT.done }), t('installed'))
           : h(Button, { ...BUTTON, disabled: checking,
-            onClick: () => { void controller.install(item, item.packageName, owner) } }, t(checking ? 'checking' : 'install'))
+            onClick: () => { void controller.install(item, owner) } }, t(checking ? 'checking' : 'install'))
       }
       return h('li', { style: STYLE.row, 'data-recommended-package': item.packageName },
         h('div', { style: STYLE.body },
           h('span', { style: STYLE.name }, item.packageName),
-          h('a', { href: item.source, target: '_blank', rel: 'noopener noreferrer', style: STYLE.muted }, t('source')),
+          h('a', { href: item.source, target: DOM.linkTarget, rel: DOM.linkRel, style: STYLE.muted }, t('source')),
           item.noteKey === undefined ? null : h('p', { style: STYLE.muted, 'data-recommended-note': item.noteKey }, t(item.noteKey)),
           check?.kind === CHECK.failed && !installed ? h(Status, { state: STATE_DOT.error, alert: true }, checkMessage(t, item.packageName, check)) : null),
         h('div', { style: STYLE.action }, action))
@@ -233,7 +287,7 @@ window.__ModuleLoader__.load({
 
     function Category({ group, t, snapshot, controller, owner }) {
       const highlighted = snapshot.highlighted.includes(group.category)
-      return h('section', { 'data-recommended-category': group.category, 'data-highlighted': highlighted ? 'true' : 'false' },
+      return h('section', { 'data-recommended-category': group.category, 'data-highlighted': String(highlighted) },
         h('h3', { style: STYLE.heading }, t(group.category), highlighted ? h('span', { style: STYLE.badge }, t('highlight')) : null),
         highlighted ? h('p', { style: STYLE.muted }, t('highlightNote')) : null,
         group.plugins.length === 0
@@ -249,9 +303,9 @@ window.__ModuleLoader__.load({
         const retry = h(Button, { ...BUTTON, onClick: () => controller.ensure() }, t('retry'))
         let body
         if (snapshot.list === STATUS.loading) body = h(Status, { state: STATE_DOT.ongoing }, t('loading'))
-        else if (snapshot.list === STATUS.error) body = h('div', null, h(Status, { state: STATE_DOT.error, alert: true }, t('listFailed')), retry)
+        else if (snapshot.list === STATUS.error) body = h(ReadFailure, { message: t('listFailed'), retry })
         else body = h(React.Fragment, null,
-          snapshot.inventory === STATUS.error ? h('div', null, h(Status, { state: STATE_DOT.error, alert: true }, t('inventoryFailed')), retry) : null,
+          snapshot.inventory === STATUS.error ? h(ReadFailure, { message: t('inventoryFailed'), retry }) : null,
           snapshot.categories.map(group => h(Category, { key: group.category, group, t, snapshot, controller, owner: props })))
         return h('div', { style: STYLE.section, 'data-plugin-tab': TAB.id },
           h('p', { style: STYLE.muted }, t('intro')), body)
@@ -263,7 +317,7 @@ window.__ModuleLoader__.load({
       const controller = new RecommendController(ctx)
       ctx.effect(() => () => controller.dispose())
       ctx.effect(() => {
-        const disposers = [ctx.remote.$on(TAB.changed, () => controller.changed()), ctx.on(TAB.reset, () => controller.changed())]
+        const disposers = [ctx.remote.$on(HOST_EVENT.changed, () => controller.changed()), ctx.on(HOST_EVENT.reset, () => controller.changed())]
         return () => { for (const dispose of disposers) dispose() }
       })
       const t = ctx.locale.bind(TAB.ns)
