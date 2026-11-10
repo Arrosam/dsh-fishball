@@ -13,8 +13,8 @@
  * - every activation (create or resume) also tries to make the Session a member of the child
  *   workspace over its own folder (user decision 7.A): native ui-conversation keeps a blank
  *   session's composer inert until its workspace resolves. Only the page path requires the
- *   attach (activate({ requireAttach: true }): route 503, page Retry); background activations
- *   log a failed attach and proceed;
+ *   attach (activateAttached: route 503, page Retry); background activations (activate) log a
+ *   failed attach and proceed;
  * - resolveAgent is the activation owner the child's reminder scheduler needs (T10): after a
  *   restart only this module can resume Fishball's Session, so without it every reminder
  *   delivery into its own session fails;
@@ -134,8 +134,6 @@ const MODEL_EVENT = Object.freeze({ selection: 'model/selection', header: 'reque
 const FAILURE = Object.freeze({ detailChars: 300, unknownName: 'Error' })
 const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, unavailable: 503, failed: 500 })
 const ELLIPSIS = '…'
-/** The fs error code of a stored folder that no longer exists (a moved child home). */
-const MISSING_PATH = 'ENOENT'
 
 /** Typed refusals; the HTTP hook returns code and message unchanged. */
 export const CHAT_ERROR = Object.freeze({
@@ -468,11 +466,10 @@ export function createChat(ctx, options = {}) {
   const toolNames = new Map()
   const disposers = []
   let sessionId
+  // The live agent this chat composed and published. Publication does not wait for the workspace
+  // attach: the extension rows' notices refuse an unpublished manager (manager-not-ready), and
+  // background work must not stop on a workspace problem (Fishball's decision, 2026-11-11).
   let agent
-  // The live agent whose persona this chat composed. It can differ from `agent` (the published
-  // one) only while a page activation's required attach keeps failing; a retried activation must
-  // not compose it again.
-  let composed
   // The live agent whose workspace attach finished, and the one attempt in flight (attach()).
   let attached
   let attaching
@@ -586,8 +583,11 @@ export function createChat(ctx, options = {}) {
    * path, which may no longer resolve. DSH has no public call that changes a Session's cwd (the
    * header is frozen creation metadata; resume takes no cwd), and dsh-workspace's
    * attachSession refuses a cwd that does not resolve to the workspace path, so such a Session
-   * can never become a member of the current folder's workspace. A header without a cwd is not
-   * a relocation; attachSession reports it.
+   * can never become a member of the current folder's workspace. A stored folder that does not
+   * resolve for any reason (missing, untraversable, no longer a directory) is elsewhere: it
+   * cannot be the current folder, which ensureFolder has just made resolvable, and attachSession
+   * would refuse it on every attempt. A header without a cwd is not a relocation; attachSession
+   * reports it.
    */
   async function storedElsewhere(live) {
     const stored = live.session?.header?.cwd
@@ -595,9 +595,8 @@ export function createChat(ctx, options = {}) {
     let resolved
     try {
       resolved = await realpath(stored)
-    } catch (error) {
-      if (error?.code === MISSING_PATH) return true
-      throw error
+    } catch {
+      return true
     }
     return resolved !== await realpath(cwd)
   }
@@ -629,7 +628,7 @@ export function createChat(ctx, options = {}) {
     attached = live
   }
 
-  /** One attach attempt per live agent at a time: concurrent page opens share it. */
+  /** One attach attempt per live agent at a time: concurrent activations share it. */
   function attach(live) {
     if (attached === live) return Promise.resolve()
     if (attaching?.live !== live) {
@@ -644,23 +643,29 @@ export function createChat(ctx, options = {}) {
     logger?.warn('Fishball session %s could not join its workspace (%s: %s)', live.id, detail.name, detail.message)
   }
 
-  /** Create or resume the Session and compose it; the workspace attach is activate()'s. */
+  /**
+   * Create or resume the Session, compose and publish it. Publication does not wait for the
+   * workspace attach (the activation entries below own it).
+   */
   async function open() {
     if (closed) unavailable()
     const agents = requireAgents()
     const existing = sessionId === undefined ? undefined : agents.get(sessionId)
     const live = existing ?? await (sessionId === undefined ? createSession(agents) : resumeSession(agents, sessionId))
     if (closed) unavailable()
-    if (existing && composed !== existing) await composePersona(existing.ctx, existing)
-    composed = live
+    if (existing && agent !== existing) await composePersona(existing.ctx, existing)
     if (closed) unavailable()
+    agent = live
+    // The factory has now published the fully configured scope. Recovery may drive
+    // the agent, so it must never run inside the composition-only setup callback.
+    await options.extensions?.published(live)
     return live
   }
 
   /** One preparation owner: concurrent reads, sends, deliveries and page opens share it. */
   function prepare() {
-    if (composed !== undefined && sessionId !== undefined && ctx.get(CHILD.agents)?.get?.(sessionId) === composed) {
-      return Promise.resolve(composed)
+    if (agent !== undefined && sessionId !== undefined && ctx.get(CHILD.agents)?.get?.(sessionId) === agent) {
+      return Promise.resolve(agent)
     }
     if (activation === undefined) {
       activation = open().finally(() => { activation = undefined })
@@ -669,41 +674,46 @@ export function createChat(ctx, options = {}) {
   }
 
   /**
-   * Publish the live agent to the extension rows (notices, recovery). The factory has already
-   * published the configured scope. Recovery may drive the agent, so it must never run inside
-   * the composition-only setup callback.
+   * One workspace attach attempt, unless the manager is already attached; a failure is logged
+   * and reported as false. A chat closed during the attach reports itself unavailable, as every
+   * other activation step does: the registry going away with it is not a workspace failure.
    */
-  async function publishManager(live) {
-    if (agent === live) return live
-    agent = live
-    await options.extensions?.published(live)
+  async function tryAttach(live) {
+    let joined = true
+    try {
+      await attach(live)
+    } catch (error) {
+      if (closed) unavailable()
+      attachFailed(live, error)
+      joined = false
+    }
+    if (closed) unavailable()
+    return joined
+  }
+
+  /**
+   * The background activation (inbox, reminders, cards, model changes, plugin notices and
+   * their recovery): the Session is prepared and one attach attempt is made, but a failed
+   * attach never stops the work (Fishball's decision, 2026-11-11). The manager stays unattached,
+   * so X1 keeps reading absent and the page's next open retries through activateAttached.
+   */
+  async function activate() {
+    const live = await prepare()
+    await tryAttach(live)
     return live
   }
 
   /**
-   * The one activation entry: prepare the Session, then make one workspace attach attempt
-   * unless it is already attached (Fishball's decision, 2026-11-11).
-   * - Background activations (inbox, reminders, cards, model changes; no options) log a failed
-   *   attach and proceed, so a workspace problem never stops delivery.
-   * - The page path (manager.ensureSession, POST api/fishball/session) passes
-   *   `{ requireAttach: true }`: a failed attach is the route's 503 and the page's Retry, and
-   *   the next page call tries again.
-   *
-   * @param {{ requireAttach?: boolean }} [request]
+   * The page activation (manager.ensureSession, POST api/fishball/session): the attach is
+   * required, so a failure is the route's 503 and the page's Retry, and the next call tries
+   * again. The manager is published either way, so notices and their recovery keep working
+   * after a failed page open. Kept as its own entry rather than a flag on activate: the two
+   * callers differ in failure policy only, and the steps are shared through tryAttach.
    */
-  async function activate(request = {}) {
+  async function activateAttached() {
     const live = await prepare()
-    try {
-      await attach(live)
-    } catch (error) {
-      // A chat closed during the attach reports itself unavailable, as every other step of
-      // the activation does; the registry going away with it is not a workspace failure.
-      if (closed) unavailable()
-      attachFailed(live, error)
-      if (request.requireAttach === true) sessionFailed()
-    }
-    if (closed) unavailable()
-    return publishManager(live)
+    if (!await tryAttach(live)) sessionFailed()
+    return live
   }
 
   function permissionOf(live) {
@@ -1083,7 +1093,7 @@ export function createChat(ctx, options = {}) {
     return agent !== undefined && attached === agent ? agent.id : undefined
   }
 
-  options.extensions?.bind({ activate, sessionId: managerId })
+  options.extensions?.bind({ activate, activateAttached, sessionId: managerId })
 
   return Object.freeze({
     start,

@@ -153,21 +153,26 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
   manager's folder (`workspaceRegistry.create`, idempotent per path) and attaches the manager to
   it (idempotent). The hidden hero picker stays closed. Attach policy (Fishball's decision,
   2026-11-11):
-  - The page path (`POST api/fishball/session`, `manager.ensureSession`) requires the attach. A
-    failure answers 503 and the page shows "Fishball session unavailable" with Retry.
-  - Background activations (inbox delivery, reminders, cards, model changes) do not block on the
-    attach. Each makes one attempt, logs a failure, proceeds and leaves the manager unattached.
+  - The page path (`POST api/fishball/session`, `manager.ensureSession`; chat.js
+    `activateAttached`) requires the attach. A failure answers 503 and the page shows "Fishball
+    session unavailable" with Retry.
+  - Background activations (chat.js `activate`: inbox delivery, reminders, cards, model changes,
+    plugin notices and their recovery) do not block on the attach. Each makes one attempt, logs a
+    failure, proceeds and leaves the manager unattached. The manager is published to the
+    extension rows before the attach on both paths, so a failed page open does not leave plugin
+    notices refusing with `manager-not-ready`.
     `manager.sessionId()` (and so GET) names the manager only once it is attached, so the page's
     next open reads null, POSTs, retries the attach and surfaces any error; the page protocol is
     unchanged. Cost: manager tools that authenticate against `sessionId()` (fold, board)
     refuse during a turn queued while the attach is failing.
-  - Moved child home: when the stored session folder no longer resolves to the current
-    `<home>/fishball/assistant`, the activation still creates the workspace for the current
-    folder, logs the mismatch and counts as attached. The manager stays outside that
-    workspace: DSH has no public call that changes a session's cwd (the header is frozen
-    creation metadata, resume takes no cwd), and `attachSession` refuses a cwd that does not
-    resolve to the workspace path (dsh-workspace, both SDKs). The hero composer of such a manager stays inert while it
-    is blank; a manager with a turn renders no hero.
+  - Moved child home: when the stored session folder does not resolve (missing or
+    untraversable) or resolves to another path than the current `<home>/fishball/assistant`,
+    the activation still creates the workspace for the current folder, logs the mismatch and
+    counts as attached. The manager stays outside that workspace: DSH has no public call that
+    changes a session's cwd (the header is frozen creation metadata, resume takes no cwd), and
+    `attachSession` refuses a cwd that does not resolve to the workspace path (dsh-workspace,
+    both SDKs). The hero composer of such a manager stays inert while it is blank; a manager
+    with a turn renders no hero.
   - A workspace the user deleted is recreated, with the SDK default title `assistant`, on the
     next activation.
 - **Native startup on a reopened page (open; no up-front mechanism in either SDK; not verified

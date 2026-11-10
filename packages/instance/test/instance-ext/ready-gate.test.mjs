@@ -83,7 +83,8 @@ function ensure(service) { return track(service.manager.ensureSession()) }
 
 /**
  * A chat port with the chat's own singleton semantics (concurrent `activate()` joins one
- * in-flight activation; a live session is returned at once). Completion is held until
+ * in-flight activation; a live session is returned at once). `activateAttached()` (the page
+ * path's member) delegates to the same `activate()`. Completion is held until
  * `release()`/`fail()` unless `held` is false. `created` counts sessions the port made.
  */
 function chatPort({ id = C.alphaId, held = true } = {}) {
@@ -107,6 +108,8 @@ function chatPort({ id = C.alphaId, held = true } = {}) {
       }
       return inflight
     },
+    // The page path's activation: same singleton semantics, counted in counts.activate.
+    activateAttached: () => port.activate(),
     release() { gate.resolve() },
     fail() { gate.reject(new Error(C.activationFailure)) },
   }
