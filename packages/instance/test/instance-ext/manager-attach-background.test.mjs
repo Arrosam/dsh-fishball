@@ -25,7 +25,7 @@
  * ST (state transitions). Every case names its technique and requirement.
  */
 import assert from 'node:assert/strict'
-import { cp, rename, symlink } from 'node:fs/promises'
+import { chmod, cp, realpath, rename, symlink } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, it } from 'node:test'
 import { bootChild, messageText, seedStoredHeader, tempDir } from '../../../../test/support/instance-ext.mjs'
@@ -48,7 +48,15 @@ const C = Object.freeze({
   prefix: Object.freeze({ moved: 'fbtest-mab-moved-', alias: 'fbtest-mab-alias-', copy: 'fbtest-mab-copy-' }),
   movedHome: 'home',
   aliasName: 'home-link',
-  repeats: Object.freeze({ one: 1, three: 3 }),
+  repeats: Object.freeze({ one: 1, two: 2, three: 3 }),
+  pluginNotice: Object.freeze({
+    pluginId: 'fishball-watchdog',
+    text: 'plugin notice through manager.notify (manager-attach R5)',
+    dedupeKey: Object.freeze({ wake: 'mab-r5-notice-wake', held: 'mab-r5-notice-held' }),
+  }),
+  notReadyCode: 'manager-not-ready',
+  mode: Object.freeze({ untraversable: 0o000, owner: 0o700 }),
+  rootUid: 0,
 })
 
 // ---------------------------------------------------------------------------------------------
@@ -527,3 +535,76 @@ describe('R4. moved child home: no permanent failure, same manager', () => {
   })
 })
 
+
+// ---------------------------------------------------------------------------------------------
+// R5. Plugin notices (X0-C manager.notify) are background; an unresolvable old folder
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Fail the page POST under a rejecting attach, then send one plugin notice through the X0-C
+ * service. Resolves {h, fault, service, call, failed, settled}.
+ */
+async function noticeAfterFailedPost(t, { wake, dedupeKey }) {
+  const { h, fault, service, call } = await faultyChild(t, { attach: ATTACH.fault.reject })
+  const failed = await call('POST')
+  const { pluginId, text } = C.pluginNotice
+  const settled = await outcome(service.manager.notify({ pluginId, dedupeKey, text, wake }))
+  return { h, fault, service, call, failed, settled }
+}
+
+/** The notice fulfilled; a `manager-not-ready` (or any) rejection is named in the message. */
+function assertNoticeFulfilled(settled) {
+  const reason = settled.reason
+  const named = reason?.code === C.notReadyCode ? C.notReadyCode + ': ' : ''
+  assert.equal(settled.status, 'fulfilled', 'a plugin notice is a background activation and must not fail on the attach: ' + named + (reason?.stack ?? reason))
+}
+
+describe('R5. plugin notices do not block on the attach; an untraversable old home is not a permanent failure', () => {
+  it('MAB-R5-01 ST (R-PAGE + R-BG): POST 503 -> notify(wake:true) fulfils, text queued in the one session, unattached; cleared -> POST 200 same id', async (t) => {
+    const { h, fault, service, call, failed, settled } = await noticeAfterFailedPost(t, { wake: true, dedupeKey: C.pluginNotice.dedupeKey.wake })
+    assert.deepEqual(failed, { status: ATTACH.route.unavailable, body: { ...ATTACH.unavailableBody } }, 'the page path requires the attach')
+    assertNoticeFulfilled(settled)
+    const id = onlySessionId(h)
+    assert.ok(followupTexts(h, id).some((text) => text.includes(C.pluginNotice.text)), 'the notice text is queued as a followup in the manager session: ' + JSON.stringify(followupTexts(h, id)))
+    assertUnattached(h, id)
+    assert.equal(service.manager.sessionId(), undefined, 'X1 reports the manager only once attached')
+    fault.clear()
+    assert.deepEqual(await call('POST'), { status: ATTACH.route.ok, body: { sessionId: id } }, 'the retry answers the same manager id')
+    assert.equal(onlySessionId(h), id, 'still one manager session')
+  })
+
+  it('MAB-R5-02 ST (R-BG): POST 503 -> notify(wake:false) fulfils, one session, still unattached', async (t) => {
+    const { h, service, failed, settled } = await noticeAfterFailedPost(t, { wake: false, dedupeKey: C.pluginNotice.dedupeKey.held })
+    assert.equal(failed.status, ATTACH.route.unavailable)
+    assertNoticeFulfilled(settled)
+    // The failed POST already created the one manager session; the notice must not add another.
+    assertUnattached(h, onlySessionId(h))
+    assert.equal(service.manager.sessionId(), undefined, 'X1 reports the manager only once attached')
+  })
+
+  it('MAB-R5-03 EP (R-MOVED, untraversable old home): ensureSession same id, POST 200 x2, workspace over the current folder', async (t) => {
+    if (process.getuid?.() === C.rootUid) { t.skip('root traverses a 0o000 directory'); return }
+    const copied = await relocatedManager(t, 'copy')
+    // The old home's tempDir cleanup was registered first and after-hooks run in registration
+    // order (a throwing hook stops the rest), so the body restores the mode in `finally`, before
+    // that cleanup; the t.after registration covers an abort and is a no-op once restored.
+    let restored = false
+    const restore = async () => { if (!restored) { restored = true; await chmod(copied.homeA, C.mode.owner) } }
+    t.after(restore)
+    await chmod(copied.homeA, C.mode.untraversable)
+    try {
+      await assert.rejects(realpath(copied.storedCwd), 'precondition: the stored old folder no longer resolves')
+      const h = await bootChild(t, { home: copied.homeB, sessionLogs: copied.sessionLogs })
+      const ensured = await outcome(h.requireInstance().manager.ensureSession())
+      assert.equal(ensured.status, 'fulfilled', 'an untraversable old folder is not a permanent failure: ' + (ensured.reason?.stack ?? ensured.reason))
+      assert.equal(ensured.value, copied.id, 'the SAME manager is resumed')
+      const call = await routeOf(h)
+      for (let index = 0; index < C.repeats.two; index++) {
+        assert.deepEqual(await call('POST'), { status: ATTACH.route.ok, body: { sessionId: copied.id } }, 'POST #' + (index + 1))
+      }
+      await assertMovedHomeHealthy(h, copied.id)
+    } finally {
+      await restore()
+    }
+  })
+})

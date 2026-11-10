@@ -14,30 +14,30 @@
  * reject or throw, or the service is missing. The wrapper counts calls (read-only GET proof).
  *
  * Server contract (parent's correction): `sessionId()` (and so GET) reports the id only once the
- * activation, including its workspace attach, succeeded; an attach failure fails the activation
- * for every caller; the next activation retries the attach without a second session or a second
- * workspace. The frozen page flow stays: GET first, POST only on {sessionId:null}.
+ * activation, including its workspace attach, succeeded; an attach failure fails every page-open
+ * ensure (background activations proceed: manager-attach-background.test.mjs); the next ensure
+ * retries the attach without a second session or a second workspace. The frozen page flow stays: GET first, POST only on {sessionId:null}.
  *
  * Techniques: EP (equivalence partitions), BVA (boundary values), DT (decision table),
  * ST (state transitions). Each case names its technique.
  */
 import assert from 'node:assert/strict'
-import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises'
+import { readFile, realpath, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, it } from 'node:test'
-import { SERVICES, bootChild, seedStoredHeader, tempDir } from '../../../../test/support/instance-ext.mjs'
-import { loadInstance } from '../../../../test/support/body-soul-env.mjs'
+import { bootChild, seedStoredHeader, tempDir } from '../../../../test/support/instance-ext.mjs'
 import { createFakeWorkspaceRegistry } from '../../../../test/support/workspace-registry.mjs'
+import {
+  faultable, managerFolder, memberships, outcome, routeOf, sessionIdsSeen, workspacesAt,
+} from '../../../../test/support/manager-attach.mjs'
 import { loadPage, settle } from './page-open-session-page.mjs'
 
 const C = Object.freeze({
-  managerFolder: Object.freeze(['fishball', 'assistant']),
   chatRecord: Object.freeze(['fishball', 'chat.json']),
   route: Object.freeze({ origin: 'http://127.0.0.1:1', path: '/api/fishball/session', ok: 200, unavailable: 503, body: '{}' }),
   unavailableBody: Object.freeze({ code: 'MANAGER_UNAVAILABLE' }),
   turnEvents: Object.freeze(['turn/start', 'step/start', 'user/message', 'assistant/message']),
   fault: Object.freeze({ reject: 'reject', throw: 'throw' }),
-  faultMessage: 'injected workspace registry fault',
   preTitle: 'pre-existing manager workspace',
   legacyId: 'session-legacy-manager-1',
   unavailableText: 'Fishball session unavailable',
@@ -47,23 +47,6 @@ const C = Object.freeze({
 // ---------------------------------------------------------------------------------------------
 // Observation helpers
 // ---------------------------------------------------------------------------------------------
-
-/** The manager's folder, canonical (created when missing: the registry canonicalizes it). */
-async function managerFolder(home, { create = true } = {}) {
-  const folder = path.join(home, ...C.managerFolder)
-  if (create) await mkdir(folder, { recursive: true })
-  return realpath(folder)
-}
-
-/** Workspaces of the real registry whose canonical path is `folder`. */
-function workspacesAt(h, folder) {
-  return h.workspaces.list().filter((workspace) => workspace.path === folder)
-}
-
-/** Every (workspace, position) slot naming `sessionId`, across the real registry. */
-function memberships(h, sessionId) {
-  return h.workspaces.list().flatMap((workspace) => workspace.sessionIds.filter((id) => id === sessionId).map(() => workspace))
-}
 
 /**
  * Contract point 1 + 3: exactly one workspace over the manager folder, the session listed in it
@@ -91,11 +74,6 @@ async function headerFolder(h, sessionId) {
   return realpath(cwd)
 }
 
-/** Distinct manager session ids the fake SDK ever created or resumed. */
-function sessionIdsSeen(h) {
-  return new Set(h.agents.map(({ live }) => live.id))
-}
-
 /** Contract point 6: ensuring never starts a turn and never queues a message. */
 function assertNoTurn(h) {
   const types = h.agents.flatMap(({ live }) => live.session.snapshotEvents().map(({ type }) => type))
@@ -103,64 +81,6 @@ function assertNoTurn(h) {
   assert.equal(h.agents.reduce((count, { live }) => count + live.followups.length, 0), 0, 'no message queued')
   for (const { live } of h.agents) assert.equal(live.status, 'idle', 'the manager agent is idle (no model call)')
 }
-
-/** Settle a promise into {status, value|reason} without letting it throw. */
-async function outcome(promise) {
-  try { return { status: 'fulfilled', value: await promise } } catch (reason) { return { status: 'rejected', reason } }
-}
-
-/** The documented session route over the live instance of `h`. */
-async function routeOf(h) {
-  const { registerSessionRoute } = await loadInstance('src/native-runtime/session-route.js')
-  const routes = []
-  registerSessionRoute({
-    on: () => () => {},
-    connection: { fetch: { register(route) { routes.push(route); return () => {} } } },
-    get: (name) => (name === SERVICES.instance ? h.instance : undefined),
-  })
-  assert.equal(routes.length, 1)
-  return async function call(method) {
-    const response = await routes[0].fetch(new Request(C.route.origin + C.route.path, { method, ...(method === 'POST' ? { body: C.route.body } : {}) }))
-    return { status: response.status, body: await response.json() }
-  }
-}
-
-/**
- * A registry replacement over the real one: faults are read at each call, so a case clears them
- * between attempts; every create/resolveByPath/initializeDefault/attachSession call is counted.
- */
-function faultable(faults = {}) {
-  const calls = { create: 0, resolveByPath: 0, initializeDefault: 0, attachSession: 0 }
-  function inject(kind) {
-    const mode = faults[kind]
-    if (mode === C.fault.throw) return () => { throw new Error(C.faultMessage + ' (' + kind + ', sync)') }
-    if (mode === C.fault.reject) return () => Promise.reject(new Error(C.faultMessage + ' (' + kind + ')'))
-    return undefined
-  }
-  function wrapWorkspace(workspace) {
-    if (workspace === undefined) return undefined
-    return new Proxy(workspace, {
-      get(target, prop) {
-        if (prop === 'attachSession') return (...args) => { calls.attachSession++; return (inject('attach') ?? target.attachSession.bind(target))(...args) }
-        const value = Reflect.get(target, prop, target)
-        return typeof value === 'function' ? value.bind(target) : value
-      },
-    })
-  }
-  const make = (real) => new Proxy(real, {
-    get(target, prop) {
-      if (prop === 'create' || prop === 'initializeDefault') return (...args) => { calls[prop]++; const fault = inject('create'); if (fault) return fault(); return target[prop](...args).then(wrapWorkspace) }
-      if (prop === 'resolveByPath') return (...args) => { calls.resolveByPath++; const fault = inject('resolve'); if (fault) return fault(); return target.resolveByPath(...args).then(wrapWorkspace) }
-      if (prop === 'get') return (id) => wrapWorkspace(target.get(id))
-      if (prop === 'list') return () => target.list().map(wrapWorkspace)
-      const value = Reflect.get(target, prop, target)
-      return typeof value === 'function' ? value.bind(target) : value
-    },
-  })
-  return { make, calls, faults, clear() { for (const key of Object.keys(faults)) delete faults[key] } }
-}
-
-const writes = (calls) => calls.create + calls.initializeDefault + calls.attachSession
 
 // ---------------------------------------------------------------------------------------------
 // W. Real SDK registry: attach on page-open ensure (contract points 1, 3, 6)
@@ -471,7 +391,7 @@ describe('G. GET /api/fishball/session never creates, never creates a workspace,
     }
     assert.equal(h.agents.length, 0, 'GET created no session')
     assert.deepEqual(h.workspaces.list(), [], 'GET created no workspace')
-    assert.equal(writes(fault.calls), 0, 'GET made no registry write: ' + JSON.stringify(fault.calls))
+    assert.equal(fault.writes(), 0, 'GET made no registry write: ' + JSON.stringify(fault.calls))
   })
 
   it('G-02 ST: resumable never-attached manager on disk: GET -> null and attaches nothing', async (t) => {
@@ -485,7 +405,7 @@ describe('G. GET /api/fishball/session never creates, never creates a workspace,
     assert.deepEqual((await call('GET')).body, { sessionId: null }, 'not activated yet: GET reports no id')
     assert.equal(second.agents.length, 0, 'GET resumed nothing')
     assert.deepEqual(memberships(second, id), [], 'GET attached nothing')
-    assert.equal(writes(fault.calls), 0)
+    assert.equal(fault.writes(), 0)
   })
 
   it('G-03 ST: after an attach failure, GET x2 stays null and re-runs no attach', async (t) => {
