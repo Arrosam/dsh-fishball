@@ -302,14 +302,17 @@ export function createExtensions(ctx) {
    * the chat owns it and other callers may share it. After each wait `closed` is checked
    * again, so a stale generation never starts an activation or reports one as finished
    * after it was retired. Only this page-open path is gated; notices keep their own
-   * existing activation. Resolves to the live session id; the route validates it rather
-   * than coercing it here.
+   * existing activation. It is also the only caller that requires the workspace attach
+   * (chat.activateAttached; notices and recovery use chat.activate, which logs a failed attach
+   * and proceeds, Fishball's decision 2026-11-11): a failed attach rejects here (route 503) and
+   * is retried on the next call. Resolves to the live session id; the route validates it rather
+   * than coercing it.
    */
   async function ensureSession() {
     refuseClosed()
     await untilRetired(readiness.promise)
     refuseClosed()
-    const live = await untilRetired(chat.activate())
+    const live = await untilRetired(chat.activateAttached())
     refuseClosed()
     return live.id
   }

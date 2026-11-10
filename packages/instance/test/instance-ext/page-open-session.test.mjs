@@ -415,12 +415,15 @@ describe('B. ensureSession through the chat activation', () => {
 })
 
 describe('B. ensureSession over a fake chat port (createExtensions().bind)', () => {
-  /** A chat port whose activate is counted and resolves after a tick, like a real activation. */
+  /**
+   * A chat port whose activate is counted and resolves after a tick, like a real activation.
+   * `activateAttached()` (the page path's member) delegates to the same `activate()`.
+   */
   function port() {
     let live
     let inflight
     const counts = { activate: 0, created: 0 }
-    return {
+    const chat = {
       counts,
       sessionId: () => live?.id,
       activate() {
@@ -429,7 +432,9 @@ describe('B. ensureSession over a fake chat port (createExtensions().bind)', () 
         inflight ??= new Promise((resolve) => setImmediate(() => { counts.created++; live = { id: ID, followup() {} }; resolve(live) }))
         return inflight
       },
+      activateAttached: () => chat.activate(),
     }
+    return chat
   }
 
   it('B-13 EP: ensureSession resolves the id the bound port activated', async (t) => {

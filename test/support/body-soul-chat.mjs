@@ -10,6 +10,7 @@
  */
 import { tempDir } from './body-soul-env.mjs'
 import { fakeDocument } from './body-soul-dom.mjs'
+import { createFakeWorkspaceRegistry } from './workspace-registry.mjs'
 
 export { fakeDocument }
 
@@ -39,7 +40,7 @@ export async function chatHarness(t, { loadChat, currentModel = () => undefined,
   const services = {
     profileContext: { home },
     agents: {
-      async create({ sessionId }) {
+      async create({ sessionId, meta }) {
         agent = {
           id: sessionId,
           status: 'idle',
@@ -48,6 +49,7 @@ export async function chatHarness(t, { loadChat, currentModel = () => undefined,
           ...(agentContext === undefined ? {} : { ctx: agentContext }),
           session: {
             id: sessionId,
+            header: { id: sessionId, ...(meta?.cwd === undefined ? {} : { cwd: meta.cwd }) },
             append(type, data) {
               if (append !== undefined) return append(type, data)
               appended.push({ type, data })
@@ -63,6 +65,8 @@ export async function chatHarness(t, { loadChat, currentModel = () => undefined,
     sessionQuery: { async readSession() { return { events: structuredClone(log) } } },
     agentDefaultModel: { currentSelection: () => undefined },
     sandboxPolicy: { resolve: () => ({ mode: 'read-only' }) },
+    // Manager activation attaches to the child workspace (7.A fix); a missing registry fails it.
+    workspaceRegistry: createFakeWorkspaceRegistry({ headerOf: (id) => (agent?.id === id ? agent.session.header : undefined) }),
     ...(llm === undefined ? {} : { llm }),
   }
   const ctx = {
