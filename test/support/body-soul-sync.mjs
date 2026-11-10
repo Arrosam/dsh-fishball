@@ -72,9 +72,11 @@ export async function syncHarness(t, { source = defaultSource(), target = defaul
   t.after(() => sourceCredentials.close())
   for (const entry of source.providers) await sourceCredentials.seed(entry.id, sourceCredentials.record())
   const sourceReads = []
+  // Main-side inventory reads: proves whether anything started a check on the main DSH.
+  const sourceCalls = { inventory: 0 }
   const sourceState = { inventory: clone(source) }
   const sourceHost = {
-    async inventory() { return clone(sourceState.inventory) },
+    async inventory() { sourceCalls.inventory++; return clone(sourceState.inventory) },
     async readRecord(id) { sourceReads.push(id); return sourceCredentials.read(id) },
   }
   const childTarget = createProviderSyncTarget({ engine: child.engine })
@@ -113,8 +115,10 @@ export async function syncHarness(t, { source = defaultSource(), target = defaul
     return { arrived, release: () => release() }
   }
   return {
-    sync, child, sourceReads, sourceState, connect, holdInventoryAt,
+    sync, child, sourceReads, sourceCalls, sourceState, connect, holdInventoryAt,
     lose: () => current.lose(),
+    /** The current in-memory wire, for a case that plays the child end itself (unsolicited frames). */
+    wire: () => current,
     check: async () => assertClean(await sync.check()),
     add: async (payload) => assertClean(await sync.add(payload)),
     assertClean,
