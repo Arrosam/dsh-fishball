@@ -28,7 +28,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import { FileSystemSkillProvider } from '@deepseek-ai/dsh-skill-filesystem'
 import { createSkillStore, assertSkillName, SkillError, SKILL_ERROR, FS_SERVICE } from './skills-store.js'
 
-/** registerSetup's plugin id, also the provider name in the manager's skill layer. */
+/** Composition names: the registerSetup plugin id, the provider name in the manager's skill layer, services. */
 export const PRIVATE_SKILLS = Object.freeze({
   pluginId: 'fishball-private-skills',
   provider: 'fishball-private',
@@ -89,6 +89,7 @@ const TEXT = Object.freeze({
   documentArg: 'The complete SKILL.md text: front matter (name, description) between --- lines, then the body.',
   notManagerScope: 'private skills were not mounted: this agent is not the Fishball manager',
   noRegistry: 'private skills are unavailable: this composition has no skill registry',
+  operationFailed: 'private skill operation failed (%s): %s',
   refreshFailed: 'The skill was saved, but the catalog could not be confirmed. Do not repeat the write: reload, then read it back.',
   section: '**Your private skills.** You keep your own skills: lessons about the user\'s preferences and ways of working. The private_skill_* tools are the one exception to never changing a file: with them you create, update and remove your own skills, on your own judgement or when the user asks, with no approval. They write only your own skills folder; every other tool stays read-only. Only you can load them. When a worker needs the experience, read the skill and put the relevant text in your message; a skill name alone is not a handoff. If a call fails, its result says what happened and whether anything was saved; decide yourself whether to retry, revise, reload or leave it.',
 })
@@ -101,12 +102,16 @@ const JSON_OUTPUT = Object.freeze({
 
 const failure = (code, extra = {}) => ({ ok: false, code, committed: false, ...extra })
 const refused = (error) => failure(error.code, error.field === undefined ? {} : { field: error.field })
+/** Only the declared parameters: an input carrying a root, path, command or extra file is refused, not ignored (EP-20-10). */
+const undeclaredKey = (args, parameters) => Object.keys(args ?? {}).some((key) => !Object.hasOwn(parameters, key))
+/** defineTool's own argument error (ToolArgsError) carries the schema `violations`. */
+const argumentFailure = (error) => failure(SKILL_RESULT.invalidArguments, Array.isArray(error?.violations) ? { violations: error.violations } : {})
 
 /**
  * One generation's six tools over the shared store. `registry` is the manager scope's skill
  * registry; `invalidate` is the private provider registration's own control.
  */
-function definitions({ store, registry, provider, invalidate, lookup, caller }) {
+function definitions({ store, registry, provider, invalidate, lookup, caller, logger }) {
   /** Which source left the last observation incomplete. */
   const cause = () => (provider.complete ? CATALOG_CAUSE.otherSource : CATALOG_CAUSE.privateLibrary)
 
@@ -129,7 +134,7 @@ function definitions({ store, registry, provider, invalidate, lookup, caller }) 
    * Anything short of that is the distinct committed-not-refreshed outcome, never a write failure.
    */
   async function confirm(name, present, signal) {
-    const refreshFailed = () => ({ ok: false, code: SKILL_RESULT.refreshFailed, committed: true, name, cause: cause(), note: TEXT.refreshFailed })
+    const refreshFailed = () => ({ ...failure(SKILL_RESULT.refreshFailed, { name, cause: cause(), note: TEXT.refreshFailed }), committed: true })
     try {
       invalidate()
       const listed = await catalog(signal)
@@ -137,6 +142,21 @@ function definitions({ store, registry, provider, invalidate, lookup, caller }) 
       if (present && await load(name, signal) === undefined) return refreshFailed()
       return { ok: true, committed: true, name }
     } catch { return refreshFailed() }
+  }
+
+  /**
+   * A body's thrown error as a result. Typed refusals keep their code. A write I/O failure or an
+   * unexpected error is also logged with its cause, which the model-facing result omits; a
+   * cancellation is the caller's own doing and is not logged.
+   */
+  function outcome(error, signal) {
+    if (error instanceof SkillError) {
+      if (error.code === SKILL_RESULT.writeFailed) logger.warn(TEXT.operationFailed, error.code, error.cause)
+      return refused(error)
+    }
+    if (signal?.aborted) return failure(SKILL_RESULT.cancelled)
+    logger.warn(TEXT.operationFailed, SKILL_RESULT.failed, error)
+    return failure(SKILL_RESULT.failed)
   }
 
   /** Shared boundary: exact argument keys, live-manager identity, typed refusals. */
@@ -147,28 +167,24 @@ function definitions({ store, registry, provider, invalidate, lookup, caller }) 
       parameters,
       output: JSON_OUTPUT,
       async execute(args, exec) {
-        // An input carrying a root, path, command or extra file is refused, not ignored (EP-20-10).
-        if (Object.keys(args ?? {}).some((key) => !Object.hasOwn(parameters, key))) return failure(SKILL_RESULT.invalidArguments)
+        if (undeclaredKey(args, parameters)) return failure(SKILL_RESULT.invalidArguments)
         if (!caller(exec)) return failure(SKILL_RESULT.notManager)
-        try { return await body(args, exec.signal) } catch (error) {
-          if (error instanceof SkillError) return refused(error)
-          return failure(exec.signal?.aborted ? SKILL_RESULT.cancelled : SKILL_RESULT.failed)
-        }
+        try { return await body(args, exec.signal) } catch (error) { return outcome(error, exec.signal) }
       },
     })
-    // defineTool throws its own argument error (with `violations`) for a missing or ill-typed
-    // argument. The body above never throws, so this catch only sees that error.
-    return {
-      ...defined,
-      execute: (args, exec) => defined.execute(args, exec).catch((error) => failure(SKILL_RESULT.invalidArguments, Array.isArray(error?.violations) ? { violations: error.violations } : {})),
-    }
+    // defineTool rejects a missing or ill-typed argument before calling execute above. That
+    // execute never throws, so this catch only sees the argument error.
+    return { ...defined, execute: (args, exec) => defined.execute(args, exec).catch(argumentFailure) }
   }
   const nameParameter = { [ARG.name]: { ...STRING, required: true, description: TEXT.nameArg } }
   const documentParameters = { ...nameParameter, [ARG.document]: { ...STRING, required: true, description: TEXT.documentArg } }
-  /** create and update: the store commits, then the catalog must show the skill. */
-  const write = (commit) => async (args, signal) => {
-    await commit(args.name, args.document, signal)
-    return confirm(args.name, true, signal)
+  /**
+   * A mutation: the store commits (or throws a not-committed SkillError), then the catalog must
+   * show the skill as present or absent.
+   */
+  const mutation = (commit, present) => async (args, signal) => {
+    await commit(args, signal)
+    return confirm(args.name, present, signal)
   }
 
   return [
@@ -178,12 +194,9 @@ function definitions({ store, registry, provider, invalidate, lookup, caller }) 
       if (definition === undefined) return failure(SKILL_RESULT.notFound)
       return { ok: true, name: definition.name, description: definition.description, body: definition.content }
     }),
-    tool(PRIVATE_SKILL_TOOL.create, TEXT.createDescription, documentParameters, write(store.create)),
-    tool(PRIVATE_SKILL_TOOL.update, TEXT.updateDescription, documentParameters, write(store.update)),
-    tool(PRIVATE_SKILL_TOOL.remove, TEXT.removeDescription, nameParameter, async (args, signal) => {
-      await store.remove(args.name, signal)
-      return confirm(args.name, false, signal)
-    }),
+    tool(PRIVATE_SKILL_TOOL.create, TEXT.createDescription, documentParameters, mutation((args, signal) => store.create(args.name, args.document, signal), true)),
+    tool(PRIVATE_SKILL_TOOL.update, TEXT.updateDescription, documentParameters, mutation((args, signal) => store.update(args.name, args.document, signal), true)),
+    tool(PRIVATE_SKILL_TOOL.remove, TEXT.removeDescription, nameParameter, mutation((args, signal) => store.remove(args.name, signal), false)),
     tool(PRIVATE_SKILL_TOOL.reload, TEXT.reloadDescription, {}, (_args, signal) => {
       invalidate()
       return catalog(signal)
@@ -192,19 +205,20 @@ function definitions({ store, registry, provider, invalidate, lookup, caller }) 
 }
 
 /**
- * Compose the private library into one manager generation's scope (registerPrivateSkills has
+ * Compose the private library into one manager generation's scope (attachPrivateSkills has
  * already checked that the composition has a skill registry).
  */
-export function mountPrivateSkills(agentCtx, live, { manager, store }) {
+function mountPrivateSkills(agentCtx, live, { manager, store }) {
   // Singleton identity before anything is exposed (SK-SEAM §4.1, decision 2): a generation whose
   // agent is not THE manager gets neither the provider nor the tools. X1 publishes the manager id
   // only after the factory publishes the agent, so during the first create (and a cold resume) it
   // is still undefined. Setup callbacks are reached only from the chat's own manager composition
   // (extensions.setup is called solely by chat.js composePersona), so that case is the manager
   // being composed. The tools re-check the published id strictly on every call.
+  const logger = agentCtx.logger(PRIVATE_SKILLS.logger)
   const managerId = manager.sessionId()
   if (managerId !== undefined && managerId !== live?.id) {
-    agentCtx.logger(PRIVATE_SKILLS.logger).warn(TEXT.notManagerScope)
+    logger.warn(TEXT.notManagerScope)
     return
   }
   // ctx.get returns the service traced to this scope (no inject needed in a setup callback), so
@@ -216,15 +230,14 @@ export function mountPrivateSkills(agentCtx, live, { manager, store }) {
   agentCtx.effect(() => () => { active = false })
   // The provider sees only the confined reader and a logger; the manager's own ctx.fs is never
   // replaced, so ordinary tools keep their sandbox (SK-SEAM §5.2.3).
-  const providerCtx = Object.freeze({
-    get: (service) => (service === FS_SERVICE ? store.fileSystem : undefined),
-    logger: agentCtx.logger(PRIVATE_SKILLS.logger),
-  })
-  let invalidate
+  const providerCtx = Object.freeze({ get: (service) => (service === FS_SERVICE ? store.fileSystem : undefined), logger })
+  // registerProvider calls its factory synchronously (SK-SEAM §3.1), so both are bound before
+  // the tools below capture them.
+  let control
   let provider
-  registry.registerProvider((control) => {
-    invalidate = control.invalidate
-    provider = new LazyRootProvider(providerCtx, control, store)
+  registry.registerProvider((given) => {
+    control = given
+    provider = new LazyRootProvider(providerCtx, given, store)
     return provider
   })
   // The manager's own view: its scope chain selects the private layer. No cwd: the private
@@ -232,7 +245,7 @@ export function mountPrivateSkills(agentCtx, live, { manager, store }) {
   const lookup = (signal) => ({ signal, scope: live })
   // Identity comes from the live receiving agent, never from names or model arguments.
   const caller = (exec) => active && exec?.agent === live && manager.sessionId() === live.id
-  for (const definition of definitions({ store, registry, provider, invalidate: () => invalidate(), lookup, caller })) {
+  for (const definition of definitions({ store, registry, provider, invalidate: control.invalidate, lookup, caller, logger })) {
     agentCtx.tools.register(definition)
   }
   const prompt = agentCtx.get(PRIVATE_SKILLS.promptService)
