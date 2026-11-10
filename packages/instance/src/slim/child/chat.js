@@ -10,6 +10,11 @@
  * - the transcript is derived from DSH's own session log (the supported live-preferred
  *   sessionQuery read), and live updates are relayed as the child app's one SSE event, so the
  *   slim UI re-reads nothing per delta;
+ * - every activation (create or resume) also tries to make the Session a member of the child
+ *   workspace over its own folder (user decision 7.A): native ui-conversation keeps a blank
+ *   session's composer inert until its workspace resolves. Only the page path requires the
+ *   attach (activateAttached: route 503, page Retry); background activations (activate) log a
+ *   failed attach and proceed;
  * - resolveAgent is the activation owner the child's reminder scheduler needs (T10): after a
  *   restart only this module can resume Fishball's Session, so without it every reminder
  *   delivery into its own session fails;
@@ -40,7 +45,7 @@
  */
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, realpath, rename, writeFile } from 'node:fs/promises'
 import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { appendPluginRecord } from '@deepseek-ai/dsh-session'
@@ -114,6 +119,8 @@ const CHILD = Object.freeze({
   defaultModel: 'agentDefaultModel',
   sandboxPolicy: 'sandboxPolicy',
   images: 'fishballImages',
+  // dsh-workspace's registry, composed by the child's dsh-web-app bundle in both SDKs.
+  workspaceRegistry: 'workspaceRegistry',
   logger: 'fishball-native-chat',
   writerHeld: 'SessionAlreadyOwnedError',
 })
@@ -154,6 +161,8 @@ const MESSAGE = Object.freeze({
   model: 'The model choice is not available.',
   method: 'The chat API accepts GET, HEAD and POST.',
   failed: 'The chat operation failed.',
+  // Log-only diagnostic; the page sees MESSAGE.session.
+  noWorkspaces: 'the workspace registry is not composed in this child',
 })
 
 /**
@@ -428,8 +437,8 @@ function failureDetail(error) {
  *
  * @param {object} ctx - the fishball-native-app row's context.
  * @param {Function} [ctx.get] - Cordis service lookup (agents, profileContext, sessionQuery,
- *   agentDefaultModel, llm, sandboxPolicy). Every service is read when used, so a row that
- *   loads later is picked up without restarting the chat.
+ *   agentDefaultModel, llm, sandboxPolicy, workspaceRegistry). Every service is read when used,
+ *   so a row that loads later is picked up without restarting the chat.
  * @param {Function} [ctx.on] - Cordis event subscription; session/event, agent/status and
  *   agent/assistant-stream drive the live page.
  * @param {object} [options]
@@ -457,7 +466,13 @@ export function createChat(ctx, options = {}) {
   const toolNames = new Map()
   const disposers = []
   let sessionId
+  // The live agent this chat composed and published. Publication does not wait for the workspace
+  // attach: the extension rows' notices refuse an unpublished manager (manager-not-ready), and
+  // background work must not stop on a workspace problem (Fishball's decision, 2026-11-11).
   let agent
+  // The live agent whose workspace attach finished, and the one attempt in flight (attach()).
+  let attached
+  let attaching
   let activation
   let started = false
   let closed = false
@@ -530,9 +545,13 @@ export function createChat(ctx, options = {}) {
     return composePersona(agentCtx, live)
   }
 
+  function ensureFolder() {
+    return mkdir(cwd, { recursive: true, mode: CHAT_LIMITS.directoryMode })
+  }
+
   async function createSession(agents) {
     const id = SESSION_PREFIX + randomUUID()
-    await mkdir(cwd, { recursive: true, mode: CHAT_LIMITS.directoryMode })
+    await ensureFolder()
     await record(id)
     const handle = await agents.create({ sessionId: id, meta: { cwd }, agentOptions: agentOptions(), setup: configure })
     return handle.agent
@@ -558,6 +577,76 @@ export function createChat(ctx, options = {}) {
     }
   }
 
+  /**
+   * Whether the Session is stored under another folder than the current
+   * `<home>/fishball/assistant`: a moved or renamed child home leaves its header naming the old
+   * path, which may no longer resolve. DSH has no public call that changes a Session's cwd (the
+   * header is frozen creation metadata; resume takes no cwd), and dsh-workspace's
+   * attachSession refuses a cwd that does not resolve to the workspace path, so such a Session
+   * can never become a member of the current folder's workspace. A stored folder that does not
+   * resolve for any reason (missing, untraversable, no longer a directory) is elsewhere: it
+   * cannot be the current folder, which ensureFolder has just made resolvable, and attachSession
+   * would refuse it on every attempt. A header without a cwd is not a relocation; attachSession
+   * reports it.
+   */
+  async function storedElsewhere(live) {
+    const stored = live.session?.header?.cwd
+    if (typeof stored !== 'string' || stored === '') return false
+    let resolved
+    try {
+      resolved = await realpath(stored)
+    } catch {
+      return true
+    }
+    return resolved !== await realpath(cwd)
+  }
+
+  /**
+   * Make the manager's Session a member of the workspace over its own folder (user decision
+   * 7.A: the page opens straight into a blank, typable session). Native ui-conversation keeps
+   * the empty-session composer inert until the session's workspace resolves a title, and
+   * dsh-workspace adds members only through attachSession: its path-grouped bootstrap runs
+   * once, at the child's first boot, before this Session exists. Both public calls are
+   * idempotent (create reuses the workspace of the same canonical path, attachSession resolves
+   * without writing for an accounted id), so an existing manager that was never attached is
+   * attached too. The folder is recreated first because both calls refuse a missing directory.
+   * A moved child home (storedElsewhere) still gets the workspace for the current folder,
+   * but no membership: attachSession would refuse it on every attempt, which would turn a
+   * relocation into a permanent page failure. It is logged and counts as done.
+   * Rejects with the underlying error; the caller decides whether that blocks.
+   */
+  async function attachWorkspace(live) {
+    const registry = ctx.get(CHILD.workspaceRegistry)
+    if (typeof registry?.create !== 'function') throw new TypeError(MESSAGE.noWorkspaces)
+    await ensureFolder()
+    const workspace = await registry.create(cwd)
+    if (await storedElsewhere(live)) {
+      logger?.warn('Fishball session %s is stored under another folder (moved child home); it stays outside the current folder\'s workspace', live.id)
+    } else {
+      await workspace.attachSession(live.id)
+    }
+    attached = live
+  }
+
+  /** One attach attempt per live agent at a time: concurrent activations share it. */
+  function attach(live) {
+    if (attached === live) return Promise.resolve()
+    if (attaching?.live !== live) {
+      const attempt = { live, promise: attachWorkspace(live).finally(() => { if (attaching === attempt) attaching = undefined }) }
+      attaching = attempt
+    }
+    return attaching.promise
+  }
+
+  function attachFailed(live, error) {
+    const detail = failureDetail(error)
+    logger?.warn('Fishball session %s could not join its workspace (%s: %s)', live.id, detail.name, detail.message)
+  }
+
+  /**
+   * Create or resume the Session, compose and publish it. Publication does not wait for the
+   * workspace attach (the activation entries below own it).
+   */
   async function open() {
     if (closed) unavailable()
     const agents = requireAgents()
@@ -573,8 +662,8 @@ export function createChat(ctx, options = {}) {
     return live
   }
 
-  /** One activation owner: concurrent reads, sends and reminder deliveries share the attempt. */
-  function activate() {
+  /** One preparation owner: concurrent reads, sends, deliveries and page opens share it. */
+  function prepare() {
     if (agent !== undefined && sessionId !== undefined && ctx.get(CHILD.agents)?.get?.(sessionId) === agent) {
       return Promise.resolve(agent)
     }
@@ -582,6 +671,49 @@ export function createChat(ctx, options = {}) {
       activation = open().finally(() => { activation = undefined })
     }
     return activation
+  }
+
+  /**
+   * One workspace attach attempt, unless the manager is already attached; a failure is logged
+   * and reported as false. A chat closed during the attach reports itself unavailable, as every
+   * other activation step does: the registry going away with it is not a workspace failure.
+   */
+  async function tryAttach(live) {
+    let joined = true
+    try {
+      await attach(live)
+    } catch (error) {
+      if (closed) unavailable()
+      attachFailed(live, error)
+      joined = false
+    }
+    if (closed) unavailable()
+    return joined
+  }
+
+  /**
+   * The background activation (inbox, reminders, cards, model changes, plugin notices and
+   * their recovery): the Session is prepared and one attach attempt is made, but a failed
+   * attach never stops the work (Fishball's decision, 2026-11-11). The manager stays unattached,
+   * so X1 keeps reading absent and the page's next open retries through activateAttached.
+   */
+  async function activate() {
+    const live = await prepare()
+    await tryAttach(live)
+    return live
+  }
+
+  /**
+   * The page activation (manager.ensureSession, POST api/fishball/session): the attach is
+   * required, so a failure is the route's 503 and the page's Retry, and the next call tries
+   * again. The manager is published either way, so notices and their recovery keep working
+   * after a failed page open. Kept as its own entry rather than a flag on activate: the two
+   * callers differ in failure policy only, and the steps are shared through tryAttach.
+   */
+  async function activateAttached() {
+    const live = await prepare()
+    if (!await tryAttach(live)) sessionFailed()
+    return live
   }
 
   function permissionOf(live) {
@@ -950,7 +1082,18 @@ export function createChat(ctx, options = {}) {
     for (const dispose of disposers.splice(0)) { try { dispose() } catch { /* the row is going away */ } }
   }
 
-  options.extensions?.bind({ activate, sessionId: () => agent?.id })
+  /**
+   * X1 (manager.sessionId(), GET api/fishball/session) names the manager only once it is
+   * published and attached. The page opens with GET and POSTs only on null, so a manager that a
+   * background activation left unattached must read as absent: that is what makes the page's
+   * next open (or Retry) POST and retry the attach. Consequence: manager tools that authenticate
+   * against X1 refuse during a turn queued while the attach is failing.
+   */
+  function managerId() {
+    return agent !== undefined && attached === agent ? agent.id : undefined
+  }
+
+  options.extensions?.bind({ activate, activateAttached, sessionId: managerId })
 
   return Object.freeze({
     start,

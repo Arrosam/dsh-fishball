@@ -20,6 +20,7 @@ import { tempPath } from './temp-path.mjs'
 import path from 'node:path'
 import { linkContractForSourceRun } from './contract-link.mjs'
 import { loadConnector, loadInstance } from './body-soul-env.mjs'
+import { startWorkspaceRegistry } from './workspace-registry.mjs'
 
 linkContractForSourceRun()
 
@@ -84,6 +85,25 @@ export async function tempDir(t, prefix = 'fbtest-instance-ext-') {
 }
 
 const tempHome = (t) => tempDir(t)
+
+/**
+ * Fixture persistence per home, beside `sessionLogs`: the session headers (a resume restores the
+ * stored header cwd, as DSH's persisted header does; crash checkpoints clone only the logs) and
+ * the workspace registry's storage root, so a restart over the same home sees the same durable
+ * registry.
+ */
+const storedHeaders = new Map()
+const registryRoots = new Map()
+
+function headersOf(home) {
+  if (!storedHeaders.has(home)) storedHeaders.set(home, new Map())
+  return storedHeaders.get(home)
+}
+
+/** Seed one fixture-persisted session header for a home (a session DSH stored before this boot). */
+export function seedStoredHeader(home, header) {
+  headersOf(tempPath(home)).set(header.id, header)
+}
 
 /**
  * Minimal model of the launcher's `appReady` service (SDK `profile-boot` `createAppReady`, the
@@ -578,8 +598,10 @@ export function createLegacyFakeHost({ capabilities = HOST.legacyCapabilities } 
  * With `ready: false` the fake host still attaches before the commit, which production cannot do
  * (the parent's readiness probe, and so its attach, runs only after child ready): "attach before
  * ready" cases exercise a superset state.
+ * `workspaceRegistry(real)` replaces the default `workspaceRegistry` service (the selected SDK's
+ * real registry for this home) before the rows apply; returning undefined models it missing.
  */
-export async function bootChild(t, { activate = false, attachments = undefined, configure, home: existingHome, watchdogEnabled = true, extraBundles = [], sessionLogs = new Map(), onFollowup, ready = true } = {}) {
+export async function bootChild(t, { activate = false, attachments = undefined, configure, home: existingHome, watchdogEnabled = true, extraBundles = [], sessionLogs = new Map(), onFollowup, ready = true, workspaceRegistry } = {}) {
   if (!AGENT.supportedVersions.includes(sessionPackage.version)) throw new Error(AGENT.unsupportedVersion + sessionPackage.version)
   const home = tempPath(existingHome ?? await tempHome(t))
   const profileDir = tempPath(path.join(home, 'profiles', 'fishball'), { root: home })
@@ -636,6 +658,12 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   t.after(() => closeHost ? closeHost() : sessionContext.fiber.dispose())
   const sessionFiber = sessionContext.plugin(SessionStore)
   await sessionFiber
+  const sessionHeaders = headersOf(home)
+  if (!registryRoots.has(home)) registryRoots.set(home, await tempDir(t, 'fbtest-workspace-registry-'))
+  // Manager activation attaches to the child workspace (7.A fix); the real child composes
+  // dsh-workspace, so the default is the selected SDK's own registry. `workspaceRegistry(real)`
+  // replaces the service before the rows apply (returning undefined models a missing service).
+  const workspaces = await startWorkspaceRegistry({ root: registryRoots.get(home), sessions: sessionContext.sessions, storedHeaders: () => [...sessionHeaders.values()] })
   const services = {
     // In-memory durable backend: only flush advances the restart-visible prefix,
     // across ALL active sessions, as SessionPersistence.flush promises on both SDKs.
@@ -665,6 +693,7 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     // The image service is optional at the app row; without a store an upload is refused.
     attachments,
     appReady: appReady.service,
+    workspaceRegistry: workspaceRegistry === undefined ? workspaces.registry : workspaceRegistry(workspaces.registry),
   }
   // A caller may retain this map across child-row boots, just as DSH retains session logs.
   // It is fixture-owned persistence only; no extension state is reconstructed by the harness.
@@ -679,7 +708,9 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
       await services.sessionPersistence.flush()
       sessionDisposers.get(sessionId)?.()
     }
-    const session = sessionContext.sessions.prepare(sessionId, { ...options, ...(sessionLogs.has(sessionId) ? { seed: sessionLogs.get(sessionId) } : {}) })
+    const storedCwd = options.meta === undefined ? sessionHeaders.get(sessionId)?.cwd : undefined
+    const session = sessionContext.sessions.prepare(sessionId, { ...options, ...(sessionLogs.has(sessionId) ? { seed: sessionLogs.get(sessionId) } : {}), ...(storedCwd === undefined ? {} : { meta: { cwd: storedCwd } }) })
+    sessionHeaders.set(sessionId, session.header)
     function enterSession() {
       sessionDisposers.set(sessionId, sessionContext.sessions.enter(session))
       sessionContext.sessions.announce(session)
@@ -737,6 +768,8 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     export: ({ name, type: level, args }) => context.logs.push({ name, level, args }),
   })
   const { ctx } = context
+  // Cordis also exposes a service as a context property (`ctx.workspaceRegistry`).
+  Object.defineProperty(ctx, 'workspaceRegistry', { get: () => ctx.get('workspaceRegistry'), enumerable: true })
   // The admin row reads ctx.settings / ctx.pluginManager / ctx.llm as services, not through get().
   ctx.settings = settings
   ctx.pluginManager = pluginManager
@@ -757,6 +790,7 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
       if (result.status === AGENT.rejected) errors.push(result.reason)
     }
     await attempt(() => services.sessionPersistence.flush())
+    await attempt(workspaces.dispose)
     for (const dispose of sessionDisposers.values()) await attempt(dispose)
     await attempt(() => sessionContext.fiber.dispose())
     if (typeof disposeSessionLogs === 'function') await attempt(disposeSessionLogs)
@@ -839,6 +873,10 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     agents,
     agentsById,
     sessionLogs,
+    /** Fixture-persisted session headers by id (read by the registry and by resume). */
+    sessionHeaders,
+    /** The selected SDK's real registry for this home (also when a case replaced the service). */
+    workspaces: workspaces.registry,
     host,
     logs: context.logs,
     context,
