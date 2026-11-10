@@ -32,6 +32,13 @@ export const V2_SUITES = Object.freeze({
     'test/instance-ext/x0-i.test.mjs',
     'test/instance-ext/x0-s.test.mjs',
     'test/instance-ext/x0-w.test.mjs',
+    // T-SK private Skills (UC-25–28, EP-19–22, BVA-12, DT-09, ST-09/10). They live under
+    // test/private-skills/, which the root rule does not discover; each suite loops over both SDKs.
+    'test/private-skills/sk-bva.test.mjs',
+    'test/private-skills/sk-dt.test.mjs',
+    'test/private-skills/sk-ep.test.mjs',
+    'test/private-skills/sk-st.test.mjs',
+    'test/private-skills/sk-uc.test.mjs',
     // Final V2 page/readiness/origin/lite/settings cases (070b88e). Unobservable seams stay TODO.
     'test/v2-page-cases/lite.test.mjs',
     'test/v2-page-cases/page.test.mjs',
