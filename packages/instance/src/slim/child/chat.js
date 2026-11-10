@@ -10,6 +10,9 @@
  * - the transcript is derived from DSH's own session log (the supported live-preferred
  *   sessionQuery read), and live updates are relayed as the child app's one SSE event, so the
  *   slim UI re-reads nothing per delta;
+ * - every activation (create or resume) also makes the Session a member of the child workspace
+ *   over its own folder (user decision 7.A): native ui-conversation keeps a blank session's
+ *   composer inert until its workspace resolves. A failed attach fails the activation;
  * - resolveAgent is the activation owner the child's reminder scheduler needs (T10): after a
  *   restart only this module can resume Fishball's Session, so without it every reminder
  *   delivery into its own session fails;
@@ -432,8 +435,8 @@ function failureDetail(error) {
  *
  * @param {object} ctx - the fishball-native-app row's context.
  * @param {Function} [ctx.get] - Cordis service lookup (agents, profileContext, sessionQuery,
- *   agentDefaultModel, llm, sandboxPolicy). Every service is read when used, so a row that
- *   loads later is picked up without restarting the chat.
+ *   agentDefaultModel, llm, sandboxPolicy, workspaceRegistry). Every service is read when used,
+ *   so a row that loads later is picked up without restarting the chat.
  * @param {Function} [ctx.on] - Cordis event subscription; session/event, agent/status and
  *   agent/assistant-stream drive the live page.
  * @param {object} [options]
@@ -589,6 +592,9 @@ export function createChat(ctx, options = {}) {
       const workspace = await registry.create(cwd)
       await workspace.attachSession(live.id)
     } catch (error) {
+      // A chat closed during the attach reports itself unavailable, as every other step of
+      // open() does; the registry going away with it is not a workspace failure.
+      if (closed) unavailable()
       const detail = failureDetail(error)
       logger?.warn('Fishball session %s could not join its workspace (%s: %s)', live.id, detail.name, detail.message)
       sessionFailed()

@@ -157,6 +157,16 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
   model changes) until an attach succeeds, including the permanent case of a resumed header
   cwd that no longer matches the folder (a moved child home); and a workspace the user deleted
   is recreated, with the SDK default title `assistant`, on the next activation.
+  Also open (static reading of ui-workspace `restoreSelection`/`createInWorkspace`, both SDKs;
+  not verified in a browser): each child generation is a new origin with no saved selection,
+  so native startup navigation now targets the most recent workspace, which is the manager's,
+  and calls `connectWorkspace` on it. While the manager is blank that names the manager
+  (`session.create` reuse; with an `agentPresets` service it may select the default preset on
+  it). Once the manager has a turn it creates one ordinary blank Session in the manager's
+  workspace (later generations reuse that blank). Whether native then opens it depends on
+  whether the page's own selection (`selectPanel(null)`) aborts that navigation first. Before
+  this fix, the empty registry left native with no target once a manager existed. Avoiding it
+  needs a decision; no host patch is allowed.
 - **Plugin inventory.** `ui-settings-plugin-inventory` stays enabled and lists `ui-agent-preset`
   as an optional client dependency; with that row disabled, preset names it shows may fall back
   to their raw keys.
