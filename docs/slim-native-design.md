@@ -1264,10 +1264,10 @@ control channel and then to the child admin service. The child applies changes w
 
 **Flow (D26, second amendment of 2026-11-06).** There is no switch and no automatic sync. The
 "Model for Fishball" block of the `fishball-instance` Plugins card in the main DSH
-(`packages/instance/client.js`) has one button, **Check for new models**. Since V2 SET, the child's slim
-settings panel ([v2-set](<planning/v2-set.md>)) also shows this block, from the same source. It reaches this host's same
-Check/Add through the settings relay, so both pages start one and the same sync. The child-side
-authority limit is recorded in that document.
+(`packages/instance/client.js`) has one button, **Check for new models**. Only the main DSH starts a sync
+(the user's decision of 2026-11-11). Neither the child's slim settings panel ([v2-set](<planning/v2-set.md>)) nor
+anything else in the child can start one. The panel shows only a read-only note pointing here; the
+settings relay has no sync op; the child registers no `models/*` route.
 
 1. **Fetch once.** A press posts `POST /api/fishball-instance/models/check` (no body), an owner-only
    Fetch route of the instance's main half. The host runs one preview

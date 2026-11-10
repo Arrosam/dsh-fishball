@@ -2,12 +2,15 @@
  * SET's slim Fishball settings panel, browser half (docs/planning/v2-set.md; instance-extension-
  * points §11.8). Child DSH only: mounted by the child's launch overlay, never in main DSH.
  *
- * Only what DSH's own pages cannot do stays here: the instance's status and Restart, the model
- * sync from the main DSH, one Read Only line, and links to the child's native Settings and Plugins
- * pages (models, effort, plugins and plugin settings are edited there). The status line and the
- * "Model for Fishball" block are the main card's own components, loaded from the same source file
- * (packages/instance/client.js, copied here as the chunk `client.instance.js`), so both pages show
- * and behave the same and no sync UI is written twice.
+ * Only what DSH's own pages cannot do stays here: the instance's status and Restart, one Read Only
+ * line, and links to the child's native Settings and Plugins pages (models, effort, plugins and
+ * plugin settings are edited there). The status line is the main card's own component, loaded from
+ * the same source file (packages/instance/client.js, copied here as the chunk
+ * `client.instance.js`), so both pages show and behave the same.
+ *
+ * Model sync is not here: the child must never start one (the user's decision of 2026-11-11,
+ * docs/planning/v2-set.md). Only the main DSH's "Model for Fishball" block on its Plugins page
+ * syncs into this instance, so the panel shows a read-only note pointing there and no control.
  */
 window.__ModuleLoader__.load({
   id: 'fishball-settings',
@@ -66,6 +69,7 @@ window.__ModuleLoader__.load({
       restartHint: 'Stops Fishball\'s private instance and starts it again; this page reloads when it is back.',
       restartFailed: 'Restart was refused: {code}',
       restartEnded: 'Fishball restarted but did not come back: {code}',
+      modelSyncNote: 'New models from DSH are added in the main DSH: Plugins → Fishball instance → Model for Fishball.',
       readOnly: 'Read Only: Fishball\'s tools run read-only in its instance. This is fixed and not a setting.',
       nativeTitle: 'More settings',
       nativeHint: 'Models, reasoning effort, plugins and their settings are in DSH\'s own pages.',
@@ -84,6 +88,7 @@ window.__ModuleLoader__.load({
       restartHint: '停止 Fishball 的私有实例并重新启动；恢复后本页会重新加载。',
       restartFailed: '重启被拒绝：{code}',
       restartEnded: 'Fishball 已重启但未能恢复：{code}',
+      modelSyncNote: 'DSH 中的新模型请在主 DSH 中添加：插件 → Fishball 实例 → Fishball 的模型。',
       readOnly: '只读：Fishball 的工具在其实例中以只读方式运行。这是固定的，不是可调设置。',
       nativeTitle: '更多设置',
       nativeHint: '模型、推理强度、插件及其设置在 DSH 自己的页面中。',
@@ -184,15 +189,13 @@ window.__ModuleLoader__.load({
         missing ? h('p', { className: PANEL.css.error, role: 'alert' }, t('settingsUnavailable')) : null)
     }
 
-    /** The shared status line, Restart and model block, once the main card's source has arrived. */
+    /** The shared status line and Restart, once the main card's source has arrived. */
     function Shared({ ctx, shared, t }) {
       const sharedT = React.useMemo(() => ctx.locale.bind(shared.locale), [shared])
       const [status, setStatus] = shared.useInstanceStatus()
-      return h(React.Fragment, null,
-        h('section', { className: PANEL.css.section },
-          h(shared.InstanceStatus, { t: sharedT, status, setStatus }),
-          h(Restart, { t, setStatus })),
-        h('section', { className: PANEL.css.section }, h(shared.ModelSync, { t: sharedT, state: status?.state })))
+      return h('section', { className: PANEL.css.section },
+        h(shared.InstanceStatus, { t: sharedT, status, setStatus }),
+        h(Restart, { t, setStatus }))
     }
 
     function makePanel(ctx, t, loader) {
@@ -209,6 +212,7 @@ window.__ModuleLoader__.load({
         return h('div', { className: PANEL.css.root, 'data-fishball-settings': true },
           h('h2', null, t('title')),
           body,
+          h('p', { className: PANEL.css.hint, 'data-fishball-settings-model-sync-note': true }, t('modelSyncNote')),
           h('p', { className: PANEL.css.hint, 'data-fishball-settings-readonly': true }, t('readOnly')),
           h(NativeLinks, { ctx, t }))
       }
