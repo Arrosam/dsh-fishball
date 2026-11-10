@@ -145,15 +145,18 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
   deliverables' open action ask the child host to reveal or open a file in a desktop app. They
   leave neither the page nor the session and touch no session, so they stay enabled; the
   desktop app opens outside the browser.
-- **Empty composer (open question, not verified in a browser).** Native content makes the hero
-  composer inert while the session is blank and no workspace title resolves (ui-conversation
-  `inert = … || hero && chipTitle === undefined`, both SDKs). Static reading suggests the manager
-  is created without a turn (PAGE 7.A) and is never attached to a child workspace
-  (`agents.create` in chat.js; dsh-workspace adds members only through `attachSession`). If so,
-  a fresh manager's composer stays disabled. Before LITE the only way out was the hero picker,
-  which connects or creates another session. That is now closed, as required. Making the first
-  message possible (for example by attaching the manager to a child workspace) belongs to
-  PAGE/READY and needs a decision; LITE does not change manager creation.
+- **Empty composer (fixed on `dev/v2-manager-ws`, not verified in a browser).** Native content
+  makes the hero composer inert while the session is blank and no workspace title resolves
+  (ui-conversation `inert = … || hero && chipTitle === undefined`, both SDKs), and dsh-workspace
+  adds members only through `attachSession`. Every manager activation (create or resume, chat.js
+  `attach`) now ensures the child workspace over the manager's folder (`workspaceRegistry.create`,
+  idempotent per path) and attaches the manager to it (idempotent). A failed attach fails the
+  activation: POST answers 503, GET still reads null, and the page shows "Fishball session
+  unavailable" with Retry. The hidden hero picker stays closed. Consequences, open for a user
+  decision: the failure also stops every other activation caller (inbox, cards, reminders,
+  model changes) until an attach succeeds, including the permanent case of a resumed header
+  cwd that no longer matches the folder (a moved child home); and a workspace the user deleted
+  is recreated, with the SDK default title `assistant`, on the next activation.
 - **Plugin inventory.** `ui-settings-plugin-inventory` stays enabled and lists `ui-agent-preset`
   as an optional client dependency; with that row disabled, preset names it shows may fall back
   to their raw keys.

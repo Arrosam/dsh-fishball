@@ -41,8 +41,11 @@ export const name = 'fishball-native-app'
  * them makes Cordis start this row only once all three exist, on both Cordis 4.0 (DSH 0.2.1) and
  * 4.1 (DSH 0.2.2). The approvals row is its own overlay row (overlay.js), so the loader's boot
  * settlement waits for that chain and this row is up before appReady's readiness probe.
+ * `workspaceRegistry` (dsh-workspace, via dsh-web-app in both SDKs) for the same reason: every
+ * chat activation attaches the manager to its workspace, and the reminder engine can activate
+ * before appReady, while a strict get() still reads an uninitialized registry as absent.
  */
-export const inject = ['attachments', 'llm', 'fishballApprovals']
+export const inject = ['attachments', 'llm', 'fishballApprovals', 'workspaceRegistry']
 
 const APP = Object.freeze({
   service: 'fishballApp',
