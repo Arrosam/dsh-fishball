@@ -533,7 +533,6 @@ window.__ModuleLoader__.load({
         const session = mountSession(ctx, manager, gate, shortcuts)
         const removals = mountRemovals(ctx, styles)
         const frameGuard = mountFrameGuard()
-        let settingsPending = continuation.view === CONTINUATION.view.settings
         // Stable across renders, so React subscribes once; LocaleRuntime methods need `this`.
         const locale = { subscribe: listener => ctx.locale.subscribe(listener), get: () => ctx.locale.getLocale() }
         function Navigation() {
@@ -554,15 +553,11 @@ window.__ModuleLoader__.load({
         // Consume the native launcher owner callback instead of inventing a global settings API.
         // A portal keeps the trigger usable outside the rc.1 drawer's inert subtree and Windows
         // collapsed footer; the native settings modal/state and all settings contributions stay owned.
-        // `view=settings` opens that same native Settings once per page load (SET owns any later
-        // Fishball settings panel).
+        // `view=settings` is not handled here: it opens Fishball's slim settings panel, which
+        // fishball-settings (SET) owns. That panel's "DSH Settings" link presses this button, so the
+        // launcher must stay on the page.
         function SettingsLauncher({ openSettings, settingsOpen }) {
           const text = useText(locale)
-          React.useEffect(() => {
-            if (!settingsPending) return
-            settingsPending = false
-            openSettings()
-          }, [openSettings])
           return createPortal(h('button', { className: PAGE.settingsButton, type: 'button',
             'aria-haspopup': 'dialog', 'aria-expanded': settingsOpen, onClick: openSettings }, text.settings), document.body)
         }

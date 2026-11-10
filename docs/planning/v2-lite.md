@@ -21,8 +21,9 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
 1. **Hash continuation.** On apply, the plugin reads `location.hash` as `URLSearchParams`. It acts
    only on `view=settings` and `lang=zh|en`. Any other name or value is ignored.
    - `lang`: `locale.setLocale(lang)` only when the language is registered and not already active.
-   - `view=settings`: native Settings opens once per page load, through the native
-     `settings.launcher` owner's `openSettings`.
+   - `view=settings`: not acted on here since INTEGRATE; it opens Fishball's slim settings panel,
+     which `fishball-settings` ([v2-set](<v2-set.md>)) owns. The `settings.launcher` button stays,
+     because that panel's "DSH Settings" link presses it.
 2. **Session.** The GET/POST `api/fishball/session` flow is unchanged (PAGE 7.A). The assigned
    manager is selected once, when it first becomes known and the shortcut gate is protected.
    After that, only the Fishball button and Retry select it. A selection is
