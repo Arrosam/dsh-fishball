@@ -17,6 +17,7 @@ const ROW = Object.freeze({
   webRuntime: 'web-runtime',
   nativeWeb: 'fishball-native-web',
   page: 'fishball-page',
+  recommend: 'fishball-recommend-plugins',
 })
 const WEB_CONFIG = Object.freeze({ host: RUNTIME.host, port: 0, tls: undefined })
 const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, publicUrl: undefined })
@@ -80,6 +81,10 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       // enforcement; this composition alone is not a read-only or session-isolation boundary.
       { id: ROW.nativeWeb, name: path.join(path.dirname(childModule), NATIVE_WEB.adapterModule), required: true, config },
       { id: ROW.page, name: path.join(path.dirname(childModule), NATIVE_WEB.pageDirectory, NATIVE_WEB.pagePackage, 'index.js'), required: true },
+      // V2 RP: the Fishball Recommended tab on the child's native Plugins page. Child-only because
+      // only this overlay inserts it; not required, so a failing tab never blocks the child boot.
+      // copyChildCode already copies the whole child-web tree and src/recommended.js it imports.
+      { id: ROW.recommend, name: path.join(path.dirname(childModule), NATIVE_WEB.pageDirectory, NATIVE_WEB.recommendPackage, 'index.js') },
       { id: ROW.lifecycle, name: childModule, required: true, config },
       // The bridge, approvals and inbox rows are loader rows, not plugins the lifecycle row
       // starts itself: the loader's boot settlement only waits for its own entries, so a nested
