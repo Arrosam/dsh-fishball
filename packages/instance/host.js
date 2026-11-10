@@ -15,6 +15,7 @@ import { CONNECTOR_CONTRACT, ContractError, ERROR, ROUTES } from './src/slim/con
 import { BINDING_STATE, BINDING_CODE, CONNECTOR_UPGRADE_MESSAGE, observeConnectorUpgrade, LAUNCH_CODE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
 import { migrateLaunchSettings } from './src/settings-migration.js'
+import { launchDetail, launchStatus } from './src/host/launch-detail.js'
 
 const PLUGIN = Object.freeze({
   // The row id is the plugin's name (design §0.2, D22); the service keeps its name for its callers.
@@ -49,6 +50,8 @@ const PLUGIN = Object.freeze({
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
   requestTimeoutMs: 750, stopTimeoutMs: 1000,
   state: Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', ready: 'ready', stopping: 'stopping', stopped: 'stopped', failed: 'failed', connectorMissing: BINDING_STATE.connectorMissing }),
+  // Between a failed start's specific code and its message in the card's detail.
+  detailSeparator: ': ',
   code: Object.freeze({ failed: 'NATIVE_START_FAILED', stop: 'NATIVE_STOP_FAILED', exited: 'NATIVE_CHILD_EXITED', unavailable: 'NATIVE_UNAVAILABLE', timeout: 'NATIVE_TIMEOUT', disabled: 'NATIVE_DISABLED' }),
 })
 /**
@@ -84,6 +87,19 @@ export const Config = Schema.object({
   enabled: Schema.boolean().default(true).volatile().description('Start the private native child after main appReady. Turning it off stops the child at once and turning it on starts it, as the row switch does; private data is retained.'),
 })
 const unavailable = code => Object.assign(new Error(code), { code })
+/**
+ * The card's detail for a failed start: the specific code, then the failure's own first message
+ * line when it has one beyond the code. Only the message text is handed on (never the error
+ * object's other fields), so all of it passes main's public sanitizer (launchDetail).
+ */
+function startFailureDetail(error) {
+  const code = typeof error?.code === 'string' ? error.code : undefined
+  const message = typeof error?.message === 'string' ? error.message : ''
+  // Node's system errors already start with their code ('ENOENT: no such file ...'): no repeat.
+  const named = code === undefined || message.startsWith(code)
+  const parts = named ? [message || code] : [code, message]
+  return launchDetail({ message: parts.filter(Boolean).join(PLUGIN.detailSeparator) })
+}
 function bounded(promise, milliseconds) {
   let timer
   return Promise.race([promise, new Promise((_, reject) => {
@@ -99,6 +115,12 @@ export async function apply(ctx, config) {
   const logger = typeof ctx.logger === 'function' ? ctx.logger(PLUGIN.name) : undefined
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
   let code = null
+  /**
+   * A failed start's cause for the card (V1 rule: sanitized, at most 2000 characters,
+   * src/host/launch-detail.js): `<specific code>: <first message line>`. The contract `code` stays
+   * the safe NATIVE_START_FAILED; null whenever the state is not a failed start.
+   */
+  let detail = null
   /**
    * Serializes the starts and stops that follow the `enabled` switch and the connector's arrivals
    * and departures, in the order they happened.
@@ -120,10 +142,10 @@ export async function apply(ctx, config) {
   let unsubscribeSettings = () => {}
   /** T16's source side: syncs the main profile's API-key providers into the child's own target. */
   let providerSync
-  const status = () => ({ enabled, state, code })
+  const status = () => launchStatus({ enabled, state, code, detail })
   /** End this row's attachment, if any; a stale detach changes nothing (contract §1.3). */
   const release = () => { bindingGeneration++; const attached = connection; connection = undefined; attached?.detach() }
-  const set = (next, nextCode = null) => { state = next; code = nextCode; return status() }
+  const set = (next, nextCode = null, nextDetail = null) => { state = next; code = nextCode; detail = nextDetail; return status() }
   // T11's admin relay. Every page operation except status and restart travels to the child over
   // the lifecycle wire's own authenticated admin channel; the child applies it with its own
   // services, so the main process never writes a child file (§9). T12's routes call
@@ -237,7 +259,10 @@ export async function apply(ctx, config) {
       if (closed) return
       try { settingsRelay.attach(transport) } catch { /* the next wire replaces it */ }
     })
-  } catch { set(PLUGIN.state.failed, PLUGIN.code.failed) }
+  } catch (error) {
+    logger?.warn('start failed (%s)', error?.code ?? PLUGIN.code.failed)
+    set(PLUGIN.state.failed, PLUGIN.code.failed, startFailureDetail(error))
+  }
 
   /** The state of an instance with no child: off, without the connector (D25), or stopped. */
   const idleState = () => (!enabled ? PLUGIN.state.disabled : connector === undefined ? PLUGIN.state.connectorMissing : PLUGIN.state.stopped)
@@ -263,9 +288,11 @@ export async function apply(ctx, config) {
         // A refused attach already left `starting` with its own code (the transport listener
         // above). A non-canonical main home is the one launch failure the user can act on, so it
         // keeps INVALID_MAIN_HOME instead of the generic NATIVE_START_FAILED (D2); every other
-        // failure stays generic, and nothing restarts either by itself (inst-OQ-03, inst-OQ-09).
+        // failure keeps the generic code, and nothing restarts either by itself (inst-OQ-03,
+        // inst-OQ-09). The specific cause goes to the row's log and the status's detail (bug 2).
         if (!closed && state === PLUGIN.state.starting) {
-          set(PLUGIN.state.failed, error?.code === LAUNCH_CODE.invalidMainHome ? LAUNCH_CODE.invalidMainHome : PLUGIN.code.failed)
+          logger?.warn('start failed (%s)', error?.code ?? PLUGIN.code.failed)
+          set(PLUGIN.state.failed, error?.code === LAUNCH_CODE.invalidMainHome ? LAUNCH_CODE.invalidMainHome : PLUGIN.code.failed, startFailureDetail(error))
         }
       }
       return status()

@@ -132,14 +132,20 @@ export async function removeRuntime(paths) {
   await rename(paths.root, retired)
   await rm(retired, { recursive: true })
 }
-export async function lifecycleLog(paths, code, limit) {
+/**
+ * Append one lifecycle line. `reason` is an optional failure code (a FAILED line's specific
+ * cause, e.g. PREFLIGHT_CORE_SHADOW); only an UPPER_SNAKE identifier is kept, so a message, path
+ * or URL can never reach the log through it.
+ */
+export async function lifecycleLog(paths, code, limit, reason) {
   // Deliberately log no exception messages, CLI output, URLs or protocol payloads.
   const allowed = new Set(['START', 'READY', 'REATTACH', 'DETACH', 'STOP', 'RECOVER', 'FAILED', 'CHILD_BOOT', 'CHILD_LISTEN', 'CHILD_READY', 'CHILD_FAILED'])
   if (!allowed.has(code)) return
   const file = path.join(paths.root, RUNTIME.log)
   let previous = ''
   if (await exists(file)) previous = await readPrivate(file, limit)
-  const line = JSON.stringify({ time: new Date().toISOString(), code }) + '\n'
+  const kept = typeof reason === 'string' && RUNTIME.logReason.test(reason) ? { reason } : {}
+  const line = JSON.stringify({ time: new Date().toISOString(), code, ...kept }) + '\n'
   const lines = (previous + line).split('\n')
   while (Buffer.byteLength(lines.join('\n')) > limit && lines.length > 1) lines.shift()
   await writePrivate(file, lines.join('\n'))

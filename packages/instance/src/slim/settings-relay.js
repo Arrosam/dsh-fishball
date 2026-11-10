@@ -15,7 +15,7 @@
  * - Never retried. A request whose transport closes or that times out answers a typed refusal; an
  *   Add whose answer is lost reports every requested id `failed` `result-unknown`, because the main
  *   host may already have committed it (docs/slim-native-design.md §10).
- * - No secret crosses: the main handlers answer the public `{state, code}` and the provider-sync
+ * - No secret crosses: the main handlers answer the public `{state, code, detail}` and the provider-sync
  *   browser shape (ids, names, model ids, outcomes, reasons, opaque check id) only.
  */
 import { randomUUID } from 'node:crypto'
@@ -142,7 +142,7 @@ class RelayEnd {
 
 /**
  * The main host's end. Each handler answers its op's result: `status`/`retry`/`restart` the public
- * `{state, code}`, `check`/`add` the provider-sync outcome `{ok, result|error}` as it is.
+ * `{state, code, detail}`, `check`/`add` the provider-sync outcome `{ok, result|error}` as it is.
  * @param {{status: Function, retry: Function, restart: Function, check: Function, add: Function}} handlers
  */
 export function createSettingsRelayServer(handlers) {

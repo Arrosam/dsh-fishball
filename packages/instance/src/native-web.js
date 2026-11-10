@@ -6,13 +6,15 @@
  * Neither answer ever carries the child's origin or launch token.
  */
 import { INSTANCE_CODES, INSTANCE_STATES } from './host/binding.js'
+import { statusLaunchDetail } from './host/launch-detail.js'
 import { registerGetRoute, registerPostRoutes } from './slim/host/fetch-routes.js'
 
 const WEB = Object.freeze({
   // The original route, kept with its shape ({enabled, state, code, detail}) for its existing
   // readers (the slim test suites read it).
   statusPath: '/api/fishball/native/status',
-  // The route design §18.5 inst-OQ-01 names: exactly {state, code}.
+  // The route design §18.5 inst-OQ-01 names: {state, code}, plus the failed start's bounded,
+  // sanitized `detail` (null otherwise) since bug 2 of the V2 e2e round 2.
   instanceStatusPath: '/api/fishball-instance/status',
   // The card's Retry (design §0.7: "its Plugins card in the main DSH (Retry)"); answers the
   // status once the retry has run, in the instanceStatusPath shape.
@@ -30,17 +32,17 @@ function safeStatus(value) {
   return { enabled: value?.enabled === true,
     state: STATES.has(value?.state) ? value.state : WEB.unavailable,
     code: CODES.has(value?.code) ? value.code : null,
-    // Always null: only the launch settings ever set it, and I2 removed them (D28). The field
-    // stays so this route keeps the shape its readers expect.
-    detail: null }
+    // A failed start's cause (host.js): main's public sanitizer runs again here, so no reader of
+    // this route ever sees more than its bounded first line.
+    detail: statusLaunchDetail(value) }
 }
 const UNREADABLE = Object.freeze({ enabled: false, state: WEB.unavailable, code: null, detail: null })
-const stateAndCode = ({ state, code }) => ({ state, code })
+const publicFields = ({ state, code, detail }) => ({ state, code, detail })
 /**
- * The instance's public `{state, code}`, as the card's status route answers it. SET's settings
+ * The instance's public `{state, code, detail}`, as the card's status route answers it. SET's settings
  * relay answers the child panel in the same shape, so both pages read one vocabulary.
  */
-export const publicStatus = (value) => stateAndCode(safeStatus(value))
+export const publicStatus = (value) => publicFields(safeStatus(value))
 const json = value => new Response(JSON.stringify(value), { status: WEB.ok, headers: { ...WEB.headers, 'content-type': WEB.json } })
 
 /** Requires connection; service.status() is synchronous and carries no token. */
@@ -59,7 +61,7 @@ export function registerNativeWeb(ctx, service) {
 }
 
 /**
- * The card's status and Retry routes, `{state, code}` each, over any status reader and Retry: the
+ * The card's status and Retry routes, `{state, code, detail}` each, over any status reader and Retry: the
  * main row's own lifecycle, or the child settings panel's relay to it
  * (child-web/fishball-settings/index.js), so the status line reads the same answers on both pages.
  * A failed Retry answers the status as it now reads. Either reader may be async.

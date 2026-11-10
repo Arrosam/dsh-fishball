@@ -28,7 +28,7 @@ const SETTINGS = Object.freeze({
 const OP = SETTINGS_RELAY.op
 
 /**
- * The restart route answers the relay's typed outcome as it is: `{ok:true,result:{state,code}}` or
+ * The restart route answers the relay's typed outcome as it is: `{ok:true,result:{state,code,detail}}` or
  * `{ok:false,error:{code}}`. The answer to a restart is usually lost with the child that serves
  * this route, which the panel expects (it keeps "Restarting…").
  */
@@ -40,7 +40,7 @@ function restartRoute(relay) {
 }
 
 /**
- * A relay status answer as the status routes' readers expect it: the `{state, code}` the main host
+ * A relay status answer as the status routes' readers expect it: the `{state, code, detail}` the main host
  * sent. A refusal throws, so the status route answers `unavailable` and a refused Retry answers
  * the status as it now reads (src/native-web.js instanceStatusRoutes).
  */

@@ -5,6 +5,7 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
     const { createPortal } = require('react-dom')
+    const { Button } = require('@deepseek-ai/dsh-client-ui-primitives')
     const PAGE = Object.freeze({
       name: 'fishball-page', route: 'api/fishball/session', read: 'GET', ensure: 'POST',
       requestFailed: 'FISHBALL_SESSION_REQUEST_FAILED', invalidSession: 'FISHBALL_SESSION_INVALID',
@@ -15,6 +16,11 @@ window.__ModuleLoader__.load({
       root: 'data-fishball-page', ready: 'data-fishball-session',
       hidden: 'data-fishball-hidden', navigation: 'fishball-page-navigation', label: 'aria-label',
       settingsSlot: 'settings.launcher', settingsButton: 'fishball-settings-launcher',
+      // The launcher's seat in the navigation row (B4); display:contents, so an empty seat adds no
+      // gap and the portalled launcher is a flex item like its siblings.
+      launcherSeat: 'fishball-page-launcher-seat',
+      // DSH's design-system Button for every navigation control (B4): the page draws no button of its own.
+      button: Object.freeze({ size: 'sm', variant: 'ghost' }),
       // The active-locale prefix that selects TEXT.zh; every other language reads TEXT.en.
       chinese: 'zh',
       main: '[data-slot="main.conversation"]', sidebarSlot: '[data-slot="sidebar"]',
@@ -116,12 +122,12 @@ window.__ModuleLoader__.load({
         // Descendants too: native ui-workspace CSS sets visibility:visible on the workspace header
         // actions (Add workspace), which would otherwise stay Tab-focusable inside the hidden column.
         `${root} ${PAGE.sidebar} *,${root} ${PAGE.sidebarSlot} *{visibility:hidden!important}`,
-        `${root} .${PAGE.settingsButton}{position:fixed;bottom:8px;left:8px;z-index:100;visibility:visible;pointer-events:auto}`,
         `${root} .pI_x6G_drawerMask,${root} ${PAGE.sidebarSlot}{visibility:hidden!important;pointer-events:none!important}`,
         `${root} [data-shell-leading],${root} [data-sidebar-toggle],${root} [data-sidebar-drawer-mask],${root} [${PAGE.hidden}]{display:none!important}`,
         `${root} [data-conversation-header-leading],${root} [data-slot="conversation.session.header.lineage"],${root} [data-slot="conversation.hero.workspace"]{display:none!important}`,
+        `.${PAGE.launcherSeat}{display:contents}`,
         `${root}:not([${PAGE.ready}]) ${PAGE.main}{visibility:hidden!important;pointer-events:none!important}`,
-        `.${PAGE.navigation}{position:fixed;bottom:8px;left:56px;z-index:100;display:flex;gap:8px;align-items:center;pointer-events:auto;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary);border-radius:8px;padding:4px}`,
+        `.${PAGE.navigation}{position:fixed;bottom:8px;left:8px;z-index:100;display:flex;gap:8px;align-items:center;pointer-events:auto;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);border-radius:8px;padding:4px}`,
         `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]{position:relative;margin:6px 12% 6px 0;padding:18px 0 0 36px}`,
         `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::after{content:"Fishball";position:absolute;top:0;left:36px;font-size:12px;color:var(--dsw-alias-label-tertiary)}`,
         `${root} ${PAGE.main} [data-chat-flow-kind="user"] [class$="_bubble"]{background:var(--dsw-specific-bubble);border:1px solid var(--dsw-alias-border-l2)}`,
@@ -404,17 +410,22 @@ window.__ModuleLoader__.load({
       let lookup = null
       // The manager the one intended selection was made for; Retry clears it to select again.
       let selectedFor = null
-      // Two owners: a background refresh may clear a lookup failure, never a failed selection.
+      // Two owners: a successful lookup clears a lookup failure; a failed selection is cleared
+      // only by the next selection or by the main view showing the manager (markReady): a failed
+      // selection is about the main view, so once it shows the manager it no longer holds (B3).
+      // That can follow any refresh, because each one re-marks. DSH can open or restore that Session itself, so the one
+      // openSession can reject while the manager is on screen; that rejection is not shown.
       const lookupFailed = createCell(false)
       const selectFailed = createCell(false)
+      const shows = target => source.getSnapshot().key === target
       function select() {
         const target = manager.get()
         if (disposed || target === null || gate.get() !== GATE.protected) return
         selectedFor = target
         selectFailed.set(false)
         ctx.layout.selectPanel(null)
-        if (source.getSnapshot().key === target) return
-        Promise.resolve().then(() => ctx.uiWorkspace.openSession(target)).catch(() => { if (!disposed) selectFailed.set(true) })
+        if (shows(target)) return
+        Promise.resolve().then(() => ctx.uiWorkspace.openSession(target)).catch(() => { if (!disposed && !shows(manager.get())) selectFailed.set(true) })
       }
       /** The first selection of a newly known manager; select() itself waits for protection. */
       function selectOnce() {
@@ -423,7 +434,9 @@ window.__ModuleLoader__.load({
       }
       function markReady() {
         const target = manager.get()
-        document.documentElement.toggleAttribute(PAGE.ready, target !== null && gate.get() === GATE.protected && source.getSnapshot().key === target)
+        const shown = target !== null && shows(target)
+        if (shown) selectFailed.set(false)
+        document.documentElement.toggleAttribute(PAGE.ready, shown && gate.get() === GATE.protected)
       }
       /** Every manager, gate or main-view change: the pending first selection, then the ready mark. */
       function mark() {
@@ -564,6 +577,12 @@ window.__ModuleLoader__.load({
         own(mountFrameGuard())
         // Stable across renders, so React subscribes once; LocaleRuntime methods need `this`.
         const locale = { subscribe: listener => ctx.locale.subscribe(listener), get: () => ctx.locale.getLocale() }
+        // The navigation's seat for the Settings launcher (B4). Two separately positioned fixed
+        // controls overlapped: the launcher, a body child, stacked above the overlay layer and
+        // covered the Fishball button. One flex row owns both, so their widths cannot collide.
+        const launcherSeat = createCell(null)
+        own(() => launcherSeat.clear())
+        const navButton = (props, label) => h(Button, { ...PAGE.button, type: 'button', ...props }, label)
         function Navigation() {
           const text = useText(locale)
           // Every hook runs on every render (no short-circuit between them).
@@ -573,22 +592,26 @@ window.__ModuleLoader__.load({
           const state = useCell(gate)
           const status = statusText(text, { unavailable: lookupFailed || selectFailed || assigned === null, gate: state })
           return h('nav', { className: PAGE.navigation, 'aria-label': PAGE.name },
-            h('button', { type: 'button', onClick: () => session.back() }, text.back),
-            h('button', { type: 'button', onClick: () => ctx.layout.selectPanel(PAGE.plugins) }, text.plugins),
+            // React renders nothing into this span itself; the launcher portals into it.
+            h('span', { className: PAGE.launcherSeat, ref: launcherSeat.set }),
+            navButton({ onClick: () => session.back() }, text.back),
+            navButton({ onClick: () => ctx.layout.selectPanel(PAGE.plugins) }, text.plugins),
             status === null ? null : h(React.Fragment, null,
               h('span', { role: 'status' }, status),
-              h('button', { type: 'button', onClick: () => session.retry() }, text.retry)))
+              navButton({ onClick: () => session.retry() }, text.retry)))
         }
         // Consume the native launcher owner callback instead of inventing a global settings API.
-        // A portal keeps the trigger usable outside the rc.1 drawer's inert subtree and Windows
-        // collapsed footer; the native settings modal/state and all settings contributions stay owned.
+        // A portal into the navigation's seat keeps the trigger usable outside the rc.1 drawer's
+        // inert subtree and Windows collapsed footer (the overlay layer is outside both); the
+        // native settings modal/state and all settings contributions stay owned.
         // `view=settings` is not handled here: it opens Fishball's slim settings panel, which
         // fishball-settings (SET) owns. That panel's "DSH Settings" link presses this button, so the
         // launcher must stay on the page.
         function SettingsLauncher({ openSettings, settingsOpen }) {
           const text = useText(locale)
-          return createPortal(h('button', { className: PAGE.settingsButton, type: 'button',
-            'aria-haspopup': 'dialog', 'aria-expanded': settingsOpen, onClick: openSettings }, text.settings), document.body)
+          const seat = useCell(launcherSeat)
+          return seat === null ? null : createPortal(navButton({ className: PAGE.settingsButton,
+            'aria-haspopup': 'dialog', 'aria-expanded': settingsOpen, onClick: openSettings }, text.settings), seat)
         }
         // Every page occupant (Settings launcher, shadowed slots) takes its single slot's seat
         // at PAGE.priority, through inject so the registration follows the slot's own lifetime.
