@@ -2446,7 +2446,7 @@ Persona baseline loader (final release run): `support/persona-bold.mjs` `loadBas
 
 ### [v2-page-cases/child-boot.test.mjs](v2-page-cases/child-boot.test.mjs): the Fishball child page in the real SDK web boot (CHILD-BOOT-nn, both SDKs)
 
-Regression for "Failed to load plugins / fishball-page: failed" with `in inactive context` errors. A real SDK `web` profile (profile-boot `runProfile`, [child-boot-host.mjs](v2-page-cases/child-boot-host.mjs)) gets the child-web rows appended by an overlay, loaded from a staged copy of `<FBTEST_PLUGIN_DIR or repo>/packages/instance` (with `client.instance.js` copied as the install does); headless Chromium opens DSH's own URL and records console calls and exceptions. No fake SDK context. Observation window after the boot settles: `BUDGET.observeAfterBootMs` (5 s, harness budget). fishball-settings needs `nativeRuntime`; the fixture row `child-native-runtime-row.mjs` provides an empty one, so its relay stays unattached (not observed here).
+Regression for "Failed to load plugins / fishball-page: failed" with `in inactive context` errors. A real SDK `web` profile (profile-boot `runProfile`, [child-boot-host.mjs](v2-page-cases/child-boot-host.mjs)) gets the child-web rows appended by an overlay, loaded from a staged copy of `<FBTEST_PLUGIN_DIR or repo>/packages/instance` (with `client.instance.js` copied as the install does); headless Chromium opens DSH's own URL and records console calls and exceptions. No fake SDK context. Observation window after the boot settles: `BUDGET.observeAfterBootMs` (5 s, harness budget). fishball-settings needs `nativeRuntime`; the fixture row `child-native-runtime-row.mjs` provides an empty one, so its relay stays unattached (not observed here). Its routes are status, retry and restart only: model sync is main-only (2026-11-11), covered by `set-main-only-sync.test.mjs`.
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -2485,3 +2485,11 @@ The user's decision of 2026-11-11: "不允许子实例发起模型同步，只�
 | MOS-EP-10 | EP (panel order) | status, Restart, note, Read Only, Settings, Plugins; Retry while failed |
 | MOS-EP-11 | EP (shared export) | `exports.shared` keys are exactly locale, dictionaries, mountStyles, mountStyle, useInstanceStatus, InstanceStatus |
 | MOS-SYS-01 | System (real main + child) | the child's POST `models/check` and `models/add` → 404, its status → 200; the main's POST `models/check` → ok with `{checkId, missing, notOffered, present}` |
+
+#### SET cases changed by main-only sync (2026-11-11; changed on purpose; why)
+
+The user's decision "不允许子实例发起模型同步，只能主实例主动同步给子实例" supersedes SET 8e9a658's child sync. Main-card-only sync placement is the oracle again ([v2-origin-lite-set-cases §3](../docs/test-design/v2-origin-lite-set-cases.md), [v2-page-cases §1](../docs/test-design/v2-page-cases.md)).
+- [set.test.mjs](v2-page-cases/set.test.mjs): `checkPost`/`addPost` now post the main DSH's owner routes (`registerProviderSyncRoutes` over the real bridge), not child routes; the relay server gets status/retry/restart only. SET-UC-03, EP-03/04/06/10/13, BVA-01, DT-02..06, ST-01..04 keep their oracles on the main card. SET-DT-01 now loses the child's provider-sync wire and checks the child has no sync route. SET-ST-03 loses that wire after the child write committed (was: the relay wire). SET-EP-10/13 and ST-03 relay parts assert that `check`/`add` are refused `invalid-request` and use retry/restart for the time bound and disconnect. New SET-EP-14: every child-initiated attempt is refused and the main sync never runs.
+- [slim-022-install.test.mjs](slim-022-install.test.mjs) INST-06: named as the main card's route (its path is the main origin's; unchanged behaviour).
+- [child-native-runtime-row.mjs](support/fixtures/child-native-runtime-row.mjs): comment names the three child routes.
+- [body-soul-i6-sync.test.mjs](body-soul-i6-sync.test.mjs), [child-boot.test.mjs](v2-page-cases/child-boot.test.mjs), [lite.test.mjs](v2-page-cases/lite.test.mjs): read, unchanged. I6 covers the main owner routes, which stay; CHILD-BOOT and LITE assert no sync behaviour.
