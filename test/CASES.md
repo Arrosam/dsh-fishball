@@ -2458,3 +2458,44 @@ Regression for "Failed to load plugins / fishball-page: failed" with `in inactiv
 | CHILD-BOOT-06 | ST setup → failed → disposed | R4 | fixture `fbtest-slot-occupant` takes the page's `shell.overlay` entry id first (native list-slot refusal); precondition: boot names `fishball-page: failed`; then no inactive-context error, no `data-fishball-page`, no page nav |
 
 Fail before the fix (baseline 7d6c9a8, `FBTEST_PLUGIN_DIR` = its `git archive`): 02–06 on both SDKs (06: 6 `locale` inactive-context exceptions after the failed setup). 01 passes on both sides.
+
+### Page boot unwinding and settings shared-card mounts (PB-nn, PBS-nn; review-opus/v2-page-boot F1/F2; written from the requirements alone, no product code read)
+
+Requirements R-A (fishball-page `apply`: one effect mounts stylesheet → `<html data-fishball-page>` → keydown capture + `shortcuts.catalog` → session part (`uiSession.adapter.current`, `sessions.list`, window `focus`, `api/fishball/session`) → body `MutationObserver` + `locale.subscribe` → `navigation` 'navigate' + document 'click' capture → `slots.inject('settings.launcher')`, `slots.inject('conversation.hero.workspace')`, `slots.register({name:'shell.overlay', id:'fishball-page.navigation'})`), R-A1–R-A3, and R-B (fishball-settings: `require.async('./client.instance.js')`, then `locale.register(shared.locale, shared.dictionaries)`, `shared.mountStyles()`, `shared.mountStyle('fishball-settings-style', css)`), R-B1, R-B2.
+
+Harness: [page-open-session-page.mjs](../packages/instance/test/instance-ext/page-open-session-page.mjs) `loadPage` gained optional `hooks` (`beforeScript`, `beforeApply`; no existing case changed). PB wraps its fakes with recorders: each named part is a key with mount/dispose events on one clock; faults are thrown from inside a fake (a ctx service, a browser API, or an `unsubscribe`). Unsubscribes and slot disposers are idempotent, as DSH's are. "Rethrown asynchronously" is observed by replacing the sandbox `queueMicrotask` with a recorder that runs the task on the host microtask queue and keeps what it throws. PBS loads the settings client in node:vm with the `createReactShim` React of [rp-recommend.mjs](support/rp-recommend.mjs) and a controllable `require.async` thenable; "teardown" runs every effect's disposer in reverse, as the fiber does.
+
+#### [page-boot-unwind.test.mjs](../packages/instance/test/instance-ext/page-boot-unwind.test.mjs) (13 tests)
+
+| id | technique | requirement | expected result |
+|---|---|---|---|
+| PB-BVA-01 | BVA (first part fails: stylesheet append) | R-A1 | effect and `apply` throw the setup sentinel (same object); nothing live when it throws |
+| PB-BVA-02 | BVA (first ctx service: `shortcuts.catalog.subscribe` throws) | R-A1 | same; stylesheet and attribute removed before the throw (the keydown listener too, if it was added first: order inside one part is not specified) |
+| PB-EP-03 | EP (browser API mid-setup: `MutationObserver.observe` throws) | R-A1 | same; parts 1–4 were mounted (precondition) and are all disposed before the throw |
+| PB-EP-04 | EP (DOM listener: document 'click' `addEventListener` throws) | R-A1 | same; parts 1–5 (incl. navigate listener, locale, observer) disposed before the throw |
+| PB-BVA-05 | BVA (penultimate: `slots.inject('conversation.hero.workspace')` throws) | R-A1 | same; `settings.launcher` injection also disposed |
+| PB-BVA-06 | BVA (last: `slots.register` shell.overlay throws, as the SDK does for a duplicate list id) | R-A1 | same; all eight earlier parts disposed before the throw |
+| PB-DT-07 | DT (setup fails at shell.overlay × early part's disposer throws: catalog unsubscribe) | R-A2 | effect throws the setup error, not the disposer's; every other part disposed at the throw; no synchronous rethrow; after settling, exactly that disposer error surfaced once from a queued microtask |
+| PB-DT-08 | DT (setup fails at shell.overlay × later part's disposer throws: locale unsubscribe) | R-A2 | as PB-DT-07 |
+| PB-ST-09 | ST mounted → disposed; BVA 0 throwing disposers | R-A, R-A3 | parts mount in R-A order; teardown disposes all in reverse mount order; disposer returns normally; nothing surfaced |
+| PB-DT-10 | DT/BVA 1 throwing (catalog) | R-A3 | every other part disposed, reverse order; disposer throws the catalog error; no further microtask error |
+| PB-DT-11 | DT/BVA 2 throwing (catalog, sessions.list) | R-A3 | disposer throws sessions.list's error (first met in reverse order); catalog's surfaces once from a queued microtask |
+| PB-DT-12 | DT/BVA 3 throwing (catalog, sessions.list, locale) | R-A3 | disposer throws locale's error; the other two surface once each from queued microtasks |
+| PB-EP-13 | EP (no `window.navigation`) | R-A ("when window.navigation exists") | setup succeeds with no navigate listener; teardown removes everything, no throw |
+
+#### [settings-shared-mount.test.mjs](../packages/instance/test/instance-ext/settings-shared-mount.test.mjs) (8 tests)
+
+| id | technique | requirement | expected result |
+|---|---|---|---|
+| PBS-BVA-01 | BVA (no throw) | R-B, R-B1 | nothing mounted while loading; on ready: locale.register → mountStyles → mountStyle in order; row teardown removes all three |
+| PBS-BVA-02 | BVA (1st mount throws: locale.register) | R-B1 | later mounts not attempted; nothing left after teardown |
+| PBS-BVA-03 | BVA (2nd mount throws: mountStyles) | R-B1 | the locale registration is removed by row teardown |
+| PBS-BVA-04 | BVA (3rd mount throws: mountStyle) | R-B1 | the locale registration and mountStyles' result are removed by row teardown |
+| PBS-ST-05 | ST ready → ready again (control) | R-B2 | a second ready notification mounts nothing twice |
+| PBS-ST-06 | ST loading → disposed → ready | R-B (disposer unsubscribes from the loader) | nothing mounted |
+| PBS-ST-07 | ST ready → disposed → ready | R-B | nothing mounted again after teardown |
+| PBS-EP-08 | EP (chunk load fails) | R-B | nothing mounted; teardown clean |
+
+Readings: R-A2/R-A3 promise only that every OTHER part is disposed when one part's disposer throws, so the throwing part itself (and its sibling keys, such as the session part's window `focus` listener next to a throwing `sessions.list` unsubscribe) is exempt from the "nothing live" check. Whether the listener's throw in R-B1 escapes the loader notification is not specified (review F2 "not fixed"), so PBS swallows it and does not assert it. The second ready call in PBS-ST-05/07 stands for "a later loader notification"; a real promise settles once.
+
+Fail before the fix (baseline fd4e99d, the new files run over its `git archive`): PB-DT-07/08 (the effect throws the disposer's error instead of the setup's), PB-DT-10/11/12 (the parts mounted before the throwing one stay live after teardown: the stylesheet and `<html data-fishball-page>`), PBS-BVA-03/04 (earlier mounts stay after teardown). All 21 pass on 8e7f842 (the review fix).
