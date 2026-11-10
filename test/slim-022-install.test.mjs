@@ -40,7 +40,8 @@ const ROUTE = Object.freeze({
   state: '/api/fishball/state',
   native: '/api/fishball/native/status',
   // I6 (6a19e44): the one-step sync route became Check for new models / Add selected on the
-  // instance's own prefix; INST-06 drives the check, which writes nothing.
+  // instance's own prefix; INST-06 drives the check, which writes nothing. It is the MAIN DSH's
+  // owner route (the main card); the child has no such route (main-only sync, 2026-11-11).
   modelsCheck: '/api/fishball-instance/models/check',
   // C2 (474b876): the sidebar-entry switch is retired with the brand setting (D22); its route answers 404.
   sidebar: '/api/fishball/sidebar-entry',
@@ -157,7 +158,7 @@ test('INST-05 the child serves /api/approvals (approval bridge mounted)', { skip
   assert.notEqual(res.status, 404)
 })
 
-test('INST-06 Check for new models from the page (same-origin Origin header) is not refused (I6)', { skip }, async () => {
+test('INST-06 Check for new models from the main card (same-origin Origin header) is not refused (I6)', { skip }, async () => {
   // A browser fetch POST always carries Origin; the page's own call must pass the fence.
   const res = await req(ROUTE.modelsCheck, { method: 'POST', headers: sameOrigin })
   const body = await res.json()

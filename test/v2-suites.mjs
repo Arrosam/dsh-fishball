@@ -56,6 +56,8 @@ export const V2_SUITES = Object.freeze({
     'test/v2-page-cases/pg-origin.test.mjs',
     'test/v2-page-cases/ready.test.mjs',
     'test/v2-page-cases/set.test.mjs',
+    // SET main-only model sync (user decision 2026-11-11): child-initiated sync is refused, the main card works.
+    'test/v2-page-cases/set-main-only-sync.test.mjs',
     // RP: the child-only Fishball Recommended tab (T-RP cases 6cbe9e3), one registration per SDK.
     'test/v2-recommendation/sdk-0.2.1-rc.5.test.mjs',
     'test/v2-recommendation/sdk-0.2.2-rc.1.test.mjs',

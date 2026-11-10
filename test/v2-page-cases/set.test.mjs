@@ -9,14 +9,15 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { BODY_SOUL, loadInstance } from '../support/body-soul-env.mjs';
 import { CASE as ENGINE_CASE, clone, inventory, provider } from '../support/provider-sync-engine.mjs';
-import { FIXTURE as SDK_FIXTURE } from '../support/provider-sync-official.mjs';
-import { PREVIEW_LIFE_MS, SYNC_PLANTED, syncHarness } from '../support/body-soul-sync.mjs';
+import { PREVIEW_LIFE_MS, SYNC_PLANTED, post, routeContext, syncHarness } from '../support/body-soul-sync.mjs';
+import { ACTIVE_SDK, parsedFrames, relayLink } from '../support/set-relay.mjs';
 
-// Native settings are the editor. SET owns only lifecycle/sync/notice/links;
-// component observations need real fixtures, never a fake passing policy model.
+// Native settings are the editor. SET owns only lifecycle/notice/links in the child; model sync is
+// main-only (user decision 2026-11-11): it runs from the main fishball-instance card's owner routes.
+// Component observations need real fixtures, never a fake passing policy model.
 const CONTEXT = Object.freeze({
   task: 'SET',
-  source: 'docs/planning/v2-final-scope.md §4 SET; docs/plugins/instance-extension-points.md §11.8; docs/slim-native-design.md §10 retained sync semantics; docs/test-design/v2-origin-lite-set-cases.md §3',
+  source: 'docs/planning/v2-final-scope.md §4 SET; docs/planning/v2-set.md; docs/plugins/instance-extension-points.md §11.8; docs/slim-native-design.md §10 (main-only sync, user decision 2026-11-11); docs/test-design/v2-origin-lite-set-cases.md §3',
   missing: 'SET: no documented runnable native slim-panel/lifecycle/sync observation harness with synthetic credentials; retain task-named TODO.',
 });
 const FIXTURE = Object.freeze({
@@ -31,8 +32,8 @@ export const CASES = Object.freeze([
   {
     id: 'SET-UC-01', title: 'Use slim settings without duplicating native editors', technique: 'Use Case',
     preconditions: ['Actor: owner; protected child manager and native panel composition.'],
-    steps: ['Main: open SET from conversation/connector; see status/Restart/model-provider check-and-select sync/one-line Read Only/native Settings and Plugins links; explicitly return.', 'Alternative: native Settings edits model/effort/plugins; composer uses native picker.', 'Exception: pending/unavailable/error is visible with meaningful explicit Retry.'],
-    expected: ['No duplicated plugin/model/config/recommendation/Watchdog editor or D2 obsolete controls.', FIXTURE.readonly, FIXTURE.unchanged, 'Allowed native destinations and explicit Fishball return work.'],
+    steps: ['Main: open SET from conversation/connector; see status/Restart/the read-only model sync note pointing to the main card/one-line Read Only/native Settings and Plugins links; explicitly return.', 'Alternative: native Settings edits model/effort/plugins; composer uses native picker.', 'Exception: pending/unavailable/error is visible with meaningful explicit Retry.'],
+    expected: ['No model sync control, no duplicated plugin/model/config/recommendation/Watchdog editor or D2 obsolete controls.', FIXTURE.readonly, FIXTURE.unchanged, 'Allowed native destinations and explicit Fishball return work.'],
   },
   {
     id: 'SET-UC-02', title: 'Restart only the exact owned child through existing lifecycle', technique: 'Use Case',
@@ -42,7 +43,7 @@ export const CASES = Object.freeze([
   },
   {
     id: 'SET-UC-03', title: 'Preview and add only selected missing API-key providers', technique: 'Use Case',
-    preconditions: ['Actor: owner; ready child; disposable synthetic inventory and credentials only.', FIXTURE.providerA, FIXTURE.providerB, 'Target has separate existing provider/key.'],
+    preconditions: ['Actor: owner on the main DSH fishball-instance card (the only sync entry point); ready child; disposable synthetic inventory and credentials only.', FIXTURE.providerA, FIXTURE.providerB, 'Target has separate existing provider/key.'],
     steps: ['Main: Check once; inspect missing provider metadata initially selected; deselect b; Add selected a; inspect per-entry result and fresh check.', 'Alternative: cancel/zero selection writes nothing; present/conflicting target retained.', 'Exception: unsupported auth, stale preview/source/child, concurrent Add, write failure or answer lost.'],
     expected: ['Only chosen provider/profile/key transferred create-only; unit of selection provider, not model.', 'Partial/unknown result truthful; no rollback/auto retry/default-model mutation; native child catalog reflects adds.', 'Browser receives no credentials.', FIXTURE.unchanged],
   },
@@ -119,8 +120,14 @@ export const CASES = Object.freeze([
   {
     id: 'SET-EP-13', title: 'Reject unauthenticated or unowned restart and sync', technique: 'EP',
     preconditions: ['Independent absent owner authentication and unrelated runtime ownership fixtures; otherwise valid operation.'],
-    steps: ['Invoke restart and sync protected actions separately.'],
+    steps: ['Invoke restart (child route) and sync (main owner routes) protected actions separately.'],
     expected: ['No lifecycle mutation, key transfer or public capability leak; clear refusal rather than apparent success.'],
+  },
+  {
+    id: 'SET-EP-14', title: 'Refuse every child-initiated sync attempt', technique: 'EP',
+    preconditions: ['Ready child; real main sync behind the relay; user decision 2026-11-11: only the main DSH starts a sync.'],
+    steps: ['From the child: look up models/check and models/add routes; send relay frames op check/add; call the relay client with check/add.'],
+    expected: ['No child models/* route; frames answered invalid-request; client refuses locally and sends nothing; the main sync never runs (no inventory read, key read or write).'],
   },
   {
     id: 'SET-BVA-01', title: 'Select zero one or both provider entries without partial-model writes', technique: 'BVA',
@@ -301,8 +308,10 @@ function boundaryAvailability(sdk) {
  *   in-memory transport pair (test-owned, below);
  * - child-web/fishball-settings/index.js apply(ctx) with a fake ctx whose registry collects the
  *   child Fetch routes, driven with real Request objects;
- * - the main end's check/add handlers are the real provider-sync bridge, coordinator, child target
- *   and engine of test/support/body-soul-sync.mjs (official disposable credential stores);
+ * - model sync is main-only (user decision 2026-11-11): check/add go to the main card's owner routes
+ *   (registerProviderSyncRoutes) over the real provider-sync bridge, coordinator, child target and
+ *   engine of test/support/body-soul-sync.mjs (official disposable credential stores); the child row
+ *   has no sync route and the relay no sync op (SET-EP-14; full set in set-main-only-sync.test.mjs);
  * - src/native-runtime/overlay.js launchOverlay and installation.js copyChildCode.
  * Browser rendering, native Settings/Plugins navigation and the real child lifecycle are not
  * observable here; each case says which remainder stays post-merge e2e.
@@ -329,7 +338,7 @@ const SET = Object.freeze({
   instanceManifest: path.join(BODY_SOUL.instance, 'package.json'),
   relay: Object.freeze({
     channel: 'instance-settings', version: 1,
-    ops: Object.freeze(['status', 'retry', 'restart', 'check', 'add']),
+    ops: Object.freeze(['status', 'retry', 'restart']),
     unavailable: 'settings-relay-unavailable', disconnected: 'settings-relay-disconnected',
     timeout: 'settings-relay-timeout', closed: 'settings-relay-closed', failed: 'settings-relay-failed',
     invalid: 'invalid-request',
@@ -375,64 +384,34 @@ const R = SET.relay;
 const S = SET.sync;
 const ID = SET.ids;
 
-/** The SDK version this process runs (FBTEST_DSH_RUNTIME); executable cases run only for it. */
-const ACTIVE_SDK = (() => {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(SDK_FIXTURE.runtime, '@deepseek-ai', 'dsh', 'package.json'), 'utf8')).version;
-  } catch {
-    return undefined;
-  }
-})();
-
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const sortedIds = (list) => list.map((item) => item.id).sort();
 const deferred = () => { let resolve; const promise = new Promise((r) => { resolve = r; }); return { promise, resolve }; };
 
-/** One in-memory relay transport pair; it records every frame and can drop the main's replies. */
-function relayLink() {
-  const handlers = { main: { message: new Set(), close: new Set() }, child: { message: new Set(), close: new Set() } };
-  const frames = { toMain: [], toChild: [] };
-  let open = true;
-  let dropReplies = false;
-  const end = (self, other, log) => ({
-    send(text) {
-      if (!open) throw new Error('relay fixture link closed');
-      log.push(text);
-      if (self === 'main' && dropReplies) return;
-      queueMicrotask(() => { if (open) for (const fn of [...handlers[other].message]) fn(text); });
-    },
-    onMessage(fn) { handlers[self].message.add(fn); return () => handlers[self].message.delete(fn); },
-    onClose(fn) { handlers[self].close.add(fn); return () => handlers[self].close.delete(fn); },
-  });
-  return {
-    main: end('main', 'child', frames.toChild),
-    child: end('child', 'main', frames.toMain),
-    frames,
-    dropReplies() { dropReplies = true; },
-    lose() {
-      if (!open) return;
-      open = false;
-      for (const side of ['main', 'child']) for (const fn of [...handlers[side].close]) fn();
-    },
-  };
-}
-
-const parsedFrames = (list) => list.map((text) => JSON.parse(text));
 
 /**
  * The child row mounted with a fake ctx, its relay client reaching a real relay server whose
- * handlers count calls. `harness` (syncHarness) backs check/add with the real sync chain.
+ * lifecycle handlers count calls. Model sync is main-only (user decision 2026-11-11): checkPost /
+ * addPost go to the MAIN DSH's owner routes (registerProviderSyncRoutes), whose service is
+ * `harness.sync` (syncHarness: the real bridge, coordinator and child engine) unless a case
+ * overrides check/add. The child row itself registers no sync route.
  */
 async function settingsFixture(t, { harness, status, retry, restart, check, add } = {}) {
   const { createSettingsRelayServer } = await loadInstance('src/slim/settings-relay.js');
+  const { registerProviderSyncRoutes } = await loadInstance('src/slim/host/provider-sync-routes.js');
   const row = await loadInstance(SET.rowModule.join('/'));
   const calls = { status: 0, retry: 0, restart: 0, check: 0, add: [] };
   const server = createSettingsRelayServer({
     status: async () => { calls.status++; return status ? status(calls.status) : SET.status.ready; },
     retry: async () => { calls.retry++; return retry ? retry(calls.retry) : SET.status.starting; },
     restart: async () => { calls.restart++; return restart ? restart(calls.restart) : SET.status.starting; },
-    check: async () => { calls.check++; return check ? check(calls.check) : harness.sync.check(); },
-    add: async (payload) => { calls.add.push(clone(payload)); return add ? add(payload) : harness.sync.add(payload); },
+  });
+  const main = routeContext();
+  registerProviderSyncRoutes(main.ctx, {
+    providerSync: {
+      check: async () => { calls.check++; return check ? check(calls.check) : harness.sync.check(); },
+      add: async (payload) => { calls.add.push(clone(payload)); return add ? add(payload) : harness.sync.add(payload); },
+    },
   });
   const routes = new Map();
   const listeners = new Set();
@@ -456,6 +435,13 @@ async function settingsFixture(t, { harness, status, retry, restart, check, add 
     current = link;
     return link;
   }
+  async function answer(response) {
+    const text = await response.text();
+    texts.push(text);
+    let json;
+    try { json = JSON.parse(text); } catch { json = undefined; }
+    return { status: response.status, json, text };
+  }
   async function call(method, routePath, { body, site = SET.site.same } = {}) {
     const route = routes.get(routePath);
     assert.ok(route, 'child route registered: ' + routePath);
@@ -463,12 +449,13 @@ async function settingsFixture(t, { harness, status, retry, restart, check, add 
     if (site) headers[SET.site.header] = site;
     const init = { method, headers };
     if (body !== undefined) init.body = typeof body === 'string' ? body : JSON.stringify(body);
-    const response = await route.fetch(new Request(SET.base + routePath, init));
-    const text = await response.text();
-    texts.push(text);
-    let json;
-    try { json = JSON.parse(text); } catch { json = undefined; }
-    return { status: response.status, json, text };
+    return answer(await route.fetch(new Request(SET.base + routePath, init)));
+  }
+  async function mainPost(routePath, body, site = SET.site.same) {
+    const encoded = body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body);
+    const result = await post(main.routes, routePath, encoded, { [SET.site.header]: site, 'content-type': 'application/json' });
+    texts.push(result.text);
+    return result;
   }
   t.after(() => {
     server.close();
@@ -480,8 +467,9 @@ async function settingsFixture(t, { harness, status, retry, restart, check, add 
     statusRead: () => call(SET.method.get, SET.route.status),
     retryPost: () => call(SET.method.post, SET.route.retry),
     restartPost: () => call(SET.method.post, SET.route.restart),
-    checkPost: (site) => call(SET.method.post, SET.route.check, { site }),
-    addPost: (body, site) => call(SET.method.post, SET.route.add, { body, site }),
+    /** The main card's owner routes (the only sync entry point). */
+    checkPost: (site) => mainPost(SET.route.check, undefined, site),
+    addPost: (body, site) => mainPost(SET.route.add, body, site),
   };
 }
 
@@ -654,7 +642,7 @@ const EXECUTABLE = {
     assert.equal(f.calls.retry, 1);
     // A throwing main handler answers the relay's typed failure (v2-set.md: settings-relay-failed).
     const { createSettingsRelayServer, createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
-    const server = createSettingsRelayServer({ status: () => { throw new Error('boom'); }, retry: () => SET.status.ready, restart: () => SET.status.ready, check: () => ({}), add: () => ({}) });
+    const server = createSettingsRelayServer({ status: () => { throw new Error('boom'); }, retry: () => SET.status.ready, restart: () => SET.status.ready });
     const client = createSettingsRelayClient({ timeoutMs: 1000 });
     const link = relayLink();
     server.attach(link.main);
@@ -733,20 +721,21 @@ const EXECUTABLE = {
     h.assertClean(logs);
     for (const id of [ID.a, ID.b]) assert.equal(logs.some((line) => line.includes(id)), false, 'the inventory is not logged');
     // Relay replies carry only what the handler returned: the raw reply frames have no extra keys.
+    // (The sync answers above came from the main owner routes, never over the relay.)
     for (const frame of parsedFrames(f.link().frames.toChild)) {
       assert.equal(frame.v, R.version);
       assert.ok(Object.keys(frame).every((key) => R.replyKeys.includes(key)), 'reply frame keys');
     }
     const { createSettingsRelayServer, createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
-    const handlerResult = { checkId: 'fixture-check', missing: [], notOffered: [], present: 0 };
-    const server = createSettingsRelayServer({ status: () => SET.status.ready, retry: () => SET.status.ready, restart: () => SET.status.ready, check: () => ({ ok: true, result: handlerResult }), add: () => ({ ok: true, result: { items: [] } }) });
+    const server = createSettingsRelayServer({ status: () => SET.status.ready, retry: () => SET.status.ready, restart: () => SET.status.ready });
     const client = createSettingsRelayClient({ timeoutMs: 1000 });
     const link = relayLink();
     server.attach(link.main);
     client.attach(link.child);
     t.after(() => { client.close(); server.close(); });
     assert.deepEqual(await client.request('status', {}), { ok: true, result: SET.status.ready }, 'status reply is the handler result as is');
-    assert.deepEqual(await client.request('check', {}), { ok: true, result: handlerResult }, 'check reply is the provider-sync outcome as is');
+    // Main-only sync (2026-11-11): the relay carries no sync op; a check request is refused locally.
+    assert.deepEqual(await client.request('check', {}), { ok: false, error: { code: R.invalid } }, 'the relay has no check op');
     for (const frame of parsedFrames(link.frames.toMain)) {
       assert.deepEqual(Object.keys(frame).sort(), [...R.requestKeys], 'request frame is {v, id, op, payload}');
       assert.ok(R.ops.includes(frame.op));
@@ -793,13 +782,14 @@ const EXECUTABLE = {
     const { createSettingsRelayServer, createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
     const handled = [];
     const handler = (op) => () => { handled.push(op); return op === 'check' || op === 'add' ? { ok: true, result: {} } : SET.status.ready; };
-    const server = createSettingsRelayServer(Object.fromEntries(R.ops.map((op) => [op, handler(op)])));
+    // check/add handlers are passed on purpose: the server never calls them (main-only sync).
+    const server = createSettingsRelayServer(Object.fromEntries([...R.ops, 'check', 'add'].map((op) => [op, handler(op)])));
     const client = createSettingsRelayClient({ timeoutMs: 1000 });
     const link = relayLink();
     server.attach(link.main);
     client.attach(link.child);
     t.after(() => { client.close(); server.close(); });
-    for (const [op, payload] of [['bogus', {}], ['add', { checkId: 'c' }], ['add', { checkId: 'c', ids: 'a' }], ['add', { checkId: 'c', ids: [], extra: 1 }], ['status', { extra: 1 }]]) {
+    for (const [op, payload] of [['bogus', {}], ['check', {}], ['add', { checkId: 'c', ids: ['a'] }], ['add', { checkId: 'c', ids: [], extra: 1 }], ['status', { extra: 1 }]]) {
       assert.deepEqual(await client.request(op, payload), { ok: false, error: { code: R.invalid } }, 'local refusal of ' + op);
     }
     assert.deepEqual(link.frames.toMain, [], 'locally refused requests send nothing');
@@ -808,11 +798,38 @@ const EXECUTABLE = {
     const replies = [];
     raw.child.onMessage((text) => replies.push(JSON.parse(text)));
     raw.child.send(JSON.stringify({ v: R.version, id: 'fixture-1', op: 'bogus', payload: {} }));
-    raw.child.send(JSON.stringify({ v: R.version, id: 'fixture-2', op: 'add', payload: { checkId: 'c' } }));
+    raw.child.send(JSON.stringify({ v: R.version, id: 'fixture-2', op: 'add', payload: { checkId: 'c', ids: ['a'] } }));
+    raw.child.send(JSON.stringify({ v: R.version, id: 'fixture-3', op: 'check', payload: {} }));
     raw.child.send(JSON.stringify({ v: R.version, op: 'status', payload: { extra: 1 } }));
     await delay(SET.settleMs);
-    assert.deepEqual(replies.map((reply) => [reply.id, reply.ok, reply.error?.code]).sort(), [['fixture-1', false, R.invalid], ['fixture-2', false, R.invalid]], 'invalid frames with an id are answered invalid-request; without an id dropped');
+    assert.deepEqual(replies.map((reply) => [reply.id, reply.ok, reply.error?.code]).sort(), [['fixture-1', false, R.invalid], ['fixture-2', false, R.invalid], ['fixture-3', false, R.invalid]], 'invalid frames (including check/add) with an id are answered invalid-request; without an id dropped');
     assert.deepEqual(handled, [], 'no handler runs for an invalid frame');
+  },
+
+  // Child-initiated sync is refused everywhere; the main sync never runs (user decision 2026-11-11).
+  async 'SET-EP-14'(t) {
+    const { h, f } = await syncedFixture(t, standardSync(t));
+    for (const gone of [SET.route.check, SET.route.add]) assert.equal(f.routes.has(gone), false, 'the child registers no ' + gone);
+    const raw = relayLink();
+    const { createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
+    const replies = [];
+    // Raw frames on the same relay link the child row uses, as code in the child could send them.
+    const link = f.link();
+    link.child.onMessage((text) => replies.push(JSON.parse(text)));
+    link.child.send(JSON.stringify({ v: R.version, id: 'ep14-check', op: 'check', payload: {} }));
+    link.child.send(JSON.stringify({ v: R.version, id: 'ep14-add', op: 'add', payload: { checkId: 'fixture-check', ids: [ID.a] } }));
+    await delay(SET.settleMs);
+    assert.deepEqual(replies.filter((reply) => reply.id?.startsWith('ep14-')).map((reply) => [reply.id, reply.ok, reply.error?.code]).sort(), [['ep14-add', false, R.invalid], ['ep14-check', false, R.invalid]]);
+    const client = createSettingsRelayClient({ timeoutMs: 1000 });
+    client.attach(raw.child);
+    t.after(() => client.close());
+    assert.deepEqual(await client.request('check', {}), { ok: false, error: { code: R.invalid } });
+    assert.deepEqual(await client.request('add', { checkId: 'fixture-check', ids: [ID.a] }), { ok: false, error: { code: R.invalid } });
+    assert.deepEqual(raw.frames.toMain, [], 'the client sends nothing for check/add');
+    assert.equal(f.calls.check, 0);
+    assert.deepEqual(f.calls.add, []);
+    assert.equal(h.child.calls.inventory, 0, 'no check reached the child');
+    assertNoTransfer(h);
   },
 
   async 'SET-BVA-01'(t) {
@@ -830,17 +847,18 @@ const EXECUTABLE = {
   },
 
   async 'SET-DT-01'(t) {
+    // Main card, child unavailable: its provider-sync wire is gone (main-only sync, 2026-11-11).
     const h = await standardSync(t);
     const f = await settingsFixture(t, { harness: h });
-    assertRefused(await f.checkPost(), R.unavailable, 'check with no relay is refused');
-    assertRefused(await f.addPost({ checkId: 'fixture-check', ids: [ID.a] }), R.unavailable, 'add with no relay is refused');
     f.connect();
-    f.link().lose();
-    assertRefused(await f.checkPost(), [R.unavailable, R.disconnected], 'check after the wire went is refused');
-    assertRefused(await f.addPost({ checkId: 'fixture-check', ids: [ID.a] }), [R.unavailable, R.disconnected], 'add after the wire went is refused');
-    assert.equal(f.calls.check, 0);
-    assert.deepEqual(f.calls.add, []);
+    h.lose();
+    assertRefused(await f.checkPost(), undefined, 'a check while the child wire is gone is refused');
+    assertRefused(await f.addPost({ checkId: 'fixture-check', ids: [ID.a] }), undefined, 'an add while the child wire is gone is refused');
     assertNoTransfer(h);
+    // The child's own relay going down never turns into a sync: the child has no sync route at all.
+    f.link().lose();
+    assert.equal(f.routes.has(SET.route.check), false, 'no child models/check route');
+    assert.equal(f.routes.has(SET.route.add), false, 'no child models/add route');
     const { createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
     const client = createSettingsRelayClient({ timeoutMs: 1000 });
     client.close();
@@ -938,47 +956,49 @@ const EXECUTABLE = {
 
   async 'SET-ST-03'(t) {
     const h = await standardSync(t);
+    // Main card Add; the child's provider-sync wire is lost after its write committed, before the answer.
     const committed = deferred();
-    const f = await settingsFixture(t, { harness: h, add: async (payload) => { const outcome = await h.sync.add(payload); committed.resolve(); return outcome; } });
-    const link = f.connect();
+    const gate = deferred();
+    t.after(() => gate.resolve());
+    const f = await settingsFixture(t, { harness: h });
+    f.connect();
     const checked = await f.checkPost();
-    link.dropReplies();
+    h.child.state.importHook = async () => { committed.resolve(); await gate.promise; };
     const pending = f.addPost({ checkId: checked.json.result.checkId, ids: [ID.a] });
     await committed.promise;
-    await delay(SET.settleMs);
-    link.lose();
+    h.lose();
+    gate.resolve();
     const lost = await pending;
+    h.child.state.importHook = null;
     assert.deepEqual(itemsOf(lost).map((item) => [item.id, item.outcome, item.reason]), [[ID.a, S.failed, S.unknown]], 'every requested id failed/result-unknown, never "nothing added"');
     assert.deepEqual(h.writes(), { additions: [ID.a], imports: [ID.a] }, 'the committed write stays (no rollback)');
-    f.connect();
+    h.connect();
     const fresh = await f.checkPost();
     assert.deepEqual(sortedIds(fresh.json.result.missing), [ID.b], 'the fresh check omits the committed entry');
     assert.equal(f.calls.add.length, 1, 'no automatic or same-Add retry');
-    // Relay time bound and disconnect for a non-add request, never retried.
+    // Relay time bound and disconnect for lifecycle requests, never retried (the relay has no sync op).
     const { createSettingsRelayServer, createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
     const never = deferred();
     t.after(() => never.resolve(SET.status.ready));
-    const server = createSettingsRelayServer({ status: () => never.promise, retry: () => never.promise, restart: () => never.promise, check: () => never.promise, add: () => never.promise });
+    const server = createSettingsRelayServer({ status: () => never.promise, retry: () => never.promise, restart: () => never.promise });
     const client = createSettingsRelayClient({ timeoutMs: R.shortTimeoutMs });
     const slow = relayLink();
     server.attach(slow.main);
     client.attach(slow.child);
     t.after(() => { client.close(); server.close(); });
     assert.deepEqual(await client.request('status', {}), { ok: false, error: { code: R.timeout } }, 'a timed-out request answers settings-relay-timeout');
-    const timedAdd = await client.request('add', { checkId: 'fixture-check', ids: [ID.a, ID.b] });
-    assert.equal(JSON.stringify(timedAdd).includes('"' + S.added + '"'), false, 'a timed-out add is never reported added');
+    assert.deepEqual(await client.request('retry', {}), { ok: false, error: { code: R.timeout } }, 'a timed-out Retry answers settings-relay-timeout');
     await delay(R.shortTimeoutMs * 3);
     assert.equal(parsedFrames(slow.frames.toMain).length, 2, 'timed-out requests are never retried');
     const cut = relayLink();
     client.attach(cut.child);
     server.attach(cut.main);
     const status = client.request('status', {});
-    const add = client.request('add', { checkId: 'fixture-check', ids: [ID.a, ID.b] });
+    const restart = client.request('restart', {});
     await delay(1);
     cut.lose();
     assert.deepEqual(await status, { ok: false, error: { code: R.disconnected } }, 'a lost status answer is settings-relay-disconnected');
-    const lostAdd = await add;
-    assert.deepEqual(lostAdd.result?.items?.map((item) => [item.id, item.outcome, item.reason]).sort(), [[ID.a, S.failed, S.unknown], [ID.b, S.failed, S.unknown]], 'a lost add reports every requested id failed/result-unknown');
+    assert.deepEqual(await restart, { ok: false, error: { code: R.disconnected } }, 'a lost restart answer is settings-relay-disconnected');
     assert.equal(parsedFrames(cut.frames.toMain).length, 2, 'no retry after disconnect');
   },
 

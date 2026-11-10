@@ -6,14 +6,21 @@ Delivers the SET row of [final V2 scope §4](<v2-final-scope.md#L154>) and
 
 ## User decisions this follows
 
-- Keep our settings page, slimmed: status, Restart, model sync, the effective Read Only line,
-  and links that open the child DSH's own Settings and Plugins pages.
+- Keep our settings page, slimmed: status, Restart, the effective Read Only line, and links that
+  open the child DSH's own Settings and Plugins pages.
+- **Model sync is main-only (the user's decision of 2026-11-11, superseding SET 8e9a658's child
+  sync):** "不允许子实例发起模型同步，只能主实例主动同步给子实例，也就是放在connector那". The child
+  never starts a sync. Only the owner's click in the main DSH's "Model for Fishball" block on the
+  `fishball-instance` Plugins card does. The child's panel shows a read-only note pointing there.
+  - **"connector" means the main side, not the `fishball-connector` row** (the user confirmed this
+    on 2026-11-11). The sync control stays on the main DSH's `fishball-instance` card as it is. It
+    is not moved to the `fishball-connector` card.
 - Plugin toggles and plugin settings live on DSH's native Plugins page. "现在的UI不要改，原来怎么配置插件现在就还怎么配置":
   the main DSH's `fishball-instance` Plugins card is unchanged, and so are its "Model for Fishball" block and routes.
 - Bundled plugins: V2 ships none ("第二版的附带插件也全都放到第三版"), so no Remove button is
   hidden. The CSS rule of §11.10 moves to V3 with bundled placement.
-- Model sync: one button fetches once and is incremental. The panel lists only what the instance
-  lacks, and the user ticks which to add. Only API-key providers are offered, and keys stay in
+- Model sync (main card only): one button fetches once and is incremental. The block lists only
+  what the instance lacks, and the user ticks which to add. Only API-key providers are offered, and keys stay in
   `credential-local`. Existing and conflicting entries are skipped, and partial success is reported per entry.
 - A failed write or restart that the user can reach is shown honestly; none is reported as success.
 
@@ -33,15 +40,16 @@ Delivers the SET row of [final V2 scope §4](<v2-final-scope.md#L154>) and
      - A restart that ran but ended `failed` updates the status line. It also shows the alert with the failure code.
      - A lost connection keeps "Restarting…", because the child being restarted is this page's own
        server. The connector's frame reloads the page when the new child attaches.
-  2. **Model sync.** This is the main card's "Model for Fishball" block, the same component, words, attributes
-     (`data-fishball-model-sync|check|entry|add|result`) and route paths. It is enabled only while the status is `ready`.
+  2. **Model sync note.** One read-only line (`data-fishball-settings-model-sync-note`), with no button or link:
+     "New models from DSH are added in the main DSH: Plugins → Fishball instance → Model for Fishball."
+     The panel has no sync control and no `data-fishball-model-*` element, and it never posts `models/check` or `models/add`.
   3. **Read Only line.** One line (`data-fishball-settings-readonly`) explaining that Fishball runs read-only in its
      instance and that this is fixed.
   4. **Links.** Two buttons (`data-fishball-settings-open="settings"` and `="plugins"`):
      - Settings opens the child's native Settings dialog through the page's Settings launcher. Closing the dialog returns to this panel.
      - Plugins opens DSH's native Plugins page (`pluginNavigation.openList()`, or `layout.selectPanel('plugins')`).
        Fishball's own navigation button returns to the conversation.
-- **No other controls.** There is no model/effort picker, no plugin list or toggle, no plugin
+- **No other controls.** There is no model sync control, no model/effort picker, no plugin list or toggle, no plugin
   settings form, no recommendation list, no Watchdog control, no question-mode or answer-seconds
   control, and no permission picker.
 - **Entry points.**
@@ -63,39 +71,36 @@ These are the same paths and answer shapes as the main card's routes, so the sha
 | `GET api/fishball-instance/status` | `{state, code}`. `{state: 'unavailable', code: null}` while the relay to the main host is down |
 | `POST api/fishball-instance/retry` | `{state, code}` after the main host's Retry (a restart only from `failed`) |
 | `POST api/fishball-instance/restart` | `{ok:true,result:{state,code}}` or `{ok:false,error:{code}}` |
-| `POST api/fishball-instance/models/check` | as on the main card: `{ok,result:{checkId,missing,notOffered,present}}` or `{ok:false,error:{code}}` |
-| `POST api/fishball-instance/models/add` `{checkId, ids}` | as on the main card: `{ok,result:{items:[{id,outcome,reason?}]}}`. A lost answer reports every requested id `failed` `result-unknown` |
 
-Check and add keep the main routes' Origin/Sec-Fetch-Site and body rules (same handler module).
+There is no `models/check` or `models/add` route in the child. DSH's Fetch registry answers 404 for
+those paths. They exist only as the main DSH's owner routes behind the main card.
 
 ### Settings relay (child → main), `src/slim/settings-relay.js`
 
 - **Transport.** A payload channel `instance-settings` on the authenticated lifecycle wire, beside
   `control`, `admin` and `provider-sync`. Requests flow child → main; the main host answers.
-- **Request frame:** `{v: 1, id, op, payload}`, where `op` is one of `status`, `retry`, `restart`, `check`, `add`.
-  - `add`'s payload is exactly `{checkId: string, ids: string[]}`; every other op takes `{}`.
+- **Request frame:** `{v: 1, id, op, payload}`, where `op` is one of `status`, `retry`, `restart`; every op takes `{}`.
   - An invalid frame is answered `invalid-request` when it carries an id, and dropped otherwise.
+    That covers the former `check` and `add` ops: they are unknown ops, refused before any handler
+    runs. The main end has no sync handler at all.
 - **Reply frame:** `{v: 1, id, ok: true, result}` or `{v: 1, id, ok: false, error: {code}}`.
 - **Main host.**
   - `status`, `retry` and `restart` answer the instance's public `{state, code}`; restart is queued like every other start and stop.
-  - `check` and `add` are the same `providerSync.check()` / `add()` calls the main card uses.
   - No key, endpoint, path or token ever crosses toward the child page.
 - **Child client.** Each request has a time bound. A detached, closed or timed-out request answers
   a typed refusal and is never retried.
   - Bounds come from existing limits:
     - status gets the lifecycle request bound;
-    - Retry and Restart get the stop plus startup bounds;
-    - Check and Add get the admin and provider-sync interactive bound.
+    - Retry and Restart get the stop plus startup bounds.
   - A request that could not be sent answers `settings-relay-unavailable`. One whose wire closed answers `settings-relay-disconnected`.
 - **Main end.**
   - It replies only on the wire a request came in on. A request still running across a child restart is never answered to the new generation.
   - In-flight requests are bounded by the lifecycle wire's pending bound; beyond it, a request is refused `settings-relay-unavailable`.
-  - Add accepts exactly the main Add route's selection shape within its body bound.
 - **Exports:**
   - `SETTINGS_RELAY`: `channel`, `version`, `op`, `code`, `limits`.
   - `createSettingsRelayServer(handlers)` → `{attach(transport), close()}`.
-    - `handlers` is `{status, retry, restart, check, add}`. Each may be async and answers the op's result;
-      `check`/`add` answer the provider-sync outcome `{ok, result|error}` as is.
+    - `handlers` is `{status, retry, restart}`. Each may be async and answers the op's result.
+      Any other key is ignored and never called.
     - A throwing handler answers `{ok:false, error:{code:'settings-relay-failed'}}`.
   - `createSettingsRelayClient({timeoutMs?})` → `{attach(transport), close(), request(op, payload)}`.
     - `request` always resolves `{ok, result|error}`.
@@ -108,8 +113,8 @@ Check and add keep the main routes' Origin/Sec-Fetch-Site and body rules (same h
 - **Launch overlay** inserts the row `{id: 'fishball-settings', name: <snapshot>/child-web/fishball-settings/index.js}`
   after `fishball-page`. The snapshot copy places the instance's `client.js` at
   `child-web/fishball-settings/client.instance.js`. The panel loads that file as its package-local chunk
-  (`require.async('./client.instance.js')`), so the status line and the sync block come from one source file
-  in both processes.
+  (`require.async('./client.instance.js')`), so the status line comes from one source file
+  in both processes. That chunk's `shared` export has no `ModelSync`.
 
 ## Remaining limits
 
@@ -119,25 +124,28 @@ Check and add keep the main routes' Origin/Sec-Fetch-Site and body rules (same h
 - **Settings link.** No public service opens native Settings. The single `settings.launcher` slot owner
   (LITE's `fishball-page`) holds the only `openSettings` callback, so the link presses that
   launcher's button, looked up on each press. When the launcher is absent, the panel shows an alert instead.
-- **OPEN SECURITY DECISION: child-side authority. Not accepted; the user decides before anything ships.**
-  The code provisionally keeps option (a), "allow". The one main-side entry point for a sync gate is
-  `childInitiatedSync` in `host.js`. The relay's Restart and Retry are lifecycle requests beside it
-  and do not pass that gate; a gate on them would sit on the same relay handler table.
-  Before SET, only an owner click on the main card could start a sync (slim-native-design §10).
-  Now any code running in the child process can call the relay as the panel does, without an
-  owner click. That includes a third-party plugin the user installed into the child. It can:
-  - read the status;
-  - restart the instance;
-  - check and add the main DSH's offered API-key providers.
-  The copied keys land in the child's `credential-local`, which other plugins in the child process can read.
-  Keys still never reach the browser or logs.
+- **Child-side authority (decided 2026-11-11 for model sync).** The user chose "main only" for
+  model sync. 8e9a658's `childInitiatedSync` entry point in `host.js`, the relay's `check`/`add`
+  ops and the child's `models/check|add` routes are removed rather than gated. A gate would leave a
+  child-reachable path to the main DSH's provider inventory whose safety rests on one check.
+  It is back to the pre-SET rule: only an owner click on the main card starts a sync
+  (slim-native-design §10).
+  - **Scope of that claim: the lifecycle wire only.** With no op and no handler, nothing on the
+    lifecycle wire lets code in the child start a sync or reach the main DSH's providers or keys.
+    It is not an OS boundary: child plugins run as the same OS user, which no relay rule can fence.
+  - **Still open:** any code in the child process can call the relay's status, Retry and Restart
+    as the panel does. That includes a plugin the user installed into the child. These are
+    lifecycle requests only and copy nothing.
+  - **Still open, accepted for V2:** a child-requested Restart (or Retry from `failed`) ends an Add
+    the owner started on the main card. That run reports its entries `failed` `result-unknown`, and
+    the owner presses Check again. Nothing is copied by the child, and nothing is retried.
 - **Chunk delivery.** The shared source registers as the panel's chunk by its own script URL
   (`document.currentScript`). That holds for the default DSH bundle loader in both SDKs.
   A deployment `__DSH_TRANSPORT__.loadBundle` that inserts no `<script>` leaves the panel on its
   "could not be loaded" message with Retry. It also registers a stray `fishball-instance` factory in the child.
 - **Baseline guard.** On this branch's base, the old fishball-page guard (`panels: ['plugins']`) closes any other
   panel at once. LITE's e7e3423 removes that guard. Until INTEGRATE merges LITE, the panel opens and closes immediately.
-- **Race outcome (fixed here).** A chosen provider whose key the child gained between Check and
+- **Race outcome (fixed here, main card).** A chosen provider whose key the child gained between Check and
   Add was reported `failed` `key-not-saved`; it is now `skipped` `provider-exists`, per §10. The kept key is never overwritten.
 - **Plugins → back.** DSH's Plugins page has no back link to this panel; Fishball's navigation button
   returns to the conversation, and the header action reopens the panel.

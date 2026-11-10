@@ -2446,7 +2446,7 @@ Persona baseline loader (final release run): `support/persona-bold.mjs` `loadBas
 
 ### [v2-page-cases/child-boot.test.mjs](v2-page-cases/child-boot.test.mjs): the Fishball child page in the real SDK web boot (CHILD-BOOT-nn, both SDKs)
 
-Regression for "Failed to load plugins / fishball-page: failed" with `in inactive context` errors. A real SDK `web` profile (profile-boot `runProfile`, [child-boot-host.mjs](v2-page-cases/child-boot-host.mjs)) gets the child-web rows appended by an overlay, loaded from a staged copy of `<FBTEST_PLUGIN_DIR or repo>/packages/instance` (with `client.instance.js` copied as the install does); headless Chromium opens DSH's own URL and records console calls and exceptions. No fake SDK context. Observation window after the boot settles: `BUDGET.observeAfterBootMs` (5 s, harness budget). fishball-settings needs `nativeRuntime`; the fixture row `child-native-runtime-row.mjs` provides an empty one, so its relay stays unattached (not observed here).
+Regression for "Failed to load plugins / fishball-page: failed" with `in inactive context` errors. A real SDK `web` profile (profile-boot `runProfile`, [child-boot-host.mjs](v2-page-cases/child-boot-host.mjs)) gets the child-web rows appended by an overlay, loaded from a staged copy of `<FBTEST_PLUGIN_DIR or repo>/packages/instance` (with `client.instance.js` copied as the install does); headless Chromium opens DSH's own URL and records console calls and exceptions. No fake SDK context. Observation window after the boot settles: `BUDGET.observeAfterBootMs` (5 s, harness budget). fishball-settings needs `nativeRuntime`; the fixture row `child-native-runtime-row.mjs` provides an empty one, so its relay stays unattached (not observed here). Its routes are status, retry and restart only: model sync is main-only (2026-11-11), covered by `set-main-only-sync.test.mjs`.
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -2499,3 +2499,38 @@ Harness: [page-open-session-page.mjs](../packages/instance/test/instance-ext/pag
 Readings: R-A2/R-A3 promise only that every OTHER part is disposed when one part's disposer throws, so the throwing part itself (and its sibling keys, such as the session part's window `focus` listener next to a throwing `sessions.list` unsubscribe) is exempt from the "nothing live" check. Whether the listener's throw in R-B1 escapes the loader notification is not specified (review F2 "not fixed"), so PBS swallows it and does not assert it. The second ready call in PBS-ST-05/07 stands for "a later loader notification"; a real promise settles once.
 
 Fail before the fix (baseline fd4e99d, the new files run over its `git archive`): PB-DT-07/08 (the effect throws the disposer's error instead of the setup's), PB-DT-10/11/12 (the parts mounted before the throwing one stay live after teardown: the stylesheet and `<html data-fishball-page>`), PBS-BVA-03/04 (earlier mounts stay after teardown). All 21 pass on 8e7f842 (the review fix).
+
+### [v2-page-cases/set-main-only-sync.test.mjs](v2-page-cases/set-main-only-sync.test.mjs): model sync is main-only (SET-MAIN-ONLY MOS-nn, both SDKs)
+
+The user's decision of 2026-11-11: "不允许子实例发起模型同步，只能主实例主动同步给子实例". Sources: [v2-set](../docs/planning/v2-set.md), [slim-native-design §10](../docs/slim-native-design.md). Seams: the child row `child-web/fishball-settings/index.js` on a fake ctx, the real settings relay over an in-memory link ([set-relay.mjs](support/set-relay.mjs)), the real main sync bridge/coordinator/child engine with planted fake keys ([body-soul-sync.mjs](support/body-soul-sync.mjs), which now also counts main inventory reads), the real admin relay, the panel's classic scripts in node:vm ([set-panel.mjs](support/set-panel.mjs)) and, for MOS-SYS-01, a real main DSH with its real child. In-process cases run for the SDK of `FBTEST_DSH_RUNTIME` and register a TODO for the other; run the file once per SDK.
+
+| id | technique | expected result |
+|---|---|---|
+| MOS-EP-01 | EP (child route set) | the child row registers exactly GET status, POST retry, POST restart; no `models/*` path |
+| MOS-EP-02 | EP (relay ops) | `SETTINGS_RELAY.op` is exactly `{status, retry, restart}`; codes unchanged |
+| MOS-DT-01 | DT (handlers present) | a server missing any of status/retry/restart throws; all three → created |
+| MOS-DT-02 | DT (extra handlers × frames) | passed `check`/`add` handlers are never called |
+| MOS-EP-03 | EP (former/look-alike ops: check, add, CHECK, Add, `check `, models/check, models/add × `{}`, extra key, valid-looking add) | exactly `{v:1,id,ok:false,error:{code:'invalid-request'}}`; no main inventory read, key read or child write; no key in replies or logs |
+| MOS-EP-04 | EP (other unknown op: bogus, '') | the same refusal; no handler runs |
+| MOS-BVA-01 | BVA (frame id) | no id / null / number → dropped; 1 char and `limits.idChars` chars → answered |
+| MOS-EP-05 | EP (client) | `request('check'/'add'/'Check', …)` → `invalid-request` locally, nothing sent; status sends one frame |
+| MOS-ST-01 | ST (refused → lifecycle) | after refused sync frames, status/retry/restart answer on the same wire |
+| MOS-ST-02 | ST (wire A → B) | a reply to a request from A never goes to B |
+| MOS-EP-06 | EP (unsolicited provider-sync frames: reply, request, sync-op, junk) | nothing starts on the main side; nothing is sent back; a later owner check works |
+| MOS-EP-07 | EP (unsolicited admin frames) | no restart, no status read, nothing sent; owner `admin.status` still answers |
+| MOS-UC-01 | Use Case (owner check → add on the main routes) | check lists only missing; OAuth not offered and not forceable (`invalid-selection`); conflict not offered; add reports added / skipped (key created meanwhile, kept) / failed (child write failure); key in credential-local, mode 0600; no key in answers, logs or recent temp files |
+| MOS-UC-02 | Use Case (child row → relay → real sync) | status and restart work; nothing reaches the main sync; only lifecycle ops on the wire |
+| MOS-UC-03 | Use Case (main card) | the instance client still carries `data-fishball-model-*` and posts the two main routes (source presence; the rendered card stays a browser case) |
+| MOS-EP-08 / 09 | EP (panel en / zh) | no `data-fishball-model-*`; one `[data-fishball-settings-model-sync-note]` with the exact words, no button or link |
+| MOS-ST-03 | ST (panel presses) | after Restart, Settings, Plugins and every button: no `models/*` request |
+| MOS-EP-10 | EP (panel order) | status, Restart, note, Read Only, Settings, Plugins; Retry while failed |
+| MOS-EP-11 | EP (shared export) | `exports.shared` keys are exactly locale, dictionaries, mountStyles, mountStyle, useInstanceStatus, InstanceStatus |
+| MOS-SYS-01 | System (real main + child) | the child's POST `models/check` and `models/add` → 404, its status → 200; the main's POST `models/check` → ok with `{checkId, missing, notOffered, present}` |
+
+#### SET cases changed by main-only sync (2026-11-11; changed on purpose; why)
+
+The user's decision "不允许子实例发起模型同步，只能主实例主动同步给子实例" supersedes SET 8e9a658's child sync. Main-card-only sync placement is the oracle again ([v2-origin-lite-set-cases §3](../docs/test-design/v2-origin-lite-set-cases.md), [v2-page-cases §1](../docs/test-design/v2-page-cases.md)).
+- [set.test.mjs](v2-page-cases/set.test.mjs): `checkPost`/`addPost` now post the main DSH's owner routes (`registerProviderSyncRoutes` over the real bridge), not child routes; the relay server gets status/retry/restart only. SET-UC-03, EP-03/04/06/10/13, BVA-01, DT-02..06, ST-01..04 keep their oracles on the main card. SET-DT-01 now loses the child's provider-sync wire and checks the child has no sync route. SET-ST-03 loses that wire after the child write committed (was: the relay wire). SET-EP-10/13 and ST-03 relay parts assert that `check`/`add` are refused `invalid-request` and use retry/restart for the time bound and disconnect. New SET-EP-14: every child-initiated attempt is refused and the main sync never runs.
+- [slim-022-install.test.mjs](slim-022-install.test.mjs) INST-06: named as the main card's route (its path is the main origin's; unchanged behaviour).
+- [child-native-runtime-row.mjs](support/fixtures/child-native-runtime-row.mjs): comment names the three child routes.
+- [body-soul-i6-sync.test.mjs](body-soul-i6-sync.test.mjs), [child-boot.test.mjs](v2-page-cases/child-boot.test.mjs), [lite.test.mjs](v2-page-cases/lite.test.mjs): read, unchanged. I6 covers the main owner routes, which stay; CHILD-BOOT and LITE assert no sync behaviour.

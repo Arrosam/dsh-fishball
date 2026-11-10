@@ -9,7 +9,7 @@ Authority order:
 1. The user's current task and settled decisions.
 2. [Final V2 scope, §4–§5](<../planning/v2-final-scope.md#L138-L296>): PAGE, READY, PG-ORIGIN, LITE and SET ownership, signal readiness, isolated origin, prevention rather than correction.
 3. [DESIGN amendments](<../../DESIGN.md#L3-L30>) and retained [native A-lite requirements](<../plugins/instance-extension-points.md#L1302-L1478>).
-4. Retained [selected-provider, add-only sync semantics](<../slim-native-design.md#L1263-L1382>), except the historical “no child settings sync button” allocation, superseded by final SET and native §11.8.
+4. Retained [selected-provider, add-only sync semantics](<../slim-native-design.md#L1263-L1382>), including its placement: the sync control is only on the main DSH's `fishball-instance` card. The child settings panel has no sync button (the user's decision of 2026-11-11, "不允许子实例发起模型同步，只能主实例主动同步给子实例"); that allocation is the oracle again, superseding SET 8e9a658's child sync.
 5. The documentation and **test IDs/titles only** at `d41b4e34631658d76c464bdb87421c7bae721399`. Historical implementation, test bodies, reported pass counts and stale fallback oracles are not sources of expected behavior.
 
 No repository product implementation was read. Independent authors derive cases from these documents; immutable SDK contract/source inspection is permitted for `0.2.1-rc.5` and `0.2.2-rc.1`, not execution. Both versions are separate obligations, not aliases for one tested deployment.
@@ -25,7 +25,7 @@ Each logical ID counts once in the summary, regardless of how many fixtures/boun
 
 ## 3. Task summary and module ownership
 
-**136 logical cases / 272 SDK-specific registrations.** Seven logical cases have opt-in HTTP assertion bodies (six PAGE, one SET); 129 require task-owned component/browser seams. With no HTTP fixtures configured, all 272 registrations remain TODO. With both SDKs' complete fixtures, 14 registrations can execute HTTP assertions and 258 remain TODO. Runnable does **not** mean executed.
+**137 logical cases / 274 SDK-specific registrations.** Seven logical cases have opt-in HTTP assertion bodies (six PAGE, one SET); 130 require task-owned component/browser seams. With no HTTP fixtures configured, all 274 registrations remain TODO. With both SDKs' complete fixtures, 14 registrations can execute HTTP assertions and 260 remain TODO. Runnable does **not** mean executed.
 
 | Task | What it tests | Logical cases | Key scenarios | Module |
 |---|---|---:|---|---|
@@ -33,7 +33,7 @@ Each logical ID counts once in the summary, regardless of how many fixtures/boun
 | READY | Child readiness and lifecycle generation | 24 | Actual `appReady.onReady`, no timer, boot not blocked, concurrent waiters, disposal/restart/failure | [READY module](<../../test/v2-page-cases/ready.test.mjs>) |
 | PG-ORIGIN | Isolated native admission and recovery | 28 | Exact owned origin, auth delivery, no main localStorage sharing, credential-safe status/Retry | [PG-ORIGIN module](<../../test/v2-page-cases/pg-origin.test.mjs>) |
 | LITE | Prevention and effective read-only | 32 | Child-only distinct complex binding/unbind, unreachable sidebar/lineage/catalog, no correction/archive | [LITE module](<../../test/v2-page-cases/lite.test.mjs>) |
-| SET | Slim native settings surface | 28 | Status/restart, selected add-only sync, native links/return, Read Only notice, no duplicate editors | [SET module](<../../test/v2-page-cases/set.test.mjs>) |
+| SET | Slim native settings surface | 29 | Status/restart, read-only sync note (selected add-only sync only from the main card; child-initiated sync refused), native links/return, Read Only notice, no duplicate editors | [SET module](<../../test/v2-page-cases/set.test.mjs>) |
 
 [Shared registration helper](<../../test/v2-page-cases/support.mjs>) registers task-named `test.todo` entries when no documented independently controllable component/browser seam exists. It never runs a pretend implementation, validates the catalogue as a substitute for the feature, or reports TODOs as acceptance. Task owners must bind their real component fixtures and assertions before claiming those obligations passed. The final browser-only verifier remains last; cases runnable at a component boundary must not be deferred merely because the integrated UI is unfinished.
 

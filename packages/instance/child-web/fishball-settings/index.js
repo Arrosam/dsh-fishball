@@ -2,19 +2,22 @@
  * SET's child row, host half (docs/planning/v2-set.md): the Fetch routes the slim settings panel
  * calls at the child's own origin. Mounted only by the child's launch overlay, never in main DSH.
  *
- * The panel shows the main card's status line and "Model for Fishball" block from the same source
- * (packages/instance/client.js), so these routes answer the same paths and shapes as the main
- * routes. They are built from the main routes' own route tables (src/native-web.js,
- * src/slim/host/provider-sync-routes.js); only the backing service differs: here it is the
- * settings relay to the main host (src/slim/settings-relay.js), because only that host owns the
- * instance's lifecycle and the main DSH's providers.
+ * The panel shows the main card's status line from the same source (packages/instance/client.js),
+ * so these routes answer the same paths and shapes as the main routes. They are built from the
+ * main routes' own route table (src/native-web.js); only the backing service differs: here it is
+ * the settings relay to the main host (src/slim/settings-relay.js), because only that host owns
+ * the instance's lifecycle.
+ *
+ * There is no model-sync route here (`models/check`, `models/add`): the child must never start a
+ * sync, which only the main DSH's "Model for Fishball" block does (the user's decision of
+ * 2026-11-11, docs/planning/v2-set.md). DSH's Fetch registry answers those paths 404.
  *
  * DSH's connection.fetch registry is owner-only and applies the child's native admission, so these
  * routes take the child page's own cookie; the relay carries no browser credential.
  */
 import { createSettingsRelayClient, SETTINGS_RELAY } from '../../src/slim/settings-relay.js'
 import { instanceStatusRoutes } from '../../src/native-web.js'
-import { providerSyncRoutes, SYNC_PAGE } from '../../src/slim/host/provider-sync-routes.js'
+import { SYNC_PAGE } from '../../src/slim/host/provider-sync-routes.js'
 import { registerGetRoute, registerPostRoutes } from '../../src/slim/host/fetch-routes.js'
 
 export const name = 'fishball-settings'
@@ -53,12 +56,8 @@ async function relayed(relay, op) {
 export function apply(ctx) {
   const relay = createSettingsRelayClient()
   const [statusRoute, retryRoute] = instanceStatusRoutes(() => relayed(relay, OP.status), () => relayed(relay, OP.retry))
-  const sync = {
-    check: () => relay.request(OP.check),
-    add: (payload) => relay.request(OP.add, payload),
-  }
   ctx.effect(() => registerGetRoute(ctx, statusRoute), name + ': status route')
-  registerPostRoutes(ctx, [retryRoute, restartRoute(relay), ...providerSyncRoutes(ctx.connection, sync)], name + ': settings routes')
+  registerPostRoutes(ctx, [retryRoute, restartRoute(relay)], name + ': settings routes')
   if (typeof ctx.nativeRuntime?.onInstanceSettingsTransport === 'function') {
     ctx.effect(() => ctx.nativeRuntime.onInstanceSettingsTransport((transport) => {
       try { relay.attach(transport) } catch { /* the next wire replaces it */ }

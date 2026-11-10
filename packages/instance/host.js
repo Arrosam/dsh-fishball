@@ -10,7 +10,7 @@ import { createSettingsRelayServer } from './src/slim/settings-relay.js'
 import { registerEmbed } from './src/slim/host/embed.js'
 import { registerAdminRoutes } from './src/slim/host/settings-routes.js'
 import { registerProviderSyncRoutes } from './src/slim/host/provider-sync-routes.js'
-import { createChildProviderSync, CHILD_SYNC } from './src/provider-sync-service.js'
+import { createChildProviderSync } from './src/provider-sync-service.js'
 import { CONNECTOR_CONTRACT, ContractError, ERROR, ROUTES } from './src/slim/contract.js'
 import { BINDING_STATE, BINDING_CODE, CONNECTOR_UPGRADE_MESSAGE, observeConnectorUpgrade, LAUNCH_CODE, REFUSAL_CODE, contractStatus, followConnector } from './src/host/binding.js'
 import { createAdminRelay } from './src/slim/host/admin.js'
@@ -129,27 +129,17 @@ export async function apply(ctx, config) {
   // services, so the main process never writes a child file (§9). T12's routes call
   // service.admin.request(operation, payload).
   const admin = createAdminRelay({ status, restart })
-  // A row whose sync bridge failed to build answers the bridge's own "unavailable" code.
-  const syncUnavailable = Object.freeze({ ok: false, error: Object.freeze({ code: CHILD_SYNC.code.unavailable }) })
   /**
-   * The one main-side entry point of a sync the CHILD starts (SET's child settings panel, through
-   * the settings relay). The main card's own routes call providerSync directly and never pass here.
-   * OPEN SECURITY DECISION (docs/planning/v2-set.md "Child-side authority"): any code in the child
-   * can reach this without an owner click. A future owner gate belongs here, in this one place:
-   * refuse or hold the request before providerSync is called. The relay's status, Retry and
-   * Restart below are lifecycle requests and do not pass here; the same decision's restart power
-   * is recorded beside it in v2-set.md.
+   * The child's slim settings panel reaches this row for lifecycle requests only. Model sync is not
+   * among them: only the owner's click in the main DSH's "Model for Fishball" block starts one
+   * (service.providerSync below, behind the main owner routes), never a request from the child
+   * (the user's decision of 2026-11-11, docs/planning/v2-set.md). The relay has no sync op, so no
+   * code in the child process can check or copy the main DSH's providers through it.
    */
-  const childInitiatedSync = Object.freeze({
-    check: () => providerSync?.check() ?? syncUnavailable,
-    add: (payload) => providerSync?.add(payload) ?? syncUnavailable,
-  })
   const settingsRelay = createSettingsRelayServer({
     status: () => publicStatus(status()),
     retry: async () => publicStatus(await retry()),
     restart: async () => publicStatus(await follow(restart)),
-    check: childInitiatedSync.check,
-    add: childInitiatedSync.add,
   })
   const key = ctx.profileContext.home
   const predecessor = registry.get(key)
@@ -229,10 +219,9 @@ export async function apply(ctx, config) {
       if (closed) return
       try { providerSync.attach(transport, metadata) } catch { /* the next wire replaces it */ }
     })
-    // SET: the child's slim settings panel asks this row for status, Retry, Restart and the same
-    // model sync the Plugins card runs (src/slim/settings-relay.js). Restart is queued like every
-    // other start and stop; its answer is usually lost with the child it replaces, which the
-    // panel expects.
+    // SET: the child's slim settings panel asks this row for status, Retry and Restart
+    // (src/slim/settings-relay.js). Restart is queued like every other start and stop; its answer
+    // is usually lost with the child it replaces, which the panel expects.
     unsubscribeSettings = owner.onInstanceSettingsTransport((transport) => {
       if (closed) return
       try { settingsRelay.attach(transport) } catch { /* the next wire replaces it */ }
@@ -346,8 +335,10 @@ export async function apply(ctx, config) {
     status, start, stop, restart, retry,
     // T12's settings routes reach the child only through this relay (§9).
     admin,
-    // The "Model for Fishball" API (§10, D26): status, Check and Add. The bridge's attach/request
-    // stay private to this row, so no other row can talk to the child target.
+    // The "Model for Fishball" API (§10, D26): status, Check and Add. Main-process only: its one
+    // caller is the main card's owner routes (registerProviderSyncRoutes below); nothing from the
+    // child reaches it. The bridge's attach/request stay private to this row, so no other row can
+    // talk to the child target.
     providerSync: Object.freeze({
       status: () => providerSync.status(),
       check: () => providerSync.check(),
