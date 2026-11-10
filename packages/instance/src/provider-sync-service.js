@@ -14,8 +14,8 @@ import { ProviderSyncCoordinator } from './provider-sync-coordinator.js'
 import { createProviderSyncCodec, providerSyncIdentity, PROVIDER_SYNC_TARGET } from './slim/child/provider-sync-target.js'
 
 // The owner route's transport rules live with the routes (src/slim/host/provider-sync-routes.js),
-// so the child settings row can build the same routes without this host-only module; re-exported
-// here for this module's existing readers.
+// so the child settings row can reuse their JSON headers without this host-only module (it has no
+// sync route); re-exported here for this module's existing readers.
 import { SYNC_PAGE } from './slim/host/provider-sync-routes.js'
 export { SYNC_PAGE }
 const P = SYNC_PAGE
