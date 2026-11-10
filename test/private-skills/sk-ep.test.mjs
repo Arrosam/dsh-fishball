@@ -3,7 +3,7 @@
  * format, EP-22 outcomes (docs/test-design/private-skills.md §3).
  *
  * Two kinds of case, each once per SDK:
- * - `SK-EP-*` todo: needs the SK implementation (owner SK).
+ * - `SK-EP-*` SK-owned case: runs against the SK implementation (support/scenarios.mjs), owner SK.
  * - `SK-EP-*-N` executable native-oracle premise: proves, from the installed SDK's own public
  *   provider, what a partition's fixture means natively (loadable, ignored, or an actual escape),
  *   so the SK oracle is not invented. These read only disposable /private/tmp fixtures.
@@ -13,8 +13,9 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { it } from 'node:test'
 import { FIXTURE, KEYS, LAYOUT, SAMPLE } from './support/constants.mjs'
-import { perSdk, placeSkill, placeSymlinkedDirectory, placeSymlinkedSkill, skillDocument, skillWorkspace, todoSk } from './support/fixtures.mjs'
+import { perSdk, placeSkill, placeSymlinkedDirectory, placeSymlinkedSkill, skCases, skillDocument, skillWorkspace } from './support/fixtures.mjs'
 import { loadSdk, nativeLibrary } from './support/native-oracle.mjs'
+import * as S from './support/scenarios.mjs'
 
 const EP_19 = [
   ['SK-EP-19-01', 'Partition: Fishball\'s own private skill. Expect: Fishball\'s list, read and load return it while ordinary tools stay read-only.'],
@@ -69,7 +70,51 @@ const EP_22 = [
   ['SK-EP-22-07', 'Partition: create conflict on an existing name. Expect: an explicit conflict; the existing bytes are unchanged.'],
 ]
 
-perSdk('T-SK EP (SK-owned)', () => todoSk([...EP_19, ...EP_20, ...EP_21, ...EP_22]))
+const SCENARIOS = {
+  'SK-EP-19-01': S.ownSkillAvailable,
+  'SK-EP-19-02': S.mainHomeExcluded,
+  'SK-EP-19-03': S.mainCollisionPrivateWins,
+  'SK-EP-19-04': S.bundledCollisionUnaltered,
+  'SK-EP-19-05': S.absentNotFound,
+  'SK-EP-19-06': S.workerIsolated,
+  'SK-EP-19-07': S.workerOwnSameName,
+  'SK-EP-20-01': S.listExactValid,
+  'SK-EP-20-02': S.readCurrent,
+  'SK-EP-20-03': S.createPublishes,
+  'SK-EP-20-04': S.updatePublishes,
+  'SK-EP-20-05': S.removeLeavesOthers,
+  'SK-EP-20-06': S.reloadFresh,
+  'SK-EP-20-07': S.ordinaryRouteDenied,
+  'SK-EP-20-08': S.nonManagerRefused,
+  'SK-EP-20-09': S.wideningIneffective,
+  'SK-EP-20-10': S.extraInputRefused,
+  'SK-EP-21-01': S.validBundle,
+  'SK-EP-21-02': S.pathNamesRefused('absolute'),
+  'SK-EP-21-03': S.pathNamesRefused('traversal'),
+  'SK-EP-21-04': S.pathNamesRefused('sibling'),
+  'SK-EP-21-05': S.pathNamesRefused('alias'),
+  'SK-EP-21-06': S.escapingSymlink('file'),
+  'SK-EP-21-07': S.all(S.escapingSymlink('dir'), S.removeWithExtras),
+  'SK-EP-21-08': S.invalidDocuments('frontmatter'),
+  'SK-EP-21-09': S.invalidDocuments('missingFields'),
+  'SK-EP-21-10': S.invalidDocuments('mismatch'),
+  'SK-EP-21-11': S.disableModelInvocation,
+  'SK-EP-21-12': S.invalidDocuments('legacy'),
+  'SK-EP-21-13': S.invalidDocuments('blankDescription'),
+  'SK-EP-21-14': S.invalidDocuments('emptyBody', 'whitespaceBody'),
+  'SK-EP-21-15': S.invalidDocuments('encoding'),
+  'SK-EP-21-16': S.acceptedContent({ description: FIXTURE.trickyDescription, body: FIXTURE.trickyBody }),
+  'SK-EP-21-17': S.bypassShapesSafe,
+  'SK-EP-22-01': S.createPublishes,
+  'SK-EP-22-02': S.all(S.updatePreCommitFault, S.createPreCommitFault),
+  'SK-EP-22-03': S.cancellationTruthful,
+  'SK-EP-22-04': S.refreshFailure,
+  'SK-EP-22-05': S.semanticNotPoliced,
+  'SK-EP-22-06': S.mutateAbsentNotFound,
+  'SK-EP-22-07': S.createConflict,
+}
+
+perSdk('T-SK EP (SK-owned)', (version) => skCases(version, [...EP_19, ...EP_20, ...EP_21, ...EP_22], SCENARIOS))
 
 perSdk('T-SK EP native-oracle premises', (version) => {
   it('SK-EP-21-01-N an S6 directory bundle is native-loadable with exact name, description and body', async (t) => {

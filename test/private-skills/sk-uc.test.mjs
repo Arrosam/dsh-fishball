@@ -1,10 +1,13 @@
 /**
  * T-SK Use Cases (written first): Fishball's private Skills, UC-25–28 plus lifecycle and
  * no-user-UI stories. Requirements: S1–S8, SK-SEAM decisions 1–4, Fishball answers Q1–Q6
- * (docs/test-design/private-skills.md). Every case needs the SK implementation, so all are
- * test.todo owned by SK; each runs once per supported SDK.
+ * (docs/test-design/private-skills.md). Every case runs against the SK implementation (owner SK)
+ * through support/scenarios.mjs, once per supported SDK. A case whose oracle is a live
+ * manager→worker delivery stays test.todo with that reason in its title.
  */
-import { perSdk, todoSk } from './support/fixtures.mjs'
+import { UNOBSERVABLE } from './support/constants.mjs'
+import { perSdk, skCases } from './support/fixtures.mjs'
+import * as S from './support/scenarios.mjs'
 
 const USE_CASES = [
   // UC-25 — Fishball applies its experience to a worker's task (S1/S2/S6/S7).
@@ -40,4 +43,33 @@ const USE_CASES = [
   ['SK-UC-UI-M', 'Samuel never has to view or approve a skill. No viewer, review or approval card appears for any of the six operations, and no tool result claims the native slash menu was refreshed.'],
 ]
 
-perSdk('T-SK Use Cases', () => todoSk(USE_CASES))
+const SCENARIOS = {
+  // The worker receiving body text in its conversation needs a real turn and a managed worker session.
+  'SK-UC-25-M': { reason: UNOBSERVABLE.workerDelivery },
+  'SK-UC-25-A1': S.mainHomeExcluded,
+  'SK-UC-25-A2': S.workerOwnSameName,
+  'SK-UC-25-E1': S.absentNotFound,
+  'SK-UC-25-E2': { reason: UNOBSERVABLE.sendGate },
+  'SK-UC-26-M': S.createPublishes,
+  'SK-UC-26-A1': S.createPublishes,
+  'SK-UC-26-A2': S.noCallNoChange,
+  'SK-UC-26-E1': S.correctedRetry,
+  'SK-UC-26-E2': S.pathNamesRefused('absolute', 'traversal'),
+  'SK-UC-27-M': S.updatePublishes,
+  'SK-UC-27-A1': S.renameTwoSteps,
+  'SK-UC-27-A2': S.createConflict,
+  'SK-UC-27-A3': S.mutateAbsentNotFound,
+  'SK-UC-27-E1': S.removeLeavesOthers,
+  'SK-UC-27-E2': S.updatePreCommitFault,
+  'SK-UC-28-M': S.updatePreCommitFault,
+  'SK-UC-28-A1': S.createPreCommitFault,
+  'SK-UC-28-A2': S.refreshFailure,
+  'SK-UC-28-A3': S.cancellationTruthful,
+  'SK-UC-28-E1': S.ordinaryRouteDenied,
+  'SK-UC-28-E2': S.concurrencyOneWinner,
+  'SK-UC-LIFE-M': S.restartKeepsLibrary,
+  'SK-UC-LIFE-A1': S.createPublishes,
+  'SK-UC-UI-M': S.noUiObligation,
+}
+
+perSdk('T-SK Use Cases', (version) => skCases(version, USE_CASES, SCENARIOS))

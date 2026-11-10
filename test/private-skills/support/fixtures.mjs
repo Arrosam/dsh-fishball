@@ -1,12 +1,12 @@
 /**
- * Shared T-SK helpers: per-SDK case blocks, SK-owned TODO cases, disposable skill roots and the
+ * Shared T-SK helpers: per-SDK case blocks, SK-owned cases (executable or reasoned TODO), disposable skill roots and the
  * native document builder used by the executable native-oracle premises.
  */
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { tempPath } from '../../support/temp-path.mjs'
-import { LAYOUT, OWNER, SKILL_SDK } from './constants.mjs'
+import { LAYOUT, OWNER, SKILL_SDK, UNOBSERVABLE } from './constants.mjs'
 
 /** Run `body(version)` once per supported SDK, so every case id is reported for both SDKs. */
 export function perSdk(group, body) {
@@ -14,12 +14,21 @@ export function perSdk(group, body) {
 }
 
 /**
- * Cases this task cannot run: each needs the SK implementation (the dedicated tool, its trusted
- * storage service and the child manager). Every title carries id, requirement oracle and owner.
+ * SK-owned cases, now executable against the SK implementation. The title stays the approved
+ * `<id> <oracle> — owner: SK`. A case whose oracle needs a seam the in-process child does not have
+ * gets `reason` (an UNOBSERVABLE value) and stays `test.todo`, its title ending with that reason.
+ * @param version - the SDK this block runs on.
  * @param cases - [id, oracle] pairs.
+ * @param scenarios - { [id]: (t, version) => Promise } or { [id]: { reason } }.
  */
-export function todoSk(cases) {
-  for (const [id, oracle] of cases) test.todo(`${id} ${oracle} — owner: ${OWNER.sk}`)
+export function skCases(version, cases, scenarios) {
+  for (const [id, oracle] of cases) {
+    const scenario = scenarios[id]
+    if (scenario === undefined) throw new Error(`${id} has no scenario and no stated reason`)
+    const title = `${id} ${oracle} — owner: ${OWNER.sk}`
+    if (typeof scenario === 'function') test(title, (t) => scenario(t, version))
+    else test.todo(`${title} — ${UNOBSERVABLE.prefix}: ${scenario.reason}`)
+  }
 }
 
 /** YAML double-quoted scalar: JSON strings are valid YAML, so any text survives exactly. */

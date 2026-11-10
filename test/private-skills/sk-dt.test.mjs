@@ -1,9 +1,11 @@
 /**
  * T-SK Decision Tables (docs/test-design/private-skills.md §5). DT-09 is the requirement table;
- * DT-SK-01 to 04 expand its conditions into full rule sets. Every rule needs the SK
- * implementation (owner SK) and runs once per SDK.
+ * DT-SK-01 to 04 expand its conditions into full rule sets. Every rule runs against the SK
+ * implementation (owner SK) through support/scenarios.mjs, once per SDK.
  */
-import { perSdk, todoSk } from './support/fixtures.mjs'
+import { UNOBSERVABLE } from './support/constants.mjs'
+import { perSdk, skCases } from './support/fixtures.mjs'
+import * as S from './support/scenarios.mjs'
 
 // DT-09 — the settled requirement table (UC-25–28; S1–S8).
 const DT_09 = [
@@ -62,4 +64,43 @@ const DT_BYPASS = [
   ['SK-DT-04-R5', 'a hand-corrupted, name-mismatched, non-regular or hardlinked SKILL.md: the manager and tool stay usable, other skills still list and load, nothing outside is written; the entry\'s own result is unspecified.'],
 ]
 
-perSdk('T-SK Decision Tables', () => todoSk([...DT_09, ...DT_CALLER, ...DT_OPERATION, ...DT_OUTCOME, ...DT_BYPASS]))
+const SCENARIOS = {
+  'SK-DT-09-R1': S.ownSkillAvailable,
+  'SK-DT-09-R2': S.all(S.createPublishes, S.updatePublishes),
+  'SK-DT-09-R3': S.removeLeavesOthers,
+  'SK-DT-09-R4': S.ordinaryOrOutsideRefused,
+  // The workers' half (no direct private-library load) is observable; the message holding the body is not.
+  'SK-DT-09-R5': { reason: UNOBSERVABLE.workerDelivery },
+  'SK-DT-09-R6': S.all(S.updatePreCommitFault, S.createPreCommitFault),
+  'SK-DT-09-R7': S.refreshFailure,
+  'SK-DT-09-R8': S.semanticNotPoliced,
+  'SK-DT-01-R1': S.ownSkillAvailable,
+  'SK-DT-01-R2': S.ordinaryRouteDenied,
+  'SK-DT-01-R3': S.workerIsolated,
+  'SK-DT-01-R4': S.workerIsolated,
+  'SK-DT-01-R5': S.nonManagerRefused,
+  'SK-DT-02-R1': S.createPublishes,
+  'SK-DT-02-R2': S.createConflict,
+  'SK-DT-02-R3': S.createInvalidAnyState,
+  'SK-DT-02-R4': S.updatePublishes,
+  'SK-DT-02-R5': S.mutateAbsentNotFound,
+  'SK-DT-02-R6': S.updateInvalidKeepsOld,
+  'SK-DT-02-R7': S.removeLeavesOthers,
+  'SK-DT-02-R8': S.mutateAbsentNotFound,
+  'SK-DT-02-R9': S.readCurrent,
+  'SK-DT-02-R10': S.absentNotFound,
+  'SK-DT-02-R11': S.pathNamesRefused(),
+  'SK-DT-02-R12': S.all(S.reloadFresh, S.emptyLibrary),
+  'SK-DT-03-R1': S.all(S.updatePreCommitFault, S.createPreCommitFault, S.invalidDocuments('emptyBody'), S.cancellationTruthful),
+  'SK-DT-03-R2': S.createPublishes,
+  'SK-DT-03-R3': S.refreshFailure,
+  'SK-DT-03-R4': S.cancellationTruthful,
+  'SK-DT-03-R5': S.refreshFailure,
+  'SK-DT-04-R1': S.escapingSymlink('file'),
+  'SK-DT-04-R2': S.all(S.escapingSymlink('dir'), S.removeWithExtras),
+  'SK-DT-04-R3': S.bypassShapesSafe,
+  'SK-DT-04-R4': S.removeWithExtras,
+  'SK-DT-04-R5': S.bypassShapesSafe,
+}
+
+perSdk('T-SK Decision Tables', (version) => skCases(version, [...DT_09, ...DT_CALLER, ...DT_OPERATION, ...DT_OUTCOME, ...DT_BYPASS], SCENARIOS))
