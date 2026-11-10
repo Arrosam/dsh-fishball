@@ -33,6 +33,8 @@ window.__ModuleLoader__.load({
       route: 'api/fishball/recommended',
       request: Object.freeze({ credentials: 'same-origin', cache: 'no-store' }),
     })
+    /** BundleInfo.availability of a declared bundle whose files cannot be read (dsh-plugin-manager types). */
+    const BUNDLE = Object.freeze({ missing: 'missing' })
     /** Host events after which the native page re-reads its inventory; the tab follows the same two. */
     const HOST_EVENT = Object.freeze({ changed: 'plugin-manager/changed', reset: 'connection/reset' })
     /** The vocabulary of `pluginManager.inspect` (PluginSpecInspection) this tab reads. */
@@ -126,6 +128,15 @@ window.__ModuleLoader__.load({
       return body
     }
 
+    /**
+     * Presence (owner decision F8, 2026-11-11): declared by the child's profile (`installed`) AND its
+     * files readable (`availability` not `missing`), enabled or not. A declared bundle whose files
+     * were deleted or never finished installing shows Install, as the native page lets it be
+     * reinstalled. A bundle the profile selects without declaring it is reachable only by
+     * hand-editing the profile; it shows Install and the native check refuses it as already installed.
+     */
+    const isPresent = bundle => bundle.installed && bundle.availability !== BUNDLE.missing
+
     /** The settled value of an inspection answer, or undefined for a transport error or lost reply. */
     const inspectionOf = answer => (answer?.ok ? answer.value : undefined)
 
@@ -197,11 +208,7 @@ window.__ModuleLoader__.load({
           if (this.live(this.listReads, read)) this.store.set({ list: STATUS.error })
         }
       }
-      /**
-       * Presence is the child's own bundle list: declared by its profile (`installed`), enabled or
-       * not. A bundle the profile selects without declaring it is reachable only by hand-editing
-       * the profile; it shows Install and the native check then refuses it as already installed.
-       */
+      /** Read the child's own bundle list; which rows count as present is `isPresent`'s rule. */
       async loadInventory() {
         const read = this.inventoryReads.begin()
         // Retry after a failed read shows progress; a background refresh keeps the shown rows.
@@ -210,7 +217,7 @@ window.__ModuleLoader__.load({
           const answer = await this.ctx.remote.pluginManager.listBundles()
           if (!this.live(this.inventoryReads, read)) return
           if (!answer?.ok) { this.store.set({ inventory: STATUS.error }); return }
-          this.store.set({ inventory: STATUS.ready, installed: new Set(answer.value.filter(bundle => bundle.installed).map(bundle => bundle.name)) })
+          this.store.set({ inventory: STATUS.ready, installed: new Set(answer.value.filter(isPresent).map(bundle => bundle.name)) })
         } catch {
           if (this.live(this.inventoryReads, read)) this.store.set({ inventory: STATUS.error })
         }
@@ -270,7 +277,11 @@ window.__ModuleLoader__.load({
       const check = snapshot.checks[item.packageName]
       const checking = check?.kind === CHECK.checking
       let action = null
-      if (snapshot.inventory === STATUS.ready) {
+      // Owner decision F9 (2026-11-11): until an inventory read answers, a row says it is loading and
+      // offers no button, since Install vs Installed is not known yet. A background refresh keeps
+      // the inventory `ready`, so only the first read (and a Retry after a failed one) shows this.
+      if (snapshot.inventory === STATUS.loading) action = h(Status, { state: STATE_DOT.ongoing }, t('loading'))
+      else if (snapshot.inventory === STATUS.ready) {
         action = installed
           ? h('span', { style: STYLE.status, 'data-recommended-state': DOM.installedState }, h(StateDot, { state: STATE_DOT.done }), t('installed'))
           : h(Button, { ...BUTTON, disabled: checking,

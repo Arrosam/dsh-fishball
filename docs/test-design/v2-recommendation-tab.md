@@ -234,7 +234,20 @@ No node test runner was invoked by T-RP. Syntax-only checks do not import/run pr
 
 | SDK (`FBTEST_DSH_RUNTIME`) | Its own file: pass / fail / todo | Other SDK's file |
 |---|---|---|
-| 0.2.1-rc.5 | 15 / 0 / 19 + 2 subtests | 15 skipped (not selected) + 19 todo |
-| 0.2.2-rc.1 | 15 / 0 / 19 + 2 subtests | 15 skipped (not selected) + 19 todo |
+| 0.2.1-rc.5 | 15 TC + 10 RV / 0 / 19 + 2 subtests | 25 skipped (not selected) + 19 todo |
+| 0.2.2-rc.1 | 15 TC + 10 RV / 0 / 19 + 2 subtests | 25 skipped (not selected) + 19 todo |
+
+(Updated 2026-11-11 after the review fixes F8/F9 and the RV cases below; each SDK's run reports 131 tests / 66 pass / 0 fail / 25 skipped / 40 todo.)
 
 - **TC-26 (owner decision 2026-11-11).** A callback captured before disposal and fired after it must start no Host work: no `listBundles`, no render, no install. That is asserted on both SDKs.
+- **Review cases RV-01–RV-10 (independent black-box author, 2026-11-11).** [review-checks.mjs](<../../test/v2-recommendation/review-checks.mjs>) registers them from both SDK files, with the same SDK-selection rule. They were written from the review requirements RV-A–RV-E only; `client.js` was not read.
+  - RV-01/RV-02 (EP): an accepted inspection with `registry: null` (SDK `Registry = string | null`) hands off a target with **no** `registry` field. A registry URL string is passed through unchanged. Both still carry `spec` name@version, `version` and a non-empty `title`. The harness gained an additive `world.installTargets`, which holds the uncloned targets, because `installs` is JSON-cloned and so hides a field set to `undefined`.
+  - RV-03 (ST): a `network` refusal shows a row alert, makes no handoff and keeps Install enabled with its normal label. Nothing retries automatically (inspect is called once). One re-click runs exactly one new inspect, and its accepted answer makes exactly one handoff.
+  - RV-04 (EP): a transport failure `{ok:false}`, a thrown inspect and a rejected inspect each give a row alert, no handoff and Install still enabled.
+  - RV-05 (EP): an `already-installed` refusal shows the Host's reason verbatim in a row alert, with no handoff and no retry. The row stays non-Installed.
+  - RV-06 (decision table): a row is present only when `installed` is true **and** `availability` is not `missing`, whatever `enabled` is. The table covers missing × enabled/disabled, profile, installation, and `installed:false` × each availability. Another package's row is unaffected.
+  - RV-07 (ST): missing → profile plus `plugin-manager/changed` gives Installed. Profile → missing plus changed gives Install.
+  - RV-08 (ST, EP en/zh): while the first `listBundles` is pending, every row shows Loading (`/loading/i`, `/加载/`), no button at all and no Installed. After the read answers, Loading is gone and the rows follow the inventory.
+  - RV-09 (EP): when the first read fails, an inventory alert exists, no row shows Loading and no row claims Installed.
+  - RV-10 (ST): a pending background refresh after the first successful read keeps the rows' Install/Installed actions, with no Loading.
+- TC-28 'two rapid invocations before the inspection answers' keeps its 1..2 tolerance unchanged; whether a second click during a pending check is blocked is a post-merge e2e item (real React/DOM timing).
