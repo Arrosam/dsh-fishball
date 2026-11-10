@@ -29,6 +29,7 @@ import { createChat } from './chat.js'
 import { createExtensions, EXTENSION_SERVICE } from './extensions.js'
 import { createImages } from './images.js'
 import { createReminders } from './reminders.js'
+import { attachPrivateSkills } from './skills.js'
 
 /** Stable Cordis plugin name; T02's overlay row id is the same string (§2.3). */
 export const name = 'fishball-native-app'
@@ -94,6 +95,9 @@ export async function apply(ctx) {
   const extensions = createExtensions(ctx)
   ctx.effect(() => () => extensions.close(), name + ': extensions')
   await extensions.start()
+  // SK: Fishball's private Skills join every manager generation's own scope, never the child's
+  // global layer; extensions.close() disposes the registration with the others.
+  attachPrivateSkills(ctx, extensions.service.manager)
   const chat = createChat(ctx, { images, extensions })
   await chat.start()
   ctx.provide(EXTENSION_SERVICE, extensions.service)
