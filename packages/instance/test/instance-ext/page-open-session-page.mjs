@@ -28,6 +28,33 @@ function store(initial) {
   }
 }
 
+/**
+ * Neutral public `ctx.shortcuts` (dsh-client-shortcuts `Shortcuts` shape): accepted, ready config
+ * and a catalog with no command the page protects, so its shortcut gate is satisfied without any
+ * edit. `catalog` and `config` share one store, as in the SDK registry. Edits are recorded only.
+ */
+function neutralShortcuts() {
+  const state = store({
+    catalog: [],
+    config: { revision: 'page-open-neutral', sequence: 1, document: { schemaVersion: 1, profiles: {} }, status: 'ready', error: null, usingDefaults: true },
+  })
+  const edits = []
+  return {
+    runtime: 'web',
+    platform: 'macos',
+    stopSequenceMs: 500,
+    edits,
+    catalog: { getSnapshot: () => state.getSnapshot().catalog, subscribe: state.subscribe },
+    config: { getSnapshot: () => state.getSnapshot().config, subscribe: state.subscribe },
+    fixedCatalog: store([]),
+    describeBinding: (binding) => ({ binding, keys: [], issue: null, conflicts: [] }),
+    async edit(operation, revision) { edits.push({ operation, revision }); return { status: 'saved', snapshot: state.getSnapshot().config } },
+    register: () => () => {},
+    registerFixed: () => () => {},
+    observeFixedInput: () => () => {},
+  }
+}
+
 /** React stub: elements are plain objects; hooks read the store snapshot synchronously. */
 function fakeReact() {
   const Fragment = Symbol('Fragment')
@@ -101,9 +128,15 @@ export function loadPage({ respond }) {
     },
     querySelectorAll: () => [],
     querySelector: () => null,
+    // The page's frame guard listens for anchor clicks on the document (LITE contract §5).
+    addEventListener() {},
+    removeEventListener() {},
   }
   const window = {
     __ModuleLoader__: { load(entry) { registered = entry } },
+    // A real child document has a location (empty hash: no view/lang continuation) and window.open.
+    location: { href: PAGE_BASE, hash: '', origin: new URL(PAGE_BASE).origin },
+    open: () => null,
     addEventListener(type, fn) {
       if (!windowListeners.has(type)) windowListeners.set(type, new Set())
       windowListeners.get(type).add(fn)
@@ -172,8 +205,10 @@ export function loadPage({ respond }) {
       bind: () => (key) => key,
       subscribe: localeStore.subscribe,
       getSnapshot: localeStore.getSnapshot,
-      getLocale: () => ({ active: 'en' }),
+      getLocale: () => ({ active: 'en', locales: [{ id: 'en', label: 'English' }], revision: 0 }),
+      setLocale() {},
     },
+    shortcuts: neutralShortcuts(),
   }
   plugin.apply(ctx)
 
