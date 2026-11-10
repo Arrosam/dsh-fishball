@@ -8,15 +8,12 @@ export const PREFLIGHT = Object.freeze({
   nodeModules: 'node_modules',
   git: '.git',
   manifest: 'package.json',
-  corePackages: ['@deepseek-ai/cordis', '@deepseek-ai/schemastery'],
-  corePrefix: '@deepseek-ai/dsh-',
 })
 
 export class NativePreflightError extends Error {
   constructor(code, message) { super(message); this.name = 'NativePreflightError'; this.code = code }
 }
 const fail = (code, message) => { throw new NativePreflightError(code, message) }
-const isCore = name => typeof name === 'string' && (name.startsWith(PREFLIGHT.corePrefix) || PREFLIGHT.corePackages.includes(name))
 export const within = (root, candidate) => {
   const relative = path.relative(root, candidate)
   return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative))
@@ -78,18 +75,24 @@ export async function preflight({ mainHome, runtimeRoot, workspace, mainWorkspac
   const scanRoots = new Set()
   await inspectAncestors(workspace, root, install, scanRoots)
   await inspectAncestors(profileDir, root, install, scanRoots)
-  // The installation graph is the authoritative reserved-core identity table. Physical
-  // profile copies win before loader mappings, so check both inventory and disk.
-  const reserved = new Map()
+  /*
+   * No core-identity (PREFLIGHT_CORE_SHADOW) check, by the user's decision of 2026-11-11 (V2 e2e
+   * round 2, bug 1, relayed by Fishball in the user's words): "用A吧，不管这些，插件怎么样就怎么样，如果炸了启动不了就启动不了。As it is.
+   * This is DSH itself shittin, not my fault. Leave it as it is."
+   * Why it went: the child profile is a DSH profile (nodeLinker: hoisted), so a plugin that depends
+   * on an `@deepseek-ai/*` package (dsh-idle-compact@0.3.0 on `@deepseek-ai/schemastery`, a
+   * Recommended entry) gets that copy hoisted into the profile's top-level node_modules, and the
+   * check then refused every later start. A plugin's dependency and a hand-placed copy look the
+   * same on disk, and the user chose no allow-list, version rule or install override. So such a
+   * copy is accepted as it is: DSH resolves it as it does in any profile, and a child that then
+   * fails to boot reports that through the start failure's own code and detail (host.js).
+   * Revisit only on a new decision by the user.
+   */
   for (const entry of resolution?.entries ?? []) {
     const target = await canonical(entry.packageDir)
     if (entry.scope === 'installation') {
       if (!within(install, target)) fail('PREFLIGHT_RESOLUTION', 'Installation entry escapes its selected installation: ' + entry.name)
-      if (isCore(entry.name)) reserved.set(entry.name, target)
-    } else {
-      if (!within(root, target) && !within(install, target)) fail('PREFLIGHT_RESOLUTION', 'Profile dependency resolves outside attached home or installation: ' + entry.name)
-      if (!within(install, target) && isCore(entry.name)) fail('PREFLIGHT_CORE_SHADOW', 'Private dependency shadows DSH core identity: ' + entry.name)
-    }
+    } else if (!within(root, target) && !within(install, target)) fail('PREFLIGHT_RESOLUTION', 'Profile dependency resolves outside attached home or installation: ' + entry.name)
   }
   for (const link of resolution?.linkedRoots ?? []) {
     const target = await canonical(link.realPath)
@@ -103,12 +106,6 @@ export async function preflight({ mainHome, runtimeRoot, workspace, mainWorkspac
   let count = 0
   async function inspectTree(directory) {
     const target = await realpath(directory)
-    const parent = path.dirname(directory)
-    const slot = path.basename(parent).startsWith('@') && path.basename(path.dirname(parent)) === PREFLIGHT.nodeModules
-      ? path.basename(parent) + '/' + path.basename(directory)
-      : path.basename(parent) === PREFLIGHT.nodeModules ? path.basename(directory) : undefined
-    // Node resolves the physical package slot even when an alias lies about manifest.name.
-    if (isCore(slot) && reserved.get(slot) !== target) fail('PREFLIGHT_CORE_SHADOW', 'Private package slot shadows core identity: ' + slot)
     if (within(install, target)) return
     if (!within(root, target)) fail('PREFLIGHT_LINK', 'Private dependency link escapes its runtime: ' + directory)
     if (visited.has(target)) return
@@ -128,10 +125,7 @@ export async function preflight({ mainHome, runtimeRoot, workspace, mainWorkspac
       } else if (entry.name === PREFLIGHT.manifest) {
         const info = await stat(file)
         if (info.size > PREFLIGHT.maxManifestBytes) fail('PREFLIGHT_LIMIT', 'Package manifest too large: ' + file)
-        let manifest
-        try { manifest = JSON.parse(await readFile(file, 'utf8')) } catch { fail('PREFLIGHT_MANIFEST', 'Invalid package manifest: ' + file) }
-        const selected = reserved.get(manifest.name)
-        if (isCore(manifest.name) || (selected && selected !== target)) fail('PREFLIGHT_CORE_SHADOW', 'Private dependency shadows installation identity: ' + manifest.name)
+        try { JSON.parse(await readFile(file, 'utf8')) } catch { fail('PREFLIGHT_MANIFEST', 'Invalid package manifest: ' + file) }
       }
     }
   }
