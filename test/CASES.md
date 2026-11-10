@@ -2458,3 +2458,30 @@ Regression for "Failed to load plugins / fishball-page: failed" with `in inactiv
 | CHILD-BOOT-06 | ST setup → failed → disposed | R4 | fixture `fbtest-slot-occupant` takes the page's `shell.overlay` entry id first (native list-slot refusal); precondition: boot names `fishball-page: failed`; then no inactive-context error, no `data-fishball-page`, no page nav |
 
 Fail before the fix (baseline 7d6c9a8, `FBTEST_PLUGIN_DIR` = its `git archive`): 02–06 on both SDKs (06: 6 `locale` inactive-context exceptions after the failed setup). 01 passes on both sides.
+
+### [v2-page-cases/set-main-only-sync.test.mjs](v2-page-cases/set-main-only-sync.test.mjs): model sync is main-only (SET-MAIN-ONLY MOS-nn, both SDKs)
+
+The user's decision of 2026-11-11: "不允许子实例发起模型同步，只能主实例主动同步给子实例". Sources: [v2-set](../docs/planning/v2-set.md), [slim-native-design §10](../docs/slim-native-design.md). Seams: the child row `child-web/fishball-settings/index.js` on a fake ctx, the real settings relay over an in-memory link ([set-relay.mjs](support/set-relay.mjs)), the real main sync bridge/coordinator/child engine with planted fake keys ([body-soul-sync.mjs](support/body-soul-sync.mjs), which now also counts main inventory reads), the real admin relay, the panel's classic scripts in node:vm ([set-panel.mjs](support/set-panel.mjs)) and, for MOS-SYS-01, a real main DSH with its real child. In-process cases run for the SDK of `FBTEST_DSH_RUNTIME` and register a TODO for the other; run the file once per SDK.
+
+| id | technique | expected result |
+|---|---|---|
+| MOS-EP-01 | EP (child route set) | the child row registers exactly GET status, POST retry, POST restart; no `models/*` path |
+| MOS-EP-02 | EP (relay ops) | `SETTINGS_RELAY.op` is exactly `{status, retry, restart}`; codes unchanged |
+| MOS-DT-01 | DT (handlers present) | a server missing any of status/retry/restart throws; all three → created |
+| MOS-DT-02 | DT (extra handlers × frames) | passed `check`/`add` handlers are never called |
+| MOS-EP-03 | EP (former/look-alike ops: check, add, CHECK, Add, `check `, models/check, models/add × `{}`, extra key, valid-looking add) | exactly `{v:1,id,ok:false,error:{code:'invalid-request'}}`; no main inventory read, key read or child write; no key in replies or logs |
+| MOS-EP-04 | EP (other unknown op: bogus, '') | the same refusal; no handler runs |
+| MOS-BVA-01 | BVA (frame id) | no id / null / number → dropped; 1 char and `limits.idChars` chars → answered |
+| MOS-EP-05 | EP (client) | `request('check'/'add'/'Check', …)` → `invalid-request` locally, nothing sent; status sends one frame |
+| MOS-ST-01 | ST (refused → lifecycle) | after refused sync frames, status/retry/restart answer on the same wire |
+| MOS-ST-02 | ST (wire A → B) | a reply to a request from A never goes to B |
+| MOS-EP-06 | EP (unsolicited provider-sync frames: reply, request, sync-op, junk) | nothing starts on the main side; nothing is sent back; a later owner check works |
+| MOS-EP-07 | EP (unsolicited admin frames) | no restart, no status read, nothing sent; owner `admin.status` still answers |
+| MOS-UC-01 | Use Case (owner check → add on the main routes) | check lists only missing; OAuth not offered and not forceable (`invalid-selection`); conflict not offered; add reports added / skipped (key created meanwhile, kept) / failed (child write failure); key in credential-local, mode 0600; no key in answers, logs or recent temp files |
+| MOS-UC-02 | Use Case (child row → relay → real sync) | status and restart work; nothing reaches the main sync; only lifecycle ops on the wire |
+| MOS-UC-03 | Use Case (main card) | the instance client still carries `data-fishball-model-*` and posts the two main routes (source presence; the rendered card stays a browser case) |
+| MOS-EP-08 / 09 | EP (panel en / zh) | no `data-fishball-model-*`; one `[data-fishball-settings-model-sync-note]` with the exact words, no button or link |
+| MOS-ST-03 | ST (panel presses) | after Restart, Settings, Plugins and every button: no `models/*` request |
+| MOS-EP-10 | EP (panel order) | status, Restart, note, Read Only, Settings, Plugins; Retry while failed |
+| MOS-EP-11 | EP (shared export) | `exports.shared` keys are exactly locale, dictionaries, mountStyles, mountStyle, useInstanceStatus, InstanceStatus |
+| MOS-SYS-01 | System (real main + child) | the child's POST `models/check` and `models/add` → 404, its status → 200; the main's POST `models/check` → ok with `{checkId, missing, notOffered, present}` |
