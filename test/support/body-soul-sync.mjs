@@ -63,7 +63,8 @@ function defaultTarget() {
 export async function syncHarness(t, { source = defaultSource(), target = defaultTarget(), now = Date.now() } = {}) {
   const { createChildProviderSync } = await loadInstance('src/provider-sync-service.js')
   const { createProviderSyncTarget, createProviderSyncTargetEndpoint } = await loadInstance('src/slim/child/provider-sync-target.js')
-  const child = await engineFixture(t, source, target)
+  // The child end stands for the production child host, which has describeRecord.
+  const child = await engineFixture(t, source, target, { describeRecord: true })
   // The engine fixture's clock starts in 2023 with a 1 s plan life; put it far enough ahead that
   // the main side's own preview life (§10, five minutes) is the one that decides expiry.
   child.state.now = now + 10 * PREVIEW_LIFE_MS

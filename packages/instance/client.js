@@ -16,9 +16,21 @@
  * Above them the card shows the instance's own status and its reason (§18.2 I1, inst-OQ-01):
  * the state, the safe code, its reason, and Retry while the instance is `failed`
  * (§0.7 "Instance: status, Retry"; inst-OQ-03, inst-OQ-09: failed until Retry).
+ *
+ * One source, two bundles (SET, docs/planning/v2-set.md): the child's slim settings panel shows
+ * this same status line and "Model for Fishball" block. The child snapshot copy places this file
+ * beside that panel as its package-local chunk `client.instance.js`
+ * (src/native-runtime/installation.js), which DSH's client-modules serves at
+ * `…/fishball-settings/client.instance.js` and expects to register as that owner's chunk. So the
+ * registration identity follows the script's own URL; the main DSH serves this file as the
+ * `fishball-instance` bundle, never under that chunk name, so its registration is unchanged. The
+ * choice is an inline expression because client-modules concatenates bundles into one classic
+ * script, where a top-level declaration could collide with another package's.
  */
 window.__ModuleLoader__.load({
-  id: 'fishball-instance',
+  ...((script, child) => (script?.src && new URL(script.src, document.baseURI).pathname.endsWith('/' + child.owner + '/' + child.chunk)
+    ? { id: child.owner, chunk: child.chunk }
+    : { id: 'fishball-instance' }))(typeof document === 'undefined' ? undefined : document.currentScript, { owner: 'fishball-settings', chunk: 'client.instance.js' }),
   factory(require) {
     const module = { exports: {} }
     const exports = module.exports
@@ -480,15 +492,31 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** DSH plugin styles are per page; the id keeps a reload from stacking two copies. */
-    function mountStyles() {
+    /** One page style sheet; DSH plugin styles are per page, and the id names the sheet. */
+    function mountStyle(id, text) {
       const style = document.createElement('style')
-      style.id = STYLE.id
-      style.textContent = css
+      style.id = id
+      style.textContent = text
       document.head.appendChild(style)
       return () => style.remove()
     }
+    /** This card's styles; the id keeps a reload from stacking two copies. */
+    const mountStyles = () => mountStyle(STYLE.id, css)
 
+    /**
+     * What the child's slim settings panel reuses as it is (SET): the dictionaries under this
+     * card's locale namespace, the styles, the polled status, the status line and the model block.
+     * The panel's own routes answer the same paths and shapes (child-web/fishball-settings/index.js).
+     */
+    exports.shared = Object.freeze({
+      locale: PLUGIN.locale,
+      dictionaries: Object.freeze({ en, zh }),
+      mountStyles,
+      mountStyle,
+      useInstanceStatus,
+      InstanceStatus,
+      ModelSync,
+    })
     exports.name = PLUGIN.id
     exports.inject = ['slots', 'locale', 'configForms']
     exports.apply = function apply(ctx) {

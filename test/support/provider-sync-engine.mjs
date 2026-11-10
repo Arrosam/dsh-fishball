@@ -17,10 +17,15 @@ export function provider(id = CASE.ids.add, changes = {}) {
 export function inventory(identity = CASE.source, providers = [provider()]) {
   return { identity: clone(identity), revision: { [CASE.ns]: CASE.revision }, schemas: { [CASE.ns]: CASE.schema }, owners: { [CASE.ns]: CASE.generation }, namespaces: [{ ns: CASE.ns, schema: CASE.schema, ownerGeneration: CASE.generation }], providers: clone(providers) }
 }
-export async function engineFixture(t, source = inventory(), target = inventory(CASE.target, [])) {
+/**
+ * `options.describeRecord` adds the real child host's optional value-free key description. Off by
+ * default: the engine treats it as optional, and the engine/coordinator suites exercise a host
+ * without it (a key created meanwhile then reaches the official locked mutation, PS-E10).
+ */
+export async function engineFixture(t, source = inventory(), target = inventory(CASE.target, []), options = {}) {
   const credentials = await officialCredentials()
   t.after(() => credentials.close())
-  const calls = { inventory: 0, reads: 0, additions: [], imports: [], verifies: [] }
+  const calls = { inventory: 0, reads: 0, additions: [], imports: [], verifies: [], describes: [] }
   const state = { source: clone(source), target: clone(target), now: CASE.time, configFailure: null, recordFailure: null, importBarrier: null, inventoryHook: null, importHook: null }
   const host = {
     async inventory() { calls.inventory++; if (state.inventoryHook) await state.inventoryHook(calls.inventory); return clone(state.target) },
@@ -45,6 +50,10 @@ export async function engineFixture(t, source = inventory(), target = inventory(
     },
     async verify(id) { calls.verifies.push(id); return { catalogAdvertised: true } },
   }
+  // The real child host (src/provider-sync-host.js createProviderSyncHost) exposes describeRecord:
+  // the value-free {configured, kind?, writable} of the child's own key record. Modelled over this
+  // fixture's official store so a key created meanwhile (§10 target race) is seen as in production.
+  if (options.describeRecord) host.describeRecord = async (id) => { calls.describes.push(id); return credentials.describe(id) }
   const { ProviderSyncEngine } = await import('../../packages/instance/src/provider-sync.js')
   const engine = new ProviderSyncEngine({ host, ttlMs: CASE.ttlMs, now: () => state.now })
   // Check every observable result/error before node:test can format it in a failure diagnostic.
