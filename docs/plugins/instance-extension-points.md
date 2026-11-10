@@ -1361,7 +1361,7 @@ DSH packages (rc.5 / rc.1), read only.
 | `shell.leading` (sidebar toggle and the controls beside it) | empty occupant of `shell.leading` (SP1) | `dsh-client-ui-sidebar/lib/client.js:651` / `:773` | CSS |
 | **56 px rail** | **no DSH mechanism**: `collapsedWidth` is 56 unless `data-platform="darwin"`, `data-windows-titlebar`, or (rc.1 only) the viewport is < 768 px | `dsh-client-ui-layout/lib/client.js:242` / `:267` (`computeColumns` `:38` / `:39`) | CSS from the plugin; see Q-F |
 | Collapse the sidebar once | `layout.toggleSidebar()` at start (SP1) | `selectPanel` `:468` / `:522` | — |
-| Hero workspace picker (empty session only) | empty occupant of `conversation.hero.workspace`; the inert chip stays (SP F2) | `dsh-client-ui-workspace` | CSS hides the chip |
+| Hero workspace picker (empty session only) | empty occupant of `conversation.hero.workspace`, and the inert chip is hidden by its native label (LITE, [v2-lite](<../planning/v2-lite.md>)) | `dsh-client-ui-workspace` | CSS hides the chip |
 | Header lineage links (parent/child sessions) | empty occupant of `conversation.session.header.lineage` | `dsh-client-ui-subagent/lib/client.js:979` / `:1262` | CSS |
 | Header utilities that leave the page (open-in-app) | the row is disabled (read-only, §11.6) | `dsh-web-app/cordis.patch.yml` `open-in-app`, `ui-open-in-app` (rc.1 `:73,:84`) | — |
 | Permission picker | `ui-permission` row disabled (SP1) | `cordis.patch.yml:418` / `:420` | — |
@@ -1369,6 +1369,11 @@ DSH packages (rc.5 / rc.1), read only.
 | **Kept:** conversation view, Composer, all `conversation.input.*` and `conversation.composer.dock` entries, chat nodes, header actions of other plugins, `rightbar` panels (except terminal, §11.6), DSH Settings and Plugins pages | — | — | — |
 
 ### 11.4 Allowed destinations and escape prevention
+
+> **Superseded for V2 (LITE).** The user rejected the navigation guard below, and its bounce-back
+> rows, together with archive cleanup ([v2-final-scope §4.3](<../planning/v2-final-scope.md#L181>)).
+> V2 prevents the escape instead: remapped shortcuts, hidden surfaces, a frame guard and one
+> intended manager selection ([v2-lite](<../planning/v2-lite.md>)). The allowed destinations stay.
 
 **Allowed:** Fishball's session view, plus the `main` panels for DSH Settings, Plugins and any
 plugin's settings (U12), plus our own panels (approvals, reminders, board). **Blocked:** every other
