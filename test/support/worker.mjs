@@ -8,7 +8,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, CONNECTOR, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTANCE, INSTALL_EVENTS, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, CONNECTOR, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTANCE, INSTALL_EVENTS, SHARED, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
 import { linkContractForSourceRun } from './contract-link.mjs'
 import { fixtureTool, plainConfig, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
@@ -88,12 +88,23 @@ function pluginPackages() {
   return [{ name: pkg.name, dir: target }]
 }
 /**
+ * V3 R-SHARED (R-ARCH-08): `fishball-shared` of the same checkout as pluginPackages(), when that
+ * checkout has one (a checkout from before R-SHARED has none). It is a library, not a bundle.
+ */
+function libraryPackages() {
+  const target = process.env.FBTEST_PLUGIN_DIR
+  const dir = target ? path.join(target, 'packages', 'shared') : SHARED.dir
+  return fs.existsSync(dir) ? [{ name: SHARED.name, dir }] : []
+}
+/**
  * Plugin statuses: every boot re-points the links, so the same home can boot the old and the new
  * version. FBTEST_LINK (JSON [{name, dir, enabled}]) links further bundles on this boot when the
  * profile lacks them (a bundle installed while DSH was down).
  */
 linkContractForSourceRun()
 for (const p of pluginPackages()) relinkPlugin(profileDir, p.name, p.dir)
+// V3 R-SHARED: the library beside the plugins, as a plain dependency (relinkPlugin never selects a bundle).
+for (const p of libraryPackages()) relinkPlugin(profileDir, p.name, p.dir)
 for (const b of JSON.parse(process.env.FBTEST_LINK ?? '[]')) {
   const deps = JSON.parse(fs.readFileSync(path.join(profileDir, 'package.json'), 'utf8')).dependencies ?? {}
   if (!Object.hasOwn(deps, b.name)) link(profileDir, b.name, b.dir, b.enabled)
