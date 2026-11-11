@@ -1,0 +1,245 @@
+{
+  "id": "standalone",
+  "sdk": "0.2.1-rc.5",
+  "node": "v24.22.2",
+  "at": "2026-11-11T09:31:04.117Z",
+  "install": {
+    "fishball-core": {
+      "ok": true,
+      "tail": [
+        "Done in 545ms using pnpm v10.33.0",
+        ""
+      ]
+    },
+    "fishball-board": {
+      "ok": true,
+      "tail": [
+        "Progress: resolved 2, reused 1, downloaded 1, added 1, done",
+        "Done in 521ms using pnpm v10.33.0"
+      ]
+    },
+    "fishball-instance": {
+      "ok": true,
+      "tail": [
+        "Progress: resolved 3, reused 2, downloaded 1, added 1, done",
+        "Done in 516ms using pnpm v10.33.0"
+      ]
+    }
+  },
+  "boots": [
+    {
+      "label": "installed",
+      "reportAtAppReady": {
+        "status": "guards-overridden",
+        "overridden": [
+          "fishball-instance"
+        ]
+      },
+      "policyAtAppReady": {
+        "sandbox": "read-only",
+        "approval": "ask",
+        "presets": [
+          "read-only"
+        ],
+        "defaultPreset": "read-only",
+        "agentPreset": "fishball"
+      },
+      "checkTriggers": [
+        "settings/document-updated",
+        "app-ready"
+      ],
+      "instanceStarted": true,
+      "boardStarted": true,
+      "preflightOrConflictLines": [],
+      "presetIds": [
+        "fishball"
+      ],
+      "session": {
+        "agentPreset": "fishball",
+        "sandbox": "read-only",
+        "permission": "read-only"
+      },
+      "modelTools": [
+        "read",
+        "read_image",
+        "working_directory"
+      ],
+      "sessionRequests": 2,
+      "sessionCreatingTools": [],
+      "clientGraphFishball": [
+        "fishball-core"
+      ],
+      "clientGraphGuardedUi": [],
+      "inventoryFishball": [
+        {
+          "entryId": "include:fishball-core",
+          "moduleName": "fishball-core",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:fishball-ui",
+          "moduleName": "fishball-core/ui",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:fishball-board",
+          "moduleName": "fishball-board",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:fishball-instance",
+          "moduleName": "fishball-instance",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:spike-llm",
+          "moduleName": "file://<worktree>/spikes/v3-s6/fake-llm.mjs",
+          "enabled": true,
+          "phase": "active"
+        }
+      ],
+      "pluginManager": {
+        "bundles": [
+          {
+            "name": "fishball-core",
+            "enabled": true,
+            "rows": [
+              "preset-fishball",
+              "fishball-core",
+              "fishball-ui"
+            ],
+            "overrides": [
+              "ui-subagent",
+              "ui-schedule",
+              "schedule",
+              "ui-permission",
+              "ui-agent-preset",
+              "entry-customization",
+              "ui-open-in-app",
+              "open-in-app",
+              "ui-sidebar-terminal",
+              "terminal-controller",
+              "fishball-instance",
+              "preset-standard",
+              "preset-ptc",
+              "preset-cordis",
+              "preset-minimal",
+              "sandbox-policy",
+              "approval",
+              "permission",
+              "agent-preset-registry"
+            ]
+          },
+          {
+            "name": "fishball-board",
+            "enabled": true,
+            "rows": [
+              "fishball-board"
+            ],
+            "overrides": []
+          },
+          {
+            "name": "fishball-instance",
+            "enabled": true,
+            "rows": [
+              "fishball-instance"
+            ],
+            "overrides": []
+          }
+        ],
+        "plugins": [
+          {
+            "entryId": "include:fishball-core",
+            "moduleName": "fishball-core",
+            "patchId": "fishball-core"
+          },
+          {
+            "entryId": "include:fishball-ui",
+            "moduleName": "fishball-core/ui",
+            "patchId": "fishball-ui"
+          },
+          {
+            "entryId": "include:fishball-board",
+            "moduleName": "fishball-board",
+            "patchId": "fishball-board"
+          },
+          {
+            "entryId": "include:fishball-instance",
+            "moduleName": "fishball-instance",
+            "patchId": "fishball-instance"
+          }
+        ]
+      },
+      "route": {
+        "status": 200,
+        "body": {
+          "highlighted": [],
+          "categories": [],
+          "source": "fishball-core/ui"
+        }
+      }
+    }
+  ],
+  "bundles": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "fishball-core",
+    "fishball-board",
+    "fishball-instance"
+  ],
+  "b1": {
+    "listedAs": {
+      "entryId": "include:ui-subagent",
+      "readOnlyReason": null
+    },
+    "result": {
+      "stage": "enable",
+      "target": "include:ui-subagent",
+      "enabled": true,
+      "changed": true,
+      "application": "applied",
+      "warnings": []
+    },
+    "triggers": [
+      "plugin-manager/changed"
+    ],
+    "report": [
+      "ui-subagent",
+      "fishball-instance"
+    ],
+    "entryDisabledAfter": false,
+    "profilePatch": [
+      "[ { id: ui-subagent, disabled: false } ]"
+    ]
+  },
+  "b2": {
+    "result": true,
+    "triggers": [
+      "settings/document-updated"
+    ],
+    "report": [
+      "ui-subagent",
+      "fishball-instance",
+      "policy.defaultPreset",
+      "policy.presets"
+    ],
+    "presetNames": [
+      "read-only",
+      "workspace-write"
+    ]
+  },
+  "b3": {
+    "result": true,
+    "triggers": [
+      "settings/document-updated"
+    ],
+    "report": [
+      "fishball-instance"
+    ]
+  },
+  "home": "<worktree>/.runtime/v3-s6/standalone-0.2.1-rc.5-1794389450369"
+}

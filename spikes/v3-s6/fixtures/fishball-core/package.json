@@ -1,0 +1,22 @@
+{
+  "name": "fishball-core",
+  "version": "0.0.0-spike.1",
+  "description": "V3-S6 throwaway: fishball-core as a plain bundle carrying its fishball-ui component",
+  "type": "module",
+  "private": true,
+  "engines": { "dsh": ">=0.2.1-rc.5" },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "inject": ["@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-ui-plugin-manager"]
+    }
+  },
+  "exports": {
+    ".": "./index.js",
+    "./ui": "./ui.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": ["index.js", "ui.js", "guards.js", "client.js", "cordis.patch.yml"]
+}

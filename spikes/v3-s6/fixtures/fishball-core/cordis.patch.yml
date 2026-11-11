@@ -1,0 +1,50 @@
+# V3-S6 throwaway: fishball-core's bundle patch. The guard rows are the fishball-ui component's part.
+# A patch's `config` REPLACES the row's whole config (cordis-plugin-include applyEntryPatches), so
+# every policy row restates the keys DSH ships, including the `!!js` workspace root.
+- { id: ui-subagent, disabled: true }
+- { id: ui-schedule, disabled: true }
+- { id: schedule, disabled: true }
+- { id: ui-permission, disabled: true }
+- { id: ui-agent-preset, disabled: true }
+- { id: entry-customization, disabled: true }
+- { id: ui-open-in-app, disabled: true }
+- { id: open-in-app, disabled: true }
+- { id: ui-sidebar-terminal, disabled: true }
+- { id: terminal-controller, disabled: true }
+- { id: fishball-instance, disabled: true }
+# Preset plugin lists are config arrays, not loader groups: a patch cannot disable one nested row by
+# id. The shipped presets are switched off and core inserts its own preset without session-creating tools.
+- { id: preset-standard, disabled: true }
+- { id: preset-ptc, disabled: true }
+- { id: preset-cordis, disabled: true }
+- { id: preset-minimal, disabled: true }
+- id: sandbox-policy
+  config:
+    mode: read-only
+    workspaceRoot: !!js process.cwd()
+- id: approval
+  config:
+    policy: ask
+- id: permission
+  config:
+    presets:
+      read-only: { sandbox: read-only, approval: ask }
+    defaultPreset: read-only
+- id: agent-preset-registry
+  config:
+    default: fishball
+- insert:
+    - id: preset-fishball
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: fishball
+        order: 0
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config: { prefix: 'You are Fishball (spike).', complete: true, includeRuntimeContext: false }
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config: { read: true, readImage: true, write: false, edit: false }
+    - { id: fishball-core, name: fishball-core, config: {} }
+    - { id: fishball-ui, name: fishball-core/ui, config: {} }
