@@ -24,6 +24,12 @@ const ROOT_FILES = Object.freeze([MANIFEST])
 const JSON_START = /^\[/m
 const DIGEST = 'sha256'
 
+/** The `.runtime` folder for throwaway copies (created on first use; the runner creates it too). */
+export function npmTempRoot() {
+  fs.mkdirSync(NPM.tempRoot, { recursive: true })
+  return NPM.tempRoot
+}
+
 export const readManifest = (dir) => {
   const file = path.join(dir, MANIFEST)
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null
@@ -43,7 +49,7 @@ const posix = (p) => p.split(path.sep).join('/')
  * a bare `fishball-shared` resolves from an importing file as it would after `npm install`.
  */
 async function workspaceCopy() {
-  const root = await mkdtemp(path.join(NPM.tempRoot, NPM.tempPrefix))
+  const root = await mkdtemp(path.join(npmTempRoot(), NPM.tempPrefix))
   const { stdout } = await run('git', ['ls-files', '-co', '--exclude-standard', '-z', '--', 'packages', ...ROOT_FILES], { cwd: REPO, maxBuffer: NPM.maxStdoutBytes })
   for (const rel of stdout.split('\0').filter(Boolean)) {
     const from = path.join(REPO, rel)
