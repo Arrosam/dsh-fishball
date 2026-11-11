@@ -359,7 +359,18 @@ What it means (now R-WD-03, R-WD-12, R-INT-07):
   and makes Q32 and its revision (R-WD-13, the idle-stop bypass) unnecessary, since no turn
   event reaches Watchdog any more.
 
-### 1.15 Earlier decisions carried into V3
+### 1.15 Q33 answered (2026-11-11), verbatim
+
+> Watchdog是被动assign上去的，所以不能
+
+What it means: Watchdog is attached to a session **passively**, so Fishball cannot call it on
+demand. `check_now` and refine-triggered checks are removed as ways to activate it. Watchdog runs
+only on a supervised session's permission request or when its own patrol timer fires.
+**Refine survives as a data change only:** Fishball may still update a supervised session's
+brief (`watchdog_refine`), but that starts no run; the new brief applies at Watchdog's next
+patrol or permission judgement (R-WD-15).
+
+### 1.16 Earlier decisions carried into V3
 
 - **Watchdog**, a token saver and not a safety layer (U16):
   - It runs only passively, when a session triggers it, or on active patrol. A single "minimum
@@ -638,8 +649,8 @@ These hold in **both** hosted and standalone mode.
 | R-WD-00 | **Watchdog is Fishball's helper, like a subagent of Fishball (Q10, decided).** It acts only on sessions its Fishball manages, only on Fishball's behalf, and never as a principal of its own. Everything Watchdog does at the connector is done as Fishball. |
 | R-WD-01 | Watchdog runs only in a Fishball DSH (hosted child or standalone), and only with `fishball-core` present. No Watchdog code, settings or UI runs in a host or main DSH. |
 | R-WD-02 | **Revised by 1.8 item 4 and Q30.** Watchdog opens **no** subscription of its own. `fishball-core` holds the one `fishball-events` subscription of its principal, and Watchdog receives its events as an **interceptor** (R-INT-07), without a Fishball LLM turn. Watchdog has no token, principal or lane of its own. Revoking Fishball's token cuts Watchdog off with it. |
-| R-WD-03 | **Watchdog is activated in exactly two cases (1.14):** (1) a permission request of a session it supervises that needs judging (R-INT-07); (2) its own patrol timer firing for a supervised session (R-WD-04, R-WD-14). Nothing else activates it: no session event, question, message or contributor event. Fishball's explicit `check_now` and refine operations remain as requests from Fishball, not events (Q33, A assumed). |
-| R-WD-04 | Patrol checks of one session are at least `minCheckIntervalSeconds` apart: default **1740** (29 min), integer, inclusive range **60–86400**. At the bounds, 60 and 86400 are accepted and 59 and 86401 are refused. A patrol fires once per interval per supervised session, whether or not the session produced anything new. Permission requests are never delayed or throttled by the interval. |
+| R-WD-03 | **Watchdog is activated in exactly two cases (1.14; Q33 decided):** (1) a permission request of a session it supervises that needs judging (R-INT-07); (2) its own patrol timer firing for a supervised session (R-WD-04, R-WD-14). Nothing else activates it: no session event, question, message, contributor event, or request from Fishball. There is no `check_now` tool, and no Fishball operation starts a Watchdog run (Q33: Watchdog is assigned passively). |
+| R-WD-04 | Patrol checks of one session are exactly one per `minCheckIntervalSeconds`, at least that far apart: default **1740** (29 min), integer, inclusive range **60–86400**. At the bounds, 60 and 86400 are accepted and 59 and 86401 are refused. A patrol fires once per interval per supervised session, whether or not the session produced anything new. Permission requests are never delayed or throttled by the interval. |
 | R-WD-05 | There are no approval timers, no hourly or daily call caps, no stall, idle or paused-poll timers and no per-brief schedule overrides. The hung-check timeout and the bounded start attachment carried over from T0 are failure bounds, not pacing. |
 | R-WD-06 | Watchdog's model follows DSH's native session behaviour: a model change applies at the next not-yet-prepared model step. Saving settings performs no model lookup. |
 | R-WD-07 | Any Watchdog failure (load, readiness, loss of its interception registration, model or provider error, budget, store, claim, attach, runtime) makes Watchdog **effective off** at once. Its claims are released, pending items go to Fishball, sends pass, and stale callbacks are fenced. Fishball is told **"watchdog is down"**: one notice each time Watchdog goes down, including with zero supervised sessions and when the Fishball DSH could not load it (R-FB-07, R-HOST-08). A failure never stops or restarts a watched session. |
@@ -650,6 +661,7 @@ These hold in **both** hosted and standalone mode.
 | R-WD-12 | **Routing (redefined by 1.14; replaces Q25's split).** For a session supervised by a healthy Watchdog, **only its permission requests** go to Watchdog (R-INT-07), and they start no Fishball LLM turn. Every other event of that session (every `turn-finished`, mid-work or idle; `state`; questions and plan reviews; `message_fishball`, `ask_fishball`; Hand over / Take back) goes to Fishball, as do all events of unsupervised sessions and everything while Watchdog is off or down. A Watchdog **escalation to Fishball** (only for a request that is not high-risk and that Watchdog cannot decide, R-WD-09) sends the request back to Fishball, which is woken for it. A high-risk request goes to the **user** instead, with no Fishball turn (Q13). |
 | R-WD-13 | *Withdrawn (1.14).* The idle-stop bypass is no longer needed: no `turn-finished` event reaches Watchdog. The ID stays reserved so earlier references remain traceable. |
 | R-WD-14 | **Patrol reads the session itself (1.14).** When the patrol timer fires for a supervised session, Watchdog reads what it needs through `fishball-core`'s link with its own operation list: `sessions_list` for that session's running and pending-interaction state, and `session_read` for the messages since its last patrol watermark, bounded by its read limits. It needs no `turn-finished` or `state` events. A patrol that finds a problem reaches Fishball only through Watchdog's usual escalation or report (R-WD-08, R-WD-09); a patrol that finds nothing wakes nobody. A failed read is a Watchdog failure (R-WD-07). |
+| R-WD-15 | **Brief changes start no run (Q33 decided).** Fishball keeps `watchdog_brief` (the brief given at start or hand-over, U2) and `watchdog_refine` (update a supervised session's brief or criteria), as data operations only. A refine is stored at once and returns immediately; it starts no check, side-session turn or model call. Watchdog uses the latest brief at its next activation (the next permission judgement or patrol of that session). A refine never moves the patrol timer. There is no `watchdog_check_now`. `watchdog_pause` and `watchdog_resume` keep their existing meaning (pause stops the session first, R-WD-10) and also start no Watchdog run. |
 
 ### 3.11 Placement, board and fold-notify (R-BND, R-BRD, R-FN)
 
@@ -817,7 +829,7 @@ Contributed tools disappear when their contributor goes (R-EXT-04). They never o
 Fishball asks these one at a time. Each gives the background, the options, the recommendation
 and its reason. Numbers are stable across revisions; decided questions stay here as a record.
 
-**Remaining:** Q33 (whether Fishball may still request Watchdog checks explicitly).
+**Remaining:** none. All questions are decided.
 
 **Q1. What may run in the main DSH? — DECIDED 2026-11-11.**
 The user's answer is quoted in 1.3. The main DSH is a full DSH and may install any plugin; the
@@ -1000,15 +1012,8 @@ quoted in 1.13). Turns in the middle of the work stay
 Watchdog-only. Now R-WD-13. Options B (strict Q25) and C (every `turn-finished` to both) are
 closed.
 
-**Q33. May Fishball still ask Watchdog for a check explicitly? (new, from 1.14)**
-*Background:* the earlier Watchdog design gave Fishball two manager operations, `check_now`
-(check a supervised session now) and an active brief refine that starts a check. The new rule
-says Watchdog is activated only by a permission request or its own patrol timer.
-- **A (recommended, assumed in R-WD-03):** keep both, as explicit Fishball requests. They are
-  not events, and they spend Watchdog tokens only when Fishball decides to; event routing
-  follows 1.14 exactly.
-- B: remove `check_now` and refine-triggered checks. Watchdog runs only on permission requests
-  and its timer; Fishball can still refine a brief, which takes effect at the next patrol.
-
-*Reason for A:* it gives Fishball a way to get a check right after it hears something worrying
-in a `turn-finished`, without waiting up to 29 minutes, and it adds no automatic activation.
+**Q33. May Fishball still ask Watchdog for a check explicitly? — DECIDED 2026-11-11: B.**
+No. The user's words are quoted in 1.15: Watchdog is assigned passively, so Fishball cannot call
+it. `check_now` and refine-triggered checks are removed; refine survives only as a brief update
+that applies at the next patrol or permission judgement. Now R-WD-03, R-WD-15. Option A is
+closed.
