@@ -404,12 +404,20 @@
       api.facade = facade(service, o.faults)
       // Native-like session/workspace/layout services.
       const current = store({ key: null })
-      const list = store({ byId: {} })
+      // The host catalogue: the manager the route names and one ordinary session. Native
+      // ctx.sessions.list (dsh-api-session-controller SessionListState, both SDKs) carries every
+      // catalogued Session whether or not a view shows it, so both are listed from the start; only
+      // the local retain counts follow the selection, and a source with no reference has no key.
+      const catalog = (mainId) => {
+        const ids = [o.session.sessionId, 'session-other-case'].filter(Boolean)
+        const byId = {}
+        for (const known of ids) byId[known] = { id: known, displayTitle: known, running: false, blank: false, updatedAt: 0, retainedBy: known === mainId ? { mainView: 1 } : {} }
+        return { ids, byId, phase: 'ready', projectionsBySession: {} }
+      }
+      const list = store(catalog(null))
       const panel = store({ activePanelId: null })
       const show = (id) => {
-        const byId = {}
-        for (const known of [o.session.sessionId, 'session-other-case']) if (known) byId[known] = { id: known, blank: false, retainedBy: { mainView: known === id ? 1 : 0 } }
-        list.set({ byId })
+        list.set(catalog(id))
         current.set({ key: id })
       }
       // Drift arrives without a user action (bypass-UI): the timeline marks it so a later
