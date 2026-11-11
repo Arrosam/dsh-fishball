@@ -553,9 +553,8 @@ refreshing after a connector restart. R-OA-16 (5), R-OA-05; design §5.5a. Cases
 documented departure from the specification. R-OA-10 (reinstated in this form), R-TOK-01, §1.25;
 design §5.5. Cases: AUTH-UC-07, AUTH-UC-11, AUTH-EP-02 rows 7–8b, AUTH-EP-11, AUTH-DT-10.
 
-**Q-HDR-1 (open).** Must an entry opt in to static header access? Today any enabled entry accepts it.
-Options: A any entry (simplest, the user's words); B a per-entry switch, off by default (like the old
-`directAccess`, so a leaked value works only where enabled). Recommendation: B.
+**Q-HDR-1 decided A** (the user: "A"): every enabled token entry accepts static headers; no per-entry
+switch. R-OA-10, §1.25; design §5.5. No case assumed a switch. **No question is open.**
 S7b flags dropped: AUTH-UC-10, AUTH-DT-07, AUTH-DT-09 rules 3–4 (rule 4's timing stays K), REM-UC-03 E5.
 
 **S6 round 2 (`7c2230e`, PASS).** Reorder: core moves itself last with DSH's public profile functions;
