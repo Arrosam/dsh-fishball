@@ -3,7 +3,7 @@
 Status: **draft for alignment, 2026-11-11. Docs only.** Branch `design/v3`, cut from
 `integrate/v2` at `505766e`. No product code or test cases exist for anything in this file yet.
 The design that answers these requirements is [v3-design.md](<v3-design.md>). Section 7 holds the
-questions that must be answered before the requirements freeze; Q1 is decided.
+questions that must be answered before the requirements freeze; Q1 and Q2 are decided.
 
 Inputs: [V2 final scope](<v2-final-scope.md>) (what V2 shipped and what it deferred to V3),
 [instance extension points](<../plugins/instance-extension-points.md>) (U1–U22, X1–X19),
@@ -74,7 +74,17 @@ What it means (Fishball's reading):
     Fishball instance. It connects through MCP, with a token, to a connector on a main or remote
     DSH.
 
-### 1.4 Earlier decisions carried into V3
+### 1.4 Q2 answered (2026-11-11), verbatim
+
+> A，lite改名fishball-ui，变成core的一个组件，既然必须一起装，那就没有分开的必要，也就是4个插件
+
+What it means: option A, with **four** plugins. The former `fishball-lite` is renamed
+**`fishball-ui`** and becomes a component **inside `fishball-core`**, because the two must always
+be installed together. The Fishball plugin set is `fishball-core` (including its `fishball-ui`
+component), `fishball-board`, `fishball-fold-notify` and `fishball-watchdog`. The features
+require core.
+
+### 1.5 Earlier decisions carried into V3
 
 - **Watchdog**, a token saver and not a safety layer (U16):
   - It runs only passively, when a session triggers it, or on active patrol. A single "minimum
@@ -111,7 +121,7 @@ What it means (Fishball's reading):
 | **Connector** (C) | `fishball-connector`, installed in a main DSH. |
 | **Instance** (I) | `fishball-instance`, the launcher plugin for hosted mode. |
 | **Embed-UI** (U) | `dsh-fishball-embed-UI`, installed in the host DSH. |
-| **Fishball plugin set** (F) | The DSH plugins that make a DSH into Fishball (proposed packaging: Q2). |
+| **Fishball plugin set** (F) | The four DSH plugins that make a DSH into Fishball (Q2, decided): `fishball-core` (with its `fishball-ui` component), `fishball-board`, `fishball-fold-notify`, `fishball-watchdog`. |
 | **Principal** | One access token's identity at a connector. Each Fishball DSH is one principal; each external agent is another. |
 | **Contributor** | A plugin in a connector's DSH that contributes MCP tools through the connector (R-EXT). |
 | **Event** | Something that happens at a main DSH and that a principal must learn about: an approval offer, a question, a settlement, a watch notice, a session state change or a `message_fishball` message. |
@@ -126,7 +136,7 @@ operation returns a machine-readable error code, changes nothing and leaks nothi
 | ID | Requirement |
 | --- | --- |
 | R-ARCH-01 | V3 ships `fishball-connector`, `fishball-instance`, `dsh-fishball-embed-UI` and the **Fishball plugin set** (R-FB). Every one of them is an ordinary DSH plugin (bundle) that DSH's own plugin management can install, enable, disable and list. |
-| R-ARCH-02 | A DSH with any of these packages installed stays a full DSH: **no** V3 package refuses to load, hides or disables another plugin because a Fishball package is present. The one exception is a Fishball DSH, where `fishball-lite` reshapes the DSH on purpose (R-FB-02, Q20). |
+| R-ARCH-02 | A DSH with any of these packages installed stays a full DSH: **no** V3 package refuses to load, hides or disables another plugin because a Fishball package is present. The one exception is a Fishball DSH, where `fishball-core`'s `fishball-ui` component reshapes the DSH on purpose (R-FB-02, Q20). |
 | R-ARCH-03 | `fishball-connector` registers **no browser client module**. Its package declares no `dsh.client` entry, and loading it adds no sidebar entry, slot contribution, CSS or route that serves HTML. |
 | R-ARCH-04 | Every host-DSH UI change Fishball makes comes from `dsh-fishball-embed-UI`. With embed-UI uninstalled, **no** Fishball UI element appears in the host DSH. |
 | R-ARCH-05 | `fishball-instance` provides only the hosted child and its lifecycle (R-HOST). It contributes no UI. Its host row's `inject` list holds **no service that reads or writes sessions, approvals, questions or prompts**; it cannot reach the host DSH's sessions except through a connector's MCP, from inside the child, like any client. |
@@ -195,12 +205,12 @@ These hold in **both** hosted and standalone mode.
 
 | ID | Requirement |
 | --- | --- |
-| R-FB-01 | The Fishball plugin set is a fixed list of DSH plugins (proposed in Q2: `fishball-core`, `fishball-lite`, `fishball-board`, `fishball-fold-notify`, `fishball-watchdog`). Each one is an ordinary bundle that DSH's native plugin management installs from its package. **The same package files** are used in hosted and standalone mode. |
+| R-FB-01 | The Fishball plugin set is exactly four DSH plugins (Q2, decided): `fishball-core`, `fishball-board`, `fishball-fold-notify` and `fishball-watchdog`. Each is an ordinary bundle that DSH's native plugin management installs from its package. **The same package files** are used in hosted and standalone mode. `fishball-ui` is a component of `fishball-core`: it ships in core's package, loads with core and has **no** separate entry in DSH's plugin list, so it cannot be installed, enabled or removed apart from core. |
 | R-FB-02 | Installing the set into an ordinary DSH and restarting it makes that DSH a Fishball DSH: one Fishball manager session; the A-lite Fishball-only page (sidebar, navigation and new-session entries hidden and not focusable, shortcuts remapped or unbound); effective read-only with the private Skills exception; no new sessions; the child-only `fishball-recommended` tab; slim settings. How strictly these guards are enforced in each mode is Q20. |
 | R-FB-03 | `fishball-core`'s native settings form names the **target**: the URL of a connector MCP endpoint and a credential reference for its token. In hosted mode the instance supplies both (R-HOST-05) and the fields are read-only notes. In standalone mode the user fills them in. A blank target reports `target-unset`. |
 | R-FB-04 | `fishball-core` connects to the target over MCP with that token. When the target is unreachable or refuses the token, Fishball still runs, and its status shows `target-unreachable` or `token-refused`. It retries with bounded backoff and never sends the token to any origin other than the target's. A non-loopback target must be `https:`. |
 | R-FB-05 | A remote target works with the same tool semantics as a local one: a Fishball DSH whose target is DSH B's connector manages **B's** sessions. |
-| R-FB-06 | A feature plugin (board, fold-notify, Watchdog) installed without `fishball-core`, or `fishball-lite` without `fishball-core`, does nothing beyond logging one `fishball-core-missing` line. It never fails the DSH's boot. The combination of core without lite is Q2. |
+| R-FB-06 | A feature plugin (board, fold-notify, Watchdog) installed without `fishball-core` does nothing beyond logging one `fishball-core-missing` line. It never fails the DSH's boot. |
 | R-FB-07 | In standalone mode, when `fishball-watchdog` is enabled in the DSH's profile but has not registered with `fishball-core` by the time the app's ready signal fires (skipped as incompatible, or failed to load), Fishball is told **"watchdog is down"** once per DSH start. |
 | R-FB-08 | The set's plugins never read, write or act on the sessions of a DSH other than their own Fishball DSH, except through the target connector's MCP. |
 
@@ -211,7 +221,7 @@ These hold in **both** hosted and standalone mode.
 | R-HOST-01 | **Launch.** The instance keeps one private child DSH under the host DSH (its own home and profile). At every child start it places the whole Fishball plugin set from its own package into the child profile, before the profile loads (R-BND). |
 | R-HOST-02 | **Lifecycle.** The child starts after the host's app ready signal, and can be stopped, restarted and retried. Crashes and failed starts show a status code. When the host DSH exits, the child stops. Uninstall cleanup removes the child runtime after offering the board archive export (R-BRD-02). |
 | R-HOST-03 | Starting, stopping and restarting the child never changes the host DSH's settings, sessions, credentials or shortcuts. |
-| R-HOST-04 | **Enforcement.** The instance applies the Fishball guards to the child as launch overlays, which DSH applies after the child profile's own patches, so the child's own settings cannot undo them (Q20). `fishball-core` and `fishball-lite` are always on in the child. |
+| R-HOST-04 | **Enforcement.** The instance applies the Fishball guards to the child as launch overlays, which DSH applies after the child profile's own patches, so the child's own settings cannot undo them (Q20). `fishball-core` is always on in the child. |
 | R-HOST-05 | **Target and token.** The instance's native settings name the target (blank = a connector in the same host DSH) and a credential reference. In the same-DSH case the token is set up automatically (Q8). The instance hands the target and the token value to the child **in memory only**: never written to disk in the child or the host, never in a process argument or environment variable another process can read. |
 | R-HOST-06 | **Child locator.** The instance publishes a host-only service for embed-UI: child state and status code, the child web's own origin, a single-use admission ticket, Retry and the target status. It publishes nothing to browsers itself. |
 | R-HOST-07 | **Model sync.** The hosted-mode provider and model sync from the host DSH into the child stays, started only from embed-UI's Plugins card (the V2 decision of 2026-11-11). Standalone mode has none: a standalone DSH has its own native model settings. |
@@ -259,7 +269,7 @@ These hold in **both** hosted and standalone mode.
 | ID | Requirement |
 | --- | --- |
 | R-BND-01 | **Hosted mode:** the whole Fishball plugin set ships inside the `fishball-instance` package. On every child boot it is copied into the child profile before the profile loads. The host DSH never resolves, lists or loads these plugins. |
-| R-BND-02 | **Hosted mode:** the first placement turns each feature plugin (board, fold-notify, Watchdog) on. A later disable survives restarts and instance upgrades. A feature plugin deleted while off is placed again **off**. `fishball-core` and `fishball-lite` are always on (R-HOST-04). |
+| R-BND-02 | **Hosted mode:** the first placement turns each feature plugin (board, fold-notify, Watchdog) on. A later disable survives restarts and instance upgrades. A feature plugin deleted while off is placed again **off**. `fishball-core` is always on (R-HOST-04). |
 | R-BND-03 | **Hosted mode:** an enabled set member that is incompatible with the running DSH (or fails to load) **blocks the child's start**. The status names the plugin and the reason. |
 | R-BND-04 | **Hosted mode:** switching a feature plugin on or off takes effect at the next child restart. The UI says "restart required", never "live". |
 | R-BND-05 | **Standalone mode:** the user installs, enables, disables and removes set members with DSH's native plugin management, and DSH's own rules apply (for example, DSH skips an incompatible bundle at boot rather than failing). `fishball-core` reports a missing or skipped member in its status. |
@@ -272,7 +282,7 @@ These hold in **both** hosted and standalone mode.
 | ID | Requirement |
 | --- | --- |
 | R-MIG-01 | A V2 user who upgrades the connector and the instance and installs embed-UI ends up with a working Fishball page and session list. Fishball's child history, Skills and child settings are kept. |
-| R-MIG-02 | The first V3 child start converts the V2 instance-owned rows into the plugin set: all set members are placed, core and lite on, the three feature plugins on at first placement. Nothing in the child's history is lost. |
+| R-MIG-02 | The first V3 child start converts the V2 instance-owned rows into the plugin set: all four set members are placed, core on, the three feature plugins on at first placement. Nothing in the child's history is lost. |
 | R-MIG-03 | A V3 Fishball DSH against a V2 connector, or a V2 instance against a V3 connector, fails visibly with `connector-upgrade-required` or `instance-upgrade-required` before any delegation. There is no compatibility shim. |
 | R-MIG-04 | V2 connector settings that V3 still uses keep their values. Settings V3 dropped are ignored, never re-rendered (D2 rule). |
 | R-MIG-05 | A V2 user's first V3 start, with the connector and the instance in one DSH, leaves them a usable token without a manual step (Q8). |
@@ -307,10 +317,11 @@ standalone). The default instance target is a connector in the same DSH (R-HOST-
 | 8r | row 8 plus external agents with their own tokens | The same, with several principals (Q7). | — |
 | 9 | **F** (standalone), target = a connector elsewhere | This DSH **is** Fishball: its own web UI is the Fishball page, guarded per Q20. Fishball manages the target DSH's sessions over MCP (manual token, Q8). Watchdog, board and fold-notify work if installed. | No dots (no embed-UI there to own a latch), no Hand over UI in the target DSH unless that DSH has U with a hosted I (row 8). |
 | 9b | **F**, target blank | Fishball runs, `target-unset`. | No sessions to manage. |
-| 10 | **F + U** or **F + I** | The standalone Fishball as in row 9. U without I is inert; I inside a Fishball DSH would try to launch a nested child, which the guards forbid (lite disables the instance row). | No nested Fishball. |
+| 10 | **F + U** or **F + I** | The standalone Fishball as in row 9. U without I is inert; I inside a Fishball DSH would try to launch a nested child, which the guards forbid (core's `fishball-ui` component disables the instance row). | No nested Fishball. |
 | 11 | **F + C** in one DSH | Not a supported combination: the Fishball guards forbid new sessions, so the connector has nothing useful to expose. No checks are promised. | — |
 | 12 | a main DSH with C, used by a hosted Fishball (row 5/8) **and** a standalone Fishball (row 9) | Two Fishball principals. Routing follows Q7 (one designated Fishball). | — |
 | 13 | **F** installed partly (feature plugins without core) | Nothing; each logs `fishball-core-missing` (R-FB-06). | — |
+| 13b | `fishball-core` alone (no feature plugins) | A full Fishball DSH: manager, page and guards, MCP link. Board, fold-notify and Watchdog are simply absent. | — |
 
 Watchdog, the board and fold-notify exist only in a Fishball DSH.
 
@@ -379,9 +390,9 @@ Contributed tools disappear when their contributor goes (R-EXT-04). They never o
 ## 7. Open questions for the user
 
 Fishball asks these one at a time. Each gives the background, the options, the recommendation
-and its reason. Numbers are stable across revisions; Q1 is decided and stays here as a record.
+and its reason. Numbers are stable across revisions; Q1 and Q2 are decided and stay here as a record.
 
-**Suggested asking order:** Q2 → Q20 → Q7 → Q5 → Q8 → Q10 → Q3 → Q4 → Q18 → Q14 → Q16 → Q6 →
+**Suggested asking order:** Q20 → Q7 → Q5 → Q8 → Q10 → Q3 → Q4 → Q18 → Q14 → Q16 → Q6 →
 Q15 → Q17 → Q19 → Q11 → Q9 → Q12 → Q13.
 
 **Q1. What may run in the main DSH? — DECIDED 2026-11-11.**
@@ -392,58 +403,39 @@ connector. Fishball itself is a set of DSH plugins, which also makes standalone 
 The former options (A: only the connector holds session authority; B: main DSH runs only the
 connector; C: standalone launcher) are closed; the answer goes beyond A.
 
-**Q2. How is the Fishball plugin set packaged? (revised for Q1)**
-*Background:* Q1 makes Fishball itself a set of ordinary DSH plugins that the instance installs
-into its hosted child, and that any other DSH can install to become a standalone Fishball. V2
-delivered the child-side pieces as instance-owned launch-overlay rows, which the child's Plugins
-page does not show and cannot switch. Those pieces are the manager session and its session tools,
-approvals, inbox, admin, the private Skills tool, the A-lite `fishball-page` (Fishball-only page,
-hidden navigation, shortcut remapping), the read-only preset and the disabled session-creating
-rows, the `fishball-recommended` tab and the slim settings panel. Board, fold-notify and Watchdog
-were already planned as separate plugins. (The former Q2, "who ships the child-side web modules",
-is answered by Q1: they belong to the plugin set.)
-- **A (recommended):** five plugins.
-  - `fishball-core`: Fishball itself (manager session, persona, MCP link, event router, the
-    extension service for features, the private Skills tool).
-  - `fishball-lite`: turns the DSH into a Fishball-only DSH (A-lite page, guards, recommended
-    tab, slim settings).
-  - `fishball-board`, `fishball-fold-notify`, `fishball-watchdog`: the features.
-  - Core requires lite: a DSH with core but not lite shows status `lite-missing` and starts no
-    Fishball session. Features require core.
-- B: one plugin, `fishball-all`, holding everything, with the features as settings switches.
-  There is one tarball to install, but features lose DSH's native on/off, and the placement
-  rules (a disable survives; a feature deleted while off stays off) no longer apply.
-- C: as A, but core also works without lite. A DSH with only core is an ordinary DSH with a
-  Fishball session added: no Fishball-only page and no read-only guard, so Fishball runs with
-  whatever permissions that DSH grants.
+**Q2. How is the Fishball plugin set packaged? — DECIDED 2026-11-11.**
+The user's answer is quoted in 1.4: option A, with `fishball-lite` renamed `fishball-ui` and
+folded into `fishball-core` as a component, so the set is **four** plugins: core (with ui),
+board, fold-notify and Watchdog. The features require core. The former options B (one plugin)
+and C (core without lite) are closed. `lite-missing` no longer exists.
 
-*Reason for A:* the agent (core) and the DSH reshaping (lite) are different concerns, so each can
-be tested alone. Feature plugins keep DSH's native switch and the agreed placement rules.
-Requiring lite keeps the earlier decision that Fishball runs read-only, in both modes.
-
-**Q20. How strictly are Fishball's guards enforced in each mode? (new, for Q1)**
+**Q20. How strictly are Fishball's guards enforced in each mode? (revised for Q2)**
 *Background:* the guards are the read-only preset with the Skills exception, the disabled
-session-creating rows (subagents, schedules, terminal, open-in-app, presets), the Fishball-only
-page and "core and lite always on". In hosted mode the instance controls how the child boots.
-DSH applies launch overlays last, after the profile's own patch file, so the child cannot undo
-them. In standalone mode there is no instance. The guards can come only from `fishball-lite`'s
-own bundle patch, which DSH applies **before** the profile's own patch file, so the owner of
-that DSH can override them (DSH's composition order, both SDKs; design §5a.2).
+session-creating rows (subagents, schedules, terminal, open-in-app, presets) and the
+Fishball-only page. After Q2 they come from `fishball-core`'s `fishball-ui` component, so they
+are always present wherever Fishball runs. Removing them by removing a plugin is no longer
+possible. What remains is **overriding** them:
+- In hosted mode the instance controls how the child boots. DSH applies launch overlays last,
+  after the profile's own patch file, so the child cannot undo them.
+- In standalone mode there is no instance. The guards can come only from core's own bundle patch,
+  which DSH applies **before** the profile's own patch file, so the owner of that DSH can override
+  individual guard rows in their own profile patch (DSH's composition order, both SDKs;
+  design §5a.2). Disabling `fishball-core` itself turns all of Fishball off, guards included.
 - **A (recommended):**
-  - Hosted: enforced. The instance applies the guards as launch overlays, keeps core and lite
-    on, and the child's Plugins page hides their switch and Remove.
-  - Standalone: the same guards come from `fishball-lite`'s bundle patch. The owner of that DSH
-    may override them in their own profile patch; the README says so. `fishball-core` reports
+  - Hosted: enforced. The instance repeats the guards as launch overlays, keeps core on, and the
+    child's Plugins page hides core's switch and Remove.
+  - Standalone: the guards come from core's bundle patch. The owner of that DSH may override
+    them in their own profile patch; the README says so. `fishball-core` reports
     `guards-overridden` in its status wherever it can read the effective policy (spike V3-S6),
     and keeps running.
-- B: standalone also refuses. `fishball-core` starts no Fishball session while any guard is
+- B: standalone refuses too. `fishball-core` starts no Fishball session while any guard is
   overridden (status `guards-overridden`).
-- C: no guards in standalone. A standalone Fishball is an ordinary DSH plus Fishball, and lite
-  only adds the page.
+- C: core applies no guards in standalone; its `fishball-ui` component only adds the page.
 
-*Reason for A:* the user keeps full control of a DSH they run themselves, as Q1 describes ("an
-ordinary DSH instance"). Hosted mode keeps V2's guarantees, which the user never changed.
-B could lock a user out of their own DSH over a setting they changed deliberately.
+*Reason for A:* Q2 removed the only other way to lose the guards (installing core without
+lite), so an override is now always a deliberate edit by the DSH's owner. The user keeps full
+control of a DSH they run themselves, which matches Q1's "an ordinary DSH instance". Hosted mode
+keeps V2's guarantees. B could lock a user out of their own DSH over a deliberate change.
 
 **Q7. With several principals connected, who gets what?**
 *Background:* V2 had one attached instance. V3 allows any number of principals per connector:
