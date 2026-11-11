@@ -318,7 +318,16 @@ What it means (now R-EVS, R-INT; Q30 decided):
   Fishball agent and may wake its LLM. Watchdog is one such interceptor.
 - **External agents** have no such split: their subscription receives the events as they are.
 
-### 1.12 Earlier decisions carried into V3
+### 1.12 Q31 answered: watching is managing (2026-11-11), verbatim
+
+> C，自动盯所有自己管的session，不是自己管的就不盯。盯=管，管=盯
+
+What it means (now R-WATCH): an agent **automatically** watches every session it manages, from
+start or Hand over until release or Take back, and never watches a session it does not manage.
+Watching and managing are the same relationship, so there are no separate watch tools or watch
+lifecycle. Every session event goes to the session's managing pair.
+
+### 1.13 Earlier decisions carried into V3
 
 - **Watchdog**, a token saver and not a safety layer (U16):
   - It runs only passively, when a session triggers it, or on active patrol. A single "minimum
@@ -360,7 +369,7 @@ What it means (now R-EVS, R-INT; Q30 decided):
 | **Fishball id** | A client's fixed, non-secret identifier, bound to its token at pairing. Part of the credential. |
 | **Name** | A principal's user-facing display name. Changeable at any time, reported by the client (R-NAME). |
 | **Contributor** | A plugin in a connector's DSH that contributes MCP tools and events through the connector (R-EXT). |
-| **Event** | Something that happens at a main DSH and that a principal must learn about. Each event carries a `type` from R-EVS-02 (permission, question, plan review, settlement, retirement, turn finished, state, watch, message, ask, Hand over, Take back, notice, or a contributor's event) and goes to exactly one pair (R-EVS-03). |
+| **Event** | Something that happens at a main DSH and that a principal must learn about. Each event carries a `type` from R-EVS-02 (permission, question, plan review, settlement, retirement, turn finished, state, message, ask, Hand over, Take back, notice, or a contributor's event) and goes to exactly one pair (R-EVS-03). |
 
 ## 3. Requirements
 
@@ -384,7 +393,7 @@ operation returns a machine-readable error code, changes nothing and leaks nothi
 | ID | Requirement |
 | --- | --- |
 | R-CON-01 | **Protocol (Q12, decided).** The connector exposes one MCP endpoint over Streamable HTTP that serves **only** MCP revision **2026-07-28** (stateless requests, `server/discover`, `subscriptions/listen`). It implements no `initialize` handshake, no `Mcp-Session-Id` sessions, no GET stream and no `resources/subscribe`. A request for another revision is refused with `UnsupportedProtocolVersion` (-32022), listing `2026-07-28`; an `initialize` request gets an error that names the supported revision; GET or DELETE on the endpoint gets 405. **Clients on 2025-11-25 or older must upgrade** to a 2026-07-28 client. A 2026-07-28 client can discover, list and call the connector's tools. |
-| R-CON-02 | The endpoint serves session control as MCP tools (the **core tools**): list, start, message, redirect, stop, read, watch / unwatch / watches, and release. It also serves approval, question and prompt answering; grant list and revoke; attachment put and read; and mailbox poll and ack. The attention signal is not a core tool; embed-UI contributes it (R-EXT-13). Core tools carry the domain semantics and limits of contract 1.2 §4 and §8. Each tool returns a structured domain result: refusals carry their contract code (for example `limit-exceeded`, `expired`, `queue-full`) and are never just prose. |
+| R-CON-02 | The endpoint serves session control as MCP tools (the **core tools**): list, start, message, redirect, stop, read, and release. There are no watch tools (R-WATCH-03). It also serves approval, question and prompt answering; grant list and revoke; attachment put and read; and mailbox poll and ack. The attention signal is not a core tool; embed-UI contributes it (R-EXT-13). Core tools carry the domain semantics and limits of contract 1.2 §4 and §8. Each tool returns a structured domain result: refusals carry their contract code (for example `limit-exceeded`, `expired`, `queue-full`) and are never just prose. |
 | R-CON-03 | Events reach a principal through a **durable mailbox** per pair (R-ID-06). Events stay pending until the principal acks them. A poll returns a bounded ordered page plus a cursor. A stale or foreign cursor gets an explicit resync answer, never a silent skip. |
 | R-CON-04 | **One typed event stream (Q30, decided; R-EVS).** The mailbox is published as one MCP resource, `fishball-events` (URI `fishball://events`). A subscription to it gets `notifications/resources/updated` whenever new events arrive for that pair. The notification is a **hint only**: a client that never subscribes gets the same events by polling, and losing a notification loses no event. |
 | R-CON-05 | No approval, question or plan review is ever settled by a timer, by a client's silence or by a lost notification. A delegated item with no answer **waits**. |
@@ -499,11 +508,21 @@ replaces or weakens the token check (R-TOK-00).
 | ID | Requirement |
 | --- | --- |
 | R-EVS-01 | The connector exposes **one** event resource, `fishball-events` (URI `fishball://events`), which resolves to the caller's own pair's mailbox. There is no other event resource, and there are no per-kind streams or subscriptions. |
-| R-EVS-02 | Every event carries a `type` from a fixed vocabulary: `permission`, `question`, `plan-review` (offers); `settlement`, `retirement` (the outcome or withdrawal of an offer); `turn-finished`, `state` (the connector's supervision signals about a **managed** session, sent to its managing pair); `watch` (a notice from a watch the pair set itself, `notifyWhenFinished` included); `message` (`message_fishball`); `ask` (`ask_fishball`); `handover`, `takeback`; `notice` (connector notices); and `contributed:<namespace>.<event>` for contributor events (R-EXT-16). A client distinguishes kinds only by `type`. |
-| R-EVS-03 | **Exactly one recipient per event; never broadcast.** The recipient is decided when the event is created: an event naming a managed session goes to that session's managing pair **as of that moment**; an event naming an unmanaged session, or no session, goes to the designated Fishball pair (R-ROUTE-04). Events that follow an earlier one go to the pair that received it: `settlement` and `retirement` to the pair that held the offer; `takeback` to the pair that managed the session until then. `watch` events go to the one pair that set the watch (Q31). With no recipient, the event follows the no-principal rules (R-CON-09), and a contributor `emit` returns `no-fishball`. |
+| R-EVS-02 | Every event carries a `type` from a fixed vocabulary: `permission`, `question`, `plan-review` (offers); `settlement`, `retirement` (the outcome or withdrawal of an offer); `turn-finished`, `state` (sent for **managed** sessions only, to their managing pair, R-WATCH); `message` (`message_fishball`); `ask` (`ask_fishball`); `handover`, `takeback`; `notice` (connector notices); and `contributed:<namespace>.<event>` for contributor events (R-EXT-16). A client distinguishes kinds only by `type`. |
+| R-EVS-03 | **Exactly one recipient per event; never broadcast.** The recipient is decided when the event is created: an event naming a managed session goes to that session's managing pair **as of that moment**; an event naming an unmanaged session, or no session, goes to the designated Fishball pair (R-ROUTE-04). Unmanaged sessions produce no `turn-finished` or `state` events at all (R-WATCH-02). Events that follow an earlier one go to the pair that received it: `settlement` and `retirement` to the pair that held the offer; `takeback` to the pair that managed the session until then. There is no watch exception (Q31, decided). With no recipient, the event follows the no-principal rules (R-CON-09), and a contributor `emit` returns `no-fishball`. |
 | R-EVS-04 | An external agent's subscription receives its events unchanged, in order, with their `type`. The connector does no interception for it. |
 
-### 3.4f Interception inside a Fishball DSH (R-INT; Q30 decided)
+### 3.4f Watching is managing (R-WATCH; Q31 decided)
+
+| ID | Requirement |
+| --- | --- |
+| R-WATCH-01 | A pair **watches exactly the sessions it manages**. Watching starts when the pair becomes the managing pair (`session_start`, a Hand over to it, or a Q24 succession) and ends when it stops being it (`session_release`, Take back, revocation or deletion of its entry, R-ROUTE-06). Nothing else starts or ends a watch. |
+| R-WATCH-02 | For every session it manages, the managing pair receives a `turn-finished` event at the end of every turn and a `state` event on every change of running or pending-interaction state, with no set-up. Unmanaged sessions produce neither event, for anyone. |
+| R-WATCH-03 | There are **no** watch tools: `session_watch`, `session_unwatch` and `watches_list` are removed, and `session_start` / `session_message` have no `notifyWhenFinished` argument. A client that calls a removed tool gets the MCP "unknown tool" error. Watch notices of V2 are covered by `turn-finished`. |
+| R-WATCH-04 | On a Q24 succession the watch moves with management: the successor receives the sessions' later events, and none is sent twice. On release or Take back, events already queued for the old pair stay with it; later ones are not produced for it. |
+| R-WATCH-05 | **Watchdog is unchanged by this:** it supervises only sessions its Fishball manages, so its `turn-finished` and `state` interception (R-INT-07) covers exactly the managed-and-supervised sessions. |
+
+### 3.4g Interception inside a Fishball DSH (R-INT; Q30 decided)
 
 | ID | Requirement |
 | --- | --- |
@@ -513,7 +532,7 @@ replaces or weakens the token check (R-TOK-00).
 | R-INT-04 | **Failure falls back to Fishball.** If the chosen interceptor's handler throws or rejects, or its plugin is off, down or not ready, or its registration is disposed while the event is in flight, the event goes to the Fishball agent, which is woken. An event is never lost and never handled twice. A filter that throws counts as "no match" for that registration. |
 | R-INT-05 | An interceptor that cannot finish an event may hand it back with `release(event, {toFishball: true})`; Fishball is then woken for it (Watchdog's escalation to Fishball, R-WD-09). |
 | R-INT-06 | Interceptors are local to the Fishball DSH and gain no authority at the connector: whatever they answer goes out through core's link as the Fishball principal, and the connector's first-commit rule (OQ-14) still applies. |
-| R-INT-07 | **Watchdog's registration (Q25, Q13 decided).** Watchdog registers two filters: (1) `types: [permission, turn-finished, state]`, for events whose session this Watchdog supervises while it is healthy (X14); (2) `types: [settlement, retirement]`, for offers this Watchdog held or escalated to the user. For (2), Fishball gets the outcome only as a **non-waking** note at its next turn (R-WD-09). Questions, plan reviews, `watch` notices (Fishball's own watches and `notifyWhenFinished`), messages, asks, Hand over / Take back, notices and contributor events are in neither `types`, so they reach Fishball. When Watchdog is off or down, its registrations are gone or their filters are false, so everything reaches Fishball. |
+| R-INT-07 | **Watchdog's registration (Q25, Q13 decided).** Watchdog registers two filters: (1) `types: [permission, turn-finished, state]`, for events whose session this Watchdog supervises while it is healthy (X14); (2) `types: [settlement, retirement]`, for offers this Watchdog held or escalated to the user. For (2), Fishball gets the outcome only as a **non-waking** note at its next turn (R-WD-09). Questions, plan reviews, messages, asks, Hand over / Take back, notices and contributor events are in neither `types`, so they reach Fishball. When Watchdog is off or down, its registrations are gone or their filters are false, so everything reaches Fishball. |
 | R-INT-08 | Core acks an event at the connector only after the receiving side (interceptor or Fishball) has durably accepted it (R-EVT-03). |
 
 ### 3.5 Events: DSH → Fishball (R-EVT)
@@ -596,7 +615,7 @@ These hold in **both** hosted and standalone mode.
 | R-WD-09 | **Decision rules (Q13, decided).** For a permission request of a session it supervises, Watchdog decides exactly one of: (1) **allow**: in scope and low risk; (2) **reject**, with a justification: beyond the task **and** dangerous; (3) **to the user**: any other high-risk request; it is committed as `escalate`, so the connector shows a user card in that session with no time limit, and **no Fishball turn** starts; (4) **to Fishball**: a request that is not high-risk but that Watchdog cannot decide; it is re-routed to Fishball, which is woken. When the user settles a card from (3), Fishball gets the outcome as a non-waking note in its context at its next turn; Watchdog gets it at once. Questions and plan reviews always go to Fishball, never to Watchdog (U21). While Watchdog is off or down, everything goes to Fishball (R-WD-07). |
 | R-WD-10 | Pausing supervision of a session stops that session first. A failed stop is reported and not recorded as paused. |
 | R-WD-11 | One Watchdog side session supervises one session (U8). Permission requests of a claimed session go to Watchdog only while it is healthy. Without a claim, they go to Fishball. |
-| R-WD-12 | **Routing split** (Q25, decided; implemented as Watchdog's interception registration, R-INT-07). For a session supervised by a healthy Watchdog: its permission offers, and the turn-finished and state events that drive supervision, go to Watchdog only, and wake no Fishball turn. Its questions and plan reviews go to Fishball (U21). Notices Fishball asked for itself (type `watch`: its own watches and `notifyWhenFinished`), `message_fishball` and `ask_fishball` from the session, and Hand over / Take back events go to Fishball. Events of unsupervised sessions all go to Fishball. When Watchdog is off or down, everything goes to Fishball. A Watchdog **escalation to Fishball** (only for an item that is not high-risk and that Watchdog cannot decide, R-WD-09) sends the item back to Fishball, which is woken for it. A high-risk item goes to the **user** instead, with no Fishball turn (Q13). Events routed only to Watchdog start **no** Fishball LLM turn. |
+| R-WD-12 | **Routing split** (Q25, decided; implemented as Watchdog's interception registration, R-INT-07). For a session supervised by a healthy Watchdog: its permission offers, and the turn-finished and state events that drive supervision, go to Watchdog only, and wake no Fishball turn. Its questions and plan reviews go to Fishball (U21). `message_fishball` and `ask_fishball` from the session, and Hand over / Take back events go to Fishball. (There are no separate watch notices any more; `turn-finished` of a supervised session is Watchdog's, Q31 and Q32.) Events of unsupervised sessions all go to Fishball. When Watchdog is off or down, everything goes to Fishball. A Watchdog **escalation to Fishball** (only for an item that is not high-risk and that Watchdog cannot decide, R-WD-09) sends the item back to Fishball, which is woken for it. A high-risk item goes to the **user** instead, with no Fishball turn (Q13). Events routed only to Watchdog start **no** Fishball LLM turn. |
 
 ### 3.11 Placement, board and fold-notify (R-BND, R-BRD, R-FN)
 
@@ -753,6 +772,7 @@ Contributed tools disappear when their contributor goes (R-EXT-04). They never o
 | X12 `bridge(pluginId, ops)` scoped connector client | Kept inside `fishball-core`, now over the MCP link. |
 | X15 claims and X19 send gate | Kept inside `fishball-core`. Watchdog feeds them, and its interception filter consults them. |
 | X9 `inbox.claim` (V2 extension point) | **Generalised** into the interception service (R-INT). |
+| V2 watches (`session.watch` / `watches` / `unwatch`, `notifyWhenFinished`, `watch.status`, `WATCH_*` vocabularies) | **Retired** (Q31): a pair watches exactly the sessions it manages (R-WATCH). |
 | Connector lanes, Watchdog's own subscription, per-kind resources (earlier V3 drafts) | **Dropped** (1.8 item 4, Q30): one `fishball-events` subscription per pair; Watchdog is an interceptor in core. |
 | V2 "one attached instance" identity | **Replaced** by token + fishball id pairs, OAuth access tokens and user-visible names (R-OA, R-ID, R-NAME). |
 | The earlier V3 draft's "static bearer tokens, no OAuth" (§5.6 of the design) | **Replaced** by the connector as its own client-credentials authorization server (1.10). |
@@ -763,7 +783,7 @@ Contributed tools disappear when their contributor goes (R-EXT-04). They never o
 Fishball asks these one at a time. Each gives the background, the options, the recommendation
 and its reason. Numbers are stable across revisions; decided questions stay here as a record.
 
-**Remaining:** Q31 (who gets a watch set by a pair that doesn't manage the session).
+**Remaining:** Q32 (whether a supervised session's finished work ever reaches Fishball).
 
 **Q1. What may run in the main DSH? — DECIDED 2026-11-11.**
 The user's answer is quoted in 1.3. The main DSH is a full DSH and may install any plugin; the
@@ -934,18 +954,23 @@ Fishball, `fishball-core` dispatches to plugins that intercept that event type, 
 Fishball agent; external agents receive the events as they are. Now R-EVS, R-INT, R-EXT-17,
 R-EXT-20. Options B (always the designated Fishball) and C (broadcast) are closed.
 
-**Q31. Who gets a watch notice when the watcher doesn't manage the session? (new, from Q30)**
-*Background:* any pair may call `session_watch` on a related session, and V2 let the one
-instance watch any related session. Q30 says each event goes to exactly one agent: the session's
-manager, else the designated Fishball. Strictly applied, a watch set by an agent that does not
-manage the session would notify someone else.
-- **A (recommended, assumed in R-EVS-03):** a `watch` event goes to the one pair that set the
-  watch, whoever manages the session. It is still exactly one agent.
-- B: strict Q30: watch notices go to the session's managing pair, else the designated Fishball,
-  even if that is not the watcher.
-- C: only the managing pair may set watches on a managed session; `session_watch` by another
-  pair is refused with `not-managed`.
+**Q31. Who gets a watch notice when the watcher doesn't manage the session? — DECIDED 2026-11-11: C, extended.**
+The user's words are quoted in 1.12: watching is managing. An agent automatically watches every
+session it manages and never one it doesn't, so the watch tools and `notifyWhenFinished` are
+removed. Now R-WATCH-01..05. Options A (to the watcher) and B (strict routing) are closed.
 
-*Reason for A:* a watch is something a client asked for, like a tool result, so it should go
-back to the asker. A and C both keep "one event, one agent"; B would wake an agent that never
-asked.
+**Q32. Does a supervised session's finished work ever reach Fishball? (new, from Q31)**
+*Background:* before Q31, Fishball could ask to be told when a session finished
+(`notifyWhenFinished`), even under Watchdog. Now finishing is just `turn-finished`, and Q25 gave
+every `turn-finished` of a supervised session to Watchdog only. Watchdog wakes Fishball only for
+escalations and abnormal reports. So Fishball may never be told that a supervised session has
+finished the work it was given and is waiting.
+- **A (recommended):** Watchdog keeps every `turn-finished`, and when a session stops with
+  nothing left running (idle, waiting for input), Watchdog hands that one event back to Fishball
+  (R-INT-05), which is woken once. Turns in the middle of work stay Watchdog-only.
+- B: strict Q25. Fishball hears only through Watchdog's escalations and abnormal reports, and
+  checks supervised sessions itself with `session_read` when it wants to.
+- C: every `turn-finished` goes to both (the Q25 option B the user declined).
+
+*Reason for A:* Fishball needs to act when delegated work is done, and an idle stop is that
+moment. Intermediate turns still cost no Fishball tokens, which is Watchdog's purpose.
