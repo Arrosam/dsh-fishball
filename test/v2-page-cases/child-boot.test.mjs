@@ -20,46 +20,17 @@
  * setup → failed → disposed for R4.
  */
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
-import fs from 'node:fs'
 import path from 'node:path'
-import { after, before, describe, test } from 'node:test'
-import { fileURLToPath } from 'node:url'
-import { NODE, REPO, TEST_HOMES } from '../support/constants.mjs'
-import { newHome } from '../support/host.mjs'
+import { describe, test } from 'node:test'
 import { sleep, until } from '../support/util.mjs'
-import { launchChromium, sdkRuntime } from './lite-browser.mjs'
+import { FIXTURES, ROW, childBootEnvironment, openDevtoolsTab, pageRow, stageInstance, stageRow, startHost } from './child-boot-support.mjs'
+import { sdkRuntime } from './lite-browser.mjs'
 import { SDK_VERSIONS } from './support.mjs'
 
-const HERE = path.dirname(fileURLToPath(import.meta.url))
-const FIXTURES = path.join(REPO, 'test', 'support', 'fixtures')
-
-const CHILD_BOOT = Object.freeze({
-  hostScript: path.join(HERE, 'child-boot-host.mjs'),
-  /** Checkout whose packages/instance and packages/connector are booted (baseline runs). */
-  pluginRoot: process.env.FBTEST_PLUGIN_DIR ? path.resolve(process.env.FBTEST_PLUGIN_DIR) : REPO,
-  instancePackage: Object.freeze(['packages', 'instance']),
-  connectorPackage: Object.freeze(['packages', 'connector']),
-  connectorName: 'fishball-connector',
-  /** Not part of a shipped snapshot; never copied into the stage. */
-  stageSkip: Object.freeze(['node_modules', 'test']),
-  stageDir: 'fishball-instance-stage',
-  instanceClient: 'client.js',
-  settingsChunk: Object.freeze(['child-web', 'fishball-settings', 'client.instance.js']),
-  rowModule: (row) => ['child-web', row, 'index.js'],
-  homeLabel: 'child-boot',
-  urlLine: /dsh web: (http\S+)/,
-  /** Redacts the admission token from any host output a failure message may quote. */
-  tokenParam: /([?&]token=)[^\s&]+/g,
-  redacted: '$1<redacted>',
-  outputTailChars: 3000,
-  runtimeProbe: path.join('@deepseek-ai', 'dsh', 'lib', 'profile-boot.js'),
-})
+const CHILD_BOOT_SUITE = Object.freeze({ homeLabel: 'child-boot' })
 
 /** Harness budgets (host-side waiting only; none of them is a product oracle). */
 const BUDGET = Object.freeze({
-  hostStartMs: 90000,
-  hostStopMs: 10000,
   /** DSH's first page load builds and serves every client bundle of the profile. */
   bootSettleMs: 45000,
   pollMs: 100,
@@ -91,7 +62,6 @@ const PAGE_MARKERS = Object.freeze({
 const INACTIVE_PATTERNS = Object.freeze(['in inactive context', 'locale subscriber crashed'])
 const FAILED_ENTRY = (id) => `${id}: failed`
 
-const ROW = Object.freeze({ page: 'fishball-page', settings: 'fishball-settings', recommend: 'fishball-recommend-plugins' })
 /**
  * fishball-settings' Node half needs `nativeRuntime`, which only the instance's native child rows
  * provide (they need a main DSH to attach to). This fixture row provides an empty one so the row
@@ -108,61 +78,6 @@ const SCENARIO = Object.freeze({
   fishball: Object.freeze({ key: 'fishball', rows: (stage) => [NATIVE_RUNTIME_ROW, pageRow(stage), stageRow(stage, ROW.settings), stageRow(stage, ROW.recommend)] }),
   refused: Object.freeze({ key: 'refused', rows: (stage) => [SLOT_OCCUPANT_ROW, pageRow(stage)] }),
 })
-
-const stageRow = (stage, id) => ({ id, name: path.join(stage, ...CHILD_BOOT.rowModule(id)) })
-/** The launch overlay marks fishball-page required (product fact). */
-const pageRow = (stage) => ({ ...stageRow(stage, ROW.page), required: true })
-
-const redact = (text) => text.replace(CHILD_BOOT.tokenParam, CHILD_BOOT.redacted)
-
-// ---------------------------------------------------------------------------------------------
-// Stage: the shipped instance files with the install-time chunk, outside every checkout
-// ---------------------------------------------------------------------------------------------
-function stageInstance(home) {
-  const source = path.join(CHILD_BOOT.pluginRoot, ...CHILD_BOOT.instancePackage)
-  const stage = path.join(home, CHILD_BOOT.stageDir)
-  fs.cpSync(source, stage, { recursive: true, filter: (from) => !CHILD_BOOT.stageSkip.includes(path.relative(source, from).split(path.sep)[0]) })
-  // The product copies the instance's client.js next to the settings client at install time.
-  fs.copyFileSync(path.join(source, CHILD_BOOT.instanceClient), path.join(stage, ...CHILD_BOOT.settingsChunk))
-  // The instance imports fishball-connector/contract; in an install it is a sibling package.
-  fs.mkdirSync(path.join(stage, 'node_modules'), { recursive: true })
-  fs.symlinkSync(path.join(CHILD_BOOT.pluginRoot, ...CHILD_BOOT.connectorPackage), path.join(stage, 'node_modules', CHILD_BOOT.connectorName))
-  return stage
-}
-
-// ---------------------------------------------------------------------------------------------
-// One real DSH web host per (SDK, scenario)
-// ---------------------------------------------------------------------------------------------
-async function startHost(runtime, home, rows) {
-  const child = spawn(NODE, [CHILD_BOOT.hostScript], {
-    env: {
-      PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '', DSH_HOME: home,
-      ...(process.env.TMPDIR ? { TMPDIR: process.env.TMPDIR } : {}),
-      DSH_TELEMETRY_DISABLED: '1', NO_COLOR: '1',
-      FBTEST_CHILD_RUNTIME: runtime, FBTEST_CHILD_ROWS: JSON.stringify(rows),
-    },
-    // stdin is a pipe that is never written: DSH's launcher shuts down on stdin EOF.
-    stdio: ['pipe', 'pipe', 'pipe'],
-  })
-  let output = ''
-  let exited = null
-  for (const stream of [child.stdout, child.stderr]) stream.setEncoding('utf8').on('data', (d) => { output += d })
-  child.on('exit', (code, signal) => { exited = { code, signal } })
-  const stop = async () => {
-    if (exited) return
-    const gone = new Promise((resolve) => child.once('exit', resolve))
-    child.stdin.end()
-    const forced = setTimeout(() => { if (!exited) child.kill('SIGKILL') }, BUDGET.hostStopMs)
-    await gone
-    clearTimeout(forced)
-  }
-  const line = await until(() => exited || CHILD_BOOT.urlLine.exec(output), BUDGET.hostStartMs, BUDGET.pollMs)
-  if (!line || exited) {
-    await stop()
-    throw new Error('child DSH host did not start (exit ' + JSON.stringify(exited) + '):\n' + redact(output.slice(-CHILD_BOOT.outputTailChars)))
-  }
-  return { url: line[1], stop, tail: () => redact(output.slice(-CHILD_BOOT.outputTailChars)) }
-}
 
 // ---------------------------------------------------------------------------------------------
 // The browser tab: console/exception capture and DOM observation
@@ -194,65 +109,35 @@ function messageText(event) {
 }
 
 async function observeInBrowser(devtools, url) {
-  const { targetId } = await devtools.send('Target.createTarget', { url: 'about:blank' })
-  const { sessionId } = await devtools.send('Target.attachToTarget', { targetId, flatten: true })
   const messages = []
-  const off = devtools.onEvent((event) => {
-    if (event.sessionId !== sessionId) return
-    const message = messageText(event)
-    if (message) messages.push(message)
-  })
+  const tab = await openDevtoolsTab(devtools, url, { onEvent: (event) => { const message = messageText(event); if (message) messages.push(message) } })
   try {
-    await devtools.send('Runtime.enable', {}, sessionId)
-    await devtools.send('Page.navigate', { url }, sessionId)
-    const read = async () => (await devtools.send('Runtime.evaluate', { expression: STATE_EXPRESSION, returnByValue: true }, sessionId)).result?.value
+    const read = () => tab.evaluate(STATE_EXPRESSION)
     // Settled: the application mounted, or the native boot screen reports its failure.
     const settled = await until(async () => { const s = await read().catch(() => null); return s && (s.mounted || failed(s)) ? s : null }, BUDGET.bootSettleMs, BUDGET.pollMs)
     const settledAt = messages.length
     await sleep(BUDGET.observeAfterBootMs)
     return { settled: settled ?? null, final: await read(), messages: [...messages], afterSettle: messages.slice(settledAt) }
   } finally {
-    off()
-    await devtools.send('Target.closeTarget', { targetId }).catch(() => {})
+    await tab.close()
   }
 }
 
 // ---------------------------------------------------------------------------------------------
 // Shared environment: one Chromium; one observation per (SDK, scenario), memoized
 // ---------------------------------------------------------------------------------------------
-let browser = null
-let browserError = null
+const { browser, skipReason, cleanups, ownHome } = childBootEnvironment()
 const observations = new Map()
-const cleanups = []
-
-before(async () => {
-  try { browser = await launchChromium() } catch (error) { browserError = error }
-})
-after(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup().catch(() => {})
-  await browser?.stop()
-})
-
-function skipReason(sdk) {
-  if (!process.env.FBTEST_DSH_RUNTIME) return 'FBTEST_DSH_RUNTIME is not set (no SDK to boot)'
-  const runtime = sdkRuntime(sdk)
-  if (!runtime || !fs.existsSync(path.join(runtime, CHILD_BOOT.runtimeProbe))) return `SDK ${sdk} runtime not found beside FBTEST_DSH_RUNTIME`
-  if (browserError) return 'headless Chromium could not start: ' + browserError.message
-  if (!browser) return 'no local headless Chromium (FBTEST_CHROME or the Playwright headless shell)'
-  return null
-}
 
 function observe(sdk, scenario) {
   const key = sdk + '/' + scenario.key
   if (!observations.has(key)) {
     observations.set(key, (async () => {
-      const home = newHome(CHILD_BOOT.homeLabel + '-' + scenario.key)
-      // Remove only the home this suite created under the test-homes root.
-      cleanups.push(async () => { if (path.dirname(home) === TEST_HOMES) fs.rmSync(home, { recursive: true, force: true }) })
+      const home = ownHome(CHILD_BOOT_SUITE.homeLabel + '-' + scenario.key)
       const host = await startHost(sdkRuntime(sdk), home, scenario.rows(stageInstance(home)))
       cleanups.push(host.stop)
       try {
-        return { ...(await observeInBrowser(browser.devtools, host.url)), hostTail: host.tail }
+        return { ...(await observeInBrowser(browser().devtools, host.url)), hostTail: host.tail }
       } finally {
         await host.stop()
       }

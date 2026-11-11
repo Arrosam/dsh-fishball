@@ -398,8 +398,8 @@ window.__ModuleLoader__.load({
     /**
      * The manager session: lookup/ensure, the one intended selection and explicit return.
      * No drift correction and no archive cleanup (the user rejected both: "这个方案听起来就很不稳定。不要").
-     * The assigned manager is opened once when it first becomes known and the shortcut gate is
-     * protected, and again only when the user asks (Fishball button, Retry). Whatever else the
+     * The assigned manager is opened once when it is known, the shortcut gate is protected and the
+     * session list carries it, and again only when the user asks (Fishball button, Retry). Whatever else the
      * main view shows is left alone; the conversation surface is simply not marked ready.
      * adapter.current is the public renderer-facing binding source in both versions; key is the ID.
      */
@@ -418,9 +418,21 @@ window.__ModuleLoader__.load({
       const lookupFailed = createCell(false)
       const selectFailed = createCell(false)
       const shows = target => source.getSnapshot().key === target
+      /**
+       * openSession throws `unknown session` for an id the session list does not carry yet
+       * (session-controller resolveTarget, both SDKs), and on a fresh child origin the route can
+       * answer before the list arrives. So the selection waits for the listed manager, as the
+       * rc.1 liveshare viewer does. Order with native startup restoration: the selectPanel(null)
+       * below (and openSession's own) aborts a restoration already pending (layout
+       * beginNavigation), and a later one sees the main reference set and stops, so the manager
+       * stays on screen. Only the first selection waits here: once made, list changes never
+       * select again (selectOnce), so they cannot undo the user's in-page navigation. The blank Session that
+       * restoration may already have created stays (accepted for V2, docs/planning/v2-lite.md).
+       */
+      const listed = target => ctx.sessions.list.getSnapshot().byId[target] !== undefined
       function select() {
         const target = manager.get()
-        if (disposed || target === null || gate.get() !== GATE.protected) return
+        if (disposed || target === null || gate.get() !== GATE.protected || !listed(target)) return
         selectedFor = target
         selectFailed.set(false)
         ctx.layout.selectPanel(null)
@@ -468,8 +480,9 @@ window.__ModuleLoader__.load({
         }).finally(() => { lookup = null })
         return lookup
       }
+      // A list change can be the one that first carries the manager, so it also re-marks.
       const unsubscribers = [source.subscribe(mark), gate.subscribe(mark),
-        ctx.sessions.list.subscribe(() => { void refresh() })]
+        ctx.sessions.list.subscribe(() => { mark(); void refresh() })]
       // A listener wrapper: addEventListener would otherwise pass the Event as ensure.
       const reread = () => { void refresh() }
       window.addEventListener(PAGE.reread, reread)

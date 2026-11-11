@@ -25,10 +25,13 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
      which `fishball-settings` ([v2-set](<v2-set.md>)) owns. The `settings.launcher` button stays,
      because that panel's "DSH Settings" link presses it.
 2. **Session.** The GET/POST `api/fishball/session` flow is unchanged (PAGE 7.A). The assigned
-   manager is selected once, when it first becomes known and the shortcut gate is protected.
-   After that, only the Fishball button and Retry select it. A selection is
+   manager is selected once, when it is known, the shortcut gate is protected and DSH's session
+   list carries it (see "Native startup on a reopened page"). After that, only the Fishball
+   button and Retry select it. A selection is
    `selectPanel(null)` followed by `openSession(manager)` when the main view is not already
-   showing it (plan §4.3 (5) item 4: initial selection and explicit return are legitimate). No subscription ever re-opens it,
+   showing it (plan §4.3 (5) item 4: initial selection and explicit return are legitimate). The
+   session-list subscription only completes that pending first selection, when the list first
+   carries the manager; no subscription ever re-opens it after a selection,
    calls `selectPanel(null)` on drift, or archives anything. The conversation is marked
    ready (`data-fishball-session`) only while the main view shows the manager and the gate is
    protected; otherwise it stays hidden.
@@ -176,28 +179,49 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
     with a turn renders no hero.
   - A workspace the user deleted is recreated, with the SDK default title `assistant`, on the
     next activation.
-- **Native startup on a reopened page (open; no up-front mechanism in either SDK; not verified
-  in a browser).** Each child generation is a new origin, so ui-workspace's persisted selection
-  (`dsh.sessions.current`, a localStorage snapshot store) is empty, and its startup
-  `restoreSelection` (identical in 0.2.1-rc.5 and 0.2.2-rc.1) runs once the workspace and
-  session lists are ready, before any page selection is known. With no saved selection it
-  targets the most recent workspace, which is the manager's, and calls `connectWorkspace`.
-  While the manager is blank that names the manager (`session.create` reuse); once it has a
-  turn the host creates one ordinary blank Session in that workspace. Neither SDK exposes a
-  public way to seed that selection or veto the startup target deterministically:
-  `UiWorkspace` has no selection setter; `layout.beginNavigation` and `selectPanel` abort only
-  the final open, after `connectWorkspace` has already created the Session; and the host
-  `session.create` has no creation hook. The one public call that skips the restore is
-  `uiWorkspace.openSession(manager)` issued before both lists are ready (it sets the main
-  reference, and `watchNavigation` then marks startup done), but the page learns the manager id
-  only from its own HTTP route, so whether it wins is a race with the native list streams, not
-  a guarantee. Options, for a user decision: (a) the page calls `openSession` as early as it
-  knows the id (public, but racy: the extra Session still appears when the lists win);
-  (b) seed the `dsh.sessions.current` localStorage key before ui-workspace constructs (a
-  private store format, and the id would have to reach the child document before boot, for
-  example in the admission fragment); (c) do not attach the manager to a workspace (the
-  composer is inert while it is blank, the 7.A problem); (d) an upstream DSH interface (a
-  startup selection hook or a "no auto session" option).
+- **Native startup on a reopened page (accepted for V2, user decision 2026-11-11).** The rule is
+  "每次从主实例打开Fishball时都自动跳转到Fishball会话页": every open from the main DSH lands on the
+  manager, through the page's one `uiWorkspace.openSession` (fishball-page). V2 accepts that
+  native startup may leave one blank Session beside the manager; the page hides the sidebar, so
+  the user does not see it. No upstream request and no detaching of the manager (V2 keeps 7.A).
+  Cause: each child generation is a new origin, so ui-workspace's persisted selection
+  (`dsh.sessions.current`, a localStorage snapshot store) is empty. Its startup `restoreSelection`
+  then runs once the workspace and session lists are ready, before the page knows the manager
+  id. With no saved selection it targets the most recent workspace, which is the manager's, and
+  calls `connectWorkspace`. While the manager is blank that names the manager (`session.create`
+  reuse); once it has a turn, the host creates one ordinary blank Session in that workspace,
+  which later opens reuse. Neither SDK has a public way to prevent this (re-checked 2026-11-11 in
+  0.2.1-rc.5 and 0.2.2-rc.1):
+  - No client plugin and not the web shell reads the page URL, query or fragment for routing,
+    and the boot global carries only the module manifest. A session id in the launch URL or
+    fragment would therefore change nothing.
+  - `UiWorkspace` (ui-workspace lib/types/client/navigation.d.ts:16 rc.5, :17 rc.1) has no
+    selection setter or startup option.
+  - The restore (`watchNavigation`/`restoreSelection`, lib/client.js:1575–1629 rc.5, 1583–1638
+    rc.1) reads only the private store (:1369 rc.5, :1370 rc.1) before `connectWorkspace`
+    (:1627 rc.5, :1636 rc.1).
+  - `layout.beginNavigation` and `selectPanel` abort only the final open, after the Session
+    exists, and the host `session.create` has no creation hook.
+  - rc.1's liveshare viewer has the same need and also opens its Session only once the list
+    carries it (dsh-experimental-liveshare lib/client.js:6400–6427).
+  The page selects the manager only once the session list carries it: `openSession` throws
+  `sessions.retain: unknown session` for an unlisted id (dsh-api-session-controller
+  lib/client.js:3007 rc.5, :3022 rc.1). On a fresh origin the route can answer before the list
+  arrives; before this was handled, a fresh reopen showed the restored blank and "Fishball
+  session unavailable" instead of the manager.
+  First start of a child (accepted for V2, user decision 2026-11-11: "所以只要在主实例中打开子实例页面的时候让子实例跳转到Fishball页面就行了",
+  option A confirmed with "按这个做"): on the child's first start, DSH 0.2.1-rc.5 (and possibly
+  0.2.2-rc.1, which has the same branch but where it was not observed) may create
+  `~/Documents/deepseek-harness/default-workspace` with one blank Session. This is DSH's own
+  first-boot behaviour (`workspaces.initializeDefault`, which runs when the workspace and session
+  lists are both empty as they become ready, so it races the page's manager POST). It is accepted
+  for V2: Fishball does not pre-register a workspace or move `documentsDirectory`, and the
+  Fishball page still lands on the manager. The only V2 requirement here is that every open from
+  the main DSH lands on the Fishball manager page.
+  Rejected: seeding the private `dsh.sessions.current` key, and calling `openSession` early to
+  race the list streams (both unstable; the user rejected such workarounds:
+  "这个方案听起来就很不稳定。不要"). Revisit when DSH offers a startup-selection hook or a
+  "no auto session" option.
 - **Plugin inventory.** `ui-settings-plugin-inventory` stays enabled and lists `ui-agent-preset`
   as an optional client dependency; with that row disabled, preset names it shows may fall back
   to their raw keys.
