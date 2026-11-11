@@ -4,8 +4,10 @@
  * Each `perSdk` block must run the instance code on ITS SDK, not on whatever FBTEST_DSH_RUNTIME
  * selects, or the "[SDK 0.2.1-rc.5]" and "[SDK 0.2.2-rc.1]" results would describe one runtime twice.
  * An instance module is imported under a `?fbsdk=<version>` URL. A resolve hook carries the tag to
- * every relative import inside the repository, and resolves every bare specifier (`@deepseek-ai/*`,
- * the runtime's own dependencies) from that version's installed node_modules. The SDK packages
+ * every import inside the repository, and resolves only `@deepseek-ai/*` specifiers from that
+ * version's installed node_modules. Every other bare specifier (e.g. `fishball-shared/*`, the V3
+ * library of R-SHARED / R-ARCH-08) resolves normally from the importing file, and keeps the tag when
+ * it lands inside the repository, so its own `@deepseek-ai/*` imports bind to the same version. The SDK packages
  * themselves are imported by their plain installed URLs, which are the same module instances the
  * tagged instance graph resolves to, and the same instances the native oracle imports.
  */
@@ -18,6 +20,8 @@ import { HARNESS, SKILL_SDK } from './constants.mjs'
 const INSTANCE_DIR = path.join(REPO, 'packages', 'instance')
 const REPO_URL = pathToFileURL(REPO + path.sep).href
 const NODE_SCHEME = 'node:'
+/** Only DSH's own packages are taken from the selected SDK. */
+const SDK_SCOPE = '@deepseek-ai/'
 let hooked = false
 
 const sdkRoot = (version) => path.join(SKILL_SDK.versionsDir, version)
@@ -27,7 +31,6 @@ const tagged = (url, version) => {
   return next.href
 }
 const versionOf = (url) => (url?.startsWith(REPO_URL) ? new URL(url).searchParams.get(HARNESS.versionTag) ?? undefined : undefined)
-const isPathSpecifier = (specifier) => specifier.startsWith('.') || specifier.startsWith('/') || specifier.startsWith('file:')
 
 function install() {
   if (hooked) return
@@ -36,7 +39,7 @@ function install() {
     resolve(specifier, context, nextResolve) {
       const version = versionOf(context.parentURL)
       if (version === undefined || specifier.startsWith(NODE_SCHEME)) return nextResolve(specifier, context)
-      if (isPathSpecifier(specifier)) {
+      if (!specifier.startsWith(SDK_SCOPE)) {
         const resolved = nextResolve(specifier, context)
         return resolved.url.startsWith(REPO_URL) ? { ...resolved, url: tagged(resolved.url, version) } : resolved
       }

@@ -33,7 +33,8 @@ const V2B = Object.freeze({
     connector: Object.freeze({ name: 'fishball-connector', dir: BODY_SOUL.connector }),
     instance: Object.freeze({ name: 'fishball-instance', dir: BODY_SOUL.instance }),
   }),
-  workspaces: Object.freeze(['packages/connector', 'packages/instance']),
+  // V3 R-SHARED / R-ARCH-08 (approved design) adds the library workspace packages/shared.
+  workspaces: Object.freeze(['packages/connector', 'packages/instance', 'packages/shared']),
   /** Repository directories of the V3 packages (no V2 module may load from them). */
   v3Dirs: Object.freeze(['board', 'fold-notify', 'watchdog'].map((d) => path.join(REPO, 'packages', d))),
   /** A packed path segment naming a V3 area or the bundled asset directory. */
