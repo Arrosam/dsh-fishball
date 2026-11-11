@@ -4,6 +4,12 @@ Fishball is MIT-licensed ([LICENSE](LICENSE)).
 
 It runs inside DeepSeek Harness and uses the host's installed packages as peer dependencies: `@deepseek-ai/*` (MIT, Copyright (c) 2026 DeepSeek) and `@deepseek-ai/cordis` (MIT, Copyright (c) 2021-present Shigma). No host source is copied or bundled into this repository.
 
+## Runtime dependencies
+
+The package manager installs these alongside the connector. None of their code is copied or bundled into this repository or its tarball:
+- `@modelcontextprotocol/server` 2.2.0, `@modelcontextprotocol/core` 2.2.0 and `@modelcontextprotocol/node` 2.1.0 (Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC). Their manifests declare MIT. Their LICENSE files describe the MCP project's move from MIT to Apache-2.0 and carry both texts.
+- Their own dependencies `zod` (MIT, Copyright (c) 2025 Colin McDonnell) and `@hono/node-server` (MIT, Copyright (c) 2022 - present, Yusuke Wada and Hono contributors).
+
 ## FishMark
 
 The Fishball mark in `assets/connector-icon.svg` and `client.js` is FishMark from the owner's own fishball app (`app/src/main/java/org/areel/fishball/ui/Surfaces.kt` at `f4a887d`; MIT, same author), redrawn as SVG with the launcher icon's colours. The connector's icon adds a wrench badge, drawn for this repository.
