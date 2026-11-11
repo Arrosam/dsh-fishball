@@ -28,6 +28,11 @@ export const PROFILE = 'fbtest'
  */
 export const CONNECTOR = { name: 'fishball-connector', dir: path.join(REPO, 'packages', 'connector') }
 export const INSTANCE = { name: 'fishball-instance', dir: path.join(REPO, 'packages', 'instance') }
+/**
+ * V3 R-SHARED (R-ARCH-08): the library `fishball-shared` the instance (and later core) imports. Not a
+ * plugin: it is linked as a plain dependency, never added to the profile's bundles.
+ */
+export const SHARED = { name: 'fishball-shared', dir: path.join(REPO, 'packages', 'shared') }
 export const PACKAGE_NAME = CONNECTOR.name
 export const INSTANCE_NAME = INSTANCE.name
 export const ROW_ID = CONNECTOR.name
