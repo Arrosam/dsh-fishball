@@ -31,7 +31,7 @@
  * | R4-EXIT-03 | BVA (failed but not a failed start: exit after ready) | R4 | failed / NATIVE_CHILD_EXITED / detail null (no stale detail); no new start-failed warn |
  * | R4-EXIT-04 | State Transition failed → Retry → (retry's child killed) → failed | R2 | same as R4-EXIT-01 for the Retry start; the warn count grows by exactly one |
  * | R4-EXIT-05 | State Transition starting → stopping (connector disabled) → start fails | R3, R4 | the start did fail (lifecycle FAILED) yet state stays the stop's (connector-missing), code null, detail null; never failed |
- * | R4-EXIT-06 | EP (ordinary start failure, no exit race) | R1 | failed / NATIVE_START_FAILED; detail 'PREFLIGHT_CORE_SHADOW: <line>' with the code not repeated; one warn with only the code |
+ * | R4-EXIT-06 | EP (ordinary start failure, no exit race) | R1 | failed / NATIVE_START_FAILED; detail 'PREFLIGHT_MANIFEST: <line>' (planted invalid dependency package.json) with the code not repeated; one warn with only the code |
  * TODO (no black-box seam): R2's ordering "onExit before the start's rejection" is the precondition,
  * not forced; R4-EXIT-01/04 report (diagnostic) whether the intermediate failed/NATIVE_CHILD_EXITED
  * with detail null was seen. R1's 2000-char bound and credential masking are covered in
@@ -44,7 +44,7 @@ import { after, describe, it } from 'node:test'
 import { RUNTIME } from './support/constants.mjs'
 import { bootHost, newHome } from './support/host.mjs'
 import { sleep, until } from './support/util.mjs'
-import { R2, R2_BUDGET, lifecycleLines, plantShadow, removeHome, runtimeDir, selectedSdk, settledStatus } from './support/v2-r2.mjs'
+import { R2, R2_BUDGET, lifecycleLines, plantInvalidManifest, removeHome, runtimeDir, selectedSdk, settledStatus } from './support/v2-r2.mjs'
 
 const SDK = selectedSdk(RUNTIME)
 const R4 = Object.freeze({
@@ -241,19 +241,19 @@ describe(`R4 [${SDK}] a child exit during its start keeps NATIVE_CHILD_EXITED an
     t.diagnostic('R4-EXIT-05 start-failed warns (not specified by R3): ' + JSON.stringify(await startFailedWarns(host, since)))
   })
 
-  it('R4-EXIT-06 an ordinary start failure (planted core shadow) → NATIVE_START_FAILED, detail with the code once, one warn with only the code', { timeout: R2_BUDGET.caseMs }, async (t) => {
-    const home = newHome('v2-r4-shadow')
+  it('R4-EXIT-06 an ordinary start failure (planted invalid dependency manifest) → NATIVE_START_FAILED, detail with the code once, one warn with only the code', { timeout: R2_BUDGET.caseMs }, async (t) => {
+    const home = newHome('v2-r4-manifest')
     homes.push(home)
     const first = await bootHost(home)
     try { assert.equal((await settledStatus(first)).state, R4.state.ready, 'precondition: first boot ready') } finally { await first.stop() }
-    plantShadow(home)
+    plantInvalidManifest(home)
     const host = await bootHost(home)
     t.after(async () => { await host.stop().catch(() => {}) })
     const failed = await settledStatus(host)
     assert.equal(failed.state, R4.state.failed)
     assert.equal(failed.code, R4.code.startFailed, 'R4-EXIT-06: no exit race → NATIVE_START_FAILED')
     const detail = assertDetail(failed.detail, 'R4-EXIT-06')
-    assert.equal(detail.code, R2.shadowCode, 'R4-EXIT-06: the specific preflight code')
+    assert.equal(detail.code, R2.faultCode, 'R4-EXIT-06: the specific preflight code')
     assert.ok(detail.message, 'R4-EXIT-06: the refusal has a message line')
     await assertOneWarn(host, 0, detail.code, detail.message, 'R4-EXIT-06')
   })
