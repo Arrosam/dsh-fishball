@@ -3,8 +3,8 @@
 Status: **draft for alignment, 2026-11-11. Docs only.** Branch `design/v3`, cut from
 `integrate/v2` at `505766e`. No product code or test cases exist for anything in this file yet.
 The design that answers these requirements is [v3-design.md](<v3-design.md>). Section 7 holds the
-questions that must be answered before the requirements freeze; Q1, Q2, Q5, Q7, Q8 and Q20
-are decided.
+questions that must be answered before the requirements freeze; Q1, Q2, Q5, Q7, Q8, Q10 and
+Q20 are decided.
 
 Inputs: [V2 final scope](<v2-final-scope.md>) (what V2 shipped and what it deferred to V3),
 [instance extension points](<../plugins/instance-extension-points.md>) (U1–U22, X1–X19),
@@ -119,7 +119,18 @@ The user chose **"A"** for all three:
   and the instance hands the value to the child in memory. The entry is visible and revocable
   like any other. For a remote target and for standalone, set-up is manual.
 
-### 1.7 Earlier decisions carried into V3
+### 1.7 Q10 answered (2026-11-11), verbatim
+
+The user chose **"A"**, and framed Watchdog this way:
+
+> watchdog只是fishball的“小帮手”，类似于fishball的子代理的存在
+
+What it means: **Watchdog is Fishball's little helper, something like Fishball's subagent.** It
+is not a separate party at the connector. It uses its Fishball DSH's token and is part of
+Fishball's principal, with its own subscription and its own lane. Revoking Fishball's token
+revokes its Watchdog.
+
+### 1.8 Earlier decisions carried into V3
 
 - **Watchdog**, a token saver and not a safety layer (U16):
   - It runs only passively, when a session triggers it, or on active patrol. A single "minimum
@@ -302,8 +313,9 @@ These hold in **both** hosted and standalone mode.
 
 | ID | Requirement |
 | --- | --- |
+| R-WD-00 | **Watchdog is Fishball's helper, like a subagent of Fishball (Q10, decided).** It acts only on sessions its Fishball manages, only on Fishball's behalf, and never as a principal of its own. Everything Watchdog does at the connector is done as Fishball. |
 | R-WD-01 | Watchdog runs only in a Fishball DSH (hosted child or standalone), and only with `fishball-core` present. No Watchdog code, settings or UI runs in a host or main DSH. |
-| R-WD-02 | When installed and enabled, Watchdog opens **its own** subscription to the target connector's events for the sessions it supervises (Q10). No Fishball turn relays those events. |
+| R-WD-02 | When installed and enabled, Watchdog opens **its own** subscription to the target connector's events for the sessions it supervises, through `fishball-core`'s MCP link, under **its Fishball DSH's token** (Q10, decided). It has its own lane in that principal's mailbox, and no token or principal of its own. No Fishball turn relays its events. Revoking Fishball's token closes Watchdog's subscription and lane with it. |
 | R-WD-03 | Watchdog runs only (a) passively, on an event from a supervised session (a permission request, a finished turn), or (b) on patrol. Explicit `check_now` and active refine are manager operations. |
 | R-WD-04 | Patrol checks of one session are at least `minCheckIntervalSeconds` apart: default **1740** (29 min), integer, inclusive range **60–86400**. At the bounds, 60 and 86400 are accepted and 59 and 86401 are refused. Passive triggers, `check_now` and active refine are not throttled. |
 | R-WD-05 | There are no approval timers, no hourly or daily call caps, no stall, idle or paused-poll timers and no per-brief schedule overrides. The hung-check timeout and the bounded start attachment carried over from T0 are failure bounds, not pacing. |
@@ -442,10 +454,10 @@ Contributed tools disappear when their contributor goes (R-EXT-04). They never o
 ## 7. Open questions for the user
 
 Fishball asks these one at a time. Each gives the background, the options, the recommendation
-and its reason. Numbers are stable across revisions; Q1, Q2, Q5, Q7, Q8 and Q20 are decided
-and stay here as a record.
+and its reason. Numbers are stable across revisions; Q1, Q2, Q5, Q7, Q8, Q10 and Q20 are
+decided and stay here as a record.
 
-**Suggested asking order:** Q10 → Q3 → Q4 → Q18 → Q14 → Q16 → Q6 →
+**Suggested asking order:** Q3 → Q4 → Q18 → Q14 → Q16 → Q6 →
 Q15 → Q17 → Q19 → Q11 → Q9 → Q12 → Q13.
 
 **Q1. What may run in the main DSH? — DECIDED 2026-11-11.**
@@ -490,19 +502,11 @@ the child in memory. The entry is visible and revocable. For a remote target and
 set-up is manual. Now R-HOST-05 and R-FB-03. Options B (manual everywhere) and C (pairing code)
 are closed.
 
-**Q10. Watchdog's MCP identity. (revised for standalone mode)**
-*Background:* Watchdog runs inside a Fishball DSH (hosted child or standalone) and opens its own
-event subscription. In standalone mode every token is created and copied by hand (R-FB-03, Q8 decided).
-- **A (recommended):** Watchdog subscribes through `fishball-core`'s MCP link, under the Fishball
-  DSH's token (the same principal), with its own lane. That is one token per Fishball DSH in both
-  modes, and revoking Fishball revokes its Watchdog.
-- B: Watchdog gets its own token entry and principal, so it can be revoked separately. A
-  standalone user must then create and copy two tokens, and the connector must link the two
-  principals for routing.
-
-*Reason for A:* there is no second token to copy by hand in standalone mode. Watchdog only acts
-on its Fishball's sessions, so a separate principal adds routing work with no safety gain. It
-still gets its own subscription, as the user asked.
+**Q10. Watchdog's MCP identity — DECIDED 2026-11-11: A.**
+The user's words are quoted in 1.7: Watchdog is Fishball's little helper, like Fishball's
+subagent. It subscribes through `fishball-core`'s MCP link under the Fishball DSH's token, with
+its own subscription and lane, as part of Fishball's principal (R-WD-00, R-WD-02). Option B
+(its own token and principal) is closed.
 
 **Q3. Do main-session marks and Hand over / Take back stay, and how does embed-UI get them?
 (revised for the tool-contribution requirement and Q1)**
