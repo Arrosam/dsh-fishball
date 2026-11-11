@@ -94,9 +94,12 @@ function walk(nodes, visit) {
 
 /**
  * Load and apply the page. `respond({method, url})` returns {status, body} for each fetch.
+ * With `listLags`, a Session the route names is not listed until the case calls
+ * `page.catalogue(id)`: the route answers first, as on a fresh child origin where DSH's list stream
+ * has not arrived yet. Without it, the row is listed just before the route's answer.
  * Returns observation handles: fetch calls, openSession calls, timers, UI queries.
  */
-export function loadPage({ respond }) {
+export function loadPage({ respond, listLags = false }) {
   const fetches = []
   const opened = []
   const timers = { setTimeout: 0, setInterval: 0 }
@@ -149,11 +152,12 @@ export function loadPage({ respond }) {
     const call = { method, url: url.href, pathname: url.pathname, init }
     fetches.push(call)
     const { status, body } = await respond(call)
+    const ok = status >= 200 && status < 300
     // A manager the route names exists on the host, so the host catalogue lists it (see catalogue).
-    if (status >= 200 && status < 300 && typeof body?.sessionId === 'string') catalogue(body.sessionId)
+    if (ok && !listLags && typeof body?.sessionId === 'string') catalogue(body.sessionId)
     return {
       status,
-      ok: status >= 200 && status < 300,
+      ok,
       headers: { get: (name) => (name.toLowerCase() === 'content-type' ? 'application/json' : null) },
       json: async () => structuredClone(body),
       text: async () => JSON.stringify(body),
@@ -185,17 +189,19 @@ export function loadPage({ respond }) {
   const panel = store({ activePanelId: null })
   /**
    * Native `ctx.sessions.list` (dsh-api-session-controller SessionListState, both SDKs): `ids` in
-   * host order with a `byId` row each, the arrival `phase`, and projections. It carries every
-   * catalogued Session, so a manager the route created or resumed is listed, and its arrival
-   * notifies the list's subscribers. The host's list stream and the route are separate channels;
-   * here the row arrives just before the route's answer.
+   * host order with a `byId` SessionSummary row each (`id`, `displayTitle`, `running`, `blank`,
+   * `updatedAt`, local `retainedBy` counts), the arrival `phase` (`pending` until the first list
+   * arrives), and projections. It carries every catalogued Session, so a manager the route created
+   * or resumed is listed, and its arrival notifies the list's subscribers. The host's list stream
+   * and the route are separate channels (see `listLags`).
    */
-  const sessionsList = store({ ids: [], byId: {}, phase: 'ready', projectionsBySession: {} })
+  const sessionsList = store({ ids: [], byId: {}, phase: 'pending', projectionsBySession: {} })
   function catalogue(sessionId) {
     const current = sessionsList.getSnapshot()
     if (current.byId[sessionId] !== undefined) return
-    const row = { sessionId, agentAvailable: true, updatedAt: 0, running: false, blank: true }
-    sessionsList.set({ ...current, ids: [...current.ids, sessionId], byId: { ...current.byId, [sessionId]: row } })
+    // An untitled Session's displayTitle falls back to its id (session-controller displayTitleOf).
+    const row = { id: sessionId, displayTitle: sessionId, running: false, retainedBy: {}, blank: true, updatedAt: 0 }
+    sessionsList.set({ ...current, ids: [...current.ids, sessionId], byId: { ...current.byId, [sessionId]: row }, phase: 'ready' })
   }
   const localeStore = store(0)
   const slots = []
@@ -247,7 +253,16 @@ export function loadPage({ respond }) {
       return found
     },
     retry: () => buttons().find((node) => textOf(node) === 'Retry'),
+    /** The rendered button whose text is `label` (e.g. 'Fishball'), or undefined. */
+    button: (label) => buttons().find((node) => textOf(node) === label),
     notifySessionsList: () => sessionsList.set({ ...sessionsList.getSnapshot() }),
+    /** DSH's list stream delivers `sessionId` (with `listLags`, the route's manager arrives only through this). */
+    catalogue,
+    /** The page's current panel (null: the conversation) and a user's own panel choice. */
+    panel: () => panel.getSnapshot().activePanelId,
+    showPanel: (id) => panel.set({ activePanelId: id }),
+    /** Subscribers the page holds on DSH's session list, main-view source and panel store. */
+    listeners: () => ({ sessionsList: sessionsList.listeners.size, selected: selected.listeners.size, panel: panel.listeners.size }),
     focus: () => { for (const fn of [...(windowListeners.get('focus') ?? [])]) fn({ type: 'focus' }) },
     dispose: () => { for (const dispose of disposers.splice(0).reverse()) if (typeof dispose === 'function') dispose() },
   }

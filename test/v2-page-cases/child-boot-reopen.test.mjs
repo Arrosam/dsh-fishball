@@ -46,14 +46,12 @@
  * comparison (REOPEN-04/06), not by the case that caused it.
  */
 import assert from 'node:assert/strict'
-import fs from 'node:fs'
 import path from 'node:path'
-import { after, before, describe, test } from 'node:test'
-import { FAKE, TEST_HOMES } from '../support/constants.mjs'
-import { newHome } from '../support/host.mjs'
+import { describe, test } from 'node:test'
+import { FAKE } from '../support/constants.mjs'
 import { until } from '../support/util.mjs'
-import { FIXTURES, ROW, openDevtoolsTab, pageRow, sdkUnavailable, stageInstance, stageRow, startHost } from './child-boot-support.mjs'
-import { launchChromium, sdkRuntime } from './lite-browser.mjs'
+import { FIXTURES, ROW, childBootEnvironment, openDevtoolsTab, pageRow, stageInstance, stageRow, startHost } from './child-boot-support.mjs'
+import { sdkRuntime } from './lite-browser.mjs'
 import { SDK_VERSIONS } from './support.mjs'
 
 const REOPEN = Object.freeze({
@@ -130,26 +128,8 @@ const VIEW_EXPRESSION = `(async () => {
 // ---------------------------------------------------------------------------------------------
 // Shared environment: one Chromium; one child host and one walk of the state machine per SDK
 // ---------------------------------------------------------------------------------------------
-let browser = null
-let browserError = null
-const cleanups = []
+const { browser, skipReason, cleanups, ownHome } = childBootEnvironment()
 const journeys = new Map()
-
-before(async () => {
-  try { browser = await launchChromium() } catch (error) { browserError = error }
-})
-after(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup().catch(() => {})
-  await browser?.stop()
-})
-
-function skipReason(sdk) {
-  const unavailable = sdkUnavailable(sdk)
-  if (unavailable) return unavailable
-  if (browserError) return 'headless Chromium could not start: ' + browserError.message
-  if (!browser) return 'no local headless Chromium (FBTEST_CHROME or the Playwright headless shell)'
-  return null
-}
 
 function childRows(stage) {
   const managerRows = REOPEN.managerRows.map(({ id, module, required }) => ({
@@ -162,9 +142,7 @@ function childRows(stage) {
 
 async function bootChild(sdk) {
   const runtime = sdkRuntime(sdk)
-  const home = newHome(REOPEN.homeLabel)
-  // Remove only the home this suite created under the test-homes root.
-  cleanups.push(async () => { if (path.dirname(home) === TEST_HOMES) fs.rmSync(home, { recursive: true, force: true }) })
+  const home = ownHome(REOPEN.homeLabel)
   const host = await startHost(runtime, home, childRows(stageInstance(home, { runtime })), {
     ipc: true,
     // fake-llm resolves the SDK from FBTEST_DSH_RUNTIME inside the host process.
@@ -180,8 +158,8 @@ async function bootChild(sdk) {
 
 /** A fresh isolated browser context (no cookie, no saved DSH selection for this origin). */
 async function freshContext() {
-  const { browserContextId } = await browser.devtools.send('Target.createBrowserContext', {})
-  cleanups.push(() => browser.devtools.send('Target.disposeBrowserContext', { browserContextId }))
+  const { browserContextId } = await browser().devtools.send('Target.createBrowserContext', {})
+  cleanups.push(() => browser().devtools.send('Target.disposeBrowserContext', { browserContextId }))
   return browserContextId
 }
 
@@ -203,7 +181,7 @@ function journey(sdk) {
   async function open({ hash = '' } = {}) {
     const host = await hostReady
     const sessionsBefore = await host.call('sessions')
-    const tab = await openDevtoolsTab(browser.devtools, host.url + hash, { browserContextId: await freshContext() })
+    const tab = await openDevtoolsTab(browser().devtools, host.url + hash, { browserContextId: await freshContext() })
     cleanups.push(tab.close)
     return { tab, sessionsBefore, ...(await settle(host, tab, { settings: Boolean(hash) })) }
   }

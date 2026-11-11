@@ -20,14 +20,11 @@
  * setup → failed → disposed for R4.
  */
 import assert from 'node:assert/strict'
-import fs from 'node:fs'
 import path from 'node:path'
-import { after, before, describe, test } from 'node:test'
-import { TEST_HOMES } from '../support/constants.mjs'
-import { newHome } from '../support/host.mjs'
+import { describe, test } from 'node:test'
 import { sleep, until } from '../support/util.mjs'
-import { FIXTURES, ROW, openDevtoolsTab, pageRow, sdkUnavailable, stageInstance, stageRow, startHost } from './child-boot-support.mjs'
-import { launchChromium, sdkRuntime } from './lite-browser.mjs'
+import { FIXTURES, ROW, childBootEnvironment, openDevtoolsTab, pageRow, stageInstance, stageRow, startHost } from './child-boot-support.mjs'
+import { sdkRuntime } from './lite-browser.mjs'
 import { SDK_VERSIONS } from './support.mjs'
 
 const CHILD_BOOT_SUITE = Object.freeze({ homeLabel: 'child-boot' })
@@ -129,38 +126,18 @@ async function observeInBrowser(devtools, url) {
 // ---------------------------------------------------------------------------------------------
 // Shared environment: one Chromium; one observation per (SDK, scenario), memoized
 // ---------------------------------------------------------------------------------------------
-let browser = null
-let browserError = null
+const { browser, skipReason, cleanups, ownHome } = childBootEnvironment()
 const observations = new Map()
-const cleanups = []
-
-before(async () => {
-  try { browser = await launchChromium() } catch (error) { browserError = error }
-})
-after(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup().catch(() => {})
-  await browser?.stop()
-})
-
-function skipReason(sdk) {
-  const unavailable = sdkUnavailable(sdk)
-  if (unavailable) return unavailable
-  if (browserError) return 'headless Chromium could not start: ' + browserError.message
-  if (!browser) return 'no local headless Chromium (FBTEST_CHROME or the Playwright headless shell)'
-  return null
-}
 
 function observe(sdk, scenario) {
   const key = sdk + '/' + scenario.key
   if (!observations.has(key)) {
     observations.set(key, (async () => {
-      const home = newHome(CHILD_BOOT_SUITE.homeLabel + '-' + scenario.key)
-      // Remove only the home this suite created under the test-homes root.
-      cleanups.push(async () => { if (path.dirname(home) === TEST_HOMES) fs.rmSync(home, { recursive: true, force: true }) })
+      const home = ownHome(CHILD_BOOT_SUITE.homeLabel + '-' + scenario.key)
       const host = await startHost(sdkRuntime(sdk), home, scenario.rows(stageInstance(home)))
       cleanups.push(host.stop)
       try {
-        return { ...(await observeInBrowser(browser.devtools, host.url)), hostTail: host.tail }
+        return { ...(await observeInBrowser(browser().devtools, host.url)), hostTail: host.tail }
       } finally {
         await host.stop()
       }

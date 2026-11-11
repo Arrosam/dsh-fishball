@@ -11,10 +11,12 @@
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { after, before } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { NODE, REPO } from '../support/constants.mjs'
+import { NODE, REPO, TEST_HOMES } from '../support/constants.mjs'
+import { newHome } from '../support/host.mjs'
 import { until } from '../support/util.mjs'
-import { sdkRuntime } from './lite-browser.mjs'
+import { launchChromium, sdkRuntime } from './lite-browser.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 export const FIXTURES = path.join(REPO, 'test', 'support', 'fixtures')
@@ -54,12 +56,47 @@ export const pageRow = (stage) => ({ ...stageRow(stage, ROW.page), required: tru
 
 export const redact = (text) => text.replace(CHILD_BOOT.tokenParam, CHILD_BOOT.redacted)
 
-/** Why `sdk` cannot be booted here, or null. The browser half of a skip reason stays with each file. */
+/** Why `sdk` cannot be booted here, or null. */
 export function sdkUnavailable(sdk) {
   if (!process.env.FBTEST_DSH_RUNTIME) return 'FBTEST_DSH_RUNTIME is not set (no SDK to boot)'
   const runtime = sdkRuntime(sdk)
   if (!runtime || !fs.existsSync(path.join(runtime, CHILD_BOOT.runtimeProbe))) return `SDK ${sdk} runtime not found beside FBTEST_DSH_RUNTIME`
   return null
+}
+
+/**
+ * One suite's shared environment, registered as the calling file's node:test hooks: a headless
+ * Chromium launched before the file's cases, and its cleanups awaited after them in reverse order.
+ * Call once, at the top level of a test file. Returns:
+ * - `browser()`: the launched browser, or null;
+ * - `skipReason(sdk)`: why a case on `sdk` cannot run here, or null;
+ * - `cleanups`: disposers the file pushes;
+ * - `ownHome(label)`: a new throwaway home, removed afterwards only when it sits under the test-homes root.
+ */
+export function childBootEnvironment() {
+  let browser = null
+  let browserError = null
+  const cleanups = []
+  before(async () => {
+    try { browser = await launchChromium() } catch (error) { browserError = error }
+  })
+  after(async () => {
+    for (const cleanup of cleanups.splice(0).reverse()) await cleanup().catch(() => {})
+    await browser?.stop()
+  })
+  function skipReason(sdk) {
+    const unavailable = sdkUnavailable(sdk)
+    if (unavailable) return unavailable
+    if (browserError) return 'headless Chromium could not start: ' + browserError.message
+    if (!browser) return 'no local headless Chromium (FBTEST_CHROME or the Playwright headless shell)'
+    return null
+  }
+  function ownHome(label) {
+    const home = newHome(label)
+    cleanups.push(async () => { if (path.dirname(home) === TEST_HOMES) fs.rmSync(home, { recursive: true, force: true }) })
+    return home
+  }
+  return { browser: () => browser, skipReason, cleanups, ownHome }
 }
 
 /**

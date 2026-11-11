@@ -25,10 +25,13 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
      which `fishball-settings` ([v2-set](<v2-set.md>)) owns. The `settings.launcher` button stays,
      because that panel's "DSH Settings" link presses it.
 2. **Session.** The GET/POST `api/fishball/session` flow is unchanged (PAGE 7.A). The assigned
-   manager is selected once, when it first becomes known and the shortcut gate is protected.
-   After that, only the Fishball button and Retry select it. A selection is
+   manager is selected once, when it is known, the shortcut gate is protected and DSH's session
+   list carries it (see "Native startup on a reopened page"). After that, only the Fishball
+   button and Retry select it. A selection is
    `selectPanel(null)` followed by `openSession(manager)` when the main view is not already
-   showing it (plan §4.3 (5) item 4: initial selection and explicit return are legitimate). No subscription ever re-opens it,
+   showing it (plan §4.3 (5) item 4: initial selection and explicit return are legitimate). The
+   session-list subscription only completes that pending first selection, when the list first
+   carries the manager; no subscription ever re-opens it after a selection,
    calls `selectPanel(null)` on drift, or archives anything. The conversation is marked
    ready (`data-fishball-session`) only while the main view shows the manager and the gate is
    protected; otherwise it stays hidden.
