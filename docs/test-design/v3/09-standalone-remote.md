@@ -22,7 +22,7 @@ rows 9, 9b. Conventions: [README](<README.md>).
 - **Exception flows:**
   - E1. Target unreachable → Fishball still runs; status `target-unreachable`; bounded backoff retries.
   - E2. C_B refuses the token → `token-refused`.
-  - E3. Target URL `http://` to a non-loopback host → refused by core (no token sent).
+  - E3. Target URL `http://` to a non-loopback host → refused by `fishball-core` itself, before any request (the MCP SDK does not refuse it, S7 §4.4); no token, id or request reaches the host.
   - E4. The target redirects to another origin → the token is not forwarded.
 - **Postconditions:** the token value is only in F's credential store; F never reads or writes any DSH's sessions except through C_B's MCP.
 
@@ -54,7 +54,7 @@ rows 9, 9b. Conventions: [README](<README.md>).
 ## Equivalence Partitioning
 
 ### REM-EP-01 — Target URL classes in `fishball-core`
-**Req:** R-FB-03, R-FB-04 · **Level:** unit · **Flags:** —
+**Req:** R-FB-03, R-FB-04 · **Level:** unit · **Flags:** P:S7 (row 6)
 
 | # | Target | Expected |
 | --- | --- | --- |
@@ -63,7 +63,7 @@ rows 9, 9b. Conventions: [README](<README.md>).
 | 3 | `http://localhost:port/…` | allowed (loopback) |
 | 4 | `http://[::1]:port/…` | allowed (loopback) |
 | 5 | `https://b.example/…` | allowed |
-| 6 | `http://b.example/…` | refused; token never sent |
+| 6 | `http://b.example/…` | refused by core before any request (not by the SDK); token never sent; no TCP connection opened |
 | 7 | `http://192.168.1.5/…` | refused |
 | 8 | malformed / `ftp:` | refused (K code) |
 

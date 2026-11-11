@@ -62,7 +62,7 @@ R-BRD-01, 02, R-FN-01, R-MIG-01…05, R-COMPAT-01, R-SEC-01…04. Conventions: [
 - **Actor:** a V2 user with C + I in one DSH and a V2 child profile.
 - **Main flow:**
   1. Upgrade the connector → V2 settings V3 still uses keep their values; dropped ones are ignored and not rendered; one log line points at embed-UI.
-  2. Upgrade the instance → first V3 child start places all four set members (core on, features on at first placement); a new hosted token is created and paired with no manual step.
+  2. Upgrade the instance → first V3 child start places all four set members and `fishball-hosted-settings` (core on, features and the hosted settings bundle on at first placement); a new hosted token is created and paired with no manual step.
   3. Install embed-UI → the Fishball page and session list work; child history, Skills and child settings are intact.
 - **Alternative flows:** A1. The V2 child had a manually installed board in state off → placement replaces the copy and keeps it off (D§10).
 - **Exception flows:**
@@ -142,6 +142,7 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 | 5 | settings documents | 0 |
 | 6 | MCP responses and resource contents | 0 |
 | 7 | the credential store of the owning DSH | present (allowed) |
+| 8 | DSH's own browser login token on stdout at startup | allowed, exactly once per DSH start, and only there (S7 §4.4); the same value anywhere else is a hit |
 
 ### PLAT-EP-06 — No private channel between a Fishball DSH and a main DSH
 **Req:** R-ARCH-07, R-FB-08, R-UI-09 · **Level:** integration (traffic trace plus static check) · **Flags:** —
@@ -153,6 +154,21 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 | 3 | every session read, start, answer by a Fishball DSH | seen at C's MCP endpoint (trace) |
 | 4 | a Fishball DSH plugin acting on its own Fishball DSH's sessions | allowed (its own sessions) |
 | 5 | a Fishball DSH plugin acting on another DSH's sessions without MCP | no such path |
+
+### PLAT-EP-07 — Package dependency boundaries and the shared library
+**Req:** R-ARCH-08, R-ARCH-01, R-BND-01, R-FB-01 · **Level:** unit (static analysis of manifests and imports), integration (row 8: a started host with a child) · **Flags:** TQ-R5 (A assumed)
+
+| # | Check | Expected |
+| --- | --- | --- |
+| 1 | `fishball-instance` imports or depends on `fishball-core` | never |
+| 2 | `fishball-core` imports or depends on `fishball-instance` | never |
+| 3 | `fishball-shared` imports any other V3 package | never |
+| 4 | `fishball-shared` manifest | no `dsh` field: no bundle, row, `dsh.client` or service; not listed on any Plugins page |
+| 5 | `fishball-core` and `fishball-instance` | each has `fishball-shared` in `dependencies` and `bundleDependencies`; their packed tarballs contain it |
+| 6 | contents of `fishball-shared` | only modules imported by both core and the instance; a module imported by only one side fails the check |
+| 7 | `fishball-connector`, `dsh-fishball-embed-UI` | do not depend on `fishball-shared` (TQ-R5 = A) |
+| 8 | host DSH process of a running hosted setup | no module from `fishball-core`, the feature plugins or `fishball-hosted-settings` is loaded (module-load trace); `fishball-shared` modules may be |
+| 9 | standalone install of the core tarball in a DSH with no instance | installs and starts with no registry access |
 
 ## Boundary Value Analysis
 
@@ -192,7 +208,7 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 | 8 | toggled on/off while the child runs | | | | effect at the next restart; UI says "restart required" |
 | 9 | any | | | | the host DSH never lists or loads the bundled copies |
 
-Applies equally to core (R-FB-10).
+Applies equally to core (R-FB-10). `fishball-hosted-settings` follows the same rules (HOST-DT-03).
 
 ### PLAT-DT-02 — Standalone set completeness
 **Req:** R-BND-05, R-FB-07 · **Level:** integration · **Flags:** K (`plugin-set-incomplete`, D§8.2), TQ-17
