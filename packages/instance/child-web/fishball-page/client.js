@@ -407,9 +407,19 @@ window.__ModuleLoader__.load({
       // Two owners: a background refresh may clear a lookup failure, never a failed selection.
       const lookupFailed = createCell(false)
       const selectFailed = createCell(false)
+      /**
+       * openSession throws `unknown session` for an id the session list does not carry yet
+       * (session-controller resolveTarget, both SDKs), and on a fresh child origin the route can
+       * answer before the list arrives. So the selection waits for the listed manager, as the
+       * rc.1 liveshare viewer does. Order with native startup restoration: openSession's own
+       * selectPanel(null) aborts a restoration already pending, and a later one sees the main
+       * reference set and stops, so the manager stays on screen. The blank Session that
+       * restoration may already have created stays (accepted for V2, docs/planning/v2-lite.md).
+       */
+      const listed = target => ctx.sessions.list.getSnapshot().byId[target] !== undefined
       function select() {
         const target = manager.get()
-        if (disposed || target === null || gate.get() !== GATE.protected) return
+        if (disposed || target === null || gate.get() !== GATE.protected || !listed(target)) return
         selectedFor = target
         selectFailed.set(false)
         ctx.layout.selectPanel(null)
@@ -455,8 +465,9 @@ window.__ModuleLoader__.load({
         }).finally(() => { lookup = null })
         return lookup
       }
+      // A list change can be the one that first carries the manager, so it also re-marks.
       const unsubscribers = [source.subscribe(mark), gate.subscribe(mark),
-        ctx.sessions.list.subscribe(() => { void refresh() })]
+        ctx.sessions.list.subscribe(() => { mark(); void refresh() })]
       // A listener wrapper: addEventListener would otherwise pass the Event as ensure.
       const reread = () => { void refresh() }
       window.addEventListener(PAGE.reread, reread)
