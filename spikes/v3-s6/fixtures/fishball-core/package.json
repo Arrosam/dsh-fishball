@@ -18,5 +18,5 @@
     "./client": "./client.js",
     "./package.json": "./package.json"
   },
-  "files": ["index.js", "ui.js", "guards.js", "client.js", "cordis.patch.yml"]
+  "files": ["index.js", "ui.js", "guards.js", "reorder.js", "client.js", "cordis.patch.yml"]
 }

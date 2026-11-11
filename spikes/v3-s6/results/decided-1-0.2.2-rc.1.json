@@ -1,0 +1,25 @@
+{
+  "id": "decided-1",
+  "sdk": "0.2.2-rc.1",
+  "node": "v24.22.2",
+  "at": "2026-11-11T11:44:01.045Z",
+  "home": "<worktree>/.runtime/v3-s6/decided-0.2.2-rc.1-1794397436057",
+  "leftover": {
+    "agentPreset": "standard",
+    "answered": true
+  },
+  "install": {
+    "fishball-core": true,
+    "fishball-board": true,
+    "fishball-instance": true,
+    "fishball-watchdog": true
+  },
+  "bundlesAfterInstall": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "fishball-core",
+    "fishball-board",
+    "fishball-instance",
+    "fishball-watchdog"
+  ]
+}

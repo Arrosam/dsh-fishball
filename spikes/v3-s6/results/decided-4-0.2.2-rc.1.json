@@ -1,0 +1,21 @@
+{
+  "id": "decided-4",
+  "sdk": "0.2.2-rc.1",
+  "node": "v24.22.2",
+  "at": "2026-11-11T12:00:41.170Z",
+  "resolve": "resumed",
+  "answered": true,
+  "tools": [
+    "read",
+    "read_image",
+    "working_directory"
+  ],
+  "sessionCreatingTools": [],
+  "agentPreset": "fishball",
+  "sandbox": "read-only",
+  "permission": "read-only",
+  "listedSessions": 2,
+  "managerListed": true,
+  "leftoverListed": true,
+  "leftoverArchivedAfterRestart": true
+}
