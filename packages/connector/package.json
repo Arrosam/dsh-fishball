@@ -37,7 +37,7 @@
     "node": ">=22",
     "dsh": ">=0.2.1-rc.2"
   },
-  "//dependencies": "Runtime dependencies installed inside this package's folder, never taken from DSH as peers (design §3.1, §9.1): no DSH runtime ships an MCP server (both 0.2.1-rc.5 and 0.2.2-rc.1 carry only @modelcontextprotocol/client and core 2.2.0). The server is pinned to that same 2.2.0 line. Its Node HTTP adapter is pinned exactly to 2.1.0, the newest @modelcontextprotocol/node whose peer range (^2.1.0) admits server 2.2.0; 2.1.1 requires ^2.3.0 and 2.1.2 ^2.4.0, so a caret range would break the server pin.",
+  "//dependencies": "Runtime dependencies installed with this package, never taken from DSH as peers (design §3.1, §9.1): no DSH runtime ships an MCP server (both 0.2.1-rc.5 and 0.2.2-rc.1 carry only @modelcontextprotocol/client and core 2.2.0). The server is pinned to that same 2.2.0 line; it requires core 2.2.0 exactly, whose dist is byte-identical to the hosts'. Its Node HTTP adapter is pinned exactly to 2.1.0, the newest @modelcontextprotocol/node whose peer range (^2.1.0) admits server 2.2.0; 2.1.1 requires ^2.3.0 and 2.1.2 ^2.4.0, so a caret range would break the server pin. DSH profiles install with pnpm nodeLinker hoisted and autoInstallPeers false, so these and their own dependencies (core, zod, @hono/node-server) land in the profile's node_modules, where DSH's resolver serves them ahead of the host's copies: the hoisted zod then also answers this package's zod peer, and that of every other package in the profile. pnpm reports hono as a missing peer of @hono/node-server; the adapter's toNodeHandler path never imports hono, so it is deliberately not added.",
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.0",
     "@modelcontextprotocol/server": "2.2.0"
