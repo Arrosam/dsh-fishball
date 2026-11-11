@@ -576,7 +576,8 @@ Clients find it through the protected resource metadata, as the spec requires.
   the next request. Without `Fishball-Agent-Id`, a raw token value or the old `<id>.<token>` form
   is an invalid access token. This serves clients that can only send fixed headers, such as DSH's
   `dsh-mcp-client`, and is the **second documented departure** from the MCP authorization
-  specification (requirements 1.17).
+  specification (requirements 1.17). Every enabled entry accepts it; there is no per-entry switch
+  (Q-HDR-1 decided A).
 
 **Why no refresh tokens for machine exchange (Q27, decided; browser clients get rotating ones, Q-OA-2 A, §5.5a):** a client-credentials client re-authenticates with its own
 id + token, which the stock provider already does. A refresh token would be a second long-lived
