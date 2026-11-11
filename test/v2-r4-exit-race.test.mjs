@@ -56,6 +56,12 @@ const R4 = Object.freeze({
   warn: Object.freeze({ type: 'warn', format: 'start failed (%s)' }),
   lifecycle: Object.freeze({ boot: 'CHILD_BOOT', ready: 'READY', failed: 'FAILED' }),
   pidFile: 'pid.json',
+  /**
+   * A live launch directory is named exactly by its instance id (a lowercase UUID). Anything else
+   * under launches/ — e.g. `<id>.retired` while a stop retires a dead child's launch, pid.json still
+   * inside — is not a live launch.
+   */
+  launchId: /^[0-9a-f-]{36}$/,
   connector: 'fishball-connector',
   killSignal: 'SIGKILL',
   detailCodePoints: 2000,
@@ -74,6 +80,7 @@ function launchPids(home) {
   const dir = launchesDir(home)
   if (!fs.existsSync(dir)) return pids
   for (const id of fs.readdirSync(dir)) {
+    if (!R4.launchId.test(id)) continue
     try {
       const pid = JSON.parse(fs.readFileSync(path.join(dir, id, R4.pidFile), 'utf8')).pid
       if (Number.isInteger(pid) && pid > 1) pids.set(id, pid)
