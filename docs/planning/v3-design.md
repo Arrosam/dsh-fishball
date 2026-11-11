@@ -174,9 +174,8 @@ Each tool wraps today's connector domain function (`packages/connector/src/*`) a
 | Tool | Domain source (contract 1.2) | Notes |
 | --- | --- | --- |
 | `sessions_list` | `session.list` | sessions related to **this principal** |
-| `session_start`, `session_message`, `session_redirect`, `session_stop`, `session_release` | §4.1 | `unconfirmed` is never retried. `session_start` makes the caller the managing principal (R-ROUTE-01) |
+| `session_start`, `session_message`, `session_redirect`, `session_stop`, `session_release` | §4.1 | `unconfirmed` is never retried. `session_start` makes the caller the managing principal (R-ROUTE-01), which also makes it the session's only watcher (R-WATCH-01). No `notifyWhenFinished` argument; no watch tools exist (R-WATCH-03) |
 | `session_read` | `session.read` | bounded; `truncated` |
-| `session_watch`, `session_unwatch`, `watches_list` | §4.1 | watch notices land in the mailbox |
 | `approvals_list`, `approval_answer` | §4.2 | timer-free descriptor (no `expiresAt`); answer authority is checked against the live `offerId` and the pair (§3.4) |
 | `question_answer`, `question_ask`, `question_answer_own` | §4.2 | plan review included |
 | `prompts_list`, `prompt_answer`, `grants_list`, `grant_revoke` | §4.3 | |
@@ -200,11 +199,12 @@ code would be lost to DSH-hosted agents. JSON-RPC errors are kept for protocol f
 
 - **One stream, typed events.** There is exactly one event resource. Every event a pair can
   receive (`handover`, `takeback`, `permission`, `question`, `plan-review`, `settlement`,
-  `retirement`, `turn-finished`, `state`, `watch`, `message`, `ask`, `notice`,
+  `retirement`, `turn-finished`, `state`, `message`, `ask`, `notice`,
   `contributed:<ns>.<event>`) is an entry in that pair's mailbox with a `type` field (R-EVS-02). Kinds are told apart only by `type`.
 - **Exactly one pair per event** (R-EVS-03): the session's managing pair as of the event; else,
   or with no session, the designated Fishball pair. Follow-up events (`settlement`,
-  `retirement`, `takeback`) go to the pair that got the original; `watch` to the watcher.
+  `retirement`, `takeback`) go to the pair that got the original. There is no watch exception:
+  a pair watches exactly the sessions it manages (R-WATCH, Q31 decided).
 - The client opens `subscriptions/listen` with `resourceSubscriptions: ['fishball://events']`,
   and optionally `toolsListChanged`. After the required acknowledgement, the server sends
   `notifications/resources/updated {uri}` after **each commit** to that pair's mailbox
@@ -226,7 +226,7 @@ V3 drafts had named lanes for Watchdog; they are dropped (requirements 1.8 item 
   - An event has `{eventId, mailboxGeneration, sequence, type, sourceSessionId, correlationId,
     offer?: {offerId, revision, decisionKind}, payload, payloadDigest}`.
   - The `type` vocabulary is R-EVS-02's: `permission`, `question`, `plan-review` (the three
-    offer types), `settlement`, `retirement`, `turn-finished`, `state`, `watch`, `message`
+    offer types), `settlement`, `retirement`, `turn-finished`, `state`, `message`
     (`message_fishball`), `ask` (`ask_fishball`), `handover`, `takeback`, `notice`, and
     `contributed:<namespace>.<event>` (contributor events, §13.5a).
 - **`inbox_poll({cursor?, limit})`** returns `{events, nextCursor, hasMore}` or an explicit
@@ -253,8 +253,13 @@ V3 drafts had named lanes for Watchdog; they are dropped (requirements 1.8 item 
   `session_release` clears it.
 - That session's permission requests, questions and plan reviews become `permission`,
   `question` and `plan-review` events for its managing pair. Every event naming the session,
-  `turn-finished` and `state` included, goes to one pair by R-EVS-03. A `watch` event goes to the
-  pair that set the watch (Q31, A assumed).
+  `turn-finished` and `state` included, goes to one pair by R-EVS-03.
+- **Watching is managing (R-WATCH, Q31 decided).** The managing pair automatically gets every
+  `turn-finished` and `state` event of its sessions, from start or Hand over until release or
+  Take back. Unmanaged sessions produce neither. The connector's V2 watch machinery (watch ids,
+  modes, watermarks per watch) collapses into one per-session watermark owned by the managing
+  pair. It is read before each `session_message`, so a turn that ends at once is still reported,
+  as V2's `notifyWhenFinished` did.
 - `message_fishball` and `ask_fishball` from a session go to its managing principal. An
   unmanaged session's calls go to the **designated Fishball principal** (setting
   `routing.fishballToken`, default the hosted Fishball's token entry, if any; R-ROUTE-04).
@@ -399,7 +404,7 @@ principal at the next request (R-TOK-05, R-OA-06):
 - open listen streams close with the graceful completion result;
 - pending answers fail;
 - its live **offers** are retired and go to the user in their sessions;
-- its queued `message`/`watch`/`state` events are kept for 30 days, so re-enabling the same entry
+- its queued `message`/`turn-finished`/`state` events are kept for 30 days, so re-enabling the same entry
   restores them (proposed; frozen with the schema). A disabled entry keeps its pair (R-ID-09);
 - managed sessions become unmanaged, with one `system` note each.
 
@@ -424,7 +429,7 @@ Deleting an entry also asks `credentials.unset(ref)` when the connector generate
   hosted entry it created (non-secret, in its lifecycle state). When a reinstalled child pairs
   with a new hosted token, the instance calls `retire(oldEntryKey, newEntryKey)`. In one storage
   transaction the connector:
-  1. moves managed sessions;
+  1. moves managed sessions, and with them their watch (R-WATCH-04);
   2. moves the designated role, if the old entry held it;
   3. copies the name;
   4. re-issues the old entry's live offers into the new mailbox with new offer ids (old ids then
@@ -724,9 +729,10 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
     supervision.isActive(e.sourceSessionId)` (healthy X14 state and a live X15 claim);
   - `types: ['settlement', 'retirement']`, `filter: e => watchdog.handled(e.correlationId)`
     (offers it held or escalated to the user).
-  Everything else (questions, plan reviews, `watch` notices, messages, asks, hand-over and
+  Everything else (questions, plan reviews, messages, asks, hand-over and
   take-back, notices, contributor events, unsupervised sessions) matches no Watchdog
-  registration and reaches Fishball.
+  registration and reaches Fishball. Whether Watchdog hands an idle-stop `turn-finished` back to
+  Fishball is Q32 (A recommended: yes, once, through `ctl.release`).
 - **Other plugins** may register too (fold-notify, the board, third-party child plugins), for
   example for `contributed:<ns>.*` types. The same rules apply. A registration with the same
   types and priority as another is accepted with one logged warning (R-INT-03).
