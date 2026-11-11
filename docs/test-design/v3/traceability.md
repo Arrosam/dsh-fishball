@@ -36,7 +36,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-CON-10 | AUTH-UC-01, AUTH-UC-09 | 2 |
 | R-CON-11 | HAND-UC-01, HAND-UC-03, HAND-UC-04, HAND-EP-01, HAND-DT-01 | 5 |
 | R-EXT-01 | EXT-UC-01, EXT-ST-01 | 2 |
-| R-EXT-02 | EXT-UC-01, EXT-EP-01 | 2 |
+| R-EXT-02 | EXT-UC-01, EXT-EP-01, EXT-EP-02 | 3 |
 | R-EXT-03 | EXT-UC-01, EXT-UC-04, EXT-EP-01, EXT-EP-02, EXT-BVA-01 | 5 |
 | R-EXT-04 | EXT-UC-01, EXT-UC-03, EXT-ST-01 | 3 |
 | R-EXT-05 | AUTH-UC-02, AUTH-EP-06, EXT-UC-01, EXT-DT-03 | 4 |
@@ -100,7 +100,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-ID-12 | AUTH-UC-01, AUTH-UC-02, AUTH-UC-09, AUTH-BVA-05, AUTH-UC-10 | 5 |
 | R-ID-13 | AUTH-EP-03, AUTH-DT-02, AUTH-DT-06, AUTH-DT-08 | 4 |
 | R-NAME-01 | NAME-UC-03, NAME-EP-02, NAME-ST-01 | 3 |
-| R-NAME-02 | AUTH-DT-08, NAME-UC-02, NAME-UC-03, NAME-EP-01, NAME-EP-02, NAME-EP-03, NAME-BVA-01, NAME-BVA-03, NAME-DT-02, NAME-ST-01 | 10 |
+| R-NAME-02 | AUTH-DT-08, NAME-UC-02, NAME-UC-03, NAME-EP-01, NAME-EP-02, NAME-EP-03, NAME-EP-04, NAME-BVA-01, NAME-BVA-03, NAME-DT-02, NAME-ST-01 | 11 |
 | R-NAME-03 | AUTH-UC-05, NAME-UC-02, NAME-DT-03 | 3 |
 | R-NAME-04 | NAME-UC-01, NAME-EP-04, NAME-DT-01, NAME-ST-01 | 4 |
 | R-NAME-05 | AUTH-UC-09, NAME-UC-02, NAME-EP-04, HAND-UC-01, HAND-UC-03 | 5 |
@@ -256,9 +256,9 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | AUTH-EP-08 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (stub HTTP servers) | K (size and time bounds) |
 | AUTH-EP-09 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | NAME-UC-01 | [02-names.md](<02-names.md>) | integration | — |
-| NAME-UC-02 | [02-names.md](<02-names.md>) | integration (core + C), e2e (page and marks) | TQ-6 |
+| NAME-UC-02 | [02-names.md](<02-names.md>) | integration (core + C), e2e (page and marks) | — |
 | NAME-UC-03 | [02-names.md](<02-names.md>) | integration | — |
-| NAME-EP-01 | [02-names.md](<02-names.md>) | unit | TQ-6 |
+| NAME-EP-01 | [02-names.md](<02-names.md>) | unit | — |
 | NAME-EP-02 | [02-names.md](<02-names.md>) | unit | — |
 | NAME-EP-03 | [02-names.md](<02-names.md>) | integration | — |
 | NAME-EP-04 | [02-names.md](<02-names.md>) | integration (connector), e2e (embed-UI) | — |
@@ -267,7 +267,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | NAME-BVA-03 | [02-names.md](<02-names.md>) | integration | — |
 | NAME-DT-01 | [02-names.md](<02-names.md>) | integration | — |
 | NAME-DT-02 | [02-names.md](<02-names.md>) | integration | — |
-| NAME-DT-03 | [02-names.md](<02-names.md>) | unit (core), e2e (page) | TQ-6 |
+| NAME-DT-03 | [02-names.md](<02-names.md>) | unit (core), e2e (page) | — |
 | NAME-ST-01 | [02-names.md](<02-names.md>) | unit | — |
 | HAND-UC-01 | [03-handover.md](<03-handover.md>) | e2e (control), integration (service) | — |
 | HAND-UC-02 | [03-handover.md](<03-handover.md>) | e2e, integration | — |
@@ -297,7 +297,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | EVT-ST-02 | [04-events-interception.md](<04-events-interception.md>) | unit | P:S2 (rows 2, 4–6, 9–11; rows 1, 3, 7, 8 settled by S2 `a499141`) |
 | WD-UC-01 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
 | WD-UC-02 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
-| WD-UC-03 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock, fake link), integration | TQ-9 |
+| WD-UC-03 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock, fake link), integration | — |
 | WD-UC-04 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
 | WD-UC-05 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
 | WD-UC-06 | [05-watchdog.md](<05-watchdog.md>) | integration | Q33 |
@@ -307,24 +307,24 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | WD-EP-03 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
 | WD-EP-04 | [05-watchdog.md](<05-watchdog.md>) | integration (fake model provider counting lookups) | — |
 | WD-BVA-01 | [05-watchdog.md](<05-watchdog.md>) | unit | — |
-| WD-BVA-02 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock) | TQ-9 |
+| WD-BVA-02 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock) | — |
 | WD-BVA-03 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock, a scripted model that records each call's brief) | Q33 |
-| WD-DT-01 | [05-watchdog.md](<05-watchdog.md>) | unit (decision mapping with a scripted model) | TQ-10 |
+| WD-DT-01 | [05-watchdog.md](<05-watchdog.md>) | unit (decision mapping with a scripted model) | — |
 | WD-DT-02 | [05-watchdog.md](<05-watchdog.md>) | unit | — |
 | WD-ST-01 | [05-watchdog.md](<05-watchdog.md>) | unit | — |
-| WD-ST-02 | [05-watchdog.md](<05-watchdog.md>) | unit | TQ-9, Q33 (rows 8–9), TQ-11 |
+| WD-ST-02 | [05-watchdog.md](<05-watchdog.md>) | unit | Q33 (rows 8–9) |
 | WD-ST-03 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock, scripted model) | Q33 |
-| WATCH-UC-01 | [06-watch.md](<06-watch.md>) | integration | TQ-12 |
+| WATCH-UC-01 | [06-watch.md](<06-watch.md>) | integration | — |
 | WATCH-UC-02 | [06-watch.md](<06-watch.md>) | integration | — |
 | WATCH-UC-03 | [06-watch.md](<06-watch.md>) | integration | — |
 | WATCH-EP-01 | [06-watch.md](<06-watch.md>) | integration | — |
 | WATCH-ST-01 | [06-watch.md](<06-watch.md>) | integration | — |
-| EXT-UC-01 | [07-contributors.md](<07-contributors.md>) | integration | P:S5 |
-| EXT-UC-02 | [07-contributors.md](<07-contributors.md>) | integration | P:S5 |
-| EXT-UC-03 | [07-contributors.md](<07-contributors.md>) | integration | P:S5, K (N of M) |
-| EXT-UC-04 | [07-contributors.md](<07-contributors.md>) | integration | P:S5, D§13.6 |
-| EXT-EP-01 | [07-contributors.md](<07-contributors.md>) | unit | K (grammar `[a-z0-9][a-z0-9_.-]{0,47}`, D§13.2; keyword subset) |
-| EXT-EP-02 | [07-contributors.md](<07-contributors.md>) | unit | P:S5, D§13.3, TQ-13 |
+| EXT-UC-01 | [07-contributors.md](<07-contributors.md>) | integration | — |
+| EXT-UC-02 | [07-contributors.md](<07-contributors.md>) | integration | P:S3 (A3) |
+| EXT-UC-03 | [07-contributors.md](<07-contributors.md>) | integration | K (N of M) |
+| EXT-UC-04 | [07-contributors.md](<07-contributors.md>) | integration | D§13.6 |
+| EXT-EP-01 | [07-contributors.md](<07-contributors.md>) | unit | K (grammar `[a-z0-9][a-z0-9_.-]{0, 47}`, D§13.2; keyword subset) |
+| EXT-EP-02 | [07-contributors.md](<07-contributors.md>) | unit | D§13.3 |
 | EXT-EP-03 | [07-contributors.md](<07-contributors.md>) | unit | — |
 | EXT-EP-04 | [07-contributors.md](<07-contributors.md>) | unit (service surface), integration | — |
 | EXT-BVA-01 | [07-contributors.md](<07-contributors.md>) | unit | K |
@@ -332,10 +332,10 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | EXT-BVA-03 | [07-contributors.md](<07-contributors.md>) | unit (fake clock) | K (token-bucket semantics assumed: capacity 10, refill 0.5/s) |
 | EXT-BVA-04 | [07-contributors.md](<07-contributors.md>) | unit | K (ceilings) |
 | EXT-DT-01 | [07-contributors.md](<07-contributors.md>) | unit | K (precedence order of checks) |
-| EXT-DT-02 | [07-contributors.md](<07-contributors.md>) | unit | TQ-14 |
-| EXT-DT-03 | [07-contributors.md](<07-contributors.md>) | integration | P:S5 |
-| EXT-ST-01 | [07-contributors.md](<07-contributors.md>) | integration | P:S5 |
-| HOST-UC-01 | [08-hosted.md](<08-hosted.md>) | integration | P:S6, TQ-15 |
+| EXT-DT-02 | [07-contributors.md](<07-contributors.md>) | unit | — |
+| EXT-DT-03 | [07-contributors.md](<07-contributors.md>) | integration | P:S7 (E2p), remote-target harness (E6, E8; X-REMOTE) |
+| EXT-ST-01 | [07-contributors.md](<07-contributors.md>) | integration | — |
+| HOST-UC-01 | [08-hosted.md](<08-hosted.md>) | integration | P:S6 |
 | HOST-UC-02 | [08-hosted.md](<08-hosted.md>) | integration | — |
 | HOST-UC-03 | [08-hosted.md](<08-hosted.md>) | integration | — |
 | HOST-UC-04 | [08-hosted.md](<08-hosted.md>) | integration (C + I), e2e (Retry) | — |
@@ -369,7 +369,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | UIM-DT-01 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | integration (headless rows), e2e (UI columns) | P:S6 |
 | PLAT-UC-01 | [11-platform.md](<11-platform.md>) | integration | — |
 | PLAT-UC-02 | [11-platform.md](<11-platform.md>) | integration | — |
-| PLAT-UC-03 | [11-platform.md](<11-platform.md>) | integration | TQ-16 |
+| PLAT-UC-03 | [11-platform.md](<11-platform.md>) | integration | — |
 | PLAT-UC-04 | [11-platform.md](<11-platform.md>) | integration (composition), e2e (page) | P:S6 |
 | PLAT-UC-05 | [11-platform.md](<11-platform.md>) | integration (+ e2e for the page) | P:S6 |
 | PLAT-UC-06 | [11-platform.md](<11-platform.md>) | integration | — |
@@ -384,6 +384,6 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | PLAT-BVA-01 | [11-platform.md](<11-platform.md>) | unit (fake clock) | K (day = 86400 s) |
 | PLAT-BVA-02 | [11-platform.md](<11-platform.md>) | integration | K (limits frozen at V3-K) |
 | PLAT-DT-01 | [11-platform.md](<11-platform.md>) | integration | — |
-| PLAT-DT-02 | [11-platform.md](<11-platform.md>) | integration | K (`plugin-set-incomplete`, D§8.2), TQ-17 |
+| PLAT-DT-02 | [11-platform.md](<11-platform.md>) | integration | K (`plugin-set-incomplete`, D§8.2) |
 | PLAT-DT-03 | [11-platform.md](<11-platform.md>) | integration (each row is a full suite run), e2e (UI rows) | — |
 | PLAT-ST-01 | [11-platform.md](<11-platform.md>) | unit | — |

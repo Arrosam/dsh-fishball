@@ -3,19 +3,21 @@
 Requirements: R-EXT-01…20, R-SEC-04, requirements §4.2. Conventions: [README](<README.md>).
 
 The service is `fishballConnectorTools` with `register`, `emit`, `mine` (D§13.2, K). The
-caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** unless stated.
+caller-identity mechanism was settled by V3-S5 (`8f2788e`, PASS): `register(def)`, namespace from the
+caller's loader-entry package. The EXT cases are no longer provisional on S5 unless a flag says so
+(S5-Q5 decided A: the namespace is attribution only, not a security boundary).
 
 ## Use Cases
 
 ### EXT-UC-01 — A plugin contributes a tool and a principal calls it
-**Req:** R-EXT-01, R-EXT-02, R-EXT-03, R-EXT-04, R-EXT-05, R-EXT-06, R-EXT-07, R-EXT-10, R-EXT-12, R-EXT-15 · **Level:** integration · **Flags:** P:S5
+**Req:** R-EXT-01, R-EXT-02, R-EXT-03, R-EXT-04, R-EXT-05, R-EXT-06, R-EXT-07, R-EXT-10, R-EXT-12, R-EXT-15 · **Level:** integration · **Flags:** —
 
 - **Actor:** contributor plugin `board-helper` in C's DSH; a paired principal P with a listen stream opted into `toolsListChanged`.
 - **Preconditions:** C loaded; `board-helper` injects `fishballConnectorTools?`.
 - **Main flow:**
   1. `board-helper` registers `{name: "lookup", description, inputSchema: {type: "object", …}, execute}` at runtime, with no connector restart.
   2. P's stream gets `notifications/tools/list_changed`.
-  3. P's `tools/list` shows `board-helper.lookup` after the core tools, sorted by public name, with `annotations` naming plugin `board-helper` and its package version.
+  3. P's `tools/list` shows `board-helper.lookup` after the core tools, sorted by public name, with `_meta["io.github.dsh-fishball/contributor"]` = `{plugin: "board-helper", version}`; its `annotations` hold only the behaviour hints the contributor declared (`readOnlyHint`, …), nothing else.
   4. P calls it with valid arguments → C authenticates, checks body/size/in-flight/rate limits and validates the input schema **before** `execute` runs.
   5. `execute` receives `call.principal = {key, name}` (opaque key, current name; no token, id or entry label), a signal and `protocolVersion: "2026-07-28"`.
   6. It returns `{ok: true, data}` → P gets `structuredContent {ok: true, …}`, the same JSON as text, and `isError: false`.
@@ -27,10 +29,12 @@ caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** un
 - **Exception flows:**
   - E1. Invalid arguments → refused with the connector's code; `execute` never runs.
   - E2. An unauthenticated request → 401; a pair-only AT does not see the tool.
+  - E3. A `register` call that cannot be traced to a package (no loader entry) → `contributor-unidentified`; nothing registered.
+  - E4. The contributor plugin is being disposed and a `tools/call` for its tool arrives before the disposer ran → "unknown tool" (owner fiber not loading or active).
 - **Postconditions:** `board-helper` gained no Fishball authority.
 
 ### EXT-UC-02 — A contributor emits an event
-**Req:** R-EXT-16, R-EXT-17, R-EXT-18, R-EVS-02, R-ID-06, R-EXT-20 · **Level:** integration · **Flags:** P:S5
+**Req:** R-EXT-16, R-EXT-17, R-EXT-18, R-EVS-02, R-ID-06, R-EXT-20 · **Level:** integration · **Flags:** P:S3 (A3)
 
 - **Actor:** contributor `ci-watch`.
 - **Preconditions:** D = HF; S1 managed by P(E2).
@@ -47,7 +51,7 @@ caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** un
 - **Postconditions:** one emit woke at most one agent.
 
 ### EXT-UC-03 — A failing contributor is contained, then quarantined, then restored
-**Req:** R-EXT-08, R-EXT-09, R-EXT-19, R-EXT-04, R-EXT-15 · **Level:** integration · **Flags:** P:S5, K (N of M)
+**Req:** R-EXT-08, R-EXT-09, R-EXT-19, R-EXT-04, R-EXT-15 · **Level:** integration · **Flags:** K (N of M)
 
 - **Actor:** contributor `flaky` with tool `flaky.go` and two pending events in P's mailbox (one already acked).
 - **Main flow:**
@@ -59,7 +63,7 @@ caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** un
 - **Postconditions:** the connector and all other clients kept working throughout.
 
 ### EXT-UC-04 — Embed-UI contributes the attention tools
-**Req:** R-EXT-13, R-UI-04, R-FN-01, R-EXT-03 · **Level:** integration · **Flags:** P:S5, D§13.6
+**Req:** R-EXT-13, R-UI-04, R-FN-01, R-EXT-03 · **Level:** integration · **Flags:** D§13.6
 
 - **Actor:** embed-UI; Fishball's fold-notify.
 - **Preconditions:** C + U in one DSH.
@@ -74,7 +78,7 @@ caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** un
 ## Equivalence Partitioning
 
 ### EXT-EP-01 — Registration validity
-**Req:** R-EXT-02, R-EXT-03 · **Level:** unit · **Flags:** K (grammar `[a-z0-9][a-z0-9_.-]{0,47}`, D§13.2; keyword subset)
+**Req:** R-EXT-02, R-EXT-03 · **Level:** unit · **Flags:** K (grammar `[a-z0-9][a-z0-9_.-]{0, 47}`, D§13.2; keyword subset)
 
 | # | Class | Expected |
 | --- | --- | --- |
@@ -92,11 +96,12 @@ caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** un
 | 12 | contributor whose derived namespace is `fishball` or the connector's plugin name | `namespace-reserved` |
 | 13 | the connector unloading | `registry-closed` |
 | 14 | any refusal | nothing registered, nothing in `tools/list`, one log line |
+| 14a | `annotations` with a non-hint key (for example `contributor`) | the key is not passed to clients; only specification behaviour hints are kept (K: refused `tool-invalid` or dropped) |
 | 15 | the same name after dispose | registered again |
 | 16 | the disposer called twice | no-op |
 
 ### EXT-EP-02 — Namespace derivation
-**Req:** R-EXT-03, R-EXT-16 · **Level:** unit · **Flags:** P:S5, D§13.3, TQ-13
+**Req:** R-EXT-03, R-EXT-16, R-EXT-02 · **Level:** unit · **Flags:** D§13.3
 
 | # | Contributor plugin name | Namespace | Public name of `lookup` |
 | --- | --- | --- | --- |
@@ -104,8 +109,10 @@ caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** un
 | 2 | `@acme/tools` | `acme-tools` | `acme-tools.lookup` |
 | 3 | `fishball-embed-ui` | `embed-ui` (the only alias) | `embed-ui.lookup` |
 | 4 | a contributor passing `namespace: "other"` in its definition | ignored; derived namespace used | |
-| 5 | a contributor calling `register` from inside another plugin's scope | the **caller's** namespace (spike S5) | |
-| 6 | two plugins whose names normalise to the same namespace | TQ-13 (unique plugin names ≠ unique normalised names) | |
+| 5 | a contributor calling `register` from inside another plugin's scope | the namespace of the context the service handle was obtained through (S5); attribution only, not a boundary (S5-Q5) | |
+| 5a | a caller with no traceable package (code evaluated outside any loader entry) | refused `contributor-unidentified` | — |
+| 5b | a contributor whose plugin entry name differs from its package name | the **package** name of its loader entry | |
+| 6 | two plugins whose names normalise to the same namespace (`@a/b`, `a-b`) | first to register keeps `a-b`; the second is refused `namespace-reserved`, logged once (TQ-13 decided) | |
 
 ### EXT-EP-03 — Result handling
 **Req:** R-EXT-07, R-EXT-08 · **Level:** unit · **Flags:** —
@@ -216,7 +223,7 @@ With namespace `ns` (2 chars) the public name is `ns.` + local name.
 Every rule: a returned code, never a throw into the connector or the contributor.
 
 ### EXT-DT-02 — Contributor event recipient
-**Req:** R-EXT-17, R-EVS-03 · **Level:** unit · **Flags:** TQ-14
+**Req:** R-EXT-17, R-EVS-03 · **Level:** unit · **Flags:** —
 
 | Rule | `sessionId` | Session managed | Designated | Recipient |
 | --- | --- | --- | --- | --- |
@@ -225,10 +232,10 @@ Every rule: a returned code, never a throw into the connector or the contributor
 | 3 | given | no | none | `no-fishball` |
 | 4 | absent | — | D | D |
 | 5 | absent | — | none | `no-fishball` |
-| 6 | given, unknown session | — | D | TQ-14 (treat as unmanaged → D, or refuse) |
+| 6 | given, unknown session | — | D | refused `event-invalid`; nothing queued (TQ-14 decided) |
 
 ### EXT-DT-03 — Contributed tools in `tools/list` (matrix §4.2)
-**Req:** R-EXT-05, R-EXT-13, R-EXT-14, R-UI-08, R-UI-09, §4.2 · **Level:** integration · **Flags:** P:S5
+**Req:** R-EXT-05, R-EXT-13, R-EXT-14, R-UI-08, R-UI-09, §4.2 · **Level:** integration · **Flags:** P:S7 (E2p), remote-target harness (E6, E8; X-REMOTE)
 
 | Rule | In the connector's DSH | AT | Contributed tools listed |
 | --- | --- | --- | --- |
@@ -246,7 +253,7 @@ Every rule: a returned code, never a throw into the connector or the contributor
 ## State Transitions
 
 ### EXT-ST-01 — A contributor's registration
-**Req:** R-EXT-01, R-EXT-04, R-EXT-09, R-EXT-19 · **Level:** integration · **Flags:** P:S5
+**Req:** R-EXT-01, R-EXT-04, R-EXT-09, R-EXT-19 · **Level:** integration · **Flags:** —
 
 | # | From | Event | To | Observable |
 | --- | --- | --- | --- | --- |
@@ -255,9 +262,11 @@ Every rule: a returned code, never a throw into the connector or the contributor
 | 3 | Active | plugin disabled / unloaded / reloaded / uninstalled | Absent | as 2; pending events retired |
 | 4 | Active | in-flight call when withdrawn | Absent | that call gets `tool-withdrawn` (D§13.4), signal fired |
 | 5 | Active | failures beyond the threshold | Quarantined | unlisted; `emit` → `contributor-unavailable`; pending events retired |
-| 6 | Quarantined | register again in the same fiber | Quarantined | refused or not listed (K) |
+| 6 | Quarantined | register again in the same activation | Quarantined | not listed; the quarantine is on the activation (S5, Q2) |
 | 7 | Quarantined | plugin disabled + re-enabled | Absent → (register) Active | |
-| 8 | Quarantined | plugin reloaded (new fiber) | Absent → Active | |
+| 8 | Quarantined | plugin reloaded or hot-reloaded (a new activation) | Absent → Active | |
+| 8a | Quarantined | the **connector** reloads | Quarantined | the quarantine survives a connector reload |
+| 8b | Active, owner fiber disposing | `tools/list` / `tools/call` | Absent | not listed / unknown tool before the disposer runs (Q4) |
 | 9 | Quarantined | any connector setting change | Quarantined | no lift |
 | 10 | Active | connector unloads | Closed | service gone; later register → `registry-closed` / service absent |
 | 11 | Absent (C missing) | contributor loads | Absent | optional inject never activates; contributor loads fine |

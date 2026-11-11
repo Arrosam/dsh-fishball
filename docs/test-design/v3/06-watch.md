@@ -5,7 +5,7 @@ Requirements: R-WATCH-01…05, R-EVS-02, R-EVS-03, R-CON-02. Conventions: [READM
 ## Use Cases
 
 ### WATCH-UC-01 — A principal automatically watches a session it starts
-**Req:** R-WATCH-01, R-WATCH-02, R-EVS-02, R-ROUTE-01 · **Level:** integration · **Flags:** TQ-12
+**Req:** R-WATCH-01, R-WATCH-02, R-EVS-02, R-ROUTE-01 · **Level:** integration · **Flags:** —
 
 - **Actor:** external agent P.
 - **Preconditions:** P is paired.
@@ -16,7 +16,7 @@ Requirements: R-WATCH-01…05, R-EVS-02, R-EVS-03, R-CON-02. Conventions: [READM
 - **Alternative flows:**
   - A1. P calls `session_message` while S1 is idle and the turn ends at once → P still gets that `turn-finished` (D§3.5: watermark read before the message).
   - A2. A turn ends while a message is queued → `turn-finished` with `queued: true`.
-- **Exception flows:** E1. P passes `notifyWhenFinished: true` → refused by schema (`invalid-arguments`, K) or ignored; either way no separate watch exists (TQ-12).
+- **Exception flows:** E1. P passes `notifyWhenFinished: true` → refused: `isError: true`, code `invalid-arguments`; nothing started (TQ-12 decided per spec: servers must validate tool inputs).
 - **Postconditions:** no other principal received any `turn-finished` / `state` of S1.
 
 ### WATCH-UC-02 — A watch ends with management
@@ -64,4 +64,4 @@ Requirements: R-WATCH-01…05, R-EVS-02, R-EVS-03, R-CON-02. Conventions: [READM
 | 5 | Watched(P) | revocation / deletion of P | Unwatched | same |
 | 6 | Watched(P) | succession P → P' | Watched(P') | later events to P' only; none sent twice (pending ones moved with their `eventId`s) |
 | 7 | Watched(P) | any other principal calls a watch tool | Watched(P) | unknown tool |
-| 8 | Watched(P) | `session_read` by another principal | Watched(P) | no watch started (K: refused `forbidden` or allowed read) |
+| 8 | Watched(P) | `session_read` by another principal | Watched(P) | refused `forbidden`; no watch started; the session is absent from that principal's `sessions_list` (1.23) |

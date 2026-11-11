@@ -39,7 +39,7 @@ integration (real child + connector).
 - **Postconditions:** Watchdog has received only supervised `permission` and its own offers' `settlement` / `retirement` events; no Watchdog model step ran for any event above.
 
 ### WD-UC-03 — The patrol timer reads the session
-**Req:** R-WD-03, R-WD-04, R-WD-14, R-WD-05 · **Level:** unit (fake clock, fake link), integration · **Flags:** TQ-9
+**Req:** R-WD-03, R-WD-04, R-WD-14, R-WD-05 · **Level:** unit (fake clock, fake link), integration · **Flags:** —
 
 - **Actor:** Watchdog's patrol timer.
 - **Preconditions:** S1 supervised; `minCheckIntervalSeconds` = 1740; last patrol watermark W.
@@ -185,7 +185,7 @@ integration (real child + connector).
 | 10 | 0 | refused |
 
 ### WD-BVA-02 — The 29-minute patrol interval in time
-**Req:** R-WD-04, R-WD-14 · **Level:** unit (fake clock) · **Flags:** TQ-9
+**Req:** R-WD-04, R-WD-14 · **Level:** unit (fake clock) · **Flags:** —
 
 Interval 1740 s. The previous patrol of S1 at t = 0.
 
@@ -200,7 +200,7 @@ Interval 1740 s. The previous patrol of S1 at t = 0.
 | 7 | S1 and S2 supervised, S2's previous patrol at t = 100 | S2's next at t = 1840, independent of S1 |
 | 8 | interval 60: patrol at 0, next at 60, none at 59 | |
 | 9 | interval 86400: next at 86400, none at 86399 | |
-| 10 | the first patrol after a new claim at t = c | TQ-9 (c + interval, or at once?) |
+| 10 | the first patrol after a new claim at t = c | at c + interval, never at once (TQ-9 decided); after `watchdog_resume` at r: r + interval |
 | 11 | interval 1740, 4 × 1740 s elapse with no activity in S1 | exactly 4 patrols ("exactly one per interval", whether or not S1 produced anything) |
 
 ### WD-BVA-03 — A refine around the patrol timer
@@ -224,7 +224,7 @@ Interval 1740 s; previous patrol of S1 at t = 0 with brief B0; no permission req
 ## Decision Tables
 
 ### WD-DT-01 — Watchdog's decision on a supervised permission request
-**Req:** R-WD-09, R-WD-12, Q13 · **Level:** unit (decision mapping with a scripted model) · **Flags:** TQ-10
+**Req:** R-WD-09, R-WD-12, Q13 · **Level:** unit (decision mapping with a scripted model) · **Flags:** —
 
 | Rule | In task scope | Dangerous | High-risk | Watchdog can decide | Outcome | Fishball turn | User card |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -233,7 +233,7 @@ Interval 1740 s; previous patrol of S1 at t = 0 with brief B0; no permission req
 | 3 | yes | — | yes | — | `escalate` | no | yes, no time limit |
 | 4 | no | no | yes | — | `escalate` | no | yes |
 | 5 | — | — | no | no | re-route to Fishball (`release`) | yes, once | no |
-| 6 | no | no | no | yes | TQ-10 (beyond scope, not dangerous, low risk: not "in scope", so not allow; not dangerous, so not reject) | | |
+| 6 | no | no | no | — | re-route to Fishball (`release`), as rule 5 (TQ-10 decided: allow needs in scope, reject needs dangerous) | yes, once | no |
 | 7 | — | — | — | Watchdog down | Fishball | yes | no |
 
 ### WD-DT-02 — Routing for a session by supervision and health
@@ -267,7 +267,7 @@ States: **NotLoaded**, **Starting**, **Healthy**, **Down**, **Off** (disabled).
 | 9 | Healthy | a supervised session is stopped/restarted by the failure | — (invalid) | never happens |
 
 ### WD-ST-02 — Supervision of one session
-**Req:** R-WD-10, R-WD-11, R-WD-14, R-WD-15, R-WATCH-05 · **Level:** unit · **Flags:** TQ-9, Q33 (rows 8–9), TQ-11
+**Req:** R-WD-10, R-WD-11, R-WD-14, R-WD-15, R-WATCH-05 · **Level:** unit · **Flags:** Q33 (rows 8–9)
 
 | # | From | Event | To |
 | --- | --- | --- | --- |
@@ -276,7 +276,7 @@ States: **NotLoaded**, **Starting**, **Healthy**, **Down**, **Off** (disabled).
 | 3 | Supervised | timer fires | Supervised (patrol read; watermark advanced) |
 | 4 | Supervised | pause, stop ok | Paused (session stopped) |
 | 5 | Supervised | pause, stop fails | Supervised (failure reported) |
-| 6 | Supervised | Fishball stops managing (release, Take back, revocation) | TQ-11 (claim must end: Watchdog supervises only managed sessions) |
+| 6 | Supervised | Fishball stops managing (release, Take back, revocation, succession away) | Unsupervised: claim ends at once, timer cancelled, session not stopped, no extra notice (TQ-11 decided) |
 | 7 | Supervised | Watchdog down | Unsupervised (claims released) |
 | 8 | Supervised | Fishball calls `watchdog_check_now` | Supervised ("unknown tool"; no run; timer unchanged) |
 | 9 | Paused | `watchdog_resume` | Supervised (no run starts; next activation = next permission request or patrol) |

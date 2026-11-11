@@ -173,7 +173,7 @@ Each tool wraps today's connector domain function (`packages/connector/src/*`) a
 
 | Tool | Domain source (contract 1.2) | Notes |
 | --- | --- | --- |
-| `sessions_list` | `session.list` | sessions related to **this principal** |
+| `sessions_list` | `session.list` | sessions related to **this principal**; a session another principal manages is omitted, and `session_read` of it is `forbidden` (1.23) |
 | `session_start`, `session_message`, `session_redirect`, `session_stop`, `session_release` | §4.1 | `unconfirmed` is never retried. `session_start` makes the caller the managing principal (R-ROUTE-01), which also makes it the session's only watcher (R-WATCH-01). No `notifyWhenFinished` argument; no watch tools exist (R-WATCH-03) |
 | `session_read` | `session.read` | bounded; `truncated` |
 | `approvals_list`, `approval_answer` | §4.2 | timer-free descriptor (no `expiresAt`); answer authority is checked against the live `offerId` and the pair (§3.4) |
@@ -698,8 +698,9 @@ its configured or unconfigured state, never the value.
   The check and the write are one transaction, under a unique index on the folded name.
 - **`pair` with a clashing or invalid name** still binds, leaves the name empty and returns
   `name: null, nameAssigned: false, nameRefused` (R-NAME-06). Pairing never fails over a name.
-- **No default names** (Q-NAME-1 B): a nameless principal is shown as `ID: <id>` everywhere
-  (R-NAME-08). `fishball-core`'s local `identity.name` defaults to "Fishball".
+- **No default names** (Q-NAME-1 B): a nameless principal is shown as `ID: <id>` everywhere, with the
+  prefix in **bold** (R-NAME-08); chosen names, including ones starting with "ID:", are plain text.
+  `set_name({name: null})` clears a name. `fishball-core`'s local `identity.name` defaults to "Fishball".
 - **Successor** (R-HOST-09): delete the old entry and move its name (or its lack of one) to the
   new principal, in the one `retire` transaction (R-NAME-07).
 - `lastSeenAt` is updated at most once a minute per pair, to bound writes.
@@ -1143,7 +1144,7 @@ this case.
 | V3-S2 | **Done `a499141` (PARTIAL):** delivery list + `Agent.followup` in `runMaintenance` when fully idle; S2-Q1 decided (core-owned acceptance + commit fence, with Q-S3-2); S2-Q2 decided A (no re-wake after a mid-turn crash); S2-Q3 decided A (the user's Stop discards an unadmitted event). MCP-S2 continuation: a durable child acceptance ledger plus `Agent.followup` gives one routed entry and one user-visible wake after a lost ack, a child crash and reconnect | the open TODO from MCP-S2 §11.5 closes; no duplicate wake |
 | V3-S3 | **Done `b4dca86` (PASS):** one serial pair/name registry; succession as one registry write with idempotent offer re-issue; the user's answer never `expired` by succession; `ctl.accept()` / `ctl.commit(send)` needed (Q-S3-1, Q-S3-2 pending; Q-S3-3 decided: 0.2.2-rc.1 baseline). Interception and pairing (Watchdog intercepts only supervised `permission` and its own `settlement`/`retirement`; every `turn-finished`/`state` reaches Fishball; a refine starts no run): core's interception service hands events to the right interceptor (priority, ties, filters) without an LLM turn, and falls back to Fishball on throw/down/dispose without loss or double handling; `pair` races, `already-paired` results; OQ-14 races between user, Watchdog and Fishball answers on one principal | race matrix; no stale commit; one event wakes one agent |
 | V3-S4 | Embed-UI as a separate package: can the moved connector client still register its sidebar/slot contributions (the same injects) and frame the PG-ORIGIN child origin, without the connector client present? | both hosts; main shortcuts untouched |
-| V3-S5 | Contribution service (§13): caller identity from the injecting fiber; auto-withdrawal of tools **and** pending events on contributor disable/unload/HMR; quarantine lifted only by a new fiber; `tools/list_changed` delivery on 2026-07-28 listen streams; event limits and recipient routing; containment of throw/hang/oversize, on both hosts | independent cases across register/dispose/reload/quarantine states |
+| V3-S5 | **Done `8f2788e` (PASS):** namespace from the caller's loader-entry package (`contributor-unidentified` otherwise); quarantine on the contributor's activation; `_meta` contributor field; owner-fiber check on list/call; `.` kept; Q5 decided A (namespace is attribution only). Contribution service (§13): caller identity from the injecting fiber; auto-withdrawal of tools **and** pending events on contributor disable/unload/HMR; quarantine lifted only by a new fiber; `tools/list_changed` delivery on 2026-07-28 listen streams; event limits and recipient routing; containment of throw/hang/oversize, on both hosts | independent cases across register/dispose/reload/quarantine states |
 | V3-S6 | `fishball-core` as a plain bundle carrying its `fishball-ui` component: one bundle that inserts its own rows, disables other bundles' rows and sets the read-only preset in an ordinary DSH on both SDKs; one `dsh.client` serving the page, tab and settings; the hosted child behaves the same with the instance's launch configuration in place; core can read the effective composition and policy through a public API to report `guards-overridden`, in both modes; the A-lite page works without the instance (standalone) | both modes, both hosts; no host patch |
 | V3-S7 | OAuth: the connector as a client-credentials authorization server on the DSH listener (RFC 9728/8414 metadata, token endpoint, audience binding) works with the stock `ClientCredentialsProvider` of both SDKs and with one non-DSH client-credentials client; immediate revocation; the direct-access fallback on and off | both hosts; no token in any log |
 | V3-S7b | Browser authorization on the connector's **own approval listener** (requirements 1.16): that the stock `@modelcontextprotocol/client` 2.2.0 (both SDKs) and the Python MCP SDK complete `authorization_code` + PKCE S256 with a **Client ID Metadata Document** `client_id`, a loopback redirect, `iss` in the response, and the issuer and `authorization_endpoint` on different origins (one issuer, metadata on DSH's listener, page on the approval port); whether either client requires a refresh token or `offline_access`; that both keep accepting a plain-`http` loopback authorization server (Q-SPEC-1 decided A: the one documented departure); how the the token-only page: entry of a token value in a POST form, uniform refusal, `already-paired` on the page, and the failure limit shared with the token endpoint; issuer and `authorization_endpoint` behind a tunnel host from `--trusted-host`; the second listener's bind and clash behaviour on both SDKs: with the approval port taken, machine exchange still works and stock clients accept metadata that keeps `authorization_endpoint` (Q-OA-7 decided A) | both hosts, both clients reach `scope: fishball` after one approval; deny returns `access_denied`; no token value in any page, URL or log |
@@ -1271,19 +1272,20 @@ type ContributedResult =
 ```
 
 **Registration rules.**
-- `register` must be called from the contributor's own context, `ctx.fishballConnectorTools.register(…)`
-  inside its `inject` sub-scope. The registry records the **caller's fiber**: Cordis service
-  calls see the caller's active context (`getTraceable`, cordis `utils.d.ts`), and
-  `ctx.fiber.name` names the plugin.
-  - The namespace comes from that name, so a contributor cannot pick another's namespace.
+- `register(definition)` must be called from the contributor's own context,
+  `ctx.fishballConnectorTools.register(…)` inside its `inject` sub-scope. The registry records the
+  **caller's fiber** (Cordis service calls see the caller's active context, `getTraceable`).
+  - **Namespace (spike V3-S5 `8f2788e`, Q1):** the normalised **package name of the caller's loader entry**, so a
+    contributor cannot pick another's namespace. A caller with no traceable package is refused
+    `contributor-unidentified`. The signature stays `register(def)` (the `register(ctx, def)`
+    fallback is not needed).
   - The returned disposer is bound to that fiber with `ctx.effect`, so the fiber's unload
     disposes it even if the contributor forgets.
-  - Whether `getTraceable` gives the *caller's* fiber through an injected service on both
-    SDKs is spike **V3-S5**. If it does not, the fallback is that a contributor passes its own
-    `ctx` (`register(ctx, definition)`) and the registry checks
-    `Context.is(ctx) && ctx.fiber.name`.
+  - **Owner check (Q4):** `tools/list` and `tools/call` also require the owner fiber to be loading
+    or active, so a tool whose owner is being disposed is invisible at once (R-EXT-04).
 - Refusals throw `ToolContributionError {code}` and register nothing:
   - `tool-invalid`: bad name, description, schema, limits over the ceilings, codes grammar;
+  - `contributor-unidentified`: the caller has no traceable package (Q1);
   - `tool-exists`: the same public name;
   - `namespace-reserved`;
   - `registry-closed`: the connector is unloading.
@@ -1291,15 +1293,16 @@ type ContributedResult =
 
 ### 13.3 Names and namespacing
 
-- `namespace` = the contributor's DSH plugin name, normalised to `[a-z0-9-]` (scope `@x/` →
-  `x-`). It is unique because DSH plugin names are unique in one profile.
+- `namespace` = the contributor's package name from its loader entry, normalised to `[a-z0-9-]`
+  (scope `@x/` → `x-`). It is unique because DSH plugin names are unique in one profile.
 - Public MCP name = `<namespace>.<name>`, for example `board-helper.lookup` for a plugin named
   `board-helper`; embed-UI's tools use its alias, `embed-ui.attention.signal` (below).
   - It fits MCP's rule (1–128 characters of `A-Z a-z 0-9 _ - .`, case-sensitive).
-  - DSH's own MCP client renders it as `mcp__<server>__<raw>` and replaces `.` and truncates to
-    its 64-character contract with a hash suffix (`dsh-mcp-client/lib/index.js:57–100`, both
-    SDKs). So the name stays unique, but long names are shortened for DSH-hosted agents. The
-    freeze sets a soft budget so that typical names avoid truncation.
+  - The `.` separator is kept [spec: server/tools § Tool Names] (S5, Q6). DSH-hosted agents see
+    **hashed** names: DSH's own MCP client renders `mcp__<server>__<raw>`, replaces `.` and
+    shortens to its 64-character contract with a hash suffix (`dsh-mcp-client/lib/index.js:57–100`,
+    both SDKs). That is the client-side disambiguation the specification allows; names stay
+    unique. The freeze sets a soft budget so typical names avoid the hash.
 - Reserved namespaces: `fishball` and the connector's own plugin name. Core tools keep unprefixed
   names (§3.2). No contributed name can collide with them, because every contributed name
   contains a `.`.
@@ -1372,9 +1375,14 @@ contributed tools on offer, and the README explains the cost.
   name and kind only. Never the arguments, the result or the principal's token.
 - **Quarantine** (R-EXT-09): `contributor-failed` on more than N of the last M calls of one
   contributor (both frozen constants in the connector's limits, not settings) withdraws that
-  contributor's tools (§13.4) and stops its events (§13.5a). It lifts only when the contributor
-  plugin is disabled and re-enabled, or reloaded (a new fiber); there is no connector-side control
-  (Q16, decided).
+  contributor's tools (§13.4) and stops its events (§13.5a). The quarantine is an effect on the
+  contributor's root fiber (S5, Q2), so it lifts only with a new activation of the contributor
+  (disable and re-enable, reload, or hot reload); a connector reload does not lift it; there is no
+  connector-side control (Q16, decided).
+- **The namespace is attribution, not a boundary (S5-Q5, decided A; the user: "选A，自己安装的插件自己负责"):** any
+  in-process plugin can reach another plugin's context through the loader and register under its
+  namespace. The namespace attributes honest contributors; it does not isolate hostile ones. A
+  plugin the user installed is the user's responsibility (R-SEC-04, README).
 - **What containment does not cover:** a contributor is ordinary in-process code. A synchronous
   infinite loop or memory exhaustion affects the whole DSH process, as any DSH plugin can. Process
   isolation is out of scope (requirements §5).
@@ -1386,7 +1394,8 @@ contributed tools on offer, and the README explains the cost.
 **Visibility to the user** (R-EXT-15; Q16, decided): there are **no** per-contributor rows or
 switches in the connector's settings. To stop a contributor, the user disables its plugin in
 DSH's Plugins page. Registrations, refusals, withdrawals and quarantines are logged once each
-with the namespace only, and `tools/list` annotations name the contributor plugin.
+with the namespace only, and `tools/list` names the contributor plugin and version in
+`_meta["io.github.dsh-fishball/contributor"] = {plugin, version}`; `annotations` keeps only the specification's behaviour hints (S5, Q3).
 
 ### 13.5a Contributor events (R-EXT-16–20; Q14 decided)
 
@@ -1445,7 +1454,7 @@ The attention latch moves out of the connector into embed-UI. Its behaviour is u
 | --- | --- | --- |
 | Provide a named service; auto-removed with the owning fiber | cordis 4.0.5 `Service` (`service.d.ts`: "registered immediately and is automatically removed with the owning fiber"), `reflect.provide` | cordis 4.1.0, `service.d.ts` identical |
 | Optional consumer sub-scope that activates and unloads with the service | `registry.inject(deps, cb)`; already used in V2 (`binding.js`), both versions per its comment | same |
-| Caller identity | `ctx.fiber` (`fiber.d.ts:9–10`), `Fiber.name` (`:135`); `getTraceable` wraps services so calls see the caller's context (`utils.d.ts`) | `Fiber.name` `:139`; `getTraceable` same |
+| Caller identity | the traceable `this.ctx` at the use site (both versions, S5); `fiber.name` is not identity; `symbols.caller` is 4.1.0-only and not used | `Fiber.name` `:139`; `getTraceable` same |
 | Disposers bound to the caller | `Fiber.effect(execute, label)` | same signature (`fiber.d.ts:161–163`) |
 | MCP `tools/list_changed` to DSH-hosted clients | `dsh-mcp-client` `listChanged.tools.onChanged` → re-sync | same lines (`:596–609`) |
 | Model-facing name normalisation | `publicToolName`, 64 characters + hash (`dsh-mcp-client/lib/index.js:57–100`) | same |

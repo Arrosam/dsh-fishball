@@ -55,7 +55,7 @@ cases, not rows.
 | PLAT (rest) | 7 | 7 | 2 | 3 | 1 | 20 |
 | **Total** | **57** | **45** | **19** | **31** | **18** | **170** |
 
-Levels (a case may span two): unit 57, integration 116, e2e 28. Provisional on a spike (`P:Sn`): 22.
+Levels (a case may span two): unit 57, integration 116, e2e 28. Provisional on a spike (`P:Sn`): 17.
 
 ## Conventions
 

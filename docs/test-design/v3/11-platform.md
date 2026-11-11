@@ -35,14 +35,14 @@ R-BRD-01, 02, R-FN-01, R-MIG-01…05, R-COMPAT-01, R-SEC-01…04. Conventions: [
 - **Postconditions:** exactly one committed outcome; no setting exists to stop external principals receiving delegated items.
 
 ### PLAT-UC-03 — A main-DSH session calls `message_fishball` / `ask_fishball`
-**Req:** R-CON-08, R-CON-09, R-ROUTE-03, R-ROUTE-04 · **Level:** integration · **Flags:** TQ-16
+**Req:** R-CON-08, R-CON-09, R-ROUTE-03, R-ROUTE-04 · **Level:** integration · **Flags:** —
 
 - **Actor:** an agent session S1 in main DSH M.
 - **Main flow:** unmanaged S1 calls `message_fishball` → a `message` event for D; `ask_fishball` → an `ask` event for D, and S1 waits for the answer.
 - **Alternative flows:** A1. S1 managed by P → both go to P.
 - **Exception flows:**
   - E1. No D set, or D not connected → `ask_fishball` answers `unavailable` at once; `message_fishball` queues up to `maxQueuedInputs`, then `queue-full`.
-  - E2. No principal connected and S1 managed → S1's permission request goes to the user in S1. *(Which principal's connection counts for a managed session is TQ-16.)*
+  - E2. S1 is managed by P, and P is not connected → S1's permission request still becomes an offer in P's mailbox and waits; it does **not** go to the user (TQ-16 decided: R-CON-09 applies only to unmanaged sessions).
 - **Postconditions:** "connected" is not a timer on the answer.
 
 ### PLAT-UC-04 — Installing the plugin set makes an ordinary DSH Fishball
@@ -118,6 +118,7 @@ Each row fails exactly one check (and later checks would also fail); the expecte
 | 2 | approvals / questions / prompts answering; grants list, revoke; attachments put, read; inbox poll, ack; `pair`, `set_name` | present |
 | 3 | watch tools | absent |
 | 4 | attention signal | absent from core (only `embed-ui.attention.*` when U is present) |
+| 4a | `session_read` / `sessions_list` for a session another principal manages | `forbidden` / omitted (1.23) |
 | 5 | any refusal | `isError: true`; `structuredContent` `{ok: false, code, message}` and the same JSON as a text block (e.g. `limit-exceeded`, `expired`, `queue-full`); never prose only |
 | 6 | any success | `isError: false`; `structuredContent` plus the same JSON as text; the output schema admits the refusal envelope |
 
@@ -228,12 +229,12 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 Applies equally to core (R-FB-10). `fishball-hosted-settings` follows the same rules (HOST-DT-03).
 
 ### PLAT-DT-02 — Standalone set completeness
-**Req:** R-BND-05, R-FB-07 · **Level:** integration · **Flags:** K (`plugin-set-incomplete`, D§8.2), TQ-17
+**Req:** R-BND-05, R-FB-07 · **Level:** integration · **Flags:** K (`plugin-set-incomplete`, D§8.2)
 
 | Rule | core | board | fold-notify | Watchdog | Core status | "watchdog is down" |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | on | on | on | on, loaded | ok | no |
-| 2 | on | — | — | — | ok (features optional), TQ-17 (does "missing" mean "not installed"?) | no |
+| 2 | on | — | — | — | ok; nothing reported (a feature that is not installed is not "missing", TQ-17 decided) | no |
 | 3 | on | on | on | on, incompatible (skipped) | reports Watchdog skipped | once per start |
 | 4 | on | on | on | off (owner) | reports nothing missing (K) | no |
 
@@ -248,7 +249,7 @@ Each rule runs the integration suite of every file of this directory that applie
 | 2 | 0.2.1-rc.5 | standalone F → C on rc.5 (row 9) | all pass |
 | 3 | 0.2.2-rc.1 | hosted | all pass |
 | 4 | 0.2.2-rc.1 | standalone F → C on rc.1 | all pass |
-| 5 | mixed: F on rc.5 → C on rc.1 | standalone | all pass (K: whether mixed hosts are in scope; R-COMPAT-01 says "separately on each") |
+| 5 | mixed: F on rc.5 → C on rc.1 | standalone | **not checked** (decided B: both sides talk only over MCP, so no cross-version dependency should exist) |
 | 6 | any | any | no user-visible behaviour differs between SDKs (compare UI snapshots and tool results of rules 1/3 and 2/4) |
 
 ## State Transitions
