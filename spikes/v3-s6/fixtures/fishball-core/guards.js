@@ -19,6 +19,8 @@ export const GUARDS = Object.freeze({
   presets: Object.freeze(['read-only']),
   defaultPreset: 'read-only',
   agentPreset: 'fishball',
+  /** The presets the guarded DSH may offer: core's and fishball-watchdog's (shipped ones are switched off). */
+  agentPresets: Object.freeze(['fishball', 'watchdog']),
 })
 export const intendedGuards = () => GUARDS
 
@@ -31,6 +33,10 @@ function entryOf(ctx, id) {
  * The effective view. A guard row that is absent from the composition counts as satisfied
  * (it cannot run); one present and enabled is overridden.
  */
+export async function effectivePresets(ctx) {
+  return (await ctx.get('agentPresets')?.list?.())?.map((preset) => preset.id) ?? []
+}
+
 export function effectiveGuards(ctx) {
   const intended = intendedGuards()
   const rows = intended.disabled.map((id) => {

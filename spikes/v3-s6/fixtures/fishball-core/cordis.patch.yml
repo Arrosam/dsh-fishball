@@ -13,7 +13,8 @@
 - { id: terminal-controller, disabled: true }
 - { id: fishball-instance, disabled: true }
 # Preset plugin lists are config arrays, not loader groups: a patch cannot disable one nested row by
-# id. The shipped presets are switched off and core inserts its own preset without session-creating tools.
+# id. Every shipped preset is switched OFF (not deleted: the user's decision of 2026-11-12) and core
+# inserts its own `fishball` preset without session-creating tools.
 - { id: preset-standard, disabled: true }
 - { id: preset-ptc, disabled: true }
 - { id: preset-cordis, disabled: true }

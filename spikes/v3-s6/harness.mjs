@@ -19,8 +19,9 @@ export const TARBALLS = path.join(WORKTREE, '.runtime', 'tarballs')
 export const RESULTS = path.join(import.meta.dirname, 'results')
 export const PROFILE = 's6'
 export const FAKE = Object.freeze({ provider: 'fishball-spike', model: 'spike-model' })
-/** The guard row ids of the core fixture, in patch order (the report must name exactly these). */
+/** The fixture packages. `watchdog` was added for the second round (Q-S6-1/2 decided). */
 export const CORE_PACKAGES = Object.freeze({ core: 'fishball-core', board: 'fishball-board', instance: 'fishball-instance' })
+export const WATCHDOG_PACKAGE = 'fishball-watchdog'
 
 /** Import a module of the selected SDK by package-relative path, so it is the instance DSH loads. */
 export const sdk = (spec) => import(pathToFileURL(path.join(SDK_ROOT, spec)).href)

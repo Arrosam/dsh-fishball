@@ -1,0 +1,3 @@
+{ "name": "fishball-watchdog", "version": "0.0.0-spike.1", "type": "module", "private": true,
+  "engines": { "dsh": ">=0.2.1-rc.5" }, "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
+  "exports": { ".": "./index.js", "./package.json": "./package.json" } }
