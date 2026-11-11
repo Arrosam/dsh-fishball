@@ -37,12 +37,12 @@ The parallel-development task table that consumes these cases is
 
 ## Counts
 
-175 active cases (plus 3 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
+174 active cases (plus 6 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
 cases, not rows.
 
 | Area | UC | EP | BVA | DT | ST | Total |
 | --- | --- | --- | --- | --- | --- | --- |
-| AUTH (OAuth, tokens, pairing) | 11 | 11 | 7 | 9 | 5 | 43 |
+| AUTH (OAuth, tokens, pairing) | 11 | 10 | 7 | 8 | 6 | 42 |
 | NAME | 3 | 4 | 2 | 3 | 1 | 13 |
 | HAND (Hand over / Take back) | 4 | 2 | 0 | 2 | 2 | 10 |
 | EVT (events, interception) | 3 | 5 | 2 | 4 | 2 | 16 |
@@ -53,9 +53,9 @@ cases, not rows.
 | REM (standalone, remote) | 3 | 3 | 0 | 1 | 0 | 7 |
 | UIM (embed-UI, install matrix) | 5 | 2 | 0 | 2 | 0 | 9 |
 | PLAT (rest) | 7 | 7 | 2 | 4 | 1 | 21 |
-| **Total** | **58** | **46** | **20** | **33** | **18** | **175** |
+| **Total** | **58** | **45** | **20** | **32** | **19** | **174** |
 
-Levels (a case may span two): unit 58, integration 120, e2e 28. Provisional on a spike (`P:Sn`): 9.
+Levels (a case may span two): unit 59, integration 118, e2e 29. Provisional on a spike (`P:Sn`): 11.
 
 ## Conventions
 

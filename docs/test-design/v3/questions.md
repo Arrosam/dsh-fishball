@@ -555,6 +555,14 @@ design §5.5. Cases: AUTH-UC-07, AUTH-UC-11, AUTH-EP-02 rows 7–8b, AUTH-EP-11,
 
 **Q-HDR-1 decided A** (the user: "A"): every enabled token entry accepts static headers; no per-entry
 switch. R-OA-10, §1.25; design §5.5. No case assumed a switch. **No question is open.**
+
+**Withdrawn 2026-11-12 (static headers and Q-HDR-1).** The user, verbatim: "改成加一个adapter，给DSH的MCP客户端加个Adapter，用来帮DSH的MCP客户端更新token，以此来满足网页端授权".
+Static token + `Fishball-Agent-Id` headers, the never-expiring bearer, Q-HDR-1 and the second spec
+departure are withdrawn (R-OA-10 withdrawn again; only loopback HTTP remains a departure). Instead an
+**adapter** runs the browser flow for `dsh-mcp-client` and keeps its token fresh with the rotating
+refresh token: R-OA-21, design §5.5b, task C-MCP-ADAPTER (packaging open), spike S7c. Cases:
+AUTH-UC-11, AUTH-DT-10, AUTH-EP-11 withdrawn (ids kept); AUTH-UC-12, AUTH-ST-06 new (P:S7c);
+AUTH-UC-07 and AUTH-EP-02 row 8b back to "refused".
 S7b flags dropped: AUTH-UC-10, AUTH-DT-07, AUTH-DT-09 rules 3–4 (rule 4's timing stays K), REM-UC-03 E5.
 
 **S6 round 2 (`7c2230e`, PASS).** Reorder: core moves itself last with DSH's public profile functions;
