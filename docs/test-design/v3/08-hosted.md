@@ -16,7 +16,7 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
   1. H's app ready fires; I places the four plugins (core, board, fold-notify, Watchdog) and `fishball-hosted-settings` into the child profile **before** the profile loads, all **on**.
   2. The child holds no paired credential → I asks C for a **new** "Fishball (hosted)" entry; C returns only its reference.
   3. I resolves the value and hands target and value to the child **in memory**.
-  4. Core authenticates with its own `identity.id` (generated `fb-` + 16 lowercase base32) and calls `pair` → paired, name "Fishball" (if free).
+  4. Core authenticates with its own `identity.id` (generated `fb-` + 16 lowercase base32) and calls `pair` with its local `identity.name` "Fishball" → paired, named "Fishball" if free, else nameless (`ID: <id>`) with the Fishball page asking for another name.
   5. The designated Fishball defaults to this hosted entry.
   6. The child locator reports state ready, the child origin and target status `connected`.
 - **Alternative flows:**
@@ -37,20 +37,21 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
 - **Postconditions:** the connector has exactly the same entries as before.
 
 ### HOST-UC-03 — Reinstall succession (Q24)
-**Req:** R-HOST-09, R-NAME-07, R-WATCH-04, R-ROUTE-01, R-EVT-02 · **Level:** integration · **Flags:** P:S3
+**Req:** R-HOST-09, R-NAME-07, R-WATCH-04, R-ROUTE-01, R-EVT-02 · **Level:** integration · **Flags:** —
 
 - **Actor:** the instance; C.
 - **Preconditions:** old hosted entry Eo (created by I) bound to `fb-old`, named "Navigator", designated, manages S1 and S2, holds a live permission offer O1 (S1), and has pending events e1, e2 (not acked). The user removes the child home (or reinstalls I).
 - **Main flow:**
-  1. The new child has no identity → I creates new entry En; the child pairs with a new id `fb-new` and a provisional default name.
+  1. The new child has no identity → I creates new entry En; the child pairs with a new id `fb-new` and its local `identity.name`, which is still held by Eo, so it pairs **nameless** (`nameRefused: name-taken`).
   2. As soon as pairing succeeds, I asks C to make En the successor of Eo.
-  3. In **one atomic step** C: moves S1 and S2 to En; moves the designated role; gives En the name "Navigator" (releasing En's provisional default); re-issues O1 into En's mailbox with a **new** offer id; moves e1, e2 with their `eventId`s; deletes Eo and unsets its generated value.
+  3. In **one atomic step** C: moves S1 and S2 to En; moves the designated role; gives En the name "Navigator"; re-issues O1 into En's mailbox with a **new** offer id; moves e1, e2 with their `eventId`s; deletes Eo and unsets its generated value.
   4. S1 and S2 each get exactly **one** `system` note naming "Navigator" (the new principal).
 - **Alternative flows:**
   - A1. Eo managed no sessions and held no role → only the name moves and Eo is deleted.
 - **Exception flows:**
-  - E1. An answer to O1's **old** id (from anyone) → `expired`.
-  - E2. The step fails midway (injected storage failure) → nothing moved; Eo stays, with sessions, role and name; En keeps its provisional name; I retries at its next start.
+  - E1. An agent's (any principal's) answer to O1's **old** id → `expired`.
+  - E1a. The **user's** answer to O1's card in S1, given during or after the succession → settles the request; it is **never** refused `expired` because of the succession (S3 `b4dca86`; offer id revision per Q-S3-1, pending).
+  - E2. The step fails midway (injected storage failure) → nothing moved; Eo stays, with sessions, role and name; En stays nameless; I retries at its next start.
   - E3. The candidate old entry was created by the **user**, not by I → `retire` refuses; nothing moves.
 - **Postconditions:** "Navigator" was never held by two principals; later S1/S2 events go to En only; no event is delivered twice.
 
@@ -217,7 +218,7 @@ Plant a recognisable value; run start, restart, crash, reinstall, uninstall.
 | 10 | Running | uninstall | Removed | export offered first |
 
 ### HOST-ST-02 — Hosted principal across reinstall
-**Req:** R-HOST-09, R-NAME-07 · **Level:** integration · **Flags:** P:S3
+**Req:** R-HOST-09, R-NAME-07 · **Level:** integration · **Flags:** —
 
 | # | From | Event | To |
 | --- | --- | --- | --- |

@@ -18,7 +18,7 @@ caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** un
   3. P's `tools/list` shows `board-helper.lookup` after the core tools, sorted by public name, with `annotations` naming plugin `board-helper` and its package version.
   4. P calls it with valid arguments → C authenticates, checks body/size/in-flight/rate limits and validates the input schema **before** `execute` runs.
   5. `execute` receives `call.principal = {key, name}` (opaque key, current name; no token, id or entry label), a signal and `protocolVersion: "2026-07-28"`.
-  6. It returns `{ok: true, data}` → P gets a successful `CallToolResult` with `structuredContent {ok: true, …}`.
+  6. It returns `{ok: true, data}` → P gets `structuredContent {ok: true, …}`, the same JSON as text, and `isError: false`.
   7. One log line names the namespace on registration; no arguments or results are logged.
 - **Alternative flows:**
   - A1. The contributor disposes the registration → before the next request is answered the tool is gone; a call gets "unknown tool"; `list_changed` sent.
@@ -113,11 +113,11 @@ caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** un
 | # | `execute` returns | Client gets |
 | --- | --- | --- |
 | 1 | `{ok: true, data}` valid | `{ok: true, …}` |
-| 2 | `{ok: false, code: <declared>}` | that code |
+| 2 | `{ok: false, code: <declared>}` | that code, `isError: true` |
 | 3 | `{ok: false, code: "forbidden"}` (shared vocabulary) | `forbidden` |
 | 4 | `{ok: false, code: "weird"}` (undeclared) | `operation-failed` |
 | 5 | data failing `outputSchema` | `contributor-failed` |
-| 6 | not the result shape (a string, `isError: true`, raw content blocks) | `contributor-failed`; never `isError` |
+| 6 | not the result shape (a string, its own `isError` flag, raw content blocks) | `contributor-failed`, with `isError: true` set by the connector; the contributor's own flags and blocks never reach the client |
 | 7 | throws / rejects | `contributor-failed` (no stack, message, path) |
 | 8 | `message` of 600 chars containing an `fbt_…` value | cut to 500 and scrubbed (D§13.5) |
 

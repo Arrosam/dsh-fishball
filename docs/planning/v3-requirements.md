@@ -145,7 +145,9 @@ What it means:
    hand-over or take-back event to the target Fishball.
 2. **Names.** There can be several Fishballs and agents, so each has a user-visible name. The
    name is set inside the Fishball DSH (the client side) and reported to the connector on
-   connect and whenever it changes. Default names: "Fishball", then "Fishball-2", "Fishball-3"
+   connect and whenever it changes. *(Connector-side default names were later dropped by Q-NAME-1 = B, §1.20: a
+   principal without a name is shown as `ID: <id>`; core's local `identity.name` still defaults to
+   "Fishball".)* Default names: "Fishball", then "Fishball-2", "Fishball-3"
    and so on.
 3. **One token, one agent.**
 4. **Watchdog routing changes (the user knows this differs from before).** Fishball
@@ -179,8 +181,8 @@ What it means (now R-ID and R-NAME):
   token fails, even with the same id, and tells the user to use a new token.
 - **The credential is token + id.** A paired client never handshakes again, including after a
   restart or reconnect. *(How it is presented is refined by 1.10: token + id go to the token
-  endpoint, and MCP requests carry the access token, or `<id>.<token>` under the direct-access
-  fallback.)*
+  endpoint, and MCP requests carry the access token. The direct-access fallback of Q28 was
+  removed by 1.16.)*
 - **External agents** must also choose an id; without one the connection is refused.
 - **Foolproofing only.** The rule stops a user handing one token to many agents. It does not
   defend against an agent impersonating a paired one; that is out of scope.
@@ -188,7 +190,9 @@ What it means (now R-ID and R-NAME):
   revises the Q8 record of 1.6).
 - **Id and name are separate (agreed).** The id is fixed and part of the credential. The name is
   user-facing, can change at any time, and is reported on connect and on every change.
-- No rule makes ids unique across tokens. The token is the primary key.
+- No rule makes ids unique across tokens. The token is the primary key. *(Superseded by Q-ID-1 = A,
+  §1.20: ids are unique per connector, and `pair` refuses an id another entry holds with `id-taken`,
+  matching the user's "如果fishball发起握手申请，并传入了一个相同的ID，这次握手就要失败" above.)*
 
 Why a second handshake fails even with the same id, and what clients do then:
 
@@ -241,17 +245,18 @@ What it means (now R-OA):
 - Disabling or deleting the token entry invalidates every access token derived from it at once.
 - The pairing rule stays: a token binds to one id through the pairing tool; re-authenticating at
   the token endpoint is not a handshake.
-- **Q27, decided (A):** access tokens last **1 hour** and there are **no refresh tokens**. On
+- **Q27, decided (A); narrowed by Q-OA-2 (A) to machine exchange:** access tokens last **1 hour** and there are **no refresh tokens** for `client_credentials` clients (browser clients get rotating refresh tokens, R-OA-16). On
   expiry, or on any 401, the client logs in again with id + token.
-- **Q28, decided (A):** the user answered "行，就A，我也想不到更好的主意了". OAuth is required by
-  default. Each token entry has a direct-access fallback switch, off by default; with it on,
-  `Bearer <id>.<token>` is accepted on the MCP endpoint and checked on every request.
+- **Q28, decided (A), superseded by 1.16:** the user first answered "行，就A，我也想不到更好的主意了"
+  (a per-entry direct-access fallback, `Bearer <id>.<token>`). The later answer in 1.16 removes it:
+  "不允许直接访问". Every MCP request carries an access token from the token endpoint.
 - **Q24, decided (A):** after a child reinstall, the new hosted principal takes over
   automatically. The old entry's managed sessions, designated role and name move to it, its live
   offers are re-issued with new ids, then the old entry is deleted and each managed session gets
   one note.
-- **Q22, decided (A):** default names are numbered per connector, in pairing order, taking the
-  lowest free name ("Fishball", "Fishball-2", …); freed numbers are reused.
+- **Q22, decided (A); superseded by Q-NAME-1 = B (§1.20):** default names were numbered per
+  connector, lowest free first ("Fishball", "Fishball-2", …). The connector now assigns no default
+  name to anyone.
 - **Q23, decided (B):** names must be unique per connector; a clash is refused with
   `name-taken`. Defaults skip taken names; a clashing name at `pair` still pairs, with a default
   name instead; a successor inherits the old name.
@@ -372,7 +377,124 @@ only on a supervised session's permission request or when its own patrol timer f
 brief (`watchdog_refine`), but that starts no run; the new brief applies at Watchdog's next
 patrol or permission judgement (R-WD-15).
 
-### 1.16 Earlier decisions carried into V3
+### 1.16 Q-S7-1 and Q-OA-1 answered: browser authorization on its own port (2026-11-11), verbatim
+
+First answer:
+
+> 也做一个OAuth认证网页吧不对，应该是这个OAuth网页也支持认证，同时兼顾网页认证和机器换码的方式
+
+Second answer, which decides the flow:
+
+> 支持网页授权，不允许直接访问，授权的网页单开一个，改成单独一个端口暴露，不然会被DSH的token要求卡住
+
+*Background:* spike V3-S7 (`8e92b84`) found that the stock `ClientCredentialsProvider` and the
+Python MCP SDK both reject authorization server metadata without an `authorization_endpoint`.
+
+What it means (now R-OA-01/02, R-OA-11…R-OA-20):
+1. **Browser authorization is in scope.** The connector supports two ways in: machine exchange
+   (`client_credentials`, unchanged) and browser authorization (an approval page, then
+   `authorization_code` with PKCE). Q-S7-1 is settled: the metadata lists a real
+   `authorization_endpoint`.
+2. **No direct access.** "不允许直接访问": the per-entry direct-access fallback of Q28 is removed.
+   There is no `directAccess` switch and no static bearer form; every MCP request carries an
+   access token from the token endpoint (R-TOK-01). R-OA-10 is withdrawn.
+3. **The approval page has its own port.** "授权的网页单开一个，改成单独一个端口暴露，不然会被DSH的token要求卡住":
+   the connector serves the authorization page on **its own listener and port**, not on DSH's
+   web listener, because DSH's own web-login token requirement would block it there. It is one
+   minimal server-rendered page with no client module, a documented exception to R-ARCH-03.
+4. Both ways end in the same thing: a full access token of one (token entry, fishball id) pair.
+   The token stays the security boundary (R-TOK-00).
+
+Third answer (Q-OA-5, how the page knows who approves):
+
+> 那就做成这个网页永久只能输入一个Token用于认证，不管输入Token的人是谁。这样就解决了你问的“怎么确定是我点的”的问题了。其他Agent会打开一个网页，然后我在网页里把Token输进去认证。至于公网暴露的问题，交给用户自己去搭Tunnel
+
+5. **The page only ever asks for a token.** It has no owner login, ticket, code or password.
+   The owner creates a token entry by hand in the connector's settings (R-TOK-03/08) and types
+   its value into the page; whoever enters a valid token authorizes, whoever they are. The token
+   is the proof.
+6. **Entering the token is the pairing.** A valid, enabled, **unpaired** token is bound to the
+   browser client, exactly once (one token, one agent, 1.9). An already-paired token is refused;
+   the page says to create a new token.
+7. **Public exposure is the user's tunnel.** The connector builds no tunnel or public-exposure
+   feature. It only has to work correctly behind a tunnel the user runs (R-REM-05).
+- Items marked **[rule]** follow from an existing user decision; items marked **[open Q-OA-n]**
+  need the user (§7).
+
+### 1.17 Follow the MCP specification on the external surface (2026-11-11), verbatim
+
+> 尽量遵循MCP的规范，对外的沟通不要用MCP规范不推荐的形式
+
+What it means: everything an external agent sees follows MCP 2026-07-28 and its authorization
+specification as closely as possible, and uses nothing the specification discourages (SHOULD NOT,
+NOT RECOMMENDED, deprecated or legacy forms). **Documented departures:** one, plain HTTP for the
+authorization server on loopback (Q-SPEC-1, decided A; R-OA-08). Requirements settled by the specification are marked
+**[spec: page § section]**, citing the official text at modelcontextprotocol.io. Departures that
+remain are open questions (§7, Q-SPEC-n).
+
+### 1.18 Standing rule: decide by the specification (2026-11-11), verbatim
+
+> 但凡按照规范的你可以自己去做决策，你做完决策告诉你决定了什么就行
+
+What it means: an open question that MCP 2026-07-28, or an RFC it requires, settles or clearly
+recommends is decided by following that text, without asking. Each such decision is marked
+**[spec: page § section]** and reported as "decided per spec". Questions the specification leaves
+open, and product choices (naming, UX, Fishball's ids and pairing), still go to the user. A
+specification rule that would reverse an earlier user decision is not applied silently: it is
+asked.
+
+### 1.19 Q-OA-3 answered: the browser client's id is typed on the page (2026-11-11), verbatim
+
+> 这个用户自己填一个编号，必须编号没有重复，且Token正确才能配对成功
+
+What it means (now R-OA-11, R-OA-12, R-ID-13): the approval page also asks for a **fishball id**,
+typed by the user. Pairing succeeds only if the token is valid, enabled and unpaired **and** the id
+is valid (R-ID-02) and used by no other entry. The connector never generates an id (R-ID-08 holds
+for browser clients too). The client's OAuth `client_id` (its metadata-document URL) is recorded
+separately on the entry.
+
+### 1.20 Optional name on the page, and the Hand over control (2026-11-11), verbatim
+
+> 然后还可以选填一个名字，方便记忆，名字因为随时可以改，不填也行。UI中handover to fishball的按钮，如果有多个agent连接了这个DSH，就会变成一个下拉菜单：Handover to... ，下拉菜单中选择连接了的Agent名称，没有名称就显示ID，显示ID时前面会加上一个ID:
+
+Correction for one connected agent:
+
+> 只连了一个也不是原来那个按钮，而是 Hand over to {agent_name}\{"ID: "+agent_id}
+
+What it means (now R-OA-11/12, R-NAME-01/08, R-ROUTE-01/05, R-UI-05/10):
+1. **The page has an optional name field.** A name is an aid to memory and can be changed at any
+   time, so it may be left empty. A non-empty name follows the name rules (R-NAME-02: trimming,
+   NFC, 1–64 characters, case-insensitive uniqueness, `name-taken`). A browser client that leaves
+   it empty has **no name**.
+
+Q-NAME-1 answered **B** (2026-11-11): the connector assigns **no default name to anyone**, machine,
+hosted or browser client. A principal without a name is shown as `ID: <id>` (R-NAME-08). A name
+refused at `pair` leaves the name empty. `fishball-core`'s local setting `identity.name` still
+defaults to "Fishball", so a Fishball DSH normally pairs with that name. This supersedes Q22 A
+and R-NAME-04's numbering.
+2. **The Hand over control names its target.** With exactly one currently connected agent it is
+   one button, "Hand over to <agent name>", or "Hand over to ID: <fishball id>" when that agent has
+   no name. With more than one it becomes a dropdown, "Handover to…", listing each connected agent
+   by name, or as "ID: <fishball id>". The fixed label "Hand over to Fishball" is gone. Choosing an
+   agent hands the session to **that** agent. Labels come from embed-UI's locale files.
+Q-HO-1 answered (which agents are listed, and their state):
+
+> C，再给Dropdown每一行一个图标，如果掉线了就显示红灯，在线就显示绿灯
+
+3. **Every enabled, paired agent is listed**, connected or not. A Hand over to a disconnected
+   agent succeeds; its `handover` event waits in that agent's mailbox until it connects, under
+   the usual queue and retention rules (R-CON-03, R-TOK-05). Each listed agent shows a **status
+   light**: green when it is **online** (it holds an open `fishball-events` listen stream right
+   now), red when it is not.
+4. This replaces Q7's "Hand over goes to the designated Fishball" (1.6) for Hand over only.
+
+Q-ID-1 answered **A** (2026-11-11): one id rule for every kind of pairing. Ids are **unique per
+connector**: machine `pair`, like the browser page, refuses an id that another entry already holds,
+with `id-taken` (R-ID-13). R-ID-11's "same id on two tokens" case is removed. The
+   designated Fishball still receives `message_fishball` / `ask_fishball` from unmanaged sessions
+   and contributor events with no managed session (R-ROUTE-03/04, R-EXT-17).
+
+### 1.21 Earlier decisions carried into V3
 
 - **Watchdog**, a token saver and not a safety layer (U16):
   - It runs only passively, when a session triggers it, or on active patrol. A single "minimum
@@ -429,7 +551,7 @@ operation returns a machine-readable error code, changes nothing and leaks nothi
 | --- | --- |
 | R-ARCH-01 | V3 ships `fishball-connector`, `fishball-instance`, `dsh-fishball-embed-UI` and the **Fishball plugin set** (R-FB). Every one of them is an ordinary DSH plugin (bundle) that DSH's own plugin management can install, enable, disable and list. V3 also has one library package, `fishball-shared` (R-ARCH-08), which is not a plugin. |
 | R-ARCH-02 | A DSH with any of these packages installed stays a full DSH: **no** V3 package refuses to load, hides or disables another plugin because a Fishball package is present. The one exception is a Fishball DSH, where `fishball-core`'s `fishball-ui` component reshapes the DSH on purpose (R-FB-02, Q20). |
-| R-ARCH-03 | `fishball-connector` registers **no browser client module**. Its package declares no `dsh.client` entry, and loading it adds no sidebar entry, slot contribution, CSS or route that serves HTML. |
+| R-ARCH-03 | `fishball-connector` registers **no browser client module**. Its package declares no `dsh.client` entry, and loading it adds no sidebar entry, slot contribution, CSS or route that serves HTML. **One exception (1.16):** the browser-authorization approval page (R-OA-11) is served by the connector on its own approval listener (R-OA-20), as one minimal server-rendered HTML page with no client module, no slot, no CSS asset file and no script beyond what the form needs; it never appears in DSH's own web UI. |
 | R-ARCH-04 | Every host-DSH UI change Fishball makes comes from `dsh-fishball-embed-UI`. With embed-UI uninstalled, **no** Fishball UI element appears in the host DSH. |
 | R-ARCH-05 | `fishball-instance` provides only the hosted child and its lifecycle (R-HOST). It contributes no UI **to the host DSH** (all host UI is embed-UI's, R-ARCH-04). Inside a hosted child it injects only the hosted-only settings sections, into `fishball-core`'s generic settings extension point (R-HOST-11). Its host row's `inject` list holds **no service that reads or writes sessions, approvals, questions or prompts**; it cannot reach the host DSH's sessions except through a connector's MCP, from inside the child, like any client. |
 | R-ARCH-06 | No V3 package patches DSH code, bundles or another plugin's files. It uses only public DSH services, slots and profile patch rows, on both supported SDKs (R-COMPAT). |
@@ -441,7 +563,7 @@ operation returns a machine-readable error code, changes nothing and leaks nothi
 | ID | Requirement |
 | --- | --- |
 | R-CON-01 | **Protocol (Q12, decided).** The connector exposes one MCP endpoint over Streamable HTTP that serves **only** MCP revision **2026-07-28** (stateless requests, `server/discover`, `subscriptions/listen`). It implements no `initialize` handshake, no `Mcp-Session-Id` sessions, no GET stream and no `resources/subscribe`. A request for another revision is refused with `UnsupportedProtocolVersion` (-32022), listing `2026-07-28`; an `initialize` request gets an error that names the supported revision; GET or DELETE on the endpoint gets 405. **Clients on 2025-11-25 or older must upgrade** to a 2026-07-28 client. A 2026-07-28 client can discover, list and call the connector's tools. |
-| R-CON-02 | The endpoint serves session control as MCP tools (the **core tools**): list, start, message, redirect, stop, read, and release. There are no watch tools (R-WATCH-03). It also serves approval, question and prompt answering; grant list and revoke; attachment put and read; and mailbox poll and ack. The attention signal is not a core tool; embed-UI contributes it (R-EXT-13). Core tools carry the domain semantics and limits of contract 1.2 §4 and §8. Each tool returns a structured domain result: refusals carry their contract code (for example `limit-exceeded`, `expired`, `queue-full`) and are never just prose. |
+| R-CON-02 | The endpoint serves session control as MCP tools (the **core tools**): list, start, message, redirect, stop, read, and release. There are no watch tools (R-WATCH-03). It also serves approval, question and prompt answering; grant list and revoke; attachment put and read; and mailbox poll and ack. The attention signal is not a core tool; embed-UI contributes it (R-EXT-13). Core tools carry the domain semantics and limits of contract 1.2 §4 and §8. Each tool returns a structured domain result in `structuredContent`, plus the same JSON serialised in a text content block [spec: Tools § Structured Content]: refusals carry their contract code (for example `limit-exceeded`, `expired`, `queue-full`) and are never just prose. A refusal is a tool execution error and sets **`isError: true`** [spec: Tools § Error Handling, decided per 1.18]; the code stays in `structuredContent` and in the JSON text block, so a client that drops `structuredContent` on errors still sees it. Success sets `isError: false`. Every output schema admits the refusal envelope (K1). |
 | R-CON-03 | Events reach a principal through a **durable mailbox** per pair (R-ID-06). Events stay pending until the principal acks them. A poll returns a bounded ordered page plus a cursor. A stale or foreign cursor gets an explicit resync answer, never a silent skip. |
 | R-CON-04 | **One typed event stream (Q30, decided; R-EVS).** The mailbox is published as one MCP resource, `fishball-events` (URI `fishball://events`). A subscription to it gets `notifications/resources/updated` whenever new events arrive for that pair. The notification is a **hint only**: a client that never subscribes gets the same events by polling, and losing a notification loses no event. |
 | R-CON-05 | No approval, question or plan review is ever settled by a timer, by a client's silence or by a lost notification. A delegated item with no answer **waits**. |
@@ -462,7 +584,7 @@ operation returns a machine-readable error code, changes nothing and leaks nothi
 | R-EXT-04 | When a registration is disposed, or its contributor is disabled, unloaded, reloaded or uninstalled, its tools leave `tools/list` **before the next request is answered**. Later calls get "unknown tool". Every client whose listen stream opted into `toolsListChanged` gets `notifications/tools/list_changed`. Registering a tool sends the same notification. |
 | R-EXT-05 | Contributed tools sit behind the same access-token check as core tools (R-TOK-01, R-OA). An unauthenticated request cannot list or call them. A pair-only access token sees no contributed tools in `tools/list` (only discovery, `tools/list` of core tools and `pair`). **Every authenticated, paired token sees and may call every contributed tool**, exactly as with core tools: there is no per-token filtering (Q15, decided; no scopes, Q6). The only control is installing or enabling the contributor plugin (Q16, Q17 decided). |
 | R-EXT-06 | A contributed tool's call passes through the connector's own checks **before** the contributor's code runs: authentication, request and body limits, in-flight and rate limits, input-schema validation against the registered schema, and the per-call byte limits the contributor declared within the connector's ceilings. A call that fails one of them is refused with the connector's code and never reaches the contributor. |
-| R-EXT-07 | A contributed tool's result passes through the connector's checks **after** the contributor's code runs: the result-size ceiling, output-schema validation when one is declared, and the result envelope (`{ok, code?, …}` in a successful `CallToolResult`). A refusal code the contributor returns must come from its declared code list or the connector's shared vocabulary; anything else becomes `operation-failed`. |
+| R-EXT-07 | A contributed tool's result passes through the connector's checks **after** the contributor's code runs: the result-size ceiling, output-schema validation when one is declared, and the result envelope (`{ok, code?, …}` in `structuredContent` and as JSON text, with `isError: true` exactly when `ok` is false, R-CON-02). A refusal code the contributor returns must come from its declared code list or the connector's shared vocabulary; anything else becomes `operation-failed`. |
 | R-EXT-08 | A contributor's execute function that throws, rejects, returns an invalid result or exceeds the per-call time ceiling is **contained**. That call gets `{ok: false, code: 'contributor-failed'}`, with no stack, message text or internal path. The connector, every other tool and every other client are unaffected. The failure is logged once per contributor and failure kind, with no arguments or result content. |
 | R-EXT-09 | A contributor that keeps failing is **quarantined**: its tools are withdrawn (R-EXT-04) and its events stop (R-EXT-19). The quarantine lifts only when that contributor's plugin is **disabled and re-enabled, or reloaded** (a new plugin fiber). There is no connector-side control for it (Q16, decided). |
 | R-EXT-10 | The per-call context handed to a contributor carries the calling **principal** (an opaque principal key and its current name, never the token or the token entry's label), a cancellation signal that fires when the client cancels or disconnects, and the protocol revision (always 2026-07-28). It carries no access to the connector's mailbox, other principals, the credential store, other tools or main-session authority beyond what the contributor's own DSH context already has. |
@@ -482,7 +604,7 @@ operation returns a machine-readable error code, changes nothing and leaks nothi
 | ID | Requirement |
 | --- | --- |
 | R-TOK-00 | **The token is the security boundary (verbatim principle, 1.9).** Ids and pairing are foolproofing only and never relax a token rule. Every request needs a valid, enabled token first; nothing about ids, pairs, names or last-seen times is processed or revealed before the token is verified. |
-| R-TOK-01 | **Every** MCP request carries `Authorization: Bearer <access token>` issued by the connector's token endpoint (R-OA), on every request including `server/discover` and subscription streams. A missing, expired, revoked or foreign access token gets **HTTP 401** with `WWW-Authenticate: Bearer resource_metadata="…"` (and `error="invalid_token"` when one was presented), no MCP processing and no hint about any pair. The **token** (the long-lived secret of a token entry) is presented only to the token endpoint, as the client secret, never to the MCP endpoint, except under the direct-access fallback (R-OA-10). |
+| R-TOK-01 | **Every** MCP request carries `Authorization: Bearer <access token>` issued by the connector's token endpoint (R-OA), on every request including `server/discover` and subscription streams. A missing, expired, revoked or foreign access token gets **HTTP 401** with `WWW-Authenticate: Bearer resource_metadata="…", scope="fishball"` (and `error="invalid_token"` when one was presented) [spec: Authorization § Scope Selection Strategy], no MCP processing and no hint about any pair. The **token** (the long-lived secret of a token entry) is presented only to the token endpoint, as the client secret, never to the MCP endpoint (there is no direct-access fallback, R-OA-10 withdrawn). |
 | R-TOK-02 | A token in a URL query string is refused, even when a valid header is also present. |
 | R-TOK-03 | The user can create a new token for an external agent or a standalone Fishball from the connector's native settings form, with no custom UI, by the mechanism of R-TOK-08 (Q5, decided). |
 | R-TOK-04 | Token secret values live **only** in DSH's credential store (`ctx.credentials`) of the DSH that holds them. They are never in settings documents, logs, lifecycle files, temp files, launch overlays, process arguments, tool results, resource contents, error messages or browser responses. |
@@ -497,16 +619,26 @@ operation returns a machine-readable error code, changes nothing and leaks nothi
 
 | ID | Requirement |
 | --- | --- |
-| R-OA-01 | The connector is its own OAuth 2.1 **authorization server** and the MCP endpoint its **protected resource**, both on the same DSH web listener as the endpoint, with no UI. It serves: the protected resource metadata (RFC 9728) at the MCP endpoint's path-inserted well-known URI and in every 401's `resource_metadata`; the authorization server metadata (RFC 8414) at its issuer's well-known URI; and a token endpoint. Standard MCP clients that support the client credentials extension work with configuration only (endpoint URL, client id, client secret, expected issuer). |
-| R-OA-02 | The authorization server supports **only** the `client_credentials` grant, with client authentication `client_secret_basic` and `client_secret_post`. It offers no authorization endpoint, no dynamic client registration and no Client ID Metadata Documents. Its metadata says so (`grant_types_supported: ["client_credentials"]`). |
+| R-OA-01 | The connector is its own OAuth 2.1 **authorization server** and the MCP endpoint its **protected resource**. On DSH's web listener (R-REM-01) it serves: the protected resource metadata (RFC 9728) at the MCP endpoint's path-inserted well-known URI and in every 401's `resource_metadata`, with `scopes_supported: ["fishball"]`; the authorization server metadata (RFC 8414) at its issuer's path-inserted well-known URI; and the token endpoint. On its own **approval listener** (R-OA-20) it serves only the authorization endpoint (the approval page) and its decision form (R-OA-11); the metadata's `authorization_endpoint` points there. One issuer covers both listeners [spec: Authorization Server Discovery — the AS's endpoints are found through its metadata; 1.16: only the page moves]. The **issuer** and the **canonical MCP URI** follow the checked request host (R-REM-03): for a request that arrived under an allowed host H, the issuer is `<scheme>://H/api/fishball/oauth` and the canonical MCP URI is `<scheme>://H/api/fishball/mcp` [spec: Authorization Server Discovery — the `issuer` in the metadata MUST be identical to the issuer used to build the well-known URL; Authorization § Canonical Server URI; spike V3-S1 Q2]. An access token is valid only for the canonical MCP URI it was issued for. Standard MCP clients work with configuration only (client credentials: URL, client id, secret, expected issuer) or with the endpoint URL only (authorization code, R-OA-13). |
+| R-OA-02 | **Grants (1.16, decided).** Exactly two: `client_credentials` (client authentication `client_secret_basic` and `client_secret_post`; the `io.modelcontextprotocol/oauth-client-credentials` extension) and `authorization_code` with **PKCE S256** (R-OA-14). Metadata: `grant_types_supported: ["client_credentials", "authorization_code", "refresh_token"]` (`refresh_token` only for browser clients, R-OA-16), `response_types_supported: ["code"]`, `code_challenge_methods_supported: ["S256"]` [spec: Security Considerations § Authorization Code Protection — clients MUST refuse an AS without it], a real `authorization_endpoint`, `authorization_response_iss_parameter_supported: true` (R-OA-14), `client_id_metadata_document_supported: true` and **no** `registration_endpoint` (R-OA-13), `token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"]`. No implicit, password or device grant, no external authorization server, and no static bearer credential (R-OA-10 withdrawn). |
 | R-OA-03 | **Client identity.** `client_id` is the client's fishball id (R-ID-02) and `client_secret` is the token value of a token entry. The connector first verifies the token in constant time against the enabled entries (R-TOK-00): an unknown, disabled or revoked token gets `invalid_client` (HTTP 401) and nothing about any pair is revealed. |
-| R-OA-04 | **Pair state decides the scope** (R-ID). On an unbound token, or on a bound token with another id, the token endpoint issues an access token whose only power is the `pair` tool (and discovery and `tools/list`). On a bound token with its bound id, it issues a full access token. The token response carries the extension field `fishball_pairing`: `unpaired`, `paired` or `id-mismatch`. |
+| R-OA-04 | **Pair state decides the scope (R-ID; Q-S7-3 settled by 1.17).** There is one scope, `fishball`, and the token response uses only standard fields [spec: 1.17 — no custom field a compliant client must read; S7 found the stock client drops custom ones]. On an unbound token, or a bound token with another id, the token endpoint issues an access token with `scope: "fishball:pair"`, whose only power is discovery, `tools/list` (which then lists `pair` only, as the specification allows: tools/list MAY vary by authorization, [spec: Tools § Capabilities]) and `pair`. On a bound token with its bound id it issues `scope: "fishball"`, full power. A client that requests `scope=fishball` (as a client following the 401 challenge does) while unbound or mismatched is **not** refused: it gets the pair-only token and the response's `scope` says so [spec: OAuth 2.1 §1.4.1, the AS MAY narrow the requested scope and MUST then return the granted scope]. Unknown requested scopes (for example `offline_access`) are ignored the same way. The former `fishball_pairing` field is removed; a client learns `unpaired` versus `id-mismatch` from `pair`'s result (R-ID-03/04). A pair-only token is refused elsewhere with HTTP 403 `insufficient_scope` (R-ID-06). |
 | R-OA-05 | **Access tokens** are opaque random strings, stored server-side by digest only, bound to (token entry, fishball id) and to the MCP endpoint's canonical URI as audience (RFC 8707 `resource`, which the client must send). **A token request without `resource` is refused with `invalid_target`** (TQ-3, decided A; confirmed by spike V3-S7 `8e92b84`: the stock `ClientCredentialsProvider` of `@modelcontextprotocol/client` 2.2.0 sends `resource` on both SDKs), as is one naming another resource. Access tokens and their digests are held **in memory only** and are lost when the connector restarts (TQ-5, decided A); a client then gets 401 and re-authenticates (R-OA-07). Each MCP request looks its token up; an access token presented for another resource is refused. |
 | R-OA-06 | **Revocation is immediate.** Disabling or deleting a token entry, or changing its value, invalidates every access token derived from it on the next request. Re-enabling an entry does not revive old access tokens; the client simply requests a new one. |
-| R-OA-07 | **Lifetime (Q27, decided).** An access token is valid for exactly **3600 seconds** from issue (`expires_in: 3600`); a request at or after expiry gets 401. The token endpoint issues **no refresh token** and supports no `refresh_token` grant (`unsupported_grant_type`). On expiry, or on any 401, the client re-authenticates at the token endpoint with id + token. That is never a pairing and never fails because the token is already bound to that same id. Access tokens are not rotated mid-life; revocation still cuts them off at once (R-OA-06). |
-| R-OA-08 | The token endpoint and metadata are served under the same exposure rules as the MCP endpoint: loopback by default, TLS for any non-loopback listener (MCP: authorization server endpoints must be HTTPS; loopback is the accepted local exception). The Origin check, body limits and rate limits apply. |
+| R-OA-07 | **Lifetime (Q27, decided).** An access token is valid for exactly **3600 seconds** from issue (`expires_in: 3600`); a request at or after expiry gets 401. For `client_credentials` the token endpoint issues **no refresh token**, and a `refresh_token` grant from such a client gets `invalid_grant` (browser clients: R-OA-16). On expiry, or on any 401, the client re-authenticates at the token endpoint with id + token. That is never a pairing and never fails because the token is already bound to that same id. Access tokens are not rotated mid-life; revocation still cuts them off at once (R-OA-06). |
+| R-OA-08 | The token endpoint, the metadata and the approval listener follow the exposure rules of R-REM-01/02: loopback by default, TLS for any non-loopback listener. **Plain HTTP on loopback is the one documented departure from the specification (Q-SPEC-1, decided A):** the specification says every authorization-server URL MUST be HTTPS [spec: Security Considerations § Communication Security; OAuth 2.1 §1.5], but DSH's own listener (Q9) and the approval listener are plain HTTP on loopback, so on loopback the connector serves them over HTTP. Every non-loopback host is HTTPS, either directly or through the user's tunnel (R-REM-05). The README states this departure. Spike V3-S7b verifies that the stock DSH client (both SDKs) and the Python MCP SDK keep accepting an HTTP loopback authorization server. The Host and Origin checks (R-REM-03), body limits and rate limits apply. |
 | R-OA-09 | The `server/discover` result advertises the extension `io.modelcontextprotocol/oauth-client-credentials`. |
-| R-OA-10 | **Direct-access fallback (Q28, decided).** Each token entry has a switch `directAccess`, default **off**, in the connector's native settings. Off: the MCP endpoint accepts only access tokens from the token endpoint, and a `Bearer <id>.<token>` value gets the same 401 as any invalid access token. On: the MCP endpoint also accepts `Authorization: Bearer <id>.<token>` (the fishball id, a dot, the token value) for that entry. It is split at the **first** dot (ids contain no dot, R-ID-02; the token part may), the token part is checked in constant time against that entry on **every** request, and the id must be valid (R-ID-02). It then counts exactly as an access token of that (token, id): full if the entry is bound to that id, pair-only otherwise, so pairing still goes through `pair`. Switching it off, or revoking the entry, refuses the next such request. All token-hygiene rules apply (R-TOK-00/04/06): the value is never logged, and limits and the Origin check apply. |
+| R-OA-10 | *Withdrawn (1.16, "不允许直接访问").* There is no direct-access fallback: no `directAccess` switch and no `Bearer <id>.<token>` form. A bearer value that is not an access token from the token endpoint, including a raw token value or `<id>.<token>`, gets the same 401 as any invalid access token (R-TOK-01). The ID stays reserved so earlier references remain traceable. |
+| R-OA-11 | **Browser authorization: the page (1.16, Q-OA-5 decided).** `GET <approval origin>/authorize` with a valid request (R-OA-14) shows a page on the approval listener (R-OA-20) that asks for **one thing only: a token** (the value of a token entry the owner created in the connector's settings, R-TOK-03/08). There is no owner login, ticket, code or password: whoever enters a valid token authorizes, whoever they are; the token is the proof [rule: R-TOK-00, the token is the security boundary]. The page shows: the client's `client_name` from its metadata document, marked **unverified**; the **redirect URI's host name**, with an extra warning when every redirect URI is `localhost` [spec: Security Considerations § Client ID Metadata Document Security]; the client id URL's host; this DSH's name and canonical MCP URI; that authorizing gives **full manager rights** over this DSH's sessions, delegated approvals and questions included (no scopes, R-TOK-10); that a token can be used for **one** agent only, and that the id must be unique and cannot be changed later (the name can). Controls: a **token** field (masked, no autofill, never echoed back), a required **id** field (the agent's fishball id, R-ID-02, 1.19), an optional **name** field (1.20), **Authorize** and **Cancel**. No secret, token or other principal's data is shown. |
+| R-OA-12 | **What entering a token does (Q-OA-5 decided) [rule: one token, one agent (1.8, 1.9); R-ID-03/04; R-OA-03].** On **Authorize**, the connector checks the entered value in constant time against the **enabled** token entries (R-TOK-06), exactly as the token endpoint checks a client secret. Outcomes, all shown **on the page** (never as a redirect carrying the reason): (1) **unknown, disabled, deleted or too-short value** → one uniform message, "this token is not valid", revealing nothing about entries, ids or pairs (R-TOK-00); (2) **valid but already paired** (to a machine or a browser client) → refused `already-paired`: "this token is already used by an agent; create a new token in the connector's settings", with the bound pair's name and last-seen time (as R-ID-04 allows a caller whose token was verified), and nothing changes; (3) **valid, enabled and unpaired**, then the typed **id** is checked: invalid → `id-invalid`; held by another entry → `id-taken` (R-ID-13); then a non-empty **name** is checked by R-NAME-02: invalid → `name-invalid`, held → `name-taken`; each refusal is shown on the page, binds nothing and leaves the request pending. (4) all checks pass → in one atomic step the entry is **bound** to the typed id, the client id URL and redirect URI are recorded against it, its name is the typed one or **none** if the field was empty (no default, 1.20; the client's `client_name` is only shown as a hint), `pairedAt` is set, and the browser is redirected with a code (R-OA-14). No token entry is ever created by the page. The bound entry is an ordinary principal: listed in native settings with its pair state (R-ID-12), disabled, re-enabled and deleted like any other. The entered value travels only in the form's POST body over the approval listener: never in a URL, redirect, `state`, code, log, page or response, and the page is sent `Cache-Control: no-store`. Re-entering a bound token, even by the same browser client, stays `already-paired` (1.9); a browser client keeps working through refresh tokens (R-OA-16). |
+| R-OA-13 | **Client registration (settled by 1.17).** Browser clients register only through **Client ID Metadata Documents**: the `client_id` is an `https:` URL with a path whose document lists `client_id` (identical to the URL), `client_name` and `redirect_uris`; the connector fetches it, validates it and caches it by its HTTP cache headers, with SSRF limits (https only, no private, link-local or loopback addresses, size and time bounds) [spec: Client Registration § Client ID Metadata Documents; Security Considerations § Authorization Server Abuse Protection]. **No dynamic client registration** (RFC 7591): the specification marks it deprecated [spec: Client Registration § Dynamic Client Registration]. Machine-exchange clients are pre-registered by their token entry (R-TOK-08) [spec: Client Registration § Pre-registration]. Fetching a document grants nothing; only the owner's approval (R-OA-12) creates a principal. *(That both stock clients support CIMD is spike V3-S7b.)* |
+| R-OA-14 | **Authorization request and code rules [spec: Security Considerations § Authorization Code Protection, § Open Redirection, § Communication Security; Authorization § Resource Parameter Implementation, § Authorization Response Validation].** A request is valid only with: `response_type=code`; a `client_id` that is a valid metadata-document URL (R-OA-13); a `redirect_uri` equal to one of the document's `redirect_uris`: an **exact** match, except that for a loopback redirect (`127.0.0.1`, `[::1]`, `localhost`) **any port** is accepted [spec: OAuth 2.1 §2.3.1, §8.4.2; decided per 1.18]; each registered redirect is loopback or `https:` [spec: Security Considerations § Communication Security]; `code_challenge` with `code_challenge_method=S256` (plain or missing is refused); and `resource` equal to a canonical MCP URI of this connector (TQ-3 = A applies to both grants). `state` is optional and, when present, echoed unchanged. An invalid `client_id` or `redirect_uri` is shown as an error **on the page** and never redirected; any other invalid parameter is redirected with the OAuth error (`invalid_request`, `unsupported_response_type`, `invalid_target`, …). Every authorization response, error responses included, carries `iss` (the issuer). The authorization code is single-use, bound to (client, redirect URI, code challenge, resource, the approved entry), and expires after **60 s** (K). A second use fails `invalid_grant` and revokes every token issued from it. The token request must repeat the same `redirect_uri`, the `code_verifier` and `resource`. |
+| R-OA-15 | **Cancel and expiry.** **Cancel** redirects with `error=access_denied`, `iss` and `state` (if sent), and binds nothing. Leaving the page open past **10 minutes** (K) lets the pending request expire: nothing is bound, and a later Authorize shows "this request has expired, start again from your agent". A pending request survives no connector restart. A refused token (R-OA-12 (1), (2)) leaves the request pending, so the owner can enter another token. |
+| R-OA-16 | **Token lifetime for browser clients (Q-OA-2 decided A) [spec: Security Considerations § Token Theft].** Access tokens from the authorization code grant are the same opaque, audience-bound, in-memory, 3600 s tokens as R-OA-05/07, and revocation of the entry cuts them off on the next request (R-OA-06). Each code redemption also returns a **refresh token**: opaque, high-entropy, stored by digest only, bound to (entry, client id, canonical MCP URI). Rules: (1) **rotation:** every `refresh_token` grant returns a new access token and a **new** refresh token and invalidates the old one; (2) **reuse detection:** presenting an already-used refresh token revokes the **whole chain** (every refresh and access token descending from that code) and returns `invalid_grant`; (3) **revocation with the entry:** disabling, deleting or changing the value of the entry invalidates every refresh token derived from it (R-OA-06); re-enabling revives none (the browser client must be authorized again with a new token, since its bound entry stays bound); (4) the refresh grant must come from the same `client_id` and carry the same `resource`, else `invalid_grant` / `invalid_target`; (5) refresh tokens live **in memory**, like access tokens (TQ-5): a connector restart loses them and the browser client must be authorized again; *(K: whether refresh tokens instead persist across restarts, and a maximum chain lifetime, are frozen at V3-K)*; (6) **machine exchange keeps no refresh tokens** (Q27): a `refresh_token` grant presented by a `client_credentials` client, or any refresh token not issued to a browser client, gets `invalid_grant`. Re-entering an already bound token on the page stays `already-paired` (1.9); refresh is the way a browser client keeps working. |
+| R-OA-17 | **Shared rules for both grants [rule].** The rate limits, Host and Origin checks and TLS rule (R-TOK-06, R-OA-08, R-REM-02/03) apply to the approval listener as to DSH's listener. Wrong tokens entered on the page count toward the **same per-client failure limit** as the token endpoint, with the same uniform answer. The form is protected against cross-site requests: same-origin only, and a single-use form value bound to the pending request. The token-endpoint rate limit counts `authorization_code` and `refresh_token` grants like `client_credentials`, and still allows the stock client's two token requests per failed call (S7 §4.4). There is no direct access for either grant (R-OA-10 withdrawn). |
+| R-OA-18 | **Q-S7-3 settled (1.17).** The stock client drops custom token-response fields, so the connector sends none: pairing state is the standard `scope` (R-OA-04) and `pair`'s result. A browser client's approval binds its pair, so its first access token already has `scope: "fishball"`. |
+| R-OA-19 | **Hosted and standalone Fishball keep machine exchange [rule: R-HOST-05, R-FB-03].** `fishball-core` and the instance use only `client_credentials`; browser authorization is for external agents. |
+| R-OA-20 | **The approval listener (1.16, decided: its own port).** The connector opens one HTTP listener of its own for browser authorization, separate from DSH's web listener, so DSH's web-login requirement does not apply to it. It serves only what R-OA-01 places there, and nothing else answers on it (any other path gets 404). It follows the same exposure rule as DSH's listener: loopback-only by default; a non-loopback bind needs TLS (R-REM-02); public reach is through the user's own tunnel (R-REM-05). **Port (Q-OA-7, decided A):** a setting in the connector's native settings form, with a fixed default port frozen at V3-K; the listener is open whenever the connector runs. **On a port clash** the connector logs one diagnostic and reports status **`approval-port-in-use`** (in its native settings status); the MCP endpoint, machine exchange and DSH's UI keep working, and the metadata **keeps** its `authorization_endpoint` (stock clients reject metadata without one, S1/S7), so only the approval page is unreachable until the port is free or changed. Changing the setting rebinds the listener; the metadata follows. Closing or failing the listener never affects the MCP endpoint, machine exchange or DSH's own web UI. It checks `Host` and `Origin` itself, as DSH's listener routes must (R-REM-03). |
 
 ### 3.4b Identity and pairing (R-ID)
 
@@ -516,39 +648,41 @@ replaces or weakens the token check (R-TOK-00).
 | ID | Requirement |
 | --- | --- |
 | R-ID-01 | **The credential is token + fishball id**, presented at the token endpoint as OAuth client secret + client id (R-OA-03). The same mechanism applies to Fishball DSHs and to external agents. MCP requests then carry only the access token, which is bound to the pair (R-OA-05). |
-| R-ID-02 | A fishball id is 1–64 characters of `A–Z a–z 0–9 _ -`, case-sensitive and not secret. **An id never contains a dot** (TQ-1, decided C), so the first dot of a direct-access value always ends the id (R-OA-10). An invalid id gets `invalid_client` at the token endpoint, so it can never reach `pair`. `fishball-core` refuses an invalid `identity.id` (a dot included) when the setting is saved, with `id-invalid`, and never sends it. Names are not ids: a name may contain dots (R-NAME-02). |
-| R-ID-03 | **Pairing is one explicit MCP tool call, `pair`**, made with an access token from R-OA-04. It binds that access token's id to its token entry, durably and atomically, and returns `{ok: true, paired: true, id, name}`. After it, the same access token gains full power at once (scope is evaluated live). **Only a token with no bound id can pair.** When two `pair` calls race on one unbound token, exactly one binds; the other gets `already-paired`. |
-| R-ID-04 | **A second `pair` on a bound token always fails**, even with the bound id. It returns the distinct result `{ok: false, code: 'already-paired', bound: {idMatches, boundId, name, pairedAt, lastSeenAt}, advice}`. `idMatches` says whether the caller's id equals the bound id. `advice` is a fixed text: with `idMatches: true`, "continue with this token and id only if no other agent uses this id with this token; otherwise use a new token"; with `idMatches: false`, "use a new token". It is returned only to a caller whose token was verified (R-TOK-00). |
+| R-ID-02 | A fishball id is 1–64 characters of `A–Z a–z 0–9 _ -`, case-sensitive and not secret. **An id never contains a dot** (TQ-1, decided C). An invalid id gets `invalid_client` at the token endpoint, so it can never reach `pair`. `fishball-core` refuses an invalid `identity.id` (a dot included) when the setting is saved, with `id-invalid`, and never sends it. Names are not ids: a name may contain dots (R-NAME-02). |
+| R-ID-03 | **Pairing is one explicit MCP tool call, `pair`**, made with an access token from R-OA-04. It binds that access token's id to its token entry, durably and atomically, and returns `{ok: true, paired: true, id, name}`. After it, the same access token gains full power at once (scope is evaluated live). **Only a token with no bound id can pair, and only with an id no other entry holds** (R-ID-13). When two `pair` calls race on one unbound token, exactly one binds; the other gets `already-paired`. When two `pair` calls race on two unbound tokens with the same id, exactly one binds; the other gets `id-taken`. |
+| R-ID-04 | **A second `pair` on a bound token always fails**, even with the bound id. It returns the distinct result `{ok: false, code: 'already-paired', bound: {idMatches, boundId, name, pairedAt, lastSeenAt}, advice}`. `idMatches` says whether the caller's id equals the bound id. `advice` is a fixed text: with `idMatches: true`, "continue with this token and id only if no other agent uses this id with this token; otherwise use a new token and a new id" (the id stays held by this entry, R-ID-13); with `idMatches: false`, "use a new token". It is returned only to a caller whose token was verified (R-TOK-00). |
 | R-ID-05 | **Normal use and reconnects never pair.** A client whose token is bound to its id just requests access tokens and works, including after a restart or reconnect of either side. "Skip pairing and continue" (R-ID-07) is just this. |
-| R-ID-06 | **Delivery keys on (token, id).** Mailbox events, subscription notifications and offers belong to the pair. Only a full access token of that pair may subscribe, poll, ack or answer. One event goes to one pair, and so wakes one agent. A call needing full power with a pair-only access token gets `not-paired` (unbound) or `id-mismatch` (bound to another id). |
-| R-ID-07 | **Fishball side (`fishball-core`).** Core calls `pair` only for a token it has not paired before (a local, non-secret "paired" record per target and token reference), never on reconnect. On `already-paired` with `idMatches: true`, the Fishball page shows a warning naming the bound pair's name and last-seen time, with two choices: **Continue with this pairing**, enabled only after the user ticks "No other Fishball or agent uses this id with this token"; or **Use a new token** (and optionally a new id). Until the user chooses, core sends nothing else to the target. On `idMatches: false`, only **Use a new token** is offered. |
-| R-ID-08 | **External agents** choose their own id (their OAuth client id); without one they cannot authenticate. They call `pair` once, and decide from its result whether to continue with the pair or switch to a new id and token. The connector never generates or suggests an id. |
+| R-ID-06 | **Delivery keys on (token, id).** Mailbox events, subscription notifications and offers belong to the pair. Only a full access token of that pair may subscribe, poll, ack or answer. One event goes to one pair, and so wakes one agent. **A request needing full power with a pair-only access token gets HTTP 403** with `WWW-Authenticate: Bearer error="insufficient_scope", scope="fishball", resource_metadata="…"` [spec: Authorization § Runtime Insufficient Scope Errors, decided per 1.18]; `error_description` says `not-paired` (unbound) or `id-mismatch` (bound to another id), as a human-readable hint only. A client learns its exact state from `pair` (R-ID-03/04). |
+| R-ID-07 | **Fishball side (`fishball-core`).** Core calls `pair` only for a token it has not paired before (a local, non-secret "paired" record per target and token reference), never on reconnect. On `already-paired` with `idMatches: true`, the Fishball page shows a warning naming the bound pair's name and last-seen time, with two choices: **Continue with this pairing**, enabled only after the user ticks "No other Fishball or agent uses this id with this token"; or **Use a new token and a new id** (both are needed, because the id stays held by the bound entry, R-ID-13). Until the user chooses, core sends nothing else to the target. On `idMatches: false`, only **Use a new token** is offered. On **`id-taken`** (another entry holds core's `identity.id`), the page says the id is used by another agent on that DSH and asks for a new `identity.id`; the token stays unpaired, so core pairs again with the same token once the id changes. |
+| R-ID-08 | **External agents** choose their own id (their OAuth client id); without one they cannot authenticate. They call `pair` once, and decide from its result whether to continue with the pair or switch to a new id and token. The connector never generates or suggests an id. Browser clients type theirs on the approval page (R-OA-12, 1.19). |
 | R-ID-09 | A bound token stays bound for the life of its entry. Disabling the entry revokes it (R-TOK-09, R-OA-06) and keeps the pair, so re-enabling restores the same principal. There is no unpair: a new agent needs a new token. |
-| R-ID-10 | **Ids in a Fishball DSH.** `fishball-core`'s setting `identity.id` is generated at first start: `fb-` followed by 16 random lowercase base32 characters. The user may set their own instead, within R-ID-02 (else `id-invalid`, and the previous id stays). Changing it after pairing makes core's next token request answer `fishball_pairing: id-mismatch`; core's status says a new token is needed. |
-| R-ID-11 | **Scope: no anti-impersonation hardening.** Two clients presenting the same token and the same id are the one paired principal. The token entry is the primary key; the same id on two different tokens is allowed and means two principals. |
+| R-ID-10 | **Ids in a Fishball DSH.** `fishball-core`'s setting `identity.id` is generated at first start: `fb-` followed by 16 random lowercase base32 characters. The user may set their own instead, within R-ID-02 (else `id-invalid`, and the previous id stays). Changing it after pairing makes core's next token request return `scope: "fishball:pair"` while core holds a paired record; core does not call `pair` again, and its status says a new token is needed. |
+| R-ID-11 | **Scope: no anti-impersonation hardening.** Two clients presenting the same token and the same id are the one paired principal. The token entry is the primary key, and ids are also unique per connector (R-ID-13, Q-ID-1 decided A): one id never names two principals. |
 | R-ID-12 | The connector records `pairedAt` and `lastSeenAt` (the last authenticated request of the pair) per pair. Its native settings show, per token entry, read-only: paired or unpaired, the bound id, the name, `lastSeenAt` and whether it is connected now. No custom UI. |
+| R-ID-13 | **Ids are unique per connector (1.19 for the browser page; Q-ID-1 decided A for `pair`).** An id may be bound to at most one token entry. Pairing with an id that another entry already holds is refused with **`id-taken`** and binds nothing, both on the approval page and in `pair` (`{ok: false, code: 'id-taken'}`); the token stays unpaired and can pair again with another id. Ids are compared exactly (case-sensitive, R-ID-02). A disabled entry still holds its id; a deleted entry frees it. Precedence in `pair`: a bound token gets `already-paired` first; an unbound token with a held id gets `id-taken`. `id-taken` is returned only to a caller whose token was verified (R-TOK-00) and says nothing else about the other entry. On the page, the entry also records the client's OAuth `client_id` (metadata-document URL) separately from the fishball id. |
 
 ### 3.4c Names (R-NAME)
 
 | ID | Requirement |
 | --- | --- |
-| R-NAME-01 | Each principal has a **name**, separate from its id (agreed). The id is fixed; the name can change at any time. Names are **unique per connector** (Q23, decided). |
+| R-NAME-01 | Each principal may have a **name**, separate from its id (agreed); a browser client that leaves the page's name field empty has none (1.20). The id is fixed; the name can change at any time. Names are **unique per connector** (Q23, decided). |
 | R-NAME-02 | A client reports its name with the MCP tool `set_name({name})`, callable any time with a full access token, or as the optional `name` argument of `pair`. **Normalisation:** surrounding whitespace is trimmed, inner runs of whitespace are collapsed to one space, and the result is Unicode NFC; that is the stored and displayed name. It must then be 1–64 characters with no control characters, else `name-invalid`. **Uniqueness** compares names case-insensitively (Unicode case folding of the normalised name), so "fishball-2" and "Fishball-2" clash. A `set_name` whose name is held by **another** principal is refused `name-taken`, and the caller keeps its current name. Setting a principal's own current name again, in any letter case, succeeds and changes nothing else (a case-only change is stored). The connector updates every place a name is shown before answering. |
-| R-NAME-03 | `fishball-core`'s setting `identity.name` is the Fishball's name. Core passes it to `pair`, and calls `set_name` on every later change and after a reconnect whose stored name might be stale. On `name-taken` (from `set_name`, or `nameAssigned: false` from `pair`), the Fishball page shows that the name is used by another agent on that DSH, shows the name actually in use, and asks the user to choose another; core keeps working under the name the connector holds. |
-| R-NAME-04 | **Default names (Q22, decided; Q23).** A principal that pairs without a usable name gets a default name at pairing, per connector: the **lowest free** name in the series "Fishball", "Fishball-2", "Fishball-3", … (there is no "Fishball-1"). "Free" means no current principal holds that name in the case-insensitive comparison of R-NAME-02, whether it was assigned as a default or chosen by hand; the series simply **skips** taken names. Numbers freed by deleted entries or by renames are reused. Concurrent pairings get distinct names. A principal keeps its default until it sets a name, and another principal's rename never renames it. A successor (R-HOST-09) takes the old principal's name instead of a new default. |
-| R-NAME-05 | Names are shown wherever a principal is shown: managed-session marks, the Hand over button, the token entry status, the designated-Fishball setting, and connector notes in sessions ("managed by …"). Name collisions are refused (R-NAME-02). |
-| R-NAME-06 | **A name clash at pairing never fails the pairing (Q23).** If the `name` given to `pair` is invalid or held by another principal, the pairing still succeeds (token and id are bound), the principal gets a default name (R-NAME-04), and the result says so: `{ok: true, paired: true, id, name: <default>, nameAssigned: false, nameRefused: 'name-taken' | 'name-invalid'}`. With a usable name, `nameAssigned: true`. |
-| R-NAME-07 | **Successor names (Q24, Q23).** In the takeover of R-HOST-09 the old entry is deleted and its name moves to the new principal in the same atomic step, so the name is never held twice and never refused. The new principal's provisional default from its pairing is released by the same step. |
+| R-NAME-03 | `fishball-core`'s setting `identity.name` is the Fishball's name; it defaults to "Fishball" locally (Q-NAME-1 B). Core passes it to `pair`, and calls `set_name` on every later change and after a reconnect whose stored name might be stale. On `name-taken` (from `set_name`, or `nameAssigned: false` from `pair`), the Fishball page shows that the name is used by another agent on that DSH, shows the name actually in use (or that it is shown as `ID: <id>` because it has none), and asks the user to choose another; core keeps working under what the connector holds. |
+| R-NAME-04 | **No default names (Q-NAME-1 decided B; supersedes Q22 A).** The connector never assigns a name. A principal that pairs without a usable name, from any client kind, has **no name** until it sets one with `set_name`, and is shown as `ID: <id>` (R-NAME-08). There is no "Fishball", "Fishball-2", … series and no number reuse. `fishball-core`'s local `identity.name` defaults to "Fishball" (R-NAME-03), so a Fishball DSH normally pairs with a name; if that name is held, it pairs nameless (R-NAME-06). A successor (R-HOST-09) takes the old principal's name. |
+| R-NAME-05 | Names are shown wherever a principal is shown: managed-session marks, the Hand over control (R-UI-10), the token entry status, the designated-Fishball setting, and connector notes in sessions ("managed by …"). Name collisions are refused (R-NAME-02). |
+| R-NAME-06 | **A name clash at pairing never fails the pairing (Q23; Q-NAME-1 B).** If the `name` given to `pair` is invalid or held by another principal, the pairing still succeeds (token and id are bound), the principal has **no name**, and the result says so: `{ok: true, paired: true, id, name: null, nameAssigned: false, nameRefused: 'name-taken' \| 'name-invalid'}`. With a usable name, `nameAssigned: true`. With no `name` given, `name: null` and no `nameRefused`. |
+| R-NAME-07 | **Successor names (Q24, Q23).** In the takeover of R-HOST-09 the old entry is deleted and its name (or its lack of one) moves to the new principal in the same atomic step, so the name is never held twice and never refused. The new child usually paired nameless (its `identity.name` was still held by the old entry), and takes the old name in the same step. |
+| R-NAME-08 | **Showing a principal with no name (1.20).** Wherever a name is shown (R-NAME-05) and the principal has none, its id is shown instead, prefixed `ID: ` (for example `ID: agent-w-1`). A nameless principal may set a name later with `set_name`. Names that are absent never clash with each other or with a name. |
 
 ### 3.4d Routing between principals (R-ROUTE, Q7 decided)
 
 | ID | Requirement |
 | --- | --- |
-| R-ROUTE-01 | Each managed session has **exactly one** managing principal: the principal that started it with `session_start`, or the designated Fishball principal for a user Hand over. `session_release` and Take back clear it. |
+| R-ROUTE-01 | Each managed session has **exactly one** managing principal: the principal that started it with `session_start`, or the agent the user picked for a Hand over (1.20). `session_release` and Take back clear it. |
 | R-ROUTE-02 | A managed session's permission requests, questions and plan reviews become offers **only** in its managing principal's mailbox. No other principal sees or can answer them; an attempt gets `forbidden`. |
 | R-ROUTE-03 | `message_fishball` and `ask_fishball` from a managed session go to its managing principal. From an unmanaged session they go to the **designated Fishball principal**. |
 | R-ROUTE-04 | The designated Fishball principal is a connector setting (`routing.fishballToken`, one of the token entries). Its default is the hosted Fishball's token entry when one exists (R-HOST-05). With no designated principal set or connected, `ask_fishball` answers `unavailable` at once and `message_fishball` queues (R-CON-09). |
-| R-ROUTE-05 | A Hand over from the user makes the **designated Fishball principal** the session's managing principal (Q7, decided) and emits one `handover` event to that principal's mailbox (R-CON-11). Embed-UI's button names it ("Hand over to Fishball-2"). With none designated, the Hand over is refused with `no-fishball` and the session stays unmanaged. Take back clears the managing principal and emits one `takeback` event to it. |
+| R-ROUTE-05 | **Hand over (1.20, decided; replaces Q7's designated target for Hand over).** A Hand over from the user names its target: one of the **enabled, paired** principals listed in embed-UI's Hand over control (R-UI-10), connected or not (Q-HO-1 decided C). It makes **that** principal the session's managing principal and emits one `handover` event to its mailbox (R-CON-11); for a disconnected principal the event waits there until it connects, under R-CON-03 and R-TOK-05. Refusals, checked when the request arrives: a target that is **disabled or deleted** by then → `no-fishball`, and the control refreshes; a session that is **already managed** → `conflict`, and its manager is unchanged; no enabled, paired principal at all → no control, and a service call gets `no-fishball`. Take back clears the managing principal and emits one `takeback` event to it. |
 | R-ROUTE-06 | When a managing principal is revoked or deleted, its managed sessions become unmanaged, each with one `system` note, and their live offers go to the user in their sessions (R-TOK-05). Changing the designated principal does not move already-managed sessions. |
 
 ### 3.4e The `fishball-events` stream (R-EVS; Q30 decided)
@@ -574,7 +708,7 @@ replaces or weakens the token check (R-TOK-00).
 
 | ID | Requirement |
 | --- | --- |
-| R-INT-01 | `fishball-core` holds its pair's single `fishball-events` subscription and provides an **interception service** to plugins in the same Fishball DSH: `intercept({pluginId, types, filter?, priority?}, onEvent) → dispose`, with `priority` defaulting to 0. `types` lists the event types it wants; `filter` is an optional synchronous predicate over the event (for example "only sessions this plugin supervises"). |
+| R-INT-01 | `fishball-core` holds its pair's single `fishball-events` subscription and provides an **interception service** to plugins in the same Fishball DSH: `intercept({pluginId, types, filter?, priority?}, onEvent) → dispose`, with `priority` defaulting to 0. `types` lists the event types it wants; `filter` is an optional synchronous predicate over the event (for example "only sessions this plugin supervises"). *(Spike V3-S3 found the service also needs `ctl.accept()` and `ctl.commit(send)`; pending Q-S3-2 and S2-Q1.)* |
 | R-INT-02 | For each accepted event, core finds the registrations whose `types` include the event's type and whose `filter` returns true. If there is one, core hands the event to it and starts **no** Fishball LLM turn. If there is none, the event goes to the Fishball agent and may wake its LLM. |
 | R-INT-03 | **Conflicts.** When more than one registration matches, exactly one gets the event: the highest `priority`; with equal priority, the earliest registration. The others don't see it. A plugin that registers with the same `types` and `priority` as an existing registration is accepted, but core logs one warning naming both plugins. |
 | R-INT-04 | **Failure falls back to Fishball.** If the chosen interceptor's handler throws or rejects, or its plugin is off, down or not ready, or its registration is disposed while the event is in flight, the event goes to the Fishball agent, which is woken. An event is never lost and never handled twice. A filter that throws counts as "no match" for that registration. |
@@ -589,7 +723,7 @@ replaces or weakens the token check (R-TOK-00).
 | --- | --- |
 | R-EVT-01 | Each event of R-EVS-02 is produced once, as one mailbox entry for its one recipient pair (R-EVS-03). |
 | R-EVT-02 | An event carries a stable `eventId`, its `type` (R-EVS-02), its source session id, its correlation id (offer id for offers) and a bounded payload. A replayed event has **the same identity**. |
-| R-EVT-03 | A Fishball DSH is woken by events: an event that `fishball-core` delivers to the Fishball agent (no interceptor, R-INT-02) while it is idle starts **exactly one** Fishball turn for it after durable acceptance, also across a lost ack and a restart of the Fishball DSH. Events an interceptor accepts (Watchdog included) start **no** Fishball turn (R-INT-02, R-WD-12). The once-only wake is still an open engineering gate from MCP-S2 (design §11). |
+| R-EVT-03 | A Fishball DSH is woken by events: an event that `fishball-core` delivers to the Fishball agent (no interceptor, R-INT-02) starts **exactly one** Fishball turn for it after durable acceptance, also across a lost ack and a restart of the Fishball DSH. If the agent is idle, that turn starts at once; if it is **busy**, the event becomes its **next** turn, never part of the running one (spike V3-S2 `a499141`). Events an interceptor accepts (Watchdog included) start **no** Fishball turn (R-INT-02, R-WD-12). *(Pending from S2: S2-Q1 interceptor `ctl.accept()`, S2-Q2 a child crash after admission, S2-Q3 an event dropped after the user's Stop.)* |
 | R-EVT-04 | An external principal that subscribes gets a notification within the same event dispatch as the commit to its mailbox. One that does not subscribe sees the event on its next poll. |
 
 ### 3.6 The Fishball plugin set (R-FB)
@@ -622,7 +756,7 @@ These hold in **both** hosted and standalone mode.
 | R-HOST-07 | **Model sync.** The hosted-mode provider and model sync from the host DSH into the child stays, started only from embed-UI's Plugins card (the V2 decision of 2026-11-11). Standalone mode has none: a standalone DSH has its own native model settings. |
 | R-HOST-11 | **Hosted-only settings (TQ-R2, decided).** The user's words: "Core放通用设置，寄宿专用的由instance注入" (core holds the generic settings; the hosted-only ones are injected by the instance). `fishball-core`'s settings panel holds only the generic slim settings and offers a generic **settings-section extension point** that knows nothing about hosting. In a hosted child, the instance injects its hosted-only sections into that point as **one placed bundle**, `fishball-hosted-settings` (row id `fishball-hosted-settings`; TQ-R4, decided B). Its code is owned by the instance and ships inside the instance package; core never imports it. Rules: (1) **only the instance places it, only in a hosted child**; a standalone DSH never has it, and a standalone core looks and behaves exactly the same apart from its absence; (2) it is listed on the child's native Plugins page and the owner switches it on and off like a set member; it follows the placement rules of R-BND-02 (on at first placement, a disable survives restarts and upgrades, deleted while off is re-placed off) and R-BND-04 (effect at the next child restart, "restart required"), recorded in the same placement record as the set; (3) switched off, the hosted-only sections are simply absent from the settings panel: no error, no notice, no empty placeholder, and the generic settings work unchanged; the host side (embed-UI's status, Retry, model-sync trigger) is unaffected; (4) enabled but incompatible or failing to load, it **blocks the child's start** like an enabled set member (R-BND-03), with the status naming it; (5) `fishball-core`'s guards never disable it: it creates no sessions and is not on the guard list (R-FB-02, design §5a.2), and its id is not `fishball-instance`; core's `guards-overridden` check ignores it, and it is not reported as a missing or skipped set member (R-BND-05). With `fishball-core` disabled the sections have nowhere to appear and do nothing. The model-sync **trigger** is not among them: it stays on embed-UI's Plugins card in the host (R-HOST-07). |
 | R-HOST-08 | The "watchdog is down" notice of a child that cannot start is kept by the instance and delivered to Fishball once the child next starts. |
-| R-HOST-09 | **Reinstall succession (Q24, decided).** When the child loses its identity (child home removed or reinstalled), the instance creates a new hosted token and the new child pairs with a new id. As soon as that pairing succeeds, the instance asks the connector to make the new principal the **successor** of the previous hosted entry it created (only an entry the instance itself created, never a user-made one). In one atomic step the connector: moves every session the old principal managed to the new one; moves the designated-Fishball role if the old one held it; gives the new principal the old one's name; re-issues the old principal's live offers into the new principal's mailbox with **new offer ids**, so an answer to an old id fails `expired`; moves its pending events, keeping their `eventId`s; then deletes the old entry (and its generated credential value). Each moved session gets exactly **one** `system` note naming the new principal. If the step fails, nothing moves, the old entry stays, and the instance retries at its next start. |
+| R-HOST-09 | **Reinstall succession (Q24, decided).** When the child loses its identity (child home removed or reinstalled), the instance creates a new hosted token and the new child pairs with a new id. As soon as that pairing succeeds, the instance asks the connector to make the new principal the **successor** of the previous hosted entry it created (only an entry the instance itself created, never a user-made one). In one atomic step the connector: moves every session the old principal managed to the new one; moves the designated-Fishball role if the old one held it; gives the new principal the old one's name; re-issues the old principal's live offers into the new principal's mailbox with **new offer ids**, so an answer to an old id fails `expired`; moves its pending events, keeping their `eventId`s; then deletes the old entry (and its generated credential value). Each moved session gets exactly **one** `system` note naming the new principal. If the step fails, nothing moves, the old entry stays, and the instance retries at its next start. The **user's** own answer to such an offer's card is never refused `expired` because of a succession (spike V3-S3); only an agent answering the old id is. *(Offer-id revision scheme: Q-S3-1, pending.)* |
 | R-HOST-10 | **User revocation.** When the user disables a hosted entry, the instance never creates a replacement on its own: the child reports `token-revoked`, and re-enabling restores it. When the user **deletes** the hosted entry, its sessions become unmanaged (R-ROUTE-06), and the instance creates a new hosted token only after the user presses Retry in embed-UI. Succession (R-HOST-09) applies only to a reinstall, never to a user's delete. |
 
 ### 3.8 Embed-UI (R-UI)
@@ -633,20 +767,22 @@ These hold in **both** hosted and standalone mode.
 | R-UI-02 | With the instance present, embed-UI shows the Fishball sidebar entry. Opening it frames the child's native page at the child's own origin, through a single-use admission ticket. No credential is placed in the frame URL. |
 | R-UI-03 | Embed-UI shows the child status and Retry outside the cross-origin frame. It never shows a token. |
 | R-UI-04 | With a connector in the same DSH, embed-UI contributes its notification tools through the connector's contribution service (R-EXT-13) under its own namespace. It owns the attention latch (fish and dots). It registers no MCP server or HTTP endpoint of its own. |
-| R-UI-05 | **Marks and Hand over (Q3, decided).** With a connector in the same DSH, embed-UI draws managed-session marks (each showing its managing principal's **name**) and the Hand over / Take back buttons. Clicking one makes embed-UI call the connector's host-only hand-over service in-process; the connector then emits the event to the target principal (R-CON-11, R-ROUTE-05). Embed-UI learns marks and names from the same service and refreshes when it reports a change. This works with or without an instance (R-UI-08). |
+| R-UI-05 | **Marks and Hand over (Q3, decided).** With a connector in the same DSH, embed-UI draws managed-session marks (each showing its managing principal's **name**) the Hand over control (R-UI-10) and the Take back button. Clicking one makes embed-UI call the connector's host-only hand-over service in-process; the connector then emits the event to the target principal (R-CON-11, R-ROUTE-05). Embed-UI learns marks and names from the same service and refreshes when it reports a change. This works with or without an instance (R-UI-08). |
 | R-UI-06 | Embed-UI stores no secret. Its settings, if any, use DSH's native form. |
 | R-UI-07 | Embed-UI never frames a standalone Fishball. A standalone Fishball's own DSH web is its Fishball page. |
-| R-UI-08 | **Connector without instance (Q18, decided).** In a DSH with a connector but no hosted instance, embed-UI shows the managed marks with principal names, the Hand over / Take back buttons (naming the designated Fishball), and the sidebar fish with its attention dots, and it contributes its attention tools (R-EXT-13). It shows **no** Fishball page and no frame, and its fish has no page to open. With neither a connector nor an instance in the DSH, embed-UI registers nothing and does nothing. |
+| R-UI-08 | **Connector without instance (Q18, decided).** In a DSH with a connector but no hosted instance, embed-UI shows the managed marks with principal names, the Hand over control (naming its target agents, R-UI-10) and Take back, and the sidebar fish with its attention dots, and it contributes its attention tools (R-EXT-13). It shows **no** Fishball page and no frame, and its fish has no page to open. With neither a connector nor an instance in the DSH, embed-UI registers nothing and does nothing. |
 | R-UI-09 | **Instance with a remote target, no connector here (Q4, decided).** Embed-UI shows the Fishball page, status and Retry as usual. It shows **no** attention dots, managed marks or Hand over / Take back in this DSH, and contributes no tools here. Fishball's attention signal lights no fish in **this** DSH. Fold-notify's call goes to the remote connector: it lights the remote DSH's fish if that DSH runs embed-UI, else it gets `unsupported-operation` (D3). There is **no** private relay over the instance's lifecycle wire; every Fishball ↔ DSH path stays MCP. Hand over for the remote DSH's sessions happens in the remote DSH (R-UI-08). |
+| R-UI-10 | **The Hand over control (1.20, decided).** On an unmanaged session, embed-UI lists every **enabled, paired** principal, online or not (Q-HO-1 decided C). With none it shows no control; with **exactly one**, one button "Hand over to <name>", or "Hand over to ID: <fishball id>" when that principal has no name; with **more than one**, a dropdown "Handover to…" whose rows are those principals, each by name or as "ID: <fishball id>" (R-NAME-08), in a stable order (K). **Status light:** every dropdown row, and the single button, carries an icon that is **green** when the principal is online (an open `fishball-events` listen stream now) and **red** when it is not, with a text alternative ("online" / "offline") for accessibility. Lights, names and the list refresh **live** when the connector reports a change of connection, name, entry state or managed state (R-UI-05), with no page reload. Choosing a row, or pressing the single button, hands the session to that principal (R-ROUTE-05). The fixed label "Hand over to Fishball" no longer exists. All label text comes from embed-UI's locale files. A managed session shows Take back instead. |
 
 ### 3.9 Remote DSH (R-REM)
 
 | ID | Requirement |
 | --- | --- |
-| R-REM-01 | **Listener (Q9, decided).** The MCP endpoint (`/api/fishball/mcp`), the OAuth metadata and the token endpoint are routes on **DSH's own web listener**. There is no separate port, listener or TLS setting. Their reach follows the user's existing DSH web configuration, so they are loopback-only unless the user has exposed DSH's web listener. |
+| R-REM-01 | **Listener (Q9, decided).** The MCP endpoint (`/api/fishball/mcp`), the OAuth metadata and the token endpoint are routes on **DSH's own web listener**. There is no separate port, listener or TLS setting for them. The one exception is the browser-authorization approval listener (R-OA-20, 1.16). Their reach follows the user's existing DSH web configuration, so they are loopback-only unless the user has exposed DSH's web listener. |
 | R-REM-02 | A non-loopback endpoint is served over TLS. Plain HTTP on a non-loopback address is refused at load, with a diagnostic. A user-run tunnel to a loopback endpoint is the supported alternative. |
-| R-REM-03 | The endpoint validates `Origin` on every request. A present Origin outside the allowlist gets **HTTP 403** (MCP Streamable HTTP security requirement). |
+| R-REM-03 | The connector itself validates **`Host`** and **`Origin`** on every request to its routes and its approval listener, because DSH's own `/api` protection does not cover these routes (spike V3-S1 (a)). Allowed hosts: the loopback names, the listener's bind address and the hosts in DSH's `--trusted-host` list (S1 (b)); any other `Host` is refused before authentication. A present `Origin` outside the allowlist gets **HTTP 403** [spec: Streamable HTTP security requirement]. |
 | R-REM-04 | Losing the remote connection never stops managed sessions on the remote DSH. Delegated items for an unreachable principal wait, per R-CON-05. |
+| R-REM-05 | **Public exposure through the user's tunnel (Q-OA-5 decided: "至于公网暴露的问题，交给用户自己去搭Tunnel").** The connector builds no tunnel, relay or public-exposure feature. It must work correctly **behind** a tunnel the user runs that forwards to the loopback listeners: (1) `Host` and `Origin` are checked against DSH's `--trusted-host` list (R-REM-03); (2) the issuer, the canonical MCP URI and the `authorization_endpoint` follow the checked `Host` (R-OA-01); (3) the scheme in them is `http` for a loopback `Host` and `https` for any other allowed `Host`, because a non-loopback name can only be reached through TLS (R-REM-02, the user's tunnel terminating it) [rule: R-REM-02 + spec Security Considerations § Communication Security]; no forwarded-scheme header is trusted. The README documents the set-up: both the DSH listener and the approval listener need forwarding, and clients that run on someone else's servers (for example Claude's hosted connectors, which call from Anthropic's servers) can only reach a connector through such a tunnel. |
 
 ### 3.10 Watchdog (R-WD)
 
@@ -696,7 +832,7 @@ These hold in **both** hosted and standalone mode.
 
 | ID | Requirement |
 | --- | --- |
-| R-COMPAT-01 | All V3 packages, including every member of the Fishball plugin set, work on DSH **0.2.1-rc.5** and **0.2.2-rc.1**, verified separately on each and in both modes, with no version-specific behaviour visible to the user. |
+| R-COMPAT-01 | All V3 packages, including every member of the Fishball plugin set, work on DSH **0.2.1-rc.5** and **0.2.2-rc.1**, verified separately on each and in both modes, with no version-specific behaviour visible to the user. **Baseline (Q-S3-3, decided by Fishball under the user's standing rule "盯着DSH最新的0.2.2版本"):** 0.2.2-rc.1 is the 0.2.2 baseline (npm's `latest`); the spike probes are re-run when 0.2.2 final ships. |
 | R-SEC-01 | In a main DSH, the connector is the only Fishball component with **Fishball authority** over its sessions. The instance and embed-UI hold none (R-ARCH-05). Other plugins keep their own ordinary DSH authority and gain none from Fishball (Q1, Q14). |
 | R-SEC-02 | No component logs a token, a credential value, an admission ticket or the `Authorization` header. A test that greps every log, lifecycle file, child home and temp directory after a full run finds none. |
 | R-SEC-03 | The MCP endpoint applies body, frame, backlog and in-flight limits below the transport codec. Limit refusals are structured. |
@@ -719,12 +855,12 @@ standalone). The default instance target is a connector in the same DSH (R-HOST-
 | 7 | **I + U**, remote target | The Fishball page here (frame, status, Retry). Fishball manages the remote DSH. | No local dots, marks or Hand over (no local connector), and no relay (R-UI-09). |
 | 7b | **I + U**, target blank | The Fishball page works. Fishball reports `target-unreachable`. | No sessions to manage. |
 | 8 | **C + I + U** | Everything: page, dots, marks and Hand over (Q3), approvals, Watchdog, board, fold-notify, embed-UI's contributed tools. | — |
-| 8r | row 8 plus external agents with their own tokens | The same, with several principals: each managed session has one managing principal; unmanaged-session calls and Hand over go to the designated Fishball (R-ROUTE). | — |
+| 8r | row 8 plus external agents with their own tokens | The same, with several principals: each managed session has one managing principal; unmanaged-session calls go to the designated Fishball; Hand over goes to the agent the user picks (R-ROUTE-05, R-UI-10). | — |
 | 9 | **F** (standalone), target = a connector elsewhere | This DSH **is** Fishball: its own web UI is the Fishball page, with the same guards as a hosted child (overridable and reported, R-FB-09). Fishball manages the target DSH's sessions over MCP (manual token, R-FB-03). Watchdog, board and fold-notify work if installed. | No dots in this DSH. Hand over to it from the target DSH needs embed-UI there (row 6 or 8). |
 | 9b | **F**, target blank | Fishball runs, `target-unset`. | No sessions to manage. |
 | 10 | **F + U** or **F + I** | The standalone Fishball as in row 9. U without I is inert; I inside a Fishball DSH would try to launch a nested child, which the guards forbid (core's `fishball-ui` component disables the `fishball-instance` row in a Fishball DSH, design §5a.2). | No nested Fishball. |
 | 11 | **F + C** in one DSH | Not a supported combination: the Fishball guards forbid new sessions, so the connector has nothing useful to expose. No checks are promised. | — |
-| 12 | a main DSH with C, used by a hosted Fishball (row 5/8) **and** a standalone Fishball (row 9) | Two Fishball principals, shown as "Fishball" and "Fishball-2" unless renamed; names are unique, so a clashing rename is refused (R-NAME-02). Routing follows R-ROUTE: each manages the sessions it started; one is the designated Fishball for unmanaged sessions and Hand over (R-ROUTE). | — |
+| 12 | a main DSH with C, used by a hosted Fishball (row 5/8) **and** a standalone Fishball (row 9) | Two Fishball principals. Both default locally to "Fishball": the first to pair holds it, the second pairs nameless (shown as `ID: <id>`) and its Fishball page asks for another name (R-NAME-03/06); a clashing rename is refused (R-NAME-02). Routing follows R-ROUTE: each manages the sessions it started; one is the designated Fishball for unmanaged sessions; the Hand over dropdown lists both (R-UI-10). | — |
 | 13 | **F** installed partly (feature plugins without core) | Nothing; each logs `fishball-core-missing` (R-FB-06). | — |
 | 13b | `fishball-core` alone (no feature plugins) | A full Fishball DSH: manager, page and guards, MCP link. Board, fold-notify and Watchdog are simply absent. | — |
 | 14 | any Fishball DSH (hosted or standalone) whose owner overrode a guard | Fishball keeps running with status `guards-overridden`, naming the guard (R-FB-09). | The overridden guard's protection. |
@@ -738,17 +874,17 @@ Watchdog, the board and fold-notify exist only in a Fishball DSH.
 | --- | --- | --- |
 | unknown, disabled, revoked | any | `invalid_client` (401); nothing about pairs revealed |
 | valid | invalid | `invalid_client` |
-| valid, unbound | valid | pair-only access token, `fishball_pairing: unpaired` |
-| valid, bound to X | X | full access token, `fishball_pairing: paired` (normal use, reconnect, "skip pairing") |
-| valid, bound to X | Y ≠ X | pair-only access token, `fishball_pairing: id-mismatch` |
+| valid, unbound | valid | pair-only access token, `scope: fishball:pair` |
+| valid, bound to X | X | full access token, `scope: fishball` (normal use, reconnect, "skip pairing") |
+| valid, bound to X | Y ≠ X | pair-only access token, `scope: fishball:pair` (`pair` then answers `already-paired`, `idMatches: false`) |
 
 | At the MCP endpoint: access token | Call | Result |
 | --- | --- | --- |
 | missing, expired, revoked, foreign audience | any | HTTP 401 with `WWW-Authenticate` |
 | pair-only, unbound | `pair` | **pairs**; the same access token is now full |
-| pair-only, unbound | other tool, subscription | `not-paired` |
+| pair-only, unbound | other tool, subscription | HTTP 403 `insufficient_scope` (`error_description`: `not-paired`) |
 | pair-only, bound to another id | `pair` | `already-paired`, `idMatches: false` |
-| pair-only, bound to another id | other tool, subscription | `id-mismatch` |
+| pair-only, bound to another id | other tool, subscription | HTTP 403 `insufficient_scope` (`error_description`: `id-mismatch`) |
 | full (bound, same id) | `pair` | `already-paired`, `idMatches: true` |
 | full | any other call | proceeds |
 
@@ -779,9 +915,10 @@ Contributed tools disappear when their contributor goes (R-EXT-04). They never o
 ## 5. Out of scope for V3
 
 - Reverse MCP (the connector calling an agent's MCP server), callback URLs, agent-hosted servers.
-- Interactive OAuth flows (authorization code, consent pages), dynamic client registration,
-  Client ID Metadata Documents and external authorization servers. V3's connector is its own
-  client-credentials-only authorization server (R-OA).
+- External authorization servers, and OAuth grants other than `client_credentials` and
+  `authorization_code` with PKCE (§1.16; the browser approval page and the registration
+  methods of R-OA-13 are in scope).
+- Building, managing or bundling a tunnel or any other public-exposure feature (R-REM-05).
 - MCP sampling, elicitation, roots, logging, and the Tasks and Apps extensions as control or
   answer paths.
 - A custom settings UI for tokens or the connector; a UI that reveals a token value; a pairing UI in the connector or host DSH (the
@@ -835,7 +972,7 @@ Contributed tools disappear when their contributor goes (R-EXT-04). They never o
 Fishball asks these one at a time. Each gives the background, the options, the recommendation
 and its reason. Numbers are stable across revisions; decided questions stay here as a record.
 
-**Remaining:** none. All questions are decided. Test-planning questions found later are recorded in `docs/test-design/v3/questions.md`; decided ones are folded into this file (TQ-1: R-ID-02, R-OA-10, R-ID-10; TQ-2: R-TOK-05; TQ-3: R-OA-05; TQ-4: R-TOK-08; TQ-5: R-OA-05, R-TOK-05).
+**Remaining (§1.16–§1.20):** S2-Q1 to S2-Q3 (the others are settled; list at the end of this section). All earlier questions are decided. Test-planning questions found later are recorded in `docs/test-design/v3/questions.md`; decided ones are folded into this file (TQ-1: R-ID-02, R-OA-10, R-ID-10; TQ-2: R-TOK-05; TQ-3: R-OA-05; TQ-4: R-TOK-08; TQ-5: R-OA-05, R-TOK-05).
 
 **Q1. What may run in the main DSH? — DECIDED 2026-11-11.**
 The user's answer is quoted in 1.3. The main DSH is a full DSH and may install any plugin; the
@@ -954,12 +1091,12 @@ as a non-waking note. Q25's "escalations go back to Fishball" applies only to it
 high-risk and that Watchdog can't decide, and to everything while Watchdog is down. Now R-WD-09,
 R-WD-12. Option B (to Fishball first) is closed.
 
-**Q27. Access-token lifetime, refresh tokens and rotation — DECIDED 2026-11-11: A.**
+**Q27. Access-token lifetime, refresh tokens and rotation — DECIDED 2026-11-11: A; narrowed to machine exchange by Q-OA-2 (A).**
 Access tokens last 1 hour; there are no refresh tokens. On expiry or a 401 the client logs in
 again with id + token. Now R-OA-07. Options B (15-minute tokens with rotating refresh tokens)
 and C (another lifetime) are closed.
 
-**Q28. Clients that cannot do OAuth at all — DECIDED 2026-11-11: A.**
+**Q28. Clients that cannot do OAuth at all — DECIDED 2026-11-11: A; superseded by 1.16 (no direct access).**
 The user's answer: "行，就A，我也想不到更好的主意了". OAuth is required by default; each token entry
 has a direct-access fallback switch, off by default, and with it on `Bearer <id>.<token>` is
 accepted and checked on every request. Now R-OA-10. Options B (no fallback) and C (always
@@ -971,7 +1108,7 @@ designated role and name move to it, its live offers are re-issued with new ids,
 entry is deleted and each managed session gets one note. Now R-HOST-09. Options B (keep the
 old entry) and C (ask first) are closed.
 
-**Q22. How are default names numbered? — DECIDED 2026-11-11: A.**
+**Q22. How are default names numbered? — DECIDED 2026-11-11: A; superseded by Q-NAME-1 = B (no default names).**
 Per connector, in pairing order, taking the lowest free name ("Fishball", "Fishball-2", …);
 freed numbers are reused. Now R-NAME-04. Options B (token-creation order) and C (counter
 without reuse) are closed.
@@ -1023,3 +1160,27 @@ No. The user's words are quoted in 1.15: Watchdog is assigned passively, so Fish
 it. `check_now` and refine-triggered checks are removed; refine survives only as a brief update
 that applies at the next patrol or permission judgement. Now R-WD-03, R-WD-15. Option A is
 closed.
+
+**Q-OA and Q-SPEC questions (from 1.16 and 1.17).** Recorded in full in the replies to Fishball of
+2026-11-11 and folded in here once answered:
+- Q-OA-1: where the approval page is served — **DECIDED: its own port** (1.16, R-OA-20);
+- Q-OA-2: refresh tokens for browser clients — **DECIDED A:** rotating refresh tokens, reuse revokes
+  the chain, revoked with the entry; machine exchange keeps none (R-OA-16);
+- Q-OA-3: the fishball id of a browser client — **DECIDED (1.19):** typed on the page, unique,
+  checked with the token;
+- Q-OA-4: registration — **SETTLED [spec]:** Client ID Metadata Documents only (R-OA-13);
+- Q-OA-5: how the approval page knows who approves — **DECIDED: it only asks for a token; entering an unpaired token pairs it** (1.16, R-OA-11/12);
+- Q-OA-6: which endpoints move — **SETTLED [1.16 + spec]:** only the page and its form (R-OA-01);
+- Q-OA-7: the approval listener's port — **DECIDED A:** configurable, fixed default (V3-K), always
+  open; a clash reports `approval-port-in-use` and keeps `authorization_endpoint` in the metadata;
+- Q-S7-2: issuer and resource origin — **SETTLED [spec + S1]:** they follow the checked host (R-OA-01);
+- Q-S7-3: `fishball_pairing` — **SETTLED [spec]:** removed; standard `scope` (R-OA-04, R-OA-18);
+- Q-SPEC-1: plain HTTP on loopback — **DECIDED A:** kept as the one documented departure from the
+  specification; non-loopback is HTTPS or the user's tunnel (R-OA-08);
+- Q-SPEC-2: how a pair-only token is refused — **DECIDED per spec:** HTTP 403 `insufficient_scope`;
+- Q-SPEC-3: `isError` on tool refusals — **DECIDED per spec:** `isError: true`;
+- Q-ID-1: unique ids — **DECIDED A:** `pair` refuses a held id with `id-taken`, as the page does;
+- Q-HO-1: which agents Hand over lists — **DECIDED C:** every enabled, paired agent, with a green
+  (online) or red (offline) light; refusals `no-fishball` (disabled or deleted) and `conflict`
+  (managed);
+- Q-NAME-1: default names — **DECIDED B:** none for anyone; nameless shows `ID: <id>`;

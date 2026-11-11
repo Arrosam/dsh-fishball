@@ -1,6 +1,6 @@
 # Fishball V3: test cases (requirements-only)
 
-Status: **draft, 2026-11-11.** Written from [v3-requirements.md](<../../planning/v3-requirements.md>)
+Status: **draft, 2026-11-11; spikes S1, S2 (partial), S3, S4, S5, S7 folded in.** Written from [v3-requirements.md](<../../planning/v3-requirements.md>)
 and [v3-design.md](<../../planning/v3-design.md>) at `e1e5577` (final design; first drafted at
 `ddd34c3`, then fast-forwarded and re-read for the Q33 change) only. No implementation code was
 read. The requirements are the authority. The design is used only where a requirement defers to it
@@ -37,14 +37,14 @@ The parallel-development task table that consumes these cases is
 
 ## Counts
 
-153 cases. A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
+163 active cases (plus 3 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
 cases, not rows.
 
 | Area | UC | EP | BVA | DT | ST | Total |
 | --- | --- | --- | --- | --- | --- | --- |
-| AUTH (OAuth, tokens, pairing) | 9 | 7 | 6 | 6 | 3 | 31 |
-| NAME | 3 | 3 | 3 | 3 | 1 | 13 |
-| HAND (Hand over / Take back) | 4 | 1 | 0 | 2 | 1 | 8 |
+| AUTH (OAuth, tokens, pairing) | 10 | 10 | 6 | 8 | 5 | 39 |
+| NAME | 3 | 4 | 2 | 3 | 1 | 13 |
+| HAND (Hand over / Take back) | 4 | 2 | 0 | 2 | 2 | 10 |
 | EVT (events, interception) | 3 | 4 | 2 | 3 | 2 | 14 |
 | WD (Watchdog) | 7 | 4 | 3 | 2 | 3 | 19 |
 | WATCH | 3 | 1 | 0 | 0 | 1 | 5 |
@@ -53,9 +53,9 @@ cases, not rows.
 | REM (standalone, remote) | 3 | 3 | 0 | 1 | 0 | 7 |
 | UIM (embed-UI, install matrix) | 3 | 1 | 0 | 1 | 0 | 5 |
 | PLAT (rest) | 6 | 7 | 2 | 3 | 1 | 19 |
-| **Total** | **53** | **38** | **20** | **27** | **15** | **153** |
+| **Total** | **54** | **43** | **19** | **29** | **18** | **163** |
 
-Levels (a case may span two): unit 53, integration 103, e2e 20. Provisional on a spike (`P:Sn`): 37.
+Levels (a case may span two): unit 55, integration 111, e2e 24. Provisional on a spike (`P:Sn`): 22.
 
 ## Conventions
 

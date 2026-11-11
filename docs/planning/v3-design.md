@@ -184,11 +184,14 @@ Each tool wraps today's connector domain function (`packages/connector/src/*`) a
 | `pair`, `set_name` | new | §5.8 (R-ID, R-NAME) |
 | ~~`attention_signal`~~ | §4.6 (D3) | **moved**: now `embed-ui.attention.signal`, contributed by embed-UI (§13.6) |
 
-**Result shape.** Every tool returns a *successful* `CallToolResult` whose `structuredContent` is
-`{ok: true, …}` or `{ok: false, code, message}`, with a short text fallback. Reason: stock DSH
-throws on `isError: true` before keeping `structuredContent` (`dsh-mcp-client` conversion,
-[option §6](<../plugins/connector-mcp-option.md#6-security-discovery-and-limits>)), so a refusal
-code would be lost to DSH-hosted agents. JSON-RPC errors are kept for protocol faults only.
+**Result shape (decided per spec, requirements 1.18: Tools § Error Handling, § Structured
+Content).** Every tool returns `structuredContent` `{ok: true, …}` or `{ok: false, code, message}`
+**and** the same JSON serialised in a text content block. A refusal is a tool execution error:
+`isError: true`. Stock DSH throws on `isError: true` before keeping `structuredContent`
+(`dsh-mcp-client` conversion, [option §6](<../plugins/connector-mcp-option.md#6-security-discovery-and-limits>)),
+so the code is also carried in the text block, which DSH-hosted agents still see. `fishball-core`'s
+own link reads `structuredContent` directly. Every output schema admits the refusal envelope (K1).
+JSON-RPC errors are kept for protocol faults only.
 
 ### 3.3 The `fishball-events` stream (R-EVS; Q30 decided)
 
@@ -279,20 +282,30 @@ Cordis service (no UI, no token, same DSH):
 ```js
 fishballConnectorHandover = {
   apiVersion: 1,
-  managed(),                      // [{sessionId, principal: {key, name}}]; names are unique per connector (Q23)
-  principals(),                   // [{key, name, connected, designated}] for the button's target name
+  managed(),                      // [{sessionId, principal: {key, name, id}}]; names unique per connector (Q23), may be null (1.20)
+  principals(),                   // [{key, name, id, online, enabled, paired, designated}]; the Hand over control lists enabled+paired ones
   onChange(fn) → dispose,         // managed set, names or connection changed
-  handOver(sessionId, note?),     // → {ok, principal} | {ok: false, code: 'no-fishball'|'unknown-session'|…}
+  handOver(sessionId, principalKey, note?), // → {ok, principal} | {ok: false, code: 'no-fishball'|'conflict'|'unknown-session'|…}
   takeBack(sessionId, note?),     // → {ok} | {ok: false, code}
 }
 ```
 
-- `handOver` makes the designated Fishball principal the managing principal and commits one
-  `handover` event (with the user's note) to its mailbox; `takeBack` clears it and commits one
-  `takeback` event. Both are the V2 domain operations with the same refusal codes.
-- `principal.key` is an opaque connector-side key, never a token or id. The service exposes no
+- `handOver` makes the **chosen** principal (requirements 1.20, R-ROUTE-05) the managing
+  principal and commits one `handover` event (with the user's note) to its mailbox; `takeBack`
+  clears it and commits one `takeback` event. Both are the V2 domain operations with the same
+  refusal codes. The target may be offline: its `handover` waits in its mailbox. A target
+  disabled or deleted by the time the call lands gets `no-fishball`; an already-managed session
+  gets `conflict` (Q-HO-1 decided C).
+- `online` is true while the principal holds an open `fishball-events` listen stream. `onChange`
+  fires on every change of it, so embed-UI's lights stay live. K1 freezes this as the one
+  "connected" definition (§3.5), recommended for `ask_fishball`'s `unavailable` check too.
+- `principal.key` is an opaque connector-side key, never a token. `principal.id` is the
+  non-secret fishball id, given only so a nameless principal can be shown as `ID: <id>`. The service exposes no
   session read, approval or answer power, and is not reachable over MCP or HTTP.
-- Embed-UI subscribes to `onChange` to redraw marks and button labels ("Hand over to Fishball-2").
+- Embed-UI subscribes to `onChange` to redraw marks and the Hand over control (R-UI-10): no
+  control with no enabled, paired principal; one button "Hand over to <name>" (or "Hand over to
+  ID: <id>") with one; a "Handover to…" dropdown with several. Each row and the single button
+  carry a green (online) or red (offline) light. Labels come from embed-UI's locale files.
 
 
 ## 4. Embed-UI: locating and showing the hosted child
@@ -327,6 +340,12 @@ fishballChild = {
   tickets only when the instance's launch overlay has given it the admission key (hosted mode).
 - The service is host-only, so no browser can call it. Only same-process plugins that inject it
   can.
+- **S4 (`b9809b7`, PASS):** the child redeems the ticket into **its own login cookie** through
+  DSH's public API, so the browser never sees the child's launch token. The cookie is
+  `SameSite=Strict`: opening the host DSH as `localhost` while the child is on `127.0.0.1` (or the
+  reverse) makes the frame answer 401. Pending S4 questions: the child's hostname following the
+  main page's host; dropped surfaces (brand mark, the `ask_fishball` Allow once / Reject row, card
+  records); the package name (npm refuses capitals, so likely `dsh-fishball-embed-ui`).
 
 ### 4.2 Embed-UI
 
@@ -343,8 +362,9 @@ fishballChild = {
   - the frame: `src` comes from `admit`; when `lang` changes it asks for a new admission;
   - status and Retry, outside the frame;
   - the Plugins card with the model-sync trigger;
-  - with `fishballConnectorHandover` present (Q3, decided): managed marks with principal names,
-    and Hand over / Take back buttons that call the service (§3.6);
+  - with `fishballConnectorHandover` present (Q3, decided): managed marks with principal names
+    (or `ID: <id>`), the Hand over control (one button or the "Handover to…" dropdown, R-UI-10)
+    and Take back, which call the service (§3.6);
   - with `fishballConnectorTools` present: its own `attention.*` tools (§13.6). From its own latch
     it draws the green dot and the important animation, and it clears the latch on page open.
 - The connector's hand-over service is specified in §3.6. It has **no attention members**: the
@@ -488,17 +508,24 @@ on localhost and 127.0.0.1. `fishball-core` uses it unchanged.
 
 | Path | Content |
 | --- | --- |
-| `/.well-known/oauth-protected-resource/api/fishball/mcp` | `{resource: <canonical MCP URI>, authorization_servers: [<issuer>], bearer_methods_supported: ["header"]}` |
-| `/.well-known/oauth-authorization-server/api/fishball/oauth` | `{issuer: <origin>/api/fishball/oauth, token_endpoint: …/token, grant_types_supported: ["client_credentials"], token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post"], response_types_supported: []}` |
+| `/.well-known/oauth-protected-resource/api/fishball/mcp` | `{resource: <canonical MCP URI>, authorization_servers: [<issuer>], bearer_methods_supported: ["header"], scopes_supported: ["fishball"]}` |
+| `/.well-known/oauth-authorization-server/api/fishball/oauth` | `{issuer, token_endpoint, authorization_endpoint: <approval origin>/authorize, grant_types_supported: ["client_credentials", "authorization_code"], response_types_supported: ["code"], code_challenge_methods_supported: ["S256"], token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"], client_id_metadata_document_supported: true, authorization_response_iss_parameter_supported: true, scopes_supported: ["fishball", "fishball:pair"]}`; no `registration_endpoint` (§5.5a) |
 | `/api/fishball/oauth/token` | the token endpoint |
+
+**Issuer and canonical URI follow the checked host** (spike V3-S1 Q2 + Q-S7-2, settled by the
+specification: the metadata's `issuer` MUST equal the issuer used to build its well-known URL).
+For a request under an allowed host H (loopback names, the bind address, DSH's `--trusted-host`
+list; R-REM-03), issuer = `<scheme>://H/api/fishball/oauth`, canonical MCP URI =
+`<scheme>://H/api/fishball/mcp`, and the access token's audience is that URI.
 
 The issuer has a path component (`/api/fishball/oauth`), so it sits under DSH's own listener
 without claiming the bare `/.well-known/oauth-authorization-server` that DSH might use itself.
 Clients find it through the protected resource metadata, as the spec requires.
 
 **Token endpoint, in order (nothing past a failure runs):**
-1. method POST, form body, the Origin check and limits (§3.1);
-2. `grant_type=client_credentials`, else `unsupported_grant_type`;
+1. method POST, form body, the Host and Origin checks and limits (§3.1);
+2. `grant_type` is `client_credentials` or `authorization_code` (§5.5a), else
+   `unsupported_grant_type`. Steps 3–4 are for `client_credentials`;
 3. the client secret is compared, in constant time, against the enabled token entries' digests.
    A miss returns `invalid_client` (401, `WWW-Authenticate: Basic`) and reveals nothing about ids
    or pairs;
@@ -508,26 +535,111 @@ Clients find it through the protected resource metadata, as the spec requires.
 6. issue an access token: an opaque value of 256 bits of randomness, stored by SHA-256 digest
    with `{entryKey, fishballId, audience, expiresAt}`, **in memory only** (TQ-5 decided A): a
    connector restart loses every access token, and clients re-authenticate on the 401. Its power is **full** if the entry is bound
-   to this id, else **pair-only** (R-OA-04). Response:
-   `{access_token, token_type: "Bearer", expires_in, scope: "fishball" | "fishball:pair", fishball_pairing}`.
-   `expires_in: 3600`. No refresh token, and the `refresh_token` grant is refused (Q27, decided).
+   to this id, else **pair-only** (R-OA-04). Response, standard fields only (requirements 1.17;
+   S7 found the stock client drops custom ones):
+   `{access_token, token_type: "Bearer", expires_in, scope: "fishball" | "fishball:pair"}`.
+   `expires_in: 3600`. No refresh token for `client_credentials`; a `refresh_token` grant from such a
+   client gets `invalid_grant` (Q27; browser clients: §5.5a).
 
 **MCP endpoint check, per request:**
 - `Authorization: Bearer` is looked up by digest; missing, unknown, expired, of another audience,
   or derived from a disabled, deleted or changed entry → 401 with
-  `WWW-Authenticate: Bearer resource_metadata="<metadata URL>"` (plus `error="invalid_token"`
-  when one was sent).
-- A pair-only token reaches only discovery, `tools/list` and `pair`. Anything else gets the
-  structured refusal `not-paired` or `id-mismatch` (R-ID-06).
-- **Direct-access fallback (Q28, decided):** a token entry with `directAccess` on (default off)
-  also accepts `Bearer <id>.<token>`, split at the first dot (fishball ids contain no dot, R-ID-02, TQ-1 decided; a user-set token may). The token part is verified on every
-  request with the same constant-time comparison, and the result counts as a full or pair-only
-  access token of that (token, id). With the switch off it is just an invalid access token.
+  `WWW-Authenticate: Bearer resource_metadata="<metadata URL>", scope="fishball"` (plus
+  `error="invalid_token"` when one was sent).
+- A pair-only token (`scope: fishball:pair`) reaches only discovery, `tools/list` (which then
+  lists `pair` only) and `pair`. Anything else gets **HTTP 403** `WWW-Authenticate: Bearer
+  error="insufficient_scope", scope="fishball", resource_metadata="…"`, with `error_description`
+  `not-paired` or `id-mismatch` (decided per spec: Authorization § Runtime Insufficient Scope
+  Errors; R-ID-06). A token request asking `scope=fishball` while unpaired is narrowed to
+  `fishball:pair`, not refused (OAuth 2.1 §1.4.1).
+- There is **no direct access** (requirements 1.16, "不允许直接访问"): only access tokens from the
+  token endpoint are accepted. A raw token value or `<id>.<token>` is an invalid access token.
 
-**Why no refresh tokens (Q27, decided):** a client-credentials client re-authenticates with its own
+**Why no refresh tokens for machine exchange (Q27, decided; browser clients get rotating ones, Q-OA-2 A, §5.5a):** a client-credentials client re-authenticates with its own
 id + token, which the stock provider already does. A refresh token would be a second long-lived
 secret with no gain here. Revocation is immediate either way, because every access token points
 back to its entry.
+
+### 5.5a Browser authorization (requirements 1.16, 1.17, R-OA-11…20)
+
+The user's answers: the OAuth page also authenticates ("同时兼顾网页认证和机器换码"), with no direct
+access, and the page on its own port ("授权的网页单开一个，改成单独一个端口暴露，不然会被DSH的token要求卡住").
+External behaviour follows MCP 2026-07-28 (requirements 1.17). Machine exchange (§5.5) is unchanged
+and stays the only path for `fishball-core` (R-OA-19).
+
+**Listeners.**
+
+**Transport (Q-SPEC-1 decided A):** both listeners are plain HTTP on loopback, the one documented
+departure from the specification's HTTPS rule; any non-loopback host is HTTPS, directly or through
+the user's tunnel (R-OA-08, R-REM-05).
+
+| Listener | Serves |
+| --- | --- |
+| DSH's web listener (§3.1) | MCP endpoint, protected-resource metadata, AS metadata, token endpoint |
+| the connector's **approval listener** (R-OA-20) | `GET /authorize` (the approval page) and `POST /authorize/decision` only; any other path 404 |
+
+One issuer (§5.5) names both; the AS metadata's `authorization_endpoint` points at the approval
+listener. **Port (Q-OA-7 decided A):** a native setting with a fixed default (frozen at V3-K),
+always open while the connector runs. On a clash: one diagnostic, status `approval-port-in-use`,
+and the metadata **keeps** `authorization_endpoint` (stock clients reject metadata without it,
+S1/S7), so MCP and machine exchange are unaffected and only the page is unreachable. Host and
+Origin are checked on both (S1 (a)).
+
+**Registration [spec: Client Registration]:** Client ID Metadata Documents only (an `https:`
+`client_id` URL with a path, fetched with SSRF limits, cached by HTTP cache headers, `client_id`
+in the document identical to the URL, `redirect_uris` required). No dynamic client registration:
+it is deprecated in the specification. Machine clients are pre-registered by their token entry.
+
+**Flow (Q-OA-5 decided: the page asks only for a token):**
+1. The client finds the AS through the protected-resource metadata (unchanged), sees
+   `client_id_metadata_document_supported: true`, and uses its metadata-document URL as
+   `client_id`.
+2. It opens the browser at the approval listener's `/authorize` with `response_type=code`,
+   `client_id`, `redirect_uri` (one of the document's; exact, except any port for a loopback
+   redirect, OAuth 2.1 §2.3.1),
+   `code_challenge` (S256), optional `state`, and `resource`.
+3. The page shows the client's `client_name` (unverified), the redirect URI's host, a warning if
+   every redirect is `localhost`, the client-id host, this DSH and its canonical MCP URI, "full
+   manager rights", and "one token, one agent". Its inputs: a **token** (required; the proof, no
+   owner login, ticket or password, R-TOK-00), the agent's **fishball id** (required, typed,
+   unique, 1.19), and an optional **name** (1.20).
+4. The owner (or whoever holds the token) types the value of an entry they created by hand in the
+   connector's settings and presses **Authorize**. The POST body carries it; it is never in a URL.
+5. The connector verifies it in constant time against the enabled entries, under the same
+   per-client failure limit as the token endpoint:
+   - not valid → one uniform message on the page; the request stays pending;
+   - valid but already paired → `already-paired` on the page, "create a new token", with the bound
+     pair's name and last-seen time; nothing changes;
+   - valid and unpaired → the typed id must be valid (`id-invalid`) and held by no other entry
+     (`id-taken`); a non-empty name must pass §5.8 (`name-invalid`, `name-taken`); any refusal is
+     shown on the page and binds nothing;
+   - all pass → in one storage transaction, bind the entry to the typed id (client-id URL and
+     redirect URI recorded), set the typed name or **none** (no default names, Q-NAME-1 B),
+     mint a code (single use, 60 s, bound to client, redirect, challenge, resource and entry), and
+     redirect with `code`, `state` (if sent) and `iss`.
+6. The client checks `iss` and posts `grant_type=authorization_code`, `code`, `redirect_uri`,
+   `code_verifier`, `client_id`, `resource` (public client, `token_endpoint_auth_method: none`) →
+   `scope: "fishball"`, `expires_in: 3600`, in memory, audience-bound, **plus a refresh token**
+   (Q-OA-2 A). Each `refresh_token` grant rotates it; a reused one revokes the whole chain and
+   answers `invalid_grant`; disable, delete or value change of the entry kills every refresh token;
+   refresh tokens live in memory like access tokens (a connector restart means authorizing again;
+   K). Re-entering the bound token on the page stays `already-paired`.
+7. **Cancel** → `error=access_denied`, `iss`, `state`; nothing bound. A pending request expires
+   after 10 min; nothing survives a connector restart.
+
+**The page never creates an entry.** The entry is the one the owner made by hand; the page only
+pairs it. A bound entry is an ordinary entry: listed in native settings with its pair state and
+client-id URL (§5.7), disabled, re-enabled and deleted as in §5.3. Its value stays in the
+credential store and in the owner's hands; the client only ever holds OAuth tokens. A replayed
+code fails `invalid_grant` and revokes the tokens issued from it. The page is sent
+`Cache-Control: no-store`, the token field is masked with autofill off, and nothing echoes the
+value back.
+
+**Public exposure** (R-REM-05): no tunnel feature. Behind the user's tunnel, `Host`/`Origin` are
+checked against `--trusted-host`, and issuer, canonical URI and `authorization_endpoint` follow the
+checked host, with `https` for any non-loopback host. The README explains that hosted clients
+(for example Claude's hosted connectors, which call from Anthropic's servers) need such a tunnel,
+for both listeners.
 
 ### 5.6 Token hygiene: the token is the security boundary (R-TOK-00)
 
@@ -540,39 +652,43 @@ back to its entry.
   address for backoff, and the counter holds no token material.
 - Revocation happens by disabling, deleting or changing the entry, and takes effect on the next
   request for every derived access token.
-- The Origin check, TLS rule, body limits and rate limits apply to the token endpoint and the MCP
-  endpoint alike.
+- The Host and Origin checks, TLS rule, body limits and rate limits apply to the token endpoint,
+  the MCP endpoint and the approval listener alike.
 - "Keep it minimal" applies only to pairing and ids (§5.8), never to this section.
 
 ### 5.7 Where the user manages tokens
 
 All of it is in DSH's native Plugins settings for `fishball-connector`: add, label, enable or
-disable, delete, choose the designated Fishball (`routing.fishballToken`), switch the
-direct-access fallback (`directAccess`, default off), and see each entry's pair state (bound id, name, last seen, connected). Values live
+disable, delete, choose the designated Fishball (`routing.fishballToken`), and see each entry's
+pair state (and, for an entry created by browser approval, its client id URL) (bound id, name, last seen, connected). Values live
 in DSH's credential store. Embed-UI, the instance and every Fishball DSH show only a token's label and
 its configured or unconfigured state, never the value.
 
 ### 5.8 Pairing and names (R-ID, R-NAME)
 
 - **`pair({name?})`**, with a pair-only or full access token:
-  - unbound entry: bind (entry → id) atomically, store `pairedAt`, set the name (given, or the lowest
-    free default per Q22, decided: computed inside the same transaction as the bind, so
-    concurrent pairings get distinct names), and return `{ok: true, paired: true, id, name}`. The same access
+  - unbound entry: bind (entry → id) atomically, store `pairedAt`, set the given name if usable and
+    free, else **none** (Q-NAME-1 B: no default names; the name check is inside the same
+    transaction, so two concurrent pairings never hold one name), and return `{ok: true, paired:
+    true, id, name}` (`name` may be `null`). The same access
     token becomes full at once;
   - bound entry: `{ok: false, code: 'already-paired', bound: {idMatches, boundId, name, pairedAt,
-    lastSeenAt}, advice}`. A concurrent second binder gets the same.
+    lastSeenAt}, advice}`. A concurrent second binder gets the same;
+  - unbound entry, id held by another entry → `{ok: false, code: 'id-taken'}`; nothing binds. The
+    bind runs under a **unique index on the id** (Q-ID-1 decided A), so two concurrent pairings with
+    one id on two tokens bind exactly one.
 - **`set_name({name})`**, full token only. Names are **unique per connector** (Q23, decided):
   - normalise: trim, collapse inner whitespace, NFC;
   - compare by Unicode case folding;
   - another principal holding the name → `{ok: false, code: 'name-taken'}`, and the caller's
     name is unchanged.
   The check and the write are one transaction, under a unique index on the folded name.
-- **`pair` with a clashing or invalid name** still binds, then assigns the lowest free default
-  and returns `nameAssigned: false, nameRefused` (R-NAME-06). Pairing never fails over a name.
-- **Default series** "Fishball", "Fishball-2", … : take the lowest n whose folded name is free.
-  Hand-chosen names such as "fishball-3" are skipped like any taken name.
-- **Successor** (R-HOST-09): delete the old entry, release the new principal's provisional
-  default, and move the old name, all in the one `retire` transaction (R-NAME-07).
+- **`pair` with a clashing or invalid name** still binds, leaves the name empty and returns
+  `name: null, nameAssigned: false, nameRefused` (R-NAME-06). Pairing never fails over a name.
+- **No default names** (Q-NAME-1 B): a nameless principal is shown as `ID: <id>` everywhere
+  (R-NAME-08). `fishball-core`'s local `identity.name` defaults to "Fishball".
+- **Successor** (R-HOST-09): delete the old entry and move its name (or its lack of one) to the
+  new principal, in the one `retire` transaction (R-NAME-07).
 - `lastSeenAt` is updated at most once a minute per pair, to bound writes.
 - **`fishball-core`'s flow:**
   1. it reads `identity.id`, `identity.name` and its token;
@@ -735,7 +851,8 @@ fishballInstance.events.intercept(
 listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fishball DSH storage)
    ─► dispatch (no LLM):
         candidates = registrations with e.type ∈ types AND filter(e) == true   (a throwing filter = false)
-        none            → Fishball agent: X9 pipeline (fold batcher) ─► Agent.followup wake
+        none            → Fishball agent: X9 pipeline (fold batcher) ─► core's delivery list
+                          ─► Agent.followup inside runMaintenance, only when the agent is fully idle
         one or more     → the highest priority; ties → the earliest registration (R-INT-03)
           handler accepts           → done, no Fishball turn
           handler throws/rejects,
@@ -762,10 +879,17 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
   event (`interceptor:<pluginId>` or `fishball`). A fallback re-dispatches only an event whose
   interceptor never recorded acceptance, so an event is neither lost nor handled twice.
 - Acceptance is durable before the ack, and the ack follows acceptance. A replay with a known
-  `eventId` is dropped. This is MCP-S2's reconciliation design. **Open gate:** MCP-S2 showed real
-  windows (restored-pending-without-wake, claimed-before-processing) that are not yet closed.
-  Implementation waits on that spike's continuation (**V3-S2**, §11). Nothing in this design
-  claims exactly-once model execution.
+  `eventId` is dropped. This is MCP-S2's reconciliation design.
+- **Delivery to the agent (spike V3-S2 `a499141`, PARTIAL).** Core never calls `Agent.followup` while the agent is busy:
+  calling it during a turn and then stopping cleanly loses the event (the one case the literal
+  earlier design failed). Instead core keeps each event it accepted for the Fishball agent in its
+  **own durable delivery list**, and hands the head of the list to `Agent.followup` from inside
+  `runMaintenance`, only when the agent is **fully idle** (no turn running, nothing queued). A busy
+  Fishball therefore receives the event as its **next** turn, never inside the running one. An
+  entry leaves the list only once the followup is admitted. Open points from S2 (S2-Q1 interceptor
+  `ctl.accept()`, S2-Q2 no re-wake after admission and a child crash, S2-Q3 an event dropped after
+  the user's Stop) are pending with the user. Nothing in this design claims exactly-once model
+  execution.
 - When Watchdog fails (X14 `fail()`), its filter turns false at once and it disposes its
   registration. In-flight events it has not accepted fall back to Fishball (R-WD-07, R-INT-04).
 - **External agents** have none of this. Their subscription receives the typed events
@@ -985,12 +1109,13 @@ this case.
 | ID | Question | Gate |
 | --- | --- | --- |
 | V3-S1 | Can a packaged MCP server SDK (2.x), configured **modern-only (2026-07-28)**, serve on a raw `webServer` route, with bearer checking before dispatch, Origin/header validation, OAuth resource metadata and listen streams, on both hosts? | Both stock-host clients (2.2.0, `pin: '2026-07-28'`) discover, list, call, subscribe and get hints; a 2025-era `initialize` gets the version refusal; GET/DELETE get 405; a 401 path never reaches the SDK |
-| V3-S2 | MCP-S2 continuation: a durable child acceptance ledger plus `Agent.followup` gives one routed entry and one user-visible wake after a lost ack, a child crash and reconnect | the open TODO from MCP-S2 §11.5 closes; no duplicate wake |
-| V3-S3 | Interception and pairing (Watchdog intercepts only supervised `permission` and its own `settlement`/`retirement`; every `turn-finished`/`state` reaches Fishball; a refine starts no run): core's interception service hands events to the right interceptor (priority, ties, filters) without an LLM turn, and falls back to Fishball on throw/down/dispose without loss or double handling; `pair` races, `already-paired` results; OQ-14 races between user, Watchdog and Fishball answers on one principal | race matrix; no stale commit; one event wakes one agent |
+| V3-S2 | **Done `a499141` (PARTIAL):** delivery list + `Agent.followup` in `runMaintenance` when fully idle; three questions pending (S2-Q1..Q3). MCP-S2 continuation: a durable child acceptance ledger plus `Agent.followup` gives one routed entry and one user-visible wake after a lost ack, a child crash and reconnect | the open TODO from MCP-S2 §11.5 closes; no duplicate wake |
+| V3-S3 | **Done `b4dca86` (PASS):** one serial pair/name registry; succession as one registry write with idempotent offer re-issue; the user's answer never `expired` by succession; `ctl.accept()` / `ctl.commit(send)` needed (Q-S3-1, Q-S3-2 pending; Q-S3-3 decided: 0.2.2-rc.1 baseline). Interception and pairing (Watchdog intercepts only supervised `permission` and its own `settlement`/`retirement`; every `turn-finished`/`state` reaches Fishball; a refine starts no run): core's interception service hands events to the right interceptor (priority, ties, filters) without an LLM turn, and falls back to Fishball on throw/down/dispose without loss or double handling; `pair` races, `already-paired` results; OQ-14 races between user, Watchdog and Fishball answers on one principal | race matrix; no stale commit; one event wakes one agent |
 | V3-S4 | Embed-UI as a separate package: can the moved connector client still register its sidebar/slot contributions (the same injects) and frame the PG-ORIGIN child origin, without the connector client present? | both hosts; main shortcuts untouched |
 | V3-S5 | Contribution service (§13): caller identity from the injecting fiber; auto-withdrawal of tools **and** pending events on contributor disable/unload/HMR; quarantine lifted only by a new fiber; `tools/list_changed` delivery on 2026-07-28 listen streams; event limits and recipient routing; containment of throw/hang/oversize, on both hosts | independent cases across register/dispose/reload/quarantine states |
 | V3-S6 | `fishball-core` as a plain bundle carrying its `fishball-ui` component: one bundle that inserts its own rows, disables other bundles' rows and sets the read-only preset in an ordinary DSH on both SDKs; one `dsh.client` serving the page, tab and settings; the hosted child behaves the same with the instance's launch configuration in place; core can read the effective composition and policy through a public API to report `guards-overridden`, in both modes; the A-lite page works without the instance (standalone) | both modes, both hosts; no host patch |
 | V3-S7 | OAuth: the connector as a client-credentials authorization server on the DSH listener (RFC 9728/8414 metadata, token endpoint, audience binding) works with the stock `ClientCredentialsProvider` of both SDKs and with one non-DSH client-credentials client; immediate revocation; the direct-access fallback on and off | both hosts; no token in any log |
+| V3-S7b | Browser authorization on the connector's **own approval listener** (requirements 1.16): that the stock `@modelcontextprotocol/client` 2.2.0 (both SDKs) and the Python MCP SDK complete `authorization_code` + PKCE S256 with a **Client ID Metadata Document** `client_id`, a loopback redirect, `iss` in the response, and the issuer and `authorization_endpoint` on different origins (one issuer, metadata on DSH's listener, page on the approval port); whether either client requires a refresh token or `offline_access`; that both keep accepting a plain-`http` loopback authorization server (Q-SPEC-1 decided A: the one documented departure); how the the token-only page: entry of a token value in a POST form, uniform refusal, `already-paired` on the page, and the failure limit shared with the token endpoint; issuer and `authorization_endpoint` behind a tunnel host from `--trusted-host`; the second listener's bind and clash behaviour on both SDKs: with the approval port taken, machine exchange still works and stock clients accept metadata that keeps `authorization_endpoint` (Q-OA-7 decided A) | both hosts, both clients reach `scope: fishball` after one approval; deny returns `access_denied`; no token value in any page, URL or log |
 | V3-K | Freeze `./mcp-schema` and `./tools`: tool names and schemas, result envelope, event types (R-EVS-02), error map, OAuth metadata and error mapping, page limit, retention, "connected" definition (§3.5) | reviewed; independent requirements-only case authoring starts after this |
 
 Process stays: requirements → independent case authoring → implementation without reading tests

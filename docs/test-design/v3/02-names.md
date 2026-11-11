@@ -5,19 +5,19 @@ Requirements: R-NAME-01…07, R-ID-10 (ids are not names), R-HOST-09. Convention
 
 ## Use Cases
 
-### NAME-UC-01 — A principal pairs and receives the lowest free default name
-**Req:** R-NAME-04, R-NAME-06, R-ID-03 · **Level:** integration · **Flags:** —
+### NAME-UC-01 — A principal pairs with or without a name
+**Req:** R-NAME-04, R-NAME-06, R-NAME-08, R-ID-03 · **Level:** integration · **Flags:** —
 
 - **Actor:** a pairing client (Fishball DSH or external agent).
-- **Preconditions:** C has principals named "Fishball" and "Fishball-3"; nobody holds "Fishball-2".
-- **Main flow:** the client calls `pair({})` → `{ok: true, paired: true, id, name: "Fishball-2"}`.
+- **Preconditions:** C has principals named "Fishball" and "Ops".
+- **Main flow:** the client calls `pair({name: "Bob"})` (free) → `{ok: true, paired: true, id, name: "Bob", nameAssigned: true}`.
 - **Alternative flows:**
-  - A1. `pair({name: "Bob"})`, free → name "Bob", `nameAssigned: true`.
-  - A2. No principal exists → "Fishball".
+  - A1. `pair({})` → `{ok: true, paired: true, id, name: null}` with no `nameRefused`; the principal is shown as `ID: <id>` everywhere.
+  - A2. A Fishball DSH pairs with its local default `identity.name` "Fishball" while no one holds it → name "Fishball".
 - **Exception flows:**
-  - E1. `pair({name: "fishball"})` (held by another, case-insensitively) → pairing succeeds, name "Fishball-2", `nameAssigned: false`, `nameRefused: "name-taken"`.
-  - E2. `pair({name: "   "})` → pairing succeeds, default name, `nameRefused: "name-invalid"`.
-- **Postconditions:** the token and id are bound whatever the name outcome; the name appears in the token entry status.
+  - E1. `pair({name: "fishball"})` (held by another, case-insensitively) → pairing succeeds, `name: null`, `nameAssigned: false`, `nameRefused: "name-taken"`.
+  - E2. `pair({name: "   "})` → pairing succeeds, `name: null`, `nameRefused: "name-invalid"`.
+- **Postconditions:** the token and id are bound whatever the name outcome; no "Fishball-2" or other default exists anywhere.
 
 ### NAME-UC-02 — The owner renames their Fishball
 **Req:** R-NAME-02, R-NAME-03, R-NAME-05 · **Level:** integration (core + C), e2e (page and marks) · **Flags:** TQ-6
@@ -40,10 +40,10 @@ Requirements: R-NAME-01…07, R-ID-10 (ids are not names), R-HOST-09. Convention
 **Req:** R-NAME-02, R-NAME-01 · **Level:** integration · **Flags:** —
 
 - **Actor:** external agent P(E2, `b`) named "Fishball-2".
-- **Main flow:** `set_name({name: "Indexer"})` → ok; `set_name` with a pair-only AT → `not-paired` / `id-mismatch`.
+- **Main flow:** `set_name({name: "Indexer"})` → ok; `set_name` with a pair-only AT → HTTP 403 `insufficient_scope`.
 - **Alternative flows:** A1. `set_name({name: "Fishball-2"})` (own name) → ok, nothing else changes.
 - **Exception flows:** E1. `set_name({name: "INDEXER"})` while another holds "Indexer" → `name-taken`.
-- **Postconditions:** "Fishball-2" is now free and is the next default (NAME-BVA-02).
+- **Postconditions:** "Fishball-2" is now free for anyone to choose; nobody is renamed to it.
 
 ## Equivalence Partitioning
 
@@ -87,9 +87,24 @@ Existing principal A holds the name in column 2; B calls `set_name` with column 
 | # | Caller | Expected |
 | --- | --- | --- |
 | 1 | full AT | processed |
-| 2 | pair-only, unbound | `not-paired` |
-| 3 | pair-only, bound to another id | `id-mismatch` |
+| 2 | pair-only, unbound | HTTP 403 `insufficient_scope` (`not-paired`) |
+| 3 | pair-only, bound to another id | HTTP 403 `insufficient_scope` (`id-mismatch`) |
+| 5 | a nameless browser principal | `set_name` works; `ID: <id>` is replaced by the name everywhere |
 | 4 | no / invalid AT | 401 |
+
+### NAME-EP-04 — Principals without a name
+**Req:** R-NAME-04, R-NAME-08, R-NAME-05, R-UI-10 · **Level:** integration (connector), e2e (embed-UI) · **Flags:** —
+
+| # | Where the principal is shown | Expected for a nameless principal with id `agent-x` |
+| --- | --- | --- |
+| 1 | managed-session mark | `ID: agent-x` |
+| 2 | Hand over button / dropdown row | "Hand over to ID: agent-x" / `ID: agent-x` |
+| 3 | token entry status in native settings | `ID: agent-x` (and the bound id column) |
+| 4 | designated-Fishball setting | `ID: agent-x` |
+| 5 | connector notes in sessions ("managed by …") | "managed by ID: agent-x" |
+| 6 | `call.principal.name` given to contributors | `null` (the contributor gets no id, R-EXT-10) |
+| 7 | two nameless principals | never clash with each other |
+| 8 | a principal named "ID: agent-y" by hand | allowed by R-NAME-02; shown as typed (K: whether names starting with `ID: ` are refused) |
 
 ## Boundary Value Analysis
 
@@ -109,35 +124,23 @@ Existing principal A holds the name in column 2; B calls `set_name` with column 
 | 9 | 64 NFD code points that become 60 in NFC | ok |
 | 10 | 65 with a leading space (→ 64) | ok |
 
-### NAME-BVA-02 — Lowest free default
-**Req:** R-NAME-04 · **Level:** unit (allocator), integration (`pair`) · **Flags:** TQ-7
+### NAME-BVA-02 — *Withdrawn* (no default names, Q-NAME-1 = B)
+**Req:** R-NAME-04 · **Level:** unit · **Flags:** —
 
-"Held" means by a current principal under the case-insensitive comparison.
+The lowest-free default series no longer exists. Nameless principals are covered by NAME-EP-04. The id stays reserved.
 
-| # | Names held | Next default |
-| --- | --- | --- |
-| 1 | none | `Fishball` |
-| 2 | `Fishball` | `Fishball-2` |
-| 3 | `Fishball`, `Fishball-2` | `Fishball-3` |
-| 4 | `Fishball-2` only | `Fishball` |
-| 5 | `Fishball`, `Fishball-3` | `Fishball-2` |
-| 6 | `fishball` (hand-chosen, lower case) | `Fishball-2` |
-| 7 | `Fishball`, `FISHBALL-2` (hand-chosen) | `Fishball-3` |
-| 8 | `Fishball`, … `Fishball-9` | `Fishball-10` |
-| 9 | `Fishball`, … `Fishball-10`, then `Fishball-5` is renamed away | `Fishball-5` |
-| 10 | `Fishball-1` (hand-chosen) | `Fishball` (there is no "Fishball-1" in the series) |
-| 11 | `Fishball`, `Fishball-1` | `Fishball-2` (`Fishball-1` is not a series name, so it is not skipped-to) |
-| 12 | `Fishball`; the "Fishball" entry is deleted | `Fishball` (reused) |
-| 13 | `Fishball`; that entry is **disabled** | `Fishball-2`? — TQ-7 (does a disabled entry's principal still "hold" its name?) |
-
-### NAME-BVA-03 — Concurrent default assignment
-**Req:** R-NAME-04, R-NAME-02 · **Level:** integration · **Flags:** P:S3
+### NAME-BVA-03 — Concurrent pairing and naming
+**Req:** R-NAME-02, R-NAME-06 · **Level:** integration · **Flags:** —
 
 | # | Setup | Expected |
 | --- | --- | --- |
-| 1 | no principals; 2 unbound entries `pair({})` at once | names `Fishball` and `Fishball-2`, distinct |
-| 2 | 10 at once | `Fishball`, `Fishball-2` … `Fishball-10`, all distinct |
-| 3 | one `pair({})` races one `set_name("Fishball")` from an existing principal | no two principals end with the same folded name; the loser gets the next default or `name-taken` |
+| 1 | 2 unbound entries `pair({name: "Fishball"})` at once | one gets "Fishball"; the other pairs with `name: null`, `nameRefused: "name-taken"` |
+| 2 | 10 at once, all `pair({})` | all pair, all `name: null`, no name assigned |
+| 3 | one `pair({name: "Ops"})` races one `set_name("Ops")` from an existing principal | exactly one ends with "Ops"; the loser gets `name: null` (pair) or `name-taken` (set_name); either branch may win (both seen in S3 `b4dca86`), never a duplicate folded name |
+
+S3 ran these races on the name registry as a single serial transaction over all entries; the
+uniqueness oracle carries over unchanged to Q-NAME-1 = B (rows 1–2 now expect `name: null` instead
+of a default, which changes the value written, not the race).
 
 ## Decision Tables
 
@@ -146,11 +149,11 @@ Existing principal A holds the name in column 2; B calls `set_name` with column 
 
 | Rule | `name` given | Valid after normalisation | Held by another | Paired | `name` result | `nameAssigned` | `nameRefused` |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | no | — | — | yes | lowest free default | — (K: `true` or absent) | — |
+| 1 | no | — | — | yes | `null` | — (K: absent) | — |
 | 2 | yes | yes | no | yes | given (normalised) | `true` | — |
-| 3 | yes | yes | yes | yes | lowest free default | `false` | `name-taken` |
-| 4 | yes | no | — | yes | lowest free default | `false` | `name-invalid` |
-| 5 | yes | yes, equals a free **default** name ("Fishball-2") | no | yes | `Fishball-2` | `true` | — |
+| 3 | yes | yes | yes | yes | `null` | `false` | `name-taken` |
+| 4 | yes | no | — | yes | `null` | `false` | `name-invalid` |
+| 5 | yes | yes, "Fishball-2" (no longer special) | no | yes | `Fishball-2` | `true` | — |
 
 ### NAME-DT-02 — `set_name` outcome
 **Req:** R-NAME-02 · **Level:** integration · **Flags:** —
@@ -169,8 +172,8 @@ Existing principal A holds the name in column 2; B calls `set_name` with column 
 | Rule | Source | Outcome | Page shows | Core keeps working as |
 | --- | --- | --- | --- | --- |
 | 1 | `pair` | `nameAssigned: true` | nothing | the given name |
-| 2 | `pair` | `nameAssigned: false`, `name-taken` | "used by another agent on that DSH", the default in use, ask to choose | the default |
-| 3 | `pair` | `nameAssigned: false`, `name-invalid` | TQ-6 | the default |
+| 2 | `pair` | `nameAssigned: false`, `name-taken` | "used by another agent on that DSH", that it is shown as `ID: <id>` for now, ask to choose | no name (`ID: <id>`) |
+| 3 | `pair` | `nameAssigned: false`, `name-invalid` | TQ-6 | no name (`ID: <id>`) |
 | 4 | `set_name` | ok | nothing | new name |
 | 5 | `set_name` | `name-taken` | as rule 2, with the old name | old name |
 | 6 | reconnect, setting changed while offline | — | — | calls `set_name` with the setting |
@@ -178,16 +181,18 @@ Existing principal A holds the name in column 2; B calls `set_name` with column 
 ## State Transitions
 
 ### NAME-ST-01 — A principal's name
-**Req:** R-NAME-01, R-NAME-02, R-NAME-04, R-NAME-07 · **Level:** unit · **Flags:** —
+**Req:** R-NAME-01, R-NAME-02, R-NAME-04, R-NAME-07, R-NAME-08 · **Level:** unit · **Flags:** —
 
 | # | From | Event | To | Observable |
 | --- | --- | --- | --- | --- |
-| 1 | (unpaired) | `pair` without usable name | Default(n) | lowest free |
-| 2 | (unpaired) | `pair` with free name N | Chosen(N) | |
-| 3 | Default(n) | another principal renames | Default(n) | never renamed by others |
-| 4 | Default(n) | `set_name(N)` free | Chosen(N) | `Fishball-n` freed |
-| 5 | Chosen(N) | `set_name(M)` taken | Chosen(N) | `name-taken` |
-| 6 | Chosen(N) | `set_name(n-th default)` free | Chosen("Fishball-n") | counts as held for defaults |
-| 7 | any | entry deleted | (gone) | name freed for reuse |
-| 8 | Default(k) provisional (successor) | `retire` succeeds | Chosen(old name) | `Fishball-k` released in the same step (R-NAME-07) |
-| 9 | Default(k) provisional | `retire` fails | Default(k) | old principal keeps its name |
+| 1 | (unpaired) | `pair` without a usable name | Nameless | shown as `ID: <id>` |
+| 2 | (unpaired) | `pair` with free name N | Named(N) | |
+| 3 | Nameless | another principal renames | Nameless | never named by others |
+| 4 | Nameless | `set_name(N)` free | Named(N) | `ID: <id>` replaced by N everywhere |
+| 5 | Named(N) | `set_name(M)` taken | Named(N) | `name-taken` |
+| 6 | Named(N) | `set_name(M)` free | Named(M) | N freed for anyone |
+| 7 | any | entry deleted | (gone) | name freed |
+| 8 | Nameless (successor) | `retire` succeeds | the old principal's state (Named(old) or Nameless) | moved in the same step (R-NAME-07) |
+| 9 | Nameless (successor) | `retire` fails | Nameless | old principal keeps its name |
+| 10 | Named(N) | — | — | no "clear name" operation is required (K: whether `set_name` may clear) |
+
