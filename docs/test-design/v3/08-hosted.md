@@ -1,0 +1,180 @@
+# 8. Hosted launch, token per pairing and reinstall takeover (HOST)
+
+Requirements: R-HOST-01…10, R-BND-01…04, R-ARCH-05, R-NAME-07, R-WATCH-04, R-MIG-05, §4.1
+(hosted child table). Conventions: [README](<README.md>).
+
+The token service is `fishballConnectorTokens` with `createHosted` and `retire` (D§5.4, K).
+
+## Use Cases
+
+### HOST-UC-01 — First hosted start with a connector in the same DSH
+**Req:** R-HOST-01, R-HOST-02, R-HOST-05, R-HOST-06, R-BND-01, R-BND-02, R-ROUTE-04, R-MIG-05 · **Level:** integration · **Flags:** P:S6, TQ-15
+
+- **Actor:** the instance, in host DSH H that also runs C.
+- **Preconditions:** I freshly installed; target blank; no hosted entry exists; no designated principal set.
+- **Main flow:**
+  1. H's app ready fires; I places the four plugins (core, board, fold-notify, Watchdog) into the child profile **before** the profile loads, all **on**.
+  2. The child holds no paired credential → I asks C for a **new** "Fishball (hosted)" entry; C returns only its reference.
+  3. I resolves the value and hands target and value to the child **in memory**.
+  4. Core authenticates with its own `identity.id` (generated `fb-` + 16 lowercase base32) and calls `pair` → paired, name "Fishball" (if free).
+  5. The designated Fishball defaults to this hosted entry.
+  6. The child locator reports state ready, the child origin and target status `connected`.
+- **Alternative flows:**
+  - A1. The user had already designated another entry → it stays designated (TQ-15: does the default override only an unset value?).
+- **Exception flows:**
+  - E1. A set member is incompatible → the child's start is blocked; status names the plugin and the reason (`PROFILE_INCOMPATIBLE`, D§8.1).
+  - E2. `fishball-core` disabled by the owner → the child starts anyway; status `fishball-off`.
+- **Postconditions:** no token value exists in the child home, host home, overlays, argv, environment of any process, temp files or logs (grep for the planted value); H's own settings, sessions, credentials (other than the new entry's value) and shortcuts are unchanged.
+
+### HOST-UC-02 — Child restart and reconnect create nothing
+**Req:** R-HOST-05, R-ID-05, §4.1 · **Level:** integration · **Flags:** —
+
+- **Actor:** the instance; the user pressing Retry.
+- **Preconditions:** the child is paired via hosted entry Eh.
+- **Main flow:** stop + start the child (or Retry, or the child crashes and restarts) → it requests a new AT with its token and id; **no** `pair` call; **no** new entry.
+- **Alternative flows:** A1. C's DSH restarts (the same as H) → the child reconnects the same way.
+- **Exception flows:** —
+- **Postconditions:** the connector has exactly the same entries as before.
+
+### HOST-UC-03 — Reinstall succession (Q24)
+**Req:** R-HOST-09, R-NAME-07, R-WATCH-04, R-ROUTE-01, R-EVT-02 · **Level:** integration · **Flags:** P:S3
+
+- **Actor:** the instance; C.
+- **Preconditions:** old hosted entry Eo (created by I) bound to `fb-old`, named "Navigator", designated, manages S1 and S2, holds a live permission offer O1 (S1), and has pending events e1, e2 (not acked). The user removes the child home (or reinstalls I).
+- **Main flow:**
+  1. The new child has no identity → I creates new entry En; the child pairs with a new id `fb-new` and a provisional default name.
+  2. As soon as pairing succeeds, I asks C to make En the successor of Eo.
+  3. In **one atomic step** C: moves S1 and S2 to En; moves the designated role; gives En the name "Navigator" (releasing En's provisional default); re-issues O1 into En's mailbox with a **new** offer id; moves e1, e2 with their `eventId`s; deletes Eo and unsets its generated value.
+  4. S1 and S2 each get exactly **one** `system` note naming "Navigator" (the new principal).
+- **Alternative flows:**
+  - A1. Eo managed no sessions and held no role → only the name moves and Eo is deleted.
+- **Exception flows:**
+  - E1. An answer to O1's **old** id (from anyone) → `expired`.
+  - E2. The step fails midway (injected storage failure) → nothing moved; Eo stays, with sessions, role and name; En keeps its provisional name; I retries at its next start.
+  - E3. The candidate old entry was created by the **user**, not by I → `retire` refuses; nothing moves.
+- **Postconditions:** "Navigator" was never held by two principals; later S1/S2 events go to En only; no event is delivered twice.
+
+### HOST-UC-04 — The user disables or deletes the hosted entry
+**Req:** R-HOST-10, R-ROUTE-06, R-TOK-05 · **Level:** integration (C + I), e2e (Retry) · **Flags:** —
+
+- **Actor:** DSH owner.
+- **Main flow (disable):** the user switches the hosted entry off → the child reports `token-revoked`; I creates **no** replacement; re-enabling restores the same principal.
+- **Alternative flows:**
+  - A1. The user **deletes** the hosted entry → its sessions become unmanaged (one note each); I creates nothing until the user presses **Retry** in embed-UI; then I creates a new hosted entry and the child pairs.
+- **Exception flows:** E1. A delete is never treated as a reinstall: no succession runs.
+- **Postconditions:** the user's choice is never undone automatically.
+
+### HOST-UC-05 — Hosted child with a remote target
+**Req:** R-HOST-05, R-FB-05, R-UI-09 · **Level:** integration · **Flags:** —
+
+- **Actor:** the user and the instance in host H (no C in H).
+- **Preconditions:** remote DSH B with C_B; the user created entry Eb in C_B and stored its value in H's credential store under the instance's `target.tokenRef`; `target.url` = C_B's endpoint (https).
+- **Main flow:** the child starts; I hands the target and value in memory; core authenticates against C_B and pairs; Fishball manages B's sessions.
+- **Alternative flows:** A1. The reference has no value → status `token-refused` (or `target-unset`, K).
+- **Exception flows:** E1. C_B is unreachable → `target-unreachable`; the child runs.
+- **Postconditions:** I never creates an entry in C_B.
+
+### HOST-UC-06 — Lifecycle with the host DSH
+**Req:** R-HOST-02, R-HOST-03, R-HOST-04, R-HOST-08, R-BRD-02 · **Level:** integration · **Flags:** —
+
+- **Actor:** the host DSH and its owner.
+- **Main flow:** the child starts only after H's app ready; when H exits, the child stops.
+- **Alternative flows:**
+  - A1. The child crashes → status code shown; Retry restarts it.
+  - A2. Uninstall → the board archive export is offered, then the child runtime is removed.
+- **Exception flows:** E1. A failed start leaves a pending "watchdog is down" notice that is delivered once at the next successful start.
+- **Postconditions:** the launch overlays contain only HMR off, the child's own origin and port, the admission key and the target URL: no guard rows, no forced-on plugin, no token.
+
+### HOST-UC-07 — Hosted model sync, started from embed-UI's Plugins card
+**Req:** R-HOST-07, R-HOST-03, R-UI-06 · **Level:** e2e (card), integration (sync engine) · **Flags:** —
+
+- **Actor:** DSH owner in H (I + U).
+- **Preconditions:** H has providers and models configured; the child is running.
+- **Main flow:** the owner starts model sync from embed-UI's Plugins card → the child's provider and model settings match H's.
+- **Alternative flows:** A1. Nothing triggers it automatically: a child start, restart or H settings change does not sync.
+- **Exception flows:** E1. A standalone Fishball DSH has no sync path at all (no card, no engine); it uses its own native model settings.
+- **Postconditions:** H's own settings are unchanged; no provider secret is shown in embed-UI or written outside the credential stores.
+
+## Equivalence Partitioning
+
+### HOST-EP-01 — What the instance's host row may inject
+**Req:** R-ARCH-05, R-SEC-01 · **Level:** unit (manifest/static) · **Flags:** —
+
+| # | Service class | Expected in `inject` |
+| --- | --- | --- |
+| 1 | lifecycle, webserver, credentials, settings, storage | allowed |
+| 2 | `fishballConnectorTokens?` (optional) | allowed |
+| 3 | any session, approval, question, prompt service | absent |
+| 4 | browser client module | absent (no UI from I) |
+
+### HOST-EP-02 — Where the token value may appear
+**Req:** R-HOST-05, R-TOK-04, R-SEC-02 · **Level:** integration · **Flags:** —
+
+Plant a recognisable value; run start, restart, crash, reinstall, uninstall.
+
+| # | Place | Expected |
+| --- | --- | --- |
+| 1 | host credential store | present (the one allowed place) |
+| 2 | child home, child profile, vendor copies | absent |
+| 3 | launch overlays, lifecycle state files | absent (only the non-secret entry key) |
+| 4 | child process argv and environment | absent |
+| 5 | temp directories, logs of host and child | absent |
+| 6 | embed-UI responses and the frame URL | absent |
+| 7 | the lifecycle wire after `auth accepted` | present only on the `mcp-credential` channel (D§5.4) |
+
+## Decision Tables
+
+### HOST-DT-01 — Does the instance create a hosted token?
+**Req:** R-HOST-05, R-HOST-09, R-HOST-10, §4.1 · **Level:** unit · **Flags:** —
+
+| Rule | Target | Child holds paired credential | Hosted entry state | User pressed Retry | Action |
+| --- | --- | --- | --- | --- | --- |
+| 1 | blank, C here | no (first start) | none | — | create new entry; child pairs |
+| 2 | blank, C here | yes | enabled | — | create nothing; reconnect |
+| 3 | blank, C here | yes | disabled by the user | — | create nothing; `token-revoked` |
+| 4 | blank, C here | yes (stale) | deleted by the user | no | create nothing |
+| 5 | blank, C here | yes (stale) | deleted by the user | yes | create new entry; child pairs; no succession |
+| 6 | blank, C here | no (child reinstalled) | old one enabled | — | create new entry; pair; then succession |
+| 7 | blank, C here | — | `pair` answers `already-paired` | — | create another new entry |
+| 8 | blank, no C here | — | — | — | nothing; `target-unreachable` |
+| 9 | remote | any | — | — | never; use `target.tokenRef` |
+
+### HOST-DT-02 — Succession eligibility
+**Req:** R-HOST-09, R-HOST-10 · **Level:** unit · **Flags:** —
+
+| Rule | Trigger | Old entry created by I | New pairing succeeded | Result |
+| --- | --- | --- | --- | --- |
+| 1 | reinstall / child home removed | yes | yes | succession |
+| 2 | reinstall | yes | no | no succession yet (retry next start) |
+| 3 | reinstall | no (user-made) | yes | refused; nothing moves |
+| 4 | user delete + Retry | — | yes | no succession |
+| 5 | restart | yes | (no new pairing) | nothing |
+
+## State Transitions
+
+### HOST-ST-01 — Child lifecycle
+**Req:** R-HOST-02, R-BND-03, R-FB-10, R-HOST-06 · **Level:** integration · **Flags:** K (status codes)
+
+| # | From | Event | To | Locator status |
+| --- | --- | --- | --- | --- |
+| 1 | Stopped | host app ready | Starting | starting |
+| 2 | Starting | ready | Running | ready, origin set |
+| 3 | Starting | incompatible member | Failed | `PROFILE_INCOMPATIBLE` naming it |
+| 4 | Running | crash | Failed | crash code |
+| 5 | Failed | Retry | Starting | |
+| 6 | Running | restart | Starting | origin null until ready |
+| 7 | Running | host exits | Stopped | |
+| 8 | Running (core disabled) | — | Running | `fishball-off` |
+| 9 | Stopped | Retry before host ready | Stopped | K |
+| 10 | Running | uninstall | Removed | export offered first |
+
+### HOST-ST-02 — Hosted principal across reinstall
+**Req:** R-HOST-09, R-NAME-07 · **Level:** integration · **Flags:** P:S3
+
+| # | From | Event | To |
+| --- | --- | --- | --- |
+| 1 | Old(Eo) active | reinstall | Old(Eo) + New(En) provisional |
+| 2 | Old + New provisional | succession ok | New(En) only, with Eo's sessions, role, name |
+| 3 | Old + New provisional | succession fails | Old + New provisional (retry at next start) |
+| 4 | Old + New provisional | next start, succession ok | New(En) only |
+| 5 | New(En) only | answer with Eo's old offer id | `expired` |
