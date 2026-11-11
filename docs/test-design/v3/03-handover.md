@@ -91,8 +91,9 @@ enabled, paired principal; **online** = an open `fishball-events` listen stream 
 | 1 | none enabled and paired | no Hand over control |
 | 2 | one, named "Navigator", online | button "Hand over to Navigator", green light |
 | 2a | one, named, offline | the same button, red light |
-| 3 | one, no name, id `agent-x` | button "Hand over to ID: agent-x" |
-| 4 | two: "Navigator" online, nameless `agent-x` offline | dropdown "Handover to…": "Navigator" green, "ID: agent-x" red |
+| 3 | one, no name, id `agent-x` | button "Hand over to **ID:** agent-x" (prefix bold) |
+| 3a | one, **named** "ID: agent-x" by hand | button "Hand over to ID: agent-x" in plain text (visibly different from row 3) |
+| 4 | two: "Navigator" online, nameless `agent-x` offline | dropdown "Handover to…": "Navigator" green, "**ID:** agent-x" (bold prefix) red |
 | 4a | an entry that is paired but **disabled** | not listed |
 | 4b | an entry that is enabled but **unpaired** | not listed |
 | 5 | three, all named | dropdown with three names, in a stable order (K) |

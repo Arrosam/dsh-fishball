@@ -20,7 +20,7 @@ Requirements: R-NAME-01…07, R-ID-10 (ids are not names), R-HOST-09. Convention
 - **Postconditions:** the token and id are bound whatever the name outcome; no "Fishball-2" or other default exists anywhere.
 
 ### NAME-UC-02 — The owner renames their Fishball
-**Req:** R-NAME-02, R-NAME-03, R-NAME-05 · **Level:** integration (core + C), e2e (page and marks) · **Flags:** TQ-6
+**Req:** R-NAME-02, R-NAME-03, R-NAME-05 · **Level:** integration (core + C), e2e (page and marks) · **Flags:** —
 
 - **Actor:** the Fishball DSH owner.
 - **Preconditions:** HF is paired as "Fishball" and manages S1; another principal holds "Ops".
@@ -33,7 +33,8 @@ Requirements: R-NAME-01…07, R-ID-10 (ids are not names), R-HOST-09. Convention
   - A2. The link was down during the change → after reconnect core calls `set_name` again with the current setting.
 - **Exception flows:**
   - E1. The owner sets "ops" → `name-taken`; the Fishball page says the name is used by another agent on that DSH, shows "Fishball" (the name in use) and asks for another; core keeps working as "Fishball".
-  - E2. The owner sets a 65-character name → `name-invalid`; the name stays "Fishball". *(R-NAME-03 names only `name-taken` for the page; what the page shows for `name-invalid` is TQ-6.)*
+  - E2. The owner sets a 65-character name → `name-invalid`; the page shows it the same way as `name-taken`, with the reason; the name stays "Fishball" (TQ-6 decided A).
+  - E3. The owner clears the name (`identity.name` empty) → core calls `set_name({name: null})`; the principal is shown as **ID:** <id> everywhere.
 - **Postconditions:** the id is unchanged by any rename.
 
 ### NAME-UC-03 — An external agent renames itself
@@ -48,19 +49,22 @@ Requirements: R-NAME-01…07, R-ID-10 (ids are not names), R-HOST-09. Convention
 ## Equivalence Partitioning
 
 ### NAME-EP-01 — Name normalisation and validity
-**Req:** R-NAME-02 · **Level:** unit · **Flags:** TQ-6
+**Req:** R-NAME-02 · **Level:** unit · **Flags:** —
 
 | # | Class | Input | Stored / result |
 | --- | --- | --- | --- |
 | 1 | plain | `Bob` | `Bob` |
 | 2 | surrounding spaces | `  Bob  ` | `Bob` |
 | 3 | inner runs | `Bob   the\t\tfish` | `Bob the fish` |
-| 4 | other Unicode whitespace (NBSP, ideographic space) | `Bob\u00A0\u00A0fish` | `Bob fish` (K: which characters count as whitespace) |
+| 4 | other Unicode whitespace (NBSP, ideographic space) | `Bob\u00A0\u00A0fish` | `Bob fish` (all Unicode whitespace, TQ-6 decided A) |
 | 5 | NFD input | `Cafe\u0301` | `Café` (NFC) |
 | 6 | empty | `` | `name-invalid` |
 | 7 | whitespace only | `   ` | `name-invalid` |
 | 8 | control char inside | `Bo\u0007b` | `name-invalid` |
-| 9 | newline inside | `Bob\nFish` | newline is whitespace → `Bob Fish`, or control → invalid: **TQ-6** |
+| 9 | newline inside | `Bob\nFish` | `Bob Fish` (whitespace collapsed before the control check, TQ-6 decided A) |
+| 9a | tab inside | `Bob\tFish` | `Bob Fish` |
+| 9b | a non-whitespace control char (`\u0007`) inside | `Bo\u0007b` | `name-invalid` |
+| 9c | name starting with `ID:` | `ID: agent-x` | accepted; shown as plain text (1.23 item 3) |
 | 10 | CJK | `小鱼` | `小鱼` |
 | 11 | emoji | `🐟 fish` | accepted (K: characters = code points) |
 | 12 | not a string | `42`, `null` | `name-invalid` (or schema `invalid-arguments`, K) |
@@ -80,6 +84,8 @@ Existing principal A holds the name in column 2; B calls `set_name` with column 
 | 6 | `Bob` | `Bobb` | ok |
 | 7 | `Bob` (B's own) | `BOB` | ok; stored `BOB` |
 | 8 | `Bob` (B's own) | `Bob` | ok; nothing else changes (no notification, no change in marks) |
+| 9 | `Bob`, held by a **disabled** entry | `bob` | `name-taken` (a disabled entry keeps its name, TQ-7 decided) |
+| 10 | `Bob`, held by a **deleted** entry | `bob` | ok (deleting frees the name) |
 
 ### NAME-EP-03 — Who may call `set_name`
 **Req:** R-NAME-02, R-ID-06 · **Level:** integration · **Flags:** —
@@ -93,18 +99,19 @@ Existing principal A holds the name in column 2; B calls `set_name` with column 
 | 4 | no / invalid AT | 401 |
 
 ### NAME-EP-04 — Principals without a name
-**Req:** R-NAME-04, R-NAME-08, R-NAME-05, R-UI-10 · **Level:** integration (connector), e2e (embed-UI) · **Flags:** —
+**Req:** R-NAME-04, R-NAME-08, R-NAME-05, R-UI-10, R-NAME-02 · **Level:** integration (connector), e2e (embed-UI) · **Flags:** —
 
 | # | Where the principal is shown | Expected for a nameless principal with id `agent-x` |
 | --- | --- | --- |
-| 1 | managed-session mark | `ID: agent-x` |
+| 1 | managed-session mark | **ID:** agent-x (prefix bold) |
 | 2 | Hand over button / dropdown row | "Hand over to ID: agent-x" / `ID: agent-x` |
 | 3 | token entry status in native settings | `ID: agent-x` (and the bound id column) |
 | 4 | designated-Fishball setting | `ID: agent-x` |
 | 5 | connector notes in sessions ("managed by …") | "managed by ID: agent-x" |
 | 6 | `call.principal.name` given to contributors | `null` (the contributor gets no id, R-EXT-10) |
 | 7 | two nameless principals | never clash with each other |
-| 8 | a principal named "ID: agent-y" by hand | allowed by R-NAME-02; shown as typed (K: whether names starting with `ID: ` are refused) |
+| 8 | a principal named "ID: agent-y" by hand | allowed; shown as **plain text** "ID: agent-y" (1.23 item 3) |
+| 9 | the nameless principal `agent-y` in the same place | **ID:** agent-y, with the prefix in bold, so rows 8 and 9 are visibly different |
 
 ## Boundary Value Analysis
 
@@ -167,13 +174,13 @@ of a default, which changes the value written, not the race).
 | 5 | yes | no | no | ok | new name; old name freed |
 
 ### NAME-DT-03 — Core's reaction to the name outcome
-**Req:** R-NAME-03 · **Level:** unit (core), e2e (page) · **Flags:** TQ-6
+**Req:** R-NAME-03 · **Level:** unit (core), e2e (page) · **Flags:** —
 
 | Rule | Source | Outcome | Page shows | Core keeps working as |
 | --- | --- | --- | --- | --- |
 | 1 | `pair` | `nameAssigned: true` | nothing | the given name |
 | 2 | `pair` | `nameAssigned: false`, `name-taken` | "used by another agent on that DSH", that it is shown as `ID: <id>` for now, ask to choose | no name (`ID: <id>`) |
-| 3 | `pair` | `nameAssigned: false`, `name-invalid` | TQ-6 | no name (`ID: <id>`) |
+| 3 | `pair` | `nameAssigned: false`, `name-invalid` | as rule 2, with the reason "invalid name" (TQ-6 decided A) | no name (`ID: <id>`) |
 | 4 | `set_name` | ok | nothing | new name |
 | 5 | `set_name` | `name-taken` | as rule 2, with the old name | old name |
 | 6 | reconnect, setting changed while offline | — | — | calls `set_name` with the setting |
@@ -194,5 +201,6 @@ of a default, which changes the value written, not the race).
 | 7 | any | entry deleted | (gone) | name freed |
 | 8 | Nameless (successor) | `retire` succeeds | the old principal's state (Named(old) or Nameless) | moved in the same step (R-NAME-07) |
 | 9 | Nameless (successor) | `retire` fails | Nameless | old principal keeps its name |
-| 10 | Named(N) | — | — | no "clear name" operation is required (K: whether `set_name` may clear) |
+| 10 | Named(N) | `set_name({name: null})` | Nameless | shown as **ID:** <id>; N freed (1.23) |
+| 11 | Nameless | `set_name({name: null})` | Nameless | ok; nothing changes |
 

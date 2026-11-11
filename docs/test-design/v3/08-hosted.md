@@ -8,7 +8,7 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
 ## Use Cases
 
 ### HOST-UC-01 — First hosted start with a connector in the same DSH
-**Req:** R-HOST-01, R-HOST-02, R-HOST-05, R-HOST-06, R-BND-01, R-BND-02, R-ROUTE-04, R-MIG-05 · **Level:** integration · **Flags:** P:S6, TQ-15
+**Req:** R-HOST-01, R-HOST-02, R-HOST-05, R-HOST-06, R-BND-01, R-BND-02, R-ROUTE-04, R-MIG-05 · **Level:** integration · **Flags:** P:S6
 
 - **Actor:** the instance, in host DSH H that also runs C.
 - **Preconditions:** I freshly installed; target blank; no hosted entry exists; no designated principal set.
@@ -20,7 +20,7 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
   5. The designated Fishball defaults to this hosted entry.
   6. The child locator reports state ready, the child origin and target status `connected`.
 - **Alternative flows:**
-  - A1. The user had already designated another entry → it stays designated (TQ-15: does the default override only an unset value?).
+  - A1. The user had already designated another entry → it stays designated; the hosted entry becomes the default only while `routing.fishballToken` is unset (TQ-15 decided).
 - **Exception flows:**
   - E1. A set member is incompatible → the child's start is blocked; status names the plugin and the reason (`PROFILE_INCOMPATIBLE`, D§8.1).
   - E2. `fishball-core` disabled by the owner → the child starts anyway; status `fishball-off`.

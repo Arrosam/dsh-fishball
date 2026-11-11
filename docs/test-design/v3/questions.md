@@ -14,20 +14,20 @@ The prefix `TQ` avoids clashing with the requirements' own `OQ-14` (first commit
 | TQ-1 | Direct-access split vs ids containing a dot | **decided C** (2026-11-11) | C-OAUTH, F-PAIR | AUTH-UC-07, AUTH-BVA-04, AUTH-DT-03 |
 | TQ-2 | Revocation: fate of item kinds §5.3 does not name; designated role | **decided A** (2026-11-11) | C-REVOKE | AUTH-UC-06, AUTH-DT-04 |
 | TQ-8 | Hand over edge cases: designated not connected / disabled; already managed | **superseded** by 1.20 (chosen target); edges now Q-HO-1 | C-ROUTE, U-MARKS | HAND-UC-01, HAND-DT-01, HAND-ST-01 |
-| TQ-10 | Watchdog decision for "beyond scope, not dangerous, not high-risk" | open | WD-DECIDE | WD-DT-01 |
-| TQ-11 | Watchdog supervision when Fishball stops managing the session | open | WD-PATROL | WD-ST-02 |
-| TQ-9 | First patrol after a new claim or resume | open | WD-PATROL | WD-UC-03, WD-BVA-02, WD-ST-02 |
+| TQ-10 | Watchdog decision for "beyond scope, not dangerous, not high-risk" | **decided** (R-WD-09 rule) | WD-DECIDE | WD-DT-01 |
+| TQ-11 | Watchdog supervision when Fishball stops managing the session | **decided** (R-WD-00) | WD-PATROL | WD-ST-02 |
+| TQ-9 | First patrol after a new claim or resume | **decided** (R-WD-03/15) | WD-PATROL | WD-UC-03, WD-BVA-02, WD-ST-02 |
 | TQ-3 | Token request without `resource` | **decided A**, confirmed by S7 (2026-11-11) | C-OAUTH | AUTH-EP-01 |
 | TQ-4 | Token creation edge cases: minimum length value, store not writable, shared `ref` | **decided A** (2026-11-11) | C-TOKENS | AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03 |
 | TQ-5 | Access tokens across a connector restart; in-flight request at revocation | **decided A** (2026-11-11) | C-OAUTH | AUTH-UC-03, AUTH-UC-06 |
-| TQ-6 | Newline in names; page text for `name-invalid` | open | C-PAIR, F-PAIR | NAME-UC-02, NAME-EP-01, NAME-DT-03 |
+| TQ-6 | Newline in names; page text for `name-invalid` | **decided A** (2026-11-11) | C-PAIR, F-PAIR | NAME-UC-02, NAME-EP-01, NAME-DT-03 |
 | TQ-7 | Does a disabled entry still hold its name? | open (default series gone with Q-NAME-1; still decides `name-taken` for a disabled entry's name) | C-PAIR | NAME-BVA-02 |
-| TQ-12 | `notifyWhenFinished` passed by an old client: refuse or ignore | open | C-TOOLS | WATCH-UC-01 |
-| TQ-13 | Two plugin names normalising to one namespace | open | C-EXT | EXT-EP-02 |
-| TQ-14 | Contributor `emit` with an unknown `sessionId` | open | C-EXT | EXT-DT-02 |
-| TQ-15 | Designated-Fishball default when the user already chose one | open | I-HOST | HOST-UC-01 |
-| TQ-16 | "No principal connected" for a managed session's permission request | open | C-ROUTE | PLAT-UC-03 |
-| TQ-17 | Standalone status when an optional feature is simply not installed | open | F-STATUS | PLAT-DT-02 |
+| TQ-12 | `notifyWhenFinished` passed by an old client: refuse or ignore | **decided per spec** | C-TOOLS | WATCH-UC-01 |
+| TQ-13 | Two plugin names normalising to one namespace | **decided** (implementation) | C-EXT | EXT-EP-02 |
+| TQ-14 | Contributor `emit` with an unknown `sessionId` | **decided** (implementation) | C-EXT | EXT-DT-02 |
+| TQ-15 | Designated-Fishball default when the user already chose one | **decided** (default semantics) | I-HOST | HOST-UC-01 |
+| TQ-16 | "No principal connected" for a managed session's permission request | **decided** (R-CON-05, Q-HO-1 C) | C-ROUTE | PLAT-UC-03 |
+| TQ-17 | Standalone status when an optional feature is simply not installed | **decided** (matrix row 13b) | F-STATUS | PLAT-DT-02 |
 
 ---
 
@@ -388,7 +388,6 @@ never both), HOST-UC-03 (the user's answer is never `expired` by succession), PL
 
 | Question | Source | Waiting for |
 | --- | --- | --- |
-| TQ-6, TQ-7, TQ-9 … TQ-17 | test-planning gaps (see the table at the top) | the user, when relevant |
 
 **S2-Q1 + Q-S3-2 decided 2026-11-11: B.** Core owns acceptance: the handler must `await ctl.accept()`
 before acting, core keeps the record open until the handler settles; after a restart an open
@@ -452,3 +451,70 @@ Now R-HOST-09; cases HOST-UC-03 E1/E1a, PLAT-ST-01 row 7.
 
 All spike questions (S2, S3, S4) are now decided. Open test-planning questions: TQ-6, TQ-7 and
 TQ-9 to TQ-17 (table at the top).
+
+## Spike S5 decisions (from `8f2788e`, PASS)
+
+- **Q1 [impl]:** the namespace is the normalised package name of the caller's loader entry;
+  `register(def)` is unchanged; a caller with no package gets `contributor-unidentified`. R-EXT-02/03.
+- **Q2 [impl]:** the quarantine lives on the contributor's activation (an effect on its root fiber);
+  disable/re-enable, reload or hot reload lifts it; a connector reload does not. R-EXT-09.
+- **Q3 [spec]:** `_meta["io.github.dsh-fishball/contributor"] = {plugin, version}`; `annotations`
+  keeps only the specification's behaviour hints [basic § General fields › `_meta`; server/tools §
+  Tool]. R-EXT-12, R-EXT-15, K2 freeze, EXT-UC-01 step 3.
+- **Q4 [impl]:** `tools/list` and `tools/call` also require the owner fiber to be loading or active.
+  R-EXT-04.
+- **Q6 [spec]:** keep `.` in public names [server/tools § Tool Names]; DSH-hosted agents see hashed
+  names, the client-side disambiguation the specification allows. R-EXT-03, design §13.3.
+- **Q5 decided A** (the user: "选A，自己安装的插件自己负责"): the namespace is attribution for honest contributors, not a
+  security boundary; a plugin the user installed is the user's responsibility. R-SEC-04, design §13.5,
+  README (task DOCS).
+
+Cases: EXT-UC-01 (E3, E4), EXT-EP-01 row 14a, EXT-EP-02 rows 5a–5b, EXT-ST-01 rows 6, 8, 8a, 8b; `P:S5`
+dropped from every EXT case.
+
+## Decided without asking (2026-11-11, under the standing rule and existing decisions)
+
+- **TQ-7:** a disabled entry keeps its name (R-ID-09: re-enabling restores the same principal). R-NAME-02.
+- **TQ-9:** first patrol one interval after the claim or resume, never at once (R-WD-03/R-WD-15). R-WD-04.
+- **TQ-10:** beyond the task, not dangerous, not high-risk → re-route to Fishball (R-WD-09's own conditions). R-WD-09.
+- **TQ-11:** when Fishball stops managing a session, Watchdog's claim and timer end at once, no notice (R-WD-00, R-INT-09). R-WD-11.
+- **TQ-12 [spec]:** an undeclared argument such as `notifyWhenFinished` is refused `invalid-arguments` with `isError: true` [server/tools § Security Considerations, § Error Handling]. R-WATCH-03.
+- **TQ-13:** two packages normalising to one namespace: first wins, second `namespace-reserved` (implementation; attribution only, S5-Q5). R-EXT-03.
+- **TQ-14:** `emit` with an unknown `sessionId` → `event-invalid` (implementation). R-EXT-17.
+- **TQ-15:** the hosted default applies only while `routing.fishballToken` is unset (what a default means). R-ROUTE-04.
+- **TQ-16:** a managed session's offers always go to its manager's mailbox, connected or not (R-CON-05, R-REM-04, Q-HO-1 C). R-CON-09.
+- **TQ-17:** "missing" = enabled but skipped or failed; not-installed is not reported (matrix row 13b). R-BND-05.
+- **S4 F3:** in row 7 the fish shows unlit (implementation). R-UI-09.
+
+Asked together on 2026-11-11 (numbered for a one-line answer): TQ-6 and Q-NEW-1 … Q-NEW-4 below.
+
+**Q-NEW-1. May `set_name` clear a name?** Since Q-NAME-1 B a principal may have no name. Options:
+A `set_name({name: null})` (or `""`) clears it, and the principal shows as `ID: <id>`; B no clearing.
+Recommendation A. Cases: NAME-ST-01 row 10.
+
+**Q-NEW-2. May a name start with `ID: `?** A nameless principal is shown as `ID: <id>`, so a name
+"ID: agent-x" could impersonate one in the Hand over dropdown. Options: A refuse names starting with
+`ID:` (case-insensitive) as `name-invalid`; B allow. Recommendation A. Cases: NAME-EP-04 row 8.
+
+**Q-NEW-3. May a principal read a session another principal manages?** `session_read` /
+`sessions_list` are scoped to "sessions related to this principal" (design §3.2), but no requirement
+says whether reading another principal's managed session is refused. Options: A `forbidden`; B allowed
+read-only (no tokens have scopes, Q6). Recommendation A (one manager per session, R-ROUTE-02). Cases:
+WATCH-ST-01 row 8.
+
+**Q-NEW-4. Mixed SDK versions between a Fishball DSH and its connector's DSH** (rc.5 ↔ rc.1). R-COMPAT-01
+says each version is verified separately. Options: A also verify the two cross pairs; B separate only.
+Recommendation A (standalone Fishballs will meet it). Cases: PLAT-DT-03 rule 5.
+
+**Batch answered 2026-11-11.** The user, verbatim: "1A 2A 3B，页面内显示的ID:加粗显示来区分 4A 5已经通过MCP连接了，中间不应该出现交叉依赖的问题，B".
+1. TQ-6 = A: all Unicode whitespace collapses before the control check; `name-invalid` shown like
+   `name-taken`. R-NAME-02/03. Cases: NAME-EP-01 rows 4, 9–9b, NAME-UC-02 E2, NAME-DT-03 rule 3.
+2. Clearing = A: `set_name({name: null})`. R-NAME-02. Cases: NAME-UC-02 E3, NAME-ST-01 rows 10–11.
+3. Names starting with `ID:` = B: allowed; a nameless principal's `ID:` prefix is **bold**, chosen
+   names plain. R-NAME-08, R-UI-10. Cases: NAME-EP-01 row 9c, NAME-EP-04 rows 1, 8–9, HAND-EP-02 rows 3, 3a, 4.
+4. Reading another principal's managed session = A: `forbidden`, omitted from lists. R-ROUTE-02.
+   Cases: WATCH-ST-01 row 8, PLAT-EP-02 row 4a.
+5. Mixed SDK versions = B: separate checks only ("已经通过MCP连接了，中间不应该出现交叉依赖的问题"). R-COMPAT-01.
+   Cases: PLAT-DT-03 rule 5.
+
+**No question is open.** Every TQ, spike and design question so far is decided.
