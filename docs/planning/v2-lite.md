@@ -177,8 +177,8 @@ There is no DSH host patch. The main DSH and the old main-DSH Fishball (`eaa33f5
     `attachSession` refuses a cwd that does not resolve to the workspace path (dsh-workspace,
     both SDKs). The hero composer of such a manager stays inert while it is blank; a manager
     with a turn renders no hero.
-  - A workspace the user deleted is recreated, with the SDK default title `assistant`, on the
-    next activation.
+  - A workspace the user deleted is recreated automatically, with the SDK default title
+    `assistant`, the next time the child instance restarts (user decision A, 2026-11-11).
 - **Native startup on a reopened page (accepted for V2, user decision 2026-11-11).** The rule is
   "每次从主实例打开Fishball时都自动跳转到Fishball会话页": every open from the main DSH lands on the
   manager, through the page's one `uiWorkspace.openSession` (fishball-page). V2 accepts that

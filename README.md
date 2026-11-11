@@ -41,7 +41,7 @@ The commands use the profile `web`; use your own profile name after `--profile`.
 
    Install the connector first. The instance declares it as a peer (`fishball-connector >=0.1.0-alpha.0 <2`), and DSH does not install peers by itself. pnpm also lists DSH's own packages as missing peers; DSH provides them when it runs, so that warning is expected.
 
-3. **Start DSH** as usual. The two plugins find each other by themselves; no profile edit is needed. Fishball starts once DSH is ready. On its first start the instance creates its private profile under `<DSH_HOME>/fishball/runtime`. The DSH home must be a canonical real path, not a path through a symbolic link such as `/tmp` (`/private/tmp` on macOS); otherwise the instance reports `INVALID_MAIN_HOME` and does not start.
+3. **Start DSH** as usual. The two plugins find each other by themselves; no profile edit is needed. Fishball starts once DSH is ready. On its first start the instance creates its private profile under `<DSH_HOME>/fishball/runtime`. The DSH home must be a canonical real path, not a path through a symbolic link such as `/tmp` (`/private/tmp` on macOS); otherwise the instance reports `INVALID_MAIN_HOME` and does not start. On that first start DSH itself may also create its default workspace, `~/Documents/deepseek-harness/default-workspace`, with one blank session. This is accepted, and opening Fishball still lands on Fishball's own conversation (see [v2-lite](<docs/planning/v2-lite.md>)).
 
 To use the connector with your own instance, install only the connector in step 2.
 
@@ -90,7 +90,7 @@ Install both packages again as above. After the cleanup command, the instance st
 
 ## Bring your DSH models into Fishball
 
-On the instance's card on DSH's Plugins page, **Model for Fishball** → **Check for new models** lists only the API-key providers you set up in DSH that Fishball does not have yet and whose endpoint uses https. OAuth/login providers, providers with custom headers and non-https endpoints are not offered; log in to OAuth/login providers inside Fishball. Tick the ones to add, then press **Add selected**. Only what you tick is added. Providers and keys Fishball already has are kept. Keys never reach the page, the logs or the chat.
+On the instance's card on DSH's Plugins page, **Model for Fishball** → **Check for new models** lists only the API-key providers you set up in DSH that Fishball does not have yet and whose endpoint uses https. OAuth/login providers, providers with custom headers and non-https endpoints are not offered; log in to OAuth/login providers inside Fishball. Tick the ones to add, then press **Add selected**. Only what you tick is added. Providers and keys Fishball already has are kept. Keys never reach the page, the logs or the chat. This block is the only place a sync starts: Fishball's own settings panel has no sync control, only a note pointing here.
 
 ## Licence
 
