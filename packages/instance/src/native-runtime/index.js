@@ -70,10 +70,19 @@ class NativeRuntime {
     this.pending = next.catch(() => {})
     return next
   }
-  start() {
+  start() { return this.serial(this.beginStartup(signal => this.startInternal(signal))) }
+  /**
+   * A new start or restart is an explicit request for a live child again, so it ends a previous
+   * parentExit() (host.js calls shutdown() before every Retry/Restart start, and it sets the flag).
+   * Without this reset nativeEmbedAccess() refused every later generation. Cleared synchronously
+   * here, not inside the queued action: a parentExit() that arrives after this call still wins.
+   * The epoch is not reset: admissions of the stopped generation stay aborted.
+   */
+  beginStartup(action) {
+    this.parentExited = false
     const startup = new AbortController()
     this.startup = startup
-    return this.serial(() => this.startInternal(startup.signal))
+    return () => action(startup.signal)
   }
   stop() { this.invalidateNativeAccess(); this.startup?.abort(); return this.serial(() => this.stopInternal()) }
   invalidateNativeAccess() { this.nativeEpoch++; this.nativeAdmission?.abort(); this.nativeAdmission = undefined }
@@ -109,9 +118,7 @@ class NativeRuntime {
   restart() {
     this.invalidateNativeAccess()
     this.startup?.abort()
-    const startup = new AbortController()
-    this.startup = startup
-    return this.serial(async () => { await this.stopInternal(); return this.startInternal(startup.signal) })
+    return this.serial(this.beginStartup(async signal => { await this.stopInternal(); return this.startInternal(signal) }))
   }
   detach() { return this.serial(async () => {
     this.dropControl()
@@ -195,7 +202,7 @@ class NativeRuntime {
     Object.assign(this, layout)
   }
   stopped() { return { state: 'stopped', hostId: this.hostId, warnings: [...this.warnings] } }
-  log(code) { return lifecycleLog(this.paths, code, this.limits.maxLogBytes) }
+  log(code, reason) { return lifecycleLog(this.paths, code, this.limits.maxLogBytes, reason) }
   async active() {
     const file = path.join(this.paths.root, RUNTIME.active)
     if (!await exists(file)) return undefined
@@ -278,9 +285,24 @@ class NativeRuntime {
       for (const listener of this.instanceSettingsListeners) listener(instanceSettings)
     } catch (error) { wire.close(); throw error }
   }
+  /**
+   * One start: every failure after the layout proof is logged once as FAILED with its specific
+   * code as the reason, including the refusals before the launch directory exists (OWNERSHIP_BUSY,
+   * OWNERSHIP_UNCERTAIN, INVALID_INSTALLATION), which used to leave no line at all. A failed
+   * layout proof (INVALID_MAIN_HOME, UNSAFE_DIRECTORY, UNOWNED_RUNTIME) means "do not write here",
+   * so it is thrown before the logged region; the row still reports it (host.js). The message
+   * is not logged: the row publishes it only through its own sanitizer.
+   */
   async startInternal(signal) {
     if (signal?.aborted) fail('START_INTERRUPTED')
     await this.prepare()
+    try { return await this.launch(signal) } catch (error) {
+      const failure = error instanceof NativeRuntimeError ? error : new NativeRuntimeError(error?.code ?? RUNTIME.startFailedCode, String(error?.message ?? ''))
+      await this.log('FAILED', failure.code).catch(() => {})
+      throw failure
+    }
+  }
+  async launch(signal) {
     this.installation = await resolveInstallation(this.options.installAnchor)
     let record = await this.active()
     if (record) {
@@ -354,10 +376,9 @@ class NativeRuntime {
       if (child.exitCode !== null || child.signalCode !== null) fail('CHILD_EXITED')
       return this.publicHealth(status)
     } catch (error) {
-      await this.log('FAILED').catch(() => {})
       if (this.owns(record, this.childIdentity?.pid) && Number.isSafeInteger(this.childIdentity?.pid)) await this.stopOwned(record).catch(() => {})
       else if (await exists(path.join(directory, RUNTIME.marker))) await removeLaunch(this.paths, record)
-      throw error instanceof NativeRuntimeError ? error : new NativeRuntimeError(error.code ?? 'START_FAILED', 'Attached runtime startup failed; private state retained.')
+      throw error
     }
   }
   /**

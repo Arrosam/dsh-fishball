@@ -17,6 +17,8 @@
  * | PGO-EP-01..04 | EP (continuation) | view=settings / lang=zh / lang=en / both → carried only in the Location fragment |
  * | PGO-EP-05..08 | EP (unsupported continuation) | view=evil / lang=fr / next=https://example.invalid/ / arbitrary param → dropped; origin stays the child origin |
  * | PGO-BVA-01..04 | BVA (continuation values) | lang=ZH / lang=zh-CN / view=Settings / view=settings+lang=fr → only the exact supported values survive |
+ * | PGO-B5-EP-01..03 | EP R6 (key order × lang) | view=settings&lang=en / lang=en&view=settings / lang=zh&view=settings → fragment view=settings plus that lang |
+ * | PGO-B5-BVA-01..02 | BVA R6 | view=x&lang=en / lang=en&view=Settings → view dropped, lang=en kept |
  * | PGO-DT-01 | DT R1 | unauthenticated (401) → 401, no location, nativeEmbedAccess not called |
  * | PGO-DT-02 | DT | Sec-Fetch-Site cross-site → 403, no location, nativeEmbedAccess not called |
  * | PGO-EP-09..10 | EP | `token` query on the broker URL (valued / empty) → 400, no location |
@@ -220,6 +222,32 @@ describe('PG-ORIGIN admission redirect', () => {
       const fragment = assertAdmission(answer, gen.access)
       assert.equal([...fragment.keys()].length, 0, 'nothing carried: ' + answer.headers.location)
       for (const text of absent) assert.equal(answer.headers.location.includes(text), false, text + ' appears in Location')
+      assertUntouched(child)
+    })
+  }
+
+  // B5 (round-2 bug 6, R6): the connector registers ui.settings as '/fishball/embed/?view=settings' and
+  // frames it with lang appended, so the documented query form must reach the fragment in either key
+  // order and with either language. EP over key order × language; the lone-view and lone-lang
+  // partitions are PGO-EP-01 and PGO-EP-03 above.
+  for (const [id, query, expected] of [
+    ['PGO-B5-EP-01', 'view=settings&lang=en', { view: 'settings', lang: 'en' }],
+    ['PGO-B5-EP-02', 'lang=en&view=settings', { view: 'settings', lang: 'en' }],
+    ['PGO-B5-EP-03', 'lang=zh&view=settings', { view: 'settings', lang: 'zh' }],
+  ]) {
+    it(id + ' EP R6 documented settings form ?' + query + ' → 303 whose fragment carries view=settings and lang', async (t) => {
+      const { h, child, gen } = await readyHarness(t)
+      const fragment = assertAdmission(await h.send(ROUTE.document + '?' + query), gen.access)
+      assert.deepEqual(Object.fromEntries(fragment), expected)
+      assertUntouched(child)
+    })
+  }
+  // An unknown view value is dropped while the language survives (BVA on the exact value 'settings').
+  for (const [id, query] of [['PGO-B5-BVA-01', 'view=x&lang=en'], ['PGO-B5-BVA-02', 'lang=en&view=Settings']]) {
+    it(id + ' BVA R6 unknown view ?' + query + ' → view dropped, lang=en kept', async (t) => {
+      const { h, child, gen } = await readyHarness(t)
+      const fragment = assertAdmission(await h.send(ROUTE.document + '?' + query), gen.access)
+      assert.deepEqual(Object.fromEntries(fragment), { lang: 'en' })
       assertUntouched(child)
     })
   }

@@ -15,6 +15,10 @@
     sdkPrefix: '/sdk/',
     sessionRoute: '/api/fishball/session',
     pageScriptMarker: '/page/client.js',
+    pageNav: 'nav[aria-label="fishball-page"]',
+    statusRole: '[role="status"]',
+    primitivesModule: '@deepseek-ai/dsh-client-ui-primitives',
+    buttonType: 'button',
   }
   const sdk = new URLSearchParams(location.search).get('sdk')
   const log = { focused: [], timeline: [], registerCalls: [], fixedInputs: [], edits: [], editResults: [], calls: [], timers: [], opens: [], handlers: [], keys: [], openSettings: 0, setLocale: [], storageWrites: [], maxInFlight: 0, errors: [] }
@@ -110,8 +114,18 @@
     useId: () => hook(() => ({ id: 'fb' + Math.random().toString(36).slice(2) })).id,
   }
   React.default = React
+  /**
+   * Harness plumbing, not an oracle: the page takes DSH's design-system `Button` from the client
+   * primitives. The stand-in renders the one native `<button type="button">` the real one renders
+   * (variant/size are styling only), so cases that find a button by tag and text stay valid.
+   * The real styled Button is observed in the real SDK web boot (child-boot-nav.test.mjs).
+   */
+  function PrimitiveButton({ variant: _variant, size: _size, children, ...props }) {
+    return createElement(H.buttonType, { type: H.buttonType, ...props }, children)
+  }
+  const pagePrimitives = { Button: PrimitiveButton, modalSelector: '[role="dialog"][aria-modal="true"]' }
   const ReactDOM = { createPortal: (node, container) => ({ portal: true, node, container }) }
-  function setProps(element, props) {
+  function setProps(element, props, root) {
     for (const [name, value] of Object.entries(props)) {
       if (name === 'children' || name === 'key' || name === 'ref' || value === undefined || value === null || value === false) continue
       if (name === 'className') element.className = value
@@ -121,6 +135,20 @@
       else element.setAttribute(name, value === true ? '' : String(value))
     }
     if (typeof props.ref === 'object' && props.ref) props.ref.current = element
+    // Callback refs (React calls them with the node after mount and with null when it goes).
+    // Collected here and called once the whole tree is attached (see commitRefs).
+    else if (typeof props.ref === 'function') root.nextRefs.push([props.ref, element])
+  }
+  /**
+   * Every render rebuilds the DOM, so each callback ref is told its old node is gone (null) and
+   * then given the new one, as React does when a ref's node is replaced. A ref that stores the node
+   * for another root (a portal seat) therefore never keeps a detached element.
+   */
+  function commitRefs(root, next) {
+    const previous = root.refs ?? []
+    root.refs = next
+    for (const [ref] of previous) ref(null)
+    for (const [ref, element] of next) ref(element)
   }
   function build(node, parent, root) {
     if (node === null || node === undefined || typeof node === 'boolean') return
@@ -130,7 +158,7 @@
     if (node.type === Fragment) { build(node.children, parent, root); return }
     if (typeof node.type === 'function') { build(node.type({ ...node.props, children: node.children.length <= 1 ? node.children[0] : node.children }), parent, root); return }
     const element = document.createElement(node.type)
-    setProps(element, node.props)
+    setProps(element, node.props, root)
     build(node.children.length ? node.children : node.props.children, element, root)
     parent.appendChild(element)
   }
@@ -142,9 +170,11 @@
     currentRoot = root
     root.hookIndex = 0
     root.effects = []
+    root.nextRefs = []
     let tree
     try { tree = root.Component(root.props()) } catch (error) { log.errors.push('render: ' + (error?.stack ?? error)) } finally { currentRoot = null }
     build(tree, root.container, root)
+    commitRefs(root, root.nextRefs)
     for (const cell of root.effects) { cell.cleanup?.(); const out = cell.fn(); cell.cleanup = typeof out === 'function' ? out : undefined }
   }
   function schedule(root) { if (root.pending || root.unmounted) return; root.pending = true; queueMicrotask(() => renderRoot(root)) }
@@ -158,6 +188,7 @@
       for (const cleanup of root.cleanups) cleanup()
       for (const portal of root.portals.splice(0)) portal.remove()
       container.replaceChildren()
+      commitRefs(root, [])
     }
   }
 
@@ -383,6 +414,8 @@
       }
       // Drift arrives without a user action (bypass-UI): the timeline marks it so a later
       // navigation can be told apart from a user-requested return.
+      // restoredSession: DSH itself already shows this session when the page starts (a reload).
+      if (o.restoredSession) show(o.restoredSession)
       api.drift = (id) => { log.timeline.push({ kind: 'drift', session: id }); show(id) }
       api.showPanel = (id) => { log.timeline.push({ kind: 'drift', panel: id }); panel.set({ activePanelId: id }) }
       api.panel = () => panel.getSnapshot().activePanelId
@@ -392,8 +425,13 @@
       // A preference change made by someone else through the real native service (not the page).
       api.externalEdit = async (id, binding) => (await service.edit({ type: 'set', id, binding }, service.config.getSnapshot().revision)).status
       let openFailures = o.openFails ?? 0
+      // holdOpen: openSession stays pending until the case settles it (rejectHeldOpen), so a
+      // rejection can arrive after the main view already shows the session.
+      api.heldOpens = []
+      api.rejectHeldOpen = () => { const held = api.heldOpens.shift(); held?.reject(new Error('fbtest: injected late openSession rejection')); return Boolean(held) }
       const uiWorkspace = recorder('uiWorkspace', {
         async openSession(id) {
+          if (o.holdOpen) return new Promise((resolve, reject) => { api.heldOpens.push({ id, resolve, reject }) })
           if (openFailures > 0) { openFailures--; throw new Error('fbtest: injected openSession rejection') }
           show(id)
         },
@@ -456,6 +494,7 @@
       const page = (await loadModule(H.pageScript)).factory((name) => {
         if (name === 'react') return React
         if (name === 'react-dom') return ReactDOM
+        if (name === H.primitivesModule) return pagePrimitives
         throw new Error('unexpected page require ' + name)
       })
       api.plugin = { name: page.name, inject: page.inject }
@@ -504,6 +543,16 @@
       return {
         statuses: [...document.querySelectorAll('[role="status"]')].filter(shown).map((node) => node.textContent.trim()).filter(Boolean),
         retry: [...document.querySelectorAll('button')].some((node) => node.textContent === 'Retry' && shown(node)),
+      }
+    },
+    /** Status nodes and buttons inside the page's own bottom-left navigation. */
+    navStatus() {
+      const nav = document.querySelector(H.pageNav)
+      if (!nav) return null
+      return {
+        statuses: [...nav.querySelectorAll(H.statusRole)].map((node) => node.textContent.trim()),
+        buttons: [...nav.querySelectorAll('button')].map((node) => node.textContent.trim()),
+        text: nav.textContent,
       }
     },
     /** Ids under a root that the browser would let a user reach (visible box that hit-tests to it). */

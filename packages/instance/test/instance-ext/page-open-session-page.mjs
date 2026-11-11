@@ -70,6 +70,19 @@ function fakeReact() {
   }
 }
 
+/**
+ * Harness plumbing, not an oracle: the page takes DSH's design-system `Button` from the client
+ * primitives module. The stand-in renders the one native `<button type="button">` the real one
+ * renders, so cases that find a button by tag and text stay valid.
+ */
+const PRIMITIVES = Object.freeze({ module: '@deepseek-ai/dsh-client-ui-primitives', buttonType: 'button' })
+function primitives(React) {
+  function Button({ variant: _variant, size: _size, children, ...props }) {
+    return React.createElement(PRIMITIVES.buttonType, { type: PRIMITIVES.buttonType, ...props }, children)
+  }
+  return { Button }
+}
+
 /** Expand function components to host elements (one shallow render, no effects). */
 function render(node) {
   if (node === null || node === undefined || typeof node === 'boolean') return []
@@ -177,7 +190,7 @@ export function loadPage({ respond, hooks = {} }) {
   if (!registered || typeof registered.factory !== 'function') throw new Error('client.js did not register through __ModuleLoader__.load')
 
   const React = fakeReact()
-  const modules = { react: React, 'react-dom': { createPortal: (node) => node } }
+  const modules = { react: React, 'react-dom': { createPortal: (node) => node }, [PRIMITIVES.module]: primitives(React) }
   const plugin = registered.factory((name) => {
     if (!(name in modules)) throw new Error('unexpected require ' + name)
     return modules[name]

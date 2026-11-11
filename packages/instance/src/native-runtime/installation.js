@@ -195,7 +195,8 @@ export async function copyChildCode(paths, record) {
   // The settings row's host half reads the public status shape and route tables of these main modules.
   await copy(path.join(sourceRoot, 'src', 'native-web.js'), path.join(destination, 'src', 'native-web.js'), javascript)
   await mkdir(path.join(destination, 'src', 'host'), { mode: RUNTIME.privateDirectoryMode })
-  await copy(path.join(sourceRoot, 'src', 'host', 'binding.js'), path.join(destination, 'src', 'host', 'binding.js'), javascript)
+  // native-web.js publishes a failed start's detail through main's sanitizer and its JSON helper.
+  for (const module of ['binding.js', 'launch-detail.js', 'json-string-spans.js']) await copy(path.join(sourceRoot, 'src', 'host', module), path.join(destination, 'src', 'host', module), javascript)
   await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
   await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), everyFile)
   // M1: the instance's src/slim shims and persona import `fishball-connector/contract`. Node finds
