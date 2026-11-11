@@ -87,6 +87,8 @@ const MOS = Object.freeze({
   fixtureWriteFailure: 'fixture child write failure',
   settleMs: 30,
   status: Object.freeze({ ready: Object.freeze({ state: 'ready', code: null, detail: null }), starting: Object.freeze({ state: 'starting', code: null, detail: null }) }),
+  // admin.status answers {state, code} only by design (no detail, path or pid).
+  adminStatus: Object.freeze({ ready: Object.freeze({ state: 'ready', code: null }) }),
   modelAttributes: Object.freeze(['data-fishball-model-sync', 'data-fishball-model-check', 'data-fishball-model-entry', 'data-fishball-model-add', 'data-fishball-model-result']),
   panel: Object.freeze({
     root: 'data-fishball-settings',
@@ -427,7 +429,7 @@ const IN_PROCESS = [
   ['MOS-EP-07', 'EP', 'unsolicited admin frames from the child start nothing', async (t) => {
     const { createAdminRelay, ADMIN, ADMIN_OPERATION } = await loadInstance(MOS.admin.module)
     const calls = { status: 0, restart: 0 }
-    const relay = createAdminRelay({ status: () => { calls.status++; return MOS.status.ready }, restart: async () => { calls.restart++ } })
+    const relay = createAdminRelay({ status: () => { calls.status++; return MOS.adminStatus.ready }, restart: async () => { calls.restart++ } })
     t.after(() => relay.close())
     const link = relayLink()
     relay.attach(link.main)
@@ -444,7 +446,7 @@ const IN_PROCESS = [
     assert.equal(calls.restart, 0, 'no restart from an unsolicited frame')
     assert.equal(calls.status, 0, 'no status read from an unsolicited frame')
     assert.deepEqual(link.frames.toChild, [], 'nothing is sent toward the child')
-    assert.deepEqual(await relay.request(MOS.admin.status), { ok: true, result: MOS.status.ready }, 'the owner admin.status still answers')
+    assert.deepEqual(await relay.request(MOS.admin.status), { ok: true, result: MOS.adminStatus.ready }, 'the owner admin.status still answers')
   }],
 
   ['MOS-UC-01', 'Use Case', 'owner check then add through the main routes, with per-entry outcomes and key rules', async (t) => {
