@@ -724,20 +724,24 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
    ─► inbox_ack after the receiving side's durable acceptance (R-INT-08)
 ```
 
-- **Watchdog's registrations** (R-INT-07; Q25 and Q13 decided), priority 0:
+- **Watchdog's registrations** (R-INT-07; Q25, Q13 and Q32 decided), priority 0:
   - `types: ['permission', 'turn-finished', 'state']`, `filter: e =>
-    supervision.isActive(e.sourceSessionId)` (healthy X14 state and a live X15 claim);
+    supervision.isActive(e.sourceSessionId) && !(e.type === 'turn-finished' &&
+    !e.payload.running && !e.payload.queued)` (healthy X14 state and a live X15 claim; an idle
+    stop is excluded);
   - `types: ['settlement', 'retirement']`, `filter: e => watchdog.handled(e.correlationId)`
     (offers it held or escalated to the user).
   Everything else (questions, plan reviews, messages, asks, hand-over and
   take-back, notices, contributor events, unsupervised sessions) matches no Watchdog
   registration and reaches Fishball.
-  - **Idle stop (Q32, decided; R-WD-13):** after checking a supervised session's
-    `turn-finished`, Watchdog looks at the event's state snapshot. If the session stopped idle
-    (not running, no queued input, offer or question), it calls `ctl.release(e, {toFishball:
-    true})`, so that one event wakes Fishball once. Mid-work `turn-finished` events stay
-    Watchdog-only. The connector includes `{running, queued}` in every `turn-finished` payload,
-    so the decision needs no extra read.
+  - **Idle stop bypasses Watchdog (Q32, revised; R-WD-13):** the filter above excludes a
+    `turn-finished` with `running: false` and `queued: false`, so no Watchdog registration
+    matches it and core delivers it straight to the Fishball agent, which is woken once.
+    Watchdog never sees it. Mid-work `turn-finished` events stay Watchdog-only. The connector
+    includes `{running, queued}` in every `turn-finished` payload, so the filter needs no read.
+  - A Watchdog check of an earlier turn that is still running when the idle stop arrives
+    finishes normally. Its result goes to Fishball only through Watchdog's usual escalation or
+    report, never merged into the idle-stop turn.
 - **Other plugins** may register too (fold-notify, the board, third-party child plugins), for
   example for `contributed:<ns>.*` types. The same rules apply. A registration with the same
   types and priority as another is accepted with one logged warning (R-INT-03).
@@ -782,9 +786,9 @@ no token, subscription, mailbox or lane of its own.
 3. Watchdog's acceptance is its own durable record. Core acks the event only after it.
 4. One Watchdog side session per watched session (U8) handles that session's events, on
    Watchdog's own model settings.
-5. An escalation **to Fishball** is `ctl.release(e, {toFishball: true})` (R-INT-05), and so is
-   the idle-stop hand-back of a `turn-finished` (R-WD-13). An
-   escalation **to the user** commits `escalate` at the connector (§7.2).
+5. An escalation **to Fishball** is `ctl.release(e, {toFishball: true})` (R-INT-05). An
+   escalation **to the user** commits `escalate` at the connector (§7.2). An idle-stop
+   `turn-finished` never reaches Watchdog: its filter excludes it (R-WD-13).
 
 ### 7.2 Requests to Fishball inside the Fishball DSH (R-WD-08)
 

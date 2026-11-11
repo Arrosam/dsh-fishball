@@ -334,6 +334,14 @@ queued, Watchdog hands that one `turn-finished` event back to Fishball, which is
 Turns in the middle of the work stay Watchdog-only. (This refines Q25: of a supervised session's
 `turn-finished` events, only the idle stop also reaches Fishball.)
 
+**Revised by the user (2026-11-11), verbatim:**
+
+> 会话停下来就绕过Watchdog直接转向Fishball
+
+What it means: the idle stop **bypasses Watchdog entirely** and goes straight to Fishball.
+Watchdog does not check that turn first and does not intercept it. Only turns after which the
+session is still running or has something queued stay Watchdog-only.
+
 ### 1.14 Earlier decisions carried into V3
 
 - **Watchdog**, a token saver and not a safety layer (U16):
@@ -527,7 +535,7 @@ replaces or weakens the token check (R-TOK-00).
 | R-WATCH-02 | For every session it manages, the managing pair receives a `turn-finished` event at the end of every turn and a `state` event on every change of running or pending-interaction state, with no set-up. Unmanaged sessions produce neither event, for anyone. |
 | R-WATCH-03 | There are **no** watch tools: `session_watch`, `session_unwatch` and `watches_list` are removed, and `session_start` / `session_message` have no `notifyWhenFinished` argument. A client that calls a removed tool gets the MCP "unknown tool" error. Watch notices of V2 are covered by `turn-finished`. |
 | R-WATCH-04 | On a Q24 succession the watch moves with management: the successor receives the sessions' later events, and none is sent twice. On release or Take back, events already queued for the old pair stay with it; later ones are not produced for it. |
-| R-WATCH-05 | **Watchdog is unchanged by this:** it supervises only sessions its Fishball manages, so its `turn-finished` and `state` interception (R-INT-07) covers exactly the managed-and-supervised sessions. Of those `turn-finished` events, only the idle stop also reaches Fishball (R-WD-13). |
+| R-WATCH-05 | **Watchdog is unchanged by this:** it supervises only sessions its Fishball manages, so its `turn-finished` and `state` interception (R-INT-07) covers exactly the managed-and-supervised sessions. Of those `turn-finished` events, the idle stop bypasses Watchdog and goes straight to Fishball (R-WD-13). |
 
 ### 3.4g Interception inside a Fishball DSH (R-INT; Q30 decided)
 
@@ -539,7 +547,7 @@ replaces or weakens the token check (R-TOK-00).
 | R-INT-04 | **Failure falls back to Fishball.** If the chosen interceptor's handler throws or rejects, or its plugin is off, down or not ready, or its registration is disposed while the event is in flight, the event goes to the Fishball agent, which is woken. An event is never lost and never handled twice. A filter that throws counts as "no match" for that registration. |
 | R-INT-05 | An interceptor that cannot finish an event may hand it back with `release(event, {toFishball: true})`; Fishball is then woken for it (Watchdog's escalation to Fishball, R-WD-09). |
 | R-INT-06 | Interceptors are local to the Fishball DSH and gain no authority at the connector: whatever they answer goes out through core's link as the Fishball principal, and the connector's first-commit rule (OQ-14) still applies. |
-| R-INT-07 | **Watchdog's registration (Q25, Q13 decided).** Watchdog registers two filters: (1) `types: [permission, turn-finished, state]`, for events whose session this Watchdog supervises while it is healthy (X14); (2) `types: [settlement, retirement]`, for offers this Watchdog held or escalated to the user. For (2), Fishball gets the outcome only as a **non-waking** note at its next turn (R-WD-09). Questions, plan reviews, messages, asks, Hand over / Take back, notices and contributor events are in neither `types`, so they reach Fishball. When Watchdog is off or down, its registrations are gone or their filters are false, so everything reaches Fishball. |
+| R-INT-07 | **Watchdog's registration (Q25, Q13, Q32 decided).** Watchdog registers two filters: (1) `types: [permission, turn-finished, state]`, for events whose session this Watchdog supervises while it is healthy (X14), **excluding** a `turn-finished` whose payload says the session is not running and has nothing queued (`running: false` and `queued: false`), which therefore goes straight to the Fishball agent (R-WD-13); (2) `types: [settlement, retirement]`, for offers this Watchdog held or escalated to the user. For (2), Fishball gets the outcome only as a **non-waking** note at its next turn (R-WD-09). Questions, plan reviews, messages, asks, Hand over / Take back, notices and contributor events are in neither `types`, so they reach Fishball. When Watchdog is off or down, its registrations are gone or their filters are false, so everything reaches Fishball. |
 | R-INT-08 | Core acks an event at the connector only after the receiving side (interceptor or Fishball) has durably accepted it (R-EVT-03). |
 
 ### 3.5 Events: DSH → Fishball (R-EVT)
@@ -623,7 +631,7 @@ These hold in **both** hosted and standalone mode.
 | R-WD-10 | Pausing supervision of a session stops that session first. A failed stop is reported and not recorded as paused. |
 | R-WD-11 | One Watchdog side session supervises one session (U8). Permission requests of a claimed session go to Watchdog only while it is healthy. Without a claim, they go to Fishball. |
 | R-WD-12 | **Routing split** (Q25, decided, refined by Q32; implemented as Watchdog's interception registration, R-INT-07). For a session supervised by a healthy Watchdog: its permission offers, and the turn-finished and state events that drive supervision, go to Watchdog only, and wake no Fishball turn. Its questions and plan reviews go to Fishball (U21). `message_fishball` and `ask_fishball` from the session, and Hand over / Take back events go to Fishball. (There are no separate watch notices any more; `turn-finished` of a supervised session is Watchdog's, Q31 and Q32.) Events of unsupervised sessions all go to Fishball. When Watchdog is off or down, everything goes to Fishball. A Watchdog **escalation to Fishball** (only for an item that is not high-risk and that Watchdog cannot decide, R-WD-09) sends the item back to Fishball, which is woken for it. A high-risk item goes to the **user** instead, with no Fishball turn (Q13). Events routed only to Watchdog start **no** Fishball LLM turn. The one exception is the idle stop of R-WD-13. |
-| R-WD-13 | **Idle stop reaches Fishball (Q32, decided).** When a supervised session's `turn-finished` event shows it stopped idle, meaning nothing running and nothing queued for it (no pending input, offer or question), Watchdog first does its own check of that turn and then hands **that one event** back to Fishball with `release(event, {toFishball: true})` (R-INT-05), which wakes Fishball once. A `turn-finished` after which the session is still running or has queued input stays Watchdog-only. The hand-back happens at most once per idle stop: a session that starts again and stops idle again produces a new hand-back. If Watchdog is off or down, the event reaches Fishball anyway (R-INT-04). If Watchdog's own check escalates in that turn, the escalation (R-WD-09) and the idle hand-back are both delivered, as two separate items. |
+| R-WD-13 | **Idle stop bypasses Watchdog (Q32, revised by the user).** A supervised session's `turn-finished` event whose payload says `running: false` and `queued: false` (not running, no pending input, offer or question) is **not** intercepted by Watchdog: its R-INT-07 filter excludes it, so core delivers it straight to the Fishball agent, which is woken once. Watchdog does not check that turn. Every other `turn-finished` of a supervised session (still running, or something queued) stays Watchdog-only. The session stays supervised: if it starts again, Watchdog sees its next events as usual. Work Watchdog had in progress for that session when the idle stop arrives (an unfinished check of an earlier turn) is finished as normal, but it adds nothing to Fishball's turn for the idle stop; if that check finds a problem, it reaches Fishball only through Watchdog's usual escalation or report (R-WD-09, R-WD-08). If Watchdog is off or down, the event reaches Fishball anyway. |
 
 ### 3.11 Placement, board and fold-notify (R-BND, R-BRD, R-FN)
 
@@ -967,8 +975,9 @@ The user's words are quoted in 1.12: watching is managing. An agent automaticall
 session it manages and never one it doesn't, so the watch tools and `notifyWhenFinished` are
 removed. Now R-WATCH-01..05. Options A (to the watcher) and B (strict routing) are closed.
 
-**Q32. Does a supervised session's finished work ever reach Fishball? — DECIDED 2026-11-11: A.**
-Yes: when a supervised session stops idle, with nothing running and nothing queued, Watchdog
-hands that one event back to Fishball, which is woken once. Turns in the middle of the work stay
+**Q32. Does a supervised session's finished work ever reach Fishball? — DECIDED 2026-11-11: A, revised.**
+Yes: when a supervised session stops idle, with nothing running and nothing queued, that one
+event bypasses Watchdog and goes straight to Fishball, which is woken once (the user's revision,
+quoted in 1.13). Turns in the middle of the work stay
 Watchdog-only. Now R-WD-13. Options B (strict Q25) and C (every `turn-finished` to both) are
 closed.
