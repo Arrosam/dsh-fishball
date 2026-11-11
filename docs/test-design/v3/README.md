@@ -37,7 +37,7 @@ The parallel-development task table that consumes these cases is
 
 ## Counts
 
-163 active cases (plus 3 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
+170 active cases (plus 3 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
 cases, not rows.
 
 | Area | UC | EP | BVA | DT | ST | Total |
@@ -45,17 +45,17 @@ cases, not rows.
 | AUTH (OAuth, tokens, pairing) | 10 | 10 | 6 | 8 | 5 | 39 |
 | NAME | 3 | 4 | 2 | 3 | 1 | 13 |
 | HAND (Hand over / Take back) | 4 | 2 | 0 | 2 | 2 | 10 |
-| EVT (events, interception) | 3 | 4 | 2 | 3 | 2 | 14 |
+| EVT (events, interception) | 3 | 5 | 2 | 4 | 2 | 16 |
 | WD (Watchdog) | 7 | 4 | 3 | 2 | 3 | 19 |
 | WATCH | 3 | 1 | 0 | 0 | 1 | 5 |
 | EXT (contributors) | 4 | 4 | 4 | 3 | 1 | 16 |
 | HOST (hosted mode) | 8 | 3 | 0 | 3 | 2 | 16 |
 | REM (standalone, remote) | 3 | 3 | 0 | 1 | 0 | 7 |
-| UIM (embed-UI, install matrix) | 3 | 1 | 0 | 1 | 0 | 5 |
-| PLAT (rest) | 6 | 7 | 2 | 3 | 1 | 19 |
-| **Total** | **54** | **43** | **19** | **29** | **18** | **163** |
+| UIM (embed-UI, install matrix) | 5 | 2 | 0 | 2 | 0 | 9 |
+| PLAT (rest) | 7 | 7 | 2 | 3 | 1 | 20 |
+| **Total** | **57** | **45** | **19** | **31** | **18** | **170** |
 
-Levels (a case may span two): unit 55, integration 111, e2e 24. Provisional on a spike (`P:Sn`): 22.
+Levels (a case may span two): unit 57, integration 116, e2e 28. Provisional on a spike (`P:Sn`): 22.
 
 ## Conventions
 

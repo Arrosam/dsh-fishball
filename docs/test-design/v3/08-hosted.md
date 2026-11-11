@@ -50,7 +50,7 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
   - A1. Eo managed no sessions and held no role → only the name moves and Eo is deleted.
 - **Exception flows:**
   - E1. An agent's (any principal's) answer to O1's **old** id → `expired`.
-  - E1a. The **user's** answer to O1's card in S1, given during or after the succession → settles the request; it is **never** refused `expired` because of the succession (S3 `b4dca86`; offer id revision per Q-S3-1, pending).
+  - E1a. The **user's** answer to O1's card in S1, given during or after the succession → settles the request; it is **never** refused `expired` because of the succession (S3 `b4dca86`; one record per request, offer id `<request>.r<n>` → `r<n+1>`, Q-S3-1 decided as implementation, K1 freezes the format).
   - E2. The step fails midway (injected storage failure) → nothing moved; Eo stays, with sessions, role and name; En stays nameless; I retries at its next start.
   - E3. The candidate old entry was created by the **user**, not by I → `retire` refuses; nothing moves.
 - **Postconditions:** "Navigator" was never held by two principals; later S1/S2 events go to En only; no event is delivered twice.

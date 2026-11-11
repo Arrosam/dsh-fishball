@@ -102,7 +102,7 @@ caller-identity mechanism is provisional on V3-S5; every EXT case is **P:S5** un
 | --- | --- | --- | --- |
 | 1 | `board-helper` | `board-helper` | `board-helper.lookup` |
 | 2 | `@acme/tools` | `acme-tools` | `acme-tools.lookup` |
-| 3 | `dsh-fishball-embed-UI` | `embed-ui` (the only alias) | `embed-ui.lookup` |
+| 3 | `fishball-embed-ui` | `embed-ui` (the only alias) | `embed-ui.lookup` |
 | 4 | a contributor passing `namespace: "other"` in its definition | ignored; derived namespace used | |
 | 5 | a contributor calling `register` from inside another plugin's scope | the **caller's** namespace (spike S5) | |
 | 6 | two plugins whose names normalise to the same namespace | TQ-13 (unique plugin names ≠ unique normalised names) | |

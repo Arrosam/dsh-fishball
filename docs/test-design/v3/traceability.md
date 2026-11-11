@@ -12,12 +12,12 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-OA-10 | Withdrawn (requirements 1.16, no direct access); the ID is reserved. Its negative is covered by AUTH-UC-07 and AUTH-EP-02 rows 7–8. |
 | R-WD-13 | Withdrawn (requirements 1.14); the ID is reserved. Its old behaviour (idle-stop bypass) is negatively covered by WD-UC-02 and WD-EP-01 #5: every `turn-finished` reaches Fishball. |
 
-**Requirement → cases** (188 requirements, 163 active cases, 3 withdrawn ids kept):
+**Requirement → cases** (193 requirements, 170 active cases, 3 withdrawn ids kept):
 
 | Requirement | Cases | Count |
 | --- | --- | --- |
 | R-ARCH-01 | PLAT-UC-04, PLAT-EP-03, PLAT-EP-07 | 3 |
-| R-ARCH-02 | UIM-DT-01 | 1 |
+| R-ARCH-02 | UIM-UC-04, UIM-DT-01 | 2 |
 | R-ARCH-03 | HAND-EP-01, PLAT-EP-03 | 2 |
 | R-ARCH-04 | HAND-UC-04, UIM-DT-01 | 2 |
 | R-ARCH-05 | HOST-UC-08, HOST-EP-03, HOST-EP-01, PLAT-EP-03 | 4 |
@@ -28,10 +28,10 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-CON-02 | WATCH-UC-03, PLAT-UC-01, PLAT-UC-02, PLAT-EP-02 | 4 |
 | R-CON-03 | HAND-DT-01, EVT-UC-01, EVT-EP-02, EVT-BVA-01, EVT-ST-01 | 5 |
 | R-CON-04 | EVT-UC-01, REM-UC-02 | 2 |
-| R-CON-05 | AUTH-DT-04, REM-UC-02, PLAT-UC-02, PLAT-ST-01 | 4 |
-| R-CON-06 | PLAT-UC-02, PLAT-ST-01 | 2 |
+| R-CON-05 | AUTH-DT-04, EVT-UC-02, REM-UC-02, PLAT-UC-02, PLAT-UC-07, PLAT-ST-01 | 6 |
+| R-CON-06 | PLAT-UC-02, PLAT-UC-07, PLAT-ST-01 | 3 |
 | R-CON-07 | PLAT-UC-02 | 1 |
-| R-CON-08 | EVT-EP-01, PLAT-UC-03 | 2 |
+| R-CON-08 | EVT-EP-01, UIM-UC-04, PLAT-UC-03, PLAT-UC-07 | 4 |
 | R-CON-09 | EVT-BVA-02, EVT-DT-01, PLAT-UC-03 | 3 |
 | R-CON-10 | AUTH-UC-01, AUTH-UC-09 | 2 |
 | R-CON-11 | HAND-UC-01, HAND-UC-03, HAND-UC-04, HAND-EP-01, HAND-DT-01 | 5 |
@@ -106,7 +106,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-NAME-05 | AUTH-UC-09, NAME-UC-02, NAME-EP-04, HAND-UC-01, HAND-UC-03 | 5 |
 | R-NAME-06 | AUTH-UC-10, NAME-UC-01, NAME-BVA-03, NAME-DT-01 | 4 |
 | R-NAME-07 | NAME-ST-01, HOST-UC-03, HOST-ST-02 | 3 |
-| R-NAME-08 | AUTH-DT-08, NAME-UC-01, NAME-EP-04, NAME-ST-01, HAND-UC-01, HAND-UC-03, HAND-EP-02 | 7 |
+| R-NAME-08 | AUTH-DT-08, NAME-UC-01, NAME-EP-04, NAME-ST-01, HAND-UC-01, HAND-UC-03, HAND-EP-02, UIM-UC-05 | 8 |
 | R-ROUTE-01 | HAND-UC-02, HAND-ST-01, WATCH-UC-01, HOST-UC-03 | 4 |
 | R-ROUTE-02 | EVT-EP-01, EVT-DT-01 | 2 |
 | R-ROUTE-03 | EVT-EP-01, EVT-DT-01, PLAT-UC-03 | 3 |
@@ -122,14 +122,15 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-WATCH-03 | WATCH-UC-03, PLAT-EP-02 | 2 |
 | R-WATCH-04 | HAND-UC-02, WATCH-UC-02, WATCH-ST-01, HOST-UC-03 | 4 |
 | R-WATCH-05 | WD-UC-02, WD-ST-02, WATCH-EP-01 | 3 |
-| R-INT-01 | EVT-UC-02, EVT-UC-03 | 2 |
-| R-INT-02 | EVT-UC-02, EVT-EP-03, EVT-DT-02, EVT-ST-02 | 4 |
+| R-INT-01 | EVT-UC-02, EVT-UC-03, EVT-DT-04, EVT-ST-02 | 4 |
+| R-INT-02 | EVT-UC-02, EVT-EP-03, EVT-DT-02, EVT-EP-05, EVT-ST-02 | 5 |
 | R-INT-03 | EVT-UC-03, EVT-DT-02 | 2 |
-| R-INT-04 | EVT-UC-03, EVT-EP-03, EVT-DT-02, EVT-ST-02, WD-UC-04 | 5 |
+| R-INT-04 | EVT-UC-02, EVT-UC-03, EVT-EP-03, EVT-DT-02, EVT-DT-04, EVT-ST-02, WD-UC-04 | 7 |
 | R-INT-05 | EVT-EP-03, EVT-ST-02 | 2 |
 | R-INT-06 | WD-UC-01 | 1 |
 | R-INT-07 | WD-UC-01, WD-UC-02, WD-UC-04, WD-EP-01, WD-DT-02, WD-ST-01 | 6 |
-| R-INT-08 | EVT-UC-02, EVT-DT-03, EVT-ST-01, EVT-ST-02 | 4 |
+| R-INT-08 | EVT-UC-02, EVT-DT-03, EVT-DT-04, EVT-ST-01, EVT-ST-02 | 5 |
+| R-INT-09 | EVT-UC-02, EVT-EP-05, EVT-ST-02, WD-UC-04 | 4 |
 | R-EVT-01 | EVT-DT-01 | 1 |
 | R-EVT-02 | EVT-UC-01, EVT-ST-01, HOST-UC-03 | 3 |
 | R-EVT-03 | EVT-UC-02, EVT-DT-03, EVT-ST-02 | 3 |
@@ -144,19 +145,20 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-FB-08 | PLAT-EP-06 | 1 |
 | R-FB-09 | HOST-DT-03, UIM-DT-01, PLAT-UC-04 | 3 |
 | R-FB-10 | HOST-UC-08, HOST-ST-01, UIM-DT-01, PLAT-UC-04, PLAT-DT-01 | 5 |
+| R-FB-11 | PLAT-UC-07 | 1 |
 | R-HOST-01 | HOST-UC-01 | 1 |
 | R-HOST-02 | HOST-UC-01, HOST-UC-06, HOST-ST-01, PLAT-UC-06 | 4 |
 | R-HOST-03 | HOST-UC-06, HOST-UC-07 | 2 |
 | R-HOST-04 | HOST-UC-06, HOST-UC-08, HOST-EP-03 | 3 |
 | R-HOST-05 | HOST-UC-01, HOST-UC-02, HOST-UC-05, HOST-EP-02, HOST-DT-01, REM-DT-01, UIM-DT-01 | 7 |
-| R-HOST-06 | HOST-UC-01, HOST-ST-01, UIM-UC-01 | 3 |
+| R-HOST-06 | HOST-UC-01, HOST-ST-01, UIM-UC-01, UIM-EP-02 | 4 |
 | R-HOST-07 | HOST-UC-07, HOST-UC-08 | 2 |
 | R-HOST-11 | HOST-UC-08, HOST-EP-03, HOST-DT-03 | 3 |
 | R-HOST-08 | WD-UC-05, WD-ST-01, HOST-UC-06 | 3 |
 | R-HOST-09 | HAND-ST-01, HOST-UC-03, HOST-DT-01, HOST-DT-02, HOST-ST-02, PLAT-ST-01 | 6 |
 | R-HOST-10 | HOST-UC-04, HOST-DT-01, HOST-DT-02 | 3 |
 | R-UI-01 | UIM-UC-01, UIM-UC-02, UIM-UC-03, UIM-EP-01, UIM-DT-01 | 5 |
-| R-UI-02 | UIM-UC-01 | 1 |
+| R-UI-02 | UIM-UC-01, UIM-EP-02 | 2 |
 | R-UI-03 | UIM-UC-01 | 1 |
 | R-UI-04 | EXT-UC-04, UIM-UC-02, UIM-EP-01 | 3 |
 | R-UI-05 | HAND-UC-01, HAND-UC-03, HAND-ST-02, UIM-UC-02 | 4 |
@@ -165,6 +167,9 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-UI-08 | EXT-DT-03, UIM-UC-02, UIM-EP-01, UIM-DT-01 | 4 |
 | R-UI-09 | HAND-UC-04, EXT-DT-03, HOST-UC-05, UIM-UC-03, UIM-EP-01, UIM-DT-01, PLAT-EP-06 | 7 |
 | R-UI-10 | NAME-EP-04, HAND-UC-01, HAND-UC-03, HAND-EP-02, HAND-ST-02, HAND-DT-01 | 6 |
+| R-UI-11 | UIM-UC-04 | 1 |
+| R-UI-12 | UIM-UC-04, UIM-UC-05, UIM-DT-02, PLAT-UC-07 | 4 |
+| R-UI-13 | UIM-UC-04, UIM-UC-05, UIM-DT-02 | 3 |
 | R-REM-01 | REM-UC-03, REM-EP-02 | 2 |
 | R-REM-02 | AUTH-EP-10, REM-UC-03, REM-EP-02 | 3 |
 | R-REM-03 | AUTH-UC-07, AUTH-UC-08, AUTH-EP-10, AUTH-EP-09, REM-UC-03, REM-EP-03, PLAT-EP-01 | 7 |
@@ -177,9 +182,9 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-WD-04 | WD-UC-03, WD-UC-07, WD-EP-02, WD-BVA-01, WD-BVA-02, WD-BVA-03 | 6 |
 | R-WD-05 | WD-UC-03, WD-EP-04 | 2 |
 | R-WD-06 | WD-EP-04 | 1 |
-| R-WD-07 | WD-UC-04, WD-UC-05, WD-DT-02, WD-ST-01 | 4 |
+| R-WD-07 | EVT-DT-04, WD-UC-04, WD-UC-05, WD-DT-02, WD-ST-01 | 5 |
 | R-WD-08 | WD-UC-04, WD-EP-03 | 2 |
-| R-WD-09 | WD-UC-01, WD-EP-01, WD-DT-01, PLAT-ST-01 | 4 |
+| R-WD-09 | WD-UC-01, WD-EP-01, WD-DT-01, UIM-UC-05, PLAT-ST-01 | 5 |
 | R-WD-10 | WD-UC-06, WD-ST-02, WD-ST-03 | 3 |
 | R-WD-11 | WD-DT-02, WD-ST-02 | 2 |
 | R-WD-12 | WD-UC-01, WD-UC-02, WD-EP-01, WD-DT-01, WD-DT-02 | 5 |
@@ -201,7 +206,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-MIG-05 | HOST-UC-01, PLAT-UC-05 | 2 |
 | R-COMPAT-01 | PLAT-DT-03 | 1 |
 | R-SEC-01 | HAND-EP-01, HOST-EP-01, PLAT-EP-07 | 3 |
-| R-SEC-02 | HOST-EP-02, PLAT-EP-05 | 2 |
+| R-SEC-02 | EVT-EP-05, HOST-EP-02, PLAT-EP-05 | 3 |
 | R-SEC-03 | PLAT-EP-01, PLAT-BVA-02 | 2 |
 | R-SEC-04 | EXT-EP-04 | 1 |
 
@@ -275,7 +280,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | HAND-DT-02 | [03-handover.md](<03-handover.md>) | integration | K |
 | HAND-ST-01 | [03-handover.md](<03-handover.md>) | integration | — |
 | EVT-UC-01 | [04-events-interception.md](<04-events-interception.md>) | integration | — |
-| EVT-UC-02 | [04-events-interception.md](<04-events-interception.md>) | integration (core with a fake link and plugins) | P:S2 (E2 crash window, V3-S2), S2-Q1 pending |
+| EVT-UC-02 | [04-events-interception.md](<04-events-interception.md>) | integration (core with a fake link and plugins) | P:S2 (E2 crash window, V3-S2) |
 | EVT-UC-03 | [04-events-interception.md](<04-events-interception.md>) | unit | — |
 | EVT-EP-01 | [04-events-interception.md](<04-events-interception.md>) | integration | — |
 | EVT-EP-02 | [04-events-interception.md](<04-events-interception.md>) | integration | — |
@@ -285,9 +290,11 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | EVT-BVA-02 | [04-events-interception.md](<04-events-interception.md>) | integration | D§3.4 (default 200), K |
 | EVT-DT-01 | [04-events-interception.md](<04-events-interception.md>) | unit (router), integration | — |
 | EVT-DT-02 | [04-events-interception.md](<04-events-interception.md>) | unit | — |
-| EVT-DT-03 | [04-events-interception.md](<04-events-interception.md>) | integration | P:S2 (rules 4, 5 and 7–9 only; rules 1–3 and 6 settled by S2 `a499141`), S2-Q1..Q3 pending |
+| EVT-DT-03 | [04-events-interception.md](<04-events-interception.md>) | integration | P:S2 (rules 4, 5, 7–9; rules 1–3 and 6 settled by S2 `a499141`) |
+| EVT-DT-04 | [04-events-interception.md](<04-events-interception.md>) | unit (core with a scripted interceptor and fake link) | — |
+| EVT-EP-05 | [04-events-interception.md](<04-events-interception.md>) | integration (Fishball DSH with a scripted interceptor; inspect context and logs) | — |
 | EVT-ST-01 | [04-events-interception.md](<04-events-interception.md>) | unit | TQ-2 (decided A) |
-| EVT-ST-02 | [04-events-interception.md](<04-events-interception.md>) | unit | P:S2 (rows 2, 4–6, 9–12; rows 1, 3, 7, 8 settled by S2 `a499141`), S2-Q3 pending (row 12) |
+| EVT-ST-02 | [04-events-interception.md](<04-events-interception.md>) | unit | P:S2 (rows 2, 4–6, 9–11; rows 1, 3, 7, 8 settled by S2 `a499141`) |
 | WD-UC-01 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
 | WD-UC-02 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
 | WD-UC-03 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock, fake link), integration | TQ-9 |
@@ -351,10 +358,14 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | REM-EP-02 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | — |
 | REM-EP-03 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | K (allowlist setting) |
 | REM-DT-01 | [09-standalone-remote.md](<09-standalone-remote.md>) | unit | — |
-| UIM-UC-01 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e | — |
+| UIM-UC-01 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e (E3–E5 also integration with a scripted browser) | — |
 | UIM-UC-02 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e | — |
 | UIM-UC-03 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e | — |
+| UIM-UC-04 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e | — |
+| UIM-UC-05 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e (both SDKs), integration (embed-UI client against scripted session events) | — |
 | UIM-EP-01 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | integration | — |
+| UIM-EP-02 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | integration (scripted browser against a real host and child), e2e | — |
+| UIM-DT-02 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | unit (record builder fed scripted session events) | — |
 | UIM-DT-01 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | integration (headless rows), e2e (UI columns) | P:S6 |
 | PLAT-UC-01 | [11-platform.md](<11-platform.md>) | integration | — |
 | PLAT-UC-02 | [11-platform.md](<11-platform.md>) | integration | — |
@@ -362,6 +373,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | PLAT-UC-04 | [11-platform.md](<11-platform.md>) | integration (composition), e2e (page) | P:S6 |
 | PLAT-UC-05 | [11-platform.md](<11-platform.md>) | integration (+ e2e for the page) | P:S6 |
 | PLAT-UC-06 | [11-platform.md](<11-platform.md>) | integration | — |
+| PLAT-UC-07 | [11-platform.md](<11-platform.md>) | integration (core with a scripted model), e2e (Fishball page) | K (card fields, K3) |
 | PLAT-EP-01 | [11-platform.md](<11-platform.md>) | integration | D§3.1 |
 | PLAT-EP-02 | [11-platform.md](<11-platform.md>) | integration | K (names D§3.2) |
 | PLAT-EP-03 | [11-platform.md](<11-platform.md>) | unit (manifest/static analysis) | — |

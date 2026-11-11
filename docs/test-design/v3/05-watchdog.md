@@ -55,16 +55,16 @@ integration (real child + connector).
 - **Postconditions:** no `turn-finished` or `state` event was needed or consumed by Watchdog.
 
 ### WD-UC-04 — Watchdog fails and falls back to Fishball
-**Req:** R-WD-07, R-INT-04, R-INT-07, R-WD-08 · **Level:** integration · **Flags:** —
+**Req:** R-WD-07, R-INT-04, R-INT-07, R-INT-09, R-WD-08 · **Level:** integration · **Flags:** —
 
 - **Actor:** Watchdog / `fishball-core`.
 - **Preconditions:** Watchdog supervises S1 and S2; holds an accepted, undecided permission offer O1 of S1.
 - **Main flow:**
   1. A failure of any kind (load, readiness, loss of its registration, model/provider error, budget, store, claim, attach, runtime) occurs.
-  2. Watchdog is effective off at once: its filters turn false / registrations disposed; claims released; O1 goes to Fishball (woken); sends pass; stale callbacks are fenced (a late Watchdog commit for O1 is not sent).
+  2. Watchdog is effective off at once: its filters turn false / registrations disposed; claims released; O1 (accepted, undecided, no commit begun) goes to Fishball (woken once); stale callbacks are fenced (a late Watchdog commit for O1 is not sent).
   3. Fishball gets **one** "watchdog is down" notice through in-session communication (not MCP).
   4. S1's next permission request goes to Fishball.
-  5. **Oracle (S3 `b4dca86`):** an answer Watchdog already had in flight when it failed is either **committed** (no Fishball wake for that item) or **fenced** (not committed; Fishball woken once for it), **never both**. *(The fence API, `ctl.commit(send)`, is pending Q-S3-2 with S2-Q1.)*
+  5. **Oracle (S3 `b4dca86`):** an answer Watchdog already had in flight when it failed is either **committed** (no Fishball wake for that item) or **fenced** (not committed; Fishball woken once for it), **never both**. (`ctl.commit(send)`, decided with S2-Q1 / Q-S3-2 = B.)
 - **Alternative flows:**
   - A1. Watchdog supervises zero sessions when it fails → the notice is still sent.
   - A2. It goes down, recovers, goes down again → two notices.

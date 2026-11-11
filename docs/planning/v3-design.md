@@ -23,7 +23,7 @@ standalone mode is the same set installed by hand.
  │  · MCP endpoint /api/fishball/mcp  ◄──┼── MCP + token ─┐ │  · launch / lifecycle / launch config │
  │  · mailbox, tokens, OAuth AS, routing │                │ │  · places the plugin set in the child │
  │  · message_fishball / ask_fishball    │                │ │  · token hand-off, child locator ──┐  │
- │  · contribution service ◄─────────────┼─ registers ────┼─┤ dsh-fishball-embed-UI             ▼  │
+ │  · contribution service ◄─────────────┼─ registers ────┼─┤ fishball-embed-ui                 ▼  │
  │  · hand-over service (Q3)  ◄──────────┼─ in-process ───┼─┤  · fish, dots, marks, hand-over, frame│
  │ other plugins (contributors X) ───────┼─ register      │ │  · contributes attention.* tools     │
  └──────────────────────────────────────┘                │ └──────────────────┬────────────────────┘
@@ -42,7 +42,7 @@ standalone mode is the same set installed by hand.
 | --- | --- | --- | --- |
 | `fishball-connector` | a main DSH | MCP server; its own client-credentials OAuth authorization server (§5.5); tokens over `ctx.credentials`; pairs and names (§5.8); per-pair mailbox; routing (R-ROUTE, Q7 decided); session operations (today's `src/*.js` domain); `message_fishball` / `ask_fishball`; managed-session approval interception; the contribution service `fishballConnectorTools` (§13); the no-UI hand-over service (Q3, decided) | browser client, slots, HTML, CSS, iframes; an attention latch |
 | `fishball-instance` | a host DSH | hosted mode only (§6): launching the child with its launch configuration, its lifecycle, placing the four plugins, target and token hand-off, the child locator `fishballChild`, hosted model sync (engine), the hosted settings bundle `fishball-hosted-settings` it places in the child (R-HOST-11), uninstall cleanup | any session, approval, question or prompt service of the host DSH (R-ARCH-05); UI |
-| `dsh-fishball-embed-UI` | the host DSH, beside the instance | the sidebar entry and fish, the attention latch and its contributed tools (§13.6), marks and Hand over / Take back buttons that drive the connector's hand-over service (Q3, decided), the frame around the child page, status and Retry, the Plugins card and the model-sync trigger | secrets; session operations of its own; a Fishball page or frame without the instance (R-UI-01); anything at all with neither a connector nor an instance (R-UI-08) |
+| `fishball-embed-ui` | the host DSH, beside the instance | the sidebar entry and fish, the attention latch and its contributed tools (§13.6), marks and Hand over / Take back buttons that drive the connector's hand-over service (Q3, decided), the frame around the child page, status and Retry, the Plugins card and the model-sync trigger | secrets; session operations of its own; a Fishball page or frame without the instance (R-UI-01); anything at all with neither a connector nor an instance (R-UI-08) |
 | **Fishball plugin set** (Q2, decided: four plugins) | a Fishball DSH (hosted child or standalone) | §5a | acting on any DSH except its own, other than through the target connector's MCP (R-FB-08) |
 
 ### 1.2 The Fishball plugin set (Q2, decided)
@@ -52,7 +52,7 @@ client module) inside `fishball-core`'s package, installed, enabled and removed 
 
 | Plugin | Contents (from V2, re-homed) | Requires |
 | --- | --- | --- |
-| `fishball-core` | **agent:** the manager session and persona; the MCP link to the target (§6.3); the `fishball-events` subscription, the interception service and the acceptance ledger (§6.4); the scoped bridge façade (X12), claims (X15) and send gate (X19); the extension service `fishballInstance` (X1–X19) for feature plugins; manager tools; the private Skills tool; the admin and settings routes it serves to its own web page. **`fishball-ui` component:** the A-lite page client module (Fishball-only page, hidden navigation, shortcut remapping or unbinding, explicit return from Settings/Plugins); the guard rows in core's bundle patch (read-only preset with the Skills exception, disabled session-creating rows); the `fishball-recommended` tab; the generic slim settings panel with its settings-section extension point (hosted-only sections are injected by the instance, R-HOST-11) | — |
+| `fishball-core` | **agent:** the manager session and persona; the MCP link to the target (§6.3); the `fishball-events` subscription, the interception service and the acceptance ledger (§6.4); the scoped bridge façade (X12), claims (X15) and send gate (X19); the extension service `fishballInstance` (X1–X19) for feature plugins; manager tools; the private Skills tool; the admin and settings routes it serves to its own web page. **`fishball-ui` component:** the A-lite page client module (Fishball-only page, hidden navigation, shortcut remapping or unbinding, explicit return from Settings/Plugins); the guard rows in core's bundle patch (read-only preset with the Skills exception, disabled session-creating rows); the `fishball-recommended` tab; the generic slim settings panel with its settings-section extension point (hosted-only sections are injected by the instance, R-HOST-11); the **ask card** for asks Fishball cannot decide (R-FB-11) | — |
 | `fishball-board` | board tools, `board_search`, archive | `fishball-core` |
 | `fishball-fold-notify` | notice batching, attention via embed-UI's tool | `fishball-core` |
 | `fishball-watchdog` | supervision (§7) | `fishball-core` |
@@ -324,8 +324,8 @@ fishballChild = {
   apiVersion: 1,
   status(),                 // {state: STATUS, code: STATUS_CODES | target code | null}
   onChange(fn) → dispose,   // state, origin or target-status changes
-  origin(),                 // the child web's own origin, or null while not ready
-  admit({view, lang}),      // Promise<{url}>: one-time admission URL at the child origin
+  origin(hostname),         // the child web's origin under that loopback hostname, or null while not ready
+  admit({view, lang, hostname}), // Promise<{url}>: one-time admission URL; hostname ∈ {127.0.0.1, localhost, [::1]}
   retry(),                  // Promise<void>: restart the child
   targetStatus(),           // {state: 'connected'|'target-unreachable'|'token-refused'|'target-unset', code}
   providerSync,             // hosted model sync (R-HOST-07), triggered from embed-UI's card
@@ -343,9 +343,15 @@ fishballChild = {
 - **S4 (`b9809b7`, PASS):** the child redeems the ticket into **its own login cookie** through
   DSH's public API, so the browser never sees the child's launch token. The cookie is
   `SameSite=Strict`: opening the host DSH as `localhost` while the child is on `127.0.0.1` (or the
-  reverse) makes the frame answer 401. Pending S4 questions: the child's hostname following the
-  main page's host; dropped surfaces (brand mark, the `ask_fishball` Allow once / Reject row, card
-  records); the package name (npm refuses capitals, so likely `dsh-fishball-embed-ui`).
+  reverse) makes the frame answer 401. Dropped surfaces (S4-Q2 decided): sidebar entry kept, brand not overridden; no `ask_fishball` row
+  (an undecidable ask becomes a card in Fishball's own page, R-FB-11); records are drawn inline in the
+  managed session from its own events (Q-S4-2b decided B, R-UI-13). Package name (S4-Q3 decided B): `fishball-embed-ui`, lowercase, matching `fishball-connector` and
+  `fishball-instance`.
+- **Hostname (S4-Q1 decided A):** embed-UI's admit route passes the hostname of the main page's
+  request; the locator accepts only `127.0.0.1`, `localhost` or `[::1]`, keeps the child's own
+  port, and binds the ticket to that hostname. The child is reachable under all three names. Any
+  other name: the route refuses and embed-UI shows "Open DSH at 127.0.0.1 to use Fishball". The
+  frame through a tunnel is out of scope.
 
 ### 4.2 Embed-UI
 
@@ -358,7 +364,14 @@ fishballChild = {
     model sync, re-serving the locator's results to its own web client. `connection.fetch`
     already authenticates the browser owner. This is V2's route set, moved out of the instance.
 - **Web half** (`dsh.client`, the same injects as today's connector and instance clients):
-  - the sidebar entry and fish;
+  - the sidebar entry and fish (the one Fishball entry; DSH's brand mark is not overridden, R-UI-11);
+  - **no** answer controls for `ask_fishball` (R-UI-12);
+  - **inline records** (R-UI-13, Q-S4-2b decided B): read-only rows in the managed session, drawn
+    when the session sends a request to Fishball and when the answer comes back, built only from
+    the session's own events: its `ask_fishball` tool call and result (a read-only
+    `tool.call.toolview` for `ask_fishball`, a slot S4 showed embed-UI can fill) and its approval
+    request and resolution (a `conversation.chat.node` record). The principal's name comes from the
+    existing `managed()`. No new service member, no connector read API;
   - the frame: `src` comes from `admit`; when `lang` changes it asks for a new admission;
   - status and Retry, outside the frame;
   - the Plugins card with the model-sync trigger;
@@ -842,9 +855,12 @@ turn.
 ```ts
 fishballInstance.events.intercept(
   { pluginId, types: EventType[], filter?: (e) => boolean, priority?: number },   // priority default 0
-  onEvent: (e, ctl) => Promise<'accepted'>,          // durably accept, then return
+  onEvent: (e, ctl) => Promise<void>,
 ) → dispose
+// await ctl.accept()                                // FIRST: core makes its acceptance record durable (R-INT-01/08)
+// await ctl.commit(send)                            // fence around an answer sent through core's link (R-INT-04)
 // ctl.release(e, { toFishball: true })              // hand the event back (R-INT-05)
+// core keeps the record open until onEvent settles (S2-Q1 / Q-S3-2 decided B)
 ```
 
 ```text
@@ -854,10 +870,12 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
         none            → Fishball agent: X9 pipeline (fold batcher) ─► core's delivery list
                           ─► Agent.followup inside runMaintenance, only when the agent is fully idle
         one or more     → the highest priority; ties → the earliest registration (R-INT-03)
-          handler accepts           → done, no Fishball turn
-          handler throws/rejects,
-          plugin off/down/not ready,
-          registration disposed     → Fishball agent (R-INT-04)
+          ctl.accept() resolves     → record open (durable) → ack
+            handler settles         → record closed; no Fishball turn; log only (R-INT-09)
+            commit begun, then fail → stays with the interceptor (committed or fenced)
+          throws/rejects, plugin off/down/not ready, disposed:
+            not accepted, or accepted-undecided → Fishball agent, once (R-INT-04)
+          restart with an open record → same plugin again (dedupe by eventId), else Fishball once
           ctl.release(toFishball)   → Fishball agent (R-INT-05)
    ─► inbox_ack after the receiving side's durable acceptance (R-INT-08)
 ```
@@ -875,9 +893,15 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
 - **Other plugins** may register too (fold-notify, the board, third-party child plugins), for
   example for `contributed:<ns>.*` types. The same rules apply. A registration with the same
   types and priority as another is accepted with one logged warning (R-INT-03).
-- **Exactly once inside the Fishball DSH:** the acceptance ledger records which side took the
-  event (`interceptor:<pluginId>` or `fishball`). A fallback re-dispatches only an event whose
-  interceptor never recorded acceptance, so an event is neither lost nor handled twice.
+- **Exactly once inside the Fishball DSH:** the acceptance ledger is **core's** (S2-Q1 / Q-S3-2
+  decided B): it records which side took the event (`interceptor:<pluginId>` or `fishball`), and
+  for an interceptor whether its record is open, its commit begun, or closed. A fallback
+  re-dispatches only an event that was not accepted, or accepted and undecided with no commit
+  begun, so an event is never lost and never committed twice (R-INT-04).
+- **Out of context (R-INT-09, the user's rule "如果插件接手了一件事，且没有传导给Agent，那就没有记录，记录只留在后台的log里，不会进上下文"):**
+  an event an interceptor handles alone leaves no trace in any agent's context; core writes its
+  acceptance, commit and outcome to the background log only. Only `release`, a waking
+  `manager.notify` or the non-waking settlement note reach Fishball.
 - Acceptance is durable before the ack, and the ack follows acceptance. A replay with a known
   `eventId` is dropped. This is MCP-S2's reconciliation design.
 - **Delivery to the agent (spike V3-S2 `a499141`, PARTIAL).** Core never calls `Agent.followup` while the agent is busy:
@@ -886,9 +910,12 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
   **own durable delivery list**, and hands the head of the list to `Agent.followup` from inside
   `runMaintenance`, only when the agent is **fully idle** (no turn running, nothing queued). A busy
   Fishball therefore receives the event as its **next** turn, never inside the running one. An
-  entry leaves the list only once the followup is admitted. Open points from S2 (S2-Q1 interceptor
-  `ctl.accept()`, S2-Q2 no re-wake after admission and a child crash, S2-Q3 an event dropped after
-  the user's Stop) are pending with the user. Nothing in this design claims exactly-once model
+  entry leaves the list only once the followup is admitted. **After admission, a crash does not
+  re-wake** (S2-Q2 decided A): the interrupted turn was the one wake, DSH shows its own crash notice,
+  and the event is neither re-delivered nor followed by a notice turn. Startup reconciliation
+  classifies by stable message id in the durable log. **A user's Stop or inbox removal before
+  admission discards the event** (S2-Q3 decided A): acked, never retried; offers inside it stay
+  live at the connector (R-CON-05). S2-Q1 is decided (§6.4 `ctl.accept()`). Nothing in this design claims exactly-once model
   execution.
 - When Watchdog fails (X14 `fail()`), its filter turns false at once and it disposes its
   registration. In-flight events it has not accepted fall back to Fishball (R-WD-07, R-INT-04).
@@ -921,7 +948,10 @@ no token, subscription, mailbox or lane of its own.
    (requirements 1.14). This replaces the V2 X9 `inbox.claim` and the earlier "router claim";
    there is no new transport extension point, and X20 of earlier drafts is dropped.
 2. Core hands it the matching events without a Fishball LLM turn.
-3. Watchdog's acceptance is its own durable record. Core acks the event only after it.
+3. Watchdog calls `await ctl.accept()` first; core's record is the durable acceptance, and core
+   acks only after it (R-INT-08). Watchdog's answers go through `ctl.commit(send)`. A decision it
+   makes alone (allow, justified reject) leaves no trace in Fishball's context; it is logged only
+   (R-INT-09).
 4. **Patrol (R-WD-14):** for each supervised session, Watchdog's own timer fires once every
    `minCheckIntervalSeconds`. It then reads the session through core's link: `sessions_list`
    for running and pending state, and `session_read` from its last patrol watermark, bounded
@@ -970,8 +1000,9 @@ Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session
   | question / plan review | never reaches Watchdog |
 
 - **Failure = off** (R-WD-07):
-  - The X14 `fail()` runs synchronously: it disposes its interception registration (in-flight
-    items it has not accepted go to Fishball), passes sends and fences callbacks.
+  - The X14 `fail()` runs synchronously: it disposes its interception registration; items it was
+    offered or accepted but had not decided go to Fishball once; an answer whose `commit` had begun
+    stays Watchdog's (committed or fenced, never both, R-INT-04); stale callbacks are fenced.
   - It also sends one `manager.notify` "watchdog is down" per down episode.
   - Watchdog has no stream of its own. Loss of core's link is core's status, not a Watchdog
     failure; events simply wait at the connector until the link is back.
@@ -1041,7 +1072,7 @@ incompatible bundle is skipped at boot, not fatal. So:
 | `fishball-core` (new, from `packages/instance/src/slim/child/**`, `src/persona.js`, the private Skills tool, `native-child.js`'s app pieces, and, as its `ui/` component, `packages/instance/child-web/**` and the `LITE` overlay rows) | Bundle row(s) for the Fishball DSH; its `cordis.patch.yml` also carries the guard rows; `dsh.client` (platform web) for the `fishball-ui` page, recommended tab and slim settings. Runtime dependency on `fishball-shared` (bundled), `@modelcontextprotocol/client` 2.x and `fishball-connector/mcp-schema`, vendored as a copy so a standalone install needs nothing from the connector package at runtime. |
 | `fishball-shared` (new, `packages/shared`; TQ-R3 and TQ-R5 decided, R-ARCH-08) | A **library**, not a plugin: no `dsh` field, no row, no client. Holds only modules **more than one** V3 package uses; first contents: the child `admin` constants, the provider-sync wire codec, the file helpers core and the instance share. Imports nothing from any other V3 package. **Any** V3 package may depend on it (connector, embed-UI, core, instance, feature plugins, `fishball-hosted-settings`); each that does lists it in `dependencies` **and** `bundleDependencies`, so its release tarball carries it and nothing is fetched from a registry. Loading it never loads a module of the Fishball set (R-BND-01). |
 | `fishball-board`, `fishball-fold-notify`, `fishball-watchdog` | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |
-| `dsh-fishball-embed-UI` (new) | Host row + `dsh.client` (platform web) with the inject lists of today's two main-DSH clients combined. Optional peers `fishball-instance` and `fishball-connector` (the latter for `./tools` types only; embed-UI never imports connector code). Owns the moved locale strings. |
+| `fishball-embed-ui` (new; S4-Q3 decided B) | Host row + `dsh.client` (platform web) with the inject lists of today's two main-DSH clients combined. Optional peers `fishball-instance` and `fishball-connector` (the latter for `./tools` types only; embed-UI never imports connector code). Owns the moved locale strings. |
 
 Release numbers stay release bookkeeping. The V3 connector, instance, embed-UI, plugin set and
 `fishball-shared` are one coordinated breaking release, versioned together; `fishball-shared` is
@@ -1109,7 +1140,7 @@ this case.
 | ID | Question | Gate |
 | --- | --- | --- |
 | V3-S1 | Can a packaged MCP server SDK (2.x), configured **modern-only (2026-07-28)**, serve on a raw `webServer` route, with bearer checking before dispatch, Origin/header validation, OAuth resource metadata and listen streams, on both hosts? | Both stock-host clients (2.2.0, `pin: '2026-07-28'`) discover, list, call, subscribe and get hints; a 2025-era `initialize` gets the version refusal; GET/DELETE get 405; a 401 path never reaches the SDK |
-| V3-S2 | **Done `a499141` (PARTIAL):** delivery list + `Agent.followup` in `runMaintenance` when fully idle; three questions pending (S2-Q1..Q3). MCP-S2 continuation: a durable child acceptance ledger plus `Agent.followup` gives one routed entry and one user-visible wake after a lost ack, a child crash and reconnect | the open TODO from MCP-S2 §11.5 closes; no duplicate wake |
+| V3-S2 | **Done `a499141` (PARTIAL):** delivery list + `Agent.followup` in `runMaintenance` when fully idle; S2-Q1 decided (core-owned acceptance + commit fence, with Q-S3-2); S2-Q2 decided A (no re-wake after a mid-turn crash); S2-Q3 decided A (the user's Stop discards an unadmitted event). MCP-S2 continuation: a durable child acceptance ledger plus `Agent.followup` gives one routed entry and one user-visible wake after a lost ack, a child crash and reconnect | the open TODO from MCP-S2 §11.5 closes; no duplicate wake |
 | V3-S3 | **Done `b4dca86` (PASS):** one serial pair/name registry; succession as one registry write with idempotent offer re-issue; the user's answer never `expired` by succession; `ctl.accept()` / `ctl.commit(send)` needed (Q-S3-1, Q-S3-2 pending; Q-S3-3 decided: 0.2.2-rc.1 baseline). Interception and pairing (Watchdog intercepts only supervised `permission` and its own `settlement`/`retirement`; every `turn-finished`/`state` reaches Fishball; a refine starts no run): core's interception service hands events to the right interceptor (priority, ties, filters) without an LLM turn, and falls back to Fishball on throw/down/dispose without loss or double handling; `pair` races, `already-paired` results; OQ-14 races between user, Watchdog and Fishball answers on one principal | race matrix; no stale commit; one event wakes one agent |
 | V3-S4 | Embed-UI as a separate package: can the moved connector client still register its sidebar/slot contributions (the same injects) and frame the PG-ORIGIN child origin, without the connector client present? | both hosts; main shortcuts untouched |
 | V3-S5 | Contribution service (§13): caller identity from the injecting fiber; auto-withdrawal of tools **and** pending events on contributor disable/unload/HMR; quarantine lifted only by a new fiber; `tools/list_changed` delivery on 2026-07-28 listen streams; event limits and recipient routing; containment of throw/hang/oversize, on both hosts | independent cases across register/dispose/reload/quarantine states |

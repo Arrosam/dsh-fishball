@@ -357,7 +357,7 @@ Open for the user: S2-Q1, S2-Q2, S2-Q3.
 
 - **S4-Q1:** should the child's hostname follow the main page's host (`localhost` vs `127.0.0.1`), given the `SameSite=Strict` 401? Cases: UIM-UC-01 E3.
 - **S4-Q2:** surfaces dropped in the move: the brand mark, the `ask_fishball` Allow once / Reject row, card records.
-- **S4-Q3:** the package name: npm refuses capitals, so likely `dsh-fishball-embed-ui`.
+- **S4-Q3 (decided B, see below):** the package name.
 
 Settled by S4: UIM-UC-01..03, UIM-EP-01, UIM-DT-01 UI columns (rows 3, 6, 7, 8; still P:S6), HAND-UC-01 UI half, HAND-UC-03.
 
@@ -372,9 +372,9 @@ Settled by S2: delivery list held by core until the agent is fully idle, then `A
 
 ## Spike S3 questions (from `b4dca86`, PASS)
 
-- **Q-S3-1 (pending):** during a Q24 succession, does the user's answer go through, and does the
+- **Q-S3-1 (decided as an implementation detail, see below):** during a Q24 succession, does the user's answer go through, and does the
   offer id carry a revision (`<request>.r<n>`)? Cases: HOST-UC-03 E1/E1a, PLAT-ST-01 row 7.
-- **Q-S3-2 (pending, asked together with S2-Q1):** what may an interceptor still do after core falls
+- **Q-S3-2 (decided B with S2-Q1, see below):** what may an interceptor still do after core falls
   back; `ctl.accept()` and `ctl.commit(send)` in the K3 freeze. Cases: WD-UC-04 step 5, EVT-ST-02.
 - **Q-S3-3 decided by Fishball** under the user's standing rule "盯着DSH最新的0.2.2版本": 0.2.2-rc.1
   is the 0.2.2 baseline (npm's `latest`); probes are re-run when 0.2.2 final ships (R-COMPAT-01).
@@ -388,11 +388,67 @@ never both), HOST-UC-03 (the user's answer is never `expired` by succession), PL
 
 | Question | Source | Waiting for |
 | --- | --- | --- |
-| S2-Q1 + Q-S3-2 | interceptor `ctl.accept()` / `ctl.commit(send)` | the user (asked together) |
-| S2-Q2 | no re-wake after admission and a child crash | the user |
-| S2-Q3 | an event dropped after the user's Stop | the user |
-| Q-S3-1 | offer revision during succession | the user |
-| S4-Q1 | the child's hostname following the main page's host | relayed later |
-| S4-Q2 | dropped surfaces (brand mark, Allow once / Reject row, card records) | relayed later |
-| S4-Q3 | lowercase package name | relayed later |
 | TQ-6, TQ-7, TQ-9 … TQ-17 | test-planning gaps (see the table at the top) | the user, when relevant |
+
+**S2-Q1 + Q-S3-2 decided 2026-11-11: B.** Core owns acceptance: the handler must `await ctl.accept()`
+before acting, core keeps the record open until the handler settles; after a restart an open
+record goes back to the same plugin (dedupe by `eventId`), or to Fishball once if that plugin is
+off. An explicit `ctl.commit(send)` fence, frozen in K3: on a throw or failure, accepted-undecided
+items go to Fishball; an answer already being sent stays with the interceptor. With the user's
+rule, verbatim: "如果插件接手了一件事，且没有传导给Agent，那就没有记录，记录只留在后台的log里，不会进上下文"
+(interceptor-only events leave no record in any agent's context; background log only; core's
+acceptance record never surfaces). Now §1.21, R-INT-01/04/08/09 (new), R-WD-07; design §6.4,
+§7.1, §7.3; tasks K3, F-INTERCEPT, WD-ROUTE. Cases: EVT-UC-02, EVT-UC-03, EVT-DT-03 rule 8,
+EVT-ST-02 rows 4–9, EVT-DT-04 (new), EVT-EP-05 (new), WD-UC-04.
+
+**S2-Q2 decided 2026-11-11: A.** No re-wake after a mid-turn crash: the interrupted turn counts as the one
+wake, and DSH's own crash notice is what the user sees. Now R-EVT-03, design §6.4. Cases: EVT-DT-03
+rule 9, EVT-UC-02 E2a, EVT-ST-02 row 11a.
+
+**S2-Q3 decided 2026-11-11: A.** A user's Stop of a Fishball turn, or removal of a queued Fishball event,
+before admission discards the event: acked, never retried; approvals or questions inside it stay
+live at the connector (R-CON-05). Now R-EVT-03, design §6.4. Cases: EVT-ST-02 row 12, EVT-UC-02 E4.
+
+**S4-Q1 decided 2026-11-11: A.** The frame URL uses the main page's loopback hostname (`127.0.0.1`,
+`localhost` or `[::1]`) with the child's own port; the ticket follows that hostname; the child is
+reachable under all three; otherwise the route refuses with "Open DSH at 127.0.0.1 to use
+Fishball"; the page through a tunnel is out of scope. Now R-UI-02, R-HOST-06, §5; design §4.1; tasks
+I-HOST, U-SHELL. Cases: UIM-UC-01 E3–E5, UIM-EP-02 (new).
+
+**S4-Q2 decided 2026-11-11 (a mix).** The user, verbatim: "侧边栏的Fishball按钮入口 或者 override 右上角标志；待批按钮去掉，如果Fishball无法决断才在Fishball里面显示。交给Fishball了可以接受一些行为的改变；决策/卡片记录留在对话内inline显示，就和一个工具使用记录一样。"
+- Entry: **the sidebar Fishball entry** (chosen over a brand override: S4 proved the sidebar slots on
+  both SDKs; the brand slots were not exercised; a brand override changes the host UI for every
+  user). R-UI-11.
+- The `ask_fishball` Allow once / Reject row is dropped (R-UI-12); an ask Fishball cannot decide is
+  a card in Fishball's own page (R-FB-11). Task F-ASKCARD (new).
+- Decision / card records inline like a tool-use record: **which conversation is open (Q-S4-2b).**
+Cases: UIM-UC-04 (new), PLAT-UC-07 (new).
+
+**Q-S4-2b (open). Where are decision and card records shown inline?** V2 drew them in the managed
+session (`conversation.chat.node` from the connector client). Options: A. in Fishball's own
+conversation only (core's `fishball-ui`); B. a read-only record row in the managed session (embed-UI,
+through a new read-only member of the hand-over service); C. both.
+
+**Q-S4-2b decided 2026-11-11: B, without a read interface.** The user, verbatim: "B，不需要开一个只读的读取接口，只要这个session向Fishball发出请求和收到请求的时候自己在会话内绘制一个就行了。我不知道为什么要加读取接口。这完全是在DSH内发生的事，完全可以在DSH内自己判断，自己绘制。"
+Records are drawn inline in the **managed session** by embed-UI when the session sends a request
+to Fishball and when it receives the answer, from the session's own DSH events only (a read-only
+`tool.call.toolview` for `ask_fishball`, a `conversation.chat.node` for permission requests); no
+new hand-over-service member, no connector read API. Now §1.22, R-UI-12, R-UI-13 (new); design
+§4.2; task U-RECORDS (new). Cases: UIM-UC-04, UIM-UC-05 (new), UIM-DT-02 (new). If an SDK does not
+expose a received decision in the session's events, U-RECORDS raises one question.
+
+**S4-Q3 decided 2026-11-11: B.** The package is **`fishball-embed-ui`**, all lowercase, matching
+`fishball-connector` and `fishball-instance` (npm and DSH's plugin manager refuse capitals). The
+user's verbatim quotes keep their original spelling. Now the glossary, R-ARCH-01/04, design §1,
+§1.1, §4.2, §9.1; task R-EMBED; cases EXT-EP-02, PLAT-EP-07.
+
+**Q-S3-1 decided as an implementation detail (not asked).** Already settled by the user's Q24 A
+(the successor takes over; live offers are re-issued with new ids, so an agent's answer to an old
+id fails `expired`) and OQ-14 A (the first committed outcome wins). The user answers a request's
+card, never an offer id, so the only behavioural rule is that a succession never refuses the
+user, which follows from Q24 A. How it is stored (one settlement record per request, offer ids
+`<request>.r<n>` with succession issuing `r<n+1>`) is S3's implementation and is frozen by K1.
+Now R-HOST-09; cases HOST-UC-03 E1/E1a, PLAT-ST-01 row 7.
+
+All spike questions (S2, S3, S4) are now decided. Open test-planning questions: TQ-6, TQ-7 and
+TQ-9 to TQ-17 (table at the top).

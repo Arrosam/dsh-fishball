@@ -79,6 +79,20 @@ R-BRD-01, 02, R-FN-01, R-MIG-01…05, R-COMPAT-01, R-SEC-01…04. Conventions: [
 - **Exception flows:** E1. Hosted uninstall → the export is offered before deletion. E2. Standalone: `board_export` manager tool exists; the README tells the user to run it.
 - **Postconditions:** no record is ever deleted while installed.
 
+### PLAT-UC-07 — Fishball shows an ask it cannot decide inside its own page
+**Req:** R-FB-11, R-UI-12, R-CON-05, R-CON-06, R-CON-08 · **Level:** integration (core with a scripted model), e2e (Fishball page) · **Flags:** K (card fields, K3)
+
+- **Actor:** an agent session S1 in main DSH M; Fishball (the principal the ask goes to); the user at the Fishball page.
+- **Main flow:**
+  1. S1 calls `ask_fishball("Use the staging database?")`; Fishball receives the `ask` event.
+  2. Fishball's model cannot decide → the Fishball page shows a card in Fishball's conversation: the asking session S1, the question, and the answer field or choices.
+  3. The user answers on the card → core commits the answer through its link as Fishball's answer; S1's `ask_fishball` returns it.
+- **Alternative flows:** A1. Fishball decides itself → no card; S1 gets Fishball's answer.
+- **Exception flows:**
+  - E1. Nobody answers for 48 h (fake clock) → the card and S1 keep waiting; no timer answers.
+  - E2. The ask is settled elsewhere first (for example S1 is stopped) → the card shows it as closed; a late answer gets `already-settled` / `expired` and changes nothing.
+- **Postconditions:** the main DSH never showed an answer control for the ask; exactly one answer was committed.
+
 ## Equivalence Partitioning
 
 ### PLAT-EP-01 — Request check order at the MCP endpoint
@@ -167,7 +181,7 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 | 4 | `fishball-shared` manifest | no `dsh` field: no bundle, row, `dsh.client` or service; not listed on any Plugins page |
 | 5 | every V3 package that imports `fishball-shared` | has it in `dependencies` and `bundleDependencies`; its packed tarball contains it |
 | 6 | contents of `fishball-shared` | every module in it is imported by **at least two** V3 packages; a module imported by only one package fails the check |
-| 7a | allowed edges **into** `fishball-shared` (TQ-R5 = B) | from `fishball-connector`, `dsh-fishball-embed-UI`, `fishball-core`, `fishball-instance`, `fishball-board`, `fishball-fold-notify`, `fishball-watchdog`, `fishball-hosted-settings`: all allowed |
+| 7a | allowed edges **into** `fishball-shared` (TQ-R5 = B) | from `fishball-connector`, `fishball-embed-ui`, `fishball-core`, `fishball-instance`, `fishball-board`, `fishball-fold-notify`, `fishball-watchdog`, `fishball-hosted-settings`: all allowed |
 | 7b | edges **out of** `fishball-shared` | none to any V3 package |
 | 7c | other cross-package edges | unchanged: the feature plugins reach core only through the optional `fishballInstance?` inject; embed-UI imports no connector code (types from `./tools` only); the connector imports no Fishball-set package |
 | 8 | host DSH process of a running hosted setup (C + I + U, with the connector or embed-UI importing `fishball-shared`) | no module from `fishball-core`, the feature plugins or `fishball-hosted-settings` is loaded (module-load trace); `fishball-shared` modules may be |
