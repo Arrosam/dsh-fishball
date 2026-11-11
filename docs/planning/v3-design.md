@@ -731,8 +731,13 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
     (offers it held or escalated to the user).
   Everything else (questions, plan reviews, messages, asks, hand-over and
   take-back, notices, contributor events, unsupervised sessions) matches no Watchdog
-  registration and reaches Fishball. Whether Watchdog hands an idle-stop `turn-finished` back to
-  Fishball is Q32 (A recommended: yes, once, through `ctl.release`).
+  registration and reaches Fishball.
+  - **Idle stop (Q32, decided; R-WD-13):** after checking a supervised session's
+    `turn-finished`, Watchdog looks at the event's state snapshot. If the session stopped idle
+    (not running, no queued input, offer or question), it calls `ctl.release(e, {toFishball:
+    true})`, so that one event wakes Fishball once. Mid-work `turn-finished` events stay
+    Watchdog-only. The connector includes `{running, queued}` in every `turn-finished` payload,
+    so the decision needs no extra read.
 - **Other plugins** may register too (fold-notify, the board, third-party child plugins), for
   example for `contributed:<ns>.*` types. The same rules apply. A registration with the same
   types and priority as another is accepted with one logged warning (R-INT-03).
@@ -777,7 +782,8 @@ no token, subscription, mailbox or lane of its own.
 3. Watchdog's acceptance is its own durable record. Core acks the event only after it.
 4. One Watchdog side session per watched session (U8) handles that session's events, on
    Watchdog's own model settings.
-5. An escalation **to Fishball** is `ctl.release(e, {toFishball: true})` (R-INT-05). An
+5. An escalation **to Fishball** is `ctl.release(e, {toFishball: true})` (R-INT-05), and so is
+   the idle-stop hand-back of a `turn-finished` (R-WD-13). An
    escalation **to the user** commits `escalate` at the connector (§7.2).
 
 ### 7.2 Requests to Fishball inside the Fishball DSH (R-WD-08)
