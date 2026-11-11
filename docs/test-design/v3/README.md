@@ -10,7 +10,9 @@ V3-K; such expectations carry the flag `D§n`.
 **Q33 is decided B** (requirements §1.15, R-WD-03, R-WD-15): Watchdog is assigned passively.
 There is no `watchdog_check_now`; `watchdog_brief` / `watchdog_refine` are data-only and start no
 run; `watchdog_pause` / `watchdog_resume` start no run either. Cases that pin this carry `Q33`.
-No requirement question remains open in the requirements document.
+No requirement question remains open in the requirements document. Test-planning questions TQ-1
+to TQ-5 and TQ-R1 to TQ-R4 are decided and folded into the requirements, design and cases on this branch; the rest
+are open in [questions.md](<questions.md>).
 
 ## Files
 
@@ -35,25 +37,25 @@ The parallel-development task table that consumes these cases is
 
 ## Counts
 
-147 cases. A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
+153 cases. A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
 cases, not rows.
 
 | Area | UC | EP | BVA | DT | ST | Total |
 | --- | --- | --- | --- | --- | --- | --- |
-| AUTH (OAuth, tokens, pairing) | 9 | 7 | 5 | 6 | 3 | 30 |
+| AUTH (OAuth, tokens, pairing) | 9 | 7 | 6 | 6 | 3 | 31 |
 | NAME | 3 | 3 | 3 | 3 | 1 | 13 |
 | HAND (Hand over / Take back) | 4 | 1 | 0 | 2 | 1 | 8 |
-| EVT (events, interception) | 3 | 3 | 2 | 3 | 2 | 13 |
+| EVT (events, interception) | 3 | 4 | 2 | 3 | 2 | 14 |
 | WD (Watchdog) | 7 | 4 | 3 | 2 | 3 | 19 |
 | WATCH | 3 | 1 | 0 | 0 | 1 | 5 |
 | EXT (contributors) | 4 | 4 | 4 | 3 | 1 | 16 |
-| HOST (hosted mode) | 7 | 2 | 0 | 2 | 2 | 13 |
+| HOST (hosted mode) | 8 | 3 | 0 | 3 | 2 | 16 |
 | REM (standalone, remote) | 3 | 3 | 0 | 1 | 0 | 7 |
 | UIM (embed-UI, install matrix) | 3 | 1 | 0 | 1 | 0 | 5 |
-| PLAT (rest) | 6 | 6 | 2 | 3 | 1 | 18 |
-| **Total** | **52** | **35** | **19** | **26** | **15** | **147** |
+| PLAT (rest) | 6 | 7 | 2 | 3 | 1 | 19 |
+| **Total** | **53** | **38** | **20** | **27** | **15** | **153** |
 
-Levels (a case may span two): unit 51, integration 97, e2e 19. Provisional on a spike (`P:Sn`): 34.
+Levels (a case may span two): unit 53, integration 103, e2e 20. Provisional on a spike (`P:Sn`): 37.
 
 ## Conventions
 

@@ -105,6 +105,18 @@ M = managing pair of the named session; D = designated pair.
 | 6 | interceptor's plugin disabled / not ready | Fishball | yes |
 | 7 | external agent | events unchanged, no interception | n/a |
 
+### EVT-EP-04 — Per-principal isolation of streams and hints
+**Req:** R-ID-06, R-TOK-05, R-EVT-04, R-EVS-03 · **Level:** integration (two pairs P and Q, each with an open listen stream) · **Flags:** P:S1, P:S7
+
+| # | Event or action | P's stream | Q's stream |
+| --- | --- | --- | --- |
+| 1 | an event committed to P's mailbox | one `notifications/resources/updated` hint | nothing |
+| 2 | an event committed to Q's mailbox | nothing | one hint |
+| 3 | P and Q share the same `id` on different tokens | hints stay per pair (rows 1–2 hold) | |
+| 4 | P's entry is disabled | closed | stays open and keeps receiving its own hints |
+| 5 | Q polls after row 1 | — | Q's mailbox has nothing of P's |
+| 6 | 100 events to P in a burst | ≥ 1 hint, never more than one per commit | nothing |
+
 ## Boundary Value Analysis
 
 ### EVT-BVA-01 — Poll page size and cursor
@@ -180,7 +192,7 @@ Registrations R1 (registered first), R2 (second) for the same type.
 ## State Transitions
 
 ### EVT-ST-01 — One mailbox event
-**Req:** R-CON-03, R-EVT-02, R-INT-08, R-EXT-19, R-TOK-05 · **Level:** unit · **Flags:** —
+**Req:** R-CON-03, R-EVT-02, R-INT-08, R-EXT-19, R-TOK-05 · **Level:** unit · **Flags:** TQ-2 (decided A)
 
 | # | From | Event | To |
 | --- | --- | --- | --- |
@@ -189,7 +201,10 @@ Registrations R1 (registered first), R2 (second) for the same type.
 | 3 | Pending | ack with correct digest | Acked |
 | 4 | Pending | contributor withdrawn (contributed type) | Retired |
 | 5 | Pending | offer settled by the user (offer type) | Pending event still present; a `settlement` follows (K: is the offer event retired?) |
-| 6 | Pending | principal disabled (`message`, `turn-finished`, `state`) | Held (30 days, D§5.3) |
+| 6 | Pending | principal disabled (any non-offer type, `ask` included) | Held (30 days, R-TOK-05) |
+| 6a | Pending (offer type) | principal disabled or deleted | Retired (offer to the user) |
+| 6b | Pending / Held | principal deleted | Dropped (an `ask` answers `unavailable` to its asker) |
+| 6c | Held | 30 days pass | Dropped (as 6b) |
 | 7 | Held | entry re-enabled | Pending |
 | 8 | Acked | ack again | Acked (no-op, K) |
 | 9 | Acked | contributor withdrawn | Acked (stays with the client) |

@@ -13,7 +13,7 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
 - **Actor:** the instance, in host DSH H that also runs C.
 - **Preconditions:** I freshly installed; target blank; no hosted entry exists; no designated principal set.
 - **Main flow:**
-  1. H's app ready fires; I places the four plugins (core, board, fold-notify, Watchdog) into the child profile **before** the profile loads, all **on**.
+  1. H's app ready fires; I places the four plugins (core, board, fold-notify, Watchdog) and `fishball-hosted-settings` into the child profile **before** the profile loads, all **on**.
   2. The child holds no paired credential → I asks C for a **new** "Fishball (hosted)" entry; C returns only its reference.
   3. I resolves the value and hands target and value to the child **in memory**.
   4. Core authenticates with its own `identity.id` (generated `fb-` + 16 lowercase base32) and calls `pair` → paired, name "Fishball" (if free).
@@ -95,7 +95,39 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
 - **Exception flows:** E1. A standalone Fishball DSH has no sync path at all (no card, no engine); it uses its own native model settings.
 - **Postconditions:** H's own settings are unchanged; no provider secret is shown in embed-UI or written outside the credential stores.
 
+### HOST-UC-08 — Hosted-only settings come from the instance's `fishball-hosted-settings` bundle
+**Req:** R-HOST-11, R-ARCH-05, R-HOST-04, R-HOST-07, R-FB-01, R-FB-10, R-BND-02, R-BND-04 · **Level:** integration (child DSH with a scripted settings page), e2e (panel and Plugins page) · **Flags:** TQ-R4 (decided B)
+
+- **Actor:** the owner of a hosted child, looking at its Fishball settings panel and its native Plugins page; the instance.
+- **Preconditions:** C + I + U in H; the child is running after its first V3 placement.
+- **Main flow:**
+  1. The child's Plugins page lists the four set members **and** `fishball-hosted-settings`, all on.
+  2. The child's settings panel shows the generic slim settings and, through core's settings-section extension point, the hosted-only sections (instance settings relay, hosted status line).
+  3. A change in a hosted-only section travels to the host over the `instance-settings` wire channel and is saved by the instance.
+- **Alternative flows:**
+  - A1. The owner switches `fishball-hosted-settings` off → the UI says "restart required"; after the next child restart the hosted-only sections are absent: no error, no notice, no empty placeholder; the generic settings work unchanged; embed-UI's status, Retry and model-sync trigger in H are unaffected; core's status shows nothing about it.
+  - A2. The owner switches it back on → after the next restart the sections are back.
+  - A3. Standalone: the same core package shows the generic settings only; the DSH has no `fishball-hosted-settings`, and core reports nothing missing.
+  - A4. The model-sync trigger appears **only** on embed-UI's Plugins card in H, never in the child panel.
+- **Exception flows:**
+  - E1. The owner disables `fishball-core` → the sections have nowhere to appear and do nothing; the child still starts (`fishball-off`).
+  - E2. Core's guards never disable `fishball-hosted-settings`, and `guards-overridden` never names it.
+- **Postconditions:** H shows no UI from the instance (all host UI is embed-UI's); the child's launch overlays carry no settings row.
+
 ## Equivalence Partitioning
+
+### HOST-EP-03 — Who owns and loads the settings code
+**Req:** R-HOST-11, R-ARCH-05, R-FB-01, R-HOST-04, R-BND-01, R-BND-02 · **Level:** unit (static import analysis), integration (rows 6–7, a started child) · **Flags:** TQ-R4 (decided B)
+
+| # | Check | Expected |
+| --- | --- | --- |
+| 1 | any `fishball-core` file importing from `fishball-instance`, or the reverse | none (both import `fishball-shared` only) |
+| 2 | `native-web.js`, `settings-relay.js`, `slim/host/*`, the status-line module | exist only in `fishball-instance` |
+| 3 | core's settings-section extension point | names nothing hosting-specific (no hosted flag, no instance types) |
+| 4 | the hosted-only sections | registered only through the extension point |
+| 5 | the instance's host UI | none: no `dsh.client` in the instance manifest (after R-EMBED) |
+| 6 | the child's launch overlays | no settings row; only HMR, origin and port, admission key and target URL (R-HOST-04) |
+| 7 | the child's profile bundles and the instance's placement record | the four set members **plus** `fishball-hosted-settings`; a standalone DSH's profile never contains it |
 
 ### HOST-EP-01 — What the instance's host row may inject
 **Req:** R-ARCH-05, R-SEC-01 · **Level:** unit (manifest/static) · **Flags:** —
@@ -149,6 +181,22 @@ Plant a recognisable value; run start, restart, crash, reinstall, uninstall.
 | 3 | reinstall | no (user-made) | yes | refused; nothing moves |
 | 4 | user delete + Retry | — | yes | no succession |
 | 5 | restart | yes | (no new pairing) | nothing |
+
+### HOST-DT-03 — `fishball-hosted-settings` at child start
+**Req:** R-HOST-11, R-BND-02, R-BND-03, R-BND-04, R-FB-02, R-FB-09, R-BND-05 · **Level:** integration · **Flags:** TQ-R4 (decided B)
+
+| Rule | Mode | In placement record | Present in child profile | Owner's last state | Compatible | Result after start | Settings panel |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | hosted | no (first placement) | no | — | yes | placed, **on** | generic + hosted sections |
+| 2 | hosted | yes | yes | on | yes | on | generic + hosted |
+| 3 | hosted | yes | yes | off | yes | off | generic only; no error, no placeholder |
+| 4 | hosted | yes | no (deleted while off) | off | yes | re-placed **off** | generic only |
+| 5 | hosted | yes | no (deleted while on) | on | yes | re-placed on | generic + hosted |
+| 6 | hosted | yes | yes | on | yes | on; core's guards leave it enabled; `guards-overridden` does not name it | generic + hosted |
+| 7 | hosted | yes | yes | on | **no** | child start **blocked**; status names `fishball-hosted-settings` and the reason | — |
+| 8 | hosted | yes | yes | off | no | start not blocked (only enabled bundles block) | generic only |
+| 9 | hosted | toggled while the child runs | | | | effect at the next restart; UI says "restart required" | |
+| 10 | standalone | — | never | — | — | not present; core reports no missing member for it | generic only |
 
 ## State Transitions
 

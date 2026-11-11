@@ -1,7 +1,7 @@
 # Traceability: requirement → cases
 
 Generated from the `**Req:**` line of every case in this directory, against the requirement IDs of
-[v3-requirements.md](<../../planning/v3-requirements.md>) at `e1e5577`. A case cites a requirement only
+[v3-requirements.md](<../../planning/v3-requirements.md>) at `e1e5577` plus the decided test-planning questions folded in on this branch (TQ-1 to TQ-5, TQ-R1 to TQ-R4). A case cites a requirement only
 when it checks an observable of it. Requirements §4 (install matrix) and §4.1/§4.2 tables are cited
 by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 
@@ -11,17 +11,18 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | --- | --- |
 | R-WD-13 | Withdrawn (requirements 1.14); the ID is reserved. Its old behaviour (idle-stop bypass) is negatively covered by WD-UC-02 and WD-EP-01 #5: every `turn-finished` reaches Fishball. |
 
-**Requirement → cases** (172 requirements, 147 cases):
+**Requirement → cases** (174 requirements, 153 cases):
 
 | Requirement | Cases | Count |
 | --- | --- | --- |
-| R-ARCH-01 | PLAT-UC-04, PLAT-EP-03 | 2 |
+| R-ARCH-01 | PLAT-UC-04, PLAT-EP-03, PLAT-EP-07 | 3 |
 | R-ARCH-02 | UIM-DT-01 | 1 |
 | R-ARCH-03 | HAND-EP-01, PLAT-EP-03 | 2 |
 | R-ARCH-04 | HAND-UC-04, UIM-DT-01 | 2 |
-| R-ARCH-05 | HOST-EP-01, PLAT-EP-03 | 2 |
+| R-ARCH-05 | HOST-UC-08, HOST-EP-03, HOST-EP-01, PLAT-EP-03 | 4 |
 | R-ARCH-06 | PLAT-UC-04, PLAT-EP-03, PLAT-DT-03 | 3 |
 | R-ARCH-07 | PLAT-EP-06 | 1 |
+| R-ARCH-08 | PLAT-EP-07 | 1 |
 | R-CON-01 | AUTH-UC-08, PLAT-UC-01, PLAT-EP-01 | 3 |
 | R-CON-02 | WATCH-UC-03, PLAT-UC-01, PLAT-UC-02, PLAT-EP-02 | 4 |
 | R-CON-03 | EVT-UC-01, EVT-EP-02, EVT-BVA-01, EVT-ST-01 | 4 |
@@ -58,8 +59,8 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-TOK-02 | AUTH-EP-01, AUTH-EP-02 | 2 |
 | R-TOK-03 | AUTH-UC-01 | 1 |
 | R-TOK-04 | AUTH-UC-01, AUTH-UC-07, AUTH-EP-04, HOST-EP-02, PLAT-EP-05 | 5 |
-| R-TOK-05 | AUTH-UC-06, AUTH-DT-04, EVT-ST-01, HOST-UC-04, PLAT-ST-01 | 5 |
-| R-TOK-06 | AUTH-UC-07, AUTH-EP-05, REM-EP-03 | 3 |
+| R-TOK-05 | AUTH-UC-06, AUTH-DT-04, EVT-EP-04, EVT-ST-01, HOST-UC-04, PLAT-ST-01 | 6 |
+| R-TOK-06 | AUTH-UC-07, AUTH-EP-05, AUTH-BVA-06, REM-EP-03 | 4 |
 | R-TOK-07 | AUTH-EP-07 | 1 |
 | R-TOK-08 | AUTH-UC-01, AUTH-UC-09, AUTH-EP-04, AUTH-BVA-03, AUTH-ST-01 | 5 |
 | R-TOK-09 | AUTH-UC-06, AUTH-EP-04, AUTH-DT-05, AUTH-ST-01 | 4 |
@@ -68,22 +69,22 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-OA-02 | AUTH-UC-08, AUTH-EP-01 | 2 |
 | R-OA-03 | AUTH-UC-02, AUTH-EP-01, AUTH-EP-03, AUTH-EP-05, AUTH-DT-01 | 5 |
 | R-OA-04 | AUTH-UC-02, AUTH-UC-03, AUTH-EP-06, AUTH-DT-01, AUTH-DT-02, AUTH-ST-02 | 6 |
-| R-OA-05 | AUTH-UC-02, AUTH-UC-08, AUTH-EP-01, AUTH-EP-02 | 4 |
+| R-OA-05 | AUTH-UC-02, AUTH-UC-03, AUTH-UC-08, AUTH-EP-01, AUTH-EP-02 | 5 |
 | R-OA-06 | AUTH-UC-06, AUTH-EP-02, AUTH-DT-04, AUTH-ST-01, AUTH-ST-02 | 5 |
-| R-OA-07 | AUTH-UC-02, AUTH-UC-03, AUTH-EP-01, AUTH-BVA-01, AUTH-ST-02 | 5 |
+| R-OA-07 | AUTH-UC-02, AUTH-UC-03, AUTH-EP-01, AUTH-BVA-01, AUTH-BVA-06, AUTH-ST-02 | 6 |
 | R-OA-08 | AUTH-EP-01, REM-UC-03, REM-EP-03 | 3 |
 | R-OA-09 | AUTH-UC-02, AUTH-UC-08, PLAT-UC-01 | 3 |
 | R-OA-10 | AUTH-UC-07, AUTH-EP-02, AUTH-BVA-04, AUTH-DT-03 | 4 |
 | R-ID-01 | AUTH-UC-02 | 1 |
-| R-ID-02 | AUTH-EP-03, AUTH-BVA-02, AUTH-BVA-04, AUTH-DT-01 | 4 |
+| R-ID-02 | AUTH-UC-07, AUTH-EP-03, AUTH-BVA-02, AUTH-BVA-04, AUTH-DT-01, AUTH-DT-03 | 6 |
 | R-ID-03 | AUTH-UC-02, AUTH-UC-07, AUTH-DT-02, AUTH-ST-01, AUTH-ST-02, NAME-UC-01 | 6 |
 | R-ID-04 | AUTH-UC-04, AUTH-EP-05, AUTH-DT-02, AUTH-ST-01 | 4 |
 | R-ID-05 | AUTH-UC-03, AUTH-DT-06, AUTH-ST-03, HOST-UC-02 | 4 |
-| R-ID-06 | AUTH-UC-02, AUTH-EP-06, AUTH-DT-02, NAME-EP-03, EVT-EP-02, EXT-UC-02 | 6 |
+| R-ID-06 | AUTH-UC-02, AUTH-EP-06, AUTH-DT-02, NAME-EP-03, EVT-EP-02, EVT-EP-04, EXT-UC-02 | 7 |
 | R-ID-07 | AUTH-UC-05, AUTH-DT-06, AUTH-ST-03, REM-UC-01 | 4 |
 | R-ID-08 | AUTH-UC-02, AUTH-UC-04 | 2 |
 | R-ID-09 | AUTH-UC-06, AUTH-ST-01 | 2 |
-| R-ID-10 | AUTH-UC-05, AUTH-DT-06, AUTH-ST-03 | 3 |
+| R-ID-10 | AUTH-UC-05, AUTH-EP-03, AUTH-DT-06, AUTH-ST-03 | 4 |
 | R-ID-11 | AUTH-UC-04, AUTH-EP-03, AUTH-EP-07 | 3 |
 | R-ID-12 | AUTH-UC-01, AUTH-UC-02, AUTH-UC-09, AUTH-BVA-05 | 4 |
 | R-NAME-01 | NAME-UC-03, NAME-EP-02, NAME-ST-01 | 3 |
@@ -96,12 +97,12 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-ROUTE-01 | HAND-UC-02, HAND-ST-01, WATCH-UC-01, HOST-UC-03 | 4 |
 | R-ROUTE-02 | EVT-EP-01, EVT-DT-01 | 2 |
 | R-ROUTE-03 | EVT-EP-01, EVT-DT-01, PLAT-UC-03 | 3 |
-| R-ROUTE-04 | HAND-DT-01, EVT-DT-01, HOST-UC-01, PLAT-UC-03 | 4 |
+| R-ROUTE-04 | AUTH-UC-06, AUTH-DT-04, HAND-DT-01, EVT-DT-01, HOST-UC-01, PLAT-UC-03 | 6 |
 | R-ROUTE-05 | HAND-UC-01, HAND-UC-02, HAND-DT-01, HAND-DT-02, HAND-ST-01 | 5 |
 | R-ROUTE-06 | AUTH-UC-06, AUTH-DT-04, HAND-ST-01, HOST-UC-04 | 4 |
 | R-EVS-01 | EVT-UC-01, EVT-EP-02 | 2 |
 | R-EVS-02 | EVT-UC-01, EVT-EP-01, WATCH-UC-01, EXT-UC-02 | 4 |
-| R-EVS-03 | HAND-UC-02, HAND-DT-02, EVT-EP-01, EVT-DT-01, WATCH-EP-01, EXT-DT-02 | 6 |
+| R-EVS-03 | HAND-UC-02, HAND-DT-02, EVT-EP-01, EVT-EP-04, EVT-DT-01, WATCH-EP-01, EXT-DT-02 | 7 |
 | R-EVS-04 | EVT-UC-01, EVT-EP-03 | 2 |
 | R-WATCH-01 | AUTH-UC-06, HAND-UC-01, HAND-ST-01, WATCH-UC-01, WATCH-UC-02, WATCH-EP-01, WATCH-ST-01 | 7 |
 | R-WATCH-02 | HAND-UC-01, EVT-EP-01, WATCH-UC-01, WATCH-EP-01 | 4 |
@@ -119,24 +120,25 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-EVT-01 | EVT-DT-01 | 1 |
 | R-EVT-02 | EVT-UC-01, EVT-ST-01, HOST-UC-03 | 3 |
 | R-EVT-03 | EVT-UC-02, EVT-DT-03 | 2 |
-| R-EVT-04 | EVT-UC-01 | 1 |
-| R-FB-01 | PLAT-UC-04, PLAT-EP-03 | 2 |
-| R-FB-02 | UIM-DT-01, PLAT-UC-04 | 2 |
+| R-EVT-04 | EVT-UC-01, EVT-EP-04 | 2 |
+| R-FB-01 | HOST-UC-08, HOST-EP-03, PLAT-UC-04, PLAT-EP-03, PLAT-EP-07 | 5 |
+| R-FB-02 | HOST-DT-03, UIM-DT-01, PLAT-UC-04 | 3 |
 | R-FB-03 | REM-UC-01, REM-EP-01, REM-DT-01 | 3 |
 | R-FB-04 | AUTH-UC-05, AUTH-DT-06, AUTH-ST-03, REM-UC-01, REM-EP-01, REM-DT-01 | 6 |
 | R-FB-05 | HOST-UC-05, REM-UC-01 | 2 |
 | R-FB-06 | UIM-DT-01, PLAT-EP-04 | 2 |
 | R-FB-07 | WD-UC-05, WD-ST-01, PLAT-DT-02 | 3 |
 | R-FB-08 | PLAT-EP-06 | 1 |
-| R-FB-09 | UIM-DT-01, PLAT-UC-04 | 2 |
-| R-FB-10 | HOST-ST-01, UIM-DT-01, PLAT-UC-04, PLAT-DT-01 | 4 |
+| R-FB-09 | HOST-DT-03, UIM-DT-01, PLAT-UC-04 | 3 |
+| R-FB-10 | HOST-UC-08, HOST-ST-01, UIM-DT-01, PLAT-UC-04, PLAT-DT-01 | 5 |
 | R-HOST-01 | HOST-UC-01 | 1 |
 | R-HOST-02 | HOST-UC-01, HOST-UC-06, HOST-ST-01, PLAT-UC-06 | 4 |
 | R-HOST-03 | HOST-UC-06, HOST-UC-07 | 2 |
-| R-HOST-04 | HOST-UC-06 | 1 |
+| R-HOST-04 | HOST-UC-06, HOST-UC-08, HOST-EP-03 | 3 |
 | R-HOST-05 | HOST-UC-01, HOST-UC-02, HOST-UC-05, HOST-EP-02, HOST-DT-01, REM-DT-01, UIM-DT-01 | 7 |
 | R-HOST-06 | HOST-UC-01, HOST-ST-01, UIM-UC-01 | 3 |
-| R-HOST-07 | HOST-UC-07 | 1 |
+| R-HOST-07 | HOST-UC-07, HOST-UC-08 | 2 |
+| R-HOST-11 | HOST-UC-08, HOST-EP-03, HOST-DT-03 | 3 |
 | R-HOST-08 | WD-UC-05, WD-ST-01, HOST-UC-06 | 3 |
 | R-HOST-09 | HAND-ST-01, HOST-UC-03, HOST-DT-01, HOST-DT-02, HOST-ST-02, PLAT-ST-01 | 6 |
 | R-HOST-10 | HOST-UC-04, HOST-DT-01, HOST-DT-02 | 3 |
@@ -169,11 +171,11 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-WD-13 | — | 0 |
 | R-WD-14 | WD-UC-03, WD-UC-07, WD-BVA-02, WD-ST-02 | 4 |
 | R-WD-15 | WD-UC-06, WD-UC-07, WD-EP-01, WD-BVA-03, WD-ST-02, WD-ST-03 | 6 |
-| R-BND-01 | HOST-UC-01, PLAT-DT-01 | 2 |
-| R-BND-02 | HOST-UC-01, PLAT-DT-01 | 2 |
-| R-BND-03 | HOST-ST-01, PLAT-DT-01 | 2 |
-| R-BND-04 | PLAT-DT-01 | 1 |
-| R-BND-05 | REM-UC-01, PLAT-DT-02 | 2 |
+| R-BND-01 | HOST-UC-01, HOST-EP-03, PLAT-EP-07, PLAT-DT-01 | 4 |
+| R-BND-02 | HOST-UC-01, HOST-UC-08, HOST-EP-03, HOST-DT-03, PLAT-DT-01 | 5 |
+| R-BND-03 | HOST-DT-03, HOST-ST-01, PLAT-DT-01 | 3 |
+| R-BND-04 | HOST-UC-08, HOST-DT-03, PLAT-DT-01 | 3 |
+| R-BND-05 | HOST-DT-03, REM-UC-01, PLAT-DT-02 | 3 |
 | R-BRD-01 | PLAT-UC-06, PLAT-BVA-01 | 2 |
 | R-BRD-02 | HOST-UC-06, PLAT-UC-06 | 2 |
 | R-FN-01 | EXT-UC-04, UIM-UC-03 | 2 |
@@ -188,35 +190,36 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-SEC-03 | PLAT-EP-01, PLAT-BVA-02 | 2 |
 | R-SEC-04 | EXT-EP-04 | 1 |
 
-**Case index** (file, technique, level, flags):
+**Case index** (file, level, flags):
 
 | Case | File | Level | Flags |
 | --- | --- | --- | --- |
-| AUTH-UC-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | K (minimum length), D§5.2 (`fbt_` prefix), TQ-4 |
+| AUTH-UC-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | D§5.2 (`fbt_` prefix), TQ-4 (decided A) |
 | AUTH-UC-02 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | P:S7, P:S3 (race), K |
-| AUTH-UC-03 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-5 |
+| AUTH-UC-03 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-5 (decided A) |
 | AUTH-UC-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-UC-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | e2e (page), integration (core decisions) | — |
-| AUTH-UC-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | D§5.3, K, TQ-2, TQ-5 |
-| AUTH-UC-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-1 |
+| AUTH-UC-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | D§5.3, TQ-2 (decided A), TQ-5 (decided A) |
+| AUTH-UC-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-1 (decided C) |
 | AUTH-UC-08 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | P:S1, P:S7 |
 | AUTH-UC-09 | [01-auth-pairing.md](<01-auth-pairing.md>) | e2e | — |
-| AUTH-EP-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-3, D§5.5 |
+| AUTH-EP-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-3 (decided A, confirmed by S7), D§5.5 |
 | AUTH-EP-02 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
-| AUTH-EP-03 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (validator), integration (endpoint) | — |
-| AUTH-EP-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | K (minimum length), TQ-4 |
+| AUTH-EP-03 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (validator), integration (endpoint, core settings) | TQ-1 (decided C) |
+| AUTH-EP-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-4 (decided A) |
 | AUTH-EP-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-EP-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-EP-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-BVA-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock), integration | — |
 | AUTH-BVA-02 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit, integration | — |
-| AUTH-BVA-03 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit | K (MIN is not given by the requirements; TQ-4) |
-| AUTH-BVA-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit | TQ-1 |
+| AUTH-BVA-03 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit | TQ-4 (decided A: minimum 32 characters) |
+| AUTH-BVA-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit | TQ-1 (decided C) |
 | AUTH-BVA-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit | D§5.8, K |
+| AUTH-BVA-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (fake clock, stock `ClientCredentialsProvider`) | K (limit and window frozen at V3-K), P:S7 |
 | AUTH-DT-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-DT-02 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
-| AUTH-DT-03 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-1 |
-| AUTH-DT-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | D§5.3, K, TQ-2 |
+| AUTH-DT-03 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-1 (decided C) |
+| AUTH-DT-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | D§5.3, TQ-2 (decided A), TQ-5 (decided A) |
 | AUTH-DT-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-DT-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (core with a fake link) | — |
 | AUTH-ST-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
@@ -249,12 +252,13 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | EVT-EP-01 | [04-events-interception.md](<04-events-interception.md>) | integration | — |
 | EVT-EP-02 | [04-events-interception.md](<04-events-interception.md>) | integration | — |
 | EVT-EP-03 | [04-events-interception.md](<04-events-interception.md>) | unit | — |
+| EVT-EP-04 | [04-events-interception.md](<04-events-interception.md>) | integration (two pairs P and Q, each with an open listen stream) | P:S1, P:S7 |
 | EVT-BVA-01 | [04-events-interception.md](<04-events-interception.md>) | unit | K (page limit frozen at V3-K) |
 | EVT-BVA-02 | [04-events-interception.md](<04-events-interception.md>) | integration | D§3.4 (default 200), K |
 | EVT-DT-01 | [04-events-interception.md](<04-events-interception.md>) | unit (router), integration | — |
 | EVT-DT-02 | [04-events-interception.md](<04-events-interception.md>) | unit | — |
 | EVT-DT-03 | [04-events-interception.md](<04-events-interception.md>) | integration | P:S2 |
-| EVT-ST-01 | [04-events-interception.md](<04-events-interception.md>) | unit | — |
+| EVT-ST-01 | [04-events-interception.md](<04-events-interception.md>) | unit | TQ-2 (decided A) |
 | EVT-ST-02 | [04-events-interception.md](<04-events-interception.md>) | unit | P:S2 |
 | WD-UC-01 | [05-watchdog.md](<05-watchdog.md>) | integration | P:S3 |
 | WD-UC-02 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
@@ -303,16 +307,19 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | HOST-UC-05 | [08-hosted.md](<08-hosted.md>) | integration | — |
 | HOST-UC-06 | [08-hosted.md](<08-hosted.md>) | integration | — |
 | HOST-UC-07 | [08-hosted.md](<08-hosted.md>) | e2e (card), integration (sync engine) | — |
+| HOST-UC-08 | [08-hosted.md](<08-hosted.md>) | integration (child DSH with a scripted settings page), e2e (panel and Plugins page) | TQ-R4 (decided B) |
+| HOST-EP-03 | [08-hosted.md](<08-hosted.md>) | unit (static import analysis), integration (rows 6–7, a started child) | TQ-R4 (decided B) |
 | HOST-EP-01 | [08-hosted.md](<08-hosted.md>) | unit (manifest/static) | — |
 | HOST-EP-02 | [08-hosted.md](<08-hosted.md>) | integration | — |
 | HOST-DT-01 | [08-hosted.md](<08-hosted.md>) | unit | — |
 | HOST-DT-02 | [08-hosted.md](<08-hosted.md>) | unit | — |
+| HOST-DT-03 | [08-hosted.md](<08-hosted.md>) | integration | TQ-R4 (decided B) |
 | HOST-ST-01 | [08-hosted.md](<08-hosted.md>) | integration | K (status codes) |
 | HOST-ST-02 | [08-hosted.md](<08-hosted.md>) | integration | P:S3 |
 | REM-UC-01 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration (two DSHs), e2e (page) | P:S6, P:S7 |
 | REM-UC-02 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | — |
 | REM-UC-03 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | P:S1 |
-| REM-EP-01 | [09-standalone-remote.md](<09-standalone-remote.md>) | unit | — |
+| REM-EP-01 | [09-standalone-remote.md](<09-standalone-remote.md>) | unit | P:S7 (row 6) |
 | REM-EP-02 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | — |
 | REM-EP-03 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | K (allowlist setting) |
 | REM-DT-01 | [09-standalone-remote.md](<09-standalone-remote.md>) | unit | — |
@@ -333,6 +340,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | PLAT-EP-04 | [11-platform.md](<11-platform.md>) | integration | — |
 | PLAT-EP-05 | [11-platform.md](<11-platform.md>) | integration (full-run acceptance) | — |
 | PLAT-EP-06 | [11-platform.md](<11-platform.md>) | integration (traffic trace plus static check) | — |
+| PLAT-EP-07 | [11-platform.md](<11-platform.md>) | unit (static analysis of manifests and imports), integration (row 8: a started host with a child) | TQ-R5 (A assumed) |
 | PLAT-BVA-01 | [11-platform.md](<11-platform.md>) | unit (fake clock) | K (day = 86400 s) |
 | PLAT-BVA-02 | [11-platform.md](<11-platform.md>) | integration | K (limits frozen at V3-K) |
 | PLAT-DT-01 | [11-platform.md](<11-platform.md>) | integration | — |

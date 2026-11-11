@@ -41,7 +41,7 @@ standalone mode is the same set installed by hand.
 | Package | Installed in | Owns | Never does |
 | --- | --- | --- | --- |
 | `fishball-connector` | a main DSH | MCP server; its own client-credentials OAuth authorization server (§5.5); tokens over `ctx.credentials`; pairs and names (§5.8); per-pair mailbox; routing (R-ROUTE, Q7 decided); session operations (today's `src/*.js` domain); `message_fishball` / `ask_fishball`; managed-session approval interception; the contribution service `fishballConnectorTools` (§13); the no-UI hand-over service (Q3, decided) | browser client, slots, HTML, CSS, iframes; an attention latch |
-| `fishball-instance` | a host DSH | hosted mode only (§6): launching the child with its launch configuration, its lifecycle, placing the four plugins, target and token hand-off, the child locator `fishballChild`, hosted model sync, uninstall cleanup | any session, approval, question or prompt service of the host DSH (R-ARCH-05); UI |
+| `fishball-instance` | a host DSH | hosted mode only (§6): launching the child with its launch configuration, its lifecycle, placing the four plugins, target and token hand-off, the child locator `fishballChild`, hosted model sync (engine), the hosted settings bundle `fishball-hosted-settings` it places in the child (R-HOST-11), uninstall cleanup | any session, approval, question or prompt service of the host DSH (R-ARCH-05); UI |
 | `dsh-fishball-embed-UI` | the host DSH, beside the instance | the sidebar entry and fish, the attention latch and its contributed tools (§13.6), marks and Hand over / Take back buttons that drive the connector's hand-over service (Q3, decided), the frame around the child page, status and Retry, the Plugins card and the model-sync trigger | secrets; session operations of its own; a Fishball page or frame without the instance (R-UI-01); anything at all with neither a connector nor an instance (R-UI-08) |
 | **Fishball plugin set** (Q2, decided: four plugins) | a Fishball DSH (hosted child or standalone) | §5a | acting on any DSH except its own, other than through the target connector's MCP (R-FB-08) |
 
@@ -52,7 +52,7 @@ client module) inside `fishball-core`'s package, installed, enabled and removed 
 
 | Plugin | Contents (from V2, re-homed) | Requires |
 | --- | --- | --- |
-| `fishball-core` | **agent:** the manager session and persona; the MCP link to the target (§6.3); the `fishball-events` subscription, the interception service and the acceptance ledger (§6.4); the scoped bridge façade (X12), claims (X15) and send gate (X19); the extension service `fishballInstance` (X1–X19) for feature plugins; manager tools; the private Skills tool; the admin and settings routes it serves to its own web page. **`fishball-ui` component:** the A-lite page client module (Fishball-only page, hidden navigation, shortcut remapping or unbinding, explicit return from Settings/Plugins); the guard rows in core's bundle patch (read-only preset with the Skills exception, disabled session-creating rows); the `fishball-recommended` tab; the slim settings panel | — |
+| `fishball-core` | **agent:** the manager session and persona; the MCP link to the target (§6.3); the `fishball-events` subscription, the interception service and the acceptance ledger (§6.4); the scoped bridge façade (X12), claims (X15) and send gate (X19); the extension service `fishballInstance` (X1–X19) for feature plugins; manager tools; the private Skills tool; the admin and settings routes it serves to its own web page. **`fishball-ui` component:** the A-lite page client module (Fishball-only page, hidden navigation, shortcut remapping or unbinding, explicit return from Settings/Plugins); the guard rows in core's bundle patch (read-only preset with the Skills exception, disabled session-creating rows); the `fishball-recommended` tab; the generic slim settings panel with its settings-section extension point (hosted-only sections are injected by the instance, R-HOST-11) | — |
 | `fishball-board` | board tools, `board_search`, archive | `fishball-core` |
 | `fishball-fold-notify` | notice batching, attention via embed-UI's tool | `fishball-core` |
 | `fishball-watchdog` | supervision (§7) | `fishball-core` |
@@ -388,7 +388,10 @@ fishballChild = {
   3. keeps it in memory only for the comparison digest (§5.5).
 - The value is never shown in any DSH UI. The user hands it to an external agent by reading
   their own credential store, or sets a value of their choice there or in the environment before
-  enabling the entry. The connector then uses it as is, if it meets the minimum length.
+  enabling the entry. The connector then uses it as is, if it has at least 32 characters
+  (else `token-too-short`). An unwritable store leaves the entry `token-unconfigured` and
+  unusable; two entries with one `ref` are refused at save with `ref-duplicate` (R-TOK-08, TQ-4
+  decided A).
 - **Finding:** in both SDKs DSH's generic plugin form has no secret-entry widget. The native
   secret inputs (`SettingsSecretField` plus `remote.credentials.set`) are used only by DSH's own
   Models and web-search pages. The plugin-manager auto form has no secret handling. So a typed-in
@@ -398,15 +401,30 @@ fishballChild = {
 ### 5.3 Revocation
 
 Disabling or deleting an entry, or changing or unsetting its credential value, revokes the
-principal at the next request (R-TOK-05, R-OA-06):
+principal at the next request (R-TOK-05, R-OA-06). TQ-2 is decided **A**. Common to every
+revocation:
 - every access token derived from the entry is invalid; MCP requests get 401 and the token
-  endpoint answers `invalid_client`;
+  endpoint answers `invalid_client`. A request already past the token check completes; the next
+  one is refused (TQ-5 decided A);
 - open listen streams close with the graceful completion result;
 - pending answers fail;
-- its live **offers** are retired and go to the user in their sessions;
-- its queued `message`/`turn-finished`/`state` events are kept for 30 days, so re-enabling the same entry
-  restores them (proposed; frozen with the schema). A disabled entry keeps its pair (R-ID-09);
+- its live **offers** are withdrawn (a `retirement` event follows each, R-EVS-03) and go to the
+  user in their sessions;
 - managed sessions become unmanaged, with one `system` note each.
+
+**Disable** (also a changed or unset value): every other queued event, of every type, `ask`
+included, is kept for **30 days**; re-enabling the same entry restores the same pair (R-ID-09) and
+the events are pollable again. The designated-Fishball role stays with the entry, so while it is
+off `ask_fishball` from an unmanaged session answers `unavailable` and `message_fishball` queues
+(R-ROUTE-04). After 30 days the kept events are dropped as on delete.
+
+**Delete:** every queued event is dropped, and the designated role is cleared
+(`routing.fishballToken` unset; R-ROUTE-04's default then applies).
+
+**Dropped `ask`:** when an `ask` event is dropped (delete, or the end of the 30 days), the waiting
+`ask_fishball` call in the asking session returns `unavailable`, the code it already uses when no
+principal is available, so the session never waits for an answer that cannot come. While the
+entry is only disabled, the call keeps waiting: no timer settles it (R-CON-05).
 
 Deleting an entry also asks `credentials.unset(ref)` when the connector generated the value
 (recorded in its storage domain), and never otherwise.
@@ -484,10 +502,12 @@ Clients find it through the protected resource metadata, as the spec requires.
 3. the client secret is compared, in constant time, against the enabled token entries' digests.
    A miss returns `invalid_client` (401, `WWW-Authenticate: Basic`) and reveals nothing about ids
    or pairs;
-4. `client_id` is a valid fishball id (R-ID-02), else `invalid_client`;
-5. `resource`, when present, must be the canonical MCP URI, else `invalid_target`;
+4. `client_id` is a valid fishball id (R-ID-02: no dot), else `invalid_client`;
+5. `resource` must be present and be the canonical MCP URI, else `invalid_target` (R-OA-05, TQ-3
+   decided A; spike V3-S7 confirmed the stock `ClientCredentialsProvider` sends it on both SDKs);
 6. issue an access token: an opaque value of 256 bits of randomness, stored by SHA-256 digest
-   with `{entryKey, fishballId, audience, expiresAt}`. Its power is **full** if the entry is bound
+   with `{entryKey, fishballId, audience, expiresAt}`, **in memory only** (TQ-5 decided A): a
+   connector restart loses every access token, and clients re-authenticate on the 401. Its power is **full** if the entry is bound
    to this id, else **pair-only** (R-OA-04). Response:
    `{access_token, token_type: "Bearer", expires_in, scope: "fishball" | "fishball:pair", fishball_pairing}`.
    `expires_in: 3600`. No refresh token, and the `refresh_token` grant is refused (Q27, decided).
@@ -500,7 +520,7 @@ Clients find it through the protected resource metadata, as the spec requires.
 - A pair-only token reaches only discovery, `tools/list` and `pair`. Anything else gets the
   structured refusal `not-paired` or `id-mismatch` (R-ID-06).
 - **Direct-access fallback (Q28, decided):** a token entry with `directAccess` on (default off)
-  also accepts `Bearer <id>.<token>`, split at the first dot. The token part is verified on every
+  also accepts `Bearer <id>.<token>`, split at the first dot (fishball ids contain no dot, R-ID-02, TQ-1 decided; a user-set token may). The token part is verified on every
   request with the same constant-time comparison, and the result counts as a full or pair-only
   access token of that (token, id). With the switch off it is just an invalid access token.
 
@@ -512,7 +532,7 @@ back to its entry.
 ### 5.6 Token hygiene: the token is the security boundary (R-TOK-00)
 
 - Entropy: generated tokens are 32 random bytes, base64url, `fbt_` prefix. A user-set value
-  under the minimum length is refused with `token-too-short`.
+  under 32 characters is refused with `token-too-short` (TQ-4).
 - Storage: values live only in `ctx.credentials`. Digests live in memory, and pairs and access
   tokens are stored by digest only. Nothing leaves in settings, logs, chat, tool results, test
   fixtures or error details.
@@ -639,8 +659,9 @@ are done.
 - Removed: `src/host/binding.js` and the `control` wire channel (the connector binding); the
   instance-owned child rows (app, session tools, approvals, inbox, admin, provider-sync target,
   native web, `fishball-page`), which move into the plugin set (requirements §6).
-- Kept on the wire: `admin` and `instance-settings` (now served by `fishball-core` in the child),
-  and `provider-sync` (hosted model sync).
+- Kept on the wire: `admin` (now served by `fishball-core` in the child), `instance-settings`
+  (served by the instance's injected settings sections, R-HOST-11) and `provider-sync` (hosted model
+  sync).
 - Added:
   - the `mcp-credential` wire channel (§5.4);
   - the `fishballChild` locator (§4.1);
@@ -660,7 +681,7 @@ run under its host:
 - `hmr` disabled (the child is restarted, not hot-reloaded);
 - the webserver and web-runtime settings that give the child its own origin and port (V2
   PG-ORIGIN);
-- the admission key for `fishball-core`'s ticket route (embed-UI's frame), and the target URL.
+- the admission key for `fishball-core`'s ticket route (embed-UI's frame), and the target URL;
 
 It writes **no** guard rows and forces no plugin on. The guards come only from `fishball-core`'s
 own patch, exactly as in a standalone DSH, so the child's owner can override them and core
@@ -846,7 +867,7 @@ Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session
 
 The design is the bundled-placement note (`f71717e`), options **P3 + 3a**, now applied to the
 whole set:
-- Sources live under `packages/instance/bundled/{core,board,fold-notify,watchdog}/` and are
+- Sources live under `packages/instance/bundled/{core,board,fold-notify,watchdog,hosted-settings}/` and are
   listed in the instance's `files`. In the host DSH they are inert data: not in its resolution,
   not bundles there.
 - At every child start, inside `initializeProfile` and before `loadProfileDirectory`, each one is
@@ -860,6 +881,11 @@ whole set:
 - An enabled member skipped by `loadProfileDirectory` (incompatible `engines.dsh`, unresolvable)
   fails the start with `PROFILE_INCOMPATIBLE`, naming it (answers placement Q3). The old
   per-start exemption and `BUNDLED_PLUGIN_UNAVAILABLE` are dropped.
+- **`fishball-hosted-settings`** (R-HOST-11, TQ-R4 decided B) is placed by the same code and the
+  same record as the four set members, from `bundled/hosted-settings/`, with the same rules: on at
+  first placement, a disable survives, deleted while off is re-placed off, an enabled incompatible
+  copy fails the start naming it. It is not a set member: core's guards do not target it, its
+  `guards-overridden` check ignores it, and a standalone DSH never has it.
 - A native remove of any of the four plugins is re-placed at the next start: on if it was on, off
   if it was off.
 
@@ -887,13 +913,15 @@ incompatible bundle is skipped at boot, not fatal. So:
 | Package | Change |
 | --- | --- |
 | `fishball-connector` | Drop `dsh.client`, `client.js`, `client.records.js`, `assets`, UI locale, and the `./client`, `./contract` and `./records` exports. Add `./mcp-schema` (tool and event schemas, limits, vocabularies) and `./tools` (contribution types, `apiVersion`, the shared result-code vocabulary, a `defineTool` helper that validates at the call site; data and types only). Add a runtime `dependencies` entry for the MCP server SDK and its Node adapter, installed inside the connector's folder, never as a DSH peer. Keep `engines.dsh >=0.2.1-rc.5`. |
-| `fishball-instance` | Drop the `fishball-connector` peer, the main-side `client.js`, `child-web/` and the `LITE` guard overlays. Keep the host row, the native runtime (lifecycle, launch configuration, placement), `uninstall.js` and hosted model sync. Add `bundled/` (the four set members) to `files`. |
-| `fishball-core` (new, from `packages/instance/src/slim/child/**`, `src/persona.js`, the private Skills tool, `native-child.js`'s app pieces, and, as its `ui/` component, `packages/instance/child-web/**` and the `LITE` overlay rows) | Bundle row(s) for the Fishball DSH; its `cordis.patch.yml` also carries the guard rows; `dsh.client` (platform web) for the `fishball-ui` page, recommended tab and slim settings. Runtime dependency on `@modelcontextprotocol/client` 2.x and on `fishball-connector/mcp-schema`, vendored as a copy so a standalone install needs nothing from the connector package at runtime. |
+| `fishball-instance` | Depend on `fishball-shared` (bundled); never on `fishball-core` (R-BND-01 strict). Drop the `fishball-connector` peer, the main-side `client.js`, `child-web/` and the `LITE` guard overlays. Add `bundled/hosted-settings/` (the `fishball-hosted-settings` bundle, R-HOST-11; instance-owned source, a plain bundle with one row and a `dsh.client` entry, registering into core's settings-section extension point). Keep the host row, the native runtime (lifecycle, launch configuration, placement), `uninstall.js` and hosted model sync. Add `bundled/` (the four set members) to `files`. |
+| `fishball-core` (new, from `packages/instance/src/slim/child/**`, `src/persona.js`, the private Skills tool, `native-child.js`'s app pieces, and, as its `ui/` component, `packages/instance/child-web/**` and the `LITE` overlay rows) | Bundle row(s) for the Fishball DSH; its `cordis.patch.yml` also carries the guard rows; `dsh.client` (platform web) for the `fishball-ui` page, recommended tab and slim settings. Runtime dependency on `fishball-shared` (bundled), `@modelcontextprotocol/client` 2.x and `fishball-connector/mcp-schema`, vendored as a copy so a standalone install needs nothing from the connector package at runtime. |
+| `fishball-shared` (new, `packages/shared`; TQ-R3 decided, R-ARCH-08) | A **library**, not a plugin: no `dsh` field, no row, no client. Holds only what core and the instance both use: the child `admin` constants, the provider-sync wire codec, the shared file helpers. Imports nothing from any other V3 package. Listed as a `dependencies` entry **and** in `bundleDependencies` of `fishball-core` and `fishball-instance`, so each release tarball carries it and nothing is fetched from a registry. |
 | `fishball-board`, `fishball-fold-notify`, `fishball-watchdog` | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |
 | `dsh-fishball-embed-UI` (new) | Host row + `dsh.client` (platform web) with the inject lists of today's two main-DSH clients combined. Optional peers `fishball-instance` and `fishball-connector` (the latter for `./tools` types only; embed-UI never imports connector code). Owns the moved locale strings. |
 
-Release numbers stay release bookkeeping. The V3 connector, instance and plugin set are one
-coordinated breaking release:
+Release numbers stay release bookkeeping. The V3 connector, instance, embed-UI, plugin set and
+`fishball-shared` are one coordinated breaking release, versioned together; `fishball-shared` is
+released only inside the core and instance tarballs (no registry, requirements §5):
 - a V2 instance finds no `fishballConnector` service and reports `connector-upgrade-required`;
 - a V3 `fishball-core` hitting a V2 connector gets 404 on the MCP route and reports
   `TARGET_INCOMPATIBLE`.
