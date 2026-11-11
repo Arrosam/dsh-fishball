@@ -68,9 +68,9 @@ These are the same paths and answer shapes as the main card's routes, so the sha
 
 | Route | Answer |
 |---|---|
-| `GET api/fishball-instance/status` | `{state, code}`. `{state: 'unavailable', code: null}` while the relay to the main host is down |
-| `POST api/fishball-instance/retry` | `{state, code}` after the main host's Retry (a restart only from `failed`) |
-| `POST api/fishball-instance/restart` | `{ok:true,result:{state,code}}` or `{ok:false,error:{code}}` |
+| `GET api/fishball-instance/status` | `{state, code, detail}` (`detail`: a failed start's sanitized cause, else null). `{state: 'unavailable', code: null, detail: null}` while the relay to the main host is down |
+| `POST api/fishball-instance/retry` | `{state, code, detail}` after the main host's Retry (a restart only from `failed`) |
+| `POST api/fishball-instance/restart` | `{ok:true,result:{state,code,detail}}` or `{ok:false,error:{code}}` |
 
 There is no `models/check` or `models/add` route in the child. DSH's Fetch registry answers 404 for
 those paths. They exist only as the main DSH's owner routes behind the main card.
@@ -85,8 +85,10 @@ those paths. They exist only as the main DSH's owner routes behind the main card
     runs. The main end has no sync handler at all.
 - **Reply frame:** `{v: 1, id, ok: true, result}` or `{v: 1, id, ok: false, error: {code}}`.
 - **Main host.**
-  - `status`, `retry` and `restart` answer the instance's public `{state, code}`; restart is queued like every other start and stop.
-  - No key, endpoint, path or token ever crosses toward the child page.
+  - `status`, `retry` and `restart` answer the instance's public `{state, code, detail}`; restart is queued like every other start and stop.
+  - No key, endpoint, path or token ever crosses toward the child page. The one exception is a failed
+    start's sanitized `detail`, which may name a non-home path; it is set only once the child is
+    stopped, so no live child page reads it.
 - **Child client.** Each request has a time bound. A detached, closed or timed-out request answers
   a typed refusal and is never retried.
   - Bounds come from existing limits:

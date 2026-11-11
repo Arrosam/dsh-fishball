@@ -19,7 +19,7 @@
  * - Requests flow child → main only; the main end never initiates.
  * - Typed and bounded both ways. A frame outside the shape is refused, never forwarded.
  * - Never retried. A request whose transport closes or that times out answers a typed refusal.
- * - No secret crosses: the main handlers answer the public `{state, code}` only.
+ * - No secret crosses: the main handlers answer the public `{state, code, detail}` only.
  */
 import { randomUUID } from 'node:crypto'
 import { RUNTIME_LIMITS } from '../native-runtime/constants.js'
@@ -123,8 +123,8 @@ class RelayEnd {
 }
 
 /**
- * The main host's end. Each handler answers its op's result, the public `{state, code}`. Only the
- * handlers of SETTINGS_RELAY.op are ever called; any other key in `handlers` is ignored.
+ * The main host's end. Each handler answers its op's result, the public `{state, code, detail}`. Only
+ * the handlers of SETTINGS_RELAY.op are ever called; any other key in `handlers` is ignored.
  * @param {{status: Function, retry: Function, restart: Function}} handlers
  */
 export function createSettingsRelayServer(handlers) {

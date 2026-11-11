@@ -1035,6 +1035,83 @@ lite('LITE-ST-04', 'Allow initial selection and explicit return but never correc
 })
 
 // ---------------------------------------------------------------------------------------------
+// B3 (round-2 bug 4, requirement R4): a reopen/reload where DSH itself already shows (or restores)
+// the manager made the one-time openSession(manager) reject, and the navigation kept showing
+// "Fishball session unavailable" + Retry next to the manager's own conversation.
+// R4: while the main view shows the manager AND the gate is protected (<html data-fishball-session>),
+// the navigation (nav[aria-label="fishball-page"]) holds no role=status node and no Retry button,
+// whatever openSession answered. A rejected open while the view shows another session still shows
+// the status and Retry. Technique: State Transition over (open outcome, what the view shows, order),
+// with a decision table over (view shows manager?, open rejected?) as the oracle:
+//   shows manager | open rejected | expected nav
+//   yes           | yes (early)   | no status, no Retry        (B3-ST-01, B3-EP-01)
+//   yes           | yes (late)    | no status, no Retry        (B3-ST-02)
+//   no            | yes           | "Fishball session unavailable" + Retry  (B3-ST-03)
+//   yes (Retry)   | no            | no status, no Retry        (B3-ST-04)
+// ---------------------------------------------------------------------------------------------
+const B3 = Object.freeze({
+  unavailable: 'Fishball session unavailable',
+  retry: STATUS.retry,
+  /** Host-side wait before a "nothing appears" read (harness budget, not a product oracle). */
+  quietMs: WAIT.quietMs,
+})
+/** R4 positive oracle: protected marker set, and the nav shows no status line and no Retry. */
+async function assertNoSessionStatus(page, why) {
+  await page.protected()
+  await sleep(B3.quietMs)
+  const nav = await page.eval('__lite.navStatus()')
+  assert.ok(nav, `${why}: the page navigation is rendered`)
+  assert.deepEqual(nav.statuses, [], `${why}: no role=status line in the navigation (saw ${JSON.stringify(nav.statuses)})`)
+  assert.equal(nav.buttons.includes(B3.retry), false, `${why}: no Retry button in the navigation (buttons ${JSON.stringify(nav.buttons)})`)
+  assert.equal(nav.text.includes(B3.unavailable), false, `${why}: "${B3.unavailable}" is not shown`)
+  assert.equal((await page.state()).protectedMarker, true, `${why}: the gate stays protected`)
+}
+
+lite('B3-ST-01', 'R4 rejected openSession(manager), then the main view shows the manager → no status line, no Retry', 'State Transition: open rejected → view shows manager', async (t, sdk) => {
+  const page = await scenario(t, sdk, { commands: commands(RELEVANT), openFails: 1 })
+  await page.settled()
+  // Precondition: the rejection really happened (the one open was refused).
+  assert.equal((await page.calls('uiWorkspace', 'openSession')).length, 1, 'precondition: the one-time open was attempted')
+  await page.eval(`__lite.drift(${JSON.stringify(FIXTURE.manager)}), true`)
+  await assertNoSessionStatus(page, 'view shows the manager after a rejected open')
+})
+
+lite('B3-EP-01', 'R4 reload: DSH already restored the manager in the main view and openSession(manager) rejects → no status line, no Retry', 'EP: view already shows manager partition', async (t, sdk) => {
+  const page = await scenario(t, sdk, { commands: commands(RELEVANT), openFails: 1, restoredSession: FIXTURE.manager })
+  await assertNoSessionStatus(page, 'restored manager with a rejected open')
+  // R4 does not require the open when the view already shows the manager; when made, it is the one
+  // allowed open of the manager (any rejection of it is the injected one).
+  const opens = await page.calls('uiWorkspace', 'openSession')
+  assert.ok(opens.length <= 1 && opens.every((call) => call.args[0] === FIXTURE.manager), 'at most the one open of the manager: ' + JSON.stringify(opens))
+})
+
+lite('B3-ST-02', 'R4 view shows the manager, then the pending openSession rejects late → still no status line, no Retry', 'State Transition: view shows manager → late rejection', async (t, sdk) => {
+  const page = await scenario(t, sdk, { commands: commands(RELEVANT), holdOpen: true })
+  await waitFor(async () => (await page.calls('uiWorkspace', 'openSession')).length === 1, 'the one-time open is pending')
+  await page.eval(`__lite.drift(${JSON.stringify(FIXTURE.manager)}), true`)
+  await page.protected()
+  assert.equal(await page.eval('__lite.rejectHeldOpen()'), true, 'precondition: the held open was rejected')
+  await page.settled()
+  await assertNoSessionStatus(page, 'late rejection while the manager is shown')
+})
+
+lite('B3-ST-03', 'R4 rejected openSession while the main view shows ANOTHER session → "Fishball session unavailable" + Retry', 'State Transition: open rejected, view shows other session (negative partition)', async (t, sdk) => {
+  const page = await scenario(t, sdk, { commands: commands(RELEVANT), openFails: 1, restoredSession: FIXTURE.ordinary })
+  await page.settled()
+  const nav = await waitFor(async () => { const n = await page.eval('__lite.navStatus()'); return n && n.statuses.some((text) => text.includes(B3.unavailable)) ? n : null }, 'session-unavailable status in the navigation')
+  assert.ok(nav.buttons.includes(B3.retry), 'a Retry button in the navigation: ' + JSON.stringify(nav.buttons))
+  assert.equal((await page.state()).protectedMarker, false, 'not marked protected while another session is shown')
+})
+
+lite('B3-ST-04', 'R4 rejected open → Retry → open succeeds → no status line, no Retry', 'State Transition: unavailable → Retry → shown', async (t, sdk) => {
+  const page = await scenario(t, sdk, { commands: commands(RELEVANT), openFails: 1 })
+  await waitFor(async () => (await page.eval('__lite.navStatus()'))?.buttons.includes(B3.retry), 'Retry offered after the rejected open')
+  assert.ok(await page.click(B3.retry), 'Retry pressed')
+  await assertNoSessionStatus(page, 'after a successful Retry')
+  assert.ok((await page.calls('uiWorkspace', 'openSession')).every((call) => call.args[0] === FIXTURE.manager), 'Retry opens only the manager')
+})
+
+// ---------------------------------------------------------------------------------------------
 // Hash continuation (contract §1) — kept as its own checks under LITE-UC-02 to preserve the case
 // catalogue. Since instance-extension-points §11.8 (superseding LITE's earlier "opens native
 // Settings"), `view=settings` never opens native DSH Settings: it requests Fishball's slim

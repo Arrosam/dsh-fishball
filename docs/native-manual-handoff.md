@@ -47,7 +47,7 @@ If native startup fails or native hosting is not installed/enabled, the native s
 - Earlier startup fixes preserve the full preset config and place copied child code within the private profile resolver scope. The old resolver path failed ERR_MODULE_NOT_FOUND; post-fix startup remains unverified.
 - Real native host session.status/watch callbacks are absent. Generic protocol support does not establish integration.
 - Approval adapter code exists but explicit opt-in/TTL/lifecycle integration is unfinished; do not assume main approvals reach the child.
-- P1 preflight canonical-target deduplication may skip core-slot inspection through a later scope alias. The logical-path recursion correction alone does not fix it. No OS sandbox is established.
+- P1's core-slot inspection is gone: the core-identity check was removed by the user's decision of 2026-11-11 (V2 e2e round 2, bug 1), so a private `@deepseek-ai/*` copy is accepted as it is. No OS sandbox is established.
 - Per-instance code snapshots are retained without bounded garbage collection. Partial initialization/crash metadata can fail closed and require separately authorized recovery. POSIX only.
 - Test-runner timeout/grandchild reaping and orphan PID60179 belong to the separate testing session; no action against that PID is part of this work.
 - Independent Claude onboarding without credential import/Keychain access remains unresolved: see [login research](<native-upgrade-and-login.md>). Do not click stock first Connect under a no-Keychain constraint.

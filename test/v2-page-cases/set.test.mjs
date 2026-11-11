@@ -357,10 +357,14 @@ const SET = Object.freeze({
   ids: Object.freeze({ a: 'provider-missing-a', b: 'provider-missing-b', existing: 'provider-existing', conflict: 'provider-conflict-fixture', oauth: 'provider-oauth-fixture', notOffered: 'not-offered-id' }),
   models: Object.freeze({ a: Object.freeze(['alpha-small', 'alpha-large']), b: Object.freeze(['beta']) }),
   sentinel: 'SENTINEL-KEY-SET',
+  // Round-2 R2.1/R2.3: the status and Retry answers carry `detail` (null when not failed), and the
+  // child routes keep the main card's answer shape (docs/planning/v2-set.md "Child Fetch routes").
   status: Object.freeze({
-    ready: Object.freeze({ state: 'ready', code: null }),
-    starting: Object.freeze({ state: 'starting', code: null }),
-    unavailable: Object.freeze({ state: 'unavailable', code: null }),
+    keys: Object.freeze(['code', 'detail', 'state']),
+    failed: 'failed',
+    ready: Object.freeze({ state: 'ready', code: null, detail: null }),
+    starting: Object.freeze({ state: 'starting', code: null, detail: null }),
+    unavailable: Object.freeze({ state: 'unavailable', code: null, detail: null }),
     // Documented states/codes (docs/test-design/instance.md O1, I1-ST-02; §0.6 contract version).
     partitions: Object.freeze([
       Object.freeze({ state: 'ready', code: null }),
@@ -570,7 +574,7 @@ const EXECUTABLE = {
     assert.equal(typeof refused.json?.error?.code, 'string', 'refusal carries a code for the alert');
     assert.equal(f.calls.restart, 2, 'a refused restart is not retried');
     const retried = await f.retryPost();
-    assert.deepEqual(retried.json, SET.status.starting, 'Retry answers the main host status {state, code}');
+    assert.deepEqual(retried.json, SET.status.starting, 'Retry answers the main host status {state, code, detail}');
     assert.equal(f.calls.retry, 1);
     f.link().lose();
     const lost = await f.restartPost();
@@ -602,12 +606,13 @@ const EXECUTABLE = {
     let index = 0;
     const f = await settingsFixture(t, { status: () => ({ ...SET.status.partitions[index], token: SET.sentinel }) });
     const down = await f.statusRead();
-    assert.deepEqual(down.json, SET.status.unavailable, 'relay down → {state:unavailable, code:null}');
+    assert.deepEqual(down.json, SET.status.unavailable, 'relay down → {state:unavailable, code:null, detail:null}');
     f.connect();
     for (; index < SET.status.partitions.length; index++) {
       const expected = SET.status.partitions[index];
       const answer = await f.statusRead();
-      assert.deepEqual(Object.keys(answer.json ?? {}).sort(), ['code', 'state'], 'status answers exactly {state, code}');
+      assert.deepEqual(Object.keys(answer.json ?? {}).sort(), [...SET.status.keys], 'status answers exactly {state, code, detail}');
+      if (expected.state !== SET.status.failed) assert.equal(answer.json.detail, null, 'detail is null when not failed (R2.1)');
       assert.equal(answer.json.state, expected.state, 'truthful state, not collapsed to ready');
       if (Object.hasOwn(expected, 'code')) assert.equal(answer.json.code, expected.code, 'truthful safe code');
       assert.equal(answer.text.includes(SET.sentinel), false, 'no secret in public status');

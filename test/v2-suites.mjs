@@ -50,6 +50,8 @@ export const V2_SUITES = Object.freeze({
     'test/private-skills/sk-uc.test.mjs',
     // CHILD-BOOT: the child page rows in the real SDK web boot and headless Chromium, both SDKs.
     'test/v2-page-cases/child-boot.test.mjs',
+    // Round-2 B4: the Fishball/Plugins way back over the Plugins page and Fishball's settings panel, real SDK web boot.
+    'test/v2-page-cases/child-boot-nav.test.mjs',
     // Final V2 page/readiness/origin/lite/settings cases (070b88e). Unobservable seams stay TODO.
     'test/v2-page-cases/lite.test.mjs',
     'test/v2-page-cases/page.test.mjs',
