@@ -1,7 +1,7 @@
 # Fishball V3: design draft
 
 Status: **draft, 2026-11-11, docs only.** It answers [v3-requirements.md](<v3-requirements.md>)
-(R-…). Q1, Q2, Q5, Q7, Q8 and Q20 are decided (requirements §1.3–§1.6). Where the design
+(R-…). Q1, Q2, Q5, Q7, Q8, Q10 and Q20 are decided (requirements §1.3–§1.7). Where the design
 depends on another open question, the
 recommended answer is assumed and the question id is named. No code, test or spike was
 run for this draft. DSH facts are from read-only inspection of the installed SDKs; MCP facts are
@@ -579,12 +579,21 @@ listen hint / reconnect ─► inbox_poll(default lane) ─► acceptance ledger
 
 ## 7. Watchdog
 
-### 7.1 Its own subscription (R-WD-02, Q10 = A)
+### 7.0 What Watchdog is (R-WD-00; Q10 decided)
+
+Watchdog is Fishball's helper, like a subagent of Fishball. At the connector it is **part of
+Fishball's principal**: the same token, the same mailbox, and its own lane and subscription
+inside it. It holds no authority of its own. The lane only lets Watchdog take the permission
+offers that Fishball has handed it (by the X15 claim), without a Fishball turn. Answers it
+commits are Fishball's answers: settled by `fishball` in the record, and fenced by the lane's
+offer ids.
+
+### 7.1 Its own subscription (R-WD-02)
 
 1. On `fishball-core`'s X14 `ready()`, Watchdog creates its lane through `fishball-core`'s MCP link,
    `lane = 'watchdog'`.
 2. It opens a **second listen stream** for `fishball://lanes/watchdog` (or a legacy
-   `resources/subscribe`), under the Fishball DSH's token (Q10 = A), through a `fishball-core` service
+   `resources/subscribe`), under the Fishball DSH's token (R-WD-02), through a `fishball-core` service
    `fishballInstance.mcp.subscribe(pluginId, uris, onHint) → dispose` (a new extension point,
    **X20**).
 3. It polls and acks its own lane with `inbox_poll` / `inbox_ack({laneId: 'watchdog'})`, through
