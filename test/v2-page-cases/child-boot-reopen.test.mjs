@@ -9,6 +9,9 @@
  * - The page marks a ready conversation with `data-fishball-session` on <html>.
  * - V2 accepts (user decision 2026-11-11) that native startup may leave ONE blank session beside
  *   the manager, in the manager's workspace, once the manager has had a turn; later opens add none.
+ * - The only requirement is that every open lands on the manager (user decision 2026-11-11,
+ *   option A): DSH's own first-boot default workspace and its blank session are accepted as they
+ *   are; sessions other than the manager must still be blank.
  * - `#view=settings` (the PG-ORIGIN continuation, read from the fragment) opens Fishball's settings
  *   view as well.
  *
@@ -31,8 +34,7 @@
  *
  * | id | technique | expected |
  * |----|-----------|----------|
- * | REOPEN-01a | ST S0→S1; EP selection none | lands on the manager (ready mark; main view = GET id; no status); the manager is the only session of its workspace |
- * | REOPEN-01b | ST S0→S1; EP selection none | no other workspace or session is created (todo: native first-use initializeDefault, rc.5 observed; pending user decision) |
+ * | REOPEN-01 | ST S0→S1; EP selection none | lands on the manager (ready mark; main view = GET id; no status); any session other than the manager is blank. Exclusivity (manager alone in its workspace, no other workspace/session) superseded by the user decision of 2026-11-11 (option A) |
  * | REOPEN-02 | ST S2→S2'; DT (manager has turn × selection none) | fresh reopen lands on the manager |
  * | REOPEN-03 | ST S2→S2'; BVA 0..1 accepted extra session | the reopen adds at most one session; each is blank and in the manager's workspace |
  * | REOPEN-04 | ST S2'→S2'; BVA second fresh reopen | no session beyond those after REOPEN-03; lands on the manager |
@@ -270,12 +272,17 @@ function assertShowsManager(step, { panel = false } = {}) {
   assert.deepEqual(view.statuses, [], 'the page navigation shows no status (no "unavailable" or pending line)')
 }
 
+/** Every session in `sessions` is blank (no turn). */
+function assertBlank(sessions) {
+  assert.deepEqual(sessions.filter(({ blank }) => blank !== true), [], 'every session other than the manager is blank: ' + describeSessions(sessions))
+}
+
 function assertAddsNoSession(step) {
   assert.deepEqual(ids(added(step)), [], 'no session was created by this open: ' + describeSessions(added(step)))
 }
 
-function reopenCase(id, sdk, title, technique, body, options = {}) {
-  test(`${id} [${sdk}] ${title} (${technique})`, { timeout: BUDGET.caseMs, ...options }, async (t) => {
+function reopenCase(id, sdk, title, technique, body) {
+  test(`${id} [${sdk}] ${title} (${technique})`, { timeout: BUDGET.caseMs }, async (t) => {
     const reason = skipReason(sdk)
     if (reason) { t.skip(reason); return }
     await body(t, journey(sdk))
@@ -287,28 +294,21 @@ function reopenCase(id, sdk, title, technique, body, options = {}) {
 // ---------------------------------------------------------------------------------------------
 for (const sdk of SDK_VERSIONS) {
   describe(`CHILD-BOOT-REOPEN [${sdk}] every open of the child page lands on the Fishball manager`, () => {
-    reopenCase('REOPEN-01a', sdk, 'first open with no manager: lands on the manager, the only session in its workspace', 'ST S0→S1; EP selection none', async (t, walk) => {
+    // Superseded by the user's decision of 2026-11-11 ("所以只要在主实例中打开子实例页面的时候让子实例
+    // 跳转到Fishball页面就行了", option A): the only requirement is that the open lands on the manager.
+    // The former exclusivity checks (the manager is the only session of its workspace; no other
+    // workspace or session on the first open, then a todo for DSH's first-use default workspace) are
+    // dropped: DSH's own first-boot default workspace and its blank session are accepted as they are.
+    // Any other session must still be blank, so a session holding a turn the user did not make fails.
+    reopenCase('REOPEN-01', sdk, 'first open with no manager: lands on the manager; any other session is blank', 'ST S0→S1; EP selection none', async (t, walk) => {
       const { first } = await walk.reach('first')
       report(t, 'after first open', first)
       assertShowsManager(first)
-      const manager = first.view.manager
-      const home = managerWorkspace(first.workspaces, manager)
-      assert.ok(home, 'the manager is in a workspace: ' + JSON.stringify(first.workspaces))
-      assert.deepEqual(home.sessionIds, [manager], 'the manager is the only session in its workspace: ' + JSON.stringify(home))
-      const inHome = first.sessions.filter(({ sessionId }) => home.sessionIds.includes(sessionId))
-      assert.deepEqual(ids(inHome), [manager], 'the session list holds no other session of the manager\'s workspace: ' + describeSessions(first.sessions))
+      const others = first.sessions.filter(({ sessionId }) => sessionId !== first.view.manager)
+      t.diagnostic(`sessions other than the manager after first open: ${describeSessions(others)}`)
+      t.diagnostic(`workspaces without the manager after first open: ${JSON.stringify(first.workspaces.filter(({ sessionIds }) => !sessionIds.includes(first.view.manager)))}`)
+      assertBlank(others)
     })
-
-    reopenCase('REOPEN-01b', sdk, 'first open with no manager: no other workspace or session is created', 'ST S0→S1; EP selection none', async (t, walk) => {
-      const { first } = await walk.reach('first')
-      const manager = first.view?.manager
-      const otherSessions = first.sessions.filter(({ sessionId }) => sessionId !== manager)
-      const otherWorkspaces = first.workspaces.filter(({ sessionIds }) => !sessionIds.includes(manager))
-      t.diagnostic(`other sessions after first open: ${describeSessions(otherSessions)}`)
-      t.diagnostic(`other workspaces after first open: ${JSON.stringify(otherWorkspaces)}`)
-      assert.deepEqual(ids(first.sessions), [manager], 'the child has exactly one session, the manager: ' + describeSessions(first.sessions))
-      assert.deepEqual(otherWorkspaces, [], 'no workspace other than the manager\'s was created')
-    }, { todo: 'native first-use initializeDefault on an empty child (rc.5 observed); pending user decision' })
 
     reopenCase('REOPEN-05', sdk, 'reload in the same browser context after a manager turn: lands on the manager, adds no session', 'ST S2→S2; DT turn × selection saved', async (t, walk) => {
       const { reload, turn } = await walk.reach('reload')
@@ -334,8 +334,8 @@ for (const sdk of SDK_VERSIONS) {
       assert.ok(extra.length <= 1, 'at most one session beside the manager was added: ' + describeSessions(extra))
       const home = managerWorkspace(fresh.workspaces, manager)
       assert.ok(home, 'the manager is in a workspace: ' + JSON.stringify(fresh.workspaces))
+      assertBlank(extra)
       for (const session of extra) {
-        assert.equal(session.blank, true, 'the added session is blank: ' + describeSessions([session]))
         assert.ok(home.sessionIds.includes(session.sessionId), 'the added session is in the manager\'s workspace: ' + JSON.stringify(home))
       }
       const neighbours = home.sessionIds.filter((sessionId) => sessionId !== manager)
