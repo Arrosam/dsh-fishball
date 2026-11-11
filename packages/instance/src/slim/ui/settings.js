@@ -3,8 +3,8 @@
  *
  * The custom page shows it at `?view=settings` (src/slim/ui/shell.js owns the switch). It has
  * three blocks: the status with Restart, the child's default model and reasoning effort from its
- * own catalog, and the child's plugins (installed, install by spec, the recommended list, and each
- * plugin's settings).
+ * own catalog, and the child's plugins (installed, install by spec, and each plugin's settings). The
+ * recommended list moved to the child's Fishball Recommended tab (child-web/fishball-recommend-plugins).
  *
  * It calls the kept admin routes `/api/fishball/native/admin/*` (src/slim/host/settings-routes.js)
  * and nothing else: the page is framed on the main origin, so those owner-only routes take the main
@@ -78,7 +78,7 @@ const CLASS = Object.freeze({
 const ARIA = Object.freeze({ label: 'aria-label', role: 'role', status: 'status', alert: 'alert', live: 'aria-live', polite: 'polite' })
 
 /** Dictionary key prefixes of the values a key is built from (ui/i18n.js `settings.*`). */
-const KEY = Object.freeze({ state: 'settings.state.', category: 'settings.category.', namespace: 'settings.ns.', field: 'settings.field.' })
+const KEY = Object.freeze({ state: 'settings.state.', namespace: 'settings.ns.', field: 'settings.field.' })
 
 /**
  * One admin call. Always resolves to `{ok:true,result}` or `{ok:false,error:{code}}`, like the
@@ -367,8 +367,7 @@ export function createSettingsView(options = {}) {
     else if (answer.error.code === STALE) plugins.say(t('settings.stale'), true)
     else plugins.refuse(answer.error)
   }
-  function drawPlugins({ inventoryRevision, bundles, recommended = [] }) {
-    const installedNames = new Set(bundles.map((bundle) => bundle.name))
+  function drawPlugins({ inventoryRevision, bundles }) {
     const install = (spec) => changePlugin('pluginInstall', { inventoryRevision, spec })
     const list = el('ul', CLASS.list)
     for (const bundle of bundles) {
@@ -395,28 +394,10 @@ export function createSettingsView(options = {}) {
     spec.addEventListener('input', () => keep(installButton, spec.value.trim() === ''))
     const installRow = el('div', CLASS.row)
     installRow.append(spec, installButton)
-    const categories = []
-    for (const entry of recommended) {
-      let group = categories.find((candidate) => candidate.category === entry.category)
-      if (group === undefined) { group = { category: entry.category, entries: [] }; categories.push(group) }
-      group.entries.push(entry)
-    }
-    const recommendedNodes = categories.flatMap(({ category, entries }) => {
-      const rows = el('ul', CLASS.list)
-      for (const entry of entries) {
-        const item = el('li', CLASS.item)
-        item.append(el('code', CLASS.code + ' ' + CLASS.grow, entry.packageName),
-          installedNames.has(entry.packageName) ? el('span', CLASS.tag, t('settings.installed'))
-            : button(t('settings.install'), () => install(entry.spec), { label: t('settings.installLabel', { name: entry.packageName }) }))
-        rows.append(item)
-      }
-      return [el('h4', CLASS.label, t(KEY.category + category) ?? category), rows]
-    })
     plugins.body.replaceChildren(
       el('h3', CLASS.subtitle, t('settings.installed')),
       bundles.length === 0 ? el('p', CLASS.hint, t('settings.noPlugins')) : list,
-      el('h3', CLASS.subtitle, t('settings.installTitle')), el('p', CLASS.hint, t('settings.installHint')), installRow,
-      el('h3', CLASS.subtitle, t('settings.recommendedTitle')), el('p', CLASS.hint, t('settings.recommendedHint')), ...recommendedNodes)
+      el('h3', CLASS.subtitle, t('settings.installTitle')), el('p', CLASS.hint, t('settings.installHint')), installRow)
     lock()
   }
 
