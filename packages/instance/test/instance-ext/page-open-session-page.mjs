@@ -149,6 +149,8 @@ export function loadPage({ respond }) {
     const call = { method, url: url.href, pathname: url.pathname, init }
     fetches.push(call)
     const { status, body } = await respond(call)
+    // A manager the route names exists on the host, so the host catalogue lists it (see catalogue).
+    if (status >= 200 && status < 300 && typeof body?.sessionId === 'string') catalogue(body.sessionId)
     return {
       status,
       ok: status >= 200 && status < 300,
@@ -181,7 +183,20 @@ export function loadPage({ respond }) {
 
   const selected = store({ key: null })
   const panel = store({ activePanelId: null })
-  const sessionsList = store([])
+  /**
+   * Native `ctx.sessions.list` (dsh-api-session-controller SessionListState, both SDKs): `ids` in
+   * host order with a `byId` row each, the arrival `phase`, and projections. It carries every
+   * catalogued Session, so a manager the route created or resumed is listed, and its arrival
+   * notifies the list's subscribers. The host's list stream and the route are separate channels;
+   * here the row arrives just before the route's answer.
+   */
+  const sessionsList = store({ ids: [], byId: {}, phase: 'ready', projectionsBySession: {} })
+  function catalogue(sessionId) {
+    const current = sessionsList.getSnapshot()
+    if (current.byId[sessionId] !== undefined) return
+    const row = { sessionId, agentAvailable: true, updatedAt: 0, running: false, blank: true }
+    sessionsList.set({ ...current, ids: [...current.ids, sessionId], byId: { ...current.byId, [sessionId]: row } })
+  }
   const localeStore = store(0)
   const slots = []
   const disposers = []
@@ -232,7 +247,7 @@ export function loadPage({ respond }) {
       return found
     },
     retry: () => buttons().find((node) => textOf(node) === 'Retry'),
-    notifySessionsList: () => sessionsList.set([...sessionsList.getSnapshot()]),
+    notifySessionsList: () => sessionsList.set({ ...sessionsList.getSnapshot() }),
     focus: () => { for (const fn of [...(windowListeners.get('focus') ?? [])]) fn({ type: 'focus' }) },
     dispose: () => { for (const dispose of disposers.splice(0).reverse()) if (typeof dispose === 'function') dispose() },
   }
