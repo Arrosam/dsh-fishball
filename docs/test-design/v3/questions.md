@@ -574,3 +574,7 @@ discard = archive (no public delete); no crash; still archived after a restart (
 **[impl] Q-S6-6:** on resume core checks the tool list, not the preset name (rc.5 cannot report it;
 R-FB-13). Cases: PLAT-UC-05 rewritten (no migration, archive leftovers), PLAT-UC-04 main flow and A3,
 PLAT-DT-04 rows 1, 3a–3c, UIM-DT-01 row 10b, WD-EP-04 row 5.
+
+**Adapter packaging decided 2026-11-12.** The user, verbatim: "adapter做成单独的插件，或者去找找有没有已经做了这个功能的插件". C-MCP-ADAPTER is a standalone
+plugin (proposed `fishball-mcp-adapter`), or an existing third-party plugin if S7c finds a suitable one.
+R-OA-21, §1.25 item 3; design §5.5b; tasks C-MCP-ADAPTER, S7c, DOCS. Cases stay P:S7c.
