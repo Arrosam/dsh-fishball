@@ -1,6 +1,7 @@
 /**
- * Fishball's recommended plugins (DESIGN §10f, revision 12): a curated list shown on its
- * settings page, each entry with the state its package has in Fishball's catalog.
+ * Fishball's recommended plugins (DESIGN §10f, revision 12): a curated list. In V2 its only reader
+ * is the child's Fishball Recommended tab (below); the older per-entry catalog state view
+ * (recommendedView) and the admin relay's ADMIN_RECOMMENDED copy were removed as dead code.
  *
  * The list is data. Every entry was installed through Fishball's own install route in a
  * throwaway sandbox on 2026-11-02 and ran for Fishball alone (spikes/rev12-recheck.mjs).
@@ -21,38 +22,11 @@
  * list through recommendedList() and installs through DSH's own Plugins page dialog instead.
  */
 
-// PLUGIN_KIND and FISHBALL_INSTALLED_PREFIX moved here from the main row's src/constants.js
-// (M1): this module is their only reader, and the instance package cannot import that file.
-/** Where a catalog plugin runs (DESIGN §4 "Plugin states"). */
-export const PLUGIN_KIND = Object.freeze({
-  /** Enabled in the profile: runs for every session; Fishball can only mask it. */
-  profile: 'profile',
-  /** Installed but off in the profile: runs in Fishball's private tree when on. */
-  fishballOnly: 'fishball-only',
-  /** A DSH capability package Fishball mounts in its private tree when on. */
-  builtin: 'builtin',
-  /**
-   * Installed by Fishball for itself alone, in its own package folder (src/fishball-packages.js),
-   * never in the DSH profile; runs in its private tree when on. A package of the same name may
-   * also be a DSH plugin: the two are separate catalog entries.
-   */
-  fishballInstalled: 'fishball-installed',
-})
-
-/**
- * Catalog key prefix of a Fishball-installed plugin (DESIGN §4): its key is this plus the package
- * name, so it never collides with a DSH plugin of the same name (whose key is the bare name).
- */
-export const FISHBALL_INSTALLED_PREFIX = 'fishball:'
-
 /** Category keys, in display order (the highlighted ones first). The browser keeps the same keys. */
 export const RECOMMENDED_CATEGORY = Object.freeze({ context: 'context', memory: 'memory', channel: 'channel', pet: 'pet' })
 
 /** Categories shown highlighted: you said they significantly improve the experience. */
 const HIGHLIGHTED = Object.freeze([RECOMMENDED_CATEGORY.context, RECOMMENDED_CATEGORY.memory])
-
-/** An entry's state, from its package's place in Fishball's catalog (DESIGN §10f table). */
-export const RECOMMENDED_STATE = Object.freeze({ install: 'install', installed: 'installed', dshOn: 'dsh-on', dshOff: 'dsh-off' })
 
 const NPM_PAGE = 'https://www.npmjs.com/package/'
 
@@ -86,13 +60,7 @@ export const RECOMMENDED_PLUGINS = Object.freeze([
 /** The fields every reader shows for an entry, before its own state and its optional note. */
 const identityOf = (item) => ({ packageName: item.packageName, spec: item.spec, source: item.source })
 
-/**
- * The list grouped by category in display order, each item mapped by `mapItem`: the one grouping
- * rule for every view of the list, so the child's Fishball Recommended tab (recommendedList) and
- * the older catalog view (recommendedView) never order or group differently. recommendedView has
- * no caller left in this repository since the M1 split (the admin relay reads ADMIN_RECOMMENDED);
- * deleting it is outside the RP increment, which only shares this rule with it.
- */
+/** The list grouped by category in display order, each item mapped by `mapItem`. */
 function grouped(mapItem) {
   return {
     highlighted: [...HIGHLIGHTED],
@@ -111,37 +79,4 @@ function grouped(mapItem) {
  */
 export function recommendedList() {
   return grouped((item) => ({ ...identityOf(item), ...noteOf(item) }))
-}
-
-/** Catalog kinds that are DSH plugins (installed in the profile, on or off there). */
-const DSH_KINDS = new Set([PLUGIN_KIND.profile, PLUGIN_KIND.fishballOnly])
-
-/**
- * The catalog entry an entry follows: the one installed for Fishball only wins over a DSH plugin
- * of the same package, because it is the one Fishball runs (DESIGN §10f).
- */
-function catalogEntryOf(plugins, packageName) {
-  return plugins.find((plugin) => plugin.plugin === FISHBALL_INSTALLED_PREFIX + packageName)
-    ?? plugins.find((plugin) => DSH_KINDS.has(plugin.kind) && plugin.packageName === packageName)
-}
-
-function stateOf(entry) {
-  if (entry === undefined) return RECOMMENDED_STATE.install
-  if (entry.kind === PLUGIN_KIND.fishballInstalled) return RECOMMENDED_STATE.installed
-  return entry.on ? RECOMMENDED_STATE.dshOn : RECOMMENDED_STATE.dshOff
-}
-
-/**
- * The list as the settings page shows it (snapshot field `recommended`).
- * @param catalog - the catalog snapshot (`{plugins}`), or null before the catalog exists.
- * @returns null without a catalog, else {highlighted, categories: [{category, plugins: [{packageName,
- *   spec, source, plugin, state, blocked, noteKey?}]}]}; `plugin` is the catalog key or null, `blocked` the
- *   catalog's reason or null, and `noteKey` is present only on an entry that has a note.
- */
-export function recommendedView(catalog) {
-  if (catalog === null) return null
-  return grouped((item) => {
-    const entry = catalogEntryOf(catalog.plugins, item.packageName)
-    return { ...identityOf(item), plugin: entry?.plugin ?? null, state: stateOf(entry), blocked: entry?.blocked ?? null, ...noteOf(item) }
-  })
 }

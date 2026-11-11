@@ -34,7 +34,6 @@
  * 3. T12's routes call `relay.request(operation, payload)`; they never reach the child
  *    directly and never write a file.
  */
-import { RECOMMENDED_CATEGORY, RECOMMENDED_PLUGINS } from '../../recommended.js'
 import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
 import {
   ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS, AdminFailure,
@@ -43,18 +42,9 @@ import {
 
 export { ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS }
 
-/**
- * The isolated Fishball's installable plugins (Q4): a fixed recommended list plus any package
- * spec the owner types into the page. The list is the repository's curated catalogue
- * (src/recommended.js) with the memory category removed, because the child starts with no
- * memory or search plugin installed (§4, D2) and recommending one would contradict that
- * baseline; the catalogue holds no search plugin to remove. The list grants nothing: install
- * accepts any spec, and the child's plugin manager still refuses what it cannot install.
- */
-export const ADMIN_RECOMMENDED = Object.freeze(RECOMMENDED_PLUGINS.filter(
-  (entry) => entry.category !== RECOMMENDED_CATEGORY.memory,
-))
-
+// The relay adds nothing to `admin.plugins.get`: the recommended list it used to append
+// (ADMIN_RECOMMENDED) had no V2 reader and was removed; the child's Fishball Recommended tab reads
+// src/recommended.js itself (child-web/fishball-recommend-plugins).
 const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose'])
 /**
  * The states and codes `admin.status` and `admin.restart` may answer: the instance's own
@@ -131,8 +121,6 @@ class AdminRelay {
    * operations are:
    * - `admin.status` → `{state, code}` from the lifecycle.
    * - `admin.restart` → restarts the child, then answers the same status.
-   * `admin.plugins.get` answers the child's inventory plus this host's
-   * `recommended` list (ADMIN_RECOMMENDED).
    *
    * @param {string} operation - one of ADMIN_OPERATION's values.
    * @param {object} [payload] - the operation's request payload.
@@ -150,9 +138,7 @@ class AdminRelay {
     if (transport === undefined) return refusal(ADMIN_ERROR.unavailable)
     let frame
     try { frame = this.codec.request(operation, payload) } catch (error) { return refusalOf(error) }
-    const outcome = await this.exchange(transport, frame, spec.timeoutMs)
-    if (!outcome.ok || operation !== ADMIN_OPERATION.pluginsGet) return outcome
-    return { ok: true, result: { ...outcome.result, recommended: ADMIN_RECOMMENDED } }
+    return this.exchange(transport, frame, spec.timeoutMs)
   }
 
   async local(operation, payload) {
