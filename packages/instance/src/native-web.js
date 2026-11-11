@@ -63,7 +63,7 @@ export function registerNativeWeb(ctx, service) {
 /**
  * The card's status and Retry routes, `{state, code, detail}` each, over any status reader and Retry: the
  * main row's own lifecycle, or the child settings panel's relay to it
- * (child-web/fishball-settings/index.js), so the status line reads the same answers on both pages.
+ * (src/child-settings/index.js), so the status line reads the same answers on both pages.
  * A failed Retry answers the status as it now reads. Either reader may be async.
  * @returns {[{path, fetch}, {path, fetch}]} the GET status route and the POST Retry route.
  */

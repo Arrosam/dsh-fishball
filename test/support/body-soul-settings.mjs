@@ -7,7 +7,7 @@
  * button changed only a draft (no `model/set`) before the user pressed Save. All answers are
  * synchronous envelopes, so `mountSettings` settles deterministically after one macrotask.
  */
-import { loadInstance } from './body-soul-env.mjs'
+import { loadCore } from './body-soul-env.mjs'
 import { fakeDocument } from './body-soul-dom.mjs'
 
 /** The admin routes the view calls; the slugs are the page's own protocol constants. */
@@ -29,8 +29,8 @@ export const ADMIN_ROUTE = Object.freeze({
 export const ok = (result) => ({ ok: true, result })
 export const refused = (code) => ({ ok: false, error: { code } })
 
-const { createSettingsView } = await loadInstance('src/slim/ui/settings.js')
-const { createI18n } = await loadInstance('src/slim/ui/i18n.js')
+const { createSettingsView } = await loadCore('src/slim/ui/settings.js')
+const { createI18n } = await loadCore('src/slim/ui/i18n.js')
 
 const EMPTY_DIGEST = '0'.repeat(64)
 

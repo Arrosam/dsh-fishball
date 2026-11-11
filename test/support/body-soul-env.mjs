@@ -22,6 +22,8 @@ import { resolveFromRuntime, resolveOfficialSDK } from './provider-sync-sdk.mjs'
 export const BODY_SOUL = Object.freeze({
   instance: path.join(REPO, 'packages', 'instance'),
   connector: path.join(REPO, 'packages', 'connector'),
+  /** V3 R-CORE: the slim child, slim ui, persona and fishball-ui page packages moved here. */
+  core: path.join(REPO, 'packages', 'core'),
   tempPrefix: 'fbtest-body-soul-',
   /** Runtime packages outside `@deepseek-ai/` that instance modules import. */
   runtimePackages: Object.freeze(['zod']),
@@ -39,6 +41,12 @@ function installHooks() {
 export async function loadInstance(relative) {
   installHooks()
   return import(pathToFileURL(path.join(BODY_SOUL.instance, relative)).href)
+}
+
+/** Import a module of packages/core by its path relative to that package. */
+export async function loadCore(relative) {
+  installHooks()
+  return import(pathToFileURL(path.join(BODY_SOUL.core, relative)).href)
 }
 
 /** Import a module of packages/connector by its path relative to that package. */

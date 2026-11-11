@@ -22,7 +22,7 @@ import { registerPostRoutes } from './fetch-routes.js'
 /**
  * The owner route's transport rules (src/provider-sync-service.js re-exports them). They live
  * here, not in the host-only sync service, so the child settings row
- * (child-web/fishball-settings/index.js) answers with the same JSON headers without importing it.
+ * (src/child-settings/index.js) answers with the same JSON headers without importing it.
  * That row has no model-sync route: only the main DSH's card starts a sync.
  */
 export const SYNC_PAGE = Object.freeze({

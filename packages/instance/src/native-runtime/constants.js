@@ -17,6 +17,13 @@ export const RUNTIME = Object.freeze({
   // fishball-shared inside the snapshot (R-ARCH-08): the child's modules import it by name, and Node
   // finds it in the snapshot's own node_modules. Its modules are its top-level JavaScript files.
   sharedPackage: Object.freeze({ name: 'fishball-shared', modules: 'node_modules', manifest: 'package.json', moduleSuffix: '.js' }),
+  // fishball-core inside the snapshot (V3 R-CORE). The instance never depends on core (TQ-R3) and
+  // never imports it (R-BND-01): copyChildCode copies core's code directories from the sibling
+  // workspace folder as files, resolved by path. Core's manifest stays out of the copy: every
+  // overlay row inside a package that declares `dsh.client` is a client source for DSH's
+  // client-modules, which refuses one package mounted by several rows. Its modules are ES modules
+  // through the snapshot's own `type: module` manifest. I-PLACE replaces this with placement.
+  corePackage: Object.freeze({ source: Object.freeze(['..', 'core']), target: 'fishball-core', directories: Object.freeze(['src', 'ui']), missingCode: 'CORE_SOURCE_UNAVAILABLE' }),
   host: '127.0.0.1',
   socketName: 'control.sock',
   socketPathBytes: 100,
@@ -155,15 +162,19 @@ export const NATIVE_WEB = Object.freeze({
   redirect: 303,
   redirectLocation: './',
   success: 200,
-  pageDirectory: 'child-web',
+  // fishball-core's `fishball-ui` component: its child-only page packages, under core's root.
+  pageDirectory: 'ui',
   pagePackage: 'fishball-page',
-  // SET's slim settings panel package, and the name its copy of the instance's client.js takes
-  // there as a package-local chunk (client-modules accepts `client.<name>.js` chunks only).
+  // The generic slim settings panel with its settings-section extension point (R-HOST-11).
   settingsPackage: 'fishball-settings',
-  sharedClient: 'client.js',
-  sharedClientChunk: 'client.instance.js',
   /** V2 RP: the child-only Fishball Recommended Plugins tab, a sibling package under pageDirectory. */
   recommendPackage: 'fishball-recommend-plugins',
+  // The instance's hosted-only settings sections (fishball-hosted-settings), at this path in the
+  // instance and in the snapshot, and the name its copy of the instance's client.js takes there as
+  // a package-local chunk (client-modules accepts `client.<name>.js` chunks only).
+  hostedSettings: Object.freeze(['src', 'child-settings']),
+  sharedClient: 'client.js',
+  sharedClientChunk: 'client.instance.js',
   adapterModule: 'native-web.js',
 })
 

@@ -3,7 +3,7 @@
  * requirements RV-A..RV-E only (registry:null handoff, inspect network/transport failures, native
  * already-installed refusal, presence = declared AND files available, first-read loading status).
  *
- * Black box: the product (child-web client.js) is driven only through test/support/rp-recommend.mjs;
+ * Black box: the product (packages/core/ui/fishball-recommend-plugins client.js) is driven only through test/support/rp-recommend.mjs;
  * its body was not read. Expected values come from the requirements and the SDK types
  * (`Registry = string | null`, `BundleInfo.availability`, `PluginSpecInspection`), never from the
  * product's own output.

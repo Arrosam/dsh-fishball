@@ -4,7 +4,7 @@
  * The page (client.js, "Plugins → Fishball → settings") reads and changes the isolated child
  * through these routes. Each one calls exactly `service.admin.request(operation, payload)`
  * once: the relay (src/slim/host/admin.js) frames the request, the child's admin service
- * (src/slim/child/admin.js) applies it with the child's own DSH services, and the main process
+ * (fishball-core src/slim/child/admin.js) applies it with the child's own DSH services, and the main process
  * never opens a child file. The page sends the settings revision or the plugin-inventory digest
  * in every mutation; a stale token comes back as a typed refusal, never as a thrown error.
  *

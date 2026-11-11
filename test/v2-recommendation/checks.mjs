@@ -15,7 +15,7 @@ import { readFileSync, readdirSync, existsSync, mkdtempSync, rmSync, statSync } 
 import { randomUUID } from 'node:crypto'
 import os from 'node:os'
 import path from 'node:path'
-import { BODY_SOUL, loadInstance, CJK } from '../support/body-soul-env.mjs'
+import { BODY_SOUL, loadCore, loadInstance, CJK } from '../support/body-soul-env.mjs'
 import { linkContractForSourceRun } from '../support/contract-link.mjs'
 import { REPO } from '../support/constants.mjs'
 import { RP, openTab, createWorld, settle, deferred, textOf, subtree, findAll, byAttr, contains, applyNodeHalf } from '../support/rp-recommend.mjs'
@@ -89,7 +89,7 @@ export const RP_CHECK = freezeData({
 
 const sdkFile = (ctx, parts) => path.join(ctx.sdkModules, ...parts)
 const readSdk = (ctx, parts) => readFileSync(sdkFile(ctx, parts), 'utf8')
-const loadData = () => loadInstance(RP.dataModule)
+const loadData = () => loadCore(RP.dataModule)
 const allIds = () => C.categoryOrder.flatMap((alias) => C.entryIds[alias])
 const pkgOf = (row) => row.props[RP.attr.pkg]
 const catOf = (node) => node.props[RP.attr.category]
@@ -202,7 +202,7 @@ export const CHECKS = Object.freeze({
     list.highlighted.length = 0
     assert.deepEqual(recommendedList(), again, 'mutating one result does not change the next')
     // Node route answers the same list (contract 2).
-    const { routes } = applyNodeHalf(await loadInstance(RP.indexModule))
+    const { routes } = applyNodeHalf(await loadCore(RP.indexModule))
     const route = routes.find((r) => r.path === RP.routePath)
     assert.ok(route, 'GET route registered'); assert.deepEqual(route.methods, ['GET'])
     const response = await route.fetch(new Request(new URL(RP.listPath, RP.baseURI), { method: 'GET' }))
@@ -543,7 +543,7 @@ export const CHECKS = Object.freeze({
     for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies', 'bundleDependencies', 'bundledDependencies']) {
       for (const dep of Object.keys(pkg[field] ?? {})) assert.ok(!listed.has(dep) && !RP_CHECK.v3Words.test(dep), field + ' ' + dep)
     }
-    const { accessed } = applyNodeHalf(await loadInstance(RP.indexModule))
+    const { accessed } = applyNodeHalf(await loadCore(RP.indexModule))
     assert.ok(accessed.every((name) => name === 'connection' || name === 'effect'), 'Node half needs only its route at startup: ' + accessed)
     const { world } = await openTab()
     assert.equal(world.installs.length + world.inspects.length, 0, 'activation installs nothing without an explicit Install')

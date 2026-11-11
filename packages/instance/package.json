@@ -18,7 +18,6 @@
     "client.js",
     "native-child.js",
     "native-web.js",
-    "child-web/",
     "uninstall.js",
     "src/",
     "locale/*.json",

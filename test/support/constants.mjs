@@ -33,6 +33,11 @@ export const INSTANCE = { name: 'fishball-instance', dir: path.join(REPO, 'packa
  * plugin: it is linked as a plain dependency, never added to the profile's bundles.
  */
 export const SHARED = { name: 'fishball-shared', dir: path.join(REPO, 'packages', 'shared') }
+/**
+ * V3 R-CORE: `fishball-core`, home of the slim child and ui, the persona and the fishball-ui page
+ * packages. Nothing imports it by name (the instance copies it by path), so it is never linked.
+ */
+export const CORE = { name: 'fishball-core', dir: path.join(REPO, 'packages', 'core') }
 export const PACKAGE_NAME = CONNECTOR.name
 export const INSTANCE_NAME = INSTANCE.name
 export const ROW_ID = CONNECTOR.name
@@ -950,8 +955,8 @@ export const PENDING = { key: 'pending' }
  * `baseline` is where the persona stood before the rule was added: the live branch.
  */
 export const PERSONA_BOLD = {
-  // M1: the persona is the instance's; FBTEST_PLUGIN_DIR still names a checkout of the repository.
-  module: path.join(process.env.FBTEST_PLUGIN_DIR ? path.join(process.env.FBTEST_PLUGIN_DIR, 'packages', 'instance') : INSTANCE.dir, 'src', 'persona.js'),
+  // V3 R-CORE: the persona is core's; FBTEST_PLUGIN_DIR still names a checkout of the repository.
+  module: path.join(process.env.FBTEST_PLUGIN_DIR ? path.join(process.env.FBTEST_PLUGIN_DIR, 'packages', 'core') : CORE.dir, 'src', 'persona.js'),
   baseline: { ref: 'rebuild/assistant', file: 'src/persona.js', moduleType: 'text/javascript' },
   exports: ['HIDDEN_PROMPT_ENTRIES', 'PERSONA_ROLE', 'PERSONA_ROW'],
   rowName: '@deepseek-ai/dsh-persona',

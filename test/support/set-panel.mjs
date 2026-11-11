@@ -1,5 +1,5 @@
 /**
- * Offline harness for the child's slim settings panel `child-web/fishball-settings/client.js`
+ * Offline harness for the child's slim settings panel `packages/core/ui/fishball-settings/client.js`
  * (SET), used by the main-only model sync cases (test/v2-page-cases/set-main-only-sync.test.mjs).
  *
  * Black box. The two classic scripts run unread in a node:vm context, the way DSH's module loader
@@ -21,13 +21,13 @@ import { BODY_SOUL } from './body-soul-env.mjs'
 import { createReactShim, findAll, settle, textOf } from './rp-recommend.mjs'
 
 export const PANEL = Object.freeze({
-  panelClient: path.join(BODY_SOUL.instance, 'child-web', 'fishball-settings', 'client.js'),
+  panelClient: path.join(BODY_SOUL.core, 'ui', 'fishball-settings', 'client.js'),
   instanceClient: path.join(BODY_SOUL.instance, 'client.js'),
   moduleId: 'fishball-settings',
   chunk: 'client.instance.js',
   chunkRequest: './client.instance.js',
   baseURI: 'http://child.test/fishball-child/',
-  chunkURL: 'http://child.test/fishball-child/fishball-settings/client.instance.js?rev=1',
+  chunkURL: 'http://child.test/fishball-child/fishball-hosted-settings/client.instance.js?rev=1',
   panelSlot: 'main',
   modules: Object.freeze({ react: 'react', reactDom: 'react-dom', primitives: '@deepseek-ai/dsh-client-ui-primitives' }),
   route: Object.freeze({

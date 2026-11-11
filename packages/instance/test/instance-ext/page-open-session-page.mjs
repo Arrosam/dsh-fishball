@@ -1,5 +1,5 @@
 /**
- * Offline loader for the classic browser script child-web/fishball-page/client.js.
+ * Offline loader for the classic browser script packages/core/ui/fishball-page/client.js.
  *
  * The script registers itself through `window.__ModuleLoader__.load({id, factory(require)})`.
  * It runs in a node:vm context with a minimal fake window/document/fetch/React. Only public
@@ -13,7 +13,7 @@ import vm from 'node:vm'
 import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const CLIENT = path.join(HERE, '..', '..', 'child-web', 'fishball-page', 'client.js')
+const CLIENT = path.join(HERE, '..', '..', '..', 'core', 'ui', 'fishball-page', 'client.js')
 export const PAGE_BASE = 'http://child.test/'
 
 /** A tiny observable store: getSnapshot/subscribe, like the SDK's external stores. */

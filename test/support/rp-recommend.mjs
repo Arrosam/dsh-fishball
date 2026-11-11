@@ -24,12 +24,12 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
-import { BODY_SOUL, loadInstance } from './body-soul-env.mjs'
+import { BODY_SOUL, loadCore } from './body-soul-env.mjs'
 
 export const RP = Object.freeze({
-  pluginDir: path.join(BODY_SOUL.instance, 'child-web', 'fishball-recommend-plugins'),
+  pluginDir: path.join(BODY_SOUL.core, 'ui', 'fishball-recommend-plugins'),
   clientFile: 'client.js',
-  indexModule: 'child-web/fishball-recommend-plugins/index.js',
+  indexModule: 'ui/fishball-recommend-plugins/index.js',
   dataModule: 'src/recommended.js',
   moduleId: 'fishball-recommend-plugins',
   baseURI: 'http://child.test/fishball-child/',
@@ -278,7 +278,7 @@ function fakePrimitives(React) {
 
 /** The Node half's registered fetch route (index.js through its public apply). */
 export async function loadNodeRoute() {
-  const mod = await loadInstance(RP.indexModule)
+  const mod = await loadCore(RP.indexModule)
   return applyNodeHalf(mod)
 }
 export function applyNodeHalf(mod) {

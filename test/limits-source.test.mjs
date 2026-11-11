@@ -22,7 +22,8 @@ import { LIMITS_R11, LIMITS_R11_REMOVED, REMOVED_PACKAGE_CONSTANTS, REPO, STAYIN
 /** Every implementation source file of the two M1 packages, as text, keyed by its path relative to the repo. */
 function sources() {
   const files = []
-  for (const d of ['connector', 'instance']) {
+  // V3 R-CORE moved the slim child, ui and limits.js from packages/instance to packages/core.
+  for (const d of ['connector', 'instance', 'core']) {
     const root = path.join(REPO, 'packages', d)
     for (const f of ['index.js', 'client.js', 'host.js', 'native-child.js']) if (fs.existsSync(path.join(root, f))) files.push(path.join('packages', d, f))
     const src = path.join(root, 'src')

@@ -1,0 +1,4 @@
+# fishball-core's bundle patch (design §5a.2). Empty on purpose: F-GUARDS adds the fishball-ui
+# guard rows and core's own rows here and removes the LITE rows from the instance's overlay in the
+# same change, so the guards are defined exactly once at every merge (v3-tasks W1 rules).
+[]

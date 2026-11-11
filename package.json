@@ -6,6 +6,7 @@
   "type": "module",
   "workspaces": [
     "packages/connector",
+    "packages/core",
     "packages/instance",
     "packages/shared"
   ],

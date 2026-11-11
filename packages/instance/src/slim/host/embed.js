@@ -31,9 +31,6 @@ const NATIVE = Object.freeze({
 })
 import { ADMISSION, BEARER, LIMITS, ROUTES, STATUS, STATUS_CODES, UI_LANG } from '../contract.js'
 import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
-// The page's own dictionaries and language rule (I9, D30): the 503 card is the page's stand-in,
-// so it follows the same `lang` the framed page would. The module has no DOM or Node dependency.
-import { i18nOf } from '../ui/i18n.js'
 
 const PREFIX = ROUTES.prefix
 const DOCUMENT = ROUTES.document
@@ -54,7 +51,7 @@ const UPLOAD = Object.freeze({ path: CHILD.api + 'upload' })
 /**
  * The one API route whose child cache header survives the proxy: T06's read-only image route is
  * content-addressed, so its immutable header is safe. Keep the path in step with
- * IMAGES.readPath (src/slim/child/images.js); every other /api/* response stays no-store.
+ * IMAGES.readPath (fishball-core src/slim/child/images.js); every other /api/* response stays no-store.
  */
 const IMAGE_READ = Object.freeze({ path: CHILD.api + 'images/' })
 
@@ -161,7 +158,7 @@ const TOKEN_QUERY = 'token'
  * drops the launch query, so the broker re-encodes these into the Location fragment, which a
  * browser keeps across the following fragment-less redirect and never sends to a server. Only
  * the listed values pass; any other parameter or value is dropped, never redirected to.
- * `view` matches the descriptor's settings page (host.js PLUGIN.ui, src/slim/ui/shell.js VIEW;
+ * `view` matches the descriptor's settings page (host.js PLUGIN.ui, fishball-core src/slim/ui/shell.js VIEW;
  * keep the three in step) and `lang` is contract 1.1's.
  */
 const CONTINUATION = Object.freeze({
@@ -188,6 +185,42 @@ function continuationOf(search) {
  */
 const STATES = new Set(INSTANCE_STATES)
 const CODES = new Set(INSTANCE_CODES)
+
+/**
+ * The 503 card's words and language rule. The card stands in for the framed page, so it follows
+ * the page's `lang` rule (I9, D30): the first `lang` value, exactly `zh` for Chinese, anything
+ * else English. The page's dictionaries moved to fishball-core (V3 R-CORE), which this host
+ * module may not import (R-BND-01), so the card keeps its own copy of these six entries and of
+ * that rule (user decision 2026-11-12). The words match the page's `unavailable.*` entries; keep
+ * the two in step until this broker is retired.
+ */
+const CARD = Object.freeze({
+  locale: Object.freeze({ [UI_LANG.values.en]: 'en', [UI_LANG.values.zh]: 'zh-CN' }),
+  words: Object.freeze({
+    [UI_LANG.values.en]: Object.freeze({
+      title: 'Fishball unavailable',
+      heading: 'Fishball is not available',
+      state: 'State:',
+      code: 'Code:',
+      retryHint: 'Retry starts the isolated Fishball again.',
+      retry: 'Retry',
+    }),
+    [UI_LANG.values.zh]: Object.freeze({
+      title: 'Fishball 不可用',
+      heading: 'Fishball 当前不可用',
+      state: '状态：',
+      code: '代码：',
+      retryHint: '重试会重新启动隔离的 Fishball。',
+      retry: '重试',
+    }),
+  }),
+})
+
+/** The card's language for a URL search string: the first `lang` value when it names a dictionary exactly, else English. */
+function cardLanguage(search) {
+  const value = new URLSearchParams(typeof search === 'string' ? search : '').get(UI_LANG.parameter)
+  return value !== null && Object.hasOwn(CARD.words, value) ? value : UI_LANG.values.en
+}
 
 const HTML_ESCAPE = Object.freeze({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => HTML_ESCAPE[character])
@@ -297,29 +330,30 @@ const isEventStream = (headers) => {
 
 /**
  * The 503 card in the language of the request's `lang` (the first one, exactly `zh` for Chinese;
- * ui/i18n.js languageOf). The words are escaped like every other value.
+ * CARD). The words are escaped like every other value.
  */
 function errorDocument(view, search) {
-  const { t, locale } = i18nOf(search)
-  const word = (key) => escapeHtml(t(key))
+  const language = cardLanguage(search)
+  const words = CARD.words[language]
+  const word = (key) => escapeHtml(words[key])
   const lines = [
     '<!doctype html>',
-    '<html lang="' + escapeHtml(locale) + '">',
+    '<html lang="' + escapeHtml(CARD.locale[language]) + '">',
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     '<meta name="color-scheme" content="light dark">',
-    '<title>' + word('unavailable.title') + '</title>',
+    '<title>' + word('title') + '</title>',
     '</head>',
     '<body>',
     '<main>',
-    '<h1>' + word('unavailable.heading') + '</h1>',
-    '<p>' + word('unavailable.state') + ' <code>' + escapeHtml(view.state) + '</code></p>',
-    view.code ? '<p>' + word('unavailable.code') + ' <code>' + escapeHtml(view.code) + '</code></p>' : '',
-    '<p>' + word('unavailable.retryHint') + '</p>',
+    '<h1>' + word('heading') + '</h1>',
+    '<p>' + word('state') + ' <code>' + escapeHtml(view.state) + '</code></p>',
+    view.code ? '<p>' + word('code') + ' <code>' + escapeHtml(view.code) + '</code></p>' : '',
+    '<p>' + word('retryHint') + '</p>',
     // No action attribute: the form retries the current document URL (with its `lang`), so the
     // page carries no path and the answer keeps the language.
-    '<form method="post"><button type="submit">' + word('unavailable.retry') + '</button></form>',
+    '<form method="post"><button type="submit">' + word('retry') + '</button></form>',
     '</main>',
     '</body>',
     '</html>',

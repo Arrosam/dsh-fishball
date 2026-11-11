@@ -186,21 +186,37 @@ export async function copyChildCode(paths, record) {
   await mkdir(path.join(destination, 'src'), { mode: RUNTIME.privateDirectoryMode })
   await copy(path.join(sourceRoot, 'native-child.js'), path.join(destination, 'native-child.js'), javascript)
   await copy(path.join(sourceRoot, NATIVE_WEB.adapterModule), path.join(destination, NATIVE_WEB.adapterModule), javascript)
-  // Keep the named manifest and ./client export together. Native modules discovers every
-  // enabled client row itself; copying a hand-picked browser roster would omit ecosystem rows.
-  await copy(path.join(sourceRoot, NATIVE_WEB.pageDirectory), path.join(destination, NATIVE_WEB.pageDirectory), everyFile)
-  // SET: the settings panel shows the instance card's status line (not its model block: sync is
-  // main-only) from that card's own source, which client-modules can serve only as one of the panel
+  // fishball-core (V3 R-CORE): the slim child, persona, private Skills tool and the fishball-ui
+  // page packages, copied as files from the sibling workspace folder, resolved by path and never
+  // imported (R-BND-01; RUNTIME.corePackage says why its manifest is left out). Every file keeps
+  // its bytes: the slim app tree and the page packages ship HTML, CSS and their manifests, and the
+  // ui packages keep their named manifest and ./client export together, because native client
+  // modules discovers every enabled client row itself.
+  const core = RUNTIME.corePackage
+  const coreSource = path.join(sourceRoot, ...core.source)
+  // The sibling folder exists in the repository checkout (and a linked install) only: a packed
+  // fishball-instance carries no fishball-core until I-PLACE ships it under bundled/. Refuse with a
+  // typed code instead of a raw filesystem error.
+  if (!(await exists(coreSource))?.isDirectory()) fail(core.missingCode)
+  await mkdir(path.join(destination, core.target), { mode: RUNTIME.privateDirectoryMode })
+  for (const directory of core.directories) await copy(path.join(coreSource, directory), path.join(destination, core.target, directory), everyFile)
+  // fishball-hosted-settings (R-HOST-11): the instance's hosted-only settings sections with their
+  // manifest. They show the instance card's status line (not its model block: sync is main-only)
+  // from that card's own source, which client-modules can serve only as one of the section
   // package's local chunks.
-  await copy(path.join(sourceRoot, NATIVE_WEB.sharedClient), path.join(destination, NATIVE_WEB.pageDirectory, NATIVE_WEB.settingsPackage, NATIVE_WEB.sharedClientChunk), javascript)
+  const hostedSettings = path.join(...NATIVE_WEB.hostedSettings)
+  await copy(path.join(sourceRoot, hostedSettings), path.join(destination, hostedSettings), everyFile)
+  await copy(path.join(sourceRoot, NATIVE_WEB.sharedClient), path.join(destination, hostedSettings, NATIVE_WEB.sharedClientChunk), javascript)
   // The settings row's host half reads the public status shape and route tables of these main modules.
   await copy(path.join(sourceRoot, 'src', 'native-web.js'), path.join(destination, 'src', 'native-web.js'), javascript)
   await mkdir(path.join(destination, 'src', 'host'), { mode: RUNTIME.privateDirectoryMode })
   // native-web.js publishes a failed start's detail through main's sanitizer and its JSON helper.
   for (const module of ['binding.js', 'launch-detail.js', 'json-string-spans.js']) await copy(path.join(sourceRoot, 'src', 'host', module), path.join(destination, 'src', 'host', module), javascript)
   await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
-  await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), everyFile)
-  // M1: the instance's src/slim shims and persona import `fishball-connector/contract`. Node finds
+  // The instance's own child-side modules the hosted settings and lifecycle import: the contract
+  // shim, the settings relay and src/slim/host.
+  await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), javascript)
+  // M1: the instance's contract shim and fishball-core's modules import `fishball-connector/contract`. Node finds
   // it in the snapshot's own node_modules, inside the private profile the preflight already
   // accepted (DSH routes a bare name to a local node_modules under the profile natively). Only the
   // contract directory and a manifest with that one export are copied, never the rest of the
@@ -214,11 +230,8 @@ export async function copyChildCode(paths, record) {
   const contractExport = './' + contract.directory
   await writePrivate(path.join(contractTarget, contract.manifest), { name: contract.name, type: 'module', private: true, exports: { [contractExport]: contractExport + '/' + path.basename(contractEntry) } }, true)
   await copy(path.dirname(contractEntry), path.join(contractTarget, contract.directory), javascript)
-  // T07 registers Fishball's persona from src/persona.js in the chat agent's scope; its text
-  // dependencies (PILE_NOTE, ANSWER_PLACE) are the contract's, copied above.
-  await copy(path.join(sourceRoot, 'src', 'persona.js'), path.join(destination, 'src', 'persona.js'), javascript)
   // fishball-shared (R-ARCH-08): the admin protocol, the provider-sync engine, codec and pi-ai host
-  // adapter, and the file and redaction helpers, which the copied slim tree and lifecycle modules
+  // adapter, and the file and redaction helpers, which the copied core and lifecycle modules
   // import by name. It is placed beside the contract, as files: its manifest and its top-level
   // modules, never anything it might have installed itself. The source is the instance's own
   // dependency, resolved by the same name the copied modules use.
@@ -231,8 +244,5 @@ export async function copyChildCode(paths, record) {
   for (const entry of await readdir(sharedSource)) {
     if (sharedFile(entry)) await copy(path.join(sharedSource, entry), path.join(sharedTarget, entry), sharedFile)
   }
-  // Read by the child-only Fishball Recommended tab's Node row (child-web/fishball-recommend-plugins,
-  // V2 RP), its only reader since the admin relay's recommended copy was removed.
-  await copy(path.join(sourceRoot, 'src', 'recommended.js'), path.join(destination, 'src', 'recommended.js'), javascript)
   return path.join(destination, 'native-child.js')
 }

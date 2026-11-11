@@ -30,10 +30,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it } from 'node:test'
 import { BODY_SOUL } from './support/body-soul-env.mjs'
-import { loadInstance } from './support/body-soul-env.mjs'
+import { loadCore } from './support/body-soul-env.mjs'
 import { chatHarness } from './support/body-soul-chat.mjs'
 
-const { createChat, CHAT } = await loadInstance('src/slim/child/chat.js')
+const { createChat, CHAT } = await loadCore('src/slim/child/chat.js')
 const hostApi = await import('@deepseek-ai/dsh-agent')
 /** 0.2.1 has no AgentModel export; its Agent selects through the scoped-context seam instead. */
 const LEGACY = !('AgentModel' in hostApi)

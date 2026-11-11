@@ -5,7 +5,7 @@
  * Observation points:
  * - the child chat's GET /api/chat entries (createChat(ctx).handle(CHAT.path, {method:'GET'}))
  *   over a stand-in sessionQuery log, and its live `session/event` relay (subscribe);
- * - createRecordRow(document, record, i18n) of src/slim/ui/records.js with a small fake document
+ * - createRecordRow(document, record, i18n) of packages/core/src/slim/ui/records.js with a small fake document
  *   (test/support/body-soul-chat.mjs). The real page's layout is the browser phase.
  *
  * | id | technique | expected |
@@ -30,13 +30,13 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { connectorRecordWords, loadConnector, loadInstance } from './support/body-soul-env.mjs'
+import { connectorRecordWords, loadConnector, loadCore } from './support/body-soul-env.mjs'
 import { CHAT_EVENT, chatHarness, fakeDocument } from './support/body-soul-chat.mjs'
 
-const loadChat = () => loadInstance('src/slim/child/chat.js')
+const loadChat = () => loadCore('src/slim/child/chat.js')
 const { ENTRY_KIND } = await loadChat()
-const { createRecordRow } = await loadInstance('src/slim/ui/records.js')
-const { createI18n } = await loadInstance('src/slim/ui/i18n.js')
+const { createRecordRow } = await loadCore('src/slim/ui/records.js')
+const { createI18n } = await loadCore('src/slim/ui/i18n.js')
 const { CARD_RECORD } = await loadConnector('contract/card-record.js')
 const WORDS = connectorRecordWords()
 const K = CARD_RECORD

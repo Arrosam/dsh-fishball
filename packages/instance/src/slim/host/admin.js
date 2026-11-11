@@ -4,7 +4,7 @@
  * The rebuilt settings page (T12) reads and changes the isolated child's model, plugins and
  * settings, and restarts it, without the main process writing one child file. This module is
  * the relay: the page calls `request()`, the child's admin service
- * (src/slim/child/admin.js) applies the change with its own DSH services, and this file only
+ * (fishball-core src/slim/child/admin.js) applies the change with its own DSH services, and this file only
  * frames requests, correlates replies and answers the two host-side operations.
  *
  * Rules kept here, because they are the relay's part of the contract:
@@ -29,7 +29,7 @@
  *    `{send, onMessage, onClose}`. The bridge keeps `control` exclusively.
  * 2. The main host row creates one relay with the lifecycle's status and restart, and calls
  *    `attach(transport)` from `ctx.nativeRuntime.onAdminTransport(listener)` on every
- *    (re)connect; the child overlay inserts src/slim/child/admin.js as its own row, which does
+ *    (re)connect; the child overlay inserts fishball-core src/slim/child/admin.js as its own row, which does
  *    the same with its end of that channel.
  * 3. T12's routes call `relay.request(operation, payload)`; they never reach the child
  *    directly and never write a file.
@@ -48,7 +48,7 @@ const { createAdminCodec, validateRequest } = createAdminProtocol({ DIGEST, STAT
 
 // The relay adds nothing to `admin.plugins.get`: the recommended list it used to append
 // (ADMIN_RECOMMENDED) had no V2 reader and was removed; the child's Fishball Recommended tab reads
-// src/recommended.js itself (child-web/fishball-recommend-plugins).
+// src/recommended.js itself (fishball-core ui/fishball-recommend-plugins).
 const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose'])
 /**
  * The states and codes `admin.status` and `admin.restart` may answer: the instance's own
