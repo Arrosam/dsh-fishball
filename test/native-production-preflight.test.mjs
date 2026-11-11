@@ -109,7 +109,7 @@ test('PREF-02 refuses resolution inventory falling back to mutable main-home pac
   } }))
 })
 
-// PREF-02 core identity, decision A (the user, 2026-11-11: "插件怎么样就怎么样，如果炸了启动不了就启动不了。As it is.").
+// PREF-02 core identity, decision A (maintainer decision, 2026-11-11: a plugin's own copy of a DSH core package is not refused).
 // A private @deepseek-ai/* package is no longer a refusal reason: no allow-list, no version check.
 // Decision table, one rule per row: an @deepseek-ai name or slot alone is accepted wherever it sits;
 // the manifest, link and resolution refusals still apply to such a slot, unchanged (C3).

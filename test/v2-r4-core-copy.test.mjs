@@ -1,8 +1,8 @@
 /**
  * Round-2 BUG 1, decision A — the child starts with a private @deepseek-ai copy in its profile.
  *
- * Requirement (the user's decision, 2026-11-11: "用A吧，不管这些，插件怎么样就怎么样，如果炸了启动不了就
- * 启动不了。As it is."):
+ * Requirement (maintainer decision, 2026-11-11: a plugin's own copy of a DSH core package is not
+ * refused; if it breaks DSH, the child fails to start and the start-failure detail reports the cause):
  * - C1 a `@deepseek-ai/*` package copy in the child profile
  *   (<mainHome>/fishball/runtime/dsh-home/profiles/fishball/node_modules/@deepseek-ai/<name>, usually a
  *   plugin's dependency pnpm hoisted there, e.g. @deepseek-ai/schemastery from dsh-idle-compact@0.3.0)
