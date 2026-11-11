@@ -8,7 +8,7 @@
  */
 import os from 'node:os'
 import path from 'node:path'
-import { REPO } from '../../support/constants.mjs'
+import { REPO, TEST_HOMES } from '../../support/constants.mjs'
 
 const pkg = (name, folder) => Object.freeze({ name, dir: path.join(REPO, 'packages', folder) })
 
@@ -66,7 +66,8 @@ export const NPM = Object.freeze({
   timeoutMs: 120000,
   maxStdoutBytes: 16 * 1024 * 1024,
   tempPrefix: 'fbtest-v3-shared-npm-',
-  tempRoot: os.tmpdir(),
+  /** The throwaway copy, and npm's cache inside it, live under the run's `.runtime` folder (never a user cache). */
+  tempRoot: path.dirname(TEST_HOMES),
   bundledDir: (name) => 'node_modules/' + name + '/',
 })
 
@@ -90,7 +91,6 @@ export const LATER = Object.freeze({
   core: 'R-CORE (creates packages/core, W1 step 2)',
   embed: 'R-EMBED (creates packages/embed-ui, W1 step 3)',
   rowSixTwoPackages: 'R-CORE (until core exists, the instance is the only package that can import the library)',
-  statusLine: 'R-CORE (re-homes the status-line module into src/child-settings/)',
   hostedSettings: 'I-PLACE (fishball-hosted-settings, a placed bundle importing the library)',
   featurePeers: 'FEAT-PEERS and WD-ROUTE (feature plugins drop the fishball-instance peer for the optional fishballInstance? inject)',
   pluginsPage: 'X-MATRIX (no Plugins page of a started DSH lists fishball-shared)',

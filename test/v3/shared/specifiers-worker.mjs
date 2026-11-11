@@ -1,9 +1,8 @@
 /**
  * Worker for the R-SHARED static checks: reads every module specifier a JS file names.
  *
- * Runs with `--expose-internals` so it can use the acorn copy built into Node itself. The repository
- * has no parser of its own, and DSH 0.2.1-rc.5 ships none, so this way both SDK runs use the same
- * parser and nothing is installed. It runs with `--experimental-import-meta-resolve` so a bare
+ * Runs with `--expose-internals` so it can use the acorn copy built into Node itself (acorn.mjs).
+ * It runs with `--experimental-import-meta-resolve` so a bare
  * specifier can be resolved from the importing file's own location (two-argument
  * `import.meta.resolve`), exactly as Node would resolve it at load time.
  *
@@ -12,33 +11,19 @@
  * Ref = { kind, specifier, resolved?: string (absolute path), unresolved?: string (error code) }.
  */
 import fs from 'node:fs'
-import { createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parentPort, workerData } from 'node:worker_threads'
-
-const internal = createRequire(import.meta.url)
-const acorn = internal('internal/deps/acorn/acorn/dist/acorn')
-const walk = internal('internal/deps/acorn/acorn-walk/dist/walk')
+import { parse, walk } from './acorn.mjs'
 
 const KIND = Object.freeze({
   static: 'static', dynamic: 'dynamic-import', require: 'require', requireResolve: 'require.resolve', metaResolve: 'import.meta.resolve',
 })
-const PARSE = Object.freeze({ ecmaVersion: 'latest', allowHashBang: true, allowAwaitOutsideFunction: true, allowReturnOutsideFunction: true })
-const SOURCE_TYPES = Object.freeze(['module', 'script'])
 
 /** A literal string argument (a plain string or a template with no expressions), else null. */
 function literal(node) {
   if (node?.type === 'Literal' && typeof node.value === 'string') return node.value
   if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) return node.quasis[0].value.cooked
   return null
-}
-
-function parse(source) {
-  let lastError
-  for (const sourceType of SOURCE_TYPES) {
-    try { return acorn.parse(source, { ...PARSE, sourceType }) } catch (error) { lastError = error }
-  }
-  throw lastError
 }
 
 /** Every specifier one file names: import/export-from, import(), require(), require.resolve(), import.meta.resolve(). */

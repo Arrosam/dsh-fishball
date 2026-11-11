@@ -16,8 +16,8 @@
  */
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import vm from 'node:vm'
 import { BODY_SOUL } from './body-soul-env.mjs'
+import { createBrowserSandbox } from './browser-sandbox.mjs'
 import { createReactShim, findAll, settle, textOf } from './rp-recommend.mjs'
 
 export const PANEL = Object.freeze({
@@ -44,8 +44,8 @@ export const PANEL = Object.freeze({
   notFound: 404,
 })
 
-/** Primitives: Button is a host <button>, every other export a generic element; all props kept. */
-function fakePrimitives(React) {
+/** Primitives: Button is a host <button>, every other export a generic element; all props kept. Shared with test/v3/core/page.mjs. */
+export function fakePrimitives(React) {
   const cache = new Map()
   const make = (name) => function Primitive({ children, ...rest }) {
     return React.createElement(name === 'Button' ? 'button' : 'div', { 'data-primitive': name, ...rest }, children)
@@ -68,29 +68,7 @@ function fakePrimitives(React) {
  * @param options.status - the `{state, code}` GET status answers.
  */
 export async function mountPanel(t, { lang = 'en', status = PANEL.status.ready } = {}) {
-  const registrations = []
   const fetches = []
-  const timers = new Set()
-  const sandboxTimers = {
-    setTimeout: (fn, ms, ...args) => { const id = setTimeout(fn, ms, ...args); timers.add(id); return id },
-    clearTimeout: (id) => { timers.delete(id); clearTimeout(id) },
-    setInterval: (fn, ms, ...args) => { const id = setInterval(fn, ms, ...args); timers.add(id); return id },
-    clearInterval: (id) => { timers.delete(id); clearInterval(id) },
-  }
-  const html = { lang, hasAttribute: () => false, setAttribute() {}, removeAttribute() {}, toggleAttribute() { return false } }
-  const document = {
-    baseURI: PANEL.baseURI,
-    currentScript: null,
-    documentElement: html,
-    adoptedStyleSheets: [],
-    head: { append() {}, appendChild() {} },
-    body: { append() {}, appendChild() {}, removeChild() {} },
-    createElement: () => ({ setAttribute() {}, append() {}, appendChild() {}, remove() {}, style: {} }),
-    querySelectorAll: () => [],
-    querySelector: () => null,
-    addEventListener() {},
-    removeEventListener() {},
-  }
   const json = (body, init) => new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' }, ...init })
   async function browserFetch(input, init = {}) {
     const url = new URL(String(input instanceof Request ? input.url : input), PANEL.baseURI)
@@ -101,30 +79,11 @@ export async function mountPanel(t, { lang = 'en', status = PANEL.status.ready }
     if (url.pathname.endsWith('/' + PANEL.route.restart)) return json({ ok: true, result: PANEL.status.starting })
     return json({ error: 'not found' }, { status: PANEL.notFound })
   }
-  const window = {
-    __ModuleLoader__: { load(entry) { registrations.push(entry) } },
-    location: new URL(PANEL.baseURI),
-    addEventListener() {},
-    removeEventListener() {},
-    open: () => null,
-    document,
-    fetch: browserFetch,
-  }
-  const sandbox = {
-    window, document, fetch: browserFetch, console, URL, URLSearchParams, Request, Response, Headers,
-    AbortController, AbortSignal, queueMicrotask, structuredClone, ...sandboxTimers,
-    requestAnimationFrame: () => 0, cancelAnimationFrame() {},
-    MutationObserver: class { observe() {} disconnect() {} takeRecords() { return [] } },
-    CSSStyleSheet: class { constructor() { this.cssRules = [] } replaceSync() {} insertRule() { return 0 } },
-    navigator: { languages: [lang] },
-  }
-  sandbox.globalThis = sandbox
-  vm.createContext(sandbox)
-  vm.runInContext(readFileSync(PANEL.panelClient, 'utf8'), sandbox, { filename: PANEL.panelClient })
+  const page = createBrowserSandbox({ lang, baseURI: PANEL.baseURI, fetch: browserFetch })
+  const { registrations } = page
+  page.run(readFileSync(PANEL.panelClient, 'utf8'), PANEL.panelClient)
   // The default bundle loader inserts a <script> for the chunk: currentScript names its URL.
-  document.currentScript = { src: PANEL.chunkURL }
-  vm.runInContext(readFileSync(PANEL.instanceClient, 'utf8'), sandbox, { filename: PANEL.chunk })
-  document.currentScript = null
+  page.run(readFileSync(PANEL.instanceClient, 'utf8'), PANEL.chunk, PANEL.chunkURL)
 
   const shim = createReactShim({ stale() {} })
   const { React } = shim
@@ -183,7 +142,7 @@ export async function mountPanel(t, { lang = 'en', status = PANEL.status.ready }
   t.after(() => {
     try { shim.unmountRoot('panel') } catch { /* already gone */ }
     for (const dispose of disposers.reverse()) { try { dispose() } catch { /* already gone */ } }
-    for (const id of timers) { clearTimeout(id); clearInterval(id) }
+    page.clearTimers()
   })
   await settle()
   const panel = slotEntries.find((entry) => entry.options.name === PANEL.panelSlot)
