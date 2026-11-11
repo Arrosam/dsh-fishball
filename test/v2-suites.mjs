@@ -30,6 +30,8 @@ export const V2_SUITES = Object.freeze({
     'packages/instance/test/instance-ext/manager-workspace.test.mjs',
     // PAGE (7.A page-open ensure) and READY (appReady gate) implementation suites, plan §3 owners.
     'packages/instance/test/instance-ext/page-open-session.test.mjs',
+    // PAGE: the first selection waits for DSH's session list to carry the manager (black-box, from requirements).
+    'packages/instance/test/instance-ext/page-open-listed.test.mjs',
     'packages/instance/test/instance-ext/ready-gate.test.mjs',
     'packages/instance/test/instance-ext/x0-c-held-context.test.mjs',
     'packages/instance/test/instance-ext/x0-c.test.mjs',
@@ -45,6 +47,8 @@ export const V2_SUITES = Object.freeze({
     'test/private-skills/sk-uc.test.mjs',
     // CHILD-BOOT: the child page rows in the real SDK web boot and headless Chromium, both SDKs.
     'test/v2-page-cases/child-boot.test.mjs',
+    // CHILD-BOOT-REOPEN: every open of the child page lands on the manager (fresh origin, reload, view=settings), both SDKs.
+    'test/v2-page-cases/child-boot-reopen.test.mjs',
     // Final V2 page/readiness/origin/lite/settings cases (070b88e). Unobservable seams stay TODO.
     'test/v2-page-cases/lite.test.mjs',
     'test/v2-page-cases/page.test.mjs',
