@@ -3,7 +3,8 @@ import { createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 import { RUNTIME, NATIVE_WEB, HOST_LAUNCH, fail, NativeRuntimeError } from './constants.js'
-import { inside, privateDirectory, writePrivate, exists, snapshotPath } from './files.js'
+import { privateDirectory, writePrivate, exists, snapshotPath } from './files.js'
+import { inside } from 'fishball-shared/files'
 
 export async function resolveInstallation(installAnchor) {
   if (typeof installAnchor !== 'string' || !path.isAbsolute(installAnchor)) fail('INVALID_INSTALLATION')
@@ -216,11 +217,20 @@ export async function copyChildCode(paths, record) {
   // T07 registers Fishball's persona from src/persona.js in the chat agent's scope; its text
   // dependencies (PILE_NOTE, ANSWER_PLACE) are the contract's, copied above.
   await copy(path.join(sourceRoot, 'src', 'persona.js'), path.join(destination, 'src', 'persona.js'), javascript)
-  // T16's child target imports the shared preview/confirm engine and dynamically imports the
-  // pi-ai host adapter beside it (src/slim/child/provider-sync-target.js: '../../provider-sync.js').
-  // Both modules ship with the slim tree so the target applies the same reviewed rules as the main host.
-  await copy(path.join(sourceRoot, 'src', 'provider-sync.js'), path.join(destination, 'src', 'provider-sync.js'), javascript)
-  await copy(path.join(sourceRoot, 'src', 'provider-sync-host.js'), path.join(destination, 'src', 'provider-sync-host.js'), javascript)
+  // fishball-shared (R-ARCH-08): the admin protocol, the provider-sync engine, codec and pi-ai host
+  // adapter, and the file and redaction helpers, which the copied slim tree and lifecycle modules
+  // import by name. It is placed beside the contract, as files: its manifest and its top-level
+  // modules, never anything it might have installed itself. The source is the instance's own
+  // dependency, resolved by the same name the copied modules use.
+  const shared = RUNTIME.sharedPackage
+  const sharedSource = path.dirname(fileURLToPath(import.meta.resolve(shared.name + '/' + shared.manifest)))
+  const sharedTarget = path.join(destination, shared.modules, shared.name)
+  await mkdir(path.join(destination, shared.modules), { recursive: true, mode: RUNTIME.privateDirectoryMode })
+  await mkdir(sharedTarget, { mode: RUNTIME.privateDirectoryMode })
+  const sharedFile = file => path.basename(file) === shared.manifest || file.endsWith(shared.moduleSuffix)
+  for (const entry of await readdir(sharedSource)) {
+    if (sharedFile(entry)) await copy(path.join(sharedSource, entry), path.join(sharedTarget, entry), sharedFile)
+  }
   // Read by the child-only Fishball Recommended tab's Node row (child-web/fishball-recommend-plugins,
   // V2 RP), its only reader since the admin relay's recommended copy was removed.
   await copy(path.join(sourceRoot, 'src', 'recommended.js'), path.join(destination, 'src', 'recommended.js'), javascript)

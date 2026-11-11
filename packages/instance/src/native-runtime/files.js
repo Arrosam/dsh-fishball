@@ -4,10 +4,6 @@ import path from 'node:path'
 import { randomUUID, randomBytes } from 'node:crypto'
 import { RUNTIME, RUNTIME_LIMITS, fail } from './constants.js'
 
-export const inside = (root, file) => {
-  const relative = path.relative(root, file)
-  return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative))
-}
 export async function exists(file) {
   try { return await lstat(file) } catch (error) { if (error.code === 'ENOENT') return undefined; throw error }
 }

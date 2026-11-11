@@ -1,0 +1,30 @@
+{
+  "name": "fishball-shared",
+  "version": "0.1.0-alpha.0",
+  "//": "A library, not a DSH plugin (R-ARCH-08, design §9.1): no `dsh` field, so no bundle, row, client or service, and it never appears on a Plugins page. It holds only the modules both fishball-core and fishball-instance use, imports no other V3 package, and ships inside their tarballs through bundleDependencies (V3 publishes nothing to a registry).",
+  "description": "Modules both Fishball sides use: the child admin service protocol, the provider-sync wire codec and engine, and shared file and redaction helpers.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./admin-protocol": "./admin-protocol.js",
+    "./files": "./files.js",
+    "./provider-sync": "./provider-sync.js",
+    "./provider-sync-codec": "./provider-sync-codec.js",
+    "./provider-sync-host": "./provider-sync-host.js",
+    "./redact": "./redact.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "*.js",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "//peerDependencies": "Host packages are resolved from the running DSH installation, as for fishball-instance: './provider-sync-codec' reads the DSH version and './provider-sync-host' adapts the pi-ai provider settings. '*' because the depending package's engines.dsh is the real compatibility gate.",
+  "peerDependencies": {
+    "@deepseek-ai/cosmokit": "*",
+    "@deepseek-ai/dsh-app-boot": "*",
+    "@deepseek-ai/dsh-llm-pi-ai": "*"
+  }
+}

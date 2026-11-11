@@ -30,6 +30,13 @@
     "node": ">=22",
     "dsh": ">=0.2.1-rc.2"
   },
+  "//dependencies": "fishball-shared holds the modules the instance host shares with the Fishball side (R-ARCH-08, design §9.1). It is bundled, so the tarball carries it and an install fetches nothing from a registry; the version moves with this package's.",
+  "dependencies": {
+    "fishball-shared": "0.1.0-alpha.0"
+  },
+  "bundleDependencies": [
+    "fishball-shared"
+  ],
   "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. fishball-connector is the connector this instance binds to: only its ./contract export is imported (design §0.2). The range is package versions (user decision 2026-11-07): from this release's 0.1.0-alpha.0 up to, not including, 2. The contract version is checked separately when the instance attaches (CONNECTOR_CONTRACT, major 1).",
   "peerDependencies": {
     "fishball-connector": ">=0.1.0-alpha.0 <2",

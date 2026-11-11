@@ -35,7 +35,7 @@ const identity = (value) => plain(value) && ['runtimeId', 'profileId', 'schemaVe
  * reason because the user can fix it in the URL; custom headers and any other unknown profile
  * field stay `unsupported`, which the page explains as "for example custom headers".
  *
- * This is the one rule for profile safety. The host (src/provider-sync-host.js safeProfile)
+ * This is the one rule for profile safety. The host (./provider-sync-host.js safeProfile)
  * refuses with this verdict and carries it in the inventory as `profileReason`, so the preview
  * reports the reason the host refused with instead of guessing from the nulled profile.
  */
@@ -90,7 +90,7 @@ const recordValid = (record) => plain(record) && record.kind === 'api-key' && te
   && Object.keys(record).every((key) => ['kind', 'key'].includes(key))
 /**
  * Why a provider with no copyable key is skipped. Since 2026-11-06 (user decision) a key from the
- * profile's apiKeyEnv is copied like a stored one (src/provider-sync-host.js resolves it in the
+ * profile's apiKeyEnv is copied like a stored one (./provider-sync-host.js resolves it in the
  * main process); while that variable is unset or empty there it gets its own reason, so the page
  * can say which variable-side fix is needed instead of "no key".
  */

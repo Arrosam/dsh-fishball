@@ -3,26 +3,11 @@ import { constants } from 'node:fs'
 import { open, rename } from 'node:fs/promises'
 import { RUNTIME } from './constants.js'
 import { exists } from './files.js'
+// Shared with the provider-sync host adapter, which the child also loads (fishball-shared, R-ARCH-08).
+import { redact } from 'fishball-shared/redact'
 
-/**
- * Secret shapes masked before a line reaches disk. The child never prints its bearer or the
- * control secret on purpose; these are defence in depth for a library or crash that prints one:
- * an Authorization value, a key/token/secret/password assignment, and any long opaque run (the
- * bearer and the control secret are 64 hex characters, API keys are long word runs). The run
- * excludes '/' and '.' so file paths in stack traces stay readable.
- */
-const REDACTION = Object.freeze([
-  Object.freeze({ pattern: /\bbearer\s+[^\s"',;]+/gi, replacement: 'Bearer [redacted]' }),
-  Object.freeze({ pattern: /\b(token|key|secret|password|credential|authorization)(s?["']?\s*[:=]\s*["']?)[^\s"',;&]+/gi, replacement: '$1$2[redacted]' }),
-  Object.freeze({ pattern: /[A-Za-z0-9_+=-]{32,}/g, replacement: '[redacted]' }),
-])
 const NEWLINE = '\n'
 const APPEND_FLAGS = constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | constants.O_NOFOLLOW
-
-/** Mask the secret shapes above; also used for provider-sync failure diagnostics (src/provider-sync-host.js). */
-export function redact(text) {
-  return REDACTION.reduce((value, { pattern, replacement }) => value.replace(pattern, replacement), text)
-}
 
 /** Append one block, rotating first when it would cross the cap; a block over the cap keeps its tail. */
 async function append(file, text, limitBytes) {

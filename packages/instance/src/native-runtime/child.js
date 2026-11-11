@@ -7,7 +7,8 @@ import { randomUUID } from 'node:crypto'
 import { registerParentShutdown } from './parent-watch.js'
 import { RUNTIME, runtimeLimits, fail, NativeRuntimeError, appAccess, NATIVE_WEB } from './constants.js'
 import { BEARER, ROUTES } from '../slim/contract.js'
-import { jsonPrivate, readPrivate, writePrivate, privateDirectory, launchPath, snapshotPath, pathsFor, inside, lifecycleLog } from './files.js'
+import { jsonPrivate, readPrivate, writePrivate, privateDirectory, launchPath, snapshotPath, pathsFor, lifecycleLog } from './files.js'
+import { inside } from 'fishball-shared/files'
 import { Wire, proof, sameProof } from './wire.js'
 
 const HTTP = Object.freeze({ success: 200 })

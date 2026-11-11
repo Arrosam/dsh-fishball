@@ -7,7 +7,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { isVolatile } from '@deepseek-ai/cosmokit'
 import { Config, recordKeyFor } from '@deepseek-ai/dsh-llm-pi-ai'
-import { redact } from './native-runtime/stderr-log.js'
+import { redact } from './redact.js'
 import { unsafeProfileReason } from './provider-sync.js'
 
 export const PROVIDER_SYNC_HOST = Object.freeze({
@@ -104,7 +104,7 @@ const unwrap = (value) => isVolatile(value) ? unwrap(value.get()) : Array.isArra
   : plain(value) ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, unwrap(item)])) : value
 
 export class ProviderSyncHostError extends Error {
-  /** @param profileReason the shared profile verdict when this refusal is one (src/provider-sync.js). */
+  /** @param profileReason the shared profile verdict when this refusal is one (./provider-sync.js). */
   constructor(code, profileReason) { super(H.errorMessage); this.code = code; this.profileReason = profileReason }
 }
 const refuse = (code) => { throw new ProviderSyncHostError(code) }
@@ -205,7 +205,7 @@ const emptyCredential = () => ({ configured: false, writable: false })
 const checkSignal = (signal) => { if (signal?.aborted) refuse(E.cancelled) }
 /**
  * A dormant built-in route keyed by its API-key record alone: no settings entry, an api-key
- * sign-in method and a fixed endpoint. Its key may be read for the sync (src/provider-sync.js
+ * sign-in method and a fixed endpoint. Its key may be read for the sync (./provider-sync.js
  * builtinKey); the target adopts the route with an empty profile before writing it.
  */
 const builtinKeyRoute = (provider) => provider.declared === false && provider.configured === false
@@ -330,7 +330,7 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
       // The directory's diagnostics are untrusted error text; only its presence is used.
       if (item.error !== undefined) reason ??= E.profile
       // A route whose endpoint is built from environment variables may point elsewhere in the
-      // other home, so its key is never copied without a profile (src/provider-sync.js builtinKey).
+      // other home, so its key is never copied without a profile (./provider-sync.js builtinKey).
       const endpointFromEnv = Array.isArray(item.baseURLEnv) && item.baseURLEnv.length > H.minimumRevision
       providers.push({ id, settingsNs: ns, settingsPath: providerPath(id), owner: H.owner,
         ...(text(item.displayName) ? { label: item.displayName } : {}), endpointFromEnv, keyFromEnv: reference !== undefined,

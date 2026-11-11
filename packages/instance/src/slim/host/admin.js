@@ -35,12 +35,16 @@
  *    directly and never write a file.
  */
 import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
+// The protocol comes from fishball-shared, never from the child's module (R-BND-01: the host loads
+// no Fishball-side module); it is bound to the same contract values the child binds it to.
 import {
-  ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS, AdminFailure,
-  createAdminCodec, refusal, refusalOf, validateRequest,
-} from '../child/admin.js'
+  ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS,
+  createAdminProtocol, refusal, refusalOf,
+} from 'fishball-shared/admin-protocol'
+import { DIGEST, STATUS, STATUS_CODES } from '../contract.js'
 
 export { ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS }
+const { createAdminCodec, validateRequest } = createAdminProtocol({ DIGEST, STATUS, STATUS_CODES })
 
 // The relay adds nothing to `admin.plugins.get`: the recommended list it used to append
 // (ADMIN_RECOMMENDED) had no V2 reader and was removed; the child's Fishball Recommended tab reads
