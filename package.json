@@ -6,7 +6,8 @@
   "type": "module",
   "workspaces": [
     "packages/connector",
-    "packages/instance"
+    "packages/instance",
+    "packages/shared"
   ],
   "engines": {
     "node": ">=22",

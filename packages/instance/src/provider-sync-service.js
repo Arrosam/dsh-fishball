@@ -9,9 +9,11 @@
  * mask or an environment variable's name.
  */
 import { randomUUID } from 'node:crypto'
-import { ProviderSyncError } from './provider-sync.js'
+import { ProviderSyncError } from 'fishball-shared/provider-sync'
 import { ProviderSyncCoordinator } from './provider-sync-coordinator.js'
-import { createProviderSyncCodec, providerSyncIdentity, PROVIDER_SYNC_TARGET } from './slim/child/provider-sync-target.js'
+// The wire codec and identity are fishball-shared's (the child target uses the same ones); this host
+// end never imports the child's module (R-BND-01).
+import { createProviderSyncCodec, providerSyncIdentity, PROVIDER_SYNC_TARGET } from 'fishball-shared/provider-sync-codec'
 
 // The owner route's transport rules live with the routes (src/slim/host/provider-sync-routes.js),
 // so the child settings row can reuse their JSON headers without this host-only module (it has no
@@ -20,7 +22,7 @@ import { SYNC_PAGE } from './slim/host/provider-sync-routes.js'
 export { SYNC_PAGE }
 const P = SYNC_PAGE
 const defaultCreateHost = async (ctx, options) => {
-  const { createProviderSyncHost } = await import('./provider-sync-host.js')
+  const { createProviderSyncHost } = await import('fishball-shared/provider-sync-host')
   return createProviderSyncHost(ctx, options)
 }
 
@@ -49,8 +51,8 @@ const defaultCreateHost = async (ctx, options) => {
  * src/native-runtime/index.js and child.js publish each end through `onProviderSyncTransport`;
  * native-host.js attaches this bridge and exposes it as `service.providerSync`;
  * src/native-runtime/overlay.js mounts src/slim/child/provider-sync-target.js in the child; and
- * src/native-runtime/installation.js copies src/provider-sync.js and src/provider-sync-host.js
- * beside the child's src/slim tree.
+ * src/native-runtime/installation.js places fishball-shared (the engine, the host adapter and the
+ * codec) in the child snapshot's node_modules.
  */
 export const CHILD_SYNC = Object.freeze({
   state: Object.freeze({ inactive: 'inactive', ready: 'ready' }),
@@ -68,9 +70,9 @@ export const CHILD_SYNC = Object.freeze({
   }),
   /** What the page shows per chosen provider (§10); the engine's finer config/key outcomes stay on the host. */
   outcome: Object.freeze({ added: 'added', skipped: 'skipped', failed: 'failed' }),
-  /** The engine's per-item statuses (src/provider-sync.js confirm). */
+  /** The engine's per-item statuses (fishball-shared/provider-sync confirm). */
   status: Object.freeze({ succeeded: 'succeeded', skipped: 'skipped', partial: 'partial', unknown: 'unknown' }),
-  /** The engine's per-item key outcome for a key that was already there (src/provider-sync.js confirm). */
+  /** The engine's per-item key outcome for a key that was already there (fishball-shared/provider-sync confirm). */
   key: Object.freeze({ exists: 'exists' }),
   /** The engine's per-item profile outcome for an item whose profile this run did not write. */
   config: Object.freeze({ unchanged: 'unchanged' }),

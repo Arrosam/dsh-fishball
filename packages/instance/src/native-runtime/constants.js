@@ -14,6 +14,9 @@ export const RUNTIME = Object.freeze({
   // The connector's contract package inside the snapshot (M1): the child's shims import
   // `fishball-connector/contract`, and Node finds it in the snapshot's own node_modules.
   contractPackage: Object.freeze({ name: 'fishball-connector', directory: 'contract', modules: 'node_modules', manifest: 'package.json' }),
+  // fishball-shared inside the snapshot (R-ARCH-08): the child's modules import it by name, and Node
+  // finds it in the snapshot's own node_modules. Its modules are its top-level JavaScript files.
+  sharedPackage: Object.freeze({ name: 'fishball-shared', modules: 'node_modules', manifest: 'package.json', moduleSuffix: '.js' }),
   host: '127.0.0.1',
   socketName: 'control.sock',
   socketPathBytes: 100,

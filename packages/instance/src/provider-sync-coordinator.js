@@ -5,7 +5,7 @@
  * reconnects, which voids a preview taken on the old connection.
  */
 import { randomBytes } from 'node:crypto'
-import { PROVIDER_SYNC, ProviderSyncError, syncFingerprint } from './provider-sync.js'
+import { PROVIDER_SYNC, ProviderSyncError, syncFingerprint } from 'fishball-shared/provider-sync'
 
 const error = (code) => { throw new ProviderSyncError(code) }
 export class ProviderSyncCoordinator {

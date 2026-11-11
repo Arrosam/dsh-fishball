@@ -54,7 +54,7 @@ export async function engineFixture(t, source = inventory(), target = inventory(
   // the value-free {configured, kind?, writable} of the child's own key record. Modelled over this
   // fixture's official store so a key created meanwhile (§10 target race) is seen as in production.
   if (options.describeRecord) host.describeRecord = async (id) => { calls.describes.push(id); return credentials.describe(id) }
-  const { ProviderSyncEngine } = await import('../../packages/instance/src/provider-sync.js')
+  const { ProviderSyncEngine } = await import('../../packages/shared/provider-sync.js')
   const engine = new ProviderSyncEngine({ host, ttlMs: CASE.ttlMs, now: () => state.now })
   // Check every observable result/error before node:test can format it in a failure diagnostic.
   const safe = async (operation) => {

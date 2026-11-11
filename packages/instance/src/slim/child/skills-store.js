@@ -27,7 +27,7 @@ import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { isModelInvocable, isSkillName } from '@deepseek-ai/dsh-skill'
 import { FileSystemSkillProvider } from '@deepseek-ai/dsh-skill-filesystem'
-import { inside } from '../../native-runtime/files.js'
+import { inside } from 'fishball-shared/files'
 
 export const SKILL_STORE = Object.freeze({
   rootDirectory: 'skills',
