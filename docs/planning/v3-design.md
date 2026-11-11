@@ -1,10 +1,8 @@
 # Fishball V3: design draft
 
 Status: **draft, 2026-11-11, docs only.** It answers [v3-requirements.md](<v3-requirements.md>)
-(R-…). Q1, Q2, Q3, Q5, Q7, Q8, Q10 and Q20 are decided, as are identity, pairing and OAuth
-(requirements §1.3–§1.10). Where the design
-depends on another open question, the
-recommended answer is assumed and the question id is named. No code, test or spike was
+(R-…). Every question in requirements §7 is decided except Q30, whose recommended answer is
+assumed here and named where used. No code, test or spike was
 run for this draft. DSH facts are from read-only inspection of the installed SDKs; MCP facts are
 from the public specification pages listed in §2. All proposed names (packages, tools, URIs,
 services, settings keys) are review vocabulary until the schema freeze (§11).
@@ -44,7 +42,7 @@ standalone mode is the same set installed by hand.
 | --- | --- | --- | --- |
 | `fishball-connector` | a main DSH | MCP server; its own client-credentials OAuth authorization server (§5.5); tokens over `ctx.credentials`; pairs and names (§5.8); per-pair mailbox; routing (R-ROUTE, Q7 decided); session operations (today's `src/*.js` domain); `message_fishball` / `ask_fishball`; managed-session approval interception; the contribution service `fishballConnectorTools` (§13); the no-UI hand-over service (Q3, decided) | browser client, slots, HTML, CSS, iframes; an attention latch |
 | `fishball-instance` | a host DSH | hosted mode only (§6): launching the child with its launch configuration, its lifecycle, placing the four plugins, target and token hand-off, the child locator `fishballChild`, hosted model sync, uninstall cleanup | any session, approval, question or prompt service of the host DSH (R-ARCH-05); UI |
-| `dsh-fishball-embed-UI` | the host DSH, beside the instance | the sidebar entry and fish, the attention latch and its contributed tools (§13.6), marks and Hand over / Take back buttons that drive the connector's hand-over service (Q3, decided), the frame around the child page, status and Retry, the Plugins card and the model-sync trigger | secrets; session operations of its own; anything without the instance (R-UI-01) |
+| `dsh-fishball-embed-UI` | the host DSH, beside the instance | the sidebar entry and fish, the attention latch and its contributed tools (§13.6), marks and Hand over / Take back buttons that drive the connector's hand-over service (Q3, decided), the frame around the child page, status and Retry, the Plugins card and the model-sync trigger | secrets; session operations of its own; a Fishball page or frame without the instance (R-UI-01); anything at all with neither a connector nor an instance (R-UI-08) |
 | **Fishball plugin set** (Q2, decided: four plugins) | a Fishball DSH (hosted child or standalone) | §5a | acting on any DSH except its own, other than through the target connector's MCP (R-FB-08) |
 
 ### 1.2 The Fishball plugin set (Q2, decided)
@@ -101,25 +99,27 @@ Read on 2026-11-11 (public pages, read only):
 - [resources](https://modelcontextprotocol.io/specification/2026-07-28/server/resources.md);
 - [authorization](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization.md);
 - [versioning and compatibility](https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning.md);
-- [2025-11-25 resources](https://modelcontextprotocol.io/specification/2025-11-25/server/resources.md).
+- [2025-11-25 resources](https://modelcontextprotocol.io/specification/2025-11-25/server/resources.md)
+  (read for comparison only; that revision is not served, Q12).
 
 | Fact (2026-07-28 unless noted) | Design consequence |
 | --- | --- |
-| Stateless: no `initialize`; every request carries protocol version, client info and capabilities in `_meta`; servers MUST implement `server/discover`. Protocol-level sessions and `Mcp-Session-Id` are removed; servers keep cross-call state in explicit server-minted handles | The principal comes from the bearer token on each request, never from a transport session. Cursors and lane handles are explicit tool arguments |
+| Stateless: no `initialize`; every request carries protocol version, client info and capabilities in `_meta`; servers MUST implement `server/discover`. Protocol-level sessions and `Mcp-Session-Id` are removed; servers keep cross-call state in explicit server-minted handles | The principal comes from the bearer token on each request, never from a transport session. Cursors are explicit tool arguments |
 | Streamable HTTP: one endpoint, POST only; a response is JSON or a request-scoped SSE stream; GET stream removed; **no resumability** (`Last-Event-ID` removed): a broken stream loses its in-flight request | Delivery cannot rely on a stream. Durable mailbox + poll/ack is required (R-CON-03). Notifications are hints (R-CON-04) |
-| Server→client change notifications only on a long-lived `subscriptions/listen` stream, filtered by `toolsListChanged`, `promptsListChanged`, `resourcesListChanged`, `resourceSubscriptions` (URIs). Server MUST ack first with `notifications/subscriptions/acknowledged`; every notification carries `io.modelcontextprotocol/subscriptionId` | Events surface as `notifications/resources/updated` for the principal's mailbox / lane URI; the client then calls `inbox_poll`. MCP has no custom event payload channel, so the payload never rides the notification |
+| Server→client change notifications only on a long-lived `subscriptions/listen` stream, filtered by `toolsListChanged`, `promptsListChanged`, `resourcesListChanged`, `resourceSubscriptions` (URIs). Server MUST ack first with `notifications/subscriptions/acknowledged`; every notification carries `io.modelcontextprotocol/subscriptionId` | Events surface as `notifications/resources/updated` for the pair's mailbox URI (`fishball://mailbox`); the client then calls `inbox_poll`. MCP has no custom event payload channel, so the payload never rides the notification |
 | `resources/list` MUST NOT vary per connection but MAY vary by the authorization presented | The mailbox URI can be per principal |
 | Server-to-client requests (sampling, elicitation, roots) are embedded in results via MRTR (`InputRequiredResult`); unsolicited server requests are gone | Not usable for "DSH asks Fishball". Not used (requirements §5) |
 | Cancellation on HTTP = closing the response stream | A closed listen stream is not revocation and not loss of authority (S1 rule kept) |
 | Security: servers MUST validate `Origin` (403 if present and invalid), SHOULD bind localhost when local, SHOULD authenticate | R-REM-03; loopback default |
 | Auth: optional. HTTP servers that support it SHOULD follow the OAuth 2.1 resource-server profile; the access token goes in `Authorization: Bearer` on **every** HTTP request and **never** in the query string; invalid → 401. Servers MUST publish RFC 9728 protected resource metadata (in `WWW-Authenticate` and/or well-known); authorization servers publish RFC 8414 metadata; tokens are audience-bound (RFC 8707). The **OAuth Client Credentials extension** (`io.modelcontextprotocol/oauth-client-credentials`) defines machine-to-machine use: `client_credentials` grant with client secret or JWT assertion, no browser | The connector is a client-credentials-only authorization server for its own endpoint (§5.5, R-OA) |
 | Required request headers `MCP-Protocol-Version`, `Mcp-Method`, `Mcp-Name` must match the body, else 400 `HeaderMismatch` (-32020) | The server SDK must validate. Freeze-time conformance test |
-| 2025-11-25 (legacy era): `initialize` handshake, `Mcp-Session-Id`, GET SSE stream, `resources/subscribe` → `notifications/resources/updated`, resumable streams | Dual-era server (Q12 = A) serves both: same tools/resources, same mailbox semantics; legacy subscription via `resources/subscribe` on the session |
+| 2025-11-25 (legacy era): `initialize` handshake, `Mcp-Session-Id`, GET SSE stream, `resources/subscribe` → `notifications/resources/updated`, resumable streams | **Not served** (Q12, decided). The connector is modern-only; legacy clients must upgrade (§3.1) |
 
 What both DSH SDKs ship (read only, byte-identical client/core dist in both):
 - `@modelcontextprotocol/client` and `core` **2.2.0**. `LATEST_PROTOCOL_VERSION = '2025-11-25'`,
   and the client contains the 2026-07-28 path: `Client.listen(filter)`, which needs a negotiated
-  2026-era connection, `versionNegotiation` modes, and a `resources/subscribe` legacy path. See
+  2026-era connection, and `versionNegotiation` modes (`legacy` is the default; `auto` probes
+  modern first; `{pin: '2026-07-28'}` is modern-only). `fishball-core` pins 2026-07-28 (§6.3). See
   `rc.5/@modelcontextprotocol/client/dist/index.mjs` around the `listen` method (≈ line 3940).
 - `@deepseek-ai/dsh-mcp-client` creates `new Client(..., {capabilities: {}, versionNegotiation:
   {mode: 'auto'}, listChanged: {tools}})`. It wires only tool-list refresh; static `headers` come
@@ -132,7 +132,7 @@ What both DSH SDKs ship (read only, byte-identical client/core dist in both):
 
 ## 3. The connector's MCP server
 
-### 3.1 Transport and mounting (Q9 = A, Q12 = A)
+### 3.1 Transport and mounting (Q9 and Q12 decided)
 
 - **Route:** `webServer.register({kind: 'exact', path: '/api/fishball/mcp', handler})`, the raw
   Node handler. It is present with the same contract in both SDKs
@@ -147,18 +147,23 @@ What both DSH SDKs ship (read only, byte-identical client/core dist in both):
     diagnostic. This never falls back silently.
   - A user-run tunnel to a loopback listener counts as loopback.
 - **Order of checks per request** (the cheapest refusal first; nothing past a refusal runs):
-  1. method is POST (legacy era: GET/DELETE only with a valid legacy session);
+  1. method is POST; GET and DELETE get 405 (no GET stream, no sessions);
   2. `Origin`, when present, is in the allowlist (default: none; non-browser agents send no
      Origin) → 403;
   3. bearer token (§5.5) → 401 with `WWW-Authenticate: Bearer`;
   4. body and in-flight limits → 413/429 (R-SEC-03);
-  5. era detection (modern `_meta` or legacy `initialize`), version and header checks → 400
-     with `UnsupportedProtocolVersion` (-32022) or `HeaderMismatch` (-32020);
+  5. version and header checks: `MCP-Protocol-Version` and `_meta` must both say
+     `2026-07-28`, else 400 with `UnsupportedProtocolVersion` (-32022, `supported:
+     ["2026-07-28"]`); mismatched mirrored headers → 400 `HeaderMismatch` (-32020). A legacy
+     `initialize` request gets a JSON-RPC error whose message names the supported revision, so a
+     2025-era client can show the user why it can't connect;
   6. dispatch.
 - **Server SDK:** an explicitly packaged `@modelcontextprotocol/server` of the same 2.x line as
-  the hosts' client (2.2.0), with its Node HTTP adapter. It must serve both eras. Proving that on
-  both hosts is spike **V3-S1** (§11). If the server SDK cannot serve both eras, the fallback is
-  Q12 = B, not a hand-written protocol.
+  the hosts' client (2.2.0), with its Node HTTP adapter, configured **modern-only (2026-07-28)**.
+  Proving it on both hosts is spike **V3-S1** (§11).
+- **Older clients must upgrade (Q12, decided).** The connector serves no 2025-11-25 or earlier
+  client. The README and the connector's settings note say so, and the refusal above names the
+  supported revision.
 
 ### 3.2 Tools
 
@@ -193,20 +198,17 @@ code would be lost to DSH-hosted agents. JSON-RPC errors are kept for protocol f
 | `fishball://mailbox` | this pair's mailbox summary: `{pending, headSequence, mailboxGeneration}`, never event bodies | every principal that wants hints |
 | `fishball://sessions` | this principal's related sessions (as `sessions_list`) | optional |
 
-- **Modern era:** the client opens `subscriptions/listen` with
+- The client opens `subscriptions/listen` with
   `resourceSubscriptions: ['fishball://mailbox']`, and optionally `toolsListChanged`. After the
   required acknowledgement, the server sends `notifications/resources/updated {uri}` after
   **each commit** to that mailbox (R-EVT-04). It sends SSE keep-alive comments while
   quiet.
-- **Legacy era:** `resources/subscribe {uri}` on the legacy session, notifications on its GET
-  stream.
 - A notification is a hint. The client always `inbox_poll`s. A hint lost to a dropped stream is
   recovered by polling on reconnect: on every (re)listen the client polls once before trusting
   hints.
 - `resources/list` varies by access token only (spec-allowed).
-- `tools.listChanged: true` is declared. A listen stream with `toolsListChanged: true` (modern)
-  or a legacy session gets `notifications/tools/list_changed` when contributions come or go
-  (§13.4).
+- `tools.listChanged: true` is declared. A listen stream with `toolsListChanged: true` gets
+  `notifications/tools/list_changed` when contributions come or go (§13.4).
 
 ### 3.4 Mailbox and delivery
 
@@ -218,7 +220,8 @@ V3 drafts had named lanes for Watchdog; they are dropped (requirements 1.8 item 
   - An event has `{eventId, mailboxGeneration, sequence, kind, sourceSessionId, correlationId,
     offer?: {offerId, revision, decisionKind}, payload, payloadDigest}`.
   - The kinds are `offer` (approval/question), `settlement`, `retirement`, `watch`, `state`,
-    `message` (`message_fishball`), `handover`, `takeback` and `notice`.
+    `message` (`message_fishball`), `handover`, `takeback`, `notice` and `contributed`
+    (contributor events, §13.5a).
 - **`inbox_poll({cursor?, limit})`** returns `{events, nextCursor, hasMore}` or an explicit
   `{resync: {reason, headSequence}}`.
   - Reading a page is not acking it.
@@ -262,8 +265,8 @@ Cordis service (no UI, no token, same DSH):
 ```js
 fishballConnectorHandover = {
   apiVersion: 1,
-  managed(),                      // [{sessionId, principal: {key, name, label}}]; label disambiguates names (Q23)
-  principals(),                   // [{key, name, label, connected, designated}] for the button's target name
+  managed(),                      // [{sessionId, principal: {key, name}}]; names are unique per connector (Q23)
+  principals(),                   // [{key, name, connected, designated}] for the button's target name
   onChange(fn) → dispose,         // managed set, names or connection changed
   handOver(sessionId, note?),     // → {ok, principal} | {ok: false, code: 'no-fishball'|'unknown-session'|…}
   takeBack(sessionId, note?),     // → {ok} | {ok: false, code}
@@ -280,7 +283,8 @@ fishballConnectorHandover = {
 
 ## 4. Embed-UI: locating and showing the hosted child
 
-Embed-UI works only beside a hosted instance (R-UI-01). It never frames a standalone Fishball
+Embed-UI's **page and frame** work only beside a hosted instance (R-UI-01). Its marks, Hand over
+/ Take back, fish and dots, and contributed tools need only a connector in the same DSH (R-UI-08). It never frames a standalone Fishball
 (R-UI-07): a standalone DSH's own web UI is already the Fishball page.
 
 ### 4.1 The child locator service (instance side)
@@ -315,7 +319,8 @@ fishballChild = {
 - **Host half:** `inject: ['fishballChild?', 'fishballConnectorHandover?', 'fishballConnectorTools?']`.
   - Without `fishballChild` it registers no frame and logs `instance-missing` once (R-UI-01).
     With the connector services but no instance, it still draws marks, Hand over / Take back and
-    the fish, and contributes its attention tools (Q18 = A). With neither, it registers nothing.
+    the fish with its dots, and contributes its attention tools, with no page or frame (Q18,
+    decided; R-UI-08). With neither, it registers nothing.
   - With it, it registers its own authenticated DSH Fetch routes for status, Retry, admission and
     model sync, re-serving the locator's results to its own web client. `connection.fetch`
     already authenticates the browser owner. This is V2's route set, moved out of the instance.
@@ -333,8 +338,9 @@ fishballChild = {
   R-ARCH-03 holds.
 - The D3 behaviour is unchanged, with embed-UI as the latch's new owner: a 0/1 latch with
   importance, cleared once on page open, no timer (§13.6).
-- **Remote target, no connector in this DSH** (matrix row 7, Q4 = A): neither connector service
-  is present, so embed-UI shows only the page, status and Retry. The frame still points at the
+- **Remote target, no connector in this DSH** (matrix row 7; Q4, decided; R-UI-09): neither
+  connector service is present, so embed-UI shows only the page, status and Retry: no dots, no
+  marks, no Hand over and no relay over the lifecycle wire. The frame still points at the
   **local** child; only the child's MCP link is remote.
 
 ## 5. Tokens
@@ -381,7 +387,7 @@ Disabling or deleting an entry, or changing or unsetting its credential value, r
 principal at the next request (R-TOK-05, R-OA-06):
 - every access token derived from the entry is invalid; MCP requests get 401 and the token
   endpoint answers `invalid_client`;
-- open listen streams and legacy sessions close with the graceful completion result;
+- open listen streams close with the graceful completion result;
 - pending answers fail;
 - its live **offers** are retired and go to the user in their sessions;
 - its queued `message`/`watch`/`state` events are kept for 30 days, so re-enabling the same entry
@@ -405,8 +411,20 @@ Deleting an entry also asks `credentials.unset(ref)` when the connector generate
   channel, `mcp-credential`, after `auth accepted`. `fishball-core` holds it only in memory, and
   uses it as its OAuth client secret (§5.5).
 - Nothing is written to the child home, the overlay, argv or env (R-HOST-05).
-- After a reinstall, `retire` moves the old hosted entry's sessions, designated role and name to
-  the new one and deletes it (Q24 = A, R-HOST-09).
+- **Reinstall succession (Q24, decided; R-HOST-09).** The instance keeps the entry key of the
+  hosted entry it created (non-secret, in its lifecycle state). When a reinstalled child pairs
+  with a new hosted token, the instance calls `retire(oldEntryKey, newEntryKey)`. In one storage
+  transaction the connector:
+  1. moves managed sessions;
+  2. moves the designated role, if the old entry held it;
+  3. copies the name;
+  4. re-issues the old entry's live offers into the new mailbox with new offer ids (old ids then
+     answer `expired`);
+  5. moves pending events with their `eventId`s;
+  6. deletes the old entry and unsets its generated credential value;
+  7. adds one `system` note per moved session.
+  `retire` refuses any old entry that `createHosted` did not create for this instance. A failure
+  rolls everything back, and the instance retries at its next start.
 - A user who disables a hosted entry gets `token-revoked` in the child and no automatic
   replacement (R-HOST-10).
 
@@ -458,7 +476,7 @@ Clients find it through the protected resource metadata, as the spec requires.
    with `{entryKey, fishballId, audience, expiresAt}`. Its power is **full** if the entry is bound
    to this id, else **pair-only** (R-OA-04). Response:
    `{access_token, token_type: "Bearer", expires_in, scope: "fishball" | "fishball:pair", fishball_pairing}`.
-   No refresh token (Q27 = A).
+   `expires_in: 3600`. No refresh token, and the `refresh_token` grant is refused (Q27, decided).
 
 **MCP endpoint check, per request:**
 - `Authorization: Bearer` is looked up by digest; missing, unknown, expired, of another audience,
@@ -467,10 +485,12 @@ Clients find it through the protected resource metadata, as the spec requires.
   when one was sent).
 - A pair-only token reaches only discovery, `tools/list` and `pair`. Anything else gets the
   structured refusal `not-paired` or `id-mismatch` (R-ID-06).
-- Under Q28 = A, a token entry with the fallback switch on also accepts `Bearer <id>.<token>`,
-  verified on every request with the same constant-time comparison.
+- **Direct-access fallback (Q28, decided):** a token entry with `directAccess` on (default off)
+  also accepts `Bearer <id>.<token>`, split at the first dot. The token part is verified on every
+  request with the same constant-time comparison, and the result counts as a full or pair-only
+  access token of that (token, id). With the switch off it is just an invalid access token.
 
-**Why no refresh tokens (Q27 = A):** a client-credentials client re-authenticates with its own
+**Why no refresh tokens (Q27, decided):** a client-credentials client re-authenticates with its own
 id + token, which the stock provider already does. A refresh token would be a second long-lived
 secret with no gain here. Revocation is immediate either way, because every access token points
 back to its entry.
@@ -493,29 +513,40 @@ back to its entry.
 ### 5.7 Where the user manages tokens
 
 All of it is in DSH's native Plugins settings for `fishball-connector`: add, label, enable or
-disable, delete, choose the designated Fishball (`routing.fishballToken`), switch the Q28
-fallback, and see each entry's pair state (bound id, name, last seen, connected). Values live
+disable, delete, choose the designated Fishball (`routing.fishballToken`), switch the
+direct-access fallback (`directAccess`, default off), and see each entry's pair state (bound id, name, last seen, connected). Values live
 in DSH's credential store. Embed-UI, the instance and every Fishball DSH show only a token's label and
 its configured or unconfigured state, never the value.
 
 ### 5.8 Pairing and names (R-ID, R-NAME)
 
 - **`pair({name?})`**, with a pair-only or full access token:
-  - unbound entry: bind (entry → id) atomically, store `pairedAt`, set the name (given, or the
-    next default per Q22 = A), and return `{ok: true, paired: true, id, name}`. The same access
+  - unbound entry: bind (entry → id) atomically, store `pairedAt`, set the name (given, or the lowest
+    free default per Q22, decided: computed inside the same transaction as the bind, so
+    concurrent pairings get distinct names), and return `{ok: true, paired: true, id, name}`. The same access
     token becomes full at once;
   - bound entry: `{ok: false, code: 'already-paired', bound: {idMatches, boundId, name, pairedAt,
     lastSeenAt}, advice}`. A concurrent second binder gets the same.
-- **`set_name({name})`**, full token only. Names are not unique; a collision is shown with a
-  disambiguating id prefix (Q23 = A).
+- **`set_name({name})`**, full token only. Names are **unique per connector** (Q23, decided):
+  - normalise: trim, collapse inner whitespace, NFC;
+  - compare by Unicode case folding;
+  - another principal holding the name → `{ok: false, code: 'name-taken'}`, and the caller's
+    name is unchanged.
+  The check and the write are one transaction, under a unique index on the folded name.
+- **`pair` with a clashing or invalid name** still binds, then assigns the lowest free default
+  and returns `nameAssigned: false, nameRefused` (R-NAME-06). Pairing never fails over a name.
+- **Default series** "Fishball", "Fishball-2", … : take the lowest n whose folded name is free.
+  Hand-chosen names such as "fishball-3" are skipped like any taken name.
+- **Successor** (R-HOST-09): delete the old entry, release the new principal's provisional
+  default, and move the old name, all in the one `retire` transaction (R-NAME-07).
 - `lastSeenAt` is updated at most once a minute per pair, to bound writes.
 - **`fishball-core`'s flow:**
   1. it reads `identity.id`, `identity.name` and its token;
   2. it gets an access token through `ClientCredentialsProvider` (client id = fishball id,
      `expectedIssuer` from the protected resource metadata);
   3. when its local "paired" record for this target and token reference is missing, it calls
-     `pair`. On success it writes the record. On `already-paired` it pauses and shows the R-ID-07
-     warning;
+     `pair`. On success it writes the record; if `nameAssigned` is false it shows the name clash
+     (R-NAME-03). On `already-paired` it pauses and shows the R-ID-07 warning;
   4. otherwise it works normally, and calls `set_name` when the name changes.
 - **Not hardened, by design.** The same token and the same id from two clients are one
   principal (R-ID-11). Pairing only prevents one token being spread over many agents. Events are
@@ -546,7 +577,8 @@ V2 applied these changes as instance launch overlays (`packages/instance/src/nat
 component's part of it), so they work without an instance:
 - `disabled: true` on the session-creating rows (`ui-subagent`, `ui-schedule`, `schedule`,
   `ui-permission`, `ui-agent-preset`, `entry-customization`, `ui-open-in-app`, `open-in-app`,
-  `ui-sidebar-terminal`, `terminal-controller`) and the session-creating preset tools;
+  `ui-sidebar-terminal`, `terminal-controller`), the `fishball-instance` row (no nested hosted
+  Fishball), and the session-creating preset tools;
 - the read-only permission preset (sandbox read-only, approval policy) with the private Skills
   root exception;
 - its client module: the A-lite page, shortcut remapping, the recommended tab and the slim
@@ -557,13 +589,14 @@ A bundle patch may target any row id (`PatchOptions {id, disabled, config, …}`
 the profile's own patch file, then `$DSH_HOME/cordis.patch.yml`, then launch overlays
 (`readProfilePatches`: `dsh-app-boot/lib/index.js` rc.5 :1127–1132, rc.1 :1908–1913). So in a
 Fishball DSH, hosted or standalone, the owner's own patches win over core's: that is the accepted
-"can override" of Q20. The instance's launch overlays carry no guard rows (§6.2), so the hosted
+"can override" of Q20 (decided). The instance's launch overlays carry no guard rows (§6.2), so the hosted
 child behaves exactly like a standalone DSH here.
 
-**Override report (Q20, A).** At app ready, and on every `settings/document-updated`, core reads
+**Override report (Q20, decided).** At app ready, and on every `settings/document-updated`, core reads
 the effective composition and policy of its own DSH: the guard rows' `disabled` state and the
 active permission preset. It compares them with its own patch's intended values. A difference
-sets status `guards-overridden` with the list of overridden guards. It also adds one line to
+sets status `guards-overridden` with the list of overridden guards; a later check that finds them
+restored clears it. It also adds one line to
 the Fishball page's status strip and one notice to Fishball's manager context, so Fishball
 knows its guarantees are weaker. Core keeps running and changes nothing back.
 
@@ -625,10 +658,11 @@ reports `fishball-off` (R-FB-10).
 ### 6.3 The MCP link (`fishball-core`, both modes)
 
 - A client row in `fishball-core` uses its packaged `@modelcontextprotocol/client` 2.x (§9.1)
-  with `versionNegotiation: {mode: 'auto'}`. It keeps one logical link:
-  - discover or initialize;
+  with `versionNegotiation: {mode: {pin: '2026-07-28'}}` (modern-only, Q12). It keeps one
+  logical link:
+  - `server/discover`;
   - list tools;
-  - open the listen stream (modern) or `resources/subscribe` (legacy) on `fishball://mailbox`;
+  - open the `subscriptions/listen` stream on `fishball://mailbox`;
   - reconnect with bounded backoff;
   - poll once on every (re)connect.
 - **The credentials:**
@@ -641,7 +675,7 @@ reports `fishball-off` (R-FB-10).
     forwarded on a redirect.
 - **No raw `mcp__…` tools reach the model.** Fishball's manager tools stay the X12 bridge façade
   (`bridge(pluginId, operations)`), under the local scope, the X19 send gate and the image gates.
-  Contributed tools are re-exposed through the same façade, filtered by the Q17 allowlist. The
+  All contributed tools are re-exposed through the same façade, unfiltered (Q17, decided). The
   stock `dsh-mcp-client` is not mounted for the target.
 - An answer attempted while the link is down fails `disconnected`. The offer waits at the
   connector (R-REM-04).
@@ -659,6 +693,7 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
         question / plan review                                → Fishball  (U21)
         own watch notice, notifyWhenFinished, message_fishball,
           ask_fishball, handover, takeback, notice             → Fishball
+        contributed (contributor event), any session          → Fishball  (R-EXT-20)
         any event of an unsupervised session                  → Fishball
         Watchdog off, down or not ready                       → Fishball
    ─► Fishball branch: X9 inbox pipeline (fold batcher) ─► Agent.followup wake (one turn per accepted entry)
@@ -666,7 +701,7 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
    ─► inbox_ack after the branch's durable acceptance
 ```
 
-- The split is Q25's recommendation (A). Watchdog's answers go out through core's MCP link as
+- The split is decided (Q25, decided; R-WD-12). Watchdog's answers go out through core's MCP link as
   the same principal (§7).
 - Acceptance is durable before the ack, and the ack follows acceptance. A replay with a known
   `eventId` is dropped. This is MCP-S2's reconciliation design. **Open gate:** MCP-S2 showed real
@@ -675,8 +710,8 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
   claims exactly-once model execution.
 - When Watchdog fails (X14 `fail()`), the router switches at once: in-flight Watchdog items are
   re-routed to the Fishball branch, and new ones go there (R-WD-07).
-- The custom first-party push of decision 1a is dropped (Q11 = A). A standalone Fishball on
-  another machine could not use it anyway.
+- The custom first-party push of decision 1a is retired (Q11, decided). A standalone Fishball
+  on another machine could not use it anyway.
 
 ### 6.5 Remote targets (R-FB-05, R-REM)
 
@@ -711,9 +746,15 @@ no token, subscription, mailbox or lane of its own.
 Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session communication:
 - `manager.notify` (X10) for "watchdog is down", reports and abnormalities: one waking notice
   turn, durably deduped;
-- an escalation **re-routes** the offer to the Fishball branch (it is still the same live offer
-  at the connector, with the same offer id, because the principal is the same) **plus** one
-  `manager.notify` carrying Watchdog's reasoning, so Fishball's turn has the context;
+- an **escalation to Fishball** (only an item that is not high-risk and that Watchdog cannot
+  decide) **re-routes** the offer to the Fishball branch. It is still the same live offer at the
+  connector, with the same offer id, because the principal is the same. Watchdog adds one
+  `manager.notify` carrying its reasoning, so Fishball's turn has the context;
+- an **escalation to the user** (any other high-risk item, Q13 decided) is committed through
+  core's link as `approval_answer` with decision `escalate`. The connector shows the user's card in
+  that session, with no time limit and no Fishball turn. When the user settles it, the
+  `settlement` event goes to Watchdog, and Fishball gets a non-waking `manager.notify`
+  (`wake: false`) with the outcome for its next turn;
 - answers Watchdog commits (allow, justified reject) go out through core's link as Fishball's
   principal. The connector's first-commit rule (OQ-14) still settles races with the user.
 
@@ -729,8 +770,8 @@ Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session
   | --- | --- |
   | in scope, low risk | allow |
   | beyond the task **and** dangerous | reject, with a justification |
-  | other high risk | `escalate` to the user's card (Q13 = A) |
-  | uncertain | re-route to Fishball (§7.2) |
+  | other high risk | `escalate` to the user's card, no Fishball turn (Q13, decided) |
+  | not high-risk, but Watchdog cannot decide | re-route to Fishball (§7.2) |
   | question / plan review | never reaches Watchdog |
 
 - **Failure = off** (R-WD-07):
@@ -823,7 +864,7 @@ coordinated breaking release:
 | Plugin-manager slots `plugins.bundle.config`, `plugins.row.config`, `plugins.tab` | present | present | embed-UI card; core's recommended tab |
 | `Agent.followup` | `dsh-agent-loop` | present (different line) | `fishball-core` wake |
 | Shortcut, origin and A-lite findings | V2 final scope §4.3 | same | `fishball-core` (`fishball-ui`) |
-| Cordis service provide / optional `ctx.inject([...], cb)` sub-scope, `ctx.effect` disposers, `fiber.name` | cordis 4.0.5 | cordis 4.1.0, `Service` and `Fiber` effect/name types the same | contribution service (§13.7), `fishballInstance`, `fishballLite`, `fishballChild` |
+| Cordis service provide / optional `ctx.inject([...], cb)` sub-scope, `ctx.effect` disposers, `fiber.name` | cordis 4.0.5 | cordis 4.1.0, `Service` and `Fiber` effect/name types the same | contribution service (§13.7), `fishballInstance`, `fishballChild` |
 
 A version-specific path is allowed only where V2 already needed one (tool executor batching,
 MCP-S1 §1). It stays hidden behind `fishball-core`'s existing adapters.
@@ -837,8 +878,10 @@ Order matters, because embed-UI is new and the connector loses its UI:
 2. **The connector's first V3 start:**
    - V2 settings that still apply keep their values (`maxMessageBytes`, read limits,
      `maxQueuedInputs`); dropped ones stay inert (D2);
-   - the intake ledger's pending V2 items move into the designated Fishball principal's mailbox,
-     keeping their ids as `eventId`;
+   - the intake ledger's pending V2 items are kept in a **holding queue**, with their ids as
+     `eventId`. They move into the designated Fishball principal's mailbox as soon as one exists
+     (normally when the upgraded instance's hosted entry pairs in step 3), or into the mailbox of
+     the first principal the user designates;
    - V2 attached-instance state is discarded (there are no live offers across a restart anyway,
      contract §5.1).
 3. **Upgrade the instance.**
@@ -863,12 +906,12 @@ this case.
 
 | ID | Question | Gate |
 | --- | --- | --- |
-| V3-S1 | Can a packaged MCP server SDK (2.x) serve **both** 2026-07-28 and 2025-11-25 on a raw `webServer` route, with bearer checking before dispatch, Origin/header validation, OAuth resource metadata, listen streams and legacy GET/subscribe, on both hosts? | Both stock-host clients (2.2.0, auto negotiation) and one 2025-era client list, call, subscribe and get hints. A 401 path never reaches the SDK |
+| V3-S1 | Can a packaged MCP server SDK (2.x), configured **modern-only (2026-07-28)**, serve on a raw `webServer` route, with bearer checking before dispatch, Origin/header validation, OAuth resource metadata and listen streams, on both hosts? | Both stock-host clients (2.2.0, `pin: '2026-07-28'`) discover, list, call, subscribe and get hints; a 2025-era `initialize` gets the version refusal; GET/DELETE get 405; a 401 path never reaches the SDK |
 | V3-S2 | MCP-S2 continuation: a durable child acceptance ledger plus `Agent.followup` gives one routed entry and one user-visible wake after a lost ack, a child crash and reconnect | the open TODO from MCP-S2 §11.5 closes; no duplicate wake |
 | V3-S3 | Router and pairing: core's router splits events to Watchdog without an LLM turn and re-routes on failure; `pair` races, `already-paired` results; OQ-14 races between user, Watchdog and Fishball answers on one principal | race matrix; no stale commit; one event wakes one agent |
-| V3-S7 | OAuth: the connector as a client-credentials authorization server on the DSH listener (RFC 9728/8414 metadata, token endpoint, audience binding) works with the stock `ClientCredentialsProvider` of both SDKs and with one non-DSH client-credentials client; immediate revocation; the Q28 fallback | both hosts; no token in any log |
+| V3-S7 | OAuth: the connector as a client-credentials authorization server on the DSH listener (RFC 9728/8414 metadata, token endpoint, audience binding) works with the stock `ClientCredentialsProvider` of both SDKs and with one non-DSH client-credentials client; immediate revocation; the direct-access fallback on and off | both hosts; no token in any log |
 | V3-S4 | Embed-UI as a separate package: can the moved connector client still register its sidebar/slot contributions (the same injects) and frame the PG-ORIGIN child origin, without the connector client present? | both hosts; main shortcuts untouched |
-| V3-S5 | Contribution service (§13): caller identity from the injecting fiber, auto-withdrawal on contributor disable/unload/HMR, `tools/list_changed` delivery on both eras, containment of throw/hang/oversize, on both hosts | independent cases across register/dispose/reload/quarantine states |
+| V3-S5 | Contribution service (§13): caller identity from the injecting fiber; auto-withdrawal of tools **and** pending events on contributor disable/unload/HMR; quarantine lifted only by a new fiber; `tools/list_changed` delivery on 2026-07-28 listen streams; event limits and recipient routing; containment of throw/hang/oversize, on both hosts | independent cases across register/dispose/reload/quarantine states |
 | V3-S6 | `fishball-core` as a plain bundle carrying its `fishball-ui` component: one bundle that inserts its own rows, disables other bundles' rows and sets the read-only preset in an ordinary DSH on both SDKs; one `dsh.client` serving the page, tab and settings; the hosted child behaves the same with the instance's launch configuration in place; core can read the effective composition and policy through a public API to report `guards-overridden`, in both modes; the A-lite page works without the instance (standalone) | both modes, both hosts; no host patch |
 | V3-K | Freeze `./mcp-schema` and `./tools`: tool names and schemas, result envelope, event kinds, error map, OAuth metadata and error mapping, page limit, retention, "connected" definition (§3.5) | reviewed; independent requirements-only case authoring starts after this |
 
@@ -886,12 +929,15 @@ Process stays: requirements → independent case authoring → implementation wi
   hidden.
 - **Contributed tools** (§13.5):
   - They run in the main DSH with their contributor's own DSH authority. The connector adds no
-    Fishball authority, no tokens and no mailbox or offer access (Q14 = A).
+    Fishball authority, no tokens and no mailbox or offer access. Toward Fishball they can only
+    emit events, expose tools and accept their calls (Q14, decided).
   - They are reached only through the same authenticated endpoint and its limits.
   - Each call is contained, and repeat offenders are quarantined.
-  - Fishball's model sees only admitted namespaces (Q17 = A).
-  - The residual risk is the same as installing any DSH plugin. It is shown to the user in the
-    connector's native settings (R-EXT-15).
+  - Fishball's model sees every contributed tool, and every contributor event reaches Fishball;
+    the only control is installing or enabling the contributor plugin (Q15, Q16, Q17 decided).
+  - The residual risk is the same as installing any DSH plugin. It is visible through log lines
+    and `tools/list` annotations, and the user controls it by disabling the plugin (R-EXT-15,
+    Q16 decided).
 - **The token is the security boundary (R-TOK-00).** Ids, pairs and names are foolproofing
   only, and never relax a token rule (§5.6).
 - **Credentials:**
@@ -918,7 +964,7 @@ Process stays: requirements → independent case authoring → implementation wi
   greps every log, lifecycle file, child home and temp directory after a full run. Any hit is a
   failure.
 
-## 13. Tool contributions from other plugins (R-EXT)
+## 13. Tool and event contributions from other plugins (R-EXT)
 
 Added on 2026-11-11 for the user's requirement (requirements §1.2). The connector's MCP tool set
 can be extended by other plugins in **the connector's own DSH process**. Embed-UI is the first
@@ -949,9 +995,22 @@ interface FishballConnectorTools {
   readonly apiVersion: 1
   /** Register one tool for the calling plugin. Throws ToolContributionError on refusal. */
   register(definition: ContributedTool): () => void
+  /** Emit one event to Fishball (Q14, decided; R-EXT-16..20). Never throws for a refusal. */
+  emit(event: ContributedEvent): Promise<{ ok: true; eventId: string } | { ok: false; code: EmitRefusal }>
   /** Read-only view of this caller's own registrations and their state. */
-  mine(): readonly { name: string; publicName: string; state: 'exposed' | 'hidden' | 'quarantined' }[]
+  mine(): readonly { name: string; publicName: string; state: 'active' | 'quarantined' }[]
 }
+
+interface ContributedEvent {
+  event: string                   // local name, same grammar as a tool name; public name <namespace>.<event>
+  payload: JsonValue              // ≤ 8 KiB UTF-8 when serialised
+  summary?: string                // plain text, ≤ 500 characters, shown to Fishball's model
+  sessionId?: string              // when the event is about one main-DSH session (routing: R-EXT-17, Q30 open)
+  dedupeKey?: string              // a pending event with the same key from the same contributor is not queued again
+}
+
+type EmitRefusal = 'event-invalid' | 'payload-too-large' | 'rate-limited' | 'queue-full'
+  | 'duplicate' | 'no-fishball' | 'contributor-unavailable' | 'registry-closed'
 
 interface ContributedTool {
   name: string                    // local name, [a-z0-9][a-z0-9_.-]{0,47}; no leading/trailing '.'
@@ -966,8 +1025,8 @@ interface ContributedTool {
 }
 
 interface ContributedCall {
-  principal: { id: string; label: string }     // never the token
-  era: 'modern' | 'legacy'
+  principal: { key: string; name: string }     // opaque principal key + current name; never the token, id or entry label
+  protocolVersion: '2026-07-28'              // the only revision served (Q12)
   signal: AbortSignal                          // client cancel, disconnect, revocation, timeout, contributor unload
 }
 
@@ -999,7 +1058,8 @@ type ContributedResult =
 
 - `namespace` = the contributor's DSH plugin name, normalised to `[a-z0-9-]` (scope `@x/` →
   `x-`). It is unique because DSH plugin names are unique in one profile.
-- Public MCP name = `<namespace>.<name>`, for example `dsh-fishball-embed-ui.attention.signal`.
+- Public MCP name = `<namespace>.<name>`, for example `board-helper.lookup` for a plugin named
+  `board-helper`; embed-UI's tools use its alias, `embed-ui.attention.signal` (below).
   - It fits MCP's rule (1–128 characters of `A-Z a-z 0-9 _ - .`, case-sensitive).
   - DSH's own MCP client renders it as `mcp__<server>__<raw>` and replaces `.` and truncates to
     its 64-character contract with a hash suffix (`dsh-mcp-client/lib/index.js:57–100`, both
@@ -1011,6 +1071,16 @@ type ContributedResult =
 - Embed-UI gets the short alias namespace `embed-ui` (a fixed first-party mapping in the
   connector, for readable tool names). No other alias exists.
 
+**Who sees contributed tools (Q15, decided):** every **full** access token, with no per-token
+filter. A pair-only token sees none (R-EXT-05). `tools/list` is the same for every full access token. The only filters are the
+contributor plugin being installed and enabled. Fishball's model sees them all too (Q17,
+decided): there is no allowlist.
+
+*Prompt-size note (documented, not a setting):* every contributed tool's name, description and
+schema is part of every Fishball turn, so many or verbose contributors grow Fishball's prompt.
+Contributors should keep descriptions short. `fishball-core`'s status shows the number of
+contributed tools on offer, and the README explains the cost.
+
 ### 13.4 Lifecycle and `tools/list_changed`
 
 - **Spec check (2026-07-28):** servers declaring `tools.listChanged` SHOULD send
@@ -1018,9 +1088,9 @@ type ContributedResult =
   `toolsListChanged: true`. `tools/list` MUST NOT vary per connection but MAY vary by
   authorization ([tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools.md),
   [subscriptions](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/subscriptions.md)).
-  The 2025-11-25 era has the same notification on the legacy session stream.
 - Events that change the list: register; dispose; contributor fiber unload (disable, uninstall,
-  reload, HMR); quarantine; the Q16 per-contributor switch; connector unload (closes everything).
+  reload, HMR); quarantine; connector unload (closes everything). There is no connector-side
+  per-contributor switch (Q16, decided).
 - On a change, the registry:
   1. swaps its immutable tool table **synchronously**, so the next `tools/list` or `tools/call`
      sees the new table (R-EXT-04);
@@ -1032,14 +1102,14 @@ type ContributedResult =
   list result is kept short, so caches refresh).
 - **DSH-hosted clients:** stock `dsh-mcp-client` re-syncs its tools on `list_changed`
   (`listChanged.tools.onChanged` → `refreshTools`, both SDKs). `fishball-core`'s link (§6.3) does
-  the same and re-filters through the Q17 allowlist.
+  the same, with no filter (Q17, decided).
 
 ### 13.5 Auth, limits, codes and isolation
 
 **Order for a contributed `tools/call`:** steps 1–5 of §3.1, then:
 1. resolve the name in the current table (unknown → JSON-RPC -32602 "unknown tool", spec
    protocol error);
-2. state check: hidden or quarantined → unknown tool, never "exists but hidden";
+2. state check: quarantined → unknown tool, never "exists but quarantined";
 3. argument byte size ≤ min(declared, connector ceiling) → `limit-exceeded`;
 4. JSON Schema validation of `arguments` against `inputSchema` → `invalid-arguments` (the
    validator is the connector's own; the keyword subset matches what the hosts' client accepts);
@@ -1067,19 +1137,52 @@ type ContributedResult =
   name and kind only. Never the arguments, the result or the principal's token.
 - **Quarantine** (R-EXT-09): `contributor-failed` on more than N of the last M calls of one
   contributor (both frozen constants in the connector's limits, not settings) withdraws that
-  contributor's tools (§13.4). It lifts on the contributor's reload, or through the Q16 switch.
+  contributor's tools (§13.4) and stops its events (§13.5a). It lifts only when the contributor
+  plugin is disabled and re-enabled, or reloaded (a new fiber); there is no connector-side control
+  (Q16, decided).
 - **What containment does not cover:** a contributor is ordinary in-process code. A synchronous
   infinite loop or memory exhaustion affects the whole DSH process, as any DSH plugin can. Process
   isolation is out of scope (requirements §5).
-- **Authority:** `call` gives the principal's id and label only. The connector passes no
+- **Authority:** `call` gives the principal's opaque key and name only. The connector passes no
   credentials, mailbox, offer, answer, hand-over or other-tool handles (R-EXT-10/11). A contributor
-  that wants session data must use its own DSH services under its own authority (Q14 = A).
+  that wants session data must use its own DSH services under its own authority. Its whole scope
+  toward Fishball is: emit events, expose tools, accept their calls (Q14, decided; R-EXT-11).
 
-**Visibility to the user** (R-EXT-15, Q16 = A): the connector's native settings gain a read-only
-list `contributors: [{namespace, tools, state}]` (state `exposed`, `hidden` or `quarantined`)
-and an `exposed` switch per namespace. The values come from the registry. No custom UI.
+**Visibility to the user** (R-EXT-15; Q16, decided): there are **no** per-contributor rows or
+switches in the connector's settings. To stop a contributor, the user disables its plugin in
+DSH's Plugins page. Registrations, refusals, withdrawals and quarantines are logged once each
+with the namespace only, and `tools/list` annotations name the contributor plugin.
 
-### 13.6 Embed-UI's notification tools (Q3 revised)
+### 13.5a Contributor events (R-EXT-16–20; Q14 decided)
+
+- **Emit path:**
+  1. `emit()` validates the name, size and rate;
+  2. it resolves the recipient (R-EXT-17; Q30 open, recommended A assumed);
+  3. it commits one mailbox event of kind `contributed` with
+     `payload: {namespace, event: <namespace>.<event>, data, summary?}` and `sourceSessionId`;
+  4. it sends the usual `notifications/resources/updated` hint.
+  It is the same ledger, the same `eventId`, ack and replay, and the same (token, id) delivery as
+  every other event (R-ID-06).
+- **Limits** (frozen constants, V3-K):
+
+  | Limit | Value |
+  | --- | --- |
+  | payload | 8 KiB |
+  | summary | 500 characters |
+  | rate per contributor and recipient | 30 per minute, burst 10 |
+  | queue | the recipient's `maxQueuedInputs` |
+
+  `dedupeKey` collapses a still-pending duplicate.
+- **Fate shared with tools:** quarantine, disable, unload or uninstall of the contributor makes
+  `emit` return `contributor-unavailable`. Its still-pending events are retired from every
+  mailbox (an event of kind `retirement` replaces each); acked ones stay with their client.
+- **In a Fishball DSH:** core's router sends `contributed` events to the Fishball branch, never
+  to Watchdog (R-EXT-20). They go through the X9 pipeline, where fold-notify may batch them, and
+  may wake Fishball's LLM. No allowlist filters them (Q17, decided).
+- **Not an authority path:** an event carries data only. Fishball decides what to do; the event
+  cannot answer, approve or hand over anything.
+
+### 13.6 Embed-UI's notification tools (Q3 decided)
 
 The attention latch moves out of the connector into embed-UI. Its behaviour is unchanged (D3).
 
@@ -1094,7 +1197,7 @@ The attention latch moves out of the connector into embed-UI. Its behaviour is u
   - it resets on embed-UI's unload, and on loss of the designated Fishball principal's
     connection (§3.5), read from the connector's hand-over service.
 - Embed-UI registers these tools whenever the connector's contribution service is present
-  (Q18 = A, with or without an instance). Without it they are absent, and
+  (Q18, decided: with or without an instance). Without it they are absent, and
   fold-notify's attention call gets `unsupported-operation`, the same D3 rule as an unserved
   signal.
 - Managed marks and Hand over / Take back are connector state. Embed-UI reads and drives them
