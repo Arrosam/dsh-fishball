@@ -86,7 +86,7 @@ const MOS = Object.freeze({
   conflictReason: 'provider-conflict',
   fixtureWriteFailure: 'fixture child write failure',
   settleMs: 30,
-  status: Object.freeze({ ready: Object.freeze({ state: 'ready', code: null }), starting: Object.freeze({ state: 'starting', code: null }) }),
+  status: Object.freeze({ ready: Object.freeze({ state: 'ready', code: null, detail: null }), starting: Object.freeze({ state: 'starting', code: null, detail: null }) }),
   modelAttributes: Object.freeze(['data-fishball-model-sync', 'data-fishball-model-check', 'data-fishball-model-entry', 'data-fishball-model-add', 'data-fishball-model-result']),
   panel: Object.freeze({
     root: 'data-fishball-settings',
