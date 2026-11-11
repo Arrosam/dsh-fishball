@@ -1,8 +1,8 @@
 # Fishball V3: design draft
 
 Status: **draft, 2026-11-11, docs only.** It answers [v3-requirements.md](<v3-requirements.md>)
-(R-…). Q1 is decided (requirements §1.3). Where the design depends on another open question, the
-recommended answer is assumed and the question id is named (Q2–Q20). No code, test or spike was
+(R-…). Q1 and Q2 are decided (requirements §1.3, §1.4). Where the design depends on another open question, the
+recommended answer is assumed and the question id is named (Q3–Q20). No code, test or spike was
 run for this draft. DSH facts are from read-only inspection of the installed SDKs; MCP facts are
 from the public specification pages listed in §2. All proposed names (packages, tools, URIs,
 services, settings keys) are review vocabulary until the schema freeze (§11).
@@ -32,7 +32,7 @@ standalone mode is the same set installed by hand.
                │ Standalone Fishball DSH (any machine)    │ │ Hosted child: an ordinary DSH profile │
                │  an ordinary DSH + the Fishball set ─────┘ │  + the Fishball plugin set ───────────┘
                └──────────────────────────────────────────┘ └───────────────────────────────────────┘
-     Fishball plugin set (same packages in both):  fishball-core · fishball-lite ·
+     Fishball plugin set (same packages in both):  fishball-core (incl. its fishball-ui component) ·
                                                     fishball-board · fishball-fold-notify · fishball-watchdog
 ```
 
@@ -43,17 +43,23 @@ standalone mode is the same set installed by hand.
 | `fishball-connector` | a main DSH | MCP server; tokens over `ctx.credentials`; per-principal mailbox and lanes; routing (Q7); session operations (today's `src/*.js` domain); `message_fishball` / `ask_fishball`; managed-session approval interception; the contribution service `fishballConnectorTools` (§13); a no-UI state service for marks and Hand over (Q3) | browser client, slots, HTML, CSS, iframes; an attention latch |
 | `fishball-instance` | a host DSH | hosted mode only (§6): launching the child, its lifecycle, placing the Fishball plugin set, enforcement overlays (Q20), target and token hand-off, the child locator `fishballChild`, hosted model sync, uninstall cleanup | any session, approval, question or prompt service of the host DSH (R-ARCH-05); UI |
 | `dsh-fishball-embed-UI` | the host DSH, beside the instance | the sidebar entry and fish, the attention latch and its contributed tools (§13.6), marks and Hand over drawing (Q3), the frame around the child page, status and Retry, the Plugins card and the model-sync trigger | secrets; session operations of its own; anything without the instance (R-UI-01) |
-| **Fishball plugin set** (Q2 = A) | a Fishball DSH (hosted child or standalone) | §5a | acting on any DSH except its own, other than through the target connector's MCP (R-FB-08) |
+| **Fishball plugin set** (Q2, decided: four plugins) | a Fishball DSH (hosted child or standalone) | §5a | acting on any DSH except its own, other than through the target connector's MCP (R-FB-08) |
 
-### 1.2 The Fishball plugin set (Q2 = A)
+### 1.2 The Fishball plugin set (Q2, decided)
+
+Four plugins. `fishball-ui` is not a plugin of its own: it is a component (a directory and a
+client module) inside `fishball-core`'s package, installed, enabled and removed with core.
 
 | Plugin | Contents (from V2, re-homed) | Requires |
 | --- | --- | --- |
-| `fishball-core` | the manager session and persona; the MCP link to the target (§6.3); the event router and acceptance ledger; the scoped bridge façade (X12), claims (X15) and send gate (X19); the extension service `fishballInstance` (X1–X20) for feature plugins; manager tools; the private Skills tool; the admin and settings routes it serves to its own web page | `fishball-lite` (status `lite-missing` without it) |
-| `fishball-lite` | the A-lite `fishball-page` client module (Fishball-only page, hidden navigation, shortcut remapping or unbinding, explicit return from Settings/Plugins); the read-only preset with the Skills exception; disabled session-creating rows (subagents, schedules, terminal, open-in-app, presets); the `fishball-recommended` tab; the slim settings panel | — (alone it reshapes the DSH; `fishball-core-missing` is shown on its page) |
+| `fishball-core` | **agent:** the manager session and persona; the MCP link to the target (§6.3); the event router and acceptance ledger; the scoped bridge façade (X12), claims (X15) and send gate (X19); the extension service `fishballInstance` (X1–X20) for feature plugins; manager tools; the private Skills tool; the admin and settings routes it serves to its own web page. **`fishball-ui` component:** the A-lite page client module (Fishball-only page, hidden navigation, shortcut remapping or unbinding, explicit return from Settings/Plugins); the guard rows in core's bundle patch (read-only preset with the Skills exception, disabled session-creating rows); the `fishball-recommended` tab; the slim settings panel | — |
 | `fishball-board` | board tools, `board_search`, archive | `fishball-core` |
 | `fishball-fold-notify` | notice batching, attention via embed-UI's tool | `fishball-core` |
 | `fishball-watchdog` | supervision (§7) | `fishball-core` |
+
+Inside core, the two parts stay separate modules with a narrow interface: the ui component reads
+the manager's identity and status from the agent side, and has no session powers of its own. So
+they can still be tested apart, which was the reason for the earlier split.
 
 **Why the extension service keeps the name `fishballInstance`:** feature plugins already inject
 `fishballInstance?` (instance-extension-points §1). The provider is now `fishball-core`, in both
@@ -65,7 +71,7 @@ modes. Renaming it would break the agreed X1–X19 contract for no gain.
 | --- | --- | --- |
 | Getting the plugins | the user installs the set's tarballs with DSH's native "add plugin" | the instance ships the set inside its package and places it at every child start (§8) |
 | Process | the user starts and stops that DSH | launch after host ready, stop with the host, restart, Retry, crash status (R-HOST-02) |
-| Guards | from `fishball-lite`'s bundle patch; the owner can override (Q20 = A) | the same guards plus launch overlays that the child cannot undo; core and lite always on (R-HOST-04) |
+| Guards | from `fishball-core`'s bundle patch (its `fishball-ui` component); the owner can override individual rows (Q20 = A) | the same guards plus launch overlays that the child cannot undo; core always on (R-HOST-04) |
 | Target and token | the user fills in `fishball-core`'s settings and puts the token in that DSH's credential store (Q8) | the instance supplies the target; with a same-DSH connector it creates and hands over the token automatically, in memory (Q8 = A) |
 | UI | that DSH's own web UI **is** the Fishball page | embed-UI frames the child in the host DSH, plus the fish, dots and hand-over |
 | Model and provider settings | that DSH's own native settings | plus hosted model sync from the host (R-HOST-07) |
@@ -431,17 +437,17 @@ Fishball DSH's own installation, like any plugin, and declare no peer on `fishba
 - `fishball-core` provides `fishballInstance` (X1–X20) from its app row once its own setup is
   ready. Feature plugins keep their optional `fishballInstance?` inject, so a missing core never
   fails their load (R-FB-06).
-- `fishball-core` checks for `fishball-lite` through a small lite-provided service
-  (`fishballLite`, `apiVersion: 1`). Without it, core starts no manager session and reports
-  `lite-missing` (Q2 = A).
+- `fishball-core` registers its `fishball-ui` component's client module through its own
+  `dsh.client` entry and its guard rows through its own `cordis.patch.yml`. There is no separate
+  `fishballLite` service and no `lite-missing` state (Q2, decided).
 - `fishball-core` ships its own copy of the MCP client (§9.1). It does not use the host's
   transitive `@modelcontextprotocol/client` or the stock `dsh-mcp-client` row (§6.3).
 
-### 5a.2 How `fishball-lite` reshapes a DSH
+### 5a.2 How `fishball-core`'s `fishball-ui` component reshapes a DSH
 
 V2 applied these changes as instance launch overlays (`packages/instance/src/native-runtime/overlay.js`
-`LITE`). In V3 they move into `fishball-lite`'s own `cordis.patch.yml`, so they work without an
-instance:
+`LITE`). In V3 they move into `fishball-core`'s own `cordis.patch.yml` (the `fishball-ui`
+component's part of it), so they work without an instance:
 - `disabled: true` on the session-creating rows (`ui-subagent`, `ui-schedule`, `schedule`,
   `ui-permission`, `ui-agent-preset`, `entry-customization`, `ui-open-in-app`, `open-in-app`,
   `ui-sidebar-terminal`, `terminal-controller`) and the session-creating preset tools;
@@ -454,7 +460,7 @@ A bundle patch may target any row id (`PatchOptions {id, disabled, config, …}`
 `cordis-plugin-include`, both SDKs). **Order matters:** DSH composes bundle patches first, then
 the profile's own patch file, then `$DSH_HOME/cordis.patch.yml`, then launch overlays
 (`readProfilePatches`: `dsh-app-boot/lib/index.js` rc.5 :1127–1132, rc.1 :1908–1913). So in a
-standalone DSH the owner's own patches win over lite's, which is Q20 = A's "can override". In
+standalone DSH the owner's own patches win over core's, which is Q20 = A's "can override". In
 hosted mode the instance repeats the same guard rows as launch overlays, which come last and
 therefore win.
 
@@ -465,7 +471,7 @@ conflict, and how `fishball-core` can read the effective composition to report
 
 ### 5a.3 Standalone setup, step by step
 
-1. Install the five tarballs in the DSH with DSH's native "add plugin", then restart that DSH.
+1. Install the four tarballs (core is required; the three features are optional) in the DSH with DSH's native "add plugin", then restart that DSH.
 2. In the **target** DSH's connector settings, add a token entry (Q5).
 3. Put that token's value in the standalone DSH's credential store, under the reference named in
    `fishball-core`'s settings, and enter the target URL there.
@@ -500,14 +506,14 @@ are done.
 ### 6.2 Enforcement overlays (Q20 = A)
 
 At each child start the instance writes, as launch overlays:
-- `disabled: false` for `fishball-core` and `fishball-lite`;
-- the same guard rows as lite's bundle patch (§5a.2), so the child's own profile patches cannot
+- `disabled: false` for `fishball-core`;
+- the same guard rows as core's bundle patch (§5a.2), so the child's own profile patches cannot
   undo them;
 - `hmr` disabled, plus the webserver and web-runtime settings that give the child its own origin
   (V2 PG-ORIGIN);
 - the target URL for `fishball-core`, and the admission key for its ticket route.
 
-The child's Plugins page hides the switch and Remove for core and lite, extending V2's Q-K = B
+The child's Plugins page hides the switch and Remove for core, extending V2's Q-K = B
 CSS hiding, which needs no host patch. Toggling a feature plugin says restart required.
 
 ### 6.3 The MCP link (`fishball-core`, both modes)
@@ -626,7 +632,7 @@ Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session
 
 The design is the bundled-placement note (`f71717e`), options **P3 + 3a**, now applied to the
 whole set:
-- Sources live under `packages/instance/bundled/{core,lite,board,fold-notify,watchdog}/` and are
+- Sources live under `packages/instance/bundled/{core,board,fold-notify,watchdog}/` and are
   listed in the instance's `files`. In the host DSH they are inert data: not in its resolution,
   not bundles there.
 - At every child start, inside `initializeProfile` and before `loadProfileDirectory`, each one is
@@ -635,8 +641,8 @@ whole set:
 - Feature plugins go into `dsh.profile.bundles` only when the instance's `bundled: [...]` record
   lacks them, so a disable survives. A feature plugin deleted while off is copied back, and the
   record still has it, so it stays **off** (3a; this answers placement Q2).
-- `fishball-core` and `fishball-lite` are added to `dsh.profile.bundles` on every start, and are
-  forced on by overlay (§6.2).
+- `fishball-core` is added to `dsh.profile.bundles` on every start, and is forced on by overlay
+  (§6.2).
 - An enabled member skipped by `loadProfileDirectory` (incompatible `engines.dsh`, unresolvable)
   fails the start with `PROFILE_INCOMPATIBLE`, naming it (answers placement Q3). The old
   per-start exemption and `BUNDLED_PLUGIN_UNAVAILABLE` are dropped.
@@ -666,9 +672,8 @@ incompatible bundle is skipped at boot, not fatal. So:
 | Package | Change |
 | --- | --- |
 | `fishball-connector` | Drop `dsh.client`, `client.js`, `client.records.js`, `assets`, UI locale, and the `./client`, `./contract` and `./records` exports. Add `./mcp-schema` (tool and event schemas, limits, vocabularies) and `./tools` (contribution types, `apiVersion`, the shared result-code vocabulary, a `defineTool` helper that validates at the call site; data and types only). Add a runtime `dependencies` entry for the MCP server SDK and its Node adapter, installed inside the connector's folder, never as a DSH peer. Keep `engines.dsh >=0.2.1-rc.5`. |
-| `fishball-instance` | Drop the `fishball-connector` peer, the main-side `client.js` and `child-web/`. Keep the host row, the native runtime (lifecycle, overlays, placement), `uninstall.js` and hosted model sync. Add `bundled/` (the five set members) to `files`. |
-| `fishball-core` (new, from `packages/instance/src/slim/child/**`, `src/persona.js`, the private Skills tool, `native-child.js`'s app pieces) | Bundle row(s) for the Fishball DSH. Runtime dependency on `@modelcontextprotocol/client` 2.x and on `fishball-connector/mcp-schema`, vendored as a copy so a standalone install needs nothing from the connector package at runtime. |
-| `fishball-lite` (new, from `packages/instance/child-web/**` and the `LITE` overlay rows) | Bundle patch with the guard rows, plus `dsh.client` (platform web) for the page, the recommended tab and slim settings. |
+| `fishball-instance` | Drop the `fishball-connector` peer, the main-side `client.js` and `child-web/`. Keep the host row, the native runtime (lifecycle, overlays, placement), `uninstall.js` and hosted model sync. Add `bundled/` (the four set members) to `files`. |
+| `fishball-core` (new, from `packages/instance/src/slim/child/**`, `src/persona.js`, the private Skills tool, `native-child.js`'s app pieces, and, as its `ui/` component, `packages/instance/child-web/**` and the `LITE` overlay rows) | Bundle row(s) for the Fishball DSH; its `cordis.patch.yml` also carries the guard rows; `dsh.client` (platform web) for the `fishball-ui` page, recommended tab and slim settings. Runtime dependency on `@modelcontextprotocol/client` 2.x and on `fishball-connector/mcp-schema`, vendored as a copy so a standalone install needs nothing from the connector package at runtime. |
 | `fishball-board`, `fishball-fold-notify`, `fishball-watchdog` | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |
 | `dsh-fishball-embed-UI` (new) | Host row + `dsh.client` (platform web) with the inject lists of today's two main-DSH clients combined. Optional peers `fishball-instance` and `fishball-connector` (the latter for `./tools` types only; embed-UI never imports connector code). Owns the moved locale strings. |
 
@@ -689,11 +694,11 @@ coordinated breaking release:
 | `@modelcontextprotocol/client` / `core` | 2.2.0 | 2.2.0, dist byte-identical | `fishball-core`'s link (packaged copy of the same line) |
 | `dsh-mcp-client` | tools + list-changed only, `capabilities: {}`, static headers | same lines | not used for the target (§6.3) |
 | MCP server runtime | not installed | not installed | packaged by the connector |
-| Bundle patch rows `{id, disabled, config, insert}` (`cordis-plugin-include` `PatchOptions`) | present | present (`patch.d.ts`) | `fishball-lite` guards (§5a.2) |
+| Bundle patch rows `{id, disabled, config, insert}` (`cordis-plugin-include` `PatchOptions`) | present | present (`patch.d.ts`) | `fishball-core` guard rows (§5a.2) |
 | Patch composition order: bundles → profile patch file → home patch → launch overlays | `dsh-app-boot` `readProfilePatches` :1127–1132 | :1908–1913 | Q20: standalone overridable, hosted enforced |
-| Plugin-manager slots `plugins.bundle.config`, `plugins.row.config`, `plugins.tab` | present | present | embed-UI card; lite's recommended tab |
+| Plugin-manager slots `plugins.bundle.config`, `plugins.row.config`, `plugins.tab` | present | present | embed-UI card; core's recommended tab |
 | `Agent.followup` | `dsh-agent-loop` | present (different line) | `fishball-core` wake |
-| Shortcut, origin and A-lite findings | V2 final scope §4.3 | same | `fishball-lite` |
+| Shortcut, origin and A-lite findings | V2 final scope §4.3 | same | `fishball-core` (`fishball-ui`) |
 | Cordis service provide / optional `ctx.inject([...], cb)` sub-scope, `ctx.effect` disposers, `fiber.name` | cordis 4.0.5 | cordis 4.1.0, `Service` and `Fiber` effect/name types the same | contribution service (§13.7), `fishballInstance`, `fishballLite`, `fishballChild` |
 
 A version-specific path is allowed only where V2 already needed one (tool executor batching,
@@ -717,7 +722,7 @@ Order matters, because embed-UI is new and the connector loses its UI:
      the "Fishball (hosted)" token (Q8 = A).
    - The child profile, home, Fishball session history, Skills and child settings are kept.
    - The child's launch overlay no longer inserts the V2 instance-owned rows. The plugin set is
-     placed instead: core and lite on, the three features on at first placement (R-MIG-02).
+     placed instead: core on, the three features on at first placement (R-MIG-02).
      Row ids are kept where V2 already had them, so stored settings carry over.
    - V2 managed sessions keep their connector-side managed state, now owned by the hosted
      principal.
@@ -739,7 +744,7 @@ this case.
 | V3-S3 | Lanes: assign, release and handoff with offer re-issue under concurrent user/Watchdog/Fishball answers | OQ-14 race matrix; no stale-lane commit |
 | V3-S4 | Embed-UI as a separate package: can the moved connector client still register its sidebar/slot contributions (the same injects) and frame the PG-ORIGIN child origin, without the connector client present? | both hosts; main shortcuts untouched |
 | V3-S5 | Contribution service (§13): caller identity from the injecting fiber, auto-withdrawal on contributor disable/unload/HMR, `tools/list_changed` delivery on both eras, containment of throw/hang/oversize, on both hosts | independent cases across register/dispose/reload/quarantine states |
-| V3-S6 | `fishball-lite` as a plain bundle: its patch disables other bundles' rows and sets the read-only preset in an ordinary DSH on both SDKs; the instance's overlays win in hosted mode; `fishball-core` can read the effective composition to report `guards-overridden`; the A-lite page works without the instance (standalone) | both modes, both hosts; no host patch |
+| V3-S6 | `fishball-core` as a plain bundle carrying its `fishball-ui` component: one bundle that inserts its own rows, disables other bundles' rows and sets the read-only preset in an ordinary DSH on both SDKs; one `dsh.client` serving the page, tab and settings; the instance's overlays win in hosted mode; core can read the effective composition to report `guards-overridden`; the A-lite page works without the instance (standalone) | both modes, both hosts; no host patch |
 | V3-K | Freeze `./mcp-schema` and `./tools`: tool names and schemas, result envelope, event kinds, error map, page limit, retention, "connected" definition (§3.5) | reviewed; independent requirements-only case authoring starts after this |
 
 Process stays: requirements → independent case authoring → implementation without reading tests
