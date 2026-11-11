@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { bootChild, messageText, until } from '../support/instance-ext.mjs'
-import { loadInstance } from '../support/body-soul-env.mjs'
+import { loadCore } from '../support/body-soul-env.mjs'
 
 async function live(t) {
   const h = await bootChild(t, { activate: true })
@@ -169,7 +169,7 @@ describe('X0-I inbox pipeline: claims, batcher, direct delivery (X9)', () => {
   })
 
   it('XI-P-03 the permission-request marker exists and matches the watchdog notice', async (t) => {
-    const markers = await loadInstance('src/slim/inbox-markers.js')
+    const markers = await loadCore('src/slim/inbox-markers.js')
     assert.ok(markers.PERMISSION_NOTICE, 'PERMISSION_NOTICE is added to inbox-markers.js')
     const text = markers.PERMISSION_NOTICE.text('apr_42')
     assert.match(text, /^\[permission request apr_42\]/)

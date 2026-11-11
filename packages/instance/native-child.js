@@ -3,7 +3,7 @@ import { applyNativeChild } from './src/native-runtime/child.js'
 /**
  * The attached child's lifecycle row: identity checks, control wire and bounded shutdown.
  * launchOverlay inserts the slim rows beside it (src/native-runtime/overlay.js): the session-tools
- * row, the approvals row, the app row (src/slim/child/app.js) and the inbox row. The app row
+ * row, the approvals row, the app row (fishball-core src/slim/child/app.js) and the inbox row. The app row
  * provides `fishballApp`; readiness preserves its bearer gate and also verifies the native Web
  * adapter. Native admission travels only on the private native-access operation, never health.
  * The main lifecycle host remains required until its callers have an explicit relocation owner.

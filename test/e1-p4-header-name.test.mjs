@@ -27,14 +27,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it } from 'node:test'
 import { BODY_SOUL, CJK } from './support/body-soul-env.mjs'
-import { loadInstance } from './support/body-soul-env.mjs'
+import { loadCore } from './support/body-soul-env.mjs'
 
-const { createI18n } = await loadInstance('src/slim/ui/i18n.js')
+const { createI18n } = await loadCore('src/slim/ui/i18n.js')
 const en = createI18n('en')
 const zh = createI18n('zh')
 
-const SHELL_HTML = fs.readFileSync(path.join(BODY_SOUL.instance, 'src/slim/ui/shell.html'), 'utf8')
-const SHELL_JS = fs.readFileSync(path.join(BODY_SOUL.instance, 'src/slim/ui/shell.js'), 'utf8')
+const SHELL_HTML = fs.readFileSync(path.join(BODY_SOUL.core, 'src/slim/ui/shell.html'), 'utf8')
+const SHELL_JS = fs.readFileSync(path.join(BODY_SOUL.core, 'src/slim/ui/shell.js'), 'utf8')
 // Address the real element by its exact opening tag: the explanatory comment itself contains the
 // word "<header>", so a loose element regex would start inside the comment.
 const HEADER_OPEN = '<header class="topbar">'

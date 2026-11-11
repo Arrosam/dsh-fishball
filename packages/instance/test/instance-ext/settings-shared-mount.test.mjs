@@ -1,7 +1,7 @@
 /**
  * PBS: fishball-settings `apply` shared main-card mounts (R-B, R-B1, R-B2), black-box.
  *
- * child-web/fishball-settings/client.js is a classic `window.__ModuleLoader__.load({id, factory})`
+ * packages/core/ui/fishball-settings/client.js is a classic `window.__ModuleLoader__.load({id, factory})`
  * script, loaded here in node:vm the same way page-open-session-page.mjs loads the page. React is
  * the exported shim of test/support/rp-recommend.mjs (nothing is rendered: the mounts under test
  * happen in a ctx.effect, not in a component). Only the module's documented inject surfaces
@@ -28,7 +28,7 @@ import { settle } from './page-open-session-page.mjs'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 
 const PBS = Object.freeze({
-  client: path.join(HERE, '..', '..', 'child-web', 'fishball-settings', 'client.js'),
+  client: path.join(HERE, '..', '..', '..', 'core', 'ui', 'fishball-settings', 'client.js'),
   moduleId: 'fishball-settings',
   sharedChunk: './client.instance.js',
   styleId: 'fishball-settings-style',

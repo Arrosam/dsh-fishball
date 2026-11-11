@@ -1,7 +1,7 @@
 /**
  * In-process child harness for the `fishballInstance` extension points (W0).
  *
- * It boots the child rows of `packages/instance/src/slim/child` exactly in the order the launch
+ * It boots the child rows of `packages/core/src/slim/child` exactly in the order the launch
  * overlay uses (`session-tools`, `approvals`, `app`, `inbox`, `admin`) over a fake Cordis
  * context, and attaches a fake main host transport to the child's own bridge. That makes the
  * public surfaces of the design the observation points:
@@ -19,7 +19,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tempPath } from './temp-path.mjs'
 import path from 'node:path'
 import { linkContractForSourceRun } from './contract-link.mjs'
-import { loadConnector, loadInstance } from './body-soul-env.mjs'
+import { loadConnector, loadCore } from './body-soul-env.mjs'
 import { startWorkspaceRegistry } from './workspace-registry.mjs'
 
 linkContractForSourceRun()
@@ -798,7 +798,7 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   }
   const rows = {}
   async function applyRow(name, modulePath) {
-    const row = await loadInstance(modulePath)
+    const row = await loadCore(modulePath)
     rows[name] = row
     const dispose = await row.apply(ctx)
     if (typeof dispose === 'function') rowDisposers.push(dispose)
@@ -812,7 +812,7 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   await applyRow('app', 'src/slim/child/app.js')
   if (process.env.FBTEST_DEBUG_HARNESS) console.error('chat service before inbox:', Object.keys(ctx.get(SERVICES.chat) ?? {}), 'provided:', [...context.provided.keys()])
   await applyRow('inbox', 'src/slim/child/inbox.js')
-  const admin = await loadInstance('src/slim/child/admin.js')
+  const admin = await loadCore('src/slim/child/admin.js')
   rows.admin = admin
   if (typeof nativeRuntime.onAdminTransport === 'function') {
     const adminDispose = admin.apply(ctx)

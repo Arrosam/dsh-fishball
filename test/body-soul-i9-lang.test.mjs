@@ -1,7 +1,7 @@
 /**
  * I9 — two language variants of the custom page: the `lang` rule and the dictionaries
  * (docs/slim-native-design.md §0.5 "Languages", §0.9 U6/U7, §18.2 I9; contract §1.2 UI_LANG).
- * Observation point: packages/instance/src/slim/ui/i18n.js (DOM-free; the page and the main 503
+ * Observation point: packages/core/src/slim/ui/i18n.js (DOM-free; the page and the main 503
  * page both use it). Expected values come from the design only:
  * - the variant is the URL's FIRST `lang` parameter; exactly `zh` is Chinese, anything else or no
  *   `lang` is English; `<html lang>` is `zh-CN` or `en`;
@@ -45,9 +45,9 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it } from 'node:test'
-import { BODY_SOUL, CJK, connectorRecordWords, loadInstance } from './support/body-soul-env.mjs'
+import { BODY_SOUL, CJK, connectorRecordWords, loadCore } from './support/body-soul-env.mjs'
 
-const i18n = await loadInstance('src/slim/ui/i18n.js')
+const i18n = await loadCore('src/slim/ui/i18n.js')
 const { languageOf, i18nOf, createI18n, DICTIONARIES } = i18n
 
 /** The design's two variants and DSH's <html lang> mapping (§0.5 "Languages"). */
@@ -198,7 +198,7 @@ describe('I9 R7 failure words', () => {
 })
 
 describe('I9 AC: no user-visible literal outside the dictionaries (static)', () => {
-  const ui = path.join(BODY_SOUL.instance, 'src', 'slim', 'ui')
+  const ui = path.join(BODY_SOUL.core, 'src', 'slim', 'ui')
   const files = fs.readdirSync(ui).filter((f) => f.endsWith('.js') && f !== 'i18n.js')
   // A heuristic for the AC's scan: an English word assigned as visible text or as an accessible name.
   const visible = /(?:\.textContent\s*=|\.title\s*=|\.placeholder\s*=|setAttribute\(\s*['"](?:aria-label|title|placeholder)['"]\s*,)\s*['"`][^'"`]*[A-Za-z]{2,}[^'"`]*['"`]/

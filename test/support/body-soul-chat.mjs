@@ -1,5 +1,5 @@
 /**
- * Stand-ins for the child chat (createChat in packages/instance/src/slim/child/chat.js). The fake
+ * Stand-ins for the child chat (createChat in packages/core/src/slim/child/chat.js). The fake
  * document lives in body-soul-dom.mjs, shared with the settings-view tests.
  *
  * The chat stand-in is the Cordis-like context createChat's JSDoc names: `get(name)` for

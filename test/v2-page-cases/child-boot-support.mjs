@@ -3,7 +3,7 @@
  * call, used by child-boot.test.mjs and child-boot-reopen.test.mjs. Black box: nothing here reads
  * or fakes the product's client code or the SDK client context.
  * - stageInstance copies `<plugin>/packages/instance` (FBTEST_PLUGIN_DIR picks the checkout; default
- *   this repo) into the throwaway home, with `fishball-settings/client.instance.js` copied from the
+ *   this repo) into the throwaway home, with `src/child-settings/client.instance.js` copied from the
  *   instance's client.js the way the product's install does, and fishball-connector linked beside it.
  * - startHost spawns child-boot-host.mjs, which boots the selected SDK's own `web` profile with an
  *   overlay that appends the given rows after the native rows, as the instance's launch overlay does.
@@ -35,7 +35,7 @@ export const CHILD_BOOT = Object.freeze({
   /** The SDK's package scope, linked into the stage only for rows that import SDK packages. */
   sdkScope: '@deepseek-ai',
   instanceClient: 'client.js',
-  settingsChunk: Object.freeze(['child-web', 'fishball-settings', 'client.instance.js']),
+  settingsChunk: Object.freeze(['src', 'child-settings', 'client.instance.js']),
   rowModule: (row) => ['child-web', row, 'index.js'],
   urlLine: /dsh web: (http\S+)/,
   /** Redacts the admission token from any host output a failure message may quote. */

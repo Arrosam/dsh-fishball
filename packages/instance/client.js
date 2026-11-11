@@ -17,12 +17,13 @@
  * the state, the safe code, its reason, and Retry while the instance is `failed`
  * (§0.7 "Instance: status, Retry"; inst-OQ-03, inst-OQ-09: failed until Retry).
  *
- * One source, two bundles (SET, docs/planning/v2-set.md): the child's slim settings panel shows
- * this same status line. The "Model for Fishball" block stays on this main card only: the child
- * must never start a sync (the user's decision of 2026-11-11). The child snapshot copy places
- * this file beside that panel as its package-local chunk `client.instance.js`
- * (src/native-runtime/installation.js), which DSH's client-modules serves at
- * `…/fishball-settings/client.instance.js` and expects to register as that owner's chunk. So the
+ * One source, two bundles (SET, docs/planning/v2-set.md): the child's hosted settings section
+ * (src/child-settings, fishball-hosted-settings) shows this same status line. The "Model for
+ * Fishball" block stays on this main card only: the child must never start a sync (the user's
+ * decision of 2026-11-11). The child snapshot copy places this file beside that section's package
+ * as its package-local chunk `client.instance.js` (src/native-runtime/installation.js), which
+ * DSH's client-modules serves at `…/fishball-hosted-settings/client.instance.js` and expects to
+ * register as that owner's chunk. So the
  * registration identity follows the script's own URL; the main DSH serves this file as the
  * `fishball-instance` bundle, never under that chunk name, so its registration is unchanged. The
  * choice is an inline expression because client-modules concatenates bundles into one classic
@@ -31,7 +32,7 @@
 window.__ModuleLoader__.load({
   ...((script, child) => (script?.src && new URL(script.src, document.baseURI).pathname.endsWith('/' + child.owner + '/' + child.chunk)
     ? { id: child.owner, chunk: child.chunk }
-    : { id: 'fishball-instance' }))(typeof document === 'undefined' ? undefined : document.currentScript, { owner: 'fishball-settings', chunk: 'client.instance.js' }),
+    : { id: 'fishball-instance' }))(typeof document === 'undefined' ? undefined : document.currentScript, { owner: 'fishball-hosted-settings', chunk: 'client.instance.js' }),
   factory(require) {
     const module = { exports: {} }
     const exports = module.exports
@@ -507,9 +508,9 @@ window.__ModuleLoader__.load({
     const mountStyles = () => mountStyle(STYLE.id, css)
 
     /**
-     * What the child's slim settings panel reuses as it is (SET): the dictionaries under this
+     * What the child's hosted settings section reuses as it is (SET): the dictionaries under this
      * card's locale namespace, the styles, the polled status and the status line. The panel's own
-     * routes answer the same paths and shapes (child-web/fishball-settings/index.js). ModelSync is
+     * routes answer the same paths and shapes (src/child-settings/index.js). ModelSync is
      * deliberately not shared: model sync starts only from this main card, never from the child.
      */
     exports.shared = Object.freeze({

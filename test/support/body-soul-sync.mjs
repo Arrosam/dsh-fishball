@@ -14,7 +14,7 @@
 import assert from 'node:assert/strict'
 import { CASE, clone, engineFixture, inventory, provider } from './provider-sync-engine.mjs'
 import { officialCredentials } from './provider-sync-official.mjs'
-import { loadInstance } from './body-soul-env.mjs'
+import { loadCore, loadInstance } from './body-soul-env.mjs'
 
 export const SYNC_IDS = Object.freeze({ ...CASE.ids, plantedEnv: 'planted-env-provider' })
 export const SYNC_PLANTED = Object.freeze({
@@ -62,7 +62,7 @@ function defaultTarget() {
 
 export async function syncHarness(t, { source = defaultSource(), target = defaultTarget(), now = Date.now() } = {}) {
   const { createChildProviderSync } = await loadInstance('src/provider-sync-service.js')
-  const { createProviderSyncTarget, createProviderSyncTargetEndpoint } = await loadInstance('src/slim/child/provider-sync-target.js')
+  const { createProviderSyncTarget, createProviderSyncTargetEndpoint } = await loadCore('src/slim/child/provider-sync-target.js')
   // The child end stands for the production child host, which has describeRecord.
   const child = await engineFixture(t, source, target, { describeRecord: true })
   // The engine fixture's clock starts in 2023 with a 1 s plan life; put it far enough ahead that

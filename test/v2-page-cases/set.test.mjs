@@ -306,7 +306,7 @@ function boundaryAvailability(sdk) {
  * the task brief, never from the implementation. Seams, all real product code:
  * - src/slim/settings-relay.js: createSettingsRelayServer / createSettingsRelayClient over an
  *   in-memory transport pair (test-owned, below);
- * - child-web/fishball-settings/index.js apply(ctx) with a fake ctx whose registry collects the
+ * - src/child-settings/index.js (fishball-hosted-settings) apply(ctx) with a fake ctx whose registry collects the
  *   child Fetch routes, driven with real Request objects;
  * - model sync is main-only (user decision 2026-11-11): check/add go to the main card's owner routes
  *   (registerProviderSyncRoutes) over the real provider-sync bridge, coordinator, child target and
@@ -332,8 +332,10 @@ const SET = Object.freeze({
   pageRowId: 'fishball-page',
   rowInject: Object.freeze(['nativeRuntime', 'connection']),
   rowModule: Object.freeze(['child-web', 'fishball-settings', 'index.js']),
-  sharedChunk: Object.freeze(['child-web', 'fishball-settings', 'client.instance.js']),
-  panelClient: path.join(BODY_SOUL.instance, 'child-web', 'fishball-settings', 'client.js'),
+  /** V3 R-CORE: the settings Node row with the relay routes, in packages/instance. */
+  rowSource: Object.freeze(['src', 'child-settings', 'index.js']),
+  sharedChunk: Object.freeze(['src', 'child-settings', 'client.instance.js']),
+  panelClient: path.join(BODY_SOUL.core, 'ui', 'fishball-settings', 'client.js'),
   instanceClient: path.join(BODY_SOUL.instance, 'client.js'),
   instanceManifest: path.join(BODY_SOUL.instance, 'package.json'),
   relay: Object.freeze({
@@ -403,7 +405,7 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
 async function settingsFixture(t, { harness, status, retry, restart, check, add } = {}) {
   const { createSettingsRelayServer } = await loadInstance('src/slim/settings-relay.js');
   const { registerProviderSyncRoutes } = await loadInstance('src/slim/host/provider-sync-routes.js');
-  const row = await loadInstance(SET.rowModule.join('/'));
+  const row = await loadInstance(SET.rowSource.join('/'));
   const calls = { status: 0, retry: 0, restart: 0, check: 0, add: [] };
   const server = createSettingsRelayServer({
     status: async () => { calls.status++; return status ? status(calls.status) : SET.status.ready; },
@@ -539,7 +541,7 @@ const EXECUTABLE = {
     assert.ok(at >= 0, 'launch overlay inserts the fishball-settings row');
     assert.equal(rows[at].name, path.join(path.dirname(childModule), ...SET.rowModule), 'row loads <snapshot>/child-web/fishball-settings/index.js');
     assert.equal(rows[at - 1]?.id, SET.pageRowId, 'fishball-settings is inserted right after fishball-page');
-    const row = await loadInstance(SET.rowModule.join('/'));
+    const row = await loadInstance(SET.rowSource.join('/'));
     assert.equal(row.name, SET.rowId);
     assert.deepEqual([...row.inject].sort(), [...SET.rowInject].sort(), 'host half needs nativeRuntime and connection');
     // Never mounted in the main DSH: the main package does not declare the child row.

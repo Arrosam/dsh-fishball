@@ -22,7 +22,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { SERVICES, bootChild, tempDir } from '../../../../test/support/instance-ext.mjs'
-import { loadInstance } from '../../../../test/support/body-soul-env.mjs'
+import { loadCore, loadInstance } from '../../../../test/support/body-soul-env.mjs'
 
 const C = Object.freeze({
   alphaId: 'ready-gate-manager-alpha',
@@ -118,7 +118,7 @@ function chatPort({ id = C.alphaId, held = true } = {}) {
 
 /** One generation of the extensions over `home`, bound to its own port. */
 async function generation(home, portOptions) {
-  const { createExtensions } = await loadInstance('src/slim/child/extensions.js')
+  const { createExtensions } = await loadCore('src/slim/child/extensions.js')
   const quiet = () => ({ info() {}, warn() {}, error() {}, debug() {} })
   const ext = createExtensions({
     on: () => () => {},

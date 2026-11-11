@@ -32,10 +32,10 @@ export const UNOBSERVABLE = Object.freeze({
 
 /** The public SK contract the cases test against (the parent's contract note; v2-sk-seam §5). */
 export const CONTRACT = Object.freeze({
-  /** Modules of packages/instance, imported per SDK version. */
+  /** Modules imported per SDK version, relative to packages/instance (V3 R-CORE: the SK modules are packages/core's). */
   modules: Object.freeze({
-    skills: path.join('src', 'slim', 'child', 'skills.js'),
-    store: path.join('src', 'slim', 'child', 'skills-store.js'),
+    skills: path.join('..', 'core', 'src', 'slim', 'child', 'skills.js'),
+    store: path.join('..', 'core', 'src', 'slim', 'child', 'skills-store.js'),
     overlay: path.join('src', 'native-runtime', 'overlay.js'),
   }),
   pluginId: 'fishball-private-skills',

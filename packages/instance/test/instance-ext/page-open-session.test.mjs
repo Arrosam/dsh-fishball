@@ -13,7 +13,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { bootChild, messageText } from '../../../../test/support/instance-ext.mjs'
-import { loadInstance } from '../../../../test/support/body-soul-env.mjs'
+import { loadCore, loadInstance } from '../../../../test/support/body-soul-env.mjs'
 import { loadPage, settle } from './page-open-session-page.mjs'
 
 const ROUTE = Object.freeze({
@@ -438,7 +438,7 @@ describe('B. ensureSession over a fake chat port (createExtensions().bind)', () 
   }
 
   it('B-13 EP: ensureSession resolves the id the bound port activated', async (t) => {
-    const { createExtensions } = await loadInstance('src/slim/child/extensions.js')
+    const { createExtensions } = await loadCore('src/slim/child/extensions.js')
     const { mkdtemp, rm } = await import('node:fs/promises')
     const home = await mkdtemp('/private/tmp/fbtest-page-open-')
     t.after(() => rm(home, { recursive: true, force: true }))

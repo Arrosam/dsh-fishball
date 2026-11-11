@@ -52,7 +52,7 @@ const NAV = Object.freeze({
   stageSkip: Object.freeze(['node_modules', 'test']),
   stageDir: 'fishball-instance-stage',
   instanceClient: 'client.js',
-  settingsChunk: Object.freeze(['child-web', 'fishball-settings', 'client.instance.js']),
+  settingsChunk: Object.freeze(['src', 'child-settings', 'client.instance.js']),
   rowModule: (row) => ['child-web', row, 'index.js'],
   homeLabel: 'child-boot-nav',
   urlLine: /dsh web: (http\S+)/,

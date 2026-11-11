@@ -6,7 +6,7 @@
  * those requirements alone; no implementation file was read.
  *
  * Seams (all real product code, no stand-in policy model):
- * - child-web/fishball-settings/index.js apply(ctx) with a fake ctx that collects its Fetch routes;
+ * - src/child-settings/index.js (fishball-hosted-settings) apply(ctx) with a fake ctx that collects its Fetch routes;
  * - src/slim/settings-relay.js server and client over the in-memory link of support/set-relay.mjs;
  * - the main side's real provider-sync bridge, coordinator, child target and engine
  *   (support/body-soul-sync.mjs, official disposable credential stores, planted fake keys), and the
@@ -44,7 +44,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test, { after } from 'node:test'
-import { BODY_SOUL, loadInstance } from '../support/body-soul-env.mjs'
+import { BODY_SOUL, loadCore, loadInstance } from '../support/body-soul-env.mjs'
 import { CASE as ENGINE_CASE, clone, inventory, provider } from '../support/provider-sync-engine.mjs'
 import { FIXTURE as SDK_FIXTURE } from '../support/provider-sync-official.mjs'
 import { post, routeContext, syncHarness } from '../support/body-soul-sync.mjs'
@@ -86,7 +86,7 @@ const MOS = Object.freeze({
   method: Object.freeze({ get: 'GET', post: 'POST' }),
   base: 'http://dsh.internal',
   site: Object.freeze({ header: 'sec-fetch-site', same: 'same-origin', cross: 'cross-site' }),
-  rowModule: 'child-web/fishball-settings/index.js',
+  rowModule: 'src/child-settings/index.js',
   relayModule: 'src/slim/settings-relay.js',
   relay: Object.freeze({
     version: 1,
@@ -421,7 +421,7 @@ const IN_PROCESS = [
 
   ['MOS-EP-06', 'EP', 'unsolicited provider-sync frames from the child start nothing', async (t) => {
     const h = await standardSync(t)
-    const { PROVIDER_SYNC_TARGET } = await loadInstance(MOS.syncTargetModule)
+    const { PROVIDER_SYNC_TARGET } = await loadCore(MOS.syncTargetModule)
     const toChild = []
     const wire = h.wire()
     wire.child.onMessage((text) => toChild.push(text))

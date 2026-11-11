@@ -18,6 +18,7 @@ const ROW = Object.freeze({
   nativeWeb: 'fishball-native-web',
   page: 'fishball-page',
   settings: 'fishball-settings',
+  hostedSettings: 'fishball-hosted-settings',
   recommend: 'fishball-recommend-plugins',
 })
 const WEB_CONFIG = Object.freeze({ host: RUNTIME.host, port: 0, tls: undefined })
@@ -52,18 +53,25 @@ const LITE = Object.freeze({
   disabledPresetPlugins: Object.freeze(['tool-subagent', 'tool-subagent-fork', 'workflow-ptc', 'tool-workflow',
     'tool-subagent-control', 'tool-subagent-list-agents', 'tool-schedule']),
 })
-/** copyChildCode copies this tree beside native-child.js, so the app row resolves inside the snapshot. */
-const APP_MODULE = path.join('src', 'slim', 'child', 'app.js')
+/**
+ * fishball-core's slim child modules (V3 R-CORE). copyChildCode copies core beside native-child.js
+ * (RUNTIME.corePackage), so these rows resolve inside the snapshot by path, never by import.
+ */
+const CORE_CHILD = path.join(RUNTIME.corePackage.target, 'src', 'slim', 'child')
+/** core's fishball-ui page packages, copied with it (NATIVE_WEB.pageDirectory). */
+const CORE_UI = path.join(RUNTIME.corePackage.target, NATIVE_WEB.pageDirectory)
+/** The child app row (T03). */
+const APP_MODULE = path.join(CORE_CHILD, 'app.js')
 /** The shared bridge client and the session tools (T05); the approvals and inbox rows read its fishballBridge. */
-const SESSION_TOOLS_MODULE = path.join('src', 'slim', 'child', 'session-tools.js')
+const SESSION_TOOLS_MODULE = path.join(CORE_CHILD, 'session-tools.js')
 /** T09's approval bridge: the app row injects its fishballApprovals for /api/approvals. */
-const APPROVALS_MODULE = path.join('src', 'slim', 'child', 'approvals.js')
+const APPROVALS_MODULE = path.join(CORE_CHILD, 'approvals.js')
 /** The inbox consumer: it injects the bridge and the app row's fishballChat. */
-const INBOX_MODULE = path.join('src', 'slim', 'child', 'inbox.js')
+const INBOX_MODULE = path.join(CORE_CHILD, 'inbox.js')
 /** The T11 admin row: the same tree, so the settings page's requests reach the child itself (§9). */
-const ADMIN_MODULE = path.join('src', 'slim', 'child', 'admin.js')
+const ADMIN_MODULE = path.join(CORE_CHILD, 'admin.js')
 /** T16's provider-sync target row: preview/confirm into the child's own home (§10). */
-const PROVIDER_SYNC_MODULE = path.join('src', 'slim', 'child', 'provider-sync-target.js')
+const PROVIDER_SYNC_MODULE = path.join(CORE_CHILD, 'provider-sync-target.js')
 
 /** Whole-row replacement preserves standard native configuration and tool declarations. */
 export function launchOverlay(paths, record, childModule, limits, control, entries) {
@@ -78,7 +86,7 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
   const instructionConfig = config => ({ ...config, projectRootMarkers: [] })
   // `<child home>/skills` is Fishball's private library (SK). It is deliberately NOT a root of the
   // standard provider: that stock reader follows symbolic links, so only the manager-scoped
-  // confined provider of src/slim/child/skills.js may read it.
+  // confined provider of fishball-core src/slim/child/skills.js may read it.
   const skillConfig = config => ({
     ...config, includeDefaultRoots: false, watchFollowSymlinks: false,
     customSkillDirs: [path.join(paths.agentsHome, 'skills'), path.join(paths.workspace, '.dsh', 'skills'), path.join(paths.workspace, '.agents', 'skills')],
@@ -115,14 +123,17 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       // Native Web supplies its standard services. PG-1 owns navigation and permission
       // enforcement; this composition alone is not a read-only or session-isolation boundary.
       { id: ROW.nativeWeb, name: path.join(path.dirname(childModule), NATIVE_WEB.adapterModule), required: true, config },
-      { id: ROW.page, name: path.join(path.dirname(childModule), NATIVE_WEB.pageDirectory, NATIVE_WEB.pagePackage, 'index.js'), required: true },
-      // SET's slim settings panel and its relay routes. Not required: a settings fault must not
-      // take the Fishball conversation down with it.
-      { id: ROW.settings, name: path.join(path.dirname(childModule), NATIVE_WEB.pageDirectory, NATIVE_WEB.settingsPackage, 'index.js') },
+      { id: ROW.page, name: path.join(path.dirname(childModule), CORE_UI, NATIVE_WEB.pagePackage, 'index.js'), required: true },
+      // SET's generic slim settings panel (core) and the instance's hosted-only sections with their
+      // relay routes, which register into the panel's extension point (R-HOST-11). Inserted here
+      // until I-PLACE places fishball-hosted-settings as a bundle. Not required: a settings fault
+      // must not take the Fishball conversation down with it.
+      { id: ROW.settings, name: path.join(path.dirname(childModule), CORE_UI, NATIVE_WEB.settingsPackage, 'index.js') },
+      { id: ROW.hostedSettings, name: path.join(path.dirname(childModule), ...NATIVE_WEB.hostedSettings, 'index.js') },
       // V2 RP: the Fishball Recommended tab on the child's native Plugins page. Child-only because
       // only this overlay inserts it; not required, so a failing tab never blocks the child boot.
-      // copyChildCode already copies the whole child-web tree and src/recommended.js it imports.
-      { id: ROW.recommend, name: path.join(path.dirname(childModule), NATIVE_WEB.pageDirectory, NATIVE_WEB.recommendPackage, 'index.js') },
+      // copyChildCode already copies core's ui tree and the src/recommended.js it imports.
+      { id: ROW.recommend, name: path.join(path.dirname(childModule), CORE_UI, NATIVE_WEB.recommendPackage, 'index.js') },
       { id: ROW.lifecycle, name: childModule, required: true, config },
       // The bridge, approvals and inbox rows are loader rows, not plugins the lifecycle row
       // starts itself: the loader's boot settlement only waits for its own entries, so a nested

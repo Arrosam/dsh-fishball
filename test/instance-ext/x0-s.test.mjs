@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { writeFile } from 'node:fs/promises'
 import { bootChild, filesContaining, messageText } from '../support/instance-ext.mjs'
-import { loadInstance } from '../support/body-soul-env.mjs'
+import { loadCore } from '../support/body-soul-env.mjs'
 
 const OWNER = 'fishball-watchdog'
 const SID = 'session-managed-1'
@@ -311,7 +311,7 @@ describe('X0-S X16 start rule (§2.3)', () => {
   })
 
   it('XS-P-03 SESSION_STARTS.attachTimeoutMs is the bridge request timeout, 30 s', async (t) => {
-    const module = await loadInstance('src/slim/child/ext/session-starts.js')
+    const module = await loadCore('src/slim/child/ext/session-starts.js')
     assert.equal(module.SESSION_STARTS.attachTimeoutMs, 30_000)
   })
 })

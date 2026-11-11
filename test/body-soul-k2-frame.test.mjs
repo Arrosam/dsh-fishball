@@ -39,10 +39,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
 import { describe, it } from 'node:test'
-import { BODY_SOUL, loadInstance } from './support/body-soul-env.mjs'
+import { BODY_SOUL, loadCore } from './support/body-soul-env.mjs'
 
 const contract = await import('fishball-connector/contract')
-const { languageOf, LANG: PAGE_LANG } = await loadInstance('src/slim/ui/i18n.js')
+const { languageOf, LANG: PAGE_LANG } = await loadCore('src/slim/ui/i18n.js')
 
 /**
  * The connector's framedUrl, cut from client.js with the declarations it reads (FRAME_UI and

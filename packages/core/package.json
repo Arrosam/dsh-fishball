@@ -1,0 +1,55 @@
+{
+  "name": "fishball-core",
+  "version": "0.1.0-alpha.0",
+  "description": "Fishball's core plugin: the Fishball manager, its slim app and persona, the private Skills tool, and its fishball-ui component (page, recommended tab and generic slim settings with a settings-section extension point).",
+  "license": "MIT",
+  "type": "module",
+  "//": "A DSH bundle of the Fishball plugin set (R-FB-01, design §1.2, §9.1). V3 R-CORE moved the slim child, persona, private Skills tool and child-web pages here unchanged; in a hosted child the instance copies src/ and ui/ as files (copyChildCode) until I-PLACE places this package. cordis.patch.yml is empty until F-GUARDS adds the guard rows, and ./client is a placeholder until the ui packages merge into it (S6, F-GUARDS). It never depends on fishball-instance (TQ-R3, R-BND-01).",
+  "exports": {
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "client.js",
+    "src/",
+    "ui/",
+    "cordis.patch.yml",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "//dependencies": "fishball-shared holds the modules core shares with the instance (R-ARCH-08); it is bundled, so the tarball carries it. fishball-connector is needed only for its ./contract export until F-LINK and F-STATUS replace it with the vendored ./mcp-schema (design §9.1); it is not bundled, because core's copy of it arrives with F-LINK.",
+  "dependencies": {
+    "fishball-connector": "0.1.0-alpha.0",
+    "fishball-shared": "0.1.0-alpha.0"
+  },
+  "bundleDependencies": [
+    "fishball-shared"
+  ],
+  "//peerDependencies": "Host packages are resolved from the running DSH installation, as for fishball-instance; cosmokit, dsh-app-boot and dsh-llm-pi-ai are the peers of the bundled fishball-shared modules core loads (provider-sync). '*' because engines.dsh is the real compatibility gate.",
+  "peerDependencies": {
+    "@deepseek-ai/cosmokit": "*",
+    "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-app-boot": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-llm-pi-ai": "*",
+    "@deepseek-ai/dsh-sandbox-policy": "*",
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-skill": "*",
+    "@deepseek-ai/dsh-skill-filesystem": "*",
+    "@deepseek-ai/dsh-system-prompt": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/dsh-user-approval": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}
