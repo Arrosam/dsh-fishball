@@ -76,6 +76,7 @@ export function createReactShim(observe) {
   let scheduled = false
   let renders = 0
   let tree = []
+  const treesByRoot = new Map()
 
   function createElement(type, props, ...children) {
     const { key = null, ...rest } = props ?? {}
@@ -178,6 +179,9 @@ export function createReactShim(observe) {
     }
     if (typeof type === 'string') {
       const { children, ...rest } = props
+      // A host element with a ref gets its element during render, before effects run, as React's
+      // commit does; only harnesses that model elements (observe.hostRef) see it.
+      if (rest.ref !== undefined && observe.hostRef) observe.hostRef(at + '/' + type, type, rest)
       return [{ tag: type, props: rest, children: renderNode(children, at + '/' + type, visited) }]
     }
     throw new Error('unsupported element type ' + String(type))
@@ -191,7 +195,12 @@ export function createReactShim(observe) {
     if (++renders > RP.renderGuard) throw new Error('render loop: more than ' + RP.renderGuard + ' renders')
     const visited = new Set()
     const next = []
-    for (const [key, build] of roots) next.push(...renderNode(build(), 'root:' + key, visited))
+    treesByRoot.clear()
+    for (const [key, build] of roots) {
+      const rendered = renderNode(build(), 'root:' + key, visited)
+      treesByRoot.set(key, rendered)
+      next.push(...rendered)
+    }
     tree = next
     for (const inst of [...instances.values()]) if (!visited.has(inst.id)) unmount(inst)
     for (const inst of [...instances.values()]) for (const run of inst.pending.splice(0)) run()
@@ -214,6 +223,10 @@ export function createReactShim(observe) {
     unmountRoot(key) { roots.delete(key); rerender() },
     rerender: schedule,
     tree: () => tree,
+    /** The rendered host tree of one root (mount key). */
+    treeOf: (key) => treesByRoot.get(key) ?? [],
+    /** The keys of the mounted roots. */
+    roots: () => [...roots.keys()],
     renders: () => renders,
   }
 }

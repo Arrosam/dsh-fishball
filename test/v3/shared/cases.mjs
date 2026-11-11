@@ -19,7 +19,7 @@ import {
   BUNDLED_FIELDS, DEP_FIELDS, DSH_FIELD, DSH_SIDE, EMBED_CONNECTOR_ALLOWED, FEATURES, JS_FILE, LATER, NPM, ROOT_WORKSPACE,
   RUNTIME_DEP_FIELD, SDK, SET_SIDE, SHARED_READER, V3, V3_NAMES,
 } from './constants.mjs'
-import { manifestNames, observe, readManifest } from './packages.mjs'
+import { manifestNames, npmTempRoot, observe, readManifest } from './packages.mjs'
 
 const NODE_MODULES_DIR = 'node_modules/'
 const has = (pkg) => readManifest(pkg.dir) !== null
@@ -28,9 +28,13 @@ const describeRef = (r) => `${r.file}: ${r.kind} ${JSON.stringify(r.specifier)}`
 const unitOf = async (name) => (await observe()).units.get(name)
 const manifestEdges = (manifest, names) => manifestNames(manifest, [...DEP_FIELDS, ...BUNDLED_FIELDS]).filter((e) => names.includes(e.name))
 
-/** One case per test, named "<case id> row <n> [SDK x] <partition>"; `todo` names the owning task. */
-function caseTest(sdk, id, row, title, fn, todo) {
-  const name = `${id} row ${row} [SDK ${sdk}] ${title}`
+/**
+ * One case per test, named "<case id> row <n> [SDK x] <partition>"; `todo` names the owning task.
+ * A part that does not start with a digit (a use-case flow such as "main 2" or "A4") is used as it is.
+ */
+export function caseTest(sdk, id, row, title, fn, todo) {
+  const part = /^\d/.test(String(row)) ? 'row ' + row : row
+  const name = `${id} ${part} [SDK ${sdk}] ${title}`
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, fn)
 }
@@ -45,9 +49,9 @@ async function assertNoEdges(from, names) {
 }
 
 /** DSH's own path inspection (the Plugins page's "add" check) on the installed SDK, offline, against a throwaway profile. */
-async function dshInspect(sdk, dir) {
+export async function dshInspect(sdk, dir) {
   const { PluginManager } = await import(pathToFileURL(path.join(SDK.versionsDir, sdk, SDK.managerEntry)).href)
-  const scratch = await mkdtemp(path.join(NPM.tempRoot, SDK.inspect.tempPrefix))
+  const scratch = await mkdtemp(path.join(npmTempRoot(), SDK.inspect.tempPrefix))
   try {
     fs.writeFileSync(path.join(scratch, 'package.json'), JSON.stringify({ name: 'fbtest-inspect-profile', dependencies: {} }))
     fs.writeFileSync(path.join(scratch, 'anchor.json'), JSON.stringify({ dependencies: {} }))
@@ -230,7 +234,7 @@ export function registerSharedCases(sdk) {
     for (const name of [V3.shared.name, ...SET_SIDE]) for (const f of units.get(name)?.files.filter((x) => !x.startsWith(NODE_MODULES_DIR)).filter(isDshSide) ?? []) elsewhere.push(name + '/' + f)
     assert.deepEqual(elsewhere, [])
   })
-  caseTest(sdk, 'HOST-EP-03', 2, 'the status-line module exists only in fishball-instance', null, LATER.statusLine)
+  // The status-line part of row 2 is R-CORE's (it re-homes that module): test/v3/core/cases.mjs.
 
   // ---- rows 8, 9 and the hosted settings bundle: later tasks ----
   caseTest(sdk, 'PLAT-EP-07', '7a', 'fishball-hosted-settings may import fishball-shared and then bundles it', null, LATER.hostedSettings)
