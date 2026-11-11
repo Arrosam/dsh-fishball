@@ -120,7 +120,7 @@ Requirements: R-UI-01…09, R-ARCH-03, R-ARCH-04, requirements §4 (rows 1–15)
 | 9 | the principal renames itself later | yes | new records use the new name; earlier records keep what they showed (K) |
 
 ### UIM-DT-01 — Install matrix (requirements §4)
-**Req:** §4, R-UI-01, R-UI-08, R-UI-09, R-ARCH-02, R-ARCH-04, R-FB-02, R-FB-06, R-FB-09, R-FB-10, R-HOST-05 · **Level:** integration (headless rows), e2e (UI columns) · **Flags:** P:S6
+**Req:** §4, R-UI-01, R-UI-08, R-UI-09, R-ARCH-02, R-ARCH-04, R-FB-02, R-FB-06, R-FB-09, R-FB-10, R-HOST-05 · **Level:** integration (headless rows), e2e (UI columns) · **Flags:** —
 
 Columns: MCP = endpoint served; Page = Fishball page in this DSH; Marks = marks + Hand over; Dots = fish dots; Tools = embed-UI tools contributed here; FB = a Fishball runs; Status = expected status code.
 
@@ -140,7 +140,7 @@ Columns: MCP = endpoint served; Page = Fishball page in this DSH; Marks = marks 
 | 9 | F → elsewhere | no | own UI | no | no | no | yes | guards as hosted; manual token |
 | 9b | F, blank | no | own UI | no | no | no | yes | `target-unset` |
 | 10a | F + U | no | own UI | no | no | no | yes | U inert |
-| 10b | F + I | no | own UI | no | no | no | yes | the `fishball-instance` row is disabled by core's guards; no nested child |
+| 10b | F + I | no | own UI | no | no | no | yes | after one restart (or the live recompose with HMR on), `fishball-instance` is off and core is last in `dsh.profile.bundles`; no nested child (R-FB-12) |
 | 11 | F + C | — | — | — | — | — | — | unsupported: no checks promised (excluded) |
 | 12 | C used by hosted + standalone | yes | yes | yes | yes | yes | two | both default to "Fishball" locally: the first holds it, the second is nameless (`ID: <id>`) until renamed; clashing rename `name-taken` |
 | 13 | feature plugins, no core | no | no | no | no | no | no | each logs `fishball-core-missing` once; boot succeeds |

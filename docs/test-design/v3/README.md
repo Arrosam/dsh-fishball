@@ -1,6 +1,6 @@
 # Fishball V3: test cases (requirements-only)
 
-Status: **draft, 2026-11-11; spikes S1, S2 (partial), S3, S4, S5, S7 folded in.** Written from [v3-requirements.md](<../../planning/v3-requirements.md>)
+Status: **draft, 2026-11-12; spikes S1–S7 and S7b folded in, K2 frozen.** Written from [v3-requirements.md](<../../planning/v3-requirements.md>)
 and [v3-design.md](<../../planning/v3-design.md>) at `e1e5577` (final design; first drafted at
 `ddd34c3`, then fast-forwarded and re-read for the Q33 change) only. No implementation code was
 read. The requirements are the authority. The design is used only where a requirement defers to it
@@ -37,12 +37,12 @@ The parallel-development task table that consumes these cases is
 
 ## Counts
 
-170 active cases (plus 3 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
+175 active cases (plus 3 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
 cases, not rows.
 
 | Area | UC | EP | BVA | DT | ST | Total |
 | --- | --- | --- | --- | --- | --- | --- |
-| AUTH (OAuth, tokens, pairing) | 10 | 10 | 6 | 8 | 5 | 39 |
+| AUTH (OAuth, tokens, pairing) | 11 | 11 | 7 | 9 | 5 | 43 |
 | NAME | 3 | 4 | 2 | 3 | 1 | 13 |
 | HAND (Hand over / Take back) | 4 | 2 | 0 | 2 | 2 | 10 |
 | EVT (events, interception) | 3 | 5 | 2 | 4 | 2 | 16 |
@@ -52,10 +52,10 @@ cases, not rows.
 | HOST (hosted mode) | 8 | 3 | 0 | 3 | 2 | 16 |
 | REM (standalone, remote) | 3 | 3 | 0 | 1 | 0 | 7 |
 | UIM (embed-UI, install matrix) | 5 | 2 | 0 | 2 | 0 | 9 |
-| PLAT (rest) | 7 | 7 | 2 | 3 | 1 | 20 |
-| **Total** | **57** | **45** | **19** | **31** | **18** | **170** |
+| PLAT (rest) | 7 | 7 | 2 | 4 | 1 | 21 |
+| **Total** | **58** | **46** | **20** | **33** | **18** | **175** |
 
-Levels (a case may span two): unit 57, integration 116, e2e 28. Provisional on a spike (`P:Sn`): 17.
+Levels (a case may span two): unit 58, integration 120, e2e 28. Provisional on a spike (`P:Sn`): 9.
 
 ## Conventions
 

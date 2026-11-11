@@ -122,18 +122,40 @@ Requirements: R-TOK-00…10, R-OA-01…10, R-ID-01…12, requirements §4.1. Con
   - E1. A request already past the token check when the revocation lands (the in-flight `approval_answer`) → it completes normally; the next request is refused.
 - **Postconditions:** after a disable E1 stays bound to `a` (R-ID-09); there is no unpair operation.
 
-### AUTH-UC-07 — A client tries to reach the MCP endpoint with a static credential
+### AUTH-UC-07 — Static credentials without the id header are refused
 **Req:** R-OA-10, R-TOK-01, R-TOK-00, R-TOK-04, R-TOK-06, R-REM-03 · **Level:** integration · **Flags:** —
 
 - **Actor:** an external MCP client with static headers only.
 - **Preconditions:** E1 enabled and bound to `agent-a`.
 - **Main flow:**
-  1. The client sends `Authorization: Bearer agent-a.<v(E1)>` → 401 `invalid_token`, identical to any invalid access token.
-  2. It sends `Authorization: Bearer <v(E1)>` → the same 401.
-  3. The connector's settings have no `directAccess` switch, and no setting enables a static form.
-- **Alternative flows:** A1. The client obtains an access token at the token endpoint with `agent-a` + `v(E1)` → MCP requests then succeed.
+  1. The client sends `Authorization: Bearer agent-a.<v(E1)>` with no `Fishball-Agent-Id` → 401 `invalid_token`, identical to any invalid access token.
+  2. It sends `Authorization: Bearer <v(E1)>` with no `Fishball-Agent-Id` → the same 401.
+  3. The connector's settings have no `directAccess` switch.
+- **Alternative flows:**
+  - A1. The client obtains an access token at the token endpoint with `agent-a` + `v(E1)` → MCP requests then succeed.
+  - A2. The client adds `Fishball-Agent-Id: agent-a` to request 2 → it succeeds as E1's pair (AUTH-UC-11).
 - **Exception flows:** E1. The header from a disallowed `Origin` → 403 before any token check.
-- **Postconditions:** the bearer value is never logged (grep); these requests count toward the per-client rate limit like any other.
+- **Postconditions:** the bearer value is never logged (grep); these requests count toward the per-client failure limit like any other.
+
+### AUTH-UC-11 — A `dsh-mcp-client` row connects with static token + id headers
+**Req:** R-OA-10, R-ID-13, R-ID-12, R-NAME-08, R-TOK-01, R-TOK-05, R-TOK-06 · **Level:** integration (a second DSH with a `dsh-mcp-client` row, both SDKs) · **Flags:** —
+
+- **Actor:** the owner of DSH M (connector) and of DSH N, where a `dsh-mcp-client` row points at M's connector.
+- **Preconditions:** the owner created E7 by hand in M's connector settings; E7 is enabled and unpaired.
+- **Main flow:**
+  1. The owner configures N's row with `headers: {Authorization: "Bearer <v(E7)>", "Fishball-Agent-Id": "dsh-n"}`.
+  2. The row's first request (`server/discover`) → M binds E7 to `dsh-n` atomically, with **no name**; the request succeeds.
+  3. `tools/list`, `tools/call` and `subscriptions/listen` succeed at full power; M's settings show E7 paired to **ID:** dsh-n.
+  4. Hours later (beyond 3600 s, fake clock) the same headers still work: no expiry, no refresh.
+- **Alternative flows:**
+  - A1. The agent calls `set_name("Mirror")` → it is shown as "Mirror".
+  - A2. M's connector restarts → the next request works with no new pairing.
+- **Exception flows:**
+  - E1. The owner disables E7 → the next request gets 401 and N's listen stream closes; re-enabling restores the same pair.
+  - E2. N's row is changed to `Fishball-Agent-Id: other` → 401 `invalid_token`, `error_description` `already-paired`; nothing changes.
+  - E3. A fresh entry E8 with `Fishball-Agent-Id: dsh-n` (already held by E7) → 401, `id-taken`; E8 stays unpaired.
+  - E4. A wrong token value with any id → 401 `invalid_token` with no detail.
+- **Postconditions:** the value appears in N's row config (the owner's choice) but in no log, response or page of M (grep).
 
 ### AUTH-UC-08 — A standard MCP client is set up with configuration only
 **Req:** R-OA-01, R-OA-02, R-OA-05, R-OA-09, R-CON-01, R-REM-03 · **Level:** integration · **Flags:** —
@@ -189,8 +211,9 @@ Every 401 row: `WWW-Authenticate: Bearer resource_metadata="<PRM URL>"`, `error=
 | 4 | expired AT | 401 `invalid_token` |
 | 5 | AT of a disabled / deleted / value-changed entry | 401 `invalid_token` |
 | 6 | AT issued for another resource (audience) | 401 `invalid_token` |
-| 7 | the raw token value `v(E1)` | 401 `invalid_token` (no direct access) |
-| 8 | `<id>.<v(E1)>` | 401 `invalid_token` (no direct access) |
+| 7 | the raw token value `v(E1)`, no `Fishball-Agent-Id` | 401 `invalid_token` |
+| 8 | `<id>.<v(E1)>` (with or without the id header) | 401 `invalid_token` |
+| 8b | `v(E1)` with `Fishball-Agent-Id` of its bound id | processed, full power (R-OA-10; AUTH-DT-10) |
 | 8a | an AT issued for this connector under another allowed host (other canonical URI) | 401 `invalid_token` (audience) |
 | 9 | valid pair-only AT | processed (pair-only power) |
 | 10 | valid full AT | processed |
@@ -232,6 +255,20 @@ Every 401 row: `WWW-Authenticate: Bearer resource_metadata="<PRM URL>"`, `error=
 | 7 | two entries sharing one `ref` | settings save refused `ref-duplicate`; previous settings stay |
 | 7a | two entries, distinct `ref`s, same value set by the user | not refused by the requirements (no rule): both authenticate as their own entry (K) |
 | 8 | ten generated values | all distinct; none appears in settings, logs or any response |
+
+### AUTH-EP-11 — Static header request classes
+**Req:** R-OA-10, R-TOK-01, R-ID-02 · **Level:** integration · **Flags:** —
+
+| # | Headers | Expected |
+| --- | --- | --- |
+| 1 | `Authorization: Bearer <access token>` only | the OAuth path |
+| 2 | `Authorization: Bearer <token value>` + `Fishball-Agent-Id: a` | the static path |
+| 3 | `Fishball-Agent-Id: a` with an **access token** as the bearer | 401 `invalid_token` (a static request needs the token value) |
+| 4 | `Fishball-Agent-Id` present but empty, or with a dot, or 65 characters | 401, `id-invalid` |
+| 5 | `Fishball-Agent-Id` sent twice with different values | 401, `id-invalid` |
+| 6 | `Fishball-Agent-Id` without `Authorization` | 401, no `error=` attribute |
+| 7 | header name in another case (`fishball-agent-id`) | treated the same (HTTP header names are case-insensitive) |
+| 8 | the token value in a query parameter | refused, never processed (R-TOK-02) |
 
 ### AUTH-EP-05 — Leakage on authentication failure
 **Req:** R-TOK-00, R-TOK-06, R-OA-03, R-ID-04 · **Level:** integration · **Flags:** —
@@ -389,6 +426,22 @@ Check on rules 1–4, 8: response identical (EP-05).
 
 See AUTH-UC-07. The id stays reserved.
 
+### AUTH-DT-10 — Static header access outcome
+**Req:** R-OA-10, R-ID-13, R-TOK-00, R-TOK-05 · **Level:** integration · **Flags:** —
+
+| Rule | Token value | Entry state | Id in `Fishball-Agent-Id` | Result | Changes |
+| --- | --- | --- | --- | --- | --- |
+| 1 | matches no entry | — | any | 401 `invalid_token`, no detail | none; failure counted |
+| 2 | matches a disabled / deleted entry, or a too-short value | — | any | same as rule 1 | none |
+| 3 | valid | enabled, unbound | valid, free | processed, full power | entry bound to the id, no name |
+| 4 | valid | enabled, unbound | valid, held by another entry | 401, `id-taken` | none |
+| 5 | valid | enabled, unbound | invalid | 401, `id-invalid` | none |
+| 6 | valid | enabled, bound to this id | same | processed, full power | `lastSeenAt` only |
+| 7 | valid | enabled, bound to another id | other | 401, `already-paired` | none |
+| 8 | valid | bound by the OAuth `pair` or the approval page, same id | same | processed (one pair, whichever path bound it) | none |
+| 9 | valid | enabled, bound; then disabled | same | the next request 401; open streams closed | — |
+| 10 | valid, 2 concurrent first requests on one unbound entry with different ids | unbound | a / b | exactly one binds; the other gets `already-paired` | one binding |
+
 ### AUTH-DT-04 — Revocation effect by item kind
 **Req:** R-TOK-05, R-ROUTE-06, R-ROUTE-04, R-OA-06, R-CON-05 · **Level:** integration · **Flags:** D§5.3, TQ-2 (decided A), TQ-5 (decided A)
 
@@ -496,9 +549,9 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 ## Browser authorization (requirements 1.16, 1.17, R-OA-11…20)
 
 ### AUTH-UC-10 — Someone authorizes a browser agent by entering a token
-**Req:** R-OA-11, R-OA-12, R-OA-13, R-OA-14, R-OA-16, R-OA-17, R-OA-18, R-OA-20, R-ID-03, R-ID-04, R-ID-12, R-NAME-06, R-TOK-00, R-TOK-04 · **Level:** e2e (page), integration (flow with a scripted browser) · **Flags:** P:S7b
+**Req:** R-OA-11, R-OA-12, R-OA-13, R-OA-14, R-OA-16, R-OA-17, R-OA-18, R-OA-20, R-ID-03, R-ID-04, R-ID-12, R-NAME-06, R-TOK-00, R-TOK-04 · **Level:** e2e (page), integration (flow with a scripted browser) · **Flags:** —
 
-- **Actor:** whoever holds a token (normally the DSH owner); an external MCP client with the authorization code flow and a Client ID Metadata Document at `https://agent.example/cimd.json` (`client_name: "Agent W"`, `redirect_uris: ["http://127.0.0.1:7777/cb"]`).
+- **Actor:** whoever holds a token (normally the DSH owner); an external MCP client with the authorization code flow (the DSH SDK client `@modelcontextprotocol/client` 2.2.0 on both SDKs, or the Python MCP SDK; DSH's own `dsh-mcp-client` has no OAuth and uses static header access instead, AUTH-UC-11) and a Client ID Metadata Document at `https://agent.example/cimd.json` (`client_name: "Agent W"`, `redirect_uris: ["http://127.0.0.1:7777/cb"]`).
 - **Preconditions:** the owner created entry E5 by hand in the connector's settings; E5 is enabled and unpaired; the approval listener is open.
 - **Main flow:**
   1. The client gets 401 at the MCP endpoint, reads both metadata documents, and sees `client_id_metadata_document_supported: true`, `code_challenge_methods_supported: ["S256"]` and `authorization_endpoint` on the approval listener.
@@ -507,10 +560,11 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
   4. The user types `v(E5)`, the id `agent-w-1`, leaves the name empty, and presses Authorize.
   5. E5 is bound to the id `agent-w-1` (client-id URL and redirect recorded separately), with **no name**, `pairedAt` set; the browser is redirected with `code`, `state` and `iss`. Wherever E5's principal is shown it reads `ID: agent-w-1` (R-NAME-08).
   6. The client exchanges the code with `code_verifier`, `redirect_uri`, `client_id` and `resource` → `scope: "fishball"`, `expires_in: 3600` and a refresh token; MCP calls succeed at full power, with no `pair` call.
-  7. An hour later the client uses the refresh token → a new access token and a **new** refresh token; nobody re-enters a token.
+  7. An hour later the client uses the refresh token → a new access token and a **new** refresh token; nobody re-enters a token. With the DSH SDK client's several calls in flight, each refreshes with the same token within 10 s → all get the identical successor (Q-S7B-1 B).
 - **Alternative flows:**
   - A1. **Cancel** → redirect with `error=access_denied`, `iss`, `state`; E5 stays unpaired.
   - A2. No `state` in the request → still valid; the response carries no `state`.
+  - A6. Every response to the client's redirect, success or error, carries `iss`; the redirect after Authorize or Cancel is a `303` and carries no token value.
   - A3. Someone other than the owner holds `v(E5)` and enters it → it authorizes the same way (the token is the proof).
   - A4. The user also types the name "Watcher" (free) → E5's principal is named "Watcher".
   - A5. The client's redirect is `http://127.0.0.1:7777/cb` but it now listens on port 50123 → `redirect_uri=http://127.0.0.1:50123/cb` is accepted (loopback, any port).
@@ -524,7 +578,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 - **Postconditions:** E5 shows in native settings as paired, with its client-id URL; disable, re-enable and delete work as for any entry; no entry was created by the page; `v(E5)` appears in no URL, redirect, code, page, response or log (grep), and the page response is `Cache-Control: no-store`.
 
 ### AUTH-DT-07 — Authorization request validation
-**Req:** R-OA-14, R-OA-13, R-OA-05 · **Level:** integration · **Flags:** P:S7b
+**Req:** R-OA-14, R-OA-13, R-OA-05 · **Level:** integration · **Flags:** —
 
 | Rule | `client_id` | `redirect_uri` | `response_type` | PKCE | `resource` | Result |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -532,13 +586,16 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 | 2 | not an `https:` URL with a path (`http://…`, `https://host` with no path, `agent-a`) | — | — | — | — | error **on the page**, no redirect |
 | 3 | document unreachable, not JSON, missing `client_name`/`redirect_uris`, or its `client_id` ≠ URL | — | — | — | — | error on the page, no redirect |
 | 4 | valid | not in the document, or differs in path, host or scheme (`http://127.0.0.1:7777/cb/`, `https://other.example/cb`) | — | — | — | error on the page, no redirect |
-| 4a | valid | a **loopback** redirect differing only in port (`http://127.0.0.1:50123/cb` for registered `:7777/cb`) | `code` | S256 | canonical | page shown (any port, OAuth 2.1 §2.3.1) |
+| 4a | valid | a **loopback** redirect differing only in port (`http://127.0.0.1:50123/cb` for registered `:7777/cb`) | `code` | S256 | canonical | page shown (port only, OAuth 2.1 §2.3.1) |
+| 4c | valid | `http://localhost:7777/cb` when only `http://127.0.0.1:7777/cb` is registered | — | — | — | error on the page (distinct hosts) |
 | 4b | valid | an `https:` redirect differing only in port | — | — | — | error on the page (exact match) |
 | 5 | valid | exact | `token` | S256 | canonical | redirect `unsupported_response_type` + `iss` |
 | 6 | valid | exact | `code` | missing | canonical | redirect `invalid_request` + `iss` |
 | 7 | valid | exact | `code` | `plain` | canonical | redirect `invalid_request` + `iss` |
 | 8 | valid | exact | `code` | S256 | missing or foreign | redirect `invalid_target` + `iss` |
 | 9 | document's `redirect_uris` contains an `http://` non-localhost URI | — | — | — | — | error on the page (the specification allows only localhost or https) |
+| 10 | document names `client_secret` or a secret-based `token_endpoint_auth_method` | — | — | — | — | error on the page (public clients only, CIMD §4.1) |
+| 11 | any redirected error (rules 5–8) | | | | | carries `error`, `iss` and `state` (if sent) |
 
 ### AUTH-ST-04 — A pending browser authorization and its code
 **Req:** R-OA-12, R-OA-14, R-OA-15 · **Level:** unit (fake clock) · **Flags:** —
@@ -560,7 +617,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 | 12 | any | connector restart | (gone) | pending requests and codes lost; bindings stay |
 
 ### AUTH-DT-09 — The approval listener's port
-**Req:** R-OA-20, R-OA-01, R-OA-02 · **Level:** integration (a second process holding the port) · **Flags:** K (default port), P:S7b (rules 3–4)
+**Req:** R-OA-20, R-OA-01, R-OA-02 · **Level:** integration (a second process holding the port) · **Flags:** K (default port; rule 4's rebind timing)
 
 | Rule | Port setting | Port free | Listener | Status | Metadata `authorization_endpoint` | MCP + machine exchange | Approval page |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -573,7 +630,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 | 7 | connector running | — | open the whole time; never closed between requests | — | — | — | — |
 
 ### AUTH-ST-05 — A browser client's refresh-token chain
-**Req:** R-OA-16, R-OA-06, R-OA-07, R-TOK-05 · **Level:** unit (fake clock), integration · **Flags:** K (in-memory or persisted, maximum chain lifetime)
+**Req:** R-OA-16, R-OA-06, R-OA-07, R-TOK-05 · **Level:** unit (fake clock), integration · **Flags:** K (maximum chain lifetime)
 
 RT1 is the refresh token from the code redemption; each refresh returns the next (RT2, RT3, …).
 
@@ -581,12 +638,17 @@ RT1 is the refresh token from the code redemption; each refresh returns the next
 | --- | --- | --- | --- | --- |
 | 1 | Chain(RT1 live) | `refresh_token` grant with RT1, same `client_id` and `resource` | Chain(RT2 live) | new AT + RT2; RT1 now used |
 | 2 | Chain(RT2 live) | grant with RT2 | Chain(RT3 live) | new AT + RT3 |
-| 3 | Chain(RT3 live) | grant with **RT1** (reuse) | Revoked | `invalid_grant`; RT3 and every AT of the chain now 401 / `invalid_grant` |
+| 3 | Chain(RT3 live) | grant with **RT1** (reuse, outside the 10 s window) | Revoked | `invalid_grant`; RT3 and every AT of the chain now 401 / `invalid_grant` |
+| 3a | Chain(RT2 live, RT1 spent < 10 s ago) | grant with RT1 again, same `client_id` and `resource` | Chain(RT2 live) | the **identical** response that issued RT2; nothing revoked (Q-S7B-1 B) |
+| 3b | Chain(RT2 live, RT1 spent < 10 s ago) | grant with RT1 from another `client_id` or for another `resource` | Revoked | reuse: chain revoked |
+| 3c | Chain(RT1 live) | grant with RT1, no `resource` | Chain(RT1 live) | `invalid_target`; nothing rotated |
 | 4 | Chain(RTn live) | grant with another `client_id` | Chain(RTn live) | `invalid_grant`; nothing rotated |
 | 5 | Chain(RTn live) | grant with a foreign `resource` | Chain(RTn live) | `invalid_target` |
 | 6 | Chain(RTn live) | the entry is disabled, deleted or its value changed | Revoked | next refresh `invalid_grant`; ATs 401 |
 | 7 | Revoked (entry disabled) | entry re-enabled | Revoked | no refresh token revived; the bound entry stays bound, so re-entering it on the page is `already-paired`: the owner needs a new token |
-| 8 | Chain(RTn live) | connector restart | Lost | refresh `invalid_grant` (in memory, K); authorize again with a new token |
+| 8 | Chain(RTn live) | connector restart | Chain(RTn live) | access tokens are gone (401); the client refreshes with RTn and gets RTn+1; the connector's storage holds RTn's **digest**, never its value (Q-S7B-3 decided A) |
+| 8a | Chain(RTn live, RTn−1 spent < 10 s before the restart) | RTn−1 presented after the restart | Revoked | reuse (the grace window is not persisted) |
+| 8b | Chain(RTn live) | entry disabled while the connector is down, then restart | Revoked | refresh `invalid_grant` |
 | 9 | (machine client) | `refresh_token` grant with any value | — | `invalid_grant` |
 
 ### AUTH-DT-08 — What entering a token on the page does
@@ -627,6 +689,20 @@ Rules 1–4 return byte-identical page bodies.
 | 5 | only DSH's listener forwarded, not the approval listener | machine exchange works; the browser flow cannot reach the page (documented in the README) |
 | 6 | the connector's own features | no tunnel, relay or exposure setting exists |
 
+### AUTH-BVA-08 — The refresh grace window (10 s)
+**Req:** R-OA-16 · **Level:** unit (fake clock) · **Flags:** K (10 s)
+
+RT1 spent at t = 0, producing RT2. Same `client_id` and `resource` unless stated.
+
+| # | RT1 presented again at | Expected |
+| --- | --- | --- |
+| 1 | 0.001 s | identical successor (RT2 and its AT) |
+| 2 | 9.999 s | identical successor |
+| 3 | 10 s | reuse: chain revoked, `invalid_grant` |
+| 4 | 10.001 s | reuse: chain revoked |
+| 5 | 5 s, by another `client_id` | reuse: chain revoked |
+| 6 | 3 concurrent at 0.1–0.3 s (the DSH SDK client's in-flight calls) | all three get the identical successor; chain intact |
+
 ### AUTH-BVA-07 — Code and request lifetimes
 **Req:** R-OA-14, R-OA-15 · **Level:** unit (fake clock) · **Flags:** K (60 s and 10 min frozen at V3-K)
 
@@ -640,7 +716,7 @@ Rules 1–4 return byte-identical page bodies.
 | 6 | Authorize at 601 | expired |
 
 ### AUTH-EP-08 — Client ID Metadata Document fetch limits (SSRF)
-**Req:** R-OA-13 · **Level:** integration (stub HTTP servers) · **Flags:** K (size and time bounds)
+**Req:** R-OA-13 · **Level:** integration (stub HTTP servers) · **Flags:** K (time bound; size 5 KiB decided per spec)
 
 | # | `client_id` URL resolves to | Expected |
 | --- | --- | --- |
@@ -649,7 +725,10 @@ Rules 1–4 return byte-identical page bodies.
 | 3 | RFC 1918, link-local (`169.254.0.0/16`, `fe80::/10`), unique-local addresses | refused |
 | 4 | a public name that redirects to a private address | refused |
 | 5 | `http:` scheme | refused |
-| 6 | body over the size bound / slower than the time bound | refused |
+| 6 | body over 5 KiB / slower than the time bound | refused |
+| 6a | the document's host answers with a redirect | refused (no redirects followed) |
+| 6b | a client-id URL with a dot segment, fragment or userinfo | refused (must survive WHATWG parsing unchanged) |
+| 6c | a fetch that failed | not cached; the next request fetches again |
 | 7 | cache headers `max-age=60`, second request at 30 s | served from cache, no fetch |
 
 ### AUTH-EP-09 — Host header and issuer selection (spike S1)

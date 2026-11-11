@@ -46,29 +46,35 @@ R-BRD-01, 02, R-FN-01, R-MIG-01…05, R-COMPAT-01, R-SEC-01…04. Conventions: [
 - **Postconditions:** "connected" is not a timer on the answer.
 
 ### PLAT-UC-04 — Installing the plugin set makes an ordinary DSH Fishball
-**Req:** R-FB-01, R-FB-02, R-FB-09, R-FB-10, R-ARCH-01, R-ARCH-06 · **Level:** integration (composition), e2e (page) · **Flags:** P:S6
+**Req:** R-FB-01, R-FB-02, R-FB-09, R-FB-10, R-FB-12, R-FB-13, R-WD-16, R-ARCH-01, R-ARCH-06 · **Level:** integration (composition), e2e (page) · **Flags:** —
 
 - **Actor:** owner of an ordinary DSH.
-- **Main flow:** install the four tarballs natively and restart → one Fishball manager session; the A-lite page (sidebar, navigation, new-session entries hidden and not focusable; shortcuts remapped or unbound); effective read-only with the private Skills exception; no new sessions can be created; the `fishball-recommended` tab; slim settings. DSH's plugin list shows four Fishball entries and **no** separate `fishball-ui`.
+- **Main flow:** install the four tarballs natively and restart → one Fishball manager session; the A-lite page (sidebar, navigation, new-session entries hidden and not focusable; shortcuts remapped or unbound); effective read-only with the private Skills exception; no new sessions can be created; the `fishball-recommended` tab; slim settings. DSH's plugin list shows four Fishball entries and **no** separate `fishball-ui`. `agentPresets.list()` is `[fishball, watchdog]` (`watchdog` if installed), default `fishball`; the four DSH-shipped presets (`standard`, `ptc`, `cordis`, `minimal`) are **switched off but still present** (not deleted); a new manager session runs `fishball` with exactly `read`, `read_image` and `working_directory`, read-only, and resumes the same in a new process (core checks its tool list, R-FB-13).
 - **Alternative flows:**
-  - A1. The owner overrides a guard row (e.g. re-enables `ui-subagent`) in their profile → core keeps running, status `guards-overridden` naming that guard, one line on the page's status strip and one notice to Fishball; restoring it clears the report at the next check (app ready or any settings change).
+  - A1. The owner overrides a guard row (e.g. re-enables `ui-subagent`, or switches a DSH-shipped agent preset back on) in their profile or the Plugins page → core keeps running, status `guards-overridden` naming that guard, one line on the page's status strip and one notice to Fishball; restoring it clears the report at the next check (app ready, `settings/document-updated` or `plugin-manager/changed`), with nothing published before app ready.
   - A2. The owner disables `fishball-core` → Fishball and its guards are off.
+  - A3. The owner installed core **first** (DSH's native install order) → at its first start core moves itself to the end of `dsh.profile.bundles`. With HMR on, DSH recomposes within seconds and `fishball-instance` (if installed) turns off; with HMR off, it is off from the next start. Until then core reports `guards-overridden` naming it. If the owner later moves core first again, core does not move it back and keeps reporting (R-FB-12).
 - **Exception flows:** E1. Nothing re-applies, blocks or hides an overridden guard.
 - **Postconditions:** no DSH code, bundle or other plugin's files were patched.
 
-### PLAT-UC-05 — V2 user upgrades to V3
-**Req:** R-MIG-01, R-MIG-02, R-MIG-03, R-MIG-04, R-MIG-05 · **Level:** integration (+ e2e for the page) · **Flags:** P:S6
+### PLAT-UC-05 — Upgrading to V3: no migration, leftover sessions archived
+**Req:** R-MIG-01, R-MIG-02, R-MIG-03, R-MIG-04, R-MIG-05, R-FB-13 · **Level:** integration (+ e2e for the page) · **Flags:** —
 
-- **Actor:** a V2 user with C + I in one DSH and a V2 child profile.
+- **Actor:** a user with C + I in one DSH and an earlier child profile holding a leftover manager session (recorded on a now switched-off preset such as `standard`).
 - **Main flow:**
   1. Upgrade the connector → V2 settings V3 still uses keep their values; dropped ones are ignored and not rendered; one log line points at embed-UI.
-  2. Upgrade the instance → first V3 child start places all four set members and `fishball-hosted-settings` (core on, features and the hosted settings bundle on at first placement); a new hosted token is created and paired with no manual step.
-  3. Install embed-UI → the Fishball page and session list work; child history, Skills and child settings are intact.
-- **Alternative flows:** A1. The V2 child had a manually installed board in state off → placement replaces the copy and keeps it off (D§10).
+  2. Upgrade the instance → the first V3 child start places all four set members and `fishball-hosted-settings` with core last (core on, features and the hosted settings bundle on at first placement); a new hosted token is created and paired with no manual step.
+  3. The leftover session is **archived** (`workspaceController.archiveSession`), not migrated or resumed; the process does not crash, and the Fishball route keeps answering.
+  4. A new manager session is created on `fishball`: tools exactly `read`, `read_image`, `working_directory`; read-only.
+  5. Install embed-UI → the Fishball page and session list work; Skills and child settings are intact.
+- **Alternative flows:**
+  - A1. The child restarts → the leftover is still archived; the manager session resumes in a new process with the same three tools, read-only (checked by tool list, R-FB-13).
+  - A2. The V2 child had a manually installed board in state off → placement replaces the copy and keeps it off (D§10).
 - **Exception flows:**
   - E1. V3 core against a V2 connector → 404 on the MCP route; status `TARGET_INCOMPATIBLE`; no delegation happens.
   - E2. V2 instance against a V3 connector → `connector-upgrade-required`.
-- **Postconditions:** nothing in the child's history is lost; no compatibility shim exists.
+  - E3. Resolving the leftover directly → refused (`gateway/internal`), no throw escapes, nothing crashes.
+- **Postconditions:** no earlier session is resumed or migrated; the leftover's log stays on disk as an archived session (DSH has no public delete); no compatibility shim exists.
 
 ### PLAT-UC-06 — The board keeps records and offers export on removal
 **Req:** R-BRD-01, R-BRD-02, R-HOST-02 · **Level:** integration · **Flags:** —
@@ -216,7 +222,7 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 
 | Rule | In the instance's placement record | Present in child profile | User's last state | Compatible | Result after start |
 | --- | --- | --- | --- | --- | --- |
-| 1 | no (first placement) | no | — | yes | placed, **on** |
+| 1 | no (first placement) | no | — | yes | placed, **on**, in the fixed order (core last) |
 | 2 | yes | yes | on | yes | on |
 | 3 | yes | yes | off | yes | off (disable survives restart and upgrade) |
 | 4 | yes | no (deleted while off) | off | yes | placed again **off** |
@@ -237,6 +243,20 @@ Applies equally to core (R-FB-10). `fishball-hosted-settings` follows the same r
 | 2 | on | — | — | — | ok; nothing reported (a feature that is not installed is not "missing", TQ-17 decided) | no |
 | 3 | on | on | on | on, incompatible (skipped) | reports Watchdog skipped | once per start |
 | 4 | on | on | on | off (owner) | reports nothing missing (K) | no |
+
+### PLAT-DT-04 — Core's bundle order and whether its guards apply
+**Req:** R-FB-12, R-FB-09, R-FB-02 · **Level:** integration (a real DSH per SDK) · **Flags:** —
+
+| Rule | Mode | `dsh.profile.bundles` before start | Core's first start in this DSH | Result after the start (and restart, if asked) | Report |
+| --- | --- | --- | --- | --- | --- |
+| 1 | hosted (HMR off) | written by the instance, core last | — | guards apply from the child's first start; `fishball-instance` never started in the child | ok |
+| 2 | standalone | core after every guarded bundle | yes | nothing moved, no restart prompt | ok |
+| 3a | standalone, HMR on | core first (native install order) | yes | core moves itself last; DSH recomposes live within seconds; `fishball-instance` (already started once) is then off | `guards-overridden` until the recompose, then ok |
+| 3b | standalone, HMR off | core first | yes | core moves itself last; the instance stays on until the next start; from then on it is never started | `guards-overridden` until the restart, then ok |
+| 3c | any | core already last | later starts | nothing written (`unchanged`) | ok |
+| 4 | standalone | the owner moved core first again later | no | not moved back | `guards-overridden` naming the guards that no longer apply |
+| 5 | standalone | a guarded bundle installed after core's first start | no | not moved | `guards-overridden` for that bundle's guarded rows |
+| 6 | any | — | — | core never changes another bundle's own on/off state | — |
 
 ### PLAT-DT-03 — Compatibility matrix
 **Req:** R-COMPAT-01, R-ARCH-06 · **Level:** integration (each row is a full suite run), e2e (UI rows) · **Flags:** —

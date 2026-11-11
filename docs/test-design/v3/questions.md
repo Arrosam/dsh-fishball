@@ -518,3 +518,52 @@ Recommendation A (standalone Fishballs will meet it). Cases: PLAT-DT-03 rule 5.
    Cases: PLAT-DT-03 rule 5.
 
 **No question is open.** Every TQ, spike and design question so far is decided.
+
+## Spike S6 decisions (from `86800d2`, PARTIAL)
+
+The user, verbatim: "1B，2B并且删除掉自带的所有预设，Watchdog也是一个预设。不会有旧会话，根本没人下载过第二版，直接丢弃之前的会话。",
+corrected: "DSH自带的预设关掉，不要删掉".
+- **Q-S6-1 = B:** core puts its own bundle after the bundles it guards (hosted: the instance writes
+  core last; standalone: core moves itself once at first start and asks for one restart). R-FB-12;
+  tasks I-PLACE, F-GUARDS. Cases: PLAT-DT-04 (new), PLAT-UC-04 A3, HOST-UC-01 step 1.
+- **Q-S6-2 = B, amended:** core's own `fishball` agent preset is the default; every DSH-shipped agent
+  preset is **switched off, not deleted**; Watchdog's side sessions run its own `watchdog` preset.
+  R-FB-02, R-WD-16; design §5a.2, §7.1. Cases: PLAT-UC-04 main flow, WD-EP-04 row 5.
+- **No V2 sessions:** earlier manager sessions are discarded, not resumed. R-MIG-01/02; PLAT-UC-05.
+- **Q-S6-3 [impl]:** `ctx.approval.config.policy` read directly, one test per SDK. R-FB-09.
+- **Q-S6-4:** 0.2.2-rc.1 counts as 0.2.2.
+Settled by S6: REM-UC-01, HOST-UC-01, PLAT-UC-04 (except A3), UIM-DT-01 rows 9, 9b, 10a, 13b, 14.
+S6 round 2 (`7c2230e`, PASS on both SDKs) freed UIM-DT-01 row 10b, PLAT-UC-04 A3, PLAT-UC-05 and PLAT-DT-04.
+
+## Spike S7b decisions (from `141ac3b`, PARTIAL: server 45/45 on both SDKs; `dsh-mcp-client` has no OAuth)
+
+Decided per spec (rule 1.18): `iss` on every authorization response, errors included; a bad
+`client_id` or `redirect_uri` shown on the page, never redirected; loopback redirects differ in port
+only and `localhost` ≠ `127.0.0.1`; CIMD documents may not carry a secret, the fetch is https only,
+refuses private addresses after resolution, follows no redirects, is capped at 5 KiB, caches no
+errors; 303 after the form POST; no `offline_access` advertised; `resource` required on the refresh
+grant. Now R-OA-02, R-OA-11, R-OA-13, R-OA-14, R-OA-16; design §5.5, §5.5a.
+**Q-S7B-1 [impl], decided by Fishball, B:** a 10 s idempotent refresh window (same `client_id`, same
+`resource` → identical successor); later reuse still revokes. R-OA-16 (4a). Cases: AUTH-BVA-08 (new),
+AUTH-ST-05 rows 3a–3c, AUTH-UC-10 step 7.
+**Q-S7B-3 decided A** (the user: "2.A"): refresh tokens persist as digests only, so a browser agent keeps
+refreshing after a connector restart. R-OA-16 (5), R-OA-05; design §5.5a. Cases: AUTH-ST-05 rows 8–8b.
+**Q-S7B-2 decided** (the user: "那就也接受直接贴token+id的请求头"): static `Authorization: Bearer <token value>` +
+`Fishball-Agent-Id: <id>` headers, pairing on first use, no expiry, revoked with the entry; the second
+documented departure from the specification. R-OA-10 (reinstated in this form), R-TOK-01, §1.25;
+design §5.5. Cases: AUTH-UC-07, AUTH-UC-11, AUTH-EP-02 rows 7–8b, AUTH-EP-11, AUTH-DT-10.
+
+**Q-HDR-1 (open).** Must an entry opt in to static header access? Today any enabled entry accepts it.
+Options: A any entry (simplest, the user's words); B a per-entry switch, off by default (like the old
+`directAccess`, so a leaked value works only where enabled). Recommendation: B.
+S7b flags dropped: AUTH-UC-10, AUTH-DT-07, AUTH-DT-09 rules 3–4 (rule 4's timing stays K), REM-UC-03 E5.
+
+**S6 round 2 (`7c2230e`, PASS).** Reorder: core moves itself last with DSH's public profile functions;
+the guard holds at once with HMR, after one restart without it; the instance writes core last in a
+hosted child; `guards-overridden` until the guard holds (R-FB-12; once only, never against the
+owner, R-FB-09). Presets: the four shipped ones off, `fishball` and `watchdog` offered; the manager
+has `read`, `read_image`, `working_directory`, read-only, and resumes the same. **[impl] Q-S6-5:**
+discard = archive (no public delete); no crash; still archived after a restart (R-MIG-01).
+**[impl] Q-S6-6:** on resume core checks the tool list, not the preset name (rc.5 cannot report it;
+R-FB-13). Cases: PLAT-UC-05 rewritten (no migration, archive leftovers), PLAT-UC-04 main flow and A3,
+PLAT-DT-04 rows 1, 3a–3c, UIM-DT-01 row 10b, WD-EP-04 row 5.
