@@ -62,8 +62,10 @@ const withKeyword = ([keyword, value]) => ({ ...FIXTURE.valid.inputSchema, [keyw
 
 export function registerK2Cases(sdk) {
   // ---- The module itself (K2 freeze: apiVersion, defineTool, signatures, vocabularies) ----
-  caseTest(sdk, 'EXT-EP-01', 'K2', 'fishball-connector/tools resolves and loads on this SDK', () => {
+  // import.meta.resolve does not check that the target exists, so the row also imports the module.
+  caseTest(sdk, 'EXT-EP-01', 'K2', 'fishball-connector/tools resolves and loads on this SDK', (mod) => {
     assert.ok(resolveToolsFile())
+    assert.ok(Object.keys(mod).length > 0, 'the module exports nothing')
   })
   caseTest(sdk, 'EXT-EP-01', 'K2', 'apiVersion is frozen as 1 (design §13.2)', (mod) => {
     const versions = leaves(mod).filter((l) => API.versionPath.test(l.path)).map((l) => l.value)
