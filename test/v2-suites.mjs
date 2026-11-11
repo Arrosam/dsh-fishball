@@ -88,6 +88,9 @@ export const V2_SUITES = Object.freeze({
     file('test/instance-ext/x0-g.test.mjs', DISPOSITION.v3, 'Watchdog supervision side agents (X13)'),
     file('packages/connector/test/instance-ext/mcp-feasibility.test.mjs', DISPOSITION.v3, 'MCP-S1/S2/S3 feasibility'),
     file('test/native-production-preflight.test.mjs', DISPOSITION.ownRunner, 'fails closed outside test/native-production-runner.mjs'),
+    // V3 K2 (freeze of fishball-connector/tools, K-flagged EXT cases); run with test/run-v3.mjs.
+    file('test/v3/k2/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
+    file('test/v3/k2/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
