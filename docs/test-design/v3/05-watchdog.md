@@ -10,7 +10,7 @@ integration (real child + connector).
 ## Use Cases
 
 ### WD-UC-01 — Watchdog decides a supervised permission request
-**Req:** R-WD-03, R-WD-09, R-WD-12, R-INT-07, R-WD-00, R-INT-06 · **Level:** integration · **Flags:** P:S3
+**Req:** R-WD-03, R-WD-09, R-WD-12, R-INT-07, R-WD-00, R-INT-06 · **Level:** integration · **Flags:** —
 
 - **Actor:** Watchdog (as part of Fishball's principal).
 - **Preconditions:** Fishball manages S1; Watchdog is healthy and has a side session claiming S1.
@@ -55,7 +55,7 @@ integration (real child + connector).
 - **Postconditions:** no `turn-finished` or `state` event was needed or consumed by Watchdog.
 
 ### WD-UC-04 — Watchdog fails and falls back to Fishball
-**Req:** R-WD-07, R-INT-04, R-INT-07, R-WD-08 · **Level:** integration · **Flags:** P:S3
+**Req:** R-WD-07, R-INT-04, R-INT-07, R-WD-08 · **Level:** integration · **Flags:** —
 
 - **Actor:** Watchdog / `fishball-core`.
 - **Preconditions:** Watchdog supervises S1 and S2; holds an accepted, undecided permission offer O1 of S1.
@@ -64,6 +64,7 @@ integration (real child + connector).
   2. Watchdog is effective off at once: its filters turn false / registrations disposed; claims released; O1 goes to Fishball (woken); sends pass; stale callbacks are fenced (a late Watchdog commit for O1 is not sent).
   3. Fishball gets **one** "watchdog is down" notice through in-session communication (not MCP).
   4. S1's next permission request goes to Fishball.
+  5. **Oracle (S3 `b4dca86`):** an answer Watchdog already had in flight when it failed is either **committed** (no Fishball wake for that item) or **fenced** (not committed; Fishball woken once for it), **never both**. *(The fence API, `ctl.commit(send)`, is pending Q-S3-2 with S2-Q1.)*
 - **Alternative flows:**
   - A1. Watchdog supervises zero sessions when it fails → the notice is still sent.
   - A2. It goes down, recovers, goes down again → two notices.
@@ -249,7 +250,7 @@ Interval 1740 s; previous patrol of S1 at t = 0 with brief B0; no permission req
 ## State Transitions
 
 ### WD-ST-01 — Watchdog health
-**Req:** R-WD-07, R-INT-07, R-FB-07, R-HOST-08 · **Level:** unit · **Flags:** P:S3
+**Req:** R-WD-07, R-INT-07, R-FB-07, R-HOST-08 · **Level:** unit · **Flags:** —
 
 States: **NotLoaded**, **Starting**, **Healthy**, **Down**, **Off** (disabled).
 

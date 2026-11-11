@@ -6,7 +6,7 @@ Requirements: R-UI-01…09, R-ARCH-03, R-ARCH-04, requirements §4 (rows 1–15)
 ## Use Cases
 
 ### UIM-UC-01 — The user opens the hosted Fishball page
-**Req:** R-UI-01, R-UI-02, R-UI-03, R-HOST-06, R-UI-06 · **Level:** e2e · **Flags:** P:S4
+**Req:** R-UI-01, R-UI-02, R-UI-03, R-HOST-06, R-UI-06 · **Level:** e2e · **Flags:** —
 
 - **Actor:** DSH owner in H with C + I + U (row 8).
 - **Preconditions:** the child is running.
@@ -20,19 +20,20 @@ Requirements: R-UI-01…09, R-ARCH-03, R-ARCH-04, requirements §4 (rows 1–15)
 - **Exception flows:**
   - E1. The child is down → status shows the code; Retry restarts it.
   - E2. Replaying a used admission URL → rejected by the child.
-- **Postconditions:** no credential or token in the frame URL, page, or network responses; no ticket in logs; embed-UI stores no secret.
+  - E3. The user opens the host DSH as `localhost` while the child is served on `127.0.0.1` (or the reverse) → the frame gets HTTP 401, because the child's login cookie is `SameSite=Strict` (S4 `b9809b7`). *(Expected result pending the S4 question on the child's hostname following the main page's host.)*
+- **Postconditions:** the child turns the single-use ticket into **its own login cookie** through DSH's public API, so the browser never sees the child's launch token (S4); no credential or token in the frame URL, page, or network responses; no ticket in logs; embed-UI stores no secret.
 
 ### UIM-UC-02 — Embed-UI in a DSH with a connector but no instance (Q18)
-**Req:** R-UI-08, R-UI-01, R-UI-04, R-UI-05 · **Level:** e2e · **Flags:** P:S4
+**Req:** R-UI-08, R-UI-01, R-UI-04, R-UI-05 · **Level:** e2e · **Flags:** —
 
 - **Actor:** DSH owner, row 6 (C + U).
-- **Main flow:** marks with principal names and Hand over / Take back (naming the designated Fishball) are shown; the sidebar fish shows attention dots; embed-UI's attention tools are contributed.
+- **Main flow:** marks with principal names (or `ID: <id>`), the Hand over control (one button naming the one connected agent, or the "Handover to…" dropdown) and Take back are shown; the sidebar fish shows attention dots; embed-UI's attention tools are contributed.
 - **Alternative flows:** A1. The fish has no page to open: clicking it opens nothing (K: no-op or a hint).
 - **Exception flows:** E1. One `instance-missing` diagnostic; no frame registered.
 - **Postconditions:** no Fishball page or frame exists.
 
 ### UIM-UC-03 — Embed-UI with a remote-target instance (Q4)
-**Req:** R-UI-09, R-UI-01, R-FN-01 · **Level:** e2e · **Flags:** P:S4
+**Req:** R-UI-09, R-UI-01, R-FN-01 · **Level:** e2e · **Flags:** —
 
 - **Actor:** DSH owner, row 7 (I + U, remote target).
 - **Main flow:** the Fishball page, status and Retry work; the frame is the **local** child.
@@ -43,7 +44,7 @@ Requirements: R-UI-01…09, R-ARCH-03, R-ARCH-04, requirements §4 (rows 1–15)
 ## Equivalence Partitioning
 
 ### UIM-EP-01 — What embed-UI registers by service availability
-**Req:** R-UI-01, R-UI-04, R-UI-08, R-UI-09 · **Level:** integration · **Flags:** P:S4
+**Req:** R-UI-01, R-UI-04, R-UI-08, R-UI-09 · **Level:** integration · **Flags:** —
 
 | # | `fishballChild` | `fishballConnectorHandover` | `fishballConnectorTools` | Registers |
 | --- | --- | --- | --- | --- |
@@ -57,7 +58,7 @@ Requirements: R-UI-01…09, R-ARCH-03, R-ARCH-04, requirements §4 (rows 1–15)
 ## Decision Tables
 
 ### UIM-DT-01 — Install matrix (requirements §4)
-**Req:** §4, R-UI-01, R-UI-08, R-UI-09, R-ARCH-02, R-ARCH-04, R-FB-02, R-FB-06, R-FB-09, R-FB-10, R-HOST-05 · **Level:** integration (headless rows), e2e (UI columns) · **Flags:** P:S4, P:S6
+**Req:** §4, R-UI-01, R-UI-08, R-UI-09, R-ARCH-02, R-ARCH-04, R-FB-02, R-FB-06, R-FB-09, R-FB-10, R-HOST-05 · **Level:** integration (headless rows), e2e (UI columns) · **Flags:** P:S6
 
 Columns: MCP = endpoint served; Page = Fishball page in this DSH; Marks = marks + Hand over; Dots = fish dots; Tools = embed-UI tools contributed here; FB = a Fishball runs; Status = expected status code.
 
@@ -79,7 +80,7 @@ Columns: MCP = endpoint served; Page = Fishball page in this DSH; Marks = marks 
 | 10a | F + U | no | own UI | no | no | no | yes | U inert |
 | 10b | F + I | no | own UI | no | no | no | yes | the `fishball-instance` row is disabled by core's guards; no nested child |
 | 11 | F + C | — | — | — | — | — | — | unsupported: no checks promised (excluded) |
-| 12 | C used by hosted + standalone | yes | yes | yes | yes | yes | two | names "Fishball" / "Fishball-2"; clashing rename `name-taken` |
+| 12 | C used by hosted + standalone | yes | yes | yes | yes | yes | two | both default to "Fishball" locally: the first holds it, the second is nameless (`ID: <id>`) until renamed; clashing rename `name-taken` |
 | 13 | feature plugins, no core | no | no | no | no | no | no | each logs `fishball-core-missing` once; boot succeeds |
 | 13b | core only | no | own UI | no | no | no | yes | board, fold-notify, Watchdog absent |
 | 14 | any F, guard overridden | — | yes | — | — | — | yes | `guards-overridden` naming the guard |

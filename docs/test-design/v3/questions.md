@@ -13,7 +13,7 @@ The prefix `TQ` avoids clashing with the requirements' own `OQ-14` (first commit
 | --- | --- | --- | --- | --- |
 | TQ-1 | Direct-access split vs ids containing a dot | **decided C** (2026-11-11) | C-OAUTH, F-PAIR | AUTH-UC-07, AUTH-BVA-04, AUTH-DT-03 |
 | TQ-2 | Revocation: fate of item kinds §5.3 does not name; designated role | **decided A** (2026-11-11) | C-REVOKE | AUTH-UC-06, AUTH-DT-04 |
-| TQ-8 | Hand over edge cases: designated not connected / disabled; already managed | open | C-ROUTE, U-MARKS | HAND-UC-01, HAND-DT-01, HAND-ST-01 |
+| TQ-8 | Hand over edge cases: designated not connected / disabled; already managed | **superseded** by 1.20 (chosen target); edges now Q-HO-1 | C-ROUTE, U-MARKS | HAND-UC-01, HAND-DT-01, HAND-ST-01 |
 | TQ-10 | Watchdog decision for "beyond scope, not dangerous, not high-risk" | open | WD-DECIDE | WD-DT-01 |
 | TQ-11 | Watchdog supervision when Fishball stops managing the session | open | WD-PATROL | WD-ST-02 |
 | TQ-9 | First patrol after a new claim or resume | open | WD-PATROL | WD-UC-03, WD-BVA-02, WD-ST-02 |
@@ -21,7 +21,7 @@ The prefix `TQ` avoids clashing with the requirements' own `OQ-14` (first commit
 | TQ-4 | Token creation edge cases: minimum length value, store not writable, shared `ref` | **decided A** (2026-11-11) | C-TOKENS | AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03 |
 | TQ-5 | Access tokens across a connector restart; in-flight request at revocation | **decided A** (2026-11-11) | C-OAUTH | AUTH-UC-03, AUTH-UC-06 |
 | TQ-6 | Newline in names; page text for `name-invalid` | open | C-PAIR, F-PAIR | NAME-UC-02, NAME-EP-01, NAME-DT-03 |
-| TQ-7 | Does a disabled entry still hold its name? | open | C-PAIR | NAME-BVA-02 |
+| TQ-7 | Does a disabled entry still hold its name? | open (default series gone with Q-NAME-1; still decides `name-taken` for a disabled entry's name) | C-PAIR | NAME-BVA-02 |
 | TQ-12 | `notifyWhenFinished` passed by an old client: refuse or ignore | open | C-TOOLS | WATCH-UC-01 |
 | TQ-13 | Two plugin names normalising to one namespace | open | C-EXT | EXT-EP-02 |
 | TQ-14 | Contributor `emit` with an unknown `sessionId` | open | C-EXT | EXT-DT-02 |
@@ -248,3 +248,151 @@ core, the instance and the bundles). Unchanged: it imports no other V3 package; 
 modules more than one package actually uses; importing it loads only the library, so the host DSH
 still loads no Fishball-set module (R-BND-01). Now R-ARCH-08 rules 1–6, glossary, design §9.1;
 task DOCS. Cases: PLAT-EP-07 rows 5–8.
+
+## Browser authorization and the MCP-spec rule (2026-11-11)
+
+Decisions recorded in requirements §1.16 (browser flow, no direct access, page on its own port) and
+§1.17 (follow the MCP specification on the external surface: "尽量遵循MCP的规范，对外的沟通不要用MCP规范不推荐的形式").
+Settled by the specification (no user question; cited in the requirements as [spec]):
+- **Registration (Q-OA-4):** Client ID Metadata Documents only; dynamic registration is deprecated
+  (Client Registration § Dynamic Client Registration). Machine clients are pre-registered.
+- **Which endpoints move (Q-OA-6):** only the approval page and its form; metadata and the token
+  endpoint stay on DSH's listener; one issuer (Authorization Server Discovery).
+- **Issuer and resource (Q-S7-2, S1 Q2):** follow the checked host; the metadata `issuer` equals the
+  issuer used to build its well-known URL (Authorization Server Discovery); canonical URI per
+  Authorization § Canonical Server URI.
+- **`fishball_pairing` (Q-S7-3):** removed; standard `scope` only (`fishball` / `fishball:pair`).
+- **`iss` in authorization responses**, `authorization_response_iss_parameter_supported: true`
+  (Authorization § Authorization Response Validation, SHOULD).
+- **`scope="fishball"` in 401 challenges** and `scopes_supported` (Authorization § Scope Selection
+  Strategy, SHOULD).
+- **Structured results also as serialized JSON text** (Tools § Structured Content, SHOULD).
+- **Redirect URIs** localhost or https, exact match; redirect host shown, localhost warning
+  (Security Considerations § Communication Security, § Open Redirection, § CIMD Security).
+- **`state`** optional for the server; echoed when present (Security Considerations § Open
+  Redirection: a client SHOULD use it).
+- Refresh tokens, if issued to public clients, MUST rotate (Security Considerations § Token Theft).
+
+**Q-OA-5 decided 2026-11-11 (a new option).** The user, verbatim: "那就做成这个网页永久只能输入一个Token用于认证，
+不管输入Token的人是谁。这样就解决了你问的“怎么确定是我点的”的问题了。其他Agent会打开一个网页，然后我在网页里把Token输进去认证。
+至于公网暴露的问题，交给用户自己去搭Tunnel". The page only ever asks for a token the owner created by
+hand; whoever enters a valid token authorizes; entering an unpaired token **pairs** that entry to
+the browser client (one token, one agent; a paired token gets `already-paired`); the page never
+creates an entry; the value travels only in the POST body. Public exposure is the user's own
+tunnel; the connector only works correctly behind one (R-REM-05). Now §1.16 items 5–7, R-OA-11,
+R-OA-12, R-OA-15, R-OA-16, R-OA-17, R-OA-20, R-REM-05 (new), §5; design §5.5a; tasks C-OAUTH-WEB,
+S7b, DOCS. Cases: AUTH-UC-10, AUTH-DT-08 (new), AUTH-ST-04, AUTH-EP-10 (new).
+
+**Q-OA-2 decided 2026-11-11: A.** Browser clients get a refresh token, rotated on every use and
+revoked with its entry; a replayed old one revokes the whole chain. Machine exchange keeps no
+refresh tokens (Q27 narrowed). Now R-OA-16, R-OA-02, R-OA-07, R-OA-12, R-OA-17; design §5.5,
+§5.5a. Cases: AUTH-ST-05 (new), AUTH-UC-10 step 7, AUTH-EP-01 rows 3, 11, AUTH-ST-02 row 6,
+AUTH-DT-01 rule 10, AUTH-DT-08 rule 7.
+
+**Standing rule 2026-11-11 (requirements 1.18):** "但凡按照规范的你可以自己去做决策，你做完决策告诉你决定了什么就行".
+Questions the specification settles are decided by it and reported; the rest go to the user.
+
+**Decided per spec this round:**
+- **Q-SPEC-2:** a pair-only token is refused with HTTP 403 `insufficient_scope`,
+  `scope="fishball"` (Authorization § Runtime Insufficient Scope Errors). A token request asking
+  `scope=fishball` while unpaired is narrowed, not refused (OAuth 2.1 §1.4.1).
+- **Q-SPEC-3:** tool refusals set `isError: true`, with the code in `structuredContent` and in the
+  JSON text block (Tools § Error Handling, § Structured Content).
+- **Loopback redirect ports:** any port for a loopback redirect; exact match otherwise (OAuth 2.1
+  §2.3.1, §8.4.2).
+- **Refresh-token binding:** the refresh grant must come from the same `client_id` (OAuth 2.1 §4.3).
+
+**Not decided per spec:** Q-SPEC-1 (the specification says HTTPS for every authorization-server
+URL, OAuth 2.1 §1.5, with loopback redirects the only exception; following it would reverse Q9's
+"routes on DSH's own listener", so it goes to the user). S2-Q1 to S2-Q3 concern Fishball's internal
+interceptor and wake contract, which no MCP text covers.
+
+**Q-OA-3 decided 2026-11-11** (before it was sent). The user, verbatim: "这个用户自己填一个编号，必须编号没有重复，且Token正确才能配对成功".
+The page has a required id field; pairing needs a valid, enabled, unpaired token **and** a valid id
+used by no other entry (`id-invalid`, `id-taken`). The OAuth `client_id` is recorded separately. Now
+1.19, R-ID-08, R-ID-13 (new), R-OA-11/12. Cases: AUTH-UC-10, AUTH-DT-08 rules 5–5f.
+
+**Optional name and the Hand over control decided 2026-11-11.** The user, verbatim:
+"然后还可以选填一个名字，方便记忆，名字因为随时可以改，不填也行。UI中handover to fishball的按钮，如果有多个agent连接了这个DSH，就会变成一个下拉菜单：Handover to... ，下拉菜单中选择连接了的Agent名称，没有名称就显示ID，显示ID时前面会加上一个ID:",
+corrected: "只连了一个也不是原来那个按钮，而是 Hand over to {agent_name}\{"ID: "+agent_id}". Now 1.20,
+R-NAME-01/05/08, R-ROUTE-01/05, R-UI-05/08/10; design §3.6, §4.2, §5.5a. Cases: HAND-* rewritten,
+HAND-EP-02 (new), AUTH-UC-10 A4. TQ-8 is replaced by Q-HO-1.
+
+**Q-HO-1 decided 2026-11-11: C, plus status lights.** The user, verbatim: "C，再给Dropdown每一行一个图标，如果掉线了就显示红灯，在线就显示绿灯".
+Every enabled, paired agent is listed; an offline target's `handover` waits in its mailbox; green
+= online (an open `fishball-events` listen stream now), red = offline; refusals `no-fishball`
+(disabled or deleted at call time) and `conflict` (already managed). Not asked, because they follow
+directly: the single button carries the same light (the user's single-agent form is the same list
+with one row), and lights refresh live through `onChange`. Added a text alternative so colour is
+not the only signal. Now 1.20 item 3, R-ROUTE-05, R-UI-10; design §3.6. Cases: HAND-UC-01, HAND-UC-03,
+HAND-EP-02, HAND-DT-01, HAND-ST-01, HAND-ST-02 (new).
+
+**Q-NAME-1 decided 2026-11-11: B.** No default names for anyone: a nameless principal shows as
+`ID: <id>`; a name refused at `pair` leaves it empty; `fishball-core`'s local `identity.name` still
+defaults to "Fishball". Supersedes Q22 A and R-NAME-04's numbering (and TQ-7's default-series
+question). Now §1.20, R-NAME-03/04/06/07, matrix row 12; design §5.8. Cases: NAME-UC-01,
+NAME-BVA-02 (withdrawn), NAME-BVA-03, NAME-DT-01, NAME-DT-03, NAME-ST-01, NAME-EP-04 (new),
+AUTH-UC-02 step 5, AUTH-UC-09, HOST-UC-01, HOST-UC-03, UIM-DT-01 row 12.
+
+**Q-ID-1 decided 2026-11-11: A.** One id rule everywhere: `pair` also refuses an id another entry
+holds, with `id-taken`; ids are unique per connector; R-ID-11's same-id-on-two-tokens case is
+removed. Matches the user's 1.9 quote ("如果fishball发起握手申请，并传入了一个相同的ID，这次握手就要失败，提示用户要用一个新的token来握手").
+Now §1.20, R-ID-03/04/07/11/13, the 1.9 note; design §5.8. Cases: AUTH-EP-03 row 8, AUTH-UC-04 A2–A3,
+AUTH-UC-05 A2/A5, AUTH-DT-02 rule 10, AUTH-DT-06 rule 10, AUTH-ST-01 rows 15–16, AUTH-ST-03 rows 12–13,
+AUTH-DT-08 rules 5c/5g, EVT-EP-04 row 3.
+
+**Q-SPEC-1 decided 2026-11-11: A.** Plain HTTP on loopback stays, as the one documented departure from
+the specification; everything non-loopback is HTTPS or the user's tunnel; S7b checks the stock
+clients keep accepting it. Now R-OA-08, §1.17 note; design §5.5a; tasks S7b, DOCS. Cases: REM-UC-03 E5.
+
+**Q-OA-7 decided 2026-11-11: A, amended.** A configurable port in the connector's native settings, a
+fixed default frozen at V3-K, always open. On a clash: one diagnostic and `approval-port-in-use`;
+MCP, machine exchange and DSH's UI keep working; the metadata **keeps** `authorization_endpoint`
+(stock clients reject metadata without it, S1/S7), so only the page is unreachable; S7b verifies.
+Now R-OA-20; design §5.5a; tasks C-OAUTH-WEB, C-WIRE, S7b. Cases: AUTH-DT-09 (new), REM-UC-03 E4.
+
+Open for the user: S2-Q1, S2-Q2, S2-Q3.
+
+## Spike S4 questions (from `b9809b7`, PASS; relayed later by Fishball)
+
+- **S4-Q1:** should the child's hostname follow the main page's host (`localhost` vs `127.0.0.1`), given the `SameSite=Strict` 401? Cases: UIM-UC-01 E3.
+- **S4-Q2:** surfaces dropped in the move: the brand mark, the `ask_fishball` Allow once / Reject row, card records.
+- **S4-Q3:** the package name: npm refuses capitals, so likely `dsh-fishball-embed-ui`.
+
+Settled by S4: UIM-UC-01..03, UIM-EP-01, UIM-DT-01 UI columns (rows 3, 6, 7, 8; still P:S6), HAND-UC-01 UI half, HAND-UC-03.
+
+## Spike S2 questions (from `a499141`, PARTIAL; asked after the OAuth ones)
+
+- **S2-Q1:** interceptor `ctl.accept()`: how an interceptor confirms durable acceptance. Cases: EVT-DT-03 rule 8.
+- **S2-Q2:** no re-wake after an event was admitted by `Agent.followup` and the child crashed before the turn ran. Cases: EVT-DT-03 rule 9.
+- **S2-Q3:** an event accepted for Fishball and dropped after the user's Stop. Cases: EVT-ST-02 row 12.
+
+Settled by S2: delivery list held by core until the agent is fully idle, then `Agent.followup` in
+`runMaintenance`; a busy Fishball gets the event as its next turn (R-EVT-03, design §6.4).
+
+## Spike S3 questions (from `b4dca86`, PASS)
+
+- **Q-S3-1 (pending):** during a Q24 succession, does the user's answer go through, and does the
+  offer id carry a revision (`<request>.r<n>`)? Cases: HOST-UC-03 E1/E1a, PLAT-ST-01 row 7.
+- **Q-S3-2 (pending, asked together with S2-Q1):** what may an interceptor still do after core falls
+  back; `ctl.accept()` and `ctl.commit(send)` in the K3 freeze. Cases: WD-UC-04 step 5, EVT-ST-02.
+- **Q-S3-3 decided by Fishball** under the user's standing rule "盯着DSH最新的0.2.2版本": 0.2.2-rc.1
+  is the 0.2.2 baseline (npm's `latest`); probes are re-run when 0.2.2 final ships (R-COMPAT-01).
+
+Settled by S3: AUTH-UC-02 E2, NAME-BVA-03 (still applies after Q-NAME-1 = B), EVT-UC-02 (S3 part),
+WD-UC-01, WD-ST-01, HOST-ST-02, PLAT-UC-02; with one change each: WD-UC-04 (committed or fenced,
+never both), HOST-UC-03 (the user's answer is never `expired` by succession), PLAT-ST-01 row 7
+(same request, revision + 1).
+
+## Pending questions (status at commit)
+
+| Question | Source | Waiting for |
+| --- | --- | --- |
+| S2-Q1 + Q-S3-2 | interceptor `ctl.accept()` / `ctl.commit(send)` | the user (asked together) |
+| S2-Q2 | no re-wake after admission and a child crash | the user |
+| S2-Q3 | an event dropped after the user's Stop | the user |
+| Q-S3-1 | offer revision during succession | the user |
+| S4-Q1 | the child's hostname following the main page's host | relayed later |
+| S4-Q2 | dropped surfaces (brand mark, Allow once / Reject row, card records) | relayed later |
+| S4-Q3 | lowercase package name | relayed later |
+| TQ-6, TQ-7, TQ-9 … TQ-17 | test-planning gaps (see the table at the top) | the user, when relevant |

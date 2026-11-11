@@ -6,7 +6,7 @@ R-ROUTE-03. Conventions: [README](<README.md>).
 ## Use Cases
 
 ### EVT-UC-01 — An external agent receives events through the one subscription
-**Req:** R-EVS-01, R-EVS-02, R-EVS-04, R-CON-03, R-CON-04, R-EVT-02, R-EVT-04 · **Level:** integration · **Flags:** P:S1
+**Req:** R-EVS-01, R-EVS-02, R-EVS-04, R-CON-03, R-CON-04, R-EVT-02, R-EVT-04 · **Level:** integration · **Flags:** —
 
 - **Actor:** external agent P(E1, `a`) with a full AT.
 - **Preconditions:** P manages S1.
@@ -26,7 +26,7 @@ R-ROUTE-03. Conventions: [README](<README.md>).
 - **Postconditions:** P received all its events in order, each typed; the connector did no interception for P.
 
 ### EVT-UC-02 — The official Fishball dispatches an event to an interceptor or to its agent
-**Req:** R-INT-01, R-INT-02, R-INT-08, R-EVT-03 · **Level:** integration (core with a fake link and plugins) · **Flags:** P:S2, P:S3
+**Req:** R-INT-01, R-INT-02, R-INT-08, R-EVT-03 · **Level:** integration (core with a fake link and plugins) · **Flags:** P:S2 (E2 crash window, V3-S2), S2-Q1 pending
 
 - **Actor:** `fishball-core` in a Fishball DSH; plugin X registered `intercept({pluginId: "x", types: ["contributed:demo.ping"]})`.
 - **Preconditions:** core is paired, idle, subscribed.
@@ -37,10 +37,12 @@ R-ROUTE-03. Conventions: [README](<README.md>).
   4. **No** Fishball LLM turn starts.
 - **Alternative flows:**
   - A1. A `message` event arrives (no registration) → it goes to the Fishball agent through the X9 pipeline and starts exactly one Fishball turn.
+  - A3. The same `message` arrives while Fishball is in a turn → core holds it in its delivery list; when the turn ends and nothing is queued, it starts exactly one **new** turn for it (S2).
   - A2. X releases the event with `release(e, {toFishball: true})` → Fishball is woken for it, once.
 - **Exception flows:**
   - E1. X's handler throws → Fishball gets the event and is woken; X does not see it again.
-  - E2. The Fishball DSH crashes after acceptance but before the ack → after restart the replay (same `eventId`) is dropped; exactly one wake in total (P:S2).
+  - E2. The Fishball DSH crashes after acceptance but before the ack → after restart the replay (same `eventId`) is dropped; exactly one wake in total.
+  - E3. An event arrives while Fishball is busy, and the user then stops that turn cleanly → the event is still delivered as the next turn, never lost (the case the earlier design failed, S2).
 - **Postconditions:** the event is handled exactly once, by exactly one side, and acked once.
 
 ### EVT-UC-03 — A plugin registers and disposes an interception
@@ -85,7 +87,7 @@ M = managing pair of the named session; D = designated pair.
 | --- | --- | --- |
 | 1 | full AT of the pair: poll / ack / listen / read `fishball://events` | own mailbox |
 | 2 | full AT of pair B reading `fishball://events` | B's mailbox only; never A's events |
-| 3 | pair-only AT | `not-paired` / `id-mismatch` |
+| 3 | pair-only AT | HTTP 403 `insufficient_scope` |
 | 4 | ack of another pair's `eventId` | refused; nothing acked (K code) |
 | 5 | ack with a wrong `payloadDigest` | refused (K) |
 | 6 | `resources/read fishball://events` | `{pending, headSequence, mailboxGeneration}` only, never bodies (D§3.3) |
@@ -106,13 +108,13 @@ M = managing pair of the named session; D = designated pair.
 | 7 | external agent | events unchanged, no interception | n/a |
 
 ### EVT-EP-04 — Per-principal isolation of streams and hints
-**Req:** R-ID-06, R-TOK-05, R-EVT-04, R-EVS-03 · **Level:** integration (two pairs P and Q, each with an open listen stream) · **Flags:** P:S1, P:S7
+**Req:** R-ID-06, R-TOK-05, R-EVT-04, R-EVS-03 · **Level:** integration (two pairs P and Q, each with an open listen stream) · **Flags:** —
 
 | # | Event or action | P's stream | Q's stream |
 | --- | --- | --- | --- |
 | 1 | an event committed to P's mailbox | one `notifications/resources/updated` hint | nothing |
 | 2 | an event committed to Q's mailbox | nothing | one hint |
-| 3 | P and Q share the same `id` on different tokens | hints stay per pair (rows 1–2 hold) | |
+| 3 | P and Q with ids that differ only in case (`agent` / `Agent`; ids are unique and case-sensitive) | hints stay per pair (rows 1–2 hold) | |
 | 4 | P's entry is disabled | closed | stays open and keeps receiving its own hints |
 | 5 | Q polls after row 1 | — | Q's mailbox has nothing of P's |
 | 6 | 100 events to P in a burst | ≥ 1 hint, never more than one per commit | nothing |
@@ -178,7 +180,7 @@ Registrations R1 (registered first), R2 (second) for the same type.
 | 8 | 5 | 0 | true, handler throws | true | Fishball (R-INT-04: the event falls back to Fishball, not to R2) |
 
 ### EVT-DT-03 — Ack timing and wake
-**Req:** R-INT-08, R-EVT-03 · **Level:** integration · **Flags:** P:S2
+**Req:** R-INT-08, R-EVT-03 · **Level:** integration · **Flags:** P:S2 (rules 4, 5 and 7–9 only; rules 1–3 and 6 settled by S2 `a499141`), S2-Q1..Q3 pending
 
 | Rule | Receiver accepted durably | Crash point | Ack sent | Fishball turns started |
 | --- | --- | --- | --- | --- |
@@ -187,7 +189,10 @@ Registrations R1 (registered first), R2 (second) for the same type.
 | 3 | Fishball, no | before acceptance | after restart's acceptance | 1 |
 | 4 | interceptor, yes | none | after acceptance | 0 |
 | 5 | interceptor, yes | before ack | after restart | 0 |
-| 6 | Fishball busy (not idle) | — | after acceptance | delivered into the running work (no extra turn, K) |
+| 6 | Fishball busy (not idle) | — | after acceptance | 1, started as the **next** turn once fully idle; nothing injected into the running turn |
+| 7 | Fishball busy; the user then stops the running turn cleanly | — | after acceptance | 1 (as the next turn; the event is not lost) |
+| 8 | interceptor (`ctl.accept()` semantics) | — | — | pending S2-Q1 |
+| 9 | Fishball, admitted by `followup`, child crashes before the turn runs | crash after admission | — | pending S2-Q2 (no re-wake today) |
 
 ## State Transitions
 
@@ -210,7 +215,7 @@ Registrations R1 (registered first), R2 (second) for the same type.
 | 9 | Acked | contributor withdrawn | Acked (stays with the client) |
 
 ### EVT-ST-02 — Core's handling of one event
-**Req:** R-INT-02, R-INT-04, R-INT-05, R-INT-08 · **Level:** unit · **Flags:** P:S2
+**Req:** R-INT-02, R-INT-04, R-INT-05, R-INT-08, R-EVT-03 · **Level:** unit · **Flags:** P:S2 (rows 2, 4–6, 9–12; rows 1, 3, 7, 8 settled by S2 `a499141`), S2-Q3 pending (row 12)
 
 | # | From | Event | To |
 | --- | --- | --- | --- |
@@ -220,6 +225,9 @@ Registrations R1 (registered first), R2 (second) for the same type.
 | 4 | OfferedTo(R) | `accepted` | AcceptedBy(R) → ack |
 | 5 | OfferedTo(R) | throw / reject / plugin down / disposed | ToFishball |
 | 6 | AcceptedBy(R) | `release(toFishball)` | ToFishball |
-| 7 | ToFishball | durable acceptance | AcceptedBy(Fishball) → ack, one wake |
+| 7 | ToFishball | durable acceptance | AcceptedBy(Fishball) → in core's delivery list → ack |
+| 10 | AcceptedBy(Fishball), agent fully idle | `runMaintenance` | Admitted (`Agent.followup`; leaves the list) → one turn |
+| 11 | AcceptedBy(Fishball), agent busy | the turn ends, nothing queued | Admitted as the next turn |
+| 12 | AcceptedBy(Fishball) | the user stops Fishball | pending S2-Q3 (today the event may be dropped) |
 | 8 | Recorded | replay with known `eventId` | Recorded (dropped) |
 | 9 | AcceptedBy(R) | R's plugin then fails | AcceptedBy(R): core does not re-dispatch it (never handled twice); returning it is R's own duty (for Watchdog: R-WD-07 "pending items go to Fishball", via `release`, WD-ST-01) |

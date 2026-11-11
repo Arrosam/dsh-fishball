@@ -6,7 +6,7 @@ R-BRD-01, 02, R-FN-01, R-MIG-01…05, R-COMPAT-01, R-SEC-01…04. Conventions: [
 ## Use Cases
 
 ### PLAT-UC-01 — A 2026-07-28 client uses the endpoint; an older one is told to upgrade
-**Req:** R-CON-01, R-CON-02, R-OA-09 · **Level:** integration · **Flags:** P:S1
+**Req:** R-CON-01, R-CON-02, R-OA-09 · **Level:** integration · **Flags:** —
 
 - **Actor:** an MCP client.
 - **Preconditions:** full AT.
@@ -22,7 +22,7 @@ R-BRD-01, 02, R-FN-01, R-MIG-01…05, R-COMPAT-01, R-SEC-01…04. Conventions: [
 - **Postconditions:** no protocol session state exists on the server.
 
 ### PLAT-UC-02 — A principal answers a delegated approval; the user races it
-**Req:** R-CON-05, R-CON-06, R-CON-07, R-CON-02 · **Level:** integration · **Flags:** P:S3
+**Req:** R-CON-05, R-CON-06, R-CON-07, R-CON-02 · **Level:** integration · **Flags:** —
 
 - **Actor:** external principal P managing S1; the user in S1.
 - **Main flow:** S1 asks permission → offer O1 in P's mailbox; P answers `approval_answer(O1, allow)` → settled; P gets a `settlement`.
@@ -104,7 +104,8 @@ Each row fails exactly one check (and later checks would also fail); the expecte
 | 2 | approvals / questions / prompts answering; grants list, revoke; attachments put, read; inbox poll, ack; `pair`, `set_name` | present |
 | 3 | watch tools | absent |
 | 4 | attention signal | absent from core (only `embed-ui.attention.*` when U is present) |
-| 5 | any refusal | structured `{ok: false, code, message}` in a successful `CallToolResult` (e.g. `limit-exceeded`, `expired`, `queue-full`), never prose only |
+| 5 | any refusal | `isError: true`; `structuredContent` `{ok: false, code, message}` and the same JSON as a text block (e.g. `limit-exceeded`, `expired`, `queue-full`); never prose only |
+| 6 | any success | `isError: false`; `structuredContent` plus the same JSON as text; the output schema admits the refusal envelope |
 
 ### PLAT-EP-03 — Packaging rules
 **Req:** R-ARCH-01, R-ARCH-03, R-ARCH-05, R-ARCH-06, R-FB-01 · **Level:** unit (manifest/static analysis) · **Flags:** —
@@ -239,7 +240,7 @@ Each rule runs the integration suite of every file of this directory that applie
 ## State Transitions
 
 ### PLAT-ST-01 — One offer (approval / question / plan review)
-**Req:** R-CON-05, R-CON-06, R-TOK-05, R-HOST-09, R-WD-09 · **Level:** unit · **Flags:** P:S3
+**Req:** R-CON-05, R-CON-06, R-TOK-05, R-HOST-09, R-WD-09 · **Level:** unit · **Flags:** —
 
 | # | From | Event | To |
 | --- | --- | --- | --- |
@@ -249,6 +250,6 @@ Each rule runs the integration suite of every file of this directory that applie
 | 4 | Settled | any answer | Settled (`already-settled` / `expired`) |
 | 5 | Live(P) | time passes / silence | Live(P) (no timer) |
 | 6 | Live(P) | P revoked | Live(user) (card in session) |
-| 7 | Live(P) | succession | Live(P', new id); old id → `expired` |
+| 7 | Live(P) | succession | Live(P'): the same request, offer revision + 1; the old id answers `expired` to any principal; a user answer during the succession settles the one request (S3 `b4dca86`) |
 | 8 | Live(P) | Watchdog commits `escalate` | Live(user card), Watchdog notified on settlement |
 | 9 | Live(P) | session ends / offer withdrawn | Retired; `retirement` to P |

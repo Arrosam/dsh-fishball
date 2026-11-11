@@ -58,7 +58,7 @@ Requirements: R-WATCH-01…05, R-EVS-02, R-EVS-03, R-CON-02. Conventions: [READM
 | # | From | Event | To | Check |
 | --- | --- | --- | --- | --- |
 | 1 | Unwatched | `session_start` by P | Watched(P) | next turn → P |
-| 2 | Unwatched | Hand over to D | Watched(D) | |
+| 2 | Unwatched | Hand over to connected P | Watched(P) | |
 | 3 | Watched(P) | `session_release` | Unwatched | queued events stay with P; no later ones |
 | 4 | Watched(P) | Take back | Unwatched | same |
 | 5 | Watched(P) | revocation / deletion of P | Unwatched | same |
