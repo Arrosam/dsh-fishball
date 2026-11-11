@@ -784,8 +784,10 @@ no token, subscription, mailbox or lane of its own.
 5. One Watchdog side session per watched session (U8) handles that session's permission
    requests and patrols, on Watchdog's own model settings.
 6. An escalation **to Fishball** is `ctl.release(e, {toFishball: true})` (R-INT-05). An
-   escalation **to the user** commits `escalate` at the connector (§7.2). Fishball's explicit
-   `check_now` and refine requests are manager operations, not events (Q33, A assumed).
+   escalation **to the user** commits `escalate` at the connector (§7.2).
+7. **No on-demand runs (Q33 decided).** Fishball has no `watchdog_check_now`. `watchdog_refine`
+   only stores a new brief or criteria for a session, which Watchdog reads at its next permission
+   judgement or patrol. It starts no turn and moves no timer (R-WD-15).
 
 ### 7.2 Requests to Fishball inside the Fishball DSH (R-WD-08)
 
@@ -809,8 +811,9 @@ Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session
 - **Activation (requirements 1.14, R-WD-03):** exactly two cases: a supervised session's
   permission request, and Watchdog's own patrol timer, once every `minCheckIntervalSeconds` per
   session (default 1740, inclusive 60–86400). There is one timer per watched session, for patrol
-  only. Permission handling is never delayed by it. Fishball's explicit `check_now` and refine
-  (Q33, A assumed) are not throttled. No other timers exist (R-WD-05).
+  only. Permission handling is never delayed by it. Nothing else starts a Watchdog run:
+  there is no `check_now`, and a refine only updates the brief (Q33 decided, R-WD-15). No other
+  timers exist (R-WD-05).
 - **Decision table:**
 
   | Request | Watchdog decision |
@@ -875,7 +878,7 @@ incompatible bundle is skipped at boot, not fatal. So:
 | --- | --- | --- |
 | board | X1, X2 (tools `board_*` + `board_search`, dynamic context) | none to its domain. Archive forever, 30-day visibility. Export offer: the instance's uninstall in hosted mode; in standalone mode, a `board_export` manager tool and a note in the README, because DSH's native remove offers no hook |
 | fold-notify | X2, X9 batcher, X8 attention | X8 now calls embed-UI's contributed `embed-ui.attention.signal` over the MCP link. If it is absent, the call gets `unsupported-operation` (D3 rule). The batcher sits on the Fishball branch, after interception (§6.4) |
-| watchdog | X1, X2, X9 (now the interception service), X10, X11, X12, X13, X14, X15, X16, X19 | an interceptor in core (§6.4, §7); no subscription of its own |
+| watchdog | X1, X2, X9 (now the interception service), X10, X11, X12, X13, X14, X15, X16, X19 | an interceptor in core for supervised `permission` only (§6.4, §7); patrol by its own timer; no `check_now`, and refine is a data update (R-WD-15) |
 
 ## 9. Packaging and compatibility
 
@@ -955,7 +958,7 @@ this case.
 | --- | --- | --- |
 | V3-S1 | Can a packaged MCP server SDK (2.x), configured **modern-only (2026-07-28)**, serve on a raw `webServer` route, with bearer checking before dispatch, Origin/header validation, OAuth resource metadata and listen streams, on both hosts? | Both stock-host clients (2.2.0, `pin: '2026-07-28'`) discover, list, call, subscribe and get hints; a 2025-era `initialize` gets the version refusal; GET/DELETE get 405; a 401 path never reaches the SDK |
 | V3-S2 | MCP-S2 continuation: a durable child acceptance ledger plus `Agent.followup` gives one routed entry and one user-visible wake after a lost ack, a child crash and reconnect | the open TODO from MCP-S2 §11.5 closes; no duplicate wake |
-| V3-S3 | Interception and pairing (Watchdog intercepts only supervised `permission` and its own `settlement`/`retirement`; every `turn-finished`/`state` reaches Fishball): core's interception service hands events to the right interceptor (priority, ties, filters) without an LLM turn, and falls back to Fishball on throw/down/dispose without loss or double handling; `pair` races, `already-paired` results; OQ-14 races between user, Watchdog and Fishball answers on one principal | race matrix; no stale commit; one event wakes one agent |
+| V3-S3 | Interception and pairing (Watchdog intercepts only supervised `permission` and its own `settlement`/`retirement`; every `turn-finished`/`state` reaches Fishball; a refine starts no run): core's interception service hands events to the right interceptor (priority, ties, filters) without an LLM turn, and falls back to Fishball on throw/down/dispose without loss or double handling; `pair` races, `already-paired` results; OQ-14 races between user, Watchdog and Fishball answers on one principal | race matrix; no stale commit; one event wakes one agent |
 | V3-S4 | Embed-UI as a separate package: can the moved connector client still register its sidebar/slot contributions (the same injects) and frame the PG-ORIGIN child origin, without the connector client present? | both hosts; main shortcuts untouched |
 | V3-S5 | Contribution service (§13): caller identity from the injecting fiber; auto-withdrawal of tools **and** pending events on contributor disable/unload/HMR; quarantine lifted only by a new fiber; `tools/list_changed` delivery on 2026-07-28 listen streams; event limits and recipient routing; containment of throw/hang/oversize, on both hosts | independent cases across register/dispose/reload/quarantine states |
 | V3-S6 | `fishball-core` as a plain bundle carrying its `fishball-ui` component: one bundle that inserts its own rows, disables other bundles' rows and sets the read-only preset in an ordinary DSH on both SDKs; one `dsh.client` serving the page, tab and settings; the hosted child behaves the same with the instance's launch configuration in place; core can read the effective composition and policy through a public API to report `guards-overridden`, in both modes; the A-lite page works without the instance (standalone) | both modes, both hosts; no host patch |
