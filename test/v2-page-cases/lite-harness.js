@@ -373,12 +373,19 @@
       api.facade = facade(service, o.faults)
       // Native-like session/workspace/layout services.
       const current = store({ key: null })
-      const list = store({ byId: {} })
+      // The host catalogue: the manager the route names and one ordinary session. Native
+      // sessions.list carries every catalogued Session (dsh-api-session-controller ApiSessionList,
+      // both SDKs) whether or not a view shows it, so both are listed from the start; only the
+      // main-view retain count follows the selection.
+      const catalog = (mainId) => {
+        const byId = {}
+        for (const known of [o.session.sessionId, 'session-other-case']) if (known) byId[known] = { id: known, blank: false, retainedBy: { mainView: known === mainId ? 1 : 0 } }
+        return byId
+      }
+      const list = store({ byId: catalog(null) })
       const panel = store({ activePanelId: null })
       const show = (id) => {
-        const byId = {}
-        for (const known of [o.session.sessionId, 'session-other-case']) if (known) byId[known] = { id: known, blank: false, retainedBy: { mainView: known === id ? 1 : 0 } }
-        list.set({ byId })
+        list.set({ byId: catalog(id) })
         current.set({ key: id })
       }
       // Drift arrives without a user action (bypass-UI): the timeline marks it so a later
