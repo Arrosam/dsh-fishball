@@ -156,7 +156,7 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 | 5 | a Fishball DSH plugin acting on another DSH's sessions without MCP | no such path |
 
 ### PLAT-EP-07 — Package dependency boundaries and the shared library
-**Req:** R-ARCH-08, R-ARCH-01, R-BND-01, R-FB-01 · **Level:** unit (static analysis of manifests and imports), integration (row 8: a started host with a child) · **Flags:** TQ-R5 (A assumed)
+**Req:** R-ARCH-08, R-ARCH-01, R-BND-01, R-FB-01, R-SEC-01 · **Level:** unit (static analysis of manifests and imports), integration (row 8: a started host with a child) · **Flags:** TQ-R5 (decided B)
 
 | # | Check | Expected |
 | --- | --- | --- |
@@ -164,10 +164,12 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 | 2 | `fishball-core` imports or depends on `fishball-instance` | never |
 | 3 | `fishball-shared` imports any other V3 package | never |
 | 4 | `fishball-shared` manifest | no `dsh` field: no bundle, row, `dsh.client` or service; not listed on any Plugins page |
-| 5 | `fishball-core` and `fishball-instance` | each has `fishball-shared` in `dependencies` and `bundleDependencies`; their packed tarballs contain it |
-| 6 | contents of `fishball-shared` | only modules imported by both core and the instance; a module imported by only one side fails the check |
-| 7 | `fishball-connector`, `dsh-fishball-embed-UI` | do not depend on `fishball-shared` (TQ-R5 = A) |
-| 8 | host DSH process of a running hosted setup | no module from `fishball-core`, the feature plugins or `fishball-hosted-settings` is loaded (module-load trace); `fishball-shared` modules may be |
+| 5 | every V3 package that imports `fishball-shared` | has it in `dependencies` and `bundleDependencies`; its packed tarball contains it |
+| 6 | contents of `fishball-shared` | every module in it is imported by **at least two** V3 packages; a module imported by only one package fails the check |
+| 7a | allowed edges **into** `fishball-shared` (TQ-R5 = B) | from `fishball-connector`, `dsh-fishball-embed-UI`, `fishball-core`, `fishball-instance`, `fishball-board`, `fishball-fold-notify`, `fishball-watchdog`, `fishball-hosted-settings`: all allowed |
+| 7b | edges **out of** `fishball-shared` | none to any V3 package |
+| 7c | other cross-package edges | unchanged: the feature plugins reach core only through the optional `fishballInstance?` inject; embed-UI imports no connector code (types from `./tools` only); the connector imports no Fishball-set package |
+| 8 | host DSH process of a running hosted setup (C + I + U, with the connector or embed-UI importing `fishball-shared`) | no module from `fishball-core`, the feature plugins or `fishball-hosted-settings` is loaded (module-load trace); `fishball-shared` modules may be |
 | 9 | standalone install of the core tarball in a DSH with no instance | installs and starts with no registry access |
 
 ## Boundary Value Analysis
