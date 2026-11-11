@@ -43,7 +43,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import test from 'node:test'
+import test, { after } from 'node:test'
 import { BODY_SOUL, loadInstance } from '../support/body-soul-env.mjs'
 import { CASE as ENGINE_CASE, clone, inventory, provider } from '../support/provider-sync-engine.mjs'
 import { FIXTURE as SDK_FIXTURE } from '../support/provider-sync-official.mjs'
@@ -52,6 +52,27 @@ import { ACTIVE_SDK, parsedFrames, relayLink } from '../support/set-relay.mjs'
 import { mountPanel, PANEL } from '../support/set-panel.mjs'
 import { bootHost, newHome, until } from '../support/host.mjs'
 import { SDK_VERSIONS } from './support.mjs'
+
+/*
+ * This file's own temp root. The runner runs several test files at once in separate processes that
+ * share one TMPDIR, so MOS-UC-01's temp-file scan (recentTempFiles walks os.tmpdir()) would also see
+ * fresh files other suites write meanwhile (e.g. a child runtime's verbatim copy of the instance
+ * source, which legitimately contains the fixture's protocol string). The scan must see only what
+ * this process writes, so os.tmpdir() points at a per-file directory for this file's tests:
+ * os.tmpdir() reads TMPDIR at call time on POSIX, and the imported helpers call it per use
+ * (constants.mjs TEST_HOMES aside, whose host homes are meant to stay outside this root). The real
+ * host of MOS-SYS-01 gets its environment explicitly (no TMPDIR), so it is unaffected.
+ */
+const OWN_TEMP = Object.freeze({ parent: os.tmpdir(), prefix: 'fbtest-set-main-only-tmp-', saved: process.env.TMPDIR })
+const ownTempRoot = fs.mkdtempSync(path.join(OWN_TEMP.parent, OWN_TEMP.prefix))
+process.env.TMPDIR = ownTempRoot
+after(() => {
+  if (OWN_TEMP.saved === undefined) delete process.env.TMPDIR
+  else process.env.TMPDIR = OWN_TEMP.saved
+  // Guard the one recursive delete: only the directory created above, directly under the runner's temp dir.
+  if (path.dirname(ownTempRoot) !== OWN_TEMP.parent || !path.basename(ownTempRoot).startsWith(OWN_TEMP.prefix)) throw new Error('unexpected temp root ' + ownTempRoot)
+  fs.rmSync(ownTempRoot, { recursive: true, force: true })
+})
 
 const MOS = Object.freeze({
   task: 'SET-MAIN-ONLY',
