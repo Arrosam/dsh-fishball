@@ -250,3 +250,173 @@ test('DATA-01 refusal preserves legacy workspace and private data', async t => {
   await expectRefusal(() => preflight(layout))
   for (const path of paths) assert.equal(await readFile(path, 'utf8'), CASE.sentinel)
 })
+
+// Inspection limits, installation-scope resolution and installation overlap (R1-R4).
+// Techniques, one per case group:
+//   R1 BVA  manifest size at exactly the limit (accepted) and limit + 1 byte (PREFLIGHT_LIMIT),
+//           crossed with EP over the package name (plain, @deepseek-ai/*).
+//   R2 EP   entry totals comfortably below the limit (accepted) and clearly above it
+//           (PREFLIGHT_LIMIT), the above partition repeated in a plain and an @deepseek-ai slot.
+//   R3 decision table  scope 'installation' x packageDir location (profile node_modules, outside
+//           everything, installRoot) x name (plain, @deepseek-ai) -> refused / accepted control.
+//   R4 EP   installRoot inside mainHome (PREFLIGHT_INSTALL) vs. a sibling-prefix lookalike (accepted).
+const LIMITS = Object.freeze({
+  manifestBytes: 1048576, limitCode: 'PREFLIGHT_LIMIT',
+  resolutionCode: 'PREFLIGHT_RESOLUTION', installCode: 'PREFLIGHT_INSTALL',
+  manifest: 'package.json', padChar: 'x',
+  belowPackages: 10, belowFilesPerPackage: 8, belowTotal: 100,
+  aboveFiles: 20100, entryLimit: 20000, writeChunk: 500,
+  filePrefix: 'f', fileSuffix: '.js', fileContent: '',
+  belowPackagePrefix: 'small-package-', outsidePackages: 'stray-packages',
+  siblingInstallSuffix: '-lookalike', namedLocations: ['profile', 'outside'],
+})
+
+/** Valid JSON manifest of exactly `bytes` bytes (ASCII padding, so characters == bytes). */
+const paddedManifest = (name, bytes) => {
+  const base = Buffer.byteLength(JSON.stringify({ name, version: DECISION_A.plainVersion, pad: '' }))
+  const text = JSON.stringify({ name, version: DECISION_A.plainVersion, pad: LIMITS.padChar.repeat(bytes - base) })
+  assert.equal(Buffer.byteLength(text), bytes, 'fixture manifest has the intended byte size')
+  return text
+}
+/** Writes `count` small files into `dir` in bounded parallel chunks. */
+const writeSmallFiles = async (dir, count) => {
+  for (let start = 0; start < count; start += LIMITS.writeChunk) {
+    const end = Math.min(count, start + LIMITS.writeChunk), writes = []
+    for (let index = start; index < end; index++) writes.push(writeFile(join(dir, LIMITS.filePrefix + index + LIMITS.fileSuffix), LIMITS.fileContent))
+    await Promise.all(writes)
+  }
+}
+const profileSlot = (layout, name) => join(layout.profileDir, FIXTURE.modules, name)
+
+// R1 BVA x EP(name).
+for (const name of [DECISION_A.plainName, DECISION_A.names[1]]) {
+  test('R1 BVA package.json of exactly 1 MiB is not refused for size (' + name + ')', async t => {
+    const layout = await sandbox(t)
+    await writeManifest(profileSlot(layout, name), paddedManifest(name, LIMITS.manifestBytes))
+    assert.deepEqual((await preflight(layout)).warnings, [])
+  })
+  test('R1 BVA package.json of 1 MiB + 1 byte is refused (PREFLIGHT_LIMIT) (' + name + ')', async t => {
+    const layout = await sandbox(t)
+    await writeManifest(profileSlot(layout, name), paddedManifest(name, LIMITS.manifestBytes + 1))
+    await expectCode(() => preflight(layout), LIMITS.limitCode)
+  })
+}
+
+// R1 EP(location): the workspace node_modules tree is inspected under the same size rule.
+test('R1 BVA oversized package.json in the workspace node_modules is refused (PREFLIGHT_LIMIT)', async t => {
+  const layout = await sandbox(t)
+  const name = DECISION_A.names[0]
+  await writeManifest(join(layout.workspace, FIXTURE.modules, name), paddedManifest(name, LIMITS.manifestBytes + 1))
+  await expectCode(() => preflight(layout), LIMITS.limitCode)
+})
+
+// R2 EP below: node_modules (10 entries) + 10 package dirs x (package.json + 8 files) = 100 entries.
+test('R2 EP profile node_modules with ~100 entries in total is accepted', async t => {
+  const layout = await sandbox(t)
+  for (let index = 0; index < LIMITS.belowPackages; index++) {
+    const name = LIMITS.belowPackagePrefix + index, packageDir = profileSlot(layout, name)
+    await writeManifest(packageDir, { name, version: DECISION_A.plainVersion })
+    await writeSmallFiles(packageDir, LIMITS.belowFilesPerPackage)
+  }
+  assert.equal(LIMITS.belowPackages * (LIMITS.belowFilesPerPackage + 2), LIMITS.belowTotal)
+  assert.deepEqual((await preflight(layout)).warnings, [])
+})
+
+// R2 EP above: one package directory holding 20100 files plus its package.json (> 20000 total).
+for (const name of [DECISION_A.plainName, DECISION_A.names[1]]) {
+  test('R2 EP package directory with 20100 files is refused (PREFLIGHT_LIMIT) (' + name + ')', async t => {
+    const layout = await sandbox(t)
+    const packageDir = profileSlot(layout, name)
+    await writeManifest(packageDir, { name, version: DECISION_A.plainVersion })
+    await writeSmallFiles(packageDir, LIMITS.aboveFiles)
+    assert.ok(LIMITS.aboveFiles > LIMITS.entryLimit)
+    await expectCode(() => preflight(layout), LIMITS.limitCode)
+  })
+}
+
+// R3 decision table: scope 'installation' with packageDir outside installRoot -> refused, by name and location.
+const outsideInstall = Object.freeze({
+  profile: (layout, name) => profileSlot(layout, name),
+  outside: (layout, name) => join(layout.root, LIMITS.outsidePackages, name),
+})
+for (const name of [DECISION_A.plainName, DECISION_A.names[1]]) {
+  for (const location of LIMITS.namedLocations) {
+    test('R3 installation-scope entry for ' + name + ' under ' + location + ' (outside installRoot) is refused (PREFLIGHT_RESOLUTION)', async t => {
+      const layout = await sandbox(t)
+      const packageDir = outsideInstall[location](layout, name)
+      await writeManifest(packageDir, { name, version: DECISION_A.plainVersion })
+      await expectCode(() => preflight({ ...layout, resolution: {
+        entries: [{ name, packageDir, scope: 'installation' }], linkedRoots: [],
+      } }), LIMITS.resolutionCode)
+    })
+  }
+}
+
+// R3 control row: the same @deepseek-ai name, scope 'installation', packageDir inside installRoot.
+test('R3 installation-scope @deepseek-ai entry inside installRoot is accepted', async t => {
+  const layout = await sandbox(t)
+  const name = DECISION_A.names[1], packageDir = join(layout.installRoot, FIXTURE.modules, name)
+  await writeManifest(packageDir, { name, version: DECISION_A.version })
+  const result = await preflight({ ...layout, resolution: { entries: [{ name, packageDir, scope: 'installation' }], linkedRoots: [] } })
+  assert.deepEqual(result.warnings, [])
+})
+
+// R4 EP: installRoot inside mainHome is refused; a sibling-prefix path beside mainHome is not inside it.
+test('R4 installRoot inside mainHome is refused (PREFLIGHT_INSTALL)', async t => {
+  const layout = await sandbox(t)
+  const installRoot = join(layout.mainHome, CASE.install)
+  await mkdir(installRoot)
+  await expectCode(() => preflight({ ...layout, installRoot }), LIMITS.installCode)
+})
+
+test('R4 installRoot at a sibling-prefix path of mainHome is not an overlap', async t => {
+  const layout = await sandbox(t)
+  const installRoot = layout.mainHome + LIMITS.siblingInstallSuffix
+  await mkdir(installRoot)
+  assert.deepEqual((await preflight({ ...layout, installRoot })).warnings, [])
+})
+
+// Linked plugins (R5, R6).
+//   R5 EP  linked plugin inside runtimeRoot (not workspace/profile), with and without a nested valid
+//          @deepseek-ai copy -> accepted. Decision-table partner: nested copy with invalid JSON ->
+//          PREFLIGHT_MANIFEST (the linked tree is inspected).
+//   R6 EP  linked plugin outside both mainHome and installRoot -> exactly PREFLIGHT_RESOLUTION.
+const LINKED = Object.freeze({
+  name: 'linked-plugin', nestedName: DECISION_A.names[1],
+  nested: Object.freeze({ none: 'none', valid: 'valid', invalid: 'invalid' }),
+})
+const linkedResolution = packageDir => ({ resolution: {
+  entries: [{ name: LINKED.name, packageDir, scope: 'profile' }],
+  linkedRoots: [{ name: LINKED.name, realPath: packageDir }],
+} })
+/** Creates a linked plugin at `plugin`, optionally with a nested @deepseek-ai copy. */
+const writeLinkedPlugin = async (plugin, nested) => {
+  await writeManifest(plugin, { name: LINKED.name, version: DECISION_A.plainVersion })
+  if (nested === LINKED.nested.none) return
+  const manifest = nested === LINKED.nested.valid ? { name: LINKED.nestedName, version: DECISION_A.version } : DECISION_A.invalidManifest
+  await writeManifest(join(plugin, FIXTURE.modules, LINKED.nestedName), manifest)
+}
+const runtimePlugin = layout => join(layout.runtimeRoot, LINKED.name)
+
+for (const nested of [LINKED.nested.none, LINKED.nested.valid]) {
+  test('R5 EP linked plugin inside runtimeRoot is accepted (nested @deepseek-ai copy: ' + nested + ')', async t => {
+    const layout = await sandbox(t)
+    const plugin = runtimePlugin(layout)
+    await writeLinkedPlugin(plugin, nested)
+    assert.deepEqual((await preflight({ ...layout, ...linkedResolution(plugin) })).warnings, [])
+  })
+}
+
+test('R5 decision table: in-runtime linked plugin with invalid nested @deepseek-ai package.json is refused (PREFLIGHT_MANIFEST)', async t => {
+  const layout = await sandbox(t)
+  const plugin = runtimePlugin(layout)
+  await writeLinkedPlugin(plugin, LINKED.nested.invalid)
+  await expectCode(() => preflight({ ...layout, ...linkedResolution(plugin) }), DECISION_A.manifestCode)
+})
+
+test('R6 linked plugin outside mainHome and installRoot is refused (exactly PREFLIGHT_RESOLUTION)', async t => {
+  const layout = await sandbox(t)
+  const plugin = join(layout.root, LINKED.name)
+  await writeLinkedPlugin(plugin, LINKED.nested.none)
+  await expectCode(() => preflight({ ...layout, ...linkedResolution(plugin) }), LIMITS.resolutionCode)
+})

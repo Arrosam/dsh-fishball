@@ -134,7 +134,7 @@ export async function removeRuntime(paths) {
 }
 /**
  * Append one lifecycle line. `reason` is an optional failure code (a FAILED line's specific
- * cause, e.g. PREFLIGHT_CORE_SHADOW); only an UPPER_SNAKE identifier is kept, so a message, path
+ * cause, e.g. PREFLIGHT_MANIFEST); only an UPPER_SNAKE identifier is kept, so a message, path
  * or URL can never reach the log through it.
  */
 export async function lifecycleLog(paths, code, limit, reason) {
