@@ -185,7 +185,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-MIG-04 | PLAT-UC-05 | 1 |
 | R-MIG-05 | HOST-UC-01, PLAT-UC-05 | 2 |
 | R-COMPAT-01 | PLAT-DT-03 | 1 |
-| R-SEC-01 | HAND-EP-01, HOST-EP-01 | 2 |
+| R-SEC-01 | PLAT-EP-07, HAND-EP-01, HOST-EP-01 | 3 |
 | R-SEC-02 | HOST-EP-02, PLAT-EP-05 | 2 |
 | R-SEC-03 | PLAT-EP-01, PLAT-BVA-02 | 2 |
 | R-SEC-04 | EXT-EP-04 | 1 |
@@ -340,7 +340,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | PLAT-EP-04 | [11-platform.md](<11-platform.md>) | integration | — |
 | PLAT-EP-05 | [11-platform.md](<11-platform.md>) | integration (full-run acceptance) | — |
 | PLAT-EP-06 | [11-platform.md](<11-platform.md>) | integration (traffic trace plus static check) | — |
-| PLAT-EP-07 | [11-platform.md](<11-platform.md>) | unit (static analysis of manifests and imports), integration (row 8: a started host with a child) | TQ-R5 (A assumed) |
+| PLAT-EP-07 | [11-platform.md](<11-platform.md>) | unit (static analysis of manifests and imports), integration (row 8: a started host with a child) | TQ-R5 (decided B) |
 | PLAT-BVA-01 | [11-platform.md](<11-platform.md>) | unit (fake clock) | K (day = 86400 s) |
 | PLAT-BVA-02 | [11-platform.md](<11-platform.md>) | integration | K (limits frozen at V3-K) |
 | PLAT-DT-01 | [11-platform.md](<11-platform.md>) | integration | — |

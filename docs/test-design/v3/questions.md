@@ -158,7 +158,7 @@ full Fishball DSH).
 
 These are about where code lives, not about behaviour. Status: TQ-R1 **decided A**, revised by
 TQ-R3; TQ-R2 **decided** (the user's own design); TQ-R3 **decided B**, resolved by `fishball-shared`;
-TQ-R4 **decided B**; TQ-R5 open.
+TQ-R4 **decided B**; TQ-R5 **decided B**.
 
 **TQ-R1. Who owns modules used by both the child (moving to core) and the instance host?** The
 `admin.js` constants, the provider-sync codec, `native-runtime/files.js` (used by
@@ -241,5 +241,10 @@ it: the connector's contract is `./mcp-schema` (K1), and embed-UI only reads hos
   through the connector's `./mcp-schema` / `./tools` contracts, as now.
 - B. Yes, any V3 package may depend on it.
 *Recommendation:* **A.** The library stays the small core↔instance overlap the user asked for, and
-the connector keeps no dependency on Fishball-side code (R-SEC-01's separation). Requirements and
-cases assume A (R-ARCH-08 rule 4, PLAT-EP-07 row 7).
+the connector keeps no dependency on Fishball-side code (R-SEC-01's separation).
+
+**Decided 2026-11-11: B.** Any V3 package may depend on `fishball-shared` (the connector, embed-UI,
+core, the instance and the bundles). Unchanged: it imports no other V3 package; it holds only
+modules more than one package actually uses; importing it loads only the library, so the host DSH
+still loads no Fishball-set module (R-BND-01). Now R-ARCH-08 rules 1–6, glossary, design §9.1;
+task DOCS. Cases: PLAT-EP-07 rows 5–8.

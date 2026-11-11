@@ -84,7 +84,8 @@ Rules for the repackaging steps:
   `fishball-shared` (`packages/shared`, R-ARCH-08: "建立公共包"); Fishball-only logic goes to core;
   DSH-only logic stays in the instance. Core and the instance never import each other, and the host
   DSH never loads any module of the set (R-BND-01 strict). `fishball-shared` imports nothing from
-  any other V3 package.
+  any other V3 package; any V3 package may depend on it (TQ-R5 decided B), but it holds only
+  modules more than one package actually uses.
 - **The V2 contract keeps one owner, the connector,** until nothing imports it. `fishball-core`
   imports `fishball-connector/contract` as a package dependency in the meantime. It gets **no**
   copy of its own. The vendored copy of design §9.1 is of the V3 `./mcp-schema`, generated from
@@ -175,7 +176,7 @@ task's area through a short follow-up task, serialised, so no two sessions edit 
 | X-SEC | Secret sweep over a full run; token-value placement checks. The scan allow-lists exactly one known hit: DSH's own browser login token printed on stdout at startup (spike V3-S7 `8e92b84`, report §4.4); any other hit, or that token anywhere else, fails | `test/v3/security/` | all of W4 and W4b | PLAT-EP-05, HOST-EP-02 (end to end), PLAT-EP-06, PLAT-EP-07 (runtime part) | zero hits |
 | X-MATRIX | Install matrix rows and contribution matrix on a real DSH | `test/v3/matrix/` | all of W4 and W4b | UIM-DT-01 (headless columns), EXT-DT-03, PLAT-EP-03 rows 2–6 | every row except 11 checked |
 | X-REMOTE | Standalone Fishball against a second DSH; hosted with a remote target | `test/v3/remote/` | C-WIRE, F-STATUS, F-PAIR, I-HOST | REM-UC-01, REM-UC-02, HOST-UC-05 (end to end) | two DSH processes, https or tunnel |
-| DOCS | README notes: older MCP clients must upgrade, prompt-size note for contributors, standalone set-up and `board_export`, migration order; packaging: five npm packages plus embed-UI versioned together, `fishball-shared` a library carried inside the core and instance tarballs (not installed by hand, not a plugin) | `README.md`, `packages/*/README.md`, `docs/package-layout.md` | W4 | — (R-CON-01, R-EXT-14, R-BRD-02 documentation parts) | reviewed |
+| DOCS | README notes: older MCP clients must upgrade, prompt-size note for contributors, standalone set-up and `board_export`, migration order; packaging: five npm packages plus embed-UI versioned together, `fishball-shared` a library carried inside the tarball of every package that depends on it (not installed by hand, not a plugin) | `README.md`, `packages/*/README.md`, `docs/package-layout.md` | W4 | — (R-CON-01, R-EXT-14, R-BRD-02 documentation parts) | reviewed |
 
 ## W5b — Compatibility matrix
 
