@@ -76,9 +76,10 @@ export async function preflight({ mainHome, runtimeRoot, workspace, mainWorkspac
   await inspectAncestors(workspace, root, install, scanRoots)
   await inspectAncestors(profileDir, root, install, scanRoots)
   /*
-   * No core-identity (PREFLIGHT_CORE_SHADOW) check, by the user's decision of 2026-11-11 (V2 e2e
-   * round 2, bug 1, relayed by Fishball in the user's words): "用A吧，不管这些，插件怎么样就怎么样，如果炸了启动不了就启动不了。As it is.
-   * This is DSH itself shittin, not my fault. Leave it as it is."
+   * No core-identity (PREFLIGHT_CORE_SHADOW) check. Maintainer decision (2026-11-11, V2 e2e round 2,
+   * bug 1, decision A): a plugin that brings its own copy of a DSH core package is no longer refused
+   * here. If that copy breaks DSH, the child fails to start and the existing start-failure detail
+   * reports the cause.
    * Why it went: the child profile is a DSH profile (nodeLinker: hoisted), so a plugin that depends
    * on an `@deepseek-ai/*` package (dsh-idle-compact@0.3.0 on `@deepseek-ai/schemastery`, a
    * Recommended entry) gets that copy hoisted into the profile's top-level node_modules, and the
