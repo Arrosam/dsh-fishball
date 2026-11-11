@@ -9,9 +9,10 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 
 | ID | Why |
 | --- | --- |
+| R-OA-10 | Withdrawn twice (1.16 direct access; 1.25 static headers replaced by the adapter, R-OA-21); the ID is reserved. Its negative is covered by AUTH-UC-07 and AUTH-EP-02 rows 7–8b. |
 | R-WD-13 | Withdrawn (requirements 1.14); the ID is reserved. Its old behaviour (idle-stop bypass) is negatively covered by WD-UC-02 and WD-EP-01 #5: every `turn-finished` reaches Fishball. |
 
-**Requirement → cases** (196 requirements, 175 active cases, 3 withdrawn ids kept):
+**Requirement → cases** (197 requirements, 174 active cases, 6 withdrawn ids kept):
 
 | Requirement | Cases | Count |
 | --- | --- | --- |
@@ -54,13 +55,13 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-EXT-18 | EVT-BVA-02, EXT-UC-02, EXT-BVA-02, EXT-BVA-03, EXT-DT-01 | 5 |
 | R-EXT-19 | EVT-ST-01, EXT-UC-03, EXT-DT-01, EXT-ST-01 | 4 |
 | R-EXT-20 | WD-UC-02, EXT-UC-02 | 2 |
-| R-TOK-00 | AUTH-UC-04, AUTH-UC-07, AUTH-EP-02, AUTH-EP-05, AUTH-DT-10, AUTH-UC-10, AUTH-DT-08 | 7 |
-| R-TOK-01 | AUTH-UC-02, AUTH-UC-03, AUTH-UC-07, AUTH-UC-11, AUTH-EP-02, AUTH-EP-11, AUTH-DT-02, PLAT-EP-01 | 8 |
+| R-TOK-00 | AUTH-UC-04, AUTH-UC-07, AUTH-EP-02, AUTH-EP-05, AUTH-UC-10, AUTH-DT-08 | 6 |
+| R-TOK-01 | AUTH-UC-02, AUTH-UC-03, AUTH-UC-07, AUTH-UC-12, AUTH-EP-02, AUTH-DT-02, PLAT-EP-01 | 7 |
 | R-TOK-02 | AUTH-EP-01, AUTH-EP-02 | 2 |
 | R-TOK-03 | AUTH-UC-01 | 1 |
-| R-TOK-04 | AUTH-UC-01, AUTH-UC-07, AUTH-EP-04, AUTH-UC-10, HOST-EP-02, PLAT-EP-05 | 6 |
-| R-TOK-05 | AUTH-UC-06, AUTH-UC-11, AUTH-DT-10, AUTH-DT-04, AUTH-ST-05, EVT-EP-04, EVT-ST-01, HOST-UC-04, PLAT-ST-01 | 9 |
-| R-TOK-06 | AUTH-UC-07, AUTH-UC-11, AUTH-EP-05, AUTH-BVA-06, AUTH-DT-08, REM-EP-03 | 6 |
+| R-TOK-04 | AUTH-UC-01, AUTH-UC-07, AUTH-UC-12, AUTH-EP-04, AUTH-UC-10, HOST-EP-02, PLAT-EP-05 | 7 |
+| R-TOK-05 | AUTH-UC-06, AUTH-DT-04, AUTH-ST-05, EVT-EP-04, EVT-ST-01, HOST-UC-04, PLAT-ST-01 | 7 |
+| R-TOK-06 | AUTH-UC-07, AUTH-EP-05, AUTH-BVA-06, AUTH-DT-08, REM-EP-03 | 5 |
 | R-TOK-07 | AUTH-EP-07 | 1 |
 | R-TOK-08 | AUTH-UC-01, AUTH-UC-09, AUTH-EP-04, AUTH-BVA-03, AUTH-ST-01, AUTH-DT-08 | 6 |
 | R-TOK-09 | AUTH-UC-06, AUTH-EP-04, AUTH-DT-05, AUTH-ST-01 | 4 |
@@ -74,19 +75,20 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-OA-07 | AUTH-UC-02, AUTH-UC-03, AUTH-EP-01, AUTH-BVA-01, AUTH-BVA-06, AUTH-ST-02, AUTH-ST-05 | 7 |
 | R-OA-08 | AUTH-EP-01, REM-UC-03, REM-EP-03 | 3 |
 | R-OA-09 | AUTH-UC-02, AUTH-UC-08, PLAT-UC-01 | 3 |
-| R-OA-10 | AUTH-UC-07, AUTH-UC-11, AUTH-EP-02, AUTH-EP-11, AUTH-DT-10 | 5 |
-| R-OA-11 | AUTH-UC-10, AUTH-DT-08 | 2 |
-| R-OA-12 | AUTH-UC-10, AUTH-ST-04, AUTH-DT-08 | 3 |
-| R-OA-13 | AUTH-UC-10, AUTH-DT-07, AUTH-EP-08 | 3 |
-| R-OA-14 | AUTH-UC-10, AUTH-DT-07, AUTH-ST-04, AUTH-BVA-07 | 4 |
+| R-OA-10 | AUTH-UC-07, AUTH-EP-02 | 2 |
+| R-OA-11 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-08 | 3 |
+| R-OA-12 | AUTH-UC-12, AUTH-UC-10, AUTH-ST-04, AUTH-DT-08 | 4 |
+| R-OA-13 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-07, AUTH-EP-08 | 4 |
+| R-OA-14 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-07, AUTH-ST-04, AUTH-BVA-07 | 5 |
 | R-OA-15 | AUTH-ST-04, AUTH-BVA-07 | 2 |
-| R-OA-16 | AUTH-UC-10, AUTH-ST-05, AUTH-BVA-08 | 3 |
+| R-OA-16 | AUTH-UC-12, AUTH-UC-10, AUTH-ST-06, AUTH-ST-05, AUTH-BVA-08 | 5 |
 | R-OA-17 | AUTH-BVA-06, AUTH-UC-10 | 2 |
 | R-OA-18 | AUTH-DT-06, AUTH-UC-10 | 2 |
 | R-OA-19 | AUTH-DT-06 | 1 |
 | R-OA-20 | AUTH-UC-10, AUTH-DT-09, AUTH-EP-10, AUTH-EP-09, REM-UC-03 | 5 |
+| R-OA-21 | AUTH-UC-12, AUTH-ST-06 | 2 |
 | R-ID-01 | AUTH-UC-02 | 1 |
-| R-ID-02 | AUTH-EP-03, AUTH-EP-11, AUTH-BVA-02, AUTH-DT-01, AUTH-DT-08 | 5 |
+| R-ID-02 | AUTH-EP-03, AUTH-BVA-02, AUTH-DT-01, AUTH-DT-08 | 4 |
 | R-ID-03 | AUTH-UC-02, AUTH-DT-02, AUTH-ST-01, AUTH-ST-02, AUTH-UC-10, AUTH-DT-08, NAME-UC-01 | 7 |
 | R-ID-04 | AUTH-UC-04, AUTH-EP-05, AUTH-DT-02, AUTH-ST-01, AUTH-UC-10, AUTH-DT-08 | 6 |
 | R-ID-05 | AUTH-UC-03, AUTH-DT-06, AUTH-ST-03, HOST-UC-02 | 4 |
@@ -96,8 +98,8 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-ID-09 | AUTH-UC-06, AUTH-ST-01 | 2 |
 | R-ID-10 | AUTH-UC-05, AUTH-EP-03, AUTH-DT-06, AUTH-ST-03 | 4 |
 | R-ID-11 | AUTH-UC-04, AUTH-EP-03, AUTH-EP-07 | 3 |
-| R-ID-12 | AUTH-UC-01, AUTH-UC-02, AUTH-UC-11, AUTH-UC-09, AUTH-BVA-05, AUTH-UC-10 | 6 |
-| R-ID-13 | AUTH-UC-11, AUTH-EP-03, AUTH-DT-02, AUTH-DT-10, AUTH-DT-06, AUTH-DT-08 | 6 |
+| R-ID-12 | AUTH-UC-01, AUTH-UC-02, AUTH-UC-09, AUTH-BVA-05, AUTH-UC-10 | 5 |
+| R-ID-13 | AUTH-EP-03, AUTH-DT-02, AUTH-DT-06, AUTH-DT-08 | 4 |
 | R-NAME-01 | NAME-UC-03, NAME-EP-02, NAME-ST-01 | 3 |
 | R-NAME-02 | AUTH-DT-08, NAME-UC-02, NAME-UC-03, NAME-EP-01, NAME-EP-02, NAME-EP-03, NAME-EP-04, NAME-BVA-01, NAME-BVA-03, NAME-DT-02, NAME-ST-01 | 11 |
 | R-NAME-03 | AUTH-UC-05, NAME-UC-02, NAME-DT-03 | 3 |
@@ -105,7 +107,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-NAME-05 | AUTH-UC-09, NAME-UC-02, NAME-EP-04, HAND-UC-01, HAND-UC-03 | 5 |
 | R-NAME-06 | AUTH-UC-10, NAME-UC-01, NAME-BVA-03, NAME-DT-01 | 4 |
 | R-NAME-07 | NAME-ST-01, HOST-UC-03, HOST-ST-02 | 3 |
-| R-NAME-08 | AUTH-UC-11, AUTH-DT-08, NAME-UC-01, NAME-EP-04, NAME-ST-01, HAND-UC-01, HAND-UC-03, HAND-EP-02, UIM-UC-05 | 9 |
+| R-NAME-08 | AUTH-DT-08, NAME-UC-01, NAME-EP-04, NAME-ST-01, HAND-UC-01, HAND-UC-03, HAND-EP-02, UIM-UC-05 | 8 |
 | R-ROUTE-01 | HAND-UC-02, HAND-ST-01, WATCH-UC-01, HOST-UC-03 | 4 |
 | R-ROUTE-02 | EVT-EP-01, EVT-DT-01 | 2 |
 | R-ROUTE-03 | EVT-EP-01, EVT-DT-01, PLAT-UC-03 | 3 |
@@ -223,14 +225,15 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | AUTH-UC-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | e2e (page), integration (core decisions) | — |
 | AUTH-UC-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | D§5.3, TQ-2 (decided A), TQ-5 (decided A) |
 | AUTH-UC-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
-| AUTH-UC-11 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (a second DSH with a `dsh-mcp-client` row, both SDKs) | — |
+| AUTH-UC-11 (withdrawn) | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
+| AUTH-UC-12 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (a second DSH with a `dsh-mcp-client` row and the adapter, both SDKs), e2e (the approval page) | P:S7c |
 | AUTH-UC-08 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-UC-09 | [01-auth-pairing.md](<01-auth-pairing.md>) | e2e | — |
 | AUTH-EP-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-3 (decided A, confirmed by S7), D§5.5 |
 | AUTH-EP-02 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-EP-03 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (validator), integration (endpoint, core settings) | TQ-1 (decided C) |
 | AUTH-EP-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-4 (decided A) |
-| AUTH-EP-11 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
+| AUTH-EP-11 (withdrawn) | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-EP-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-EP-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-EP-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
@@ -243,7 +246,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | AUTH-DT-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-DT-02 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-DT-03 (withdrawn) | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
-| AUTH-DT-10 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
+| AUTH-DT-10 (withdrawn) | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-DT-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | D§5.3, TQ-2 (decided A), TQ-5 (decided A) |
 | AUTH-DT-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-DT-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (core with a fake link) | — |
@@ -253,6 +256,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | AUTH-UC-10 | [01-auth-pairing.md](<01-auth-pairing.md>) | e2e (page), integration (flow with a scripted browser) | — |
 | AUTH-DT-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-ST-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock) | — |
+| AUTH-ST-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (adapter with a fake connector and fake clock) | P:S7c |
 | AUTH-DT-09 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (a second process holding the port) | K (default port; rule 4's rebind timing) |
 | AUTH-ST-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock), integration | K (maximum chain lifetime) |
 | AUTH-DT-08 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |

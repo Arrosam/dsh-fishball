@@ -128,34 +128,39 @@ Requirements: R-TOK-00…10, R-OA-01…10, R-ID-01…12, requirements §4.1. Con
 - **Actor:** an external MCP client with static headers only.
 - **Preconditions:** E1 enabled and bound to `agent-a`.
 - **Main flow:**
-  1. The client sends `Authorization: Bearer agent-a.<v(E1)>` with no `Fishball-Agent-Id` → 401 `invalid_token`, identical to any invalid access token.
-  2. It sends `Authorization: Bearer <v(E1)>` with no `Fishball-Agent-Id` → the same 401.
+  1. The client sends `Authorization: Bearer agent-a.<v(E1)>` → 401 `invalid_token`, identical to any invalid access token.
+  2. It sends `Authorization: Bearer <v(E1)>` (with or without any id header, e.g. `Fishball-Agent-Id: agent-a`) → the same 401.
   3. The connector's settings have no `directAccess` switch.
 - **Alternative flows:**
   - A1. The client obtains an access token at the token endpoint with `agent-a` + `v(E1)` → MCP requests then succeed.
-  - A2. The client adds `Fishball-Agent-Id: agent-a` to request 2 → it succeeds as E1's pair (AUTH-UC-11).
+  - A2. The client is a `dsh-mcp-client` row → it connects through the adapter with ordinary OAuth (AUTH-UC-12).
 - **Exception flows:** E1. The header from a disallowed `Origin` → 403 before any token check.
 - **Postconditions:** the bearer value is never logged (grep); these requests count toward the per-client failure limit like any other.
 
-### AUTH-UC-11 — A `dsh-mcp-client` row connects with static token + id headers
-**Req:** R-OA-10, R-ID-13, R-ID-12, R-NAME-08, R-TOK-01, R-TOK-05, R-TOK-06 · **Level:** integration (a second DSH with a `dsh-mcp-client` row, both SDKs) · **Flags:** —
+### AUTH-UC-11 — *Withdrawn* (the static token + id header form, requirements 1.25, was replaced by the `dsh-mcp-client` adapter)
+**Req:** R-OA-10 · **Level:** integration · **Flags:** —
 
-- **Actor:** the owner of DSH M (connector) and of DSH N, where a `dsh-mcp-client` row points at M's connector.
+The id stays reserved. Its negative is covered by AUTH-UC-07 and AUTH-EP-02 rows 7–8b; the replacement is AUTH-UC-12.
+
+### AUTH-UC-12 — A `dsh-mcp-client` row connects through the adapter with normal OAuth
+**Req:** R-OA-21, R-OA-11, R-OA-12, R-OA-13, R-OA-14, R-OA-16, R-TOK-01, R-TOK-04 · **Level:** integration (a second DSH with a `dsh-mcp-client` row and the adapter, both SDKs), e2e (the approval page) · **Flags:** P:S7c
+
+- **Actor:** the owner of DSH M (connector) and of DSH N, where a `dsh-mcp-client` row points at M's connector and the adapter is installed.
 - **Preconditions:** the owner created E7 by hand in M's connector settings; E7 is enabled and unpaired.
 - **Main flow:**
-  1. The owner configures N's row with `headers: {Authorization: "Bearer <v(E7)>", "Fishball-Agent-Id": "dsh-n"}`.
-  2. The row's first request (`server/discover`) → M binds E7 to `dsh-n` atomically, with **no name**; the request succeeds.
-  3. `tools/list`, `tools/call` and `subscriptions/listen` succeed at full power; M's settings show E7 paired to **ID:** dsh-n.
-  4. Hours later (beyond 3600 s, fake clock) the same headers still work: no expiry, no refresh.
+  1. The row starts; the adapter fetches M's protected-resource and authorization-server metadata and uses its Client ID Metadata Document URL as `client_id`.
+  2. The adapter opens the owner's browser at M's approval page with PKCE S256, a loopback redirect it listens on, `state` and `resource`.
+  3. The owner types `v(E7)` and the id `dsh-n` and authorizes; the adapter receives the code, checks `iss`, and exchanges it → an access token (`scope: fishball`) and a refresh token.
+  4. The row's MCP requests carry `Authorization: Bearer <access token>`; `tools/list`, `tools/call` and `subscriptions/listen` succeed.
+  5. Before the access token expires, the adapter refreshes once (single-flight) and the row keeps working, across several 3600 s lifetimes (fake clock).
 - **Alternative flows:**
-  - A1. The agent calls `set_name("Mirror")` → it is shown as "Mirror".
-  - A2. M's connector restarts → the next request works with no new pairing.
+  - A1. M's connector restarts → the row's next request gets 401; the adapter refreshes with the persisted refresh token (R-OA-16 (5)) and the row reconnects with no browser step.
+  - A2. N restarts → the adapter reads its stored refresh token from `ctx.credentials` and refreshes; no browser step.
 - **Exception flows:**
-  - E1. The owner disables E7 → the next request gets 401 and N's listen stream closes; re-enabling restores the same pair.
-  - E2. N's row is changed to `Fishball-Agent-Id: other` → 401 `invalid_token`, `error_description` `already-paired`; nothing changes.
-  - E3. A fresh entry E8 with `Fishball-Agent-Id: dsh-n` (already held by E7) → 401, `id-taken`; E8 stays unpaired.
-  - E4. A wrong token value with any id → 401 `invalid_token` with no detail.
-- **Postconditions:** the value appears in N's row config (the owner's choice) but in no log, response or page of M (grep).
+  - E1. The owner disables E7 → the next refresh gets `invalid_grant`; the adapter reports "authorize again" once and does not retry in a loop.
+  - E2. The owner cancels on the approval page → the adapter reports it; the row stays disconnected.
+  - E3. The adapter is disabled → it stops refreshing; the row fails at the next expiry.
+- **Postconditions:** M saw only standard OAuth requests (no non-standard header, field or grant); no access token, refresh token or verifier is in N's saved row configuration, any log, or any page (grep); no host file of N was patched.
 
 ### AUTH-UC-08 — A standard MCP client is set up with configuration only
 **Req:** R-OA-01, R-OA-02, R-OA-05, R-OA-09, R-CON-01, R-REM-03 · **Level:** integration · **Flags:** —
@@ -211,9 +216,9 @@ Every 401 row: `WWW-Authenticate: Bearer resource_metadata="<PRM URL>"`, `error=
 | 4 | expired AT | 401 `invalid_token` |
 | 5 | AT of a disabled / deleted / value-changed entry | 401 `invalid_token` |
 | 6 | AT issued for another resource (audience) | 401 `invalid_token` |
-| 7 | the raw token value `v(E1)`, no `Fishball-Agent-Id` | 401 `invalid_token` |
+| 7 | the raw token value `v(E1)` | 401 `invalid_token` |
 | 8 | `<id>.<v(E1)>` (with or without the id header) | 401 `invalid_token` |
-| 8b | `v(E1)` with `Fishball-Agent-Id` of its bound id | processed, full power (R-OA-10; AUTH-DT-10) |
+| 8b | `v(E1)` with `Fishball-Agent-Id` of its bound id | 401 `invalid_token` (no static credential, R-OA-10 withdrawn) |
 | 8a | an AT issued for this connector under another allowed host (other canonical URI) | 401 `invalid_token` (audience) |
 | 9 | valid pair-only AT | processed (pair-only power) |
 | 10 | valid full AT | processed |
@@ -256,19 +261,10 @@ Every 401 row: `WWW-Authenticate: Bearer resource_metadata="<PRM URL>"`, `error=
 | 7a | two entries, distinct `ref`s, same value set by the user | not refused by the requirements (no rule): both authenticate as their own entry (K) |
 | 8 | ten generated values | all distinct; none appears in settings, logs or any response |
 
-### AUTH-EP-11 — Static header request classes
-**Req:** R-OA-10, R-TOK-01, R-ID-02 · **Level:** integration · **Flags:** —
+### AUTH-EP-11 — *Withdrawn* (the static token + id header form, requirements 1.25, was replaced by the `dsh-mcp-client` adapter)
+**Req:** R-OA-10 · **Level:** integration · **Flags:** —
 
-| # | Headers | Expected |
-| --- | --- | --- |
-| 1 | `Authorization: Bearer <access token>` only | the OAuth path |
-| 2 | `Authorization: Bearer <token value>` + `Fishball-Agent-Id: a` | the static path |
-| 3 | `Fishball-Agent-Id: a` with an **access token** as the bearer | 401 `invalid_token` (a static request needs the token value) |
-| 4 | `Fishball-Agent-Id` present but empty, or with a dot, or 65 characters | 401, `id-invalid` |
-| 5 | `Fishball-Agent-Id` sent twice with different values | 401, `id-invalid` |
-| 6 | `Fishball-Agent-Id` without `Authorization` | 401, no `error=` attribute |
-| 7 | header name in another case (`fishball-agent-id`) | treated the same (HTTP header names are case-insensitive) |
-| 8 | the token value in a query parameter | refused, never processed (R-TOK-02) |
+The id stays reserved. Its negative is covered by AUTH-UC-07 and AUTH-EP-02 rows 7–8b; the replacement is AUTH-UC-12.
 
 ### AUTH-EP-05 — Leakage on authentication failure
 **Req:** R-TOK-00, R-TOK-06, R-OA-03, R-ID-04 · **Level:** integration · **Flags:** —
@@ -426,21 +422,10 @@ Check on rules 1–4, 8: response identical (EP-05).
 
 See AUTH-UC-07. The id stays reserved.
 
-### AUTH-DT-10 — Static header access outcome
-**Req:** R-OA-10, R-ID-13, R-TOK-00, R-TOK-05 · **Level:** integration · **Flags:** —
+### AUTH-DT-10 — *Withdrawn* (the static token + id header form, requirements 1.25, was replaced by the `dsh-mcp-client` adapter)
+**Req:** R-OA-10 · **Level:** integration · **Flags:** —
 
-| Rule | Token value | Entry state | Id in `Fishball-Agent-Id` | Result | Changes |
-| --- | --- | --- | --- | --- | --- |
-| 1 | matches no entry | — | any | 401 `invalid_token`, no detail | none; failure counted |
-| 2 | matches a disabled / deleted entry, or a too-short value | — | any | same as rule 1 | none |
-| 3 | valid | enabled, unbound | valid, free | processed, full power | entry bound to the id, no name |
-| 4 | valid | enabled, unbound | valid, held by another entry | 401, `id-taken` | none |
-| 5 | valid | enabled, unbound | invalid | 401, `id-invalid` | none |
-| 6 | valid | enabled, bound to this id | same | processed, full power | `lastSeenAt` only |
-| 7 | valid | enabled, bound to another id | other | 401, `already-paired` | none |
-| 8 | valid | bound by the OAuth `pair` or the approval page, same id | same | processed (one pair, whichever path bound it) | none |
-| 9 | valid | enabled, bound; then disabled | same | the next request 401; open streams closed | — |
-| 10 | valid, 2 concurrent first requests on one unbound entry with different ids | unbound | a / b | exactly one binds; the other gets `already-paired` | one binding |
+The id stays reserved. Its negative is covered by AUTH-UC-07 and AUTH-EP-02 rows 7–8b; the replacement is AUTH-UC-12.
 
 ### AUTH-DT-04 — Revocation effect by item kind
 **Req:** R-TOK-05, R-ROUTE-06, R-ROUTE-04, R-OA-06, R-CON-05 · **Level:** integration · **Flags:** D§5.3, TQ-2 (decided A), TQ-5 (decided A)
@@ -551,7 +536,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 ### AUTH-UC-10 — Someone authorizes a browser agent by entering a token
 **Req:** R-OA-11, R-OA-12, R-OA-13, R-OA-14, R-OA-16, R-OA-17, R-OA-18, R-OA-20, R-ID-03, R-ID-04, R-ID-12, R-NAME-06, R-TOK-00, R-TOK-04 · **Level:** e2e (page), integration (flow with a scripted browser) · **Flags:** —
 
-- **Actor:** whoever holds a token (normally the DSH owner); an external MCP client with the authorization code flow (the DSH SDK client `@modelcontextprotocol/client` 2.2.0 on both SDKs, or the Python MCP SDK; DSH's own `dsh-mcp-client` has no OAuth and uses static header access instead, AUTH-UC-11) and a Client ID Metadata Document at `https://agent.example/cimd.json` (`client_name: "Agent W"`, `redirect_uris: ["http://127.0.0.1:7777/cb"]`).
+- **Actor:** whoever holds a token (normally the DSH owner); an external MCP client with the authorization code flow (the DSH SDK client `@modelcontextprotocol/client` 2.2.0 on both SDKs, or the Python MCP SDK; DSH's own `dsh-mcp-client` has no OAuth and is served by the adapter, AUTH-UC-12) and a Client ID Metadata Document at `https://agent.example/cimd.json` (`client_name: "Agent W"`, `redirect_uris: ["http://127.0.0.1:7777/cb"]`).
 - **Preconditions:** the owner created entry E5 by hand in the connector's settings; E5 is enabled and unpaired; the approval listener is open.
 - **Main flow:**
   1. The client gets 401 at the MCP endpoint, reads both metadata documents, and sees `client_id_metadata_document_supported: true`, `code_challenge_methods_supported: ["S256"]` and `authorization_endpoint` on the approval listener.
@@ -615,6 +600,22 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 | 10 | CodeIssued | 60 s pass | Expired | `invalid_grant` |
 | 11 | Redeemed | the same code again | Redeemed | `invalid_grant`; every AT issued from it revoked |
 | 12 | any | connector restart | (gone) | pending requests and codes lost; bindings stay |
+
+### AUTH-ST-06 — The adapter's view of one `dsh-mcp-client` row
+**Req:** R-OA-21, R-OA-16 · **Level:** unit (adapter with a fake connector and fake clock) · **Flags:** P:S7c
+
+| # | From | Event | To | Observable |
+| --- | --- | --- | --- | --- |
+| 1 | Unauthorized | row starts | Authorizing | browser opened at `authorization_endpoint` (PKCE, `state`, `resource`) |
+| 2 | Authorizing | redirect with `code`, valid `iss` | Connected | code exchanged; row sends the access token |
+| 3 | Authorizing | redirect with a wrong `iss` or `state` | Unauthorized | code not exchanged; reported |
+| 4 | Authorizing | `access_denied` | Unauthorized | reported once |
+| 5 | Connected | access token near expiry | Refreshing | one refresh grant |
+| 6 | Refreshing | several row requests at once | Refreshing | still one refresh in flight (single-flight) |
+| 7 | Refreshing | success | Connected | new access token and refresh token stored in `ctx.credentials` |
+| 8 | Refreshing | `invalid_grant` | NeedsAuthorization | "authorize again" reported once; no retry loop |
+| 9 | Connected | 401 (connector restarted) | Refreshing | refresh with the persisted refresh token |
+| 10 | any | adapter disabled | Stopped | no refresh; nothing written to the row config |
 
 ### AUTH-DT-09 — The approval listener's port
 **Req:** R-OA-20, R-OA-01, R-OA-02 · **Level:** integration (a second process holding the port) · **Flags:** K (default port; rule 4's rebind timing)
