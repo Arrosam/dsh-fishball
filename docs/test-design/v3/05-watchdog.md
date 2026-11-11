@@ -157,7 +157,7 @@ integration (real child + connector).
 | 5 | Watchdog → Fishball messages (escalation, report, "watchdog is down") | travel only through in-session communication in the Fishball DSH (`manager.notify`, D§7.2); a connector trace shows no MCP call for them |
 
 ### WD-EP-04 — Watchdog model changes and saving settings
-**Req:** R-WD-06, R-WD-05 · **Level:** integration (fake model provider counting lookups) · **Flags:** —
+**Req:** R-WD-06, R-WD-05, R-WD-16 · **Level:** integration (fake model provider counting lookups) · **Flags:** —
 
 | # | Class | Expected |
 | --- | --- | --- |
@@ -165,6 +165,7 @@ integration (real child + connector).
 | 2 | model changed while a step is already prepared | that step keeps the old model; the next not-yet-prepared step uses the new one |
 | 3 | saving Watchdog settings (any field) | performs no model lookup (provider call count unchanged) |
 | 4 | timers present in Watchdog after start | only the patrol timer per supervised session, plus the hung-check timeout and the bounded start attachment as failure bounds; no approval, hourly/daily cap, stall, idle, paused-poll or per-brief schedule timers |
+| 5 | the agent preset of a Watchdog side session | `watchdog`, contributed by `fishball-watchdog`, offered beside `fishball`; never switched off by core's guards; read-only tools, no session-creating tool (R-WD-16) |
 
 ## Boundary Value Analysis
 

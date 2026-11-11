@@ -51,12 +51,12 @@ caller's loader-entry package. The EXT cases are no longer provisional on S5 unl
 - **Postconditions:** one emit woke at most one agent.
 
 ### EXT-UC-03 — A failing contributor is contained, then quarantined, then restored
-**Req:** R-EXT-08, R-EXT-09, R-EXT-19, R-EXT-04, R-EXT-15 · **Level:** integration · **Flags:** K (N of M)
+**Req:** R-EXT-08, R-EXT-09, R-EXT-19, R-EXT-04, R-EXT-15 · **Level:** integration · **Flags:** — (K2: `QUARANTINE.moreThanFailures` = 2, `QUARANTINE.windowOutcomes` = 5)
 
 - **Actor:** contributor `flaky` with tool `flaky.go` and two pending events in P's mailbox (one already acked).
 - **Main flow:**
   1. `execute` throws → that call gets `{ok: false, code: "contributor-failed"}` with no stack, message or path. Another contributor's tool and another client's calls are unaffected. One log line per (contributor, failure kind).
-  2. Failures continue past the frozen threshold → `flaky` is **quarantined**: its tools leave `tools/list` (`list_changed` sent; calls get "unknown tool", never "quarantined"); `emit` returns `contributor-unavailable`; its **pending** events are retired from every mailbox; the acked one stays.
+  2. A third `contributor-failed` among the last 5 counted outcomes (`QUARANTINE`: more than 2 of 5) → `flaky` is **quarantined**: its tools leave `tools/list` (`list_changed` sent; calls get "unknown tool", never "quarantined"); `emit` returns `contributor-unavailable`; its **pending** events are retired from every mailbox; the acked one stays.
   3. The user disables and re-enables `flaky` (or reloads it) → its new registrations are accepted and listed again.
 - **Alternative flows:** A1. Emits that keep failing validation count toward the same quarantine.
 - **Exception flows:** E1. There is no connector setting to lift the quarantine; the connector settings form has no per-contributor rows.
@@ -78,7 +78,7 @@ caller's loader-entry package. The EXT cases are no longer provisional on S5 unl
 ## Equivalence Partitioning
 
 ### EXT-EP-01 — Registration validity
-**Req:** R-EXT-02, R-EXT-03 · **Level:** unit · **Flags:** K (grammar `[a-z0-9][a-z0-9_.-]{0, 47}`, D§13.2; keyword subset)
+**Req:** R-EXT-02, R-EXT-03 · **Level:** unit · **Flags:** — (K2: `NAME_GRAMMAR.local` 1–48 of `[a-z0-9_.-]`; `SCHEMA_SUBSET`; `TOOL_LIMITS.descriptionBytes` 2048)
 
 | # | Class | Expected |
 | --- | --- | --- |
@@ -121,8 +121,9 @@ caller's loader-entry package. The EXT cases are no longer provisional on S5 unl
 | --- | --- | --- |
 | 1 | `{ok: true, data}` valid | `{ok: true, …}` |
 | 2 | `{ok: false, code: <declared>}` | that code, `isError: true` |
-| 3 | `{ok: false, code: "forbidden"}` (shared vocabulary) | `forbidden` |
-| 4 | `{ok: false, code: "weird"}` (undeclared) | `operation-failed` |
+| 3 | `{ok: false, code: "forbidden"}` (in K2's closed `SHARED_CODES`) | `forbidden` |
+| 3a | each other `SHARED_CODES` member (`limit-exceeded`, `unknown-session`, `expired`, `conflict`, `unavailable`, `unsupported-operation`, `operation-failed`), undeclared | passed through unchanged |
+| 4 | `{ok: false, code: "weird"}` (undeclared, not in `SHARED_CODES`) | `operation-failed` |
 | 5 | data failing `outputSchema` | `contributor-failed` |
 | 6 | not the result shape (a string, its own `isError` flag, raw content blocks) | `contributor-failed`, with `isError: true` set by the connector; the contributor's own flags and blocks never reach the client |
 | 7 | throws / rejects | `contributor-failed` (no stack, message, path) |
@@ -144,7 +145,7 @@ caller's loader-entry package. The EXT cases are no longer provisional on S5 unl
 ## Boundary Value Analysis
 
 ### EXT-BVA-01 — Public tool name length (MCP 1–128)
-**Req:** R-EXT-03 · **Level:** unit · **Flags:** K
+**Req:** R-EXT-03 · **Level:** unit · **Flags:** — (K2: `NAME_GRAMMAR.publicMaxChars` 128)
 
 With namespace `ns` (2 chars) the public name is `ns.` + local name.
 
@@ -158,7 +159,7 @@ With namespace `ns` (2 chars) the public name is `ns.` + local name.
 | 6 | local name 49 | `tool-invalid` |
 
 ### EXT-BVA-02 — Event payload and summary size
-**Req:** R-EXT-18 · **Level:** unit · **Flags:** K (refusal codes `payload-too-large`, `event-invalid` from D§13.2)
+**Req:** R-EXT-18 · **Level:** unit · **Flags:** — (K2: `EVENT_LIMITS.payloadBytes` 8192, `EVENT_LIMITS.summaryChars` 500; `EMIT_REFUSAL`)
 
 | # | Field | Size | Expected |
 | --- | --- | --- | --- |
@@ -174,7 +175,7 @@ With namespace `ns` (2 chars) the public name is `ns.` + local name.
 | 10 | `event` name | grammar as tool names; `""`, `A B` → `event-invalid` |
 
 ### EXT-BVA-03 — Event rate (30 / minute, burst 10) per contributor and recipient
-**Req:** R-EXT-18 · **Level:** unit (fake clock) · **Flags:** K (token-bucket semantics assumed: capacity 10, refill 0.5/s)
+**Req:** R-EXT-18 · **Level:** unit (fake clock) · **Flags:** — (K2: `EVENT_LIMITS.ratePerMinute` 30, `rateBurst` 10, `rateWindowMs` 60000; a refused emit takes no token)
 
 | # | Sequence (same contributor, same recipient) | Expected |
 | --- | --- | --- |
@@ -186,25 +187,30 @@ With namespace `ns` (2 chars) the public name is `ns.` + local name.
 | 6 | 31 emits spread evenly in 60 s after the burst is spent | the 31st refused |
 | 7 | 10 at t = 0 to recipient A, 10 at t = 0 to recipient B | all 20 ok (separate buckets) |
 | 8 | two contributors, 10 each to A at t = 0 | all 20 ok |
-| 9 | a refused emit | does not consume budget (K) |
+| 9 | a refused emit | does not consume budget (K2: a refused emit takes no token, whatever its code) |
 
 ### EXT-BVA-04 — Per-call limits
-**Req:** R-EXT-06, R-EXT-07, R-EXT-08 · **Level:** unit · **Flags:** K (ceilings)
+**Req:** R-EXT-06, R-EXT-07, R-EXT-08 · **Level:** unit · **Flags:** — (K2: `TOOL_LIMITS.ceiling.argumentBytes` 65536, `resultBytes` 262144, `timeoutMs` 30000, `contributorInFlightCalls` 16)
 
 | # | Limit | Value | Expected |
 | --- | --- | --- | --- |
+| 0a | argument bytes, no declared limit | 65536 | runs (ceiling `TOOL_LIMITS.ceiling.argumentBytes`) |
+| 0b | | 65537 | `limit-exceeded`, `execute` not called |
+| 0c | result bytes, no declared limit | 262144 / 262145 | ok / `contributor-failed` |
+| 0d | timeout, no declared limit | returns at 29.9 s / still running at 30 s | ok / `contributor-failed`, `call.signal.reason` = `timeout` |
+| 0e | 16 calls of one contributor in flight | a 17th | `queue-full`; the 16 continue |
 | 1 | argument bytes, declared 1000 | 1000 | runs |
 | 2 | | 1001 | `limit-exceeded`, `execute` not called |
 | 3 | declared above the ceiling | at registration | `tool-invalid` |
 | 4 | result bytes, declared R | R | ok |
 | 5 | | R + 1 | `contributor-failed` |
 | 6 | timeout, declared T | returns at T − ε | ok |
-| 7 | | still running at T | `contributor-failed`; signal fired |
+| 7 | | still running at T | `contributor-failed`; signal fired with reason `timeout` |
 
 ## Decision Tables
 
 ### EXT-DT-01 — `emit` outcome
-**Req:** R-EXT-16, R-EXT-17, R-EXT-18, R-EXT-19 · **Level:** unit · **Flags:** K (precedence order of checks)
+**Req:** R-EXT-16, R-EXT-17, R-EXT-18, R-EXT-19 · **Level:** unit · **Flags:** — (K2: `EMIT_CHECK_ORDER`)
 
 | Rule | Contributor active | Name valid | Size ok | Recipient exists | Rate ok | Duplicate pending | Queue has room | Result |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -260,9 +266,9 @@ Every rule: a returned code, never a throw into the connector or the contributor
 | 1 | Absent | register | Active | listed; `list_changed` |
 | 2 | Active | dispose | Absent | unlisted before the next answer; `list_changed` |
 | 3 | Active | plugin disabled / unloaded / reloaded / uninstalled | Absent | as 2; pending events retired |
-| 4 | Active | in-flight call when withdrawn | Absent | that call gets `tool-withdrawn` (D§13.4), signal fired |
+| 4 | Active | in-flight call when withdrawn | Absent | that call gets `tool-withdrawn`, signal fired with reason `tool-withdrawn` (`ABORT_REASON`) |
 | 5 | Active | failures beyond the threshold | Quarantined | unlisted; `emit` → `contributor-unavailable`; pending events retired |
-| 6 | Quarantined | register again in the same activation | Quarantined | not listed; the quarantine is on the activation (S5, Q2) |
+| 6 | Quarantined | register again in the same activation | Quarantined | accepted with a normal disposer but **not listed**; `mine()` shows it `quarantined` (K2) |
 | 7 | Quarantined | plugin disabled + re-enabled | Absent → (register) Active | |
 | 8 | Quarantined | plugin reloaded or hot-reloaded (a new activation) | Absent → Active | |
 | 8a | Quarantined | the **connector** reloads | Quarantined | the quarantine survives a connector reload |

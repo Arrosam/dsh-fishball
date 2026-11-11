@@ -522,7 +522,7 @@ on localhost and 127.0.0.1. `fishball-core` uses it unchanged.
 | Path | Content |
 | --- | --- |
 | `/.well-known/oauth-protected-resource/api/fishball/mcp` | `{resource: <canonical MCP URI>, authorization_servers: [<issuer>], bearer_methods_supported: ["header"], scopes_supported: ["fishball"]}` |
-| `/.well-known/oauth-authorization-server/api/fishball/oauth` | `{issuer, token_endpoint, authorization_endpoint: <approval origin>/authorize, grant_types_supported: ["client_credentials", "authorization_code"], response_types_supported: ["code"], code_challenge_methods_supported: ["S256"], token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"], client_id_metadata_document_supported: true, authorization_response_iss_parameter_supported: true, scopes_supported: ["fishball", "fishball:pair"]}`; no `registration_endpoint` (§5.5a) |
+| `/.well-known/oauth-authorization-server/api/fishball/oauth` | `{issuer, token_endpoint, authorization_endpoint: <approval origin>/authorize, grant_types_supported: ["client_credentials", "authorization_code", "refresh_token"], response_types_supported: ["code"], code_challenge_methods_supported: ["S256"], token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"], client_id_metadata_document_supported: true, authorization_response_iss_parameter_supported: true, scopes_supported: ["fishball", "fishball:pair"]}` (never `offline_access`); no `registration_endpoint` (§5.5a) |
 | `/api/fishball/oauth/token` | the token endpoint |
 
 **Issuer and canonical URI follow the checked host** (spike V3-S1 Q2 + Q-S7-2, settled by the
@@ -537,8 +537,9 @@ Clients find it through the protected resource metadata, as the spec requires.
 
 **Token endpoint, in order (nothing past a failure runs):**
 1. method POST, form body, the Host and Origin checks and limits (§3.1);
-2. `grant_type` is `client_credentials` or `authorization_code` (§5.5a), else
-   `unsupported_grant_type`. Steps 3–4 are for `client_credentials`;
+2. `grant_type` is `client_credentials`, `authorization_code` or `refresh_token` (§5.5a), else
+   `unsupported_grant_type`. Steps 3–4 are for `client_credentials`; the other two are public-client
+   grants (`none`; a client secret gets `invalid_client`), and `resource` is required on all three;
 3. the client secret is compared, in constant time, against the enabled token entries' digests.
    A miss returns `invalid_client` (401, `WWW-Authenticate: Basic`) and reveals nothing about ids
    or pairs;
@@ -565,8 +566,17 @@ Clients find it through the protected resource metadata, as the spec requires.
   `not-paired` or `id-mismatch` (decided per spec: Authorization § Runtime Insufficient Scope
   Errors; R-ID-06). A token request asking `scope=fishball` while unpaired is narrowed to
   `fishball:pair`, not refused (OAuth 2.1 §1.4.1).
-- There is **no direct access** (requirements 1.16, "不允许直接访问"): only access tokens from the
-  token endpoint are accepted. A raw token value or `<id>.<token>` is an invalid access token.
+- **Static header access** (requirements 1.25, R-OA-10; the user: "那就也接受直接贴token+id的请求头"):
+  a request carrying `Fishball-Agent-Id: <fishball id>` is authenticated by
+  `Authorization: Bearer <token value>` instead of an access token. The value is compared in
+  constant time against the enabled entries on **every** request; an unbound entry with a free id
+  is paired on the first request (no name), exactly like the approval page; an entry bound to that
+  id is that pair at full power; otherwise 401 `invalid_token` with `error_description`
+  `already-paired`, `id-taken` or `id-invalid`. No expiry: disable, delete or a value change refuses
+  the next request. Without `Fishball-Agent-Id`, a raw token value or the old `<id>.<token>` form
+  is an invalid access token. This serves clients that can only send fixed headers, such as DSH's
+  `dsh-mcp-client`, and is the **second documented departure** from the MCP authorization
+  specification (requirements 1.17).
 
 **Why no refresh tokens for machine exchange (Q27, decided; browser clients get rotating ones, Q-OA-2 A, §5.5a):** a client-credentials client re-authenticates with its own
 id + token, which the stock provider already does. A refresh token would be a second long-lived
@@ -582,8 +592,8 @@ and stays the only path for `fishball-core` (R-OA-19).
 
 **Listeners.**
 
-**Transport (Q-SPEC-1 decided A):** both listeners are plain HTTP on loopback, the one documented
-departure from the specification's HTTPS rule; any non-loopback host is HTTPS, directly or through
+**Transport (Q-SPEC-1 decided A):** both listeners are plain HTTP on loopback, a documented
+departure from the specification's HTTPS rule (the other is static header access, §5.5); any non-loopback host is HTTPS, directly or through
 the user's tunnel (R-OA-08, R-REM-05).
 
 | Listener | Serves |
@@ -633,12 +643,32 @@ it is deprecated in the specification. Machine clients are pre-registered by the
 6. The client checks `iss` and posts `grant_type=authorization_code`, `code`, `redirect_uri`,
    `code_verifier`, `client_id`, `resource` (public client, `token_endpoint_auth_method: none`) →
    `scope: "fishball"`, `expires_in: 3600`, in memory, audience-bound, **plus a refresh token**
-   (Q-OA-2 A). Each `refresh_token` grant rotates it; a reused one revokes the whole chain and
-   answers `invalid_grant`; disable, delete or value change of the entry kills every refresh token;
-   refresh tokens live in memory like access tokens (a connector restart means authorizing again;
-   K). Re-entering the bound token on the page stays `already-paired`.
+   (Q-OA-2 A). Each `refresh_token` grant (same `client_id`, `resource` required) rotates it; a
+   spent token presented again within **10 s** (K) by the same client for the same resource gets
+   the identical successor (Q-S7B-1 B: the stock TS client refreshes concurrently); later reuse
+   revokes the whole chain and answers `invalid_grant`; disable, delete or value change of the entry
+   kills every refresh token. **Restart (Q-S7B-3 decided A):** refresh tokens are persisted as
+   **digests only**, with chain id and entry generation, in the connector's storage, so a browser
+   client refreshes after a restart; access tokens stay in memory; the 10 s window is not
+   persisted; maximum chain lifetime K. Re-entering the bound token on the page stays
+   `already-paired`.
 7. **Cancel** → `error=access_denied`, `iss`, `state`; nothing bound. A pending request expires
    after 10 min; nothing survives a connector restart.
+8. **Page and responses (S7b, decided per spec):** every authorization response carries `iss`;
+   a bad `client_id` or `redirect_uri` is shown on the page, never redirected; the redirect after
+   the form POST is `303`; the page sends a restrictive CSP and `Referrer-Policy: no-referrer`.
+   On loopback `authorization_endpoint` uses the client's hostname with the approval port, and the
+   approval listener rebuilds the issuer from its own `Host` with DSH's port; behind a tunnel both
+   use the one tunnel hostname with path routing (S7b F4).
+9. **CIMD fetch (S7b, decided per spec):** https only; private, loopback, link-local and
+   unique-local addresses refused after resolution; no redirects; 5 KiB; errors not cached;
+   `max-age` respected; secret-bearing documents refused.
+
+**`dsh-mcp-client` (S7b F1; Q-S7B-2 decided, requirements 1.25):** DSH's own MCP client has no OAuth
+support (no `authProvider`, no OAuth config). It is supported through static header access
+(§5.5): a row with `headers: {Authorization: "Bearer <token value>", "Fishball-Agent-Id": "<id>"}`
+pairs on its first request and keeps working until the entry is revoked. Fishball's own DSHs are
+unaffected: `fishball-core` uses the SDK's `ClientCredentialsProvider` (R-OA-19).
 
 **The page never creates an entry.** The entry is the one the owner made by hand; the page only
 pairs it. A bound entry is an ordinary entry: listed in native settings with its pair state and
@@ -741,33 +771,53 @@ V2 applied these changes as instance launch overlays (`packages/instance/src/nat
 component's part of it), so they work without an instance:
 - `disabled: true` on the session-creating rows (`ui-subagent`, `ui-schedule`, `schedule`,
   `ui-permission`, `ui-agent-preset`, `entry-customization`, `ui-open-in-app`, `open-in-app`,
-  `ui-sidebar-terminal`, `terminal-controller`), the `fishball-instance` row (no nested hosted
-  Fishball), and the session-creating preset tools;
+  `ui-sidebar-terminal`, `terminal-controller`) and the `fishball-instance` row (no nested hosted
+  Fishball);
+- **agent presets (Q-S6-2 decided B, amended; requirements 1.24):** `disabled: true` on every
+  DSH-shipped agent preset row (`preset-standard`, `preset-ptc`, `preset-cordis`,
+  `preset-minimal` on both SDKs; the list is core's constant per SDK) — **switched off, not
+  deleted** — and core's own `preset-fishball` inserted with `agent-preset-registry.default:
+  fishball`. The session-creating tools live inside each shipped preset's `config.plugins`, which
+  no patch can reach (S6 §3.2), so switching the presets off is how they leave the model.
+  `fishball-watchdog` contributes its own `preset-watchdog` for its side sessions (§7);
 - the read-only permission preset (sandbox read-only, approval policy) with the private Skills
   root exception;
 - its client module: the A-lite page, shortcut remapping, the recommended tab and the slim
   settings panel.
 
-A bundle patch may target any row id (`PatchOptions {id, disabled, config, …}`,
-`cordis-plugin-include`, both SDKs). **Order matters:** DSH composes bundle patches first, then
+A bundle patch may target any **root or group** row that an **earlier** layer or bundle has
+inserted (`PatchOptions {id, disabled, config, …}`, `cordis-plugin-include`, both SDKs; S6). It
+cannot reach rows inside an agent preset's `config.plugins`, and a patch on a row not yet inserted
+is **skipped** with only a debug-level warning. So core's bundle must come **last** (Q-S6-1
+decided B, R-FB-12; spike V3-S6 round 2 `7c2230e`): the instance writes it last when it builds a hosted child; in standalone
+mode core, in its own row's `apply`, moves itself to the end of `dsh.profile.bundles` with
+`dsh-app-boot`'s `readProfileManifest` / `writeProfileBundles` under `dsh-atomic-write`'s
+`withFileLock` on the profile `package.json`. With HMR on, DSH recomposes live within seconds;
+with HMR off, the guard holds from the next start. Until it holds, core reports
+`guards-overridden`. **Order matters a second time:** DSH composes bundle patches first, then
 the profile's own patch file, then `$DSH_HOME/cordis.patch.yml`, then launch overlays
 (`readProfilePatches`: `dsh-app-boot/lib/index.js` rc.5 :1127–1132, rc.1 :1908–1913). So in a
 Fishball DSH, hosted or standalone, the owner's own patches win over core's: that is the accepted
 "can override" of Q20 (decided). The instance's launch overlays carry no guard rows (§6.2), so the hosted
 child behaves exactly like a standalone DSH here.
 
-**Override report (Q20, decided).** At app ready, and on every `settings/document-updated`, core reads
-the effective composition and policy of its own DSH: the guard rows' `disabled` state and the
-active permission preset. It compares them with its own patch's intended values. A difference
+**Override report (Q20, decided).** At app ready, on every `settings/document-updated` and on every
+`plugin-manager/changed` (S6), and never before app ready, core reads the effective composition
+and policy of its own DSH through public services only: `ctx.loader.entries()` (`disabled`),
+`sandboxPolicy.defaultMode`, `ctx.approval.config.policy` (read directly, one test per SDK;
+requirements 1.24 item 4), `permissionPresets` and `agentPresets` (default `fishball`, shipped
+presets off). It compares them with its own patch's intended values. A difference
 sets status `guards-overridden` with the list of overridden guards; a later check that finds them
 restored clears it. It also adds one line to
 the Fishball page's status strip and one notice to Fishball's manager context, so Fishball
 knows its guarantees are weaker. Core keeps running and changes nothing back.
 
-**Engineering check (spike V3-S6):** whether a bundle patch that disables *another* bundle's rows
-is accepted by both SDKs' compatibility preflight and plugin manager without being reported as a
-conflict, and which public API exposes the effective composition and policy so core can detect
-an override (without reading DSH's files directly).
+**Spike V3-S6 (`86800d2` + round 2 `7c2230e`, PASS on both SDKs):** preflight and plugin manager
+accept a bundle patch that disables another bundle's rows; the public API for the override report
+is the list above; the reorder, the switched-off shipped presets with `fishball` and `watchdog`
+offered, the read-only manager (`read`, `read_image`, `working_directory`) and its resume in a new
+process all hold. On resume core checks the manager's **tool list**, not its preset name, because
+rc.5 has no `presetForSession` ([impl], R-FB-13).
 
 ### 5a.3 Standalone setup, step by step
 
@@ -957,7 +1007,8 @@ no token, subscription, mailbox or lane of its own.
    `minCheckIntervalSeconds`. It then reads the session through core's link: `sessions_list`
    for running and pending state, and `session_read` from its last patrol watermark, bounded
    by its read limits. It needs no `turn-finished` or `state` events, which all go to Fishball.
-5. One Watchdog side session per watched session (U8) handles that session's permission
+5. One Watchdog side session per watched session (U8), running Watchdog's own `watchdog` agent
+   preset (contributed by `fishball-watchdog`; R-WD-16), handles that session's permission
    requests and patrols, on Watchdog's own model settings.
 6. An escalation **to Fishball** is `ctl.release(e, {toFishball: true})` (R-INT-05). An
    escalation **to the user** commits `escalate` at the connector (§7.2).
@@ -1029,6 +1080,9 @@ whole set:
 - At every child start, inside `initializeProfile` and before `loadProfileDirectory`, each one is
   copied to `<child>/vendor/<name>` and `<child>/node_modules/<name>` (temp + rename), with
   `dependencies[name] = file:./vendor/<name>`.
+- **Order (Q-S6-1 B, R-FB-12):** `dsh.profile.bundles` lists `fishball-instance` (if present) and
+  the three features and `fishball-hosted-settings` **before** `fishball-core`; the instance writes
+  that order at every start.
 - Each plugin goes into `dsh.profile.bundles` only when the instance's `bundled: [...]` record
   lacks them, so a disable survives. A feature plugin deleted while off is copied back, and the
   record still has it, so it stays **off** (3a; this answers placement Q2).
@@ -1048,7 +1102,9 @@ whole set:
 ### 8.2 Standalone mode
 
 The user installs the set with DSH's native plugin management. DSH's own rules apply: an
-incompatible bundle is skipped at boot, not fatal. So:
+incompatible bundle is skipped at boot, not fatal. Native install appends in install order, so core
+moves itself last at its first start; the guard holds at once with HMR, or after one restart
+(R-FB-12). So:
 - `fishball-core` reports which expected members are missing or skipped in its status
   (`plugin-set-incomplete`, naming them);
 - a skipped or failed Watchdog produces one "watchdog is down" notice per start (R-FB-07);
@@ -1093,7 +1149,7 @@ released only inside the tarballs of the packages that depend on it (no registry
 | `@modelcontextprotocol/client` / `core` | 2.2.0 | 2.2.0, dist byte-identical | `fishball-core`'s link (packaged copy of the same line) |
 | `dsh-mcp-client` | tools + list-changed only, `capabilities: {}`, static headers | same lines | not used for the target (§6.3) |
 | MCP server runtime | not installed | not installed | packaged by the connector |
-| Bundle patch rows `{id, disabled, config, insert}` (`cordis-plugin-include` `PatchOptions`) | present | present (`patch.d.ts`) | `fishball-core` guard rows (§5a.2) |
+| Bundle patch rows `{id, disabled, config, insert}` (`cordis-plugin-include` `PatchOptions`); applied in bundle order, a patch on a row not yet inserted is skipped with a debug-level warning (S6) | present | present (`patch.d.ts`) | `fishball-core` guard rows (§5a.2) |
 | Patch composition order: bundles → profile patch file → home patch → launch overlays | `dsh-app-boot` `readProfilePatches` :1127–1132 | :1908–1913 | Q20 (decided): core's guards are overridable in both modes; the instance's overlays carry no guards |
 | Plugin-manager slots `plugins.bundle.config`, `plugins.row.config`, `plugins.tab` | present | present | embed-UI card; core's recommended tab |
 | `Agent.followup` | `dsh-agent-loop` | present (different line) | `fishball-core` wake |
@@ -1121,7 +1177,11 @@ Order matters, because embed-UI is new and the connector loses its UI:
 3. **Upgrade the instance.**
    - On its first V3 start with a connector in the same DSH, the instance asks the connector for
      a new "Fishball (hosted)" token; the child authenticates and calls `pair` (R-HOST-05).
-   - The child profile, home, Fishball session history, Skills and child settings are kept.
+   - The child profile, home, Skills and child settings are kept. **Earlier sessions are not
+     migrated** (requirements 1.24: nobody installed V2): each leftover is archived through
+     `workspaceController.archiveSession` (DSH has no public delete), with no crash, and stays
+     archived after a restart; the first V3 start begins a new manager session under the
+     `fishball` preset.
    - The child's launch overlay no longer inserts the V2 instance-owned rows. The plugin set is
      placed instead: core on, the three features on at first placement (R-MIG-02).
      Row ids are kept where V2 already had them, so stored settings carry over.
@@ -1145,9 +1205,9 @@ this case.
 | V3-S3 | **Done `b4dca86` (PASS):** one serial pair/name registry; succession as one registry write with idempotent offer re-issue; the user's answer never `expired` by succession; `ctl.accept()` / `ctl.commit(send)` needed (Q-S3-1, Q-S3-2 pending; Q-S3-3 decided: 0.2.2-rc.1 baseline). Interception and pairing (Watchdog intercepts only supervised `permission` and its own `settlement`/`retirement`; every `turn-finished`/`state` reaches Fishball; a refine starts no run): core's interception service hands events to the right interceptor (priority, ties, filters) without an LLM turn, and falls back to Fishball on throw/down/dispose without loss or double handling; `pair` races, `already-paired` results; OQ-14 races between user, Watchdog and Fishball answers on one principal | race matrix; no stale commit; one event wakes one agent |
 | V3-S4 | Embed-UI as a separate package: can the moved connector client still register its sidebar/slot contributions (the same injects) and frame the PG-ORIGIN child origin, without the connector client present? | both hosts; main shortcuts untouched |
 | V3-S5 | **Done `8f2788e` (PASS):** namespace from the caller's loader-entry package (`contributor-unidentified` otherwise); quarantine on the contributor's activation; `_meta` contributor field; owner-fiber check on list/call; `.` kept; Q5 decided A (namespace is attribution only). Contribution service (§13): caller identity from the injecting fiber; auto-withdrawal of tools **and** pending events on contributor disable/unload/HMR; quarantine lifted only by a new fiber; `tools/list_changed` delivery on 2026-07-28 listen streams; event limits and recipient routing; containment of throw/hang/oversize, on both hosts | independent cases across register/dispose/reload/quarantine states |
-| V3-S6 | `fishball-core` as a plain bundle carrying its `fishball-ui` component: one bundle that inserts its own rows, disables other bundles' rows and sets the read-only preset in an ordinary DSH on both SDKs; one `dsh.client` serving the page, tab and settings; the hosted child behaves the same with the instance's launch configuration in place; core can read the effective composition and policy through a public API to report `guards-overridden`, in both modes; the A-lite page works without the instance (standalone) | both modes, both hosts; no host patch |
+| V3-S6 | **Done `86800d2` + `7c2230e` (PASS):** composition, client, override API, reorder (one restart with HMR off; the instance writes core last), shipped presets off with `fishball` / `watchdog` offered, read-only manager resumed; discard = archive; tool-list check on resume; Q-S6-3 impl (`approval.config.policy`), Q-S6-4 (rc.1 = 0.2.2). `fishball-core` as a plain bundle carrying its `fishball-ui` component: one bundle that inserts its own rows, disables other bundles' rows and sets the read-only preset in an ordinary DSH on both SDKs; one `dsh.client` serving the page, tab and settings; the hosted child behaves the same with the instance's launch configuration in place; core can read the effective composition and policy through a public API to report `guards-overridden`, in both modes; the A-lite page works without the instance (standalone) | both modes, both hosts; no host patch |
 | V3-S7 | OAuth: the connector as a client-credentials authorization server on the DSH listener (RFC 9728/8414 metadata, token endpoint, audience binding) works with the stock `ClientCredentialsProvider` of both SDKs and with one non-DSH client-credentials client; immediate revocation; the direct-access fallback on and off | both hosts; no token in any log |
-| V3-S7b | Browser authorization on the connector's **own approval listener** (requirements 1.16): that the stock `@modelcontextprotocol/client` 2.2.0 (both SDKs) and the Python MCP SDK complete `authorization_code` + PKCE S256 with a **Client ID Metadata Document** `client_id`, a loopback redirect, `iss` in the response, and the issuer and `authorization_endpoint` on different origins (one issuer, metadata on DSH's listener, page on the approval port); whether either client requires a refresh token or `offline_access`; that both keep accepting a plain-`http` loopback authorization server (Q-SPEC-1 decided A: the one documented departure); how the the token-only page: entry of a token value in a POST form, uniform refusal, `already-paired` on the page, and the failure limit shared with the token endpoint; issuer and `authorization_endpoint` behind a tunnel host from `--trusted-host`; the second listener's bind and clash behaviour on both SDKs: with the approval port taken, machine exchange still works and stock clients accept metadata that keeps `authorization_endpoint` (Q-OA-7 decided A) | both hosts, both clients reach `scope: fishball` after one approval; deny returns `access_denied`; no token value in any page, URL or log |
+| V3-S7b | **Done `141ac3b` (PARTIAL):** server side 45/45 on both SDKs with the SDK client and Python; `dsh-mcp-client` has no OAuth (Q-S7B-2); refresh race decided (10 s window); restart (Q-S7B-3) pending. Browser authorization on the connector's **own approval listener** (requirements 1.16): that the stock `@modelcontextprotocol/client` 2.2.0 (both SDKs) and the Python MCP SDK complete `authorization_code` + PKCE S256 with a **Client ID Metadata Document** `client_id`, a loopback redirect, `iss` in the response, and the issuer and `authorization_endpoint` on different origins (one issuer, metadata on DSH's listener, page on the approval port); whether either client requires a refresh token or `offline_access`; that both keep accepting a plain-`http` loopback authorization server (Q-SPEC-1 decided A: the one documented departure); how the the token-only page: entry of a token value in a POST form, uniform refusal, `already-paired` on the page, and the failure limit shared with the token endpoint; issuer and `authorization_endpoint` behind a tunnel host from `--trusted-host`; the second listener's bind and clash behaviour on both SDKs: with the approval port taken, machine exchange still works and stock clients accept metadata that keeps `authorization_endpoint` (Q-OA-7 decided A) | both hosts, both clients reach `scope: fishball` after one approval; deny returns `access_denied`; no token value in any page, URL or log |
 | V3-K | Freeze `./mcp-schema` and `./tools`: tool names and schemas, result envelope, event types (R-EVS-02), error map, OAuth metadata and error mapping, page limit, retention, "connected" definition (§3.5) | reviewed; independent requirements-only case authoring starts after this |
 
 Process stays: requirements → independent case authoring → implementation without reading tests
@@ -1302,7 +1362,8 @@ type ContributedResult =
     **hashed** names: DSH's own MCP client renders `mcp__<server>__<raw>`, replaces `.` and
     shortens to its 64-character contract with a hash suffix (`dsh-mcp-client/lib/index.js:57–100`,
     both SDKs). That is the client-side disambiguation the specification allows; names stay
-    unique. The freeze sets a soft budget so typical names avoid the hash.
+    unique. There is **no** soft name-length budget: S5 showed DSH hashes **every** dotted name,
+    whatever its length (K2 `d1d0b25`, `packages/connector/tools/README.md`).
 - Reserved namespaces: `fishball` and the connector's own plugin name. Core tools keep unprefixed
   names (§3.2). No contributed name can collide with them, because every contributed name
   contains a `.`.
@@ -1351,7 +1412,9 @@ contributed tools on offer, and the README explains the cost.
 3. argument byte size ≤ min(declared, connector ceiling) → `limit-exceeded`;
 4. JSON Schema validation of `arguments` against `inputSchema` → `invalid-arguments` (the
    validator is the connector's own; the keyword subset matches what the hosts' client accepts);
-5. per-principal and per-contributor in-flight and rate limits → `queue-full` / `rate-limited`;
+5. per-principal limits, and the **per-contributor in-flight bound** (`TOOL_LIMITS.contributorInFlightCalls`
+   = 16 calls of one contributor at once; one more → `queue-full`). There is **no per-contributor
+   call rate** in V3 (K2 `d1d0b25`, `packages/connector/tools/README.md`);
 6. `execute(args, call)` under a timeout (min(declared, ceiling)) and the abort signal.
 
 **Result handling:**
@@ -1374,7 +1437,11 @@ contributed tools on offer, and the README explains the cost.
 - Logging: one warn line per (contributor, failure kind) per window, with the namespace, tool
   name and kind only. Never the arguments, the result or the principal's token.
 - **Quarantine** (R-EXT-09): `contributor-failed` on more than N of the last M calls of one
-  contributor (both frozen constants in the connector's limits, not settings) withdraws that
+  contributor, frozen by K2 as `QUARANTINE.moreThanFailures` = 2 of `QUARANTINE.windowOutcomes` = 5
+  counted outcomes (finished calls, where a failure is `contributor-failed`, and validated emits,
+  where a failure is `event-invalid` or `payload-too-large`; `tool-withdrawn` and refusals before
+  `execute` are not counted), so the 3rd failure in 5 quarantines;
+  (frozen constants, not settings) withdraws that
   contributor's tools (§13.4) and stops its events (§13.5a). The quarantine is an effect on the
   contributor's root fiber (S5, Q2), so it lifts only with a new activation of the contributor
   (disable and re-enable, reload, or hot reload); a connector reload does not lift it; there is no
@@ -1414,6 +1481,16 @@ with the namespace only, and `tools/list` names the contributor plugin and versi
   | payload | 8 KiB |
   | summary | 500 characters |
   | rate per contributor and recipient | 30 per minute, burst 10 |
+
+**Frozen by K2 (K2 `d1d0b25`, `packages/connector/tools/README.md`; [impl], decided by Fishball):** `TOOL_LIMITS.ceiling.argumentBytes` = 65536
+(64 KiB), `TOOL_LIMITS.ceiling.resultBytes` = 262144 (256 KiB), `TOOL_LIMITS.ceiling.timeoutMs` = 30000
+(30 s, below DSH's 60 s client default), `TOOL_LIMITS.contributorInFlightCalls` = 16,
+`TOOL_LIMITS.descriptionBytes` = 2048, `TOOL_LIMITS.messageChars` = 500, `EVENT_LIMITS` payload 8192 bytes,
+summary 500 code points, 30 per minute with burst 10 per (contributor, recipient),
+`QUARANTINE` 2 of 5; the closed `SHARED_CODES` (`limit-exceeded`, `forbidden`, `unknown-session`,
+`expired`, `conflict`, `unavailable`, `unsupported-operation`, `operation-failed`); `CALL_CODE`;
+`ABORT_REASON` (`cancelled`, `disconnected`, `revoked`, `timeout`, `tool-withdrawn`); `EMIT_CHECK_ORDER`.
+The README is the authority; this table only names them.
   | queue | the recipient's `maxQueuedInputs` |
 
   `dedupeKey` collapses a still-pending duplicate.
