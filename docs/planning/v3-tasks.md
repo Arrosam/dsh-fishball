@@ -44,8 +44,10 @@ plan.
 | W1 | Interface freeze (V3-K) and mechanical repackaging | K1, K2, K3, R-CORE, R-EMBED, R-CONN |
 | W2 | Independent modules, connector and Fishball side | C-HTTP, C-OAUTH, C-TOKENS, C-PAIR, C-MAILBOX, C-EXT, F-LINK, F-INTERCEPT, F-GUARDS, I-PLACE |
 | W3 | Domain behaviour built on W2 | C-ROUTE, C-TOOLS, F-PAIR, F-FACADE, WD-ROUTE, I-HOST, U-SHELL, FEAT-PEERS |
-| W4 | Cross-cutting connector effects, Watchdog judgement and patrol, embed-UI features | C-REVOKE, C-SUCCEED, C-WIRE, WD-DECIDE, WD-PATROL, F-STATUS, U-MARKS, U-ATTN |
-| W5 | Reinstall succession end to end, migration, acceptance suites | I-SUCCEED, X-MIG, X-SEC, X-MATRIX, X-REMOTE, X-COMPAT, DOCS |
+| W4 | Cross-cutting connector effects, Watchdog judgement and patrol, embed-UI features | C-REVOKE, C-SUCCEED, WD-DECIDE, WD-PATROL, F-STATUS, U-MARKS, U-ATTN |
+| W4b | Connector wiring (after C-REVOKE and C-SUCCEED) | C-WIRE |
+| W5 | Reinstall succession end to end, migration, acceptance suites | I-SUCCEED, X-MIG, X-SEC, X-MATRIX, X-REMOTE, DOCS |
+| W5b | Compatibility matrix (after X-MATRIX and X-REMOTE) | X-COMPAT |
 | W6 | Browser e2e after merge | E2E-UI, E2E-CORE |
 
 ## W0 — Spikes
@@ -64,6 +66,9 @@ Each spike lives only under `spikes/v3-sN/` and ends with a short report
 | S7 | Client-credentials AS on the DSH listener with the stock `ClientCredentialsProvider` and one non-DSH client; revocation; direct access | `spikes/v3-s7/`, `docs/spikes/v3-s7.md` | — | AUTH-UC-02, AUTH-UC-08, REM-UC-01 | also answers TQ-3 (is `resource` sent?) |
 
 ## W1 — Interface freeze (V3-K) and repackaging
+
+R-CORE, R-EMBED and R-CONN need no spike and touch no spike files, so they run alongside W0
+(started that way on 2026-11-11). K1–K3 wait for their spikes.
 
 V3-K is split into three freeze tasks so each fits one session. Each is reviewed by the design
 session; the case files are re-checked for every `K` flag the freeze resolves. Repackaging tasks
@@ -114,12 +119,20 @@ Each task builds one module behind a K1/K2/K3 interface and tests it against fak
 | --- | --- | --- | --- | --- | --- |
 | C-REVOKE | Revocation effects: streams close, answers refused, offers to the user, sessions unmanaged with one note, held events for 30 days and restored on re-enable (per TQ-2 answer) | `packages/connector/src/revocation/` | C-TOKENS, C-MAILBOX, C-ROUTE | AUTH-UC-03, AUTH-UC-06, AUTH-DT-04 | takes effect on the next request |
 | C-SUCCEED | `fishballConnectorTokens`: `createHosted`, `retire` as one transaction (sessions, role, name, re-issued offers with new ids, events with their ids, delete, notes, rollback) | `packages/connector/src/hosted/` | C-PAIR, C-ROUTE, C-MAILBOX | HOST-UC-03 (connector part), HOST-DT-02, HOST-ST-02, NAME-ST-01 rows 8–9 | name never held twice |
-| C-WIRE | Connector plugin row: wire all modules, native settings schema (tokens list, `directAccess`, `routing.fishballToken`, limits; no per-contributor rows), V2 settings kept/inert, V2 intake holding queue; **owns** the connector plugin entry and settings schema | `packages/connector/src/index` (plugin row), `packages/connector/src/settings/`, `packages/connector/src/migration/` | all C-* of W2–W3 | AUTH-UC-09 (integration part), PLAT-UC-05 step 1, PLAT-EP-03 | full connector loads on both SDKs; R-CON-10 |
 | WD-DECIDE | Permission judgement: allow / justified reject / `escalate` to the user / re-route to Fishball, settlement interception and non-waking note, first-commit races, model change timing | `packages/watchdog/src/decide/` | WD-ROUTE, K1 (answer tool contract; tested against a fake link) | WD-UC-01, WD-DT-01, WD-EP-04 rows 1–3 | no Fishball turn for allow, reject or escalate |
 | WD-PATROL | Patrol timer (one per supervised session, exactly one per interval), patrol reads with watermark, `minCheckIntervalSeconds` validation, data-only `watchdog_brief` / `watchdog_refine`, pause (stop first) / resume with no run, no `watchdog_check_now`, no other timers | `packages/watchdog/src/patrol/`, `packages/watchdog/src/brief/` | WD-ROUTE | WD-UC-03, WD-UC-06, WD-UC-07, WD-EP-01 rows 12–15, WD-EP-02, WD-EP-04 row 4, WD-BVA-01, WD-BVA-02, WD-BVA-03, WD-ST-02, WD-ST-03 | a refine returns before any Watchdog work and never moves the timer |
 | F-STATUS | Core status: `target-unset` / `target-unreachable` / `token-refused` / `TARGET_INCOMPATIBLE`, plugin-set completeness, standalone "watchdog is down" at app ready, `fishball-off`, status strip | `packages/core/src/status/`, `packages/core/ui/status/` | F-LINK, F-GUARDS, WD-ROUTE | REM-DT-01 (status display), PLAT-DT-02, WD-UC-05 (standalone), PLAT-EP-04 row 3 | one notice per DSH start |
 | U-MARKS | Managed marks with names, Hand over / Take back buttons through the hand-over service, refresh on `onChange` | `packages/embed-ui/src/client/marks/`, `packages/embed-ui/src/host/handover/` | U-SHELL, C-ROUTE | HAND-UC-01, HAND-UC-02, HAND-UC-03, HAND-UC-04 (integration parts), UIM-DT-01 rows 6, 8 | names always match `managed()` |
 | U-ATTN | Attention latch in embed-UI; `embed-ui.attention.signal` / `.state` contributed; fish and dots; clear on page open; reset on unload or loss of the designated Fishball's connection | `packages/embed-ui/src/client/attention/`, `packages/embed-ui/src/host/attention/` | U-SHELL, C-EXT | EXT-UC-04, EXT-DT-03 rows E3–E5 | absent without the connector service |
+
+## W4b — Connector wiring
+
+C-WIRE runs alone, after W4, because it wires in every connector module, including C-REVOKE and
+C-SUCCEED from W4.
+
+| Id | Scope | Owns | Depends | Cases | Definition of done |
+| --- | --- | --- | --- | --- | --- |
+| C-WIRE | Connector plugin row: wire all modules, native settings schema (tokens list, `directAccess`, `routing.fishballToken`, limits; no per-contributor rows), V2 settings kept/inert, V2 intake holding queue; **owns** the connector plugin entry and settings schema | `packages/connector/src/index` (plugin row), `packages/connector/src/settings/`, `packages/connector/src/migration/` | every connector task of W2–W4: C-HTTP, C-OAUTH, C-TOKENS, C-PAIR, C-MAILBOX, C-EXT, C-ROUTE, C-TOOLS, C-REVOKE, C-SUCCEED | AUTH-UC-09 (integration part), PLAT-UC-05 step 1, PLAT-EP-03 | full connector loads on both SDKs; R-CON-10 |
 
 ## W5 — End to end, migration and acceptance
 
@@ -130,18 +143,25 @@ task's area through a short follow-up task, serialised, so no two sessions edit 
 | --- | --- | --- | --- | --- | --- |
 | I-SUCCEED | Instance side of reinstall succession: keep the entry key, call `retire` after the new pairing, retry at next start, never for a user-made entry or a user delete | `packages/instance/src/host/succession/` | I-HOST, C-SUCCEED | HOST-UC-03, HOST-DT-01 rows 5–7, HOST-DT-02 (end to end) | succession runs only on reinstall |
 | X-MIG | V2 → V3 upgrade on a real V2 child profile | `test/v3/migration/` | C-WIRE, I-HOST, F-STATUS, U-SHELL | PLAT-UC-05 | history, Skills, settings kept |
-| X-SEC | Secret sweep over a full run; token-value placement checks | `test/v3/security/` | all of W4 | PLAT-EP-05, HOST-EP-02 (end to end), PLAT-EP-06 | zero hits |
-| X-MATRIX | Install matrix rows and contribution matrix on a real DSH | `test/v3/matrix/` | all of W4 | UIM-DT-01 (headless columns), EXT-DT-03, PLAT-EP-03 rows 2–6 | every row except 11 checked |
+| X-SEC | Secret sweep over a full run; token-value placement checks | `test/v3/security/` | all of W4 and W4b | PLAT-EP-05, HOST-EP-02 (end to end), PLAT-EP-06 | zero hits |
+| X-MATRIX | Install matrix rows and contribution matrix on a real DSH | `test/v3/matrix/` | all of W4 and W4b | UIM-DT-01 (headless columns), EXT-DT-03, PLAT-EP-03 rows 2–6 | every row except 11 checked |
 | X-REMOTE | Standalone Fishball against a second DSH; hosted with a remote target | `test/v3/remote/` | C-WIRE, F-STATUS, F-PAIR, I-HOST | REM-UC-01, REM-UC-02, HOST-UC-05 (end to end) | two DSH processes, https or tunnel |
-| X-COMPAT | The compatibility matrix | `test/v3/compat/` | X-MATRIX, X-REMOTE | PLAT-DT-03 | all rules pass |
 | DOCS | README notes: older MCP clients must upgrade, prompt-size note for contributors, standalone set-up and `board_export`, migration order | `README.md`, `packages/*/README.md` | W4 | — (R-CON-01, R-EXT-14, R-BRD-02 documentation parts) | reviewed |
+
+## W5b — Compatibility matrix
+
+X-COMPAT runs after W5, because it re-runs the X-MATRIX and X-REMOTE suites on both SDKs.
+
+| Id | Scope | Owns | Depends | Cases | Definition of done |
+| --- | --- | --- | --- | --- | --- |
+| X-COMPAT | The compatibility matrix | `test/v3/compat/` | X-MATRIX, X-REMOTE | PLAT-DT-03 | all rules pass |
 
 ## W6 — Browser e2e after merge
 
 | Id | Scope | Owns | Depends | Cases | Definition of done |
 | --- | --- | --- | --- | --- | --- |
-| E2E-UI | Host-DSH browser flows: page, frame, status, Retry, marks, Hand over / Take back, fish and dots, native settings pair status, hosted model-sync card | `test/v3/e2e/host/` | merge of W5 | UIM-UC-01, UIM-UC-02, UIM-UC-03, HAND-UC-01…04 (UI), AUTH-UC-09, HOST-UC-04 (Retry), HOST-UC-07 (card), UIM-DT-01 (UI columns) | both SDKs |
-| E2E-CORE | Fishball-page browser flows: `already-paired` warning, name clash, A-lite page and guards, `guards-overridden` strip | `test/v3/e2e/fishball/` | merge of W5 | AUTH-UC-05, AUTH-ST-03 (warning), NAME-UC-02 (page), NAME-DT-03 (page), PLAT-UC-04 (page), REM-UC-01 (page) | hosted and standalone, both SDKs |
+| E2E-UI | Host-DSH browser flows: page, frame, status, Retry, marks, Hand over / Take back, fish and dots, native settings pair status, hosted model-sync card | `test/v3/e2e/host/` | merge of W5b | UIM-UC-01, UIM-UC-02, UIM-UC-03, HAND-UC-01…04 (UI), AUTH-UC-09, HOST-UC-04 (Retry), HOST-UC-07 (card), UIM-DT-01 (UI columns) | both SDKs |
+| E2E-CORE | Fishball-page browser flows: `already-paired` warning, name clash, A-lite page and guards, `guards-overridden` strip | `test/v3/e2e/fishball/` | merge of W5b | AUTH-UC-05, AUTH-ST-03 (warning), NAME-UC-02 (page), NAME-DT-03 (page), PLAT-UC-04 (page), REM-UC-01 (page) | hosted and standalone, both SDKs |
 
 ## Dependency graph (summary)
 
@@ -151,8 +171,10 @@ W0  S1 S2 S3 S4 S5 S6 S7
 W1  K1 ◄┴──┴──┴─────┴──┘   K2 ◄ S5   K3 ◄ S3 S4 S6   R-CORE  R-EMBED  R-CONN
 W2  C-HTTP C-OAUTH C-TOKENS C-PAIR C-MAILBOX (K1) · C-EXT (K2) · F-LINK (K1) · F-INTERCEPT (K3) · F-GUARDS (K3, R-CORE) · I-PLACE (R-CORE)
 W3  C-ROUTE (MAILBOX, PAIR) · C-TOOLS (HTTP, OAUTH) · F-PAIR · F-FACADE · WD-ROUTE · I-HOST · U-SHELL · FEAT-PEERS
-W4  C-REVOKE · C-SUCCEED · C-WIRE · WD-DECIDE · WD-PATROL · F-STATUS · U-MARKS · U-ATTN
-W5  I-SUCCEED · X-MIG · X-SEC · X-MATRIX · X-REMOTE · X-COMPAT · DOCS
+W4  C-REVOKE · C-SUCCEED · WD-DECIDE · WD-PATROL · F-STATUS · U-MARKS · U-ATTN
+W4b C-WIRE (all connector modules, incl. C-REVOKE, C-SUCCEED)
+W5  I-SUCCEED · X-MIG · X-SEC · X-MATRIX · X-REMOTE · DOCS
+W5b X-COMPAT (X-MATRIX, X-REMOTE)
 W6  E2E-UI · E2E-CORE
 ```
 
@@ -163,11 +185,11 @@ W6  E2E-UI · E2E-CORE
 | W1 | `packages/instance/package.json` | R-CORE |
 | W1 | `packages/connector/package.json` | R-CONN |
 | W2 | `packages/instance/package.json` | I-PLACE |
-| W2 | connector plugin row | nobody (modules only; wired in W4 by C-WIRE) |
+| W2–W4 | connector plugin row and settings schema | nobody (modules only; wired in W4b by C-WIRE) |
 | W3 | `packages/watchdog/package.json` | WD-ROUTE |
 | W3 | `packages/embed-ui/package.json`, client entry | U-SHELL |
 | W3 | `packages/instance/src/host/` | I-HOST |
-| W4 | connector plugin row and settings schema | C-WIRE |
+| W4b | connector plugin row and settings schema | C-WIRE (only task in the wave) |
 | W4 | `packages/watchdog/` | WD-DECIDE (`decide/`), WD-PATROL (`patrol/`, `brief/`); row and manifest untouched |
 | W4 | `packages/embed-ui/` | U-MARKS (`marks/`, `host/handover/`), U-ATTN (`attention/`); shell untouched |
 | W5 | `packages/instance/src/host/succession/` | I-SUCCEED |
