@@ -10,10 +10,12 @@
     "./link": "./src/link/index.js",
     "./package.json": "./package.json"
   },
+  "//files": "vendor/ is the copy of fishball-connector/mcp-schema that scripts/vendor-mcp-schema.mjs writes into a staged package at pack time (design §9.1; REL-PACK runs it); the repository holds no copy. scripts/ is not shipped.",
   "files": [
     "client.js",
     "src/",
     "ui/",
+    "vendor/",
     "cordis.patch.yml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
