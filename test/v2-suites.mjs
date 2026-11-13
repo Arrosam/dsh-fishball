@@ -91,6 +91,9 @@ export const V2_SUITES = Object.freeze({
     // V3 R-SHARED (PLAT-EP-07 static rows, HOST-EP-03 rows 1–2); run with test/run-v3.mjs.
     file('test/v3/shared/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-shared package boundaries (R-SHARED)'),
     file('test/v3/shared/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-shared package boundaries (R-SHARED)'),
+    // V3 K2 (freeze of fishball-connector/tools, K-flagged EXT cases); run with test/run-v3.mjs.
+    file('test/v3/k2/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
+    file('test/v3/k2/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
