@@ -11,7 +11,10 @@
  *   background log) or a DSH host value it reads (session event types, the Cordis fiber state).
  */
 
-/** Values frozen by K3 (`events.d.ts`) with no runtime export of their own. */
+/**
+ * PROPOSED (Fishball 2026-11-14): values K3 states in `events.d.ts` but exports no runtime constant
+ * for. They live here once until task K-VALUES moves them into `packages/core/contracts`.
+ */
 export const CONTRACT = Object.freeze({
   /** `InterceptRegistration.priority` default (R-INT-01). */
   defaultPriority: 0,
@@ -26,10 +29,18 @@ export const CONTRACT = Object.freeze({
  * `eventId` (design §6.4, S2 §2.2). The record is a small state machine; every move is a
  * read-modify-write on the domain's single write chain, so two moves never interleave (S3).
  */
+const MS_PER_DAY = 24 * 60 * 60 * 1000
 export const LEDGER = Object.freeze({
   domain: 'fishball_core_events',
   table: 'acceptance',
   version: 1,
+  /**
+   * PROPOSED (Fishball 2026-11-14, under the user's review): a finished record (closed, admitted
+   * or discarded) that the connector has acked is deleted this long after it finished. Only acked
+   * records go: the connector never returns an acked event to a poll (K1 MAILBOX), so a deleted
+   * id cannot come back and be handled twice; an unacked one is kept so its replay stays a duplicate.
+   */
+  finishedRetentionMs: 30 * MS_PER_DAY,
 })
 
 /**
@@ -57,6 +68,8 @@ export const STATE = Object.freeze({
 export const UNDECIDED = Object.freeze([STATE.offered, STATE.open])
 /** States in which an interceptor's handler is still running (the record is "open", S2-Q1 B). */
 export const INTERCEPTOR_HELD = Object.freeze([STATE.offered, STATE.open, STATE.committing])
+/** End states: nothing more happens to the event (the retention clock starts here). */
+export const FINISHED = Object.freeze([STATE.closed, STATE.admitted, STATE.discarded])
 /** Every state but `offered` is a durable acceptance by one side, so core may ack (R-INT-08). */
 export const ACKABLE = Object.freeze(Object.values(STATE).filter((state) => state !== STATE.offered))
 

@@ -145,6 +145,9 @@ export function createInterception({ ledger, registry, delivery, link, logger })
   async function intake(event) {
     await recovering
     if (closed) return DISPATCH.duplicate
+    // Retention runs on intake as well as at startup, so a long-running Fishball DSH also sheds
+    // finished records; it scans the in-memory table and writes only when something expired.
+    await ledger.prune()
     const known = ledger.get(event.eventId)
     if (known !== undefined) return replay(event.eventId)
     const chosen = registry.choose(event)
@@ -192,7 +195,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
    *   because the answer may already be at the connector (R-INT-04: "committed or fenced, never
    *   both").
    * - fishball: reconciled against the session log by the delivery list.
-   * Then every durable acceptance still unacked is acked.
+   * Then every durable acceptance still unacked is acked, and expired finished records go.
    */
   function recover() {
     recovering = (async () => {
@@ -208,6 +211,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
       }
       await delivery.recover()
       for (const record of ledger.inOrder(ACKABLE)) if (!record.acked) await ack(record.eventId)
+      await ledger.prune()
     })()
     return recovering
   }

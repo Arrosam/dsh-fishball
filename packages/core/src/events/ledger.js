@@ -10,7 +10,7 @@
  * wins (S3 `proto/interception.mjs`). The table has no put-if-absent, so `create` guards the first
  * write of an id in process; there is one core per Fishball DSH (R-ID-06).
  */
-import { LEDGER, MESSAGE, MISUSE, STATE } from './constants.js'
+import { FINISHED, LEDGER, MESSAGE, MISUSE, STATE } from './constants.js'
 
 const STATES = new Set(Object.values(STATE))
 
@@ -23,6 +23,7 @@ const recordSchema = Object.freeze({
   parse(value) {
     const ok = value !== null && typeof value === 'object' && typeof value.eventId === 'string' && STATES.has(value.state)
       && Number.isSafeInteger(value.sequence) && typeof value.acked === 'boolean' && value.event !== null && typeof value.event === 'object'
+      && (value.finishedAt === undefined || Number.isSafeInteger(value.finishedAt))
     if (!ok) throw new TypeError(MISUSE.record)
     return value
   },
@@ -53,9 +54,10 @@ export const receiptOf = (record) => ({ eventId: record.eventId, payloadDigest: 
 
 /**
  * The state machine over one KvTable.
- * @param table - the ledger's KvTable (`get`, `entries`, `put`, `update`).
+ * @param table - the ledger's KvTable (`get`, `entries`, `put`, `update`, `deleteMany`).
+ * @param now - the clock, epoch milliseconds; stamps `finishedAt` and drives retention.
  */
-export function createLedger(table) {
+export function createLedger(table, now) {
   const creating = new Set()
   let sequence = Math.max(0, ...[...table.entries()].map(([, record]) => record.sequence))
 
@@ -83,6 +85,7 @@ export function createLedger(table) {
     },
     /**
      * Compare-and-set: apply `next` only when `guard(current)` holds at the record's write slot.
+     * A move into an end state stamps `finishedAt`.
      * @returns whether this call won the move.
      */
     async move(eventId, guard, next) {
@@ -90,9 +93,16 @@ export function createLedger(table) {
       await table.update(eventId, (current) => {
         if (!guard(current)) return current
         won = true
-        return { ...current, ...next(current) }
+        const moved = { ...current, ...next(current) }
+        return FINISHED.includes(moved.state) && moved.finishedAt === undefined ? { ...moved, finishedAt: now() } : moved
       })
       return won
+    },
+    /** Delete acked records that finished more than LEDGER.finishedRetentionMs ago. */
+    prune() {
+      const cutoff = now() - LEDGER.finishedRetentionMs
+      const expired = records().filter((record) => record.acked && record.finishedAt !== undefined && record.finishedAt < cutoff)
+      return expired.length === 0 ? Promise.resolve(0) : table.deleteMany(expired.map((record) => record.eventId))
     },
   })
 }
