@@ -11,7 +11,7 @@
  * Each is declared once here, marked PROPOSED, and imported wherever it is used, so the K-VALUES
  * task can move it into the frozen contracts by changing this file alone.
  */
-import { HOSTS, PATHS, PROTOCOL, RESOURCE } from './schema.js'
+import { HOSTS, PROTOCOL, RESOURCE } from './schema.js'
 
 /**
  * The link's state words, spelled as K3's `TargetState` (design §4.1). PROPOSED runtime owner: K3
@@ -91,7 +91,6 @@ export const LINK_MCP = Object.freeze({
   onInsufficientScope: 'throw',
   // No request follows a redirect: a credential never travels to a redirect target (design §6.3).
   redirect: 'error',
-  mcpPath: PATHS.mcp,
 })
 
 /** HTTP facts the link classifies by (R-MIG-03: a V2 connector answers 404 on the MCP route). */
