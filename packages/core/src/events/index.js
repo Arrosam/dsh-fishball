@@ -10,10 +10,13 @@
  * - `link.ack(receipts)`: `inbox_ack` through core's link (K1);
  * - `fishball.activate()`: the manager session's live agent;
  * - `fishball.present(event)`: the model-facing content blocks of one event;
- * - `logger`: the background log (R-INT-09).
+ * - `logger`: the background log (R-INT-09);
+ * - `now`: the clock in epoch milliseconds (default `Date.now`), for ledger retention.
  *
- * Order of use: `recover()` once after the Fishball DSH's plugins have registered (app ready),
- * then `intake(event)` for every polled event; `close()` before the agent's owner disposes it.
+ * Order of use (confirmed by Fishball 2026-11-14): F-WIRE calls `recover()` once after app ready,
+ * when the Fishball DSH's plugins have registered, because an open record is offered again only
+ * to a plugin that is registered (R-INT-04); then `intake(event)` for every polled event;
+ * `close()` before the agent's owner disposes it.
  */
 import { createDelivery } from './delivery.js'
 import { createInterception } from './interception.js'
@@ -28,8 +31,8 @@ export { CONTRACT, DISPATCH, LEDGER, STATE } from './constants.js'
  * @returns {{service: object, intake: Function, recover: Function, close: Function}} `service` is
  *   the K3 `FishballInstanceEvents` value (`fishballInstance.events`).
  */
-export function createEvents({ table, link, fishball, logger }) {
-  const ledger = createLedger(table)
+export function createEvents({ table, link, fishball, logger, now = Date.now }) {
+  const ledger = createLedger(table, now)
   const registry = createRegistry({ logger })
   const delivery = createDelivery({ ledger, fishball, logger })
   return createInterception({ ledger, registry, delivery, link, logger })
