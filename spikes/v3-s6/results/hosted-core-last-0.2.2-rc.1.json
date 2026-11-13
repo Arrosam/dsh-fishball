@@ -1,0 +1,202 @@
+{
+  "id": "hosted-core-last",
+  "sdk": "0.2.2-rc.1",
+  "node": "v24.22.2",
+  "at": "2026-11-11T09:10:04.109Z",
+  "bundles": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "fishball-board",
+    "fishball-instance",
+    "fishball-core"
+  ],
+  "launchOverlay": [
+    {
+      "id": "hmr",
+      "disabled": true
+    },
+    {
+      "id": "web-runtime",
+      "config": {
+        "openBrowser": false,
+        "printUrl": true,
+        "surfaceContext": true
+      }
+    },
+    {
+      "id": "fishball-core",
+      "config": {
+        "hosted": true,
+        "admissionKey": "spike-admission-key-not-a-secret",
+        "target": "<target>"
+      }
+    }
+  ],
+  "launchOverlayGuardRows": [],
+  "hmrDisabled": true,
+  "coreConfigSeen": {
+    "hosted": true,
+    "admissionKey": "<present>",
+    "target": "http://127.0.0.1:1/api/fishball/mcp"
+  },
+  "boots": [
+    {
+      "label": "hosted-with-owner-override",
+      "reportAtAppReady": {
+        "status": "guards-overridden",
+        "overridden": [
+          "ui-subagent"
+        ]
+      },
+      "policyAtAppReady": {
+        "sandbox": "read-only",
+        "approval": "ask",
+        "presets": [
+          "read-only"
+        ],
+        "defaultPreset": "read-only",
+        "agentPreset": "fishball"
+      },
+      "checkTriggers": [
+        "settings/document-updated",
+        "app-ready"
+      ],
+      "instanceStarted": false,
+      "boardStarted": true,
+      "preflightOrConflictLines": [],
+      "presetIds": [
+        "fishball"
+      ],
+      "session": {
+        "agentPreset": "fishball",
+        "sandbox": "read-only",
+        "permission": "read-only"
+      },
+      "modelTools": [
+        "read",
+        "read_image",
+        "working_directory"
+      ],
+      "sessionRequests": 2,
+      "sessionCreatingTools": [],
+      "clientGraphFishball": [
+        "fishball-core"
+      ],
+      "clientGraphGuardedUi": [
+        "@deepseek-ai/dsh-client-ui-subagent"
+      ],
+      "inventoryFishball": [
+        {
+          "entryId": "include:fishball-board",
+          "moduleName": "fishball-board",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:fishball-instance",
+          "moduleName": "fishball-instance",
+          "enabled": false,
+          "phase": null
+        },
+        {
+          "entryId": "include:fishball-core",
+          "moduleName": "fishball-core",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:fishball-ui",
+          "moduleName": "fishball-core/ui",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:spike-llm",
+          "moduleName": "file://<worktree>/spikes/v3-s6/fake-llm.mjs",
+          "enabled": true,
+          "phase": "active"
+        }
+      ],
+      "pluginManager": {
+        "bundles": [
+          {
+            "name": "fishball-board",
+            "enabled": true,
+            "rows": [
+              "fishball-board"
+            ],
+            "overrides": []
+          },
+          {
+            "name": "fishball-instance",
+            "enabled": true,
+            "rows": [
+              "fishball-instance"
+            ],
+            "overrides": []
+          },
+          {
+            "name": "fishball-core",
+            "enabled": true,
+            "rows": [
+              "preset-fishball",
+              "fishball-core",
+              "fishball-ui"
+            ],
+            "overrides": [
+              "ui-subagent",
+              "ui-schedule",
+              "schedule",
+              "ui-permission",
+              "ui-agent-preset",
+              "entry-customization",
+              "ui-open-in-app",
+              "open-in-app",
+              "ui-sidebar-terminal",
+              "terminal-controller",
+              "fishball-instance",
+              "preset-standard",
+              "preset-ptc",
+              "preset-cordis",
+              "preset-minimal",
+              "sandbox-policy",
+              "approval",
+              "permission",
+              "agent-preset-registry"
+            ]
+          }
+        ],
+        "plugins": [
+          {
+            "entryId": "include:fishball-board",
+            "moduleName": "fishball-board",
+            "patchId": "fishball-board"
+          },
+          {
+            "entryId": "include:fishball-instance",
+            "moduleName": "fishball-instance",
+            "patchId": "fishball-instance"
+          },
+          {
+            "entryId": "include:fishball-core",
+            "moduleName": "fishball-core",
+            "patchId": "fishball-core"
+          },
+          {
+            "entryId": "include:fishball-ui",
+            "moduleName": "fishball-core/ui",
+            "patchId": "fishball-ui"
+          }
+        ]
+      },
+      "route": {
+        "status": 200,
+        "body": {
+          "highlighted": [],
+          "categories": [],
+          "source": "fishball-core/ui"
+        }
+      }
+    }
+  ]
+}
