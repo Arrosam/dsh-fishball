@@ -55,7 +55,8 @@ export const RP_CHECK = freezeData({
   overlayEntries: ['hmr', 'sandbox-policy', 'approval', 'webserver', 'web-runtime'],
   /** Main-side texts that must not name the child-only tab or its module (AC1, decision R1). */
   mainNeedles: ['fishball-recommended', 'fishball-recommend-plugins', 'api/fishball/recommended'],
-  mainSources: { connectorDir: path.join(REPO, 'packages', 'connector'), instanceMainClient: path.join(REPO, 'packages', 'instance', 'client.js') },
+  // R-EMBED: the main-side UI (connector UI and instance card) moved into embed-UI's client folder.
+  mainSources: { connectorDir: path.join(REPO, 'packages', 'connector'), embedClientDir: path.join(REPO, 'packages', 'embed-ui', 'src', 'client') },
   sourceExtensions: ['.js', '.mjs', '.json', '.yml', '.yaml'],
   skipDirs: ['node_modules', 'test'],
   /** Historical checked versions (DESIGN §10f): not new install pins (AC2). */
@@ -275,7 +276,7 @@ export const CHECKS = Object.freeze({
   // DT R1–R3 + BVA 0↔1 + EP enabled/disabled/main-only (AC1, AC3).
   async 'TC-23'(ctx, t) {
     await t.test('R1 main context: no main-side source names the tab or its module', () => {
-      assertNoNeedles([...sourceFiles(RP_CHECK.mainSources.connectorDir), RP_CHECK.mainSources.instanceMainClient])
+      assertNoNeedles([...sourceFiles(RP_CHECK.mainSources.connectorDir), ...sourceFiles(RP_CHECK.mainSources.embedClientDir)])
     })
     const name = C.fixtures.absentPackage
     const rules = [
@@ -505,7 +506,7 @@ export const CHECKS = Object.freeze({
     assert.ok(!root.workspaces.some((w) => w.includes('recommend')), 'not a separate workspace')
     const instance = JSON.parse(readFileSync(path.join(BODY_SOUL.instance, 'package.json'), 'utf8'))
     assert.ok(instance.files.some((f) => f.replace(/\/$/, '') === 'child-web'), 'shipped inside fishball-instance (child-web/)')
-    assertNoNeedles([...sourceFiles(RP_CHECK.mainSources.connectorDir), RP_CHECK.mainSources.instanceMainClient])
+    assertNoNeedles([...sourceFiles(RP_CHECK.mainSources.connectorDir), ...sourceFiles(RP_CHECK.mainSources.embedClientDir)])
 
     linkContractForSourceRun()
     const { copyChildCode } = await loadInstance('src/native-runtime/installation.js')

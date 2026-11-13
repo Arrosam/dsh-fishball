@@ -3,8 +3,8 @@
  * call, used by child-boot.test.mjs and child-boot-reopen.test.mjs. Black box: nothing here reads
  * or fakes the product's client code or the SDK client context.
  * - stageInstance copies `<plugin>/packages/instance` (FBTEST_PLUGIN_DIR picks the checkout; default
- *   this repo) into the throwaway home, with `src/child-settings/client.instance.js` copied from the
- *   instance's client.js the way the product's install does, and fishball-connector linked beside it.
+ *   this repo) into the throwaway home, with fishball-connector linked beside it (since R-EMBED the
+ *   instance ships its status line in src/child-settings/ itself, so no client file is copied).
  * - startHost spawns child-boot-host.mjs, which boots the selected SDK's own `web` profile with an
  *   overlay that appends the given rows after the native rows, as the instance's launch overlay does.
  */
@@ -34,8 +34,6 @@ export const CHILD_BOOT = Object.freeze({
   stageModules: 'node_modules',
   /** The SDK's package scope, linked into the stage only for rows that import SDK packages. */
   sdkScope: '@deepseek-ai',
-  instanceClient: 'client.js',
-  settingsChunk: Object.freeze(['src', 'child-settings', 'client.instance.js']),
   rowModule: (row) => ['child-web', row, 'index.js'],
   urlLine: /dsh web: (http\S+)/,
   /** Redacts the admission token from any host output a failure message may quote. */
@@ -110,8 +108,7 @@ export function stageInstance(home, { runtime } = {}) {
   const source = path.join(CHILD_BOOT.pluginRoot, ...CHILD_BOOT.instancePackage)
   const stage = path.join(home, CHILD_BOOT.stageDir)
   fs.cpSync(source, stage, { recursive: true, filter: (from) => !CHILD_BOOT.stageSkip.includes(path.relative(source, from).split(path.sep)[0]) })
-  // The product copies the instance's client.js next to the settings client at install time.
-  fs.copyFileSync(path.join(source, CHILD_BOOT.instanceClient), path.join(stage, ...CHILD_BOOT.settingsChunk))
+  // R-EMBED (4): the instance ships its status line in src/child-settings/ itself; no client copy.
   // The instance imports fishball-connector/contract; in an install it is a sibling package.
   const modules = path.join(stage, CHILD_BOOT.stageModules)
   fs.mkdirSync(modules, { recursive: true })

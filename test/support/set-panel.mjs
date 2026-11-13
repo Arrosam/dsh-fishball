@@ -19,15 +19,16 @@ import path from 'node:path'
 import { BODY_SOUL } from './body-soul-env.mjs'
 import { createBrowserSandbox } from './browser-sandbox.mjs'
 import { createReactShim, findAll, settle, textOf } from './rp-recommend.mjs'
+import { EMBED_UI } from './constants.mjs'
 
 export const PANEL = Object.freeze({
   panelClient: path.join(BODY_SOUL.core, 'ui', 'fishball-settings', 'client.js'),
-  instanceClient: path.join(BODY_SOUL.instance, 'client.js'),
+  instanceClient: EMBED_UI.statusLine,
   moduleId: 'fishball-settings',
-  chunk: 'client.instance.js',
-  chunkRequest: './client.instance.js',
+  chunk: 'client.status.js',
+  chunkRequest: './client.status.js',
   baseURI: 'http://child.test/fishball-child/',
-  chunkURL: 'http://child.test/fishball-child/fishball-hosted-settings/client.instance.js?rev=1',
+  chunkURL: 'http://child.test/fishball-child/fishball-hosted-settings/client.status.js?rev=1',
   panelSlot: 'main',
   modules: Object.freeze({ react: 'react', reactDom: 'react-dom', primitives: '@deepseek-ai/dsh-client-ui-primitives' }),
   route: Object.freeze({
