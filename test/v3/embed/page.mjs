@@ -56,6 +56,25 @@ function configForms() {
 }
 
 /**
+ * The Plugins cards build their forms from ui-primitives' `SettingsFormModel` (and field helpers
+ * such as `settingsNumberField`) at apply time, before registering. The shared fake primitives
+ * (support/set-panel.mjs) make every export a component, so a card would throw before its
+ * registration. This page answers those two names with a stand-in that holds no values and writes
+ * nothing; only "did the card register" is observed here, never its form.
+ */
+class FormModelStandIn {
+  bind(snapshot) { return { getSnapshot: snapshot, subscribe: () => () => {} } }
+  shell() { return {} }
+  field() { return {} }
+  actions() { return {} }
+  dispose() {}
+}
+const FORM_EXPORTS = Object.freeze({ SettingsFormModel: FormModelStandIn, settingsNumberField: (field) => field })
+function primitivesWithForms(primitives) {
+  return new Proxy(primitives, { get: (target, name) => (Object.hasOwn(FORM_EXPORTS, name) ? FORM_EXPORTS[name] : target[name]) })
+}
+
+/**
  * Load the host's client bundles into one scripted page and apply them.
  * @param t - node:test context (cleanup).
  * @param options.sdk - the SDK whose Cordis applies the plugins.
@@ -74,7 +93,7 @@ export async function openMainPage(t, { sdk, host }) {
   const platform = {
     [BOOT.platform.react]: React,
     [BOOT.platform.reactDom]: { createPortal: (node) => node },
-    [BOOT.platform.primitives]: fakePrimitives(React),
+    [BOOT.platform.primitives]: primitivesWithForms(fakePrimitives(React)),
   }
 
   const graph = await hostGraph(host)
@@ -113,6 +132,15 @@ export async function openMainPage(t, { sdk, host }) {
   await settle()
   return {
     graph, scripts, registrations, errors,
+    /**
+     * Wait until `done(registrations)` holds or the budget ends: the moved parts are package-local
+     * chunks the entry loads with require.async, so their slots arrive after the network fetches.
+     */
+    async waitFor(done) {
+      const deadline = Date.now() + BUDGET.readyMs
+      while (Date.now() < deadline && !done(registrations)) await new Promise((resolve) => setTimeout(resolve, BUDGET.pollMs))
+      return done(registrations)
+    },
     plugins: plugins.map((p) => ({ id: p.id, inject: p.inject, state: p.fiber.state })),
     failed: () => plugins.filter((p) => p.fiber.state === FIBER.failed).map((p) => p.id),
   }
