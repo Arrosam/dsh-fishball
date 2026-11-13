@@ -27,7 +27,7 @@ import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { REPO, TEST_HOMES } from '../../support/constants.mjs'
 import { bootHost, newHome, until } from '../../support/host.mjs'
-import { BUDGET, MARK, ROUTE, STATE, runtimeOf } from '../core/constants.mjs'
+import { BUDGET, CHILD_SETTINGS, MARK, ROUTE, STATE, runtimeOf } from '../core/constants.mjs'
 import { admitChild, openSettingsPage } from '../core/page.mjs'
 import { describeRef, has, ownFiles, tokensOf, unitOf } from '../core/static.mjs'
 import { caseName, caseTest, dshInspect } from '../shared/cases.mjs'
@@ -218,7 +218,11 @@ export function registerEmbedCases(sdk) {
     assert.deepEqual(withClient, [V3.embed.name])
   })
   caseTest(sdk, 'PLAT-EP-03', 3, "the instance's own shipped code (not its child-side hosted-settings bundle) registers no browser module and names no host-DSH slot", async () => {
-    assert.deepEqual(await hostUiFiles(V3.instance), [])
+    // src/child-settings/ is the fishball-hosted-settings bundle (R-HOST-11): its client runs only in
+    // the hosted child, never in the host DSH. Excluded by name, whichever package an ownership
+    // helper counts it under.
+    const hostSide = (await hostUiFiles(V3.instance)).filter((hit) => !hit.startsWith(CHILD_SETTINGS.folder))
+    assert.deepEqual(hostSide, [])
   })
 
   // ================================================================ PLAT-EP-03 row 5: each remains a native DSH bundle
