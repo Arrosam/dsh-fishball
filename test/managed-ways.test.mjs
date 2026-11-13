@@ -39,7 +39,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { DELIVERY, ERROR, WATCH_ERROR, WATCH_MODE } from 'fishball-connector/contract'
-import { FISHBALL_WORD, MANAGED_BY, MANAGED_CODE, MANAGED_TOOLS, NOTE_TEXT, P5_CODE, PRESET, RELAY, UNKNOWN_TOOL_TEXT } from './support/constants.mjs'
+import { EMBED_UI_LINK, FISHBALL_WORD, MANAGED_BY, MANAGED_CODE, MANAGED_TOOLS, NOTE_TEXT, P5_CODE, PRESET, RELAY, UNKNOWN_TOOL_TEXT } from './support/constants.mjs'
 import { HOOK, T, fishballClientBundle, settledIdle, toolNames, turn, untrustedBlock } from './support/expect.mjs'
 import { KIND, OPERATION, STUB, handOver, messageFishball, quietPushes, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
 import {
@@ -78,7 +78,7 @@ describe('yours or managed, and the ways in and out (H-STUB)', () => {
   const count = async (sid) => (await notesAbout(stub, sid)).length
 
   before(async () => {
-    booted = await bootManaged('managed-ways')
+    booted = await bootManaged('managed-ways', { link: [EMBED_UI_LINK] })
     ;({ host, stub, fb } = booted)
   }, HOOK)
   after(() => stopStub(booted), HOOK)
@@ -414,7 +414,7 @@ describe('yours or managed, and the ways in and out (H-STUB)', () => {
 
   it('MGD-16 the client bundle has one Hand over and Take back, and no send or watch button', T, async () => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references fishball-connector/client.js')
+    assert.ok(bundle.found, 'index references fishball-embed-ui/client.js')
     assert.equal(bundle.status, 200)
     assert.ok(bundle.text.includes(MANAGED_STUB.labels.handOver), MANAGED_STUB.labels.handOver)
     assert.ok(bundle.text.includes(MANAGED_STUB.labels.takeBack), MANAGED_STUB.labels.takeBack)

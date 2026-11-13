@@ -52,6 +52,7 @@ import { ACTIVE_SDK, parsedFrames, relayLink } from '../support/set-relay.mjs'
 import { mountPanel, PANEL } from '../support/set-panel.mjs'
 import { bootHost, newHome, until } from '../support/host.mjs'
 import { SDK_VERSIONS } from './support.mjs'
+import { EMBED_UI } from '../support/constants.mjs'
 
 /*
  * This file's own temp root. The runner runs several test files at once in separate processes that
@@ -541,7 +542,7 @@ const IN_PROCESS = [
   ['MOS-UC-03', 'Use Case', 'the main card keeps its Model for Fishball block and owner routes', async () => {
     // No main-card render seam is available offline (its settings form needs the SDK's configForms
     // service); this is a source-presence check, the rendered flow stays a browser case.
-    const source = fs.readFileSync(path.join(BODY_SOUL.instance, 'client.js'), 'utf8')
+    const source = fs.readFileSync(EMBED_UI.instanceCard, 'utf8')
     for (const attribute of MOS.modelAttributes) assert.ok(source.includes(attribute), 'main card keeps ' + attribute)
     for (const route of [MOS.route.check, MOS.route.add]) assert.ok(source.includes(route.slice(1)), 'main card posts ' + route)
     const { PROVIDER_SYNC_ROUTE } = await loadInstance('src/slim/host/provider-sync-routes.js')
