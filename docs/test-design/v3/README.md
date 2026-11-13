@@ -1,6 +1,6 @@
 # Fishball V3: test cases (requirements-only)
 
-Status: **draft, 2026-11-11.** Written from [v3-requirements.md](<../../planning/v3-requirements.md>)
+Status: **draft, 2026-11-13; spikes S1–S7, S7b and S7c folded in, K2 frozen.** Written from [v3-requirements.md](<../../planning/v3-requirements.md>)
 and [v3-design.md](<../../planning/v3-design.md>) at `e1e5577` (final design; first drafted at
 `ddd34c3`, then fast-forwarded and re-read for the Q33 change) only. No implementation code was
 read. The requirements are the authority. The design is used only where a requirement defers to it
@@ -37,25 +37,25 @@ The parallel-development task table that consumes these cases is
 
 ## Counts
 
-153 cases. A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
+183 active cases (plus 6 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
 cases, not rows.
 
 | Area | UC | EP | BVA | DT | ST | Total |
 | --- | --- | --- | --- | --- | --- | --- |
-| AUTH (OAuth, tokens, pairing) | 9 | 7 | 6 | 6 | 3 | 31 |
-| NAME | 3 | 3 | 3 | 3 | 1 | 13 |
-| HAND (Hand over / Take back) | 4 | 1 | 0 | 2 | 1 | 8 |
-| EVT (events, interception) | 3 | 4 | 2 | 3 | 2 | 14 |
+| AUTH (OAuth, tokens, pairing, the connector adapter) | 13 | 13 | 8 | 10 | 7 | 51 |
+| NAME | 3 | 4 | 2 | 3 | 1 | 13 |
+| HAND (Hand over / Take back) | 4 | 2 | 0 | 2 | 2 | 10 |
+| EVT (events, interception) | 3 | 5 | 2 | 4 | 2 | 16 |
 | WD (Watchdog) | 7 | 4 | 3 | 2 | 3 | 19 |
 | WATCH | 3 | 1 | 0 | 0 | 1 | 5 |
 | EXT (contributors) | 4 | 4 | 4 | 3 | 1 | 16 |
 | HOST (hosted mode) | 8 | 3 | 0 | 3 | 2 | 16 |
 | REM (standalone, remote) | 3 | 3 | 0 | 1 | 0 | 7 |
-| UIM (embed-UI, install matrix) | 3 | 1 | 0 | 1 | 0 | 5 |
-| PLAT (rest) | 6 | 7 | 2 | 3 | 1 | 19 |
-| **Total** | **53** | **38** | **20** | **27** | **15** | **153** |
+| UIM (embed-UI, install matrix) | 5 | 2 | 0 | 2 | 0 | 9 |
+| PLAT (rest) | 7 | 7 | 2 | 4 | 1 | 21 |
+| **Total** | **60** | **48** | **21** | **34** | **20** | **183** |
 
-Levels (a case may span two): unit 53, integration 103, e2e 20. Provisional on a spike (`P:Sn`): 37.
+Levels (a case may span two): unit 58, integration 128, e2e 29. Provisional on a spike (`P:Sn`): 9.
 
 ## Conventions
 
@@ -87,6 +87,11 @@ Levels (a case may span two): unit 53, integration 103, e2e 20. Provisional on a
 | `Q33` | Pins the Q33 = B decision (R-WD-03, R-WD-15): no on-demand Watchdog run. |
 | `TQ-n` | Depends on open test-planning question n in [questions.md](<questions.md>). The expected result shown is the recommended answer. |
 | `D§n` | The expected value comes from design section n, because the requirement defers to it. |
+
+**Owner.** A case may name the task that writes its test, as `**Owner:** <task id>` after its flags, using the ids of
+[v3-tasks.md](<../../planning/v3-tasks.md>) and `.runtime/reports/v3-remaining-plan.md`. Every
+case of the connector-adapter section of [01-auth-pairing.md](<01-auth-pairing.md>) does; for the
+other cases the owner is the task whose "Cases" column lists it.
 
 **Common oracle for every refusal** ("refused", requirements §3): the operation returns its
 machine-readable code, **changes nothing** (store, mailbox, pairs, names, settings) and **leaks

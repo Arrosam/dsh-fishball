@@ -1,0 +1,77 @@
+{
+  "id": "decided-3",
+  "sdk": "0.2.2-rc.1",
+  "node": "v24.22.2",
+  "at": "2026-11-11T11:47:57.332Z",
+  "hmr": true,
+  "rowsAtAppReady": {
+    "fishball-instance": "off:idle"
+  },
+  "bundles": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "fishball-board",
+    "fishball-instance",
+    "fishball-watchdog",
+    "fishball-core"
+  ],
+  "reorder": {
+    "at": "apply",
+    "before": [
+      "@deepseek-ai/dsh-base",
+      "@deepseek-ai/dsh-web-app",
+      "fishball-board",
+      "fishball-instance",
+      "fishball-watchdog",
+      "fishball-core"
+    ],
+    "unchanged": true
+  },
+  "conflictLines": [],
+  "presets": [
+    "fishball",
+    "watchdog"
+  ],
+  "defaultPreset": "fishball",
+  "rows": {
+    "preset-standard": "off:idle",
+    "preset-ptc": "off:idle",
+    "preset-cordis": "off:idle",
+    "preset-minimal": "off:idle",
+    "fishball-instance": "off:idle",
+    "preset-fishball": "on:active",
+    "preset-watchdog": "on:active"
+  },
+  "instanceStarted": false,
+  "watchdogStarted": true,
+  "reportAtAppReady": [],
+  "manager": {
+    "created": {
+      "agentPreset": "fishball"
+    },
+    "answered": true,
+    "tools": [
+      "read",
+      "read_image",
+      "working_directory"
+    ],
+    "sessionCreatingTools": [],
+    "sandbox": "read-only",
+    "permission": "read-only"
+  },
+  "leftover": {
+    "recordedPreset": "standard",
+    "controllerResolve": "gateway/internal",
+    "archive": {
+      "archivedSessionIds": [
+        "session-c692a59b-da99-4721-8c4a-91c9a5faf582"
+      ]
+    },
+    "processAlive": true,
+    "listedAfterArchive": true,
+    "pageAfterDiscard": 200
+  },
+  "sessionIds": {
+    "manager": "session-3bea6a85-0e01-47a6-919c-980ff45be75d"
+  }
+}

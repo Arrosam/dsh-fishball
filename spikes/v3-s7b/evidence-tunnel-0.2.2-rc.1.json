@@ -1,0 +1,324 @@
+{
+  "version": "0.2.2-rc.1",
+  "python": "mcp 2.3.0",
+  "node": "v24.22.2",
+  "results": [
+    {
+      "id": "T1 metadata under https://fb.example: issuer, canonical URI, token and authorization endpoints all https://fb.example (X-Forwarded-* ignored)",
+      "observed": {
+        "prm": {
+          "resource": "https://fb.example:<tunnel>/api/fishball/mcp",
+          "authorization_servers": [
+            "https://fb.example:<tunnel>/api/fishball/oauth"
+          ],
+          "bearer_methods_supported": [
+            "header"
+          ],
+          "scopes_supported": [
+            "fishball"
+          ]
+        },
+        "asm": {
+          "issuer": "https://fb.example:<tunnel>/api/fishball/oauth",
+          "token_endpoint": "https://fb.example:<tunnel>/api/fishball/oauth/token",
+          "authorization_endpoint": "https://fb.example:<tunnel>/authorize",
+          "grant_types_supported": [
+            "client_credentials",
+            "authorization_code",
+            "refresh_token"
+          ],
+          "response_types_supported": [
+            "code"
+          ],
+          "code_challenge_methods_supported": [
+            "S256"
+          ],
+          "token_endpoint_auth_methods_supported": [
+            "client_secret_basic",
+            "client_secret_post",
+            "none"
+          ],
+          "client_id_metadata_document_supported": true,
+          "authorization_response_iss_parameter_supported": true,
+          "scopes_supported": [
+            "fishball",
+            "fishball:pair"
+          ]
+        },
+        "loopbackIssuer": "<dsh>/api/fishball/oauth",
+        "loopbackAuthorizationEndpoint": "http://127.0.0.1:<port>/authorize",
+        "forwardedHeadersSeenByDsh": "x-forwarded-proto: http, x-forwarded-host: evil.example, forwarded: proto=http;host=evil.example"
+      },
+      "status": "pass"
+    },
+    {
+      "id": "T2 the same Host over plain http (tunnel host on the loopback socket) is still advertised as https; X-Forwarded-Proto: https on loopback is ignored",
+      "observed": {
+        "tunnelHostOverHttp": "https://fb.example:<tunnel>/api/fishball/oauth",
+        "loopbackWithForwardedHttps": "issuer stays http://127.0.0.1:<port>"
+      },
+      "status": "pass"
+    },
+    {
+      "id": "T3 host not in --trusted-host → 403 before authentication, on DSH routes and on the approval listener",
+      "observed": {
+        "PRM": 403,
+        "ASM": 403,
+        "token": 403,
+        "mcp": 403,
+        "approval": 403,
+        "via tunnel, SNI evil.example": 403,
+        "Origin https://evil.example on token endpoint (tunnel host)": 403
+      },
+      "status": "pass"
+    },
+    {
+      "id": "T4 machine exchange through the tunnel (stock ClientCredentialsProvider, expectedIssuer https://fb.example); AT from the tunnel refused on loopback and the reverse",
+      "observed": {
+        "pair": {
+          "ok": true,
+          "paired": true,
+          "id": "tunnel-machine",
+          "name": null,
+          "nameAssigned": false
+        },
+        "whoami": {
+          "ok": true,
+          "entry": "e1",
+          "id": "tunnel-machine",
+          "name": null,
+          "kind": "machine"
+        },
+        "tunnelAtOnLoopback": 401,
+        "loopbackAtOnTunnel": 401
+      },
+      "status": "pass"
+    },
+    {
+      "id": "T5 stock TS client: browser authorization through the tunnel (page at https://fb.example/authorize, iss https://fb.example/…)",
+      "observed": {
+        "authorizationOrigin": "https://fb.example:<tunnel>",
+        "iss": "https://fb.example:<tunnel>/api/fishball/oauth",
+        "whoami": {
+          "ok": true,
+          "entry": "e2",
+          "id": "tunnel-browser",
+          "name": "Tunnel Agent",
+          "kind": "browser"
+        },
+        "pageCacheControl": "no-store",
+        "tunnelRouting": [
+          "/.well-known/oauth-protected-resource/api/fishball/mcp→dsh",
+          "/.well-known/oauth-authorization-server/api/fishball/oauth→dsh",
+          "/api/fishball/oauth/token→dsh",
+          "/api/fishball/mcp→dsh",
+          "/authorize*→approval"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "id": "T6 only DSH's listener forwarded: machine exchange works; the page is unreachable",
+      "observed": {
+        "page": 502,
+        "token": 200
+      },
+      "status": "pass"
+    },
+    {
+      "id": "Y0 Python MCP SDK 2.3.0 run (loopback + tunnel)",
+      "observed": {
+        "ran": true
+      },
+      "status": "pass"
+    },
+    {
+      "id": "Y1 Python: browser flow on plain-http loopback — CIMD client id, page, any-port redirect, iss + state checked, scope fishball, refresh token",
+      "observed": {
+        "tools": [
+          "pair",
+          "whoami"
+        ],
+        "whoami": {
+          "ok": true,
+          "entry": "e10",
+          "id": "agent-p-1",
+          "name": "Py Agent",
+          "kind": "browser"
+        },
+        "pages": [
+          {
+            "pageStatus": 200,
+            "cacheControl": "no-store",
+            "pageHost": "127.0.0.1:<port>",
+            "decisionStatus": 303,
+            "alert": null
+          }
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "id": "Y2 Python: expired access token → refresh grant with client_id and resource, rotated, no page",
+      "observed": {
+        "codeParams": [
+          "client_id",
+          "code",
+          "code_verifier",
+          "grant_type",
+          "redirect_uri",
+          "resource"
+        ],
+        "refreshParams": [
+          "client_id",
+          "grant_type",
+          "refresh_token",
+          "resource"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "id": "Y2b Python: a server-side 401 with a locally valid token → full re-authorization (page), not a refresh",
+      "observed": {
+        "outcome": "CancelledError",
+        "grants": [],
+        "discoveryRequests": 2,
+        "pages": [
+          {
+            "pageStatus": 200,
+            "cacheControl": "no-store",
+            "pageHost": "127.0.0.1:<port>",
+            "decisionStatus": 303,
+            "alert": null
+          },
+          {
+            "pageStatus": 200,
+            "cacheControl": "no-store",
+            "pageHost": "127.0.0.1:<port>",
+            "decisionStatus": 200,
+            "alert": "This token is already used by an agent. Create a new token in the connector&#39;s settings. Bound to ID: agent-p-401, last seen 2026-11-11T11:51:26.646Z."
+          }
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "id": "Y3 Python: wrong iss refused before the code is redeemed",
+      "observed": {
+        "error": "OAuthFlowError: Authorization response iss mismatch: https://evil.example/oauth != <dsh>/api/fishball/oauth"
+      },
+      "status": "pass"
+    },
+    {
+      "id": "Y4 Python: Cancel → access_denied reaches the client; re-entering a bound token → already-paired on the page",
+      "observed": {
+        "cancel": "RuntimeError: authorization error access_denied iss=<dsh>/api/fishball/oauth state=True",
+        "alreadyPaired": "This token is already used by an agent. Create a new token in the connector&#39;s settings. Bound to Py Agent, last seen 2026-11-11T11:51:26.620Z."
+      },
+      "status": "pass"
+    },
+    {
+      "id": "Y5 Python: browser flow through the tunnel (https://fb.example)",
+      "observed": {
+        "whoami": {
+          "ok": true,
+          "entry": "e12",
+          "id": "agent-p-tunnel",
+          "name": null,
+          "kind": "browser"
+        },
+        "pages": [
+          {
+            "pageStatus": 200,
+            "cacheControl": "no-store",
+            "pageHost": "fb.example:49538",
+            "decisionStatus": 303,
+            "alert": null
+          }
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "id": "Y6 Python ClientCredentialsOAuthProvider: scope=fishball narrowed to fishball:pair, no refresh token; whoami → 403 → step-up → error; after pair → full",
+      "observed": {
+        "unpaired": {
+          "tools": [
+            "pair"
+          ],
+          "scope": "fishball:pair",
+          "hasRefresh": false,
+          "whoamiError": "MCPError: Server returned an error response",
+          "ok": true,
+          "tokenRequests": [
+            {
+              "method": "POST",
+              "path": "/api/fishball/oauth/token",
+              "host": "127.0.0.1",
+              "params": [
+                "grant_type",
+                "resource",
+                "scope"
+              ],
+              "grant": "client_credentials"
+            },
+            {
+              "method": "POST",
+              "path": "/api/fishball/oauth/token",
+              "host": "127.0.0.1",
+              "params": [
+                "grant_type",
+                "resource",
+                "scope"
+              ],
+              "grant": "client_credentials"
+            }
+          ]
+        },
+        "paired": {
+          "pair": {
+            "ok": true,
+            "paired": true,
+            "id": "py-machine",
+            "name": null,
+            "nameAssigned": false
+          },
+          "whoami": {
+            "ok": true,
+            "entry": "e13",
+            "id": "py-machine",
+            "name": null,
+            "kind": "machine"
+          }
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "id": "L1 leak check (DSH home, probe console, Python stdout/stderr)",
+      "observed": {
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "secretsChecked": 29,
+        "consoleWarnings": [
+          "OAuth flow error",
+          "Traceback (most recent call last):",
+          "  File \"/opt/homebrew/Cellar/python@3.15/3.15.0/Frameworks/Python.framework/Versions/3.15/lib/python3.15/asyncio/tasks.py\", line 495, in wait_for",
+          "    return await fut",
+          "           ^^^^^^^^^",
+          "asyncio.exceptions.CancelledError",
+          "The above exception was the direct cause of the following exception:",
+          "  File \"/Volumes/SSD1/GitHub/dsh-fishball/.agents/worktrees/spike-v3-s7b/.runtime/pyenv/lib/python3.15/site-packages/mcp/client/auth/oauth2.py\", line 785, in _auth_flow",
+          "    token_response = yield await self._perform_authorization()",
+          "                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+          "  File \"/Volumes/SSD1/GitHub/dsh-fishball/.agents/worktrees/spike-v3-s7b/.runtime/pyenv/lib/python3.15/site-packages/mcp/client/auth/oauth2.py\", line 381, in _perform_authorization",
+          "    auth_code, code_verifier = await self._perform_authorization_code_grant()"
+        ]
+      },
+      "status": "pass"
+    }
+  ]
+}

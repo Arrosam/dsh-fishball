@@ -1,0 +1,61 @@
+{
+  "id": "order",
+  "sdk": "0.2.2-rc.1",
+  "node": "v24.22.2",
+  "at": "2026-11-11T11:00:06.071Z",
+  "coreFirst": {
+    "order": [
+      "fishball-core",
+      "fishball-instance"
+    ],
+    "instanceDisabled": null,
+    "warnings": [
+      "patch: entry \"ui-subagent\" not found",
+      "patch: entry \"ui-schedule\" not found",
+      "patch: entry \"schedule\" not found",
+      "patch: entry \"ui-permission\" not found",
+      "patch: entry \"ui-agent-preset\" not found",
+      "patch: entry \"entry-customization\" not found",
+      "patch: entry \"ui-open-in-app\" not found",
+      "patch: entry \"open-in-app\" not found",
+      "patch: entry \"ui-sidebar-terminal\" not found",
+      "patch: entry \"terminal-controller\" not found",
+      "patch: entry \"fishball-instance\" not found",
+      "patch: entry \"preset-standard\" not found",
+      "patch: entry \"preset-ptc\" not found",
+      "patch: entry \"preset-cordis\" not found",
+      "patch: entry \"preset-minimal\" not found",
+      "patch: entry \"sandbox-policy\" not found",
+      "patch: entry \"approval\" not found",
+      "patch: entry \"permission\" not found",
+      "patch: entry \"agent-preset-registry\" not found"
+    ]
+  },
+  "coreLast": {
+    "order": [
+      "fishball-instance",
+      "fishball-core"
+    ],
+    "instanceDisabled": true,
+    "warnings": [
+      "patch: entry \"ui-subagent\" not found",
+      "patch: entry \"ui-schedule\" not found",
+      "patch: entry \"schedule\" not found",
+      "patch: entry \"ui-permission\" not found",
+      "patch: entry \"ui-agent-preset\" not found",
+      "patch: entry \"entry-customization\" not found",
+      "patch: entry \"ui-open-in-app\" not found",
+      "patch: entry \"open-in-app\" not found",
+      "patch: entry \"ui-sidebar-terminal\" not found",
+      "patch: entry \"terminal-controller\" not found",
+      "patch: entry \"preset-standard\" not found",
+      "patch: entry \"preset-ptc\" not found",
+      "patch: entry \"preset-cordis\" not found",
+      "patch: entry \"preset-minimal\" not found",
+      "patch: entry \"sandbox-policy\" not found",
+      "patch: entry \"approval\" not found",
+      "patch: entry \"permission\" not found",
+      "patch: entry \"agent-preset-registry\" not found"
+    ]
+  }
+}
