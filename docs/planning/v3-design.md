@@ -331,7 +331,9 @@ fishballChild = {
 
 ### 4.2 Embed-UI
 
-- **Host half:** `inject: ['fishballChild?', 'fishballConnectorHandover?', 'fishballConnectorTools?']`.
+- **Host half:** looks up `fishballChild`, `fishballConnectorHandover` and `fishballConnectorTools`
+  at runtime (`ctx.get`, or a `ctx.inject([...])` sub-scope), never in its own `inject`: Cordis
+  treats a trailing `?` literally on both SDKs, and every listed key gates the row (K3).
   - Without `fishballChild` it registers no frame and logs `instance-missing` once (R-UI-01).
     With the connector services but no instance, it still draws marks, Hand over / Take back and
     the fish with its dots, and contributes its attention tools, with no page or frame (Q18,
