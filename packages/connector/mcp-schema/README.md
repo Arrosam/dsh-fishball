@@ -60,7 +60,8 @@ tool (R-EXT-12).
 same JSON; `isError` is `true` exactly when `ok` is `false` (`okResult`, `refusalResult`). Each
 `outputSchema` is an exact-one `oneOf` of the success shape(s) and the refusal envelope, so every
 output schema admits the refusal. The output root is therefore that `oneOf`, not `type: "object"`
-[spec: tools § Output Schema accepts any JSON Schema; the page's own example has an array root];
+[spec: MCP 2026-07-28 tools.md § Output Schema allows any JSON Schema for `outputSchema`, an array
+root included, as the page's own `list_users` example shows; confirmed by Fishball 2026-11-13].
 K2's `isObjectRootSchema` is the rule for contributed tools only. The builders write `ok`, `code`
 and `message` last, so no extra field can change them. JSON-RPC errors stay for protocol faults
 (unknown tool: -32602).
@@ -189,6 +190,9 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 
 - Rate limits count every refused credential (secret, page token, bearer). An empty page field is
   not counted (PROPOSED). While limited, a valid credential is refused too (S7b P2).
+- **Settings save refusals (`SETTINGS_REFUSAL`):** `ref-duplicate` (two entries, one `ref`) and
+  `value-duplicate` (two entries whose refs hold the same value; the user's decision 2026-11-13,
+  AUTH-EP-04 7a). Either refusal keeps the previous settings, and names only entry labels.
 - Limit refusals at the endpoint are a JSON-RPC error body, code -32000, message `limit-exceeded`
   (413) or `rate-limited` (429), id `null`.
 - A non-loopback listener over plain http answers 503 `insecure-listener` on every route.
@@ -203,10 +207,12 @@ list; anything else is 403 before authentication. Loopback is `http`, every othe
 ### Names and ids (`ID_GRAMMAR`, `NAME_RULES`, `rules.js`)
 
 - Id: `^[A-Za-z0-9_-]{1,64}$`, case-sensitive (`isFishballId`).
-- Name: White_Space runs → one space, trimmed, NFC; then 1–64 code points with no `Cc` character
-  (`checkName`). The uniqueness key is `nameKey`: upper then lower case, then NFC (so `Straße` and
-  `STRASSE` and `Straẞe` clash). Format characters (bidi overrides, zero-width space) are not
-  control characters (`Cc`) and are accepted, as R-NAME-02 reads (open question to the user). A nameless principal shows as `ID: <id>` with the prefix bold
+- Name: White_Space runs → one space, trimmed, NFC; then 1–64 code points with no `Cc` control
+  character and no `Cf` format character (bidi overrides, zero-width and other invisible
+  characters; the user's decision, 2026-11-13), else `name-invalid`. U+200D (zero-width joiner)
+  is `Cf` too, so an emoji ZWJ sequence such as a family emoji is refused; single emoji are fine
+  (`checkName`). The uniqueness key is `nameKey`: lower, upper, then lower case, then NFC (so `Straße` and
+  `STRASSE` and `Straẞe` clash). A nameless principal shows as `ID: <id>` with the prefix bold
   (`principalLabel`).
 
 ## Internal module interfaces (`index.d.ts`, types only)
@@ -222,7 +228,6 @@ value.
 | What (case rows flagged `K`) | Task |
 | --- | --- |
 | which `notice` codes exist (EVT-EP-01 15) | the producing task (C-ROUTE, C-WIRE), as a K1 amendment |
-| two entries with one user-set value (AUTH-EP-04 7a) | open question to the user; `TokenRegistry.match` proposes "neither matches" |
 | card fields of the ask card and of `question_ask` (PLAT-UC-07) | K3 |
 | `fishballConnectorHandover` codes, dropdown order, release emits nothing? (HAND rows 1-E1, 5, 7a, 8, 9, 144, 160, 164) | K3 / C-ROUTE |
 | `fishballConnectorTokens`, hosted status codes (08-hosted) | K3 / I-HOST |
