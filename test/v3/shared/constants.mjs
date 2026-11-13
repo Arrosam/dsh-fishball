@@ -18,7 +18,8 @@ export const V3 = Object.freeze({
   core: pkg('fishball-core', 'core'),
   instance: pkg('fishball-instance', 'instance'),
   connector: pkg('fishball-connector', 'connector'),
-  embed: pkg('dsh-fishball-embed-UI', 'embed-ui'),
+  // S4-Q3 decided B (questions.md at b1295de): all lowercase, as npm and DSH's plugin manager require.
+  embed: pkg('fishball-embed-ui', 'embed-ui'),
   board: pkg('fishball-board', 'board'),
   foldNotify: pkg('fishball-fold-notify', 'fold-notify'),
   watchdog: pkg('fishball-watchdog', 'watchdog'),
