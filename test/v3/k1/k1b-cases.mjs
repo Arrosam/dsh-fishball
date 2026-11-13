@@ -186,14 +186,14 @@ export function registerK1bCases(sdk) {
       })
     }
   }
-  caseTest(sdk, 'K1b-DT-01', row + 1, `a limit refusal's body is a JSON-RPC error typed from ${LIMIT_BODY.version} and ${LIMIT_BODY.code}, id null`, () => {
+  caseTest(sdk, 'K1b-DT-01', row + 1, `a limit refusal's body is a JSON-RPC error typed from ${LIMIT_BODY.version} and ${LIMIT_BODY.code}, with no ${LIMIT_BODY.id}`, () => {
     const { m } = declarations()
     for (const status of ADMIT_ORDER_KEYS) {
       const body = typeOf(m, refusalBranch(m, GATE_TYPE.admitRefusal, status), GATE_TYPE.body)
       const members = m.members(body)
       assert.ok([...members.values()].some((x) => x.type.includes(LIMIT_BODY.version)), `${body} has no ${LIMIT_BODY.version}`)
       assert.ok([...members.values()].some((x) => x.type.includes(LIMIT_BODY.code)), `${body} has no ${LIMIT_BODY.code}`)
-      assert.equal(members.get(LIMIT_BODY.id)?.type, GATE_TYPE.literal.null)
+      assert.ok(!members.has(LIMIT_BODY.id), `${body} has a member ${LIMIT_BODY.id}`)
     }
   })
   caseTest(sdk, 'K1b-EP-06', 1, `${GRANT_TYPE.handler} {${GRANT_TYPE.grantType}: GRANT's values, ${GRANT_TYPE.handle.name}(form: ${GRANT_TYPE.handle.form}, ctx: ${GRANT_TYPE.handle.context}): Promise<${GRANT_TYPE.result}>}`, () => {
@@ -299,10 +299,13 @@ export function registerK1bCases(sdk) {
       const schema = await jsonRpcErrorSchema(sdk)
       assert.ok(schema.safeParse(limitBody(mod, refusal, {})).success, JSON.stringify(limitBody(mod, refusal, {})))
     })
-    caseTest(sdk, 'K1b-EP-13', `${status} id null`, `the body as AdmitRefusal types it (id null): this SDK's client accepts it as a JSON-RPC error`, async (mod) => {
+    // Negative row: the MCP 2026-07-28 JSON-RPC schema, as @modelcontextprotocol/core 2.2.0 ships
+    // it on both SDKs (JSONRPCErrorResponseSchema, `id: RequestIdSchema.optional()`), refuses
+    // `id: null`; that is why the limit refusal's body omits `id` instead of writing it null.
+    caseTest(sdk, 'K1b-EP-13', `${status} id null`, `the body with id null: this SDK's client refuses it as a JSON-RPC error`, async (mod) => {
       const schema = await jsonRpcErrorSchema(sdk)
       const body = limitBody(mod, refusal, { [LIMIT_BODY.id]: null })
-      assert.ok(schema.safeParse(body).success, `this SDK (MCP 2026-07-28 schema) refuses ${JSON.stringify(body)}`)
+      assert.ok(!schema.safeParse(body).success, `this SDK (MCP 2026-07-28 schema) accepts ${JSON.stringify(body)}`)
     })
   }
 
