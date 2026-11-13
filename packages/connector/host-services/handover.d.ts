@@ -56,14 +56,19 @@ export interface HandoverPrincipal {
  *   deleted, not paired, or its key is unknown. A deleted entry's key is indistinguishable from a
  *   key that never existed, so both answer the same code (HAND-DT-01 rows 2, 6, 7a, 8).
  *
- * When several apply, the first in this order wins: `unknown-session`, `conflict`, `no-fishball`.
+ * When several apply, the first in this order wins: `unknown-session`, `conflict`, `no-fishball`
+ * (the order and the merging of rows 2, 6, 7a and 8 into one code are PROPOSED).
  */
 export type HandOverRefusalCode = 'unknown-session' | 'conflict' | 'no-fishball'
 
 /**
  * Why `takeBack` refuses (HAND-DT-02).
  * - `unknown-session`: no such session in this DSH.
- * - `not-managed`: the session exists and nobody manages it (V2's `not-managed`, kept).
+ * - `not-managed`: the session exists and nobody manages it (decided by the user for K3; V2's
+ *   Take back succeeded silently here, and used `not-managed` only for `release`).
+ *
+ * V2's other Hand over / Take back codes are not carried (PROPOSED): `is-fishball` (in V3 the
+ * Fishball manager session never lives in the main DSH, design §1.4) and `feature-off`.
  */
 export type TakeBackRefusalCode = 'unknown-session' | 'not-managed'
 
@@ -77,10 +82,9 @@ export interface FishballConnectorHandover {
   managed(): readonly ManagedSession[]
 
   /**
-   * Every token entry of the connector, in one stable order: the order of the entries in the
-   * connector's native settings list (the order the owner sees and controls there). A rename,
-   * a connection change or a pairing never moves an entry; adding an entry appends it where the
-   * settings list has it (R-UI-10's "stable order").
+   * Every token entry of the connector, in one stable order (R-UI-10). PROPOSED: the order of the
+   * entries in the connector's native settings list, the order the owner sees and controls there.
+   * A rename, a connection change or a pairing never moves an entry.
    */
   principals(): readonly HandoverPrincipal[]
 
@@ -88,21 +92,21 @@ export interface FishballConnectorHandover {
    * Calls `fn` after any change of the managed set, of a principal's name, connection
    * (`online`), entry state (`enabled`, `paired`, `designated`) or of the entry list. `fn` gets no
    * argument: it reads `managed()` and `principals()` again. A throwing listener does not stop the
-   * others. Returns the disposer of this listener.
+   * others (PROPOSED). Returns the disposer of this listener.
    */
   onChange(fn: () => void): Dispose
 
   /**
    * The user's Hand over to the principal they chose (R-ROUTE-05). On success the chosen
    * principal becomes the managing principal and exactly one `handover` event, carrying `note`
-   * (empty when omitted), is committed to its mailbox; an offline target gets it when it next polls.
+   * (empty when omitted, PROPOSED), is committed to its mailbox; an offline target gets it when it next polls.
    * A refusal changes nothing and commits nothing.
    */
   handOver(sessionId: string, principalKey: string, note?: string): Promise<HandOverResult>
 
   /**
    * The user's Take back. On success the session becomes unmanaged and exactly one `takeback`
-   * event, carrying `note` (empty when omitted), is committed to the pair that managed it until
+   * event, carrying `note` (empty when omitted, PROPOSED), is committed to the pair that managed it until
    * then (R-EVS-03). Events already queued for that pair stay with it (R-WATCH-04).
    */
   takeBack(sessionId: string, note?: string): Promise<TakeBackResult>

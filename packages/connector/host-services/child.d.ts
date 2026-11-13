@@ -1,7 +1,7 @@
 /**
  * `fishballChild`: the instance's child locator (task K3; design §4.1; R-HOST-02, R-HOST-06,
  * R-HOST-07, R-HOST-10, R-UI-01, R-UI-02; S4-Q1 decided A). Provided by the instance's host row
- * and injected optionally by fishball-embed-ui (`fishballChild?`). Types only.
+ * and looked up at runtime by fishball-embed-ui (see index.d.ts). Types only.
  *
  * It replaces the `ui` / `status` / `retry` fields V2 passed through contract 1.2. The vocabulary
  * below is V2's (`fishball-connector/contract` STATUS, STATUS_CODES) plus the V3 codes the
@@ -37,11 +37,14 @@ export type ChildStatusCode = LifecycleCode | TargetCode
 
 /**
  * `code` is `null` when there is nothing to report. A lifecycle code wins over a target code:
- * a target code appears only while `state` is `ready`.
+ * a target code appears only while `state` is `ready` (PROPOSED).
+ * `plugin` names the bundle a `PROFILE_INCOMPATIBLE` start was blocked by (R-HOST-11 (4),
+ * HOST-ST-01 #3: the status names it); absent otherwise. The field name is PROPOSED.
  */
 export interface ChildStatus {
   readonly state: ChildState
   readonly code: ChildStatusCode | null
+  readonly plugin?: string
 }
 
 /**
@@ -51,7 +54,8 @@ export interface ChildStatus {
  * - `token-refused`: the target refused the token (`code` is `token-revoked` when it had accepted
  *   it before, else `TOKEN_REFUSED`);
  * - `target-unset`: there is nothing to connect with: no connector in this DSH and a blank
- *   `target.url`, or a `target.tokenRef` that holds no value (HOST-UC-05 A1).
+ *   `target.url`, or a `target.tokenRef` that holds no value (HOST-UC-05 A1, which the case left
+ *   open between this and `token-refused`: PROPOSED).
  */
 export type TargetState = 'connected' | 'target-unreachable' | 'token-refused' | 'target-unset'
 
@@ -64,7 +68,9 @@ export interface TargetStatus {
  * The loopback names the frame may use (S4-Q1 decided A, R-UI-02). The child is reachable under
  * all three. A host name is case-insensitive (RFC 3986 §3.2.2) and a WHATWG URL's `hostname` is
  * already lower-case, so a caller passes the hostname of the main page's request as its URL parsed
- * it; a page opened as `LOCALHOST` therefore arrives as `localhost`. Any other value is refused.
+ * it; a page opened as `LOCALHOST` therefore arrives as `localhost`. Embed-UI's admit route checks
+ * the main page's hostname against these three before it calls the locator, and refuses any other
+ * name itself (design §4.1); the locator still rejects any other value from an untyped caller.
  */
 export type LoopbackHostname = '127.0.0.1' | 'localhost' | '[::1]'
 
@@ -84,7 +90,7 @@ export interface AdmitRequest {
 }
 
 /**
- * Why `admit` rejects (`HostServiceError.code`):
+ * Why `admit` rejects (`HostServiceError.code`; both codes PROPOSED):
  * - `hostname-refused`: the hostname is not one of `LoopbackHostname`; embed-UI then shows "Open DSH
  *   at 127.0.0.1 to use Fishball" instead of a frame (R-UI-02);
  * - `not-ready`: the child is not `ready`, or it stopped or restarted before the ticket was minted.
@@ -97,6 +103,9 @@ export interface ProviderSyncStatus {
   readonly instanceId?: string
 }
 
+/** A model-sync refusal, as V2's sync routes answer it. */
+export interface ProviderSyncRefusal { readonly ok: false; readonly error: { readonly code: string } }
+
 export type ProviderSyncCheckResult =
   | {
       readonly ok: true
@@ -107,11 +116,11 @@ export type ProviderSyncCheckResult =
         readonly present: number
       }
     }
-  | { readonly ok: false; readonly error: { readonly code: string } }
+  | ProviderSyncRefusal
 
 export type ProviderSyncAddResult =
   | { readonly ok: true; readonly result: { readonly items: readonly { readonly id: string; readonly outcome: 'added' | 'skipped' | 'failed'; readonly reason?: string }[] } }
-  | { readonly ok: false; readonly error: { readonly code: string } }
+  | ProviderSyncRefusal
 
 export interface ProviderSync {
   status(): ProviderSyncStatus
@@ -147,8 +156,12 @@ export interface FishballChild {
   /**
    * Retry: restarts the child when its state is `failed`, and in any other state changes nothing
    * (V2's rule, so a Retry before the host is ready leaves a stopped child stopped, HOST-ST-01 #9).
-   * After the user deleted the hosted entry, it is also the one step that lets the instance create
-   * a new one (R-HOST-10). Resolves once the retry has run; read `status()` for its outcome.
+   * Resolves once the retry has run; read `status()` for its outcome.
+   *
+   * OPEN (question to the user): R-HOST-10 makes Retry the one step that creates a new hosted entry
+   * after the user deleted the old one, but such a child is `ready` with `token-revoked`, so the
+   * `failed`-only rule would never reach it; and `fishballConnectorTokens` gives the instance no
+   * way to tell a deleted entry (replace after Retry) from a disabled one (never replace).
    */
   retry(): Promise<void>
 

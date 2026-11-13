@@ -4,8 +4,10 @@
  * Types only. F-GUARDS builds the patch rows, the self-reorder and the check, in
  * `packages/core/cordis.patch.yml`, `packages/core/ui/patch/` and `packages/core/src/guards/`.
  *
- * Literal types below are the guard list as decided. They are the same on DSH 0.2.1-rc.5 and
- * 0.2.2-rc.1 (both ship the four agent presets with these ids, read from `dsh-web-app/presets/`).
+ * The row lists, presets, policy and manager tools are as decided (design §5a.2, 1.24, S6 round 2).
+ * They are the same on DSH 0.2.1-rc.5 and 0.2.2-rc.1: both ship the four agent presets with these
+ * ids (`dsh-web-app/presets/`). The report's spelling (`OverriddenGuard`, `GuardReport`) and
+ * `ReorderOutcome` are PROPOSED; S6's probe spelled rows by id and policy as `policy.<key>`.
  */
 
 /** Root rows core's patch disables (session-creating rows, and no nested hosted Fishball). */
@@ -37,7 +39,8 @@ export type ManagerTool = 'read' | 'read_image' | 'working_directory'
 
 /**
  * One overridden guard, as the report names it.
- * - `row:<id>`: a guarded row or a shipped preset row is enabled (an absent row counts as held);
+ * - `row:<id>`: a guarded row or a shipped preset row is enabled. An absent row counts as held,
+ *   because it cannot run (S6's probe);
  * - `policy:<key>`: one `IntendedPolicy` value differs;
  * - `agent-presets`: `agentPresets.list()` offers a preset other than `fishball` / `watchdog`;
  * - `bundle-order`: core is not last in `dsh.profile.bundles`, so its patch may miss rows (R-FB-12);
@@ -65,7 +68,10 @@ export type GuardReport =
 
 /**
  * The outcome of core's one standalone reorder at its first start in a DSH (R-FB-12): `moved`
- * (core was moved to the end of `dsh.profile.bundles`), or `unchanged` (it already was last, or
- * this DSH had recorded the reorder before; core never moves itself back after the owner moves it).
+ * (core was moved to the end of `dsh.profile.bundles`), `unchanged` (it already was last, or this
+ * DSH had recorded the reorder before; core never moves itself back after the owner moves it), or
+ * `failed`.
  */
-export type ReorderOutcome = 'moved' | 'unchanged'
+export type ReorderOutcome = 'moved' | 'unchanged' | 'failed'
+// 'failed': the lock or the manifest write failed; nothing was written, and the report keeps
+// `bundle-order` until a later start succeeds. PROPOSED, like the rest of this type.

@@ -7,12 +7,8 @@
  * reachable over MCP, HTTP or from a browser, and none carries a token value. Each has
  * `apiVersion: 1`; a consumer treats any other value as the service being absent (UIM-EP-01 #5).
  *
- * Providers and consumers:
- * - `fishballConnectorHandover`: provided by fishball-connector, used by fishball-embed-ui;
- * - `fishballConnectorTokens`: provided by fishball-connector, used by the instance's host row;
- * - `fishballChild`: provided by the instance's host row, used by fishball-embed-ui. It is declared
- *   here, beside the other host-only services of a main DSH, so its consumer needs only the
- *   connector's type folder; the instance never imports this file.
+ * Providers and consumers are listed once, in README.md. Values marked PROPOSED there are frozen
+ * as written unless the user changes them at review (the K1/K2 convention).
  */
 
 /** Disposes what a registration created. Idempotent: a second call does nothing. */
@@ -45,9 +41,14 @@ import type { FishballConnectorTokens } from './tokens.js'
 import type { FishballChild } from './child.js'
 
 /**
- * The services as DSH declares its own: members of the cordis `Context`. Each consumer injects
- * them optionally (`'fishballConnectorHandover?'`, `'fishballConnectorTokens?'`,
- * `'fishballChild?'`), so it loads and reports without the provider (R-UI-01, R-ARCH-03).
+ * The services as DSH declares its own: members of the cordis `Context`. A consumer must load and
+ * report without the provider (R-UI-01, R-ARCH-03), so it looks the service up at runtime
+ * (`ctx.get(name)`, or a `ctx.inject([name], …)` sub-scope) and does not list it in its own
+ * `inject`: Cordis on both SDKs treats a trailing `?` literally, and every listed key gates the
+ * row's activation (fold-notify/index.js, instance host.js). Design §4.2's `'name?'` spelling
+ * means this.
+ *
+ * Resolving this augmentation needs `@deepseek-ai/cordis` (a DSH peer) in the consumer's types.
  */
 declare module '@deepseek-ai/cordis' {
   interface Context {

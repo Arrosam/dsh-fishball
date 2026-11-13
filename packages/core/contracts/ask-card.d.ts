@@ -5,6 +5,12 @@
  *
  * The card has no time limit (R-CON-05): it stays open until it is answered here or the ask is
  * settled elsewhere. The main DSH shows no card for it (R-UI-12).
+ *
+ * R-FB-11 fixes what the card shows: the asking session, the question, and the answer choices or a
+ * free answer. Every field name, `state` value and `AskCardAnswer` below is PROPOSED. The values
+ * come from the `ask` event's payload, which is K1's (its V2 descriptor: `approvalId`, `offerId`,
+ * `prompt`, `choices`, `at`); a V2 `ask_fishball` offers no choices, so `choices` is empty for it
+ * until a K1 amendment adds any.
  */
 
 /**

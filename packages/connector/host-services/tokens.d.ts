@@ -1,7 +1,11 @@
 /**
  * `fishballConnectorTokens`: hosted token set-up and reinstall succession (task K3; design §5.4;
- * R-HOST-05, R-HOST-09, R-HOST-10; Q8 revised by 1.9, Q24 decided). Only the instance's host row
- * injects it, optionally (`fishballConnectorTokens?`). Types only.
+ * R-HOST-05, R-HOST-09, R-HOST-10; Q8 revised by 1.9, Q24 decided). Only the instance's host row uses it,
+ * looked up at runtime (see index.d.ts). Types only.
+ *
+ * Design §5.4 fixes the two members and `createHosted`'s success value; every refusal code below is
+ * PROPOSED. `createHosted` rejects because its success type has no refusal arm in the design;
+ * `retire` returns refusals as data, because the instance retries it at its next start.
  */
 import type { Refusal } from './index.js'
 
@@ -20,7 +24,7 @@ export interface HostedTokenEntry {
 }
 
 /**
- * Why `createHosted` rejects (`HostServiceError.code`). It creates nothing in either case.
+ * Why `createHosted` rejects (`HostServiceError.code`; PROPOSED). It creates nothing in either case.
  * - `credentials-unwritable`: the credential store refused the generated value (design §5.2's
  *   unwritable store);
  * - `operation-failed`: any other failure.
@@ -28,7 +32,7 @@ export interface HostedTokenEntry {
 export type CreateHostedErrorCode = 'credentials-unwritable' | 'operation-failed'
 
 /**
- * Why `retire` refuses. Every refusal moves nothing and deletes nothing.
+ * Why `retire` refuses (PROPOSED). Every refusal moves nothing and deletes nothing (R-HOST-09).
  * - `unknown-entry`: either key names no token entry;
  * - `not-hosted`: either entry was not made by `createHosted`, or the two were made for different
  *   `instanceId`s. A user-made entry is never retired (R-HOST-09, HOST-UC-03 E3);
