@@ -15,7 +15,12 @@
  * 5. one `inbox_poll` on every (re)connect and on every events hint (hints may drop; polls
  *    recover them, design §6.5).
  * A failure is classified (`failureStatus`) and retried with bounded backoff; Fishball keeps
- * running whatever the link does (R-FB-04, R-REM-04).
+ * running whatever the link does (R-FB-04, R-REM-04). A blank or refused target and a missing
+ * token are not retried: nothing changes until the caller's `reconnect()` after a settings change.
+ *
+ * Status while not connected (the user's decision, 2026-11-14): `stop()` and `reconnect()` turn a
+ * `connected` status into `target-unreachable` / `TARGET_UNREACHABLE` until the next attempt
+ * classifies; any other status is kept. There is no "connecting" word (K3 `TargetState`).
  *
  * Every request goes through one fetch wrapper that refuses any URL outside the target origin and
  * follows no redirect, so neither the client secret nor an access token can reach another origin
@@ -27,13 +32,18 @@
 import { TOOL } from './schema.js'
 import { BACKOFF, LINK_MCP, LINK_REFUSAL } from './constants.js'
 import { checkTarget } from './target.js'
-import { STATUS, failureStatus, refusedTarget } from './status.js'
+import { OffTargetRequest, STATUS, failureStatus } from './status.js'
 
 /** Delay before the n-th consecutive retry (from 0), bounded by `BACKOFF.maxMs`. */
 export const backoffDelayMs = (attempt) => Math.min(BACKOFF.initialMs * BACKOFF.factor ** attempt, BACKOFF.maxMs)
 
-/** Why a request is refused locally; it never leaves the process. */
-class OffTargetRequest extends Error {}
+/** The connection failed in a way `failureStatus` cannot see from the error alone. */
+class LinkFailure extends Error {
+  constructor(status) {
+    super(status.code)
+    this.status = status
+  }
+}
 
 /**
  * @typedef {object} LinkOptions
@@ -54,7 +64,11 @@ export class McpLink {
   #generation = 0
   #failures = 0
   #timer
+  // The attempt's client from its creation, so a stop or restart mid-attempt closes it too.
   #client
+  // The client of the open link only: set once the listen stream is acknowledged, cleared on any
+  // teardown. Calls and polls go through it alone, so nothing is sent on a half-made connection.
+  #connected
   #subscription
   #tools = Object.freeze([])
   #started = false
@@ -75,7 +89,7 @@ export class McpLink {
   /** The target's tools as last listed (core tools first, then contributed ones, R-EXT-12). */
   tools() { return this.#tools }
 
-  /** Calls `fn(status)` after each status change. Returns its disposer. */
+  /** Calls `fn(status)` after each status change. Returns its disposer. A throwing listener affects no other. */
   onStatus(fn) { return this.#subscribe(this.#listeners.status, fn) }
 
   /** Calls `fn(result)` with each `inbox_poll` result (`structuredContent`) the link fetched. */
@@ -100,38 +114,43 @@ export class McpLink {
     this.#restart()
   }
 
-  /** Stops the link: no request is sent after this. */
+  /** Stops the link: no request is sent and no status is emitted after this. */
   async stop() {
     this.#started = false
     this.#generation += 1
     this.#cancelTimer()
+    this.#leaveConnected()
     await this.#teardown()
   }
 
   /**
-   * Calls one tool of the target and resolves to its `structuredContent`. While the link is not
-   * connected it sends nothing and resolves `{ok: false, code: 'disconnected'}`: the answer never
-   * reached the connector, and the offer waits there (design §6.3, R-REM-04). A call that fails
-   * after it was sent rejects: whether it reached the connector is then unknown, and the caller
-   * decides (K3 `commit` treats a rejected send as `disconnected`).
+   * Calls one tool of the target and resolves to its `structuredContent` (`undefined` when the
+   * result carries none). While the link is not connected it sends nothing and resolves
+   * `{ok: false, code: 'disconnected'}`: the answer never reached the connector, and the offer
+   * waits there (design §6.3, R-REM-04). A call that fails after it was sent rejects: whether it
+   * reached the connector is then unknown, and the caller decides (K3 `commit` treats a rejected
+   * send as `disconnected`).
    * @param {string} name
    * @param {object} [args]
    */
   async callTool(name, args = {}) {
-    const client = this.#connectedClient()
+    const client = this.#connected
     if (client === undefined) return { ok: false, code: LINK_REFUSAL.disconnected }
     const result = await client.callTool({ name, arguments: args })
     return result.structuredContent
   }
-
-  #connectedClient() { return this.#status === STATUS.connected ? this.#client : undefined }
 
   #subscribe(set, fn) {
     set.add(fn)
     return () => { set.delete(fn) }
   }
 
-  #emit(set, value) { for (const fn of [...set]) fn(value) }
+  /** Listeners are the caller's code: one that throws must not break the link or another listener. */
+  #emit(set, value) {
+    for (const fn of [...set]) {
+      try { fn(value) } catch { /* isolated, see above */ }
+    }
+  }
 
   #setStatus(next) {
     if (next === this.#status) return
@@ -139,9 +158,15 @@ export class McpLink {
     this.#emit(this.#listeners.status, next)
   }
 
+  /** The user's decision: a link that stops being connected says so until it is classified again. */
+  #leaveConnected() {
+    if (this.#status === STATUS.connected) this.#setStatus(STATUS.unreachable)
+  }
+
   #restart() {
     this.#failures = 0
     this.#cancelTimer()
+    this.#leaveConnected()
     const generation = ++this.#generation
     void this.#teardown().then(() => this.#attempt(generation))
   }
@@ -156,6 +181,7 @@ export class McpLink {
     const client = this.#client
     this.#subscription = undefined
     this.#client = undefined
+    this.#connected = undefined
     // Closing is best effort: the peer may already be gone.
     await subscription?.close().catch(() => {})
     await client?.close().catch(() => {})
@@ -163,29 +189,33 @@ export class McpLink {
 
   #current(generation) { return this.#started && generation === this.#generation }
 
-  /** One connection attempt; stale attempts (an older generation) stop at their next step. */
+  /**
+   * One connection attempt. It never rejects. Every await is followed by a generation check, so an
+   * attempt overtaken by `stop()` or `reconnect()` neither emits a status nor schedules a retry.
+   */
   async #attempt(generation) {
     if (!this.#current(generation)) return
-    const target = checkTarget(this.#options.target())
-    // A refused or blank target is not retried: nothing changes until the user edits it.
-    if (!target.ok) return this.#setStatus(target.code === null ? STATUS.unset : refusedTarget(target.code))
-    const credentials = await this.#options.credentials()
-    if (!this.#current(generation)) return
-    if (!credentials?.secret) return this.#setStatus(STATUS.unset)
     const seen = { mcpStatus: undefined }
     try {
+      const target = checkTarget(this.#options.target())
+      if (!target.ok) return this.#setStatus(target.status)
+      const credentials = await this.#options.credentials()
+      if (!this.#current(generation)) return
+      if (!credentials?.secret) return this.#setStatus(STATUS.unset)
       const sdk = await this.#sdk()
       if (!this.#current(generation)) return
-      await this.#connect(sdk, target, credentials, seen, generation)
+      const client = await this.#connect(sdk, target, credentials, seen, generation)
       if (!this.#current(generation)) return
+      this.#connected = client
       this.#failures = 0
       this.#setStatus(STATUS.connected)
       void this.#poll(generation)
     } catch (error) {
       if (!this.#current(generation)) return
       await this.#teardown()
+      if (!this.#current(generation)) return
       // Without a loaded client module (a broken install) every failure is `target-unreachable`.
-      this.#setStatus(failureStatus(this.#options.sdk ?? {}, error, seen.mcpStatus))
+      this.#setStatus(error instanceof LinkFailure ? error.status : failureStatus(this.#options.sdk ?? {}, error, seen.mcpStatus))
       this.#retryLater(generation)
     }
   }
@@ -213,13 +243,14 @@ export class McpLink {
     })
     // A failed re-list keeps the previous list; the next change or (re)connect lists again.
     client.setNotificationHandler(LINK_MCP.toolsListChanged, () => { this.#listTools(client, generation).catch(() => {}) })
-    // Held before connecting, so a stop or restart during the attempt closes it too.
     this.#client = client
     await client.connect(transport)
     await this.#listTools(client, generation)
     const subscription = await client.listen({ resourceSubscriptions: [LINK_MCP.eventsUri], toolsListChanged: true })
-    if (!this.#current(generation)) return void subscription.close().catch(() => {})
     this.#subscription = subscription
+    // Connected means a listen stream on fishball-events (K3 TargetState). A V3 connector always
+    // honours it, so a target that does not is not one (the user's decision, 2026-11-14).
+    if (!subscription.honoredFilter?.resourceSubscriptions?.includes(LINK_MCP.eventsUri)) throw new LinkFailure(STATUS.incompatible)
     // Any end of the stream we did not cause ('graceful' included: a revocation closes it, R-TOK-05)
     // drops the link; the next attempt reports what the target says then.
     void subscription.closed.then(() => this.#lost(generation, subscription))
@@ -245,21 +276,23 @@ export class McpLink {
   }
 
   async #poll(generation) {
-    const client = this.#connectedClient()
+    const client = this.#connected
     if (client === undefined || !this.#current(generation)) return
+    let result
     try {
-      const result = await client.callTool({ name: TOOL.inboxPoll, arguments: {} })
-      if (this.#current(generation)) this.#emit(this.#listeners.poll, result.structuredContent)
+      result = await client.callTool({ name: TOOL.inboxPoll, arguments: {} })
     } catch {
       // A failed poll loses nothing: pending events stay at the connector until acked, and the
       // next (re)connect or hint polls again.
+      return
     }
+    if (this.#current(generation)) this.#emit(this.#listeners.poll, result.structuredContent)
   }
 
   /**
    * The listen stream ended without our asking. The link is down until the next attempt, which
-   * runs after the backoff delay (not at once), so a target that keeps closing the stream is
-   * retried at a bounded rate.
+   * runs after the backoff delay. The failure count restarts at every successful connect, so a
+   * target that keeps accepting and then closing the stream is retried every `BACKOFF.initialMs`.
    */
   #lost(generation, subscription) {
     if (!this.#current(generation) || this.#subscription !== subscription) return
@@ -269,6 +302,7 @@ export class McpLink {
   }
 
   #retryLater(generation) {
+    this.#cancelTimer()
     const delay = backoffDelayMs(this.#failures)
     this.#failures += 1
     this.#timer = this.#options.setTimer(() => {

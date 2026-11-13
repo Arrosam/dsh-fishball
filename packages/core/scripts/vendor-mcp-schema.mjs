@@ -34,6 +34,10 @@ const VENDOR = Object.freeze({
   // or `;`, so a string constant after `export const` is never read as a specifier), and bare
   // `import '…'`.
   specifiers: /^\s*(?:(?:import|export)\s[^'";]*?\sfrom\s*|import\s*)['"]([^'"]+)['"]/gm,
+  // A dynamic `import(` would load something this scan cannot follow, so the copy refuses it and
+  // the "no runtime dependency" claim stays checked. JSDoc type imports (`{import('…')…}`) are
+  // types only and allowed.
+  dynamicImport: /(?<![{(.\w])import\s*\(/,
 })
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -52,7 +56,9 @@ function closure(root, entry) {
     if (found.has(relative)) return
     if (relative.startsWith('..') || !relative.endsWith(VENDOR.script)) fail('import leaves the connector or is not JavaScript: ' + relative)
     found.add(relative)
-    for (const [, specifier] of fs.readFileSync(file, 'utf8').matchAll(VENDOR.specifiers)) {
+    const source = fs.readFileSync(file, 'utf8')
+    if (VENDOR.dynamicImport.test(source)) fail('dynamic import() in ' + relative)
+    for (const [, specifier] of source.matchAll(VENDOR.specifiers)) {
       if (specifier.startsWith(VENDOR.builtinScheme)) continue
       if (!VENDOR.relative.some((prefix) => specifier.startsWith(prefix))) fail(`bare import ${specifier} in ${relative}`)
       visit(path.resolve(path.dirname(file), specifier))
