@@ -153,6 +153,13 @@ export const FINDER = Object.freeze({
   depth: 2,
   member: /guard|report|status/i,
   callMs: 1000,
+  /**
+   * A one-argument member of the same service that takes a change listener (report.mjs
+   * `subscribeReport`). The history records every published value through it, because a correct
+   * report can stand for a few milliseconds only (a recompose right after core's reorder), which a
+   * poll misses.
+   */
+  subscribe: /change|subscribe|listen/i,
 })
 
 /** Harness budgets (waiting only; none is a product oracle). */
