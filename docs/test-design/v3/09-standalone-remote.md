@@ -6,7 +6,7 @@ rows 9, 9b. Conventions: [README](<README.md>).
 ## Use Cases
 
 ### REM-UC-01 — The user sets up a standalone Fishball against a remote DSH
-**Req:** R-FB-03, R-FB-04, R-FB-05, R-ID-07, R-UI-07, R-BND-05 · **Level:** integration (two DSHs), e2e (page) · **Flags:** P:S6, P:S7
+**Req:** R-FB-03, R-FB-04, R-FB-05, R-ID-07, R-UI-07, R-BND-05 · **Level:** integration (two DSHs), e2e (page) · **Flags:** P:S7
 
 - **Actor:** owner of DSH F (standalone) and of main DSH B.
 - **Preconditions:** B runs C_B exposed over HTTPS (or a tunnel to loopback); F is an ordinary DSH.
@@ -41,15 +41,18 @@ rows 9, 9b. Conventions: [README](<README.md>).
 - **Postconditions:** no event lost; no session stopped.
 
 ### REM-UC-03 — The owner exposes the connector beyond loopback
-**Req:** R-REM-01, R-REM-02, R-OA-08, R-REM-03 · **Level:** integration · **Flags:** P:S1
+**Req:** R-REM-01, R-REM-02, R-OA-08, R-REM-03, R-OA-20 · **Level:** integration · **Flags:** —
 
 - **Actor:** owner of B.
-- **Main flow:** with DSH's listener on loopback, `/api/fishball/mcp`, the OAuth metadata and the token endpoint answer on DSH's own port; there is no separate port or TLS setting.
+- **Main flow:** with DSH's listener on loopback, `/api/fishball/mcp`, the OAuth metadata and the token endpoint answer on DSH's own port; there is no separate port or TLS setting for them (the browser approval page alone has its own listener, R-OA-20).
 - **Alternative flows:** A1. The owner exposes DSH's listener over HTTPS → the routes are reachable remotely.
 - **Exception flows:**
   - E1. Non-loopback over plain HTTP → the routes are refused at load with one diagnostic (D§3.1: 503 `insecure-listener`); the token endpoint is not served either.
-  - E2. A request with a present `Origin` outside the allowlist → 403, on the MCP endpoint and the token endpoint.
-- **Postconditions:** nothing listens on any other port.
+  - E2. A request with a present `Origin` outside the allowlist → 403, on the MCP endpoint, the token endpoint and the approval listener.
+  - E3. A request whose `Host` is not a loopback name, the bind address or a `--trusted-host` entry → refused before authentication; the connector checks this itself (S1 (a)).
+  - E4. The approval listener follows the same exposure rule as DSH's listener (loopback by default; non-loopback needs TLS), listens on its configured port, and answers nothing but the authorize page and the decision form (port clash: AUTH-DT-09).
+  - E5. On loopback, DSH's listener and the approval listener serve the metadata, token endpoint and page over plain HTTP; the DSH SDK client (both SDKs) and the Python MCP SDK accept it (S7b); this is the one documented departure from the specification (Q-SPEC-1 decided A).
+- **Postconditions:** apart from the approval listener (R-OA-20), nothing listens on any other port.
 
 ## Equivalence Partitioning
 
