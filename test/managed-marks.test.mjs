@@ -26,7 +26,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { MANAGED_BY, MANAGED_CODE, P5_CODE, TITLE } from './support/constants.mjs'
+import { EMBED_UI_LINK, MANAGED_BY, MANAGED_CODE, P5_CODE, TITLE } from './support/constants.mjs'
 import { HOOK, T, fishballClientBundle, settledIdle } from './support/expect.mjs'
 import { handOver, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
 import {
@@ -59,7 +59,7 @@ describe('managed-session marks: what the client reads (H-STUB)', () => {
   const ok200 = (r) => assert.equal(r.status, 200, r.text)
 
   before(async () => {
-    booted = await bootManaged('managed-marks')
+    booted = await bootManaged('managed-marks', { link: [EMBED_UI_LINK] })
     host = booted.host
   }, HOOK)
   after(() => stopStub(booted), HOOK)
@@ -159,7 +159,7 @@ describe('managed-session marks: what the client reads (H-STUB)', () => {
 
   it('MKS-09 the client bundle carries the banner\'s and the header\'s words', T, async () => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found && bundle.status === 200, 'index references fishball-connector/client.js')
+    assert.ok(bundle.found && bundle.status === 200, 'index references fishball-embed-ui/client.js')
     for (const word of [MANAGED_STUB.labels.banner, MANAGED_STUB.labels.handOver, MANAGED_STUB.labels.takeBack]) assert.ok(bundle.text.includes(word), word)
   })
 

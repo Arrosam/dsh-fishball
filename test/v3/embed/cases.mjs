@@ -27,14 +27,14 @@ import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { REPO, TEST_HOMES } from '../../support/constants.mjs'
 import { bootHost, newHome, until } from '../../support/host.mjs'
-import { BUDGET, MARK, ROUTE, STATE, runtimeOf } from '../core/constants.mjs'
+import { BUDGET, CHILD_SETTINGS, MARK, ROUTE, STATE, runtimeOf } from '../core/constants.mjs'
 import { admitChild, openSettingsPage } from '../core/page.mjs'
 import { describeRef, has, ownFiles, tokensOf, unitOf } from '../core/static.mjs'
 import { caseName, caseTest, dshInspect } from '../shared/cases.mjs'
 import { DSH_FIELD, JS_FILE, NPM, SDK, V3 } from '../shared/constants.mjs'
 import { npmTempRoot, observe, readManifest } from '../shared/packages.mjs'
 import {
-  BASE, CARD_SLOTS, CHILD_COPY, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
+  BASE, CARD_SLOTS, CHILD_COPY, GIT, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
   INTEGRATION, LATER, MODULE_LOADER, OLD_CLIENT, STATUS_LINE,
 } from './constants.mjs'
 import { hostGraph, openMainPage } from './page.mjs'
@@ -145,18 +145,18 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ R-EMBED (2): the moved client
-  caseTest(sdk, 'R-EMBED', '(2)', 'embed-UI ships the moved client under src/client/connector/ and src/client/instance/', async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', 'embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js, client.connector.js, client.instance.js', async () => {
     needEmbed()
     const files = ownFiles(await unitOf(V3.embed.name))
-    for (const folder of EMBED.clientFolders) assert.ok(files.some((f) => f.startsWith(folder) && JS_FILE.test(f)), 'no JS file under ' + folder)
+    for (const file of [EMBED.clientEntry, ...Object.values(EMBED.clientChunks)]) assert.ok(files.includes(file), 'not shipped: ' + file)
   })
-  caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (src/client/connector/) carries the V2 contributions' slots and the moved instance card (src/client/instance/) a Plugins card slot", async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (client.connector.js) carries the V2 contributions' slots and the moved instance card (client.instance.js) a Plugins card slot", async () => {
     needEmbed()
     const tokens = await unitTokens(V3.embed)
-    const stringsUnder = (folder) => new Set([...tokens].filter(([f]) => f.startsWith(folder)).flatMap(([, t]) => t.strings))
-    const connector = stringsUnder(EMBED.clientFolders[0])
+    const stringsOf = (file) => new Set(tokens.get(file)?.strings ?? [])
+    const connector = stringsOf(EMBED.clientChunks.connector)
     assert.deepEqual(EXPECTED_UI.map((e) => e.slot).filter((slot) => !connector.has(slot)), [], 'slots missing from the moved connector UI')
-    const instance = stringsUnder(EMBED.clientFolders[1])
+    const instance = stringsOf(EMBED.clientChunks.instance)
     assert.ok(CARD_SLOTS.some((slot) => instance.has(slot)), 'the moved instance card names no Plugins card slot (' + CARD_SLOTS.join(', ') + ')')
   })
   caseTest(sdk, 'R-EMBED', '(2)', 'the instance exports its status-line module from src/child-settings/ (its one owner)', () => {
@@ -164,16 +164,17 @@ export function registerEmbedCases(sdk) {
     const targets = Object.values(exports).flatMap((v) => (typeof v === 'string' ? [v] : Object.values(v ?? {})))
     assert.ok(targets.some((t) => typeof t === 'string' && t.startsWith(STATUS_LINE.exportTarget)), 'no instance export points into ' + STATUS_LINE.exportTarget + ': ' + JSON.stringify(exports))
   })
-  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI's card imports the status line through a fishball-instance export into src/child-settings/", async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI reaches the status line through a committed relative symlink to the file a fishball-instance export names (src/child-settings/)", async () => {
     needEmbed()
-    const exports = manifestOf(V3.instance).exports ?? {}
-    const intoChildSettings = (specifier) => {
-      const sub = '.' + specifier.slice(V3.instance.name.length)
-      const target = exports[sub]
-      return typeof target === 'string' && target.startsWith(STATUS_LINE.exportTarget)
-    }
-    const refs = (await unitOf(V3.embed.name)).refs.filter((r) => r.target === V3.instance.name)
-    assert.ok(refs.some((r) => typeof r.specifier === 'string' && intoChildSettings(r.specifier)), 'embed-UI names no fishball-instance status-line export; its instance refs: ' + refs.map(describeRef).join('; '))
+    const link = path.join(V3.embed.dir, STATUS_LINE.embedLink)
+    assert.ok(fs.lstatSync(link, { throwIfNoEntry: false })?.isSymbolicLink(), STATUS_LINE.embedLink + ' is not a symlink')
+    const target = fs.readlinkSync(link)
+    assert.equal(path.isAbsolute(target), false, 'the symlink target is absolute: ' + target)
+    const { stdout } = await run('git', ['ls-files', '-s', '--', path.relative(REPO, link)], { cwd: REPO })
+    assert.match(stdout, GIT.symlinkMode, 'the symlink is not committed as a symlink: ' + JSON.stringify(stdout))
+    const exported = Object.values(manifestOf(V3.instance).exports ?? {})
+      .filter((t) => typeof t === 'string' && t.startsWith(STATUS_LINE.exportTarget)).map((t) => fs.realpathSync(path.join(V3.instance.dir, t)))
+    assert.ok(exported.includes(fs.realpathSync(link)), 'the symlink resolves to ' + fs.realpathSync(link) + ', which no fishball-instance export into ' + STATUS_LINE.exportTarget + ' names')
   })
   caseTest(sdk, 'R-EMBED', '(2)', 'no shipped JS file of embed-UI is a byte copy of a file the instance or the connector ships (moved, one owner)', async () => {
     needEmbed()
@@ -217,7 +218,11 @@ export function registerEmbedCases(sdk) {
     assert.deepEqual(withClient, [V3.embed.name])
   })
   caseTest(sdk, 'PLAT-EP-03', 3, "the instance's own shipped code (not its child-side hosted-settings bundle) registers no browser module and names no host-DSH slot", async () => {
-    assert.deepEqual(await hostUiFiles(V3.instance), [])
+    // src/child-settings/ is the fishball-hosted-settings bundle (R-HOST-11): its client runs only in
+    // the hosted child, never in the host DSH. Excluded by name, whichever package an ownership
+    // helper counts it under.
+    const hostSide = (await hostUiFiles(V3.instance)).filter((hit) => !hit.startsWith(CHILD_SETTINGS.folder))
+    assert.deepEqual(hostSide, [])
   })
 
   // ================================================================ PLAT-EP-03 row 5: each remains a native DSH bundle
@@ -272,16 +277,23 @@ export function registerEmbedCases(sdk) {
   integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the V2 contributions and a Plugins card render from fishball-embed-ui, with no failed plugin or page error', async (t) => {
     const { host } = await hostWith(sdk, SETS.full)
     const page = await openMainPage(t, { sdk, host })
+    // Attribution is by serving package: a registration belongs to the graph entry whose served
+    // bundle (or package-local chunk) made it. The moved parts may keep their V2 plugin names
+    // inside embed-UI (a pure move); no design section ties the slots to embed-UI's own name.
+    const fromEmbed = () => page.registrations.filter((r) => r.owner === V3.embed.name)
+    const missingOf = () => EXPECTED_UI.filter((e) => !fromEmbed().some((r) => r.slot === e.slot && (e.id === undefined || r.id === e.id) && (e.key === undefined || r.key === e.key)))
+    await page.waitFor(() => missingOf().length === 0 && fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)))
     assert.deepEqual(page.failed(), [], 'failed plugins')
     assert.deepEqual(page.errors, [], 'page errors')
-    const fromEmbed = page.registrations.filter((r) => r.owner === V3.embed.name)
-    const missing = EXPECTED_UI.filter((e) => !fromEmbed.some((r) => r.slot === e.slot && (e.id === undefined || r.id === e.id) && (e.key === undefined || r.key === e.key)))
-    assert.deepEqual(missing, [], 'contributions not registered by embed-UI; it registered ' + JSON.stringify(fromEmbed))
-    assert.ok(fromEmbed.some((r) => CARD_SLOTS.includes(r.slot)), 'embed-UI registered no Plugins card')
+    const missing = missingOf()
+    assert.deepEqual(missing, [], 'contributions not registered by embed-UI; it registered ' + JSON.stringify(fromEmbed()))
+    assert.ok(fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)), 'embed-UI registered no Plugins card')
   })
   integrationCase(sdk, 'HOST-UC-08', 'post', 'C + I + U: the host shows no UI from the instance or the connector (no registration by another Fishball entry)', async (t) => {
     const { host } = await hostWith(sdk, SETS.full)
     const page = await openMainPage(t, { sdk, host })
+    // The served chunks register after their fetches; wait for embed-UI's first contribution.
+    await page.waitFor((regs) => regs.some((r) => r.owner === V3.embed.name))
     assert.deepEqual(page.registrations.filter((r) => FISHBALL_ENTRY(r.owner) && r.owner !== V3.embed.name), [])
   })
   integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the hosted child starts and its settings panel still shows the status line (ready)', async (t) => {

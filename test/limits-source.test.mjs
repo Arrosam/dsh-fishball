@@ -23,7 +23,8 @@ import { LIMITS_R11, LIMITS_R11_REMOVED, REMOVED_PACKAGE_CONSTANTS, REPO, STAYIN
 function sources() {
   const files = []
   // V3 R-CORE moved the slim child, ui and limits.js from packages/instance to packages/core.
-  for (const d of ['connector', 'instance', 'core']) {
+  // V3 R-EMBED moved the main-DSH client files into packages/embed-ui/src/client.
+  for (const d of ['connector', 'instance', 'core', 'embed-ui']) {
     const root = path.join(REPO, 'packages', d)
     for (const f of ['index.js', 'client.js', 'host.js', 'native-child.js']) if (fs.existsSync(path.join(root, f))) files.push(path.join('packages', d, f))
     const src = path.join(root, 'src')

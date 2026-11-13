@@ -30,7 +30,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const PBS = Object.freeze({
   client: path.join(HERE, '..', '..', '..', 'core', 'ui', 'fishball-settings', 'client.js'),
   moduleId: 'fishball-settings',
-  sharedChunk: './client.instance.js',
+  sharedChunk: './client.status.js',
   styleId: 'fishball-settings-style',
   baseURI: 'http://child.test/',
   modules: Object.freeze({ react: 'react', primitives: '@deepseek-ai/dsh-client-ui-primitives' }),
