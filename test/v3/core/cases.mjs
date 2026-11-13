@@ -316,6 +316,7 @@ export function registerCoreCases(sdk) {
   })
   caseTest(sdk, 'HOST-UC-08', 'main 3', 'a change in a hosted-only section is saved by the instance', null, LATER.saved)
 
+  // HOST-EP-03 row 5 and the HOST-UC-08 postcondition "H shows no UI from the instance" are R-EMBED's: test/v3/embed/cases.mjs.
   // ================================================================ later tasks
   caseTest(sdk, 'HOST-UC-08', 'main 1', "the child's Plugins page lists the four set members and fishball-hosted-settings, all on", null, LATER.place)
   caseTest(sdk, 'HOST-UC-08', 'A1', 'fishball-hosted-settings switched off: "restart required", then the sections are absent with no error after the restart', null, LATER.place)
@@ -323,9 +324,7 @@ export function registerCoreCases(sdk) {
   caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: the same core package shows the generic settings only and reports nothing missing', null, LATER.standalone)
   caseTest(sdk, 'HOST-UC-08', 'E1', 'fishball-core disabled: the sections do nothing and the child still starts (fishball-off)', null, LATER.host)
   caseTest(sdk, 'HOST-UC-08', 'E2', "core's guards never disable fishball-hosted-settings; guards-overridden never names it", null, LATER.guards)
-  caseTest(sdk, 'HOST-UC-08', 'post', 'the host shows no UI from the instance (all host UI is embed-UI\'s)', null, LATER.embed)
   caseTest(sdk, 'HOST-UC-08', 'e2e', 'the panel and the Plugins page in a browser', null, LATER.e2e)
-  caseTest(sdk, 'HOST-EP-03', 5, 'the instance manifest has no dsh.client', null, LATER.embed)
   caseTest(sdk, 'HOST-EP-03', 6, "the child's launch overlays carry no settings row (only HMR, origin and port, admission key, target URL)", null, LATER.place)
   caseTest(sdk, 'HOST-EP-03', 7, 'the child profile and the placement record hold the four set members plus fishball-hosted-settings; a standalone profile never does', null, LATER.place)
 }

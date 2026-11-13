@@ -101,7 +101,6 @@ export const LATER = Object.freeze({
   host: 'I-HOST (lifecycle codes, fishball-off)',
   guards: 'F-GUARDS (guard rows and guards-overridden)',
   status: 'F-STATUS (core status: set completeness; never reports fishball-hosted-settings)',
-  embed: 'R-EMBED (host UI moves to fishball-embed-ui; the instance manifest drops dsh.client)',
   standalone: 'F-GUARDS and S6 (standalone loading of core is not required in R-CORE)',
   saved: 'unassigned in v3-tasks.md (the V2 hosted sections have no setting the instance saves; see the R-CORE test report)',
   e2e: 'E2E (W6 browser flows; no browser in this suite)',
