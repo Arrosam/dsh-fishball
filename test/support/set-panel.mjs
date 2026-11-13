@@ -2,13 +2,18 @@
  * Offline harness for the child's slim settings panel `packages/core/ui/fishball-settings/client.js`
  * (SET), used by the main-only model sync cases (test/v2-page-cases/set-main-only-sync.test.mjs).
  *
- * Black box. The two classic scripts run unread in a node:vm context, the way DSH's module loader
- * runs them: the panel registers `{id: 'fishball-settings', factory}` and loads the instance's
- * `client.js` as its package-local chunk `./client.instance.js` (docs/planning/v2-set.md "Launch
- * overlay"), so the chunk is evaluated with `document.currentScript` naming that chunk URL. React
- * is the hook shim of rp-recommend.mjs (no React is resolvable here and nothing may be installed);
- * the primitives render host elements carrying every prop. The fake ctx models only the public
- * client surfaces the panel names (`slots`, `layout`, `locale`, `ctx.get`, `ctx.effect`).
+ * Black box. The classic scripts run unread in a node:vm context, the way DSH's module loader runs
+ * them. V3 R-HOST-11 / task R-CORE (3)-(4): a hosted child has two settings bundles. Core's generic
+ * panel registers `{id: 'fishball-settings', factory}` and provides the settings-section extension
+ * point `fishballSettingsSections`; the instance's `fishball-hosted-settings` registers the
+ * hosted-only sections into it and loads the instance's `client.js` as its package-local chunk
+ * `./client.instance.js`, evaluated with `document.currentScript` naming that chunk URL. Both are
+ * applied, panel first (the launch overlay's row order). React is the hook shim of rp-recommend.mjs
+ * (no React is resolvable here and nothing may be installed); a host element held by ref gets one
+ * plain object per rendered position, so each section has its own container, and a portal renders
+ * in place. The primitives render host elements carrying every prop. The fake ctx models only the
+ * public client surfaces the two bundles name (`slots`, `layout`, `locale`, `reflect.provide`,
+ * `ctx.get`, `ctx.effect`).
  *
  * Observation points: the rendered host tree (data attributes, text, tags, order), every browser
  * fetch the page makes, and the chunk's `exports.shared`. Timers the page schedules are tracked and
@@ -23,7 +28,10 @@ import { createReactShim, findAll, settle, textOf } from './rp-recommend.mjs'
 export const PANEL = Object.freeze({
   panelClient: path.join(BODY_SOUL.core, 'ui', 'fishball-settings', 'client.js'),
   instanceClient: path.join(BODY_SOUL.instance, 'client.js'),
+  /** V3 R-HOST-11: the instance-owned hosted-only sections bundle. */
+  hostedClient: path.join(BODY_SOUL.instance, 'src', 'child-settings', 'client.js'),
   moduleId: 'fishball-settings',
+  hostedModuleId: 'fishball-hosted-settings',
   chunk: 'client.instance.js',
   chunkRequest: './client.instance.js',
   baseURI: 'http://child.test/fishball-child/',
@@ -82,10 +90,18 @@ export async function mountPanel(t, { lang = 'en', status = PANEL.status.ready }
   const page = createBrowserSandbox({ lang, baseURI: PANEL.baseURI, fetch: browserFetch })
   const { registrations } = page
   page.run(readFileSync(PANEL.panelClient, 'utf8'), PANEL.panelClient)
+  page.run(readFileSync(PANEL.hostedClient, 'utf8'), PANEL.hostedClient)
   // The default bundle loader inserts a <script> for the chunk: currentScript names its URL.
   page.run(readFileSync(PANEL.instanceClient, 'utf8'), PANEL.chunk, PANEL.chunkURL)
 
-  const shim = createReactShim({ stale() {} })
+  // One container object per ref'd host element position (a section's mount target).
+  const elements = new Map()
+  const hostRef = (key, _tag, props) => {
+    if (!elements.has(key)) elements.set(key, { key })
+    if (typeof props.ref === 'function') props.ref(elements.get(key))
+    else if (props.ref && typeof props.ref === 'object') props.ref.current = elements.get(key)
+  }
+  const shim = createReactShim({ stale() {}, hostRef })
   const { React } = shim
   const modules = { [PANEL.modules.react]: React, [PANEL.modules.reactDom]: { createPortal: (node) => node }, [PANEL.modules.primitives]: fakePrimitives(React) }
   const chunk = { exports: undefined, requests: [] }
@@ -101,9 +117,13 @@ export async function mountPanel(t, { lang = 'en', status = PANEL.status.ready }
       return chunk.exports
     },
   })
-  const main = registrations.find((r) => r.chunk === undefined && r.id === PANEL.moduleId)
-  if (!main) throw new Error('the panel did not register ' + PANEL.moduleId)
-  const plugin = main.factory(requireFor())
+  const entryOf = (id) => {
+    const entry = registrations.find((r) => r.chunk === undefined && r.id === id)
+    if (!entry) throw new Error('no bundle registered ' + id)
+    return entry.factory(requireFor())
+  }
+  const plugin = entryOf(PANEL.moduleId)
+  const hosted = entryOf(PANEL.hostedModuleId)
 
   const dictionaries = new Map()
   const translate = (ns, key, params) => {
@@ -121,6 +141,7 @@ export async function mountPanel(t, { lang = 'en', status = PANEL.status.ready }
   const slotEntries = []
   const panelInfo = { value: { activePanelId: PANEL.moduleId } }
   const disposers = []
+  const services = new Map()
   const ctx = {
     locale,
     layout: {
@@ -135,10 +156,13 @@ export async function mountPanel(t, { lang = 'en', status = PANEL.status.ready }
       getVersion: () => 0,
       subscribe: () => () => {},
     },
-    get: () => undefined,
+    // Reflected services (core's extension point), as DSH's client context provides them.
+    reflect: { provide(name, value) { services.set(name, value); return () => { if (services.get(name) === value) services.delete(name) } } },
+    get: (name) => services.get(name),
     effect(fn) { const dispose = fn(); if (typeof dispose === 'function') disposers.push(dispose); return dispose },
   }
   plugin.apply(ctx)
+  hosted.apply(ctx)
   t.after(() => {
     try { shim.unmountRoot('panel') } catch { /* already gone */ }
     for (const dispose of disposers.reverse()) { try { dispose() } catch { /* already gone */ } }
