@@ -104,11 +104,13 @@ function integrationTest(sdk, id, row, title, fn) {
 /**
  * A probe section (test fixture). Assumed contract (a K3 case question): `mount` receives the host
  * element the panel gives the section, as the R-CORE page harness observes it; `unmount` empties it.
+ * `title` is a function: the frozen K3 contract (`SectionTitle = () => string`, read at each render
+ * so it follows the locale) as R-CORE (3) created it; a string title is a malformed section.
  */
 function probeSection(mounted) {
   return {
     id: SECTION.probe.id,
-    title: SECTION.probe.title,
+    title: () => SECTION.probe.title,
     order: SECTION.probe.order,
     mount(hostElement) {
       mounted.push(hostElement)
