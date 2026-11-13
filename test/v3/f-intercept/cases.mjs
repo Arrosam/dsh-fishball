@@ -1036,9 +1036,35 @@ function registerDecisionCases(sdk) {
     assert.equal(r.modelRequestsTotal, 1, 'model requests carrying the event, both processes')
     assert.equal(r.requestsAfterRestart, 0, 'a turn ran after the restart')
   })
-  crashRow(sdk, ID.dt03, `9b (${D.d4}, admission/ledger window)`, 'the session holds the admission, core\'s admitted record has not landed → crash → restart: one wake in total (R-EVT-03)', 'admissionLedgerWindow', (r) => {
+  // Decision 2026-11-14 (crash window) A: documented R-EVT-03 exception. A crash between the durable
+  // admission and core's `admitted` record re-delivers once; the first copy reached no model.
+  crashRow(sdk, ID.dt03, `9b (${D.d4}, admission/ledger window)`, 'the session holds the admission, core\'s admitted record has not landed → crash → restart: two admissions, the first reached no model (decision 2026-11-14 (crash window) A: documented R-EVT-03 exception)', 'admissionLedgerWindow', (r) => {
     assert.equal(r.window?.durable, true, 'harness: the admission was not durable at the cut ' + JSON.stringify(r.window))
-    assert.equal(r.admissions, 1, 'wakes')
+    assert.equal(r.admissions, 2, 'admissions in total (the documented exception)')
+    assert.equal(r.modelRequestsTotal - r.modelRequestsAfterRestart, 0, 'model requests carrying the event before the crash')
+    assert.equal(r.modelRequestsTotal, 1, 'model requests carrying the event, both processes')
+  })
+  /** Row 11e harness: the restart found the stale copy pending and the user's act ran on it. */
+  const assertStaleCopy = (r) => assert.deepEqual([r.pendingAtRestart, r.acted], [true, true], 'harness: the stale copy was not pending at the restart, or the user\'s act missed it ' + JSON.stringify(r))
+  crashRow(sdk, ID.st02, `11e (${D.d4}, a copy left pending by an earlier process)`, 'AcceptedBy(Fishball), its message left pending in Fishball\'s DSH inbox, crash; at restart the user\'s message wakes Fishball first and its turn admits the stale copy → one admission in total, no second hand-over later, ledger admitted, acked (R-EVT-03)', 'stalePendingUserWakes', (r) => {
+    assertStaleCopy(r)
+    assert.equal(r.admissions, 1, 'admissions in total, both processes')
+    assert.equal(r.handOvers, 1, 'times core\'s message was queued in the Fishball inbox, both processes')
+    assert.equal(r.laterAdmissions, 1, 'harness: the later event (more idle edges) was not delivered')
+    assert.ok(r.ledgerStates.includes(CORE.admitted), 'core\'s ledger record of the event is not admitted: ' + JSON.stringify(r.ledgerStates))
+    assert.equal(r.acked, true)
+  })
+  // Decision 2026-11-14 (11e stop) A: documented exception. The user removes the stale copy before
+  // core's recovery subscribes to the agent, so core (whose ledger alone decides, 4.A) cannot see the
+  // removal: recovery hands the event over once more and it is admitted once; nothing after that.
+  crashRow(sdk, ID.st02, `11e (${D.d4}, stop)`, 'AcceptedBy(Fishball), its message left pending in Fishball\'s DSH inbox, crash; at restart the user removes the stale copy before core\'s recovery subscribes → one admission in total, no further re-delivery after later idle edges, ledger admitted, acked (decision 2026-11-14 (11e stop) A: documented exception)', 'stalePendingUserRemoves', (r) => {
+    assertStaleCopy(r)
+    assert.equal(r.admissions, 1, 'admissions in total, both processes (the documented exception)')
+    // The first process's hand-over (the removed copy) and recovery's one, which is the admission.
+    assert.equal(r.handOvers, 2, 'times core\'s message was queued in the Fishball inbox, both processes')
+    assert.equal(r.laterAdmissions, 1, 'harness: the later event (more idle edges) was not delivered')
+    assert.ok(r.ledgerStates.includes(CORE.admitted), 'core\'s ledger record of the event is not admitted: ' + JSON.stringify(r.ledgerStates))
+    assert.equal(r.acked, true)
   })
 
   // ============================== decision 2: startup recovery fails; intake continues
