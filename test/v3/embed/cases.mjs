@@ -34,7 +34,7 @@ import { caseName, caseTest, dshInspect } from '../shared/cases.mjs'
 import { DSH_FIELD, JS_FILE, NPM, SDK, V3 } from '../shared/constants.mjs'
 import { npmTempRoot, observe, readManifest } from '../shared/packages.mjs'
 import {
-  BASE, CARD_SLOTS, CHILD_COPY, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
+  BASE, CARD_SLOTS, CHILD_COPY, GIT, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
   INTEGRATION, LATER, MODULE_LOADER, OLD_CLIENT, STATUS_LINE,
 } from './constants.mjs'
 import { hostGraph, openMainPage } from './page.mjs'
@@ -164,16 +164,17 @@ export function registerEmbedCases(sdk) {
     const targets = Object.values(exports).flatMap((v) => (typeof v === 'string' ? [v] : Object.values(v ?? {})))
     assert.ok(targets.some((t) => typeof t === 'string' && t.startsWith(STATUS_LINE.exportTarget)), 'no instance export points into ' + STATUS_LINE.exportTarget + ': ' + JSON.stringify(exports))
   })
-  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI's card imports the status line through a fishball-instance export into src/child-settings/", async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI reaches the status line through a committed relative symlink to the file a fishball-instance export names (src/child-settings/)", async () => {
     needEmbed()
-    const exports = manifestOf(V3.instance).exports ?? {}
-    const intoChildSettings = (specifier) => {
-      const sub = '.' + specifier.slice(V3.instance.name.length)
-      const target = exports[sub]
-      return typeof target === 'string' && target.startsWith(STATUS_LINE.exportTarget)
-    }
-    const refs = (await unitOf(V3.embed.name)).refs.filter((r) => r.target === V3.instance.name)
-    assert.ok(refs.some((r) => typeof r.specifier === 'string' && intoChildSettings(r.specifier)), 'embed-UI names no fishball-instance status-line export; its instance refs: ' + refs.map(describeRef).join('; '))
+    const link = path.join(V3.embed.dir, STATUS_LINE.embedLink)
+    assert.ok(fs.lstatSync(link, { throwIfNoEntry: false })?.isSymbolicLink(), STATUS_LINE.embedLink + ' is not a symlink')
+    const target = fs.readlinkSync(link)
+    assert.equal(path.isAbsolute(target), false, 'the symlink target is absolute: ' + target)
+    const { stdout } = await run('git', ['ls-files', '-s', '--', path.relative(REPO, link)], { cwd: REPO })
+    assert.match(stdout, GIT.symlinkMode, 'the symlink is not committed as a symlink: ' + JSON.stringify(stdout))
+    const exported = Object.values(manifestOf(V3.instance).exports ?? {})
+      .filter((t) => typeof t === 'string' && t.startsWith(STATUS_LINE.exportTarget)).map((t) => fs.realpathSync(path.join(V3.instance.dir, t)))
+    assert.ok(exported.includes(fs.realpathSync(link)), 'the symlink resolves to ' + fs.realpathSync(link) + ', which no fishball-instance export into ' + STATUS_LINE.exportTarget + ' names')
   })
   caseTest(sdk, 'R-EMBED', '(2)', 'no shipped JS file of embed-UI is a byte copy of a file the instance or the connector ships (moved, one owner)', async () => {
     needEmbed()
