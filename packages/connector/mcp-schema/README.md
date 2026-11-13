@@ -124,8 +124,9 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 | --- | --- | --- |
 | `pageDefault` | 50 | PROPOSED: `inbox_poll` without `limit` |
 | `pageMax` | 100 | PROPOSED: `limit` is 1–100; 0 or 101 is `limit-exceeded`, never clamped |
-| `heldMs` | 30 days | [req] events kept for a disabled entry |
+| `disabledRetentionMs` | 30 days | [req] events kept for a disabled entry |
 | `ackedReceiptMs` | 1 day | PROPOSED: a repeated ack of an acked event is a no-op success |
+| `QUEUE.maxQueuedInputs` | 200 | [design §3.4] the default of the connector setting; frozen by K1 |
 | `QUEUE.refusedTypes` | `message`, `turn-finished`, `state`, `notice`, contributor events | PROPOSED: refused `queue-full` past `maxQueuedInputs`; offers, `ask`, `settlement`, `retirement`, `handover`, `takeback` always commit |
 
 - A pending event never expires. A stale cursor is `{resync: {reason: 'stale-cursor',
@@ -214,6 +215,37 @@ list; anything else is 403 before authentication. Loopback is `http`, every othe
   (`checkName`). The uniqueness key is `nameKey`: lower, upper, then lower case, then NFC (so `Straße` and
   `STRASSE` and `Straẞe` clash). A nameless principal shows as `ID: <id>` with the prefix bold
   (`principalLabel`).
+
+## Naming of durations
+
+A duration's unit is the end of its key name: `…Ms` milliseconds, `…Seconds` seconds, `…Days`
+days. Every duration in this module is `…Ms`; the wire's whole-second fields (`expires_in`,
+`Retry-After`) are derived from them with `TIME_UNIT.msPerSecond`. Tasks that add durations keep
+this rule.
+
+## K decisions with no constant value
+
+Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed by case id.
+
+| Case | Decision |
+| --- | --- |
+| AUTH-EP-01 row 5 | A token request with no `grant_type` is 400 `invalid_request` [spec: RFC 6749 §5.2, a required parameter is missing], not `unsupported_grant_type`. No access token. |
+| AUTH-EP-01 row 6 | A GET on the token endpoint is 405 with `Allow: POST` and no access token (PROPOSED: S7 T7's behaviour). |
+| AUTH-ST-04 row 9 | A wrong `code_verifier` (or `redirect_uri`) is 400 `invalid_grant` and does **not** consume the code; the code stays bound by its 60 s life (PROPOSED: S7b's behaviour). A replay of a code already redeemed revokes its chain (R-OA-14). |
+| AUTH-DT-08 row 10 | An empty token field on the approval page shows "enter a token" and is **not** counted as a failure toward the rate limit (PROPOSED: S7b's behaviour). |
+| AUTH-DT-09 row 4 | After a clash the approval listener retries the bind every `APPROVAL_LISTENER.retryMs` (30 s) while the connector runs, so a freed port is bound again without a restart; a change of the port setting rebinds at once (PROPOSED). |
+| NAME-EP-01 rows 11–12 | Name characters are Unicode code points (an emoji is one or more code points as encoded; a ZWJ sequence is refused, `Cf`). A non-string, non-null `name` is refused by the input schema as `invalid-arguments` before `checkName`; `checkName` itself answers `name-invalid` for any non-string. |
+| NAME-BVA-01 (K) | Name length counts Unicode code points **after** whitespace collapse, trim and NFC (`checkName`). |
+| EVT-EP-02 rows 4–5 | `inbox_ack` with an `eventId` that is not in the caller's mailbox (another pair's included) is `unknown-event`; a wrong `payloadDigest` is `digest-mismatch`. All or nothing: one bad receipt acks nothing (PROPOSED). |
+| EVT-ST-01 row 8 | A second ack of an acked event is a no-op success while its receipt is remembered (`MAILBOX.ackedReceiptMs`, 1 day), counted in `acked` as 0 (PROPOSED). |
+| EVT-ST-01 row 5 | An offer settled by the user keeps its own event pending until acked; the `settlement` that follows is the signal; the offer event is not retired (PROPOSED). |
+| EVT-BVA-01 rows 5–6 | `inbox_poll` `limit` must be 1–`MAILBOX.pageMax` (100); 0 and 101 are `limit-exceeded`, never clamped (V2 contract §8: a value outside a limit is `limit-exceeded`). |
+| EVT-BVA-02 rows 1–4 | `maxQueuedInputs` = 200 (`QUEUE.maxQueuedInputs`); past it only `QUEUE.refusedTypes` and contributor events are `queue-full`. |
+| PLAT-UC-03 (connected) | Connected = an open `subscriptions/listen` stream on `fishball://events` now (`CONNECTED`; design §3.5 amended to match §3.6). |
+| PLAT-UC-01 E5 | An `Mcp-Session-Id` header is ignored: the request is served statelessly and no session is created [spec: 2026-07-28 has no protocol sessions; S1 C21]. |
+| PLAT-BVA-02 | Body limit `ENDPOINT_LIMITS.bodyBytes` = 8 MiB: at the limit processed, one byte over 413; in-flight one over `inFlightPerPrincipal` 429 (PROPOSED values). |
+| PLAT-BVA-01 (K) | Left to FEAT-PEERS: the board's day length and whether 30 d is inclusive are board rules, not part of the MCP surface. |
+| PLAT-DT-02 (K) | Left to F-STATUS: `plugin-set-incomplete` and "rule 4 reports nothing missing" are core's status rules, not part of the MCP surface. |
 
 ## Internal module interfaces (`index.d.ts`, types only)
 

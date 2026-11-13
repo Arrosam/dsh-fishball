@@ -172,8 +172,29 @@ export const BEARER_CHALLENGE = Object.freeze({
   queryParameter: 'access_token',
   // The same rule at the token endpoint: a secret in the URL is 400 `invalid_request` (S7 T7).
   queryClientSecret: 'client_secret',
-  // RFC 9728 `bearer_methods_supported`: the header only (R-TOK-02).
-  methodsSupported: Object.freeze(['header']),
+})
+
+/**
+ * The fixed fields of the two metadata documents, under their RFC field names (RFC 9728 §2,
+ * RFC 8414 §2; R-OA-01/02; design §5.5 table; S7b §3.2 item 1). The URL fields (`resource`,
+ * `authorization_servers`, `issuer`, `token_endpoint`, `authorization_endpoint`) follow the checked
+ * host and are added by `oauth.js`. No `registration_endpoint`, and never `offline_access` [spec].
+ */
+export const OAUTH_METADATA = Object.freeze({
+  protectedResource: Object.freeze({
+    // The header only (R-TOK-02).
+    bearer_methods_supported: Object.freeze(['header']),
+    scopes_supported: Object.freeze([SCOPE.full]),
+  }),
+  authorizationServer: Object.freeze({
+    grant_types_supported: Object.freeze([GRANT.clientCredentials, GRANT.authorizationCode, GRANT.refreshToken]),
+    response_types_supported: Object.freeze([RESPONSE_TYPE.code]),
+    code_challenge_methods_supported: Object.freeze([PKCE.method]),
+    token_endpoint_auth_methods_supported: Object.freeze([CLIENT_AUTH.basic, CLIENT_AUTH.post, CLIENT_AUTH.none]),
+    client_id_metadata_document_supported: true,
+    authorization_response_iss_parameter_supported: true,
+    scopes_supported: Object.freeze([SCOPE.full, SCOPE.pair]),
+  }),
 })
 
 /** `error_description` of a pair-only token's 403, a human-readable hint only (R-ID-06). */
@@ -426,7 +447,9 @@ export const DECISION_KIND_OF = Object.freeze({
 
 /**
  * The mailbox's capacity rule (R-CON-09, R-EXT-18, design §3.4, V2 contract 1.2 §9). Every
- * pending event counts toward the recipient's `maxQueuedInputs` (connector setting, default 200),
+ * pending event counts toward the recipient's `maxQueuedInputs`: a connector setting (V2's, kept,
+ * design §10) whose default K1 freezes at 200 (design §3.4; V2 `src/config.js` has the same value,
+ * which C-WIRE's settings schema takes from here),
  * but only these types are refused `queue-full` past it. PROPOSED split, from the rules it must
  * keep: offers always reach their manager's mailbox (R-CON-09 "always"); a `settlement` or
  * `retirement` must follow the event it ends, or a client would hold a dead offer; `handover` /
@@ -434,7 +457,7 @@ export const DECISION_KIND_OF = Object.freeze({
  * for an answer like an offer. Contributor events count (R-EXT-18).
  */
 export const QUEUE = Object.freeze({
-  settingField: 'maxQueuedInputs',
+  maxQueuedInputs: 200,
   refusedTypes: Object.freeze([EVENT_TYPE.message, EVENT_TYPE.turnFinished, EVENT_TYPE.state, EVENT_TYPE.notice]),
   contributedRefused: true,
 })
@@ -444,14 +467,14 @@ export const QUEUE = Object.freeze({
  * - pageDefault / pageMax: PROPOSED. `limit` is a whole number 1–pageMax; 0 or above pageMax is
  *   `limit-exceeded` (V2 contract §8: a value outside a limit is `limit-exceeded`), never clamped.
  * - A pending event never expires (R-CON-03, R-CON-05).
- * - heldMs: [req] events of a disabled entry are kept 30 days, then dropped as on delete.
+ * - disabledRetentionMs: [req] events of a disabled entry are kept 30 days, then dropped as on delete.
  * - ackedReceiptMs: PROPOSED. An acked event's receipt is remembered this long, so a repeated ack
  *   is a no-op success (EVT-ST-01 row 8) rather than `unknown-event`.
  */
 export const MAILBOX = Object.freeze({
   pageDefault: 50,
   pageMax: 100,
-  heldMs: 30 * DAY_MS,
+  disabledRetentionMs: 30 * DAY_MS,
   ackedReceiptMs: DAY_MS,
 })
 

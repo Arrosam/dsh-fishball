@@ -6,8 +6,7 @@
  * same bytes.
  */
 import {
-  BEARER_CHALLENGE, CLIENT_AUTH, GRANT, INSUFFICIENT_SCOPE_REASON, LIFETIME, OAUTH_ERROR, PATHS, PKCE, RESPONSE_TYPE, SCOPE,
-  TIME_UNIT, TOKEN_TYPE,
+  BEARER_CHALLENGE, INSUFFICIENT_SCOPE_REASON, LIFETIME, OAUTH_ERROR, OAUTH_METADATA, PATHS, SCOPE, TIME_UNIT, TOKEN_TYPE,
 } from './constants.js'
 
 /** The only `error` / `error_description` values a challenge may carry, so RFC 6750 §3 quoting stays trivial. */
@@ -37,8 +36,7 @@ export function protectedResourceMetadata(origin) {
   return Object.freeze({
     resource: urls.resource,
     authorization_servers: Object.freeze([urls.issuer]),
-    bearer_methods_supported: BEARER_CHALLENGE.methodsSupported,
-    scopes_supported: Object.freeze([SCOPE.full]),
+    ...OAUTH_METADATA.protectedResource,
   })
 }
 
@@ -55,13 +53,7 @@ export function authorizationServerMetadata(origin, approvalOrigin) {
     issuer: urls.issuer,
     token_endpoint: urls.tokenEndpoint,
     authorization_endpoint: approvalOrigin + PATHS.authorize,
-    grant_types_supported: Object.freeze([GRANT.clientCredentials, GRANT.authorizationCode, GRANT.refreshToken]),
-    response_types_supported: Object.freeze([RESPONSE_TYPE.code]),
-    code_challenge_methods_supported: Object.freeze([PKCE.method]),
-    token_endpoint_auth_methods_supported: Object.freeze([CLIENT_AUTH.basic, CLIENT_AUTH.post, CLIENT_AUTH.none]),
-    client_id_metadata_document_supported: true,
-    authorization_response_iss_parameter_supported: true,
-    scopes_supported: Object.freeze([SCOPE.full, SCOPE.pair]),
+    ...OAUTH_METADATA.authorizationServer,
   })
 }
 

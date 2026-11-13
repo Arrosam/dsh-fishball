@@ -192,7 +192,7 @@ export interface Mailbox {
   summary(principalKey: PrincipalKey): Promise<{ pending: number; headSequence: number; mailboxGeneration: string }>
   /** Replaces a pending event by a `retirement` naming it (R-EXT-19, R-TOK-05, R-HOST-09). */
   retire(principalKey: PrincipalKey, eventId: string, reason: 'withdrawn' | 'revoked' | 'released' | 'reissued' | 'contributor-withdrawn'): Promise<void>
-  /** Disable (R-TOK-05): the mailbox is held, not pollable, for MAILBOX.heldMs from `now`. */
+  /** Disable (R-TOK-05): the mailbox is held, not pollable, for MAILBOX.disabledRetentionMs from `now`. */
   hold(principalKey: PrincipalKey, now: EpochMs): Promise<void>
   /** Re-enable within the hold: the held events are pending again, same identities. */
   release(principalKey: PrincipalKey): Promise<void>
@@ -289,7 +289,7 @@ export interface Presence {
 
 export declare const ANSWERABLE_TYPES: readonly ["permission", "question", "plan-review", "ask"]
 export declare const APPROVAL_LISTENER: { readonly defaultPort: 47615; readonly retryMs: 30000; readonly headers: { readonly "cache-control": "no-store"; readonly "referrer-policy": "no-referrer"; readonly "content-security-policy": "default-src 'none'; frame-ancestors 'none'" }; readonly redirectStatus: 303 }
-export declare const BEARER_CHALLENGE: { readonly scheme: "Bearer"; readonly basicScheme: "Basic"; readonly params: readonly ["error", "error_description", "scope", "resource_metadata"]; readonly queryParameter: "access_token"; readonly queryClientSecret: "client_secret"; readonly methodsSupported: readonly ["header"] }
+export declare const BEARER_CHALLENGE: { readonly scheme: "Bearer"; readonly basicScheme: "Basic"; readonly params: readonly ["error", "error_description", "scope", "resource_metadata"]; readonly queryParameter: "access_token"; readonly queryClientSecret: "client_secret" }
 export declare const CIMD_LIMITS: { readonly maxBytes: 5120; readonly timeoutMs: 3000; readonly maxCacheMs: 86400000; readonly scheme: "https:"; readonly forbiddenAuthFields: readonly ["client_secret", "client_secret_expires_at"] }
 export declare const CLIENT_AUTH: { readonly basic: "client_secret_basic"; readonly post: "client_secret_post"; readonly none: "none" }
 export declare const CONNECTED: { readonly listenResource: "fishball://events" }
@@ -306,9 +306,21 @@ export declare const HTTP_REFUSAL: { readonly insecureListener: "insecure-listen
 export declare const HTTP_STATUS: { readonly ok: 200; readonly seeOther: 303; readonly badRequest: 400; readonly unauthorized: 401; readonly forbidden: 403; readonly notFound: 404; readonly methodNotAllowed: 405; readonly payloadTooLarge: 413; readonly tooManyRequests: 429; readonly internalServerError: 500; readonly serviceUnavailable: 503 }
 export declare const ID_GRAMMAR: { readonly pattern: RegExp }
 export declare const ID_REFUSAL: { readonly idInvalid: "id-invalid" }
+export declare const OAUTH_METADATA: {
+  readonly protectedResource: { readonly bearer_methods_supported: readonly ["header"]; readonly scopes_supported: readonly ["fishball"] }
+  readonly authorizationServer: {
+    readonly grant_types_supported: readonly ["client_credentials", "authorization_code", "refresh_token"]
+    readonly response_types_supported: readonly ["code"]
+    readonly code_challenge_methods_supported: readonly ["S256"]
+    readonly token_endpoint_auth_methods_supported: readonly ["client_secret_basic", "client_secret_post", "none"]
+    readonly client_id_metadata_document_supported: true
+    readonly authorization_response_iss_parameter_supported: true
+    readonly scopes_supported: readonly ["fishball", "fishball:pair"]
+  }
+}
 export declare const INSUFFICIENT_SCOPE_REASON: { readonly notPaired: "not-paired"; readonly idMismatch: "id-mismatch" }
 export declare const LIFETIME: { readonly accessTokenMs: 3600000; readonly codeMs: 60000; readonly pendingRequestMs: 600000; readonly refreshGraceMs: 10000; readonly refreshChainMaxMs: 2592000000 }
-export declare const MAILBOX: { readonly pageDefault: 50; readonly pageMax: 100; readonly heldMs: 2592000000; readonly ackedReceiptMs: 86400000 }
+export declare const MAILBOX: { readonly pageDefault: 50; readonly pageMax: 100; readonly disabledRetentionMs: 2592000000; readonly ackedReceiptMs: 86400000 }
 export declare const NAME_RULES: { readonly minChars: 1; readonly maxChars: 64; readonly whitespaceRun: RegExp; readonly control: RegExp; readonly space: " "; readonly normalForm: "NFC"; readonly namelessPrefix: "ID: " }
 export declare const NOTICE: { readonly codeGrammar: RegExp; readonly codes: Readonly<Record<string, never>> }
 export declare const OAUTH_ERROR: { readonly invalidRequest: "invalid_request"; readonly invalidClient: "invalid_client"; readonly invalidGrant: "invalid_grant"; readonly unsupportedGrantType: "unsupported_grant_type"; readonly invalidTarget: "invalid_target"; readonly unsupportedResponseType: "unsupported_response_type"; readonly accessDenied: "access_denied"; readonly serverError: "server_error"; readonly temporarilyUnavailable: "temporarily_unavailable"; readonly invalidToken: "invalid_token"; readonly insufficientScope: "insufficient_scope" }
@@ -322,7 +334,7 @@ export declare const PAIR_TIMING: { readonly lastSeenWriteIntervalMs: 60000 }
 export declare const PATHS: { readonly mcp: "/api/fishball/mcp"; readonly issuer: "/api/fishball/oauth"; readonly token: "/api/fishball/oauth/token"; readonly protectedResourcePrefix: "/.well-known/oauth-protected-resource"; readonly authorizationServerPrefix: "/.well-known/oauth-authorization-server"; readonly authorize: "/authorize"; readonly decision: "/authorize/decision" }
 export declare const PKCE: { readonly method: "S256" }
 export declare const PROTOCOL: { readonly version: "2026-07-28"; readonly unsupportedVersionCode: -32022; readonly headerMismatchCode: -32020; readonly ignoredHeaders: readonly ["mcp-session-id"]; readonly clientCredentialsExtension: "io.modelcontextprotocol/oauth-client-credentials" }
-export declare const QUEUE: { readonly settingField: "maxQueuedInputs"; readonly refusedTypes: readonly ["message", "turn-finished", "state", "notice"]; readonly contributedRefused: true }
+export declare const QUEUE: { readonly maxQueuedInputs: 200; readonly refusedTypes: readonly ["message", "turn-finished", "state", "notice"]; readonly contributedRefused: true }
 export declare const RATE_LIMITS: { readonly windowMs: 60000; readonly keyParts: readonly ["remoteAddress", "clientId"]; readonly failuresPerWindow: 10; readonly failuresPerAddressPerWindow: 50; readonly tokenRequestsPerWindow: 30; readonly retryAfterHeader: "retry-after" }
 export declare const REFUSAL: { readonly limitExceeded: "limit-exceeded"; readonly invalidArguments: "invalid-arguments"; readonly queueFull: "queue-full"; readonly rateLimited: "rate-limited"; readonly operationFailed: "operation-failed"; readonly forbidden: "forbidden"; readonly unknownSession: "unknown-session"; readonly expired: "expired"; readonly conflict: "conflict"; readonly unavailable: "unavailable"; readonly unsupportedOperation: "unsupported-operation"; readonly notReferenced: "not-referenced"; readonly tooLarge: "too-large"; readonly imagesUnsupported: "images-unsupported"; readonly notManaged: "not-managed"; readonly featureOff: "feature-off"; readonly sessionNotLive: "session-not-live"; readonly invalidDecision: "invalid-decision"; readonly riskRequired: "risk-required"; readonly reasonRequired: "reason-required"; readonly allowNeedsLowRisk: "allow-needs-low-risk"; readonly argumentsIncomplete: "arguments-incomplete"; readonly questionRequired: "question-required"; readonly modeUser: "mode-user"; readonly badAnswer: "bad-answer"; readonly alreadySettled: "already-settled"; readonly grantInvalid: "grant-invalid"; readonly prefixNotShellTool: "prefix-not-shell-tool"; readonly prefixEmpty: "prefix-empty"; readonly prefixNotInCall: "prefix-not-in-call"; readonly expiresRequired: "expires-at-required"; readonly expiresInvalid: "expires-at-invalid"; readonly expiresPast: "expires-at-past"; readonly grantUnknown: "unknown"; readonly grantEnded: "ended"; readonly alreadyPaired: "already-paired"; readonly idTaken: "id-taken"; readonly nameInvalid: "name-invalid"; readonly nameTaken: "name-taken"; readonly unknownEvent: "unknown-event"; readonly digestMismatch: "digest-mismatch" }
 export declare const RESOURCE: { readonly events: { readonly name: "fishball-events"; readonly uri: "fishball://events"; readonly mimeType: "application/json" } }
