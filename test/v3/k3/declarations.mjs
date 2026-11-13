@@ -75,7 +75,7 @@ function skipString(code, i) {
  * Split `code` at depth-0 separators. `separators` is a set of characters; a newline separates only
  * when the type does not obviously continue (a leading `|`, `&`, `.`, `=>` or a dangling operator).
  */
-function splitTop(code, separators, { newline = false } = {}) {
+export function splitTop(code, separators, { newline = false } = {}) {
   const parts = []
   let depth = 0
   let start = 0
