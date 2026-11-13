@@ -2,15 +2,18 @@
  * The one place that binds the cases to C-MAILBOX's module (`packages/connector/src/mailbox/`).
  *
  * K1 freezes the `Mailbox` interface (commit, poll, ack, summary, retire, hold, release, drop) and
- * C-HTTP's `HintSink` (index.d.ts), but no factory. This seam assumes one, and only here:
+ * C-HTTP's `HintSink` (index.d.ts). The module's entry (mailbox/index.js) composes it in two steps,
+ * and this seam calls both, only here:
  *
- *   <create|open>…Mailbox({ ctx, storageDomain, hints, now }) → Mailbox | Promise<Mailbox>
+ *   openMailboxTables(ctx, { defineDomain, domainTable }) → Promise<{ tables, close }>
  *     ctx            a cordis context with DSH's storage domain service (design §3.4: "one durable
- *                    ledger in its own storage domain")
- *     storageDomain  the same service, for a factory that takes it directly
+ *                    ledger in its own storage domain"); the module opens its domain through it
+ *     defineDomain, domainTable   from `@deepseek-ai/dsh-storage-domain` of the SDK under test
+ *   createMailbox({ tables, hints, now }) → Mailbox
  *     hints          the fake HintSink below (C-HTTP's side, faked as the task says)
  *     now            the injected clock, `() => EpochMs`
- *   an optional `close()` on the mailbox is awaited before the world goes away.
+ *     maxQueuedInputs is not passed, so the K1 default (QUEUE.maxQueuedInputs) applies.
+ *   The mailbox has no close; the `close()` from openMailboxTables is awaited before the world goes away.
  *
  * `poll(principalKey, cursor, limit)` with `limit` undefined stands for `inbox_poll` without
  * `limit` (EVT-BVA-01 rows 1–2 "default"): the tool's `limit` is optional, the mailbox serves it.
@@ -21,21 +24,42 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
+import { registerHooks } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { INSTANCE } from '../../support/constants.mjs'
 import { linkContractForSourceRun } from '../../support/contract-link.mjs'
+import { HARNESS, SKILL_SDK } from '../../private-skills/support/constants.mjs'
 import { importInstance, importSdk } from '../../private-skills/support/sdk.mjs'
 import { DSH, FIXTURE, SUBJECT } from './constants.mjs'
 
-/** The module's factory, bound to `sdk` (its `@deepseek-ai/*` imports resolve to that SDK). */
-async function factoryFor(sdk) {
+/**
+ * Runtime packages outside `@deepseek-ai/` that the mailbox imports (store.js validates its rows
+ * with `zod`). DSH ships them in each SDK and a profile resolves them from there, but the repo has
+ * no install of its own and sdk.mjs maps only `@deepseek-ai/*`. So, as body-soul-env.mjs does for
+ * one runtime, these names resolve from the SDK that tagged the importing module.
+ */
+const RUNTIME_PACKAGES = Object.freeze(['zod'])
+
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    const version = RUNTIME_PACKAGES.includes(specifier) && context.parentURL ? new URL(context.parentURL).searchParams.get(HARNESS.versionTag) : null
+    if (!version) return nextResolve(specifier, context)
+    return nextResolve(specifier, { ...context, parentURL: pathToFileURL(path.join(SKILL_SDK.versionsDir, version, SKILL_SDK.packageFile)).href })
+  },
+})
+
+/** mailbox/index.js's two composition entry points (the module's own names, not K1 values). */
+const ENTRY = Object.freeze({ openTables: 'openMailboxTables', create: 'createMailbox' })
+
+/** The module's two entry points, bound to `sdk` (its `@deepseek-ai/*` imports resolve to that SDK). */
+async function moduleFor(sdk) {
   assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-MAILBOX "Owns" packages/connector/src/mailbox/)`)
   linkContractForSourceRun()
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
-  const names = Object.keys(mod).filter((n) => typeof mod[n] === 'function' && SUBJECT.factoryName.test(n))
-  assert.equal(names.length, 1, `mailbox/index.js should export exactly one mailbox factory (${SUBJECT.factoryName}); found ${JSON.stringify(names)}`)
-  return mod[names[0]]
+  for (const name of Object.values(ENTRY)) assert.equal(typeof mod[name], 'function', `mailbox/index.js does not export ${name}()`)
+  return { openTables: mod[ENTRY.openTables], create: mod[ENTRY.create] }
 }
 
 /**
@@ -55,13 +79,14 @@ export function fakeClock(start = FIXTURE.epochMs) {
   return { now: () => ms, advance: (by) => { ms += by } }
 }
 
+/** A cordis context with DSH storage over `root`, and the SDK's storage-domain module (its `defineDomain`, `domainTable`). */
 async function openStorage(sdk, root) {
   const [cordis, storage, json, domain] = await Promise.all([DSH.cordis, DSH.storage, DSH.storageJson, DSH.storageDomain].map((n) => importSdk(sdk, n)))
   const ctx = new cordis.Context()
   await ctx.plugin(storage.default ?? storage).await()
   await ctx.plugin(json, { root: path.join(root, FIXTURE.storageDir) }).await()
   await ctx.plugin(domain, DSH.domainConfig).await()
-  return ctx
+  return { ctx, domain }
 }
 
 /**
@@ -70,21 +95,25 @@ async function openStorage(sdk, root) {
  * with the same hint sink and clock and returns the new mailbox (also set on the world).
  */
 export async function worldFor(t, sdk) {
-  const factory = await factoryFor(sdk)
+  const { openTables, create } = await moduleFor(sdk)
   const root = await mkdtemp(path.join(os.tmpdir(), FIXTURE.tempPrefix))
   const hints = new FakeHints()
   const clock = fakeClock()
   let ctx
+  let store
   const world = { hints, clock, mailbox: undefined }
   async function open() {
-    ctx = await openStorage(sdk, root)
-    world.mailbox = await factory({ ctx, storageDomain: ctx.storageDomain, hints, now: clock.now })
+    const opened = await openStorage(sdk, root)
+    ctx = opened.ctx
+    store = await openTables(ctx, opened.domain)
+    world.mailbox = create({ tables: store.tables, hints, now: clock.now })
     for (const method of SUBJECT.methods) assert.equal(typeof world.mailbox?.[method], 'function', `the mailbox has no ${method}() (K1 Mailbox)`)
     return world.mailbox
   }
   async function shut() {
-    await world.mailbox?.close?.()
+    await store?.close()
     await ctx?.fiber.dispose()
+    store = undefined
     world.mailbox = undefined
   }
   world.reopen = async () => { await shut(); return open() }
