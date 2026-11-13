@@ -9,7 +9,9 @@
  * The user's decisions 2026-11-14 1, 2 and 4 add: a scenario may change the root between the two
  * phases (`between`), reopen in another Fishball session (`restartIn`), inject a fault into the
  * recover phase's startup recovery and publish a later event there (`recoverFault`), and run a
- * third, clean start (`restart`) whose report is the result's `restart` field.
+ * third, clean start (`restart`) whose report is the result's `restart` field. Row 11e (decision 4)
+ * adds the `pending` cut (core's message left unclaimed in Fishball's DSH inbox) and an act of the
+ * user's right after the restart's world opens, before core starts (`atRestart`).
  */
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -54,7 +56,47 @@ export const SCENARIO = Object.freeze({
   // Decision 2: startup recovery fails; a later event still goes through; the next start delivers.
   recoverActivateFails: { type: EVENT_TYPE.message, cut: 'queued', recoverFault: RECOVER_FAULT.activate, restart: true },
   recoverLedgerFails: { type: interceptedType, cut: 'afterAccept', pluginAtRestart: false, recoverFault: RECOVER_FAULT.ledgerWrite, restart: true },
+  // Decision 4, row 11e: core's message is left pending (unclaimed) in Fishball's DSH inbox by the
+  // first process; at restart the user's ordinary message wakes the agent before core delivers, or
+  // the user removes the stale copy from the inbox. A later event then passes more idle edges.
+  stalePendingUserWakes: { type: EVENT_TYPE.message, cut: 'pending', atRestart: 'userWakes', later: true },
+  stalePendingUserRemoves: { type: EVENT_TYPE.message, cut: 'pending', atRestart: 'userRemoves', later: true },
 })
+
+/** Whether core's message for `event` waits in `agent`'s DSH inbox (either pending list). */
+const pendingIn = (agent, event) => [...agent.inbox.nextTurn, ...agent.inbox.nextStep].some((m) => m.id === CORE.messageId(event.eventId))
+/**
+ * The "pending" cut (row 11e): when the driver wakes for core's message (`agent/status` running is
+ * emitted synchronously, before the turn opens and claims), a hook cancels that wake and keeps the
+ * inbox, so the message stays pending and unclaimed and no turn opens. The cut phase then dies
+ * (child()). Only the first such wake is cancelled.
+ */
+function holdPending(world, event) {
+  let done = false
+  world.ctx.on(DSH.agentStatus, (payload) => {
+    if (done || payload.status !== DSH.running || !pendingIn(world.agent, event)) return
+    done = true
+    world.agent.cancel(DSH.hookCancel, { keepInbox: true })
+  })
+}
+/**
+ * The recover phase's first act (row 11e), from `onOpen`: right after the world opens and before
+ * core starts, so before core's own delivery. Returns a harness fact for the report.
+ */
+const AT_RESTART = Object.freeze({
+  // The user's ordinary message: its turn claims the stale copy too.
+  userWakes: (world) => { world.agent.followup(world.userMessage(FIXTURE.userText, FIXTURE.userId)); return true },
+  // The user removes the stale copy from DSH's inbox (a logged, canceled splice and a discard).
+  userRemoves: (world, event) => world.agent.inbox.remove(CORE.messageId(event.eventId)),
+})
+/** The states (STATE values) of core's ledger records that name `event` (decision 4). */
+function ledgerStates(world, event) {
+  const table = world.ctx.storageDomain.get(CORE.ledger.domain)?.table(CORE.ledger.table)
+  if (table === undefined) return []
+  return [...table.entries()]
+    .filter(([key, record]) => key === event.eventId || JSON.stringify(record).includes(JSON.stringify(event.eventId)))
+    .flatMap(([, record]) => Object.values(record).filter((v) => CORE.states.includes(v)))
+}
 
 /** SIGKILL now, with nothing more made durable. */
 async function kill() {
@@ -141,7 +183,19 @@ async function child(sdk, root, name, phase) {
     ? { ledgerWrite: async (write) => { if (admitsRecord(write)) await dieInAdmissionWindow(world, event) } }
     : undefined
   const fishballSession = phase === PHASE.cut ? FIXTURE.fishballSession : scenario.restartIn ?? FIXTURE.fishballSession
-  world = await openWorld(sdk, root, { linkHooks, onRequest, plugins, seam, fishballSession, onOpen: (w) => { world = w } })
+  const recovering = phase === PHASE.recover
+  // Row 11e harness facts: the stale copy was pending when the world reopened; the user's removal found it.
+  const atOpen = {}
+  world = await openWorld(sdk, root, {
+    linkHooks, onRequest, plugins, seam, fishballSession,
+    onOpen: (w) => {
+      world = w
+      if (cutAt('pending')) holdPending(w, event)
+      if (!recovering || scenario.atRestart === undefined) return
+      atOpen.pendingAtRestart = pendingIn(w.agent, event)
+      atOpen.acted = AT_RESTART[scenario.atRestart](w, event)
+    },
+  })
   if (phase === PHASE.cut) {
     // The claiming step of the event dies before it is admitted (decision 2026-11-14 1, `interrupted`).
     world.ctx.on(DSH.preStep, async (input, next) => {
@@ -153,6 +207,11 @@ async function child(sdk, root, name, phase) {
     if (cutAt('queued')) {
       await until(() => world.link.acked(event.eventId), WAIT.settleMs, WAIT.pollMs)
       if (world.link.acked(event.eventId)) await die(world)
+    } else if (cutAt('pending')) {
+      // Dies once the event is acked and its message waits, unclaimed, in the inbox (flushed: durable).
+      const left = () => world.link.acked(event.eventId) && pendingIn(world.agent, event)
+      await until(left, WAIT.settleMs, WAIT.pollMs)
+      if (left()) await die(world)
     } else {
       await world.settle()
       // The "settled" cut needs the one admission first, or a later "no second wake" proves nothing.
@@ -163,7 +222,7 @@ async function child(sdk, root, name, phase) {
     process.exit(0)
   }
   await world.settle()
-  const later = phase === PHASE.recover && scenario.recoverFault !== undefined ? makeEvent(EVENT_TYPE.message, LATER_EVENT_NUMBER) : undefined
+  const later = recovering && (scenario.recoverFault !== undefined || scenario.later === true) ? makeEvent(EVENT_TYPE.message, LATER_EVENT_NUMBER) : undefined
   if (later !== undefined) {
     world.link.publish(later)
     await world.settle()
@@ -185,6 +244,11 @@ async function child(sdk, root, name, phase) {
     requestsAfterRestart: world.requests.length,
     modelRequestsTotal: readLines(world.file('model')).filter((r) => r.texts.includes(event.marker)).length,
     interruptedTurns: log.filter((e) => e.type === 'turn/end' && e.data?.reason?.kind === 'interrupted').length,
+    // Row 11e: harness facts of the restart's first act, and core's ledger record of the event.
+    ...atOpen,
+    ledgerStates: ledgerStates(world, event),
+    // Every time core's message for the event was queued in this session's inbox (both processes).
+    handOvers: log.filter((e) => e.type === DSH.inboxSpliced && (e.data?.inserted ?? []).some((m) => m.id === CORE.messageId(event.eventId))).length,
   }
   await world.close()
   process.stdout.write(JSON.stringify(report) + '\n')

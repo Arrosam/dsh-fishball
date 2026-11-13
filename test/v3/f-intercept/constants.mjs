@@ -8,7 +8,7 @@
  * - K3 `packages/core/contracts/events.d.ts` (types only, so its three values are read from the
  *   declaration text: the default priority, the `fenced` code and the `disconnected` code).
  * - `packages/core/src/events/constants.js`, for the values the user's decisions of 2026-11-14 name
- *   there (`PRESENT_RETRY`, `TEXT.presentGivenUp`, `REASON.presentGivenUp`, `STATE.admitted`); read,
+ *   there (`PRESENT_RETRY`, `TEXT.presentGivenUp`, `REASON.presentGivenUp`, `STATE`, `MESSAGE.idPrefix`); read,
  *   never re-typed (see CORE).
  * DSH's own vocabulary (session-log event kinds, the cancel causes) is the installed SDK's. The rest is
  * fixture data (plugin ids, markers) and harness timing, which are not product values.
@@ -69,6 +69,12 @@ export const CORE = Object.freeze({
   get presentGivenUpReason() { return coreValue('REASON').presentGivenUp },
   /** The acceptance ledger's state of an admitted event (decision 4). */
   get admitted() { return coreValue('STATE').admitted },
+  /** Every acceptance-ledger state, to read a record's state without knowing its field (decision 4). */
+  get states() { return Object.values(coreValue('STATE')) },
+  /** The id of the DSH inbox message core hands Fishball for `eventId` (decision 4, row 11e). */
+  messageId: (eventId) => coreValue('MESSAGE').idPrefix + eventId,
+  /** `{domain, table}`: where the acceptance ledger lives in dsh-storage-domain, to read a record (row 11e). */
+  get ledger() { return coreValue('LEDGER') },
 })
 
 /** DSH's own session-log vocabulary (installed SDK; observed through its public persistence). */
@@ -76,6 +82,11 @@ export const DSH = Object.freeze({
   userMessage: 'user/message',
   turnEnd: 'turn/end',
   preStep: 'agent/pre-step',
+  /** dsh-agent's live notice of an agent's status change (`idle` ⇄ `running`). */
+  agentStatus: 'agent/status',
+  running: 'running',
+  /** dsh-agent's durable inbox mutation (`data.inserted` holds the messages it queued). */
+  inboxSpliced: 'agent/inbox/spliced',
   /** The closer resume appends for a turn a crash interrupted (DSH's crash notice). */
   interrupted: 'interrupted',
   userCancel: Object.freeze({ kind: 'user' }),
@@ -128,6 +139,9 @@ export const FIXTURE = Object.freeze({
   busyText: 'FBTEST-BUSY long user task',
   laterId: 'fbtest-later',
   laterText: 'FBTEST-LATER next user turn',
+  /** The user's ordinary message that wakes Fishball right after a restart (row 11e). */
+  userId: 'fbtest-user',
+  userText: 'FBTEST-USER ordinary message after the restart',
   otherText: 'FBTEST-OTHER side session turn',
   answer: 'fbtest-answer',
   modelText: 'fbtest ok',
