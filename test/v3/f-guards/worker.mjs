@@ -22,7 +22,7 @@ import { linkContractForSourceRun } from '../../support/contract-link.mjs'
 import { until } from '../../support/util.mjs'
 import { V3 } from '../shared/constants.mjs'
 import { BUDGET, DSH_ROW, ENV, FIBER_ACTIVE, FIXTURE, GUARDS, OWNER, PROFILE } from './constants.mjs'
-import { findReport } from './report.mjs'
+import { findReport, stillProvided, subscribeReport } from './report.mjs'
 
 const host = (spec) => import(pathToFileURL(path.join(RUNTIME, spec)).href)
 const hostPkg = (name) => host(path.join('@deepseek-ai', name, 'lib', 'index.js'))
@@ -110,9 +110,17 @@ const { ctx, shutdown } = await runProfile({ environment: loadLayeredEnv('dsh'),
 /** Every change of core's report in this process: [{at, status, overridden}] (null: no report found). */
 const history = []
 const sameReport = (a, b) => JSON.stringify(a && { s: a.status, o: [...a.overridden].sort() }) === JSON.stringify(b && { s: b.status, o: [...b.overridden].sort() })
+const record = (report) => { if (history.length === 0 || !sameReport(history.at(-1).report, report)) history.push({ at: Date.now(), report }) }
+// Subscribe in the same tick runProfile returns, before any await, so the first check's report
+// and a recompose's report a few milliseconds later are both recorded: a poll misses a value that
+// stands for a few milliseconds only. Each tick re-subscribes if a recompose replaced the service.
+// Only while no service offers a listener member is the report polled, because a poll's
+// asynchronous read could record a value out of order next to a subscription.
+let subscribed = subscribeReport(ctx, record)
 const sampler = setInterval(async () => {
-  const report = await findReport(ctx).catch(() => null)
-  if (history.length === 0 || !sameReport(history.at(-1).report, report)) history.push({ at: Date.now(), report })
+  if (subscribed !== null && stillProvided(ctx, subscribed)) return
+  subscribed = subscribeReport(ctx, record)
+  if (subscribed === null) record(await findReport(ctx).catch(() => null))
 }, BUDGET.sampleMs)
 sampler.unref()
 

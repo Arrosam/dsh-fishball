@@ -57,6 +57,34 @@ function fishballServices(ctx) {
   return Reflect.ownKeys(store).map((key) => store[key]).filter((impl) => impl && /fishball/i.test(String(impl.name))).map((impl) => ({ name: impl.name, value: impl.value }))
 }
 
+/**
+ * Subscribe to every change of the report, synchronously: on a Fishball-named service with a
+ * parameterless report member (FINDER.member) and a one-argument listener member
+ * (FINDER.subscribe), call the listener member with a function that hands each GuardReport-shaped
+ * argument to `onReport({status, overridden, service})`. It also hands over the value current at
+ * subscription. It returns the subscribed service object, or null when none can be subscribed,
+ * so the caller can poll instead.
+ */
+export function subscribeReport(ctx, onReport) {
+  for (const { name, value } of fishballServices(ctx)) {
+    if (value === null || typeof value !== 'object') continue
+    const names = memberNames(value)
+    const reader = names.find((k) => FINDER.member.test(k) && typeof value[k] === 'function' && value[k].length === 0)
+    const listen = names.find((k) => FINDER.subscribe.test(k) && typeof value[k] === 'function' && value[k].length === 1)
+    if (reader === undefined || listen === undefined) continue
+    const hand = (report) => { if (isReport(report)) onReport({ ...plain(report), service: name }) }
+    try { value[listen].call(value, hand) } catch { continue }
+    try { hand(value[reader].call(value)) } catch { /* nothing current yet */ }
+    return value
+  }
+  return null
+}
+
+/** Whether `service` (from subscribeReport) is still a provided Fishball service, not replaced by a recompose. */
+export function stillProvided(ctx, service) {
+  return fishballServices(ctx).some(({ value }) => value === service)
+}
+
 /** The current report `{status, overridden, service}`, or null when no service carries one. */
 export async function findReport(ctx) {
   for (const { name, value } of fishballServices(ctx)) {
