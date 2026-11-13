@@ -7,36 +7,28 @@
  * (R-FB-03, R-FB-04, R-REM-04), v3-design.md §4.1 / §6.3 / §9.1, and the frozen contracts:
  * K1 `fishball-connector/mcp-schema` (paths, hosts, protocol, tools, OAuth builders) and K3
  * `packages/connector/host-services/child.d.ts` (TargetState, TargetCode). Tunable values are imported
- * from K1, never restated. None comes from an implementation.
+ * from K1, never restated. The link's status words, which K3 types but exports no runtime value for,
+ * are imported from F-LINK's one declaration of them (see STATE); no other value comes from an
+ * implementation.
  */
 import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { REPO } from '../../support/constants.mjs'
 import * as K1 from '../../../packages/connector/mcp-schema/index.js'
+import * as CORE_LINK from '../../../packages/core/src/link/constants.js'
 
 export { K1 }
 
 /**
- * Core's target status (K3 child.d.ts `TargetState`, design §4.1; REM-DT-01). These are the words of
- * the requirements (R-FB-03, R-FB-04) and K3 types them; K3 has no runtime value to import.
+ * Core's target status (K3 child.d.ts `TargetState`, design §4.1; REM-DT-01), its codes (K3
+ * `TargetCode`, design §6.1; R-MIG-03 for TARGET_INCOMPATIBLE) and the answer code of a call made
+ * while the link is down (design §6.3, K3 events.d.ts `CommitSendResult`: `{ok: false, code:
+ * 'disconnected'}`, REM-UC-02 step 3). K3 types these words only; F-LINK declares their one runtime
+ * copy (PROPOSED until K-VALUES), so they are imported from it rather than restated.
  */
-export const STATE = Object.freeze({
-  connected: 'connected',
-  unreachable: 'target-unreachable',
-  refused: 'token-refused',
-  unset: 'target-unset',
-})
-/** K3 child.d.ts `TargetCode` (design §6.1; R-MIG-03 for TARGET_INCOMPATIBLE). */
-export const CODE = Object.freeze({
-  unreachable: 'TARGET_UNREACHABLE',
-  refused: 'TOKEN_REFUSED',
-  incompatible: 'TARGET_INCOMPATIBLE',
-})
-/**
- * Design §6.3 and K3 events.d.ts (`CommitSendResult`): an answer attempted while the link is down
- * resolves `{ok: false, code: 'disconnected'}` (REM-UC-02 step 3). Not a value K1/K2/K3 export.
- */
-export const DISCONNECTED = 'disconnected'
+export const STATE = CORE_LINK.TARGET_STATE
+export const CODE = CORE_LINK.TARGET_CODE
+export const DISCONNECTED = CORE_LINK.LINK_REFUSAL.disconnected
 
 /** MCP 2026-07-28 method names the fake connector answers (spec vocabulary, not product values). */
 export const RPC = Object.freeze({
@@ -160,8 +152,22 @@ export const CLIENT_PIN = Object.freeze({
   manifest: 'package.json',
 })
 
+/**
+ * Core's vendored copy of K1 (design §9.1) and its generator. The command and the output folder are
+ * F-LINK's (packages/core/package.json `//files`): `node scripts/vendor-mcp-schema.mjs [coreDir]`
+ * writes `<coreDir>/vendor/`, each file at its path relative to the connector package.
+ */
+export const VENDOR = Object.freeze({
+  generator: path.join(REPO, 'packages', 'core', 'scripts', 'vendor-mcp-schema.mjs'),
+  connectorDir: path.join(REPO, 'packages', 'connector'),
+  committedDir: path.join(REPO, 'packages', 'core', 'vendor'),
+  directory: 'vendor',
+  entry: path.join('mcp-schema', 'index.js'),
+  tempPrefix: 'fbtest-f-link-vendor-',
+  timeoutMs: 60000,
+})
+
 /** Rows that need a later task. */
 export const LATER = Object.freeze({
-  pack: 'REL-PACK (runs F-LINK\'s vendored ./mcp-schema generator in the one pack mechanism; the generator\'s command and output folder are not specified)',
   intercept: 'F-INTERCEPT (a polled event, the settlement included, reaches core\'s acceptance ledger and dispatch: no event lost)',
 })
