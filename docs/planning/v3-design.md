@@ -264,9 +264,10 @@ V3 drafts had named lanes for Watchdog; they are dropped (requirements 1.8 item 
   unmanaged session's calls go to the **designated Fishball principal** (setting
   `routing.fishballToken`, default the hosted Fishball's token entry, if any; R-ROUTE-04).
 - `ask_fishball` with the target principal not connected keeps contract 1.2 §9: it answers
-  `unavailable` at once. "Connected" means the principal has made an authenticated request or
-  held a listen stream within the current connector life (decided at schema freeze), **not** a
-  timer on the answer.
+  `unavailable` at once. "Connected" means the principal holds an open `subscriptions/listen`
+  stream on `fishball://events` **now**: the same definition as `online` in §3.6 and R-UI-10
+  (frozen by K1, `fishball-connector/mcp-schema` `CONNECTED`). It is **not** a timer on the
+  answer, and a request without a listen stream does not count.
 - A managed session whose principal is revoked or deleted returns to the user (unmanaged), and
   its live offers go to the user in that session (§5.3).
 
