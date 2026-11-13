@@ -331,8 +331,13 @@ const SET = Object.freeze({
   rowId: 'fishball-settings',
   pageRowId: 'fishball-page',
   rowInject: Object.freeze(['nativeRuntime', 'connection']),
-  rowModule: Object.freeze(['child-web', 'fishball-settings', 'index.js']),
-  /** V3 R-CORE: the settings Node row with the relay routes, in packages/instance. */
+  /**
+   * V3 R-CORE (2) / R-HOST-11: the generic panel row is fishball-core's `fishball-ui` component in
+   * the snapshot; the hosted-only sections with the relay routes are the instance-owned
+   * `fishball-hosted-settings` row, at the same path in the instance and the snapshot.
+   */
+  rowModule: Object.freeze(['fishball-core', 'ui', 'fishball-settings', 'index.js']),
+  hostedRowId: 'fishball-hosted-settings',
   rowSource: Object.freeze(['src', 'child-settings', 'index.js']),
   sharedChunk: Object.freeze(['src', 'child-settings', 'client.instance.js']),
   panelClient: path.join(BODY_SOUL.core, 'ui', 'fishball-settings', 'client.js'),
@@ -539,13 +544,17 @@ const EXECUTABLE = {
     const rows = insertedRows(operations);
     const at = rows.findIndex((row) => row.id === SET.rowId);
     assert.ok(at >= 0, 'launch overlay inserts the fishball-settings row');
-    assert.equal(rows[at].name, path.join(path.dirname(childModule), ...SET.rowModule), 'row loads <snapshot>/child-web/fishball-settings/index.js');
+    assert.equal(rows[at].name, path.join(path.dirname(childModule), ...SET.rowModule), 'row loads <snapshot>/fishball-core/ui/fishball-settings/index.js');
     assert.equal(rows[at - 1]?.id, SET.pageRowId, 'fishball-settings is inserted right after fishball-page');
+    // R-HOST-11: the hosted-only sections are one row, loaded for now by the V2 child-row insertion (R-CORE (4)).
+    const hosted = rows.filter((row) => row.id === SET.hostedRowId);
+    assert.equal(hosted.length, 1, 'launch overlay inserts the fishball-hosted-settings row once');
+    assert.equal(hosted[0].name, path.join(path.dirname(childModule), ...SET.rowSource), 'hosted row loads <snapshot>/src/child-settings/index.js');
     const row = await loadInstance(SET.rowSource.join('/'));
-    assert.equal(row.name, SET.rowId);
+    assert.equal(row.name, SET.hostedRowId);
     assert.deepEqual([...row.inject].sort(), [...SET.rowInject].sort(), 'host half needs nativeRuntime and connection');
-    // Never mounted in the main DSH: the main package does not declare the child row.
-    assert.equal(fs.readFileSync(SET.instanceManifest, 'utf8').includes(SET.rowId), false, 'main package manifest does not mount fishball-settings');
+    // Never mounted in the main DSH: the main package declares neither child row.
+    for (const id of [SET.rowId, SET.hostedRowId]) assert.equal(fs.readFileSync(SET.instanceManifest, 'utf8').includes(id), false, 'main package manifest does not mount ' + id);
     // The snapshot copy serves the instance card's client.js as the panel's chunk: one source in both processes.
     const { copyChildCode } = await loadInstance('src/native-runtime/installation.js');
     const root = await mkdtemp(path.join(os.tmpdir(), SET.tempPrefix));
@@ -555,7 +564,7 @@ const EXECUTABLE = {
     const native = await copyChildCode({ profile }, { instanceId: randomUUID(), hostId: 'fbset-host' });
     const snapshot = path.dirname(native);
     assert.deepEqual(await readFile(path.join(snapshot, ...SET.sharedChunk)), await readFile(SET.instanceClient), 'client.instance.js is a byte copy of the instance client.js');
-    assert.ok(fs.existsSync(path.join(snapshot, ...SET.rowModule)), 'snapshot carries the settings row');
+    for (const parts of [SET.rowModule, SET.rowSource]) assert.ok(fs.existsSync(path.join(snapshot, ...parts)), 'snapshot carries ' + parts.join('/'));
   },
 
   // Executable remainder: relay seam (restart/retry relayed once, failure honest, no retry).
