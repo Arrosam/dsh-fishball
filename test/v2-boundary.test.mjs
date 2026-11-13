@@ -34,8 +34,9 @@ const V2B = Object.freeze({
     instance: Object.freeze({ name: 'fishball-instance', dir: BODY_SOUL.instance }),
   }),
   // V3 R-SHARED / R-ARCH-08 (approved design) adds the library workspace packages/shared;
-  // V3 R-CORE (1) / design §9.1 adds fishball-core's workspace packages/core.
-  workspaces: Object.freeze(['packages/connector', 'packages/core', 'packages/instance', 'packages/shared']),
+  // V3 R-CORE (1) / design §9.1 adds fishball-core's workspace packages/core;
+  // V3 R-EMBED / design §9.1 (DESIGN.md §17) adds fishball-embed-ui's workspace packages/embed-ui.
+  workspaces: Object.freeze(['packages/connector', 'packages/core', 'packages/embed-ui', 'packages/instance', 'packages/shared']),
   /** Repository directories of the V3 packages (no V2 module may load from them). */
   v3Dirs: Object.freeze(['board', 'fold-notify', 'watchdog'].map((d) => path.join(REPO, 'packages', d))),
   /** A packed path segment naming a V3 area or the bundled asset directory. */
