@@ -125,11 +125,39 @@ function sdkParts(sdk) {
   return parts.get(sdk)
 }
 
+/** The durable files of one session's JSONL artifact directory under `root` (empty when absent). */
+function sessionDirs(root, sessionId) {
+  const sessions = path.join(root, FIXTURE.files.sessions)
+  if (!fs.existsSync(sessions)) return []
+  // jsonl persistence keeps `<sessions>/<project key>/<session id>/`; the fixture ids need no encoding.
+  return fs.readdirSync(sessions).map((p) => path.join(sessions, p, sessionId)).filter((d) => fs.existsSync(d))
+}
+export const sessionLogFiles = (root, sessionId) =>
+  sessionDirs(root, sessionId).flatMap((d) => fs.readdirSync(d).filter((f) => f.endsWith(FIXTURE.logSuffix)).map((f) => path.join(d, f)))
+/** Whether `sessionId`'s durable log on disk holds a `user/message` line carrying `marker`. */
+export const durablyAdmitted = (root, sessionId, marker) =>
+  sessionLogFiles(root, sessionId).some((f) => fs.readFileSync(f, 'utf8').split('\n').some((l) => l.includes(json(DSH.userMessage)) && l.includes(marker)))
+/**
+ * Clears a closed session: removes its artifact directory and the world's "created" marker, so the
+ * next open creates an empty session with the same id (decision 2026-11-14 4: a cleared log).
+ */
+export function forgetSession(root, sessionId) {
+  const dirs = sessionDirs(root, sessionId)
+  assert.ok(dirs.length > 0, 'harness: no session directory to clear for ' + sessionId)
+  for (const dir of dirs) {
+    assert.ok(dir.startsWith(path.join(root, FIXTURE.files.sessions) + path.sep), 'refusing to remove ' + dir)
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+  fs.rmSync(path.join(root, FIXTURE.files.created) + '.' + sessionId, { force: true })
+}
+
 /**
  * Open (or reopen after a crash) the Fishball DSH in `root`, start core's events module on it and
  * return the world. `model.onRequest(texts)` may act inside a model request (hold it, crash).
+ * `fishballSession` is the session the Fishball agent runs in (decision 2026-11-14 4: a replaced
+ * session); `seam` goes to subject.mjs (its optional fault and timing hooks).
  */
-export async function openWorld(sdk, root, { linkHooks, onRequest, otherSession = false, plugins = [], onOpen } = {}) {
+export async function openWorld(sdk, root, { linkHooks, onRequest, otherSession = false, plugins = [], onOpen, seam, fishballSession = FIXTURE.fishballSession } = {}) {
   const p = await sdkParts(sdk)
   const ctx = new p[DSH.cordis].Context()
   const logs = []
@@ -171,11 +199,11 @@ export async function openWorld(sdk, root, { linkHooks, onRequest, otherSession 
     handles.set(sessionId, handle)
     return handle.agent
   }
-  const agent = await sessionAgent(FIXTURE.fishballSession)
+  const agent = await sessionAgent(fishballSession)
   const other = otherSession ? await sessionAgent(FIXTURE.otherSession) : undefined
 
   const link = new FakeLink(file('connector'), linkHooks)
-  const core = await makeSubject(sdk, { ctx, agent, link })
+  const core = await makeSubject(sdk, { ctx, agent, link, seam })
 
   /** A plugin with its own fiber; its registrations are effects, so `off()` disposes them. */
   async function plugin({ pluginId, registrations, handler }) {
@@ -198,7 +226,7 @@ export async function openWorld(sdk, root, { linkHooks, onRequest, otherSession 
   const loaded = []
 
   /** Every event of one session's durable log. */
-  async function sessionLog(sessionId = FIXTURE.fishballSession) {
+  async function sessionLog(sessionId = fishballSession) {
     const live = handles.get(sessionId)?.agent
     if (live) await ctx.sessions.flush(live.session)
     const reader = await ctx.sessionPersistence.open(sessionId, 'read')

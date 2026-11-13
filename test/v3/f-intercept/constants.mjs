@@ -7,12 +7,18 @@
  * - K2 `fishball-connector/tools` (the contributed-type prefix, through K1's re-export);
  * - K3 `packages/core/contracts/events.d.ts` (types only, so its three values are read from the
  *   declaration text: the default priority, the `fenced` code and the `disconnected` code).
- * DSH's own vocabulary (session-log event kinds, the cancel cause) is the installed SDK's. The rest is
+ * - `packages/core/src/events/constants.js`, for the values the user's decisions of 2026-11-14 name
+ *   there (`PRESENT_RETRY`, `TEXT.presentGivenUp`, `REASON.presentGivenUp`, `STATE.admitted`); read,
+ *   never re-typed (see CORE).
+ * DSH's own vocabulary (session-log event kinds, the cancel causes) is the installed SDK's. The rest is
  * fixture data (plugin ids, markers) and harness timing, which are not product values.
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL } from '../../../packages/connector/mcp-schema/index.js'
+// A namespace import: a value the product has not exported yet fails the cases that use it, with a
+// reason, instead of failing this whole file at module link time (test-first).
+import * as EVENTS_CONSTANTS from '../../../packages/core/src/events/constants.js'
 import { REPO } from '../../support/constants.mjs'
 
 export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL }
@@ -45,6 +51,26 @@ export const K3 = Object.freeze({
   controller: Object.freeze(['accept', 'commit', 'release']),
 })
 
+/** One named export of the events module's constants.js, or a clear failure when it is missing. */
+const coreValue = (name) => {
+  const value = EVENTS_CONSTANTS[name]
+  if (value === undefined) throw new Error(`packages/core/src/events/constants.js exports no ${name} (decision 2026-11-14)`)
+  return value
+}
+/**
+ * The user's decisions 2026-11-14 3 and 4 name these values in the events module's constants.js:
+ * the presenter retry schedule, the give-up notice and its log reason, and the ledger's admitted state.
+ */
+export const CORE = Object.freeze({
+  /** `{attempts, backoffMs, backoffFactor}` (decision 3). */
+  get presentRetry() { return coreValue('PRESENT_RETRY') },
+  /** The notice text Fishball gets for a given-up event (decision 3). */
+  presentGivenUp: (eventId, type) => coreValue('TEXT').presentGivenUp(eventId, type),
+  get presentGivenUpReason() { return coreValue('REASON').presentGivenUp },
+  /** The acceptance ledger's state of an admitted event (decision 4). */
+  get admitted() { return coreValue('STATE').admitted },
+})
+
 /** DSH's own session-log vocabulary (installed SDK; observed through its public persistence). */
 export const DSH = Object.freeze({
   userMessage: 'user/message',
@@ -53,6 +79,14 @@ export const DSH = Object.freeze({
   /** The closer resume appends for a turn a crash interrupted (DSH's crash notice). */
   interrupted: 'interrupted',
   userCancel: Object.freeze({ kind: 'user' }),
+  /** dsh-session `AgentCancelCause` variants other than the user's Stop. */
+  parentCancel: Object.freeze({ kind: 'parent' }),
+  hookCancel: Object.freeze({ kind: 'hook', reason: 'fbtest-hook' }),
+  disposedCancel: Object.freeze({ kind: 'disposed' }),
+  /** dsh-agent `PreStepDecision` that rejects the step: the turn ends `blocked`. */
+  rejectStep: Object.freeze({ kind: 'reject' }),
+  /** `turn/end` reason kinds (dsh-session `TurnEndReasonMap`). */
+  ended: Object.freeze({ aborted: 'aborted', error: 'error', blocked: 'blocked' }),
   idle: 'idle',
   /** cordis's logger type of a warning. */
   warn: 'warn',
@@ -77,6 +111,8 @@ export const FIXTURE = Object.freeze({
   pluginX: 'fbtest-x',
   pluginY: 'fbtest-y',
   fishballSession: 'fbtest-fishball',
+  /** The session the Fishball agent moves to when its session is replaced (decision 2026-11-14 4). */
+  replacementSession: 'fbtest-fishball-2',
   otherSession: 'fbtest-other',
   watchedSession: 'fbtest-s1',
   provider: 'fbtest-fake',
@@ -95,7 +131,9 @@ export const FIXTURE = Object.freeze({
   otherText: 'FBTEST-OTHER side session turn',
   answer: 'fbtest-answer',
   modelText: 'fbtest ok',
-  files: Object.freeze({ connector: 'connector.json', model: 'model.jsonl', interceptor: 'interceptor.jsonl', created: 'created', domain: 'domain', sessions: 'sessions' }),
+  fault: 'fbtest: injected fault',
+  logSuffix: '.jsonl',
+  files: Object.freeze({ connector: 'connector.json', model: 'model.jsonl', interceptor: 'interceptor.jsonl', window: 'window.json', created: 'created', domain: 'domain', sessions: 'sessions' }),
   tempPrefix: 'fbtest-f-intercept-',
 })
 
