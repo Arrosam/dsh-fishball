@@ -2075,3 +2075,15 @@ Deliberately unbounded (your answers): active grants and grant lifetimes, questi
 | Layout and motion in `client.js` and the Messenger look (pixel sizes, `listMinRows`, the 2.2 s unread cycle, `refreshMinMs` 400 ms mirroring DSH's Refresh) | — | Presentation, not a bound on what is done or shown |
 
 *To ask:* nothing left from this list; your answers of 2026-11-01 are in the tables above and in §16 "Revision 11". Nothing is left open: Q-r11-own-card-detail was decided by the manager for you on 2026-11-02 (§16).
+
+## 17. V3 R-EMBED: where the main-DSH UI lives (2026-11-13)
+
+Decided by the user on 2026-11-13 while R-EMBED ran (V3 plan `docs/planning/v3-tasks.md`):
+
+| Point | Decision | Reason |
+|---|---|---|
+| Layout of `fishball-embed-ui`'s browser half | Flat package-local chunks in `packages/embed-ui/src/client/`: `client.js` (the entry) loads `client.connector.js` (with `client.records.js`) and `client.instance.js`, each run as a sub-plugin of the row | DSH serves a package's `client.js` and only `client.<name>.js` files beside it (`CLIENT_CHUNK`, dsh-client-modules, the same in 0.2.1-rc.5 and 0.2.2-rc.1). Subfolders would need a build step, and this repository has none |
+| The status line | One instance-owned file, `packages/instance/src/child-settings/client.status.js` (HOST-EP-03 row 2). The child loads it as a chunk of `fishball-hosted-settings`. Embed-UI loads it through a committed relative symlink, `packages/embed-ui/src/client/client.status.js` | A chunk must sit beside its own package's `client.js`. **Open for the release packing task:** `npm pack` drops symlinks (checked with npm 11.19.1), so packing `fishball-embed-ui` must dereference this one file |
+| Embed-UI's host row | A placeholder row with an empty host half, so DSH composes the browser half. U-SHELL adds the host half | DSH composes a `dsh.client` only for a package that a profile row names |
+| Start timing | Each part starts once its chunk has arrived, one request after the entry runs, while the V2 bundles started with the page's own batch. So DSH's own brand can show briefly before Fishball's | It follows from the flat chunk layout. No case pins the first frame |
+| UI behaviour | Moved unchanged. The V3 decisions (sidebar entry only, no Allow once / Reject, inline records, the Hand over control) land in U-SHELL, U-MARKS and U-RECORDS | R-EMBED is a move, so its diff stays reviewable |

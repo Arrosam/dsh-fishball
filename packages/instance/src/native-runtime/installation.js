@@ -201,12 +201,10 @@ export async function copyChildCode(paths, record) {
   await mkdir(path.join(destination, core.target), { mode: RUNTIME.privateDirectoryMode })
   for (const directory of core.directories) await copy(path.join(coreSource, directory), path.join(destination, core.target, directory), everyFile)
   // fishball-hosted-settings (R-HOST-11): the instance's hosted-only settings sections with their
-  // manifest. They show the instance card's status line (not its model block: sync is main-only)
-  // from that card's own source, which client-modules can serve only as one of the section
-  // package's local chunks.
+  // manifest and their status-line chunk client.status.js, which the folder already holds (V3
+  // R-EMBED: the main card's client.js is no longer copied in; it is embed-UI's now).
   const hostedSettings = path.join(...NATIVE_WEB.hostedSettings)
   await copy(path.join(sourceRoot, hostedSettings), path.join(destination, hostedSettings), everyFile)
-  await copy(path.join(sourceRoot, NATIVE_WEB.sharedClient), path.join(destination, hostedSettings, NATIVE_WEB.sharedClientChunk), javascript)
   // The settings row's host half reads the public status shape and route tables of these main modules.
   await copy(path.join(sourceRoot, 'src', 'native-web.js'), path.join(destination, 'src', 'native-web.js'), javascript)
   await mkdir(path.join(destination, 'src', 'host'), { mode: RUNTIME.privateDirectoryMode })

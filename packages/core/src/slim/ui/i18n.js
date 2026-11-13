@@ -12,7 +12,7 @@
  * or no `lang`, selects English, DSH's own fallback locale (dsh-client-locale FALLBACK_LOCALE).
  * The page reads it once; a DSH language change reloads the frame (K2), so nothing here re-reads.
  *
- * The `record.*` entries repeat the connector's `record.*` words (packages/connector/client.js,
+ * The `record.*` entries repeat the connector's `record.*` words (packages/embed-ui/src/client/client.connector.js,
  * its en and zh dictionaries) key for key and word for word (§0.9 U6); a test compares them.
  *
  * Values are plain text with `{name}` placeholders, as DSH's own dictionaries write them, so the

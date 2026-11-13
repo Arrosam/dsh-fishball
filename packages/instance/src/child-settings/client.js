@@ -6,9 +6,9 @@
  * without core's panel it has nowhere to appear and does nothing.
  *
  * The sections are the V2 panel's hosted parts, unchanged: the instance's status line and Restart,
- * and the read-only note that new models are added from the main DSH. The status line is the main
- * card's own component, loaded from the same source file (packages/instance/client.js, copied
- * beside this file as the chunk `client.instance.js`), so both pages show and behave the same.
+ * and the read-only note that new models are added from the main DSH. The status line is the
+ * instance-owned chunk beside this file, `client.status.js`, which the main DSH's instance card
+ * (fishball-embed-ui) loads too, so both pages show and behave the same.
  *
  * Model sync is not here: the child must never start one (R-HOST-07; the user's decision of
  * 2026-11-11, docs/planning/v2-set.md). Only the main DSH's "Model for Fishball" block syncs into
@@ -30,8 +30,8 @@ window.__ModuleLoader__.load({
       // and Restart, then the model-sync note, each its own panel row as in V2.
       instance: Object.freeze({ id: 'fishball-hosted-instance', order: 50 }),
       modelSyncNote: Object.freeze({ id: 'fishball-hosted-model-sync-note', order: 60 }),
-      // The main card's source, delivered as this package's chunk (installation.js copyChildCode).
-      shared: './client.instance.js',
+      // The instance's status line, this package's own chunk (client.status.js).
+      shared: './client.status.js',
       restartPath: 'api/fishball-instance/restart',
       request: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: Object.freeze({ 'content-type': 'application/json' }), body: '{}' }),
     })
@@ -76,7 +76,7 @@ window.__ModuleLoader__.load({
       retry: '重试',
     }
 
-    /** The shared main-card source, loaded once per page; a failure is shown with Retry. */
+    /** The shared status line, loaded once per page; a failure is shown with Retry. */
     function sharedLoader() {
       let snapshot = { state: SHARED_STATE.loading }
       const listeners = new Set()
@@ -129,7 +129,7 @@ window.__ModuleLoader__.load({
         view.error ? h('p', { className: classes.error, role: 'alert', 'data-fishball-settings-restart-error': view.error }, t(view.ended ? 'restartEnded' : 'restartFailed', { code: view.error })) : null)
     }
 
-    /** The shared status line and Restart, once the main card's source has arrived. */
+    /** The shared status line and Restart, once its chunk has arrived. */
     function Shared({ ctx, shared, t, classes }) {
       const sharedT = React.useMemo(() => ctx.locale.bind(shared.locale), [shared])
       const [status, setStatus] = shared.useInstanceStatus()
@@ -159,7 +159,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.locale.register(HOSTED.locale, { en, zh }), 'fishball hosted settings: dictionaries')
       ctx.effect(() => {
         loader.load()
-        // The shared card's dictionaries and styles are registered by this page once they arrive.
+        // The status line's dictionaries and styles are registered by this page once they arrive.
         // Each disposer is kept as soon as its part is mounted: if a later mount throws, the parts
         // already mounted are still removed by this effect's cleanup instead of outliving the row.
         const disposers = []

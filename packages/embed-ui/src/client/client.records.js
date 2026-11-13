@@ -1,12 +1,14 @@
 /**
  * The card record's browser half: one conversation definition and its chat-node view, shared by
  * every DSH session view that shows Fishball's card records (a managed session's view here, and
- * Fishball's own chat in the instance, I7). It is the connector's `./records` export (design §0.2).
+ * Fishball's own chat in the instance, I7). It was the connector's `./records` export (design
+ * §0.2); V3 R-EMBED moved it to fishball-embed-ui with the connector's client, and the connector
+ * no longer exports it (R-ARCH-03).
  *
- * It is a package-local chunk of the connector's client bundle, not a second bundle: DSH's client
+ * It is a package-local chunk of embed-UI's client bundle, not a second bundle: DSH's client
  * module loader serves only a package's `client.js` and its `client.*.js` siblings (the
  * CLIENT_CHUNK rule of dsh-client-modules, the same in 0.2.1-rc.5 and 0.2.2-rc.1), and this
- * repository has no build step, so client.js loads it with `require.async('./client.records.js')`.
+ * repository has no build step, so client.connector.js loads it with `require.async('./client.records.js')`.
  * The registration is skipped when no module loader exists (a plain Node import), so importing the
  * file outside a DSH page has no effect instead of throwing.
  *
@@ -17,7 +19,8 @@
  * answer and the note. No new chat primitive: DSH's own row, its own icons and the caller's classes.
  */
 globalThis.__ModuleLoader__?.load({
-  id: 'fishball-connector',
+  // A chunk of fishball-embed-ui's client since V3 R-EMBED (it moved here from the connector).
+  id: 'fishball-embed-ui',
   chunk: 'client.records.js',
   factory(require) {
     const module = { exports: {} }
