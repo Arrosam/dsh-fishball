@@ -21,8 +21,8 @@ or a code here is a K3 amendment.
 
 ## Frozen choices
 
-Rows not sourced from the spec or the user are PROPOSED: frozen as written unless the user changes
-them at review.
+Rows marked PROPOSED are **product choices**, not taken from the spec or a user decision. They are
+frozen as they stand (decided 3 = A), and the user may still change any of them.
 
 | Point | Frozen as | Source |
 | --- | --- | --- |
@@ -39,7 +39,8 @@ them at review.
 | Status naming the blocking bundle | `status().plugin` beside `PROFILE_INCOMPATIBLE` (PROPOSED) | R-HOST-11 (4), HOST-ST-01 #3 |
 | `admit` hostname | exactly `127.0.0.1`, `localhost`, `[::1]`; the caller passes the URL-parsed (lower-case) hostname; anything else rejects `hostname-refused` (code PROPOSED) | S4-Q1 A, RFC 3986 §3.2.2 |
 | `admit` views | `chat`, `settings` (V2's descriptor views) | instance `host.js` `PLUGIN.ui` |
-| `retry()` | restarts only from `failed`; otherwise changes nothing (V2's rule). **Open:** Retry after a deleted hosted entry (R-HOST-10) | HOST-ST-01 row 9 |
+| `retry()` | restarts a `failed` child; on `token-revoked` creates a new hosted entry only when `entryState` is `deleted`; otherwise changes nothing | decided 1 = A; R-HOST-10, HOST-ST-01 row 9 |
+| `entryState(entryKey)` | read-only `enabled`, `disabled` (also a changed or unset value), `deleted` (also an unknown key) | decided 1 = A; design §5.3 |
 | `providerSync` | V2's `status` / `check` / `add`, unchanged | R-HOST-07 |
 
 ## Not frozen here

@@ -154,14 +154,14 @@ export interface FishballChild {
   admit(request: AdmitRequest): Promise<{ readonly url: string }>
 
   /**
-   * Retry: restarts the child when its state is `failed`, and in any other state changes nothing
-   * (V2's rule, so a Retry before the host is ready leaves a stopped child stopped, HOST-ST-01 #9).
+   * Retry (decided 1 = A). It acts in exactly two cases and changes nothing otherwise, so a Retry
+   * before the host is ready leaves a stopped child stopped (HOST-ST-01 #9):
+   * - state `failed`: restarts the child (V2's rule);
+   * - code `token-revoked` with a same-DSH connector: the instance reads
+   *   `fishballConnectorTokens.entryState` of its hosted entry. `deleted`: it creates a new hosted
+   *   entry and the child pairs with it (R-HOST-10, HOST-DT-01 rule 5; never a succession).
+   *   `disabled` or `enabled`: nothing, so a disabled entry is never replaced.
    * Resolves once the retry has run; read `status()` for its outcome.
-   *
-   * OPEN (question to the user): R-HOST-10 makes Retry the one step that creates a new hosted entry
-   * after the user deleted the old one, but such a child is `ready` with `token-revoked`, so the
-   * `failed`-only rule would never reach it; and `fishballConnectorTokens` gives the instance no
-   * way to tell a deleted entry (replace after Retry) from a disabled one (never replace).
    */
   retry(): Promise<void>
 

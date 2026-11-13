@@ -45,6 +45,16 @@ export type RetireRefusalCode = 'unknown-entry' | 'not-hosted' | 'successor-unpa
 
 export type RetireResult = { readonly ok: true } | Refusal<RetireRefusalCode>
 
+/**
+ * A hosted entry's state, as the instance needs it to decide whether Retry may replace it
+ * (R-HOST-10; decided 1 = A):
+ * - `enabled`: the entry is on and its value is the one it was created with;
+ * - `disabled`: the user switched it off, or changed or unset its value (design §5.3 treats both
+ *   alike). Never replaced: re-enabling restores the same principal;
+ * - `deleted`: the entry no longer exists. Replaced only after the user presses Retry.
+ */
+export type HostedEntryState = 'enabled' | 'disabled' | 'deleted'
+
 export interface FishballConnectorTokens {
   readonly apiVersion: 1
 
@@ -56,6 +66,12 @@ export interface FishballConnectorTokens {
    * Rejects with `HostServiceError<CreateHostedErrorCode>`.
    */
   createHosted(instanceId: string): Promise<HostedTokenEntry>
+
+  /**
+   * Read-only: the state of an entry `createHosted` returned. A key that names no entry (or not a
+   * hosted one) answers `deleted`. Never creates, changes or reveals anything.
+   */
+  entryState(entryKey: string): HostedEntryState
 
   /**
    * Reinstall succession (Q24): in one storage transaction, makes the successor's principal take

@@ -4,7 +4,8 @@ Types only (`*.d.ts`); nothing here runs. Sources:
 [v3-design.md](<../../../docs/planning/v3-design.md>) §5a.2, §6.4; requirements 1.21, 1.24,
 R-INT-01…09, R-HOST-11, R-FB-02/09/11/12/13; spikes V3-S2 `a499141`, V3-S3 `b4dca86`, V3-S6
 `86800d2` and `7c2230e`. Changing a name here is a K3 amendment. Values marked PROPOSED in the
-`.d.ts` files are frozen as written unless the user changes them at review. Nothing imports
+`.d.ts` files are **product choices**: frozen as they stand (decided 3 = A), and the user may still
+change any of them. Nothing imports
 fishball-instance, and the settings-section point names nothing about hosting.
 
 The `.d.ts` files need `@deepseek-ai/cordis` (a DSH peer) for the `Context` members, and the DOM
