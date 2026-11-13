@@ -25,9 +25,8 @@ function offerValid(type, offer) {
   return parsed !== undefined && parsed.revision === offer.revision && offer.decisionKind === DECISION_KIND_OF[type]
 }
 
-/** A dedupe key is a contributor event's only (K1 EventDraft, R-EXT-18). */
-const dedupeValid = (type, dedupeKey) => dedupeKey === undefined
-  || (type.startsWith(CONTRIBUTED_TYPE_PREFIX) && typeof dedupeKey === 'string' && dedupeKey.length > 0)
+/** A dedupe key is a contributor event's only, and any string (K1 EventDraft `dedupeKey?: string`, R-EXT-18). */
+const dedupeValid = (type, dedupeKey) => dedupeKey === undefined || (type.startsWith(CONTRIBUTED_TYPE_PREFIX) && typeof dedupeKey === 'string')
 
 /**
  * @param {object} draft - a K1 EventDraft.
@@ -46,6 +45,9 @@ export function assertDraft(draft) {
 /**
  * The contributor a contributed type belongs to: the namespace in `contributed:<namespace>.<event>`.
  * A namespace holds no `.` (K2 NAMESPACE). For any other type the result is `undefined`.
+ * K1's `isEventType` (rules.js) parses the same prefix but exports no helper for it; a K1
+ * `namespaceOf(type)` would let both share one parse. That is left to a later K1 amendment.
+ * Only call it on a type `isEventType` accepted.
  */
 export function contributorOf(type) {
   if (!type.startsWith(CONTRIBUTED_TYPE_PREFIX)) return undefined

@@ -32,7 +32,10 @@ const ROOT_PATH = '$'
  * DSH's violation texts name the failing path in one of two forms (`json-schema.js` `checkValue`,
  * identical on both SDKs): `"<path>" must …` / `"<path>" is not …`, or
  * `missing required property "<path>"`. Both patterns are greedy, because DSH does not escape a
- * `"` inside a property key.
+ * `"` inside a property key. A known limit: an `enum` or `const` violation also quotes the
+ * expected values, so a value whose JSON text holds `" is ` or `" must ` can stretch the match past
+ * the path. That needs a key or value shaped like DSH's own sentence. `reason` always holds DSH's
+ * full text, so a log can still tell what happened.
  */
 const PATH_FORMS = Object.freeze([
   Object.freeze(/^"(.*)" (?:must|is) /s),

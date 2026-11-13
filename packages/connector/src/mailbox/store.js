@@ -5,11 +5,14 @@
  *
  * `boxes` (key: digest of the principal key) holds `{principalKey, generation, head, held?}`:
  * - `generation` is `mailboxGeneration`. It is set when the box is first created and never
- *   changed: K1 does not yet say what starts a new one (pending a K1 amendment, Fishball
- *   2026-11-14).
+ *   changed here. Fishball accepted the rule on 2026-11-14 and it lands as a K1 amendment after
+ *   the W2 merge: only lost or reset storage starts a new generation; delete, hold expiry and
+ *   re-enable keep it. Until that amendment, nothing here starts one.
  * - `head` is the last sequence handed out. It is stored so that pruning or dropping events never
  *   lets a sequence be handed out twice in one generation.
  * - `held = {since, expired?}` marks a disabled entry (R-TOK-05).
+ * - `dropping = {asks, throughSequence, until?}` exists only while a drop is in progress. It lets a drop cut short by a
+ *   crash be finished with its asks still reported (`mailbox.js` `dropEvents`).
  * `events` (key: `eventId`) holds `{boxKey, state, event, dedupeKey?, finishedAt?}`.
  */
 import { z } from 'zod'
@@ -20,6 +23,7 @@ const boxRecord = z.object({
   generation: z.string().min(1),
   head: z.number().int().nonnegative(),
   held: z.object({ since: z.number().int(), expired: z.boolean().optional() }).optional(),
+  dropping: z.object({ asks: z.array(z.string()), throughSequence: z.number().int().nonnegative(), until: z.number().int().optional() }).optional(),
 })
 
 /** The stored event is the K1 MailboxEvent as committed; its payload is opaque at this layer. */

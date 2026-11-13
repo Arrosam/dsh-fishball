@@ -44,9 +44,15 @@ export const CURSOR = Object.freeze({ encoding: 'base64url', fields: 3 })
 /** The position before the first event of a generation (sequences start at 1). */
 export const START_SEQUENCE = 0
 
-/** Background-log lines. They never carry a payload or a principal key. */
+/** Smallest accepted values: K1 `limit` is 1–pageMax, and `maxQueuedInputs` must leave room for one event. */
+export const MINIMUM = Object.freeze({ pageSize: 1, queuedInputs: 1 })
+
+/** Background-log lines. They never carry a payload or a principal key (only an error's name is logged with them). */
 export const LOG = Object.freeze({
   hintFailed: 'fishball mailbox: the listen-stream hint failed; the event is committed and stays pollable',
+  headWriteFailed: 'fishball mailbox: writing a box head failed; the event is committed and the head is repaired at the next load',
+  expiryFailed: 'fishball mailbox: a hold-expiry drop failed for one box; it keeps its marker and the next expireHolds finishes it',
+  headRepairFailed: 'fishball mailbox: repairing box heads at load failed; they are right in memory and retried before the next delete',
 })
 
 /** TypeError messages for a producer's programming error (K3 #17 style: a bug, not a CommitResult). */
@@ -54,7 +60,8 @@ export const MISUSE = Object.freeze({
   draft: 'fishball mailbox: invalid event draft',
   maxQueuedInputs: 'fishball mailbox: maxQueuedInputs must be a positive whole number',
   principalKey: 'fishball mailbox: a principal key must be a non-empty string',
-  eventKey: 'fishball mailbox: newId() must return a path-safe event id',
+  id: 'fishball mailbox: newId() must return a path-safe id (it names events and generations)',
+  time: 'fishball mailbox: a time must be a whole number of milliseconds since the Unix epoch',
 })
 
 /** Path-safe record keys (dsh-storage-json per-record layout). */
