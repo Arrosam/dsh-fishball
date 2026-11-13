@@ -29,6 +29,8 @@ export const CONTRACT = Object.freeze({
  * `eventId` (design §6.4, S2 §2.2). The record is a small state machine; every move is a
  * read-modify-write on the domain's single write chain, so two moves never interleave (S3).
  */
+// K1 keeps its day length private (mcp-schema constants.js DAY_MS) and exports only
+// TIME_UNIT.msPerSecond; this is the same unit, named for the one value below.
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 export const LEDGER = Object.freeze({
   domain: 'fishball_core_events',
@@ -87,10 +89,16 @@ export const REASON = Object.freeze({
   handled: 'handled',
   commitInterrupted: 'commit-interrupted',
   userStopped: 'user-stopped',
+  /**
+   * The turn that claimed the event ended before admitting it in another way than a user Stop, a
+   * crash or an owner teardown (`error`, `blocked`, an `aborted` by `parent` or `hook`). Discarded,
+   * as before: whether it should be re-delivered instead is an open user question (review 2026-11-14).
+   */
+  claimTurnEnded: 'claim-turn-ended',
 })
 
 /** What `intake` did with one polled event. */
-export const DISPATCH = Object.freeze({ interceptor: 'interceptor', fishball: 'fishball', duplicate: 'duplicate' })
+export const DISPATCH = Object.freeze({ interceptor: 'interceptor', fishball: 'fishball', duplicate: 'duplicate', closed: 'closed' })
 
 /**
  * The message an event becomes in Fishball's session. Its id is derived from the `eventId`, so
@@ -112,16 +120,24 @@ export const HOST = Object.freeze({
   turnEnd: 'turn/end',
   agentStatus: 'agent/status',
   idle: 'idle',
-  /** The closer resume appends to a turn a crash left open; a user Stop writes another kind. */
+  /** The closer resume appends to a turn a crash left open. */
   interrupted: 'interrupted',
+  /** `turn/end` of a cancelled turn; its `reason.kind` is the cancel cause. */
+  aborted: 'aborted',
+  /** Cancel causes (dsh-session `AgentCancelCause`): the user's Stop, and owner teardown. */
+  causeUser: 'user',
+  causeDisposed: 'disposed',
   canceled: 'canceled',
   inboxTargets: Object.freeze(['next-turn', 'next-step']),
   /** Cordis `FiberState.ACTIVE` (a const enum, so not exported at runtime; 4.0.5 and 4.1.0). */
   fiberActive: 2,
   /**
-   * Cordis's tracker key (`symbols.tracker`, 4.0.5 and 4.1.0). A service object carrying it is
-   * traced: inside its methods `this.ctx` is the caller's context (spike V3-S5 I1), which is how
+   * Options of Cordis's tracker (`symbols.tracker`, 4.0.5 and 4.1.0). A service object carrying it
+   * is traced: inside its methods `this.ctx` is the caller's context (spike V3-S5 I1), which is how
    * the events service learns the registering plugin's fiber without a `ctx` argument.
+   * `Symbol.for` gives the very symbol cordis exports as `symbols.tracker`; it is not imported
+   * because `@deepseek-ai/cordis` is not one of core's peers, and core's manifest belongs to F-LINK
+   * this wave.
    */
   tracker: Symbol.for('cordis.tracker'),
   trackerOptions: Object.freeze({ property: 'ctx', noShadow: true }),
@@ -142,6 +158,7 @@ export const DELIVERY = Object.freeze({
  * its type and a reason only. No payload, token or answer is ever logged (R-SEC-02).
  */
 export const LOG = Object.freeze({
+  /** The logger name the wiring row (F-WIRE) gives this module's `logger` port. */
   name: 'fishball-core-events',
   twin: 'interception: %s registered the same types and priority %s as %s',
   accepted: 'event %s (%s) accepted by interceptor %s',
@@ -153,6 +170,9 @@ export const LOG = Object.freeze({
   replay: 'event %s replayed; dropped',
   ackFailed: 'event %s could not be acked (%s)',
   deliverFailed: 'event %s could not be delivered to Fishball yet (%s)',
+  pruneFailed: 'acceptance ledger retention failed (%s)',
+  presentFailed: 'event %s (%s) could not be presented to Fishball; held until the next start (%s)',
+  recoverFailed: 'event recovery failed (%s); intake continues',
 })
 
 /** `TypeError` texts of an invalid registration or call (K3 PROPOSED rule). */
