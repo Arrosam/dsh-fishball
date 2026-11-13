@@ -100,6 +100,12 @@ export const V2_SUITES = Object.freeze({
     // V3 K1 (freeze of fishball-connector/mcp-schema, K-flagged AUTH/NAME/EVT/PLAT/WATCH cases); run with test/run-v3.mjs.
     file('test/v3/k1/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 MCP schema freeze (K1)'),
     file('test/v3/k1/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 MCP schema freeze (K1)'),
+    // V3 K3 (host-only service contracts, core's settings-section point; HAND/HOST/UIM K flags); run with test/run-v3.mjs.
+    file('test/v3/k3/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 host-only service and core contract freeze (K3)'),
+    file('test/v3/k3/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 host-only service and core contract freeze (K3)'),
+    // V3 R-EMBED (PLAT-EP-03 rows 1, 3, 5, HOST-EP-03 row 5); run with test/run-v3.mjs.
+    file('test/v3/embed/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-embed-ui package (R-EMBED)'),
+    file('test/v3/embed/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-embed-ui package (R-EMBED)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
