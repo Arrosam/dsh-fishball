@@ -145,18 +145,18 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ R-EMBED (2): the moved client
-  caseTest(sdk, 'R-EMBED', '(2)', 'embed-UI ships the moved client under src/client/connector/ and src/client/instance/', async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', 'embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js, client.connector.js, client.instance.js', async () => {
     needEmbed()
     const files = ownFiles(await unitOf(V3.embed.name))
-    for (const folder of EMBED.clientFolders) assert.ok(files.some((f) => f.startsWith(folder) && JS_FILE.test(f)), 'no JS file under ' + folder)
+    for (const file of [EMBED.clientEntry, ...Object.values(EMBED.clientChunks)]) assert.ok(files.includes(file), 'not shipped: ' + file)
   })
-  caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (src/client/connector/) carries the V2 contributions' slots and the moved instance card (src/client/instance/) a Plugins card slot", async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (client.connector.js) carries the V2 contributions' slots and the moved instance card (client.instance.js) a Plugins card slot", async () => {
     needEmbed()
     const tokens = await unitTokens(V3.embed)
-    const stringsUnder = (folder) => new Set([...tokens].filter(([f]) => f.startsWith(folder)).flatMap(([, t]) => t.strings))
-    const connector = stringsUnder(EMBED.clientFolders[0])
+    const stringsOf = (file) => new Set(tokens.get(file)?.strings ?? [])
+    const connector = stringsOf(EMBED.clientChunks.connector)
     assert.deepEqual(EXPECTED_UI.map((e) => e.slot).filter((slot) => !connector.has(slot)), [], 'slots missing from the moved connector UI')
-    const instance = stringsUnder(EMBED.clientFolders[1])
+    const instance = stringsOf(EMBED.clientChunks.instance)
     assert.ok(CARD_SLOTS.some((slot) => instance.has(slot)), 'the moved instance card names no Plugins card slot (' + CARD_SLOTS.join(', ') + ')')
   })
   caseTest(sdk, 'R-EMBED', '(2)', 'the instance exports its status-line module from src/child-settings/ (its one owner)', () => {

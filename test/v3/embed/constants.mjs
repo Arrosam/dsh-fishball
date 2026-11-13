@@ -17,8 +17,14 @@ export const EMBED = Object.freeze({
   workspace: 'packages/embed-ui',
   clientExport: './client',
   platform: 'web',
-  /** Layout named by the task: packages/embed-ui/src/client/{connector,instance}/. */
-  clientFolders: Object.freeze(['src/client/connector/', 'src/client/instance/']),
+  /**
+   * Approved layout (Fishball decision after 3c23e6b): flat chunks beside the entry,
+   * src/client/client.<part>.js, because DSH's client-modules serves only `client.*.js` files
+   * next to a package's `client.js` (CLIENT_CHUNK rule, both SDKs). It replaces the task's
+   * src/client/{connector,instance}/ folders.
+   */
+  clientEntry: 'src/client/client.js',
+  clientChunks: Object.freeze({ connector: 'src/client/client.connector.js', instance: 'src/client/client.instance.js' }),
 })
 
 /** R-EMBED (3): the client entries the connector and the instance lose in the same change. */
