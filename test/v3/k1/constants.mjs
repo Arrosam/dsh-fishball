@@ -12,6 +12,8 @@ import path from 'node:path'
 export const SCHEMA_MODULE = Object.freeze({
   specifier: 'fishball-connector/mcp-schema',
   folder: path.join('packages', 'connector', 'mcp-schema'),
+  /** The declaration file that types the internal interfaces (task K1a names it). */
+  declarations: 'index.d.ts',
   /** Files whose text carries the module's interfaces (types) and its written freeze record. */
   textFile: /\.(?:(?:c|m)?(?:js|ts)|md)$/,
   /** Code files only (sources and declarations), where the W2 interfaces are typed. */
@@ -106,12 +108,18 @@ export const CORE_TOOLS = Object.freeze([
 /** R-WATCH-03 (WATCH-UC-03) and R-EXT-13 (PLAT-EP-02 row 4): never core tools. */
 export const ABSENT_TOOLS = Object.freeze(['session_watch', 'session_unwatch', 'watches_list', 'attention_signal'])
 export const ABSENT_TOOL_WORDS = /watch|attention/
-/** R-WATCH-03: the argument that no longer exists on these tools (WATCH-UC-01 E1). */
-export const NO_NOTIFY = Object.freeze({ argument: 'notifyWhenFinished', tools: Object.freeze(['session_start', 'session_message']) })
-export const TOOL = Object.freeze({ pair: 'pair', setName: 'set_name', poll: 'inbox_poll', ack: 'inbox_ack' })
+/**
+ * R-WATCH-03: the argument that no longer exists on session_start and session_message (WATCH-UC-01
+ * E1). The cases pick those tools, and pair / inbox_poll / inbox_ack, by the module's own TOOL
+ * names: selecting a definition is not what they check (CORE_TOOLS is the name oracle).
+ */
+export const NO_NOTIFY = Object.freeze({ argument: 'notifyWhenFinished' })
 
-/** R-CON-02 / design §3.2: the refusal envelope every output schema admits. */
-export const REFUSAL = Object.freeze({ ok: false, code: 'limit-exceeded', message: 'over the limit' })
+/**
+ * R-CON-02 / design §3.2: the refusal envelope every output schema admits. Its `code` is any frozen
+ * refusal code, taken from the module in the case (`REFUSAL.limitExceeded`).
+ */
+export const REFUSAL = Object.freeze({ ok: false, message: 'over the limit' })
 
 /** Results of `pair` the requirements spell out (R-ID-03/04/13, R-NAME-06; AUTH-UC-02, NAME-DT-01). */
 export const PAIR_RESULT = Object.freeze({
@@ -174,7 +182,10 @@ export const BYTES_UNIT = /(?:[Bb]ytes?|_BYTES)$/
 /** Tolerance when comparing a converted duration (ms → s) with its expected value. */
 export const SECONDS_EPSILON = 1e-9
 
-/** Frozen durations, in seconds, from the requirements and cases. */
+/**
+ * Frozen durations, in seconds, from the requirements and cases: oracles, so they are kept here and
+ * not read from the module (reading them back would make each check compare the module with itself).
+ */
 export const DURATION_S = Object.freeze({
   accessToken: 3600, // R-OA-07
   code: 60, // R-OA-14, AUTH-BVA-07 (K)
@@ -234,6 +245,25 @@ export const MEANING = Object.freeze({
   offerId: has(/offer/i),
   connected: has(/connected|online/i),
 })
+/**
+ * Task K1a (R-OA-17): ONE failure limit shared by the token endpoint and the approval page. The
+ * constant is found by meaning, as every K1 value: its own keys name a per-key ceiling, a
+ * per-address ceiling and a window (with a unit), and a string list names the key parts (the
+ * remote address and the client id). RATE_LIMITS is named by the requirement itself.
+ */
+export const FAILURE_LIMIT_MEANING = Object.freeze({
+  failure: /fail/i,
+  perKey: /key/i,
+  perAddress: /address/i,
+  window: /window/i,
+  keyParts: Object.freeze([/address/i, /client/i]),
+  rateConstant: 'RATE_LIMITS',
+})
+/** K1a: the declarations name the limiter interface with a check and a record-failure member. */
+export const FAILURE_LIMITER = Object.freeze({ name: 'FailureLimiter', check: 'check', record: /^record\w*Fail/i })
+/** K1a definition of done: C-OAUTH owns the one OAuthTokenStore implementation, durable putRefresh included. */
+export const TOKEN_STORE = Object.freeze({ name: 'OAuthTokenStore', owner: 'C-OAUTH', durable: 'putRefresh', implementation: /implementation/i, promise: /^Promise\s*</ })
+
 /** Walk depth into exported data (constant objects are shallow; deeper is schema detail). */
 export const WALK_DEPTH = 12
 

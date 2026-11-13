@@ -19,15 +19,17 @@
  * module's text under its case id; a duration's unit is in its key's name.
  */
 import assert from 'node:assert/strict'
+import path from 'node:path'
 import test from 'node:test'
 import {
   ABSENT_TOOL_WORDS, ABSENT_TOOLS, ADVICE, APPROVAL_PATHS, AUTH_CODES, BYTES_UNIT, CC_EXTENSION, CIMD_MAX_BYTES, CONNECTOR_MANIFEST, CORE_TOOLS,
-  DURATION_S, ERROR_STATUS, EVENT_TYPES, EVENTS_URI, FIELDS, IDS, INSTANT, INTERFACES, LATER, MAX_QUEUED_DEFAULT, MCP, MEANING, METADATA,
+  DURATION_S, ERROR_STATUS, EVENT_TYPES, EVENTS_URI, FAILURE_LIMIT_MEANING, FAILURE_LIMITER, FIELDS, IDS, INSTANT, INTERFACES, LATER, MAX_QUEUED_DEFAULT, MCP, MEANING, METADATA,
   NAME_MAX_CHARS, NO_NOTIFY, OAUTH_ERRORS, OFFER_ID, PAIR_RESULT, PATHS, PORT_RANGE, PROTOCOL_VERSION, RECORDED, REFUSAL, SCHEMA_MODULE, SCOPE,
-  SCOPE_HINT, SECONDS_EPSILON, STOCK_TOKEN_REQUESTS_PER_FAILED_CALL, TOKEN_MIN_CHARS, TOOL, TOOL_CODES, WELL_KNOWN,
+  SCOPE_HINT, SECONDS_EPSILON, STOCK_TOKEN_REQUESTS_PER_FAILED_CALL, TOKEN_MIN_CHARS, TOKEN_STORE, TOOL_CODES, UNITS, WELL_KNOWN,
 } from './constants.mjs'
+import { model } from '../k3/declarations.mjs'
 import {
-  allPropertyNames, allText, exportedRegExps, exportedStrings, exportedStringsAndKeys, hasListEqualTo, leaves, mcpClient, mcpClientVersion, mcpCore, numbersAt,
+  allPropertyNames, allText, exportedRegExps, exportedStrings, exportedStringsAndKeys, folderTexts, hasListEqualTo, leaves, mcpClient, mcpClientVersion, mcpCore, numbersAt,
   readManifest, rootPropertyNames, schemaModule, secondsAt, statusesFor, toolDefinitions, toolsModule, validatorFor, walk,
 } from './schema-module.mjs'
 
@@ -81,13 +83,37 @@ const toolDef = (mod, name) => {
 }
 /** `pair`'s output schema, compiled by this SDK's client validator. */
 const pairOutput = async (sdk, mod) => {
-  const def = toolDef(mod, TOOL.pair)
+  const def = toolDef(mod, mod.TOOL.pair)
   assert.ok(def.outputSchema, 'pair has no outputSchema')
   return (await validatorFor(sdk))(def.outputSchema)
 }
 
 /** Fishball ids: the frozen validator is the exported RegExp that accepts row 1 and refuses row 2a. */
 const idPattern = (mod) => exportedRegExps(mod).find((re) => IDS.accepted.every((id) => re.test(id)) && !re.test(IDS.refused[0]))
+
+/** K1a: the declaration file's text, required to exist. */
+const declarationText = () => {
+  const file = path.join(SCHEMA_MODULE.folder, SCHEMA_MODULE.declarations)
+  const text = folderTexts(SCHEMA_MODULE.codeFile).get(file)
+  assert.ok(text !== undefined, 'no ' + file)
+  return [file, text]
+}
+const isPositiveInteger = (v) => Number.isSafeInteger(v) && v > 0
+/**
+ * K1a: does one exported constant hold the whole failure limit by its own keys? A per-key and a
+ * per-address ceiling (positive integers), a window with a unit in its key, and a string list of key
+ * parts naming the remote address and the client id.
+ */
+const holdsFailureLimit = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const entries = Object.entries(value)
+  const hasUnit = (k) => UNITS.some(([re]) => re.test(k))
+  // A ceiling is a count, so its key has no unit; the window is the one with a unit.
+  const ceiling = (re) => entries.some(([k, v]) => re.test(k) && !hasUnit(k) && isPositiveInteger(v))
+  const window = entries.some(([k, v]) => FAILURE_LIMIT_MEANING.window.test(k) && hasUnit(k) && v > 0)
+  const parts = entries.some(([, v]) => Array.isArray(v) && FAILURE_LIMIT_MEANING.keyParts.every((re) => v.some((p) => typeof p === 'string' && re.test(p))))
+  return ceiling(FAILURE_LIMIT_MEANING.perKey) && ceiling(FAILURE_LIMIT_MEANING.perAddress) && window && parts
+}
 
 export function registerK1Cases(sdk) {
   // ======================================================================================
@@ -134,7 +160,7 @@ export function registerK1Cases(sdk) {
     const refusing = []
     for (const [n, def] of tools(mod)) {
       if (!def.outputSchema) missing.push(n)
-      else if (!validate(def.outputSchema)(REFUSAL)) refusing.push(n)
+      else if (!validate(def.outputSchema)({ ...REFUSAL, code: mod.REFUSAL.limitExceeded })) refusing.push(n)
     }
     assert.deepEqual({ missing, refusing }, { missing: [], refusing: [] })
   })
@@ -143,7 +169,7 @@ export function registerK1Cases(sdk) {
   })
   caseTest(sdk, 'WATCH-UC-01', 'E1', 'session_start and session_message have no notifyWhenFinished argument and refuse unknown arguments (TQ-12)', async (mod) => {
     const validate = await validatorFor(sdk)
-    for (const n of NO_NOTIFY.tools) {
+    for (const n of [mod.TOOL.sessionStart, mod.TOOL.sessionMessage]) {
       const schema = toolDef(mod, n).inputSchema
       assert.ok(!allPropertyNames(schema).has(NO_NOTIFY.argument), n + ' declares ' + NO_NOTIFY.argument)
       assert.equal(schema.additionalProperties, false, n + ' does not refuse unknown arguments, so notifyWhenFinished would pass')
@@ -173,12 +199,12 @@ export function registerK1Cases(sdk) {
     for (const result of PAIR_RESULT.refused) assert.ok(check(result), result.nameRefused)
   })
   caseTest(sdk, 'NAME-DT-01', 1, 'pair\'s output schema has the R-NAME-06 fields (nameAssigned, nameRefused); "absent" for rule 1 is K', async (mod) => {
-    const names = rootPropertyNames(toolDef(mod, TOOL.pair).outputSchema)
+    const names = rootPropertyNames(toolDef(mod, mod.TOOL.pair).outputSchema)
     for (const f of ['ok', 'paired', 'id', 'name', 'nameAssigned', 'nameRefused', 'code', 'bound', 'advice']) assert.ok(names.has(f), f)
   })
   caseTest(sdk, 'AUTH-UC-04', 2, 'pair\'s output schema admits already-paired with bound {idMatches, boundId, name, pairedAt, lastSeenAt} and advice (R-ID-04)', async (mod) => {
     const check = await pairOutput(sdk, mod)
-    const form = [INSTANT.iso, INSTANT.epochMs].find((t) => check({ ...PAIR_RESULT.alreadyPaired, bound: { ...PAIR_RESULT.alreadyPaired.bound, pairedAt: t, lastSeenAt: t }, advice: ADVICE.idMatches }))
+    const form = [INSTANT.iso, INSTANT.epochMs].find((t) => check({ ...PAIR_RESULT.alreadyPaired, bound: { ...PAIR_RESULT.alreadyPaired.bound, pairedAt: t, lastSeenAt: t }, advice: mod.PAIR_ADVICE.idMatches }))
     assert.ok(form !== undefined, 'no timestamp form (ISO string or epoch ms) is admitted for pairedAt / lastSeenAt')
   })
   caseTest(sdk, 'AUTH-UC-04', 'A1', 'the two fixed advice texts of R-ID-04 are frozen', (mod) => {
@@ -210,10 +236,10 @@ export function registerK1Cases(sdk) {
   caseTest(sdk, 'AUTH-UC-08', 'K1', 'the approval listener serves only /authorize and /authorize/decision (D§5.5a, R-OA-20)', (mod) => {
     assertExported(mod, Object.values(APPROVAL_PATHS), 'approval paths')
   })
-  caseTest(sdk, 'AUTH-UC-08', 'main', 'the SDK\'s discovery URL for the frozen issuer is the path-inserted RFC 8414 one (R-OA-01)', async () => {
+  caseTest(sdk, 'AUTH-UC-08', 'main', 'the SDK\'s discovery URL for the frozen issuer is the path-inserted RFC 8414 one (R-OA-01)', async (mod) => {
     const client = await mcpClient(sdk)
-    const [first] = client.buildDiscoveryUrls(new URL(PATHS.issuer, WELL_KNOWN.base))
-    assert.equal(first.url.pathname, WELL_KNOWN.server + PATHS.issuer)
+    const [first] = client.buildDiscoveryUrls(new URL(mod.PATHS.issuer, WELL_KNOWN.base))
+    assert.equal(first.url.pathname, WELL_KNOWN.server + mod.PATHS.issuer)
   })
   caseTest(sdk, 'AUTH-UC-08', 'main', 'the AS metadata lists are frozen: grants, response types, S256, auth methods, scopes (R-OA-02)', (mod) => {
     for (const what of ['grantTypes', 'responseTypes', 'challengeMethods', 'authMethods', 'asScopes']) {
@@ -303,7 +329,8 @@ export function registerK1Cases(sdk) {
   caseTest(sdk, 'AUTH-ST-05', 'K', 'a maximum refresh-chain lifetime is frozen, longer than one access-token lifetime (R-OA-16 (5))', (mod) => {
     const found = secondsAt(mod, MEANING.chain)
     assert.ok(found.length > 0, 'no chain lifetime frozen with a unit in its name')
-    assert.ok(found.some((l) => l.seconds > DURATION_S.accessToken), 'a chain shorter than an access token would end every browser client within the hour: ' + JSON.stringify(found))
+    const accessTokenS = mod.LIFETIME.accessTokenMs / mod.TIME_UNIT.msPerSecond
+    assert.ok(found.some((l) => l.seconds > accessTokenS), 'a chain shorter than an access token would end every browser client within the hour: ' + JSON.stringify(found))
   })
   caseTest(sdk, 'AUTH-DT-04', '5–8', 'the disabled-entry retention is frozen as 30 days (R-TOK-05)', (mod) => {
     assertDuration(mod, MEANING.retention, DURATION_S.retention, 'retention')
@@ -350,6 +377,37 @@ export function registerK1Cases(sdk) {
   todos(sdk, 'AUTH-EP-05', LATER.oauth, [['1–6', 'uniform invalid_client on failures; 100 failures; constant-time comparator']])
 
   // ======================================================================================
+  // K1a (R-OA-17): one failure limit shared by the token endpoint and the approval page
+  // ======================================================================================
+  caseTest(sdk, 'K1a', 1, 'exactly one exported constant holds the failure limit (per-key and per-address ceilings, a window with a unit, key parts address + client id), and RATE_LIMITS carries no failure field', (mod) => {
+    const holders = Object.entries(mod).filter(([, v]) => holdsFailureLimit(v)).map(([k]) => k)
+    assert.equal(holders.length, 1, 'constants holding a failure limit: ' + JSON.stringify(holders))
+    const rate = mod[FAILURE_LIMIT_MEANING.rateConstant]
+    assert.ok(rate && typeof rate === 'object', FAILURE_LIMIT_MEANING.rateConstant + ' is not exported')
+    assert.deepEqual(Object.keys(rate).filter((k) => FAILURE_LIMIT_MEANING.failure.test(k)), [], FAILURE_LIMIT_MEANING.rateConstant + ' still carries failure fields')
+  })
+  caseTest(sdk, 'K1a', 2, 'no second failure ceiling exists in the module: every number named after failures is in the one constant', (mod) => {
+    const [holder] = Object.entries(mod).filter(([, v]) => holdsFailureLimit(v)).map(([k]) => k)
+    assert.ok(holder, 'no constant holds the failure limit')
+    const outside = leaves(mod).filter((l) => typeof l.value === 'number' && FAILURE_LIMIT_MEANING.failure.test(l.path) && l.path.split('.')[0] !== holder)
+    assert.deepEqual(outside.map((l) => l.path), [])
+  })
+  caseTest(sdk, 'K1a', 3, `${SCHEMA_MODULE.declarations} declares ${FAILURE_LIMITER.name} (check, record a failure) and names ${TOKEN_STORE.owner} the owner of the one ${TOKEN_STORE.name} implementation, durable ${TOKEN_STORE.durable} included`, () => {
+    const [file, text] = declarationText()
+    const { members } = model(new Map([[file, text]]))
+    const limiter = [...members(FAILURE_LIMITER.name).values()]
+    assert.ok(limiter.some((m) => m.method && m.name === FAILURE_LIMITER.check), FAILURE_LIMITER.name + ' has no ' + FAILURE_LIMITER.check + ' method')
+    assert.ok(limiter.some((m) => m.method && FAILURE_LIMITER.record.test(m.name)), FAILURE_LIMITER.name + ' has no record-failure method')
+    const put = members(TOKEN_STORE.name).get(TOKEN_STORE.durable)
+    assert.ok(put?.method && TOKEN_STORE.promise.test(put.returns), TOKEN_STORE.name + '.' + TOKEN_STORE.durable + ' is not a durable (Promise) write')
+    // One sentence of a comment names the implementation, its owner (C-OAUTH, not C-OAUTH-WEB) and putRefresh.
+    const owner = new RegExp(String.raw`\b${TOKEN_STORE.owner}(?!-)`)
+    const sentences = (text.match(/\/\*[\s\S]*?\*\//g) ?? []).flatMap((c) => c.split(/\.\s/))
+    assert.ok(sentences.some((c) => c.includes(TOKEN_STORE.name) && c.includes(TOKEN_STORE.durable) && TOKEN_STORE.implementation.test(c) && owner.test(c)),
+      'no comment names ' + TOKEN_STORE.owner + ' as the owner of the one ' + TOKEN_STORE.name + ' implementation with ' + TOKEN_STORE.durable)
+  })
+
+  // ======================================================================================
   // Provisional on spike V3-S7c (P:S7c)
   // ======================================================================================
   todos(sdk, 'AUTH-UC-12', LATER.adapter, [
@@ -387,7 +445,7 @@ export function registerK1Cases(sdk) {
     assertExported(mod, [EVENTS_URI], 'event resource')
   })
   caseTest(sdk, 'EVT-UC-01', 3, 'inbox_poll\'s schemas carry cursor and limit in, events, hasMore and resync out; an event carries eventId, type, payloadDigest (D§3.4)', (mod) => {
-    const poll = toolDef(mod, TOOL.poll)
+    const poll = toolDef(mod, mod.TOOL.inboxPoll)
     const inNames = allPropertyNames(poll.inputSchema)
     const outNames = allPropertyNames(poll.outputSchema)
     assert.deepEqual(FIELDS.pollArgs.filter((f) => !inNames.has(f)), [], 'inbox_poll input')
@@ -398,7 +456,7 @@ export function registerK1Cases(sdk) {
     assert.deepEqual(FIELDS.summary.filter((f) => !text.includes(f)), [])
   })
   caseTest(sdk, 'EVT-UC-01', 4, 'inbox_ack\'s input schema admits {receipts: [{eventId, payloadDigest}]} (D§3.4)', async (mod) => {
-    assert.ok((await validatorFor(sdk))(toolDef(mod, TOOL.ack).inputSchema)(FIELDS.receipt))
+    assert.ok((await validatorFor(sdk))(toolDef(mod, mod.TOOL.inboxAck).inputSchema)(FIELDS.receipt))
   })
   caseTest(sdk, 'WATCH-UC-01', 2, 'the turn-finished payload says running and queued (R-EVS-02), frozen by name', () => {
     const text = allText()
@@ -406,7 +464,7 @@ export function registerK1Cases(sdk) {
   })
   caseTest(sdk, 'EVT-BVA-01', '3–6', 'the poll page LIMIT is frozen, and inbox_poll\'s limit schema accepts 1 and LIMIT', async (mod) => {
     const limits = frozenPositive(mod, MEANING.page, 'page limit')
-    const validate = (await validatorFor(sdk))(toolDef(mod, TOOL.poll).inputSchema)
+    const validate = (await validatorFor(sdk))(toolDef(mod, mod.TOOL.inboxPoll).inputSchema)
     const limit = Math.max(...limits)
     assert.ok(validate({ limit: 1 }) && validate({ limit }), 'limit 1 or LIMIT = ' + limit + ' is refused by the schema')
   })
