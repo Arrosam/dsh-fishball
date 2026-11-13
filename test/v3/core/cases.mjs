@@ -34,7 +34,7 @@ import {
 } from './constants.mjs'
 import { hostedChildFor } from './hosted.mjs'
 import { childRequest, openSettingsPage } from './page.mjs'
-import { corePatch, describeRef, has, hostingTokens, isEmptyPatch, ownFiles, panelFiles, tokensOf, unitOf } from './static.mjs'
+import { corePatchFile, corePatchRows, describeRef, has, hostingTokens, insertedRows, isModuleOf, ownFiles, panelFiles, tokensOf, unitOf } from './static.mjs'
 
 const JS = /\.(?:c|m)?js$/
 const HOME_LABEL = 'v3-r-core'
@@ -119,11 +119,16 @@ export function registerCoreCases(sdk) {
     assert.equal(answer.bundle, true, JSON.stringify(answer))
     assert.equal(answer.name, V3.core.name, JSON.stringify(answer))
   })
-  caseTest(sdk, 'HOST-EP-03', 1, 'core ships an empty cordis.patch.yml (no patch entry before F-GUARDS)', () => {
+  // The R-CORE snapshot "empty patch" ended with F-GUARDS, which adds the guard rows (design §5a.2,
+  // R-FB-02, R-FB-12). What stays true for this row: the patch never brings the instance into core.
+  caseTest(sdk, 'HOST-EP-03', 1, "core's cordis.patch.yml carries the F-GUARDS rows and inserts no row or module of the instance or fishball-hosted-settings", async () => {
     needCore()
-    const text = corePatch()
-    assert.notEqual(text, null, 'packages/core/' + CORE.patchFile + ' is missing')
-    assert.ok(isEmptyPatch(text), 'the patch is not empty:\n' + text)
+    assert.ok(fs.existsSync(corePatchFile()), 'packages/core/' + CORE.patchFile + ' is missing')
+    const patches = await corePatchRows(sdk)
+    assert.ok(Array.isArray(patches) && patches.length > 0, 'the patch is not a non-empty list (F-GUARDS adds the guard rows)')
+    const inserted = insertedRows(patches)
+    assert.deepEqual(inserted.filter((row) => CORE.neverInserted.includes(row?.id)).map((row) => row.id), [], 'core inserts these rows')
+    assert.deepEqual(inserted.filter((row) => isModuleOf(row?.name, V3.instance)).map((row) => `${row.id}: ${row.name}`), [], 'core inserts modules of fishball-instance')
   })
   caseTest(sdk, 'HOST-EP-03', 1, 'core depends on fishball-shared (dependencies and bundleDependencies) and on the connector; never on the instance', () => {
     const manifest = coreManifest()
