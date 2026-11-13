@@ -651,9 +651,12 @@ it is deprecated in the specification. Machine clients are pre-registered by the
    persisted; maximum chain lifetime 365 days from the code redemption (K, decided by the user
    2026-11-13). Re-entering the bound token on the page stays `already-paired`, with one
    exception, the **renewal** (R-OA-16 (7)): when every chain of the entry ended by reaching the
-   maximum lifetime, the same client (the client id recorded at the bind) with the bound id gets a
-   new code and a new chain for the same principal; nothing is re-bound, and the pair keeps its id,
-   name, managed sessions and pending events.
+   maximum lifetime and the entry was not disabled, deleted or given a new value since, the same
+   client (the client id recorded at the bind) with the bound id gets a new code and a new chain
+   for the same principal; nothing is re-bound, the pair keeps its id, name, `pairedAt`, managed
+   sessions and pending events, and the redirect URI (any the client's document allows) replaces
+   the recorded one. K1's `OAuthTokenStore.chainsOf` answers whether every chain ended, and
+   `PairStore.renewFromPage` keeps the pair.
 7. **Cancel** → `error=access_denied`, `iss`, `state`; nothing bound. A pending request expires
    after 10 min; nothing survives a connector restart.
 8. **Page and responses (S7b, decided per spec):** every authorization response carries `iss`;

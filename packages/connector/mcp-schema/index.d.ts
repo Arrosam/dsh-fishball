@@ -161,6 +161,15 @@ export interface PairStore {
    */
   bindFromPage(entryKey: EntryKey, id: string, name: string | undefined, client: { clientIdUrl: string; redirectUri: string }, now: EpochMs):
     Promise<{ ok: true; pair: Pair } | { ok: false; code: 'already-paired' | 'id-invalid' | 'id-taken' | 'name-invalid' | 'name-taken' }>
+  /**
+   * The approval page's renewal (R-OA-12 (2), R-OA-16 (7)), called only once C-OAUTH-WEB has seen
+   * `OAuthTokenStore.chainsOf` answer `ended`: the pair must be bound to `client.clientIdUrl` and
+   * to `id`, else `already-paired`. It keeps the pair (id, name, `pairedAt`, managed sessions,
+   * pending events) and records `client.redirectUri`, which may be any redirect URI the client's
+   * metadata document allows (the user's decision, 2026-11-13). It binds nothing new.
+   */
+  renewFromPage(entryKey: EntryKey, id: string, client: { clientIdUrl: string; redirectUri: string }):
+    Promise<{ ok: true; pair: Pair } | { ok: false; code: 'already-paired' }>
   /** `set_name`; `null` clears (R-NAME-02). */
   setName(principalKey: PrincipalKey, name: string | null): Promise<SetNameResult>
   /** Records an authenticated request; writes at most once per PAIR_TIMING.lastSeenWriteIntervalMs. */
@@ -212,9 +221,6 @@ export interface HintSink {
  * The token store C-OAUTH and C-OAUTH-WEB share (R-OA-05, R-OA-14, R-OA-16). Everything is held
  * by SHA-256 digest of the opaque value. Access tokens and codes are in memory only; refresh
  * tokens persist as digests with their chain id and entry generation (Q-S7B-3 A).
- * Ownership (K1a): the one `OAuthTokenStore` implementation is C-OAUTH's
- * (`packages/connector/src/mcp/oauth/`), durable `putRefresh` included; C-OAUTH-WEB uses that one
- * instance and builds against a fake of this interface.
  */
 export interface IssuedAccessToken {
   readonly entryKey: EntryKey
@@ -244,6 +250,24 @@ export interface CodeRecord {
   readonly audience: string
   readonly issuedAt: EpochMs
 }
+/**
+ * Where an entry's refresh chains stand, for the renewal of R-OA-16 (7) (`chainsOf`):
+ * - `none`: the entry has no chain (never redeemed a code, or a machine client);
+ * - `live`: at least one chain can still be refreshed;
+ * - `ended`: every chain reached `chainStartedAt + LIFETIME.refreshChainMaxMs` and none was
+ *   revoked: the only state in which the page renews (R-OA-12 (2));
+ * - `revoked`: a chain was revoked by reuse or a replayed code (R-OA-16 (2)), or a chain was issued
+ *   under an older entry generation (a disable, delete or value change since, R-OA-16 (3)). The
+ *   user's decision (2026-11-13): such an entry never renews, even when its chain had ended first.
+ */
+export type ChainsState = 'none' | 'live' | 'ended' | 'revoked'
+
+/**
+ * The OAuth token store (R-OA-05, R-OA-14, R-OA-16).
+ * Ownership (K1a): the one `OAuthTokenStore` implementation is C-OAUTH's
+ * (`packages/connector/src/mcp/oauth/`), durable `putRefresh` included; C-OAUTH-WEB uses that one
+ * instance and builds against a fake of this interface.
+ */
 export interface OAuthTokenStore {
   putAccess(digest: string, token: IssuedAccessToken): void
   getAccess(digest: string): IssuedAccessToken | undefined
@@ -256,6 +280,12 @@ export interface OAuthTokenStore {
   revokeChain(chainId: string): Promise<void>
   /** Revokes every token derived from an entry below `generation` (R-OA-06). */
   revokeEntry(entryKey: EntryKey, generation: number): Promise<void>
+  /**
+   * Where the entry's chains stand at `now` (ChainsState), with `generation` the entry's current
+   * one. It survives a restart as the refresh digests do, so the end reason of a chain is kept with
+   * it until the entry is deleted.
+   */
+  chainsOf(entryKey: EntryKey, generation: number, now: EpochMs): ChainsState
 }
 
 /** A FailureLimiter key's parts (FAILURE_LIMIT.keyParts): `clientId` is absent for an MCP bearer. */
@@ -315,9 +345,10 @@ export interface Presence {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Runtime exports (index.js). Literal types mirror the values fixed by the spec, a requirement or
-// the design. A value marked PROPOSED or DECIDED in constants.js (a tunable) is typed by its
-// primitive instead, so changing it touches constants.js only (the user's rule: one place).
+// Runtime exports (index.js). Literal types mirror the frozen values, except numeric tunables:
+// a number marked PROPOSED or DECIDED in constants.js is typed `number` here, so changing it
+// touches constants.js only (the user's rule: one place). A K1 amendment of any other value
+// changes both files.
 // ---------------------------------------------------------------------------------------------
 
 export declare const ANSWERABLE_TYPES: readonly ["permission", "question", "plan-review", "ask"]

@@ -118,7 +118,7 @@ export interface FishballInstanceEvents {
    *   earliest registration.
    * - Disposing is synchronous: from then on the registration matches nothing, and events in
    *   flight to it that are not committing fall back to Fishball once (EVT-UC-03 E1, R-WD-07).
-   * - PROPOSED: an invalid registration (no `pluginId`, empty `types`, a non-function `filter` or
+   * - DECIDED (#17, kept by the user; packages/connector/mcp-schema/README.md "User decisions"): an invalid registration (no `pluginId`, empty `types`, a non-function `filter` or
    *   handler, a priority that is not a finite number) throws a `TypeError`, registering nothing.
    */
   intercept(registration: InterceptRegistration, onEvent: InterceptHandler): () => void

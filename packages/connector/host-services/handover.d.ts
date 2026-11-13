@@ -57,7 +57,7 @@ export interface HandoverPrincipal {
  *   key that never existed, so both answer the same code (HAND-DT-01 rows 2, 6, 7a, 8).
  *
  * When several apply, the first in this order wins: `unknown-session`, `conflict`, `no-fishball`
- * (the order and the merging of rows 2, 6, 7a and 8 into one code are PROPOSED).
+ * (the merging of rows 2, 6, 7a and 8 into one code is DECIDED #11, kept; the order is PROPOSED).
  */
 export type HandOverRefusalCode = 'unknown-session' | 'conflict' | 'no-fishball'
 
@@ -67,7 +67,7 @@ export type HandOverRefusalCode = 'unknown-session' | 'conflict' | 'no-fishball'
  * - `not-managed`: the session exists and nobody manages it (decided by the user for K3; V2's
  *   Take back succeeded silently here, and used `not-managed` only for `release`).
  *
- * V2's other Hand over / Take back codes are not carried (PROPOSED): `is-fishball` (in V3 the
+ * V2's other Hand over / Take back codes are not carried (DECIDED #12, kept): `is-fishball` (in V3 the
  * Fishball manager session never lives in the main DSH, design §1.4) and `feature-off`.
  */
 export type TakeBackRefusalCode = 'unknown-session' | 'not-managed'

@@ -4,8 +4,7 @@
  * Every name here is part of the `./tools` freeze; changing one is a K2 amendment. Values the
  * requirements do not fix are marked "PROPOSED (user decision pending)": they are frozen as
  * written unless the user changes them at review. Values marked "DECIDED (#n)" are the user's
- * decisions at that review (2026-11-13, relayed by Fishball; #n is the item of
- * `.runtime/reports/v3-proposed-values.md`).
+ * decisions at that review (relayed by Fishball); ../mcp-schema/README.md "User decisions" records each #n.
  *
  * Every RegExp is itself frozen (an outer Object.freeze leaves `compile()` open to any importer)
  * and none has the `g` flag, so no `lastIndex` state is shared between importers.
@@ -158,8 +157,8 @@ export const REGISTER_REFUSAL = Object.freeze({
 /**
  * `emit(event)` refusals: always returned as `{ok: false, code}`, never thrown (R-EXT-18).
  * `contributor-unidentified` and `namespace-reserved` are not in design §13.2's EmitRefusal union;
- * they are added because R-EXT-16 applies the tools' namespace rule to events (PROPOSED, user
- * decision pending). Check order: EMIT_CHECK_ORDER.
+ * they are added because R-EXT-16 applies the tools' namespace rule to events (DECIDED #7:
+ * kept). Check order: EMIT_CHECK_ORDER.
  */
 export const EMIT_REFUSAL = Object.freeze({
   eventInvalid: 'event-invalid',
@@ -206,7 +205,7 @@ export const EMIT_CHECK_ORDER = Object.freeze([
 
 /**
  * The connector's shared refusal vocabulary a tool may return without declaring it (design
- * §13.5, whose list ends "…"; this is its closed form, PROPOSED). Any other undeclared code
+ * §13.5, whose list ends "…"; this is its closed form, DECIDED #8: kept). Any other undeclared code
  * becomes `operation-failed`. A tool may not declare a CALL_CODE in `codes` (`tool-invalid`),
  * so a contributor can never produce `contributor-failed` or `tool-withdrawn` itself.
  */

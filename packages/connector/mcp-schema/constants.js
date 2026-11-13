@@ -9,8 +9,8 @@
  * - [req]      the value is in the requirements;
  * - [design]   the value is in the design, which a requirement defers to;
  * - PROPOSED   no requirement fixes it: frozen as written unless the user changes it at review;
- * - DECIDED    the user decided the value at review (2026-11-13, relayed by Fishball; the review list
- *              is `.runtime/reports/v3-proposed-values.md`, by its item number #n).
+ * - DECIDED    the user decided the value at review (relayed by Fishball); #n is its row in
+ *              README.md "User decisions", the one record of the decisions of K1, K2 and K3.
  *
  * Units are part of each name. Values with different meanings keep separate names even when they
  * coincide. Every RegExp is frozen and has no `g` flag, so importers share no `lastIndex` state.
@@ -18,7 +18,7 @@
 import { CALL_CODE, CONTRIBUTED_EVENT, NAME_GRAMMAR, SHARED_CODES, TOOLS_API } from '../tools/constants.js'
 // The V2 domain's operation codes keep their one owner, `./contract`, until C-WIRE retires it;
 // C-WIRE then moves these values here unchanged (a move, not a K1 amendment).
-import { ERROR as V2_ERROR } from '../contract/contract.js'
+import { ERROR as V2_ERROR, LIMITS as V2_LIMITS } from '../contract/contract.js'
 
 // K2's frozen SHARED_CODES, by its declared order (tools/README.md "Codes"), so each word keeps
 // K2 as its one owner. The order is part of K2's freeze: reordering it is a K2 amendment, and
@@ -26,7 +26,6 @@ import { ERROR as V2_ERROR } from '../contract/contract.js'
 const [, forbidden, unknownSession, expired, conflict, unavailable, unsupportedOperation] = SHARED_CODES
 
 const KIB = 1024
-const MIB = KIB * KIB
 const SECOND_MS = 1000
 const MINUTE_MS = 60 * SECOND_MS
 const HOUR_MS = 60 * MINUTE_MS
@@ -118,7 +117,7 @@ export const OAUTH_ERROR = Object.freeze({
   serverError: 'server_error',
   // RFC 6749 §4.1.2.1 defines this for the authorization response only; RFC 6749 §5.2 lists no
   // token-endpoint code for "too many requests", so the token endpoint uses it too, with 429
-  // (PROPOSED).
+  // (DECIDED #1: kept).
   temporarilyUnavailable: 'temporarily_unavailable',
   invalidToken: 'invalid_token',
   insufficientScope: 'insufficient_scope',
@@ -258,7 +257,7 @@ export const LIFETIME = Object.freeze({
   // identical successor; at 10 s and later it is reuse (AUTH-BVA-08).
   refreshGraceMs: 10 * SECOND_MS,
   // DECIDED (#18): R-OA-16 (5) asks for a maximum chain lifetime: 365 days from the code
-  // redemption. A refresh after it is `invalid_grant`. The owner then renews the chain on the same
+  // redemption. A refresh at or after it is `invalid_grant`. The owner then renews the chain on the same
   // entry, keeping its pair (R-OA-16 (7), R-OA-12 (2)): re-entering the bound token on the
   // approval page, from the same client id and with the bound id, mints a new code instead of
   // answering `already-paired`.
@@ -266,8 +265,8 @@ export const LIFETIME = Object.freeze({
 })
 
 /**
- * Request-rate limits (R-TOK-06, R-OA-17, design §5.6), over the same one-minute window and key
- * as FAILURE_LIMIT. PROPOSED numbers: they allow the stock client's 2 token requests per failed
+ * Request-rate limits (R-TOK-06, R-OA-17, design §5.6), counted per (remote address, OAuth
+ * `client_id`), the key FAILURE_LIMIT.keyParts names. PROPOSED numbers: they allow the stock client's 2 token requests per failed
  * call and its 3 requests per hourly re-discovery (S7 §4.4) many times over.
  * - tokenRequestsPerWindow: every token-endpoint request, of any grant (R-OA-17).
  * Over a limit, as over FAILURE_LIMIT: HTTP 429 with `Retry-After` (whole seconds until the window
@@ -294,12 +293,14 @@ export const RATE_LIMITS = Object.freeze({
  *   none, so its key is the address alone. On loopback every client shares one address, and an
  *   address-only key for every client would let one revoked agent's retries lock the hosted
  *   Fishball out. No token material is in a key.
- * - Limited (PROPOSED, S7b's rule): a key with `perKeyPerWindow` or more counted failures within
+ * - Limited (PROPOSED; S7b's `>=` rule, over S7b's one address-only key): a key with `perKeyPerWindow` or more counted failures within
  *   the last `windowMs`, or an address with `perAddressPerWindow` or more over all its keys.
  *   While limited, even a valid credential is refused (S7b P2), with RATE_LIMITS' 429 answer.
  */
 export const FAILURE_LIMIT = Object.freeze({
-  windowMs: RATE_LIMITS.windowMs,
+  // Its own window: a failure window and a request-rate window mean different things, even
+  // though both are one minute today.
+  windowMs: MINUTE_MS,
   keyParts: Object.freeze(['remoteAddress', 'clientId']),
   // #21 DECIDED: 10 per key per minute.
   perKeyPerWindow: 10,
@@ -324,7 +325,7 @@ export const FAILURE_LIMIT = Object.freeze({
  * reserved range -32768…-32000.
  */
 export const ENDPOINT_LIMITS = Object.freeze({
-  bodyBytes: 8 * MIB,
+  bodyBytes: V2_LIMITS.attachmentEnvelopeBytes,
   inFlightPerPrincipal: 32,
   listenStreamsPerPrincipal: 8,
   requestsPerMinute: 600,
@@ -473,8 +474,8 @@ export const DECISION_KIND_OF = Object.freeze({
 /**
  * The mailbox's capacity rule (R-CON-09, R-EXT-18, design §3.4, V2 contract 1.2 §9). Every
  * pending event counts toward the recipient's `maxQueuedInputs`: a connector setting (V2's, kept,
- * design §10) whose default K1 freezes at 200 (design §3.4; V2 `src/config.js` has the same value,
- * which C-WIRE's settings schema takes from here),
+ * design §10) whose default K1 freezes at 200 (design §3.4); the connector's settings schema
+ * (`src/config.js`) takes its default from here,
  * but only these types are refused `queue-full` past it. PROPOSED split, from the rules it must
  * keep: offers always reach their manager's mailbox (R-CON-09 "always"); a `settlement` or
  * `retirement` must follow the event it ends, or a client would hold a dead offer; `handover` /
@@ -600,7 +601,7 @@ export const REFUSAL = Object.freeze({
   idTaken: 'id-taken',
   nameInvalid: 'name-invalid',
   nameTaken: 'name-taken',
-  // inbox_ack (the codes PROPOSED): a receipt naming no event of the caller's mailbox (never "it
+  // inbox_ack (the codes DECIDED #5, #6: kept): a receipt naming no event of the caller's mailbox (never "it
   // belongs to another pair", R-TOK-00), or a digest that differs from the event's. All or nothing
   // (DECIDED #61: kept): one bad receipt acks nothing.
   unknownEvent: 'unknown-event',

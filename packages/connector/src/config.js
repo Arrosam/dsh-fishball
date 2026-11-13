@@ -10,6 +10,8 @@
  */
 import Schema from '@deepseek-ai/schemastery'
 import { QUESTION_MODE } from './constants.js'
+// The default of maxQueuedInputs has one owner, K1's QUEUE (data only, no DSH import).
+import { QUEUE } from '../mcp-schema/constants.js'
 
 /** Minimum for counts and sizes. No limit has a maximum (conn-OQ-19). */
 const MIN = Object.freeze({ count: 1 })
@@ -20,7 +22,7 @@ const MIN = Object.freeze({ count: 1 })
  * a stored value of one is ignored.
  */
 export const LIMITS = Object.freeze([
-  ['maxQueuedInputs', 200, MIN.count, 'Inputs (messages, finish notices, plugin events) that have arrived but Fishball has not read yet.'],
+  ['maxQueuedInputs', QUEUE.maxQueuedInputs, MIN.count, 'Inputs (messages, finish notices, plugin events) that have arrived but Fishball has not read yet.'],
   ['maxActiveWatches', 50, MIN.count, 'Open "tell Fishball when this session finishes" requests.'],
   ['maxPendingApprovals', 8, MIN.count, 'Permission requests open at the same time: waiting for Fishball, or waiting for you in your pile; extra requests go to you in their session.'],
   ['argumentExcerptBytes', 8192, MIN.count, 'How much of a requested tool call Fishball sees.'],

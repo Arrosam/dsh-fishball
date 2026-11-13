@@ -533,10 +533,10 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
   - A3. Someone other than the owner holds `v(E5)` and enters it → it authorizes the same way (the token is the proof).
   - A4. The user also types the name "Watcher" (free) → E5's principal is named "Watcher".
   - A5. The client's redirect is `http://127.0.0.1:7777/cb` but it now listens on port 50123 → `redirect_uri=http://127.0.0.1:50123/cb` is accepted (loopback, any port).
+  - A7. **Renewal (R-OA-16 (7)):** E5's every chain has reached its 365-day maximum lifetime; the same client (the client id recorded at the bind) opens the page again and the owner enters `v(E5)` with the bound id `agent-w-1` → redirect with a code; the new chain belongs to the **same** principal (same id, name, managed sessions and pending events); nothing is re-bound and no new token is needed; any redirect URI of the client's document is accepted and recorded.
 - **Exception flows:**
   - E1. A wrong, disabled or deleted token value → one uniform "this token is not valid" message; the request stays pending; the attempt counts toward the per-client failure limit.
   - E2. `v(E5)` after E5 is already paired (by a machine client or another browser client) → `already-paired` on the page: "create a new token", with the bound pair's name and last-seen time; nothing changes.
-  - A7. **Renewal (R-OA-16 (7)):** E5's every chain has reached its 365-day maximum lifetime; the same client (the client id recorded at the bind) opens the page again and the owner enters `v(E5)` with the bound id `agent-w-1` → redirect with a code; the new chain belongs to the **same** principal (same id, name, managed sessions and pending events); nothing is re-bound and no new token is needed.
   - E2a. The id `agent-w-1` is already used by another entry → `id-taken`; the id `agent.w` → `id-invalid`; the name "Fishball" when held → `name-taken`; each leaves E5 unpaired and the request pending.
   - E3. The request waits 10 min → expired; Authorize shows "this request has expired, start again from your agent".
   - E4. A cross-site POST to the form (other origin, or a replayed form value) → refused; nothing bound.
@@ -564,7 +564,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 | 11 | any redirected error (rules 5–8) | | | | | carries `error`, `iss` and `state` (if sent) |
 
 ### AUTH-ST-04 — A pending browser authorization and its code
-**Req:** R-OA-12, R-OA-14, R-OA-15 · **Level:** unit (fake clock) · **Flags:** —
+**Req:** R-OA-12, R-OA-14, R-OA-15, R-OA-16 · **Level:** unit (fake clock) · **Flags:** —
 
 | # | From | Event | To | Observable |
 | --- | --- | --- | --- | --- |
@@ -623,9 +623,11 @@ RT1 is the refresh token from the code redemption; each refresh returns the next
 | 12a | Ended | re-entry from another client id, or with another id | Ended | `already-paired` on the page; nothing changes |
 | 12b | Revoked (by reuse, or by disable, delete or value change) | the same client re-enters the bound token with the bound id | Revoked | `already-paired`: only an ended lifetime renews |
 | 12c | Ended, while another chain of the entry is still live | re-entry from the recorded client id with the bound id | unchanged | `already-paired` |
+| 12d | Ended, then the entry disabled and re-enabled, or its value changed | re-entry (the current value) from the recorded client id with the bound id | Ended | `already-paired`: a change since the end blocks renewal (user decision 2026-11-13) |
+| 12e | Ended | renewal with another redirect URI the client's document lists | Chain(RT1′ live) | accepted; the new redirect URI is recorded |
 
 ### AUTH-DT-08 — What entering a token on the page does
-**Req:** R-OA-12, R-OA-11, R-ID-02, R-ID-03, R-ID-04, R-ID-13, R-TOK-00, R-TOK-06, R-TOK-08, R-NAME-02, R-NAME-08 · **Level:** integration · **Flags:** —
+**Req:** R-OA-12, R-OA-11, R-OA-16, R-ID-02, R-ID-03, R-ID-04, R-ID-13, R-TOK-00, R-TOK-06, R-TOK-08, R-NAME-02, R-NAME-08 · **Level:** integration · **Flags:** —
 
 | Rule | Entered value | Entry state | Binding | Result on the page | Changes |
 | --- | --- | --- | --- | --- | --- |
