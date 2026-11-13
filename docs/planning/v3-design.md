@@ -629,7 +629,8 @@ it is deprecated in the specification. Machine clients are pre-registered by the
    per-client failure limit as the token endpoint:
    - not valid → one uniform message on the page; the request stays pending;
    - valid but already paired → `already-paired` on the page, "create a new token", with the bound
-     pair's name and last-seen time; nothing changes;
+     pair's name and last-seen time; nothing changes; except the renewal of step 6 (an ended chain,
+     the recorded client id, the bound id), which mints a code for the existing pair;
    - valid and unpaired → the typed id must be valid (`id-invalid`) and held by no other entry
      (`id-taken`); a non-empty name must pass §5.8 (`name-invalid`, `name-taken`); any refusal is
      shown on the page and binds nothing;
@@ -647,8 +648,12 @@ it is deprecated in the specification. Machine clients are pre-registered by the
    kills every refresh token. **Restart (Q-S7B-3 decided A):** refresh tokens are persisted as
    **digests only**, with chain id and entry generation, in the connector's storage, so a browser
    client refreshes after a restart; access tokens stay in memory; the 10 s window is not
-   persisted; maximum chain lifetime K. Re-entering the bound token on the page stays
-   `already-paired`.
+   persisted; maximum chain lifetime 365 days from the code redemption (K, decided by the user
+   2026-11-13). Re-entering the bound token on the page stays `already-paired`, with one
+   exception, the **renewal** (R-OA-16 (7)): when every chain of the entry ended by reaching the
+   maximum lifetime, the same client (the client id recorded at the bind) with the bound id gets a
+   new code and a new chain for the same principal; nothing is re-bound, and the pair keeps its id,
+   name, managed sessions and pending events.
 7. **Cancel** → `error=access_denied`, `iss`, `state`; nothing bound. A pending request expires
    after 10 min; nothing survives a connector restart.
 8. **Page and responses (S7b, decided per spec):** every authorization response carries `iss`;
@@ -1515,10 +1520,11 @@ contributed tools on offer, and the README explains the cost.
 - Logging: one warn line per (contributor, failure kind) per window, with the namespace, tool
   name and kind only. Never the arguments, the result or the principal's token.
 - **Quarantine** (R-EXT-09): `contributor-failed` on more than N of the last M calls of one
-  contributor, frozen by K2 as `QUARANTINE.moreThanFailures` = 2 of `QUARANTINE.windowOutcomes` = 5
-  counted outcomes (finished calls, where a failure is `contributor-failed`, and validated emits,
+  contributor, frozen by K2 as `QUARANTINE.moreThanFailures` = 4 of `QUARANTINE.windowOutcomes` = 10
+  counted outcomes (decided by the user, 2026-11-13: recovery is manual, so one short outage should
+  not cost a reload; finished calls, where a failure is `contributor-failed`, and validated emits,
   where a failure is `event-invalid` or `payload-too-large`; `tool-withdrawn` and refusals before
-  `execute` are not counted), so the 3rd failure in 5 quarantines;
+  `execute` are not counted), so the 5th failure among the last 10 quarantines;
   (frozen constants, not settings) withdraws that
   contributor's tools (§13.4) and stops its events (§13.5a). The quarantine is an effect on the
   contributor's root fiber (S5, Q2), so it lifts only with a new activation of the contributor
@@ -1565,7 +1571,7 @@ with the namespace only, and `tools/list` names the contributor plugin and versi
 (30 s, below DSH's 60 s client default), `TOOL_LIMITS.contributorInFlightCalls` = 16,
 `TOOL_LIMITS.descriptionBytes` = 2048, `TOOL_LIMITS.messageChars` = 500, `EVENT_LIMITS` payload 8192 bytes,
 summary 500 code points, 30 per minute with burst 10 per (contributor, recipient),
-`QUARANTINE` 2 of 5; the closed `SHARED_CODES` (`limit-exceeded`, `forbidden`, `unknown-session`,
+`QUARANTINE` more than 4 of the last 10 (the user's decision, 2026-11-13); the closed `SHARED_CODES` (`limit-exceeded`, `forbidden`, `unknown-session`,
 `expired`, `conflict`, `unavailable`, `unsupported-operation`, `operation-failed`); `CALL_CODE`;
 `ABORT_REASON` (`cancelled`, `disconnected`, `revoked`, `timeout`, `tool-withdrawn`); `EMIT_CHECK_ORDER`.
 The README is the authority; this table only names them.

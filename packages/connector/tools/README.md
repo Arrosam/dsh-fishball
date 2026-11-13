@@ -6,7 +6,9 @@ The contract of the contribution service `fishballConnectorTools`. Sources:
 This module holds data, pure validators and types only. The registry behind the service belongs to
 C-EXT (`packages/connector/src/contrib/`). Each name below is frozen, so changing one is a K2
 amendment. A value marked **PROPOSED** is one the requirements do not fix: it is frozen as written
-unless the user changes it at review.
+unless the user changes it at review. **DECIDED (#n)** marks a value the user decided at that
+review (2026-11-13, relayed by Fishball; `#n` is the item of
+`.runtime/reports/v3-proposed-values.md`).
 
 ## Service
 
@@ -96,8 +98,8 @@ unless the user changes it at review.
 | `EVENT_LIMITS.ratePerMinute` | 30 | rate per (contributor, recipient) |
 | `EVENT_LIMITS.rateBurst` | 10 | token-bucket capacity per (contributor, recipient) |
 | `EVENT_LIMITS.rateWindowMs` | 60000 | the window that `ratePerMinute` refills over (one token per 2 s) |
-| `QUARANTINE.moreThanFailures` | 2 | PROPOSED: more than this many failures quarantine a contributor … |
-| `QUARANTINE.windowOutcomes` | 5 | PROPOSED: … among the last this many counted outcomes of its activation |
+| `QUARANTINE.moreThanFailures` | 4 | DECIDED (#44): more than this many failures quarantine a contributor … |
+| `QUARANTINE.windowOutcomes` | 10 | DECIDED (#45): … among the last this many counted outcomes of its activation |
 
 - **Effective limits.** A tool's effective limit is the value it declares, or the ceiling when it
   declares none (`effectiveLimits(def)`).
@@ -106,8 +108,9 @@ unless the user changes it at review.
   user sets one.
 - **Queue.** The event queue limit is the recipient's `maxQueuedInputs` (K1), not a constant here.
 - **Quarantine.**
-  - The rule follows design §13.5's wording, "more than N of the last M". With N = 2 and M = 5,
-    the 3rd failure in 5 quarantines, the behaviour spike S5 observed.
+  - The rule follows design §13.5's wording, "more than N of the last M". With N = 4 and M = 10
+    (DECIDED #44, #45), the 5th failure among the last 10 quarantines. Spike S5's 3rd failure in 5
+    was replaced because recovery is manual (R-EXT-09).
   - Counted outcomes (PROPOSED): every finished call of the contributor's tools, where a failure is
     `contributor-failed`; and every emit that reaches validation, where a failure is
     `event-invalid` or `payload-too-large` and an accepted emit counts as a success.
