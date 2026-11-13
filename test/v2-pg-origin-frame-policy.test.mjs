@@ -5,7 +5,7 @@
  * DSH runs at its own origin) and `referrerPolicy` `no-referrer`. No other feature is granted; in
  * particular no `clipboard-read`.
  *
- * Observation point: packages/connector/client.js is a browser bundle loaded by DSH's client module
+ * Observation point: the connector UI (packages/embed-ui/src/client/client.connector.js since R-EMBED) is a browser bundle loaded by DSH's client module
  * loader, so it is not importable. As in body-soul-k2-frame.test.mjs, the source text is cut: the
  * `h('iframe', { … })` call carrying the marker prop is located, the constants its `allow` and
  * `referrerPolicy` props reference are read from it, and the frozen constants object they name is
@@ -28,6 +28,7 @@ import path from 'node:path'
 import vm from 'node:vm'
 import { describe, it } from 'node:test'
 import { BODY_SOUL } from './support/body-soul-env.mjs'
+import { EMBED_UI } from './support/constants.mjs'
 
 /** Expected values, from the requirement (not from the source). */
 const EXPECTED = Object.freeze({
@@ -45,7 +46,7 @@ function harness(message) {
   return new Error('PG-ORIGIN harness: client.js ' + message)
 }
 
-const source = fs.readFileSync(path.join(BODY_SOUL.connector, 'client.js'), 'utf8')
+const source = fs.readFileSync(EMBED_UI.connectorClient, 'utf8')
 
 /**
  * The text of the object literal starting at `open` (a `{`), up to its matching `}`. Quoted

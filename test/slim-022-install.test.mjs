@@ -8,7 +8,8 @@
  * settings, §10 Refresh models, §6.6 uploads, T09 approvals), docs/package-layout.md and the task
  * brief.
  *
- * Opt-in: set FBTEST_CONNECTOR_TGZ and FBTEST_INSTANCE_TGZ (absolute .tgz) and FBTEST_DSH_BIN
+ * Opt-in: set FBTEST_CONNECTOR_TGZ, FBTEST_INSTANCE_TGZ and (since R-EMBED) FBTEST_EMBED_UI_TGZ
+ * (absolute .tgz) and FBTEST_DSH_BIN
  * (DSH-X's 0.2.2-rc.1 `dsh` wrapper). FBTEST_NODE22 is the plain Node put first on DSH's PATH (the
  * native host's default pick since 0ee4d9e; the test no longer edits the profile). Without them
  * every case is skipped. Run it outside a file sandbox: the native runtime spawns /bin/ps, and a
@@ -24,6 +25,8 @@ import path from 'node:path'
 const ENV = Object.freeze({
   connectorTgz: process.env.FBTEST_CONNECTOR_TGZ,
   instanceTgz: process.env.FBTEST_INSTANCE_TGZ,
+  // R-EMBED: the main-DSH UI ships in its own tarball, installed after the two M1 packages.
+  embedTgz: process.env.FBTEST_EMBED_UI_TGZ,
   dsh: process.env.FBTEST_DSH_BIN,
   node: process.env.FBTEST_NODE22 ?? '/opt/homebrew/Cellar/node@22/22.22.2_1/bin/node',
 })
@@ -52,7 +55,9 @@ const ROUTE = Object.freeze({
   // never served this route (docs/slim-native-design.md §12).
   questionsAnswer: '/api/fishball/questions/answer',
 })
-const PACKAGE = Object.freeze({ connector: 'fishball-connector', instance: 'fishball-instance' })
+const PACKAGE = Object.freeze({ connector: 'fishball-connector', instance: 'fishball-instance', embed: 'fishball-embed-ui' })
+/** R-EMBED: the moved connector UI inside the installed embed-UI package. */
+const EMBED_CONNECTOR_CLIENT = Object.freeze(['src', 'client', 'client.connector.js'])
 const installed = (name) => path.join(home, 'profiles', CFG.profile, 'node_modules', name)
 /**
  * Where a session's question is answered, as the model reads it. Since a6e0841 (N9-a port) the words sit
@@ -63,7 +68,7 @@ const installed = (name) => path.join(home, 'profiles', CFG.profile, 'node_modul
 const answerPlace = async () => (await import(path.join(installed(PACKAGE.connector), 'contract', 'index.js'))).ANSWER_PLACE
 /** A shipped source file reads its answer place from the contract (no private copy of the words). */
 const readsContractPlace = (src) => /^const IN_SESSION = ANSWER_PLACE\.sessionQuestion$/m.test(src)
-const skip = !ENV.connectorTgz || !ENV.instanceTgz || !ENV.dsh ? 'set FBTEST_CONNECTOR_TGZ, FBTEST_INSTANCE_TGZ and FBTEST_DSH_BIN to run' : false
+const skip = !ENV.connectorTgz || !ENV.instanceTgz || !ENV.embedTgz || !ENV.dsh ? 'set FBTEST_CONNECTOR_TGZ, FBTEST_INSTANCE_TGZ, FBTEST_EMBED_UI_TGZ and FBTEST_DSH_BIN to run' : false
 
 let home, proc, cookie, origin, composed
 
@@ -86,7 +91,7 @@ before(async () => {
   fs.writeFileSync(path.join(profileDir, 'pnpm-workspace.yaml'), 'packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n')
   // Connector first, then instance: the instance imports fishball-connector/contract and resolves
   // it as a sibling in this one profile (docs/package-layout.md §5, "Packing").
-  for (const tgz of [ENV.connectorTgz, ENV.instanceTgz]) {
+  for (const tgz of [ENV.connectorTgz, ENV.instanceTgz, ENV.embedTgz]) {
     const add = spawnSync(ENV.dsh, ['plugin', '--profile', CFG.profile, 'add', tgz, '--ignore-scripts'],
       { env: { ...process.env, DSH_HOME: home }, encoding: 'utf8' })
     assert.equal(add.status, 0, `dsh plugin add ${path.basename(tgz)} failed\n${add.stderr}`)
@@ -206,7 +211,7 @@ test('INST-11 the removed pile question-answer path stays absent, and the page n
   const res = await req(ROUTE.questionsAnswer, { method: 'POST', headers: { ...sameOrigin, 'content-type': 'application/json' }, body: '{}' })
   assert.equal(res.status, 404)
   // The page's client module is the installed client.js; a leftover call would 404 in the browser.
-  const client = fs.readFileSync(path.join(installed(PACKAGE.connector), 'client.js'), 'utf8')
+  const client = fs.readFileSync(path.join(installed(PACKAGE.embed), ...EMBED_CONNECTOR_CLIENT), 'utf8')
   assert.ok(!client.includes(ROUTE.questionsAnswer.slice(1)), 'client.js still names the removed route')
 })
 
@@ -227,7 +232,7 @@ test('INST-12 notify_when_finished rides only start/message, and question wordin
   assert.ok(!accepts(VALIDATORS.response[OPERATION.sessionMessage], { status: 'delivered', watchId: 'w', watchError: 'limit-reached' }), 'both admitted')
   assert.ok(!accepts(VALIDATORS.response[OPERATION.sessionRedirect], { status: 'delivered', watchId: 'w' }), 'redirect result admits a watch')
   // N6: the settings hints (en + zh) and the child's question texts no longer send the user to the pile.
-  const client = fs.readFileSync(path.join(connector, 'client.js'), 'utf8')
+  const client = fs.readFileSync(path.join(installed(PACKAGE.embed), ...EMBED_CONNECTOR_CLIENT), 'utf8')
   for (const gone of ['otherwise the question comes to your pile', 'Every question comes to your pile', '否则问题会进入你的待处理区', '每个问题都进入你的待处理区']) {
     assert.ok(!client.includes(gone), `old hint still shipped: ${gone}`)
   }

@@ -51,8 +51,6 @@ const NAV = Object.freeze({
   connectorName: 'fishball-connector',
   stageSkip: Object.freeze(['node_modules', 'test']),
   stageDir: 'fishball-instance-stage',
-  instanceClient: 'client.js',
-  settingsChunk: Object.freeze(['src', 'child-settings', 'client.instance.js']),
   rowModule: (row) => ['child-web', row, 'index.js'],
   homeLabel: 'child-boot-nav',
   urlLine: /dsh web: (http\S+)/,
@@ -108,7 +106,7 @@ function stageInstance(home) {
   const source = path.join(NAV.pluginRoot, ...NAV.instancePackage)
   const stage = path.join(home, NAV.stageDir)
   fs.cpSync(source, stage, { recursive: true, filter: (from) => !NAV.stageSkip.includes(path.relative(source, from).split(path.sep)[0]) })
-  fs.copyFileSync(path.join(source, NAV.instanceClient), path.join(stage, ...NAV.settingsChunk))
+  // R-EMBED (4): the instance ships its status line in src/child-settings/ itself; no client copy.
   fs.mkdirSync(path.join(stage, 'node_modules'), { recursive: true })
   fs.symlinkSync(path.join(NAV.pluginRoot, ...NAV.connectorPackage), path.join(stage, 'node_modules', NAV.connectorName))
   return stage
