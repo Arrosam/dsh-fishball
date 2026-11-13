@@ -47,8 +47,15 @@ export const RP_CHECK = freezeData({
     platform: 'web',
     clientExport: './client',
     managerInject: '@deepseek-ai/dsh-client-ui-plugin-manager',
-    overlayNameTail: path.join('child-web', 'fishball-recommend-plugins', 'index.js'),
-    snapshotFiles: [path.join('child-web', 'fishball-recommend-plugins', 'index.js'), path.join('child-web', 'fishball-recommend-plugins', 'client.js'), path.join('child-web', 'fishball-recommend-plugins', 'package.json'), path.join('src', 'recommended.js')],
+    /**
+     * V3 design §1.2 / §9.1 (task R-CORE (2)): the tab is part of fishball-core's `fishball-ui`
+     * component (`ui/`), not the instance's `child-web/`; the snapshot carries core's copy under
+     * `fishball-core/`. Paths below are relative to packages/core and to that snapshot directory.
+     */
+    owner: 'ui',
+    snapshotDir: 'fishball-core',
+    overlayNameTail: path.join('fishball-core', 'ui', 'fishball-recommend-plugins', 'index.js'),
+    snapshotFiles: [path.join('ui', 'fishball-recommend-plugins', 'index.js'), path.join('ui', 'fishball-recommend-plugins', 'client.js'), path.join('ui', 'fishball-recommend-plugins', 'package.json'), path.join('src', 'recommended.js')],
     /** Superseded standalone-package proposal (§11.9): must not exist as its own package. */
     standaloneDir: path.join('packages', 'recommend-plugins'),
   },
@@ -503,8 +510,8 @@ export const CHECKS = Object.freeze({
     assert.ok(!existsSync(path.join(REPO, RP_CHECK.plugin.standaloneDir)), 'no standalone recommend-plugins package')
     const root = JSON.parse(readFileSync(path.join(REPO, 'package.json'), 'utf8'))
     assert.ok(!root.workspaces.some((w) => w.includes('recommend')), 'not a separate workspace')
-    const instance = JSON.parse(readFileSync(path.join(BODY_SOUL.instance, 'package.json'), 'utf8'))
-    assert.ok(instance.files.some((f) => f.replace(/\/$/, '') === 'child-web'), 'shipped inside fishball-instance (child-web/)')
+    const core = JSON.parse(readFileSync(path.join(BODY_SOUL.core, 'package.json'), 'utf8'))
+    assert.ok(core.files.some((f) => f.replace(/\/$/, '') === RP_CHECK.plugin.owner), 'shipped inside fishball-core (its fishball-ui component, ui/)')
     assertNoNeedles([...sourceFiles(RP_CHECK.mainSources.connectorDir), RP_CHECK.mainSources.instanceMainClient])
 
     linkContractForSourceRun()
@@ -515,8 +522,9 @@ export const CHECKS = Object.freeze({
     const childModule = await copyChildCode(paths, record)
     const snapshot = path.dirname(childModule)
     for (const rel of RP_CHECK.plugin.snapshotFiles) {
-      assert.ok(statSync(path.join(snapshot, rel)).isFile(), 'snapshot carries ' + rel)
-      assert.deepEqual(readFileSync(path.join(snapshot, rel)), readFileSync(path.join(BODY_SOUL.instance, rel)), rel + ' copied unchanged')
+      const copied = path.join(snapshot, RP_CHECK.plugin.snapshotDir, rel)
+      assert.ok(statSync(copied).isFile(), 'snapshot carries ' + rel)
+      assert.deepEqual(readFileSync(copied), readFileSync(path.join(BODY_SOUL.core, rel)), rel + ' copied unchanged')
     }
     const rows = insertedRows(launchOverlay(paths, record, childModule, {}, {}, overlayEntries()))
     const ours = rows.filter((r) => r.id === RP_CHECK.plugin.name)
