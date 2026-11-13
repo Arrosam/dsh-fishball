@@ -8,7 +8,9 @@
  * - [spec]     decided per MCP 2026-07-28 and the RFCs it cites (requirements 1.18);
  * - [req]      the value is in the requirements;
  * - [design]   the value is in the design, which a requirement defers to;
- * - PROPOSED   no requirement fixes it: frozen as written unless the user changes it at review.
+ * - PROPOSED   no requirement fixes it: frozen as written unless the user changes it at review;
+ * - DECIDED    the user decided the value at review (relayed by Fishball); #n is its row in
+ *              README.md "User decisions", the one record of the decisions of K1, K2 and K3.
  *
  * Units are part of each name. Values with different meanings keep separate names even when they
  * coincide. Every RegExp is frozen and has no `g` flag, so importers share no `lastIndex` state.
@@ -16,7 +18,7 @@
 import { CALL_CODE, CONTRIBUTED_EVENT, NAME_GRAMMAR, SHARED_CODES, TOOLS_API } from '../tools/constants.js'
 // The V2 domain's operation codes keep their one owner, `./contract`, until C-WIRE retires it;
 // C-WIRE then moves these values here unchanged (a move, not a K1 amendment).
-import { ERROR as V2_ERROR } from '../contract/contract.js'
+import { ERROR as V2_ERROR, LIMITS as V2_LIMITS } from '../contract/contract.js'
 
 // K2's frozen SHARED_CODES, by its declared order (tools/README.md "Codes"), so each word keeps
 // K2 as its one owner. The order is part of K2's freeze: reordering it is a K2 amendment, and
@@ -24,7 +26,6 @@ import { ERROR as V2_ERROR } from '../contract/contract.js'
 const [, forbidden, unknownSession, expired, conflict, unavailable, unsupportedOperation] = SHARED_CODES
 
 const KIB = 1024
-const MIB = KIB * KIB
 const SECOND_MS = 1000
 const MINUTE_MS = 60 * SECOND_MS
 const HOUR_MS = 60 * MINUTE_MS
@@ -116,7 +117,7 @@ export const OAUTH_ERROR = Object.freeze({
   serverError: 'server_error',
   // RFC 6749 §4.1.2.1 defines this for the authorization response only; RFC 6749 §5.2 lists no
   // token-endpoint code for "too many requests", so the token endpoint uses it too, with 429
-  // (PROPOSED).
+  // (DECIDED #1: kept).
   temporarilyUnavailable: 'temporarily_unavailable',
   invalidToken: 'invalid_token',
   insufficientScope: 'insufficient_scope',
@@ -255,37 +256,58 @@ export const LIFETIME = Object.freeze({
   // [req] R-OA-16 (4a) (K): a spent refresh token presented again strictly before 10 s gets the
   // identical successor; at 10 s and later it is reuse (AUTH-BVA-08).
   refreshGraceMs: 10 * SECOND_MS,
-  // PROPOSED: R-OA-16 (5) asks for a maximum chain lifetime. 30 days from the code redemption; a
-  // refresh after it is `invalid_grant` and the browser client must be authorized again.
-  refreshChainMaxMs: 30 * DAY_MS,
+  // DECIDED (#18): R-OA-16 (5) asks for a maximum chain lifetime: 365 days from the code
+  // redemption. A refresh at or after it is `invalid_grant`. The owner then renews the chain on the same
+  // entry, keeping its pair (R-OA-16 (7), R-OA-12 (2)): re-entering the bound token on the
+  // approval page, from the same client id and with the bound id, mints a new code instead of
+  // answering `already-paired`.
+  refreshChainMaxMs: 365 * DAY_MS,
 })
 
 /**
- * Rate and failure limits (R-TOK-06, R-OA-17, design §5.6). Counted per client: the key is the
- * remote address plus the OAuth `client_id` the request names (the fishball id at the token
- * endpoint, the CIMD URL on the approval page; an MCP bearer has none, so its key is the address
- * alone). PROPOSED key: on loopback every client shares one address, and an address-only key
- * would let one revoked agent's retries lock the hosted Fishball out. No token material is in a key. PROPOSED: no requirement fixes the numbers; each allows the
- * stock client's 2 token requests per failed call and its 3 requests per hourly re-discovery
- * (S7 §4.4) many times over.
- * - failures: every refused credential counts: a wrong client secret, a wrong token typed on the
- *   approval page, and an invalid bearer at the MCP endpoint (AUTH-UC-07). An empty page field is
- *   "enter a token" and does not count (PROPOSED, the spike's behaviour).
- * - tokenRequests: every token-endpoint request, of any grant (R-OA-17).
- * Over a limit: HTTP 429 with `Retry-After` (whole seconds until the window admits one more) and,
- * at the token endpoint, `{error: "temporarily_unavailable"}`; nothing says which tokens or ids
- * exist. While limited, even a valid credential is refused (S7b P2).
+ * Request-rate limits (R-TOK-06, R-OA-17, design §5.6), counted per (remote address, OAuth
+ * `client_id`), the key FAILURE_LIMIT.keyParts names. PROPOSED numbers: they allow the stock client's 2 token requests per failed
+ * call and its 3 requests per hourly re-discovery (S7 §4.4) many times over.
+ * - tokenRequestsPerWindow: every token-endpoint request, of any grant (R-OA-17).
+ * Over a limit, as over FAILURE_LIMIT: HTTP 429 with `Retry-After` (whole seconds until the window
+ * admits one more) and, at the token endpoint, `{error: "temporarily_unavailable"}`; nothing says
+ * which tokens or ids exist.
  */
 export const RATE_LIMITS = Object.freeze({
   windowMs: MINUTE_MS,
-  keyParts: Object.freeze(['remoteAddress', 'clientId']),
-  failuresPerWindow: 10,
-  // A second, address-wide failure ceiling (PROPOSED), so rotating `client_id` from one address
-  // buys no extra guesses beyond it. Loopback clients share it too, so it is set well above one
-  // agent's normal failures.
-  failuresPerAddressPerWindow: 50,
   tokenRequestsPerWindow: 30,
   retryAfterHeader: 'retry-after',
+})
+
+/**
+ * The one failure limit (task K1a; R-OA-17, R-TOK-06, design §5.6), shared by the token endpoint,
+ * the approval page and the MCP endpoint's bearer check through C-OAUTH's `FailureLimiter`
+ * (index.d.ts). The grouping into one constant and one limiter is PROPOSED (K1a, pending the user's
+ * review); the values are the user's (#19, #21 DECIDED: kept as they were, no relaxing).
+ * - Counted: every refused credential: a wrong client secret, a wrong token typed on the approval
+ *   page, and an invalid bearer at the MCP endpoint (AUTH-UC-07). An empty page field is
+ *   "enter a token" and does not count (PROPOSED, the spike's behaviour). A request refused because
+ *   the key is already limited is not counted again (S7b's limiter).
+ * - Key (#19 DECIDED): the remote address plus the OAuth `client_id` the request names (the
+ *   fishball id at the token endpoint, the CIMD URL on the approval page); an MCP bearer names
+ *   none, so its key is the address alone. On loopback every client shares one address, and an
+ *   address-only key for every client would let one revoked agent's retries lock the hosted
+ *   Fishball out. No token material is in a key.
+ * - Limited (PROPOSED; S7b's `>=` rule, over S7b's one address-only key): a key with `perKeyPerWindow` or more counted failures within
+ *   the last `windowMs`, or an address with `perAddressPerWindow` or more over all its keys.
+ *   While limited, even a valid credential is refused (S7b P2), with RATE_LIMITS' 429 answer.
+ */
+export const FAILURE_LIMIT = Object.freeze({
+  // Its own window: a failure window and a request-rate window mean different things, even
+  // though both are one minute today.
+  windowMs: MINUTE_MS,
+  keyParts: Object.freeze(['remoteAddress', 'clientId']),
+  // #21 DECIDED: 10 per key per minute.
+  perKeyPerWindow: 10,
+  // An address-wide ceiling (PROPOSED), so rotating `client_id` from one address buys no extra
+  // guesses beyond it. Loopback clients share it too, so it is set well above one agent's
+  // normal failures.
+  perAddressPerWindow: 50,
 })
 
 /**
@@ -296,15 +318,19 @@ export const RATE_LIMITS = Object.freeze({
  * - listenStreamsPerPrincipal: open listen streams of one principal; one more is 429.
  * - requestsPerMinute / requestBurst: a token bucket per principal; over it is 429.
  * A limit refusal is a structured JSON-RPC error body (code `jsonRpcCode`, message the refusal
- * word below) with id `null`, never prose only; a 429 carries `Retry-After`.
+ * word below) with id `null` (JSON-RPC 2.0 §5: the body was never parsed), never prose only; a
+ * 429 carries `Retry-After`. `jsonRpcCode` is DECIDED (#4): -31000, one code for both refusals
+ * (the message tells them apart), because MCP 2026-07-28 basic § Error Codes makes -32000…-32019 a
+ * legacy range new implementations SHOULD NOT use and asks for codes outside the JSON-RPC
+ * reserved range -32768…-32000.
  */
 export const ENDPOINT_LIMITS = Object.freeze({
-  bodyBytes: 8 * MIB,
+  bodyBytes: V2_LIMITS.attachmentEnvelopeBytes,
   inFlightPerPrincipal: 32,
   listenStreamsPerPrincipal: 8,
   requestsPerMinute: 600,
   requestBurst: 120,
-  jsonRpcCode: -32000,
+  jsonRpcCode: -31000,
 })
 
 /** HTTP-level refusal words of the connector's own routes (design §3.1). */
@@ -322,7 +348,7 @@ export const HTTP_REFUSAL = Object.freeze({
  * host over `https` (R-REM-05 (3)); no forwarded-scheme header is ever read.
  * Origin: [design §3.1] the allowlist of DSH's listener routes is empty, so any present `Origin`
  * (including `null`) is 403; the approval form accepts only its own page's origin (R-OA-17).
- * There is no Origin setting in V3 (PROPOSED).
+ * There is no Origin setting in V3 (DECIDED #60: kept).
  */
 export const HOSTS = Object.freeze({
   loopbackNames: Object.freeze(['localhost', '127.0.0.1', '[::1]']),
@@ -448,8 +474,8 @@ export const DECISION_KIND_OF = Object.freeze({
 /**
  * The mailbox's capacity rule (R-CON-09, R-EXT-18, design §3.4, V2 contract 1.2 §9). Every
  * pending event counts toward the recipient's `maxQueuedInputs`: a connector setting (V2's, kept,
- * design §10) whose default K1 freezes at 200 (design §3.4; V2 `src/config.js` has the same value,
- * which C-WIRE's settings schema takes from here),
+ * design §10) whose default K1 freezes at 200 (design §3.4); the connector's settings schema
+ * (`src/config.js`) takes its default from here,
  * but only these types are refused `queue-full` past it. PROPOSED split, from the rules it must
  * keep: offers always reach their manager's mailbox (R-CON-09 "always"); a `settlement` or
  * `retirement` must follow the event it ends, or a client would hold a dead offer; `handover` /
@@ -468,8 +494,8 @@ export const QUEUE = Object.freeze({
  *   `limit-exceeded` (V2 contract §8: a value outside a limit is `limit-exceeded`), never clamped.
  * - A pending event never expires (R-CON-03, R-CON-05).
  * - disabledRetentionMs: [req] events of a disabled entry are kept 30 days, then dropped as on delete.
- * - ackedReceiptMs: PROPOSED. An acked event's receipt is remembered this long, so a repeated ack
- *   is a no-op success (EVT-ST-01 row 8) rather than `unknown-event`.
+ * - ackedReceiptMs: DECIDED (#36: kept at 1 day). An acked event's receipt is remembered this
+ *   long, so a repeated ack is a no-op success (EVT-ST-01 row 8) rather than `unknown-event`.
  */
 export const MAILBOX = Object.freeze({
   pageDefault: 50,
@@ -575,9 +601,9 @@ export const REFUSAL = Object.freeze({
   idTaken: 'id-taken',
   nameInvalid: 'name-invalid',
   nameTaken: 'name-taken',
-  // inbox_ack (PROPOSED): a receipt naming no event of the caller's mailbox (never "it belongs to
-  // another pair", R-TOK-00), or a digest that differs from the event's. All or nothing: one bad
-  // receipt acks nothing.
+  // inbox_ack (the codes DECIDED #5, #6: kept): a receipt naming no event of the caller's mailbox (never "it
+  // belongs to another pair", R-TOK-00), or a digest that differs from the event's. All or nothing
+  // (DECIDED #61: kept): one bad receipt acks nothing.
   unknownEvent: 'unknown-event',
   digestMismatch: 'digest-mismatch',
 })
@@ -600,4 +626,9 @@ export const NOTICE = Object.freeze({ codeGrammar: NAME_GRAMMAR.code, codes: Obj
  *   and never computes it;
  * - cursors, event ids, entry keys and principal keys are opaque non-empty strings.
  */
-export const WIRE = Object.freeze({ digestHexChars: 64, digestPattern: Object.freeze(/^[0-9a-f]{64}$/) })
+const DIGEST_HEX_CHARS = 64
+export const WIRE = Object.freeze({
+  digestHexChars: DIGEST_HEX_CHARS,
+  // Built from digestHexChars, so the length is written once.
+  digestPattern: Object.freeze(new RegExp('^[0-9a-f]{' + DIGEST_HEX_CHARS + '}$')),
+})
