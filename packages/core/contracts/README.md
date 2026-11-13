@@ -64,5 +64,5 @@ These are the R-CORE point unchanged, with one rule added for `unmount`:
   - `fishball-hosted-settings` is never named.
 - **Reorder:** `moved`, `unchanged` or `failed` (PROPOSED), once per DSH. Core never moves itself
   back.
-- **Leftover sessions** are archived (`workspaceController.archiveSession`). That is F-GUARDS
-  behaviour, with no type here.
+- **Leftover sessions** are archived (`workspaceController.archiveSession`). That is X-MIG's
+  behaviour (PLAT-UC-05, R-MIG-01), with no type here.

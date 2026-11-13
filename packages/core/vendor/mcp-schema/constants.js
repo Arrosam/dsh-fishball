@@ -95,6 +95,16 @@ export const GRANT = Object.freeze({
   authorizationCode: 'authorization_code',
   refreshToken: 'refresh_token',
 })
+/**
+ * The token endpoint's `grant_type` dispatch (task K1b; R-OA-02, RFC 6749 §5.2). C-OAUTH owns the
+ * endpoint, the dispatch, `unsupported_grant_type`, the shared FailureLimiter and the `builtIn`
+ * handlers; every other grant of OAUTH_METADATA's `grant_types_supported` (`authorization_code`,
+ * `refresh_token`) is a C-OAUTH-WEB `GrantHandler` that C-WIRE registers (index.d.ts).
+ */
+export const GRANT_DISPATCH = Object.freeze({
+  formField: 'grant_type',
+  builtIn: Object.freeze([GRANT.clientCredentials]),
+})
 export const CLIENT_AUTH = Object.freeze({ basic: 'client_secret_basic', post: 'client_secret_post', none: 'none' })
 export const RESPONSE_TYPE = Object.freeze({ code: 'code' })
 export const PKCE = Object.freeze({ method: 'S256' })
@@ -317,6 +327,9 @@ export const FAILURE_LIMIT = Object.freeze({
  * - inFlightPerPrincipal: requests of one principal being processed at once; one more is 429.
  * - listenStreamsPerPrincipal: open listen streams of one principal; one more is 429.
  * - requestsPerMinute / requestBurst: a token bucket per principal; over it is 429.
+ * "Per principal" (the names are K1's and stay) is counted per token entry (`Caller.entryKey`; the user's decision, 2026-11-14,
+ * K1b), so a pair-only caller is limited too. C-HTTP applies these through `RequestGate.admit`
+ * (REQUEST_GATE), after the bearer check.
  * A limit refusal is a structured JSON-RPC error body (code `jsonRpcCode`, message the refusal
  * word below) with id `null` (JSON-RPC 2.0 §5: the body was never parsed), never prose only; a
  * 429 carries `Retry-After`. `jsonRpcCode` is DECIDED (#4): -31000, one code for both refusals
@@ -331,7 +344,12 @@ export const ENDPOINT_LIMITS = Object.freeze({
   requestsPerMinute: 600,
   requestBurst: 120,
   jsonRpcCode: -31000,
+  // JSON-RPC 2.0 §4: the `jsonrpc` member of the limit-refusal body.
+  jsonRpcVersion: '2.0',
 })
+
+/** The HTTP methods the connector's routes serve (design §3.1 step 1, §5.5 approval listener table). */
+export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
 
 /** HTTP-level refusal words of the connector's own routes (design §3.1). */
 export const HTTP_REFUSAL = Object.freeze({
@@ -355,6 +373,63 @@ export const HOSTS = Object.freeze({
   loopbackScheme: 'http:',
   remoteScheme: 'https:',
   forwardedHeadersIgnored: Object.freeze(['forwarded', 'x-forwarded-proto', 'x-forwarded-host']),
+})
+
+/** The three request surfaces C-HTTP's one `RequestGate` serves (index.d.ts; task K1b). */
+export const GATE_SURFACE = Object.freeze({ mcp: 'mcp', token: 'token', approval: 'approval' })
+
+/** How a surface treats a present `Origin` (HOSTS): `refuse-any` on DSH's listener, the page's own origin on the approval listener. */
+export const ORIGIN_RULE = Object.freeze({ refuseAny: 'refuse-any', ownOnly: 'own-only' })
+
+/**
+ * The request gate (task K1b; design §3.1, §5.5; R-REM-02/03, R-SEC-03, R-OA-20). C-HTTP owns the
+ * only `RequestGate` implementation; C-OAUTH, C-OAUTH-WEB and C-HTTP's MCP route each call it.
+ * - Built by C-WIRE with the listener facts (DSH's `webServer.host`, `protocol`, `--trusted-host`;
+ *   the approval listener binds the same host on its own port, the user's decision 2026-11-14) and
+ *   an injected clock (index.d.ts GateListenerFacts).
+ * - `check` (before authentication, every surface) refuses in this fixed order, each step only
+ *   after every earlier one passed: 405 (the path's methods; `Allow` lists them, no body), 403
+ *   (`Host` not allowed, or an `Origin` the surface's ORIGIN_RULE refuses; no body), 503 (a
+ *   non-loopback listener over plain http; body `{error: HTTP_REFUSAL.insecureListener}`). The
+ *   empty 405/403 bodies and the 503 body shape are the user's decision (2026-11-14, K1b).
+ * - `admit` (after the bearer check, `mcp` only; the user's decision 2026-11-14, K1b) refuses 413
+ *   before 429, with ENDPOINT_LIMITS' JSON-RPC body. The token endpoint keeps C-OAUTH's own
+ *   RATE_LIMITS and FAILURE_LIMIT; the approval page has no `admit`.
+ * - `routes`: each surface's paths and their methods. A wrong method on a listed path is 405
+ *   (S7 T7 for the token endpoint; the approval page's two paths by the user's decision
+ *   2026-11-14, K1b). A path not listed passes the 405 step only: the 403 and 503 steps still
+ *   apply, and its route answers 404 once `check` passes.
+ *   The two metadata documents are C-OAUTH's (v3-tasks.md C-OAUTH), so they are on `token`.
+ */
+export const REQUEST_GATE = Object.freeze({
+  checkOrder: Object.freeze([HTTP_STATUS.methodNotAllowed, HTTP_STATUS.forbidden, HTTP_STATUS.serviceUnavailable]),
+  admitOrder: Object.freeze([HTTP_STATUS.payloadTooLarge, HTTP_STATUS.tooManyRequests]),
+  admitSurfaces: Object.freeze([GATE_SURFACE.mcp]),
+  routes: Object.freeze({
+    [GATE_SURFACE.mcp]: Object.freeze({ [PATHS.mcp]: Object.freeze([HTTP_METHOD.post]) }),
+    [GATE_SURFACE.token]: Object.freeze({
+      [PATHS.token]: Object.freeze([HTTP_METHOD.post]),
+      [PATHS.protectedResourcePrefix + PATHS.mcp]: Object.freeze([HTTP_METHOD.get]),
+      [PATHS.authorizationServerPrefix + PATHS.issuer]: Object.freeze([HTTP_METHOD.get]),
+    }),
+    [GATE_SURFACE.approval]: Object.freeze({
+      [PATHS.authorize]: Object.freeze([HTTP_METHOD.get]),
+      [PATHS.decision]: Object.freeze([HTTP_METHOD.post]),
+    }),
+  }),
+  originRule: Object.freeze({
+    [GATE_SURFACE.mcp]: ORIGIN_RULE.refuseAny,
+    [GATE_SURFACE.token]: ORIGIN_RULE.refuseAny,
+    [GATE_SURFACE.approval]: ORIGIN_RULE.ownOnly,
+  }),
+  // Header names are lower case, as Node delivers request headers.
+  headers: Object.freeze({ host: 'host', origin: 'origin', allow: 'allow' }),
+  // `Allow` joins the methods with this (RFC 9110 §10.2.1: a comma-separated list).
+  allowSeparator: ', ',
+  // `Retry-After` of the in-flight 429 (PROPOSED, the user's choice 2026-11-14): one second, the
+  // smallest whole-second value, because a slot frees as soon as any request ends. The token
+  // bucket's 429 derives its own value from ENDPOINT_LIMITS.requestsPerMinute.
+  inFlightRetryAfterMs: SECOND_MS,
 })
 
 /**
