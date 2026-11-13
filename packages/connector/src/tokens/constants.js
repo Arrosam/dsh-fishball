@@ -90,6 +90,11 @@ export const SYNC_REASON = Object.freeze({ start: 'start', settings: 'settings',
  */
 export const DUPLICATE_POLICY = Object.freeze({ restore: 'restore', unusable: 'unusable' })
 export const UNSET_POLICY = Object.freeze({ regenerate: 'regenerate', awaitSave: 'awaitSave' })
+/**
+ * PROPOSED (2026-11-14): `restore` and `regenerate` (option A of each), awaiting the user's answer
+ * to Q4 / Q5. If the user picks B, a follow-up commit changes this switch, and for Q4 B also adds
+ * a K1 `ENTRY_STATUS` word (a K1 amendment) that `list()` shows for a duplicate entry.
+ */
 export const PENDING_DECISION = Object.freeze({
   valueDuplicate: DUPLICATE_POLICY.restore,
   afterUnset: UNSET_POLICY.regenerate,
