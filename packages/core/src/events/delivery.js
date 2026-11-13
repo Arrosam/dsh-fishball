@@ -8,41 +8,42 @@
  * pending input never wakes by itself. Inside `runMaintenance` the release claims the message on
  * the same JS stack, so the session log never holds "inserted, not claimed".
  *
- * Whether an accepted event reached the agent is DERIVED from the durable session log by the
- * event's stable message id, never from a "woken" bit written before or after the wake (S2 §2.2,
- * MCP-S2 §4.2: a bit is wrong on one side of the crash either way).
+ * Whether an event was delivered is decided by core's own ledger alone (the user's decision
+ * 2026-11-14 4.A): core never reads the Fishball session's log, so a cleared, compacted or
+ * replaced session cannot make it wake Fishball twice. Core learns the admission live, from the
+ * agent's own session events, and records `admitted` in its ledger. A `session/flush` listener
+ * makes DSH's checkpoint before any model dispatch wait for that ledger write (the checkpoint
+ * policy flushes before every model request, on both SDKs), so a crash after the model saw the
+ * event always finds `admitted` at restart. Remaining window, documented: a crash after the
+ * admission was written to the session log but before the ledger write was durable, and before
+ * any model dispatch, delivers the event once more after restart; the first admission then reached
+ * no model.
  */
 import { freezeMessage } from '@deepseek-ai/dsh-llm'
-import { DELIVERY, HOST, LOG, MESSAGE, REASON, STATE } from './constants.js'
+import { HOST, LOG, MESSAGE, PRESENT_RETRY, REASON, STATE, TEXT } from './constants.js'
 import { codeOf } from './diagnostics.js'
 import { messageIdOf } from './ledger.js'
 
+const REDELIVER = Symbol('redeliver')
+
 /**
- * Where one message id stands in a session log (S2 `classify`). Removals carry only a position,
- * so the pending lists are rebuilt from the ordered `agent/inbox/spliced` events.
- * @returns {{state: string, claimTurnEnd: object|undefined}} `claimTurnEnd` is the `turn/end`
- *   reason of the turn that claimed it (`{kind}`, and `{kind: 'aborted', reason: {kind}}` for a
- *   cancellation), or undefined while that turn has not ended.
+ * What the end of the turn that claimed an event, before admitting it, means (the user's decision
+ * 2026-11-14 1.B; S2-Q3 A). Such a claim reached no model (S2 §2.1 item 5).
+ * - owner teardown (`aborted` by `disposed`, which is not the user's decision): deliver again;
+ * - a user Stop: discard (S2-Q3 A);
+ * - an error, a blocked step, a stop by a parent or a hook, or any other end: discard.
+ * @returns {string|symbol} a REASON to discard with, or REDELIVER.
  */
-export function classify(events, messageId) {
-  const lists = Object.fromEntries(HOST.inboxTargets.map((target) => [target, []]))
-  let last = DELIVERY.absent
-  let admitted = false
-  let claimTurnEnd
-  let awaitingEnd = false
-  for (const event of events) {
-    if (awaitingEnd && event.type === HOST.turnEnd) { claimTurnEnd = event.data?.reason; awaitingEnd = false }
-    if (event.type === HOST.userMessage && event.data?.id === messageId) admitted = true
-    if (event.type !== HOST.inboxSpliced) continue
-    const { target, start, removedCount = 0, inserted = [], outcome } = event.data
-    const removed = (lists[target] ??= []).splice(start, removedCount, ...inserted)
-    if (inserted.some((item) => item.id === messageId)) last = DELIVERY.pending
-    if (!removed.some((item) => item.id === messageId)) continue
-    if (outcome === HOST.canceled) last = DELIVERY.canceled
-    else { last = DELIVERY.claimed; awaitingEnd = true; claimTurnEnd = undefined }
-  }
-  return { state: admitted ? DELIVERY.admitted : last, claimTurnEnd }
+function claimVerdict(end) {
+  if (end?.kind === HOST.aborted && end.reason?.kind === HOST.causeDisposed) return REDELIVER
+  return end?.kind === HOST.aborted && end.reason?.kind === HOST.causeUser ? REASON.userStopped : REASON.claimTurnEnded
 }
+
+/** The PROPOSED backoff before attempt n + 1 of presenting an event (n is 1-based). */
+const backoffAfter = (attempt) => PRESENT_RETRY.backoffMs * PRESENT_RETRY.backoffFactor ** (attempt - 1)
+
+/** A timer that never keeps the process alive: a held event is delivered again at the next start. */
+const realDelay = (ms) => new Promise((resolve) => { setTimeout(resolve, ms).unref?.() })
 
 /**
  * @param options.ledger - the acceptance ledger (ledger.js).
@@ -52,101 +53,104 @@ export function classify(events, messageId) {
  *   - `present(event): ContentBlock[]` the model-facing content of one event (the X9 pipeline's
  *     framing; owned by the façade/wiring, not by this module).
  * @param options.logger - `{info, warn}` background log; never given payloads.
+ * @param options.delay - `(ms) => Promise<void>`, the wait between presentation attempts.
  */
-/**
- * What a claim without an admission means (S2 §2.1 item 5: the checkpoint flushes the admission
- * before any model dispatch, so such a claim dispatched nothing).
- * - not ended yet: wait;
- * - `interrupted` (a crash) or `aborted` by `disposed` (owner teardown or a graceful stop, which
- *   is not the user's decision): re-deliver;
- * - `aborted` by `user`: the user's Stop wins, discard (S2-Q3 A);
- * - any other end: discard as `claim-turn-ended`, pending a user decision (REASON.claimTurnEnded).
- * @returns {string|symbol|undefined} a REASON to discard with, REDELIVER, or undefined to wait.
- */
-const REDELIVER = Symbol('redeliver')
-const PENDING = Symbol('pending')
-const WAIT = Symbol('wait')
-const DONE = Symbol('done')
-function claimVerdict(end) {
-  if (end === undefined) return undefined
-  if (end.kind === HOST.interrupted || (end.kind === HOST.aborted && end.reason?.kind === HOST.causeDisposed)) return REDELIVER
-  return end.kind === HOST.aborted && end.reason?.kind === HOST.causeUser ? REASON.userStopped : REASON.claimTurnEnded
-}
-
-export function createDelivery({ ledger, fishball, logger }) {
+export function createDelivery({ ledger, fishball, logger, delay = realDelay }) {
   /** eventIds accepted for Fishball, not yet handed to the agent, in arrival order. */
   const queue = []
-  /** eventIds handed to `followup`, waiting for the log to show admission or a discard. */
-  const inflight = new Set()
+  /** messageId → eventId of every event handed to `followup` and not yet admitted or discarded. */
+  const inflight = new Map()
+  /** messageIds claimed by a turn that has not admitted them yet. */
+  const claimed = new Set()
+  /** eventId → failed presentation attempts so far (in memory: a restart starts again). */
+  const failures = new Map()
+  /** eventIds waiting out a presentation backoff; not in `queue` meanwhile. */
+  const backingOff = new Set()
+  /**
+   * eventId → its frozen message, built once and kept until handed over, so a busy agent that
+   * refuses the hand-over never makes core present the same event again.
+   */
+  const prepared = new Map()
+  /** Ledger writes of admissions not yet durable; the flush checkpoint waits for them. */
+  const writes = new Set()
   const watched = new WeakSet()
   let draining = false
+  // A drain asked for while one runs; honoured as soon as that one ends, so no request is lost.
+  let again = false
   let closed = false
-  // Held while recover() reconciles the previous generation, so no new hand-over races it, the
-  // order stays oldest first, and the agent is activated once (review finding 7).
+  // Held while recovery runs, so no new hand-over races it, the order stays oldest first, and the
+  // agent is activated once.
   let recovering = false
 
-  const messageOf = (record) => freezeMessage({
+  const messageOf = (record, content) => freezeMessage({
     id: messageIdOf(record.eventId),
     role: MESSAGE.role,
-    content: fishball.present(record.event),
+    content,
     source: { kind: MESSAGE.sourceKind, eventId: record.eventId, type: record.event.type },
   })
 
-  async function finish(record, state, reason) {
-    const won = await ledger.move(record.eventId, (current) => current.state === STATE.fishball, () => ({ state, reason }))
-    inflight.delete(record.eventId)
-    if (!won) return
-    if (state === STATE.admitted) logger?.info(LOG.admitted, record.eventId, record.event.type)
-    else logger?.info(LOG.discarded, record.eventId, record.event.type, reason)
+  function finish(eventId, state, reason) {
+    const write = ledger.move(eventId, (current) => current.state === STATE.fishball, () => ({ state, reason })).then((won) => {
+      if (!won) return
+      const { type } = ledger.get(eventId).event
+      if (state === STATE.admitted) logger?.info(LOG.admitted, eventId, type)
+      else logger?.info(LOG.discarded, eventId, type, reason)
+    }, (error) => logger?.warn(LOG.deliverFailed, eventId, codeOf(error)))
+    writes.add(write)
+    void write.finally(() => writes.delete(write))
+    return write
+  }
+
+  /** Back to the head of the list, to be handed over again at the next true idle. */
+  function redeliver(messageId) {
+    const eventId = inflight.get(messageId)
+    inflight.delete(messageId)
+    claimed.delete(messageId)
+    queue.unshift(eventId)
+    void drain()
+  }
+
+  /** The end of one in-flight event, observed live (never by reading the log, decision 4.A). */
+  function settleOne(messageId, state, reason) {
+    const eventId = inflight.get(messageId)
+    inflight.delete(messageId)
+    claimed.delete(messageId)
+    void finish(eventId, state, reason)
   }
 
   /**
-   * The session log the classification reads. `snapshotEvents()` is marked deprecated for new
-   * calls on both SDKs, and it is the only synchronous read of the full log both offer; the S2
-   * spike reconciled from the same read. Its use is an open question for the user (review
-   * 2026-11-14); it is confined to this one function so a replacement changes one place.
+   * One appended event of the agent's own session (dsh-session `session/event`): the admission
+   * (`user/message` with our id) ends the event; the end of a turn that claimed it without
+   * admitting it decides it by claimVerdict.
    */
-  const logOf = (agent) => agent.session.snapshotEvents()
-
-  /**
-   * One record against the log. Admission ends it (S2-Q2 A: a later crash never re-wakes); a
-   * removal from the inbox or a user Stop before admission discards it (S2-Q3 A).
-   * @returns {Promise<symbol>} REDELIVER, PENDING, WAIT or DONE.
-   */
-  async function judge(agent, record, events) {
-    const found = classify(events, messageIdOf(record.eventId))
-    if (found.state === DELIVERY.admitted) { await finish(record, STATE.admitted, REASON.handled); return DONE }
-    if (found.state === DELIVERY.canceled) { await finish(record, STATE.discarded, REASON.userStopped); return DONE }
-    if (found.state === DELIVERY.pending) return PENDING
-    if (found.state === DELIVERY.absent) return REDELIVER
-    const verdict = claimVerdict(found.claimTurnEnd)
-    if (verdict === undefined || verdict === REDELIVER) return verdict ?? WAIT
-    await finish(record, STATE.discarded, verdict)
-    return DONE
-  }
-
-  /**
-   * Classify every in-flight event against the agent's log on an idle edge. A claim that will not
-   * be admitted (a teardown) goes back to the head of the list; one still pending waits.
-   */
-  async function settle(agent) {
-    if (inflight.size === 0) return
-    const events = logOf(agent)
-    for (const eventId of [...inflight]) {
-      const record = ledger.get(eventId)
-      const verdict = await judge(agent, record, events)
-      if (verdict === REDELIVER) { inflight.delete(eventId); queue.unshift(eventId) }
+  function observe(event) {
+    if (event.type === HOST.userMessage && inflight.has(event.data?.id)) return settleOne(event.data.id, STATE.admitted, REASON.handled)
+    if (event.type !== HOST.turnEnd) return undefined
+    const verdict = claimVerdict(event.data?.reason)
+    for (const messageId of [...claimed]) {
+      if (verdict === REDELIVER) redeliver(messageId)
+      else settleOne(messageId, STATE.discarded, verdict)
     }
+    return undefined
   }
 
-  /** Follow one agent's idle edges: settle what it admitted, then hand it the next held event. */
+  /**
+   * Follow one agent, all through its public live events (dsh-agent, both SDKs), never its log:
+   * - `agent/inbox/claimed`: a turn took our message (it is admitted or its turn ends next);
+   * - `agent/inbox/discarded`: removed from the inbox before admission, the user's (S2-Q3 A);
+   * - `session/event`: the admission, and the claiming turn's end;
+   * - `session/flush`: DSH's checkpoint before a model request waits for our admission writes;
+   * - `agent/status` idle: the next hand-over.
+   */
   function watch(agent) {
     if (watched.has(agent)) return
     watched.add(agent)
-    agent.ctx.on(HOST.agentStatus, ({ status }) => {
-      if (status !== HOST.idle || closed) return
-      void settle(agent).then(drain, (error) => logger?.warn(LOG.deliverFailed, [...inflight].join(), codeOf(error)))
-    })
+    const mine = (payload) => !closed && payload.agent === agent && inflight.has(payload.message?.id)
+    agent.ctx.on(HOST.inboxClaimed, (payload) => { if (mine(payload)) claimed.add(payload.message.id) })
+    agent.ctx.on(HOST.inboxDiscarded, (payload) => { if (mine(payload)) settleOne(payload.message.id, STATE.discarded, REASON.userStopped) })
+    agent.ctx.on(HOST.sessionEvent, (session, event) => { if (!closed && session === agent.session) observe(event) })
+    agent.ctx.on(HOST.sessionFlush, () => Promise.all([...writes]))
+    agent.ctx.on(HOST.agentStatus, ({ status }) => { if (status === HOST.idle && !closed) void drain() })
   }
 
   /** Run `job` under the agent's true-idle maintenance, or retry once it is idle again. */
@@ -162,14 +166,57 @@ export function createDelivery({ ledger, fishball, logger }) {
   }
 
   /**
+   * The model-facing content of the head event. A presenter that throws is retried after the
+   * PROPOSED backoff without blocking the events behind it; after the last attempt the event is
+   * given up: one log line, and Fishball gets a short notice naming it as its one wake (the user's
+   * decision 2026-11-14 3.A).
+   * @returns {object[]|undefined} the content, or undefined when the event waits for a retry.
+   */
+  function contentOf(record) {
+    try {
+      const content = fishball.present(record.event)
+      failures.delete(record.eventId)
+      return content
+    } catch (error) {
+      const attempt = (failures.get(record.eventId) ?? 0) + 1
+      failures.set(record.eventId, attempt)
+      if (attempt < PRESENT_RETRY.attempts) {
+        logger?.warn(LOG.presentFailed, record.eventId, record.event.type, codeOf(error))
+        backingOff.add(record.eventId)
+        void delay(backoffAfter(attempt)).then(() => {
+          backingOff.delete(record.eventId)
+          if (closed || ledger.get(record.eventId)?.state !== STATE.fishball || queue.includes(record.eventId)) return
+          queue.push(record.eventId)
+          void drain()
+        })
+        return undefined
+      }
+      failures.delete(record.eventId)
+      logger?.warn(LOG.presentGivenUp, record.eventId, record.event.type, REASON.presentGivenUp, codeOf(error))
+      return [{ type: TEXT.blockType, text: TEXT.presentGivenUp(record.eventId, record.event.type) }]
+    }
+  }
+
+  /**
    * Hand the head of the list to the agent when it is truly idle. `runMaintenance` throws
    * synchronously unless nothing else owns the agent (public status also reads idle during someone
    * else's maintenance), so a refusal keeps the event held until the next quiescence. One event per
    * idle edge: each becomes its own next turn, never part of a running one (EVT-DT-03 rule 6).
    */
   async function drain() {
-    if (closed || recovering || draining || queue.length === 0) return
+    // One drain at a time from start to hand-over: two would read the same head and present it
+    // twice (the second presentation round of one event, EVT-ST-02 row 10b).
+    if (draining) { again = true; return }
+    if (closed || recovering || queue.length === 0) return
     draining = true
+    try { await handOverHead() } finally {
+      draining = false
+      if (again) { again = false; void drain() }
+    }
+  }
+
+  /** Hand over the head of the list once; schedules the next drain itself when there is work. */
+  async function handOverHead() {
     let agent
     try {
       agent = await fishball.activate()
@@ -177,89 +224,68 @@ export function createDelivery({ ledger, fishball, logger }) {
       // No retry timer (no requirement gives one): the next intake or idle edge drains again.
       logger?.warn(LOG.deliverFailed, queue[0], codeOf(error))
       return
-    } finally { draining = false }
-    // A close while activating: held events wait for the next owner's recover() rather than
+    }
+    // A close while activating: held events wait for the next owner's recovery rather than
     // entering an agent that is being disposed (S2 §2.2 owner teardown).
     if (closed || queue.length === 0) return
     watch(agent)
     const eventId = queue[0]
-    const record = ledger.get(eventId)
-    let message
-    try {
-      message = messageOf(record)
-    } catch (error) {
-      // An event that cannot be presented must not block every event behind it. It stays in
-      // state `fishball` (never acked away unread), so the next start reconciles it again; what
-      // should finally happen to it is an open user question (review 2026-11-14).
-      queue.shift()
-      logger?.warn(LOG.presentFailed, eventId, record.event.type, codeOf(error))
-      void drain()
-      return
+    if (!prepared.has(eventId)) {
+      const record = ledger.get(eventId)
+      const content = contentOf(record)
+      if (content === undefined) { queue.shift(); again = true; return }
+      prepared.set(eventId, messageOf(record, content))
     }
+    const message = prepared.get(eventId)
     // "Fully idle" is the true-idle claim of runMaintenance. Parked input is not waited for: in an
     // idle agent it never wakes by itself (S2 §2.1 item 3), so waiting would hold the event forever.
-    const task = whenTrulyIdle(agent, async () => agent.followup(message))
+    // A copy left pending by an earlier generation is removed first, so one id is pending once.
+    const task = whenTrulyIdle(agent, async () => { agent.inbox.remove(message.id); agent.followup(message) })
     if (task === undefined) return
     queue.shift()
-    inflight.add(eventId)
+    prepared.delete(eventId)
+    inflight.set(message.id, eventId)
     task.catch((error) => {
-      inflight.delete(eventId)
+      inflight.delete(message.id)
       queue.unshift(eventId)
       logger?.warn(LOG.deliverFailed, eventId, codeOf(error))
     })
-  }
-
-  /**
-   * Startup reconciliation of one accepted-for-Fishball record against the new agent's log (S2
-   * §2.2), before any new intake.
-   * - admitted: done; no second wake, no notice turn (S2-Q2 A).
-   * - claimed, no admission (claimVerdict): a crash or a teardown is delivered again; a user Stop
-   *   is discarded (S2-Q3 A); any other end is discarded pending the user's decision.
-   * - canceled (removed from the inbox): discarded (S2-Q3 A).
-   * - pending (left in DSH's inbox): re-seated under maintenance so its wake latches; if another
-   *   owner holds the agent, the pending input is left to it and settle() follows it.
-   * - absent: delivered.
-   */
-  async function reconcile(agent, record, events) {
-    const verdict = await judge(agent, record, events)
-    if (verdict === REDELIVER) { queue.push(record.eventId); return }
-    if (verdict !== PENDING) { if (verdict === WAIT) inflight.add(record.eventId); return }
-    inflight.add(record.eventId)
-    let message
-    try { message = messageOf(record) } catch (error) { inflight.delete(record.eventId); logger?.warn(LOG.presentFailed, record.eventId, record.event.type, codeOf(error)); return }
-    await whenTrulyIdle(agent, async () => { agent.inbox.remove(message.id); agent.followup(message) })
+    if (queue.length > 0) again = true
   }
 
   return Object.freeze({
     /** A record just accepted for Fishball (state `fishball`); delivered at the next true idle. */
     add(record) {
-      if (closed || queue.includes(record.eventId) || inflight.has(record.eventId)) return
+      if (closed || queue.includes(record.eventId) || backingOff.has(record.eventId) || inflight.has(messageIdOf(record.eventId))) return
       queue.push(record.eventId)
       void drain()
     },
     /**
-     * Reconcile every record still in state `fishball` from before this start, oldest first, then
-     * start delivering. A record already added in this generation (recovery just moved an open
-     * record of a plugin that is off to Fishball) is tracked here already; reconciling it too
-     * would queue it twice and wake Fishball twice.
+     * Startup: every record still in state `fishball` was accepted for Fishball and not admitted,
+     * by the ledger alone (decision 4.A), so it is delivered again once, oldest first. A record
+     * this generation already queued (recovery just moved it here) is not queued twice.
+     * Recovery activates the agent itself. If that fails, recovery fails: the records it queued are
+     * dropped from this run and wait for the next start, with no in-run retry (the user's decision
+     * 2026-11-14 2.B). While recovery holds the list no intake runs, so the list holds only them.
      */
     async recover() {
       recovering = true
       try {
-        const records = ledger.inOrder([STATE.fishball]).filter((record) => !queue.includes(record.eventId) && !inflight.has(record.eventId))
-        if (records.length === 0 || closed) return
-        const agent = await fishball.activate()
-        watch(agent)
-        const events = logOf(agent)
-        for (const record of records) await reconcile(agent, record, events)
-        // Records the interception's recovery moved here were queued first; keep arrival order.
+        for (const record of ledger.inOrder([STATE.fishball])) if (!queue.includes(record.eventId)) queue.push(record.eventId)
+        if (queue.length === 0 || closed) return
+        try {
+          watch(await fishball.activate())
+        } catch (error) {
+          queue.length = 0
+          throw error
+        }
         queue.sort((a, b) => ledger.get(a).sequence - ledger.get(b).sequence)
       } finally {
         recovering = false
         void drain()
       }
     },
-    /** Hold hand-overs while the interception's own recovery moves records here (finding 7). */
+    /** Hold hand-overs while the interception's own recovery moves records here. */
     hold() { recovering = true },
     /** Stop delivering before the agent's owner disposes it (S2: teardown cancels queued input). */
     close() { closed = true },

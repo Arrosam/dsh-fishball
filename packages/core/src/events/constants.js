@@ -90,19 +90,37 @@ export const REASON = Object.freeze({
   commitInterrupted: 'commit-interrupted',
   userStopped: 'user-stopped',
   /**
-   * The turn that claimed the event ended before admitting it in another way than a user Stop, a
-   * crash or an owner teardown (`error`, `blocked`, an `aborted` by `parent` or `hook`). Discarded,
-   * as before: whether it should be re-delivered instead is an open user question (review 2026-11-14).
+   * The turn that claimed the event ended before admitting it in another way than a user Stop or
+   * an owner teardown (`error`, `blocked`, an `aborted` by `parent` or `hook`): discarded (the
+   * user's decision 2026-11-14 1.B).
    */
   claimTurnEnded: 'claim-turn-ended',
+  /** Every attempt to present the event failed; Fishball got a notice instead (decision 3.A). */
+  presentGivenUp: 'present-given-up',
+})
+
+/**
+ * PROPOSED (the user's decision 2026-11-14 3.A, values under review): how often core tries to turn
+ * an event into Fishball's message before it gives up. Attempt n (1-based) that fails, with
+ * n < attempts, is followed by a wait of backoffMs × backoffFactor^(n−1) before attempt n + 1.
+ */
+export const PRESENT_RETRY = Object.freeze({ attempts: 3, backoffMs: 1000, backoffFactor: 2 })
+
+/**
+ * PROPOSED (decision 3.A): the short notice Fishball gets for an event core could not present.
+ * It names the event only; no payload.
+ */
+export const TEXT = Object.freeze({
+  blockType: 'text',
+  presentGivenUp: (eventId, type) => `Fishball notice: event ${eventId} (${type}) could not be shown to you and was given up.`,
 })
 
 /** What `intake` did with one polled event. */
 export const DISPATCH = Object.freeze({ interceptor: 'interceptor', fishball: 'fishball', duplicate: 'duplicate', closed: 'closed' })
 
 /**
- * The message an event becomes in Fishball's session. Its id is derived from the `eventId`, so
- * startup reconciliation can find it in the durable session log without a "woken" bit (S2 §2.2).
+ * The message an event becomes in Fishball's session. Its id is derived from the `eventId`, so the
+ * live admission (`user/message` with that id) is recognised as this event's.
  */
 export const MESSAGE = Object.freeze({
   idPrefix: 'fbe_',
@@ -111,24 +129,28 @@ export const MESSAGE = Object.freeze({
 })
 
 /**
- * DSH host vocabulary read by the delivery list (dsh-agent / dsh-session types, the same on
- * 0.2.1-rc.5 and 0.2.2-rc.1).
+ * DSH host vocabulary the delivery list observes live (dsh-agent / dsh-session types, the same on
+ * 0.2.1-rc.5 and 0.2.2-rc.1). It is read from the agent's own session events as they are appended,
+ * never from the session log (decision 4.A).
  */
 export const HOST = Object.freeze({
   userMessage: 'user/message',
-  inboxSpliced: 'agent/inbox/spliced',
   turnEnd: 'turn/end',
+  /** A turn took a pending message, `{agent, message, turn}`. */
+  inboxClaimed: 'agent/inbox/claimed',
+  /** A pending message was removed from the inbox unrun, `{agent, message}`. */
+  inboxDiscarded: 'agent/inbox/discarded',
   agentStatus: 'agent/status',
+  /** Each appended session event, `(session, event)`, scoped to the agent's context. */
+  sessionEvent: 'session/event',
+  /** The awaited durability checkpoint DSH runs before every model request (checkpoint policy). */
+  sessionFlush: 'session/flush',
   idle: 'idle',
-  /** The closer resume appends to a turn a crash left open. */
-  interrupted: 'interrupted',
   /** `turn/end` of a cancelled turn; its `reason.kind` is the cancel cause. */
   aborted: 'aborted',
   /** Cancel causes (dsh-session `AgentCancelCause`): the user's Stop, and owner teardown. */
   causeUser: 'user',
   causeDisposed: 'disposed',
-  canceled: 'canceled',
-  inboxTargets: Object.freeze(['next-turn', 'next-step']),
   /** Cordis `FiberState.ACTIVE` (a const enum, so not exported at runtime; 4.0.5 and 4.1.0). */
   fiberActive: 2,
   /**
@@ -142,15 +164,6 @@ export const HOST = Object.freeze({
   tracker: Symbol.for('cordis.tracker'),
   trackerOptions: Object.freeze({ property: 'ctx', noShadow: true }),
   disposerLabel: 'fishball-core-events: interception',
-})
-
-/** Where one message id stands in a session log (S2 `classify`). */
-export const DELIVERY = Object.freeze({
-  absent: 'absent',
-  pending: 'pending',
-  claimed: 'claimed',
-  admitted: 'admitted',
-  canceled: 'canceled',
 })
 
 /**
@@ -171,7 +184,8 @@ export const LOG = Object.freeze({
   ackFailed: 'event %s could not be acked (%s)',
   deliverFailed: 'event %s could not be delivered to Fishball yet (%s)',
   pruneFailed: 'acceptance ledger retention failed (%s)',
-  presentFailed: 'event %s (%s) could not be presented to Fishball; held until the next start (%s)',
+  presentFailed: 'event %s (%s) could not be presented to Fishball; retrying (%s)',
+  presentGivenUp: 'event %s (%s) given up (%s): it could not be presented to Fishball (%s)',
   recoverFailed: 'event recovery failed (%s); intake continues',
 })
 
