@@ -14,13 +14,18 @@
  */
 
 /**
- * An event as core hands it to an interceptor: the mailbox entry of design §3.4, unchanged.
+ * An event as core hands it to an interceptor: every field of the mailbox entry (design §3.4,
+ * plus `at`, epoch milliseconds of the commit). K1 freezes the entry; a K1 change to it changes
+ * this type in the same amendment.
  * `type` is one of K1's event types (R-EVS-02) or `contributed:<namespace>.<event>` (K2). Two
  * deliveries of one event carry the same `eventId` (R-EVT-02); an interceptor dedupes by it.
  */
 export interface InterceptedEvent {
   readonly eventId: string
+  readonly mailboxGeneration: string
+  readonly sequence: number
   readonly type: string
+  readonly at: number
   readonly sourceSessionId: string | null
   readonly correlationId: string | null
   readonly offer?: { readonly offerId: string; readonly revision: number; readonly decisionKind: string }
@@ -77,6 +82,9 @@ export interface InterceptControl {
    * interceptor whatever happens to the handler, except that an answer that never reached the
    * connector (`send` rejects, or resolves `{ok: false, code: 'disconnected'}`) falls back to
    * Fishball once. So an answer is committed or fenced, never both (S3 WD-FAIL-RACE).
+   * `commit` itself never rejects: a rejected `send` resolves `{ok: false, code: 'disconnected'}`.
+   * PROPOSED: S3 falls back only for an answer that never reached the connector; a rejected `send`
+   * is treated as one, as the S3 prototype did (its `send` threw only before the request left).
    */
   commit(send: () => Promise<CommitSendResult>): Promise<CommitResult>
 
@@ -105,12 +113,13 @@ export type InterceptHandler = (event: InterceptedEvent, ctl: InterceptControl) 
 
 export interface FishballInstanceEvents {
   /**
-   * Registers an interception and returns its disposer. `priority` is optional, default 0;
-   * dispatch order is the highest `priority` first, then the earliest registration. Disposing is synchronous: from then on
-   * the registration matches nothing, and events in flight to it that are not committing fall back
-   * to Fishball once (EVT-UC-03 E1, R-WD-07). An invalid registration (no `pluginId`, empty
-   * `types`, a non-function `filter` or handler, a priority that is not a finite number) throws a
-   * `TypeError` and registers nothing.
+   * Registers an interception and returns its disposer.
+   * - `priority` is optional, default 0. Dispatch order: the highest `priority` first, then the
+   *   earliest registration.
+   * - Disposing is synchronous: from then on the registration matches nothing, and events in
+   *   flight to it that are not committing fall back to Fishball once (EVT-UC-03 E1, R-WD-07).
+   * - PROPOSED: an invalid registration (no `pluginId`, empty `types`, a non-function `filter` or
+   *   handler, a priority that is not a finite number) throws a `TypeError`, registering nothing.
    */
   intercept(registration: InterceptRegistration, onEvent: InterceptHandler): () => void
 }

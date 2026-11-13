@@ -5,12 +5,16 @@
  * injects it and registers once it exists. Types only.
  *
  * The point is generic: it carries no flag, type or member about where the DSH runs, and the panel
- * works unchanged with no section but its own. Its own sections ("Read Only" at order 100, the
+ * works unchanged with no section but its own. `HTMLElement` needs the DOM library in the reader's
+ * TypeScript settings (`lib: ["dom"]`): the point lives in the browser. Its own sections ("Read Only" at order 100, the
  * native-page links at 200) are registered through it like any other.
  */
 
 /** The service's name, as a plugin injects it. */
 export type SettingsSectionsServiceName = 'fishballSettingsSections'
+
+/** A section's accessible name, read at each render so it follows the locale. */
+export type SectionTitle = () => string
 
 /**
  * One section.
@@ -25,9 +29,6 @@ export type SettingsSectionsServiceName = 'fishballSettingsSections'
  *   section is withdrawn (its registration disposed, which also happens when the registering
  *   plugin is disposed): **at most once per `mount`**, and never for a `mount` that threw.
  */
-/** A section's accessible name, read at each render so it follows the locale. */
-export type SectionTitle = () => string
-
 export interface SettingsSection {
   readonly id: string
   readonly title: SectionTitle
