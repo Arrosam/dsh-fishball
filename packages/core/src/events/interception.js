@@ -225,14 +225,15 @@ export function createInterception({ ledger, registry, delivery, link, logger })
    *   fenced. When the plugin is off the record closes with it. It never moves to Fishball,
    *   because the answer may already be at the connector (R-INT-04: "committed or fenced, never
    *   both").
-   * - fishball: reconciled against the session log by the delivery list.
+   * - fishball: accepted for Fishball and not admitted, by the ledger alone: the delivery list
+   *   delivers it again once (the user's decision 2026-11-14 4.A).
    * Then every durable acceptance still unacked is acked, and expired finished records go.
    */
   function recover() {
     recovering = reconcile().catch((error) => {
       // The barrier always settles, so one failed recovery never blocks every later intake. The
-      // records it did not reach stay in the ledger for the next start (whether recovery should be
-      // retried in-process is an open user question, review 2026-11-14).
+      // records it did not reach stay in the ledger for the next start, with no in-run retry (the
+      // user's decision 2026-11-14 2.B).
       logger?.warn(LOG.recoverFailed, codeOf(error))
     })
     return recovering
@@ -252,11 +253,13 @@ export function createInterception({ ledger, registry, delivery, link, logger })
         else await close({ pluginId: record.plugin }, record.eventId, record.attempt, REASON.commitInterrupted)
       }
     } finally {
-      // Releases the hold even when a move above failed, so delivery never stays blocked.
-      await delivery.recover()
+      // Releases the hold even when a move above failed, so delivery never stays blocked. The ack
+      // sweep and retention need no agent, so they run even when delivery's recovery failed.
+      try { await delivery.recover() } finally {
+        for (const record of ledger.inOrder(ACKABLE)) if (!record.acked) await ack(record.eventId)
+        prune()
+      }
     }
-    for (const record of ledger.inOrder(ACKABLE)) if (!record.acked) await ack(record.eventId)
-    prune()
   }
 
   /**

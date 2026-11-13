@@ -5,8 +5,8 @@
  *
  * Why hold instead of queueing into DSH's inbox: a `followup` queued on a busy agent is lost when
  * the user then stops cleanly or the owner disposes the agent (S2 rows 12, 13), and a restored
- * pending input never wakes by itself. Inside `runMaintenance` the release claims the message on
- * the same JS stack, so the session log never holds "inserted, not claimed".
+ * pending input never wakes by itself. Inside `runMaintenance` the followup only latches the wake;
+ * the maintenance release starts the turn that claims it, so nothing else can claim it first.
  *
  * Whether an event was delivered is decided by core's own ledger alone (the user's decision
  * 2026-11-14 4.A): core never reads the Fishball session's log, so a cleared, compacted or
@@ -14,10 +14,21 @@
  * agent's own session events, and records `admitted` in its ledger. A `session/flush` listener
  * makes DSH's checkpoint before any model dispatch wait for that ledger write (the checkpoint
  * policy flushes before every model request, on both SDKs), so a crash after the model saw the
- * event always finds `admitted` at restart. Remaining window, documented: a crash after the
- * admission was written to the session log but before the ledger write was durable, and before
- * any model dispatch, delivers the event once more after restart; the first admission then reached
- * no model.
+ * event always finds `admitted` at restart.
+ *
+ * Documented exceptions to R-EVT-03's "exactly one turn", accepted by the user (2026-11-14, rule
+ * for edge cases normal use cannot reach):
+ * - crash window (decision A): a crash after the session durably recorded the admission but before
+ *   the ledger's `admitted` write was durable delivers the event once more after restart: two
+ *   admissions, and the first reached no model (EVT-DT-03 row 9b);
+ * - ledger write failure (A2): if the `admitted` write itself fails, it is logged and the flush
+ *   still succeeds, so a later restart may wake Fishball for the event once more;
+ * - inbox cleared by another owner (B1): every removal of a handed-over, unclaimed message from
+ *   DSH's inbox counts as the user's and discards the event, including DSH's own teardown or an
+ *   archive stop in the microtask between hand-over and claim. The inbox event carries no cause;
+ * - a stale copy removed before recovery (11e stop, A): a copy an earlier process left pending in
+ *   DSH's inbox, removed by the user before core's recovery subscribes to the agent, is unseen by
+ *   core (it reads no log) and so delivered once more (EVT-ST-02 row 11e).
  */
 import { freezeMessage } from '@deepseek-ai/dsh-llm'
 import { HOST, LOG, MESSAGE, PRESENT_RETRY, REASON, STATE, TEXT } from './constants.js'
@@ -58,10 +69,14 @@ const realDelay = (ms) => new Promise((resolve) => { setTimeout(resolve, ms).unr
 export function createDelivery({ ledger, fishball, logger, delay = realDelay }) {
   /** eventIds accepted for Fishball, not yet handed to the agent, in arrival order. */
   const queue = []
-  /** messageId → eventId of every event handed to `followup` and not yet admitted or discarded. */
-  const inflight = new Map()
-  /** messageIds claimed by a turn that has not admitted them yet. */
-  const claimed = new Set()
+  /**
+   * messageId → eventId of every record in state `fishball` this generation knows: queued, backing
+   * off, handed to `followup`, or left pending in DSH's inbox by an earlier process. Every one is
+   * watched, so whichever turn admits or discards it, core records that once (review 2, finding 1).
+   */
+  const tracked = new Map()
+  /** messageId → the agent whose turn claimed it and has not admitted it yet. */
+  const claimed = new Map()
   /** eventId → failed presentation attempts so far (in memory: a restart starts again). */
   const failures = new Map()
   /** eventIds waiting out a presentation backoff; not in `queue` meanwhile. */
@@ -71,6 +86,8 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
    * refuses the hand-over never makes core present the same event again.
    */
   const prepared = new Map()
+  /** eventIds whose message is the given-up notice (decision 3.A); their ledger reason says so. */
+  const givenUp = new Set()
   /** Ledger writes of admissions not yet durable; the flush checkpoint waits for them. */
   const writes = new Set()
   const watched = new WeakSet()
@@ -89,47 +106,72 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
     source: { kind: MESSAGE.sourceKind, eventId: record.eventId, type: record.event.type },
   })
 
+  /** Start tracking a record's message id; returns false when it was already tracked. */
+  function track(eventId) {
+    const messageId = messageIdOf(eventId)
+    if (tracked.has(messageId)) return false
+    tracked.set(messageId, eventId)
+    return true
+  }
+
+  /** Forget an event everywhere this generation holds it; returns its eventId. */
+  function untrack(messageId) {
+    const eventId = tracked.get(messageId)
+    tracked.delete(messageId)
+    claimed.delete(messageId)
+    prepared.delete(eventId)
+    backingOff.delete(eventId)
+    const index = queue.indexOf(eventId)
+    if (index >= 0) queue.splice(index, 1)
+    return eventId
+  }
+
   function finish(eventId, state, reason) {
     const write = ledger.move(eventId, (current) => current.state === STATE.fishball, () => ({ state, reason })).then((won) => {
       if (!won) return
       const { type } = ledger.get(eventId).event
       if (state === STATE.admitted) logger?.info(LOG.admitted, eventId, type)
       else logger?.info(LOG.discarded, eventId, type, reason)
+      // A2 (2026-11-14): a failed write is logged, never rethrown into the flush; see the header.
     }, (error) => logger?.warn(LOG.deliverFailed, eventId, codeOf(error)))
     writes.add(write)
     void write.finally(() => writes.delete(write))
     return write
   }
 
-  /** Back to the head of the list, to be handed over again at the next true idle. */
-  function redeliver(messageId) {
-    const eventId = inflight.get(messageId)
-    inflight.delete(messageId)
-    claimed.delete(messageId)
-    queue.unshift(eventId)
+  /**
+   * Back to the head of the list, to be handed over again at the next true idle. Its message, if
+   * already built, is kept, so it is not presented again.
+   */
+  function redeliver(eventId, message) {
+    claimed.delete(messageIdOf(eventId))
+    if (message !== undefined) prepared.set(eventId, message)
+    if (!queue.includes(eventId)) queue.unshift(eventId)
     void drain()
   }
 
-  /** The end of one in-flight event, observed live (never by reading the log, decision 4.A). */
+  /** The end of one tracked event, observed live (never by reading the log, decision 4.A). */
   function settleOne(messageId, state, reason) {
-    const eventId = inflight.get(messageId)
-    inflight.delete(messageId)
-    claimed.delete(messageId)
-    void finish(eventId, state, reason)
+    void finish(untrack(messageId), state, reason)
   }
 
   /**
-   * One appended event of the agent's own session (dsh-session `session/event`): the admission
-   * (`user/message` with our id) ends the event; the end of a turn that claimed it without
-   * admitting it decides it by claimVerdict.
+   * One appended event of one agent's own session (dsh-session `session/event`): the admission
+   * (`user/message` with a tracked id) ends the event; the end of a turn that claimed one without
+   * admitting it decides it by claimVerdict. Only that agent's own claims are decided.
    */
-  function observe(event) {
-    if (event.type === HOST.userMessage && inflight.has(event.data?.id)) return settleOne(event.data.id, STATE.admitted, REASON.handled)
+  function observe(agent, event) {
+    const messageId = event.data?.id
+    if (event.type === HOST.userMessage && tracked.has(messageId)) {
+      const reason = givenUp.delete(tracked.get(messageId)) ? REASON.presentGivenUp : REASON.handled
+      return settleOne(messageId, STATE.admitted, reason)
+    }
     if (event.type !== HOST.turnEnd) return undefined
     const verdict = claimVerdict(event.data?.reason)
-    for (const messageId of [...claimed]) {
-      if (verdict === REDELIVER) redeliver(messageId)
-      else settleOne(messageId, STATE.discarded, verdict)
+    for (const [claimedId, owner] of [...claimed]) {
+      if (owner !== agent) continue
+      if (verdict === REDELIVER) redeliver(tracked.get(claimedId))
+      else settleOne(claimedId, STATE.discarded, verdict)
     }
     return undefined
   }
@@ -145,11 +187,12 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   function watch(agent) {
     if (watched.has(agent)) return
     watched.add(agent)
-    const mine = (payload) => !closed && payload.agent === agent && inflight.has(payload.message?.id)
-    agent.ctx.on(HOST.inboxClaimed, (payload) => { if (mine(payload)) claimed.add(payload.message.id) })
+    const mine = (payload) => !closed && payload.agent === agent && tracked.has(payload.message?.id)
+    agent.ctx.on(HOST.inboxClaimed, (payload) => { if (mine(payload)) claimed.set(payload.message.id, agent) })
+    // B1 (2026-11-14): any removal counts as the user's; see the header.
     agent.ctx.on(HOST.inboxDiscarded, (payload) => { if (mine(payload)) settleOne(payload.message.id, STATE.discarded, REASON.userStopped) })
-    agent.ctx.on(HOST.sessionEvent, (session, event) => { if (!closed && session === agent.session) observe(event) })
-    agent.ctx.on(HOST.sessionFlush, () => Promise.all([...writes]))
+    agent.ctx.on(HOST.sessionEvent, (session, event) => { if (!closed && session === agent.session) observe(agent, event) })
+    agent.ctx.on(HOST.sessionFlush, (session) => (session === agent.session ? Promise.all([...writes]) : undefined))
     agent.ctx.on(HOST.agentStatus, ({ status }) => { if (status === HOST.idle && !closed) void drain() })
   }
 
@@ -192,6 +235,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
         return undefined
       }
       failures.delete(record.eventId)
+      givenUp.add(record.eventId)
       logger?.warn(LOG.presentGivenUp, record.eventId, record.event.type, REASON.presentGivenUp, codeOf(error))
       return [{ type: TEXT.blockType, text: TEXT.presentGivenUp(record.eventId, record.event.type) }]
     }
@@ -244,11 +288,9 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
     if (task === undefined) return
     queue.shift()
     prepared.delete(eventId)
-    inflight.set(message.id, eventId)
     task.catch((error) => {
-      inflight.delete(message.id)
-      queue.unshift(eventId)
       logger?.warn(LOG.deliverFailed, eventId, codeOf(error))
+      if (tracked.has(message.id)) redeliver(eventId, message)
     })
     if (queue.length > 0) again = true
   }
@@ -256,27 +298,30 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   return Object.freeze({
     /** A record just accepted for Fishball (state `fishball`); delivered at the next true idle. */
     add(record) {
-      if (closed || queue.includes(record.eventId) || backingOff.has(record.eventId) || inflight.has(messageIdOf(record.eventId))) return
+      if (closed || !track(record.eventId)) return
       queue.push(record.eventId)
       void drain()
     },
     /**
      * Startup: every record still in state `fishball` was accepted for Fishball and not admitted,
-     * by the ledger alone (decision 4.A), so it is delivered again once, oldest first. A record
-     * this generation already queued (recovery just moved it here) is not queued twice.
-     * Recovery activates the agent itself. If that fails, recovery fails: the records it queued are
-     * dropped from this run and wait for the next start, with no in-run retry (the user's decision
-     * 2026-11-14 2.B). While recovery holds the list no intake runs, so the list holds only them.
+     * by the ledger alone (decision 4.A), so it is delivered again once, oldest first. Its id is
+     * tracked from now on, so a copy an earlier process left pending in DSH's inbox is recorded
+     * whichever turn admits or discards it. A record this generation already tracks (recovery
+     * just moved it here) is not queued twice.
+     * Recovery activates the agent itself. If that fails, the records recovery queued (and only
+     * those) are dropped from this run and wait for the next start, with no in-run retry (the
+     * user's decision 2026-11-14 2.B).
      */
     async recover() {
       recovering = true
+      const mine = []
       try {
-        for (const record of ledger.inOrder([STATE.fishball])) if (!queue.includes(record.eventId)) queue.push(record.eventId)
+        for (const record of ledger.inOrder([STATE.fishball])) if (track(record.eventId)) { queue.push(record.eventId); mine.push(record.eventId) }
         if (queue.length === 0 || closed) return
         try {
           watch(await fishball.activate())
         } catch (error) {
-          queue.length = 0
+          for (const eventId of mine) untrack(messageIdOf(eventId))
           throw error
         }
         queue.sort((a, b) => ledger.get(a).sequence - ledger.get(b).sequence)
