@@ -57,6 +57,9 @@ export function createBrowserSandbox({ lang, baseURI, fetch, console: pageConsol
     AbortController, AbortSignal, queueMicrotask, structuredClone, ...sandboxTimers,
     requestAnimationFrame: () => 0, cancelAnimationFrame() {},
     MutationObserver: class { observe() {} disconnect() {} takeRecords() { return [] } },
+    // A stream that never delivers: a client that opens server-sent state (the moved connector UI
+    // does at apply time) keeps its initial snapshot instead of throwing on a missing global.
+    EventSource: class { close() {} addEventListener() {} removeEventListener() {} },
     CSSStyleSheet: class { constructor() { this.cssRules = [] } replaceSync() {} insertRule() { return 0 } },
     navigator: { languages: [lang] },
   }

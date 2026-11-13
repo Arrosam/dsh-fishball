@@ -277,16 +277,23 @@ export function registerEmbedCases(sdk) {
   integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the V2 contributions and a Plugins card render from fishball-embed-ui, with no failed plugin or page error', async (t) => {
     const { host } = await hostWith(sdk, SETS.full)
     const page = await openMainPage(t, { sdk, host })
+    // Attribution is by serving package: a registration belongs to the graph entry whose served
+    // bundle (or package-local chunk) made it. The moved parts may keep their V2 plugin names
+    // inside embed-UI (a pure move); no design section ties the slots to embed-UI's own name.
+    const fromEmbed = () => page.registrations.filter((r) => r.owner === V3.embed.name)
+    const missingOf = () => EXPECTED_UI.filter((e) => !fromEmbed().some((r) => r.slot === e.slot && (e.id === undefined || r.id === e.id) && (e.key === undefined || r.key === e.key)))
+    await page.waitFor(() => missingOf().length === 0 && fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)))
     assert.deepEqual(page.failed(), [], 'failed plugins')
     assert.deepEqual(page.errors, [], 'page errors')
-    const fromEmbed = page.registrations.filter((r) => r.owner === V3.embed.name)
-    const missing = EXPECTED_UI.filter((e) => !fromEmbed.some((r) => r.slot === e.slot && (e.id === undefined || r.id === e.id) && (e.key === undefined || r.key === e.key)))
-    assert.deepEqual(missing, [], 'contributions not registered by embed-UI; it registered ' + JSON.stringify(fromEmbed))
-    assert.ok(fromEmbed.some((r) => CARD_SLOTS.includes(r.slot)), 'embed-UI registered no Plugins card')
+    const missing = missingOf()
+    assert.deepEqual(missing, [], 'contributions not registered by embed-UI; it registered ' + JSON.stringify(fromEmbed()))
+    assert.ok(fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)), 'embed-UI registered no Plugins card')
   })
   integrationCase(sdk, 'HOST-UC-08', 'post', 'C + I + U: the host shows no UI from the instance or the connector (no registration by another Fishball entry)', async (t) => {
     const { host } = await hostWith(sdk, SETS.full)
     const page = await openMainPage(t, { sdk, host })
+    // The served chunks register after their fetches; wait for embed-UI's first contribution.
+    await page.waitFor((regs) => regs.some((r) => r.owner === V3.embed.name))
     assert.deepEqual(page.registrations.filter((r) => FISHBALL_ENTRY(r.owner) && r.owner !== V3.embed.name), [])
   })
   integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the hosted child starts and its settings panel still shows the status line (ready)', async (t) => {
