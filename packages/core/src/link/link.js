@@ -211,7 +211,8 @@ export class McpLink {
     client.setNotificationHandler(LINK_MCP.resourceUpdated, (notification) => {
       if (notification?.params?.uri === LINK_MCP.eventsUri) void this.#poll(generation)
     })
-    client.setNotificationHandler(LINK_MCP.toolsListChanged, () => { void this.#listTools(client, generation) })
+    // A failed re-list keeps the previous list; the next change or (re)connect lists again.
+    client.setNotificationHandler(LINK_MCP.toolsListChanged, () => { this.#listTools(client, generation).catch(() => {}) })
     // Held before connecting, so a stop or restart during the attempt closes it too.
     this.#client = client
     await client.connect(transport)
