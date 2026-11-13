@@ -212,6 +212,9 @@ export interface HintSink {
  * The token store C-OAUTH and C-OAUTH-WEB share (R-OA-05, R-OA-14, R-OA-16). Everything is held
  * by SHA-256 digest of the opaque value. Access tokens and codes are in memory only; refresh
  * tokens persist as digests with their chain id and entry generation (Q-S7B-3 A).
+ * Ownership (K1a): the one `OAuthTokenStore` implementation is C-OAUTH's
+ * (`packages/connector/src/mcp/oauth/`), durable `putRefresh` included; C-OAUTH-WEB uses that one
+ * instance and builds against a fake of this interface.
  */
 export interface IssuedAccessToken {
   readonly entryKey: EntryKey
@@ -228,6 +231,7 @@ export interface RefreshRecord {
   readonly clientId: string
   readonly audience: string
   readonly generation: number
+  /** The chain's code redemption; the chain ends at `chainStartedAt + LIFETIME.refreshChainMaxMs` (R-OA-16 (5)). */
   readonly chainStartedAt: EpochMs
   /** Set once spent; within LIFETIME.refreshGraceMs a repeat gets `successor` (R-OA-16 (4a)). */
   readonly spentAt?: EpochMs
@@ -252,6 +256,33 @@ export interface OAuthTokenStore {
   revokeChain(chainId: string): Promise<void>
   /** Revokes every token derived from an entry below `generation` (R-OA-06). */
   revokeEntry(entryKey: EntryKey, generation: number): Promise<void>
+}
+
+/** A FailureLimiter key's parts (FAILURE_LIMIT.keyParts): `clientId` is absent for an MCP bearer. */
+export interface FailureKey {
+  readonly remoteAddress: string
+  /** The fishball id at the token endpoint, the CIMD URL on the approval page; never token material. */
+  readonly clientId?: string
+}
+
+/**
+ * The one failure limit of R-OA-17 (task K1a): the token endpoint (C-OAUTH), the approval page
+ * (C-OAUTH-WEB) and the MCP endpoint's bearer check (C-HTTP) share one instance, so a wrong page
+ * entry and a wrong client secret count toward the same limit (S7b P2). The one implementation is
+ * C-OAUTH's (`packages/connector/src/mcp/oauth/`); the others build against fakes of it. In memory
+ * only, with an injected clock; it never sees a token value. Limits and window: FAILURE_LIMIT.
+ */
+export interface FailureLimiter {
+  /**
+   * Whether `key` is limited at `now`: its own counted failures within the last
+   * FAILURE_LIMIT.windowMs reach perKeyPerWindow, or its address's (over every key) reach
+   * perAddressPerWindow. A limited request is refused, valid credential or not, and is not recorded.
+   * @returns `{limited: true, retryAfterMs}` (ms until the window admits one more, for
+   *   `Retry-After` in whole seconds) or `{limited: false}`
+   */
+  check(key: FailureKey, now: EpochMs): { limited: false } | { limited: true; retryAfterMs: number }
+  /** Counts one refused credential for `key` (never an empty page field). */
+  recordFailure(key: FailureKey, now: EpochMs): void
 }
 
 /** What an event is about, for routing (R-EVS-03). */
@@ -284,22 +315,25 @@ export interface Presence {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Runtime exports (index.js). Literal types mirror the frozen values; a K1 amendment changes both.
+// Runtime exports (index.js). Literal types mirror the values fixed by the spec, a requirement or
+// the design. A value marked PROPOSED or DECIDED in constants.js (a tunable) is typed by its
+// primitive instead, so changing it touches constants.js only (the user's rule: one place).
 // ---------------------------------------------------------------------------------------------
 
 export declare const ANSWERABLE_TYPES: readonly ["permission", "question", "plan-review", "ask"]
-export declare const APPROVAL_LISTENER: { readonly defaultPort: 47615; readonly retryMs: 30000; readonly headers: { readonly "cache-control": "no-store"; readonly "referrer-policy": "no-referrer"; readonly "content-security-policy": "default-src 'none'; frame-ancestors 'none'" }; readonly redirectStatus: 303 }
+export declare const APPROVAL_LISTENER: { readonly defaultPort: number; readonly retryMs: number; readonly headers: { readonly "cache-control": "no-store"; readonly "referrer-policy": "no-referrer"; readonly "content-security-policy": "default-src 'none'; frame-ancestors 'none'" }; readonly redirectStatus: 303 }
 export declare const BEARER_CHALLENGE: { readonly scheme: "Bearer"; readonly basicScheme: "Basic"; readonly params: readonly ["error", "error_description", "scope", "resource_metadata"]; readonly queryParameter: "access_token"; readonly queryClientSecret: "client_secret" }
-export declare const CIMD_LIMITS: { readonly maxBytes: 5120; readonly timeoutMs: 3000; readonly maxCacheMs: 86400000; readonly scheme: "https:"; readonly forbiddenAuthFields: readonly ["client_secret", "client_secret_expires_at"] }
+export declare const CIMD_LIMITS: { readonly maxBytes: 5120; readonly timeoutMs: number; readonly maxCacheMs: number; readonly scheme: "https:"; readonly forbiddenAuthFields: readonly ["client_secret", "client_secret_expires_at"] }
 export declare const CLIENT_AUTH: { readonly basic: "client_secret_basic"; readonly post: "client_secret_post"; readonly none: "none" }
 export declare const CONNECTED: { readonly listenResource: "fishball://events" }
 export declare const CONNECTOR_STATUS: { readonly approvalPortInUse: "approval-port-in-use" }
 export declare const CONTRIBUTED_TYPE_PREFIX: "contributed:"
 export declare const DECISION_KIND: { readonly approval: "approval"; readonly question: "question" }
 export declare const DECISION_KIND_OF: { readonly permission: "approval"; readonly ask: "approval"; readonly question: "question"; readonly "plan-review": "question" }
-export declare const ENDPOINT_LIMITS: { readonly bodyBytes: 8388608; readonly inFlightPerPrincipal: 32; readonly listenStreamsPerPrincipal: 8; readonly requestsPerMinute: 600; readonly requestBurst: 120; readonly jsonRpcCode: -32000 }
+export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number }
 export declare const ENTRY_STATUS: { readonly ok: "ok"; readonly tokenTooShort: "token-too-short"; readonly tokenUnconfigured: "token-unconfigured" }
 export declare const EVENT_TYPE: { readonly permission: "permission"; readonly question: "question"; readonly planReview: "plan-review"; readonly settlement: "settlement"; readonly retirement: "retirement"; readonly turnFinished: "turn-finished"; readonly state: "state"; readonly message: "message"; readonly ask: "ask"; readonly handover: "handover"; readonly takeback: "takeback"; readonly notice: "notice" }
+export declare const FAILURE_LIMIT: { readonly windowMs: number; readonly keyParts: readonly ["remoteAddress", "clientId"]; readonly perKeyPerWindow: number; readonly perAddressPerWindow: number }
 export declare const GRANT: { readonly clientCredentials: "client_credentials"; readonly authorizationCode: "authorization_code"; readonly refreshToken: "refresh_token" }
 export declare const HOSTS: { readonly loopbackNames: readonly ["localhost", "127.0.0.1", "[::1]"]; readonly loopbackScheme: "http:"; readonly remoteScheme: "https:"; readonly forwardedHeadersIgnored: readonly ["forwarded", "x-forwarded-proto", "x-forwarded-host"] }
 export declare const HTTP_REFUSAL: { readonly insecureListener: "insecure-listener"; readonly tooLarge: "limit-exceeded"; readonly rateLimited: "rate-limited" }
@@ -319,8 +353,8 @@ export declare const OAUTH_METADATA: {
   }
 }
 export declare const INSUFFICIENT_SCOPE_REASON: { readonly notPaired: "not-paired"; readonly idMismatch: "id-mismatch" }
-export declare const LIFETIME: { readonly accessTokenMs: 3600000; readonly codeMs: 60000; readonly pendingRequestMs: 600000; readonly refreshGraceMs: 10000; readonly refreshChainMaxMs: 2592000000 }
-export declare const MAILBOX: { readonly pageDefault: 50; readonly pageMax: 100; readonly disabledRetentionMs: 2592000000; readonly ackedReceiptMs: 86400000 }
+export declare const LIFETIME: { readonly accessTokenMs: 3600000; readonly codeMs: 60000; readonly pendingRequestMs: 600000; readonly refreshGraceMs: 10000; readonly refreshChainMaxMs: number }
+export declare const MAILBOX: { readonly pageDefault: number; readonly pageMax: number; readonly disabledRetentionMs: 2592000000; readonly ackedReceiptMs: number }
 export declare const NAME_RULES: { readonly minChars: 1; readonly maxChars: 64; readonly whitespaceRun: RegExp; readonly control: RegExp; readonly space: " "; readonly normalForm: "NFC"; readonly namelessPrefix: "ID: " }
 export declare const NOTICE: { readonly codeGrammar: RegExp; readonly codes: Readonly<Record<string, never>> }
 export declare const OAUTH_ERROR: { readonly invalidRequest: "invalid_request"; readonly invalidClient: "invalid_client"; readonly invalidGrant: "invalid_grant"; readonly unsupportedGrantType: "unsupported_grant_type"; readonly invalidTarget: "invalid_target"; readonly unsupportedResponseType: "unsupported_response_type"; readonly accessDenied: "access_denied"; readonly serverError: "server_error"; readonly temporarilyUnavailable: "temporarily_unavailable"; readonly invalidToken: "invalid_token"; readonly insufficientScope: "insufficient_scope" }
@@ -335,7 +369,7 @@ export declare const PATHS: { readonly mcp: "/api/fishball/mcp"; readonly issuer
 export declare const PKCE: { readonly method: "S256" }
 export declare const PROTOCOL: { readonly version: "2026-07-28"; readonly unsupportedVersionCode: -32022; readonly headerMismatchCode: -32020; readonly ignoredHeaders: readonly ["mcp-session-id"]; readonly clientCredentialsExtension: "io.modelcontextprotocol/oauth-client-credentials" }
 export declare const QUEUE: { readonly maxQueuedInputs: 200; readonly refusedTypes: readonly ["message", "turn-finished", "state", "notice"]; readonly contributedRefused: true }
-export declare const RATE_LIMITS: { readonly windowMs: 60000; readonly keyParts: readonly ["remoteAddress", "clientId"]; readonly failuresPerWindow: 10; readonly failuresPerAddressPerWindow: 50; readonly tokenRequestsPerWindow: 30; readonly retryAfterHeader: "retry-after" }
+export declare const RATE_LIMITS: { readonly windowMs: number; readonly tokenRequestsPerWindow: number; readonly retryAfterHeader: "retry-after" }
 export declare const REFUSAL: { readonly limitExceeded: "limit-exceeded"; readonly invalidArguments: "invalid-arguments"; readonly queueFull: "queue-full"; readonly rateLimited: "rate-limited"; readonly operationFailed: "operation-failed"; readonly forbidden: "forbidden"; readonly unknownSession: "unknown-session"; readonly expired: "expired"; readonly conflict: "conflict"; readonly unavailable: "unavailable"; readonly unsupportedOperation: "unsupported-operation"; readonly notReferenced: "not-referenced"; readonly tooLarge: "too-large"; readonly imagesUnsupported: "images-unsupported"; readonly notManaged: "not-managed"; readonly featureOff: "feature-off"; readonly sessionNotLive: "session-not-live"; readonly invalidDecision: "invalid-decision"; readonly riskRequired: "risk-required"; readonly reasonRequired: "reason-required"; readonly allowNeedsLowRisk: "allow-needs-low-risk"; readonly argumentsIncomplete: "arguments-incomplete"; readonly questionRequired: "question-required"; readonly modeUser: "mode-user"; readonly badAnswer: "bad-answer"; readonly alreadySettled: "already-settled"; readonly grantInvalid: "grant-invalid"; readonly prefixNotShellTool: "prefix-not-shell-tool"; readonly prefixEmpty: "prefix-empty"; readonly prefixNotInCall: "prefix-not-in-call"; readonly expiresRequired: "expires-at-required"; readonly expiresInvalid: "expires-at-invalid"; readonly expiresPast: "expires-at-past"; readonly grantUnknown: "unknown"; readonly grantEnded: "ended"; readonly alreadyPaired: "already-paired"; readonly idTaken: "id-taken"; readonly nameInvalid: "name-invalid"; readonly nameTaken: "name-taken"; readonly unknownEvent: "unknown-event"; readonly digestMismatch: "digest-mismatch" }
 export declare const RESOURCE: { readonly events: { readonly name: "fishball-events"; readonly uri: "fishball://events"; readonly mimeType: "application/json" } }
 export declare const RESPONSE_TYPE: { readonly code: "code" }
