@@ -133,9 +133,11 @@ function pageServices(shim, lang) {
  * @param options.lang - page language.
  * @param options.exclude - `(entry, source) => boolean`: graph entries this page does not load (the
  *   "no section registered" partition leaves out the instance's hosted-section bundle).
+ * @param options.plugins - extra client plugins (`{name, inject, apply}`) applied in the same Cordis
+ *   root after the child's own, as a third-party client plugin of the child would be (K3's probe section).
  * @returns { panel: rendered host tree of the main settings entry, or null; header; entries; plugins; requests; errors; byAttr; text }
  */
-export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = () => false }) {
+export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = () => false, plugins: extra = [] }) {
   const requests = []
   const errors = []
   const baseURI = child.origin + ROUTE.childRoot
@@ -243,6 +245,7 @@ export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = (
     if (typeof plugin?.apply !== 'function') continue
     plugins.push({ id: entry.id, inject: plugin.inject ?? [], fiber: root.plugin(plugin) })
   }
+  for (const plugin of extra) plugins.push({ id: plugin.name, inject: plugin.inject ?? [], fiber: root.plugin(plugin) })
   // Unmount and stop the page's timers before the plugins go: a render or poll after a fiber's
   // disposal would read a service from an inactive Cordis context.
   t.after(async () => {
