@@ -33,7 +33,7 @@ const INVALID = Symbol('invalid')
  * answers differently on a second read can never slip a value past the check (review finding).
  */
 
-/** A declared limit is a positive whole number at or below its ceiling (PROPOSED: integers only). */
+/** A declared limit is a positive whole number at or below its ceiling (DECIDED #9: integers only). */
 const limitValid = (value, ceiling) => Number.isSafeInteger(value) && value > 0 && value <= ceiling
 
 function checkedLimits(limits) {
@@ -58,7 +58,7 @@ function checkedCodes(codes) {
   return valid ? copy : INVALID
 }
 
-/** Only the specification's hints are kept; a hint that is not a boolean is refused (PROPOSED). */
+/** Only the specification's hints are kept; a hint that is not a boolean is refused (DECIDED #10). */
 function checkedAnnotations(annotations) {
   if (annotations === undefined) return undefined
   if (!isPlainRecord(annotations)) return INVALID

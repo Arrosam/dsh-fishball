@@ -90,7 +90,7 @@ export interface AdmitRequest {
 }
 
 /**
- * Why `admit` rejects (`HostServiceError.code`; both codes PROPOSED):
+ * Why `admit` rejects (`HostServiceError.code`; both codes DECIDED #15, #16, kept):
  * - `hostname-refused`: the hostname is not one of `LoopbackHostname`; embed-UI then shows "Open DSH
  *   at 127.0.0.1 to use Fishball" instead of a frame (R-UI-02);
  * - `not-ready`: the child is not `ready`, or it stopped or restarted before the ticket was minted.

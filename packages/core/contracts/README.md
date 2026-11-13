@@ -21,7 +21,8 @@ library for `HTMLElement`. Services are looked up at runtime (`ctx.get`); a trai
 
 ## Interception
 
-- `intercept({pluginId, types, filter?, priority?}, onEvent) → dispose`. `priority` is any finite
+- `intercept({pluginId, types, filter?, priority?}, onEvent) → dispose`. An invalid registration
+  throws a `TypeError` and registers nothing (DECIDED #17, [the decisions table](<../../connector/mcp-schema/README.md#user-decisions>)). `priority` is any finite
   number, negative included, **default 0**. The winner is the highest priority, then the earliest
   registration. A throwing `filter` counts as no match.
 - `ctl` has exactly `accept`, `commit` and `release`:

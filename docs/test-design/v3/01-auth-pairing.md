@@ -533,6 +533,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
   - A3. Someone other than the owner holds `v(E5)` and enters it → it authorizes the same way (the token is the proof).
   - A4. The user also types the name "Watcher" (free) → E5's principal is named "Watcher".
   - A5. The client's redirect is `http://127.0.0.1:7777/cb` but it now listens on port 50123 → `redirect_uri=http://127.0.0.1:50123/cb` is accepted (loopback, any port).
+  - A7. **Renewal (R-OA-16 (7)):** E5's every chain has reached its 365-day maximum lifetime; the same client (the client id recorded at the bind) opens the page again and the owner enters `v(E5)` with the bound id `agent-w-1` → redirect with a code; the new chain belongs to the **same** principal (same id, name, managed sessions and pending events); nothing is re-bound and no new token is needed; any redirect URI of the client's document is accepted and recorded.
 - **Exception flows:**
   - E1. A wrong, disabled or deleted token value → one uniform "this token is not valid" message; the request stays pending; the attempt counts toward the per-client failure limit.
   - E2. `v(E5)` after E5 is already paired (by a machine client or another browser client) → `already-paired` on the page: "create a new token", with the bound pair's name and last-seen time; nothing changes.
@@ -563,7 +564,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 | 11 | any redirected error (rules 5–8) | | | | | carries `error`, `iss` and `state` (if sent) |
 
 ### AUTH-ST-04 — A pending browser authorization and its code
-**Req:** R-OA-12, R-OA-14, R-OA-15 · **Level:** unit (fake clock) · **Flags:** —
+**Req:** R-OA-12, R-OA-14, R-OA-15, R-OA-16 · **Level:** unit (fake clock) · **Flags:** —
 
 | # | From | Event | To | Observable |
 | --- | --- | --- | --- | --- |
@@ -572,6 +573,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 | 2a | Pending | Authorize with a good token but `id-invalid`, `id-taken`, `name-invalid` or `name-taken` | Pending | refusal on the page; nothing bound |
 | 3 | Pending | Authorize with an invalid token | Pending | uniform "not valid"; failure counted |
 | 4 | Pending | Authorize with a valid but paired token | Pending | `already-paired` on the page; nothing changes |
+| 4a | Pending | Authorize with a browser-bound token whose every chain ended by lifetime, from the recorded client id, with the bound id | CodeIssued | redirect with `code`, `iss`; the pair is unchanged (renewal, R-OA-16 (7)) |
 | 5 | Pending | Cancel | Closed | `access_denied`; nothing bound |
 | 6 | Pending | 10 min pass | Expired | Authorize shows the expiry message; nothing bound |
 | 7 | Pending | per-client failure limit reached | Pending | further attempts refused with the rate-limit answer; nothing revealed |
@@ -595,7 +597,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 | 7 | connector running | — | open the whole time; never closed between requests | — | — | — | — |
 
 ### AUTH-ST-05 — A browser client's refresh-token chain
-**Req:** R-OA-16, R-OA-06, R-OA-07, R-TOK-05 · **Level:** unit (fake clock), integration · **Flags:** K (maximum chain lifetime)
+**Req:** R-OA-16, R-OA-12, R-OA-06, R-OA-07, R-TOK-05 · **Level:** unit (fake clock), integration · **Flags:** K (maximum chain lifetime: 365 days, decided by the user 2026-11-13)
 
 RT1 is the refresh token from the code redemption; each refresh returns the next (RT2, RT3, …).
 
@@ -615,9 +617,17 @@ RT1 is the refresh token from the code redemption; each refresh returns the next
 | 8a | Chain(RTn live, RTn−1 spent < 10 s before the restart) | RTn−1 presented after the restart | Revoked | reuse (the grace window is not persisted) |
 | 8b | Chain(RTn live) | entry disabled while the connector is down, then restart | Revoked | refresh `invalid_grant` |
 | 9 | (machine client) | `refresh_token` grant with any value | — | `invalid_grant` |
+| 10 | Chain(RTn live), started at T | refresh at T + 365 days − 1 ms | Chain(RTn+1 live) | new AT + RTn+1; the chain's start stays T |
+| 11 | Chain(RTn live), started at T | refresh at T + 365 days, or later | Ended | `invalid_grant`; the pair, its name and its pending events stay |
+| 12 | Ended (every chain of the entry) | the same client (recorded client id) re-enters the bound token on the page with the bound id | Chain(RT1′ live) | a code, then a new chain started at the redemption, for the **same** principal (same id, name, managed sessions, pending events); no new token, no re-pair (R-OA-16 (7)) |
+| 12a | Ended | re-entry from another client id, or with another id | Ended | `already-paired` on the page; nothing changes |
+| 12b | Revoked (by reuse, or by disable, delete or value change) | the same client re-enters the bound token with the bound id | Revoked | `already-paired`: only an ended lifetime renews |
+| 12c | Ended, while another chain of the entry is still live | re-entry from the recorded client id with the bound id | unchanged | `already-paired` |
+| 12d | Ended, then the entry disabled and re-enabled, or its value changed | re-entry (the current value) from the recorded client id with the bound id | Ended | `already-paired`: a change since the end blocks renewal (user decision 2026-11-13) |
+| 12e | Ended | renewal with another redirect URI the client's document lists | Chain(RT1′ live) | accepted; the new redirect URI is recorded |
 
 ### AUTH-DT-08 — What entering a token on the page does
-**Req:** R-OA-12, R-OA-11, R-ID-02, R-ID-03, R-ID-04, R-ID-13, R-TOK-00, R-TOK-06, R-TOK-08, R-NAME-02, R-NAME-08 · **Level:** integration · **Flags:** —
+**Req:** R-OA-12, R-OA-11, R-OA-16, R-ID-02, R-ID-03, R-ID-04, R-ID-13, R-TOK-00, R-TOK-06, R-TOK-08, R-NAME-02, R-NAME-08 · **Level:** integration · **Flags:** —
 
 | Rule | Entered value | Entry state | Binding | Result on the page | Changes |
 | --- | --- | --- | --- | --- | --- |
@@ -635,6 +645,8 @@ RT1 is the refresh token from the code redemption; each refresh returns the next
 | 5f | valid; id free; name only whitespace | enabled | unpaired | treated as empty: bound with no name | bound |
 | 6 | valid | enabled | paired to a machine client | `already-paired`, "create a new token", bound name and last-seen | none |
 | 7 | valid | enabled | paired to **this same** browser client | `already-paired` (handshake rule 1.9; the client keeps working through refresh tokens, R-OA-16) | none |
+| 7a | valid | enabled | paired to **this same** browser client (recorded client id), every chain ended by its 365-day lifetime, typed id = bound id | redirect with `code`, `iss` (renewal, R-OA-16 (7)) | none to the pair; a new chain at redemption |
+| 7b | valid | enabled | as 7a, typed id ≠ bound id | `already-paired` | none |
 | 8 | valid | enabled | paired to another browser client | `already-paired` | none |
 | 9 | valid, unpaired, name field empty, `client_name` held by another principal | enabled | unpaired | redirect | bound with no name (`client_name` is only a hint) |
 | 10 | empty field | — | — | "enter a token" | none; not counted as a failure (K) |
