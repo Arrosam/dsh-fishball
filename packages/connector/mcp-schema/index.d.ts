@@ -76,7 +76,7 @@ export interface Caller {
 }
 
 /**
- * C-OAUTH's bearer verifier, called by C-HTTP after the Host/Origin checks and before any MCP
+ * C-OAUTH's bearer verifier, called by C-HTTP after `RequestGate.check` and before any MCP
  * processing (design §3.1 step 3). It never throws and never says which tokens exist.
  */
 export interface BearerVerifier {
@@ -344,6 +344,190 @@ export interface Presence {
   onChange(listener: (principalKey: PrincipalKey, connected: boolean) => void): () => void
 }
 
+// --- Request gate (task K1b) -------------------------------------------------------------------
+
+/** GATE_SURFACE: the MCP route, C-OAUTH's token endpoint and metadata, and the approval listener. */
+export type GateSurface = typeof GATE_SURFACE[keyof typeof GATE_SURFACE]
+
+/**
+ * The listener facts the gate is built with (C-WIRE constructs the one `RequestGate` with them and
+ * with an injected clock). Never taken from a request: no forwarded header is read (HOSTS). The
+ * approval listener binds DSH's listener host (`webServer.host`) on its own port, so both surfaces
+ * share `host`, `secure` and `trustedHosts` (the user's decision, 2026-11-14, K1b).
+ */
+export interface GateListenerFacts {
+  /** DSH's `webServer.host`: the bind address, also an allowed `Host` (HOSTS). */
+  readonly host: string
+  /** Whether DSH's listener is https (`webServer.protocol`); a non-loopback `host` that is not is 503. */
+  readonly secure: boolean
+  /** DSH's `--trusted-host` list (`webStartup.trustedHosts`). */
+  readonly trustedHosts: readonly string[]
+  /**
+   * The approval listener's current port (APPROVAL_LISTENER, the port setting), read live so a
+   * rebind is followed. The page's own origin, the only `Origin` ORIGIN_RULE.ownOnly accepts, is
+   * the listener's scheme with the checked `Host` (R-OA-11, S7b F4).
+   */
+  approvalPort(): number
+  readonly now: () => EpochMs
+}
+
+/** What the gate reads of one request. */
+export interface GateRequest {
+  readonly method: string
+  /** The path without its query. */
+  readonly path: string
+  /** Node's request headers, names in lower case (REQUEST_GATE.headers). */
+  readonly headers: Readonly<Record<string, string | readonly string[] | undefined>>
+}
+
+/** `admit`'s request: the body has been read by the caller, stopping one byte past ENDPOINT_LIMITS.bodyBytes. */
+export interface AdmitRequest extends GateRequest {
+  /** Bytes read; more than ENDPOINT_LIMITS.bodyBytes is 413, exactly at it passes (PLAT-BVA-02). */
+  readonly bodyBytes: number
+}
+
+/** `check`'s refusals, in REQUEST_GATE.checkOrder. 405 and 403 have no body (the user's decision, 2026-11-14). */
+export type CheckRefusal =
+  | { readonly pass: false; readonly status: typeof HTTP_STATUS.methodNotAllowed; readonly headers: Readonly<Record<typeof REQUEST_GATE.headers.allow, string>>; readonly body: null }
+  | { readonly pass: false; readonly status: typeof HTTP_STATUS.forbidden; readonly headers: Readonly<Record<string, never>>; readonly body: null }
+  | { readonly pass: false; readonly status: typeof HTTP_STATUS.serviceUnavailable; readonly headers: Readonly<Record<string, never>>; readonly body: { readonly error: typeof HTTP_REFUSAL.insecureListener } }
+
+/** ENDPOINT_LIMITS' structured refusal: a JSON-RPC error with id `null` (the body was never parsed, JSON-RPC 2.0 §5). */
+export interface LimitRefusalBody<M extends typeof HTTP_REFUSAL.tooLarge | typeof HTTP_REFUSAL.rateLimited> {
+  readonly jsonrpc: typeof ENDPOINT_LIMITS.jsonRpcVersion
+  readonly id: null
+  readonly error: { readonly code: typeof ENDPOINT_LIMITS.jsonRpcCode; readonly message: M }
+}
+
+/**
+ * `admit`'s refusals, in REQUEST_GATE.admitOrder. A 429 carries `Retry-After` in whole seconds
+ * (TIME_UNIT): for an empty token bucket, until it holds one token again; for the in-flight limit,
+ * REQUEST_GATE.inFlightRetryAfterMs (PROPOSED, the user's choice 2026-11-14: a slot frees when any
+ * request ends).
+ */
+export type AdmitRefusal =
+  | { readonly pass: false; readonly status: typeof HTTP_STATUS.payloadTooLarge; readonly headers: Readonly<Record<string, never>>; readonly body: LimitRefusalBody<typeof HTTP_REFUSAL.tooLarge> }
+  | { readonly pass: false; readonly status: typeof HTTP_STATUS.tooManyRequests; readonly headers: Readonly<Record<typeof RATE_LIMITS.retryAfterHeader, string>>; readonly body: LimitRefusalBody<typeof HTTP_REFUSAL.rateLimited> }
+
+/** The one surface `admit` serves (REQUEST_GATE.admitSurfaces). */
+export type AdmitSurface = typeof REQUEST_GATE.admitSurfaces[number]
+
+/** Any gate refusal: the caller writes `status`, `headers` and `body` (JSON, or none when `null`) and runs nothing else. */
+export type GateRefusal = CheckRefusal | AdmitRefusal
+
+/**
+ * C-HTTP's request gate (task K1b; design §3.1, §5.5; R-REM-02/03, R-OA-20, R-SEC-03). C-HTTP owns
+ * the only implementation; C-OAUTH (token endpoint and metadata), C-OAUTH-WEB (approval listener)
+ * and C-HTTP's MCP route call it and build against fakes. Every value is REQUEST_GATE's, HOSTS',
+ * HTTP_STATUS', HTTP_REFUSAL's and ENDPOINT_LIMITS'. The order of one MCP request is
+ * `check` → BearerVerifier (401) → `admit` → version checks → dispatch (design §3.1, PLAT-EP-01).
+ * Built once by C-WIRE from GateListenerFacts. Neither method throws, and neither reads a token
+ * or says which tokens exist.
+ */
+export interface RequestGate {
+  /**
+   * Before authentication, on every surface. Refuses at the first failing step of
+   * REQUEST_GATE.checkOrder:
+   * 1. 405: the path is in REQUEST_GATE.routes[surface] and `method` is not one of its methods;
+   *    `Allow` is those methods joined by REQUEST_GATE.allowSeparator. A path not listed passes
+   *    this step only: steps 2 and 3 still apply, and its route answers 404 once `check` passes.
+   * 2. 403: `Host` is not an allowed host (HOSTS: the loopback names, the listener's bind address,
+   *    DSH's `--trusted-host` list), or a present `Origin` (`null` included) that the surface's
+   *    REQUEST_GATE.originRule refuses: any on `mcp` and `token`, any but the page's own origin on
+   *    `approval`.
+   * 3. 503 `insecure-listener`: GateListenerFacts.host is not loopback and `secure` is false.
+   */
+  check(req: GateRequest, surface: GateSurface): { readonly pass: true } | CheckRefusal
+  /**
+   * After the bearer check, on REQUEST_GATE.admitSurfaces only (`mcp`; the user's decision,
+   * 2026-11-14); `token` and `approval` never call it. Refuses 413 when `bodyBytes` exceeds
+   * ENDPOINT_LIMITS.bodyBytes, else 429 when the caller has ENDPOINT_LIMITS.inFlightPerPrincipal
+   * requests in flight or its token bucket (requestsPerMinute, requestBurst; clock from
+   * GateListenerFacts.now) is empty. Limits are
+   * counted per `caller.entryKey` (the user's decision, 2026-11-14, K1b: one entry holds at most
+   * one principal, so this is "per principal" for a paired caller, and a pair-only caller, which
+   * has no principal key yet, is counted too). A pass takes one bucket token and one in-flight
+   * slot: the caller calls `done()` exactly once when the response ends, or, for a listen stream,
+   * as soon as the stream is open (an open stream holds no slot; the user's decision, 2026-11-14).
+   * A refusal takes nothing. The listen-stream cap (ENDPOINT_LIMITS.listenStreamsPerPrincipal) is
+   * C-HTTP's stream registry's, not this method's.
+   */
+  admit(req: AdmitRequest, surface: AdmitSurface, caller: Caller): { readonly pass: true; done(): void } | AdmitRefusal
+}
+
+// --- Token-endpoint grants (task K1b) ----------------------------------------------------------
+
+/** GRANT's values. */
+export type GrantType = typeof GRANT[keyof typeof GRANT]
+
+/**
+ * The token request's form (`application/x-www-form-urlencoded`), parsed by C-OAUTH. A repeated
+ * parameter never reaches a handler [spec: RFC 6749 §3.2, parameters MUST NOT repeat].
+ */
+export type TokenForm = Readonly<Record<string, string>>
+
+/** How the client authenticated (CLIENT_AUTH), as C-OAUTH parsed it. `secret` is token material: never logged, never in a FailureKey. */
+export interface ClientAuthentication {
+  readonly method: typeof CLIENT_AUTH[keyof typeof CLIENT_AUTH]
+  readonly clientId?: string
+  readonly secret?: string
+}
+
+/** What C-OAUTH hands a handler with one request. */
+export interface GrantContext {
+  /** The checked origin (`check` passed): issuer and canonical MCP URI follow it (`oauthUrls`, R-OA-01). */
+  readonly origin: string
+  readonly client: ClientAuthentication
+  /** The request's FailureLimiter key; C-OAUTH has already checked it is not limited. */
+  readonly failureKey: FailureKey
+  readonly now: EpochMs
+}
+
+/**
+ * The OAUTH_ERROR values a grant answers (OAUTH_ERROR_STATUS gives each its status). The others
+ * are the endpoint's own (`unsupported_grant_type`, `temporarily_unavailable`, `server_error` for a
+ * throw) or the resource server's (`invalid_token`, `insufficient_scope`).
+ */
+export type GrantErrorCode =
+  | typeof OAUTH_ERROR.invalidRequest | typeof OAUTH_ERROR.invalidClient | typeof OAUTH_ERROR.invalidGrant | typeof OAUTH_ERROR.invalidTarget
+
+export type GrantResult =
+  /** C-OAUTH sends it with 200 and TOKEN_RESPONSE_HEADERS. */
+  | { readonly ok: true; readonly body: ReturnType<typeof tokenResponse> }
+  /**
+   * C-OAUTH sends `oauthErrorBody(error, description)` with OAUTH_ERROR_STATUS[error], plus
+   * `WWW-Authenticate: Basic` on `invalid_client` when the client used Basic. `countedFailure` is
+   * true exactly for a refused credential (FAILURE_LIMIT "Counted"); C-OAUTH then records it on
+   * `ctx.failureKey`.
+   */
+  | { readonly ok: false; readonly error: GrantErrorCode; readonly description?: string; readonly countedFailure: boolean }
+
+/**
+ * One `grant_type` of the token endpoint (task K1b; R-OA-02). C-OAUTH owns the endpoint, the
+ * dispatch on GRANT_DISPATCH.formField, `unsupported_grant_type`, the shared FailureLimiter and
+ * the GRANT_DISPATCH.builtIn handlers (`client_credentials`). C-OAUTH-WEB supplies
+ * `authorization_code` and `refresh_token`; C-WIRE registers them (GrantRegistry). Before any
+ * handler runs, the endpoint answers itself: the RATE_LIMITS / FAILURE_LIMIT 429, a secret in the
+ * URL and a repeated parameter (`invalid_request`, RFC 6749 §3.2, §5.2), a missing `grant_type`
+ * (`invalid_request`) and a `grant_type` with no handler (`unsupported_grant_type`). A handler
+ * never throws for a bad request; a throw is 500 `server_error`. C-OAUTH's built-in
+ * `client_credentials` implements this interface too.
+ */
+export interface GrantHandler {
+  readonly grantType: GrantType
+  handle(form: TokenForm, ctx: GrantContext): Promise<GrantResult>
+}
+
+/** C-OAUTH's registration seam for C-WIRE. */
+export interface GrantRegistry {
+  /**
+   * Adds a handler before the endpoint serves. A `grantType` that is built in, already
+   * registered or not in OAUTH_METADATA's `grant_types_supported` throws `TypeError` (a wiring
+   * bug, as K3's `intercept`, DECIDED #17; PROPOSED for this seam).
+   */
+  register(handler: GrantHandler & { readonly grantType: Exclude<GrantType, typeof GRANT_DISPATCH.builtIn[number]> }): void
+}
+
 // ---------------------------------------------------------------------------------------------
 // Runtime exports (index.js). Literal types mirror the frozen values, except numeric tunables:
 // a number marked PROPOSED or DECIDED in constants.js is typed `number` here, so changing it
@@ -361,12 +545,15 @@ export declare const CONNECTOR_STATUS: { readonly approvalPortInUse: "approval-p
 export declare const CONTRIBUTED_TYPE_PREFIX: "contributed:"
 export declare const DECISION_KIND: { readonly approval: "approval"; readonly question: "question" }
 export declare const DECISION_KIND_OF: { readonly permission: "approval"; readonly ask: "approval"; readonly question: "question"; readonly "plan-review": "question" }
-export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number }
+export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number; readonly jsonRpcVersion: "2.0" }
 export declare const ENTRY_STATUS: { readonly ok: "ok"; readonly tokenTooShort: "token-too-short"; readonly tokenUnconfigured: "token-unconfigured" }
 export declare const EVENT_TYPE: { readonly permission: "permission"; readonly question: "question"; readonly planReview: "plan-review"; readonly settlement: "settlement"; readonly retirement: "retirement"; readonly turnFinished: "turn-finished"; readonly state: "state"; readonly message: "message"; readonly ask: "ask"; readonly handover: "handover"; readonly takeback: "takeback"; readonly notice: "notice" }
 export declare const FAILURE_LIMIT: { readonly windowMs: number; readonly keyParts: readonly ["remoteAddress", "clientId"]; readonly perKeyPerWindow: number; readonly perAddressPerWindow: number }
+export declare const GATE_SURFACE: { readonly mcp: "mcp"; readonly token: "token"; readonly approval: "approval" }
 export declare const GRANT: { readonly clientCredentials: "client_credentials"; readonly authorizationCode: "authorization_code"; readonly refreshToken: "refresh_token" }
+export declare const GRANT_DISPATCH: { readonly formField: "grant_type"; readonly builtIn: readonly ["client_credentials"] }
 export declare const HOSTS: { readonly loopbackNames: readonly ["localhost", "127.0.0.1", "[::1]"]; readonly loopbackScheme: "http:"; readonly remoteScheme: "https:"; readonly forwardedHeadersIgnored: readonly ["forwarded", "x-forwarded-proto", "x-forwarded-host"] }
+export declare const HTTP_METHOD: { readonly get: "GET"; readonly post: "POST" }
 export declare const HTTP_REFUSAL: { readonly insecureListener: "insecure-listener"; readonly tooLarge: "limit-exceeded"; readonly rateLimited: "rate-limited" }
 export declare const HTTP_STATUS: { readonly ok: 200; readonly seeOther: 303; readonly badRequest: 400; readonly unauthorized: 401; readonly forbidden: 403; readonly notFound: 404; readonly methodNotAllowed: 405; readonly payloadTooLarge: 413; readonly tooManyRequests: 429; readonly internalServerError: 500; readonly serviceUnavailable: 503 }
 export declare const ID_GRAMMAR: { readonly pattern: RegExp }
@@ -392,6 +579,7 @@ export declare const OAUTH_ERROR: { readonly invalidRequest: "invalid_request"; 
 export declare const OAUTH_ERROR_STATUS: { readonly invalid_request: 400; readonly invalid_client: 401; readonly invalid_grant: 400; readonly unsupported_grant_type: 400; readonly invalid_target: 400; readonly temporarily_unavailable: 429; readonly invalid_token: 401; readonly insufficient_scope: 403; readonly server_error: 500 }
 export declare const OFFER_ID: { readonly pattern: RegExp; readonly separator: ".r"; readonly firstRevision: 1 }
 export declare const OFFER_TYPES: readonly ["permission", "question", "plan-review"]
+export declare const ORIGIN_RULE: { readonly refuseAny: "refuse-any"; readonly ownOnly: "own-only" }
 export declare const PAIR_ADVICE: { readonly idMatches: "continue with this token and id only if no other agent uses this id with this token; otherwise use a new token and a new id"; readonly idDiffers: "use a new token" }
 export declare const PAIR_ONLY: { readonly methods: readonly ["server/discover", "tools/list"]; readonly tools: readonly ["pair"] }
 export declare const PAIR_STATE: { readonly paired: "paired"; readonly unpaired: "unpaired" }
@@ -402,6 +590,24 @@ export declare const PROTOCOL: { readonly version: "2026-07-28"; readonly unsupp
 export declare const QUEUE: { readonly maxQueuedInputs: 200; readonly refusedTypes: readonly ["message", "turn-finished", "state", "notice"]; readonly contributedRefused: true }
 export declare const RATE_LIMITS: { readonly windowMs: number; readonly tokenRequestsPerWindow: number; readonly retryAfterHeader: "retry-after" }
 export declare const REFUSAL: { readonly limitExceeded: "limit-exceeded"; readonly invalidArguments: "invalid-arguments"; readonly queueFull: "queue-full"; readonly rateLimited: "rate-limited"; readonly operationFailed: "operation-failed"; readonly forbidden: "forbidden"; readonly unknownSession: "unknown-session"; readonly expired: "expired"; readonly conflict: "conflict"; readonly unavailable: "unavailable"; readonly unsupportedOperation: "unsupported-operation"; readonly notReferenced: "not-referenced"; readonly tooLarge: "too-large"; readonly imagesUnsupported: "images-unsupported"; readonly notManaged: "not-managed"; readonly featureOff: "feature-off"; readonly sessionNotLive: "session-not-live"; readonly invalidDecision: "invalid-decision"; readonly riskRequired: "risk-required"; readonly reasonRequired: "reason-required"; readonly allowNeedsLowRisk: "allow-needs-low-risk"; readonly argumentsIncomplete: "arguments-incomplete"; readonly questionRequired: "question-required"; readonly modeUser: "mode-user"; readonly badAnswer: "bad-answer"; readonly alreadySettled: "already-settled"; readonly grantInvalid: "grant-invalid"; readonly prefixNotShellTool: "prefix-not-shell-tool"; readonly prefixEmpty: "prefix-empty"; readonly prefixNotInCall: "prefix-not-in-call"; readonly expiresRequired: "expires-at-required"; readonly expiresInvalid: "expires-at-invalid"; readonly expiresPast: "expires-at-past"; readonly grantUnknown: "unknown"; readonly grantEnded: "ended"; readonly alreadyPaired: "already-paired"; readonly idTaken: "id-taken"; readonly nameInvalid: "name-invalid"; readonly nameTaken: "name-taken"; readonly unknownEvent: "unknown-event"; readonly digestMismatch: "digest-mismatch" }
+export declare const REQUEST_GATE: {
+  readonly checkOrder: readonly [405, 403, 503]
+  readonly admitOrder: readonly [413, 429]
+  readonly admitSurfaces: readonly ["mcp"]
+  readonly routes: {
+    readonly mcp: { readonly "/api/fishball/mcp": readonly ["POST"] }
+    readonly token: {
+      readonly "/api/fishball/oauth/token": readonly ["POST"]
+      readonly "/.well-known/oauth-protected-resource/api/fishball/mcp": readonly ["GET"]
+      readonly "/.well-known/oauth-authorization-server/api/fishball/oauth": readonly ["GET"]
+    }
+    readonly approval: { readonly "/authorize": readonly ["GET"]; readonly "/authorize/decision": readonly ["POST"] }
+  }
+  readonly originRule: { readonly mcp: "refuse-any"; readonly token: "refuse-any"; readonly approval: "own-only" }
+  readonly headers: { readonly host: "host"; readonly origin: "origin"; readonly allow: "allow" }
+  readonly allowSeparator: ", "
+  readonly inFlightRetryAfterMs: number
+}
 export declare const RESOURCE: { readonly events: { readonly name: "fishball-events"; readonly uri: "fishball://events"; readonly mimeType: "application/json" } }
 export declare const RESPONSE_TYPE: { readonly code: "code" }
 export declare const RESYNC_REASON: { readonly staleCursor: "stale-cursor" }
