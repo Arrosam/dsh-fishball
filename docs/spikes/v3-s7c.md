@@ -173,7 +173,12 @@ The design below includes the user's decisions in §6: Fishball connectors only 
   - say `token_endpoint_auth_method: "none"` and carry no secret.
 
   The plugin's README documents this, with a template.
-- **Fishball connectors only (Q-S7C-1):** before any authorization request, discovery must show that the server is a Fishball connector. A server that fails the check is refused with a message and no request is sent. The exact check is Q-S7C-5.
+- **Fishball connectors only (Q-S7C-1):** before any authorization request, discovery must show that the server is a Fishball connector. The rule is Q-S7C-5 A:
+  - the protected-resource `resource` equals the configured URL, with path `/api/fishball/mcp`;
+  - `authorization_servers[0]` is the same origin plus `/api/fishball/oauth`;
+  - `scopes_supported` includes `fishball`.
+
+  A server that fails is refused with a message, and no request is sent.
 - **Registration:** CIMD only. The SDK's `auth()` runs with the configured `clientMetadataUrl`. Fishball connectors advertise CIMD and have no `registration_endpoint`, so there is no dynamic-registration fallback.
 - **Sign-in (Q-S7C-3): one agent tool, `fishball_connector_sign_in` (working name), input `{server}`:**
   - `authorized`: nothing to do;
@@ -205,7 +210,7 @@ The design below includes the user's decisions in §6: Fishball connectors only 
    - the config schema, with `clientMetadataUrl` required;
    - grant record format v1;
    - the states `needs-configuration`, `needs-authorization`, `authorizing`, `authorized` and `failed`;
-   - the Fishball-connector check (Q-S7C-5);
+   - the Fishball-connector check (Q-S7C-5 A);
    - the tool's input and results;
    - the proxy rules;
    - K values: refresh lead, auth timeout, body cap.
@@ -242,7 +247,7 @@ The design below includes the user's decisions in §6: Fishball connectors only 
 
 ## 6. Questions for the user: decided
 
-The user's answers are "CCB" for Q-S7C-1 to Q-S7C-3. Q-S7C-4 was already settled by the V3 auth decisions. My earlier recommendations were B, A, A and A; they are kept below for the record.
+The user's answers are "CCB" for Q-S7C-1 to Q-S7C-3. Q-S7C-4 was already settled by the V3 auth decisions, and Fishball decided Q-S7C-5 as an implementation detail. My earlier recommendations were B, A, A and A; they are kept below for the record.
 
 ### Q-S7C-1. Which servers the adapter serves: **decided C, Fishball connectors only**
 
@@ -288,7 +293,7 @@ The user's answers are "CCB" for Q-S7C-1 to Q-S7C-3. Q-S7C-4 was already settled
   - After a restart the adapter's access token gets a 401, the proxy's single refresh succeeds, and the call goes through without the user.
   - This settles S7b Q-S7B-3 option A for the adapter's rows.
 
-### Q-S7C-5 (new, open). How the adapter recognizes a Fishball connector
+### Q-S7C-5. How the adapter recognizes a Fishball connector: **decided A, by the metadata it already serves**
 
 - **Background:** Q-S7C-1 = C needs a rule, applied before any authorization request. The rule should rest on what the decided connector already serves (v3-design §5.5; observed in S7b D1 and T1, on loopback and behind a tunnel).
 - **Options:**
@@ -300,11 +305,11 @@ The user's answers are "CCB" for Q-S7C-1 to Q-S7C-3. Q-S7C-4 was already settled
     This needs no connector change.
   - **B.** Check only that the configured URL's path is `/api/fishball/mcp`. This is weaker: any server can use that path.
   - **C.** A Fishball marker advertised by the connector, such as a field in its metadata. This needs a connector change.
-- **Recommendation: A.**
+- **Decided A** (Fishball, as an implementation detail, following my recommendation). The rule is the three checks in A, made on the discovered metadata before any authorization request, with no connector change.
 
 ## 7. Effect on the design
 
 - **v3-design §5.5 / AUTH-UC-10:** "a DSH using another DSH's connector" now has a supported path: `fishball-connector-adapter` (c2), with sign-in through its agent tool and a user-hosted CIMD. S7b Q-S7B-2 option A ("a plain `dsh-mcp-client` row is not supported") can become "supported through the adapter plugin, for Fishball connectors".
 - **Q-S7B-3:** decided A (Q-S7C-4); the adapter relies on it for silent recovery after a connector restart.
 - **Q-S7B-1:** still needed for third-party clients that race (the plain SDK). It is not needed for the adapter (F5).
-- **DESIGN.md:** a new standalone package, scoped to Fishball connectors. I did not change DESIGN.md or the cases in this spike. The update waits for Q-S7C-5 and is listed here for the next design revision.
+- **DESIGN.md:** a new standalone package, scoped to Fishball connectors. I did not change DESIGN.md or the cases in this spike. All questions are decided; the update is listed here for the next design revision.
