@@ -12,7 +12,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-OA-10 | Withdrawn twice (1.16 direct access; 1.25 static headers replaced by the adapter, R-OA-21); the ID is reserved. Its negative is covered by AUTH-UC-07 and AUTH-EP-02 rows 7–8b. |
 | R-WD-13 | Withdrawn (requirements 1.14); the ID is reserved. Its old behaviour (idle-stop bypass) is negatively covered by WD-UC-02 and WD-EP-01 #5: every `turn-finished` reaches Fishball. |
 
-**Requirement → cases** (197 requirements, 174 active cases, 6 withdrawn ids kept):
+**Requirement → cases** (197 requirements, 183 active cases, 6 withdrawn ids kept):
 
 | Requirement | Cases | Count |
 | --- | --- | --- |
@@ -59,7 +59,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-TOK-01 | AUTH-UC-02, AUTH-UC-03, AUTH-UC-07, AUTH-UC-12, AUTH-EP-02, AUTH-DT-02, PLAT-EP-01 | 7 |
 | R-TOK-02 | AUTH-EP-01, AUTH-EP-02 | 2 |
 | R-TOK-03 | AUTH-UC-01 | 1 |
-| R-TOK-04 | AUTH-UC-01, AUTH-UC-07, AUTH-UC-12, AUTH-EP-04, AUTH-UC-10, HOST-EP-02, PLAT-EP-05 | 7 |
+| R-TOK-04 | AUTH-UC-01, AUTH-UC-07, AUTH-UC-12, AUTH-EP-04, AUTH-UC-10, HOST-EP-02, PLAT-EP-05, AUTH-EP-13 | 8 |
 | R-TOK-05 | AUTH-UC-06, AUTH-DT-04, AUTH-ST-05, EVT-EP-04, EVT-ST-01, HOST-UC-04, PLAT-ST-01 | 7 |
 | R-TOK-06 | AUTH-UC-07, AUTH-EP-05, AUTH-BVA-06, AUTH-DT-08, REM-EP-03 | 5 |
 | R-TOK-07 | AUTH-EP-07 | 1 |
@@ -78,15 +78,15 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-OA-10 | AUTH-UC-07, AUTH-EP-02 | 2 |
 | R-OA-11 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-08 | 3 |
 | R-OA-12 | AUTH-UC-12, AUTH-UC-10, AUTH-ST-04, AUTH-DT-08 | 4 |
-| R-OA-13 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-07, AUTH-EP-08 | 4 |
-| R-OA-14 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-07, AUTH-ST-04, AUTH-BVA-07 | 5 |
-| R-OA-15 | AUTH-ST-04, AUTH-BVA-07 | 2 |
-| R-OA-16 | AUTH-UC-12, AUTH-UC-10, AUTH-ST-06, AUTH-ST-05, AUTH-BVA-08 | 5 |
+| R-OA-13 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-07, AUTH-EP-08, AUTH-EP-12 | 5 |
+| R-OA-14 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-07, AUTH-ST-04, AUTH-BVA-07, AUTH-ST-07 | 6 |
+| R-OA-15 | AUTH-ST-04, AUTH-BVA-07, AUTH-ST-07 | 3 |
+| R-OA-16 | AUTH-UC-12, AUTH-UC-10, AUTH-ST-06, AUTH-ST-05, AUTH-BVA-08, AUTH-BVA-09 | 6 |
 | R-OA-17 | AUTH-BVA-06, AUTH-UC-10 | 2 |
 | R-OA-18 | AUTH-DT-06, AUTH-UC-10 | 2 |
 | R-OA-19 | AUTH-DT-06 | 1 |
 | R-OA-20 | AUTH-UC-10, AUTH-DT-09, AUTH-EP-10, AUTH-EP-09, REM-UC-03 | 5 |
-| R-OA-21 | AUTH-UC-12, AUTH-ST-06 | 2 |
+| R-OA-21 | AUTH-UC-12, AUTH-UC-13, AUTH-UC-14, AUTH-EP-12, AUTH-EP-13, AUTH-EP-14, AUTH-BVA-09, AUTH-DT-11, AUTH-DT-12, AUTH-ST-06, AUTH-ST-07 | 11 |
 | R-ID-01 | AUTH-UC-02 | 1 |
 | R-ID-02 | AUTH-EP-03, AUTH-BVA-02, AUTH-DT-01, AUTH-DT-08 | 4 |
 | R-ID-03 | AUTH-UC-02, AUTH-DT-02, AUTH-ST-01, AUTH-ST-02, AUTH-UC-10, AUTH-DT-08, NAME-UC-01 | 7 |
@@ -210,7 +210,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-MIG-05 | HOST-UC-01, PLAT-UC-05 | 2 |
 | R-COMPAT-01 | PLAT-DT-03 | 1 |
 | R-SEC-01 | HAND-EP-01, HOST-EP-01, PLAT-EP-07 | 3 |
-| R-SEC-02 | EVT-EP-05, HOST-EP-02, PLAT-EP-05 | 3 |
+| R-SEC-02 | EVT-EP-05, HOST-EP-02, PLAT-EP-05, AUTH-EP-13 | 4 |
 | R-SEC-03 | PLAT-EP-01, PLAT-BVA-02 | 2 |
 | R-SEC-04 | EXT-EP-04 | 1 |
 
@@ -226,7 +226,9 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | AUTH-UC-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | D§5.3, TQ-2 (decided A), TQ-5 (decided A) |
 | AUTH-UC-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-UC-11 (withdrawn) | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
-| AUTH-UC-12 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (a second DSH with a `dsh-mcp-client` row and the adapter, both SDKs), e2e (the approval page) | P:S7c |
+| AUTH-UC-12 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (N on both SDKs against a fake connector and the S7b connector prototype; end to end against the real connector), e2e (the approval page in a real browser) | K (LEAD, TIMEOUT) |
+| AUTH-UC-13 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (both SDKs, fake connector) | — |
+| AUTH-UC-14 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (both SDKs, a non-Fishball OAuth-protected MCP server stub) | — |
 | AUTH-UC-08 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-UC-09 | [01-auth-pairing.md](<01-auth-pairing.md>) | e2e | — |
 | AUTH-EP-01 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | TQ-3 (decided A, confirmed by S7), D§5.5 |
@@ -256,7 +258,6 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | AUTH-UC-10 | [01-auth-pairing.md](<01-auth-pairing.md>) | e2e (page), integration (flow with a scripted browser) | — |
 | AUTH-DT-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-ST-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock) | — |
-| AUTH-ST-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (adapter with a fake connector and fake clock) | P:S7c |
 | AUTH-DT-09 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (a second process holding the port) | K (default port; rule 4's rebind timing) |
 | AUTH-ST-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock), integration | K (maximum chain lifetime) |
 | AUTH-DT-08 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
@@ -265,6 +266,14 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | AUTH-BVA-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock) | K (60 s and 10 min frozen at V3-K) |
 | AUTH-EP-08 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (stub HTTP servers) | K (time bound; size 5 KiB decided per spec) |
 | AUTH-EP-09 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
+| AUTH-EP-12 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (both SDKs, fake connector) | — |
+| AUTH-EP-13 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (a full AUTH-UC-12 run on both SDKs with planted, recognisable values) | — |
+| AUTH-EP-14 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (both SDKs, fake connector) | — |
+| AUTH-BVA-09 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (fake clock, fake connector, both SDKs) | K (LEAD, TIMEOUT ≤ 600 s) |
+| AUTH-DT-11 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (stub metadata servers, both SDKs) | K (rule 9's state) |
+| AUTH-DT-12 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (both SDKs, fake connector) | K (rule 8's code) |
+| AUTH-ST-06 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (fake connector and fake clock, both SDKs) | K (what enters `failed`) |
+| AUTH-ST-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (fake connector and fake clock, both SDKs) | K (TIMEOUT) |
 | NAME-UC-01 | [02-names.md](<02-names.md>) | integration | — |
 | NAME-UC-02 | [02-names.md](<02-names.md>) | integration (core + C), e2e (page and marks) | — |
 | NAME-UC-03 | [02-names.md](<02-names.md>) | integration | — |

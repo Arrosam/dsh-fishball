@@ -1,6 +1,6 @@
 # 1. OAuth client credentials, tokens and pairing (AUTH)
 
-Requirements: R-TOK-00…10, R-OA-01…10, R-ID-01…12, requirements §4.1. Conventions:
+Requirements: R-TOK-00…10, R-OA-01…21, R-ID-01…13, requirements §4.1. Conventions:
 [README](<README.md>).
 
 ## Use Cases
@@ -133,34 +133,14 @@ Requirements: R-TOK-00…10, R-OA-01…10, R-ID-01…12, requirements §4.1. Con
   3. The connector's settings have no `directAccess` switch.
 - **Alternative flows:**
   - A1. The client obtains an access token at the token endpoint with `agent-a` + `v(E1)` → MCP requests then succeed.
-  - A2. The client is a `dsh-mcp-client` row → it connects through the adapter with ordinary OAuth (AUTH-UC-12).
+  - A2. The client is DSH's `dsh-mcp-client` → it connects through `fishball-connector-adapter` with ordinary OAuth (AUTH-UC-12).
 - **Exception flows:** E1. The header from a disallowed `Origin` → 403 before any token check.
 - **Postconditions:** the bearer value is never logged (grep); these requests count toward the per-client failure limit like any other.
 
-### AUTH-UC-11 — *Withdrawn* (the static token + id header form, requirements 1.25, was replaced by the `dsh-mcp-client` adapter)
+### AUTH-UC-11 — *Withdrawn* (the static token + id header form, requirements 1.25, was replaced by `fishball-connector-adapter`)
 **Req:** R-OA-10 · **Level:** integration · **Flags:** —
 
 The id stays reserved. Its negative is covered by AUTH-UC-07 and AUTH-EP-02 rows 7–8b; the replacement is AUTH-UC-12.
-
-### AUTH-UC-12 — A `dsh-mcp-client` row connects through the adapter with normal OAuth
-**Req:** R-OA-21, R-OA-11, R-OA-12, R-OA-13, R-OA-14, R-OA-16, R-TOK-01, R-TOK-04 · **Level:** integration (a second DSH with a `dsh-mcp-client` row and the adapter, both SDKs), e2e (the approval page) · **Flags:** P:S7c
-
-- **Actor:** the owner of DSH M (connector) and of DSH N, where a `dsh-mcp-client` row points at M's connector and the adapter is installed.
-- **Preconditions:** the owner created E7 by hand in M's connector settings; E7 is enabled and unpaired.
-- **Main flow:**
-  1. The row starts; the adapter fetches M's protected-resource and authorization-server metadata and uses its Client ID Metadata Document URL as `client_id`.
-  2. The adapter opens the owner's browser at M's approval page with PKCE S256, a loopback redirect it listens on, `state` and `resource`.
-  3. The owner types `v(E7)` and the id `dsh-n` and authorizes; the adapter receives the code, checks `iss`, and exchanges it → an access token (`scope: fishball`) and a refresh token.
-  4. The row's MCP requests carry `Authorization: Bearer <access token>`; `tools/list`, `tools/call` and `subscriptions/listen` succeed.
-  5. Before the access token expires, the adapter refreshes once (single-flight) and the row keeps working, across several 3600 s lifetimes (fake clock).
-- **Alternative flows:**
-  - A1. M's connector restarts → the row's next request gets 401; the adapter refreshes with the persisted refresh token (R-OA-16 (5)) and the row reconnects with no browser step.
-  - A2. N restarts → the adapter reads its stored refresh token from `ctx.credentials` and refreshes; no browser step.
-- **Exception flows:**
-  - E1. The owner disables E7 → the next refresh gets `invalid_grant`; the adapter reports "authorize again" once and does not retry in a loop.
-  - E2. The owner cancels on the approval page → the adapter reports it; the row stays disconnected.
-  - E3. The adapter is disabled → it stops refreshing; the row fails at the next expiry.
-- **Postconditions:** M saw only standard OAuth requests (no non-standard header, field or grant); no access token, refresh token or verifier is in N's saved row configuration, any log, or any page (grep); no host file of N was patched.
 
 ### AUTH-UC-08 — A standard MCP client is set up with configuration only
 **Req:** R-OA-01, R-OA-02, R-OA-05, R-OA-09, R-CON-01, R-REM-03 · **Level:** integration · **Flags:** —
@@ -536,7 +516,7 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 ### AUTH-UC-10 — Someone authorizes a browser agent by entering a token
 **Req:** R-OA-11, R-OA-12, R-OA-13, R-OA-14, R-OA-16, R-OA-17, R-OA-18, R-OA-20, R-ID-03, R-ID-04, R-ID-12, R-NAME-06, R-TOK-00, R-TOK-04 · **Level:** e2e (page), integration (flow with a scripted browser) · **Flags:** —
 
-- **Actor:** whoever holds a token (normally the DSH owner); an external MCP client with the authorization code flow (the DSH SDK client `@modelcontextprotocol/client` 2.2.0 on both SDKs, or the Python MCP SDK; DSH's own `dsh-mcp-client` has no OAuth and is served by the adapter, AUTH-UC-12) and a Client ID Metadata Document at `https://agent.example/cimd.json` (`client_name: "Agent W"`, `redirect_uris: ["http://127.0.0.1:7777/cb"]`).
+- **Actor:** whoever holds a token (normally the DSH owner); an external MCP client with the authorization code flow (the DSH SDK client `@modelcontextprotocol/client` 2.2.0 on both SDKs, or the Python MCP SDK; DSH's own `dsh-mcp-client` has no OAuth and reaches a Fishball connector through `fishball-connector-adapter`, AUTH-UC-12) and a Client ID Metadata Document at `https://agent.example/cimd.json` (`client_name: "Agent W"`, `redirect_uris: ["http://127.0.0.1:7777/cb"]`).
 - **Preconditions:** the owner created entry E5 by hand in the connector's settings; E5 is enabled and unpaired; the approval listener is open.
 - **Main flow:**
   1. The client gets 401 at the MCP endpoint, reads both metadata documents, and sees `client_id_metadata_document_supported: true`, `code_challenge_methods_supported: ["S256"]` and `authorization_endpoint` on the approval listener.
@@ -600,22 +580,6 @@ States: **Unconfigured** (enabled, no value), **Ready** (enabled, value, unbound
 | 10 | CodeIssued | 60 s pass | Expired | `invalid_grant` |
 | 11 | Redeemed | the same code again | Redeemed | `invalid_grant`; every AT issued from it revoked |
 | 12 | any | connector restart | (gone) | pending requests and codes lost; bindings stay |
-
-### AUTH-ST-06 — The adapter's view of one `dsh-mcp-client` row
-**Req:** R-OA-21, R-OA-16 · **Level:** unit (adapter with a fake connector and fake clock) · **Flags:** P:S7c
-
-| # | From | Event | To | Observable |
-| --- | --- | --- | --- | --- |
-| 1 | Unauthorized | row starts | Authorizing | browser opened at `authorization_endpoint` (PKCE, `state`, `resource`) |
-| 2 | Authorizing | redirect with `code`, valid `iss` | Connected | code exchanged; row sends the access token |
-| 3 | Authorizing | redirect with a wrong `iss` or `state` | Unauthorized | code not exchanged; reported |
-| 4 | Authorizing | `access_denied` | Unauthorized | reported once |
-| 5 | Connected | access token near expiry | Refreshing | one refresh grant |
-| 6 | Refreshing | several row requests at once | Refreshing | still one refresh in flight (single-flight) |
-| 7 | Refreshing | success | Connected | new access token and refresh token stored in `ctx.credentials` |
-| 8 | Refreshing | `invalid_grant` | NeedsAuthorization | "authorize again" reported once; no retry loop |
-| 9 | Connected | 401 (connector restarted) | Refreshing | refresh with the persisted refresh token |
-| 10 | any | adapter disabled | Stopped | no refresh; nothing written to the row config |
 
 ### AUTH-DT-09 — The approval listener's port
 **Req:** R-OA-20, R-OA-01, R-OA-02 · **Level:** integration (a second process holding the port) · **Flags:** K (default port; rule 4's rebind timing)
@@ -744,3 +708,218 @@ RT1 spent at t = 0, producing RT2. Same `client_id` and `resource` unless stated
 | 5 | any other host (DNS rebinding, `evil.example`) | refused before authentication, on DSH's listener and on the approval listener |
 | 6 | AT issued under host 1, used under host 2 | 401 (different canonical URI) |
 | 7 | the AS metadata fetched under host H | its `issuer` equals the issuer built from H |
+
+## Connector adapter `fishball-connector-adapter` (requirements 1.25, 1.25a, R-OA-21; spike S7c `51e9ff1`)
+
+Fixtures for this section: **N** is the DSH with the adapter installed, M is the DSH with connector C.
+`U = <origin of M>/api/fishball/mcp` is a configured server `{serverName: "m", url: U}`. `CIMD =
+https://agent.example/fb-adapter.json` is the user-hosted document (`client_id` = its URL,
+`client_name`, `redirect_uris: ["http://127.0.0.1:7777/callback"]`, `token_endpoint_auth_method:
+"none"`). A **fake connector** is a stub HTTP server that serves the metadata, the approval page and
+the token endpoint as scripted per row, and records every request. LEAD (refresh lead) and TIMEOUT
+(attempt timeout, at most 600 s) are the adapter's K values (S7c plan step K1). **END** is the state an
+attempt that ends without a grant leaves behind (Cancel, a rejected callback, TIMEOUT): the sources
+leave what enters `failed` to the adapter contract, so END is `needs-authorization` or `failed` (K),
+and the rows only require that it is not `authorized`. The **probe console** is the stdout and
+stderr of the test process that drives N and M. Integration rows run
+on 0.2.1-rc.5 and 0.2.2-rc.1 (R-COMPAT-01). **Owner** names the task in v3-remaining-plan.md that
+writes the test.
+
+### AUTH-UC-12 — A DSH signs in to a Fishball connector through the adapter and stays connected
+**Req:** R-OA-21, R-OA-11, R-OA-12, R-OA-13, R-OA-14, R-OA-16, R-TOK-01, R-TOK-04 · **Level:** integration (N on both SDKs against a fake connector and the S7b connector prototype; end to end against the real connector), e2e (the approval page in a real browser) · **Flags:** K (LEAD; END) · **Owner:** C-MCP-ADAPTER (integration, fake connector and S7b prototype); X-REMOTE (end to end, the real connector with persisted refresh digests); E2E-AUTH (e2e)
+
+- **Actor:** the owner of N and M, and the agent of a session in N.
+- **Preconditions:** the adapter is enabled in N with `clientMetadataUrl = CIMD` and `servers: [{serverName: "m", url: U}]`; N's configuration holds no `dsh-mcp-client` row and no `!!js`; the owner created E7 by hand in C's settings; E7 is enabled and unpaired; no grant for `m` exists.
+- **Main flow:**
+  1. The adapter reports `m` as `needs-authorization`; no child row is mounted and no `mcp__m__…` tool exists.
+  2. The agent calls `fishball_connector_sign_in({server: "m"})`. The adapter reads M's protected-resource metadata, then its authorization-server metadata, and the Fishball-connector check passes (AUTH-DT-11 rule 1).
+  3. The tool returns at once with `approval-url`: an URL on M's approval listener with `client_id = CIMD`, `redirect_uri = http://127.0.0.1:<port>/callback`, `code_challenge_method = S256`, `state`, `scope = fishball` and `resource = U`, plus the text "open it in your browser and enter a token from the connector's settings". The state is `authorizing`. No registration request was sent.
+  4. The owner opens the URL, types `v(E7)`, the id `dsh-n` and no name, and presses Authorize.
+  5. The adapter's callback receives `code`, `state` and `iss`, checks `state` and `iss`, and exchanges the code with `code_verifier`, `redirect_uri`, `client_id` and `resource`, with no client secret → an access token (`scope: fishball`) and a refresh token. The grant is committed to N's credential store.
+  6. The state is `authorized`; the adapter mounts a stock `dsh-mcp-client` child row pointed at its loopback proxy; `mcp__m__pair`, `mcp__m__whoami` and the other tools appear; `whoami` shows a browser pair with id `dsh-n`.
+  7. Tool calls and `subscriptions/listen` succeed through the proxy, which sends `Authorization: Bearer <access token>` upstream.
+  8. Across several 3600 s lifetimes (fake clock), the adapter refreshes once per lifetime, LEAD before expiry; the child row is never restarted and keeps working.
+  9. A later `fishball_connector_sign_in({server: "m"})` returns `authorized` and changes nothing.
+- **Alternative flows:**
+  - A1. M's connector restarts → access tokens are gone; the row's next call gets 401 at the proxy, which refreshes once with the refresh token whose digest C persisted (R-OA-16 (5)) and retries once → the call succeeds; no browser step, no new sign-in.
+  - A2. N restarts → `m` comes back `authorized` from the stored grant; no browser and no token request at start; the child row is mounted again.
+  - A3. C drops the access token early while the adapter's clock says it is valid → the call that hits the 401 succeeds after one refresh and one retry.
+  - A4. Eight calls hit an expired access token at once → all eight succeed with exactly **one** refresh grant; C records no refresh-token reuse.
+  - A5. Two N processes share the credential store and both see the token near expiry → one refresh grant in total (the record lock), and both use the new token.
+- **Exception flows:**
+  - E1. The owner disables E7 → the next refresh gets `invalid_grant`; `m` becomes `needs-authorization`, reported once; no further refresh is attempted.
+  - E2. The owner presses Cancel on the approval page → `access_denied` with `iss`; the attempt ends; `m` is END; no child row.
+  - E3. The callback carries a wrong `state` or `iss` → the code is not exchanged and no grant is committed (whether the attempt ends or keeps waiting for a good callback is K).
+  - E4. The 401 persists after the one refresh and retry → the call fails; `m` is `needs-authorization`; no third request.
+  - E5. The adapter is disabled → refreshing stops and the child row is gone.
+- **Postconditions:** C saw only standard OAuth requests (no non-standard header, field or grant, and no `registration_endpoint` use); no token value, refresh token, verifier or `v(E7)` is in N's configuration, logs, the tool's results or the session transcript (AUTH-EP-13); no host file of N was patched.
+
+### AUTH-UC-13 — The adapter is installed without its client-id setting
+**Req:** R-OA-21 · **Level:** integration (both SDKs, fake connector) · **Flags:** — · **Owner:** C-MCP-ADAPTER
+
+- **Actor:** the owner of N, and the agent of a session in N.
+- **Preconditions:** the adapter is enabled with `servers: [{serverName: "m", url: U}]` and **no** `clientMetadataUrl` (the setting has no default); the fake connector records every request.
+- **Main flow:**
+  1. The adapter starts; `m` is `needs-configuration`; no child row and no `mcp__m__…` tool exist.
+  2. The agent calls `fishball_connector_sign_in({server: "m"})` → `needs-configuration`, saying the client-id setting is missing; no URL is returned.
+  3. The owner sets `clientMetadataUrl = CIMD` → `m` becomes `needs-authorization`; the next sign-in proceeds as in AUTH-UC-12 step 2.
+- **Alternative flows:**
+  - A1. The setting holds a value that is not an https URL with a non-root path (AUTH-EP-12) → the same as step 2.
+- **Exception flows:**
+  - E1. The owner saves an invalid value after a valid one, while `m` has no grant → `m` is `needs-configuration` again (AUTH-EP-12 row 8).
+- **Postconditions:** until step 3, the fake connector received no authorization, registration or token request, and the approval page was never opened; the adapter never substituted a built-in or hard-coded client id.
+
+### AUTH-UC-14 — A configured server that is not a Fishball connector is refused
+**Req:** R-OA-21 · **Level:** integration (both SDKs, a non-Fishball OAuth-protected MCP server stub) · **Flags:** K (when the check runs and which metadata it reads) · **Owner:** C-MCP-ADAPTER
+
+- **Actor:** the agent of a session in N.
+- **Preconditions:** `clientMetadataUrl = CIMD`; `servers: [{serverName: "x", url: "https://other.example/mcp"}]`; the server at that URL is a stock OAuth-protected MCP server whose metadata names `https://other.example/oauth` as its authorization server and `scopes_supported: ["read"]`, and records every request.
+- **Main flow:**
+  1. The agent calls `fishball_connector_sign_in({server: "x"})`.
+  2. The adapter reads the server's discovery metadata, and the Fishball-connector check fails (AUTH-DT-11).
+  3. The tool returns `needs-configuration`, saying the server is not a Fishball connector; `x` is `needs-configuration`.
+- **Alternative flows:**
+  - A1. Only one of the three checks fails (AUTH-DT-11 rules 2–7) → the same result.
+- **Exception flows:**
+  - E1. A second call → the same result; still no authorization, registration or token request.
+- **Postconditions:** the server received no authorization, registration or token request, and no URL was returned; no grant record for `x` exists; no child row is mounted.
+
+### AUTH-EP-12 — The `clientMetadataUrl` setting
+**Req:** R-OA-21, R-OA-13 · **Level:** integration (both SDKs, fake connector) · **Flags:** — · **Owner:** C-MCP-ADAPTER
+
+| # | Class | Value | State of every server | Sign-in result |
+| --- | --- | --- | --- | --- |
+| 1 | absent | (no setting) | `needs-configuration` | `needs-configuration`; no authorization request |
+| 2 | empty | `""` | `needs-configuration` | as row 1 |
+| 3 | not a URL | `fb-adapter` | `needs-configuration` | as row 1 |
+| 4 | `http:` with a path | `http://agent.example/fb-adapter.json` | `needs-configuration` | as row 1 |
+| 5 | `https:`, root path | `https://agent.example/` | `needs-configuration` | as row 1 |
+| 6 | `https:`, no path | `https://agent.example` | `needs-configuration` | as row 1 |
+| 7 | `https:` with a non-root path | `CIMD` | `needs-authorization` | `approval-url` whose `client_id` is exactly this value |
+| 8 | valid, then removed | row 7, then absent | `needs-configuration` again for a server with no grant | as row 1 |
+
+### AUTH-EP-13 — Where the adapter's secrets may appear (leak check)
+**Req:** R-OA-21, R-TOK-04, R-SEC-02 · **Level:** integration (a full AUTH-UC-12 run on both SDKs with planted, recognisable values) · **Flags:** — · **Owner:** C-MCP-ADAPTER (adapter suite); X-SEC (full-run sweep)
+
+Planted values: `v(E7)`, every access token, every refresh token, every authorization code, every PKCE verifier and the proxy's local bearer. Each cell is a grep for every planted value.
+
+| # | Place | Expected hits |
+| --- | --- | --- |
+| 1 | N's configuration (profile and home patches, settings documents) | 0 |
+| 2 | every log of N and M, and the probe console | 0 |
+| 3 | every result of `fishball_connector_sign_in` (the `approval-url` URL carries only `client_id`, `redirect_uri`, `state`, the PKCE challenge, `scope`, `resource`) | 0 |
+| 4 | the **session transcript** of the session that called the tool (stored history and what the client renders) | 0 |
+| 5 | every other file of N's and M's homes, temp dirs and lifecycle files, except row 6 | 0 |
+| 6 | N's `.credentials.yaml` | the grant record of each server (its access and refresh token); never `v(E7)` or the local bearer; whether an attempt's verifier or code is held there while the attempt runs is K; file mode 0600 |
+| 7 | requests the proxy sends upstream | the access token only in `Authorization`; never in a URL; never the local bearer |
+| 8 | anything the adapter's status reports | no value of any planted class |
+
+### AUTH-EP-14 — Requests to the adapter's loopback proxy
+**Req:** R-OA-21 · **Level:** integration (both SDKs, fake connector) · **Flags:** K (row 10's cap) · **Owner:** C-MCP-ADAPTER
+
+| # | Class | Expected |
+| --- | --- | --- |
+| 1 | from the child row, correct local bearer | forwarded with the real access token; the response streams back |
+| 2 | no `Authorization` header | refused at the proxy; nothing forwarded |
+| 3 | a wrong local bearer, same length | refused; nothing forwarded (constant-time comparison) |
+| 4 | a wrong local bearer, other length | refused; nothing forwarded |
+| 5 | a local bearer from before an adapter restart | refused (the bearer is per start and never on disk) |
+| 6 | the caller's own `Authorization` value | never forwarded upstream (no token passthrough) |
+| 7 | hop-by-hop headers (`connection`, `keep-alive`, `transfer-encoding`, `upgrade`, `te`, `trailer`, `proxy-authorization`) | not forwarded |
+| 8 | the proxy's listening address | 127.0.0.1 only; not reachable on any other interface |
+| 9 | a `subscriptions/listen` stream | stays open and streams events |
+| 10 | a request body at the proxy body cap, and one byte over it (K: the cap) | at the cap: forwarded; over it: refused at the proxy, nothing forwarded |
+
+### AUTH-BVA-09 — Refresh timing, the 401 retry and the attempt timeout
+**Req:** R-OA-21, R-OA-16 · **Level:** integration (fake clock, fake connector, both SDKs) · **Flags:** K (LEAD, TIMEOUT ≤ 600 s; END) · **Owner:** C-MCP-ADAPTER
+
+The access token is issued at t0 with `expires_in: 3600`; E = t0 + 3600.
+
+| # | Input | Expected |
+| --- | --- | --- |
+| 1 | time reaches E − LEAD − 1 | no refresh grant |
+| 2 | time reaches E − LEAD | exactly one refresh grant |
+| 3 | time reaches E − LEAD + 1 after row 2 | no second grant |
+| 4 | a call gets 1 × 401 | one refresh, one retry; the call succeeds |
+| 5 | a call gets 2 × 401 (the retry is refused too) | the call fails; `needs-authorization`; no third upstream request and no second refresh |
+| 6 | a sign-in attempt is pending at TIMEOUT − 1 | still pending; a sign-in call returns the same URL |
+| 7 | a sign-in attempt is pending at TIMEOUT | ended; END; a sign-in call returns a new URL |
+| 8 | the frozen TIMEOUT | ≤ 600 s (the connector's pending lifetime, R-OA-15) |
+
+### AUTH-DT-11 — The Fishball-connector check (Q-S7C-5 = A)
+**Req:** R-OA-21 · **Level:** integration (stub metadata servers, both SDKs) · **Flags:** K (rule 9's state; when the check runs) · **Owner:** C-MCP-ADAPTER
+
+The configured URL is `url`; O is its origin. `clientMetadataUrl` is valid in every rule. "Requests" are
+authorization, registration and token requests; which discovery reads happen, and whether the check
+runs at start or at sign-in, is K.
+
+| Rule | Path of `url` | PRM `resource` | `authorization_servers[0]` | `scopes_supported` | Result | Requests after the metadata reads |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | `/api/fishball/mcp` | equals `url` | O + `/api/fishball/oauth` | includes `fishball` | Fishball connector: sign-in proceeds | none yet; `approval-url` returned (the browser then sends the authorization request) |
+| 2 | `/api/fishball/mcp` | another URL | O + `/api/fishball/oauth` | includes `fishball` | refused: `needs-configuration` | none |
+| 3 | `/api/fishball/mcp` | equals `url` | another origin + `/api/fishball/oauth` | includes `fishball` | refused | none |
+| 4 | `/api/fishball/mcp` | equals `url` | O + another path | includes `fishball` | refused | none |
+| 5 | `/api/fishball/mcp` | equals `url` | O + `/api/fishball/oauth` | lacks `fishball` | refused | none |
+| 6 | `/api/fishball/mcp` | equals `url` | O + `/api/fishball/oauth` | absent | refused | none |
+| 7 | another path (`/mcp`) | equals `url` | O + `/api/fishball/oauth` | includes `fishball` | refused | none |
+| 8 | `/api/fishball/mcp` | equals `url` | only the second entry is O + `/api/fishball/oauth` | includes `fishball` | refused (the first entry decides) | none |
+| 9 | any | the metadata cannot be read (unreachable, not JSON) | — | — | no sign-in (K: `failed` or `needs-configuration`, frozen by the adapter contract) | none |
+
+### AUTH-DT-12 — What `fishball_connector_sign_in` returns
+**Req:** R-OA-21 · **Level:** integration (both SDKs, fake connector) · **Flags:** K (rule 8's code) · **Owner:** C-MCP-ADAPTER
+
+| Rule | `server` configured | `clientMetadataUrl` valid | Fishball connector (DT-11) | Grant with live tokens | Attempt pending | Result | Side effect |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | yes | no | — | — | — | `needs-configuration` (client-id setting missing) | no request to the server |
+| 2 | yes | yes | no | — | — | `needs-configuration` (not a Fishball connector) | no authorization, registration or token request |
+| 3 | yes | yes | yes | yes | — | `authorized` | none; no new attempt |
+| 4 | yes | yes | yes | no | no | `approval-url` with a new URL | a new attempt starts; state `authorizing` |
+| 5 | yes | yes | yes | no | yes | `approval-url` with the **same** URL as the pending attempt | no second attempt |
+| 6 | yes | yes | yes | no (the last attempt ended without a grant: Cancel, a rejected callback, TIMEOUT; or a later `invalid_grant` dropped the tokens) | no | `approval-url` with a new URL (new `state`) | the old URL stays dead (AUTH-ST-07) |
+| 7 | any | any | any | any | any | the result returns at once, never waits for the approval | — |
+| 8 | **no** (unknown `server`) | any | — | — | — | refused (K: code frozen by the adapter contract) | nothing changes; no request |
+
+### AUTH-ST-06 — The adapter's state for one configured server
+**Req:** R-OA-21, R-OA-16 · **Level:** integration (fake connector and fake clock, both SDKs) · **Flags:** K (what enters `failed`, END; when the Fishball-connector check runs) · **Owner:** C-MCP-ADAPTER
+
+States: `needs-configuration`, `needs-authorization`, `authorizing`, `authorized`, `failed`.
+
+| # | From | Event | To | Observable |
+| --- | --- | --- | --- | --- |
+| 1 | (start) | adapter starts, `clientMetadataUrl` missing or invalid | `needs-configuration` | no child row; no authorization request |
+| 2 | `needs-configuration` | a valid `clientMetadataUrl` is saved | `needs-authorization` | no request yet |
+| 3 | (start) | adapter starts, valid setting, no grant | `needs-authorization` | no child row |
+| 4 | (start) | adapter starts, valid setting, a stored grant | `authorized` | child row mounted; no browser, no token request at start |
+| 5 | `needs-authorization` | the Fishball-connector check fails (at start or at sign-in, K) | `needs-configuration` | no authorization, registration or token request |
+| 6 | `needs-authorization` | sign-in, the check passes | `authorizing` | `approval-url` returned |
+| 7 | `authorizing` | sign-in again | `authorizing` | the same URL |
+| 8 | `authorizing` | callback with `code`, valid `state` and `iss` | `authorized` | code exchanged; grant committed; child row mounted |
+| 9 | `authorizing` | callback with a wrong `state` or `iss` | `authorizing` or END (K) | code not exchanged; no grant |
+| 10 | `authorizing` | `access_denied` (Cancel) | END | reported once |
+| 11 | `authorizing` | TIMEOUT passes | END | the URL is dead |
+| 12 | `authorizing` | the attempt fails for any other reason | `failed` | reported (K) |
+| 13 | `authorized` | LEAD before expiry | `authorized` | one refresh grant; no row restart |
+| 14 | `authorized` | 401 at the proxy, refresh succeeds (connector restarted, A1) | `authorized` | one refresh, one retry; the call succeeds |
+| 15 | `authorized` | `invalid_grant` on refresh (entry disabled, deleted or value changed) | `needs-authorization` | tokens dropped; reported once; no retry loop |
+| 16 | `authorized` | 401 again after the retry | `needs-authorization` | no third request |
+| 17 | `authorized` | the grant record is removed | `needs-authorization` | child row disposed of |
+| 18 | `authorized` | sign-in | `authorized` | result `authorized`; nothing changes |
+| 19 | any | adapter disabled | (stopped) | no refresh; nothing written to any configuration |
+
+### AUTH-ST-07 — One sign-in attempt and its approval URL
+**Req:** R-OA-21, R-OA-14, R-OA-15 · **Level:** integration (fake connector and fake clock, both SDKs) · **Flags:** K (TIMEOUT; row 3a's state) · **Owner:** C-MCP-ADAPTER
+
+The attempt's URL is u1; its loopback callback is the one the attempt listens on.
+
+| # | From | Event | To | Observable |
+| --- | --- | --- | --- | --- |
+| 1 | (none) | sign-in | Pending(u1) | `approval-url` u1; callback listening on a fresh OS port |
+| 2 | Pending(u1) | sign-in again, before TIMEOUT | Pending(u1) | `approval-url` u1 again, byte-identical; no second attempt, no second listener |
+| 3 | Pending(u1) | callback with `code`, valid `state` and `iss` | Ended(authorized) | grant committed; a later redirect for u1 is not accepted (row 7) |
+| 3a | Pending(u1) | callback with a wrong `state` or `iss` | Pending(u1) or Ended(rejected) (K) | code not exchanged; no grant |
+| 4 | Pending(u1) | `access_denied` | Ended(denied) | no grant; a later redirect for u1 is not accepted (row 7) |
+| 5 | Pending(u1) | TIMEOUT | Ended(expired) | no grant; a later redirect for u1 is not accepted (row 7) |
+| 6 | Pending(u1) | the adapter is disabled or restarts | Ended | no grant; nothing of the attempt survives |
+| 7 | Ended(any) | a redirect for u1 (its `state`) arrives | Ended | not accepted: no code exchange and no grant |
+| 8 | Ended(denied / expired / rejected) | sign-in | Pending(u2) | a new URL u2 ≠ u1 (new `state`, new PKCE challenge) |
+| 9 | Ended(authorized) | sign-in | Ended(authorized) | result `authorized`; no URL |

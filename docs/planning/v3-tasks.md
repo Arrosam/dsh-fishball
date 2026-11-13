@@ -1,6 +1,6 @@
 # Fishball V3: task table for parallel development
 
-Status: **draft, 2026-11-11.** Built on [v3-requirements.md](<v3-requirements.md>) and
+Status: **draft, 2026-11-11; synced 2026-11-13 (D-SYNC) with v3-remaining-plan.md's added tasks and the S7c decisions.** Built on [v3-requirements.md](<v3-requirements.md>) and
 [v3-design.md](<v3-design.md>) at `e1e5577`, and on the requirements-only cases in
 [docs/test-design/v3](<../test-design/v3/README.md>). No implementation code was read for this
 plan.
@@ -45,13 +45,14 @@ plan.
 | --- | --- | --- |
 | W0 | Spikes (gates) | S1, S2, S3, S4, S5, S6, S7, S7b, S7c |
 | W1 | Interface freeze (V3-K) and repackaging, in steps: (R-CONN ∥ R-SHARED, which creates `fishball-shared`) → R-CORE → R-EMBED | K1, K2, K3, R-CONN, R-SHARED, R-CORE, R-EMBED |
+| W1z | Gate before W2 (added 2026-11-13): sync the docs, amend K1 | D-SYNC, K1a |
 | W2 | Independent modules, connector and Fishball side | C-HTTP, C-OAUTH, C-OAUTH-WEB, C-TOKENS, C-PAIR, C-MAILBOX, C-EXT, F-LINK, F-INTERCEPT, F-GUARDS |
 | W3 | Domain behaviour built on W2 | C-ROUTE, C-TOOLS, F-PAIR, F-FACADE, WD-ROUTE, I-PLACE, U-SHELL, FEAT-PEERS |
-| W4 | Cross-cutting connector effects, Watchdog judgement and patrol, embed-UI features, instance host, the `dsh-mcp-client` adapter | C-REVOKE, C-SUCCEED, WD-DECIDE, WD-PATROL, F-STATUS, F-ASKCARD, U-MARKS, U-ATTN, U-RECORDS, I-HOST, C-MCP-ADAPTER |
-| W4b | Connector wiring (after C-REVOKE and C-SUCCEED) | C-WIRE |
-| W5 | Reinstall succession end to end, migration, acceptance suites | I-SUCCEED, X-MIG, X-SEC, X-MATRIX, X-REMOTE, DOCS |
+| W4 | Cross-cutting connector effects, Watchdog judgement and patrol, embed-UI features, instance host, the connector adapter `fishball-connector-adapter` | C-REVOKE, C-SUCCEED, WD-DECIDE, WD-PATROL, F-STATUS, F-ASKCARD, U-MARKS, U-ATTN, U-RECORDS, I-HOST, C-MCP-ADAPTER |
+| W4b | Wiring, one task per package (after W4) | C-WIRE, F-WIRE (new), WD-WIRE (new), U-WIRE (new) |
+| W5 | Reinstall succession end to end, packing, migration, acceptance suites | I-SUCCEED, REL-PACK (new), X-MIG, X-SEC, X-MATRIX, X-REMOTE, DOCS |
 | W5b | Compatibility matrix (after X-MATRIX and X-REMOTE) | X-COMPAT |
-| W6 | Browser e2e after merge | E2E-UI, E2E-CORE |
+| W6 | Browser e2e after merge | E2E-UI, E2E-CORE, E2E-AUTH (new); then ACC (new) |
 
 ## W0 — Spikes
 
@@ -68,7 +69,7 @@ Each spike lives only under `spikes/v3-sN/` and ends with a short report
 | S6 | `fishball-core` as a plain bundle with guard rows disabling other bundles' rows; override detection through a public API; both modes | `spikes/v3-s6/`, `docs/spikes/v3-s6.md` | — | HOST-UC-01, REM-UC-01, UIM-DT-01, PLAT-UC-04, PLAT-UC-05 | **done** `86800d2` + round 2 `7c2230e` (PASS on both SDKs) |
 | S7 | Client-credentials AS on the DSH listener with the stock `ClientCredentialsProvider` and one non-DSH client; revocation; direct access | `spikes/v3-s7/`, `docs/spikes/v3-s7.md` | — | AUTH-UC-02, AUTH-UC-08, REM-UC-01 — **done** `8e92b84`; TQ-3 confirmed; Q-S7-1 led to the browser flow (S7b), Q-S7-2/3 settled by the MCP-spec rule | also answers TQ-3 (is `resource` sent?) |
 | S7b | Browser authorization on the connector's own approval listener with the stock DSH client (both SDKs) and the Python MCP SDK: CIMD `client_id`, PKCE S256, loopback redirect, `iss`, issuer and page on different origins; refresh-token needs; plain-http loopback AS acceptance (Q-SPEC-1 decided A); the token-only page (POST entry, uniform refusal, `already-paired`); second-listener bind and clash (metadata keeps `authorization_endpoint`) | `spikes/v3-s7b/`, `docs/spikes/v3-s7b.md` | — | AUTH-UC-10, AUTH-DT-07 — **done** `141ac3b` (PARTIAL): server 45/45 on both SDKs; `dsh-mcp-client` has no OAuth (Q-S7B-2 pending); Q-S7B-1 decided; Q-S7B-3 pending | design §11 V3-S7b gate; confirms the Q-SPEC-1 departure and the Q-OA-7 clash behaviour |
-| S7c | Adapter for `dsh-mcp-client` without a host patch, both SDKs: supply and refresh a row's bearer at runtime, run the browser flow (browser open, loopback redirect, CIMD hosting), keep tokens out of the row config and logs; search for an existing plugin that already does this (if found, C-MCP-ADAPTER adopts it) | `spikes/v3-s7c/`, `docs/spikes/v3-s7c.md` | S7b | AUTH-UC-12, AUTH-ST-06 | design §11 V3-S7c gate; answers packaging |
+| S7c | Adapter for `dsh-mcp-client` without a host patch, both SDKs: supply and refresh a row's bearer at runtime, run the browser flow (browser open, loopback redirect, CIMD hosting), keep tokens out of the row config and logs; search for an existing plugin that already does this | `spikes/v3-s7c/`, `docs/spikes/v3-s7c.md` | S7b | AUTH-UC-12, AUTH-ST-06 — **done** `51e9ff1` (PASS, mechanism c2, 19/19 on both SDKs); no reusable plugin; Q-S7C-1…5 decided (requirements 1.25a) | design §11 V3-S7c gate; answers packaging |
 
 ## W1 — Interface freeze (V3-K) and repackaging
 
@@ -115,6 +116,13 @@ move code without changing behaviour.
 | R-EMBED | **Step 3.** (1) Create a **minimal** `packages/embed-ui/package.json` (name **`fishball-embed-ui`**, lowercase, S4-Q3 decided B; version, `engines.dsh`, the `dsh.client` entry, optional peers incl. `fishball-instance`) and add it to the root `workspaces`. (2) Move the connector `client.js` UI and the instance main `client.js` **Plugins card** into `packages/embed-ui/src/client/{connector,instance}/` (layout of the parked `53de4a0`, not merged as is). The **status-line module** stays in the instance (`packages/instance/src/child-settings/`, from R-CORE) as its one owner: embed-UI's card imports it through the optional `fishball-instance` peer, and the injected child section already uses it. (3) In the **same change** remove `dsh.client`, `./client` and `./records` from the connector manifest and `dsh.client` from the instance manifest. (4) In `src/native-runtime/installation.js`, stop copying the instance `client.js` into the child: the status line now arrives with the injected hosted section (R-HOST-11). The instance never reads a file inside embed-UI's package | `packages/embed-ui/**` (incl. its first `package.json`); the moved client files; the client entries of both manifests; the client-copy line of `installation.js`; the instance's export of the status-line module; root `workspaces` (step 3) | R-CORE, R-CONN, **S4** | PLAT-EP-03 rows 1, 3, 5 (static: the connector has no `dsh.client`; embed-UI is the only host-UI package; each package remains a native DSH bundle). Test session: updates the 21 tests that open the old client paths and the 3 that look for `fishball-connector/client.js` in the served page (paths only, assertions unchanged) | the main DSH boots with C + I + U and with C + I alone, with no client-loader error; the same UI renders from embed-UI on both SDKs; the hosted child starts and still shows its status line |
 | R-CONN | **Step 1. Additive only.** Connector manifest: add the `./mcp-schema` and `./tools` export entries pointing at the folders K1 and K2 fill; add the MCP server SDK and its Node adapter as runtime dependencies. **Keeps** `dsh.client`, `./client`, `./records`, `./contract`, `fishballConnector.attachInstance`, envelope-v2 and the `control` wire use: the UI leaves with R-EMBED (step 3), and the V2 control path and `./contract` leave with C-WIRE (W4b) once nothing uses them | `packages/connector/package.json` (W1 steps 1–2) | — (no spike) | — (PLAT-EP-03 rows 1, 5 belong to R-EMBED, which drops `dsh.client`) | existing tests pass; nothing removed |
 
+## W1z — Gate before W2 (added by v3-remaining-plan.md, 2026-11-13)
+
+| Id | Scope | Owns | Depends | Cases | Definition of done |
+| --- | --- | --- | --- | --- | --- |
+| D-SYNC | Sync the design and test-design work into the integration branch and fold in the S7c decisions | `docs/planning/v3-*.md`, `DESIGN.md` (V3 sections), `docs/test-design/v3/**`, `docs/spikes/v3-s6.md`, `docs/spikes/v3-s7*.md`, `spikes/v3-s6/`, `spikes/v3-s7*/` | — | AUTH-UC-12 and AUTH-ST-06 rewritten; AUTH-UC-13, AUTH-UC-14, AUTH-EP-12…14, AUTH-BVA-09, AUTH-DT-11, AUTH-DT-12, AUTH-ST-07 added | `b0922bc`, `7c2230e`, `141ac3b`, `51e9ff1` merged; S7c decisions folded; the cases lose `P:S7c` |
+| K1a | Freeze a `FailureLimiter` interface (one failure limit shared by the token endpoint and the approval page, R-OA-17), so C-OAUTH and C-OAUTH-WEB build against fakes of it; record that the one `OAuthTokenStore` implementation belongs to C-OAUTH, including durable `putRefresh`. No other K value changes | `packages/connector/mcp-schema/` | D-SYNC | K1 suite rows for the limiter | as K1 |
+
 ## W2 — Independent modules
 
 Each task builds one module behind a K1/K2/K3 interface and tests it against fakes of the others.
@@ -159,16 +167,20 @@ Each task builds one module behind a K1/K2/K3 interface and tests it against fak
 | I-HOST | Instance host row: `fishballChild` locator (status, origin and single-use admission for the caller's loopback hostname `127.0.0.1` / `localhost` / `[::1]`, child reachable under all three (S4-Q1 decided A), Retry, target status), lifecycle codes, `mcp-credential` wire channel, `createHosted` call when no paired credential, no replacement on disable, Retry after delete, pending "watchdog is down", host model-sync trigger kept; removes `src/host/binding.js` (the V2 connector binding) | `packages/instance/src/host/`, `packages/instance/src/native-runtime/wire/` | I-PLACE, K3 | HOST-UC-01, HOST-UC-02, HOST-UC-04, HOST-UC-05, HOST-UC-06, HOST-UC-07 (engine), HOST-EP-01, HOST-EP-02, HOST-DT-01, HOST-ST-01 (rows 4–10), WD-UC-05 A1 | token only in memory and on the wire channel |
 | U-ATTN | Attention latch in embed-UI; `embed-ui.attention.signal` / `.state` contributed; fish and dots; clear on page open; reset on unload or loss of the designated Fishball's connection | `packages/embed-ui/src/client/attention/`, `packages/embed-ui/src/host/attention/` | U-SHELL, C-EXT | EXT-UC-04, EXT-DT-03 rows E3–E5 | absent without the connector service |
 | U-RECORDS | Inline read-only records in the managed session (R-UI-13): an `ask_fishball` record (question, then answer) through a read-only `tool.call.toolview`, and a permission record (request, then decision or the user's card answer) through `conversation.chat.node`, built only from the session's own DSH events, principal name from the existing `managed()`; no new service member, no connector read API. If an SDK does not expose a received decision in the session's own events: stop and raise one question | `packages/embed-ui/src/client/records/` | U-SHELL, C-ROUTE (via the K3 contract) | UIM-UC-05, UIM-DT-02 | both SDKs; no answer control anywhere in the main DSH |
-| C-MCP-ADAPTER | The `dsh-mcp-client` adapter (R-OA-21): browser flow on the row's behalf (CIMD, PKCE, loopback redirect, `iss`), single-flight refresh before expiry, tokens only in `ctx.credentials`, stop and report on `invalid_grant`, no host patch. **Packaging decided** (the user: "adapter做成单独的插件，或者去找找有没有已经做了这个功能的插件"): a **standalone plugin** (proposed `fishball-mcp-adapter`); if S7c finds an existing third-party plugin that does this with standard OAuth, this task only verifies and documents that plugin against the cases and builds nothing | `packages/mcp-adapter/**` (new package; none if an existing plugin is used) | S7c, C-OAUTH-WEB (contract via K1), K1 | AUTH-UC-12, AUTH-ST-06 | a stock `dsh-mcp-client` row stays connected across token lifetimes and a connector restart on both SDKs; the connector sees only standard OAuth |
+| C-MCP-ADAPTER | **`fishball-connector-adapter`** (R-OA-21, design §5.5b; S7c `51e9ff1`), a Fishball-only standalone plugin, mechanism c2: per configured server, the OAuth grant in `ctx.credentials`, a loopback proxy and a stock `dsh-mcp-client` child row mounted once a grant exists. Built per S7c plan steps K1–K4: (K1) contract: config schema with `clientMetadataUrl` required (https, non-root path, no default) and `servers: [{serverName, url}]`, grant record v1, states `needs-configuration` / `needs-authorization` / `authorizing` / `authorized` / `failed`, the Fishball-connector check (Q-S7C-5 A), the tool's input and results, the proxy rules, K values (refresh lead, auth timeout, body cap); (K2) token manager: `ctx.authorization` flow, CIMD from the setting, PKCE, loopback, `state` and `iss`, single-flight refresh in `modifyRecord` and the timer, `invalid_grant` → `needs-authorization`; (K3) proxy and child row; (K4) the agent tool `fishball_connector_sign_in` (`authorized` / `approval-url` / `needs-configuration`). No host patch | `packages/connector-adapter/**` (new package `fishball-connector-adapter`); the root `package.json` `workspaces` line | D-SYNC, K1, C-OAUTH-WEB (persisted refresh digests, Q-S7B-3 A) | AUTH-UC-12 (integration against a fake connector and the S7b connector prototype), AUTH-UC-13, AUTH-UC-14, AUTH-EP-12, AUTH-EP-13 (adapter suite), AUTH-EP-14, AUTH-BVA-09, AUTH-DT-11, AUTH-DT-12, AUTH-ST-06, AUTH-ST-07 | a stock `dsh-mcp-client` row stays connected across token lifetimes and restarts of either side, on both SDKs; a non-Fishball server is refused; missing configuration reports `needs-configuration`; the leak check passes, including the transcript; no host patch |
 
-## W4b — Connector wiring
+## W4b — Wiring
 
-C-WIRE runs alone, after W4, because it wires in every connector module, including C-REVOKE and
-C-SUCCEED from W4.
+C-WIRE wires in every connector module, including C-REVOKE and C-SUCCEED from W4. F-WIRE, WD-WIRE
+and U-WIRE (added by v3-remaining-plan.md: W4 owns only modules, and nothing wired them into the
+rows) each own one package's entry and rows, so the four run in parallel.
 
 | Id | Scope | Owns | Depends | Cases | Definition of done |
 | --- | --- | --- | --- | --- | --- |
 | C-WIRE | Connector plugin row: wire all modules, native settings schema (tokens list, `routing.fishballToken`, limits, the approval-listener port setting (Q-OA-7); no `directAccess`, no per-contributor rows), V2 settings kept/inert, V2 intake holding queue; removes `./contract`, `fishballConnector.attachInstance`, envelope-v2 and the `control` wire use, i.e. the V2 control path (nothing imports them any more); raises the connector's `engines.dsh` from `>=0.2.1-rc.2` to `>=0.2.1-rc.5` (design §9.1); **owns** the connector plugin entry and settings schema | `packages/connector/src/index` (plugin row), `packages/connector/package.json`, `packages/connector/src/settings/`, `packages/connector/src/migration/` | every connector task of W2–W4: C-HTTP, C-OAUTH, C-OAUTH-WEB, C-TOKENS, C-PAIR, C-MAILBOX, C-EXT, C-ROUTE, C-TOOLS, C-REVOKE, C-SUCCEED; plus I-HOST (binding gone) and F-STATUS (core off `./contract`) | AUTH-UC-09 (integration part), PLAT-UC-05 step 1, PLAT-EP-03 | full connector loads on both SDKs; R-CON-10 |
+| F-WIRE (new) | Core wiring: every core module live in core's rows and entry; the guards unchanged | `packages/core/cordis.patch.yml` (service rows), `packages/core/client.js`, core's entry, `packages/core/package.json` | F-LINK, F-INTERCEPT, F-GUARDS, F-PAIR, F-FACADE, F-STATUS, F-ASKCARD | PLAT-UC-04 (wiring part), REM-UC-01 (headless part) | core starts in hosted and standalone mode on both SDKs with every module live |
+| WD-WIRE (new) | Watchdog wiring of `decide` and `patrol` | `packages/watchdog/index.js`, `packages/watchdog/cordis.patch.yml` | WD-DECIDE, WD-PATROL | WD-UC-05 (hosted) | a Watchdog failure equals off |
+| U-WIRE (new) | Embed-UI wiring of marks, attention and records | `packages/embed-ui/index.js`, `packages/embed-ui/src/client/client.js` (entry), `packages/embed-ui/cordis.patch.yml` | U-MARKS, U-ATTN, U-RECORDS | UIM-DT-01 rows 1, 2 (headless) | main DSH boots with C+I+U and with C+I alone, with no loader error |
 
 ## W5 — End to end, migration and acceptance
 
@@ -179,10 +191,11 @@ task's area through a short follow-up task, serialised, so no two sessions edit 
 | --- | --- | --- | --- | --- | --- |
 | I-SUCCEED | Instance side of reinstall succession: keep the entry key, call `retire` after the new pairing, retry at next start, never for a user-made entry or a user delete | `packages/instance/src/host/succession/` | I-HOST, C-SUCCEED | HOST-UC-03, HOST-DT-01 rows 5–7, HOST-DT-02 (end to end) | succession runs only on reinstall |
 | X-MIG | V2 → V3 upgrade on a real V2 child profile | `test/v3/migration/` | C-WIRE, I-HOST, F-STATUS, U-SHELL | PLAT-UC-05 | Skills and settings kept; no migration: leftover sessions archived (no crash, still archived after a restart), a new manager session under `fishball` (1.24) |
-| X-SEC | Secret sweep over a full run; token-value placement checks. The scan allow-lists exactly one known hit: DSH's own browser login token printed on stdout at startup (spike V3-S7 `8e92b84`, report §4.4); any other hit, or that token anywhere else, fails | `test/v3/security/` | all of W4 and W4b | PLAT-EP-05, HOST-EP-02 (end to end), PLAT-EP-06, PLAT-EP-07 (runtime part) | zero hits |
+| X-SEC | Secret sweep over a full run; token-value placement checks. The scan allow-lists exactly one known hit: DSH's own browser login token printed on stdout at startup (spike V3-S7 `8e92b84`, report §4.4); any other hit, or that token anywhere else, fails. Sweeps include the adapter's session transcript and the credentials file mode | `test/v3/security/` | all of W4 and W4b | PLAT-EP-05, HOST-EP-02 (end to end), PLAT-EP-06, PLAT-EP-07 (runtime part), AUTH-EP-13 (full-run sweep) | zero hits |
+| REL-PACK (new) | One pack mechanism for every tarball: dereferences embed-UI's `src/client/client.status.js` symlink, bundles `fishball-shared` into every importer, runs F-LINK's vendored `./mcp-schema` generator, sets one shared version and `engines.dsh` `>=0.2.1-rc.5`; nothing published | `scripts/release/**` (new); root `package.json` `scripts`; the `files`, `bundleDependencies` and `prepack` lines and the version of every package manifest; output in `.runtime/release/` | W4b, the I-PLACE step-0 finding | PLAT-EP-07 rows 5 and 9; HOST-UC-08 A3 (install part); the R-EMBED status line in the packed embed-UI | each tarball installs offline into a fresh `DSH_HOME` on both SDKs |
 | X-MATRIX | Install matrix rows and contribution matrix on a real DSH | `test/v3/matrix/` | all of W4 and W4b | UIM-DT-01 (headless columns), EXT-DT-03, PLAT-EP-03 rows 2–6 | every row except 11 checked |
-| X-REMOTE | Standalone Fishball against a second DSH; hosted with a remote target | `test/v3/remote/` | C-WIRE, F-STATUS, F-PAIR, I-HOST | REM-UC-01, REM-UC-02, HOST-UC-05 (end to end) | two DSH processes, https or tunnel |
-| DOCS | README notes: older MCP clients must upgrade, prompt-size note for contributors, standalone set-up and `board_export`, migration order; connecting a `dsh-mcp-client` row through the adapter plugin (R-OA-21); the one departure from the MCP specification (plain HTTP for the authorization server on loopback, Q-SPEC-1); contributor namespaces are attribution only, and a plugin the user installed is the user's responsibility (S5-Q5); public exposure through the user's own tunnel (both listeners, `--trusted-host`; hosted clients such as Claude's hosted connectors call from Anthropic's servers and need it; no tunnel feature, R-REM-05); packaging: five npm packages plus embed-UI versioned together, `fishball-shared` a library carried inside the tarball of every package that depends on it (not installed by hand, not a plugin) | `README.md`, `packages/*/README.md`, `docs/package-layout.md` | W4 | — (R-CON-01, R-EXT-14, R-BRD-02 documentation parts) | reviewed |
+| X-REMOTE | Standalone Fishball against a second DSH; hosted with a remote target; the adapter against the **real** connector | `test/v3/remote/` | REL-PACK, C-WIRE, F-WIRE, F-STATUS, F-PAIR, I-HOST, C-MCP-ADAPTER | REM-UC-01, REM-UC-02, HOST-UC-05 (end to end), AUTH-UC-12 (end to end) | two DSH processes, https or tunnel; refresh digests survive a connector restart |
+| DOCS | README notes: older MCP clients must upgrade, prompt-size note for contributors, standalone set-up and `board_export`, migration order; adapter set-up for `fishball-connector-adapter` with a user-hosted CIMD (a template; R-OA-21); the one departure from the MCP specification (plain HTTP for the authorization server on loopback, Q-SPEC-1); contributor namespaces are attribution only, and a plugin the user installed is the user's responsibility (S5-Q5); public exposure through the user's own tunnel (both listeners, `--trusted-host`; hosted clients such as Claude's hosted connectors call from Anthropic's servers and need it; no tunnel feature, R-REM-05); packaging: five npm packages plus embed-UI versioned together, `fishball-shared` a library carried inside the tarball of every package that depends on it (not installed by hand, not a plugin). **V2 history documents are deleted outright, not marked superseded** (the user, 2026-11-13); living documents are rewritten for V3 | `README.md`, `packages/*/README.md`, `docs/package-layout.md` | W4 | — (R-CON-01, R-EXT-14, R-BRD-02 documentation parts) | reviewed |
 
 ## W5b — Compatibility matrix
 
@@ -198,6 +211,8 @@ X-COMPAT runs after W5, because it re-runs the X-MATRIX and X-REMOTE suites on b
 | --- | --- | --- | --- | --- | --- |
 | E2E-UI | Host-DSH browser flows: page, frame, status, Retry, marks, Hand over / Take back, fish and dots, native settings pair status, hosted model-sync card | `test/v3/e2e/host/` | merge of W5b | UIM-UC-01, UIM-UC-02, UIM-UC-03, HAND-UC-01…04 (UI), AUTH-UC-09, HOST-UC-04 (Retry), HOST-UC-07 (card), UIM-DT-01 (UI columns) | both SDKs |
 | E2E-CORE | Fishball-page browser flows: `already-paired` warning, name clash, A-lite page and guards, `guards-overridden` strip | `test/v3/e2e/fishball/` | merge of W5b | AUTH-UC-05, AUTH-ST-03 (warning), NAME-UC-02 (page), NAME-DT-03 (page), PLAT-UC-04 (page), REM-UC-01 (page) | hosted and standalone, both SDKs |
+| E2E-AUTH (new) | The approval page and the adapter's sign-in end to end in a real browser | `test/v3/e2e/auth/` | final merge | AUTH-UC-10 (page), AUTH-DT-08 (page), AUTH-UC-12 (e2e) | no token value in any URL, page or network response |
+| ACC (new) | Ready for the user's manual acceptance: release-candidate tarballs, green runs, a checklist mapping each user requirement (requirements §1.1–§1.15, S7c §6) to manual steps (hosted, standalone, adapter with a user-hosted CIMD), the K "PROPOSED" values listed; the branch pushed, not merged to `main`; nothing published | `docs/verification/v3-acceptance/`; `.runtime/release/` | W6 and every E2E and DOCS fix | — (it runs no new case) | the user can run the checklist |
 
 ## Dependency graph (summary)
 
@@ -205,13 +220,14 @@ X-COMPAT runs after W5, because it re-runs the X-MATRIX and X-REMOTE suites on b
 W0  S1 S2 S3 S4 S5 S6 S7
      │  │  │  │  │  │  │
 W1  K1 ◄┴──┴──┴─────┴──┘   K2 ◄ S5   K3 ◄ S3 S4 S6   (R-CONN ∥ R-SHARED) → R-CORE → R-EMBED (+S4)
+W1z D-SYNC → K1a (FailureLimiter)
 W2  C-HTTP C-OAUTH C-TOKENS C-PAIR C-MAILBOX (K1) · C-EXT (K2) · F-LINK (K1) · F-INTERCEPT (K3) · F-GUARDS (K3, S6, R-CORE)
 W3  C-ROUTE (MAILBOX, PAIR) · C-TOOLS (HTTP, OAUTH) · F-PAIR · F-FACADE · WD-ROUTE · I-PLACE (R-CORE, F-GUARDS) · U-SHELL · FEAT-PEERS
-W4  C-REVOKE · C-SUCCEED · WD-DECIDE · WD-PATROL · F-STATUS · U-MARKS · U-ATTN · I-HOST (I-PLACE)
-W4b C-WIRE (all connector modules, incl. C-REVOKE, C-SUCCEED)
-W5  I-SUCCEED · X-MIG · X-SEC · X-MATRIX · X-REMOTE · DOCS
+W4  C-REVOKE · C-SUCCEED · WD-DECIDE · WD-PATROL · F-STATUS · F-ASKCARD · U-MARKS · U-ATTN · U-RECORDS · I-HOST (I-PLACE) · C-MCP-ADAPTER (D-SYNC, K1, C-OAUTH-WEB)
+W4b C-WIRE (all connector modules, incl. C-REVOKE, C-SUCCEED) · F-WIRE · WD-WIRE · U-WIRE
+W5  I-SUCCEED · REL-PACK (W4b) · X-MIG · X-SEC · X-MATRIX · X-REMOTE · DOCS
 W5b X-COMPAT (X-MATRIX, X-REMOTE)
-W6  E2E-UI · E2E-CORE
+W6  E2E-UI · E2E-CORE · E2E-AUTH → ACC
 ```
 
 ## Overlap check (per wave)
@@ -233,7 +249,12 @@ W6  E2E-UI · E2E-CORE
 | W3 | `packages/embed-ui/package.json`, client entry, all of `packages/embed-ui/src/client/**` | U-SHELL |
 | W4 | `packages/instance/src/host/` | I-HOST |
 | W4 | `packages/core/package.json` | F-STATUS |
-| W4b | connector plugin row, settings schema, `packages/connector/package.json` | C-WIRE (only task in the wave) |
+| W4b | connector plugin row, settings schema, `packages/connector/package.json` | C-WIRE |
+| W4b | core's service rows, `client.js`, entry, `packages/core/package.json` | F-WIRE |
+| W4b | `packages/watchdog/index.js`, `cordis.patch.yml` | WD-WIRE |
+| W4b | `packages/embed-ui/index.js`, client entry, `cordis.patch.yml` | U-WIRE |
+| W4 | `packages/connector-adapter/**`; root `package.json` `workspaces` line | C-MCP-ADAPTER |
+| W5 | every package manifest's `files`, `bundleDependencies`, `prepack` and version; root `scripts` | REL-PACK |
 | W4 | `packages/watchdog/` | WD-DECIDE (`decide/`), WD-PATROL (`patrol/`, `brief/`); row and manifest untouched |
 | W4 | `packages/embed-ui/` | U-MARKS (`marks/`, `host/handover/`), U-ATTN (`attention/`), U-RECORDS (`records/`); shell untouched |
 | W5 | `packages/instance/src/host/succession/` | I-SUCCEED |

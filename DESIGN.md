@@ -2087,3 +2087,16 @@ Decided by the user on 2026-11-13 while R-EMBED ran (V3 plan `docs/planning/v3-t
 | Embed-UI's host row | A placeholder row with an empty host half, so DSH composes the browser half. U-SHELL adds the host half | DSH composes a `dsh.client` only for a package that a profile row names |
 | Start timing | Each part starts once its chunk has arrived, one request after the entry runs, while the V2 bundles started with the page's own batch. So DSH's own brand can show briefly before Fishball's | It follows from the flat chunk layout. No case pins the first frame |
 | UI behaviour | Moved unchanged. The V3 decisions (sidebar entry only, no Allow once / Reject, inline records, the Hand over control) land in U-SHELL, U-MARKS and U-RECORDS | R-EMBED is a move, so its diff stays reviewable |
+
+## 18. V3 S7c: the connector adapter `fishball-connector-adapter` (2026-11-13)
+
+Decided by the user on 2026-11-13 after spike V3-S7c (`51e9ff1`, PASS on 0.2.1-rc.5 and 0.2.2-rc.1, no host patch). The full design is `docs/planning/v3-design.md` §5.5b; the requirement is R-OA-21 (requirements §1.25a); the build task is C-MCP-ADAPTER.
+
+| Point | Decision | Reason |
+|---|---|---|
+| What it is | A new standalone, Fishball-only plugin `fishball-connector-adapter` in `packages/connector-adapter/`, installed in a DSH that uses another DSH's connector. Not part of the connector, embed-UI or the Fishball set | DSH's `dsh-mcp-client` has no OAuth (S7b F1), and no existing plugin is reusable (S7c §3.3) |
+| Mechanism | c2: a loopback proxy on 127.0.0.1 with a per-start local bearer, plus a stock `dsh-mcp-client` the adapter mounts as a child row once a grant exists | The stock row cannot report a 401 (S7c F1), so only a proxy or an own client has a 401 path; c2 keeps DSH's own client and needs no `!!js` in the user's config |
+| Which servers | Fishball connectors only, recognized by the metadata they already serve: the `/api/fishball/mcp` resource, the `/api/fishball/oauth` issuer and the `fishball` scope. Any other server is refused before any authorization request | Q-S7C-1 = C, Q-S7C-5 = A; needs no connector change |
+| Client identity | CIMD only, hosted by the user: `clientMetadataUrl`, a required https setting with no default. Without it every server reports `needs-configuration` | Q-S7C-2 = C; a local plugin has no https origin of its own |
+| Sign-in | The agent tool `fishball_connector_sign_in` returns the approval URL in the chat (`authorized`, `approval-url` or `needs-configuration`). The connector token is typed only on the approval page | Q-S7C-3 = B; no DSH Web surface lists other plugins' sign-ins |
+| Tokens | The grant lives only in `ctx.credentials`; refresh is single-flight under the record lock; the connector persists refresh-token digests, so a connector restart needs no new sign-in | Q-S7C-4 = A (Q-S7B-3 A) |
