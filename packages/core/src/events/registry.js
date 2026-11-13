@@ -89,6 +89,5 @@ export function createRegistry({ logger }) {
       live.splice(live.indexOf(entry), 1)
       return true
     },
-    all: () => [...live],
   })
 }

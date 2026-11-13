@@ -17,12 +17,14 @@ const STATES = new Set(Object.values(STATE))
 /**
  * Validates a stored record when the domain opens. The domain calls `parse` on load only, so a
  * malformed record fails the open loudly (the default `invalid-record`) instead of being trusted.
- * Only the fields the state machine reads are checked; `event` and `message` are opaque here.
+ * The fields the state machine reads are checked; the rest of `event` is opaque here.
  */
 const recordSchema = Object.freeze({
   parse(value) {
     const ok = value !== null && typeof value === 'object' && typeof value.eventId === 'string' && STATES.has(value.state)
-      && Number.isSafeInteger(value.sequence) && typeof value.acked === 'boolean' && value.event !== null && typeof value.event === 'object'
+      && typeof value.attempt === 'string' && Number.isSafeInteger(value.sequence) && typeof value.acked === 'boolean'
+      && value.event !== null && typeof value.event === 'object' && typeof value.event.payloadDigest === 'string'
+      && (value.plugin === undefined || typeof value.plugin === 'string')
       && (value.finishedAt === undefined || Number.isSafeInteger(value.finishedAt))
     if (!ok) throw new TypeError(MISUSE.record)
     return value
@@ -54,12 +56,13 @@ export const receiptOf = (record) => ({ eventId: record.eventId, payloadDigest: 
 
 /**
  * The state machine over one KvTable.
- * @param table - the ledger's KvTable (`get`, `entries`, `put`, `update`, `deleteMany`).
+ * @param table - the ledger's KvTable (`get`, `entries`, `put`, `update`, `delete`).
  * @param now - the clock, epoch milliseconds; stamps `finishedAt` and drives retention.
  */
 export function createLedger(table, now) {
   const creating = new Set()
-  let sequence = Math.max(0, ...[...table.entries()].map(([, record]) => record.sequence))
+  // A reduce, not Math.max(...spread): a spread of a very large table could exceed the call stack.
+  let sequence = [...table.entries()].reduce((highest, [, record]) => Math.max(highest, record.sequence), 0)
 
   const records = () => [...table.entries()].map(([, record]) => record)
 
@@ -98,11 +101,16 @@ export function createLedger(table, now) {
       })
       return won
     },
-    /** Delete acked records that finished more than LEDGER.finishedRetentionMs ago. */
-    prune() {
+    /**
+     * Delete acked records that finished more than LEDGER.finishedRetentionMs ago. One `delete` per
+     * key: `KvTable.deleteMany` exists on 0.2.2-rc.1 only, `delete` on both SDKs.
+     * @returns {Promise<number>} how many were deleted.
+     */
+    async prune() {
       const cutoff = now() - LEDGER.finishedRetentionMs
       const expired = records().filter((record) => record.acked && record.finishedAt !== undefined && record.finishedAt < cutoff)
-      return expired.length === 0 ? Promise.resolve(0) : table.deleteMany(expired.map((record) => record.eventId))
+      for (const record of expired) await table.delete(record.eventId)
+      return expired.length
     },
   })
 }
