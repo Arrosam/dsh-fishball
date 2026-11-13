@@ -17,13 +17,16 @@
  * the Fishball session log (S2's observable); "acked" = an `inbox_ack` receipt at the link; "in a
  * context" = any trace of the event's marker in a session log or a model request; "logged" = the
  * logger exporter's records.
+ *
+ * The user's decisions of 2026-11-14 ("1.B,2.B,3.A,4.A"), cited as "decision 2026-11-14 n", add the
+ * cases of `registerDecisionCases` below; none of them changes an existing case's expectation.
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../shared/cases.mjs'
 import { runCrash, SCENARIO } from './crash.mjs'
-import { DSH, EVENT_TYPE, FIXTURE, K3, LATER, TOOL, WAIT } from './constants.mjs'
-import { busyGate, contributedType, eventually, makeEvent, newRoot, removeRoot, startBusy, worldFor } from './world.mjs'
+import { CORE, DSH, EVENT_TYPE, FIXTURE, K3, LATER, TOOL, WAIT } from './constants.mjs'
+import { busyGate, contributedType, eventually, makeEvent, newRoot, openWorld, removeRoot, startBusy, worldFor } from './world.mjs'
 
 const T = { timeout: WAIT.testMs }
 const ID = Object.freeze({
@@ -801,6 +804,256 @@ export function registerInterceptCases(sdk) {
     await x.off()
     await world.settle()
     assert.equal(await wakes(world, event), 0, 'a closed record was re-dispatched to Fishball')
+  })
+
+  registerDecisionCases(sdk)
+}
+
+// ------------------------------------------------------------------------------------------------
+// The user's decisions 2026-11-14 ("1.B,2.B,3.A,4.A").
+
+const D = Object.freeze({
+  d1: 'decision 2026-11-14 1', d2: 'decision 2026-11-14 2', d3: 'decision 2026-11-14 3', d4: 'decision 2026-11-14 4',
+})
+/** How often the connector holds an ack receipt for `event` (decision 3: "acked once"). */
+const ackCount = (world, event) => world.link.state().acked[event.eventId] ?? 0
+/** The JSON-escaped form of `text`, as it appears inside a logged session event's data. */
+const inJson = (text) => JSON.stringify(text).slice(1, -1)
+
+/**
+ * Decision 3's presenter faults: `present` fails the first `failures` calls for each event, and
+ * `delay` records every requested wait. A held delay (`hold`) resolves only on `releaseAll()`, so a
+ * case can keep one event inside its backoff.
+ */
+function presenterFaults(failures, { hold = false } = {}) {
+  const calls = new Map()
+  const waits = []
+  const held = []
+  let releasedAll = false
+  return {
+    seam: {
+      present: (event, base) => {
+        const n = (calls.get(event.eventId) ?? 0) + 1
+        calls.set(event.eventId, n)
+        if (n <= failures(event)) throw new Error(FIXTURE.fault)
+        return base(event)
+      },
+      delay: (ms) => {
+        waits.push(ms)
+        if (!hold || releasedAll) return Promise.resolve()
+        const gate = Promise.withResolvers()
+        held.push(gate.resolve)
+        return gate.promise
+      },
+    },
+    calls: (event) => calls.get(event.eventId) ?? 0,
+    waits,
+    heldCount: () => held.length,
+    releaseAll: () => { releasedAll = true; for (const resolve of held.splice(0)) resolve() },
+  }
+}
+/** Decision 3: the waits after failed attempts 1…`failed` (`backoffMs × backoffFactor^(n−1)`). */
+function backoffSeries(failed) {
+  const { backoffMs, backoffFactor } = CORE.presentRetry
+  return Array.from({ length: failed }, (_, i) => backoffMs * backoffFactor ** i)
+}
+
+/**
+ * Decision 1: ends the turn that claims `event` (its pre-step), once, before the event is admitted.
+ * Only the first claim is ended, so a retry would show as a wake.
+ */
+const cancelWith = (cause) => ({ end: (world) => { world.agent.cancel(cause) }, reason: { kind: DSH.ended.aborted, reason: cause } })
+const CLAIM_END = Object.freeze({
+  stop: cancelWith(DSH.userCancel),
+  parent: cancelWith(DSH.parentCancel),
+  hook: cancelWith(DSH.hookCancel),
+  disposed: cancelWith(DSH.disposedCancel),
+  error: { end: () => { throw new Error(FIXTURE.fault) }, reason: { kind: DSH.ended.error } },
+  blocked: { end: () => DSH.rejectStep, reason: { kind: DSH.ended.blocked } },
+})
+/** Harness check: the Fishball log has a `turn/end` with `how`'s reason, so the row ran its path. */
+async function assertClaimEnded(world, how) {
+  const { reason } = CLAIM_END[how]
+  const ends = (await world.sessionLog()).filter((e) => e.type === DSH.turnEnd).map((e) => e.data?.reason)
+  const matches = (got) => got?.kind === reason.kind && (reason.reason === undefined || got?.reason?.kind === reason.reason.kind)
+  assert.ok(ends.some(matches), `harness: no turn ended ${JSON.stringify(reason)}; turn ends ${JSON.stringify(ends)}`)
+}
+function endClaimingTurn(world, event, how) {
+  let done = false
+  world.ctx.on(DSH.preStep, (input, next) => {
+    if (done || !JSON.stringify(input.messages).includes(event.marker)) return next()
+    done = true
+    return CLAIM_END[how].end(world) ?? next()
+  })
+}
+
+/** A world over a root a case may close and reopen in this process; cleanup closes the last one. */
+async function reopenableWorld(t, sdk) {
+  const root = await newRoot()
+  const box = { world: await openWorld(sdk, root) }
+  t.after(async () => { await box.world?.close(); await removeRoot(root) })
+  box.reopen = async () => {
+    const old = box.world
+    box.world = undefined
+    await old.close()
+    box.world = await openWorld(sdk, root)
+    return box.world
+  }
+  return box
+}
+
+function registerDecisionCases(sdk) {
+  const st = (n, title, fn) => row(sdk, ID.st02, n, title, fn)
+
+  // ============================== decision 3: presenter retry and give-up (BVA on the failure count)
+  /** N − 1, N, N + 1 are read when the case runs: PRESENT_RETRY is the product's (PROPOSED). */
+  const FAILURES = [
+    ['k=0', () => 0],
+    ['k=1', () => 1],
+    ['k=N-1', () => CORE.presentRetry.attempts - 1],
+    ['k=N', () => CORE.presentRetry.attempts],
+    ['k=N+1', () => CORE.presentRetry.attempts + 1],
+  ]
+  for (const [label, failuresOf] of FAILURES) {
+    st(`10a (${D.d3}, ${label})`, `AcceptedBy(Fishball), the presenter fails ${label} times (N = PRESENT_RETRY.attempts): below N delivered after the backoff series; from N on given up with one notice`, async (t) => {
+      const N = CORE.presentRetry.attempts
+      const k = failuresOf()
+      const faults = presenterFaults(() => k)
+      const world = await worldFor(t, sdk, { seam: faults.seam })
+      const secret = FIXTURE.secret + (counter + 1)
+      const event = nextEvent(EVENT_TYPE.message, { secret })
+      await publish(world, event)
+      await world.settle()
+      const admissions = await world.admissions(event.marker)
+      const notice = inJson(CORE.presentGivenUp(event.eventId, event.type))
+      const giveUps = world.logs.filter((l) => l.text.includes(CORE.presentGivenUpReason) && l.text.includes(event.eventId))
+      assert.equal(admissions.length, 1, 'Fishball wakes for the event')
+      assert.equal(ackCount(world, event), 1, 'ack receipts for the event')
+      if (k < N) {
+        assert.equal(faults.calls(event), k + 1, 'presenter attempts')
+        assert.deepEqual(faults.waits, backoffSeries(k), 'requested backoff waits')
+        assert.equal(JSON.stringify(admissions[0].data).includes(notice), false, 'a presented event was given up')
+        assert.deepEqual(giveUps, [], 'a give-up was logged for a presented event')
+      } else {
+        assert.equal(faults.calls(event), N, 'presenter attempts (never more than N)')
+        assert.deepEqual(faults.waits, backoffSeries(N - 1), 'requested backoff waits')
+        assert.ok(JSON.stringify(admissions[0].data).includes(notice), 'the one wake is not the give-up notice naming the event: ' + JSON.stringify(admissions[0].data))
+        assert.equal(giveUps.length, 1, 'give-up log lines with REASON.presentGivenUp')
+        assert.deepEqual(world.logsWith(secret), [], 'the event\'s payload was logged (R-SEC-02)')
+      }
+    })
+  }
+  st(`10b (${D.d3})`, 'an event inside its presenter backoff does not hold up a later event: the later one is delivered first; the first is then given up with its one notice', async (t) => {
+    let first
+    const faults = presenterFaults((e) => (e.eventId === first.eventId ? Infinity : 0), { hold: true })
+    const world = await worldFor(t, sdk, { seam: faults.seam })
+    first = nextEvent(EVENT_TYPE.message)
+    const second = nextEvent(EVENT_TYPE.message)
+    await publish(world, first)
+    await eventually(() => faults.heldCount() > 0, 'the first event is waiting in its backoff')
+    world.link.publish(second)
+    await eventually(async () => (await wakes(world, second)) === 1, 'the later event is delivered while the first one is in its backoff')
+    faults.releaseAll()
+    await world.settle()
+    assert.equal(await wakes(world, second), 1, 'wakes for the later event')
+    const admissions = await world.admissions(first.marker)
+    assert.equal(admissions.length, 1, 'wakes for the given-up event')
+    assert.ok(JSON.stringify(admissions[0].data).includes(inJson(CORE.presentGivenUp(first.eventId, first.type))), 'the given-up event\'s wake is not its notice')
+    assert.equal(faults.calls(first), CORE.presentRetry.attempts, 'presenter attempts for the given-up event; requested waits ' + JSON.stringify(faults.waits))
+    assert.deepEqual([ackCount(world, first), ackCount(world, second)], [1, 1], 'acked once each')
+  })
+
+  // ============================== decision 1: how the claiming turn ended before admission
+  /** Discarded: no wake, acked once, nothing settled at the connector, and no retry later. */
+  async function assertDiscarded(world, event) {
+    await world.settle()
+    assert.equal(await wakes(world, event), 0, 'Fishball admitted an event whose claiming turn ended')
+    assert.equal(ackCount(world, event), 1, 'ack receipts for the discarded event')
+    assert.deepEqual(world.link.answers(), [], 'the discard settled something at the connector (R-CON-05)')
+    const later = nextEvent(EVENT_TYPE.message)
+    world.link.publish(later)
+    await assertFishballOnce(world, later)
+    assert.equal(await wakes(world, event), 0, 'the discarded event was retried')
+  }
+  const DISCARDED = [
+    ['stop', 'the user\'s Stop (S2-Q3 A, unchanged)'],
+    ['error', 'the turn ends in an error'],
+    ['blocked', 'the step is rejected (turn ends blocked)'],
+    ['parent', 'stopped by its parent (aborted, cause parent)'],
+    ['hook', 'stopped by a hook (aborted, cause hook)'],
+  ]
+  for (const [how, title] of DISCARDED) {
+    st(`12a (${D.d1}, ${how})`, `AcceptedBy(Fishball), not admitted → ${title} → Discarded: acked once, no wake, never retried`, async (t) => {
+      const world = await worldFor(t, sdk)
+      const event = nextEvent(EVENT_TYPE.permission)
+      endClaimingTurn(world, event, how)
+      await publish(world, event)
+      await world.settle()
+      await assertClaimEnded(world, how)
+      await assertDiscarded(world, event)
+    })
+  }
+  crashRow(sdk, ID.st02, `12a (${D.d1}, interrupted)`, 'AcceptedBy(Fishball), claimed, not admitted → the Fishball DSH crashes → delivered again: one wake in total', 'fishballClaimCrash', (r) => {
+    // Harness: the cut was in the claiming step, before any model request carried the event.
+    assert.equal(r.interruptedTurns, 1, 'harness: the claiming turn was not left open by the crash')
+    assert.equal(r.modelRequestsTotal, r.modelRequestsAfterRestart, 'harness: the event reached a model before the crash')
+    assert.equal(r.admissions, 1, 'Fishball wakes in total')
+    assert.equal(r.acked, true)
+  })
+  st(`12a (${D.d1}, disposed)`, 'AcceptedBy(Fishball), claimed, not admitted → owner teardown (aborted, cause disposed) → delivered again: one wake in total, also across the next start', async (t) => {
+    const box = await reopenableWorld(t, sdk)
+    const event = nextEvent(EVENT_TYPE.message)
+    endClaimingTurn(box.world, event, 'disposed')
+    await publish(box.world, event)
+    await box.world.settle()
+    await assertClaimEnded(box.world, 'disposed')
+    // The teardown's owner goes away; whether the event comes back in this run or at the next
+    // start, the total is one wake.
+    const world = await box.reopen()
+    await world.settle()
+    assert.equal(await wakes(world, event), 1, 'Fishball wakes in total')
+    assert.ok(acked(world, event), 'the event was not acked')
+  })
+
+  // ============================== decision 4: core's ledger alone decides delivery
+  crashRow(sdk, ID.st02, `11b (${D.d4}, cleared)`, 'Admitted → the Fishball session log is cleared → restart: no second wake', 'admittedThenCleared', (r) => {
+    assert.equal(r.admissions, 0, 'wakes in the cleared session')
+    assert.equal(r.requestsAfterRestart, 0, 'a turn ran after the restart')
+    assert.equal(r.acked, true)
+  })
+  crashRow(sdk, ID.st02, `11b (${D.d4}, replaced)`, 'Admitted → the Fishball agent moves to a new session → restart: no second wake', 'admittedThenReplaced', (r) => {
+    assert.equal(r.admissionsInFirstSession, 1, 'the first session\'s admission (the one wake)')
+    assert.equal(r.admissions, 0, 'wakes in the new session')
+    assert.equal(r.requestsAfterRestart, 0, 'a turn ran after the restart')
+  })
+  crashRow(sdk, ID.st02, `11c (${D.d4})`, 'AcceptedBy(Fishball) and acked while busy, not admitted → crash → restart: exactly one wake in total', 'fishballQueuedBusy', (r) => {
+    assert.equal(r.admissions, 1, 'Fishball wakes in total')
+    assert.equal(r.modelRequestsTotal, 1, 'model requests carrying the event, both processes')
+    assert.equal(r.acked, true)
+  })
+  crashRow(sdk, ID.dt03, `9a (${D.d4})`, 'admitted, crash right after (inside its turn) → restart: one wake in total, no re-delivery', 'fishballMidTurn', (r) => {
+    assert.equal(r.admissions, 1, 'Fishball wakes in total')
+    assert.equal(r.modelRequestsTotal, 1, 'model requests carrying the event, both processes')
+    assert.equal(r.requestsAfterRestart, 0, 'a turn ran after the restart')
+  })
+  crashRow(sdk, ID.dt03, `9b (${D.d4}, admission/ledger window)`, 'the session holds the admission, core\'s admitted record has not landed → crash → restart: one wake in total (R-EVT-03)', 'admissionLedgerWindow', (r) => {
+    assert.equal(r.window?.durable, true, 'harness: the admission was not durable at the cut ' + JSON.stringify(r.window))
+    assert.equal(r.admissions, 1, 'wakes')
+  })
+
+  // ============================== decision 2: startup recovery fails; intake continues
+  crashRow(sdk, ID.st02, `11d (${D.d2}, activation fails)`, 'AcceptedBy(Fishball), not admitted, crash; at restart the agent cannot be activated during recovery → a later event is still delivered; the missed one at the next start', 'recoverActivateFails', (r) => {
+    assert.ok(r.faultsFired > 0, 'seam: startup recovery never activated the agent, so the fault did not fire')
+    assert.deepEqual([r.laterAdmissions, r.laterAcked], [1, true], 'the later event after a failed recovery (wakes, acked)')
+    assert.equal(r.admissions, 0, 'the missed record was retried in the same run: ' + JSON.stringify(r))
+    assert.equal(r.restart.admissions, 1, 'the missed record at the next start (wakes in total)')
+    assert.equal(r.restart.acked, true)
+  })
+  crashRow(sdk, ID.st02, `5g (${D.d2}, ledger write fails)`, 'Open(R), crash, R off; a ledger write rejects once during recovery → a later event is still delivered; the open record goes to Fishball at the next start', 'recoverLedgerFails', (r) => {
+    assert.equal(r.faultsFired, 1, 'seam: startup recovery wrote nothing to the ledger, so the fault did not fire')
+    assert.deepEqual([r.laterAdmissions, r.laterAcked], [1, true], 'the later event after a failed recovery (wakes, acked)')
+    assert.equal(r.admissions, 0, 'the missed record was retried in the same run')
+    assert.equal(r.restart.admissions, 1, 'the missed record at the next start (wakes in total)')
   })
 }
 

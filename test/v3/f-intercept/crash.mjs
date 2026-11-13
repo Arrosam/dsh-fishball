@@ -6,17 +6,29 @@
  *
  * Run as a script: `node crash.mjs <sdk> <root> <scenario> <phase>`; phase `cut` publishes the event
  * and dies at the scenario's cut point; phase `recover` reopens, settles and prints one JSON report.
+ * The user's decisions 2026-11-14 1, 2 and 4 add: a scenario may change the root between the two
+ * phases (`between`), reopen in another Fishball session (`restartIn`), inject a fault into the
+ * recover phase's startup recovery and publish a later event there (`recoverFault`), and run a
+ * third, clean start (`restart`) whose report is the result's `restart` field.
  */
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
-import { EVENT_TYPE, FIXTURE, TOOL, WAIT } from './constants.mjs'
-import { contributedType, makeEvent, openWorld, readLines } from './world.mjs'
+import { CORE, DSH, EVENT_TYPE, FIXTURE, TOOL, WAIT } from './constants.mjs'
+import { until } from '../../support/util.mjs'
+import { busyGate, contributedType, durablyAdmitted, forgetSession, makeEvent, openWorld, readLines, startBusy } from './world.mjs'
 
-const PHASE = Object.freeze({ cut: 'cut', recover: 'recover' })
+const PHASE = Object.freeze({ cut: 'cut', recover: 'recover', restart: 'restart' })
 
-/** One event per scenario; its marker is fixed so both phases see the same identity. */
+/** One event per scenario; its marker is fixed so every phase sees the same identity. */
 const EVENT_NUMBER = 1
+/** The event a faulty recover phase publishes after its failed recovery (decision 2026-11-14 2). */
+const LATER_EVENT_NUMBER = 2
 const interceptedType = contributedType()
+
+/** Startup-recovery faults of the recover phase (decision 2026-11-14 2), by name. */
+export const RECOVER_FAULT = Object.freeze({ activate: 'activate', ledgerWrite: 'ledgerWrite' })
+/** Between-phase actions on the root, run by the parent process while no world is open. */
+const BETWEEN = Object.freeze({ clearFishball: (root) => forgetSession(root, FIXTURE.fishballSession) })
 
 /**
  * Scenarios by the case rows they serve. `type` picks the route (a contributed type has a
@@ -30,12 +42,62 @@ export const SCENARIO = Object.freeze({
   interceptorBeforeAck: { type: interceptedType, cut: 'ack', pluginAtRestart: true },
   interceptorOpenUp: { type: interceptedType, cut: 'afterAccept', pluginAtRestart: true },
   interceptorOpenOff: { type: interceptedType, cut: 'afterAccept', pluginAtRestart: false },
+  // Decision 2026-11-14 1: the claiming step dies before the event is admitted (`interrupted`).
+  fishballClaimCrash: { type: EVENT_TYPE.message, cut: 'claim' },
+  // Decision 4 (b): accepted for Fishball and acked while it is busy, not admitted, then the crash.
+  fishballQueuedBusy: { type: EVENT_TYPE.message, cut: 'queued' },
+  // Decision 4 (a): admitted and its turn done, then the Fishball session is cleared or replaced.
+  admittedThenCleared: { type: EVENT_TYPE.message, cut: 'settled', between: 'clearFishball' },
+  admittedThenReplaced: { type: EVENT_TYPE.message, cut: 'settled', restartIn: FIXTURE.replacementSession },
+  // Decision 4 window: the session holds the admission, the ledger's `admitted` write has not landed.
+  admissionLedgerWindow: { type: EVENT_TYPE.message, cut: 'admitting' },
+  // Decision 2: startup recovery fails; a later event still goes through; the next start delivers.
+  recoverActivateFails: { type: EVENT_TYPE.message, cut: 'queued', recoverFault: RECOVER_FAULT.activate, restart: true },
+  recoverLedgerFails: { type: interceptedType, cut: 'afterAccept', pluginAtRestart: false, recoverFault: RECOVER_FAULT.ledgerWrite, restart: true },
 })
 
-async function die(world) {
-  await world.ctx.sessions.flush(world.agent.session)
+/** SIGKILL now, with nothing more made durable. */
+async function kill() {
   process.kill(process.pid, 'SIGKILL')
   await new Promise(() => {})
+}
+async function die(world) {
+  await world.ctx.sessions.flush(world.agent.session)
+  await kill()
+}
+
+/** The record a ledger write stores, or undefined for a delete (`update`'s transform is pure, K-domain). */
+function written({ op, args, table }) {
+  if (op === 'put') return args[1]
+  if (op === 'update') return args[1](table.get(args[0]))
+  return undefined
+}
+/** Whether a ledger write moves a record to core's admitted state (decision 2026-11-14 4). */
+const admitsRecord = (write) => {
+  const next = written(write)
+  return next !== null && typeof next === 'object' && Object.values(next).includes(CORE.admitted)
+}
+
+/**
+ * The window cut (decision 4): holds the ledger's `admitted` write, waits until the admission is in
+ * the Fishball session's durable log, then dies without flushing (a flush could wait on the held
+ * write). It records whether the admission was durable at the cut, so a report tells the two apart.
+ */
+async function dieInAdmissionWindow(world, event) {
+  await until(() => durablyAdmitted(world.root, FIXTURE.fishballSession, event.marker), WAIT.settleMs, WAIT.pollMs)
+  fs.writeFileSync(world.file('window'), JSON.stringify({ durable: durablyAdmitted(world.root, FIXTURE.fishballSession, event.marker) }))
+  await kill()
+}
+
+/** The recover phase's fault (decision 2), counting how often it fired. */
+function recoverSeam(fault, fired) {
+  if (fault === RECOVER_FAULT.activate) {
+    return { activate: async ({ agent, recovering }) => { if (recovering) { fired.count += 1; throw new Error(FIXTURE.fault) } return agent } }
+  }
+  if (fault === RECOVER_FAULT.ledgerWrite) {
+    return { ledgerWrite: async ({ recovering }) => { if (recovering && fired.count === 0) { fired.count += 1; throw new Error(FIXTURE.fault) } } }
+  }
+  return undefined
 }
 
 /**
@@ -66,22 +128,55 @@ async function child(sdk, root, name, phase) {
     [TOOL.inboxPoll]: async (_args, link) => { if (cutAt('poll') && link.state().events.length > 0) await die(world) },
     [TOOL.inboxAck]: async () => { if (cutAt('ack')) await die(world) },
   }
-  const onRequest = async (texts) => { if (cutAt('model') && texts.includes(event.marker)) await die(world) }
+  const gate = busyGate()
+  const onRequest = async (texts, options) => {
+    if (cutAt('model') && texts.includes(event.marker)) await die(world)
+    return cutAt('queued') ? gate.onRequest(texts, options) : undefined
+  }
   const plugUp = phase === PHASE.cut || scenario.pluginAtRestart === true
   const intercepted = scenario.type === interceptedType
   const plugins = intercepted && plugUp ? [interceptor(() => world, scenario, phase)] : []
-  world = await openWorld(sdk, root, { linkHooks, onRequest, plugins, onOpen: (w) => { world = w } })
+  const fired = { count: 0 }
+  const seam = phase === PHASE.recover ? recoverSeam(scenario.recoverFault, fired) : cutAt('admitting')
+    ? { ledgerWrite: async (write) => { if (admitsRecord(write)) await dieInAdmissionWindow(world, event) } }
+    : undefined
+  const fishballSession = phase === PHASE.cut ? FIXTURE.fishballSession : scenario.restartIn ?? FIXTURE.fishballSession
+  world = await openWorld(sdk, root, { linkHooks, onRequest, plugins, seam, fishballSession, onOpen: (w) => { world = w } })
   if (phase === PHASE.cut) {
+    // The claiming step of the event dies before it is admitted (decision 2026-11-14 1, `interrupted`).
+    world.ctx.on(DSH.preStep, async (input, next) => {
+      if (cutAt('claim') && JSON.stringify(input.messages).includes(event.marker)) await die(world)
+      return next()
+    })
+    if (cutAt('queued')) await startBusy(world, gate)
     world.link.publish(event)
-    await world.settle()
+    if (cutAt('queued')) {
+      await until(() => world.link.acked(event.eventId), WAIT.settleMs, WAIT.pollMs)
+      if (world.link.acked(event.eventId)) await die(world)
+    } else {
+      await world.settle()
+      // The "settled" cut needs the one admission first, or a later "no second wake" proves nothing.
+      if (cutAt('settled') && (await world.admissions(event.marker)).length === 1) await die(world)
+    }
     // Reaching here means the cut point never came: report it so the case fails with a reason.
     process.stdout.write(JSON.stringify({ error: 'cut point not reached: ' + scenario.cut }) + '\n')
     process.exit(0)
   }
   await world.settle()
+  const later = phase === PHASE.recover && scenario.recoverFault !== undefined ? makeEvent(EVENT_TYPE.message, LATER_EVENT_NUMBER) : undefined
+  if (later !== undefined) {
+    world.link.publish(later)
+    await world.settle()
+  }
   const log = await world.sessionLog()
   const report = {
     admissions: (await world.admissions(event.marker)).length,
+    // Admissions in the cut phase's session, when this phase runs in another one (decision 4).
+    admissionsInFirstSession: (await world.admissions(event.marker, FIXTURE.fishballSession).catch(() => [])).length,
+    faultsFired: fired.count,
+    laterAdmissions: later === undefined ? undefined : (await world.admissions(later.marker)).length,
+    laterAcked: later === undefined ? undefined : world.link.acked(later.eventId),
+    window: fs.existsSync(world.file('window')) ? JSON.parse(fs.readFileSync(world.file('window'), 'utf8')) : undefined,
     acked: world.link.acked(event.eventId),
     interceptorEffects: readLines(world.file('interceptor')).filter((w) => w.eventId === event.eventId).length,
     offeredAgain: world.loaded[0]?.seen.filter((s) => s.event.eventId === event.eventId).length ?? 0,
@@ -96,15 +191,25 @@ async function child(sdk, root, name, phase) {
   process.exit(0)
 }
 
-/** Runs one scenario's two phases; returns the recover phase's report. */
+/**
+ * Runs one scenario's phases; returns the recover phase's report, with the third start's report as
+ * `restart` when the scenario has one.
+ */
 export function runCrash(sdk, root, name) {
+  const scenario = SCENARIO[name]
   const run = (phase) => spawnSync(process.execPath, [import.meta.filename, sdk, root, name, phase], { encoding: 'utf8', timeout: WAIT.childMs })
-  const cut = run(PHASE.cut)
   const lastLine = (r) => (r.stdout ?? '').trim().split('\n').filter(Boolean).at(-1)
+  const cut = run(PHASE.cut)
   if (cut.signal !== 'SIGKILL') return { error: `cut phase did not crash (${cut.status ?? cut.signal}): ${lastLine(cut) ?? ''} ${cut.stderr ?? ''}`.trim() }
-  const recover = run(PHASE.recover)
-  if (recover.status !== 0) return { error: `recover phase failed (${recover.status ?? recover.signal}): ${recover.stderr ?? ''}`.trim() }
-  return JSON.parse(lastLine(recover))
+  if (scenario.between !== undefined) BETWEEN[scenario.between](root)
+  const reportOf = (phase) => {
+    const r = run(phase)
+    if (r.status !== 0) return { error: `${phase} phase failed (${r.status ?? r.signal}): ${r.stderr ?? ''}`.trim() }
+    return JSON.parse(lastLine(r))
+  }
+  const recover = reportOf(PHASE.recover)
+  if (recover.error !== undefined || scenario.restart !== true) return recover
+  return { ...recover, restart: reportOf(PHASE.restart) }
 }
 
 if (process.argv[1] === import.meta.filename) {
