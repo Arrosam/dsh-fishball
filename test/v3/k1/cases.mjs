@@ -37,13 +37,13 @@ import {
  * One test per case row, named "<case id> row <n> [SDK x] <partition>"; `todo` names the owning task.
  * A body with one parameter gets the module; with none it runs on the SDK oracle alone.
  */
-function caseTest(sdk, id, row, title, fn, todo) {
+export function caseTest(sdk, id, row, title, fn, todo) {
   const name = `${id} row ${row} [SDK ${sdk}] ${title}`
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, async () => (fn.length === 0 ? fn() : fn(await schemaModule(sdk))))
 }
 /** A list of rows that only a later task can run. */
-const todos = (sdk, id, owner, rows) => { for (const [row, title] of rows) caseTest(sdk, id, row, title, null, owner) }
+export const todos = (sdk, id, owner, rows) => { for (const [row, title] of rows) caseTest(sdk, id, row, title, null, owner) }
 
 const assertExported = (mod, values, what, strings = exportedStrings(mod)) => {
   assert.deepEqual(values.filter((v) => !strings.has(v)), [], `${what}: not exported as data by ${SCHEMA_MODULE.specifier}`)
@@ -92,7 +92,7 @@ const pairOutput = async (sdk, mod) => {
 const idPattern = (mod) => exportedRegExps(mod).find((re) => IDS.accepted.every((id) => re.test(id)) && !re.test(IDS.refused[0]))
 
 /** K1a: the declaration file's text, required to exist. */
-const declarationText = () => {
+export const declarationText = () => {
   const file = path.join(SCHEMA_MODULE.folder, SCHEMA_MODULE.declarations)
   const text = folderTexts(SCHEMA_MODULE.codeFile).get(file)
   assert.ok(text !== undefined, 'no ' + file)
