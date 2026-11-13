@@ -26,6 +26,7 @@
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createBrowserSandbox } from '../../support/browser-sandbox.mjs'
+import { applyPlugins, moduleTable } from '../shared/client-graph.mjs'
 import { FakeElement } from '../../support/body-soul-dom.mjs'
 import { createReactShim, findAll, textOf } from '../../support/rp-recommend.mjs'
 import { fakePrimitives } from '../../support/set-panel.mjs'
@@ -81,8 +82,8 @@ export async function bootGraph(child) {
   return JSON.parse(match[1]).entries.filter((entry) => !entry.id.startsWith(BOOT.sdkScope))
 }
 
-/** The scripted page services (see the header): slots, layout, locale. */
-function pageServices(shim, lang) {
+/** The scripted page services (see the header): slots, layout, locale. Also used by the R-EMBED main page. */
+export function pageServices(shim, lang) {
   const entries = new Map()
   const bump = () => shim.rerender()
   const slots = {
@@ -95,7 +96,12 @@ function pageServices(shim, lang) {
       return () => { const at = list.indexOf(entry); if (at >= 0) { list.splice(at, 1); bump() } }
     },
     // The slot is always declared here, so the injection runs once and its effect is disposed with it.
-    inject(_name, callback) { const effect = callback(); return () => { if (typeof effect === 'function') effect() } },
+    // An effect is a disposer or, from a generator callback, an iterable of disposers (the V2 main clients yield several).
+    inject(_name, callback) {
+      const effect = callback()
+      const disposers = typeof effect === 'function' ? [effect] : effect && typeof effect[Symbol.iterator] === 'function' ? [...effect] : []
+      return () => { for (const dispose of disposers.reverse()) if (typeof dispose === 'function') dispose() }
+    },
     entries: (name) => [...(entries.get(name) ?? [])],
     entriesOfSlot: (name) => [...(entries.get(name) ?? [])],
     subscribe: () => () => {},
@@ -204,47 +210,14 @@ export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = (
     page.run(text, target.pathname, target.href)
   }
 
-  // The module table: graph entries by id, package-local chunks by `<id>/<chunk>` (dsh-client-modules' require).
-  const registered = new Map(page.registrations.map((r) => [r.chunk === undefined ? r.id : r.id + '/' + r.chunk, r]))
-  const exportsOf = new Map()
-  const materialize = (key) => {
-    if (!exportsOf.has(key)) exportsOf.set(key, registered.get(key).factory(requireFor(key.split('/')[0])))
-    return exportsOf.get(key)
-  }
-  function requireFor(ownerId) {
-    const require = (spec) => {
-      if (spec in platform) return platform[spec]
-      const id = spec.replace(/\/client$/, '')
-      if (registered.has(id)) return materialize(id)
-      throw new Error('scripted page: require(' + JSON.stringify(spec) + ') missed the module table')
-    }
-    require.async = async (spec) => {
-      if (!spec.startsWith('./')) return require(spec)
-      const file = spec.slice(2)
-      const key = ownerId + '/' + file
-      if (!registered.has(key)) {
-        const row = graph.find((entry) => entry.id === ownerId)
-        await loadScript(ownerId, BOOT.chunkUrl(ownerId, file, row.rev))
-        for (const r of page.registrations) if (r.chunk !== undefined) registered.set(r.id + '/' + r.chunk, r)
-      }
-      return materialize(key)
-    }
-    require.asset = (reference) => reference
-    return require
-  }
+  // The module table and the plugin apply: shared with the R-EMBED main page (../shared/client-graph.mjs).
+  const table = moduleTable({ page, platform, graph, loadChunk: (ownerId, file, row) => loadScript(ownerId, BOOT.chunkUrl(ownerId, file, row.rev)) })
 
   const { Context } = await import(pathToFileURL(path.join(runtimeOf(sdk), BOOT.cordisEntry)).href)
   const root = new Context()
   const services = pageServices(shim, lang)
   for (const name of BOOT.services) root.provide(name, services[name])
-  const plugins = []
-  for (const entry of graph) {
-    let plugin
-    try { plugin = materialize(entry.id) } catch (error) { errors.push(entry.id + ': ' + error.message); continue }
-    plugin = plugin?.default ?? plugin
-    if (typeof plugin?.apply !== 'function') continue
-    plugins.push({ id: entry.id, inject: plugin.inject ?? [], fiber: root.plugin(plugin) })
-  }
+  const plugins = applyPlugins(root, graph, table, errors)
   for (const plugin of extra) plugins.push({ id: plugin.name, inject: plugin.inject ?? [], fiber: root.plugin(plugin) })
   // Unmount and stop the page's timers before the plugins go: a render or poll after a fiber's
   // disposal would read a service from an inactive Cordis context.

@@ -5,17 +5,17 @@
   "license": "MIT",
   "type": "module",
   "main": "./host.js",
-  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The card's own runtime text stays in client.js.",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The instance has no host-DSH UI (R-ARCH-05): V3 R-EMBED moved its Plugins card, with ./client, to fishball-embed-ui; the status line it shows stays here, in src/child-settings/client.status.js.",
+  "//exports": "./status-line is the instance's status line (R-EMBED; HOST-EP-03 row 2: its one owner is src/child-settings/). It is a browser chunk, not a Node module: the child's hosted settings section loads it beside its own client.js, and fishball-embed-ui's copy beside its client.js comes from this export (a symlink in the repository; the release packing task dereferences it, DESIGN.md §17).",
   "exports": {
     ".": "./host.js",
-    "./client": "./client.js",
     "./native-runtime": "./src/native-runtime/index.js",
+    "./status-line": "./src/child-settings/client.status.js",
     "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
   "files": [
     "host.js",
-    "client.js",
     "native-child.js",
     "native-web.js",
     "uninstall.js",
@@ -58,15 +58,6 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
-    },
-    "//client": "The instance's Plugins card in the main DSH (design §0.2, §0.7): the instance's status, Retry and its one field, `enabled`. The injected packages are the client halves whose services the card uses: locale, the settings form (configForms) and the Plugins page slots.",
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-plugin-manager"
-      ]
     }
   }
 }
