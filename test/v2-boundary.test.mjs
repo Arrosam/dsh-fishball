@@ -22,7 +22,7 @@ import path from 'node:path'
 import { after, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
-import { BODY_SOUL, loadConnector, loadInstance } from './support/body-soul-env.mjs'
+import { BODY_SOUL, loadConnector, loadCore, loadInstance } from './support/body-soul-env.mjs'
 import { NODE, REPO } from './support/constants.mjs'
 import { RUNTIME_PARENT_URL } from './support/provider-sync-sdk.mjs'
 
@@ -33,8 +33,9 @@ const V2B = Object.freeze({
     connector: Object.freeze({ name: 'fishball-connector', dir: BODY_SOUL.connector }),
     instance: Object.freeze({ name: 'fishball-instance', dir: BODY_SOUL.instance }),
   }),
-  // V3 R-SHARED / R-ARCH-08 (approved design) adds the library workspace packages/shared.
-  workspaces: Object.freeze(['packages/connector', 'packages/instance', 'packages/shared']),
+  // V3 R-SHARED / R-ARCH-08 (approved design) adds the library workspace packages/shared;
+  // V3 R-CORE (1) / design §9.1 adds fishball-core's workspace packages/core.
+  workspaces: Object.freeze(['packages/connector', 'packages/core', 'packages/instance', 'packages/shared']),
   /** Repository directories of the V3 packages (no V2 module may load from them). */
   v3Dirs: Object.freeze(['board', 'fold-notify', 'watchdog'].map((d) => path.join(REPO, 'packages', d))),
   /** A packed path segment naming a V3 area or the bundled asset directory. */
@@ -54,7 +55,9 @@ const V2B = Object.freeze({
     tempPrefix: 'fbtest-v2b-npm-',
   }),
   entries: Object.freeze({
-    instance: Object.freeze(['host.js', 'native-child.js', 'native-web.js', 'child-web/fishball-page/index.js', 'src/native-runtime/overlay.js', 'src/native-runtime/constants.js', 'src/slim/child/app.js']),
+    instance: Object.freeze(['host.js', 'native-child.js', 'native-web.js', 'src/native-runtime/overlay.js', 'src/native-runtime/constants.js']),
+    // V3 R-CORE (2) / design §9.1: the child page row and the slim app moved, unchanged, into fishball-core.
+    core: Object.freeze(['ui/fishball-page/index.js', 'src/slim/child/app.js']),
     connector: Object.freeze(['index.js']),
   }),
   /** A path that does not exist: importing it only installs the helper hooks (see below). */
@@ -274,6 +277,7 @@ for (const pkg of Object.values(V2B.packages)) {
 
 const startupEntries = [
   ...V2B.entries.instance.map((rel) => ({ rel, dir: BODY_SOUL.instance, load: loadInstance, label: 'instance' })),
+  ...V2B.entries.core.map((rel) => ({ rel, dir: BODY_SOUL.core, load: loadCore, label: 'core' })),
   ...V2B.entries.connector.map((rel) => ({ rel, dir: BODY_SOUL.connector, load: loadConnector, label: 'connector' })),
 ]
 for (const entry of startupEntries) {

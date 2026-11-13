@@ -1,11 +1,16 @@
 /**
- * PBS: fishball-settings `apply` shared main-card mounts (R-B, R-B1, R-B2), black-box.
+ * PBS: the shared main-card mounts of the hosted-only settings sections (R-B, R-B1, R-B2), black-box.
  *
- * packages/core/ui/fishball-settings/client.js is a classic `window.__ModuleLoader__.load({id, factory})`
+ * V3 R-HOST-11 / task R-CORE (4): the sections that show the main card's status line moved out of the
+ * generic panel into the instance-owned bundle `fishball-hosted-settings`, which registers them into
+ * core's settings-section extension point; the panel's own style sheet stays with core's generic
+ * panel, so the shared card's mounts are now locale.register → mountStyles (no mountStyle).
+ *
+ * packages/instance/src/child-settings/client.js is a classic `window.__ModuleLoader__.load({id, factory})`
  * script, loaded here in node:vm the same way page-open-session-page.mjs loads the page. React is
  * the exported shim of test/support/rp-recommend.mjs (nothing is rendered: the mounts under test
  * happen in a ctx.effect, not in a component). Only the module's documented inject surfaces
- * (`slots`, `layout`, `locale`) and `ctx.effect` are faked; any other ctx access is recorded so a
+ * (`fishballSettingsSections` through `ctx.get`, and `locale`) and `ctx.effect` are faked; any other ctx access is recorded so a
  * failing precondition names it.
  *
  * Driving the loader: `require.async('./client.instance.js')` returns a thenable whose fulfil/reject
@@ -13,7 +18,7 @@
  * after a successful mount is the only black-box way to make the loader notify its listeners again
  * (R-B2 control); a real promise settles once, so that call stands for any later notification.
  *
- * Techniques: BVA over the position of the throwing mount (1st, 2nd, 3rd, none), EP over the
+ * Techniques: BVA over the position of the throwing mount (none, 1st, 2nd = last, past the last), EP over the
  * loader's outcome (ready / failed), ST over (loading, ready, disposed). Each case names its technique.
  */
 import assert from 'node:assert/strict'
@@ -28,10 +33,11 @@ import { settle } from './page-open-session-page.mjs'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 
 const PBS = Object.freeze({
-  client: path.join(HERE, '..', '..', '..', 'core', 'ui', 'fishball-settings', 'client.js'),
-  moduleId: 'fishball-settings',
+  client: path.join(HERE, '..', '..', 'src', 'child-settings', 'client.js'),
+  moduleId: 'fishball-hosted-settings',
+  /** Core's settings-section extension point, the service the hosted sections register into. */
+  sectionsService: 'fishballSettingsSections',
   sharedChunk: './client.instance.js',
-  styleId: 'fishball-settings-style',
   baseURI: 'http://child.test/',
   modules: Object.freeze({ react: 'react', primitives: '@deepseek-ai/dsh-client-ui-primitives' }),
   sharedLocale: 'pbs-shared-locale',
@@ -39,9 +45,12 @@ const PBS = Object.freeze({
   loadFailure: 'PBS chunk load failure',
 })
 
-/** The three mounts in R-B order; `site` names the fake that mounts or throws. */
+/**
+ * The mounts in R-B order; `site` names the fake that mounts or throws. `style` (the panel's own
+ * sheet) is core's generic panel's now, not the hosted sections': a call to it is out of order.
+ */
 const MOUNT = Object.freeze({ locale: 'locale.register', styles: 'shared.mountStyles', style: 'shared.mountStyle' })
-const MOUNT_ORDER = Object.freeze([MOUNT.locale, MOUNT.styles, MOUNT.style])
+const MOUNT_ORDER = Object.freeze([MOUNT.locale, MOUNT.styles])
 
 /** Minimal fake primitives: a Button host element is all the factory needs at load time. */
 function fakePrimitives(React) {
@@ -85,11 +94,13 @@ function bootSettings({ throwAt } = {}) {
     locale: PBS.sharedLocale,
     dictionaries: PBS.sharedDictionaries,
     mountStyles: () => mount(MOUNT.styles),
-    mountStyle: (id, css) => {
-      assert.equal(id, PBS.styleId, 'mountStyle gets the panel style id')
-      assert.equal(typeof css, 'string', 'mountStyle gets the panel css text')
-      return mount(MOUNT.style)
-    },
+    mountStyle: () => mount(MOUNT.style),
+  }
+  /** Core's extension point as the hosted sections see it; sections are accepted and not rendered. */
+  const sectionsService = {
+    register: () => () => {},
+    reactSection: () => ({ mount() {}, unmount() {} }),
+    classes: { section: 'pbs-section', row: 'pbs-row', hint: 'pbs-hint', error: 'pbs-error' },
   }
 
   let registered
@@ -130,8 +141,10 @@ function bootSettings({ throwAt } = {}) {
       try { record.dispose = execute() } finally { inEffect = previous }
       return record.dispose
     },
-    slots: guarded('slots', { register: () => () => {}, inject: () => () => {} }),
-    layout: guarded('layout', { panelInfo: { getSnapshot: () => ({ activePanelId: null }), subscribe: () => () => {} }, selectPanel() {}, toggleSidebar() {} }),
+    get(name) {
+      if (name !== PBS.sectionsService) { unexpected.push('ctx.get(' + String(name) + ')'); return undefined }
+      return guarded(PBS.sectionsService, sectionsService)
+    },
     locale: guarded('locale', {
       // The row may register other namespaces of its own (outside R-B); only the shared card's
       // registration is the R-B mount under test.
@@ -168,7 +181,7 @@ function bootSettings({ throwAt } = {}) {
 
 /** Precondition shared by every case: the effect asked for the shared chunk through require.async. */
 function assertLoaderStarted(row) {
-  assert.deepEqual(row.unexpected, [], 'no ctx surface outside slots/layout/locale/effect is used')
+  assert.deepEqual(row.unexpected, [], 'no ctx surface outside the sections service, locale and effect is used')
   assert.ok(row.sharedChunks().length >= 1, "an effect calls require.async('" + PBS.sharedChunk + "')")
   assert.ok(row.sharedChunks().every((entry) => entry.effect !== null), 'the chunk is requested from inside a ctx.effect')
 }
@@ -177,15 +190,17 @@ function assertLoaderStarted(row) {
 // R-B / R-B1: mount order and removal of earlier mounts when a later one throws
 // ---------------------------------------------------------------------------------------------
 
-/** BVA over the failing position: none, 1st, 2nd, 3rd (the last). Expected live set before teardown. */
+/** BVA over the failing position: none, 1st, 2nd (the last), past the last. Expected live set before teardown. */
 const MOUNT_ROWS = Object.freeze([
   Object.freeze({ id: 'PBS-BVA-01', technique: 'BVA (no throw)', throwAt: undefined, attempted: MOUNT_ORDER, liveBefore: MOUNT_ORDER }),
   Object.freeze({ id: 'PBS-BVA-02', technique: 'BVA (1st mount throws)', throwAt: MOUNT.locale, attempted: MOUNT_ORDER.slice(0, 1), liveBefore: Object.freeze([]) }),
-  Object.freeze({ id: 'PBS-BVA-03', technique: 'BVA (2nd mount throws)', throwAt: MOUNT.styles, attempted: MOUNT_ORDER.slice(0, 2), liveBefore: MOUNT_ORDER.slice(0, 1) }),
-  Object.freeze({ id: 'PBS-BVA-04', technique: 'BVA (3rd mount throws)', throwAt: MOUNT.style, attempted: MOUNT_ORDER, liveBefore: MOUNT_ORDER.slice(0, 2) }),
+  // V3: the 2nd mount is the last one; the former 3rd position (the panel sheet) moved to core.
+  Object.freeze({ id: 'PBS-BVA-03', technique: 'BVA (2nd = last mount throws)', throwAt: MOUNT.styles, attempted: MOUNT_ORDER, liveBefore: MOUNT_ORDER.slice(0, 1) }),
+  // Just past the last position: the panel sheet's mountStyle is core's, so a fault there is never reached.
+  Object.freeze({ id: 'PBS-BVA-04', technique: 'BVA (past the last: mountStyle would throw)', throwAt: MOUNT.style, attempted: MOUNT_ORDER, liveBefore: MOUNT_ORDER }),
 ])
 
-describe('PBS R-B1 fishball-settings: shared card mounts are removed by row teardown even when a later mount throws', () => {
+describe('PBS R-B1 fishball-hosted-settings: shared card mounts are removed by row teardown even when a later mount throws', () => {
   for (const row of MOUNT_ROWS) {
     const label = row.throwAt ? row.throwAt + ' throws' : 'every mount succeeds'
     it(`${row.id} ${row.technique}: ${label}`, async () => {
@@ -196,7 +211,7 @@ describe('PBS R-B1 fishball-settings: shared card mounts are removed by row tear
       world.ready()
       await settle()
       // Mounting stops at the throw (a later part is never attempted after an earlier one threw).
-      assert.deepEqual(world.mounts, [...row.attempted], 'mounts run in order locale.register → mountStyles → mountStyle, up to the throw')
+      assert.deepEqual(world.mounts, [...row.attempted], 'mounts run in order locale.register → mountStyles, up to the throw')
       assert.deepEqual([...world.live], [...row.liveBefore], 'precondition: the parts before the throw are mounted')
       world.teardownRow()
       assert.deepEqual([...world.live], [], 'row teardown removes every part that was mounted')
@@ -208,7 +223,7 @@ describe('PBS R-B1 fishball-settings: shared card mounts are removed by row tear
 // R-B2 control and loader state transitions
 // ---------------------------------------------------------------------------------------------
 
-describe('PBS R-B / R-B2 fishball-settings: loader notifications and teardown', () => {
+describe('PBS R-B / R-B2 fishball-hosted-settings: loader notifications and teardown', () => {
   it('PBS-ST-05 ST ready → ready again (control, R-B2): a later loader notification mounts nothing twice', async () => {
     const world = bootSettings()
     assertLoaderStarted(world)
