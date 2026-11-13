@@ -1,5 +1,8 @@
 /**
- * The `fishball-instance` card in DSH's Plugins page (design §0.7, D23, D26; task I1).
+ * The `fishball-instance` card in DSH's Plugins page (design §0.7, D23, D26; task I1), drawn by
+ * fishball-embed-ui (V3 R-EMBED moved it here unchanged from packages/instance/client.js: every
+ * host-DSH UI is embed-UI's, R-ARCH-04). It is a package-local chunk of embed-UI's client
+ * (client.js plugs it in); the row it configures and the routes it calls are still the instance's.
  *
  * The main DSH holds only what the instance needs before its child exists: `enabled`, edited in
  * DSH's own form for the instance's row. There is no launch field: the child starts as the main
@@ -13,26 +16,15 @@
  * The field is the row's volatile config: DSH's settings form can write volatile fields only,
  * and writes it into the profile's patch for the `fishball-instance` row (§0.7).
  *
- * Above them the card shows the instance's own status and its reason (§18.2 I1, inst-OQ-01):
- * the state, the safe code, its reason, and Retry while the instance is `failed`
- * (§0.7 "Instance: status, Retry"; inst-OQ-03, inst-OQ-09: failed until Retry).
- *
- * One source, two bundles (SET, docs/planning/v2-set.md): the child's hosted settings section
- * (src/child-settings, fishball-hosted-settings) shows this same status line. The "Model for
- * Fishball" block stays on this main card only: the child must never start a sync (the user's
- * decision of 2026-11-11). The child snapshot copy places this file beside that section's package
- * as its package-local chunk `client.instance.js` (src/native-runtime/installation.js), which
- * DSH's client-modules serves at `…/fishball-hosted-settings/client.instance.js` and expects to
- * register as that owner's chunk. So the
- * registration identity follows the script's own URL; the main DSH serves this file as the
- * `fishball-instance` bundle, never under that chunk name, so its registration is unchanged. The
- * choice is an inline expression because client-modules concatenates bundles into one classic
- * script, where a top-level declaration could collide with another package's.
+ * Above them the card shows the instance's own status line (§18.2 I1, inst-OQ-01; §0.7
+ * "Instance: status, Retry"). The instance owns that line (HOST-EP-03 row 2): it is the chunk
+ * client.status.js (packages/instance/src/child-settings/client.status.js, a symlink beside this
+ * file), which the child's hosted settings section shows too. The "Model for Fishball" block stays
+ * on this main card only: the child must never start a sync (the user's decision of 2026-11-11).
  */
 window.__ModuleLoader__.load({
-  ...((script, child) => (script?.src && new URL(script.src, document.baseURI).pathname.endsWith('/' + child.owner + '/' + child.chunk)
-    ? { id: child.owner, chunk: child.chunk }
-    : { id: 'fishball-instance' }))(typeof document === 'undefined' ? undefined : document.currentScript, { owner: 'fishball-hosted-settings', chunk: 'client.instance.js' }),
+  id: 'fishball-embed-ui',
+  chunk: 'client.instance.js',
   factory(require) {
     const module = { exports: {} }
     const exports = module.exports
@@ -43,12 +35,13 @@ window.__ModuleLoader__.load({
 
     /**
      * The row's identity. The row id is the settings namespace DSH serves and also the package
-     * name, so the slot key the Plugins page dispatches is `<package>#<row id>` (§0.2, D22).
+     * name, so the slot key the Plugins page dispatches is `<package>#<row id>` (§0.2, D22). The
+     * card's locale namespace is the status line's (`shared.locale`), so its words and the line's
+     * are one dictionary.
      */
     const PLUGIN = Object.freeze({
       id: 'fishball-instance',
       slot: 'plugins.row.config',
-      locale: 'fishball-instance',
     })
     /** The form's two views; `summary` is the row's one-liner, `page` the form and its Save. */
     const VIEW = Object.freeze({ summary: 'summary', page: 'page' })
@@ -63,25 +56,6 @@ window.__ModuleLoader__.load({
      * its own two spellings and nothing else parses.
      */
     const FLAG = Object.freeze({ on: 'true', off: 'false' })
-    /**
-     * The instance's status on this card (host.js status(), served by src/native-web.js). The
-     * routes are relative to DSH's page, as the connector's are. Status has no event, so the open
-     * card re-reads it at the cadence the connector's frame reads `status()` (conn-OQ-25: once a
-     * second), only while it is mounted and the tab is visible, one read at a time.
-     * `unavailable` is the route's own answer for a state it cannot read. `stateTone` maps a state
-     * to the DSH Tag tones the connector's frame uses.
-     */
-    const STATUS_UI = Object.freeze({
-      statusPath: 'api/fishball-instance/status',
-      retryPath: 'api/fishball-instance/retry',
-      read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
-      post: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: Object.freeze({ 'content-type': 'application/json' }), body: '{}' }),
-      pollMs: 1000,
-      loading: 'loading',
-      failed: 'failed',
-      stateTone: Object.freeze({ ready: 'info', failed: 'danger' }),
-      neutralTone: 'neutral',
-    })
     /**
      * The "Model for Fishball" block (§10, D26; src/slim/host/provider-sync-routes.js). Check posts
      * no body and answers `{checkId, missing, notOffered, present}`; Add posts `{checkId, ids}` and
@@ -108,26 +82,22 @@ window.__ModuleLoader__.load({
       unreadable: 'provider-sync-refused',
       separator: ' · ',
     })
-    const CLS = Object.freeze({ feature: 'fb-instance-feature', toggleRow: 'fb-instance-toggle-row', hint: 'fb-instance-hint', status: 'fb-instance-status', statusRow: 'fb-instance-status-row', sync: 'fb-instance-sync', syncTitle: 'fb-instance-sync-title', syncList: 'fb-instance-sync-list', syncRow: 'fb-instance-sync-row', syncModels: 'fb-instance-sync-models', error: 'fb-instance-error' })
-    const STYLE = Object.freeze({
-      id: 'fishball-instance-style',
-      gap: '16px',
-      stackGap: '6px',
-      hintSize: '12px',
-      lineHeight: '1.5',
-    })
-    const css = [
-      `.${CLS.feature}{display:grid;gap:${STYLE.stackGap}}`,
-      `.${CLS.toggleRow}{display:flex;align-items:flex-start;justify-content:space-between;gap:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
-      `.${CLS.hint}{margin:0;color:var(--dsw-alias-label-tertiary);font-size:${STYLE.hintSize};line-height:${STYLE.lineHeight}}`,
-      `.${CLS.status}{display:grid;gap:${STYLE.stackGap};margin-bottom:${STYLE.gap}}`,
-      `.${CLS.statusRow}{display:flex;align-items:center;flex-wrap:wrap;gap:${STYLE.stackGap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
-      `.${CLS.sync}{display:grid;gap:${STYLE.stackGap};margin-bottom:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
-      `.${CLS.syncTitle}{margin:0;font:var(--dsw-font-s-strong-14)}`,
-      `.${CLS.syncList}{list-style:none;margin:0;padding:0;display:grid;gap:${STYLE.stackGap}}`,
-      `.${CLS.syncRow}{display:flex;align-items:flex-start;flex-wrap:wrap;gap:${STYLE.stackGap}}`,
-      `.${CLS.syncModels}{flex-basis:100%;margin:0;color:var(--dsw-alias-label-tertiary);font-size:${STYLE.hintSize};overflow-wrap:anywhere}`,
-      `.${CLS.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
+    /**
+     * The card's own classes. The status line's classes, `hint` and `statusRow` included, and the
+     * layout tokens come from the status-line module (`layout.classes`, `layout.style`), which
+     * defines those rules once for both pages; the model block reuses them.
+     */
+    const OWN_CLS = Object.freeze({ feature: 'fb-instance-feature', toggleRow: 'fb-instance-toggle-row', sync: 'fb-instance-sync', syncTitle: 'fb-instance-sync-title', syncList: 'fb-instance-sync-list', syncRow: 'fb-instance-sync-row', syncModels: 'fb-instance-sync-models', error: 'fb-instance-error' })
+    /** The card's own rules, over the status line's layout tokens. */
+    const cardCss = (STYLE) => [
+      `.${OWN_CLS.feature}{display:grid;gap:${STYLE.stackGap}}`,
+      `.${OWN_CLS.toggleRow}{display:flex;align-items:flex-start;justify-content:space-between;gap:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
+      `.${OWN_CLS.sync}{display:grid;gap:${STYLE.stackGap};margin-bottom:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
+      `.${OWN_CLS.syncTitle}{margin:0;font:var(--dsw-font-s-strong-14)}`,
+      `.${OWN_CLS.syncList}{list-style:none;margin:0;padding:0;display:grid;gap:${STYLE.stackGap}}`,
+      `.${OWN_CLS.syncRow}{display:flex;align-items:flex-start;flex-wrap:wrap;gap:${STYLE.stackGap}}`,
+      `.${OWN_CLS.syncModels}{flex-basis:100%;margin:0;color:var(--dsw-alias-label-tertiary);font-size:${STYLE.hintSize};overflow-wrap:anywhere}`,
+      `.${OWN_CLS.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
     ].join('')
 
     // Locale dictionaries are flat key→text maps (the service looks a key up verbatim), so the
@@ -141,24 +111,6 @@ window.__ModuleLoader__.load({
       save: 'Save',
       saving: 'Saving…',
       saveFailed: 'The deployment did not accept these values; they were left for you to correct.',
-      status: 'Status',
-      'state.loading': 'checking',
-      'state.disabled': 'disabled',
-      'state.waiting': 'waiting',
-      'state.starting': 'starting',
-      'state.ready': 'running',
-      'state.stopping': 'stopping',
-      'state.stopped': 'stopped',
-      'state.failed': 'failed',
-      'state.connector-missing': 'connector missing',
-      'state.unavailable': 'unavailable',
-      'reason.connector-missing': 'The Fishball connector (fishball-connector) is not installed or not enabled, so the instance does not start. Enable the connector; the instance then starts without a restart of DSH.',
-      'reason.NATIVE_CONNECTOR_UPGRADE_REQUIRED': 'Upgrade Fishball connector to contract 1.2 with interaction.timerfree support, then retry this instance. The older connector cannot safely delegate timer-free decisions.',
-      'reason.NATIVE_INSTANCE_BUSY': 'Another Fishball instance is already attached to the connector, so this one was stopped.',
-      'reason.NATIVE_CONTRACT_VERSION': 'The installed connector speaks a different contract version, so this instance was stopped.',
-      'reason.INVALID_MAIN_HOME': 'The DSH home is not a canonical real path. Start DSH with a home that is its own real path, not one through a symlink such as /tmp (on macOS, /private/tmp rather than /tmp).',
-      retry: 'Retry',
-      retrying: 'Retrying…',
       'sync.title': 'Model for Fishball',
       'sync.check': 'Check for new models',
       'sync.checking': 'Checking…',
@@ -208,24 +160,6 @@ window.__ModuleLoader__.load({
       save: '保存',
       saving: '保存中…',
       saveFailed: '本部署没有接受这些值，已保留供你修改。',
-      status: '状态',
-      'state.loading': '检查中',
-      'state.disabled': '已禁用',
-      'state.waiting': '等待中',
-      'state.starting': '启动中',
-      'state.ready': '运行中',
-      'state.stopping': '停止中',
-      'state.stopped': '已停止',
-      'state.failed': '失败',
-      'state.connector-missing': '缺少连接器',
-      'state.unavailable': '无法读取',
-      'reason.connector-missing': 'Fishball 连接器（fishball-connector）未安装或未启用，所以实例不会启动。启用连接器后，实例会自动启动，无需重启 DSH。',
-      'reason.NATIVE_CONNECTOR_UPGRADE_REQUIRED': '请将 Fishball 连接器升级至支持 interaction.timerfree 的契约 1.2，再重试此实例。旧连接器无法安全委派无计时器决策。',
-      'reason.NATIVE_INSTANCE_BUSY': '已有另一个 Fishball 实例连接到连接器，所以本实例已停止。',
-      'reason.NATIVE_CONTRACT_VERSION': '已安装的连接器使用不同的契约版本，所以本实例已停止。',
-      'reason.INVALID_MAIN_HOME': 'DSH home 不是规范的真实路径。请让 DSH 使用它自身的真实路径，而不是经过 /tmp 之类符号链接的路径（macOS 上应使用 /private/tmp，而不是 /tmp）。',
-      retry: '重试',
-      retrying: '正在重试…',
       'sync.title': 'Fishball 的模型',
       'sync.check': '检查新模型',
       'sync.checking': '正在检查…',
@@ -309,70 +243,6 @@ window.__ModuleLoader__.load({
       return { store, actions: form.actions(), dispose: () => form.dispose() }
     }
 
-    /**
-     * One read or Retry of this row's status route. @returns `{state, code, detail}`, or
-     * undefined when the answer could not be read (the card then keeps what it showed).
-     */
-    async function statusRequest(path, init, signal) {
-      try {
-        const response = await fetch(new URL(path, document.baseURI).toString(), { ...init, signal })
-        if (!response.ok) return undefined
-        const value = await response.json()
-        return value !== null && typeof value === 'object' && typeof value.state === 'string' ? value : undefined
-      } catch { return undefined }
-    }
-
-    /** The instance's status while the card is open: read at once, then every STATUS_UI.pollMs. */
-    function useInstanceStatus() {
-      const [status, setStatus] = React.useState(undefined)
-      React.useEffect(() => {
-        const abort = new AbortController()
-        let reading = false
-        const poll = () => {
-          if (reading || document.hidden) return
-          reading = true
-          void statusRequest(STATUS_UI.statusPath, STATUS_UI.read, abort.signal).then((next) => {
-            if (next !== undefined && !abort.signal.aborted) setStatus(next)
-          }).finally(() => { reading = false })
-        }
-        poll()
-        const timer = setInterval(poll, STATUS_UI.pollMs)
-        return () => { clearInterval(timer); abort.abort() }
-      }, [])
-      return [status, setStatus]
-    }
-
-    /**
-     * The status line: DSH's Tag with the state, the safe code beside it, the reason (the
-     * state's or the code's own text), and Retry for `failed`.
-     * @param t - this card's locale reader.
-     * @param status - the polled status ({@link useInstanceStatus}), shared with the model block.
-     */
-    function InstanceStatus({ t, status, setStatus }) {
-      const [retrying, setRetrying] = React.useState(false)
-      const state = status?.state ?? STATUS_UI.loading
-      const code = status?.code ?? null
-      const reasonKey = ['reason.' + state, code === null ? null : 'reason.' + code].find((key) => key !== null && Object.hasOwn(en, key))
-      const reason = reasonKey !== undefined ? t(reasonKey) : null
-      const retry = async () => {
-        setRetrying(true)
-        const next = await statusRequest(STATUS_UI.retryPath, STATUS_UI.post)
-        setRetrying(false)
-        if (next !== undefined) setStatus(next)
-      }
-      return h('div', { className: CLS.status, 'data-fishball-instance-state': state, ...(code ? { 'data-fishball-instance-code': code } : {}) },
-        h('div', { className: CLS.statusRow, role: 'status' },
-          h('span', null, t('status')),
-          h(Tag, { tone: STATUS_UI.stateTone[state] ?? STATUS_UI.neutralTone }, t('state.' + state)),
-          code ? h('code', null, code) : null,
-          state === STATUS_UI.failed
-            ? h(Button, { type: 'button', size: 'sm', variant: 'secondary', disabled: retrying, 'data-fishball-instance-retry': true, onClick: () => void retry() }, retrying ? t('retrying') : t('retry'))
-            : null),
-        reason ? h('p', { className: CLS.hint }, reason) : null,
-        // A failed start's specific cause (host.js, already sanitized and bounded by the route).
-        typeof status?.detail === 'string' && status.detail ? h('p', { className: CLS.hint, 'data-fishball-instance-detail': true }, status.detail) : null)
-    }
-
     /** One model-sync call. @returns `{ok, result|error}`; an unreadable answer is a typed refusal. */
     async function syncRequest(path, payload) {
       try {
@@ -393,8 +263,10 @@ window.__ModuleLoader__.load({
      * is a fixed message key; `error` a code shown with its own words or as itself.
      * @param t - this card's locale reader.
      * @param state - the instance state from the shared status poll.
+     * @param CLS - every class the card draws (its own and the status line's).
+     * @param neutralTone - the status line's Tag tone for an outcome with no tone of its own.
      */
-    function ModelSync({ t, state }) {
+    function ModelSync({ t, state, CLS, neutralTone }) {
       const P = MODEL_SYNC_UI.phase
       const [view, setView] = React.useState({ phase: P.idle })
       const ready = state === MODEL_SYNC_UI.ready
@@ -451,7 +323,7 @@ window.__ModuleLoader__.load({
           h('p', { role: 'status' }, counts.map(([outcome, count]) => t('sync.summary.' + outcome, { count })).join(MODEL_SYNC_UI.separator)),
           h('ul', { className: CLS.syncList }, view.items.map((item) => h('li', { key: item.id, className: CLS.syncRow, 'data-fishball-model-result': item.outcome },
             h('strong', null, nameOf(item.id)),
-            h(Tag, { tone: MODEL_SYNC_UI.outcomeTone[item.outcome] ?? STATUS_UI.neutralTone }, t('sync.outcome.' + item.outcome)),
+            h(Tag, { tone: MODEL_SYNC_UI.outcomeTone[item.outcome] ?? neutralTone }, t('sync.outcome.' + item.outcome)),
             item.reason ? h('span', { className: CLS.hint }, reason(item.reason)) : null)))) : null,
         (listed || view.phase === P.result) && view.check.present > 0 ? h('p', { className: CLS.hint }, t('sync.present', { count: view.check.present })) : null,
         (listed || view.phase === P.result) && view.check.notOffered.length > 0 ? h('details', null,
@@ -466,9 +338,13 @@ window.__ModuleLoader__.load({
      * boolean.
      * @param section - the staged form from {@link launchSection}.
      * @param t - this card's locale reader.
+     * @param shared - the status-line module (client.status.js).
+     * @param CLS - every class the card draws (its own and the status line's).
+     * @param neutralTone - the status line's neutral Tag tone, for the model block.
      * @returns the row page component.
      */
-    function makeCard(section, t) {
+    function makeCard(section, t, shared, CLS, neutralTone) {
+      const { InstanceStatus, useInstanceStatus } = shared
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
       return function FishballInstanceCard(props) {
@@ -477,7 +353,7 @@ window.__ModuleLoader__.load({
         const [status, setStatus] = useInstanceStatus()
         if (props.view !== VIEW.page) return t('summary')
         const disabled = !state.writable || state.saving
-        return h(React.Fragment, null, h(InstanceStatus, { t, status, setStatus }), h(ModelSync, { t, state: status?.state }), h(SettingsForm, {
+        return h(React.Fragment, null, h(InstanceStatus, { t, status, setStatus }), h(ModelSync, { t, state: status?.state, CLS, neutralTone }), h(SettingsForm, {
           labels: formLabels(t),
           state,
           onSave: section.actions.save,
@@ -496,52 +372,38 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** One page style sheet; DSH plugin styles are per page, and the id names the sheet. */
-    function mountStyle(id, text) {
-      const style = document.createElement('style')
-      style.id = id
-      style.textContent = text
-      document.head.appendChild(style)
-      return () => style.remove()
-    }
-    /** This card's styles; the id keeps a reload from stacking two copies. */
-    const mountStyles = () => mountStyle(STYLE.id, css)
-
     /**
-     * What the child's hosted settings section reuses as it is (SET): the dictionaries under this
-     * card's locale namespace, the styles, the polled status and the status line. The panel's own
-     * routes answer the same paths and shapes (src/child-settings/index.js). ModelSync is
-     * deliberately not shared: model sync starts only from this main card, never from the child.
+     * The card as a client plugin over the instance-owned status line (embed-UI's client.js loads
+     * both chunks and starts the result as a sub-plugin of its row).
+     * @param shared - the status-line module's `shared` export (client.status.js).
+     * @param layout - its `layout` export: the line's classes, rules, tokens and neutral tone.
      */
-    exports.shared = Object.freeze({
-      locale: PLUGIN.locale,
-      dictionaries: Object.freeze({ en, zh }),
-      mountStyles,
-      mountStyle,
-      useInstanceStatus,
-      InstanceStatus,
+    exports.instancePlugin = (shared, layout) => ({
+      name: PLUGIN.id,
+      inject: ['slots', 'locale', 'configForms'],
+      apply(ctx) {
+        const t = ctx.locale.bind(shared.locale)
+        const words = shared.dictionaries
+        ctx.effect(() => ctx.locale.register(shared.locale, { en: { ...words.en, ...en }, zh: { ...words.zh, ...zh } }), 'fishball instance: dictionaries')
+        // One sheet, as in V2: the status line's rules and the card's own, under the line's sheet id.
+        ctx.effect(() => shared.mountStyle(layout.style.id, layout.css + cardCss(layout.style)), 'fishball instance: styles')
+        const CLS = Object.freeze({ ...layout.classes, ...OWN_CLS })
+        // Registered while the Host serves this row's settings namespace, so a deployment without
+        // the instance package shows no trace of the card, and the row's Configure control appears
+        // only where a configuration exists (the Plugins page asks slot keys for it).
+        ctx.effect(() => {
+          const section = launchSection(ctx.configForms.get(PLUGIN.id))
+          const Card = makeCard(section, t, shared, CLS, layout.neutralTone)
+          const stopServing = ctx.configForms.whileServed([PLUGIN.id], () =>
+            ctx.slots.inject(PLUGIN.slot, () => ctx.slots.register({
+              name: PLUGIN.slot,
+              key: `${PLUGIN.id}#${PLUGIN.id}`,
+              locale: shared.locale,
+            }, Card)))
+          return () => { stopServing(); section.dispose() }
+        }, 'fishball instance: Plugins card')
+      },
     })
-    exports.name = PLUGIN.id
-    exports.inject = ['slots', 'locale', 'configForms']
-    exports.apply = function apply(ctx) {
-      const t = ctx.locale.bind(PLUGIN.locale)
-      ctx.effect(() => ctx.locale.register(PLUGIN.locale, { en, zh }), 'fishball instance: dictionaries')
-      ctx.effect(mountStyles, 'fishball instance: styles')
-      // Registered while the Host serves this row's settings namespace, so a deployment without
-      // the instance package shows no trace of the card, and the row's Configure control appears
-      // only where a configuration exists (the Plugins page asks slot keys for it).
-      ctx.effect(() => {
-        const section = launchSection(ctx.configForms.get(PLUGIN.id))
-        const Card = makeCard(section, t)
-        const stopServing = ctx.configForms.whileServed([PLUGIN.id], () =>
-          ctx.slots.inject(PLUGIN.slot, () => ctx.slots.register({
-            name: PLUGIN.slot,
-            key: `${PLUGIN.id}#${PLUGIN.id}`,
-            locale: PLUGIN.locale,
-          }, Card)))
-        return () => { stopServing(); section.dispose() }
-      }, 'fishball instance: Plugins card')
-    }
     return module.exports
   },
 })

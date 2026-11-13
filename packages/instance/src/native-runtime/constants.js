@@ -170,11 +170,8 @@ export const NATIVE_WEB = Object.freeze({
   /** V2 RP: the child-only Fishball Recommended Plugins tab, a sibling package under pageDirectory. */
   recommendPackage: 'fishball-recommend-plugins',
   // The instance's hosted-only settings sections (fishball-hosted-settings), at this path in the
-  // instance and in the snapshot, and the name its copy of the instance's client.js takes there as
-  // a package-local chunk (client-modules accepts `client.<name>.js` chunks only).
+  // instance and in the snapshot.
   hostedSettings: Object.freeze(['src', 'child-settings']),
-  sharedClient: 'client.js',
-  sharedClientChunk: 'client.instance.js',
   adapterModule: 'native-web.js',
 })
 

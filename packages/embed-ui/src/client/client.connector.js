@@ -29,8 +29,13 @@
  * package-local chunk client.records.js.
  */
 window.__ModuleLoader__.load({
-  // DSH's client module system registers a bundle under its package name (dsh-client-modules).
-  id: 'fishball-connector',
+  // V3 R-EMBED: moved here unchanged from packages/connector/client.js (R-ARCH-03: the connector
+  // has no browser client; R-ARCH-04). It is now a package-local chunk of fishball-embed-ui's
+  // client (client.js starts it as a sub-plugin), so it registers under that package with its
+  // chunk name. Its plugin name, settings namespace and slot keys stay the connector's, because it
+  // still draws and configures the connector's row.
+  id: 'fishball-embed-ui',
+  chunk: 'client.connector.js',
   factory(require) {
     const module = { exports: {} }
     const exports = module.exports
