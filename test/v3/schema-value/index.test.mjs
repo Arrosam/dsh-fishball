@@ -16,9 +16,9 @@ const SDK_VERSIONS = ['0.2.1-rc.5', '0.2.2-rc.1']
 const SDK_ROOT = 'file:///Users/samuel/Library/Application%20Support/DSH/data/versions/'
 const SDK_TAG = 'sdk'
 const SDK_TAG_PATTERN = /[?&]sdk=([^&]+)/
-const REPO_ROOT = new URL('../../../../', import.meta.url).href
+const REPO_ROOT = new URL('../../../', import.meta.url).href
 const HOST_SPECIFIER = /^(@deepseek-ai\/|zod(\/|$))/
-const MODULE_URL = new URL('./index.js', import.meta.url)
+const MODULE_URL = new URL('../../../packages/connector/src/schema-value/index.js', import.meta.url)
 const ORACLE_SPECIFIER = '@deepseek-ai/dsh-tools'
 const ROOT = '$'
 
