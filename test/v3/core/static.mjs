@@ -54,6 +54,12 @@ export async function panelFiles() {
 
 export const corePatchFile = () => path.join(V3.core.dir, CORE.patchFile)
 
+/** Core's F-GUARDS patch file text, or null when it is missing (the F-GUARDS suite reads it too). */
+export function corePatch() {
+  const file = corePatchFile()
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null
+}
+
 /** Core's bundle patch as `sdk`'s DSH parses it (it throws on an unparsable or non-list file). */
 export async function corePatchRows(sdk) {
   const { loadOverlayPatches } = await import(pathToFileURL(path.join(runtimeOf(sdk), CORE.patchLoader)).href)
