@@ -10,7 +10,7 @@
     "./link": "./src/link/index.js",
     "./package.json": "./package.json"
   },
-  "//files": "vendor/ is the copy of fishball-connector/mcp-schema that scripts/vendor-mcp-schema.mjs writes into a staged package at pack time (design §9.1; REL-PACK runs it); the repository holds no copy. scripts/ is not shipped.",
+  "//files": "vendor/ is the committed copy of fishball-connector/mcp-schema (and the K2 and V2 contract files it imports) that core's link reads (design §9.1; user decision 2026-11-14). It is generator output: refresh it with node scripts/vendor-mcp-schema.mjs after a contract change, never by hand; REL-PACK runs the same script. scripts/ is not shipped.",
   "files": [
     "client.js",
     "src/",
@@ -32,7 +32,7 @@
   "bundleDependencies": [
     "fishball-shared"
   ],
-  "//peerDependencies": "Host packages are resolved from the running DSH installation, as for fishball-instance. fishball-connector is a peer for the same reason as the instance's (user decision 2026-11-12): it is not published, so a plain dependency would send an install to a registry; core imports its ./contract export (until F-STATUS replaces it) and, through src/link/schema.js alone, its ./mcp-schema export, which the pack-time vendored copy replaces (design §9.1). Its range is the instance's. cosmokit, dsh-app-boot and dsh-llm-pi-ai are the peers of the bundled fishball-shared modules core loads (provider-sync). '*' because engines.dsh is the real compatibility gate.",
+  "//peerDependencies": "Host packages are resolved from the running DSH installation, as for fishball-instance. fishball-connector is a peer for the same reason as the instance's (user decision 2026-11-12): it is not published, so a plain dependency would send an install to a registry; core imports only its ./contract export, until F-STATUS replaces it; the link reads ./mcp-schema from the vendored copy in vendor/, never from this peer (design §9.1). Its range is the instance's. cosmokit, dsh-app-boot and dsh-llm-pi-ai are the peers of the bundled fishball-shared modules core loads (provider-sync). '*' because engines.dsh is the real compatibility gate.",
   "peerDependencies": {
     "fishball-connector": ">=0.1.0-alpha.0 <2",
     "@deepseek-ai/cosmokit": "*",
