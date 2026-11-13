@@ -24,17 +24,16 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { after } from 'node:test'
-import { TEST_HOMES } from '../../support/constants.mjs'
-import { bootHost, newHome, until } from '../../support/host.mjs'
+import { until } from '../../support/host.mjs'
 import { lifecycleLines } from '../../support/v2-r2.mjs'
 import { caseTest, dshInspect } from '../shared/cases.mjs'
 import { BUNDLED_FIELDS, DEP_FIELDS, DSH_FIELD, RUNTIME_DEP_FIELD, SDK, V3 } from '../shared/constants.mjs'
 import { manifestNames, observe, readManifest } from '../shared/packages.mjs'
 import {
-  BUDGET, CHILD_SETTINGS, CORE, HTTP, LATER, LIFECYCLE, MARK, MOVED, ROUTE, SLOT, STATE, runtimeOf,
+  BUDGET, CHILD_SETTINGS, CORE, HTTP, LATER, LIFECYCLE, MARK, MOVED, ROUTE, SLOT, STATE,
 } from './constants.mjs'
-import { admitChild, childRequest, openSettingsPage } from './page.mjs'
+import { hostedChildFor } from './hosted.mjs'
+import { childRequest, openSettingsPage } from './page.mjs'
 import { corePatch, describeRef, has, hostingTokens, isEmptyPatch, ownFiles, panelFiles, tokensOf, unitOf } from './static.mjs'
 
 const JS = /\.(?:c|m)?js$/
@@ -81,24 +80,7 @@ async function slimChildModules() {
 // One real hosted setup per SDK process (the integration rows share it; Restart runs last).
 // ---------------------------------------------------------------------------------------------
 
-let live
-/** Boot a host DSH on `sdk` with this checkout's instance and wait for its child to be ready. */
-function hostedChild(sdk) {
-  live ??= (async () => {
-    // Canonical and outside the checkout: the child refuses a non-canonical main home and a Git ancestor.
-    const home = fs.realpathSync(newHome(HOME_LABEL))
-    const host = await bootHost(home, { env: { FBTEST_DSH_RUNTIME: runtimeOf(sdk) } })
-    let status
-    await until(async () => { status = (await host.get(ROUTE.status)).json; return status?.state === STATE.ready || status?.state === STATE.failed }, BUDGET.readyMs, BUDGET.pollMs)
-    return { home, host, status }
-  })()
-  return live
-}
-async function readyChild(sdk) {
-  const setup = await hostedChild(sdk)
-  assert.equal(setup.status?.state, STATE.ready, 'precondition: the hosted child is ready; status ' + JSON.stringify(setup.status))
-  return { ...setup, child: await admitChild(setup.host) }
-}
+let readyChild
 
 /**
  * The graph entries the instance owns: entries whose own served script is a file of its
@@ -117,13 +99,7 @@ async function hostedSectionEntries(page) {
 const describePlugins = (page) => JSON.stringify(page.plugins) + (page.errors.length ? ' errors: ' + page.errors.join(' | ') : '')
 
 export function registerCoreCases(sdk) {
-  after(async () => {
-    if (live === undefined) return
-    const setup = await live.catch(() => undefined)
-    await setup?.host.stop().catch(() => {})
-    // Guard the one recursive delete: a home this file created directly under the test-homes root.
-    if (setup && path.dirname(setup.home) === fs.realpathSync(TEST_HOMES) && path.basename(setup.home).startsWith(HOME_LABEL)) fs.rmSync(setup.home, { recursive: true, force: true })
-  })
+  readyChild = hostedChildFor(HOME_LABEL)
 
   // ================================================================ R-CORE (1): the package exists
   caseTest(sdk, 'HOST-EP-03', 1, 'fishball-core exists in packages/core and is a root workspace', () => {
