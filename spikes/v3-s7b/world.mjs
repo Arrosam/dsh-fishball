@@ -41,8 +41,9 @@ export const makeWorldCerts = (dir = path.join(RUNTIME, `s7b-pki-${Date.now()}`)
   tunnel: [`DNS:${TUNNEL_HOST}`, 'DNS:evil.example'],
 })
 
-export async function startWorld(version, { label, tunnel = false, tunnelInject = {}, certs = makeWorldCerts() } = {}) {
-  const cimdHost = await startCimdHost(certs.agent, cimdDocuments())
+/** `extraDocs` (S7c) adds documents to the stand-in client host, for example the adapter's own CIMD. */
+export async function startWorld(version, { label, tunnel = false, tunnelInject = {}, certs = makeWorldCerts(), extraDocs = {} } = {}) {
+  const cimdHost = await startCimdHost(certs.agent, { ...cimdDocuments(), ...extraDocs })
   const dsh = await launch(version, {
     label,
     trustedHosts: tunnel ? [TUNNEL_HOST] : [],
