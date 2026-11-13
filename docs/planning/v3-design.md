@@ -43,6 +43,7 @@ standalone mode is the same set installed by hand.
 | `fishball-connector` | a main DSH | MCP server; its own client-credentials OAuth authorization server (§5.5); tokens over `ctx.credentials`; pairs and names (§5.8); per-pair mailbox; routing (R-ROUTE, Q7 decided); session operations (today's `src/*.js` domain); `message_fishball` / `ask_fishball`; managed-session approval interception; the contribution service `fishballConnectorTools` (§13); the no-UI hand-over service (Q3, decided) | browser client, slots, HTML, CSS, iframes; an attention latch |
 | `fishball-instance` | a host DSH | hosted mode only (§6): launching the child with its launch configuration, its lifecycle, placing the four plugins, target and token hand-off, the child locator `fishballChild`, hosted model sync (engine), the hosted settings bundle `fishball-hosted-settings` it places in the child (R-HOST-11), uninstall cleanup | any session, approval, question or prompt service of the host DSH (R-ARCH-05); UI |
 | `fishball-embed-ui` | the host DSH, beside the instance | the sidebar entry and fish, the attention latch and its contributed tools (§13.6), marks and Hand over / Take back buttons that drive the connector's hand-over service (Q3, decided), the frame around the child page, status and Retry, the Plugins card and the model-sync trigger | secrets; session operations of its own; a Fishball page or frame without the instance (R-UI-01); anything at all with neither a connector nor an instance (R-UI-08) |
+| `fishball-connector-adapter` (S7c, §5.5b) | a DSH that uses another DSH's connector | for each configured Fishball connector: the OAuth grant in `ctx.credentials`, the loopback proxy, a stock `dsh-mcp-client` child row, and the `fishball_connector_sign_in` tool | serving any server that is not a Fishball connector; a host patch; tokens in config, logs or the chat |
 | **Fishball plugin set** (Q2, decided: four plugins) | a Fishball DSH (hosted child or standalone) | §5a | acting on any DSH except its own, other than through the target connector's MCP (R-FB-08) |
 
 ### 1.2 The Fishball plugin set (Q2, decided)
@@ -572,7 +573,7 @@ Clients find it through the protected resource metadata, as the spec requires.
 - There is **no static credential** (requirements 1.16, 1.25; R-OA-10 withdrawn twice): only
   access tokens from the token endpoint are accepted. A raw token value, `<id>.<token>`, or a token
   value with an id header is an invalid access token. The static header form that 1.25 first
-  decided was replaced by the `dsh-mcp-client` adapter (§5.5b).
+  decided was replaced by the connector adapter `fishball-connector-adapter` (§5.5b).
 
 **Why no refresh tokens for machine exchange (Q27, decided; browser clients get rotating ones, Q-OA-2 A, §5.5a):** a client-credentials client re-authenticates with its own
 id + token, which the stock provider already does. A refresh token would be a second long-lived
@@ -661,31 +662,89 @@ it is deprecated in the specification. Machine clients are pre-registered by the
    `max-age` respected; secret-bearing documents refused.
 
 **`dsh-mcp-client` (S7b F1):** DSH's own MCP client has no OAuth support (no `authProvider`, no
-OAuth config). It is served by the adapter of §5.5b. Fishball's own DSHs are unaffected:
+OAuth config). A DSH reaches a Fishball connector through it with the adapter
+`fishball-connector-adapter` of §5.5b. Fishball's own DSHs are unaffected:
 `fishball-core` uses the SDK's `ClientCredentialsProvider` (R-OA-19).
 
-### 5.5b Adapter for `dsh-mcp-client` (requirements 1.25, R-OA-21; provisional on spike V3-S7c)
+### 5.5b The connector adapter `fishball-connector-adapter` (requirements 1.25, 1.25a, R-OA-21; spike V3-S7c `51e9ff1`)
 
-The user: "改成加一个adapter，给DSH的MCP客户端加个Adapter，用来帮DSH的MCP客户端更新token，以此来满足网页端授权".
-The adapter runs in the DSH that hosts the `dsh-mcp-client` row (the client side), not in the
-connector. Toward the connector it is an ordinary browser OAuth client (§5.5a):
-- **First connect:** it fetches the protected-resource and authorization-server metadata, uses a
-  Client ID Metadata Document URL as `client_id`, opens the owner's browser at
-  `authorization_endpoint` with PKCE S256, a loopback redirect it listens on, `state` and
-  `resource`, checks `iss` on the response, and exchanges the code.
-- **Steady state:** it supplies the row's `Authorization: Bearer <access token>` and refreshes
-  before expiry with the rotating refresh token, one refresh at a time per row (single-flight), so
-  the 10 s grace window is never needed by this client; on `invalid_grant` it stops and reports
-  "authorize again" instead of retrying.
-- **Secrets:** access token, refresh token and PKCE verifier live only in the adapter's
-  `ctx.credentials` storage, never in the row's saved `headers` or in logs.
-- **Open, for S7c:** how a plugin can supply or update a `dsh-mcp-client` row's headers (or
-  transport auth) without a host patch; where the CIMD document is hosted; how the adapter opens
-  the browser and receives the loopback redirect inside DSH; and whether an **existing** plugin
-  already does this.
-- **Packaging (decided; the user: "adapter做成单独的插件，或者去找找有没有已经做了这个功能的插件"):** a standalone DSH plugin of its own (proposed
-  `fishball-mcp-adapter`, `packages/mcp-adapter/`), or an existing third-party plugin if S7c finds a
-  suitable one, in which case none is built.
+The user: "改成加一个adapter，给DSH的MCP客户端加个Adapter，用来帮DSH的MCP客户端更新token，以此来满足网页端授权",
+then "CCB" for Q-S7C-1…3 (S7c §6). The adapter runs in the DSH that wants to use another DSH's
+connector (the client side), never in the connector. Toward the connector it is an ordinary browser
+OAuth client (§5.5a). S7c passed with this design on 0.2.1-rc.5 and 0.2.2-rc.1, no host patch.
+
+- **Package:** `fishball-connector-adapter`, `packages/connector-adapter/`, a standalone plugin,
+  **Fishball connectors only** (Q-S7C-1 = C). It is not in the Fishball set and does not depend on
+  the connector. No existing plugin is reused (S7c §3.3: none combines a user URL, CIMD, live refresh,
+  a 401 retry, DSH's credential store and MCP 2026-07-28 under a usable licence).
+- **Mechanism c2: loopback proxy plus a child stock row.** Per configured server the adapter owns the
+  grant, a route on its loopback proxy, and a stock `dsh-mcp-client` mounted with `ctx.plugin()` and
+  pointed at that route. The child is mounted only once a grant exists (so it never sits in the stock
+  client's reconnect backoff, S7c F6) and disposed of when the grant is removed. *Why:* the stock
+  row cannot report a 401 (S7c F1), so a header-feeding mechanism (a1–a3) has no 401 path; a2 breaks
+  on 0.2.2 (F2) and a1 puts the access token in the profile patch (F3). An own client (d) would
+  duplicate `dsh-mcp-client` and drift from it. c2 keeps DSH's client and needs no `!!js` in the
+  user's configuration.
+- **Configuration:**
+  - `clientMetadataUrl`: **required, no default** (Q-S7C-2 = C, the user hosts the CIMD). An `https:`
+    URL with a non-root path (the SDK refuses anything else). Missing or invalid → every server is
+    `needs-configuration` and no request is sent.
+  - `servers: [{serverName, url}]`: one grant, one proxy route and one child row per entry.
+  - The user's CIMD document: on a public https host (the connector refuses private and loopback
+    addresses and redirects, 5 KiB cap, §5.5a item 9); `client_id` equal to its own URL; a
+    `client_name`; `redirect_uris: ["http://127.0.0.1:<any port>/callback"]`;
+    `token_endpoint_auth_method: "none"`, no secret. The README ships a template (task DOCS).
+- **Fishball-connector check (Q-S7C-5 = A), before any authorization request**, on the discovered
+  metadata (RFC 9728, then RFC 8414), with no connector change:
+  - the protected-resource `resource` equals the configured URL, with path `/api/fishball/mcp`;
+  - `authorization_servers[0]` is the same origin plus `/api/fishball/oauth`;
+  - `scopes_supported` includes `fishball`.
+
+  A server that fails is refused with a message (`needs-configuration`); no authorization,
+  registration or token request is sent.
+- **States per server:** `needs-configuration`, `needs-authorization`, `authorizing`, `authorized`,
+  `failed`. They never show a token value.
+- **Browser leg:** a `ctx.authorization` flow (one attempt per key, S7c F4) with the SDK's `auth()`:
+  CIMD `client_id` = `clientMetadataUrl` (no dynamic registration: Fishball connectors have no
+  `registration_endpoint`), PKCE S256, `state` generated and checked by the adapter (the SDK does
+  not), `resource`, scope from `scopes_supported`, a loopback callback
+  `http://127.0.0.1:<OS port>/callback` on a fresh port per attempt, and `iss` checked on success and
+  error responses before they are believed (RFC 9207). The code exchange sends `resource` and no
+  client secret.
+- **Sign-in (Q-S7C-3 = B): the agent tool `fishball_connector_sign_in`, input `{server}`:**
+  - `authorized`: nothing to do;
+  - `approval-url`: the URL, with "open it in your browser and enter a token from the connector's
+    settings". A second call while the attempt is pending returns the **same** URL;
+  - `needs-configuration`: `clientMetadataUrl` is missing, or the server is not a Fishball
+    connector.
+
+  It returns at once; the attempt runs on until the callback, the timeout (K, at most the
+  connector's 600 s pending lifetime) or cancellation. The URL carries no secret (`client_id`,
+  `redirect_uri`, `state`, the PKCE challenge, `resource`) and is **dead once the attempt ends**. The
+  connector token is typed only on the approval page, never in the chat. The tool is registered like
+  the stock client's own tools (global, not agent-scoped). Once the grant is committed the child row
+  is mounted and the server's tools appear under the stock row's names.
+- **Grant storage:** one `ctx.credentials` record (`kind: grant`, file mode 0600) per server:
+  upstream, client information, discovery, resource, tokens. No token in configuration, logs, the
+  tool's result or the chat.
+- **Refresh:** before expiry by a timer (lead K) and once on a 401 from the proxy, **single-flight
+  under `credentials.modifyRecord`'s cross-process lock**: a caller refreshes only if the stored
+  access token is still the one that failed, or near expiry; a caller that lost the race finds the
+  newer token and declines. So one refresh token is presented once, even from two processes, and
+  this client never needs the 10 s grace window (S7c F5; Q-S7B-1 B stays for other clients). A second
+  401, or `invalid_grant`, drops the tokens: `needs-authorization`, reported once, no loop.
+- **The proxy:** listens on 127.0.0.1 only; authenticates the child row with a per-start random local
+  bearer, never on disk, compared in constant time; drops hop-by-hop headers and the inbound
+  `authorization` (no token passthrough); streams responses (listen streams stay open); handles a 401
+  by refreshing once and retrying once.
+- **Restarts:** after a restart of the adapter's DSH every server comes back from its stored grant
+  with no browser step. After a **connector** restart, access tokens are gone but refresh-token
+  digests persist (Q-S7C-4 = A = Q-S7B-3 A, §5.5a item 6): the proxy's single 401 refresh succeeds and
+  the call goes through without the user. (The re-authorization S7c P2/P3 observed was against S7b's
+  in-memory prototype and does not apply to the decided connector.)
+- **Built per S7c plan:** K1 contract (config schema, grant record v1, states, the check, the tool's
+  input and results, the proxy rules, K values: refresh lead, auth timeout, body cap); K2 token
+  manager; K3 proxy and child row; K4 the sign-in tool (task C-MCP-ADAPTER).
 
 **The page never creates an entry.** The entry is the one the owner made by hand; the page only
 pairs it. A bound entry is an ordinary entry: listed in native settings with its pair state and
@@ -1147,6 +1206,7 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 | `fishball-shared` (new, `packages/shared`; TQ-R3 and TQ-R5 decided, R-ARCH-08) | A **library**, not a plugin: no `dsh` field, no row, no client. Holds only modules **more than one** V3 package uses; first contents: the child `admin` constants, the provider-sync wire codec, the file helpers core and the instance share. Imports nothing from any other V3 package. **Any** V3 package may depend on it (connector, embed-UI, core, instance, feature plugins, `fishball-hosted-settings`); each that does lists it in `dependencies` **and** `bundleDependencies`, so its release tarball carries it and nothing is fetched from a registry. Loading it never loads a module of the Fishball set (R-BND-01). |
 | `fishball-board`, `fishball-fold-notify`, `fishball-watchdog` | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |
 | `fishball-embed-ui` (new; S4-Q3 decided B) | Host row + `dsh.client` (platform web) with the inject lists of today's two main-DSH clients combined. Optional peers `fishball-instance` and `fishball-connector` (the latter for `./tools` types only; embed-UI never imports connector code). Owns the moved locale strings. |
+| `fishball-connector-adapter` (new, `packages/connector-adapter/`; S7c) | A standalone plugin row for the client DSH: settings `clientMetadataUrl` (required, no default) and `servers`; uses `ctx.credentials`, `ctx.authorization` and `ctx.tools`; mounts `@deepseek-ai/dsh-mcp-client` as a child. Versioning and dependency pins are **carried** (v3-remaining-plan §3 Q4 recommends: versioned with the set, `@modelcontextprotocol/client` pinned as K1 pins the server SDK, no `fishball-shared` dependency unless a module is genuinely shared). |
 
 Release numbers stay release bookkeeping. The V3 connector, instance, embed-UI, plugin set and
 `fishball-shared` are one coordinated breaking release, versioned together; `fishball-shared` is
@@ -1225,7 +1285,7 @@ this case.
 | V3-S6 | **Done `86800d2` + `7c2230e` (PASS):** composition, client, override API, reorder (one restart with HMR off; the instance writes core last), shipped presets off with `fishball` / `watchdog` offered, read-only manager resumed; discard = archive; tool-list check on resume; Q-S6-3 impl (`approval.config.policy`), Q-S6-4 (rc.1 = 0.2.2). `fishball-core` as a plain bundle carrying its `fishball-ui` component: one bundle that inserts its own rows, disables other bundles' rows and sets the read-only preset in an ordinary DSH on both SDKs; one `dsh.client` serving the page, tab and settings; the hosted child behaves the same with the instance's launch configuration in place; core can read the effective composition and policy through a public API to report `guards-overridden`, in both modes; the A-lite page works without the instance (standalone) | both modes, both hosts; no host patch |
 | V3-S7 | OAuth: the connector as a client-credentials authorization server on the DSH listener (RFC 9728/8414 metadata, token endpoint, audience binding) works with the stock `ClientCredentialsProvider` of both SDKs and with one non-DSH client-credentials client; immediate revocation; the direct-access fallback on and off | both hosts; no token in any log |
 | V3-S7b | **Done `141ac3b` (PARTIAL):** server side 45/45 on both SDKs with the SDK client and Python; `dsh-mcp-client` has no OAuth (Q-S7B-2); refresh race decided (10 s window); restart (Q-S7B-3) pending. Browser authorization on the connector's **own approval listener** (requirements 1.16): that the stock `@modelcontextprotocol/client` 2.2.0 (both SDKs) and the Python MCP SDK complete `authorization_code` + PKCE S256 with a **Client ID Metadata Document** `client_id`, a loopback redirect, `iss` in the response, and the issuer and `authorization_endpoint` on different origins (one issuer, metadata on DSH's listener, page on the approval port); whether either client requires a refresh token or `offline_access`; that both keep accepting a plain-`http` loopback authorization server (Q-SPEC-1 decided A: the one documented departure); how the the token-only page: entry of a token value in a POST form, uniform refusal, `already-paired` on the page, and the failure limit shared with the token endpoint; issuer and `authorization_endpoint` behind a tunnel host from `--trusted-host`; the second listener's bind and clash behaviour on both SDKs: with the approval port taken, machine exchange still works and stock clients accept metadata that keeps `authorization_endpoint` (Q-OA-7 decided A) | both hosts, both clients reach `scope: fishball` after one approval; deny returns `access_denied`; no token value in any page, URL or log |
-| V3-S7c | **Adapter for `dsh-mcp-client` (R-OA-21).** Can a DSH plugin, with no host patch, on both SDKs: supply and update a `dsh-mcp-client` row's bearer (headers or transport auth) at runtime; run the browser flow (open the browser, receive a loopback redirect, CIMD document hosting); refresh before expiry without dropping the row's session; keep tokens out of the row's saved config and logs? Is there an existing plugin that already does this with standard OAuth? | a stock `dsh-mcp-client` row stays connected across several access-token lifetimes and a connector restart, with only standard OAuth seen by the connector |
+| V3-S7c | **Done `51e9ff1` (PASS, mechanism c2):** a standalone plugin, no host patch, both SDKs, 19/19 checks each; no reusable existing plugin; Q-S7C-1…5 decided (§5.5b, requirements 1.25a). Adapter for `dsh-mcp-client` (R-OA-21): can a DSH plugin, with no host patch, on both SDKs: supply and update a `dsh-mcp-client` row's bearer at runtime; run the browser flow (loopback redirect, CIMD document hosting); refresh before expiry and on a 401 without dropping the row's session; keep tokens out of the row's saved config and logs? Is there an existing plugin that already does this with standard OAuth? | a stock `dsh-mcp-client` row stays connected across several access-token lifetimes and a connector restart, with only standard OAuth seen by the connector |
 | V3-K | Freeze `./mcp-schema` and `./tools`: tool names and schemas, result envelope, event types (R-EVS-02), error map, OAuth metadata and error mapping, page limit, retention, "connected" definition (§3.5) | reviewed; independent requirements-only case authoring starts after this |
 
 Process stays: requirements → independent case authoring → implementation without reading tests
