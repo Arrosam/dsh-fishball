@@ -38,6 +38,13 @@ const sendJson = (res, status, body, headers = {}) => {
 
 /** `{jsonrpc, id, result}` with the 2026-07-28 `resultType`. */
 const rpcResult = (id, result) => ({ jsonrpc: RPC.jsonrpc, id, result: { resultType: RPC.resultComplete, ...result } })
+/**
+ * MCP 2026-07-28 CacheableResult (SEP-2549): `tools/list`, `resources/list` and `resources/read`
+ * results REQUIRE `ttlMs` (a non-negative integer) and `cacheScope` ('public' | 'private'); the
+ * SDK 2.2.0 client rejects such a result without them (INVALID_RESULT). 0 is the spec's
+ * "immediately stale" and 'private' its non-shared scope, so a fake list is never cached.
+ */
+const CACHEABLE = Object.freeze({ ttlMs: 0, cacheScope: 'private' })
 const rpcError = (id, code, message) => ({ jsonrpc: RPC.jsonrpc, id, error: { code, message } })
 
 /** A mailbox event of K1's shape (MAILBOX_EVENT_SCHEMA), with a fake digest of K1's length. */
@@ -117,15 +124,16 @@ export async function startFakeConnector({ mode = MODE.v3, clientId, secret, iss
           capabilities: { tools: { listChanged: true }, resources: { subscribe: true, listChanged: false } },
         }))
       case RPC.toolsList:
-        return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, { tools: K1.TOOLS }))
+        return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, { ...CACHEABLE, tools: K1.TOOLS }))
       case RPC.toolsCall:
         return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, { ...toolResult(message.params?.name, message.params?.arguments) }))
       case RPC.resourcesRead:
         return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, {
+          ...CACHEABLE,
           contents: [{ uri: K1.RESOURCE.events.uri, mimeType: K1.RESOURCE.events.mimeType, text: JSON.stringify({ pending: pending.length, headSequence: 0, mailboxGeneration: MAILBOX.generation }) }],
         }))
       case RPC.resourcesList:
-        return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, { resources: [K1.RESOURCE.events] }))
+        return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, { ...CACHEABLE, resources: [K1.RESOURCE.events] }))
       case RPC.listen: {
         const filter = message.params?.notifications ?? {}
         listens.push({ filter, at: Date.now() })

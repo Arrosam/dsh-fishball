@@ -1,23 +1,25 @@
 /**
  * The one seam between the F-LINK cases and `fishball-core`'s link (`packages/core/src/link/`).
  *
- * K1, K2 and K3 freeze no JavaScript entry for the link, so this file names the **assumed** shape
- * once, from design §4.1 (`targetStatus()` → `{state, code}`, K3 `TargetStatus`), §6.3 (the link
- * resolves its secret per connection, as `ctx.credentials.resolve` does; an answer while down
+ * The cases use one small shape, named here once from design §4.1 (`{state, code}`, K3
+ * `TargetStatus`), §6.3 (the link resolves its secret per connection; an answer while down
  * resolves `{ok: false, code: 'disconnected'}`, K3 `CommitSendResult`) and R-FB-03 (target URL):
  *
- *   createLink({url, clientId, resolveSecret}) → link
- *     url            the target MCP endpoint ('' = blank target)
- *     clientId       the fishball id (R-FB-04: OAuth client id)
- *     resolveSecret  async () => string | undefined (undefined = the reference holds no value)
- *   link.start(): Promise<void>      begins connecting; resolves without waiting for the target
+ *   openLink(t, sdk, {url, clientId, secret}) → link
+ *     url       the target MCP endpoint ('' = blank target)
+ *     clientId  the fishball id (R-FB-04: OAuth client id)
+ *     secret    the token value; null (HARNESS.noSecret) = the reference holds no value
  *   link.status(): {state, code}     K3 TargetState / TargetCode | null
  *   link.call(tool, args): Promise<structuredContent>   one core tool through the link
  *   link.stop(): Promise<void>
  *
- * If F-LINK chooses other names, only this file changes. Binding: the module is imported with the
- * per-SDK resolve hook, so "[SDK x]" runs it against that SDK's `@deepseek-ai/*` packages; its own
- * packaged `@modelcontextprotocol/client` resolves from core (design §9.1).
+ * F-LINK's real entry (`createLink`, index.js) takes `target: () => url`, `credentials: async () =>
+ * {clientId, secret}` and an optional `sdk` (the `@modelcontextprotocol/client` module); its call is
+ * `callTool`. Only this file maps one onto the other.
+ *
+ * Binding: the module is imported with the per-SDK resolve hook, and the link runs on that SDK's own
+ * `@modelcontextprotocol/client` (the copy K1's cases load as their oracle), so "[SDK x]" runs it
+ * against that SDK. Core's own packaged client is not installed in the repository.
  */
 import assert from 'node:assert/strict'
 import path from 'node:path'
@@ -25,6 +27,7 @@ import { INSTANCE } from '../../support/constants.mjs'
 import { linkContractForSourceRun } from '../../support/contract-link.mjs'
 import { until } from '../../support/util.mjs'
 import { importInstance } from '../../private-skills/support/sdk.mjs'
+import { mcpClient } from '../k1/schema-module.mjs'
 import { HARNESS, LINK } from './constants.mjs'
 
 const stacks = new WeakMap()
@@ -55,10 +58,18 @@ export async function linkModule(sdk) {
 export async function openLink(t, sdk, { url, clientId, secret }) {
   const mod = await linkModule(sdk)
   assert.equal(typeof mod[LINK.factory], 'function', `${path.join(LINK.dir, LINK.entry)} exports no ${LINK.factory}()`)
-  const link = mod[LINK.factory]({ url, clientId, resolveSecret: async () => secret ?? undefined })
+  const link = mod[LINK.factory]({
+    target: () => url,
+    credentials: async () => ({ clientId, secret: secret ?? undefined }),
+    sdk: await mcpClient(sdk),
+  })
   defer(t, () => link.stop())
-  await link.start()
-  return link
+  link.start()
+  return {
+    status: () => link.status(),
+    call: (tool, args) => link.callTool(tool, args),
+    stop: () => link.stop(),
+  }
 }
 
 /** Waits until the link reports `state`; returns the last status (the assertion message shows it). */

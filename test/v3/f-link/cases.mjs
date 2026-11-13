@@ -16,7 +16,9 @@
  * that need a later task are `todo` and name it. Every tunable value is K1's (constants.mjs).
  */
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { caseTest } from '../shared/cases.mjs'
@@ -25,7 +27,7 @@ import { readManifest } from '../shared/packages.mjs'
 import { specifiers } from '../k3/declarations.mjs'
 import {
   ANSWER, CLIENT_PIN, CODE, DISCONNECTED, HARNESS, K1, LATER, LINK, OFFER, OFFER_PAYLOAD, PRINCIPAL, RPC, SETTLEMENT_PAYLOAD, STATE,
-  STOPPING_TOOLS, TARGET, WEB, mcpUrl,
+  STOPPING_TOOLS, TARGET, VENDOR, WEB, mcpUrl,
 } from './constants.mjs'
 import { MODE, freePort, mailboxEvent, startFakeConnector, startRecorder } from './fake-connector.mjs'
 import { defer, openLink, untilState, untilTrue } from './link-driver.mjs'
@@ -74,6 +76,10 @@ async function assertRefusedBeforeAnyRequest(t, sdk, url, host) {
 
 /** Core's own source files under `dir` (relative), JS only. */
 const sourceFiles = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir, { recursive: true }).map(String).filter((f) => JS.test(f)) : [])
+/** Every regular file under `dir`, as sorted paths relative to it ([] when `dir` is missing). */
+const treeFiles = (dir) => (fs.existsSync(dir)
+  ? fs.readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => path.relative(dir, path.join(e.parentPath, e.name))).sort()
+  : [])
 
 export function registerFLinkCases(sdk) {
   // ---------------------------------------------------------------- REM-UC-02 (Use Case, first)
@@ -278,5 +284,18 @@ export function registerFLinkCases(sdk) {
     assert.equal(manifest?.peerDependencies?.[MCP_CLIENT], undefined, 'the client must be packaged, not a DSH peer')
   })
 
-  caseTest(sdk, 'F-LINK', 'done 7', 'the vendored ./mcp-schema generator runs at pack time and its copy equals the connector\'s source', null, LATER.pack)
+  caseTest(sdk, 'F-LINK', 'done 7', 'the vendored ./mcp-schema generator runs at pack time and its copy equals the connector\'s source', async (t) => {
+    // A fresh core folder, so the generator never writes into the checkout.
+    const coreDir = fs.mkdtempSync(path.join(os.tmpdir(), VENDOR.tempPrefix))
+    t.after(() => fs.rmSync(coreDir, { recursive: true, force: true }))
+    const run = spawnSync(process.execPath, [VENDOR.generator, coreDir], { encoding: 'utf8', timeout: VENDOR.timeoutMs })
+    assert.equal(run.status, 0, `generator failed: ${run.stderr || run.error}`)
+    const outDir = path.join(coreDir, VENDOR.directory)
+    const written = treeFiles(outDir)
+    assert.ok(written.includes(VENDOR.entry), `the generator wrote no ${VENDOR.entry}: ${JSON.stringify(written)}`)
+    const differs = (a, b) => !fs.existsSync(b) || !fs.readFileSync(a).equals(fs.readFileSync(b))
+    assert.deepEqual(written.filter((f) => differs(path.join(outDir, f), path.join(VENDOR.connectorDir, f))), [], 'copied files that differ from the connector\'s source')
+    assert.deepEqual(treeFiles(VENDOR.committedDir), written, 'the committed vendor/ file set is not the generator\'s')
+    assert.deepEqual(written.filter((f) => differs(path.join(outDir, f), path.join(VENDOR.committedDir, f))), [], 'committed vendor/ files that differ from a fresh run')
+  })
 }
