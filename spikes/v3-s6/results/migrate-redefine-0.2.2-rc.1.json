@@ -1,0 +1,31 @@
+{
+  "id": "migrate-redefine",
+  "sdk": "0.2.2-rc.1",
+  "node": "v24.22.2",
+  "at": "2026-11-11T10:54:20.345Z",
+  "before": {
+    "sessionId": "session-68d1b47d-9ac6-4535-8f87-63c0bd45585c",
+    "agentPreset": "standard",
+    "home": "<worktree>/.runtime/v3-s6/migrate-0.2.2-rc.1-1794394339076"
+  },
+  "controller": {
+    "ok": true,
+    "modelAnswered": true,
+    "tools": [
+      "read",
+      "read_image",
+      "working_directory"
+    ],
+    "sandbox": "workspace-write",
+    "permission": "custom"
+  },
+  "loggedErrors": [],
+  "presetIds": [
+    "fishball",
+    "standard"
+  ],
+  "variant": "redefine",
+  "newSession": {
+    "agentPreset": "standard"
+  }
+}

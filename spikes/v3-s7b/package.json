@@ -1,0 +1,10 @@
+{
+  "name": "spike-v3-s7b",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway V3-S7b prototype (browser OAuth on the connector's approval listener). Not product code.",
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.2.0",
+    "undici": "^7.0.0"
+  }
+}

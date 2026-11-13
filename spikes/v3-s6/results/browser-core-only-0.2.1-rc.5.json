@@ -1,0 +1,20 @@
+{
+  "id": "browser-core-only",
+  "sdk": "0.2.1-rc.5",
+  "node": "v24.22.2",
+  "at": "2026-11-11T11:00:16.774Z",
+  "client": {
+    "applied": true,
+    "slots": [
+      "shell.overlay",
+      "main",
+      "plugins.tab"
+    ]
+  },
+  "overlayMarked": 1,
+  "bootGraph": [
+    "fishball-core"
+  ],
+  "pageErrors": [],
+  "screenshot": "browser-core-only-0.2.1-rc.5.png"
+}

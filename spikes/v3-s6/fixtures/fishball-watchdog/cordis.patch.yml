@@ -1,0 +1,16 @@
+# V3-S6 throwaway: fishball-watchdog contributes its own agent preset `watchdog` (the user's
+# decision of 2026-11-12) beside its supervision row. Read-only tools only; no session-creating tool.
+- insert:
+    - id: preset-watchdog
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: watchdog
+        order: 1
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config: { prefix: 'You are Watchdog (spike).', complete: true, includeRuntimeContext: false }
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config: { read: true, readImage: true, write: false, edit: false }
+    - { id: fishball-watchdog, name: fishball-watchdog, config: {} }
