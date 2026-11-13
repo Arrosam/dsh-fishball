@@ -27,7 +27,6 @@ import {
 } from './registry.js'
 
 const SILENT_LOGGER = Object.freeze({ warn() {} })
-const LOG_FORMAT = '%s (%s)'
 
 const refusal = (code) => Object.freeze({ ok: false, code })
 const ALREADY_PAIRED = refusal(REFUSAL.alreadyPaired)
@@ -81,6 +80,7 @@ function pairNameOutcome(registry, entryKey, requested) {
 /**
  * The page's name outcome (R-OA-12 (3)): an empty field, or one that normalises to nothing (only
  * whitespace, AUTH-DT-08 rule 5f), means no name; otherwise a bad or held name refuses the bind.
+ * K1 types the page's name `string | undefined` (a form field), so unlike `pair` there is no `null`.
  */
 const pageNameOutcome = (registry, entryKey, requested) =>
   (requested === undefined || normaliseName(requested) === '' ? { name: null } : claimName(registry, entryKey, requested))
@@ -131,7 +131,7 @@ export function createPairStore(table, { logger = SILENT_LOGGER } = {}) {
 
   function notify() {
     for (const listener of [...listeners]) {
-      try { listener() } catch (error) { logger.warn(LOG_FORMAT, LOG.listenerFailed, diagnosticOf(error)) }
+      try { listener() } catch (error) { logger.warn(LOG.format, LOG.listenerFailed, diagnosticOf(error)) }
     }
   }
 
@@ -150,7 +150,8 @@ export function createPairStore(table, { logger = SILENT_LOGGER } = {}) {
     let outcome
     await table.update(PAIRS.recordKey, (registry) => {
       outcome = step(registry)
-      return outcome.next === undefined ? registry : registrySchema.parse(outcome.next)
+      if (outcome.next === undefined) return registry
+      try { return registrySchema.parse(outcome.next) } catch { throw new TypeError(MISUSE.write) }
     })
     if (outcome.next !== undefined) notify()
     return outcome.result
@@ -173,7 +174,7 @@ export function createPairStore(table, { logger = SILENT_LOGGER } = {}) {
       const latest = findByPrincipal(registry, principalKey)
       if (latest === undefined || !isSeenDue(latest, now)) return { result: undefined }
       return { next: withPairChanged(registry, latest.entryKey, { lastSeenAt: now }), result: undefined }
-    }).catch((error) => logger.warn(LOG_FORMAT, LOG.seenFailed, diagnosticOf(error))).finally(() => {
+    }).catch((error) => logger.warn(LOG.format, LOG.seenFailed, diagnosticOf(error))).finally(() => {
       if (pendingSeen.get(principalKey) === now) pendingSeen.delete(principalKey)
     })
   }
@@ -272,7 +273,7 @@ export function createPairStore(table, { logger = SILENT_LOGGER } = {}) {
         writeSeen(principalKey, now)
       } catch (error) {
         // A closed or quarantined domain throws on a synchronous read.
-        logger.warn(LOG_FORMAT, LOG.seenFailed, diagnosticOf(error))
+        logger.warn(LOG.format, LOG.seenFailed, diagnosticOf(error))
       }
     },
 

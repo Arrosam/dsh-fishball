@@ -23,12 +23,15 @@ export const PAIRS = Object.freeze({
 /** Programming-error messages (contract misuse, never shown to a client). */
 export const MISUSE = Object.freeze({
   record: 'fishball pair registry: stored record does not match its shape',
+  write: 'fishball pair store: refused to write a registry record that would not reopen (a caller passed a bad value)',
   invalidId: 'fishball pair store: the id is not a fishball id (the token endpoint admits only valid ids)',
   unknownPrincipal: 'fishball pair store: no pair has this principal key',
 })
 
 /** Background log lines (no token value, id or name is ever logged). */
 export const LOG = Object.freeze({
+  /** `logger.warn(format, line, diagnostic code)`: the connector's log convention (../errors.js). */
+  format: '%s (%s)',
   seenFailed: 'pair store: recording lastSeenAt failed',
   listenerFailed: 'pair store: a change listener threw',
 })
