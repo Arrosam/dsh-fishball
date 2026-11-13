@@ -48,7 +48,7 @@ export async function openLedger(ctx, { defineDomain, domainTable }) {
   return { table: domain.table(LEDGER.table), close: () => domain.close() }
 }
 
-/** The stable message id an event gets in Fishball's session (S2: reconcile by id, no woken bit). */
+/** The stable message id an event gets in Fishball's session; its live admission is matched by it. */
 export const messageIdOf = (eventId) => `${MESSAGE.idPrefix}${eventId}`
 
 /** The K1 `inbox_ack` receipt of a record. */

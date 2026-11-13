@@ -52,9 +52,10 @@ export const LEDGER = Object.freeze({
  * - committing: `ctl.commit(send)` began; the event stays with the interceptor from here on.
  * - closed: the interceptor's handler settled; log only (R-INT-09).
  * - fishball: accepted for the Fishball agent, in core's delivery list (R-INT-08, R-EVT-03).
- * - admitted: `Agent.followup` admitted it; the one wake happened (S2-Q2 A: never again).
- * - discarded: the user stopped the claiming turn or removed it from the inbox before admission
- *   (S2-Q3 A): acked, never retried.
+ * - admitted: Fishball's session admitted its message (the event's own, or the given-up notice,
+ *   decision 3.A); the one wake happened, and this record alone says so (decision 4.A).
+ * - discarded: removed from the inbox, or its claiming turn ended before admission in another way
+ *   than an owner teardown (S2-Q3 A, decision 1.B): acked, never retried.
  */
 export const STATE = Object.freeze({
   offered: 'offered',
