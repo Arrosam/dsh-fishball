@@ -32,9 +32,12 @@ const manifestEdges = (manifest, names) => manifestNames(manifest, [...DEP_FIELD
  * One case per test, named "<case id> row <n> [SDK x] <partition>"; `todo` names the owning task.
  * A part that does not start with a digit (a use-case flow such as "main 2" or "A4") is used as it is.
  */
-export function caseTest(sdk, id, row, title, fn, todo) {
+export function caseName(sdk, id, row, title) {
   const part = /^\d/.test(String(row)) ? 'row ' + row : row
-  const name = `${id} ${part} [SDK ${sdk}] ${title}`
+  return `${id} ${part} [SDK ${sdk}] ${title}`
+}
+export function caseTest(sdk, id, row, title, fn, todo) {
+  const name = caseName(sdk, id, row, title)
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, fn)
 }
