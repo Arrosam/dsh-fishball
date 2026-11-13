@@ -6,10 +6,11 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Worker } from 'node:worker_threads'
 import { V3, WORKER } from '../shared/constants.mjs'
 import { observe, readManifest } from '../shared/packages.mjs'
-import { CORE, HOSTING_WORDS, MARK, TOKENS_WORKER } from './constants.mjs'
+import { CORE, HOSTING_WORDS, MARK, TOKENS_WORKER, runtimeOf } from './constants.mjs'
 
 export const has = (pkg) => readManifest(pkg.dir) !== null
 export const unitOf = async (name) => (await observe()).units.get(name)
@@ -51,17 +52,39 @@ export async function panelFiles() {
   return [...tokens].filter(([, t]) => t.strings.includes(MARK.panel)).map(([f, t]) => ({ file: f, ...t }))
 }
 
-/** Core's F-GUARDS patch file text (R-CORE (1): present and empty), or null. */
+export const corePatchFile = () => path.join(V3.core.dir, CORE.patchFile)
+
+/** Core's F-GUARDS patch file text, or null when it is missing (the F-GUARDS suite reads it too). */
 export function corePatch() {
-  const file = path.join(V3.core.dir, CORE.patchFile)
+  const file = corePatchFile()
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null
 }
 
-/** A patch text with no entry: only comments and blank lines, or an empty YAML list. */
-export function isEmptyPatch(text) {
-  const lines = text.split('\n')
-  if (lines.every((line) => CORE.emptyPatch.comment.test(line))) return true
-  const content = lines.filter((line) => !CORE.emptyPatch.comment.test(line))
-  return content.length === 1 && CORE.emptyPatch.emptyList.test(content[0])
+/** Core's bundle patch as `sdk`'s DSH parses it (it throws on an unparsable or non-list file). */
+export async function corePatchRows(sdk) {
+  const { loadOverlayPatches } = await import(pathToFileURL(path.join(runtimeOf(sdk), CORE.patchLoader)).href)
+  return loadOverlayPatches(CORE.patchLabel, corePatchFile())
+}
+
+/**
+ * Every row a patch list inserts, nested rows included: an inserted row's children are a group's
+ * `config` list or an agent preset's `config.plugins` (a module there loads too).
+ */
+export function insertedRows(patches) {
+  const walk = (row) => {
+    const children = Array.isArray(row?.config) ? row.config : Array.isArray(row?.config?.plugins) ? row.config.plugins : []
+    return [row, ...children.flatMap(walk)]
+  }
+  return patches.flatMap((p) => (p?.insert ?? []).flatMap(walk))
+}
+
+/** Whether a row's module `name` is a module of package `pkg` (by package name, or a file inside its folder). */
+export function isModuleOf(name, pkg) {
+  if (typeof name !== 'string') return false
+  if (name === pkg.name || name.startsWith(pkg.name + '/')) return true
+  const file = name.startsWith(CORE.fileScheme) ? fileURLToPath(name) : path.isAbsolute(name) ? name : null
+  if (file === null) return false
+  const inside = (dir) => { const rel = path.relative(dir, file); return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel) }
+  return inside(pkg.dir) || (fs.existsSync(pkg.dir) && inside(fs.realpathSync(pkg.dir)))
 }
 

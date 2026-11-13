@@ -175,7 +175,7 @@ const VIEW_FIELDS = Object.freeze(['id', 'title', 'prompt', 'kind', 'scheduledAt
 const RECEIPT_FIELDS = Object.freeze(['scheduledAt', 'deliveredAt'])
 
 /** The four tool names and parameters the DSH schedule tool publishes. */
-const TOOL = Object.freeze({
+export const TOOL = Object.freeze({
   create: 'schedule_create',
   list: 'schedule_list',
   update: 'schedule_update',
