@@ -327,15 +327,19 @@ export const FAILURE_LIMIT = Object.freeze({
  * - inFlightPerPrincipal: requests of one principal being processed at once; one more is 429.
  * - listenStreamsPerPrincipal: open listen streams of one principal; one more is 429.
  * - requestsPerMinute / requestBurst: a token bucket per principal; over it is 429.
- * "Per principal" (the names are K1's and stay) is counted per token entry (`Caller.entryKey`; the user's decision, 2026-11-14,
- * K1b), so a pair-only caller is limited too. C-HTTP applies these through `RequestGate.admit`
- * (REQUEST_GATE), after the bearer check.
+ * "Per principal" (the names are K1's and stay) is counted per token entry (`Caller.entryKey`;
+ * the user's decision, 2026-11-14, K1b), so a pair-only caller is limited too. C-HTTP applies
+ * these through `RequestGate.admit` (REQUEST_GATE), after the bearer check.
  * A limit refusal is a structured JSON-RPC error body (code `jsonRpcCode`, message the refusal
- * word below) with id `null` (JSON-RPC 2.0 §5: the body was never parsed), never prose only; a
- * 429 carries `Retry-After`. `jsonRpcCode` is DECIDED (#4): -31000, one code for both refusals
- * (the message tells them apart), because MCP 2026-07-28 basic § Error Codes makes -32000…-32019 a
- * legacy range new implementations SHOULD NOT use and asks for codes outside the JSON-RPC
- * reserved range -32768…-32000.
+ * word below) with no `id` member, never prose only. [spec] The body was never parsed, so no id
+ * exists; JSON-RPC 2.0 §5 would write `id: null`, but MCP 2026-07-28's `JSONRPCErrorResponse` has
+ * `id` optional and string or integer only, so both hosts' clients refuse `null`
+ * (`@modelcontextprotocol/core` 2.2.0 `JSONRPCErrorResponseSchema`, the same in 0.2.1-rc.5 and
+ * 0.2.2-rc.1; the user's decision 2026-11-14, K1b-EP-13: omit it). A 429 carries `Retry-After`.
+ * `jsonRpcCode` is DECIDED (#4): -31000, one code for both refusals (the message tells them
+ * apart), because MCP 2026-07-28 basic § Error Codes makes -32000…-32019 a legacy range new
+ * implementations SHOULD NOT use and asks for codes outside the JSON-RPC reserved range
+ * -32768…-32000.
  */
 export const ENDPOINT_LIMITS = Object.freeze({
   bodyBytes: V2_LIMITS.attachmentEnvelopeBytes,

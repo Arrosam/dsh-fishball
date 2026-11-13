@@ -392,10 +392,14 @@ export type CheckRefusal =
   | { readonly pass: false; readonly status: typeof HTTP_STATUS.forbidden; readonly headers: Readonly<Record<string, never>>; readonly body: null }
   | { readonly pass: false; readonly status: typeof HTTP_STATUS.serviceUnavailable; readonly headers: Readonly<Record<string, never>>; readonly body: { readonly error: typeof HTTP_REFUSAL.insecureListener } }
 
-/** ENDPOINT_LIMITS' structured refusal: a JSON-RPC error with id `null` (the body was never parsed, JSON-RPC 2.0 §5). */
+/**
+ * ENDPOINT_LIMITS' structured refusal: a JSON-RPC error with **no** `id` member. The body was never
+ * parsed, so there is no request id; MCP 2026-07-28's `JSONRPCErrorResponse` makes `id` optional
+ * and admits only a string or integer, so `id: null` (JSON-RPC 2.0 §5) is refused by both hosts'
+ * clients (`@modelcontextprotocol/core` 2.2.0 `JSONRPCErrorResponseSchema`; K1b-EP-13).
+ */
 export interface LimitRefusalBody<M extends typeof HTTP_REFUSAL.tooLarge | typeof HTTP_REFUSAL.rateLimited> {
   readonly jsonrpc: typeof ENDPOINT_LIMITS.jsonRpcVersion
-  readonly id: null
   readonly error: { readonly code: typeof ENDPOINT_LIMITS.jsonRpcCode; readonly message: M }
 }
 

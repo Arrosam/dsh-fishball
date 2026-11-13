@@ -200,7 +200,10 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   AUTH-EP-04 7a). Either refusal keeps the previous settings, and names only entry labels.
 - Limit refusals at the endpoint are a JSON-RPC error body, code -31000 (`ENDPOINT_LIMITS.jsonRpcCode`,
   DECIDED #4: MCP 2026-07-28 makes -32000…-32019 a legacy range new implementations SHOULD NOT
-  use), message `limit-exceeded` (413) or `rate-limited` (429), id `null`.
+  use), message `limit-exceeded` (413) or `rate-limited` (429), and **no `id` member** [spec: MCP
+  2026-07-28 `JSONRPCErrorResponse` has `id` optional, string or integer only, so the JSON-RPC 2.0
+  §5 `id: null` is refused by both hosts' clients (`@modelcontextprotocol/core` 2.2.0
+  `JSONRPCErrorResponseSchema`); the user's decision 2026-11-14, K1b-EP-13].
 - A non-loopback listener over plain http answers 503 `insecure-listener` on every route, after
   the 405 and 403 steps (`REQUEST_GATE.checkOrder`).
 - "Per principal" in `ENDPOINT_LIMITS` (the `…PerPrincipal` names stay) is counted per token
