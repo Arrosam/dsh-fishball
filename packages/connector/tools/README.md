@@ -7,8 +7,7 @@ This module holds data, pure validators and types only. The registry behind the 
 C-EXT (`packages/connector/src/contrib/`). Each name below is frozen, so changing one is a K2
 amendment. A value marked **PROPOSED** is one the requirements do not fix: it is frozen as written
 unless the user changes it at review. **DECIDED (#n)** marks a value the user decided at that
-review (2026-11-13, relayed by Fishball; `#n` is the item of
-`.runtime/reports/v3-proposed-values.md`).
+review (relayed by Fishball); `#n` is its row in [the decisions table](<../mcp-schema/README.md#user-decisions>).
 
 ## Service
 
@@ -39,10 +38,10 @@ review (2026-11-13, relayed by Fishball; `#n` is the item of
   - `title`, if given, must be a string;
   - `description` must be non-empty and at most `TOOL_LIMITS.descriptionBytes` UTF-8 bytes;
   - `execute` must be a function;
-  - `limits.*` must each be a positive safe integer at or below its ceiling (integers: PROPOSED);
+  - `limits.*` must each be a positive safe integer at or below its ceiling (integers: DECIDED #9);
   - each `codes` entry must match `NAME_GRAMMAR.code` and must not be a `CALL_CODE`, so a
     contributor can never produce `contributor-failed` or `tool-withdrawn` itself;
-  - a hint whose value is not a boolean is `tool-invalid` (PROPOSED; dropping it was the
+  - a hint whose value is not a boolean is `tool-invalid` (DECIDED #10; dropping it was the
     alternative).
 - **Schemas** (`inputSchema`, and `outputSchema` when given) must have an object root and use only
   DSH's enforced subset:
@@ -125,7 +124,7 @@ review (2026-11-13, relayed by Fishball; `#n` is the item of
 - **`EMIT_REFUSAL`:** `event-invalid`, `payload-too-large`, `rate-limited`, `queue-full`,
   `duplicate`, `no-fishball`, `contributor-unavailable`, plus the three caller codes
   `contributor-unidentified`, `namespace-reserved` and `registry-closed`. The design's union has
-  only `registry-closed`; the other two (PROPOSED) apply the tools' namespace rule to events, as
+  only `registry-closed`; the other two (DECIDED #7) apply the tools' namespace rule to events, as
   R-EXT-16 asks.
 - **`EMIT_CHECK_ORDER`** (EXT-DT-01): `registry-closed`, `contributor-unidentified`,
   `namespace-reserved`, `contributor-unavailable`, `event-invalid`, `payload-too-large`,
@@ -136,7 +135,7 @@ review (2026-11-13, relayed by Fishball; `#n` is the item of
   `rate-limited`, `operation-failed`.
 - **`SHARED_CODES`** (a tool may return these without declaring them): `limit-exceeded`,
   `forbidden`, `unknown-session`, `expired`, `conflict`, `unavailable`, `unsupported-operation`,
-  `operation-failed`. The design's list ends in "…", so this closed form is PROPOSED. Any other
+  `operation-failed`. The design's list ends in "…", so this closed form is DECIDED (#8). Any other
   undeclared code becomes `operation-failed`.
 - **`ABORT_REASON`** (`call.signal.reason`, a string): `cancelled`, `disconnected`, `revoked`,
   `timeout`, `tool-withdrawn`. The names are PROPOSED.

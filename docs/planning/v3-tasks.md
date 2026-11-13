@@ -121,7 +121,7 @@ move code without changing behaviour.
 | Id | Scope | Owns | Depends | Cases | Definition of done |
 | --- | --- | --- | --- | --- | --- |
 | D-SYNC | Sync the design and test-design work into the integration branch and fold in the S7c decisions | `docs/planning/v3-*.md`, `DESIGN.md` (V3 sections), `docs/test-design/v3/**`, `docs/spikes/v3-s6.md`, `docs/spikes/v3-s7*.md`, `spikes/v3-s6/`, `spikes/v3-s7*/` | — | AUTH-UC-12 and AUTH-ST-06 rewritten; AUTH-UC-13, AUTH-UC-14, AUTH-EP-12…14, AUTH-BVA-09, AUTH-DT-11, AUTH-DT-12, AUTH-ST-07 added | `b0922bc`, `7c2230e`, `141ac3b`, `51e9ff1` merged; S7c decisions folded; the cases lose `P:S7c` |
-| K1a | Freeze a `FailureLimiter` interface (one failure limit shared by the token endpoint and the approval page, R-OA-17), so C-OAUTH and C-OAUTH-WEB build against fakes of it; record that the one `OAuthTokenStore` implementation belongs to C-OAUTH, including durable `putRefresh`. No other K value changes | `packages/connector/mcp-schema/` | D-SYNC | K1 suite rows for the limiter | as K1 |
+| K1a | Freeze a `FailureLimiter` interface (one failure limit shared by the token endpoint and the approval page, R-OA-17, and by C-HTTP's bearer check), so C-OAUTH and C-OAUTH-WEB build against fakes of it; record that the one `OAuthTokenStore` implementation belongs to C-OAUTH, including durable `putRefresh`. No other K value changes | `packages/connector/mcp-schema/` | D-SYNC | K1 suite rows for the limiter | as K1 |
 
 ## W2 — Independent modules
 
