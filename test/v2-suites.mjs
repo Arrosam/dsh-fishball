@@ -115,6 +115,9 @@ export const V2_SUITES = Object.freeze({
     // V3 F-GUARDS (PLAT-UC-04 composition, PLAT-DT-04, UIM-DT-01 rows 9/10b/14, HOST-DT-03 rule 6, HOST-UC-08 A3/E2); run with test/run-v3.mjs.
     file('test/v3/f-guards/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core guard rows, override report and self-reorder (F-GUARDS)'),
     file('test/v3/f-guards/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core guard rows, override report and self-reorder (F-GUARDS)'),
+    // V3 C-TOKENS (AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03, AUTH-DT-05, AUTH-ST-01 rows 1, 5–10, 12); run with test/run-v3.mjs.
+    file('test/v3/c-tokens/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector token entries, generation, minimum length, revocation signal and cleanup (C-TOKENS)'),
+    file('test/v3/c-tokens/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector token entries, generation, minimum length, revocation signal and cleanup (C-TOKENS)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
