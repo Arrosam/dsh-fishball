@@ -1,38 +1,32 @@
 #!/usr/bin/env node
 /**
- * Regenerates core's vendored copy of K1's `fishball-connector/mcp-schema` (design §9.1: "vendored
- * as a copy so a standalone install needs nothing from the connector package at runtime").
+ * Regenerates core's vendored copy of K1's `fishball-connector/mcp-schema` in `vendor/` (design
+ * §9.1: "vendored as a copy so a standalone install needs nothing from the connector package at
+ * runtime"). The copy is committed (the user's decision, 2026-11-14), and core's link imports it
+ * through `src/link/schema.js` only; this script is how it is refreshed after a K1, K2 or V2
+ * contract change, and REL-PACK runs it so a tarball always carries the current K1.
  *
- * Usage: node scripts/vendor-mcp-schema.mjs <coreDir> [connectorDir]
- * - coreDir (required): the core package to write into. REL-PACK passes its staged copy. There is
- *   no default, because the run rewrites `src/link/schema.js`, and the repository's copy must keep
- *   importing the connector's own module.
- * - connectorDir: the connector package to copy from, default the sibling workspace folder.
+ * Usage: node scripts/vendor-mcp-schema.mjs [coreDir] [connectorDir]
+ * - coreDir: the core package to write into; default this script's package;
+ * - connectorDir: the connector package to copy from; default the sibling workspace folder.
  *
- * What it does, and why:
- * 1. Copies every JavaScript file reachable from the connector's `./mcp-schema` entry through
- *    relative imports (K1 imports K2's `../tools` and V2's `../contract`, so the closure is copied,
- *    not the folder), byte for byte, keeping each file's path relative to the connector, so every
- *    relative import inside the copy still resolves. The old copy is removed first, so nothing
- *    stale survives a K1 change.
- * 2. Rewrites the one specifier in `src/link/schema.js`, the link's only K1 import, to the copy;
- *    a second run on the same staged copy is a no-op there.
- * K1 is data and pure functions with no bare imports except `node:` builtins (its README), so the
- * copy needs no dependency. A bare import found in the closure is refused, never silently copied.
+ * It copies every JavaScript file reachable from the connector's `./mcp-schema` export through
+ * relative imports (K1 imports K2's `../tools` and V2's `../contract`, so the closure is copied,
+ * not the folder), byte for byte, keeping each file's path relative to the connector, so every
+ * relative import inside the copy still resolves. The old copy is removed first, so nothing stale
+ * survives. K1 is data and pure functions with no bare imports except `node:` builtins (its
+ * README), so the copy needs no dependency; a bare import in the closure is refused.
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const VENDOR = Object.freeze({
-  // K1's export, as core imports it in the repository (src/link/schema.js).
-  packageSpecifier: 'fishball-connector/mcp-schema',
   // The connector's export map is the authority for the entry file.
   exportKey: './mcp-schema',
   manifest: 'package.json',
   // Where the copy lives inside core; listed in core's package.json `files`.
   directory: 'vendor',
-  seam: path.join('src', 'link', 'schema.js'),
   script: '.js',
   builtinScheme: 'node:',
   relative: Object.freeze(['./', '../']),
@@ -68,8 +62,7 @@ function closure(root, entry) {
   return [...found].sort()
 }
 
-if (process.argv[2] === undefined) fail('usage: vendor-mcp-schema.mjs <coreDir> [connectorDir]')
-const coreDir = path.resolve(process.argv[2])
+const coreDir = path.resolve(process.argv[2] ?? path.join(here, '..'))
 const manifest = JSON.parse(fs.readFileSync(path.join(connectorDir, VENDOR.manifest), 'utf8'))
 const entryTarget = manifest.exports?.[VENDOR.exportKey]
 if (typeof entryTarget !== 'string') fail(`no ${VENDOR.exportKey} export in ${connectorDir}`)
@@ -83,12 +76,4 @@ for (const relative of files) {
   fs.copyFileSync(path.join(connectorDir, relative), target)
 }
 
-const seam = path.join(coreDir, VENDOR.seam)
-const source = fs.readFileSync(seam, 'utf8')
-const quoted = `'${VENDOR.packageSpecifier}'`
-const copyEntry = path.relative(path.dirname(seam), path.join(vendorDir, entryTarget)).split(path.sep).join('/')
-const vendored = `'${copyEntry}'`
-// A second run on the same staged copy finds the seam already pointing at the copy.
-if (source.includes(quoted)) fs.writeFileSync(seam, source.replace(quoted, vendored))
-else if (!source.includes(vendored)) fail(`${VENDOR.seam} imports neither ${quoted} nor ${vendored}`)
-console.log(`vendor-mcp-schema: ${files.length} files into ${path.relative(coreDir, vendorDir)}; ${VENDOR.seam} -> ${copyEntry}`)
+console.log(`vendor-mcp-schema: ${files.length} files into ${path.relative(coreDir, vendorDir)}`)
