@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { ACTION, API, CLICK, PILE_API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
+import { EMBED_UI, ACTION, API, CLICK, PILE_API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -401,14 +401,23 @@ export const outboxNow = async (host) => (await host.state()).outbox.entries
 /** A string of exactly n UTF-8 bytes made of 2-byte characters (n even), or ASCII when ascii is set. */
 export const bytesOf = (n, ascii = false) => (ascii ? 'b'.repeat(n) : 'é'.repeat(n / 2))
 
-/** The served client combo script that carries fishball-connector/client.js, read like a browser (M5). */
+/**
+ * The served Fishball client, read like a browser (M5): the combo script that carries
+ * fishball-embed-ui/client.js, plus the package-local chunk with the moved connector UI
+ * (R-EMBED), served at plugins/fishball-embed-ui/client.connector.js with the entry's rev.
+ */
 export async function fishballClientBundle(host) {
   const index = await host.get('/')
   // Bootstrap batches load with <script src>, application batches are preloaded with <link href>.
-  const urls = [...index.text.matchAll(/(?:src|href)="([^"]*fishball-connector\/client\.js[^"]*)"/g)].map((m) => m[1].replaceAll('&amp;', '&'))
+  const entry = new RegExp('(?:src|href)="([^"]*' + EMBED_UI.name + '\\/client\\.js[^"]*)"', 'g')
+  const urls = [...index.text.matchAll(entry)].map((m) => m[1].replaceAll('&amp;', '&'))
   if (urls.length === 0) return { found: false, status: index.status }
   const res = await host.get('/' + urls[0])
-  return { found: true, status: res.status, text: res.text }
+  // A chunk is served under its own entry's rev (the boot graph), not the combo batch's.
+  const graph = EMBED_UI.bootGraph.exec(index.text)
+  const rev = graph ? JSON.parse(graph[1]).entries.find((e) => e.id === EMBED_UI.name)?.rev : undefined
+  const chunk = await host.get('/plugins/' + EMBED_UI.name + '/' + EMBED_UI.connectorChunk + '?rev=' + rev)
+  return { found: true, status: res.status === 200 ? chunk.status : res.status, text: res.text + '\n' + chunk.text }
 }
 
 // ---- P6 helpers (watches) ----

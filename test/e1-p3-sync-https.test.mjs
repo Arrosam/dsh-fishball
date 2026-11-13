@@ -37,6 +37,7 @@ import { describe, it } from 'node:test'
 import { BODY_SOUL, CJK, instanceClientWords } from './support/body-soul-env.mjs'
 import { CASE as C, assertNoWrites, clone, engineFixture, inventory, provider } from './support/provider-sync-engine.mjs'
 import { hostFixture } from './support/provider-sync-host.mjs'
+import { EMBED_UI } from './support/constants.mjs'
 
 const NON_HTTPS = 'non-https-endpoint'
 const UNSUPPORTED = 'unsupported-provider'
@@ -50,7 +51,7 @@ const refusalsOf = (plan) => plan.groups.unsupported.map((entry) => [entry.id, e
 /** The card's dictionary words, and the list that decides whether a code gets words at all. */
 const words = instanceClientWords()
 const reasonsList = (() => {
-  const source = fs.readFileSync(path.join(BODY_SOUL.instance, 'client.js'), 'utf8')
+  const source = fs.readFileSync(EMBED_UI.instanceCard, 'utf8')
   const block = /reasons:\s*Object\.freeze\(\[([\s\S]*?)\]\)/.exec(source)
   assert.ok(block, 'the card declares its reason codes')
   return [...block[1].matchAll(/'([^']+)'/g)].map((match) => match[1])

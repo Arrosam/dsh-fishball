@@ -57,10 +57,17 @@ export function createBrowserSandbox({ lang, baseURI, fetch, console: pageConsol
     AbortController, AbortSignal, queueMicrotask, structuredClone, ...sandboxTimers,
     requestAnimationFrame: () => 0, cancelAnimationFrame() {},
     MutationObserver: class { observe() {} disconnect() {} takeRecords() { return [] } },
+    // A stream that never delivers: a client that opens server-sent state (the moved connector UI
+    // does at apply time) keeps its initial snapshot instead of throwing on a missing global.
+    EventSource: class { close() {} addEventListener() {} removeEventListener() {} },
     CSSStyleSheet: class { constructor() { this.cssRules = [] } replaceSync() {} insertRule() { return 0 } },
     navigator: { languages: [lang] },
   }
   sandbox.globalThis = sandbox
+  // In a browser `window` IS the global object, so a chunk that registers through
+  // `globalThis.__ModuleLoader__` (a package-local chunk such as a status line or records chunk)
+  // reaches the same loader as one that writes `window.__ModuleLoader__`.
+  sandbox.__ModuleLoader__ = window.__ModuleLoader__
   vm.createContext(sandbox)
   return {
     sandbox, window, document, registrations,

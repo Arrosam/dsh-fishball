@@ -11,6 +11,7 @@ import { BODY_SOUL, loadInstance } from '../support/body-soul-env.mjs';
 import { CASE as ENGINE_CASE, clone, inventory, provider } from '../support/provider-sync-engine.mjs';
 import { PREVIEW_LIFE_MS, SYNC_PLANTED, post, routeContext, syncHarness } from '../support/body-soul-sync.mjs';
 import { ACTIVE_SDK, parsedFrames, relayLink } from '../support/set-relay.mjs';
+import { EMBED_UI } from '../support/constants.mjs'
 
 // Native settings are the editor. SET owns only lifecycle/notice/links in the child; model sync is
 // main-only (user decision 2026-11-11): it runs from the main fishball-instance card's owner routes.
@@ -339,9 +340,9 @@ const SET = Object.freeze({
   rowModule: Object.freeze(['fishball-core', 'ui', 'fishball-settings', 'index.js']),
   hostedRowId: 'fishball-hosted-settings',
   rowSource: Object.freeze(['src', 'child-settings', 'index.js']),
-  sharedChunk: Object.freeze(['src', 'child-settings', 'client.instance.js']),
+  sharedChunk: Object.freeze(['src', 'child-settings', 'client.status.js']),
   panelClient: path.join(BODY_SOUL.core, 'ui', 'fishball-settings', 'client.js'),
-  instanceClient: path.join(BODY_SOUL.instance, 'client.js'),
+  instanceClient: EMBED_UI.statusLine,
   instanceManifest: path.join(BODY_SOUL.instance, 'package.json'),
   relay: Object.freeze({
     channel: 'instance-settings', version: 1,

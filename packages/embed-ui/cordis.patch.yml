@@ -1,0 +1,7 @@
+# fishball-embed-ui's profile footprint: one host row (V3 R-EMBED). DSH composes a package's
+# browser half only while a profile row names that package, so the row exists from the start; its
+# host half is a placeholder until U-SHELL (index.js). It edits no other row.
+- insert:
+    - id: fishball-embed-ui
+      name: 'fishball-embed-ui'
+      config: {}

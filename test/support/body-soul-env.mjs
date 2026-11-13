@@ -6,8 +6,8 @@
  *   settings migration also imports `zod`, a package DSH ships in the same runtime but which is not
  *   under `@deepseek-ai/`, so one extra resolve hook maps that single name to the same runtime.
  * - Scratch directories are throwaway temp dirs (os.tmpdir()), removed after each test.
- * - The connector's `record.*` words live inside the closure of packages/connector/client.js (a
- *   browser bundle for DSH's module loader), so they are read from the source text.
+ * - The connector's `record.*` words live inside the closure of the moved connector UI
+ *   (packages/embed-ui/src/client/client.connector.js since R-EMBED), so they are read from the source text.
  */
 import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -15,7 +15,7 @@ import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { REPO } from './constants.mjs'
+import { EMBED_UI, REPO } from './constants.mjs'
 import { FIXTURE } from './provider-sync-official.mjs'
 import { resolveFromRuntime, resolveOfficialSDK } from './provider-sync-sdk.mjs'
 
@@ -72,15 +72,15 @@ export async function tempDir(t) {
 }
 
 /**
- * The page dictionary words of one package's browser bundle (`client.js`): its `const en = {`
+ * The page dictionary words of one browser bundle file: its `const en = {`
  * and `const zh = {` objects, keyed exactly as `t()` looks them up. Only single-quoted
  * `'key': '…'` pairs are read. `keep` narrows the result for a feature's own prefix.
  */
-function clientWords(packageDir, keep) {
-  const source = fs.readFileSync(path.join(packageDir, 'client.js'), 'utf8')
+function clientWords(file, keep) {
+  const source = fs.readFileSync(file, 'utf8')
   const enAt = source.indexOf('const en = {')
   const zhAt = source.indexOf('const zh = {')
-  if (enAt < 0 || zhAt < 0 || zhAt < enAt) throw new Error('client.js dictionaries not found in ' + packageDir)
+  if (enAt < 0 || zhAt < 0 || zhAt < enAt) throw new Error('dictionaries not found in ' + file)
   const zhEnd = source.indexOf('\n    }\n', zhAt)
   const pairs = (text) => {
     const words = {}
@@ -93,12 +93,17 @@ function clientWords(packageDir, keep) {
 
 /** The connector's `record.*` words per language (the same observation point as its page). */
 export function connectorRecordWords() {
-  return clientWords(BODY_SOUL.connector, (key) => key.startsWith('record.'))
+  return clientWords(EMBED_UI.connectorClient, (key) => key.startsWith('record.'))
 }
 
-/** The instance card's words per language (sync reasons, state and failure explanations). */
+/**
+ * The instance card's words per language (sync reasons, state and failure explanations). Since
+ * R-EMBED the V2 card is two files: the card chunk in embed-UI and the status line it shows, which
+ * stays the instance's (src/child-settings/client.status.js); their words are read together.
+ */
 export function instanceClientWords() {
-  return clientWords(BODY_SOUL.instance)
+  const parts = [EMBED_UI.instanceCard, EMBED_UI.statusLine].map((file) => clientWords(file))
+  return { en: Object.assign({}, ...parts.map((p) => p.en)), zh: Object.assign({}, ...parts.map((p) => p.zh)) }
 }
 
 /** CJK ideographs: the observable mark of the Chinese variant. */

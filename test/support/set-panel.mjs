@@ -6,8 +6,8 @@
  * them. V3 R-HOST-11 / task R-CORE (3)-(4): a hosted child has two settings bundles. Core's generic
  * panel registers `{id: 'fishball-settings', factory}` and provides the settings-section extension
  * point `fishballSettingsSections`; the instance's `fishball-hosted-settings` registers the
- * hosted-only sections into it and loads the instance's `client.js` as its package-local chunk
- * `./client.instance.js`, evaluated with `document.currentScript` naming that chunk URL. Both are
+ * hosted-only sections into it and loads the instance's status line as its package-local chunk
+ * `./client.status.js` (R-EMBED), evaluated with `document.currentScript` naming that chunk URL. Both are
  * applied, panel first (the launch overlay's row order). React is the hook shim of rp-recommend.mjs
  * (no React is resolvable here and nothing may be installed); a host element held by ref gets one
  * plain object per rendered position, so each section has its own container, and a portal renders
@@ -24,18 +24,19 @@ import path from 'node:path'
 import { BODY_SOUL } from './body-soul-env.mjs'
 import { createBrowserSandbox } from './browser-sandbox.mjs'
 import { createReactShim, findAll, settle, textOf } from './rp-recommend.mjs'
+import { EMBED_UI } from './constants.mjs'
 
 export const PANEL = Object.freeze({
   panelClient: path.join(BODY_SOUL.core, 'ui', 'fishball-settings', 'client.js'),
-  instanceClient: path.join(BODY_SOUL.instance, 'client.js'),
+  instanceClient: EMBED_UI.statusLine,
   /** V3 R-HOST-11: the instance-owned hosted-only sections bundle. */
   hostedClient: path.join(BODY_SOUL.instance, 'src', 'child-settings', 'client.js'),
   moduleId: 'fishball-settings',
   hostedModuleId: 'fishball-hosted-settings',
-  chunk: 'client.instance.js',
-  chunkRequest: './client.instance.js',
+  chunk: 'client.status.js',
+  chunkRequest: './client.status.js',
   baseURI: 'http://child.test/fishball-child/',
-  chunkURL: 'http://child.test/fishball-child/fishball-hosted-settings/client.instance.js?rev=1',
+  chunkURL: 'http://child.test/fishball-child/fishball-hosted-settings/client.status.js?rev=1',
   panelSlot: 'main',
   modules: Object.freeze({ react: 'react', reactDom: 'react-dom', primitives: '@deepseek-ai/dsh-client-ui-primitives' }),
   route: Object.freeze({

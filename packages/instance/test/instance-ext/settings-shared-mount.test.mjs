@@ -13,7 +13,7 @@
  * (`fishballSettingsSections` through `ctx.get`, and `locale`) and `ctx.effect` are faked; any other ctx access is recorded so a
  * failing precondition names it.
  *
- * Driving the loader: `require.async('./client.instance.js')` returns a thenable whose fulfil/reject
+ * Driving the loader: `require.async('./client.status.js')` returns a thenable whose fulfil/reject
  * handlers the case keeps. Calling the fulfil handler is "the loader reaches ready". Calling it again
  * after a successful mount is the only black-box way to make the loader notify its listeners again
  * (R-B2 control); a real promise settles once, so that call stands for any later notification.
@@ -37,7 +37,7 @@ const PBS = Object.freeze({
   moduleId: 'fishball-hosted-settings',
   /** Core's settings-section extension point, the service the hosted sections register into. */
   sectionsService: 'fishballSettingsSections',
-  sharedChunk: './client.instance.js',
+  sharedChunk: './client.status.js',
   baseURI: 'http://child.test/',
   modules: Object.freeze({ react: 'react', primitives: '@deepseek-ai/dsh-client-ui-primitives' }),
   sharedLocale: 'pbs-shared-locale',

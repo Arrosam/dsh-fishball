@@ -3,8 +3,9 @@
  * the hosted-only settings sections call at the child's own origin. Owned by the instance; mounted
  * only by the child's launch overlay, never in main DSH (I-PLACE later places it as the bundle).
  *
- * The sections show the main card's status line from the same source (packages/instance/client.js),
- * so these routes answer the same paths and shapes as the main routes. They are built from the
+ * The sections show the instance's status line (client.status.js beside this file, which the main
+ * DSH's instance card in fishball-embed-ui shows too), so these routes answer the same paths and
+ * shapes as the main routes. They are built from the
  * main routes' own route table (src/native-web.js); only the backing service differs: here it is
  * the settings relay to the main host (src/slim/settings-relay.js), because only that host owns
  * the instance's lifecycle.

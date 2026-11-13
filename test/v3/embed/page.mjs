@@ -1,0 +1,147 @@
+/**
+ * A scripted main page for a REAL host DSH (R-EMBED definition of done: "the same UI renders from
+ * embed-UI on both SDKs"). No browser.
+ *
+ * What is real: the host DSH (support/host.mjs, this checkout's packages linked into its profile),
+ * its boot graph (`__DSH_BOOT__`), every non-SDK client bundle and package-local chunk it serves,
+ * fetched from its own origin with the owner's cookie, and the SDK's own Cordis `Context`, which
+ * applies each client plugin with its declared `inject` list.
+ *
+ * What is scripted: the DOM (support/browser-sandbox.mjs), React and the primitives (the shims the
+ * R-CORE page uses), and the page services the V2 main clients inject: `slots`, `locale` and
+ * `layout` from the R-CORE page, plus `configForms`, which serves every settings namespace so the
+ * Plugins cards register (they register only while the Host serves their row's namespace). Network
+ * reads such as the connector's EventSource are absent: a contribution that waits for state
+ * (the sidebar fish) is not counted, only contributions registered at apply time.
+ *
+ * Observation points: the graph entries and their served sources, the plugins and their fiber
+ * states, every slot registration with the graph entry that made it, and page console errors.
+ */
+import { createBrowserSandbox } from '../../support/browser-sandbox.mjs'
+import { createReactShim } from '../../support/rp-recommend.mjs'
+import { fakePrimitives } from '../../support/set-panel.mjs'
+import { applyPlugins, moduleTable } from '../shared/client-graph.mjs'
+import { BOOT, BUDGET, HTTP, ROUTE, runtimeOf } from '../core/constants.mjs'
+import { FIBER, pageServices, servedSource } from '../core/page.mjs'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { PAGE } from './constants.mjs'
+
+const settle = async () => { for (let i = 0; i < BUDGET.settleRounds; i++) await new Promise((resolve) => setImmediate(resolve)) }
+
+/** One GET at the host's own origin with the owner's cookie, as same-origin page code sends it. */
+async function hostGet(host, pathname) {
+  const response = await fetch(host.origin + pathname, { headers: { cookie: host.cookie, ...HTTP.sameOrigin } })
+  return { status: response.status, text: await response.text() }
+}
+
+/** The host's boot graph: every non-SDK client entry (Fishball's and any other plugin's). */
+export async function hostGraph(host) {
+  const html = (await hostGet(host, ROUTE.childRoot)).text
+  const match = BOOT.graph.exec(html)
+  if (!match) throw new Error('the host page carries no __DSH_BOOT__ graph')
+  return JSON.parse(match[1]).entries.filter((entry) => !entry.id.startsWith(BOOT.sdkScope))
+}
+
+/**
+ * `configForms` as the Plugins cards use it: `get(ns)` hands a form scope, `whileServed(ns, fn)`
+ * runs `fn` at once (every namespace counts as served here) and returns its disposer.
+ */
+function configForms() {
+  const form = () => ({ getSnapshot: () => ({ value: {}, revision: 0 }), subscribe: () => () => {}, set: async () => ({ ok: true }), dispose() {} })
+  return {
+    get: (ns) => form(ns),
+    whileServed(_namespaces, register) { const dispose = register(); return () => { if (typeof dispose === 'function') dispose() } },
+  }
+}
+
+/**
+ * The Plugins cards build their forms from ui-primitives' `SettingsFormModel` (and field helpers
+ * such as `settingsNumberField`) at apply time, before registering. The shared fake primitives
+ * (support/set-panel.mjs) make every export a component, so a card would throw before its
+ * registration. This page answers those two names with a stand-in that holds no values and writes
+ * nothing; only "did the card register" is observed here, never its form.
+ */
+class FormModelStandIn {
+  bind(snapshot) { return { getSnapshot: snapshot, subscribe: () => () => {} } }
+  shell() { return {} }
+  field() { return {} }
+  actions() { return {} }
+  dispose() {}
+}
+const FORM_EXPORTS = Object.freeze({ SettingsFormModel: FormModelStandIn, settingsNumberField: (field) => field })
+function primitivesWithForms(primitives) {
+  return new Proxy(primitives, { get: (target, name) => (Object.hasOwn(FORM_EXPORTS, name) ? FORM_EXPORTS[name] : target[name]) })
+}
+
+/**
+ * Load the host's client bundles into one scripted page and apply them.
+ * @param t - node:test context (cleanup).
+ * @param options.sdk - the SDK whose Cordis applies the plugins.
+ * @param options.host - a booted host handle (support/host.mjs).
+ * @returns {{ graph, scripts, plugins, failed(), registrations, errors }}
+ *   registrations: every slot entry as { slot, id?, key?, owner } where owner is the graph entry that registered it.
+ */
+export async function openMainPage(t, { sdk, host }) {
+  const errors = []
+  const baseURI = host.origin + ROUTE.childRoot
+  const pageFetch = async (input, init = {}) => fetch(new URL(String(input instanceof Request ? input.url : input), baseURI), { ...init, headers: { ...(init.headers ?? {}), cookie: host.cookie, ...HTTP.sameOrigin } })
+  const pageConsole = { ...console, error: (...args) => errors.push(args.map(String).join(' ')), warn: () => {}, log: () => {}, info: () => {}, debug: () => {} }
+  const page = createBrowserSandbox({ lang: PAGE.lang, baseURI, fetch: pageFetch, console: pageConsole })
+  const shim = createReactShim({ stale() {} })
+  const { React } = shim
+  const platform = {
+    [BOOT.platform.react]: React,
+    [BOOT.platform.reactDom]: { createPortal: (node) => node },
+    [BOOT.platform.primitives]: primitivesWithForms(fakePrimitives(React)),
+  }
+
+  const graph = await hostGraph(host)
+  const scripts = []
+  const runScript = async (id, url, entry) => {
+    const target = new URL(url, baseURI)
+    const response = await hostGet(host, target.pathname + target.search)
+    if (response.status !== 200) throw new Error('the host did not serve ' + target.pathname + ' (' + response.status + ')')
+    scripts.push({ id, url: target.pathname, source: servedSource(response.text), entry })
+    page.run(response.text, target.pathname, target.href)
+  }
+  for (const entry of graph) await runScript(entry.id, entry.url, true)
+  const table = moduleTable({ page, platform, graph, loadChunk: (ownerId, file, row) => runScript(ownerId, BOOT.chunkUrl(ownerId, file, row.rev), false) })
+
+  const { Context } = await import(pathToFileURL(path.join(runtimeOf(sdk), BOOT.cordisEntry)).href)
+  const services = { ...pageServices(shim, PAGE.lang), configForms: configForms() }
+  // One root per graph entry, all over the same page services, with a `slots` face that records the
+  // entry: every registration is attributed to the bundle that made it. The V2 main clients share no
+  // Cordis service with each other, so separate roots change nothing they see.
+  const registrations = []
+  const plugins = []
+  for (const entry of graph) {
+    const root = new Context()
+    const slots = {
+      ...services.slots,
+      register(options, Component) { registrations.push({ slot: options.name, id: options.id, key: options.key, owner: entry.id }); return services.slots.register(options, Component) },
+    }
+    for (const name of PAGE.services) root.provide(name, name === 'slots' ? slots : services[name])
+    plugins.push(...applyPlugins(root, [entry], table, errors))
+  }
+  t.after(async () => {
+    for (const key of shim.roots()) shim.unmountRoot(key)
+    page.clearTimers()
+    for (const p of plugins.reverse()) await p.fiber.dispose?.().catch?.(() => {})
+  })
+  await settle()
+  return {
+    graph, scripts, registrations, errors,
+    /**
+     * Wait until `done(registrations)` holds or the budget ends: the moved parts are package-local
+     * chunks the entry loads with require.async, so their slots arrive after the network fetches.
+     */
+    async waitFor(done) {
+      const deadline = Date.now() + BUDGET.readyMs
+      while (Date.now() < deadline && !done(registrations)) await new Promise((resolve) => setTimeout(resolve, BUDGET.pollMs))
+      return done(registrations)
+    },
+    plugins: plugins.map((p) => ({ id: p.id, inject: p.inject, state: p.fiber.state })),
+    failed: () => plugins.filter((p) => p.fiber.state === FIBER.failed).map((p) => p.id),
+  }
+}

@@ -25,7 +25,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { INTAKE_STATUSES, LIMITS, MANAGED_LABELS, NOTE_TEXT, P5_CODE, PRESET, RELAY_HEADER, STATE_LIST_MAX } from './support/constants.mjs'
+import { EMBED_UI_LINK, INTAKE_STATUSES, LIMITS, MANAGED_LABELS, NOTE_TEXT, P5_CODE, PRESET, RELAY_HEADER, STATE_LIST_MAX } from './support/constants.mjs'
 import { HOOK, T, fishballClientBundle, toolNames, toolSchema, turn, untrustedBlock } from './support/expect.mjs'
 import { KIND, bootStub, messageFishball, quietPushes, stopStub, userSession } from './support/instance-stub.mjs'
 import {
@@ -216,7 +216,7 @@ describe('the queue bound and the intake state with no instance attached', () =>
   let sender
 
   before(async () => {
-    booted = await bootStub('msg-in-queue')
+    booted = await bootStub('msg-in-queue', { link: [EMBED_UI_LINK] })
     ;({ host, stub } = booted)
     sender = await managedDrained(booted, 'q-sender')
     await stub.detach()
@@ -280,7 +280,7 @@ describe('the queue bound and the intake state with no instance attached', () =>
 
   it('MSG-13 the client bundle is served and has the Hand over entry', T, async (t) => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references fishball-connector/client.js')
+    assert.ok(bundle.found, 'index references fishball-embed-ui/client.js')
     assert.equal(bundle.status, 200)
     assert.ok(bundle.text.includes(MANAGED_LABELS.handOver), 'entry label')
     // T14 removed the send-only entry; whether its old label still appears anywhere is only recorded.
