@@ -114,9 +114,9 @@ export type RevocationKind = 'disabled' | 'deleted' | 'value-changed'
 export interface TokenRegistry {
   /**
    * Constant-time match of a presented value against the **enabled**, `ok` entries' digests
-   * (R-TOK-06). `undefined` for every miss, whatever the reason. Two entries holding one value
-   * (distinct refs, AUTH-EP-04 7a; no rule refuses it) are ambiguous: neither matches, and both
-   * report status `ok` (PROPOSED: a value must name one principal, R-TOK-07).
+   * (R-TOK-06). `undefined` for every miss, whatever the reason. Two entries never hold one
+   * value: such a settings save is refused `value-duplicate` (SETTINGS_REFUSAL), so a match is
+   * unique.
    */
   match(value: string): TokenEntry | undefined
   get(entryKey: EntryKey): TokenEntry | undefined
@@ -331,7 +331,7 @@ export declare const RESYNC_REASON: { readonly staleCursor: "stale-cursor" }
 export declare const RETIREMENT_REASON: { readonly withdrawn: "withdrawn"; readonly revoked: "revoked"; readonly released: "released"; readonly reissued: "reissued"; readonly contributorWithdrawn: "contributor-withdrawn" }
 export declare const SCOPE: { readonly full: "fishball"; readonly pair: "fishball:pair" }
 export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.2.0"; readonly "@modelcontextprotocol/node": "2.1.0" }
-export declare const SETTINGS_REFUSAL: { readonly refDuplicate: "ref-duplicate" }
+export declare const SETTINGS_REFUSAL: { readonly refDuplicate: "ref-duplicate"; readonly valueDuplicate: "value-duplicate" }
 export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal" }
 export declare const SETTLEMENT_OUTCOME: { readonly allowed: "allowed"; readonly rejected: "rejected"; readonly answered: "answered" }
 export declare const TIME_UNIT: { readonly msPerSecond: 1000 }

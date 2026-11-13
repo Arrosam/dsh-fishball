@@ -350,14 +350,16 @@ export const ID_GRAMMAR = Object.freeze({ pattern: Object.freeze(new RegExp(`^${
 
 /**
  * Names (R-NAME-02, TQ-6 A). Normalise: trim Unicode White_Space, collapse every inner run to one
- * space, then NFC; then 1–64 code points with no `Cc` control character. Uniqueness compares the
+ * space, then NFC; then 1–64 code points with no `Cc` control character and no `Cf` format
+ * character (bidi overrides, zero-width characters and other invisible ones; the user's decision,
+ * 2026-11-13, so a name cannot look like another). Uniqueness compares the
  * case-folded normalised name.
  */
 export const NAME_RULES = Object.freeze({
   minChars: 1,
   maxChars: 64,
   whitespaceRun: Object.freeze(/\p{White_Space}+/u),
-  control: Object.freeze(/\p{Cc}/u),
+  control: Object.freeze(/[\p{Cc}\p{Cf}]/u),
   space: ' ',
   normalForm: 'NFC',
   // R-NAME-08: a principal with no name is shown as its id after this prefix, the prefix bold.
@@ -490,7 +492,13 @@ export const ENTRY_STATUS = Object.freeze({
   tokenTooShort: 'token-too-short',
   tokenUnconfigured: 'token-unconfigured',
 })
-export const SETTINGS_REFUSAL = Object.freeze({ refDuplicate: 'ref-duplicate' })
+/**
+ * A settings save is refused, and the previous settings stay (R-TOK-08): two entries share one
+ * `ref` (`ref-duplicate`), or two entries' refs resolve to the same value (`value-duplicate`; the
+ * user's decision 2026-11-13, AUTH-EP-04 7a), so one value always names one principal (R-TOK-07).
+ * The value check compares digests in constant time and names only the entries' labels.
+ */
+export const SETTINGS_REFUSAL = Object.freeze({ refDuplicate: 'ref-duplicate', valueDuplicate: 'value-duplicate' })
 export const PAIR_STATE = Object.freeze({ paired: 'paired', unpaired: 'unpaired' })
 export const CONNECTOR_STATUS = Object.freeze({ approvalPortInUse: 'approval-port-in-use' })
 
