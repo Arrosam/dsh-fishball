@@ -1,50 +1,88 @@
 /**
- * The one place that binds the cases to F-INTERCEPT's module. K3 freezes what plugins see
- * (`fishballInstance.events.intercept`, events.d.ts) but no constructor for core's events module, and
- * F-LINK's link has no frozen in-process interface either (v3-tasks.md: W2 tasks build against fakes
- * of the frozen interfaces only). The seam below is therefore this suite's **assumption**, reported
- * with the commit; if the dev session's entry differs, only this file changes, never a case:
+ * The one place that binds the cases to F-INTERCEPT's module (`packages/core/src/events/index.js`).
+ * Its entry is composition with injected ports; F-WIRE mounts it in core's rows, and F-LINK owns
+ * the real link and poll loop. Until those exist this seam stands in for both, from their
+ * contracts only, so a case never changes when they land:
  *
- * - `packages/core/src/events/index.js` exports a factory (the default export when it is a function,
- *   else the one export named like `create…Events` / `create…Intercept…`);
- * - it is called as `factory({ ctx, agent, link })`:
- *   - `ctx`: the Fishball DSH's cordis context (real `storage.domain`, `logger`, `agentLoop`);
- *   - `agent`: the Fishball manager agent (a real DSH `Agent`);
- *   - `link`: core's MCP link as far as K1 freezes it: `callTool(name, args)` resolving to the tool's
- *     `structuredContent` (K1 `TOOL.inboxPoll` / `TOOL.inboxAck` shapes), and
- *     `onResourceUpdated(listener) → dispose` for the `fishball://events` listen hint;
- * - it returns (or resolves to) the K3 `FishballInstanceEvents` (`intercept`) directly or under
- *   `events`, optionally with `start()` and `close()` (stop before the agent's owner disposes it,
- *   design §6.4);
- * - plugins that load with core register between the factory call and `start()`, so a restart
- *   re-offers an open record to a plugin that is up (EVT-DT-04 rule 7) instead of falling back.
- * Core polls once when started and once per hint (design §6.3 "poll once on every (re)connect").
+ * - `openLedger(ctx, {defineDomain, domainTable})` opens the ledger in the world's real
+ *   dsh-storage-domain over dsh-storage-json, so a SIGKILLed world reopens the same records;
+ * - `createEvents({table, link, fishball, logger})` with
+ *   - `link.ack(receipts)` = K1 `inbox_ack` through the world's fake link;
+ *   - `fishball.activate()` = the world's Fishball manager agent (a real DSH `Agent`);
+ *   - `fishball.present(event)` = one text block naming the event's type and id. The wording is
+ *     another task's (X9 / F-FACADE); the id carries the case's marker, so every oracle finds it;
+ *   - `logger` = a cordis logger of the world's context, so the world's exporter sees every line;
+ * - the world has no `fishballInstance` row (F-WIRE), so `intercept` reaches the service with no
+ *   traced caller: a registration ends only by its disposer, which the world's plugins run as a
+ *   fiber effect;
+ * - `start()` is the world's "ready" point (its plugins have registered): `recover()` once, then
+ *   the poll loop. Core polls once when started and once per `fishball://events` hint (design §6.3
+ *   "poll once on every (re)connect"), hands every polled event to `intake` in order, one poll at
+ *   a time, and keeps paging while the connector says `hasMore`;
+ * - `close()` stops the loop, closes the events module, then the ledger.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { INSTANCE } from '../../support/constants.mjs'
-import { importInstance } from '../../private-skills/support/sdk.mjs'
-import { SUBJECT } from './constants.mjs'
+import { importInstance, importSdk } from '../../private-skills/support/sdk.mjs'
+import { DSH, SUBJECT, TOOL } from './constants.mjs'
 
-/** The factory export, bound to `sdk` (its `@deepseek-ai/*` imports resolve to that SDK). */
-async function factoryFor(sdk) {
+/** The module's entry and its constants, bound to `sdk` (their `@deepseek-ai/*` imports resolve to that SDK). */
+async function modulesFor(sdk) {
   assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (F-INTERCEPT "Owns" packages/core/src/events/)`)
-  const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
-  if (typeof mod.default === 'function') return mod.default
-  const named = Object.entries(mod).filter(([name, value]) => typeof value === 'function' && SUBJECT.factoryName.test(name))
-  assert.equal(named.length, 1, `no single events factory export; exports: ${Object.keys(mod).join(', ')}`)
-  return named[0][1]
+  const bound = (file) => importInstance(sdk, path.relative(INSTANCE.dir, file))
+  const [events, constants, storageDomain] = await Promise.all([
+    bound(SUBJECT.entry), bound(path.join(path.dirname(SUBJECT.entry), 'constants.js')), importSdk(sdk, DSH.storageDomain),
+  ])
+  return { events, constants, storageDomain }
 }
 
 /** Core's events service over one world: `{ intercept, start, close }`; `start` is the caller's. */
 export async function makeSubject(sdk, { ctx, agent, link }) {
-  const made = await (await factoryFor(sdk))({ ctx, agent, link })
-  const events = typeof made?.intercept === 'function' ? made : made?.events
-  assert.equal(typeof events?.intercept, 'function', 'the events factory returned no intercept(registration, onEvent)')
+  const { events: mod, constants, storageDomain } = await modulesFor(sdk)
+  const ledger = await mod.openLedger(ctx, storageDomain)
+  const events = mod.createEvents({
+    table: ledger.table,
+    link: { ack: (receipts) => link.callTool(TOOL.inboxAck, { receipts }) },
+    fishball: {
+      activate: async () => agent,
+      present: (event) => [{ type: 'text', text: `${event.type} ${event.eventId}` }],
+    },
+    logger: ctx.logger(constants.LOG.name),
+  })
+
+  // The stand-in poll loop: one poll at a time; a hint during a poll queues one more after it.
+  let chain = Promise.resolve()
+  let failure
+  let stopped = false
+  async function pollOnce() {
+    let more = true
+    while (more && !stopped) {
+      const page = await link.callTool(TOOL.inboxPoll, {})
+      for (const event of page.events ?? []) await events.intake(event)
+      more = page.hasMore === true
+    }
+  }
+  const poll = () => { chain = chain.then(pollOnce).catch((error) => { failure ??= error }) }
+  let unlisten
+
   return {
-    intercept: (registration, onEvent) => events.intercept(registration, onEvent),
-    start: async () => { if (typeof made.start === 'function') await made.start() },
-    close: async () => { if (typeof made.close === 'function') await made.close() },
+    intercept: (registration, onEvent) => events.service.intercept(registration, onEvent),
+    async start() {
+      await events.recover()
+      unlisten = link.onResourceUpdated(poll)
+      poll()
+      await chain
+    },
+    async close() {
+      stopped = true
+      unlisten?.()
+      await chain
+      events.close()
+      await ledger.close()
+      // A poll that threw (intake rejected) would otherwise vanish inside the loop.
+      if (failure !== undefined) throw failure
+    },
   }
 }
