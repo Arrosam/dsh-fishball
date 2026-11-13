@@ -181,9 +181,14 @@ export function createDelivery({ ledger, fishball, logger }) {
       queue.push(record.eventId)
       void drain()
     },
-    /** Reconcile every record still in state `fishball`, oldest first, then start delivering. */
+    /**
+     * Reconcile every record still in state `fishball` from before this start, oldest first, then
+     * start delivering. A record already added in this generation (recovery just moved an open
+     * record of a plugin that is off to Fishball) is tracked here already; reconciling it too
+     * would queue it twice and wake Fishball twice.
+     */
     async recover() {
-      const records = ledger.inOrder([STATE.fishball])
+      const records = ledger.inOrder([STATE.fishball]).filter((record) => !queue.includes(record.eventId) && !inflight.has(record.eventId))
       if (records.length === 0 || closed) return
       const agent = await fishball.activate()
       watch(agent)

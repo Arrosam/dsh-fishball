@@ -73,21 +73,26 @@ export function createInterception({ ledger, registry, delivery, link, logger })
     const owns = (current) => current.attempt === attempt
     // Every commit the handler starts, awaited or not, decides the record before it is settled.
     const commits = []
+    /** The durable move offered → open; true when this attempt holds the event as accepted. */
+    async function acceptOnce() {
+      if (!registry.isLive(entry)) return false
+      // A record offered again after a restart is already durably accepted (open or committing):
+      // accept is then true for its new attempt, with no second move (its ack is recover's).
+      const current = ledger.get(eventId)
+      if (owns(current) && (current.state === STATE.open || current.state === STATE.committing)) return true
+      const won = await ledger.move(eventId, (record) => owns(record) && record.state === STATE.offered && registry.isLive(entry),
+        () => ({ state: STATE.open }))
+      if (won) logger?.info(LOG.accepted, eventId, event.type, entry.pluginId)
+      return won
+    }
     const ctl = Object.freeze({
-      async accept() {
-        if (!registry.isLive(entry)) return false
-        // A record offered again after a restart is already durably accepted (open or
-        // committing): accept is then true for its new attempt, with no second move or ack.
-        const current = ledger.get(eventId)
-        if (owns(current) && (current.state === STATE.open || current.state === STATE.committing)) return true
-        const won = await ledger.move(eventId, (record) => owns(record) && record.state === STATE.offered && registry.isLive(entry),
-          () => ({ state: STATE.open }))
-        if (!won) return false
-        logger?.info(LOG.accepted, eventId, event.type, entry.pluginId)
-        // The record is durable before accept resolves; the ack follows it (R-INT-08). The
-        // handler does not wait for the connector: a lost ack is recovered by the replay.
-        void ack(eventId)
-        return true
+      accept() {
+        const accepted = acceptOnce()
+        // R-INT-08: the ack goes out only after accept has resolved, never inside it. setImmediate
+        // runs after the handler's own continuation of `await ctl.accept()`. The handler does not
+        // wait for the connector; a lost ack is recovered by the replay.
+        void accepted.then((won) => { if (won) setImmediate(() => { void ack(eventId) }) })
+        return accepted
       },
       commit(send) {
         const task = (async () => {
