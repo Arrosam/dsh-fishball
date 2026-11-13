@@ -64,6 +64,10 @@ export function createBrowserSandbox({ lang, baseURI, fetch, console: pageConsol
     navigator: { languages: [lang] },
   }
   sandbox.globalThis = sandbox
+  // In a browser `window` IS the global object, so a chunk that registers through
+  // `globalThis.__ModuleLoader__` (a package-local chunk such as a status line or records chunk)
+  // reaches the same loader as one that writes `window.__ModuleLoader__`.
+  sandbox.__ModuleLoader__ = window.__ModuleLoader__
   vm.createContext(sandbox)
   return {
     sandbox, window, document, registrations,
