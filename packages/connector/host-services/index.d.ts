@@ -7,8 +7,8 @@
  * reachable over MCP, HTTP or from a browser, and none carries a token value. Each has
  * `apiVersion: 1`; a consumer treats any other value as the service being absent (UIM-EP-01 #5).
  *
- * Providers and consumers are listed once, in README.md. Values marked PROPOSED there are frozen
- * as written unless the user changes them at review (the K1/K2 convention).
+ * Providers and consumers are listed once, in README.md. Values marked PROPOSED are product
+ * choices: frozen as they stand (decided 3 = A), and the user may still change them.
  */
 
 /** Disposes what a registration created. Idempotent: a second call does nothing. */
@@ -29,7 +29,7 @@ export interface HostServiceError<Code extends string = string> extends Error {
 }
 
 export type { FishballConnectorHandover, HandoverPrincipal, ManagedSession, PrincipalRef, HandOverResult, TakeBackResult, HandOverRefusalCode, TakeBackRefusalCode } from './handover.js'
-export type { FishballConnectorTokens, HostedTokenEntry, RetireResult, RetireRefusalCode, CreateHostedErrorCode } from './tokens.js'
+export type { FishballConnectorTokens, HostedTokenEntry, HostedEntryState, RetireResult, RetireRefusalCode, CreateHostedErrorCode } from './tokens.js'
 export type {
   FishballChild, ChildState, ChildStatus, ChildStatusCode, LifecycleCode, TargetCode, TargetState, TargetStatus,
   LoopbackHostname, AdmitRequest, AdmitView, AdmitLang, AdmitErrorCode, ProviderSync, ProviderSyncStatus,
