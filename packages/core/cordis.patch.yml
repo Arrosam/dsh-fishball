@@ -1,4 +1,83 @@
-# fishball-core's bundle patch (design §5a.2). Empty on purpose: F-GUARDS adds the fishball-ui
-# guard rows and core's own rows here and removes the LITE rows from the instance's overlay in the
-# same change, so the guards are defined exactly once at every merge (v3-tasks W1 rules).
-[]
+# fishball-core's bundle patch (design §5a.2; R-FB-02; spike V3-S6 `86800d2` + round 2 `7c2230e`).
+# This file is the ONE definition of the guards: src/guards/intended.js reads the guarded rows, the
+# policy values and core's own presets back from it at runtime, so the check can never disagree
+# with what the patch sets (v3-tasks W1 rules: the guards are defined exactly once).
+#
+# Rules this file relies on (cordis-plugin-include `applyEntryPatches`, both SDKs):
+# - a patch reaches only rows an EARLIER layer inserted, so core's bundle must be last
+#   (R-FB-12): src/guards/reorder.js arranges that in standalone mode; the instance writes it in a
+#   hosted child (I-PLACE);
+# - a patch's `config` REPLACES the row's whole config, so a policy row restates every key DSH ships
+#   (the `!!js` workspace root included);
+# - the owner's profile patch, home patch and launch overlays apply after this file, so the owner can
+#   override any guard (Q20); core then reports `guards-overridden` and changes nothing back (R-FB-09).
+#
+# A guard is a bare `{id, disabled: true}` row; intended.js reads exactly that shape as a guard.
+# fishball-hosted-settings is never listed here (R-HOST-11 (5)).
+
+# Session-creating rows (V2 LITE). ui-subagent: header lineage and catalogue tree items open other
+# sessions; ui-schedule/schedule: scheduled prompts run as new sessions; ui-permission/
+# ui-agent-preset: permission and preset pickers (the preset creator also starts sessions);
+# entry-customization: More-menu rows that start sessions; ui-open-in-app/open-in-app: native
+# launches off the page; ui-sidebar-terminal/terminal-controller: a shell outside read-only. Each
+# service they provide is injected only by another row switched off here (checked in 0.2.1-rc.5 and
+# 0.2.2-rc.1), so boot is unaffected.
+- { id: ui-subagent, disabled: true }
+- { id: ui-schedule, disabled: true }
+- { id: schedule, disabled: true }
+- { id: ui-permission, disabled: true }
+- { id: ui-agent-preset, disabled: true }
+- { id: entry-customization, disabled: true }
+- { id: ui-open-in-app, disabled: true }
+- { id: open-in-app, disabled: true }
+- { id: ui-sidebar-terminal, disabled: true }
+- { id: terminal-controller, disabled: true }
+# No nested hosted Fishball (UIM-DT-01 row 10b).
+- { id: fishball-instance, disabled: true }
+
+# Agent presets (Q-S6-2 decided B, amended; requirements 1.24). The session-creating tools live inside
+# each shipped preset's `config.plugins`, which no patch can reach (S6 §3.2), so every DSH-shipped
+# preset is switched OFF here, never deleted. The ids are the same on both SDKs
+# (`dsh-web-app/presets/`). fishball-watchdog contributes its own `watchdog` preset (R-WD-16).
+- { id: preset-standard, disabled: true }
+- { id: preset-ptc, disabled: true }
+- { id: preset-cordis, disabled: true }
+- { id: preset-minimal, disabled: true }
+
+# Effective read-only (V2 LITE). The approval policy stays `ask`: `never` would mean "allowed without
+# asking". The private Skills exception needs no row: the manager-scoped confined provider of
+# src/slim/child/skills.js is the only writer of Fishball's own skills.
+- id: sandbox-policy
+  config:
+    mode: &read-only read-only
+    workspaceRoot: !!js process.cwd()
+- id: approval
+  config:
+    policy: &ask ask
+# Only the read-only permission preset, so `/permission` refuses every other name.
+- id: permission
+  config:
+    presets:
+      read-only: { sandbox: *read-only, approval: *ask }
+    defaultPreset: *read-only
+- id: agent-preset-registry
+  config:
+    default: &fishball fishball
+
+- insert:
+    # Core's own agent preset for the manager: `read` and `read_image` (tool-fs with no write or
+    # edit); `working_directory` is DSH's global tool (dsh-base). No persona row: core composes the
+    # manager's persona in code on create and on every resume (src/slim/child/persona.js).
+    - id: preset-fishball
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: *fishball
+        order: 0
+        plugins:
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config: { read: true, readImage: true, write: false, edit: false }
+    # fishball-ui's Node half for the guards: the check, the `guards-overridden` report and the
+    # standalone self-reorder (src/guards/).
+    - id: fishball-ui
+      name: ./ui/patch/index.js

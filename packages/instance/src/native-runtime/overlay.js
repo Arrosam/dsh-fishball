@@ -23,36 +23,11 @@ const ROW = Object.freeze({
 })
 const WEB_CONFIG = Object.freeze({ host: RUNTIME.host, port: 0, tls: undefined })
 const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, publicUrl: undefined })
-/** Policies the slim child fixes independently of the main deployment (§2.3). */
-const POLICY = Object.freeze({ sandboxMode: 'read-only', approval: 'ask' })
-/** The one permission preset the child keeps; its policy is the child's fixed POLICY. */
-const READ_ONLY_PRESET = 'read-only'
-/**
- * LITE effective read-only (instance-extension-points §11.3/§11.6; U13 Q-I A; K-4). The approval
- * policy stays `ask`: `never` would mean "allowed without asking". Widening requests from the
- * manager are refused by approvals.js's explicit own-approval rejection (Q-J), not here.
- * - The `permission` row keeps only the read-only preset, so `/permission` refuses every other
- *   name; the launch overlay outranks the profile and home layers, so a saved value cannot widen it.
- * - Native rows switched off: each service they provide is injected only by another row switched
- *   off here (checked in 0.2.1-rc.5 and 0.2.2-rc.1), so boot is unaffected. The enabled
- *   ui-settings-plugin-inventory lists ui-agent-preset as an optional client dependency, which
- *   client-modules skips. Ids absent from a profile are skipped.
- *   ui-subagent: header lineage and catalogue tree items open other sessions (Enter/Space/click);
- *   ui-schedule/schedule: scheduled prompts run as new sessions; ui-permission/ui-agent-preset:
- *   permission and preset pickers (the preset creator also starts sessions); entry-customization:
- *   More-menu rows that start sessions; ui-open-in-app/open-in-app: native launches off the page;
- *   ui-sidebar-terminal/terminal-controller: a shell outside read-only.
- * - Agent-preset plugins switched off: delegation (subagent, subagent_fork, workflow) and the
- *   schedule tool create ordinary child sessions. The child's own reminders tools are unaffected.
- */
-const LITE = Object.freeze({
-  permission: Object.freeze({ row: 'permission', preset: READ_ONLY_PRESET,
-    presets: Object.freeze({ [READ_ONLY_PRESET]: Object.freeze({ sandbox: POLICY.sandboxMode, approval: POLICY.approval }) }) }),
-  disabledRows: Object.freeze(['ui-subagent', 'ui-schedule', 'schedule', 'ui-permission', 'ui-agent-preset',
-    'entry-customization', 'ui-open-in-app', 'open-in-app', 'ui-sidebar-terminal', 'terminal-controller']),
-  disabledPresetPlugins: Object.freeze(['tool-subagent', 'tool-subagent-fork', 'workflow-ptc', 'tool-workflow',
-    'tool-subagent-control', 'tool-subagent-list-agents', 'tool-schedule']),
-})
+// V3 F-GUARDS: the LITE guard rows (read-only policy, the one permission preset, the
+// session-creating rows and the delegation/schedule tools inside the agent presets) moved into
+// fishball-core's own cordis.patch.yml, their one definition (design §5a.2, R-HOST-04: the launch
+// overlays carry no guard rows). Until I-PLACE places core as a bundle, a hosted child starts
+// without them (user decision 2026-11-14).
 /**
  * fishball-core's slim child modules (V3 R-CORE). copyChildCode copies core beside native-child.js
  * (RUNTIME.corePackage), so these rows resolve inside the snapshot by path, never by import.
@@ -96,7 +71,6 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
     return plugins.map(row => {
       if (row.name === '@deepseek-ai/dsh-agent-instructions') return { ...row, config: instructionConfig(row.config) }
       if (row.name === '@deepseek-ai/dsh-skill-filesystem') return { ...row, config: skillConfig(row.config) }
-      if (LITE.disabledPresetPlugins.includes(row.id)) return { ...row, disabled: true }
       if (row.group && Array.isArray(row.config)) return { ...row, config: isolatePlugins(row.config) }
       return row
     })
@@ -107,7 +81,10 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
     else if (row.name === '@deepseek-ai/dsh-agent-instructions') overlays.push({ id: row.id, config: instructionConfig(row.config) })
     else if (row.name === '@deepseek-ai/dsh-skill-filesystem') overlays.push({ id: row.id, config: skillConfig(row.config) })
   }
-  // Settings and enabled native client rows are deliberately preserved, not roster-filtered.
+  // Settings and enabled native client rows are deliberately preserved, not roster-filtered. The
+  // policy rows are no longer patched here (F-GUARDS), but a profile without them stays refused
+  // as before (UNSUPPORTED_PROFILE): it is not the native composition this launcher was written
+  // for, and core's guards target exactly these rows once I-PLACE places core.
   for (const id of [ROW.hmr, ROW.sandboxPolicy, ROW.approval, ROW.webserver, ROW.webRuntime]) if (!rows.has(id)) fail('UNSUPPORTED_PROFILE')
   const config = { mainHome: paths.mainHome, hostId: record.hostId, instanceId: record.instanceId, limits, control }
   return [
@@ -115,10 +92,6 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
     { id: ROW.hmr, disabled: true },
     { id: ROW.webserver, disabled: false, config: { ...rows.get(ROW.webserver).config, ...WEB_CONFIG } },
     { id: ROW.webRuntime, disabled: false, config: { ...rows.get(ROW.webRuntime).config, ...WEB_RUNTIME_CONFIG } },
-    { id: ROW.sandboxPolicy, config: { ...rows.get(ROW.sandboxPolicy).config, mode: POLICY.sandboxMode } },
-    { id: ROW.approval, config: { ...rows.get(ROW.approval).config, policy: POLICY.approval } },
-    ...(rows.has(LITE.permission.row) ? [{ id: LITE.permission.row, config: { ...rows.get(LITE.permission.row).config, presets: LITE.permission.presets, defaultPreset: LITE.permission.preset } }] : []),
-    ...LITE.disabledRows.filter(id => rows.has(id)).map(id => ({ id, disabled: true })),
     { insert: [
       // Native Web supplies its standard services. PG-1 owns navigation and permission
       // enforcement; this composition alone is not a read-only or session-isolation boundary.
