@@ -15,8 +15,19 @@ import { SDK, V3 } from '../shared/constants.mjs'
 export const CORE = Object.freeze({
   workspace: 'packages/core',
   patchFile: 'cordis.patch.yml',
-  /** Comment and blank lines only, or an empty YAML list: no patch entry yet (F-GUARDS adds them). */
-  emptyPatch: Object.freeze({ comment: /^\s*(?:#.*)?$/, emptyList: /^\s*\[\s*\]\s*$/ }),
+  /**
+   * DSH's own reader of a bundle's cordis.patch.yml (dsh-app-boot `loadOverlayPatches`, both SDKs),
+   * so the patch is read exactly as DSH composes it; the label only prefixes its errors.
+   */
+  patchLoader: path.join('@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js'),
+  patchLabel: 'fbtest-v3-core',
+  /**
+   * F-GUARDS (design §5a.2, R-FB-02, R-FB-12): core's patch carries the guard rows. It may DISABLE the
+   * fishball-instance row, but it never inserts a row of the instance or of fishball-hosted-settings,
+   * nor a module of the instance package (R-BND-01, R-HOST-11 (5), R-ARCH-08 (2)).
+   */
+  neverInserted: Object.freeze(['fishball-instance', 'fishball-hosted-settings']),
+  fileScheme: 'file:',
   /** Core reaches the connector only for `./contract` (R-CORE; design §9.1 until F-STATUS drops it). */
   connectorAllowed: Object.freeze(['fishball-connector/contract']),
 })
