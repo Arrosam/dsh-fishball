@@ -51,12 +51,12 @@ caller's loader-entry package. The EXT cases are no longer provisional on S5 unl
 - **Postconditions:** one emit woke at most one agent.
 
 ### EXT-UC-03 — A failing contributor is contained, then quarantined, then restored
-**Req:** R-EXT-08, R-EXT-09, R-EXT-19, R-EXT-04, R-EXT-15 · **Level:** integration · **Flags:** — (K2: `QUARANTINE.moreThanFailures` = 2, `QUARANTINE.windowOutcomes` = 5)
+**Req:** R-EXT-08, R-EXT-09, R-EXT-19, R-EXT-04, R-EXT-15 · **Level:** integration · **Flags:** — (K2: `QUARANTINE.moreThanFailures` = 4, `QUARANTINE.windowOutcomes` = 10)
 
 - **Actor:** contributor `flaky` with tool `flaky.go` and two pending events in P's mailbox (one already acked).
 - **Main flow:**
   1. `execute` throws → that call gets `{ok: false, code: "contributor-failed"}` with no stack, message or path. Another contributor's tool and another client's calls are unaffected. One log line per (contributor, failure kind).
-  2. A third `contributor-failed` among the last 5 counted outcomes (`QUARANTINE`: more than 2 of 5) → `flaky` is **quarantined**: its tools leave `tools/list` (`list_changed` sent; calls get "unknown tool", never "quarantined"); `emit` returns `contributor-unavailable`; its **pending** events are retired from every mailbox; the acked one stays.
+  2. A fifth `contributor-failed` among the last 10 counted outcomes (`QUARANTINE`: more than 4 of 10) → `flaky` is **quarantined**: its tools leave `tools/list` (`list_changed` sent; calls get "unknown tool", never "quarantined"); `emit` returns `contributor-unavailable`; its **pending** events are retired from every mailbox; the acked one stays.
   3. The user disables and re-enables `flaky` (or reloads it) → its new registrations are accepted and listed again.
 - **Alternative flows:** A1. Emits that keep failing validation count toward the same quarantine.
 - **Exception flows:** E1. There is no connector setting to lift the quarantine; the connector settings form has no per-contributor rows.

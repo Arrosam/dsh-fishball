@@ -6,7 +6,8 @@ The contract of the contribution service `fishballConnectorTools`. Sources:
 This module holds data, pure validators and types only. The registry behind the service belongs to
 C-EXT (`packages/connector/src/contrib/`). Each name below is frozen, so changing one is a K2
 amendment. A value marked **PROPOSED** is one the requirements do not fix: it is frozen as written
-unless the user changes it at review.
+unless the user changes it at review. **DECIDED (#n)** marks a value the user decided at that
+review (relayed by Fishball); `#n` is its row in [the decisions table](<../mcp-schema/README.md#user-decisions>).
 
 ## Service
 
@@ -37,10 +38,10 @@ unless the user changes it at review.
   - `title`, if given, must be a string;
   - `description` must be non-empty and at most `TOOL_LIMITS.descriptionBytes` UTF-8 bytes;
   - `execute` must be a function;
-  - `limits.*` must each be a positive safe integer at or below its ceiling (integers: PROPOSED);
+  - `limits.*` must each be a positive safe integer at or below its ceiling (integers: DECIDED #9);
   - each `codes` entry must match `NAME_GRAMMAR.code` and must not be a `CALL_CODE`, so a
     contributor can never produce `contributor-failed` or `tool-withdrawn` itself;
-  - a hint whose value is not a boolean is `tool-invalid` (PROPOSED; dropping it was the
+  - a hint whose value is not a boolean is `tool-invalid` (DECIDED #10; dropping it was the
     alternative).
 - **Schemas** (`inputSchema`, and `outputSchema` when given) must have an object root and use only
   DSH's enforced subset:
@@ -96,8 +97,8 @@ unless the user changes it at review.
 | `EVENT_LIMITS.ratePerMinute` | 30 | rate per (contributor, recipient) |
 | `EVENT_LIMITS.rateBurst` | 10 | token-bucket capacity per (contributor, recipient) |
 | `EVENT_LIMITS.rateWindowMs` | 60000 | the window that `ratePerMinute` refills over (one token per 2 s) |
-| `QUARANTINE.moreThanFailures` | 2 | PROPOSED: more than this many failures quarantine a contributor … |
-| `QUARANTINE.windowOutcomes` | 5 | PROPOSED: … among the last this many counted outcomes of its activation |
+| `QUARANTINE.moreThanFailures` | 4 | DECIDED (#44): more than this many failures quarantine a contributor … |
+| `QUARANTINE.windowOutcomes` | 10 | DECIDED (#45): … among the last this many counted outcomes of its activation |
 
 - **Effective limits.** A tool's effective limit is the value it declares, or the ceiling when it
   declares none (`effectiveLimits(def)`).
@@ -106,8 +107,9 @@ unless the user changes it at review.
   user sets one.
 - **Queue.** The event queue limit is the recipient's `maxQueuedInputs` (K1), not a constant here.
 - **Quarantine.**
-  - The rule follows design §13.5's wording, "more than N of the last M". With N = 2 and M = 5,
-    the 3rd failure in 5 quarantines, the behaviour spike S5 observed.
+  - The rule follows design §13.5's wording, "more than N of the last M". With N = 4 and M = 10
+    (DECIDED #44, #45), the 5th failure among the last 10 quarantines. Spike S5's 3rd failure in 5
+    was replaced because recovery is manual (R-EXT-09).
   - Counted outcomes (PROPOSED): every finished call of the contributor's tools, where a failure is
     `contributor-failed`; and every emit that reaches validation, where a failure is
     `event-invalid` or `payload-too-large` and an accepted emit counts as a success.
@@ -122,7 +124,7 @@ unless the user changes it at review.
 - **`EMIT_REFUSAL`:** `event-invalid`, `payload-too-large`, `rate-limited`, `queue-full`,
   `duplicate`, `no-fishball`, `contributor-unavailable`, plus the three caller codes
   `contributor-unidentified`, `namespace-reserved` and `registry-closed`. The design's union has
-  only `registry-closed`; the other two (PROPOSED) apply the tools' namespace rule to events, as
+  only `registry-closed`; the other two (DECIDED #7) apply the tools' namespace rule to events, as
   R-EXT-16 asks.
 - **`EMIT_CHECK_ORDER`** (EXT-DT-01): `registry-closed`, `contributor-unidentified`,
   `namespace-reserved`, `contributor-unavailable`, `event-invalid`, `payload-too-large`,
@@ -133,7 +135,7 @@ unless the user changes it at review.
   `rate-limited`, `operation-failed`.
 - **`SHARED_CODES`** (a tool may return these without declaring them): `limit-exceeded`,
   `forbidden`, `unknown-session`, `expired`, `conflict`, `unavailable`, `unsupported-operation`,
-  `operation-failed`. The design's list ends in "…", so this closed form is PROPOSED. Any other
+  `operation-failed`. The design's list ends in "…", so this closed form is DECIDED (#8). Any other
   undeclared code becomes `operation-failed`.
 - **`ABORT_REASON`** (`call.signal.reason`, a string): `cancelled`, `disconnected`, `revoked`,
   `timeout`, `tool-withdrawn`. The names are PROPOSED.

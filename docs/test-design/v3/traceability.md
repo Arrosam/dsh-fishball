@@ -77,11 +77,11 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-OA-09 | AUTH-UC-02, AUTH-UC-08, PLAT-UC-01 | 3 |
 | R-OA-10 | AUTH-UC-07, AUTH-EP-02 | 2 |
 | R-OA-11 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-08 | 3 |
-| R-OA-12 | AUTH-UC-12, AUTH-UC-10, AUTH-ST-04, AUTH-DT-08 | 4 |
+| R-OA-12 | AUTH-UC-12, AUTH-UC-10, AUTH-ST-04, AUTH-ST-05, AUTH-DT-08 | 5 |
 | R-OA-13 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-07, AUTH-EP-08, AUTH-EP-12 | 5 |
 | R-OA-14 | AUTH-UC-12, AUTH-UC-10, AUTH-DT-07, AUTH-ST-04, AUTH-BVA-07, AUTH-ST-07 | 6 |
 | R-OA-15 | AUTH-ST-04, AUTH-BVA-07, AUTH-ST-07 | 3 |
-| R-OA-16 | AUTH-UC-12, AUTH-UC-10, AUTH-ST-06, AUTH-ST-05, AUTH-BVA-08, AUTH-BVA-09 | 6 |
+| R-OA-16 | AUTH-UC-12, AUTH-UC-10, AUTH-ST-06, AUTH-ST-05, AUTH-ST-04, AUTH-DT-08, AUTH-BVA-08, AUTH-BVA-09 | 8 |
 | R-OA-17 | AUTH-BVA-06, AUTH-UC-10 | 2 |
 | R-OA-18 | AUTH-DT-06, AUTH-UC-10 | 2 |
 | R-OA-19 | AUTH-DT-06 | 1 |
@@ -259,7 +259,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | AUTH-DT-07 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-ST-04 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock) | — |
 | AUTH-DT-09 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (a second process holding the port) | K (default port; rule 4's rebind timing) |
-| AUTH-ST-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock), integration | K (maximum chain lifetime) |
+| AUTH-ST-05 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock), integration | K (maximum chain lifetime: 365 days, decided) |
 | AUTH-DT-08 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration | — |
 | AUTH-EP-10 | [01-auth-pairing.md](<01-auth-pairing.md>) | integration (a local TLS-terminating proxy as the tunnel) | — |
 | AUTH-BVA-08 | [01-auth-pairing.md](<01-auth-pairing.md>) | unit (fake clock) | K (10 s) |
@@ -340,7 +340,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | WATCH-ST-01 | [06-watch.md](<06-watch.md>) | integration | — |
 | EXT-UC-01 | [07-contributors.md](<07-contributors.md>) | integration | — |
 | EXT-UC-02 | [07-contributors.md](<07-contributors.md>) | integration | P:S3 (A3) |
-| EXT-UC-03 | [07-contributors.md](<07-contributors.md>) | integration | — (K2: `QUARANTINE.moreThanFailures` = 2, `QUARANTINE.windowOutcomes` = 5) |
+| EXT-UC-03 | [07-contributors.md](<07-contributors.md>) | integration | — (K2: `QUARANTINE.moreThanFailures` = 4, `QUARANTINE.windowOutcomes` = 10) |
 | EXT-UC-04 | [07-contributors.md](<07-contributors.md>) | integration | D§13.6 |
 | EXT-EP-01 | [07-contributors.md](<07-contributors.md>) | unit | — (K2: `NAME_GRAMMAR.local` 1–48 of `[a-z0-9_.-]`; `SCHEMA_SUBSET`; `TOOL_LIMITS.descriptionBytes` 2048) |
 | EXT-EP-02 | [07-contributors.md](<07-contributors.md>) | unit | D§13.3 |

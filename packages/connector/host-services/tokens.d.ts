@@ -4,7 +4,7 @@
  * looked up at runtime (see index.d.ts). Types only.
  *
  * Design §5.4 fixes the two members and `createHosted`'s success value; every refusal code below is
- * PROPOSED. `createHosted` rejects because its success type has no refusal arm in the design;
+ * the K3 choice the user kept (DECIDED #13, #14). `createHosted` rejects because its success type has no refusal arm in the design;
  * `retire` returns refusals as data, because the instance retries it at its next start.
  */
 import type { Refusal } from './index.js'
@@ -24,7 +24,7 @@ export interface HostedTokenEntry {
 }
 
 /**
- * Why `createHosted` rejects (`HostServiceError.code`; PROPOSED). It creates nothing in either case.
+ * Why `createHosted` rejects (`HostServiceError.code`; DECIDED #14, kept). It creates nothing in either case.
  * - `credentials-unwritable`: the credential store refused the generated value (design §5.2's
  *   unwritable store);
  * - `operation-failed`: any other failure.
@@ -32,7 +32,7 @@ export interface HostedTokenEntry {
 export type CreateHostedErrorCode = 'credentials-unwritable' | 'operation-failed'
 
 /**
- * Why `retire` refuses (PROPOSED). Every refusal moves nothing and deletes nothing (R-HOST-09).
+ * Why `retire` refuses (DECIDED #13, kept). Every refusal moves nothing and deletes nothing (R-HOST-09).
  * - `unknown-entry`: either key names no token entry;
  * - `not-hosted`: either entry was not made by `createHosted`, or the two were made for different
  *   `instanceId`s. A user-made entry is never retired (R-HOST-09, HOST-UC-03 E3);

@@ -38,6 +38,8 @@ function caseTest(sdk, id, row, title, fn, todo) {
 
 const name = (length) => FIXTURE.pad.repeat(length)
 const utf8 = (s) => Buffer.byteLength(s, 'utf8')
+/** A public tool name `<namespace><separator><local>` on the short namespace, with the module's frozen separator. */
+const publicName = (mod, local) => SHORT_NAMESPACE + mod.NAMESPACE.separator + local
 /** A string of exactly `bytes` UTF-8 bytes, mostly three-byte characters (bytes, not characters, count). */
 const ofBytes = (bytes) => EURO.repeat(Math.floor(bytes / utf8(EURO))) + FIXTURE.pad.repeat(bytes % utf8(EURO))
 const assertExported = (mod, values) => {
@@ -99,13 +101,15 @@ export function registerK2Cases(sdk) {
   caseTest(sdk, 'EXT-EP-01', 'K2', 'the _meta contributor key is frozen (R-EXT-12, S5-Q3)', (mod) => {
     assertExported(mod, [META_KEY])
   })
-  caseTest(sdk, 'EXT-EP-01', 'K2', 'the frozen _meta key survives this SDK\'s MCP Tool schema; a non-hint annotation does not (S5 §3.5)', async () => {
+  // The probe is the module's own key (the row above checks its value against R-EXT-12).
+  caseTest(sdk, 'EXT-EP-01', 'K2', 'the frozen _meta key survives this SDK\'s MCP Tool schema; a non-hint annotation does not (S5 §3.5)', async (mod) => {
     const core = await mcpCore(sdk)
+    const key = mod.CONTRIBUTOR_META_KEY
     const tool = core.ToolSchema.parse({
-      name: SHORT_NAMESPACE + '.' + FIXTURE.valid.name, inputSchema: FIXTURE.valid.inputSchema,
-      annotations: { ...FIXTURE.hint, [NON_HINT_ANNOTATION]: FIXTURE.contributor }, _meta: { [META_KEY]: FIXTURE.contributor },
+      name: publicName(mod, FIXTURE.valid.name), inputSchema: FIXTURE.valid.inputSchema,
+      annotations: { ...FIXTURE.hint, [NON_HINT_ANNOTATION]: FIXTURE.contributor }, _meta: { [key]: FIXTURE.contributor },
     })
-    assert.deepEqual(tool._meta[META_KEY], FIXTURE.contributor)
+    assert.deepEqual(tool._meta[key], FIXTURE.contributor)
     assert.deepEqual(tool.annotations, FIXTURE.hint)
   })
   caseTest(sdk, 'EXT-EP-01', 'K2', 'the protocol revision handed to execute is 2026-07-28 (R-EXT-10)', (mod) => {
@@ -192,14 +196,14 @@ export function registerK2Cases(sdk) {
   caseTest(sdk, 'EXT-BVA-01', 2, 'public name length 129 → tool-invalid (needs a long derived namespace)', null, LATER.registry)
   caseTest(sdk, 'EXT-BVA-01', 3, 'local name length 1 (`ns.a`) → accepted; the public name meets MCP\'s rule', (mod) => {
     assert.ok(accepts(mod, definition({ name: name(1) })))
-    assert.match(SHORT_NAMESPACE + '.' + name(1), MCP_TOOL_NAME)
+    assert.match(publicName(mod, name(1)), MCP_TOOL_NAME)
   })
   caseTest(sdk, 'EXT-BVA-01', 4, 'local name length 0 → tool-invalid', (mod) => {
     assert.ok(isInvalid(mod, definition({ name: '' })))
   })
   caseTest(sdk, 'EXT-BVA-01', 5, 'local name 48 (grammar max) → accepted; `ns.` + 48 meets MCP\'s rule', (mod) => {
     assert.ok(accepts(mod, definition({ name: name(GRAMMAR.nameMax) })))
-    assert.match(SHORT_NAMESPACE + '.' + name(GRAMMAR.nameMax), MCP_TOOL_NAME)
+    assert.match(publicName(mod, name(GRAMMAR.nameMax)), MCP_TOOL_NAME)
   })
   caseTest(sdk, 'EXT-BVA-01', 6, 'local name 49 → tool-invalid', (mod) => {
     assert.ok(isInvalid(mod, definition({ name: name(GRAMMAR.nameMax + 1) })))

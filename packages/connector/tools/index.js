@@ -6,7 +6,7 @@
  * sibling `index.d.ts`; the prose freeze is `README.md` beside this file.
  *
  * Frozen export names (the K2 freeze; renaming one is a K2 amendment). Values marked PROPOSED
- * in constants.js await the user's decision.
+ * in constants.js await the user's decision; values marked DECIDED are the user's.
  * Values:
  * - service and wire: apiVersion, TOOLS_API (version, service, protocolVersion),
  *   CONTRIBUTOR_META_KEY, CONTRIBUTED_EVENT (typePrefix);

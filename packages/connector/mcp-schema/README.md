@@ -8,8 +8,9 @@ The contract of the connector's MCP surface and of the internal seams W2 builds 
 This module holds data, pure builders and pure rules only. It imports no DSH package and loads in
 plain Node, because `fishball-core` vendors a copy (design §9.1). Every name below is frozen:
 changing one is a K1 amendment. A value marked **PROPOSED** is one the requirements do not fix; it
-is frozen as written unless the user changes it at review. **[spec]** marks a point decided per MCP
-2026-07-28 and the RFCs it cites (requirements 1.18).
+is frozen as written unless the user changes it at review. **DECIDED** marks a value the user
+decided at review (relayed by Fishball); `#n` is its row in [User decisions](#user-decisions). **[spec]** marks a point decided per MCP 2026-07-28 and
+the RFCs it cites (requirements 1.18).
 
 One owner per value: the protocol version, the `contributed:` prefix and the shared refusal words
 are K2's (`../tools/constants.js`), and the V2 domain's operation codes and payload vocabularies are
@@ -76,7 +77,7 @@ K2's shared words (`limit-exceeded`, `forbidden`, `unknown-session`, `expired`, 
 `question-required`, `mode-user`, `bad-answer`, `already-settled`, `grant-invalid`,
 `prefix-not-shell-tool`, `prefix-empty`, `prefix-not-in-call`, `expires-at-required`,
 `expires-at-invalid`, `expires-at-past`, `unknown`, `ended`); new: `already-paired`, `id-taken`,
-`name-invalid`, `name-taken`, and for `inbox_ack` (PROPOSED) `unknown-event` and
+`name-invalid`, `name-taken`, and for `inbox_ack` (DECIDED #5, #6) `unknown-event` and
 `digest-mismatch`. V2's wire-only codes (envelope, handshake, capability, host, duplicate, timeout)
 do not exist over MCP. `id-invalid` (`ID_REFUSAL`) is a settings and page word only: at the token
 endpoint an invalid id is `invalid_client` (R-ID-02).
@@ -125,7 +126,7 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 | `pageDefault` | 50 | PROPOSED: `inbox_poll` without `limit` |
 | `pageMax` | 100 | PROPOSED: `limit` is 1–100; 0 or 101 is `limit-exceeded`, never clamped |
 | `disabledRetentionMs` | 30 days | [req] events kept for a disabled entry |
-| `ackedReceiptMs` | 1 day | PROPOSED: a repeated ack of an acked event is a no-op success |
+| `ackedReceiptMs` | 1 day | DECIDED (#36: kept): a repeated ack of an acked event is a no-op success |
 | `QUEUE.maxQueuedInputs` | 200 | [design §3.4] the default of the connector setting; frozen by K1 |
 | `QUEUE.refusedTypes` | `message`, `turn-finished`, `state`, `notice`, contributor events | PROPOSED: refused `queue-full` past `maxQueuedInputs`; offers, `ask`, `settlement`, `retirement`, `handover`, `takeback` always commit |
 
@@ -134,8 +135,8 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 - A settled offer's own event is **not** retired: it stays pending until acked, and the
   `settlement` that follows it is the signal (PROPOSED, EVT-ST-01 row 5). A withdrawn one is
   replaced by a `retirement` (design §5.3).
-- `inbox_ack` is all or nothing (PROPOSED): a receipt naming no event of the caller's mailbox is
-  `unknown-event` (it never says "another pair's"), a wrong digest is `digest-mismatch`.
+- `inbox_ack` is all or nothing (DECIDED #61; the codes DECIDED #5, #6): a receipt naming no
+  event of the caller's mailbox is `unknown-event` (it never says "another pair's"), a wrong digest is `digest-mismatch`.
 
 ## OAuth
 
@@ -165,7 +166,7 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 | a client secret on a public grant | 401 `invalid_client` |
 | `client_secret` or `access_token` in the URL query | 400 `invalid_request`, even with a valid header or form [spec: RFC 6750 §2.3, a client MUST NOT use two methods] |
 | wrong `code_verifier` or `redirect_uri` | 400 `invalid_grant`; the code is **not** consumed and stays bound by its 60 s life (PROPOSED: S7b's behaviour) |
-| rate limit | 429, `Retry-After`, `{error: "temporarily_unavailable"}` (PROPOSED: RFC 6749 §5.2 has no rate-limit code; this one is from §4.1.2.1) |
+| rate limit | 429, `Retry-After`, `{error: "temporarily_unavailable"}` (DECIDED #1: RFC 6749 §5.2 has no rate-limit code; this one is from §4.1.2.1) |
 | unexpected failure | 500 `server_error` |
 
 ### Lifetimes and limits
@@ -176,10 +177,11 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 | `LIFETIME.codeMs` | 60 s | [req] R-OA-14 |
 | `LIFETIME.pendingRequestMs` | 10 min | [req] R-OA-15 |
 | `LIFETIME.refreshGraceMs` | 10 s; reuse at exactly 10 s revokes | [req] Q-S7B-1 B |
-| `LIFETIME.refreshChainMaxMs` | 30 days from the code redemption | PROPOSED (R-OA-16 (5) asks for one) |
+| `LIFETIME.refreshChainMaxMs` | 365 days from the code redemption; an ended chain is renewed on the same entry (R-OA-16 (7)) | DECIDED (#18; R-OA-16 (5) asks for one) |
 | `TOKEN_VALUE.minChars` | 32 code points | [req] TQ-4 A |
 | `TOKEN_VALUE` generated | `fbt_` + 32 random bytes base64url | [design] §5.2 |
-| `RATE_LIMITS` | per (address, client id), 1-min window: 10 credential failures, 30 token requests; plus 50 failures per address | PROPOSED |
+| `RATE_LIMITS.tokenRequestsPerWindow` | 30 token requests per (address, client id) per minute | PROPOSED |
+| `FAILURE_LIMIT` | the one failure limit (K1a): per (address, client id; an MCP bearer by address alone), 1-min window: 10 refused credentials; plus 50 per address | key and 10: DECIDED (#19, #21: kept); 50: PROPOSED; one shared constant and `FailureLimiter`: PROPOSED (K1a) |
 | `ENDPOINT_LIMITS.bodyBytes` | 8 MiB | PROPOSED (V2's attachment frame) |
 | `ENDPOINT_LIMITS.inFlightPerPrincipal` | 32 | PROPOSED |
 | `ENDPOINT_LIMITS.listenStreamsPerPrincipal` | 8 | PROPOSED |
@@ -189,13 +191,16 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 | `CIMD_LIMITS` | 5 KiB [spec]; 3 s; cache ≤ 1 day | 5 KiB per CIMD §6.6; the rest PROPOSED |
 | `PAIR_TIMING.lastSeenWriteIntervalMs` | 60 s: a request 60 s or more after the last write updates it | [design] §5.8 |
 
-- Rate limits count every refused credential (secret, page token, bearer). An empty page field is
-  not counted (PROPOSED). While limited, a valid credential is refused too (S7b P2).
+- `FAILURE_LIMIT` counts every refused credential (secret, page token, bearer) in one
+  `FailureLimiter` that the token endpoint, the approval page and the MCP endpoint share
+  (R-OA-17; K1a, PROPOSED). An empty page field is not counted (PROPOSED). While limited, a valid
+  credential is refused too (S7b P2), and the refused request is not counted again.
 - **Settings save refusals (`SETTINGS_REFUSAL`):** `ref-duplicate` (two entries, one `ref`) and
   `value-duplicate` (two entries whose refs hold the same value; the user's decision 2026-11-13,
   AUTH-EP-04 7a). Either refusal keeps the previous settings, and names only entry labels.
-- Limit refusals at the endpoint are a JSON-RPC error body, code -32000, message `limit-exceeded`
-  (413) or `rate-limited` (429), id `null`.
+- Limit refusals at the endpoint are a JSON-RPC error body, code -31000 (`ENDPOINT_LIMITS.jsonRpcCode`,
+  DECIDED #4: MCP 2026-07-28 makes -32000…-32019 a legacy range new implementations SHOULD NOT
+  use), message `limit-exceeded` (413) or `rate-limited` (429), id `null`.
 - A non-loopback listener over plain http answers 503 `insecure-listener` on every route.
 
 ### Hosts and Origin (`HOSTS`)
@@ -203,7 +208,8 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 Allowed hosts: `localhost`, `127.0.0.1`, `[::1]`, the bind address and DSH's `--trusted-host`
 list; anything else is 403 before authentication. Loopback is `http`, every other allowed host
 `https`; forwarded headers are never read. Any present `Origin` on DSH's listener routes is 403
-(design §3.1: the allowlist is empty); the approval form accepts only its own origin.
+(design §3.1: the allowlist is empty); the approval form accepts only its own origin. There is no
+Origin setting (DECIDED #60: kept).
 
 ### Names and ids (`ID_GRAMMAR`, `NAME_RULES`, `rules.js`)
 
@@ -236,8 +242,9 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 | AUTH-DT-09 row 4 | After a clash the approval listener retries the bind every `APPROVAL_LISTENER.retryMs` (30 s) while the connector runs, so a freed port is bound again without a restart; a change of the port setting rebinds at once (PROPOSED). |
 | NAME-EP-01 rows 11–12 | Name characters are Unicode code points (an emoji is one or more code points as encoded; a ZWJ sequence is refused, `Cf`). A non-string, non-null `name` is refused by the input schema as `invalid-arguments` before `checkName`; `checkName` itself answers `name-invalid` for any non-string. |
 | NAME-BVA-01 (K) | Name length counts Unicode code points **after** whitespace collapse, trim and NFC (`checkName`). |
-| EVT-EP-02 rows 4–5 | `inbox_ack` with an `eventId` that is not in the caller's mailbox (another pair's included) is `unknown-event`; a wrong `payloadDigest` is `digest-mismatch`. All or nothing: one bad receipt acks nothing (PROPOSED). |
-| EVT-ST-01 row 8 | A second ack of an acked event is a no-op success while its receipt is remembered (`MAILBOX.ackedReceiptMs`, 1 day), counted in `acked` as 0 (PROPOSED). |
+| EVT-EP-02 rows 4–5 | `inbox_ack` with an `eventId` that is not in the caller's mailbox (another pair's included) is `unknown-event`; a wrong `payloadDigest` is `digest-mismatch` (DECIDED #5, #6). All or nothing: one bad receipt acks nothing (DECIDED #61: kept). |
+| EVT-ST-01 row 8 | A second ack of an acked event is a no-op success while its receipt is remembered (`MAILBOX.ackedReceiptMs`, 1 day, DECIDED #36: kept), counted in `acked` as 0 (PROPOSED). |
+| AUTH-ST-05 rows 10–12c | A chain ends `LIFETIME.refreshChainMaxMs` (365 days, DECIDED #18) after its code redemption: a refresh at or after it is `invalid_grant`. The owner renews it on the same entry: re-entering the bound token on the approval page, from the client id recorded at the bind, with the bound id and any redirect URI the client's document allows, mints a new code and chain and keeps the pair (id, name, `pairedAt`, managed sessions, pending events) (R-OA-16 (7), R-OA-12 (2); DECIDED #18). Only `OAuthTokenStore.chainsOf` = `ended` renews: a revoked chain, a live one, or any disable, delete or value change of the entry since (a newer generation) answers `already-paired`. |
 | EVT-ST-01 row 5 | An offer settled by the user keeps its own event pending until acked; the `settlement` that follows is the signal; the offer event is not retired (PROPOSED). |
 | EVT-BVA-01 rows 5–6 | `inbox_poll` `limit` must be 1–`MAILBOX.pageMax` (100); 0 and 101 are `limit-exceeded`, never clamped (V2 contract §8: a value outside a limit is `limit-exceeded`). |
 | EVT-BVA-02 rows 1–4 | `maxQueuedInputs` = 200 (`QUEUE.maxQueuedInputs`); past it only `QUEUE.refusedTypes` and contributor events are `queue-full`. |
@@ -251,8 +258,11 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 
 `BearerVerifier` (C-OAUTH → C-HTTP), `TokenRegistry` (C-TOKENS), `PairStore` (C-PAIR), `Mailbox`
 (C-MAILBOX: commit, poll, ack, summary, retire, hold, release, drop), `HintSink` (C-HTTP's listen
-streams), `OAuthTokenStore` (C-OAUTH and C-OAUTH-WEB), `Router.recipientFor` (C-ROUTE), `Presence`
-(the connected definition). The runtime exports are declared there too. Keys are opaque: `EntryKey`, `PrincipalKey`; no interface carries a token
+streams), `OAuthTokenStore` (C-OAUTH and C-OAUTH-WEB; `chainsOf` answers the renewal question),
+`FailureLimiter` (K1a: the token endpoint, the approval page and C-HTTP's bearer check share it),
+`Router.recipientFor` (C-ROUTE), `Presence` (the connected definition). The one `OAuthTokenStore`
+implementation and the one `FailureLimiter` implementation are C-OAUTH's, durable `putRefresh`
+included (K1a). C-OAUTH-WEB builds against fakes of both; C-HTTP against a fake `FailureLimiter`. The runtime exports are declared there too. Keys are opaque: `EntryKey`, `PrincipalKey`; no interface carries a token
 value.
 
 ## Left to a task (not frozen here)
@@ -269,6 +279,35 @@ value.
 | Watchdog rows (05-watchdog) | WD-ROUTE / WD-PATROL |
 | embed-UI rows (10-embed-ui-matrix) | U-SHELL / U-MARKS / U-RECORDS |
 | the `dsh-mcp-client` adapter | C-MCP-ADAPTER (S7c) |
+
+## User decisions
+
+The user's decisions on the PROPOSED values of K1, K2 and K3 (relayed by Fishball), by item number.
+This is the one record: `DECIDED #n` in any of the three contracts points here. Every other value
+marked PROPOSED is still open.
+
+| # | Value | Decision |
+| --- | --- | --- |
+| 1 | `OAUTH_ERROR.temporarilyUnavailable` with 429 at the token endpoint | kept (2026-11-14) |
+| 4 | `ENDPOINT_LIMITS.jsonRpcCode` | changed from -32000 to -31000: MCP 2026-07-28 makes -32000…-32019 a legacy range (2026-11-13) |
+| 5, 6 | `REFUSAL.unknownEvent`, `REFUSAL.digestMismatch` | kept (2026-11-14) |
+| 18 | `LIFETIME.refreshChainMaxMs` | changed from 30 to 365 days, and an ended chain is renewed on the same entry (R-OA-16 (7)) (2026-11-13) |
+| 19 | the failure key: (address, client id), an MCP bearer by address alone | kept, no relaxing (2026-11-13) |
+| 21 | 10 failures per key per minute (`FAILURE_LIMIT.perKeyPerWindow`) | kept, no relaxing (2026-11-13) |
+| 36 | `MAILBOX.ackedReceiptMs` 1 day | kept (2026-11-13) |
+| 60 | no Origin setting (`HOSTS`) | kept (2026-11-13) |
+| 61 | `inbox_ack` all or nothing | kept (2026-11-13) |
+| 7 | K2 `EMIT_REFUSAL.contributorUnidentified`, `.namespaceReserved` | kept (2026-11-14) |
+| 8 | K2 `SHARED_CODES` as a closed list | kept (2026-11-14) |
+| 9 | K2: declared `limits` must be integers | kept (2026-11-14) |
+| 10 | K2: a non-boolean annotation hint is `tool-invalid` | kept (2026-11-14) |
+| 44, 45 | K2 `QUARANTINE` | changed from more than 2 of the last 5 to more than 4 of the last 10, because recovery is manual (2026-11-13) |
+| 11 | K3 `handOver`: an unknown, deleted, disabled or unpaired principal is `no-fishball` | kept (2026-11-14) |
+| 12 | K3 `takeBack` drops V2's `is-fishball` and `feature-off` | kept (2026-11-14) |
+| 13 | K3 `RetireRefusalCode` | kept (2026-11-14) |
+| 14 | K3 `CreateHostedErrorCode` | kept (2026-11-14) |
+| 15, 16 | K3 `AdmitErrorCode` `hostname-refused`, `not-ready` | kept (2026-11-14) |
+| 17 | K3 core contracts: an invalid `intercept` registration throws `TypeError` | kept (2026-11-14) |
 
 ## Departure from the specification
 

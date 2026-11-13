@@ -3,7 +3,8 @@
  * requirements R-EXT-01…20, spike V3-S5 `8f2788e`). Data only: no DSH import and no behaviour.
  * Every name here is part of the `./tools` freeze; changing one is a K2 amendment. Values the
  * requirements do not fix are marked "PROPOSED (user decision pending)": they are frozen as
- * written unless the user changes them at review.
+ * written unless the user changes them at review. Values marked "DECIDED (#n)" are the user's
+ * decisions at that review (relayed by Fishball); ../mcp-schema/README.md "User decisions" records each #n.
  *
  * Every RegExp is itself frozen (an outer Object.freeze leaves `compile()` open to any importer)
  * and none has the `g` flag, so no `lastIndex` state is shared between importers.
@@ -130,12 +131,13 @@ export const EVENT_LIMITS = Object.freeze({
  * `execute` are not counted, because the contributor's code did not fail) and every emit that
  * reaches validation (a failure is `event-invalid` or `payload-too-large`, R-EXT-19; a success
  * counts as a success).
- * PROPOSED (user decision pending): N = 2, M = 5 keeps the spike's observed behaviour (V3-S5
- * Q-a: quarantine at the 3rd failure in 5) under the design's "more than N" wording.
+ * DECIDED (#44, #45): N = 4, M = 10, so the 5th failure among the last 10 counted outcomes
+ * quarantines. The spike's 2 of 5 (V3-S5 Q-a) was replaced because recovery is manual (a disable
+ * and re-enable or a reload, R-EXT-09): one short backend outage should not cost a reload.
  */
 export const QUARANTINE = Object.freeze({
-  moreThanFailures: 2,
-  windowOutcomes: 5,
+  moreThanFailures: 4,
+  windowOutcomes: 10,
 })
 
 /**
@@ -155,8 +157,8 @@ export const REGISTER_REFUSAL = Object.freeze({
 /**
  * `emit(event)` refusals: always returned as `{ok: false, code}`, never thrown (R-EXT-18).
  * `contributor-unidentified` and `namespace-reserved` are not in design §13.2's EmitRefusal union;
- * they are added because R-EXT-16 applies the tools' namespace rule to events (PROPOSED, user
- * decision pending). Check order: EMIT_CHECK_ORDER.
+ * they are added because R-EXT-16 applies the tools' namespace rule to events (DECIDED #7:
+ * kept). Check order: EMIT_CHECK_ORDER.
  */
 export const EMIT_REFUSAL = Object.freeze({
   eventInvalid: 'event-invalid',
@@ -203,7 +205,7 @@ export const EMIT_CHECK_ORDER = Object.freeze([
 
 /**
  * The connector's shared refusal vocabulary a tool may return without declaring it (design
- * §13.5, whose list ends "…"; this is its closed form, PROPOSED). Any other undeclared code
+ * §13.5, whose list ends "…"; this is its closed form, DECIDED #8: kept). Any other undeclared code
  * becomes `operation-failed`. A tool may not declare a CALL_CODE in `codes` (`tool-invalid`),
  * so a contributor can never produce `contributor-failed` or `tool-withdrawn` itself.
  */
