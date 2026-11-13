@@ -200,8 +200,50 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   AUTH-EP-04 7a). Either refusal keeps the previous settings, and names only entry labels.
 - Limit refusals at the endpoint are a JSON-RPC error body, code -31000 (`ENDPOINT_LIMITS.jsonRpcCode`,
   DECIDED #4: MCP 2026-07-28 makes -32000…-32019 a legacy range new implementations SHOULD NOT
-  use), message `limit-exceeded` (413) or `rate-limited` (429), id `null`.
-- A non-loopback listener over plain http answers 503 `insecure-listener` on every route.
+  use), message `limit-exceeded` (413) or `rate-limited` (429), and **no `id` member** [spec: MCP
+  2026-07-28 `JSONRPCErrorResponse` has `id` optional, string or integer only, so the JSON-RPC 2.0
+  §5 `id: null` is refused by both hosts' clients (`@modelcontextprotocol/core` 2.2.0
+  `JSONRPCErrorResponseSchema`); the user's decision 2026-11-14, K1b-EP-13].
+- A non-loopback listener over plain http answers 503 `insecure-listener` on every route, after
+  the 405 and 403 steps (`REQUEST_GATE.checkOrder`).
+- "Per principal" in `ENDPOINT_LIMITS` (the `…PerPrincipal` names stay) is counted per token
+  entry (`Caller.entryKey`), so a pair-only caller is limited too (the user's decision,
+  2026-11-14, K1b).
+
+### Request gate (`REQUEST_GATE`, `RequestGate`; task K1b)
+
+C-HTTP owns the only `RequestGate` implementation. C-HTTP's MCP route, C-OAUTH (the token
+endpoint and both metadata documents) and C-OAUTH-WEB (the approval listener) call it, on the
+surfaces `mcp`, `token` and `approval` (`GATE_SURFACE`). It has two methods, so that one MCP request
+runs `check` → bearer (401) → `admit` → version → dispatch (design §3.1, PLAT-EP-01; the user's
+decision, 2026-11-14):
+
+| Method | When, where | Order | Refusal |
+| --- | --- | --- | --- |
+| `check(req, surface)` | before authentication, every surface | 405 → 403 → 503 | 405: a listed path with a method it does not serve, `Allow` with its methods, no body; 403: `Host` not allowed or an `Origin` refused by the surface's `ORIGIN_RULE`, no body; 503: `{error: "insecure-listener"}` |
+| `admit(req, surface, caller)` | after the bearer check, `mcp` only | 413 → 429 | `ENDPOINT_LIMITS`' JSON-RPC body; a 429 with `Retry-After` |
+
+The user's decisions (2026-11-14) cover: the empty 405/403 bodies; the 503 body; the per-path 405
+on the approval listener; the approval listener binding DSH's listener host on its own port, so
+both surfaces share host, TLS and `--trusted-host`; and an open listen stream holding no in-flight
+slot. A path the surface does not list passes the 405 step only; the 403 and 503 steps still apply,
+and its route answers 404. C-WIRE builds the one gate with the listener facts and a clock
+(`GateListenerFacts`). An `admit` pass takes one bucket token and one in-flight slot, which `done()`
+frees. A 429 for the bucket says when it next holds a token; a 429 for in-flight says
+`REQUEST_GATE.inFlightRetryAfterMs` (1 s, PROPOSED). The token endpoint keeps C-OAUTH's own
+`RATE_LIMITS` and `FAILURE_LIMIT`, and the approval listener has no `admit`.
+
+### Token-endpoint grants (`GRANT_DISPATCH`, `GrantHandler`; task K1b)
+
+C-OAUTH owns the token endpoint, the dispatch on `grant_type`, `unsupported_grant_type`, the
+shared `FailureLimiter` and the `client_credentials` handler. C-OAUTH-WEB supplies
+`authorization_code` and `refresh_token` as `GrantHandler {grantType, handle(form, ctx)}` objects,
+which C-WIRE registers with C-OAUTH's `GrantRegistry`. A handler returns a token response or an
+OAuth error (`invalid_request`, `invalid_client`, `invalid_grant` or `invalid_target`) with
+`countedFailure`. C-OAUTH writes the response and records counted failures. The
+endpoint answers these itself, before any handler runs: a limited key (429), a secret in the URL, a
+repeated parameter, a missing `grant_type`, and a `grant_type` with no handler. Registering a
+built-in, duplicate or unsupported grant type throws `TypeError` (PROPOSED).
 
 ### Hosts and Origin (`HOSTS`)
 
@@ -249,6 +291,8 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 | EVT-BVA-01 rows 5–6 | `inbox_poll` `limit` must be 1–`MAILBOX.pageMax` (100); 0 and 101 are `limit-exceeded`, never clamped (V2 contract §8: a value outside a limit is `limit-exceeded`). |
 | EVT-BVA-02 rows 1–4 | `maxQueuedInputs` = 200 (`QUEUE.maxQueuedInputs`); past it only `QUEUE.refusedTypes` and contributor events are `queue-full`. |
 | PLAT-UC-03 (connected) | Connected = an open `subscriptions/listen` stream on `fishball://events` now (`CONNECTED`; design §3.5 amended to match §3.6). |
+| AUTH-EP-01 (token form) | A token request that repeats a parameter is 400 `invalid_request` before any grant handler runs [spec: RFC 6749 §3.2, request parameters MUST NOT be included more than once; §5.2 `invalid_request`] (K1b). |
+| K1b `GrantRegistry` | Registering a built-in, already-registered or unsupported `grant_type` throws `TypeError`, a wiring bug, as K3's `intercept` (DECIDED #17) (PROPOSED: open for the user's review). |
 | PLAT-UC-01 E5 | An `Mcp-Session-Id` header is ignored: the request is served statelessly and no session is created [spec: 2026-07-28 has no protocol sessions; S1 C21]. |
 | PLAT-BVA-02 | Body limit `ENDPOINT_LIMITS.bodyBytes` = 8 MiB: at the limit processed, one byte over 413; in-flight one over `inFlightPerPrincipal` 429 (PROPOSED values). |
 | PLAT-BVA-01 (K) | Left to FEAT-PEERS: the board's day length and whether 30 d is inclusive are board rules, not part of the MCP surface. |
@@ -260,10 +304,13 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 (C-MAILBOX: commit, poll, ack, summary, retire, hold, release, drop), `HintSink` (C-HTTP's listen
 streams), `OAuthTokenStore` (C-OAUTH and C-OAUTH-WEB; `chainsOf` answers the renewal question),
 `FailureLimiter` (K1a: the token endpoint, the approval page and C-HTTP's bearer check share it),
-`Router.recipientFor` (C-ROUTE), `Presence` (the connected definition). The one `OAuthTokenStore`
-implementation and the one `FailureLimiter` implementation are C-OAUTH's, durable `putRefresh`
-included (K1a). C-OAUTH-WEB builds against fakes of both; C-HTTP against a fake `FailureLimiter`. The runtime exports are declared there too. Keys are opaque: `EntryKey`, `PrincipalKey`; no interface carries a token
-value.
+`Router.recipientFor` (C-ROUTE), `Presence` (the connected definition), `RequestGate` (C-HTTP;
+K1b), `GrantHandler` and `GrantRegistry` (C-OAUTH's seam for C-OAUTH-WEB's grants, wired by
+C-WIRE; K1b). The one `OAuthTokenStore` implementation and the one `FailureLimiter`
+implementation are C-OAUTH's, durable `putRefresh` included (K1a). C-OAUTH-WEB builds against fakes
+of both; C-HTTP against a fake `FailureLimiter`. The one `RequestGate` is C-HTTP's; C-OAUTH and
+C-OAUTH-WEB build against fakes of it. The runtime exports are declared there too. Keys are
+opaque: `EntryKey`, `PrincipalKey`; no interface carries a token value.
 
 ## Left to a task (not frozen here)
 
