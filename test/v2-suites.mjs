@@ -109,6 +109,9 @@ export const V2_SUITES = Object.freeze({
     // V3 F-LINK (REM-UC-02 Fishball side, REM-EP-01, REM-DT-01); run with test/run-v3.mjs.
     file('test/v3/f-link/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core MCP link (F-LINK)'),
     file('test/v3/f-link/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core MCP link (F-LINK)'),
+    // V3 F-INTERCEPT (EVT-UC-02/03, EVT-EP-03/05, EVT-DT-02/03/04, EVT-ST-02); run with test/run-v3.mjs.
+    file('test/v3/f-intercept/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core interception, acceptance ledger and wake (F-INTERCEPT)'),
+    file('test/v3/f-intercept/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core interception, acceptance ledger and wake (F-INTERCEPT)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
