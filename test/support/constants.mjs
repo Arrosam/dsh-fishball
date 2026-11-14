@@ -73,6 +73,8 @@ export const NEEDS_INSTANCE_STUB = 'drives the removed in-process Fishball sessi
 
 /** Fixture bundle linked into the test profile, before the plugin under test. */
 export const FIXTURE_BUNDLE = { name: 'fbtest-tools', dir: path.join(SUPPORT, 'fixtures', 'fbtest-tools') }
+/** FBTEST_BOOT_LOG=1: the overlay row that records every log line from boot on (fixtures/boot-log.mjs). */
+export const BOOT_LOG = Object.freeze({ env: 'FBTEST_BOOT_LOG', on: '1', row: 'fbtest-boot-log', module: path.join(SUPPORT, 'fixtures', 'boot-log.mjs') })
 
 const fixtureDir = (name) => path.join(SUPPORT, 'fixtures', name)
 /**
