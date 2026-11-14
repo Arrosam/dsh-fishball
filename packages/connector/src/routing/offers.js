@@ -13,6 +13,13 @@
  * - already acked: a fresh `retirement` draft naming it, committed to the same pair through the
  *   normal commit path (the router's follow-up rule). The ledger knows which, from `markAcked`.
  * The same rule serves `session_release` and Take back (`released`) and a revocation (`revoked`).
+ *
+ * Known race (Fishball's decision 2026-11-14, option b): `acked` flips when the mailbox port's
+ * `onAcked` fires, after `ack` has resolved. An `inbox_ack` of the offer that lands on the mailbox's
+ * chain just before this module's `retire` makes that retire a silent no-op (K1 `Mailbox.retire`
+ * leaves an acked event alone and resolves `void`), so no fresh retirement is sent for it. The K1
+ * amendment `Mailbox.retire → {retired: boolean}` at the W3 merge closes it: a `false` then falls
+ * back to the fresh retirement below.
  * An `ask` is not retired when management ends: it is not an offer for revocation (K1
  * OFFER_TYPES), and its asker keeps waiting for the answer of the pair that got it.
  */

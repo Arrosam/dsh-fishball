@@ -71,12 +71,16 @@ export const RECORD_KEY = Object.freeze({ algorithm: 'sha256', encoding: 'hex' }
 /** The first `seq` of an empty held queue; each accepted message takes the next one. */
 export const HELD_SEQUENCE = Object.freeze({ first: 0, step: 1 })
 
+/** The smallest live `maxQueuedInputs` that leaves room for one message (as C-MAILBOX's MINIMUM). */
+export const HELD_MINIMUM = Object.freeze({ queuedInputs: 1 })
+
 /** Programming-error messages (a caller bug, thrown as TypeError; never shown to a client). */
 export const MISUSE = Object.freeze({
   followUp: 'fishball routing: a settlement, retirement or takeback needs followsPrincipal',
-  produce: 'fishball routing: produce() takes offers, ask, message, notice, turn-finished and state only (follow-ups go through settle/withdraw, handover and takeback through the hand-over service, contributor events through C-EXT)',
+  offerType: 'fishball routing: offer() takes permission, question and plan-review only (ask goes through askFishball)',
   offer: 'fishball routing: an answerable event needs an offer, and its offer id must not be live already',
   sessionId: 'fishball routing: a session id must be a non-empty string',
+  heldRecord: 'fishball routing: refused to store a held message that would not reopen (a caller passed a bad value)',
   principalKey: 'fishball routing: a principal key must be a non-empty string',
   maxQueuedInputs: 'fishball routing: maxQueuedInputs() must return a positive whole number',
 })
@@ -84,10 +88,11 @@ export const MISUSE = Object.freeze({
 /** Background log lines: `logger.warn(LOG.format, line, diagnostic code)`; no payload, key or id is ever logged. */
 export const LOG = Object.freeze({
   format: '%s (%s)',
-  noticeDropped: 'routing: a notice with no designated paired Fishball was not produced',
   commitRefused: 'routing: the mailbox refused an event',
   retireFailed: 'routing: retiring a live offer failed; the management change stands',
+  followUpFailed: 'routing: the handover or takeback event of a stored change failed; the change stands',
   flushFailed: 'routing: moving held messages into the designated mailbox failed; they stay queued in order',
+  heldDeleteFailed: 'routing: a moved held message could not be deleted; a restart may deliver it again',
   listenerFailed: 'routing: a change listener threw',
   watchFailed: 'routing: producing a turn-finished or state event failed',
 })
