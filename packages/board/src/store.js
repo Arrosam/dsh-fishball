@@ -7,8 +7,9 @@ import { STORAGE, assertSnapshot, createArchive, isClosed, openPrivate, unavaila
 
 const copy = value => structuredClone(value)
 const refusal = code => Object.assign(new Error(code), { code })
+// Strictly less: a card closed exactly visibilityDays ago is archived (constants.js).
 const visible = (card, at) => !isClosed(card)
-  || at - card.closedAt <= BOARD_LIMITS.visibilityDays * STORAGE.millisecondsPerDay
+  || at - card.closedAt < BOARD_LIMITS.visibilityDays * STORAGE.millisecondsPerDay
 const project = (cards, at) => cards.filter(card => visible(card, at))
 
 function assertCards(cards) {
@@ -27,8 +28,8 @@ function assertCards(cards) {
  * transact receives {cards, getCard(id)} and returns the complete candidate card array.
  * B4 validates the whole call using B2 before returning; storage never invents transitions.
  * scanArchive(visitor) streams {card, archiveLine, onBoard}; completion, not the last
- * callback, certifies a complete scan. exportArchive(writeChunk) streams raw JSONL bytes.
- * Neither API owns search ranking, destination publication or uninstall integration.
+ * callback, certifies a complete scan. It owns no search ranking. There is no export: the user
+ * dropped `board_export` and the uninstall export (W3, 2026-11-15).
  */
 export function createBoardStore({ home, now = Date.now }) {
   if (typeof home !== 'string' || !isAbsolute(home)) throw refusal(REFUSAL.invalidInput)
@@ -198,6 +199,5 @@ export function createBoardStore({ home, now = Date.now }) {
       const onBoard = new Set(project(cards, now()).map(card => card.id))
       return archive.scan(entry => visit({ ...entry, onBoard: onBoard.has(entry.card.id) }), archiveBytes)
     }),
-    exportArchive: writeChunk => queued(() => archive.exportTo(writeChunk, archiveBytes)),
   }
 }

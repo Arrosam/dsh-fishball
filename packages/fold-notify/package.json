@@ -19,7 +19,6 @@
     "dsh": ">=0.2.1-rc.5"
   },
   "peerDependencies": {
-    "fishball-instance": ">=0.1.0-alpha.0 <2",
     "@deepseek-ai/schemastery": "*",
     "@deepseek-ai/dsh-session": "*",
     "@deepseek-ai/dsh-llm": "*"
