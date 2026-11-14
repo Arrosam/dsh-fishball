@@ -2,22 +2,17 @@
  * Constants of the connector's authorization server (task C-OAUTH; design §5.5, §5.6; spike V3-S7
  * `8e92b84`). Every tunable of the OAuth surface (lifetimes, rate and failure limits, error codes,
  * grants, paths, token sizes) is K1's and is imported from `../../../mcp-schema`; this file holds
- * only what K1 leaves to this module: the token form's own bounds, header and media-type words,
+ * only what K1 leaves to this module: the token form's field and media-type words, header words,
  * the storage layout and the module's messages.
  */
 
-const KIB = 1024
-
 /**
- * The token request body (RFC 6749 §3.2: `application/x-www-form-urlencoded`).
- * - maxBodyBytes: PROPOSED (Fishball 2026-11-14, on the K1 amendment list): 8 KiB, the S7
- *   prototype's `maxFormBytes`. K1 freezes no token-form bound, and ENDPOINT_LIMITS.bodyBytes
- *   (8 MiB) bounds MCP bodies, a different thing. A larger body is 400 `invalid_request`.
+ * The token request body (RFC 6749 §3.2: `application/x-www-form-urlencoded`). Its size bound is
+ * K1's TOKEN_ENDPOINT_LIMITS.formBodyBytes.
  * - A media type other than `mediaType` (parameters such as `charset` aside) is 400
  *   `invalid_request` (Fishball 2026-11-14, #4).
  */
 export const TOKEN_FORM = Object.freeze({
-  maxBodyBytes: 8 * KIB,
   mediaType: 'application/x-www-form-urlencoded',
   mediaTypeParameterSeparator: ';',
   // The form's client fields (RFC 6749 §2.3.1, §3.2); `resource` is RFC 8707's.
@@ -40,17 +35,6 @@ export const HEADER_VALUE = Object.freeze({
   // before the body), and the socket is then destroyed, so Node never drains an unbounded body.
   close: 'close',
 })
-
-/**
- * The token endpoint's request ceiling per remote address (Fishball 2026-11-14, #15). PROPOSED, on
- * the K1 amendment list as `RATE_LIMITS.tokenRequestsPerAddressPerWindow`; kept here until K1 has
- * it. Every token request counts, before its body is read, so refusals that never reach the
- * per-(address, client id) RATE_LIMITS (a query secret, a bad media type, an over-long or bad
- * form) are bounded too, and rotating `client_id` buys nothing past it. 150 is
- * RATE_LIMITS.tokenRequestsPerWindow (30) scaled as FAILURE_LIMIT's address ceiling is (50 / 10).
- * It shares RATE_LIMITS.windowMs.
- */
-export const ADDRESS_RATE_LIMIT = Object.freeze({ tokenRequestsPerAddressPerWindow: 150 })
 
 /**
  * `Authorization` header parsing (RFC 7235 §2.1: the scheme is case-insensitive; one space before

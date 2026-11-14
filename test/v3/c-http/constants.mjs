@@ -124,6 +124,17 @@ export const FIXTURE = Object.freeze({
   pad: ' ',
 })
 
+/** K1 amendment rows (amend-cases.mjs): how the raw uploads are sent. Harness data, not product values. */
+export const UPLOAD = Object.freeze({
+  /** HTTP/1.1 chunked framing [spec: RFC 9112 §7.1]. */
+  transferEncoding: 'transfer-encoding',
+  chunked: 'chunked',
+  /** The body bytes a held upload sends before it stops mid-body. */
+  heldPrefixBytes: 1,
+  /** The size of each chunk a streamed body is written in. */
+  chunkBytes: 64 * 1024,
+})
+
 /** Harness timing only. */
 export const WAIT = Object.freeze({
   /** How long a hint or a stream close may take to arrive. */

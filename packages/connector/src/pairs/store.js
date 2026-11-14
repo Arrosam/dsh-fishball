@@ -23,13 +23,14 @@ import { diagnosticOf } from '../errors.js'
 import { LOG, MISUSE, PAIRS } from './constants.js'
 import {
   EMPTY_REGISTRY, findByEntry, findByPrincipal, idHeldByOther, nameHeldByOther, pairView, registrySchema, withPairAdded, withPairChanged,
-  withPairRemoved,
+  withPairRemoved, withSuccession,
 } from './registry.js'
 
 const SILENT_LOGGER = Object.freeze({ warn() {} })
 
 const refusal = (code) => Object.freeze({ ok: false, code })
 const ALREADY_PAIRED = refusal(REFUSAL.alreadyPaired)
+const SUCCESSOR_UNPAIRED = refusal(REFUSAL.successorUnpaired)
 
 /** `pair`'s `already-paired` result (R-ID-04): only ever built for a caller whose token was verified. */
 function alreadyPaired(stored, id) {
@@ -282,6 +283,34 @@ export function createPairStore(table, { logger = SILENT_LOGGER } = {}) {
       await change((registry) => {
         const stored = findByEntry(registry, entryKey)
         return stored === undefined ? { result: undefined } : { next: withPairRemoved(registry, entryKey), result: undefined }
+      })
+    },
+
+    /**
+     * Reinstall succession's pair step (K1 `PairStore.succeed`; R-HOST-09, R-NAME-07, NAME-ST-01
+     * rows 8–9), for C-SUCCEED's `retire`. One registry write removes the old pair, which frees its
+     * id, and gives the successor the old pair's name, or its lack of one. The name therefore moves
+     * without ever being held twice, and the uniqueness check cannot refuse it: the only other holder
+     * of that name was the old pair, which leaves in the same write. A failed write changes nothing.
+     * - successor unpaired: `successor-unpaired` (K3 RetireRefusalCode), nothing changes;
+     * - old entry never paired: `{ok: true, pair}` with the successor's pair as it is, and nothing
+     *   changes. It has no principal, so there is no name, or lack of one, to move (Fishball
+     *   2026-11-14), and the successor keeps its own;
+     * - else `{ok: true, pair}`, the successor's pair after the step: only its name changed.
+     * The successor is checked first, so a successor that has not paired yet is reported even when
+     * the old entry has gone, and the instance retries at its next start (HOST-DT-02 rule 2).
+     * @throws TypeError when both keys name one entry: a caller bug, it cannot succeed itself.
+     */
+    async succeed(oldEntryKey, successorEntryKey) {
+      if (oldEntryKey === successorEntryKey) throw new TypeError(MISUSE.selfSuccession)
+      return change((registry) => {
+        const successor = findByEntry(registry, successorEntryKey)
+        if (successor === undefined) return { result: SUCCESSOR_UNPAIRED }
+        const old = findByEntry(registry, oldEntryKey)
+        const succeeded = (stored) => Object.freeze({ ok: true, pair: pairView(visible(stored)) })
+        if (old === undefined) return { result: succeeded(successor) }
+        const result = succeeded({ ...successor, name: old.name })
+        return { next: withSuccession(registry, old, successor), result }
       })
     },
 

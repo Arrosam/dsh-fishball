@@ -24,7 +24,7 @@ import { validatorFor } from '../k1/schema-module.mjs'
 import { caseName } from '../shared/cases.mjs'
 import {
   CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, EVENT_TYPE, FIXTURE, LATER, MAILBOX, MAILBOX_EVENT_SCHEMA, MAILBOX_SUMMARY_SCHEMA,
-  OFFER_ID, QUEUE, REFUSAL, RESOURCE, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WAIT, WIRE, formatOfferId, payloadSchemaOf,
+  OFFER_ID, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WAIT, WIRE, formatOfferId, payloadSchemaOf,
 } from './constants.mjs'
 import { worldFor } from './subject.mjs'
 
@@ -36,7 +36,7 @@ const MAX = QUEUE.maxQueuedInputs
 const CONTRIBUTED = CONTRIBUTED_TYPE_PREFIX + FIXTURE.namespace + '.' + FIXTURE.contributedEvent
 
 /** One test per case row, named as every V3 suite names them; `todo` names the owning task. */
-function row(sdk, id, part, title, fn, todo) {
+export function row(sdk, id, part, title, fn, todo) {
   const name = caseName(sdk, id, part, title)
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, T, fn)
@@ -73,7 +73,7 @@ function draft(type, { sourceSessionId = FIXTURE.s1 } = {}) {
 // Shared steps and observations (each states one oracle once).
 
 /** Commits one fresh draft of `type` to `key`; asserts it was accepted and returns `{eventId, marker, draft}`. */
-async function commitOk(mailbox, key, type, options) {
+export async function commitOk(mailbox, key, type, options) {
   const made = draft(type, options)
   const result = await mailbox.commit(key, made.draft)
   assert.equal(result?.ok, true, `commit of ${type} refused: ${JSON.stringify(result)}`)
@@ -81,20 +81,20 @@ async function commitOk(mailbox, key, type, options) {
   return { ...made, eventId: result.eventId }
 }
 /** `n` commits of `type` in order. */
-async function commitMany(mailbox, key, n, type = EVENT_TYPE.message) {
+export async function commitMany(mailbox, key, n, type = EVENT_TYPE.message) {
   const out = []
   for (let i = 0; i < n; i += 1) out.push(await commitOk(mailbox, key, type))
   return out
 }
 /** One page; asserts a page (not a resync or refusal) came back. */
-async function page(mailbox, key, cursor, limit) {
+export async function page(mailbox, key, cursor, limit) {
   const result = await mailbox.poll(key, cursor, limit)
   assert.equal(result?.ok, true, `poll refused: ${JSON.stringify(result)}`)
   assert.ok(Array.isArray(result.events), `poll returned no page: ${JSON.stringify(result)}`)
   return result
 }
 /** Every pending event of `key`, paging with the cursor at the largest page. */
-async function pollAll(mailbox, key) {
+export async function pollAll(mailbox, key) {
   const events = []
   let cursor
   for (;;) {
@@ -104,13 +104,13 @@ async function pollAll(mailbox, key) {
     cursor = result.nextCursor
   }
 }
-const receiptOf = (event) => ({ eventId: event.eventId, payloadDigest: event.payloadDigest })
+export const receiptOf = (event) => ({ eventId: event.eventId, payloadDigest: event.payloadDigest })
 /** An event's identity (R-EVT-02: a replay has the same one). */
-const identity = (e) => ({ eventId: e.eventId, mailboxGeneration: e.mailboxGeneration, sequence: e.sequence, type: e.type, payloadDigest: e.payloadDigest })
-const ids = (events) => events.map((e) => e.eventId)
+export const identity = (e) => ({ eventId: e.eventId, mailboxGeneration: e.mailboxGeneration, sequence: e.sequence, type: e.type, payloadDigest: e.payloadDigest })
+export const ids = (events) => events.map((e) => e.eventId)
 
 /** Both pairs' mailboxes as the interface shows them: summaries and every pending identity. */
-async function snapshot(mailbox) {
+export async function snapshot(mailbox) {
   const out = {}
   for (const key of [P, Q]) out[key] = { summary: await mailbox.summary(key), events: (await pollAll(mailbox, key)).map(identity) }
   return out
@@ -209,7 +209,20 @@ export function registerMailboxCases(sdk) {
     await assertRefused(w.mailbox, await w.mailbox.poll(P, qCursor, LIMIT), REFUSAL.forbidden, before, [Q, qEvent.marker])
   })
 
-  row(sdk, ID.uc01, 'E2', 'P polls with a stale cursor (older mailbox generation): explicit resync, never a silent skip', null, LATER.generation)
+  // Unblocked by the K1 amendment after W2 (DECIDED #W2-1): only lost or reset mailbox storage
+  // starts a new mailboxGeneration (subject.mjs `loseStorage`).
+  row(sdk, ID.uc01, 'E2', 'P polls with a stale cursor (older mailbox generation): explicit resync, never a silent skip', async (t) => {
+    const w = await worldFor(t, sdk)
+    await commitMany(w.mailbox, P, 2)
+    const before = await w.mailbox.summary(P)
+    const stale = (await page(w.mailbox, P, undefined, 1)).nextCursor
+    await w.loseStorage()
+    const fresh = await commitOk(w.mailbox, P, EVENT_TYPE.message)
+    const now = await w.mailbox.summary(P)
+    assert.notEqual(now.mailboxGeneration, before.mailboxGeneration, 'lost storage kept the old mailboxGeneration')
+    assert.deepEqual(await w.mailbox.poll(P, stale, LIMIT), { ok: true, resync: { reason: RESYNC_REASON.staleCursor, headSequence: now.headSequence } })
+    assert.deepEqual(ids(await pollAll(w.mailbox, P)), [fresh.eventId], 'polling from the start after the resync')
+  })
   row(sdk, ID.uc01, 'E3', 'resources/read or subscribe on any other event URI: not found; no per-kind stream', null, LATER.httpUri)
 
   row(sdk, ID.uc01, 'post', 'P received all its events in order, each typed, unchanged (no interception for an external agent)', async (t) => {

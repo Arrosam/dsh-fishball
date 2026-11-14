@@ -52,7 +52,7 @@ const NO_HEADERS = Object.freeze({})
 // ---------------------------------------------------------------------------------------------
 
 /** The MCP wire names the installed SDK owns (`_meta` keys, the legacy revision, METHOD_NOT_FOUND). */
-async function wireOf(sdk) {
+export async function wireOf(sdk) {
   const m = await sdkClient(sdk)
   return {
     legacyVersion: m.LATEST_PROTOCOL_VERSION,
@@ -64,7 +64,7 @@ async function wireOf(sdk) {
 }
 
 /** A 2026-07-28 request: the per-request `_meta` envelope claims `version` [spec: 2026-07-28 basic]. */
-const modernRpc = (wire, method, { version = PROTOCOL.version, params = {} } = {}) => ({
+export const modernRpc = (wire, method, { version = PROTOCOL.version, params = {} } = {}) => ({
   jsonrpc: RPC.jsonrpc, id: FIXTURE.rpcId, method,
   params: { ...params, _meta: { [wire.versionKey]: version, [wire.infoKey]: FIXTURE.clientInfo, [wire.capabilitiesKey]: {} } },
 })
@@ -74,7 +74,7 @@ const legacyInitialize = (wire) => ({
   params: { protocolVersion: wire.legacyVersion, capabilities: {}, clientInfo: FIXTURE.clientInfo },
 })
 /** `body` serialised and padded with JSON whitespace to exactly `bytes` bytes (still valid JSON). */
-function sized(body, bytes) {
+export function sized(body, bytes) {
   const text = JSON.stringify(body)
   assert.ok(bytes >= Buffer.byteLength(text), `harness: ${bytes} bytes cannot hold the request`)
   return text + FIXTURE.pad.repeat(bytes - Buffer.byteLength(text))
@@ -84,7 +84,7 @@ function sized(body, bytes) {
  * A raw POST of `body` (an object, or text) to the MCP route, with the 2026-07-28 headers mirrored
  * from its `_meta` claim (none for a legacy request). `token` adds the bearer header; `headers` overrides or adds (`undefined` removes one).
  */
-function post(w, wire, body, { token, headers = {}, method = RIGHT_MCP_METHOD, query = '' } = {}) {
+export function post(w, wire, body, { token, headers = {}, method = RIGHT_MCP_METHOD, query = '' } = {}) {
   const parsed = typeof body === 'string' ? JSON.parse(body) : body
   const claimed = parsed.params?._meta?.[wire.versionKey]
   const base = {
@@ -111,7 +111,7 @@ function messageOf(res) {
 const isJsonRpc = (text) => { try { return JSON.parse(text)?.jsonrpc === RPC.jsonrpc } catch { return false } }
 
 /** Dispatched: a `server/discover` result offering the one served revision. */
-function assertDiscovered(res) {
+export function assertDiscovered(res) {
   assert.equal(res.status, HTTP_STATUS.ok, `not dispatched: ${res.status} ${res.text.slice(0, 200)}`)
   const message = messageOf(res)
   assert.equal(message.error, undefined, JSON.stringify(message.error))
@@ -125,7 +125,7 @@ function assertBare(res, status, headers = {}) {
 }
 /** ENDPOINT_LIMITS' structured refusal: a JSON-RPC error with no `id` member (K1b-EP-13). */
 const limitBody = (message) => ({ jsonrpc: RPC.jsonrpc, error: { code: ENDPOINT_LIMITS.jsonRpcCode, message } })
-function assertLimit(res, status, message) {
+export function assertLimit(res, status, message) {
   assert.equal(res.status, status, res.text.slice(0, 200))
   assert.deepEqual(JSON.parse(res.text), limitBody(message))
 }
@@ -134,7 +134,7 @@ const assertInsecure = (res) => {
   assert.deepEqual(JSON.parse(res.text), { error: HTTP_REFUSAL.insecureListener })
 }
 /** A 401 (R-TOK-01): the challenge for `w`'s origin, `error` only when a value was presented, no JSON-RPC body. */
-function assert401(w, res, { presented = false } = {}) {
+export function assert401(w, res, { presented = false } = {}) {
   assert.equal(res.status, HTTP_STATUS.unauthorized, res.text.slice(0, 200))
   const challenge = presented ? bearerChallenge(w.origin, { error: OAUTH_ERROR.invalidToken }) : bearerChallenge(w.origin)
   assert.equal(res.headers[HEADER.wwwAuthenticate], challenge)
@@ -161,7 +161,7 @@ const settlesWithin = (promise, ms) => Promise.race([promise.then(() => true), n
  * A principal with a full access token, connected with the SDK client and holding an open listen
  * stream on the events resource; `uris` are the `resources/updated` hints it received.
  */
-async function listener(w, id) {
+export async function listener(w, id) {
   const { token, caller } = w.principal(id)
   const uris = []
   const client = await w.connect(token, PROTOCOL.version, { [RPC.resourceUpdated]: (n) => { uris.push(n.params.uri) } })
@@ -186,32 +186,32 @@ const PASS = Object.freeze({ pass: true })
 const forbidden = Object.freeze({ pass: false, status: HTTP_STATUS.forbidden, headers: NO_HEADERS, body: null })
 const insecure = Object.freeze({ pass: false, status: HTTP_STATUS.serviceUnavailable, headers: NO_HEADERS, body: { error: HTTP_REFUSAL.insecureListener } })
 const methodRefusal = (allowed) => ({ pass: false, status: HTTP_STATUS.methodNotAllowed, headers: { [REQUEST_GATE.headers.allow]: allowed.join(REQUEST_GATE.allowSeparator) }, body: null })
-const tooLarge = { pass: false, status: HTTP_STATUS.payloadTooLarge, headers: NO_HEADERS, body: limitBody(HTTP_REFUSAL.tooLarge) }
-const inFlightRefusal = { pass: false, status: HTTP_STATUS.tooManyRequests, headers: { [RATE_LIMITS.retryAfterHeader]: IN_FLIGHT_RETRY_AFTER }, body: limitBody(HTTP_REFUSAL.rateLimited) }
+export const tooLarge = { pass: false, status: HTTP_STATUS.payloadTooLarge, headers: NO_HEADERS, body: limitBody(HTTP_REFUSAL.tooLarge) }
+export const inFlightRefusal = { pass: false, status: HTTP_STATUS.tooManyRequests, headers: { [RATE_LIMITS.retryAfterHeader]: IN_FLIGHT_RETRY_AFTER }, body: limitBody(HTTP_REFUSAL.rateLimited) }
 /** A refusal as plain data, so it compares by value (`done` is a function; a refusal has none). */
 const plain = (result) => JSON.parse(JSON.stringify(result))
 /** A gate `check` result compared by value. */
-const assertCheck = (result, expected) => assert.deepEqual(plain(result), plain(expected))
+export const assertCheck = (result, expected) => assert.deepEqual(plain(result), plain(expected))
 
 /** `admit` on `mcp` for `caller` with `bodyBytes`; returns the result. */
-const admit = (gate, caller, bodyBytes = 0) =>
+export const admit = (gate, caller, bodyBytes = 0) =>
   gate.admit({ ...gateRequest(GATE_SURFACE.mcp, { host: loopbackHost(GATE_SURFACE.mcp) }), bodyBytes }, GATE_SURFACE.mcp, caller)
 /** `n` passing admits of `caller` that stay in flight; returns their `done`s. */
-function hold(gate, caller, n) {
+export function hold(gate, caller, n) {
   return Array.from({ length: n }, (_, i) => {
     const result = admit(gate, caller)
     assert.equal(result.pass, true, `harness: admit ${i + 1} of ${n} refused: ${JSON.stringify(plain(result))}`)
     return result.done
   })
 }
-const unitCaller = (id, options) => callerOf(id, `${HOSTS.loopbackScheme}//${loopbackHost(GATE_SURFACE.mcp)}${PATHS.mcp}`, options)
+export const unitCaller = (id, options) => callerOf(id, `${HOSTS.loopbackScheme}//${loopbackHost(GATE_SURFACE.mcp)}${PATHS.mcp}`, options)
 
 /** One case on a fresh HTTP world built from `facts`. */
-function world(sdk, id, part, title, fn, facts) {
+export function world(sdk, id, part, title, fn, facts) {
   caseTest(sdk, id, part, title, async (t) => fn(await httpWorld(t, sdk, facts), await wireOf(sdk)))
 }
 /** One case on a fresh gate built from `facts`. */
-function unit(sdk, id, part, title, fn, facts) {
+export function unit(sdk, id, part, title, fn, facts) {
   caseTest(sdk, id, part, title, async () => fn(await gateUnit(sdk, facts)))
 }
 const todo = (sdk, id, part, title, owner) => caseTest(sdk, id, part, title, null, owner)
