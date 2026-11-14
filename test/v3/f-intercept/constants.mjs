@@ -7,9 +7,9 @@
  * - K2 `fishball-connector/tools` (the contributed-type prefix, through K1's re-export);
  * - K3 `packages/core/contracts/events.d.ts` (types only, so its three values are read from the
  *   declaration text: the default priority, the `fenced` code and the `disconnected` code).
- * - `packages/core/src/events/constants.js`, for the values the user's decisions of 2026-11-14 name
- *   there (`PRESENT_RETRY`, `TEXT.presentGivenUp`, `REASON.presentGivenUp`, `STATE`, `MESSAGE.idPrefix`); read,
- *   never re-typed (see CORE).
+ * - K3 `packages/core/contracts/constants.js`, for the values the user's decisions of 2026-11-14 name
+ *   (`PRESENT_RETRY`, `TEXT.presentGivenUp`, `REASON.presentGivenUp`, `STATE`, `MESSAGE.idPrefix`); read,
+ *   never re-typed (see CORE). K1's values above live in K1 `mcp-schema/constants.js`.
  * DSH's own vocabulary (session-log event kinds, the cancel causes) is the installed SDK's. The rest is
  * fixture data (plugin ids, markers) and harness timing, which are not product values.
  */
@@ -54,7 +54,7 @@ export const K3 = Object.freeze({
 /** One named export of the events module's constants.js, or a clear failure when it is missing. */
 const coreValue = (name) => {
   const value = EVENTS_CONSTANTS[name]
-  if (value === undefined) throw new Error(`packages/core/src/events/constants.js exports no ${name} (decision 2026-11-14)`)
+  if (value === undefined) throw new Error(`packages/core/contracts/constants.js exports no ${name} (decision 2026-11-14)`)
   return value
 }
 /**
