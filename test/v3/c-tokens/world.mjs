@@ -72,9 +72,10 @@ export function userValue(chars, { last = FIXTURE.pad, seed = '' } = {}) {
 /**
  * Opens a world in `root`. `env` is the launching environment (`{REF: value}`); `stored` values are
  * written to the credential file before the store starts (the user set them beforehand);
- * `unwritable` makes the store refuse writes.
+ * `removed` refs are unset by the user before the registry starts (a credential-store edit made
+ * while the connector was down); `unwritable` makes the store refuse writes.
  */
-export async function openWorld(sdk, root, { env = {}, stored = {}, unwritable = false } = {}) {
+export async function openWorld(sdk, root, { env = {}, stored = {}, removed = [], unwritable = false } = {}) {
   const p = await sdkParts(sdk)
   const ctx = new p[DSH.cordis].Context()
   const logs = []
@@ -97,6 +98,7 @@ export async function openWorld(sdk, root, { env = {}, stored = {}, unwritable =
   }
   // Values the user stored before the connector ran.
   for (const [ref, value] of Object.entries(stored)) await asUser(() => ctx.credentials.set(ref, value))
+  for (const ref of removed) await asUser(() => ctx.credentials.unset(ref))
 
   await ctx.plugin(p[DSH.storage].default ?? p[DSH.storage]).await()
   await ctx.plugin(p[DSH.storageJson], { root: path.join(root, FIXTURE.domainDir) }).await()
@@ -121,8 +123,14 @@ export async function openWorld(sdk, root, { env = {}, stored = {}, unwritable =
   return world
 }
 
-/** A world in a fresh temp root, closed and removed by `t`'s cleanup. */
-export async function worldFor(t, sdk, options) {
+/**
+ * A world in a fresh temp root, closed and removed by `t`'s cleanup. `world.restart(next)` is a
+ * connector restart: this world's DSH stops and a new one starts over the same root (credential
+ * file and storage domain), with the same launching environment and store kind; `next.removed`
+ * are the user's unsets while it was down. It returns the new world, whose registry has not been
+ * fed any settings yet.
+ */
+export async function worldFor(t, sdk, options = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), FIXTURE.tempPrefix))
   let world
   t.after(async () => {
@@ -130,8 +138,16 @@ export async function worldFor(t, sdk, options) {
     assert.ok(path.basename(root).startsWith(FIXTURE.tempPrefix), 'refusing to remove ' + root)
     await rm(root, { recursive: true, force: true })
   })
-  world = await openWorld(sdk, root, options)
-  return world
+  const open = async (opts) => {
+    world = await openWorld(sdk, root, opts)
+    world.restart = async ({ removed } = {}) => {
+      await world.close()
+      // `stored` is not replayed: those values are already in the credential file.
+      return open({ env: options.env, unwritable: options.unwritable, removed })
+    }
+    return world
+  }
+  return open(options)
 }
 
 /** Polls `predicate` until it is truthy (WAIT.eventuallyMs); returns its last value. */
