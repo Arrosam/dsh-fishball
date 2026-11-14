@@ -29,6 +29,18 @@ is deleted while the board is installed, and `board_search` finds archived cards
 The recent-done count does not shorten that visibility window. There is no archive
 export (the user's decision, 2026-11-15).
 
+## Removing the board
+
+The board keeps its data in `fishball-board/` inside the DSH home of the DSH that
+runs it.
+
+- **Hosted mode:** that is the Fishball child's home, inside the instance's runtime
+  tree, so the instance's uninstall deletes it.
+- **Standalone mode:** removing `fishball-board` with DSH's plugin management leaves
+  `<DSH home>/fishball-board/` on disk. DSH's remove gives a plugin no hook, and it
+  disables the row first, so the board cannot tell a removal from a disable. To remove
+  the board's data, delete that folder yourself after removing the plugin.
+
 Child placement and enable/disable persistence belong to X0-B. Storage and tools
 belong to B2–B4; context and the native DSH panel to B5; archive search to B11.
 This package does not change the main DSH profile or launch a child.
