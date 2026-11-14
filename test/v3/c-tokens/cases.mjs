@@ -1,0 +1,478 @@
+/**
+ * C-TOKENS black-box cases (v3-tasks.md row C-TOKENS, wave W2; docs/test-design/v3/
+ * 01-auth-pairing.md): AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03, AUTH-DT-05 and AUTH-ST-01 rows 1, 5–10,
+ * 12. Requirements R-TOK-03, R-TOK-04, R-TOK-05, R-TOK-08, R-TOK-09, R-ID-09; design §5.1–§5.3, §5.6;
+ * K1 `TokenRegistry` (mcp-schema/index.d.ts) and its constants.
+ *
+ * Techniques, and only these: Use Case first (AUTH-UC-01: each test names its flow), then
+ * Equivalence Partitioning (AUTH-EP-04: one test per class), Boundary Value Analysis (AUTH-BVA-03:
+ * one test per length), Decision Table (AUTH-DT-05: one test per rule) and State Transition
+ * (AUTH-ST-01: one test per transition row C-TOKENS owns).
+ *
+ * Level: integration over the installed SDK's real credential store, storage and logger (world.mjs),
+ * through the one seam in subject.mjs. The tests fail until C-TOKENS's module exists. Observables
+ * that only the wired connector shows (the token endpoint's `invalid_client`, access tokens, the
+ * native form) are `todo` and name the task that owns them; each such row states the registry-level
+ * oracle C-TOKENS owns in a test of its own. AUTH-ST-01 rows 2–4, 11, 13–16 are C-PAIR's.
+ *
+ * Oracles, all public: the credential store (`ctx.credentials.resolve`, and the writes it received),
+ * the K1 answers (`match`, `get`, `list`, `onRevoked`), and, for "never leaks" (R-TOK-04), the
+ * logger's records, every file under the world's root except the credential file, and every
+ * registry answer.
+ */
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { caseName } from '../shared/cases.mjs'
+import { DSH, ENTRY_STATUS, FIXTURE, LATER, REQUIREMENT, REVOCATION, SETTINGS_REFUSAL, TOKEN_VALUE, WAIT } from './constants.mjs'
+import { eventually, leaksOf, staysFalse, userValue, worldFor } from './world.mjs'
+
+const T = { timeout: WAIT.testMs }
+const ID = Object.freeze({ uc01: 'AUTH-UC-01', ep04: 'AUTH-EP-04', bva03: 'AUTH-BVA-03', dt05: 'AUTH-DT-05', st01: 'AUTH-ST-01' })
+
+/** One test per case row, named as every V3 suite names them; `todo` names the owning task. */
+function row(sdk, id, part, title, fn, todo) {
+  const name = caseName(sdk, id, part, title)
+  if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
+  else test(name, T, fn)
+}
+
+// ------------------------------------------------------------------------------------------------
+// Settings documents and shared observations (each states one requirement oracle once).
+
+const A = FIXTURE.agentA
+const B = FIXTURE.agentB
+/** One `tokens` list entry (design §5.1): label, switch, credential reference; never a value. */
+const entry = (who, enabled = true) => ({ label: who.label, enabled, ref: who.ref })
+/** A value of exactly the minimum length (TQ-4 A), distinct per seed. */
+const longEnough = (seed = '') => userValue(TOKEN_VALUE.minChars, { seed })
+
+/** Saves the tokens list (the settings change) and requires it to be accepted. */
+async function save(world, tokens) {
+  const result = await world.registry.apply(tokens)
+  assert.equal(result?.ok, true, 'the settings save was refused: ' + JSON.stringify(result))
+}
+/** The registry's entry for `ref`, or undefined. */
+const entryOf = (world, ref) => world.registry.list().find((e) => e.ref === ref)
+/** The registry's entry for `ref`, which must exist. */
+function requireEntry(world, ref) {
+  const found = entryOf(world, ref)
+  assert.ok(found, `the registry lists no entry for ${ref}: ${JSON.stringify(world.registry.list())}`)
+  return found
+}
+/** The value the connector generated for `ref` (waits for it). */
+async function generatedValue(world, ref) {
+  const value = await eventually(() => world.resolve(ref))
+  assert.ok(value, `no value was generated under ${ref}`)
+  return value
+}
+/** Waits until `ref`'s entry has `status`. */
+async function untilStatus(world, ref, status) {
+  await eventually(() => entryOf(world, ref)?.status === status)
+  assert.equal(requireEntry(world, ref).status, status)
+}
+
+/** R-TOK-08 / design §5.2: `fbt_` + 32 random bytes in base64url (no padding): ≥ 256 bits. */
+function assertGeneratedShape(value) {
+  assert.ok(value.startsWith(TOKEN_VALUE.generatedPrefix), 'the generated value lacks the prefix')
+  const body = value.slice(TOKEN_VALUE.generatedPrefix.length)
+  assert.match(body, /^[A-Za-z0-9_-]+$/, 'the generated value is not base64url (no padding)')
+  const bytes = Buffer.from(body, 'base64url')
+  assert.equal(bytes.toString('base64url'), body, 'the generated value does not round-trip as base64url')
+  assert.equal(bytes.length, TOKEN_VALUE.generatedBytes, 'random bytes behind the generated value')
+  assert.ok(bytes.length * REQUIREMENT.bitsPerByte >= REQUIREMENT.minEntropyBits, 'the generated value has less than 256 bits')
+}
+
+/** The entry for `ref` authenticates `value`: `match` answers it (and only it). */
+function assertMatches(world, ref, value) {
+  const hit = world.registry.match(value)
+  assert.equal(hit?.ref, ref, `the value does not match ${ref}'s entry`)
+  assert.equal(hit.entryKey, requireEntry(world, ref).entryKey)
+}
+/** No entry authenticates `value` (the token endpoint then answers `invalid_client`, R-OA-03). */
+const assertNoMatch = (world, value, why) => assert.equal(world.registry.match(value), undefined, why)
+
+/** R-TOK-04: the value is nowhere but in the credential store. */
+const assertNoLeak = (world, value) => assert.deepEqual(leaksOf(world, value), [], 'the token value leaked')
+
+/** Bits per base64url character: a generated value's body has ceil(bytes · 8 / 6) characters. */
+const BASE64_BITS_PER_CHAR = 6
+/** A generated-looking value, to sweep for "nothing written anywhere" (AUTH-UC-01 E2). */
+const GENERATED_SHAPE = new RegExp(`${TOKEN_VALUE.generatedPrefix}[A-Za-z0-9_-]{${Math.ceil(TOKEN_VALUE.generatedBytes * REQUIREMENT.bitsPerByte / BASE64_BITS_PER_CHAR)}}`)
+/**
+ * An unwritable store: no value under `ref`, no value the store refused leaks or authenticates,
+ * and no generated-looking value is in a log, a stored file or a registry answer.
+ */
+async function assertNothingWrittenAnywhere(world, ref) {
+  assert.equal(await world.resolve(ref), undefined, `a value appeared under ${ref}`)
+  for (const { value } of world.writes.filter((w) => w.op === 'set')) {
+    assertNoMatch(world, value, 'a value the store refused authenticates')
+    assertNoLeak(world, value)
+  }
+  assert.deepEqual(world.logs.filter((l) => GENERATED_SHAPE.test(l.text)).map((l) => l.name), [], 'a generated value was logged')
+  assert.ok(!GENERATED_SHAPE.test(JSON.stringify(world.registry.list())), 'a generated value is in a registry answer')
+}
+
+/** Records every revocation signal (K1 `onRevoked`). */
+function revocations(world) {
+  const seen = []
+  world.registry.onRevoked((entryKey, kind, generation) => seen.push({ entryKey, kind, generation }))
+  return seen
+}
+/** Waits for one revocation of `entryKey` with `kind`, and checks its generation is a newer one. */
+async function assertRevoked(seen, before, kind) {
+  await eventually(() => seen.some((r) => r.entryKey === before.entryKey))
+  const mine = seen.filter((r) => r.entryKey === before.entryKey)
+  assert.equal(mine.length, 1, 'revocation signals for the entry: ' + JSON.stringify(mine))
+  assert.equal(mine[0].kind, kind)
+  assert.ok(mine[0].generation > before.generation, `the generation did not move past ${before.generation}: ${mine[0].generation}`)
+  return mine[0]
+}
+
+// ------------------------------------------------------------------------------------------------
+
+export function registerTokenCases(sdk) {
+  // ---- AUTH-UC-01: the user creates a token entry for an external agent (Use Case) ----
+
+  row(sdk, ID.uc01, 'main 1–2', 'saving an enabled entry with an unconfigured ref generates a value into ctx.credentials under that ref', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    const value = await generatedValue(world, A.ref)
+    assert.equal(await world.source(A.ref), DSH.fileSource, 'the value is not in the managed credential store')
+    assert.ok(world.writes.some((w) => w.op === 'set' && w.ref === A.ref && w.value === value), 'the value was not stored with credentials.set')
+    const created = requireEntry(world, A.ref)
+    assert.equal(created.label, A.label)
+    assert.equal(created.enabled, true)
+    assert.equal(created.generated, true, 'the entry does not record that the connector generated its value')
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+  })
+  row(sdk, ID.uc01, 'main 3', 'the value the user reads from their own store authenticates as that entry', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    const value = await generatedValue(world, A.ref)
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    assertMatches(world, A.ref, value)
+  })
+  row(sdk, ID.uc01, 'A1', 'a value of at least 32 characters already stored under the ref is used unchanged; nothing is generated or overwritten', async (t) => {
+    const mine = longEnough()
+    const world = await worldFor(t, sdk, { stored: { [A.ref]: mine } })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    assertMatches(world, A.ref, mine)
+    assert.equal(await world.resolve(A.ref), mine, 'the user-set value was overwritten')
+    assert.deepEqual(world.writes, [], 'the connector wrote to the credential store')
+    assert.equal(requireEntry(world, A.ref).generated, false)
+  })
+  row(sdk, ID.uc01, 'A2', 'an entry saved with enabled: false gets no value until it is enabled', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A, false)])
+    assert.ok(await staysFalse(() => world.resolve(A.ref)), 'a value was generated for a disabled entry')
+    await save(world, [entry(A, true)])
+    assertGeneratedShape(await generatedValue(world, A.ref))
+  })
+  row(sdk, ID.uc01, 'E1', 'a user-set value of 31 characters: status token-too-short and the value authenticates nothing', async (t) => {
+    const short = userValue(TOKEN_VALUE.minChars - 1)
+    const world = await worldFor(t, sdk, { stored: { [A.ref]: short } })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.tokenTooShort)
+    assertNoMatch(world, short, 'a too-short value authenticates')
+    assert.equal(await world.resolve(A.ref), short, 'the user-set value was replaced')
+  })
+  row(sdk, ID.uc01, 'E1', 'the token endpoint answers invalid_client for the too-short value', null, LATER.tokenEndpoint)
+  row(sdk, ID.uc01, 'E2', 'an unwritable credential store: status token-unconfigured, unusable, and no value written anywhere', async (t) => {
+    const world = await worldFor(t, sdk, { unwritable: true })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.tokenUnconfigured)
+    await assertNothingWrittenAnywhere(world, A.ref)
+  })
+  row(sdk, ID.uc01, 'E3', 'a second entry with the same ref is refused ref-duplicate and the previous settings stay', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    const value = await generatedValue(world, A.ref)
+    const before = world.registry.list()
+    const result = await world.registry.apply([entry(A), { label: B.label, enabled: true, ref: A.ref }])
+    assert.equal(result?.ok, false)
+    assert.equal(result.code, SETTINGS_REFUSAL.refDuplicate)
+    assert.deepEqual(world.registry.list(), before, 'the refused save changed the entries')
+    assert.equal(await world.resolve(A.ref), value, 'the refused save changed the value')
+  })
+  row(sdk, ID.uc01, 'post', 'the generated value is fbt_ + 32 random bytes in base64url (≥ 256 bits)', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    assertGeneratedShape(await generatedValue(world, A.ref))
+  })
+  row(sdk, ID.uc01, 'post', 'the value lives only in ctx.credentials: no log, stored file or registry answer holds it, and the entry key is opaque', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    const value = await generatedValue(world, A.ref)
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    world.registry.match(value)
+    assertNoLeak(world, value)
+    const { entryKey } = requireEntry(world, A.ref)
+    // K1 EntryKey: "never the token, its ref or its label".
+    for (const part of [value, A.ref, A.label]) assert.ok(!String(entryKey).includes(part), 'the entry key carries ' + part)
+  })
+  row(sdk, ID.uc01, 'post', 'the settings document and every DSH UI, browser response and settings read-back hold label, enabled and ref only, never the value', null, LATER.surfaces)
+  row(sdk, ID.uc01, 'post', 'the form shows the entry read-only as unpaired: no bound id, no name, no lastSeenAt (R-ID-12)', null, LATER.formStatus)
+  row(sdk, ID.uc01, 'post', 'no custom settings UI exists; the entry is edited in DSH\'s native Plugins form (R-CON-10)', null, LATER.nativeForm)
+
+  // ---- AUTH-EP-04: token value classes at creation and use (Equivalence Partitioning) ----
+
+  row(sdk, ID.ep04, 1, 'enabled, ref unconfigured, store writable: generated and stored with credentials.set, once', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    const value = await generatedValue(world, A.ref)
+    assertGeneratedShape(value)
+    await save(world, [entry(A)])
+    assert.ok(await staysFalse(async () => (await world.resolve(A.ref)) !== value), 'a second save replaced the generated value')
+    assert.deepEqual(world.writes.filter((w) => w.ref === A.ref).map((w) => w.op), ['set'], 'writes for the ref')
+  })
+  row(sdk, ID.ep04, 2, 'enabled, value set in the store (≥ 32 characters): used as is and never overwritten', async (t) => {
+    const mine = longEnough()
+    const world = await worldFor(t, sdk, { stored: { [A.ref]: mine } })
+    await save(world, [entry(A)])
+    await save(world, [entry(A, false)])
+    await save(world, [entry(A, true)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    assertMatches(world, A.ref, mine)
+    assert.equal(await world.resolve(A.ref), mine)
+    assert.deepEqual(world.writes, [], 'the connector wrote to the credential store')
+  })
+  row(sdk, ID.ep04, 3, 'enabled, value set in the environment only (≥ 32 characters): used as is; nothing written to the store', async (t) => {
+    const mine = longEnough()
+    const world = await worldFor(t, sdk, { env: { [A.ref]: mine } })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    assertMatches(world, A.ref, mine)
+    assert.notEqual(await world.source(A.ref), DSH.fileSource, 'a value was written to the store, shadowing the environment')
+    assert.deepEqual(world.writes, [], 'the connector wrote to the credential store')
+  })
+  row(sdk, ID.ep04, 4, 'enabled, value set but under 32 characters: status token-too-short; the value authenticates nothing', async (t) => {
+    const short = userValue(TOKEN_VALUE.minChars - 1)
+    const world = await worldFor(t, sdk, { stored: { [A.ref]: short } })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.tokenTooShort)
+    assertNoMatch(world, short, 'a too-short value authenticates')
+    assert.deepEqual(world.writes, [], 'the connector replaced the too-short value')
+  })
+  row(sdk, ID.ep04, 4, 'invalid_client at the token endpoint for that value', null, LATER.tokenEndpoint)
+  row(sdk, ID.ep04, 5, 'disabled, ref unconfigured: nothing generated', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A, false)])
+    assert.ok(await staysFalse(() => world.resolve(A.ref)), 'a value was generated for a disabled entry')
+    assert.deepEqual(world.writes, [], 'the connector wrote to the credential store')
+  })
+  row(sdk, ID.ep04, 6, 'enabled, ref unconfigured, store not writable: status token-unconfigured; unusable; nothing written anywhere', async (t) => {
+    const world = await worldFor(t, sdk, { unwritable: true })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.tokenUnconfigured)
+    await assertNothingWrittenAnywhere(world, A.ref)
+  })
+  row(sdk, ID.ep04, 7, 'two entries sharing one ref: the save is refused ref-duplicate; the previous settings stay', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    const before = world.registry.list()
+    const result = await world.registry.apply([entry(A), { label: B.label, enabled: true, ref: A.ref }])
+    assert.equal(result?.ok, false)
+    assert.equal(result.code, SETTINGS_REFUSAL.refDuplicate)
+    assert.deepEqual(world.registry.list(), before)
+  })
+  row(sdk, ID.ep04, '7a', 'two entries, distinct refs, the same user-set value: refused value-duplicate (K1, user decision 2026-11-13); previous settings stay; the refusal shows no value', async (t) => {
+    const same = longEnough()
+    const world = await worldFor(t, sdk, { stored: { [A.ref]: same, [B.ref]: same } })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    const before = world.registry.list()
+    const result = await world.registry.apply([entry(A), entry(B)])
+    assert.equal(result?.ok, false)
+    assert.equal(result.code, SETTINGS_REFUSAL.valueDuplicate)
+    assert.ok(!JSON.stringify(result).includes(same), 'the refusal carries the value')
+    assert.deepEqual(world.registry.list(), before)
+    assertMatches(world, A.ref, same)
+  })
+  row(sdk, ID.ep04, 8, 'ten generated values: all distinct; none appears in a log, a stored file or a registry answer', async (t) => {
+    const world = await worldFor(t, sdk)
+    const whos = Array.from({ length: FIXTURE.manyEntries }, (_, i) => ({ label: FIXTURE.manyLabelPrefix + i, ref: FIXTURE.manyRefPrefix + i }))
+    await save(world, whos.map((w) => entry(w)))
+    const values = []
+    for (const w of whos) values.push(await generatedValue(world, w.ref))
+    assert.equal(new Set(values).size, values.length, 'two generated values are equal')
+    for (const [i, value] of values.entries()) {
+      assertGeneratedShape(value)
+      assertMatches(world, whos[i].ref, value)
+      assertNoLeak(world, value)
+    }
+  })
+
+  // ---- AUTH-BVA-03: token value length at use (Boundary Value Analysis; TQ-4 A, characters) ----
+
+  /** One user-set length and its expected status (`ok` also authenticates; the rest do not). */
+  async function lengthRow(t, value, status) {
+    const world = await worldFor(t, sdk, { stored: { [A.ref]: value } })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, status)
+    if (status === ENTRY_STATUS.ok) assertMatches(world, A.ref, value)
+    else assertNoMatch(world, value, 'a too-short value authenticates')
+    assert.deepEqual(world.writes, [], 'the connector wrote to the credential store')
+  }
+  row(sdk, ID.bva03, 1, '0 (empty): treated as unconfigured, so a value is generated (EP-04 #1)', async (t) => {
+    // The store cannot hold an empty value (dsh-credentials: empty is absent); an empty variable in
+    // the launching environment is the one place a user can set one.
+    const world = await worldFor(t, sdk, { env: { [A.ref]: '' } })
+    await save(world, [entry(A)])
+    assertGeneratedShape(await generatedValue(world, A.ref))
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+  })
+  row(sdk, ID.bva03, 2, '1 character: token-too-short', (t) => lengthRow(t, userValue(1), ENTRY_STATUS.tokenTooShort))
+  row(sdk, ID.bva03, 3, '31 characters (minimum − 1): token-too-short; it authenticates nothing', (t) => lengthRow(t, userValue(TOKEN_VALUE.minChars - 1), ENTRY_STATUS.tokenTooShort))
+  row(sdk, ID.bva03, 4, '32 characters (the minimum): accepted', (t) => lengthRow(t, userValue(TOKEN_VALUE.minChars), ENTRY_STATUS.ok))
+  row(sdk, ID.bva03, 5, '33 characters (minimum + 1): accepted', (t) => lengthRow(t, userValue(TOKEN_VALUE.minChars + 1), ENTRY_STATUS.ok))
+  row(sdk, ID.bva03, 6, '32 characters ending in a multi-byte character (31 ASCII + €): accepted (characters, not bytes)', (t) => {
+    const value = userValue(TOKEN_VALUE.minChars, { last: FIXTURE.multiByte })
+    assert.ok(Buffer.byteLength(value) > TOKEN_VALUE.minChars, 'harness: the fixture is not multi-byte')
+    return lengthRow(t, value, ENTRY_STATUS.ok)
+  })
+  row(sdk, ID.bva03, 7, 'generated: at least 32 characters (fbt_ + 43 base64url) and at least 256 bits', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    const value = await generatedValue(world, A.ref)
+    assert.ok([...value].length >= TOKEN_VALUE.minChars, 'the generated value is shorter than the minimum')
+    assertGeneratedShape(value)
+  })
+
+  // ---- AUTH-DT-05: credential cleanup on delete (Decision Table) ----
+
+  row(sdk, ID.dt05, 1, 'generated by C, delete: the value is unset from the store', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    await generatedValue(world, A.ref)
+    await save(world, [])
+    assert.ok(await eventually(async () => (await world.resolve(A.ref)) === undefined), 'the generated value is still stored')
+    assert.ok(world.writes.some((w) => w.op === 'unset' && w.ref === A.ref), 'the value was not removed with credentials.unset')
+  })
+  row(sdk, ID.dt05, 2, 'generated by C, disable: the value is kept', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    const value = await generatedValue(world, A.ref)
+    await save(world, [entry(A, false)])
+    assert.ok(await staysFalse(async () => (await world.resolve(A.ref)) !== value), 'disabling changed or removed the value')
+    assert.ok(!world.writes.some((w) => w.op === 'unset'), 'disabling unset a value')
+  })
+  row(sdk, ID.dt05, 3, 'user-set in the store, delete: the value is kept', async (t) => {
+    const mine = longEnough()
+    const world = await worldFor(t, sdk, { stored: { [A.ref]: mine } })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    await save(world, [])
+    assert.ok(await staysFalse(async () => (await world.resolve(A.ref)) !== mine), 'deleting removed the user\'s value')
+    assert.deepEqual(world.writes, [], 'the connector wrote to the credential store')
+  })
+  row(sdk, ID.dt05, 4, 'user-set in the environment, delete: the environment is untouched', async (t) => {
+    const mine = longEnough()
+    const world = await worldFor(t, sdk, { env: { [A.ref]: mine } })
+    await save(world, [entry(A)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    const source = await world.source(A.ref)
+    await save(world, [])
+    assert.ok(await staysFalse(async () => (await world.resolve(A.ref)) !== mine || (await world.source(A.ref)) !== source), 'deleting changed the environment value')
+    assert.deepEqual(world.writes, [], 'the connector wrote to the credential store')
+  })
+  row(sdk, ID.dt05, 5, 'generated, disabled, then enabled: the same value, and the same entry (principal restored)', async (t) => {
+    const world = await worldFor(t, sdk)
+    await save(world, [entry(A)])
+    const value = await generatedValue(world, A.ref)
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    const { entryKey } = requireEntry(world, A.ref)
+    await save(world, [entry(A, false)])
+    await save(world, [entry(A, true)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    assert.equal(await world.resolve(A.ref), value, 're-enabling changed the value')
+    assert.equal(world.registry.match(value)?.entryKey, entryKey, 're-enabling did not restore the same entry')
+    assert.deepEqual(world.writes.filter((w) => w.ref === A.ref).map((w) => w.op), ['set'], 'writes for the ref')
+  })
+
+  // ---- AUTH-ST-01: token entry lifecycle, the rows C-TOKENS owns (State Transition) ----
+  // Bound(X) and Off-Bound(X) differ from Ready / Off-Unbound only in C-PAIR's pair store: the
+  // registry's transitions are the same, so each row starts from an enabled entry with a value.
+
+  /** An enabled entry with a generated value, its K1 entry and the revocation recorder. */
+  async function readyEntry(t) {
+    const world = await worldFor(t, sdk)
+    const seen = revocations(world)
+    await save(world, [entry(A)])
+    const value = await generatedValue(world, A.ref)
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    return { world, seen, value, before: requireEntry(world, A.ref) }
+  }
+
+  row(sdk, ID.st01, 1, 'Unconfigured → settings change, store writable → Ready: a value is generated and authenticates', async (t) => {
+    const { world, value } = await readyEntry(t)
+    assertGeneratedShape(value)
+    assertMatches(world, A.ref, value)
+  })
+  row(sdk, ID.st01, 5, 'Bound(X) → disable → Off-Bound(X): one `disabled` revocation with a newer generation; the value authenticates nothing', async (t) => {
+    const { world, seen, value, before } = await readyEntry(t)
+    await save(world, [entry(A, false)])
+    await assertRevoked(seen, before, REVOCATION.disabled)
+    assertNoMatch(world, value, 'a disabled entry authenticates')
+    assert.equal(world.registry.get(before.entryKey)?.enabled, false, 'the disabled entry is gone or still enabled')
+  })
+  row(sdk, ID.st01, 5, '401 for its access tokens and invalid_client at the token endpoint', null, LATER.accessTokens)
+  row(sdk, ID.st01, 6, 'Off-Bound(X) → enable → Bound(X): the same entry authenticates again under the newer generation, with no further revocation', async (t) => {
+    const { world, seen, value, before } = await readyEntry(t)
+    await save(world, [entry(A, false)])
+    const revoked = await assertRevoked(seen, before, REVOCATION.disabled)
+    await save(world, [entry(A, true)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    const back = world.registry.match(value)
+    assert.equal(back?.entryKey, before.entryKey, 'the re-enabled entry is another one')
+    // Old access tokens carry the old generation, so a re-enable revives none (R-OA-06, K1 TokenEntry.generation).
+    assert.ok(back.generation >= revoked.generation, `the generation went back from ${revoked.generation} to ${back.generation}`)
+    assert.equal(seen.length, 1, 'enabling fired a revocation')
+  })
+  row(sdk, ID.st01, 6, 'a new access token for X is full (scope fishball)', null, LATER.accessTokens)
+  row(sdk, ID.st01, 7, 'Ready → disable → Off-Unbound: one `disabled` revocation; the value authenticates nothing', async (t) => {
+    const { world, seen, value, before } = await readyEntry(t)
+    await save(world, [entry(A, false)])
+    await assertRevoked(seen, before, REVOCATION.disabled)
+    assertNoMatch(world, value, 'a disabled entry authenticates')
+  })
+  row(sdk, ID.st01, 8, 'Off-Unbound → enable → Ready: the same entry authenticates again', async (t) => {
+    const { world, value, before } = await readyEntry(t)
+    await save(world, [entry(A, false)])
+    assert.ok(await eventually(() => world.registry.match(value) === undefined), 'the disabled entry still authenticates')
+    await save(world, [entry(A, true)])
+    await untilStatus(world, A.ref, ENTRY_STATUS.ok)
+    assert.equal(world.registry.match(value)?.entryKey, before.entryKey)
+  })
+  row(sdk, ID.st01, 8, 'the token request returns a pair-only access token (scope fishball:pair)', null, LATER.accessTokens)
+  row(sdk, ID.st01, 9, 'Bound(X) → delete → Gone: one `deleted` revocation; the entry is gone and its generated value unset', async (t) => {
+    const { world, seen, value, before } = await readyEntry(t)
+    await save(world, [])
+    await assertRevoked(seen, before, REVOCATION.deleted)
+    assert.equal(world.registry.get(before.entryKey), undefined, 'the deleted entry is still known')
+    assert.equal(entryOf(world, A.ref), undefined, 'the deleted entry is still listed')
+    assertNoMatch(world, value, 'a deleted entry authenticates')
+    assert.ok(await eventually(async () => (await world.resolve(A.ref)) === undefined), 'the generated value is still stored')
+  })
+  row(sdk, ID.st01, 10, 'Bound(X) → change value → Bound(X): one `value-changed` revocation; the old value authenticates nothing, the new one the same entry', async (t) => {
+    const { world, seen, value, before } = await readyEntry(t)
+    const next = longEnough('changed')
+    await world.userSets(A.ref, next)
+    await assertRevoked(seen, before, REVOCATION.valueChanged)
+    await eventually(() => world.registry.match(next) !== undefined)
+    assertNoMatch(world, value, 'the old value still authenticates')
+    assert.equal(world.registry.match(next)?.entryKey, before.entryKey, 'the new value is not the same entry')
+    assertNoLeak(world, next)
+  })
+  row(sdk, ID.st01, 10, 'old access tokens get 401; the new value with X gets a full access token', null, LATER.accessTokens)
+  row(sdk, ID.st01, 12, 'Gone → any request → Gone: the old value authenticates nothing and the entry stays unknown; no second revocation', async (t) => {
+    const { world, seen, value, before } = await readyEntry(t)
+    await save(world, [])
+    await assertRevoked(seen, before, REVOCATION.deleted)
+    for (let i = 0; i < 2; i += 1) assertNoMatch(world, value, 'a deleted entry authenticates')
+    assert.equal(world.registry.get(before.entryKey), undefined)
+    await save(world, [])
+    assert.ok(await staysFalse(() => seen.length > 1), 'a gone entry was revoked again')
+  })
+  row(sdk, ID.st01, 12, 'invalid_client at the token endpoint and 401 at the MCP endpoint', null, LATER.accessTokens)
+}
