@@ -144,6 +144,48 @@ export function mailboxPort(real) {
   }
 }
 
+/**
+ * mailboxPort with a slow commit on demand: the C-MAILBOX commit of an offer or ask still in
+ * flight, so a row can call `settle` (or a release) while that offer's step is on the managed
+ * chain. Driver: `holdNext(match(recipient, draft))` → `{reached, open()}`. The first commit after
+ * the call that `match`es waits until `open()`; `reached` resolves with `{recipient, draft}` once it
+ * is waiting. `open()` also cancels a hold no commit has reached; `openAll()` opens every hold
+ * (a row's cleanup, so a failed row never leaves the chain blocked for close()). Every other member
+ * is mailboxPort's.
+ */
+export function gatedMailboxPort(real) {
+  const port = mailboxPort(real)
+  const holds = []
+  const opens = []
+  return {
+    openAll() { for (const open of opens) open() },
+    ...port,
+    async commit(recipient, draft) {
+      const at = holds.findIndex((h) => h.match(recipient, draft))
+      if (at >= 0) {
+        const [hold] = holds.splice(at, 1)
+        hold.arrive({ recipient, draft })
+        await hold.opened
+      }
+      return port.commit(recipient, draft)
+    },
+    holdNext(match) {
+      let arrive
+      let open
+      const hold = { match, reached: new Promise((resolve) => { arrive = resolve }), opened: new Promise((resolve) => { open = resolve }) }
+      hold.arrive = arrive
+      holds.push(hold)
+      const release = () => {
+        const at = holds.indexOf(hold)
+        if (at >= 0) holds.splice(at, 1)
+        open()
+      }
+      opens.push(release)
+      return { reached: hold.reached, open: release }
+    },
+  }
+}
+
 /** A cordis-style logger that records every line by level. */
 export function recordingLogger() {
   const lines = []

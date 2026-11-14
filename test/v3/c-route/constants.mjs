@@ -19,12 +19,16 @@ import {
   QUEUE, REFUSAL, REQUEST_GATE, RETIREMENT_REASON, TOOL_NAMES, formatOfferId,
 } from '../../../packages/connector/mcp-schema/index.js'
 import { EMIT_REFUSAL, NAMESPACE } from '../../../packages/connector/tools/index.js'
+import { IMAGE_TYPES } from '../../../packages/connector/contract/contract.js'
 import { REPO } from '../../support/constants.mjs'
 
 export {
   CONNECTED, CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, ENTRY_STATUS, EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, OFFER_ID, OFFER_TYPES, PATHS,
   QUEUE, REFUSAL, REQUEST_GATE, RETIREMENT_REASON, TOOL_NAMES, formatOfferId,
 }
+
+/** K1 settlement payload values (EVENT_PAYLOAD_SHAPES.settlement `{approvalId, outcome, by}`), for the settle rows. */
+export { SETTLED_BY, SETTLEMENT_OUTCOME } from '../../../packages/connector/mcp-schema/index.js'
 
 /** K1 `RevocationKind` (index.d.ts, types only): the values FakeTokens fires and the end-to-end row passes C-HTTP. */
 export const REVOCATION = Object.freeze({ disabled: 'disabled', deleted: 'deleted' })
@@ -134,6 +138,34 @@ export const FIXTURE = Object.freeze({
   /** A hand-over name in a tool name or path (HAND-EP-01 rows 2–3). */
   handoverToolName: /hand[-_]?over|take[-_]?back/i,
   listenerError: 'fbtest listener failure',
+})
+
+/**
+ * Fixture data of the merge-review fix-1 rows (ROUTE-ST-03, ROUTE-DT-03, ROUTE-EP-02): the values a
+ * caller writes into a `message_fishball` payload after the call, and an offer no one made.
+ */
+export const MUTATION = Object.freeze({
+  /** A valid replacement of the top-level `text`. */
+  text: 'FBTEST-MUTATED-AFTER-THE-CALL',
+  /** Valid JSON of the wrong type for `text` (a number). */
+  wrongType: 42,
+  /** No JSON value at all: JSON.stringify throws on a BigInt. */
+  nonJson: 10n,
+  /** An `images` entry that is no K1 imageRef. */
+  notAnImage: 'fbtest-not-an-image',
+  /** A key no K1 payload has (an extra member, or one holding a function). */
+  extraKey: 'fbtestExtra',
+  /** An approval id no offer was made for. */
+  unknownApproval: FIXTURE.offerPrefix + 'never-offered',
+  /** A valid K1 imageRef (shapes.js imageRef) for the nested partitions; its sizes are fixture data. */
+  image: (n) => ({ attachmentId: `fbtest-attachment-${n}`, mediaType: IMAGE_TYPES[0], width: n, height: n, bytes: n }),
+})
+
+/** Fixture data of the settle rows: a question answer (K1 questionAnswerItem) and values no K1 settlement allows. */
+export const SETTLE_FIXTURE = Object.freeze({
+  answer: Object.freeze({ id: 'fbtest-question-1', selected: Object.freeze(['fbtest-option-a']) }),
+  otherChoice: 'fbtest-option-b',
+  badOutcome: 'fbtest-not-an-outcome',
 })
 
 /** A contributor event type of the fixture namespace (`contributed:<ns>.<event>`, K2 separator). */
