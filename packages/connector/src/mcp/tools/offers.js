@@ -63,18 +63,22 @@ export function createOfferDesk({ interactions }) {
   /**
    * One principal answer.
    * @param {{sessionId: string, requestId: string, offerId: string, principalKey: string}} answer
-   * @param {() => Promise<{ok: boolean, code?: string}>} commit the domain's answer, run only when allowed
+   * @param {(sessionId: string) => Promise<{ok: boolean, code?: string}>} commit the domain's answer for the
+   *   offer's root session, run only when allowed
    * @returns the domain's result, or `{ok: false, code}`
    */
   function answer({ sessionId, requestId, offerId, principalKey }, commit) {
     // An offer id names its request: one naming another request never answers this one.
     if (parseOfferId(offerId)?.requestId !== requestId) return Promise.resolve(refused(REFUSAL.expired))
     return serial(requestId, async () => {
+      // A committed id is never answerable again, whatever the port's timing in dropping it from
+      // `liveOffers` (a retirement may follow the commit asynchronously): first commit wins.
+      if (settled.has(offerId)) return notLive(offerId, principalKey)
       const live = (await liveOffers(sessionId)).find((offer) => offer.descriptor.approvalId === requestId)
       if (live === undefined) return notLive(offerId, principalKey)
       if (live.principalKey !== principalKey) return refused(REFUSAL.forbidden)
       if (live.descriptor.offerId !== offerId) return refused(REFUSAL.expired)
-      const result = await commit()
+      const result = await commit(sessionId)
       if (result?.ok === true) settled.set(offerId, principalKey)
       return result
     })

@@ -10,8 +10,9 @@ import { REFUSAL, TOOL } from '../../../mcp-schema/index.js'
 /**
  * The V2 request validator (contract 1.2 §4, §8) that checks a tool's arguments after K1's input
  * schema: the schema subset cannot express lengths, counts, bytes or "reason required", so those
- * stay V2's domain checks with V2's codes (design §3.2). A tool absent here has no V2 payload rule
- * (inbox, pair, set_name, question_ask).
+ * stay V2's domain checks with V2's codes (design §3.2). The tools absent here have no V2 payload
+ * fields to check: `prompts_list` and `grants_list` take none (V2's rule is "no keys", which K1's
+ * closed schema already says), and inbox, `pair` and `set_name` are new in V3.
  */
 export const V2_PAYLOAD = Object.freeze({
   [TOOL.sessionsList]: OPERATION.sessionList,
@@ -24,6 +25,9 @@ export const V2_PAYLOAD = Object.freeze({
   [TOOL.approvalsList]: OPERATION.approvalList,
   [TOOL.approvalAnswer]: OPERATION.approvalAnswer,
   [TOOL.questionAnswer]: OPERATION.questionAnswer,
+  // Fishball's decision R5 (2026-11-14): V2's question counts and character limits apply before
+  // `unsupported-operation` (handlers.js); dispatch.js adapts the V3 arguments to V2's payload.
+  [TOOL.questionAsk]: OPERATION.questionAsk,
   [TOOL.questionAnswerOwn]: OPERATION.questionAnswerOwn,
   [TOOL.promptAnswer]: OPERATION.promptAnswer,
   [TOOL.grantRevoke]: OPERATION.grantRevoke,
@@ -31,13 +35,18 @@ export const V2_PAYLOAD = Object.freeze({
   [TOOL.attachmentRead]: OPERATION.attachmentRead,
 })
 
+
 /**
- * Arguments a V3 tool adds to its V2 payload, removed before the V2 validator runs (it refuses an
- * unknown key). `question_answer` names the offer it answers, as `approval_answer` does (K1 README
- * "Payloads"); V2's question.answer had no offer.
+ * How a V3 tool's arguments become the V2 payload its validator reads, where they differ (K1 README
+ * "Payloads"). The V2 validator refuses an unknown key and requires its own:
+ * - `question_answer` names the offer it answers, as `approval_answer` does; V2's had no offer;
+ * - `question_ask` takes no `sessionId` (the caller is the principal, not a child session); V2's
+ *   required one, so a placeholder stands in for the check only. It is never used as a session.
  */
-export const V3_ONLY_ARGUMENTS = Object.freeze({
-  [TOOL.questionAnswer]: Object.freeze(['offerId']),
+const V2_SESSION_PLACEHOLDER = 'question-ask'
+export const V2_ADAPT = Object.freeze({
+  [TOOL.questionAnswer]: ({ offerId, ...rest }) => rest,
+  [TOOL.questionAsk]: (args) => ({ ...args, sessionId: V2_SESSION_PLACEHOLDER }),
 })
 
 /**
@@ -48,6 +57,8 @@ export const V3_ONLY_ARGUMENTS = Object.freeze({
  * - `read`: reading (session_read, attachment_read) is its manager's too, and an unmanaged
  *   session is `forbidden` (R-ROUTE-02, 1.23 item 4; Fishball's Q4: only managed sessions are
  *   related, because V3 has no watches).
+ * Fishball's decision R12 (2026-11-14) confirms the placements: approvals_list acts
+ * (`not-managed`), attachment_read reads (`forbidden`).
  */
 export const SESSION_ACCESS = Object.freeze({
   manage: Object.freeze({ unmanaged: REFUSAL.notManaged }),
@@ -60,6 +71,9 @@ export const AUTHORITY = Object.freeze({ mine: 'mine', other: 'other', none: 'no
 /** The two MCP methods this module answers on the caller's server (dispatch.js says why it owns both). */
 export const TOOLS_METHOD = Object.freeze({ list: 'tools/list', call: 'tools/call' })
 
+/** The keys of K1's result envelope itself (envelope.js); a refusal's extra fields never carry them. */
+export const ENVELOPE_KEYS = Object.freeze(['ok', 'code', 'message'])
+
 /** The JSON-RPC -32602 message of an unknown tool. It names no tool: the client knows which it called. */
 export const UNKNOWN_TOOL = 'Unknown tool'
 
@@ -69,4 +83,7 @@ export const LOG = Object.freeze({
   toolFailed: 'core tools: a tool call failed unexpectedly; answered operation-failed',
   outputInvalid: 'core tools: a domain answer did not fit the tool\'s output schema; answered operation-failed',
   manageFailed: 'core tools: making a started session managed failed; it starts unmanaged',
+  // The diagnostic is the code itself: a domain constant, never client data.
+  unknownCode: 'core tools: a domain refusal carried a code outside K1\'s vocabulary; answered operation-failed',
+  contributedFailed: 'core tools: the contributed-tool pipeline threw; answered operation-failed',
 })
