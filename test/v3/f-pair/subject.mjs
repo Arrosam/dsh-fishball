@@ -1,49 +1,49 @@
 /**
  * The one place that binds the F-PAIR cases to F-PAIR's module (`packages/core/src/identity/`).
- * K1, K2 and K3 freeze no JS entry for it, and the dev session has relayed no surface yet
- * (2026-11-15; spec question 1 to Fishball). This file assumes ONE shape; if the module differs,
- * only this file is adapted and no case changes.
+ * The surface is the one Fishball relayed from the dev session (2026-11-15, `dev/v3-f-pair` at
+ * `ed5f2b75`); nothing else of the module is read:
  *
- *   generateId() → string                     R-ID-10: `fb-` + 16 lowercase base32
- *   checkId(value) → {ok: true} | {ok: false, code: 'id-invalid'}   R-ID-02 (the settings validator)
- *   IDENTITY_DEFAULTS.name                    R-NAME-03: 'Fishball' (settings rows are F-WIRE's)
- *   PAIRING_STATE.{noRecord, paired, warnMatch, warnMismatch, needToken, needId, idMismatch, tokenRefused}
- *                                             AUTH-ST-03's states
- *   PAIRING_CHOICE.{continue, newToken}       R-ID-07's two choices
- *   createPairing({target, tokenRef, credentials, settings, records, sdk, logger}) → Pairing
- *     target()      the target MCP URL (standalone `target.url`; hosted: the instance's)
- *     tokenRef()    the opaque token reference (Q-9: standalone `target.tokenRef`; hosted: the
- *                   entry's non-secret key)
- *     credentials   {resolve(ref) → Promise<string | undefined>} (design §6.3, per connection)
- *     settings      {get(key), set(key, value), onChange(fn(key)) → dispose} over `identity.id`,
- *                   `identity.name`, `target.url`, `target.tokenRef`; core writes `identity.id`
- *                   once when it generates it (R-ID-10 "at first start")
- *     records       {get(key), set(key, record), delete(key)}: the non-secret paired records,
- *                   keyed by core (R-ID-07: per target and token reference)
- *     sdk           the `@modelcontextprotocol/client` module (as F-LINK's createLink)
- *     logger        {debug, info, warn, error}
- *   Pairing = {
- *     start(), stop() → Promise<void>
- *     status() → K3 TargetStatus {state, code}
- *     view() → {state: PAIRING_STATE value,
- *               warning: null | {idMatches, name, lastSeenAt, choices: PAIRING_CHOICE values[]},
- *               nameClash: null | {code: 'name-taken' | 'name-invalid', nameInUse: string | null}}
- *     choose(choice) → Promise<void>    the user's choice on the warning (the tick is the page's)
- *   }
+ *   createPairing({records, name, now?, createLink?, target, credentials, sdk})
+ *     → {link, state(), onChange(fn), nameChanged(), choose(choice, {confirmed})}
+ *     credentials()  → {clientId, secret, ref}; `ref` is required with a secret (else TypeError)
+ *     link           core's link with the pairing gate (F-LINK's `status`, `start`, `stop`,
+ *                    `reconnect`, `callTool`)
+ *     state()        → {state, warning, choices, nameIssue}
+ *     choose()       never rejects: {ok: true} | {ok: false, code: 'not-confirmed' | 'not-offered' | 'not-saved'}
+ *   openRecords(ctx, {defineDomain, domainTable}) → Promise<{table, close}> (a DSH KvTable), and
+ *     createRecords(table) → the injected records port {get(origin, ref), put(record),
+ *     declined(origin, ref), decline(origin, ref, at)}, keyed by (origin, ref); a record is
+ *     {origin, ref, id, name | null, pairedAt, asked?}
+ *   generateId(), acceptId(next, prev) → {ok: true, id} | {ok: false, code: 'id-invalid', id: prev},
+ *   requestedName(setting): absent → "Fishball", '' → null
+ *   constants IDENTITY, PAIRING_STATE, CHOICE, CHOICES_OF, CHOICE_REFUSAL, NO_CHOICES, SCOPE_LIST
  *
- * The world emulates DSH's settings save: a saved `identity.id` passes core's `checkId` first, and
- * a refused value leaves the previous one (R-ID-02, AUTH-EP-03 row 2c); then `onChange` fires.
+ * Fishball's answers of 2026-11-15 (relayed from the dev):
+ * - `name` is a getter of the raw `identity.name` setting (`undefined` when absent); core applies
+ *   `requestedName` itself;
+ * - the caller tells core about a changed `target.url`, `target.tokenRef` or `identity.id` with
+ *   `link.reconnect()`, and about a changed `identity.name` with `nameChanged()`;
+ * - `state().warning` is `{...bound, advice, inUse}` (K1's `bound`, `inUse` = K1 `principalLabel`
+ *   of the bound name and id); `nameIssue` is `{source: 'pair' | 'set_name', code, inUse}`.
+ *
+ * The world plays F-WIRE's part: DSH-like settings whose `identity.id` save goes through
+ * `acceptId` (a refused value leaves the previous one, R-ID-02), the credential store, and the
+ * records port in real DSH storage of the SDK under test (dsh-storage over dsh-storage-json in a
+ * throwaway root), so `restart()` is a DSH restart over the same files.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { mkdtemp, rm } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { INSTANCE } from '../../support/constants.mjs'
 import { linkContractForSourceRun } from '../../support/contract-link.mjs'
 import { until } from '../../support/util.mjs'
 import { importInstance } from '../../private-skills/support/sdk.mjs'
 import { mcpClient } from '../k1/schema-module.mjs'
+import { resolveRuntimePackages, storageContext } from '../c-pair/subject.mjs'
 import { FakePairs, startFakeConnector } from './fake-connector.mjs'
-import { HARNESS, IDENTITY, SETTING, SUBJECT, mcpUrl } from './constants.mjs'
+import { HARNESS, IDENTITY, RELAYED, SETTING, SUBJECT, mcpUrl } from './constants.mjs'
 
 const stacks = new WeakMap()
 /** Registers `fn` to run after the test, last registered first (the pairing stops before its fake). */
@@ -60,121 +60,164 @@ export function defer(t, fn) {
 export async function identityModule(sdk) {
   assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (F-PAIR "Owns" packages/core/src/identity/)`)
   linkContractForSourceRun()
+  resolveRuntimePackages()
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
-  for (const name of [SUBJECT.factory, SUBJECT.generateId, SUBJECT.checkId]) assert.equal(typeof mod[name], 'function', `identity/index.js exports no ${name}()`)
-  for (const name of [SUBJECT.defaults, SUBJECT.states, SUBJECT.choices]) assert.equal(typeof mod[name], 'object', `identity/index.js exports no ${name}`)
+  for (const name of SUBJECT.functions) assert.equal(typeof mod[name], 'function', `identity/index.js exports no ${name}()`)
+  for (const name of SUBJECT.constants) assert.equal(typeof mod[name], 'object', `identity/index.js exports no ${name}`)
   return mod
-}
-
-/** A recording logger: every line, so a case can show no secret was logged. */
-function recordingLogger() {
-  const lines = []
-  const at = (level) => (...args) => { lines.push({ level, text: args.map((a) => (typeof a === 'string' ? a : String(a?.stack ?? JSON.stringify(a)))).join(' ') }) }
-  return { lines, debug: at('debug'), info: at('info'), warn: at('warn'), error: at('error') }
 }
 
 /** DSH-like settings: values, a validated save and change listeners. */
 function fakeSettings(mod, initial) {
-  // An `undefined` initial value means "not set" (R-ID-10: the id is generated at first start).
+  // An `undefined` initial value means "not set".
   const values = new Map(Object.entries(initial).filter(([, v]) => v !== undefined))
   const listeners = new Set()
-  const fire = (key) => { for (const fn of [...listeners]) fn(key) }
   return {
     get: (key) => values.get(key),
-    /** Core's own write (the generated id). */
-    set: (key, value) => { values.set(key, value); fire(key) },
     onChange: (fn) => { listeners.add(fn); return () => listeners.delete(fn) },
-    /** The user's save, through core's validator for `identity.id` (R-ID-02). */
+    /**
+     * The user's save, answered `{ok: true}` or `{ok: false, code}`; `identity.id` goes through
+     * core's `acceptId` first (R-ID-02), and a refused value leaves the previous one.
+     */
     save(key, value) {
       if (key === IDENTITY.idKey) {
-        const checked = mod[SUBJECT.checkId](value)
-        if (!checked.ok) return checked
+        const { ok, code } = mod[SUBJECT.acceptId](value, values.get(key))
+        if (!ok) return { ok, code }
       }
       values.set(key, value)
-      fire(key)
+      for (const fn of [...listeners]) fn(key)
       return { ok: true }
     },
-    /** Offline edit with no notification (a change made while core was stopped). */
+    /** An edit made while core was stopped (no notification). */
     edit: (key, value) => { values.set(key, value) },
   }
 }
 
-/** The paired-record store (a fake of the storage core is given). */
-function fakeRecords() {
-  const map = new Map()
-  return {
-    get: (key) => map.get(key),
-    set: (key, record) => { map.set(key, structuredClone(record)) },
-    delete: (key) => { map.delete(key) },
-    /** Every record as plain data (oracle reads). */
-    all: () => [...map.entries()].map(([key, value]) => ({ key, value })),
-    get size() { return map.size },
-  }
-}
+/** Every file under `dir` as one string (the leak oracle reads the stored records raw). */
+const treeText = (dir) => (fs.existsSync(dir)
+  ? fs.readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => fs.readFileSync(path.join(e.parentPath, e.name), 'utf8')).join('\n')
+  : '')
 
 /**
- * One pairing world: a fake connector, fake settings / credentials / records, and core's pairing.
+ * One pairing world: a fake connector, fake settings and credential store, the real records port
+ * in DSH storage, and core's pairing over core's own link.
  * @param {import('node:test').TestContext} t
  * @param {string} sdk
  * @param {{entries: Array<{entryKey, secret, enabled?}>, refs: Record<string, string | undefined>,
  *   settings: object, store?: object, now?: () => number, extraTokenFields?: object, start?: boolean}} options
- *   `refs` maps token references to stored values (the credential store); `settings` holds the
- *   initial `identity.*` and `target.tokenRef` (the URL is the fake's); `store` defaults to FakePairs.
+ *   `refs` maps token references to stored values; `settings` holds the initial `identity.*` and
+ *   `target.tokenRef` (the URL is the fake's); `store` defaults to FakePairs.
  */
 export async function pairingWorld(t, sdk, { entries, refs, settings = {}, store = new FakePairs(), now, extraTokenFields, start = true }) {
   const mod = await identityModule(sdk)
+  const tmp = fs.realpathSync(os.tmpdir())
+  const root = await mkdtemp(path.join(tmp, HARNESS.tempPrefix))
+  defer(t, async () => {
+    // Guard the one recursive delete: only the directory this helper created under the OS temp dir.
+    assert.ok(path.dirname(root) === tmp && path.basename(root).startsWith(HARNESS.tempPrefix), 'refusing to remove ' + root)
+    await rm(root, { recursive: true, force: true })
+  })
   const f = await startFakeConnector({ store, entries, now, extraTokenFields })
   defer(t, () => f.stop())
   const credentialValues = new Map(Object.entries(refs))
   const s = fakeSettings(mod, { [SETTING.url]: mcpUrl(f.port), ...settings })
-  const records = fakeRecords()
-  const logger = recordingLogger()
   const client = await mcpClient(sdk)
-  let pairing
-  const open = () => mod[SUBJECT.factory]({
-    target: () => s.get(SETTING.url),
-    tokenRef: () => s.get(SETTING.tokenRef),
-    credentials: { resolve: async (ref) => credentialValues.get(ref) },
-    settings: s,
-    records,
-    sdk: client,
-    logger,
-  })
-  const stop = async () => { if (pairing !== undefined) { const p = pairing; pairing = undefined; await p.stop() } }
-  defer(t, stop)
+  let open
+
+  async function openAll() {
+    // R-ID-10 "generated at first start": the settings row is F-WIRE's, so the world plays it with
+    // core's `generateId` and keeps the value, as DSH keeps a saved setting across restarts.
+    if (s.get(IDENTITY.idKey) === undefined) s.edit(IDENTITY.idKey, mod[SUBJECT.generateId]())
+    const { ctx, helpers } = await storageContext(sdk, root)
+    const opened = await mod[SUBJECT.openRecords](ctx, helpers)
+    const records = mod[SUBJECT.createRecords](opened.table)
+    const pairing = mod[SUBJECT.factory]({
+      records,
+      name: () => s.get(IDENTITY.nameKey),
+      ...(now === undefined ? {} : { now }),
+      target: () => s.get(SETTING.url),
+      credentials: async () => {
+        const ref = s.get(SETTING.tokenRef)
+        return { clientId: s.get(IDENTITY.idKey), secret: credentialValues.get(ref), ref }
+      },
+      sdk: client,
+    })
+    const unlisten = s.onChange((key) => {
+      if (key === IDENTITY.nameKey) pairing.nameChanged()
+      else pairing.link.reconnect()
+    })
+    open = { ctx, opened, records, pairing, unlisten }
+    await pairing.link.start()
+  }
+  async function closeAll() {
+    if (open === undefined) return
+    const { ctx, opened, pairing, unlisten } = open
+    open = undefined
+    unlisten()
+    await pairing.link.stop()
+    await opened.close()
+    await ctx.fiber.dispose()
+  }
+  defer(t, closeAll)
+
   const world = {
     mod,
     f,
     settings: s,
-    records,
-    logger,
-    state: (key) => mod[SUBJECT.states][key],
-    choice: (key) => mod[SUBJECT.choices][key],
-    get pairing() { return pairing },
-    view: () => pairing.view(),
-    status: () => pairing.status(),
-    async start() { pairing = open(); await pairing.start() },
-    stop,
-    /** Core stops and starts again over the same settings and records (a restart of the DSH). */
-    async restart() { await stop(); await world.start() },
+    get pairing() { return open?.pairing },
+    /** `state()` of the pairing: {state, warning, choices, nameIssue}. */
+    view: () => open?.pairing.state(),
+    /** K3 TargetStatus of core's link. */
+    status: () => open?.pairing.link.status(),
+    /** The relayed word of an AUTH-ST-03 state / an R-ID-07 choice / a choice refusal. */
+    state: (key) => RELAYED.state[key],
+    choice: (key) => RELAYED.choice[key],
+    /** The user's choice on the warning; `confirmed` is the page's tick. */
+    choose: (key, confirmed = true) => open.pairing.choose(RELAYED.choice[key], { confirmed }),
+    start: openAll,
+    stop: closeAll,
+    /** A DSH restart: core and its storage close, then open again over the same files. */
+    async restart() { await closeAll(); await openAll() },
+    /** The target's origin, the records' first key (R-ID-07: per target and token reference). */
+    origin: () => new URL(s.get(SETTING.url)).origin,
+    /** The paired record of (this target, `ref`), or undefined (read through the records port). */
+    record: async (ref = s.get(SETTING.tokenRef)) => (await open.records.get(world.origin(), ref)) ?? undefined,
+    /** The records of this target under every reference the world knows, present ones only. */
+    async records() {
+      const found = []
+      for (const ref of Object.keys(refs)) { const r = await world.record(ref); if (r !== undefined) found.push(r) }
+      return found
+    },
     /** Stores a value under a reference in the credential store (the user's action). */
     setCredential: (ref, value) => { credentialValues.set(ref, value) },
-    /** Waits until the pairing view reports AUTH-ST-03 state `key`. */
+    /** Everything core stored, raw (the records' storage files). */
+    storedText: () => treeText(root),
+    /** Waits until the pairing reports AUTH-ST-03 state `key`. */
     async untilView(key, timeoutMs = HARNESS.settleMs) {
       const want = world.state(key)
-      await until(() => pairing?.view()?.state === want, timeoutMs, HARNESS.pollMs)
-      assert.equal(pairing?.view()?.state, want, `pairing state after ${timeoutMs} ms: ${JSON.stringify(pairing?.view())} (status ${JSON.stringify(pairing?.status())})`)
-      return pairing.view()
+      await until(() => world.view()?.state === want, timeoutMs, HARNESS.pollMs)
+      assert.equal(world.view()?.state, want, `pairing state after ${timeoutMs} ms: ${JSON.stringify(world.view())} (status ${JSON.stringify(world.status())})`)
+      return world.view()
     },
-    /** Waits until core reports target state `state`. */
+    /** Waits until core's link reports target state `state`. */
     async untilStatus(state, timeoutMs = HARNESS.settleMs) {
-      await until(() => pairing?.status()?.state === state, timeoutMs, HARNESS.pollMs)
-      assert.equal(pairing?.status()?.state, state, `target status after ${timeoutMs} ms: ${JSON.stringify(pairing?.status())} (view ${JSON.stringify(pairing?.view())})`)
-      return pairing.status()
+      await until(() => world.status()?.state === state, timeoutMs, HARNESS.pollMs)
+      assert.equal(world.status()?.state, state, `target status after ${timeoutMs} ms: ${JSON.stringify(world.status())} (pairing ${JSON.stringify(world.view())})`)
+      return world.status()
     },
   }
-  if (start) await world.start()
+  if (start) await openAll()
   return world
+}
+
+/**
+ * Core's `identity.id` check of one value (R-ID-02), as `{ok: true}` or `{ok: false, code}`:
+ * `acceptId(value, previous)` with a valid previous id; the `id` it answers is dropped here (the
+ * "previous id stays" oracle reads it through the world's settings save).
+ */
+export async function checkId(sdk, value, previous) {
+  const { ok, code } = (await identityModule(sdk))[SUBJECT.acceptId](value, previous)
+  return ok ? { ok } : { ok, code }
 }
 
 /** Waits until `predicate()` holds (harness wait only). */
