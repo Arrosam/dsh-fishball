@@ -121,6 +121,9 @@ export const V2_SUITES = Object.freeze({
     // V3 C-PAIR (AUTH-UC-02/04, AUTH-EP-03/06, AUTH-DT-02, AUTH-BVA-05, AUTH-ST-01 rows 2–4/11/13/14, NAME-UC-01/03, NAME-EP-01…04, NAME-BVA-01/03, NAME-DT-01/02, NAME-ST-01 rows 1–7); run with test/run-v3.mjs.
     file('test/v3/c-pair/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
     file('test/v3/c-pair/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
+    // V3 C-HTTP (PLAT-UC-01, PLAT-EP-01, PLAT-BVA-02, REM-UC-03, REM-EP-02/03, EVT-EP-04 rows 3–4, AUTH-EP-02 rows 1, 2, 11–14, K1b-UC-01/DT-05/BVA-02/ST-02); run with test/run-v3.mjs.
+    file('test/v3/c-http/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector MCP route, request gate and limits (C-HTTP)'),
+    file('test/v3/c-http/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector MCP route, request gate and limits (C-HTTP)'),
     // V3 C-MAILBOX (EVT-UC-01, EVT-EP-02, EVT-EP-04 rows 1/2/5/6, EVT-BVA-01/02, EVT-ST-01); run with test/run-v3.mjs.
     file('test/v3/c-mailbox/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector per-pair mailbox, poll/ack and hints (C-MAILBOX)'),
     file('test/v3/c-mailbox/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector per-pair mailbox, poll/ack and hints (C-MAILBOX)'),
