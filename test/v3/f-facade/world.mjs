@@ -41,7 +41,8 @@ async function newRoot() {
  * @param {{tools: object[], status?: object, answers?: object}} linkOptions the fake link
  * @param {{events?: boolean, gate?: object, imagesSupported?: boolean}} options `events`: also run
  *   F-INTERCEPT's module with the façade's `present` as its Fishball presenter (EXT-UC-02 A3);
- *   `gate` and `imagesSupported` go to the façade's factory (subject.mjs)
+ *   `gate` and `imagesSupported` (a boolean here; subject.mjs passes it as `() => boolean`) go to the
+ *   façade's factory
  */
 export async function worldFor(t, sdk, linkOptions, { events = false, gate, imagesSupported } = {}) {
   const root = await newRoot()

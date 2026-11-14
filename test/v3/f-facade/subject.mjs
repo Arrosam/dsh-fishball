@@ -7,8 +7,10 @@
  *                      (fakes.mjs FakeLink)
  *     gate             X19: `gate.send('session.message' | 'session.redirect', sessionId)` →
  *                      `{ok: true}` or `{code, reason}`
- *     imagesSupported  whether Fishball's model takes images (the image gate on the model's
- *                      `attachment_read`). ASSUMED a boolean: the relay names no type.
+ *     imagesSupported  `(exec) => boolean | Promise<boolean>`, called on every model call: whether
+ *                      Fishball's model takes images (the image gate on the model's `attachment_read`).
+ *                      Never a plain boolean; a non-function, or a `gate` without `send`, throws
+ *                      TypeError at createBridge (Fishball 2026-11-15, dev c9e93398).
  *     logger           a cordis logger
  *   Bridge = {
  *     mount(toolsService) → dispose   registers DSH ToolDefinitions for Fishball's model
@@ -53,7 +55,8 @@ export async function makeBridge(sdk, { ctx, link, logger, gate, imagesSupported
   const bridge = mod[SUBJECT.factory]({
     link, logger,
     ...(gate === undefined ? {} : { gate }),
-    ...(imagesSupported === undefined ? {} : { imagesSupported }),
+    // The cases say true/false; the module takes the function form.
+    ...(imagesSupported === undefined ? {} : { imagesSupported: () => imagesSupported }),
   })
   assert.equal(typeof bridge?.mount, 'function', `${SUBJECT.factory}() returned no mount()`)
   let dispose = bridge.mount(ctx.tools)
