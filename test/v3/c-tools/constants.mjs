@@ -61,7 +61,13 @@ export const FIXTURE = Object.freeze({
   clientInfo: Object.freeze({ name: 'fbtest-c-tools', version: '0.0.0' }),
   generation: 1,
   entry: (id) => `fbtest-entry-${id}`,
-  accessToken: (id) => `fbtest-at-${id}`,
+  /**
+   * The bearer value is built from a token-safe label of the id (base64url, RFC 6750 token68), not
+   * the raw id: the F6 row's invalid id has spaces, and C-HTTP's FakeVerifier splits the
+   * Authorization header on a space, so a raw id would 401 before the tools are reached. The raw
+   * id still goes to the verifier's caller and to PairStore.pair (subject.mjs `issue`).
+   */
+  accessToken: (id) => `fbtest-at-${Buffer.from(id).toString('base64url')}`,
   /** P manages S1; Q is another principal (README fixtures). */
   idP: 'agent-p',
   idQ: 'agent-q',
