@@ -10,7 +10,7 @@
  * V2 top-level modules stay untouched (W3 O2) and C-WIRE adapts them. Who manages a session is
  * K1c's `ManagedState` only; the V2 managed registry is never read here.
  */
-import { MANAGED_REFUSAL, REFUSAL, TOOL } from '../../../mcp-schema/index.js'
+import { REFUSAL, TOOL } from '../../../mcp-schema/index.js'
 import { hasVisibleCharacter } from '../../text.js'
 import { inboxAckTool, inboxPollTool } from '../../mailbox/index.js'
 import { AUTHORITY, LOG, SESSION_ACCESS } from './constants.js'
@@ -59,8 +59,8 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
   /**
    * The answer tools (offers.js). Row 1 of the session table applies first: a session another
    * principal manages is `forbidden` before any offer or DSH read, since that principal holds
-   * every offer of it (Fishball 2026-11-14). The offer's session is then the root the domain keys
-   * its requests by (a subagent asks for the session the user sees).
+   * every offer of it (Fishball 2026-11-14). The offer, and the domain's commit, then use the
+   * root the domain keys its requests by (a subagent asks for the session the user sees).
    */
   async function answered(args, caller, requestId, commit) {
     const { relation, root } = access.relationOf(args.sessionId, caller.principalKey)
@@ -69,9 +69,10 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
   }
 
   /**
-   * Fishball's decisions Q3 and Q5 (2026-11-14): the main DSH surface of `question_ask` is not
+   * Fishball's decisions Q3, Q5 and R5 (2026-11-14): the main DSH surface of `question_ask` is not
    * designed yet (W3 brief Q-25), so it files nothing; `question_answer_own` settles only cards
-   * `question_ask` filed, so it goes with it. Both answer after their arguments are checked.
+   * `question_ask` filed, so it goes with it. Both answer after K1's schema and V2's payload rules
+   * (question counts and character limits) passed (dispatch.js).
    */
   const notYet = async () => refused(REFUSAL.unsupportedOperation)
 
@@ -79,9 +80,9 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     // Only managed sessions are related in V3 (Fishball's Q4): the caller's own, never another's.
     async [TOOL.sessionsList](args, { caller }) {
       const listed = []
-      for (const { sessionId } of managed.managed()) {
+      for (const { sessionId, principalKey } of managed.managed()) {
         if (listed.length >= args.limit) break
-        if (!access.isMine(sessionId, caller.principalKey)) continue
+        if (principalKey !== caller.principalKey) continue
         const summary = await sessions.describe(sessionId)
         if (summary === undefined || (args.workspaceId !== undefined && summary.workspaceId !== args.workspaceId)) continue
         listed.push(summary)
@@ -108,17 +109,18 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     // The reason is checked (V2: required) but has no V3 consumer: K1c's `release` is the only
     // call, and it sends no release event (K1c-2).
     [TOOL.sessionRelease]: managing(async (args, caller, root) => {
-      const released = await managed.release(root, caller.principalKey)
-      return released.ok === true ? ok({ sessionId: args.sessionId, managed: false }) : refused(released.code ?? MANAGED_REFUSAL.notManaged)
+      return passed(await managed.release(root, caller.principalKey), () => ({ sessionId: args.sessionId, managed: false }))
     }),
     [TOOL.approvalsList]: managing(async (args, caller, root) => ok({ approvals: await offers.heldBy(root, caller.principalKey) })),
-    [TOOL.approvalAnswer]: (args, { caller }) => answered(args, caller, args.approvalId, async () => passed(
-      await interactions.answerApproval({ sessionId: args.sessionId, approvalId: args.approvalId, answer: args.answer }),
+    [TOOL.approvalAnswer]: (args, { caller }) => answered(args, caller, args.approvalId, async (sessionId) => passed(
+      await interactions.answerApproval({ sessionId, approvalId: args.approvalId, answer: args.answer }),
       (result) => defined({ accepted: true, grantId: result.grantId, expiresAt: result.grantId === undefined ? undefined : result.expiresAt }),
     )),
     [TOOL.questionAnswer]: (args, { caller }) => {
       const { offerId, ...answer } = args
-      return answered(args, caller, args.questionId, async () => passed(await interactions.answerQuestion(answer), () => ({ accepted: true })))
+      return answered(args, caller, args.questionId, async (sessionId) => passed(
+        await interactions.answerQuestion({ ...answer, sessionId }), () => ({ accepted: true }),
+      ))
     },
     [TOOL.questionAsk]: notYet,
     [TOOL.questionAnswerOwn]: notYet,
@@ -127,7 +129,8 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
       return ok({ prompts: prompts.filter((prompt) => access.isMine(prompt.sessionId, caller.principalKey)) })
     },
     [TOOL.promptAnswer]: managing(async (args) => {
-      // V2's prompt rules (approvals.js answerPrompt): a closed prompt is expired, another session's forbidden.
+      // V2's prompt rules (slim/host/approvals.js answerPrompt), raw ids as there: a closed prompt is
+      // expired, another session's forbidden. A prompt is answered with the sessionId prompts_list showed.
       const prompt = (await interactions.listPrompts()).find((entry) => entry.promptId === args.promptId)
       if (prompt === undefined) return refused(REFUSAL.expired)
       if (prompt.sessionId !== args.sessionId) return refused(REFUSAL.forbidden)
