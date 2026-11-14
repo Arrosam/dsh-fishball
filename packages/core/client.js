@@ -19,8 +19,13 @@ window.__ModuleLoader__.load({
     const CORE = Object.freeze({
       name: 'fishball-core',
       settings: './client.settings.js',
+      effect: 'fishball-core: settings panel',
       unavailable: 'fishball core: settings panel unavailable',
     })
+
+    // The same load-then-start shape as fishball-embed-ui's parts (its client.js `start`). It is
+    // copied, not shared: two browser packages could share it only through a library chunk both
+    // load, and no such client library exists in the set.
 
     function apply(ctx) {
       ctx.effect(() => {
@@ -28,7 +33,7 @@ window.__ModuleLoader__.load({
         require.async(CORE.settings).then(({ settingsPlugin }) => { if (live) ctx.plugin(settingsPlugin) })
           .catch((error) => { ctx.logger?.warn?.(CORE.unavailable, error) })
         return () => { live = false }
-      }, CORE.name + ': settings panel')
+      }, CORE.effect)
     }
 
     // No inject of its own: the panel declares the client services it needs and starts with them.
