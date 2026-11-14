@@ -184,16 +184,21 @@ export async function routeWorld(t, sdk, { hints = recordingHints() } = {}) {
     async reopen() { await stop(); open = await start() },
     /**
      * A token entry with id `id`, enabled; `paired` binds it (with `name`); `connected` opens its
-     * listen stream; `designated` makes it `routing.fishballToken`. Returns its principal key.
+     * listen stream; `designated` makes it `routing.fishballToken`. Returns the key the handover
+     * service lists it under: its principal key when paired, else its entry key. An unpaired entry
+     * has no principal key yet (C-PAIR mints one only when it binds), so its key is the opaque
+     * EntryKey (K3 handover.d.ts; ROUTE-EP-01 rows 3 and 7).
      */
     principal(id, { name = null, paired = true, connected = false, designated = false } = {}) {
       const entryKey = ports.tokens.add(id)
       const key = FIXTURE.principal(id)
+      // `keys` names mailboxes, so it keeps the principal key even while unpaired: that is where
+      // mail lands once the entry is bound later (as ROUTE-EP-01 row 7 does).
       keys.add(key)
       if (paired) ports.pairs.bind(id, name)
       if (connected) ports.presence.connect(key)
       if (designated) ports.settings.set({ fishballToken: entryKey })
-      return key
+      return paired ? key : entryKey
     },
     /** A session of this DSH. */
     session: (id) => ports.sessions.add(id),
