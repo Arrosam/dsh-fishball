@@ -391,7 +391,7 @@ export function registerUShellCases(sdk) {
     }
   })
   integrationCase(sdk, 'U-SHELL', 'routes', 'GET child/status re-serves the locator: {ok, status, target} with its state and code', async () => {
-    const answer = await routeCall(await hostFor(sdk, SCENARIO.down), PAGE_NAME.ipv4, 'GET', ROUTE.status)
+    const answer = await routeCall(await hostFor(sdk, SCENARIO.downRead), PAGE_NAME.ipv4, 'GET', ROUTE.status)
     assert.equal(answer.status, HTTP_OK, answer.text)
     assert.deepEqual(ROUTE.statusKeys.filter((k) => !(k in answer.json)), [])
     assert.deepEqual([answer.json.status.state, answer.json.status.code], [CHILD.failed, CHILD.exited])
@@ -424,11 +424,15 @@ export function registerUShellCases(sdk) {
     })
   }
   for (const [label, hostHeader] of Object.entries(HOST_TRICK)) {
-    integrationCase(sdk, 'UIM-EP-02', '4 (EP)', `a Host that names localhost only after parsing (${label}) → 409 hostname-refused; no ticket`, async () => {
+    integrationCase(sdk, 'UIM-EP-02', '4 (EP)', `a Host that names localhost only after parsing (${label}) → refused (409 hostname-refused, or DSH's own fence first); no ticket`, async () => {
       const setup = await hostFor(sdk, SCENARIO.all)
       const before = admissions(setup).length
-      assertRefusal(await routeCall(setup, PAGE_NAME.tunnel, 'POST', ROUTE.admit, { view: CHILD.views[0], lang: CHILD.langs.en }, { hostHeader }), ROUTE_REFUSAL.hostname)
-      assert.equal(admissions(setup).length, before)
+      const answer = await routeCall(setup, PAGE_NAME.tunnel, 'POST', ROUTE.admit, { view: CHILD.views[0], lang: CHILD.langs.en }, { hostHeader })
+      // DSH's browser-trust fence (dsh-client-connection, both SDKs) runs before any route handler and
+      // may refuse such a Host itself; when the request does reach embed-UI, the relayed code applies.
+      assert.notEqual(answer.status, HTTP_OK, answer.text)
+      if (answer.status === ROUTE_REFUSAL.hostname.status) assert.equal(refusalCode(answer), ROUTE_REFUSAL.hostname.code)
+      assert.equal(admissions(setup).length, before, 'a ticket was minted')
     })
   }
   for (const [label, body] of [['an extra hostname key', { view: CHILD.views[0], lang: CHILD.langs.en, hostname: PAGE_NAME.tunnel.header }], ['a missing lang', { view: CHILD.views[0] }], ['an unknown view', { view: 'fbtest-view', lang: CHILD.langs.en }], ['an unknown lang', { view: CHILD.views[0], lang: 'fr' }]]) {

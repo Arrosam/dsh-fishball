@@ -160,6 +160,8 @@ export const SCENARIO = Object.freeze({
   older: Object.freeze({ label: 'older', services: Object.freeze({ child: Object.freeze({ ...READY, apiVersion: API_VERSION.older }) }) }),
   disabled: Object.freeze({ label: 'off', services: Object.freeze({ child: Object.freeze({ ...READY, disabled: true }), ...CONNECTOR }) }),
   down: Object.freeze({ label: 'down', services: Object.freeze({ child: Object.freeze({ ...READY, status: Object.freeze({ state: CHILD.failed, code: CHILD.exited }) }) }) }),
+  /** The same failed child on its own host, which no row retries (read-only route rows). */
+  downRead: Object.freeze({ label: 'downread', services: Object.freeze({ child: Object.freeze({ ...READY, status: Object.freeze({ state: CHILD.failed, code: CHILD.exited }) }) }) }),
   /** Every service, embed-UI NOT installed (UIM-UC-04 A2: DSH's generic rows only). */
   noEmbed: Object.freeze({ label: 'noembed', embed: false, services: Object.freeze({ child: READY, ...CONNECTOR }) }),
   blank: Object.freeze({ label: 'blank', services: Object.freeze({ child: Object.freeze({ ...READY, status: Object.freeze({ state: CHILD.ready, code: CHILD.unreachable.code }), targetStatus: CHILD.unreachable }) }) }),
