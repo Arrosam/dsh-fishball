@@ -5,8 +5,7 @@
  * https rule covers only the token endpoint, so the access token would otherwise travel in plain
  * text to the MCP URL (spike V3-S7 `8e92b84` §4.4).
  */
-import { HOSTS, oauthUrls } from './schema.js'
-import { TARGET_REFUSAL } from './constants.js'
+import { HOSTS, TARGET_CODE, oauthUrls } from './schema.js'
 import { STATUS, refusedTarget } from './status.js'
 
 /**
@@ -24,8 +23,8 @@ const refused = (code) => unusable(refusedTarget(code))
  * The refusal carries the TargetStatus to report (`status`), so the rule has one place.
  * - blank (absent, empty or white space only): `target-unset`, code `null` (R-FB-03);
  * - not a URL, a scheme other than http/https, or a URL with a user name or password (a fetch
- *   refuses those, so it could never connect): `target-unset`, `TARGET_REFUSAL.invalid`;
- * - `http:` to a host that is not a loopback name: `target-unset`, `TARGET_REFUSAL.insecure`;
+ *   refuses those, so it could never connect): `target-unset`, `TARGET_CODE.invalid`;
+ * - `http:` to a host that is not a loopback name: `target-unset`, `TARGET_CODE.insecure`;
  * - otherwise usable, with the issuer core pins (`expectedIssuer`): the target origin's K1 issuer,
  *   so the client secret can only ever go to an authorization server of the target's own origin.
  * @param {unknown} value
@@ -33,11 +32,11 @@ const refused = (code) => unusable(refusedTarget(code))
  */
 export function checkTarget(value) {
   if (isBlank(value)) return unusable(STATUS.unset)
-  if (typeof value !== 'string' || !URL.canParse(value)) return refused(TARGET_REFUSAL.invalid)
+  if (typeof value !== 'string' || !URL.canParse(value)) return refused(TARGET_CODE.invalid)
   const url = new URL(value)
-  if (url.username !== '' || url.password !== '') return refused(TARGET_REFUSAL.invalid)
+  if (url.username !== '' || url.password !== '') return refused(TARGET_CODE.invalid)
   const loopback = HOSTS.loopbackNames.includes(url.hostname)
-  if (url.protocol === HOSTS.loopbackScheme && !loopback) return refused(TARGET_REFUSAL.insecure)
-  if (url.protocol !== HOSTS.loopbackScheme && url.protocol !== HOSTS.remoteScheme) return refused(TARGET_REFUSAL.invalid)
+  if (url.protocol === HOSTS.loopbackScheme && !loopback) return refused(TARGET_CODE.insecure)
+  if (url.protocol !== HOSTS.loopbackScheme && url.protocol !== HOSTS.remoteScheme) return refused(TARGET_CODE.invalid)
   return Object.freeze({ ok: true, url, origin: url.origin, issuer: oauthUrls(url.origin).issuer })
 }

@@ -10,7 +10,8 @@
  * wins (S3 `proto/interception.mjs`). The table has no put-if-absent, so `create` guards the first
  * write of an id in process; there is one core per Fishball DSH (R-ID-06).
  */
-import { FINISHED, LEDGER, MESSAGE, MISUSE, STATE } from './constants.js'
+import { LEDGER, MESSAGE, STATE } from '../../contracts/constants.js'
+import { FINISHED, MISUSE } from './constants.js'
 
 const STATES = new Set(Object.values(STATE))
 

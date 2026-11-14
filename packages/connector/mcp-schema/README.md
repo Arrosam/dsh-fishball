@@ -119,6 +119,19 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   `reject` → `rejected`, an answered question or plan review → `answered`; `ask` and `escalate`
   settle nothing (the user's later answer does). `by` is `user` or `principal`.
 
+### Core's link to its target (`TARGET_STATE`, `TARGET_CODE`, `LINK_REFUSAL`)
+
+K1 is the one runtime owner of these words (DECIDED D7): they cross the connector–core boundary,
+and core reads them from its vendored K1. K3 types them (`host-services/child.d.ts` `TargetState`,
+`TargetCode`; `core/contracts/events.d.ts` `CommitSendResult`), so a K3 amendment of those types
+changes this object in the same change.
+
+| Constant | Values |
+| --- | --- |
+| `TARGET_STATE` | `connected`, `target-unreachable`, `token-refused`, `target-unset` (design §4.1) |
+| `TARGET_CODE` | `TARGET_UNREACHABLE`, `TOKEN_REFUSED`, `TARGET_INCOMPATIBLE`, `token-revoked` (design §6.1); `target-insecure`, `target-invalid`: core's own refusals of a target URL before any request, with state `target-unset` (DECIDED D5; R-FB-04, REM-EP-01 rows 6–8) |
+| `LINK_REFUSAL.disconnected` | the answer of a call made while the link is down: it never reached the connector (design §6.3, R-REM-04) |
+
 ### Mailbox (`MAILBOX`, `QUEUE`)
 
 | Name | Value | Meaning |
@@ -340,7 +353,7 @@ opaque: `EntryKey`, `PrincipalKey`; no interface carries a token value.
 | `fishballConnectorHandover` codes, dropdown order, release emits nothing? (HAND rows 1-E1, 5, 7a, 8, 9, 144, 160, 164) | K3 / C-ROUTE |
 | `fishballConnectorTokens`, hosted status codes (08-hosted) | K3 / I-HOST |
 | interceptor priority range (EVT-DT-02 7) and core's interception (EVT) | K3 / F-INTERCEPT |
-| core's target status codes, URL refusals (09 rows 8, 74, 103) | F-LINK / F-STATUS |
+| core's target status reporting (09 rows 74, 103); the codes are frozen above | F-LINK / F-STATUS |
 | `plugin-set-incomplete`, board 30 d edge (11-platform) | F-STATUS / FEAT-PEERS |
 | Watchdog rows (05-watchdog) | WD-ROUTE / WD-PATROL |
 | embed-UI rows (10-embed-ui-matrix) | U-SHELL / U-MARKS / U-RECORDS |
@@ -349,8 +362,9 @@ opaque: `EntryKey`, `PrincipalKey`; no interface carries a token value.
 ## User decisions
 
 The user's decisions on the PROPOSED values of K1, K2 and K3 (relayed by Fishball), by item number.
-This is the one record: `DECIDED #n` in any of the three contracts points here. Every other value
-marked PROPOSED is still open.
+This is the one record: `DECIDED #n` (or `DECIDED Dn`) in any of the three contracts points here.
+Every other value marked PROPOSED is still open. Rows D1–D7 are the values the W2 tasks proposed
+locally; they moved into their contracts unchanged (the constants migration, 2026-11-14).
 
 | # | Value | Decision |
 | --- | --- | --- |
@@ -376,6 +390,13 @@ marked PROPOSED is still open.
 | 17 | K3 core contracts: an invalid `intercept` registration throws `TypeError` | kept (2026-11-14) |
 | W2-1 | `mailboxGeneration` (`MAILBOX`) | changes only when mailbox storage is lost or reset; delete, hold expiry and re-enable keep it (2026-11-14, K1 amendment after W2) |
 | W2-2 | `PairStore.succeed` with an unpaired old entry | succeeds and changes nothing: there is no principal and no name to move (2026-11-14, K1 amendment after W2) |
+| D1 | K3 `PRESENT_RETRY` (core contracts): 3 attempts, 1000 ms, factor 2 (waits 1 s, then 2 s) | kept (numeric; delegated to Fishball, 2026-11-14) |
+| D2 | K3 `LEDGER.finishedRetentionMs`: 30 days | kept (numeric; delegated to Fishball, 2026-11-14) |
+| D3 | K3 `INTERCEPT.defaultPriority`: 0 | kept (numeric; delegated to Fishball, 2026-11-14) |
+| D4 | K3 `LINK_BACKOFF`: 1 s, factor 2, at most 60 s | kept (numeric; delegated to Fishball, 2026-11-14) |
+| D5 | K1 `TARGET_CODE.insecure` / `.invalid` (`target-insecure`, `target-invalid`), also in K3 `TargetCode` | kept; decided by Fishball under the user's rule 0mwexcc0, not the user's own choice (2026-11-14) |
+| D6 | K3 `TEXT.presentGivenUp`: the notice for an event core could not present | kept; decided by Fishball under the user's rule 0mwexcc0, not the user's own choice (2026-11-14) |
+| D7 | Runtime owners: K1 for `TARGET_STATE`, `TARGET_CODE`, `LINK_REFUSAL`; K3 core `contracts/constants.js` for the interception, link-backoff and guard values | decided by Fishball under the user's rule 0mwexcc0, not the user's own choice (2026-11-14) |
 
 ## Departure from the specification
 

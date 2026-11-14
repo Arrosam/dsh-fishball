@@ -10,9 +10,10 @@
     "./link": "./src/link/index.js",
     "./package.json": "./package.json"
   },
-  "//files": "vendor/ is the committed copy of fishball-connector/mcp-schema (and the K2 and V2 contract files it imports) that core's link reads (design §9.1; user decision 2026-11-14). It is generator output: refresh it with node scripts/vendor-mcp-schema.mjs after a contract change, never by hand; REL-PACK runs the same script. scripts/ is not shipped.",
+  "//files": "contracts/constants.js is K3's one data-only runtime module (K3 amendment 2026-11-14); src/ imports it, so it ships, while the contract's .d.ts files are types only and do not. vendor/ is the committed copy of fishball-connector/mcp-schema (and the K2 and V2 contract files it imports) that core's link reads (design §9.1; user decision 2026-11-14). It is generator output: refresh it with node scripts/vendor-mcp-schema.mjs after a contract change, never by hand; REL-PACK runs the same script. scripts/ is not shipped.",
   "files": [
     "client.js",
+    "contracts/constants.js",
     "src/",
     "ui/",
     "vendor/",

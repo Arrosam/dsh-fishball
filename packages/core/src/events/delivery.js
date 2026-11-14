@@ -31,7 +31,8 @@
  *   core (it reads no log) and so delivered once more (EVT-ST-02 row 11e).
  */
 import { freezeMessage } from '@deepseek-ai/dsh-llm'
-import { HOST, LOG, MESSAGE, PRESENT_RETRY, REASON, STATE, TEXT } from './constants.js'
+import { MESSAGE, PRESENT_RETRY, REASON, STATE, TEXT } from '../../contracts/constants.js'
+import { HOST, LOG } from './constants.js'
 import { codeOf } from './diagnostics.js'
 import { messageIdOf } from './ledger.js'
 
@@ -50,7 +51,7 @@ function claimVerdict(end) {
   return end?.kind === HOST.aborted && end.reason?.kind === HOST.causeUser ? REASON.userStopped : REASON.claimTurnEnded
 }
 
-/** The PROPOSED backoff before attempt n + 1 of presenting an event (n is 1-based). */
+/** The backoff (K3 PRESENT_RETRY, DECIDED D1) before attempt n + 1 of presenting an event (n is 1-based). */
 const backoffAfter = (attempt) => PRESENT_RETRY.backoffMs * PRESENT_RETRY.backoffFactor ** (attempt - 1)
 
 /** A timer that never keeps the process alive: a held event is delivered again at the next start. */
@@ -210,7 +211,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
 
   /**
    * The model-facing content of the head event. A presenter that throws is retried after the
-   * PROPOSED backoff without blocking the events behind it; after the last attempt the event is
+   * PRESENT_RETRY backoff without blocking the events behind it; after the last attempt the event is
    * given up: one log line, and Fishball gets a short notice naming it as its one wake (the user's
    * decision 2026-11-14 3.A).
    * @returns {object[]|undefined} the content, or undefined when the event waits for a retry.

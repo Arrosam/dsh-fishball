@@ -37,6 +37,8 @@ DECIDED (#n) are ones the user kept at the value review (relayed by Fishball; #n
 | `retire` refusals | `unknown-entry`, `not-hosted`, `successor-unpaired`, `operation-failed`; all move nothing (codes DECIDED #13) | R-HOST-09, HOST-DT-02 |
 | `createHosted` failures | rejects with `credentials-unwritable` or `operation-failed`; creates nothing (DECIDED #14) | design §5.2 |
 | Child states and codes | V2's `STATUS` and `STATUS_CODES`, `INVALID_MAIN_HOME`, plus `PROFILE_INCOMPATIBLE`, `fishball-off`, `TARGET_UNREACHABLE`, `TOKEN_REFUSED`, `TARGET_INCOMPATIBLE`, `token-revoked` | design §6.1, §8.1, R-FB-10, R-HOST-10 |
+| `TargetCode` URL refusals | `target-insecure` (plain `http:` to a host that is not a loopback name), `target-invalid` (not an `http:` / `https:` URL); core refuses the URL before any request, with state `target-unset` (DECIDED D5) | R-FB-04, REM-EP-01 rows 6–8 |
+| Runtime values of `TargetState`, `TargetCode` | K1's `TARGET_STATE`, `TARGET_CODE` (`fishball-connector/mcp-schema`): this folder stays types only (DECIDED D7) | K3 amendment 2026-11-14 |
 | `targetStatus()` states | `connected`, `target-unreachable`, `token-refused`, `target-unset` (design §4.1); a reference with no value is `target-unset` (PROPOSED) | HOST-UC-05 A1 |
 | Status naming the blocking bundle | `status().plugin` beside `PROFILE_INCOMPATIBLE` (PROPOSED) | R-HOST-11 (4), HOST-ST-01 #3 |
 | `admit` hostname | exactly `127.0.0.1`, `localhost`, `[::1]`; the caller passes the URL-parsed (lower-case) hostname; anything else rejects `hostname-refused` (code DECIDED #15) | S4-Q1 A, RFC 3986 §3.2.2 |

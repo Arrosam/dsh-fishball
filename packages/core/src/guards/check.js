@@ -5,7 +5,7 @@
  */
 import { readProfileManifest } from '@deepseek-ai/dsh-app-boot'
 import { scopeParentOf } from '@deepseek-ai/dsh-scope'
-import { GUARDS } from './constants.js'
+import { GUARDS } from '../../contracts/constants.js'
 import { bundlesOf, coreLast } from './reorder.js'
 
 const { code, services } = GUARDS

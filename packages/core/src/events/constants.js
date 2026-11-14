@@ -1,71 +1,16 @@
 /**
- * Constants of fishball-core's interception service and acceptance ledger (task F-INTERCEPT;
- * K3 `packages/core/contracts/events.d.ts`; design §6.4; requirements R-INT-01…09, R-EVT-03;
- * spikes V3-S2 `a499141`, V3-S3 `b4dca86`).
+ * Internal vocabulary of fishball-core's interception service and acceptance ledger (task
+ * F-INTERCEPT; K3 `packages/core/contracts/events.d.ts`; design §6.4; requirements R-INT-01…09,
+ * R-EVT-03; spikes V3-S2 `a499141`, V3-S3 `b4dca86`).
  *
- * Two kinds of value live here, kept apart on purpose:
- * - CONTRACT: values the K3 freeze states in prose and types (`events.d.ts`) but exports no runtime
- *   constant for, because K3 is types only. They are reproduced once, here, until K3 gains a
- *   runtime module; a K3 amendment changes `events.d.ts` and this object together.
- * - Everything else is this module's own internal vocabulary (ledger layout, record states, the
- *   background log) or a DSH host value it reads (session event types, the Cordis fiber state).
+ * The contract's values (default priority, `fenced`, the ledger, its states and reasons, the
+ * presenter retry, the given-up notice, the message id) are K3's, in `contracts/constants.js`; the
+ * `disconnected` answer is K1's `LINK_REFUSAL`. What stays here is this module's own vocabulary
+ * (state groups, dispatch outcomes, the background log, misuse texts) and the DSH host values it
+ * reads (session event types, the Cordis fiber state).
  */
 
-/**
- * PROPOSED (Fishball 2026-11-14): values K3 states in `events.d.ts` but exports no runtime constant
- * for. They live here once until task K-VALUES moves them into `packages/core/contracts`.
- */
-export const CONTRACT = Object.freeze({
-  /** `InterceptRegistration.priority` default (R-INT-01). */
-  defaultPriority: 0,
-  /** `CommitResult` code when the handler no longer holds the event as accepted. */
-  fenced: 'fenced',
-  /** `CommitSendResult` code of an answer that never reached the connector (design §6.3). */
-  disconnected: 'disconnected',
-})
-
-/**
- * The acceptance ledger: one DSH storage-domain table in the Fishball DSH, one record per
- * `eventId` (design §6.4, S2 §2.2). The record is a small state machine; every move is a
- * read-modify-write on the domain's single write chain, so two moves never interleave (S3).
- */
-// K1 keeps its day length private (mcp-schema constants.js DAY_MS) and exports only
-// TIME_UNIT.msPerSecond; this is the same unit, named for the one value below.
-const MS_PER_DAY = 24 * 60 * 60 * 1000
-export const LEDGER = Object.freeze({
-  domain: 'fishball_core_events',
-  table: 'acceptance',
-  version: 1,
-  /**
-   * PROPOSED (Fishball 2026-11-14, under the user's review): a finished record (closed, admitted
-   * or discarded) that the connector has acked is deleted this long after it finished. Only acked
-   * records go: the connector never returns an acked event to a poll (K1 MAILBOX), so a deleted
-   * id cannot come back and be handled twice; an unacked one is kept so its replay stays a duplicate.
-   */
-  finishedRetentionMs: 30 * MS_PER_DAY,
-})
-
-/**
- * Record states.
- * - offered: handed to one interceptor (`plugin`, `attempt`), not yet accepted; never acked.
- * - open: the interceptor's `ctl.accept()` resolved; durable, acked, undecided.
- * - committing: `ctl.commit(send)` began; the event stays with the interceptor from here on.
- * - closed: the interceptor's handler settled; log only (R-INT-09).
- * - fishball: accepted for the Fishball agent, in core's delivery list (R-INT-08, R-EVT-03).
- * - admitted: Fishball's session admitted its message (the event's own, or the given-up notice,
- *   decision 3.A); the one wake happened, and this record alone says so (decision 4.A).
- * - discarded: removed from the inbox, or its claiming turn ended before admission in another way
- *   than an owner teardown (S2-Q3 A, decision 1.B): acked, never retried.
- */
-export const STATE = Object.freeze({
-  offered: 'offered',
-  open: 'open',
-  committing: 'committing',
-  closed: 'closed',
-  fishball: 'fishball',
-  admitted: 'admitted',
-  discarded: 'discarded',
-})
+import { STATE } from '../../contracts/constants.js'
 
 /** States that hold the event for an interceptor and that a fallback may still move to Fishball. */
 export const UNDECIDED = Object.freeze([STATE.offered, STATE.open])
@@ -76,58 +21,8 @@ export const FINISHED = Object.freeze([STATE.closed, STATE.admitted, STATE.disca
 /** Every state but `offered` is a durable acceptance by one side, so core may ack (R-INT-08). */
 export const ACKABLE = Object.freeze(Object.values(STATE).filter((state) => state !== STATE.offered))
 
-/** Why an event went to Fishball, or how an interceptor's record ended; background log only. */
-export const REASON = Object.freeze({
-  noMatch: 'no-match',
-  notAccepted: 'not-accepted',
-  handlerFailed: 'handler-failed',
-  pluginNotLive: 'plugin-not-live',
-  disposed: 'registration-disposed',
-  released: 'released',
-  sendNotDelivered: 'send-not-delivered',
-  restartBeforeAccept: 'restart-before-accept',
-  restartPluginOff: 'restart-plugin-off',
-  handled: 'handled',
-  commitInterrupted: 'commit-interrupted',
-  userStopped: 'user-stopped',
-  /**
-   * The turn that claimed the event ended before admitting it in another way than a user Stop or
-   * an owner teardown (`error`, `blocked`, an `aborted` by `parent` or `hook`): discarded (the
-   * user's decision 2026-11-14 1.B).
-   */
-  claimTurnEnded: 'claim-turn-ended',
-  /** Every attempt to present the event failed; Fishball got a notice instead (decision 3.A). */
-  presentGivenUp: 'present-given-up',
-})
-
-/**
- * PROPOSED (the user's decision 2026-11-14 3.A, values under review): how often core tries to turn
- * an event into Fishball's message before it gives up. Attempt n (1-based) that fails, with
- * n < attempts, is followed by a wait of backoffMs × backoffFactor^(n−1) before attempt n + 1.
- */
-export const PRESENT_RETRY = Object.freeze({ attempts: 3, backoffMs: 1000, backoffFactor: 2 })
-
-/**
- * PROPOSED (decision 3.A): the short notice Fishball gets for an event core could not present.
- * It names the event only; no payload.
- */
-export const TEXT = Object.freeze({
-  blockType: 'text',
-  presentGivenUp: (eventId, type) => `Fishball notice: event ${eventId} (${type}) could not be shown to you and was given up.`,
-})
-
 /** What `intake` did with one polled event. */
 export const DISPATCH = Object.freeze({ interceptor: 'interceptor', fishball: 'fishball', duplicate: 'duplicate', closed: 'closed' })
-
-/**
- * The message an event becomes in Fishball's session. Its id is derived from the `eventId`, so the
- * live admission (`user/message` with that id) is recognised as this event's.
- */
-export const MESSAGE = Object.freeze({
-  idPrefix: 'fbe_',
-  role: 'user',
-  sourceKind: 'fishball-event',
-})
 
 /**
  * DSH host vocabulary the delivery list observes live (dsh-agent / dsh-session types, the same on
@@ -190,7 +85,7 @@ export const LOG = Object.freeze({
   recoverFailed: 'event recovery failed (%s); intake continues',
 })
 
-/** `TypeError` texts of an invalid registration or call (K3 PROPOSED rule). */
+/** `TypeError` texts of an invalid registration or call (K3 rule, DECIDED #17). */
 export const MISUSE = Object.freeze({
   pluginId: 'intercept: pluginId must be a non-empty string',
   types: 'intercept: types must be a non-empty array of non-empty strings',
