@@ -118,6 +118,9 @@ export const V2_SUITES = Object.freeze({
     // V3 C-PAIR (AUTH-UC-02/04, AUTH-EP-03/06, AUTH-DT-02, AUTH-BVA-05, AUTH-ST-01 rows 2–4/11/13/14, NAME-UC-01/03, NAME-EP-01…04, NAME-BVA-01/03, NAME-DT-01/02, NAME-ST-01 rows 1–7); run with test/run-v3.mjs.
     file('test/v3/c-pair/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
     file('test/v3/c-pair/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
+    // V3 C-OAUTH-WEB (AUTH-UC-10, AUTH-DT-07/08/09, AUTH-ST-04/05, AUTH-BVA-07/08, AUTH-EP-08/10, K1b-DT-07); run with test/run-v3.mjs.
+    file('test/v3/c-oauth-web/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector browser authorization: approval listener, CIMD, code and refresh grants (C-OAUTH-WEB)'),
+    file('test/v3/c-oauth-web/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector browser authorization: approval listener, CIMD, code and refresh grants (C-OAUTH-WEB)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).

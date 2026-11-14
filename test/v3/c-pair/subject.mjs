@@ -30,7 +30,7 @@ let hooked = false
  * runtime packages DSH ships outside that scope (`zod`), which the repository does not install.
  * This hook resolves those few names from the same SDK version as the importing, tagged module.
  */
-function resolveRuntimePackages() {
+export function resolveRuntimePackages() {
   if (hooked) return
   hooked = true
   registerHooks({
