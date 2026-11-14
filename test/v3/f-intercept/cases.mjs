@@ -25,7 +25,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../shared/cases.mjs'
 import { runCrash, SCENARIO } from './crash.mjs'
-import { CORE, DSH, EVENT_TYPE, FIXTURE, K3, LATER, TOOL, WAIT } from './constants.mjs'
+import { CORE, DSH, EVENT_TYPE, FIXTURE, K3, LATER, PROCESS_EVENT, TOOL, WAIT } from './constants.mjs'
 import { busyGate, contributedType, eventually, makeEvent, newRoot, openWorld, removeRoot, startBusy, worldFor } from './world.mjs'
 
 const T = { timeout: WAIT.testMs }
@@ -807,6 +807,81 @@ export function registerInterceptCases(sdk) {
   })
 
   registerDecisionCases(sdk)
+  registerCloseCases(sdk)
+}
+
+// ------------------------------------------------------------------------------------------------
+// close() while an offer is in flight (regression: the offer's tail touched the closed ledger).
+
+/**
+ * A handler held in flight until the test lets it go: it accepts first when `accepts` (so the
+ * record is open at close time, else still offered), then returns or, when `throws`, throws.
+ * `at` resolves with accept's result (undefined when it never accepts); `settled` once it ended.
+ */
+function inFlightHandler({ accepts, throws }) {
+  const at = Promise.withResolvers()
+  const go = Promise.withResolvers()
+  const settled = Promise.withResolvers()
+  const handler = async (_e, ctl) => {
+    try {
+      at.resolve(accepts ? await ctl.accept() : undefined)
+      await go.promise
+      if (throws) throw new Error(FIXTURE.fault)
+    } finally { settled.resolve() }
+  }
+  return { handler, at: at.promise, go: () => go.resolve(), settled: settled.promise }
+}
+/** Lets a settled handler's tail run to its end: a few event-loop turns. */
+async function drainTurns() {
+  for (let turn = 0; turn < WAIT.immediateTurns; turn++) await new Promise((resolve) => setImmediate(resolve))
+}
+
+/**
+ * Decision table over the in-flight state at close(): record offered (never accepted) or open
+ * (accepted, acked) × the handler then returns or throws. Every rule: once the handler settles
+ * after close(), no ledger write happens (the record keeps the state it had at close) and no
+ * unhandledRejection is raised. Without close() the same four rules are EVT-ST-02 rows 4, 5, 5a
+ * and 5d above (the record moves to Fishball or closes).
+ */
+function registerCloseCases(sdk) {
+  const IN_FLIGHT = [
+    ['offered, returns', { accepts: false, throws: false }],
+    ['offered, throws', { accepts: false, throws: true }],
+    ['open, returns', { accepts: true, throws: false }],
+    ['open, throws', { accepts: true, throws: true }],
+  ]
+  for (const [label, behaviour] of IN_FLIGHT) {
+    row(sdk, ID.st02, `5h (close() in flight, ${label})`, `the record is ${label.replace(',', ' and the handler')} only after core's close(): no ledger write after close(), no unhandledRejection`, async (t) => {
+      let closing = false
+      const writesBeforeClose = []
+      const writesAfterClose = []
+      const seam = { ledgerWrite: ({ op }) => { (closing ? writesAfterClose : writesBeforeClose).push(op) } }
+      const world = await worldFor(t, sdk, { seam })
+      const held = inFlightHandler(behaviour)
+      await pluginX(world, held.handler)
+      const event = nextEvent(CONTRIBUTED)
+      await publish(world, event)
+      const accepted = await held.at
+      await world.settle()
+      // Harness: the record is in the rule's state and the write guard is wired.
+      assert.equal(accepted, behaviour.accepts ? true : undefined, 'harness: accept before close()')
+      assert.equal(acked(world, event), behaviour.accepts, 'harness: acked (open) or not (offered) before close()')
+      assert.ok(writesBeforeClose.length > 0, 'harness: the ledger write guard saw no write')
+
+      const unhandled = []
+      const onUnhandled = (reason) => { unhandled.push(String(reason?.message ?? reason)) }
+      process.on(PROCESS_EVENT.unhandledRejection, onUnhandled)
+      try {
+        closing = true
+        await world.core.close()
+        held.go()
+        await held.settled
+        await drainTurns()
+      } finally { process.off(PROCESS_EVENT.unhandledRejection, onUnhandled) }
+      assert.deepEqual(unhandled, [], 'unhandledRejection after the handler settled past close()')
+      assert.deepEqual(writesAfterClose, [], 'ledger writes after close()')
+    })
+  }
 }
 
 // ------------------------------------------------------------------------------------------------

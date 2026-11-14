@@ -152,7 +152,14 @@ export const FIXTURE = Object.freeze({
 })
 
 /** Harness waits only; never a product oracle. */
-export const WAIT = Object.freeze({ settleMs: 20000, quietMs: 800, pollMs: 25, childMs: 90000, testMs: 180000 })
+export const WAIT = Object.freeze({
+  settleMs: 20000, quietMs: 800, pollMs: 25, childMs: 90000, testMs: 180000,
+  /** Event-loop turns (setImmediate) given to a settled handler's tail before an unhandled rejection is ruled out. */
+  immediateTurns: 5,
+})
+
+/** Node's process events a case listens to. */
+export const PROCESS_EVENT = Object.freeze({ unhandledRejection: 'unhandledRejection' })
 
 /** Owners of rows this task cannot check (v3-tasks.md W2–W6). */
 export const LATER = Object.freeze({
