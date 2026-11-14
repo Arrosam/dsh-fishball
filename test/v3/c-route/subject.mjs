@@ -1,0 +1,169 @@
+/**
+ * The one place that binds the C-ROUTE cases to C-ROUTE's module (`packages/connector/src/routing/`
+ * and `src/handover/`). K1 freezes `Router.recipientFor` and `Presence`, K1c `ManagedState`, K3
+ * `fishballConnectorHandover`, but no factory and no ports. The dev session has relayed no surface
+ * yet (2026-11-14), so this file assumes ONE shape (Fishball 2026-11-14: every port injected; the
+ * entry-point shapes accepted as written here). If the module differs, only this file is adapted;
+ * no case changes.
+ *
+ *   openRouting(ctx, {defineDomain, domainTable}, ports) → Promise<Routing>
+ *     ctx, helpers   a cordis context with DSH's storage domain, and the SDK's dsh-storage-domain
+ *                    helpers (ManagedState and the no-recipient queue are durable, K1c-1, K1c-3)
+ *     ports = {
+ *       mailbox    K1 `Mailbox` (C-MAILBOX's, real here) plus `onAcked(listener(principalKey)) →
+ *                  dispose`, fired after each successful ack: the room-freed signal that moves
+ *                  held messages in (Fishball 2026-11-14 #3; fakes.mjs mailboxPort)
+ *       pairs      K1 `PairStore` (list, pairOf, byPrincipal, onChange; fake)
+ *       tokens     K1 `TokenRegistry` (get, list in native-settings order, onRevoked; fake). An
+ *                  entry's enabled state is `get(entryKey).enabled`; `onRevoked` ends the
+ *                  entry's management in W3 (Fishball 2026-11-14 #1)
+ *       presence   K1 `Presence` (isConnected, onChange; fake; CONNECTED = an open listen stream)
+ *       settings   `{get() → {fishballToken?: EntryKey, maxQueuedInputs?: number}, onChange(fn) →
+ *                  dispose}`: the live `routing.fishballToken` and `maxQueuedInputs` (unset =
+ *                  QUEUE.maxQueuedInputs)
+ *       sessions   the session source (Fishball 2026-11-14 #7; binding it to DSH is C-WIRE's):
+ *                  `exists(sessionId) → boolean`, `onTurnFinished(fn(sessionId, {running, queued}))
+ *                  → dispose`, `onState(fn(sessionId, {running, pendingInteraction})) → dispose`.
+ *                  Session ids are root ids (K1c-1: the caller resolves the root)
+ *       logger     a cordis-style logger {debug, info, warn, error}
+ *       now        the injected clock, `() => EpochMs`
+ *     }
+ *   Routing = {
+ *     router      K1 `Router`
+ *     managed     K1c `ManagedState`
+ *     handover    K3 `FishballConnectorHandover` (the object `provide` provides)
+ *     provide(ctx)                provides `handover` as `fishballConnectorHandover` on `ctx`
+ *     messageFishball(sessionId, {text, images}) → Promise<{ok: true} | {ok: false, code: 'queue-full'}>
+ *                                 the `message_fishball` tool's routing (R-ROUTE-03, K1c-3)
+ *     askFishball(sessionId, {question}) → Promise
+ *                                 `ask_fishball`: resolves `{ok: false, code: 'unavailable'}` at
+ *                                 once with no connected recipient; else commits one `ask` offer
+ *                                 and stays pending until it is answered (C-TOOLS answers it)
+ *     offer(sessionId, type, descriptor) → Promise<{recipient: PrincipalKey, eventId} | NoRecipient>
+ *                                 the approval hook: a `permission`, `question` or `plan-review`
+ *                                 of the session, `descriptor` the K1 offer descriptor (its
+ *                                 `offerId` is the event's offer and correlation id). C-ROUTE
+ *                                 commits it and keeps the live-offer ledger whose offers
+ *                                 `ManagedState.release` retires (Fishball 2026-11-14 #2)
+ *     close() → Promise<void>     before the storage goes away
+ *   }
+ *
+ * The world is real DSH storage of the SDK under test in a throwaway directory under the OS temp
+ * directory, with the real C-MAILBOX over it, so `reopen()` is a connector restart over the same
+ * files. The pair store, tokens, presence, settings and sessions are fakes (fakes.mjs).
+ */
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import { mkdtemp, rm } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import { INSTANCE } from '../../support/constants.mjs'
+import { importInstance, importSdk } from '../../private-skills/support/sdk.mjs'
+import { DSH } from '../c-pair/constants.mjs'
+import { resolveRuntimePackages, storageContext } from '../c-pair/subject.mjs'
+import { FIXTURE, HANDOVER, MANAGED_STATE_METHODS, SUBJECT } from './constants.mjs'
+import { FakePairs, FakePresence, FakeSessions, FakeSettings, FakeTokens, fakeClock, mailboxPort, recordingLogger } from './fakes.mjs'
+
+/** `entry` bound to `sdk`, with `names` required as functions; `owner` names the task for the message. */
+async function moduleOf(sdk, entry, names, owner) {
+  assert.ok(fs.existsSync(entry), `${path.relative(process.cwd(), entry)} does not exist (${owner})`)
+  resolveRuntimePackages()
+  const mod = await importInstance(sdk, path.relative(INSTANCE.dir, entry))
+  for (const name of names) assert.equal(typeof mod[name], 'function', `${path.basename(path.dirname(entry))}/index.js exports no ${name}()`)
+  return mod
+}
+
+/** A HintSink that records calls (the unit worlds; the end-to-end world passes C-HTTP's). */
+function recordingHints() {
+  const calls = []
+  return { calls, resourceUpdated: (...args) => { calls.push(args) } }
+}
+
+/**
+ * One C-ROUTE world for `t`: real storage and mailbox, fake ports, the routing module opened.
+ * `hints` defaults to a recording HintSink. Cleaned up by `t`.
+ */
+export async function routeWorld(t, sdk, { hints = recordingHints() } = {}) {
+  const [route, mail] = await Promise.all([
+    moduleOf(sdk, SUBJECT.entry, [SUBJECT.open], 'C-ROUTE "Owns" packages/connector/src/routing/'),
+    moduleOf(sdk, SUBJECT.mailboxEntry, [SUBJECT.mailboxOpen, SUBJECT.mailboxCreate], 'C-MAILBOX, merged in W2'),
+  ])
+  const root = await mkdtemp(path.join(fs.realpathSync(os.tmpdir()), FIXTURE.tempPrefix))
+  const ports = {
+    pairs: new FakePairs(), tokens: new FakeTokens(), presence: new FakePresence(), settings: new FakeSettings(),
+    sessions: new FakeSessions(), logger: recordingLogger(), clock: fakeClock(),
+  }
+  let open
+  const start = async () => {
+    const { ctx, helpers } = await storageContext(sdk, root)
+    const tables = await mail[SUBJECT.mailboxOpen](ctx, helpers)
+    const real = mail[SUBJECT.mailboxCreate]({ tables: tables.tables, hints, now: ports.clock.now })
+    const mailbox = mailboxPort(real)
+    const routing = await route[SUBJECT.open](ctx, helpers, {
+      mailbox, pairs: ports.pairs, tokens: ports.tokens, presence: ports.presence, settings: ports.settings,
+      sessions: ports.sessions, logger: ports.logger, now: ports.clock.now,
+    })
+    for (const m of SUBJECT.members) assert.ok(routing?.[m] !== undefined, `openRouting's result has no ${m}`)
+    assert.equal(typeof routing.router.recipientFor, 'function', 'router has no recipientFor() (K1 Router)')
+    for (const m of MANAGED_STATE_METHODS) assert.equal(typeof routing.managed[m], 'function', `managed has no ${m}() (K1c ManagedState)`)
+    assert.equal(routing.handover.apiVersion, HANDOVER.apiVersion, 'handover.apiVersion is not 1 (K3)')
+    return { ctx, tables, real, mailbox, routing }
+  }
+  const stop = async () => {
+    if (open === undefined) return
+    const { ctx, tables, routing } = open
+    open = undefined
+    await routing.close?.()
+    await tables.close()
+    await ctx.fiber.dispose()
+  }
+  t.after(async () => {
+    await stop()
+    // Guard the one recursive delete: only the directory this helper made under the OS temp dir.
+    assert.ok(path.dirname(root) === fs.realpathSync(os.tmpdir()) && path.basename(root).startsWith(FIXTURE.tempPrefix), 'refusing to remove ' + root)
+    await rm(root, { recursive: true, force: true })
+  })
+  open = await start()
+
+  const keys = new Set()
+  const world = {
+    ...ports,
+    hints,
+    get routing() { return open.routing },
+    get router() { return open.routing.router },
+    get managed() { return open.routing.managed },
+    get handover() { return open.routing.handover },
+    /** The mailbox port C-ROUTE was given. */
+    get mailbox() { return open.mailbox },
+    /** C-MAILBOX itself, for reading and for the cases' own commits. */
+    get realMailbox() { return open.real },
+    /** Every principal key the world has made (for "count entries in every mailbox"). */
+    keys,
+    /** A connector restart over the same files: the routing module and the mailbox close and open again. */
+    async reopen() { await stop(); open = await start() },
+    /**
+     * A token entry with id `id`, enabled; `paired` binds it (with `name`); `connected` opens its
+     * listen stream; `designated` makes it `routing.fishballToken`. Returns its principal key.
+     */
+    principal(id, { name = null, paired = true, connected = false, designated = false } = {}) {
+      const entryKey = ports.tokens.add(id)
+      const key = FIXTURE.principal(id)
+      keys.add(key)
+      if (paired) ports.pairs.bind(id, name)
+      if (connected) ports.presence.connect(key)
+      if (designated) ports.settings.set({ fishballToken: entryKey })
+      return key
+    },
+    /** A session of this DSH. */
+    session: (id) => ports.sessions.add(id),
+  }
+  return world
+}
+
+/** A bare cordis context of `sdk`, standing for one DSH process (HAND-EP-01: who can reach the service); disposed by `t`. */
+export async function cordisContext(t, sdk) {
+  const cordis = await importSdk(sdk, DSH.cordis)
+  const ctx = new cordis.Context()
+  t.after(() => ctx.fiber.dispose())
+  return ctx
+}
