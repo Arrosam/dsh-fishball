@@ -25,9 +25,8 @@ export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL, TOOLS }
 export const SUBJECT = Object.freeze({
   dir: path.join(REPO, 'packages', 'core', 'src', 'bridge'),
   entry: process.env.FBTEST_F_FACADE_ENTRY ?? path.join(REPO, 'packages', 'core', 'src', 'bridge', 'index.js'),
-  /** The assumed factory (subject.mjs); matched by meaning when the export has another name. */
+  /** The relayed factory (Fishball 2026-11-15, subject.mjs). */
   factory: 'createBridge',
-  factoryName: /^create.*(?:bridge|facade)/i,
 })
 
 /** K1's values the oracles use. */
