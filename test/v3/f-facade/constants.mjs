@@ -16,7 +16,7 @@ import path from 'node:path'
 import {
   CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, REFUSAL, TARGET_CODE, TARGET_STATE, TOOL, TOOLS,
 } from '../../../packages/connector/mcp-schema/index.js'
-import { CONTRIBUTOR_META_KEY, NAMESPACE } from '../../../packages/connector/tools/index.js'
+import * as K2_TOOLS from '../../../packages/connector/tools/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL, TOOLS }
@@ -27,6 +27,37 @@ export const SUBJECT = Object.freeze({
   entry: process.env.FBTEST_F_FACADE_ENTRY ?? path.join(REPO, 'packages', 'core', 'src', 'bridge', 'index.js'),
   /** The relayed factory (Fishball 2026-11-15, subject.mjs). */
   factory: 'createBridge',
+  /** The bridge's source files the static row reads (`packages/core/src/bridge/*.js`). */
+  sourceFile: /\.js$/,
+})
+
+/**
+ * K2 amendment at the W3 merge (DECIDED #W3-2): the façade applies K2's EXTERNAL_NAME. Its own
+ * exports (`modelNameOf(name)`, `MODEL_NAME.dot`, `MODEL_NAME.separator`) were named in the
+ * amendment. `restated` finds the mapping's replacement written as a quoted string literal of its
+ * own (`'__'`, `"__"` or a template); `'mcp__'` (the raw-prefix constant) does not match.
+ */
+export const EXTERNAL = Object.freeze({
+  id: 'K2-AMEND-1 (F-FACADE)',
+  modelNameOf: 'modelNameOf',
+  constants: 'MODEL_NAME',
+  restated: /(['"`])__\1/,
+  /** Public names with 1, 2 and 3 dots, and a core tool name (no namespace): the decision's own examples first. */
+  mapped: Object.freeze([
+    ['ns.tool', 'ns__tool'],
+    ['embed-ui.attention.signal', 'embed-ui__attention__signal'],
+    ['fbtest-x.a.b.c', 'fbtest-x__a__b__c'],
+  ]),
+  /**
+   * BVA where only the dots cross the limit (each `.` adds one character): a 12-character namespace
+   * and a 48-character local name (K2's grammar maximum) give a 61-character public name. With 2
+   * dots in the local name (3 in all) it maps to 64 and is offered; with 3 (4 in all) it maps to 65
+   * and is refused, though its public name is just as long.
+   */
+  bvaNamespace: 'fbtest-bva-x',
+  localChars: 48,
+  dotsAt64: 2,
+  pad: 'a',
 })
 
 /** K1's values the oracles use. */
@@ -41,12 +72,18 @@ export const K1 = Object.freeze({
   down: Object.freeze({ state: TARGET_STATE.unreachable, code: TARGET_CODE.unreachable }),
 })
 
-/** K2: `<namespace>.<name>`, so every contributed name holds the separator and no core name does. */
-const K2_SEPARATOR = NAMESPACE.separator
+/**
+ * K2: `<namespace>.<name>`, so every contributed name holds the separator and no core name does.
+ * `externalName` is K2's EXTERNAL_NAME (DECIDED #W3-2, the K2 amendment at the W3 merge). It is
+ * read through the module namespace so this file still loads on a contract without it; every row
+ * that maps a name then fails, and K2-AMEND-1 names the missing export.
+ */
+const { NAMESPACE } = K2_TOOLS
 export const K2 = Object.freeze({
-  separator: K2_SEPARATOR,
+  separator: NAMESPACE.separator,
   embedUi: NAMESPACE.aliases['fishball-embed-ui'],
-  metaKey: CONTRIBUTOR_META_KEY,
+  metaKey: K2_TOOLS.CONTRIBUTOR_META_KEY,
+  externalName: K2_TOOLS.EXTERNAL_NAME,
 })
 
 /** Design §13.6 (D§13.6): embed-UI's two contributed tools and the signal's accepted result. */
@@ -63,18 +100,22 @@ export const ATTENTION = Object.freeze({
  * `embed-ui__attention__signal`). A mapped name over 64 characters, starting with `mcp__`, without
  * a namespace (a listed non-core tool with no `.`, `not-namespaced`) or clashing with another is
  * not offered and is logged once. Core tools keep their names; `inbox_poll`, `inbox_ack`, `pair`
- * and `set_name` are withheld from the model and from X12.
+ * and `set_name` are withheld from the model and from X12. Since the K2 amendment at the W3 merge
+ * (DECIDED #W3-2) the mapping is K2's `EXTERNAL_NAME`, read from there, never restated.
  */
 export const MODEL_NAME = Object.freeze({
-  from: K2_SEPARATOR,
-  to: '__',
+  from: K2.externalName?.replaced,
+  to: K2.externalName?.replacement,
   maxChars: 64,
   /** Design §6.3: no tool the model is offered carries DSH's MCP-client prefix. */
   rawPrefix: 'mcp__',
   withheld: Object.freeze([TOOL.inboxPoll, TOOL.inboxAck, TOOL.pair, TOOL.setName]),
 })
-/** The model-facing name of a public tool name (Fishball 2026-11-15). */
-export const modelName = (publicName) => publicName.split(MODEL_NAME.from).join(MODEL_NAME.to)
+/** The model-facing name of a public tool name (Fishball 2026-11-15; K2 EXTERNAL_NAME since DECIDED #W3-2). */
+export function modelName(publicName) {
+  if (K2.externalName === undefined) throw new Error('fishball-connector/tools exports no EXTERNAL_NAME (K2 amendment at the W3 merge)')
+  return publicName.split(MODEL_NAME.from).join(MODEL_NAME.to)
+}
 
 /**
  * The façade's call order (Fishball 2026-11-15, answer 2): link down → `disconnected`; not listed →
