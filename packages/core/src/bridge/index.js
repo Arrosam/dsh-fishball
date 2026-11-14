@@ -21,10 +21,12 @@
  * 4. for the model, a tool that brings images in is refused `images-unsupported` when Fishball's
  *    model declares no image input (the V2 Q2 rule);
  * 5. `link.callTool`.
+ * A failure in steps 1–4 sent nothing (`operation-failed`, "not sent"); a failure of step 5 may
+ * have reached the connector, and the model is told to check before repeating it.
  * Mounting, the wiring of the gate and of the model lookup are F-WIRE's (it mounts nothing here).
  */
 import { randomUUID } from 'node:crypto'
-import { TARGET_STATE } from '../link/schema.js'
+import { TARGET_STATE, isEventType } from '../link/schema.js'
 import { CODE, FACADE, LOG, MISUSE, TEXT, TOOL_OUTPUT } from './constants.js'
 import { offerOf } from './names.js'
 
@@ -40,14 +42,56 @@ const refusal = (code, extra) => Object.freeze({ ...extra, ok: false, code })
 
 const isPortLink = (link) => FACADE.linkMembers.every((member) => typeof link?.[member] === 'function')
 
+const textBlock = (text) => [{ type: TOOL_OUTPUT.blockType, text }]
+
 /** One JSON text block of a result, as session-tools.js renders its own. */
-const render = (_args, value) => [{ type: TOOL_OUTPUT.blockType, text: JSON.stringify(value, null, TOOL_OUTPUT.jsonIndent) }]
+const render = (_args, value) => textBlock(JSON.stringify(value, null, TOOL_OUTPUT.jsonIndent))
+
+/** What a failure contributes to the log: its code or name, never its message (R-SEC-02). */
+const codeOf = (error) => String(error?.code ?? error?.name ?? typeof error)
+
+/** A connector-supplied name as the log shows it: JSON-quoted and bounded (LOG.nameChars). */
+const logName = (name) => JSON.stringify(String(name).slice(0, LOG.nameChars))
+
+function assertPluginId(pluginId) {
+  if (typeof pluginId !== 'string' || pluginId.trim() === '') throw new TypeError(MISUSE.pluginId)
+}
+
+/**
+ * The X19 verdict as the façade answers it. The gate's documented refusal is `{code, reason}`
+ * (instance-extension-points X19); it becomes a K1-shaped refusal, and anything that is not
+ * `{ok: true}` and names no code refuses `operation-failed`, so no gate answer reaches the model raw.
+ */
+function gateRefusal(verdict) {
+  if (verdict?.ok === true) return undefined
+  const code = typeof verdict?.code === 'string' ? verdict.code : CODE.failed
+  return refusal(code, typeof verdict?.reason === 'string' ? { reason: verdict.reason } : undefined)
+}
+
+/** The step-5 send was cancelled by the turn (S7: link.callTool takes no signal, so it is raced). */
+class Cancelled extends Error {}
+
+/**
+ * `promise`, or a rejection with Cancelled once `signal` aborts. The link's request itself keeps
+ * running (link.js `callTool` takes no signal; src/link/ is F-PAIR's in W3), so only the turn stops
+ * waiting; the answer is the post-send one, because the request may still reach the connector.
+ */
+function raced(promise, signal) {
+  if (signal === undefined) return promise
+  if (signal.aborted) return Promise.reject(new Cancelled())
+  return new Promise((resolve, reject) => {
+    const onAbort = () => reject(new Cancelled())
+    signal.addEventListener('abort', onAbort, { once: true })
+    promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort))
+  })
+}
 
 /**
  * @param {object} options
  * @param {object} options.link core's link (link.js `McpLink`), public API only
- * @param {{send(tool: string, sessionId: unknown): {ok: true} | {ok: false, code: string}}} [options.gate]
- *   the X19 send gate, given the K1 tool name and the target session id; default: off (all pass)
+ * @param {{send(operation: string, sessionId: unknown): {ok: true} | {code: string, reason?: string}}} [options.gate]
+ *   the X19 send gate, asked with the V2 send operation (`session.message`, `session.redirect`) and
+ *   the target session id; default: off (all pass)
  * @param {(exec: object) => Promise<boolean>} [options.imagesSupported] whether the calling agent's
  *   model takes image input; default: an unknown model takes them (as images.js judges it)
  * @param {{info: Function, warn: Function}} [options.logger] the background log
@@ -61,22 +105,38 @@ export function createBridge({ link, gate = OPEN_GATE, imagesSupported = async (
 
   const listed = (name) => link.tools().some((tool) => tool.name === name)
 
+  /** Steps 1–4 of the header: a refusal, or `undefined` when the call may be sent. Sends nothing. */
+  async function check(name, args, exec) {
+    if (link.status()?.state !== TARGET_STATE.connected) return refusal(CODE.disconnected)
+    if (!listed(name)) return refusal(CODE.unsupported)
+    if (Object.hasOwn(FACADE.sendOperations, name)) {
+      const refused = gateRefusal(gate.send(FACADE.sendOperations[name], args?.[FACADE.sessionArgument]))
+      if (refused !== undefined) return refused
+    }
+    if (exec !== undefined && FACADE.imageTools.includes(name) && !(await imagesSupported(exec))) return refusal(CODE.imagesUnsupported)
+    return undefined
+  }
+
   /**
-   * One call of a connector tool (the order is the header's). Resolves to the tool's
-   * `structuredContent`, or to a refusal; rejects only when the call failed after it was sent,
-   * since whether it reached the connector is then unknown (link.js `callTool`) and the caller
-   * decides (K3 `commit` treats a rejected send as `disconnected`).
+   * One call of a connector tool. It never rejects: it resolves to the tool's `structuredContent`
+   * or to a refusal. A failure before sending is `operation-failed` with `TEXT.notSent`; one after
+   * sending is `operation-failed` with `TEXT.maybeSent` (link.js `callTool`: whether it reached
+   * the connector is then unknown, so the caller must check before repeating it).
    * @param {object} [exec] the DSH tool execution, present only for the model's own calls
    */
   async function call(name, args, exec) {
-    if (link.status()?.state !== TARGET_STATE.connected) return refusal(CODE.disconnected)
-    if (!listed(name)) return refusal(CODE.unsupported)
-    if (FACADE.sendTools.includes(name)) {
-      const verdict = gate.send(name, args?.[FACADE.sessionArgument])
-      if (verdict?.ok !== true) return verdict
+    let refused
+    try { refused = await check(name, args, exec) } catch (error) {
+      logger?.warn(LOG.checkFailed, logName(name), codeOf(error))
+      return refusal(CODE.failed, { message: TEXT.notSent })
     }
-    if (exec !== undefined && FACADE.imageTools.includes(name) && !(await imagesSupported(exec))) return refusal(CODE.imagesUnsupported)
-    return (await link.callTool(name, args)) ?? TOOL_OUTPUT.absent
+    if (refused !== undefined) return refused
+    try {
+      return (await raced(link.callTool(name, args), exec?.signal)) ?? TOOL_OUTPUT.absent
+    } catch (error) {
+      logger?.warn(LOG.callFailed, logName(name), codeOf(error))
+      return refusal(CODE.failed, { message: TEXT.maybeSent })
+    }
   }
 
   /** The DSH tool definition of one offered tool (dsh-mcp-client's raw form, both SDKs). */
@@ -86,85 +146,97 @@ export function createBridge({ link, gate = OPEN_GATE, imagesSupported = async (
       description: tool.description ?? TEXT.noDescription,
       parameters: tool.inputSchema,
       output: { schema: TOOL_OUTPUT.schema, render },
-      async execute(args, exec) {
-        try {
-          return await call(name, args, exec)
-        } catch (error) {
-          logger?.warn(LOG.callFailed, name, String(error?.code ?? error?.name ?? typeof error))
-          return refusal(CODE.failed, { message: TEXT.maybeSent })
-        }
-      },
+      execute: (args, exec) => call(name, args, exec),
     }
   }
 
-  /** Register the current offer into one mount, replacing what it had. */
+  /** Withdraw one mount's tools; a disposer that throws (a scope already gone) stops no other. */
+  function withdraw(mount) {
+    for (const dispose of mount.disposers.splice(0)) {
+      try { dispose() } catch (error) { logger?.warn(LOG.withdrawFailed, codeOf(error)) }
+    }
+  }
+
+  /**
+   * Register the current offer into one mount, replacing what it had. Tools are registered one by
+   * one, and one that DSH refuses is logged and skipped: unlike dsh-mcp-client, which rolls a
+   * failed generation back to zero tools, the façade is Fishball's only path to the connector, so
+   * one bad contributed tool must not take the core tools away with it.
+   */
   function sync(mount) {
-    for (const dispose of mount.disposers.splice(0)) dispose()
+    withdraw(mount)
     for (const entry of offer.offered) {
       try { mount.disposers.push(mount.tools.register(definitionOf(entry))) }
-      catch (error) { logger?.warn(LOG.registerFailed, entry.modelName, String(error?.name ?? typeof error)) }
+      catch (error) { logger?.warn(LOG.registerFailed, logName(entry.modelName), codeOf(error)) }
     }
   }
 
   /** A new list from the link: a new offer, logged, synced into every mount, then announced. */
   function refresh(tools) {
     offer = offerOf(tools)
-    for (const { name, modelName, reason } of offer.refused) logger?.warn(LOG.notOffered, name, modelName, reason)
+    for (const { name, modelName, reason } of offer.refused) logger?.warn(LOG.notOffered, logName(name), logName(modelName), reason)
     for (const mount of mounts) sync(mount)
     for (const fn of [...listeners]) { try { fn() } catch { /* a listener owns its failure */ } }
   }
   refresh(link.tools())
   const offTools = link.onTools((tools) => { if (!closed) refresh(tools) })
 
-  /** X12: a client limited to `operations` (K1 or contributed tool names); others are `forbidden`. */
+  /**
+   * X12: a client limited to `operations` (K1 or contributed tool names). A name outside the list
+   * answers `forbidden` and sends nothing (X12, U9). The link's own tools (`FACADE.withheld`) are
+   * never in scope, whatever the list says: a plugin's `inbox_ack` would bypass core's ledger
+   * exactly as a model's would (R-INT-08).
+   */
   function bridge(pluginId, operations) {
-    if (typeof pluginId !== 'string' || pluginId.trim() === '') throw new TypeError(MISUSE.pluginId)
+    assertPluginId(pluginId)
     if (!Array.isArray(operations) || !operations.every((operation) => typeof operation === 'string')) throw new TypeError(MISUSE.operations)
     // A copy: changing the caller's list later never widens the handle.
-    const allowed = new Set(operations)
+    const allowed = new Set(operations.filter((operation) => !FACADE.withheld.includes(operation)))
     return Object.freeze({
-      /** Whether `name` is in scope and listed now. */
+      /** Whether `name` is in scope and listed now (whether the link is up is `call`'s answer). */
       supports: (name) => allowed.has(name) && listed(name),
       call: (name, args = {}) => (allowed.has(name) ? call(name, args) : Promise.resolve(refusal(CODE.forbidden))),
     })
   }
 
+  const isAttentionInput = (input) => typeof input?.important === 'boolean'
+    && Object.keys(input).length === FACADE.attentionKeys.length && FACADE.attentionKeys.every((key) => Object.hasOwn(input, key))
+
   const attention = Object.freeze({
     /**
      * X8 (Q-14): `{ok: true, accepted: true}` only when embed-UI accepted it; otherwise a refusal,
      * `unsupported-operation` when the target lists no attention tool. Stateless and never retried
-     * or replayed; it never rejects, a failure after sending included (`operation-failed`).
+     * or replayed. A missing plugin id is a programming error and throws; an input other than
+     * exactly `{important: boolean}` is refused `invalid-arguments` without a send (§3.1: an
+     * invalid payload is a refusal, never a thrown or fabricated acceptance).
      */
     async signal(pluginId, input) {
-      if (typeof pluginId !== 'string' || pluginId.trim() === '') throw new TypeError(MISUSE.pluginId)
-      if (typeof input?.important !== 'boolean' || Object.keys(input).length !== 1) throw new TypeError(MISUSE.important)
-      try { return await call(FACADE.attentionTool, { important: input.important }) }
-      catch { return refusal(CODE.failed) }
+      assertPluginId(pluginId)
+      if (!isAttentionInput(input)) return refusal(CODE.invalidArguments)
+      return call(FACADE.attentionTool, { important: input.important })
     },
   })
 
   /**
    * The Fishball branch's content for one event (Q-11): a header naming its type, then the whole
    * event inside an untrusted block whose fence has a random marker, so no payload text can close
-   * the block or imitate core's own framing (as the connector's framing.js). One text block.
+   * the block or imitate core's own framing (as the connector's framing.js). Only a K1 event type
+   * (`isEventType`) is named in the header; any other value stays inside the block. One text block.
    */
   function present(event) {
     const marker = randomUUID()
-    const text = [TEXT.eventHeader(event.type), TEXT.untrustedOpen(marker), TEXT.eventFields + JSON.stringify(event), TEXT.untrustedClose(marker)].join(TEXT.lineEnd)
-    return [{ type: TOOL_OUTPUT.blockType, text }]
+    const type = isEventType(event?.type) ? event.type : TEXT.unknownType
+    return textBlock([TEXT.eventHeader(type), TEXT.untrustedOpen(marker), TEXT.eventFields + JSON.stringify(event), TEXT.untrustedClose(marker)].join(TEXT.lineEnd))
   }
 
   return Object.freeze({
     /** Offer the tools into one DSH `tools` service (an agent scope); returns its disposer. */
     mount(tools) {
-      const mount = { tools, disposers: [] }
       if (closed) return () => {}
+      const mount = { tools, disposers: [] }
       mounts.add(mount)
       sync(mount)
-      return () => {
-        if (!mounts.delete(mount)) return
-        for (const dispose of mount.disposers.splice(0)) dispose()
-      }
+      return () => { if (mounts.delete(mount)) withdraw(mount) }
     },
     bridge,
     attention,
@@ -176,8 +248,8 @@ export function createBridge({ link, gate = OPEN_GATE, imagesSupported = async (
     /** Withdraw every offered tool and stop following the link. */
     close() {
       closed = true
-      offTools()
-      for (const mount of mounts) for (const dispose of mount.disposers.splice(0)) dispose()
+      try { offTools() } catch (error) { logger?.warn(LOG.withdrawFailed, codeOf(error)) }
+      for (const mount of mounts) withdraw(mount)
       mounts.clear()
       listeners.clear()
     },
