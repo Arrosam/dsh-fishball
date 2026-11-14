@@ -73,9 +73,12 @@ export function userValue(chars, { last = FIXTURE.pad, seed = '' } = {}) {
  * Opens a world in `root`. `env` is the launching environment (`{REF: value}`); `stored` values are
  * written to the credential file before the store starts (the user set them beforehand);
  * `removed` refs are unset by the user before the registry starts (a credential-store edit made
- * while the connector was down); `unwritable` makes the store refuse writes.
+ * while the connector was down); `unwritable` makes the store refuse writes. The registry gets a
+ * `restoreTokens` that records each list it is handed in `world.restored` (C-WIRE's part, which
+ * writes it back to the settings document, is the test's `apply` of that list); `noRestore`
+ * builds the registry without one.
  */
-export async function openWorld(sdk, root, { env = {}, stored = {}, removed = [], unwritable = false } = {}) {
+export async function openWorld(sdk, root, { env = {}, stored = {}, removed = [], unwritable = false, noRestore = false } = {}) {
   const p = await sdkParts(sdk)
   const ctx = new p[DSH.cordis].Context()
   const logs = []
@@ -104,9 +107,12 @@ export async function openWorld(sdk, root, { env = {}, stored = {}, removed = []
   await ctx.plugin(p[DSH.storageJson], { root: path.join(root, FIXTURE.domainDir) }).await()
   await ctx.plugin(p[DSH.storageDomain], { backend: 'json', routes: {} }).await()
 
+  const restored = []
   const world = {
-    ctx, logs, writes, root, credentialsFile,
+    ctx, logs, writes, root, credentialsFile, restored,
     logger: ctx.logger('fbtest-c-tokens'),
+    /** The registry's `restoreTokens` callback, or undefined (`noRestore`). */
+    restoreTokens: noRestore ? undefined : async (previous) => { restored.push(previous) },
     /** The value `ref` resolves to now, or undefined. */
     resolve: async (ref) => (await ctx.credentials.resolve(ref))?.value,
     /** The source layer of `ref`'s value (`file`, `env`, …), or undefined. */
@@ -143,7 +149,7 @@ export async function worldFor(t, sdk, options = {}) {
     world.restart = async ({ removed } = {}) => {
       await world.close()
       // `stored` is not replayed: those values are already in the credential file.
-      return open({ env: options.env, unwritable: options.unwritable, removed })
+      return open({ env: options.env, unwritable: options.unwritable, noRestore: options.noRestore, removed })
     }
     return world
   }
