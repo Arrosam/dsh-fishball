@@ -6,11 +6,16 @@
  * the settings schema. Until then this seam names the smallest shape the requirements need, so a
  * case never changes when the real names land (the dev session adapts this file only):
  *
- *   <factory>({ctx, logger}) → registry (or a promise of one)
+ *   <factory>({ctx, logger, restoreTokens?}) → registry (or a promise of one)
  *     ctx      a cordis context with `ctx.credentials` (dsh-credentials-local) and DSH storage
  *              (dsh-storage-domain over dsh-storage-json), where the module records which values
  *              it generated (design §5.3);
  *     logger   a cordis logger of that context; the world's exporter sees every line it writes.
+ *     restoreTokens(previousList)   optional: called after a refused save with the list to write
+ *              back to the settings document (Q4 = A). C-WIRE writes it, and that write's
+ *              `settings/document-updated` comes back as `apply(previousList)` with the default
+ *              reason: an echo, which is not the user saving again (Q5 = B, refused save, the
+ *              user's final answer, 2026-11-14).
  *   registry.apply(tokens, reason?) → Promise<{ok: true} | {ok: false, code, …}>
  *     the `settings/document-updated` of the connector's `tokens` list (design §5.1, §5.2):
  *     `tokens` is `[{label, enabled, ref}]`, the whole list. A refused save (`SETTINGS_REFUSAL`)
@@ -48,7 +53,9 @@ async function factory(sdk) {
 /** Builds the registry over one world. */
 export async function makeSubject(sdk, world) {
   const create = await factory(sdk)
-  const registry = await create({ ctx: world.ctx, logger: world.logger })
+  // The option is left out, not passed as undefined, when the world has no restore (`noRestore`).
+  const restore = world.restoreTokens === undefined ? {} : { restoreTokens: world.restoreTokens }
+  const registry = await create({ ctx: world.ctx, logger: world.logger, ...restore })
   for (const member of ['apply', 'refresh', 'match', 'get', 'list', 'onRevoked']) {
     assert.equal(typeof registry?.[member], 'function', `the token registry has no ${member}()`)
   }
