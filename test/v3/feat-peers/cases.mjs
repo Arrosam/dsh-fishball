@@ -210,6 +210,9 @@ export function registerFeatPeersCases(sdk) {
 
   // ============================================================================================
   // Boundary Value Analysis: PLAT-BVA-01 (day = 86 400 s; archived at exactly 30 d, Q-24)
+  // instance-extension-points.md §12.6 "Tests" says the opposite at the edge (on board at 30 d,
+  // off at + 1 ms). The brief follows the case (Q-24), so row 2 expects archived; the conflict is
+  // reported as a spec gap.
 
   for (const value of RETENTION.bva) {
     row(sdk, ID.bva01, value.row, `${value.label} since done: ${value.onBoard ? 'visible' : 'archived'}; searchable`, async (t) => {
