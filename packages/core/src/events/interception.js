@@ -38,6 +38,14 @@ const snapshotOf = (event) => frozen(structuredClone(event))
 export function createInterception({ ledger, registry, delivery, link, logger }) {
   let recovering = Promise.resolve()
   let pruning = false
+  // Once close() has run, the ledger's owner may close its storage domain, and a ledger read or
+  // move then rejects ("domain … is closed"). The paths that run un-awaited after an intake (the
+  // offer's tail and its commit fallback, accept and the ack it schedules, dispose's fallback) would
+  // turn that into an unhandledRejection, so each checks `closed` right before its first ledger call,
+  // with no await between, and then does nothing. Records are left as they stand, as a crash would
+  // leave them: recover() at the next start settles offered, open and committing records and acks
+  // the unacked ones (its doc below). A close() that lands during a move already queued is
+  // tolerated, because the domain still drains a write queued before it began closing.
   let closed = false
 
   /**
@@ -53,6 +61,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
 
   /** Ack a record once it is a durable acceptance; a failure is logged and retried on replay. */
   async function ack(eventId) {
+    if (closed) return
     const record = ledger.get(eventId)
     if (record === undefined || record.acked || !ACKABLE.includes(record.state)) return
     try {
@@ -103,7 +112,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
      * @returns {Promise<{won: boolean, moved: boolean}>} `moved` when this call made the move.
      */
     async function acceptOnce() {
-      if (settled || !registry.isLive(entry)) return { won: false, moved: false }
+      if (closed || settled || !registry.isLive(entry)) return { won: false, moved: false }
       // A record offered again after a restart is already durably accepted (open or committing):
       // accept is then true for its new attempt with no second move; recover() acks it.
       const current = ledger.get(eventId)
@@ -133,7 +142,9 @@ export function createInterception({ ledger, registry, delivery, link, logger })
           // connector (K3 events.d.ts, as S3's prototype treated it).
           try { result = await send() } catch { result = { ok: false, code: LINK_REFUSAL.disconnected } }
           // One move committing → fishball, so no crash can fall between two writes (finding 15).
-          if (result?.ok === false && result.code === LINK_REFUSAL.disconnected) await toFishball(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
+          // Not after close() (see `closed`): a rejected move would also break "commit never
+          // rejects" (K3). The record stays committing.
+          if (!closed && result?.ok === false && result.code === LINK_REFUSAL.disconnected) await toFishball(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
           return result
         })()
         commits.push(task)
@@ -151,6 +162,8 @@ export function createInterception({ ledger, registry, delivery, link, logger })
     settled = true
     await Promise.all(commits)
     entry.held.delete(eventId)
+    // A handler can outlive close(), since the offer is not awaited (see `closed`).
+    if (closed) return
     const record = ledger.get(eventId)
     if (!owns(record)) return
     if (record.state === STATE.offered) {
@@ -212,7 +225,8 @@ export function createInterception({ ledger, registry, delivery, link, logger })
    * undecided fall back to Fishball once; one whose commit began stays fenced with it.
    */
   function dispose(entry) {
-    if (!registry.remove(entry)) return
+    // The registration still goes (it is in memory); only the fallback needs the ledger.
+    if (!registry.remove(entry) || closed) return
     for (const [eventId, attempt] of entry.held) void toFishball(eventId, attempt, REASON.disposed)
   }
 
