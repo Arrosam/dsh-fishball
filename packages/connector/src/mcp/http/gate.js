@@ -11,13 +11,15 @@
 import {
   ENDPOINT_LIMITS, HOSTS, HTTP_REFUSAL, HTTP_STATUS, ORIGIN_RULE, RATE_LIMITS, REQUEST_GATE, TIME_UNIT,
 } from '../../../mcp-schema/index.js'
-import { BUCKET_COST, LOG, MS_PER_MINUTE } from './constants.js'
+import { AUTHORITY, BUCKET_COST, LOG, MS_PER_MINUTE } from './constants.js'
 
 const SILENT_LOGGER = Object.freeze({ warn() {} })
 
 const PASS = Object.freeze({ pass: true })
 const NO_HEADERS = Object.freeze({})
-const FORBIDDEN = Object.freeze({ pass: false, status: HTTP_STATUS.forbidden, headers: NO_HEADERS, body: null })
+/** A body-less refusal with `status`; the gate's 403 and the endpoint's own 403, 404 and 500 share it. */
+export const bareRefusal = (status) => Object.freeze({ pass: false, status, headers: NO_HEADERS, body: null })
+export const FORBIDDEN = bareRefusal(HTTP_STATUS.forbidden)
 const INSECURE = Object.freeze({
   pass: false, status: HTTP_STATUS.serviceUnavailable, headers: NO_HEADERS, body: Object.freeze({ error: HTTP_REFUSAL.insecureListener }),
 })
@@ -55,19 +57,26 @@ function single(headers, name) {
  * fragment or anything WHATWG parsing would silently drop is refused rather than reinterpreted.
  */
 function parseAuthority(value, scheme) {
-  if (value === '' || /[\s/?#@\\]/.test(value)) return undefined
+  if (value === '' || AUTHORITY.notBare.test(value)) return undefined
   try {
-    return new URL(`${scheme}//${value}`)
+    return new URL(scheme + AUTHORITY.schemeSuffix + value)
   } catch {
     return undefined
   }
 }
 
-/** A bind address in the bracketed form a `Host` hostname has (IPv6 literals bracketed, any `%zone` dropped). */
-function bindHostname(host) {
-  const zoneAt = host.indexOf('%')
+/**
+ * A bind address as a `Host` hostname reads after URL normalisation (DSH's `isBindAddressAuthority`):
+ * any `%zone` dropped, an IPv6 literal bracketed, then parsed, so `0:0:0:0:0:0:0:1` is `[::1]` and
+ * `FE80::1` is `[fe80::1]`. An unparseable bind matches no Host and is not loopback.
+ */
+function bindHostname(host, scheme) {
+  const zoneAt = host.indexOf(AUTHORITY.zoneSeparator)
   const address = zoneAt === -1 ? host : host.slice(0, zoneAt)
-  return address.includes(':') && !address.startsWith('[') ? `[${address}]` : address.toLowerCase()
+  const bracketed = address.includes(AUTHORITY.ipv6Separator) && !address.startsWith(AUTHORITY.ipv6Open)
+    ? AUTHORITY.ipv6Open + address + AUTHORITY.ipv6Close
+    : address
+  return parseAuthority(bracketed, scheme)?.hostname
 }
 
 /**
@@ -77,14 +86,14 @@ function bindHostname(host) {
 const writesPort = (entry) => [HOSTS.loopbackScheme, HOSTS.remoteScheme].some((scheme) => parseAuthority(entry, scheme)?.port)
 
 /**
- * Whether a `Host` authority matches one `--trusted-host` entry, by DSH's rule
- * (`dsh-client-connection` `isTrustedAuthority`): an entry with a port matches that exact
- * authority, a port-less entry the hostname on any port.
+ * One `--trusted-host` entry as a Host matcher, by DSH's rule (`dsh-client-connection`
+ * `isTrustedAuthority`): an entry with a port matches that exact authority, a port-less entry the
+ * hostname on any port. An entry that is no bare authority matches nothing (DSH refuses it at load).
  */
-function matchesTrusted(hostUrl, entry, scheme) {
+function trustedMatcher(entry, scheme) {
   const entryUrl = parseAuthority(entry, scheme)
-  if (entryUrl === undefined) return false
-  return writesPort(entry) ? entryUrl.host === hostUrl.host : entryUrl.hostname === hostUrl.hostname
+  if (entryUrl === undefined) return () => false
+  return writesPort(entry) ? (hostUrl) => entryUrl.host === hostUrl.host : (hostUrl) => entryUrl.hostname === hostUrl.hostname
 }
 
 /**
@@ -99,8 +108,10 @@ function matchesTrusted(hostUrl, entry, scheme) {
  */
 export function createRequestGate(facts, { originOf, logger = SILENT_LOGGER }) {
   const scheme = facts.secure ? HOSTS.remoteScheme : HOSTS.loopbackScheme
-  const bound = bindHostname(facts.host)
-  // The listener's exposure never changes while it runs (DSH rebinds by restarting), so it is decided once.
+  // The listener facts never change while it runs (DSH rebinds by restarting), so the bind address,
+  // the trusted hosts and the exposure are decided once.
+  const bound = bindHostname(facts.host, scheme)
+  const trusted = facts.trustedHosts.map((entry) => trustedMatcher(entry, scheme))
   const insecure = !HOSTS.loopbackNames.includes(bound) && !facts.secure
   // One diagnostic per listener, never per request (R-REM-02, design §3.1).
   if (insecure) logger.warn(LOG.format, LOG.insecureListener, HTTP_REFUSAL.insecureListener)
@@ -109,8 +120,7 @@ export function createRequestGate(facts, { originOf, logger = SILENT_LOGGER }) {
     const host = single(headers, REQUEST_GATE.headers.host)
     const hostUrl = host === undefined ? undefined : parseAuthority(host, scheme)
     if (hostUrl === undefined) return false
-    return HOSTS.loopbackNames.includes(hostUrl.hostname) || hostUrl.hostname === bound
-      || facts.trustedHosts.some((entry) => matchesTrusted(hostUrl, entry, scheme))
+    return HOSTS.loopbackNames.includes(hostUrl.hostname) || hostUrl.hostname === bound || trusted.some((matches) => matches(hostUrl))
   }
 
   /** A present `Origin` (empty and `null` included) passes only the surface's ORIGIN_RULE. */
@@ -137,8 +147,9 @@ export function createRequestGate(facts, { originOf, logger = SILENT_LOGGER }) {
   }
 
   // Per token entry (Caller.entryKey; the user's decision 2026-11-14): requests in flight and a
-  // token bucket. Entries are only ever created for verified callers, so the map is bounded by the
-  // configured token entries.
+  // token bucket. A state is only created for a verified caller, so the map holds one per token
+  // entry that has made a request in this connector life (entry keys of deleted entries included:
+  // they are few and small, and dropping them would need C-TOKENS' revocation feed here).
   const limits = new Map()
   const refillPerMs = ENDPOINT_LIMITS.requestsPerMinute / MS_PER_MINUTE
 

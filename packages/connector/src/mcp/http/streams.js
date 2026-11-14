@@ -32,6 +32,9 @@ export function createListenStreams({ factory, handlerOptions, logger }) {
   /** principalKey → {handler, entryKey, open, events (open streams on fishball://events), reserved, closed} */
   const pairs = new Map()
   const listeners = new Set()
+  // After `close()` (connector dispose) no listen opens: a stream on a handler nobody will close
+  // again would outlive the connector.
+  let disposed = false
 
   function notifyPresence(principalKey, connected) {
     for (const listener of [...listeners]) {
@@ -51,9 +54,10 @@ export function createListenStreams({ factory, handlerOptions, logger }) {
   /**
    * Reserves one of the principal's ENDPOINT_LIMITS.listenStreamsPerPrincipal stream slots
    * (counting streams still being opened, so two racing listens cannot both take the last one).
-   * @returns the reservation, or undefined at the cap
+   * @returns the reservation, or undefined at the cap or after `close()`
    */
   function reserve(principalKey, entryKey) {
+    if (disposed) return undefined
     const pair = pairOf(principalKey, entryKey)
     if (pair.open + pair.reserved >= ENDPOINT_LIMITS.listenStreamsPerPrincipal) return undefined
     pair.reserved += 1
@@ -68,11 +72,22 @@ export function createListenStreams({ factory, handlerOptions, logger }) {
        * The SDK fetch face of this pair's handler. An answer that is an event stream counts as an
        * open stream until `res` closes; any other answer (a bad filter, a version refusal) opens
        * nothing and frees the slot.
+       *
+       * Two races end before the stream counts. The client may hang up while the SDK builds the
+       * answer: `res` has then already closed and a late close listener would never fire, so the
+       * stream would count as open forever. Or a revocation may close this pair's handler in the
+       * same window: its router opened the stream after `closeAll`, so nobody would ever end it
+       * (R-TOK-05). Either way the stream is cancelled here and nothing is counted or announced.
        */
       fetch: async (request, options, { res, events }) => {
         try {
           const response = await pair.handler.fetch(request, options)
-          if (response.headers.get(HTTP_HEADER.contentType)?.startsWith(MEDIA_TYPE.eventStream)) opened(principalKey, pair, events, res)
+          if (!response.headers.get(HTTP_HEADER.contentType)?.startsWith(MEDIA_TYPE.eventStream)) return response
+          if (pair.closed || res.destroyed || res.writableFinished) {
+            await response.body?.cancel()
+            return response
+          }
+          opened(principalKey, pair, events, res)
           return response
         } finally {
           release()
@@ -136,6 +151,7 @@ export function createListenStreams({ factory, handlerOptions, logger }) {
   }
 
   function close() {
+    disposed = true
     for (const [principalKey, pair] of [...pairs]) closePair(principalKey, pair)
   }
 
