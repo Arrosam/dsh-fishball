@@ -72,9 +72,13 @@ export function userValue(chars, { last = FIXTURE.pad, seed = '' } = {}) {
 /**
  * Opens a world in `root`. `env` is the launching environment (`{REF: value}`); `stored` values are
  * written to the credential file before the store starts (the user set them beforehand);
- * `unwritable` makes the store refuse writes.
+ * `removed` refs are unset by the user before the registry starts (a credential-store edit made
+ * while the connector was down); `unwritable` makes the store refuse writes. The registry gets a
+ * `restoreTokens` that records each list it is handed in `world.restored` (C-WIRE's part, which
+ * writes it back to the settings document, is the test's `apply` of that list); `noRestore`
+ * builds the registry without one.
  */
-export async function openWorld(sdk, root, { env = {}, stored = {}, unwritable = false } = {}) {
+export async function openWorld(sdk, root, { env = {}, stored = {}, removed = [], unwritable = false, noRestore = false } = {}) {
   const p = await sdkParts(sdk)
   const ctx = new p[DSH.cordis].Context()
   const logs = []
@@ -97,14 +101,18 @@ export async function openWorld(sdk, root, { env = {}, stored = {}, unwritable =
   }
   // Values the user stored before the connector ran.
   for (const [ref, value] of Object.entries(stored)) await asUser(() => ctx.credentials.set(ref, value))
+  for (const ref of removed) await asUser(() => ctx.credentials.unset(ref))
 
   await ctx.plugin(p[DSH.storage].default ?? p[DSH.storage]).await()
   await ctx.plugin(p[DSH.storageJson], { root: path.join(root, FIXTURE.domainDir) }).await()
   await ctx.plugin(p[DSH.storageDomain], { backend: 'json', routes: {} }).await()
 
+  const restored = []
   const world = {
-    ctx, logs, writes, root, credentialsFile,
+    ctx, logs, writes, root, credentialsFile, restored,
     logger: ctx.logger('fbtest-c-tokens'),
+    /** The registry's `restoreTokens` callback, or undefined (`noRestore`). */
+    restoreTokens: noRestore ? undefined : async (previous) => { restored.push(previous) },
     /** The value `ref` resolves to now, or undefined. */
     resolve: async (ref) => (await ctx.credentials.resolve(ref))?.value,
     /** The source layer of `ref`'s value (`file`, `env`, …), or undefined. */
@@ -121,8 +129,14 @@ export async function openWorld(sdk, root, { env = {}, stored = {}, unwritable =
   return world
 }
 
-/** A world in a fresh temp root, closed and removed by `t`'s cleanup. */
-export async function worldFor(t, sdk, options) {
+/**
+ * A world in a fresh temp root, closed and removed by `t`'s cleanup. `world.restart(next)` is a
+ * connector restart: this world's DSH stops and a new one starts over the same root (credential
+ * file and storage domain), with the same launching environment and store kind; `next.removed`
+ * are the user's unsets while it was down. It returns the new world, whose registry has not been
+ * fed any settings yet.
+ */
+export async function worldFor(t, sdk, options = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), FIXTURE.tempPrefix))
   let world
   t.after(async () => {
@@ -130,8 +144,16 @@ export async function worldFor(t, sdk, options) {
     assert.ok(path.basename(root).startsWith(FIXTURE.tempPrefix), 'refusing to remove ' + root)
     await rm(root, { recursive: true, force: true })
   })
-  world = await openWorld(sdk, root, options)
-  return world
+  const open = async (opts) => {
+    world = await openWorld(sdk, root, opts)
+    world.restart = async ({ removed } = {}) => {
+      await world.close()
+      // `stored` is not replayed: those values are already in the credential file.
+      return open({ env: options.env, unwritable: options.unwritable, noRestore: options.noRestore, removed })
+    }
+    return world
+  }
+  return open(options)
 }
 
 /** Polls `predicate` until it is truthy (WAIT.eventuallyMs); returns its last value. */

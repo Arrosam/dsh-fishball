@@ -68,37 +68,12 @@ export const REVOCATION = Object.freeze({ deleted: 'deleted', disabled: 'disable
  */
 export const CREDENTIALS_UPDATED = 'credentials/reference-updated'
 
-/** Why a sync runs. Only `settings` counts as "the user saved the settings" (UNSET_POLICY). */
+/**
+ * Why a sync runs. Only `settings` counts as "the user saved the settings": only a save is refused
+ * and undone for a value duplicate, and only an accepted save ends an unset value's wait for a
+ * generated one (the user's decisions 2026-11-14, C-TOKENS questions 4 = A and 5 = B); see registry.js.
+ */
 export const SYNC_REASON = Object.freeze({ start: 'start', settings: 'settings', credentials: 'credentials' })
-
-/**
- * The two behaviours Fishball is still asking the user about (questions 4 and 5, 2026-11-14).
- * This is the one branch point: each value below selects one implemented behaviour.
- *
- * `valueDuplicate` (two entries' values are equal, SETTINGS_REFUSAL.valueDuplicate):
- * - `restore`: a save that introduces one (an entry that was not already a duplicate becomes one)
- *   is refused and undone by writing the previous tokens list back (the caller's `restoreTokens`),
- *   logged with the labels only. A save that leaves an existing duplicate as it is goes through,
- *   so a label change or a disable is never blocked by it;
- * - `unusable`: the save stands and the entries are left unusable until the values differ.
- * Either way a duplicate that did not come from a save (a credential-store edit, or one found at
- * start) leaves its entries unusable.
- *
- * `afterUnset` (an enabled entry's value is unset in the store):
- * - `regenerate`: R-TOK-08 applies at once, a writable ref gets a fresh value in the same sync;
- * - `awaitSave`: no value is generated for it until the next settings save.
- */
-export const DUPLICATE_POLICY = Object.freeze({ restore: 'restore', unusable: 'unusable' })
-export const UNSET_POLICY = Object.freeze({ regenerate: 'regenerate', awaitSave: 'awaitSave' })
-/**
- * PROPOSED (2026-11-14): `restore` and `regenerate` (option A of each), awaiting the user's answer
- * to Q4 / Q5. If the user picks B, a follow-up commit changes this switch, and for Q4 B also adds
- * a K1 `ENTRY_STATUS` word (a K1 amendment) that `list()` shows for a duplicate entry.
- */
-export const PENDING_DECISION = Object.freeze({
-  valueDuplicate: DUPLICATE_POLICY.restore,
-  afterUnset: UNSET_POLICY.regenerate,
-})
 
 /** Log lines: labels only, never a value, a fingerprint or a key (R-TOK-04). */
 export const LOG = Object.freeze({

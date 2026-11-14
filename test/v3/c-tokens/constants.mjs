@@ -1,6 +1,6 @@
 /**
  * Vocabulary for the C-TOKENS cases (v3-tasks.md row C-TOKENS, wave W2; docs/test-design/v3/
- * 01-auth-pairing.md): AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03, AUTH-DT-05, AUTH-ST-01 rows 1, 5–10, 12.
+ * 01-auth-pairing.md): AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03, AUTH-DT-05, AUTH-ST-01 rows 1, 5–10, 10a–10m (Q5 = B), 12.
  *
  * Every product value comes from the K1 freeze `fishball-connector/mcp-schema`, never from an
  * implementation: the token-value rules (TOKEN_VALUE), the entry statuses (ENTRY_STATUS), the
@@ -21,6 +21,8 @@ export const SUBJECT = Object.freeze({
   entry: process.env.FBTEST_C_TOKENS_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'tokens', 'index.js'),
   /** K1 freezes the `TokenRegistry` interface but no factory: the one export found by meaning. */
   factoryName: /^(?:open|create)\w*Token/i,
+  /** `apply`'s reason for the connector-start sync (not a settings save; subject.mjs). */
+  startReason: 'start',
 })
 
 /** K1's declaration file: `RevocationKind` is a type there, so its words are read from the text. */
@@ -71,6 +73,8 @@ export const FIXTURE = Object.freeze({
   /** AUTH-UC-01's own entry. */
   agentA: Object.freeze({ label: 'Agent A', ref: 'FB_EXT_1' }),
   agentB: Object.freeze({ label: 'Agent B', ref: 'FB_EXT_2' }),
+  /** AUTH-ST-01 row 10k: the entry whose value duplicates Agent B's. */
+  agentC: Object.freeze({ label: 'Agent C', ref: 'FB_EXT_3' }),
   /** Every user-set value starts with this marker, so a leak sweep finds it by text. */
   marker: 'FBTESTTOKENVALUE',
   pad: 'x',
