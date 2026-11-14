@@ -88,14 +88,21 @@ function processSdk() {
  * install anchor.
  */
 export async function launchOverlayExport() {
-  const module = await import(pathToFileURL(path.join(V3.instance.dir, ...RELAYED.overlayModule.file)).href)
-  const composedProfile = module[COMPOSE.name]
-  const installAnchor = path.join(SDK.versionsDir, processSdk(), ...COMPOSE.anchor)
   return async function launchOverlay(paths) {
-    fs.mkdirSync(paths.mainHome, { recursive: true })
-    const { overlay } = await composedProfile({ mainHome: fs.realpathSync(paths.mainHome), installAnchor })
-    return overlay
+    return (await composeChild(paths.mainHome)).overlay
   }
+}
+
+/**
+ * The whole composedProfile result for a main home (created and made canonical here):
+ * `{paths, entries, overlay, record}`. `paths.home` is the child's own DSH home
+ * (`<mainHome>/fishball/runtime/dsh-home`), `entries` the composed rows.
+ */
+export async function composeChild(mainHome) {
+  const module = await import(pathToFileURL(path.join(V3.instance.dir, ...RELAYED.overlayModule.file)).href)
+  const installAnchor = path.join(SDK.versionsDir, processSdk(), ...COMPOSE.anchor)
+  fs.mkdirSync(mainHome, { recursive: true })
+  return module[COMPOSE.name]({ mainHome: fs.realpathSync(mainHome), installAnchor })
 }
 
 export const placedCopy = (home, name, dir) => path.join(childProfile(home), dir, name)

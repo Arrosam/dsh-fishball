@@ -79,7 +79,12 @@ export const OVERLAY = Object.freeze({
    */
   isolation: Object.freeze({
     instructions: Object.freeze({ id: 'agent-instructions', field: 'projectRootMarkers', value: Object.freeze([]) }),
-    skills: Object.freeze({ id: 'skill-filesystem', field: 'includeDefaultRoots', value: false, home: 'dshHome' }),
+    // dsh-skill-filesystem's own config fields (both SDKs): dshHome, agentsHome, customSkillDirs.
+    skills: Object.freeze({ id: 'skill-filesystem', field: 'includeDefaultRoots', value: false, home: 'dshHome', agentsHome: 'agentsHome', customDirs: 'customSkillDirs' }),
+    /** The child runtime root, relative to the main home (RELAYED.launches' parent). */
+    runtimeRoot: Object.freeze(['fishball', 'runtime']),
+    /** The user's real agents home folder name under their OS home (DSH's `~/.agents` default). */
+    userAgentsDir: '.agents',
   }),
   /** The dsh-agent-preset rows that nest the two rows above (dsh-web-app/presets, both SDKs). */
   presetRow: /^preset-/,
