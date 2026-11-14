@@ -1,7 +1,9 @@
 /**
  * The data-only rule of core contracts' `constants.js` (K3 amendment 2026-11-14, Fishball's final
- * rule): frozen data, `import type` / `export type … from`, JSDoc, and pure template formatters
- * (`(a, b) => \`…${a}…${b.c}…\``) only. Black box: the file is read as text, never loaded.
+ * rule and its call addition): frozen data (`Object.freeze(…)` the only call), number arithmetic,
+ * `const` names reused by later values, `import type` / `export type … from`, JSDoc, and pure
+ * template formatters (`(a, b) => \`…${a}…${b.c}…\``) only. Black box: the file is read as text,
+ * never loaded.
  *
  * A small tokenizer rather than regular expressions: strings and template text may hold `=>`,
  * `function` or `import(` as plain characters, and only tokens outside them are code. Comments are
@@ -144,6 +146,36 @@ function moduleViolation(tokens, k) {
   return null
 }
 
+/**
+ * The whole dotted callee ending at token `end` (`Object.freeze` → ['Object', 'freeze']), or null
+ * when the chain starts on something other than an identifier (`f().freeze`, `x[0].freeze`), so
+ * `a.Object.freeze(…)` and `Object.freeze(…).map(…)` are not taken for the global Object.freeze.
+ */
+function calleePath(tokens, end) {
+  const path = []
+  for (let k = end; ; k -= 2) {
+    if (!isIdent(tokens[k])) return null
+    path.unshift(tokens[k].value)
+    if (!isPunct(tokens[k - 1], P.dot)) return path
+  }
+}
+const sameList = (a, b) => a.length === b.length && a.every((v, i) => v === b[i])
+
+/**
+ * A call outside the allowed `Object.freeze(…)` (Fishball 2026-11-14) at token `k`: a `(` after a
+ * callee (an identifier, `)`, `]`, a template or `?.`), a tagged template, or `new`. The `(` of
+ * `import(` is the dynamic-import finding instead, so it is not reported twice.
+ */
+function isOtherCall(tokens, k) {
+  const t = tokens[k]
+  const before = tokens[k - 1]
+  if (isIdent(t, KW.new)) return true
+  const opens = isPunct(t, P.parenOpen) || (t.kind === 'template' && !isIdent(before, KW.default))
+  if (!opens || !before || isIdent(before, KW.import)) return false
+  const callee = before.kind === 'ident' || before.kind === 'template' || [P.parenClose, P.bracketClose, P.dot].some((p) => isPunct(before, p))
+  return callee && !(isPunct(t, P.parenOpen) && sameList(calleePath(tokens, k - 1) ?? [], DATA_ONLY.allowedCall))
+}
+
 /** Each violation as `<kind> at token <n>: <context>` (empty when the tokens are data only). */
 function violations(tokens, options) {
   const out = []
@@ -155,6 +187,7 @@ function violations(tokens, options) {
     else if (isPunct(t, P.arrow) && !(options.templateFormatters && isTemplateFormatter(tokens, k))) report(k, V.arrow)
     // `) {` opens a body: a method shorthand, a getter, a function or a statement block; data has none.
     else if (isPunct(t, P.parenClose) && isPunct(tokens[k + 1], P.braceOpen)) report(k, V.methodBody)
+    if (isOtherCall(tokens, k)) report(k, V.call)
     if (t.kind === 'template') for (const source of t.interpolations) out.push(...violations(tokenize(source), options))
   })
   return out
