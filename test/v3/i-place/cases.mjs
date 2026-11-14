@@ -27,6 +27,7 @@
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { after, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -300,24 +301,32 @@ export function registerIPlaceCases(sdk) {
     assert.ok(rows.length > 0, 'precondition: the SDK has agent-instructions rows')
     for (const row of rows) assert.deepEqual(row.config?.[OVERLAY.isolation.instructions.field], [...OVERLAY.isolation.instructions.value], 'project instructions not read: ' + show(row.config))
   })
-  // The child's home is composedProfile's `paths.home` (<mainHome>/fishball/runtime/dsh-home), not
-  // a path the test invents (Fishball 2026-11-15, isolation correction).
-  caseTest(sdk, 'HOST-EP-03', '6 isolation', "the overlay limits skill-filesystem to the child's home with includeDefaultRoots false wherever it is composed", async (t) => {
+  // The isolation rule (Fishball 2026-11-15, isolation, final wording): the child reads nothing of
+  // the user's own skills or instructions. dshHome is composedProfile's `paths.home`
+  // (<mainHome>/fishball/runtime/dsh-home); agentsHome and every customSkillDirs entry sit under the
+  // child runtime root <mainHome>/fishball/runtime/, never the main home itself, never outside the
+  // runtime root, never the user's real ~/.agents; includeDefaultRoots is false.
+  caseTest(sdk, 'HOST-EP-03', '6 isolation', "the overlay limits skill-filesystem to the child runtime with includeDefaultRoots false wherever it is composed", async (t) => {
     const mainHome = path.join(scratch(t, 'fbtest-iplace-iso-'), 'main')
     const { paths, overlay } = await composeChild(mainHome)
     const effective = await composedChild(sdk, { overlay })
     const rows = findRows(effective, OVERLAY.isolation.skills.id)
     assert.ok(rows.length > 0, 'precondition: the SDK has skill-filesystem rows')
-    // The child's home lies inside the main home, so "never under the main home" means: every
-    // directory is under paths.home, and none is elsewhere in the main home.
-    const inside = (dir, root) => { const rel = path.relative(root, dir); return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel)) }
+    const main = fs.realpathSync(mainHome)
+    const runtimeRoot = path.join(main, ...OVERLAY.isolation.runtimeRoot)
+    const userAgents = path.join(os.homedir(), OVERLAY.isolation.userAgentsDir)
+    /** Strictly below `root` (the root itself does not count). */
+    const below = (dir, root) => { const rel = path.relative(root, dir); return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel) }
+    const within = (dir, root) => dir === root || below(dir, root)
     for (const row of rows) {
       const config = row.config ?? {}
       assert.equal(config[OVERLAY.isolation.skills.field], OVERLAY.isolation.skills.value, 'default roots read: ' + show(config))
       assert.equal(config[OVERLAY.isolation.skills.home], paths.home, "skills home is not the child's: " + show(config))
       assert.equal(typeof config[OVERLAY.isolation.skills.agentsHome], 'string', 'no agentsHome: ' + show(config))
       for (const dir of [config[OVERLAY.isolation.skills.agentsHome], ...(config[OVERLAY.isolation.skills.customDirs] ?? [])]) {
-        assert.ok(inside(dir, paths.home), `${dir} is not under the child's home ${paths.home} (main home ${fs.realpathSync(mainHome)})`)
+        assert.notEqual(dir, main, 'a skills directory is the main home itself')
+        assert.ok(below(dir, runtimeRoot), `${dir} is not under the child runtime root ${runtimeRoot}`)
+        assert.equal(within(dir, userAgents), false, `${dir} is the user's real ${userAgents}`)
       }
     }
   })
