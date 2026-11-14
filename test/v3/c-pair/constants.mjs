@@ -143,7 +143,6 @@ export const UNIQUENESS = Object.freeze([
  * a `todo` naming it; the store-level part of the same row runs here.
  */
 export const LATER = Object.freeze({
-  tokenEndpoint: 'C-OAUTH (W2): token endpoint, client authentication and the granted scope',
   mcpEndpoint: 'C-HTTP (W2): 401 / 403 insufficient_scope at the MCP endpoint, before any tool runs',
   seenCallSite: 'C-HTTP (W2): which requests call PairStore.seen (a 401 never does)',
   mailbox: 'C-MAILBOX (W2): one durable mailbox per pair',

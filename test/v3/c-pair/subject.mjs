@@ -29,8 +29,9 @@ let hooked = false
  * The per-SDK resolver (sdk.mjs) binds only `@deepseek-ai/*` to the SDK; the connector also imports
  * runtime packages DSH ships outside that scope (`zod`), which the repository does not install.
  * This hook resolves those few names from the same SDK version as the importing, tagged module.
+ * Exported for the other connector suites (C-OAUTH), which import connector modules the same way.
  */
-function resolveRuntimePackages() {
+export function resolveRuntimePackages() {
   if (hooked) return
   hooked = true
   registerHooks({
@@ -51,8 +52,8 @@ export async function pairsModule(sdk) {
   return mod
 }
 
-/** One DSH storage stack of `sdk` over `root`: the cordis context a connector row would have. */
-async function storageContext(sdk, root) {
+/** One DSH storage stack of `sdk` over `root`: the cordis context a connector row would have (also C-OAUTH's token store). */
+export async function storageContext(sdk, root) {
   const [cordis, storage, json, domain] = await Promise.all([DSH.cordis, DSH.storage, DSH.storageJson, DSH.storageDomain].map((n) => importSdk(sdk, n)))
   const ctx = new cordis.Context()
   await ctx.plugin(storage.default ?? storage).await()
