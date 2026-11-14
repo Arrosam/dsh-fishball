@@ -9,6 +9,7 @@
  * | 3 | no token value (K3: a reference with no value is `target-unset`, PROPOSED) | `target-unset` | `null` |
  * | 2 | no answer, or any other failure | `target-unreachable` | `TARGET_UNREACHABLE` |
  * | 4 | the target refused the credential | `token-refused` | `TOKEN_REFUSED` |
+ * | 4a | as 4, for a credential the link's pairing gate holds a paired record for (R-HOST-10, K3 `TargetCode`) | `token-refused` | `token-revoked` |
  * | 5 | connected (listen stream open) | `connected` | `null` |
  * | 6 | the MCP route answered 404 (a V2 connector), the target sends the link to another origin or
  * |   | names another issuer, or its listen stream does not honour `fishball://events` | `target-unreachable` | `TARGET_INCOMPATIBLE` |
@@ -31,6 +32,8 @@ export const STATUS = Object.freeze({
   connected: status(TARGET_STATE.connected, null),
   unreachable: status(TARGET_STATE.unreachable, TARGET_CODE.unreachable),
   refused: status(TARGET_STATE.refused, TARGET_CODE.refused),
+  // Rule 4a: decided by the pairing gate (F-PAIR), which alone knows the paired records.
+  revoked: status(TARGET_STATE.refused, TARGET_CODE.revoked),
   incompatible: status(TARGET_STATE.unreachable, TARGET_CODE.incompatible),
 })
 
