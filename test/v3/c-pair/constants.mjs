@@ -44,6 +44,29 @@ export function pairStoreMembers() {
   return [...body[1].matchAll(/^\s{2}(\w+)\(/gm)].map((m) => m[1])
 }
 
+/**
+ * `PairStore.succeed`'s refusal code: K1 declares it only as a type (`SucceedResult`, index.d.ts),
+ * so it is read from the declaration text, as `pairStoreMembers` reads the members.
+ */
+export function succeedRefusal() {
+  const m = /export type SucceedResult\s*=[^\n]*code:\s*'([^']+)'/.exec(fs.readFileSync(K1_TYPES, 'utf8'))
+  if (!m) throw new Error('K1 index.d.ts declares no SucceedResult refusal code')
+  return m[1]
+}
+
+/** Fixture data of the K1-amendment `succeed` rows (R-NAME-07, NAME-ST-01 rows 8–9, HOST-UC-03). */
+export const SUCCEED = Object.freeze({
+  /** HOST-UC-03: the old hosted entry's name and the two ids. */
+  navigator: 'Navigator',
+  navigatorLower: 'navigator',
+  oldId: 'fb-old',
+  newId: 'fb-new',
+  thirdId: 'fb-third',
+  successorOwnName: 'Scout',
+  /** Rounds of the succeed / set_name race. */
+  raceRounds: 6,
+})
+
 /** The installed SDK packages a pair store needs: DSH storage, its JSON backend and the domain layer. */
 export const DSH = Object.freeze({
   cordis: '@deepseek-ai/cordis',
@@ -152,4 +175,5 @@ export const LATER = Object.freeze({
   marks: 'U-MARKS (W4): managed marks and the Hand over control',
   wire: 'C-WIRE (W4b): the tools over MCP end to end, and the native settings status rows',
   coreIdentity: 'F-PAIR (W3): fishball-core\'s identity.id setting',
+  succeedFailure: 'C-SUCCEED (HOST-UC-03 E2): an injected storage failure in the succession step changes nothing (the C-PAIR world has no write-failure seam)',
 })

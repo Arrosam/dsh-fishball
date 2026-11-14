@@ -55,7 +55,7 @@ const ABSENT = null
  * header), `.post` (id and secret in the form) or `.none` (the id only). `grant: ABSENT` omits
  * `grant_type`; `extra` appends parameters (a repeat included); `query` is appended to the path.
  */
-function tokenRequest(w, { host, auth = CLIENT_AUTH.basic, clientId, secret, grant = GRANT.clientCredentials, resource, scope, extra = [], query = '', method = HTTP_METHOD.post } = {}) {
+export function tokenRequest(w, { host, auth = CLIENT_AUTH.basic, clientId, secret, grant = GRANT.clientCredentials, resource, scope, extra = [], query = '', method = HTTP_METHOD.post } = {}) {
   const form = new URLSearchParams()
   if (grant !== ABSENT) form.set(GRANT_DISPATCH.formField, grant)
   const headers = { [HTTP_WIRE.contentType]: HTTP_WIRE.form }
@@ -77,7 +77,7 @@ const approvalOrigin = (w, host = FIXTURE.host.loopback) => (HOSTS.loopbackNames
 const audience = (w, host) => oauthUrls(w.origin(host)).resource
 
 /** A 200 token response: exactly K1's `tokenResponse` (standard fields only, no refresh token) with TOKEN_RESPONSE_HEADERS. */
-function assertToken(res, scope) {
+export function assertToken(res, scope) {
   assert.equal(res.status, HTTP_STATUS.ok, `expected a token, got ${res.status} ${res.text}`)
   for (const [name, value] of Object.entries(TOKEN_RESPONSE_HEADERS)) assert.equal(res.headers[name], value, `header ${name}`)
   assert.equal(typeof res.body?.access_token, 'string')
@@ -86,13 +86,13 @@ function assertToken(res, scope) {
   return res.body.access_token
 }
 /** An OAuth error: its status (OAUTH_ERROR_STATUS), the code, only the RFC 6749 §5.2 fields, no token. */
-function assertError(res, error) {
+export function assertError(res, error) {
   assert.equal(res.status, OAUTH_ERROR_STATUS[error], `expected ${error}, got ${res.status} ${res.text}`)
   assert.equal(res.body?.error, error)
   assert.deepEqual(Object.keys(res.body).filter((k) => !ERROR_BODY_FIELDS.includes(k)), [], 'fields beyond the OAuth error body')
 }
 /** The rate- or failure-limit answer (RATE_LIMITS, FAILURE_LIMIT): 429, whole-second Retry-After, `{error}` alone. */
-function assertLimited(res) {
+export function assertLimited(res) {
   assert.equal(res.status, HTTP_STATUS.tooManyRequests, `expected 429, got ${res.status} ${res.text}`)
   assert.deepEqual(res.body, { ...oauthErrorBody(OAUTH_ERROR.temporarilyUnavailable) })
   const retry = res.headers[RATE_LIMITS.retryAfterHeader]
@@ -130,7 +130,7 @@ const refusingGrant = (grantType, error, countedFailure = false) => new FakeGran
 const codeRequest = (w, extra = []) => tokenRequest(w, { auth: CLIENT_AUTH.none, clientId: FIXTURE.cimd, grant: GRANT.authorizationCode, extra: [[FORM.code, FIXTURE.fakeCode], ...extra] })
 
 /** One case test on a fresh world; `todo` (a LATER owner) registers a todo instead. */
-function row(sdk, id, part, title, fn, todo) {
+export function row(sdk, id, part, title, fn, todo) {
   caseTest(sdk, id, part, title, todo === undefined ? async (t) => fn(await oauthWorld(t, sdk), t) : null, todo)
 }
 const todo = (sdk, id, part, title, owner) => row(sdk, id, part, title, null, owner)

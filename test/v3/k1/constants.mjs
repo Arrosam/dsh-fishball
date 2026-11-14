@@ -293,6 +293,34 @@ export const RECORDED = Object.freeze([
   ['PLAT-DT-02', 'K', 'plugin-set-incomplete, and rule 4 reports nothing missing (or left to F-STATUS)'],
 ])
 
+/**
+ * The K1 amendment after W2 that moved module-local limits into K1 (Fishball, 2026-11-14): each
+ * `[owner, key, value]` is one constant now defined once in the module, with the value the
+ * amendment states. `oldNames` are the local definitions the modules had, which must be gone from
+ * packages/connector/src/ (a no-duplicate check over source text).
+ */
+const KIB = 1024
+export const MOVED_LIMITS = Object.freeze({
+  values: Object.freeze([
+    Object.freeze(['APPROVAL_LISTENER', 'decisionBodyBytes', 8 * KIB]),
+    Object.freeze(['TOKEN_ENDPOINT_LIMITS', 'formBodyBytes', 8 * KIB]),
+    Object.freeze(['APPROVAL_LISTENER', 'pendingRequestsMax', 256]),
+    Object.freeze(['CIMD_LIMITS', 'cacheEntriesMax', 256]),
+    Object.freeze(['RATE_LIMITS', 'tokenRequestsPerAddressPerWindow', 150]),
+  ]),
+  /** README section that lists every limit. */
+  readme: 'README.md',
+  section: '### Lifetimes and limits',
+  nextSection: /\n#{2,3} /,
+  /** The listen-stream cap's 429 reuses the in-flight Retry-After (documented in K1). */
+  listenRetry: Object.freeze({ cap: 'ENDPOINT_LIMITS.listenStreamsPerPrincipal', retry: 'REQUEST_GATE.inFlightRetryAfterMs' }),
+  /** The old local definitions: a binding of the name (const/let/var/export), or the TOKEN_FORM key. */
+  oldNames: Object.freeze(['FORM_LIMITS', 'STATE_CAPS', 'ADDRESS_RATE_LIMIT']),
+  oldMember: Object.freeze({ owner: 'TOKEN_FORM', key: 'maxBodyBytes' }),
+  source: path.join('packages', 'connector', 'src'),
+  sourceFile: /\.(?:c|m)?js$/,
+})
+
 /** Owners of the rows K1 cannot check (v3-tasks.md W2–W4). */
 export const LATER = Object.freeze({
   http: 'C-HTTP (MCP route, check order, limits)',
