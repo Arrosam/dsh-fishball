@@ -24,6 +24,7 @@ import { pathToFileURL } from 'node:url'
 import { importSdk } from '../../private-skills/support/sdk.mjs'
 import { SKILL_SDK } from '../../private-skills/support/constants.mjs'
 import { until } from '../../support/util.mjs'
+import { RETIRE_OUTCOME } from '../c-mailbox/constants.mjs'
 import { DSH, FIXTURE, K1, K2, WAIT } from './constants.mjs'
 import { contributionsModule, startContributions } from './subject.mjs'
 
@@ -85,14 +86,18 @@ class FakeMailbox {
   retireCalls = []
   /** Every `retireContributor(namespace, activationTag)` call, as made. */
   retireContributorCalls = []
-  /** K1: replaces a **pending** event by a `retirement` naming it; an acked one stays. */
+  /**
+   * K1: replaces a **pending** event by a `retirement` naming it and resolves `{retired: true}`; an
+   * acked, retired or unknown one stays and it resolves `{retired: false}` (DECIDED #W3-1).
+   */
   async retire(pk, eventId, reason) {
     this.retireCalls.push({ pk, eventId, reason })
     this.retirements.push({ pk, eventId, reason })
     const event = this.box(pk).find((e) => e.eventId === eventId)
-    if (event?.state !== 'pending') return
+    if (event?.state !== 'pending') return RETIRE_OUTCOME.nothing
     event.state = 'retired'
     this.box(pk).push({ type: K1.EVENT_TYPE.retirement, eventId: eventId + '-retired', correlationId: eventId, reason, state: 'pending' })
+    return RETIRE_OUTCOME.replaced
   }
   /**
    * K1 amendment after W2: retires, as `retire` does, every **pending** `contributed:<namespace>.*`

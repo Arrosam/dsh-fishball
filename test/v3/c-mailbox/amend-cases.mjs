@@ -14,16 +14,24 @@
  *   held ones included; nothing else. A polled event never carries `activationTag`. A tag on a
  *   non-contributed draft, or a tag that is not a non-empty string, is a programming error: commit
  *   rejects with TypeError (the suite's convention for draft misuse).
+ * - K1-AMEND-9 (Decision Table on the event's state × the answer, Equivalence Partitioning of the
+ *   reason, State Transition; DECIDED #W3-1, the fix of W2 finding SF3): `retire` resolves
+ *   `{retired: true}` when it replaced a pending event of that pair, `{retired: false}` when nothing
+ *   was pending there to replace (acked, already retired, unknown, another pair's): then nothing is
+ *   committed, nothing changes and no hint is sent. Misuse still throws. Not covered: retire on a
+ *   held mailbox (K1 does not say whether a held event counts as "pending" for retire).
  *
  * Level: the module over real DSH storage (subject.mjs), as cases.mjs. Every value is K1's or
  * fixture data (constants.mjs AMEND).
  */
 import assert from 'node:assert/strict'
-import { commitMany, commitOk, ids, page, pollAll, receiptOf, row, snapshot } from './cases.mjs'
-import { AMEND, CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, FIXTURE, MAILBOX, REFUSAL, RESYNC_REASON, RETIREMENT_REASON } from './constants.mjs'
+import { commitMany, commitOk, ids, page, pendingEvent, pollAll, receiptOf, row, snapshot } from './cases.mjs'
+import {
+  AMEND, CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, FIXTURE, MAILBOX, REFUSAL, RESYNC_REASON, RETIRE_FIXTURE, RETIRE_OUTCOME, RETIREMENT_REASON,
+} from './constants.mjs'
 import { worldFor } from './subject.mjs'
 
-const ID = Object.freeze({ generation: 'K1-AMEND-1', retireContributor: 'K1-AMEND-3' })
+const ID = Object.freeze({ generation: 'K1-AMEND-1', retireContributor: 'K1-AMEND-3', retireOutcome: 'K1-AMEND-9' })
 const { p: P, q: Q } = FIXTURE
 const LIMIT = MAILBOX.pageMax
 const TAG = AMEND.tag
@@ -313,8 +321,95 @@ function retireContributorCases(sdk) {
   }
 }
 
+// ------------------------------------------------------------------------------------------------
+// K1-AMEND-9: Mailbox.retire resolves {retired: boolean} (DECIDED #W3-1)
+
+/** `retire` answered "nothing to replace": `{retired: false}`, both mailboxes as before, no hint sent. */
+async function assertNothingRetired(w, act) {
+  const before = await snapshot(w.mailbox)
+  const hints = w.hints.calls.length
+  assert.deepEqual(await act(), RETIRE_OUTCOME.nothing)
+  assert.deepEqual(await snapshot(w.mailbox), before, 'a retire that replaced nothing changed a mailbox')
+  assert.equal(w.hints.calls.length, hints, 'a retire that replaced nothing sent a hint')
+}
+
+function retireOutcomeCases(sdk) {
+  const rule = (part, title, fn) => row(sdk, ID.retireOutcome, part, title, async (t) => fn(await worldFor(t, sdk)))
+  const offer = EVENT_TYPE.permission
+  const reason = RETIREMENT_REASON.withdrawn
+
+  // Decision Table: the event's state in the named pair's mailbox × the answer. Rule 1 for every
+  // K1 reason (Equivalence Partitioning of `reason`: the answer does not depend on it).
+  for (const why of Object.values(RETIREMENT_REASON)) {
+    rule(`1 (pending, ${why})`, `a pending event of the pair, reason ${why} → {retired: true}; it is replaced by one retirement {retiredEventId, reason: ${why}}`, async (w) => {
+      const e = await pendingEvent(w.mailbox, P, offer)
+      assert.deepEqual(await w.mailbox.retire(P, e.eventId, why), RETIRE_OUTCOME.replaced)
+      const after = await pollAll(w.mailbox, P)
+      assert.ok(!ids(after).includes(e.eventId), 'the retired event is still pending')
+      const retirements = await retirementsOf(w.mailbox, P, e.eventId)
+      assert.deepEqual(retirements.map((r) => r.payload), [{ retiredEventId: e.eventId, reason: why }])
+    })
+  }
+  rule('2 (acked)', 'an acked event → {retired: false}; nothing committed, nothing changed; its receipt is still known', async (w) => {
+    const e = await pendingEvent(w.mailbox, P, offer)
+    assert.deepEqual(await w.mailbox.ack(P, [receiptOf(e)]), { ok: true, acked: 1 })
+    await assertNothingRetired(w, () => w.mailbox.retire(P, e.eventId, reason))
+    assert.deepEqual(await w.mailbox.ack(P, [receiptOf(e)]), { ok: true, acked: 0 })
+  })
+  rule('3 (already retired)', 'retire twice → the first {retired: true}, the second {retired: false}; one retirement names it', async (w) => {
+    const e = await pendingEvent(w.mailbox, P, offer)
+    assert.deepEqual(await w.mailbox.retire(P, e.eventId, reason), RETIRE_OUTCOME.replaced)
+    await assertNothingRetired(w, () => w.mailbox.retire(P, e.eventId, reason))
+    assert.equal((await retirementsOf(w.mailbox, P, e.eventId)).length, 1)
+  })
+  rule('3 (retired by retireContributor)', 'an event retireContributor already retired → retire answers {retired: false}', async (w) => {
+    const e = await pendingContributed(w.mailbox, P, FIXTURE.namespace, TAG.a)
+    await w.mailbox.retireContributor(FIXTURE.namespace, TAG.a)
+    await assertNothingRetired(w, () => w.mailbox.retire(P, e.eventId, RETIREMENT_REASON.contributorWithdrawn))
+    await assertRetired(w.mailbox, P, e)
+  })
+  rule('4 (unknown)', 'an event id no commit returned → {retired: false}; nothing changed', async (w) => {
+    await commitOk(w.mailbox, P, offer)
+    await assertNothingRetired(w, () => w.mailbox.retire(P, RETIRE_FIXTURE.unknownEventId, reason))
+  })
+  rule('5 (another pair\'s)', 'Q\'s pending event named under P → {retired: false}; Q\'s event stays pending, no retirement anywhere', async (w) => {
+    const q = await pendingEvent(w.mailbox, Q, offer)
+    await assertNothingRetired(w, () => w.mailbox.retire(P, q.eventId, reason))
+    assert.ok(ids(await pollAll(w.mailbox, Q)).includes(q.eventId), 'Q\'s event left Q\'s mailbox')
+    assert.deepEqual(await retirementsOf(w.mailbox, Q, q.eventId), [])
+  })
+  rule('6 (misuse)', 'a principal key that is no string → retire throws (as before); nothing changed', async (w) => {
+    const e = await pendingEvent(w.mailbox, P, offer)
+    const before = await snapshot(w.mailbox)
+    await assert.rejects(async () => w.mailbox.retire(RETIRE_FIXTURE.badPrincipalKey, e.eventId, reason))
+    assert.deepEqual(await snapshot(w.mailbox), before)
+  })
+
+  // State Transition: the answer follows the event's state, across a restart too.
+  rule('ST 1 (Pending → ack → retire)', 'Pending → ack → Acked → retire → {retired: false} (the ack/retire race seen from the mailbox)', async (w) => {
+    const e = await pendingEvent(w.mailbox, P, offer)
+    await w.mailbox.ack(P, [receiptOf(e)])
+    await assertNothingRetired(w, () => w.mailbox.retire(P, e.eventId, reason))
+  })
+  rule('ST 2 (Pending → retire → ack)', 'Pending → retire {retired: true} → Retired → ack of its receipt → a no-op success counting 0; a second retire → {retired: false}', async (w) => {
+    const e = await pendingEvent(w.mailbox, P, offer)
+    assert.deepEqual(await w.mailbox.retire(P, e.eventId, reason), RETIRE_OUTCOME.replaced)
+    assert.deepEqual(await w.mailbox.ack(P, [receiptOf(e)]), { ok: true, acked: 0 })
+    await assertNothingRetired(w, () => w.mailbox.retire(P, e.eventId, reason))
+  })
+  rule('ST 3 (restart)', 'a pending event survives a restart: retire after it → {retired: true}; an acked one after a restart → {retired: false}', async (w) => {
+    const pendingOne = await pendingEvent(w.mailbox, P, offer)
+    const ackedOne = await pendingEvent(w.mailbox, P, offer)
+    await w.mailbox.ack(P, [receiptOf(ackedOne)])
+    await w.reopen()
+    assert.deepEqual(await w.mailbox.retire(P, pendingOne.eventId, reason), RETIRE_OUTCOME.replaced)
+    await assertNothingRetired(w, () => w.mailbox.retire(P, ackedOne.eventId, reason))
+  })
+}
+
 /** The K1-amendment cases on one SDK. */
 export function registerMailboxAmendCases(sdk) {
   generationCases(sdk)
   retireContributorCases(sdk)
+  retireOutcomeCases(sdk)
 }

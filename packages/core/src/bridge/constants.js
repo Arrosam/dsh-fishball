@@ -15,7 +15,7 @@
 import { LINK_REFUSAL, REFUSAL, TOOL } from '../link/schema.js'
 // K2's frozen data, from the copy core already vendors with K1 (scripts/vendor-mcp-schema.mjs);
 // `./tools` is not re-exported by K1's index, so it is read here directly.
-import { NAME_GRAMMAR, NAMESPACE } from '../../vendor/tools/constants.js'
+import { EXTERNAL_NAME, NAME_GRAMMAR, NAMESPACE } from '../../vendor/tools/constants.js'
 // The X19 gate is keyed on the V2 send operations (instance-extension-points §2.5, as the slim
 // child's gate in slim/child/bridge.js receives them), read from core's vendored V2 contract.
 import { OPERATION } from '../../vendor/contract/contract.js'
@@ -50,18 +50,18 @@ export const FACADE = Object.freeze({
 })
 
 /**
- * The model-facing name of a listed tool (Q-8, PROPOSED as a K2 amendment, Fishball's answer
- * pending). Neither SDK's ToolRuntime checks names, but DSH's own MCP client holds model tool
- * names to the DeepSeek function-name contract, `[A-Za-z0-9_-]` and at most 64 characters
- * (`dsh-mcp-client/lib/index.js:57-100`, both SDKs), and the providers send the name unchanged.
- * A core tool name already fits and is kept; a contributed name `<namespace>.<name>` has each `.`
- * replaced by `separator`. A name that still breaks the contract, or starts with DSH's MCP prefix
- * (design §6.3: no `mcp__…` tool reaches the model), or equals a name offered before it, is not
- * offered and is logged once.
+ * The model-facing name of a listed tool (Q-8). Neither SDK's ToolRuntime checks names, but DSH's
+ * own MCP client holds model tool names to the DeepSeek function-name contract, `[A-Za-z0-9_-]`
+ * and at most 64 characters (`dsh-mcp-client/lib/index.js:57-100`, both SDKs), and the providers
+ * send the name unchanged. A core tool name already fits and is kept; a contributed name
+ * `<namespace>.<name>` has each `dot` replaced by `separator`, K2's frozen `EXTERNAL_NAME` mapping
+ * (K2 amendment at the W3 merge), read from it, never restated. A name that still breaks the
+ * contract, or starts with DSH's MCP prefix (design §6.3: no `mcp__…` tool reaches the model), or
+ * equals a name offered before it, is not offered and is logged once.
  */
 export const MODEL_NAME = Object.freeze({
-  dot: NAMESPACE.separator,
-  separator: '__',
+  dot: EXTERNAL_NAME.replaced,
+  separator: EXTERNAL_NAME.replacement,
   maxChars: 64,
   allowed: Object.freeze(/^[A-Za-z0-9_-]+$/),
   refusedPrefix: 'mcp__',

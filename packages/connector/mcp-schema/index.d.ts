@@ -217,6 +217,9 @@ export interface EventDraft {
   activationTag?: string
 }
 
+/** `Mailbox.retire`'s answer: whether a pending event was replaced (K1 amendment at the W3 merge). */
+export type RetireOutcome = Readonly<{ retired: boolean }>
+
 export type CommitResult = { ok: true; eventId: string } | { ok: false; code: 'queue-full' | 'duplicate' }
 
 /** C-MAILBOX: one durable ledger per pair (R-CON-03, R-ID-06). */
@@ -226,8 +229,15 @@ export interface Mailbox {
   poll(principalKey: PrincipalKey, cursor: string | undefined, limit: number): Promise<PollResult>
   ack(principalKey: PrincipalKey, receipts: readonly Receipt[]): Promise<AckResult>
   summary(principalKey: PrincipalKey): Promise<{ pending: number; headSequence: number; mailboxGeneration: string }>
-  /** Replaces a pending event by a `retirement` naming it (R-EXT-19, R-TOK-05, R-HOST-09). */
-  retire(principalKey: PrincipalKey, eventId: string, reason: 'withdrawn' | 'revoked' | 'released' | 'reissued' | 'contributor-withdrawn'): Promise<void>
+  /**
+   * Replaces a pending event by a `retirement` naming it (R-EXT-19, R-TOK-05, R-HOST-09).
+   * Resolves `{retired: true}` when it did, `{retired: false}` when the event was not pending in
+   * this pair's mailbox (acked, already retired, unknown or another pair's): then nothing is
+   * committed and nothing changes (K1 amendment at the W3 merge, DECIDED #W3-1). A caller that
+   * must still tell the pair, because the pair may already have acked the event, sends a fresh
+   * `retirement` on `false` (C-ROUTE: an ack can land between its own acked check and this call).
+   */
+  retire(principalKey: PrincipalKey, eventId: string, reason: 'withdrawn' | 'revoked' | 'released' | 'reissued' | 'contributor-withdrawn'): Promise<RetireOutcome>
   /**
    * A contributor activation's withdrawal or quarantine (R-EXT-19; K1 amendment after W2, for
    * C-EXT): every **pending** event of type `contributed:<namespace>.*` committed with this

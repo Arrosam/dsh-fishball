@@ -30,6 +30,9 @@ export {
 /** K1 settlement payload values (EVENT_PAYLOAD_SHAPES.settlement `{approvalId, outcome, by}`), for the settle rows. */
 export { SETTLED_BY, SETTLEMENT_OUTCOME } from '../../../packages/connector/mcp-schema/index.js'
 
+/** K1 `RetireOutcome` of `Mailbox.retire` (DECIDED #W3-1; types only), as C-MAILBOX's cases name it. */
+export { RETIRE_OUTCOME } from '../c-mailbox/constants.mjs'
+
 /** K1 `RevocationKind` (index.d.ts, types only): the values FakeTokens fires and the end-to-end row passes C-HTTP. */
 export const REVOCATION = Object.freeze({ disabled: 'disabled', deleted: 'deleted' })
 

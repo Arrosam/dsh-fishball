@@ -133,6 +133,27 @@ export const FIXTURE = Object.freeze({
 /** MCP's tool-name rule (R-EXT-03, [spec: server/tools § Tool Names]): 1–128 of `A–Z a–z 0–9 _ - .`. */
 export const MCP_TOOL_NAME = /^[A-Za-z0-9_.-]{1,128}$/
 
+/**
+ * K2 amendment at the W3 merge (DECIDED #W3-2): a contributed tool's external (model-facing) name
+ * is its public name with every `.` replaced by `__`. `name` is the frozen export; `value` the
+ * decided value; `modelName` the model tool-name rule the mapping exists for (DSH's MCP client,
+ * `[A-Za-z0-9_-]`); `vendored` core's copy of the constants; `readme`/`declaration` the contract
+ * texts that must list and declare it.
+ */
+export const EXTERNAL_NAME_AMEND = Object.freeze({
+  id: 'K2-AMEND-1',
+  name: 'EXTERNAL_NAME',
+  value: Object.freeze({ replaced: '.', replacement: '__' }),
+  modelName: /^[A-Za-z0-9_-]+$/,
+  vendored: path.join('packages', 'core', 'vendor', 'tools', 'constants.js'),
+  readme: path.join('packages', 'connector', 'tools', 'README.md'),
+  readmeExports: '## Exported names',
+  declaration: path.join('packages', 'connector', 'tools', 'index.d.ts'),
+  declares: /export declare const EXTERNAL_NAME\b/,
+  /** Local names with no, one and several dots (grammar-valid, EXT-EP-01 row 1's class). */
+  locals: Object.freeze(['tool', 'attention.signal', 'a.b.c-d_e']),
+})
+
 /** Owners of the rows K2 cannot check (v3-tasks.md W2–W5). */
 export const LATER = Object.freeze({
   registry: 'C-EXT (contribution service registry: register path, namespace, list and call)',
