@@ -7,11 +7,13 @@ import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import { BODY_SOUL, loadInstance } from '../support/body-soul-env.mjs';
 import { CASE as ENGINE_CASE, clone, inventory, provider } from '../support/provider-sync-engine.mjs';
 import { PREVIEW_LIFE_MS, SYNC_PLANTED, post, routeContext, syncHarness } from '../support/body-soul-sync.mjs';
 import { ACTIVE_SDK, parsedFrames, relayLink } from '../support/set-relay.mjs';
 import { EMBED_UI } from '../support/constants.mjs'
+import { FIXTURE as SDK_FIXTURE } from '../support/provider-sync-official.mjs';
 
 // Native settings are the editor. SET owns only lifecycle/notice/links in the child; model sync is
 // main-only (user decision 2026-11-11): it runs from the main fishball-instance card's owner routes.
@@ -766,13 +768,18 @@ const EXECUTABLE = {
     for (const pattern of SET.obsolete) assert.doesNotMatch(source, pattern, 'panel bundle must not carry the obsolete/moved control ' + pattern);
   },
 
-  // Executable remainder: the effective sandbox stays read-only whatever the stored row asks for.
+  // Executable remainder. V3 rule (design e1e5577 §5a.2, §6.2; R-HOST-04): the launch overlay
+  // patches no sandbox-policy; the read-only guard is fishball-core's bundle patch, which the
+  // owner's own profile may override (Q20, reported as guards-overridden by test/v3/f-guards).
   // Link activation, return and the rendered notice stay post-merge e2e: browser.
   async 'SET-EP-12'() {
     const { operations } = await overlayOperations(SET.overlayRows);
-    const sandbox = operations.filter((op) => op.id === 'sandbox-policy');
-    assert.ok(sandbox.length > 0, 'overlay patches the sandbox-policy row');
-    for (const op of sandbox) assert.equal(op.config?.mode, SET.readOnly, 'stored higher sandbox does not widen the child');
+    assert.deepEqual(operations.filter((op) => op.id === 'sandbox-policy'), [], 'the launch overlay patches no sandbox-policy (R-HOST-04)');
+    const { loadOverlayPatches } = await import(pathToFileURL(path.join(SDK_FIXTURE.runtime, '@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js')).href);
+    const core = loadOverlayPatches('fbset', path.join(BODY_SOUL.core, 'cordis.patch.yml'));
+    const sandbox = core.filter((op) => op?.id === 'sandbox-policy');
+    assert.ok(sandbox.length > 0, "fishball-core's bundle patch sets the sandbox-policy row");
+    for (const op of sandbox) assert.equal(op.config?.mode, SET.readOnly, "core's guard is read-only");
     const source = fs.readFileSync(SET.panelClient, 'utf8');
     assert.match(source, /data-fishball-settings-readonly/, 'the panel carries the one-line Read Only notice');
     assert.match(source, /data-fishball-settings-open/, 'the panel carries the Settings/Plugins links');
