@@ -124,8 +124,9 @@ export async function openMainPage(t, { sdk, host, prepare = () => {}, lang = PA
 
   const { Context } = await import(pathToFileURL(path.join(runtimeOf(sdk), BOOT.cordisEntry)).href)
   const services = { ...pageServices(shim, lang), configForms: configForms() }
-  // The user's language choice: the snapshot and its listeners follow `setLang` (the words stay the
-  // open-time language's; only the language a client reads and reacts to is observed here).
+  // The user's language choice: the snapshot, its listeners and `resolveText` (DSH's own API for
+  // picking a language's text) follow `setLang`. The registered dictionaries' words stay the
+  // open-time language's; only the language a client reads and reacts to is observed here.
   const language = { active: lang, revision: 0, listeners: new Set() }
   const snapshot = () => ({ active: language.active, revision: language.revision })
   services.locale = {
@@ -133,6 +134,7 @@ export async function openMainPage(t, { sdk, host, prepare = () => {}, lang = PA
     getSnapshot: snapshot,
     getLocale: snapshot,
     subscribe(fn) { language.listeners.add(fn); return () => language.listeners.delete(fn) },
+    resolveText: (text) => (typeof text === 'string' ? text : text?.[language.active] ?? text?.en),
   }
   // One root per graph entry, all over the same page services, with a `slots` face that records the
   // entry: every registration is attributed to the bundle that made it. The V2 main clients share no
