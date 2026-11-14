@@ -4,7 +4,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { inside } from 'fishball-shared/files'
 import { RUNTIME, PLACEMENT, fail } from './constants.js'
-import { exists, jsonPrivate, writePrivate } from './files.js'
+import { exists, jsonPrivate, writePrivate, writeProfileBundles, sameBundles } from './files.js'
 
 /**
  * The child's copies of the plugin set, fishball-hosted-settings and their libraries (I-PLACE;
@@ -22,7 +22,7 @@ const json = async (file) => JSON.parse(await readFile(file, 'utf8'))
 async function ownedDirectory(directory) {
   await mkdir(directory, { recursive: true, mode: RUNTIME.privateDirectoryMode })
   const info = await lstat(directory)
-  if (!info.isDirectory() || info.isSymbolicLink() || info.uid !== process.getuid()) fail('UNSAFE_DIRECTORY')
+  if (!info.isDirectory() || info.isSymbolicLink() || info.uid !== process.getuid()) fail(PLACEMENT.code.unsafeDirectory)
 }
 
 /** Copy one source file, bytes unchanged; a link is refused, so nothing outside the source is read. */
@@ -106,19 +106,36 @@ async function writePackage(sourceRoot, files, manifest, target) {
 }
 
 /**
- * Replace `<parent>/<name>` with a fresh copy: built beside it, then swapped in by rename, so the
- * slot always holds a complete copy (the old one, or the new one). A previous slot may be a real
- * directory or a pnpm link; the link itself is moved aside and removed, never what it points to.
+ * Remove what an interrupted earlier replaceSlot of `name` left beside its slot
+ * (`<name>.placing-*`, `<name>.previous-*`): full copies with a set member's manifest, which pnpm
+ * and the preflight would otherwise scan forever. Only this user's own entries are removed; a link
+ * is removed itself, never followed.
+ */
+async function removeLeftovers(parent, name) {
+  const prefixes = [PLACEMENT.temporaryInfix, PLACEMENT.retiredInfix].map((infix) => name + infix)
+  for (const entry of await readdir(parent)) {
+    if (!prefixes.some((prefix) => entry.startsWith(prefix))) continue
+    const info = await lstat(path.join(parent, entry))
+    if (info.uid === process.getuid()) await rm(path.join(parent, entry), { recursive: true, force: true })
+  }
+}
+
+/**
+ * Replace `<parent>/<name>` with a fresh copy, built beside it and swapped in by rename: the slot
+ * holds the old copy or the new one, and is empty only between the two renames. A previous slot may
+ * be a real directory or a pnpm link; the link itself is moved aside and removed, never what it
+ * points to.
  */
 async function replaceSlot(parent, name, populate) {
   await ownedDirectory(parent)
+  await removeLeftovers(parent, name)
   const target = path.join(parent, name)
   const temporary = target + PLACEMENT.temporaryInfix + randomUUID()
   const retired = target + PLACEMENT.retiredInfix + randomUUID()
   try {
     await populate(temporary)
     const previous = await exists(target)
-    if (previous && previous.uid !== process.getuid()) fail('UNSAFE_DIRECTORY')
+    if (previous && previous.uid !== process.getuid()) fail(PLACEMENT.code.unsafeDirectory)
     if (previous) await rename(target, retired)
     try { await rename(temporary, target) } catch (error) { if (previous) await rename(retired, target); throw error }
     if (previous) await rm(retired, { recursive: true })
@@ -139,26 +156,28 @@ function rebase(value, base) {
 }
 
 /**
- * A set member's source folder: the packed `bundled/<directory>` (REL-PACK output, Q-22), else the
- * checkout's sibling workspace folder, as copyChildCode read core before I-PLACE.
+ * A set member's source: the packed `bundled/<directory>` (REL-PACK output, Q-22), else the
+ * checkout's sibling workspace folder, as copyChildCode read core before I-PLACE. A packed
+ * `bundled/` wins, so a checkout where a pack once ran reads that output until it is removed. A
+ * folder counts only when its manifest names the member: an installed instance without `bundled/`
+ * sits in a node_modules whose siblings are unrelated packages (npm has `core` and `board`).
  */
-async function memberRoot(bundle) {
+async function memberSource(bundle) {
   for (const root of [path.join(INSTANCE_ROOT, PLACEMENT.packed, bundle.directory), path.join(INSTANCE_ROOT, PLACEMENT.parent, bundle.directory)]) {
-    if ((await exists(path.join(root, PLACEMENT.manifest)))?.isFile()) return root
+    const file = path.join(root, PLACEMENT.manifest)
+    if (!(await exists(file))?.isFile()) continue
+    const manifest = await json(file)
+    if (manifest.name === bundle.name) return { root, files: await shippedFiles(root, manifest), manifest }
   }
   fail(PLACEMENT.code.missing, bundle.name)
 }
 
-/** One placed package: where its files come from, which files, and the manifest written beside them. */
-async function bundleSource(bundle) {
-  if (bundle.own === undefined) {
-    const root = await memberRoot(bundle)
-    const manifest = await json(path.join(root, PLACEMENT.manifest))
-    return { root, files: await shippedFiles(root, manifest), manifest }
-  }
-  // fishball-hosted-settings: its folder plus the instance modules its row imports, rooted at the
-  // instance's package root so every relative import keeps its path; its manifest moves to that
-  // root with its paths rebased onto the folder.
+/**
+ * fishball-hosted-settings: its folder plus the instance modules its row imports, rooted at the
+ * instance's package root so every relative import keeps its path; its manifest moves to that root
+ * with its paths rebased onto the folder.
+ */
+async function ownSource(bundle) {
   const folder = path.dirname(bundle.own)
   const files = await treeFiles(INSTANCE_ROOT, path.join(INSTANCE_ROOT, folder))
   const modules = await moduleClosure(INSTANCE_ROOT, files.filter((file) => file.endsWith(PLACEMENT.script)))
@@ -166,6 +185,9 @@ async function bundleSource(bundle) {
   const manifest = { ...own, exports: rebase(own.exports, posix(folder)), dsh: rebase(own.dsh, posix(folder)) }
   return { root: INSTANCE_ROOT, files: [...new Set([...files, ...modules])].filter((file) => file !== bundle.own), manifest }
 }
+
+/** One placed bundle: where its files come from, which files, and the manifest written beside them. */
+const bundleSource = (bundle) => (bundle.own === undefined ? memberSource(bundle) : ownSource(bundle))
 
 /** The libraries the placed code imports by name (PLACEMENT.shared, PLACEMENT.contract). */
 async function librarySources() {
@@ -186,28 +208,18 @@ async function librarySources() {
   ]
 }
 
-/** The placement record (3a): the names whose first placement is done. */
+/**
+ * The placement record (3a): the names whose first placement is done. A damaged record refuses the
+ * start with a typed code; deleting the file is a safe repair, because every placed name is also a
+ * declared dependency of the profile, which keeps its on/off state the same way.
+ */
 async function readRecord(file) {
   if (!await exists(file)) return new Set()
-  const record = await jsonPrivate(file)
+  let record
+  try { record = await jsonPrivate(file) } catch (error) { if (error instanceof SyntaxError) fail(PLACEMENT.code.record); throw error }
   if (record?.format !== PLACEMENT.recordFormat || !Array.isArray(record.placed) || record.placed.some((name) => typeof name !== 'string')) fail(PLACEMENT.code.record)
   return new Set(record.placed)
 }
-
-/**
- * Write the child profile's manifest with `bundles` (and the manifest's other fields as given),
- * keeping the replaced manifest's exact bytes first under a new private name: exclusive create, so
- * no earlier backup is ever overwritten, and a backup that cannot be written stops the start before
- * the manifest changes. Every instance write of the child's bundle list goes through here.
- */
-export async function writeProfileBundles(boot, profileDir, manifest, bundles) {
-  const file = path.join(profileDir, RUNTIME.profile.manifest)
-  const stamp = new Date().toISOString().replace(/[-:.]/g, '')
-  await writePrivate(file + RUNTIME.profile.manifestBackupInfix + stamp, await readFile(file), true)
-  boot.writeProfileBundles(profileDir, manifest, bundles)
-}
-
-const sameList = (left, right) => left.length === right.length && left.every((item, index) => item === right[index])
 
 /**
  * Place the set, fishball-hosted-settings and their libraries into the child profile, before it
@@ -239,17 +251,18 @@ export async function placeBundles(paths, boot) {
   const enabled = names.filter((name) => current.includes(name) || !(placed.has(name) || Object.hasOwn(declared, name)))
   const bundles = [...current.filter((name) => !names.includes(name)), ...enabled]
   const dependencies = { ...declared, ...Object.fromEntries(sources.map((source) => [source.name, PLACEMENT.dependency(source.name)])) }
-  const unchanged = sameList(current, bundles) && sources.every((source) => declared[source.name] === dependencies[source.name])
+  const unchanged = sameBundles(current, bundles) && sources.every((source) => declared[source.name] === dependencies[source.name])
   if (!unchanged) await writeProfileBundles(boot, paths.profile, { ...manifest, dependencies }, bundles)
   if (names.some((name) => !placed.has(name))) await writePrivate(recordFile, { format: PLACEMENT.recordFormat, placed: names })
 }
 
 /**
- * The instance's lifecycle code for one child, in the profile (RUNTIME.snapshotEntries and the
+ * The instance's lifecycle code for one child, in the profile (RUNTIME.snapshot and the
  * modules they reach), as copyChildCode always wrote it: exclusive, under the instance id.
  * @returns {Promise<string>} the lifecycle row's module path.
  */
 export async function snapshotLifecycle(destination) {
-  for (const file of await moduleClosure(INSTANCE_ROOT, RUNTIME.snapshotEntries)) await copyFile(path.join(INSTANCE_ROOT, file), path.join(destination, file))
-  return path.join(destination, RUNTIME.snapshotEntries[0])
+  const { lifecycle, entries } = RUNTIME.snapshot
+  for (const file of await moduleClosure(INSTANCE_ROOT, [lifecycle, ...entries])) await copyFile(path.join(INSTANCE_ROOT, file), path.join(destination, file))
+  return path.join(destination, lifecycle)
 }

@@ -1,5 +1,5 @@
 import { constants } from 'node:fs'
-import { open, mkdir, lstat, realpath, rename, unlink, rm } from 'node:fs/promises'
+import { open, mkdir, lstat, realpath, rename, unlink, rm, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { randomUUID, randomBytes } from 'node:crypto'
 import { RUNTIME, RUNTIME_LIMITS, fail } from './constants.js'
@@ -38,6 +38,22 @@ export async function writePrivate(file, value, exclusive = false) {
   try { await rename(temporary, file) } catch (error) { await unlink(temporary).catch(() => {}); throw error }
 }
 export async function jsonPrivate(file) { return JSON.parse(await readPrivate(file)) }
+/** Whether two bundle lists hold the same names in the same order. */
+export const sameBundles = (left, right) => left.length === right.length && left.every((name, index) => name === right[index])
+/**
+ * Write the child profile's manifest with `bundles` (its other fields as given), keeping the
+ * replaced manifest's exact bytes first under a new private name: exclusive create, so no earlier
+ * backup is ever overwritten (the id keeps two writes of one start apart), and a backup that cannot
+ * be written stops the start before the manifest changes. Every instance write of the child's
+ * bundle list goes through here (installation.js nativeProfileBundles, placement.js).
+ * @param boot - the installation's dsh-app-boot module.
+ */
+export async function writeProfileBundles(boot, profileDir, manifest, bundles) {
+  const file = path.join(profileDir, RUNTIME.profile.manifest)
+  const stamp = new Date().toISOString().replace(/[-:.]/g, '') + RUNTIME.profile.manifestBackupSeparator + randomUUID()
+  await writePrivate(file + RUNTIME.profile.manifestBackupInfix + stamp, await readFile(file), true)
+  boot.writeProfileBundles(profileDir, manifest, bundles)
+}
 export function validId(value) { return typeof value === 'string' && /^[0-9a-f-]{36}$/.test(value) }
 export function pathsFor(mainHome) {
   const root = path.join(mainHome, 'fishball', 'runtime')

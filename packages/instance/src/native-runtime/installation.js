@@ -3,9 +3,9 @@ import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import path from 'node:path'
 import { RUNTIME, PLACEMENT, HOST_LAUNCH, fail, NativeRuntimeError } from './constants.js'
-import { privateDirectory, writePrivate, exists, snapshotPath } from './files.js'
+import { privateDirectory, writePrivate, exists, snapshotPath, writeProfileBundles, sameBundles } from './files.js'
 import { inside } from 'fishball-shared/files'
-import { placeBundles, snapshotLifecycle, writeProfileBundles } from './placement.js'
+import { placeBundles, snapshotLifecycle } from './placement.js'
 
 export async function resolveInstallation(installAnchor) {
   if (typeof installAnchor !== 'string' || !path.isAbsolute(installAnchor)) fail('INVALID_INSTALLATION')
@@ -122,15 +122,14 @@ async function validateStartupFiles(paths) {
 /**
  * The attached profile was first created with the Web bundle, and initProfile never rewrites an
  * existing manifest. Restore the native Web bundle after base; every bundle installed into the
- * child profile afterwards is kept in order (placement.js writeProfileBundles keeps a backup).
+ * child profile afterwards is kept in order (files.js writeProfileBundles keeps a backup).
  */
 async function nativeProfileBundles(boot, profileDir) {
   const manifest = boot.readProfileManifest(RUNTIME.profileName, profileDir)
   const current = manifest.dsh?.profile?.bundles ?? []
   const retained = current.filter(name => !RUNTIME.profile.bundles.includes(name))
   const bundles = [...RUNTIME.profile.bundles, ...retained]
-  const unchanged = current.length === bundles.length && current.every((name, index) => name === bundles[index])
-  if (unchanged) return
+  if (sameBundles(current, bundles)) return
   await writeProfileBundles(boot, profileDir, manifest, bundles)
 }
 
