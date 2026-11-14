@@ -363,8 +363,9 @@ opaque: `EntryKey`, `PrincipalKey`; no interface carries a token value.
 
 The user's decisions on the PROPOSED values of K1, K2 and K3 (relayed by Fishball), by item number.
 This is the one record: `DECIDED #n` (or `DECIDED Dn`) in any of the three contracts points here.
-Every other value marked PROPOSED is still open. Rows D1–D7 are the values the W2 tasks proposed
-locally; they moved into their contracts unchanged (the constants migration, 2026-11-14).
+Every other value marked PROPOSED is still open. Rows D1–D6 are values the W2 tasks proposed
+locally, and D7 is where those values live; they moved into their contracts unchanged (the
+constants migration, 2026-11-14).
 
 | # | Value | Decision |
 | --- | --- | --- |

@@ -207,7 +207,10 @@ export const GUARDS = Object.freeze({
   }),
   /** DSH's agent-registry event after a session's setup (create or resume), both SDKs. */
   agentCreated: 'agent/created',
-  /** The service this row provides: `report()`, `reorder()`, `onChange(listener)` (not in K3's types). */
+  /**
+   * The service this row provides: `report()`, `reorder()`, `onChange(listener)`. Not in K3's types;
+   * the name is F-GUARDS's, kept as it was (owner DECIDED D7).
+   */
   serviceName: 'fishballGuards',
   /** The guard module's Cordis plugin name (ui/patch/index.js `name`). */
   pluginName: 'fishball-ui',

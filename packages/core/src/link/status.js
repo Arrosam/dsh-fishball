@@ -6,7 +6,7 @@
  * | --- | --- | --- | --- |
  * | 1 | target blank | `target-unset` | `null` |
  * | 1a | target URL refused by core (REM-EP-01 rows 6–8) | `target-unset` | the refusal |
- * | 3 | no token value (K3: a reference with no value is `target-unset`) | `target-unset` | `null` |
+ * | 3 | no token value (K3: a reference with no value is `target-unset`, PROPOSED) | `target-unset` | `null` |
  * | 2 | no answer, or any other failure | `target-unreachable` | `TARGET_UNREACHABLE` |
  * | 4 | the target refused the credential | `token-refused` | `TOKEN_REFUSED` |
  * | 5 | connected (listen stream open) | `connected` | `null` |
