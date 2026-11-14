@@ -12,12 +12,13 @@
  * 1. read: every item's value is resolved and fingerprinted; nothing is written. A saved list that
  *    gives one `ref` to two items is refused `ref-duplicate` (R-TOK-08); at start or on a
  *    credential change, when there is no save to refuse, only those items are left out (6 = A).
- *    Equal values under two refs are `value-duplicate` (K1 SETTINGS_REFUSAL; PENDING_DECISION). A
+ *    Equal values under two refs are `value-duplicate` (K1 SETTINGS_REFUSAL; see `introduced`). A
  *    refused save changes nothing (R-TOK-08 "the previous settings stay"), and the caller's
  *    `restoreTokens` writes the previous list back.
- * 2. commit: values are generated for enabled entries whose ref has none (R-TOK-08), the new state
- *    is swapped in, revocations are announced, records are written, and the generated values of
- *    deleted entries are unset (R-TOK-09).
+ * 2. commit: values are generated for enabled entries whose ref has none (R-TOK-08; a value unset
+ *    outside a save waits for the next accepted save, see `awaitsSave`), the new state is swapped in,
+ *    revocations are announced, records are written, and the generated values of deleted entries
+ *    are unset (R-TOK-09).
  *
  * Identity (Fishball's decision 2026-11-14, question 1 = A): an item is the entry whose live
  * record has its `ref`. A changed ref is therefore a delete plus a new entry, and a ref added
@@ -44,7 +45,7 @@ import { randomBytes } from 'node:crypto'
 import { ENTRY_STATUS, SETTINGS_REFUSAL, TOKEN_VALUE } from '../../mcp-schema/constants.js'
 import { isTokenLongEnough } from '../../mcp-schema/rules.js'
 import { diagnosticOf } from '../errors.js'
-import { CREDENTIALS_UPDATED, DUPLICATE_POLICY, ENTRY_KEY, GENERATION, LOG, NO_TEXT, PENDING_DECISION, REF_PATTERN, REVOCATION, SYNC_REASON, UNSET_POLICY, VALUE_ENCODING } from './constants.js'
+import { CREDENTIALS_UPDATED, ENTRY_KEY, GENERATION, LOG, NO_TEXT, REF_PATTERN, REVOCATION, SYNC_REASON, VALUE_ENCODING } from './constants.js'
 import { loadFingerprinter, sameFingerprint } from './fingerprint.js'
 import { openTokenStore } from './store.js'
 
@@ -86,6 +87,8 @@ const newEntryKey = () => randomBytes(ENTRY_KEY.bytes).toString(ENTRY_KEY.encodi
 const labelsText = (labels) => labels.join(LOG.labelSeparator)
 const bumped = (generation) => generation + GENERATION.step
 const publicList = (records) => records.filter((record) => !record.removed).map(({ label, enabled, ref }) => ({ label, enabled, ref }))
+/** Equal as stored or as written back: the shapes compared are built with one key order. */
+const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
 /**
  * @param {object} options
@@ -94,7 +97,8 @@ const publicList = (records) => records.filter((record) => !record.removed).map(
  * @param {(previous: {label: string, enabled: boolean, ref: string}[]) => Promise<void>} [options.restoreTokens]
  *   writes the previous list back to the settings after a refused save (C-WIRE owns the document).
  *   It runs inside the registry's sync queue, so it must not wait for the `apply` that its own
- *   write's `settings/document-updated` starts: that `apply` is queued behind it.
+ *   write's `settings/document-updated` starts: that `apply` is queued behind it. That `apply`
+ *   (the restored list, the default reason) is not counted as the user saving again.
  */
 export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   const credentials = ctx.credentials
@@ -106,6 +110,8 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   let live = []
   /** The list as last applied, for `refresh()` and for a restore. */
   let applied
+  /** The list a refusal wrote back, until the next settings sync, which is that write's when it holds this list. */
+  let restored
   /** Records repaired at open (two for one ref): announced `deleted` by the first sync. */
   let repaired = []
   const listeners = new Set()
@@ -181,18 +187,23 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   const valueGroups = (reads) => sharedGroups(reads.filter((state) => state.fingerprint !== null), (state) => state.fingerprint, sameFingerprint)
 
   /**
-   * DUPLICATE_POLICY.restore: whether this save makes an entry a duplicate that was not one
-   * already (a new item counts as not one). A duplicate the save leaves as it was does not refuse it.
+   * Two entries may never hold one value (the user's decision 2026-11-14, C-TOKENS question 4 =
+   * A, kept as built): a save that
+   * makes an entry a duplicate that was not one already (a new item counts as not one) is refused
+   * and the previous list written back, logged with the labels only. A save that leaves an existing
+   * duplicate as it was is not refused, so a label change or a disable is never blocked by it. A
+   * duplicate that did not come from a save (a store edit, or one found at start) has no save to
+   * undo: its entries stay unusable until the values differ.
    */
   function introduced(group) {
     const wasDuplicate = (state) => live.some((current) => current.duplicate && current.entry.entryKey === state.record?.entryKey)
     return group.some((state) => !wasDuplicate(state))
   }
 
-  /** Whether the commit should generate a value for this item (R-TOK-08; UNSET_POLICY). */
-  async function mayGenerate(state, reason) {
+  /** Whether the commit should generate a value for this item (R-TOK-08), given `awaitsSave`'s answer. */
+  async function mayGenerate(state, waiting) {
     const { item, value, unreadable } = state
-    if (!item.enabled || value !== undefined || unreadable || !isRef(item.ref) || awaitsSave(state, reason)) return false
+    if (!item.enabled || value !== undefined || unreadable || !isRef(item.ref) || waiting) return false
     try { return (await credentials.describe(item.ref)).writable === true } catch (error) {
       logger.warn(LOG.credentialRead, item.label, diagnosticOf(error))
       return false
@@ -200,12 +211,22 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   }
 
   /**
-   * UNSET_POLICY.awaitSave: an entry whose value was unset outside a settings save (a store edit,
-   * or one seen at start) gets no generated value until the next save; any value ends the wait.
+   * The user's decision 2026-11-14, C-TOKENS question 5 = B: an entry whose value was unset
+   * outside a settings save (a store edit, or one seen at start) stays `token-unconfigured` with no
+   * generated value until the user saves the settings again; any value ends the wait. Only an
+   * entry that had a value waits: a new entry, or one whose ref never held a value, is generated
+   * for as R-TOK-08 says. The wait is recorded as the record's `awaitSave`, so a restart (whose
+   * start sync sees no value, and no earlier one) keeps waiting. Only an accepted save ends it
+   * (the user's final answer 2026-11-14, superseding the first): a refused save changes nothing,
+   * and neither does the settings sync that `restoreTokens`' write of the previous list starts,
+   * which `sync` recognises by that list and does not count as a save. An accepted save ends it
+   * even while the value cannot be read: the user did save, and a failing read is no reason to wait.
+   * @param {boolean} accepted - this sync is a settings save the user made that was not refused.
    */
-  function awaitsSave({ record, fingerprint, unreadable }, reason) {
+  function awaitsSave({ record, fingerprint, unreadable }, accepted) {
+    if (accepted) return false
     if (unreadable) return record?.awaitSave === true
-    if (PENDING_DECISION.afterUnset !== UNSET_POLICY.awaitSave || reason === SYNC_REASON.settings || fingerprint !== null) return false
+    if (fingerprint !== null) return false
     return record?.awaitSave === true || (record !== undefined && record.fingerprint !== null)
   }
 
@@ -222,9 +243,10 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   }
 
   /** Phase 2 for one item: generate if needed, then `{next, status, kind}`: its next record, K1 status and revocation, if any. */
-  async function commitOne(state, reason) {
+  async function commitOne(state, accepted) {
     const { item, record, unreadable } = state
-    const generatedValue = (await mayGenerate(state, reason)) ? await generateFor(item) : undefined
+    const waiting = awaitsSave(state, accepted)
+    const generatedValue = (await mayGenerate(state, waiting)) ? await generateFor(item) : undefined
     const value = generatedValue ?? state.value
     // An unreadable value keeps what the record knew: it is unknown, not changed (see the header).
     const fingerprint = generatedValue !== undefined ? fingerprinter.of(generatedValue) : unreadable ? record?.fingerprint ?? null : state.fingerprint
@@ -246,7 +268,7 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
       generated,
       fingerprint,
       keyId: unreadable && record !== undefined ? record.keyId : fingerprinter.id,
-      awaitSave: awaitsSave({ record, fingerprint: state.fingerprint, unreadable }, reason),
+      awaitSave: waiting,
       removed: false,
     }
     return { next, status, kind }
@@ -275,7 +297,7 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
    */
   async function persist() {
     for (const record of [...records.values()]) {
-      if (JSON.stringify(stored.get(record.entryKey)) === JSON.stringify(record)) continue
+      if (sameJson(stored.get(record.entryKey), record)) continue
       if (await attempt(() => store.table.put(record.entryKey, record))) stored.set(record.entryKey, record)
     }
   }
@@ -312,14 +334,27 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   /** A refusal: nothing changes, and a refused save is written back (R-TOK-08). Labels only. */
   async function refuse(code, groups) {
     if (restoreTokens !== undefined) {
-      try { await restoreTokens(applied ?? publicList([...records.values()])) } catch (error) { logger.warn(LOG.restoreFailed, diagnosticOf(error)) }
+      const previous = applied ?? publicList([...records.values()])
+      // Set before the write: a restore that fails after writing must not let its echo count as an
+      // accepted save (fail closed). One that fails before costs one user save of this same list.
+      restored = previous
+      try { await restoreTokens(previous) } catch (error) { logger.warn(LOG.restoreFailed, diagnosticOf(error)) }
     }
     return Object.freeze({ ok: false, code, labels: Object.freeze(groups.map((group) => Object.freeze([...group]))) })
   }
 
   async function sync(tokens, reason) {
     const all = itemsOf(tokens)
-    const saved = reason === SYNC_REASON.settings
+    // The first settings sync after a restore is that restore's own write when it holds the
+    // restored list: it is not the user saving (C-TOKENS question 5 = B, the user's final answer),
+    // so nothing in it is refused (a duplicate there came from no save, see `introduced`) and it
+    // ends no wait. Any settings sync clears `restored`, so a lost write-back event costs at most
+    // one user save of that same list. Limit: a second user save queued between a refusal and its
+    // write's event takes the echo's place; telling them apart for sure needs C-WIRE to mark its write.
+    const settingsSync = reason === SYNC_REASON.settings
+    const echo = settingsSync && restored !== undefined && sameJson(all, restored)
+    if (settingsSync) restored = undefined
+    const saved = settingsSync && !echo
     const refClashes = refClashesOf(all)
     const refLabels = refClashes.map((group) => group.map((item) => item.label))
     for (const labels of refLabels) logger.warn(LOG.refDuplicate, labelsText(labels), saved ? LOG.refDuplicateRefused : LOG.refDuplicateLeftOut)
@@ -333,7 +368,7 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
     const reads = []
     for (const item of items) reads.push(await read(item))
     const groups = valueGroups(reads)
-    const refusing = groups.filter((group) => PENDING_DECISION.valueDuplicate === DUPLICATE_POLICY.restore && saved && introduced(group))
+    const refusing = groups.filter((group) => saved && introduced(group))
     for (const group of groups) {
       logger.warn(LOG.valueDuplicate, labelsText(group.map((state) => state.item.label)), refusing.includes(group) ? LOG.valueDuplicateRestored : LOG.valueDuplicateUnusable)
     }
@@ -341,7 +376,7 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
     const duplicates = new Set(groups.flat())
 
     const commits = []
-    for (const state of reads) commits.push({ state, ...(await commitOne(state, reason)) })
+    for (const state of reads) commits.push({ state, ...(await commitOne(state, saved)) })
     const kept = new Set(commits.map(({ next }) => next.entryKey))
     const deleted = [...records.values()].filter((record) => !record.removed && !kept.has(record.entryKey) && !clashing.has(record.ref))
       .map((record) => ({ ...record, generation: bumped(record.generation), removed: true }))
