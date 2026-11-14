@@ -191,7 +191,7 @@ export const PAGE_TEXT = Object.freeze({
   localhostOnly: 'Warning: this client only redirects to this computer (localhost). Any program on it could claim this name.',
   dsh: 'DSH: {dsh}, {resource}.',
   rights: 'Authorizing gives this agent full manager rights over this DSH\'s sessions, delegated approvals and questions included.',
-  oneAgent: 'A token can be used for one agent only. The id must be unique and cannot be changed later; the name can.',
+  oneAgent: 'One token, one agent: a token can be used for one agent only. The id must be unique and cannot be changed later; the name can.',
   tokenLabel: 'Token',
   idLabel: 'Fishball id',
   nameLabel: 'Name (optional)',
@@ -207,7 +207,8 @@ export const PAGE_TEXT = Object.freeze({
   idTaken: 'id-taken: another agent on this DSH already uses this id.',
   nameInvalid: 'name-invalid: the name must be 1-64 characters with no control or invisible characters.',
   nameTaken: 'name-taken: another agent on this DSH already uses this name.',
-  expired: 'This request has expired. Start again from your agent.',
+  // R-OA-15's wording.
+  expired: 'This request has expired, start again from your agent.',
   badClient: 'The client id is not a valid client metadata document URL, or its document could not be used.',
   badRedirect: 'The redirect URI is not registered for this client.',
 })

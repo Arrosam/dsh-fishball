@@ -10,7 +10,7 @@
  */
 import {
   APPROVAL_LISTENER, GATE_SURFACE, HTTP_STATUS, ID_REFUSAL, LIFETIME, OAUTH_ERROR, PATHS, RATE_LIMITS, REFUSAL,
-  RESPONSE_TYPE, TIME_UNIT, oauthUrls, principalLabel,
+  RESPONSE_TYPE, TIME_UNIT, normaliseName, oauthUrls, principalLabel,
 } from '../../../mcp-schema/index.js'
 import { diagnosticOf } from '../../errors.js'
 import { clientNameOf, isAllowedRedirect, isLoopbackOnly, redirectUrisOf } from './client-rules.js'
@@ -78,6 +78,15 @@ const REPEATED = Symbol('repeated')
 function single(query, name) {
   const values = query.getAll(name)
   return values.length > 1 ? REPEATED : values[0]
+}
+
+/**
+ * The name field as `PairStore.bindFromPage` takes it: `undefined` for an empty field or one that
+ * normalises to nothing (R-OA-12 (3) checks a non-empty name only; AUTH-DT-08 rules 5, 5f).
+ */
+function typedName(form) {
+  const raw = form.get(FORM_FIELD.name)
+  return raw === null || normaliseName(raw) === '' ? undefined : raw
 }
 
 const lastSeenText = (lastSeenAt) => (lastSeenAt === null ? PAGE_TEXT.neverSeen : new Date(lastSeenAt).toISOString())
@@ -205,7 +214,7 @@ export function createApprovalHandler(deps) {
     const id = form.get(FORM_FIELD.id) ?? ''
     const pair = pairs.pairOf(entry.entryKey)
     if (pair !== undefined) return boundEntry(res, request, entry, pair, id, at)
-    const bound = await pairs.bindFromPage(entry.entryKey, id, form.get(FORM_FIELD.name) ?? undefined,
+    const bound = await pairs.bindFromPage(entry.entryKey, id, typedName(form),
       { clientIdUrl: request.clientId, redirectUri: request.redirectUri }, at)
     if (bound.ok) return issueCode(res, request, entry.entryKey, at)
     // A concurrent bind of this entry since `pairOf` answers `already-paired`, shown with its pair.
