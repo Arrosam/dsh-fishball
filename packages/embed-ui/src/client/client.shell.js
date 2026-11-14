@@ -1,6 +1,5 @@
 /**
- * Fishball browser half (DESIGN §10).
- *
+ * fishball-embed-ui, the shell part (V3 U-SHELL split of the V2 connector client, DESIGN §10):
  * 1. Brand: fills sidebar.brand.mark / sidebar.brand.name at slot priority -1 (a single
  *    slot renders its LOWEST priority; the shipped brand uses 0 — spike S14). The name
  *    occupant takes over its enclosing button's click (capture phase, so it runs before
@@ -16,31 +15,31 @@
  *    the `main` slot where a session's conversation shows, opened by the brand and by a Fishball row
  *    in the sidebar's panel list. The frame shows the instance's state, Fishball's unread count and
  *    Connector settings; with no instance it shows an empty state and no iframe.
- * 4. The body's marks on ordinary sessions (§8.2, §8.3): Hand over / Take back in the header and
- *    row menu, the managed-session fish and dots on the row, and the ask_fishball row with your
- *    Allow once / Reject once the request is yours.
+ * 4. The kit the other parts are built from (`exports.kit`): the one state stream, POST helper,
+ *    style sheet and dictionary, and the seats (SEAT) where the attention part draws the fish's
+ *    latch in the brand, the sidebar row and the frame. The marks (client.marks.js) and the
+ *    ask_fishball row with the card records (client.records.js) are parts of their own.
  * The in-process Fishball's own surfaces (its chat dock, pile, welcome card, model gate, the
  * Plugins page's Fishball tab and install dialog, the Messenger look) were removed with it.
  *
  * The mark is FishMark from the owner's fishball app (THIRD_PARTY_NOTICES); the connector's own
  * icon is FishMark with a wrench badge (assets/connector-icon.svg, D22).
  *
- * State comes from GET /api/fishball/events (server-sent snapshots). The card record's view is the
- * package-local chunk client.records.js.
+ * State comes from GET /api/fishball/events (server-sent snapshots).
  */
 window.__ModuleLoader__.load({
   // V3 R-EMBED: moved here unchanged from packages/connector/client.js (R-ARCH-03: the connector
-  // has no browser client; R-ARCH-04). It is now a package-local chunk of fishball-embed-ui's
-  // client (client.js starts it as a sub-plugin), so it registers under that package with its
-  // chunk name. Its plugin name, settings namespace and slot keys stay the connector's, because it
+  // has no browser client; R-ARCH-04), then split by U-SHELL. It is a package-local chunk of
+  // fishball-embed-ui's client (client.js starts it as a sub-plugin), so it registers under that
+  // package with its chunk name. Its plugin name, settings namespace and slot keys stay the connector's, because it
   // still draws and configures the connector's row.
   id: 'fishball-embed-ui',
-  chunk: 'client.connector.js',
+  chunk: 'client.shell.js',
   factory(require) {
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconWarningOutlineRegular, Input, MenuItemButton, Modal, SettingsForm, SettingsFormModel, SettingsValueField, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconWarningOutlineRegular, SettingsForm, SettingsFormModel, SettingsValueField, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'fishball-connector'
@@ -56,17 +55,6 @@ window.__ModuleLoader__.load({
     /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
     /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
     const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', attentionRead: '/api/fishball/connector/attention/read' })
-    /**
-     * The one hand-over entry (§8.3): the session header and the session-row menu share it. Menu
-     * order: after DSH's own pin/rename/fork/archive, before the id; header order: just before
-     * Fishball's own settings action. The Take back refusal keeps its own overlay id, because the
-     * dialog and that notice are registered in the same slot.
-     */
-    const HAND_OVER = Object.freeze({ id: 'fishball-hand-over', noticeId: 'fishball-hand-over-notice', menuOrder: 422, headerOrder: 4.5 })
-    /** Hand-over refusals with their own text (keep in step with src/constants.js INTAKE_ERROR). */
-    const HAND_OVER_ERRORS = new Set(['queue-full', 'too-large', 'from-fishball', 'unknown-session', 'unavailable'])
-    /** Take back refusals with their own text (src/constants.js MANAGED_ERROR). */
-    const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'unavailable'])
     /**
      * The Fishball view (§7) and the connector's frame around it (design §0.5 "The frame", D27).
      * `panelId` is one key shared by the `main` occupant and its `sidebar.panellist` row, as DSH's
@@ -156,6 +144,44 @@ window.__ModuleLoader__.load({
     /** Where the sidebar opens the Fishball view (src/constants.js SIDEBAR_ENTRY): its own row, or the brand only. */
     const SIDEBAR_ENTRY = Object.freeze({ panel: 'panel', brand: 'brand' })
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
+    /**
+     * The fish mark's shared look, used by the shell's sheet and by the parts (kit.ROW_MARK): the
+     * managed-row cell, the dot and the running flip. cellPx copies DSH's leading cell (the seat's
+     * contract in dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the title"); the
+     * cell is not sized by its parent, so a percentage would collapse. Revisit if DSH resizes it.
+     * The dots sit at the mark's top-right; green/yellow come from DSH's state tokens, so light and
+     * dark themes both read.
+     */
+    const ROW_MARK = Object.freeze({
+      cellPx: 16,
+      dot: Object.freeze({ sizePx: 7, topPx: -1, rightPx: -1, unread: 'unread', action: 'action' }),
+      /** The flipping fish while a row runs (design ⑥): a half-turn, a hold, then the other half. */
+      flipAnimation: 'fb-flip',
+      flipSeconds: 1.8,
+      flipOrigin: '50% 50%',
+      flip: Object.freeze([[0, 0], [45, 180], [55, 180], [100, 360]]),
+    })
+    /**
+     * The reveal of a box that opens and closes (DESIGN §10e, rev11-pile-list), drawn by the shell's
+     * sheet and moved by the records part (kit.PILE_LIST). Its length and easing are presentation,
+     * not settings (the manager's decision): short, so a switch never holds up a click; under
+     * prefers-reduced-motion: reduce every switch is instant.
+     */
+    const PILE_LIST = Object.freeze({
+      revealMs: 180,
+      easing: 'cubic-bezier(.2,0,0,1)',
+      /** A reveal's states, drawn as data-fishball-reveal. */
+      reveal: Object.freeze({ hidden: 'hidden', opening: 'opening', open: 'open', closing: 'closing' }),
+    })
+    /**
+     * The shell's seats (U-SHELL's slot registry): places in the shell's own surfaces that a part
+     * fills (`seats.register(seat, value)`), so the shell draws them without knowing the part, and a
+     * part that never loads leaves the shell's fallback. One value per seat; the latest wins.
+     * - mark: the sidebar mark component `({size})` the brand and the sidebar row draw;
+     * - frameBadge: a component `({t})` in the frame's header;
+     * - pageOpened: a function the view calls once each time it mounts.
+     */
+    const SEAT = Object.freeze({ mark: 'mark', frameBadge: 'frameBadge', pageOpened: 'pageOpened' })
     const SLOT = Object.freeze({
       mark: 'sidebar.brand.mark',
       name: 'sidebar.brand.name',
@@ -181,79 +207,8 @@ window.__ModuleLoader__.load({
        */
       rowTrailing: 'sidebar.session.row.trailing',
     })
-    /**
-     * Your pile as a list of rows with a detail view (DESIGN §10e, rev11-pile-list). The reveal's
-     * length and easing are presentation, not settings (the manager's decision): short, so a switch
-     * never holds up a click; under prefers-reduced-motion: reduce every switch is instant.
-     */
-    const PILE_LIST = Object.freeze({
-      revealMs: 180,
-      easing: 'cubic-bezier(.2,0,0,1)',
-      /** A reveal's states, drawn as data-fishball-reveal. */
-      reveal: Object.freeze({ hidden: 'hidden', opening: 'opening', open: 'open', closing: 'closing' }),
-      /** A shell tool's command argument, as prefix grants read it (keep in step with src/constants.js GRANT.commandArgument). */
-      commandArgument: Object.freeze({ bash: 'command', pwsh: 'command', terminal_send: 'text' }),
-      escapeKey: 'Escape',
-      /** The pile's scrolling box: a click on it (its scroll bar) is not a click outside the detail. */
-      scrollArea: '[data-fishball-pile]',
-      /** One card's whole box in the list (its li): a click inside it is not outside its detail. */
-      cardBox: '[data-fishball-card]',
-      rowGapPx: 8,
-    })
-    /**
-     * The managed mark in a sidebar row. cellPx copies DSH's leading cell (the seat's contract in
-     * dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the title"); the cell is not
-     * sized by its parent, so a percentage would collapse. Revisit if DSH resizes it.
-     *
-     * Idle: a still fish in the leading seat. Running: DSH replaces that seat with its own spinner,
-     * so the same fish moves to the trailing seat and animates (0.2.2's always-mounted seat). The
-     * dots sit at the mark's top-right; needs-action is checked first, so it wins when both apply.
-     * Green/yellow come from DSH's state tokens, so light and dark themes both read.
-     */
-    const MANAGED_ROW = Object.freeze({
-      id: 'fishball-managed',
-      iconPx: 14,
-      cellPx: 16,
-      dot: Object.freeze({ sizePx: 7, topPx: -1, rightPx: -1, unread: 'unread', action: 'action' }),
-      /** The flipping fish while a row runs (design ⑥): a half-turn, a hold, then the other half. */
-      flipAnimation: 'fb-flip',
-      flipSeconds: 1.8,
-      flipOrigin: '50% 50%',
-      flip: Object.freeze([[0, 0], [45, 180], [55, 180], [100, 360]]),
-      /** Values of data-fishball-row-state, so a running mark is distinguishable from an idle one. */
-      state: Object.freeze({ idle: 'idle', running: 'running' }),
-    })
-    /**
-     * The Host state one managed row's dots read. Both are per session, never Fishball-wide:
-     * - green: an open intake row whose source identity is this session (a message_fishball from
-     *   it that Fishball has not read). The prefix is src/messaging.js SOURCE_ID.session; the open
-     *   statuses are INTAKE_STATUS pending/accepted (src/constants.js).
-     * - yellow: a card or question in state.pile whose sessionId is this session.
-     * Fishball's own chat unread count stays on the top-left brand mark, where the design keeps it.
-     */
-    const ROW_STATE = Object.freeze({
-      unreadSource: 'session/',
-      unreadStatuses: new Set(['pending', 'accepted']),
-    })
-    /** The ask_fishball row (S37): DSH has no view for this tool, so this entry draws the whole row. */
-    const ASK_ROW = Object.freeze({ tool: 'ask_fishball', phaseStart: 'start', phaseResult: 'result' })
-    /** ask_fishball's answer codes with their own words (keep in step with src/constants.js ASK_RESULT, ASK_ERROR). */
-    const ASK_CODES = new Set(['allowed', 'rejected', 'question', 'unavailable', 'over-capacity', 'no-longer-managed', 'not-user-message', 'too-large', 'expired', 'invalid-request', 'empty', 'cancelled'])
-    /** Your answer on a card (src/constants.js CARD_DECISION) and refusals with their own text. */
-    const CARD_DECISION = Object.freeze({ allow: 'allow', reject: 'reject' })
-    const CARD_ERRORS = new Set(['expired', 'too-large', 'unavailable'])
     // The attribute Fishball keeps on DSH's brand button (rev11-ui-fixes R5).
     const BRAND_LABEL_ATTR = 'aria-label'
-    // ask_fishball's reason_from for Fishball's own reason (rev11-ui-fixes R3); a row from before the fix has none.
-    const REASON_FROM_FISHBALL = 'fishball'
-    /**
-     * Questions and plan reviews (rev11g, §7a.10; src/constants.js QUESTION_KIND, QUESTION_MODE):
-     * the mode is a field of DSH's form of the row (src/config.js QUESTION_MODE_SETTING). You answer
-     * them in their own session (DSH's question card); the pile that had a question form is gone
-     * (docs/slim-native-design.md §12).
-     */
-    const GRANT_ERRORS = new Set(['unknown', 'ended', 'unavailable'])
-    const JSON_INDENT = 2
     /**
      * The limit fields, in the order the Host declares them (src/config.js LIMITS, the
      * conn-OQ-20 set). The form model needs its fields before the first state frame arrives, so
@@ -624,8 +579,8 @@ window.__ModuleLoader__.load({
       `.${CLS.swim}{transform-origin:${ORCA_SWIM.origin};overflow:visible;animation:fb-swim ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
       `@keyframes fb-swim{${[...ORCA_SWIM.sway.map(([at, transform]) => [at * SWIM_SHARE, transform]), [100, 'none']].map(([at, transform]) => `${at}%{transform:${transform}}`).join('')}}`,
       // The running fish's flip (design ⑥): a half-turn to the mirror, a short hold, then back.
-      `.${CLS.flip}{transform-origin:${MANAGED_ROW.flipOrigin};animation:${MANAGED_ROW.flipAnimation} ${MANAGED_ROW.flipSeconds}s ease-in-out infinite}`,
-      `@keyframes ${MANAGED_ROW.flipAnimation}{${MANAGED_ROW.flip.map(([at, degrees]) => `${at}%{transform:rotateY(${degrees}deg)}`).join('')}}`,
+      `.${CLS.flip}{transform-origin:${ROW_MARK.flipOrigin};animation:${ROW_MARK.flipAnimation} ${ROW_MARK.flipSeconds}s ease-in-out infinite}`,
+      `@keyframes ${ROW_MARK.flipAnimation}{${ROW_MARK.flip.map(([at, degrees]) => `${at}%{transform:rotateY(${degrees}deg)}`).join('')}}`,
       // Motion is the only thing that stops: the pill, its count and the dots stay.
       `@media (prefers-reduced-motion:reduce){.${CLS.badge},.${CLS.wag},.${CLS.swim},.${CLS.flip}{animation:none}}`,
       `.${CLS.row}{display:flex;gap:12px;align-items:baseline}`,
@@ -672,10 +627,10 @@ window.__ModuleLoader__.load({
       `.${CLS.pre}{margin:0;padding:6px 8px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--ds-font-family-code);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${CLS.actions}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
       `.${CLS.askRow}{display:flex;flex-direction:column;gap:6px;padding:6px 0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
-      `.${CLS.managedRow}{position:relative;display:inline-flex;align-items:center;justify-content:center;width:${MANAGED_ROW.cellPx}px;height:${MANAGED_ROW.cellPx}px;color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.managedRow}{position:relative;display:inline-flex;align-items:center;justify-content:center;width:${ROW_MARK.cellPx}px;height:${ROW_MARK.cellPx}px;color:var(--dsw-alias-label-primary)}`,
       // The dots' two meanings get DSH's own state tokens; yellow is checked first in the component.
-      `.${CLS.managedRowDot}{position:absolute;top:${MANAGED_ROW.dot.topPx}px;right:${MANAGED_ROW.dot.rightPx}px;box-sizing:border-box;width:${MANAGED_ROW.dot.sizePx}px;height:${MANAGED_ROW.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-success-primary);pointer-events:none}`,
-      `.${CLS.managedRowDot}[data-fishball-dot="${MANAGED_ROW.dot.action}"]{background:var(--dsw-alias-state-warn-primary)}`,
+      `.${CLS.managedRowDot}{position:absolute;top:${ROW_MARK.dot.topPx}px;right:${ROW_MARK.dot.rightPx}px;box-sizing:border-box;width:${ROW_MARK.dot.sizePx}px;height:${ROW_MARK.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-success-primary);pointer-events:none}`,
+      `.${CLS.managedRowDot}[data-fishball-dot="${ROW_MARK.dot.action}"]{background:var(--dsw-alias-state-warn-primary)}`,
       // The one accent token and the one ring (§8.5). The ring mixes the accent with whatever
       // surface is under it, so it reads on light and dark; DSH's own variant supplies hover,
       // active and focus-visible.
@@ -736,23 +691,6 @@ window.__ModuleLoader__.load({
       className: [ACCENT_BUTTON.className, props.className].filter(Boolean).join(' '),
     }, ...children)
 
-    /** Connector-owned attention latch: count is 0 or 1; no producer unread state. */
-    const unreadCount = (state) => state.unread?.count ?? 0
-    /** The unread count in words, capped so the pill stays narrow. */
-    const unreadText = (t, count) => count > UNREAD_BADGE.max ? t('unreadMany', { max: UNREAD_BADGE.max }) : String(count)
-    /**
-     * Whether this row's session has a card or question waiting for you: the Host's one pile,
-     * filtered by the card's own sessionId. A card from Fishball's own session has no managed row,
-     * so it lights no dot; the mark never borrows another session's card.
-     */
-    const needsAction = (state, sessionId) => (Array.isArray(state.pile) ? state.pile : []).some((card) => card?.sessionId === sessionId)
-    /**
-     * Whether Fishball has unread input from this row's session: an open intake row whose source
-     * identity is this session. The snapshot lists at most INTAKE.rowsShown items (src/constants.js), so a very old
-     * open item may be missing from the dot; the dot is a hint, not a queue count.
-     */
-    const unreadInput = (state, sessionId) => (Array.isArray(state.intake?.items) ? state.intake.items : []).some((item) => item?.sourceIdentity === ROW_STATE.unreadSource + sessionId && ROW_STATE.unreadStatuses.has(item.status))
-
     /** Which brand icon you chose; Fishball's own until the Host says otherwise. */
     const brandStyleOf = (state) => state.preferences?.brandStyle ?? BRAND_STYLE.fishball
 
@@ -810,19 +748,44 @@ window.__ModuleLoader__.load({
     /** The icon the Sidebar icon setting chose: the brand mark and the managed-session marks share it. */
     const brandIconOf = (state) => BRAND_ICON[brandStyleOf(state)] ?? FishballIcon
 
+    /** Connector-owned attention latch: count is 0 or 1; no producer unread state. */
+    const unreadCount = (state) => state.unread?.count ?? 0
     /** Reuse the existing row dot; attention adds no timer or separate animation. */
     const attentionDot = (dot) => h('span', { className: CLS.managedRowDot, 'data-fishball-dot': dot, 'aria-hidden': true })
 
-    function makeMark(t) {
-      return function Mark({ size }) {
-        const state = useFishball()
-        const count = unreadCount(state)
-        const Icon = brandIconOf(state)
-        return h('span', { className: CLS.markBox, 'data-fishball-unread': count },
-          h(Icon, { size, unread: count > 0 && state.unread?.important === true, badge: true }),
-          count > 0 ? attentionDot(MANAGED_ROW.dot.unread) : null)
-      }
+    /**
+     * The seat registry (SEAT). `register` returns its disposer, so a part fills a seat inside its
+     * own effect and the seat empties when the part stops; a disposer of a replaced value changes
+     * nothing.
+     */
+    const seats = (() => {
+      const stores = new Map(Object.values(SEAT).map((seat) => [seat, valueStore(undefined)]))
+      return Object.freeze({
+        register(seat, value) {
+          const store = stores.get(seat)
+          store.set(value)
+          return () => { if (store.get() === value) store.set(undefined) }
+        },
+        get: (seat) => stores.get(seat).get(),
+        use: (seat) => { const store = stores.get(seat); return React.useSyncExternalStore(store.subscribe, store.get) },
+      })
+    })()
+
+    /** The sidebar mark before (or without) the attention part: the chosen icon alone, with no latch. */
+    function PlainMark({ size }) {
+      const Icon = brandIconOf(useFishball())
+      return h(Icon, { size, unread: false, badge: true })
     }
+    /** The brand's and the sidebar row's mark: the attention part's seat, else the plain one. */
+    function Mark(props) {
+      return h(seats.use(SEAT.mark) ?? PlainMark, props)
+    }
+    /** The frame header's badge seat (the attention part's unread count); nothing while empty. */
+    function FrameBadge(props) {
+      const Badge = seats.use(SEAT.frameBadge)
+      return Badge === undefined ? null : h(Badge, props)
+    }
+
 
     /**
      * Lets the tag overhang the shell's brand box: opens the nearest clipping ancestor of the
@@ -943,13 +906,6 @@ window.__ModuleLoader__.load({
         code ? h('code', { className: CLS.code }, code) : null)
     }
 
-    /** Fishball's unread count in the frame: the brand mark's own count and cap, absent at 0. */
-    function FrameUnread({ t }) {
-      const count = unreadCount(useFishball())
-      if (count === 0) return null
-      return h('span', { 'data-fishball-frame-unread': count, 'aria-label': t('frameUnread', { count }) },
-        h(Tag, { tone: EMBED_UI.neutralTone }, unreadText(t, count)))
-    }
 
     /** Split text at the first mark: what is before it, and what follows it (null without the mark). */
     function splitAt(text, mark) {
@@ -1016,13 +972,8 @@ window.__ModuleLoader__.load({
         const [generation, setGeneration] = React.useState(0)
         const [retrying, setRetrying] = React.useState(false)
         const [retryCode, setRetryCode] = React.useState(null)
-        const attentionRead = React.useRef(false)
-        React.useEffect(() => {
-          // Clear once on page open, not on every snapshot or iframe refresh. No instance feedback.
-          if (attentionRead.current) return
-          attentionRead.current = true
-          void send(API.attentionRead, {})
-        }, [])
+        // Once per mount of the view, not on every snapshot or iframe refresh (the attention part's clear).
+        React.useEffect(() => { seats.get(SEAT.pageOpened)?.() }, [])
         React.useEffect(() => () => framedPage.set(FRAME_UI.page.chat), [])
         const state = instance?.state ?? FRAME_UI.loading
         const ui = instance?.ui ?? {}
@@ -1067,7 +1018,7 @@ window.__ModuleLoader__.load({
           h('header', { className: CLS.embedBar, 'data-window-drag': true },
             h('span', { className: CLS.embedName }, t('viewTitle')),
             h(FrameState, { state, code: instance?.code ?? null, t }),
-            h(FrameUnread, { t }),
+            h(FrameBadge, { t }),
             h('div', { className: CLS.embedActions },
               retryCode ? h('span', { role: 'alert', 'data-fishball-retry-error': retryCode }, t('frameRetryFailed'), ' ', h('code', { className: CLS.code }, retryCode)) : null,
               instance?.canRetry ? accentButton({ size: 'sm', disabled: retrying, 'data-fishball-frame-retry': true, onClick: () => void retry() }, retrying ? t('frameRetrying') : t('embedRetry')) : null,
@@ -1126,359 +1077,6 @@ window.__ModuleLoader__.load({
         get: () => current,
         set: (next) => { current = next; for (const listener of listeners) listener() },
         subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
-      }
-    }
-
-    /**
-     * The hand-over dialog's request (§8.3): one store shared by the session-row menu entry and
-     * the header action; the dialog lives in the shell overlay so it outlives the menu.
-     */
-    const handOverRequest = (() => {
-      const store = valueStore(null)
-      return { ...store, open: (sessionId, title) => store.set({ sessionId, title }), close: () => store.set(null) }
-    })()
-    const useHandOverRequest = () => React.useSyncExternalStore(handOverRequest.subscribe, handOverRequest.get)
-    /** Any session but Fishball's own id (which names no main session). */
-    const isOtherSession = (state, sessionId) => Boolean(sessionId) && sessionId !== state.sessionId
-    /** Whether a session can be handed over: the body is up, and it is not Fishball's own session. */
-    const canHandOver = (state, sessionId) => state.status === STATUS.live && isOtherSession(state, sessionId)
-
-    function makeHandOverDialog(t) {
-      return function FishballHandOverDialog() {
-        const request = useHandOverRequest()
-        if (request === null) return null
-        return h(HandOverForm, { key: request.sessionId, request, t })
-      }
-    }
-
-    /** One hand-over's dialog: the note and in-flight state die with it. */
-    function HandOverForm({ request, t }) {
-      const [note, setNote] = React.useState('')
-      const [handingOver, setHandingOver] = React.useState(false)
-      const [problem, setProblem] = React.useState(null)
-      const close = () => { if (!handingOver) handOverRequest.close() }
-      const confirm = async () => {
-        setHandingOver(true)
-        // The send route forwards the note as the user's words and makes the session managed.
-        const { ok, code } = await send(API.send, { sessionId: request.sessionId, note })
-        setHandingOver(false)
-        if (ok) handOverRequest.close()
-        else setProblem(HAND_OVER_ERRORS.has(code) ? 'handOverError.' + code : 'handOverFailed')
-      }
-      return h(Modal, {
-        open: true,
-        onClose: close,
-        closeLabel: t('close'),
-        title: request.title ? t('handOverTitle', { title: request.title }) : t('handOver'),
-        footer: h(React.Fragment, null,
-          h(Button, { type: 'button', variant: 'outline', disabled: handingOver, onClick: close }, t('cancel')),
-          h(Button, { type: 'button', variant: 'primary', disabled: handingOver, onClick: confirm }, handingOver ? t('handingOver') : t('handOverConfirm'))),
-      },
-        h('p', { className: CLS.muted }, t('handOverHint')),
-        h('label', { className: CLS.field },
-          h('span', null, t('handOverNoteLabel')),
-          h('textarea', { className: CLS.note, value: note, rows: 4, placeholder: t('handOverNotePlaceholder'), 'data-modal-autofocus': true, disabled: handingOver, onChange: (event) => { setNote(event.target.value); setProblem(null) } })),
-        problem ? h('div', { role: 'alert' }, t(problem)) : null)
-    }
-
-    /**
-     * A request from a menu entry or header action and its refusal, in one store outside the menu:
-     * a menu entry unmounts when the menu closes, so the refusal is shown by the overlay
-     * (makeRequestNotice), not by the entry.
-     * @param path - the Host route. @param errors - refusal codes with their own text under `errorPrefix`.
-     * @param failedKey - the text of any other failure.
-     */
-    function requestNotice(path, errors, errorPrefix, failedKey) {
-      const store = valueStore(null)
-      return {
-        get: store.get,
-        subscribe: store.subscribe,
-        async request(body) {
-          const { ok, code } = await send(path, body)
-          store.set(ok ? null : errors.has(code) ? errorPrefix + code : failedKey)
-        },
-        dismiss: () => store.set(null),
-      }
-    }
-    /** The refusal of a notice's last request, as a dialog in the shell overlay. */
-    function makeRequestNotice(t, notice, titleKey) {
-      return function FishballRequestNotice() {
-        const problem = React.useSyncExternalStore(notice.subscribe, notice.get)
-        if (problem === null) return null
-        return h(Modal, {
-          open: true,
-          onClose: notice.dismiss,
-          closeLabel: t('close'),
-          title: t(titleKey),
-          footer: h(Button, { type: 'button', variant: 'primary', onClick: notice.dismiss }, t('close')),
-        }, h('div', { role: 'alert' }, t(problem)))
-      }
-    }
-
-    /** Take back (§8.3) and its refusal. */
-    const manageNotice = requestNotice(API.managed, MANAGE_ERRORS, 'manageError.', 'manageFailed')
-    const isManagedSession = (state, sessionId) => (state.managed ?? []).some((entry) => entry.sessionId === sessionId)
-    /** Offered where the hand-over can run, once the Host lists managed sessions. */
-    const canManage = (state, sessionId) => Array.isArray(state.managed) && canHandOver(state, sessionId)
-    /**
-     * The one entry's text and action: Hand over opens the note dialog; Take back takes the
-     * session back at once, with no note (§8.3 keeps it a single click).
-     */
-    const handOverChoice = (state, sessionId, title) => isManagedSession(state, sessionId)
-      ? { label: 'takeBack', run: () => void manageNotice.request({ sessionId, managed: false }) }
-      : { label: 'handOver', run: () => handOverRequest.open(sessionId, title) }
-
-    function makeHandOverMenuItem(t) {
-      return function FishballHandOverMenuItem({ sessionId, displayTitle, useMenuOpenState }) {
-        const state = useFishball()
-        const [, setMenuOpen] = useMenuOpenState()
-        if (!canManage(state, sessionId)) return null
-        const choice = handOverChoice(state, sessionId, displayTitle)
-        return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); void choice.run() } }, t(choice.label))
-      }
-    }
-
-    /** Hand over / Take back, shared by the session header and the managed banner so they cannot drift. */
-    const handOverButton = (t, state, sessionId) => {
-      const choice = handOverChoice(state, sessionId, '')
-      return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void choice.run() }, t(choice.label))
-    }
-
-    function makeHandOverHeaderAction(t) {
-      return function FishballHandOverHeaderAction({ sessionId }) {
-        const state = useFishball()
-        if (!canManage(state, sessionId)) return null
-        return handOverButton(t, state, sessionId)
-      }
-    }
-
-    /**
-     * Whether a session shows the managed-session marks (item 30): it is managed, and Take back is
-     * offered (canManage: the body is up, never Fishball's own session). The
-     * user's answers hide both the banner and the sidebar icon whenever Take back would be hidden.
-     */
-    const showsManagedMarks = (state, sessionId) => canManage(state, sessionId) && isManagedSession(state, sessionId)
-
-    /**
-     * One managed row's mark, shared by the idle leading seat and the running trailing seat: the
-     * Sidebar icon setting's fish, a green dot when this session has unread input for Fishball, or
-     * a yellow dot when this session has a card or question waiting. Both dots are per row; yellow
-     * wins when both apply. The fish is still while idle and moves while the row runs; the dots and
-     * the accessible label carry the state, so reduced motion loses no information.
-     */
-    function ManagedMark({ state, sessionId, t, running }) {
-      const needsYou = needsAction(state, sessionId)
-      const hasUnread = unreadInput(state, sessionId)
-      const dot = needsYou ? MANAGED_ROW.dot.action : hasUnread ? MANAGED_ROW.dot.unread : null
-      const label = needsYou
-        ? t('managedRowNeedsYou')
-        : hasUnread
-          ? t('managedRowUnread')
-          : running ? t('managedRowRunning') : t('managedBanner')
-      const Icon = brandIconOf(state)
-      return h('span', {
-        className: CLS.managedRow, role: 'img', 'aria-label': label, title: label,
-        'data-fishball-managed-row': sessionId,
-        'data-fishball-row-state': running ? MANAGED_ROW.state.running : MANAGED_ROW.state.idle,
-      },
-        h(Icon, { size: MANAGED_ROW.iconPx, unread: false, moving: running, badge: true }),
-        dot === null ? null : attentionDot(dot))
-    }
-
-    /**
-     * The idle mark in a DSH session row's leading cell (DESIGN §10e item 30). DSH mounts this
-     * seat only while the row is idle; its own spinner takes the cell otherwise, so the running
-     * variant below uses the trailing seat. The seat gives only the row's sessionId, so the managed
-     * list comes from the state stream every Fishball entry shares.
-     */
-    function makeManagedRowMark(t) {
-      return function FishballManagedRowMark({ sessionId }) {
-        const state = useFishball()
-        if (!showsManagedMarks(state, sessionId)) return null
-        return h(ManagedMark, { state, sessionId, t, running: false })
-      }
-    }
-
-    /**
-     * The running mark in a DSH session row's trailing seat (0.2.2's always-mounted seat). DSH's
-     * own spinner stays in the leading cell; only the Fishball fish moves here, and only while this
-     * row runs. An idle row renders nothing here, so it never shows two fish. rc.3 has no trailing
-     * seat: slots.inject waits for the declaration and this entry never mounts (no error).
-     */
-    function makeManagedRowRunningMark(t) {
-      return function FishballManagedRowRunningMark({ sessionId, useSessionStatus }) {
-        const state = useFishball()
-        if (!showsManagedMarks(state, sessionId)) return null
-        // A child owns the hook, so an unmanaged row never subscribes to DSH's status source.
-        return h(ManagedRowRunningMark, { state, sessionId, t, useSessionStatus })
-      }
-    }
-
-    /** The running half of the trailing entry: hooks are unconditional, the null return is not. */
-    function ManagedRowRunningMark({ state, sessionId, t, useSessionStatus }) {
-      // The seat is always mounted, so the row's running state comes from DSH's global status
-      // source; a selector keeps this mark from re-rendering on every other row's status change.
-      const running = useSessionStatus((statuses) => statuses.get(sessionId)?.running === true)
-      if (!running) return null
-      return h(ManagedMark, { state, sessionId, t, running: true })
-    }
-
-    /** POST your answer on a card. @returns null when accepted, else the refusal's text. */
-    async function answerCard(requestId, decision, note, t) {
-      const { ok, code } = await send(API.requestsAnswer, { requestId, decision, ...(note ? { note } : {}) })
-      if (ok) return null
-      return t(CARD_ERRORS.has(code) ? 'cardError.' + code : 'cardFailed')
-    }
-
-    /**
-     * One answer in flight at a time, shared by the pile's rows, its detail and the session's row:
-     * busy while it runs, then the refusal's text, or null and onDone() once it was taken.
-     */
-    function useSubmit() {
-      const [busy, setBusy] = React.useState(false)
-      const [problem, setProblem] = React.useState(null)
-      const run = async (submit, onDone) => {
-        setBusy(true)
-        const refusal = await submit()
-        setBusy(false)
-        setProblem(refusal)
-        if (refusal === null) onDone?.()
-      }
-      return { busy, problem, run }
-    }
-
-    /** A small button on a card; every card control is one of these, disabled while an answer is in flight. */
-    const cardButton = (t, busy, key, variant, onClick, label) => h(Button, { key, type: 'button', size: 'sm', variant, disabled: busy, onClick }, t(label))
-    const problemLine = (problem) => (problem ? h('div', { role: 'alert' }, problem) : null)
-
-    /** How long a reveal takes now: none when you asked for less motion (DESIGN §10e animation). */
-    const revealMs = () => (window.matchMedia(MOTION_QUERY).matches ? PILE_LIST.revealMs : 0)
-
-    /**
-     * Shows or hides its children with a short open/close (DESIGN §10e animation, rev11-pile-list).
-     * The box grows from no height to its own (a grid row from 0fr to 1fr) while it fades in, so the
-     * entries around it reflow smoothly with it; closing runs the other way, and once closed nothing
-     * is drawn, not even the box. A box mounted shown opens, so new entries arrive the same way.
-     * The state is drawn as data-fishball-reveal (hidden, opening, open, closing); while not shown
-     * the box is inert, so a closing entry can't be clicked or focused.
-     */
-    function Reveal({ shown, as = 'div', className, children, ...rest }) {
-      const S = PILE_LIST.reveal
-      const ref = React.useRef(null)
-      const [state, setState] = React.useState(S.hidden)
-      React.useLayoutEffect(() => {
-        if (ref.current) ref.current.inert = !shown
-        const target = shown ? S.open : S.hidden
-        if (state === target) return undefined
-        const ms = revealMs()
-        if (ms === 0) {
-          setState(target)
-          return undefined
-        }
-        const moving = shown ? S.opening : S.closing
-        if (state !== moving) {
-          // Lay the current size out before the change, so the browser has a size to move from.
-          void ref.current?.offsetHeight
-          setState(moving)
-          return undefined
-        }
-        const timer = setTimeout(() => setState(target), ms)
-        return () => clearTimeout(timer)
-      }, [shown, state])
-      if (state === S.hidden && !shown) return null
-      return h(as, { ref, className: className ? `${CLS.reveal} ${className}` : CLS.reveal, 'data-fishball-reveal': state, 'aria-hidden': shown ? undefined : true, ...rest },
-        h('div', { className: CLS.revealInner }, children))
-    }
-
-    /**
-     * Allow once / Reject on one card, the same in your pile's detail and on the session's running
-     * row (item 15). Both read the card from the Host's snapshot, so an answer in either place clears
-     * both. Reject first opens an optional note to the agent (DESIGN §10e).
-     * @param onDone - optional, called once your answer was taken (the pile's detail goes back to its list).
-     */
-    function CardAnswer({ requestId, t, onDone }) {
-      const id = React.useId()
-      const { busy, problem, run } = useSubmit()
-      const [rejecting, setRejecting] = React.useState(false)
-      const [note, setNote] = React.useState('')
-      const answer = (decision) => run(() => answerCard(requestId, decision, decision === CARD_DECISION.reject ? note.trim() : '', t), onDone)
-      const button = (key, variant, onClick, label) => cardButton(t, busy, key, variant, onClick, label)
-      return h('div', { className: CLS.grow, 'data-fishball-card-answer': requestId },
-        h(Reveal, { shown: rejecting }, h('div', { className: CLS.field },
-          h('label', { htmlFor: id, className: CLS.muted }, t('rejectNote')),
-          h(Input, { id, value: note, onChange: (event) => setNote(event.target.value) }))),
-        h('div', { className: CLS.actions },
-          button('allow', 'primary', () => void answer(CARD_DECISION.allow), 'allowOnce'),
-          rejecting ? button('send', 'secondary', () => void answer(CARD_DECISION.reject), 'rejectSend') : button('reject', 'secondary', () => setRejecting(true), 'reject'),
-          rejecting ? button('cancel', 'ghost', () => { setRejecting(false); setNote('') }, 'cancel') : null),
-        problemLine(problem))
-    }
-
-    /** A labelled line of text from another session or from Fishball (plain text, never markup: §10c framing rule). */
-    const labelled = (label, text) => h('div', null, h('span', { className: CLS.muted }, label + ': '), text)
-
-    /** POST your Revoke. @returns null when accepted, else the refusal's text. */
-    async function revokeGrant(grantId, t) {
-      const { ok, code } = await send(API.grantsRevoke, { grantId })
-      if (ok) return null
-      return t(GRANT_ERRORS.has(code) ? 'grantError.' + code : 'cardFailed')
-    }
-
-    /** An ask_fishball call's arguments: a started block keeps them in argsRaw, a settled one on its call (S37). */
-    function askArguments(block) {
-      try {
-        const value = JSON.parse(block?.argsRaw ?? block?.call?.argsRaw ?? '{}')
-        return value !== null && typeof value === 'object' ? value : {}
-      } catch { return {} }
-    }
-
-    /** A settled call's answer: the JSON ask_fishball returned ({ value }), or its text ({ text }), e.g. an aborted call. */
-    function askResult(block) {
-      const content = block?.content ?? block?.result?.content
-      const text = Array.isArray(content) ? content.filter((part) => typeof part?.text === 'string').map((part) => part.text).join('') : ''
-      try {
-        const value = JSON.parse(text)
-        if (value !== null && typeof value === 'object' && typeof value.code === 'string') return { value }
-      } catch { /* not ask_fishball's JSON: shown as text */ }
-      return { text }
-    }
-
-    /**
-     * The running ask_fishball row in the asking session (DESIGN §10e, S37). DSH has no view for this
-     * tool, so this entry is the whole row: what is asked, whether it waits for Fishball or for you,
-     * and Allow once / Reject once the request is your card (Reading: not while Fishball decides).
-     */
-    /**
-     * The card record's definition and view live in the package-local chunk client.records.js (the
-     * connector's `./records` export, design §0.2), so the instance's chat can register the same
-     * module (I7). The chunk loads once, after the page's first render; a record that arrives
-     * meanwhile is matched when the definition registers, as DSH replays the session's records.
-     */
-    const RECORDS_CHUNK = './client.records.js'
-
-    function makeAskRow(t) {
-      return function FishballAskRow({ callId, phase, block }) {
-        const state = useFishball()
-        const args = askArguments(block)
-        const card = phase === ASK_ROW.phaseStart ? (state.pile ?? []).find((entry) => entry.callId === callId) : undefined
-        const replying = typeof args.request_id === 'string'
-        const result = phase === ASK_ROW.phaseResult ? askResult(block) : null
-        const code = result?.value?.code
-        return h('div', { className: CLS.askRow, 'data-fishball-ask-row': callId, 'data-fishball-phase': phase },
-          h('div', { className: CLS.cardHead },
-            h('span', { className: CLS.title }, t(replying ? 'askRowReply' : 'askRowTitle')),
-            typeof args.tool === 'string' ? h('span', { className: CLS.code }, args.tool) : null,
-            phase === ASK_ROW.phaseStart ? h(Tag, { tone: card ? 'danger' : 'info' }, t(card ? 'askRowWaitingYou' : 'askRowWaitingFishball')) : null,
-            code !== undefined ? h(Tag, { tone: 'neutral' }, ASK_CODES.has(code) ? t('askResult.' + code) : code) : null),
-          args.arguments !== undefined ? h('pre', { className: CLS.pre }, JSON.stringify(args.arguments, null, JSON_INDENT)) : null,
-          typeof args.why === 'string' && args.why ? labelled(t('cardReason'), args.why) : null,
-          replying && typeof args.reply === 'string' ? h('div', null, args.reply) : null,
-          // Fishball's reject reason carries the pile card's Fishball label; your own Reject note, and a
-          // row from before reason_from, keep Reason (rev11-ui-fixes R3).
-          typeof result?.value?.reason === 'string' ? labelled(t(result.value.reason_from === REASON_FROM_FISHBALL ? 'cardFishballNote' : 'cardReason'), result.value.reason) : null,
-          typeof result?.value?.question === 'string' ? labelled(t('cardFishballNote'), result.value.question) : null,
-          result?.text ? h('div', { className: CLS.muted }, result.text) : null,
-          card ? h(CardAnswer, { requestId: card.requestId, t }) : null)
       }
     }
 
@@ -1544,6 +1142,15 @@ window.__ModuleLoader__.load({
     // The plugin manager (DESIGN §10d): the Fishball tab of DSH's Plugins page, and a tag and a
     // switch on DSH's own page for each plugin. Every change goes to Fishball's side only.
 
+    /**
+     * What the parts share with the shell (client.marks.js, client.attention.js, client.records.js):
+     * one state stream, one POST helper, one style sheet and dictionary, and the seats. A part is a
+     * factory of this kit; client.js starts each result as a sub-plugin of the row.
+     */
+    exports.kit = Object.freeze({
+      NS, SLOT, API, STATUS, CLS, EMBED_UI, ROW_MARK, PILE_LIST, UNREAD_BADGE, MOTION_QUERY, SEAT, seats,
+      useFishball, send, valueStore, brandIconOf, attentionDot, unreadCount,
+    })
     exports.name = PACKAGE_NAME
     exports.inject = ['slots', 'locale', 'configForms']
     exports.apply = function apply(ctx) {
@@ -1552,38 +1159,13 @@ window.__ModuleLoader__.load({
       ctx.effect(mountStyles, 'fishball: styles')
       const BrandName = makeBrandName(ctx, t)
       ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
-        yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, makeMark(t))
+        yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, Mark)
         yield ctx.slots.register({ name: SLOT.name, priority: BRAND_PRIORITY }, BrandName)
       })), 'fishball: brand')
-      // Hand over / Take back on an ordinary session's header and row menu (§8.3).
-      ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => ctx.slots.register({ name: SLOT.headerActions, id: HAND_OVER.id, order: HAND_OVER.headerOrder, locale: NS }, makeHandOverHeaderAction(t))), 'fishball: hand-over header action')
-      ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, function* () {
-        yield ctx.slots.register({ name: SLOT.sessionMenu, id: HAND_OVER.id, order: HAND_OVER.menuOrder, locale: NS }, makeHandOverMenuItem(t))
-      }), 'fishball: session menu')
-      ctx.effect(() => ctx.slots.inject(SLOT.overlay, function* () {
-        yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.id, locale: NS }, makeHandOverDialog(t))
-        yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.noticeId, locale: NS }, makeRequestNotice(t, manageNotice, 'manageTitle'))
-      }), 'fishball: dialogs')
       // The Fishball view in DSH's main area, as Plugins and Tasks register theirs (§7). The key is
       // registered for the plugin's life, so the brand button opens it even without the row.
       ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.register({ name: SLOT.main, key: EMBED_UI.panelId, locale: NS }, makeFishballView(ctx, t))), 'fishball: main view')
-      ctx.effect(() => followSidebarEntry(ctx, makeMark(t), t), 'fishball: sidebar row')
-      // The managed-session marks (§8.2) and the ask_fishball row with your Allow once / Reject (S37).
-      ctx.effect(() => ctx.slots.inject(SLOT.rowLeading, () => ctx.slots.register({ name: SLOT.rowLeading, id: MANAGED_ROW.id, locale: NS }, makeManagedRowMark(t))), 'fishball: managed row mark')
-      // 0.2.2 keeps a row's trailing seat mounted while it runs; rc.3 has no such seat and this waits.
-      ctx.effect(() => ctx.slots.inject(SLOT.rowTrailing, () => ctx.slots.register({ name: SLOT.rowTrailing, id: MANAGED_ROW.id, locale: NS }, makeManagedRowRunningMark(t))), 'fishball: managed row running mark')
-      ctx.effect(() => ctx.slots.inject(SLOT.toolview, () => ctx.slots.register({ name: SLOT.toolview, key: ASK_ROW.tool, locale: NS }, makeAskRow(t))), 'fishball: ask_fishball row')
-      // Card records in any DSH session view (client.records.js). The uiConversation service is read
-      // on demand, so an older DSH without it keeps working. A failed chunk load loses only the
-      // record rows, never the rest of the client.
-      void require.async(RECORDS_CHUNK).then(({ CARD_RECORD, cardRecordDefinition, makeCardRecordView }) => {
-        if (ctx.fiber?.uid === null) return
-        ctx.inject(['uiConversation'], (scope) => {
-          scope.effect(() => scope.uiConversation.events.register(cardRecordDefinition), 'fishball: card record definition')
-        })
-        const CardRecord = makeCardRecordView({ t, labelled, classes: { muted: CLS.muted, recordBody: CLS.recordBody, pre: CLS.pre } })
-        ctx.effect(() => ctx.slots.inject(SLOT.chatNode, () => ctx.slots.register({ name: SLOT.chatNode, key: CARD_RECORD.node, locale: NS }, CardRecord)), 'fishball: card record row')
-      }, (error) => { ctx.logger?.warn?.('fishball: card records unavailable', error) })
+      ctx.effect(() => followSidebarEntry(ctx, Mark, t), 'fishball: sidebar row')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
         const Settings = makeSettingsPage(ctx, section, t)
