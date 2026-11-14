@@ -116,16 +116,44 @@ function tripwire(calls, trail = []) {
   })
 }
 
+/**
+ * An unfrozen, plain stand-in for `store` that an override may wrap or replace members on.
+ * C-PAIR's store is `Object.freeze`d, so its members are non-configurable read-only data
+ * properties; a Proxy over it whose `get` answers a different value for one of them breaks the
+ * Proxy invariants and every such read throws a TypeError (the F6 row's fake `pair` never ran).
+ * Each member found on the store or its prototype chain (short of Object.prototype) becomes an own,
+ * configurable accessor here. Methods are bound to the real store so they keep their `this` (private
+ * fields included), and other values are read live from the store.
+ */
+function overridableStore(store) {
+  const view = {}
+  for (let o = store; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
+    for (const key of Reflect.ownKeys(o)) {
+      if (key === 'constructor' || Object.hasOwn(view, key)) continue
+      Object.defineProperty(view, key, {
+        configurable: true,
+        enumerable: true,
+        get: () => {
+          const value = Reflect.get(store, key)
+          return typeof value === 'function' ? value.bind(store) : value
+        },
+      })
+    }
+  }
+  return view
+}
+
 /** `resources/read fishball://events`, as C-HTTP's suite fakes it (not a C-TOOLS concern). */
 const readEvents = async () => ({ contents: [{ uri: RESOURCE.events.uri, mimeType: RESOURCE.events.mimeType, text: JSON.stringify([]) }] })
 
 /**
  * A C-TOOLS world for `t` on `sdk`: real pair store and mailbox over one storage context, the fake
  * ManagedState, the tripwire domain, C-HTTP's real gate and endpoint with C-TOOLS' populate, on
- * loopback. `overridePairs(store)` may wrap the real store (the F6 row's throwing `pair`).
+ * loopback. `overridePairs(store)` may wrap the real store (the F6 row's throwing `pair`); it is
+ * handed `overridableStore(store)`, not the frozen store itself.
  * Returns {pairs, mailbox, managed, domainCalls, clock, logger, full(id, name), pairOnly(id), connect(token)}.
  */
-export async function toolsWorld(t, sdk, { overridePairs = (store) => store } = {}) {
+export async function toolsWorld(t, sdk, { overridePairs } = {}) {
   linkContractForSourceRun()
   resolveRuntimePackages()
   const [createTools, pairsMod, mailboxMod, httpMod] = await Promise.all([
@@ -142,7 +170,7 @@ export async function toolsWorld(t, sdk, { overridePairs = (store) => store } = 
   const mailbox = mailboxMod[MAILBOX_ENTRY.create]({ tables: tables.tables, hints, now: clock.now })
   const managed = new FakeManaged()
   const domainCalls = []
-  const pairs = overridePairs(opened.store)
+  const pairs = overridePairs ? overridePairs(overridableStore(opened.store)) : opened.store
   const made = createTools({ pairs, mailbox, managed, domain: tripwire(domainCalls), now: clock.now, logger })
   const populate = typeof made === 'function' ? made : made?.populate
   assert.equal(typeof populate, 'function', 'the C-TOOLS factory returned no populate(server, caller)')
