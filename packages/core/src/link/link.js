@@ -26,8 +26,16 @@
  * follows no redirect, so neither the client secret nor an access token can reach another origin
  * (design §6.3 "credentials are never forwarded on a redirect").
  *
- * What the link does **not** do: pairing and names (F-PAIR), acking and dispatching events
- * (F-INTERCEPT), the bridge façade (F-FACADE), the status display (F-STATUS), wiring (F-WIRE).
+ * The pairing gate (F-PAIR, AUTH-UC-05 E1): an optional `gate` decides, per attempt, before any
+ * request (`hold`) and between `tools/list` and `subscriptions/listen` (`admit`), whether the link
+ * may go on. A held attempt closes its client, reports the gate's status and is not retried, so
+ * nothing more reaches the target until the caller's `reconnect()`. The gate also says whether a
+ * refused credential was paired before (`paired`), which turns `TOKEN_REFUSED` into
+ * `token-revoked` (status rule 4a). The link knows nothing about pairing beyond these three calls.
+ *
+ * What the link does **not** do: pairing and names (F-PAIR, through the gate), acking and
+ * dispatching events (F-INTERCEPT), the bridge façade (F-FACADE), the status display (F-STATUS),
+ * wiring (F-WIRE).
  */
 import { LINK_BACKOFF } from '../../contracts/constants.js'
 import { LINK_REFUSAL, TOOL } from './schema.js'
@@ -46,16 +54,41 @@ class LinkFailure extends Error {
   }
 }
 
+/** The pairing gate held the attempt: reported like a failure, but never retried. */
+class LinkHold extends LinkFailure {}
+
+/** A tool call's `structuredContent` (`undefined` when the result carries none). */
+const callStructured = async (client, name, args) => (await client.callTool({ name, arguments: args })).structuredContent
+
+/** Admits every attempt: the link without pairing (F-LINK's behaviour). */
+const OPEN_GATE = Object.freeze({ hold: () => null, admit: async () => null, paired: async () => false })
+
 /**
  * @typedef {object} LinkOptions
  * @property {() => unknown} target the configured target URL (R-FB-03)
- * @property {() => Promise<{clientId: string, secret: string} | null | undefined>} credentials
- *   the fishball id and the token value; `null`, `undefined` or an empty secret is "no token"
+ * @property {() => Promise<{clientId: string, secret: string, ref?: string} | null | undefined>} credentials
+ *   the fishball id, the token value and, for the gate, the token's non-secret reference; `null`,
+ *   `undefined` or an empty secret is "no token"
+ * @property {PairingGate} [gate] the pairing gate; defaults to one that admits every attempt
  * @property {object} [sdk] the `@modelcontextprotocol/client` module; defaults to core's packaged
  *   copy (§9.1). A caller may pass another 2.2.x copy (both hosts' copies are byte-identical).
  * @property {typeof fetch} [fetch] the network fetch; defaults to the global one
  * @property {(fn: () => void, ms: number) => unknown} [setTimer] defaults to `setTimeout`
  * @property {(handle: unknown) => void} [clearTimer] defaults to `clearTimeout`
+ */
+
+/**
+ * @typedef {{origin: string, clientId: string, ref: string | undefined}} LinkAttempt what one
+ *   attempt connects with: the target origin, the fishball id and the token reference; never the secret
+ * @typedef {object} PairingGate
+ * @property {(attempt: LinkAttempt) => {state: string, code: string | null} | null | Promise<{state: string, code: string | null} | null>} hold
+ *   before any request: a status holds the attempt (no request at all), `null` lets it connect
+ * @property {(attempt: LinkAttempt, session: {scope: string | undefined, call: (name: string, args?: object) => Promise<unknown>}) => Promise<{state: string, code: string | null} | null>} admit
+ *   after `tools/list`: `scope` is the access token's granted scope, `call` reaches this attempt's
+ *   client (resolving to `structuredContent`); a status holds the attempt, `null` lets it listen.
+ *   A rejection fails the attempt like any other failure (classified, retried)
+ * @property {(attempt: LinkAttempt) => Promise<boolean>} paired whether the target refused a
+ *   credential the gate holds a paired record for (status rule 4a)
  */
 
 export class McpLink {
@@ -80,6 +113,7 @@ export class McpLink {
       setTimer: (fn, ms) => setTimeout(fn, ms),
       clearTimer: (handle) => clearTimeout(handle),
       fetch: (...args) => globalThis.fetch(...args),
+      gate: OPEN_GATE,
       ...options,
     }
   }
@@ -137,8 +171,7 @@ export class McpLink {
   async callTool(name, args = {}) {
     const client = this.#connected
     if (client === undefined) return { ok: false, code: LINK_REFUSAL.disconnected }
-    const result = await client.callTool({ name, arguments: args })
-    return result.structuredContent
+    return callStructured(client, name, args)
   }
 
   #subscribe(set, fn) {
@@ -197,15 +230,20 @@ export class McpLink {
   async #attempt(generation) {
     if (!this.#current(generation)) return
     const seen = { mcpStatus: undefined }
+    let attempt
     try {
       const target = checkTarget(this.#options.target())
       if (!target.ok) return this.#setStatus(target.status)
       const credentials = await this.#options.credentials()
       if (!this.#current(generation)) return
       if (!credentials?.secret) return this.#setStatus(STATUS.unset)
+      attempt = Object.freeze({ origin: target.origin, clientId: credentials.clientId, ref: credentials.ref })
+      const held = await this.#options.gate.hold(attempt)
+      if (!this.#current(generation)) return
+      if (held) return this.#setStatus(held)
       const sdk = await this.#sdk()
       if (!this.#current(generation)) return
-      const client = await this.#connect(sdk, target, credentials, seen, generation)
+      const client = await this.#connect(sdk, target, credentials, attempt, seen, generation)
       if (!this.#current(generation)) return
       this.#connected = client
       this.#failures = 0
@@ -215,10 +253,22 @@ export class McpLink {
       if (!this.#current(generation)) return
       await this.#teardown()
       if (!this.#current(generation)) return
-      // Without a loaded client module (a broken install) every failure is `target-unreachable`.
-      this.#setStatus(error instanceof LinkFailure ? error.status : failureStatus(this.#options.sdk ?? {}, error, seen.mcpStatus))
-      this.#retryLater(generation)
+      const status = await this.#failed(error, attempt, seen)
+      if (!this.#current(generation)) return
+      this.#setStatus(status)
+      if (!(error instanceof LinkHold)) this.#retryLater(generation)
     }
+  }
+
+  /** The status of a failed or held attempt (status rules 2, 4, 4a, 6, or the gate's hold). */
+  async #failed(error, attempt, seen) {
+    if (error instanceof LinkFailure) return error.status
+    // Without a loaded client module (a broken install) every failure is `target-unreachable`.
+    const status = failureStatus(this.#options.sdk ?? {}, error, seen.mcpStatus)
+    if (status !== STATUS.refused || attempt === undefined) return status
+    // A gate that cannot read its records keeps the plain refusal: the target's answer stands.
+    const paired = await this.#options.gate.paired(attempt).catch(() => false)
+    return paired ? STATUS.revoked : status
   }
 
   /** Core's packaged MCP client (design §9.1), unless the caller supplied one. */
@@ -227,7 +277,7 @@ export class McpLink {
     return this.#options.sdk
   }
 
-  async #connect(sdk, target, credentials, seen, generation) {
+  async #connect(sdk, target, credentials, attempt, seen, generation) {
     const provider = new sdk.ClientCredentialsProvider({
       clientId: credentials.clientId,
       clientSecret: credentials.secret,
@@ -247,6 +297,15 @@ export class McpLink {
     this.#client = client
     await client.connect(transport)
     await this.#listTools(client, generation)
+    // The gate sees the attempt between the tool list and the listen stream: nothing that needs a
+    // full access token has been sent yet, and a held attempt sends nothing more (AUTH-UC-05 E1).
+    const held = await this.#options.gate.admit(attempt, {
+      scope: provider.tokens()?.scope,
+      call: (name, args = {}) => callStructured(client, name, args),
+    })
+    if (held) throw new LinkHold(held)
+    // `admit` may have waited on `pair`: an attempt overtaken meanwhile sends no listen request.
+    if (!this.#current(generation)) return client
     const subscription = await client.listen({ resourceSubscriptions: [LINK_MCP.eventsUri], toolsListChanged: true })
     this.#subscription = subscription
     // Connected means a listen stream on fishball-events (K3 TargetState). A V3 connector always
@@ -281,13 +340,13 @@ export class McpLink {
     if (client === undefined || !this.#current(generation)) return
     let result
     try {
-      result = await client.callTool({ name: TOOL.inboxPoll, arguments: {} })
+      result = await callStructured(client, TOOL.inboxPoll, {})
     } catch {
       // A failed poll loses nothing: pending events stay at the connector until acked, and the
       // next (re)connect or hint polls again.
       return
     }
-    if (this.#current(generation)) this.#emit(this.#listeners.poll, result.structuredContent)
+    if (this.#current(generation)) this.#emit(this.#listeners.poll, result)
   }
 
   /**
