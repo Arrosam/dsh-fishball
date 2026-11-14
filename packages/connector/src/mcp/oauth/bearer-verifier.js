@@ -13,26 +13,14 @@
  * pair-only token turns full the moment `pair` binds its entry to its client id.
  */
 import { BEARER_CHALLENGE, ENTRY_STATUS, LIFETIME, OAUTH_ERROR, SCOPE } from '../../../mcp-schema/index.js'
+import { diagnosticOf } from '../../errors.js'
 import { powerOf } from '../../pairs/index.js'
-import { AUTH_HEADER } from './constants.js'
+import { credentialsOf } from './auth-header.js'
+import { BEARER_MISSING, EMPTY_VALUE, LOG, SILENT_LOGGER } from './constants.js'
 import { digestOf } from './digest.js'
 
-const MISSING = Object.freeze({ error: 'missing' })
+const MISSING = Object.freeze({ error: BEARER_MISSING })
 const INVALID = Object.freeze({ error: OAUTH_ERROR.invalidToken })
-
-/**
- * The bearer value of an `Authorization` header, or `undefined` when it carries none: absent,
- * another scheme (`Basic …`, AUTH-EP-02 row 2) or an empty value. The scheme is matched
- * case-insensitively (RFC 7235 §2.1).
- */
-function bearerOf(authorization) {
-  if (typeof authorization !== 'string') return undefined
-  const separator = authorization.indexOf(AUTH_HEADER.schemeSeparator)
-  if (separator < 0) return undefined
-  if (authorization.slice(0, separator).toLowerCase() !== BEARER_CHALLENGE.scheme.toLowerCase()) return undefined
-  const value = authorization.slice(separator + 1).trim()
-  return value === '' ? undefined : value
-}
 
 /**
  * Whether the entry still stands behind a token issued under `generation`: present, enabled,
@@ -45,28 +33,40 @@ const entryStands = (entry, generation) => entry !== undefined && entry.enabled 
  * @param deps.tokenStore - the K1 `OAuthTokenStore`
  * @param deps.tokenRegistry - C-TOKENS' K1 `TokenRegistry` (`get`)
  * @param deps.pairStore - C-PAIR's K1 `PairStore` (`pairOf`)
+ * @param deps.logger - background log: a dependency that throws (a closed storage domain) is
+ *   logged by diagnostic code and answered `invalid_token`, since K1's verifier never throws
  * @returns the K1 `BearerVerifier`
  */
-export function createBearerVerifier({ tokenStore, tokenRegistry, pairStore }) {
+export function createBearerVerifier({ tokenStore, tokenRegistry, pairStore, logger = SILENT_LOGGER }) {
+  function verify(authorization, audience, now) {
+    const bearer = credentialsOf(authorization, BEARER_CHALLENGE.scheme)
+    // Another scheme (`Basic …`, AUTH-EP-02 row 2) or an empty value presents no bearer.
+    if (bearer === undefined || bearer === EMPTY_VALUE) return MISSING
+    const token = tokenStore.getAccess(digestOf(bearer))
+    if (token === undefined) return INVALID
+    // "Expired" is `now >= issuedAt + lifetime` (K1 LIFETIME); use never extends it (R-OA-07).
+    if (now >= token.issuedAt + LIFETIME.accessTokenMs || token.audience !== audience) return INVALID
+    if (!entryStands(tokenRegistry.get(token.entryKey), token.generation)) return INVALID
+    const pair = pairStore.pairOf(token.entryKey)
+    const { scope } = powerOf(pair, token.clientId)
+    return Object.freeze({
+      entryKey: token.entryKey,
+      clientId: token.clientId,
+      ...(scope === SCOPE.full ? { principalKey: pair.principalKey } : {}),
+      scope,
+      audience: token.audience,
+      generation: token.generation,
+    })
+  }
+
   return Object.freeze({
     verify(authorization, audience, now) {
-      const bearer = bearerOf(authorization)
-      if (bearer === undefined) return MISSING
-      const token = tokenStore.getAccess(digestOf(bearer))
-      if (token === undefined) return INVALID
-      // "Expired" is `now >= issuedAt + lifetime` (K1 LIFETIME); use never extends it (R-OA-07).
-      if (now >= token.issuedAt + LIFETIME.accessTokenMs || token.audience !== audience) return INVALID
-      if (!entryStands(tokenRegistry.get(token.entryKey), token.generation)) return INVALID
-      const pair = pairStore.pairOf(token.entryKey)
-      const { scope } = powerOf(pair, token.clientId)
-      return Object.freeze({
-        entryKey: token.entryKey,
-        clientId: token.clientId,
-        ...(scope === SCOPE.full ? { principalKey: pair.principalKey } : {}),
-        scope,
-        audience: token.audience,
-        generation: token.generation,
-      })
+      try {
+        return verify(authorization, audience, now)
+      } catch (error) {
+        logger.warn(LOG.format, LOG.verifyFailed, diagnosticOf(error))
+        return INVALID
+      }
     },
   })
 }
