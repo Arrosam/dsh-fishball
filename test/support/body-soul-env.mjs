@@ -7,7 +7,7 @@
  *   under `@deepseek-ai/`, so one extra resolve hook maps that single name to the same runtime.
  * - Scratch directories are throwaway temp dirs (os.tmpdir()), removed after each test.
  * - The connector's `record.*` words live inside the closure of the moved connector UI
- *   (packages/embed-ui/src/client/client.records.js since U-SHELL's split), so they are read from the source text.
+ *   (packages/embed-ui/src/client/client.shell.js, the page dictionaries' part since U-SHELL's split), so they are read from the source text.
  */
 import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -93,7 +93,7 @@ function clientWords(file, keep) {
 
 /** The connector's `record.*` words per language (the same observation point as its page). */
 export function connectorRecordWords() {
-  return clientWords(EMBED_UI.recordsClient, (key) => key.startsWith('record.'))
+  return clientWords(EMBED_UI.connectorClient, (key) => key.startsWith('record.'))
 }
 
 /**
