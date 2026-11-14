@@ -8,7 +8,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, CONNECTOR, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTANCE, INSTALL_EVENTS, SHARED, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, BOOT_LOG, CONNECTOR, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTANCE, INSTALL_EVENTS, SHARED, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
 import { linkContractForSourceRun } from './contract-link.mjs'
 import { fixtureTool, plainConfig, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
@@ -147,6 +147,8 @@ fs.writeFileSync(overlay, JSON.stringify([
   ...(process.env.FBTEST_NO_SESSION_TITLE === '1' ? [{ id: 'session-title', disabled: true }] : []),
   { insert: [
     { id: 'fbtest-llm', name: FAKE_LLM_MODULE },
+    // FBTEST_BOOT_LOG: a row that records every log line from boot on (bootLog), for lines logged at app ready.
+    ...(process.env.FBTEST_BOOT_LOG === '1' ? [{ id: BOOT_LOG.row, name: BOOT_LOG.module }] : []),
     // An ordinary preset with no tools of its own, so the global fixture tools are what its sessions see.
     { id: 'preset-fbtest-bare', name: '@deepseek-ai/dsh-agent-preset', config: { id: PRESET.bare, order: 90, plugins: [{ id: 'time-context', name: '@deepseek-ai/dsh-time-context' }] } },
     // rev11g: ordinary presets whose sessions can ask the user questions (ask_user_question: blocking, as the shipped presets, or timed).
@@ -764,6 +766,8 @@ const ops = {
   probeEvents() { return probe.events },
   /** Warnings and errors logged so far (optionally those after the first `since`). */
   loggedProblems({ since = 0 } = {}) { return logged.slice(since) },
+  /** Every log line since boot, at every level (FBTEST_BOOT_LOG=1; fixtures/boot-log.mjs), or null without that row. */
+  bootLog() { return globalThis.__fbtestBootLog ?? null },
   /** Whether the host has a sessionTitle service. */
   hasSessionTitle() { return Boolean(ctx.get('sessionTitle')) },
 
