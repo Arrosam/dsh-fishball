@@ -58,8 +58,11 @@ class LinkFailure extends Error {
 /** The pairing gate held the attempt: reported like a failure, but never retried. */
 class LinkHold extends LinkFailure {}
 
-/** A tool call's `structuredContent` (`undefined` when the result carries none). */
-const callStructured = async (client, name, args) => (await client.callTool({ name, arguments: args })).structuredContent
+/**
+ * A tool call's `structuredContent` (`undefined` when the result carries none). `signal`, when
+ * given, is the SDK's per-request `RequestOptions.signal`: aborting it rejects the call.
+ */
+const callStructured = async (client, name, args, signal) => (await client.callTool({ name, arguments: args }, signal === undefined ? undefined : { signal })).structuredContent
 
 /** Admits every attempt: the link without pairing (F-LINK's behaviour). */
 const OPEN_GATE = Object.freeze({ hold: () => null, admit: async () => null, paired: async () => false })
@@ -165,14 +168,16 @@ export class McpLink {
    * `{ok: false, code: 'disconnected'}`: the answer never reached the connector, and the offer
    * waits there (design §6.3, R-REM-04). A call that fails after it was sent rejects: whether it
    * reached the connector is then unknown, and the caller decides (K3 `commit` treats a rejected
-   * send as `disconnected`).
+   * send as `disconnected`). An aborted `signal` rejects the call like any failure after sending
+   * (F-FACADE: a caller that gives up on a call).
    * @param {string} name
    * @param {object} [args]
+   * @param {{signal?: AbortSignal}} [options]
    */
-  async callTool(name, args = {}) {
+  async callTool(name, args = {}, { signal } = {}) {
     const client = this.#connected
     if (client === undefined) return { ok: false, code: LINK_REFUSAL.disconnected }
-    return callStructured(client, name, args)
+    return callStructured(client, name, args, signal)
   }
 
   #setStatus(next) {

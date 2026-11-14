@@ -15,10 +15,12 @@
  * | 9 | — | — | `client_credentials` only (the link's provider), state from `scope` and `pair` only (R-OA-18) |
  *
  * A held state keys on what it was decided for, and a later attempt with other values decides
- * again: a warning, `need-id` and `id-mismatch` on (target origin, token reference, fishball id);
- * `need-token` on (target origin, token reference) only, so a new id alone never brings the old
- * token back (AUTH-UC-05 A2 "core stops using the old token"). The caller (F-WIRE) calls
- * `link.reconnect()` after a settings change, as for the link itself.
+ * again (a new id or token is the user's answer, Fishball's decision 2026-11-15, question 6): a
+ * warning, `need-id` and `id-mismatch` on (target origin, token reference, fishball id).
+ * `need-token` is a declined record of (target origin, token reference), so a new id alone never
+ * brings the old token back, nor does a restart (AUTH-UC-05 A2 "core stops using the old token";
+ * question 5). The caller (F-WIRE) calls `link.reconnect()` after a settings change, as for the
+ * link itself.
  *
  * Decisions run one at a time, in attempt order, and only the latest attempt changes the view: an
  * attempt overtaken while it waited on `pair` or a record write leaves what it learnt in the
@@ -52,8 +54,6 @@ const NAME_REFUSALS = Object.freeze([REFUSAL.nameTaken, REFUSAL.nameInvalid])
 /** The values a record and most holds apply to: (target origin, token reference, fishball id). */
 const pairKeyOf = (attempt) => JSON.stringify([attempt.origin, attempt.ref, attempt.clientId])
 
-/** The values a held state applies to (see the module comment). */
-const holdKeyOf = (state, attempt) => (state === PAIRING_STATE.needToken ? JSON.stringify([attempt.origin, attempt.ref]) : pairKeyOf(attempt))
 
 /** The `pair` arguments: the requested name, or none for a cleared name (R-NAME-06). */
 const pairArgs = (name) => (name === null ? {} : { name })
@@ -91,7 +91,8 @@ const withRef = (credentials) => async () => {
 /**
  * @param {object} options the link's options (`target`, `credentials` with its `ref`, `sdk`,
  *   `fetch`, timers), plus:
- * @param {{get: Function, put: Function}} options.records the paired records (`createRecords`)
+ * @param {{get: Function, put: Function, declined: Function, decline: Function}} options.records
+ *   the identity records (`createRecords`)
  * @param {() => unknown} options.name the `identity.name` setting as stored (`requestedName` reads it)
  * @param {() => number} [options.now] epoch milliseconds, for the record's `pairedAt`
  * @param {(options: object) => object} [options.createLink] defaults to the link's own
@@ -117,7 +118,7 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
     emitIsolated(listeners, view)
   }
   const enter = (state, attempt, warning = null) => {
-    holdKey = HELD_STATES.includes(state) ? holdKeyOf(state, attempt) : undefined
+    holdKey = HELD_STATES.includes(state) ? pairKeyOf(attempt) : undefined
     update({ state, warning, choices: CHOICES_OF[state] ?? NO_CHOICES })
   }
   /** The name refusal a record shows for the requested name, or `null` (see the module comment). */
@@ -132,7 +133,7 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
   const newRecord = (attempt, held) => ({ origin: attempt.origin, ref: attempt.ref, id: attempt.clientId, name: held, pairedAt: now() })
 
   const stored = (attempt) => records.get(attempt.origin, attempt.ref)
-  const isHeld = (attempt) => HELD_STATES.includes(view.state) && holdKey === holdKeyOf(view.state, attempt)
+  const isHeld = (attempt) => HELD_STATES.includes(view.state) && holdKey === pairKeyOf(attempt)
   const isLatest = (attempt) => attempt === latest
 
   /** Writes a successful `pair`'s record, kept in `unwritten` until the write succeeds. */
@@ -193,6 +194,10 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
   const gate = Object.freeze({
     hold(attempt) {
       latest = attempt
+      if (records.declined(attempt.origin, attempt.ref)) {
+        if (view.state !== PAIRING_STATE.needToken || !isHeld(attempt)) enter(PAIRING_STATE.needToken, attempt)
+        return HOLD_STATUS
+      }
       if (isHeld(attempt)) return HOLD_STATUS
       // Other values than the hold was decided for (or no hold): the record decides again, and a
       // name issue of other values is not this one's.
@@ -272,24 +277,22 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
      *   this token" ticked): writes the record, sends no `pair`, and reconnects the link;
      * - `new-token-and-id` / `new-token`: core stops using this token until its reference changes.
      * @returns {Promise<{ok: true} | {ok: false, code: string}>} never rejects; a refusal changes
-     *   nothing (`not-offered`, `not-confirmed`, or `not-saved` when the record write failed)
+     *   nothing (`not-offered`, `not-confirmed`, or `not-saved` when its record write failed)
      */
     async choose(choice, { confirmed = false } = {}) {
       if (!view.choices.includes(choice)) return refusal(CHOICE_REFUSAL.notOffered)
       const { attempt, bound } = warned
-      if (choice !== CHOICE.continue) {
-        enter(PAIRING_STATE.needToken, attempt)
-        return OK
-      }
-      if (confirmed !== true) return refusal(CHOICE_REFUSAL.notConfirmed)
+      const isContinue = choice === CHOICE.continue
+      if (isContinue && confirmed !== true) return refusal(CHOICE_REFUSAL.notConfirmed)
       try {
-        // The connector holds the bound pair's name; the name sync after the reconnect asks for ours.
-        await records.put(newRecord(attempt, bound.name ?? null))
+        // Continue: the connector holds the bound pair's name; the name sync after the reconnect
+        // asks for ours. A new token: the declined record keeps core off this token for good.
+        await (isContinue ? records.put(newRecord(attempt, bound.name ?? null)) : records.decline(attempt.origin, attempt.ref, now()))
       } catch {
         return refusal(CHOICE_REFUSAL.notSaved)
       }
-      enter(PAIRING_STATE.paired, attempt)
-      link.reconnect()
+      enter(isContinue ? PAIRING_STATE.paired : PAIRING_STATE.needToken, attempt)
+      if (isContinue) link.reconnect()
       return OK
     },
   })

@@ -36,7 +36,8 @@ export const IDENTITY = Object.freeze({
  * - paired: a record exists, and the last attempt was admitted (or none has run yet);
  * - warnMatch / warnMismatch: `pair` answered `already-paired` with `idMatches` true / false; the
  *   warning is open and the link sends nothing (AUTH-UC-05 E1);
- * - needToken: the user chose a new token; held until the token reference changes (row 7);
+ * - needToken: the user chose a new token; held, also after a restart (a declined record),
+ *   until the token reference changes (row 7);
  * - needId: `pair` answered `id-taken`; held until `identity.id` changes, the token stays (row 13);
  * - idMismatch: a record exists but the token request returned the pair-only scope (R-ID-10,
  *   row 9): a new token is needed, and `pair` is never called.
@@ -102,15 +103,20 @@ export const SCOPE_LIST = Object.freeze({ separator: ' ' })
 export const NAME_SOURCE = Object.freeze({ pair: 'pair', setName: 'set_name' })
 
 /**
- * Core's paired records: one DSH storage-domain table in the Fishball DSH, one non-secret record
- * per (target origin, token reference). The record holds the target origin, the token reference,
- * the fishball id it was paired with, the connector's name for the pair, the name core last asked
- * for with the connector's answer, and when core wrote it; never a token value (`records.js`).
+ * Core's identity records: one DSH storage-domain table in the Fishball DSH, at most one
+ * non-secret record of each kind per (target origin, token reference), never a token value
+ * (`records.js`):
+ * - paired: core paired, or chose Continue, with this token; it holds the fishball id, the
+ *   connector's name for the pair, the name core last asked for with the connector's answer, and
+ *   when core wrote it;
+ * - declined: the user chose "Use a new token" for this token (Fishball's decision 2026-11-15,
+ *   question 5: it survives a restart), so core never uses it again; it holds when.
  */
 export const RECORDS = Object.freeze({
   domain: 'fishball_core_identity',
-  table: 'paired',
+  table: 'records',
   version: 1,
+  kind: Object.freeze({ paired: 'paired', declined: 'declined' }),
 })
 
 /** Error messages, never shown to a user. */
