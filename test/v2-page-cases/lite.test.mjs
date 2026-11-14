@@ -295,7 +295,10 @@ const commonUnchanged = async (page, main) => {
 // ---------------------------------------------------------------------------------------------
 const OVERLAY = Object.freeze({
   disabledRows: Object.freeze(['ui-subagent', 'ui-schedule', 'schedule', 'ui-permission', 'ui-agent-preset', 'entry-customization', 'ui-open-in-app', 'open-in-app', 'ui-sidebar-terminal', 'terminal-controller']),
-  presetPluginRows: Object.freeze(['tool-subagent', 'tool-subagent-fork', 'workflow-ptc', 'tool-workflow', 'tool-subagent-control', 'tool-subagent-list-agents', 'tool-schedule']),
+  // V3 (design §5a.2 as amended at 32fca3c5, S6 round 2; Q-S6-2 B): the session-creating tools sit
+  // inside the shipped presets' config.plugins, which no patch reaches; the shipped presets are
+  // switched off, not deleted, so they leave the model as a whole.
+  shippedPresets: Object.freeze(['preset-standard', 'preset-ptc', 'preset-cordis', 'preset-minimal']),
   permission: Object.freeze({ presets: { 'read-only': { sandbox: 'read-only', approval: 'ask' } }, defaultPreset: 'read-only' }),
   base: path.join(os.tmpdir(), 'fbtest-lite-overlay'),
   saved: Object.freeze({ id: 'sandbox-policy', config: { mode: 'danger-full-access' } }),
@@ -310,6 +313,10 @@ async function overlayComposition(sdk, { profileLayer = [] } = {}) {
     const manifest = JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8'))
     return boot.bundlePatchPaths(dir, manifest.dsh.bundle).flatMap((file) => boot.loadOverlayPatches('fbtest', file))
   })
+  // V3 rule (design e1e5577 §5a.2, §6.2): the guards come from fishball-core's own bundle patch,
+  // composed after the bundles it guards (R-FB-12); then the profile patch file; then the launch
+  // overlays, which carry no guard row. Core's patch is read by the SDK's own loader.
+  layers.push(boot.loadOverlayPatches('fbtest', path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', 'packages', 'core', 'cordis.patch.yml')))
   const entries = boot.composeEntries([...layers, profileLayer])
   const { launchOverlay } = await loadInstance('src/native-runtime/overlay.js')
   const paths = { home: path.join(OVERLAY.base, 'home'), agentsHome: path.join(OVERLAY.base, 'agents'), workspace: path.join(OVERLAY.base, 'workspace'), mainHome: path.join(OVERLAY.base, 'main') }
@@ -327,14 +334,25 @@ function findRows(rows, id, out = []) {
   return out
 }
 function assertReadOnlyAuthority(effective, entries) {
-  assert.deepEqual(findRows(effective, 'permission')[0]?.config?.presets, OVERLAY.permission.presets, 'permission presets read-only only')
+  assert.deepEqual(Object.keys(findRows(effective, 'permission')[0]?.config?.presets ?? {}), Object.keys(OVERLAY.permission.presets), 'permission presets read-only only')
   assert.equal(findRows(effective, 'permission')[0]?.config?.defaultPreset, OVERLAY.permission.defaultPreset)
   assert.equal(findRows(effective, 'sandbox-policy')[0]?.config?.mode, 'read-only', 'sandbox-policy read-only kept')
   assert.equal(findRows(effective, 'approval')[0]?.config?.policy, 'ask', 'approval ask kept')
   for (const id of OVERLAY.disabledRows) for (const row of findRows(effective, id)) assert.equal(row.disabled, true, 'row must be disabled: ' + id)
-  for (const id of OVERLAY.presetPluginRows) for (const row of findRows(effective, id)) assert.equal(row.disabled, true, 'preset plugin row must be disabled: ' + id)
+  const presets = OVERLAY.shippedPresets.flatMap((id) => findRows(effective, id))
+  assert.ok(presets.length > 0, 'the SDK ships its agent presets (switched off, not deleted)')
+  for (const row of presets) assert.equal(row.disabled, true, 'shipped preset must be disabled: ' + row.id)
   // Present-only: no disabled row is invented for a row the profile does not have.
-  for (const id of [...OVERLAY.disabledRows, ...OVERLAY.presetPluginRows]) assert.equal(findRows(effective, id).length, findRows(entries, id).length, 'overlay must not add row ' + id)
+  for (const id of [...OVERLAY.disabledRows, ...OVERLAY.shippedPresets]) assert.equal(findRows(effective, id).length, findRows(entries, id).length, 'overlay must not add row ' + id)
+}
+/**
+ * V3 Q20 "can override" (design e1e5577 §5a.2): the owner's own profile patch composes after core's
+ * bundle patch, so a saved wider value wins; core keeps running and reports guards-overridden
+ * (R-FB-09, checked by test/v3/f-guards). The launch overlay adds nothing that narrows it again.
+ */
+function assertOwnerOverrideWins(effective) {
+  assert.equal(findRows(effective, 'sandbox-policy')[0]?.config?.mode, OVERLAY.saved.config.mode, 'the owner\'s saved sandbox wins over core\'s guard (Q20)')
+  assert.equal(findRows(effective, 'permission')[0]?.config?.defaultPreset, OVERLAY.savedPermission.config.defaultPreset, 'the owner\'s saved permission default wins (Q20)')
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -415,11 +433,13 @@ lite('LITE-UC-02', 'Preserve native Settings and Plugins with explicit Fishball 
 })
 
 lite('LITE-UC-03', 'Keep effective read-only with sole narrow private Skills exception', 'Use Case', async (_t, sdk) => {
-  const { effective, entries } = await overlayComposition(sdk)
+  const { effective, entries, operations } = await overlayComposition(sdk)
   assertReadOnlyAuthority(effective, entries)
-  // Saved higher permission values in the profile layer cannot widen the effective mode.
+  // V3 (design e1e5577 §6.2, R-HOST-04): the launch overlay carries no guard row.
+  assert.deepEqual(operations.filter((op) => ['sandbox-policy', 'approval', 'permission'].includes(op?.id) || OVERLAY.disabledRows.includes(op?.id)).map((op) => op.id), [], 'guard rows in the launch overlay')
+  // V3 (Q20): a saved wider value in the owner's profile layer wins over core's guard, and is reported.
   const widened = await overlayComposition(sdk, { profileLayer: [OVERLAY.saved, OVERLAY.savedPermission] })
-  assertReadOnlyAuthority(widened.effective, widened.entries)
+  assertOwnerOverrideWins(widened.effective)
 }, 'Private Skills exception and connector-mediated main-session work need the SK suite / a live child agent; only the overlay authority boundary is asserted here.')
 
 lite('LITE-EP-01', 'Protect editable session.new on page and composer', 'EP', async (t, sdk) => {
@@ -648,9 +668,10 @@ lite('LITE-EP-12', 'Preserve child native ecosystem contributions and untouched 
 lite('LITE-EP-13', 'Refuse ordinary child creation and general agent write escapes', 'EP', async (_t, sdk) => {
   const { effective, entries } = await overlayComposition(sdk)
   assertReadOnlyAuthority(effective, entries)
+  assert.deepEqual(Object.keys(findRows(effective, 'permission')[0].config.presets), ['read-only'], '/permission accepts only read-only')
+  // V3 (Q20): the owner may override in their own profile; that is reported, not refused.
   const widened = await overlayComposition(sdk, { profileLayer: [OVERLAY.saved, OVERLAY.savedPermission] })
-  assertReadOnlyAuthority(widened.effective, widened.entries)
-  assert.deepEqual(Object.keys(findRows(widened.effective, 'permission')[0].config.presets), ['read-only'], '/permission accepts only read-only')
+  assertOwnerOverrideWins(widened.effective)
 }, 'Runtime refusal by a live child agent (tool calls, escalation prompt, private Skills exception) needs a booted child; only the composed overlay authority is asserted.')
 
 const FRAME_GUARD = Object.freeze({
