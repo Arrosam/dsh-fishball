@@ -29,13 +29,14 @@
  * What the link does **not** do: pairing and names (F-PAIR), acking and dispatching events
  * (F-INTERCEPT), the bridge façade (F-FACADE), the status display (F-STATUS), wiring (F-WIRE).
  */
-import { TOOL } from './schema.js'
-import { BACKOFF, LINK_MCP, LINK_REFUSAL } from './constants.js'
+import { LINK_BACKOFF } from '../../contracts/constants.js'
+import { LINK_REFUSAL, TOOL } from './schema.js'
+import { LINK_MCP } from './constants.js'
 import { checkTarget } from './target.js'
 import { OffTargetRequest, STATUS, failureStatus } from './status.js'
 
-/** Delay before the n-th consecutive retry (from 0), bounded by `BACKOFF.maxMs`. */
-export const backoffDelayMs = (attempt) => Math.min(BACKOFF.initialMs * BACKOFF.factor ** attempt, BACKOFF.maxMs)
+/** Delay before the n-th consecutive retry (from 0), bounded by `LINK_BACKOFF.maxMs`. */
+export const backoffDelayMs = (attempt) => Math.min(LINK_BACKOFF.initialMs * LINK_BACKOFF.factor ** attempt, LINK_BACKOFF.maxMs)
 
 /** The connection failed in a way `failureStatus` cannot see from the error alone. */
 class LinkFailure extends Error {
@@ -292,7 +293,7 @@ export class McpLink {
   /**
    * The listen stream ended without our asking. The link is down until the next attempt, which
    * runs after the backoff delay. The failure count restarts at every successful connect, so a
-   * target that keeps accepting and then closing the stream is retried every `BACKOFF.initialMs`.
+   * target that keeps accepting and then closing the stream is retried every `LINK_BACKOFF.initialMs`.
    */
   #lost(generation, subscription) {
     if (!this.#current(generation) || this.#subscription !== subscription) return

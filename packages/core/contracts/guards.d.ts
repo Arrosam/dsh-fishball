@@ -1,7 +1,8 @@
 /**
  * Core's guards and their override report (task K3 freezes the vocabulary; design §5a.2;
  * R-FB-02, R-FB-09, R-FB-12, R-FB-13, R-HOST-11 (5); spike V3-S6 `86800d2` + round 2 `7c2230e`).
- * Types only. F-GUARDS builds the patch rows, the self-reorder and the check, in
+ * Types; the runtime spellings are `constants.js`'s `GUARDS` beside this file (a change to one
+ * changes both). F-GUARDS builds the patch rows, the self-reorder and the check, in
  * `packages/core/cordis.patch.yml`, `packages/core/ui/patch/` and `packages/core/src/guards/`.
  *
  * The row lists, presets, policy and manager tools are as decided (design §5a.2, 1.24, S6 round 2).

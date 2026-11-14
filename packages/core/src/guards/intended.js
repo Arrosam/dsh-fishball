@@ -7,7 +7,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadOverlayPatches } from '@deepseek-ai/dsh-app-boot'
-import { GUARDS } from './constants.js'
+import { GUARDS } from '../../contracts/constants.js'
 
 const PATCH_PATH = fileURLToPath(new URL(GUARDS.patchFile, import.meta.url))
 

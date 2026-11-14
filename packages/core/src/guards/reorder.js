@@ -17,7 +17,7 @@ import path from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { readProfileManifest, writeProfileBundles } from '@deepseek-ai/dsh-app-boot'
 import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
-import { GUARDS } from './constants.js'
+import { GUARDS } from '../../contracts/constants.js'
 
 const { reorder: OUTCOME, text: TEXT } = GUARDS
 
@@ -29,6 +29,9 @@ export function coreLast(bundles) {
   if (!bundles.includes(GUARDS.bundleName) || bundles.at(-1) === GUARDS.bundleName) return undefined
   return [...bundles.filter((name) => name !== GUARDS.bundleName), GUARDS.bundleName]
 }
+
+/** The record's content: the outcome, one JSON line. */
+const recordLine = (outcome) => JSON.stringify({ outcome }) + GUARDS.record.lineEnd
 
 /** `<DSH home>/fishball/guards/<profile>.reorder.json`. */
 const recordPath = (profile) => path.join(profile.home, ...GUARDS.record.directory, profile.name + GUARDS.record.suffix)
@@ -96,7 +99,7 @@ export async function reorderOnce(profile, logger) {
   // the real outcome standing (the manifest already moved). The next start then finds core last,
   // writes nothing, and records `unchanged`.
   try {
-    await writeFileAtomic(file, GUARDS.recordLine(outcome), { mode: GUARDS.record.mode, dirMode: GUARDS.record.directoryMode })
+    await writeFileAtomic(file, recordLine(outcome), { mode: GUARDS.record.mode, dirMode: GUARDS.record.directoryMode })
   } catch (error) {
     logger.warn(TEXT.recordFailed, reason(error))
   }

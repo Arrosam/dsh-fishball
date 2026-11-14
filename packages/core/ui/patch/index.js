@@ -4,7 +4,7 @@
  * and the `guards-overridden` report. It has no package manifest of its own, so DSH resolves its
  * host imports through core's manifest (its peers) and serves no second client for it.
  */
-import { GUARDS } from '../../src/guards/constants.js'
+import { GUARDS } from '../../contracts/constants.js'
 import { createGuards } from '../../src/guards/index.js'
 
 export const name = GUARDS.pluginName

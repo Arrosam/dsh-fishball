@@ -15,7 +15,7 @@ import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { REPO } from '../../support/constants.mjs'
 import * as K1 from '../../../packages/connector/mcp-schema/index.js'
-import * as CORE_LINK from '../../../packages/core/src/link/constants.js'
+import * as CORE_LINK from '../../../packages/connector/mcp-schema/index.js'
 
 export { K1 }
 

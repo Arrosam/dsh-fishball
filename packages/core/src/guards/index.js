@@ -8,7 +8,7 @@
  * The status strip line and the notice to Fishball's manager (design §5a.2) are F-STATUS's: they
  * read this service.
  */
-import { GUARDS } from './constants.js'
+import { GUARDS } from '../../contracts/constants.js'
 import { readIntendedGuards } from './intended.js'
 import { checkGuards } from './check.js'
 import { reason, reorderOnce } from './reorder.js'
