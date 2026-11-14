@@ -68,15 +68,15 @@ function gateRefusal(verdict) {
   return refusal(code, typeof verdict?.reason === 'string' ? { reason: verdict.reason } : undefined)
 }
 
-/** The step-5 send was cancelled by the turn (S7: link.callTool takes no signal, so it is raced). */
+/** The turn stopped waiting for a step-5 send (the send itself is not cancelled; see raced()). */
 class Cancelled extends Error {}
 
 /**
- * `promise`, or a rejection with Cancelled once `signal` aborts. The link's request itself keeps
- * running (link.js `callTool` takes no signal; src/link/ is F-PAIR's in W3), so only the turn stops
- * waiting; the answer is the post-send one, because the request may still reach the connector.
- * FOLLOW-UP (after dev/v3-f-pair `a5ec0bfd` and this branch are both in integrate): pass the
- * signal as `link.callTool(name, args, {signal})` and drop this race.
+ * `promise`, or a rejection with Cancelled once `signal` aborts. Only the turn stops waiting: the
+ * link's request keeps running, and the answer is the post-send one, because the request may still
+ * reach the connector. The user's decision (2026-11-15): stopping Fishball's turn never cancels work
+ * already sent, so the turn's signal is not passed to `link.callTool`, although F-PAIR's link
+ * accepts `{signal}` (dev/v3-f-pair `a5ec0bfd`).
  */
 function raced(promise, signal) {
   if (signal === undefined) return promise
