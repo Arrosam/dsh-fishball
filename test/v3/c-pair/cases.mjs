@@ -43,7 +43,7 @@ const CASE = Object.freeze({
 // ---------------------------------------------------------------------------------------------
 
 /** The fake clock: `offsetMs` after the reference instant. */
-const at = (offsetMs = 0) => FIXTURE.t0 + offsetMs
+export const at = (offsetMs = 0) => FIXTURE.t0 + offsetMs
 const seconds = (s) => s * TIME_UNIT.msPerSecond
 /** Lets a `seen` (typed `void`) finish whatever it started before its effect is read. */
 const tick = () => new Promise((resolve) => setImmediate(resolve))
@@ -51,9 +51,9 @@ const codePoints = (text) => [...text].length
 const NAME_MAX = NAME_RULES.maxChars
 
 /** K1 `PairResult` success: without a `name`, `nameAssigned` is absent (K1 README, NAME-DT-01 rule 1). */
-const paired = (id, name, extra = {}) => ({ ok: true, paired: true, id, name, ...extra })
+export const paired = (id, name, extra = {}) => ({ ok: true, paired: true, id, name, ...extra })
 const assigned = (id, name) => paired(id, name, { nameAssigned: true })
-const nameRefused = (id, code) => paired(id, null, { nameAssigned: false, nameRefused: code })
+export const nameRefused = (id, code) => paired(id, null, { nameAssigned: false, nameRefused: code })
 /** K1 `already-paired` (R-ID-04): the bound pair's fields and the fixed advice text. */
 const alreadyPaired = (idMatches, pair) => ({
   ok: false, code: REFUSAL.alreadyPaired,
@@ -67,7 +67,7 @@ const NOT_PAIRED = pairOnly(INSUFFICIENT_SCOPE_REASON.notPaired)
 const ID_MISMATCH = pairOnly(INSUFFICIENT_SCOPE_REASON.idMismatch)
 
 /** `pair` on entry `n`, required to succeed; returns the stored pair. */
-async function bind(w, n, id, name, now = at()) {
+export async function bind(w, n, id, name, now = at()) {
   const result = await w.store.pair(E(n), id, name, now)
   assert.equal(result.ok, true, `harness: pairing entry ${n} as ${id} failed: ${JSON.stringify(result)}`)
   return w.store.pairOf(E(n))
@@ -83,12 +83,12 @@ async function assertRefused(w, call, expected) {
   assert.deepEqual(w.snapshot(), before, 'a refusal changes nothing')
 }
 /** Names are unique per connector after folding (R-NAME-01/02); nameless principals never clash. */
-function assertUniqueNames(w) {
+export function assertUniqueNames(w) {
   const keys = w.store.list().map((p) => p.name).filter((n) => n !== null).map(nameKey)
   assert.equal(new Set(keys).size, keys.length, `two principals hold one folded name: ${JSON.stringify(keys)}`)
 }
 /** Counts `onChange` notifications from now on. */
-function changes(w) {
+export function changes(w) {
   let count = 0
   const off = w.store.onChange(() => { count += 1 })
   return { get count() { return count }, off }
@@ -96,10 +96,10 @@ function changes(w) {
 /** How a principal is shown (R-NAME-08, K1 `principalLabel`): `ID: <id>` when nameless. */
 const labelOf = (pair) => principalLabel(pair.name, pair.id)
 /** `set_name` on entry `n`'s principal. */
-const setName = (w, n, name) => w.store.setName(w.store.pairOf(E(n)).principalKey, name)
+export const setName = (w, n, name) => w.store.setName(w.store.pairOf(E(n)).principalKey, name)
 
 /** One case test on a fresh store; `todo` (a LATER owner) registers it as a todo instead. */
-function row(sdk, id, part, title, fn, todo) {
+export function row(sdk, id, part, title, fn, todo) {
   caseTest(sdk, id, part, title, todo === undefined ? async (t) => fn(await pairWorld(t, sdk), t) : null, todo)
 }
 const todo = (sdk, id, part, title, owner) => row(sdk, id, part, title, null, owner)

@@ -59,7 +59,7 @@ const lower = (text) => text.toLowerCase()
 const textOf = (res) => lower(pageText(res.body))
 
 /** The redirect a response carries: `{status, target, params}` (target = origin + path), or undefined. */
-function redirectOf(res) {
+export function redirectOf(res) {
   const location = res.headers[HTTP_HEADER.location]
   if (location === undefined) return undefined
   const url = new URL(location)
@@ -67,7 +67,7 @@ function redirectOf(res) {
 }
 
 /** One pending request: a fresh PKCE pair and the page `/authorize` answered. */
-async function open(w, { browser = w.browser(), overrides = {} } = {}) {
+export async function open(w, { browser = w.browser(), overrides = {} } = {}) {
   const { verifier, challenge } = pkce()
   const res = await browser.open(PATHS.authorize, authorizeParams(w, challenge, overrides))
   return { b: browser, verifier, challenge, page: res }
@@ -96,7 +96,7 @@ const refresh = (w, rt, overrides = {}, options = {}) => w.token({
 const expectedState = (options) => (Object.hasOwn(options, 'state') ? options.state : FIXTURE.state)
 
 /** A success redirect to `target` with a code, the issuer and the state (R-OA-14, R-OA-12 (4)). */
-function assertCode(w, flow, options = {}) {
+export function assertCode(w, flow, options = {}) {
   const { target = FIXTURE.redirect } = options
   const state = expectedState(options)
   assert.ok(flow.redirect, `no redirect; page says: ${pageText(flow.res.body)}`)
@@ -120,7 +120,7 @@ function assertRedirectedError(w, res, error, options = {}) {
   assert.equal(r.params[PARAM.code], undefined)
 }
 /** An answer shown on the page, never redirected, carrying `text` (case-insensitive). */
-function assertOnPage(res, ...texts) {
+export function assertOnPage(res, ...texts) {
   assert.equal(res.headers[HTTP_HEADER.location], undefined, 'shown on the page, never redirected')
   for (const text of texts) assert.ok(textOf(res).includes(lower(text)), `page lacks "${text}": ${pageText(res.body)}`)
 }
@@ -182,12 +182,12 @@ async function chain(w, { redirectUri } = {}) {
 const endChain = (w, c) => w.clock.set(c.startedAt + LIFETIME.refreshChainMaxMs)
 
 /** One case test on a fresh world; `todo` (a LATER owner) registers a todo instead. */
-function row(sdk, id, part, title, fn, todo, options) {
+export function row(sdk, id, part, title, fn, todo, options) {
   caseTest(sdk, id, part, title, todo === undefined ? async (t) => fn(await webWorld(t, sdk, options?.(t)), t) : null, todo)
 }
 const todo = (sdk, id, part, title, owner) => row(sdk, id, part, title, null, owner)
 /** A case on the module alone (no world). */
-const plain = (sdk, id, part, title, fn) => caseTest(sdk, id, part, title, async (t) => fn(await webModule(sdk), t))
+export const plain = (sdk, id, part, title, fn) => caseTest(sdk, id, part, title, async (t) => fn(await webModule(sdk), t))
 
 // ---------------------------------------------------------------------------------------------
 // Use Cases
@@ -383,7 +383,7 @@ function useCases(sdk) {
 // ---------------------------------------------------------------------------------------------
 
 /** A public resolver unless `answers[hostname]` says otherwise; records each lookup. */
-function resolver(answers = {}) {
+export function resolver(answers = {}) {
   const calls = []
   const resolve = async (hostname) => { calls.push(hostname); return answers[hostname] ?? [FIXTURE.publicAddress] }
   resolve.calls = calls

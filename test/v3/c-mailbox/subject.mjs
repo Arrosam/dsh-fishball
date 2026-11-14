@@ -117,6 +117,18 @@ export async function worldFor(t, sdk) {
     world.mailbox = undefined
   }
   world.reopen = async () => { await shut(); return open() }
+  /**
+   * The mailbox storage is lost or reset (K1 DECIDED #W2-1): the mailbox closes, its whole storage
+   * directory is deleted, and it opens again over nothing. Returns the new mailbox.
+   */
+  world.loseStorage = async () => {
+    await shut()
+    const dir = path.join(root, FIXTURE.storageDir)
+    // Guard the recursive delete: only the storage directory inside the temp root this helper made.
+    assert.ok(path.dirname(dir) === root && path.dirname(root) === os.tmpdir() && path.basename(root).startsWith(FIXTURE.tempPrefix), 'refusing to remove ' + dir)
+    await rm(dir, { recursive: true, force: true })
+    return open()
+  }
   t.after(async () => { await shut(); await rm(root, { recursive: true, force: true }) })
   await open()
   return world

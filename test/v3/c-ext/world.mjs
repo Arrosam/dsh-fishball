@@ -81,13 +81,37 @@ class FakeMailbox {
     for (const r of receipts) this.ackEvent(pk, r.eventId)
     return { ok: true, acked: receipts.length }
   }
+  /** Every `retire(pk, eventId, reason)` call, as made (K1 amendment rows: C-EXT uses `retireContributor`). */
+  retireCalls = []
+  /** Every `retireContributor(namespace, activationTag)` call, as made. */
+  retireContributorCalls = []
   /** K1: replaces a **pending** event by a `retirement` naming it; an acked one stays. */
   async retire(pk, eventId, reason) {
+    this.retireCalls.push({ pk, eventId, reason })
     this.retirements.push({ pk, eventId, reason })
     const event = this.box(pk).find((e) => e.eventId === eventId)
     if (event?.state !== 'pending') return
     event.state = 'retired'
     this.box(pk).push({ type: K1.EVENT_TYPE.retirement, eventId: eventId + '-retired', correlationId: eventId, reason, state: 'pending' })
+  }
+  /**
+   * K1 amendment after W2: retires, as `retire` does, every **pending** `contributed:<namespace>.*`
+   * event committed with `activationTag`, in every pair's mailbox (the draft's tag is kept on the
+   * stored event by `commit`'s clone). Each one is recorded in `retirements` with `retire`'s shape,
+   * so the R-EXT-19 oracles read both paths alike. Acked, retired, other namespaces and other tags
+   * are left alone; a repeat finds nothing pending.
+   */
+  async retireContributor(namespace, activationTag) {
+    this.retireContributorCalls.push({ namespace, activationTag })
+    const prefix = K1.CONTRIBUTED_TYPE_PREFIX + namespace + K2.NAMESPACE.separator
+    for (const [pk, box] of this.boxes) {
+      for (const event of [...box]) {
+        if (event.state !== 'pending' || event.activationTag !== activationTag || !event.type?.startsWith(prefix)) continue
+        this.retirements.push({ pk, eventId: event.eventId, reason: K1.RETIREMENT_REASON.contributorWithdrawn })
+        event.state = 'retired'
+        box.push({ type: K1.EVENT_TYPE.retirement, eventId: event.eventId + '-retired', correlationId: event.eventId, reason: K1.RETIREMENT_REASON.contributorWithdrawn, state: 'pending' })
+      }
+    }
   }
   /** Every `retirement` event naming `eventId`, in any mailbox. */
   retirementsOf(eventId) { return [...this.boxes.values()].flat().filter((e) => e.type === K1.EVENT_TYPE.retirement && e.correlationId === eventId) }

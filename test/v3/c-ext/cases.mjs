@@ -52,7 +52,7 @@ const REFILL_MS = EVENT_LIMITS.rateWindowMs / EVENT_LIMITS.ratePerMinute
 const JUST_BEFORE_REFILL_MS = REFILL_MS - REFILL_MS / (EVENT_LIMITS.rateBurst * 2)
 
 /** One test per case row, named as every V3 suite names them; `todo` names the owning task. */
-function row(sdk, id, part, title, fn, todo, options = T) {
+export function row(sdk, id, part, title, fn, todo, options = T) {
   const name = caseName(sdk, id, part, title)
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, options, fn)
@@ -62,7 +62,7 @@ function row(sdk, id, part, title, fn, todo, options = T) {
 // Shared steps and oracles (each states one requirement oracle once).
 
 const pub = (namespace, local) => namespace + K2.NAMESPACE.separator + local
-const nsOf = (c) => K2.namespaceOf(c.pkg)
+export const nsOf = (c) => K2.namespaceOf(c.pkg)
 const toolOf = (c, local = c.tools[0]) => pub(nsOf(c), local)
 const json = (value) => JSON.stringify(value)
 const throwing = () => { throw new Error(FIXTURE.secretPath) }
@@ -126,13 +126,13 @@ async function assertEmitRefused(world, c, event, code, svc = c.svc) {
   assert.deepEqual(result, { ok: false, code })
   assert.equal(world.mailbox.commits.length, commits, 'a refused emit committed an event')
 }
-async function assertEmitOk(world, c, event, svc = c.svc) {
+export async function assertEmitOk(world, c, event, svc = c.svc) {
   const result = await c.emit(event, svc)
   assert.equal(result.ok, true, 'emit refused: ' + json(result))
   assert.deepEqual(Object.keys(result).sort(), ['eventId', 'ok'])
   return result
 }
-const note = (extra = {}) => ({ event: FIXTURE.event.note, payload: { marker: FIXTURE.marker }, ...extra })
+export const note = (extra = {}) => ({ event: FIXTURE.event.note, payload: { marker: FIXTURE.marker }, ...extra })
 /** A string payload whose JSON text is exactly `bytes` UTF-8 bytes. */
 const payloadOf = (bytes) => FIXTURE.pad(bytes - FIXTURE.stringOverheadBytes)
 const lastCommit = (world) => world.mailbox.commits.at(-1)
@@ -148,7 +148,7 @@ async function fail(sdk, world, c, n, local = c.tools[0]) {
   for (let i = 0; i < n; i++) await assertContained(sdk, await world.call(D, toolOf(c, local), ARGS))
   delete c.behaviour[local]
 }
-const quarantine = (sdk, world, c) => fail(sdk, world, c, QUARANTINING_FAILURES)
+export const quarantine = (sdk, world, c) => fail(sdk, world, c, QUARANTINING_FAILURES)
 /** The observable state of a quarantined contributor (R-EXT-09, R-EXT-19). */
 async function assertQuarantined(world, c, local = c.tools[0]) {
   assert.ok(!world.listed(toolOf(c, local)), 'a quarantined tool is listed')
@@ -156,14 +156,14 @@ async function assertQuarantined(world, c, local = c.tools[0]) {
   await assertEmitRefused(world, c, note(), EMIT_REFUSAL.contributorUnavailable)
 }
 /** Two events of `c` in D's mailbox, the first acked by the client (EXT-UC-03 actor). */
-async function pendingAndAcked(world, c) {
+export async function pendingAndAcked(world, c) {
   const acked = await assertEmitOk(world, c, note())
   const pending = await assertEmitOk(world, c, note())
   world.mailbox.ackEvent(D.principalKey, acked.eventId)
   return { acked: acked.eventId, pending: pending.eventId }
 }
 /** R-EXT-19: the pending event is retired, the acked one stays with its client. */
-async function assertRetired(world, { acked, pending }) {
+export async function assertRetired(world, { acked, pending }) {
   await eventually(() => world.mailbox.retirements.some((r) => r.eventId === pending), 'the pending event is retired')
   const retirement = world.mailbox.retirements.find((r) => r.eventId === pending)
   assert.equal(retirement.pk, D.principalKey)
