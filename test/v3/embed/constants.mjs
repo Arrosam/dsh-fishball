@@ -25,17 +25,18 @@ export const EMBED = Object.freeze({
    */
   clientEntry: 'src/client/client.js',
   /**
-   * U-SHELL (v3-w3 briefs F2, Q-7) splits the moved client, with no behaviour change, into flat
-   * parts beside the entry. The moved connector UI is spread over every part; the moved instance
-   * card (the Plugins card) is the shell's.
+   * U-SHELL (v3-w3 briefs F2, Q-7) splits the moved connector UI, with no behaviour change, into
+   * flat parts beside the entry; the moved instance card (the Plugins card) stays client.instance.js
+   * (layout relayed by Fishball from dev/v3-u-shell `096da986`).
    */
   clientChunks: Object.freeze({
     shell: 'src/client/client.shell.js',
     marks: 'src/client/client.marks.js',
     attention: 'src/client/client.attention.js',
     records: 'src/client/client.records.js',
+    instance: 'src/client/client.instance.js',
   }),
-  cardChunk: 'src/client/client.shell.js',
+  cardChunk: 'src/client/client.instance.js',
 })
 
 /** R-EMBED (3): the client entries the connector and the instance lose in the same change. */

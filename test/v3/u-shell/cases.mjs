@@ -22,16 +22,22 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { until } from '../../support/host.mjs'
 import { findAll, textOf } from '../../support/rp-recommend.mjs'
 import { ownFiles, tokensOf, unitOf } from '../core/static.mjs'
+import { assertParams, contracts, member, serviceMembers, vocabulary } from '../k3/contracts.mjs'
+import { FOLDER } from '../k3/constants.mjs'
 import { caseTest, integrationCase as gatedCase } from '../shared/cases.mjs'
 import { JS_FILE, V3 } from '../shared/constants.mjs'
 import {
-  ASK_TOOL, BUDGET, CHILD, CONTROL, DIAGNOSTIC, FAKE, INTEGRATION, LATER, PAGE_NAME, REFUSAL_TEXT, RETRY_LABEL, SCENARIO,
-  SLOT, SPLIT, V2_ANSWER_ROUTE,
+  API_VERSION, ASK_TOOL, BUDGET, CHILD, CONTROL, DIAGNOSTIC, FAKE, HOST_CONSTANTS, HOST_TRICK, HTTP_OK, INTEGRATION, LATER, LOOPBACK, PAGE_NAME,
+  REFUSAL_TEXT, RETRY_LABEL, ROUTE, ROUTE_REFUSAL, SCENARIO, SERVICE, SLOT, SPLIT, V2_ANSWER_ROUTE,
 } from './constants.mjs'
-import { bySlot, frameTarget, homeFilesHolding, hostFor, launchToken, logLines, logMessages, openFishball, openPage, pageEntries, press, recordsOf, registerCleanup } from './world.mjs'
+import {
+  bySlot, frameTarget, homeFilesHolding, hostFor, launchToken, logLines, logMessages, openFishball, openPage, pageEntries, press, recordsOf,
+  refusalCode, registerCleanup, routeCall,
+} from './world.mjs'
 
 const integrationCase = (sdk, id, row, title, fn) => gatedCase(sdk, id, row, title, fn, INTEGRATION)
 const clientDir = () => path.join(V3.embed.dir, ...SPLIT.clientDir)
@@ -93,6 +99,18 @@ const assertNoMarks = (regs) => assert.deepEqual(regs.filter((r) => SLOT.marks.i
 const assertOneEntry = (regs) => assert.equal(bySlot(regs, SLOT.entry).length, 1, 'embed-UI\'s sidebar entries: ' + JSON.stringify(bySlot(regs, SLOT.entry).map((r) => r.id ?? r.key)))
 const assertNoBrand = (regs) => assert.deepEqual(regs.filter((r) => SLOT.brand.includes(r.slot)), [], 'a sidebar.brand.* slot was used')
 const assertCard = (regs) => assert.ok(regs.some((r) => SLOT.card.includes(r.slot)), 'no Plugins card (' + SLOT.card.join(', ') + ')')
+/** K3's literal vocabulary of a type, by a member path from a service (`fishballChild.admit` → request → field). */
+const k3 = () => contracts(FOLDER.hostServices)
+const admitField = (field) => {
+  const [request] = assertParams(member(serviceMembers(k3(), SERVICE.child), 'admit'), { params: 1 })
+  return [...vocabulary(k3(), k3().m.members(request.type).get(field).type).literals].sort()
+}
+const admitErrorCodes = () => [...vocabulary(k3(), 'AdmitErrorCode').literals].sort()
+/** A refusal's status and code (relayed route contract). */
+const assertRefusal = (answer, refusal) => {
+  assert.equal(answer.status, refusal.status, 'status ' + answer.status + ' ' + answer.text)
+  assert.equal(refusalCode(answer), refusal.code, 'code in ' + answer.text)
+}
 const assertDiagnostics = (setup, n) => assert.equal(diagnostics(setup).length, n, DIAGNOSTIC + ' lines: ' + JSON.stringify(diagnostics(setup)))
 
 export function registerUShellCases(sdk) {
@@ -345,4 +363,109 @@ export function registerUShellCases(sdk) {
     assert.equal(fs.realpathSync(link), fs.realpathSync(path.join(V3.instance.dir, 'src', 'child-settings', SPLIT.statusLink)))
   })
   caseTest(sdk, 'U-SHELL', 'done', 'the Plugins card starts model sync on the Plugins page (R-HOST-07) in a browser', null, LATER.e2e)
+
+  // ============================================================ the host half's constants equal the frozen contracts
+  caseTest(sdk, 'U-SHELL', 'K3/K2', "the host half's restated service names and apiVersion equal K3's Context members and K2's TOOLS_API", async () => {
+    const { SERVICE: own } = await import(pathToFileURL(HOST_CONSTANTS.file).href)
+    const { TOOLS_API } = await import(pathToFileURL(HOST_CONSTANTS.tools).href)
+    for (const service of [SERVICE.child, SERVICE.handover]) assert.ok(serviceMembers(k3(), service).get('apiVersion'), 'K3 declares ' + service)
+    assert.deepEqual({ child: own.child, handover: own.handover, tools: own.tools, apiVersion: own.apiVersion }, { child: SERVICE.child, handover: SERVICE.handover, tools: TOOLS_API.service, apiVersion: TOOLS_API.version })
+    assert.deepEqual([...vocabulary(k3(), serviceMembers(k3(), SERVICE.child).get('apiVersion').type).literals], [String(own.apiVersion)], 'K3 apiVersion')
+  })
+  caseTest(sdk, 'U-SHELL', 'K3', "the host half's loopback names, admit views, langs and refusal codes equal K3's LoopbackHostname, AdmitView, AdmitLang and AdmitErrorCode", async () => {
+    const { LOOPBACK: hostnames, ADMIT } = await import(pathToFileURL(HOST_CONSTANTS.file).href)
+    assert.deepEqual([...hostnames.hostnames].sort(), admitField('hostname'))
+    assert.deepEqual([...hostnames.hostnames].sort(), [...LOOPBACK].sort())
+    assert.deepEqual([...ADMIT.views].sort(), admitField('view'))
+    assert.deepEqual([...ADMIT.langs].sort(), admitField('lang'))
+    assert.deepEqual(Object.values(ADMIT.code).sort(), admitErrorCodes())
+  })
+
+  // ============================================================ the host routes (relayed surface; design §4.2)
+  integrationCase(sdk, 'U-SHELL', 'routes', 'GET services answers which services are usable now, per UIM-EP-01 partition (page ⇔ a v1 locator; handover and tools ⇔ the connector services)', async () => {
+    for (const [scenario, expected] of [[SCENARIO.none, [false, false, false]], [SCENARIO.child, [true, false, false]], [SCENARIO.connector, [false, true, true]], [SCENARIO.all, [true, true, true]], [SCENARIO.older, [false, false, false]], [SCENARIO.disabled, [false, true, true]]]) {
+      const answer = await routeCall(await hostFor(sdk, scenario), PAGE_NAME.ipv4, 'GET', ROUTE.services)
+      assert.equal(answer.status, HTTP_OK, scenario.label + ': ' + answer.text)
+      assert.deepEqual(ROUTE.servicesKeys.filter((k) => !(k in answer.json)), [], scenario.label + ' keys')
+      assert.deepEqual([answer.json.page, answer.json.handover, answer.json.tools], expected, scenario.label)
+    }
+  })
+  integrationCase(sdk, 'U-SHELL', 'routes', 'GET child/status re-serves the locator: {ok, status, target} with its state and code', async () => {
+    const answer = await routeCall(await hostFor(sdk, SCENARIO.downRead), PAGE_NAME.ipv4, 'GET', ROUTE.status)
+    assert.equal(answer.status, HTTP_OK, answer.text)
+    assert.deepEqual(ROUTE.statusKeys.filter((k) => !(k in answer.json)), [])
+    assert.deepEqual([answer.json.status.state, answer.json.status.code], [CHILD.failed, CHILD.exited])
+  })
+  for (const scenario of [SCENARIO.none, SCENARIO.older]) {
+    integrationCase(sdk, 'U-SHELL', 'routes', `without a usable locator (${scenario.label}) every child/* route answers 503 instance-missing`, async () => {
+      const setup = await hostFor(sdk, scenario)
+      for (const key of ROUTE.child) {
+        const method = key === 'status' ? 'GET' : 'POST'
+        assertRefusal(await routeCall(setup, PAGE_NAME.ipv4, method, ROUTE[key], method === 'POST' ? { view: CHILD.views[0], lang: CHILD.langs.en } : undefined), ROUTE_REFUSAL.missing)
+      }
+    })
+  }
+  for (const name of [PAGE_NAME.ipv4, PAGE_NAME.localhost, PAGE_NAME.ipv6, PAGE_NAME.upper]) {
+    integrationCase(sdk, 'UIM-EP-02', name.row, `POST child/admit under ${name.display} → {ok, url} at ${name.expected} with the child's port; the locator got that hostname`, async () => {
+      const setup = await hostFor(sdk, SCENARIO.all)
+      const answer = await routeCall(setup, name, 'POST', ROUTE.admit, { view: CHILD.views[0], lang: CHILD.langs.en })
+      assert.equal(answer.status, HTTP_OK, answer.text)
+      assert.equal(new URL(answer.json.url).hostname, name.expected)
+      assert.equal(Number(new URL(answer.json.url).port), CHILD.port)
+      assert.equal(admissions(setup).at(-1).hostname, name.expected)
+    })
+  }
+  for (const name of [PAGE_NAME.tunnel, PAGE_NAME.edge]) {
+    integrationCase(sdk, 'UIM-EP-02', name.row, `POST child/admit under ${name.display} → 409 hostname-refused; the locator is not asked`, async () => {
+      const setup = await hostFor(sdk, SCENARIO.all)
+      const before = admissions(setup).length
+      assertRefusal(await routeCall(setup, name, 'POST', ROUTE.admit, { view: CHILD.views[0], lang: CHILD.langs.en }), ROUTE_REFUSAL.hostname)
+      assert.equal(admissions(setup).length, before)
+    })
+  }
+  for (const [label, hostHeader] of Object.entries(HOST_TRICK)) {
+    integrationCase(sdk, 'UIM-EP-02', '4 (EP)', `a Host that names localhost only after parsing (${label}) → refused (409 hostname-refused, or DSH's own fence first); no ticket`, async () => {
+      const setup = await hostFor(sdk, SCENARIO.all)
+      const before = admissions(setup).length
+      const answer = await routeCall(setup, PAGE_NAME.tunnel, 'POST', ROUTE.admit, { view: CHILD.views[0], lang: CHILD.langs.en }, { hostHeader })
+      // DSH's browser-trust fence (dsh-client-connection, both SDKs) runs before any route handler and
+      // may refuse such a Host itself; when the request does reach embed-UI, the relayed code applies.
+      assert.notEqual(answer.status, HTTP_OK, answer.text)
+      if (answer.status === ROUTE_REFUSAL.hostname.status) assert.equal(refusalCode(answer), ROUTE_REFUSAL.hostname.code)
+      assert.equal(admissions(setup).length, before, 'a ticket was minted')
+    })
+  }
+  for (const [label, body] of [['an extra hostname key', { view: CHILD.views[0], lang: CHILD.langs.en, hostname: PAGE_NAME.tunnel.header }], ['a missing lang', { view: CHILD.views[0] }], ['an unknown view', { view: 'fbtest-view', lang: CHILD.langs.en }], ['an unknown lang', { view: CHILD.views[0], lang: 'fr' }]]) {
+    integrationCase(sdk, 'U-SHELL', 'routes', `POST child/admit with ${label} → 400 invalid-request; no ticket`, async () => {
+      const setup = await hostFor(sdk, SCENARIO.all)
+      const before = admissions(setup).length
+      assertRefusal(await routeCall(setup, PAGE_NAME.ipv4, 'POST', ROUTE.admit, body), ROUTE_REFUSAL.invalid)
+      assert.equal(admissions(setup).length, before)
+    })
+  }
+  integrationCase(sdk, 'UIM-UC-01', 'E1', 'POST child/admit while the child is down → 409 not-ready; POST child/retry restarts it; admit then answers a URL', async () => {
+    const setup = await hostFor(sdk, SCENARIO.down)
+    const body = { view: CHILD.views[0], lang: CHILD.langs.en }
+    // The page row of E1 may have retried already; only a still-failed child must refuse.
+    const first = await routeCall(setup, PAGE_NAME.ipv4, 'GET', ROUTE.status)
+    if (first.json?.status?.state === CHILD.failed) assertRefusal(await routeCall(setup, PAGE_NAME.ipv4, 'POST', ROUTE.admit, body), ROUTE_REFUSAL.notReady)
+    assert.equal((await routeCall(setup, PAGE_NAME.ipv4, 'POST', ROUTE.retry, {})).status, HTTP_OK)
+    const admitted = await routeCall(setup, PAGE_NAME.ipv4, 'POST', ROUTE.admit, body)
+    assert.equal(admitted.status, HTTP_OK, admitted.text)
+  })
+  integrationCase(sdk, 'U-SHELL', 'routes', 'the routes are owner-only: without the owner\'s cookie, services and admit mint nothing', async () => {
+    const setup = await hostFor(sdk, SCENARIO.all)
+    const before = admissions(setup).length
+    for (const [method, route] of [['GET', ROUTE.services], ['POST', ROUTE.admit]]) {
+      const response = await fetch(setup.host.origin + route, { method, headers: { 'content-type': 'application/json' }, body: method === 'POST' ? JSON.stringify({ view: CHILD.views[0], lang: CHILD.langs.en }) : undefined })
+      const text = await response.text()
+      assert.notEqual(response.status, HTTP_OK, route + ' answered a stranger: ' + text)
+    }
+    assert.equal(admissions(setup).length, before, 'a ticket was minted for a stranger')
+  })
+  integrationCase(sdk, 'UIM-EP-01', 5, 'GET services with an older locator: page false, so the client registers no frame (apiVersion 2 is absent)', async () => {
+    const answer = await routeCall(await hostFor(sdk, SCENARIO.older), PAGE_NAME.ipv4, 'GET', ROUTE.services)
+    assert.equal(answer.json?.page, false, answer.text)
+    assert.ok(API_VERSION.older !== API_VERSION.current)
+  })
 }
