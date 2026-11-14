@@ -53,6 +53,12 @@ export const RELAYED = Object.freeze({
  */
 export const OVERLAY = Object.freeze({
   hmr: 'hmr',
+  /**
+   * The two instance runtime rows a child needs that are neither guards nor configuration (Q-5 as
+   * recommended; dev 6d13f6a1 relayed 2026-11-15): the lifecycle endpoint and the native-web
+   * admission adapter. Every other V2 row left the overlay.
+   */
+  runtimeRows: Object.freeze(['fishball-native-web', 'fishball-native-child']),
   origin: Object.freeze(['webserver', 'web-runtime']),
   /**
    * The child isolation rows (Fishball 2026-11-15, isolation: Fishball must never read the user's
@@ -104,6 +110,8 @@ export const PANEL = Object.freeze({
   hostedInject: V3.core.name,
   /** The K3 settings-section service (settings-sections.d.ts SettingsSectionsServiceName). */
   service: 'fishballSettingsSections',
+  /** The child page's Fishball client entries once the panel is core's chunk (dev 6d13f6a1, relayed 2026-11-15). */
+  childEntries: Object.freeze(['fishball-page', 'fishball-recommend-plugins', V3.core.name, HOSTED_SETTINGS]),
   register: 'register',
 })
 

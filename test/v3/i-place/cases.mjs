@@ -254,9 +254,10 @@ export function registerIPlaceCases(sdk) {
 
   // ============================================================== Use Cases
   // ---- HOST-UC-06 postcondition (R-HOST-04, Q-5; design §6.2): the launch overlay carries only launch configuration.
-  caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay inserts no row (no guard row, no V2 child row, no settings row, no forced-on plugin)', async (t) => {
+  // Q-5 (dev 6d13f6a1): the overlay inserts exactly the two instance runtime rows; no guard, V2 child, settings or forced-on row.
+  caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay inserts only fishball-native-web and fishball-native-child (no guard, V2 child, settings or forced-on row)', async (t) => {
     const ops = await overlayOps(sdk, scratch(t, 'fbtest-iplace-ovl-'), [])
-    assert.deepEqual(insertedOf(ops).map((r) => r.id), [])
+    assert.deepEqual(insertedOf(ops).map((r) => r.id).sort(), [...OVERLAY.runtimeRows].sort())
   })
   caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay disables nothing but hmr: no guarded row, no shipped preset, no fishball-instance', async (t) => {
     const ops = await overlayOps(sdk, scratch(t, 'fbtest-iplace-ovl-'), [])
@@ -270,11 +271,11 @@ export function registerIPlaceCases(sdk) {
     assert.ok(ops.some((op) => op?.id === OVERLAY.hmr && op.disabled === true), 'hmr off')
   })
   caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay carries no token (only the non-secret entry key)', null, LATER.host)
-  integrationCase(sdk, 'HOST-UC-06', 'post', 'a real start: the written launch.patch.yml holds the same shape (no insert, nothing disabled but hmr) and is removed when the child stops', async () => {
+  integrationCase(sdk, 'HOST-UC-06', 'post', 'a real start: the written launch.patch.yml holds the same shape (the two runtime rows, nothing disabled but hmr) and is removed when the child stops', async () => {
     const { home } = await ready()
     const live = launchOverlays(home)
     assert.equal(live.length, 1, 'one live launch overlay: ' + live.length)
-    assert.deepEqual(insertedOf(live[0]).map((r) => r.id), [])
+    assert.deepEqual(insertedOf(live[0]).map((r) => r.id).sort(), [...OVERLAY.runtimeRows].sort())
     assert.deepEqual(live[0].filter((op) => op?.disabled === true).map((op) => op.id), [OVERLAY.hmr])
     await setup.restart(sdk, (h) => assert.deepEqual(launchOverlays(h), [], 'the stopped child left its launch overlay'))
   })
@@ -507,6 +508,12 @@ export function registerIPlaceCases(sdk) {
     assert.equal(page.byAttr(MARK.readOnly).length, 1)
     assert.ok((await page.waitFor(MARK.status)).length > 0)
   })
+  // Dev 6d13f6a1: the panel is core's chunk; the child's Fishball client entries are these four.
+  integrationCase(sdk, 'HOST-UC-08', 'A3', "a real hosted child serves fishball-page, fishball-recommend-plugins, fishball-core and fishball-hosted-settings, and no fishball-settings entry", async () => {
+    const { host } = await ready()
+    const graph = (await childGraph(host)).filter((id) => id.startsWith('fishball-'))
+    assert.deepEqual(graph.sort(), [...PANEL.childEntries].sort())
+  })
   caseTest(sdk, 'HOST-DT-03', 6, 'a real hosted child: guards-overridden does not name fishball-hosted-settings', null, LATER.status)
   caseTest(sdk, 'HOST-DT-03', 10, 'standalone: not present; core reports no missing member for it', null, LATER.status)
 
@@ -583,7 +590,7 @@ export function registerIPlaceCases(sdk) {
   integrationCase(sdk, 'LITE-UC-03', 'hosted', 'a real hosted child: no guarded row or shipped preset runs (the core patch applied over the placed bundles)', async () => {
     const { home } = await ready()
     assert.equal(profileBundles(home).at(-1), SET.core, 'precondition: core last')
-    assert.deepEqual(insertedOf(launchOverlays(home)[0] ?? []).map((r) => r.id), [])
+    assert.deepEqual(insertedOf(launchOverlays(home)[0] ?? []).map((r) => r.id).sort(), [...OVERLAY.runtimeRows].sort())
   })
   caseTest(sdk, 'LITE-UC-03', 'hosted', 'the private Skills exception and a live child agent refused child creation and write', null, LATER.e2e)
 
