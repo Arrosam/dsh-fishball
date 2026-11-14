@@ -56,8 +56,8 @@ const ROUTE = Object.freeze({
   questionsAnswer: '/api/fishball/questions/answer',
 })
 const PACKAGE = Object.freeze({ connector: 'fishball-connector', instance: 'fishball-instance', embed: 'fishball-embed-ui' })
-/** R-EMBED: the moved connector UI inside the installed embed-UI package. */
-const EMBED_CONNECTOR_CLIENT = Object.freeze(['src', 'client', 'client.connector.js'])
+/** R-EMBED: the moved connector UI inside the installed embed-UI package (its shell part since U-SHELL's split). */
+const EMBED_CONNECTOR_CLIENT = Object.freeze(['src', 'client', 'client.shell.js'])
 const installed = (name) => path.join(home, 'profiles', CFG.profile, 'node_modules', name)
 /**
  * Where a session's question is answered, as the model reads it. Since a6e0841 (N9-a port) the words sit

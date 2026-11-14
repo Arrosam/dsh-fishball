@@ -8,7 +8,7 @@
  * It is a package-local chunk of embed-UI's client bundle, not a second bundle: DSH's client
  * module loader serves only a package's `client.js` and its `client.*.js` siblings (the
  * CLIENT_CHUNK rule of dsh-client-modules, the same in 0.2.1-rc.5 and 0.2.2-rc.1), and this
- * repository has no build step, so client.connector.js loads it with `require.async('./client.records.js')`.
+ * repository has no build step, so client.js loads it with `require.async('./client.records.js')`.
  * The registration is skipped when no module loader exists (a plain Node import), so importing the
  * file outside a DSH page has no effect instead of throwing.
  *
@@ -25,8 +25,10 @@ globalThis.__ModuleLoader__?.load({
   factory(require) {
     const module = { exports: {} }
     const React = require('react')
-    const { DisclosureRow, IconQuestionOutlineRegular, IconShieldOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { DisclosureRow, IconQuestionOutlineRegular, IconShieldOutlineRegular, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
+    /** The records part's sub-plugin (recordsPart below): its name and the client services it reads. */
+    const RECORDS_PART = Object.freeze({ name: 'fishball-embed-ui: records', inject: Object.freeze(['slots', 'locale']) })
 
     const CARD_RECORD = Object.freeze({ type: 'plugin:fishball/card-record', version: 1, kind: 'fishball-card-record', node: 'fishball-card-record', permission: 'permission', iconPx: 14, separator: ' · ' })
     /** DSH's conversation-definition vocabulary this definition uses (dsh-client-ui-conversation). */
@@ -89,7 +91,97 @@ globalThis.__ModuleLoader__?.load({
       }
     }
 
-    module.exports = { CARD_RECORD, cardRecordDefinition, makeCardRecordView }
+    /**
+     * The records part (V3 U-SHELL split; U-RECORDS owns this chunk from W4): the ask_fishball row
+     * in the asking session and the card records in any session view, as a client plugin over the
+     * shell's kit (client.shell.js `kit`). Moved unchanged from the V2 connector client; the shell
+     * starts it as a sub-plugin of its row, so a chunk that fails to load loses only this part.
+     * @param kit - the shell's shared state stream, helpers, vocabulary and seats.
+     */
+    function recordsPart(kit) {
+      const { NS, SLOT, CLS } = kit
+
+      /** The ask_fishball row (S37): DSH has no view for this tool, so this entry draws the whole row. */
+      const ASK_ROW = Object.freeze({ tool: 'ask_fishball', phaseStart: 'start', phaseResult: 'result' })
+      /** ask_fishball's answer codes with their own words (keep in step with src/constants.js ASK_RESULT, ASK_ERROR). */
+      const ASK_CODES = new Set(['allowed', 'rejected', 'question', 'unavailable', 'over-capacity', 'no-longer-managed', 'not-user-message', 'too-large', 'expired', 'invalid-request', 'empty', 'cancelled'])
+      // ask_fishball's reason_from for Fishball's own reason (rev11-ui-fixes R3); a row from before the fix has none.
+      const REASON_FROM_FISHBALL = 'fishball'
+      const JSON_INDENT = 2
+
+      /** A labelled line of text from another session or from Fishball (plain text, never markup: §10c framing rule). */
+      const labelled = (label, text) => h('div', null, h('span', { className: CLS.muted }, label + ': '), text)
+
+      /** An ask_fishball call's arguments: a started block keeps them in argsRaw, a settled one on its call (S37). */
+      function askArguments(block) {
+        try {
+          const value = JSON.parse(block?.argsRaw ?? block?.call?.argsRaw ?? '{}')
+          return value !== null && typeof value === 'object' ? value : {}
+        } catch { return {} }
+      }
+
+      /** A settled call's answer: the JSON ask_fishball returned ({ value }), or its text ({ text }), e.g. an aborted call. */
+      function askResult(block) {
+        const content = block?.content ?? block?.result?.content
+        const text = Array.isArray(content) ? content.filter((part) => typeof part?.text === 'string').map((part) => part.text).join('') : ''
+        try {
+          const value = JSON.parse(text)
+          if (value !== null && typeof value === 'object' && typeof value.code === 'string') return { value }
+        } catch { /* not ask_fishball's JSON: shown as text */ }
+        return { text }
+      }
+
+      /**
+       * The running ask_fishball row in the asking session (DESIGN §10e, S37). DSH has no view for this
+       * tool, so this entry is the whole row: what is asked, whether it waits for Fishball or for you,
+       * and the answer once it came. It is read-only (R-UI-12, S4-Q2 decided): the main DSH shows no
+       * Allow once / Reject or other answer control for an ask_fishball call, so V2's card answer
+       * left this row with U-SHELL. U-RECORDS (W4) replaces the row with R-UI-13's inline record.
+       */
+      function makeAskRow(t) {
+        return function FishballAskRow({ callId, phase, block }) {
+          const args = askArguments(block)
+          const replying = typeof args.request_id === 'string'
+          const result = phase === ASK_ROW.phaseResult ? askResult(block) : null
+          const code = result?.value?.code
+          return h('div', { className: CLS.askRow, 'data-fishball-ask-row': callId, 'data-fishball-phase': phase },
+            h('div', { className: CLS.cardHead },
+              h('span', { className: CLS.title }, t(replying ? 'askRowReply' : 'askRowTitle')),
+              typeof args.tool === 'string' ? h('span', { className: CLS.code }, args.tool) : null,
+              // Always "waiting for Fishball": the main DSH has no answer control (R-UI-12), so the row
+              // never asks the user to act; a card the user must settle shows in its own session.
+              phase === ASK_ROW.phaseStart ? h(Tag, { tone: 'info' }, t('askRowWaitingFishball')) : null,
+              code !== undefined ? h(Tag, { tone: 'neutral' }, ASK_CODES.has(code) ? t('askResult.' + code) : code) : null),
+            args.arguments !== undefined ? h('pre', { className: CLS.pre }, JSON.stringify(args.arguments, null, JSON_INDENT)) : null,
+            typeof args.why === 'string' && args.why ? labelled(t('cardReason'), args.why) : null,
+            replying && typeof args.reply === 'string' ? h('div', null, args.reply) : null,
+            // Fishball's reject reason carries the pile card's Fishball label; your own Reject note, and a
+            // row from before reason_from, keep Reason (rev11-ui-fixes R3).
+            typeof result?.value?.reason === 'string' ? labelled(t(result.value.reason_from === REASON_FROM_FISHBALL ? 'cardFishballNote' : 'cardReason'), result.value.reason) : null,
+            typeof result?.value?.question === 'string' ? labelled(t('cardFishballNote'), result.value.question) : null,
+            result?.text ? h('div', { className: CLS.muted }, result.text) : null)
+        }
+      }
+
+      return {
+        name: RECORDS_PART.name,
+        inject: RECORDS_PART.inject,
+        apply(ctx) {
+          const t = ctx.locale.bind(NS)
+          ctx.effect(() => ctx.slots.inject(SLOT.toolview, () => ctx.slots.register({ name: SLOT.toolview, key: ASK_ROW.tool, locale: NS }, makeAskRow(t))), 'fishball: ask_fishball row')
+          // Card records in any DSH session view. The uiConversation service is read on demand, so an
+          // older DSH without it keeps working.
+          // The definition and view are this chunk's own, so they arrive with this part.
+          ctx.inject(['uiConversation'], (scope) => {
+            scope.effect(() => scope.uiConversation.events.register(cardRecordDefinition), 'fishball: card record definition')
+          })
+          const CardRecord = makeCardRecordView({ t, labelled, classes: { muted: CLS.muted, recordBody: CLS.recordBody, pre: CLS.pre } })
+          ctx.effect(() => ctx.slots.inject(SLOT.chatNode, () => ctx.slots.register({ name: SLOT.chatNode, key: CARD_RECORD.node, locale: NS }, CardRecord)), 'fishball: card record row')
+        },
+      }
+    }
+
+    module.exports = { CARD_RECORD, cardRecordDefinition, makeCardRecordView, recordsPart }
     return module.exports
   },
 })

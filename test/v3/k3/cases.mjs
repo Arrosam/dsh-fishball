@@ -279,7 +279,6 @@ export function registerK3Cases(sdk) {
   caseTest(sdk, 'UIM-EP-01', 5, 'every host-only service carries apiVersion: 1, so an older locator is told apart (K)', () => {
     for (const [service, members] of [[SERVICE.child, child()], [SERVICE.handover, handover()], [SERVICE.tokens, tokens()]]) assertApiVersion(members, service)
   })
-  caseTest(sdk, 'UIM-EP-01', 5, 'an older locator (apiVersion ≠ 1) is treated as absent: instance-missing', null, LATER.shell)
   caseTest(sdk, 'HOST-ST-01', 'K', 'status() state names starting and ready (rows 1, 2)', () => {
     const state = host().m.members(member(child(), 'status').returns).get('state')
     assert.ok(state, 'status() has no state')

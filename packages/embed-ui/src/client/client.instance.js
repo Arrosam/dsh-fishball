@@ -265,22 +265,23 @@ window.__ModuleLoader__.load({
      * @param state - the instance state from the shared status poll.
      * @param CLS - every class the card draws (its own and the status line's).
      * @param neutralTone - the status line's Tag tone for an outcome with no tone of its own.
+     * @param paths - `{check, add}`: the model-sync routes this card calls.
      */
-    function ModelSync({ t, state, CLS, neutralTone }) {
+    function ModelSync({ t, state, CLS, neutralTone, paths }) {
       const P = MODEL_SYNC_UI.phase
       const [view, setView] = React.useState({ phase: P.idle })
       const ready = state === MODEL_SYNC_UI.ready
       const reason = (code) => (MODEL_SYNC_UI.reasons.includes(code) ? t('syncReason.' + code) : code)
       const check = async () => {
         setView({ phase: P.checking })
-        const answer = await syncRequest(MODEL_SYNC_UI.checkPath)
+        const answer = await syncRequest(paths.check)
         if (!answer.ok) { setView({ phase: P.idle, error: answer.error.code }); return }
         setView({ phase: P.listed, check: answer.result, ticked: answer.result.missing.map((entry) => entry.id) })
       }
       const add = async () => {
         const { check: listed, ticked } = view
         setView({ ...view, phase: P.adding, error: undefined, notice: undefined })
-        const answer = await syncRequest(MODEL_SYNC_UI.addPath, { checkId: listed.checkId, ids: ticked })
+        const answer = await syncRequest(paths.add, { checkId: listed.checkId, ids: ticked })
         if (answer.ok) {
           const unknown = answer.result.items.some((item) => item.reason === MODEL_SYNC_UI.unknownReason)
           setView({ phase: P.result, check: listed, items: answer.result.items, notice: unknown ? 'sync.unknown' : undefined })
@@ -341,9 +342,10 @@ window.__ModuleLoader__.load({
      * @param shared - the status-line module (client.status.js).
      * @param CLS - every class the card draws (its own and the status line's).
      * @param neutralTone - the status line's neutral Tag tone, for the model block.
+     * @param paths - the model block's routes (see {@link ModelSync}).
      * @returns the row page component.
      */
-    function makeCard(section, t, shared, CLS, neutralTone) {
+    function makeCard(section, t, shared, CLS, neutralTone, paths) {
       const { InstanceStatus, useInstanceStatus } = shared
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
@@ -353,7 +355,7 @@ window.__ModuleLoader__.load({
         const [status, setStatus] = useInstanceStatus()
         if (props.view !== VIEW.page) return t('summary')
         const disabled = !state.writable || state.saving
-        return h(React.Fragment, null, h(InstanceStatus, { t, status, setStatus }), h(ModelSync, { t, state: status?.state, CLS, neutralTone }), h(SettingsForm, {
+        return h(React.Fragment, null, h(InstanceStatus, { t, status, setStatus }), h(ModelSync, { t, state: status?.state, CLS, neutralTone, paths }), h(SettingsForm, {
           labels: formLabels(t),
           state,
           onSave: section.actions.save,
@@ -377,8 +379,11 @@ window.__ModuleLoader__.load({
      * both chunks and starts the result as a sub-plugin of its row).
      * @param shared - the status-line module's `shared` export (client.status.js).
      * @param layout - its `layout` export: the line's classes, rules, tokens and neutral tone.
+     * @param childRoutes - embed-UI's host-half routes (its `services` answer's `routes`) when the
+     *   instance locator `fishballChild` is usable: model sync then goes through them (U-SHELL,
+     *   R-HOST-07). Absent: the instance's own V2 routes, unchanged.
      */
-    exports.instancePlugin = (shared, layout) => ({
+    exports.instancePlugin = (shared, layout, childRoutes) => ({
       name: PLUGIN.id,
       inject: ['slots', 'locale', 'configForms'],
       apply(ctx) {
@@ -393,7 +398,10 @@ window.__ModuleLoader__.load({
         // only where a configuration exists (the Plugins page asks slot keys for it).
         ctx.effect(() => {
           const section = launchSection(ctx.configForms.get(PLUGIN.id))
-          const Card = makeCard(section, t, shared, CLS, layout.neutralTone)
+          const paths = childRoutes === undefined
+            ? { check: MODEL_SYNC_UI.checkPath, add: MODEL_SYNC_UI.addPath }
+            : { check: childRoutes.modelsCheck, add: childRoutes.modelsAdd }
+          const Card = makeCard(section, t, shared, CLS, layout.neutralTone, paths)
           const stopServing = ctx.configForms.whileServed([PLUGIN.id], () =>
             ctx.slots.inject(PLUGIN.slot, () => ctx.slots.register({
               name: PLUGIN.slot,
