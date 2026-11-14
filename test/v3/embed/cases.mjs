@@ -145,18 +145,18 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ R-EMBED (2): the moved client
-  caseTest(sdk, 'R-EMBED', '(2)', 'embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js, client.connector.js, client.instance.js', async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js and U-SHELL's parts client.shell.js, client.marks.js, client.attention.js, client.records.js", async () => {
     needEmbed()
     const files = ownFiles(await unitOf(V3.embed.name))
     for (const file of [EMBED.clientEntry, ...Object.values(EMBED.clientChunks)]) assert.ok(files.includes(file), 'not shipped: ' + file)
   })
-  caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (client.connector.js) carries the V2 contributions' slots and the moved instance card (client.instance.js) a Plugins card slot", async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (U-SHELL's client parts) carries the V2 contributions' slots and the moved instance card (client.shell.js) a Plugins card slot", async () => {
     needEmbed()
     const tokens = await unitTokens(V3.embed)
-    const stringsOf = (file) => new Set(tokens.get(file)?.strings ?? [])
-    const connector = stringsOf(EMBED.clientChunks.connector)
+    const stringsOf = (...files) => new Set(files.flatMap((file) => tokens.get(file)?.strings ?? []))
+    const connector = stringsOf(...Object.values(EMBED.clientChunks))
     assert.deepEqual(EXPECTED_UI.map((e) => e.slot).filter((slot) => !connector.has(slot)), [], 'slots missing from the moved connector UI')
-    const instance = stringsOf(EMBED.clientChunks.instance)
+    const instance = stringsOf(EMBED.cardChunk)
     assert.ok(CARD_SLOTS.some((slot) => instance.has(slot)), 'the moved instance card names no Plugins card slot (' + CARD_SLOTS.join(', ') + ')')
   })
   caseTest(sdk, 'R-EMBED', '(2)', 'the instance exports its status-line module from src/child-settings/ (its one owner)', () => {

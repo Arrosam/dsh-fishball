@@ -5,7 +5,7 @@
  * DSH runs at its own origin) and `referrerPolicy` `no-referrer`. No other feature is granted; in
  * particular no `clipboard-read`.
  *
- * Observation point: the connector UI (packages/embed-ui/src/client/client.connector.js since R-EMBED) is a browser bundle loaded by DSH's client module
+ * Observation point: the connector UI (packages/embed-ui/src/client/client.shell.js since U-SHELL's split) is a browser bundle loaded by DSH's client module
  * loader, so it is not importable. As in body-soul-k2-frame.test.mjs, the source text is cut: the
  * `h('iframe', { … })` call carrying the marker prop is located, the constants its `allow` and
  * `referrerPolicy` props reference are read from it, and the frozen constants object they name is
