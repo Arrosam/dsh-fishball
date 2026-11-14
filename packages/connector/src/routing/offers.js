@@ -1,0 +1,95 @@
+/**
+ * The live-offer ledger (task C-ROUTE; K1c-2; Fishball 2026-11-14). Every offer and `ask` C-ROUTE
+ * commits is recorded with the pair that holds it, its event and whether that pair has acked it,
+ * so a session leaving management can retire exactly its live offers.
+ *
+ * In memory only: an offer is live while the session's call waits, and no call survives a connector
+ * restart (V2 contract 1.2 §5.1: "there are no live offers across a restart"; design §10), so there
+ * is nothing to retire after one.
+ *
+ * Retiring one offer (Fishball's decision, 2026-11-14): K1c-2 says one `retirement` per live offer,
+ * and an agent that already acked the offer still holds it in its context, so it must be told too.
+ * - still pending in the pair's mailbox: `Mailbox.retire(pair, eventId, reason)`, which replaces it;
+ * - already acked: a fresh `retirement` draft naming it, committed to the same pair through the
+ *   normal commit path (the router's follow-up rule). The ledger knows which, from `markAcked`.
+ * The same rule serves `session_release` and Take back (`released`) and a revocation (`revoked`).
+ * An `ask` is not retired when management ends: it is not an offer for revocation (K1
+ * OFFER_TYPES), and its asker keeps waiting for the answer of the pair that got it.
+ */
+import { EVENT_TYPE, OFFER_TYPES } from '../../mcp-schema/index.js'
+
+/**
+ * @param {object} deps
+ * @param deps.mailbox - the K1 `Mailbox` port
+ * @param {(subject: object, draft: object) => Promise<object>} deps.produce - the one commit path (index.js)
+ * @returns the ledger
+ */
+export function createOfferLedger({ mailbox, produce }) {
+  /** offerId → {type, sessionId, principalKey, eventId, acked, answer?}; `answer` resolves an ask's waiting call. */
+  const live = new Map()
+
+  async function retireOne(offerId, record, reason) {
+    live.delete(offerId)
+    if (!record.acked) return mailbox.retire(record.principalKey, record.eventId, reason)
+    await produce(
+      { type: EVENT_TYPE.retirement, sessionId: record.sessionId, followsPrincipal: record.principalKey },
+      { sourceSessionId: record.sessionId, correlationId: offerId, payload: { retiredEventId: record.eventId, reason } },
+    )
+  }
+
+  return Object.freeze({
+    has: (offerId) => live.has(offerId),
+
+    /** Records an offer or ask committed as `eventId` to `principalKey`. */
+    record(offerId, entry) {
+      live.set(offerId, { ...entry, acked: false })
+    },
+
+    /** The pair acked these receipts: its offers among them are acked from now on. */
+    markAcked(principalKey, receipts) {
+      const eventIds = new Set((Array.isArray(receipts) ? receipts : []).map((receipt) => receipt?.eventId))
+      for (const record of live.values()) if (record.principalKey === principalKey && eventIds.has(record.eventId)) record.acked = true
+    },
+
+    /** `{sessionId, principalKey}` of a live offer or ask, or undefined. */
+    holderOf(offerId) {
+      const record = live.get(offerId)
+      return record === undefined ? undefined : Object.freeze({ sessionId: record.sessionId, principalKey: record.principalKey })
+    },
+
+    /** An offer or ask was answered: it is no longer live; a waiting ask gets `result`. */
+    settle(offerId, result) {
+      const record = live.get(offerId)
+      if (record === undefined) return false
+      live.delete(offerId)
+      record.answer?.(result)
+      return true
+    },
+
+    /**
+     * The session's call ended before an answer: the offer (or ask) is retired from its pair by the
+     * same rule as above, and a waiting ask gets `result`.
+     * @returns whether it was live
+     */
+    async withdraw(offerId, reason, result) {
+      const record = live.get(offerId)
+      if (record === undefined) return false
+      record.answer?.(result)
+      await retireOne(offerId, record, reason)
+      return true
+    },
+
+    /**
+     * Retires every live offer of `sessionId` held by `principalKey` (K1c-2). Every offer is tried;
+     * the first failure is rethrown after the rest, so the caller can log it.
+     */
+    async retireSession(sessionId, principalKey, reason) {
+      let failure
+      const offers = [...live].filter(([, record]) => record.sessionId === sessionId && record.principalKey === principalKey && OFFER_TYPES.includes(record.type))
+      for (const [offerId, record] of offers) {
+        try { await retireOne(offerId, record, reason) } catch (error) { failure ??= error }
+      }
+      if (failure !== undefined) throw failure
+    },
+  })
+}
