@@ -650,13 +650,19 @@ function equivalencePartitions(sdk) {
     w.presence.disconnect(key)
     await until(() => online() === false, 'offline after disconnect')
   })
-  worldRow(sdk, 'ROUTE-EP-01', '7', 'order = the native settings list; a rename, a connection change or a pairing never moves an entry', async (w) => {
+  // Key of an entry (decided by Fishball, 2026-11-14, reconciling K1 mcp-schema PrincipalKey with K3
+  // handOver(sessionId, principalKey)): while unpaired an entry is listed under its opaque EntryKey;
+  // once paired, under its PrincipalKey, the same key as managed().principal.key. K3's "stable for
+  // the life of the token entry" holds from pairing on, so Q's key changes at the bind; its place
+  // in the order does not.
+  worldRow(sdk, 'ROUTE-EP-01', '7', 'order = the native settings list; a rename, a connection change or a pairing never moves an entry (Q: EntryKey until paired, then its PrincipalKey)', async (w) => {
     const keys = [w.principal(ID.p), w.principal(ID.q, { paired: false }), w.principal(ID.x)]
     const order = () => w.handover.principals().map((x) => x.key)
     assert.deepEqual(order(), keys)
     await w.pairs.setName(keys[2], NAME.renamed)
     w.presence.connect(keys[0])
-    w.pairs.bind(ID.q)
+    // bind returns Q's PrincipalKey, the key w.principal(Q) returns for a paired entry.
+    keys[1] = w.pairs.bind(ID.q)
     await quiet()
     assert.deepEqual(order(), keys)
   })
