@@ -16,9 +16,13 @@
  * definition and throws the same `ToolContributionError {code}` as `register` on a refusal.
  */
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
 import test from 'node:test'
+import { pathToFileURL } from 'node:url'
+import { REPO } from '../../support/constants.mjs'
 import {
-  API, CALL_CODE, DESCRIPTION_MAX_BYTES, EMIT_CODE, EURO, EVENT_LIMITS, FIXTURE, GRAMMAR, LATER, LIMIT_KEYS,
+  API, CALL_CODE, DESCRIPTION_MAX_BYTES, EMIT_CODE, EURO, EVENT_LIMITS, EXTERNAL_NAME_AMEND, FIXTURE, GRAMMAR, LATER, LIMIT_KEYS,
   MCP_TOOL_NAME, MEANING, MESSAGE_MAX_CHARS, META_KEY, NON_HINT_ANNOTATION, PROTOCOL_VERSION, REGISTER_CODE, SERVICE, SHORT_NAMESPACE,
 } from './constants.mjs'
 import {
@@ -277,6 +281,46 @@ export function registerK2Cases(sdk) {
     ['A1', 'emits that keep failing validation count toward the same quarantine', LATER.quarantine],
     ['E1', 'no connector setting lifts the quarantine; no per-contributor rows in the settings form', LATER.settings],
   ]) caseTest(sdk, 'EXT-UC-03', row, title, null, owner)
+}
+
+/**
+ * K2-AMEND-1 (DECIDED #W3-2, Equivalence Partitioning: the frozen value, its relation to the
+ * separator, the contract texts, core's vendored copy, and public names with 0, 1 and n dots).
+ */
+export function registerExternalNameCases(sdk) {
+  const A = EXTERNAL_NAME_AMEND
+  const rule = (row, title, fn) => caseTest(sdk, A.id, row, title, fn)
+  const text = (file) => fs.readFileSync(path.join(REPO, file), 'utf8')
+  const external = (mod, publicName) => publicName.split(mod[A.name].replaced).join(mod[A.name].replacement)
+  rule(1, `${A.name} is exported, frozen, and is exactly {replaced: '.', replacement: '__'}`, (mod) => {
+    assert.equal(typeof mod[A.name], 'object', `fishball-connector/tools exports no ${A.name}`)
+    assert.ok(Object.isFrozen(mod[A.name]), `${A.name} is not frozen`)
+    assert.deepEqual({ ...mod[A.name] }, A.value)
+  })
+  rule(2, `${A.name}.replaced is the same character as NAMESPACE.separator`, (mod) => {
+    assert.equal(mod[A.name]?.replaced, mod.NAMESPACE.separator)
+  })
+  rule(3, `index.d.ts declares ${A.name} and the README lists it among the exported names`, () => {
+    assert.match(text(A.declaration), A.declares)
+    const readme = text(A.readme)
+    assert.ok(readme.includes(A.readmeExports), 'the README has no exported-names section')
+    assert.ok(readme.slice(readme.indexOf(A.readmeExports)).includes(A.name), `the README's exported names do not list ${A.name}`)
+  })
+  rule(4, `core's vendored tools constants export the same frozen ${A.name}`, async (mod) => {
+    const vendored = (await import(pathToFileURL(path.join(REPO, A.vendored)).href))[A.name]
+    assert.equal(typeof vendored, 'object', `core's vendored tools constants export no ${A.name}`)
+    assert.ok(Object.isFrozen(vendored), `the vendored ${A.name} is not frozen`)
+    assert.deepEqual({ ...vendored }, { ...mod[A.name] })
+  })
+  rule(5, 'a public name with 0, 1 or n dots in its local name maps to a model tool name ([A-Za-z0-9_-]) with each `.` replaced', (mod) => {
+    for (const local of A.locals) {
+      const publicName = mod.publicNameOf(SHORT_NAMESPACE, local)
+      const mapped = external(mod, publicName)
+      assert.match(mapped, A.modelName, `${publicName} → ${mapped}`)
+      const dots = publicName.split(mod.NAMESPACE.separator).length - 1
+      assert.equal(mapped.length, publicName.length + dots * (A.value.replacement.length - A.value.replaced.length), `${publicName}: one extra character per dot`)
+    }
+  })
 }
 
 /** EXT-EP-01 row 9 / EXT-BVA-04 row 3: a finite ceiling exists, is frozen as data, and ceiling + 1 is refused. */

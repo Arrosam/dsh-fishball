@@ -88,6 +88,26 @@ export const AMEND = Object.freeze({
   justAfterMs: 1,
 })
 
+/**
+ * K1 amendment at the W3 merge (DECIDED #W3-1): `Mailbox.retire` resolves `RetireOutcome`
+ * `{retired: boolean}` (index.d.ts, types only, so its two values are written out here). `true`:
+ * a pending event of that pair was replaced by a `retirement`; `false`: nothing was pending to
+ * replace (acked, already retired, unknown, another pair's), nothing committed or changed.
+ * C-ROUTE's cases read these too (the same K1 type).
+ */
+export const RETIRE_OUTCOME = Object.freeze({
+  replaced: Object.freeze({ retired: true }),
+  nothing: Object.freeze({ retired: false }),
+})
+
+/** Fixture data of the RETIRE_OUTCOME rows (amend-cases.mjs K1-AMEND-9): not product values. */
+export const RETIRE_FIXTURE = Object.freeze({
+  /** An event id no commit returned. */
+  unknownEventId: 'fbtest-no-such-event',
+  /** A principal key that is no K1 `PrincipalKey` (a string): misuse, which throws. */
+  badPrincipalKey: 42,
+})
+
 /** Harness timing only. */
 export const WAIT = Object.freeze({ testMs: 60000 })
 
