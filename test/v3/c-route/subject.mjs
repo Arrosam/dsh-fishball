@@ -10,9 +10,10 @@
  *     ctx, helpers   a cordis context with DSH's storage domain, and the SDK's dsh-storage-domain
  *                    helpers (ManagedState and the no-recipient queue are durable, K1c-1, K1c-3)
  *     ports = {
- *       mailbox    K1 `Mailbox` (C-MAILBOX's, real here) plus `onAcked(listener(principalKey)) →
- *                  dispose`, fired after each successful ack: the room-freed signal that moves
- *                  held messages in (Fishball 2026-11-14 #3; fakes.mjs mailboxPort)
+ *       mailbox    K1 `Mailbox` (C-MAILBOX's, real here) plus `onAcked(listener(principalKey,
+ *                  receipts)) → dispose`, fired after each successful ack with the acked receipts
+ *                  (the `inbox_ack` argument): the room-freed signal that moves held messages in
+ *                  (Fishball 2026-11-14 #3; fakes.mjs mailboxPort)
  *       pairs      K1 `PairStore` (list, pairOf, byPrincipal, onChange; fake)
  *       tokens     K1 `TokenRegistry` (get, list in native-settings order, onRevoked; fake). An
  *                  entry's enabled state is `get(entryKey).enabled`; `onRevoked` ends the
@@ -35,9 +36,13 @@
  *     provide(ctx)                provides `handover` as `fishballConnectorHandover` on `ctx`
  *     messageFishball(sessionId, {text, images}) → Promise<{ok: true} | {ok: false, code: 'queue-full'}>
  *                                 the `message_fishball` tool's routing (R-ROUTE-03, K1c-3)
- *     askFishball(sessionId, {question}) → Promise
- *                                 `ask_fishball`: resolves `{ok: false, code: 'unavailable'}` at
- *                                 once with no connected recipient; else commits one `ask` offer
+ *     askFishball(sessionId, descriptor) → Promise
+ *                                 `ask_fishball`, `descriptor` a full K1 ask descriptor
+ *                                 (EVENT_PAYLOAD_SHAPES.ask: approvalId, offerId, kind, prompt, …).
+ *                                 The cases pass `{question}`; the world's `routing` builds the
+ *                                 descriptor from it (askDescriptor below). Resolves
+ *                                 `{ok: false, code: 'unavailable'}` at once with no connected
+ *                                 recipient; else commits one `ask` offer
  *                                 and stays pending until it is answered (C-TOOLS answers it)
  *     offer(sessionId, type, descriptor) → Promise<{recipient: PrincipalKey, eventId} | NoRecipient>
  *                                 the approval hook: a `permission`, `question` or `plan-review`
@@ -57,11 +62,12 @@ import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { APPROVAL_KIND } from '../../../packages/connector/contract/contract.js'
 import { INSTANCE } from '../../support/constants.mjs'
 import { importInstance, importSdk } from '../../private-skills/support/sdk.mjs'
 import { DSH } from '../c-pair/constants.mjs'
 import { resolveRuntimePackages, storageContext } from '../c-pair/subject.mjs'
-import { FIXTURE, HANDOVER, MANAGED_STATE_METHODS, SUBJECT } from './constants.mjs'
+import { FIXTURE, HANDOVER, MANAGED_STATE_METHODS, OFFER_ID, SUBJECT, formatOfferId } from './constants.mjs'
 import { FakePairs, FakePresence, FakeSessions, FakeSettings, FakeTokens, fakeClock, mailboxPort, recordingLogger } from './fakes.mjs'
 
 /** `entry` bound to `sdk`, with `names` required as functions; `owner` names the task for the message. */
@@ -77,6 +83,40 @@ async function moduleOf(sdk, entry, names, owner) {
 function recordingHints() {
   const calls = []
   return { calls, resourceUpdated: (...args) => { calls.push(args) } }
+}
+
+/**
+ * The driver's own fixture for ask descriptors. The approval ids get their own prefix so they never
+ * collide with the offer descriptors cases.mjs numbers from FIXTURE.offerPrefix.
+ */
+const ASK_FIXTURE = Object.freeze({ approvalPrefix: FIXTURE.offerPrefix + 'ask-' })
+let askCounter = 0
+/**
+ * A K1 ask descriptor (shapes.js `descriptor`, timer-free) built from the cases' `{question}`: an
+ * `ask` is an approval-kind request with no `questions`, so the question is its prompt, title and
+ * reason (as cases.mjs fills its offer descriptors), stamped by the world's clock.
+ */
+function askDescriptor({ question }, now) {
+  const approvalId = ASK_FIXTURE.approvalPrefix + ++askCounter
+  return {
+    approvalId, offerId: formatOfferId(approvalId, OFFER_ID.firstRevision), kind: APPROVAL_KIND.approval, prompt: question,
+    choices: [], title: question, at: now(), toolName: FIXTURE.toolName, callId: null, reason: question, quotes: [],
+  }
+}
+/**
+ * `routing` as the cases drive it: every member is the module's own (methods bound to it, so
+ * private state keeps working), except `askFishball`, which takes the cases' `{question}` and
+ * passes the module a full ask descriptor.
+ */
+function routingDriver(routing, now) {
+  const askFishball = (sessionId, ask) => routing.askFishball(sessionId, askDescriptor(ask, now))
+  return new Proxy(routing, {
+    get(target, prop) {
+      if (prop === 'askFishball') return askFishball
+      const value = Reflect.get(target, prop, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
 }
 
 /**
@@ -107,7 +147,7 @@ export async function routeWorld(t, sdk, { hints = recordingHints() } = {}) {
     assert.equal(typeof routing.router.recipientFor, 'function', 'router has no recipientFor() (K1 Router)')
     for (const m of MANAGED_STATE_METHODS) assert.equal(typeof routing.managed[m], 'function', `managed has no ${m}() (K1c ManagedState)`)
     assert.equal(routing.handover.apiVersion, HANDOVER.apiVersion, 'handover.apiVersion is not 1 (K3)')
-    return { ctx, tables, real, mailbox, routing }
+    return { ctx, tables, real, mailbox, routing, driver: routingDriver(routing, ports.clock.now) }
   }
   const stop = async () => {
     if (open === undefined) return
@@ -129,7 +169,8 @@ export async function routeWorld(t, sdk, { hints = recordingHints() } = {}) {
   const world = {
     ...ports,
     hints,
-    get routing() { return open.routing },
+    /** The routing object as the cases drive it (routingDriver: `askFishball` takes `{question}`). */
+    get routing() { return open.driver },
     get router() { return open.routing.router },
     get managed() { return open.routing.managed },
     get handover() { return open.routing.handover },

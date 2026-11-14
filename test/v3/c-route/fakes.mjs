@@ -119,8 +119,10 @@ export class FakeSessions {
 
 /**
  * The mailbox port: a real K1 `Mailbox` (C-MAILBOX's) plus the
- * room-freed signal `onAcked(listener(principalKey))` (Fishball 2026-11-14 #3), fired after each
- * successful `ack`. The dev session aligns the real port; this wrapper is the agreed shape.
+ * room-freed signal `onAcked(listener(principalKey, receipts))` (Fishball 2026-11-14 #3), fired after
+ * each successful `ack` with the receipts that `ack` (the `inbox_ack` argument) acknowledged, so a
+ * listener knows which events left the mailbox. The dev session aligns the real port; this wrapper
+ * is the agreed shape.
  */
 export function mailboxPort(real) {
   const acked = new Set()
@@ -129,7 +131,7 @@ export function mailboxPort(real) {
     poll: (...a) => real.poll(...a),
     async ack(principalKey, receipts) {
       const result = await real.ack(principalKey, receipts)
-      if (result?.ok) fire(acked, principalKey)
+      if (result?.ok) fire(acked, principalKey, receipts)
       return result
     },
     summary: (...a) => real.summary(...a),
