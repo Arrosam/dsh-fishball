@@ -2,23 +2,27 @@
  * The one place that binds the C-OAUTH cases to C-OAUTH's module (`packages/connector/src/mcp/oauth/`).
  *
  * K1 freezes what the module answers (`OAuthTokenStore`, `FailureLimiter`, `BearerVerifier`,
- * `GrantRegistry`, index.d.ts) but no factory. This seam assumes four, and only here, so a case
- * never changes when the real names land (the dev session adapts this file only). Each is the one
- * function export whose name matches SUBJECT.factories:
+ * `GrantRegistry`, index.d.ts) but no factory. This seam binds the module's own, and only here, so
+ * a case never changes with the names. Each is the one function export whose name matches
+ * BINDING.roles (SUBJECT.factories plus the revocation follower); where several match, the one
+ * BINDING.prefer names:
  *
- *   <open|create>…TokenStore(ctx, {defineDomain, domainTable}, {logger})
- *       → OAuthTokenStore | {store, close} (or a promise of either); `ctx` carries DSH's
- *         `storageDomain`, where `putRefresh` persists (K1a: durable), as C-PAIR's pair store.
- *   <open|create>…FailureLimiter({}) → FailureLimiter (in memory; the clock is each call's `now`).
- *   <open|create>…BearerVerifier({store, tokens, pairs}) → BearerVerifier
- *       tokens: C-TOKENS' TokenRegistry (faked); pairs: C-PAIR's PairStore (faked).
- *   <open|create>…TokenEndpoint({gate, facts, store, limiter, tokens, pairs, logger})
- *       → {handle(req, res), register(handler)}: `handle` is the raw Node handler DSH's
- *         `webServer.register` takes (design §3.1), serving the token endpoint and both metadata
- *         documents (REQUEST_GATE.routes.token); `register` is K1b's GrantRegistry. `gate` is
- *         C-HTTP's RequestGate (faked), `facts` the GateListenerFacts with the injected clock.
+ *   openOAuthTokenStore(ctx, {defineDomain, domainTable}) → Promise<{store, close}>: the durable
+ *       store over DSH's `storageDomain` (`putRefresh` persists, K1a), as C-PAIR's pair store.
+ *       The module also exports `createOAuthTokenStore(tables)` over bare KvTables; the world
+ *       restarts over real files, so it takes `open…`.
+ *   followRevocations(tokenRegistry, store, {logger}) → unsubscribe: C-TOKENS' revocations applied
+ *       to the store, as C-WIRE mounts it once per store.
+ *   createFailureLimiter() → FailureLimiter (in memory; the clock is each call's `now`).
+ *   createBearerVerifier({tokenStore, tokenRegistry, pairStore}) → BearerVerifier
+ *       tokenRegistry: C-TOKENS' TokenRegistry (faked); pairStore: C-PAIR's PairStore (faked).
+ *   createTokenEndpoint({gate, failureLimiter, tokenStore, tokenRegistry, pairStore, secure,
+ *       approvalOrigin, now, logger}) → {register, routes, …}: `routes` are the exact DSH WebRoutes
+ *       for `webServer.register` (design §3.1), serving the token endpoint and both metadata
+ *       documents (REQUEST_GATE.routes.token); `register` is K1b's GrantRegistry. `gate` is C-HTTP's
+ *       RequestGate (faked); `secure`, `now` and the approval port come from the GateListenerFacts.
  *
- * The world serves `handle` on 127.0.0.1 with a real Node HTTP server, so a request carries any
+ * The world serves `routes` on 127.0.0.1 as DSH's webServer does (exact path, else 404) with a real Node HTTP server, so a request carries any
  * `Host` the case names and the stock `ClientCredentialsProvider` can run against it. The store
  * runs in a real DSH storage domain of the SDK under test in a throwaway root, so a restart is a
  * close and reopen of the same files.
@@ -40,14 +44,27 @@ import { FakeGate, FakePairStore, FakeTokenRegistry, fakeClock, recordingLogger 
 
 const LISTEN_HOST = HOSTS.loopbackNames[1]
 
+/**
+ * The export each role binds to. The store pattern matches both `createOAuthTokenStore` (bare
+ * tables) and `openOAuthTokenStore` (a storage domain on a ctx); the world needs the durable one.
+ */
+const BINDING = Object.freeze({
+  roles: Object.freeze({ ...SUBJECT.factories, revocations: /^follow\w*Revocations$/i }),
+  prefer: Object.freeze({ store: /^open/i }),
+})
+/** What DSH's webServer answers for a path no route serves (dsh-host-webserver, no fallback). */
+const NO_ROUTE = Object.freeze({ status: 404, urlBase: 'http://x' })
+
 /** C-OAUTH's four factories bound to `sdk` (its `@deepseek-ai/*` imports resolve to that SDK). */
 async function factories(sdk) {
   assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-OAUTH "Owns" packages/connector/src/mcp/oauth/)`)
   resolveRuntimePackages()
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
-  return Object.fromEntries(Object.entries(SUBJECT.factories).map(([role, pattern]) => {
-    const names = Object.keys(mod).filter((n) => typeof mod[n] === 'function' && pattern.test(n))
-    assert.equal(names.length, 1, `the C-OAUTH entry should export exactly one ${role} factory (${pattern}); found ${JSON.stringify(names)}`)
+  return Object.fromEntries(Object.entries(BINDING.roles).map(([role, pattern]) => {
+    const matching = Object.keys(mod).filter((n) => typeof mod[n] === 'function' && pattern.test(n))
+    const prefer = BINDING.prefer[role]
+    const names = matching.length > 1 && prefer !== undefined ? matching.filter((n) => prefer.test(n)) : matching
+    assert.equal(names.length, 1, `the C-OAUTH entry should export exactly one ${role} factory (${pattern}${prefer === undefined ? '' : `, preferring ${prefer}`}); found ${JSON.stringify(matching)}`)
     return [role, mod[names[0]]]
   }))
 }
@@ -73,7 +90,7 @@ async function tempRoot(t, beforeRemove) {
  * A token store over a fresh DSH storage root: `{store, reopen()}`. `reopen()` closes it and opens
  * the same files again (a connector restart); `store` then names the new one.
  */
-export async function storeWorld(t, sdk, logger = recordingLogger()) {
+export async function storeWorld(t, sdk) {
   const made = await factories(sdk)
   let open
   const stop = async () => {
@@ -86,7 +103,7 @@ export async function storeWorld(t, sdk, logger = recordingLogger()) {
   const root = await tempRoot(t, stop)
   const start = async () => {
     const { ctx, helpers } = await storageContext(sdk, root)
-    const opened = await made.store(ctx, helpers, { logger })
+    const opened = await made.store(ctx, helpers)
     const store = opened?.store ?? opened
     for (const member of ['putAccess', 'getAccess', 'putCode', 'takeCode', 'putRefresh', 'getRefresh', 'revokeChain', 'revokeEntry', 'chainsOf']) {
       assert.equal(typeof store?.[member], 'function', `the token store has no ${member}()`)
@@ -99,7 +116,7 @@ export async function storeWorld(t, sdk, logger = recordingLogger()) {
 
 /** A fresh FailureLimiter of `sdk`. */
 export async function limiterOf(sdk) {
-  const limiter = (await factories(sdk)).limiter({})
+  const limiter = (await factories(sdk)).limiter()
   for (const member of ['check', 'recordFailure']) assert.equal(typeof limiter?.[member], 'function', `the failure limiter has no ${member}()`)
   return limiter
 }
@@ -139,23 +156,43 @@ export async function oauthWorld(t, sdk) {
     host: LISTEN_HOST, secure: false, trustedHosts: Object.freeze([FIXTURE.host.trusted]), approvalPort: () => APPROVAL_LISTENER.defaultPort, now: clock.now,
   })
   const gate = new FakeGate(facts)
-  const stores = await storeWorld(t, sdk, logger)
+  const stores = await storeWorld(t, sdk)
   const registered = []
   const remoteAddresses = []
+  /**
+   * The approval listener's origin for a request with checked `origin` (design §5.5a item 8, as
+   * C-WIRE supplies it): a loopback host on the approval port, any other host unchanged.
+   */
+  const approvalOrigin = (req, origin) => {
+    const { protocol, hostname } = new URL(origin)
+    return HOSTS.loopbackNames.includes(hostname) ? `${protocol}//${hostname}:${facts.approvalPort()}` : origin
+  }
   let parts
+  let unfollow
   const build = () => {
-    const limiter = stores.made.limiter({})
-    const verifier = stores.made.verifier({ store: stores.store, tokens, pairs })
-    const endpoint = stores.made.endpoint({ gate, facts, store: stores.store, limiter, tokens, pairs, logger })
+    unfollow?.()
+    const tokenStore = stores.store
+    unfollow = stores.made.revocations(tokens, tokenStore, { logger })
+    const limiter = stores.made.limiter()
+    const verifier = stores.made.verifier({ tokenStore, tokenRegistry: tokens, pairStore: pairs })
+    const endpoint = stores.made.endpoint({
+      gate, failureLimiter: limiter, tokenStore, tokenRegistry: tokens, pairStore: pairs, secure: facts.secure, approvalOrigin, now: facts.now, logger,
+    })
     assert.equal(typeof verifier?.verify, 'function', 'the bearer verifier has no verify()')
-    for (const member of ['handle', 'register']) assert.equal(typeof endpoint?.[member], 'function', `the token endpoint has no ${member}()`)
+    assert.equal(typeof endpoint?.register, 'function', 'the token endpoint has no register()')
+    assert.ok(Array.isArray(endpoint?.routes), 'the token endpoint has no routes')
     for (const grant of registered) endpoint.register(grant)
     parts = { limiter, verifier, endpoint }
   }
   build()
+  t.after(() => unfollow?.())
   const server = http.createServer((req, res) => {
     remoteAddresses.push(req.socket.remoteAddress)
-    parts.endpoint.handle(req, res)
+    const pathname = new URL(req.url ?? '/', NO_ROUTE.urlBase).pathname
+    const route = parts.endpoint.routes.find((r) => r.path === pathname)
+    if (route !== undefined) return route.handler(req, res)
+    res.writeHead(NO_ROUTE.status)
+    res.end()
   })
   await new Promise((resolve) => server.listen(0, LISTEN_HOST, resolve))
   t.after(() => new Promise((resolve) => { server.closeAllConnections(); server.close(resolve) }))
