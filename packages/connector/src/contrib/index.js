@@ -68,6 +68,7 @@ export function createContributions({ mailbox, router, sessionExists, onToolsCha
   return Object.freeze({
     service,
     provide(ctx) {
+      registry.bindHost(ctx.fiber)
       return ctx.effect(() => {
         const dispose = ctx.provide(TOOLS_API.service, service)
         return () => {

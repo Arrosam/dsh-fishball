@@ -80,6 +80,13 @@ export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
   /** Activations this registry is attached to. */
   const attached = new Set()
   let closed = false
+  /**
+   * The connector row's fiber, once `provide` bound the registry to it. Like a contributor's, it
+   * turns UNLOADING before its effects run (S5 L2), so a call in that window is already
+   * `registry-closed` (EXT-EP-01 #13), not answered as if the connector were still up.
+   */
+  let hostFiber
+  const isClosed = () => closed || (hostFiber !== undefined && !isLive(hostFiber))
   let changeScheduled
   /** Contributors already refused because another package holds their namespace (TQ-13: logged once). */
   const loggedNamespaceClash = new Set()
@@ -93,7 +100,7 @@ export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
     })
   }
 
-  const isVisible = (reg) => !closed && !reg.disposed && isLive(reg.owner) && isLive(reg.act.root) && isCurrent(reg.act) && !reg.act.quarantined
+  const isVisible = (reg) => !isClosed() && !reg.disposed && isLive(reg.owner) && isLive(reg.act.root) && isCurrent(reg.act) && !reg.act.quarantined
 
   /** Abort the running calls a predicate selects, with `reason`. */
   function abortCalls(select, reason) {
@@ -122,7 +129,7 @@ export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
    * @returns {{who: object} | {code: string, who?: object, logged?: boolean}}
    */
   function admit(ctx) {
-    if (closed) return { code: REGISTER_REFUSAL.registryClosed }
+    if (isClosed()) return { code: REGISTER_REFUSAL.registryClosed }
     const who = contributorOf(ctx)
     if (who === undefined) return { code: REGISTER_REFUSAL.contributorUnidentified }
     const holder = claims.get(who.namespace)
@@ -275,7 +282,8 @@ export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
       retireCommitted(act, takeCommitted(act))
       if (wasListed) changed()
     },
-    get closed() { return closed },
+    /** Bind the registry's lifetime to the connector row's fiber (see `hostFiber`). */
+    bindHost(fiber) { hostFiber = fiber },
     /**
      * Connector unload (EXT-ST-01 #10): later calls through a saved handle get `registry-closed`,
      * every running call is withdrawn, and the activations stay with their contributors.
