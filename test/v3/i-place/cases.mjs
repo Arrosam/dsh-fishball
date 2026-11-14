@@ -27,6 +27,7 @@
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { after, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -42,7 +43,7 @@ import {
   BUDGET, CHILD, CORE_COPY, DSH_ROW, GUARDS, INTEGRATION, LATER, NEVER_GUARDED, OVERLAY, PANEL, POLICY, PROBE, RELAYED, REPORT, SET,
 } from './constants.mjs'
 import {
-  blockedBy, childHome, childProfile, launchOverlayExport, launchOverlays, placedCopy, placementFile, placementMode, placementRecord, profileBundles,
+  blockedBy, childHome, composeChild, childProfile, launchOverlayExport, launchOverlays, placedCopy, placementFile, placementMode, placementRecord, profileBundles,
   profileManifest, removePlaced, setProfileBundles,
 } from './subject.mjs'
 
@@ -264,11 +265,23 @@ export function registerIPlaceCases(sdk) {
     const disabled = ops.filter((op) => op?.disabled === true).map((op) => op.id)
     assert.deepEqual(disabled, [OVERLAY.hmr])
   })
+  // Isolation (Fishball 2026-11-15; row 6 as amended in 57ae8e96): a shipped preset row nests the
+  // isolated plugins, so it may carry a config-only op; an op that sets or clears `disabled` on it
+  // stays a guard op and is forbidden, and the composed child keeps it off.
   caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay touches only the allowed rows: hmr, origin and port, admission, target, and the isolation rows', async (t) => {
     const ops = await overlayOps(sdk, scratch(t, 'fbtest-iplace-ovl-'), [])
-    const guardOrPolicy = [...GUARDS.rows, ...GUARDS.shippedPresets, DSH_ROW.sandbox, DSH_ROW.approval, DSH_ROW.permission, DSH_ROW.agentPresetRegistry]
+    const guardOrPolicy = [...GUARDS.rows, DSH_ROW.sandbox, DSH_ROW.approval, DSH_ROW.permission, DSH_ROW.agentPresetRegistry]
     assert.deepEqual(rowsTouched(ops).filter((id) => guardOrPolicy.includes(id)), [], 'guard or policy rows in the overlay')
+    const presetOps = ops.filter((op) => GUARDS.shippedPresets.includes(op?.id))
+    assert.deepEqual(presetOps.filter((op) => Object.hasOwn(op, 'disabled')).map((op) => op.id), [], 'an overlay op sets or clears disabled on a shipped preset')
+    assert.deepEqual(presetOps.filter((op) => Object.keys(op).some((k) => !['id', 'config'].includes(k))).map((op) => op.id), [], 'a shipped preset op is not config only')
     assert.ok(ops.some((op) => op?.id === OVERLAY.hmr && op.disabled === true), 'hmr off')
+  })
+  caseTest(sdk, 'HOST-UC-06', 'post', 'the composed child keeps every shipped preset disabled: true, the isolation config ops included', async (t) => {
+    const { entries } = await composeChild(path.join(scratch(t, 'fbtest-iplace-ovl-'), 'main'))
+    const presets = shippedPresets(entries)
+    assert.ok(presets.length > 0, 'precondition: the composed child has the shipped preset rows')
+    for (const row of presets) assert.equal(row.disabled, true, 'shipped preset on in the composed child: ' + row.id)
   })
   caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay carries no token (only the non-secret entry key)', null, LATER.host)
   integrationCase(sdk, 'HOST-UC-06', 'post', 'a real start: the written launch.patch.yml holds the same shape (the two runtime rows, nothing disabled but hmr) and is removed when the child stops', async () => {
@@ -288,16 +301,33 @@ export function registerIPlaceCases(sdk) {
     assert.ok(rows.length > 0, 'precondition: the SDK has agent-instructions rows')
     for (const row of rows) assert.deepEqual(row.config?.[OVERLAY.isolation.instructions.field], [...OVERLAY.isolation.instructions.value], 'project instructions not read: ' + show(row.config))
   })
-  caseTest(sdk, 'HOST-EP-03', '6 isolation', "the overlay limits skill-filesystem to the child's home with includeDefaultRoots false wherever it is composed", async (t) => {
-    const base = scratch(t, 'fbtest-iplace-iso-')
-    const ops = await overlayOps(sdk, base, [])
-    const effective = await composedChild(sdk, { overlay: ops })
+  // The isolation rule (Fishball 2026-11-15, isolation, final wording): the child reads nothing of
+  // the user's own skills or instructions. dshHome is composedProfile's `paths.home`
+  // (<mainHome>/fishball/runtime/dsh-home); agentsHome and every customSkillDirs entry sit under the
+  // child runtime root <mainHome>/fishball/runtime/, never the main home itself, never outside the
+  // runtime root, never the user's real ~/.agents; includeDefaultRoots is false.
+  caseTest(sdk, 'HOST-EP-03', '6 isolation', "the overlay limits skill-filesystem to the child runtime with includeDefaultRoots false wherever it is composed", async (t) => {
+    const mainHome = path.join(scratch(t, 'fbtest-iplace-iso-'), 'main')
+    const { paths, overlay } = await composeChild(mainHome)
+    const effective = await composedChild(sdk, { overlay })
     const rows = findRows(effective, OVERLAY.isolation.skills.id)
     assert.ok(rows.length > 0, 'precondition: the SDK has skill-filesystem rows')
-    const isolatedHome = overlayArgs(base).paths.home
+    const main = fs.realpathSync(mainHome)
+    const runtimeRoot = path.join(main, ...OVERLAY.isolation.runtimeRoot)
+    const userAgents = path.join(os.homedir(), OVERLAY.isolation.userAgentsDir)
+    /** Strictly below `root` (the root itself does not count). */
+    const below = (dir, root) => { const rel = path.relative(root, dir); return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel) }
+    const within = (dir, root) => dir === root || below(dir, root)
     for (const row of rows) {
-      assert.equal(row.config?.[OVERLAY.isolation.skills.field], OVERLAY.isolation.skills.value, 'default roots read: ' + show(row.config))
-      assert.equal(row.config?.[OVERLAY.isolation.skills.home], isolatedHome, "skills home is not the child's: " + show(row.config))
+      const config = row.config ?? {}
+      assert.equal(config[OVERLAY.isolation.skills.field], OVERLAY.isolation.skills.value, 'default roots read: ' + show(config))
+      assert.equal(config[OVERLAY.isolation.skills.home], paths.home, "skills home is not the child's: " + show(config))
+      assert.equal(typeof config[OVERLAY.isolation.skills.agentsHome], 'string', 'no agentsHome: ' + show(config))
+      for (const dir of [config[OVERLAY.isolation.skills.agentsHome], ...(config[OVERLAY.isolation.skills.customDirs] ?? [])]) {
+        assert.notEqual(dir, main, 'a skills directory is the main home itself')
+        assert.ok(below(dir, runtimeRoot), `${dir} is not under the child runtime root ${runtimeRoot}`)
+        assert.equal(within(dir, userAgents), false, `${dir} is the user's real ${userAgents}`)
+      }
     }
   })
   caseTest(sdk, 'HOST-EP-03', '6 isolation', 'the isolation edits are config only: no isolation row is disabled or inserted by the overlay', async (t) => {
