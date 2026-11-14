@@ -1,7 +1,7 @@
 /**
  * The child app row, fishball-native-app (§2.1, §2.3, §15 T03 and T07).
  *
- * T02 inserts this module as the child profile's required app row. It owns the child's loopback
+ * core's own patch inserts this module as the app row (`fishball-core/slim/app`, I-PLACE). It owns the child's loopback
  * server: the shell document, /ui/*, /api/health and /api/events, all behind the bearer this
  * instance mints (§3.2). The chat row (T07) lives inside this row: createChat owns Fishball's
  * Session, the /api/chat and /api/model routes and the chat SSE event.
@@ -16,10 +16,11 @@
  * (§2.3). The lifecycle row config (mainHome, hostId, instanceId, limits, control) belongs to
  * T02; this row reads the launcher's profileContext for the chat record's home instead.
  *
- * The row runs from the child's code snapshot, so T02's copyChildCode must carry this module's
- * whole tree — src/slim/child/*.js, ../limits.js and the other ../*.js, and every file under ../ui/. A
- * copy that keeps only *.js fails loud here, because the shell document is read before the server
- * starts; the shell's script and stylesheet are read when /ui/* is requested.
+ * The row runs from core's placed copy in the child, which carries core's whole `files` (src/
+ * included, every file and its bytes; I-PLACE), so this module's tree — src/slim/child/*.js,
+ * ../limits.js and the other ../*.js, and every file under ../ui/ — is there. A copy that kept only
+ * *.js would fail loud here, because the shell document is read before the server starts; the
+ * shell's script and stylesheet are read when /ui/* is requested.
  */
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -66,7 +67,7 @@ const APP = Object.freeze({
 /**
  * The image service is optional at the app row: a composition without the attachment store or
  * the llm still serves the chat and reminders, and only an upload or an attachment is refused.
- * The row is required, so a failure here must not take the child's only page down with it.
+ * The row is the child's only page, so a failure here must not take it down with it.
  */
 function mountImages(ctx) {
   try {

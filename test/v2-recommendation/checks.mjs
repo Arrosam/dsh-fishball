@@ -11,10 +11,11 @@
  * Each check receives `{sdk, sdkModules}`: SDK artifacts are read from that SDK's own install path.
  */
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync, existsSync, mkdtempSync, rmSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync, mkdtempSync, realpathSync, rmSync, statSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import os from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { BODY_SOUL, loadCore, loadInstance, CJK } from '../support/body-soul-env.mjs'
 import { linkContractForSourceRun } from '../support/contract-link.mjs'
 import { REPO } from '../support/constants.mjs'
@@ -49,13 +50,17 @@ export const RP_CHECK = freezeData({
     managerInject: '@deepseek-ai/dsh-client-ui-plugin-manager',
     /**
      * V3 design §1.2 / §9.1 (task R-CORE (2)): the tab is part of fishball-core's `fishball-ui`
-     * component (`ui/`), not the instance's `child-web/`; the snapshot carries core's copy under
-     * `fishball-core/`. Paths below are relative to packages/core and to that snapshot directory.
+     * component (`ui/`), not the instance's `child-web/`. V3 rule (design e1e5577 §9.1 and §5a.2,
+     * R-HOST-04; Fishball decisions 2026-11-15, I-PLACE): the instance no longer snapshots core; it
+     * places core into the child profile at `<profile>/node_modules/fishball-core`, and the row is
+     * core's own patch row, a path row into its own ui package of that placed copy. Paths below are
+     * relative to packages/core and to that placed directory.
      */
     owner: 'ui',
-    snapshotDir: 'fishball-core',
-    overlayNameTail: path.join('fishball-core', 'ui', 'fishball-recommend-plugins', 'index.js'),
-    snapshotFiles: [path.join('ui', 'fishball-recommend-plugins', 'index.js'), path.join('ui', 'fishball-recommend-plugins', 'client.js'), path.join('ui', 'fishball-recommend-plugins', 'package.json'), path.join('src', 'recommended.js')],
+    placedDir: path.join('node_modules', 'fishball-core'),
+    rowNameTail: path.join('node_modules', 'fishball-core', 'ui', 'fishball-recommend-plugins', 'index.js'),
+    installAnchor: path.join('@deepseek-ai', 'dsh', 'package.json'),
+    placedFiles: [path.join('ui', 'fishball-recommend-plugins', 'index.js'), path.join('ui', 'fishball-recommend-plugins', 'client.js'), path.join('ui', 'fishball-recommend-plugins', 'package.json'), path.join('src', 'recommended.js')],
     /** Superseded standalone-package proposal (§11.9): must not exist as its own package. */
     standaloneDir: path.join('packages', 'recommend-plugins'),
   },
@@ -515,22 +520,22 @@ export const CHECKS = Object.freeze({
     assert.ok(core.files.some((f) => f.replace(/\/$/, '') === RP_CHECK.plugin.owner), 'shipped inside fishball-core (its fishball-ui component, ui/)')
     assertNoNeedles([...sourceFiles(RP_CHECK.mainSources.connectorDir), ...sourceFiles(RP_CHECK.mainSources.embedClientDir)])
 
+    // V3 I-PLACE (see RP_CHECK.plugin): a composed child (placement, profile load, overlay; no process).
     linkContractForSourceRun()
-    const { copyChildCode } = await loadInstance('src/native-runtime/installation.js')
-    const { launchOverlay } = await loadInstance('src/native-runtime/overlay.js')
-    const base = scratch(t)
-    const { paths, record } = overlayArgs(base)
-    const childModule = await copyChildCode(paths, record)
-    const snapshot = path.dirname(childModule)
-    for (const rel of RP_CHECK.plugin.snapshotFiles) {
-      const copied = path.join(snapshot, RP_CHECK.plugin.snapshotDir, rel)
-      assert.ok(statSync(copied).isFile(), 'snapshot carries ' + rel)
+    const { composedProfile } = await loadInstance('src/native-runtime/index.js')
+    const mainHome = realpathSync(scratch(t))
+    const { paths, entries, overlay } = await composedProfile({ mainHome, installAnchor: path.join(ctx.sdkModules, RP_CHECK.plugin.installAnchor) })
+    const placed = path.join(paths.profile, RP_CHECK.plugin.placedDir)
+    for (const rel of RP_CHECK.plugin.placedFiles) {
+      const copied = path.join(placed, rel)
+      assert.ok(statSync(copied).isFile(), 'the placed core carries ' + rel)
       assert.deepEqual(readFileSync(copied), readFileSync(path.join(BODY_SOUL.core, rel)), rel + ' copied unchanged')
     }
-    const rows = insertedRows(launchOverlay(paths, record, childModule, {}, {}, overlayEntries()))
-    const ours = rows.filter((r) => r.id === RP_CHECK.plugin.name)
-    assert.equal(ours.length, 1, 'one child overlay row')
-    assert.ok(ours[0].name.endsWith(RP_CHECK.plugin.overlayNameTail) && ours[0].name.startsWith(snapshot + path.sep), 'row runs the snapshot copy: ' + ours[0].name)
+    assert.deepEqual(insertedRows(overlay).filter((r) => r.id === RP_CHECK.plugin.name), [], 'the launch overlay inserts no recommendation row (core\'s patch does)')
+    const ours = entries.filter((r) => r.id === RP_CHECK.plugin.name)
+    assert.equal(ours.length, 1, 'one child row')
+    const rowFile = ours[0].name.startsWith('file:') ? fileURLToPath(ours[0].name) : ours[0].name
+    assert.ok(rowFile.endsWith(RP_CHECK.plugin.rowNameTail) && rowFile.startsWith(placed + path.sep), 'row runs the placed copy: ' + ours[0].name)
     await t.test('fresh main/child composition on this SDK', { todo: RP_CHECK.todoE2E })
   },
 

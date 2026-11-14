@@ -14,9 +14,9 @@
  *   1. fishball-instance src/native-runtime/wire.js carries PROVIDER_SYNC_TARGET.channel;
  *   2. fishball-instance src/native-runtime/child.js publishes the child end through onProviderSyncTransport;
  *   3. fishball-instance src/native-runtime/index.js publishes the main end the same way;
- *   4. fishball-instance src/native-runtime/overlay.js inserts this module as a child row;
- *   5. fishball-instance src/native-runtime/installation.js copyChildCode places fishball-shared in the snapshot's
- *      node_modules, beside the snapshot's fishball-core/src/slim tree.
+ *   4. fishball-core's cordis.patch.yml inserts this module as a child row (`fishball-core/slim/provider-sync-target`);
+ *   5. fishball-instance src/native-runtime/placement.js places fishball-shared in the child profile's
+ *      node_modules, beside the placed fishball-core.
  *
  * No value ever appears in a preview, a refusal or a result: group entries are exact-key checked
  * against metadata only, and the record validator lives in fishball-shared/provider-sync.

@@ -11,7 +11,11 @@ import { launchOverlay } from './overlay.js'
 import { captureChildStderr } from './stderr-log.js'
 import { preflight as defaultPreflight } from '../native-preflight.js'
 
-export { RUNTIME_LIMITS, NativeRuntimeError }
+// launchOverlay is public so a reader can compute a start's overlay operations from the same
+// arguments the start uses (paths, record, childModule, limits, control, composed entries); the
+// file each start writes (launches/<instanceId>/launch.patch.yml) holds exactly its result.
+export { RUNTIME_LIMITS, NativeRuntimeError, launchOverlay }
+export { composedProfile, COMPOSE_RECORD } from './compose.js'
 export function createNativeRuntime(options, dependencies = {}) { return new NativeRuntime(options, dependencies) }
 
 class NativeRuntime {

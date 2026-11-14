@@ -1,6 +1,6 @@
 /**
  * `fishballSettingsSections`: the settings-section extension point of core's generic slim settings
- * panel (task K3 freezes it as task R-CORE created it, `ui/fishball-settings/client.js`;
+ * panel (task K3 freezes it as task R-CORE created it, now core's `client.settings.js` (I-PLACE);
  * R-HOST-11). A browser-side service the panel provides through the client's `reflect`; a plugin
  * injects it and registers once it exists. Types only.
  *

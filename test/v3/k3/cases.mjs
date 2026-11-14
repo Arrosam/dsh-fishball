@@ -418,8 +418,8 @@ export function registerK3Cases(sdk) {
     assert.deepEqual(page.failed(), [], 'failed plugins')
     assert.deepEqual(page.errors, [], 'page console errors')
   })
-  // When unmount runs (plugin disposal, panel close) is not stated by R-HOST-11 or R-CORE (3): see the K3 case questions.
-  caseTest(sdk, 'HOST-UC-08', 'A1', 'a section whose bundle is off is absent: no error, no notice, no placeholder', null, 'I-PLACE (fishball-hosted-settings switched off)')
+  // The K3 unmount rule (panel close, withdrawal, plugin disposal; never after a throwing mount) is I-PLACE's: test/v3/i-place/cases.mjs.
+  // HOST-UC-08 A1 (a section whose bundle is off is absent) is I-PLACE's too (Q-20).
 
   // ================================================================ PLAT-UC-07: the ask card's fields (R-FB-11, "exact card fields: K3")
   caseTest(sdk, 'PLAT-UC-07', 'main 2', 'core contracts declare the ask card: the asking session, the question, choices or a free answer', () => {
