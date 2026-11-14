@@ -48,6 +48,11 @@ export const SPECIFIER = Object.freeze({
   scopedSegments: 2,
   plainSegments: 1,
   manifestEncoding: 'utf8',
+  /**
+   * A file name under a directory, for asking Node for that directory's nearest manifest
+   * (`findPackageJSON` takes a file location; the file need not exist).
+   */
+  probeFile: 'index.js',
   // Decided by Fishball (2026-11-14, #7): a package with no string `version` is still a
   // contributor; `_meta` then carries the empty version.
   noVersion: '',
@@ -92,6 +97,17 @@ export const LOG = Object.freeze({
   retireFailed: 'contributor %s: a pending event could not be retired (%s)',
   listChangedFailed: 'tools list change could not be sent (%s)',
 })
+
+/** The emit pipeline's own values (emit.js). */
+export const EMIT = Object.freeze({
+  /** Joins the contributor namespace and the recipient key of a rate bucket; in neither grammar. */
+  bucketKeySeparator: '\u0000',
+  /** Thrown at load when emit.js's check order no longer matches K2's EMIT_CHECK_ORDER. */
+  orderMismatch: 'fishball-connector contrib: emit no longer follows K2 EMIT_CHECK_ORDER',
+})
+
+/** Thrown by a second `provide` of one createContributions (index.js: one per connector activation). */
+export const SERVICE_REUSED = 'fishball-connector contrib: provide() called twice; create one per connector activation'
 
 /** Which port failed, for LOG.portFailed. */
 export const PORT = Object.freeze({ sessionExists: 'sessionExists', router: 'router', mailbox: 'mailbox' })
