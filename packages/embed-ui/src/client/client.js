@@ -42,11 +42,21 @@ window.__ModuleLoader__.load({
         Object.freeze({ chunk: './client.records.js', factory: 'recordsPart', needs: Object.freeze(['handover', 'legacy']) }),
       ]),
       /**
-       * The shell runs with any service. The instance card needs no flag: it registers only while
-       * the instance row's settings are served (configForms.whileServed), as in V2.
+       * The shell runs with any service; the instance card with the locator, or (W3 fallback) V2's
+       * connector, whose attachment V2's card served.
        */
       shellNeeds: Object.freeze(['page', 'handover', 'tools', 'legacy']),
+      instanceNeeds: Object.freeze(['page', 'legacy']),
       instance: './client.instance.js',
+      /**
+       * What the host half reports usable (src/host/constants.js ROUTE.services, page-relative; this
+       * classic script cannot import it): `{ok, page, handover, tools, legacy, routes}`. Read here,
+       * not in a part, so every part waits only on this one read and never on another chunk.
+       * Unreadable is "nothing", so nothing that needs a service registers.
+       */
+      servicesPath: 'api/fishball-embed-ui/services',
+      read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
+      none: Object.freeze({ page: false, handover: false, tools: false, legacy: false, routes: Object.freeze({}) }),
       status: './client.status.js',
       unavailable: 'fishball embed-ui: part unavailable',
     })
@@ -67,6 +77,15 @@ window.__ModuleLoader__.load({
       }, EMBED.name + ': ' + label)
     }
 
+    /** One read of the host half's availability (EMBED.servicesPath). */
+    async function readAvailability() {
+      try {
+        const response = await fetch(new URL(EMBED.servicesPath, document.baseURI).toString(), EMBED.read)
+        const value = await response.json()
+        return response.ok && value?.ok === true ? value : EMBED.none
+      } catch { return EMBED.none }
+    }
+
     /** Whether any flag in `needs` is set in the host half's availability. */
     const wanted = (available, needs) => needs.some((flag) => available[flag] === true)
 
@@ -77,18 +96,16 @@ window.__ModuleLoader__.load({
      */
     function apply(ctx) {
       const shell = require.async(EMBED.shell)
-      const available = shell.then((module) => module.readAvailability())
+      const available = readAvailability()
       const when = (needs, load) => () => available.then((flags) => (wanted(flags, needs) ? load(flags) : undefined))
       start(ctx, EMBED.shell, when(EMBED.shellNeeds, (flags) => shell.then((module) => module.shellPlugin(flags))))
       for (const part of EMBED.parts) {
         start(ctx, part.chunk, when(part.needs, () => Promise.all([shell, require.async(part.chunk)]).then(([{ kit }, module]) => module[part.factory](kit))))
       }
       // With the locator, the card's model sync goes through the host half's routes (R-HOST-07,
-      // design §4.2); without it, through the instance's own V2 routes, as before. A shell chunk
-      // that failed to load leaves the card on V2's routes, never without the card.
-      const childRoutes = available.then((flags) => (flags.page ? flags.routes : undefined), () => undefined)
-      start(ctx, EMBED.instance, () => Promise.all([require.async(EMBED.instance), require.async(EMBED.status), childRoutes])
-        .then(([instance, { shared, layout }, routes]) => instance.instancePlugin(shared, layout, routes)))
+      // design §4.2); with only V2's connector, through the instance's own V2 routes, as before.
+      start(ctx, EMBED.instance, when(EMBED.instanceNeeds, (flags) => Promise.all([require.async(EMBED.instance), require.async(EMBED.status)])
+        .then(([instance, { shared, layout }]) => instance.instancePlugin(shared, layout, flags.page ? flags.routes : undefined))))
     }
 
     // No inject of its own: each part declares the client services it needs and starts with them.
