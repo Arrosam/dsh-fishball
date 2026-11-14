@@ -73,6 +73,9 @@ export const CHOICE = Object.freeze({
   newToken: 'new-token',
 })
 
+/** The choices of a state with no warning. */
+export const NO_CHOICES = Object.freeze([])
+
 /** The choices each warning offers, in display order. */
 export const CHOICES_OF = Object.freeze({
   [PAIRING_STATE.warnMatch]: Object.freeze([CHOICE.continue, CHOICE.newTokenAndId]),
@@ -85,7 +88,15 @@ export const CHOICE_REFUSAL = Object.freeze({
   notConfirmed: 'not-confirmed',
   /** The choice is not one the current state offers. */
   notOffered: 'not-offered',
+  /** Continue could not write its paired record; the warning stays open. */
+  notSaved: 'not-saved',
 })
+
+/**
+ * The granted `scope` of a token response is a list separated by single spaces (RFC 6749 §3.3);
+ * core is fully paired only when it holds K1's `SCOPE.full` (R-OA-04, R-OA-18).
+ */
+export const SCOPE_LIST = Object.freeze({ separator: ' ' })
 
 /** Where a name refusal came from (NAME-DT-03 "Source"). */
 export const NAME_SOURCE = Object.freeze({ pair: 'pair', setName: 'set_name' })
@@ -102,8 +113,12 @@ export const RECORDS = Object.freeze({
   version: 1,
 })
 
-/** Programming errors (thrown `TypeError`s), never shown to a user. */
+/** Error messages, never shown to a user. */
 export const MISUSE = Object.freeze({
+  /** A `TypeError`: a stored record is malformed, so the records table does not open. */
   record: 'fishball-core identity: malformed paired record',
+  /** A `TypeError`: the link's credentials carry no token reference (`ref`, a string). */
+  ref: 'fishball-core identity: credentials need a token reference',
+  /** A `PairingFailed` (retried like any failure): `pair` answered nothing the decision table knows. */
   pairResult: 'fishball-core identity: pair answered no result',
 })

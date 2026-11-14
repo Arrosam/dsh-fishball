@@ -42,6 +42,7 @@ import { LINK_REFUSAL, TOOL } from './schema.js'
 import { LINK_MCP } from './constants.js'
 import { checkTarget } from './target.js'
 import { OffTargetRequest, STATUS, failureStatus } from './status.js'
+import { emitIsolated, subscribe } from './listeners.js'
 
 /** Delay before the n-th consecutive retry (from 0), bounded by `LINK_BACKOFF.maxMs`. */
 export const backoffDelayMs = (attempt) => Math.min(LINK_BACKOFF.initialMs * LINK_BACKOFF.factor ** attempt, LINK_BACKOFF.maxMs)
@@ -125,13 +126,13 @@ export class McpLink {
   tools() { return this.#tools }
 
   /** Calls `fn(status)` after each status change. Returns its disposer. A throwing listener affects no other. */
-  onStatus(fn) { return this.#subscribe(this.#listeners.status, fn) }
+  onStatus(fn) { return subscribe(this.#listeners.status, fn) }
 
   /** Calls `fn(result)` with each `inbox_poll` result (`structuredContent`) the link fetched. */
-  onPoll(fn) { return this.#subscribe(this.#listeners.poll, fn) }
+  onPoll(fn) { return subscribe(this.#listeners.poll, fn) }
 
   /** Calls `fn(tools)` after each `tools/list` the link made. */
-  onTools(fn) { return this.#subscribe(this.#listeners.tools, fn) }
+  onTools(fn) { return subscribe(this.#listeners.tools, fn) }
 
   /** Starts connecting. Idempotent. */
   start() {
@@ -174,22 +175,10 @@ export class McpLink {
     return callStructured(client, name, args)
   }
 
-  #subscribe(set, fn) {
-    set.add(fn)
-    return () => { set.delete(fn) }
-  }
-
-  /** Listeners are the caller's code: one that throws must not break the link or another listener. */
-  #emit(set, value) {
-    for (const fn of [...set]) {
-      try { fn(value) } catch { /* isolated, see above */ }
-    }
-  }
-
   #setStatus(next) {
     if (next === this.#status) return
     this.#status = next
-    this.#emit(this.#listeners.status, next)
+    emitIsolated(this.#listeners.status, next)
   }
 
   /** The user's decision: a link that stops being connected says so until it is classified again. */
@@ -297,6 +286,8 @@ export class McpLink {
     this.#client = client
     await client.connect(transport)
     await this.#listTools(client, generation)
+    // An attempt overtaken by stop() or reconnect() asks the gate nothing: `admit` may send `pair`.
+    if (!this.#current(generation)) return client
     // The gate sees the attempt between the tool list and the listen stream: nothing that needs a
     // full access token has been sent yet, and a held attempt sends nothing more (AUTH-UC-05 E1).
     const held = await this.#options.gate.admit(attempt, {
@@ -332,7 +323,7 @@ export class McpLink {
     const { tools } = await client.listTools()
     if (!this.#current(generation)) return
     this.#tools = Object.freeze([...tools])
-    this.#emit(this.#listeners.tools, this.#tools)
+    emitIsolated(this.#listeners.tools, this.#tools)
   }
 
   async #poll(generation) {
@@ -346,7 +337,7 @@ export class McpLink {
       // next (re)connect or hint polls again.
       return
     }
-    if (this.#current(generation)) this.#emit(this.#listeners.poll, result)
+    if (this.#current(generation)) emitIsolated(this.#listeners.poll, result)
   }
 
   /**

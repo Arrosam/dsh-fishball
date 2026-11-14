@@ -4,8 +4,9 @@
  * merge. Data only: frozen strings and pure template formatters that interpolate names only.
  * F-WIRE draws it from `fishball-core/src/identity`'s `pairing.state()`.
  *
- * Keys follow the pairing state and choice words (`PAIRING_STATE`, `CHOICE`) and the K1 refusal
- * codes (`name-taken`, `name-invalid`), so a drawing never maps one word through a second table.
+ * Keys are the property names of the words they draw: `PAIRING_STATE` (`warnMatch`, `needId`, …),
+ * `CHOICE` (`continue`, `newToken`, …), K1's `REFUSAL` (`nameTaken`, `nameInvalid`) and
+ * `ID_REFUSAL` (`idInvalid`). The id rule's bounds are K1's `ID_GRAMMAR`, so the copy names none.
  */
 export const PAIRING_TEXT = Object.freeze({
   en: Object.freeze({
@@ -18,7 +19,7 @@ export const PAIRING_TEXT = Object.freeze({
     needToken: 'Fishball needs a new token for this target.',
     needId: 'This id is used by another agent on that DSH. Choose a new id.',
     idMismatch: 'This token was paired with another id. Fishball needs a new token.',
-    idInvalid: 'Not a valid id: use 1–64 letters, digits, "_" or "-". The previous id is kept.',
+    idInvalid: 'Not a valid id: use only letters, digits, "_" or "-". The previous id is kept.',
     nameTaken: 'This name is used by another agent on that DSH. Choose another.',
     nameInvalid: 'This name is invalid. Choose another.',
     nameInUse: (name) => `Fishball is shown as ${name}.`,
@@ -35,7 +36,7 @@ export const PAIRING_TEXT = Object.freeze({
     needToken: 'Fishball 需要此目标的新令牌。',
     needId: '此 ID 已被该 DSH 上的另一个智能体使用。请选择新的 ID。',
     idMismatch: '此令牌已与另一个 ID 配对。Fishball 需要新的令牌。',
-    idInvalid: 'ID 无效：请使用 1–64 个字母、数字、"_" 或 "-"。已保留之前的 ID。',
+    idInvalid: 'ID 无效：只能使用字母、数字、"_" 或 "-"。已保留之前的 ID。',
     nameTaken: '此名称已被该 DSH 上的另一个智能体使用。请另选一个。',
     nameInvalid: '此名称无效。请另选一个。',
     nameInUse: (name) => `Fishball 显示为 ${name}。`,
