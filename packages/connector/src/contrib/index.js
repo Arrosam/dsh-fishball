@@ -14,14 +14,16 @@
  *   rate buckets.
  *
  * `provide(ctx)` provides the service on the connector row's context and closes the registry when
- * that row unloads (EXT-ST-01 #10). `list()` and `call()` are for the MCP layer (C-HTTP / C-TOOLS)
+ * that row unloads (EXT-ST-01 #10). One `createContributions` serves **one** connector activation:
+ * its registry stays closed after that unload, so the next activation creates a new one, and a
+ * second `provide` throws instead of serving a dead service. `list()` and `call()` are for the MCP layer (C-HTTP / C-TOOLS)
  * only. The service itself has exactly the K2 members (R-EXT-11): `apiVersion`, `register`, `emit`
  * and `mine`.
  */
 import { EMIT_REFUSAL, TOOLS_API } from '../../tools/index.js'
 import { createCalls } from './calls.js'
-import { HOST, LOG } from './constants.js'
-import { createEmit } from './emit.js'
+import { HOST, LOG, SERVICE_REUSED } from './constants.js'
+import { createEmit, refused } from './emit.js'
 import { createRegistry } from './registry.js'
 
 export { LOG } from './constants.js'
@@ -32,13 +34,10 @@ export { LOG } from './constants.js'
  *   close: () => void}}
  */
 export function createContributions({ mailbox, router, sessionExists, onToolsChanged, logger, now = Date.now }) {
-  // The registry and the emit pipeline need each other: a withdrawal retires events through emit's
-  // `retire`, and `emit` admits callers through the registry. The late binding keeps each the only
-  // owner of its state.
-  let events
-  const registry = createRegistry({ logger, onToolsChanged, retireCommitted: (act, committed) => events.retire(act, committed) })
-  events = createEmit({ registry, mailbox, router, sessionExists, logger, now })
+  const registry = createRegistry({ logger, onToolsChanged })
+  const events = createEmit({ registry, mailbox, router, sessionExists, logger, now })
   const calls = createCalls({ registry, logger })
+  let provided = false
 
   /** The traced caller context (`this.ctx` through Cordis's tracker; S5 I1). */
   const callerOf = (self) => self?.[HOST.trackerOptions.property]
@@ -59,7 +58,7 @@ export function createContributions({ mailbox, router, sessionExists, onToolsCha
         // Every refusal is a returned code, never an exception into the contributor (R-EXT-18).
         // Anything unforeseen means nothing was queued: answered like a failed port (Fishball #4).
         logger.warn(LOG.emitFailed, error?.code ?? error?.name)
-        return Object.freeze({ ok: false, code: EMIT_REFUSAL.queueFull })
+        return refused(EMIT_REFUSAL.queueFull)
       }
     },
     mine() { return registry.mine(callerOf(this)) },
@@ -68,6 +67,8 @@ export function createContributions({ mailbox, router, sessionExists, onToolsCha
   return Object.freeze({
     service,
     provide(ctx) {
+      if (provided) throw new Error(SERVICE_REUSED)
+      provided = true
       registry.bindHost(ctx.fiber)
       return ctx.effect(() => {
         const dispose = ctx.provide(TOOLS_API.service, service)

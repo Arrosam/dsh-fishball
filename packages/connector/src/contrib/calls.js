@@ -22,10 +22,9 @@ import { okResult, refusalResult } from '../../mcp-schema/index.js'
 import { ABORT_REASON, CALL_CODE, SCHEMA_SUBSET, SHARED_CODES, TOOL_LIMITS, TOOLS_API } from '../../tools/index.js'
 import { redact } from 'fishball-shared/redact'
 import { FAILURE_KIND, LOG, RESULT_FIELD, RESULT_KEYS } from './constants.js'
+import { byteLength, snapshotJson } from './json.js'
 import { validateValue } from '../schema-value/index.js'
 
-const UTF8 = new TextEncoder()
-const byteLength = (text) => UTF8.encode(text).length
 /** Any lossless JSON object: what `data` must be before its own schema is checked (Fishball A). */
 const ANY_OBJECT = Object.freeze({ type: SCHEMA_SUBSET.root })
 /** The client-side abort reasons the MCP layer may give its signal; any other reason is `cancelled`. */
@@ -39,8 +38,9 @@ const hasOnly = (value, keys) => Object.keys(value).every((key) => keys.includes
 const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
- * The client envelope of a returned value, or a FAILURE_KIND. Reads each field once, on a value
- * that may be hostile (a getter or a proxy); any throw is a bad shape.
+ * The client envelope of a returned value, or a FAILURE_KIND. The value may be hostile (a getter
+ * or a proxy): each top-level field is read once, and `data` is one snapshot (json.js) that is
+ * then measured, checked and sent. Any throw is a bad shape.
  * @returns {{result: object} | {failure: string}}
  */
 function shape(reg, value) {
@@ -49,16 +49,16 @@ function shape(reg, value) {
     const ok = value[RESULT_FIELD.ok]
     if (ok === true) {
       if (!hasOnly(value, RESULT_KEYS.success)) return { failure: FAILURE_KIND.shape }
-      const data = value[RESULT_FIELD.data]
       const text = value[RESULT_FIELD.text]
+      const data = snapshotJson(value[RESULT_FIELD.data], ANY_OBJECT)
       // `text` is accepted and dropped: the text block is always the same JSON (Fishball B).
       // A `data` with its own `ok` would be overwritten by the envelope's (Fishball G).
-      if ((text !== undefined && typeof text !== 'string') || !validateValue(ANY_OBJECT, data).ok || Object.hasOwn(data, RESULT_FIELD.ok)) {
+      if ((text !== undefined && typeof text !== 'string') || data === undefined || Object.hasOwn(data.value, RESULT_FIELD.ok)) {
         return { failure: FAILURE_KIND.shape }
       }
-      if (byteLength(JSON.stringify(data)) > reg.limits.resultBytes) return { failure: FAILURE_KIND.oversize }
-      if (reg.def.outputSchema !== undefined && !validateValue(reg.def.outputSchema, data).ok) return { failure: FAILURE_KIND.outputSchema }
-      return { result: okResult({ ...data }) }
+      if (byteLength(data.text) > reg.limits.resultBytes) return { failure: FAILURE_KIND.oversize }
+      if (reg.def.outputSchema !== undefined && !validateValue(reg.def.outputSchema, data.value).ok) return { failure: FAILURE_KIND.outputSchema }
+      return { result: okResult(data.value) }
     }
     if (ok !== false || !hasOnly(value, RESULT_KEYS.refusal)) return { failure: FAILURE_KIND.shape }
     const code = value[RESULT_FIELD.code]
@@ -88,7 +88,11 @@ export function createCalls({ registry, logger }) {
     return refusalResult(CALL_CODE.contributorFailed)
   }
 
-  /** The checks before `execute` (steps 2–4 above); a refusal result, or undefined to run. */
+  /**
+   * The checks before `execute` (steps 2–4 above): a refusal result, or undefined to run. The
+   * arguments come from the MCP layer as parsed JSON, so they are measured as given; the schema
+   * check needs no snapshot.
+   */
   function precheck(reg, args) {
     let text
     try { text = JSON.stringify(args) } catch { return refusalResult(CALL_CODE.invalidArguments) }
@@ -101,7 +105,9 @@ export function createCalls({ registry, logger }) {
 
   /**
    * Run `execute` under the timeout and the abort signal. Its late result after an abort is
-   * dropped (design §13.4 step 2).
+   * dropped (design §13.4 step 2). The in-flight bound counts calls the connector still waits for:
+   * a contributor that ignores its signal can keep work running after the abort, which the
+   * connector cannot stop (in-process code, design §13.5 "what containment does not cover").
    * @returns {Promise<{settled: string, value?: unknown, reason?: string}>}
    */
   async function run(reg, args, principal, clientSignal) {
@@ -110,6 +116,8 @@ export function createCalls({ registry, logger }) {
     const onClientAbort = () => abort(CLIENT_REASONS.includes(clientSignal.reason) ? clientSignal.reason : ABORT_REASON.cancelled)
     const untrack = registry.track({ registration: reg, abort })
     const timer = setTimeout(() => abort(ABORT_REASON.timeout), reg.limits.timeoutMs)
+    // A pending contributor call never keeps the DSH process alive on its own.
+    timer.unref?.()
     clientSignal?.addEventListener('abort', onClientAbort, { once: true })
     if (clientSignal?.aborted) onClientAbort()
     try {

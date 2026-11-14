@@ -12,6 +12,8 @@
  */
 import fs from 'node:fs'
 import { findPackageJSON } from 'node:module'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { NAMESPACE, namespaceOf } from '../../tools/index.js'
 import { HOST, SPECIFIER } from './constants.js'
 
@@ -27,15 +29,40 @@ function bareName(specifier) {
 
 const isPathSpecifier = (specifier) => specifier.startsWith(SPECIFIER.relativePrefix) || specifier.startsWith(SPECIFIER.absolutePrefix) || specifier.startsWith(SPECIFIER.fileScheme)
 
-/** The manifest `{name, version}` Node resolves for `specifier` from `baseUrl`, or undefined. */
-function manifestOf(specifier, baseUrl) {
+/** A parsed manifest object, or undefined. */
+function readManifest(file) {
+  const manifest = JSON.parse(fs.readFileSync(file, SPECIFIER.manifestEncoding))
+  return manifest !== null && typeof manifest === 'object' ? manifest : undefined
+}
+
+/**
+ * The nearest manifest at or above `file` that has a `name`, and is named `expected` when that is
+ * given. A dual build often ships a nested, nameless `dist/package.json` (`{"type": "module"}`)
+ * that is not the package's own manifest, so the walk goes on past it.
+ */
+function namedManifestFrom(file, expected) {
+  let current = file
+  while (current !== undefined) {
+    const manifest = readManifest(current)
+    if (typeof manifest?.name === 'string' && (expected === undefined || manifest.name === expected)) return manifest
+    const parentDir = path.dirname(path.dirname(current))
+    if (parentDir === path.dirname(current)) return undefined
+    current = findPackageJSON(pathToFileURL(path.join(parentDir, SPECIFIER.probeFile)).href)
+  }
+  return undefined
+}
+
+/** The URL of a path specifier: absolute paths as file URLs, others against the tree's base. */
+const pathUrl = (specifier, baseUrl) => (specifier.startsWith(SPECIFIER.absolutePrefix) ? pathToFileURL(specifier) : new URL(specifier, baseUrl ?? undefined)).href
+
+/**
+ * The manifest Node resolves for `specifier` from `baseUrl`, or undefined. For a bare specifier it
+ * must carry that package's name (`expected`).
+ */
+function manifestOf(specifier, baseUrl, expected) {
   try {
-    const file = isPathSpecifier(specifier)
-      ? findPackageJSON(new URL(specifier, baseUrl ?? undefined).href)
-      : findPackageJSON(specifier, baseUrl)
-    if (file === undefined) return undefined
-    const manifest = JSON.parse(fs.readFileSync(file, SPECIFIER.manifestEncoding))
-    return manifest !== null && typeof manifest === 'object' ? manifest : undefined
+    const file = isPathSpecifier(specifier) ? findPackageJSON(pathUrl(specifier, baseUrl)) : findPackageJSON(specifier, baseUrl)
+    return file === undefined ? undefined : namedManifestFrom(file, expected)
   } catch {
     // Unresolvable from here (a package the loader found by its own means, or a missing file).
     return undefined
@@ -52,8 +79,9 @@ function manifestOf(specifier, baseUrl) {
  */
 function packageOf(specifier, baseUrl) {
   if (typeof specifier !== 'string' || specifier.startsWith(SPECIFIER.builtinPrefix)) return undefined
-  const manifest = manifestOf(specifier, baseUrl)
-  const name = isPathSpecifier(specifier) ? manifest?.name : bareName(specifier)
+  const bare = isPathSpecifier(specifier) ? undefined : bareName(specifier)
+  const manifest = manifestOf(specifier, baseUrl, bare)
+  const name = bare ?? manifest?.name
   if (typeof name !== 'string') return undefined
   const version = typeof manifest?.version === 'string' ? manifest.version : SPECIFIER.noVersion
   return { name, version }

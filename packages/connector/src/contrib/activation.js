@@ -23,8 +23,6 @@ export function activationOf(who) {
   const current = who.root[HOST.activationKey]
   if (current !== undefined) return current
   const act = {
-    pkg: who.pkg,
-    version: who.version,
     namespace: who.namespace,
     root: who.root,
     ended: false,
@@ -32,12 +30,14 @@ export function activationOf(who) {
     /** The last QUARANTINE.windowOutcomes counted outcomes, oldest first; `true` is a failure. */
     outcomes: [],
     /**
-     * Every event this activation committed, as `{recipient, eventId}`, so a quarantine or the
-     * activation's end can retire the pending ones (R-EXT-19). Retiring an acked one is a no-op
-     * (C-MAILBOX, confirmed by Fishball 2026-11-14). K1 gives C-EXT no ack signal, so this list is
-     * unbounded for the activation's life (up to EVENT_LIMITS.ratePerMinute per recipient). The
-     * K1 follow-up `Mailbox.retireContributor(namespace, activationTag)`, on the amendment list
-     * after W2, replaces it.
+     * One retire function per event this activation committed, so a quarantine or the
+     * activation's end retires the pending ones (R-EXT-19). Each carries its own mailbox port, so
+     * retirement still works when the registry that committed it has closed since (a connector
+     * reload). Retiring an acked one is a no-op (C-MAILBOX, confirmed by Fishball 2026-11-14). K1
+     * gives C-EXT no ack signal, so this list is unbounded for the activation's life (up to
+     * EVENT_LIMITS.ratePerMinute per recipient). The K1 follow-up
+     * `Mailbox.retireContributor(namespace, activationTag)`, on the amendment list after W2,
+     * replaces it.
      */
     committed: [],
     /** Failure kinds already logged for this activation (R-EXT-08: once per contributor and kind). */
@@ -60,8 +60,14 @@ export const isCurrent = (act) => !act.ended && act.root[HOST.activationKey] ===
 function endActivation(act) {
   act.ended = true
   if (act.root[HOST.activationKey] === act) delete act.root[HOST.activationKey]
+  retireCommitted(act)
   for (const registry of [...act.registries]) registry.activationEnded(act)
   act.registries.clear()
+}
+
+/** Retire every event the activation committed; the list is then empty (R-EXT-19). */
+export function retireCommitted(act) {
+  for (const retire of act.committed.splice(0)) retire()
 }
 
 /**
@@ -80,6 +86,3 @@ export function recordOutcome(act, failed) {
   act.quarantined = true
   return true
 }
-
-/** Take the activation's committed events, for retirement; the list is then empty. */
-export const takeCommitted = (act) => act.committed.splice(0)

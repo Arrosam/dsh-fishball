@@ -16,16 +16,17 @@
  * disposers run. The table itself changes synchronously (design §13.4 step 1).
  */
 import {
-  CONTRIBUTOR_META_KEY, REGISTER_REFUSAL, REGISTRATION_STATE, ToolContributionError, ABORT_REASON,
+  CONTRIBUTOR_META_KEY, REGISTER_REFUSAL, REGISTRATION_STATE, SCHEMA_SUBSET, ToolContributionError, ABORT_REASON,
   defineTool, effectiveLimits, isReservedNamespace, publicNameOf,
 } from '../../tools/index.js'
 import { refusalSchema } from '../../mcp-schema/index.js'
-import { constant } from '../../mcp-schema/schema.js'
-import { activationOf, isCurrent, recordOutcome, takeCommitted } from './activation.js'
+import { activationOf, isCurrent, recordOutcome, retireCommitted } from './activation.js'
 import { HOST, LOG, RESULT_FIELD } from './constants.js'
 import { contributorOf, isLive } from './identity.js'
 
 const refusal = (code) => new ToolContributionError(code)
+/** `ok: true` in the advertised success branch (the same node K1's core-tool schemas use). */
+const OK_TRUE = Object.freeze({ type: SCHEMA_SUBSET.type.boolean, const: true })
 
 /**
  * The `outputSchema` advertised in `tools/list`, the same way the core tools advertise theirs
@@ -42,7 +43,7 @@ function advertisedOutputSchema(dataSchema) {
   if (Object.hasOwn(properties, RESULT_FIELD.ok)) throw refusal(REGISTER_REFUSAL.toolInvalid)
   const success = {
     ...dataSchema,
-    properties: { ...properties, [RESULT_FIELD.ok]: constant(true) },
+    properties: { ...properties, [RESULT_FIELD.ok]: OK_TRUE },
     required: [...(dataSchema.required ?? []), RESULT_FIELD.ok],
   }
   return { oneOf: [success, refusalSchema()] }
@@ -68,9 +69,8 @@ function toolEntry(publicName, def, who) {
  * @param {{info: Function, warn: Function}} ports.logger
  * @param {() => void} [ports.onToolsChanged] called once per event-loop turn after the list changed
  *   (design §13.4 step 3); the MCP layer sends `notifications/tools/list_changed` from it.
- * @param {(act: object) => void} ports.retireCommitted retires an activation's pending events (emit.js)
  */
-export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
+export function createRegistry({ logger, onToolsChanged }) {
   /** publicName → registration. */
   const table = new Map()
   /** namespace → {pkg, acts}: the first package to reach the registry keeps it (TQ-13). */
@@ -107,12 +107,18 @@ export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
     for (const call of [...inFlight]) if (select(call.registration)) call.abort(reason)
   }
 
-  /** Remove registrations from the table; aborts their calls; notifies when a listed one left. */
+  /**
+   * Remove registrations from the table, abort their calls, and notify when one of them had been
+   * announced to clients. `reg.announced` is used rather than `isVisible`, because a withdrawal
+   * normally runs inside a Cordis effect disposer, when the owner fiber is already UNLOADING and
+   * the registration is no longer visible (S5 L2), yet clients still hold it in their list.
+   */
   function removeWhere(select) {
     let wasListed = false
     for (const [publicName, reg] of [...table]) {
       if (!select(reg)) continue
-      wasListed ||= isVisible(reg)
+      wasListed ||= reg.announced
+      reg.announced = false
       reg.disposed = true
       table.delete(publicName)
     }
@@ -188,23 +194,33 @@ export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
     if (holder !== undefined) removeWhere((other) => other === holder)
     const act = claim(who)
     if (act === undefined) refuse(REGISTER_REFUSAL.contributorUnidentified, who)
-    const reg = { publicName, def, limits: effectiveLimits(def), entry, act, owner: who.fiber, disposed: false }
-    const dispose = () => {
-      if (reg.disposed) return
-      removeWhere((other) => other === reg)
+    const reg = { publicName, def, limits: effectiveLimits(def), entry, act, owner: who.fiber, disposed: false, announced: false }
+    const remove = () => {
+      if (!reg.disposed) removeWhere((other) => other === reg)
     }
     // Bound to the *calling* fiber: an inject sub-scope that unloads disposes its own tools, even
-    // when the contributor never calls the disposer (design §13.2).
+    // when the contributor never calls the disposer (design §13.2). The effect's handle is kept,
+    // so a manual dispose also leaves the fiber's effect list (no growth under register/dispose churn).
+    let unbind
     try {
-      who.ctx.effect(() => dispose, HOST.labels.registration)
+      unbind = who.ctx.effect(() => remove, HOST.labels.registration)
     } catch {
       refuse(REGISTER_REFUSAL.contributorUnidentified, who)
     }
     table.set(publicName, reg)
     // A quarantined activation's registration is accepted but not listed (EXT-ST-01 #6, K2).
-    if (isVisible(reg)) changed()
+    if (isVisible(reg)) {
+      reg.announced = true
+      changed()
+    }
     logger.info(LOG.registered, who.namespace, def.name)
-    return dispose
+    let disposed = false
+    return () => {
+      if (disposed) return
+      disposed = true
+      remove()
+      unbind?.()
+    }
   }
 
   /** The caller's registrations in its current activation (R-EXT-01 `mine`). */
@@ -236,12 +252,6 @@ export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
     if (holder.acts.size === 0) claims.delete(act.namespace)
   }
 
-  /** Withdraw what an activation holds here: its tools, its calls and its pending events (R-EXT-04, R-EXT-19). */
-  function withdrawActivation(act) {
-    removeWhere((reg) => reg.act === act)
-    retireCommitted(act, takeCommitted(act))
-  }
-
   const api = Object.freeze({
     register,
     mine,
@@ -258,6 +268,7 @@ export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
     count(act, failed) {
       if (!recordOutcome(act, failed)) return
       logger.warn(LOG.quarantined, act.namespace)
+      retireCommitted(act)
       for (const registry of [...act.registries]) registry.activationQuarantined(act)
     },
     /** Track a running call, so a withdrawal can abort it. Returns its untrack function. */
@@ -265,21 +276,30 @@ export function createRegistry({ logger, onToolsChanged, retireCommitted }) {
       inFlight.add(call)
       return () => inFlight.delete(call)
     },
-    /** The activation ended (its contributor was disabled, unloaded, reloaded or uninstalled). */
+    /**
+     * The activation ended (its contributor was disabled, unloaded, reloaded or uninstalled): its
+     * tools leave and its calls are withdrawn (R-EXT-04). activation.js retires its events.
+     */
     activationEnded(act) {
-      withdrawActivation(act)
+      const held = [...table.values()].some((reg) => reg.act === act)
+      removeWhere((reg) => reg.act === act)
       release(act)
-      logger.info(LOG.withdrawn, act.namespace)
+      // One line per withdrawal (R-EXT-15): only the registry that held its tools writes it.
+      if (held) logger.info(LOG.withdrawn, act.namespace)
     },
     /**
      * The activation was quarantined (R-EXT-09): its registrations stay in the table but are no
-     * longer listed (`mine()` shows them `quarantined`). Its calls are aborted and its pending
-     * events retired.
+     * longer listed (`mine()` shows them `quarantined`), and its calls are aborted. `count`
+     * retires its events, once for all registries.
      */
     activationQuarantined(act) {
-      const wasListed = [...table.values()].some((reg) => reg.act === act && !reg.disposed)
+      let wasListed = false
+      for (const reg of table.values()) {
+        if (reg.act !== act) continue
+        wasListed ||= reg.announced
+        reg.announced = false
+      }
       abortCalls((reg) => reg.act === act, ABORT_REASON.withdrawn)
-      retireCommitted(act, takeCommitted(act))
       if (wasListed) changed()
     },
     /** Bind the registry's lifetime to the connector row's fiber (see `hostFiber`). */
