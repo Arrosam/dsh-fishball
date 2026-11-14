@@ -22,7 +22,8 @@ const isGeneration = (value) => Number.isSafeInteger(value) && value >= 0
  * import it with nothing else installed). A changed shape bumps TOKEN_STORE.version.
  * - `fingerprint`: the HMAC of the value last seen under `ref`, or null when it had none;
  * - `keyId`: the fingerprint key's id; another id means the fingerprint cannot be compared;
- * - `awaitSave`: UNSET_POLICY.awaitSave, the value was unset outside a settings save.
+ * - `awaitSave`: the value was unset outside a settings save, so none is generated for it until
+ *   the next save (Q5 = B, registry.js `awaitsSave`).
  */
 const entryRecord = Object.freeze({
   parse(value) {
