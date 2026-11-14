@@ -143,6 +143,9 @@ export const V2_SUITES = Object.freeze({
     // V3 C-ROUTE (EVT-EP-01, EVT-EP-04 end to end, EVT-DT-01, WATCH-UC-01/02, WATCH-EP-01, WATCH-ST-01 rows 1–6, HAND-EP-01, HAND-DT-01/02, HAND-ST-01, HAND-UC-02 service part, PLAT-UC-03); run with test/run-v3.mjs.
     file('test/v3/c-route/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
     file('test/v3/c-route/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
+    // V3 F-PAIR (AUTH-UC-05 decisions, AUTH-DT-06, AUTH-ST-03 non-warning-UI rows, NAME-UC-02 core part, NAME-DT-03 core reaction, token-revoked: AUTH-ST-03 row 10, HOST-UC-04 main); run with test/run-v3.mjs.
+    file('test/v3/f-pair/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
+    file('test/v3/f-pair/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
