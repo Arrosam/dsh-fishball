@@ -15,13 +15,13 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL } from '../../../packages/connector/mcp-schema/index.js'
+import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, TOOL } from '../../../packages/connector/mcp-schema/index.js'
 // A namespace import: a value the product has not exported yet fails the cases that use it, with a
 // reason, instead of failing this whole file at module link time (test-first).
 import * as EVENTS_CONSTANTS from '../../../packages/core/contracts/constants.js'
 import { REPO } from '../../support/constants.mjs'
 
-export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL }
+export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, TOOL }
 
 /** The F-INTERCEPT "Owns" folder. FBTEST_F_INTERCEPT_ENTRY moves the entry (another checkout). */
 export const SUBJECT = Object.freeze({
@@ -69,6 +69,8 @@ export const CORE = Object.freeze({
   get presentGivenUpReason() { return coreValue('REASON').presentGivenUp },
   /** The acceptance ledger's state of an admitted event (decision 4). */
   get admitted() { return coreValue('STATE').admitted },
+  /** The acceptance ledger's state of an interceptor record whose commit began (K3 `committing`). */
+  get committing() { return coreValue('STATE').committing },
   /** Every acceptance-ledger state, to read a record's state without knowing its field (decision 4). */
   get states() { return Object.values(coreValue('STATE')) },
   /** The id of the DSH inbox message core hands Fishball for `eventId` (decision 4, row 11e). */
@@ -152,7 +154,14 @@ export const FIXTURE = Object.freeze({
 })
 
 /** Harness waits only; never a product oracle. */
-export const WAIT = Object.freeze({ settleMs: 20000, quietMs: 800, pollMs: 25, childMs: 90000, testMs: 180000 })
+export const WAIT = Object.freeze({
+  settleMs: 20000, quietMs: 800, pollMs: 25, childMs: 90000, testMs: 180000,
+  /** Event-loop turns (setImmediate) given to a settled handler's tail before an unhandled rejection is ruled out. */
+  immediateTurns: 5,
+})
+
+/** Node's process events a case listens to. */
+export const PROCESS_EVENT = Object.freeze({ unhandledRejection: 'unhandledRejection' })
 
 /** Owners of rows this task cannot check (v3-tasks.md W2–W6). */
 export const LATER = Object.freeze({

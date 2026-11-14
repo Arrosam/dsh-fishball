@@ -90,7 +90,7 @@ const AT_RESTART = Object.freeze({
   userRemoves: (world, event) => world.agent.inbox.remove(CORE.messageId(event.eventId)),
 })
 /** The states (STATE values) of core's ledger records that name `event` (decision 4). */
-function ledgerStates(world, event) {
+export function ledgerStates(world, event) {
   const table = world.ctx.storageDomain.get(CORE.ledger.domain)?.table(CORE.ledger.table)
   if (table === undefined) return []
   return [...table.entries()]
