@@ -118,6 +118,9 @@ export const V2_SUITES = Object.freeze({
     // V3 C-PAIR (AUTH-UC-02/04, AUTH-EP-03/06, AUTH-DT-02, AUTH-BVA-05, AUTH-ST-01 rows 2–4/11/13/14, NAME-UC-01/03, NAME-EP-01…04, NAME-BVA-01/03, NAME-DT-01/02, NAME-ST-01 rows 1–7); run with test/run-v3.mjs.
     file('test/v3/c-pair/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
     file('test/v3/c-pair/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
+    // V3 C-OAUTH (AUTH-UC-03/06/07/08, AUTH-EP-01/02/05/07/09, AUTH-BVA-01/02/06, AUTH-DT-01, AUTH-ST-02, store/limiter rows of AUTH-ST-04/05, K1b-UC-02/DT-06, C-PAIR's token-endpoint rows); run with test/run-v3.mjs.
+    file('test/v3/c-oauth/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector authorization server: token store, failure limiter, bearer verifier, token endpoint (C-OAUTH)'),
+    file('test/v3/c-oauth/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector authorization server: token store, failure limiter, bearer verifier, token endpoint (C-OAUTH)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
