@@ -11,10 +11,15 @@
  *              (dsh-storage-domain over dsh-storage-json), where the module records which values
  *              it generated (design §5.3);
  *     logger   a cordis logger of that context; the world's exporter sees every line it writes.
- *   registry.apply(tokens) → Promise<{ok: true} | {ok: false, code, …}>
+ *   registry.apply(tokens, reason?) → Promise<{ok: true} | {ok: false, code, …}>
  *     the `settings/document-updated` of the connector's `tokens` list (design §5.1, §5.2):
  *     `tokens` is `[{label, enabled, ref}]`, the whole list. A refused save (`SETTINGS_REFUSAL`)
- *     keeps the previous list. Deleting an entry is a list without it.
+ *     keeps the previous list. Deleting an entry is a list without it. With no `reason` it is the
+ *     user's settings save; `reason` SUBJECT.startReason is the connector's start, which feeds
+ *     the stored list without being a save (Q5 = B, the user, 2026-11-14: only a save generates
+ *     a value for an entry whose value was unset).
+ *   registry.refresh() → Promise
+ *     a credential change (`credentials/reference-updated`): re-reads every value of the list.
  *   registry.match / get / list / onRevoked   K1 `TokenRegistry`, unchanged.
  *   registry.close?()   optional: stops listening to the credential store.
  *
@@ -44,7 +49,7 @@ async function factory(sdk) {
 export async function makeSubject(sdk, world) {
   const create = await factory(sdk)
   const registry = await create({ ctx: world.ctx, logger: world.logger })
-  for (const member of ['apply', 'match', 'get', 'list', 'onRevoked']) {
+  for (const member of ['apply', 'refresh', 'match', 'get', 'list', 'onRevoked']) {
     assert.equal(typeof registry?.[member], 'function', `the token registry has no ${member}()`)
   }
   return registry
