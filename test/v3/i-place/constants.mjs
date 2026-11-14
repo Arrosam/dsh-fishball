@@ -41,8 +41,20 @@ export const RELAYED = Object.freeze({
    * (dev 6d13f6a1) in the status `detail` or `message`.
    */
   blocked: Object.freeze({ field: 'plugin', texts: Object.freeze(['detail', 'message']), message: /Enabled bundles cannot load: (\S+) \(/ }),
-  /** Fishball 2026-11-15: the core V2 child rows are bare-subpath rows of core's patch; `fishball-ui` the only path row. */
-  pathRow: 'fishball-ui',
+  /**
+   * Core's patch rows (Fishball 2026-11-15, Q-13 probe correction). DSH client-modules serves a
+   * client only for a path row (resolved to its nearest manifest) or a bare package name, never
+   * for `fishball-core/<sub>`. So:
+   * - `fishball-ui` is the only path row whose nearest package.json is fishball-core's own (Q-13);
+   * - `fishball-page` and `fishball-recommend-plugins` are path rows into their own ui packages;
+   * - every slim child row is a `fishball-core/slim/*` subpath.
+   */
+  rows: Object.freeze({
+    corePathRow: 'fishball-ui',
+    uiPackages: Object.freeze({ 'fishball-page': path.join('ui', 'fishball-page'), 'fishball-recommend-plugins': path.join('ui', 'fishball-recommend-plugins') }),
+    slim: Object.freeze(['session-tools', 'approvals', 'app', 'inbox', 'admin', 'provider-sync'].map((n) => 'fishball-native-' + n)),
+    slimPrefix: V3.core.name + '/slim/',
+  }),
 })
 
 /**
