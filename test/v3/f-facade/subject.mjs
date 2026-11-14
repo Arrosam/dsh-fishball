@@ -1,23 +1,26 @@
 /**
  * The one place that binds the F-FACADE cases to the façade module (`packages/core/src/bridge/`).
- * No contract freezes its factory, and the dev session has relayed no surface yet, so this file
- * assumes ONE shape, from the brief's "Builds" list. If the module differs, only this file changes:
+ * The surface was relayed by Fishball on 2026-11-15 (`dev/v3-f-facade` @ 9694c90c):
  *
- *   createBridge({ctx, link, logger}) → Bridge
- *     ctx     a cordis context with DSH's `tools` service: the façade re-exposes the target's
- *             tools to Fishball's model there (design §6.3: the stock dsh-mcp-client is not used)
- *     link    core's link, public API only (O4): tools(), onTools(fn), callTool(name, args),
- *             status(), onStatus(fn) (fakes.mjs FakeLink)
- *     logger  a cordis logger
+ *   createBridge({link, gate?, imagesSupported?, logger?}) → Bridge
+ *     link             core's link, public API: status(), tools(), onTools(fn), callTool(name, args)
+ *                      (fakes.mjs FakeLink)
+ *     gate             X19: `gate.send('session.message' | 'session.redirect', sessionId)` →
+ *                      `{ok: true}` or `{code, reason}`
+ *     imagesSupported  whether Fishball's model takes images (the image gate on the model's
+ *                      `attachment_read`). ASSUMED a boolean: the relay names no type.
+ *     logger           a cordis logger
  *   Bridge = {
- *     contributedCount() → number    contributed tools on offer, for F-STATUS (R-EXT-14 note)
- *     present(event) → content blocks
- *                                    F-INTERCEPT's `fishball.present` port, the X9 Fishball branch
- *     attention: { signal(pluginId, {important}) → Promise<result> }
- *                                    X8, the core side (Q-14): `embed-ui.attention.signal` over the
- *                                    link, or `{ok: false, code: 'unsupported-operation'}`
- *     close()                        withdraws what it registered
+ *     mount(toolsService) → dispose   registers DSH ToolDefinitions for Fishball's model
+ *     bridge(pluginId, ops) → {supports(name), call(name, args)}   X12; a name outside `ops`
+ *                                     answers `forbidden`
+ *     attention: {signal(pluginId, {important})}   X8; never rejects
+ *     present(event) → [{type: 'text', text}]       F-INTERCEPT's `fishball.present` port
+ *     contributedCount(), onChange(fn), close()
  *   }
+ *
+ * `makeBridge` mounts the façade on the world's `ctx.tools` (what Fishball's agent sees) and
+ * returns the Bridge plus `unmount` and a `close` that undoes both.
  *
  * F-INTERCEPT's merged entry (`packages/core/src/events/index.js`) is used as test/v3/f-intercept
  * binds it: `openLedger(ctx, storageDomain)` and `createEvents({table, link: {ack}, fishball:
@@ -40,21 +43,29 @@ async function bound(sdk, file, owner) {
   return importInstance(sdk, path.relative(INSTANCE.dir, file))
 }
 
-/** The façade's factory: `createBridge`, else the one function export named like it. */
-async function factoryOf(sdk) {
+/**
+ * One façade over `link`, mounted on `ctx.tools`. `gate` and `imagesSupported` are passed only
+ * when a case sets them, so the module's own defaults apply otherwise.
+ */
+export async function makeBridge(sdk, { ctx, link, logger, gate, imagesSupported }) {
   const mod = await bound(sdk, SUBJECT.entry, 'F-FACADE "Owns" packages/core/src/bridge/')
-  if (typeof mod[SUBJECT.factory] === 'function') return mod[SUBJECT.factory]
-  const named = Object.entries(mod).filter(([name, value]) => typeof value === 'function' && SUBJECT.factoryName.test(name))
-  assert.equal(named.length, 1, `packages/core/src/bridge/index.js exports no ${SUBJECT.factory}() (found ${Object.keys(mod).join(', ') || 'nothing'})`)
-  return named[0][1]
-}
-
-/** One façade over `link` in `ctx`. */
-export async function makeBridge(sdk, { ctx, link, logger }) {
-  const create = await factoryOf(sdk)
-  const bridge = await create({ ctx, link, logger })
-  assert.ok(bridge && typeof bridge === 'object', 'createBridge returned no object')
-  return bridge
+  assert.equal(typeof mod[SUBJECT.factory], 'function', `packages/core/src/bridge/index.js exports no ${SUBJECT.factory}()`)
+  const bridge = mod[SUBJECT.factory]({
+    link, logger,
+    ...(gate === undefined ? {} : { gate }),
+    ...(imagesSupported === undefined ? {} : { imagesSupported }),
+  })
+  assert.equal(typeof bridge?.mount, 'function', `${SUBJECT.factory}() returned no mount()`)
+  let dispose = bridge.mount(ctx.tools)
+  const unmount = () => { dispose?.(); dispose = undefined }
+  // A plain view: the module's object may be frozen (a Proxy over it could not replace `close`).
+  // Every member is the module's own, called on the module's object (it may hold private state).
+  const view = {}
+  for (const key of Object.keys(bridge)) {
+    const value = bridge[key]
+    view[key] = typeof value === 'function' ? value.bind(bridge) : value
+  }
+  return Object.assign(view, { unmount, async close() { unmount(); await bridge.close?.() } })
 }
 
 /** F-INTERCEPT's events module bound to `sdk`. */
