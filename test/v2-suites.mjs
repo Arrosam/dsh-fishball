@@ -143,6 +143,9 @@ export const V2_SUITES = Object.freeze({
     // V3 C-ROUTE (EVT-EP-01, EVT-EP-04 end to end, EVT-DT-01, WATCH-UC-01/02, WATCH-EP-01, WATCH-ST-01 rows 1–6, HAND-EP-01, HAND-DT-01/02, HAND-ST-01, HAND-UC-02 service part, PLAT-UC-03); run with test/run-v3.mjs.
     file('test/v3/c-route/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
     file('test/v3/c-route/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
+    // V3 FEAT-PEERS (PLAT-EP-04 rows 1, 2, 4, PLAT-UC-06 main and A1, PLAT-BVA-01, EXT-UC-04 A1; the board export was dropped by the user, 2026-11-15); run with test/run-v3.mjs.
+    file('test/v3/feat-peers/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
+    file('test/v3/feat-peers/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
