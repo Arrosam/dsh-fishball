@@ -22,13 +22,13 @@
  */
 import { createHash, randomUUID } from 'node:crypto'
 import {
-  CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, MAILBOX, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON,
+  CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, MAILBOX, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIREMENT_REASON,
 } from '../../mcp-schema/index.js'
 import { EMIT_REFUSAL } from '../../tools/index.js'
 import { canonical } from '../digest.js'
 import { EVENT_STATE, HASH, LOG, MINIMUM, MISUSE, SAFE_KEY, START_SEQUENCE } from './constants.js'
 import { decodeCursor, encodeCursor } from './cursor.js'
-import { assertDraft, contributorOf } from './draft.js'
+import { assertDraft, contributorOf, isNonEmptyString } from './draft.js'
 
 const hash = (text) => createHash(HASH.algorithm).update(text).digest(HASH.encoding)
 
@@ -56,6 +56,13 @@ function snapshotOf(draft) {
   } catch {
     throw new TypeError(MISUSE.draft)
   }
+}
+
+/** A `retirement` draft for `eventId`, checked as every draft is; the ids are the retired event's. */
+function retirementDraft(eventId, reason) {
+  const draft = { type: EVENT_TYPE.retirement, sourceSessionId: null, correlationId: null, payload: { retiredEventId: eventId, reason } }
+  assertDraft(draft)
+  return draft
 }
 
 /** The box record after the first expiry of its hold: still held (the entry is still disabled), now expired. */
@@ -134,7 +141,10 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
     return id
   }
 
-  /** The principal's box, created on first use with its one generation (store.js: nothing here starts another). */
+  /**
+   * The principal's box, created on first use with its one generation (K1 MAILBOX, DECIDED #W2-1).
+   * Nothing else starts a generation: only a box record lost with its storage is created again.
+   */
   async function boxOf(principalKey) {
     const boxKey = boxKeyOf(principalKey)
     const existing = boxes.get(boxKey)
@@ -175,7 +185,13 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
       payload,
       payloadDigest: hash(canonical(payload)),
     }
-    await events.put(eventId, { boxKey, state: EVENT_STATE.pending, event, ...(draft.dedupeKey === undefined ? {} : { dedupeKey: draft.dedupeKey }) })
+    await events.put(eventId, {
+      boxKey,
+      state: EVENT_STATE.pending,
+      event,
+      ...(draft.dedupeKey === undefined ? {} : { dedupeKey: draft.dedupeKey }),
+      ...(draft.activationTag === undefined ? {} : { activationTag: draft.activationTag }),
+    })
     entry.pending.add(eventId)
     entry.head = sequence
     // The event is durable and pollable from here. A failed head write therefore fails nothing:
@@ -197,6 +213,18 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
     const entry = entryOf(boxKey)
     entry.pending.delete(eventId)
     entry.ended.add(eventId)
+  }
+
+  /**
+   * Replaces one pending event by a `retirement` naming it. The retirement keeps the event's session
+   * and correlation ids, so the client can match it (Fishball 2026-11-14, item 6).
+   * The retirement is written first. A crash between the two writes then leaves the old event
+   * pending next to its retirement, so the client still learns the offer is dead. The reverse
+   * order could leave the old event retired with no retirement ever sent.
+   */
+  async function retireRecord(principalKey, boxKey, record, draft) {
+    await append(principalKey, boxKey, { ...draft, sourceSessionId: record.event.sourceSessionId, correlationId: record.event.correlationId })
+    await finish(boxKey, record.event.eventId, EVENT_STATE.retired, clock())
   }
 
   async function removeEvent(boxKey, eventId) {
@@ -382,24 +410,49 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
     },
 
     /**
-     * The `retirement` names the retired event and keeps its session and correlation ids, so the
-     * client can match it (Fishball 2026-11-14, item 6). An event that is not pending in this
-     * box (acked, already retired, unknown) is left alone, and nothing is committed.
+     * An event that is not pending in this box (acked, already retired, unknown) is left alone, and
+     * nothing is committed (`retireRecord`).
      */
     retire(principalKey, eventId, reason) {
       assertPrincipal(principalKey)
-      const draft = { type: EVENT_TYPE.retirement, sourceSessionId: null, correlationId: null, payload: { retiredEventId: eventId, reason } }
-      assertDraft(draft)
+      const draft = retirementDraft(eventId, reason)
       return serial(async () => {
         // No box is created here: a pending event in this box means the box exists already.
         const boxKey = boxKeyOf(principalKey)
         const record = events.get(eventId)
         if (record === undefined || record.boxKey !== boxKey || record.state !== EVENT_STATE.pending) return
-        // The retirement is written first. A crash between the two writes then leaves the old
-        // event pending next to its retirement, so the client still learns the offer is dead.
-        // The reverse order could leave the old event retired with no retirement ever sent.
-        await append(principalKey, boxKey, { ...draft, sourceSessionId: record.event.sourceSessionId, correlationId: record.event.correlationId })
-        await finish(boxKey, eventId, EVENT_STATE.retired, clock())
+        await retireRecord(principalKey, boxKey, record, draft)
+      })
+    },
+
+    /**
+     * Retires every pending event of `namespace` committed with `activationTag`, in every box, held
+     * ones included (K1 `retireContributor`, R-EXT-19). C-EXT calls it once per withdrawn or
+     * quarantined activation instead of keeping one retire per committed event. It scans the
+     * pending index only, so its cost is the pending events, which QUEUE.maxQueuedInputs bounds per box.
+     * One box's failure does not stop the others, as in `expireHolds`: it is logged, every other box
+     * is still retired, and the call then rejects, so the caller knows a retry is needed; a repeat
+     * retires only what is still pending.
+     */
+    retireContributor(namespace, activationTag) {
+      if (!isNonEmptyString(namespace) || !isNonEmptyString(activationTag)) throw new TypeError(MISUSE.contributor)
+      const draftFor = (record) => retirementDraft(record.event.eventId, RETIREMENT_REASON.contributorWithdrawn)
+      return serial(async () => {
+        let failure
+        for (const [boxKey, entry] of index) {
+          const matching = recordsIn(entry.pending)
+            .filter((record) => record.activationTag === activationTag && contributorOf(record.event.type) === namespace)
+          // A box with pending events has its record: `append` writes the event only into a box that exists.
+          if (matching.length === 0) continue
+          const { principalKey } = boxes.get(boxKey)
+          try {
+            for (const record of matching) await retireRecord(principalKey, boxKey, record, draftFor(record))
+          } catch (error) {
+            warn(LOG.retireContributorFailed)(error)
+            failure ??= error
+          }
+        }
+        if (failure !== undefined) throw failure
       })
     },
 

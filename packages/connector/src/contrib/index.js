@@ -34,7 +34,8 @@ export { LOG } from './constants.js'
  *   close: () => void}}
  */
 export function createContributions({ mailbox, router, sessionExists, onToolsChanged, logger, now = Date.now }) {
-  const registry = createRegistry({ logger, onToolsChanged })
+  // The registry retires through emit's mailbox port; `events` is bound before any call can reach it.
+  const registry = createRegistry({ logger, onToolsChanged, retireEvents: (act) => events.retireEvents(act) })
   const events = createEmit({ registry, mailbox, router, sessionExists, logger, now })
   const calls = createCalls({ registry, logger })
   let provided = false

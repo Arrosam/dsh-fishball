@@ -16,14 +16,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {
   APPROVAL_LISTENER, BEARER_CHALLENGE, CLIENT_AUTH, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS, HTTP_METHOD, HTTP_STATUS,
-  LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS, OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, SCOPE, TIME_UNIT, TOKEN_RESPONSE_HEADERS, TOKEN_VALUE,
+  LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS, OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, SCOPE, TIME_UNIT, TOKEN_ENDPOINT_LIMITS, TOKEN_RESPONSE_HEADERS, TOKEN_VALUE,
   authorizationServerMetadata, isFishballId, oauthErrorBody, oauthUrls, protectedResourceMetadata, tokenResponse,
 } from '../../../packages/connector/mcp-schema/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export {
   APPROVAL_LISTENER, BEARER_CHALLENGE, CLIENT_AUTH, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS, HTTP_METHOD, HTTP_STATUS,
-  LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS, OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, SCOPE, TIME_UNIT, TOKEN_RESPONSE_HEADERS, TOKEN_VALUE,
+  LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS, OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, SCOPE, TIME_UNIT, TOKEN_ENDPOINT_LIMITS, TOKEN_RESPONSE_HEADERS, TOKEN_VALUE,
   authorizationServerMetadata, isFishballId, oauthErrorBody, oauthUrls, protectedResourceMetadata, tokenResponse,
 }
 
@@ -124,6 +124,15 @@ export const FIXTURE = Object.freeze({
   /** AUTH-BVA-02: the filler character of an id of a given length. */
   idFill: 'a',
   idDot: '.',
+})
+
+/** Fixture data of the K1-amendment rows (amend-cases.mjs). */
+export const AMEND = Object.freeze({
+  /** A form parameter no grant knows, used to pad a form to an exact size (RFC 6749 §3.2: unknown parameters are ignored). */
+  padParameter: 'fbtest_pad',
+  padChar: 'p',
+  /** Fishball ids of the per-address rows: one per (address, client id) bucket. */
+  addressClient: (n) => `fbtest-addr-${n}`,
 })
 
 /** AUTH-EP-03 rows 1–6 and AUTH-BVA-02: whether the id grammar accepts the id (R-ID-02). */

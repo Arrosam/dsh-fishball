@@ -28,15 +28,22 @@ function offerValid(type, offer) {
 /** A dedupe key is a contributor event's only, and any string (K1 EventDraft `dedupeKey?: string`, R-EXT-18). */
 const dedupeValid = (type, dedupeKey) => dedupeKey === undefined || (type.startsWith(CONTRIBUTED_TYPE_PREFIX) && typeof dedupeKey === 'string')
 
+/** An activation tag is a contributor event's only, and a non-empty string (K1 EventDraft `activationTag?`). */
+const activationTagValid = (type, tag) => tag === undefined || (type.startsWith(CONTRIBUTED_TYPE_PREFIX) && isNonEmptyString(tag))
+
+/** An activation tag's shape, and that of `retireContributor`'s namespace (K1: opaque non-empty strings). */
+export const isNonEmptyString = (value) => typeof value === 'string' && value.length > 0
+
 /**
  * @param {object} draft - a K1 EventDraft.
  * @throws {TypeError} when the type, the session or correlation id, the offer, the payload (against
- *   K1 `payloadSchemaOf`) or the dedupe key is invalid.
+ *   K1 `payloadSchemaOf`), the dedupe key or the activation tag is invalid.
  */
 export function assertDraft(draft) {
   const valid = draft !== null && typeof draft === 'object' && isEventType(draft.type)
     && isNullableString(draft.sourceSessionId) && isNullableString(draft.correlationId)
     && offerValid(draft.type, draft.offer) && dedupeValid(draft.type, draft.dedupeKey)
+    && activationTagValid(draft.type, draft.activationTag)
   if (!valid) throw new TypeError(MISUSE.draft)
   const payload = validateValue(payloadSchemaOf(draft.type), draft.payload)
   if (!payload.ok) throw new TypeError(`${MISUSE.draft}: payload at ${payload.path}`)

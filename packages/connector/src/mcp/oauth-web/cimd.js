@@ -10,7 +10,7 @@
  * package exports no reusable helper, so the pinning is restated here). Every limit is applied here,
  * not in the transport: https only, no redirect followed, CIMD_LIMITS.maxBytes, CIMD_LIMITS.timeoutMs
  * for the whole exchange, and a cache by `max-age` capped at CIMD_LIMITS.maxCacheMs and at
- * STATE_CAPS.cimdCacheEntries documents. Failures are never cached. Every exchange is aborted when
+ * CIMD_LIMITS.cacheEntriesMax documents. Failures are never cached. Every exchange is aborted when
  * it ends, read or not, so no refused response keeps its socket.
  */
 import { lookup } from 'node:dns/promises'
@@ -18,7 +18,7 @@ import https from 'node:https'
 import { BlockList, isIP } from 'node:net'
 import { CIMD_LIMITS, TIME_UNIT } from '../../../mcp-schema/index.js'
 import { documentProblem, isClientIdUrl } from './client-rules.js'
-import { BLOCKED_SUBNETS, CIMD_HTTP, CIMD_REFUSAL, SERVER_EVENT, STATE_CAPS } from './constants.js'
+import { BLOCKED_SUBNETS, CIMD_HTTP, CIMD_REFUSAL, SERVER_EVENT } from './constants.js'
 import { readCapped } from './io.js'
 
 const blocked = new BlockList()
@@ -94,14 +94,14 @@ class CimdRefusal extends Error {
 export function createCimdFetcher({ resolve = systemResolve, transport = httpsTransport, now = Date.now, timers = globalThis } = {}) {
   /**
    * clientId → {doc, expiresAt}, in insertion order (a Map's), so the oldest is first. At
-   * STATE_CAPS.cimdCacheEntries the oldest is evicted; an expired hit is dropped when read.
+   * CIMD_LIMITS.cacheEntriesMax the oldest is evicted; an expired hit is dropped when read.
    */
   const cache = new Map()
 
   function remember(clientId, doc, lifetimeMs) {
     if (lifetimeMs <= 0) return
     cache.delete(clientId)
-    while (cache.size >= STATE_CAPS.cimdCacheEntries) cache.delete(cache.keys().next().value)
+    while (cache.size >= CIMD_LIMITS.cacheEntriesMax) cache.delete(cache.keys().next().value)
     cache.set(clientId, { doc, expiresAt: now() + lifetimeMs })
   }
 

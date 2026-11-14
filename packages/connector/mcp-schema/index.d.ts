@@ -145,6 +145,13 @@ export type PairResult =
 export type SetNameResult = { ok: true; name: string | null } | { ok: false; code: 'name-taken' | 'name-invalid' }
 
 /**
+ * `PairStore.succeed`'s answer (K1 amendment after W2, for C-SUCCEED). `successor-unpaired`
+ * (REFUSAL.successorUnpaired) is K3's RetireRefusalCode (host-services/tokens.d.ts), which
+ * C-SUCCEED returns as it is.
+ */
+export type SucceedResult = { ok: true; pair: Pair } | { ok: false; code: 'successor-unpaired' }
+
+/**
  * C-PAIR's pair store: one serial registry over every pair and name (S3: DSH storage has no
  * secondary index, so `pair`, the page's bind and `set_name` are one transaction each over it).
  */
@@ -176,6 +183,20 @@ export interface PairStore {
   seen(principalKey: PrincipalKey, now: EpochMs): void
   /** Deleting an entry frees its id and name (R-ID-13, R-NAME-02). */
   remove(entryKey: EntryKey): Promise<void>
+  /**
+   * Reinstall succession's pair step (R-HOST-09, R-NAME-07; K1 amendment after W2, for C-SUCCEED's
+   * `retire`). In one atomic registry write: the old entry's pair is removed (its id and name are
+   * freed, as `remove`) and the successor's pair takes the old one's name, or its lack of one
+   * (`null`), replacing the successor's own. So the name is never held twice and never refused.
+   * - The successor's entry is unpaired: `successor-unpaired`, nothing changes.
+   * - The old entry is unpaired: `{ok: true, pair}` with the successor's unchanged pair, and
+   *   nothing changes (it has no principal, so there is no name to move; Fishball 2026-11-14).
+   * - Otherwise `{ok: true, pair}` with the successor's pair after the step; its id, principal
+   *   key, `pairedAt` and page fields are its own, unchanged.
+   * Listeners run once after a change. A failed write changes nothing (the caller rolls back).
+   * @throws TypeError when both keys name the same entry (a caller bug).
+   */
+  succeed(oldEntryKey: EntryKey, successorEntryKey: EntryKey): Promise<SucceedResult>
   onChange(listener: () => void): () => void
 }
 
@@ -188,6 +209,12 @@ export interface EventDraft {
   payload: JsonValue
   /** Contributor events only: a pending duplicate from the same contributor is `duplicate`. */
   dedupeKey?: string
+  /**
+   * Contributor events only (K1 amendment after W2): an opaque non-empty tag of the contributor
+   * activation that emitted it, so `Mailbox.retireContributor` can find it. Stored with the
+   * event; never part of the MailboxEvent a client polls.
+   */
+  activationTag?: string
 }
 
 export type CommitResult = { ok: true; eventId: string } | { ok: false; code: 'queue-full' | 'duplicate' }
@@ -201,9 +228,22 @@ export interface Mailbox {
   summary(principalKey: PrincipalKey): Promise<{ pending: number; headSequence: number; mailboxGeneration: string }>
   /** Replaces a pending event by a `retirement` naming it (R-EXT-19, R-TOK-05, R-HOST-09). */
   retire(principalKey: PrincipalKey, eventId: string, reason: 'withdrawn' | 'revoked' | 'released' | 'reissued' | 'contributor-withdrawn'): Promise<void>
+  /**
+   * A contributor activation's withdrawal or quarantine (R-EXT-19; K1 amendment after W2, for
+   * C-EXT): every **pending** event of type `contributed:<namespace>.*` committed with this
+   * `activationTag`, in every pair's mailbox (held ones included), is retired as `retire` does,
+   * with reason `contributor-withdrawn`. Acked and already-retired events, other namespaces and
+   * other activations' events are left alone. Repeating it is a no-op for what it already retired.
+   */
+  retireContributor(namespace: string, activationTag: string): Promise<void>
   /** Disable (R-TOK-05): the mailbox is held, not pollable, for MAILBOX.disabledRetentionMs from `now`. */
   hold(principalKey: PrincipalKey, now: EpochMs): Promise<void>
-  /** Re-enable within the hold: the held events are pending again, same identities. */
+  /**
+   * Re-enable within the hold: the held events are pending again, same identities.
+   * `mailboxGeneration` (K1 amendment after W2): `hold`, `release`, `drop` and `expireHolds`
+   * keep the pair's generation; it changes only when the mailbox's storage is lost or reset
+   * (MAILBOX). Only then is an earlier cursor stale (`resync`).
+   */
   release(principalKey: PrincipalKey): Promise<void>
   /**
    * Delete, or the end of the hold: every event is dropped. Returns the dropped `ask` events'
@@ -380,10 +420,19 @@ export interface GateRequest {
   readonly headers: Readonly<Record<string, string | readonly string[] | undefined>>
 }
 
-/** `admit`'s request: the body has been read by the caller, stopping one byte past ENDPOINT_LIMITS.bodyBytes. */
+/**
+ * `admit`'s request (K1 amendment after W2): the caller calls `admit` **before** it reads the MCP
+ * body, so a pass's in-flight slot bounds one entry's concurrent uploads too.
+ */
 export interface AdmitRequest extends GateRequest {
-  /** Bytes read; more than ENDPOINT_LIMITS.bodyBytes is 413, exactly at it passes (PLAT-BVA-02). */
-  readonly bodyBytes: number
+  /**
+   * The body length the request declares (`Content-Length`), or absent when it declares none
+   * (chunked). More than ENDPOINT_LIMITS.bodyBytes is 413, exactly at it passes (PLAT-BVA-02). A
+   * body with no declared length is read under the pass's slot; once it exceeds
+   * ENDPOINT_LIMITS.bodyBytes the caller answers the same 413 itself and calls `done()` (the
+   * bucket token stays spent).
+   */
+  readonly bodyBytes?: number
 }
 
 /** `check`'s refusals, in REQUEST_GATE.checkOrder. 405 and 403 have no body (the user's decision, 2026-11-14). */
@@ -444,7 +493,8 @@ export interface RequestGate {
   check(req: GateRequest, surface: GateSurface): { readonly pass: true } | CheckRefusal
   /**
    * After the bearer check, on REQUEST_GATE.admitSurfaces only (`mcp`; the user's decision,
-   * 2026-11-14); `token` and `approval` never call it. Refuses 413 when `bodyBytes` exceeds
+   * 2026-11-14); `token` and `approval` never call it. Called before the body is read (AdmitRequest).
+   * Refuses 413 when the declared `bodyBytes` exceeds
    * ENDPOINT_LIMITS.bodyBytes, else 429 when the caller has ENDPOINT_LIMITS.inFlightPerPrincipal
    * requests in flight or its token bucket (requestsPerMinute, requestBurst; clock from
    * GateListenerFacts.now) is empty. Limits are
@@ -540,9 +590,9 @@ export interface GrantRegistry {
 // ---------------------------------------------------------------------------------------------
 
 export declare const ANSWERABLE_TYPES: readonly ["permission", "question", "plan-review", "ask"]
-export declare const APPROVAL_LISTENER: { readonly defaultPort: number; readonly retryMs: number; readonly headers: { readonly "cache-control": "no-store"; readonly "referrer-policy": "no-referrer"; readonly "content-security-policy": "default-src 'none'; frame-ancestors 'none'" }; readonly redirectStatus: 303 }
+export declare const APPROVAL_LISTENER: { readonly defaultPort: number; readonly retryMs: number; readonly decisionBodyBytes: number; readonly pendingRequestsMax: number; readonly headers: { readonly "cache-control": "no-store"; readonly "referrer-policy": "no-referrer"; readonly "content-security-policy": "default-src 'none'; frame-ancestors 'none'" }; readonly redirectStatus: 303 }
 export declare const BEARER_CHALLENGE: { readonly scheme: "Bearer"; readonly basicScheme: "Basic"; readonly params: readonly ["error", "error_description", "scope", "resource_metadata"]; readonly queryParameter: "access_token"; readonly queryClientSecret: "client_secret" }
-export declare const CIMD_LIMITS: { readonly maxBytes: 5120; readonly timeoutMs: number; readonly maxCacheMs: number; readonly scheme: "https:"; readonly forbiddenAuthFields: readonly ["client_secret", "client_secret_expires_at"] }
+export declare const CIMD_LIMITS: { readonly maxBytes: 5120; readonly timeoutMs: number; readonly maxCacheMs: number; readonly cacheEntriesMax: number; readonly scheme: "https:"; readonly forbiddenAuthFields: readonly ["client_secret", "client_secret_expires_at"] }
 export declare const CLIENT_AUTH: { readonly basic: "client_secret_basic"; readonly post: "client_secret_post"; readonly none: "none" }
 export declare const CONNECTED: { readonly listenResource: "fishball://events" }
 export declare const CONNECTOR_STATUS: { readonly approvalPortInUse: "approval-port-in-use" }
@@ -592,8 +642,8 @@ export declare const PATHS: { readonly mcp: "/api/fishball/mcp"; readonly issuer
 export declare const PKCE: { readonly method: "S256" }
 export declare const PROTOCOL: { readonly version: "2026-07-28"; readonly unsupportedVersionCode: -32022; readonly headerMismatchCode: -32020; readonly ignoredHeaders: readonly ["mcp-session-id"]; readonly clientCredentialsExtension: "io.modelcontextprotocol/oauth-client-credentials" }
 export declare const QUEUE: { readonly maxQueuedInputs: 200; readonly refusedTypes: readonly ["message", "turn-finished", "state", "notice"]; readonly contributedRefused: true }
-export declare const RATE_LIMITS: { readonly windowMs: number; readonly tokenRequestsPerWindow: number; readonly retryAfterHeader: "retry-after" }
-export declare const REFUSAL: { readonly limitExceeded: "limit-exceeded"; readonly invalidArguments: "invalid-arguments"; readonly queueFull: "queue-full"; readonly rateLimited: "rate-limited"; readonly operationFailed: "operation-failed"; readonly forbidden: "forbidden"; readonly unknownSession: "unknown-session"; readonly expired: "expired"; readonly conflict: "conflict"; readonly unavailable: "unavailable"; readonly unsupportedOperation: "unsupported-operation"; readonly notReferenced: "not-referenced"; readonly tooLarge: "too-large"; readonly imagesUnsupported: "images-unsupported"; readonly notManaged: "not-managed"; readonly featureOff: "feature-off"; readonly sessionNotLive: "session-not-live"; readonly invalidDecision: "invalid-decision"; readonly riskRequired: "risk-required"; readonly reasonRequired: "reason-required"; readonly allowNeedsLowRisk: "allow-needs-low-risk"; readonly argumentsIncomplete: "arguments-incomplete"; readonly questionRequired: "question-required"; readonly modeUser: "mode-user"; readonly badAnswer: "bad-answer"; readonly alreadySettled: "already-settled"; readonly grantInvalid: "grant-invalid"; readonly prefixNotShellTool: "prefix-not-shell-tool"; readonly prefixEmpty: "prefix-empty"; readonly prefixNotInCall: "prefix-not-in-call"; readonly expiresRequired: "expires-at-required"; readonly expiresInvalid: "expires-at-invalid"; readonly expiresPast: "expires-at-past"; readonly grantUnknown: "unknown"; readonly grantEnded: "ended"; readonly alreadyPaired: "already-paired"; readonly idTaken: "id-taken"; readonly nameInvalid: "name-invalid"; readonly nameTaken: "name-taken"; readonly unknownEvent: "unknown-event"; readonly digestMismatch: "digest-mismatch" }
+export declare const RATE_LIMITS: { readonly windowMs: number; readonly tokenRequestsPerWindow: number; readonly tokenRequestsPerAddressPerWindow: number; readonly retryAfterHeader: "retry-after" }
+export declare const REFUSAL: { readonly limitExceeded: "limit-exceeded"; readonly invalidArguments: "invalid-arguments"; readonly queueFull: "queue-full"; readonly rateLimited: "rate-limited"; readonly operationFailed: "operation-failed"; readonly forbidden: "forbidden"; readonly unknownSession: "unknown-session"; readonly expired: "expired"; readonly conflict: "conflict"; readonly unavailable: "unavailable"; readonly unsupportedOperation: "unsupported-operation"; readonly notReferenced: "not-referenced"; readonly tooLarge: "too-large"; readonly imagesUnsupported: "images-unsupported"; readonly notManaged: "not-managed"; readonly featureOff: "feature-off"; readonly sessionNotLive: "session-not-live"; readonly invalidDecision: "invalid-decision"; readonly riskRequired: "risk-required"; readonly reasonRequired: "reason-required"; readonly allowNeedsLowRisk: "allow-needs-low-risk"; readonly argumentsIncomplete: "arguments-incomplete"; readonly questionRequired: "question-required"; readonly modeUser: "mode-user"; readonly badAnswer: "bad-answer"; readonly alreadySettled: "already-settled"; readonly grantInvalid: "grant-invalid"; readonly prefixNotShellTool: "prefix-not-shell-tool"; readonly prefixEmpty: "prefix-empty"; readonly prefixNotInCall: "prefix-not-in-call"; readonly expiresRequired: "expires-at-required"; readonly expiresInvalid: "expires-at-invalid"; readonly expiresPast: "expires-at-past"; readonly grantUnknown: "unknown"; readonly grantEnded: "ended"; readonly alreadyPaired: "already-paired"; readonly idTaken: "id-taken"; readonly nameInvalid: "name-invalid"; readonly nameTaken: "name-taken"; readonly unknownEvent: "unknown-event"; readonly digestMismatch: "digest-mismatch"; readonly successorUnpaired: "successor-unpaired" }
 export declare const REQUEST_GATE: {
   readonly checkOrder: readonly [405, 403, 503]
   readonly admitOrder: readonly [413, 429]
@@ -622,6 +672,7 @@ export declare const SETTINGS_REFUSAL: { readonly refDuplicate: "ref-duplicate";
 export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal" }
 export declare const SETTLEMENT_OUTCOME: { readonly allowed: "allowed"; readonly rejected: "rejected"; readonly answered: "answered" }
 export declare const TIME_UNIT: { readonly msPerSecond: 1000 }
+export declare const TOKEN_ENDPOINT_LIMITS: { readonly formBodyBytes: number }
 export declare const TOKEN_RESPONSE_HEADERS: { readonly "cache-control": "no-store"; readonly pragma: "no-cache" }
 export declare const TOKEN_TYPE: "Bearer"
 export declare const TOKEN_VALUE: { readonly generatedPrefix: "fbt_"; readonly generatedBytes: 32; readonly minChars: 32; readonly opaqueBytes: 32; readonly digestAlgorithm: "sha256" }

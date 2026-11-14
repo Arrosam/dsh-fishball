@@ -279,6 +279,12 @@ export const LIFETIME = Object.freeze({
  * `client_id`), the key FAILURE_LIMIT.keyParts names. PROPOSED numbers: they allow the stock client's 2 token requests per failed
  * call and its 3 requests per hourly re-discovery (S7 §4.4) many times over.
  * - tokenRequestsPerWindow: every token-endpoint request, of any grant (R-OA-17).
+ * - tokenRequestsPerAddressPerWindow (K1 amendment after W2; PROPOSED, Fishball 2026-11-14):
+ *   every token request of one remote address, over all client ids, counted before its body is
+ *   read, so refusals that never reach the per-(address, client id) limit (a query secret, a bad
+ *   media type, an over-long or bad form) are bounded too and rotating `client_id` buys nothing
+ *   past it. 150 is tokenRequestsPerWindow (30) scaled as FAILURE_LIMIT's address ceiling is
+ *   (50 / 10). It shares windowMs.
  * Over a limit, as over FAILURE_LIMIT: HTTP 429 with `Retry-After` (whole seconds until the window
  * admits one more) and, at the token endpoint, `{error: "temporarily_unavailable"}`; nothing says
  * which tokens or ids exist.
@@ -286,6 +292,7 @@ export const LIFETIME = Object.freeze({
 export const RATE_LIMITS = Object.freeze({
   windowMs: MINUTE_MS,
   tokenRequestsPerWindow: 30,
+  tokenRequestsPerAddressPerWindow: 150,
   retryAfterHeader: 'retry-after',
 })
 
@@ -351,6 +358,13 @@ export const ENDPOINT_LIMITS = Object.freeze({
   // JSON-RPC 2.0 §4: the `jsonrpc` member of the limit-refusal body.
   jsonRpcVersion: '2.0',
 })
+
+/**
+ * The token endpoint's request body (K1 amendment after W2; RFC 6749 §3.2: a form).
+ * formBodyBytes: PROPOSED (Fishball 2026-11-14): 8 KiB, the S7 prototype's `maxFormBytes`. It is
+ * not ENDPOINT_LIMITS.bodyBytes, which bounds MCP bodies. A larger body is 400 `invalid_request`.
+ */
+export const TOKEN_ENDPOINT_LIMITS = Object.freeze({ formBodyBytes: 8 * KIB })
 
 /** The HTTP methods the connector's routes serve (design §3.1 step 1, §5.5 approval listener table). */
 export const HTTP_METHOD = Object.freeze({ get: 'GET', post: 'POST' })
@@ -432,7 +446,10 @@ export const REQUEST_GATE = Object.freeze({
   allowSeparator: ', ',
   // `Retry-After` of the in-flight 429 (PROPOSED, the user's choice 2026-11-14): one second, the
   // smallest whole-second value, because a slot frees as soon as any request ends. The token
-  // bucket's 429 derives its own value from ENDPOINT_LIMITS.requestsPerMinute.
+  // bucket's 429 derives its own value from ENDPOINT_LIMITS.requestsPerMinute. C-HTTP's 429 for
+  // the listen-stream cap (ENDPOINT_LIMITS.listenStreamsPerPrincipal) reuses this value, for the
+  // same reason: a stream slot frees as soon as any of the pair's streams ends (K1 amendment
+  // after W2; PROPOSED, Fishball 2026-11-14, Q4). It has no value of its own.
   inFlightRetryAfterMs: SECOND_MS,
 })
 
@@ -442,10 +459,19 @@ export const REQUEST_GATE = Object.freeze({
  * On a clash the connector retries the bind every `retryMs` (PROPOSED: R-OA-20 says the page is
  * unreachable "until the port is free or changed", so it recovers by itself), and a change of the
  * setting rebinds at once.
+ * K1 amendment after W2, both PROPOSED (Fishball 2026-11-14):
+ * - decisionBodyBytes: the `/authorize/decision` form body cap, 8 KiB (S7b's): the form carries a
+ *   token, an id, a name and two opaque values. Over it is 413 with no body;
+ * - pendingRequestsMax: pending authorization requests held at once. `GET /authorize` needs no
+ *   credential and is reachable through a tunnel, so without a cap every request (held for
+ *   LIFETIME.pendingRequestMs) would grow memory without bound. At the cap the oldest is evicted
+ *   first; an evicted request answers "expired" like any other.
  */
 export const APPROVAL_LISTENER = Object.freeze({
   defaultPort: 47615,
   retryMs: 30 * SECOND_MS,
+  decisionBodyBytes: 8 * KIB,
+  pendingRequestsMax: 256,
   // The page's response headers (R-OA-11, R-OA-12; S7b P-rows).
   headers: Object.freeze({
     'cache-control': 'no-store',
@@ -461,11 +487,15 @@ export const APPROVAL_LISTENER = Object.freeze({
 /**
  * Client ID Metadata Document fetch (R-OA-13; [spec] CIMD draft §3, §4.4, §6.5, §6.6).
  * `maxBytes` is the draft's figure; the time bound and the cache cap are PROPOSED (S7b's values).
+ * cacheEntriesMax (K1 amendment after W2; PROPOSED, Fishball 2026-11-14): documents cached at
+ * once, one per client id URL, so new client id URLs cannot grow memory without bound (each is
+ * kept up to maxCacheMs). At the cap the oldest is evicted first.
  */
 export const CIMD_LIMITS = Object.freeze({
   maxBytes: 5 * KIB,
   timeoutMs: 3 * SECOND_MS,
   maxCacheMs: DAY_MS,
+  cacheEntriesMax: 256,
   scheme: 'https:',
   forbiddenAuthFields: Object.freeze(['client_secret', 'client_secret_expires_at']),
 })
@@ -569,6 +599,11 @@ export const QUEUE = Object.freeze({
 
 /**
  * Mailbox paging and retention (R-CON-03, R-TOK-05; design §3.4).
+ * - `mailboxGeneration` (K1 amendment after W2; Fishball 2026-11-14): a box's generation is
+ *   set when its storage record is first made, and changes only when that storage is lost or
+ *   reset (the box record is gone, so the next use makes a new one). Delete (`drop`), the end of
+ *   a hold (`expireHolds`) and re-enable (`release`) keep it. A cursor of an older generation is
+ *   answered `{resync: {reason: RESYNC_REASON.staleCursor, headSequence}}` (EVT-UC-01 E2).
  * - pageDefault / pageMax: PROPOSED. `limit` is a whole number 1–pageMax; 0 or above pageMax is
  *   `limit-exceeded` (V2 contract §8: a value outside a limit is `limit-exceeded`), never clamped.
  * - A pending event never expires (R-CON-03, R-CON-05).
@@ -685,6 +720,9 @@ export const REFUSAL = Object.freeze({
   // (DECIDED #61: kept): one bad receipt acks nothing.
   unknownEvent: 'unknown-event',
   digestMismatch: 'digest-mismatch',
+  // PairStore.succeed (K1 amendment after W2): the successor has not paired yet. The word of K3's
+  // RetireRefusalCode (host-services/tokens.d.ts), which C-SUCCEED returns unchanged.
+  successorUnpaired: 'successor-unpaired',
 })
 
 /** The `id-invalid` word of `fishball-core`'s settings and of the approval page (R-ID-02, R-OA-12). */

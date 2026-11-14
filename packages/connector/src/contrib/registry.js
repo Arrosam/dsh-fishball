@@ -69,8 +69,10 @@ function toolEntry(publicName, def, who) {
  * @param {{info: Function, warn: Function}} ports.logger
  * @param {() => void} [ports.onToolsChanged] called once per event-loop turn after the list changed
  *   (design §13.4 step 3); the MCP layer sends `notifications/tools/list_changed` from it.
+ * @param {(act: object) => void} ports.retireEvents retires an activation's pending events through
+ *   this connector activation's mailbox (emit.js); activation.js calls it on every attached registry.
  */
-export function createRegistry({ logger, onToolsChanged }) {
+export function createRegistry({ logger, onToolsChanged, retireEvents }) {
   /** publicName → registration. */
   const table = new Map()
   /** namespace → {pkg, acts}: the first package to reach the registry keeps it (TQ-13). */
@@ -259,6 +261,7 @@ export function createRegistry({ logger, onToolsChanged }) {
     resolve,
     admit,
     claim,
+    retireEvents,
     /** How many calls of an activation are running (TOOL_LIMITS.contributorInFlightCalls). */
     runningFor: (act) => [...inFlight].filter((call) => call.registration.act === act).length,
     /**

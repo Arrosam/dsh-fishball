@@ -12,14 +12,15 @@
 import path from 'node:path'
 import {
   ANSWERABLE_TYPES, CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, EVENT_PAYLOAD_SCHEMA, EVENT_TYPE, MAILBOX, MAILBOX_EVENT_SCHEMA,
-  MAILBOX_SUMMARY_SCHEMA, OFFER_ID, QUEUE, REFUSAL, RESOURCE, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WIRE,
+  MAILBOX_SUMMARY_SCHEMA, OFFER_ID, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WIRE,
   formatOfferId, payloadSchemaOf,
 } from '../../../packages/connector/mcp-schema/index.js'
+import { NAMESPACE } from '../../../packages/connector/tools/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export {
   ANSWERABLE_TYPES, CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, EVENT_PAYLOAD_SCHEMA, EVENT_TYPE, MAILBOX, MAILBOX_EVENT_SCHEMA,
-  MAILBOX_SUMMARY_SCHEMA, OFFER_ID, QUEUE, REFUSAL, RESOURCE, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WIRE,
+  MAILBOX_SUMMARY_SCHEMA, OFFER_ID, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WIRE,
   formatOfferId, payloadSchemaOf,
 }
 
@@ -66,6 +67,25 @@ export const FIXTURE = Object.freeze({
   wrongDigest: '0'.repeat(WIRE.digestHexChars),
   tempPrefix: 'fbtest-c-mailbox-',
   storageDir: 'storage',
+})
+
+/**
+ * The K1 amendments after W2 (amend-cases.mjs): mailboxGeneration (DECIDED #W2-1) and
+ * `Mailbox.retireContributor` with `EventDraft.activationTag`. Fixture data only.
+ */
+export const AMEND = Object.freeze({
+  /** `contributed:<namespace>.<event>`: K2's namespace separator. */
+  typeSeparator: NAMESPACE.separator,
+  /** A namespace that shares FIXTURE.namespace as a prefix, so `contributed:fbtest.*` must not reach it. */
+  otherNamespace: FIXTURE.namespace + 'x',
+  /** Two contributor activations' opaque tags. */
+  tag: Object.freeze({ a: 'fbtest-activation-a', b: 'fbtest-activation-b', unknown: 'fbtest-activation-none' }),
+  /** A contributor event's correlation id, kept by its retirement. */
+  correlationId: 'fbtest-correlation',
+  /** Tags that are no opaque non-empty string: a number and the empty string. */
+  badTags: Object.freeze([42, '']),
+  /** "After MAILBOX.disabledRetentionMs": this much past the end of the hold. */
+  justAfterMs: 1,
 })
 
 /** Harness timing only. */
