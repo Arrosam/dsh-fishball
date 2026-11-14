@@ -1461,6 +1461,9 @@ type ContributedResult =
     both SDKs). That is the client-side disambiguation the specification allows; names stay
     unique. There is **no** soft name-length budget: S5 showed DSH hashes **every** dotted name,
     whatever its length (K2 `d1d0b25`, `packages/connector/tools/README.md`).
+  - Fishball's own model-facing name for a contributed tool (core's bridge façade) is the
+    public name with every `.` replaced by `__` (`ns.tool` → `ns__tool`), K2's frozen
+    `EXTERNAL_NAME` (K2 amendment at the W3 merge).
 - Reserved namespaces: `fishball` and the connector's own plugin name. Core tools keep unprefixed
   names (§3.2). No contributed name can collide with them, because every contributed name
   contains a `.`.

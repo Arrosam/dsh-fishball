@@ -31,6 +31,12 @@ export const MAILBOX_STORE = Object.freeze({
  */
 export const EVENT_STATE = Object.freeze({ pending: 'pending', acked: 'acked', retired: 'retired' })
 
+/**
+ * `Mailbox.retire`'s two answers (K1 `RetireOutcome`, amendment at the W3 merge). Each is frozen
+ * once and shared, so no caller can change the answer another caller gets.
+ */
+export const RETIRE_OUTCOME = Object.freeze({ retired: Object.freeze({ retired: true }), notRetired: Object.freeze({ retired: false }) })
+
 /** `payloadDigest` (K1 WIRE: 64 lowercase hex, SHA-256) and the box key share this hash. */
 export const HASH = Object.freeze({ algorithm: 'sha256', encoding: 'hex' })
 

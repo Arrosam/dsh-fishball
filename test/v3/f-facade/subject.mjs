@@ -71,5 +71,22 @@ export async function makeBridge(sdk, { ctx, link, logger, gate, imagesSupported
   return Object.assign(view, { unmount, async close() { unmount(); await bridge.close?.() } })
 }
 
+/**
+ * The façade's exported `name` (`MODEL_NAME`, `modelNameOf`; K2 amendment at the W3 merge): from
+ * the entry when it re-exports it, else from the first module of the bridge folder that exports
+ * it (which file holds it is the module's choice, not a contract). Only exports are read, never
+ * the source. Undefined when no module of the folder exports it.
+ */
+export async function bridgeExport(sdk, name) {
+  const files = [SUBJECT.entry, ...bridgeSources().filter((f) => f !== SUBJECT.entry)]
+  for (const file of files) {
+    const mod = await bound(sdk, file, 'F-FACADE "Owns" packages/core/src/bridge/')
+    if (mod[name] !== undefined) return mod[name]
+  }
+  return undefined
+}
+/** The JavaScript files of the bridge folder (its top level, as K2-AMEND-1 static rows read them). */
+export const bridgeSources = () => fs.readdirSync(SUBJECT.dir).filter((f) => SUBJECT.sourceFile.test(f)).map((f) => path.join(SUBJECT.dir, f))
+
 /** F-INTERCEPT's events module bound to `sdk`. */
 export const eventsModule = (sdk) => bound(sdk, EVENTS_ENTRY, 'F-INTERCEPT (merged in W2)')

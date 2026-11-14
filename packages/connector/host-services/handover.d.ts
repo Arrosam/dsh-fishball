@@ -9,6 +9,9 @@ import type { Dispose, Refusal } from './index.js'
  * A principal as the hand-over service names it.
  * - `key` is an opaque connector-side key, stable for the life of the token entry. It is never a
  *   token value, a credential reference or an entry label.
+ *   Note (K3, W3 merge, DECIDED #W3-3): "stable for the life of the token entry" holds from
+ *   pairing onward. An entry that is not paired yet has a key too (`HandoverPrincipal`), and that
+ *   key changes once, when the entry pairs; from then on it does not change while the entry lives.
  * - `name` is the principal's chosen name, unique per connector (R-NAME), or `null` for a nameless
  *   principal (requirements 1.20). A nameless one is shown as `ID: <id>`, prefix bold (R-NAME-08).
  * - `id` is the non-secret fishball id the pair is bound to.

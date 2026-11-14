@@ -11,7 +11,7 @@
  * - service and wire: apiVersion, TOOLS_API (version, service, protocolVersion),
  *   CONTRIBUTOR_META_KEY, CONTRIBUTED_EVENT (typePrefix);
  * - names: NAMESPACE (separator, aliases, reserved, normalisation data), NAME_GRAMMAR (local,
- *   publicMaxChars, code);
+ *   publicMaxChars, code), EXTERNAL_NAME (replaced, replacement);
  * - limits: TOOL_LIMITS (descriptionBytes, ceiling.{argumentBytes, resultBytes, timeoutMs},
  *   contributorInFlightCalls, messageChars), EVENT_LIMITS (payloadBytes, summaryChars,
  *   ratePerMinute, rateBurst, rateWindowMs), QUARANTINE (moreThanFailures, windowOutcomes);
