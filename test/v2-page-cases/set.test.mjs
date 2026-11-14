@@ -343,7 +343,7 @@ const SET = Object.freeze({
   hostedRowId: 'fishball-hosted-settings',
   rowSource: Object.freeze(['src', 'child-settings', 'index.js']),
   sharedChunk: Object.freeze(['src', 'child-settings', 'client.status.js']),
-  panelClient: path.join(BODY_SOUL.core, 'ui', 'fishball-settings', 'client.js'),
+  panelClient: path.join(BODY_SOUL.core, 'client.settings.js'),
   instanceClient: EMBED_UI.statusLine,
   instanceManifest: path.join(BODY_SOUL.instance, 'package.json'),
   relay: Object.freeze({
