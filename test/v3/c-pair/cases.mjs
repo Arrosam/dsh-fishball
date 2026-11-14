@@ -11,8 +11,10 @@
  * Decision Table (one per rule) and State Transition (one per transition row).
  *
  * Level: unit and integration as the cases state, over a real DSH storage domain of the SDK under
- * test (subject.mjs), with an injected clock. The parts of a row that need the token endpoint, the
- * MCP endpoint or a later task are `todo` and name that task (constants.mjs LATER); the store part
+ * test (subject.mjs), with an injected clock. The parts of a row that need the MCP endpoint or a
+ * later task are `todo` and name that task (constants.mjs LATER); the token-endpoint parts (AUTH-UC-02
+ * main 2–3, A2, E1; AUTH-UC-04 E1; AUTH-EP-03 rows 1–6; AUTH-EP-06 row 9; AUTH-ST-01 row 14) run
+ * against C-OAUTH in test/v3/c-oauth/cases.mjs under the same case ids; the store part
  * of the same row runs here. "An access token of id X on entry E" is C-PAIR's live power,
  * `powerOf(pairOf(E), X)` (R-ID-03: scope is evaluated live, not stored in the token).
  *
@@ -109,8 +111,6 @@ const todo = (sdk, id, part, title, owner) => row(sdk, id, part, title, null, ow
 function useCases(sdk) {
   const uc02 = (part, title, fn, owner) => row(sdk, CASE.uc02, part, title, fn, owner)
   todo(sdk, CASE.uc02, 'main step 1', 'no token: 401 with the bearer challenge and no error=', LATER.mcpEndpoint)
-  todo(sdk, CASE.uc02, 'main step 2', 'protected resource and authorization server metadata', LATER.tokenEndpoint)
-  todo(sdk, CASE.uc02, 'main step 3', 'client_credentials on an unbound entry: 200, scope fishball:pair, standard fields only', LATER.tokenEndpoint)
   uc02('main step 3 (store)', 'an access token of agent-a on the unbound E1 has pair-only power (not-paired)', (w) => {
     assert.equal(w.store.pairOf(E(1)), undefined, 'E1 starts unbound')
     assert.deepEqual(w.power(E(1), ID.agentA), NOT_PAIRED)
@@ -129,8 +129,6 @@ function useCases(sdk) {
     assert.deepEqual(await w.store.pair(E(1), ID.agentA, NAME.agentA, at()), assigned(ID.agentA, NAME.agentA))
     assert.equal(w.store.pairOf(E(1)).name, NAME.agentA)
   })
-  todo(sdk, CASE.uc02, 'A2', 'client_secret_post gives the same results as client_secret_basic', LATER.tokenEndpoint)
-  todo(sdk, CASE.uc02, 'E1', 'no client_id: invalid_client, no access token', LATER.tokenEndpoint)
   uc02('E2', 'two agents race pair on E1 with ids a and b: exactly one binds, the other gets already-paired, idMatches false', async (w) => {
     const results = await Promise.all([w.store.pair(E(1), ID.a, undefined, at()), w.store.pair(E(1), ID.b, undefined, at())])
     const winners = results.filter((r) => r.ok)
@@ -200,7 +198,6 @@ function useCases(sdk) {
     await assertRefused(w, () => w.store.pair(E(2), ID.n123, undefined, at()), refusal(REFUSAL.idTaken))
     assert.equal(w.store.pairOf(E(2)), undefined)
   })
-  todo(sdk, CASE.uc04, 'E1', 'an invalid token with id 123: invalid_client, no already-paired, no field of the bound pair', LATER.tokenEndpoint)
   uc04('post', 'E1 stays bound to 123 as the same principal; no re-pairing occurred', async (w) => {
     const bound = await boundE1(w)
     await w.store.pair(E(1), ID.n123, undefined, at(FIXTURE.t2Offset))
@@ -271,7 +268,6 @@ function equivalencePartitions(sdk) {
   // AUTH-EP-03: valid ids bind; invalid ones never reach pair (the token endpoint refuses them),
   // and the page's bind, which shares the store's id rules, refuses them id-invalid (R-OA-12 (3)).
   for (const [n, cls, ids, valid] of ID_CLASSES) {
-    todo(sdk, CASE.ep03, n, `${cls} (${ids.map((i) => JSON.stringify(i)).join(', ')}) at the token endpoint: ${valid ? 'accepted' : 'invalid_client'}`, LATER.tokenEndpoint)
     row(sdk, CASE.ep03, `${n} (store)`, `${cls}: ${valid ? 'pair binds the id' : 'the page bind refuses id-invalid and binds nothing'}`, async (w) => {
       for (const [i, id] of ids.entries()) {
         if (valid) assert.deepEqual(await w.store.pair(E(i), id, undefined, at()), paired(id, null))
@@ -316,7 +312,6 @@ function equivalencePartitions(sdk) {
     })
     todo(sdk, CASE.ep06, n, `${call} with a pair-only token: 403 insufficient_scope, scope="fishball", with that description`, LATER.mcpEndpoint)
   }
-  todo(sdk, CASE.ep06, '9', 'token request with scope=fishball while unpaired: 200, narrowed to fishball:pair', LATER.tokenEndpoint)
 
   // NAME-EP-01: the class through set_name on a principal named "Watcher" (unchanged on a refusal).
   for (const [n, cls, input, stored] of NAME_CLASSES) {
@@ -616,7 +611,6 @@ function stateTransitions(sdk) {
     assert.deepEqual(results.find((r) => !r.ok), alreadyPaired(false, bound))
     assert.deepEqual(results.find((r) => r.ok), paired(bound.id, null))
   })
-  todo(sdk, CASE.st01, '14', 'Off-Bound(X) → pair → 401 (no token check passes)', LATER.tokenEndpoint)
 
   // NAME-ST-01 rows 1–7 (rows 8–9 are C-SUCCEED's).
   const nameSt = (n, title, fn) => row(sdk, CASE.nameSt01, n, title, fn)
