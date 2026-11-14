@@ -3,15 +3,19 @@
  * `packages/fold-notify/`). The frozen surfaces are the plugins' own rows (`name`, `inject`,
  * `apply`, `Config`), K3 `fishballInstance` (`apiVersion: 1`) with the X1/X2/X8/X9 members of
  * docs/plugins/instance-extension-points.md §1.1, and the board's and fold-notify's manager tools.
- * The dev session has relayed no other surface yet (2026-11-15), so this file assumes ONE shape; if
- * the packages differ, only this file is adapted, no case changes:
+ * The dev surface relayed by Fishball (2026-11-15, `dev/v3-feat-peers` `f1f0f058`/`ef06678c`); if
+ * the packages change, only this file is adapted, no case changes:
  *
- * - each row is its package's `index.js`, imported bound to the SDK under test (its
- *   `@deepseek-ai/*` imports resolve to that SDK) and mounted as one loader row;
- * - the board reads the clock through `Date` (the board design stores epoch ms); the fake clock is
- *   node:test's MockTimers on `Date` only, so no timer of DSH or of the harness is touched;
- * - X8 `attention.signal(pluginId, {important})` resolves to the answer the fake core attention
- *   member gives (`ATTENTION.accepted` or `ATTENTION.refused`, a K1 refusal envelope), never rejects;
+ * - each row is its package's `index.js` exporting `{name, inject: ['tools'], Config, apply(ctx)}`,
+ *   imported bound to the SDK under test (its `@deepseek-ai/*` imports resolve to that SDK) and
+ *   mounted as one loader row. Without `fishballInstance` each row logs `warn('fishball-core-missing')`
+ *   once, at `appReady.onReady` or, with no appReady service (as here), at load;
+ * - the board's store and tools take an injected `now`; the row wires it to the wall clock, so the
+ *   fake clock is node:test's MockTimers on `Date` only (no timer of DSH or of the harness is
+ *   touched). The row-level cases need no deeper binding to `createBoardStore`/`createBoardTools`;
+ * - X8: fold-notify's `notify_user` calls `attention.signal('fishball-fold-notify', {important})`
+ *   and ignores any refusal or throw; the fake core attention member answers `ATTENTION.accepted`
+ *   or `ATTENTION.refused` (a K1 refusal envelope);
  * - a manager tool runs as DSH runs it: `definition.execute(args, exec)` with `exec.agent` the
  *   manager's agent (`{id, session}`); a refusal may be a returned `{ok: false, code}` or a thrown
  *   error with a string `code` (the designs name the code, not the transport), and is normalised to
