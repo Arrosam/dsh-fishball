@@ -2,6 +2,9 @@
  * Supplementary FN-1/B1 framework verification, not real tools/agents host API evidence.
  * Oracles: instance-ext-w0-decisions.md §4 and instance-ext-w0-skeleton-use-cases.md
  * FN1-UC-LOAD/B1-UC-LOAD only. No product implementation is inspected by this test.
+ * V3 realignment: R-FB-06 (docs/planning/v3-requirements.md line 869) replaces W0's
+ * `instance-hooks-missing` with one `fishball-core-missing` warning per feature plugin, so the
+ * absence warning is now checked for both rows (with no appReady service it is logged at load).
  *
  * EP/DT: optional public service present/absent; required tools present/absent.
  * ST: real Cordis plugin activation -> ACTIVE -> DISPOSED, or PENDING -> DISPOSED.
@@ -25,7 +28,7 @@ const PROBE = Object.freeze({
   apiVersion: 1,
   sessionId: 'w0-cordis-memory-manager',
   fixtureName: 'w0-cordis-memory-services',
-  missingHooks: 'instance-hooks-missing',
+  coreMissing: 'fishball-core-missing',
   statusEvent: 'internal/status',
   errorLevel: 'error',
   warningLevel: 'warn',
@@ -135,9 +138,9 @@ function assertDisposed(harness, fiber, row) {
   assert.ok(harness.transitions.some((entry) => entry.fiber === fiber && entry.state === PROBE.state.DISPOSED))
 }
 
-function missingHooksWarnings(harness) {
+function coreMissingWarnings(harness) {
   return harness.logs.filter((entry) => entry.type === PROBE.warningLevel
-    && entry.args.some((argument) => String(argument).includes(PROBE.missingHooks))).length
+    && entry.args.some((argument) => String(argument).includes(PROBE.coreMissing))).length
 }
 
 for (const plugin of PROBE.plugins) {
@@ -152,10 +155,10 @@ for (const plugin of PROBE.plugins) {
       assert.ok(harness.transitions.some((entry) => entry.fiber === fiber && entry.state === PROBE.state.ACTIVE))
       if (!withInstance) assert.equal(harness.root.get(PROBE.service.instance), undefined)
       const expectedWarnings = withInstance ? PROBE.emptyCount : PROBE.warningCount
-      if (plugin.id === 'B1') assert.equal(missingHooksWarnings(harness), expectedWarnings)
+      assert.equal(coreMissingWarnings(harness), expectedWarnings)
       await fiber.dispose()
       assertDisposed(harness, fiber, row)
-      if (plugin.id === 'B1') assert.equal(missingHooksWarnings(harness), expectedWarnings, 'disposal adds no duplicate absence warning')
+      assert.equal(coreMissingWarnings(harness), expectedWarnings, 'disposal adds no duplicate absence warning')
     })
   }
 
@@ -166,7 +169,7 @@ for (const plugin of PROBE.plugins) {
     assert.equal(fiber.state, PROBE.state.PENDING, 'missing required tools prevents activation')
     assert.equal(harness.transitions.some((entry) => entry.fiber === fiber && entry.state === PROBE.state.ACTIVE), false)
     assert.equal(harness.memory.registrations.size, PROBE.emptyCount, 'a gated row made no contributions')
-    assert.equal(missingHooksWarnings(harness), PROBE.emptyCount, 'gated row did not run its absence path')
+    assert.equal(coreMissingWarnings(harness), PROBE.emptyCount, 'gated row did not run its absence path')
     await fiber.dispose()
     assertDisposed(harness, fiber, row)
   })

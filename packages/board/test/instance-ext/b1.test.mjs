@@ -51,7 +51,9 @@ describe('B1 package and row', () => {
     assert.equal(manifest.version, '0.1.0-alpha.0')
     assert.equal(manifest.dsh?.bundle?.patch, './cordis.patch.yml')
     assert.match(manifest.engines?.dsh ?? '', />=0\.2\.1-rc\.5/)
-    assert.ok(manifest.peerDependencies?.['fishball-instance'], 'peerDependencies names the instance')
+    // V3 realignment: docs/planning/v3-design.md §9.1 (line 1217) drops the `fishball-instance` peer;
+    // the plugin finds fishball-core at runtime (R-FB-06), so no Fishball package is a peer.
+    assert.equal(manifest.peerDependencies?.['fishball-instance'], undefined, 'no fishball-instance peer (design §9.1)')
     for (const file of ['index.js', 'src/constants.js', 'src/config.js', 'README.md']) await packageFile(BOARD, file)
   })
 
@@ -110,11 +112,14 @@ describe('B1 loading with and without the instance points (§8)', () => {
     await assert.doesNotReject(async () => row.apply(stubContext({ withInstance: true }), {}))
   })
 
-  it('B1-UC-LOAD-A Samuel keeps his Fishball work board available — W0: [formerly B1-DT-02] without the points the row loads and logs instance-hooks-missing once', async () => {
+  // V3 realignment: R-FB-06 (docs/planning/v3-requirements.md line 869) replaces W0's
+  // `instance-hooks-missing` with one `fishball-core-missing` line; without an appReady service the
+  // line is logged at load.
+  it('B1-UC-LOAD-A Samuel keeps his Fishball work board available — V3: without fishball-core the row loads and logs fishball-core-missing once (R-FB-06)', async () => {
     const row = await packageModule(BOARD, 'index.js')
     const ctx = stubContext({ withInstance: false })
     await assert.doesNotReject(async () => row.apply(ctx, {}))
-    assert.equal(ctx.logs.filter((line) => line.includes('instance-hooks-missing')).length, 1)
+    assert.equal(ctx.logs.filter((line) => line.includes('fishball-core-missing')).length, 1)
   })
 })
 
