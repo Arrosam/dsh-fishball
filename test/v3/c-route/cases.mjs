@@ -38,6 +38,8 @@ import {
   CONNECTED, CONTRIBUTED, DECISION_KIND_OF, EVENT_TYPE, FALLBACK, FIXTURE, HANDOVER, LATER, MAILBOX, MANAGED_REFUSAL, OFFER_ID, OFFER_TYPES,
   PATHS, QUEUE, REFUSAL, RELAYED, REQUEST_GATE, RETIREMENT_REASON, REVOCATION, TOOL_NAMES, WAIT, formatOfferId, handoverCodes,
 } from './constants.mjs'
+import { MUTATION, SETTLED_BY, SETTLEMENT_OUTCOME, SETTLE_FIXTURE } from './constants.mjs'
+import { gatedMailboxPort } from './fakes.mjs'
 import { cordisContext, routeWorld } from './subject.mjs'
 
 const T = { timeout: WAIT.testMs }
@@ -1249,6 +1251,338 @@ function stateTransitions(sdk) {
   todoRow(sdk, 'ROUTE-ST-02', 'DSH', 'held messages flush after a real connector restart with the setting changed in native settings', LATER.wire)
 }
 
+// ================================================================================================
+// Merge-review fix 1 (integrate/v3-w2 review): `settle` on the managed chain, and the payloads
+// `message_fishball` and `settle` accept are taken as they were at the call. Requirements as the
+// review states them; the routing/index.js JSDoc of `settle` / `withdraw` is the contract.
+//   ROUTE-ST-03  the live-offer ledger under settle (Queued, Live, Settled, Withdrawn, Retired)
+//   ROUTE-DT-03  settle racing a release, a revocation or a withdraw: order on the chain decides
+//   ROUTE-EP-02  message_fishball payload mutated after the call: path × field × value × timing
+//   ROUTE-EP-03  settle's settlement payload: mutated after the call, uncopyable, schema-invalid
+// ================================================================================================
+
+/** A row on a world whose mailbox port can hold one commit (fakes.mjs gatedMailboxPort); every hold is opened at the end. */
+const gatedRow = (sdk, id, part, title, fn) => row(sdk, id, part, title, async (t) => {
+  const w = await routeWorld(t, sdk, { port: gatedMailboxPort })
+  try { await fn(w, t) } finally { w.mailbox.openAll() }
+})
+/** A K1 settlement payload (EVENT_PAYLOAD_SHAPES.settlement) for `approvalId`. */
+const settlementOf = (approvalId, outcome = SETTLEMENT_OUTCOME.allowed, by = SETTLED_BY.principal) => ({ approvalId, outcome, by })
+/** The answer a waiting ask_fishball gets when its ask is settled (routing/index.js JSDoc of settle). */
+const askSettled = (settlement) => ({ ok: true, settlement })
+const UNKNOWN_OFFER = formatOfferId(MUTATION.unknownApproval, OFFER_ID.firstRevision)
+
+/** `settle` of a live offer: resolves true and commits exactly one `settlement` (correlationId = offerId, payload `want`) to `key`. */
+async function settledTo(w, act, key, offerId, want) {
+  const { value, event } = await expectOne(w, act, key, ET.settlement)
+  assert.equal(value, true, 'settle of a live offer did not return true')
+  assert.equal(event.correlationId, offerId)
+  assert.deepEqual(event.payload, want)
+  return event
+}
+/** `settle` of an offer that is not live: resolves false and commits nothing. */
+async function settleRefused(w, offerId, settlement) {
+  const { value } = await expectNone(w, () => w.routing.settle(offerId, settlement))
+  assert.equal(value, false, 'settle of an offer that is not live did not return false')
+}
+/** A live ask from unmanaged S1 to the connected designated D: `{d, event, offerId, approvalId, promise}`. */
+async function liveAsk(w) {
+  const d = w.principal(ID.d, { connected: true, designated: true })
+  w.session(S.s1)
+  const { event, promise } = await askTo(w, S.s1, d)
+  return { d, event, offerId: event.offer.offerId, approvalId: event.payload.approvalId, promise }
+}
+/**
+ * Starts `start()` (an offer or ask call) with its mailbox commit held: resolves once that commit
+ * waits, i.e. once the offer's step is in flight on the managed chain. Returns the call's promise,
+ * the held draft and the gate.
+ */
+async function inFlight(w, type, start) {
+  const gate = w.mailbox.holdNext((_, draft) => draft.type === type)
+  const call = start()
+  const { draft } = await gate.reached
+  return { call, draft, gate }
+}
+/** Every settlement of `offerId` and every retirement of `eventId`, across every mailbox: [{key, e}]. */
+async function endsOf(w, offerId, eventId) {
+  return (await allEntries(w)).filter(({ e }) => (e.type === ET.settlement && e.correlationId === offerId) || (e.type === ET.retirement && e.payload.retiredEventId === eventId))
+}
+
+function settleTransitions(sdk) {
+  // ROUTE-ST-03 — One offer in C-ROUTE's live-offer ledger under settle (RELAYED.offerLedger).
+  // States: Queued (its commit in flight on the managed chain), Live, Settled, Withdrawn, Retired.
+  worldRow(sdk, 'ROUTE-ST-03', '1', 'Live → settle → Settled: true; one settlement to the pair that held it, correlationId = offerId, payload = the settlement', async (w) => {
+    const { p } = await managedByP(w)
+    const offer = await offerTo(w, S.s1, ET.permission, p)
+    const s = settlementOf(offer.payload.approvalId)
+    await settledTo(w, () => w.routing.settle(offer.offer.offerId, s), p, offer.offer.offerId, s)
+  })
+  worldRow(sdk, 'ROUTE-ST-03', '2', 'Settled → settle again → false; nothing committed', async (w) => {
+    const { p } = await managedByP(w)
+    const offer = await offerTo(w, S.s1, ET.permission, p)
+    const s = settlementOf(offer.payload.approvalId)
+    await settledTo(w, () => w.routing.settle(offer.offer.offerId, s), p, offer.offer.offerId, s)
+    await settleRefused(w, offer.offer.offerId, s)
+  })
+  worldRow(sdk, 'ROUTE-ST-03', '3', 'no such offer → settle → false; nothing committed', async (w) => {
+    await managedByP(w)
+    await settleRefused(w, UNKNOWN_OFFER, settlementOf(MUTATION.unknownApproval))
+  })
+  worldRow(sdk, 'ROUTE-ST-03', '4', 'Live → withdraw → Withdrawn; then settle → false; nothing committed', async (w) => {
+    const { p } = await managedByP(w)
+    const offer = await offerTo(w, S.s1, ET.permission, p)
+    assert.equal(await w.routing.withdraw(offer.offer.offerId), true)
+    await until(async () => (await endsOf(w, offer.offer.offerId, offer.eventId)).length >= 1, 'the withdrawn offer\'s retirement')
+    await settleRefused(w, offer.offer.offerId, settlementOf(offer.payload.approvalId))
+  })
+  worldRow(sdk, 'ROUTE-ST-03', '5', `Live → session_release → Retired (${RETIREMENT_REASON.released}); then settle → false; nothing committed`, async (w) => {
+    const { p } = await managedByP(w)
+    const offer = await offerTo(w, S.s1, ET.permission, p)
+    await expectRetirement(w, () => w.managed.release(S.s1, p), p, offer)
+    await settleRefused(w, offer.offer.offerId, settlementOf(offer.payload.approvalId))
+  })
+  worldRow(sdk, 'ROUTE-ST-03', '6', 'Live ask → settle → Settled: one settlement to D; the waiting ask_fishball resolves {ok: true, settlement}', async (w) => {
+    const ask = await liveAsk(w)
+    const s = settlementOf(ask.approvalId)
+    await settledTo(w, () => w.routing.settle(ask.offerId, s), ask.d, ask.offerId, s)
+    assert.deepEqual(await ask.promise, askSettled(s))
+  })
+  gatedRow(sdk, 'ROUTE-ST-03', '7', 'Queued (the offer\'s commit in flight) → settle → runs after the commit: true; the offer and one settlement in P\'s mailbox; a second settle → false', async (w) => {
+    const { p } = await managedByP(w)
+    const d = descriptor(ET.permission)
+    const s = settlementOf(d.approvalId)
+    const { value } = await expectEntries(w, async () => {
+      const { call, gate } = await inFlight(w, ET.permission, () => w.routing.offer(S.s1, ET.permission, d))
+      const settled = w.routing.settle(d.offerId, s)
+      assert.equal(await settlesWithin(settled, WAIT.quietMs), false, 'settle answered before the offer\'s own commit ran (it is not on the managed chain)')
+      gate.open()
+      return { offered: await call, settled: await settled }
+    }, 2)
+    assert.equal(value.offered?.recipient, p)
+    assert.equal(value.settled, true, 'settle of an offer still queued on the chain did not find it')
+    const mine = await pendingOf(w, p)
+    assert.deepEqual(mine.filter((e) => e.correlationId === d.offerId).map((e) => e.type).sort(), [ET.permission, ET.settlement].sort())
+    assert.deepEqual(mine.find((e) => e.type === ET.settlement).payload, s)
+    await settleRefused(w, d.offerId, s)
+  })
+  gatedRow(sdk, 'ROUTE-ST-03', '8', 'Queued ask (its commit in flight) → settle → true after the commit; one settlement to D; the waiting ask_fishball resolves {ok: true, settlement}', async (w) => {
+    const d = w.principal(ID.d, { connected: true, designated: true })
+    w.session(S.s1)
+    let asked
+    const { value } = await expectEntries(w, async () => {
+      const flight = await inFlight(w, ET.ask, () => w.routing.askFishball(S.s1, { question: FIXTURE.question }))
+      asked = flight.call
+      const s = settlementOf(flight.draft.payload.approvalId)
+      const settled = w.routing.settle(flight.draft.correlationId, s)
+      assert.equal(await settlesWithin(settled, WAIT.quietMs), false, 'settle answered before the ask\'s own commit ran')
+      flight.gate.open()
+      return { s, offerId: flight.draft.correlationId, settled: await settled }
+    }, 2)
+    assert.equal(value.settled, true, 'settle of an ask still queued on the chain did not find it')
+    const settlement = (await pendingOf(w, d)).filter((e) => e.type === ET.settlement)
+    assert.deepEqual(settlement.map((e) => [e.correlationId, e.payload]), [[value.offerId, value.s]])
+    assert.deepEqual(await asked, askSettled(value.s))
+  })
+
+  // ROUTE-DT-03 — settle(A) racing a management change or a withdraw of A. Both are queued, in
+  // call order, behind a held commit of another offer B of S1, so their order on the managed chain
+  // is the call order. Rules: whichever runs first wins; exactly one of settlement / retirement of A.
+  const RACERS = Object.freeze({
+    release: { end: (w, p) => w.managed.release(S.s1, p), value: () => ({ ok: true }), reason: RETIREMENT_REASON.released },
+    revocation: { end: (w) => { w.tokens.disable(ID.p) }, value: () => undefined, reason: undefined },
+    withdraw: { end: (w, p, offerId) => w.routing.withdraw(offerId), value: (endFirst) => endFirst, reason: RETIREMENT_REASON.withdrawn },
+  })
+  for (const [name, racer] of Object.entries(RACERS)) {
+    for (const settleFirst of [true, false]) {
+      const order = settleFirst ? `settle, then ${name}` : `${name}, then settle`
+      const outcome = settleFirst ? 'settle true; one settlement of A to P; no retirement of A' : `settle false; one retirement of A${racer.reason ? ` (${racer.reason})` : ''} to P; no settlement`
+      gatedRow(sdk, 'ROUTE-DT-03', `${name} ${settleFirst ? '1' : '2'}`, `${order} on the chain → ${outcome}`, async (w) => {
+        const { p } = await managedByP(w)
+        const a = await offerTo(w, S.s1, ET.permission, p)
+        const s = settlementOf(a.payload.approvalId)
+        const b = descriptor(ET.permission)
+        const { call, gate } = await inFlight(w, ET.permission, () => w.routing.offer(S.s1, ET.permission, b))
+        const run = { settle: () => w.routing.settle(a.offer.offerId, s), end: () => racer.end(w, p, a.offer.offerId) }
+        const [first, second] = settleFirst ? [run.settle(), run.end()] : [run.end(), run.settle()]
+        gate.open()
+        const [settled, ended] = settleFirst ? [await first, await second] : [await second, await first]
+        await call
+        assert.equal(settled, settleFirst, `settle ${settleFirst ? 'lost to' : 'won over'} a ${name} that ran ${settleFirst ? 'after' : 'before'} it`)
+        assert.deepEqual(ended, racer.value(!settleFirst))
+        await until(async () => (await endsOf(w, a.offer.offerId, a.eventId)).length >= 1, 'a settlement or retirement of A')
+        await quiet()
+        const ends = await endsOf(w, a.offer.offerId, a.eventId)
+        assert.deepEqual(ends.map((x) => [x.key, x.e.type]), [[p, settleFirst ? ET.settlement : ET.retirement]], 'not exactly one end of A')
+        if (settleFirst) assert.deepEqual(ends[0].e.payload, s)
+        else if (racer.reason !== undefined) assert.equal(ends[0].e.payload.reason, racer.reason)
+      })
+    }
+  }
+}
+
+/** A `message_fishball` payload with one image (K1 EVENT_PAYLOAD_SHAPES.message), so a nested field exists. */
+const imaged = () => { const n = ++counter; return { text: FIXTURE.text(n), images: [MUTATION.image(n)] } }
+/**
+ * Writes a caller can make to a payload object (ROUTE-EP-02 partitions): top-level vs nested, and
+ * the value left valid, of the wrong type, no JSON at all, or uncopyable. `valid`: whether the
+ * payload still satisfies K1 after it.
+ */
+const PAYLOAD_MUTATIONS = Object.freeze({
+  'top-level valid': { valid: true, apply: (m) => { m.text = MUTATION.text } },
+  'top-level wrong type': { valid: false, apply: (m) => { m.text = MUTATION.wrongType } },
+  'top-level non-JSON': { valid: false, apply: (m) => { m.text = MUTATION.nonJson } },
+  'top-level function': { valid: false, apply: (m) => { m[MUTATION.extraKey] = () => MUTATION.text } },
+  'top-level cycle': { valid: false, apply: (m) => { m[MUTATION.extraKey] = m } },
+  'nested valid': { valid: true, apply: (m) => { m.images[0].attachmentId = MUTATION.text } },
+  'nested wrong type': { valid: false, apply: (m) => { m.images[0].width = MUTATION.notAnImage } },
+  'nested non-JSON': { valid: false, apply: (m) => { m.images[0].bytes = MUTATION.nonJson } },
+  'nested entry replaced': { valid: false, apply: (m) => { m.images[0] = MUTATION.notAnImage } },
+})
+const TIMINGS = Object.freeze({ beforeResolve: 'before the call resolves', afterResolve: 'after the call resolves' })
+/** Calls messageFishball with `m`, applying `mutate` at `timing`; returns the call's answer. */
+async function callThenMutate(w, m, mutate, timing) {
+  const pending = w.routing.messageFishball(S.s1, m)
+  if (timing === TIMINGS.beforeResolve) mutate(m)
+  const value = await pending
+  if (timing === TIMINGS.afterResolve) mutate(m)
+  return value
+}
+/** The payloads of the `message` events pending in `key`'s mailbox, in mailbox order. */
+const messagePayloads = async (w, key) => (await pendingOf(w, key)).filter((e) => e.type === ET.message).map((e) => e.payload)
+/** Designates D (offline) and waits until `want` are its messages, exactly and in order; a new message then follows them. */
+async function flushedAs(w, want) {
+  const d = w.principal(ID.d)
+  designate(w, ID.d)
+  await until(async () => (await messagePayloads(w, d)).length >= want.length, `${want.length} held messages in D's mailbox`)
+  await quiet()
+  assert.deepEqual(await messagePayloads(w, d), want, 'the held queue flushed something other than the payloads as they were at their calls')
+  const next = await messageTo(w, S.s1, d)
+  assert.deepEqual(await messagePayloads(w, d), [...want, next.payload], 'a new message did not follow the flushed ones')
+}
+/** README's "refused at the call": a TypeError thrown synchronously by `call`, not a promise. */
+function refusedAtCall(call) {
+  let result
+  try { result = call() } catch (e) {
+    assert.ok(e instanceof TypeError, `refused with ${e?.name}, not TypeError`)
+    return
+  }
+  Promise.resolve(result).catch(() => {})
+  assert.fail('not refused at the call: it returned instead of throwing a TypeError')
+}
+
+function payloadPartitions(sdk) {
+  // ROUTE-EP-02 — message_fishball's payload is taken as it was at the call (merge review fix 1).
+  for (const [name, mutation] of Object.entries(PAYLOAD_MUTATIONS)) {
+    for (const timing of Object.values(TIMINGS)) {
+      worldRow(sdk, 'ROUTE-EP-02', `held ${name} ${timing === TIMINGS.beforeResolve ? 'early' : 'late'}`, `no recipient: payload held, then ${name} mutation ${timing} → the flush carries the payload as at the call; the next held and a new message follow in order`, async (w) => {
+        w.session(S.s1)
+        const first = imaged()
+        const want = structuredClone(first)
+        const { value } = await expectNone(w, () => callThenMutate(w, first, mutation.apply, timing))
+        assert.deepEqual(value, { ok: true })
+        const second = await messageHeld(w)
+        await flushedAs(w, [want, second])
+      })
+      worldRow(sdk, 'ROUTE-EP-02', `routed ${name} ${timing === TIMINGS.beforeResolve ? 'early' : 'late'}`, `D designated: ${name} mutation ${timing} → D's message carries the payload as at the call; the next message follows`, async (w) => {
+        const d = w.principal(ID.d, { connected: true, designated: true })
+        w.session(S.s1)
+        const m = imaged()
+        const want = structuredClone(m)
+        const { value, event } = await expectOne(w, () => callThenMutate(w, m, mutation.apply, timing), d, ET.message)
+        assert.deepEqual(value, { ok: true })
+        assert.deepEqual(event.payload, want)
+        await messageTo(w, S.s1, d)
+      })
+    }
+    if (mutation.valid) continue
+    worldRow(sdk, 'ROUTE-EP-02', `call ${name} held`, `no recipient: a payload already ${name} at the call → TypeError at the call; nothing held (only the valid messages around it flush)`, async (w) => {
+      w.session(S.s1)
+      const before = await messageHeld(w)
+      const bad = imaged()
+      mutation.apply(bad)
+      await expectNone(w, () => refusedAtCall(() => w.routing.messageFishball(S.s1, bad)))
+      const after = await messageHeld(w)
+      await flushedAs(w, [before, after])
+    })
+    worldRow(sdk, 'ROUTE-EP-02', `call ${name} routed`, `D designated: a payload already ${name} at the call → TypeError at the call; nothing committed; the next message goes through`, async (w) => {
+      const d = w.principal(ID.d, { connected: true, designated: true })
+      w.session(S.s1)
+      const bad = imaged()
+      mutation.apply(bad)
+      await expectNone(w, () => refusedAtCall(() => w.routing.messageFishball(S.s1, bad)))
+      await messageTo(w, S.s1, d)
+    })
+  }
+
+  // ROUTE-EP-03 — settle's settlement payload: taken as it was at the call; an uncopyable or
+  // schema-invalid one is refused (TypeError) and leaves the offer live.
+  worldRow(sdk, 'ROUTE-EP-03', '1', 'ask settled, then the settlement\'s top-level outcome changed before settle resolves → the committed payload and the ask\'s answer are as at the call', async (w) => {
+    const ask = await liveAsk(w)
+    const s = settlementOf(ask.approvalId)
+    const want = structuredClone(s)
+    await settledTo(w, () => { const pending = w.routing.settle(ask.offerId, s); s.outcome = SETTLEMENT_OUTCOME.rejected; return pending }, ask.d, ask.offerId, want)
+    assert.deepEqual(await ask.promise, askSettled(want))
+  })
+  worldRow(sdk, 'ROUTE-EP-03', '2', 'question offer settled answered, then a nested answer changed before settle resolves → the committed payload is as at the call', async (w) => {
+    const { p } = await managedByP(w)
+    const offer = await offerTo(w, S.s1, ET.question, p)
+    const s = { ...settlementOf(offer.payload.approvalId, SETTLEMENT_OUTCOME.answered), answers: [structuredClone(SETTLE_FIXTURE.answer)] }
+    const want = structuredClone(s)
+    await settledTo(w, () => { const pending = w.routing.settle(offer.offer.offerId, s); s.answers[0].selected.push(SETTLE_FIXTURE.otherChoice); return pending }, p, offer.offer.offerId, want)
+  })
+  gatedRow(sdk, 'ROUTE-EP-03', '3', 'settle queued behind the ask\'s in-flight commit; the settlement changed while queued → the committed payload and the ask\'s answer are as at the call', async (w) => {
+    const d = w.principal(ID.d, { connected: true, designated: true })
+    w.session(S.s1)
+    const { call, draft, gate } = await inFlight(w, ET.ask, () => w.routing.askFishball(S.s1, { question: FIXTURE.question }))
+    const s = settlementOf(draft.payload.approvalId)
+    const want = structuredClone(s)
+    const settled = w.routing.settle(draft.correlationId, s)
+    s.outcome = SETTLEMENT_OUTCOME.rejected
+    s.by = SETTLED_BY.user
+    gate.open()
+    assert.equal(await settled, true)
+    await until(async () => (await pendingOf(w, d)).some((e) => e.type === ET.settlement), 'the settlement in D\'s mailbox')
+    assert.deepEqual((await pendingOf(w, d)).filter((e) => e.type === ET.settlement).map((e) => e.payload), [want])
+    assert.deepEqual(await call, askSettled(want))
+  })
+  /** Settlements no K1 settlement payload allows: uncopyable (b) and copyable but schema-invalid (c). */
+  const BAD_SETTLEMENTS = Object.freeze({
+    'uncopyable function': (s) => { s[MUTATION.extraKey] = () => MUTATION.text },
+    'uncopyable cycle': (s) => { s[MUTATION.extraKey] = s },
+    'non-JSON outcome': (s) => { s.outcome = MUTATION.nonJson },
+    'outcome not a K1 outcome': (s) => { s.outcome = SETTLE_FIXTURE.badOutcome },
+    'by missing': (s) => { delete s.by },
+    'approvalId of the wrong type': (s) => { s.approvalId = MUTATION.wrongType },
+    'an extra member': (s) => { s[MUTATION.extraKey] = MUTATION.text },
+  })
+  /** Settles `ask` with a settlement made bad by `spoil`: rejects TypeError, nothing committed, the ask still waits. */
+  async function badSettleKeepsLive(w, ask, spoil) {
+    const bad = settlementOf(ask.approvalId)
+    spoil(bad)
+    await expectNone(w, () => assert.rejects(() => w.routing.settle(ask.offerId, bad), TypeError))
+    assert.equal(await settlesWithin(ask.promise, WAIT.quietMs), false, 'a refused settlement answered the waiting ask')
+  }
+  for (const [name, spoil] of Object.entries(BAD_SETTLEMENTS)) {
+    worldRow(sdk, 'ROUTE-EP-03', `bad ${name}`, `settle with a settlement whose ${name} → rejects TypeError; nothing committed; the ask still waits; a later valid settle → true, one settlement, the ask answered`, async (w) => {
+      const ask = await liveAsk(w)
+      await badSettleKeepsLive(w, ask, spoil)
+      const s = settlementOf(ask.approvalId)
+      await settledTo(w, () => w.routing.settle(ask.offerId, s), ask.d, ask.offerId, s)
+      assert.deepEqual(await ask.promise, askSettled(s))
+    })
+  }
+  worldRow(sdk, 'ROUTE-EP-03', 'bad then withdraw', `a refused settlement, then withdraw → true; one retirement (${RETIREMENT_REASON.withdrawn}) of the ask to D; the ask answers ${REFUSAL.unavailable}`, async (w) => {
+    const ask = await liveAsk(w)
+    await badSettleKeepsLive(w, ask, BAD_SETTLEMENTS['outcome not a K1 outcome'])
+    assert.equal(await w.routing.withdraw(ask.offerId), true, 'withdraw did not find the ask live after a refused settlement')
+    await until(async () => (await endsOf(w, ask.offerId, ask.event.eventId)).length >= 1, 'the ask\'s retirement')
+    await quiet()
+    const ends = await endsOf(w, ask.offerId, ask.event.eventId)
+    assert.deepEqual(ends.map((x) => [x.key, x.e.type, x.e.payload.reason]), [[ask.d, ET.retirement, RETIREMENT_REASON.withdrawn]])
+    assert.deepEqual(await ask.promise, { ok: false, code: REFUSAL.unavailable })
+  })
+}
+
 // ------------------------------------------------------------------------------------------------
 
 export function registerRouteCases(sdk) {
@@ -1257,4 +1591,6 @@ export function registerRouteCases(sdk) {
   boundaryValues(sdk)
   decisionTables(sdk)
   stateTransitions(sdk)
+  settleTransitions(sdk)
+  payloadPartitions(sdk)
 }

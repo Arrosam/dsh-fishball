@@ -50,6 +50,13 @@
  *                                 `offerId` is the event's offer and correlation id). C-ROUTE
  *                                 commits it and keeps the live-offer ledger whose offers
  *                                 `ManagedState.release` retires (Fishball 2026-11-14 #2)
+ *     settle(offerId, settlement) → Promise<boolean>
+ *                                 an offer's or ask's outcome: one `settlement` (correlationId =
+ *                                 offerId) to the pair that held it; a waiting ask gets
+ *                                 `{ok: true, settlement}`; false (nothing) when the offer is not live
+ *                                 (routing/index.js JSDoc; on the managed chain, merge review fix 1)
+ *     withdraw(offerId) → Promise<boolean>
+ *                                 the session's call ended: the offer is retired `withdrawn`
  *     close() → Promise<void>     before the storage goes away
  *   }
  *
@@ -121,9 +128,10 @@ function routingDriver(routing, now) {
 
 /**
  * One C-ROUTE world for `t`: real storage and mailbox, fake ports, the routing module opened.
- * `hints` defaults to a recording HintSink. Cleaned up by `t`.
+ * `hints` defaults to a recording HintSink; `port` builds the mailbox port C-ROUTE is given over
+ * the real mailbox (default fakes.mjs mailboxPort; gatedMailboxPort for a slow commit). Cleaned up by `t`.
  */
-export async function routeWorld(t, sdk, { hints = recordingHints() } = {}) {
+export async function routeWorld(t, sdk, { hints = recordingHints(), port = mailboxPort } = {}) {
   const [route, mail] = await Promise.all([
     moduleOf(sdk, SUBJECT.entry, [SUBJECT.open], 'C-ROUTE "Owns" packages/connector/src/routing/'),
     moduleOf(sdk, SUBJECT.mailboxEntry, [SUBJECT.mailboxOpen, SUBJECT.mailboxCreate], 'C-MAILBOX, merged in W2'),
@@ -138,7 +146,7 @@ export async function routeWorld(t, sdk, { hints = recordingHints() } = {}) {
     const { ctx, helpers } = await storageContext(sdk, root)
     const tables = await mail[SUBJECT.mailboxOpen](ctx, helpers)
     const real = mail[SUBJECT.mailboxCreate]({ tables: tables.tables, hints, now: ports.clock.now })
-    const mailbox = mailboxPort(real)
+    const mailbox = port(real)
     const routing = await route[SUBJECT.open](ctx, helpers, {
       mailbox, pairs: ports.pairs, tokens: ports.tokens, presence: ports.presence, settings: ports.settings,
       sessions: ports.sessions, logger: ports.logger, now: ports.clock.now,
