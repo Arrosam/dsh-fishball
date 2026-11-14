@@ -33,6 +33,94 @@ export const FILES = Object.freeze({
   emptyScript: /^(?:export\s*\{\s*\}\s*;?)?$/,
 })
 
+/**
+ * K3 amendment 2026-11-14 (Fishball, under the user's rule that every tunable value is defined once
+ * in its frozen contract's constants object): core contracts may hold one data-only `constants.js`
+ * next to the types. Data only means no function, class, method or value import; `import type` and
+ * JSDoc comments are fine. Host-services stays types only.
+ */
+export const DATA_ONLY = Object.freeze({
+  /** The one script file core contracts may hold (top level of the folder, this exact name). */
+  file: 'constants.js',
+  /**
+   * Fishball's final rule 2026-11-14: the one function shape allowed is a pure template formatter,
+   * `(a, b) => \`…${a}…${b.c}…\`` (plain identifier parameters, the body only a template literal,
+   * each interpolation an identifier or dotted member access). Set false to forbid it again.
+   */
+  templateFormatters: true,
+  /**
+   * Fishball 2026-11-14 (addition): outside a template formatter the only call allowed is
+   * `Object.freeze(…)`, as the contract freezes its objects. Number arithmetic, numeric literals
+   * (`0o600`) and `const NAME = …` reused by later values are data.
+   */
+  allowedCall: Object.freeze(['Object', 'freeze']),
+  keyword: Object.freeze({
+    function: 'function', class: 'class', import: 'import', export: 'export', type: 'type', from: 'from', new: 'new', default: 'default',
+  }),
+  punct: Object.freeze({
+    arrow: '=>', backtick: '`', interpolation: '${', escape: '\\', quotes: '\'"',
+    braceOpen: '{', braceClose: '}', parenOpen: '(', parenClose: ')', bracketClose: ']', comma: ',', dot: '.', star: '*',
+  }),
+  /** Tokens that may follow a formatter's template body: the next entry, the statement's end or a closing bracket. */
+  bodyEnd: Object.freeze([',', ';', '}', ')', ']']),
+  violation: Object.freeze({
+    function: 'a function', class: 'a class', valueImport: 'a value import', dynamicImport: 'a dynamic import(',
+    reExport: 'a value re-export', arrow: 'an arrow function', methodBody: 'a method or function body `) {`',
+    call: 'a call other than Object.freeze(…)',
+  }),
+})
+
+/**
+ * Self-check of the data-only detector (EP / BVA over the amendment's rule; inline texts, no
+ * filesystem): [title, text, data only?]. Each failing sample breaks the rule in one way only.
+ */
+const FORMATTER = 'export const NOTICE = Object.freeze({ label: (id, type) => `notice ${id} (${type})` })'
+export const DATA_ONLY_SAMPLES = Object.freeze([
+  ['a frozen object of strings, numbers, booleans, arrays and a nested frozen object', 'export const X = Object.freeze({ a: 1, b: \'s\', c: true, d: Object.freeze([1, 2]), e: Object.freeze({ f: -0.5 }) })', true],
+  ['JSDoc and line comments that mention function, class, import and =>', '/** A function-free table; see import(\'x\') => class. */\n// function f() {}\nexport const X = Object.freeze({ a: 1 })', true],
+  ['a string literal holding "=>", "function" and "import("', 'export const X = Object.freeze({ a: \'(a) => b\', b: "function f() {}", c: \'import("y")\' })', true],
+  ['an `import type` and an `export type … from`', 'import type { T } from \'./events\'\nexport type { U } from \'./guards\'\nexport const X = Object.freeze({ a: 1 })', true],
+  ['an empty `export {}` stub', 'export {}', true],
+  ['an arrow function', 'export const X = Object.freeze({ f: (a) => a })', false],
+  ['a `function`', 'export function f() { return 1 }', false],
+  ['a `class`', 'export class C {}', false],
+  ['a method shorthand', 'export const X = Object.freeze({ f() { return 1 } })', false],
+  ['a value `import { X } from`', 'import { X } from \'./x.js\'\nexport const Y = Object.freeze({ X })', false],
+  ['a default value import named `type`', 'import type from \'./x.js\'\nexport const Y = Object.freeze({ type })', false],
+  ['a dynamic `import(`', 'export const X = Object.freeze({ p: import(\'./x.js\') })', false],
+  ['a value re-export `export { X } from`', 'export { X } from \'./x.js\'', false],
+  ['a value re-export `export * from`', 'export * from \'./x.js\'', false],
+  ['a property key named `class` (strict token reading, decided 2026-11-14)', 'export const X = Object.freeze({ class: 1 })', false],
+  // The formatter allowance (Fishball's final rule 2026-11-14), both sides of its boundary.
+  ['a pure template formatter `(id, type) => `notice ${id} (${type})``', FORMATTER, true],
+  ['formatters with no parameter, one bare parameter and a dotted access', 'export const X = Object.freeze({ a: () => `fb-notice`, b: id => `#${id}`, c: (e) => `${e.session.id}:${PREFIX}` })', true],
+  ['a template formatter with "=>" and "${" as template text', 'export const X = Object.freeze({ a: (id) => `a => b \\${id} ${id}` })', true],
+  ['a formatter calling a function in an interpolation `(x) => `${f(x)}``', 'export const X = Object.freeze({ a: (x) => `${f(x)}` })', false],
+  ['a formatter with an operator in an interpolation', 'export const X = Object.freeze({ a: (x) => `${x + 1}` })', false],
+  ['a formatter with a nested template in an interpolation', 'export const X = Object.freeze({ a: (x) => `${`${x}`}` })', false],
+  ['an arrow with an expression body `(x) => x + 1`', 'export const X = Object.freeze({ a: (x) => x + 1 })', false],
+  ['an arrow with a block body `(x) => { return `a` }`', 'export const X = Object.freeze({ a: (x) => { return `a` } })', false],
+  ['a template body continued by an operator', 'export const X = Object.freeze({ a: (x) => `${x}` + x })', false],
+  ['a tagged template body', 'export const X = Object.freeze({ a: (x) => tag`${x}` })', false],
+  ['a destructured parameter', 'export const X = Object.freeze({ a: ({ id }) => `${id}` })', false],
+  ['a default parameter value', 'export const X = Object.freeze({ a: (id = 1) => `${id}` })', false],
+  ['an async template arrow', 'export const X = Object.freeze({ a: async (id) => `${id}` })', false],
+  // The call rule (Fishball 2026-11-14, addition): Object.freeze is the only call outside formatters.
+  ['`Object.freeze({a: 1})`', 'export const X = Object.freeze({a: 1})', true],
+  ['number arithmetic, `0o600` and a `const` reused by a later value',
+    'const DAY_MS = 24 * 60 * 60 * 1000\nexport const X = Object.freeze({ dayMs: DAY_MS, weekMs: 7 * DAY_MS, mode: 0o600, half: -0.5, big: 1_000 })', true],
+  ['`Object.values(X).filter(f)`', 'export const Y = Object.freeze({ a: Object.values(X).filter(f) })', false],
+  ['`Symbol.for(\'x\')`', 'export const X = Object.freeze({ s: Symbol.for(\'x\') })', false],
+  ['`JSON.stringify(x)`', 'export const X = Object.freeze({ s: JSON.stringify(x) })', false],
+  ['a bare call `foo()`', 'export const X = foo()', false],
+  ['`Object.freeze` reached through another object `a.Object.freeze(…)`', 'export const X = a.Object.freeze({ a: 1 })', false],
+  ['a call on a frozen result `Object.freeze([1]).map(f)`', 'export const X = Object.freeze([1]).map(f)', false],
+  ['an optional call `f?.(x)`', 'export const X = Object.freeze({ a: f?.(x) })', false],
+  ['a `new` expression', 'export const X = Object.freeze({ a: new Map() })', false],
+])
+/** The formatter sample, checked again with the allowance switched off (the flag is what allows it). */
+export const DATA_ONLY_FORMATTER = FORMATTER
+
 /** The Cordis service names the K3 row and design §3.6 / §4.1 / §5.4 / §6.4 give. */
 export const SERVICE = Object.freeze({
   handover: 'fishballConnectorHandover',
