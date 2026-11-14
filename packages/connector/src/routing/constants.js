@@ -80,6 +80,7 @@ export const MISUSE = Object.freeze({
   offerType: 'fishball routing: offer() takes permission, question and plan-review only (ask goes through askFishball)',
   offer: 'fishball routing: an answerable event needs an offer, and its offer id must not be live already',
   sessionId: 'fishball routing: a session id must be a non-empty string',
+  payload: 'fishball routing: a message or settlement payload must be a value structuredClone can copy',
   heldRecord: 'fishball routing: refused to store a held message that would not reopen (a caller passed a bad value)',
   principalKey: 'fishball routing: a principal key must be a non-empty string',
   maxQueuedInputs: 'fishball routing: maxQueuedInputs() must return a positive whole number',

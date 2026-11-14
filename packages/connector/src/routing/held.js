@@ -34,7 +34,11 @@ export function createHeldQueue({ table, newKey, limit, onDeleteFailed }) {
   return Object.freeze({
     count: () => queue.length,
 
-    /** @returns `{ok: true}` once stored, or `queue-full` past the live bound (nothing stored). */
+    /**
+     * @param payload - kept as given, so it must be the caller's detached copy (`messageFishball`
+     *   copies it at the call): a payload changed while held could block the flush for good.
+     * @returns `{ok: true}` once stored, or `queue-full` past the live bound (nothing stored).
+     */
     async hold(sourceSessionId, payload) {
       if (queue.length >= limit()) return Object.freeze({ ok: false, code: REFUSAL.queueFull })
       const record = { seq: nextSeq, sourceSessionId, payload }
