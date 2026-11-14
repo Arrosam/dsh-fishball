@@ -127,7 +127,7 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
 | 3 | core's settings-section extension point | names nothing hosting-specific (no hosted flag, no instance types) |
 | 4 | the hosted-only sections | registered only through the extension point |
 | 5 | the instance's host UI | none: no `dsh.client` in the instance manifest (after R-EMBED) |
-| 6 | the child's launch overlays | no settings row; only HMR, origin and port, admission key and target URL (R-HOST-04) |
+| 6 | the child's launch overlays | no settings row and no guard row; only HMR, origin and port, admission key and target URL (R-HOST-04), plus the child isolation config patches (`agent-instructions` `projectRootMarkers: []`, `skill-filesystem` limited to the child's home with `includeDefaultRoots: false`, and the preset rows that nest them), so Fishball never reads the user's skills or project instructions (Fishball, 2026-11-15, isolation) |
 | 7 | the child's profile bundles and the instance's placement record | the four set members **plus** `fishball-hosted-settings`; a standalone DSH's profile never contains it |
 
 ### HOST-EP-01 — What the instance's host row may inject

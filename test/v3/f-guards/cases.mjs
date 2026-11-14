@@ -547,7 +547,6 @@ export function registerGuardCases(sdk) {
     assert.ok(isOk(f.report), show(f.report))
     assert.equal(f.bundles.at(-1), CORE)
   })
-  caseTest(sdk, 'PLAT-DT-04', 1, 'hosted: the instance writes the child profile with core last (a real hosted child)', null, LATER.place)
   caseTest(sdk, 'HOST-DT-03', 6, 'fishball-hosted-settings on: core\'s guards leave it enabled and it runs', async () => {
     const f = await shaped()
     needGuardsHeld(f.rows)
@@ -560,5 +559,4 @@ export function registerGuardCases(sdk) {
     needReports(f.history)
     assert.equal(JSON.stringify(f.history).includes(NEVER_GUARDED), false)
   })
-  caseTest(sdk, 'HOST-DT-03', 6, 'the same in a real hosted child placed by the instance (settings panel: generic + hosted)', null, LATER.place)
 }

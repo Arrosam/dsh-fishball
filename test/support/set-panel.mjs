@@ -1,5 +1,5 @@
 /**
- * Offline harness for the child's slim settings panel `packages/core/ui/fishball-settings/client.js`
+ * Offline harness for the child's slim settings panel `packages/core/client.settings.js`
  * (SET), used by the main-only model sync cases (test/v2-page-cases/set-main-only-sync.test.mjs).
  *
  * Black box. The classic scripts run unread in a node:vm context, the way DSH's module loader runs
@@ -27,7 +27,7 @@ import { createReactShim, findAll, settle, textOf } from './rp-recommend.mjs'
 import { EMBED_UI } from './constants.mjs'
 
 export const PANEL = Object.freeze({
-  panelClient: path.join(BODY_SOUL.core, 'ui', 'fishball-settings', 'client.js'),
+  panelClient: path.join(BODY_SOUL.core, 'client.settings.js'),
   instanceClient: EMBED_UI.statusLine,
   /** V3 R-HOST-11: the instance-owned hosted-only sections bundle. */
   hostedClient: path.join(BODY_SOUL.instance, 'src', 'child-settings', 'client.js'),
