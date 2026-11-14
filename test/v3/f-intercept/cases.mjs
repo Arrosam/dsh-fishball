@@ -821,22 +821,24 @@ const SEND_OUTCOME = Object.freeze({
 /**
  * A handler held in flight until the test lets it go: it accepts first when `accepts` (so the
  * record is open at close time, else still offered), then returns or, when `throws`, throws.
- * With `sends` it also commits, and its `send` is what is held (the record is committing at close
- * time); once let go, `send` settles as `SEND_OUTCOME[sends]` and the handler returns.
+ * With `acceptsLate` it calls `accept` once let go (`result.lateAccept`). With `sends` it also
+ * commits, and its `send` is what is held (the record is committing at close time); once let go,
+ * `send` settles as `SEND_OUTCOME[sends]` and the handler returns.
  * `at` resolves with accept's result (undefined when it never accepts); `settled` once it ended;
  * `result.sendStarted` and `result.commit` (`{resolved}` or `{rejected}`) record the commit.
  */
-function inFlightHandler({ accepts, throws, sends }) {
+function inFlightHandler({ accepts, throws, sends, acceptsLate }) {
   const at = Promise.withResolvers()
   const go = Promise.withResolvers()
   const settled = Promise.withResolvers()
-  const result = { sendStarted: false, commit: undefined }
+  const result = { sendStarted: false, commit: undefined, lateAccept: undefined }
   const handler = async (_e, ctl) => {
     try {
       const accepted = accepts ? await ctl.accept() : undefined
       if (sends === undefined) {
         at.resolve(accepted)
         await go.promise
+        if (acceptsLate) result.lateAccept = await ctl.accept()
       } else {
         const send = async () => { result.sendStarted = true; at.resolve(accepted); await go.promise; return SEND_OUTCOME[sends]() }
         // A commit fenced before its send still lets the test go on (the harness check then fails).
@@ -852,6 +854,54 @@ function inFlightHandler({ accepts, throws, sends }) {
 async function drainTurns() {
   for (let turn = 0; turn < WAIT.immediateTurns; turn++) await new Promise((resolve) => setImmediate(resolve))
 }
+/** R-INT-08's observable: the `inbox_ack` calls at the link whose receipts name `event`. */
+const ackCallsFor = (world, event) =>
+  world.link.calls.filter((c) => c.name === TOOL.inboxAck && (c.args.receipts ?? []).some((r) => r.eventId === event.eventId)).length
+/** An interceptor registered straight through `service.intercept`: its value is the disposer. */
+const interceptDirectly = (world, handler) => world.core.intercept({ pluginId: FIXTURE.pluginX, types: [CONTRIBUTED] }, handler)
+
+/**
+ * A world whose ledger writes are split at core's close(): `writes.beforeClose` / `.afterClose`.
+ * `close()` marks the split and closes core; `watch(act)` runs `act`, gives its tail a few turns
+ * and returns the messages of every unhandledRejection raised meanwhile (listener scoped to it).
+ */
+async function closeProbe(t, sdk) {
+  let closing = false
+  const writes = { beforeClose: [], afterClose: [] }
+  const seam = { ledgerWrite: ({ op }) => { (closing ? writes.afterClose : writes.beforeClose).push(op) } }
+  const world = await worldFor(t, sdk, { seam })
+  async function watch(act) {
+    const unhandled = []
+    const onUnhandled = (reason) => { unhandled.push(String(reason?.message ?? reason)) }
+    process.on(PROCESS_EVENT.unhandledRejection, onUnhandled)
+    try {
+      await act()
+      await drainTurns()
+    } finally { process.off(PROCESS_EVENT.unhandledRejection, onUnhandled) }
+    return unhandled
+  }
+  return { world, writes, watch, close: () => { closing = true; return world.core.close() } }
+}
+/**
+ * A close probe whose interceptor holds one event in flight (`inFlightHandler(behaviour)`): the
+ * record is offered or, with `behaviour.accepts`, open and acked. `register(world, handler)` makes
+ * the interceptor (default plugin X); what it returns is `registered`.
+ */
+async function heldAtClose(t, sdk, behaviour, register = pluginX) {
+  const probe = await closeProbe(t, sdk)
+  const { world, writes } = probe
+  const held = inFlightHandler(behaviour)
+  const registered = await register(world, held.handler)
+  const event = nextEvent(CONTRIBUTED)
+  await publish(world, event)
+  const accepted = await held.at
+  await world.settle()
+  // Harness: the record is in the rule's state and the write guard is wired.
+  assert.equal(accepted, behaviour.accepts ? true : undefined, 'harness: accept before close()')
+  assert.equal(acked(world, event), behaviour.accepts, 'harness: acked (open) or not (offered) before close()')
+  assert.ok(writes.beforeClose.length > 0, 'harness: the ledger write guard saw no write')
+  return { ...probe, held, event, registered }
+}
 
 /**
  * Decision table over the in-flight state at close(): record offered (never accepted) or open
@@ -862,6 +912,11 @@ async function drainTurns() {
  * `send` across close(); it then settles as one of K3's "never reached the connector" outcomes
  * (which without close() is EVT-DT-04 rule 6 / 6 (disconnected)): `commit` still resolves (K3:
  * commit never rejects) and the record stays committing.
+ *
+ * Rows 5i–5k are the controller and registration paths that must also do nothing once close()
+ * has run: a late `accept` (5i), the ack `accept` defers, on the boundary where close() comes
+ * between accept resolving and that ack going out (5j; the other side is row 4), and a dispose of
+ * an interceptor holding an offered or open record (5k; without close() EVT-UC-03 E1 / DT-04 rule 2).
  */
 function registerCloseCases(sdk) {
   const IN_FLIGHT = [
@@ -876,39 +931,58 @@ function registerCloseCases(sdk) {
     const committing = behaviour.sends !== undefined
     const settles = committing ? label.replace(',', ' and its') + ', then the handler returns,' : label.replace(',', ' and the handler')
     row(sdk, ID.st02, `5h (close() in flight, ${label})`, `the record is ${settles} only after core's close(): no ledger write after close(), no unhandledRejection${committing ? ', commit resolves' : ''}`, async (t) => {
-      let closing = false
-      const writesBeforeClose = []
-      const writesAfterClose = []
-      const seam = { ledgerWrite: ({ op }) => { (closing ? writesAfterClose : writesBeforeClose).push(op) } }
-      const world = await worldFor(t, sdk, { seam })
-      const held = inFlightHandler(behaviour)
-      await pluginX(world, held.handler)
-      const event = nextEvent(CONTRIBUTED)
-      await publish(world, event)
-      const accepted = await held.at
-      await world.settle()
-      // Harness: the record is in the rule's state and the write guard is wired.
-      assert.equal(accepted, behaviour.accepts ? true : undefined, 'harness: accept before close()')
-      assert.equal(acked(world, event), behaviour.accepts, 'harness: acked (open) or not (offered) before close()')
-      assert.ok(writesBeforeClose.length > 0, 'harness: the ledger write guard saw no write')
+      const { world, writes, watch, close, held, event } = await heldAtClose(t, sdk, behaviour)
       if (committing) {
         assert.equal(held.result.sendStarted, true, 'harness: send was not in flight at close() (commit fenced: ' + JSON.stringify(held.result.commit) + ')')
         assert.deepEqual(ledgerStates(world, event), [CORE.committing], 'harness: the record\'s state at close()')
       }
-
-      const unhandled = []
-      const onUnhandled = (reason) => { unhandled.push(String(reason?.message ?? reason)) }
-      process.on(PROCESS_EVENT.unhandledRejection, onUnhandled)
-      try {
-        closing = true
-        await world.core.close()
-        held.go()
-        await held.settled
-        await drainTurns()
-      } finally { process.off(PROCESS_EVENT.unhandledRejection, onUnhandled) }
+      const unhandled = await watch(async () => { await close(); held.go(); await held.settled })
       assert.deepEqual(unhandled, [], 'unhandledRejection after the handler settled past close()')
-      assert.deepEqual(writesAfterClose, [], 'ledger writes after close()')
+      assert.deepEqual(writes.afterClose, [], 'ledger writes after close()')
       if (committing) assert.ok(held.result.commit !== undefined && 'resolved' in held.result.commit, 'commit did not resolve (K3: commit never rejects): ' + JSON.stringify(held.result.commit))
+    })
+  }
+
+  row(sdk, ID.st02, '5i (accept after close(), offered)', 'a handler holding an offered event calls accept only after core\'s close(): no ack, no ledger write after close(), no unhandledRejection', async (t) => {
+    const { world, writes, watch, close, held, event } = await heldAtClose(t, sdk, { accepts: false, throws: false, acceptsLate: true })
+    const unhandled = await watch(async () => { await close(); held.go(); await held.settled })
+    assert.deepEqual(unhandled, [], 'unhandledRejection after accept past close()')
+    assert.equal(ackCallsFor(world, event), 0, 'inbox_ack calls for an event accepted after close()')
+    assert.deepEqual(writes.afterClose, [], 'ledger writes after close()')
+  })
+
+  row(sdk, ID.st02, '5j (close() before accept\'s deferred ack)', 'close() runs in the handler\'s continuation of accept, before the ack accept scheduled goes out: no ack after close(), no ledger write after close(), no unhandledRejection', async (t) => {
+    const { world, writes, watch, close } = await closeProbe(t, sdk)
+    const event = nextEvent(CONTRIBUTED)
+    const settled = Promise.withResolvers()
+    const seenAtClose = { accept: undefined, acks: undefined }
+    await pluginX(world, async (_e, ctl) => {
+      try {
+        seenAtClose.accept = await ctl.accept()
+        seenAtClose.acks = ackCallsFor(world, event)
+        await close()
+      } finally { settled.resolve() }
+    })
+    const unhandled = await watch(async () => { await publish(world, event); await settled.promise })
+    // Harness: accept won and its ack had not gone out when close() ran (else this is row 4).
+    assert.deepEqual(seenAtClose, { accept: true, acks: 0 }, 'harness: accept and the inbox_ack calls when close() ran')
+    assert.ok(writes.beforeClose.length > 0, 'harness: the ledger write guard saw no write')
+    assert.deepEqual(unhandled, [], 'unhandledRejection after close() past accept')
+    assert.equal(ackCallsFor(world, event), 0, 'inbox_ack calls for the event after close()')
+    assert.deepEqual(writes.afterClose, [], 'ledger writes after close()')
+  })
+
+  const HOLDING = [['offered', { accepts: false, throws: false }], ['open', { accepts: true, throws: false }]]
+  for (const [label, behaviour] of HOLDING) {
+    row(sdk, ID.st02, `5k (dispose after close(), ${label})`, `an interceptor holding an ${label} event is disposed (service.intercept's disposer) only after core's close(): no fallback to Fishball, no ledger write, no unhandledRejection`, async (t) => {
+      const { world, writes, watch, close, held, event, registered: dispose } = await heldAtClose(t, sdk, behaviour, interceptDirectly)
+      // The handler is released only at cleanup, so nothing but the dispose runs after close().
+      t.after(held.go)
+      const unhandled = await watch(async () => { await close(); dispose() })
+      assert.deepEqual(unhandled, [], 'unhandledRejection after dispose past close()')
+      assert.deepEqual(writes.afterClose, [], 'ledger writes after close()')
+      await world.settle()
+      assert.equal(await wakes(world, event), 0, 'Fishball woken for an event disposed after close()')
     })
   }
 }
