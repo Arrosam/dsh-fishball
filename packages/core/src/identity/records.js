@@ -18,7 +18,7 @@ const isAsked = (value) => value === undefined
  */
 const recordSchema = Object.freeze({
   parse(value) {
-    const ok = value !== null && typeof value === 'object' && isText(value.origin) && isOptionalText(value.ref)
+    const ok = value !== null && typeof value === 'object' && isText(value.origin) && isText(value.ref)
       && isText(value.id) && isOptionalText(value.name) && Number.isSafeInteger(value.pairedAt) && isAsked(value.asked)
     if (!ok) throw new TypeError(MISUSE.record)
     return value
@@ -43,7 +43,7 @@ export async function openRecords(ctx, { defineDomain, domainTable }) {
 }
 
 /** The table key of (origin, reference): a JSON pair, so no separator can make two keys meet. */
-const keyOf = (origin, ref) => JSON.stringify([origin, ref ?? null])
+const keyOf = (origin, ref) => JSON.stringify([origin, ref])
 
 /**
  * The records over one KvTable (`get`, `put`; both SDKs).
@@ -59,7 +59,7 @@ export function createRecords(table) {
      * core last asked for, where (`pair` / `set_name`) and the refusal code or `null`.
      */
     put: (record) => table.put(keyOf(record.origin, record.ref), Object.freeze({
-      origin: record.origin, ref: record.ref ?? null, id: record.id, name: record.name, pairedAt: record.pairedAt,
+      origin: record.origin, ref: record.ref, id: record.id, name: record.name, pairedAt: record.pairedAt,
       ...(record.asked === undefined ? {} : { asked: record.asked }),
     })),
   })

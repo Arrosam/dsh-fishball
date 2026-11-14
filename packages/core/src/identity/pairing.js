@@ -8,9 +8,9 @@
  * | Rule | Record | Granted scope | Action |
  * | --- | --- | --- | --- |
  * | 1, 2, 3, 7, 10 | absent | any | `pair({name})`: ok → write the record, work; `already-paired` → warning (match or mismatch); `id-taken` → need a new id |
- * | 4 | present | `fishball` | work, no `pair` (R-ID-05) |
- * | 5 | present | `fishball:pair` | hold: a new token is needed (R-ID-10), no `pair` |
- * | 6 | present | (refused) | the link reports `token-refused` / `token-revoked` and retries |
+ * | 4 | present | holds `fishball` | work, no `pair` (R-ID-05) |
+ * | 5 | present | `fishball:pair` (anything without `fishball`) | hold: a new token is needed (R-ID-10), no `pair` |
+ * | 6 | present | (refused) | the link reports `token-refused` / `token-revoked`, and retries (no hold) |
  * | 8 | warning open | — | the link is held before its first request: nothing reaches the target |
  * | 9 | — | — | `client_credentials` only (the link's provider), state from `scope` and `pair` only (R-OA-18) |
  *
@@ -20,19 +20,28 @@
  * token back (AUTH-UC-05 A2 "core stops using the old token"). The caller (F-WIRE) calls
  * `link.reconnect()` after a settings change, as for the link itself.
  *
- * Names (R-NAME-03, NAME-DT-03): `pair` carries `identity.name`. After every connect, and on
- * `nameChanged()`, `set_name` is called when the requested name is neither the connector's name
- * nor the name the connector last answered for. Both are kept in the record (`name`, `asked`), so a
- * change made while the link was down is sent after the reconnect (NAME-UC-02 A2), while a refused
- * name is not sent again until the setting changes. A refusal keeps the connector's name and is
- * reported as `nameIssue`, also after a restart.
+ * Decisions run one at a time, in attempt order, and only the latest attempt changes the view: an
+ * attempt overtaken while it waited on `pair` or a record write leaves what it learnt in the
+ * records (a `pair` that succeeded is a fact) and changes nothing else.
  *
- * A record write that fails after a successful `pair` fails the attempt; the retry's `pair` then
- * answers `already-paired` with `idMatches: true`, and the user's Continue restores the record.
+ * A successful `pair` is kept in memory until its record is written. A failed write fails the
+ * attempt, and the retry writes the kept record instead of calling `pair` again (R-ID-05). Only a
+ * restart between the two loses it; that retry's `pair` answers `already-paired` with
+ * `idMatches: true`, and the user's Continue restores the record.
+ *
+ * Names (R-NAME-03, NAME-DT-03): `pair` carries `identity.name`. `nameChanged()` sends `set_name`
+ * unless the requested name already is the connector's, at once when connected, else after the
+ * next connect. After any other connect, `set_name` is sent only when the requested name is
+ * neither the connector's name nor the name the connector last answered for. Both are kept in the
+ * record (`name`, `asked`), so a change made while the link was down is sent after the reconnect
+ * (NAME-UC-02 A2), while a refused name is not sent at every reconnect. A refusal keeps the
+ * connector's name and is reported as `nameIssue`, also after a restart.
  */
 import { REFUSAL, SCOPE, TOOL, principalLabel } from '../link/schema.js'
-import { STATUS, createLink } from '../link/index.js'
-import { CHOICE, CHOICES_OF, CHOICE_REFUSAL, HELD_STATES, HOLD_STATUS, MISUSE, NAME_SOURCE, PAIRING_STATE } from './constants.js'
+import { STATUS, createLink, emitIsolated, subscribe } from '../link/index.js'
+import {
+  CHOICE, CHOICES_OF, CHOICE_REFUSAL, HELD_STATES, HOLD_STATUS, MISUSE, NAME_SOURCE, NO_CHOICES, PAIRING_STATE, SCOPE_LIST,
+} from './constants.js'
 import { requestedName, sameName } from './identity.js'
 
 /** A `pair` answer the decision table has no row for: the attempt fails and is retried. */
@@ -40,18 +49,39 @@ export class PairingFailed extends Error {}
 
 const NAME_REFUSALS = Object.freeze([REFUSAL.nameTaken, REFUSAL.nameInvalid])
 
+/** The values a record and most holds apply to: (target origin, token reference, fishball id). */
+const pairKeyOf = (attempt) => JSON.stringify([attempt.origin, attempt.ref, attempt.clientId])
+
 /** The values a held state applies to (see the module comment). */
-const holdKeyOf = (state, attempt) => JSON.stringify(state === PAIRING_STATE.needToken
-  ? [attempt.origin, attempt.ref ?? null]
-  : [attempt.origin, attempt.ref ?? null, attempt.clientId])
+const holdKeyOf = (state, attempt) => (state === PAIRING_STATE.needToken ? JSON.stringify([attempt.origin, attempt.ref]) : pairKeyOf(attempt))
 
 /** The `pair` arguments: the requested name, or none for a cleared name (R-NAME-06). */
 const pairArgs = (name) => (name === null ? {} : { name })
 
+/** Whether a granted scope list holds K1's full scope (RFC 6749 §3.3; R-OA-04). */
+const isFull = (scope) => typeof scope === 'string' && scope.split(SCOPE_LIST.separator).includes(SCOPE.full)
+
+const refusedName = (code) => (NAME_REFUSALS.includes(code) ? code : null)
+
+const refusal = (code) => Object.freeze({ ok: false, code })
+const OK = Object.freeze({ ok: true })
+
+/**
+ * The link's credentials, with the token reference required: records and holds key on it, so a
+ * missing one would put every token of a target under one key. A missing reference is F-WIRE's
+ * programming error; the link reports it as a failed attempt.
+ */
+const withRef = (credentials) => async () => {
+  const value = await credentials()
+  if (value?.secret && typeof value.ref !== 'string') throw new TypeError(MISUSE.ref)
+  return value
+}
+
 /**
  * @typedef {object} PairingView what the Fishball page shows (`pairing.state()`)
  * @property {string} state one of PAIRING_STATE
- * @property {object | null} warning `already-paired`'s `bound` and `advice` while a warning is open
+ * @property {object | null} warning while a warning is open: `already-paired`'s `bound` fields,
+ *   its `advice`, and `inUse`, the bound pair as `principalLabel` gives it (R-NAME-08)
  * @property {readonly string[]} choices the warning's choices (CHOICES_OF), else empty
  * @property {{source: string, code: string, inUse: object} | null} nameIssue a refused name: where
  *   it came from (NAME_SOURCE), `name-taken` / `name-invalid`, and the name in use as
@@ -68,25 +98,27 @@ const pairArgs = (name) => (name === null ? {} : { name })
  */
 export function createPairing({ records, name, now = Date.now, createLink: makeLink = createLink, ...linkOptions }) {
   const listeners = new Set()
-  let view = Object.freeze({ state: PAIRING_STATE.unpaired, warning: null, choices: Object.freeze([]), nameIssue: null })
+  let view = Object.freeze({ state: PAIRING_STATE.unpaired, warning: null, choices: NO_CHOICES, nameIssue: null })
   let holdKey
-  // The attempt the gate last admitted: the name sync reads and writes its record.
+  // The latest attempt (the one the view follows) and the one the gate last admitted (whose record
+  // the name sync reads and writes).
+  let latest
   let admitted
   let warned
+  // Successful `pair` results whose record is not written yet, by pairKeyOf.
+  const unwritten = new Map()
+  let decisions = Promise.resolve()
   let nameSync = Promise.resolve()
+  // `nameChanged()` came while no name sync could run: the next connect sends regardless of `asked`.
+  let nameChangePending = false
 
-  const emit = () => {
-    for (const fn of [...listeners]) {
-      try { fn(view) } catch { /* a listener is the caller's code; it cannot break pairing */ }
-    }
-  }
   const update = (changes) => {
     view = Object.freeze({ ...view, ...changes })
-    emit()
+    emitIsolated(listeners, view)
   }
   const enter = (state, attempt, warning = null) => {
     holdKey = HELD_STATES.includes(state) ? holdKeyOf(state, attempt) : undefined
-    update({ state, warning, choices: CHOICES_OF[state] ?? Object.freeze([]) })
+    update({ state, warning, choices: CHOICES_OF[state] ?? NO_CHOICES })
   }
   /** The name refusal a record shows for the requested name, or `null` (see the module comment). */
   const issueOf = (record, wanted) => {
@@ -94,31 +126,48 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
     if (sameName(wanted, record.name) || asked?.name !== wanted || asked.refused === null) return null
     return Object.freeze({ source: asked.source, code: asked.refused, inUse: principalLabel(record.name, record.id) })
   }
-  const showName = (record) => update({ nameIssue: issueOf(record, requestedName(name())) })
-  /** The record of `attempt` with the connector's answer to the name `asked` for from `source`. */
+  const showName = (record) => update({ nameIssue: record === undefined ? null : issueOf(record, requestedName(name())) })
+  /** `record` with the connector's name `held` and its answer to the name `asked` for from `source`. */
   const answered = (record, asked, source, held, refused) => ({ ...record, name: held, asked: Object.freeze({ name: asked, source, refused }) })
-  const refusedName = (code) => (NAME_REFUSALS.includes(code) ? code : null)
-
   const newRecord = (attempt, held) => ({ origin: attempt.origin, ref: attempt.ref, id: attempt.clientId, name: held, pairedAt: now() })
 
+  const stored = (attempt) => records.get(attempt.origin, attempt.ref)
   const isHeld = (attempt) => HELD_STATES.includes(view.state) && holdKey === holdKeyOf(view.state, attempt)
+  const isLatest = (attempt) => attempt === latest
+
+  /** Writes a successful `pair`'s record, kept in `unwritten` until the write succeeds. */
+  async function writePaired(attempt, record) {
+    const key = pairKeyOf(attempt)
+    unwritten.set(key, record)
+    await records.put(record)
+    unwritten.delete(key)
+  }
+
+  /** The attempt is admitted with `record`: the view follows only for the latest attempt. */
+  function work(attempt, record) {
+    if (!isLatest(attempt)) return HOLD_STATUS
+    admitted = attempt
+    if (view.state !== PAIRING_STATE.paired) enter(PAIRING_STATE.paired, attempt)
+    showName(record)
+    return null
+  }
 
   async function pair(attempt, call) {
     const wanted = requestedName(name())
     const result = await call(TOOL.pair, pairArgs(wanted))
     if (result?.ok === true) {
+      const held = result.name ?? null
       const refused = result.nameAssigned === false ? refusedName(result.nameRefused) : null
-      const record = answered(newRecord(attempt, result.name), wanted, NAME_SOURCE.pair, result.name, refused)
-      await records.put(record)
-      admitted = attempt
-      enter(PAIRING_STATE.paired, attempt)
-      showName(record)
-      return null
+      const record = answered(newRecord(attempt, held), wanted, NAME_SOURCE.pair, held, refused)
+      await writePaired(attempt, record)
+      return work(attempt, record)
     }
+    if (!isLatest(attempt)) return HOLD_STATUS
     if (result?.code === REFUSAL.alreadyPaired) {
-      warned = Object.freeze({ attempt, bound: result.bound })
-      const state = result.bound?.idMatches === true ? PAIRING_STATE.warnMatch : PAIRING_STATE.warnMismatch
-      enter(state, attempt, Object.freeze({ ...result.bound, advice: result.advice }))
+      const bound = result.bound ?? {}
+      warned = Object.freeze({ attempt, bound })
+      const state = bound.idMatches === true ? PAIRING_STATE.warnMatch : PAIRING_STATE.warnMismatch
+      enter(state, attempt, Object.freeze({ ...bound, advice: result.advice, inUse: principalLabel(bound.name ?? null, bound.boundId) }))
       return HOLD_STATUS
     }
     if (result?.code === REFUSAL.idTaken) {
@@ -128,61 +177,82 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
     throw new PairingFailed(result?.code ?? MISUSE.pairResult)
   }
 
+  async function decide(attempt, { scope, call }) {
+    const kept = unwritten.get(pairKeyOf(attempt))
+    if (kept !== undefined) await writePaired(attempt, kept)
+    const record = stored(attempt)
+    if (record === undefined) return pair(attempt, call)
+    if (!isFull(scope)) {
+      if (isLatest(attempt)) enter(PAIRING_STATE.idMismatch, attempt)
+      return HOLD_STATUS
+    }
+    return work(attempt, record)
+  }
+
   /** The link's pairing gate (link.js `PairingGate`). */
   const gate = Object.freeze({
     hold(attempt) {
+      latest = attempt
       if (isHeld(attempt)) return HOLD_STATUS
-      // Other values than the hold was decided for (or no hold): the record decides again.
-      const state = records.get(attempt.origin, attempt.ref) === undefined ? PAIRING_STATE.unpaired : PAIRING_STATE.paired
+      // Other values than the hold was decided for (or no hold): the record decides again, and a
+      // name issue of other values is not this one's.
+      const record = stored(attempt)
+      const state = record === undefined ? PAIRING_STATE.unpaired : PAIRING_STATE.paired
       if (view.state !== state) enter(state, attempt)
-      return null
-    },
-    async admit(attempt, { scope, call }) {
-      const record = records.get(attempt.origin, attempt.ref)
-      if (record === undefined) return pair(attempt, call)
-      if (scope === SCOPE.pair) {
-        enter(PAIRING_STATE.idMismatch, attempt)
-        return HOLD_STATUS
+      if (admitted === undefined || pairKeyOf(admitted) !== pairKeyOf(attempt)) {
+        admitted = undefined
+        showName(record)
       }
-      admitted = attempt
-      if (view.state !== PAIRING_STATE.paired) enter(PAIRING_STATE.paired, attempt)
-      showName(record)
       return null
     },
-    paired: async (attempt) => records.get(attempt.origin, attempt.ref) !== undefined,
+    admit(attempt, session) {
+      const next = decisions.then(() => decide(attempt, session))
+      decisions = next.catch(() => {})
+      return next
+    },
+    paired: async (attempt) => stored(attempt) !== undefined || unwritten.has(pairKeyOf(attempt)),
   })
 
-  const link = makeLink({ ...linkOptions, gate })
+  const link = makeLink({ ...linkOptions, credentials: withRef(linkOptions.credentials), gate })
 
   /** One `set_name` when the module comment's rule asks for it; queued, never concurrent. */
-  async function syncNameOnce() {
+  async function syncNameOnce(forced) {
     const attempt = admitted
-    const record = attempt && records.get(attempt.origin, attempt.ref)
-    if (record === undefined || link.status() !== STATUS.connected) return
+    const record = attempt && stored(attempt)
+    if (record === undefined || link.status() !== STATUS.connected) {
+      if (forced) nameChangePending = true
+      return
+    }
+    const force = forced || nameChangePending
+    nameChangePending = false
     const wanted = requestedName(name())
     showName(record)
-    if (sameName(wanted, record.name) || record.asked?.name === wanted) return
+    if (sameName(wanted, record.name) || (!force && record.asked?.name === wanted)) return
     let result
     try {
       result = await link.callTool(TOOL.setName, { name: wanted })
     } catch {
       // Unknown whether it arrived: the record is unchanged, so the next connect asks again.
+      if (force) nameChangePending = true
       return
     }
     const ok = result?.ok === true
     const refused = ok ? null : refusedName(result?.code)
-    // Any other answer (`disconnected` included) changes nothing; the next connect asks again.
-    if (!ok && refused === null) return
-    const next = answered(record, wanted, NAME_SOURCE.setName, ok ? result.name : record.name, refused)
+    if (!ok && refused === null) {
+      // Any other answer (`disconnected` included) changes nothing; the next connect asks again.
+      if (force) nameChangePending = true
+      return
+    }
+    const next = answered(record, wanted, NAME_SOURCE.setName, ok ? result.name ?? null : record.name, refused)
     await records.put(next)
     showName(next)
   }
-  const syncName = () => {
-    nameSync = nameSync.then(syncNameOnce, syncNameOnce).catch(() => {})
+  const syncName = (forced) => {
+    nameSync = nameSync.then(() => syncNameOnce(forced)).catch(() => {})
     return nameSync
   }
 
-  link.onStatus((status) => { if (status === STATUS.connected) void syncName() })
+  link.onStatus((status) => { if (status === STATUS.connected) void syncName(false) })
 
   return Object.freeze({
     /** Core's link, with this pairing as its gate. Start it with `link.start()`. */
@@ -190,35 +260,37 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
     /** @returns {PairingView} */
     state: () => view,
     /** Calls `fn(view)` after each change of `state()`. Returns its disposer. */
-    onChange(fn) {
-      listeners.add(fn)
-      return () => { listeners.delete(fn) }
-    },
+    onChange: (fn) => subscribe(listeners, fn),
     /**
      * The `identity.name` setting changed (R-NAME-03): sends `set_name` now when connected,
-     * otherwise after the next connect. Resolves once that call settled.
+     * otherwise after the next connect. Resolves once that call settled; never rejects.
      */
-    nameChanged: () => syncName(),
+    nameChanged: () => syncName(true),
     /**
      * One of the warning's choices (R-ID-07; AUTH-ST-03 rows 3–5).
      * - `continue` with `{confirmed: true}` (the box "No other Fishball or agent uses this id with
      *   this token" ticked): writes the record, sends no `pair`, and reconnects the link;
      * - `new-token-and-id` / `new-token`: core stops using this token until its reference changes.
-     * @returns {Promise<{ok: true} | {ok: false, code: string}>} a refusal changes nothing
+     * @returns {Promise<{ok: true} | {ok: false, code: string}>} never rejects; a refusal changes
+     *   nothing (`not-offered`, `not-confirmed`, or `not-saved` when the record write failed)
      */
     async choose(choice, { confirmed = false } = {}) {
-      if (!view.choices.includes(choice)) return Object.freeze({ ok: false, code: CHOICE_REFUSAL.notOffered })
-      if (choice === CHOICE.continue) {
-        if (confirmed !== true) return Object.freeze({ ok: false, code: CHOICE_REFUSAL.notConfirmed })
-        const { attempt, bound } = warned
+      if (!view.choices.includes(choice)) return refusal(CHOICE_REFUSAL.notOffered)
+      const { attempt, bound } = warned
+      if (choice !== CHOICE.continue) {
+        enter(PAIRING_STATE.needToken, attempt)
+        return OK
+      }
+      if (confirmed !== true) return refusal(CHOICE_REFUSAL.notConfirmed)
+      try {
         // The connector holds the bound pair's name; the name sync after the reconnect asks for ours.
         await records.put(newRecord(attempt, bound.name ?? null))
-        enter(PAIRING_STATE.paired, attempt)
-        link.reconnect()
-      } else {
-        enter(PAIRING_STATE.needToken, warned.attempt)
+      } catch {
+        return refusal(CHOICE_REFUSAL.notSaved)
       }
-      return Object.freeze({ ok: true })
+      enter(PAIRING_STATE.paired, attempt)
+      link.reconnect()
+      return OK
     },
   })
 }
