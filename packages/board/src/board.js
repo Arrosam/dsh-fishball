@@ -163,10 +163,8 @@ async function linkGraph(next, changed, getCard) {
  * keeps the provenance it was stored with, including NONE: a legacy link stored without
  * `session` stays without it, because the session that created it is unknown and must not be
  * attributed to the current manager. Only a link not already on the card gets `session`.
- * Non-`ev:` links are stored as sent.
- * B10 CONFLICT (unresolved, no export here): board design §6 exports cards "without the manager
- * session id", while U19 exports the complete archive.jsonl, which now holds `session`. B10 must
- * not ship until that is reconciled; this storage does not broaden any export.
+ * Non-`ev:` links are stored as sent. Nothing exports the archive (the user dropped
+ * `board_export`, W3 2026-11-15), so `session` stays inside the board's own files.
  */
 function withProvenance(links, previousLinks, session) {
   if (links === undefined) return undefined

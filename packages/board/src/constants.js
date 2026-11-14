@@ -28,7 +28,9 @@ export const BOARD_LIMITS = Object.freeze({
   links: 8,
   contextChars: 2000,
   guideChars: 900,
-  // U19: a projection window for closed cards, never an archive deletion age.
+  // U19: a projection window for closed cards, never an archive deletion age. A closed card is
+  // visible while less than this many days (STORAGE.millisecondsPerDay each) have passed since it
+  // closed, and archived at exactly the edge (PLAT-BVA-01 K, W3 Q-24; K1 left it to the board).
   visibilityDays: 30,
   search: Object.freeze({
     queryMinChars: 1,
@@ -61,4 +63,5 @@ export const REFUSAL = Object.freeze({
 
 export const CONTEXT_ORDER = Object.freeze({ guide: 10210, board: 300 })
 
-export const LOG = Object.freeze({ instanceHooksMissing: 'instance-hooks-missing' })
+/** R-FB-06: the one line a board row logs when fishball-core is not there. */
+export const LOG = Object.freeze({ coreMissing: 'fishball-core-missing' })

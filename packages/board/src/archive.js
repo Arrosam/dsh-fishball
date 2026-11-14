@@ -119,16 +119,5 @@ export function createArchive(file) {
         return expectedBytes + Buffer.byteLength(text, STORAGE.encoding)
       } finally { await handle.close() }
     },
-    async exportTo(writeChunk, expectedBytes) {
-      // Validate the entire boundary before giving B10 any bytes. Sink failure still rejects;
-      // B10 must publish its destination only after this promise successfully completes.
-      await scan(() => {}, expectedBytes)
-      return withReader(expectedBytes, async ({ handle, size }) => {
-        if (size === STORAGE.emptyBytes) return
-        for await (const chunk of handle.createReadStream({ start: STORAGE.emptyBytes, end: size - STORAGE.lastByteOffset, autoClose: false })) {
-          await writeChunk(chunk)
-        }
-      })
-    },
   }
 }
