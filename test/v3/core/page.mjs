@@ -22,6 +22,7 @@
  *
  * Observation points: the rendered `main` slot entry of the settings panel (data attributes, text,
  * roles), the header entry, every request the page makes, page console errors and plugin failures.
+ * Actions (I-PLACE's K3 `unmount` rows): close and reopen the panel, dispose one client plugin.
  */
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -270,6 +271,19 @@ export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = (
     },
     async press(node) {
       node.props.onClick?.({ preventDefault() {}, stopPropagation() {}, currentTarget: node, target: node })
+      await settle()
+    },
+    /** Let the page settle (promises, re-renders). */
+    settled: settle,
+    /** Close the panel: its main slot entry leaves the page, as when the owner selects another panel. */
+    async close() { shim.unmountRoot('panel'); await settle() },
+    /** Open the panel again after close(). */
+    async reopen() { if (panel) shim.mount('panel', () => React.createElement(panel.Component, {})); await settle() },
+    /** Dispose one applied client plugin's fiber (a plugin's disposal, as DSH does at its unload). */
+    async disposePlugin(id) {
+      const found = plugins.find((p) => p.id === id)
+      if (!found) throw new Error('no applied plugin ' + id)
+      await found.fiber.dispose()
       await settle()
     },
   }
