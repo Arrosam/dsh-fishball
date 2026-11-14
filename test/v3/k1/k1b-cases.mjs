@@ -370,7 +370,5 @@ export function registerK1bCases(sdk) {
   ])
   // K1b-UC-02 (the token endpoint over the gate, the grant dispatch) and K1b-DT-06 (GrantRegistry)
   // run against C-OAUTH's implementation in test/v3/c-oauth/cases.mjs, under the same case ids.
-  todos(sdk, 'K1b-DT-07', K1B_LATER.web, [
-    ['1–3', 'approval: POST /authorize → 405 Allow: GET; GET /authorize/decision → 405 Allow: POST; an unknown path passes the gate and gets 404'],
-  ])
+  // K1b-DT-07 (the approval listener over the gate) runs in test/v3/c-oauth-web (C-OAUTH-WEB's suite).
 }

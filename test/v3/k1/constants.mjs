@@ -297,7 +297,6 @@ export const RECORDED = Object.freeze([
 export const LATER = Object.freeze({
   http: 'C-HTTP (MCP route, check order, limits)',
   oauth: 'C-OAUTH (token endpoint, access tokens, 401s)',
-  web: 'C-OAUTH-WEB (approval listener, page, codes, refresh tokens, CIMD)',
   tokens: 'C-TOKENS (token entries, generation, length check)',
   pair: 'C-PAIR (pair store, pair / set_name, names)',
   mailbox: 'C-MAILBOX (ledger, inbox_poll / inbox_ack)',

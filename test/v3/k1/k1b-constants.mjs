@@ -166,5 +166,4 @@ export const CODE_FILE = /\.(?:c|m)?js$/
 /** Owners of the behaviour rows (v3-tasks.md W2). */
 export const K1B_LATER = Object.freeze({
   http: 'C-HTTP (RequestGate implementation on the MCP route)',
-  web: 'C-OAUTH-WEB (approval listener over the gate)',
 })

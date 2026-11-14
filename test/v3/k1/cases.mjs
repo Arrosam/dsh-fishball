@@ -339,9 +339,7 @@ export function registerK1Cases(sdk) {
     assertDuration(mod, MEANING.lastSeen, DURATION_S.lastSeen, 'lastSeenAt bound')
   })
   todos(sdk, 'AUTH-BVA-01', LATER.oauth, [['1–8', 'requests at t0 … t0 + 3601 with a fake clock; re-authentication at expiry; no extension by use']])
-  todos(sdk, 'AUTH-BVA-07', LATER.web, [['1–6', 'code redeemed at 59 / 60 / 61 s; Authorize at 599 / 600 / 601 s (fake clock)']])
-  todos(sdk, 'AUTH-BVA-08', LATER.web, [['1–6', 'RT1 presented again at 0.001, 9.999, 10, 10.001 s, by another client, 3 concurrent']])
-  todos(sdk, 'AUTH-ST-05', LATER.web, [['1–9', 'the refresh-token chain: rotation, reuse, grace, resource, revocation, restart (digests only)']])
+  // AUTH-BVA-07, AUTH-BVA-08, AUTH-ST-05, AUTH-DT-09 rows 1–7, AUTH-EP-08, AUTH-ST-04 and AUTH-DT-08 run in test/v3/c-oauth-web.
   todos(sdk, 'AUTH-BVA-05', LATER.pair, [['1–5', 'lastSeenAt at 0 / 59 / 60 s after the last write, after pairing, on a 401']])
   todos(sdk, 'AUTH-DT-04', 'C-REVOKE (revocation effects by item kind)', [['1–12', 'disable / delete effects on streams, offers, sessions, queued events, the designated role, ATs']])
   todos(sdk, 'AUTH-UC-06', 'C-REVOKE (revocation effects by item kind)', [['main, A1–A4, E1', 'disable, delete, value change and 30-day expiry of a designated principal']])
@@ -363,16 +361,12 @@ export function registerK1Cases(sdk) {
   for (const [id, row, what] of RECORDED.filter(([id]) => id.startsWith('AUTH-'))) {
     if (id !== 'AUTH-EP-01' && id !== 'AUTH-EP-02') caseTest(sdk, id, row, `K recorded: ${what}`, () => assertRecorded(id, row))
   }
-  todos(sdk, 'AUTH-DT-09', LATER.web, [['1–7', 'the approval listener on the default, a user port, a clash, a freed port, DSH\'s own port']])
   caseTest(sdk, 'AUTH-EP-08', 6, `the CIMD body limit is frozen as ${CIMD_MAX_BYTES} bytes (R-OA-13, decided per spec)`, (mod) => {
     assertNumber(mod, MEANING.cimd, CIMD_MAX_BYTES, 'CIMD size')
   })
   caseTest(sdk, 'AUTH-EP-08', 6, 'a CIMD fetch time bound is frozen (K)', (mod) => {
     assert.ok(secondsAt(mod, MEANING.cimdTime).some((l) => l.seconds > 0), 'no CIMD time bound frozen with a unit in its name')
   })
-  todos(sdk, 'AUTH-EP-08', LATER.web, [['1–7', 'CIMD fetch against stub servers: private addresses, redirects, size, time, no error cache, max-age']])
-  todos(sdk, 'AUTH-ST-04', LATER.web, [['1–12', 'a pending authorization and its code (fake clock), wrong verifier, replay, restart']])
-  todos(sdk, 'AUTH-DT-08', LATER.web, [['1–11', 'entering a token on the page (headless form POST): uniform refusal, binding, id and name checks']])
   todos(sdk, 'AUTH-EP-04', LATER.tokens, [['1–8', 'token value classes at creation and use (generate, keep, too short, unconfigured, ref-duplicate)']])
   todos(sdk, 'AUTH-EP-05', LATER.oauth, [['1–6', 'uniform invalid_client on failures; 100 failures; constant-time comparator']])
 
