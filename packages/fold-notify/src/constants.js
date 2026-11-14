@@ -8,11 +8,16 @@ export const SEEN = Object.freeze({ dwellMs: 600, threshold: 0.5 })
 export const TOOL = Object.freeze({
   name: 'notify_user',
   // Extension points §1: a missing service OR another apiVersion is an "older instance".
-  host: Object.freeze({ service: 'fishballInstance', apiVersion: 1, serviceEvent: 'internal/service' }),
+  // No Fishball contract module is imported for these values: this package must load with no
+  // fishball-core and no connector installed (R-FB-06), so it cannot resolve `fishball-core/contracts`.
+  // `appReady` is DSH's launcher readiness service (dsh profile-boot, both SDKs).
+  host: Object.freeze({ service: 'fishballInstance', apiVersion: 1, serviceEvent: 'internal/service', appReady: 'appReady' }),
   recordType: 'plugin:fishball-fold-notify/notice', recordVersion: 1,
   sectionName: 'fishball-fold-notify', sectionOrder: 90,
   argumentKeys: Object.freeze(['message', 'important']),
 })
+/** R-FB-06: the one line the row logs when fishball-core is not there. */
+export const LOG = Object.freeze({ coreMissing: 'fishball-core-missing' })
 export const ERROR = Object.freeze({
   name: 'NotifyError', empty: 'notify-empty', tooLong: 'notify-too-long',
   invalid: 'notify-invalid', wrongSession: 'notify-wrong-session', unavailable: 'notify-unavailable',
