@@ -20,9 +20,8 @@
  * nothing was queued and the contributor may retry (Fishball 2026-11-14, #4). Such an emit is not
  * counted and takes no token.
  */
-import { CONTRIBUTED_TYPE_PREFIX, RETIREMENT_REASON } from '../../mcp-schema/index.js'
+import { CONTRIBUTED_TYPE_PREFIX } from '../../mcp-schema/index.js'
 import { EMIT_CHECK_ORDER, EMIT_REFUSAL, EVENT_LIMITS, publicNameFor } from '../../tools/index.js'
-import { retireCommitted } from './activation.js'
 import { EMIT, LOG, PORT } from './constants.js'
 import { isLive } from './identity.js'
 import { byteLength, snapshotJson } from './json.js'
@@ -116,13 +115,14 @@ export function createEmit({ registry, mailbox, router, sessionExists, logger, n
    */
   const refund = (key) => { const bucket = buckets.get(key); if (bucket !== undefined) bucket.credit = Math.min(CAPACITY, bucket.credit + TOKEN) }
 
-  /** The retire function of one committed event; the mailbox makes an acked one a no-op (R-EXT-19). */
-  function retirer(act, recipient, eventId) {
+  /**
+   * Retires `act`'s pending events through this mailbox, in every pair's box at once (K1
+   * `retireContributor`); the mailbox leaves acked ones alone (R-EXT-19).
+   */
+  function retireEvents(act) {
     // Through a microtask, so a synchronous throw is caught too and never reaches a withdrawal.
-    return () => {
-      Promise.resolve().then(() => mailbox.retire(recipient, eventId, RETIREMENT_REASON.contributorWithdrawn))
-        .catch((error) => logger.warn(LOG.retireFailed, act.namespace, error?.code ?? error?.name))
-    }
+    Promise.resolve().then(() => mailbox.retireContributor(act.namespace, act.tag))
+      .catch((error) => logger.warn(LOG.retireFailed, act.namespace, error?.code ?? error?.name))
   }
 
   /**
@@ -168,6 +168,7 @@ export function createEmit({ registry, mailbox, router, sessionExists, logger, n
         correlationId: null,
         payload: { namespace: act.namespace, event: read.publicName, data: read.payload, ...(read.summary === undefined ? {} : { summary: read.summary }) },
         ...(read.dedupeKey === undefined ? {} : { dedupeKey: read.dedupeKey }),
+        activationTag: act.tag,
       }
       // `take` and the draft are synchronous, so nothing can have changed since the check above.
       const committed = await port(PORT.mailbox, () => mailbox.commit(route.recipient, draft))
@@ -175,10 +176,10 @@ export function createEmit({ registry, mailbox, router, sessionExists, logger, n
         refund(key)
         return refused(committed?.code === EMIT_REFUSAL.duplicate ? EMIT_REFUSAL.duplicate : EMIT_REFUSAL.queueFull)
       }
-      act.committed.push(retirer(act, route.recipient, committed.eventId))
       // The contributor may have been withdrawn or quarantined while the commit ran: its event then
-      // shares that fate at once (R-EXT-19).
-      if (act.ended || act.quarantined) retireCommitted(act)
+      // shares that fate at once (R-EXT-19). Through this mailbox: an ended activation has no
+      // registries left to retire through.
+      if (act.ended || act.quarantined) retireEvents(act)
       registry.count(act, false)
       return Object.freeze({ ok: true, eventId: committed.eventId })
     } catch (error) {
@@ -192,5 +193,6 @@ export function createEmit({ registry, mailbox, router, sessionExists, logger, n
   return Object.freeze({
     /** `emit(event)` for the caller context `ctx`; never rejects (R-EXT-18). */
     emit: (ctx, event) => emitFor(ctx, event),
+    retireEvents,
   })
 }

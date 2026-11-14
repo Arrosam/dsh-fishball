@@ -30,7 +30,8 @@ export const limitRefusalBody = (message) => Object.freeze({
   jsonrpc: ENDPOINT_LIMITS.jsonRpcVersion,
   error: Object.freeze({ code: ENDPOINT_LIMITS.jsonRpcCode, message }),
 })
-const TOO_LARGE = Object.freeze({
+/** The 413: `admit`'s for a declared length, and the endpoint's for an undeclared body that grew past the limit. */
+export const TOO_LARGE = Object.freeze({
   pass: false, status: HTTP_STATUS.payloadTooLarge, headers: NO_HEADERS, body: limitRefusalBody(HTTP_REFUSAL.tooLarge),
 })
 
@@ -170,7 +171,9 @@ export function createRequestGate(facts, { logger = SILENT_LOGGER } = {}) {
     // `token` and `approval` keep their own limits and never call this (REQUEST_GATE.admitSurfaces);
     // a call for them limits nothing rather than throwing.
     if (!REQUEST_GATE.admitSurfaces.includes(surface)) return Object.freeze({ pass: true, done() {} })
-    if (req.bodyBytes > ENDPOINT_LIMITS.bodyBytes) return TOO_LARGE
+    // `bodyBytes` is the declared length, absent for a chunked body (K1 AdmitRequest): `admit` runs
+    // before the body is read, and the endpoint judges an undeclared body itself as it reads it.
+    if (req.bodyBytes !== undefined && req.bodyBytes > ENDPOINT_LIMITS.bodyBytes) return TOO_LARGE
     const state = limitsOf(caller.entryKey, facts.now())
     if (state.inFlight >= ENDPOINT_LIMITS.inFlightPerPrincipal) return IN_FLIGHT_LIMITED
     if (state.tokens < BUCKET_COST) return rateLimited((BUCKET_COST - state.tokens) / refillPerMs)

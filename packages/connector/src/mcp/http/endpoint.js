@@ -9,7 +9,9 @@
  * 2. a token in the query string → 400 `invalid_request`, before any lookup (R-TOK-02; RFC 6750 §2.3);
  * 3. the shared FailureLimiter, keyed by the remote address alone (FAILURE_LIMIT) → 429;
  * 4. `BearerVerifier.verify` → 401 with the K1 challenge and no body; the SDK is never reached;
- * 5. `RequestGate.admit` (413 → 429), after reading the body up to one byte past the limit;
+ * 5. `RequestGate.admit` (413 for a declared length → 429), before the body is read, so the
+ *    in-flight slot it takes also bounds the entry's concurrent uploads (K1 AdmitRequest);
+ *    then the body is read up to one byte past the limit, and an undeclared body past it is 413;
  * 6. a pair-only caller reaches only PAIR_ONLY → else 403 `insufficient_scope` (R-ID-06);
  * 7. the SDK (`createMcpHandler`, `legacy: 'reject'`): version and header checks, then dispatch.
  *
@@ -31,7 +33,7 @@ import {
   BEARER_MISSING, HTTP_HEADER, JSON_RPC, LOG, MANIFEST_URL, MEDIA_TYPE, SDK_OPTION, SERVER_NAME, TEXT_ENCODING, UNKNOWN_ADDRESS,
   URL_BASE, unsupportedVersionMessage,
 } from './constants.js'
-import { FORBIDDEN, bareRefusal, rateLimited } from './gate.js'
+import { FORBIDDEN, TOO_LARGE, bareRefusal, rateLimited } from './gate.js'
 import { createListenStreams, listensForEvents } from './streams.js'
 
 const SERVER_INFO = Object.freeze({ name: SERVER_NAME, version: JSON.parse(readFileSync(MANIFEST_URL, TEXT_ENCODING)).version })
@@ -41,11 +43,7 @@ const NODE_ADAPTER_OPTIONS = Object.freeze({ maxRequestBodySize: ENDPOINT_LIMITS
 const NOT_FOUND = bareRefusal(HTTP_STATUS.notFound)
 const INTERNAL_ERROR = bareRefusal(HTTP_STATUS.internalServerError)
 
-/**
- * The listen-stream cap's 429 (ENDPOINT_LIMITS.listenStreamsPerPrincipal). PROPOSED (Fishball
- * 2026-11-14, Q4; on the K1 amendment list): K1 names no Retry-After for it, so it reuses the
- * in-flight value for the same reason: a slot frees as soon as any of the pair's streams ends.
- */
+/** The listen-stream cap's 429 (ENDPOINT_LIMITS.listenStreamsPerPrincipal): K1 has it reuse REQUEST_GATE.inFlightRetryAfterMs. */
 const STREAMS_LIMITED = rateLimited(REQUEST_GATE.inFlightRetryAfterMs)
 const QUERY_TOKEN = Object.freeze({ pass: false, status: HTTP_STATUS.badRequest, headers: Object.freeze({}), body: oauthErrorBody(OAUTH_ERROR.invalidRequest) })
 
@@ -72,15 +70,12 @@ function writeRefusal(res, { status, headers, body }) {
 const writeChallenge = (res, status, challenge) => writeRefusal(res, { status, headers: { [HTTP_HEADER.wwwAuthenticate]: challenge }, body: null })
 
 /**
- * Reads the body, stopping one byte past ENDPOINT_LIMITS.bodyBytes (index.d.ts AdmitRequest), so an
- * oversize body is never buffered whole. Past the limit the rest is discarded as it arrives, never
- * buffered. The request is neither destroyed nor paused, for the reason `writeRefusal` gives: the
- * client must be able to finish sending and read its 413. This is what Node's server does itself
- * with an unread body (`IncomingMessage._dump`), bounded by DSH's listener timeouts.
- *
- * Open case (K1 amendment list, Fishball 2026-11-14): the body is buffered before `admit` takes an
- * in-flight slot, as K1b's AdmitRequest has it, so one entry's concurrent uploads of honest or
- * chunked bodies are not yet bounded by ENDPOINT_LIMITS.inFlightPerPrincipal while being read.
+ * Reads the body, stopping one byte past ENDPOINT_LIMITS.bodyBytes, so an oversize body is never
+ * buffered whole. It runs under the in-flight slot `admit` took (index.d.ts AdmitRequest). Past
+ * the limit the rest is discarded as it arrives, never buffered. The request is neither destroyed
+ * nor paused, for the reason `writeRefusal` gives: the client must be able to finish sending and
+ * read its 413. This is what Node's server does itself with an unread body (`IncomingMessage._dump`),
+ * bounded by DSH's listener timeouts.
  * @returns `{body, bytes}`, or undefined when the client aborted the upload (nothing to answer)
  */
 function readBody(req) {
@@ -110,6 +105,17 @@ function readBody(req) {
     req.once('error', onAbort)
     req.once('aborted', onAbort)
   })
+}
+
+/**
+ * The body length the request declares, for `admit` (K1 AdmitRequest.bodyBytes), or undefined
+ * when it declares none (chunked). Node's parser has already refused a malformed `Content-Length`
+ * and enforces a declared one, so a body never runs past what it declared.
+ */
+function declaredLength(req) {
+  const header = req.headers[HTTP_HEADER.contentLength]
+  const length = header === undefined ? undefined : Number(header)
+  return Number.isSafeInteger(length) ? length : undefined
 }
 
 // The SDK decodes a body with TextDecoder, which drops a UTF-8 byte-order mark; decoding the same
@@ -263,12 +269,17 @@ export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, rea
     if (url.pathname !== PATHS.mcp) return writeRefusal(res, NOT_FOUND)
     const caller = authenticate(req, res, url, origin)
     if (caller === undefined) return undefined
-    const read = await readBody(req)
-    if (read === undefined) return undefined
-    const { body, bytes } = read
-    const admitted = gate.admit({ method: req.method, path: url.pathname, headers: req.headers, bodyBytes: bytes }, GATE_SURFACE.mcp, caller)
+    const admitted = gate.admit({
+      method: req.method, path: url.pathname, headers: req.headers, bodyBytes: declaredLength(req),
+    }, GATE_SURFACE.mcp, caller)
     if (!admitted.pass) return writeRefusal(res, admitted)
     try {
+      const read = await readBody(req)
+      if (read === undefined) return undefined
+      const { body, bytes } = read
+      // Only an undeclared (chunked) body gets here oversize: `admit` refused a declared one. Its
+      // bucket token stays spent, as for any admitted request.
+      if (bytes > ENDPOINT_LIMITS.bodyBytes) return writeRefusal(res, TOO_LARGE)
       const message = messageOf(body)
       // A body that is no single JSON-RPC message (not JSON, a batch) is left to the SDK, which
       // refuses it as malformed whatever the caller's power (Fishball 2026-11-14, Q3).

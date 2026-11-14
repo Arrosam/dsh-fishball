@@ -6,9 +6,6 @@
  * page copy and log lines.
  */
 
-// K1's own KIB is private to its constants file, so the unit is restated for this module's cap.
-const KIB = 1024
-
 /** The query parameters of `GET /authorize` [spec: RFC 6749 §4.1.1, RFC 7636 §4.3, RFC 8707 §2]. */
 export const AUTHORIZE_PARAM = Object.freeze({
   responseType: 'response_type',
@@ -67,22 +64,6 @@ export const SECRET_ENCODING = Object.freeze({
   // finds the access token this module stored.
   digest: 'hex',
 })
-
-/**
- * The decision form's body cap. PROPOSED (Fishball 2026-11-14, item 4; on the K1 amendment list):
- * K1's ENDPOINT_LIMITS.bodyBytes is the MCP endpoint's; the form carries a token, an id, a name and
- * two opaque values, so S7b's 8 KiB is ample. Over it is 413 with no body.
- */
-export const FORM_LIMITS = Object.freeze({ maxBodyBytes: 8 * KIB })
-
-/**
- * Caps on what unauthenticated requests can make the connector hold. PROPOSED (Fishball 2026-11-14,
- * on the K1 amendment list): `GET /authorize` needs no credential and is reachable through a tunnel,
- * so without a cap every request (pending for LIFETIME.pendingRequestMs) and every new client id URL
- * (cached up to CIMD_LIMITS.maxCacheMs) would grow memory without bound. At the cap the oldest entry
- * is evicted first; an evicted pending request answers "expired" like any other.
- */
-export const STATE_CAPS = Object.freeze({ pendingRequests: 256, cimdCacheEntries: 256 })
 
 /** The CIMD request and response facts (R-OA-13; [spec] CIMD draft §4.4: the document is JSON). */
 export const CIMD_HTTP = Object.freeze({
