@@ -38,8 +38,8 @@ import {
   CONNECTED, CONTRIBUTED, DECISION_KIND_OF, EVENT_TYPE, FALLBACK, FIXTURE, HANDOVER, LATER, MAILBOX, MANAGED_REFUSAL, OFFER_ID, OFFER_TYPES,
   PATHS, QUEUE, REFUSAL, RELAYED, REQUEST_GATE, RETIREMENT_REASON, REVOCATION, TOOL_NAMES, WAIT, formatOfferId, handoverCodes,
 } from './constants.mjs'
-import { MUTATION, SETTLED_BY, SETTLEMENT_OUTCOME, SETTLE_FIXTURE } from './constants.mjs'
-import { gatedMailboxPort } from './fakes.mjs'
+import { MUTATION, RETIRE_OUTCOME, SETTLED_BY, SETTLEMENT_OUTCOME, SETTLE_FIXTURE } from './constants.mjs'
+import { gatedMailboxPort, lateAckPort } from './fakes.mjs'
 import { cordisContext, routeWorld } from './subject.mjs'
 
 const T = { timeout: WAIT.testMs }
@@ -1583,6 +1583,117 @@ function payloadPartitions(sdk) {
   })
 }
 
+// ================================================================================================
+// K1 amendment at the W3 merge (DECIDED #W3-1, the fix of W2 finding SF3): `Mailbox.retire`
+// resolves `{retired: boolean}`. When C-ROUTE retires a live offer (permission, question,
+// plan-review) its ledger has not seen acked, it calls `retire`; on `{retired: false}` (an
+// `inbox_ack` landed before the retire, before its `onAcked` listener marked the offer acked) it
+// commits a fresh `retirement {retiredEventId, reason}` to the same pair, as it does for an offer it
+// knows is acked; on `{retired: true}` nothing more. Every cause: withdraw (`withdrawn`), release
+// and Take back (`released`), revocation (`revoked`).
+//   ROUTE-DT-04  ledger acked × retire's answer × cause (one test per rule)
+//   ROUTE-EP-04  the race for each offer type
+//   ROUTE-ST-04  the race as transitions: ack resolved, onAcked late, then the cause; and the late ack
+// The oracle in every rule is the pair's view: exactly one `retirement` naming the offer's event,
+// in the pair's mailbox, with the cause's reason; the offer's event no longer pending; nothing else.
+// ================================================================================================
+
+/** How a live offer of S1 (managed by P) is retired: the call, what it answers, its reason, and any other event it makes. */
+const RETIRE_CAUSES = Object.freeze({
+  withdraw: { act: (w, p, offerId) => w.routing.withdraw(offerId), value: true, reason: RETIREMENT_REASON.withdrawn, extras: [] },
+  release: { act: (w, p) => w.managed.release(S.s1, p), value: { ok: true }, reason: RETIREMENT_REASON.released, extras: [] },
+  takeBack: { act: (w) => w.handover.takeBack(S.s1, FIXTURE.note), value: { ok: true }, reason: RETIREMENT_REASON.released, extras: [ET.takeback] },
+  revocation: { act: (w) => { w.tokens.disable(ID.p) }, value: undefined, reason: RETIREMENT_REASON.revoked, extras: [] },
+})
+/** P's offer as P's client acks it through the port (`inbox_ack`): resolves `{ok: true, acked: 1}`. */
+async function ackOffer(w, p, offer) {
+  assert.deepEqual(await w.mailbox.ack(p, [{ eventId: offer.eventId, payloadDigest: offer.payloadDigest }]), { ok: true, acked: 1 })
+}
+/**
+ * Runs `cause` on `offer` (held by `p`) and checks the pair's view: its answer, then exactly one
+ * new `retirement` across every mailbox, in `p`'s, `{retiredEventId: offer.eventId, reason}`, plus
+ * only the cause's own extra events; the offer's event is pending nowhere.
+ */
+async function retiredOnce(w, cause, p, offer) {
+  const { value, fresh } = await expectEntries(w, () => cause.act(w, p, offer.offer.offerId), 1 + cause.extras.length)
+  assert.deepEqual(value, cause.value)
+  assert.deepEqual(fresh.map((x) => x.e.type).sort(), [ET.retirement, ...cause.extras].sort(), 'the cause produced something other than one retirement (and its own events)')
+  const retirement = fresh.find((x) => x.e.type === ET.retirement)
+  assert.equal(retirement.key, p, 'the retirement went to another pair')
+  assert.deepEqual(retirement.e.payload, { retiredEventId: offer.eventId, reason: cause.reason })
+  assert.ok(!(await allEntries(w)).some((x) => x.e.eventId === offer.eventId), 'the retired offer\'s event is still pending')
+}
+/** C-ROUTE's `retire` calls for `offer` with the mailbox's answers (fakes.mjs mailboxPort `retires`). */
+const retiresOf = (w, offer) => w.mailbox.retires.filter((r) => r.eventId === offer.eventId).map(({ principalKey, reason, outcome }) => ({ principalKey, reason, outcome }))
+/** A row on a world whose port tells `onAcked` of an ack only on `announceAcks()` (fakes.mjs lateAckPort). */
+const lateAckRow = (sdk, id, part, title, fn) => row(sdk, id, part, title, async (t) => fn(await routeWorld(t, sdk, { port: lateAckPort })))
+/** P manages S1 and holds one live offer of `type`, whose `inbox_ack` has landed but `onAcked` has not fired yet. */
+async function racedOffer(w, type) {
+  const { p } = await managedByP(w)
+  const offer = await offerTo(w, S.s1, type, p)
+  await ackOffer(w, p, offer)
+  return { p, offer }
+}
+
+function retireOutcomeTables(sdk) {
+  const R = RETIRE_OUTCOME
+  // ROUTE-DT-04 — conditions: the ledger saw the ack (yes / no) × retire's answer (true / false) ×
+  // cause. "Ledger acked: yes" needs no retire answer (the rule's "—"); "no × false" is the SF3 race.
+  for (const [name, cause] of Object.entries(RETIRE_CAUSES)) {
+    worldRow(sdk, 'ROUTE-DT-04', `${name} 1`, `ledger not acked, retire → {retired: true} (${cause.reason}): the offer's event replaced; no fresh retirement (exactly one in all)`, async (w) => {
+      const { p } = await managedByP(w)
+      const offer = await offerTo(w, S.s1, ET.permission, p)
+      await retiredOnce(w, cause, p, offer)
+      assert.deepEqual(retiresOf(w, offer), [{ principalKey: p, reason: cause.reason, outcome: R.replaced }], 'C-ROUTE did not retire the pending offer through Mailbox.retire')
+    })
+    lateAckRow(sdk, 'ROUTE-DT-04', `${name} 2`, `ledger not acked (ack landed, onAcked not yet fired), retire → {retired: false} (${cause.reason}): one fresh retirement naming the offer to the pair`, async (w) => {
+      const { p, offer } = await racedOffer(w, ET.permission)
+      await retiredOnce(w, cause, p, offer)
+      assert.deepEqual(retiresOf(w, offer), [{ principalKey: p, reason: cause.reason, outcome: R.nothing }], 'C-ROUTE did not call Mailbox.retire for an offer its ledger had not seen acked')
+    })
+    worldRow(sdk, 'ROUTE-DT-04', `${name} 3`, `ledger acked (onAcked fired) (${cause.reason}): one fresh retirement naming the offer to the pair, never two`, async (w) => {
+      const { p } = await managedByP(w)
+      const offer = await offerTo(w, S.s1, ET.permission, p)
+      await ackOffer(w, p, offer)
+      await retiredOnce(w, cause, p, offer)
+    })
+  }
+
+  // ROUTE-EP-04 — the race for every offer type (permission is ROUTE-DT-04's).
+  for (const type of OFFER_TYPES.filter((x) => x !== ET.permission)) {
+    lateAckRow(sdk, 'ROUTE-EP-04', type, `a ${type} offer acked just before withdraw (onAcked late) → retire {retired: false}; one fresh retirement (${RETIREMENT_REASON.withdrawn}) to the pair`, async (w) => {
+      const { p, offer } = await racedOffer(w, type)
+      await retiredOnce(w, RETIRE_CAUSES.withdraw, p, offer)
+      assert.deepEqual(retiresOf(w, offer).map((r) => r.outcome), [R.nothing])
+    })
+  }
+
+  // ROUTE-ST-04 — the SF3 race as a sequence: Live → ack resolves (onAcked pending) → withdraw →
+  // Withdrawn with one fresh retirement → onAcked fires late → nothing more; settle → false.
+  lateAckRow(sdk, 'ROUTE-ST-04', '1', 'Live → ack resolved, onAcked not fired → withdraw → one fresh retirement → the late onAcked → nothing more; settle → false', async (w) => {
+    const { p, offer } = await racedOffer(w, ET.permission)
+    await retiredOnce(w, RETIRE_CAUSES.withdraw, p, offer)
+    await expectNone(w, () => w.mailbox.announceAcks())
+    await settleRefused(w, offer.offer.offerId, settlementOf(offer.payload.approvalId))
+  })
+  lateAckRow(sdk, 'ROUTE-ST-04', '2', 'Live → withdraw ({retired: true}) → Withdrawn → the pair acks the offer\'s old receipt (acked 0) and onAcked fires → nothing more', async (w) => {
+    const { p } = await managedByP(w)
+    const offer = await offerTo(w, S.s1, ET.permission, p)
+    await retiredOnce(w, RETIRE_CAUSES.withdraw, p, offer)
+    assert.deepEqual(await w.mailbox.ack(p, [{ eventId: offer.eventId, payloadDigest: offer.payloadDigest }]), { ok: true, acked: 0 })
+    await expectNone(w, () => w.mailbox.announceAcks())
+  })
+  lateAckRow(sdk, 'ROUTE-ST-04', '3', 'two live offers, one acked just before release (onAcked late) → release: one retirement each (released), the acked one fresh, the pending one by retire', async (w) => {
+    const { p, offer: acked } = await racedOffer(w, ET.permission)
+    const pending = await offerTo(w, S.s1, ET.question, p)
+    const { fresh } = await expectEntries(w, () => w.managed.release(S.s1, p), 2)
+    assert.deepEqual(fresh.map((x) => [x.key, x.e.type, x.e.payload.reason, x.e.payload.retiredEventId]).sort(),
+      [[p, ET.retirement, RETIREMENT_REASON.released, acked.eventId], [p, ET.retirement, RETIREMENT_REASON.released, pending.eventId]].sort())
+    assert.deepEqual(retiresOf(w, acked).map((r) => r.outcome), [R.nothing])
+    assert.deepEqual(retiresOf(w, pending).map((r) => r.outcome), [R.replaced])
+  })
+}
+
 // ------------------------------------------------------------------------------------------------
 
 export function registerRouteCases(sdk) {
@@ -1593,4 +1704,5 @@ export function registerRouteCases(sdk) {
   stateTransitions(sdk)
   settleTransitions(sdk)
   payloadPartitions(sdk)
+  retireOutcomeTables(sdk)
 }

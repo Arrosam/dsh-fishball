@@ -24,10 +24,14 @@
  */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
 import { caseTest } from '../shared/cases.mjs'
 import {
-  ATTENTION, CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, FIXTURE, GATE, K1, K2, LATER, MODEL_NAME, PRESENT, TOOL, TOOLS, WATCHDOG_TYPES, modelName,
+  ATTENTION, CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, EXTERNAL, FIXTURE, GATE, K1, K2, LATER, MODEL_NAME, PRESENT, TOOL, TOOLS, WATCHDOG_TYPES,
+  modelName,
 } from './constants.mjs'
+import { bridgeExport, bridgeSources } from './subject.mjs'
 import { worldFor } from './world.mjs'
 
 const json = (value) => JSON.stringify(value)
@@ -308,13 +312,14 @@ export function registerFacadeCases(sdk) {
     assert.ok(json(result.content).includes(FIXTURE.resultMarker), `the connector's result did not reach the model: ${json(result.content)}`)
   })
 
-  for (const [partition, name, args] of [
-    ['core tool', CORE_OFFERED.find((t) => !(t.inputSchema.required ?? []).length).name, {}],
-    ['contributed tool', modelName(FIXTURE.x[0].name), { q: FIXTURE.query }],
+  // The names are taken when the row runs: a contract without EXTERNAL_NAME fails the row, not the file.
+  for (const [partition, nameOf, args] of [
+    ['core tool', () => CORE_OFFERED.find((t) => !(t.inputSchema.required ?? []).length).name, {}],
+    ['contributed tool', () => modelName(FIXTURE.x[0].name), { q: FIXTURE.query }],
   ]) {
     caseTest(sdk, 'F-FACADE EP', `call (${partition}, link down)`, `a call while the link is down answers ${K1.disconnected} and nothing reaches the connector`, async (t) => {
       const w = await worldFor(t, sdk, { tools: listed(FIXTURE.x), status: K1.down })
-      const result = await w.modelCalls(name, args)
+      const result = await w.modelCalls(nameOf(), args)
       assert.ok(json(result.content).includes(K1.disconnected), `the model got no ${K1.disconnected}: ${json(result.content)}`)
       assert.deepEqual(w.link.sent(), [], 'a request reached the connector while the link was down')
     })
@@ -437,4 +442,68 @@ export function registerFacadeCases(sdk) {
   })
 
   caseTest(sdk, 'F-FACADE BVA', 'count in status', 'core\'s status shows how many contributed tools are offered', null, LATER.status)
+
+  externalNameCases(sdk)
+}
+
+/**
+ * K2-AMEND-1, F-FACADE side (DECIDED #W3-2): the façade applies exactly K2's EXTERNAL_NAME. EP on the
+ * façade's own exports and on public names with 1, 2 and 3 dots and core names (no dot); BVA on the
+ * 64-character limit where only the dots cross it; a static row that the mapping is imported, not
+ * restated, in packages/core/src/bridge/*.js.
+ */
+function externalNameCases(sdk) {
+  const rule = (part, title, fn) => caseTest(sdk, EXTERNAL.id, part, title, fn)
+  const modelNameOf = async () => {
+    const fn = await bridgeExport(sdk, EXTERNAL.modelNameOf)
+    assert.equal(typeof fn, 'function', `the bridge exports no ${EXTERNAL.modelNameOf}()`)
+    return fn
+  }
+  rule('EP 1 (constants)', `the bridge's ${EXTERNAL.constants}.dot and .separator equal K2's EXTERNAL_NAME.replaced and .replacement`, async () => {
+    assert.equal(typeof K2.externalName, 'object', 'fishball-connector/tools exports no EXTERNAL_NAME')
+    const constants = await bridgeExport(sdk, EXTERNAL.constants)
+    assert.deepEqual([constants?.dot, constants?.separator], [K2.externalName.replaced, K2.externalName.replacement])
+  })
+  rule('EP 2 (mapping)', `${EXTERNAL.modelNameOf} replaces every dot: ${EXTERNAL.mapped.map(([from, to]) => `${from} → ${to}`).join(', ')}`, async () => {
+    const map = await modelNameOf()
+    for (const [from, to] of EXTERNAL.mapped) {
+      assert.equal(modelName(from), to, `fixture: ${from} under K2's EXTERNAL_NAME`)
+      assert.equal(map(from), to, from)
+    }
+  })
+  rule('EP 3 (core names)', `${EXTERNAL.modelNameOf} leaves every K1 core tool name unchanged`, async () => {
+    const map = await modelNameOf()
+    assert.deepEqual(TOOLS.map((t) => map(t.name)), TOOLS.map((t) => t.name))
+  })
+  rule('EP 4 (offered, several dots)', 'a contributed tool whose local name holds dots is offered under the name with every dot replaced, and is called under its public name', async (t) => {
+    const [, , [publicName, mapped]] = EXTERNAL.mapped
+    const tool = toolNamed(publicName)
+    const w = await worldFor(t, sdk, { tools: listed([tool]) })
+    assert.ok((await w.offered()).some((o) => o.name === mapped), `${mapped} is not offered`)
+    await w.modelCalls(mapped, { q: FIXTURE.query })
+    assert.deepEqual(w.link.sent(publicName).map((c) => c.args), [{ q: FIXTURE.query }])
+  })
+  for (const [part, dots, offered] of [['BVA 64 (dots)', EXTERNAL.dotsAt64, true], ['BVA 65 (dots)', EXTERNAL.dotsAt64 + 1, false]]) {
+    const name = EXTERNAL.bvaNamespace + K2.separator + dottedLocal(dots)
+    const mappedChars = MODEL_NAME.maxChars + (offered ? 0 : 1)
+    rule(part, `${name} (${name.length} characters, ${dots + 1} dots) maps to ${mappedChars}: ${offered ? 'offered' : 'not offered, logged once; the rest offered'}`, async (t) => {
+      assert.equal(modelName(name).length, mappedChars, 'fixture')
+      const w = await worldFor(t, sdk, { tools: listed(FIXTURE.remote, [toolNamed(name)]) })
+      const got = await w.offered()
+      assert.equal(offeredNamed(got, name) !== undefined, offered, `${modelName(name)} ${offered ? 'is not' : 'is'} offered`)
+      assertOffersEvery(got, listed(FIXTURE.remote))
+      if (!offered) assert.equal(w.logsWith(name).length, 1, `${name} is not logged exactly once`)
+    })
+  }
+  rule('static', 'the bridge source restates no `__` string literal: the mapping is imported from K2 (constants defined once)', () => {
+    const restated = bridgeSources().filter((file) => EXTERNAL.restated.test(fs.readFileSync(file, 'utf8')))
+    assert.deepEqual(restated.map((file) => path.basename(file)), [], 'bridge files that write the `__` literal themselves')
+  })
+}
+/** A grammar-valid local name of EXTERNAL.localChars characters holding `dots` single dots, none at an end. */
+function dottedLocal(dots) {
+  const chars = EXTERNAL.localChars - dots
+  const segment = Math.floor(chars / (dots + 1))
+  const segments = Array.from({ length: dots + 1 }, (_, i) => EXTERNAL.pad.repeat(i === 0 ? chars - segment * dots : segment))
+  return segments.join(K2.separator)
 }

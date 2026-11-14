@@ -123,25 +123,47 @@ export class FakeSessions {
  * each successful `ack` with the receipts that `ack` (the `inbox_ack` argument) acknowledged, so a
  * listener knows which events left the mailbox. The dev session aligns the real port; this wrapper
  * is the agreed shape.
+ *
+ * Test-only: `retires` records every `retire` call C-ROUTE makes with the real mailbox's answer
+ * (`{principalKey, eventId, reason, outcome}`; K1 amendment at the W3 merge, `{retired: boolean}`).
+ * `announce(fireAcked)` decides when the `onAcked` listeners hear of a successful ack; by default at
+ * once, as the agreed shape does (lateAckPort defers it).
  */
-export function mailboxPort(real) {
+export function mailboxPort(real, announce = (fireAcked) => fireAcked()) {
   const acked = new Set()
+  const retires = []
   return {
+    retires,
     commit: (...a) => real.commit(...a),
     poll: (...a) => real.poll(...a),
     async ack(principalKey, receipts) {
       const result = await real.ack(principalKey, receipts)
-      if (result?.ok) fire(acked, principalKey, receipts)
+      if (result?.ok) announce(() => fire(acked, principalKey, receipts))
       return result
     },
     summary: (...a) => real.summary(...a),
-    retire: (...a) => real.retire(...a),
+    async retire(principalKey, eventId, reason) {
+      const outcome = await real.retire(principalKey, eventId, reason)
+      retires.push({ principalKey, eventId, reason, outcome })
+      return outcome
+    },
     retireContributor: (...a) => real.retireContributor(...a),
     hold: (...a) => real.hold(...a),
     release: (...a) => real.release(...a),
     drop: (...a) => real.drop(...a),
     onAcked: (listener) => subscribe(acked, listener),
   }
+}
+
+/**
+ * mailboxPort whose `onAcked` listeners hear of an ack only when the row says so: the W2 SF3 race,
+ * where an `inbox_ack` has landed in the mailbox (ack resolved) but C-ROUTE's `onAcked` listener has
+ * not yet marked the offer acked. Driver: `announceAcks()` fires every ack held back so far, in order.
+ */
+export function lateAckPort(real) {
+  const late = []
+  const port = mailboxPort(real, (fireAcked) => { late.push(fireAcked) })
+  return { ...port, announceAcks() { for (const fireAcked of late.splice(0)) fireAcked() } }
 }
 
 /**
