@@ -825,6 +825,13 @@ window.__ModuleLoader__.load({
 
     /** DSH's own empty/error state, centred in the view (dsh-client-ui-schedule .empty). */
     const emptyState = (...children) => h('div', { className: CLS.embedError }, ...children)
+    /**
+     * The one framed page (both views): only its key and src differ by view, so it is created in
+     * one place with one `allow` and one referrer policy (see EMBED_UI.iframeAllow,
+     * iframeReferrerPolicy). The shell registers exactly one view, so one such frame exists.
+     * @param key - the frame document's identity: a new key remounts it, which is a reload.
+     */
+    const framedPageFrame = (t, key, src) => h('iframe', { key, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
     /** The view's "checking" state, before its first answer. */
     const loadingState = (t) => emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
     /** The warning glyph that opens every not-framed state. */
@@ -946,8 +953,7 @@ window.__ModuleLoader__.load({
                 ? emptyState(warningGlyph(), hostnameRefused
                   ? h('p', { role: 'alert', 'data-fishball-hostname-refused': true }, t('hostnameRefused'))
                   : h('p', { role: 'alert', 'data-fishball-admit-refused': admission.refused ?? '' }, t('admitFailed')))
-                // allow and referrer: see EMBED_UI.iframeAllow, iframeReferrerPolicy.
-                : h('iframe', { key: `${generation}:${admission.url}`, className: CLS.embedFrame, src: admission.url, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
+                : framedPageFrame(t, `${generation}:${admission.url}`, admission.url)
         return h(FrameChrome, {
           t, page, state, code, retry,
           canRetry: true,
@@ -1007,8 +1013,7 @@ window.__ModuleLoader__.load({
             : instance.attached && ui.chat === undefined
               ? emptyState(h('p', { 'data-fishball-embed-no-chat': true }, t('frameNoChat', { name: instance.name })))
               : framed
-                // allow: clipboard-write for the child's own origin too, see EMBED_UI.iframeAllow.
-                ? h('iframe', { key: `${instance.attachCount}:${generation}:${src}`, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
+                ? framedPageFrame(t, `${instance.attachCount}:${generation}:${src}`, src)
                 : emptyState(
                   warningGlyph(),
                   // An interrupted channel says so: the instance may still be running (B1).
