@@ -368,13 +368,8 @@ export function registerK1bCases(sdk) {
   todos(sdk, 'K1b-ST-02', K1B_LATER.http, [
     ['1–3', 'an in-flight slot: taken by a pass, freed by done(); a listen stream frees it once open; a refusal takes none'],
   ])
-  todos(sdk, 'K1b-UC-02', K1B_LATER.oauth, [
-    ['AUTH-EP-01 6', 'GET on the token endpoint: 405 with Allow: POST; the token surface never calls admit'],
-    ['AUTH-EP-01 1–5', 'dispatch on grant_type to each GrantHandler; missing → invalid_request, unknown → unsupported_grant_type'],
-  ])
-  todos(sdk, 'K1b-DT-06', K1B_LATER.oauth, [
-    ['1–4', 'GrantRegistry.register: a supported non-built-in type registers; built-in, duplicate or unsupported throws TypeError'],
-  ])
+  // K1b-UC-02 (the token endpoint over the gate, the grant dispatch) and K1b-DT-06 (GrantRegistry)
+  // run against C-OAUTH's implementation in test/v3/c-oauth/cases.mjs, under the same case ids.
   todos(sdk, 'K1b-DT-07', K1B_LATER.web, [
     ['1–3', 'approval: POST /authorize → 405 Allow: GET; GET /authorize/decision → 405 Allow: POST; an unknown path passes the gate and gets 404'],
   ])
