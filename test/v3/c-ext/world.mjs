@@ -89,6 +89,10 @@ class FakeMailbox {
     event.state = 'retired'
     this.box(pk).push({ type: K1.EVENT_TYPE.retirement, eventId: eventId + '-retired', correlationId: eventId, reason, state: 'pending' })
   }
+  /** Every `retirement` event naming `eventId`, in any mailbox. */
+  retirementsOf(eventId) { return [...this.boxes.values()].flat().filter((e) => e.type === K1.EVENT_TYPE.retirement && e.correlationId === eventId) }
+  /** Whether `eventId` is still in `pk`'s mailbox as acked (it stayed with its client). */
+  isAcked(pk, eventId) { return this.box(pk).find((e) => e.eventId === eventId)?.state === 'acked' }
   async summary(pk) { return { pending: this.pending(pk).length, headSequence: this.#seq, mailboxGeneration: FIXTURE.marker } }
   async poll(pk) { return { ok: true, events: this.pending(pk), nextCursor: String(this.#seq), hasMore: false } }
   async hold() {}
@@ -195,11 +199,11 @@ async function openWorld(sdk, root, { connector = true, designated } = {}) {
   const router = new FakeRouter()
   if (designated === null) router.designated = null
   /** The principals' current names, as the endpoint reads them from the pair store (R-EXT-10). */
-  const names = new Map(Object.values(FIXTURE.pairs).map((p) => [p.principalKey, p.name]))
+  const principalNames = new Map(Object.values(FIXTURE.pairs).map((p) => [p.principalKey, p.name]))
   const sessions = new Set([FIXTURE.session.managed, FIXTURE.session.unmanaged])
 
   const world = {
-    sdk, root, ctx, Context, Service, loader, logs, clock, mailbox, router, names, sessions,
+    sdk, root, ctx, Context, Service, loader, logs, clock, mailbox, router, principalNames, sessions,
     contributors: new Map(),
     registry: undefined,
     listChanges: 0,
@@ -209,7 +213,7 @@ async function openWorld(sdk, root, { connector = true, designated } = {}) {
     names: () => world.list().map((tool) => tool.name),
     listed: (name) => world.names().includes(name),
     /** One `tools/call` by `pair`'s principal, `{key, name}` as the endpoint passes it. */
-    call: (pair, name, args, signal) => world.registry.call({ key: pair.principalKey, name: names.get(pair.principalKey) }, name, args, signal),
+    call: (pair, name, args, signal) => world.registry.call({ key: pair.principalKey, name: principalNames.get(pair.principalKey) }, name, args, signal),
     logsWith: (needle) => logs.filter((l) => l.text.includes(needle)),
     /** Adds a contributor package and loads its row; `tools` are registered on every activation. */
     async add(pkg, { tools = [FIXTURE.tool.lookup], declaredName, onService, definition, version = FIXTURE.version } = {}) {
