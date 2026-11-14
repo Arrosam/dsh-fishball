@@ -22,7 +22,7 @@ import { ContractError, ERROR } from 'fishball-connector/contract'
 import { CARD_CLOSED, QUESTION_ANSWER, RECORD_ITEM } from '../inbox-markers.js'
 import { CARD_RECORD } from '../card-record.js'
 
-/** Stable Cordis plugin name; the launch overlay inserts this row. */
+/** Stable Cordis plugin name; core's patch inserts this row. */
 export const name = 'fishball-native-inbox'
 
 /** Services the consumer needs: the shared bridge client and T07's chat row. */

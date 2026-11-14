@@ -1,8 +1,9 @@
 import { recommendedList } from '../../src/recommended.js'
 
 /**
- * Child-only Node half of the Fishball Recommended tab (V2 RP). The launch overlay mounts it in the
- * child's profile only; the main DSH never loads it. Its one job is serving the fixed curated list
+ * Node half of the Fishball Recommended tab (V2 RP). core's patch mounts it wherever core is a
+ * bundle (a hosted child, or a standalone Fishball DSH); a main DSH that hosts an instance never has
+ * core and never loads it. Its one job is serving the fixed curated list
  * from src/recommended.js, so the browser half carries no second copy of that data.
  */
 export const name = 'fishball-recommend-plugins'
