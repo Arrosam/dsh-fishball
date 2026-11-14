@@ -143,6 +143,18 @@ export const V2_SUITES = Object.freeze({
     // V3 C-ROUTE (EVT-EP-01, EVT-EP-04 end to end, EVT-DT-01, WATCH-UC-01/02, WATCH-EP-01, WATCH-ST-01 rows 1–6, HAND-EP-01, HAND-DT-01/02, HAND-ST-01, HAND-UC-02 service part, PLAT-UC-03); run with test/run-v3.mjs.
     file('test/v3/c-route/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
     file('test/v3/c-route/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
+    // V3 F-FACADE (EXT-DT-03 E6/E8 Fishball side, EXT-UC-02 A3, EXT-UC-04 A1 core side); run with test/run-v3.mjs.
+    file('test/v3/f-facade/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),
+    file('test/v3/f-facade/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),
+    // V3 FEAT-PEERS (PLAT-EP-04 rows 1, 2, 4, PLAT-UC-06 main and A1, PLAT-BVA-01, EXT-UC-04 A1; the board export was dropped by the user, 2026-11-15); run with test/run-v3.mjs.
+    file('test/v3/feat-peers/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
+    file('test/v3/feat-peers/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
+    // V3 F-PAIR (AUTH-UC-05 decisions, AUTH-DT-06, AUTH-ST-03 non-warning-UI rows, NAME-UC-02 core part, NAME-DT-03 core reaction, token-revoked: AUTH-ST-03 row 10, HOST-UC-04 main); run with test/run-v3.mjs.
+    file('test/v3/f-pair/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
+    file('test/v3/f-pair/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
+    // V3 U-SHELL (UIM-UC-01 integration part, UIM-UC-04 U-SHELL's parts, UIM-EP-01/02, UIM-DT-01 rows 3, 7, 7b, R-EMBED's U-SHELL row); run with test/run-v3.mjs.
+    file('test/v3/u-shell/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),
+    file('test/v3/u-shell/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),
     // V3 I-PLACE (PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 post, HOST-UC-08 main 1/A1–A3, HOST-EP-03 rows 6–7, HOST-DT-03, PLAT-DT-04 rule 1 hosted, LITE-UC-03/LITE-EP-13/SET-EP-12 hosted, K3 unmount); run with test/run-v3.mjs.
     file('test/v3/i-place/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
     file('test/v3/i-place/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),

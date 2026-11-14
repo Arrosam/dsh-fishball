@@ -20,15 +20,26 @@
  * | BFL-10   | BVA (R8 position)               | bottom is exactly -9px (not the old -2px), right is -16px |
  * | BFL-07   | EP (error guessing, whole sheet)| no font / font-family declaration in the sheet ends on a bare generic family as its only name |
  * | BFL-08   | DT (lang x navigator language)  | the sheet text is identical for en, zh-CN, ja, zh-TW, and an unset lang |
+ *
+ * V3 re-baseline (R-UI-11, S4-Q2 decided: "sidebar entry"): embed-UI does not override DSH's brand,
+ * so the `sidebar.brand.mark` / `sidebar.brand.name` slots are not used and the main DSH has no
+ * "Deepseek Harness" sticker, no word logo and no count pill on the brand mark. Every row above
+ * asserts one of those rules, so the whole table is skipped with that reason. The replacing
+ * oracle (no `sidebar.brand.*` slot, in the shipped code and in every UIM-EP-01 partition) is
+ * test/v3/u-shell UIM-UC-04 "post"; the fish's attention dots are U-ATTN's (W4).
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
-import { describe, it } from 'node:test'
+import { describe, it as nodeIt } from 'node:test'
 import { EMBED_UI } from './support/constants.mjs'
 import { parseCss } from './support/messenger-style.mjs'
 
+/** Why every row is skipped in V3 (see the header). */
+const REBASELINE = 'R-UI-11: no brand override in V3, so no brand sticker, word logo or brand-mark count pill exists; replaced by test/v3/u-shell UIM-UC-04 post'
+/** Every row stays listed, skipped with the reason, so the re-baseline is visible in each run. */
+const it = (name, fn) => nodeIt(name, { skip: REBASELINE }, fn)
 const STACK = 'Helvetica,Arial,sans-serif'
 const WORD_STACK = '"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif'
 const GENERIC = new Set(['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-sans-serif', 'ui-serif', 'ui-monospace', 'ui-rounded', 'emoji', 'math', 'fangsong'])
