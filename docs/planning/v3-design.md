@@ -147,7 +147,9 @@ What both DSH SDKs ship (read only, byte-identical client/core dist in both):
   - non-loopback host over `http:`: the route answers 503 `insecure-listener` and logs one
     diagnostic. This never falls back silently.
   - A user-run tunnel to a loopback listener counts as loopback.
-- **Order of checks per request** (the cheapest refusal first; nothing past a refusal runs):
+- **Order of checks per request** (the cheapest refusal first; nothing past a refusal runs). K1b
+  freezes steps 1–2 with the `Host` check and the 503 `insecure-listener` refusal as
+  `RequestGate.check` (405 → 403 → 503) and step 4 as `RequestGate.admit` (`./mcp-schema`):
   1. method is POST; GET and DELETE get 405 (no GET stream, no sessions);
   2. `Origin`, when present, is in the allowlist (default: none; non-browser agents send no
      Origin) → 403;

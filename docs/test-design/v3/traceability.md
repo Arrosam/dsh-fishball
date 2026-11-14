@@ -304,7 +304,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | EVT-EP-01 | [04-events-interception.md](<04-events-interception.md>) | integration | — |
 | EVT-EP-02 | [04-events-interception.md](<04-events-interception.md>) | integration | — |
 | EVT-EP-03 | [04-events-interception.md](<04-events-interception.md>) | unit | — |
-| EVT-EP-04 | [04-events-interception.md](<04-events-interception.md>) | integration (two pairs P and Q, each with an open listen stream) | — |
+| EVT-EP-04 | [04-events-interception.md](<04-events-interception.md>) | integration (two pairs P and Q, each with an open listen stream) (owners, K1b: rows 1, 2, 5, 6 C-MAILBOX; rows 3, 4 C-HTTP; end to end C-ROUTE / C-WIRE) | — |
 | EVT-BVA-01 | [04-events-interception.md](<04-events-interception.md>) | unit | K (page limit frozen at V3-K) |
 | EVT-BVA-02 | [04-events-interception.md](<04-events-interception.md>) | integration | D§3.4 (default 200), K |
 | EVT-DT-01 | [04-events-interception.md](<04-events-interception.md>) | unit (router), integration | — |
