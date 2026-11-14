@@ -11,21 +11,34 @@
  *   profileBundles(H)          the child profile's `dsh.profile.bundles`
  *   launchOverlays(H)          every live start's ops from <H>/fishball/runtime/launches/<id>/launch.patch.yml
  *                              (a JSON array of patch ops, removed when that child stops)
- *   launchOverlayExport()      `launchOverlay` from fishball-instance/native-runtime, a pure function
- *                              called as launchOverlay(paths, record, childModule, limits, control, entries)
+ *   launchOverlayExport()      an async `launchOverlay(paths, …)` whose ops come from the relayed
+ *                              `composedProfile({mainHome: paths.mainHome, installAnchor})` of
+ *                              fishball-instance/native-runtime (dev a10a6774); the V2 pure
+ *                              `launchOverlay(…, entries)` refused an empty `entries` list
+ *                              (UNSUPPORTED_PROFILE)
  *   placedCopy(H, name, dir)   <profile>/<dir>/<name> for dir in vendor, node_modules
  *   blockedBy(status)          the bundle a PROFILE_INCOMPATIBLE start names: K3 ChildStatus `plugin`
  *                              (PROPOSED) when present, else the name in the relayed message
  *                              "Enabled bundles cannot load: <name> (<reason>)" (dev 6d13f6a1)
  *
  * Every read is of a file the instance writes or of a public export: no module of the placement is
- * imported other than the relayed `launchOverlay`.
+ * imported other than the relayed `composedProfile`.
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { V3 } from '../shared/constants.mjs'
+import { SDK, V3 } from '../shared/constants.mjs'
 import { RELAYED } from './constants.mjs'
+
+/**
+ * The composedProfile seam (dev a10a6774, relayed by Fishball 2026-11-15): its export name, the
+ * SDK's dsh package.json as the install anchor, and the test file name that carries the SDK.
+ */
+const COMPOSE = Object.freeze({
+  name: 'composedProfile',
+  anchor: Object.freeze(['node_modules', '@deepseek-ai', 'dsh', 'package.json']),
+  sdkFile: /^sdk-(.+)\.test\.mjs$/,
+})
 
 export const childProfile = (home) => path.join(home, ...RELAYED.childProfile)
 /** The child's own DSH home (the profile's `profiles/<name>` parent's parent). */
@@ -59,10 +72,30 @@ export function launchOverlays(home) {
   return fs.readdirSync(dir).map((id) => path.join(dir, id, RELAYED.launchFile)).filter((f) => fs.existsSync(f)).map((f) => JSON.parse(fs.readFileSync(f, 'utf8')))
 }
 
-/** The relayed pure export, imported from the instance's own package folder. */
+/** The SDK this test process runs: the file is `sdk-<version>.test.mjs` (one process per file under node --test). */
+function processSdk() {
+  const match = COMPOSE.sdkFile.exec(path.basename(process.argv[1] ?? ''))
+  if (!match) throw new Error('cannot tell the SDK from the test file ' + process.argv[1])
+  return match[1]
+}
+
+/**
+ * The launch overlay a start would write, from the relayed `composedProfile` (dev a10a6774): it lays
+ * out, places and loads the child profile under `mainHome` and returns `{paths, entries, overlay,
+ * record}`, creating no launch directory and starting no process. The cases call the result with
+ * the V2 `launchOverlay` arguments; only `paths.mainHome` is used, made canonical and created here
+ * (composedProfile requires a canonical realpath directory). The SDK's dsh package.json is the
+ * install anchor.
+ */
 export async function launchOverlayExport() {
   const module = await import(pathToFileURL(path.join(V3.instance.dir, ...RELAYED.overlayModule.file)).href)
-  return module[RELAYED.overlayModule.name]
+  const composedProfile = module[COMPOSE.name]
+  const installAnchor = path.join(SDK.versionsDir, processSdk(), ...COMPOSE.anchor)
+  return async function launchOverlay(paths) {
+    fs.mkdirSync(paths.mainHome, { recursive: true })
+    const { overlay } = await composedProfile({ mainHome: fs.realpathSync(paths.mainHome), installAnchor })
+    return overlay
+  }
 }
 
 export const placedCopy = (home, name, dir) => path.join(childProfile(home), dir, name)
