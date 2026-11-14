@@ -158,6 +158,9 @@ export const V2_SUITES = Object.freeze({
     // V3 I-PLACE (PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 post, HOST-UC-08 main 1/A1–A3, HOST-EP-03 rows 6–7, HOST-DT-03, PLAT-DT-04 rule 1 hosted, LITE-UC-03/LITE-EP-13/SET-EP-12 hosted, K3 unmount); run with test/run-v3.mjs.
     file('test/v3/i-place/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
     file('test/v3/i-place/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
+    // V3 WD-ROUTE (WD-UC-02, WD-UC-04, WD-EP-01 rows 1–11, WD-EP-03, WD-DT-02, WD-ST-01, preset-watchdog / WD-EP-04 row 5); run with test/run-v3.mjs.
+    file('test/v3/wd-route/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 Watchdog as an interceptor, failure = off and its agent preset (WD-ROUTE)'),
+    file('test/v3/wd-route/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 Watchdog as an interceptor, failure = off and its agent preset (WD-ROUTE)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).

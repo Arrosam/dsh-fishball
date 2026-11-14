@@ -1,7 +1,7 @@
 {
   "name": "fishball-watchdog",
   "version": "0.1.0-alpha.0",
-  "description": "Fishball's small-context supervision and permission helper (WD-1 skeleton).",
+  "description": "Fishball's small-context supervision and permission helper: an interceptor of fishball-core's events, with its own watchdog agent preset.",
   "license": "MIT",
   "type": "module",
   "main": "./index.js",
@@ -14,16 +14,13 @@
     "node": ">=22",
     "dsh": ">=0.2.1-rc.5"
   },
+  "//peerDependencies": "No peer on fishball-instance or fishball-core (design §5a.1, §9.1): fishballInstance is looked up at runtime, so a DSH without core still loads this row and only logs fishball-core-missing (R-FB-06).",
   "peerDependencies": {
     "@deepseek-ai/dsh-agent": "*",
     "@deepseek-ai/dsh-llm": "*",
     "@deepseek-ai/dsh-scope": "*",
     "@deepseek-ai/dsh-tools": "*",
-    "@deepseek-ai/schemastery": "*",
-    "fishball-instance": "0.1.0-alpha.0"
-  },
-  "peerDependenciesMeta": {
-    "fishball-instance": { "optional": true }
+    "@deepseek-ai/schemastery": "*"
   },
   "dsh": {
     "bundle": { "patch": "./cordis.patch.yml" }
