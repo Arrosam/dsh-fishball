@@ -1,23 +1,20 @@
 /**
  * fishball-embed-ui, the shell part (V3 U-SHELL split of the V2 connector client, DESIGN §10):
- * 1. Brand: fills sidebar.brand.mark / sidebar.brand.name at slot priority -1 (a single
- *    slot renders its LOWEST priority; the shipped brand uses 0 — spike S14). The name
- *    occupant takes over its enclosing button's click (capture phase, so it runs before
- *    the shell's New Session handler) and opens the Fishball view (item 3). On macOS Desktop
- *    the brand row is a drag region without a button; there Fishball opens from its
- *    sidebar row.
+ * 1. The one Fishball entry (R-UI-11): the fish row in DSH's sidebar panel list. DSH's own brand
+ *    mark and name are not overridden (no sidebar.brand.* slot), so V2's brand override, its
+ *    click takeover and the Sidebar entry preference are gone.
  * 2. The connector's Plugins card (§0.7, D24): DSH's form of the connector's active limits
  *    (src/config.js; C2: the only place they change), and "Open instance
  *    settings" while the attached instance registered `ui.settings`. The instance's own status,
  *    model, plugins and settings are the instance's pages, not this card.
  * 3. The Fishball view (slim §7) inside the connector's frame (§0.5 "The frame", D27): the
  *    attached instance's `ui.chat` (or its `ui.settings`, from the card) framed in DSH's main area,
- *    the `main` slot where a session's conversation shows, opened by the brand and by a Fishball row
- *    in the sidebar's panel list. The frame shows the instance's state, Fishball's unread count and
+ *    the `main` slot where a session's conversation shows, opened by the Fishball row in the sidebar's
+ *    panel list. The frame shows the instance's state, Fishball's unread count and
  *    Connector settings; with no instance it shows an empty state and no iframe.
  * 4. The kit the other parts are built from (`exports.kit`): the one state stream, POST helper,
  *    style sheet and dictionary, and the seats (SEAT) where the attention part draws the fish's
- *    latch in the brand, the sidebar row and the frame. The marks (client.marks.js) and the
+ *    latch in the sidebar row and the frame. The marks (client.marks.js) and the
  *    ask_fishball row with the card records (client.records.js) are parts of their own.
  * The in-process Fishball's own surfaces (its chat dock, pile, welcome card, model gate, the
  * Plugins page's Fishball tab and install dialog, the Messenger look) were removed with it.
@@ -39,14 +36,13 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { BrandWordmark, Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconWarningOutlineRegular, SettingsForm, SettingsFormModel, SettingsValueField, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconWarningOutlineRegular, SettingsForm, SettingsFormModel, SettingsValueField, Tag, settingsNumberField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const PACKAGE_NAME = 'fishball-connector'
     /** Host row id; also the settings namespace configForms serves (cordis.patch.yml, design §0.2 D22). */
     const ENTRY_ID = 'fishball-connector'
     const NS = 'fishball'
-    const BRAND_PRIORITY = -1
     /** Client services read on demand (not injected: Fishball works without each of them). */
     const SERVICE = Object.freeze({ layout: 'layout' })
     const SUMMARY_VIEW = 'summary'
@@ -139,10 +135,53 @@ window.__ModuleLoader__.load({
       /** The URL marks the framed address is cut at, so its path, other parameters and fragment stay verbatim. */
       url: Object.freeze({ fragment: '#', query: '?', separator: '&', assign: '=' }),
     })
+    /**
+     * The V3 frame (U-SHELL; design §4.1, §4.2; R-UI-02, R-UI-03): the instance locator
+     * `fishballChild` as embed-UI's host half re-serves it. Keep `route` in step with
+     * src/host/constants.js ROUTE (this chunk is a classic script and cannot import it); the paths
+     * are relative to DSH's page, as V2's are.
+     * - The frame's `src` is only ever `admit`'s one-time URL, asked for afresh for each frame
+     *   document (first open, a language change, Refresh, the child turning ready again); it is
+     *   never stored or logged, and the address holds no token (the ticket is redeemed by the child
+     *   into its own cookie, S4).
+     * - `hostnameRefused` is K3's AdmitErrorCode: the page was not opened under a loopback name, so
+     *   the view shows the refusal text and no frame (UIM-EP-02 row 4).
+     * - `retryStates`/`retryCodes`: where K3 `retry()` acts (decided 1 = A: a `failed` child, or
+     *   `token-revoked`), so the view offers Retry only there.
+     */
+    const CHILD_UI = Object.freeze({
+      route: Object.freeze({
+        services: 'api/fishball-embed-ui/services',
+        status: 'api/fishball-embed-ui/child/status',
+        retry: 'api/fishball-embed-ui/child/retry',
+        admit: 'api/fishball-embed-ui/child/admit',
+        modelsCheck: 'api/fishball-embed-ui/child/models/check',
+        modelsAdd: 'api/fishball-embed-ui/child/models/add',
+      }),
+      readyState: 'ready',
+      hostnameRefused: 'hostname-refused',
+      retryStates: Object.freeze(['failed']),
+      retryCodes: Object.freeze(['token-revoked']),
+      /** What the host half reports usable (src/host/services.js availability); all false when unreadable. */
+      none: Object.freeze({ page: false, connector: false, legacy: false }),
+    })
+    /**
+     * PROPOSED wording (W3 brief P-3): new copy with no text in the spec, except `hostnameRefused`,
+     * whose English is R-UI-02's. The user reviews this object at the W3 merge; the dictionaries
+     * below take it unchanged.
+     */
+    const PROPOSED_WORDING = Object.freeze({
+      en: Object.freeze({
+        hostnameRefused: 'Open DSH at 127.0.0.1 to use Fishball',
+        admitFailed: 'The Fishball page could not be opened.',
+      }),
+      zh: Object.freeze({
+        hostnameRefused: '请通过 127.0.0.1 打开 DSH 以使用 Fishball',
+        admitFailed: '无法打开 Fishball 页面。',
+      }),
+    })
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
     const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
-    /** Where the sidebar opens the Fishball view (src/constants.js SIDEBAR_ENTRY): its own row, or the brand only. */
-    const SIDEBAR_ENTRY = Object.freeze({ panel: 'panel', brand: 'brand' })
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
     /**
      * The fish mark's shared look, used by the shell's sheet and by the parts (kit.ROW_MARK): the
@@ -162,29 +201,15 @@ window.__ModuleLoader__.load({
       flip: Object.freeze([[0, 0], [45, 180], [55, 180], [100, 360]]),
     })
     /**
-     * The reveal of a box that opens and closes (DESIGN §10e, rev11-pile-list), drawn by the shell's
-     * sheet and moved by the records part (kit.PILE_LIST). Its length and easing are presentation,
-     * not settings (the manager's decision): short, so a switch never holds up a click; under
-     * prefers-reduced-motion: reduce every switch is instant.
-     */
-    const PILE_LIST = Object.freeze({
-      revealMs: 180,
-      easing: 'cubic-bezier(.2,0,0,1)',
-      /** A reveal's states, drawn as data-fishball-reveal. */
-      reveal: Object.freeze({ hidden: 'hidden', opening: 'opening', open: 'open', closing: 'closing' }),
-    })
-    /**
      * The shell's seats (U-SHELL's slot registry): places in the shell's own surfaces that a part
      * fills (`seats.register(seat, value)`), so the shell draws them without knowing the part, and a
      * part that never loads leaves the shell's fallback. One value per seat; the latest wins.
-     * - mark: the sidebar mark component `({size})` the brand and the sidebar row draw;
+     * - mark: the sidebar mark component `({size})` the sidebar row draws;
      * - frameBadge: a component `({t})` in the frame's header;
      * - pageOpened: a function the view calls once each time it mounts.
      */
     const SEAT = Object.freeze({ mark: 'mark', frameBadge: 'frameBadge', pageOpened: 'pageOpened' })
     const SLOT = Object.freeze({
-      mark: 'sidebar.brand.mark',
-      name: 'sidebar.brand.name',
       bundleConfig: 'plugins.bundle.config',
       headerActions: 'conversation.session.header.actions',
       sessionMenu: 'sidebar.workspaces.session.menu.item',
@@ -207,8 +232,6 @@ window.__ModuleLoader__.load({
        */
       rowTrailing: 'sidebar.session.row.trailing',
     })
-    // The attribute Fishball keeps on DSH's brand button (rev11-ui-fixes R5).
-    const BRAND_LABEL_ATTR = 'aria-label'
     /**
      * The limit fields, in the order the Host declares them (src/config.js LIMITS, the
      * conn-OQ-20 set). The form model needs its fields before the first state frame arrives, so
@@ -259,57 +282,12 @@ window.__ModuleLoader__.load({
      */
     const ACCENT_BUTTON = Object.freeze({ variant: 'secondary', className: 'fb-outline' })
     /**
-     * The font the brand's text ends on (the tag, the unread count, the word logo's fallback).
-     * DSH sets <html lang> to its display language (dsh-client-locale), and a bare `sans-serif`
-     * then picks a per-language face: PingFang SC in Chinese, lighter and shaped differently,
-     * so the tag changed look. Named Latin faces first give every language the English face.
+     * The font the unread count ends on. DSH sets <html lang> to its display language
+     * (dsh-client-locale), and a bare `sans-serif` then picks a per-language face: PingFang SC in
+     * Chinese, lighter and shaped differently. Named Latin faces first give every language the English face.
      * DSH's own --dsw-font-family is SF Pro on macOS, wider than the approved look.
      */
     const BRAND_LATIN_FONT = 'Helvetica,Arial,sans-serif'
-    /**
-     * The word logo from the fishball repo. The repo ships no image for it: it is the string
-     * `wordmark` ("FISHBALL", strings.xml) set in the display face at weight 900 with -0.5px
-     * tracking (docs/preview/designs.html `.brand .wm`, Theme.kt displaySmall). The face is
-     * the repo's stack and is not downloaded here, so a machine without Archivo falls back to
-     * the next family, as the app's own dummy does. It ends on BRAND_LATIN_FONT instead of
-     * the repo's bare `sans-serif`, so Windows (no Helvetica Neue) keeps one face in every language.
-     */
-    const WORDMARK = Object.freeze({
-      fontFamily: `"Archivo","Helvetica Neue",${BRAND_LATIN_FONT}`,
-      fontWeight: 900,
-      letterSpacing: '-0.5px',
-      lineHeight: 1,
-      /** Lifts the word so the tag below can cover its bottom edge without hiding the letters. */
-      lift: '-2px',
-    })
-    /**
-     * The "Deepseek Harness" tag: a flat sticker overlapping the word logo's bottom-right corner
-     * (design 8 of the owner's pick, untilted at the owner's request), with a hard magenta drop
-     * shadow. A negative `right` pushes it past the word's right edge so its left end no longer
-     * covers the mark; the brand button has free room to the right of the word (it grows to the
-     * sidebar toggle), so nothing is cut off. It covers the foot of the last letters on purpose:
-     * the small plain text it replaced could not be read at sidebar size. Flat, it sits low (the
-     * owner picked -9px) so it touches only the letters' feet; at -2px it hid their lower half.
-     * Its bottom and shadow hang below the shell's brand box (dsh-client-ui-sidebar `.brand`,
-     * 24px high, overflow hidden), so releaseClip() opens it while the brand is shown. The fill
-     * and text swap the sidebar's own label colours so the
-     * sticker reads on light and dark themes; the ring is the sidebar ground and separates the
-     * sticker from the letters it covers; the shadow is the mark's eye magenta
-     * (FISH_MARK.eyeColor), the one colour the brand spends.
-     */
-    const BRAND_TAG = Object.freeze({
-      fontFamily: BRAND_LATIN_FONT, fontSize: '9px', lineHeight: '11px', fontWeight: 800, paddingX: '4px', radius: '1px',
-      right: '-16px', bottom: '-9px',
-      fill: 'var(--dsw-alias-label-primary)', textColor: 'var(--dsw-alias-label-primary-inverted)',
-      ring: '0 0 0 1.5px var(--dsw-alias-label-primary-inverted)', shadow: '2px 2px 0 1.5px ' + FISH_MARK.eyeColor,
-    })
-    /**
-     * How many ancestors above the brand name releaseClip() searches for the clipping box. The
-     * shell nests it brandName > brandIdentity > brand (a button, or a span on macOS Desktop), so
-     * 4 leaves one spare level. The bound keeps a shell change from making this open a distant
-     * container (the sidebar or the app root) that was meant to clip.
-     */
-    const CLIP_SEARCH_DEPTH = 4
     /**
      * Unread replies on the mark: a count pill on its top-right corner and a short tail wag,
      * repeated every WAG cycle while anything is unread (the pill pops with the wag and rests
@@ -317,10 +295,7 @@ window.__ModuleLoader__.load({
      * so it separates from the mark on light and dark themes, as the Deepseek Harness tag does.
      * The pill shows the count up to `max`, then "${max}+", so it stays narrow in the sidebar.
      * The wag pivots near the tail's root; it is a keyframe list, so a change of look edits data.
-     * The pill overhangs the mark by 7px above and 9px to the right. The shell clips the brand
-     * button (overflow:hidden, exactly the mark's 24px high), so it shows only because
-     * releaseClip() opens that box while the brand is shown; if a DSH update changes that markup the
-     * pill is cut. Check it in the expanded sidebar, the collapsed rail and the Windows titlebar.
+     * The pill overhangs the mark by 7px above and 9px to the right.
      */
     const UNREAD_BADGE = Object.freeze({
       max: 99,
@@ -363,13 +338,10 @@ window.__ModuleLoader__.load({
     /** Only animate for people who have not asked for less motion (DSH's hero checks the same query). */
     const MOTION_QUERY = '(prefers-reduced-motion: no-preference)'
     const STYLE_ID = 'fishball-style'
-    const CLS = Object.freeze({ cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', actions: 'fb-actions', askRow: 'fb-ask-row', field: 'fb-field', note: 'fb-note', entries: 'fb-entries', section: 'fb-section', row: 'fb-row', label: 'fb-label', code: 'fb-code', name: 'fb-name', tag: 'fb-tag', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', grow: 'fb-grow', muted: 'fb-muted', recordBody: 'fb-record-body', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', reveal: 'fb-reveal', revealInner: 'fb-reveal-inner', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
+    const CLS = Object.freeze({ cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', askRow: 'fb-ask-row', field: 'fb-field', note: 'fb-note', section: 'fb-section', row: 'fb-row', code: 'fb-code',  mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', muted: 'fb-muted', recordBody: 'fb-record-body', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
 
     const en = {
-      brandName: 'FISHBALL',
-      brandTag: 'Deepseek Harness',
-      brandLabel: 'Open Fishball',
-      brandLabelUnread: 'Open Fishball, {count} unread',
+      ...PROPOSED_WORDING.en,
       unreadMany: '{max}+',
       limits: 'Safety limits',
       viewTitle: 'Fishball', embedTitle: 'Fishball chat', embedRefresh: 'Refresh',
@@ -426,14 +398,6 @@ window.__ModuleLoader__.load({
       'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
       cardReason: 'Reason',
       cardFishballNote: 'Fishball',
-      allowOnce: 'Allow once',
-      reject: 'Reject',
-      rejectNote: 'Note to the agent (optional)',
-      rejectSend: 'Reject',
-      'cardError.expired': 'This request was already answered or has ended.',
-      'cardError.too-large': 'The note is too long.',
-      'cardError.unavailable': 'Fishball is not running.',
-      cardFailed: 'That did not work.',
       askRowTitle: 'Ask Fishball',
       askRowReply: 'Reply to Fishball',
       askRowWaitingFishball: 'Waiting for Fishball',
@@ -450,9 +414,6 @@ window.__ModuleLoader__.load({
       'askResult.invalid-request': 'Invalid request',
       'askResult.empty': 'Empty reply',
       'askResult.cancelled': 'Cancelled',
-      'grantError.unknown': 'This grant does not exist.',
-      'grantError.ended': 'This grant has already ended.',
-      'grantError.unavailable': 'Fishball is not running.',
       reset: 'Reset to default',
       overridden: 'Custom',
       save: 'Save',
@@ -469,10 +430,7 @@ window.__ModuleLoader__.load({
       'record.from': 'From', 'record.answer': 'Answer', 'record.tool': 'Tool', 'record.arguments': 'Arguments', 'record.reason': 'Reason', 'record.note': 'Note', 'record.closed': 'Why it closed', 'record.own': 'Fishball asked you',
     }
     const zh = {
-      brandName: 'FISHBALL',
-      brandTag: 'Deepseek Harness',
-      brandLabel: '打开 Fishball',
-      brandLabelUnread: '打开 Fishball，{count} 条未读',
+      ...PROPOSED_WORDING.zh,
       unreadMany: '{max}+',
       limits: '安全限制',
       viewTitle: 'Fishball', embedTitle: 'Fishball 聊天', embedRefresh: '刷新',
@@ -526,14 +484,6 @@ window.__ModuleLoader__.load({
       'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
       cardReason: '理由',
       cardFishballNote: 'Fishball',
-      allowOnce: '允许一次',
-      reject: '拒绝',
-      rejectNote: '给代理的说明（可选）',
-      rejectSend: '拒绝',
-      'cardError.expired': '这个请求已被处理或已结束。',
-      'cardError.too-large': '说明太长。',
-      'cardError.unavailable': 'Fishball 未在运行。',
-      cardFailed: '操作未成功。',
       askRowTitle: '询问 Fishball',
       askRowReply: '回复 Fishball',
       askRowWaitingFishball: '等待 Fishball',
@@ -550,9 +500,6 @@ window.__ModuleLoader__.load({
       'askResult.invalid-request': '请求无效',
       'askResult.empty': '回复为空',
       'askResult.cancelled': '已取消',
-      'grantError.unknown': '这个许可不存在。',
-      'grantError.ended': '这个许可已经结束。',
-      'grantError.unavailable': 'Fishball 未在运行。',
       reset: '恢复默认',
       overridden: '已自定义',
       save: '保存',
@@ -584,12 +531,7 @@ window.__ModuleLoader__.load({
       // Motion is the only thing that stops: the pill, its count and the dots stay.
       `@media (prefers-reduced-motion:reduce){.${CLS.badge},.${CLS.wag},.${CLS.swim},.${CLS.flip}{animation:none}}`,
       `.${CLS.row}{display:flex;gap:12px;align-items:baseline}`,
-      `.${CLS.label}{min-width:120px;color:var(--dsw-alias-label-tertiary)}`,
       `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
-      `.${CLS.name}{position:relative;display:inline-block;font-family:${WORDMARK.fontFamily};font-weight:${WORDMARK.fontWeight};letter-spacing:${WORDMARK.letterSpacing};line-height:${WORDMARK.lineHeight};top:${WORDMARK.lift}}`,
-      // Overlaid on the corner, so it takes no layout space and cannot push the sidebar controls.
-      `.${CLS.tag}{position:absolute;right:${BRAND_TAG.right};bottom:${BRAND_TAG.bottom};padding:0 ${BRAND_TAG.paddingX};border-radius:${BRAND_TAG.radius};background:${BRAND_TAG.fill};color:${BRAND_TAG.textColor};font:${BRAND_TAG.fontWeight} ${BRAND_TAG.fontSize}/${BRAND_TAG.lineHeight} ${BRAND_TAG.fontFamily};box-shadow:${BRAND_TAG.ring},${BRAND_TAG.shadow};white-space:nowrap;pointer-events:none}`,
-      `.${CLS.grow}{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
       // The Fishball view (§7) fills DSH's main area as a session does: DSH's conversation root,
       // its header (border, padding, the leading clearance a hidden macOS sidebar leaves) and its
@@ -610,22 +552,9 @@ window.__ModuleLoader__.load({
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
       // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
       `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
-      `.${CLS.entries}{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}`,
-      // The pile and the ask_fishball row (revision 11, S37's fixture look), in DSH's theme tokens
-      // so they follow light and dark. The pile's height comes from pileMaxHeightVh, set inline.
-      `.${CLS.entries}>:first-child>.${CLS.revealInner}>.${CLS.card}{border-top:0}`,
-      // The reveal (rev11-pile-list): a one-row grid from 0fr to 1fr, so the box's height moves and the
-      // entries around it reflow with it. Its content is clipped only while it moves, so focus rings
-      // and the pinned titles work once it is open.
-      `.${CLS.reveal}{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows ${PILE_LIST.revealMs}ms ${PILE_LIST.easing},opacity ${PILE_LIST.revealMs}ms ${PILE_LIST.easing}}`,
-      `.${CLS.reveal}[data-fishball-reveal="${PILE_LIST.reveal.hidden}"],.${CLS.reveal}[data-fishball-reveal="${PILE_LIST.reveal.closing}"]{grid-template-rows:0fr;opacity:0}`,
-      `.${CLS.revealInner}{min-width:0;min-height:0}`,
-      `.${CLS.reveal}:not([data-fishball-reveal="${PILE_LIST.reveal.open}"])>.${CLS.revealInner}{overflow:hidden}`,
-      `@media (prefers-reduced-motion: reduce){.${CLS.reveal}{transition:none}}`,
       `.${CLS.cardHead}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
       `.${CLS.title}{color:var(--dsw-alias-label-primary);font-weight:500;overflow-wrap:anywhere}`,
       `.${CLS.pre}{margin:0;padding:6px 8px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--ds-font-family-code);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
-      `.${CLS.actions}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
       `.${CLS.askRow}{display:flex;flex-direction:column;gap:6px;padding:6px 0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
       `.${CLS.managedRow}{position:relative;display:inline-flex;align-items:center;justify-content:center;width:${ROW_MARK.cellPx}px;height:${ROW_MARK.cellPx}px;color:var(--dsw-alias-label-primary)}`,
       // The dots' two meanings get DSH's own state tokens; yellow is checked first in the component.
@@ -776,7 +705,7 @@ window.__ModuleLoader__.load({
       const Icon = brandIconOf(useFishball())
       return h(Icon, { size, unread: false, badge: true })
     }
-    /** The brand's and the sidebar row's mark: the attention part's seat, else the plain one. */
+    /** The sidebar row's mark: the attention part's seat, else the plain one. */
     function Mark(props) {
       return h(seats.use(SEAT.mark) ?? PlainMark, props)
     }
@@ -786,75 +715,10 @@ window.__ModuleLoader__.load({
       return Badge === undefined ? null : h(Badge, props)
     }
 
-
-    /**
-     * Lets the tag overhang the shell's brand box: opens the nearest clipping ancestor of the
-     * brand name and returns a function that puts back its inline overflow. The row above it is
-     * 60px tall (40px with the Windows titlebar), so the few pixels of overhang stay visible.
-     */
-    function releaseClip(node) {
-      let box = node?.parentElement
-      for (let depth = 1; box && depth < CLIP_SEARCH_DEPTH && getComputedStyle(box).overflowX === 'visible'; depth += 1) box = box.parentElement
-      if (!box || getComputedStyle(box).overflowX === 'visible') return undefined
-      const previous = box.style.overflow
-      box.style.overflow = 'visible'
-      return () => { box.style.overflow = previous }
-    }
-
-    function makeBrandName(ctx, t) {
-      return function FishballBrandName() {
-        const ref = React.useRef(null)
-        // Subscribed for the unread count and the chosen brand icon; the click opens the Fishball view.
-        const state = useFishball()
-        const count = unreadCount(state)
-        const deepseek = brandStyleOf(state) === BRAND_STYLE.deepseek
-        React.useEffect(() => releaseClip(ref.current), [])
-        React.useEffect(() => {
-          const button = ref.current?.closest('button')
-          if (!button) return undefined
-          let previous = button.getAttribute(BRAND_LABEL_ATTR)
-          // DSH renders its own label on this button and sets it again whenever it re-renders (after
-          // its language loads on a fresh page, or changes): put Fishball's back each time, worded
-          // anew so it follows the current language (rev11-ui-fixes R5). Equal labels are left
-          // alone, so this cannot loop.
-          const keepLabel = () => {
-            const label = count > 0 ? t('brandLabelUnread', { count }) : t('brandLabel')
-            const current = button.getAttribute(BRAND_LABEL_ATTR)
-            if (current === label) return
-            // DSH's newest label (e.g. in a new language) is the one to give back when Fishball's goes.
-            previous = current
-            button.setAttribute(BRAND_LABEL_ATTR, label)
-          }
-          keepLabel()
-          const labelWatch = new MutationObserver(keepLabel)
-          labelWatch.observe(button, { attributes: true, attributeFilter: [BRAND_LABEL_ATTR] })
-          const onClick = (event) => {
-            // The brand opens the Fishball view in the main area (§7), with or without its sidebar row.
-            event.preventDefault()
-            event.stopPropagation()
-            event.stopImmediatePropagation()
-            openFishballView(ctx)
-          }
-          button.addEventListener('click', onClick, true)
-          return () => {
-            labelWatch.disconnect()
-            button.removeEventListener('click', onClick, true)
-            if (previous === null) button.removeAttribute(BRAND_LABEL_ATTR)
-            else button.setAttribute(BRAND_LABEL_ATTR, previous)
-          }
-        }, [count])
-        // DeepSeek's word logo is the stock one, without Fishball's tag or its lifted word.
-        if (deepseek) return h('span', { ref, 'data-fishball-name': BRAND_STYLE.deepseek }, h(BrandWordmark, { includeMark: false }))
-        return h('span', { ref, className: CLS.name, 'data-fishball-name': true },
-          t('brandName'),
-          h('span', { className: CLS.tag, 'data-fishball-tag': true }, t('brandTag')))
-      }
-    }
-
     /**
      * Which of the attached instance's pages the view frames. The Plugins card's "Open instance
      * settings" asks for `settings` (conn-OQ-24); the view puts it back to `chat` when it unmounts,
-     * so the next visit from the row or the brand frames the chat again. An instance whose
+     * so the next visit from the row frames the chat again. An instance whose
      * `ui.settings` went away meanwhile shows its chat, the view's default.
      */
     const framedPage = valueStore(FRAME_UI.page.chat)
@@ -906,7 +770,6 @@ window.__ModuleLoader__.load({
         code ? h('code', { className: CLS.code }, code) : null)
     }
 
-
     /** Split text at the first mark: what is before it, and what follows it (null without the mark). */
     function splitAt(text, mark) {
       const at = text.indexOf(mark)
@@ -946,6 +809,123 @@ window.__ModuleLoader__.load({
     /** DSH's own empty/error state, centred in the view (dsh-client-ui-schedule .empty). */
     const emptyState = (...children) => h('div', { className: CLS.embedError }, ...children)
 
+    /** One GET of the host half's route; undefined for an answer that is not `{ok: true, ...}`. */
+    async function readRoute(path, signal) {
+      try {
+        const response = await fetch(apiUrl(path), { ...FRAME_UI.read, signal })
+        const value = await response.json()
+        return value?.ok === true ? value : undefined
+      } catch { return undefined }
+    }
+
+    /**
+     * What the host half reports usable (src/host/services.js): read once when the shell starts.
+     * The row registers by it (UIM-EP-01); a service that comes or goes later shows after a reload,
+     * as V2's instance card did. An unreadable answer is "nothing", so the shell then registers
+     * nothing that needs a service.
+     */
+    const readAvailability = async () => (await readRoute(CHILD_UI.route.services)) ?? CHILD_UI.none
+
+    /**
+     * The child's status and target, re-read at the V2 frame's cadence (FRAME_UI.pollMs) while the
+     * view is mounted and the tab is visible, one read at a time. undefined until the first answer.
+     */
+    function useChildStatus() {
+      const [status, setStatus] = React.useState(undefined)
+      React.useEffect(() => {
+        const abort = new AbortController()
+        let polling = false
+        const poll = () => {
+          if (polling || document.hidden) return
+          polling = true
+          void readRoute(CHILD_UI.route.status, abort.signal).then((next) => {
+            if (next !== undefined && !abort.signal.aborted) setStatus((previous) => (sameInstance(previous, next) ? previous : next))
+          }).finally(() => { polling = false })
+        }
+        poll()
+        const timer = setInterval(poll, FRAME_UI.pollMs)
+        return () => { clearInterval(timer); abort.abort() }
+      }, [])
+      return [status, setStatus]
+    }
+
+    /**
+     * The frame's one-time address for `{view, lang}` while the child is ready: asked of the admit
+     * route afresh whenever the view, the language, the generation (Refresh) or readiness changes,
+     * because a ticket is single-use (UIM-UC-01 A1, A2). The answer is held only in this
+     * component's state for that one frame document. `{refused}` carries the route's code.
+     */
+    function useAdmission(view, lang, ready, generation) {
+      const [admission, setAdmission] = React.useState(undefined)
+      React.useEffect(() => {
+        setAdmission(undefined)
+        if (!ready) return undefined
+        let live = true
+        void send(CHILD_UI.route.admit, { view, lang }).then(({ ok, code, answer }) => {
+          if (!live) return
+          setAdmission(ok && typeof answer?.url === 'string' ? { url: answer.url } : { refused: code })
+        })
+        return () => { live = false }
+      }, [view, lang, ready, generation])
+      return admission
+    }
+
+    /**
+     * The Fishball view over the instance locator (U-SHELL; design §4.2; R-UI-02, R-UI-03): the
+     * same main slot, header and empty states as the V2 view below, with the child's status, its
+     * code and Retry outside the frame, and the frame's address from admit only. A page opened
+     * under any name but a loopback one gets `hostname-refused` and shows R-UI-02's text instead
+     * of a frame. Nothing crosses the iframe (no `message` listener), as in V2.
+     */
+    function makeChildView(ctx, t) {
+      const frameLang = frameLangStore(ctx.locale)
+      return function FishballChildView() {
+        const [status, setStatus] = useChildStatus()
+        const page = React.useSyncExternalStore(framedPage.subscribe, framedPage.get)
+        const lang = React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
+        const [generation, setGeneration] = React.useState(0)
+        const [retrying, setRetrying] = React.useState(false)
+        React.useEffect(() => { seats.get(SEAT.pageOpened)?.() }, [])
+        React.useEffect(() => () => framedPage.set(FRAME_UI.page.chat), [])
+        const state = status?.status?.state ?? FRAME_UI.loading
+        const code = status?.status?.code ?? null
+        const ready = state === CHILD_UI.readyState
+        const admission = useAdmission(page, lang, ready, generation)
+        const canRetry = CHILD_UI.retryStates.includes(state) || CHILD_UI.retryCodes.includes(code)
+        const retry = async () => {
+          setRetrying(true)
+          const { ok, answer } = await send(CHILD_UI.route.retry, {})
+          setRetrying(false)
+          if (ok && answer?.ok === true) setStatus(answer)
+        }
+        const body = status === undefined
+          ? emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
+          : !ready
+            ? emptyState(
+              h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
+              h('p', null, t('embedState'), ' ', h('code', { className: CLS.code }, state)),
+              code ? h('p', null, t('embedCode'), ' ', h('code', { className: CLS.code }, code)) : null)
+            : admission === undefined
+              ? emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
+              : admission.refused !== undefined
+                ? emptyState(
+                  h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
+                  admission.refused === CHILD_UI.hostnameRefused
+                    ? h('p', { role: 'alert', 'data-fishball-hostname-refused': true }, t('hostnameRefused'))
+                    : h('p', { role: 'alert', 'data-fishball-admit-refused': admission.refused ?? '' }, t('admitFailed')))
+                : h('iframe', { key: `${generation}:${admission.url}`, className: CLS.embedFrame, src: admission.url, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
+        return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
+          h('header', { className: CLS.embedBar, 'data-window-drag': true },
+            h('span', { className: CLS.embedName }, t('viewTitle')),
+            h(FrameState, { state, code, t }),
+            h(FrameBadge, { t }),
+            h('div', { className: CLS.embedActions },
+              canRetry ? accentButton({ size: 'sm', disabled: retrying, 'data-fishball-frame-retry': true, onClick: () => void retry() }, retrying ? t('frameRetrying') : t('embedRetry')) : null,
+              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: admission?.url === undefined, onClick: () => setGeneration((value) => value + 1) }, t('embedRefresh')))),
+          body)
+      }
+    }
+
     /**
      * The Fishball view (§7) inside the connector's frame (design §0.5 "The frame", D27): DSH's
      * main area where a session's conversation shows (the `main` slot, keyed by EMBED_UI.panelId).
@@ -962,6 +942,8 @@ window.__ModuleLoader__.load({
      * Nothing crosses the iframe: the view installs no `message` listener and acts on no
      * postMessage from the page (D27; the contract's former open-settings message is dropped).
      * Everything it shows comes from the connector's own state and routes.
+     * W3 fallback (U-SHELL): shown only without a usable `fishballChild` while the V2 connector
+     * service is there; it leaves with the V2 path in W4b (C-WIRE).
      */
     function makeFishballView(ctx, t) {
       const frameLang = frameLangStore(ctx.locale)
@@ -1047,27 +1029,14 @@ window.__ModuleLoader__.load({
         h('div', { className: CLS.row }, accentButton({ size: 'sm', onClick: open }, t('instanceOpenSettings'))))
     }
 
-    /** Which sidebar entry you chose; the panel row until the Host says otherwise. */
-    const sidebarEntryOf = (state) => state.preferences?.sidebarEntry ?? SIDEBAR_ENTRY.panel
-
     /**
-     * The Fishball row in DSH's sidebar panel list, while you keep it (Settings → Sidebar entry).
-     * DSH draws the row, its label and its selected highlight (`aria-current` while the view is
-     * open, cleared when you open a session), exactly as for Plugins and Tasks; the icon is the
-     * brand mark with its unread count.
+     * The Fishball row in DSH's sidebar panel list: embed-UI's one Fishball entry (R-UI-11). It no
+     * longer follows V2's Sidebar entry preference, because the brand it could fall back to is no
+     * longer overridden. DSH draws the row, its label and its selected highlight (`aria-current`
+     * while the view is open, cleared when you open a session), exactly as for Plugins and Tasks;
+     * the icon is the fish mark (the attention part's latch in it, when that part runs).
      */
-    function followSidebarEntry(ctx, Icon, t) {
-      let dispose
-      const update = () => {
-        const wanted = sidebarEntryOf(stateSource.get()) === SIDEBAR_ENTRY.panel
-        if (wanted === (dispose !== undefined)) return
-        if (!wanted) { dispose(); dispose = undefined; return }
-        dispose = ctx.slots.inject(SLOT.panelList, () => ctx.slots.register({ name: SLOT.panelList, id: EMBED_UI.panelId, order: EMBED_UI.panelOrder, locale: NS, label: () => t('viewTitle') }, Icon))
-      }
-      update()
-      const unsubscribe = stateSource.subscribe(update)
-      return () => { unsubscribe(); dispose?.(); dispose = undefined }
-    }
+    const registerSidebarEntry = (ctx, Icon, t) => ctx.slots.inject(SLOT.panelList, () => ctx.slots.register({ name: SLOT.panelList, id: EMBED_UI.panelId, order: EMBED_UI.panelOrder, locale: NS, label: () => t('viewTitle') }, Icon))
 
     /** One value components share and follow (dialog requests, the tab's open page); set() notifies them. */
     function valueStore(initial) {
@@ -1148,24 +1117,28 @@ window.__ModuleLoader__.load({
      * factory of this kit; client.js starts each result as a sub-plugin of the row.
      */
     exports.kit = Object.freeze({
-      NS, SLOT, API, STATUS, CLS, EMBED_UI, ROW_MARK, PILE_LIST, UNREAD_BADGE, MOTION_QUERY, SEAT, seats,
-      useFishball, send, valueStore, brandIconOf, attentionDot, unreadCount,
+      NS, SLOT, API, STATUS, CLS, EMBED_UI, ROW_MARK, UNREAD_BADGE, SEAT, seats,
+      useFishball, send, valueStore, brandIconOf, attentionDot, unreadCount, CHILD_UI,
     })
-    exports.name = PACKAGE_NAME
-    exports.inject = ['slots', 'locale', 'configForms']
-    exports.apply = function apply(ctx) {
+    exports.readAvailability = readAvailability
+    /**
+     * The shell as a client plugin for what is usable now (readAvailability). The connector's
+     * Plugins card follows its own row's settings namespace (configForms.whileServed), as in V2.
+     * @param available - `{page, connector, legacy}` from the host half.
+     */
+    exports.shellPlugin = (available) => ({ name: PACKAGE_NAME, inject: ['slots', 'locale', 'configForms'], apply: (ctx) => apply(ctx, available) })
+    function apply(ctx, available) {
       const t = ctx.locale.bind(NS)
       ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
       ctx.effect(mountStyles, 'fishball: styles')
-      const BrandName = makeBrandName(ctx, t)
-      ctx.effect(() => ctx.slots.inject(SLOT.mark, () => ctx.slots.inject(SLOT.name, function* () {
-        yield ctx.slots.register({ name: SLOT.mark, priority: BRAND_PRIORITY }, Mark)
-        yield ctx.slots.register({ name: SLOT.name, priority: BRAND_PRIORITY }, BrandName)
-      })), 'fishball: brand')
       // The Fishball view in DSH's main area, as Plugins and Tasks register theirs (§7). The key is
-      // registered for the plugin's life, so the brand button opens it even without the row.
-      ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.register({ name: SLOT.main, key: EMBED_UI.panelId, locale: NS }, makeFishballView(ctx, t))), 'fishball: main view')
-      ctx.effect(() => followSidebarEntry(ctx, Mark, t), 'fishball: sidebar row')
+      // registered for the plugin's life, as theirs are.
+      // The page and its sidebar entry by availability (UIM-EP-01): the locator's view, else (W3
+      // only) the V2 connector frame, else none. With a connector but no page, the fish row stays
+      // (R-UI-08: "its fish has no page to open"), so it registers the view's slot only with a page.
+      const View = available.page ? makeChildView(ctx, t) : available.legacy ? makeFishballView(ctx, t) : undefined
+      if (View !== undefined) ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.register({ name: SLOT.main, key: EMBED_UI.panelId, locale: NS }, View)), 'fishball: main view')
+      if (View !== undefined || available.connector) ctx.effect(() => registerSidebarEntry(ctx, Mark, t), 'fishball: sidebar row')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
         const Settings = makeSettingsPage(ctx, section, t)
