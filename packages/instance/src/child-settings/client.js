@@ -2,7 +2,7 @@
  * fishball-hosted-settings, browser half: the hosted-only sections of Fishball's slim settings
  * panel (R-HOST-11, TQ-R2; V3 task R-CORE). Owned by the instance and loaded only in a hosted
  * child; fishball-core never imports it. It registers through core's settings-section extension
- * point (`fishballSettingsSections`, ui/fishball-settings in fishball-core) and nowhere else, so
+ * point (`fishballSettingsSections`, fishball-core's client.settings.js) and nowhere else, so
  * without core's panel it has nowhere to appear and does nothing.
  *
  * The sections are the V2 panel's hosted parts, unchanged: the instance's status line and Restart,
@@ -24,7 +24,7 @@ window.__ModuleLoader__.load({
     const HOSTED = Object.freeze({
       id: 'fishball-hosted-settings',
       locale: 'fishball-hosted-settings',
-      // core's settings-section extension point (fishball-core ui/fishball-settings).
+      // core's settings-section extension point (fishball-core client.settings.js).
       sections: 'fishballSettingsSections',
       // Before the generic sections (they start at 100), in the V2 panel's order: the status line
       // and Restart, then the model-sync note, each its own panel row as in V2.

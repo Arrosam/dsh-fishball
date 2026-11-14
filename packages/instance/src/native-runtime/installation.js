@@ -1,10 +1,11 @@
 import { readFile, realpath, lstat, chmod, readdir, mkdir } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { pathToFileURL } from 'node:url'
 import path from 'node:path'
-import { RUNTIME, NATIVE_WEB, HOST_LAUNCH, fail, NativeRuntimeError } from './constants.js'
+import { RUNTIME, PLACEMENT, HOST_LAUNCH, fail, NativeRuntimeError } from './constants.js'
 import { privateDirectory, writePrivate, exists, snapshotPath } from './files.js'
 import { inside } from 'fishball-shared/files'
+import { placeBundles, snapshotLifecycle, writeProfileBundles } from './placement.js'
 
 export async function resolveInstallation(installAnchor) {
   if (typeof installAnchor !== 'string' || !path.isAbsolute(installAnchor)) fail('INVALID_INSTALLATION')
@@ -121,9 +122,7 @@ async function validateStartupFiles(paths) {
 /**
  * The attached profile was first created with the Web bundle, and initProfile never rewrites an
  * existing manifest. Restore the native Web bundle after base; every bundle installed into the
- * child profile afterwards is kept in order. The replaced manifest's exact bytes are kept first
- * under a new private name (exclusive create, so no earlier backup is ever overwritten); a backup
- * that cannot be written stops the start before the manifest changes.
+ * child profile afterwards is kept in order (placement.js writeProfileBundles keeps a backup).
  */
 async function nativeProfileBundles(boot, profileDir) {
   const manifest = boot.readProfileManifest(RUNTIME.profileName, profileDir)
@@ -132,10 +131,7 @@ async function nativeProfileBundles(boot, profileDir) {
   const bundles = [...RUNTIME.profile.bundles, ...retained]
   const unchanged = current.length === bundles.length && current.every((name, index) => name === bundles[index])
   if (unchanged) return
-  const file = path.join(profileDir, RUNTIME.profile.manifest)
-  const stamp = new Date().toISOString().replace(/[-:.]/g, '')
-  await writePrivate(file + RUNTIME.profile.manifestBackupInfix + stamp, await readFile(file), true)
-  boot.writeProfileBundles(profileDir, manifest, bundles)
+  await writeProfileBundles(boot, profileDir, manifest, bundles)
 }
 
 export async function initializeProfile(paths, installation, preflight, mainWorkspaces) {
@@ -149,9 +145,13 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   boot.initProfile(paths.profile, RUNTIME.profile.bundles)
   if (fresh) await privateTree(paths.profile)
   await nativeProfileBundles(boot, paths.profile)
+  // The plugin set and fishball-hosted-settings, placed before the profile loads (design §8.1).
+  await placeBundles(paths, boot)
   await validateStartupFiles(paths)
   const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
-  if (profile.skippedBundles.length) fail('PROFILE_INCOMPATIBLE', 'Private profile contains missing or incompatible bundles.')
+  // Every enabled bundle DSH skipped blocks the start, named with DSH's reason (R-BND-03); the
+  // host's launch detail bounds and redacts that message before any page shows it.
+  if (profile.skippedBundles.length) fail(PLACEMENT.code.incompatible, PLACEMENT.incompatible(profile.skippedBundles))
   const resolution = await boot.createRuntimeResolution({ installAnchor: installation.installAnchor, profile, home: paths.home })
   const result = await preflight({ ...args, resolution })
   const homePatches = boot.loadOptionalPatches('fishball', path.join(paths.home, boot.PROFILE_PATCH_FILENAME)) ?? []
@@ -159,9 +159,12 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   return { warnings: result.warnings ?? [], entries }
 }
 
-/** Snapshot only owned integration code, never the main profile or its dependency graph. */
+/**
+ * Snapshot only the instance's own lifecycle code, never the main profile or its dependency graph.
+ * The plugin set, fishball-hosted-settings and their libraries are placed bundles now
+ * (placement.js), which the lifecycle modules find through the profile's node_modules.
+ */
 export async function copyChildCode(paths, record) {
-  const sourceRoot = fileURLToPath(new URL('../../', import.meta.url))
   // Native package interception covers the profile, not sibling launch metadata directories.
   // Direct placement keeps every existing ancestor within the completed profile preflight.
   const destination = snapshotPath(paths, record.instanceId)
@@ -170,77 +173,5 @@ export async function copyChildCode(paths, record) {
   await mkdir(destination, { mode: RUNTIME.privateDirectoryMode })
   await writePrivate(path.join(destination, RUNTIME.marker), record, true)
   await writePrivate(path.join(destination, 'package.json'), { type: 'module', private: true }, true)
-  // Lifecycle modules are JavaScript; the slim app tree also ships its UI assets, so that copy
-  // keeps every file and its bytes unchanged: decoding as UTF-8 would corrupt PNG, font and other
-  // binary assets (§2.4).
-  const javascript = file => file.endsWith('.js')
-  const everyFile = () => true
-  async function copy(source, target, keep) {
-    const info = await lstat(source)
-    if (info.isSymbolicLink()) fail('UNSAFE_INTEGRATION_SOURCE')
-    if (info.isDirectory()) {
-      await mkdir(target, { mode: RUNTIME.privateDirectoryMode })
-      for (const entry of await readdir(source)) await copy(path.join(source, entry), path.join(target, entry), keep)
-    } else if (keep(source)) await writePrivate(target, await readFile(source), true)
-  }
-  await mkdir(path.join(destination, 'src'), { mode: RUNTIME.privateDirectoryMode })
-  await copy(path.join(sourceRoot, 'native-child.js'), path.join(destination, 'native-child.js'), javascript)
-  await copy(path.join(sourceRoot, NATIVE_WEB.adapterModule), path.join(destination, NATIVE_WEB.adapterModule), javascript)
-  // fishball-core (V3 R-CORE): the slim child, persona, private Skills tool and the fishball-ui
-  // page packages, copied as files from the sibling workspace folder, resolved by path and never
-  // imported (R-BND-01; RUNTIME.corePackage says why its manifest is left out). Every file keeps
-  // its bytes: the slim app tree and the page packages ship HTML, CSS and their manifests, and the
-  // ui packages keep their named manifest and ./client export together, because native client
-  // modules discovers every enabled client row itself.
-  const core = RUNTIME.corePackage
-  const coreSource = path.join(sourceRoot, ...core.source)
-  // The sibling folder exists in the repository checkout (and a linked install) only: a packed
-  // fishball-instance carries no fishball-core until I-PLACE ships it under bundled/. Refuse with a
-  // typed code instead of a raw filesystem error.
-  if (!(await exists(coreSource))?.isDirectory()) fail(core.missingCode)
-  await mkdir(path.join(destination, core.target), { mode: RUNTIME.privateDirectoryMode })
-  for (const directory of core.directories) await copy(path.join(coreSource, directory), path.join(destination, core.target, directory), everyFile)
-  // fishball-hosted-settings (R-HOST-11): the instance's hosted-only settings sections with their
-  // manifest and their status-line chunk client.status.js, which the folder already holds (V3
-  // R-EMBED: the main card's client.js is no longer copied in; it is embed-UI's now).
-  const hostedSettings = path.join(...NATIVE_WEB.hostedSettings)
-  await copy(path.join(sourceRoot, hostedSettings), path.join(destination, hostedSettings), everyFile)
-  // The settings row's host half reads the public status shape and route tables of these main modules.
-  await copy(path.join(sourceRoot, 'src', 'native-web.js'), path.join(destination, 'src', 'native-web.js'), javascript)
-  await mkdir(path.join(destination, 'src', 'host'), { mode: RUNTIME.privateDirectoryMode })
-  // native-web.js publishes a failed start's detail through main's sanitizer and its JSON helper.
-  for (const module of ['binding.js', 'launch-detail.js', 'json-string-spans.js']) await copy(path.join(sourceRoot, 'src', 'host', module), path.join(destination, 'src', 'host', module), javascript)
-  await copy(path.join(sourceRoot, 'src', 'native-runtime'), path.join(destination, 'src', 'native-runtime'), javascript)
-  // The instance's own child-side modules the hosted settings and lifecycle import: the contract
-  // shim, the settings relay and src/slim/host.
-  await copy(path.join(sourceRoot, 'src', 'slim'), path.join(destination, 'src', 'slim'), javascript)
-  // M1: the instance's contract shim and fishball-core's modules import `fishball-connector/contract`. Node finds
-  // it in the snapshot's own node_modules, inside the private profile the preflight already
-  // accepted (DSH routes a bare name to a local node_modules under the profile natively). Only the
-  // contract directory and a manifest with that one export are copied, never the rest of the
-  // connector, so the child sees what a third-party instance sees. The source is the installed
-  // export, resolved by the same name the shims use (JavaScript only, like the lifecycle code).
-  const contract = RUNTIME.contractPackage
-  const contractEntry = fileURLToPath(import.meta.resolve(contract.name + '/' + contract.directory))
-  const contractTarget = path.join(destination, contract.modules, contract.name)
-  await mkdir(path.join(destination, contract.modules), { mode: RUNTIME.privateDirectoryMode })
-  await mkdir(contractTarget, { mode: RUNTIME.privateDirectoryMode })
-  const contractExport = './' + contract.directory
-  await writePrivate(path.join(contractTarget, contract.manifest), { name: contract.name, type: 'module', private: true, exports: { [contractExport]: contractExport + '/' + path.basename(contractEntry) } }, true)
-  await copy(path.dirname(contractEntry), path.join(contractTarget, contract.directory), javascript)
-  // fishball-shared (R-ARCH-08): the admin protocol, the provider-sync engine, codec and pi-ai host
-  // adapter, and the file and redaction helpers, which the copied core and lifecycle modules
-  // import by name. It is placed beside the contract, as files: its manifest and its top-level
-  // modules, never anything it might have installed itself. The source is the instance's own
-  // dependency, resolved by the same name the copied modules use.
-  const shared = RUNTIME.sharedPackage
-  const sharedSource = path.dirname(fileURLToPath(import.meta.resolve(shared.name + '/' + shared.manifest)))
-  const sharedTarget = path.join(destination, shared.modules, shared.name)
-  await mkdir(path.join(destination, shared.modules), { recursive: true, mode: RUNTIME.privateDirectoryMode })
-  await mkdir(sharedTarget, { mode: RUNTIME.privateDirectoryMode })
-  const sharedFile = file => path.basename(file) === shared.manifest || file.endsWith(shared.moduleSuffix)
-  for (const entry of await readdir(sharedSource)) {
-    if (sharedFile(entry)) await copy(path.join(sharedSource, entry), path.join(sharedTarget, entry), sharedFile)
-  }
-  return path.join(destination, 'native-child.js')
+  return snapshotLifecycle(destination)
 }

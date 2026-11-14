@@ -1,6 +1,10 @@
 /**
  * Fishball's generic slim settings panel, browser half (SET, docs/planning/v2-set.md; V3
- * R-HOST-11). Part of fishball-core's `fishball-ui` component.
+ * R-HOST-11). Part of fishball-core's `fishball-ui` component: a package-local chunk of core's own
+ * client (`client.js` loads it and starts it as a sub-plugin), so the panel ships with core and
+ * shows the same in a hosted child and in a standalone DSH (HOST-UC-08 A3). It was the separate
+ * `ui/fishball-settings` package until I-PLACE; a chunk, not a folder, because DSH's client
+ * modules serve only `client.<name>.js` files beside `client.js` (CLIENT_CHUNK, both SDKs).
  *
  * Only what DSH's own pages cannot do is here: one Read Only line and links to the native Settings
  * and Plugins pages (models, effort, plugins and plugin settings are edited there).
@@ -17,7 +21,9 @@
  * panel works unchanged with no section but its own, and a withdrawn section leaves no trace.
  */
 window.__ModuleLoader__.load({
-  id: 'fishball-settings',
+  // A chunk of core's client (client.js `CORE.settings`): the owner id and this file's name.
+  id: 'fishball-core',
+  chunk: 'client.settings.js',
   factory(require) {
     const React = require('react')
     const { createPortal } = require('react-dom')
@@ -264,6 +270,8 @@ window.__ModuleLoader__.load({
       ctx.effect(() => openFromContinuation(ctx), 'fishball settings: view continuation')
     }
 
-    return { name: PANEL.id, inject: ['slots', 'layout', 'locale'], apply }
+    // The panel keeps its V2 plugin name, slot key, locale namespace and data attributes, so the
+    // page, its readers and stored panel selections see it unchanged after the move.
+    return { settingsPlugin: Object.freeze({ name: PANEL.id, inject: ['slots', 'layout', 'locale'], apply }) }
   },
 })
