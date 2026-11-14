@@ -10,8 +10,9 @@ const isCoreTool = (name) => TOOL_NAMES.includes(name)
 /** The model-facing name of one listed tool (MODEL_NAME), before the uniqueness check. */
 export const modelNameOf = (name) => (isCoreTool(name) ? name : name.split(MODEL_NAME.dot).join(MODEL_NAME.separator))
 
-/** Why a model-facing name cannot be offered, or `undefined` when it can. */
-function unusable(modelName, taken) {
+/** Why a listed tool cannot be offered under `modelName`, or `undefined` when it can. */
+function unusable(name, modelName, taken) {
+  if (!isCoreTool(name) && !name.includes(MODEL_NAME.dot)) return LOG.reason.notNamespaced
   if (modelName.startsWith(MODEL_NAME.refusedPrefix)) return LOG.reason.mcpPrefix
   if (modelName.length > MODEL_NAME.maxChars || !MODEL_NAME.allowed.test(modelName)) return LOG.reason.invalid
   return taken.has(modelName) ? LOG.reason.duplicate : undefined
@@ -39,7 +40,7 @@ export function offerOf(tools) {
     const { name } = tool
     if (typeof name !== 'string' || FACADE.withheld.includes(name)) continue
     const modelName = modelNameOf(name)
-    const reason = unusable(modelName, taken)
+    const reason = unusable(name, modelName, taken)
     if (reason !== undefined) { refused.push(Object.freeze({ name, modelName, reason })); continue }
     taken.add(modelName)
     offered.push(Object.freeze({ name, modelName, tool, contributed: !isCoreTool(name) }))
