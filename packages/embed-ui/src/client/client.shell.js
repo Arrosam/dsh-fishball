@@ -140,8 +140,7 @@ window.__ModuleLoader__.load({
     /**
      * The V3 frame (U-SHELL; design §4.1, §4.2; R-UI-02, R-UI-03): the instance locator
      * `fishballChild` as embed-UI's host half re-serves it. The host half's routes come from its
-     * `services` answer (`routes`, page-relative), so only that one path is kept here; it is
-     * src/host/constants.js ROUTE.services, which this classic script cannot import.
+     * `services` answer (`routes`, page-relative; client.js reads it), so none is kept here.
      * - The frame's `src` is only ever `admit`'s one-time URL, asked for afresh for each frame
      *   document (first open, a language change, Refresh, or a not-ready state the 1 s status poll
      *   saw; a restart faster than the poll keeps the frame, which then reloads by Refresh); it is
@@ -149,17 +148,14 @@ window.__ModuleLoader__.load({
      *   into its own cookie, S4).
      * - `hostnameRefused` is K3's AdmitErrorCode: the page was not opened under a loopback name, so
      *   the view shows the refusal text and no frame (UIM-EP-02 row 4).
-     * - `retryStates`/`retryCodes`: where K3 `retry()` acts (decided 1 = A: a `failed` child, or
-     *   `token-revoked`), so the view offers Retry only there.
+     * - Retry is offered whenever the locator is there (R-UI-03: "the child status and Retry
+     *   outside the frame"); K3 `retry()` acts only for a `failed` child or `token-revoked` and
+     *   changes nothing otherwise (decided 1 = A), so pressing it in any other state is safe.
      */
     const CHILD_UI = Object.freeze({
-      servicesPath: 'api/fishball-embed-ui/services',
       readyState: 'ready',
       hostnameRefused: 'hostname-refused',
-      retryStates: Object.freeze(['failed']),
-      retryCodes: Object.freeze(['token-revoked']),
       /** What the host half reports usable (src/host/services.js availability); all false when unreadable. */
-      none: Object.freeze({ page: false, handover: false, tools: false, legacy: false, routes: Object.freeze({}) }),
     })
     /**
      * PROPOSED wording (W3 brief P-3): new copy with no text in the spec, except `hostnameRefused`,
@@ -897,13 +893,6 @@ window.__ModuleLoader__.load({
         body)
     }
 
-    /**
-     * What the host half reports usable (src/host/services.js): read once when the shell starts.
-     * The row registers by it (UIM-EP-01); a service that comes or goes later shows after a reload,
-     * as V2's instance card did. An unreadable answer is "nothing", so the shell then registers
-     * nothing that needs a service.
-     */
-    const readAvailability = async () => (await readJson(CHILD_UI.servicesPath, isHostAnswer)) ?? CHILD_UI.none
 
     /**
      * The frame's one-time address for `{view, lang}` while the child is ready: asked of the admit
@@ -961,7 +950,7 @@ window.__ModuleLoader__.load({
                 : h('iframe', { key: `${generation}:${admission.url}`, className: CLS.embedFrame, src: admission.url, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
         return h(FrameChrome, {
           t, page, state, code, retry,
-          canRetry: CHILD_UI.retryStates.includes(state) || CHILD_UI.retryCodes.includes(code),
+          canRetry: true,
           canRefresh: admission !== undefined && !hostnameRefused,
           onRefresh: () => setGeneration((value) => value + 1),
           actions: null, body,
@@ -1146,11 +1135,10 @@ window.__ModuleLoader__.load({
       NS, SLOT, API, STATUS, CLS, EMBED_UI, ROW_MARK, UNREAD_BADGE, SEAT, seats,
       useFishball, send, valueStore, brandIconOf, attentionDot, unreadCount,
     })
-    exports.readAvailability = readAvailability
     /**
      * The shell as a client plugin for what is usable now (readAvailability). The connector's
      * Plugins card follows its own row's settings namespace (configForms.whileServed), as in V2.
-     * @param available - the host half's answer (readAvailability): its flags and its `routes`.
+     * @param available - the host half's answer (client.js readAvailability): its flags and `routes`.
      */
     exports.shellPlugin = (available) => ({ name: PACKAGE_NAME, inject: ['slots', 'locale', 'configForms'], apply: (ctx) => apply(ctx, available) })
     function apply(ctx, available) {
