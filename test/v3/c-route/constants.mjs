@@ -1,0 +1,162 @@
+/**
+ * Vocabulary for the C-ROUTE cases (.runtime/reports/v3-w3-briefs.md "C-ROUTE test brief";
+ * v3-tasks.md row C-ROUTE): EVT-EP-01, EVT-EP-04 (end to end), EVT-DT-01, WATCH-UC-01 (main, A1,
+ * A2), WATCH-UC-02, WATCH-EP-01, WATCH-ST-01 rows 1–6, HAND-EP-01, HAND-DT-01, HAND-DT-02,
+ * HAND-ST-01, HAND-UC-02 (service part), PLAT-UC-03, and the K1c / K3 rules no case file numbers
+ * (the ROUTE-* ids, cases.mjs).
+ *
+ * Every product value comes from K1 (`fishball-connector/mcp-schema`: event types, refusal codes,
+ * MANAGED_REFUSAL, QUEUE, RETIREMENT_REASON, OFFER_ID, CONNECTED, TOOL_NAMES), K2
+ * (`fishball-connector/tools`: `no-fishball`, the namespace separator) or K3
+ * (`host-services/handover.d.ts`, types only, so its codes are restated in HANDOVER below and
+ * checked against the declaration text). Nothing comes from `packages/connector/src/routing/` or
+ * `src/handover/`. The rest is fixture data and harness timing, which are not product values.
+ */
+import fs from 'node:fs'
+import path from 'node:path'
+import {
+  CONNECTED, CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, ENTRY_STATUS, EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, OFFER_ID, OFFER_TYPES, PATHS,
+  QUEUE, REFUSAL, REQUEST_GATE, RETIREMENT_REASON, TOOL_NAMES, formatOfferId,
+} from '../../../packages/connector/mcp-schema/index.js'
+import { EMIT_REFUSAL, NAMESPACE } from '../../../packages/connector/tools/index.js'
+import { REPO } from '../../support/constants.mjs'
+
+export {
+  CONNECTED, CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, ENTRY_STATUS, EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, OFFER_ID, OFFER_TYPES, PATHS,
+  QUEUE, REFUSAL, REQUEST_GATE, RETIREMENT_REASON, TOOL_NAMES, formatOfferId,
+}
+
+/** K1 `RevocationKind` (index.d.ts, types only): the values FakeTokens fires and the end-to-end row passes C-HTTP. */
+export const REVOCATION = Object.freeze({ disabled: 'disabled', deleted: 'deleted' })
+
+/**
+ * C-ROUTE's "Owns" folders and the assumed entry (subject.mjs states the one assumed shape).
+ * FBTEST_C_ROUTE_ENTRY moves the entry (e.g. to the dev checkout).
+ */
+export const SUBJECT = Object.freeze({
+  entry: process.env.FBTEST_C_ROUTE_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'routing', 'index.js'),
+  open: 'openRouting',
+  /** Members of the opened routing object the cases drive (subject.mjs). */
+  members: Object.freeze(['router', 'managed', 'handover', 'provide', 'messageFishball', 'askFishball', 'offer']),
+  /** C-MAILBOX's entry and its two composition functions (as test/v3/c-mailbox/subject.mjs binds them). */
+  mailboxEntry: process.env.FBTEST_C_MAILBOX_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'mailbox', 'index.js'),
+  mailboxOpen: 'openMailboxTables',
+  mailboxCreate: 'createMailbox',
+})
+
+/** K1c `ManagedState` members (index.d.ts). */
+export const MANAGED_STATE_METHODS = Object.freeze(['managerOf', 'managed', 'manage', 'release', 'onChange'])
+
+/**
+ * K3 `fishballConnectorHandover` (host-services/handover.d.ts; types only). `codes` restates the
+ * refusal codes; `handoverCodes()` below reads them back from the declaration so a K3 amendment
+ * fails the row instead of drifting.
+ */
+const HANDOVER_DTS = path.join(REPO, 'packages', 'connector', 'host-services', 'handover.d.ts')
+export const HANDOVER = Object.freeze({
+  service: 'fishballConnectorHandover',
+  apiVersion: 1,
+  /** Exactly these members (HAND-EP-01 row 5: no session read, approval or answer member). */
+  members: Object.freeze(['apiVersion', 'managed', 'principals', 'onChange', 'handOver', 'takeBack']),
+  principalFields: Object.freeze(['key', 'name', 'id', 'online', 'enabled', 'paired', 'designated']),
+  refFields: Object.freeze(['key', 'name', 'id']),
+  codes: Object.freeze({ unknownSession: 'unknown-session', conflict: 'conflict', noFishball: EMIT_REFUSAL.noFishball, notManaged: MANAGED_REFUSAL.notManaged }),
+  /** The `note` an event carries when the call omits it (K3 README "note"). */
+  omittedNote: '',
+})
+/** The string literals of a K3 refusal-code union (`HandOverRefusalCode`, `TakeBackRefusalCode`). */
+export function handoverCodes(typeName) {
+  const m = new RegExp(String.raw`export type ${typeName}\s*=([^\n]*)`).exec(fs.readFileSync(HANDOVER_DTS, 'utf8'))
+  if (!m) throw new Error('handover.d.ts declares no ' + typeName)
+  return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1])
+}
+
+/** K1 `NoRecipient.fallback` values (index.d.ts, types only) and the type each applies to. */
+export const FALLBACK = Object.freeze({
+  toUser: 'to-user',
+  queue: 'queue',
+  unavailable: 'unavailable',
+  noFishball: EMIT_REFUSAL.noFishball,
+  dropped: 'dropped',
+})
+
+/**
+ * Fishball's answers to this session's questions (2026-11-14, decided by Fishball, not the user),
+ * named where a row relies on one.
+ */
+export const RELAYED = Object.freeze({
+  revocation: 'Fishball 2026-11-14 #1: in W3 C-ROUTE ends management on TokenRegistry.onRevoked',
+  offerLedger: 'Fishball 2026-11-14 #2: C-ROUTE commits offers itself and keeps their live ledger',
+  roomSignal: 'Fishball 2026-11-14 #3: the mailbox port signals freed room (onAcked)',
+  askManagedOffline: 'Fishball 2026-11-14 #4: an ask from a session managed by an offline P waits in P\'s mailbox',
+  noticeNoD: 'Fishball 2026-11-14 #5: a notice with no D goes to the background log only',
+  offersUnmanaged: 'Fishball 2026-11-14 #5: question / plan-review of an unmanaged session go to the user',
+  disabledD: 'Fishball 2026-11-14 #6: a paired but disabled designated entry counts as no D',
+  sessionSource: 'Fishball 2026-11-14 #7: C-ROUTE takes an injected session source; binding it to DSH is C-WIRE\'s',
+})
+
+/** Fixture data: keys, ids, names and texts of the case tables; not product values. */
+export const FIXTURE = Object.freeze({
+  /** The same key formulas as test/v3/c-http (FIXTURE.entry, FIXTURE.principal), so the end-to-end world shares them. */
+  entry: (id) => `fbtest-entry-${id}`,
+  principal: (id) => `fbtest-principal-${id}`,
+  label: (id) => `fbtest label ${id}`,
+  ref: (id) => `fbtest-ref-${id}`,
+  /** Ids of the case tables: P, Q, D (designated), HF ("Navigator"), the nameless `agent-x`. */
+  ids: Object.freeze({ p: 'agent-p', q: 'agent-q', d: 'fishball-d', hf: 'navigator', x: 'agent-x' }),
+  names: Object.freeze({ hf: 'Navigator', p: 'Planner', renamed: 'Indexer' }),
+  /** EVT-EP-04 row 3: two ids that differ only in case (ids are case-sensitive, R-ID-02). */
+  caseIds: Object.freeze({ lower: 'agent', upper: 'Agent' }),
+  sessions: Object.freeze({ s1: 'fbtest-s1', s2: 'fbtest-s2', s3: 'fbtest-s3' }),
+  unknownSession: 'fbtest-no-such-session',
+  unknownKey: 'fbtest-no-such-principal',
+  note: 'fbtest hand-over note',
+  text: (n) => `FBTEST-MSG-${n}`,
+  question: 'FBTEST-ASK: may I go on?',
+  namespace: 'fbtest',
+  contributedEvent: 'ping',
+  /** The injected clock's reference instant (README "clock"). */
+  epochMs: Date.UTC(2026, 10, 14),
+  /** PLAT-UC-03 postcondition / PLAT-UC-02 E1's span: 48 h on the fake clock. */
+  longWaitMs: 48 * 3600 * 1000,
+  /** A small live `maxQueuedInputs` for the queue rows (the setting is live, K1c-3). */
+  smallQueue: 3,
+  /** EVT-EP-04 row 6: "100 events to P in a burst" (the case's own number). */
+  burst: 100,
+  tempPrefix: 'fbtest-c-route-',
+  /** The secret value of a token entry: never in any answer (HAND-EP-01 row 5). */
+  tokenValue: (id) => `fbtest-token-value-${id}-0123456789abcdef`,
+  /** An offer descriptor's approval id prefix (OFFER_ID: `[A-Za-z0-9_-]`) and its tool name. */
+  offerPrefix: 'fbtest-offer-',
+  toolName: 'fbtest_tool',
+  /** The entry generation FakeTokens starts at; a revocation is the next one. */
+  generation: 1,
+  /** A hand-over name in a tool name or path (HAND-EP-01 rows 2–3). */
+  handoverToolName: /hand[-_]?over|take[-_]?back/i,
+  listenerError: 'fbtest listener failure',
+})
+
+/** A contributor event type of the fixture namespace (`contributed:<ns>.<event>`, K2 separator). */
+export const CONTRIBUTED = CONTRIBUTED_TYPE_PREFIX + FIXTURE.namespace + NAMESPACE.separator + FIXTURE.contributedEvent
+
+/** Harness timing only. */
+export const WAIT = Object.freeze({
+  testMs: 120000,
+  /** How long a produced event may take to reach a mailbox. */
+  eventMs: 5000,
+  /** How long a mailbox that must get nothing is watched. */
+  quietMs: 300,
+  pollMs: 20,
+})
+
+/** Owners of rows C-ROUTE cannot check alone (v3-tasks.md W3–W4; the brief's "Not yours"). */
+export const LATER = Object.freeze({
+  wire: 'C-WIRE (binding the session source to a real DSH session controller on both SDKs; Fishball 2026-11-14 #7)',
+  wireTools: 'C-WIRE (the main-session tools message_fishball / ask_fishball and the approval hook on a real DSH)',
+  wireRoutes: 'C-WIRE (the connector row: nothing but its listed routes is served; the service is a Cordis service of this process only)',
+  wireToUser: 'C-WIRE (DSH approval binding: a retired or unmanaged offer is answered by the user in the session)',
+  toolsAnswer: 'C-TOOLS (approval_answer on the ask offer answers the waiting ask_fishball)',
+  succeed: 'C-SUCCEED (Q24 succession moves management and pending events, R-HOST-09)',
+  revokeNote: 'C-REVOKE (the one system note in the session and the live offers to the user, R-ROUTE-06, R-TOK-05)',
+  watchdog: 'WD-ROUTE (inside the Fishball DSH Watchdog receives no turn-finished / state; the connector sees one principal)',
+})
