@@ -87,6 +87,7 @@ const newEntryKey = () => randomBytes(ENTRY_KEY.bytes).toString(ENTRY_KEY.encodi
 const labelsText = (labels) => labels.join(LOG.labelSeparator)
 const bumped = (generation) => generation + GENERATION.step
 const publicList = (records) => records.filter((record) => !record.removed).map(({ label, enabled, ref }) => ({ label, enabled, ref }))
+const sameItems = (a, b) => JSON.stringify(itemsOf(a)) === JSON.stringify(itemsOf(b))
 
 /**
  * @param {object} options
@@ -95,7 +96,8 @@ const publicList = (records) => records.filter((record) => !record.removed).map(
  * @param {(previous: {label: string, enabled: boolean, ref: string}[]) => Promise<void>} [options.restoreTokens]
  *   writes the previous list back to the settings after a refused save (C-WIRE owns the document).
  *   It runs inside the registry's sync queue, so it must not wait for the `apply` that its own
- *   write's `settings/document-updated` starts: that `apply` is queued behind it.
+ *   write's `settings/document-updated` starts: that `apply` is queued behind it. That `apply`
+ *   (the restored list, the default reason) is not counted as the user saving again.
  */
 export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   const credentials = ctx.credentials
@@ -107,6 +109,8 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   let live = []
   /** The list as last applied, for `refresh()` and for a restore. */
   let applied
+  /** The list a refusal wrote back, until the settings sync its write starts arrives (see `awaitsSave`). */
+  let restored
   /** Records repaired at open (two for one ref): announced `deleted` by the first sync. */
   let repaired = []
   const listeners = new Set()
@@ -213,11 +217,13 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
    * for as R-TOK-08 says. The wait is recorded as the record's `awaitSave`, so a restart (whose
    * start sync sees no value, and no earlier one) keeps waiting. A save ends it even while the
    * value cannot be read: the user did save, and the read failing is not a reason to wait longer.
-   * A refused save counts too (the user's answer 2026-11-14): the user did press Save, and the
-   * previous list that `restoreTokens` writes back arrives as a settings sync that ends the wait.
+   * Only an accepted save ends it (the user's final answer 2026-11-14, superseding the first): a
+   * refused save changes nothing, and neither does the settings sync that `restoreTokens`' write
+   * of the previous list starts, which `sync` recognises by that list and does not count as a save.
+   * @param {boolean} accepted - this sync is a settings save the user made that was not refused.
    */
-  function awaitsSave({ record, fingerprint, unreadable }, reason) {
-    if (reason === SYNC_REASON.settings) return false
+  function awaitsSave({ record, fingerprint, unreadable }, accepted) {
+    if (accepted) return false
     if (unreadable) return record?.awaitSave === true
     if (fingerprint !== null) return false
     return record?.awaitSave === true || (record !== undefined && record.fingerprint !== null)
@@ -236,9 +242,9 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   }
 
   /** Phase 2 for one item: generate if needed, then `{next, status, kind}`: its next record, K1 status and revocation, if any. */
-  async function commitOne(state, reason) {
+  async function commitOne(state, accepted) {
     const { item, record, unreadable } = state
-    const waiting = awaitsSave(state, reason)
+    const waiting = awaitsSave(state, accepted)
     const generatedValue = (await mayGenerate(state, waiting)) ? await generateFor(item) : undefined
     const value = generatedValue ?? state.value
     // An unreadable value keeps what the record knew: it is unknown, not changed (see the header).
@@ -327,7 +333,11 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   /** A refusal: nothing changes, and a refused save is written back (R-TOK-08). Labels only. */
   async function refuse(code, groups) {
     if (restoreTokens !== undefined) {
-      try { await restoreTokens(applied ?? publicList([...records.values()])) } catch (error) { logger.warn(LOG.restoreFailed, diagnosticOf(error)) }
+      const previous = applied ?? publicList([...records.values()])
+      try {
+        await restoreTokens(previous)
+        restored = previous
+      } catch (error) { logger.warn(LOG.restoreFailed, diagnosticOf(error)) }
     }
     return Object.freeze({ ok: false, code, labels: Object.freeze(groups.map((group) => Object.freeze([...group]))) })
   }
@@ -335,6 +345,11 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   async function sync(tokens, reason) {
     const all = itemsOf(tokens)
     const saved = reason === SYNC_REASON.settings
+    // The first settings sync after a restore is that restore's own write when it holds the
+    // restored list: it is not the user saving again (question 5 = B). Any settings sync ends the
+    // watch, so a lost write-back event costs at most one save of that same list.
+    const echo = saved && restored !== undefined && sameItems(all, restored)
+    if (saved) restored = undefined
     const refClashes = refClashesOf(all)
     const refLabels = refClashes.map((group) => group.map((item) => item.label))
     for (const labels of refLabels) logger.warn(LOG.refDuplicate, labelsText(labels), saved ? LOG.refDuplicateRefused : LOG.refDuplicateLeftOut)
@@ -356,7 +371,7 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
     const duplicates = new Set(groups.flat())
 
     const commits = []
-    for (const state of reads) commits.push({ state, ...(await commitOne(state, reason)) })
+    for (const state of reads) commits.push({ state, ...(await commitOne(state, saved && !echo)) })
     const kept = new Set(commits.map(({ next }) => next.entryKey))
     const deleted = [...records.values()].filter((record) => !record.removed && !kept.has(record.entryKey) && !clashing.has(record.ref))
       .map((record) => ({ ...record, generation: bumped(record.generation), removed: true }))
