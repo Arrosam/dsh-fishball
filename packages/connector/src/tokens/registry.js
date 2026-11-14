@@ -213,6 +213,8 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
    * for as R-TOK-08 says. The wait is recorded as the record's `awaitSave`, so a restart (whose
    * start sync sees no value, and no earlier one) keeps waiting. A save ends it even while the
    * value cannot be read: the user did save, and the read failing is not a reason to wait longer.
+   * A refused save counts too (the user's answer 2026-11-14): the user did press Save, and the
+   * previous list that `restoreTokens` writes back arrives as a settings sync that ends the wait.
    */
   function awaitsSave({ record, fingerprint, unreadable }, reason) {
     if (reason === SYNC_REASON.settings) return false
