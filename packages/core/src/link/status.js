@@ -6,7 +6,7 @@
  * | --- | --- | --- | --- |
  * | 1 | target blank | `target-unset` | `null` |
  * | 1a | target URL refused by core (REM-EP-01 rows 6–8) | `target-unset` | the refusal |
- * | 3 | no token value (K3: a reference with no value is `target-unset`, PROPOSED) | `target-unset` | `null` |
+ * | 3 | no token value (K3: a reference with no value is `target-unset`) | `target-unset` | `null` |
  * | 2 | no answer, or any other failure | `target-unreachable` | `TARGET_UNREACHABLE` |
  * | 4 | the target refused the credential | `token-refused` | `TOKEN_REFUSED` |
  * | 5 | connected (listen stream open) | `connected` | `null` |
@@ -18,8 +18,8 @@
  * decisions, 2026-11-14). Rule 4 is decided from what the SDK threw, never from an earlier 401
  * alone: a 401 challenge precedes every first token request, so it says nothing about the outcome.
  */
-import { HTTP_STATUS } from './schema.js'
-import { REFUSED_OAUTH_ERRORS, TARGET_CODE, TARGET_STATE } from './constants.js'
+import { HTTP_STATUS, TARGET_CODE, TARGET_STATE } from './schema.js'
+import { REFUSED_OAUTH_ERRORS } from './constants.js'
 
 /** The link's fetch guard refused a URL outside the target origin; it never left the process. */
 export class OffTargetRequest extends Error {}

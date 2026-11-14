@@ -612,6 +612,7 @@ export declare const HTTP_REFUSAL: { readonly insecureListener: "insecure-listen
 export declare const HTTP_STATUS: { readonly ok: 200; readonly seeOther: 303; readonly badRequest: 400; readonly unauthorized: 401; readonly forbidden: 403; readonly notFound: 404; readonly methodNotAllowed: 405; readonly payloadTooLarge: 413; readonly tooManyRequests: 429; readonly internalServerError: 500; readonly serviceUnavailable: 503 }
 export declare const ID_GRAMMAR: { readonly pattern: RegExp }
 export declare const ID_REFUSAL: { readonly idInvalid: "id-invalid" }
+export declare const LINK_REFUSAL: { readonly disconnected: "disconnected" }
 export declare const OAUTH_METADATA: {
   readonly protectedResource: { readonly bearer_methods_supported: readonly ["header"]; readonly scopes_supported: readonly ["fishball"] }
   readonly authorizationServer: {
@@ -671,6 +672,8 @@ export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.2.0
 export declare const SETTINGS_REFUSAL: { readonly refDuplicate: "ref-duplicate"; readonly valueDuplicate: "value-duplicate" }
 export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal" }
 export declare const SETTLEMENT_OUTCOME: { readonly allowed: "allowed"; readonly rejected: "rejected"; readonly answered: "answered" }
+export declare const TARGET_CODE: { readonly unreachable: "TARGET_UNREACHABLE"; readonly refused: "TOKEN_REFUSED"; readonly incompatible: "TARGET_INCOMPATIBLE"; readonly revoked: "token-revoked"; readonly insecure: "target-insecure"; readonly invalid: "target-invalid" }
+export declare const TARGET_STATE: { readonly connected: "connected"; readonly unreachable: "target-unreachable"; readonly refused: "token-refused"; readonly unset: "target-unset" }
 export declare const TIME_UNIT: { readonly msPerSecond: 1000 }
 export declare const TOKEN_ENDPOINT_LIMITS: { readonly formBodyBytes: number }
 export declare const TOKEN_RESPONSE_HEADERS: { readonly "cache-control": "no-store"; readonly pragma: "no-cache" }

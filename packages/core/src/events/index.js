@@ -25,7 +25,8 @@ import { createLedger } from './ledger.js'
 import { createRegistry } from './registry.js'
 
 export { openLedger, messageIdOf } from './ledger.js'
-export { CONTRACT, DISPATCH, LEDGER, PRESENT_RETRY, REASON, STATE, TEXT } from './constants.js'
+export { INTERCEPT, LEDGER, PRESENT_RETRY, REASON, STATE, TEXT } from '../../contracts/constants.js'
+export { DISPATCH } from './constants.js'
 
 /**
  * @returns {{service: object, intake: Function, recover: Function, close: Function}} `service` is
