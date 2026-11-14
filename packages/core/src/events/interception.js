@@ -14,7 +14,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import { INTERCEPT, REASON, STATE } from '../../contracts/constants.js'
-// K1 through the link's one K1 seam (its vendored copy), not the link itself: `disconnected` is K1's.
+// `disconnected` is K1's: read through core's one K1 seam (the vendored copy), not the link itself.
 import { LINK_REFUSAL } from '../link/schema.js'
 import { ACKABLE, DISPATCH, HOST, INTERCEPTOR_HELD, LOG, MISUSE, UNDECIDED } from './constants.js'
 import { codeOf } from './diagnostics.js'

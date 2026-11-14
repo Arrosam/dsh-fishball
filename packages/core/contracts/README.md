@@ -36,6 +36,7 @@ The target states and codes and the `disconnected` answer are K1's (`TARGET_STAT
 | `LEDGER` | storage domain `fishball_core_events`, table `acceptance`, version 1; `finishedRetentionMs` 30 days | retention DECIDED D2 |
 | `STATE`, `REASON`, `MESSAGE` | the ledger's record states, its log reasons, and the message id prefix `fbe_` | F-INTERCEPT's, per decisions 1.B, 3.A and 4.A (2026-11-14) |
 | `PRESENT_RETRY` | 3 attempts; wait 1000 ms × 2^(n−1) after failed attempt n | DECIDED D1 |
+| `TEXT.blockType` | `text` (the notice's content block) | DSH content-block type |
 | `TEXT.presentGivenUp` | "Fishball notice: event <id> (<type>) could not be shown to you and was given up." | DECIDED D6 |
 | `LINK_BACKOFF` | 1 s × 2^n, at most 60 s; a connected link resets n | DECIDED D4 |
 | `GUARDS` | the report, codes, triggers, presets, manager tools and reorder outcomes as `guards.d.ts` spells them, plus F-GUARDS's service name, record location and texts | spellings as `guards.d.ts`; owner DECIDED D7 |

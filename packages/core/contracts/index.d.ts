@@ -1,6 +1,7 @@
 /**
  * fishball-core's frozen contracts for plugins of the same Fishball DSH (task K3; design §5a, §6.4;
- * R-INT-01, R-HOST-11, R-FB-09, R-FB-11). Types only; the prose freeze is `README.md`.
+ * R-INT-01, R-HOST-11, R-FB-09, R-FB-11). Types only here; the runtime values are the data-only
+ * `constants.js` beside this file (K3 amendment 2026-11-14); the prose freeze is `README.md`.
  *
  * - `fishballInstance.events`: the interception service (`events.d.ts`). `fishballInstance` keeps
  *   its X1–X19 members and `apiVersion: 1` (design §1.2); K3 freezes only its `events` member.
