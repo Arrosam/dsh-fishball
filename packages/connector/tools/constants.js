@@ -81,6 +81,22 @@ export const NAME_GRAMMAR = Object.freeze({
 })
 
 /**
+ * A contributed tool's external name: the model-facing name a Fishball-side client offers it
+ * under (K2 amendment at the W3 merge, DECIDED #W3-2). Every `replaced` in the public name, the
+ * namespace separator and any `.` of the local name alike, becomes `replacement`: `ns.tool` →
+ * `ns__tool`. It exists because model tool names are held to `[A-Za-z0-9_-]` (DSH's own MCP
+ * client, `dsh-mcp-client/lib/index.js:57–100`, both SDKs), which has no `.`. Core tool names have
+ * no `.` and are unchanged. The public MCP name itself keeps its `.` (S5-Q6); only the external
+ * name is mapped. Defined here once; every user imports it.
+ */
+export const EXTERNAL_NAME = Object.freeze({
+  // The character, not NAMESPACE.separator: a local name's own `.` is replaced too, and the two
+  // would stay apart if the separator ever changed.
+  replaced: '.',
+  replacement: '__',
+})
+
+/**
  * Per-tool limits (design §13.2, §13.5). A tool may declare `limits` at or below each ceiling;
  * an undeclared limit is the ceiling, so the effective limit is always min(declared, ceiling).
  * PROPOSED (user decision pending): no requirement fixes the ceilings or the in-flight count.

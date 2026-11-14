@@ -75,6 +75,12 @@ review (relayed by Fishball); `#n` is its row in [the decisions table](<../mcp-s
 - **The public name** is `<namespace>.<name>` (the `.` separator is kept, per S5-Q6), at most
   `NAME_GRAMMAR.publicMaxChars` (128) characters. `publicNameFor` checks both rules and returns
   `undefined` on a breach; `publicNameOf` throws `tool-invalid` instead, for `register`.
+- **The external name** (`EXTERNAL_NAME`, DECIDED #W3-2) is the name a contributed tool is
+  offered to a model under: every `.` of its public name becomes `__`, so `ns.tool` is
+  `ns__tool` and `embed-ui.attention.signal` is `embed-ui__attention__signal`. Model tool names
+  allow only `[A-Za-z0-9_-]` (DSH's own MCP client, both SDKs), so the `.` cannot stay there; the
+  public MCP name keeps it. Core tool names have no `.` and are unchanged. The mapping is defined
+  once here; fishball-core's bridge imports it.
 - **Events** use the same grammar and the same 128-character bound (the bound for events is
   PROPOSED). A breach is `event-invalid`, returned, never thrown (`emit` uses `publicNameFor`). A
   contributed event's mailbox type is `CONTRIBUTED_EVENT.typePrefix + <namespace>.<event>`.
@@ -150,7 +156,7 @@ review (relayed by Fishball); `#n` is its row in [the decisions table](<../mcp-s
 
 ## Exported names
 
-Values and functions: `apiVersion`, `TOOLS_API`, `CONTRIBUTOR_META_KEY`, `CONTRIBUTED_EVENT`, `NAMESPACE`, `NAME_GRAMMAR`,
+Values and functions: `apiVersion`, `TOOLS_API`, `CONTRIBUTOR_META_KEY`, `CONTRIBUTED_EVENT`, `NAMESPACE`, `NAME_GRAMMAR`, `EXTERNAL_NAME`,
 `TOOL_LIMITS`, `EVENT_LIMITS`, `QUARANTINE`, `REGISTER_REFUSAL`, `EMIT_REFUSAL`, `CALL_CODE`,
 `SHARED_CODES`, `ANNOTATION_HINTS`, `SCHEMA_SUBSET`, `REGISTRATION_STATE`, `ABORT_REASON`, `ToolContributionError`,
 `EMIT_CHECK_ORDER`, `defineTool`, `effectiveLimits`, `namespaceOf`, `isReservedNamespace`,
