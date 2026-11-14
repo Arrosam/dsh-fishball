@@ -218,7 +218,7 @@ export interface EventDraft {
 }
 
 /** `Mailbox.retire`'s answer: whether a pending event was replaced (K1 amendment at the W3 merge). */
-export type RetireOutcome = { retired: boolean }
+export type RetireOutcome = Readonly<{ retired: boolean }>
 
 export type CommitResult = { ok: true; eventId: string } | { ok: false; code: 'queue-full' | 'duplicate' }
 
@@ -234,7 +234,7 @@ export interface Mailbox {
    * Resolves `{retired: true}` when it did, `{retired: false}` when the event was not pending in
    * this pair's mailbox (acked, already retired, unknown or another pair's): then nothing is
    * committed and nothing changes (K1 amendment at the W3 merge, DECIDED #W3-1). A caller that
-   * must still tell the pair, because it may hold the event already acked, sends a fresh
+   * must still tell the pair, because the pair may already have acked the event, sends a fresh
    * `retirement` on `false` (C-ROUTE: an ack can land between its own acked check and this call).
    */
   retire(principalKey: PrincipalKey, eventId: string, reason: 'withdrawn' | 'revoked' | 'released' | 'reissued' | 'contributor-withdrawn'): Promise<RetireOutcome>

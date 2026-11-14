@@ -18,6 +18,10 @@
  * resolves `{retired: false}` (K1 amendment at the W3 merge, DECIDED #W3-1), and the fresh
  * retirement is sent instead, so the pair is told either way.
  * The same rule serves `session_release` and Take back (`released`) and a revocation (`revoked`).
+ * `false` also answers an event that is gone because its box was dropped (a delete), and a fresh
+ * retirement into that box would never be polled. So C-REVOKE drops a revoked pair's mailbox only
+ * after routing's `revoked` retirements for it have run (the user's decision at the W3 merge,
+ * option a); this module does not check for a dropped box itself.
  * An `ask` is not retired when management ends: it is not an offer for revocation (K1
  * OFFER_TYPES), and its asker keeps waiting for the answer of the pair that got it.
  */

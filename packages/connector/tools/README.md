@@ -80,7 +80,9 @@ review (relayed by Fishball); `#n` is its row in [the decisions table](<../mcp-s
   `ns__tool` and `embed-ui.attention.signal` is `embed-ui__attention__signal`. Model tool names
   allow only `[A-Za-z0-9_-]` (DSH's own MCP client, both SDKs), so the `.` cannot stay there; the
   public MCP name keeps it. Core tool names have no `.` and are unchanged. The mapping is defined
-  once here; fishball-core's bridge imports it.
+  once here; fishball-core's bridge imports it. It is not reversible (a local name may hold `_`,
+  so `ns.a__b` and `ns.a.b` both map to `ns__a__b`): a client calls by the public name and refuses
+  a duplicate external name.
 - **Events** use the same grammar and the same 128-character bound (the bound for events is
   PROPOSED). A breach is `event-invalid`, returned, never thrown (`emit` uses `publicNameFor`). A
   contributed event's mailbox type is `CONTRIBUTED_EVENT.typePrefix + <namespace>.<event>`.

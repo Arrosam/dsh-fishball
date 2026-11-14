@@ -90,8 +90,8 @@ export const NAME_GRAMMAR = Object.freeze({
  * name is mapped. Defined here once; every user imports it.
  */
 export const EXTERNAL_NAME = Object.freeze({
-  // The character, not NAMESPACE.separator: a local name's own `.` is replaced too, and the two
-  // would stay apart if the separator ever changed.
+  // The character, not NAMESPACE.separator: a local name's own `.` must be replaced too. Revisit
+  // if NAMESPACE.separator ever changes, since the external name must then map it as well.
   replaced: '.',
   replacement: '__',
 })
