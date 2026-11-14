@@ -5,7 +5,7 @@
  * - `fishball-connector/contract` (CONNECTOR_CONTRACT, UI_LANG, negotiateContract,
  *   validateAttachment);
  * - the framed address rule. The connector's `framedUrl(path, lang)` sits inside the browser
- *   bundle's closure (packages/embed-ui/src/client/client.connector.js since R-EMBED, loaded by DSH's client module loader), so it is
+ *   bundle's closure (packages/embed-ui/src/client/client.shell.js since U-SHELL's split, loaded by DSH's client module loader), so it is
  *   not importable. These cases evaluate that one function's source text in isolation, with
  *   the bundle's own FRAME_UI constants object, and compare with the addresses the contract
  *   states. The iframe `src`, "Open in a tab" and the reload on a locale change are the browser phase.
