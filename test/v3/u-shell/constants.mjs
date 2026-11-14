@@ -9,6 +9,7 @@
  * from the brief. No embed-UI implementation was read.
  */
 import path from 'node:path'
+import { REPO } from '../../support/constants.mjs'
 
 /** The three host-only services embed-UI follows at runtime (K3 README, design §4.2). */
 export const SERVICE = Object.freeze({
@@ -86,6 +87,43 @@ export const CHILD = Object.freeze({
   refused: Object.freeze({ hostname: 'hostname-refused', notReady: 'not-ready' }),
   /** The child port the fake locator reports (child.d.ts's own example, `http://localhost:49152`). */
   port: 49152,
+})
+
+/**
+ * embed-UI's host routes (relayed by Fishball from dev/v3-u-shell `096da986`; design §4.2 "its own
+ * authenticated DSH Fetch routes for status, Retry, admission and model sync"): owner-only JSON.
+ * `admit`'s body is exactly `{view, lang}`; the hostname is the request's own `Host`.
+ */
+export const ROUTE = Object.freeze({
+  services: '/api/fishball-embed-ui/services',
+  status: '/api/fishball-embed-ui/child/status',
+  retry: '/api/fishball-embed-ui/child/retry',
+  admit: '/api/fishball-embed-ui/child/admit',
+  modelsCheck: '/api/fishball-embed-ui/child/models/check',
+  modelsAdd: '/api/fishball-embed-ui/child/models/add',
+  /** The `child/*` routes: each answers `instance-missing` without a usable locator. */
+  child: Object.freeze(['status', 'retry', 'admit', 'modelsCheck', 'modelsAdd']),
+  servicesKeys: Object.freeze(['ok', 'page', 'handover', 'tools', 'legacy', 'routes']),
+  statusKeys: Object.freeze(['ok', 'status', 'target']),
+})
+/** The routes' refusals (relayed): HTTP status and code. */
+export const ROUTE_REFUSAL = Object.freeze({
+  hostname: Object.freeze({ status: 409, code: 'hostname-refused' }),
+  notReady: Object.freeze({ status: 409, code: 'not-ready' }),
+  invalid: Object.freeze({ status: 400, code: 'invalid-request' }),
+  missing: Object.freeze({ status: 503, code: 'instance-missing' }),
+})
+export const HTTP_OK = 200
+/** Hosts that name a loopback host only after URL parsing: userinfo and a path (relayed: refused as hostname-refused). */
+export const HOST_TRICK = Object.freeze({ userinfo: 'fishball-tunnel.example@localhost', path: 'localhost/fbtest' })
+
+/**
+ * The host half restates the K3/K2 values (Fishball: K3 is types only, and K2's runtime module is
+ * absent in row 7); a row checks they equal the contracts. Only the exported data is read.
+ */
+export const HOST_CONSTANTS = Object.freeze({
+  file: path.join(REPO, 'packages', 'embed-ui', 'src', 'host', 'constants.js'),
+  tools: path.join(REPO, 'packages', 'connector', 'tools', 'constants.js'),
 })
 
 /** The fake host-only services (fake-services.mjs) and what they record. */
