@@ -29,7 +29,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, test } from 'node:test'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { TEST_HOMES } from '../../support/constants.mjs'
 import { bootHost, newHome, until } from '../../support/host.mjs'
 import { MARK, ROUTE, runtimeOf } from '../core/constants.mjs'
@@ -527,15 +527,46 @@ export function registerIPlaceCases(sdk) {
     const names = ops.flatMap((op) => [op?.name, ...(op?.insert ?? []).map((r) => r.name)]).filter((n) => typeof n === 'string')
     assert.deepEqual(names.filter((n) => n.includes(V3.core.name) || n.includes(path.join('packages', 'core'))), [])
   })
-  caseTest(sdk, 'HOST-EP-03', 7, "core's patch inserts fishball-ui as its only path row; every other row is a bare subpath of fishball-core (Fishball 2026-11-15)", async () => {
-    const runtime = runtimeOf(sdk)
-    const { loadOverlayPatches } = await import(pathToFileURL(path.join(runtime, SDK_SCOPE + 'dsh-app-boot', 'lib', 'index.js')).href)
-    const rows = loadOverlayPatches('fbtest', corePatchFile()).flatMap((p) => p?.insert ?? [])
-    const isPath = (n) => typeof n === 'string' && (n.startsWith('file:') || path.isAbsolute(n))
-    assert.deepEqual(rows.filter((r) => isPath(r.name)).map((r) => r.id), [RELAYED.pathRow])
-    for (const r of rows.filter((x) => !isPath(x.name) && typeof x.name === 'string' && x.name.startsWith(V3.core.name))) {
-      const subpath = '.' + r.name.slice(V3.core.name.length)
-      assert.ok(Object.hasOwn(readManifest(V3.core.dir).exports ?? {}, subpath), `${r.id}: ${r.name} is not an export of core`)
+  // Core's patch rows (Fishball 2026-11-15, Q-13 probe): DSH serves a client only for a path row
+  // (its nearest manifest) or a bare package name, so the ui packages stay path rows into their own
+  // manifests, and only fishball-ui may resolve to core's own manifest.
+  const corePatchInserts = async () => {
+    const { loadOverlayPatches } = await import(pathToFileURL(path.join(runtimeOf(sdk), SDK_SCOPE + 'dsh-app-boot', 'lib', 'index.js')).href)
+    return loadOverlayPatches('fbtest', corePatchFile()).flatMap((p) => p?.insert ?? [])
+  }
+  /** A path row's file (DSH anchors relative names to file: URLs), or null for a package name. */
+  const rowFile = (name) => (typeof name !== 'string' ? null : name.startsWith('file:') ? fileURLToPath(name) : path.isAbsolute(name) ? name : null)
+  /** The folder of the nearest package.json at or above a path row's file. */
+  const nearestManifestDir = (file) => {
+    for (let dir = fs.existsSync(file) && fs.statSync(file).isDirectory() ? file : path.dirname(file); ; dir = path.dirname(dir)) {
+      if (fs.existsSync(path.join(dir, CORE_COPY.manifest))) return fs.realpathSync(dir)
+      if (path.dirname(dir) === dir) return null
+    }
+  }
+  const coreDir = () => fs.realpathSync(V3.core.dir)
+  caseTest(sdk, 'HOST-EP-03', 7, "core's patch has no path row whose nearest package.json is fishball-core's, except fishball-ui", async () => {
+    const rows = await corePatchInserts()
+    const intoCore = rows.filter((r) => rowFile(r.name) !== null && nearestManifestDir(rowFile(r.name)) === coreDir()).map((r) => r.id)
+    assert.deepEqual(intoCore, [RELAYED.rows.corePathRow])
+  })
+  caseTest(sdk, 'HOST-EP-03', 7, "fishball-page and fishball-recommend-plugins are path rows into their own ui packages (own manifest, own ./client)", async () => {
+    const rows = await corePatchInserts()
+    for (const [id, folder] of Object.entries(RELAYED.rows.uiPackages)) {
+      const row = rows.find((r) => r.id === id)
+      assert.ok(row, 'core\'s patch inserts no ' + id)
+      const file = rowFile(row.name)
+      assert.ok(file, `${id} is not a path row: ${show(row.name)}`)
+      const own = fs.realpathSync(path.join(V3.core.dir, folder))
+      assert.equal(nearestManifestDir(file), own, `${id} does not resolve to its own manifest in ${folder}`)
+      assert.ok(Object.hasOwn(readManifest(own)?.exports ?? {}, './client'), `${folder}/package.json exports no ./client`)
+    }
+  })
+  caseTest(sdk, 'HOST-EP-03', 7, 'every slim child row (fishball-native-{session-tools,approvals,app,inbox,admin,provider-sync}) is a fishball-core/slim/* subpath', async () => {
+    const rows = await corePatchInserts()
+    for (const id of RELAYED.rows.slim) {
+      const row = rows.find((r) => r.id === id)
+      assert.ok(row, 'core\'s patch inserts no ' + id)
+      assert.ok(typeof row.name === 'string' && row.name.startsWith(RELAYED.rows.slimPrefix), `${id}: ${show(row.name)} is not a ${RELAYED.rows.slimPrefix}* subpath`)
     }
   })
   integrationCase(sdk, 'HOST-EP-03', 7, 'the child profile and the placement record hold the four set members plus fishball-hosted-settings, and nothing else of Fishball', async () => {
