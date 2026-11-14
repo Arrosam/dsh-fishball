@@ -23,7 +23,7 @@ const isGeneration = (value) => Number.isSafeInteger(value) && value >= 0
  * - `fingerprint`: the HMAC of the value last seen under `ref`, or null when it had none;
  * - `keyId`: the fingerprint key's id; another id means the fingerprint cannot be compared;
  * - `awaitSave`: the value was unset outside a settings save, so none is generated for it until
- *   the next save (Q5 = B, registry.js `awaitsSave`).
+ *   the next save (the user's decision 2026-11-14, C-TOKENS question 5 = B; registry.js `awaitsSave`).
  */
 const entryRecord = Object.freeze({
   parse(value) {
