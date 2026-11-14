@@ -168,7 +168,12 @@ async function assertRetired(world, { acked, pending }) {
   const retirement = world.mailbox.retirements.find((r) => r.eventId === pending)
   assert.equal(retirement.pk, D.principalKey)
   assert.equal(retirement.reason, K1.RETIREMENT_REASON.contributorWithdrawn)
-  assert.ok(!world.mailbox.retirements.some((r) => r.eventId === acked), 'an acked event was retired')
+  // The acked event is checked by outcome, not by whether `retire` was called for it: K1 gives the
+  // contributor no ack signal, so C-EXT may call `retire` on it, and that is a no-op. K1
+  // (mcp-schema/index.d.ts:202): retire "Replaces a pending event by a `retirement` naming it";
+  // R-EXT-19: "Events a client has already acked stay with that client."
+  assert.deepEqual(world.mailbox.retirementsOf(acked), [], 'a retirement names the acked event')
+  assert.ok(world.mailbox.isAcked(D.principalKey, acked), 'the acked event left its client')
   assert.ok(!world.mailbox.pending(D.principalKey).some((e) => e.eventId === pending), 'the retired event is still pending')
 }
 /** A service member name, over the prototype chain, that is not a cordis `Service` base member. */
@@ -277,7 +282,7 @@ function registerUseCases(sdk) {
     assert.deepEqual({ ...call.principal }, { key: D.principalKey, name: D.name })
     assert.ok(call.signal instanceof AbortSignal)
     assert.equal(call.protocolVersion, K2.TOOLS_API.protocolVersion)
-    world.names.set(D.principalKey, E2.name)
+    world.principalNames.set(D.principalKey, E2.name)
     await world.call(D, toolOf(c), ARGS)
     assert.equal(c.calls[1].call.principal.name, E2.name, 'the principal\'s current name')
   })
@@ -605,7 +610,8 @@ function registerPartitions(sdk) {
     const c = await world.add(FIXTURE.pkg.board, { tools: [] })
     const result = c.register(c.tool(LOOKUP, { annotations: { ...FIXTURE.hint, [FIXTURE.nonHint]: FIXTURE.marker } }))
     if (result.code !== undefined) return assert.equal(result.code, REGISTER_REFUSAL.toolInvalid)
-    const tool = world.list().find((x) => x.name === toolOf(c))
+    // Added with `tools: []`, so `c.tools[0]` (toolOf's default) is undefined: name the tool registered above.
+    const tool = world.list().find((x) => x.name === toolOf(c, LOOKUP))
     assert.deepEqual(tool.annotations, FIXTURE.hint)
     assert.ok(!json(tool).includes(FIXTURE.marker), 'the non-hint value reached tools/list')
   })
