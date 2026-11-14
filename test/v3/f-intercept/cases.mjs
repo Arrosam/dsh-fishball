@@ -24,8 +24,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../shared/cases.mjs'
-import { runCrash, SCENARIO } from './crash.mjs'
-import { CORE, DSH, EVENT_TYPE, FIXTURE, K3, LATER, PROCESS_EVENT, TOOL, WAIT } from './constants.mjs'
+import { ledgerStates, runCrash, SCENARIO } from './crash.mjs'
+import { CORE, DSH, EVENT_TYPE, FIXTURE, K3, LATER, LINK_REFUSAL, PROCESS_EVENT, TOOL, WAIT } from './constants.mjs'
 import { busyGate, contributedType, eventually, makeEvent, newRoot, openWorld, removeRoot, startBusy, worldFor } from './world.mjs'
 
 const T = { timeout: WAIT.testMs }
@@ -813,23 +813,40 @@ export function registerInterceptCases(sdk) {
 // ------------------------------------------------------------------------------------------------
 // close() while an offer is in flight (regression: the offer's tail touched the closed ledger).
 
+/** How a held `send` settles once let go: K3's two "never reached the connector" outcomes. */
+const SEND_OUTCOME = Object.freeze({
+  disconnected: () => ({ ok: false, code: LINK_REFUSAL.disconnected }),
+  rejects: () => { throw new Error(FIXTURE.fault) },
+})
 /**
  * A handler held in flight until the test lets it go: it accepts first when `accepts` (so the
  * record is open at close time, else still offered), then returns or, when `throws`, throws.
- * `at` resolves with accept's result (undefined when it never accepts); `settled` once it ended.
+ * With `sends` it also commits, and its `send` is what is held (the record is committing at close
+ * time); once let go, `send` settles as `SEND_OUTCOME[sends]` and the handler returns.
+ * `at` resolves with accept's result (undefined when it never accepts); `settled` once it ended;
+ * `result.sendStarted` and `result.commit` (`{resolved}` or `{rejected}`) record the commit.
  */
-function inFlightHandler({ accepts, throws }) {
+function inFlightHandler({ accepts, throws, sends }) {
   const at = Promise.withResolvers()
   const go = Promise.withResolvers()
   const settled = Promise.withResolvers()
+  const result = { sendStarted: false, commit: undefined }
   const handler = async (_e, ctl) => {
     try {
-      at.resolve(accepts ? await ctl.accept() : undefined)
-      await go.promise
+      const accepted = accepts ? await ctl.accept() : undefined
+      if (sends === undefined) {
+        at.resolve(accepted)
+        await go.promise
+      } else {
+        const send = async () => { result.sendStarted = true; at.resolve(accepted); await go.promise; return SEND_OUTCOME[sends]() }
+        // A commit fenced before its send still lets the test go on (the harness check then fails).
+        const committed = ctl.commit(send).finally(() => at.resolve(accepted))
+        result.commit = await committed.then((value) => ({ resolved: value }), (error) => ({ rejected: String(error) }))
+      }
       if (throws) throw new Error(FIXTURE.fault)
     } finally { settled.resolve() }
   }
-  return { handler, at: at.promise, go: () => go.resolve(), settled: settled.promise }
+  return { handler, at: at.promise, go: () => go.resolve(), settled: settled.promise, result }
 }
 /** Lets a settled handler's tail run to its end: a few event-loop turns. */
 async function drainTurns() {
@@ -841,7 +858,10 @@ async function drainTurns() {
  * (accepted, acked) × the handler then returns or throws. Every rule: once the handler settles
  * after close(), no ledger write happens (the record keeps the state it had at close) and no
  * unhandledRejection is raised. Without close() the same four rules are EVT-ST-02 rows 4, 5, 5a
- * and 5d above (the record moves to Fishball or closes).
+ * and 5d above (the record moves to Fishball or closes). The committing rules hold the handler's
+ * `send` across close(); it then settles as one of K3's "never reached the connector" outcomes
+ * (which without close() is EVT-DT-04 rule 6 / 6 (disconnected)): `commit` still resolves (K3:
+ * commit never rejects) and the record stays committing.
  */
 function registerCloseCases(sdk) {
   const IN_FLIGHT = [
@@ -849,9 +869,13 @@ function registerCloseCases(sdk) {
     ['offered, throws', { accepts: false, throws: true }],
     ['open, returns', { accepts: true, throws: false }],
     ['open, throws', { accepts: true, throws: true }],
+    ['committing, send answers disconnected', { accepts: true, throws: false, sends: 'disconnected' }],
+    ['committing, send rejects', { accepts: true, throws: false, sends: 'rejects' }],
   ]
   for (const [label, behaviour] of IN_FLIGHT) {
-    row(sdk, ID.st02, `5h (close() in flight, ${label})`, `the record is ${label.replace(',', ' and the handler')} only after core's close(): no ledger write after close(), no unhandledRejection`, async (t) => {
+    const committing = behaviour.sends !== undefined
+    const settles = committing ? label.replace(',', ' and its') + ', then the handler returns,' : label.replace(',', ' and the handler')
+    row(sdk, ID.st02, `5h (close() in flight, ${label})`, `the record is ${settles} only after core's close(): no ledger write after close(), no unhandledRejection${committing ? ', commit resolves' : ''}`, async (t) => {
       let closing = false
       const writesBeforeClose = []
       const writesAfterClose = []
@@ -867,6 +891,10 @@ function registerCloseCases(sdk) {
       assert.equal(accepted, behaviour.accepts ? true : undefined, 'harness: accept before close()')
       assert.equal(acked(world, event), behaviour.accepts, 'harness: acked (open) or not (offered) before close()')
       assert.ok(writesBeforeClose.length > 0, 'harness: the ledger write guard saw no write')
+      if (committing) {
+        assert.equal(held.result.sendStarted, true, 'harness: send was not in flight at close() (commit fenced: ' + JSON.stringify(held.result.commit) + ')')
+        assert.deepEqual(ledgerStates(world, event), [CORE.committing], 'harness: the record\'s state at close()')
+      }
 
       const unhandled = []
       const onUnhandled = (reason) => { unhandled.push(String(reason?.message ?? reason)) }
@@ -880,6 +908,7 @@ function registerCloseCases(sdk) {
       } finally { process.off(PROCESS_EVENT.unhandledRejection, onUnhandled) }
       assert.deepEqual(unhandled, [], 'unhandledRejection after the handler settled past close()')
       assert.deepEqual(writesAfterClose, [], 'ledger writes after close()')
+      if (committing) assert.ok(held.result.commit !== undefined && 'resolved' in held.result.commit, 'commit did not resolve (K3: commit never rejects): ' + JSON.stringify(held.result.commit))
     })
   }
 }
