@@ -70,7 +70,7 @@ async function assertRefusedBeforeAnyRequest(t, sdk, url, host) {
   const reached = host === undefined ? net.all() : net.to(host)
   assert.deepEqual(reached, [], `the link reached the network for ${JSON.stringify(url)}: ${JSON.stringify(reached)}`)
   assert.notEqual(l.status()?.state, STATE.connected, `a refused target reports ${JSON.stringify(l.status())}`)
-  // K1 README "Left to a task": the refusal's code is F-LINK's (09 row 8); any code is accepted here, but there must be one.
+  // The refusal's code is owned by K1 TARGET_CODE (09 row 8); any code is accepted here, but there must be one.
   assert.ok(l.status()?.state, `no target status for a refused target: ${JSON.stringify(l.status())}`)
 }
 

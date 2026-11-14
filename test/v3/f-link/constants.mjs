@@ -15,7 +15,6 @@ import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { REPO } from '../../support/constants.mjs'
 import * as K1 from '../../../packages/connector/mcp-schema/index.js'
-import * as CORE_LINK from '../../../packages/connector/mcp-schema/index.js'
 
 export { K1 }
 
@@ -23,12 +22,12 @@ export { K1 }
  * Core's target status (K3 child.d.ts `TargetState`, design §4.1; REM-DT-01), its codes (K3
  * `TargetCode`, design §6.1; R-MIG-03 for TARGET_INCOMPATIBLE) and the answer code of a call made
  * while the link is down (design §6.3, K3 events.d.ts `CommitSendResult`: `{ok: false, code:
- * 'disconnected'}`, REM-UC-02 step 3). K3 types these words only; F-LINK declares their one runtime
- * copy (PROPOSED until K-VALUES), so they are imported from it rather than restated.
+ * 'disconnected'}`, REM-UC-02 step 3). K3 types these words only; K1 `mcp-schema/constants.js` owns
+ * their one runtime copy (DECIDED D7), so they are imported from it rather than restated.
  */
-export const STATE = CORE_LINK.TARGET_STATE
-export const CODE = CORE_LINK.TARGET_CODE
-export const DISCONNECTED = CORE_LINK.LINK_REFUSAL.disconnected
+export const STATE = K1.TARGET_STATE
+export const CODE = K1.TARGET_CODE
+export const DISCONNECTED = K1.LINK_REFUSAL.disconnected
 
 /** MCP 2026-07-28 method names the fake connector answers (spec vocabulary, not product values). */
 export const RPC = Object.freeze({
