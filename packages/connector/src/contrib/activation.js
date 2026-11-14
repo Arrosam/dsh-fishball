@@ -11,6 +11,7 @@
  * Every registry (one per connector activation) that touched the contributor attaches itself. On
  * the activation's end, each attached registry withdraws what it holds.
  */
+import { randomUUID } from 'node:crypto'
 import { QUARANTINE } from '../../tools/index.js'
 import { HOST } from './constants.js'
 
@@ -30,16 +31,12 @@ export function activationOf(who) {
     /** The last QUARANTINE.windowOutcomes counted outcomes, oldest first; `true` is a failure. */
     outcomes: [],
     /**
-     * One retire function per event this activation committed, so a quarantine or the
-     * activation's end retires the pending ones (R-EXT-19). Each carries its own mailbox port, so
-     * retirement still works when the registry that committed it has closed since (a connector
-     * reload). Retiring an acked one is a no-op (C-MAILBOX, confirmed by Fishball 2026-11-14). K1
-     * gives C-EXT no ack signal, so this list is unbounded for the activation's life (up to
-     * EVENT_LIMITS.ratePerMinute per recipient). The K1 follow-up
-     * `Mailbox.retireContributor(namespace, activationTag)`, on the amendment list after W2,
-     * replaces it.
+     * The opaque K1 `EventDraft.activationTag` of every event this activation commits. A fresh
+     * random one per activation, so `Mailbox.retireContributor(namespace, tag)` retires this
+     * activation's events and never those of the contributor's next activation (a reload). The
+     * activation therefore keeps no list of what it committed, however many events it emits.
      */
-    committed: [],
+    tag: randomUUID(),
     /** Failure kinds already logged for this activation (R-EXT-08: once per contributor and kind). */
     loggedFailures: new Set(),
     /** Registries attached to this activation; each withdraws its own state at the end. */
@@ -65,9 +62,16 @@ function endActivation(act) {
   act.registries.clear()
 }
 
-/** Retire every event the activation committed; the list is then empty (R-EXT-19). */
+/**
+ * Retire every pending event the activation committed (R-EXT-19), through the mailbox of each
+ * registry attached to it now. Each open registry is one connector activation's, with that
+ * activation's live mailbox, and every mailbox reads the one durable ledger, so events committed
+ * before a connector reload are retired through the new connector's mailbox. A closed registry
+ * has detached itself (its mailbox is closed with it). A commit that lands after this (it raced a
+ * withdrawal) is retired by emit.js through its own mailbox.
+ */
 export function retireCommitted(act) {
-  for (const retire of act.committed.splice(0)) retire()
+  for (const registry of act.registries) registry.retireEvents(act)
 }
 
 /**

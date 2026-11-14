@@ -26,6 +26,7 @@ export const MISUSE = Object.freeze({
   write: 'fishball pair store: refused to write a registry record that would not reopen (a caller passed a bad value)',
   invalidId: 'fishball pair store: the id is not a fishball id (the token endpoint admits only valid ids)',
   unknownPrincipal: 'fishball pair store: no pair has this principal key',
+  selfSuccession: 'fishball pair store: an entry cannot succeed itself',
 })
 
 /** Background log lines (no token value, id or name is ever logged). */

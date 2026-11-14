@@ -86,3 +86,11 @@ export const withPairChanged = (registry, entryKey, changes) =>
 export const withPairAdded = (registry, stored) => ({ pairs: [...registry.pairs, stored] })
 
 export const withPairRemoved = (registry, entryKey) => ({ pairs: registry.pairs.filter((pair) => pair.entryKey !== entryKey) })
+
+/**
+ * Succession (R-NAME-07): the next record with the old pair removed and the successor's pair holding
+ * the old one's name. Only this result is checked and written, once; the old pair's removal comes
+ * first, so the name is never on two pairs even within the computation.
+ */
+export const withSuccession = (registry, old, successor) =>
+  withPairChanged(withPairRemoved(registry, old.entryKey), successor.entryKey, { name: old.name })

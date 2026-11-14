@@ -4,16 +4,18 @@
  * stays true to them.
  *
  * `boxes` (key: digest of the principal key) holds `{principalKey, generation, head, held?}`:
- * - `generation` is `mailboxGeneration`. It is set when the box is first created and never
- *   changed here. Fishball accepted the rule on 2026-11-14 and it lands as a K1 amendment after
- *   the W2 merge: only lost or reset storage starts a new generation; delete, hold expiry and
- *   re-enable keep it. Until that amendment, nothing here starts one.
+ * - `generation` is `mailboxGeneration`. It is set when the box record is first created and never
+ *   changed after that (K1 MAILBOX, DECIDED #W2-1): only lost or reset storage starts a new
+ *   generation, because the next use then finds no box record and creates one. Delete, hold
+ *   expiry and re-enable keep the record, and so the generation.
  * - `head` is the last sequence handed out. It is stored so that pruning or dropping events never
  *   lets a sequence be handed out twice in one generation.
  * - `held = {since, expired?}` marks a disabled entry (R-TOK-05).
  * - `dropping = {asks, throughSequence, until?}` exists only while a drop is in progress. It lets a drop cut short by a
  *   crash be finished with its asks still reported (`mailbox.js` `dropEvents`).
- * `events` (key: `eventId`) holds `{boxKey, state, event, dedupeKey?, finishedAt?}`.
+ * `events` (key: `eventId`) holds `{boxKey, state, event, dedupeKey?, activationTag?, finishedAt?}`.
+ * `activationTag` (a contributor event's, K1 EventDraft) is kept beside the event, never in it,
+ * so a poll never shows it.
  */
 import { z } from 'zod'
 import { EVENT_STATE, MAILBOX_STORE } from './constants.js'
@@ -43,6 +45,7 @@ const eventRecord = z.object({
     payloadDigest: z.string(),
   }),
   dedupeKey: z.string().optional(),
+  activationTag: z.string().min(1).optional(),
   finishedAt: z.number().int().optional(),
 })
 

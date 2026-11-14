@@ -15,7 +15,7 @@ import {
 import { diagnosticOf } from '../../errors.js'
 import { clientNameOf, isAllowedRedirect, isLoopbackOnly, redirectUrisOf } from './client-rules.js'
 import {
-  ADDRESS, AUTHORIZE_PARAM, CHAINS_STATE, FORM_ACTION, FORM_FIELD, FORM_LIMITS, LOG, PAGE_HTTP, PAGE_TEXT, RESPONSE_PARAM, STATE_CAPS,
+  ADDRESS, AUTHORIZE_PARAM, CHAINS_STATE, FORM_ACTION, FORM_FIELD, LOG, PAGE_HTTP, PAGE_TEXT, RESPONSE_PARAM,
   URL_RULES,
 } from './constants.js'
 import { SILENT_LOGGER, readCapped } from './io.js'
@@ -58,9 +58,9 @@ function redirect(res, redirectUri, params, request) {
   sendEmpty(res, APPROVAL_LISTENER.redirectStatus, { [PAGE_HTTP.locationHeader]: url.href })
 }
 
-/** The form body up to FORM_LIMITS.maxBodyBytes; `undefined` once it is larger. */
+/** The form body up to APPROVAL_LISTENER.decisionBodyBytes; `undefined` once it is larger. */
 async function readForm(req) {
-  const text = await readCapped(req, FORM_LIMITS.maxBodyBytes)
+  const text = await readCapped(req, APPROVAL_LISTENER.decisionBodyBytes)
   return text === undefined ? undefined : new URLSearchParams(text)
 }
 
@@ -111,7 +111,7 @@ export function createApprovalHandler(deps) {
   const { gate, originOf, secure, cimd, tokens, pairs, store, limiter, dshName, dshPort, approvalPort, now, logger = SILENT_LOGGER } = deps
   /**
    * Pending requests by id, in creation order (a Map's), so the oldest is first. Bounded by
-   * STATE_CAPS.pendingRequests: at the cap the oldest is evicted (it then reads as expired), and
+   * APPROVAL_LISTENER.pendingRequestsMax: at the cap the oldest is evicted (it then reads as expired), and
    * expired ones are dropped from the front as new ones arrive.
    */
   const pending = new Map()
@@ -119,7 +119,7 @@ export function createApprovalHandler(deps) {
   const isExpired = (request, at) => at >= request.createdAt + LIFETIME.pendingRequestMs
   function remember(request) {
     for (const [id, held] of pending) {
-      if (!isExpired(held, request.createdAt) && pending.size < STATE_CAPS.pendingRequests) break
+      if (!isExpired(held, request.createdAt) && pending.size < APPROVAL_LISTENER.pendingRequestsMax) break
       pending.delete(id)
     }
     pending.set(request.id, request)

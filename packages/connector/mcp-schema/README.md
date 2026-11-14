@@ -130,6 +130,9 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 | `QUEUE.maxQueuedInputs` | 200 | [design §3.4] the default of the connector setting; frozen by K1 |
 | `QUEUE.refusedTypes` | `message`, `turn-finished`, `state`, `notice`, contributor events | PROPOSED: refused `queue-full` past `maxQueuedInputs`; offers, `ask`, `settlement`, `retirement`, `handover`, `takeback` always commit |
 
+- **`mailboxGeneration`** (DECIDED #W2-1) is set when a pair's mailbox storage is first made
+  and changes only when that storage is lost or reset. Delete (`drop`), the end of a hold
+  (`expireHolds`) and re-enable (`release`) keep it. Only a new generation makes a cursor stale.
 - A pending event never expires. A stale cursor is `{resync: {reason: 'stale-cursor',
   headSequence}}`; a foreign cursor is `forbidden`.
 - A settled offer's own event is **not** retired: it stays pending until acked, and the
@@ -181,6 +184,8 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 | `TOKEN_VALUE.minChars` | 32 code points | [req] TQ-4 A |
 | `TOKEN_VALUE` generated | `fbt_` + 32 random bytes base64url | [design] §5.2 |
 | `RATE_LIMITS.tokenRequestsPerWindow` | 30 token requests per (address, client id) per minute | PROPOSED |
+| `RATE_LIMITS.tokenRequestsPerAddressPerWindow` | 150 token requests per address per minute, any client id, counted before the body is read | PROPOSED (K1 amendment after W2; was C-OAUTH's local value) |
+| `TOKEN_ENDPOINT_LIMITS.formBodyBytes` | 8 KiB token-request form; over it 400 `invalid_request` | PROPOSED (K1 amendment after W2; was C-OAUTH's `TOKEN_FORM.maxBodyBytes`) |
 | `FAILURE_LIMIT` | the one failure limit (K1a): per (address, client id; an MCP bearer by address alone), 1-min window: 10 refused credentials; plus 50 per address | key and 10: DECIDED (#19, #21: kept); 50: PROPOSED; one shared constant and `FailureLimiter`: PROPOSED (K1a) |
 | `ENDPOINT_LIMITS.bodyBytes` | 8 MiB | PROPOSED (V2's attachment frame) |
 | `ENDPOINT_LIMITS.inFlightPerPrincipal` | 32 | PROPOSED |
@@ -188,7 +193,10 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 | `ENDPOINT_LIMITS` rate | 600 per minute, burst 120, per principal | PROPOSED |
 | `APPROVAL_LISTENER.defaultPort` | 47615 | PROPOSED |
 | `APPROVAL_LISTENER.retryMs` | 30 s rebind retry after a clash | PROPOSED |
+| `APPROVAL_LISTENER.decisionBodyBytes` | 8 KiB decision-form body; over it 413, no body | PROPOSED (K1 amendment after W2; was C-OAUTH-WEB's local value) |
+| `APPROVAL_LISTENER.pendingRequestsMax` | 256 pending authorization requests; the oldest is evicted first and then reads as expired | PROPOSED (K1 amendment after W2; was C-OAUTH-WEB's local value) |
 | `CIMD_LIMITS` | 5 KiB [spec]; 3 s; cache ≤ 1 day | 5 KiB per CIMD §6.6; the rest PROPOSED |
+| `CIMD_LIMITS.cacheEntriesMax` | 256 cached documents; the oldest is evicted first | PROPOSED (K1 amendment after W2; was C-OAUTH-WEB's local value) |
 | `PAIR_TIMING.lastSeenWriteIntervalMs` | 60 s: a request 60 s or more after the last write updates it | [design] §5.8 |
 
 - `FAILURE_LIMIT` counts every refused credential (secret, page token, bearer) in one
@@ -221,7 +229,7 @@ decision, 2026-11-14):
 | Method | When, where | Order | Refusal |
 | --- | --- | --- | --- |
 | `check(req, surface)` | before authentication, every surface | 405 → 403 → 503 | 405: a listed path with a method it does not serve, `Allow` with its methods, no body; 403: `Host` not allowed or an `Origin` refused by the surface's `ORIGIN_RULE`, no body; 503: `{error: "insecure-listener"}` |
-| `admit(req, surface, caller)` | after the bearer check, `mcp` only | 413 → 429 | `ENDPOINT_LIMITS`' JSON-RPC body; a 429 with `Retry-After` |
+| `admit(req, surface, caller)` | after the bearer check and before the body is read, `mcp` only | 413 → 429 | `ENDPOINT_LIMITS`' JSON-RPC body; a 429 with `Retry-After` |
 
 The user's decisions (2026-11-14) cover: the empty 405/403 bodies; the 503 body; the per-path 405
 on the approval listener; the approval listener binding DSH's listener host on its own port, so
@@ -230,7 +238,14 @@ slot. A path the surface does not list passes the 405 step only; the 403 and 503
 and its route answers 404. C-WIRE builds the one gate with the listener facts and a clock
 (`GateListenerFacts`). An `admit` pass takes one bucket token and one in-flight slot, which `done()`
 frees. A 429 for the bucket says when it next holds a token; a 429 for in-flight says
-`REQUEST_GATE.inFlightRetryAfterMs` (1 s, PROPOSED). The token endpoint keeps C-OAUTH's own
+`REQUEST_GATE.inFlightRetryAfterMs` (1 s, PROPOSED). C-HTTP's 429 for the listen-stream cap
+(`ENDPOINT_LIMITS.listenStreamsPerPrincipal`) reuses `inFlightRetryAfterMs` and has no value of
+its own (K1 amendment after W2, PROPOSED): a stream slot frees as soon as any of the pair's
+streams ends. **`admit` runs before the MCP body is read** (K1 amendment after W2), so the
+in-flight slot also bounds one entry's concurrent uploads: its 413 judges the declared
+`Content-Length` (`AdmitRequest.bodyBytes`); a body with no declared length is read under the
+slot, and past `ENDPOINT_LIMITS.bodyBytes` C-HTTP answers the same 413 and frees the slot. The
+token endpoint keeps C-OAUTH's own
 `RATE_LIMITS` and `FAILURE_LIMIT`, and the approval listener has no `admit`.
 
 ### Token-endpoint grants (`GRANT_DISPATCH`, `GrantHandler`; task K1b)
@@ -287,6 +302,8 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 | EVT-EP-02 rows 4–5 | `inbox_ack` with an `eventId` that is not in the caller's mailbox (another pair's included) is `unknown-event`; a wrong `payloadDigest` is `digest-mismatch` (DECIDED #5, #6). All or nothing: one bad receipt acks nothing (DECIDED #61: kept). |
 | EVT-ST-01 row 8 | A second ack of an acked event is a no-op success while its receipt is remembered (`MAILBOX.ackedReceiptMs`, 1 day, DECIDED #36: kept), counted in `acked` as 0 (PROPOSED). |
 | AUTH-ST-05 rows 10–12c | A chain ends `LIFETIME.refreshChainMaxMs` (365 days, DECIDED #18) after its code redemption: a refresh at or after it is `invalid_grant`. The owner renews it on the same entry: re-entering the bound token on the approval page, from the client id recorded at the bind, with the bound id and any redirect URI the client's document allows, mints a new code and chain and keeps the pair (id, name, `pairedAt`, managed sessions, pending events) (R-OA-16 (7), R-OA-12 (2); DECIDED #18). Only `OAuthTokenStore.chainsOf` = `ended` renews: a revoked chain, a live one, or any disable, delete or value change of the entry since (a newer generation) answers `already-paired`. |
+| EVT-UC-01 E2 | A stale cursor names an older `mailboxGeneration`, which only lost or reset mailbox storage starts (DECIDED #W2-1); it gets `{resync: {reason: 'stale-cursor', headSequence}}`, never a silent skip. |
+| NAME-ST-01 rows 8–9 | `PairStore.succeed(old, successor)`: in one registry write the old pair is removed and the successor takes its name or its lack of one; `successor-unpaired` and any failure change nothing (R-NAME-07). An unpaired old entry succeeds with nothing changed (DECIDED #W2-2). |
 | EVT-ST-01 row 5 | An offer settled by the user keeps its own event pending until acked; the `settlement` that follows is the signal; the offer event is not retired (PROPOSED). |
 | EVT-BVA-01 rows 5–6 | `inbox_poll` `limit` must be 1–`MAILBOX.pageMax` (100); 0 and 101 are `limit-exceeded`, never clamped (V2 contract §8: a value outside a limit is `limit-exceeded`). |
 | EVT-BVA-02 rows 1–4 | `maxQueuedInputs` = 200 (`QUEUE.maxQueuedInputs`); past it only `QUEUE.refusedTypes` and contributor events are `queue-full`. |
@@ -300,8 +317,10 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 
 ## Internal module interfaces (`index.d.ts`, types only)
 
-`BearerVerifier` (C-OAUTH → C-HTTP), `TokenRegistry` (C-TOKENS), `PairStore` (C-PAIR), `Mailbox`
-(C-MAILBOX: commit, poll, ack, summary, retire, hold, release, drop), `HintSink` (C-HTTP's listen
+`BearerVerifier` (C-OAUTH → C-HTTP), `TokenRegistry` (C-TOKENS), `PairStore` (C-PAIR; `succeed`, the
+atomic succession step of C-SUCCEED's `retire`, R-NAME-07), `Mailbox`
+(C-MAILBOX: commit, poll, ack, summary, retire, `retireContributor` for C-EXT, hold, release,
+drop), `HintSink` (C-HTTP's listen
 streams), `OAuthTokenStore` (C-OAUTH and C-OAUTH-WEB; `chainsOf` answers the renewal question),
 `FailureLimiter` (K1a: the token endpoint, the approval page and C-HTTP's bearer check share it),
 `Router.recipientFor` (C-ROUTE), `Presence` (the connected definition), `RequestGate` (C-HTTP;
@@ -355,6 +374,8 @@ marked PROPOSED is still open.
 | 14 | K3 `CreateHostedErrorCode` | kept (2026-11-14) |
 | 15, 16 | K3 `AdmitErrorCode` `hostname-refused`, `not-ready` | kept (2026-11-14) |
 | 17 | K3 core contracts: an invalid `intercept` registration throws `TypeError` | kept (2026-11-14) |
+| W2-1 | `mailboxGeneration` (`MAILBOX`) | changes only when mailbox storage is lost or reset; delete, hold expiry and re-enable keep it (2026-11-14, K1 amendment after W2) |
+| W2-2 | `PairStore.succeed` with an unpaired old entry | succeeds and changes nothing: there is no principal and no name to move (2026-11-14, K1 amendment after W2) |
 
 ## Departure from the specification
 

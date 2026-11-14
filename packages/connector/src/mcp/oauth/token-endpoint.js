@@ -5,12 +5,12 @@
  * One token request, in order (nothing past a refusal runs):
  * 1. `RequestGate.check(req, 'token')`: 405, 403 (`Host`, `Origin`), 503 (C-HTTP's gate). A `Host`
  *    the gate passed but no origin can be built from is 403 too.
- * 2. The address ceiling (ADDRESS_RATE_LIMIT, Fishball 2026-11-14, #15): every request counts,
+ * 2. The address ceiling (RATE_LIMITS.tokenRequestsPerAddressPerWindow): every request counts,
  *    before its body is read, so no refusal below is free.
  * 3. `client_secret` or `access_token` in the URL query: 400 `invalid_request` (R-TOK-02, RFC 6750
  *    §2.3). Before the body is read, so a secret in the URL is refused even with a valid form.
- * 4. The body: the form media type, at most TOKEN_FORM.maxBodyBytes, no repeated parameter (RFC
- *    6749 §3.2), else 400 `invalid_request`. An empty value counts as omitted (§3.1).
+ * 4. The body: the form media type, at most TOKEN_ENDPOINT_LIMITS.formBodyBytes, no repeated
+ *    parameter (RFC 6749 §3.2), else 400 `invalid_request`. An empty value counts as omitted (§3.1).
  * 5. Client authentication: two methods at once is 400 `invalid_request` (§2.3).
  * 6. The limits per (address, client id): FAILURE_LIMIT through the shared `FailureLimiter`, then
  *    RATE_LIMITS. The client id is the one the request names, before it is verified (K1
@@ -30,13 +30,13 @@
  */
 import {
   BEARER_CHALLENGE, CLIENT_AUTH, GATE_SURFACE, GRANT_DISPATCH, HTTP_STATUS, OAUTH_ERROR, OAUTH_METADATA, PATHS, RATE_LIMITS,
-  TIME_UNIT, authorizationServerMetadata, protectedResourceMetadata,
+  TIME_UNIT, TOKEN_ENDPOINT_LIMITS, authorizationServerMetadata, protectedResourceMetadata,
 } from '../../../mcp-schema/index.js'
 import { diagnosticOf } from '../../errors.js'
 import { clientAuthOf } from './client-auth.js'
 import { createClientCredentialsGrant } from './client-credentials.js'
 import {
-  ADDRESS_RATE_LIMIT, EMPTY_VALUE, HEADER, HEADER_VALUE, LOG, MISUSE, ROUTE_KIND, SILENT_LOGGER, TEXT_ENCODING, TOKEN_FORM, UNKNOWN_ADDRESS,
+  EMPTY_VALUE, HEADER, HEADER_VALUE, LOG, MISUSE, ROUTE_KIND, SILENT_LOGGER, TEXT_ENCODING, TOKEN_FORM, UNKNOWN_ADDRESS,
   URL_BASE,
 } from './constants.js'
 import { limitKeyOf } from './failure-limiter.js'
@@ -226,15 +226,15 @@ export function createTokenEndpoint({ gate, failureLimiter, tokenStore, tokenReg
   async function serveToken(req, res, origin) {
     const address = remoteAddressOf(req)
     const at = now()
-    const addressWaitMs = addressRequests.retryAfterMs(address, at, ADDRESS_RATE_LIMIT.tokenRequestsPerAddressPerWindow)
+    const addressWaitMs = addressRequests.retryAfterMs(address, at, RATE_LIMITS.tokenRequestsPerAddressPerWindow)
     if (addressWaitMs > 0) return writeUnread(req, res, OAUTH_ERROR.temporarilyUnavailable, rateLimitedHeaders(addressWaitMs))
     addressRequests.add(address, at)
 
     const query = urlOf(req).searchParams
     if (QUERY_SECRETS.some((name) => query.has(name))) return writeUnread(req, res, OAUTH_ERROR.invalidRequest)
     if (!isFormMediaType(req.headers[HEADER.contentType])) return writeUnread(req, res, OAUTH_ERROR.invalidRequest)
-    if (declaredTooLarge(req, TOKEN_FORM.maxBodyBytes)) return writeUnread(req, res, OAUTH_ERROR.invalidRequest)
-    const body = await readBody(req, TOKEN_FORM.maxBodyBytes)
+    if (declaredTooLarge(req, TOKEN_ENDPOINT_LIMITS.formBodyBytes)) return writeUnread(req, res, OAUTH_ERROR.invalidRequest)
+    const body = await readBody(req, TOKEN_ENDPOINT_LIMITS.formBodyBytes)
     if (body === TOO_LARGE) return writeUnread(req, res, OAUTH_ERROR.invalidRequest)
     const form = parseForm(body)
     if (form === BAD_FORM) return writeOAuthError(res, OAUTH_ERROR.invalidRequest)
