@@ -111,6 +111,8 @@ export const MISUSE = Object.freeze({
   pluginId: 'fishball bridge: a plugin id is required',
   operations: 'fishball bridge: operations must be a list of tool names',
   link: 'fishball bridge: a link with status(), tools(), onTools() and callTool() is required',
+  gate: 'fishball bridge: gate must have send(operation, sessionId)',
+  imagesSupported: 'fishball bridge: imagesSupported must be a function (exec) => boolean | Promise<boolean>',
 })
 
 /** The background log: names and codes only, never arguments or results (R-SEC-02). */
