@@ -9,21 +9,14 @@ export const RUNTIME = Object.freeze({
     manifest: 'package.json',
     // Preserve exact old bytes before restoring native composition; never overwrite a backup.
     manifestBackupInfix: '.pre-native-web-',
+    manifestBackupSeparator: '-',
   }),
   codeSnapshotPrefix: '.fishball-native-',
-  // The connector's contract package inside the snapshot (M1): the child's shims import
-  // `fishball-connector/contract`, and Node finds it in the snapshot's own node_modules.
-  contractPackage: Object.freeze({ name: 'fishball-connector', directory: 'contract', modules: 'node_modules', manifest: 'package.json' }),
-  // fishball-shared inside the snapshot (R-ARCH-08): the child's modules import it by name, and Node
-  // finds it in the snapshot's own node_modules. Its modules are its top-level JavaScript files.
-  sharedPackage: Object.freeze({ name: 'fishball-shared', modules: 'node_modules', manifest: 'package.json', moduleSuffix: '.js' }),
-  // fishball-core inside the snapshot (V3 R-CORE). The instance never depends on core (TQ-R3) and
-  // never imports it (R-BND-01): copyChildCode copies core's code directories from the sibling
-  // workspace folder as files, resolved by path. Core's manifest stays out of the copy: every
-  // overlay row inside a package that declares `dsh.client` is a client source for DSH's
-  // client-modules, which refuses one package mounted by several rows. Its modules are ES modules
-  // through the snapshot's own `type: module` manifest. I-PLACE replaces this with placement.
-  corePackage: Object.freeze({ source: Object.freeze(['..', 'core']), target: 'fishball-core', directories: Object.freeze(['src', 'ui']), missingCode: 'CORE_SOURCE_UNAVAILABLE' }),
+  // The snapshot holds only the instance's own lifecycle code (Q-5): the lifecycle row, the
+  // native-web adapter and the parent-watch preload the launch imports by path (index.js), each with
+  // the relative-import closure of its module. The plugin set and fishball-hosted-settings are
+  // placed bundles (PLACEMENT), never snapshot code.
+  snapshot: Object.freeze({ lifecycle: 'native-child.js', entries: Object.freeze(['native-web.js', 'src/native-runtime/parent-watch.js']) }),
   host: '127.0.0.1',
   socketName: 'control.sock',
   socketPathBytes: 100,
@@ -162,17 +155,76 @@ export const NATIVE_WEB = Object.freeze({
   redirect: 303,
   redirectLocation: './',
   success: 200,
-  // fishball-core's `fishball-ui` component: its child-only page packages, under core's root.
-  pageDirectory: 'ui',
-  pagePackage: 'fishball-page',
-  // The generic slim settings panel with its settings-section extension point (R-HOST-11).
-  settingsPackage: 'fishball-settings',
-  /** V2 RP: the child-only Fishball Recommended Plugins tab, a sibling package under pageDirectory. */
-  recommendPackage: 'fishball-recommend-plugins',
-  // The instance's hosted-only settings sections (fishball-hosted-settings), at this path in the
-  // instance and in the snapshot.
-  hostedSettings: Object.freeze(['src', 'child-settings']),
   adapterModule: 'native-web.js',
+})
+
+/**
+ * Placement of the plugin set and fishball-hosted-settings into the child profile (R-BND-01/02/03,
+ * R-HOST-01/11, design §8.1; bundled-placement note `f71717e` P3 + 3a). Each placed package is
+ * copied, at every child start and before the profile loads, to `<profile>/vendor/<name>` and
+ * `<profile>/node_modules/<name>` with `dependencies[name] = file:./vendor/<name>`, so DSH resolves it
+ * as a profile package and a later pnpm operation in the child keeps it (I-PLACE probe, both SDKs:
+ * `dsh plugin --profile fishball install <tarball>` succeeds, every placed copy stays, and the next
+ * start places and loads again; core's own dependencies are not fetched). The host never resolves
+ * these copies: their sources are data inside fishball-instance's own folder (R-BND-01).
+ */
+export const PLACEMENT = Object.freeze({
+  /**
+   * The bundles, in the order they are appended to `dsh.profile.bundles` after every other bundle:
+   * fishball-core last, so its guard patch reaches every row the others insert (R-FB-12).
+   * `directory` names a set member's folder: `bundled/<directory>` in a packed instance (REL-PACK
+   * output, never committed; Q-22), else the sibling workspace folder `../<directory>` of a checkout.
+   * `own` is fishball-hosted-settings: the instance's own `src/child-settings/` stays its source
+   * (Q-6), and its manifest's paths are relative to the instance's package root, because its row
+   * imports instance modules beside that folder (the settings relay, the status routes).
+   */
+  bundles: Object.freeze([
+    Object.freeze({ name: 'fishball-board', directory: 'board' }),
+    Object.freeze({ name: 'fishball-fold-notify', directory: 'fold-notify' }),
+    Object.freeze({ name: 'fishball-watchdog', directory: 'watchdog' }),
+    Object.freeze({ name: 'fishball-hosted-settings', own: 'src/child-settings/package.json' }),
+    Object.freeze({ name: 'fishball-core', directory: 'core' }),
+  ]),
+  /**
+   * Libraries placed beside the bundles, never listed as bundles: fishball-shared, core's and the
+   * instance's bundled dependency (R-ARCH-08), and the connector's `./contract` export, which core,
+   * the hosted settings and the lifecycle rows import by name until F-STATUS (M1). Each source is
+   * resolved through the instance's own dependency graph, by the name the copied modules import.
+   * The contract is placed as that export alone, with a manifest naming only it, so the child sees
+   * what a third-party client sees and nothing else of the connector.
+   */
+  shared: 'fishball-shared',
+  contract: Object.freeze({ name: 'fishball-connector', export: './contract' }),
+  packed: 'bundled',
+  parent: '..',
+  vendor: 'vendor',
+  modules: 'node_modules',
+  manifest: 'package.json',
+  manifestPath: './package.json',
+  relative: './',
+  dependency: (name) => 'file:./vendor/' + name,
+  // The record of the names placed so far (3a): a name is switched on only at its first placement.
+  // It lives in the child profile, so a profile deleted by hand starts over with the set on.
+  record: 'fishball-placement.json',
+  recordFormat: 1,
+  temporaryInfix: '.placing-',
+  retiredInfix: '.previous-',
+  // A `files` entry may hold `*` within its last path segment only (as fishball-shared's `*.js`).
+  wildcard: '*',
+  wildcardPattern: '[^/]*',
+  regexSpecial: /[.+?^${}()|[\]\\]/g,
+  regexEscape: '\\$&',
+  script: '.js',
+  // Relative static imports (`import … from './x.js'`, `export … from`, bare `import './x.js'`) whose
+  // targets are copied with a module: a placed or snapshot module must find every relative import.
+  // One statement per line is read (`^`, as the source style has it); a second import on the same
+  // line, or a relative dynamic `import()`, would be missed, and the copied row would then fail to
+  // load in the child, loudly. No copied module has either today.
+  specifiers: /^\s*(?:(?:import|export)\s[^'";]*?\sfrom\s*|import\s*)['"](\.{1,2}\/[^'"]+)['"]/gm,
+  code: Object.freeze({ missing: 'PLACEMENT_SOURCE_UNAVAILABLE', unsafe: 'UNSAFE_PLACEMENT_SOURCE', unsafeDirectory: 'UNSAFE_DIRECTORY', record: 'INVALID_PLACEMENT_RECORD', incompatible: 'PROFILE_INCOMPATIBLE' }),
+  // R-BND-03: an enabled bundle that DSH skips blocks the start; the status names it and DSH's
+  // reason. One line, because the host's launch detail keeps only the first line (launch-detail.js).
+  incompatible: (skipped) => 'Enabled bundles cannot load: ' + skipped.map(({ packageName, reason }) => packageName + ' (' + String(reason).replace(/\s+/g, ' ').trim() + ')').join('; '),
 })
 
 /** Validate without including private admission values in exceptions. */

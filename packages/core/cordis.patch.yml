@@ -81,3 +81,25 @@
     # standalone self-reorder (src/guards/).
     - id: fishball-ui
       name: ./ui/patch/index.js
+    # fishball-ui's page packages (I-PLACE). Each is its own small package under ui/ (its own manifest
+    # and ./client), so its path row is a client source of that package, not a second one of core.
+    - { id: fishball-page, name: ./ui/fishball-page/index.js }
+    - { id: fishball-recommend-plugins, name: ./ui/fishball-recommend-plugins/index.js }
+    # Core's slim child rows (V2 T03–T16, moved from the instance's launch overlay by I-PLACE, row ids
+    # kept so stored settings carry over). Each is a `fishball-core/<export>` package subpath, never a
+    # path: DSH's client modules count every path row inside core's folder as another client source
+    # of fishball-core and refuse the package (I-PLACE probe, both SDKs), and a subpath is not a
+    # client source. They are rows, not sub-plugins of one row, because the boot settlement waits for
+    # loader rows only (B5): the chain nativeRuntime → fishballBridge → fishballApprovals → the app
+    # row must be up before appReady. nativeRuntime comes from the hosted child's lifecycle row; a DSH
+    # without it leaves these rows waiting for that service (W4b's F-WIRE replaces them).
+    # No row here is `required` (decided 2026-11-15): a required row would fail every standalone
+    # DSH's boot, where these rows wait for nativeRuntime. So a broken app row no longer fails a
+    # hosted child's boot loudly (V2 LIFE-02); it shows as the lifecycle's readiness failure
+    # (APP_NOT_PUBLISHED, or STARTUP_TIMEOUT), and the start is reported failed all the same.
+    - { id: fishball-native-session-tools, name: fishball-core/slim/session-tools }
+    - { id: fishball-native-approvals, name: fishball-core/slim/approvals }
+    - { id: fishball-native-app, name: fishball-core/slim/app }
+    - { id: fishball-native-inbox, name: fishball-core/slim/inbox }
+    - { id: fishball-native-admin, name: fishball-core/slim/admin }
+    - { id: fishball-native-provider-sync, name: fishball-core/slim/provider-sync-target }

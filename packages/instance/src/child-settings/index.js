@@ -1,7 +1,8 @@
 /**
  * fishball-hosted-settings, host half (SET, docs/planning/v2-set.md; R-HOST-11): the Fetch routes
- * the hosted-only settings sections call at the child's own origin. Owned by the instance; mounted
- * only by the child's launch overlay, never in main DSH (I-PLACE later places it as the bundle).
+ * the hosted-only settings sections call at the child's own origin. Owned by the instance; placed
+ * as the bundle `fishball-hosted-settings` in a hosted child only (native-runtime/placement.js),
+ * never in main DSH.
  *
  * The sections show the instance's status line (client.status.js beside this file, which the main
  * DSH's instance card in fishball-embed-ui shows too), so these routes answer the same paths and

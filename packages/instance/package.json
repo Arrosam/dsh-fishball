@@ -14,12 +14,14 @@
     "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
+  "//files": "bundled/ holds the plugin set's sources in a packed instance (design §8.1); it is REL-PACK output, never committed (Q-22): in a checkout, placement reads the sibling workspace folders (src/native-runtime/placement.js). src/child-settings/ is fishball-hosted-settings' source (Q-6).",
   "files": [
     "host.js",
     "native-child.js",
     "native-web.js",
     "uninstall.js",
     "src/",
+    "bundled/",
     "locale/*.json",
     "cordis.patch.yml",
     "LICENSE",
