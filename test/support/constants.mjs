@@ -40,19 +40,23 @@ export const SHARED = { name: 'fishball-shared', dir: path.join(REPO, 'packages'
 export const CORE = { name: 'fishball-core', dir: path.join(REPO, 'packages', 'core') }
 /**
  * V3 R-EMBED: `fishball-embed-ui`, the only package with host-DSH UI. The V2 main clients moved into
- * its flat client chunks (DSH serves only `client.*.js` beside the `./client` entry): the connector UI
- * is `client.connector.js` (card records `client.records.js`), the instance's Plugins card is
- * `client.instance.js`. The status line stays the instance's `src/child-settings/client.status.js`.
+ * its flat client chunks (DSH serves only `client.*.js` beside the `./client` entry).
+ * V3 U-SHELL splits that client, with no behaviour change, into the flat parts `client.shell.js`,
+ * `client.marks.js`, `client.attention.js` and `client.records.js` (v3-w3 briefs F2 and Q-7). The
+ * shell holds what the moved connector UI and the instance's Plugins card drew outside the marks,
+ * the latch and the records (frame, styles, the Plugins card); the card records' words are in the
+ * records part. The status line stays the instance's `src/child-settings/client.status.js`.
  */
 export const EMBED_UI = Object.freeze({
   name: 'fishball-embed-ui',
   dir: path.join(REPO, 'packages', 'embed-ui'),
   clientDir: Object.freeze(['src', 'client']),
-  connectorClient: path.join(REPO, 'packages', 'embed-ui', 'src', 'client', 'client.connector.js'),
-  instanceCard: path.join(REPO, 'packages', 'embed-ui', 'src', 'client', 'client.instance.js'),
+  connectorClient: path.join(REPO, 'packages', 'embed-ui', 'src', 'client', 'client.shell.js'),
+  instanceCard: path.join(REPO, 'packages', 'embed-ui', 'src', 'client', 'client.shell.js'),
+  recordsClient: path.join(REPO, 'packages', 'embed-ui', 'src', 'client', 'client.records.js'),
   statusLine: path.join(REPO, 'packages', 'instance', 'src', 'child-settings', 'client.status.js'),
-  /** The served chunk that carries the moved connector UI (its words and controls). */
-  connectorChunk: 'client.connector.js',
+  /** The served package-local chunks that carry the moved UI (its words and controls), U-SHELL's split. */
+  clientChunks: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js', 'client.records.js']),
   /** DSH's boot page graph global (dsh-client-modules, both SDKs). */
   bootGraph: /globalThis\["__DSH_BOOT__"\]\s*=\s*(\{.*?\});?\s*<\/script>/s,
 })
