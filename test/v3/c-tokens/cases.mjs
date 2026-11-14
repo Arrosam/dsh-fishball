@@ -24,6 +24,12 @@
  * (AUTH-UC-01 main, AUTH-ST-01 row 1). Whether a brand-new entry first seen at start (no record)
  * is generated is not settled by R-TOK-08 / design §5.2, so no row asserts it.
  *
+ * Rows 10k–10m (Q5 = B, refused save, the user's final answer, 2026-11-14): a save refused
+ * `value-duplicate` or `ref-duplicate` is not "saving the settings again". The waiting entry stays
+ * `token-unconfigured` with nothing generated, the previous list goes to `restoreTokens` (Q4 = A),
+ * and C-WIRE's write-back of that list, which returns as `apply(previous)` with the settings
+ * reason, is not a save either. Only a later accepted save of the user generates.
+ *
  * Oracles, all public: the credential store (`ctx.credentials.resolve`, and the writes it received),
  * the K1 answers (`match`, `get`, `list`, `onRevoked`), and, for "never leaks" (R-TOK-04), the
  * logger's records, every file under the world's root except the credential file, and every
@@ -39,6 +45,8 @@ const T = { timeout: WAIT.testMs }
 const ID = Object.freeze({ uc01: 'AUTH-UC-01', ep04: 'AUTH-EP-04', bva03: 'AUTH-BVA-03', dt05: 'AUTH-DT-05', st01: 'AUTH-ST-01' })
 /** The decision the AUTH-ST-01 rows 10a–10j cite: an unset value is regenerated only by a settings save. */
 const Q5 = 'Q5 = B (the user, 2026-11-14)'
+/** The decision rows 10k–10m cite: a refused save, and its restore echo, are not a save. */
+const Q5_REFUSED = 'Q5 = B, refused save (the user\'s final answer, 2026-11-14)'
 
 /** One test per case row, named as every V3 suite names them; `todo` names the owning task. */
 function row(sdk, id, part, title, fn, todo) {
@@ -52,6 +60,7 @@ function row(sdk, id, part, title, fn, todo) {
 
 const A = FIXTURE.agentA
 const B = FIXTURE.agentB
+const C = FIXTURE.agentC
 /** One `tokens` list entry (design §5.1): label, switch, credential reference; never a value. */
 const entry = (who, enabled = true) => ({ label: who.label, enabled, ref: who.ref })
 /** A value of exactly the minimum length (TQ-4 A), distinct per seed. */
@@ -409,11 +418,14 @@ export function registerTokenCases(sdk) {
   // Bound(X) and Off-Bound(X) differ from Ready / Off-Unbound only in C-PAIR's pair store: the
   // registry's transitions are the same, so each row starts from an enabled entry with a value.
 
-  /** An enabled entry with a generated value, its K1 entry and the revocation recorder. */
-  async function readyEntry(t) {
-    const world = await worldFor(t, sdk)
+  /**
+   * An enabled entry A with a generated value, its K1 entry and the revocation recorder; `tokens`
+   * is the list saved (A first; others with values the world stores).
+   */
+  async function readyEntry(t, options, tokens = [entry(A)]) {
+    const world = await worldFor(t, sdk, options)
     const seen = revocations(world)
-    await save(world, [entry(A)])
+    await save(world, tokens)
     const value = await generatedValue(world, A.ref)
     await untilStatus(world, A.ref, ENTRY_STATUS.ok)
     return { world, seen, value, before: requireEntry(world, A.ref) }
@@ -504,8 +516,8 @@ export function registerTokenCases(sdk) {
    * A Ready entry whose generated value the user then removed from the store, then synced;
    * `sets` counts the connector's `credentials.set` calls before the unset.
    */
-  async function unsetEntry(t) {
-    const ready = await readyEntry(t)
+  async function unsetEntry(t, options, tokens) {
+    const ready = await readyEntry(t, options, tokens)
     const sets = setsFor(ready.world, A.ref)
     await ready.world.userUnsets(A.ref)
     await ready.world.registry.refresh()
@@ -630,6 +642,64 @@ export function registerTokenCases(sdk) {
     await save(world, [entry(A, false)])
     assert.ok(await staysFalse(async () => setsFor(world, A.ref) > sets || (await world.resolve(A.ref)) !== undefined), 'a value was generated for a disabled entry')
     await save(world, [entry(A, true)])
+    await assertGeneratedOnSave(world, A.ref, old)
+  })
+
+  // Rows 10k–10m: a refused save while A waits (Q5 = B, refused save). The accepted list is
+  // [A, B]; B has a user value and C (not listed) the same one, so adding C is `value-duplicate`
+  // and adding an entry on B's ref is `ref-duplicate` (SETTINGS_REFUSAL, R-TOK-08).
+
+  /** The accepted list of rows 10k–10m and the value B and C share. */
+  const SHARED = longEnough('shared')
+  const accepted = [entry(A), entry(B)]
+  /** The label, switch and ref of each entry of a list (the K1 settings shape, design §5.1). */
+  const settingsOf = (list) => list.map(({ label, enabled, ref }) => ({ label, enabled, ref }))
+  /** Entry A waiting after an unset, next to B, with `restoreTokens` unless `noRestore`. */
+  async function waitingNextToB(t, noRestore = false) {
+    const waiting = await unsetEntry(t, { stored: { [B.ref]: SHARED, [C.ref]: SHARED }, noRestore }, accepted)
+    await untilStatus(waiting.world, A.ref, ENTRY_STATUS.tokenUnconfigured)
+    await untilStatus(waiting.world, B.ref, ENTRY_STATUS.ok)
+    return waiting
+  }
+  /** The save is refused with `code`, shows no value, and leaves A waiting and B as it was. */
+  async function assertRefusedKeepsWaiting(world, tokens, code, sets) {
+    const result = await world.registry.apply(tokens)
+    assert.equal(result?.ok, false, 'the duplicate save was accepted: ' + JSON.stringify(result))
+    assert.equal(result.code, code)
+    assert.ok(!JSON.stringify(result).includes(SHARED), 'the refusal carries the value')
+    await assertStaysUnconfigured(world, A.ref, sets, `by the save refused ${code} (${Q5_REFUSED})`)
+    assertMatches(world, B.ref, SHARED)
+  }
+  /**
+   * The refused save of `tokens` (`code`): A keeps waiting; restoreTokens gets the accepted list;
+   * C-WIRE's write-back returns as `apply(previous)` and still nothing is generated; then the
+   * user's accepted save generates A's value.
+   */
+  async function refusedThenRestored(t, tokens, code) {
+    const { world, value: old, sets } = await waitingNextToB(t)
+    await assertRefusedKeepsWaiting(world, tokens, code, sets)
+    assert.equal(world.restored.length, 1, 'restoreTokens calls: ' + JSON.stringify(world.restored))
+    const previous = world.restored[0]
+    assert.deepEqual(settingsOf(previous), accepted, 'restoreTokens did not get the previous list')
+    await save(world, previous)
+    await assertStaysUnconfigured(world, A.ref, sets, `by the restore's settings echo (${Q5_REFUSED})`)
+    assert.equal(world.restored.length, 1, 'the echo was refused and restored again')
+    await save(world, accepted)
+    await assertGeneratedOnSave(world, A.ref, old)
+    assertMatches(world, B.ref, SHARED)
+  }
+
+  row(sdk, ID.st01, '10k', `Unconfigured (unset) → a save refused value-duplicate, then its restore echo → Unconfigured, nothing generated; restoreTokens gets the previous list; → an accepted save → Ready (${Q5_REFUSED}; Q4 = A)`,
+    (t) => refusedThenRestored(t, [...accepted, entry(C)], SETTINGS_REFUSAL.valueDuplicate))
+  row(sdk, ID.st01, '10l', `Unconfigured (unset) → a save refused ref-duplicate, then its restore echo → Unconfigured, nothing generated; restoreTokens gets the previous list; → an accepted save → Ready (${Q5_REFUSED})`,
+    (t) => refusedThenRestored(t, [...accepted, { label: C.label, enabled: true, ref: B.ref }], SETTINGS_REFUSAL.refDuplicate))
+  row(sdk, ID.st01, '10m', `Unconfigured (unset), no restoreTokens → saves refused value-duplicate and ref-duplicate → Unconfigured, nothing generated; → an accepted save → Ready (${Q5_REFUSED})`, async (t) => {
+    const { world, value: old, sets } = await waitingNextToB(t, true)
+    const before = world.registry.list()
+    await assertRefusedKeepsWaiting(world, [...accepted, entry(C)], SETTINGS_REFUSAL.valueDuplicate, sets)
+    await assertRefusedKeepsWaiting(world, [...accepted, { label: C.label, enabled: true, ref: B.ref }], SETTINGS_REFUSAL.refDuplicate, sets)
+    assert.deepEqual(world.registry.list(), before, 'a refused save changed the entries')
+    await save(world, accepted)
     await assertGeneratedOnSave(world, A.ref, old)
   })
   row(sdk, ID.st01, 12, 'Gone → any request → Gone: the old value authenticates nothing and the entry stays unknown; no second revocation', async (t) => {
