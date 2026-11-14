@@ -11,6 +11,7 @@
 import {
   ENDPOINT_LIMITS, HOSTS, HTTP_REFUSAL, HTTP_STATUS, ORIGIN_RULE, RATE_LIMITS, REQUEST_GATE, TIME_UNIT,
 } from '../../../mcp-schema/index.js'
+import { originOf } from '../oauth/index.js'
 import { AUTHORITY, BUCKET_COST, LOG, MS_PER_MINUTE } from './constants.js'
 
 const SILENT_LOGGER = Object.freeze({ warn() {} })
@@ -100,13 +101,11 @@ function trustedMatcher(entry, scheme) {
  * @param {import('../../../mcp-schema/index.js').GateListenerFacts} facts DSH's listener facts and the clock.
  *   `approvalPort` is part of the facts but unused here: `Host` is port-agnostic on every surface,
  *   as on DSH's own fence (Fishball 2026-11-14, Q9).
- * @param {object} ports
- * @param {(req: {headers: object}, options: {secure: boolean}) => string | undefined} ports.originOf
- *   C-OAUTH's `originOf` (`src/mcp/oauth/`), the one rule for the request's origin; C-WIRE passes it.
+ * @param {object} [ports]
  * @param {{warn(...args: unknown[]): void}} [ports.logger] gets the one insecure-listener diagnostic
  * @returns {import('../../../mcp-schema/index.js').RequestGate}
  */
-export function createRequestGate(facts, { originOf, logger = SILENT_LOGGER }) {
+export function createRequestGate(facts, { logger = SILENT_LOGGER } = {}) {
   const scheme = facts.secure ? HOSTS.remoteScheme : HOSTS.loopbackScheme
   // The listener facts never change while it runs (DSH rebinds by restarting), so the bind address,
   // the trusted hosts and the exposure are decided once.
@@ -128,7 +127,8 @@ export function createRequestGate(facts, { originOf, logger = SILENT_LOGGER }) {
     if (req.headers[REQUEST_GATE.headers.origin] === undefined) return true
     if (REQUEST_GATE.originRule[surface] !== ORIGIN_RULE.ownOnly) return false
     const origin = single(req.headers, REQUEST_GATE.headers.origin)
-    // The page's own origin is the checked `Host` under the listener's scheme (R-OA-11, S7b F4).
+    // The page's own origin is the checked `Host` under the listener's scheme (R-OA-11, S7b F4), by
+    // C-OAUTH's one host → origin rule.
     return origin !== undefined && origin === originOf(req, { secure: facts.secure })
   }
 

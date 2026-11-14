@@ -14,8 +14,8 @@
  * 7. the SDK (`createMcpHandler`, `legacy: 'reject'`): version and header checks, then dispatch.
  *
  * Every tunable is K1's (`../../../mcp-schema`). The audience and `resource_metadata` follow the
- * request's origin as C-OAUTH's `originOf(req, {secure})` gives it (R-OA-01, S1 C29), so this
- * module never derives a scheme or reads a forwarded header.
+ * request's origin as C-OAUTH's `originOf(req, {secure})` (`../oauth/`) gives it (R-OA-01, S1 C29),
+ * so this module never derives a scheme or reads a forwarded header.
  */
 import { readFileSync } from 'node:fs'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
@@ -26,6 +26,7 @@ import {
 } from '../../../mcp-schema/index.js'
 import { diagnosticOf } from '../../errors.js'
 import { powerOf } from '../../pairs/index.js'
+import { originOf } from '../oauth/index.js'
 import {
   BEARER_MISSING, HTTP_HEADER, JSON_RPC, LOG, MANIFEST_URL, MEDIA_TYPE, SDK_OPTION, SERVER_NAME, TEXT_ENCODING, UNKNOWN_ADDRESS,
   URL_BASE, unsupportedVersionMessage,
@@ -178,7 +179,6 @@ function replayed(req, body, caller) {
  * @param {import('../../../mcp-schema/index.js').BearerVerifier} ports.verifier C-OAUTH's
  * @param {import('../../../mcp-schema/index.js').FailureLimiter} ports.failures the one shared limiter (C-OAUTH)
  * @param {Pick<import('../../../mcp-schema/index.js').PairStore, 'pairOf' | 'seen'>} ports.pairs C-PAIR's store
- * @param {(req: {headers: object}, options: {secure: boolean}) => string | undefined} ports.originOf C-OAUTH's
  * @param {boolean} ports.secure GateListenerFacts.secure of DSH's listener
  * @param {(principalKey: string) => Promise<object>} ports.readEvents the `resources/read fishball://events`
  *   result for a full caller (C-WIRE binds C-MAILBOX's `readEventsResource`; Fishball 2026-11-14, Q6 B)
@@ -187,7 +187,7 @@ function replayed(req, body, caller) {
  * @param {() => number} ports.now injected clock
  * @param {{warn(...args: unknown[]): void}} ports.logger
  */
-export function createMcpEndpoint({ gate, verifier, failures, pairs, originOf, secure, readEvents, populate = () => {}, now, logger }) {
+export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, readEvents, populate = () => {}, now, logger }) {
   const onerror = (error) => logger.warn(LOG.format, LOG.sdkError, diagnosticOf(error))
 
   /** One fresh McpServer per request (the SDK's per-request factory), built for the verified caller. */
