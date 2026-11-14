@@ -182,7 +182,8 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   const valueGroups = (reads) => sharedGroups(reads.filter((state) => state.fingerprint !== null), (state) => state.fingerprint, sameFingerprint)
 
   /**
-   * Two entries may never hold one value (the user's decision 2026-11-14, Q4 = A): a save that
+   * Two entries may never hold one value (the user's decision 2026-11-14, C-TOKENS question 4 =
+   * A, kept as built): a save that
    * makes an entry a duplicate that was not one already (a new item counts as not one) is refused
    * and the previous list written back, logged with the labels only. A save that leaves an existing
    * duplicate as it was is not refused, so a label change or a disable is never blocked by it. A
@@ -194,10 +195,10 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
     return group.some((state) => !wasDuplicate(state))
   }
 
-  /** Whether the commit should generate a value for this item (R-TOK-08; `awaitsSave`). */
-  async function mayGenerate(state, reason) {
+  /** Whether the commit should generate a value for this item (R-TOK-08), given `awaitsSave`'s answer. */
+  async function mayGenerate(state, waiting) {
     const { item, value, unreadable } = state
-    if (!item.enabled || value !== undefined || unreadable || !isRef(item.ref) || awaitsSave(state, reason)) return false
+    if (!item.enabled || value !== undefined || unreadable || !isRef(item.ref) || waiting) return false
     try { return (await credentials.describe(item.ref)).writable === true } catch (error) {
       logger.warn(LOG.credentialRead, item.label, diagnosticOf(error))
       return false
@@ -205,14 +206,18 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   }
 
   /**
-   * The user's decision 2026-11-14, Q5 = B: an entry whose value was unset outside a settings save
-   * (a store edit, or one seen at start) stays `token-unconfigured` with no generated value until
-   * the user saves the settings again; any value ends the wait. Only an entry that had a value
-   * waits: a new entry, or one whose ref never held a value, is generated for as R-TOK-08 says.
+   * The user's decision 2026-11-14, C-TOKENS question 5 = B: an entry whose value was unset
+   * outside a settings save (a store edit, or one seen at start) stays `token-unconfigured` with no
+   * generated value until the user saves the settings again; any value ends the wait. Only an
+   * entry that had a value waits: a new entry, or one whose ref never held a value, is generated
+   * for as R-TOK-08 says. The wait is recorded as the record's `awaitSave`, so a restart (whose
+   * start sync sees no value, and no earlier one) keeps waiting. A save ends it even while the
+   * value cannot be read: the user did save, and the read failing is not a reason to wait longer.
    */
   function awaitsSave({ record, fingerprint, unreadable }, reason) {
+    if (reason === SYNC_REASON.settings) return false
     if (unreadable) return record?.awaitSave === true
-    if (reason === SYNC_REASON.settings || fingerprint !== null) return false
+    if (fingerprint !== null) return false
     return record?.awaitSave === true || (record !== undefined && record.fingerprint !== null)
   }
 
@@ -231,7 +236,8 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   /** Phase 2 for one item: generate if needed, then `{next, status, kind}`: its next record, K1 status and revocation, if any. */
   async function commitOne(state, reason) {
     const { item, record, unreadable } = state
-    const generatedValue = (await mayGenerate(state, reason)) ? await generateFor(item) : undefined
+    const waiting = awaitsSave(state, reason)
+    const generatedValue = (await mayGenerate(state, waiting)) ? await generateFor(item) : undefined
     const value = generatedValue ?? state.value
     // An unreadable value keeps what the record knew: it is unknown, not changed (see the header).
     const fingerprint = generatedValue !== undefined ? fingerprinter.of(generatedValue) : unreadable ? record?.fingerprint ?? null : state.fingerprint
@@ -253,7 +259,7 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
       generated,
       fingerprint,
       keyId: unreadable && record !== undefined ? record.keyId : fingerprinter.id,
-      awaitSave: awaitsSave({ record, fingerprint: state.fingerprint, unreadable }, reason),
+      awaitSave: waiting,
       removed: false,
     }
     return { next, status, kind }

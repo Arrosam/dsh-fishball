@@ -70,8 +70,8 @@ export const CREDENTIALS_UPDATED = 'credentials/reference-updated'
 
 /**
  * Why a sync runs. Only `settings` counts as "the user saved the settings": only a save is refused
- * and undone for a value duplicate (Q4 = A), and only a save ends an unset value's wait for a
- * generated one (Q5 = B); see registry.js.
+ * and undone for a value duplicate, and only a save ends an unset value's wait for a generated one
+ * (the user's decisions 2026-11-14, C-TOKENS questions 4 = A and 5 = B); see registry.js.
  */
 export const SYNC_REASON = Object.freeze({ start: 'start', settings: 'settings', credentials: 'credentials' })
 
