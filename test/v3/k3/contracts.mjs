@@ -6,7 +6,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { FILES } from './constants.mjs'
+import { DATA_ONLY, FILES } from './constants.mjs'
+import { dataOnlyViolations } from './data-only.mjs'
 import { blankComments, declarationTexts, folderFiles, model, unwrapPromise } from './declarations.mjs'
 
 const loaded = new Map()
@@ -30,6 +31,18 @@ export function needDeclarations(c) {
 export function behaviourScripts(c) {
   return c.files.filter((f) => FILES.script.test(f))
     .filter((f) => !FILES.emptyScript.test(blankComments(fs.readFileSync(path.join(c.dir, f), 'utf8')).trim()))
+}
+
+/**
+ * Core contracts under the K3 amendment 2026-11-14: the script files with code other than the one
+ * allowed `constants.js`, and that file's data-only violations (none when it is absent).
+ */
+export function coreScriptFindings(c) {
+  const constants = path.join(c.dir, DATA_ONLY.file)
+  return {
+    others: behaviourScripts(c).filter((f) => f !== DATA_ONLY.file),
+    constants: fs.existsSync(constants) ? dataOnlyViolations(fs.readFileSync(constants, 'utf8')) : [],
+  }
 }
 
 /** The members of a named service (found by its Cordis name), asserting it is declared. */

@@ -665,6 +665,36 @@ export const SETTINGS_REFUSAL = Object.freeze({ refDuplicate: 'ref-duplicate', v
 export const PAIR_STATE = Object.freeze({ paired: 'paired', unpaired: 'unpaired' })
 export const CONNECTOR_STATUS = Object.freeze({ approvalPortInUse: 'approval-port-in-use' })
 
+/**
+ * The words of a Fishball DSH's link to its target connector. K1 is their one runtime owner
+ * (DECIDED D7): they cross the connector–core boundary, and core vendors K1. K3
+ * `host-services/child.d.ts` types the same words as `TargetState` and `TargetCode`, and K3
+ * `core/contracts/events.d.ts` types `disconnected` in `CommitSendResult`; a K3 amendment of one
+ * of those types changes this object in the same change.
+ * - TARGET_STATE: `targetStatus().state` (design §4.1).
+ * - TARGET_CODE: `targetStatus().code` (design §6.1, §9.1; R-MIG-03; R-HOST-10 for `token-revoked`).
+ *   `insecure` and `invalid` (DECIDED D5) are core's own refusals of a target URL before any
+ *   request (R-FB-04; REM-EP-01 rows 6–8), reported with state `target-unset`: plain `http:` to a
+ *   host that is not a loopback name, and a value that is not an `http:` / `https:` URL.
+ * - LINK_REFUSAL: the answer code of a call made while the link is down (design §6.3, R-REM-04):
+ *   the call never reached the connector.
+ */
+export const TARGET_STATE = Object.freeze({
+  connected: 'connected',
+  unreachable: 'target-unreachable',
+  refused: 'token-refused',
+  unset: 'target-unset',
+})
+export const TARGET_CODE = Object.freeze({
+  unreachable: 'TARGET_UNREACHABLE',
+  refused: 'TOKEN_REFUSED',
+  incompatible: 'TARGET_INCOMPATIBLE',
+  revoked: 'token-revoked',
+  insecure: 'target-insecure',
+  invalid: 'target-invalid',
+})
+export const LINK_REFUSAL = Object.freeze({ disconnected: 'disconnected' })
+
 
 /**
  * Refusal codes of the core tools (R-CON-02): `structuredContent.code` of `{ok: false}`. The shared

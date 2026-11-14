@@ -29,12 +29,14 @@ import { openSettingsPage } from '../core/page.mjs'
 import { caseName, caseTest } from '../shared/cases.mjs'
 import { SET_SIDE, V3 } from '../shared/constants.mjs'
 import {
-  API_VERSION, ASK_CARD, CHILD, FOLDER, HANDOVER, INTEGRATION, INTERCEPT, LATER, SECTION, SERVICE, TOKENS,
+  API_VERSION, ASK_CARD, CHILD, DATA_ONLY, DATA_ONLY_FORMATTER, DATA_ONLY_SAMPLES, FOLDER, HANDOVER, INTEGRATION, INTERCEPT,
+  LATER, SECTION, SERVICE, TOKENS,
 } from './constants.mjs'
 import {
-  assertIncludes, assertParams, behaviourScripts, contracts, elementType, member, needDeclarations, resultCodes,
-  serviceByShape, serviceMembers, vocabulary,
+  assertIncludes, assertParams, behaviourScripts, contracts, coreScriptFindings, elementType, member, needDeclarations,
+  resultCodes, serviceByShape, serviceMembers, vocabulary,
 } from './contracts.mjs'
+import { dataOnlyViolations } from './data-only.mjs'
 import { specifiers, syntaxErrors } from './declarations.mjs'
 
 const host = () => contracts(FOLDER.hostServices)
@@ -133,11 +135,28 @@ export function registerK3Cases(sdk) {
       needDeclarations(c)
       assert.deepEqual(syntaxErrors(c.texts), [], 'declaration syntax')
     })
-    caseTest(sdk, 'K3', 'types', `${label}: types only, no behaviour code`, () => {
-      needDeclarations(get())
-      assert.deepEqual(behaviourScripts(get()), [], 'script files with code')
+  }
+  // Host-services stays strictly types only; the K3 amendment 2026-11-14 does not touch it.
+  caseTest(sdk, 'K3', 'types', 'host-services: types only, no behaviour code', () => {
+    needDeclarations(host())
+    assert.deepEqual(behaviourScripts(host()), [], 'script files with code')
+  })
+  // K3 amendment 2026-11-14 (Fishball, the user's rule: each tunable value is defined once in its
+  // contract's constants object): core contracts may also hold one data-only constants.js.
+  caseTest(sdk, 'K3', 'types', `core contracts: types plus one data-only ${DATA_ONLY.file} (K3 amendment 2026-11-14)`, () => {
+    needDeclarations(core())
+    assert.deepEqual(coreScriptFindings(core()), { others: [], constants: [] }, `script files with code other than ${DATA_ONLY.file}, and ${DATA_ONLY.file} violations`)
+  })
+  for (const [title, text, dataOnly] of DATA_ONLY_SAMPLES) {
+    caseTest(sdk, 'K3', 'types', `data-only detector self-check: ${title} → ${dataOnly ? 'passes' : 'fails'}`, () => {
+      const found = dataOnlyViolations(text)
+      if (dataOnly) assert.deepEqual(found, [], 'reported as not data only')
+      else assert.ok(found.length > 0, 'not detected')
     })
   }
+  caseTest(sdk, 'K3', 'types', 'data-only detector self-check: the template formatter fails with the formatter allowance off', () => {
+    assert.ok(dataOnlyViolations(DATA_ONLY_FORMATTER, { templateFormatters: false }).length > 0, 'the allowance flag does not govern formatters')
+  })
   // R-BND-01 / PLAT-EP-07: the connector reaches no module of the set; core reaches nothing of the instance.
   caseTest(sdk, 'K3', 'types', 'host-services declarations reference no package of the Fishball set or the instance', () => {
     needDeclarations(host())

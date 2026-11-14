@@ -18,7 +18,7 @@ import path from 'node:path'
 import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL } from '../../../packages/connector/mcp-schema/index.js'
 // A namespace import: a value the product has not exported yet fails the cases that use it, with a
 // reason, instead of failing this whole file at module link time (test-first).
-import * as EVENTS_CONSTANTS from '../../../packages/core/src/events/constants.js'
+import * as EVENTS_CONSTANTS from '../../../packages/core/contracts/constants.js'
 import { REPO } from '../../support/constants.mjs'
 
 export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL }

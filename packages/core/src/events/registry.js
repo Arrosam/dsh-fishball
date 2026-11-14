@@ -2,12 +2,13 @@
  * The interception registrations and the choice of one receiver (R-INT-01…03; K3 `events.d.ts`).
  * Pure bookkeeping: no ledger, no I/O. The interception module owns what happens to an event.
  */
-import { CONTRACT, HOST, LOG, MISUSE } from './constants.js'
+import { INTERCEPT } from '../../contracts/constants.js'
+import { HOST, LOG, MISUSE } from './constants.js'
 
 const isNonEmptyString = (value) => typeof value === 'string' && value !== ''
 
 /**
- * Validate one registration (K3 PROPOSED: an invalid registration throws a `TypeError` and
+ * Validate one registration (K3, DECIDED #17: an invalid registration throws a `TypeError` and
  * registers nothing).
  */
 function validate(registration, onEvent) {
@@ -69,7 +70,7 @@ export function createRegistry({ logger }) {
         pluginId: registration.pluginId,
         types: new Set(registration.types),
         filter: registration.filter,
-        priority: registration.priority ?? CONTRACT.defaultPriority,
+        priority: registration.priority ?? INTERCEPT.defaultPriority,
         onEvent,
         fiber,
         order: ++order,

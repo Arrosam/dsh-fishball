@@ -13,7 +13,10 @@
  * restart) is fenced: its `accept`, `commit` and `release` all lose (S3 §4 items 1–3).
  */
 import { randomUUID } from 'node:crypto'
-import { ACKABLE, CONTRACT, DISPATCH, HOST, INTERCEPTOR_HELD, LOG, MISUSE, REASON, STATE, UNDECIDED } from './constants.js'
+import { INTERCEPT, REASON, STATE } from '../../contracts/constants.js'
+// `disconnected` is K1's: read through core's one K1 seam (the vendored copy), not the link itself.
+import { LINK_REFUSAL } from '../link/schema.js'
+import { ACKABLE, DISPATCH, HOST, INTERCEPTOR_HELD, LOG, MISUSE, UNDECIDED } from './constants.js'
 import { codeOf } from './diagnostics.js'
 import { receiptOf } from './ledger.js'
 
@@ -123,14 +126,14 @@ export function createInterception({ ledger, registry, delivery, link, logger })
         const task = (async () => {
           const won = !settled && await ledger.move(eventId, (current) => !settled && owns(current) && current.state === STATE.open,
             () => ({ state: STATE.committing }))
-          if (!won) return { ok: false, code: CONTRACT.fenced }
+          if (!won) return { ok: false, code: INTERCEPT.fenced }
           logger?.info(LOG.committing, eventId, event.type, entry.pluginId)
           let result
           // K3: commit never rejects; a rejected send is an answer that never reached the
-          // connector (PROPOSED in K3, as S3's prototype treated it).
-          try { result = await send() } catch { result = { ok: false, code: CONTRACT.disconnected } }
+          // connector (K3 events.d.ts, as S3's prototype treated it).
+          try { result = await send() } catch { result = { ok: false, code: LINK_REFUSAL.disconnected } }
           // One move committing → fishball, so no crash can fall between two writes (finding 15).
-          if (result?.ok === false && result.code === CONTRACT.disconnected) await toFishball(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
+          if (result?.ok === false && result.code === LINK_REFUSAL.disconnected) await toFishball(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
           return result
         })()
         commits.push(task)

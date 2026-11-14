@@ -29,9 +29,14 @@ export type LifecycleCode =
  * - `TOKEN_REFUSED`: the target refused the token;
  * - `TARGET_INCOMPATIBLE`: the target is not a V3 connector (404 on the MCP route, design §9.1);
  * - `token-revoked`: the target refused a token the child had paired with before: the user
- *   disabled or deleted the hosted entry (R-HOST-10). No replacement is created on its own.
+ *   disabled or deleted the hosted entry (R-HOST-10). No replacement is created on its own;
+ * - `target-insecure`, `target-invalid` (DECIDED D5): core refused the target URL itself, before any
+ *   request (R-FB-04, REM-EP-01 rows 6–8), with state `target-unset`: plain `http:` to a host that
+ *   is not a loopback name, or a value that is not an `http:` / `https:` URL.
+ * The runtime values are K1's `TARGET_CODE` (`fishball-connector/mcp-schema`, DECIDED D7); a change
+ * here changes that object in the same amendment.
  */
-export type TargetCode = 'TARGET_UNREACHABLE' | 'TOKEN_REFUSED' | 'TARGET_INCOMPATIBLE' | 'token-revoked'
+export type TargetCode = 'TARGET_UNREACHABLE' | 'TOKEN_REFUSED' | 'TARGET_INCOMPATIBLE' | 'token-revoked' | 'target-insecure' | 'target-invalid'
 
 export type ChildStatusCode = LifecycleCode | TargetCode
 
@@ -56,6 +61,8 @@ export interface ChildStatus {
  * - `target-unset`: there is nothing to connect with: no connector in this DSH and a blank
  *   `target.url`, or a `target.tokenRef` that holds no value (HOST-UC-05 A1, which the case left
  *   open between this and `token-refused`: PROPOSED).
+ * The runtime values are K1's `TARGET_STATE` (DECIDED D7); a change here changes that object in the
+ * same amendment.
  */
 export type TargetState = 'connected' | 'target-unreachable' | 'token-refused' | 'target-unset'
 
