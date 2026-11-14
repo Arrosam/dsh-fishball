@@ -124,6 +124,9 @@ export const V2_SUITES = Object.freeze({
     // V3 C-HTTP (PLAT-UC-01, PLAT-EP-01, PLAT-BVA-02, REM-UC-03, REM-EP-02/03, EVT-EP-04 rows 3–4, AUTH-EP-02 rows 1, 2, 11–14, K1b-UC-01/DT-05/BVA-02/ST-02); run with test/run-v3.mjs.
     file('test/v3/c-http/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector MCP route, request gate and limits (C-HTTP)'),
     file('test/v3/c-http/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector MCP route, request gate and limits (C-HTTP)'),
+    // V3 C-TOOLS (PLAT-UC-02, PLAT-EP-02 rows 1–6/4a, PLAT-ST-01, WATCH-UC-03, WATCH-UC-01 E1, WATCH-ST-01 rows 7–8); run with test/run-v3.mjs.
+    file('test/v3/c-tools/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector core MCP tools and result envelope (C-TOOLS)'),
+    file('test/v3/c-tools/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector core MCP tools and result envelope (C-TOOLS)'),
     // V3 C-MAILBOX (EVT-UC-01, EVT-EP-02, EVT-EP-04 rows 1/2/5/6, EVT-BVA-01/02, EVT-ST-01); run with test/run-v3.mjs.
     file('test/v3/c-mailbox/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector per-pair mailbox, poll/ack and hints (C-MAILBOX)'),
     file('test/v3/c-mailbox/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector per-pair mailbox, poll/ack and hints (C-MAILBOX)'),
