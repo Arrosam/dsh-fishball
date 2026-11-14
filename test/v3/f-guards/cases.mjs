@@ -27,6 +27,8 @@ import { V3 } from '../shared/constants.mjs'
 import { corePatch, ownFiles, tokensOf, unitOf } from '../core/static.mjs'
 import { CORE as CORE_PACKAGE, MARK, runtimeOf } from '../core/constants.mjs'
 import { bootGraph, openSettingsPage } from '../core/page.mjs'
+import { readManifest } from '../shared/packages.mjs'
+import { RELAYED } from '../i-place/constants.mjs'
 import { bootEnv, scenario } from './harness.mjs'
 import { BUDGET, DSH_ROW, FIXTURE, GUARDS, LATER, NEVER_GUARDED, OWNER, PROFILE, REPORT, SDK_SCOPE, UI_COMPONENT } from './constants.mjs'
 
@@ -197,10 +199,22 @@ export function registerGuardCases(sdk) {
     assert.ok(names.includes(CORE), show(names))
     assert.equal(names.includes(UI_COMPONENT), false, show(names))
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', "the page's client graph holds one Fishball client entry, core's", async () => {
+  // V3 rule (design e1e5577 §9.1 and §5a.2, R-HOST-04; Fishball decisions 2026-11-15, I-PLACE):
+  // core's patch carries the child rows, and DSH serves a client only for a path row (its nearest
+  // manifest) or a bare package name. So core's own manifest gives exactly one entry, core's, and
+  // fishball-page and fishball-recommend-plugins may come from their own ui packages under core's
+  // ui/. Any other Fishball client entry still fails.
+  caseTest(sdk, 'PLAT-UC-04', 'main', "the page's client graph holds one Fishball client entry from core's manifest, core's; only the page and recommended-tab ui packages beside it", async () => {
     const f = await native()
     const fishball = f.graph1.filter((id) => !id.startsWith(SDK_SCOPE) && /fishball/i.test(id))
-    assert.deepEqual(fishball, [CORE])
+    const uiPackages = Object.entries(RELAYED.rows.uiPackages)
+    assert.deepEqual(fishball.filter((id) => !uiPackages.some(([ui]) => ui === id)), [CORE], 'Fishball client entries other than core and its ui packages')
+    // A graph entry's id is the name of the manifest it is served from: each allowed one must be its own ui package's.
+    for (const [id, folder] of uiPackages.filter(([ui]) => fishball.includes(ui))) {
+      const own = readManifest(path.join(V3.core.dir, folder))
+      assert.equal(own?.name, id, `${id} is not the name of ${folder}/package.json`)
+      assert.ok(own?.dsh?.client, `${folder}/package.json declares no dsh.client`)
+    }
   })
   caseTest(sdk, 'PLAT-UC-04', 'main', "core's own patch (read by the SDK's patch loader) switches every guard row off and never names fishball-hosted-settings", async () => {
     assert.notEqual(corePatch(), null, 'packages/core/cordis.patch.yml is missing')

@@ -44,6 +44,19 @@ const V2B = Object.freeze({
   /** Text a packed V2 file must never contain. */
   v3Text: Object.freeze(['fishball-board', 'fishball-fold-notify', 'fishball-watchdog', 'board_search', 'notify_user', 'BUNDLED_PLUGIN_UNAVAILABLE']),
   v3PackageNames: Object.freeze(['fishball-board', 'fishball-fold-notify', 'fishball-watchdog']),
+  /**
+   * V3 rule (design e1e5577 §9.1, R-HOST-04; Fishball decisions 2026-11-15, I-PLACE): the instance
+   * places the four set members into the child profile, so its placement constants name the V3
+   * packages and its `files` carries `bundled/` (the set's sources in a packed instance, REL-PACK
+   * output). Only these exceptions are allowed: the V3 package names in that one constants file
+   * (never a V3 tool or code, never in another file) and the one `bundled/` files entry.
+   */
+  v3Allowed: Object.freeze({
+    'fishball-instance': Object.freeze({
+      names: Object.freeze({ 'src/native-runtime/constants.js': Object.freeze(['fishball-board', 'fishball-fold-notify', 'fishball-watchdog']) }),
+      files: Object.freeze(['bundled/']),
+    }),
+  }),
   dependencyFields: Object.freeze(['dependencies', 'peerDependencies', 'optionalDependencies', 'bundleDependencies', 'bundledDependencies']),
   /** Words an overlay row id, name or absolute path may not carry. */
   v3Words: /board|fold-notify|watchdog|bundled/i,
@@ -239,18 +252,22 @@ for (const pkg of Object.values(V2B.packages)) {
     assert.deepEqual(offending, [])
   })
 
-  // EP V2B-ART-03a: no packed file (read from disk by its listed path) mentions a V3 name, tool or code.
-  test(`V2B-ART-03a ${pkg.name} packed files never mention V3 names`, async () => {
+  const allowed = V2B.v3Allowed[pkg.name]
+  // EP V2B-ART-03a: no packed file (read from disk by its listed path) mentions a V3 name, tool or
+  // code; the one exception is the instance's placement constants naming the V3 packages (§9.1, see V2B.v3Allowed).
+  test(`V2B-ART-03a ${pkg.name} packed files never mention V3 names (V3 §9.1: only the instance constants may name the V3 packages)`, async () => {
     const hits = []
     for (const file of await packListing(pkg)) {
       const text = fs.readFileSync(path.join(pkg.dir, file), 'utf8')
-      for (const word of V2B.v3Text) if (text.includes(word)) hits.push(file + ': ' + word)
+      const permitted = allowed?.names[file] ?? []
+      for (const word of V2B.v3Text) if (text.includes(word) && !permitted.includes(word)) hits.push(file + ': ' + word)
     }
     assert.deepEqual(hits, [])
   })
 
-  // DT V2B-ART-03b: each dependency field (rows) x each V3 package name (columns) -> never named; `files` has no bundled entry.
-  test(`V2B-ART-03b ${pkg.name} manifest names no V3 dependency and no bundled files entry`, () => {
+  // DT V2B-ART-03b: each dependency field (rows) x each V3 package name (columns) -> never named;
+  // `files` has no bundled entry, except the instance's one `bundled/` (§9.1, see V2B.v3Allowed).
+  test(`V2B-ART-03b ${pkg.name} manifest names no V3 dependency and no bundled files entry (V3 §9.1: the instance's files may hold bundled/)`, () => {
     const m = manifest(pkg.dir)
     const named = []
     for (const field of V2B.dependencyFields) {
@@ -259,7 +276,7 @@ for (const pkg of Object.values(V2B.packages)) {
       for (const name of names) if (V2B.v3PackageNames.includes(name)) named.push(field + ': ' + name)
     }
     assert.deepEqual(named, [])
-    assert.deepEqual((m.files ?? []).filter((entry) => /(^|\/)bundled(\/|$)/.test(entry)), [])
+    assert.deepEqual((m.files ?? []).filter((entry) => /(^|\/)bundled(\/|$)/.test(entry) && !(allowed?.files ?? []).includes(entry)), [])
   })
 
   // EP V2B-ART-04: the package's cordis patch inserts exactly its own row (one row, id and name = package name).

@@ -71,6 +71,14 @@ const R4 = Object.freeze({
   /** Throwaway homes for the staged SDK copies and pnpm's own home/store (no user config is read). */
   scratch: Object.freeze({ stage: 'stage', pnpm: 'pnpm-home' }),
   pnpmArgs: Object.freeze(['--offline', '--ignore-scripts']),
+  /**
+   * R4-UC-01 waits for REL-PACK. Since I-PLACE (design e1e5577 §9.1 and §5a.2, R-HOST-04; Fishball
+   * decisions 2026-11-15) fishball-core is a placed bundle of the child profile, so an offline
+   * `pnpm add` there also resolves core's own dependencies; core's MCP client
+   * (@modelcontextprotocol/client) is not bundled yet and pnpm fails with ERR_PNPM_NO_OFFLINE_META.
+   * Fishball decided (B): REL-PACK bundles it. The body still runs and reports; it is a todo until then.
+   */
+  relPack: 'REL-PACK (Fishball decision B, 2026-11-15: REL-PACK bundles core\'s MCP client @modelcontextprotocol/client; until then an offline pnpm add in the child fails with ERR_PNPM_NO_OFFLINE_META)',
   linkTarget: 'fbtest-outside-dep',
   linkSlot: 'fbtest-external-link',
 })
@@ -180,7 +188,7 @@ describe(`R4 [${SDK}] decision A: the child starts with a private @deepseek-ai c
     t.diagnostic('R4-EP-04 outcome: ' + JSON.stringify(outcome))
   })
 
-  it('R4-UC-01 + R4-EP-05 a plugin installed by real offline pnpm hoists @deepseek-ai/schemastery: ready; then a nested copy under that plugin: ready', { timeout: R2_BUDGET.caseMs, skip: fs.existsSync(R4.pnpm) ? false : 'no pnpm at ' + R4.pnpm }, async (t) => {
+  it.todo('R4-UC-01 + R4-EP-05 a plugin installed by real offline pnpm hoists @deepseek-ai/schemastery: ready; then a nested copy under that plugin: ready — TODO ' + R4.relPack, { timeout: R2_BUDGET.caseMs, skip: fs.existsSync(R4.pnpm) ? false : 'no pnpm at ' + R4.pnpm }, async (t) => {
     const h = home('pnpm-hoisted')
     const { host } = await bootAfterFault(t, h, pnpmAddPlugin)
     const hoisted = path.join(childProfileDir(h), ...scopeSlot(R4.copies.schemastery))

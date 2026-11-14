@@ -8,8 +8,12 @@
  * point `fishballSettingsSections`; the instance's `fishball-hosted-settings` registers the
  * hosted-only sections into it and loads the instance's status line as its package-local chunk
  * `./client.status.js` (R-EMBED), evaluated with `document.currentScript` naming that chunk URL. Both are
- * applied, panel first (the launch overlay's row order). React is the hook shim of rp-recommend.mjs
- * (no React is resolvable here and nothing may be installed); a host element held by ref gets one
+ * applied, panel first (the panel provides the extension point the hosted bundle injects).
+ * V3 rule (design e1e5577 §9.1 and §5a.2, R-HOST-04; Fishball decisions 2026-11-15, I-PLACE): the
+ * panel is no bundle of its own any more. `client.settings.js` registers a package-local chunk of
+ * fishball-core (`{id: 'fishball-core', chunk: 'client.settings.js'}`) whose factory gives the
+ * `fishball-settings` plugin as `settingsPlugin`; no bundle may register `fishball-settings`.
+ * React is the hook shim of rp-recommend.mjs (no React is resolvable here and nothing may be installed); a host element held by ref gets one
  * plain object per rendered position, so each section has its own container, and a portal renders
  * in place. The primitives render host elements carrying every prop. The fake ctx models only the
  * public client surfaces the two bundles name (`slots`, `layout`, `locale`, `reflect.provide`,
@@ -32,6 +36,9 @@ export const PANEL = Object.freeze({
   /** V3 R-HOST-11: the instance-owned hosted-only sections bundle. */
   hostedClient: path.join(BODY_SOUL.instance, 'src', 'child-settings', 'client.js'),
   moduleId: 'fishball-settings',
+  /** V3 I-PLACE: the panel is core's chunk client.settings.js, its plugin the chunk's `settingsPlugin`. */
+  panelOwner: 'fishball-core',
+  panelChunk: 'client.settings.js',
   hostedModuleId: 'fishball-hosted-settings',
   chunk: 'client.status.js',
   chunkRequest: './client.status.js',
@@ -118,12 +125,18 @@ export async function mountPanel(t, { lang = 'en', status = PANEL.status.ready }
       return chunk.exports
     },
   })
+  const registered = (id, chunkName) => registrations.find((r) => r.chunk === chunkName && r.id === id)
   const entryOf = (id) => {
-    const entry = registrations.find((r) => r.chunk === undefined && r.id === id)
+    const entry = registered(id, undefined)
     if (!entry) throw new Error('no bundle registered ' + id)
     return entry.factory(requireFor())
   }
-  const plugin = entryOf(PANEL.moduleId)
+  // V3 I-PLACE: no bundle registers fishball-settings; the panel comes from core's chunk.
+  if (registered(PANEL.moduleId, undefined)) throw new Error('a bundle registers ' + PANEL.moduleId + ': the panel must be ' + PANEL.panelOwner + "'s chunk " + PANEL.panelChunk)
+  const panelChunk = registered(PANEL.panelOwner, PANEL.panelChunk)
+  if (!panelChunk) throw new Error(PANEL.panelClient + ' registered no ' + PANEL.panelOwner + ' chunk ' + PANEL.panelChunk)
+  const plugin = panelChunk.factory(requireFor()).settingsPlugin
+  if (plugin?.name !== PANEL.moduleId) throw new Error('the panel chunk gives no ' + PANEL.moduleId + ' plugin: ' + plugin?.name)
   const hosted = entryOf(PANEL.hostedModuleId)
 
   const dictionaries = new Map()
