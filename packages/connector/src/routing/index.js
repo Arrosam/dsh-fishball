@@ -23,7 +23,9 @@
  * One commit path (`produce`): every event C-ROUTE produces asks the router first and commits to the
  * one recipient it names, or to nobody (R-EVS-03, EVT-DT-01 rule 9: exactly one mailbox entry).
  * `message` routing and the held-queue flush share one serial chain, so a new message never
- * overtakes a held one (K1c-3).
+ * overtakes a held one (K1c-3). Offer and ask commits, `settle`, `withdraw` and every management
+ * change share the managed chain (`managed.withState`), so none of them lands halfway through
+ * another (K1c-2).
  */
 import { randomUUID } from 'node:crypto'
 import { DECISION_KIND_OF, EVENT_TYPE, OFFER_TYPES, QUEUE, REFUSAL, RETIREMENT_REASON, parseOfferId } from '../../mcp-schema/index.js'
@@ -43,6 +45,18 @@ export { ROUTE_FALLBACK } from './constants.js'
 
 const UNAVAILABLE = Object.freeze({ ok: false, code: REFUSAL.unavailable })
 const OK = Object.freeze({ ok: true })
+
+/**
+ * A detached copy of a caller's payload, taken as C-MAILBOX snapshots a draft (`structuredClone`).
+ * A value that cannot be copied is not a valid payload: a caller bug, like any other bad draft.
+ */
+function detachedPayload(payload) {
+  try {
+    return structuredClone(payload)
+  } catch {
+    throw new TypeError(MISUSE.payload)
+  }
+}
 
 /**
  * @returns {Promise<Routing>} see the module comment; members `router`, `managed`, `handover`,
@@ -195,10 +209,14 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     messageFishball(sessionId, payload) {
       // A held record must pass its schema at the next open (store.js), so a bad id is refused here.
       if (sessionId !== undefined && sessionId !== null && !isNonEmptyString(sessionId)) throw new TypeError(MISUSE.sessionId)
-      const draft = checkedFields(EVENT_TYPE.message, { sourceSessionId: sessionId ?? null, correlationId: null, payload })
+      // The payload is copied at the call, and only the copy is checked, routed and held. The step
+      // below runs later on the chain and a held message waits until a flush: a caller that changed
+      // its object meanwhile would change what was checked, and could turn the head of the held
+      // queue into a draft the mailbox refuses, which would block every message behind it.
+      const draft = checkedFields(EVENT_TYPE.message, { sourceSessionId: sessionId ?? null, correlationId: null, payload: detachedPayload(payload) })
       return routeSerial(async () => {
         const { route, committed } = await produce({ type: EVENT_TYPE.message, sessionId: draft.sourceSessionId }, draft)
-        if (route.recipient === null) return held.hold(draft.sourceSessionId, payload)
+        if (route.recipient === null) return held.hold(draft.sourceSessionId, draft.payload)
         return committed.ok ? OK : Object.freeze({ ok: false, code: committed.code })
       })
     },
@@ -235,14 +253,23 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      * to the pair that held it (R-EVS-03 follow-up); a waiting `ask_fishball` gets `{ok: true, settlement}`.
      * @param settlement - the K1 settlement payload `{approvalId, outcome, by, answers?}`
      * @returns whether the offer was live
+     * Runs on the managed chain, as the offer's own commit and `withdraw` do. Off it, a settle that
+     * arrives while its offer's commit is still queued there finds nothing live and returns `false`,
+     * and the offer then lands in the manager's mailbox with nothing left to settle or retire it. On
+     * it, a release or revocation either retires the offer first (settle then finds nothing) or
+     * runs after the settle (and finds nothing to retire). The settlement is copied at the call,
+     * because the step reads it later.
      */
     async settle(offerId, settlement) {
-      const holder = ledger.holderOf(offerId)
-      if (holder === undefined) return false
-      ledger.settle(offerId, Object.freeze({ ok: true, settlement }))
-      await produce({ type: EVENT_TYPE.settlement, sessionId: holder.sessionId, followsPrincipal: holder.principalKey },
-        { sourceSessionId: holder.sessionId, correlationId: offerId, payload: settlement })
-      return true
+      const payload = detachedPayload(settlement)
+      return managed.withState(async () => {
+        const holder = ledger.holderOf(offerId)
+        if (holder === undefined) return false
+        ledger.settle(offerId, Object.freeze({ ok: true, settlement: payload }))
+        await produce({ type: EVENT_TYPE.settlement, sessionId: holder.sessionId, followsPrincipal: holder.principalKey },
+          { sourceSessionId: holder.sessionId, correlationId: offerId, payload })
+        return true
+      })
     },
 
     /**
