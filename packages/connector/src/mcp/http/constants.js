@@ -13,13 +13,25 @@ export const HTTP_HEADER = Object.freeze({
   contentLength: 'content-length',
   wwwAuthenticate: 'www-authenticate',
   authorization: 'authorization',
-  connection: 'connection',
 })
+
 /**
- * A 413 is answered before the rest of the body is read; closing the connection stops Node from
- * draining an unbounded remainder to keep the socket alive.
+ * How the gate reads an authority (`Host`, a `--trusted-host` entry, the bind address):
+ * - `notBare`: characters a bare `host[:port]` never holds (whitespace, userinfo, path, query,
+ *   fragment, backslash); WHATWG parsing would silently drop or reinterpret what follows them;
+ * - `schemeSuffix`: what joins a scheme and an authority into a parseable URL;
+ * - `zoneSeparator` / `ipv6Separator`: a bind address's `%zone` (an interface selector, not address
+ *   text, ignored as DSH's `isBindAddressAuthority` does) and the mark of an IPv6 literal, which a
+ *   URL authority needs bracketed (`ipv6Open` / `ipv6Close`).
  */
-export const CONNECTION_CLOSE = 'close'
+export const AUTHORITY = Object.freeze({
+  notBare: Object.freeze(/[\s/?#@\\]/),
+  schemeSuffix: '//',
+  zoneSeparator: '%',
+  ipv6Separator: ':',
+  ipv6Open: '[',
+  ipv6Close: ']',
+})
 
 /** The token bucket refills ENDPOINT_LIMITS.requestsPerMinute per this many milliseconds. */
 const SECONDS_PER_MINUTE = 60
@@ -33,6 +45,21 @@ export const MEDIA_TYPE = Object.freeze({
   // a refusal (bad filter, version) and opens nothing.
   eventStream: 'text/event-stream',
 })
+
+/** The BearerVerifier's refusal word for "no Bearer value" (index.d.ts BearerVerifier.verify): 401 without `error`. */
+export const BEARER_MISSING = 'missing'
+
+/**
+ * `createMcpHandler` options of the SDK that are this module's choices:
+ * - `legacy`: modern-only (Q12): a 2025-era request gets the SDK's -32022, never a legacy session;
+ * - `noListenStreams`: the `maxSubscriptions` of the handler that serves ordinary requests. Listen
+ *   streams belong only on a pair's own handler (S1 F2, streams.js), so the shared one refuses
+ *   every `subscriptions/listen` in band, should one ever reach it.
+ */
+export const SDK_OPTION = Object.freeze({ legacy: 'reject', noListenStreams: 0 })
+
+/** The manifest's text encoding. */
+export const TEXT_ENCODING = 'utf8'
 
 /** The JSON-RPC members and methods the endpoint reads before the SDK (pair-only power, listen routing). */
 export const JSON_RPC = Object.freeze({
