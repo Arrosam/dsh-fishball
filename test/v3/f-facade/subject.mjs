@@ -58,15 +58,14 @@ export async function makeBridge(sdk, { ctx, link, logger, gate, imagesSupported
   assert.equal(typeof bridge?.mount, 'function', `${SUBJECT.factory}() returned no mount()`)
   let dispose = bridge.mount(ctx.tools)
   const unmount = () => { dispose?.(); dispose = undefined }
-  const own = { unmount, async close() { unmount(); await bridge.close?.() } }
-  // Every other member is the module's own, called on the module's object (it may hold private state).
-  return new Proxy(bridge, {
-    get(target, prop) {
-      if (Object.hasOwn(own, prop)) return own[prop]
-      const value = Reflect.get(target, prop, target)
-      return typeof value === 'function' ? value.bind(target) : value
-    },
-  })
+  // A plain view: the module's object may be frozen (a Proxy over it could not replace `close`).
+  // Every member is the module's own, called on the module's object (it may hold private state).
+  const view = {}
+  for (const key of Object.keys(bridge)) {
+    const value = bridge[key]
+    view[key] = typeof value === 'function' ? value.bind(bridge) : value
+  }
+  return Object.assign(view, { unmount, async close() { unmount(); await bridge.close?.() } })
 }
 
 /** F-INTERCEPT's events module bound to `sdk`. */

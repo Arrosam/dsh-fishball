@@ -124,6 +124,7 @@ export async function worldFor(t, sdk, linkOptions, { events = false, gate, imag
       return result
     },
     modelRequestsWith: (needle) => requests.filter((r) => json(r.messages).includes(needle)),
+    logsWith: (needle) => logs.filter((l) => l.text.includes(needle)),
   }
 
   async function settle(started) {
