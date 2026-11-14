@@ -211,8 +211,27 @@ export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = (
     page.run(text, target.pathname, target.href)
   }
 
+  // Every package-local chunk load still in flight. A chunk is a real fetch from the DSH under test
+  // (core's client loads its settings panel, client.settings.js, this way), so how long it takes
+  // depends on that DSH's load; a fixed number of settle rounds raced it under gate load
+  // (HOST-UC-08 A3 saw no panel). The page waits for these loads instead.
+  const chunkLoads = new Set()
+  const loadChunk = (ownerId, file, row) => {
+    const load = loadScript(ownerId, BOOT.chunkUrl(ownerId, file, row.rev))
+    chunkLoads.add(load)
+    load.finally(() => chunkLoads.delete(load)).catch(() => {})
+    return load
+  }
+  /** Settle until no chunk load is in flight (a started chunk may load another). Failures stay the plugin's own. */
+  const settleChunks = async () => {
+    await settle()
+    while (chunkLoads.size > 0) {
+      await Promise.allSettled([...chunkLoads])
+      await settle()
+    }
+  }
   // The module table and the plugin apply: shared with the R-EMBED main page (../shared/client-graph.mjs).
-  const table = moduleTable({ page, platform, graph, loadChunk: (ownerId, file, row) => loadScript(ownerId, BOOT.chunkUrl(ownerId, file, row.rev)) })
+  const table = moduleTable({ page, platform, graph, loadChunk })
 
   const { Context } = await import(pathToFileURL(path.join(runtimeOf(sdk), BOOT.cordisEntry)).href)
   const root = new Context()
@@ -227,7 +246,7 @@ export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = (
     page.clearTimers()
     for (const p of plugins.reverse()) await p.fiber.dispose?.().catch?.(() => {})
   })
-  await settle()
+  await settleChunks()
 
   const mainEntries = services.entries.get(SLOT.main) ?? []
   const render = (Component) => {

@@ -3,7 +3,7 @@ import test from 'node:test';
 import { registerTaskCases, SDK_VERSIONS } from './support.mjs';
 import { createHttpFixtures } from './http-fixtures.mjs';
 import fs from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -315,7 +315,7 @@ function boundaryAvailability(sdk) {
  *   (registerProviderSyncRoutes) over the real provider-sync bridge, coordinator, child target and
  *   engine of test/support/body-soul-sync.mjs (official disposable credential stores); the child row
  *   has no sync route and the relay no sync op (SET-EP-14; full set in set-main-only-sync.test.mjs);
- * - src/native-runtime/overlay.js launchOverlay and installation.js copyChildCode.
+ * - src/native-runtime/overlay.js launchOverlay and index.js composedProfile (placement, no child).
  * Browser rendering, native Settings/Plugins navigation and the real child lifecycle are not
  * observable here; each case says which remainder stays post-merge e2e.
  * ============================================================================================= */
@@ -332,20 +332,27 @@ const SET = Object.freeze({
   base: 'http://dsh.internal',
   site: Object.freeze({ header: 'sec-fetch-site', same: 'same-origin', cross: 'cross-site' }),
   rowId: 'fishball-settings',
-  pageRowId: 'fishball-page',
   rowInject: Object.freeze(['nativeRuntime', 'connection']),
   /**
-   * V3 R-CORE (2) / R-HOST-11: the generic panel row is fishball-core's `fishball-ui` component in
-   * the snapshot; the hosted-only sections with the relay routes are the instance-owned
-   * `fishball-hosted-settings` row, at the same path in the instance and the snapshot.
+   * V3 rule (design e1e5577 §9.1 and §5a.2, R-HOST-04; Fishball decisions 2026-11-15, I-PLACE): no
+   * launch-overlay row is `fishball-settings` any more. The generic panel is fishball-core's
+   * package-local chunk `client.settings.js` (its `settingsPlugin`), started by core's own client;
+   * the hosted-only sections with the relay routes are the instance-owned `fishball-hosted-settings`
+   * bundle (src/child-settings/, its own one-row patch), placed into the child profile with core.
    */
-  rowModule: Object.freeze(['fishball-core', 'ui', 'fishball-settings', 'index.js']),
   hostedRowId: 'fishball-hosted-settings',
   rowSource: Object.freeze(['src', 'child-settings', 'index.js']),
+  hostedPatch: path.join(BODY_SOUL.instance, 'src', 'child-settings', 'cordis.patch.yml'),
   sharedChunk: Object.freeze(['src', 'child-settings', 'client.status.js']),
   panelClient: path.join(BODY_SOUL.core, 'client.settings.js'),
+  panelChunk: Object.freeze({ owner: 'fishball-core', file: 'client.settings.js', plugin: 'settingsPlugin' }),
+  /** The child profile's placed copies (the instance's placement: `<profile>/node_modules/<name>`). */
+  placedModules: 'node_modules',
+  /** The installed DSH whose installation a composed child runs (composedProfile's install anchor). */
+  installAnchor: Object.freeze(['@deepseek-ai', 'dsh', 'package.json']),
   instanceClient: EMBED_UI.statusLine,
   instanceManifest: path.join(BODY_SOUL.instance, 'package.json'),
+  instancePatch: path.join(BODY_SOUL.instance, 'cordis.patch.yml'),
   relay: Object.freeze({
     channel: 'instance-settings', version: 1,
     ops: Object.freeze(['status', 'retry', 'restart']),
@@ -543,31 +550,41 @@ const EXECUTABLE = {
   // Executable remainder: composition + row mounting. Rendering, native destinations and the
   // explicit return stay post-merge e2e: browser panel on both SDKs (docs/planning/v2-set.md "Remaining limits").
   async 'SET-UC-01'(t) {
-    const { childModule, operations } = await overlayOperations(SET.overlayRows);
-    const rows = insertedRows(operations);
-    const at = rows.findIndex((row) => row.id === SET.rowId);
-    assert.ok(at >= 0, 'launch overlay inserts the fishball-settings row');
-    assert.equal(rows[at].name, path.join(path.dirname(childModule), ...SET.rowModule), 'row loads <snapshot>/fishball-core/ui/fishball-settings/index.js');
-    assert.equal(rows[at - 1]?.id, SET.pageRowId, 'fishball-settings is inserted right after fishball-page');
-    // R-HOST-11: the hosted-only sections are one row, loaded for now by the V2 child-row insertion (R-CORE (4)).
-    const hosted = rows.filter((row) => row.id === SET.hostedRowId);
-    assert.equal(hosted.length, 1, 'launch overlay inserts the fishball-hosted-settings row once');
-    assert.equal(hosted[0].name, path.join(path.dirname(childModule), ...SET.rowSource), 'hosted row loads <snapshot>/src/child-settings/index.js');
+    // V3 rule (design e1e5577 §9.1, §5a.2, R-HOST-04; Fishball 2026-11-15, I-PLACE): the launch
+    // overlay inserts neither settings row; the panel is core's chunk, the hosted sections a placed bundle.
+    const { operations } = await overlayOperations(SET.overlayRows);
+    const overlayIds = insertedRows(operations).map((row) => row.id);
+    for (const id of [SET.rowId, SET.hostedRowId]) assert.equal(overlayIds.includes(id), false, 'the launch overlay must not insert ' + id);
+    // The generic panel: core's package-local chunk client.settings.js, whose plugin is fishball-settings.
+    const registrations = [];
+    new Function('window', fs.readFileSync(SET.panelClient, 'utf8'))({ __ModuleLoader__: { load: (entry) => registrations.push(entry) } });
+    assert.deepEqual(registrations.map((r) => [r.id, r.chunk]), [[SET.panelChunk.owner, SET.panelChunk.file]], 'client.settings.js registers only core\'s chunk, no fishball-settings bundle');
+    assert.equal(registrations[0].factory(() => ({}))[SET.panelChunk.plugin]?.name, SET.rowId, 'the chunk gives the fishball-settings panel plugin');
+    // R-HOST-11: the hosted-only sections are one row, from the bundle's own patch.
+    const { loadOverlayPatches } = await import(pathToFileURL(path.join(SDK_FIXTURE.runtime, '@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js')).href);
+    const hostedRows = insertedRows(loadOverlayPatches('fbset', SET.hostedPatch));
+    assert.deepEqual(hostedRows.map((r) => r.id), [SET.hostedRowId], 'fishball-hosted-settings\' patch inserts its one row');
     const row = await loadInstance(SET.rowSource.join('/'));
     assert.equal(row.name, SET.hostedRowId);
     assert.deepEqual([...row.inject].sort(), [...SET.rowInject].sort(), 'host half needs nativeRuntime and connection');
-    // Never mounted in the main DSH: the main package declares neither child row.
-    for (const id of [SET.rowId, SET.hostedRowId]) assert.equal(fs.readFileSync(SET.instanceManifest, 'utf8').includes(id), false, 'main package manifest does not mount ' + id);
-    // The snapshot copy serves the instance card's client.js as the panel's chunk: one source in both processes.
-    const { copyChildCode } = await loadInstance('src/native-runtime/installation.js');
-    const root = await mkdtemp(path.join(os.tmpdir(), SET.tempPrefix));
+    // Never mounted in the main DSH: neither the main package's `dsh` field nor its own patch names
+    // either child row. (Since I-PLACE its `//files` comment names fishball-hosted-settings as the
+    // source it places, which mounts nothing.)
+    const mainMounts = JSON.stringify(JSON.parse(fs.readFileSync(SET.instanceManifest, 'utf8')).dsh) + fs.readFileSync(SET.instancePatch, 'utf8');
+    for (const id of [SET.rowId, SET.hostedRowId]) assert.equal(mainMounts.includes(id), false, 'main package does not mount ' + id);
+    // A composed child (placement, profile load and overlay; no process): the composed rows hold the
+    // hosted row once and no fishball-settings row, and the placed copies are byte copies of the
+    // sources, so the status line and the panel have one source in both processes.
+    const { composedProfile } = await loadInstance('src/native-runtime/index.js');
+    const root = fs.realpathSync(await mkdtemp(path.join(os.tmpdir(), SET.tempPrefix)));
     t.after(() => rm(root, { recursive: true, force: true }));
-    const profile = path.join(root, 'profile');
-    await mkdir(profile, { mode: 0o700 });
-    const native = await copyChildCode({ profile }, { instanceId: randomUUID(), hostId: 'fbset-host' });
-    const snapshot = path.dirname(native);
-    assert.deepEqual(await readFile(path.join(snapshot, ...SET.sharedChunk)), await readFile(SET.instanceClient), 'client.instance.js is a byte copy of the instance client.js');
-    for (const parts of [SET.rowModule, SET.rowSource]) assert.ok(fs.existsSync(path.join(snapshot, ...parts)), 'snapshot carries ' + parts.join('/'));
+    const composed = await composedProfile({ mainHome: root, installAnchor: path.join(SDK_FIXTURE.runtime, ...SET.installAnchor) });
+    const composedIds = composed.entries.map((entry) => entry.id);
+    assert.equal(composedIds.filter((id) => id === SET.hostedRowId).length, 1, 'the composed child holds the fishball-hosted-settings row once');
+    assert.equal(composedIds.includes(SET.rowId), false, 'no composed row is fishball-settings');
+    const placed = (name, ...parts) => readFile(path.join(composed.paths.profile, SET.placedModules, name, ...parts));
+    assert.deepEqual(await placed(SET.hostedRowId, ...SET.sharedChunk), await readFile(SET.instanceClient), 'the placed client.status.js is a byte copy of the instance status line');
+    assert.deepEqual(await placed(SET.panelChunk.owner, SET.panelChunk.file), await readFile(SET.panelClient), 'the placed core carries client.settings.js unchanged');
   },
 
   // Executable remainder: relay seam (restart/retry relayed once, failure honest, no retry).
