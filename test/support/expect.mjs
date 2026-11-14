@@ -403,8 +403,8 @@ export const bytesOf = (n, ascii = false) => (ascii ? 'b'.repeat(n) : 'é'.repea
 
 /**
  * The served Fishball client, read like a browser (M5): the combo script that carries
- * fishball-embed-ui/client.js, plus the package-local chunk with the moved connector UI
- * (R-EMBED), served at plugins/fishball-embed-ui/client.connector.js with the entry's rev.
+ * fishball-embed-ui/client.js, plus the package-local chunks with the moved connector UI
+ * (R-EMBED; split into parts by U-SHELL), served at plugins/fishball-embed-ui/<chunk> with the entry's rev.
  */
 export async function fishballClientBundle(host) {
   const index = await host.get('/')
@@ -416,8 +416,10 @@ export async function fishballClientBundle(host) {
   // A chunk is served under its own entry's rev (the boot graph), not the combo batch's.
   const graph = EMBED_UI.bootGraph.exec(index.text)
   const rev = graph ? JSON.parse(graph[1]).entries.find((e) => e.id === EMBED_UI.name)?.rev : undefined
-  const chunk = await host.get('/plugins/' + EMBED_UI.name + '/' + EMBED_UI.connectorChunk + '?rev=' + rev)
-  return { found: true, status: res.status === 200 ? chunk.status : res.status, text: res.text + '\n' + chunk.text }
+  const chunks = []
+  for (const file of EMBED_UI.clientChunks) chunks.push(await host.get('/plugins/' + EMBED_UI.name + '/' + file + '?rev=' + rev))
+  const failed = chunks.find((chunk) => chunk.status !== 200)
+  return { found: true, status: res.status === 200 ? (failed?.status ?? res.status) : res.status, text: [res.text, ...chunks.map((chunk) => chunk.text)].join('\n') }
 }
 
 // ---- P6 helpers (watches) ----

@@ -22,7 +22,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import { mkdtemp, mkdir, readFile, readdir, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { after, test } from 'node:test'
+import { after } from 'node:test'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { REPO, TEST_HOMES } from '../../support/constants.mjs'
@@ -30,7 +30,7 @@ import { bootHost, newHome, until } from '../../support/host.mjs'
 import { BUDGET, CHILD_SETTINGS, MARK, ROUTE, STATE, runtimeOf } from '../core/constants.mjs'
 import { admitChild, openSettingsPage } from '../core/page.mjs'
 import { describeRef, has, ownFiles, tokensOf, unitOf } from '../core/static.mjs'
-import { caseName, caseTest, dshInspect } from '../shared/cases.mjs'
+import { caseTest, dshInspect, integrationCase as gatedCase } from '../shared/cases.mjs'
 import { DSH_FIELD, JS_FILE, NPM, SDK, V3 } from '../shared/constants.mjs'
 import { npmTempRoot, observe, readManifest } from '../shared/packages.mjs'
 import {
@@ -73,15 +73,8 @@ async function hostUiFiles(pkg) {
   return hits
 }
 
-/**
- * Run `fn` only at integration: it boots a host DSH and launches a child (see INTEGRATION). Outside
- * integration the test is registered as skipped under the same name, so both SDK runs list it.
- */
-function integrationCase(sdk, id, row, title, fn) {
-  const name = caseName(sdk, id, row, title)
-  if (process.env[INTEGRATION.env] === INTEGRATION.on) test(name, fn)
-  else test(name, { skip: INTEGRATION.skip }, () => {})
-}
+/** Run `fn` only at integration: it boots a host DSH and launches a child (see INTEGRATION). */
+const integrationCase = (sdk, id, row, title, fn) => gatedCase(sdk, id, row, title, fn, INTEGRATION)
 
 // ---------------------------------------------------------------------------------------------
 // Real hosts, one per installed set and SDK process (integration rows only).
@@ -145,18 +138,18 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ R-EMBED (2): the moved client
-  caseTest(sdk, 'R-EMBED', '(2)', 'embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js, client.connector.js, client.instance.js', async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js and U-SHELL's parts client.shell.js, client.marks.js, client.attention.js, client.records.js", async () => {
     needEmbed()
     const files = ownFiles(await unitOf(V3.embed.name))
     for (const file of [EMBED.clientEntry, ...Object.values(EMBED.clientChunks)]) assert.ok(files.includes(file), 'not shipped: ' + file)
   })
-  caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (client.connector.js) carries the V2 contributions' slots and the moved instance card (client.instance.js) a Plugins card slot", async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (U-SHELL's client parts) carries the V2 contributions' slots and the moved instance card (client.shell.js) a Plugins card slot", async () => {
     needEmbed()
     const tokens = await unitTokens(V3.embed)
-    const stringsOf = (file) => new Set(tokens.get(file)?.strings ?? [])
-    const connector = stringsOf(EMBED.clientChunks.connector)
+    const stringsOf = (...files) => new Set(files.flatMap((file) => tokens.get(file)?.strings ?? []))
+    const connector = stringsOf(...Object.values(EMBED.clientChunks))
     assert.deepEqual(EXPECTED_UI.map((e) => e.slot).filter((slot) => !connector.has(slot)), [], 'slots missing from the moved connector UI')
-    const instance = stringsOf(EMBED.clientChunks.instance)
+    const instance = stringsOf(EMBED.cardChunk)
     assert.ok(CARD_SLOTS.some((slot) => instance.has(slot)), 'the moved instance card names no Plugins card slot (' + CARD_SLOTS.join(', ') + ')')
   })
   caseTest(sdk, 'R-EMBED', '(2)', 'the instance exports its status-line module from src/child-settings/ (its one owner)', () => {
@@ -321,7 +314,6 @@ export function registerEmbedCases(sdk) {
   caseTest(sdk, 'PLAT-EP-03', 4, 'fishball-ui ships inside core with no separate plugin entry', null, LATER.matrix)
   caseTest(sdk, 'PLAT-EP-03', 5, "each package installs, enables, disables and lists on DSH's own Plugins page", null, LATER.matrix)
   caseTest(sdk, 'PLAT-EP-03', 6, 'no file writes outside their own folders or profile rows; no host patch', null, LATER.matrix)
-  caseTest(sdk, 'R-EMBED', 'U-SHELL', 'embed-UI host row: service detection and one instance-missing line; the sidebar entry is the one entry with no brand override', null, LATER.shell)
   caseTest(sdk, 'R-EMBED', 'e2e', 'the moved UI in a browser on both SDKs', null, LATER.e2e)
 }
 
