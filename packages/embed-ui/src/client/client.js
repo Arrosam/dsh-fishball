@@ -9,7 +9,8 @@
  * - client.records.js: the ask_fishball row and the card records (U-RECORDS in W4);
  * - client.instance.js: the instance's Plugins card, given the instance-owned status line
  *   client.status.js (a symlink to packages/instance/src/child-settings/client.status.js).
- * The split moved the V2 code unchanged; the parts read the connector's V2 state through the kit.
+ * The split moved the V2 code unchanged, except what R-UI-11/12 remove (the brand override and the
+ * ask_fishball answer control); the parts read the connector's V2 state through the kit.
  *
  * They are package-local chunks, not folders, because DSH's client modules serve a package's
  * `client.js` and only `client.<name>.js` files beside it (CLIENT_CHUNK in dsh-client-modules, the
@@ -29,22 +30,22 @@ window.__ModuleLoader__.load({
       name: 'fishball-embed-ui',
       shell: './client.shell.js',
       /**
-       * Each kit part: its chunk, the factory it exports, and when it runs (UIM-EP-01). `needs` names
-       * the availability flags of which any one is enough (src/host/services.js): marks and the fish
-       * latch need the connector (V2's service is the W3 fallback until C-WIRE); the ask row and
-       * the card records draw a managed session's own events and the connector's V2 state, so they
-       * follow the connector too.
+       * Each kit part: its chunk, the factory it exports, and when it runs (UIM-EP-01, design §4.2).
+       * `needs` names the availability flags of which any one is enough (src/host/services.js):
+       * marks need the hand-over service, the fish latch the tools service (V2's connector service
+       * is the W3 fallback for both until C-WIRE). The ask row and the card records draw a managed
+       * session's events with the connector's V2 state, so they follow the hand-over service.
        */
       parts: Object.freeze([
-        Object.freeze({ chunk: './client.marks.js', factory: 'marksPart', needs: Object.freeze(['connector', 'legacy']) }),
-        Object.freeze({ chunk: './client.attention.js', factory: 'attentionPart', needs: Object.freeze(['connector', 'legacy']) }),
-        Object.freeze({ chunk: './client.records.js', factory: 'recordsPart', needs: Object.freeze(['connector', 'legacy']) }),
+        Object.freeze({ chunk: './client.marks.js', factory: 'marksPart', needs: Object.freeze(['handover', 'legacy']) }),
+        Object.freeze({ chunk: './client.attention.js', factory: 'attentionPart', needs: Object.freeze(['tools', 'legacy']) }),
+        Object.freeze({ chunk: './client.records.js', factory: 'recordsPart', needs: Object.freeze(['handover', 'legacy']) }),
       ]),
       /**
        * The shell runs with any service. The instance card needs no flag: it registers only while
        * the instance row's settings are served (configForms.whileServed), as in V2.
        */
-      shellNeeds: Object.freeze(['page', 'connector', 'legacy']),
+      shellNeeds: Object.freeze(['page', 'handover', 'tools', 'legacy']),
       instance: './client.instance.js',
       status: './client.status.js',
       unavailable: 'fishball embed-ui: part unavailable',
@@ -83,9 +84,11 @@ window.__ModuleLoader__.load({
         start(ctx, part.chunk, when(part.needs, () => Promise.all([shell, require.async(part.chunk)]).then(([{ kit }, module]) => module[part.factory](kit))))
       }
       // With the locator, the card's model sync goes through the host half's routes (R-HOST-07,
-      // design §4.2); without it, through the instance's own V2 routes, as before.
-      start(ctx, EMBED.instance, () => Promise.all([require.async(EMBED.instance), require.async(EMBED.status), shell, available])
-        .then(([instance, { shared, layout }, { kit }, flags]) => instance.instancePlugin(shared, layout, flags.page ? kit.CHILD_UI.route : undefined)))
+      // design §4.2); without it, through the instance's own V2 routes, as before. A shell chunk
+      // that failed to load leaves the card on V2's routes, never without the card.
+      const childRoutes = available.then((flags) => (flags.page ? flags.routes : undefined), () => undefined)
+      start(ctx, EMBED.instance, () => Promise.all([require.async(EMBED.instance), require.async(EMBED.status), childRoutes])
+        .then(([instance, { shared, layout }, routes]) => instance.instancePlugin(shared, layout, routes)))
     }
 
     // No inject of its own: each part declares the client services it needs and starts with them.

@@ -43,7 +43,7 @@ globalThis.__ModuleLoader__?.load({
 
       /**
        * The managed mark in a sidebar row. Its cell, its dot and its flip are the shell's ROW_MARK,
-       * because the shell's one style sheet and the brand mark use them too.
+       * because the shell's one style sheet and the sidebar mark use them too.
        *
        * Idle: a still fish in the leading seat. Running: DSH replaces that seat with its own spinner,
        * so the same fish moves to the trailing seat and animates (0.2.2's always-mounted seat). The
@@ -62,7 +62,7 @@ globalThis.__ModuleLoader__?.load({
        *   it that Fishball has not read). The prefix is src/messaging.js SOURCE_ID.session; the open
        *   statuses are INTAKE_STATUS pending/accepted (src/constants.js).
        * - yellow: a card or question in state.pile whose sessionId is this session.
-       * Fishball's own chat unread count stays on the top-left brand mark, where the design keeps it.
+       * Fishball's own chat unread count stays on the sidebar row's fish.
        */
       const ROW_STATE = Object.freeze({
         unreadSource: 'session/',

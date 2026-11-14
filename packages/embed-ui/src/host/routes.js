@@ -13,7 +13,7 @@
  * - the admission URL goes only into the admit answer: it is never logged, stored or put in an error;
  * - a locator failure without a K3 code answers REFUSAL.failed and never echoes its message.
  */
-import { ADMIT, FETCH, HTTP, LOG, LOOPBACK, REFUSAL, ROUTE, SERVICE } from './constants.js'
+import { ADMIT, FETCH, HTTP, LOG, LOOPBACK, REFUSAL, ROUTE, ROUTE_PREFIX, SERVICE } from './constants.js'
 import { availability, usable } from './services.js'
 
 const json = (status, value) => new Response(JSON.stringify(value), { status, headers: HTTP.headers })
@@ -26,7 +26,7 @@ const isRecord = (value) => value !== null && typeof value === 'object' && !Arra
  */
 export function loopbackHostname(request) {
   const host = request.headers.get(LOOPBACK.hostHeader)
-  if (typeof host !== 'string') return undefined
+  if (typeof host !== 'string' || LOOPBACK.notInAuthority.test(host)) return undefined
   let hostname
   try { hostname = new URL(LOOPBACK.parseScheme + host).hostname } catch { return undefined }
   return LOOPBACK.hostnames.includes(hostname) ? hostname : undefined
@@ -46,8 +46,13 @@ function admitBody(value) {
   return ADMIT.views.includes(value.view) && ADMIT.langs.includes(value.lang) ? { view: value.view, lang: value.lang } : undefined
 }
 
-/** A K3 admit rejection keeps its code; anything else is REFUSAL.failed. */
-const admitRefusal = (error) => (Object.values(ADMIT.code).includes(error?.code) ? error.code : REFUSAL.failed)
+/** A K3 admit rejection keeps its code (409); anything else is REFUSAL.failed (502). */
+const admitRefusal = (error) => (Object.values(ADMIT.code).includes(error?.code)
+  ? refused(HTTP.conflict, error.code)
+  : refused(HTTP.badGateway, REFUSAL.failed))
+
+/** Every route but `services`, by its ROUTE key, as a path relative to DSH's page. */
+const pageRoutes = Object.freeze(Object.fromEntries(Object.entries(ROUTE).map(([key, path]) => [key, path.slice(ROUTE_PREFIX.length)])))
 
 /**
  * Runs `answer(child)` with the usable locator, or answers REFUSAL.unavailable. A throw is
@@ -57,7 +62,7 @@ function withChild(ctx, answer) {
   return async (request) => {
     const child = usable(ctx, SERVICE.child)
     if (child === undefined) return refused(HTTP.unavailable, REFUSAL.unavailable)
-    try { return await answer(child, request) } catch { return refused(HTTP.conflict, REFUSAL.failed) }
+    try { return await answer(child, request) } catch { return refused(HTTP.badGateway, REFUSAL.failed) }
   }
 }
 
@@ -70,7 +75,7 @@ const syncAnswer = (outcome) => json(HTTP.ok, isRecord(outcome) && typeof outcom
 /** The routes, as `{path, methods, fetch}`. */
 export function routes(ctx) {
   return [
-    { path: ROUTE.services, methods: [FETCH.get], fetch: () => json(HTTP.ok, { ok: true, ...availability(ctx) }) },
+    { path: ROUTE.services, methods: [FETCH.get], fetch: () => json(HTTP.ok, { ok: true, ...availability(ctx), routes: pageRoutes }) },
     { path: ROUTE.status, methods: [FETCH.get], fetch: withChild(ctx, (child) => json(HTTP.ok, statusOf(child))) },
     { path: ROUTE.retry, methods: [FETCH.post], fetch: withChild(ctx, async (child) => { await child.retry(); return json(HTTP.ok, statusOf(child)) }) },
     {
@@ -82,8 +87,8 @@ export function routes(ctx) {
         const body = admitBody(await jsonBody(request))
         if (body === undefined) return refused(HTTP.badRequest, REFUSAL.invalid)
         let admitted
-        try { admitted = await child.admit({ ...body, hostname }) } catch (error) { return refused(HTTP.conflict, admitRefusal(error)) }
-        return typeof admitted?.url === 'string' ? json(HTTP.ok, { ok: true, url: admitted.url }) : refused(HTTP.conflict, REFUSAL.failed)
+        try { admitted = await child.admit({ ...body, hostname }) } catch (error) { return admitRefusal(error) }
+        return typeof admitted?.url === 'string' ? json(HTTP.ok, { ok: true, url: admitted.url }) : refused(HTTP.badGateway, REFUSAL.failed)
       }),
     },
     { path: ROUTE.modelsCheck, methods: [FETCH.post], fetch: withChild(ctx, async (child) => syncAnswer(await child.providerSync.check())) },

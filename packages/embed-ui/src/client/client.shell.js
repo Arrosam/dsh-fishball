@@ -50,7 +50,7 @@ window.__ModuleLoader__.load({
     const STATUS = Object.freeze({ starting: 'starting', live: 'live' })
     /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
     /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
-    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', managed: 'api/fishball/managed', requestsAnswer: 'api/fishball/requests/answer', grantsRevoke: 'api/fishball/grants/revoke', attentionRead: '/api/fishball/connector/attention/read' })
+    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', managed: 'api/fishball/managed', attentionRead: '/api/fishball/connector/attention/read' })
     /**
      * The Fishball view (§7) and the connector's frame around it (design §0.5 "The frame", D27).
      * `panelId` is one key shared by the `main` occupant and its `sidebar.panellist` row, as DSH's
@@ -75,7 +75,9 @@ window.__ModuleLoader__.load({
        * refused. The wildcard is safe here because src is only an instance-registered relative
        * path on the main origin (contract 1.2 refuses absolute or token-bearing paths). Its
        * authenticated launch redirects only to the exact owned child, and the grant is write-only:
-       * no clipboard-read or any other feature (Fishball's decision, 2026-11-10).
+       * no clipboard-read or any other feature (Fishball's decision, 2026-11-10). The V3 child view
+       * frames admit's one-time URL at the child's own loopback origin instead (design §4.1); the
+       * same write-only grant then covers that origin and the child's redirect to its clean page.
        */
       iframeAllow: 'clipboard-write *',
       /**
@@ -137,11 +139,12 @@ window.__ModuleLoader__.load({
     })
     /**
      * The V3 frame (U-SHELL; design §4.1, §4.2; R-UI-02, R-UI-03): the instance locator
-     * `fishballChild` as embed-UI's host half re-serves it. Keep `route` in step with
-     * src/host/constants.js ROUTE (this chunk is a classic script and cannot import it); the paths
-     * are relative to DSH's page, as V2's are.
+     * `fishballChild` as embed-UI's host half re-serves it. The host half's routes come from its
+     * `services` answer (`routes`, page-relative), so only that one path is kept here; it is
+     * src/host/constants.js ROUTE.services, which this classic script cannot import.
      * - The frame's `src` is only ever `admit`'s one-time URL, asked for afresh for each frame
-     *   document (first open, a language change, Refresh, the child turning ready again); it is
+     *   document (first open, a language change, Refresh, or a not-ready state the 1 s status poll
+     *   saw; a restart faster than the poll keeps the frame, which then reloads by Refresh); it is
      *   never stored or logged, and the address holds no token (the ticket is redeemed by the child
      *   into its own cookie, S4).
      * - `hostnameRefused` is K3's AdmitErrorCode: the page was not opened under a loopback name, so
@@ -150,20 +153,13 @@ window.__ModuleLoader__.load({
      *   `token-revoked`), so the view offers Retry only there.
      */
     const CHILD_UI = Object.freeze({
-      route: Object.freeze({
-        services: 'api/fishball-embed-ui/services',
-        status: 'api/fishball-embed-ui/child/status',
-        retry: 'api/fishball-embed-ui/child/retry',
-        admit: 'api/fishball-embed-ui/child/admit',
-        modelsCheck: 'api/fishball-embed-ui/child/models/check',
-        modelsAdd: 'api/fishball-embed-ui/child/models/add',
-      }),
+      servicesPath: 'api/fishball-embed-ui/services',
       readyState: 'ready',
       hostnameRefused: 'hostname-refused',
       retryStates: Object.freeze(['failed']),
       retryCodes: Object.freeze(['token-revoked']),
       /** What the host half reports usable (src/host/services.js availability); all false when unreadable. */
-      none: Object.freeze({ page: false, connector: false, legacy: false }),
+      none: Object.freeze({ page: false, handover: false, tools: false, legacy: false, routes: Object.freeze({}) }),
     })
     /**
      * PROPOSED wording (W3 brief P-3): new copy with no text in the spec, except `hostnameRefused`,
@@ -240,7 +236,7 @@ window.__ModuleLoader__.load({
     const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxPendingApprovals', 'argumentExcerptBytes', 'maxMessageBytes', 'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'watchesShown', 'readSessionMessages', 'readSessionBytes', 'forwardExcerptBytes', 'userMessagesListed', 'userMessageExcerptChars'])
     /**
      * The one Fishball accent (§8.5): the app's magenta. It is declared once here and exposed
-     * once as `--fb-accent` (the style sheet below); the ring, the switches and the brand's
+     * once as `--fb-accent` (the style sheet below); the ring, the switches and the mark's
      * badge all read it. DSH mounts this plugin's surfaces in several slots, so the variable is
      * set on the document rather than on a single root element.
      */
@@ -291,8 +287,8 @@ window.__ModuleLoader__.load({
     /**
      * Unread replies on the mark: a count pill on its top-right corner and a short tail wag,
      * repeated every WAG cycle while anything is unread (the pill pops with the wag and rests
-     * between). The pill takes the brand's one accent and a ring in the sidebar's label colour
-     * so it separates from the mark on light and dark themes, as the Deepseek Harness tag does.
+     * between). The pill takes the one accent and a ring in the sidebar's label colour
+     * so it separates from the mark on light and dark themes.
      * The pill shows the count up to `max`, then "${max}+", so it stays narrow in the sidebar.
      * The wag pivots near the tail's root; it is a keyframe list, so a change of look edits data.
      * The pill overhangs the mark by 7px above and 9px to the right.
@@ -338,7 +334,7 @@ window.__ModuleLoader__.load({
     /** Only animate for people who have not asked for less motion (DSH's hero checks the same query). */
     const MOTION_QUERY = '(prefers-reduced-motion: no-preference)'
     const STYLE_ID = 'fishball-style'
-    const CLS = Object.freeze({ cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', askRow: 'fb-ask-row', field: 'fb-field', note: 'fb-note', section: 'fb-section', row: 'fb-row', code: 'fb-code',  mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', muted: 'fb-muted', recordBody: 'fb-record-body', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
+    const CLS = Object.freeze({ cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', askRow: 'fb-ask-row', field: 'fb-field', note: 'fb-note', section: 'fb-section', row: 'fb-row', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', muted: 'fb-muted', recordBody: 'fb-record-body', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
 
     const en = {
       ...PROPOSED_WORDING.en,
@@ -401,7 +397,6 @@ window.__ModuleLoader__.load({
       askRowTitle: 'Ask Fishball',
       askRowReply: 'Reply to Fishball',
       askRowWaitingFishball: 'Waiting for Fishball',
-      askRowWaitingYou: 'Waiting for you',
       'askResult.allowed': 'Allowed once',
       'askResult.rejected': 'Rejected',
       'askResult.question': 'Fishball asks a question',
@@ -487,7 +482,6 @@ window.__ModuleLoader__.load({
       askRowTitle: '询问 Fishball',
       askRowReply: '回复 Fishball',
       askRowWaitingFishball: '等待 Fishball',
-      askRowWaitingYou: '等你处理',
       'askResult.allowed': '已允许一次',
       'askResult.rejected': '已拒绝',
       'askResult.question': 'Fishball 提了一个问题',
@@ -631,7 +625,7 @@ window.__ModuleLoader__.load({
     /**
      * Fishball's fish: wags while anything is unread; flips while a row runs (the managed mark's
      * running variant). A moving mark never wags, so the running state has one animation.
-     * `badge` adds the wrench: the connector's one icon (D22), on the brand, its sidebar row and
+     * `badge` adds the wrench: the connector's one icon (D22), on its sidebar row and
      * managed session rows, where it keeps the unread pill and the green and yellow dots (the
      * user's answer to D0: the icon keeps both). The package icon on the Plugins card is the same
      * drawing (assets/connector-icon.svg).
@@ -674,7 +668,7 @@ window.__ModuleLoader__.load({
     }
 
     const BRAND_ICON = Object.freeze({ [BRAND_STYLE.fishball]: FishballIcon, [BRAND_STYLE.deepseek]: OrcaIcon })
-    /** The icon the Sidebar icon setting chose: the brand mark and the managed-session marks share it. */
+    /** The icon the Sidebar icon setting chose: the sidebar mark and the managed-session marks share it. */
     const brandIconOf = (state) => BRAND_ICON[brandStyleOf(state)] ?? FishballIcon
 
     /** Connector-owned attention latch: count is 0 or 1; no producer unread state. */
@@ -700,14 +694,24 @@ window.__ModuleLoader__.load({
       })
     })()
 
-    /** The sidebar mark before (or without) the attention part: the chosen icon alone, with no latch. */
-    function PlainMark({ size }) {
-      const Icon = brandIconOf(useFishball())
-      return h(Icon, { size, unread: false, badge: true })
+    /**
+     * The sidebar mark before (or without) the attention part: the icon alone, with no latch. Only
+     * with V2's connector does it read the V2 stream (the Sidebar icon setting lives there); without
+     * it, it is Fishball's own icon, so a page with no V2 connector opens no stream to a route that
+     * does not exist (R-UI-09, install row 7).
+     */
+    function makePlainMark(legacy) {
+      if (!legacy) return ({ size }) => h(FishballIcon, { size, unread: false, badge: true })
+      return function PlainMark({ size }) {
+        const Icon = brandIconOf(useFishball())
+        return h(Icon, { size, unread: false, badge: true })
+      }
     }
-    /** The sidebar row's mark: the attention part's seat, else the plain one. */
-    function Mark(props) {
-      return h(seats.use(SEAT.mark) ?? PlainMark, props)
+    /** The sidebar row's mark: the attention part's seat, else `Plain`. */
+    function makeMark(Plain) {
+      return function Mark(props) {
+        return h(seats.use(SEAT.mark) ?? Plain, props)
+      }
     }
     /** The frame header's badge seat (the attention part's unread count); nothing while empty. */
     function FrameBadge(props) {
@@ -723,18 +727,49 @@ window.__ModuleLoader__.load({
      */
     const framedPage = valueStore(FRAME_UI.page.chat)
 
-    /** One read of the connector's own instance route; a failed read keeps what the view showed. */
-    async function readInstance(signal) {
+    /**
+     * One GET of a route of this page: the JSON answer when `valid(answer)` holds, else undefined
+     * (unreachable, not JSON, or not the route's shape), so the caller keeps what it showed.
+     */
+    async function readJson(path, valid, signal) {
       try {
-        const response = await fetch(apiUrl(FRAME_UI.instancePath), { ...FRAME_UI.read, signal })
+        const response = await fetch(apiUrl(path), { ...FRAME_UI.read, signal })
         if (!response.ok) return undefined
         const value = await response.json()
-        return value !== null && typeof value === 'object' && typeof value.attached === 'boolean' ? value : undefined
+        return value !== null && typeof value === 'object' && valid(value) ? value : undefined
       } catch { return undefined }
     }
+    /** The connector's own instance route (V2): an answer that names `attached`. */
+    const isInstanceView = (value) => typeof value.attached === 'boolean'
+    /** The host half's routes: `{ok: true, ...}`. */
+    const isHostAnswer = (value) => value.ok === true
 
-    /** Whether two instance views show the same thing, so a steady poll re-renders nothing. */
+    /** Whether two answers show the same thing, so a steady poll re-renders nothing. */
     const sameInstance = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+
+    /**
+     * Re-reads `path` at once and then every FRAME_UI.pollMs while the caller is mounted and the
+     * tab is visible, one read at a time (conn-OQ-25's cadence), keeping the last valid answer.
+     * @returns `[latest, setLatest]`; latest starts as `initial`.
+     */
+    function usePoll(path, valid, initial) {
+      const [latest, setLatest] = React.useState(initial)
+      React.useEffect(() => {
+        const abort = new AbortController()
+        let polling = false
+        const poll = () => {
+          if (polling || document.hidden) return
+          polling = true
+          void readJson(path, valid, abort.signal).then((next) => {
+            if (next !== undefined && !abort.signal.aborted) setLatest((previous) => (sameInstance(previous, next) ? previous : next))
+          }).finally(() => { polling = false })
+        }
+        poll()
+        const timer = setInterval(poll, FRAME_UI.pollMs)
+        return () => { clearInterval(timer); abort.abort() }
+      }, [])
+      return [latest, setLatest]
+    }
 
     /**
      * The instance the frame shows: the state stream's `instance` (an attach or a detach shows at
@@ -743,22 +778,8 @@ window.__ModuleLoader__.load({
      */
     function useFrameInstance() {
       const streamed = useFishball().instance
-      const [latest, setLatest] = React.useState(streamed)
+      const [latest, setLatest] = usePoll(FRAME_UI.instancePath, isInstanceView, streamed)
       React.useEffect(() => { if (streamed !== undefined) setLatest((previous) => (sameInstance(previous, streamed) ? previous : streamed)) }, [streamed])
-      React.useEffect(() => {
-        const abort = new AbortController()
-        let polling = false
-        const poll = () => {
-          if (polling || document.hidden) return
-          polling = true
-          void readInstance(abort.signal).then((next) => {
-            if (next !== undefined && !abort.signal.aborted) setLatest((previous) => (sameInstance(previous, next) ? previous : next))
-          }).finally(() => { polling = false })
-        }
-        poll()
-        const timer = setInterval(poll, FRAME_UI.pollMs)
-        return () => { clearInterval(timer); abort.abort() }
-      }, [])
       return latest
     }
 
@@ -808,14 +829,72 @@ window.__ModuleLoader__.load({
 
     /** DSH's own empty/error state, centred in the view (dsh-client-ui-schedule .empty). */
     const emptyState = (...children) => h('div', { className: CLS.embedError }, ...children)
+    /** The view's "checking" state, before its first answer. */
+    const loadingState = (t) => emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
+    /** The warning glyph that opens every not-framed state. */
+    const warningGlyph = () => h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph })
+    /** "State <state>" and, when there is one, "Code <code>": the not-framed state's safe details. */
+    const stateDetails = (t, state, code) => [
+      h('p', { key: 'state' }, t('embedState'), ' ', h('code', { className: CLS.code }, state)),
+      code ? h('p', { key: 'code' }, t('embedCode'), ' ', h('code', { className: CLS.code }, code)) : null,
+    ]
 
-    /** One GET of the host half's route; undefined for an answer that is not `{ok: true, ...}`. */
-    async function readRoute(path, signal) {
-      try {
-        const response = await fetch(apiUrl(path), { ...FRAME_UI.read, signal })
-        const value = await response.json()
-        return value?.ok === true ? value : undefined
-      } catch { return undefined }
+    /**
+     * What both Fishball views do while mounted: tell the attention part the page opened, once per
+     * mount (not on every snapshot or iframe refresh; a ref keeps a re-run effect from clearing
+     * twice), and put the framed page back to `chat` when the view goes.
+     * @returns the framed page (`framedPage`) and the language the frame opens in.
+     */
+    function useViewPage(frameLang) {
+      const opened = React.useRef(false)
+      React.useEffect(() => {
+        if (opened.current) return
+        opened.current = true
+        seats.get(SEAT.pageOpened)?.()
+      }, [])
+      React.useEffect(() => () => framedPage.set(FRAME_UI.page.chat), [])
+      const page = React.useSyncExternalStore(framedPage.subscribe, framedPage.get)
+      const lang = React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
+      return { page, lang }
+    }
+
+    /**
+     * A Retry in the header, as V2's frame has it: in flight, then a refusal with its code (the
+     * route's, else FRAME_UI.retryFailed), shown beside the button until the next try.
+     * @param path - the Retry route. @param onDone - gets the route's answer when it was accepted.
+     */
+    function useRetry(path, onDone) {
+      const [retrying, setRetrying] = React.useState(false)
+      const [retryCode, setRetryCode] = React.useState(null)
+      const retry = async () => {
+        setRetrying(true)
+        setRetryCode(null)
+        // The routes take no body; send() is the one POST helper (it reads the refusal's code).
+        const { ok, code, answer } = await send(path, {})
+        setRetrying(false)
+        if (!ok) setRetryCode(code ?? FRAME_UI.retryFailed)
+        else onDone?.(answer)
+      }
+      return { retrying, retryCode, retry }
+    }
+
+    /**
+     * The view's frame (design §0.5 "The frame"): DSH's session header with the title, the state
+     * tag and code, the attention badge seat, the Retry refusal, Retry, Refresh and the extra
+     * actions, then the body. Both views draw it, so the header cannot drift between them.
+     */
+    function FrameChrome({ t, page, state, code, retry, canRetry, canRefresh, onRefresh, actions, body }) {
+      return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
+        h('header', { className: CLS.embedBar, 'data-window-drag': true },
+          h('span', { className: CLS.embedName }, t('viewTitle')),
+          h(FrameState, { state, code, t }),
+          h(FrameBadge, { t }),
+          h('div', { className: CLS.embedActions },
+            retry.retryCode ? h('span', { role: 'alert', 'data-fishball-retry-error': retry.retryCode }, t('frameRetryFailed'), ' ', h('code', { className: CLS.code }, retry.retryCode)) : null,
+            canRetry ? accentButton({ size: 'sm', disabled: retry.retrying, 'data-fishball-frame-retry': true, onClick: () => void retry.retry() }, retry.retrying ? t('frameRetrying') : t('embedRetry')) : null,
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')),
+            actions)),
+        body)
     }
 
     /**
@@ -824,44 +903,21 @@ window.__ModuleLoader__.load({
      * as V2's instance card did. An unreadable answer is "nothing", so the shell then registers
      * nothing that needs a service.
      */
-    const readAvailability = async () => (await readRoute(CHILD_UI.route.services)) ?? CHILD_UI.none
-
-    /**
-     * The child's status and target, re-read at the V2 frame's cadence (FRAME_UI.pollMs) while the
-     * view is mounted and the tab is visible, one read at a time. undefined until the first answer.
-     */
-    function useChildStatus() {
-      const [status, setStatus] = React.useState(undefined)
-      React.useEffect(() => {
-        const abort = new AbortController()
-        let polling = false
-        const poll = () => {
-          if (polling || document.hidden) return
-          polling = true
-          void readRoute(CHILD_UI.route.status, abort.signal).then((next) => {
-            if (next !== undefined && !abort.signal.aborted) setStatus((previous) => (sameInstance(previous, next) ? previous : next))
-          }).finally(() => { polling = false })
-        }
-        poll()
-        const timer = setInterval(poll, FRAME_UI.pollMs)
-        return () => { clearInterval(timer); abort.abort() }
-      }, [])
-      return [status, setStatus]
-    }
+    const readAvailability = async () => (await readJson(CHILD_UI.servicesPath, isHostAnswer)) ?? CHILD_UI.none
 
     /**
      * The frame's one-time address for `{view, lang}` while the child is ready: asked of the admit
-     * route afresh whenever the view, the language, the generation (Refresh) or readiness changes,
+     * route `path` afresh whenever the view, the language, the generation (Refresh) or readiness changes,
      * because a ticket is single-use (UIM-UC-01 A1, A2). The answer is held only in this
      * component's state for that one frame document. `{refused}` carries the route's code.
      */
-    function useAdmission(view, lang, ready, generation) {
+    function useAdmission(path, view, lang, ready, generation) {
       const [admission, setAdmission] = React.useState(undefined)
       React.useEffect(() => {
         setAdmission(undefined)
         if (!ready) return undefined
         let live = true
-        void send(CHILD_UI.route.admit, { view, lang }).then(({ ok, code, answer }) => {
+        void send(path, { view, lang }).then(({ ok, code, answer }) => {
           if (!live) return
           setAdmission(ok && typeof answer?.url === 'string' ? { url: answer.url } : { refused: code })
         })
@@ -877,52 +933,39 @@ window.__ModuleLoader__.load({
      * under any name but a loopback one gets `hostname-refused` and shows R-UI-02's text instead
      * of a frame. Nothing crosses the iframe (no `message` listener), as in V2.
      */
-    function makeChildView(ctx, t) {
+    function makeChildView(ctx, t, route) {
       const frameLang = frameLangStore(ctx.locale)
       return function FishballChildView() {
-        const [status, setStatus] = useChildStatus()
-        const page = React.useSyncExternalStore(framedPage.subscribe, framedPage.get)
-        const lang = React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
+        const [status, setStatus] = usePoll(route.status, isHostAnswer, undefined)
+        const { page, lang } = useViewPage(frameLang)
         const [generation, setGeneration] = React.useState(0)
-        const [retrying, setRetrying] = React.useState(false)
-        React.useEffect(() => { seats.get(SEAT.pageOpened)?.() }, [])
-        React.useEffect(() => () => framedPage.set(FRAME_UI.page.chat), [])
         const state = status?.status?.state ?? FRAME_UI.loading
         const code = status?.status?.code ?? null
         const ready = state === CHILD_UI.readyState
-        const admission = useAdmission(page, lang, ready, generation)
-        const canRetry = CHILD_UI.retryStates.includes(state) || CHILD_UI.retryCodes.includes(code)
-        const retry = async () => {
-          setRetrying(true)
-          const { ok, answer } = await send(CHILD_UI.route.retry, {})
-          setRetrying(false)
-          if (ok && answer?.ok === true) setStatus(answer)
-        }
+        const admission = useAdmission(route.admit, page, lang, ready, generation)
+        const retry = useRetry(route.retry, setStatus)
+        // A hostname refusal stays until the page is opened under another name; any other refusal
+        // can be asked again with Refresh, as a framed page can be reloaded.
+        const hostnameRefused = admission?.refused === CHILD_UI.hostnameRefused
         const body = status === undefined
-          ? emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
+          ? loadingState(t)
           : !ready
-            ? emptyState(
-              h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
-              h('p', null, t('embedState'), ' ', h('code', { className: CLS.code }, state)),
-              code ? h('p', null, t('embedCode'), ' ', h('code', { className: CLS.code }, code)) : null)
+            ? emptyState(warningGlyph(), ...stateDetails(t, state, code))
             : admission === undefined
-              ? emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
+              ? loadingState(t)
               : admission.refused !== undefined
-                ? emptyState(
-                  h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
-                  admission.refused === CHILD_UI.hostnameRefused
-                    ? h('p', { role: 'alert', 'data-fishball-hostname-refused': true }, t('hostnameRefused'))
-                    : h('p', { role: 'alert', 'data-fishball-admit-refused': admission.refused ?? '' }, t('admitFailed')))
+                ? emptyState(warningGlyph(), hostnameRefused
+                  ? h('p', { role: 'alert', 'data-fishball-hostname-refused': true }, t('hostnameRefused'))
+                  : h('p', { role: 'alert', 'data-fishball-admit-refused': admission.refused ?? '' }, t('admitFailed')))
+                // allow and referrer: see EMBED_UI.iframeAllow, iframeReferrerPolicy.
                 : h('iframe', { key: `${generation}:${admission.url}`, className: CLS.embedFrame, src: admission.url, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
-        return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
-          h('header', { className: CLS.embedBar, 'data-window-drag': true },
-            h('span', { className: CLS.embedName }, t('viewTitle')),
-            h(FrameState, { state, code, t }),
-            h(FrameBadge, { t }),
-            h('div', { className: CLS.embedActions },
-              canRetry ? accentButton({ size: 'sm', disabled: retrying, 'data-fishball-frame-retry': true, onClick: () => void retry() }, retrying ? t('frameRetrying') : t('embedRetry')) : null,
-              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: admission?.url === undefined, onClick: () => setGeneration((value) => value + 1) }, t('embedRefresh')))),
-          body)
+        return h(FrameChrome, {
+          t, page, state, code, retry,
+          canRetry: CHILD_UI.retryStates.includes(state) || CHILD_UI.retryCodes.includes(code),
+          canRefresh: admission !== undefined && !hostnameRefused,
+          onRefresh: () => setGeneration((value) => value + 1),
+          actions: null, body,
+        })
       }
     }
 
@@ -949,27 +992,14 @@ window.__ModuleLoader__.load({
       const frameLang = frameLangStore(ctx.locale)
       return function FishballView() {
         const instance = useFrameInstance()
-        const page = React.useSyncExternalStore(framedPage.subscribe, framedPage.get)
-        const lang = React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
+        const { page, lang } = useViewPage(frameLang)
         const [generation, setGeneration] = React.useState(0)
-        const [retrying, setRetrying] = React.useState(false)
-        const [retryCode, setRetryCode] = React.useState(null)
-        // Once per mount of the view, not on every snapshot or iframe refresh (the attention part's clear).
-        React.useEffect(() => { seats.get(SEAT.pageOpened)?.() }, [])
-        React.useEffect(() => () => framedPage.set(FRAME_UI.page.chat), [])
+        const retry = useRetry(FRAME_UI.retryPath)
         const state = instance?.state ?? FRAME_UI.loading
         const ui = instance?.ui ?? {}
         const path = (page === FRAME_UI.page.settings ? ui.settings : undefined) ?? ui.chat
         const framed = instance?.attached === true && path !== undefined && FRAME_UI.framedStates.includes(state)
         const src = path === undefined ? undefined : framedUrl(path, lang)
-        const retry = async () => {
-          setRetrying(true)
-          setRetryCode(null)
-          // The route takes no body; send() is the one POST helper (it reads the refusal's code).
-          const { ok, code } = await send(FRAME_UI.retryPath, {})
-          setRetrying(false)
-          if (!ok) setRetryCode(code ?? FRAME_UI.retryFailed)
-        }
         const openConnectorSettings = () => ctx.get(FRAME_UI.navigation)?.openBundle(PACKAGE_NAME)
         const openPlugins = () => {
           const navigation = ctx.get(FRAME_UI.navigation)
@@ -977,10 +1007,10 @@ window.__ModuleLoader__.load({
           else ctx.get(SERVICE.layout)?.selectPanel(EMBED_UI.pluginsPanelId)
         }
         const body = instance === undefined
-          ? emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
+          ? loadingState(t)
           : state === FRAME_UI.unattached
             ? emptyState(
-              h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
+              warningGlyph(),
               h('p', { 'data-fishball-embed-empty': true }, t('frameNoInstance')),
               accentButton({ onClick: openPlugins }, t('frameOpenPlugins')))
             // "is attached and has no chat page" fits only a live attachment; one whose channel ended
@@ -991,22 +1021,18 @@ window.__ModuleLoader__.load({
                 // allow: clipboard-write for the child's own origin too, see EMBED_UI.iframeAllow.
                 ? h('iframe', { key: `${instance.attachCount}:${generation}:${src}`, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
                 : emptyState(
-                  h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph }),
+                  warningGlyph(),
                   // An interrupted channel says so: the instance may still be running (B1).
                   h('p', { role: 'alert' }, t(state === FRAME_UI.interrupted ? 'frameInterrupted' : 'embedUnavailable', { name: instance.name })),
-                  h('p', null, t('embedState'), ' ', h('code', { className: CLS.code }, state)),
-                  instance.code ? h('p', null, t('embedCode'), ' ', h('code', { className: CLS.code }, instance.code)) : null)
-        return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
-          h('header', { className: CLS.embedBar, 'data-window-drag': true },
-            h('span', { className: CLS.embedName }, t('viewTitle')),
-            h(FrameState, { state, code: instance?.code ?? null, t }),
-            h(FrameBadge, { t }),
-            h('div', { className: CLS.embedActions },
-              retryCode ? h('span', { role: 'alert', 'data-fishball-retry-error': retryCode }, t('frameRetryFailed'), ' ', h('code', { className: CLS.code }, retryCode)) : null,
-              instance?.canRetry ? accentButton({ size: 'sm', disabled: retrying, 'data-fishball-frame-retry': true, onClick: () => void retry() }, retrying ? t('frameRetrying') : t('embedRetry')) : null,
-              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !framed, onClick: () => setGeneration((value) => value + 1) }, t('embedRefresh')),
-              h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-connector-settings': true, onClick: openConnectorSettings }, t('frameConnectorSettings')))),
-          body)
+                  ...stateDetails(t, state, instance.code))
+        return h(FrameChrome, {
+          t, page, state, code: instance?.code ?? null, retry,
+          canRetry: instance?.canRetry === true,
+          canRefresh: framed,
+          onRefresh: () => setGeneration((value) => value + 1),
+          actions: h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-connector-settings': true, onClick: openConnectorSettings }, t('frameConnectorSettings')),
+          body,
+        })
       }
     }
 
@@ -1118,13 +1144,13 @@ window.__ModuleLoader__.load({
      */
     exports.kit = Object.freeze({
       NS, SLOT, API, STATUS, CLS, EMBED_UI, ROW_MARK, UNREAD_BADGE, SEAT, seats,
-      useFishball, send, valueStore, brandIconOf, attentionDot, unreadCount, CHILD_UI,
+      useFishball, send, valueStore, brandIconOf, attentionDot, unreadCount,
     })
     exports.readAvailability = readAvailability
     /**
      * The shell as a client plugin for what is usable now (readAvailability). The connector's
      * Plugins card follows its own row's settings namespace (configForms.whileServed), as in V2.
-     * @param available - `{page, connector, legacy}` from the host half.
+     * @param available - the host half's answer (readAvailability): its flags and its `routes`.
      */
     exports.shellPlugin = (available) => ({ name: PACKAGE_NAME, inject: ['slots', 'locale', 'configForms'], apply: (ctx) => apply(ctx, available) })
     function apply(ctx, available) {
@@ -1136,9 +1162,10 @@ window.__ModuleLoader__.load({
       // The page and its sidebar entry by availability (UIM-EP-01): the locator's view, else (W3
       // only) the V2 connector frame, else none. With a connector but no page, the fish row stays
       // (R-UI-08: "its fish has no page to open"), so it registers the view's slot only with a page.
-      const View = available.page ? makeChildView(ctx, t) : available.legacy ? makeFishballView(ctx, t) : undefined
+      const View = available.page ? makeChildView(ctx, t, available.routes) : available.legacy ? makeFishballView(ctx, t) : undefined
+      const Mark = makeMark(makePlainMark(available.legacy))
       if (View !== undefined) ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.register({ name: SLOT.main, key: EMBED_UI.panelId, locale: NS }, View)), 'fishball: main view')
-      if (View !== undefined || available.connector) ctx.effect(() => registerSidebarEntry(ctx, Mark, t), 'fishball: sidebar row')
+      if (View !== undefined || available.handover || available.tools) ctx.effect(() => registerSidebarEntry(ctx, Mark, t), 'fishball: sidebar row')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
         const Settings = makeSettingsPage(ctx, section, t)

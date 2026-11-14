@@ -8,7 +8,7 @@
  * It is a package-local chunk of embed-UI's client bundle, not a second bundle: DSH's client
  * module loader serves only a package's `client.js` and its `client.*.js` siblings (the
  * CLIENT_CHUNK rule of dsh-client-modules, the same in 0.2.1-rc.5 and 0.2.2-rc.1), and this
- * repository has no build step, so client.connector.js loads it with `require.async('./client.records.js')`.
+ * repository has no build step, so client.js loads it with `require.async('./client.records.js')`.
  * The registration is skipped when no module loader exists (a plain Node import), so importing the
  * file outside a DSH page has no effect instead of throwing.
  *
@@ -99,7 +99,7 @@ globalThis.__ModuleLoader__?.load({
      * @param kit - the shell's shared state stream, helpers, vocabulary and seats.
      */
     function recordsPart(kit) {
-      const { NS, SLOT, CLS, useFishball } = kit
+      const { NS, SLOT, CLS } = kit
 
       /** The ask_fishball row (S37): DSH has no view for this tool, so this entry draws the whole row. */
       const ASK_ROW = Object.freeze({ tool: 'ask_fishball', phaseStart: 'start', phaseResult: 'result' })
@@ -140,9 +140,7 @@ globalThis.__ModuleLoader__?.load({
        */
       function makeAskRow(t) {
         return function FishballAskRow({ callId, phase, block }) {
-          const state = useFishball()
           const args = askArguments(block)
-          const card = phase === ASK_ROW.phaseStart ? (state.pile ?? []).find((entry) => entry.callId === callId) : undefined
           const replying = typeof args.request_id === 'string'
           const result = phase === ASK_ROW.phaseResult ? askResult(block) : null
           const code = result?.value?.code
@@ -150,7 +148,9 @@ globalThis.__ModuleLoader__?.load({
             h('div', { className: CLS.cardHead },
               h('span', { className: CLS.title }, t(replying ? 'askRowReply' : 'askRowTitle')),
               typeof args.tool === 'string' ? h('span', { className: CLS.code }, args.tool) : null,
-              phase === ASK_ROW.phaseStart ? h(Tag, { tone: card ? 'danger' : 'info' }, t(card ? 'askRowWaitingYou' : 'askRowWaitingFishball')) : null,
+              // Always "waiting for Fishball": the main DSH has no answer control (R-UI-12), so the row
+              // never asks the user to act; a card the user must settle shows in its own session.
+              phase === ASK_ROW.phaseStart ? h(Tag, { tone: 'info' }, t('askRowWaitingFishball')) : null,
               code !== undefined ? h(Tag, { tone: 'neutral' }, ASK_CODES.has(code) ? t('askResult.' + code) : code) : null),
             args.arguments !== undefined ? h('pre', { className: CLS.pre }, JSON.stringify(args.arguments, null, JSON_INDENT)) : null,
             typeof args.why === 'string' && args.why ? labelled(t('cardReason'), args.why) : null,

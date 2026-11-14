@@ -4,8 +4,8 @@
  * host-services/index.d.ts), and counts only with `apiVersion` SERVICE.apiVersion: any other value
  * is the service absent (UIM-EP-01 row 5).
  *
- * Cordis emits `internal/service` whenever a service appears, is replaced or goes (both SDKs), so
- * the lookup follows it without a timer or a gating inject.
+ * Each caller looks up afresh (a route per request, the client once per page load), so a service
+ * that appears, is replaced or goes is seen at the next lookup, without a timer or a gating inject.
  */
 import { LABEL, LOG, SERVICE } from './constants.js'
 
@@ -16,15 +16,18 @@ export function usable(ctx, name) {
 }
 
 /**
- * What the client may register, as UIM-EP-01 reads it: `page` (the Fishball page, frame, status,
- * Retry and the Plugins card's model sync) needs `fishballChild`; `connector` (marks, Hand over,
- * fish and dots, attention tools) needs both connector services. `legacy` is the V2 connector
- * service, which keeps the V2 frame and marks working until W4b removes it (SERVICE.legacyConnector).
+ * What the client may register (UIM-EP-01, design §4.2), one flag per service:
+ * - page: `fishballChild` (the Fishball page, frame, status, Retry, the card's model sync);
+ * - handover: `fishballConnectorHandover` (marks, Hand over / Take back);
+ * - tools: `fishballConnectorTools` (the fish's attention latch and its tools);
+ * - legacy: V2's connector service, which keeps the V2 frame and marks working until W4b removes
+ *   it (SERVICE.legacyConnector).
  */
 export function availability(ctx) {
   return Object.freeze({
     page: usable(ctx, SERVICE.child) !== undefined,
-    connector: usable(ctx, SERVICE.handover) !== undefined && usable(ctx, SERVICE.tools) !== undefined,
+    handover: usable(ctx, SERVICE.handover) !== undefined,
+    tools: usable(ctx, SERVICE.tools) !== undefined,
     legacy: ctx.get(SERVICE.legacyConnector) !== undefined,
   })
 }

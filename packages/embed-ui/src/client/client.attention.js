@@ -7,7 +7,7 @@
  *
  * A package-local chunk beside client.js (DSH serves only flat client.<name>.js chunks, the
  * CLIENT_CHUNK rule of dsh-client-modules on both SDKs; no build step). It draws nothing of its
- * own: it fills three of the shell's seats (kit.SEAT), so the shell's brand, sidebar row and frame
+ * own: it fills three of the shell's seats (kit.SEAT), so the shell's sidebar row and frame
  * show it without knowing this part, and a part that never loads leaves the shell's fallbacks.
  */
 globalThis.__ModuleLoader__?.load({
@@ -32,7 +32,7 @@ globalThis.__ModuleLoader__?.load({
       /** The unread count in words, capped so the pill stays narrow. */
       const unreadText = (t, count) => count > UNREAD_BADGE.max ? t('unreadMany', { max: UNREAD_BADGE.max }) : String(count)
 
-      /** The sidebar mark (brand and sidebar row): the chosen icon, wagging while important, and the latch's dot. */
+      /** The sidebar row's mark: the chosen icon, wagging while important, and the latch's dot. */
       function Mark({ size }) {
         const state = useFishball()
         const count = unreadCount(state)
@@ -42,7 +42,7 @@ globalThis.__ModuleLoader__?.load({
           count > 0 ? attentionDot(ROW_MARK.dot.unread) : null)
       }
 
-      /** Fishball's unread count in the frame: the brand mark's own count and cap, absent at 0. */
+      /** Fishball's unread count in the frame: the sidebar mark's own count and cap, absent at 0. */
       function FrameUnread({ t }) {
         const count = unreadCount(useFishball())
         if (count === 0) return null

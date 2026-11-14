@@ -379,7 +379,7 @@ window.__ModuleLoader__.load({
      * both chunks and starts the result as a sub-plugin of its row).
      * @param shared - the status-line module's `shared` export (client.status.js).
      * @param layout - its `layout` export: the line's classes, rules, tokens and neutral tone.
-     * @param childRoutes - embed-UI's host-half routes (client.shell.js CHILD_UI.route) when the
+     * @param childRoutes - embed-UI's host-half routes (its `services` answer's `routes`) when the
      *   instance locator `fishballChild` is usable: model sync then goes through them (U-SHELL,
      *   R-HOST-07). Absent: the instance's own V2 routes, unchanged.
      */

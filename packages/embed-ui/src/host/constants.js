@@ -31,8 +31,6 @@ export const SERVICE = Object.freeze({
    * connector shows its marks and its V2 frame through it. Remove this name with that path.
    */
   legacyConnector: 'fishballConnector',
-  /** Cordis's event for a service that appears, is replaced or goes (both SDKs; fold-notify src/instance.js). */
-  changed: 'internal/service',
   /** DSH's app-ready service (dsh profile-boot, both SDKs): `onReady(fn)` also calls a late subscriber. */
   appReady: 'appReady',
 })
@@ -47,6 +45,12 @@ export const LOOPBACK = Object.freeze({
   /** The request header that names the main page's authority, and the scheme its URL parses with. */
   hostHeader: 'host',
   parseScheme: 'http://',
+  /**
+   * Characters a bare `host[:port]` never holds; a Host with any of them (userinfo, a path, a
+   * query or a fragment) is refused before parsing, because the URL parser would read a name out
+   * of it (`evil@localhost` → `localhost`).
+   */
+  notInAuthority: /[@/?#\\]/,
 })
 
 /**
@@ -66,8 +70,11 @@ export const ADMIT = Object.freeze({
  * Retry, admission and model sync, re-serving the locator's results to its own web client").
  * DSH's `connection.fetch` registry is exact-path and owner-only, and applies DSH's Host/Origin
  * fence before a handler runs (dsh-client-connection), so a handler checks only its body.
- * `services` answers which services are usable now, so the client registers by availability.
+ * `services` answers which services are usable now, so the client registers by availability, and
+ * the other routes' page-relative paths (`ROUTE_PREFIX` dropped), so the web client keeps no copy.
  */
+/** A route path's root part, dropped for the page-relative form the browser resolves against DSH's page. */
+export const ROUTE_PREFIX = '/'
 export const ROUTE = Object.freeze({
   services: '/api/fishball-embed-ui/services',
   status: '/api/fishball-embed-ui/child/status',
@@ -85,6 +92,8 @@ export const HTTP = Object.freeze({
   ok: 200,
   badRequest: 400,
   conflict: 409,
+  /** The locator failed without a K3 code: the service behind this route, not the request, failed. */
+  badGateway: 502,
   unavailable: 503,
   headers: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
   /** The largest request body read (admit and Add are small; V2's sync routes used the same bound). */
@@ -112,7 +121,5 @@ export const LOG = Object.freeze({
 
 /** Cordis effect labels. */
 export const LABEL = Object.freeze({
-  services: 'fishball-embed-ui: services',
-  routes: 'fishball-embed-ui: routes',
   ready: 'fishball-embed-ui: instance-missing check',
 })
