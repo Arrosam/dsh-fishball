@@ -34,6 +34,7 @@ DECIDED (#n) are ones the user kept at the value review (relayed by Fishball; #n
 | `note` | optional; the event carries `''` when omitted | design §3.6 |
 | `principals()` order | the order of the entries in the connector's native settings list (PROPOSED) | R-UI-10 "stable order" |
 | online | an open `fishball-events` listen stream, as K1's `CONNECTED` | design §3.5, HAND-ST-02 |
+| Principal `key` stability | "stable for the life of the token entry" holds from pairing onward; an unpaired entry's key changes once, when it pairs (DECIDED #W3-3) | K3 note at the W3 merge |
 | `retire` refusals | `unknown-entry`, `not-hosted`, `successor-unpaired`, `operation-failed`; all move nothing (codes DECIDED #13) | R-HOST-09, HOST-DT-02 |
 | `createHosted` failures | rejects with `credentials-unwritable` or `operation-failed`; creates nothing (DECIDED #14) | design §5.2 |
 | Child states and codes | V2's `STATUS` and `STATUS_CODES`, `INVALID_MAIN_HOME`, plus `PROFILE_INCOMPATIBLE`, `fishball-off`, `TARGET_UNREACHABLE`, `TOKEN_REFUSED`, `TARGET_INCOMPATIBLE`, `token-revoked` | design §6.1, §8.1, R-FB-10, R-HOST-10 |

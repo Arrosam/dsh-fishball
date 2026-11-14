@@ -26,7 +26,7 @@ import {
 } from '../../mcp-schema/index.js'
 import { EMIT_REFUSAL } from '../../tools/index.js'
 import { canonical } from '../digest.js'
-import { EVENT_STATE, HASH, LOG, MINIMUM, MISUSE, SAFE_KEY, START_SEQUENCE } from './constants.js'
+import { EVENT_STATE, HASH, LOG, MINIMUM, MISUSE, RETIRE_OUTCOME, SAFE_KEY, START_SEQUENCE } from './constants.js'
 import { decodeCursor, encodeCursor } from './cursor.js'
 import { assertDraft, contributorOf, isNonEmptyString } from './draft.js'
 
@@ -410,8 +410,10 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
     },
 
     /**
-     * An event that is not pending in this box (acked, already retired, unknown) is left alone, and
-     * nothing is committed (`retireRecord`).
+     * Resolves `{retired: true}` once the pending event is replaced (`retireRecord`). An event that
+     * is not pending in this box (acked, already retired, unknown, another box's) is left alone,
+     * nothing is committed, and it resolves `{retired: false}` (K1 amendment at the W3 merge), so a
+     * caller whose event may have been acked meanwhile knows to tell the pair itself.
      */
     retire(principalKey, eventId, reason) {
       assertPrincipal(principalKey)
@@ -420,8 +422,9 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
         // No box is created here: a pending event in this box means the box exists already.
         const boxKey = boxKeyOf(principalKey)
         const record = events.get(eventId)
-        if (record === undefined || record.boxKey !== boxKey || record.state !== EVENT_STATE.pending) return
+        if (record === undefined || record.boxKey !== boxKey || record.state !== EVENT_STATE.pending) return RETIRE_OUTCOME.notRetired
         await retireRecord(principalKey, boxKey, record, draft)
+        return RETIRE_OUTCOME.retired
       })
     },
 

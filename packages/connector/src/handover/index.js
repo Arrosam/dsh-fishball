@@ -13,8 +13,8 @@
  *   `paired: false` and `online: false` (it has no pair, so no listen stream). `handOver` with it
  *   answers `no-fishball` (K3 DECIDED #11), because no pair has that principal key.
  * So an entry's `key` changes exactly once, from its EntryKey to its PrincipalKey, when it pairs;
- * K3's "stable for the life of the token entry" holds from pairing on (Fishball 2026-11-14; a K3
- * note follows at the W3 merge). A pair's key never changes while the entry lives (R-ID-09).
+ * K3's "stable for the life of the token entry" holds from pairing on (Fishball 2026-11-14; K3's
+ * note at the W3 merge, DECIDED #W3-3). A pair's key never changes while the entry lives (R-ID-09).
  * Neither is ever a token value, a ref or a label (K3, HAND-EP-01 row 5). The Hand over control
  * itself shows only `enabled && paired` entries (K3, R-UI-10); that filter is embed-UI's.
  *

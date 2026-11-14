@@ -190,6 +190,11 @@ changes this object in the same change.
 - A settled offer's own event is **not** retired: it stays pending until acked, and the
   `settlement` that follows it is the signal (PROPOSED, EVT-ST-01 row 5). A withdrawn one is
   replaced by a `retirement` (design §5.3).
+- `Mailbox.retire` resolves `{retired: boolean}` (DECIDED #W3-1): `true` when it replaced a
+  pending event, `false` when the event was not pending in that pair's mailbox (acked, already
+  retired, unknown, another pair's), which commits and changes nothing. On `false` C-ROUTE sends
+  a fresh `retirement` naming the offer, as it does for an offer it knows is acked, so an
+  `inbox_ack` that lands just before the retire no longer loses the retirement (W2 finding SF3).
 - `inbox_ack` is all or nothing (DECIDED #61; the codes DECIDED #5, #6): a receipt naming no
   event of the caller's mailbox is `unknown-event` (it never says "another pair's"), a wrong digest is `digest-mismatch`.
 
@@ -431,6 +436,9 @@ constants migration, 2026-11-14).
 | 17 | K3 core contracts: an invalid `intercept` registration throws `TypeError` | kept (2026-11-14) |
 | W2-1 | `mailboxGeneration` (`MAILBOX`) | changes only when mailbox storage is lost or reset; delete, hold expiry and re-enable keep it (2026-11-14, K1 amendment after W2) |
 | W2-2 | `PairStore.succeed` with an unpaired old entry | succeeds and changes nothing: there is no principal and no name to move (2026-11-14, K1 amendment after W2) |
+| W3-1 | `Mailbox.retire` | resolves `{retired: boolean}` instead of `void`; C-ROUTE sends a fresh `retirement` on `false` (fixes W2 finding SF3, the ack/retire race) (2026-11-15, K1 amendment at the W3 merge) |
+| W3-2 | K2 `EXTERNAL_NAME` | a contributed tool's external (model-facing) name replaces every `.` of its public name by `__` (`ns.tool` → `ns__tool`); defined once in K2 and imported (2026-11-15, K2 amendment at the W3 merge) |
+| W3-3 | K3 `PrincipalRef.key` / `HandoverPrincipal.key` | "stable for the life of the token entry" holds from pairing onward; an unpaired entry's key changes once, when it pairs (2026-11-15, K3 note at the W3 merge) |
 | D1 | K3 `PRESENT_RETRY` (core contracts): 3 attempts, 1000 ms, factor 2 (waits 1 s, then 2 s) | kept (numeric; delegated to Fishball, 2026-11-14) |
 | D2 | K3 `LEDGER.finishedRetentionMs`: 30 days | kept (numeric; delegated to Fishball, 2026-11-14) |
 | D3 | K3 `INTERCEPT.defaultPriority`: 0 | kept (numeric; delegated to Fishball, 2026-11-14) |

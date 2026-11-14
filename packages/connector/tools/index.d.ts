@@ -160,6 +160,8 @@ export declare const NAMESPACE: Readonly<{
   reserved: readonly string[]
 }>
 export declare const NAME_GRAMMAR: Readonly<{ local: RegExp; publicMaxChars: 128; code: RegExp }>
+/** A contributed tool's external (model-facing) name: every `.` of its public name becomes `__` (DECIDED #W3-2). */
+export declare const EXTERNAL_NAME: Readonly<{ replaced: '.'; replacement: '__' }>
 export declare const TOOL_LIMITS: Readonly<{
   descriptionBytes: number
   ceiling: Readonly<{ argumentBytes: number; resultBytes: number; timeoutMs: number }>
