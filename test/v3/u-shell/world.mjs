@@ -131,6 +131,27 @@ async function loginAs(setup, name) {
   return { origin, cookie, send }
 }
 
+/** The same-origin markers a page's own fetch carries (DSH's browser-trust fence reads them). */
+const sameOriginHeaders = (origin) => ({ origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' })
+
+/**
+ * One request to embed-UI's host routes as the owner's page under `name` sends it. `hostHeader`
+ * replaces the authority's host part (the userinfo / path rows); the cookie is the owner's login.
+ * Returns `{status, json}`.
+ */
+export async function routeCall(setup, name, method, route, body, { hostHeader } = {}) {
+  const port = Number(new URL(setup.host.origin).port)
+  const owner = await loginAs(setup, name)
+  const { send } = hostHeader ? transportFor(port, { ...name, header: hostHeader }) : owner
+  const response = await send(owner.origin + route, { method, headers: { cookie: owner.cookie, ...sameOriginHeaders(owner.origin) }, body: body === undefined ? undefined : JSON.stringify(body) })
+  const text = await response.text()
+  let json
+  try { json = JSON.parse(text) } catch { json = undefined }
+  return { status: response.status, json, text }
+}
+/** A refusal's code: the routes answer `{ok: false, code}` (V2's sync routes nest it as `error.code`; either is read). */
+export const refusalCode = (answer) => answer.json?.code ?? answer.json?.error?.code
+
 /** Recording page storage: what embed-UI's client writes to localStorage, sessionStorage and document.cookie. */
 function storageRecorder() {
   const writes = []
