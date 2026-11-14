@@ -88,8 +88,17 @@ const refresh = (w, rt, overrides = {}, options = {}) => w.token({
   [PARAM.grantType]: GRANT.refreshToken, [PARAM.refreshToken]: rt, [PARAM.clientId]: FIXTURE.clientId, [PARAM.resource]: w.urls.resource, ...overrides,
 }, options)
 
+/**
+ * The state a redirect must echo: FIXTURE.state unless the caller names `state`. A default
+ * parameter cannot do this, because it also applies to an explicit `{state: undefined}`, which
+ * here means "no state was sent, none comes back" (R-OA-14, AUTH-DT-07 row 11, AUTH-UC-10 A2).
+ */
+const expectedState = (options) => (Object.hasOwn(options, 'state') ? options.state : FIXTURE.state)
+
 /** A success redirect to `target` with a code, the issuer and the state (R-OA-14, R-OA-12 (4)). */
-function assertCode(w, flow, { target = FIXTURE.redirect, state = FIXTURE.state } = {}) {
+function assertCode(w, flow, options = {}) {
+  const { target = FIXTURE.redirect } = options
+  const state = expectedState(options)
   assert.ok(flow.redirect, `no redirect; page says: ${pageText(flow.res.body)}`)
   assert.equal(flow.redirect.status, APPROVAL_LISTENER.redirectStatus, 'the redirect after the form is 303')
   assert.equal(flow.redirect.target, target)
@@ -99,7 +108,9 @@ function assertCode(w, flow, { target = FIXTURE.redirect, state = FIXTURE.state 
   assert.equal(flow.redirect.params[PARAM.state], state)
 }
 /** A redirected OAuth error (R-OA-14, R-OA-15): `error`, `iss`, `state` if sent, and no code. */
-function assertRedirectedError(w, res, error, { target = FIXTURE.redirect, state = FIXTURE.state } = {}) {
+function assertRedirectedError(w, res, error, options = {}) {
+  const { target = FIXTURE.redirect } = options
+  const state = expectedState(options)
   const r = redirectOf(res)
   assert.ok(r, `expected a redirect with ${error}; page says: ${pageText(res.body)}`)
   assert.equal(r.target, target)
