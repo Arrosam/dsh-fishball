@@ -375,7 +375,5 @@ export function registerK1bCases(sdk) {
   todos(sdk, 'K1b-DT-06', K1B_LATER.oauth, [
     ['1–4', 'GrantRegistry.register: a supported non-built-in type registers; built-in, duplicate or unsupported throws TypeError'],
   ])
-  todos(sdk, 'K1b-DT-07', K1B_LATER.web, [
-    ['1–3', 'approval: POST /authorize → 405 Allow: GET; GET /authorize/decision → 405 Allow: POST; an unknown path passes the gate and gets 404'],
-  ])
+  // K1b-DT-07 (the approval listener over the gate) runs in test/v3/c-oauth-web (C-OAUTH-WEB's suite).
 }
