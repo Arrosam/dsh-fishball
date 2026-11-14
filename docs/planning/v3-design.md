@@ -1160,9 +1160,18 @@ Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session
 
 The design is the bundled-placement note (`f71717e`), options **P3 + 3a**, now applied to the
 whole set:
-- Sources live under `packages/instance/bundled/{core,board,fold-notify,watchdog,hosted-settings}/` and are
-  listed in the instance's `files`. In the host DSH they are inert data: not in its resolution,
-  not bundles there.
+- The set members' sources live under `packages/instance/bundled/{core,board,fold-notify,watchdog}/`
+  in a packed instance, listed in its `files`; `bundled/` is REL-PACK output and never committed, so
+  in a checkout placement reads the sibling workspace folders (Q-22, decided 2026-11-15).
+  `fishball-hosted-settings`' source stays the instance's own `src/child-settings/` (Q-6, decided
+  2026-11-15). In the host DSH they are inert data: not in its resolution, not bundles there.
+  Each copy is exactly the package's `files` plus `package.json` (Q-21); `fishball-shared` and the
+  connector's `./contract` export are placed beside them as libraries, never as bundles.
+- Core's V2 child rows (app, session tools, approvals, inbox, admin, provider-sync target) are
+  rows of core's own patch, named by package subpath (`fishball-core/slim/<module>`): a path row
+  inside core's folder would be a second client source of `fishball-core`, which DSH's client
+  modules refuse, and a sub-plugin chain would race `appReady` (I-PLACE probe Q-13, both SDKs).
+  The launch overlay inserts only the instance's lifecycle row and native-web adapter (Q-5).
 - At every child start, inside `initializeProfile` and before `loadProfileDirectory`, each one is
   copied to `<child>/vendor/<name>` and `<child>/node_modules/<name>` (temp + rename), with
   `dependencies[name] = file:./vendor/<name>`.
@@ -1178,7 +1187,7 @@ whole set:
   fails the start with `PROFILE_INCOMPATIBLE`, naming it (answers placement Q3). The old
   per-start exemption and `BUNDLED_PLUGIN_UNAVAILABLE` are dropped.
 - **`fishball-hosted-settings`** (R-HOST-11, TQ-R4 decided B) is placed by the same code and the
-  same record as the four set members, from `bundled/hosted-settings/`, with the same rules: on at
+  same record as the four set members, from `src/child-settings/`, with the same rules: on at
   first placement, a disable survives, deleted while off is re-placed off, an enabled incompatible
   copy fails the start naming it. It is not a set member: core's guards do not target it, its
   `guards-overridden` check ignores it, and a standalone DSH never has it.
@@ -1211,7 +1220,7 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 | Package | Change |
 | --- | --- |
 | `fishball-connector` | Drop `dsh.client`, `client.js`, `client.records.js`, `assets`, UI locale, and the `./client`, `./contract` and `./records` exports. Add `./mcp-schema` (tool and event schemas, limits, vocabularies) and `./tools` (contribution types, `apiVersion`, the shared result-code vocabulary, a `defineTool` helper that validates at the call site; data and types only). Add a runtime `dependencies` entry for the MCP server SDK and its Node adapter, installed inside the connector's folder, never as a DSH peer. Keep `engines.dsh >=0.2.1-rc.5`. |
-| `fishball-instance` | Depend on `fishball-shared` (bundled); never on `fishball-core` (R-BND-01 strict). Drop the `fishball-connector` peer, the main-side `client.js`, `child-web/` and the `LITE` guard overlays. Add `bundled/hosted-settings/` (the `fishball-hosted-settings` bundle, R-HOST-11; instance-owned source, a plain bundle with one row and a `dsh.client` entry, registering into core's settings-section extension point). Keep the host row, the native runtime (lifecycle, launch configuration, placement), `uninstall.js` and hosted model sync. Add `bundled/` (the four set members) to `files`. |
+| `fishball-instance` | Depend on `fishball-shared` (bundled); never on `fishball-core` (R-BND-01 strict). Drop the `fishball-connector` peer, the main-side `client.js`, `child-web/` and the `LITE` guard overlays. Keep `src/child-settings/` as the source of the `fishball-hosted-settings` bundle (R-HOST-11; Q-6; instance-owned source, a plain bundle with one row and a `dsh.client` entry, registering into core's settings-section extension point). Keep the host row, the native runtime (lifecycle, launch configuration, placement), `uninstall.js` and hosted model sync. Add `bundled/` (the four set members) to `files`. |
 | `fishball-core` (new, from `packages/instance/src/slim/child/**`, `src/persona.js`, the private Skills tool, `native-child.js`'s app pieces, and, as its `ui/` component, `packages/instance/child-web/**` and the `LITE` overlay rows) | Bundle row(s) for the Fishball DSH; its `cordis.patch.yml` also carries the guard rows; `dsh.client` (platform web) for the `fishball-ui` page, recommended tab and slim settings. Runtime dependency on `fishball-shared` (bundled), `@modelcontextprotocol/client` 2.x and `fishball-connector/mcp-schema`, vendored as a copy so a standalone install needs nothing from the connector package at runtime. |
 | `fishball-shared` (new, `packages/shared`; TQ-R3 and TQ-R5 decided, R-ARCH-08) | A **library**, not a plugin: no `dsh` field, no row, no client. Holds only modules **more than one** V3 package uses; first contents: the child `admin` constants, the provider-sync wire codec, the file helpers core and the instance share. Imports nothing from any other V3 package. **Any** V3 package may depend on it (connector, embed-UI, core, instance, feature plugins, `fishball-hosted-settings`); each that does lists it in `dependencies` **and** `bundleDependencies`, so its release tarball carries it and nothing is fetched from a registry. Loading it never loads a module of the Fishball set (R-BND-01). |
 | `fishball-board`, `fishball-fold-notify`, `fishball-watchdog` | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |

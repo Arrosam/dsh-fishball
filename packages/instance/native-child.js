@@ -2,8 +2,8 @@ import { applyNativeChild } from './src/native-runtime/child.js'
 
 /**
  * The attached child's lifecycle row: identity checks, control wire and bounded shutdown.
- * launchOverlay inserts the slim rows beside it (src/native-runtime/overlay.js): the session-tools
- * row, the approvals row, the app row (fishball-core src/slim/child/app.js) and the inbox row. The app row
+ * fishball-core's own patch inserts the slim rows beside it (the session-tools, approvals, app and
+ * inbox rows, fishball-core/slim/*), placed with core as a bundle (src/native-runtime/placement.js). The app row
  * provides `fishballApp`; readiness preserves its bearer gate and also verifies the native Web
  * adapter. Native admission travels only on the private native-access operation, never health.
  * The main lifecycle host remains required until its callers have an explicit relocation owner.
@@ -15,7 +15,7 @@ import { applyNativeChild } from './src/native-runtime/child.js'
  * (ctx.nativeRuntime.onControlTransport), and the lifecycle channel (health, readiness, stop,
  * the embed bearer) stays on the wire's own lifecycle operations, untouched by either.
  *
- * The slim rows used to be plugged here with ctx.plugin. They are overlay rows now, because the
+ * The slim rows used to be plugged here with ctx.plugin. They are loader rows now, because the
  * loader's boot settlement waits only for its own rows' chains: a plugin nested here could still
  * be starting when appReady fired, and the app row then missed fishballApprovals (B5).
  */

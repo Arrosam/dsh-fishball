@@ -1,13 +1,37 @@
 /**
- * fishball-core's `dsh.client` entry (design §5a.1). A placeholder with no behaviour (user
- * decision 2026-11-12): the fishball-ui page, recommended tab and slim settings still live in
- * their own ui/ packages, which the hosted child loads as separate rows, and core's bundle patch
- * inserts no row yet, so nothing loads this file. F-GUARDS (spike V3-S6) merges the ui packages
- * into this one entry.
+ * fishball-core's `dsh.client` entry (design §5a.1): the browser half of its `fishball-ui`
+ * component. DSH serves it once for the package, because core's patch mounts exactly one row whose
+ * module has no manifest of its own (`fishball-ui`, ui/patch/index.js); every other core row is a
+ * package subpath (`fishball-core/...`) or its own ui package, so DSH's client modules never see
+ * core mounted twice (I-PLACE probe Q-13, both SDKs).
+ *
+ * It starts the generic slim settings panel, the package-local chunk client.settings.js, as a
+ * sub-plugin of this row, so the panel and its settings-section extension point
+ * (`fishballSettingsSections`) come from core itself, in a hosted child and in a standalone DSH
+ * alike (HOST-UC-08 A3). The page and the Recommended tab stay their own ui packages for now.
+ *
+ * A chunk that fails to load loses only the panel, logged once; a chunk that arrives after this row
+ * stopped is not started (the same rule as fishball-embed-ui's parts).
  */
 window.__ModuleLoader__.load({
   id: 'fishball-core',
-  factory() {
-    return { name: 'fishball-core', apply() {} }
+  factory(require) {
+    const CORE = Object.freeze({
+      name: 'fishball-core',
+      settings: './client.settings.js',
+      unavailable: 'fishball core: settings panel unavailable',
+    })
+
+    function apply(ctx) {
+      ctx.effect(() => {
+        let live = true
+        require.async(CORE.settings).then(({ settingsPlugin }) => { if (live) ctx.plugin(settingsPlugin) })
+          .catch((error) => { ctx.logger?.warn?.(CORE.unavailable, error) })
+        return () => { live = false }
+      }, CORE.name + ': settings panel')
+    }
+
+    // No inject of its own: the panel declares the client services it needs and starts with them.
+    return { name: CORE.name, apply }
   },
 })
