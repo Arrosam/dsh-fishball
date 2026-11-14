@@ -19,6 +19,7 @@ import path from 'node:path'
 import { DECISION } from '../../../packages/connector/contract/contract.js'
 import { EVENT_TYPE, LINK_REFUSAL, TOOL } from '../../../packages/connector/mcp-schema/index.js'
 import { GUARDS, INTERCEPT } from '../../../packages/core/contracts/constants.js'
+import { BOOT_TOOLS } from '../../support/constants.mjs'
 import { V3 } from '../shared/constants.mjs'
 
 export { DECISION, EVENT_TYPE, LINK_REFUSAL, TOOL, INTERCEPT, V3 }
@@ -27,12 +28,13 @@ export { DECISION, EVENT_TYPE, LINK_REFUSAL, TOOL, INTERCEPT, V3 }
  * WD-ROUTE's "Owns" folders. FBTEST_WD_ROUTE_ENTRY moves the entry (another checkout). The entry's
  * factory is the assumed surface of subject.mjs (no surface relayed yet, 2026-11-15).
  */
+const ENTRY = process.env.FBTEST_WD_ROUTE_ENTRY ?? path.join(V3.watchdog.dir, 'src', 'intercept', 'index.js')
+/** The watchdog package the entry belongs to (`<package>/src/intercept/index.js`), so its patch and row come from the same checkout. */
+const PACKAGE_DIR = path.dirname(path.dirname(path.dirname(ENTRY)))
 export const SUBJECT = Object.freeze({
-  entry: process.env.FBTEST_WD_ROUTE_ENTRY ?? path.join(V3.watchdog.dir, 'src', 'intercept', 'index.js'),
-  open: 'openWatchdogRouting',
-  /** The members the cases drive (subject.mjs). */
-  members: Object.freeze(['ready', 'supervise', 'unsupervise', 'fail', 'dispose']),
-  patch: path.join(V3.watchdog.dir, 'cordis.patch.yml'),
+  entry: ENTRY,
+  packageDir: PACKAGE_DIR,
+  patch: path.join(PACKAGE_DIR, 'cordis.patch.yml'),
 })
 
 /** Design §6.4: Watchdog's registrations, exactly these type sets (R-INT-07), at priority 0. */
@@ -73,9 +75,15 @@ export const PRESET = Object.freeze({
   /**
    * DSH's global tool from dsh-base, offered to every session whatever its preset (K3 manager tools
    * list it beside `read` / `read_image` for `preset-fishball`, which has the same two file tools).
-   * Pending Fishball's answer (question 6), a session on `watchdog` may also see it and nothing else.
+   * Allowed beside the preset's own two tools (Fishball 2026-11-15, question 6).
    */
   global: Object.freeze(GUARDS.managerTools.filter((t) => t !== 'read' && t !== 'read_image')),
+  /**
+   * The test worker's fixture bundle `fbtest-tools` registers these test-only globals on every
+   * session (test/support/constants.mjs BOOT_TOOLS); they do not exist in production, so the oracle
+   * leaves exactly them out (Fishball 2026-11-15). Any other tool still fails the row.
+   */
+  harnessOnly: Object.freeze([...BOOT_TOOLS]),
 })
 
 /** Fixture data (not product values). */
@@ -114,5 +122,6 @@ export const LATER = Object.freeze({
   neverLoaded: 'F-STATUS (standalone, R-FB-07) or I-HOST (hosted pending notice, R-HOST-08): the notice when Watchdog never loaded (Q-18)',
   revoke: 'X-REMOTE (a real connector revocation of Fishball\'s token cuts Watchdog off with Fishball\'s link)',
   connector: 'C-WIRE (connector routing end to end: this Fishball DSH receives no event of a session another principal manages, or of an unmanaged one)',
+  wire: 'F-WIRE (core\'s app row provides fishballInstance, so a core-present DSH hands Watchdog its service)',
   decide: 'WD-DECIDE (the non-waking settlement note to Fishball for an offer Watchdog escalated to the user, R-WD-09)',
 })

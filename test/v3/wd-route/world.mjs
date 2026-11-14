@@ -119,8 +119,12 @@ function tracedCtl(event, ctl, trace) {
   }
 }
 
-/** Core's interception service as Watchdog's `events` port; `refuse` makes `intercept` throw (a registration failure). */
-function eventsPort(core, trace, gate) {
+/**
+ * Core's interception service as Watchdog's `events` port; `refuse` makes `intercept` throw (a
+ * registration failure). Every handler run is kept in `inFlight` until it settles, so teardown can
+ * wait for them (see wdWorld).
+ */
+function eventsPort(core, trace, gate, inFlight) {
   return {
     intercept(registration, handler) {
       if (gate.refuse) throw new Error(FIXTURE.registrationFault)
@@ -129,7 +133,10 @@ function eventsPort(core, trace, gate) {
       const dispose = core.intercept(registration, (event, ctl) => {
         record.seen.push(event.eventId)
         trace.log(event.eventId, STEP.offered, { types: registration.types })
-        return handler(event, tracedCtl(event, ctl, trace))
+        const run = handler(event, tracedCtl(event, ctl, trace))
+        const settled = Promise.resolve(run).catch(() => {}).finally(() => inFlight.delete(settled))
+        inFlight.add(settled)
+        return run
       })
       return () => { record.disposed = true; dispose() }
     },
@@ -177,9 +184,23 @@ export async function wdWorld(t, sdk, { ready = true } = {}) {
   let world
   let routing
   const closers = []
+  const inFlight = new Set()
+  /**
+   * Teardown must not close core's ledger domain under a handler core is still finishing: core
+   * records an event's outcome after its handler settles (and a disposal sends in-flight events to
+   * Fishball), so a close before that tail rejects with "domain is closed". Each step therefore waits
+   * for every handler run to settle and then for the world's own settle signal (no change at the
+   * link, the model or the log, every agent idle) before the next step closes anything.
+   */
+  const drain = async () => {
+    while (inFlight.size > 0) await Promise.allSettled([...inFlight])
+    await world?.settle()
+  }
   t.after(async () => {
     for (const close of closers.reverse()) await close().catch(() => {})
+    await drain()
     await routing?.dispose()
+    await drain()
     await world?.close()
     // Guard the one recursive delete: only the directory this helper made under the OS temp dir.
     if (path.dirname(root) === fs.realpathSync(os.tmpdir()) && path.basename(root).startsWith(FIXTURE.tempPrefix)) await removeRoot(root)
@@ -191,7 +212,7 @@ export async function wdWorld(t, sdk, { ready = true } = {}) {
   const notices = []
   const verdicts = []
   const ports = {
-    events: eventsPort(world.core, trace, gate),
+    events: eventsPort(world.core, trace, gate, inFlight),
     link,
     async notify(notice) {
       trace.log(null, STEP.notify, { wake: notice?.wake })
