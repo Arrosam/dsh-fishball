@@ -70,8 +70,11 @@ export function registerNotify(manager, agentCtx, agent, attention) {
       } catch {
         throw new NotifyError(ERROR.unavailable)
       }
-      // Attention is optional and best-effort; a disconnected connector must not
-      // turn an already appended notice into a failed/retryable tool result.
+      // X8 attention (design §8.3, R-FN-01): core's member calls embed-UI's contributed
+      // `embed-ui.attention.signal` over its link and answers `{ok: true, accepted: true}`, or
+      // `unsupported-operation` when that tool is absent (W3 Q-14). Attention is optional and
+      // best-effort: a refusal (answered or thrown) or a disconnected link changes nothing else,
+      // so an already appended notice never becomes a failed or retryable tool result.
       try { await attention?.signal(PLUGIN.name, { important }) } catch { /* no replay */ }
       return { notified: true, id, important }
     },

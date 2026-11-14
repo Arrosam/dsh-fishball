@@ -2,16 +2,21 @@ import { LOG, NAMESPACE } from './src/constants.js'
 import { createBoardStore } from './src/store.js'
 import { createBoardTools } from './src/board.js'
 import { registerBoardSearch } from './src/search.js'
-import { followInstance } from './src/instance.js'
+import { followInstance, reportCoreMissing } from './src/instance.js'
 
 export { Config } from './src/config.js'
 export const name = NAMESPACE
-// Both supported Cordis versions treat every injected name as required, even with '?'.
+// Both supported Cordis versions treat every injected name as required, even with '?', so
+// fishball-core's `fishballInstance` is looked up at runtime and never injected (R-FB-06).
 export const inject = ['tools']
 
 // Extension points §1: a missing service OR another apiVersion is an "older instance".
+// No Fishball contract module is imported for these values: this package must load with no
+// fishball-core and no connector installed (R-FB-06), so it cannot resolve `fishball-core/contracts`.
+// `appReady` is DSH's launcher readiness service (dsh profile-boot, both SDKs).
 const HOST = Object.freeze({
   service: 'fishballInstance', profile: 'profileContext', apiVersion: 1, serviceEvent: 'internal/service',
+  appReady: 'appReady',
 })
 
 export function apply(ctx) {
@@ -30,7 +35,7 @@ export function apply(ctx) {
       registerBoardSearch(agentCtx, { openStore, sessionId })
     })
   })
-  // Once per load; a later arrival attaches without a further log line. Disabling the row
-  // removes every manager-scope contribution with the X2 registration (followInstance's effect).
-  if (!binding.attached) ctx.logger(NAMESPACE).warn(LOG.instanceHooksMissing)
+  // Once per load, at app ready; a later arrival attaches without a further log line. Disabling
+  // the row removes every manager-scope contribution with the X2 registration (followInstance's effect).
+  reportCoreMissing(ctx, HOST, binding, () => ctx.logger(NAMESPACE).warn(LOG.coreMissing))
 }

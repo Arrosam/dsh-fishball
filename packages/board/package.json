@@ -21,8 +21,7 @@
     "dsh": ">=0.2.1-rc.5"
   },
   "peerDependencies": {
-    "@deepseek-ai/schemastery": "*",
-    "fishball-instance": ">=0.1.0-alpha.0 <2"
+    "@deepseek-ai/schemastery": "*"
   },
   "dsh": {
     "bundle": {
