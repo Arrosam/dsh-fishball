@@ -154,20 +154,45 @@ export const MAILBOX = Object.freeze({ cursor: 'fbtest-cursor', generation: 'g1'
 
 /**
  * The pairing module, the one seam between these cases and F-PAIR (`packages/core/src/identity/`).
- * K1, K2 and K3 freeze no JS entry for it, so the assumed shape is named once here and in
- * subject.mjs (spec question 1 to Fishball, 2026-11-15).
+ * K1, K2 and K3 freeze no JS entry for it; the names are the surface Fishball relayed from the dev
+ * session (2026-11-15, `dev/v3-f-pair` at `ed5f2b75` / `a5ec0bfd`), used only by subject.mjs.
  */
 export const SUBJECT = Object.freeze({
   entry: process.env.FBTEST_F_PAIR_ENTRY ?? path.join(REPO, 'packages', 'core', 'src', 'identity', 'index.js'),
   factory: 'createPairing',
+  openRecords: 'openRecords',
+  createRecords: 'createRecords',
   generateId: 'generateId',
-  checkId: 'checkId',
-  defaults: 'IDENTITY_DEFAULTS',
+  acceptId: 'acceptId',
+  requestedName: 'requestedName',
+  functions: Object.freeze(['createPairing', 'openRecords', 'createRecords', 'generateId', 'acceptId', 'requestedName']),
+  // Only the constants the cases read are required (the relay also named CHOICES_OF, CHOICE_REFUSAL, NO_CHOICES, SCOPE_LIST).
+  constants: Object.freeze(['IDENTITY', 'PAIRING_STATE', 'CHOICE']),
+  identity: 'IDENTITY',
   states: 'PAIRING_STATE',
-  choices: 'PAIRING_CHOICE',
-  /** AUTH-ST-03's states and R-ID-07's two choices, as the module's constant keys. */
-  stateKeys: Object.freeze(['noRecord', 'paired', 'warnMatch', 'warnMismatch', 'needToken', 'needId', 'idMismatch', 'tokenRefused']),
-  choiceKeys: Object.freeze(['continue', 'newToken']),
+  choices: 'CHOICE',
+  choicesOf: 'CHOICES_OF',
+})
+
+/**
+ * The words of AUTH-ST-03's core states, R-ID-07's choices and `choose`'s refusals, as the dev
+ * session relayed them through Fishball (2026-11-15). The case files name the states (NoRecord,
+ * WarnMatch, …) but fix no words, so these are the relay's, keyed by the case's names. AUTH-ST-03's
+ * TokenRefused is not a pairing state: it is the link's TargetStatus `token-refused` (Fishball
+ * answer 2), so it has no key here.
+ */
+export const RELAYED = Object.freeze({
+  state: Object.freeze({
+    noRecord: 'unpaired',
+    paired: 'paired',
+    warnMatch: 'warn-match',
+    warnMismatch: 'warn-mismatch',
+    needToken: 'need-token',
+    needId: 'need-id',
+    idMismatch: 'id-mismatch',
+  }),
+  choice: Object.freeze({ continue: 'continue', newTokenAndId: 'new-token-and-id', newToken: 'new-token' }),
+  refusal: Object.freeze({ notConfirmed: 'not-confirmed', notOffered: 'not-offered', notSaved: 'not-saved' }),
 })
 
 /** Harness waits and polls only; never a product oracle. */
