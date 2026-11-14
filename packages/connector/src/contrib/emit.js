@@ -23,7 +23,7 @@
 import { CONTRIBUTED_TYPE_PREFIX, RETIREMENT_REASON } from '../../mcp-schema/index.js'
 import { EMIT_CHECK_ORDER, EMIT_REFUSAL, EVENT_LIMITS, publicNameFor } from '../../tools/index.js'
 import { LOG, PORT } from './constants.js'
-import { validateValue } from './schema-value.js'
+import { validateValue } from '../schema-value/index.js'
 
 /**
  * The order `emitFor` below checks in. Its data dependencies fix it (the rate bucket needs the

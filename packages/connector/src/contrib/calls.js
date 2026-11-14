@@ -22,7 +22,7 @@ import { okResult, refusalResult } from '../../mcp-schema/index.js'
 import { ABORT_REASON, CALL_CODE, SCHEMA_SUBSET, SHARED_CODES, TOOL_LIMITS, TOOLS_API } from '../../tools/index.js'
 import { redact } from 'fishball-shared/redact'
 import { FAILURE_KIND, LOG, RESULT_FIELD, RESULT_KEYS } from './constants.js'
-import { validateValue } from './schema-value.js'
+import { validateValue } from '../schema-value/index.js'
 
 const UTF8 = new TextEncoder()
 const byteLength = (text) => UTF8.encode(text).length
