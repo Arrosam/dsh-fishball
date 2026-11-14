@@ -24,7 +24,8 @@ import { validatorFor } from '../k1/schema-module.mjs'
 import { caseName } from '../shared/cases.mjs'
 import {
   CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, EVENT_TYPE, FIXTURE, LATER, MAILBOX, MAILBOX_EVENT_SCHEMA, MAILBOX_SUMMARY_SCHEMA,
-  OFFER_ID, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WAIT, WIRE, formatOfferId, payloadSchemaOf,
+  OFFER_ID, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIRE_OUTCOME, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WAIT, WIRE, formatOfferId,
+  payloadSchemaOf,
 } from './constants.mjs'
 import { worldFor } from './subject.mjs'
 
@@ -103,6 +104,13 @@ export async function pollAll(mailbox, key) {
     if (!result.hasMore) return events
     cursor = result.nextCursor
   }
+}
+/** Commits `type` to `key` and returns it as polled (Pending). */
+export async function pendingEvent(mailbox, key, type) {
+  const e = await commitOk(mailbox, key, type)
+  const got = (await pollAll(mailbox, key)).find((x) => x.eventId === e.eventId)
+  assert.ok(got, 'the committed event is not pending')
+  return got
 }
 export const receiptOf = (event) => ({ eventId: event.eventId, payloadDigest: event.payloadDigest })
 /** An event's identity (R-EVT-02: a replay has the same one). */
@@ -422,12 +430,7 @@ export function registerMailboxCases(sdk) {
 
   // ---------------------------------------------------------------- EVT-ST-01 (State Transition)
   /** Commits `type` to P and returns it as polled (Pending). */
-  async function pending(w, type) {
-    const e = await commitOk(w.mailbox, P, type)
-    const got = (await pollAll(w.mailbox, P)).find((x) => x.eventId === e.eventId)
-    assert.ok(got, 'the committed event is not pending')
-    return got
-  }
+  const pending = (w, type) => pendingEvent(w.mailbox, P, type)
   /** The `retirement` naming `eventId` among P's pending events, if any. */
   const retirementOf = async (w, eventId) => (await pollAll(w.mailbox, P)).filter((e) => e.type === EVENT_TYPE.retirement && e.payload?.retiredEventId === eventId)
   /** Holds, restarts and releases P; returns P's pending identities after the release. */
@@ -546,9 +549,9 @@ export function registerMailboxCases(sdk) {
     const w = await worldFor(t, sdk)
     const got = await pending(w, CONTRIBUTED)
     await w.mailbox.ack(P, [receiptOf(got)])
-    // K1 states `retire` for pending events only; what it answers for an acked one is not frozen,
-    // so only the resulting state is checked (R-EXT-19: acked events stay with the client).
-    await w.mailbox.retire(P, got.eventId, RETIREMENT_REASON.contributorWithdrawn).catch(() => undefined)
+    // K1 amendment at the W3 merge (DECIDED #W3-1) froze the answer for an acked event:
+    // `{retired: false}`, nothing committed (R-EXT-19: acked events stay with the client).
+    assert.deepEqual(await w.mailbox.retire(P, got.eventId, RETIREMENT_REASON.contributorWithdrawn), RETIRE_OUTCOME.nothing)
     assert.deepEqual(await pollAll(w.mailbox, P), [], 'a retirement replaced an acked event')
     assert.deepEqual(await w.mailbox.ack(P, [receiptOf(got)]), { ok: true, acked: 0 }, 'the acked receipt is no longer known')
   })
