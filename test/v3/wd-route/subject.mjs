@@ -46,7 +46,7 @@ import { SUBJECT as CASES_SUBJECT, TOOL, V3 } from './constants.mjs'
 /** The relayed surface: entries, factory and result members (the cases' SUBJECT keeps its own paths). */
 const SUBJECT = Object.freeze({
   entry: CASES_SUBJECT.entry,
-  health: path.join(path.dirname(path.dirname(CASES_SUBJECT.entry)), 'health', 'index.js'),
+  health: path.join(CASES_SUBJECT.packageDir, 'src', 'health', 'index.js'),
   open: 'createRouting',
   members: Object.freeze(['health', 'supervision', 'dispose']),
 })
