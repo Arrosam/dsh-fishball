@@ -2,7 +2,9 @@
 import { registerK1AmendCases } from './amend-cases.mjs'
 import { registerK1Cases } from './cases.mjs'
 import { registerK1bCases } from './k1b-cases.mjs'
+import { registerK1cCases } from './k1c-cases.mjs'
 
 registerK1Cases('0.2.1-rc.5')
 registerK1bCases('0.2.1-rc.5')
 registerK1AmendCases('0.2.1-rc.5')
+registerK1cCases('0.2.1-rc.5')

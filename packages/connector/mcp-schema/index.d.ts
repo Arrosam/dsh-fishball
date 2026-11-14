@@ -365,7 +365,15 @@ export interface RouteSubject {
   contributor?: string
 }
 
-/** The no-recipient outcome, by type (R-CON-09, R-EXT-17). */
+/**
+ * The no-recipient outcome, by type (R-CON-09, R-EXT-17). `queue` is the connector's durable
+ * no-recipient queue of `message` events (task K1c; README "Managed state", K1c-3): it holds while
+ * no **paired** entry is designated, bounded by the live `maxQueuedInputs` setting (default
+ * QUEUE.maxQueuedInputs), `queue-full` past it. Once a paired entry is designated, connected or not,
+ * the held messages move in order into its mailbox; those that do not fit stay queued in order and
+ * move in as room frees. While the queue is not empty, a new such message joins its end instead of
+ * going to the mailbox, so none overtakes an older one. A held message is never dropped once accepted.
+ */
 export type NoRecipient = { recipient: null; fallback: 'to-user' | 'queue' | 'unavailable' | 'no-fishball' | 'dropped' }
 
 /**
@@ -382,6 +390,74 @@ export interface Router {
 export interface Presence {
   isConnected(principalKey: PrincipalKey): boolean
   onChange(listener: (principalKey: PrincipalKey, connected: boolean) => void): () => void
+}
+
+// --- Managed state (task K1c) ------------------------------------------------------------------
+
+/** One managed session and its manager, as ManagedState lists it. */
+export interface ManagedRecord {
+  /** A root session id (the session the user sees). */
+  readonly sessionId: string
+  readonly principalKey: PrincipalKey
+}
+
+/** `manage`'s answer: MANAGED_REFUSAL.alreadyManaged (`conflict`) when the session has a manager. */
+export type ManageResult = { readonly ok: true } | { readonly ok: false; readonly code: typeof MANAGED_REFUSAL.alreadyManaged }
+
+/**
+ * `release`'s answer: MANAGED_REFUSAL.notManaged (`not-managed`) when nobody manages the session,
+ * MANAGED_REFUSAL.otherManager (`forbidden`) when another principal does (R-ROUTE-02, HAND-ST-01
+ * row 9).
+ */
+export type ReleaseResult =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly code: typeof MANAGED_REFUSAL.notManaged | typeof MANAGED_REFUSAL.otherManager }
+
+/**
+ * Who manages a session (task K1c; R-ROUTE-01, R-WATCH-01; README "Managed state", K1c-1). The
+ * seam C-ROUTE and C-TOOLS share: C-ROUTE owns the one implementation (with the router and K3's
+ * `fishballConnectorHandover`, which change the same state through Hand over and Take back).
+ * C-TOOLS calls `manage` from `session_start` and `release` from `session_release`, and reads
+ * `managerOf` in every tool that names a session ("a session you manage"; `sessions_list` omits and
+ * `session_read` refuses `forbidden` a session another principal manages, R-ROUTE-02,
+ * requirements 1.23) and for `approval_answer` authority. Connector-internal: never a DSH service,
+ * never reachable over MCP or HTTP.
+ *
+ * - **Keys** are root session ids (the session the user sees; a subagent belongs to its root, as
+ *   in V2). The caller resolves the root and checks that the session exists: an unknown session is
+ *   the caller's `unknown-session` (C-TOOLS reads DSH), never this interface's.
+ * - **One manager per session**, at most. Hand over and Take back stay K3's service; revocation
+ *   and succession are added by C-REVOKE and C-SUCCEED, not here.
+ * - **Durable** (as V2's managed table, which V3 keeps, design §10 step 3): a change resolves only
+ *   once it is stored, and survives a connector restart. **Serial** (as V2's ManagedRegistry, so two
+ *   overlapping calls never both see the old state): of two overlapping calls the first wins and
+ *   the second sees its result. **Visible on resolve:** `managerOf` and `managed()` show a change
+ *   once its promise has resolved (K1c-1).
+ * - **Events:** `manage` commits none. `release` sends no release event or notification (K1c-2);
+ *   its only events are the retirements of the session's live offers, one `retirement` with
+ *   RETIREMENT_REASON.released per live offer to the releasing pair, which C-ROUTE's `release`
+ *   performs once the change is stored. C-TOOLS calls nothing else. The offers then go to the user
+ *   in the session.
+ * - A refusal changes nothing. No method throws for a refusal.
+ */
+export interface ManagedState {
+  /** The session's manager now, or `undefined` when it is unmanaged. Synchronous: no I/O. */
+  managerOf(sessionId: string): PrincipalKey | undefined
+  /** Every managed session with its manager, in no particular order. */
+  managed(): readonly ManagedRecord[]
+  /**
+   * `session_start`: makes `principalKey` the session's manager. A session that already has a
+   * manager, the caller included, is MANAGED_REFUSAL.alreadyManaged (the rule of K3's `handOver`).
+   */
+  manage(sessionId: string, principalKey: PrincipalKey): Promise<ManageResult>
+  /** `session_release` by `principalKey`: the session becomes unmanaged. */
+  release(sessionId: string, principalKey: PrincipalKey): Promise<ReleaseResult>
+  /**
+   * Calls `listener` after every change of the managed set, by any path (`manage`, `release`, Hand
+   * over, Take back, revocation, succession). It gets no argument and reads `managed()` again. A
+   * throwing listener does not stop the others (K1c-1). Returns the disposer of this listener.
+   */
+  onChange(listener: () => void): () => void
 }
 
 // --- Request gate (task K1b) -------------------------------------------------------------------
@@ -628,6 +704,7 @@ export declare const OAUTH_METADATA: {
 export declare const INSUFFICIENT_SCOPE_REASON: { readonly notPaired: "not-paired"; readonly idMismatch: "id-mismatch" }
 export declare const LIFETIME: { readonly accessTokenMs: 3600000; readonly codeMs: 60000; readonly pendingRequestMs: 600000; readonly refreshGraceMs: 10000; readonly refreshChainMaxMs: number }
 export declare const MAILBOX: { readonly pageDefault: number; readonly pageMax: number; readonly disabledRetentionMs: 2592000000; readonly ackedReceiptMs: number }
+export declare const MANAGED_REFUSAL: { readonly alreadyManaged: "conflict"; readonly notManaged: "not-managed"; readonly otherManager: "forbidden" }
 export declare const NAME_RULES: { readonly minChars: 1; readonly maxChars: 64; readonly whitespaceRun: RegExp; readonly control: RegExp; readonly space: " "; readonly normalForm: "NFC"; readonly namelessPrefix: "ID: " }
 export declare const NOTICE: { readonly codeGrammar: RegExp; readonly codes: Readonly<Record<string, never>> }
 export declare const OAUTH_ERROR: { readonly invalidRequest: "invalid_request"; readonly invalidClient: "invalid_client"; readonly invalidGrant: "invalid_grant"; readonly unsupportedGrantType: "unsupported_grant_type"; readonly invalidTarget: "invalid_target"; readonly unsupportedResponseType: "unsupported_response_type"; readonly accessDenied: "access_denied"; readonly serverError: "server_error"; readonly temporarilyUnavailable: "temporarily_unavailable"; readonly invalidToken: "invalid_token"; readonly insufficientScope: "insufficient_scope" }
