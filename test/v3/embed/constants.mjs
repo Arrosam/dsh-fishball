@@ -142,6 +142,5 @@ export const embedDir = () => path.join(REPO, EMBED.workspace)
 /** Owners of the rows R-EMBED cannot check (v3-tasks.md at b1295de). */
 export const LATER = Object.freeze({
   matrix: 'X-MATRIX (PLAT-EP-03 rows 2–6 on a real DSH: Plugins page install, enable, disable, list)',
-  shell: 'U-SHELL (embed-UI host row, service detection, instance-missing, sidebar entry with no brand override)',
   e2e: 'E2E-UI (W6 browser flows; no browser in this suite)',
 })

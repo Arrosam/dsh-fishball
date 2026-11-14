@@ -41,6 +41,15 @@ export function caseTest(sdk, id, row, title, fn, todo) {
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, fn)
 }
+/**
+ * Run `fn` only at integration (`gate.env` set to `gate.on`): it boots a host DSH. Outside
+ * integration the test is registered as skipped under the same name, so both SDK runs list it.
+ */
+export function integrationCase(sdk, id, row, title, fn, gate) {
+  const name = caseName(sdk, id, row, title)
+  if (process.env[gate.env] === gate.on) test(name, fn)
+  else test(name, { skip: gate.skip }, () => {})
+}
 
 /** A package that does not import the given set (code or manifest). */
 async function assertNoEdges(from, names) {
