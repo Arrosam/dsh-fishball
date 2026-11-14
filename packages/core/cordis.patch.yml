@@ -93,6 +93,10 @@
     # loader rows only (B5): the chain nativeRuntime → fishballBridge → fishballApprovals → the app
     # row must be up before appReady. nativeRuntime comes from the hosted child's lifecycle row; a DSH
     # without it leaves these rows waiting for that service (W4b's F-WIRE replaces them).
+    # No row here is `required` (decided 2026-11-15): a required row would fail every standalone
+    # DSH's boot, where these rows wait for nativeRuntime. So a broken app row no longer fails a
+    # hosted child's boot loudly (V2 LIFE-02); it shows as the lifecycle's readiness failure
+    # (APP_NOT_PUBLISHED, or STARTUP_TIMEOUT), and the start is reported failed all the same.
     - { id: fishball-native-session-tools, name: fishball-core/slim/session-tools }
     - { id: fishball-native-approvals, name: fishball-core/slim/approvals }
     - { id: fishball-native-app, name: fishball-core/slim/app }
