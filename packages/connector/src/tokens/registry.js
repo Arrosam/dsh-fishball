@@ -12,12 +12,13 @@
  * 1. read: every item's value is resolved and fingerprinted; nothing is written. A saved list that
  *    gives one `ref` to two items is refused `ref-duplicate` (R-TOK-08); at start or on a
  *    credential change, when there is no save to refuse, only those items are left out (6 = A).
- *    Equal values under two refs are `value-duplicate` (K1 SETTINGS_REFUSAL; PENDING_DECISION). A
+ *    Equal values under two refs are `value-duplicate` (K1 SETTINGS_REFUSAL; see `introduced`). A
  *    refused save changes nothing (R-TOK-08 "the previous settings stay"), and the caller's
  *    `restoreTokens` writes the previous list back.
- * 2. commit: values are generated for enabled entries whose ref has none (R-TOK-08), the new state
- *    is swapped in, revocations are announced, records are written, and the generated values of
- *    deleted entries are unset (R-TOK-09).
+ * 2. commit: values are generated for enabled entries whose ref has none (R-TOK-08; a value unset
+ *    outside a save waits for the next save, see `awaitsSave`), the new state is swapped in,
+ *    revocations are announced, records are written, and the generated values of deleted entries
+ *    are unset (R-TOK-09).
  *
  * Identity (Fishball's decision 2026-11-14, question 1 = A): an item is the entry whose live
  * record has its `ref`. A changed ref is therefore a delete plus a new entry, and a ref added
@@ -44,7 +45,7 @@ import { randomBytes } from 'node:crypto'
 import { ENTRY_STATUS, SETTINGS_REFUSAL, TOKEN_VALUE } from '../../mcp-schema/constants.js'
 import { isTokenLongEnough } from '../../mcp-schema/rules.js'
 import { diagnosticOf } from '../errors.js'
-import { CREDENTIALS_UPDATED, DUPLICATE_POLICY, ENTRY_KEY, GENERATION, LOG, NO_TEXT, PENDING_DECISION, REF_PATTERN, REVOCATION, SYNC_REASON, UNSET_POLICY, VALUE_ENCODING } from './constants.js'
+import { CREDENTIALS_UPDATED, ENTRY_KEY, GENERATION, LOG, NO_TEXT, REF_PATTERN, REVOCATION, SYNC_REASON, VALUE_ENCODING } from './constants.js'
 import { loadFingerprinter, sameFingerprint } from './fingerprint.js'
 import { openTokenStore } from './store.js'
 
@@ -181,15 +182,19 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   const valueGroups = (reads) => sharedGroups(reads.filter((state) => state.fingerprint !== null), (state) => state.fingerprint, sameFingerprint)
 
   /**
-   * DUPLICATE_POLICY.restore: whether this save makes an entry a duplicate that was not one
-   * already (a new item counts as not one). A duplicate the save leaves as it was does not refuse it.
+   * Two entries may never hold one value (the user's decision 2026-11-14, Q4 = A): a save that
+   * makes an entry a duplicate that was not one already (a new item counts as not one) is refused
+   * and the previous list written back, logged with the labels only. A save that leaves an existing
+   * duplicate as it was is not refused, so a label change or a disable is never blocked by it. A
+   * duplicate that did not come from a save (a store edit, or one found at start) has no save to
+   * undo: its entries stay unusable until the values differ.
    */
   function introduced(group) {
     const wasDuplicate = (state) => live.some((current) => current.duplicate && current.entry.entryKey === state.record?.entryKey)
     return group.some((state) => !wasDuplicate(state))
   }
 
-  /** Whether the commit should generate a value for this item (R-TOK-08; UNSET_POLICY). */
+  /** Whether the commit should generate a value for this item (R-TOK-08; `awaitsSave`). */
   async function mayGenerate(state, reason) {
     const { item, value, unreadable } = state
     if (!item.enabled || value !== undefined || unreadable || !isRef(item.ref) || awaitsSave(state, reason)) return false
@@ -200,12 +205,14 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
   }
 
   /**
-   * UNSET_POLICY.awaitSave: an entry whose value was unset outside a settings save (a store edit,
-   * or one seen at start) gets no generated value until the next save; any value ends the wait.
+   * The user's decision 2026-11-14, Q5 = B: an entry whose value was unset outside a settings save
+   * (a store edit, or one seen at start) stays `token-unconfigured` with no generated value until
+   * the user saves the settings again; any value ends the wait. Only an entry that had a value
+   * waits: a new entry, or one whose ref never held a value, is generated for as R-TOK-08 says.
    */
   function awaitsSave({ record, fingerprint, unreadable }, reason) {
     if (unreadable) return record?.awaitSave === true
-    if (PENDING_DECISION.afterUnset !== UNSET_POLICY.awaitSave || reason === SYNC_REASON.settings || fingerprint !== null) return false
+    if (reason === SYNC_REASON.settings || fingerprint !== null) return false
     return record?.awaitSave === true || (record !== undefined && record.fingerprint !== null)
   }
 
@@ -333,7 +340,7 @@ export function createTokenRegistry({ ctx, logger, restoreTokens }) {
     const reads = []
     for (const item of items) reads.push(await read(item))
     const groups = valueGroups(reads)
-    const refusing = groups.filter((group) => PENDING_DECISION.valueDuplicate === DUPLICATE_POLICY.restore && saved && introduced(group))
+    const refusing = groups.filter((group) => saved && introduced(group))
     for (const group of groups) {
       logger.warn(LOG.valueDuplicate, labelsText(group.map((state) => state.item.label)), refusing.includes(group) ? LOG.valueDuplicateRestored : LOG.valueDuplicateUnusable)
     }
