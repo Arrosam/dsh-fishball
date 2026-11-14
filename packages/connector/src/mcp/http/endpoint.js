@@ -1,0 +1,266 @@
+/**
+ * The MCP Streamable HTTP endpoint on DSH's listener (task C-HTTP; design §3.1, §3.3, §5.5;
+ * R-CON-01, R-REM-01/03, R-TOK-01/02/06, R-ID-06, R-OA-05/09, R-SEC-03; spike V3-S1).
+ * C-WIRE registers `handler` as the `exact` raw route PATHS.mcp (S1 F3: exact beats DSH's `/api`
+ * prefix, whose browser fence therefore does not apply, so the gate checks Host itself).
+ *
+ * One request runs, and nothing after a refusal runs (design §3.1, PLAT-EP-01):
+ * 1. `RequestGate.check` (405 → 403 → 503);
+ * 2. a token in the query string → 400 `invalid_request`, before any lookup (R-TOK-02; RFC 6750 §2.3);
+ * 3. the shared FailureLimiter, keyed by the remote address alone (FAILURE_LIMIT) → 429;
+ * 4. `BearerVerifier.verify` → 401 with the K1 challenge and no body; the SDK is never reached;
+ * 5. `RequestGate.admit` (413 → 429), after reading the body up to one byte past the limit;
+ * 6. a pair-only caller reaches only PAIR_ONLY → else 403 `insufficient_scope` (R-ID-06);
+ * 7. the SDK (`createMcpHandler`, `legacy: 'reject'`): version and header checks, then dispatch.
+ *
+ * Every tunable is K1's (`../../../mcp-schema`). The audience and `resource_metadata` follow the
+ * request's origin as C-OAUTH's `originOf(req, {secure})` gives it (R-OA-01, S1 C29), so this
+ * module never derives a scheme or reads a forwarded header.
+ */
+import { readFileSync } from 'node:fs'
+import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
+import { toNodeHandler } from '@modelcontextprotocol/node'
+import {
+  BEARER_CHALLENGE, ENDPOINT_LIMITS, GATE_SURFACE, HTTP_STATUS, OAUTH_ERROR, PAIR_ONLY, PATHS, PROTOCOL, REQUEST_GATE, RESOURCE, SCOPE,
+  bearerChallenge, insufficientScopeChallenge, invalidTokenChallenge, oauthErrorBody, oauthUrls,
+} from '../../../mcp-schema/index.js'
+import { diagnosticOf } from '../../errors.js'
+import { powerOf } from '../../pairs/index.js'
+import {
+  CONNECTION_CLOSE, HTTP_HEADER, JSON_RPC, LOG, MANIFEST_URL, MEDIA_TYPE, SERVER_NAME, UNKNOWN_ADDRESS, URL_BASE, unsupportedVersionMessage,
+} from './constants.js'
+import { rateLimited } from './gate.js'
+import { createListenStreams, listensForEvents } from './streams.js'
+
+const SERVER_INFO = Object.freeze({ name: SERVER_NAME, version: JSON.parse(readFileSync(MANIFEST_URL, 'utf8')).version })
+const CAPABILITIES = Object.freeze({ tools: Object.freeze({ listChanged: true }), resources: Object.freeze({ subscribe: true }) })
+const BEARER_MISSING = 'missing'
+
+/**
+ * The listen-stream cap's 429 (ENDPOINT_LIMITS.listenStreamsPerPrincipal). PROPOSED (Fishball
+ * 2026-11-14, Q4; on the K1 amendment list): K1 names no Retry-After for it, so it reuses the
+ * in-flight value for the same reason: a slot frees as soon as any of the pair's streams ends.
+ */
+const STREAMS_LIMITED = rateLimited(REQUEST_GATE.inFlightRetryAfterMs)
+const QUERY_TOKEN = Object.freeze({ pass: false, status: HTTP_STATUS.badRequest, headers: Object.freeze({}), body: oauthErrorBody(OAUTH_ERROR.invalidRequest) })
+
+/** Writes a gate-shaped refusal: `status`, `headers`, and `body` as JSON, or no body when `null`. */
+function writeRefusal(res, { status, headers, body }) {
+  if (body === null) {
+    res.writeHead(status, headers)
+    res.end()
+    return
+  }
+  res.writeHead(status, { ...headers, [HTTP_HEADER.contentType]: MEDIA_TYPE.json })
+  res.end(JSON.stringify(body))
+}
+
+/** A 401 or 403 bearer answer: only `WWW-Authenticate`, no body (AUTH-EP-02: byte-identical apart from `error`). */
+const writeChallenge = (res, status, challenge) => writeRefusal(res, { status, headers: { [HTTP_HEADER.wwwAuthenticate]: challenge }, body: null })
+
+/**
+ * Reads the body, stopping one byte past ENDPOINT_LIMITS.bodyBytes (index.d.ts AdmitRequest), so an
+ * oversize body is never buffered whole. A body cut short by the client is what arrived.
+ */
+async function readBody(req) {
+  const chunks = []
+  let bytes = 0
+  for await (const chunk of req) {
+    chunks.push(chunk)
+    bytes += chunk.length
+    if (bytes > ENDPOINT_LIMITS.bodyBytes) break
+  }
+  return { body: Buffer.concat(chunks), bytes }
+}
+
+/** The single JSON-RPC message of a body, or undefined (not JSON, a batch, a non-object). */
+function messageOf(body) {
+  try {
+    const value = JSON.parse(body.toString('utf8'))
+    return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Whether a pair-only caller may send `message` (PAIR_ONLY, R-OA-04): discovery, `tools/list`,
+ * `tools/call pair`. Anything else, notifications included, needs full power.
+ */
+function pairOnlyMay(message) {
+  if (PAIR_ONLY.methods.includes(message.method)) return true
+  return message.method === JSON_RPC.toolsCallMethod && PAIR_ONLY.tools.includes(message.params?.name)
+}
+
+/**
+ * The SDK's answer, with a -32022 (PROTOCOL.unsupportedVersionCode) message rewritten to name the
+ * served revision (design §3.1, PLAT-UC-01 E1); status, code and `data` stay the SDK's. Any other
+ * answer, streams included, passes untouched.
+ */
+async function namingServedRevision(response) {
+  if (response.status !== HTTP_STATUS.badRequest || !response.headers.get(HTTP_HEADER.contentType)?.startsWith(MEDIA_TYPE.json)) return response
+  const body = messageOf(Buffer.from(await response.clone().arrayBuffer()))
+  if (body?.error?.code !== PROTOCOL.unsupportedVersionCode) return response
+  const headers = new Headers(response.headers)
+  headers.delete(HTTP_HEADER.contentLength)
+  const named = { ...body, error: { ...body.error, message: unsupportedVersionMessage(PROTOCOL.version) } }
+  return new Response(JSON.stringify(named), { status: response.status, headers })
+}
+
+/** A fetch face that answers as `handler.fetch` does, with the served revision named. */
+const naming = (fetch) => async (request, options) => namingServedRevision(await fetch(request, options))
+
+/**
+ * The request as the SDK's Node adapter reads it, replaying the body this module already read.
+ * `toWebRequest` duck-types its input (method, url, headers, async-iterable body), so the SDK's
+ * own content-type, JSON and size answers stay authoritative. `auth` is what the SDK hands the
+ * factory as `authInfo`; it never carries the token value, which stops at the verifier.
+ */
+function replayed(req, body, caller) {
+  return {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    auth: { token: '', clientId: caller.clientId, scopes: [caller.scope], resource: new URL(caller.audience), extra: { caller } },
+    async *[Symbol.asyncIterator]() { if (body.length > 0) yield body },
+  }
+}
+
+/**
+ * @param {object} ports
+ * @param {import('../../../mcp-schema/index.js').RequestGate} ports.gate the one gate (C-WIRE)
+ * @param {import('../../../mcp-schema/index.js').BearerVerifier} ports.verifier C-OAUTH's
+ * @param {import('../../../mcp-schema/index.js').FailureLimiter} ports.failures the one shared limiter (C-OAUTH)
+ * @param {Pick<import('../../../mcp-schema/index.js').PairStore, 'pairOf' | 'seen'>} ports.pairs C-PAIR's store
+ * @param {(req: {headers: object}, options: {secure: boolean}) => string | undefined} ports.originOf C-OAUTH's
+ * @param {boolean} ports.secure GateListenerFacts.secure of DSH's listener
+ * @param {(principalKey: string) => Promise<object>} ports.readEvents the `resources/read fishball://events`
+ *   result for a full caller (C-WIRE binds C-MAILBOX's `readEventsResource`; Fishball 2026-11-14, Q6 B)
+ * @param {(server: McpServer, caller: object) => void} [ports.populate] registers the caller's tools
+ *   (C-TOOLS, C-EXT; C-WIRE composes them); pair-only callers get `pair` only (R-OA-04)
+ * @param {() => number} ports.now injected clock
+ * @param {{warn(...args: unknown[]): void}} ports.logger
+ */
+export function createMcpEndpoint({ gate, verifier, failures, pairs, originOf, secure, readEvents, populate = () => {}, now, logger }) {
+  const onerror = (error) => logger.warn(LOG.format, LOG.sdkError, diagnosticOf(error))
+
+  /** One fresh McpServer per request (the SDK's per-request factory), built for the verified caller. */
+  function factory({ authInfo }) {
+    const caller = authInfo.extra.caller
+    const server = new McpServer(SERVER_INFO, { capabilities: CAPABILITIES })
+    // R-OA-09: `server/discover` advertises the client-credentials extension, with empty settings.
+    server.server.registerCapabilities({ extensions: { [PROTOCOL.clientCredentialsExtension]: {} } })
+    if (caller.scope === SCOPE.full) {
+      server.registerResource(RESOURCE.events.name, RESOURCE.events.uri, { mimeType: RESOURCE.events.mimeType }, () => readEvents(caller.principalKey))
+    }
+    populate(server, caller)
+    return server
+  }
+
+  const handlerOptions = Object.freeze({ legacy: 'reject', maxRequestBodySize: ENDPOINT_LIMITS.bodyBytes, onerror })
+  const requests = createMcpHandler(factory, handlerOptions)
+  const requestNode = toNodeHandler({ fetch: naming(requests.fetch) }, { maxRequestBodySize: ENDPOINT_LIMITS.bodyBytes })
+  const streams = createListenStreams({ factory, handlerOptions, logger })
+
+  /** Steps 2–4: the caller, or undefined once a refusal has been written. */
+  function authenticate(req, res, url, origin) {
+    if (url.searchParams.has(BEARER_CHALLENGE.queryParameter)) return void writeRefusal(res, QUERY_TOKEN)
+    const failureKey = { remoteAddress: req.socket?.remoteAddress ?? UNKNOWN_ADDRESS }
+    const at = now()
+    const limited = failures.check(failureKey, at)
+    if (limited.limited) return void writeRefusal(res, rateLimited(limited.retryAfterMs))
+    const caller = verifier.verify(req.headers[HTTP_HEADER.authorization], oauthUrls(origin).resource, at)
+    if (caller.error === BEARER_MISSING) return void writeChallenge(res, HTTP_STATUS.unauthorized, bearerChallenge(origin))
+    if (caller.error !== undefined) {
+      // A refused credential counts toward the shared failure limit (FAILURE_LIMIT, AUTH-UC-07); no token is not one.
+      failures.recordFailure(failureKey, at)
+      return void writeChallenge(res, HTTP_STATUS.unauthorized, invalidTokenChallenge(origin))
+    }
+    if (caller.principalKey !== undefined) pairs.seen(caller.principalKey, at)
+    return caller
+  }
+
+  /** `subscriptions/listen`: on the pair's own handler, within its stream cap; it holds no in-flight slot. */
+  async function listen(req, res, body, caller, message, admitted) {
+    const reservation = streams.reserve(caller.principalKey, caller.entryKey)
+    if (reservation === undefined) {
+      admitted.done()
+      return writeRefusal(res, STREAMS_LIMITED)
+    }
+    const events = listensForEvents(message)
+    const node = toNodeHandler({
+      fetch: async (request, options) => {
+        try {
+          return await namingServedRevision(await reservation.fetch(request, options, { res, events }))
+        } finally {
+          // An open stream holds no in-flight slot (the user's decision 2026-11-14, K1b).
+          admitted.done()
+        }
+      },
+    }, { maxRequestBodySize: ENDPOINT_LIMITS.bodyBytes })
+    try {
+      await node(replayed(req, body, caller), res)
+    } finally {
+      reservation.release()
+    }
+  }
+
+  async function serve(req, res) {
+    const url = new URL(req.url ?? PATHS.mcp, URL_BASE)
+    const checked = gate.check({ method: req.method, path: url.pathname, headers: req.headers }, GATE_SURFACE.mcp)
+    if (!checked.pass) return writeRefusal(res, checked)
+    const origin = originOf(req, { secure })
+    // `check` passed, so the Host is allowed and well formed; an origin C-OAUTH still cannot build
+    // is refused as a Host the endpoint cannot name, before any credential is read.
+    if (origin === undefined) return writeRefusal(res, { status: HTTP_STATUS.forbidden, headers: {}, body: null })
+    if (url.pathname !== PATHS.mcp) return writeRefusal(res, { status: HTTP_STATUS.notFound, headers: {}, body: null })
+    const caller = authenticate(req, res, url, origin)
+    if (caller === undefined) return undefined
+    const { body, bytes } = await readBody(req)
+    const admitted = gate.admit({ method: req.method, path: url.pathname, headers: req.headers, bodyBytes: bytes }, GATE_SURFACE.mcp, caller)
+    if (!admitted.pass) {
+      // The rest of an oversize body is never read; closing the connection keeps Node from draining it.
+      if (admitted.status === HTTP_STATUS.payloadTooLarge) res.setHeader(HTTP_HEADER.connection, CONNECTION_CLOSE)
+      return writeRefusal(res, admitted)
+    }
+    try {
+      const message = messageOf(body)
+      // A body that is no single JSON-RPC message (not JSON, a batch) is left to the SDK, which
+      // refuses it as malformed whatever the caller's power (Fishball 2026-11-14, Q3).
+      if (caller.scope !== SCOPE.full && message !== undefined && !pairOnlyMay(message)) {
+        const { reason } = powerOf(pairs.pairOf(caller.entryKey), caller.clientId)
+        return writeChallenge(res, HTTP_STATUS.forbidden, insufficientScopeChallenge(origin, reason))
+      }
+      if (message?.method === JSON_RPC.listenMethod) return await listen(req, res, body, caller, message, admitted)
+      return await requestNode(replayed(req, body, caller), res)
+    } finally {
+      admitted.done()
+    }
+  }
+
+  /** The raw route handler. It never throws into DSH's webserver. */
+  async function handler(req, res) {
+    try {
+      await serve(req, res)
+    } catch (error) {
+      logger.warn(LOG.format, LOG.requestFailed, diagnosticOf(error))
+      if (!res.headersSent) writeRefusal(res, { status: HTTP_STATUS.internalServerError, headers: {}, body: null })
+      else res.destroy()
+    }
+  }
+
+  /** Closes every handler: open streams complete gracefully, in-flight requests are aborted. */
+  async function close() {
+    streams.close()
+    await requests.close()
+  }
+
+  return Object.freeze({
+    handler,
+    hints: streams.hints,
+    presence: streams.presence,
+    toolsChanged: streams.toolsChanged,
+    closeEntry: streams.closeEntry,
+    close,
+  })
+}
