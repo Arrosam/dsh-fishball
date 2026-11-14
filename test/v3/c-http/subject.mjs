@@ -2,22 +2,30 @@
  * The one place that binds the C-HTTP cases to C-HTTP's module (`packages/connector/src/mcp/http/`).
  *
  * K1b freezes `RequestGate` (check, admit), `GateListenerFacts` and C-HTTP's `HintSink`
- * (index.d.ts), but no factory. This seam assumes two, and only here; the dev session adapts this
+ * (index.d.ts), but no factory. The module's entry exports these two; the dev session adapts this
  * file, never a case:
  *
- *   <create…Gate>(facts, {logger}) → RequestGate
- *     facts    K1b GateListenerFacts: {host, secure, trustedHosts, approvalPort(), now}
- *   <create…Route|Endpoint>({gate, verifier, failures, tokens, logger, now}) → route | Promise<route>
- *     gate      the gate above (C-WIRE builds the one gate; the route calls it)
- *     verifier  K1 BearerVerifier (C-OAUTH's), faked below
- *     failures  K1a FailureLimiter (C-OAUTH's; "C-HTTP against a fake FailureLimiter"), faked below
- *     tokens    K1 TokenRegistry's `onRevoked` (C-TOKENS'), faked below: a revocation closes that
- *               principal's listen streams only (R-TOK-05, v3-tasks.md C-HTTP)
- *     logger    a cordis-style logger ({debug, info, warn, error}); the world records every line
+ *   createRequestGate(facts, {originOf}) → RequestGate
+ *     facts     K1b GateListenerFacts: {host, secure, trustedHosts, approvalPort(), now}
+ *     originOf  C-OAUTH's `originOf(req, {secure})`, faked below (C-OAUTH is not merged yet)
+ *   createMcpEndpoint({gate, verifier, failures, pairs, originOf, secure, readEvents, now, logger})
+ *       → {handler, hints, presence, toolsChanged, closeEntry, close}
+ *     gate        the gate above (C-WIRE builds the one gate; the route calls it)
+ *     verifier    K1 BearerVerifier (C-OAUTH's), faked below
+ *     failures    K1a FailureLimiter (C-OAUTH's; "C-HTTP against a fake FailureLimiter"), faked below
+ *     pairs       K1 PairStore's `pairOf` and `seen` (C-PAIR's), faked below: the endpoint derives a
+ *                 pair-only caller's 403 reason from it
+ *     secure      the same boolean as the gate's facts.secure (one listener)
+ *     readEvents  the `resources/read fishball://events` result (C-MAILBOX's), faked below
+ *     logger      a cordis-style logger ({debug, info, warn, error}); the world records every line
  *   route.handler(req, res)   the raw Node handler DSH's `webServer.register({kind: 'exact', path:
  *                             PATHS.mcp, handler})` takes (design §3.1)
  *   route.hints               K1 HintSink: the mailbox's side calls `resourceUpdated(principalKey, uri)`
- *   route.close?()            optional, awaited when the world goes away
+ *   route.closeEntry(entryKey) a revocation closes that entry's listen streams only (R-TOK-05); the
+ *                             world wires the fake TokenRegistry's `onRevoked` to it, as C-WIRE does
+ *   route.close()             awaited when the world goes away
+ *
+ * `populate` (the tools, C-TOOLS) is not passed: every tools row is `todo` (constants.mjs LATER).
  *
  * The world is real HTTP: a Node server on loopback that answers PATHS.mcp with the route (exact,
  * as DSH's listener) and 404 elsewhere. The listener facts the gate gets are the case's (a
@@ -35,7 +43,9 @@ import { pathToFileURL } from 'node:url'
 import { INSTANCE, REPO } from '../../support/constants.mjs'
 import { SKILL_SDK } from '../../private-skills/support/constants.mjs'
 import { importInstance } from '../../private-skills/support/sdk.mjs'
-import { BEARER_CHALLENGE, FIXTURE, HEADER, HOSTS, OAUTH_ERROR, PATHS, SCOPE, oauthUrls, SDK_CLIENT, SUBJECT, VERIFY, WAIT } from './constants.mjs'
+import {
+  BEARER_CHALLENGE, FIXTURE, HEADER, HOSTS, OAUTH_ERROR, PATHS, REQUEST_GATE, RESOURCE, SCOPE, oauthUrls, SDK_CLIENT, SUBJECT, VERIFY, WAIT,
+} from './constants.mjs'
 
 /** C-HTTP's entry bound to `sdk`, with exactly one factory of each kind. */
 async function factories(sdk) {
@@ -88,6 +98,50 @@ export class FakeFailures {
   recordFailure(key, now) { this.recorded.push({ key, now }) }
 }
 
+/** Characters no bare `Host` authority holds: whitespace, path, query, fragment, userinfo, backslash. */
+const NOT_AUTHORITY = /[\s/?#@\\]/
+
+/**
+ * C-OAUTH's `originOf(req, {secure})`, faked to its contract (C-OAUTH is not merged yet):
+ * `<scheme>//<Host>` with the `Host` exactly as dialled, `https:` on a secure listener, else
+ * `http:` for a loopback hostname and `https:` for any other. Undefined when `Host` is missing,
+ * empty, repeated or not a bare authority. It never judges whether the host is allowed (the gate
+ * does) and never reads a forwarded header.
+ */
+export function fakeOriginOf(req, { secure }) {
+  const host = req.headers[REQUEST_GATE.headers.host]
+  // A bare `host[:port]`: anything URL parsing would drop or reinterpret is no authority.
+  if (typeof host !== 'string' || host === '' || NOT_AUTHORITY.test(host)) return undefined
+  let hostname
+  try {
+    hostname = new URL(`${HOSTS.loopbackScheme}//${host}`).hostname
+  } catch {
+    return undefined
+  }
+  const scheme = secure || !HOSTS.loopbackNames.includes(hostname) ? HOSTS.remoteScheme : HOSTS.loopbackScheme
+  return `${scheme}//${host}`
+}
+
+/**
+ * C-PAIR's PairStore (`pairOf`, `seen`), faked: `bind` records the pair a full principal has, so a
+ * pair-only caller of an unbound entry is `not-paired` and of an entry bound to another id is
+ * `id-mismatch`. `seen` records what it is told.
+ */
+export class FakePairs {
+  seenCalls = []
+  #pairs = new Map()
+  bind(entryKey, principalKey, id) {
+    this.#pairs.set(entryKey, Object.freeze({ entryKey, principalKey, id, name: null, pairedAt: FIXTURE.t0, lastSeenAt: null }))
+  }
+  pairOf(entryKey) { return this.#pairs.get(entryKey) }
+  seen(principalKey, now) { this.seenCalls.push({ principalKey, now }) }
+}
+
+/** C-MAILBOX's `resources/read fishball://events` result, faked: an empty event list. */
+const readEvents = async () => ({
+  contents: [{ uri: RESOURCE.events.uri, mimeType: RESOURCE.events.mimeType, text: JSON.stringify([]) }],
+})
+
 /** C-TOKENS' `onRevoked`, faked: `revoke` fires it as the registry would (R-TOK-05). */
 export class FakeTokens {
   #listeners = new Set()
@@ -128,25 +182,42 @@ function exchange(port, { method, path: target, headers, body }) {
 }
 
 /**
- * A C-HTTP world on loopback for `t`: the gate built from `facts` (defaults: DSH's listener on
- * loopback http, no trusted hosts), the route mounted on PATHS.mcp, and the fakes.
- * Returns {port, host, gate, verifier, failures, tokens, hints, logger, clock, principal, request, connect}.
+ * The gate of `make` over `facts` (defaults: DSH's listener on loopback http, no trusted hosts)
+ * and the fake `originOf`. Returns {gate, clock, logger, facts}.
  */
-export async function httpWorld(t, sdk, facts = {}) {
-  const make = await factories(sdk)
+function gateOf(make, facts) {
   const clock = fakeClock()
   const logger = recordingLogger()
-  const verifier = new FakeVerifier()
-  const failures = new FakeFailures()
-  const tokens = new FakeTokens()
   const listenerFacts = {
     host: FIXTURE.loopback, secure: false, trustedHosts: [], approvalPort: () => 0, now: clock.now, ...facts,
   }
-  const gate = make.gate(listenerFacts, { logger })
+  // `logger` beside the required `originOf`: the module surface names none for the gate, but the one
+  // diagnostic of an insecure listener (REM-UC-03 E1) may be the gate's or the endpoint's to write.
+  const gate = make.gate(listenerFacts, { originOf: fakeOriginOf, logger })
   for (const m of SUBJECT.gateMethods) assert.equal(typeof gate?.[m], 'function', `the gate has no ${m}() (K1b RequestGate)`)
-  const route = await make.route({ gate, verifier, failures, tokens, logger, now: clock.now })
+  return { gate, clock, logger, facts: listenerFacts }
+}
+
+/**
+ * A C-HTTP world on loopback for `t`: the gate built from `facts` (defaults: DSH's listener on
+ * loopback http, no trusted hosts), the route mounted on PATHS.mcp, and the fakes.
+ * Returns {port, host, gate, verifier, failures, tokens, pairs, hints, logger, clock, principal, request, connect}.
+ */
+export async function httpWorld(t, sdk, facts = {}) {
+  const make = await factories(sdk)
+  const { gate, clock, logger, facts: listenerFacts } = gateOf(make, facts)
+  const verifier = new FakeVerifier()
+  const failures = new FakeFailures()
+  const tokens = new FakeTokens()
+  const pairs = new FakePairs()
+  const route = await make.route({
+    gate, verifier, failures, pairs, originOf: fakeOriginOf, secure: listenerFacts.secure, readEvents, logger, now: clock.now,
+  })
   assert.equal(typeof route?.handler, 'function', 'the route has no handler(req, res)')
   assert.equal(typeof route?.hints?.resourceUpdated, 'function', 'the route has no hints.resourceUpdated (K1 HintSink)')
+  assert.equal(typeof route?.closeEntry, 'function', 'the route has no closeEntry(entryKey)')
+  // C-WIRE's wiring: a token entry's revocation closes that entry's listen streams (R-TOK-05).
+  const unsubscribe = tokens.onRevoked((entryKey) => route.closeEntry(entryKey))
 
   const server = http.createServer((req, res) => {
     // Exact match on the pathname, as DSH's listener routes (S1 F3).
@@ -159,13 +230,14 @@ export async function httpWorld(t, sdk, facts = {}) {
   const clients = []
   t.after(async () => {
     await Promise.allSettled(clients.map((c) => c.close()))
-    await route.close?.()
+    unsubscribe()
+    await route.close()
     server.closeAllConnections()
     await new Promise((resolve) => server.close(resolve))
   })
 
   const world = {
-    port, gate, verifier, failures, tokens, hints: route.hints, logger, clock, facts: listenerFacts,
+    port, gate, verifier, failures, tokens, pairs, hints: route.hints, logger, clock, facts: listenerFacts,
     /** The Host of a request to this listener under its loopback name, and its origin. */
     host: `${FIXTURE.loopback}:${port}`,
     get origin() { return `${HOSTS.loopbackScheme}//${world.host}` },
@@ -177,6 +249,8 @@ export async function httpWorld(t, sdk, facts = {}) {
       const caller = callerOf(id, oauthUrls(world.origin).resource, { pairOnly })
       const token = FIXTURE.accessToken(id)
       verifier.issue(token, caller)
+      // A full principal is its entry's pair under its own id; a pair-only one has no pair yet.
+      if (!pairOnly) pairs.bind(caller.entryKey, caller.principalKey, id)
       return { token, caller }
     },
     /** One raw request; `host` defaults to the loopback Host. */
@@ -185,7 +259,7 @@ export async function httpWorld(t, sdk, facts = {}) {
     /**
      * An SDK client of `sdk`, pinned to `version`, authenticated with `token`, connected
      * (its `server/discover` probe done), with `handlers` ({notification method: handler}) set
-   * before it connects. Closed with the world.
+     * before it connects. Closed with the world.
      */
     async connect(token, version, handlers = {}) {
       const { Client, StreamableHTTPClientTransport } = await sdkClient(sdk)
@@ -204,11 +278,7 @@ export async function httpWorld(t, sdk, facts = {}) {
 
 /** A bare gate from `facts`, for the unit rows (K1b). Returns {gate, clock, logger}. */
 export async function gateUnit(sdk, facts = {}) {
-  const make = await factories(sdk)
-  const clock = fakeClock()
-  const logger = recordingLogger()
-  const gate = make.gate({ host: FIXTURE.loopback, secure: false, trustedHosts: [], approvalPort: () => 0, now: clock.now, ...facts }, { logger })
-  for (const m of SUBJECT.gateMethods) assert.equal(typeof gate?.[m], 'function', `the gate has no ${m}() (K1b RequestGate)`)
+  const { gate, clock, logger } = gateOf(await factories(sdk), facts)
   return { gate, clock, logger }
 }
 
