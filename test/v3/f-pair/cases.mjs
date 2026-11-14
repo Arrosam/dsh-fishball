@@ -92,23 +92,31 @@ function assertNoSecretKept(w) {
   const kept = w.storedText()
   assert.deepEqual(secrets.filter((s) => kept.includes(s)).map((s) => s.slice(0, K1.TOKEN_VALUE.generatedPrefix.length) + '…'), [], 'a secret is in a stored record')
 }
-/** How many paired records core holds for this target. */
-const recordCount = async (w) => (await w.records()).length
+/**
+ * A refused name as core reports it (Fishball (c), R-NAME-03): the tool that refused it, the
+ * code, and the name in use as K1 `principalLabel` (no name: `ID: <id>`, core's id here).
+ */
+const nameIssue = (source, code, nameInUse) => ({ source, code, inUse: K1.principalLabel(nameInUse, FIXTURE.coreId) })
 
 /**
- * AUTH-UC-05 E1 / DT-06 rule 8: with the warning open the connector sees no request of any kind,
- * not even after a rename (no `set_name`), and core holds no subscription.
+ * Every pairing hold (a warning, need-token, need-id, id-mismatch) shows TargetStatus
+ * token-refused / TOKEN_REFUSED and sends nothing while held, a rename included (Fishball
+ * answer 2, 2026-11-15; AUTH-UC-05 E1, DT-06 rule 8).
  */
-async function assertSilentWhileWarning(w) {
+async function assertHeld(w) {
+  assert.deepEqual(w.status(), { state: STATE.refused, code: CODE.refused })
   const before = w.f.requests.length
   await sleep(HARNESS.quietMs)
   w.settings.save(IDENTITY.nameKey, NAME.renamed)
   await sleep(HARNESS.quietMs)
-  const after = w.f.requests.slice(before).map((r) => `${r.method} ${r.path}`)
-  assert.deepEqual(after, [], 'core sent requests while the warning was open')
-  assert.deepEqual(w.f.eventListens().length, 0, 'core holds a subscriptions/listen stream while the warning is open')
-  assert.deepEqual(w.f.calls.filter((c) => c.name !== K1.TOOL.pair).map((c) => c.name), [], 'a tool other than pair was called')
+  assert.deepEqual(w.f.requests.slice(before).map((r) => `${r.method} ${r.path}`), [], 'core sent requests while held')
 }
+
+/** How many paired records core holds for this target. */
+const recordCount = async (w) => (await w.records()).length
+
+/** AUTH-UC-05 E1 / DT-06 rule 8: with the warning open the connector sees no request of any kind. */
+const assertSilentWhileWarning = assertHeld
 
 /** Token requests made after request index `from`, by secret. */
 const secretsSince = (w, from) => w.f.tokenSecrets().slice(from)
@@ -150,7 +158,9 @@ export function registerFPairCases(sdk) {
     assert.equal(warning.idMatches, true)
     assert.equal(warning.name, FIXTURE.boundName)
     assert.equal(warning.lastSeenAt, bound.lastSeenAt, 'the warning does not show the bound pair\'s lastSeenAt')
-    assert.deepEqual([...w.view().choices].sort(), [w.choice('continue'), w.choice('newToken')].sort())
+    assert.deepEqual(warning.inUse, K1.principalLabel(FIXTURE.boundName, FIXTURE.coreId))
+    await assertHeld(w)
+    assert.deepEqual([...w.view().choices].sort(), [w.choice('continue'), w.choice('newTokenAndId')].sort())
     assert.equal(await recordCount(w), 0, 'a record exists before Continue')
   })
 
@@ -169,8 +179,9 @@ export function registerFPairCases(sdk) {
 
   caseTest(sdk, 'AUTH-UC-05', 'A2', 'Use a new token and a new id: core stops using the old token, then pairs again with the new reference and id', async (t) => {
     const w = await warnMatchWorld(t, sdk)
-    await w.choose('newToken')
+    assert.deepEqual(await w.choose('newTokenAndId'), { ok: true })
     await w.untilView('needToken')
+    await assertHeld(w)
     const from = w.f.tokenRequests().length
     await sleep(HARNESS.quietMs)
     assert.deepEqual(secretsSince(w, from).filter((s) => s === w.secrets.core).length, 0, 'core used the old token after choosing a new one')
@@ -187,6 +198,7 @@ export function registerFPairCases(sdk) {
     assert.equal(lastPairResult(w).code, K1.REFUSAL.idTaken)
     assert.equal(await recordCount(w), 0)
     assert.equal(w.settings.get(SETTING.tokenRef), FIXTURE.ref, 'the token reference changed on id-taken')
+    await assertHeld(w)
     w.settings.save(IDENTITY.idKey, FIXTURE.coreIdNext)
     await w.untilView('paired')
     assert.deepEqual(pairCalls(w).map((c) => [c.entryKey, c.clientId]), [[ENTRY.core, FIXTURE.coreId], [ENTRY.core, FIXTURE.coreIdNext]], 'the second pair did not use the same token with the new id')
@@ -198,6 +210,7 @@ export function registerFPairCases(sdk) {
     assert.equal(lastPairResult(w).bound.idMatches, false)
     assert.deepEqual(w.view().choices, [w.choice('newToken')])
     assert.equal(await recordCount(w), 0)
+    await assertHeld(w)
   })
 
   caseTest(sdk, 'AUTH-UC-05', 'A4', 'identity.id changed after pairing: the next token is pair-only, core does not call pair and is not connected', async (t) => {
@@ -210,7 +223,7 @@ export function registerFPairCases(sdk) {
     assert.ok(w.f.tokenClientIds().slice(from).includes(FIXTURE.coreIdNext), 'no token request with the new id after the reconnect')
     await sleep(HARNESS.quietMs)
     assert.equal(pairCalls(w).length, 1, 'core called pair again while holding a paired record')
-    assert.notEqual(w.status().state, STATE.connected)
+    await assertHeld(w)
   })
 
   caseTest(sdk, 'AUTH-UC-05', 'E1', 'while the warning is open core sends nothing else: no tool call, no subscription, no set_name', async (t) => {
@@ -278,7 +291,7 @@ export function registerFPairCases(sdk) {
     const [call] = await rename(w, NAME.otherFolded)
     assert.equal(call.result.code, K1.REFUSAL.nameTaken)
     assert.ok(await untilTrue(() => w.view().nameIssue !== null))
-    assert.deepEqual(w.view().nameIssue, { code: K1.REFUSAL.nameTaken, nameInUse: IDENTITY.defaultName })
+    assert.deepEqual(w.view().nameIssue, nameIssue(K1.TOOL.setName, K1.REFUSAL.nameTaken, IDENTITY.defaultName))
     assert.equal(w.name(), IDENTITY.defaultName)
     assert.equal(w.status().state, STATE.connected)
   })
@@ -288,7 +301,7 @@ export function registerFPairCases(sdk) {
     const [call] = await rename(w, NAME.tooLong)
     assert.equal(call.result.code, K1.REFUSAL.nameInvalid)
     assert.ok(await untilTrue(() => w.view().nameIssue !== null))
-    assert.deepEqual(w.view().nameIssue, { code: K1.REFUSAL.nameInvalid, nameInUse: IDENTITY.defaultName })
+    assert.deepEqual(w.view().nameIssue, nameIssue(K1.TOOL.setName, K1.REFUSAL.nameInvalid, IDENTITY.defaultName))
     assert.equal(w.name(), IDENTITY.defaultName)
     assert.equal(w.status().state, STATE.connected)
   })
@@ -427,7 +440,7 @@ export function registerFPairCases(sdk) {
   caseTest(sdk, 'AUTH-DT-06', 'rule 2', 'absent, full scope → pair → already-paired (match) → warning with Continue and New token', async (t) => {
     const w = await warnMatchWorld(t, sdk)
     assert.equal(pairCalls(w).length, 1)
-    assert.deepEqual([...w.view().choices].sort(), [w.choice('continue'), w.choice('newToken')].sort())
+    assert.deepEqual([...w.view().choices].sort(), [w.choice('continue'), w.choice('newTokenAndId')].sort())
   })
 
   caseTest(sdk, 'AUTH-DT-06', 'rule 3', 'absent, pair-only bound to another id → already-paired (mismatch) → New token only', async (t) => {
@@ -451,7 +464,7 @@ export function registerFPairCases(sdk) {
     await w.untilView('idMismatch')
     await sleep(HARNESS.quietMs)
     assert.equal(pairCalls(w).length, 1)
-    assert.notEqual(w.status().state, STATE.connected)
+    await assertHeld(w)
   })
 
   caseTest(sdk, 'AUTH-DT-06', 'rule 6', `present, invalid_client → ${STATE.refused}; core retries (it reconnects once the entry is back)`, async (t) => {
@@ -514,13 +527,13 @@ export function registerFPairCases(sdk) {
   caseTest(sdk, 'NAME-DT-03', 'rule 2', 'pair: name-taken → clash shown as ID: <id> for now (no name in use); core keeps working nameless', async (t) => {
     const w = await pairedWorld(t, sdk, { bind: [[ENTRY.other, FIXTURE.otherId, IDENTITY.defaultName]] })
     assert.equal(lastPairResult(w).nameRefused, K1.REFUSAL.nameTaken)
-    assert.deepEqual(w.view().nameIssue, { code: K1.REFUSAL.nameTaken, nameInUse: null })
+    assert.deepEqual(w.view().nameIssue, nameIssue(K1.TOOL.pair, K1.REFUSAL.nameTaken, null))
     assert.equal(w.f.store.pairOf(ENTRY.core).name, null)
   })
 
   caseTest(sdk, 'NAME-DT-03', 'rule 3', 'pair: name-invalid → clash with the reason; core keeps working nameless', async (t) => {
     const w = await pairedWorld(t, sdk, { settings: { [IDENTITY.nameKey]: NAME.tooLong } })
-    assert.deepEqual(w.view().nameIssue, { code: K1.REFUSAL.nameInvalid, nameInUse: null })
+    assert.deepEqual(w.view().nameIssue, nameIssue(K1.TOOL.pair, K1.REFUSAL.nameInvalid, null))
     assert.equal(w.f.store.pairOf(ENTRY.core).name, null)
   })
 
@@ -535,7 +548,7 @@ export function registerFPairCases(sdk) {
     const w = await pairedWorld(t, sdk, { bind: [[ENTRY.other, FIXTURE.otherId, NAME.other]] })
     w.settings.save(IDENTITY.nameKey, NAME.otherFolded)
     assert.ok(await untilTrue(() => w.view().nameIssue !== null), 'no clash after a refused set_name')
-    assert.deepEqual(w.view().nameIssue, { code: K1.REFUSAL.nameTaken, nameInUse: IDENTITY.defaultName })
+    assert.deepEqual(w.view().nameIssue, nameIssue(K1.TOOL.setName, K1.REFUSAL.nameTaken, IDENTITY.defaultName))
     assert.equal(w.f.store.pairOf(ENTRY.core).name, IDENTITY.defaultName)
     assert.equal(w.status().state, STATE.connected)
   })
@@ -563,6 +576,15 @@ export function registerFPairCases(sdk) {
     await assertSilentWhileWarning(w)
   })
   caseTest(sdk, 'AUTH-ST-03', 3, 'WarnMatch → Continue without the tick → WarnMatch (button disabled)', null, LATER.page)
+  caseTest(sdk, 'AUTH-ST-03', '3 (core)', 'WarnMatch → Continue not confirmed → not-confirmed; stays WarnMatch, no record, nothing sent', async (t) => {
+    const w = await warnMatchWorld(t, sdk)
+    const before = w.f.requests.length
+    assert.deepEqual(await w.choose('continue', false), { ok: false, code: RELAYED.refusal.notConfirmed })
+    await sleep(HARNESS.quietMs)
+    assert.equal(w.view().state, w.state('warnMatch'))
+    assert.equal(await recordCount(w), 0)
+    assert.equal(w.f.requests.length, before)
+  })
   caseTest(sdk, 'AUTH-ST-03', 4, 'WarnMatch → tick + Continue → Paired (record written, no pair)', async (t) => {
     const w = await warnMatchWorld(t, sdk)
     await w.choose('continue')
@@ -572,7 +594,7 @@ export function registerFPairCases(sdk) {
   })
   caseTest(sdk, 'AUTH-ST-03', '5 (match)', 'WarnMatch → Use a new token and a new id → NeedToken', async (t) => {
     const w = await warnMatchWorld(t, sdk)
-    await w.choose('newToken')
+    assert.deepEqual(await w.choose('newTokenAndId'), { ok: true })
     await w.untilView('needToken')
     assert.equal(await recordCount(w), 0)
   })
@@ -595,6 +617,30 @@ export function registerFPairCases(sdk) {
     assert.deepEqual({ entryKey: last.entryKey, clientId: last.clientId }, { entryKey: ENTRY.next, clientId: FIXTURE.coreId })
     assert.equal(await recordCount(w), 1)
   })
+  caseTest(sdk, 'AUTH-ST-03', '7 (same value)', 'NeedToken → the same reference saved again → stays NeedToken; nothing is sent', async (t) => {
+    const w = await warnMismatchWorld(t, sdk)
+    await w.choose('newToken')
+    await w.untilView('needToken')
+    const before = w.f.requests.length
+    w.settings.save(SETTING.tokenRef, FIXTURE.ref)
+    await sleep(HARNESS.quietMs)
+    assert.equal(w.view().state, w.state('needToken'))
+    assert.deepEqual(w.f.requests.slice(before).map((r) => `${r.method} ${r.path}`), [])
+  })
+  caseTest(sdk, 'AUTH-ST-03', '5 (restart)', 'a declined token stays declined across a restart: the old reference is never used until it changes', async (t) => {
+    const w = await warnMismatchWorld(t, sdk)
+    await w.choose('newToken')
+    await w.untilView('needToken')
+    const from = w.f.tokenRequests().length
+    await w.restart()
+    await w.untilView('needToken')
+    await sleep(HARNESS.quietMs)
+    assert.deepEqual(secretsSince(w, from).filter((s) => s === w.secrets.core).length, 0, 'the declined token was used after the restart')
+    w.settings.save(SETTING.tokenRef, FIXTURE.refNext)
+    await w.untilView('paired')
+    assert.equal(pairCalls(w).at(-1).entryKey, ENTRY.next)
+    assert.equal(secretsSince(w, from).filter((s) => s === w.secrets.core).length, 0, 'the declined token was used')
+  })
   caseTest(sdk, 'AUTH-ST-03', 8, 'Paired → reconnect and restart → Paired, no pair', async (t) => {
     const w = await pairedWorld(t, sdk)
     await w.f.drop()
@@ -616,13 +662,15 @@ export function registerFPairCases(sdk) {
   caseTest(sdk, 'AUTH-ST-03', 10, `Paired → invalid_client (revoked) → TokenRefused, status ${STATE.refused} / ${CODE.revoked}`, async (t) => {
     const w = await pairedWorld(t, sdk)
     w.f.setEnabled(ENTRY.core, false)
-    await w.untilView('tokenRefused')
+    await w.untilStatus(STATE.refused)
     assert.deepEqual(w.status(), { state: STATE.refused, code: CODE.revoked })
+    assert.equal(w.view().state, w.state('paired'), 'the paired record is kept on a refusal')
+    assert.equal(await recordCount(w), 1)
   })
   caseTest(sdk, 'AUTH-ST-03', 11, 'TokenRefused → entry re-enabled → Paired (no pair)', async (t) => {
     const w = await pairedWorld(t, sdk)
     w.f.setEnabled(ENTRY.core, false)
-    await w.untilView('tokenRefused')
+    await w.untilStatus(STATE.refused)
     w.f.setEnabled(ENTRY.core, true)
     await w.untilView('paired')
     await w.untilStatus(STATE.connected)
@@ -642,7 +690,7 @@ export function registerFPairCases(sdk) {
   caseTest(sdk, 'AUTH-ST-03', 'invalid (Continue on mismatch)', 'WarnMismatch → Continue (not offered) → stays WarnMismatch, no record, nothing sent', async (t) => {
     const w = await warnMismatchWorld(t, sdk)
     const before = w.f.requests.length
-    await w.choose('continue').catch(() => {})
+    assert.deepEqual(await w.choose('continue'), { ok: false, code: RELAYED.refusal.notOffered })
     await sleep(HARNESS.quietMs)
     assert.equal(w.view().state, w.state('warnMismatch'))
     assert.equal(await recordCount(w), 0)
