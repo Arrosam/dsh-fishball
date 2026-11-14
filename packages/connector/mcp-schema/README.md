@@ -104,7 +104,7 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   `turn-finished` `{sessionId, running, queued}`; `state` `{sessionId, running,
   pendingInteraction}`; `message` `{text, images}`; `handover` / `takeback` `{sessionId, note}`;
   `notice` `{code, text}` (no notice code is frozen yet: `NOTICE.codes` is empty, and each task that
-  produces one adds it as a K1 amendment); contributor events `{namespace, event, data, summary?}`
+  produces one adds it as a K1 amendment; C-ROUTE produces none, K1c-4); contributor events `{namespace, event, data, summary?}`
   (design §13.5a).
 - **Offer ids (`OFFER_ID`):** `<requestId>.r<revision>`, revision from 1 (Q-S3-1).
 - **Resource:** `fishball-events`, `fishball://events`, `application/json`; `resources/read`
@@ -118,6 +118,45 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 - **Settlement (`SETTLEMENT_OUTCOME`, `SETTLED_BY`, PROPOSED):** `allow` / `grant` → `allowed`,
   `reject` → `rejected`, an answered question or plan review → `answered`; `ask` and `escalate`
   settle nothing (the user's later answer does). `by` is `user` or `principal`.
+
+### Managed state (`ManagedState`, `MANAGED_REFUSAL`; task K1c)
+
+C-ROUTE owns the one `ManagedState` implementation; C-TOOLS calls it. It records at most one
+manager per **root** session id (R-ROUTE-01). The caller resolves the root and answers
+`unknown-session` itself (C-TOOLS reads DSH). Hand over and Take back stay K3's
+`fishballConnectorHandover`; revocation and succession are C-REVOKE's and C-SUCCEED's. All decided
+by Fishball (K1c-1), including these rules:
+
+- **Durable:** a change resolves only once it is stored, and survives a connector restart.
+- **Serial:** changes run one after another; of two overlapping calls the first wins and the second
+  sees its result.
+- **Visible on resolve:** `managerOf` and `managed()` show a change once its promise has resolved.
+- **Listeners:** a throwing `onChange` listener does not stop the others.
+
+| Method | Caller | Answer |
+| --- | --- | --- |
+| `managerOf(sessionId)` | C-TOOLS: every tool that names a session ("a session you manage"); `sessions_list` omits and `session_read` refuses `forbidden` a session another principal manages (1.23); `approval_answer` authority | the `PrincipalKey`, or `undefined` |
+| `managed()` | C-ROUTE, K3's `managed()`, C-TOOLS lists over managed sessions | `[{sessionId, principalKey}]` |
+| `manage(sessionId, principalKey)` | `session_start` | `{ok: true}`; `conflict` (`MANAGED_REFUSAL.alreadyManaged`) when the session has a manager, the caller included |
+| `release(sessionId, principalKey)` | `session_release` | `{ok: true}`; `not-managed` when nobody manages it; `forbidden` (`MANAGED_REFUSAL.otherManager`) when another principal does (HAND-ST-01 row 9) |
+| `onChange(fn)` | C-ROUTE, K3 | `fn()` after every change, by any path; returns the disposer |
+
+- A refusal changes nothing; no method throws for one.
+- **`session_release` sends no release event or notification** (W3 Q-16, K1c-2): there is no
+  counterpart of `takeback`. Its only events are the retirements of the session's live offers, as
+  frozen: one `retirement` with reason `released` per live offer, to the releasing pair. C-ROUTE's
+  `release` performs them once the change is stored; C-TOOLS calls nothing else. The offers then go
+  to the user in the session.
+- **No-recipient `message` queue** (W3 Q-17, K1c-3): while no **paired** entry is designated (none
+  set, or the designated entry unpaired), a `message_fishball` from an unmanaged session (or none)
+  is held in a durable connector queue (`NoRecipient.fallback` `queue`), bounded by the live
+  `maxQueuedInputs` (default `QUEUE.maxQueuedInputs`); one more is `queue-full`. Once a paired entry
+  is designated, connected or not, the held messages move into its mailbox in order; those that do
+  not fit stay queued, in order, and move in as room frees up. While the queue is not empty, a new
+  such message is appended to it rather than sent to the mailbox, so it never overtakes an older one
+  (a managed session's message goes to its manager and never waits here). A held message is never
+  dropped once accepted. Only `message` is held: `ask` is `unavailable` at once, and a contributor
+  `emit` is `no-fishball`.
 
 ### Core's link to its target (`TARGET_STATE`, `TARGET_CODE`, `LINK_REFUSAL`)
 
@@ -336,7 +375,8 @@ atomic succession step of C-SUCCEED's `retire`, R-NAME-07), `Mailbox`
 drop), `HintSink` (C-HTTP's listen
 streams), `OAuthTokenStore` (C-OAUTH and C-OAUTH-WEB; `chainsOf` answers the renewal question),
 `FailureLimiter` (K1a: the token endpoint, the approval page and C-HTTP's bearer check share it),
-`Router.recipientFor` (C-ROUTE), `Presence` (the connected definition), `RequestGate` (C-HTTP;
+`Router.recipientFor` (C-ROUTE), `ManagedState` (C-ROUTE, called by C-TOOLS; K1c), `Presence`
+(the connected definition), `RequestGate` (C-HTTP;
 K1b), `GrantHandler` and `GrantRegistry` (C-OAUTH's seam for C-OAUTH-WEB's grants, wired by
 C-WIRE; K1b). The one `OAuthTokenStore` implementation and the one `FailureLimiter`
 implementation are C-OAUTH's, durable `putRefresh` included (K1a). C-OAUTH-WEB builds against fakes
@@ -348,9 +388,9 @@ opaque: `EntryKey`, `PrincipalKey`; no interface carries a token value.
 
 | What (case rows flagged `K`) | Task |
 | --- | --- |
-| which `notice` codes exist (EVT-EP-01 15) | the producing task (C-ROUTE, C-WIRE), as a K1 amendment |
+| which `notice` codes exist (EVT-EP-01 15) | C-WIRE, as a K1 amendment; C-ROUTE produces none (K1c-4) |
 | card fields of the ask card and of `question_ask` (PLAT-UC-07) | K3 |
-| `fishballConnectorHandover` codes, dropdown order, release emits nothing? (HAND rows 1-E1, 5, 7a, 8, 9, 144, 160, 164) | K3 / C-ROUTE |
+| `fishballConnectorHandover` codes, dropdown order (HAND rows 1-E1, 7a, 8, 144); release emits nothing (HAND-ST-01 row 5) is K1c-2; release by another principal is `forbidden` (HAND-ST-01 row 9) is K1c-1 | K3 / C-ROUTE |
 | `fishballConnectorTokens`, hosted status codes (08-hosted) | K3 / I-HOST |
 | interceptor priority range (EVT-DT-02 7) and core's interception (EVT) | K3 / F-INTERCEPT |
 | core's target status reporting (09 rows 74, 103); the codes are frozen above | F-LINK / F-STATUS |
@@ -398,6 +438,10 @@ constants migration, 2026-11-14).
 | D5 | K1 `TARGET_CODE.insecure` / `.invalid` (`target-insecure`, `target-invalid`), also in K3 `TargetCode` | kept; decided by Fishball under the user's rule 0mwexcc0, not the user's own choice (2026-11-14) |
 | D6 | K3 `TEXT.presentGivenUp`: the notice for an event core could not present | kept; decided by Fishball under the user's rule 0mwexcc0, not the user's own choice (2026-11-14) |
 | D7 | Runtime owners: K1 for `TARGET_STATE`, `TARGET_CODE`, `LINK_REFUSAL`; K3 core `contracts/constants.js` for the interception, link-backoff and guard values | decided by Fishball under the user's rule 0mwexcc0, not the user's own choice (2026-11-14) |
+| K1c-1 | `ManagedState` (`managerOf`, `managed`, `manage`, `release`, `onChange`) and `MANAGED_REFUSAL`: root session ids as keys; `unknown-session` stays the caller's (C-TOOLS); Hand over and Take back stay K3's; durable, serial (first wins), visible to `managerOf` once a change resolves, a throwing listener does not stop the others | decided by Fishball, not the user (2026-11-14) |
+| K1c-2 | W3 Q-16: `session_release` commits no event of its own (no release event); its only events are the retirements of its live offers (`released`, to the releasing pair), which C-ROUTE's `release` performs; the offers then go to the user | decided by Fishball, not the user (2026-11-14) |
+| K1c-3 | W3 Q-17: the no-recipient `message` queue: held while no paired entry is designated; durable, bounded by `maxQueuedInputs` with `queue-full`, flushed in order once a paired entry is designated (connected or not); what does not fit stays queued in order; while it is not empty a new message joins its end; never dropped once accepted | decided by Fishball, not the user (2026-11-14) |
+| K1c-4 | No `notice` code is frozen: `NOTICE.codes` stays empty, and C-ROUTE produces none | decided by Fishball, not the user (2026-11-14) |
 
 ## Departure from the specification
 
