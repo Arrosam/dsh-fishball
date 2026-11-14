@@ -39,10 +39,11 @@ async function newRoot() {
 /**
  * Opens the world; `t.after` closes it and removes its root.
  * @param {{tools: object[], status?: object, answers?: object}} linkOptions the fake link
- * @param {{events?: boolean}} options `events`: also run F-INTERCEPT's module with the façade's
- *   `present` as its Fishball presenter (EXT-UC-02 A3)
+ * @param {{events?: boolean, gate?: object, imagesSupported?: boolean}} options `events`: also run
+ *   F-INTERCEPT's module with the façade's `present` as its Fishball presenter (EXT-UC-02 A3);
+ *   `gate` and `imagesSupported` go to the façade's factory (subject.mjs)
  */
-export async function worldFor(t, sdk, linkOptions, { events = false } = {}) {
+export async function worldFor(t, sdk, linkOptions, { events = false, gate, imagesSupported } = {}) {
   const root = await newRoot()
   const closers = []
   t.after(async () => {
@@ -95,8 +96,8 @@ export async function worldFor(t, sdk, linkOptions, { events = false } = {}) {
 
   const link = new FakeLink(linkOptions)
   const logger = ctx.logger(FIXTURE.loggerName)
-  const bridge = await makeBridge(sdk, { ctx, link, logger })
-  closers.push(async () => { await bridge.close?.() })
+  const bridge = await makeBridge(sdk, { ctx, link, logger, gate, imagesSupported })
+  closers.push(() => bridge.close())
 
   let turnSeq = 0
   const world = {
@@ -123,6 +124,7 @@ export async function worldFor(t, sdk, linkOptions, { events = false } = {}) {
       return result
     },
     modelRequestsWith: (needle) => requests.filter((r) => json(r.messages).includes(needle)),
+    logsWith: (needle) => logs.filter((l) => l.text.includes(needle)),
   }
 
   async function settle(started) {

@@ -25,22 +25,26 @@ export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL, TOOLS }
 export const SUBJECT = Object.freeze({
   dir: path.join(REPO, 'packages', 'core', 'src', 'bridge'),
   entry: process.env.FBTEST_F_FACADE_ENTRY ?? path.join(REPO, 'packages', 'core', 'src', 'bridge', 'index.js'),
-  /** The assumed factory (subject.mjs); matched by meaning when the export has another name. */
+  /** The relayed factory (Fishball 2026-11-15, subject.mjs). */
   factory: 'createBridge',
-  factoryName: /^create.*(?:bridge|facade)/i,
 })
 
 /** K1's values the oracles use. */
 export const K1 = Object.freeze({
   disconnected: LINK_REFUSAL.disconnected,
   unsupported: REFUSAL.unsupportedOperation,
+  forbidden: REFUSAL.forbidden,
+  invalidArguments: REFUSAL.invalidArguments,
+  operationFailed: REFUSAL.operationFailed,
+  imagesUnsupported: REFUSAL.imagesUnsupported,
   connected: Object.freeze({ state: TARGET_STATE.connected }),
   down: Object.freeze({ state: TARGET_STATE.unreachable, code: TARGET_CODE.unreachable }),
 })
 
 /** K2: `<namespace>.<name>`, so every contributed name holds the separator and no core name does. */
+const K2_SEPARATOR = NAMESPACE.separator
 export const K2 = Object.freeze({
-  separator: NAMESPACE.separator,
+  separator: K2_SEPARATOR,
   embedUi: NAMESPACE.aliases['fishball-embed-ui'],
   metaKey: CONTRIBUTOR_META_KEY,
 })
@@ -52,8 +56,42 @@ export const ATTENTION = Object.freeze({
   accepted: Object.freeze({ ok: true, accepted: true }),
 })
 
-/** Design §6.3: no tool the model is offered carries DSH's MCP-client prefix. */
-export const RAW_MCP_PREFIX = 'mcp__'
+/**
+ * Model-facing names (Fishball 2026-11-15, Q-8 decided: the public name is NOT kept). DSH's model
+ * function-name contract is `[A-Za-z0-9_-]`, at most 64 characters (dsh-mcp-client
+ * lib/index.js:57–100), so the one frozen mapping is `.` → `__` (`embed-ui.attention.signal` →
+ * `embed-ui__attention__signal`). A mapped name over 64 characters, starting with `mcp__`, without
+ * a namespace (a listed non-core tool with no `.`, `not-namespaced`) or clashing with another is
+ * not offered and is logged once. Core tools keep their names; `inbox_poll`, `inbox_ack`, `pair`
+ * and `set_name` are withheld from the model and from X12.
+ */
+export const MODEL_NAME = Object.freeze({
+  from: K2_SEPARATOR,
+  to: '__',
+  maxChars: 64,
+  /** Design §6.3: no tool the model is offered carries DSH's MCP-client prefix. */
+  rawPrefix: 'mcp__',
+  withheld: Object.freeze([TOOL.inboxPoll, TOOL.inboxAck, TOOL.pair, TOOL.setName]),
+})
+/** The model-facing name of a public tool name (Fishball 2026-11-15). */
+export const modelName = (publicName) => publicName.split(MODEL_NAME.from).join(MODEL_NAME.to)
+
+/**
+ * The façade's call order (Fishball 2026-11-15, answer 2): link down → `disconnected`; not listed →
+ * `unsupported-operation`; the X19 gate (`session.message`, `session.redirect`); the image gate
+ * (`attachment_read`, model calls only) → `images-unsupported`; then `callTool`.
+ */
+export const GATE = Object.freeze({
+  sends: Object.freeze({ [TOOL.sessionMessage]: 'session.message', [TOOL.sessionRedirect]: 'session.redirect' }),
+  imageTool: TOOL.attachmentRead,
+})
+
+/**
+ * `present(event)` (Fishball 2026-11-15, answer 3, Q-11 decided: F-FACADE renders every event):
+ * `[{type: 'text', text}]` whose header names the type when K1's `isEventType` accepts it, and
+ * says "unknown type" otherwise.
+ */
+export const PRESENT = Object.freeze({ blockType: 'text', unknownType: /unknown type/i })
 
 /** Watchdog's registration types (R-WD-08, R-INT-07: it never registers for `contributed:…`). */
 export const WATCHDOG_TYPES = Object.freeze([EVENT_TYPE.permission, EVENT_TYPE.settlement, EVENT_TYPE.retirement])
@@ -113,6 +151,11 @@ export const FIXTURE = Object.freeze({
   query: 'fbtest-query',
   resultMarker: 'FBTEST-RESULT',
   callId: 'fbtest-call-',
+  sessionId: 'fbtest-s1',
+  attachmentId: 'fbtest-att-1',
+  /** An X19 refusal the fake gate answers with (its shape is the relayed `{code, reason}`). */
+  gateRefusal: Object.freeze({ code: 'fbtest-gate-refused', reason: 'fbtest: no active brief' }),
+  pluginX12: 'fbtest-x12',
   userText: 'FBTEST-USER please use your tools',
 })
 
@@ -124,7 +167,4 @@ export const LATER = Object.freeze({
   remote: 'X-REMOTE (two DSH processes: the real connector C / C\' with its contributors, read through the façade of a real standalone or hosted Fishball)',
   status: 'F-STATUS (core\'s status shows the contributed-tool count, R-EXT-14 note)',
   watchdog: 'WD-ROUTE + WD-WIRE (the real Watchdog row registered through fishballInstance next to the façade)',
-  q8: 'Q-8 (model-facing name of a contributed tool: kept as `<namespace>.<name>`, or one frozen K2 mapping)',
-  qAbsentDown: 'Q-FACADE-2 (attention.signal with the tool absent from the last list and the link down: unsupported-operation or disconnected)',
-  q11: 'Q-11 (present(event) for non-contributor event types: owned by F-FACADE or not)',
 })
