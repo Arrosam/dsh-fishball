@@ -133,7 +133,10 @@ export function createInterception({ ledger, registry, delivery, link, logger })
           // connector (K3 events.d.ts, as S3's prototype treated it).
           try { result = await send() } catch { result = { ok: false, code: LINK_REFUSAL.disconnected } }
           // One move committing → fishball, so no crash can fall between two writes (finding 15).
-          if (result?.ok === false && result.code === LINK_REFUSAL.disconnected) await toFishball(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
+          // Not once close() has run during send(): the move would reject on the closed domain and
+          // break "commit never rejects" (K3), and the tail awaits this task (see the tail's check).
+          // The record stays committing for recover().
+          if (!closed && result?.ok === false && result.code === LINK_REFUSAL.disconnected) await toFishball(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
           return result
         })()
         commits.push(task)
@@ -155,8 +158,9 @@ export function createInterception({ ledger, registry, delivery, link, logger })
     // owner may close its storage domain. A ledger read or move from here would then reject ("domain
     // … is closed") with nobody awaiting it, an unhandledRejection. So the tail writes nothing and
     // leaves the record as it stands, as a crash here would: recover() at the next start settles
-    // offered, open and committing records (S2 §2.2). The check is the last step before the first
-    // ledger call, with no await between them.
+    // offered, open and committing records (its doc below). The check is the last step before the
+    // first ledger call, with no await between them; a close() landing during the move itself is
+    // tolerated, because the domain still drains a write queued before it began closing.
     if (closed) return
     const record = ledger.get(eventId)
     if (!owns(record)) return
