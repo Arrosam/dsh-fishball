@@ -89,6 +89,9 @@ function raced(promise, signal) {
 /**
  * @param {object} options
  * @param {object} options.link core's link (link.js `McpLink`), public API only
+ * @param {object} [options.ctx] a Cordis context with DSH's `tools` service: the offer is mounted
+ *   into `ctx.tools` at once (the same as `mount(ctx.tools)`) and withdrawn by `close()`. Which
+ *   context (the manager's agent scope) is the wiring's choice (F-WIRE)
  * @param {{send(operation: string, sessionId: unknown): {ok: true} | {code: string, reason?: string}}} [options.gate]
  *   the X19 send gate, asked with the V2 send operation (`session.message`, `session.redirect`) and
  *   the target session id; default: off (all pass)
@@ -96,7 +99,7 @@ function raced(promise, signal) {
  *   model takes image input; default: an unknown model takes them (as images.js judges it)
  * @param {{info: Function, warn: Function}} [options.logger] the background log
  */
-export function createBridge({ link, gate = OPEN_GATE, imagesSupported = async () => true, logger }) {
+export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, logger }) {
   if (!isPortLink(link)) throw new TypeError(MISUSE.link)
   const mounts = new Set()
   const listeners = new Set()
@@ -229,15 +232,18 @@ export function createBridge({ link, gate = OPEN_GATE, imagesSupported = async (
     return textBlock([TEXT.eventHeader(type), TEXT.untrustedOpen(marker), TEXT.eventFields + JSON.stringify(event), TEXT.untrustedClose(marker)].join(TEXT.lineEnd))
   }
 
+  /** Offer the tools into one DSH `tools` service (an agent scope); returns its disposer. */
+  function mount(tools) {
+    if (closed) return () => {}
+    const entry = { tools, disposers: [] }
+    mounts.add(entry)
+    sync(entry)
+    return () => { if (mounts.delete(entry)) withdraw(entry) }
+  }
+  if (ctx !== undefined) mount(ctx.tools)
+
   return Object.freeze({
-    /** Offer the tools into one DSH `tools` service (an agent scope); returns its disposer. */
-    mount(tools) {
-      if (closed) return () => {}
-      const mount = { tools, disposers: [] }
-      mounts.add(mount)
-      sync(mount)
-      return () => { if (mounts.delete(mount)) withdraw(mount) }
-    },
+    mount,
     bridge,
     attention,
     present,
