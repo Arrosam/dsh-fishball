@@ -151,6 +151,13 @@ export function createInterception({ ledger, registry, delivery, link, logger })
     settled = true
     await Promise.all(commits)
     entry.held.delete(eventId)
+    // A handler can outlive close(): the offer is not awaited, and once close() has run the ledger's
+    // owner may close its storage domain. A ledger read or move from here would then reject ("domain
+    // … is closed") with nobody awaiting it, an unhandledRejection. So the tail writes nothing and
+    // leaves the record as it stands, as a crash here would: recover() at the next start settles
+    // offered, open and committing records (S2 §2.2). The check is the last step before the first
+    // ledger call, with no await between them.
+    if (closed) return
     const record = ledger.get(eventId)
     if (!owns(record)) return
     if (record.state === STATE.offered) {
