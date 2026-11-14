@@ -1136,7 +1136,7 @@ lite('B3-ST-04', 'R4 rejected open → Retry → open succeeds → no status lin
 // Hash continuation (contract §1) — kept as its own checks under LITE-UC-02 to preserve the case
 // catalogue. Since instance-extension-points §11.8 (superseding LITE's earlier "opens native
 // Settings"), `view=settings` never opens native DSH Settings: it requests Fishball's slim
-// `fishball-settings` main panel, owned by the separate child package packages/core/ui/fishball-settings.
+// `fishball-settings` main panel, owned by fishball-core's chunk packages/core/client.settings.js.
 // This harness loads only fishball-page, so here only the 0 native opens is observable; the slim
 // panel opening is a todo verified in browser e2e.
 // ---------------------------------------------------------------------------------------------
