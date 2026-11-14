@@ -1,5 +1,6 @@
 /**
  * Keep one contribution bound to the live, compatible `fishballInstance` (extension points §1).
+ * fishball-fold-notify's src/instance.js is a deliberate copy (its header says why); change both together.
  *
  * A missing service or another `apiVersion` is an "older instance": nothing is attached. The
  * service may arrive after this row (the app row publishes it after an asynchronous chat start),
@@ -50,7 +51,8 @@ export function followInstance(ctx, host, attach) {
  * then. `onReady` calls a late listener at once, which covers a row enabled after boot. A host
  * without `appReady` (a bare Cordis host, not a DSH profile) has no ready moment, so the check
  * runs at load there. An instance that arrives later is still attached by followInstance; the
- * line is not withdrawn, because it reports the state at ready.
+ * line is not withdrawn, because it reports the state at ready. A core with another `apiVersion`
+ * is an "older instance" (extension points §1) and also reads as missing.
  *
  * @param {object} ctx - the row's Cordis context (`get`, `effect`).
  * @param {{appReady: string}} host - the name of DSH's app-ready service.
@@ -60,7 +62,10 @@ export function followInstance(ctx, host, attach) {
 export function reportCoreMissing(ctx, host, binding, warn) {
   const check = () => { if (!binding.attached()) warn() }
   const appReady = ctx.get(host.appReady)
-  if (typeof appReady?.onReady !== 'function') return check()
+  if (typeof appReady?.onReady !== 'function') {
+    check()
+    return
+  }
   // The disposer cancels a listener that has not fired when the row is disabled before ready.
   ctx.effect(() => appReady.onReady(check))
 }
