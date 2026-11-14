@@ -97,14 +97,23 @@ function raced(promise, signal) {
  * @param {{send(operation: string, sessionId: unknown): {ok: true} | {code: string, reason?: string}}} [options.gate]
  *   the X19 send gate, asked with the V2 send operation (`session.message`, `session.redirect`) and
  *   the target session id; default: off (all pass)
- * @param {(exec: object) => Promise<boolean>} [options.imagesSupported] whether the calling agent's
- *   model takes image input; default: an unknown model takes them (as images.js judges it)
+ * @param {(exec: object) => boolean | Promise<boolean>} [options.imagesSupported] a function, asked
+ *   at each model call with DSH's tool execution, whether the calling agent's current model takes
+ *   image input (the model can change between turns, so it is never a fixed value); default: an
+ *   unknown model takes them (as images.js judges it)
  * @param {{info: Function, warn: Function}} [options.logger] the background log
  */
 export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, logger }) {
   if (!isPortLink(link)) throw new TypeError(MISUSE.link)
+  // Checked here so a wrong port fails at wiring time, not as a refused call at the model's turn.
+  if (typeof gate?.send !== 'function') throw new TypeError(MISUSE.gate)
+  if (typeof imagesSupported !== 'function') throw new TypeError(MISUSE.imagesSupported)
   const mounts = new Set()
   const listeners = new Set()
+  // Connector names already logged as not offered: each is logged once, not on every re-list.
+  // Per façade, which is per process in production (F-WIRE makes one); a test's own façade
+  // starts with none.
+  const reported = new Set()
   let offer
   let closed = false
 
@@ -179,7 +188,11 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
   /** A new list from the link: a new offer, logged, synced into every mount, then announced. */
   function refresh(tools) {
     offer = offerOf(tools)
-    for (const { name, modelName, reason } of offer.refused) logger?.warn(LOG.notOffered, logName(name), logName(modelName), reason)
+    for (const { name, modelName, reason } of offer.refused) {
+      if (reported.has(name)) continue
+      reported.add(name)
+      logger?.warn(LOG.notOffered, logName(name), logName(modelName), reason)
+    }
     for (const mount of mounts) sync(mount)
     for (const fn of [...listeners]) { try { fn() } catch { /* a listener owns its failure */ } }
   }
