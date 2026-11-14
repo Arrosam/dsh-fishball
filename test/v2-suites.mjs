@@ -149,6 +149,9 @@ export const V2_SUITES = Object.freeze({
     // V3 FEAT-PEERS (PLAT-EP-04 rows 1, 2, 4, PLAT-UC-06 main and A1, PLAT-BVA-01, EXT-UC-04 A1; the board export was dropped by the user, 2026-11-15); run with test/run-v3.mjs.
     file('test/v3/feat-peers/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
     file('test/v3/feat-peers/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
+    // V3 F-PAIR (AUTH-UC-05 decisions, AUTH-DT-06, AUTH-ST-03 non-warning-UI rows, NAME-UC-02 core part, NAME-DT-03 core reaction, token-revoked: AUTH-ST-03 row 10, HOST-UC-04 main); run with test/run-v3.mjs.
+    file('test/v3/f-pair/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
+    file('test/v3/f-pair/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
