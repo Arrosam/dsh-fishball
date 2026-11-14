@@ -26,3 +26,9 @@ export const HANDOVER_SERVICE = Object.freeze({
 
 /** K3: an omitted `note` is carried as the empty string (README "note", design §3.6). */
 export const NO_NOTE = ''
+
+/** Programming-error messages (a caller bug, thrown; never shown to a client). */
+export const MISUSE = Object.freeze({
+  note: 'fishball hand-over: a note must be a string (K3 note?: string)',
+  provideTwice: 'fishball hand-over: provide() called twice; open one routing module per connector activation',
+})

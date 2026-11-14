@@ -16,16 +16,26 @@
  * K3's "stable for the life of the token entry" holds from pairing on (Fishball 2026-11-14; a K3
  * note follows at the W3 merge). A pair's key never changes while the entry lives (R-ID-09).
  * Neither is ever a token value, a ref or a label (K3, HAND-EP-01 row 5). The Hand over control
- * itself shows only `enabled && paired` entries (K3, R-UI-10); that filter is embed-UI's. (Fishball
- * first proposed listing paired entries only and withdrew it on 2026-11-14 because K3 freezes this.)
+ * itself shows only `enabled && paired` entries (K3, R-UI-10); that filter is embed-UI's.
  *
  * Order: the order of the entries in the connector's native settings list (K3 README, PROPOSED),
  * which `TokenRegistry.list()` follows; a rename, a connection change or a pairing never moves one.
  */
 import { EVENT_TYPE, RETIREMENT_REASON } from '../../mcp-schema/index.js'
-import { HANDOVER_REFUSAL, HANDOVER_SERVICE, NO_NOTE } from './constants.js'
+import { checkedFields } from '../routing/support.js'
+import { HANDOVER_REFUSAL, HANDOVER_SERVICE, MISUSE, NO_NOTE } from './constants.js'
 
 const refusal = (code) => Object.freeze({ ok: false, code })
+
+/**
+ * The `handover` / `takeback` draft of a session, checked before any change is made, so the event
+ * a stored change owes can only fail on storage (`managed.js` follow-ups).
+ * @throws TypeError for a note that is not a string (K3 `note?: string`: a caller bug, as K3 #17)
+ */
+function noteDraft(type, sessionId, note) {
+  if (typeof note !== 'string') throw new TypeError(MISUSE.note)
+  return checkedFields(type, { sourceSessionId: sessionId, correlationId: null, payload: { sessionId, note } })
+}
 
 /**
  * @param {object} deps
@@ -40,11 +50,16 @@ const refusal = (code) => Object.freeze({ ok: false, code })
 export function createHandover({ managed, produce, pairs, tokens, presence, designatedEntry, sessionExists, changes }) {
   const principalRef = (pair) => Object.freeze({ key: pair.principalKey, name: pair.name, id: pair.id })
 
-  /** The pair `principalKey` names, if its entry is listed, enabled and paired now (R-ROUTE-05). */
+  /**
+   * The pair `principalKey` names, if its entry is listed, enabled and paired now (R-ROUTE-05).
+   * Any other value, a non-string or an EntryKey of an unpaired entry included, names no pair: K3's
+   * `no-fishball`, never a throw (K3: refusals are data).
+   */
   function eligible(principalKey) {
     const pair = typeof principalKey === 'string' ? pairs.byPrincipal(principalKey) : undefined
     return pair !== undefined && tokens.get(pair.entryKey)?.enabled === true ? pair : undefined
   }
+  let provided = false
 
   const service = Object.freeze({
     apiVersion: HANDOVER_SERVICE.apiVersion,
@@ -52,7 +67,9 @@ export function createHandover({ managed, produce, pairs, tokens, presence, desi
     managed() {
       return Object.freeze(managed.state.managed().flatMap(({ sessionId, principalKey }) => {
         const pair = pairs.byPrincipal(principalKey)
-        // A manager whose pair is gone is ended by revocation; until then it is not shown with a stale name.
+        // A manager whose pair is gone is ended by its revocation; until then it is not shown with a
+        // stale name. C-SUCCEED: a succession must move such sessions in the same step, or they
+        // vanish from the marks between `PairStore.succeed` and the move.
         return pair === undefined ? [] : [Object.freeze({ sessionId, principal: principalRef(pair) })]
       }))
     },
@@ -71,23 +88,25 @@ export function createHandover({ managed, produce, pairs, tokens, presence, desi
 
     async handOver(sessionId, principalKey, note = NO_NOTE) {
       if (typeof sessionId !== 'string' || !(await sessionExists(sessionId))) return refusal(HANDOVER_REFUSAL.unknownSession)
+      const draft = noteDraft(EVENT_TYPE.handover, sessionId, note)
       let pair
       const result = await managed.assign(sessionId, principalKey, {
         // Checked inside the managed step, after `conflict` (K3 order), against a racing disable.
         admit: () => ((pair = eligible(principalKey)) === undefined ? refusal(HANDOVER_REFUSAL.noFishball) : undefined),
         // One `handover`, to the new manager, offline or not (it waits in its mailbox; HAND-DT-01 rule 5).
-        then: () => produce({ type: EVENT_TYPE.handover, sessionId }, { sourceSessionId: sessionId, correlationId: null, payload: { sessionId, note } }),
+        then: () => produce({ type: EVENT_TYPE.handover, sessionId }, draft),
       })
       return result.ok ? Object.freeze({ ok: true, principal: principalRef(pair) }) : result
     },
 
     async takeBack(sessionId, note = NO_NOTE) {
       if (typeof sessionId !== 'string' || !(await sessionExists(sessionId))) return refusal(HANDOVER_REFUSAL.unknownSession)
+      const draft = noteDraft(EVENT_TYPE.takeback, sessionId, note)
       // The `takeback` goes to the pair that managed it until now (R-EVS-03), committed before its
       // offers are retired; the same retirement rule as release (Fishball 2026-11-14).
       const result = await managed.end(sessionId, {
         reason: RETIREMENT_REASON.released,
-        then: (manager) => produce({ type: EVENT_TYPE.takeback, sessionId, followsPrincipal: manager }, { sourceSessionId: sessionId, correlationId: null, payload: { sessionId, note } }),
+        then: (manager) => produce({ type: EVENT_TYPE.takeback, sessionId, followsPrincipal: manager }, draft),
       })
       return result.ok ? Object.freeze({ ok: true }) : refusal(HANDOVER_REFUSAL.notManaged)
     },
@@ -95,10 +114,17 @@ export function createHandover({ managed, produce, pairs, tokens, presence, desi
 
   return Object.freeze({
     service,
-    /** Provides the service on `ctx` (the connector row) until that context unloads. */
-    provide: (ctx) => ctx.effect(() => {
-      const dispose = ctx.provide(HANDOVER_SERVICE.name, service)
-      return () => { dispose?.() }
-    }, HANDOVER_SERVICE.label),
+    /**
+     * Provides the service on `ctx` (the connector row) until that context unloads. Once per
+     * routing module, as C-EXT's `provide`: a second call throws instead of serving the same state twice.
+     */
+    provide(ctx) {
+      if (provided) throw new Error(MISUSE.provideTwice)
+      provided = true
+      return ctx.effect(() => {
+        const dispose = ctx.provide(HANDOVER_SERVICE.name, service)
+        return () => { dispose?.() }
+      }, HANDOVER_SERVICE.label)
+    },
   })
 }

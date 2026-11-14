@@ -3,10 +3,24 @@
  * listener set whose throwing listener does not stop the others (K1c-1, K3 `onChange`).
  */
 import { diagnosticOf } from '../errors.js'
+import { assertDraft } from '../mailbox/draft.js'
+
+/**
+ * Checks `{type, ...fields}` as the K1 EventDraft it becomes, and returns `fields`: the routing
+ * module's commit path (`produce(subject, fields)`) takes the type from the subject, so a draft
+ * is checked whole before any change and handed on without it.
+ * @throws TypeError for an invalid draft (C-MAILBOX `assertDraft`)
+ */
+export function checkedFields(type, fields) {
+  assertDraft({ type, ...fields })
+  return fields
+}
 
 /**
  * A serial chain: each step runs after every earlier one has settled, and a failed step never
- * blocks later ones (the rule of V2's ManagedRegistry and of C-MAILBOX).
+ * blocks later ones (the rule of V2's ManagedRegistry and of C-MAILBOX). C-MAILBOX and C-TOKENS
+ * each keep a private copy of the same chain; a later task may move all three into one shared
+ * helper (outside C-ROUTE's folders in W3).
  * @returns {(step: () => Promise<T>) => Promise<T>}
  */
 export function serialChain() {
@@ -38,6 +52,3 @@ export function listenerSet(logger, format, line) {
     },
   })
 }
-
-/** A non-empty string (K1: session ids and principal keys are opaque non-empty strings). */
-export const isKey = (value) => typeof value === 'string' && value.length > 0

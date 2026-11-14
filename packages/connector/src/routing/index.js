@@ -10,10 +10,15 @@
  *   marks offers acked). **C-WIRE and C-TOOLS must route every `inbox_ack` through this port.**
  * - `pairs` K1 `PairStore`; `tokens` K1 `TokenRegistry`; `presence` K1 `Presence`;
  * - `settings`: `{get() → {fishballToken?, maxQueuedInputs?}, onChange(fn) → dispose}`, the live
- *   `routing.fishballToken` and `maxQueuedInputs` (unset = K1 QUEUE.maxQueuedInputs);
+ *   `routing.fishballToken` and `maxQueuedInputs` (unset = K1 QUEUE.maxQueuedInputs). K1
+ *   `TokenRegistry` has no change event besides `onRevoked`, so a re-enable, an added or a removed
+ *   entry reaches this module only through this port: **C-WIRE fires `settings.onChange` after
+ *   `TokenRegistry.apply` has resolved**, so the K3 listeners and the held-queue flush read the new
+ *   entries. (C-MAILBOX reads `maxQueuedInputs` once at creation, this queue reads it live: C-WIRE
+ *   aligns the two when it builds them.)
  * - `sessions`: `{exists(id), onTurnFinished(fn(id, {running, queued})), onState(fn(id, {running,
  *   pendingInteraction}))}` over root session ids (binding it to DSH is C-WIRE's);
- * - `logger` (`{warn}`), `now` (unused by the rules; kept for C-WIRE's uniform ports).
+ * - `logger` (`{warn}`).
  *
  * One commit path (`produce`): every event C-ROUTE produces asks the router first and commits to the
  * one recipient it names, or to nobody (R-EVS-03, EVT-DT-01 rule 9: exactly one mailbox entry).
@@ -24,14 +29,14 @@ import { randomUUID } from 'node:crypto'
 import { DECISION_KIND_OF, EVENT_TYPE, OFFER_TYPES, QUEUE, REFUSAL, RETIREMENT_REASON, parseOfferId } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { createHandover } from '../handover/index.js'
-import { assertDraft } from '../mailbox/draft.js'
-import { LOG, MISUSE, ROUTE_FALLBACK } from './constants.js'
+import { isNonEmptyString } from '../mailbox/draft.js'
+import { HELD_MINIMUM, LOG, MISUSE } from './constants.js'
 import { createHeldQueue } from './held.js'
 import { createManagedState } from './managed.js'
 import { createOfferLedger } from './offers.js'
 import { createRouter } from './router.js'
 import { openRoutingTables } from './store.js'
-import { listenerSet, serialChain } from './support.js'
+import { checkedFields, listenerSet, serialChain } from './support.js'
 
 export { createRouter } from './router.js'
 export { ROUTE_FALLBACK } from './constants.js'
@@ -52,7 +57,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   /** The live `maxQueuedInputs` (K1c-3), checked: a bad setting is a wiring bug, not a client's refusal. */
   function maxQueuedInputs() {
     const value = settings.get().maxQueuedInputs ?? QUEUE.maxQueuedInputs
-    if (!Number.isSafeInteger(value) || value < 1) throw new TypeError(MISUSE.maxQueuedInputs)
+    if (!Number.isSafeInteger(value) || value < HELD_MINIMUM.queuedInputs) throw new TypeError(MISUSE.maxQueuedInputs)
     return value
   }
   const designatedEntry = () => settings.get().fishballToken
@@ -67,7 +72,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     return pairs.pairOf(entryKey)?.principalKey
   }
 
-  const held = createHeldQueue({ table: tables.held, newKey: randomUUID, limit: maxQueuedInputs })
+  const held = createHeldQueue({ table: tables.held, newKey: randomUUID, limit: maxQueuedInputs, onDeleteFailed: warn(LOG.heldDeleteFailed) })
   // `managed` is assigned below, before any call can reach the router (the router and the ledger
   // need each other's owner only at call time).
   let managed
@@ -84,10 +89,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
    */
   async function produce(subject, draft) {
     const route = router.recipientFor(subject)
-    if (route.recipient === null) {
-      if (subject.type === EVENT_TYPE.notice && route.fallback === ROUTE_FALLBACK.dropped) logger.warn(LOG.format, LOG.noticeDropped, route.fallback)
-      return { route }
-    }
+    if (route.recipient === null) return { route }
     const committed = await mailbox.commit(route.recipient, { type: subject.type, ...draft })
     if (!committed.ok) logger.warn(LOG.format, LOG.commitRefused, committed.code)
     return { route, committed }
@@ -112,23 +114,23 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   // K3 onChange: managed set, names, connection, entry state and designation (handover.d.ts).
   const changes = listenerSet(logger, LOG.format, LOG.listenerFailed)
   const changed = () => changes.fire()
-  disposers.push(managed.state.onChange(changed), presence.onChange(changed))
-  disposers.push(pairs.onChange(() => { changed(); flush() }))
-  disposers.push(settings.onChange(() => { changed(); flush() }))
-
   /**
    * The pair each entry was last seen bound to, so a revocation still finds the manager after the
-   * pair itself has been removed in the same sync (a delete frees the pair, R-ID-13).
+   * pair itself has been removed in the same sync (a delete frees the pair, R-ID-13). An entry is
+   * forgotten once its revocation is handled and the registry no longer lists it.
    */
   const lastPair = new Map()
   const remember = () => { for (const pair of pairs.list()) lastPair.set(pair.entryKey, pair.principalKey) }
   remember()
-  disposers.push(pairs.onChange(remember))
+  disposers.push(managed.state.onChange(changed), presence.onChange(changed))
+  disposers.push(pairs.onChange(() => { remember(); changed(); flush() }))
+  disposers.push(settings.onChange(() => { changed(); flush() }))
   // W3 (Fishball 2026-11-14 #1): a revoked entry's sessions become unmanaged and its live offers are
   // retired `revoked` (R-ROUTE-06, R-TOK-05). The `system` note and the rest are C-REVOKE's.
   disposers.push(tokens.onRevoked((entryKey) => {
     changed()
     const principalKey = pairs.pairOf(entryKey)?.principalKey ?? lastPair.get(entryKey)
+    if (tokens.get(entryKey) === undefined) lastPair.delete(entryKey)
     if (principalKey !== undefined) managed.endAllOf(principalKey, RETIREMENT_REASON.revoked).catch(warn(LOG.retireFailed))
   }))
 
@@ -143,26 +145,33 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   }
   disposers.push(sessions.onTurnFinished(watch(EVENT_TYPE.turnFinished)), sessions.onState(watch(EVENT_TYPE.state)))
 
-  /** An answerable draft for `descriptor` (its offer id is the offer and the correlation id). */
+  /** An answerable draft's fields for `descriptor` (its offer id is the offer and the correlation id). */
   function answerable(type, sessionId, descriptor) {
     const parsed = parseOfferId(descriptor?.offerId)
-    if (parsed === undefined || ledger.has(descriptor.offerId)) throw new TypeError(MISUSE.offer)
-    const draft = {
-      type, sourceSessionId: sessionId, correlationId: descriptor.offerId,
+    if (parsed === undefined) throw new TypeError(MISUSE.offer)
+    return checkedFields(type, {
+      sourceSessionId: sessionId, correlationId: descriptor.offerId,
       offer: { offerId: descriptor.offerId, revision: parsed.revision, decisionKind: DECISION_KIND_OF[type] }, payload: descriptor,
-    }
-    assertDraft(draft)
-    return draft
+    })
   }
 
-  /** Commits an answerable event and records it as live; `answer` resolves an ask's waiting call. */
-  async function commitAnswerable(type, sessionId, descriptor, answer) {
-    const { type: ignored, ...draft } = answerable(type, sessionId, descriptor)
-    const { route, committed } = await produce({ type, sessionId }, draft)
-    if (route.recipient !== null && committed.ok) {
-      ledger.record(descriptor.offerId, { type, sessionId, principalKey: route.recipient, eventId: committed.eventId, answer })
-    }
-    return { route, committed }
+  /**
+   * Commits an answerable event and records it as live; `answer` resolves an ask's waiting call.
+   * Route, commit and record run as one step on the managed chain (`withState`), so a release, Take
+   * back or revocation either runs before it (the offer then routes by the new state) or after it
+   * (and then finds and retires the recorded offer); never in between (K1c-2).
+   */
+  function commitAnswerable(type, sessionId, descriptor, answer) {
+    const draft = answerable(type, sessionId, descriptor)
+    return managed.withState(async () => {
+      // Checked on the chain, so two concurrent offers with one id cannot both pass it.
+      if (ledger.has(descriptor.offerId)) throw new TypeError(MISUSE.offer)
+      const { route, committed } = await produce({ type, sessionId }, draft)
+      if (route.recipient !== null && committed.ok) {
+        ledger.record(descriptor.offerId, { type, sessionId, principalKey: route.recipient, eventId: committed.eventId, answer })
+      }
+      return { route, committed }
+    })
   }
 
   await flush()
@@ -184,8 +193,9 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      * Fishball, else held. `queue-full` is the mailbox's bound or the held queue's.
      */
     messageFishball(sessionId, payload) {
-      const draft = { type: EVENT_TYPE.message, sourceSessionId: sessionId ?? null, correlationId: null, payload }
-      assertDraft(draft)
+      // A held record must pass its schema at the next open (store.js), so a bad id is refused here.
+      if (sessionId !== undefined && sessionId !== null && !isNonEmptyString(sessionId)) throw new TypeError(MISUSE.sessionId)
+      const draft = checkedFields(EVENT_TYPE.message, { sourceSessionId: sessionId ?? null, correlationId: null, payload })
       return routeSerial(async () => {
         const { route, committed } = await produce({ type: EVENT_TYPE.message, sessionId: draft.sourceSessionId }, draft)
         if (route.recipient === null) return held.hold(draft.sourceSessionId, payload)
@@ -210,10 +220,11 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      * The approval hook: a `permission`, `question` or `plan-review` of `sessionId`. A managed
      * session's offer goes to its manager, connected or not (PLAT-UC-03 E2); an unmanaged one's is
      * the user's (`to-user`, R-CON-09).
-     * @returns `{recipient, eventId}` or the K1 `NoRecipient`
+     * @returns `{recipient, eventId}` or the K1 `NoRecipient`. (`{ok: false, code}` only if the
+     *   mailbox refused the commit, which K1 QUEUE never does for an offer.)
      */
     async offer(sessionId, type, descriptor) {
-      if (!OFFER_TYPES.includes(type)) throw new TypeError(MISUSE.produce)
+      if (!OFFER_TYPES.includes(type)) throw new TypeError(MISUSE.offerType)
       const { route, committed } = await commitAnswerable(type, sessionId, descriptor)
       if (route.recipient === null) return route
       return committed.ok ? Object.freeze({ recipient: route.recipient, eventId: committed.eventId }) : Object.freeze({ ok: false, code: committed.code })
@@ -235,11 +246,21 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     },
 
     /**
-     * The session's call ended before an answer (or the ask's event was dropped, R-TOK-05): an offer
-     * is retired `withdrawn` from its pair; a waiting `ask_fishball` answers `unavailable`.
+     * The session's call ended before an answer: the offer (or ask) is retired `withdrawn` from its
+     * pair; a waiting `ask_fishball` answers `unavailable`.
      * @returns whether the offer was live
+     * Runs on the managed chain, as the offer's own commit does: a withdraw that arrives while its
+     * offer is still queued there runs after it, and so finds it.
      */
-    withdraw: (offerId) => ledger.withdraw(offerId, RETIREMENT_REASON.withdrawn, UNAVAILABLE),
+    withdraw: (offerId) => managed.withState(() => ledger.withdraw(offerId, RETIREMENT_REASON.withdrawn, UNAVAILABLE)),
+
+    /**
+     * C-REVOKE: an `ask` event was dropped with its mailbox (delete, or the end of the 30 days;
+     * K1 `Mailbox.drop` / `expireHolds` `droppedAsks`). Its asker answers `unavailable` at once
+     * (R-TOK-05); nothing is retired or committed, because the pair that held it is gone.
+     * @returns whether the ask was live
+     */
+    askDropped: (offerId) => managed.withState(async () => ledger.settle(offerId, UNAVAILABLE)),
 
     async close() {
       for (const dispose of disposers.splice(0)) dispose?.()
