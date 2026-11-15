@@ -21,7 +21,7 @@ import { FAKE, FAKE_LLM_MODULE, RUNTIME } from '../../support/constants.mjs'
 import { linkContractForSourceRun } from '../../support/contract-link.mjs'
 import { until } from '../../support/util.mjs'
 import { V3 } from '../shared/constants.mjs'
-import { BUDGET, DSH_ROW, ENV, FIBER_ACTIVE, FIXTURE, GUARDS, OWNER, PROFILE } from './constants.mjs'
+import { BUDGET, DSH_ROW, ENV, FIBER_ACTIVE, FIXTURE, OWNER, PROFILE } from './constants.mjs'
 import { findReport, stillProvided, subscribeReport } from './report.mjs'
 
 const host = (spec) => import(pathToFileURL(path.join(RUNTIME, spec)).href)
@@ -53,21 +53,18 @@ function fixtureBundle(name, rows, entry) {
 }
 const standinEntry = (row) => `import { standin } from ${JSON.stringify(pathToFileURL(FIXTURE.standinModule).href)}\nexport const name = ${JSON.stringify(row)}\nexport const apply = standin(${JSON.stringify(row)})\n`
 
-/** The other offered preset (K3 FishballAgentPreset without the default), as fishball-watchdog would contribute it. */
-const otherOffered = GUARDS.offeredPresets.filter((p) => p !== GUARDS.policy.defaultAgentPreset)
-
 /** The installable members a test can name. */
 const MEMBERS = {
   [V3.core.name]: () => V3.core.dir,
   [FIXTURE.instance]: () => fixtureBundle(FIXTURE.instance, [{ id: FIXTURE.instance, name: FIXTURE.instance, config: {} }], standinEntry(FIXTURE.instance)),
-  [FIXTURE.hostedSettings]: () => fixtureBundle(FIXTURE.hostedSettings, [{ id: FIXTURE.hostedSettings, name: FIXTURE.hostedSettings, config: {} }], standinEntry(FIXTURE.hostedSettings)),
+  [FIXTURE.other]: () => fixtureBundle(FIXTURE.other, [{ id: FIXTURE.other, name: FIXTURE.other, config: {} }], standinEntry(FIXTURE.other)),
   [FIXTURE.deselected]: () => fixtureBundle(FIXTURE.deselected, [{ id: FIXTURE.deselected, name: FIXTURE.deselected, config: {} }], standinEntry(FIXTURE.deselected)),
   [FIXTURE.probe.name]: () => fixtureBundle(FIXTURE.probe.name, [{ id: FIXTURE.probe.name, name: FIXTURE.probe.name, config: {} }], `export * from ${JSON.stringify(pathToFileURL(FIXTURE.probe.module).href)}\n`),
-  // A stand-in for fishball-watchdog's own preset (design §7): read-only file tools, no session-creating tool.
-  [FIXTURE.watchdog.name]: () => fixtureBundle(FIXTURE.watchdog.name, otherOffered.map((id) => ({
-    id: FIXTURE.watchdog.row, name: DSH_ROW.agentPreset,
-    config: { id, order: FIXTURE.watchdog.order, plugins: [DSH_ROW.fileTools(OWNER.readOnlyFiles)] },
-  })), `export const name = ${JSON.stringify(FIXTURE.watchdog.name)}\nexport function apply() {}\n`),
+  // A third-party agent preset with no session-creating tool: only its being offered is a guard matter.
+  [FIXTURE.extraPreset.name]: () => fixtureBundle(FIXTURE.extraPreset.name, [{
+    id: FIXTURE.extraPreset.row, name: DSH_ROW.agentPreset,
+    config: { id: FIXTURE.extraPreset.id, order: FIXTURE.extraPreset.order, plugins: [DSH_ROW.fileTools(OWNER.readOnlyFiles)] },
+  }], `export const name = ${JSON.stringify(FIXTURE.extraPreset.name)}\nexport function apply() {}\n`),
 }
 const readManifest = () => JSON.parse(fs.readFileSync(manifestFile, 'utf8'))
 const writeManifest = (pkg) => fs.writeFileSync(manifestFile, JSON.stringify(pkg, null, 2))

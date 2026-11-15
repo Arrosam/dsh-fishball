@@ -1,5 +1,5 @@
 /**
- * A stand-in row with a guarded or watched row id (dsh-instance, fishball-hosted-settings): it
+ * A stand-in row with a guarded or watched row id (dsh-instance, an ordinary other bundle): it
  * only appends "<row> <pid>" to `<DSH_HOME>/standin.log` when it starts, so a case can tell whether
  * the row ran in a given process. A real dsh-instance would start a nested child here.
  */

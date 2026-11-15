@@ -144,7 +144,7 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   boot.initProfile(paths.profile, RUNTIME.profile.bundles)
   if (fresh) await privateTree(paths.profile)
   await nativeProfileBundles(boot, paths.profile)
-  // The plugin set and fishball-hosted-settings, placed before the profile loads (design §8.1).
+  // The plugin set, placed before the profile loads (design §8.1).
   await placeBundles(paths, boot)
   await validateStartupFiles(paths)
   const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
@@ -160,7 +160,7 @@ export async function initializeProfile(paths, installation, preflight, mainWork
 
 /**
  * Snapshot only the instance's own lifecycle code, never the main profile or its dependency graph.
- * The plugin set, fishball-hosted-settings and their libraries are placed bundles now
+ * The plugin set and its libraries are placed bundles now
  * (placement.js), which the lifecycle modules find through the profile's node_modules.
  */
 export async function copyChildCode(paths, record) {

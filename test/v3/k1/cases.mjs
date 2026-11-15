@@ -496,5 +496,5 @@ export function registerK1Cases(sdk) {
   todos(sdk, 'PLAT-UC-03', LATER.route, [['main, A1, E1, E2', 'message_agent / ask_agent routing; unavailable at once when not connected']])
   todos(sdk, 'PLAT-UC-07', LATER.card, [['main, A1, E1, E2', 'Fishball shows an ask card (card fields frozen by K3)']])
   todos(sdk, 'PLAT-BVA-01', LATER.board, [['1–3', 'board done-item visibility at 29 d 23:59:59, 30 d, 30 d + 1 s (fake clock)']])
-  todos(sdk, 'PLAT-DT-02', LATER.status, [['1–4', 'standalone set completeness and the Watchdog-down report']])
+  todos(sdk, 'PLAT-DT-02', LATER.status, [['1–4', 'standalone set completeness']])
 }

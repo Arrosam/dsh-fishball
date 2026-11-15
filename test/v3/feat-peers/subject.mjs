@@ -1,8 +1,8 @@
 /**
- * The one place that binds the FEAT-PEERS cases to the two packages (`packages/board/`,
- * `packages/fold-notify/`). The frozen surfaces are the plugins' own rows (`name`, `inject`,
- * `apply`, `Config`), K3 `fishballInstance` (`apiVersion: 1`) with the X1/X2/X8/X9 members of
- * docs/plugins/instance-extension-points.md §1.1, and the board's and fold-notify's manager tools.
+ * The one place that binds the FEAT-PEERS cases to the board package (`packages/board/`). The
+ * frozen surfaces are the plugin's own row (`name`, `inject`, `apply`, `Config`), K3
+ * `fishballInstance` (`apiVersion: 1`) with the X1/X2/X8/X9 members of
+ * docs/plugins/instance-extension-points.md §1.1, and the board's manager tools.
  * The dev surface relayed by Fishball (2026-11-15, `dev/v3-feat-peers` `f1f0f058`/`ef06678c`); if
  * the packages change, only this file is adapted, no case changes:
  *
@@ -13,9 +13,6 @@
  * - the board's store and tools take an injected `now`; the row wires it to the wall clock, so the
  *   fake clock is node:test's MockTimers on `Date` only (no timer of DSH or of the harness is
  *   touched). The row-level cases need no deeper binding to `createBoardStore`/`createBoardTools`;
- * - X8: fold-notify's `notify_user` calls `attention.signal('fishball-fold-notify', {important})`
- *   and ignores any refusal or throw; the fake core attention member answers `ATTENTION.accepted`
- *   or `ATTENTION.refused` (a K1 refusal envelope);
  * - a manager tool runs as DSH runs it: `definition.execute(args, exec)` with `exec.agent` the
  *   manager's agent (`{id, session}`); a refusal may be a returned `{ok: false, code}` or a thrown
  *   error with a string `code` (the designs name the code, not the transport), and is normalised to

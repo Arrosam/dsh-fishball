@@ -777,7 +777,7 @@ export const ID_REFUSAL = Object.freeze({ idInvalid: 'id-invalid' })
  * A `notice` event's `code` (R-EVS-02). The grammar is K2's refusal-code grammar; which notices
  * exist is left to the task that produces each one, which adds its code here as a K1 amendment.
  * None is frozen yet. K1c (README "User decisions" K1c-4): C-ROUTE produces none (a revocation's
- * note is a `system` note in the session, and "watchdog is down" is core's `manager.notify`). A
+ * note is a `system` note in the session). A
  * notice C-WIRE produces is still its own K1 amendment.
  */
 export const NOTICE = Object.freeze({ codeGrammar: NAME_GRAMMAR.code, codes: Object.freeze({}) })

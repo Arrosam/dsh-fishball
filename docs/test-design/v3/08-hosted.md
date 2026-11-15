@@ -13,7 +13,7 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
 - **Actor:** the instance, in host DSH H that also runs C.
 - **Preconditions:** I freshly installed; target blank; no hosted entry exists; no designated principal set.
 - **Main flow:**
-  1. H's app ready fires; I places the four plugins (core, board, fold-notify, Watchdog) and `fishball-hosted-settings` into the child profile **before** the profile loads, all **on**, with `fishball-core` **last** in the child's `dsh.profile.bundles` (after `fishball-instance`, the features and `fishball-hosted-settings`; R-FB-12).
+  1. H's app ready fires; I places the plugins (core, board, fold-notify) and `fishball-hosted-settings` into the child profile **before** the profile loads, all **on**, with `fishball-core` **last** in the child's `dsh.profile.bundles` (after `fishball-instance`, the features and `fishball-hosted-settings`; R-FB-12).
   2. The child holds no paired credential → I asks C for a **new** "Fishball (hosted)" entry; C returns only its reference.
   3. I resolves the value and hands target and value to the child **in memory**.
   4. Core authenticates with its own `identity.id` (generated `fb-` + 16 lowercase base32) and calls `pair` with its local `identity.name` "Fishball" → paired, named "Fishball" if free, else nameless (`ID: <id>`) with the Fishball page asking for another name.
@@ -83,7 +83,7 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
 - **Alternative flows:**
   - A1. The child crashes → status code shown; Retry restarts it.
   - A2. Uninstall → the board archive export is offered, then the child runtime is removed.
-- **Exception flows:** E1. A failed start leaves a pending "watchdog is down" notice that is delivered once at the next successful start.
+- **Exception flows:** E1. *(withdrawn: Watchdog left V3, requirements 1.37)*
 - **Postconditions:** the launch overlays contain only HMR off, the child's own origin and port, the admission key and the target URL: no guard rows, no forced-on plugin, no token.
 
 ### HOST-UC-07 — Hosted model sync, started from embed-UI's Plugins card

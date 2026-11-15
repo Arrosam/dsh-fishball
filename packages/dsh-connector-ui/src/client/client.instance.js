@@ -19,7 +19,7 @@
  * Above them the card shows the instance's own status line (§18.2 I1, inst-OQ-01; §0.7
  * "Instance: status, Retry"). The instance owns that line (HOST-EP-03 row 2): it is the chunk
  * client.status.js (packages/dsh-instance/src/child-settings/client.status.js, a symlink beside this
- * file), which the child's hosted settings section shows too. The "Model for Fishball" block stays
+ * file). The "Model for Fishball" block stays
  * on this main card only: the child must never start a sync (the user's decision of 2026-11-11).
  */
 window.__ModuleLoader__.load({

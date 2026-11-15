@@ -51,6 +51,4 @@ DECIDED (#n) are ones the user kept at the value review (relayed by Fishball; #n
 
 ## Not frozen here
 
-- What `fishball-hosted-settings` and the hosted sections show: instance-owned, through core's
-  settings-section point (`packages/core/contracts/`).
 - Behaviour: C-ROUTE (hand-over), C-SUCCEED (`retire`), I-HOST (`dshInstanceChild`).

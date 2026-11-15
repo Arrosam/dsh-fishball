@@ -14,8 +14,8 @@ export type ChildState = 'disabled' | 'waiting' | 'starting' | 'ready' | 'stoppi
 
 /**
  * Lifecycle codes (V2 STATUS_CODES and the instance's own launch codes, plus V3's).
- * - `PROFILE_INCOMPATIBLE`: an enabled set member or `fishball-hosted-settings` was skipped by the
- *   child's profile load; the start is blocked (design §8.1, R-BND-03, R-HOST-11 (4));
+ * - `PROFILE_INCOMPATIBLE`: an enabled set member was skipped by the child's profile load; the
+ *   start is blocked (design §8.1, R-BND-03);
  * - `fishball-off`: the owner disabled `fishball-core` in the child; the child runs anyway
  *   (R-FB-10). It is a code with state `ready`, not a state of its own.
  */
@@ -43,7 +43,7 @@ export type ChildStatusCode = LifecycleCode | TargetCode
 /**
  * `code` is `null` when there is nothing to report. A lifecycle code wins over a target code:
  * a target code appears only while `state` is `ready` (PROPOSED).
- * `plugin` names the bundle a `PROFILE_INCOMPATIBLE` start was blocked by (R-HOST-11 (4),
+ * `plugin` names the bundle a `PROFILE_INCOMPATIBLE` start was blocked by (R-BND-03,
  * HOST-ST-01 #3: the status names it); absent otherwise. The field name is PROPOSED.
  */
 export interface ChildStatus {

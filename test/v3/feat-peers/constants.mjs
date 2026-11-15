@@ -4,10 +4,9 @@
  * - R-BRD-01, PLAT-UC-06 and PLAT-BVA-01 (30 days, day = 86 400 s, "archived at exactly 30 d", Q-24);
  * - docs/plugins/instance-extension-points.md §12.6 (archive file, `{id, clear: true}`, `not-closed`)
  *   and §12.7 (`board_search` and its `onBoard` flag);
- * - R-FN-01, EXT-UC-04 A1 and X8 / Q-14 (`attention.signal(pluginId, {important})`, answered
- *   `{ok: true, accepted: true}` or `unsupported-operation`);
- * - the fold-notify design §3 (`notify_user {message, important?}`, its `plugin:<pluginId>/notice`
- *   record) and the X0 namespace rule (pluginId = the npm package name).
+ * - X8 / Q-14 (`attention.signal(pluginId, {important})`, answered `{ok: true, accepted: true}`
+ *   or `unsupported-operation`), the fake core member's answers (world.mjs);
+ * - the X0 namespace rule (pluginId = the npm package name).
  * K1's `REFUSAL.unsupportedOperation` is the one spelling of the refusal code.
  *
  * The user dropped the board export (2026-11-15): no `board_export` tool, no export offer on
@@ -37,9 +36,6 @@ export const DSH = Object.freeze({
 /** The feature plugins under test, each as its loader row (the package's own entry). */
 export const PLUGIN = Object.freeze({
   board: Object.freeze({ name: 'fishball-board', entry: path.join(REPO, 'packages', 'board', 'index.js') }),
-  fold: Object.freeze({ name: 'fishball-fold-notify', entry: path.join(REPO, 'packages', 'fold-notify', 'index.js') }),
-  /** PLAT-EP-04 row 4 only; its peer change and its line are WD-ROUTE's (same wave). */
-  watchdog: Object.freeze({ name: 'fishball-watchdog', entry: path.join(REPO, 'packages', 'watchdog', 'index.js') }),
 })
 
 /** R-FB-06: the one line a feature plugin logs without fishball-core. */
@@ -76,14 +72,6 @@ export const BOARD = Object.freeze({
   archive: Object.freeze(['fishball-board', 'archive.jsonl']),
 })
 
-/** Fold-notify's tool and record (fold-notify design §3; X0 namespace = package name). */
-export const FOLD = Object.freeze({
-  tool: 'notify_user',
-  recordPrefix: 'plugin:' + PLUGIN.fold.name + '/',
-  /** Per-notice values of the record and the result that differ between two calls by nature. */
-  volatile: Object.freeze(['id', 'at', 'callId']),
-})
-
 /** The fake core attention member's two answers (X8, Q-14). */
 export const ATTENTION = Object.freeze({
   accepted: Object.freeze({ ok: true, accepted: true }),
@@ -100,7 +88,6 @@ export const FIXTURE = Object.freeze({
   /** The keyword `board_search` looks for; each card's title carries it. */
   keyword: 'fbtestkeyword',
   title: (n) => `fbtestkeyword card ${n}`,
-  notice: 'fbtest notice for the user',
   callIdPrefix: 'fbtest-call-',
 })
 
@@ -108,12 +95,9 @@ export const WAIT = Object.freeze({
   testMs: 60_000,
   settleMs: 5_000,
   pollMs: 20,
-  /** How long "no further call" is watched after the first one. */
-  quietMs: 300,
 })
 
 /** Rows a later task makes runnable (`todo`, naming it). */
 export const LATER = Object.freeze({
-  fWireAttention: 'F-WIRE (core wired: X8 through F-FACADE\'s façade over the real link to a connector whose DSH runs no embed-UI)',
   fWireBoard: 'F-WIRE (core wired: the board over core\'s real fishballInstance in a Fishball DSH)',
 })

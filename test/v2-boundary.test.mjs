@@ -46,14 +46,14 @@ const V2B = Object.freeze({
   v3PackageNames: Object.freeze(['fishball-board', 'fishball-fold-notify', 'fishball-watchdog']),
   /**
    * V3 rule (design e1e5577 §9.1, R-HOST-04; Fishball decisions 2026-11-15, I-PLACE): the instance
-   * places the four set members into the child profile, so its placement constants name the V3
-   * packages and its `files` carries `bundled/` (the set's sources in a packed instance, REL-PACK
-   * output). Only these exceptions are allowed: the V3 package names in that one constants file
-   * (never a V3 tool or code, never in another file) and the one `bundled/` files entry.
+   * places the set (board and core, design §1.0) into the child profile, so its placement constants
+   * name the V3 feature package and its `files` carries `bundled/` (the set's sources in a packed
+   * instance, REL-PACK output). Only these exceptions are allowed: that package name in that one
+   * constants file (never a V3 tool or code, never in another file) and the one `bundled/` files entry.
    */
   v3Allowed: Object.freeze({
     'dsh-instance': Object.freeze({
-      names: Object.freeze({ 'src/native-runtime/constants.js': Object.freeze(['fishball-board', 'fishball-fold-notify', 'fishball-watchdog']) }),
+      names: Object.freeze({ 'src/native-runtime/constants.js': Object.freeze(['fishball-board']) }),
       files: Object.freeze(['bundled/']),
     }),
   }),
@@ -370,10 +370,8 @@ const tracked = () => execFileSync('git', ['ls-files', '*.test.mjs'], { cwd: REP
 const rootRule = () => fs.readdirSync(path.join(REPO, 'test')).filter((f) => f.endsWith('.test.mjs') && !f.startsWith(V2B.ownRunnerPrefix)).map((f) => 'test/' + f)
 
 const V3_FILES = [
-  'packages/watchdog/test/instance-ext/wd-1.test.mjs', 'packages/board/test/instance-ext/b1.test.mjs',
-  'packages/board/test/instance-ext/b11-search.test.mjs', 'packages/fold-notify/test/instance-ext/fn-1.test.mjs',
-  'packages/dsh-connector/test/instance-ext/mcp-feasibility.test.mjs', 'test/instance-ext/x0-b.test.mjs', 'test/instance-ext/x0-a.test.mjs',
-  'test/instance-ext/x0-g.test.mjs', 'test/verification/wd1-native.test.mjs', 'test/verification/w0-cordis.test.mjs',
+  'packages/board/test/instance-ext/b1.test.mjs', 'packages/board/test/instance-ext/b11-search.test.mjs',
+  'packages/dsh-connector/test/instance-ext/mcp-feasibility.test.mjs', 'test/verification/w0-cordis.test.mjs',
   'docs/verification/v2-board-search-accept/supplemental.test.mjs',
 ]
 const OWN_RUNNER_FILES = ['test/native-production-preflight.test.mjs']
@@ -381,7 +379,7 @@ const INCLUDED = [
   'test/body-soul-i1c-status.test.mjs', 'test/v2-d1-runtime.test.mjs', 'test/v2-d1-contract.test.mjs', 'test/v2-d1-d3-schema.test.mjs',
   'test/v2-d2-config-retention.test.mjs', 'test/v2-d3-connector-attention.test.mjs', 'test/v2-d3-signal-producer.test.mjs',
   'test/instance-ext-fakehost.test.mjs', 'test/v2-boundary.test.mjs',
-  'test/instance-ext/x0-w.test.mjs', 'test/instance-ext/x0-i.test.mjs', 'test/instance-ext/x0-s.test.mjs',
+  'test/instance-ext/x0-w.test.mjs', 'test/instance-ext/x0-i.test.mjs',
   'packages/dsh-instance/test/instance-ext/x0-c.test.mjs', 'packages/dsh-instance/test/instance-ext/x0-c-held-context.test.mjs',
   'packages/dsh-connector/test/instance-ext/k1.test.mjs', 'test/verification/w0-host-session.test.mjs',
 ]
@@ -440,35 +438,21 @@ test('V2B-SUITE-03 included files and root runner rule', async () => {
  * V2B-SUITE-04 case-selection tables. `skip` is the expected outcome; `disposition` and `files` are the
  * expected excludedCases entry for a skipped name. A name is skipped when ANY skip pattern matches it.
  */
-const X0S = 'test/instance-ext/x0-s.test.mjs'
-const X0I = 'test/instance-ext/x0-i.test.mjs'
 const K1 = 'packages/dsh-connector/test/instance-ext/k1.test.mjs'
 const X0C = ['packages/dsh-instance/test/instance-ext/x0-c.test.mjs', 'packages/dsh-instance/test/instance-ext/x0-c-held-context.test.mjs']
 const k1 = (id) => 'K1-MCP-' + id + ' | x'
 const x = (id) => id + ' x'
 const CASE_TABLES = {
-  // BVA: XS-DT-10 vs XS-DT-01 / XS-DT-01b differ by one character; the rest are other partitions of X0-S.
-  'X0-S': {
-    kept: ['XS-DT-10 the gate is off'],
-    skipped: ['XS-DT-01', 'XS-DT-01b', 'XS-DT-11', 'XS-DT-11b', 'XS-P-01', 'XS-BVA-03'].map(x),
-    disposition: 'v3', files: [X0S],
-  },
-  // EP + BVA: XI-EP-02 | XI-EP-03 is the boundary inside the EP family.
-  'X0-I': {
-    kept: ['XI-EP-01', 'XI-EP-02'].map(x),
-    skipped: ['XI-EP-03', 'XI-DT-01', 'XI-DT-02', 'XI-DT-03', 'XI-P-01', 'XI-P-02', 'XI-P-03', 'XI-ST-01', 'XI-ST-02', 'XI-ST-03', 'XI-BVA-01'].map(x),
-    disposition: 'v3', files: [X0I],
-  },
   // EP: actual-MCP cases vs rewritten D1-D3 cases sharing the K1-MCP- prefix.
   K1: {
     kept: ['UC-01-M', 'UC-01-E1', 'EP-01', 'EP-02', 'EP-03', 'EP-04', 'EP-06', 'EP-07', 'BVA-01', 'BVA-02', 'DT-01', 'DT-03', 'DT-04', 'ST-01', 'ST-02', 'ST-03', 'UC-02-M'].map(k1),
     skipped: ['UC-01-A1', 'EP-05', 'EP-08', 'DT-02', 'ST-04'].map(k1),
     disposition: 'v3', files: [K1],
   },
-  // EP: V3 TODOs (board/Watchdog/fold image/MCP) vs retained X0-C and held-context cases.
+  // EP: V3 TODOs (board/MCP) vs retained X0-C and held-context cases.
   'X0-C': {
-    kept: ['XC-UC-01-A4', 'XC-UC-01-E2', 'XC-UC-02-E3', 'XC-UC-04-M', 'XC-UC-04-E1', 'XC-BVA-BATCH-COUNT-1', 'XC-EP-BATCH-01', 'XC-DT-OFF-message_session', 'XC-EP-STUB-16', 'XC-EP-V-05', 'XC-HELD-ST-RESTART', 'XC-UC-03-M1'].map(x),
-    skipped: ['XC-UC-01-A5', 'XC-UC-03-F', 'XC-UC-04-A1', 'XC-UC-05-M'].map(x),
+    kept: ['XC-UC-01-A4', 'XC-UC-01-E2', 'XC-UC-02-E3', 'XC-UC-04-M', 'XC-UC-04-E1', 'XC-BVA-BATCH-COUNT-1', 'XC-EP-BATCH-01', 'XC-EP-STUB-16', 'XC-EP-V-05', 'XC-HELD-ST-RESTART', 'XC-UC-03-M1'].map(x),
+    skipped: ['XC-UC-01-A5', 'XC-UC-05-M'].map(x),
     disposition: 'v3', files: X0C,
   },
   // EP: I2 migration assertions (non-gating, not V3) vs plain I2 cases.
@@ -479,7 +463,7 @@ const CASE_TABLES = {
   },
   // EP: representative root names of other families are never skipped (non-interference).
   'non-interference': {
-    kept: ['I1c-V-02', 'XW-P-01', 'D3-CONNECTOR-LATCH', 'X11-HOST-SESSION', 'V2B-SUITE-01'].map(x),
+    kept: ['I1c-V-02', 'XW-P-01', 'XI-EP-01', 'XI-EP-02', 'D3-CONNECTOR-LATCH', 'X11-HOST-SESSION', 'V2B-SUITE-01'].map(x),
     skipped: [], disposition: null, files: null,
   },
 }

@@ -45,7 +45,7 @@ import type { DshInstanceChild } from './child.js'
  * report without the provider (R-UI-01, R-ARCH-03), so it looks the service up at runtime
  * (`ctx.get(name)`, or a `ctx.inject([name], …)` sub-scope) and does not list it in its own
  * `inject`: Cordis on both SDKs treats a trailing `?` literally, and every listed key gates the
- * row's activation (fold-notify/index.js, instance host.js). Design §4.2's `'name?'` spelling
+ * row's activation (board/index.js, instance host.js). Design §4.2's `'name?'` spelling
  * means this.
  *
  * Resolving this augmentation needs `@deepseek-ai/cordis` (a DSH peer) in the consumer's types.

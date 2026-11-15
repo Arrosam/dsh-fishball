@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "//": "A DSH bundle of the Fishball plugin set (R-FB-01, design §1.2, §9.1). V3 R-CORE moved the slim child, persona, private Skills tool and child-web pages here unchanged; in a hosted child the instance places this package as a bundle, last (I-PLACE). cordis.patch.yml carries the fishball-ui guard rows, core's fishball preset and the guard row ui/patch (F-GUARDS), and the page, Recommended tab and slim child rows (I-PLACE); ./client is fishball-ui's browser half with the settings panel chunk client.settings.js. It never depends on dsh-instance (TQ-R3, R-BND-01).",
-  "//exports": "./slim/* are the slim child modules core's own patch mounts as fishball-core/<subpath> rows (a path row inside this folder would be a second client source of the package; I-PLACE). ./contracts and ./mcp-schema are K3's runtime constants and the vendored K1 schema, for plugins that import them dynamically (WD-ROUTE).",
+  "//exports": "./slim/* are the slim child modules core's own patch mounts as fishball-core/<subpath> rows (a path row inside this folder would be a second client source of the package; I-PLACE). ./contracts and ./mcp-schema are K3's runtime constants and the vendored K1 schema, for plugins that import them dynamically.",
   "exports": {
     "./client": "./client.js",
     "./link": "./src/link/index.js",

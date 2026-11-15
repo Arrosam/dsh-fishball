@@ -199,14 +199,14 @@ Registrations R1 (registered first), R2 (second) for the same type.
 | 9 | Fishball, admitted by `followup`, the turn started, then the Fishball DSH crashes | crash after admission | before or after the crash (acceptance preceded it) | **1** (the interrupted turn); after restart: no new turn, no re-delivery, no notice turn; DSH's own crash notice shows on that turn (S2-Q2 decided A) |
 
 ### EVT-DT-04 — Where an intercepted event ends up when something fails
-**Req:** R-INT-01, R-INT-04, R-INT-08, R-WD-07 · **Level:** unit (core with a scripted interceptor and fake link) · **Flags:** —
+**Req:** R-INT-01, R-INT-04, R-INT-08 · **Level:** unit (core with a scripted interceptor and fake link) · **Flags:** —
 
 | Rule | `ctl.accept()` resolved | `ctl.commit(send)` begun | Failure | Event goes to | Commits to the connector |
 | --- | --- | --- | --- | --- | --- |
 | 1 | no | no | handler throws / rejects | Fishball, once | at most Fishball's |
 | 2 | no | no | plugin off / down / disposed | Fishball, once | at most Fishball's |
 | 3 | yes | no | handler throws | Fishball, once | at most Fishball's |
-| 4 | yes | no | plugin disabled mid-decision (Watchdog down) | Fishball, once | at most Fishball's |
+| 4 | yes | no | plugin disabled mid-decision | Fishball, once | at most Fishball's |
 | 5 | yes | yes, reached the connector | handler throws after sending | stays with the interceptor | the interceptor's only; Fishball gets no turn |
 | 6 | yes | yes, never reached the connector | plugin fails during the send | fenced: Fishball, once | at most Fishball's (never both) |
 | 7 | yes | no | Fishball DSH restart, plugin up | the same plugin again (dedupe by `eventId`) | the interceptor's only |
@@ -219,12 +219,12 @@ Registrations R1 (registered first), R2 (second) for the same type.
 | # | Where | Expected after an event an interceptor handled alone |
 | --- | --- | --- |
 | 1 | Fishball's next turn (prompt, messages, notices, tool results) | nothing about the event |
-| 2 | any other agent session in the Fishball DSH (Watchdog side session excluded: it is the interceptor) | nothing |
+| 2 | any other agent session in the Fishball DSH | nothing |
 | 3 | core's acceptance / delivery records | present as internal state; never shown in any context |
 | 4 | the background log | one entry per acceptance, commit and outcome; no token or payload secret |
 | 5 | the same event after `release(toFishball)` | appears in Fishball's context once, as the released event |
-| 6 | a Watchdog `escalate` later settled by the user | only the non-waking settlement note reaches Fishball (R-WD-09) |
-| 7 | a Watchdog allow or justified reject | nothing in Fishball's context; logged only |
+| 6 | *(withdrawn: Watchdog left V3, requirements 1.37)* | — |
+| 7 | *(withdrawn: Watchdog left V3, requirements 1.37)* | — |
 
 ## State Transitions
 

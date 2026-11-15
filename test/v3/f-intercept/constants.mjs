@@ -166,7 +166,6 @@ export const PROCESS_EVENT = Object.freeze({ unhandledRejection: 'unhandledRejec
 /** Owners of rows this task cannot check (v3-tasks.md W2–W6). */
 export const LATER = Object.freeze({
   mailbox: 'C-MAILBOX (EVT-UC-01 / R-EVS-04: an external agent\'s subscription is served by the connector, with no interception)',
-  wdDecide: 'WD-DECIDE (Watchdog allow / justified reject / escalate and its non-waking settlement note, R-WD-09)',
   // K3's registration names no fiber, so "not ready" is only observable when the registration comes
   // through `ctx.fishballInstance` in the plugin's own context, which core's service row provides.
   wire: 'F-WIRE (core\'s service row provides fishballInstance, so a registration carries its plugin\'s fiber and readiness)',

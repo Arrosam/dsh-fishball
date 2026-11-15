@@ -7,7 +7,7 @@ import { RUNTIME, PLACEMENT, fail } from './constants.js'
 import { exists, jsonPrivate, writePrivate, writeProfileBundles, sameBundles } from './files.js'
 
 /**
- * The child's copies of the plugin set, fishball-hosted-settings and their libraries (I-PLACE;
+ * The child's copies of the plugin set and its libraries (I-PLACE;
  * constants.js PLACEMENT says where they go and why). Everything here reads source packages as
  * files: no module of the set is ever imported by the host (R-BND-01).
  */
@@ -145,17 +145,6 @@ async function replaceSlot(parent, name, populate) {
 }
 
 /**
- * A manifest's own relative paths (`./x`) rebased under `base`, for a package rooted above its
- * folder. The manifest itself is written at the new root, so its own path stays as it is.
- */
-function rebase(value, base) {
-  if (typeof value === 'string') return value.startsWith(PLACEMENT.relative) && value !== PLACEMENT.manifestPath ? PLACEMENT.relative + path.posix.join(base, value) : value
-  if (Array.isArray(value)) return value.map((item) => rebase(item, base))
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, rebase(item, base)]))
-  return value
-}
-
-/**
  * A set member's source: the packed `bundled/<directory>` (REL-PACK output, Q-22), else the
  * checkout's sibling workspace folder, as copyChildCode read core before I-PLACE. A packed
  * `bundled/` wins, so a checkout where a pack once ran reads that output until it is removed. A
@@ -171,23 +160,6 @@ async function memberSource(bundle) {
   }
   fail(PLACEMENT.code.missing, bundle.name)
 }
-
-/**
- * fishball-hosted-settings: its folder plus the instance modules its row imports, rooted at the
- * instance's package root so every relative import keeps its path; its manifest moves to that root
- * with its paths rebased onto the folder.
- */
-async function ownSource(bundle) {
-  const folder = path.dirname(bundle.own)
-  const files = await treeFiles(INSTANCE_ROOT, path.join(INSTANCE_ROOT, folder))
-  const modules = await moduleClosure(INSTANCE_ROOT, files.filter((file) => file.endsWith(PLACEMENT.script)))
-  const own = await json(path.join(INSTANCE_ROOT, bundle.own))
-  const manifest = { ...own, exports: rebase(own.exports, posix(folder)), dsh: rebase(own.dsh, posix(folder)) }
-  return { root: INSTANCE_ROOT, files: [...new Set([...files, ...modules])].filter((file) => file !== bundle.own), manifest }
-}
-
-/** One placed bundle: where its files come from, which files, and the manifest written beside them. */
-const bundleSource = (bundle) => (bundle.own === undefined ? memberSource(bundle) : ownSource(bundle))
 
 /** The libraries the placed code imports by name (PLACEMENT.shared, PLACEMENT.contract). */
 async function librarySources() {
@@ -222,13 +194,13 @@ async function readRecord(file) {
 }
 
 /**
- * Place the set, fishball-hosted-settings and their libraries into the child profile, before it
+ * Place the set and its libraries into the child profile, before it
  * loads (design §8.1). Every start refreshes each copy from the running instance's sources, then
  * writes `dsh.profile.bundles`:
  * - a bundle is switched on at its first placement only: a name the record holds, or one the
  *   profile already declares as a dependency (a V2 profile's hand-installed copy, design §10),
  *   keeps the state the owner gave it, so a disable survives and a copy deleted while off returns
- *   off (R-BND-02, R-HOST-11 (2));
+ *   off (R-BND-02);
  * - every other bundle keeps its place, and the placed ones follow in PLACEMENT.bundles order, so
  *   fishball-core is last (R-FB-12).
  * Copies come first and the manifest and record after, so a failed copy changes no selection.
@@ -236,7 +208,7 @@ async function readRecord(file) {
  * @param boot - the installation's dsh-app-boot module (readProfileManifest, writeProfileBundles).
  */
 export async function placeBundles(paths, boot) {
-  const sources = [...await Promise.all(PLACEMENT.bundles.map(async (bundle) => ({ name: bundle.name, ...await bundleSource(bundle) }))), ...await librarySources()]
+  const sources = [...await Promise.all(PLACEMENT.bundles.map(async (bundle) => ({ name: bundle.name, ...await memberSource(bundle) }))), ...await librarySources()]
   for (const source of sources) {
     for (const parent of [PLACEMENT.vendor, PLACEMENT.modules]) {
       await replaceSlot(path.join(paths.profile, parent), source.name, (target) => writePackage(source.root, source.files, source.manifest, target))

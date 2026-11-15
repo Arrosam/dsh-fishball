@@ -38,7 +38,7 @@ export interface FishballInstance {
  * settings panel (browser, through the client context's `reflect`). A missing core must never fail
  * a plugin's load (R-FB-06), so a plugin looks them up at runtime (`ctx.get(name)` or a
  * `ctx.inject([name], …)` sub-scope) and does not list them in its own `inject`: Cordis treats a
- * trailing `?` literally on both SDKs (fold-notify/index.js). Resolving this augmentation needs
+ * trailing `?` literally on both SDKs (board/index.js). Resolving this augmentation needs
  * `@deepseek-ai/cordis` (a DSH peer) in the reader's types.
  */
 declare module '@deepseek-ai/cordis' {

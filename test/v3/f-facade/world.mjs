@@ -5,7 +5,7 @@
  * - the model adapter: it records every request (the tool schemas Fishball's model is offered and
  *   the messages it sees) and can be scripted to call one tool;
  * - core's link (fakes.mjs), K1 shapes only;
- * - for EXT-UC-02 A3, a Watchdog-like interceptor plugin (a real cordis plugin whose registration
+ * - for EXT-UC-02 A3, an interceptor plugin (a real cordis plugin whose registration
  *   is an effect of its fiber).
  * Everything observed is public: the model requests, the link's calls and DSH's tool results.
  */

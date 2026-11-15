@@ -7,7 +7,8 @@ import { describe, it } from 'node:test'
 import { bootChild, contract } from './support/instance-ext.mjs'
 
 const C = Object.freeze({
-  owner: 'fishball-fold-notify', signal: 'attention.signal', semantic: 'interaction.timerfree',
+  // Any plugin id: attention.signal takes the caller's id as given (X8).
+  owner: 'fbtest-plugin', signal: 'attention.signal', semantic: 'interaction.timerfree',
   accepted: Object.freeze({ accepted: true }),
 })
 const capabilities = (signal) => [

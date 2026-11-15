@@ -10,9 +10,10 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | ID | Why |
 | --- | --- |
 | R-OA-10 | Withdrawn twice (1.16 direct access; 1.25 static headers replaced by the adapter, R-OA-21); the ID is reserved. Its negative is covered by AUTH-UC-07 and AUTH-EP-02 rows 7–8b. |
-| R-WD-13 | Withdrawn (requirements 1.14); the ID is reserved. Its old behaviour (idle-stop bypass) is negatively covered by WD-UC-02 and WD-EP-01 #5: every `turn-finished` reaches Fishball. |
+| R-INT-06 | Its only case was Watchdog's (WD-UC-01), which left V3 with Watchdog (requirements 1.37); no V3 case covers it yet. |
+| R-INT-07 | Withdrawn (requirements 1.37): no interceptor is built into Fishball V3; the ID is reserved. |
 
-**Requirement → cases** (197 requirements, 183 active cases, 6 withdrawn ids kept):
+**Requirement → cases** (180 requirements, 164 active cases, 6 withdrawn ids kept; the R-WD rows left with Watchdog, requirements 1.37):
 
 | Requirement | Cases | Count |
 | --- | --- | --- |
@@ -54,7 +55,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-EXT-17 | EVT-DT-01, EXT-UC-02, EXT-DT-01, EXT-DT-02 | 4 |
 | R-EXT-18 | EVT-BVA-02, EXT-UC-02, EXT-BVA-02, EXT-BVA-03, EXT-DT-01 | 5 |
 | R-EXT-19 | EVT-ST-01, EXT-UC-03, EXT-DT-01, EXT-ST-01 | 4 |
-| R-EXT-20 | WD-UC-02, EXT-UC-02 | 2 |
+| R-EXT-20 | EXT-UC-02 | 1 |
 | R-TOK-00 | AUTH-UC-04, AUTH-UC-07, AUTH-EP-02, AUTH-EP-05, AUTH-UC-10, AUTH-DT-08 | 6 |
 | R-TOK-01 | AUTH-UC-02, AUTH-UC-03, AUTH-UC-07, AUTH-UC-12, AUTH-EP-02, AUTH-DT-02, PLAT-EP-01 | 7 |
 | R-TOK-02 | AUTH-EP-01, AUTH-EP-02 | 2 |
@@ -122,16 +123,16 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-WATCH-02 | HAND-UC-01, EVT-EP-01, WATCH-UC-01, WATCH-EP-01 | 4 |
 | R-WATCH-03 | WATCH-UC-03, PLAT-EP-02 | 2 |
 | R-WATCH-04 | HAND-UC-02, WATCH-UC-02, WATCH-ST-01, HOST-UC-03 | 4 |
-| R-WATCH-05 | WD-UC-02, WD-ST-02, WATCH-EP-01 | 3 |
+| R-WATCH-05 | WATCH-EP-01 | 1 |
 | R-INT-01 | EVT-UC-02, EVT-UC-03, EVT-DT-04, EVT-ST-02 | 4 |
 | R-INT-02 | EVT-UC-02, EVT-EP-03, EVT-DT-02, EVT-EP-05, EVT-ST-02 | 5 |
 | R-INT-03 | EVT-UC-03, EVT-DT-02 | 2 |
-| R-INT-04 | EVT-UC-02, EVT-UC-03, EVT-EP-03, EVT-DT-02, EVT-DT-04, EVT-ST-02, WD-UC-04 | 7 |
+| R-INT-04 | EVT-UC-02, EVT-UC-03, EVT-EP-03, EVT-DT-02, EVT-DT-04, EVT-ST-02 | 6 |
 | R-INT-05 | EVT-EP-03, EVT-ST-02 | 2 |
-| R-INT-06 | WD-UC-01 | 1 |
-| R-INT-07 | WD-UC-01, WD-UC-02, WD-UC-04, WD-EP-01, WD-DT-02, WD-ST-01 | 6 |
+| R-INT-06 | — | 0 |
+| R-INT-07 | — | 0 |
 | R-INT-08 | EVT-UC-02, EVT-DT-03, EVT-DT-04, EVT-ST-01, EVT-ST-02 | 5 |
-| R-INT-09 | EVT-UC-02, EVT-EP-05, EVT-ST-02, WD-UC-04 | 4 |
+| R-INT-09 | EVT-UC-02, EVT-EP-05, EVT-ST-02 | 3 |
 | R-EVT-01 | EVT-DT-01 | 1 |
 | R-EVT-02 | EVT-UC-01, EVT-ST-01, HOST-UC-03 | 3 |
 | R-EVT-03 | EVT-UC-02, EVT-DT-03, EVT-ST-02 | 3 |
@@ -142,7 +143,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-FB-04 | AUTH-UC-05, AUTH-DT-06, AUTH-ST-03, REM-UC-01, REM-EP-01, REM-DT-01 | 6 |
 | R-FB-05 | HOST-UC-05, REM-UC-01 | 2 |
 | R-FB-06 | UIM-DT-01, PLAT-EP-04 | 2 |
-| R-FB-07 | WD-UC-05, WD-ST-01, PLAT-DT-02 | 3 |
+| R-FB-07 | PLAT-DT-02 | 1 |
 | R-FB-08 | PLAT-EP-06 | 1 |
 | R-FB-09 | HOST-DT-03, UIM-DT-01, PLAT-UC-04, PLAT-DT-04 | 4 |
 | R-FB-10 | HOST-UC-08, HOST-ST-01, UIM-DT-01, PLAT-UC-04, PLAT-DT-01 | 5 |
@@ -157,7 +158,7 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-HOST-06 | HOST-UC-01, HOST-ST-01, UIM-UC-01, UIM-EP-02 | 4 |
 | R-HOST-07 | HOST-UC-07, HOST-UC-08 | 2 |
 | R-HOST-11 | HOST-UC-08, HOST-EP-03, HOST-DT-03 | 3 |
-| R-HOST-08 | WD-UC-05, WD-ST-01, HOST-UC-06 | 3 |
+| R-HOST-08 | HOST-UC-06 | 1 |
 | R-HOST-09 | HAND-ST-01, HOST-UC-03, HOST-DT-01, HOST-DT-02, HOST-ST-02, PLAT-ST-01 | 6 |
 | R-HOST-10 | HOST-UC-04, HOST-DT-01, HOST-DT-02 | 3 |
 | R-UI-01 | UIM-UC-01, UIM-UC-02, UIM-UC-03, UIM-EP-01, UIM-DT-01 | 5 |
@@ -178,23 +179,6 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | R-REM-03 | AUTH-UC-07, AUTH-UC-08, AUTH-EP-10, AUTH-EP-09, REM-UC-03, REM-EP-03, PLAT-EP-01 | 7 |
 | R-REM-04 | REM-UC-02 | 1 |
 | R-REM-05 | AUTH-EP-10 | 1 |
-| R-WD-00 | WD-UC-01, WD-EP-03 | 2 |
-| R-WD-01 | WD-EP-03 | 1 |
-| R-WD-02 | WD-EP-03 | 1 |
-| R-WD-03 | WD-UC-01, WD-UC-02, WD-UC-03, WD-UC-07, WD-EP-01, WD-BVA-03, WD-ST-03 | 7 |
-| R-WD-04 | WD-UC-03, WD-UC-07, WD-EP-02, WD-BVA-01, WD-BVA-02, WD-BVA-03 | 6 |
-| R-WD-05 | WD-UC-03, WD-EP-04 | 2 |
-| R-WD-06 | WD-EP-04 | 1 |
-| R-WD-07 | EVT-DT-04, WD-UC-04, WD-UC-05, WD-DT-02, WD-ST-01 | 5 |
-| R-WD-08 | WD-UC-04, WD-EP-03 | 2 |
-| R-WD-09 | WD-UC-01, WD-EP-01, WD-DT-01, UIM-UC-05, PLAT-ST-01 | 5 |
-| R-WD-10 | WD-UC-06, WD-ST-02, WD-ST-03 | 3 |
-| R-WD-11 | WD-DT-02, WD-ST-02 | 2 |
-| R-WD-12 | WD-UC-01, WD-UC-02, WD-EP-01, WD-DT-01, WD-DT-02 | 5 |
-| R-WD-13 | — | 0 |
-| R-WD-14 | WD-UC-03, WD-UC-07, WD-BVA-02, WD-ST-02 | 4 |
-| R-WD-15 | WD-UC-06, WD-UC-07, WD-EP-01, WD-BVA-03, WD-ST-02, WD-ST-03 | 6 |
-| R-WD-16 | WD-EP-04, PLAT-UC-04 | 2 |
 | R-BND-01 | HOST-UC-01, HOST-EP-03, PLAT-EP-07, PLAT-DT-01 | 4 |
 | R-BND-02 | HOST-UC-01, HOST-UC-08, HOST-EP-03, HOST-DT-03, PLAT-DT-01 | 5 |
 | R-BND-03 | HOST-DT-03, HOST-ST-01, PLAT-DT-01 | 3 |
@@ -314,25 +298,6 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | EVT-EP-05 | [04-events-interception.md](<04-events-interception.md>) | integration (Fishball DSH with a scripted interceptor; inspect context and logs) | — |
 | EVT-ST-01 | [04-events-interception.md](<04-events-interception.md>) | unit | TQ-2 (decided A) |
 | EVT-ST-02 | [04-events-interception.md](<04-events-interception.md>) | unit | P:S2 (rows 2, 4–6, 9–11; rows 1, 3, 7, 8 settled by S2 `a499141`) |
-| WD-UC-01 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
-| WD-UC-02 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
-| WD-UC-03 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock, fake link), integration | — |
-| WD-UC-04 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
-| WD-UC-05 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
-| WD-UC-06 | [05-watchdog.md](<05-watchdog.md>) | integration | Q33 |
-| WD-UC-07 | [05-watchdog.md](<05-watchdog.md>) | integration (manager tools in a Fishball DSH with a fake link, fake clock and a scripted Watchdog model that counts its calls) | Q33 |
-| WD-EP-01 | [05-watchdog.md](<05-watchdog.md>) | unit | Q33 (rows 12–14) |
-| WD-EP-02 | [05-watchdog.md](<05-watchdog.md>) | unit (settings validation) | — |
-| WD-EP-03 | [05-watchdog.md](<05-watchdog.md>) | integration | — |
-| WD-EP-04 | [05-watchdog.md](<05-watchdog.md>) | integration (fake model provider counting lookups) | — |
-| WD-BVA-01 | [05-watchdog.md](<05-watchdog.md>) | unit | — |
-| WD-BVA-02 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock) | — |
-| WD-BVA-03 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock, a scripted model that records each call's brief) | Q33 |
-| WD-DT-01 | [05-watchdog.md](<05-watchdog.md>) | unit (decision mapping with a scripted model) | — |
-| WD-DT-02 | [05-watchdog.md](<05-watchdog.md>) | unit | — |
-| WD-ST-01 | [05-watchdog.md](<05-watchdog.md>) | unit | — |
-| WD-ST-02 | [05-watchdog.md](<05-watchdog.md>) | unit | Q33 (rows 8–9) |
-| WD-ST-03 | [05-watchdog.md](<05-watchdog.md>) | unit (fake clock, scripted model) | Q33 |
 | WATCH-UC-01 | [06-watch.md](<06-watch.md>) | integration | — |
 | WATCH-UC-02 | [06-watch.md](<06-watch.md>) | integration | — |
 | WATCH-UC-03 | [06-watch.md](<06-watch.md>) | integration | — |

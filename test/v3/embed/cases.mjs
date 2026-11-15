@@ -210,10 +210,10 @@ export function registerEmbedCases(sdk) {
     const withClient = [V3.connector, V3.instance, V3.shared, V3.embed].filter((p) => readManifest(p.dir)?.[DSH_FIELD]?.client !== undefined).map((p) => p.name)
     assert.deepEqual(withClient, [V3.embed.name])
   })
-  caseTest(sdk, 'PLAT-EP-03', 3, "the instance's own shipped code (not its child-side hosted-settings bundle) registers no browser module and names no host-DSH slot", async () => {
-    // src/child-settings/ is the fishball-hosted-settings bundle (R-HOST-11): its client runs only in
-    // the hosted child, never in the host DSH. Excluded by name, whichever package an ownership
-    // helper counts it under.
+  caseTest(sdk, 'PLAT-EP-03', 3, "the instance's own shipped code (not its status-line chunk) registers no browser module and names no host-DSH slot", async () => {
+    // src/child-settings/ holds only the status line (client.status.js), which embed-UI loads as its
+    // own chunk through the committed symlink (R-EMBED): it is embed-UI's browser code, not a client
+    // of the instance. Excluded by folder, whichever package an ownership helper counts it under.
     const hostSide = (await hostUiFiles(V3.instance)).filter((hit) => !hit.startsWith(CHILD_SETTINGS.folder))
     assert.deepEqual(hostSide, [])
   })
