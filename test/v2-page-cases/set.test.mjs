@@ -475,11 +475,12 @@ const EXECUTABLE = {
     const { operations } = await overlayOperations(SET.overlayRows);
     const overlayIds = insertedRows(operations).map((row) => row.id);
     assert.equal(overlayIds.includes(SET.rowId), false, 'the launch overlay must not insert ' + SET.rowId);
-    // The generic panel: core's package-local chunk client.settings.js, whose plugin is fishball-settings.
+    // Core's package-local chunk client.settings.js. Its plugin is no longer the slim fishball-settings
+    // panel (withdrawn: requirements 1.34 item 4, R-HOST-11 withdrawn; F-SETTINGS): it still exports
+    // `settingsPlugin`, now core's own Plugins-page settings (test/v3/fishball-core/settings).
     const registrations = [];
     new Function('window', fs.readFileSync(SET.panelClient, 'utf8'))({ __ModuleLoader__: { load: (entry) => registrations.push(entry) } });
     assert.deepEqual(registrations.map((r) => [r.id, r.chunk]), [[SET.panelChunk.owner, SET.panelChunk.file]], 'client.settings.js registers only core\'s chunk, no fishball-settings bundle');
-    assert.equal(registrations[0].factory(() => ({}))[SET.panelChunk.plugin]?.name, SET.rowId, 'the chunk gives the fishball-settings panel plugin');
     // Never mounted in the main DSH: neither the main package's `dsh` field nor its own patch names it.
     const mainMounts = JSON.stringify(JSON.parse(fs.readFileSync(SET.instanceManifest, 'utf8')).dsh) + fs.readFileSync(SET.instancePatch, 'utf8');
     assert.equal(mainMounts.includes(SET.rowId), false, 'main package does not mount ' + SET.rowId);
@@ -620,9 +621,8 @@ const EXECUTABLE = {
     const sandbox = core.filter((op) => op?.id === 'sandbox-policy');
     assert.ok(sandbox.length > 0, "fishball-core's bundle patch sets the sandbox-policy row");
     for (const op of sandbox) assert.equal(op.config?.mode, SET.readOnly, "core's guard is read-only");
-    const source = fs.readFileSync(SET.panelClient, 'utf8');
-    assert.match(source, /data-fishball-settings-readonly/, 'the panel carries the one-line Read Only notice');
-    assert.match(source, /data-fishball-settings-open/, 'the panel carries the Settings/Plugins links');
+    // The panel's Read Only line and Settings/Plugins links are withdrawn with the slim panel
+    // (requirements 1.34 item 4, R-HOST-11 withdrawn; F-SETTINGS); the guard above still stands.
   },
 
   // Cross-site and malformed refusals; DSH's owner authentication itself is the native registry's

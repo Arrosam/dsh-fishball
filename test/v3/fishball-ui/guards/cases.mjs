@@ -28,7 +28,9 @@ import { until } from '../../../support/util.mjs'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { corePatch, ownFiles, tokensOf, unitOf } from '../../fishball-core/package/static.mjs'
-import { CORE as CORE_PACKAGE, MARK, runtimeOf } from '../../fishball-core/package/constants.mjs'
+import { CORE as CORE_PACKAGE, SLOT, runtimeOf } from '../../fishball-core/package/constants.mjs'
+import { DSH as SETTINGS_DSH } from '../../fishball-core/settings/constants.mjs'
+import { withdrawnCase } from '../../fishball-core/settings/withdrawn.mjs'
 import { bootGraph, openSettingsPage } from '../../fishball-core/package/page.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import { RELAYED } from '../../dsh-instance/placement/constants.mjs'
@@ -78,17 +80,18 @@ const sandboxOverride = `- id: ${DSH_ROW.sandbox}\n  config:\n    mode: ${OWNER.
 const approvalOverride = JSON.stringify([{ id: DSH_ROW.approval, config: { policy: OWNER.approval } }])
 const EMPTY_PATCH = '[]\n'
 
-/** A scripted settings page of one running standalone DSH (core/page.mjs), read once and closed. */
+/**
+ * A scripted page of one running standalone DSH (core/page.mjs), read once and closed. The slim
+ * panel it used to read is removed (requirements 1.34 item 4); what is read now is the page's main
+ * slot keys (no slim panel entry may remain) and its failed plugins. Core's own settings page in
+ * standalone mode is F-SETTINGS' row SET3-UC-01 A4 (test/v3/fishball-core/settings).
+ */
 async function settingsFacts(sdk, h) {
   const cleanups = []
   try {
     const page = await openSettingsPage({ after: (fn) => cleanups.push(fn) }, { sdk, child: { origin: h.origin, cookie: h.cookie } })
     return {
-      panel: Boolean(page.panel),
-      readOnly: page.byAttr(MARK.readOnly).length,
-      open: page.byAttr(MARK.open).map((n) => n.props[MARK.open]).sort(),
-      hosted: [...page.byAttr(MARK.status), ...page.byAttr(MARK.restart)].length,
-      roles: page.byAttr('role').map((n) => n.props.role),
+      mainKeys: page.entriesOf(SLOT.main).map((e) => e.options.key ?? e.options.id),
       failed: page.failed(),
     }
   } finally {
@@ -503,13 +506,11 @@ export function registerGuardCases(sdk) {
     assert.notDeepEqual([...f.resumed3.tools].sort(), [...GUARDS.managerTools].sort(), 'precondition: the owner changed the tools')
     assert.ok(f.report3?.overridden?.includes(REPORT.managerTools), show(f.report3))
   })
-  caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: the same core package shows the generic settings only (Read Only line, DSH links, no hosted section, no error)', async () => {
+  withdrawnCase(sdk, 'HOST-UC-08', 'A3', 'standalone: the same core package shows the generic settings only (Read Only line, DSH links, no hosted section, no error)')
+  // Re-pointed: the slim panel is removed (1.34 item 4); a standalone core page carries none of it and nothing fails.
+  caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: no slim settings panel entry remains, and no Fishball plugin fails', async () => {
     const f = await last()
-    assert.ok(f.settings.panel, 'no settings panel: ' + show(f.settings))
-    assert.equal(f.settings.readOnly, 1)
-    assert.deepEqual(f.settings.open, [...MARK.openTargets].sort())
-    assert.equal(f.settings.hosted, 0)
-    assert.deepEqual(f.settings.roles, [], 'a notice or error placeholder')
+    assert.equal(f.settings.mainKeys.includes(SETTINGS_DSH.removedPanelKey), false, show(f.settings))
     assert.deepEqual(f.settings.failed, [])
   })
 

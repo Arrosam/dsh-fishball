@@ -89,7 +89,8 @@ const PAGE = Object.freeze({
   /** The native main conversation and the session id it renders (ui-conversation, both SDKs). */
   mainConversation: '[data-slot="main.conversation"] [data-conversation-session]',
   conversationSession: 'data-conversation-session',
-  settingsView: '[data-fishball-settings]',
+  /** Core's own settings page (F-SETTINGS req 8), re-pointed from the removed slim panel (1.34 item 4). */
+  settingsView: '[data-fishball-core-settings]',
   /** Harness-only window flag set on a document about to be reloaded, so its state is never read as the new one's. */
   staleFlag: '__fbtestReopenStale',
   /**

@@ -27,8 +27,8 @@ import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { REPO, TEST_HOMES } from '../../../support/constants.mjs'
 import { bootHost, newHome, until } from '../../../support/host.mjs'
-import { BUDGET, CHILD_SETTINGS, MARK, ROUTE, STATE, runtimeOf } from '../../fishball-core/package/constants.mjs'
-import { admitChild, openSettingsPage } from '../../fishball-core/package/page.mjs'
+import { BUDGET, CHILD_SETTINGS, ROUTE, STATE, runtimeOf } from '../../fishball-core/package/constants.mjs'
+import { withdrawnCase } from '../../fishball-core/settings/withdrawn.mjs'
 import { describeRef, has, ownFiles, tokensOf, unitOf } from '../../fishball-core/package/static.mjs'
 import { caseTest, dshInspect, integrationCase as gatedCase } from '../package-boundaries/cases.mjs'
 import { DSH_FIELD, JS_FILE, NPM, SDK, V3 } from '../package-boundaries/constants.mjs'
@@ -290,14 +290,8 @@ export function registerEmbedCases(sdk) {
     await page.waitFor((regs) => regs.some((r) => r.owner === V3.embed.name))
     assert.deepEqual(page.registrations.filter((r) => FISHBALL_ENTRY(r.owner) && r.owner !== V3.embed.name), [])
   })
-  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the hosted child starts and its settings panel still shows the status line (ready)', async (t) => {
-    const { host, status } = await hostWith(sdk, SETS.full)
-    assert.equal(status?.state, STATE.ready, 'the hosted child is ready; status ' + JSON.stringify(status))
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(host) })
-    await page.waitFor(MARK.status)
-    await until(() => page.byAttr(MARK.status).some((n) => n.props[MARK.status] === STATE.ready), BUDGET.readyMs, BUDGET.pollMs)
-    assert.ok(page.byAttr(MARK.status).some((n) => n.props[MARK.status] === STATE.ready), 'no ready status line; saw ' + page.byAttr(MARK.status).map((n) => n.props[MARK.status]))
-  })
+  // The child's slim settings panel is removed (requirements 1.34 item 4, R-HOST-11 withdrawn; F-SETTINGS).
+  withdrawnCase(sdk, 'R-EMBED', 'done', 'C + I + U: the hosted child starts and its settings panel still shows the status line (ready)')
   integrationCase(sdk, 'R-EMBED', 'done', 'C + I alone: the main DSH boots with no client-loader error, no Fishball client entry, and the child still starts', async () => {
     const { host, status } = await hostWith(sdk, SETS.noEmbed)
     assert.deepEqual(loaderErrors(host), [], 'client-loader errors')
