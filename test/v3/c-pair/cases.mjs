@@ -141,7 +141,7 @@ function useCases(sdk) {
     assert.deepEqual(w.power(E(1), ID.agentA), NOT_PAIRED)
     assert.deepEqual(w.snapshot(), [])
   })
-  todo(sdk, CASE.uc02, 'E3', 'session_start before pair: HTTP 403 insufficient_scope, scope="fishball", not-paired; nothing started', LATER.mcpEndpoint)
+  todo(sdk, CASE.uc02, 'E3', 'session_start before pair: HTTP 403 insufficient_scope, scope="agent", not-paired; nothing started', LATER.mcpEndpoint)
   uc02('post', 'the binding is durable across a connector restart, with pairedAt set and the id the client chose', async (w) => {
     await bind(w, 1, ID.agentA, undefined, at(FIXTURE.t1Offset))
     const before = w.store.pairOf(E(1))
@@ -187,7 +187,7 @@ function useCases(sdk) {
     assert.deepEqual(w.power(E(1), ID.n999), ID_MISMATCH)
     await assertRefused(w, () => w.store.pair(E(1), ID.n999, undefined, at(FIXTURE.t2Offset)), alreadyPaired(false, bound))
   })
-  todo(sdk, CASE.uc04, 'A1 (endpoint)', 'id 999: token scope fishball:pair; any other call 403 insufficient_scope (id-mismatch)', LATER.mcpEndpoint)
+  todo(sdk, CASE.uc04, 'A1 (endpoint)', 'id 999: token scope agent:pair; any other call 403 insufficient_scope (id-mismatch)', LATER.mcpEndpoint)
   uc04('A2', 'B switches to an unbound E2 and a new id: pairs normally', async (w) => {
     await boundE1(w)
     assert.deepEqual(await w.store.pair(E(2), ID.n999, undefined, at()), paired(ID.n999, null))
@@ -306,11 +306,11 @@ function equivalencePartitions(sdk) {
     assert.deepEqual(await w.store.pair(E(1), ID.a, undefined, at()), paired(ID.a, null))
     await assertRefused(w, () => w.store.pair(E(2), ID.a, undefined, at()), alreadyPaired(false, other))
   })
-  for (const [n, call] of [['4', 'sessions_list, session_start, approval_answer, set_name'], ['5', 'inbox_poll, inbox_ack'], ['6', 'subscriptions/listen'], ['7', 'resources/read fishball://events'], ['8', 'a contributed tool call']]) {
+  for (const [n, call] of [['4', 'sessions_list, session_start, approval_answer, set_name'], ['5', 'inbox_poll, inbox_ack'], ['6', 'subscriptions/listen'], ['7', 'resources/read dsh-agent://events'], ['8', 'a contributed tool call']]) {
     row(sdk, CASE.ep06, `${n} (store)`, `${call}: the live power is pair-only, not-paired (unbound) / id-mismatch (bound to another id)`, async (w) => {
       assert.deepEqual(await columns(w), { unbound: NOT_PAIRED, other: ID_MISMATCH })
     })
-    todo(sdk, CASE.ep06, n, `${call} with a pair-only token: 403 insufficient_scope, scope="fishball", with that description`, LATER.mcpEndpoint)
+    todo(sdk, CASE.ep06, n, `${call} with a pair-only token: 403 insufficient_scope, scope="agent", with that description`, LATER.mcpEndpoint)
   }
 
   // NAME-EP-01: the class through set_name on a principal named "Watcher" (unchanged on a refusal).

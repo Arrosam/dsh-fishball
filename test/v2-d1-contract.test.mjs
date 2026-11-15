@@ -5,10 +5,10 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { CONNECTOR_CONTRACT, negotiateContract, validateAttachment } from '../packages/connector/contract/index.js'
+import { CONNECTOR_CONTRACT, negotiateContract, validateAttachment } from '../packages/dsh-connector/contract/index.js'
 
 const D1 = Object.freeze({
-  contractId: 'fishball-connector', major: 1, minor: 2,
+  contractId: 'dsh-connector', major: 1, minor: 2,
   minors: Object.freeze([0, 1, 2, 3]),
   instanceId: 'd1-legacy-fixture', instanceName: 'D1 legacy fixture',
   chatPath: '/fixture/chat/', settingsPath: '/fixture/settings/',

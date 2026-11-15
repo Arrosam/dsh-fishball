@@ -1,7 +1,7 @@
 /**
  * V2 release boundary (docs/planning/v2-final-scope.md §1, §3.3, §4 BOUNDARY), black-box.
  *
- * V2 ships exactly fishball-connector and fishball-instance. Watchdog, board (board_search),
+ * V2 ships exactly dsh-connector and dsh-instance. Watchdog, board (board_search),
  * fold-notify (notify_user), bundled-plugin placement and MCP stay in the repository as V3 source
  * but must not be packed, loaded at startup, or selected by the V2 suite run.
  *
@@ -30,13 +30,13 @@ const run = promisify(execFile)
 
 const V2B = Object.freeze({
   packages: Object.freeze({
-    connector: Object.freeze({ name: 'fishball-connector', dir: BODY_SOUL.connector }),
-    instance: Object.freeze({ name: 'fishball-instance', dir: BODY_SOUL.instance }),
+    connector: Object.freeze({ name: 'dsh-connector', dir: BODY_SOUL.connector }),
+    instance: Object.freeze({ name: 'dsh-instance', dir: BODY_SOUL.instance }),
   }),
   // V3 R-SHARED / R-ARCH-08 (approved design) adds the library workspace packages/shared;
   // V3 R-CORE (1) / design §9.1 adds fishball-core's workspace packages/core;
-  // V3 R-EMBED / design §9.1 (DESIGN.md §17) adds fishball-embed-ui's workspace packages/embed-ui.
-  workspaces: Object.freeze(['packages/connector', 'packages/core', 'packages/embed-ui', 'packages/instance', 'packages/shared']),
+  // V3 R-EMBED / design §9.1 (DESIGN.md §17) adds dsh-connector-ui's workspace packages/dsh-connector-ui.
+  workspaces: Object.freeze(['packages/dsh-connector', 'packages/core', 'packages/dsh-connector-ui', 'packages/dsh-instance', 'packages/shared']),
   /** Repository directories of the V3 packages (no V2 module may load from them). */
   v3Dirs: Object.freeze(['board', 'fold-notify', 'watchdog'].map((d) => path.join(REPO, 'packages', d))),
   /** A packed path segment naming a V3 area or the bundled asset directory. */
@@ -52,7 +52,7 @@ const V2B = Object.freeze({
    * (never a V3 tool or code, never in another file) and the one `bundled/` files entry.
    */
   v3Allowed: Object.freeze({
-    'fishball-instance': Object.freeze({
+    'dsh-instance': Object.freeze({
       names: Object.freeze({ 'src/native-runtime/constants.js': Object.freeze(['fishball-board', 'fishball-fold-notify', 'fishball-watchdog']) }),
       files: Object.freeze(['bundled/']),
     }),
@@ -372,7 +372,7 @@ const rootRule = () => fs.readdirSync(path.join(REPO, 'test')).filter((f) => f.e
 const V3_FILES = [
   'packages/watchdog/test/instance-ext/wd-1.test.mjs', 'packages/board/test/instance-ext/b1.test.mjs',
   'packages/board/test/instance-ext/b11-search.test.mjs', 'packages/fold-notify/test/instance-ext/fn-1.test.mjs',
-  'packages/connector/test/instance-ext/mcp-feasibility.test.mjs', 'test/instance-ext/x0-b.test.mjs', 'test/instance-ext/x0-a.test.mjs',
+  'packages/dsh-connector/test/instance-ext/mcp-feasibility.test.mjs', 'test/instance-ext/x0-b.test.mjs', 'test/instance-ext/x0-a.test.mjs',
   'test/instance-ext/x0-g.test.mjs', 'test/verification/wd1-native.test.mjs', 'test/verification/w0-cordis.test.mjs',
   'docs/verification/v2-board-search-accept/supplemental.test.mjs',
 ]
@@ -382,8 +382,8 @@ const INCLUDED = [
   'test/v2-d2-config-retention.test.mjs', 'test/v2-d3-connector-attention.test.mjs', 'test/v2-d3-signal-producer.test.mjs',
   'test/instance-ext-fakehost.test.mjs', 'test/v2-boundary.test.mjs',
   'test/instance-ext/x0-w.test.mjs', 'test/instance-ext/x0-i.test.mjs', 'test/instance-ext/x0-s.test.mjs',
-  'packages/instance/test/instance-ext/x0-c.test.mjs', 'packages/instance/test/instance-ext/x0-c-held-context.test.mjs',
-  'packages/connector/test/instance-ext/k1.test.mjs', 'test/verification/w0-host-session.test.mjs',
+  'packages/dsh-instance/test/instance-ext/x0-c.test.mjs', 'packages/dsh-instance/test/instance-ext/x0-c-held-context.test.mjs',
+  'packages/dsh-connector/test/instance-ext/k1.test.mjs', 'test/verification/w0-host-session.test.mjs',
 ]
 
 // EP V2B-SUITE-00: the contract module exports a frozen V2_SUITES and a well-formed selection.
@@ -442,8 +442,8 @@ test('V2B-SUITE-03 included files and root runner rule', async () => {
  */
 const X0S = 'test/instance-ext/x0-s.test.mjs'
 const X0I = 'test/instance-ext/x0-i.test.mjs'
-const K1 = 'packages/connector/test/instance-ext/k1.test.mjs'
-const X0C = ['packages/instance/test/instance-ext/x0-c.test.mjs', 'packages/instance/test/instance-ext/x0-c-held-context.test.mjs']
+const K1 = 'packages/dsh-connector/test/instance-ext/k1.test.mjs'
+const X0C = ['packages/dsh-instance/test/instance-ext/x0-c.test.mjs', 'packages/dsh-instance/test/instance-ext/x0-c-held-context.test.mjs']
 const k1 = (id) => 'K1-MCP-' + id + ' | x'
 const x = (id) => id + ' x'
 const CASE_TABLES = {

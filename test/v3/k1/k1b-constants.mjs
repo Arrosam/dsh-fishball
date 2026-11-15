@@ -1,6 +1,6 @@
 /**
  * Oracles for the K1b rows: the request gate and the grant dispatch frozen in
- * `fishball-connector/mcp-schema` (design §3.1, §5.5, §5.5a, §5.6; 01-auth-pairing.md AUTH-EP-01
+ * `dsh-connector/mcp-schema` (design §3.1, §5.5, §5.5a, §5.6; 01-auth-pairing.md AUTH-EP-01
  * row 6, AUTH-EP-09; 11-platform.md PLAT-UC-01 E3, PLAT-EP-01, PLAT-BVA-02), with the K1b
  * decisions Fishball relayed on 2026-11-14:
  * - `check(req, surface)` runs before authentication on all three surfaces, in the order 405 →

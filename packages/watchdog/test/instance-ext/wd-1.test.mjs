@@ -105,7 +105,7 @@ describe('WD-1 package and row', () => {
     assert.equal(manifest.version, '0.1.0-alpha.0')
     assert.equal(manifest.dsh?.bundle?.patch, './cordis.patch.yml')
     assert.match(manifest.engines?.dsh ?? '', />=0\.2\.1-rc\.5/)
-    assert.ok(manifest.peerDependencies?.['fishball-instance'], 'peerDependencies names the instance')
+    assert.ok(manifest.peerDependencies?.['dsh-instance'], 'peerDependencies names the instance')
   })
 
   it('WD1-EP-V-02 Samuel saves Fishball tokens with a small-context helper — W0: the row exports name, inject, Config and apply', async () => {

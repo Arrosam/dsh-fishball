@@ -11,7 +11,7 @@
  * alike (HOST-UC-08 A3). The page and the Recommended tab stay their own ui packages for now.
  *
  * A chunk that fails to load loses only the panel, logged once; a chunk that arrives after this row
- * stopped is not started (the same rule as fishball-embed-ui's parts).
+ * stopped is not started (the same rule as dsh-connector-ui's parts).
  */
 window.__ModuleLoader__.load({
   id: 'fishball-core',
@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
       unavailable: 'fishball core: settings panel unavailable',
     })
 
-    // The same load-then-start shape as fishball-embed-ui's parts (its client.js `start`). It is
+    // The same load-then-start shape as dsh-connector-ui's parts (its client.js `start`). It is
     // copied, not shared: two browser packages could share it only through a library chunk both
     // load, and no such client library exists in the set.
 

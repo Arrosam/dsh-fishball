@@ -23,7 +23,7 @@
  * | GRT-10 ×17 | DT (refused answers) | §4.2 refusals, §7a.3 code rules | each the named error frame, channel open, request still offered, no grant row, no grant decision |
  * | GRT-10b ×4 | BVA (`grantPrefixChars` 512, `reasonChars` 500) | contract §8 | prefix 512 and reason 500 (also astral) accepted; 513 / 501 not accepted and no grant |
  * | GRT-11  | BVA (end time one year out; three active grants) | §7a.8 "no longest lifetime, no cap" | accepted; all three listed at once |
- * | GRT-12  | EP (grant through ask_fishball; ask_fishball of a covered call) | §7a.8, §7a.3 Reading | allowed; a later direct call covered; ask_fishball for a covered call answers allowed with no approval.request |
+ * | GRT-12  | EP (grant through ask_agent; ask_agent of a covered call) | §7a.8, §7a.3 Reading | allowed; a later direct call covered; ask_agent for a covered call answers allowed with no approval.request |
  *
  * Retired:
  * - GRT-01/02 tags: tag records and the turn-tail tags were removed (slim §8.1, T08/T15); a covered call is reported by approval.ran instead.
@@ -31,7 +31,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, it } from 'node:test'
-import { ENVELOPE } from 'fishball-connector/contract'
+import { ENVELOPE } from 'dsh-connector/contract'
 import { ASK_CODE, ASK_FISHBALL, ASK_TOOL, EXACT_ONLY_TOOLS, PREFIX_TOOLS } from './support/constants.mjs'
 import { HOOK, T, jsonOf, settledIdle, step, turn } from './support/expect.mjs'
 import { managedSession, stopStub } from './support/instance-stub.mjs'
@@ -273,7 +273,7 @@ describe('Revision 11 rev11d on H-STUB: creating grants and what they cover', ()
     assert.ok(Math.abs(rowEnd(grantRow(ctx, made[0])) - year.expiresAt) < GRANT_C.endToleranceMs, 'the row keeps the same end time')
   })
 
-  it('GRT-12 a grant made through ask_fishball; ask_fishball for a covered call answers allowed at once', T, async () => {
+  it('GRT-12 a grant made through ask_agent; ask_agent for a covered call answers allowed at once', T, async () => {
     const prefix = 'cargo build ' + tok('12')
     const ask = (command) => ({ tool: SHELL, arguments: argsFor(SHELL, command), quote: [], why: 'fbtest why ' + command })
     const first = cid('12a')
@@ -283,12 +283,12 @@ describe('Revision 11 rev11d on H-STUB: creating grants and what they cover', ()
     const events = (await ctx.host.call('inspect', { sessionId: x, events: true })).events
     assert.equal(jsonOf(events.find((e) => e.type === 'tool/result' && e.result.callId === first)?.result)?.code, ASK_CODE.allowed)
     await run(x, SHELL, prefix + ' --release', '12b')
-    // Now covered: an ask_fishball for another matching command answers allowed without asking the instance.
+    // Now covered: an ask_agent for another matching command answers allowed without asking the instance.
     const second = cid('12c')
     await settledIdle(ctx.host, x)
     const r = await turn(ctx.host, x, [step(ASK_FISHBALL, ask(prefix + ' -p x'), second), [{ text: 'done' }]])
     assert.equal(jsonOf(r.results.find((e) => e.callId === second))?.code, ASK_CODE.allowed, JSON.stringify(r.results))
     await sleep(GRANT_C.quietMs)
-    assert.deepEqual(await requestsFor(ctx, second), [], 'no approval.request for a covered ask_fishball')
+    assert.deepEqual(await requestsFor(ctx, second), [], 'no approval.request for a covered ask_agent')
   })
 })

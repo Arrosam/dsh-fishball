@@ -23,13 +23,13 @@ export const CORE = Object.freeze({
   patchLabel: 'fbtest-v3-core',
   /**
    * F-GUARDS (design §5a.2, R-FB-02, R-FB-12): core's patch carries the guard rows. It may DISABLE the
-   * fishball-instance row, but it never inserts a row of the instance or of fishball-hosted-settings,
+   * dsh-instance row, but it never inserts a row of the instance or of fishball-hosted-settings,
    * nor a module of the instance package (R-BND-01, R-HOST-11 (5), R-ARCH-08 (2)).
    */
-  neverInserted: Object.freeze(['fishball-instance', 'fishball-hosted-settings']),
+  neverInserted: Object.freeze(['dsh-instance', 'fishball-hosted-settings']),
   fileScheme: 'file:',
   /** Core reaches the connector only for `./contract` (R-CORE; design §9.1 until F-STATUS drops it). */
-  connectorAllowed: Object.freeze(['fishball-connector/contract']),
+  connectorAllowed: Object.freeze(['dsh-connector/contract']),
 })
 
 /** R-CORE (2): what moves into core. The instance ships none of it after the move. */
@@ -48,7 +48,7 @@ export const CHILD_SETTINGS = Object.freeze({ folder: 'src/child-settings/', dir
  * panel may carry one. Matched case-insensitively, so `isHosted` and `HOSTED` count.
  */
 // `fishballInstance` is not a hosting word: it is core's own extension service (design §5a.1).
-export const HOSTING_WORDS = Object.freeze([/hosted/i, /fishball-instance/i, /instance-?settings/i, /settings-?relay/i, /fishballchild/i])
+export const HOSTING_WORDS = Object.freeze([/hosted/i, /dsh-instance/i, /instance-?settings/i, /settings-?relay/i, /fishballchild/i])
 
 /** The V2 settings panel's public page markers ("the hosted child behaves as before"). */
 export const MARK = Object.freeze({
@@ -73,11 +73,11 @@ export const SLOT = Object.freeze({ main: 'main', header: 'conversation.session.
 
 /** The hosted child's routes, at the host and at the child's own origin. */
 export const ROUTE = Object.freeze({
-  status: '/api/fishball-instance/status',
+  status: '/api/dsh-instance/status',
   embed: '/fishball/embed/',
   /** R-HOST-07: the child has no model-sync route; DSH answers 404. */
-  sync: Object.freeze(['/api/fishball-instance/models/check', '/api/fishball-instance/models/add']),
-  instancePrefix: '/api/fishball-instance/',
+  sync: Object.freeze(['/api/dsh-instance/models/check', '/api/dsh-instance/models/add']),
+  instancePrefix: '/api/dsh-instance/',
   childRoot: '/',
 })
 export const HTTP = Object.freeze({ notFound: 404, seeOther: 303, sameOrigin: Object.freeze({ 'sec-fetch-site': 'same-origin' }) })

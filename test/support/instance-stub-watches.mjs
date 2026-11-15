@@ -5,10 +5,10 @@
  *
  * Observation points (all public): the stub's contract requests (`session.watch`, `session.watches`,
  * `session.unwatch`, `session.message`, `session.start`, `session.read`), the `inbox.push` items and
- * events it receives, the managed session's own `message_fishball` result, and the connector's
+ * events it receives, the managed session's own `message_agent` result, and the connector's
  * user routes under /api/fishball.
  */
-import { ENVELOPE, WATCH_ERROR, WATCH_MODE, WATCH_STATE, WATCH_STATUS, makeEnvelope } from 'fishball-connector/contract'
+import { ENVELOPE, WATCH_ERROR, WATCH_MODE, WATCH_STATE, WATCH_STATUS, makeEnvelope } from 'dsh-connector/contract'
 import { API, CONNECTOR, LIMITS_R11, PRESET } from './constants.mjs'
 import { turn, untrustedBlock } from './expect.mjs'
 import { KIND, OPERATION, STUB, bootStub, managedSession, restartStub } from './instance-stub.mjs'

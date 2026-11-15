@@ -1,5 +1,5 @@
 /** X12 is a local restriction over the retained authenticated bridge, not a transport. */
-import { ContractError, ERROR, OPERATIONS } from 'fishball-connector/contract'
+import { ContractError, ERROR, OPERATIONS } from 'dsh-connector/contract'
 
 const SCOPE = Object.freeze({
   invalidPlugin: 'fishball bridge scope: a plugin id is required',

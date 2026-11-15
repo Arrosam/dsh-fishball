@@ -3,11 +3,11 @@
  * (docs/slim-native-design.md §0.5 "Child launch" and "Electron host", §0.7, §0.9 U1/U2,
  * §18.1 I2, §18.2 I2).
  * Observation points (no DSH boot):
- * - packages/instance/src/native-runtime/installation.js `childExecArgv(execArgv)` and
+ * - packages/dsh-instance/src/native-runtime/installation.js `childExecArgv(execArgv)` and
  *   `isolatedEnvironment(paths, host)` (host = a stand-in for `process`: env, versions, execPath),
  *   with `paths` from files.js `pathsFor(<temp main home>)`;
- * - packages/instance/host.js `Config` (the row's schema);
- * - packages/instance/src/settings-migration.js `migrateLaunchSettings(ctx, {namespace, schema})`
+ * - packages/dsh-instance/host.js `Config` (the row's schema);
+ * - packages/dsh-instance/src/settings-migration.js `migrateLaunchSettings(ctx, {namespace, schema})`
  *   with a stand-in row context whose profile context composes the old `fishball-native-host` row
  *   from a launch overlay (DSH's own patch reader does the composing).
  * The real spawn (executable, detached, no window, no stdin, both versions reach ready) is E1.
@@ -38,7 +38,7 @@
  * | I2-M-DT-04 | DT (marker present) | a second boot copies nothing |
  * | I2-M-DT-05 | DT (no old row) | nothing written |
  * | I2-M-EP-01 | EP (old `enabled` invalid) | skipped; logged by key, never by value |
- * | I2-S-01 | static | node-default.js is deleted; no `verifyNode` in packages/instance |
+ * | I2-S-01 | static | node-default.js is deleted; no `verifyNode` in packages/dsh-instance |
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -127,7 +127,7 @@ describe('I2 environment', () => {
 })
 
 describe('I2 the row\'s form and the migration', () => {
-  it('I2-C-P-01 the fishball-instance Config has exactly the field enabled', () => {
+  it('I2-C-P-01 the dsh-instance Config has exactly the field enabled', () => {
     assert.deepEqual(Object.keys(Config.dict), ['enabled'])
   })
   it('I2-C-EP-01 old stored values are accepted and ignored', () => {
@@ -147,14 +147,14 @@ describe('I2 the row\'s form and the migration', () => {
     const ctx = {
       logger: () => ({ warn: (...a) => logs.push(a.join(' ')), info: (...a) => logs.push(a.join(' ')), debug: (...a) => logs.push(a.join(' ')) }),
       storageDomain: { open: async () => ({ table: () => ({ get: (k) => store.get(k), put: async (k, v) => { store.set(k, v) } }), close: async () => {} }) },
-      settings: { describe: () => [{ ns: 'fishball-instance', user }], update: async (ns, values) => { updates.push([ns, values]) } },
+      settings: { describe: () => [{ ns: 'dsh-instance', user }], update: async (ns, values) => { updates.push([ns, values]) } },
       profileContext: {
         name: 'fbtest-profile', dir: profile, patchPath: path.join(profile, 'cordis.patch.yml'), installAnchor: runtimeAnchor(), cwd: dir, home: dir,
         startedBundles: [], telemetryDisabledEnv: undefined,
         overlays: old === undefined ? [] : [{ insert: [{ id: 'fishball-native-host', name: 'fishball-native-host', config: old }] }],
       },
     }
-    const copied = await migrateLaunchSettings(ctx, { namespace: 'fishball-instance', schema: Config })
+    const copied = await migrateLaunchSettings(ctx, { namespace: 'dsh-instance', schema: Config })
     const written = Object.assign({}, ...updates.map(([, values]) => values))
     const logText = logs.join('\n')
     return { copied, updates, written, logText }
@@ -166,7 +166,7 @@ describe('I2 the row\'s form and the migration', () => {
   it('I2-M-DT-01 copies only enabled; the old launch values are not written and not logged', async (t) => {
     const m = await migration(t, { old: { enabled: false, ...OLD } })
     assert.deepEqual(m.written, { enabled: false })
-    assert.ok(m.updates.every(([ns]) => ns === 'fishball-instance'))
+    assert.ok(m.updates.every(([ns]) => ns === 'dsh-instance'))
     assertOldValuesSilent(m.logText)
   })
   it('I2-M-DT-02 an old row with only the two launch values writes nothing and says nothing about them', async (t) => {

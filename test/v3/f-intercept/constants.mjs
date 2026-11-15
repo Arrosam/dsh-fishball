@@ -3,8 +3,8 @@
  * W2): EVT-UC-02, EVT-UC-03, EVT-EP-03, EVT-EP-05, EVT-DT-02, EVT-DT-03, EVT-DT-04, EVT-ST-02.
  *
  * Every product value comes from a frozen contract module, never from an implementation:
- * - K1 `fishball-connector/mcp-schema` (event types, tool names, offer ids, the events resource);
- * - K2 `fishball-connector/tools` (the contributed-type prefix, through K1's re-export);
+ * - K1 `dsh-connector/mcp-schema` (event types, tool names, offer ids, the events resource);
+ * - K2 `dsh-connector/tools` (the contributed-type prefix, through K1's re-export);
  * - K3 `packages/core/contracts/events.d.ts` (types only, so its three values are read from the
  *   declaration text: the default priority, the `fenced` code and the `disconnected` code).
  * - K3 `packages/core/contracts/constants.js`, for the values the user's decisions of 2026-11-14 name
@@ -15,7 +15,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, TOOL } from '../../../packages/connector/mcp-schema/index.js'
+import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, TOOL } from '../../../packages/dsh-connector/mcp-schema/index.js'
 // A namespace import: a value the product has not exported yet fails the cases that use it, with a
 // reason, instead of failing this whole file at module link time (test-first).
 import * as EVENTS_CONSTANTS from '../../../packages/core/contracts/constants.js'

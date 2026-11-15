@@ -1,12 +1,12 @@
 /**
- * H-STUB group B: ask_fishball, list_user_messages, quotes, and the cards that go to the user (Allow once /
- * Reject on the ask_fishball row). Sources: DESIGN §7a.2, §7a.3, §7a.5, §7a.6, §9, §10e, §16; contract §4.2,
+ * H-STUB group B: ask_agent, list_user_messages, quotes, and the cards that go to the user (Allow once /
+ * Reject on the ask_agent row). Sources: DESIGN §7a.2, §7a.3, §7a.5, §7a.6, §9, §10e, §16; contract §4.2,
  * §5, §5.1, §9; docs/test-design/connector.md C1-EP-02, C1-DT-02; slim-native-design §12.
  *
  * The in-process Fishball is gone (slim §12): the fake instance answers through `approval.answer`, and what
  * used to be "Fishball's notice" is now an `inbox.push` of kind `approval` plus an `approval.request` event
  * (contract §4.5, §5). The pile UI went with it, but the snapshot keeps `pile`, and a card that goes to the
- * user is answered on its own session's ask_fishball row, which calls POST /api/fishball/requests/answer
+ * user is answered on its own session's ask_agent row, which calls POST /api/fishball/requests/answer
  * (§10e "Host API"), so the route is what these cases click.
  *
  * One host per file (APPROVER_AFTER: the scripted stock prompt sits after the connector's broker, and the
@@ -14,7 +14,7 @@
  * case sets another outcome, so an unexpected prompt never hangs a turn.
  */
 import assert from 'node:assert/strict'
-import { EVENT, SETTLED_BY } from 'fishball-connector/contract'
+import { EVENT, SETTLED_BY } from 'dsh-connector/contract'
 import { APPROVAL_ID, APPROVER_AFTER_ENV, ASK_CODE, ASK_OUTPUT, ASK_REFUSALS, ASK_TOOL, DECISIONS_TABLE, OUTCOME } from './constants.mjs'
 import { answerCard, askStep, auditOf, callStep, resultOfCall, settledIdle, stockSeen, storedRows, turn, untilCard, untrustedBlock } from './expect.mjs'
 import { ENVELOPE, KIND, OPERATION, STUB, bootStub, managedSession, restartStub, stopStub } from './instance-stub.mjs'
@@ -36,13 +36,13 @@ export const ASK_STUB = Object.freeze({
   long: Object.freeze({ timeout: 120000 }),
   /** The closing text step every scripted turn ends with. */
   closing: Object.freeze([{ text: 'done' }]),
-  /** The default reason an agent gives on its ask_fishball. */
+  /** The default reason an agent gives on its ask_agent. */
   why: 'fbtest why',
   /** The trusted head of a permission-request inbox item, and the request id in it (DESIGN §7a.2 "What Fishball is given"). */
   noticeHead: /^\[permission request (apr_[0-9a-f]+)\]/,
   noticePrefix: (requestId) => '[permission request ' + requestId + ']',
   /** The header says the session asked first (DESIGN §7a.2: "the kind (asked first, or a direct call)"). */
-  askedFirst: /ask_fishball/,
+  askedFirst: /ask_agent/,
   /** A well-formed request id nobody minted. */
   unknownRequestId: 'apr_0123456789abcdef',
   /** An Origin the same-origin fence must refuse (§10e "same-origin fence"). */
@@ -77,7 +77,7 @@ export async function restartAsk(ctx) {
 export const stopAsk = (ctx) => stopStub(ctx)
 
 /**
- * The shape every ask_fishball answer has (§7a.2 "Results"): a stable code, ok true only for allowed, and a
+ * The shape every ask_agent answer has (§7a.2 "Results"): a stable code, ok true only for allowed, and a
  * request id except on the refusals made before anything is sent.
  */
 export function assertShape(json, code, label = '') {
@@ -94,9 +94,9 @@ export function askTools(ctx, { tok, cid }) {
     async setLimit(patch) { const r = await ctx.host.call('settingsUpdate', { patch }); assert.equal(r.ok, true, JSON.stringify(r.error)) },
     session: (folder) => managedSession(ctx.host, folder),
     askArgs: (args, { quote = [], why = ASK_STUB.why } = {}) => ({ tool: ASK_TOOL, arguments: args, quote, why }),
-    /** One ask_fishball step for the asking tool with these arguments. */
+    /** One ask_agent step for the asking tool with these arguments. */
     ask: (args, id, opts) => askStep(t.askArgs(args, opts), id),
-    /** One ask_fishball step that continues a request (§7a.2 "question"); requestId may be REQUEST_PLACEHOLDER. */
+    /** One ask_agent step that continues a request (§7a.2 "question"); requestId may be REQUEST_PLACEHOLDER. */
     reply: (requestId, reply, id) => askStep({ request_id: requestId, reply }, id),
     /** One step making the call itself (the asking fixture tool; its body asks DSH). */
     call: (text, id) => callStep({ text }, id),
@@ -170,7 +170,7 @@ export function askTools(ctx, { tok, cid }) {
     async reattach() { const a = await ctx.stub.attach(); assert.equal(a.ok, true, 'attach again: ' + JSON.stringify(a)); return a },
 
     /**
-     * Start a turn whose ask_fishball waits (the steps in after follow once it is answered); returns the
+     * Start a turn whose ask_agent waits (the steps in after follow once it is answered); returns the
      * offer the instance received. The reason carries the text too, so the offer can be found when the
      * arguments are cut.
      */
@@ -190,7 +190,7 @@ export function askTools(ctx, { tok, cid }) {
     },
 
     // ---- the user's side and the audit (§9, §10e) ----
-    /** Allow once / Reject on the ask_fishball row (the Host route it calls). */
+    /** Allow once / Reject on the ask_agent row (the Host route it calls). */
     click: (requestId, decision, note) => answerCard(ctx.host, requestId, decision, note),
     decisionsFor: (requestId) => storedRows(ctx.home, DECISIONS_TABLE).filter((d) => d.target === requestId),
     answersOf: (requestId) => auditOf(ctx.home, requestId).map((r) => r.answer),

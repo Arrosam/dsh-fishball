@@ -8,7 +8,7 @@
  *
  * | id     | technique | requirement | expected |
  * |--------|-----------|-------------|----------|
- * | C1-EP-01 | EP (message_fishball, no instance) | contract §9 | the result reports success (queued), never unavailable; delivered once as kind session on attach |
+ * | C1-EP-01 | EP (message_agent, no instance) | contract §9 | the result reports success (queued), never unavailable; delivered once as kind session on attach |
  * | C1-P-03 | P (three turns, no instance) | contract §9 | three ok results; exactly m1, m2, m3 in order, once each; once acked, a detach and a new attach re-deliver nothing |
  * | C1-P-06 | P (note, message, finished notice; no instance) | contract §9 (conn-OQ-33, -34) | items arrive in arrival order, once each: the note (kind user, n1 outside the untrusted block), m1 (kind session), the finished notice (kind watch) |
  * | C1-EP-03 | EP (notify_when_finished, no instance) | contract §9 | the finished notice is queued and delivered once (kind watch), after m1 |
@@ -19,7 +19,7 @@
  * | DUR-02 | ST (queued → sender archived → attach) | contract §9 "delivered once each" | an item queued before its managed sender was archived is still delivered once on the next attach |
  * | C1-ST-09 | ST N across a DSH restart | contract §9; DESIGN §5b | m1 and m2 queued before the restart are delivered once each, in order |
  * | DUR-01 | ST (pushed, unacked → restart) | contract §3.3, §4.5; slim §5.2 | the item is pushed again after the restart, unchanged (same payload, same dedupeKey); once acked it is consumed |
- * | DUR-03 | EP | DESIGN §9; slim §5.2 "Ack consumes" | $DSH_HOME/storages/fishball_intake holds per-record files, and no file holds the text of a consumed message |
+ * | DUR-03 | EP | DESIGN §9; slim §5.2 "Ack consumes" | $DSH_HOME/storages/dsh_connector_intake holds per-record files, and no file holds the text of a consumed message |
  * | DUR-04 | ST (restart) | contract §4.5 | a restart re-delivers nothing that was already acked |
  * | C1-BVA-04 | BVA (min − 1) | DESIGN §16; C2 | maxQueuedInputs 0 is refused and the old value stays |
  * | C1-BVA-03 | BVA (min: 1) | contract §8, §9 | m1 accepted; m2 queue-full |
@@ -50,7 +50,7 @@ const NO_RETRY_MS = 5000
 /** The default ack policy (ack every push). */
 const ACK_ALL = null
 
-/** One message_fishball call per turn; asserts each is accepted. */
+/** One message_agent call per turn; asserts each is accepted. */
 async function sendEach(host, sessionId, texts) {
   for (const message of texts) assert.equal((await messageFishball(host, sessionId, { message })).json?.ok, true, message)
 }
@@ -85,7 +85,7 @@ describe('no-instance queueing and reconnects', () => {
   afterEach(() => drainedDetached(booted), HOOK)
   after(() => stopStub(booted), HOOK)
 
-  it('C1-EP-01 message_fishball with no instance is queued, never unavailable, and delivered once on attach', T, async () => {
+  it('C1-EP-01 message_agent with no instance is queued, never unavailable, and delivered once on attach', T, async () => {
     const m1 = tok('ep01')
     const { json } = await messageFishball(host, sender, { message: m1 })
     assert.equal(json?.ok, true, JSON.stringify(json))

@@ -1,7 +1,7 @@
 /**
  * H-STUB vocabulary (docs/test-design/connector.md "H-STUB details"), shared by the fixture plugin
  * that runs inside the DSH worker and the test-side client. Contract names come from the public
- * `fishball-connector/contract` export, never from the connector's own source; the values here are
+ * `dsh-connector/contract` export, never from the connector's own source; the values here are
  * the harness's own: its row, its IPC message types, its default descriptor and its timings.
  */
 import { tempPath } from './temp-path.mjs'

@@ -25,7 +25,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ENVELOPE } from 'fishball-connector/contract'
+import { ENVELOPE } from 'dsh-connector/contract'
 import { DSH_REJECT_WORDS, MANAGED_ENTRY_KEYS, MANAGED_TOOLS, OUTCOME, PROMPT_DECISION } from './support/constants.mjs'
 import { HOOK, T, approvalAudit, managedItems, settledIdle, toolNames } from './support/expect.mjs'
 import { stopStub } from './support/instance-stub.mjs'

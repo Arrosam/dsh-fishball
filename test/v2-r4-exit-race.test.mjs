@@ -2,7 +2,7 @@
  * Round-4 — a child that exits while its start is still in progress keeps NATIVE_CHILD_EXITED and
  * still publishes the start's cause.
  *
- * Requirements (brief, derived only from it; main host row `fishball-instance`, the start path):
+ * Requirements (brief, derived only from it; main host row `dsh-instance`, the start path):
  * - R1 a failed start → state `failed`, `detail` = '<specific code>' + ': ' + first message line
  *   (sanitized, ≤ 2000 chars; the code is not repeated when the message already starts with it);
  *   the row's logger gets exactly one warn `start failed (%s)` whose only argument is the code.
@@ -48,7 +48,7 @@ import { R2, R2_BUDGET, lifecycleLines, plantInvalidManifest, removeHome, runtim
 
 const SDK = selectedSdk(RUNTIME)
 const R4 = Object.freeze({
-  row: 'fishball-instance',
+  row: 'dsh-instance',
   state: Object.freeze({ starting: 'starting', ready: 'ready', failed: 'failed', missing: 'connector-missing' }),
   code: Object.freeze({ childExited: 'NATIVE_CHILD_EXITED', startFailed: 'NATIVE_START_FAILED' }),
   /** R2's example: the start failure's own code when its child exits. */
@@ -62,7 +62,7 @@ const R4 = Object.freeze({
    * inside — is not a live launch.
    */
   launchId: /^[0-9a-f-]{36}$/,
-  connector: 'fishball-connector',
+  connector: 'dsh-connector',
   killSignal: 'SIGKILL',
   detailCodePoints: 2000,
 })

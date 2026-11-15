@@ -2,7 +2,7 @@
  * Revision 11 rev11c: answering a card that went to the user, on the H-STUB harness (DESIGN §7a.2, §7a.3, §7a.5
  * "Slow", §7a.6, §9 audit, §10e "Host API"; contract §4.2, §5 `approval.settled` / `approval.ran`;
  * slim-native-design §12). The pile UI is deleted (slim §12): a card that goes to the user is answered on its own
- * session's running ask_fishball row, whose Allow once / Reject call POST /api/fishball/requests/answer
+ * session's running ask_agent row, whose Allow once / Reject call POST /api/fishball/requests/answer
  * {requestId, decision, note?}; the snapshot keeps `pile`. The attached instance escalates with `approval.answer`
  * where the in-process Fishball used answer_approval. One host; cases run in order.
  *
@@ -21,7 +21,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { DECISION, RAN_VIA, RISK, SETTLED_BY } from 'fishball-connector/contract'
+import { DECISION, RAN_VIA, RISK, SETTLED_BY } from 'dsh-connector/contract'
 import { APR_CODE, ASK_CODE, ASK_OUTPUT, AUDIT_ANSWER, AUDIT_KIND, CLICK, DECISION_ACTION, OUTCOME, P5_CODE, PILE_API, PILE_CODE, REQUEST_PLACEHOLDER } from './support/constants.mjs'
 import { HOOK, T, cardOf, untilCard, untilNoCard } from './support/expect.mjs'
 import { ASK_STUB, askHost, askTools, assertShape, stopAsk, tokens } from './support/instance-stub-ask.mjs'

@@ -359,10 +359,10 @@ export async function untilSeen(host, fb, needle, timeoutMs = 15000) {
   return Boolean(seen)
 }
 
-/** One message_fishball call from a session; returns the parsed answer and the raw result. */
+/** One message_agent call from a session; returns the parsed answer and the raw result. */
 export async function messageFishball(host, sessionId, args, callId) {
-  const r = await turn(host, sessionId, callScript('message_fishball', args, callId))
-  if (r.results.length !== 1) throw new Error('expected one message_fishball result, got ' + JSON.stringify(r.results))
+  const r = await turn(host, sessionId, callScript('message_agent', args, callId))
+  if (r.results.length !== 1) throw new Error('expected one message_agent result, got ' + JSON.stringify(r.results))
   return { json: jsonOf(r.results[0]), result: r.results[0], requests: r.requests }
 }
 
@@ -403,8 +403,8 @@ export const bytesOf = (n, ascii = false) => (ascii ? 'b'.repeat(n) : 'é'.repea
 
 /**
  * The served Fishball client, read like a browser (M5): the combo script that carries
- * fishball-embed-ui/client.js, plus the package-local chunks with the moved connector UI
- * (R-EMBED; split into parts by U-SHELL), served at plugins/fishball-embed-ui/<chunk> with the entry's rev.
+ * dsh-connector-ui/client.js, plus the package-local chunks with the moved connector UI
+ * (R-EMBED; split into parts by U-SHELL), served at plugins/dsh-connector-ui/<chunk> with the entry's rev.
  */
 export async function fishballClientBundle(host) {
   const index = await host.get('/')
@@ -602,7 +602,7 @@ export const managedItems = async (host, sessionId) => ((await intakeNow(host))?
 /**
  * Make a session managed through Hand over and wait until Fishball has read the note, so the note's
  * Fishball turn cannot overlap the caller's next step. Used by the pre-revision-11 cases that are about
- * a session talking to Fishball: from rev11a only managed sessions have message_fishball and only their
+ * a session talking to Fishball: from rev11a only managed sessions have message_agent and only their
  * permission requests reach Fishball (CASES.md "Revision 11 rev11a cases", older tests changed).
  */
 export async function makeManaged(host, fb, sessionId) {
@@ -613,11 +613,11 @@ export async function makeManaged(host, fb, sessionId) {
   return r
 }
 
-// ---- Revision 11 rev11b helpers (ask_fishball, passes, direct calls) ----
+// ---- Revision 11 rev11b helpers (ask_agent, passes, direct calls) ----
 
 /** One scripted model step that calls a tool, with a call id so its result can be found. */
 export const step = (tool, args, id) => [{ tool, args, ...(id ? { id } : {}) }]
-/** One scripted ask_fishball step. */
+/** One scripted ask_agent step. */
 export const askStep = (args, id) => step(ASK_FISHBALL, args, id)
 /** One scripted call of the asking fixture tool (its body asks DSH for approval). */
 export const callStep = (args, id) => step(ASK_TOOL, args, id)
@@ -627,7 +627,7 @@ export const resultById = (r, id) => r.results.find((x) => x.callId === id)
 export const stockSeen = async (host, text) => (await host.call('approvals', {})).filter((a) => a.reason === ASK_REASON(text))
 
 /**
- * Every approval audit record (domain fishball_intake, table approvals, one file per record; §9), with its
+ * Every approval audit record (domain dsh_connector_intake, table approvals, one file per record; §9), with its
  * file name: the record key, which carries the request id's hex part (P7). The record is the object inside
  * the file's JSON that carries an `answer`, whatever wrapper the store adds.
  */

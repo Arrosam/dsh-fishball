@@ -1,6 +1,6 @@
 /**
  * Secret masking for diagnostics (fishball-shared, R-ARCH-08). Moved unchanged from
- * fishball-instance's src/native-runtime/stderr-log.js: the instance's child stderr log and the
+ * dsh-instance's src/native-runtime/stderr-log.js: the instance's child stderr log and the
  * provider-sync host adapter (./provider-sync-host.js, loaded by both ends) mask the same shapes.
  */
 

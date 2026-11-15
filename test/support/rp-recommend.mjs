@@ -3,7 +3,7 @@
  *
  * Why a hand-written React shim: React is not resolvable here (no node_modules in the worktree, and
  * neither pinned DSH install ships `react`; it exists only inside the prebuilt dsh-web-frontend
- * bundle). Nothing may be installed, so — as packages/instance/test/instance-ext/page-open-session-page.mjs
+ * bundle). Nothing may be installed, so — as packages/dsh-instance/test/instance-ext/page-open-session-page.mjs
  * does for fishball-page — the classic script runs in a node:vm context with fakes of the public
  * client surfaces only. That page harness's React is a no-op (no state/effects); the recommendation
  * tab needs real hooks, effects with cleanup, re-render on state change and unmount, so this shim

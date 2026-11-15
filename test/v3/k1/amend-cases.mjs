@@ -7,7 +7,7 @@
  * test per constant and per artefact: the value, its declaration, its README row, no local copy).
  *
  * Level: unit over the loaded module, its declaration file and README (as cases.mjs), and a static
- * scan of packages/connector/src/ source text, read as data, for the old local definitions. The
+ * scan of packages/dsh-connector/src/ source text, read as data, for the old local definitions. The
  * behaviour at each boundary is in c-oauth and c-oauth-web amend-cases.mjs.
  */
 import assert from 'node:assert/strict'
@@ -32,7 +32,7 @@ function limitsSection() {
 }
 /** The module's code files (sources, not declarations), comments blanked. */
 const moduleCode = () => [...folderTexts(MOVED_LIMITS.sourceFile).values()].map(blankComments).join('\n')
-/** Every source file under packages/connector/src/, comments blanked: `[relative path, code]`. */
+/** Every source file under packages/dsh-connector/src/, comments blanked: `[relative path, code]`. */
 function sourceCode() {
   const dir = path.join(REPO, MOVED_LIMITS.source)
   if (!fs.existsSync(dir)) return []

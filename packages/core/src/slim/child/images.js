@@ -25,7 +25,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { DIGEST, ERROR, IMAGE_TYPES, LIMITS, MEDIA, OPERATION, ROUTES, ContractError } from 'fishball-connector/contract'
+import { DIGEST, ERROR, IMAGE_TYPES, LIMITS, MEDIA, OPERATION, ROUTES, ContractError } from 'dsh-connector/contract'
 import {
   chunksOf, fromBase64, isImageMediaType, maxChunkedBytes, sha256Hex, verifyTransfer,
 } from '../attachment-transfer.js'

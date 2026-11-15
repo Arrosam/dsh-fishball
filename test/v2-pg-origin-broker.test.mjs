@@ -3,7 +3,7 @@
  * (docs/planning/v2-final-scope.md §4.3(4) "Admission design"; docs/test-design/v2-origin-lite-set-cases.md §1).
  * Requirements-only black-box file: no implementation source was read while writing it.
  *
- * Observation point: createEmbedBroker({ service, connection }) of packages/instance/src/slim/host/embed.js,
+ * Observation point: createEmbedBroker({ service, connection }) of packages/dsh-instance/src/slim/host/embed.js,
  * mounted at /fishball/embed on a real loopback http.Server (port 0). The service is a stand-in *native*
  * service (status / embedAccess / restart / nativeEmbedAccess). Every child generation is a real spy
  * http.Server on 127.0.0.1 that counts TCP connections, so "the broker never contacts the child" is

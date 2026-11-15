@@ -49,7 +49,7 @@
  * | I6-R-BVA-03 | BVA | a check body of maxBodyBytes + 1 → 400 |
  * | I6-R-EP-11 | EP | `Sec-Fetch-Site: cross-site` → refused (not 200), service not called, on both routes |
  * | I6-R-SEC-01 | EP | the route answers over the real bridge carry no planted secret |
- * | I6-R-P-03 | P | the routes are exactly `/api/fishball-instance/models/check` and `/models/add` |
+ * | I6-R-P-03 | P | the routes are exactly `/api/dsh-instance/models/check` and `/models/add` |
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
@@ -60,7 +60,7 @@ import { PREVIEW_LIFE_MS, SYNC_IDS as ID, post, routeContext, syncHarness } from
 const { SYNC_PAGE } = await loadInstance('src/provider-sync-service.js')
 const { registerProviderSyncRoutes, PROVIDER_SYNC_ROUTE } = await loadInstance('src/slim/host/provider-sync-routes.js')
 
-const ROUTE = Object.freeze({ check: '/api/fishball-instance/models/check', add: '/api/fishball-instance/models/add' })
+const ROUTE = Object.freeze({ check: '/api/dsh-instance/models/check', add: '/api/dsh-instance/models/add' })
 /** The refusals §10 names for an Add whose check is no longer valid. */
 const STALE = Object.freeze(['repreview-required', 'preview-expired', 'sync-closed'])
 const NOTHING = Object.freeze({ additions: [], imports: [] })

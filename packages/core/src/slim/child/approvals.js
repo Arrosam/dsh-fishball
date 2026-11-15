@@ -54,7 +54,7 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { ANSWER_PLACE, APPROVAL_KIND, DECISION, ERROR, EVENT, GRANT_KIND, LIMITS, OPERATION, PLAN_REVIEW, RAN_VIA, RISK, SETTLED_BY, ContractError } from 'fishball-connector/contract'
+import { ANSWER_PLACE, APPROVAL_KIND, DECISION, ERROR, EVENT, GRANT_KIND, LIMITS, OPERATION, PLAN_REVIEW, RAN_VIA, RISK, SETTLED_BY, ContractError } from 'dsh-connector/contract'
 import { CARD_CLOSED, QUESTION_ANSWER } from '../inbox-markers.js'
 import { createDecisionStore } from './decisions.js'
 

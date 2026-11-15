@@ -1,0 +1,11 @@
+# dsh-connector's profile footprint: one host row (design §0.2, §0.6).
+# - dsh-connector: Fishball's "body" in the main DSH. It manages your sessions for Fishball
+#   (Hand over, message_agent, permission requests, questions, watches). Its browser UI (brand,
+#   session-row marks, Plugins card) is dsh-connector-ui's since V3 R-EMBED. Its id is also the
+#   settings namespace DSH's form edits (embed-ui client.connector.js ENTRY_ID; its limits and
+#   question mode, src/config.js). It works with no instance installed.
+# The built-in instance inserts its own row from its own package (packages/dsh-instance).
+- insert:
+    - id: dsh-connector
+      name: 'dsh-connector'
+      config: {}

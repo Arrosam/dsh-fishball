@@ -17,7 +17,7 @@
  * | DCD-05  | ST (your click in the session: Reject) | as DCD-04 | the card leaves; the call is rejected; decisions row reject by user |
  * | DCD-06  | BVA (approvalAnswerSeconds 1, no answer) | §7a.5 Slow | neither card nor prompt appears past stored one-second minimum; explicit escalation creates both; Reject closes both and audit is escalate |
  * | DCD-07  | ST (turn stopped while both show) | §7a.6 Leaving | card leaves, prompt closes; a later click on the card is 409 expired |
- * | DCD-08  | BVA (maxPendingApprovals 2: an ask_fishball card + a direct card, then a third direct call) | §7a.6 Cap | the third shows the stock prompt only: no approval.request, no card; pile unchanged; your click answers it |
+ * | DCD-08  | BVA (maxPendingApprovals 2: an ask_agent card + a direct card, then a third direct call) | §7a.6 Cap | the third shows the stock prompt only: no approval.request, no card; pile unchanged; your click answers it |
  * | DCD-09  | ST (instance detached while both show) | §7a.5 "keeps the prompt" | the stock prompt keeps showing and your click answers the call; no card remains |
  * | DCD-10  | EP (one answer only) | §7a.1 "the first answer wins" | after the card cleared both, a second answer on either side changes nothing: one decisions row, the call ran once |
  * | DCD-11  | BVA (maxQueuedInputs 1 full; maxPendingApprovals 1) | §7a.6, §11, contract §9 | the undeliverable direct call gets a card and the stock prompt and no approval inbox item; a second one past the cap gets the stock prompt only |
@@ -27,7 +27,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, it } from 'node:test'
-import { ENVELOPE, INBOX_KIND } from 'fishball-connector/contract'
+import { ENVELOPE, INBOX_KIND } from 'dsh-connector/contract'
 import { ASK_FISHBALL, ASK_TOOL, CARD_KEYS, CARD_KIND, CLICK, DECISION, LIMITS, OUTCOME, PILE_CODE, APPROVER_HOLDS } from './support/constants.mjs'
 import { HOOK, T, answerCard, cardArguments, cardOf, messageFishball, pileNow, untilCard, untilNoCard } from './support/expect.mjs'
 import { STUB, managedSession, seedStoredInteractionConfig, stopStub } from './support/instance-stub.mjs'
@@ -184,13 +184,13 @@ describe('Revision 11 rev11e on H-STUB: a direct call sent to you shows a card a
     assert.equal((await answerCard(ctx.host, c.requestId, CLICK.allow)).status, 409)
   })
 
-  it('DCD-08 maxPendingApprovals 2 with an ask_fishball card and a direct card: a third direct call shows the stock prompt only', T, async () => {
+  it('DCD-08 maxPendingApprovals 2 with an ask_agent card and a direct card: a third direct call shows the stock prompt only', T, async () => {
     await setLimit({ maxPendingApprovals: 2 })
     try {
       const askText = tok('08a')
       const ask = await direct(ctx, x, ASK_FISHBALL, { tool: ASK_TOOL, arguments: { text: askText }, quote: [], why: 'why ' + askText }, cid('08a'))
       assert.equal((await answer(ctx, x, ask, { decision: DECISION.escalate })).type, ENVELOPE.type.response)
-      assert.ok(await untilCard(ctx.host, ask.approvalId), 'the ask_fishball card')
+      assert.ok(await untilCard(ctx.host, ask.approvalId), 'the ask_agent card')
       const second = await sentToYou(y, '08b')
       assert.equal((await pileNow(ctx.host)).length, 2)
       const text = tok('08c')

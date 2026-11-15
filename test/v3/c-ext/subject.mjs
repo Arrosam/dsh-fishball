@@ -1,5 +1,5 @@
 /**
- * The one place that binds the cases to C-EXT's module (`packages/connector/src/contrib/index.js`).
+ * The one place that binds the cases to C-EXT's module (`packages/dsh-connector/src/contrib/index.js`).
  * K2 freezes the contributor-facing service only; the connector-side seam below is C-EXT's, as
  * relayed by Fishball (2026-11-14), so a case never changes when it is adapted:
  *
@@ -12,7 +12,7 @@
  *   - `logger`: `{info, warn}`; here a cordis logger, so the world's exporter sees every line;
  *   - `now()`: the injected clock, in epoch milliseconds (the emit token bucket, EXT-BVA-03);
  * - it returns `{service, provide(ctx), list(), call(publicName, args, {principal, signal})}`:
- *   - `provide(ctx)` provides `fishballConnectorTools` (K2 `TOOLS_API.service`) on the connector
+ *   - `provide(ctx)` provides `dshConnectorTools` (K2 `TOOLS_API.service`) on the connector
  *     row's context, so the service goes when that row unloads;
  *   - `list()`: the contributed tools as MCP `Tool` objects, in `tools/list` order (R-EXT-12);
  *   - `call(…)`: a K1 `CallToolResult` (R-CON-02, R-EXT-07), or `undefined` for an unknown tool
@@ -28,7 +28,7 @@ import { SUBJECT } from './constants.mjs'
 
 /** C-EXT's module bound to `sdk` (its `@deepseek-ai/*` imports resolve to that SDK). */
 export async function contributionsModule(sdk) {
-  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-EXT "Owns" packages/connector/src/contrib/)`)
+  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-EXT "Owns" packages/dsh-connector/src/contrib/)`)
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
   assert.equal(typeof mod[SUBJECT.factory], 'function', `the contrib module exports no ${SUBJECT.factory}`)
   return mod

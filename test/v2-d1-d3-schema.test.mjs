@@ -3,7 +3,7 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import * as contract from '../packages/connector/contract/index.js'
+import * as contract from '../packages/dsh-connector/contract/index.js'
 
 const C = Object.freeze({
   timerfree: 'interaction.timerfree', signal: 'attention.signal',

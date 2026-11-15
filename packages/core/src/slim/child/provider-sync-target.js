@@ -11,11 +11,11 @@
  * the already-authenticated lifecycle wire on its own payload channel, exactly like the T11 admin
  * protocol. The frame shapes are fishball-shared/provider-sync-codec's; this module owns the
  * endpoint and the child row; the wiring is:
- *   1. fishball-instance src/native-runtime/wire.js carries PROVIDER_SYNC_TARGET.channel;
- *   2. fishball-instance src/native-runtime/child.js publishes the child end through onProviderSyncTransport;
- *   3. fishball-instance src/native-runtime/index.js publishes the main end the same way;
+ *   1. dsh-instance src/native-runtime/wire.js carries PROVIDER_SYNC_TARGET.channel;
+ *   2. dsh-instance src/native-runtime/child.js publishes the child end through onProviderSyncTransport;
+ *   3. dsh-instance src/native-runtime/index.js publishes the main end the same way;
  *   4. fishball-core's cordis.patch.yml inserts this module as a child row (`fishball-core/slim/provider-sync-target`);
- *   5. fishball-instance src/native-runtime/placement.js places fishball-shared in the child profile's
+ *   5. dsh-instance src/native-runtime/placement.js places fishball-shared in the child profile's
  *      node_modules, beside the placed fishball-core.
  *
  * No value ever appears in a preview, a refusal or a result: group entries are exact-key checked

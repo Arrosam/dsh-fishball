@@ -128,17 +128,17 @@ export function registerCoreCases(sdk) {
     assert.ok(Array.isArray(patches) && patches.length > 0, 'the patch is not a non-empty list (F-GUARDS adds the guard rows)')
     const inserted = insertedRows(patches)
     assert.deepEqual(inserted.filter((row) => CORE.neverInserted.includes(row?.id)).map((row) => row.id), [], 'core inserts these rows')
-    assert.deepEqual(inserted.filter((row) => isModuleOf(row?.name, V3.instance)).map((row) => `${row.id}: ${row.name}`), [], 'core inserts modules of fishball-instance')
+    assert.deepEqual(inserted.filter((row) => isModuleOf(row?.name, V3.instance)).map((row) => `${row.id}: ${row.name}`), [], 'core inserts modules of dsh-instance')
   })
   caseTest(sdk, 'HOST-EP-03', 1, 'core depends on fishball-shared (dependencies and bundleDependencies) and on the connector; never on the instance', () => {
     const manifest = coreManifest()
     assert.ok(Object.hasOwn(manifest[RUNTIME_DEP_FIELD] ?? {}, V3.shared.name), 'fishball-shared not in ' + RUNTIME_DEP_FIELD)
     assert.ok(BUNDLED_FIELDS.some((f) => (manifest[f] ?? []).includes(V3.shared.name)), 'fishball-shared not in ' + BUNDLED_FIELDS.join('/'))
     const named = manifestNames(manifest, DEP_FIELDS).map((e) => e.name)
-    assert.ok(named.includes(V3.connector.name), 'fishball-connector is named in no dependency field')
-    assert.equal(named.includes(V3.instance.name), false, 'core names fishball-instance')
+    assert.ok(named.includes(V3.connector.name), 'dsh-connector is named in no dependency field')
+    assert.equal(named.includes(V3.instance.name), false, 'core names dsh-instance')
   })
-  caseTest(sdk, 'HOST-EP-03', 1, 'core reaches the connector only through fishball-connector/contract', async () => {
+  caseTest(sdk, 'HOST-EP-03', 1, 'core reaches the connector only through dsh-connector/contract', async () => {
     needCore()
     const unit = await unitOf(V3.core.name)
     assert.deepEqual(unit.parseErrors, [], 'unparsed shipped files')
@@ -166,7 +166,7 @@ export function registerCoreCases(sdk) {
   })
 
   // ================================================================ HOST-EP-03 row 2: the status line stays in the instance
-  caseTest(sdk, 'HOST-EP-03', 2, 'the status-line module is shipped only by fishball-instance, under src/child-settings/', async () => {
+  caseTest(sdk, 'HOST-EP-03', 2, 'the status-line module is shipped only by dsh-instance, under src/child-settings/', async () => {
     const holders = await filesHolding(MARK.status)
     assert.ok(holders.length > 0, 'no V3 package ships the status line (' + MARK.status + ')')
     assert.deepEqual(holders.filter((h) => h.name !== V3.instance.name).map((h) => h.name + '/' + h.file), [], 'shipped outside the instance')

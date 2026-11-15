@@ -4,7 +4,7 @@
  * loop, logger) as spike V3-S2 did (`a499141`, probe.mjs). Fakes, and only these:
  * - the model adapter: answers at once, can hold a turn open ("busy") and records every request;
  * - core's link (K1 shapes only): one durable mailbox file with `inbox_poll`, `inbox_ack`, the
- *   `fishball://events` hint and a log of every other tool call (an interceptor's answer);
+ *   `dsh-agent://events` hint and a log of every other tool call (an interceptor's answer);
  * - the interceptor plugins: real cordis plugins whose registration is an effect of their fiber, so
  *   switching a plugin off is disposing its fiber.
  * Everything observed is public: tool calls at the link, the DSH session logs, the model requests
@@ -16,7 +16,7 @@ import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { ANSWERABLE_TYPES, DECISION_KIND_OF, OFFER_ID, REFUSAL, RESOURCE, formatOfferId } from '../../../packages/connector/mcp-schema/index.js'
+import { ANSWERABLE_TYPES, DECISION_KIND_OF, OFFER_ID, REFUSAL, RESOURCE, formatOfferId } from '../../../packages/dsh-connector/mcp-schema/index.js'
 import { importSdk } from '../../private-skills/support/sdk.mjs'
 import { until } from '../../support/util.mjs'
 import { CONTRIBUTED_TYPE_PREFIX, DSH, EVENT_TYPE, FIXTURE, TOOL, WAIT } from './constants.mjs'

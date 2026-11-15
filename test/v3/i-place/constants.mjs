@@ -33,7 +33,7 @@ export const RELAYED = Object.freeze({
   launches: Object.freeze(['fishball', 'runtime', 'launches']),
   launchFile: 'launch.patch.yml',
   /** The pure export with the V2 arguments: launchOverlay(paths, record, childModule, limits, control, entries). */
-  overlayModule: Object.freeze({ specifier: 'fishball-instance/native-runtime', file: Object.freeze(['src', 'native-runtime', 'index.js']), name: 'launchOverlay' }),
+  overlayModule: Object.freeze({ specifier: 'dsh-instance/native-runtime', file: Object.freeze(['src', 'native-runtime', 'index.js']), name: 'launchOverlay' }),
   /** 3. Each placed package goes to both folders of the child profile. */
   copyDirs: Object.freeze(['vendor', 'node_modules']),
   /**
@@ -154,7 +154,7 @@ export const BUDGET = Object.freeze({ readyMs: 150000, restartMs: 150000, pollMs
 
 /** Owners of the rows I-PLACE cannot check. */
 export const LATER = Object.freeze({
-  host: 'I-HOST (W4: the fishballChild locator, Retry, lifecycle codes such as fishball-off)',
+  host: 'I-HOST (W4: the dshInstanceChild locator, Retry, lifecycle codes such as fishball-off)',
   status: 'F-STATUS (core status: reports nothing missing for fishball-hosted-settings)',
   restartNotice: 'U-SHELL / E2E-UI (the "restart required" line in the UI)',
   relPack: 'REL-PACK (P-1 mechanism B: a real fishball-shared copy in each tarball; PLAT-EP-07 row 5 stays failing until then)',

@@ -1,6 +1,6 @@
 /**
  * H-STUB (docs/test-design/connector.md): a fake Fishball instance in the main profile. It reaches
- * the connector only through the public contract: it injects `fishballConnector` in an optional
+ * the connector only through the public contract: it injects `dshConnector` in an optional
  * sub-scope (contract §1, as any instance must, so a missing connector never fails the boot),
  * calls `attachInstance` with a descriptor the test builds, and speaks envelope-v2 frames over the
  * transport it hands over (contract §3). It never attaches by itself.
@@ -17,7 +17,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   CONNECTOR_CONTRACT, CONNECTOR_SERVICE, ENVELOPE, OPERATION, TRANSPORT_METHODS, ContractError, makeEnvelope,
-} from 'fishball-connector/contract'
+} from 'dsh-connector/contract'
 import { STUB } from '../../instance-stub-data.mjs'
 
 export const name = STUB.row

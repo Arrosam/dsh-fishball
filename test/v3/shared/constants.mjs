@@ -16,10 +16,10 @@ const pkg = (name, folder) => Object.freeze({ name, dir: path.join(REPO, 'packag
 export const V3 = Object.freeze({
   shared: pkg('fishball-shared', 'shared'),
   core: pkg('fishball-core', 'core'),
-  instance: pkg('fishball-instance', 'instance'),
-  connector: pkg('fishball-connector', 'connector'),
+  instance: pkg('dsh-instance', 'dsh-instance'),
+  connector: pkg('dsh-connector', 'dsh-connector'),
   // S4-Q3 decided B (questions.md at b1295de): all lowercase, as npm and DSH's plugin manager require.
-  embed: pkg('fishball-embed-ui', 'embed-ui'),
+  embed: pkg('dsh-connector-ui', 'dsh-connector-ui'),
   board: pkg('fishball-board', 'board'),
   foldNotify: pkg('fishball-fold-notify', 'fold-notify'),
   watchdog: pkg('fishball-watchdog', 'watchdog'),
@@ -33,7 +33,7 @@ export const SET_SIDE = Object.freeze([V3.core.name, V3.board.name, V3.foldNotif
 /** Design §9.1: the feature plugins find core only through the optional `fishballInstance?` inject. */
 export const FEATURES = Object.freeze([V3.board.name, V3.foldNotify.name, V3.watchdog.name])
 /** Design §9.1: embed-UI may take `./tools` from the connector (types and data), nothing else. */
-export const EMBED_CONNECTOR_ALLOWED = Object.freeze(['fishball-connector/tools'])
+export const EMBED_CONNECTOR_ALLOWED = Object.freeze(['dsh-connector/tools'])
 
 /** Manifest fields that name a package edge, and the bundled-dependency fields (npm reads both spellings). */
 export const DEP_FIELDS = Object.freeze(['dependencies', 'peerDependencies', 'optionalDependencies', 'devDependencies'])
@@ -90,10 +90,10 @@ export const WORKER = Object.freeze({
 /** Owners of the rows R-SHARED cannot check yet (v3-tasks.md). */
 export const LATER = Object.freeze({
   core: 'R-CORE (creates packages/core, W1 step 2)',
-  embed: 'R-EMBED (creates packages/embed-ui, W1 step 3)',
+  embed: 'R-EMBED (creates packages/dsh-connector-ui, W1 step 3)',
   rowSixTwoPackages: 'R-CORE (until core exists, the instance is the only package that can import the library)',
   hostedSettings: 'I-PLACE (fishball-hosted-settings, a placed bundle importing the library)',
-  featurePeers: 'FEAT-PEERS and WD-ROUTE (feature plugins drop the fishball-instance peer for the optional fishballInstance? inject)',
+  featurePeers: 'FEAT-PEERS and WD-ROUTE (feature plugins drop the dsh-instance peer for the optional fishballInstance? inject)',
   pluginsPage: 'X-MATRIX (no Plugins page of a started DSH lists fishball-shared)',
   hostTrace: 'X-SEC (PLAT-EP-07 runtime part: module-load trace of a running hosted setup C + I + U)',
   standalone: 'unassigned in v3-tasks.md (standalone install of the core tarball with no registry; core is not standalone-loadable before S6/F-GUARDS)',

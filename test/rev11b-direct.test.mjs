@@ -1,5 +1,5 @@
 /**
- * Revision 11 rev11b on the H-STUB harness: direct calls in a managed session (no ask_fishball first), their
+ * Revision 11 rev11b on the H-STUB harness: direct calls in a managed session (no ask_agent first), their
  * wording, retries, the instance's question on a direct call, explicit escalation and timerfree waiting, and your clicks' audit
  * (DESIGN §7a.3 "ask on a direct call", §7a.4, §7a.5, §9 decisions; contract §4.2, §5). The stub is the instance and
  * answers with `approval.answer` while the session's turn runs; FBTEST_APPROVER_AFTER=1 puts the scripted stock
@@ -9,15 +9,15 @@
  * | id      | technique | expected |
  * |---------|-----------|----------|
  * | DIR-01  | EP (direct call, the instance allows) | the notice says a direct call and carries your last turn; the result is the tool's own output + "\n\nFishball approved this call once. …"; not an error; no stock prompt; audit kind direct, answer allow |
- * | DIR-02  | EP (the instance rejects with a reason) | an error result exactly "Fishball rejected this call: <reason>\nNext time, call ask_fishball …"; no "the user rejected"; audit answer reject |
+ * | DIR-02  | EP (the instance rejects with a reason) | an error result exactly "Fishball rejected this call: <reason>\nNext time, call ask_agent …"; no "the user rejected"; audit answer reject |
  * | DIR-03  | ST (rejected –retry→) | the retried call reaches the instance again as a new request; allowed this time, with the hint |
- * | DIR-04  | ST (the instance asks on a direct call → agent replies with ask_fishball → allow) | an error result naming the request id and the question and telling the agent to use ask_fishball; the reply continues the same request (offered again with the same id; its notice has the thread); allowed; the call made again runs on the pass (its own output, no stock prompt, no further offer; approval.ran via pass) |
+ * | DIR-04  | ST (the instance asks on a direct call → agent replies with ask_agent → allow) | an error result naming the request id and the question and telling the agent to use ask_agent; the reply continues the same request (offered again with the same id; its notice has the thread); allowed; the call made again runs on the pass (its own output, no stock prompt, no further offer; approval.ran via pass) |
  * | DIR-05  | EP (escalate) | the stock prompt shows in the session and answers the call; no further offer; your Allow once → decisions row allow-once, by user, target the request id; audit escalate |
  * | DIR-06  | BVA (approvalAnswerSeconds 1, no answer) | no stock prompt/result/timeout audit past the stored one-second minimum; explicit escalation preserves user Reject and decisions/audit |
  */
 import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, it } from 'node:test'
-import { RAN_VIA } from 'fishball-connector/contract'
+import { RAN_VIA } from 'dsh-connector/contract'
 import {
   ALLOWED_TEXT, ASK_CODE, ASK_OUTPUT, AUDIT_ANSWER, AUDIT_KIND, DECISION_ACTION, DECISIONS_TABLE, DSH_REJECT_WORDS, OUTCOME, REJECTED_TEXT, REQUEST_PLACEHOLDER,
 } from './support/constants.mjs'
@@ -102,7 +102,7 @@ describe('Revision 11 rev11b: direct calls (H-STUB)', () => {
     assert.notEqual(offers[0].payload.approvalId, offers[1].payload.approvalId, 'a new request')
   })
 
-  it('DIR-04 the instance asks on a direct call: a rejection carrying the question; the agent\'s ask_fishball continues the same request', T, async () => {
+  it('DIR-04 the instance asks on a direct call: a rejection carrying the question; the agent\'s ask_agent continues the same request', T, async () => {
     const text = tok('04')
     const args = { text }
     const question = 'which files does this touch? ' + text
@@ -117,7 +117,7 @@ describe('Revision 11 rev11b: direct calls (H-STUB)', () => {
     assert.equal(firstResult?.isError, true, 'a rejection: ' + firstResult?.text)
     assert.ok(firstResult.text.includes(requestId), 'names the request id ' + requestId + ': ' + firstResult.text)
     assert.ok(firstResult.text.includes(question), 'carries the question')
-    assert.match(firstResult.text, APPROVALS.askFishballWord, 'tells the agent to answer with ask_fishball')
+    assert.match(firstResult.text, APPROVALS.askFishballWord, 'tells the agent to answer with ask_agent')
     const continued = jsonOf(resultById(r, replyId))
     assert.equal(continued?.code, ASK_CODE.allowed, resultById(r, replyId)?.text)
     assert.equal(continued.request_id, requestId, 'the same request')

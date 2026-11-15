@@ -1,5 +1,5 @@
 /**
- * Vocabulary for the K1 cases: the freeze of `fishball-connector/mcp-schema` (v3-tasks.md row K1,
+ * Vocabulary for the K1 cases: the freeze of `dsh-connector/mcp-schema` (v3-tasks.md row K1,
  * "resolves K flags in AUTH, NAME, EVT, PLAT, WATCH"), read at `test/v3-cases` `b1295de`.
  *
  * Every value comes from docs/planning/v3-requirements.md, from docs/planning/v3-design.md where a
@@ -10,8 +10,8 @@ import path from 'node:path'
 
 /** The frozen module, as consumers import it (R-CONN declared the subpath; K1 fills the folder). */
 export const SCHEMA_MODULE = Object.freeze({
-  specifier: 'fishball-connector/mcp-schema',
-  folder: path.join('packages', 'connector', 'mcp-schema'),
+  specifier: 'dsh-connector/mcp-schema',
+  folder: path.join('packages', 'dsh-connector', 'mcp-schema'),
   /** The declaration file that types the internal interfaces (task K1a names it). */
   declarations: 'index.d.ts',
   /** Files whose text carries the module's interfaces (types) and its written freeze record. */
@@ -20,9 +20,9 @@ export const SCHEMA_MODULE = Object.freeze({
   codeFile: /\.(?:c|m)?(?:js|ts)$/,
 })
 /** K2's frozen module: K1 shares its protocol version and the contributed-event prefix (Fishball, 2026-11-12). */
-export const TOOLS_SPECIFIER = 'fishball-connector/tools'
+export const TOOLS_SPECIFIER = 'dsh-connector/tools'
 /** The connector manifest that carries the pinned SDK versions (K1 row: a change of a pin is a K1 amendment). */
-export const CONNECTOR_MANIFEST = path.join('packages', 'connector', 'package.json')
+export const CONNECTOR_MANIFEST = path.join('packages', 'dsh-connector', 'package.json')
 
 /** The MCP SDK packages each DSH install carries (2.2.0 on both), the oracle of spec-defined shapes. */
 export const MCP = Object.freeze({
@@ -41,18 +41,18 @@ export const MCP = Object.freeze({
 })
 
 /** R-OA-01, design §5.5 (D§5.5): paths on DSH's listener. */
-export const PATHS = Object.freeze({ mcp: '/api/fishball/mcp', issuer: '/api/fishball/oauth', token: '/api/fishball/oauth/token' })
+export const PATHS = Object.freeze({ mcp: '/api/agent/mcp', issuer: '/api/agent/oauth', token: '/api/agent/oauth/token' })
 /** RFC 9728 / RFC 8414 path-inserted well-known prefixes (R-OA-01); the AS one is cross-checked with the SDK's own builder. */
 export const WELL_KNOWN = Object.freeze({ resource: '/.well-known/oauth-protected-resource', server: '/.well-known/oauth-authorization-server', base: 'http://127.0.0.1' })
 /** Design §5.5a (D§5.5a): the approval listener serves only these two paths. */
 export const APPROVAL_PATHS = Object.freeze({ authorize: '/authorize', decision: '/authorize/decision' })
 /** R-EVS-01: the one event resource. */
-export const EVENTS_URI = 'fishball://events'
+export const EVENTS_URI = 'dsh-agent://events'
 /** R-CON-01 / Q12: the only protocol revision served (K2 froze the same value as TOOLS_API.protocolVersion). */
 export const PROTOCOL_VERSION = '2026-07-28'
 /** R-OA-04: the two scope values; R-OA-09: the extension `server/discover` advertises. */
-const SCOPE_FULL = 'fishball'
-export const SCOPE = Object.freeze({ full: SCOPE_FULL, pair: 'fishball:pair' })
+const SCOPE_FULL = 'agent'
+export const SCOPE = Object.freeze({ full: SCOPE_FULL, pair: 'agent:pair' })
 export const CC_EXTENSION = 'io.modelcontextprotocol/oauth-client-credentials'
 /** R-ID-06: the 403 `error_description` hints. */
 export const SCOPE_HINT = Object.freeze({ notPaired: 'not-paired', idMismatch: 'id-mismatch' })
@@ -297,7 +297,7 @@ export const RECORDED = Object.freeze([
  * The K1 amendment after W2 that moved module-local limits into K1 (Fishball, 2026-11-14): each
  * `[owner, key, value]` is one constant now defined once in the module, with the value the
  * amendment states. `oldNames` are the local definitions the modules had, which must be gone from
- * packages/connector/src/ (a no-duplicate check over source text).
+ * packages/dsh-connector/src/ (a no-duplicate check over source text).
  */
 const KIB = 1024
 export const MOVED_LIMITS = Object.freeze({
@@ -317,7 +317,7 @@ export const MOVED_LIMITS = Object.freeze({
   /** The old local definitions: a binding of the name (const/let/var/export), or the TOKEN_FORM key. */
   oldNames: Object.freeze(['FORM_LIMITS', 'STATE_CAPS', 'ADDRESS_RATE_LIMIT']),
   oldMember: Object.freeze({ owner: 'TOKEN_FORM', key: 'maxBodyBytes' }),
-  source: path.join('packages', 'connector', 'src'),
+  source: path.join('packages', 'dsh-connector', 'src'),
   sourceFile: /\.(?:c|m)?js$/,
 })
 

@@ -25,7 +25,7 @@ function configOf(patches, row) {
 /**
  * @param {string} [file] - the patch to read; core's own by default.
  * @returns {{rows: readonly string[], policy: readonly {key: string, value: unknown}[]}} the guarded
- *   row ids (session-creating rows, `fishball-instance` and the shipped presets) in patch order, and
+ *   row ids (session-creating rows, `dsh-instance` and the shipped presets) in patch order, and
  *   one intended value per `GUARDS.policy` key (a key list for `keys: true` entries).
  * @throws when the patch cannot be read or a policy row is missing: core's own file is broken.
  */

@@ -1,5 +1,5 @@
 /**
- * K1c black-box rows: the managed-state seam frozen in `fishball-connector/mcp-schema` (spec and
+ * K1c black-box rows: the managed-state seam frozen in `dsh-connector/mcp-schema` (spec and
  * oracles: k1c-constants.mjs). Written from Fishball's K1c spec, the README and index.d.ts only; no
  * K1c implementation file was read.
  *

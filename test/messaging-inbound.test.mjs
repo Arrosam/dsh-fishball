@@ -1,5 +1,5 @@
 /**
- * message_fishball from managed sessions on the H-STUB harness: its framing, dedupe, refusals, the
+ * message_agent from managed sessions on the H-STUB harness: its framing, dedupe, refusals, the
  * queue bound and the intake state. Fishball is now the attached instance, so "Fishball received X"
  * is an `inbox.push` the stub received (contract §4.5). Sources: DESIGN §5b "As built (P5)", §5e,
  * §9 intake; contract §4.5, §8, §9; slim §5.2 "Delivery rules", §8.3; test design C1-P-02,
@@ -7,11 +7,11 @@
  *
  * | id     | technique | requirement | expected |
  * |--------|-----------|-------------|----------|
- * | MSG-01 | EP (bare / standard preset) | DESIGN §5b, §5e | every managed session's request lists message_fishball with the required string 'message' and the optional boolean 'notify_when_finished' |
+ * | MSG-01 | EP (bare / standard preset) | DESIGN §5b, §5e | every managed session's request lists message_agent with the required string 'message' and the optional boolean 'notify_when_finished' |
  * | MSG-03 | EP (valid message, instance ready) | DESIGN §5b; contract §4.5; C1-P-02 | {ok:true, note:'Delivered to Fishball.'}; exactly one inbox.push kind session, sourceSessionId = caller, a messageId and a dedupeKey; trusted header, one untrusted block with session_id, session_title, session_folder and the JSON-quoted text; the intake item session/<id> ends consumed after the ack; the state never holds the text; a detach and a new attach re-deliver nothing |
  * | MSG-04 | EP (hostile text) | DESIGN §5b framing | a fake closing tag and a fake forward stay inside the block as one JSON string; one closing tag; one session_id line; the block id differs per message |
  * | MSG-05 | EP (spoofed sender arguments) | DESIGN §5b | the sender is the calling session, never an argument |
- * | MSG-06 | EP (subagent caller) | DESIGN §5e "Subagents" | a subagent of a managed session has no message_fishball; nothing reaches the stub |
+ * | MSG-06 | EP (subagent caller) | DESIGN §5e "Subagents" | a subagent of a managed session has no message_agent; nothing reaches the stub |
  * | MSG-07 ×4 | DT (call id × response × text) | DESIGN §5b dedupe | same id+response+text: one push, the repeat answers {ok:true, duplicate:true, note}; later response: new; other text: new; other id: new |
  * | MSG-08 ×8 | BVA + EP (maxMessageBytes 64) | DESIGN §5b bounds, §16 | '' and whitespace: empty; 1, 64 ASCII and 64 bytes of 2-byte chars: delivered (the framing does not count); 65 ASCII, 63 + one 2-byte char, 66 bytes: too-large and nothing pushed |
  * | MSG-09 | BVA (maxQueuedInputs 2, no instance) + ST (full → attach → acked → free) | contract §9 queue bound; C1-BVA-03; C1-BVA-06 | 2 accepted, the 3rd queue-full; a Hand over with a note past the bound answers 200 and is queued (a user item is always accepted); after the attach the two messages and the note arrive once each, the 3rd never; a new message is accepted |
@@ -20,8 +20,8 @@
  *
  * Retired:
  * - MSG-02: Fishball's own requests and its message_session/start_session tools belonged to the removed in-process session (slim §12); the instance uses session.message/session.start.
- * - MSG-10: Fishball calling message_fishball needs Fishball's in-process session in the main DSH, which no longer exists (slim §12).
- * - MSG-11: the persona is the instance's own system prompt (packages/instance), not observable on the main side.
+ * - MSG-10: Fishball calling message_agent needs Fishball's in-process session in the main DSH, which no longer exists (slim §12).
+ * - MSG-11: the persona is the instance's own system prompt (packages/dsh-instance), not observable on the main side.
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
@@ -33,7 +33,7 @@ import {
 } from './support/instance-stub-messaging.mjs'
 import { until } from './support/util.mjs'
 
-const INBOUND_TOOL = 'message_fishball'
+const INBOUND_TOOL = 'message_agent'
 /** The pushes of the newest attachment whose message field is exactly text. */
 const pushesOfText = async (stub, text) => (await pushedWith(stub, JSON.stringify(text).slice(1, -1), { kind: KIND.session })).filter((p) => messageOf(p) === text)
 /** Wait until a message with this text was pushed (and the stub is quiet); returns the pushes of it. */
@@ -43,7 +43,7 @@ async function delivered(stub, text) {
   return pushesOfText(stub, text)
 }
 
-describe('message_fishball to the attached instance', () => {
+describe('message_agent to the attached instance', () => {
   let booted
   let host
   let stub
@@ -60,7 +60,7 @@ describe('message_fishball to the attached instance', () => {
   }, HOOK)
   after(() => stopStub(booted), HOOK)
 
-  it('MSG-01 every managed session has message_fishball with one required string argument', T, async () => {
+  it('MSG-01 every managed session has message_agent with one required string argument', T, async () => {
     for (const sid of [bare, std]) {
       const req = (await turn(host, sid, [[{ text: 'list' }]])).requests.at(-1)
       assert.ok(toolNames(req).includes(INBOUND_TOOL), sid + ' lacks ' + INBOUND_TOOL)
@@ -129,7 +129,7 @@ describe('message_fishball to the attached instance', () => {
     }
   })
 
-  it('MSG-06 a subagent of a managed session has no message_fishball', T, async () => {
+  it('MSG-06 a subagent of a managed session has no message_agent', T, async () => {
     const marker = tok('m06sub')
     const text = tok('m06')
     await host.call('queueMarker', { marker, except: std, script: [[{ tool: INBOUND_TOOL, args: { message: text } }], [{ text: 'sub done' }]] })
@@ -280,7 +280,7 @@ describe('the queue bound and the intake state with no instance attached', () =>
 
   it('MSG-13 the client bundle is served and has the Hand over entry', T, async (t) => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references fishball-embed-ui/client.js')
+    assert.ok(bundle.found, 'index references dsh-connector-ui/client.js')
     assert.equal(bundle.status, 200)
     assert.ok(bundle.text.includes(MANAGED_LABELS.handOver), 'entry label')
     // T14 removed the send-only entry; whether its old label still appears anywhere is only recorded.

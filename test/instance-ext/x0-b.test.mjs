@@ -1,7 +1,7 @@
 /**
  * W0 / X0-B — bundling and the admin switch (X17, X18, §2.2).
  *
- * Observation points: `RUNTIME.bundledPlugins`, `packages/instance/package.json`'s dependencies,
+ * Observation points: `RUNTIME.bundledPlugins`, `packages/dsh-instance/package.json`'s dependencies,
  * the admin wire the settings page uses (`admin.plugins.get`, disable, remove) and a real
  * `initializeProfile` run over a fake DSH boot (the start-up placement and the skipped-bundle
  * check). The three plugin packages are fixture packages; the real ones arrive with the plugin
@@ -34,7 +34,7 @@ describe('X0-B X17/X18 bundled plugin identity', () => {
   })
 
   it('XB-P-02 the instance declares each bundled plugin as an exact-version dependency', async (t) => {
-    const manifest = JSON.parse(await readFile(path.join(REPO, 'packages', 'instance', 'package.json'), 'utf8'))
+    const manifest = JSON.parse(await readFile(path.join(REPO, 'packages', 'dsh-instance', 'package.json'), 'utf8'))
     const dependencies = manifest.dependencies ?? {}
     for (const name of BUNDLED) {
       assert.equal(typeof dependencies[name], 'string', name + ' is a dependency')
@@ -142,7 +142,7 @@ describe('X0-B X18 disable is a hand-over (U7, §2.4)', () => {
 
 describe('X0-B §2.2 placement at child start', () => {
   async function instanceNodeModules(t) {
-    const dir = path.join(REPO, 'packages', 'instance', 'node_modules')
+    const dir = path.join(REPO, 'packages', 'dsh-instance', 'node_modules')
     await mkdir(dir, { recursive: true })
     const made = []
     for (const name of ['fishball-fold-notify', 'fishball-board']) {
@@ -163,7 +163,7 @@ describe('X0-B §2.2 placement at child start', () => {
     const installation = {
       bootPath: path.join(REPO, 'test', 'fixtures', 'fake-dsh-boot.mjs'),
       installRoot: path.dirname(path.dirname(REPO)),
-      installAnchor: path.join(REPO, 'packages', 'instance'),
+      installAnchor: path.join(REPO, 'packages', 'dsh-instance'),
     }
     const warnings = []
     const preflight = async () => ({ warnings })
@@ -205,7 +205,7 @@ describe('X0-B §2.2 placement at child start', () => {
     const installation = {
       bootPath: path.join(REPO, 'test', 'fixtures', 'fake-dsh-boot.mjs'),
       installRoot: path.dirname(path.dirname(REPO)),
-      installAnchor: path.join(REPO, 'packages', 'instance'),
+      installAnchor: path.join(REPO, 'packages', 'dsh-instance'),
     }
     await assert.rejects(
       () => initializeProfile({ mainHome: home, root: path.join(home, 'runtime'), workspace: path.join(home, 'workspace'), profile, home }, installation, async () => ({ warnings: [] }), []),

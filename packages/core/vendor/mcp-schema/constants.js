@@ -53,7 +53,7 @@ export const PROTOCOL = Object.freeze({
  * The runtime SDK pins (R-CONN `368e848`). `@modelcontextprotocol/node` 2.1.1 and later need
  * server ^2.3.0, so 2.1.0 is the newest adapter that admits server 2.2.0, the line of both hosts'
  * client. A change of either pin is a K1 amendment and also a change of
- * `packages/connector/package.json` (C-WIRE owns it after W1).
+ * `packages/dsh-connector/package.json` (C-WIRE owns it after W1).
  */
 export const SDK_PINS = Object.freeze({
   '@modelcontextprotocol/server': '2.2.0',
@@ -62,9 +62,9 @@ export const SDK_PINS = Object.freeze({
 
 /** Routes. DSH's listener routes are `exact` (S1 F3: exact routes win over DSH's `/api` prefix). */
 export const PATHS = Object.freeze({
-  mcp: '/api/fishball/mcp',
-  issuer: '/api/fishball/oauth',
-  token: '/api/fishball/oauth/token',
+  mcp: '/api/agent/mcp',
+  issuer: '/api/agent/oauth',
+  token: '/api/agent/oauth/token',
   // RFC 9728 §3.1 / RFC 8414 §3.1: the well-known segment is inserted before the path.
   protectedResourcePrefix: '/.well-known/oauth-protected-resource',
   authorizationServerPrefix: '/.well-known/oauth-authorization-server',
@@ -75,19 +75,19 @@ export const PATHS = Object.freeze({
 
 /** The one event resource (R-EVS-01, R-CON-04). Its contents are a summary, never event bodies. */
 export const RESOURCE = Object.freeze({
-  events: Object.freeze({ name: 'fishball-events', uri: 'fishball://events', mimeType: 'application/json' }),
+  events: Object.freeze({ name: 'agent-events', uri: 'dsh-agent://events', mimeType: 'application/json' }),
 })
 
 /**
  * "Connected" (design §3.5, §3.6): a principal is connected (online) exactly while it holds at
  * least one open `subscriptions/listen` stream whose `resourceSubscriptions` include
- * `fishball://events`. It is the one definition: embed-UI's lights, `ask_fishball`'s `unavailable`
+ * `dsh-agent://events`. It is the one definition: embed-UI's lights, `ask_agent`'s `unavailable`
  * check and the native status column all use it. It is not a timer and no request refreshes it.
  */
 export const CONNECTED = Object.freeze({ listenResource: RESOURCE.events.uri })
 
 /** Access-token scopes (R-OA-04, R-OA-02). `offline_access` is never listed ([spec] S7b §4). */
-export const SCOPE = Object.freeze({ full: 'fishball', pair: 'fishball:pair' })
+export const SCOPE = Object.freeze({ full: 'agent', pair: 'agent:pair' })
 
 /** OAuth grants and client-authentication methods (R-OA-02). */
 export const GRANT = Object.freeze({
@@ -245,8 +245,8 @@ export const PAIR_ONLY = Object.freeze({
 
 /** Token values, access tokens, refresh tokens and codes (R-TOK-08, R-OA-05, design §5.2, §5.6). */
 export const TOKEN_VALUE = Object.freeze({
-  // [design] 32 random bytes, base64url, `fbt_` prefix: ≥ 256 bits, and recognised by scanners.
-  generatedPrefix: 'fbt_',
+  // [design] 32 random bytes, base64url, `dsht_` prefix: ≥ 256 bits, and recognised by scanners.
+  generatedPrefix: 'dsht_',
   generatedBytes: 32,
   // [req] TQ-4 A. Characters are Unicode code points, as every `*Chars` limit of the connector.
   minChars: 32,
@@ -564,7 +564,7 @@ export const CONTRIBUTED_TYPE_PREFIX = CONTRIBUTED_EVENT.typePrefix
 
 /**
  * The three offer types (R-EVS-02). Their events carry `offer`; a revocation withdraws them to the
- * user (R-TOK-05). An `ask` (ask_fishball) is answered the same way, with `approval_answer` on its
+ * user (R-TOK-05). An `ask` (ask_agent) is answered the same way, with `approval_answer` on its
  * `offer.offerId` (it is V2's asked request, contract 1.2 §4.2), but it is not an offer for
  * revocation: a disable keeps it for 30 days and the asker keeps waiting (R-TOK-05).
  */

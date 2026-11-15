@@ -12,7 +12,7 @@
  * | 4a | as 4, for a credential the link's pairing gate holds a paired record for (R-HOST-10, K3 `TargetCode`) | `token-refused` | `token-revoked` |
  * | 5 | connected (listen stream open) | `connected` | `null` |
  * | 6 | the MCP route answered 404 (a V2 connector), the target sends the link to another origin or
- * |   | names another issuer, or its listen stream does not honour `fishball://events` | `target-unreachable` | `TARGET_INCOMPATIBLE` |
+ * |   | names another issuer, or its listen stream does not honour `dsh-agent://events` | `target-unreachable` | `TARGET_INCOMPATIBLE` |
  *
  * Rule 6 uses K3's wording "the target … is not a V3 connector" for its state: a V3 connector
  * always names its own origin's K1 issuer and honours the events subscription (the user's

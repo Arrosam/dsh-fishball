@@ -68,7 +68,7 @@ export const RP_CHECK = freezeData({
   /** Main-side texts that must not name the child-only tab or its module (AC1, decision R1). */
   mainNeedles: ['fishball-recommended', 'fishball-recommend-plugins', 'api/fishball/recommended'],
   // R-EMBED: the main-side UI (connector UI and instance card) moved into embed-UI's client folder.
-  mainSources: { connectorDir: path.join(REPO, 'packages', 'connector'), embedClientDir: path.join(REPO, 'packages', 'embed-ui', 'src', 'client') },
+  mainSources: { connectorDir: path.join(REPO, 'packages', 'dsh-connector'), embedClientDir: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'client') },
   sourceExtensions: ['.js', '.mjs', '.json', '.yml', '.yaml'],
   skipDirs: ['node_modules', 'test'],
   /** Historical checked versions (DESIGN §10f): not new install pins (AC2). */

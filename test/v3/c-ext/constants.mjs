@@ -4,23 +4,23 @@
  * rows other tasks own (todo).
  *
  * Every product value comes from a frozen contract module, never from an implementation:
- * - K2 `fishball-connector/tools` (packages/connector/tools/): codes, limits, grammar, the `_meta`
+ * - K2 `dsh-connector/tools` (packages/dsh-connector/tools/): codes, limits, grammar, the `_meta`
  *   key, the alias and reserved namespaces, abort reasons, the emit check order;
- * - K1 `fishball-connector/mcp-schema` (packages/connector/mcp-schema/): the K1 interfaces' words
+ * - K1 `dsh-connector/mcp-schema` (packages/dsh-connector/mcp-schema/): the K1 interfaces' words
  *   the fakes speak (retirement reason, queue size, scope, the generated-token prefix).
  * The rest is fixture data (package names, markers, pairs) and harness timing, which are not
  * product values.
  */
 import path from 'node:path'
-import * as K1 from '../../../packages/connector/mcp-schema/index.js'
-import * as K2 from '../../../packages/connector/tools/index.js'
+import * as K1 from '../../../packages/dsh-connector/mcp-schema/index.js'
+import * as K2 from '../../../packages/dsh-connector/tools/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export { K1, K2 }
 
 /** The C-EXT "Owns" folder. FBTEST_C_EXT_ENTRY moves the entry (another checkout). */
 export const SUBJECT = Object.freeze({
-  entry: process.env.FBTEST_C_EXT_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'contrib', 'index.js'),
+  entry: process.env.FBTEST_C_EXT_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'contrib', 'index.js'),
   /** The factory export (subject.mjs; the seam C-EXT relayed through Fishball, 2026-11-14). */
   factory: 'createContributions',
 })
@@ -38,7 +38,7 @@ export const DSH = Object.freeze({
 })
 
 /**
- * The service's members (K2 README "Service" table and index.d.ts `FishballConnectorTools`: "It offers
+ * The service's members (K2 README "Service" table and index.d.ts `DshConnectorTools`: "It offers
  * no other member", R-EXT-11). K2 freezes them as names in prose and types, not as data.
  */
 export const SERVICE_MEMBERS = Object.freeze(['apiVersion', 'emit', 'mine', 'register'])
@@ -61,7 +61,7 @@ export const FIXTURE = Object.freeze({
   version: '1.2.3',
   /** Contributor packages (EXT-UC-01…03, EXT-EP-02). */
   pkg: Object.freeze({
-    board: 'board-helper', acme: '@acme/tools', embed: 'fishball-embed-ui', ci: 'ci-watch', flaky: 'flaky',
+    board: 'board-helper', acme: '@acme/tools', embed: 'dsh-connector-ui', ci: 'ci-watch', flaky: 'flaky',
     other: 'fbtest-other', holder: 'fbtest-holder', user: 'fbtest-user', declared: 'fbtest-real-package',
     dash: 'a-b', scoped: '@a/b', short: 'ns',
     long128: pad(LONG_NS - LONG_SUFFIX.length, 'n') + LONG_SUFFIX, long129: pad(LONG_NS + 1 - LONG_SUFFIX.length, 'n') + LONG_SUFFIX,
@@ -120,8 +120,8 @@ export const FIXTURE = Object.freeze({
   session: Object.freeze({ managed: 'fbtest-s1', unmanaged: 'fbtest-s2', unknown: 'fbtest-s9' }),
   /** Paired principals (K1 `Pair`); keys are opaque fixture strings. */
   pairs: Object.freeze({
-    d: Object.freeze({ entryKey: 'fbtest-entry-d', principalKey: 'fbtest-pk-d', id: 'fbtest-id-d', name: 'Fishball', label: 'fbtest-label-d', token: 'fbt_fbtestTokenOfD0000000000000000000000' }),
-    e2: Object.freeze({ entryKey: 'fbtest-entry-e2', principalKey: 'fbtest-pk-e2', id: 'fbtest-id-e2', name: 'Ops', label: 'fbtest-label-e2', token: 'fbt_fbtestTokenOfE20000000000000000000000' }),
+    d: Object.freeze({ entryKey: 'fbtest-entry-d', principalKey: 'fbtest-pk-d', id: 'fbtest-id-d', name: 'Fishball', label: 'fbtest-label-d', token: 'dsht_fbtestTokenOfD0000000000000000000000' }),
+    e2: Object.freeze({ entryKey: 'fbtest-entry-e2', principalKey: 'fbtest-pk-e2', id: 'fbtest-id-e2', name: 'Ops', label: 'fbtest-label-e2', token: 'dsht_fbtestTokenOfE20000000000000000000000' }),
   }),
   /** A mailbox event the fake preloads (EXT-DT-01 rule 7); its type is not a contributor's. */
   fillerType: K1.EVENT_TYPE.message,

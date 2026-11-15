@@ -11,7 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { API, APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, ELLIPSIS, MANAGED_API, MANAGED_ENTRY_KEYS, MANAGED_IDENTITY, OUTCOME } from './constants.mjs'
 import { askSettled, callScript, settledIdle, startAsk, stockSeen, toolNames, turn, untrustedBlock } from './expect.mjs'
-import { CARD_CLOSED, DECISION, EVENT, QUESTION_ANSWER, RECORD_ITEM, RISK } from 'fishball-connector/contract'
+import { CARD_CLOSED, DECISION, EVENT, QUESTION_ANSWER, RECORD_ITEM, RISK } from 'dsh-connector/contract'
 import { OPERATION, STUB, bootStub, restartStub } from './instance-stub.mjs'
 import { sleep, until } from './util.mjs'
 

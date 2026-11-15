@@ -1,6 +1,6 @@
 /**
  * The fakes of C-ROUTE's injected ports (subject.mjs names each port). Each implements the K1
- * interface it stands for (`fishball-connector/mcp-schema/index.d.ts`) plus the test-only drivers
+ * interface it stands for (`dsh-connector/mcp-schema/index.d.ts`) plus the test-only drivers
  * named in its comment; nothing here reads C-ROUTE's code.
  *
  * Keys follow FIXTURE: entry `fbtest-entry-<id>`, principal `fbtest-principal-<id>` (the same
@@ -90,11 +90,11 @@ export class FakePresence {
 }
 
 /**
- * The connector's live routing settings: `routing.fishballToken` (an EntryKey or undefined) and
+ * The connector's live routing settings: `routing.agentToken` (an EntryKey or undefined) and
  * `maxQueuedInputs` (undefined = the K1 default). Driver: `set(patch)` fires `onChange`.
  */
 export class FakeSettings {
-  #values = { fishballToken: undefined, maxQueuedInputs: undefined }
+  #values = { agentToken: undefined, maxQueuedInputs: undefined }
   #changed = new Set()
   get() { return { ...this.#values } }
   set(patch) { this.#values = { ...this.#values, ...patch }; fire(this.#changed) }

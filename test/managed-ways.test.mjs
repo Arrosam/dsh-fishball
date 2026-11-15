@@ -20,7 +20,7 @@
  * | MGD-08  | ST (managed –Take back→ yours) | §5e item 4, contract §4.5 | 200; entry gone; one `user` note naming the folder and the user; next request has no managed tool and no "Fishball"; permission request to the stock prompt |
  * | MGD-09  | ST (managed –session.release→ yours) | contract §4.1, §4.5 | {sessionId, managed:false}; entry gone; one `system` note naming the folder; next request has no managed tool; permission request to the stock prompt |
  * | MGD-09b ×6 | DT/BVA (session.release refusals and reason length) | contract §4.1, §8 (reasonChars 500) | yours: not-managed; the instance's own session: is-fishball; unknown id: unknown-session; reason 500 chars: accepted; reason '': error reason-required (§4.1 names it); 501 chars: refused (an error frame or a validation close, §3.1), no response; the session stays managed |
- * | MGD-10 ×2 | DT (message_fishball × yours / managed) | §5e "tools per session", contract §4.5 | yours: UNKNOWN_TOOL, no inbox item; managed: {ok:true, note:'Delivered to Fishball.'}, one `session` item from it |
+ * | MGD-10 ×2 | DT (message_agent × yours / managed) | §5e "tools per session", contract §4.5 | yours: UNKNOWN_TOOL, no inbox item; managed: {ok:true, note:'Delivered to Fishball.'}, one `session` item from it |
  * | MGD-11 ×5 | DT (route × the instance's own / unknown session) | §10e, contract §4.1 | Hand over / Take back of the instance's own session: 409 is-fishball; session.message to it: is-fishball; unknown id (managed true / false): 409 unknown-session; the own session is never listed |
  * | MGD-12 ×8 | EP (bad body) | §10e | invalid JSON, array, {}, missing managed, missing sessionId, managed 'true', sessionId 1, sessionId '' → 400 bad-body; nothing changes |
  * | MGD-13 ×2 | EP (session.watch / session.read on a session that is yours) | §5e "Reading", contract §4.1 (related session), §7 WATCH_ERROR | watch: a response with watchError not-related; read: an error frame; neither makes the session managed; no tool |
@@ -28,17 +28,17 @@
  * | MGD-15 ×2 | ST (Hand over / Take back while a turn is held at step 1) | §5e "tools per session" | step 1's request is as before; step 2 of the same turn has (hand over) / lacks (take back) the tools |
  * | MGD-16  | EP (client bundle) | §10e, slim §8.3 | carries "Hand over to Fishball" and "Take back from Fishball"; no "Send to Fishball" or "Tell Fishball when finished" button |
  * | MGD-17  | diagnostic | — | unspecified transitions: hand over twice, take back a session that is yours |
- * | MGD-18  | BVA (queue bound 2, no instance) | contract §9, C1-BVA-06, conn-OQ-03 | a third message_fishball is refused queue-full; Hand over with a note and Take back still answer 200 and change management; after the attach the four items arrive in arrival order, each once; a release whose `system` note meets the full bound still stands |
+ * | MGD-18  | BVA (queue bound 2, no instance) | contract §9, C1-BVA-06, conn-OQ-03 | a third message_agent is refused queue-full; Hand over with a note and Take back still answer 200 and change management; after the attach the four items arrive in arrival order, each once; a release whose `system` note meets the full bound still stands |
  *
  * Retired:
  * - MGD-05 (by 'send'): Hand over with a note posts the forward route, which records by hand-over (slim §8.3, T14 item 3); there is no separate send tag.
  * - MGD-06 (message makes managed): session.message serves managed sessions only (contract §4.1) and refuses one that is yours with not-managed, so messaging is no longer a way in.
  * - MGD-13 (watch route): "Tell Fishball when finished" and its route are gone (slim §8.3: watch-only dropped).
- * - MGD-11 (Fishball never gets message_fishball): Fishball's own model requests and agent no longer exist in the main DSH (slim §12).
+ * - MGD-11 (Fishball never gets message_agent): Fishball's own model requests and agent no longer exist in the main DSH (slim §12).
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { DELIVERY, ERROR, WATCH_ERROR, WATCH_MODE } from 'fishball-connector/contract'
+import { DELIVERY, ERROR, WATCH_ERROR, WATCH_MODE } from 'dsh-connector/contract'
 import { EMBED_UI_LINK, FISHBALL_WORD, MANAGED_BY, MANAGED_CODE, MANAGED_TOOLS, NOTE_TEXT, P5_CODE, PRESET, RELAY, UNKNOWN_TOOL_TEXT } from './support/constants.mjs'
 import { HOOK, T, fishballClientBundle, settledIdle, toolNames, turn, untrustedBlock } from './support/expect.mjs'
 import { KIND, OPERATION, STUB, handOver, messageFishball, quietPushes, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
@@ -50,7 +50,7 @@ import { sleep, until } from './support/util.mjs'
 
 let seq = 0
 const tok = (label) => 'MGD' + label + 'x' + (++seq) + Math.random().toString(36).slice(2, 7)
-/** The queue bound of MGD-18 (C1-BVA-06: limit 2, two message_fishball open). */
+/** The queue bound of MGD-18 (C1-BVA-06: limit 2, two message_agent open). */
 const QUEUE_BOUND = 2
 const QUEUE_DEFAULT = 200
 const QUEUE_FULL = P5_CODE.queueFull
@@ -271,7 +271,7 @@ describe('yours or managed, and the ways in and out (H-STUB)', () => {
     })
   })
 
-  describe('MGD-10 message_fishball: yours versus managed', () => {
+  describe('MGD-10 message_agent: yours versus managed', () => {
     it('from a session that is yours: UNKNOWN_TOOL and nothing reaches the instance', T, async () => {
       const { sid } = await yours('mgd10-yours')
       const { result } = await messageFishball(host, sid, { message: tok('10y') })
@@ -414,7 +414,7 @@ describe('yours or managed, and the ways in and out (H-STUB)', () => {
 
   it('MGD-16 the client bundle has one Hand over and Take back, and no send or watch button', T, async () => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references fishball-embed-ui/client.js')
+    assert.ok(bundle.found, 'index references dsh-connector-ui/client.js')
     assert.equal(bundle.status, 200)
     assert.ok(bundle.text.includes(MANAGED_STUB.labels.handOver), MANAGED_STUB.labels.handOver)
     assert.ok(bundle.text.includes(MANAGED_STUB.labels.takeBack), MANAGED_STUB.labels.takeBack)

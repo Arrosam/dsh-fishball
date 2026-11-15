@@ -4,7 +4,7 @@ Source of expectations: [runtime requirements](<../docs/runtime-isolation.md>) a
 
 ## Safety and execution boundary
 
-- Every shell invocation requires exact-command approval through `ask_fishball`; this child has no such registered tool, so the parent must forward authorization or run the approved command.
+- Every shell invocation requires exact-command approval through `ask_agent`; this child has no such registered tool, so the parent must forward authorization or run the approved command.
 - Run under `env -i` with disposable `HOME`, `DSH_HOME`, `DSH_AGENTS_HOME`, XDG and temporary roots before importing host code. Do not run the host’s broad suite, read real settings/provider credentials, or use Keychain.
 - Native integration is opt-in via `DSH_RUNTIME_ROOT`; omission skips only native integration and an explicit invalid root fails without fallback. No built-in installation path or download.
 - A test-only transport guard is loaded before CLI imports from the identical copied module URL used by its native fixture. No providers or external requests. Its scope is JavaScript TCP/TLS/fetch, not OS confinement.

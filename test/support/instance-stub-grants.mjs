@@ -11,7 +11,7 @@
  * fixture tools ask DSH for approval in their body (FBTEST_ASKING_TOOLS, ASKING_SHELL_ENV).
  */
 import assert from 'node:assert/strict'
-import { ENVELOPE, ERROR, EVENT, GRANT_KIND, OPERATION, RECORD_ITEM, RISK } from 'fishball-connector/contract'
+import { ENVELOPE, ERROR, EVENT, GRANT_KIND, OPERATION, RECORD_ITEM, RISK } from 'dsh-connector/contract'
 import { APPROVER_AFTER_ENV, APPROVER_HOLDS, ASKING_SHELL_ENV, ASK_TOOL, OUTCOME, PRESET } from './constants.mjs'
 import { approvalAudit, auditOf, settledIdle, step, stockSeen, storedRows, turn } from './expect.mjs'
 import { bootStub, restartStub, userSession } from './instance-stub.mjs'

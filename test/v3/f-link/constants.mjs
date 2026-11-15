@@ -5,8 +5,8 @@
  *
  * Every value comes from docs/test-design/v3/09-standalone-remote.md, docs/planning/v3-requirements.md
  * (R-FB-03, R-FB-04, R-REM-04), v3-design.md §4.1 / §6.3 / §9.1, and the frozen contracts:
- * K1 `fishball-connector/mcp-schema` (paths, hosts, protocol, tools, OAuth builders) and K3
- * `packages/connector/host-services/child.d.ts` (TargetState, TargetCode). Tunable values are imported
+ * K1 `dsh-connector/mcp-schema` (paths, hosts, protocol, tools, OAuth builders) and K3
+ * `packages/dsh-connector/host-services/child.d.ts` (TargetState, TargetCode). Tunable values are imported
  * from K1, never restated. The link's status words, which K3 types but exports no runtime value for,
  * are imported from F-LINK's one declaration of them (see STATE); no other value comes from an
  * implementation.
@@ -14,7 +14,7 @@
 import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { REPO } from '../../support/constants.mjs'
-import * as K1 from '../../../packages/connector/mcp-schema/index.js'
+import * as K1 from '../../../packages/dsh-connector/mcp-schema/index.js'
 
 export { K1 }
 
@@ -158,7 +158,7 @@ export const CLIENT_PIN = Object.freeze({
  */
 export const VENDOR = Object.freeze({
   generator: path.join(REPO, 'packages', 'core', 'scripts', 'vendor-mcp-schema.mjs'),
-  connectorDir: path.join(REPO, 'packages', 'connector'),
+  connectorDir: path.join(REPO, 'packages', 'dsh-connector'),
   committedDir: path.join(REPO, 'packages', 'core', 'vendor'),
   directory: 'vendor',
   entry: path.join('mcp-schema', 'index.js'),

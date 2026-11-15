@@ -164,13 +164,13 @@ export function registerK3Cases(sdk) {
     const hits = [...host().texts].flatMap(([f, t]) => specifiers(t).filter((s) => banned.some((n) => s === n || s.startsWith(n + '/'))).map((s) => f + ': ' + s))
     assert.deepEqual(hits, [])
   })
-  caseTest(sdk, 'K3', 'types', 'core contracts reference nothing of fishball-instance', () => {
+  caseTest(sdk, 'K3', 'types', 'core contracts reference nothing of dsh-instance', () => {
     needDeclarations(core())
     const hits = [...core().texts].flatMap(([f, t]) => specifiers(t).filter((s) => s === V3.instance.name || s.startsWith(V3.instance.name + '/')).map((s) => f + ': ' + s))
     assert.deepEqual(hits, [])
   })
 
-  // ================================================================ HAND: fishballConnectorHandover (D§3.6, K)
+  // ================================================================ HAND: dshConnectorHandover (D§3.6, K)
   caseTest(sdk, 'HAND-EP-01', 1, `the service ${SERVICE.handover} is declared with ${HANDOVER.members.join(', ')}`, () => {
     assertMembers(handover(), HANDOVER.members, SERVICE.handover)
   })
@@ -223,7 +223,7 @@ export function registerK3Cases(sdk) {
     [7, 'labels from embed-UI locale files'], [8, 'markup in a name shown as text'], [9, 'every light has a text alternative'],
   ]) caseTest(sdk, 'HAND-EP-02', row, title, null, LATER.marks)
 
-  caseTest(sdk, 'HAND-DT-01', '1, 2, 6, 7, 7a', 'handOver refusal codes are a frozen vocabulary holding no-fishball, conflict, unknown-session', () => {
+  caseTest(sdk, 'HAND-DT-01', '1, 2, 6, 7, 7a', 'handOver refusal codes are a frozen vocabulary holding no-agent, conflict, unknown-session', () => {
     assertIncludes(resultCodes(host(), member(handover(), 'handOver')), HANDOVER.handOverCodes, 'handOver codes')
   })
   caseTest(sdk, 'HAND-DT-01', '3–5', 'handOver success returns {ok: true, principal}', () => {
@@ -236,10 +236,10 @@ export function registerK3Cases(sdk) {
     assert.ok([...codes].some((code) => !HANDOVER.takeBackCodes.includes(code)), 'no code for "session not managed": ' + JSON.stringify([...codes]))
   })
   for (const [rule, title] of [
-    [1, 'session unknown → unknown-session, no event'], [2, 'no enabled, paired principal → no-fishball'],
+    [1, 'session unknown → unknown-session, no event'], [2, 'no enabled, paired principal → no-agent'],
     [3, 'enabled, paired, online → ok; one handover'], [4, 'the designated Fishball → ok, no special case'],
-    [5, 'offline → ok; handover waits in its mailbox'], [6, 'disabled or deleted at call time → no-fishball; onChange'],
-    [7, 'already managed → conflict; manager unchanged'], ['7a', 'enabled but unpaired → no-fishball'],
+    [5, 'offline → ok; handover waits in its mailbox'], [6, 'disabled or deleted at call time → no-agent; onChange'],
+    [7, 'already managed → conflict; manager unchanged'], ['7a', 'enabled but unpaired → no-agent'],
     [8, 'unknown principal key → refused with the frozen code'],
   ]) caseTest(sdk, 'HAND-DT-01', rule, title, null, LATER.route)
   for (const [rule, title] of [
@@ -249,7 +249,7 @@ export function registerK3Cases(sdk) {
   caseTest(sdk, 'HAND-ST-01', 5, 'P calls session_release → Unmanaged; whether it emits an event (K)', null, LATER.tools)
   caseTest(sdk, 'HAND-ST-01', 9, 'Q calls session_release on P\'s session → refused forbidden (K)', null, LATER.tools)
 
-  // ================================================================ HOST: fishballConnectorTokens (D§5.4, K)
+  // ================================================================ HOST: dshConnectorTokens (D§5.4, K)
   caseTest(sdk, 'HOST-UC-03', 'K', `the service ${SERVICE.tokens} is declared with ${TOKENS.members.join(', ')}`, () => {
     assertMembers(tokens(), TOKENS.members, SERVICE.tokens)
   })
@@ -272,7 +272,7 @@ export function registerK3Cases(sdk) {
     ['E2', 'a failure midway moves nothing'], ['E3', 'a user-made old entry is refused; nothing moves'],
   ]) caseTest(sdk, 'HOST-UC-03', row, title, null, LATER.succeed)
 
-  // ================================================================ HOST / UIM: fishballChild (D§4.1, §6.1, K)
+  // ================================================================ HOST / UIM: dshInstanceChild (D§4.1, §6.1, K)
   caseTest(sdk, 'HOST-ST-01', 'K', `the service ${SERVICE.child} is declared with ${CHILD.members.join(', ')}`, () => {
     assertMembers(child(), CHILD.members, SERVICE.child)
   })

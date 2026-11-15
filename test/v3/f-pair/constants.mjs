@@ -6,7 +6,7 @@
  *
  * Every value comes from docs/test-design/v3/01-auth-pairing.md, 02-names.md, 08-hosted.md,
  * docs/planning/v3-requirements.md (R-ID-02/05/07/10/13, R-OA-18/19, R-FB-04, R-NAME-02/03/05,
- * R-HOST-10) and the frozen contracts: K1 `fishball-connector/mcp-schema` (scopes, tools, OAuth
+ * R-HOST-10) and the frozen contracts: K1 `dsh-connector/mcp-schema` (scopes, tools, OAuth
  * builders, pair results, TARGET_STATE / TARGET_CODE) and K3 `host-services/child.d.ts`
  * (`token-revoked` = refused after the child had paired with it). Tunable values are imported from
  * K1, never restated. No value comes from F-PAIR's implementation.
@@ -14,7 +14,7 @@
 import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { REPO } from '../../support/constants.mjs'
-import * as K1 from '../../../packages/connector/mcp-schema/index.js'
+import * as K1 from '../../../packages/dsh-connector/mcp-schema/index.js'
 
 export { K1 }
 

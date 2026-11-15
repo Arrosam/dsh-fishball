@@ -2,11 +2,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { createBridgeHost } from '../packages/connector/src/slim/host/bridge.js'
+import { createBridgeHost } from '../packages/dsh-connector/src/slim/host/bridge.js'
 import {
   CONNECTOR_CONTRACT, ENVELOPE, OPERATION, EVENT, ERROR, SEMANTIC_CAPABILITY,
   makeEnvelope,
-} from '../packages/connector/contract/contract.js'
+} from '../packages/dsh-connector/contract/contract.js'
 import { until } from './support/util.mjs'
 
 const DATA = Object.freeze({

@@ -2,8 +2,8 @@
  * Revision 11 rev11b regression on H-STUB, added with rev11d (the manager's decision of 2026-11-02, DESIGN §7a.3
  * table: `escalate` has code rules "None: any request can go to you"; `ask` needs only its question; contract §4.2
  * `approval.answer`: with `ask` or `escalate` the reason may be empty). The stub answers a managed session's
- * `ask_fishball` request with `approval.answer`; the request then goes to the user, who answers it on the
- * ask_fishball row (`/api/fishball/requests/answer`, slim §12 "a card that goes to the user is answered in its own
+ * `ask_agent` request with `approval.answer`; the request then goes to the user, who answers it on the
+ * ask_agent row (`/api/fishball/requests/answer`, slim §12 "a card that goes to the user is answered in its own
  * session").
  *
  * | id      | technique | requirement | expected |
@@ -14,7 +14,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ENVELOPE } from 'fishball-connector/contract'
+import { ENVELOPE } from 'dsh-connector/contract'
 import { ASK_CODE, ASK_FISHBALL, ASK_TOOL, AUDIT_ANSWER, CLICK, DECISION } from './support/constants.mjs'
 import { HOOK, T, answerCard, cardOf, jsonOf, stockSeen, untilCard, untilNoCard } from './support/expect.mjs'
 import { managedSession, stopStub } from './support/instance-stub.mjs'
@@ -25,7 +25,7 @@ const { tok, cid } = tokens('REG')
 describe('Revision 11 rev11b regression on H-STUB: escalate and ask need no risk or reason', () => {
   let ctx
   let x
-  /** An ask_fishball request from x waiting for the instance; returns {desc, text, callId}. */
+  /** An ask_agent request from x waiting for the instance; returns {desc, text, callId}. */
   async function waiting(label) {
     const text = tok(label)
     const callId = cid(label)

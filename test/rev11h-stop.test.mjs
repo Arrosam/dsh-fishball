@@ -8,7 +8,7 @@
  * | id      | technique | requirement | expected |
  * |---------|-----------|-------------|----------|
  * | STP-01  | EP (running turn, nothing pending) | §7a.12; §4.1 | {stopped:true}; the turn ends aborted; idle, still managed; the model script does not continue |
- * | STP-02  | ST (an ask_fishball waiting for the instance) | §7a.12 "its waiting requests … are cancelled" | the call ends aborted; the instance's late approval.answer is expired; the turn ends aborted; still managed |
+ * | STP-02  | ST (an ask_agent waiting for the instance) | §7a.12 "its waiting requests … are cancelled" | the call ends aborted; the instance's late approval.answer is expired; the turn ends aborted; still managed |
  * | STP-02b | ST (a direct call waiting for the instance) | §7a.12; §7a.14 "a cancellation as cancelled" | the call ends; approval/decided cancelled in the session; the late answer is expired |
  * | STP-03  | ST (a question waiting for the instance) | §7a.12; §7a.10 | the own card closes; the result is an abort error; the instance's late question.answer is refused |
  * | STP-04  | ST (idle session) | §7a.12 "On an idle session it is a no-op"; §9 outcome idle | {stopped:true}; no new turn end, no model request; still managed |
@@ -18,7 +18,7 @@
  * | STP-08  | EP (audit, with a reason) | §7a.12 "audited"; §9 | one decisions row action stop, by fishball, for the session, at a time; the reason kept as rationale |
  * | STP-09  | EP (reason optional) | §4.1 `reason?` | without a reason: {stopped:true}, audited |
  * | RDR-01  | EP (running turn) | §7a.12 redirect | {status:'delivered'}; old turn aborted; a new turn reads the instruction as a relay from Fishball and completes; the old script does not continue |
- * | RDR-02  | ST (a waiting ask_fishball, a waiting question) | §7a.12 | their offers end (late answers expired); the own card closes; the new turn runs |
+ * | RDR-02  | ST (a waiting ask_agent, a waiting question) | §7a.12 | their offers end (late answers expired); the own card closes; the new turn runs |
  * | RDR-03  | ST (a message you queued before the redirect) | §7a.12 "Messages you queued before the stop run first" | yours is read first, the instruction after it |
  * | RDR-04  | DT (target × refusal) | §4.1; §7 | as STP-07; the running turn of a session that is yours is untouched; nothing delivered |
  * | RDR-05  | EP (audit) | §7a.12 "audited" | one decisions row action redirect, by fishball |
@@ -73,7 +73,7 @@ describe('Revision 11 rev11h on H-STUB: session.stop and session.redirect', () =
     assert.ok(await q.isManaged(sid), 'still managed')
     return r
   }
-  /** An ask_fishball (or direct call) waiting for the instance; returns its approval offer. */
+  /** An ask_agent (or direct call) waiting for the instance; returns its approval offer. */
   async function waitingApproval(sid, label, direct = false) {
     const text = tok(label)
     const id = cid(label)
@@ -96,11 +96,11 @@ describe('Revision 11 rev11h on H-STUB: session.stop and session.redirect', () =
     assert.equal(await q.status(sid), QSTUB.agent.idle, 'stays idle')
   })
 
-  it('STP-02 an ask_fishball waiting for the instance is cancelled', T, async () => {
+  it('STP-02 an ask_agent waiting for the instance is cancelled', T, async () => {
     const sid = await q.session('stp02')
     const { offer, id } = await waitingApproval(sid, '02')
     await stoppedAborted(sid)
-    assert.match((await q.result(sid, id)).text, CALL_ABORTED, 'the ask_fishball call ended aborted')
+    assert.match((await q.result(sid, id)).text, CALL_ABORTED, 'the ask_agent call ended aborted')
     assert.equal(codeOf(await lateApproval(sid, offer)), QSTUB.code.expired)
   })
 

@@ -133,7 +133,7 @@ export function registerFPairCases(sdk) {
   caseTest(sdk, 'AUTH-UC-05', 'main 2', 'pair succeeds: core writes one non-secret record and works (opens its events listen stream)', async (t) => {
     const w = await pairedWorld(t, sdk)
     assert.equal(await recordCount(w), 1, `records after pairing: ${JSON.stringify(await w.records())}`)
-    assert.ok(await untilTrue(() => w.f.eventListens().length > 0), 'core does not listen on fishball://events after pairing')
+    assert.ok(await untilTrue(() => w.f.eventListens().length > 0), 'core does not listen on dsh-agent://events after pairing')
     assertNoSecretKept(w)
   })
 
@@ -341,7 +341,7 @@ export function registerFPairCases(sdk) {
     const mod = await identityModule(sdk)
     const ids = Array.from({ length: GENERATION_SAMPLE }, () => mod[SUBJECT.generateId]())
     assert.deepEqual(ids.filter((id) => !IDENTITY.generated.test(id)), [])
-    assert.deepEqual(ids.filter((id) => !K1.isFishballId(id)), [], 'a generated id is not a valid fishball id')
+    assert.deepEqual(ids.filter((id) => !K1.isAgentId(id)), [], 'a generated id is not a valid fishball id')
     assert.equal(new Set(ids).size, ids.length, 'generated ids repeat')
   })
 

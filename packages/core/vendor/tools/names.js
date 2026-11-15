@@ -8,7 +8,7 @@ import { ToolContributionError } from './errors.js'
 
 /**
  * The namespace of a contributor package: the package name normalised to `[a-z0-9-]`
- * (`@acme/tools` → `acme-tools`), then the one first-party alias (`fishball-embed-ui` →
+ * (`@acme/tools` → `acme-tools`), then the one first-party alias (`dsh-connector-ui` →
  * `embed-ui`). Returns `undefined` when there is no package name or nothing of it survives
  * normalisation; the caller then refuses `contributor-unidentified`. Whether the namespace is
  * reserved or already held is the registry's check, not this function's.

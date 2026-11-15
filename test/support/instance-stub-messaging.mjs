@@ -1,11 +1,11 @@
 /**
- * Group F of the H-STUB rewrite (messaging): message_fishball inbound, Hand over with a note
+ * Group F of the H-STUB rewrite (messaging): message_agent inbound, Hand over with a note
  * (POST /api/fishball/send), intake durability, session.read roles and bounds, and the persona rule.
  * Helpers on top of support/instance-stub.mjs; every expectation comes from the docs the test files
  * name (contract, test design, DESIGN.md, slim design), never from the connector's code.
  */
 import assert from 'node:assert/strict'
-import { INBOX_KIND, OPERATION, ROLE } from 'fishball-connector/contract'
+import { INBOX_KIND, OPERATION, ROLE } from 'dsh-connector/contract'
 import { API, PRESET, READ_MAX } from './constants.mjs'
 import { jsonOf, turn, untrustedBlock } from './expect.mjs'
 import { handOver, managedSession, quietPushes } from './instance-stub.mjs'
@@ -14,9 +14,9 @@ import { until } from './util.mjs'
 export const MSGF = Object.freeze({
   /** Skip reasons of what no stub can show. */
   skip: Object.freeze({
-    personaPrompt: "the persona is the instance's own system prompt (packages/instance, slim §0.5, §12): no model request of Fishball's session exists on the main side, and the built-in instance does not boot under H-STUB, so no black-box path reaches it",
+    personaPrompt: "the persona is the instance's own system prompt (packages/dsh-instance, slim §0.5, §12): no model request of Fishball's session exists on the main side, and the built-in instance does not boot under H-STUB, so no black-box path reaches it",
   }),
-  /** Calls per scripted model response when a case needs many message_fishball calls (kept below DSH's step limits). */
+  /** Calls per scripted model response when a case needs many message_agent calls (kept below DSH's step limits). */
   batch: 50,
   /** Waits: an intake change, a watch notice after a turn end, and the long budget of restart and 200-item cases. */
   waitMs: 10000,
@@ -56,11 +56,11 @@ export const queuedNow = async (host) => (await intakeNow(host)).queued
 /** Wait until the intake has exactly n open items; returns whether it did. */
 export const untilQueued = async (host, n, timeoutMs = MSGF.waitMs) => Boolean(await until(async () => (await queuedNow(host)) === n, timeoutMs, MSGF.pollMs))
 
-// ---- message_fishball from a managed session ----
+// ---- message_agent from a managed session ----
 
-/** One model response with several message_fishball calls ({args, id}), then a closing answer. */
-export const manyCalls = (calls) => [calls.map((c) => ({ tool: 'message_fishball', args: c.args, ...(c.id ? { id: c.id } : {}) })), [{ text: 'done' }]]
-/** Several message_fishball calls in one turn; returns their parsed answers in call order. */
+/** One model response with several message_agent calls ({args, id}), then a closing answer. */
+export const manyCalls = (calls) => [calls.map((c) => ({ tool: 'message_agent', args: c.args, ...(c.id ? { id: c.id } : {}) })), [{ text: 'done' }]]
+/** Several message_agent calls in one turn; returns their parsed answers in call order. */
 export async function sendCalls(host, sessionId, calls) {
   const r = await turn(host, sessionId, manyCalls(calls))
   assert.equal(r.results.length, calls.length, 'one result per call: ' + JSON.stringify(r.results))

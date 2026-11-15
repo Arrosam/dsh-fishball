@@ -3,7 +3,7 @@
  * §3.3, §3.6, §11, §18.2 I9 R1/R2, §18.5 inst-OQ-12/-13). The admission order (inst-OQ-11) is in
  * body-soul-i3-admission.test.mjs.
  * Observation point: createEmbedBroker({service, connection}) of
- * packages/instance/src/slim/host/embed.js on a real loopback http.Server (port 0), with a
+ * packages/dsh-instance/src/slim/host/embed.js on a real loopback http.Server (port 0), with a
  * stand-in lifecycle service (status / embedAccess / restart) and a stand-in DSH admission that
  * refuses `Sec-Fetch-Site: cross-site` with 403 as DSH's requestRejection does (inst-OQ-11 (3)).
  *

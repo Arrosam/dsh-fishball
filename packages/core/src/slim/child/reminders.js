@@ -43,7 +43,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { ROUTES } from 'fishball-connector/contract'
+import { ROUTES } from 'dsh-connector/contract'
 import {
   advance,
   decodeRecord,

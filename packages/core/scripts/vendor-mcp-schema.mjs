@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Regenerates core's vendored copy of K1's `fishball-connector/mcp-schema` in `vendor/` (design
+ * Regenerates core's vendored copy of K1's `dsh-connector/mcp-schema` in `vendor/` (design
  * §9.1: "vendored as a copy so a standalone install needs nothing from the connector package at
  * runtime"). The copy is committed (the user's decision, 2026-11-14), and core's link imports it
  * through `src/link/schema.js` only; this script is how it is refreshed after a K1, K2 or V2
@@ -41,7 +41,7 @@ const VENDOR = Object.freeze({
 })
 
 const here = path.dirname(fileURLToPath(import.meta.url))
-const connectorDir = path.resolve(process.argv[3] ?? path.join(here, '..', '..', 'connector'))
+const connectorDir = path.resolve(process.argv[3] ?? path.join(here, '..', '..', 'dsh-connector'))
 
 function fail(message) {
   console.error('vendor-mcp-schema: ' + message)

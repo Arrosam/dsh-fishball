@@ -2,7 +2,7 @@
  * C-EXT black-box cases (v3-tasks.md row C-EXT, wave W2; docs/test-design/v3/07-contributors.md):
  * EXT-UC-01, EXT-UC-02, EXT-UC-03, EXT-EP-01…04, EXT-BVA-01…04, EXT-DT-01, EXT-DT-02, EXT-ST-01,
  * plus the C-EXT rows of EXT-DT-03 and the K2 suite's C-EXT `todo` rows (test/v3/k2/cases.mjs),
- * which run here. Requirements R-EXT-01…20, R-SEC-04; design §13; K2 `fishball-connector/tools`.
+ * which run here. Requirements R-EXT-01…20, R-SEC-04; design §13; K2 `dsh-connector/tools`.
  *
  * Techniques, and only these, in this order: Use Case (each test names its flow), then Equivalence
  * Partitioning (one test per row), Boundary Value Analysis (one test per value), Decision Table
@@ -424,10 +424,10 @@ function registerUseCases(sdk) {
     assert.equal(lastCommit(world).recipient, D.principalKey)
   })
   row(sdk, ID.uc02, 'A3', 'in HF\'s Fishball DSH the event reaches the Fishball agent through X9; Watchdog never sees it', null, LATER.facade)
-  row(sdk, ID.uc02, 'E1', 'no recipient (no D, no manager) → no-fishball, nothing queued', async (t) => {
+  row(sdk, ID.uc02, 'E1', 'no recipient (no D, no manager) → no-agent, nothing queued', async (t) => {
     const world = await worldFor(t, sdk, { designated: null })
     const c = await world.add(FIXTURE.pkg.ci, { tools: [] })
-    await assertEmitRefused(world, c, note(), EMIT_REFUSAL.noFishball)
+    await assertEmitRefused(world, c, note(), EMIT_REFUSAL.noAgent)
   })
 
   // ---- EXT-UC-03: a failing contributor is contained, then quarantined, then restored ----
@@ -502,9 +502,9 @@ function registerUseCases(sdk) {
   row(sdk, ID.uc03, 'A1 (other refusals)', 'emit refusals other than event-invalid / payload-too-large do not count (decision 2026-11-14)', async (t) => {
     const world = await worldFor(t, sdk, { designated: null })
     const flaky = await world.add(FIXTURE.pkg.flaky, { tools: [FIXTURE.tool.go] })
-    for (let i = 0; i < QUARANTINE.windowOutcomes; i++) await assertEmitRefused(world, flaky, note(), EMIT_REFUSAL.noFishball)
+    for (let i = 0; i < QUARANTINE.windowOutcomes; i++) await assertEmitRefused(world, flaky, note(), EMIT_REFUSAL.noAgent)
     await fail(sdk, world, flaky, QUARANTINE.moreThanFailures)
-    assert.ok(world.listed(toolOf(flaky)), 'no-fishball refusals were counted')
+    assert.ok(world.listed(toolOf(flaky)), 'no-agent refusals were counted')
   })
   row(sdk, ID.uc03, 'A1 (mixed)', 'failed calls and failed emits count toward one quarantine', async (t) => {
     const world = await worldFor(t, sdk)
@@ -732,7 +732,7 @@ function registerPartitions(sdk) {
     c.behaviour[LOOKUP] = async () => { throw new Error(FIXTURE.secretPath) }
     for (const local of [LOOKUP, FIXTURE.tool.second]) await assertContained(sdk, await world.call(D, toolOf(c, local), ARGS))
   })
-  row(sdk, ID.ep03, 8, `a ${FIXTURE.messageLength}-character message holding an fbt_ value → scrubbed and cut to ${TOOL_LIMITS.messageChars}`, async (t) => {
+  row(sdk, ID.ep03, 8, `a ${FIXTURE.messageLength}-character message holding an dsht_ value → scrubbed and cut to ${TOOL_LIMITS.messageChars}`, async (t) => {
     const world = await worldFor(t, sdk)
     const c = await world.add(FIXTURE.pkg.board)
     const token = K1.TOKEN_VALUE.generatedPrefix + FIXTURE.tokenTail
@@ -975,7 +975,7 @@ function registerDecisionTables(sdk) {
   })
   rule(2, 'active, name invalid → event-invalid', (w, c) => assertEmitRefused(w, c, note({ event: FIXTURE.badEventNames[1] }), EMIT_REFUSAL.eventInvalid))
   rule(3, 'name valid, size over → payload-too-large', (w, c) => assertEmitRefused(w, c, note({ payload: payloadOf(EVENT_LIMITS.payloadBytes + 1) }), EMIT_REFUSAL.payloadTooLarge))
-  rule(4, 'size ok, no recipient → no-fishball', (w, c) => assertEmitRefused(w, c, note(), EMIT_REFUSAL.noFishball), { designated: null })
+  rule(4, 'size ok, no recipient → no-agent', (w, c) => assertEmitRefused(w, c, note(), EMIT_REFUSAL.noAgent), { designated: null })
   rule(5, 'recipient exists, rate over → rate-limited', async (w, c) => {
     await exhaust(w, c)
     await assertEmitRefused(w, c, note({ sessionId: FIXTURE.session.managed }), EMIT_REFUSAL.rateLimited)
@@ -1044,9 +1044,9 @@ function registerDecisionTables(sdk) {
   const none = { designated: null }
   recipient(1, 'sessionId given, managed by M → M', { sessionId: FIXTURE.session.managed }, { to: E2.principalKey })
   recipient(2, 'sessionId given, unmanaged, D designated → D', { sessionId: FIXTURE.session.unmanaged }, { to: D.principalKey })
-  recipient(3, 'sessionId given, unmanaged, none designated → no-fishball', { sessionId: FIXTURE.session.unmanaged }, { code: EMIT_REFUSAL.noFishball }, none)
+  recipient(3, 'sessionId given, unmanaged, none designated → no-agent', { sessionId: FIXTURE.session.unmanaged }, { code: EMIT_REFUSAL.noAgent }, none)
   recipient(4, 'no sessionId, D designated → D', {}, { to: D.principalKey })
-  recipient(5, 'no sessionId, none designated → no-fishball', {}, { code: EMIT_REFUSAL.noFishball }, none)
+  recipient(5, 'no sessionId, none designated → no-agent', {}, { code: EMIT_REFUSAL.noAgent }, none)
   recipient(6, 'sessionId of no session of this DSH → event-invalid, nothing queued (TQ-14)', { sessionId: FIXTURE.session.unknown }, { code: EMIT_REFUSAL.eventInvalid })
 
   // ---- EXT-DT-03: contributed tools in tools/list (C-EXT's rows; the matrix is X-MATRIX's) ----

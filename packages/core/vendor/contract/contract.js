@@ -1,5 +1,5 @@
 /**
- * The `fishball-connector` contract v1 (docs/connector-contract.md; design §0.4), envelope v2
+ * The `dsh-connector` contract v1 (docs/connector-contract.md; design §0.4), envelope v2
  * (§15 T01). K1 moved it here from src/slim/contract.js, which now only re-exports this module.
  *
  * Contract only: this module imports no DSH package and holds no behaviour beyond validation
@@ -1293,7 +1293,7 @@ export function decodeEnvelope(encoded, options = {}) {
 
 /**
  * The connector side of the in-process binding (design §0.4). The connector row provides the
- * DSH service `fishballConnector` at apply, with or without an instance; an instance is any
+ * DSH service `dshConnector` at apply, with or without an instance; an instance is any
  * plugin in the same main profile that injects it and calls attachInstance(descriptor).
  *
  * `minor` is this module's minor version. A minor only adds operations, events or optional
@@ -1302,11 +1302,11 @@ export function decodeEnvelope(encoded, options = {}) {
  * 1.1 (K2) adds only UI_LANG below, a browser-side addition with no frame or descriptor change,
  * so a 1.0 instance still attaches (negotiateContract checks the id and the major only).
  */
-export const CONNECTOR_CONTRACT = Object.freeze({ id: 'fishball-connector', major: 1, minor: 2 })
-export const CONNECTOR_SERVICE = 'fishballConnector'
+export const CONNECTOR_CONTRACT = Object.freeze({ id: 'dsh-connector', major: 1, minor: 2 })
+export const CONNECTOR_SERVICE = 'dshConnector'
 
 /**
- * The `fishballConnector` service's members, and nothing else (design §18.5 conn-OQ-49).
+ * The `dshConnector` service's members, and nothing else (design §18.5 conn-OQ-49).
  * `current()` is read-only and carries no transport: it returns null with no instance, else a
  * frozen object of exactly CONNECTOR_SERVICE_API.currentKeys (conn-OQ-08), where `attachedAt` is
  * epoch ms and `attachCount` counts attaches since the connector row was applied. C1 implements
@@ -1324,7 +1324,7 @@ export const CONNECTOR_SERVICE_API = Object.freeze({
  * button opens DSH's form. It stays exported, with its value unchanged, because a minor never
  * removes a name (contract §2); a major 2 may drop it.
  */
-export const BROWSER_MESSAGE = Object.freeze({ keys: Object.freeze(['type']), openSettings: 'fishball-connector:open-settings' })
+export const BROWSER_MESSAGE = Object.freeze({ keys: Object.freeze(['type']), openSettings: 'dsh-connector:open-settings' })
 
 /**
  * Contract 1.1 (K2; design D30, U4): the language the connector asks of the page it frames. The

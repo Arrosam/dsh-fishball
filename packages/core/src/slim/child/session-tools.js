@@ -22,7 +22,7 @@
  * service rather than opening a second channel.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { ANSWER_PLACE, DELIVERY, ERROR, LIMITS, OPERATION, WATCH_MODE, ContractError } from 'fishball-connector/contract'
+import { ANSWER_PLACE, DELIVERY, ERROR, LIMITS, OPERATION, WATCH_MODE, ContractError } from 'dsh-connector/contract'
 import { createBridgeClient } from './bridge.js'
 
 /** Stable Cordis plugin name; the child overlay inserts it as the session-tools row. */

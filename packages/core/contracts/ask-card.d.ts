@@ -1,5 +1,5 @@
 /**
- * The ask card: an `ask` event (`ask_fishball`) that Fishball cannot decide, shown to the user in
+ * The ask card: an `ask` event (`ask_agent`) that Fishball cannot decide, shown to the user in
  * Fishball's own conversation (task K3 freezes its fields; R-FB-11, PLAT-UC-07; S4-Q2 decided).
  * Types only. F-ASKCARD builds it in `packages/core/ui/asks/` and `packages/core/src/asks/`.
  *
@@ -9,7 +9,7 @@
  * R-FB-11 fixes what the card shows: the asking session, the question, and the answer choices or a
  * free answer. Every field name, `state` value and `AskCardAnswer` below is PROPOSED. The values
  * come from the `ask` event's payload, which is K1's (its V2 descriptor: `approvalId`, `offerId`,
- * `prompt`, `choices`, `at`); a V2 `ask_fishball` offers no choices, so `choices` is empty for it
+ * `prompt`, `choices`, `at`); a V2 `ask_agent` offers no choices, so `choices` is empty for it
  * until a K1 amendment adds any.
  */
 

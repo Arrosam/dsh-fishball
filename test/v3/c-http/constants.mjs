@@ -5,7 +5,7 @@
  * 1, 2 and 11–14 (01-auth-pairing.md), and the K1b rows the K1 suite left `todo` for C-HTTP
  * (k1b-cases.mjs: K1b-UC-01, K1b-DT-05, K1b-BVA-02, K1b-ST-02).
  *
- * Every product value is K1's (`fishball-connector/mcp-schema`): statuses, paths, the request
+ * Every product value is K1's (`dsh-connector/mcp-schema`): statuses, paths, the request
  * gate's routes, orders, headers and Retry-After (REQUEST_GATE), limits, refusal words, the
  * protocol revision and codes, the bearer challenge. MCP wire names that the SDK owns (the `_meta`
  * keys, the legacy revision, METHOD_NOT_FOUND) come from the SDK under test (subject.mjs). The rest
@@ -15,7 +15,7 @@ import path from 'node:path'
 import {
   APPROVAL_LISTENER, BEARER_CHALLENGE, ENDPOINT_LIMITS, GATE_SURFACE, HOSTS, HTTP_METHOD, HTTP_REFUSAL, HTTP_STATUS, OAUTH_ERROR,
   OAUTH_ERROR_STATUS, PATHS, PROTOCOL, RATE_LIMITS, REQUEST_GATE, RESOURCE, SCOPE, TIME_UNIT, bearerChallenge, oauthUrls,
-} from '../../../packages/connector/mcp-schema/index.js'
+} from '../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export {
@@ -29,7 +29,7 @@ export {
  * FBTEST_C_HTTP_ENTRY moves the entry (another checkout).
  */
 export const SUBJECT = Object.freeze({
-  entry: process.env.FBTEST_C_HTTP_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'mcp', 'http', 'index.js'),
+  entry: process.env.FBTEST_C_HTTP_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'mcp', 'http', 'index.js'),
   gateFactory: /^create\w*Gate$/i,
   routeFactory: /^create\w*(?:Route|Endpoint)$/i,
   /** K1b `RequestGate` methods. */

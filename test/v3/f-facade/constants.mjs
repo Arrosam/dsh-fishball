@@ -4,9 +4,9 @@
  * EXT-UC-04 A1. Requirements R-EXT-05/13/14/20, R-UI-08/09, R-FB-06, R-FN-01, design §6.3.
  *
  * Every product value comes from a frozen contract, never from an implementation:
- * - K1 `fishball-connector/mcp-schema`: the core tool list (`TOOLS`), the target states, the
+ * - K1 `dsh-connector/mcp-schema`: the core tool list (`TOOLS`), the target states, the
  *   `disconnected` answer (`LINK_REFUSAL`), `unsupported-operation` (`REFUSAL`), event types;
- * - K2 `fishball-connector/tools`: the public-name separator, the embed-UI alias, the contributor
+ * - K2 `dsh-connector/tools`: the public-name separator, the embed-UI alias, the contributor
  *   `_meta` key;
  * - design §13.6 (flag D§13.6): embed-UI's attention tools' local names and results;
  * - design §6.3: "no raw `mcp__…` tool" (the prefix DSH's own MCP client gives every MCP tool).
@@ -15,8 +15,8 @@
 import path from 'node:path'
 import {
   CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, REFUSAL, TARGET_CODE, TARGET_STATE, TOOL, TOOLS,
-} from '../../../packages/connector/mcp-schema/index.js'
-import * as K2_TOOLS from '../../../packages/connector/tools/index.js'
+} from '../../../packages/dsh-connector/mcp-schema/index.js'
+import * as K2_TOOLS from '../../../packages/dsh-connector/tools/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, TOOL, TOOLS }
@@ -81,7 +81,7 @@ export const K1 = Object.freeze({
 const { NAMESPACE } = K2_TOOLS
 export const K2 = Object.freeze({
   separator: NAMESPACE.separator,
-  embedUi: NAMESPACE.aliases['fishball-embed-ui'],
+  embedUi: NAMESPACE.aliases['dsh-connector-ui'],
   metaKey: K2_TOOLS.CONTRIBUTOR_META_KEY,
   externalName: K2_TOOLS.EXTERNAL_NAME,
 })
@@ -113,7 +113,7 @@ export const MODEL_NAME = Object.freeze({
 })
 /** The model-facing name of a public tool name (Fishball 2026-11-15; K2 EXTERNAL_NAME since DECIDED #W3-2). */
 export function modelName(publicName) {
-  if (K2.externalName === undefined) throw new Error('fishball-connector/tools exports no EXTERNAL_NAME (K2 amendment at the W3 merge)')
+  if (K2.externalName === undefined) throw new Error('dsh-connector/tools exports no EXTERNAL_NAME (K2 amendment at the W3 merge)')
   return publicName.split(MODEL_NAME.from).join(MODEL_NAME.to)
 }
 

@@ -11,15 +11,15 @@
  *
  * | id      | technique | requirement | expected |
  * |---------|-----------|-------------|----------|
- * | LUM-01  | EP (managed session) | §7a.2, §5e | its next model request lists message_fishball, ask_fishball and list_user_messages |
- * | LUM-02 ×2 | EP (yours: ask_fishball / list_user_messages) | §7a.2 | neither in its request; calling either is DSH's UNKNOWN_TOOL error; no body runs (no frame reaches the instance) |
+ * | LUM-01  | EP (managed session) | §7a.2, §5e | its next model request lists message_agent, ask_agent and list_user_messages |
+ * | LUM-02 ×2 | EP (yours: ask_agent / list_user_messages) | §7a.2 | neither in its request; calling either is DSH's UNKNOWN_TOOL error; no body runs (no frame reaches the instance) |
  * | LUM-03  | ST (managed –Take back→ yours) | §5e | the next request has none of the three tools |
  * | LUM-05  | EP (sources: user, user-rpc form, the instance's relay, fishball-notice, runtime-context, another session's) | §7a.2 | only the user-typed messages of that session: {ok:true, messages:[{id, at, excerpt}]} with exactly those keys, DSH message ids, ISO times, newest first |
  * | LUM-06 ×2 | BVA (userMessagesListed 20: 20 / 21 messages) | §16 | 20 → all 20; 21 → 20, the newest (the oldest left out) |
  * | LUM-07  | BVA (userMessagesListed 1) | §16 | only the newest; applied without a restart (connector live, the same attachment) |
  * | LUM-08 ×2 | BVA (userMessageExcerptChars 1000: 1000 / 1001 chars of 2-byte text) | §16 | 1000 → the whole text; 1001 → at most 1000 characters, a prefix (an ellipsis allowed) |
  * | LUM-09  | BVA (userMessageExcerptChars 1) | §16 | every excerpt at most 1 character; applied without a restart |
- * | LUM-10  | EP (config) | §16, conn-OQ-20 | both fields in the fishball-connector row's form with defaults 20 and 1000, in the settings value and in state.limits |
+ * | LUM-10  | EP (config) | §16, conn-OQ-20 | both fields in the dsh-connector row's form with defaults 20 and 1000, in the settings value and in state.limits |
  * | LUM-11 ×4 | BVA (min 1: 1 accepted, 0 refused, per field) | §16 "Rules" | 1 accepted and shown in state.limits; 0 refused, the value stays |
  */
 import assert from 'node:assert/strict'

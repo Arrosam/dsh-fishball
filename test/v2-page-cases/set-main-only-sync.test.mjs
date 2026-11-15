@@ -78,11 +78,11 @@ after(() => {
 const MOS = Object.freeze({
   task: 'SET-MAIN-ONLY',
   route: Object.freeze({
-    status: '/api/fishball-instance/status',
-    retry: '/api/fishball-instance/retry',
-    restart: '/api/fishball-instance/restart',
-    check: '/api/fishball-instance/models/check',
-    add: '/api/fishball-instance/models/add',
+    status: '/api/dsh-instance/status',
+    retry: '/api/dsh-instance/retry',
+    restart: '/api/dsh-instance/restart',
+    check: '/api/dsh-instance/models/check',
+    add: '/api/dsh-instance/models/add',
   }),
   method: Object.freeze({ get: 'GET', post: 'POST' }),
   base: 'http://dsh.internal',

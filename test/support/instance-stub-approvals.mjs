@@ -7,7 +7,7 @@
  * is asked in the session" is observable as a record of the scripted answerer.
  */
 import assert from 'node:assert/strict'
-import { CARD_CLOSED, DECISION, EVENT, OPERATION, RECORD_ITEM, RISK } from 'fishball-connector/contract'
+import { CARD_CLOSED, DECISION, EVENT, OPERATION, RECORD_ITEM, RISK } from 'dsh-connector/contract'
 import { APPROVER_AFTER_ENV, ASK_REASON, ASK_TOOL, OUTCOME } from './constants.mjs'
 import { approvalAudit, askSettled, callScript, stockSeen, untrustedBlock } from './expect.mjs'
 import { bootStub, KIND } from './instance-stub.mjs'
@@ -39,7 +39,7 @@ export const APPROVALS = Object.freeze({
   item: Object.freeze({
     prefix: (id) => '[permission request ' + id + ']',
     direct: /a direct call/,
-    asked: /asks first.*ask_fishball/,
+    asked: /asks first.*ask_agent/,
     /** 'Arguments: <status>' (a cut or missing status adds its high-risk note before the full stop). */
     argumentsLine: (status) => 'Arguments: ' + status,
     highRisk: /alone makes it high risk/,
@@ -73,7 +73,7 @@ export const APPROVALS = Object.freeze({
   mode: Object.freeze({ readOnly: 'read-only' }),
   policy: Object.freeze({ ask: 'ask', never: 'never' }),
   /** Text the agent sees for a question on a direct call (DESIGN §7a.3 "ask on a direct call"). */
-  askFishballWord: /ask_fishball/,
+  askFishballWord: /ask_agent/,
 })
 
 let seq = 0
@@ -156,7 +156,7 @@ export const answerOffer = (stub, sessionId, descriptor, answer, { offerId = des
 /**
  * Answer the nth offer matching pred as soon as it arrives, while the asking turn runs (the instance answers
  * on its own time, so a case starts this before it drives the turn). Resolves {frame, reply}, or undefined
- * when no such offer came. A continued request (ask_fishball's reply) is offered again with the same id, so
+ * when no such offer came. A continued request (ask_agent's reply) is offered again with the same id, so
  * nth = 2 answers its second round.
  */
 export function answerWhen(stub, pred, answer, { nth = 1, timeoutMs = APPROVALS.ms.settle } = {}) {

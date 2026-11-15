@@ -20,7 +20,7 @@ import { REPO } from '../../support/constants.mjs'
 const ROOT = process.env.FBTEST_K3_ROOT ?? path.join(REPO, 'packages')
 export const FOLDER = Object.freeze({
   /** Host-only services of a main / host DSH (connector-side folder). */
-  hostServices: path.join(ROOT, 'connector', 'host-services'),
+  hostServices: path.join(ROOT, 'dsh-connector', 'host-services'),
   /** Fishball-side contracts of fishball-core (interception, settings sections, ask card). */
   coreContracts: path.join(ROOT, 'core', 'contracts'),
 })
@@ -123,15 +123,15 @@ export const DATA_ONLY_FORMATTER = FORMATTER
 
 /** The Cordis service names the K3 row and design §3.6 / §4.1 / §5.4 / §6.4 give. */
 export const SERVICE = Object.freeze({
-  handover: 'fishballConnectorHandover',
-  tokens: 'fishballConnectorTokens',
-  child: 'fishballChild',
+  handover: 'dshConnectorHandover',
+  tokens: 'dshConnectorTokens',
+  child: 'dshInstanceChild',
   instance: 'fishballInstance',
 })
 /** Design §3.6, §4.1, §5.4: every host-only service carries `apiVersion: 1` (UIM-EP-01 row 5). */
 export const API_VERSION = Object.freeze({ member: 'apiVersion', value: '1' })
 
-/** Design §3.6 (HAND): members, arities and refusal codes of `fishballConnectorHandover`. */
+/** Design §3.6 (HAND): members, arities and refusal codes of `dshConnectorHandover`. */
 export const HANDOVER = Object.freeze({
   members: Object.freeze(['apiVersion', 'managed', 'principals', 'onChange', 'handOver', 'takeBack']),
   /** handOver(sessionId, principalKey, note?) and takeBack(sessionId, note?): the note is optional. */
@@ -139,7 +139,7 @@ export const HANDOVER = Object.freeze({
   takeBack: Object.freeze({ params: 2, optionalFrom: 1 }),
   onChange: Object.freeze({ params: 1 }),
   /** HAND-DT-01 rules 1, 2, 6, 7, 7a (R-ROUTE-05). */
-  handOverCodes: Object.freeze(['no-fishball', 'conflict', 'unknown-session']),
+  handOverCodes: Object.freeze(['no-agent', 'conflict', 'unknown-session']),
   /** HAND-DT-02 rule 4. */
   takeBackCodes: Object.freeze(['unknown-session']),
   /** Design §3.6 `principals()` fields (R-UI-10: enabled + paired are listed; online = listen stream). */
@@ -154,7 +154,7 @@ export const HANDOVER = Object.freeze({
   orderWords: /\border(?:ed)?\b|\bsort(?:ed)?\b|\bstable\b/i,
 })
 
-/** Design §5.4 (HOST): `fishballConnectorTokens`. */
+/** Design §5.4 (HOST): `dshConnectorTokens`. */
 export const TOKENS = Object.freeze({
   members: Object.freeze(['apiVersion', 'createHosted', 'retire']),
   createHosted: Object.freeze({ params: 1 }),
@@ -164,7 +164,7 @@ export const TOKENS = Object.freeze({
   valueField: /^(?:value|token|secret|credential|password|bearer)$/i,
 })
 
-/** Design §4.1 and §6.1 (HOST, UIM): `fishballChild`. */
+/** Design §4.1 and §6.1 (HOST, UIM): `dshInstanceChild`. */
 export const CHILD = Object.freeze({
   members: Object.freeze(['apiVersion', 'status', 'onChange', 'origin', 'admit', 'retry', 'targetStatus', 'providerSync']),
   origin: Object.freeze({ params: 1 }),
@@ -241,8 +241,8 @@ export const INTEGRATION = Object.freeze({
 export const LATER = Object.freeze({
   route: 'C-ROUTE (hand-over service behaviour: managed state, handOver / takeBack, principals, onChange)',
   intercept: 'F-INTERCEPT (interception service: dispatch, priority, ties, warnings, fallback, ledger)',
-  host: 'I-HOST (fishballChild locator: lifecycle codes, Retry, admission, hostname rules)',
-  succeed: 'C-SUCCEED (fishballConnectorTokens: createHosted and retire)',
+  host: 'I-HOST (dshInstanceChild locator: lifecycle codes, Retry, admission, hostname rules)',
+  succeed: 'C-SUCCEED (dshConnectorTokens: createHosted and retire)',
   shell: 'U-SHELL (embed-UI service detection, instance-missing, the sidebar entry)',
   marks: 'U-MARKS (Hand over control labels and order)',
   records: 'U-RECORDS (inline records)',

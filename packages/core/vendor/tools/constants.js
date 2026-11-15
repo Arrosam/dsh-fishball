@@ -1,5 +1,5 @@
 /**
- * Frozen data of the contribution service `fishballConnectorTools` (task K2; design §13,
+ * Frozen data of the contribution service `dshConnectorTools` (task K2; design §13,
  * requirements R-EXT-01…20, spike V3-S5 `8f2788e`). Data only: no DSH import and no behaviour.
  * Every name here is part of the `./tools` freeze; changing one is a K2 amendment. Values the
  * requirements do not fix are marked "PROPOSED (user decision pending)": they are frozen as
@@ -28,7 +28,7 @@ export const apiVersion = 1
 /** The service and its version. */
 export const TOOLS_API = Object.freeze({
   version: apiVersion,
-  service: 'fishballConnectorTools',
+  service: 'dshConnectorTools',
   // The only MCP revision the connector serves (Q12); handed to every call as `call.protocolVersion`.
   protocolVersion: '2026-07-28',
 })
@@ -38,7 +38,7 @@ export const TOOLS_API = Object.freeze({
  * contributor (R-EXT-12, S5-Q3). It is `_meta`, not `annotations`, because the stock 2.2.0 client
  * strips unknown annotation keys and keeps namespaced `_meta` keys (S5 §3.5).
  */
-export const CONTRIBUTOR_META_KEY = 'io.github.dsh-fishball/contributor'
+export const CONTRIBUTOR_META_KEY = 'io.github.dsh-connector/contributor'
 
 /**
  * Namespaces (R-EXT-03, design §13.3). The namespace is the normalised package name of the
@@ -59,12 +59,12 @@ export const NAMESPACE = Object.freeze({
   // A normalised name identifies a package only if a letter or digit survives ("@/" or "___" do not).
   identifying: Object.freeze(/[a-z0-9]/),
   // The one fixed first-party alias, keyed on the normalised package name: the package is
-  // `fishball-embed-ui` (S4-Q3 decided B, R-ARCH-01). S5's side note about a published
+  // `dsh-connector-ui` (S4-Q3 decided B, R-ARCH-01). S5's side note about a published
   // `dsh-fishball-embed-ui` predates that decision, so only the decided name is keyed.
-  aliases: Object.freeze({ 'fishball-embed-ui': 'embed-ui' }),
+  aliases: Object.freeze({ 'dsh-connector-ui': 'embed-ui' }),
   // `fishball` and the connector's own plugin name. Core tools need no entry: every contributed
   // name contains the separator and no core tool name does.
-  reserved: Object.freeze(['fishball', 'fishball-connector']),
+  reserved: Object.freeze(['fishball', 'dsh-connector']),
 })
 
 /** Name grammars (design §13.2; MCP server/tools § Tool Names for the public name). */
@@ -182,7 +182,7 @@ export const EMIT_REFUSAL = Object.freeze({
   rateLimited: 'rate-limited',
   queueFull: 'queue-full',
   duplicate: 'duplicate',
-  noFishball: 'no-fishball',
+  noAgent: 'no-agent',
   contributorUnavailable: 'contributor-unavailable',
   contributorUnidentified: REGISTER_REFUSAL.contributorUnidentified,
   namespaceReserved: REGISTER_REFUSAL.namespaceReserved,
@@ -213,7 +213,7 @@ export const EMIT_CHECK_ORDER = Object.freeze([
   EMIT_REFUSAL.contributorUnavailable,
   EMIT_REFUSAL.eventInvalid,
   EMIT_REFUSAL.payloadTooLarge,
-  EMIT_REFUSAL.noFishball,
+  EMIT_REFUSAL.noAgent,
   EMIT_REFUSAL.rateLimited,
   EMIT_REFUSAL.duplicate,
   EMIT_REFUSAL.queueFull,

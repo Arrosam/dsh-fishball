@@ -2,17 +2,17 @@
  * K2 — contract 1.1: the framed path's `lang` (docs/slim-native-design.md §0.9 U4, §18.2 K2;
  * docs/connector-contract.md §1.2 "The language parameter", §2, §10, §11).
  * Observation points:
- * - `fishball-connector/contract` (CONNECTOR_CONTRACT, UI_LANG, negotiateContract,
+ * - `dsh-connector/contract` (CONNECTOR_CONTRACT, UI_LANG, negotiateContract,
  *   validateAttachment);
  * - the framed address rule. The connector's `framedUrl(path, lang)` sits inside the browser
- *   bundle's closure (packages/embed-ui/src/client/client.shell.js since U-SHELL's split, loaded by DSH's client module loader), so it is
+ *   bundle's closure (packages/dsh-connector-ui/src/client/client.shell.js since U-SHELL's split, loaded by DSH's client module loader), so it is
  *   not importable. These cases evaluate that one function's source text in isolation, with
  *   the bundle's own FRAME_UI constants object, and compare with the addresses the contract
  *   states. The iframe `src`, "Open in a tab" and the reload on a locale change are the browser phase.
  *
  * | id | technique | expected |
  * |----|-----------|----------|
- * | K2-V-01 | P | CONNECTOR_CONTRACT = {id: fishball-connector, major 1, minor 2} |
+ * | K2-V-01 | P | CONNECTOR_CONTRACT = {id: dsh-connector, major 1, minor 2} |
  * | K2-V-02 | P | UI_LANG.parameter = `lang`, values exactly {zh, en} |
  * | K2-V-03 | P | negotiateContract 1.0 → {major 1, minor 0} (a 1.0 instance still attaches) |
  * | K2-V-04 | P | negotiateContract 1.1 → minor 1; 1.5 → minor 2 (lower of the two) |
@@ -42,7 +42,7 @@ import { describe, it } from 'node:test'
 import { BODY_SOUL, loadCore } from './support/body-soul-env.mjs'
 import { EMBED_UI } from './support/constants.mjs'
 
-const contract = await import('fishball-connector/contract')
+const contract = await import('dsh-connector/contract')
 const { languageOf, LANG: PAGE_LANG } = await loadCore('src/slim/ui/i18n.js')
 
 /**
@@ -67,27 +67,27 @@ function loadFramedUrl() {
 const framedUrl = loadFramedUrl()
 
 describe('K2 language compatibility under contract 1.2', () => {
-  it('K2-V-01 CONNECTOR_CONTRACT is 1.2 of fishball-connector', () => {
-    assert.deepEqual({ ...contract.CONNECTOR_CONTRACT }, { id: 'fishball-connector', major: 1, minor: 2 })
+  it('K2-V-01 CONNECTOR_CONTRACT is 1.2 of dsh-connector', () => {
+    assert.deepEqual({ ...contract.CONNECTOR_CONTRACT }, { id: 'dsh-connector', major: 1, minor: 2 })
   })
   it('K2-V-02 UI_LANG names `lang` with exactly the values zh and en', () => {
     assert.equal(contract.UI_LANG.parameter, 'lang')
     assert.deepEqual(Object.values(contract.UI_LANG.values).sort(), ['en', 'zh'])
   })
   it('K2-V-03 a 1.0 instance still negotiates (common minor 0)', () => {
-    assert.deepEqual({ ...contract.negotiateContract({ id: 'fishball-connector', major: 1, minor: 0 }) }, { id: 'fishball-connector', major: 1, minor: 0 })
+    assert.deepEqual({ ...contract.negotiateContract({ id: 'dsh-connector', major: 1, minor: 0 }) }, { id: 'dsh-connector', major: 1, minor: 0 })
   })
   it('K2-V-04 the common minor is the lower of the two', () => {
-    assert.equal(contract.negotiateContract({ id: 'fishball-connector', major: 1, minor: 1 }).minor, 1)
-    assert.equal(contract.negotiateContract({ id: 'fishball-connector', major: 1, minor: 5 }).minor, 2)
+    assert.equal(contract.negotiateContract({ id: 'dsh-connector', major: 1, minor: 1 }).minor, 1)
+    assert.equal(contract.negotiateContract({ id: 'dsh-connector', major: 1, minor: 5 }).minor, 2)
   })
-  for (const declared of [{ id: 'fishball-connector', major: 0, minor: 1 }, { id: 'fishball-connector', major: 2, minor: 0 }, { id: 'other', major: 1, minor: 1 }]) {
+  for (const declared of [{ id: 'dsh-connector', major: 0, minor: 1 }, { id: 'dsh-connector', major: 2, minor: 0 }, { id: 'other', major: 1, minor: 1 }]) {
     it('K2-V-05 ' + JSON.stringify(declared) + ' → contract-version', () => {
       assert.throws(() => contract.negotiateContract(declared), (error) => error.code === 'contract-version')
     })
   }
   const descriptor = (minor, ui) => ({
-    id: 'fbtest-instance', name: 'Fbtest instance', contract: { id: 'fishball-connector', major: 1, minor },
+    id: 'fbtest-instance', name: 'Fbtest instance', contract: { id: 'dsh-connector', major: 1, minor },
     transport: { send() {}, onMessage() {}, onClose() {}, close() {} }, ui,
   })
   it('K2-V-06 a 1.0 descriptor with chat and settings is accepted, its ui unchanged', () => {

@@ -33,7 +33,7 @@
 - { id: ui-sidebar-terminal, disabled: true }
 - { id: terminal-controller, disabled: true }
 # No nested hosted Fishball (UIM-DT-01 row 10b).
-- { id: fishball-instance, disabled: true }
+- { id: dsh-instance, disabled: true }
 
 # Agent presets (Q-S6-2 decided B, amended; requirements 1.24). The session-creating tools live inside
 # each shipped preset's `config.plugins`, which no patch can reach (S6 §3.2), so every DSH-shipped

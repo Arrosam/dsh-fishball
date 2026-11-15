@@ -1,8 +1,8 @@
 /**
  * The provider-sync wire codec (fishball-shared, R-ARCH-08; §10, §15 T16).
  *
- * Moved unchanged from fishball-instance's src/slim/child/provider-sync-target.js: the main host's
- * source end (fishball-instance src/provider-sync-service.js) and the child's target end
+ * Moved unchanged from dsh-instance's src/slim/child/provider-sync-target.js: the main host's
+ * source end (dsh-instance src/provider-sync-service.js) and the child's target end
  * (src/slim/child/provider-sync-target.js) both build, bound and check frames with it, and both
  * describe themselves with providerSyncIdentity, so the two ends cannot drift. The endpoint and
  * the child row stay with the target; the preview/confirm engine is ./provider-sync.js.

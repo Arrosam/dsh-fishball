@@ -35,7 +35,7 @@ export async function coordinatorFixture(t, source = inventory(CASE.source, [pro
     },
   }
   const channel = { peer: () => state.unpaired ? null : peer }
-  const { ProviderSyncCoordinator } = await import('../../packages/instance/src/provider-sync-coordinator.js')
+  const { ProviderSyncCoordinator } = await import('../../packages/dsh-instance/src/provider-sync-coordinator.js')
   const coordinator = new ProviderSyncCoordinator({ host, channel, ttlMs: CASE.ttlMs, now: () => target.state.now })
   t.after(() => coordinator.close())
   const safe = async (operation) => {

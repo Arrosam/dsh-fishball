@@ -51,9 +51,9 @@ describe('FN-1 package and row', () => {
       assert.ok(manifest.files?.includes(file) || (file.startsWith('src/') && manifest.files?.includes('src/')), 'package.json files list covers ' + file)
     }
     assert.match(manifest.engines?.dsh ?? '', />=0\.2\.1-rc\.5/)
-    // V3 realignment: docs/planning/v3-design.md §9.1 (line 1217) drops the `fishball-instance` peer;
+    // V3 realignment: docs/planning/v3-design.md §9.1 (line 1217) drops the `dsh-instance` peer;
     // the plugin finds fishball-core at runtime (R-FB-06), so no Fishball package is a peer.
-    assert.equal(manifest.peerDependencies?.['fishball-instance'], undefined, 'no fishball-instance peer (design §9.1)')
+    assert.equal(manifest.peerDependencies?.['dsh-instance'], undefined, 'no dsh-instance peer (design §9.1)')
   })
 
   it('FN1-EP-V-02 Samuel keeps a busy Fishball conversation manageable — W0: the row exports name, inject, Config and apply', async () => {

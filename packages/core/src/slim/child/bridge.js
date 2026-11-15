@@ -2,7 +2,7 @@
  * The slim session bridge, isolated-child half (§5.1, §5.2, §15 T05).
  *
  * The child owns exactly one envelope-v2 channel over the authenticated lifecycle transport
- * (fishball-instance src/native-runtime/wire.js, reached through ctx.nativeRuntime.onControlTransport). This
+ * (dsh-instance src/native-runtime/wire.js, reached through ctx.nativeRuntime.onControlTransport). This
  * module is the child's protocol client: it performs the handshake, sends the §5.2 session
  * requests, receives the main-to-child inbox requests and state events, and never retries.
  *
@@ -29,7 +29,7 @@ import { gate } from './extensions.js'
 import { createBridgeScope } from './ext/bridge-scope.js'
 import {
   ENVELOPE, ERROR, SEMANTIC_CAPABILITY, OPERATION, OPERATIONS, SIDE, TRANSPORT_METHODS, ContractError, decodeEnvelope, encodeEnvelope, makeEnvelope,
-} from 'fishball-connector/contract'
+} from 'dsh-connector/contract'
 
 /**
  * Client resource ceilings. Like the host's, these are runtime configuration rather than
@@ -213,7 +213,7 @@ class BridgeClient {
   onEvent(listener) { return subscribe(this.events, listener, this.limits.maxListeners) }
 
   /**
-   * Receive inbox items (message_fishball, hand-over notes, and T09's question-answer notice)
+   * Receive inbox items (message_agent, hand-over notes, and T09's question-answer notice)
    * from the main host. At least one listener must accept the item; with none the client refuses
    * the item so the host keeps it queued. A listener that throws, or resolves false, refuses the
    * item in the same way, so a notice another module owns can never be acked by this one.

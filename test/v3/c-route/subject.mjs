@@ -1,7 +1,7 @@
 /**
- * The one place that binds the C-ROUTE cases to C-ROUTE's module (`packages/connector/src/routing/`
+ * The one place that binds the C-ROUTE cases to C-ROUTE's module (`packages/dsh-connector/src/routing/`
  * and `src/handover/`). K1 freezes `Router.recipientFor` and `Presence`, K1c `ManagedState`, K3
- * `fishballConnectorHandover`, but no factory and no ports. The dev session has relayed no surface
+ * `dshConnectorHandover`, but no factory and no ports. The dev session has relayed no surface
  * yet (2026-11-14), so this file assumes ONE shape (Fishball 2026-11-14: every port injected; the
  * entry-point shapes accepted as written here). If the module differs, only this file is adapted;
  * no case changes.
@@ -19,8 +19,8 @@
  *                  entry's enabled state is `get(entryKey).enabled`; `onRevoked` ends the
  *                  entry's management in W3 (Fishball 2026-11-14 #1)
  *       presence   K1 `Presence` (isConnected, onChange; fake; CONNECTED = an open listen stream)
- *       settings   `{get() → {fishballToken?: EntryKey, maxQueuedInputs?: number}, onChange(fn) →
- *                  dispose}`: the live `routing.fishballToken` and `maxQueuedInputs` (unset =
+ *       settings   `{get() → {agentToken?: EntryKey, maxQueuedInputs?: number}, onChange(fn) →
+ *                  dispose}`: the live `routing.agentToken` and `maxQueuedInputs` (unset =
  *                  QUEUE.maxQueuedInputs)
  *       sessions   the session source (Fishball 2026-11-14 #7; binding it to DSH is C-WIRE's):
  *                  `exists(sessionId) → boolean`, `onTurnFinished(fn(sessionId, {running, queued}))
@@ -32,12 +32,12 @@
  *   Routing = {
  *     router      K1 `Router`
  *     managed     K1c `ManagedState`
- *     handover    K3 `FishballConnectorHandover` (the object `provide` provides)
- *     provide(ctx)                provides `handover` as `fishballConnectorHandover` on `ctx`
- *     messageFishball(sessionId, {text, images}) → Promise<{ok: true} | {ok: false, code: 'queue-full'}>
- *                                 the `message_fishball` tool's routing (R-ROUTE-03, K1c-3)
- *     askFishball(sessionId, descriptor) → Promise
- *                                 `ask_fishball`, `descriptor` a full K1 ask descriptor
+ *     handover    K3 `DshConnectorHandover` (the object `provide` provides)
+ *     provide(ctx)                provides `handover` as `dshConnectorHandover` on `ctx`
+ *     messageAgent(sessionId, {text, images}) → Promise<{ok: true} | {ok: false, code: 'queue-full'}>
+ *                                 the `message_agent` tool's routing (R-ROUTE-03, K1c-3)
+ *     askAgent(sessionId, descriptor) → Promise
+ *                                 `ask_agent`, `descriptor` a full K1 ask descriptor
  *                                 (EVENT_PAYLOAD_SHAPES.ask: approvalId, offerId, kind, prompt, …).
  *                                 The cases pass `{question}`; the world's `routing` builds the
  *                                 descriptor from it (askDescriptor below). Resolves
@@ -69,7 +69,7 @@ import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { APPROVAL_KIND } from '../../../packages/connector/contract/contract.js'
+import { APPROVAL_KIND } from '../../../packages/dsh-connector/contract/contract.js'
 import { INSTANCE } from '../../support/constants.mjs'
 import { importInstance, importSdk } from '../../private-skills/support/sdk.mjs'
 import { DSH } from '../c-pair/constants.mjs'
@@ -112,14 +112,14 @@ function askDescriptor({ question }, now) {
 }
 /**
  * `routing` as the cases drive it: every member is the module's own (methods bound to it, so
- * private state keeps working), except `askFishball`, which takes the cases' `{question}` and
+ * private state keeps working), except `askAgent`, which takes the cases' `{question}` and
  * passes the module a full ask descriptor.
  */
 function routingDriver(routing, now) {
-  const askFishball = (sessionId, ask) => routing.askFishball(sessionId, askDescriptor(ask, now))
+  const askAgent = (sessionId, ask) => routing.askAgent(sessionId, askDescriptor(ask, now))
   return new Proxy(routing, {
     get(target, prop) {
-      if (prop === 'askFishball') return askFishball
+      if (prop === 'askAgent') return askAgent
       const value = Reflect.get(target, prop, target)
       return typeof value === 'function' ? value.bind(target) : value
     },
@@ -133,7 +133,7 @@ function routingDriver(routing, now) {
  */
 export async function routeWorld(t, sdk, { hints = recordingHints(), port = mailboxPort } = {}) {
   const [route, mail] = await Promise.all([
-    moduleOf(sdk, SUBJECT.entry, [SUBJECT.open], 'C-ROUTE "Owns" packages/connector/src/routing/'),
+    moduleOf(sdk, SUBJECT.entry, [SUBJECT.open], 'C-ROUTE "Owns" packages/dsh-connector/src/routing/'),
     moduleOf(sdk, SUBJECT.mailboxEntry, [SUBJECT.mailboxOpen, SUBJECT.mailboxCreate], 'C-MAILBOX, merged in W2'),
   ])
   const root = await mkdtemp(path.join(fs.realpathSync(os.tmpdir()), FIXTURE.tempPrefix))
@@ -177,7 +177,7 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
   const world = {
     ...ports,
     hints,
-    /** The routing object as the cases drive it (routingDriver: `askFishball` takes `{question}`). */
+    /** The routing object as the cases drive it (routingDriver: `askAgent` takes `{question}`). */
     get routing() { return open.driver },
     get router() { return open.routing.router },
     get managed() { return open.routing.managed },
@@ -192,7 +192,7 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
     async reopen() { await stop(); open = await start() },
     /**
      * A token entry with id `id`, enabled; `paired` binds it (with `name`); `connected` opens its
-     * listen stream; `designated` makes it `routing.fishballToken`. Returns the key the handover
+     * listen stream; `designated` makes it `routing.agentToken`. Returns the key the handover
      * service lists it under: its principal key when paired, else its entry key. An unpaired entry
      * has no principal key yet (C-PAIR mints one only when it binds), so its key is the opaque
      * EntryKey (K3 handover.d.ts; ROUTE-EP-01 rows 3 and 7).
@@ -205,7 +205,7 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
       keys.add(key)
       if (paired) ports.pairs.bind(id, name)
       if (connected) ports.presence.connect(key)
-      if (designated) ports.settings.set({ fishballToken: entryKey })
+      if (designated) ports.settings.set({ agentToken: entryKey })
       return paired ? key : entryKey
     },
     /** A session of this DSH. */

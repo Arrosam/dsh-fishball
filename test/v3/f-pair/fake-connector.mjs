@@ -3,8 +3,8 @@
  * pattern (the brief forbids importing it from another task's folder). It speaks only what the
  * requirements and the frozen K1 module define:
  * - RFC 9728 / 8414 metadata from K1's builders;
- * - a `client_credentials` token endpoint whose `scope` follows R-OA-04 / R-ID-03: `fishball` when
- *   the token's entry is bound to the caller's id, else `fishball:pair`; `invalid_client` for an
+ * - a `client_credentials` token endpoint whose `scope` follows R-OA-04 / R-ID-03: `agent` when
+ *   the token's entry is bound to the caller's id, else `agent:pair`; `invalid_client` for an
  *   unknown or disabled entry or an invalid id (R-ID-02);
  * - an MCP 2026-07-28 endpoint (discover, tools/list, tools/call, listen) with K1's envelope, where
  *   a pair-only access token reaches exactly K1 PAIR_ONLY and the scope is evaluated live (R-ID-03).
@@ -135,7 +135,7 @@ export async function startFakeConnector({ store, entries, now = Date.now, extra
     const form = new URLSearchParams(body)
     const { clientId, secret } = clientOf(req, form)
     const entry = entryBySecret(secret)
-    if (form.get(WEB.formGrant) !== K1.GRANT.clientCredentials || entry === undefined || !entry.enabled || !K1.isFishballId(clientId)) {
+    if (form.get(WEB.formGrant) !== K1.GRANT.clientCredentials || entry === undefined || !entry.enabled || !K1.isAgentId(clientId)) {
       const error = K1.OAUTH_ERROR.invalidClient
       return sendJson(res, K1.OAUTH_ERROR_STATUS[error], K1.oauthErrorBody(error), { 'www-authenticate': K1.BEARER_CHALLENGE.basicScheme })
     }

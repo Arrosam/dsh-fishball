@@ -17,12 +17,12 @@ import { until } from './util.mjs'
 
 export const R2 = Object.freeze({
   route: Object.freeze({
-    status: '/api/fishball-instance/status',
-    retry: '/api/fishball-instance/retry',
+    status: '/api/dsh-instance/status',
+    retry: '/api/dsh-instance/retry',
     nativeStatus: '/api/fishball/native/status',
     embed: '/fishball/embed/',
     /** The child's own Restart route (the settings view's Restart, relayed to the main host). */
-    childRestart: '/api/fishball-instance/restart',
+    childRestart: '/api/dsh-instance/restart',
   }),
   state: Object.freeze({ ready: 'ready', failed: 'failed' }),
   /** Unchanged contract vocabulary (R2.1). */

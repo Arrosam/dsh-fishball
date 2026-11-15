@@ -9,7 +9,7 @@
  *
  * | id     | technique          | expected |
  * |--------|--------------------|----------|
- * | L40 ×20 | EP (one per old name) | no `NAME.field` / `NAME?.field` / `NAME['field']` (or the bare `OUTBOX_SHOWN`) in each package's index.js, client.js and src tree (M1: packages/connector, packages/instance) |
+ * | L40 ×20 | EP (one per old name) | no `NAME.field` / `NAME?.field` / `NAME['field']` (or the bare `OUTBOX_SHOWN`) in each package's index.js, client.js and src tree (M1: packages/dsh-connector, packages/dsh-instance) |
  * | L41 ×12 | EP (one per staying name) | each constant §16 keeps whose owner still exists is named somewhere in the source (the other seven went with the in-process Fishball, slim §12) |
  * | L42 ×3 | EP (one per size) | the author guide names the dedupe key with 256 bytes, the description with 1,024 bytes and the source title with 200 bytes |
  */
@@ -22,9 +22,9 @@ import { LIMITS_R11, LIMITS_R11_REMOVED, REMOVED_PACKAGE_CONSTANTS, REPO, STAYIN
 /** Every implementation source file of the two M1 packages, as text, keyed by its path relative to the repo. */
 function sources() {
   const files = []
-  // V3 R-CORE moved the slim child, ui and limits.js from packages/instance to packages/core.
-  // V3 R-EMBED moved the main-DSH client files into packages/embed-ui/src/client.
-  for (const d of ['connector', 'instance', 'core', 'embed-ui']) {
+  // V3 R-CORE moved the slim child, ui and limits.js from packages/dsh-instance to packages/core.
+  // V3 R-EMBED moved the main-DSH client files into packages/dsh-connector-ui/src/client.
+  for (const d of ['dsh-connector', 'dsh-instance', 'core', 'dsh-connector-ui']) {
     const root = path.join(REPO, 'packages', d)
     for (const f of ['index.js', 'client.js', 'host.js', 'native-child.js']) if (fs.existsSync(path.join(root, f))) files.push(path.join('packages', d, f))
     const src = path.join(root, 'src')
@@ -47,8 +47,8 @@ function patternFor(name) {
 
 describe('rev11-limits: source and documentation checks', () => {
   it('L40 precondition: the source tree is there', () => {
-    assert.ok(FILES.some((f) => f.file === path.join('packages', 'connector', 'index.js')), 'connector index.js found')
-    assert.ok(FILES.some((f) => f.file.startsWith(path.join('packages', 'connector', 'src'))), 'connector src/*.js found')
+    assert.ok(FILES.some((f) => f.file === path.join('packages', 'dsh-connector', 'index.js')), 'connector index.js found')
+    assert.ok(FILES.some((f) => f.file.startsWith(path.join('packages', 'dsh-connector', 'src'))), 'connector src/*.js found')
   })
 
   // C2 removed ten of the sixteen fields from the row; their old constants must stay unread all the same.

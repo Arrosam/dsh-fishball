@@ -2,7 +2,7 @@
  * Revision 11 rev11b on the H-STUB harness: one-time passes (DESIGN §7a.3 "One-time passes", §9 "Passes and to-you
  * tickets"; contract §5 `approval.ran`). A pass covers exactly one call: the same session, tool and canonical-JSON
  * arguments (key order ignored), until it is used or the session's turn ends. The stub is the instance: it answers
- * the ask_fishball request with `approval.answer` while the asking turn runs. FBTEST_APPROVER_AFTER=1 puts the
+ * the ask_agent request with `approval.answer` while the asking turn runs. FBTEST_APPROVER_AFTER=1 puts the
  * scripted stock prompt after the broker, and fbtest_ask asks in its body. One host; cases run in order. Expected
  * values come from the requirements, never the implementation.
  *
@@ -17,7 +17,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, it } from 'node:test'
-import { RAN_VIA, SETTLED_BY } from 'fishball-connector/contract'
+import { RAN_VIA, SETTLED_BY } from 'dsh-connector/contract'
 import { ASK_CODE, ASK_OUTPUT, ASK_TOOL, OUTCOME } from './support/constants.mjs'
 import { HOOK, T, askStep, callStep, jsonOf, resultById, resultOfCall, turn } from './support/expect.mjs'
 import { managedSession, stopStub } from './support/instance-stub.mjs'
@@ -53,13 +53,13 @@ describe('Revision 11 rev11b: one-time passes (H-STUB)', () => {
     const [askId, callId] = [cid('01a'), cid('01b')]
     const r = await turn(host, x, [askStep(askArgs(args), askId), callStep(args, callId), [{ text: 'done' }]])
     const requestId = (await answered)?.frame.payload.approvalId
-    assert.ok(requestId, 'the ask_fishball request reached the instance')
+    assert.ok(requestId, 'the ask_agent request reached the instance')
     assert.equal(jsonOf(resultById(r, askId))?.code, ASK_CODE.allowed, resultById(r, askId)?.text)
     assert.equal(resultById(r, callId)?.text, ASK_OUTPUT(OUTCOME.allow), 'the call ran with its own output')
     assert.equal(resultById(r, callId)?.isError, false)
     assert.deepEqual(await stockFor(host, text), [], 'no stock prompt')
     await sleep(APPROVALS.ms.quiet)
-    assert.equal((await offersOf(text)).length, 1, 'only the ask_fishball request: no second offer')
+    assert.equal((await offersOf(text)).length, 1, 'only the ask_agent request: no second offer')
     const ran = await ranEvents(stub, requestId)
     assert.equal(ran.length, 1, 'approval.ran once')
     assert.equal(ran[0].via, RAN_VIA.pass)
@@ -129,8 +129,8 @@ describe('Revision 11 rev11b: one-time passes (H-STUB)', () => {
     const [askId, callId] = [cid('06a'), cid('06b')]
     await host.call('driveStart', { sessionId: x, script: [askStep(askArgs(args), askId), callStep(args, callId), [{ text: 'done' }]] })
     const [first] = await until(async () => { const o = await offersOf(text); return o.length > 0 ? o : false }, APPROVALS.ms.settle, 50) || []
-    assert.ok(first, 'the ask_fishball request reached the instance')
-    // x waits inside ask_fishball; hold its next model request so its turn (and so its pass) stays open.
+    assert.ok(first, 'the ask_agent request reached the instance')
+    // x waits inside ask_agent; hold its next model request so its turn (and so its pass) stays open.
     await host.call('holdNext', { sessionId: x })
     const allowed = await answerWhen(stub, mentions(text), APPROVALS.answer.allow('fine'))
     assert.deepEqual(allowed.reply.payload, { accepted: true })

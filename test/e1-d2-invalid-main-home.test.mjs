@@ -7,7 +7,7 @@
  * `NATIVE_START_FAILED`. The install docs must state the canonical-path requirement (D1, whose
  * README change is reviewed with this release).
  *
- * Observation points: `GET /api/fishball-instance/status` after a real DSH boot from a symlinked
+ * Observation points: `GET /api/dsh-instance/status` after a real DSH boot from a symlinked
  * home, the instance runtime's `lifecycle.log` (no child ever starts), and the instance card's
  * en/zh words for the code.
  *
@@ -30,7 +30,7 @@ import { CJK, instanceClientWords } from './support/body-soul-env.mjs'
 import { bootHost } from './support/host.mjs'
 import { until } from './support/util.mjs'
 
-const STATUS_PATH = '/api/fishball-instance/status'
+const STATUS_PATH = '/api/dsh-instance/status'
 const CODE = 'INVALID_MAIN_HOME'
 const BOOT_TIMEOUT = 90_000
 

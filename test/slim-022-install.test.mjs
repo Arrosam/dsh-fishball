@@ -45,7 +45,7 @@ const ROUTE = Object.freeze({
   // I6 (6a19e44): the one-step sync route became Check for new models / Add selected on the
   // instance's own prefix; INST-06 drives the check, which writes nothing. It is the MAIN DSH's
   // owner route (the main card); the child has no such route (main-only sync, 2026-11-11).
-  modelsCheck: '/api/fishball-instance/models/check',
+  modelsCheck: '/api/dsh-instance/models/check',
   // C2 (474b876): the sidebar-entry switch is retired with the brand setting (D22); its route answers 404.
   sidebar: '/api/fishball/sidebar-entry',
   embedDoc: '/fishball/embed/',
@@ -55,13 +55,13 @@ const ROUTE = Object.freeze({
   // never served this route (docs/slim-native-design.md §12).
   questionsAnswer: '/api/fishball/questions/answer',
 })
-const PACKAGE = Object.freeze({ connector: 'fishball-connector', instance: 'fishball-instance', embed: 'fishball-embed-ui' })
+const PACKAGE = Object.freeze({ connector: 'dsh-connector', instance: 'dsh-instance', embed: 'dsh-connector-ui' })
 /** R-EMBED: the moved connector UI inside the installed embed-UI package (its shell part since U-SHELL's split). */
 const EMBED_CONNECTOR_CLIENT = Object.freeze(['src', 'client', 'client.shell.js'])
 const installed = (name) => path.join(home, 'profiles', CFG.profile, 'node_modules', name)
 /**
  * Where a session's question is answered, as the model reads it. Since a6e0841 (N9-a port) the words sit
- * once in the shipped contract (`ANSWER_PLACE`, packages/connector/contract/pile-note.js) and every copy
+ * once in the shipped contract (`ANSWER_PLACE`, packages/dsh-connector/contract/pile-note.js) and every copy
  * (connector questions.js, the child's approvals.js, the persona) reads them, so the cases import the
  * installed contract instead of matching a `const IN_SESSION = '…'` literal in each source file.
  */
@@ -89,7 +89,7 @@ before(async () => {
   // As DSH-X creates a profile: without autoInstallPeers:false pnpm tries to fetch DSH's own
   // @deepseek-ai peers from the registry (prerelease-only) and the add fails.
   fs.writeFileSync(path.join(profileDir, 'pnpm-workspace.yaml'), 'packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n')
-  // Connector first, then instance: the instance imports fishball-connector/contract and resolves
+  // Connector first, then instance: the instance imports dsh-connector/contract and resolves
   // it as a sibling in this one profile (docs/package-layout.md §5, "Packing").
   for (const tgz of [ENV.connectorTgz, ENV.instanceTgz, ENV.embedTgz]) {
     const add = spawnSync(ENV.dsh, ['plugin', '--profile', CFG.profile, 'add', tgz, '--ignore-scripts'],

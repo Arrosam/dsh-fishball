@@ -1,5 +1,5 @@
 /**
- * The one place that binds the C-TOOLS cases to C-TOOLS' module (`packages/connector/src/mcp/tools/`).
+ * The one place that binds the C-TOOLS cases to C-TOOLS' module (`packages/dsh-connector/src/mcp/tools/`).
  *
  * **Assumed surface (Q1, accepted by Fishball 2026-11-14).** The dev session has relayed nothing
  * yet, so this file assumes one factory in the entry, and nothing else of the module is read:
@@ -49,12 +49,12 @@ import { FIXTURE, MANAGED_REFUSAL, PROTOCOL, RESOURCE, SCOPE, SUBJECT, WAIT, oau
 
 /** C-MAILBOX's two composition entry points (its relayed surface, as test/v3/c-mailbox states it). */
 const MAILBOX_ENTRY = Object.freeze({
-  file: path.join(INSTANCE.dir, '..', 'connector', 'src', 'mailbox', 'index.js'),
+  file: path.join(INSTANCE.dir, '..', 'dsh-connector', 'src', 'mailbox', 'index.js'),
   openTables: 'openMailboxTables',
   create: 'createMailbox',
 })
 /** C-PAIR's relayed surface (test/v3/c-pair). */
-const PAIR_ENTRY = Object.freeze({ file: path.join(INSTANCE.dir, '..', 'connector', 'src', 'pairs', 'index.js'), open: 'openPairStore' })
+const PAIR_ENTRY = Object.freeze({ file: path.join(INSTANCE.dir, '..', 'dsh-connector', 'src', 'pairs', 'index.js'), open: 'openPairStore' })
 const TEMP_PREFIX = 'fbtest-c-tools-'
 const PATH_MCP = new URL(oauthUrls(FIXTURE.urlBase).resource).pathname
 
@@ -143,7 +143,7 @@ function overridableStore(store) {
   return view
 }
 
-/** `resources/read fishball://events`, as C-HTTP's suite fakes it (not a C-TOOLS concern). */
+/** `resources/read dsh-agent://events`, as C-HTTP's suite fakes it (not a C-TOOLS concern). */
 const readEvents = async () => ({ contents: [{ uri: RESOURCE.events.uri, mimeType: RESOURCE.events.mimeType, text: JSON.stringify([]) }] })
 
 /**
@@ -218,7 +218,7 @@ export async function toolsWorld(t, sdk, { overridePairs } = {}) {
       const { principalKey } = opened.store.pairOf(FIXTURE.entry(id))
       return { token: issue(id, { principalKey, scope: SCOPE.full }), principalKey }
     },
-    /** An unpaired entry's pair-only access token (scope `fishball:pair`, no principal key). */
+    /** An unpaired entry's pair-only access token (scope `agent:pair`, no principal key). */
     pairOnly: (id) => issue(id, { scope: SCOPE.pair }),
     /** The installed SDK's stock client, pinned to 2026-07-28 and connected with `token`. */
     async connect(token) {

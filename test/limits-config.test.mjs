@@ -3,7 +3,7 @@
  * limits moved to config"): the sixteen new fields of the fishball row's config, as DSH's settings
  * service (the form DSH's Plugins page draws) describes and edits them. One host; cases run in order.
  * Expected values come from §16's tables only. C2 (conn-OQ-20, 474b876) keeps six of the sixteen in the
- * fishball-connector row; the other ten went with the in-process agent (slim §12). L9-L11 (Fishball's
+ * dsh-connector row; the other ten went with the in-process agent (slim §12). L9-L11 (Fishball's
  * own set_plugin_settings, its tools' parameters, its session never remounted) are retired with it.
  *
  * | id     | technique                     | expected |
@@ -55,7 +55,7 @@ function formKeys(json) {
   return [...keys]
 }
 
-describe('rev11-limits: the kept fields in the fishball-connector row config', () => {
+describe('rev11-limits: the kept fields in the dsh-connector row config', () => {
   let host
   let home
 
@@ -79,7 +79,7 @@ describe('rev11-limits: the kept fields in the fishball-connector row config', (
     // The row's form is described once its entry is active; poll briefly rather than read it once.
     let json
     await until(async () => { json = await host.call('settingsSchema', { ns: ROW_ID }); return formKeys(json).length > 0 }, 5000, 100)
-    assert.ok(json, 'the fishball-connector row has a settings form')
+    assert.ok(json, 'the dsh-connector row has a settings form')
     const keys = formKeys(json)
     for (const k of NEW) assert.ok(keys.includes(k), 'form field ' + k + ' (form has ' + keys.join(', ') + ')')
     for (const k of Object.keys(LIMITS)) assert.ok(keys.includes(k), 'existing form field ' + k)

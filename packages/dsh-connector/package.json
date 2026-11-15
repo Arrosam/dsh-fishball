@@ -1,0 +1,67 @@
+{
+  "name": "dsh-connector",
+  "//version": "The package version is the release's (user decision 2026-11-07: 0.1.0-alpha.0 for both packages). It is independent of the contract version, which lives only in CONNECTOR_CONTRACT (1.1) and is checked when an instance attaches (design §0.2).",
+  "version": "0.1.0-alpha.0",
+  "description": "Fishball's body in DeepSeek Harness: manages your sessions for Fishball (Hand over, message_agent, permission requests, questions, watches) and connects an external Fishball instance through the documented dsh-connector contract (./contract).",
+  "icon": "./assets/connector-icon.svg",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "//exports": "./mcp-schema (tool and event schemas, limits, vocabularies) and ./tools (contribution types, apiVersion, defineTool) are V3's data-and-types modules (design §9.1), frozen by the V3-K tasks K1 and K2. ./client and ./records moved to dsh-connector-ui with the UI (R-EMBED); ./contract stays until a later V3 task removes it.",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The connector has no browser client (R-ARCH-03): V3 R-EMBED moved its UI, with ./client and ./records, to dsh-connector-ui.",
+  "exports": {
+    ".": "./index.js",
+    "./contract": "./contract/index.js",
+    "./mcp-schema": "./mcp-schema/index.js",
+    "./tools": "./tools/index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "contract/",
+    "mcp-schema/",
+    "tools/",
+    "assets/connector-icon.svg",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "//engines": "node >=22.14: C-EXT resolves a contributor's package with node:module findPackageJSON (22.14 / 23.2); DSH itself needs >=24.9.0 on both SDKs (Fishball 2026-11-14; REL-PACK aligns engines across packages).",
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "//dependencies": "Runtime dependencies installed with this package, never taken from DSH as peers (design §3.1, §9.1): no DSH runtime ships an MCP server (both 0.2.1-rc.5 and 0.2.2-rc.1 carry only @modelcontextprotocol/client and core 2.2.0). The server is pinned to that same 2.2.0 line; it requires core 2.2.0 exactly, whose dist is byte-identical to the hosts'. Its Node HTTP adapter is pinned exactly to 2.1.0, the newest @modelcontextprotocol/node whose peer range (^2.1.0) admits server 2.2.0; 2.1.1 requires ^2.3.0 and 2.1.2 ^2.4.0, so a caret range would break the server pin. DSH profiles install with pnpm nodeLinker hoisted and autoInstallPeers false, so these and their own dependencies (core, zod, @hono/node-server) land in the profile's node_modules, where DSH's resolver serves them ahead of the host's copies: the hoisted zod then also answers this package's zod peer, and that of every other package in the profile. hono is listed because DSH's own pnpm settings (nodeLinker hoisted, autoInstallPeers false, dsh-app-boot PROFILE_PNPM_WORKSPACE on both SDKs) warn 'missing peer hono' for @modelcontextprotocol/node 2.1.0 and @hono/node-server without it (C-HTTP's dependency check, 2026-11-14); the adapter's toNodeHandler path never imports hono, so the line exists only to satisfy that peer, in the adapter's own range.",
+  "dependencies": {
+    "@modelcontextprotocol/node": "2.1.0",
+    "@modelcontextprotocol/server": "2.2.0",
+    "fishball-shared": "0.1.0-alpha.0",
+    "hono": "^4.11.4"
+  },
+  "//TODO": "SPLIT-SHARED (v3-remaining-plan §6): fishball-shared below becomes dsh-connector-shared (design §1.0c, §1.0b row 5). RENAME-DSH left it, as the split is that task's.",
+  "//bundleDependencies": "fishball-shared (R-ARCH-08) is bundled as in core and the instance, so the tarball carries it and an install fetches nothing from a registry. The connector uses its ./redact, the secret-shape scrub a contributed tool's refusal message passes (design §13.5; C-EXT, decided by Fishball 2026-11-14).",
+  "bundleDependencies": [
+    "fishball-shared"
+  ],
+  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate.",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-scope": "*",
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-session-title": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*",
+    "yaml": "*",
+    "zod": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

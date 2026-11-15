@@ -1,17 +1,17 @@
 /**
- * Revision 11 rev11b: ask_fishball and the instance's answers, on the H-STUB harness (DESIGN §7a.2, §7a.3,
+ * Revision 11 rev11b: ask_agent and the instance's answers, on the H-STUB harness (DESIGN §7a.2, §7a.3,
  * §7a.5, §7a.6 "To-you ticket", §9 audit; contract §4.2 approval.answer, §5 events, §5.1 descriptor, §9 "No
  * instance attached"; docs/test-design/connector.md C1-DT-02, C1-EP-02, C1-ST-08; slim-native-design §12).
  * The in-process Fishball and its answer_approval tool are gone: the fake instance (fbtest-stub-instance)
  * receives the request as an `approval.request` event plus an `approval`-kind `inbox.push`, and answers with
  * `approval.answer`. "Fishball off" is now "no instance attached" (detach, or the transport closed), since the
  * Permission requests switch is gone (slim §12: permission requests are always on). A card that goes to the
- * user is answered on its session's ask_fishball row, i.e. POST /api/fishball/requests/answer (§10e).
+ * user is answered on its session's ask_agent row, i.e. POST /api/fishball/requests/answer (§10e).
  * One host; cases run in order. Expected values come from the requirements, never the implementation.
  *
  * | id      | technique | requirement | expected |
  * |---------|-----------|-------------|----------|
- * | ASK-01  | EP (allow; C1-DT-02) | §7a.2, §7a.3, contract §5.1 | {ok:true, code:'allowed', request_id}; one approval notice whose header says the session asked first (ask_fishball), its block with tool, arguments, why, latest_user_message, quoted_user_messages []; the offer's descriptor names the same id, tool, call, reason, complete arguments; approval.settled allow by fishball; audit kind asked, answer allow |
+ * | ASK-01  | EP (allow; C1-DT-02) | §7a.2, §7a.3, contract §5.1 | {ok:true, code:'allowed', request_id}; one approval notice whose header says the session asked first (ask_agent), its block with tool, arguments, why, latest_user_message, quoted_user_messages []; the offer's descriptor names the same id, tool, call, reason, complete arguments; approval.settled allow by fishball; audit kind asked, answer allow |
  * | ASK-02  | EP (reject with a reason) | §7a.3 | {ok:false, code:'rejected', reason, request_id}; audit answer reject |
  * | ASK-03 ×9 | DT (approval.answer refusals) | contract §4.2 | allow+high → allow-needs-low-risk; allow without risk → risk-required; allow without / '' / '   ' reason → reason-required; reject '' reason → reason-required; ask with no / '' question → question-required; unknown id → expired; each leaves the request listed by approval.list and the agent waiting |
  * | ASK-04  | DT (escalate needs nothing) | §7a.3, §7a.6, §10e | accepted with no risk and no reason; a card, the agent keeps waiting, no stock prompt; your Allow once → allowed, the identical call runs on the pass; decisions row allow-once by user; audit escalate (final allowed-once) then pass |
@@ -20,14 +20,14 @@
  * | ASK-07  | ST (thread: 3 question rounds, then allow) | §7a.2 "question", §7a.3 `ask`, contract §4.2 | each `ask` answer (with reason '', which ask allows) reaches the agent as {code:'question', request_id, question}; each reply is offered again as the same request with a new offerId and a notice holding the whole thread so far, in order; the final allow covers the call (it runs with no prompt and no further offer); audit allow then pass |
  * | ASK-08 ×3 | EP (request_id unknown / settled / another session's) | §7a.2, §7a.3 "Only pending ids" | {ok:false, code:'expired'}, no request_id, nothing sent to the instance |
  * | ASK-09  | EP (no instance attached; C1-EP-02) | contract §9, §7a.5 "Off" | unavailable at once with a request_id, nothing queued (no offer and no notice after a new attach); the identical call goes to the stock prompt |
- * | ASK-10  | ST (detach while an ask_fishball and a direct call wait; C1-ST-08) | contract §5.1, §7a.5 "Going off" | the ask_fishball answers unavailable and its identical call shows the stock prompt; the direct call shows its stock prompt |
- * | ASK-11  | ST (transport closed while an ask_fishball waits; then asked while closed; then attached again) | contract §9, §7a.5 | unavailable for both, at once for the second; after a new attach a new request is offered again |
- * | ASK-12  | ST (Take back while ask_fishball waits) | §7a.2 `no-longer-managed`, §9 audit | no-longer-managed with request_id; audit answer released |
+ * | ASK-10  | ST (detach while an ask_agent and a direct call wait; C1-ST-08) | contract §5.1, §7a.5 "Going off" | the ask_agent answers unavailable and its identical call shows the stock prompt; the direct call shows its stock prompt |
+ * | ASK-11  | ST (transport closed while an ask_agent waits; then asked while closed; then attached again) | contract §9, §7a.5 | unavailable for both, at once for the second; after a new attach a new request is offered again |
+ * | ASK-12  | ST (Take back while ask_agent waits) | §7a.2 `no-longer-managed`, §9 audit | no-longer-managed with request_id; audit answer released |
  * | ASK-13  | BVA (maxPendingApprovals 1 with 1 pending) | §7a.6 "Cap" | over-capacity at once with request_id, nothing offered; the identical call goes to the stock prompt |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ARGUMENTS_STATUS, DECISION, ERROR, RISK, SETTLED_BY } from 'fishball-connector/contract'
+import { ARGUMENTS_STATUS, DECISION, ERROR, RISK, SETTLED_BY } from 'dsh-connector/contract'
 import { APR_CODE, ASK_CODE, ASK_OUTPUT, ASK_TOOL, AUDIT_ANSWER, AUDIT_KIND, CLICK, DECISION_ACTION, LIMITS, LIMITS_R11, OUTCOME, QUESTION_REQUIRED, REQUEST_PLACEHOLDER } from './support/constants.mjs'
 import { HOOK, T, blockArguments, jsonOf, resultById, settledIdle, stockSeen, cardOf, untilCard } from './support/expect.mjs'
 import { ASK_STUB, askHost, askTools, assertShape, stopAsk, tokens } from './support/instance-stub-ask.mjs'
@@ -36,7 +36,7 @@ import { sleep, until } from './support/util.mjs'
 
 const { tok, cid } = tokens('ASK')
 
-describe('Revision 11 rev11b: ask_fishball answered by an attached instance', () => {
+describe('Revision 11 rev11b: ask_agent answered by an attached instance', () => {
   let ctx
   let t
   let x
@@ -59,7 +59,7 @@ describe('Revision 11 rev11b: ask_fishball answered by an attached instance', ()
     const offer = await t.offerFor(text)
     assert.ok(offer, 'offered to the instance')
     assert.equal(offer.toolName, ASK_TOOL)
-    assert.equal(offer.callId, id, 'the ask_fishball call the row matches on')
+    assert.equal(offer.callId, id, 'the ask_agent call the row matches on')
     assert.equal(offer.reason, why)
     assert.deepEqual(offer.quotes, [])
     assert.deepEqual(JSON.parse(offer.arguments), args)
@@ -72,7 +72,7 @@ describe('Revision 11 rev11b: ask_fishball answered by an attached instance', ()
     assert.equal(notices.length, 1, 'one notice')
     assert.equal(t.requestIdOf(notices[0]), json.request_id, 'the notice names the same request')
     const [round] = await t.rounds(json.request_id)
-    assert.match(round.block.header, ASK_STUB.askedFirst, 'says the session asked first (ask_fishball): ' + round.block.header)
+    assert.match(round.block.header, ASK_STUB.askedFirst, 'says the session asked first (ask_agent): ' + round.block.header)
     const f = round.block.fields
     assert.equal(f.tool, ASK_TOOL)
     assert.deepEqual(blockArguments(round.block), args)
@@ -292,7 +292,7 @@ describe('Revision 11 rev11b: ask_fishball answered by an attached instance', ()
     await t.nothingSent(text)
   })
 
-  it('ASK-10 detach while requests wait: the ask_fishball answers unavailable and its call prompts; a direct call shows its stock prompt (C1-ST-08)', T, async () => {
+  it('ASK-10 detach while requests wait: the ask_agent answers unavailable and its call prompts; a direct call shows its stock prompt (C1-ST-08)', T, async () => {
     const askText = tok('10ask')
     const [askId, askStockId] = [cid('10ask'), cid('10askstock')]
     await t.waiting(x, askText, askId, [t.call(askText, askStockId)])
@@ -305,11 +305,11 @@ describe('Revision 11 rev11b: ask_fishball answered by an attached instance', ()
       assert.ok(await until(async () => (await t.stockSeen(directText)).length === 1, ASK_STUB.offerWaitMs, 100), 'the direct call shows its stock prompt')
       await t.waitIdle(x)
       await t.waitIdle(y)
-      assert.equal((await t.stockSeen(askText)).length, 1, 'the ask_fishball call went to the stock prompt (a to-you ticket)')
+      assert.equal((await t.stockSeen(askText)).length, 1, 'the ask_agent call went to the stock prompt (a to-you ticket)')
     } finally { await t.reattach() }
   })
 
-  it('ASK-11 transport closed while an ask_fishball waits: unavailable; asked while closed: unavailable at once; attached again: offered again', ASK_STUB.long, async () => {
+  it('ASK-11 transport closed while an ask_agent waits: unavailable; asked while closed: unavailable at once; attached again: offered again', ASK_STUB.long, async () => {
     const text = tok('11')
     const id = cid('11')
     await t.waiting(x, text, id)
@@ -333,7 +333,7 @@ describe('Revision 11 rev11b: ask_fishball answered by an attached instance', ()
     await t.waitIdle(x)
   })
 
-  it('ASK-12 Take back while ask_fishball waits: no-longer-managed; audit answer released', T, async () => {
+  it('ASK-12 Take back while ask_agent waits: no-longer-managed; audit answer released', T, async () => {
     const z = await t.session('ask-12')
     const id = cid('12')
     const offer = await t.waiting(z, tok('12'), id)
@@ -366,7 +366,7 @@ describe('Revision 11 rev11b: ask_fishball answered by an attached instance', ()
   })
 
   describe('ASK-14 the reason (why) is bounded in bytes and is not cut to rationaleChars', () => {
-    /** The user's decision (2026-11-08): an ask_fishball reason over 8 KiB is refused, never cut. */
+    /** The user's decision (2026-11-08): an ask_agent reason over 8 KiB is refused, never cut. */
     const REASON_MAX_BYTES = 8192
     after(() => t.setLimit({ rationaleChars: LIMITS_R11.rationaleChars.default }))
 

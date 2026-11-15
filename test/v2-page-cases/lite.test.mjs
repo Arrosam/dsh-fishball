@@ -320,7 +320,7 @@ async function overlayComposition(sdk, { profileLayer = [] } = {}) {
   const entries = boot.composeEntries([...layers, profileLayer])
   const { launchOverlay } = await loadInstance('src/native-runtime/overlay.js')
   const paths = { home: path.join(OVERLAY.base, 'home'), agentsHome: path.join(OVERLAY.base, 'agents'), workspace: path.join(OVERLAY.base, 'workspace'), mainHome: path.join(OVERLAY.base, 'main') }
-  const childModule = path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', 'packages', 'instance', 'native-child.js')
+  const childModule = path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', 'packages', 'dsh-instance', 'native-child.js')
   const operations = launchOverlay(paths, { hostId: 'fbtest-host', instanceId: 'fbtest-instance' }, childModule, {}, {}, entries)
   const effective = boot.composeEntries([...layers, profileLayer, operations])
   return { entries, operations, effective, mainEntries: boot.composeEntries([...layers, profileLayer]) }
@@ -658,7 +658,7 @@ lite('LITE-EP-12', 'Preserve child native ecosystem contributions and untouched 
   const inserted = operations.filter((op) => Array.isArray(op?.insert)).flatMap((op) => op.insert)
   assert.equal(inserted.filter((row) => row.id === 'fishball-page').length, 1, 'child overlay inserts the page row once')
   // Main manifest never declares the page client.
-  const manifest = JSON.parse(readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', 'packages', 'instance', 'package.json'), 'utf8'))
+  const manifest = JSON.parse(readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', 'packages', 'dsh-instance', 'package.json'), 'utf8'))
   assert.ok(!JSON.stringify(manifest.dsh?.client ?? {}).includes('fishball-page'))
   // Disabled child rows are limited to the contract list (no unrelated removal).
   const disabledByOverlay = operations.filter((op) => op?.disabled === true).map((op) => op.id).filter((id) => id !== 'hmr')

@@ -43,7 +43,7 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { ERROR } from 'fishball-connector/contract'
+import { ERROR } from 'dsh-connector/contract'
 import { FAKE } from './support/constants.mjs'
 import { T, turn } from './support/expect.mjs'
 import { START_MODEL as C, route } from './support/start-session-model.mjs'

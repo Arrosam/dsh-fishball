@@ -10,8 +10,8 @@
  * | id      | technique | expected |
  * |---------|-----------|----------|
  * | PTC-01  | EP (inner call allowed) | the program gets the plain value (no hint in the run_code result); the agent's next request has, after that result, a message of source fishball-notice carrying the hint; the session log holds that notice |
- * | PTC-02  | EP (inner call rejected) | the program catches an error whose message is exactly "Fishball rejected this call: <reason>\nNext time, call ask_fishball …" |
- * | PTC-03  | EP (the instance asks on an inner call) | the program catches an error naming the request id and the question and pointing to ask_fishball |
+ * | PTC-02  | EP (inner call rejected) | the program catches an error whose message is exactly "Fishball rejected this call: <reason>\nNext time, call ask_agent …" |
+ * | PTC-03  | EP (the instance asks on an inner call) | the program catches an error naming the request id and the question and pointing to ask_agent |
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'

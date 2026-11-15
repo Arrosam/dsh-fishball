@@ -1,5 +1,5 @@
 /**
- * The one place that binds the C-OAUTH cases to C-OAUTH's module (`packages/connector/src/mcp/oauth/`).
+ * The one place that binds the C-OAUTH cases to C-OAUTH's module (`packages/dsh-connector/src/mcp/oauth/`).
  *
  * K1 freezes what the module answers (`OAuthTokenStore`, `FailureLimiter`, `BearerVerifier`,
  * `GrantRegistry`, index.d.ts) but no factory. This seam binds the module's own, and only here, so
@@ -57,7 +57,7 @@ const NO_ROUTE = Object.freeze({ status: 404, urlBase: 'http://x' })
 
 /** C-OAUTH's four factories bound to `sdk` (its `@deepseek-ai/*` imports resolve to that SDK). */
 async function factories(sdk) {
-  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-OAUTH "Owns" packages/connector/src/mcp/oauth/)`)
+  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-OAUTH "Owns" packages/dsh-connector/src/mcp/oauth/)`)
   resolveRuntimePackages()
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
   return Object.fromEntries(Object.entries(BINDING.roles).map(([role, pattern]) => {

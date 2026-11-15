@@ -1,5 +1,5 @@
 /**
- * K1 black-box cases: the freeze of `fishball-connector/mcp-schema` (v3-tasks.md row K1 at
+ * K1 black-box cases: the freeze of `dsh-connector/mcp-schema` (v3-tasks.md row K1 at
  * `b1295de`). K1 "resolves the K flags in AUTH, NAME, EVT, PLAT, WATCH", and its definition of done
  * is "every K value used by a case is in the module or explicitly left to a task". So the cases are
  * the K-flagged rows of 01-auth-pairing.md, 02-names.md, 04-events-interception.md,
@@ -445,7 +445,7 @@ export function registerK1Cases(sdk) {
     assert.deepEqual(FIELDS.pollArgs.filter((f) => !inNames.has(f)), [], 'inbox_poll input')
     assert.deepEqual([...FIELDS.poll, ...FIELDS.event].filter((f) => !outNames.has(f)), [], 'inbox_poll output')
   })
-  caseTest(sdk, 'EVT-EP-02', 6, 'the fishball://events summary is {pending, headSequence, mailboxGeneration}, frozen by name (D§3.3)', (mod) => {
+  caseTest(sdk, 'EVT-EP-02', 6, 'the dsh-agent://events summary is {pending, headSequence, mailboxGeneration}, frozen by name (D§3.3)', (mod) => {
     const text = allText()
     assert.deepEqual(FIELDS.summary.filter((f) => !text.includes(f)), [])
   })
@@ -493,7 +493,7 @@ export function registerK1Cases(sdk) {
   for (const [id, row, what] of RECORDED.filter(([id]) => id.startsWith('PLAT-'))) caseTest(sdk, id, row, `K recorded: ${what}`, () => assertRecorded(id, row))
   todos(sdk, 'PLAT-UC-01', LATER.http, [['main, E1–E6', '2026-07-28 client flow; initialize, old version, GET/DELETE, resources/subscribe, Mcp-Session-Id, header mismatch']])
   todos(sdk, 'PLAT-BVA-02', LATER.http, [['1–4', 'body limit − 1, limit, limit + 1 (413 structured); in-flight max + 1 (429 structured)']])
-  todos(sdk, 'PLAT-UC-03', LATER.route, [['main, A1, E1, E2', 'message_fishball / ask_fishball routing; unavailable at once when not connected']])
+  todos(sdk, 'PLAT-UC-03', LATER.route, [['main, A1, E1, E2', 'message_agent / ask_agent routing; unavailable at once when not connected']])
   todos(sdk, 'PLAT-UC-07', LATER.card, [['main, A1, E1, E2', 'Fishball shows an ask card (card fields frozen by K3)']])
   todos(sdk, 'PLAT-BVA-01', LATER.board, [['1–3', 'board done-item visibility at 29 d 23:59:59, 30 d, 30 d + 1 s (fake clock)']])
   todos(sdk, 'PLAT-DT-02', LATER.status, [['1–4', 'standalone set completeness and the Watchdog-down report']])

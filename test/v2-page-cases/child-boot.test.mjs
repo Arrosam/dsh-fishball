@@ -7,8 +7,8 @@
  * - child-boot-host.mjs boots the selected SDK's own `web` profile (profile-boot runProfile) on a
  *   throwaway home, with an overlay that appends the child-web rows after the native rows, as the
  *   instance's launch overlay does. DSH's native web boot then serves each row's browser half.
- * - The rows load from a staged copy of `<plugin>/packages/instance` (FBTEST_PLUGIN_DIR picks the
- *   checkout; default this repo), with fishball-connector linked beside it (since R-EMBED the
+ * - The rows load from a staged copy of `<plugin>/packages/dsh-instance` (FBTEST_PLUGIN_DIR picks the
+ *   checkout; default this repo), with dsh-connector linked beside it (since R-EMBED the
  *   instance ships its status line in src/child-settings/ itself, so no client file is copied).
  * - A headless Chromium opens DSH's own URL over DevTools and records every console call and
  *   uncaught exception of that tab.

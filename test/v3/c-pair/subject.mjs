@@ -1,11 +1,11 @@
 /**
- * The one place that binds the C-PAIR cases to C-PAIR's module (`packages/connector/src/pairs/`).
+ * The one place that binds the C-PAIR cases to C-PAIR's module (`packages/dsh-connector/src/pairs/`).
  * The surface is the one Fishball relayed from the dev session (2026-11-14), and nothing else of
  * the module is read:
  *
  * - `openPairStore(ctx, {defineDomain, domainTable}, {logger?})` → `Promise<{store, close}>`, where
  *   `ctx` carries DSH's `storageDomain` and `store` implements K1's `PairStore` (index.d.ts);
- * - `powerOf(pair, clientId)` (pure) → `{scope: 'fishball'}` or `{scope: 'fishball:pair', reason:
+ * - `powerOf(pair, clientId)` (pure) → `{scope: 'agent'}` or `{scope: 'agent:pair', reason:
  *   'not-paired' | 'id-mismatch'}`: the live scope of R-ID-03 that C-OAUTH and C-HTTP apply to an
  *   access token of `clientId`. An unbound entry has no pair, so its `pair` is `undefined`.
  *
@@ -45,7 +45,7 @@ export function resolveRuntimePackages() {
 
 /** C-PAIR's entry bound to one SDK, with the two exports the cases use required. */
 export async function pairsModule(sdk) {
-  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-PAIR "Owns" packages/connector/src/pairs/)`)
+  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-PAIR "Owns" packages/dsh-connector/src/pairs/)`)
   resolveRuntimePackages()
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
   for (const name of [SUBJECT.open, SUBJECT.power]) assert.equal(typeof mod[name], 'function', `the C-PAIR entry exports no ${name}()`)

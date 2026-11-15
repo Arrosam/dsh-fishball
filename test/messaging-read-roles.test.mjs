@@ -45,12 +45,12 @@
  * | ROL-50 ×2 | EP (relatedness) | contract §4.1 "related session only (managed, watched, messaged by, forwarded)" | a session never related is refused with an error frame; a forwarded session stays readable after Take back |
  *
  * Retired:
- * - ROL-40: read_session's tool description is the instance's own (packages/instance), not observable on the main side.
+ * - ROL-40: read_session's tool description is the instance's own (packages/dsh-instance), not observable on the main side.
  * - ROL-41: read_session's result note was the in-process tool's wording; session.read's response has no note (contract §4.1).
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ERROR, OPERATION, ROLE } from 'fishball-connector/contract'
+import { ERROR, OPERATION, ROLE } from 'dsh-connector/contract'
 import { ELLIPSIS, LIMITS_R11, READ_MAX } from './support/constants.mjs'
 import { HOOK, T, turn } from './support/expect.mjs'
 import { bootStub, restartStub, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
