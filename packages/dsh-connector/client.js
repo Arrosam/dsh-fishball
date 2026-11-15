@@ -40,7 +40,9 @@ window.__ModuleLoader__.load({
       pageView: 'page',
       /** ConfigFormSnapshot.status when DSH does not serve the row's settings to this client. */
       unavailable: 'unavailable',
-      effect: 'dsh-connector: settings page',
+      /** ConfigFormSnapshot.status before the first accepted section. */
+      loading: 'loading',
+      effect: Object.freeze({ locale: 'dsh-connector: settings page words', page: 'dsh-connector: settings page' }),
     })
     /**
      * The host half's routes, page-relative: the same paths as src/settings-page/constants.js
@@ -67,23 +69,32 @@ window.__ModuleLoader__.load({
       reveal: 'data-dsh-connector-reveal',
       copy: 'data-dsh-connector-copy',
     })
-    /** Inline layout over DSH's design tokens: the page adds no style sheet (R-ARCH-03). */
+    /**
+     * Inline layout: the page adds no style sheet (R-ARCH-03). Colours and fonts are DSH's theme
+     * tokens (dsh-client-ui-theme); DSH has no spacing tokens, so the gaps are named here, at the
+     * values core's settings panel uses (packages/core/client.settings.js).
+     */
+    const GAP = Object.freeze({ section: '12px', item: '8px' })
     const STYLE = Object.freeze({
-      page: Object.freeze({ display: 'grid', gap: 'var(--dsw-space-3, 12px)', color: 'var(--dsw-alias-label-primary)', font: 'var(--dsw-font-xs-13)' }),
-      row: Object.freeze({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--dsw-space-2, 8px)' }),
-      list: Object.freeze({ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 'var(--dsw-space-2, 8px)' }),
+      page: Object.freeze({ display: 'grid', gap: GAP.section, color: 'var(--dsw-alias-label-primary)', font: 'var(--dsw-font-xs-13)' }),
+      row: Object.freeze({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: GAP.item }),
+      list: Object.freeze({ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: GAP.item }),
       hint: Object.freeze({ margin: 0, color: 'var(--dsw-alias-label-tertiary)' }),
       error: Object.freeze({ margin: 0, color: 'var(--dsw-alias-state-error-primary)' }),
-      value: Object.freeze({ margin: 0, padding: 'var(--dsw-space-2, 8px)', font: 'var(--dsw-font-code-13, monospace)', overflowWrap: 'anywhere', userSelect: 'all' }),
+      value: Object.freeze({ margin: 0, padding: GAP.item, fontFamily: 'var(--dsw-font-markdown-code-font-family)', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', userSelect: 'all' }),
     })
+    /** What the page is doing: one action at a time, each with its own button text. */
+    const BUSY = Object.freeze({ none: null, saving: 'saving', creating: 'creating' })
     /** The Copy button's outcome, by its message key. */
     const COPY = Object.freeze({ done: 'copied', failed: 'copyFailed' })
+    /** Separates a duplicated entry key from a row index in a React key. */
+    const DUPLICATE_ROW = '#'
     /** A step in the list for the reorder buttons. */
     const MOVE = Object.freeze({ up: -1, down: 1 })
 
     const en = {
       summary: 'Tokens for agents that connect to this DSH.',
-      title: 'Tokens',
+      loading: 'Loading…',
       hint: 'Each agent gets its own token. A token is shown once, when it is created; nobody can view or edit it afterwards. To replace a token, delete it and create a new one.',
       empty: 'No tokens yet.',
       label: 'Label',
@@ -113,7 +124,7 @@ window.__ModuleLoader__.load({
     }
     const zh = {
       summary: '连接到此 DSH 的 agent 所用的 token。',
-      title: 'Token',
+      loading: '加载中…',
       hint: '每个 agent 使用自己的 token。token 只在创建时显示一次，之后任何人都无法查看或修改。要更换 token，请删除它并新建一个。',
       empty: '还没有 token。',
       label: '标签',
@@ -208,8 +219,11 @@ window.__ModuleLoader__.load({
         const form = props.form
         const snapshot = form?.state
         const saved = listOf(snapshot?.value)
+        // The staged list and the revision it was staged from, which fences its Save: a list
+        // changed underneath (New token, the hosted create, another tab) refuses that Save instead
+        // of being overwritten, which would delete the new entry for good.
         const [draft, setDraft] = React.useState(null)
-        const [busy, setBusy] = React.useState(false)
+        const [busy, setBusy] = React.useState(BUSY.none)
         const [problem, setProblem] = React.useState(null)
         const [notice, setNotice] = React.useState(null)
         const [newLabel, setNewLabel] = React.useState('')
@@ -219,13 +233,22 @@ window.__ModuleLoader__.load({
           const answer = await call(ROUTE.notice, ROUTE.get)
           setNotice(answer.ok ? answer.notice ?? null : null)
         }, [])
-        React.useEffect(() => { void refreshNotice() }, [refreshNotice, snapshot?.revision])
+        const onPage = props.view === PAGE.pageView && snapshot !== undefined && snapshot.status !== PAGE.unavailable
+        React.useEffect(() => { if (onPage) void refreshNotice() }, [refreshNotice, onPage, snapshot?.revision])
         if (props.view !== PAGE.pageView) return t('summary')
-        if (snapshot === undefined || snapshot.status === PAGE.unavailable) return h('p', { style: STYLE.hint }, t('unavailable'))
-        const list = draft ?? saved
-        const dirty = draft !== null && !sameList(draft, saved)
-        const disabled = !snapshot.writable || busy
-        const stage = (change) => { setProblem(null); setDraft((current) => change([...(current ?? saved)])) }
+        if (!onPage) return h('p', { style: STYLE.hint }, t('unavailable'))
+        if (snapshot.status === PAGE.loading) return h('p', { style: STYLE.hint, role: 'status' }, t('loading'))
+        // A draft equal to the saved list is no edit: the saved list is shown, so nothing hides
+        // an item added meanwhile.
+        const dirty = draft !== null && !sameList(draft.items, saved)
+        const list = dirty ? draft.items : saved
+        const disabled = !snapshot.writable || busy !== BUSY.none
+        const stage = (change) => {
+          setProblem(null)
+          setDraft((current) => (current !== null && !sameList(current.items, saved)
+            ? { ...current, items: change([...current.items]) }
+            : { items: change([...saved]), revision: snapshot.revision }))
+        }
         const edit = {
           label: (index, label) => stage((next) => { next[index] = { ...next[index], label }; return next }),
           enabled: (index, enabled) => stage((next) => { next[index] = { ...next[index], enabled }; return next }),
@@ -233,36 +256,38 @@ window.__ModuleLoader__.load({
           move: (index, step) => stage((next) => { const [item] = next.splice(index, 1); next.splice(index + step, 0, item); return next }),
         }
         const save = async () => {
-          setBusy(true)
+          setBusy(BUSY.saving)
           let accepted = false
-          try { accepted = await form.mutate([{ op: OP_SET, path: [PAGE.tokensField], value: draft }], snapshot.revision) } catch { accepted = false }
-          setBusy(false)
+          try { accepted = await form.mutate([{ op: OP_SET, path: [PAGE.tokensField], value: draft.items }], draft.revision) } catch { accepted = false }
+          setBusy(BUSY.none)
           if (accepted) setDraft(null)
           else setProblem(t('saveFailed'))
           await refreshNotice()
         }
         const create = async () => {
-          setBusy(true)
+          setBusy(BUSY.creating)
           setProblem(null)
           const answer = await call(ROUTE.create, { ...ROUTE.post, body: JSON.stringify({ label: newLabel }) })
-          setBusy(false)
+          setBusy(BUSY.none)
           if (!answer.ok || typeof answer.value !== 'string') { setProblem(t('createFailed', { code: answer.code ?? ROUTE.unreadable })); return }
           setNewLabel('')
           setRevealed(answer.value)
         }
+        // No heading: the Plugins page draws the row's title above its configuration.
         return h('div', { style: STYLE.page, [DATA.root]: true },
-          h('h3', null, t('title')),
           h('p', { style: STYLE.hint }, t('hint')),
           snapshot.writable ? null : h('p', { style: STYLE.hint }, t('readOnly')),
           h(Notice, { t, notice }),
           list.length === 0 ? h('p', { style: STYLE.hint }, t('empty')) : h('ul', { style: STYLE.list },
-            list.map((item, index) => h(TokenRow, { key: item.key + index, t, item, index, count: list.length, disabled, edit }))),
+            // Keyed by the entry key, so a reorder moves a row (and its focus) instead of remounting
+            // it; a key two items share is a duplicate (design §5.9), whose second row is keyed apart.
+            list.map((item, index) => h(TokenRow, { key: list.findIndex((other) => other.key === item.key) === index ? item.key : item.key + DUPLICATE_ROW + index, t, item, index, count: list.length, disabled, edit }))),
           dirty ? h('div', { style: STYLE.row },
-            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled, onClick: () => void save() }, busy ? t('saving') : t('save')),
-            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: busy, onClick: () => { setDraft(null); setProblem(null) } }, t('discard'))) : null,
+            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled, onClick: () => void save() }, busy === BUSY.saving ? t('saving') : t('save')),
+            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: busy !== BUSY.none, onClick: () => { setDraft(null); setProblem(null) } }, t('discard'))) : null,
           h('div', { style: STYLE.row },
             h('input', { type: 'text', 'aria-label': t('newLabel'), placeholder: t('newLabel'), value: newLabel, disabled: disabled || dirty, [DATA.newLabel]: true, onChange: (event) => setNewLabel(event.target.value) }),
-            h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: disabled || dirty || newLabel.trim() === '', [DATA.newToken]: true, onClick: () => void create() }, busy ? t('creating') : t('newToken'))),
+            h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: disabled || dirty || newLabel.trim() === '', [DATA.newToken]: true, onClick: () => void create() }, busy === BUSY.creating ? t('creating') : t('newToken'))),
           problem === null ? null : h('p', { style: STYLE.error, role: 'alert' }, problem),
           revealed === null ? null : h(Reveal, { t, value: revealed, onClose: () => setRevealed(null) }))
       }
@@ -270,7 +295,7 @@ window.__ModuleLoader__.load({
 
     function apply(ctx) {
       const t = ctx.locale.bind(PAGE.locale)
-      ctx.effect(() => ctx.locale.register(PAGE.locale, { en, zh }), PAGE.effect)
+      ctx.effect(() => ctx.locale.register(PAGE.locale, { en, zh }), PAGE.effect.locale)
       // Registered only while DSH serves the row's settings, so a deployment without the row shows
       // no trace of the page (the Plugins page asks slot keys for a configure control).
       ctx.effect(() => ctx.configForms.whileServed([PAGE.id], () =>
@@ -278,7 +303,7 @@ window.__ModuleLoader__.load({
           name: PAGE.slot,
           key: `${PAGE.id}#${PAGE.id}`,
           locale: PAGE.locale,
-        }, makePage(t)))), PAGE.effect)
+        }, makePage(t)))), PAGE.effect.page)
     }
 
     return { name: PAGE.id, inject: ['slots', 'locale', 'configForms'], apply }

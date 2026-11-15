@@ -30,8 +30,6 @@ export const ENTRY_KEY = Object.freeze({ bytes: 16, encoding: 'base64url' })
 
 /** Encoding of a generated token value after `TOKEN_VALUE.generatedPrefix` (design §5.2). */
 export const VALUE_ENCODING = 'base64url'
-/** Encoding of a stored value digest (`TOKEN_VALUE.digestAlgorithm`). */
-export const DIGEST_ENCODING = 'hex'
 
 /** K1 `TokenEntry.generation`: a new entry's first, and what each revocation adds. */
 export const GENERATION = Object.freeze({ first: 0, step: 1 })
@@ -53,10 +51,15 @@ export const HOSTED_TOKEN = Object.freeze({ label: 'Fishball (hosted)' })
 export const SYNC_REASON = Object.freeze({ start: 'start', settings: 'settings' })
 
 /**
- * `create` / `createHosted` reject with this code when the record or the settings item could not
- * be written (K3 `CreateHostedErrorCode`); nothing was created and no value was returned.
+ * Why `create` / `createHosted` reject. `operationFailed` is the code when the record or the
+ * settings item could not be written (K3 `CreateHostedErrorCode`); nothing was created and no
+ * value was returned.
  */
-export const CREATE_ERROR = Object.freeze({ operationFailed: REFUSAL.operationFailed })
+export const CREATE_ERROR = Object.freeze({
+  operationFailed: REFUSAL.operationFailed,
+  /** The TypeError's message for a label that is not a non-empty string (nothing is created). */
+  invalidLabel: 'a token label must be a non-empty string',
+})
 
 /** Log lines: labels and codes only, never a value, a digest or a key (R-TOK-04). */
 export const LOG = Object.freeze({
@@ -68,6 +71,5 @@ export const LOG = Object.freeze({
   storeWriteFailed: 'token entry record not written yet; the entry stays unusable until it is (%s)',
   createFailed: 'token entry "%s" not created (%s)',
   invalidRecord: 'invalid token entry record',
-  invalidLabel: 'a token label must be a non-empty string',
   labelSeparator: ', ',
 })

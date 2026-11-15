@@ -31,19 +31,23 @@
  * Fail closed on storage: the new state is in memory before the listeners run, so the next request
  * sees it whatever the store does. An entry whose generation is newer in memory than in the store
  * is unusable until the record is written (retried at every sync): otherwise a restart would bring
- * the older generation back and revive the tokens issued under it.
+ * the older generation back and revive the tokens issued under it. A deleted entry's record is
+ * first written as `removed` with its new generation, then dropped, so a failed drop cannot bring
+ * the entry back after a restart. What a restart cannot recover is a change the store never took
+ * at all (the store itself failing until the connector stops).
  */
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { ENTRY_STATUS, REVOCATION_KIND, SETTINGS_REFUSAL, TOKEN_VALUE } from '../../mcp-schema/constants.js'
 import { diagnosticOf } from '../errors.js'
-import { CREATE_ERROR, DIGEST_ENCODING, ENTRY_KEY, GENERATION, HOSTED_TOKEN, LOG, NO_TEXT, SYNC_REASON, VALUE_ENCODING } from './constants.js'
+// The connector's one hash of a secret value (lowercase hex SHA-256, K1 TOKEN_VALUE.digestAlgorithm;
+// mcp/oauth/digest.js): a token value's stored digest is taken the same way as every OAuth token's.
+import { DIGEST_ENCODING } from '../mcp/oauth/constants.js'
+import { digestOf } from '../mcp/oauth/digest.js'
+import { CREATE_ERROR, ENTRY_KEY, GENERATION, HOSTED_TOKEN, LOG, NO_TEXT, SYNC_REASON, VALUE_ENCODING } from './constants.js'
 import { openTokenStore } from './store.js'
 
 /** A generated token value (design §5.2): prefix + base64url of the K1 number of random bytes. */
 export const generateTokenValue = () => TOKEN_VALUE.generatedPrefix + randomBytes(TOKEN_VALUE.generatedBytes).toString(VALUE_ENCODING)
-
-/** The stored digest of a value (design §5.1). */
-const digestOf = (value) => createHash(TOKEN_VALUE.digestAlgorithm).update(value).digest(DIGEST_ENCODING)
 
 /** Constant-time equality of two digests of the one fixed algorithm and encoding. */
 function sameDigest(a, b) {
@@ -199,10 +203,14 @@ export function createTokenRegistry({ ctx, logger, settings, restoreTokens }) {
     }
   }
 
-  /** Writes every record whose stored copy differs from the one held. A failed write is retried by the next sync. */
+  /**
+   * Writes every record whose stored copy differs from the one held, removed ones included: a
+   * removed record is stored with its new generation before settleRemoved drops it, so a failed
+   * drop leaves a removed record, never the live one. A failed write is retried by the next sync.
+   */
   async function persist() {
     for (const record of [...records.values()]) {
-      if (record.removed || sameJson(stored.get(record.entryKey), record)) continue
+      if (sameJson(stored.get(record.entryKey), record)) continue
       if (await attempt(() => store.table.put(record.entryKey, record))) stored.set(record.entryKey, record)
     }
   }
@@ -221,7 +229,9 @@ export function createTokenRegistry({ ctx, logger, settings, restoreTokens }) {
   async function refuse(groups) {
     refusedGroups = groups
     if (restoreTokens !== undefined) {
-      const previous = applied ?? publicList([...records.values()])
+      // Before the first sync there is no applied list: the stored entries stand in, without the
+      // ones a `create` has not added to the settings yet.
+      const previous = applied ?? publicList([...records.values()].filter((record) => !creating.has(record.entryKey)))
       // Set before the write: a restore that fails after writing must not let its echo count as an
       // accepted save (fail closed). One that fails before costs one user save of this same list.
       restored = previous
@@ -357,7 +367,7 @@ export function createTokenRegistry({ ctx, logger, settings, restoreTokens }) {
      */
     create(label) {
       const trimmed = typeof label === 'string' ? label.trim() : NO_TEXT
-      if (trimmed === NO_TEXT) return Promise.reject(new TypeError(LOG.invalidLabel))
+      if (trimmed === NO_TEXT) return Promise.reject(new TypeError(CREATE_ERROR.invalidLabel))
       return createEntry(trimmed, false)
     },
 
