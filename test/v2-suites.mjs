@@ -15,6 +15,8 @@ export const DISPOSITION = Object.freeze({
   ownRunner: 'own-runner',
   /** Plan §0/§3.3: no migration acceptance in V2; the code ships, the cases are not a V2 gate. */
   nonGatingMigration: 'non-gating-migration',
+  /** The row's subject was removed by an approved design change; the reason names the successor task. */
+  withdrawn: 'withdrawn',
 })
 
 const file = (path, disposition, reason) => Object.freeze({ file: path, disposition, reason })
@@ -151,6 +153,10 @@ export const V2_SUITES = Object.freeze({
     cases('packages/dsh-instance/test/instance-ext/x0-c.test.mjs', '^XC-UC-(01-A5|05-M) ', DISPOSITION.v3, 'board context, MCP routing'),
     // Fishball decision 1.
     cases('test/body-soul-i2-launch.test.mjs', '^I2-M-(DT-0[1-5]|EP-01) ', DISPOSITION.nonGatingMigration, 'launch-settings migration; V2 assumes a fresh or V2-only child profile'),
+    // Design §1.0 / REMOVE-WD (2bf3769c): fishball-hosted-settings, which served the child's
+    // /api/dsh-instance/restart route, is removed. Restart and Retry move to dsh-instance's own
+    // settings page, built and tested by I-HOST. The other R3 rows (incl. R3-UC-01 Retry) still run.
+    cases('test/v2-r3-native-access.test.mjs', '^R3-UC-02 row: restart from the child settings view ', DISPOSITION.withdrawn, 'child-settings Restart route removed with fishball-hosted-settings (design §1.0, REMOVE-WD); successor I-HOST'),
   ]),
 })
 

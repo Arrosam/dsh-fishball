@@ -81,7 +81,7 @@ const V2B = Object.freeze({
   /** DT representative: one required row removed. */
   missingRow: 'approval',
   suitesModule: './v2-suites.mjs',
-  dispositions: Object.freeze({ files: Object.freeze(['v3', 'own-runner']), cases: Object.freeze(['v3', 'non-gating-migration']) }),
+  dispositions: Object.freeze({ files: Object.freeze(['v3', 'own-runner']), cases: Object.freeze(['v3', 'non-gating-migration', 'withdrawn']) }),
   runner: Object.freeze({ script: 'test:v2', command: /(^|\s|&&\s*)node test\/run-v2\.mjs(\s|$)/, file: 'test/run-v2.mjs' }),
   rootTest: /^test\/[^/]+\.test\.mjs$/,
   ownRunnerPrefix: 'native-production-',
