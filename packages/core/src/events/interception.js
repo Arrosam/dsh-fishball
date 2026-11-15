@@ -13,9 +13,8 @@
  * restart) is fenced: its `accept`, `commit` and `release` all lose (S3 §4 items 1–3).
  */
 import { randomUUID } from 'node:crypto'
-import { INTERCEPT, REASON, STATE } from '../../contracts/constants.js'
-// `disconnected` is K1's: read through core's one K1 seam (the vendored copy), not the link itself.
-import { LINK_REFUSAL } from '../link/schema.js'
+// `LINK.disconnected` is core's own copy of the connector's word (K3a), not read from the link itself.
+import { INTERCEPT, LINK, REASON, STATE } from '../../contracts/constants.js'
 import { ACKABLE, DISPATCH, HOST, INTERCEPTOR_HELD, LOG, MISUSE, UNDECIDED } from './constants.js'
 import { codeOf } from './diagnostics.js'
 import { receiptOf } from './ledger.js'
@@ -140,11 +139,11 @@ export function createInterception({ ledger, registry, delivery, link, logger })
           let result
           // K3: commit never rejects; a rejected send is an answer that never reached the
           // connector (K3 events.d.ts, as S3's prototype treated it).
-          try { result = await send() } catch { result = { ok: false, code: LINK_REFUSAL.disconnected } }
+          try { result = await send() } catch { result = { ok: false, code: LINK.disconnected } }
           // One move committing → fishball, so no crash can fall between two writes (finding 15).
           // Not after close() (see `closed`): a rejected move would also break "commit never
           // rejects" (K3). The record stays committing.
-          if (!closed && result?.ok === false && result.code === LINK_REFUSAL.disconnected) await toFishball(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
+          if (!closed && result?.ok === false && result.code === LINK.disconnected) await toFishball(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
           return result
         })()
         commits.push(task)

@@ -1,3 +1,4 @@
+import { assertNoGeneratedSchema } from '../own-schema/absence.mjs'
 /**
  * K3a black-box cases: what core needs from the DSH side, frozen as core's own copy of the MCP
  * surface and as DSH state under published names (design `design/v3` 9a531192 §1.0b row 1 / decided
@@ -55,6 +56,8 @@ function assertSameGrammar(copy, flags, published, samples) {
 }
 
 export function registerK3aCases(sdk) {
+  // F-OWN-SCHEMA replaces LATER.ownSchema with the executed public behavior suite OWN-LINK/ID/NAME/TOOLS/EVENT.
+  caseTest(sdk, 'K3a-MCP', 'own schema', 'core no longer carries a generated connector copy (F-OWN-SCHEMA)', assertNoGeneratedSchema)
   // ================================================================ R-ARCH-10: no code dependency on the DSH side
   for (const [specifier, dshSide] of DSH_SIDE.samples) {
     caseTest(sdk, 'K3a-ARCH', 'self-check', `specifier ${JSON.stringify(specifier)} → ${dshSide ? 'DSH side' : 'not DSH side'}`, () => {

@@ -227,5 +227,5 @@ export const LATER = Object.freeze({
   ui: 'F-UI (fishball-ui: logs fishball-core-missing without core; draws only through fishballInstance.ui)',
   status: 'F-STATUS (core reports nothing about a missing fishball-ui)',
   wire: 'F-WIRE (core provides fishballInstance.ui: listeners fire on change; dispose stops them)',
-  ownSchema: 'F-OWN-SCHEMA (core\'s link reads these constants instead of vendor/)',
+  // F-OWN-SCHEMA is executable in contract/own-schema; no deferred owner remains.
 })

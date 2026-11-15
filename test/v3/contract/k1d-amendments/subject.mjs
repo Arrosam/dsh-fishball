@@ -176,32 +176,7 @@ export const deriveId = ({ prefix, chars, alphabet, digest }, clientIdUrl) =>
 export const moduleIdPattern = (mod) => exportedRegExps(mod).find((re) => ID_ORACLE.accepted.every((v) => re.test(v)) && !ID_ORACLE.refused.some((v) => re.test(v)))
 
 // ------------------------------------------------------------------------------------------------
-// Core's vendored copy
-
-let regenerated
-/**
- * Runs core's generator into a fresh temp core folder (never into the checkout) and returns
- * Map relative path → bytes of what it wrote, and of what core has committed. Run once.
- */
-export function vendorTrees() {
-  regenerated ??= (async () => {
-    const tmp = await mkdtemp(path.join(os.tmpdir(), FILES.tempPrefix))
-    try {
-      const run = spawnSync(process.execPath, [FILES.vendorScript, tmp], { encoding: 'utf8' })
-      assert.equal(run.status, 0, `the generator failed: ${run.stderr}`)
-      return { generated: tree(path.join(tmp, FILES.vendorFolder)), committed: tree(FILES.coreVendor) }
-    } finally {
-      // Guard the recursive delete: only the temp folder this helper made.
-      assert.ok(path.dirname(tmp) === os.tmpdir() && path.basename(tmp).startsWith(FILES.tempPrefix), 'refusing to remove ' + tmp)
-      await rm(tmp, { recursive: true, force: true })
-    }
-  })()
-  return regenerated
-}
-const tree = (dir) => new Map(folderFiles(dir).map((f) => [f, fs.readFileSync(path.join(dir, f))]))
-
-/** Core's committed vendored module, imported in plain Node as core's link imports it. */
-export const vendoredModule = () => import(pathToFileURL(path.join(FILES.coreVendor, FILES.vendorEntry)).href)
+// F-OWN-SCHEMA: generator and vendored-module drivers withdrawn (design §1.0b row 1).
 
 /** A module's exported data as comparable JSON: RegExps as their source, functions by name. */
 export function exportedData(mod) {

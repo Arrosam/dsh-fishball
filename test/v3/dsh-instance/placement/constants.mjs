@@ -118,7 +118,7 @@ export const CHILD = Object.freeze({
 /** The child copy of core (Q-21, RELAYED.copies 3): its `files` plus package.json; the two K3/K1 entries the brief names. */
 export const CORE_COPY = Object.freeze({
   manifest: 'package.json',
-  mustCarry: Object.freeze([path.join('contracts', 'constants.js'), 'vendor']),
+  mustCarry: Object.freeze([path.join('contracts', 'constants.js')]),
 })
 
 /** HOST-UC-08 A3 (Q-13, O5): the generic panel moves to a flat chunk beside core's client.js. */

@@ -14,7 +14,7 @@
  *   F-INTERCEPT's delivery list calls (Q-11).
  *
  * Every call goes through `call()`, in this order, and nothing leaves the process on a refusal:
- * 1. the link is not connected → `disconnected` (K1 `LINK_REFUSAL`; the offer waits at the
+ * 1. the link is not connected → `disconnected` (`LINK.disconnected`; the offer waits at the
  *    connector, R-REM-04);
  * 2. the tool is not listed now → `unsupported-operation` (D3, R-FN-01);
  * 3. a manager→session send (`FACADE.sendTools`) is judged by the X19 send gate;
@@ -26,7 +26,8 @@
  * Mounting, the wiring of the gate and of the model lookup are F-WIRE's (it mounts nothing here).
  */
 import { randomUUID } from 'node:crypto'
-import { TARGET_STATE, isEventType } from '../link/schema.js'
+import { LINK } from '../../contracts/constants.js'
+import { isEventType } from '../link/schema.js'
 import { CODE, FACADE, LOG, MISUSE, TEXT, TOOL_OUTPUT } from './constants.js'
 import { offerOf } from './names.js'
 
@@ -121,7 +122,7 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
 
   /** Steps 1–4 of the header: a refusal, or `undefined` when the call may be sent. Sends nothing. */
   async function check(name, args, exec) {
-    if (link.status()?.state !== TARGET_STATE.connected) return refusal(CODE.disconnected)
+    if (link.status()?.state !== LINK.state.connected) return refusal(CODE.disconnected)
     if (!listed(name)) return refusal(CODE.unsupported)
     if (Object.hasOwn(FACADE.sendOperations, name)) {
       const refused = gateRefusal(gate.send(FACADE.sendOperations[name], args?.[FACADE.sessionArgument]))
