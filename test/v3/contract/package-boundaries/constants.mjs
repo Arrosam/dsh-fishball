@@ -107,7 +107,7 @@ export const LATER = Object.freeze({
   featurePeers: 'FEAT-PEERS (the feature plugin drops the dsh-instance peer for the optional fishballInstance? inject)',
   pluginsPage: 'X-MATRIX (no Plugins page of a started DSH lists either library)',
   hostTrace: 'X-SEC (PLAT-EP-07 runtime part: module-load trace of a running hosted setup C + I + U)',
-  twoUsers: 'Fishball (R-ARCH-08 rule 5 "more than one package uses it" conflicts with the SPLIT-SHARED contents: admin-protocol, files and provider-sync have one DSH-side user, the instance; fishball-shared has one, core, until F-UI)',
+  twoUsers: 'REMOVE-V2 (Fishball 2026-11-16: R-ARCH-08 rule 5 "more than one package uses it" stays as worded and is enforced once I-HOST and REMOVE-V2 settle the interim copies and the one-user modules)',
   removeV2: 'REMOVE-V2 (design §1.0b row 2: core still imports dsh-connector/contract and peers on dsh-connector; that edge goes with the V2 child path)',
   standalone: 'unassigned in v3-tasks.md (standalone install of the core tarball with no registry; core is not standalone-loadable before S6/F-GUARDS)',
 })

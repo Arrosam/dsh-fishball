@@ -91,9 +91,11 @@ bundle it, tarballs contain it), row 6 (every module used; no live copy in a plu
 side). HOST-EP-03 row 1 now reads: core imports fishball-shared, the instance dsh-connector-shared,
 and the instance reaches nothing of fishball-shared.
 
-## Open point for Fishball
+## R-ARCH-08 rule 5 (decided by Fishball 2026-11-16)
 
 R-ARCH-08 rule 5 says a library holds modules "more than one" package uses. The SPLIT-SHARED contents
 contradict that at this commit. In dsh-connector-shared, the admin protocol, files and provider-sync
 have one user (the instance), and only redact has two. fishball-shared has one user (core) until F-UI.
-PLAT-EP-07 row 6 "at least two" is therefore a `todo` until Fishball reconciles the two texts.
+Decided: the rule stays as worded and is enforced later. The interim copies and the one-user modules
+settle once I-HOST and REMOVE-V2 land, so PLAT-EP-07 row 6 "at least two" stays a `todo` owned by
+REMOVE-V2.
