@@ -4,9 +4,12 @@ The contract of the connector's MCP surface and of the internal seams W2 builds 
 [v3-requirements.md](<../../../docs/planning/v3-requirements.md>) and
 [v3-design.md](<../../../docs/planning/v3-design.md>) at `test/v3-cases` `b1295de`; spikes V3-S1
 `9499ec6`, S2 `a499141`, S3 `b4dca86`, S7 `8e92b84`, S7b `141ac3b`; K2 `d1d0b25` (`../tools`).
+The K1d gate (W4) amends it from `design/v3` `9a531192`: the token-reveal amendment (design §5.1,
+§5.9; requirements 1.27–1.32), the page id and no chain cap (R-OA-22, R-OA-23), the neutral names
+(§1.0c), `Mailbox.transfer` and the `SettingsWriter` / `SessionNotes` ports (W4 briefs G3).
 
 This module holds data, pure builders and pure rules only. It imports no DSH package and loads in
-plain Node, because `fishball-core` vendors a copy (design §9.1). Every name below is frozen:
+plain Node, because `fishball-core` vendors a copy (design §9.1; until F-OWN-SCHEMA ends it). Every name below is frozen:
 changing one is a K1 amendment. A value marked **PROPOSED** is one the requirements do not fix; it
 is frozen as written unless the user changes it at review. **DECIDED** marks a value the user
 decided at review (relayed by Fishball); `#n` is its row in [User decisions](#user-decisions). **[spec]** marks a point decided per MCP 2026-07-28 and
@@ -190,6 +193,11 @@ changes this object in the same change.
 - A settled offer's own event is **not** retired: it stays pending until acked, and the
   `settlement` that follows it is the signal (PROPOSED, EVT-ST-01 row 5). A withdrawn one is
   replaced by a `retirement` (design §5.3).
+- `Mailbox.transfer(from, to)` (K1d-1, R-HOST-09 step 5): every pending event of `from`, held
+  ones included, moves to `to` in order, keeping its `eventId`, payload and `payloadDigest`; its
+  `sequence` and `mailboxGeneration` become the new box's. Nothing is committed, no hold changes,
+  and `maxQueuedInputs` never refuses a moved event. Misuse (a bad key, or `from === to`) is a
+  synchronous `TypeError`, as `retire`'s (K1d-2).
 - `Mailbox.retire` resolves `{retired: boolean}` (DECIDED #W3-1): `true` when it replaced a
   pending event, `false` when the event was not pending in that pair's mailbox (acked, already
   retired, unknown, another pair's), which commits and changes nothing. On `false` C-ROUTE sends
@@ -221,7 +229,7 @@ changes this object in the same change.
 | unknown grant (`password`, …) | 400 `unsupported_grant_type` |
 | GET on the token endpoint | 405, `Allow: POST`, no body semantics (PROPOSED: S7 T7's behaviour) |
 | `refresh_token` from a machine client, or any refresh token not issued to a browser client | 400 `invalid_grant` |
-| unknown / disabled / deleted / short token, invalid or missing client id | 401 `invalid_client` (`WWW-Authenticate: Basic` when Basic was used) |
+| unknown / disabled / deleted / duplicated token, invalid or missing client id | 401 `invalid_client` (`WWW-Authenticate: Basic` when Basic was used) |
 | missing or foreign `resource` | 400 `invalid_target` |
 | a client secret on a public grant | 401 `invalid_client` |
 | `client_secret` or `access_token` in the URL query | 400 `invalid_request`, even with a valid header or form [spec: RFC 6750 §2.3, a client MUST NOT use two methods] |
@@ -237,9 +245,9 @@ changes this object in the same change.
 | `LIFETIME.codeMs` | 60 s | [req] R-OA-14 |
 | `LIFETIME.pendingRequestMs` | 10 min | [req] R-OA-15 |
 | `LIFETIME.refreshGraceMs` | 10 s; reuse at exactly 10 s revokes | [req] Q-S7B-1 B |
-| `LIFETIME.refreshChainMaxMs` | 365 days from the code redemption; an ended chain is renewed on the same entry (R-OA-16 (7)) | DECIDED (#18; R-OA-16 (5) asks for one) |
-| `TOKEN_VALUE.minChars` | 32 code points | [req] TQ-4 A |
-| `TOKEN_VALUE` generated | `dsht_` + 32 random bytes base64url | [design] §5.2 |
+| refresh chain lifetime | none: a chain ends only by reuse or by a disable or delete of its entry (`refreshChainMaxMs` withdrawn, K1d) | [req] R-OA-23 (1.32 R14; DECIDED #18 reversed) |
+| `TOKEN_VALUE` generated | `dsht_` + 32 random bytes base64url; the only kind of token value (no length rule: `minChars` and `isTokenLongEnough` withdrawn, K1d) | [design] §5.2, §1.0c; [req] 1.27 |
+| `TOKEN_VALUE.digestAlgorithm` | SHA-256: the connector stores only the digest of a token value (K1d) | [design] §5.1 |
 | `RATE_LIMITS.tokenRequestsPerWindow` | 30 token requests per (address, client id) per minute | PROPOSED |
 | `RATE_LIMITS.tokenRequestsPerAddressPerWindow` | 150 token requests per address per minute, any client id, counted before the body is read | PROPOSED (K1 amendment after W2; was C-OAUTH's local value) |
 | `TOKEN_ENDPOINT_LIMITS.formBodyBytes` | 8 KiB token-request form; over it 400 `invalid_request` | PROPOSED (K1 amendment after W2; was C-OAUTH's `TOKEN_FORM.maxBodyBytes`) |
@@ -260,9 +268,23 @@ changes this object in the same change.
   `FailureLimiter` that the token endpoint, the approval page and the MCP endpoint share
   (R-OA-17; K1a, PROPOSED). An empty page field is not counted (PROPOSED). While limited, a valid
   credential is refused too (S7b P2), and the refused request is not counted again.
-- **Settings save refusals (`SETTINGS_REFUSAL`):** `ref-duplicate` (two entries, one `ref`) and
-  `value-duplicate` (two entries whose refs hold the same value; the user's decision 2026-11-13,
-  AUTH-EP-04 7a). Either refusal keeps the previous settings, and names only entry labels.
+- **Settings save refusal (`SETTINGS_REFUSAL`, K1d):** `token-duplicate` (PROPOSED, R3; decided
+  item 9) for two items with one entry `key`, two entries with one value digest, or an item with no
+  record (R5). The previous list is written back and the notice names only entry labels; found
+  outside a save, the entries involved refuse service. It replaces `ref-duplicate` and
+  `value-duplicate`. `ENTRY_STATUS` is `ok` only (`token-too-short`, `token-unconfigured`
+  withdrawn), and `REVOCATION_KIND` is `disabled` or `deleted` (`value-changed` withdrawn).
+  `TokenEntry` drops `ref` and `generated` and gains `hosted: boolean` (made by `createHosted`);
+  it never carries the value or its digest. A settings item is `{label, enabled, key}`
+  (`TokenSettingsItem`).
+- **Browser client ids (`AUTHORIZE_EXTENSION`, `DERIVED_AGENT_ID`, K1d):** the approval page asks
+  for no id. The agent passes its id as the authorization-request parameter `agent_id`; a client
+  that passes none gets `cid-` + the first 16 lowercase base32 characters of SHA-256(client id URL)
+  (design §5.5a, R-OA-22). The page binds at once (`PairStore.bindFromPage`); a bound entry entered
+  again with the same id reconnects the same principal (`PairStore.reconnectFromPage`), any other
+  id is `already-paired`. An entry bound on the page refuses `client_credentials` (`invalid_client`),
+  so one token never serves two client types (decided item 4). Machine clients and `pair` are
+  unchanged: their id is their OAuth `client_id`.
 - Limit refusals at the endpoint are a JSON-RPC error body, code -31000 (`ENDPOINT_LIMITS.jsonRpcCode`,
   DECIDED #4: MCP 2026-07-28 makes -32000…-32019 a legacy range new implementations SHOULD NOT
   use), message `limit-exceeded` (413) or `rate-limited` (429), and **no `id` member** [spec: MCP
@@ -358,7 +380,7 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 | NAME-BVA-01 (K) | Name length counts Unicode code points **after** whitespace collapse, trim and NFC (`checkName`). |
 | EVT-EP-02 rows 4–5 | `inbox_ack` with an `eventId` that is not in the caller's mailbox (another pair's included) is `unknown-event`; a wrong `payloadDigest` is `digest-mismatch` (DECIDED #5, #6). All or nothing: one bad receipt acks nothing (DECIDED #61: kept). |
 | EVT-ST-01 row 8 | A second ack of an acked event is a no-op success while its receipt is remembered (`MAILBOX.ackedReceiptMs`, 1 day, DECIDED #36: kept), counted in `acked` as 0 (PROPOSED). |
-| AUTH-ST-05 rows 10–12c | A chain ends `LIFETIME.refreshChainMaxMs` (365 days, DECIDED #18) after its code redemption: a refresh at or after it is `invalid_grant`. The owner renews it on the same entry: re-entering the bound token on the approval page, from the client id recorded at the bind, with the bound id and any redirect URI the client's document allows, mints a new code and chain and keeps the pair (id, name, `pairedAt`, managed sessions, pending events) (R-OA-16 (7), R-OA-12 (2); DECIDED #18). Only `OAuthTokenStore.chainsOf` = `ended` renews: a revoked chain, a live one, or any disable, delete or value change of the entry since (a newer generation) answers `already-paired`. |
+| AUTH-ST-05 rows 10–12c | Withdrawn by K1d (R-OA-23): no chain ends by age, so there is no renewal, no `chainsOf` and no `renewFromPage`. Re-entering a bound token with the same id on the page is a reconnect (`PairStore.reconnectFromPage`, R-OA-22). |
 | EVT-UC-01 E2 | A stale cursor names an older `mailboxGeneration`, which only lost or reset mailbox storage starts (DECIDED #W2-1); it gets `{resync: {reason: 'stale-cursor', headSequence}}`, never a silent skip. |
 | NAME-ST-01 rows 8–9 | `PairStore.succeed(old, successor)`: in one registry write the old pair is removed and the successor takes its name or its lack of one; `successor-unpaired` and any failure change nothing (R-NAME-07). An unpaired old entry succeeds with nothing changed (DECIDED #W2-2). |
 | EVT-ST-01 row 5 | An offer settled by the user keeps its own event pending until acked; the `settlement` that follows is the signal; the offer event is not retired (PROPOSED). |
@@ -377,8 +399,9 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 `BearerVerifier` (C-OAUTH → C-HTTP), `TokenRegistry` (C-TOKENS), `PairStore` (C-PAIR; `succeed`, the
 atomic succession step of C-SUCCEED's `retire`, R-NAME-07), `Mailbox`
 (C-MAILBOX: commit, poll, ack, summary, retire, `retireContributor` for C-EXT, hold, release,
-drop), `HintSink` (C-HTTP's listen
-streams), `OAuthTokenStore` (C-OAUTH and C-OAUTH-WEB; `chainsOf` answers the renewal question),
+drop, `transfer` for C-SUCCEED, K1d), `SettingsWriter` and `SessionNotes` (C-WIRE binds them for
+C-TOKENS-REVEAL, C-REVOKE and C-SUCCEED, K1d), `HintSink` (C-HTTP's listen
+streams), `OAuthTokenStore` (C-OAUTH and C-OAUTH-WEB),
 `FailureLimiter` (K1a: the token endpoint, the approval page and C-HTTP's bearer check share it),
 `Router.recipientFor` (C-ROUTE), `ManagedState` (C-ROUTE, called by C-TOOLS; K1c), `Presence`
 (the connected definition), `RequestGate` (C-HTTP;
@@ -416,7 +439,7 @@ constants migration, 2026-11-14).
 | 1 | `OAUTH_ERROR.temporarilyUnavailable` with 429 at the token endpoint | kept (2026-11-14) |
 | 4 | `ENDPOINT_LIMITS.jsonRpcCode` | changed from -32000 to -31000: MCP 2026-07-28 makes -32000…-32019 a legacy range (2026-11-13) |
 | 5, 6 | `REFUSAL.unknownEvent`, `REFUSAL.digestMismatch` | kept (2026-11-14) |
-| 18 | `LIFETIME.refreshChainMaxMs` | changed from 30 to 365 days, and an ended chain is renewed on the same entry (R-OA-16 (7)) (2026-11-13) |
+| 18 | `LIFETIME.refreshChainMaxMs` | changed from 30 to 365 days (2026-11-13); **reversed** by requirements 1.32 R14 (2026-11-16): no chain cap, the value and the renewal withdrawn (K1d) |
 | 19 | the failure key: (address, client id), an MCP bearer by address alone | kept, no relaxing (2026-11-13) |
 | 21 | 10 failures per key per minute (`FAILURE_LIMIT.perKeyPerWindow`) | kept, no relaxing (2026-11-13) |
 | 36 | `MAILBOX.ackedReceiptMs` 1 day | kept (2026-11-13) |
@@ -449,6 +472,11 @@ constants migration, 2026-11-14).
 | K1c-2 | W3 Q-16: `session_release` commits no event of its own (no release event); its only events are the retirements of its live offers (`released`, to the releasing pair), which C-ROUTE's `release` performs; the offers then go to the user | decided by Fishball, not the user (2026-11-14) |
 | K1c-3 | W3 Q-17: the no-recipient `message` queue: held while no paired entry is designated; durable, bounded by `maxQueuedInputs` with `queue-full`, flushed in order once a paired entry is designated (connected or not); what does not fit stays queued in order; while it is not empty a new message joins its end; never dropped once accepted | decided by Fishball, not the user (2026-11-14) |
 | K1c-4 | No `notice` code is frozen: `NOTICE.codes` stays empty, and C-ROUTE produces none | decided by Fishball, not the user (2026-11-14) |
+| K1d-1 | `Mailbox.transfer(from, to) → {moved}`: every pending event (held ones included) moves in order with its `eventId` and payload digest, renumbered in the new box; nothing committed; misuse is a synchronous `TypeError`. PROPOSED details: moved events follow the destination's own, `maxQueuedInputs` never refuses one, the destination's streams get the hint when `moved > 0` | decided by Fishball, not the user (2026-11-16; W4 briefs G3) |
+| K1d-2 | `Mailbox.retire` misuse (bad principal key, event id or reason) stays a synchronous `TypeError` before the call is queued | decided by Fishball (open-questions decided item 45, 2026-11-16) |
+| K1d-3 | `SettingsWriter` (`addToken`, `removeToken`, `setDesignated`) and `SessionNotes.system`: connector-internal ports C-WIRE binds; a write resolves after the save and the registry's sync. PROPOSED details: writes run in call order; `removeToken` of an absent key is a no-op; `system` rejects for an unknown session | decided by Fishball, not the user (2026-11-16; W4 briefs G3) |
+| K1d-4 | The page id follows design §5.5a and R-OA-22 (1.33 Q-A1 B, Q-A2 A): the page binds at once with the passed `agent_id` or the derived `cid-` id (`bindFromPage`), and a same-id return reconnects (`reconnectFromPage`). This supersedes W4 briefs G3 item 6's earlier model (`pair` with an id for a browser client, `claimFromPage`, a claimed entry pair-only until `pair`) and open-questions decided items 2, 3 and 5. G3 item 6's K3a `importToken` is void (plan §5) and the locator `reconnect()` is not K1's (Reconnect is on the instance's page, Q-D1) | decided by Fishball from the design (2026-11-16) |
+| K1d-5 | `reconnectFromPage` of an unpaired entry throws `TypeError` (a caller bug); `RefreshRecord.chainStartedAt` is withdrawn with the chain cap (no V3 store has shipped, decided item 44); `DERIVED_AGENT_ID` hashes the UTF-8 `client_id` as received and base32-encodes the raw digest, unpadded | decided by Fishball, PROPOSED (2026-11-16) |
 
 ## Departure from the specification
 

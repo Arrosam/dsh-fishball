@@ -243,13 +243,17 @@ export const PAIR_ONLY = Object.freeze({
   tools: Object.freeze([TOOL.pair]),
 })
 
-/** Token values, access tokens, refresh tokens and codes (R-TOK-08, R-OA-05, design §5.2, §5.6). */
+/**
+ * Token values, access tokens, refresh tokens and codes (R-TOK-08, R-OA-05, design §5.1, §5.2,
+ * §5.6). Every token value is generated (requirements 1.27, 1.31): there is no user-set value, so
+ * there is no length rule (K1d withdrew `minChars` and `isTokenLongEnough`, TQ-4's length part).
+ * The connector stores only `digestAlgorithm(value)` of a token value, never the value (K1d,
+ * design §5.1): 256 random bits need no keyed digest.
+ */
 export const TOKEN_VALUE = Object.freeze({
-  // [design] 32 random bytes, base64url, `dsht_` prefix: ≥ 256 bits, and recognised by scanners.
+  // [design] 32 random bytes, base64url, `dsht_` prefix (§1.0c): ≥ 256 bits, and recognised by scanners.
   generatedPrefix: 'dsht_',
   generatedBytes: 32,
-  // [req] TQ-4 A. Characters are Unicode code points, as every `*Chars` limit of the connector.
-  minChars: 32,
   // Opaque access tokens, refresh tokens, codes and form nonces: 256 bits each [design §5.5].
   opaqueBytes: 32,
   digestAlgorithm: 'sha256',
@@ -266,12 +270,8 @@ export const LIFETIME = Object.freeze({
   // [req] R-OA-16 (4a) (K): a spent refresh token presented again strictly before 10 s gets the
   // identical successor; at 10 s and later it is reuse (AUTH-BVA-08).
   refreshGraceMs: 10 * SECOND_MS,
-  // DECIDED (#18): R-OA-16 (5) asks for a maximum chain lifetime: 365 days from the code
-  // redemption. A refresh at or after it is `invalid_grant`. The owner then renews the chain on the same
-  // entry, keeping its pair (R-OA-16 (7), R-OA-12 (2)): re-entering the bound token on the
-  // approval page, from the same client id and with the bound id, mints a new code instead of
-  // answering `already-paired`.
-  refreshChainMaxMs: 365 * DAY_MS,
+  // No maximum chain lifetime (R-OA-23, requirements 1.32 R14; K1d withdrew `refreshChainMaxMs`
+  // and DECIDED #18 with it): a chain lives until reuse revokes it or the entry is disabled or deleted.
 })
 
 /**
@@ -306,10 +306,10 @@ export const RATE_LIMITS = Object.freeze({
  *   "enter a token" and does not count (PROPOSED, the spike's behaviour). A request refused because
  *   the key is already limited is not counted again (S7b's limiter).
  * - Key (#19 DECIDED): the remote address plus the OAuth `client_id` the request names (the
- *   fishball id at the token endpoint, the CIMD URL on the approval page); an MCP bearer names
+ *   agent id at the token endpoint, the CIMD URL on the approval page); an MCP bearer names
  *   none, so its key is the address alone. On loopback every client shares one address, and an
  *   address-only key for every client would let one revoked agent's retries lock the hosted
- *   Fishball out. No token material is in a key.
+ *   agent out. No token material is in a key.
  * - Limited (PROPOSED; S7b's `>=` rule, over S7b's one address-only key): a key with `perKeyPerWindow` or more counted failures within
  *   the last `windowMs`, or an address with `perAddressPerWindow` or more over all its keys.
  *   While limited, even a valid credential is refused (S7b P2), with RATE_LIMITS' 429 answer.
@@ -500,9 +500,29 @@ export const CIMD_LIMITS = Object.freeze({
   forbiddenAuthFields: Object.freeze(['client_secret', 'client_secret_expires_at']),
 })
 
-/** Fishball ids (R-ID-02, TQ-1 C): 1–64 of `A–Z a–z 0–9 _ -`, case-sensitive, never a dot. */
+/** Agent ids (R-ID-02, TQ-1 C): 1–64 of `A–Z a–z 0–9 _ -`, case-sensitive, never a dot. */
 const ID_BODY = '[A-Za-z0-9_-]{1,64}'
 export const ID_GRAMMAR = Object.freeze({ pattern: Object.freeze(new RegExp(`^${ID_BODY}$`)) })
+
+/**
+ * The browser client's id on the approval page (R-OA-22, R-ID-01, requirements 1.32 R13, 1.33
+ * Q-A1 B; design §5.5a; K1d). The page asks for no id:
+ * - AUTHORIZE_EXTENSION.agentIdParam: the authorization-request extension parameter that carries
+ *   the agent's own id (§1.0c: `fishball_id` renamed `agent_id`) [spec: RFC 6749 §3.1 lets an
+ *   authorization server define request parameters; one it does not know is ignored];
+ * - DERIVED_AGENT_ID: the fixed id a client that passes none gets: `prefix` followed by the first
+ *   `chars` characters of the RFC 4648 base32 encoding, in `alphabet` (lower case, no padding), of
+ *   the raw `digestAlgorithm` bytes of the UTF-8 `client_id` string exactly as the request carries
+ *   it (no normalisation; K1d pins the input so two implementations derive one id). Deterministic,
+ *   no dot, and within ID_GRAMMAR (20 characters).
+ */
+export const AUTHORIZE_EXTENSION = Object.freeze({ agentIdParam: 'agent_id' })
+export const DERIVED_AGENT_ID = Object.freeze({
+  prefix: 'cid-',
+  chars: 16,
+  alphabet: 'abcdefghijklmnopqrstuvwxyz234567',
+  digestAlgorithm: 'sha256',
+})
 
 /**
  * Names (R-NAME-02, TQ-6 A). Normalise: trim Unicode White_Space, collapse every inner run to one
@@ -535,7 +555,7 @@ export const PAIR_ADVICE = Object.freeze({
  * Offer ids (R-HOST-09, Q-S3-1, S3 §4 item 4): `<requestId>.r<revision>`. A request has one
  * settlement record; a succession re-issues the offer as revision n+1 in the same registry write,
  * so an agent's answer to `.r<n>` gets `expired` while the user's answer to the request's card
- * still settles it. The request id has the fishball-id alphabet (no dot), so the last `.r`
+ * still settles it. The request id has the agent-id alphabet (no dot), so the last `.r`
  * always starts the revision.
  */
 export const OFFER_ID = Object.freeze({
@@ -649,19 +669,26 @@ export const RETIREMENT_REASON = Object.freeze({
 /**
  * Native-settings status of a token entry, and the save refusal (R-TOK-08, R-ID-12, R-OA-20).
  * The `pairState` column is read-only.
+ * - ENTRY_STATUS (K1d, design §5.9): `ok` only. A generated value can be neither too short nor
+ *   unset, so `token-too-short` and `token-unconfigured` are withdrawn. The field stays, so a caller
+ *   that admits only `status === ENTRY_STATUS.ok` is unchanged.
  */
-export const ENTRY_STATUS = Object.freeze({
-  ok: 'ok',
-  tokenTooShort: 'token-too-short',
-  tokenUnconfigured: 'token-unconfigured',
-})
+export const ENTRY_STATUS = Object.freeze({ ok: 'ok' })
 /**
- * A settings save is refused, and the previous settings stay (R-TOK-08): two entries share one
- * `ref` (`ref-duplicate`), or two entries' refs resolve to the same value (`value-duplicate`; the
- * user's decision 2026-11-13, AUTH-EP-04 7a), so one value always names one principal (R-TOK-07).
- * The value check compares digests in constant time and names only the entries' labels.
+ * A settings save of the tokens list is refused, the previous list is written back, and the
+ * settings page shows a notice naming the entries' labels only (R-TOK-08, R3, R5; design §5.9).
+ * `token-duplicate` (K1d; PROPOSED, decided item 9) replaces `ref-duplicate` and `value-duplicate`.
+ * It covers two items with one entry `key`, two entries with one value digest, and an item with no
+ * record (added by hand, so it has no digest; R5). Found outside a save, the same entries refuse
+ * service and the page shows the same notice. So one value always names one principal (R-TOK-07).
  */
-export const SETTINGS_REFUSAL = Object.freeze({ refDuplicate: 'ref-duplicate', valueDuplicate: 'value-duplicate' })
+export const SETTINGS_REFUSAL = Object.freeze({ tokenDuplicate: 'token-duplicate' })
+/**
+ * K1 `RevocationKind` as data (K1d), so the connector writes each word once: `disabled` (the entry
+ * was switched off; its pair and held mailbox stay, R-ID-09) and `deleted`. A value can no longer
+ * change (requirements 1.27), so `value-changed` is withdrawn.
+ */
+export const REVOCATION_KIND = Object.freeze({ disabled: 'disabled', deleted: 'deleted' })
 export const PAIR_STATE = Object.freeze({ paired: 'paired', unpaired: 'unpaired' })
 export const CONNECTOR_STATUS = Object.freeze({ approvalPortInUse: 'approval-port-in-use' })
 
