@@ -5,7 +5,7 @@
  *
  * - RequestGate (C-HTTP's): `check` per REQUEST_GATE (405 → 403 → 503) over the listener facts;
  *   `admit` must never be called on the approval surface (REQUEST_GATE.admitSurfaces);
- * - TokenRegistry (C-TOKENS'): enabled, `ok` entries only match; disable, delete and value change
+ * - TokenRegistry (C-TOKENS'): enabled, `ok` entries only match; disable and delete
  *   bump the generation and fire `onRevoked`;
  * - PairStore (C-PAIR's): `bindFromPage` / `renewFromPage` per K1 (id grammar, id and name
  *   uniqueness by `nameKey`, a deleted entry frees both);
@@ -70,7 +70,6 @@ export function fakeTokens(key) {
     disable(n, { silently = false } = {}) { const e = entries.get(key(n)); e.enabled = false; if (silently) e.generation += 1; else revoke(e, 'disabled') },
     enable(n) { entries.get(key(n)).enabled = true },
     remove(n) { const e = entries.get(key(n)); entries.delete(key(n)); revoke(e, 'deleted') },
-    changeValue(n, value) { const e = entries.get(key(n)); e.value = value; revoke(e, 'value-changed') },
     match(value) {
       const e = [...entries.values()].find((x) => x.enabled && x.status === ENTRY_STATUS.ok && x.value === value)
       return e === undefined ? undefined : view(e)
