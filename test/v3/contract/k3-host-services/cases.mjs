@@ -253,13 +253,13 @@ export function registerK3Cases(sdk) {
   caseTest(sdk, 'HOST-UC-03', 'K', `the service ${SERVICE.tokens} is declared with ${TOKENS.members.join(', ')}`, () => {
     assertMembers(tokens(), TOKENS.members, SERVICE.tokens)
   })
-  caseTest(sdk, 'HOST-UC-01', 'main 2', 'createHosted(instanceId) resolves to {ref, entryKey, label} and never the value (R-HOST-05)', () => {
+  caseTest(sdk, 'HOST-UC-01', 'main 2', 'createHosted(instanceId) resolves to {entryKey, label, value}: the value once, to the instance, and no ref (R-HOST-05, R1; K1d)', () => {
     const found = member(tokens(), 'createHosted')
     assertParams(found, TOKENS.createHosted)
     assert.match(found.returns, INTERCEPT.promise, 'createHosted is asynchronous')
     const result = host().m.members(found.returns)
     assertMembers(result, TOKENS.createdFields, 'createHosted result')
-    assert.deepEqual([...result.keys()].filter((n) => TOKENS.valueField.test(n)), [], 'a value field')
+    assert.deepEqual([...result.keys()].filter((n) => TOKENS.withdrawnField.test(n)), [], 'a credential-reference field (withdrawn by K1d)')
   })
   caseTest(sdk, 'HOST-UC-03', 'E2, E3', 'retire(oldEntryKey, successorEntryKey) is asynchronous and refuses with a machine-readable code', () => {
     const found = member(tokens(), 'retire')
