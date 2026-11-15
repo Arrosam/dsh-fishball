@@ -323,13 +323,15 @@ export function createTokenRegistry({ ctx, logger, settings, restoreTokens }) {
       await settings.addToken(Object.freeze({ label, enabled: true, key: record.entryKey }))
     } catch (error) {
       logger.warn(LOG.createFailed, label, diagnosticOf(error))
-      // The item never reached the list: the record goes, through the delete path's retry.
+      // A rejecting SettingsWriter leaves the previous list (K1d), so the record goes, through the
+      // delete path's retry: there is no entry whose value nobody saw (design §5.2). Should a sync
+      // have listed the item anyway, it becomes one with no record: it stops matching at once, and
+      // the next sync shows it with the notice.
       await serial(async () => {
         creating.delete(record.entryKey)
-        if (!live.some((state) => state.entry.entryKey === record.entryKey)) {
-          records.set(record.entryKey, { ...record, removed: true })
-          await settleRemoved()
-        }
+        records.set(record.entryKey, { ...record, removed: true })
+        live = live.map((state) => (state.entry.entryKey === record.entryKey ? { entry: Object.freeze({ ...state.entry, enabled: false }), digest: null } : state))
+        await settleRemoved()
       }).catch(() => {})
       throw new TokenCreateError(error)
     }
