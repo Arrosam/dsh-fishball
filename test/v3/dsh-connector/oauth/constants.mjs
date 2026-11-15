@@ -7,17 +7,16 @@
  * AUTH-EP-03, AUTH-EP-06 row 9, AUTH-ST-01 row 14).
  *
  * Every product value comes from K1, `dsh-connector/mcp-schema` (index.js; the `RevocationKind`
- * words from the frozen index.d.ts, types only). Nothing comes from `packages/dsh-connector/src/mcp/oauth/`.
+ * words from K1d's REVOCATION_KIND). Nothing comes from `packages/dsh-connector/src/mcp/oauth/`.
  * The rest is case data (the ids, hosts and inputs the case tables name), HTTP's own vocabulary and
  * fixture keys, which are not product values.
  */
 import { randomBytes } from 'node:crypto'
-import fs from 'node:fs'
 import path from 'node:path'
 import {
   APPROVAL_LISTENER, BEARER_CHALLENGE, CLIENT_AUTH, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS, HTTP_METHOD, HTTP_STATUS,
-  LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS, OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, SCOPE, TIME_UNIT, TOKEN_ENDPOINT_LIMITS, TOKEN_RESPONSE_HEADERS, TOKEN_VALUE,
-  authorizationServerMetadata, isAgentId, oauthErrorBody, oauthUrls, protectedResourceMetadata, tokenResponse,
+  LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS, OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, REVOCATION_KIND, SCOPE, TIME_UNIT, TOKEN_ENDPOINT_LIMITS, TOKEN_RESPONSE_HEADERS,
+  TOKEN_VALUE, authorizationServerMetadata, isAgentId, oauthErrorBody, oauthUrls, protectedResourceMetadata, tokenResponse,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../../support/constants.mjs'
 
@@ -42,20 +41,8 @@ export const SUBJECT = Object.freeze({
   }),
 })
 
-/** K1's declaration file: `RevocationKind` is a type there, so its words are read from the text. */
-const K1_DTS = path.join(REPO, 'packages', 'dsh-connector', 'mcp-schema', 'index.d.ts')
-function revocationKind(stem) {
-  const m = /export type RevocationKind\s*=\s*([^\n]+)/.exec(fs.readFileSync(K1_DTS, 'utf8'))
-  const found = m && [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).find((k) => k.startsWith(stem))
-  if (!found) throw new Error(`K1 index.d.ts declares no RevocationKind starting "${stem}"`)
-  return found
-}
-/** `TokenRegistry.onRevoked`'s `kind` (K1), for the fake registry. */
-export const REVOCATION = Object.freeze({
-  get disabled() { return revocationKind('disabl') },
-  get deleted() { return revocationKind('delet') },
-  get valueChanged() { return revocationKind('value') },
-})
+/** `TokenRegistry.onRevoked`'s `kind`, for the fake registry: K1d's runtime REVOCATION_KIND (`RevocationKind` is typed from it). */
+export const REVOCATION = Object.freeze({ disabled: REVOCATION_KIND.disabled, deleted: REVOCATION_KIND.deleted })
 
 /** `BearerVerifier.verify`'s two refusals (K1 index.d.ts): no Bearer value, or an invalid one. */
 export const VERIFY_ERROR = Object.freeze({ missing: 'missing', invalidToken: OAUTH_ERROR.invalidToken })
@@ -100,9 +87,7 @@ export const FIXTURE = Object.freeze({
   day: DAY_MS,
   /** A user-set or generated token value: `dsht_` + 32 random bytes, as C-TOKENS generates (R-TOK-08). */
   value: () => TOKEN_VALUE.generatedPrefix + randomBytes(TOKEN_VALUE.generatedBytes).toString('base64url'),
-  /** A value one character under the minimum (AUTH-DT-01 rule 8). */
-  shortValue: () => FIXTURE.value().slice(0, TOKEN_VALUE.minChars - 1),
-  /** The first generation of a fake token entry; disable, delete and value change bump it (K1 TokenEntry). */
+  /** The first generation of a fake token entry; disable and delete bump it (K1 TokenEntry). */
   firstGeneration: 1,
   /** The fake registry's entry keys (K1 `EntryKey` is opaque). */
   entryKey: (n) => `fbtest-entry-${n}`,

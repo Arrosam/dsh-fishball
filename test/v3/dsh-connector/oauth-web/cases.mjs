@@ -31,7 +31,7 @@ import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { fields, forms, isRequired, masked, pageText } from './browser.mjs'
 import {
-  APPROVAL_LISTENER, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, DOC, ENTRY_STATUS, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT,
+  APPROVAL_LISTENER, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, DOC, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT,
   HOSTS, HTTP_HEADER, HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LATER, LIFETIME, NAME_RULES, OAUTH_ERROR, PAGE_TEXT, PARAM, PATHS, PLAIN_METHOD,
   REFRESH_RECORD_MEMBERS, REFUSAL, RELAYED, REQUEST_GATE, SCOPE, STUB, SUBJECT, TIME_UNIT, oauthUrls,
 } from './constants.mjs'
@@ -713,7 +713,7 @@ function decisionTables(sdk) {
     ['1', 'matches no entry', () => {}, () => V(1)],
     ['2', 'matches a disabled entry', (w) => { w.tokens.add(2, V(2)); w.tokens.disable(2) }, () => V(2)],
     ['3', 'matches a deleted entry\'s old value', (w) => { w.tokens.add(3, V(3)); w.tokens.remove(3) }, () => V(3)],
-    ['4', 'a user-set value under 32 characters', (w) => { w.tokens.add(4, FIXTURE.shortValue, { status: ENTRY_STATUS.tokenTooShort }) }, () => FIXTURE.shortValue],
+    // Rule 4 (a user-set value under 32 characters) is withdrawn by design §5.9: every value is generated.
   ]
   for (const [rule, what, setup, value] of invalidCases) {
     dt08(rule, `${what} → "this token is not valid"; nothing changes; failure counted`, async (w) => {
@@ -725,7 +725,7 @@ function decisionTables(sdk) {
       assert.equal(w.limiter.failures.length, 1)
     })
   }
-  dt08('1–4', 'the four refusals return byte-identical page bodies (the per-render form nonce masked)', async (w) => {
+  dt08('1–3', 'the three refusals return byte-identical page bodies (the per-render form nonce masked)', async (w) => {
     for (const [, , setup] of invalidCases) setup(w)
     const flow = await open(w)
     const bodies = []
@@ -1126,14 +1126,14 @@ function stateTransitions(sdk) {
     assertGrantError(await refresh(w, c.rt, { [PARAM.resource]: oauthUrls(`${HOSTS.remoteScheme}//other.example`).resource }), OAUTH_ERROR.invalidTarget)
     assertGrantOk(await refresh(w, c.rt))
   })
-  for (const [what, act] of [['disabled', (w) => w.tokens.disable(5)], ['deleted', (w) => w.tokens.remove(5)], ['given a new value', (w) => w.tokens.changeValue(5, FIXTURE.changedValue(5))]]) {
+  for (const [what, act] of [['disabled', (w) => w.tokens.disable(5)], ['deleted', (w) => w.tokens.remove(5)]]) {
     st05('6', `Chain(RTn) → the entry ${what} → Revoked: the next refresh is invalid_grant`, async (w) => {
       const c = await chain(w)
       act(w)
       assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
     })
   }
-  todo(sdk, CASE.st05, '6 (MCP)', 'the entry\'s access tokens get 401 after disable, delete or value change', LATER.verifier)
+  todo(sdk, CASE.st05, '6 (MCP)', 'the entry\'s access tokens get 401 after disable or delete', LATER.verifier)
   // Row 7's "re-entering is already-paired" is superseded by R-OA-22 (1.33 Q-A2 A; relayed reading,
   // PAGE-ID-USE-CASES.md): the same id reconnects; the revoked chain stays revoked.
   st05('7', 'Revoked (entry disabled) → re-enabled → Revoked: no refresh token revived; re-entering the token with the bound id reconnects (a new chain, the same principal)', async (w) => {
@@ -1240,6 +1240,7 @@ function stateTransitions(sdk) {
       assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
     })
   }
+  // AUTH-ST-05 12b (revoked by a value change) is withdrawn by design §5.9: a value never changes.
   st05('12e', 'reconnect with another redirect URI the document lists → accepted; the new redirect URI recorded', async (w) => {
     w.cimd.document(FIXTURE.clientId, documentOf(FIXTURE.clientId, [FIXTURE.redirect, FIXTURE.redirectSecond]))
     await chain(w)

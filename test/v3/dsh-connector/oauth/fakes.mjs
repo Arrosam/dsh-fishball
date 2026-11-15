@@ -71,7 +71,7 @@ export class FakeGrant {
 
 /**
  * C-TOKENS' `TokenRegistry`, faked from K1 (TokenEntry, RevocationKind): `match` finds only an
- * enabled `ok` entry by its exact value; disable, delete and value change bump the generation and
+ * enabled `ok` entry by its exact value; disable and delete bump the generation and
  * fire `onRevoked` synchronously; re-enabling does not bump it (K1 TokenEntry.generation).
  */
 export class FakeTokenRegistry {
@@ -106,12 +106,6 @@ export class FakeTokenRegistry {
   disable(entryKey) { this.#revoke(entryKey, REVOCATION.disabled, { enabled: false }) }
   enable(entryKey) { this.#entries.set(entryKey, Object.freeze({ ...this.#entries.get(entryKey), enabled: true })) }
   remove(entryKey) { this.#revoke(entryKey, REVOCATION.deleted, {}) }
-  /** A new value for the entry (R-OA-06); `value` restores an old one (AUTH-DT-04 rule 12). */
-  changeValue(entryKey, value = FIXTURE.value()) {
-    this.#values.set(entryKey, value)
-    this.#revoke(entryKey, REVOCATION.valueChanged, {})
-    return value
-  }
 }
 
 /**

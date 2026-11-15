@@ -159,8 +159,6 @@ export const FIXTURE = Object.freeze({
   /** Opaque entry keys and token values; each value is long enough unless stated. */
   entry: (n) => `fbtest-entry-${n}`,
   value: (n) => `fbtest-value-${n}-`.padEnd(TOKEN_VALUE.minChars + 8, 'x'),
-  shortValue: 'v'.repeat(TOKEN_VALUE.minChars - 1),
-  changedValue: (n) => `fbtest-changed-${n}-`.padEnd(TOKEN_VALUE.minChars + 8, 'y'),
   remoteAddress: '127.0.0.1',
   /** DSH's web port as the handler is told it (never bound by these cases: the issuer's port). */
   dshPort: 48_080,

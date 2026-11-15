@@ -22,10 +22,10 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import test from 'node:test'
 import {
-  ABSENT_TOOL_WORDS, ABSENT_TOOLS, ADVICE, APPROVAL_PATHS, AUTH_CODES, BYTES_UNIT, CC_EXTENSION, CHAIN_CAP, CIMD_MAX_BYTES, CONNECTOR_MANIFEST, CORE_TOOLS,
+  ABSENT_TOOL_WORDS, ABSENT_TOOLS, ADVICE, APPROVAL_PATHS, AUTH_CODES, CC_EXTENSION, CHAIN_CAP, CIMD_MAX_BYTES, CONNECTOR_MANIFEST, CORE_TOOLS,
   DURATION_S, ERROR_STATUS, EVENT_TYPES, EVENTS_URI, FAILURE_LIMIT_MEANING, FAILURE_LIMITER, FIELDS, IDS, INSTANT, INTERFACES, LATER, MAX_QUEUED_DEFAULT, MCP, MEANING, METADATA,
   NAME_MAX_CHARS, NO_NOTIFY, OAUTH_ERRORS, OFFER_ID, PAIR_RESULT, PATHS, PORT_RANGE, PROTOCOL_VERSION, RECORDED, REFUSAL, SCHEMA_MODULE, SCOPE,
-  SCOPE_HINT, SECONDS_EPSILON, STOCK_TOKEN_REQUESTS_PER_FAILED_CALL, TOKEN_MIN_CHARS, TOKEN_STORE, TOOL_CODES, UNITS, WELL_KNOWN,
+  SCOPE_HINT, SECONDS_EPSILON, STOCK_TOKEN_REQUESTS_PER_FAILED_CALL, TOKEN_STORE, TOOL_CODES, UNITS, WELL_KNOWN, ENTRY_OK, WITHDRAWN_TOKEN_CODES,
 } from './constants.mjs'
 import { model } from '../k3-host-services/declarations.mjs'
 import {
@@ -213,8 +213,13 @@ export function registerK1Cases(sdk) {
   caseTest(sdk, 'AUTH-UC-04', 'A3', 'pair\'s output schema admits {ok: false, code: id-taken} (R-ID-13)', async (mod) => {
     assert.ok((await pairOutput(sdk, mod))(PAIR_RESULT.idTaken))
   })
-  caseTest(sdk, 'AUTH-UC-02', 'K', 'the pairing codes and settings statuses are frozen (already-paired, id-taken, id-invalid, name-*, token-*, ref-duplicate, approval-port-in-use)', (mod) => {
-    assertExported(mod, AUTH_CODES, 'pairing codes and statuses')
+  caseTest(sdk, 'AUTH-UC-02', 'K', 'the pairing codes and settings refusals are frozen (already-paired, id-taken, id-invalid, name-*, token-duplicate, approval-port-in-use; K1d)', (mod) => {
+    assertExported(mod, AUTH_CODES, 'pairing codes and refusals')
+  })
+  caseTest(sdk, 'AUTH-UC-02', 'K (K1d)', `the entry status is ok only, and no withdrawn token code is exported (${WITHDRAWN_TOKEN_CODES.join(', ')})`, (mod) => {
+    assert.deepEqual(Object.values(mod.ENTRY_STATUS), [ENTRY_OK])
+    const strings = exportedStringsAndKeys(mod)
+    assert.deepEqual(WITHDRAWN_TOKEN_CODES.filter((c) => strings.has(c)), [], 'a withdrawn code is still exported')
   })
   caseTest(sdk, 'AUTH-UC-02', 4, `the two scopes, ${SCOPE.full} and ${SCOPE.pair}, and the ${CC_EXTENSION} extension are frozen (R-OA-04, R-OA-09)`, (mod) => {
     assertExported(mod, [SCOPE.full, SCOPE.pair, CC_EXTENSION], 'scopes and extension')
@@ -301,15 +306,8 @@ export function registerK1Cases(sdk) {
   })
   todos(sdk, 'AUTH-EP-03', LATER.oauth, [['1–9', 'id classes at the token endpoint (invalid_client), case sensitivity, id-taken, one principal']])
 
-  // ======================================================================================
-  // AUTH-BVA-03 (TQ-4 A, K: characters not bytes): token value length
-  // ======================================================================================
-  caseTest(sdk, 'AUTH-BVA-03', '2–6', `the minimum user-set token length is frozen as ${TOKEN_MIN_CHARS} characters, not bytes (row 6, K)`, (mod) => {
-    const found = numbersAt(mod, MEANING.tokenMin).filter((l) => l.value === TOKEN_MIN_CHARS)
-    assert.ok(found.length > 0, `no exported token minimum of ${TOKEN_MIN_CHARS}`)
-    assert.deepEqual(found.filter((l) => BYTES_UNIT.test(l.key)).map((l) => l.path), [], 'the minimum is named in bytes')
-  })
-  todos(sdk, 'AUTH-BVA-03', LATER.tokens, [['1–7', 'user-set lengths 0, 1, 31, 32, 33, 31 ASCII + € and the generated value at use']])
+  // AUTH-BVA-03 rows 1–7 (the user-set token length) are withdrawn by design §5.9 (requirements
+  // 1.27: every value is generated; no length rule). The generated value's form is k1d-amendments' row.
 
   // ======================================================================================
   // Durations: access token, code, pending request, grace window, chain, retention, lastSeenAt
@@ -371,7 +369,7 @@ export function registerK1Cases(sdk) {
   caseTest(sdk, 'AUTH-EP-08', 6, 'a CIMD fetch time bound is frozen (K)', (mod) => {
     assert.ok(secondsAt(mod, MEANING.cimdTime).some((l) => l.seconds > 0), 'no CIMD time bound frozen with a unit in its name')
   })
-  todos(sdk, 'AUTH-EP-04', LATER.tokens, [['1–8', 'token value classes at creation and use (generate, keep, too short, unconfigured, ref-duplicate)']])
+  // AUTH-EP-04 rows 1 and 8 run in test/v3/dsh-connector/tokens (rows 2–7a withdrawn, design §5.9).
   todos(sdk, 'AUTH-EP-05', LATER.oauth, [['1–6', 'uniform invalid_client on failures; 100 failures; constant-time comparator']])
 
   // ======================================================================================
