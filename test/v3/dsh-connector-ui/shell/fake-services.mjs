@@ -1,6 +1,7 @@
 /**
  * A host row standing in for the host-only services embed-UI follows (K3 freeze):
- * `dshInstanceChild` (child.d.ts), `dshConnectorHandover` (handover.d.ts) and
+ * `dshInstanceChild` (child.d.ts), the connector's UI backend `dshConnectorUi` (requirements 1.34:
+ * it replaced `dshConnectorHandover` as embed-UI's connector; its surface is C-UI-BACKEND's) and
  * `dshConnectorTools` (tools/index.d.ts). One module, one row per service (`config.service`),
  * so a scenario can leave a service out or insert its row switched off.
  *
@@ -53,15 +54,20 @@ function provideChild(ctx, config) {
   ctx.provide(SERVICE.child, service)
 }
 
-function provideHandover(ctx) {
-  const listeners = new Set()
-  ctx.provide(SERVICE.handover, {
+/**
+ * `dshConnectorUi` (C-UI-BACKEND's relayed surface, requirements 1.34): apiVersion 1, its routes and
+ * `contribute(register)`, which declares the three tools through the caller's `register`. Its
+ * routes are not served here (U-SHELL rows read no snapshot; U-DRAW runs the real backend).
+ */
+function provideUi(ctx) {
+  ctx.provide(SERVICE.ui, {
     apiVersion: 1,
-    managed: () => [],
-    principals: () => [],
-    onChange(fn) { listeners.add(fn); return () => { listeners.delete(fn) } },
-    async handOver(sessionId, principalKey) { record({ kind: FAKE.kind.handover, member: 'handOver', sessionId, principalKey }); return { ok: false, code: 'unknown-session' } },
-    async takeBack(sessionId) { record({ kind: FAKE.kind.handover, member: 'takeBack', sessionId }); return { ok: false, code: 'unknown-session' } },
+    routes: Object.freeze({ ...FAKE.uiRoutes }),
+    contribute(register) {
+      record({ kind: FAKE.kind.contribute })
+      const disposers = FAKE.uiTools.map((name) => register({ name, description: name, inputSchema: { type: 'object', properties: {}, additionalProperties: false }, execute: async () => ({ ok: true, data: {} }) }))
+      return () => { for (const dispose of disposers) dispose?.() }
+    },
   })
 }
 
@@ -93,7 +99,7 @@ function startRecorder(ctx) {
   record({ kind: FAKE.kind.started })
 }
 
-const START = Object.freeze({ child: provideChild, handover: provideHandover, tools: provideTools, [FAKE.recorder]: startRecorder })
+const START = Object.freeze({ child: provideChild, ui: provideUi, tools: provideTools, [FAKE.recorder]: startRecorder })
 
 export function apply(ctx, config) {
   START[config.service](ctx, config)
