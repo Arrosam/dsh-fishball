@@ -22,12 +22,18 @@ library for `HTMLElement`. Services are looked up at runtime (`ctx.get`); a trai
 | The ask card's fields | [ask-card.d.ts](<ask-card.d.ts>) | F-ASKCARD |
 | Guard list, policy, manager tools and the `guards-overridden` report | [guards.d.ts](<guards.d.ts>) | F-GUARDS |
 | The runtime values of the above (and core's link backoff) | [constants.js](<constants.js>) | the constants migration (2026-11-14) |
+| K3a: the link status and the hosted import's published names | [link.d.ts](<link.d.ts>) | F-LINK-SAVE (core), I-HOST (instance, its own copy of the names) |
+| K3a: Connect and the Fishball-side OAuth client | [connect.d.ts](<connect.d.ts>) | `fishball-shared/oauth-client`, F-LINK-SAVE |
+| K3a: the fishball-ui seam `fishballInstance.ui` | [ui.d.ts](<ui.d.ts>) | F-UI, F-WIRE |
+| K3a: core's own copy of the connector's MCP surface (`MCP`), replacing `vendor/` | [constants.js](<constants.js>) | F-OWN-SCHEMA |
 
 ## Values (`constants.js`)
 
 `DECIDED Dn` / `#n` is a row of [the decisions table](<../../connector/mcp-schema/README.md#user-decisions>).
-The target states and codes and the `disconnected` answer are K1's (`TARGET_STATE`, `TARGET_CODE`,
-`LINK_REFUSAL`, DECIDED D7), not this file's.
+The target states and codes and the `disconnected` answer were K1's (DECIDED D7); since K3a
+(requirements 1.39) core holds its own copy in `LINK`, and the connector keeps `TARGET_STATE`,
+`TARGET_CODE` and `LINK_REFUSAL` for the DSH side. Until F-OWN-SCHEMA, core's code still reads
+them through `src/link/schema.js`.
 
 | Constant | Value | Status |
 | --- | --- | --- |
@@ -40,6 +46,30 @@ The target states and codes and the `disconnected` answer are K1's (`TARGET_STAT
 | `TEXT.presentGivenUp` | "Fishball notice: event <id> (<type>) could not be shown to you and was given up." | DECIDED D6 |
 | `LINK_BACKOFF` | 1 s × 2^n, at most 60 s; a connected link resets n | DECIDED D4 |
 | `GUARDS` | the report, codes, triggers, presets, manager tools and reorder outcomes as `guards.d.ts` spells them, plus F-GUARDS's service name, record location and texts | spellings as `guards.d.ts`; owner DECIDED D7 |
+
+## K3a (requirements 1.39–1.41)
+
+The two sides share no package, so this gate freezes what core needs from the DSH side as DSH
+state under published names and as core's own copy of the MCP surface. K3a's earlier
+`importToken` / `hasCredential` and every Watchdog seam are withdrawn (1.37, 1.39).
+
+- **Hosted import** (`HOSTED_IMPORT`, `link.d.ts`): the instance's child-side row writes the token
+  to the credential reference `DSH_AGENT_TOKEN` and the target URL to the child setting
+  `dsh-instance-child.targetUrl`. DSH's reference grammar (`^[A-Za-z_][A-Za-z0-9_]*$`, both SDKs)
+  refuses the user's `dsh-agent-token`, and core's guard disables the row `dsh-instance`, so both
+  are spelled as the user chose on 2026-11-16. Core saves the accepted token in the record
+  `fishball-core/hosted-agent` and unsets the reference; "the child holds a credential" is
+  `describe(ref).configured || describeRecord(key).configured`, answered by DSH alone.
+- **Connect** (`CONNECT`, `connect.d.ts`): the S7c token manager's states and `begin` outcomes,
+  `connect.clientMetadataUrl` (required, no default), the `needs-configuration` codes (PROPOSED),
+  the loopback `/callback` and the web callback path (PROPOSED). Core passes `identity.id` as
+  `agent_id`.
+- **MCP surface** (`MCP`, `LINK`): core's own values; `test/v3/k3a/` compares `MCP` with the
+  connector's published `tools/list` and OAuth metadata, so a K1 change shows as a failing row.
+  F-OWN-SCHEMA repoints `src/link/schema.js` and deletes `vendor/`.
+- **fishball-ui** (`UI_SEAM`, `ui.d.ts`): fishball-ui reads `fishballInstance.ui` with `ctx.get`;
+  without core it logs `fishball-core-missing` and changes nothing; core reports nothing when
+  fishball-ui is absent.
 
 ## Interception
 

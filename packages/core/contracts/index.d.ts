@@ -7,6 +7,9 @@
  *   its X1–X19 members and `apiVersion: 1` (design §1.2); K3 freezes only its `events` member.
  * - `fishballSettingsSections`: the settings-section extension point (`settings-sections.d.ts`).
  * - the ask card's fields (`ask-card.d.ts`) and the guard vocabulary (`guards.d.ts`).
+ * - gate K3a (requirements 1.39–1.41): the link's status and the hosted import's published names
+ *   (`link.d.ts`), Connect (`connect.d.ts`), the fishball-ui seam `fishballInstance.ui` (`ui.d.ts`),
+ *   and core's own copy of the connector's MCP surface (`constants.js` `MCP`; values only).
  */
 export type {
   FishballInstanceEvents, InterceptRegistration, InterceptHandler, InterceptControl, InterceptedEvent,
@@ -18,18 +21,26 @@ export type {
   GuardedRow, ShippedPresetRow, FishballAgentPreset, IntendedPolicy, ManagerTool, OverriddenGuard,
   GuardCheckTrigger, GuardReport, ReorderOutcome,
 } from './guards.js'
+export type { LinkState, LinkCode, LinkStatus, HostedImportNames } from './link.js'
+export type {
+  ConnectState, ConnectConfigurationCode, ConnectStatus, ConnectBegin, OAuthClientOptions, OAuthClient, CreateOAuthClient,
+  FishballConnect,
+} from './connect.js'
+export type { FishballUi, UiPairingView, UiResult, Dispose } from './ui.js'
 
 import type { FishballInstanceEvents } from './events.js'
+import type { FishballUi } from './ui.js'
 import type { FishballSettingsSections } from './settings-sections.js'
 
 /**
- * The `fishballInstance` service as far as K3 freezes it: `apiVersion` and the `events` member.
- * Its other members (manager, bridge, inbox, attention, sideAgents, approvals, supervision,
- * sessionStarts) are the X1–X19 contract and are not restated here.
+ * The `fishballInstance` service as far as K3 and K3a freeze it: `apiVersion`, the `events`
+ * member and the `ui` member (K3a: what fishball-ui draws, `ui.d.ts`). Its other members are the
+ * X1–X19 contract and are not restated here; K3b withdraws the Watchdog-only ones.
  */
 export interface FishballInstance {
   readonly apiVersion: 1
   readonly events: FishballInstanceEvents
+  readonly ui: FishballUi
 }
 
 /**
