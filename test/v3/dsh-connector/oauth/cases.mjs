@@ -75,7 +75,7 @@ const PRM_PATH = PATHS.protectedResourcePrefix + PATHS.mcp
 const ASM_PATH = PATHS.authorizationServerPrefix + PATHS.issuer
 /** Where the approval listener answers for a client under `host` (R-OA-11, S7b F4). */
 const approvalOrigin = (w, host = FIXTURE.host.loopback) => (HOSTS.loopbackNames.includes(host) ? `${HOSTS.loopbackScheme}//${host}:${w.facts.approvalPort()}` : w.origin(host))
-const audience = (w, host) => oauthUrls(w.origin(host)).resource
+export const audience = (w, host) => oauthUrls(w.origin(host)).resource
 
 /** A 200 token response: exactly K1's `tokenResponse` (standard fields only, no refresh token) with TOKEN_RESPONSE_HEADERS. */
 export function assertToken(res, scope) {
@@ -123,7 +123,7 @@ function expectedCaller(w, e, clientId, { host, generation = FIXTURE.firstGenera
   const full = pair?.id === clientId
   return callerOf({ entryKey: e.entryKey, clientId, principalKey: full ? pair.principalKey : undefined, scope: full ? SCOPE.full : SCOPE.pair, audience: audience(w, host), generation })
 }
-const INVALID = Object.freeze({ error: VERIFY_ERROR.invalidToken })
+export const INVALID = Object.freeze({ error: VERIFY_ERROR.invalidToken })
 /** The fake C-OAUTH-WEB grants: a 200 with a refresh token, and the `invalid_grant` a machine client gets. */
 const okGrant = (grantType) => new FakeGrant(grantType, { ok: true, body: tokenResponse({ accessToken: FIXTURE.fakeAccess, scope: SCOPE.full, refreshToken: FIXTURE.fakeRefresh }) })
 const refusingGrant = (grantType, error, countedFailure = false) => new FakeGrant(grantType, { ok: false, error, countedFailure })

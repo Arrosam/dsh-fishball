@@ -199,6 +199,8 @@ export const FIXTURE = Object.freeze({
   idFill: 'a',
   invalidAgentIds: Object.freeze([['dot', 'agent.w'], ['space', 'a b'], ['@', 'a@b'], ['non-ASCII', '\u00e9']]),
   validAgentIds: Object.freeze([['letters, digits, - and _', 'Az_09-']]),
+  /** AUTH-ST-09 row 7: the store key of a chainless (client_credentials) access token planted in the fake store. */
+  chainlessDigest: 'fbtest-chainless-access-digest',
 })
 
 /** The fixture CIMD documents. */

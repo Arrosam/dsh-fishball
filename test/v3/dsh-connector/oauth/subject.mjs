@@ -112,7 +112,8 @@ export async function storeWorld(t, sdk) {
     return { ctx, store, close: opened?.close?.bind(opened) ?? store.close?.bind(store) }
   }
   open = await start()
-  return { made, get store() { return open.store }, async reopen() { await stop(); open = await start() } }
+  // `root`: the throwaway storage root, so a row can count what the store persisted (K1d-7's bound).
+  return { made, root, get store() { return open.store }, async reopen() { await stop(); open = await start() } }
 }
 
 /** A fresh FailureLimiter of `sdk`. */

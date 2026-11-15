@@ -1076,14 +1076,24 @@ function stateTransitions(sdk) {
     const [rt2, rt3] = await rotate(w, c.rt, 2)
     assert.notEqual(rt3.refresh_token, rt2.refresh_token)
   })
-  st05('3', 'Chain(RT3) → RT1 again outside the window → Revoked: invalid_grant; RT3 and every AT of the chain dead', async (w) => {
+  // K1d-7 (bounded refresh records): only the newest spent token of a chain is still known, so
+  // reuse is detected on RT2 (the newest spent after RT3 was issued), no longer on RT1.
+  st05('3', 'Chain(RT3) → RT2, the newest spent, again outside the window → Revoked: invalid_grant; RT3 and every AT of the chain dead', async (w) => {
+    const c = await chain(w)
+    const bodies = await rotate(w, c.rt, 2)
+    w.clock.advance(LIFETIME.refreshGraceMs)
+    assertGrantError(await refresh(w, bodies[0].refresh_token), OAUTH_ERROR.invalidGrant)
+    assert.ok(sawCall(w, 'revokeChain', c.chainId))
+    assertGrantError(await refresh(w, bodies[1].refresh_token), OAUTH_ERROR.invalidGrant)
+    for (const body of [c.first, ...bodies]) assert.equal(w.store.getAccess(digest(body.access_token)), undefined)
+  })
+  st05('3 (older spent, K1d-7)', 'Chain(RT3) → RT1, older than the newest spent, outside the window → invalid_grant as unknown; the chain is NOT revoked and RT3 still refreshes', async (w) => {
     const c = await chain(w)
     const bodies = await rotate(w, c.rt, 2)
     w.clock.advance(LIFETIME.refreshGraceMs)
     assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
-    assert.ok(sawCall(w, 'revokeChain', c.chainId))
-    assertGrantError(await refresh(w, bodies[1].refresh_token), OAUTH_ERROR.invalidGrant)
-    for (const body of [c.first, ...bodies]) assert.equal(w.store.getAccess(digest(body.access_token)), undefined)
+    assert.equal(sawCall(w, 'revokeChain'), false, 'an unknown token revoked the chain')
+    assertGrantOk(await refresh(w, bodies[1].refresh_token))
   })
   todo(sdk, CASE.st05, '3 (MCP)', 'the revoked chain\'s access tokens get 401 at the MCP endpoint', LATER.verifier)
   st05('3a', 'Chain(RT2, RT1 spent < 10 s ago) → RT1 again, same client and resource → the identical response; nothing revoked', async (w) => {
@@ -1206,8 +1216,9 @@ function stateTransitions(sdk) {
     assert.equal(w.store.getAccess(digest(fresh.access_token)).entryKey, E(5))
     assert.equal(w.pairs.pairOf(E(5)).principalKey, principal)
     assert.equal(w.tokens.list().length, 1, 'no new token')
-    // A reconnect from the same client ends no chain: only reuse, a replayed code or a disable / delete does (R-OA-23).
-    assertGrantOk(await refresh(w, c.rt))
+    // K1d-6: the reconnect revoked the principal's older chains; the new one rotates.
+    assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
+    assertGrantOk(await refresh(w, fresh.refresh_token))
   })
   st05('12a', 'a chain → re-entry with another id → already-paired; nothing changes', async (w) => {
     await chain(w)

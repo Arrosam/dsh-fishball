@@ -63,6 +63,12 @@ export const VERIFY_ERROR = Object.freeze({ missing: 'missing', invalidToken: OA
 export const TOKEN_STORE_MEMBERS = Object.freeze(['putAccess', 'getAccess', 'putCode', 'takeCode', 'putRefresh', 'getRefresh', 'revokeChain', 'revokeEntry'])
 export const WITHDRAWN_STORE_MEMBER = 'chainsOf'
 /** K1d `RefreshRecord` of an unspent refresh token: these members and no other (`chainStartedAt` withdrawn, K1d-5). Sorted. */
+/**
+ * K1d-7 (decided by Fishball, 2026-11-16): the store's persisted refresh table (one record file per
+ * digest under a directory of this name in the storage root) and how many records one chain keeps:
+ * the newest spent one and the live one. `rotations` is the case's N.
+ */
+export const REFRESH_BOUND = Object.freeze({ table: 'refresh', recordsPerChain: 2, rotations: 50, recordFile: /\.json$/ })
 export const REFRESH_RECORD_MEMBERS = Object.freeze(['audience', 'chainId', 'clientId', 'entryKey', 'generation'])
 /** The fields of K1's `Caller` the cases compare. */
 export const CALLER_FIELDS = Object.freeze(['entryKey', 'clientId', 'principalKey', 'scope', 'audience', 'generation'])
