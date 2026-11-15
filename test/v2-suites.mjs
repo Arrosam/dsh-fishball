@@ -145,6 +145,15 @@ export const V2_SUITES = Object.freeze({
     // V3 I-PLACE (PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 post, HOST-UC-08 main 1/A1–A3, HOST-EP-03 rows 6–7, HOST-DT-03, PLAT-DT-04 rule 1 hosted, LITE-UC-03/LITE-EP-13/SET-EP-12 hosted, K3 unmount); run with test/run-v3.mjs.
     file('test/v3/dsh-instance/placement/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
     file('test/v3/dsh-instance/placement/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
+    // V3 K1d (W4 contract gate amending K1 and K3's tokens.d.ts before C-REVOKE / C-SUCCEED); run with test/run-v3.mjs.
+    file('test/v3/contract/k1d-amendments/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 K1d amendments: token reveal, page id, Mailbox.transfer, SettingsWriter, SessionNotes (K1d)'),
+    file('test/v3/contract/k1d-amendments/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 K1d amendments: token reveal, page id, Mailbox.transfer, SettingsWriter, SessionNotes (K1d)'),
+    // V3 K3a (R-ARCH-10, R-HOST-05, R-FB-14, Q-G1, Q-G2; core's own MCP-surface copy and published DSH names); run with test/run-v3.mjs.
+    file('test/v3/contract/k3a-core-seams/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 K3a core-side seams: own MCP-surface copy, hosted import names, Connect, fishball-ui seam (K3a)'),
+    file('test/v3/contract/k3a-core-seams/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 K3a core-side seams: own MCP-surface copy, hosted import names, Connect, fishball-ui seam (K3a)'),
+    // V3 F-STATUS (R-FB-03/04 REM-DT-01, PLAT-DT-02 board only, HOST-DT-03 rule 10, Q-G1, R-FB-09, R-EXT-14, R-FB-10); run with test/run-v3.mjs.
+    file('test/v3/fishball-core/status/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core status, strip view, set completeness and guards notice (F-STATUS)'),
+    file('test/v3/fishball-core/status/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core status, strip view, set completeness and guards notice (F-STATUS)'),
   ]),
   excludedCases: Object.freeze([
     // Plan §3.3: the rewritten K1 cases describe V2 D1-D3; these five are the actual MCP server/push obligations.
