@@ -787,7 +787,7 @@ const EXECUTABLE = {
 
   // Executable remainder. V3 rule (design e1e5577 §5a.2, §6.2; R-HOST-04): the launch overlay
   // patches no sandbox-policy; the read-only guard is fishball-core's bundle patch, which the
-  // owner's own profile may override (Q20, reported as guards-overridden by test/v3/f-guards).
+  // owner's own profile may override (Q20, reported as guards-overridden by test/v3/fishball-ui/guards).
   // Link activation, return and the rendered notice stay post-merge e2e: browser.
   async 'SET-EP-12'() {
     const { operations } = await overlayOperations(SET.overlayRows);

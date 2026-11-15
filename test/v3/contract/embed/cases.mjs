@@ -1,0 +1,319 @@
+/**
+ * R-EMBED black-box cases (v3-tasks.md W1 step 3, spec `test/v3-cases` at `b1295de`; S4 `b9809b7`):
+ * PLAT-EP-03 rows 1, 3 and 5, HOST-EP-03 row 5, HOST-UC-08's postcondition "H shows no UI from the
+ * instance", and the task's definition of done (the main DSH boots with C + I + U and with C + I
+ * alone with no client-loader error; the same UI renders from embed-UI on both SDKs; the hosted
+ * child starts and still shows its status line). Requirements R-ARCH-01, R-ARCH-03, R-ARCH-04,
+ * R-ARCH-05, R-ARCH-06, R-HOST-11, R-FB-01, R-COMPAT-01; design §4.2, §9.1.
+ *
+ * Techniques: EP (PLAT-EP-03 and HOST-EP-03 rows; each test names its row and partition) and a
+ * decision table over the installed set for the boots (C + I + U → Fishball UI only from embed-UI;
+ * C + I → no Fishball UI and no client-loader error).
+ *
+ * Levels: unit (manifests, packed listings, import specifiers and source tokens; DSH's own bundle
+ * inspection; the instance's child-code copy into a throwaway profile, which launches nothing) and
+ * integration (a real host DSH, its child, and a scripted main page fed by the host's served
+ * bundles; page.mjs). Integration rows are written here and run at integration only
+ * (FBTEST_V3_INTEGRATION=1). No browser. Rows a later task owns are `todo` and name it.
+ */
+import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
+import fs from 'node:fs'
+import { mkdtemp, mkdir, readFile, readdir, rm } from 'node:fs/promises'
+import path from 'node:path'
+import { after } from 'node:test'
+import { pathToFileURL } from 'node:url'
+import { promisify } from 'node:util'
+import { REPO, TEST_HOMES } from '../../../support/constants.mjs'
+import { bootHost, newHome, until } from '../../../support/host.mjs'
+import { BUDGET, CHILD_SETTINGS, MARK, ROUTE, STATE, runtimeOf } from '../../fishball-core/package/constants.mjs'
+import { admitChild, openSettingsPage } from '../../fishball-core/package/page.mjs'
+import { describeRef, has, ownFiles, tokensOf, unitOf } from '../../fishball-core/package/static.mjs'
+import { caseTest, dshInspect, integrationCase as gatedCase } from '../package-boundaries/cases.mjs'
+import { DSH_FIELD, JS_FILE, NPM, SDK, V3 } from '../package-boundaries/constants.mjs'
+import { npmTempRoot, observe, readManifest } from '../package-boundaries/packages.mjs'
+import {
+  BASE, CARD_SLOTS, CHILD_COPY, GIT, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
+  INTEGRATION, LATER, MODULE_LOADER, OLD_CLIENT, STATUS_LINE,
+} from './constants.mjs'
+import { hostGraph, openMainPage } from './page.mjs'
+
+const run = promisify(execFile)
+const FISHBALL_ENTRY = (id) => id.startsWith(FISHBALL_PREFIX)
+
+const needEmbed = () => { const m = readManifest(V3.embed.dir); assert.ok(m, EMBED.workspace + '/package.json is missing (R-EMBED (1))'); return m }
+const manifestOf = (pkg) => { const m = readManifest(pkg.dir); assert.ok(m, path.relative(REPO, pkg.dir) + '/package.json is missing'); return m }
+const exportKeys = (manifest) => (manifest.exports && typeof manifest.exports === 'object' ? Object.keys(manifest.exports) : [])
+
+/** The V2 main clients' inject lists at the task's base commit (design §9.1: embed-UI combines them). */
+async function baseInjects() {
+  const lists = []
+  for (const file of BASE.manifests) {
+    const { stdout } = await run('git', ['show', BASE.commit + ':' + file], { cwd: REPO })
+    lists.push(...(JSON.parse(stdout)[DSH_FIELD]?.client?.inject ?? []))
+  }
+  return [...new Set(lists)]
+}
+
+/** Shipped own JS files of one unit with their tokens. */
+async function unitTokens(pkg) {
+  const unit = await unitOf(pkg.name)
+  assert.ok(unit, pkg.name + ' is not packed')
+  return tokensOf(fs.realpathSync(pkg.dir), ownFiles(unit).filter((f) => JS_FILE.test(f)))
+}
+
+/** Files of a unit naming the browser module loader or a host-DSH slot (host UI, PLAT-EP-03 rows 1 and 3). */
+async function hostUiFiles(pkg) {
+  const hits = []
+  for (const [file, t] of await unitTokens(pkg)) {
+    const names = [...t.names.filter((n) => n === MODULE_LOADER), ...t.strings.filter((s) => s === MODULE_LOADER || HOST_SLOTS.includes(s))]
+    if (names.length) hits.push(file + ': ' + [...new Set(names)].join(', '))
+  }
+  return hits
+}
+
+/** Run `fn` only at integration: it boots a host DSH and launches a child (see INTEGRATION). */
+const integrationCase = (sdk, id, row, title, fn) => gatedCase(sdk, id, row, title, fn, INTEGRATION)
+
+// ---------------------------------------------------------------------------------------------
+// Real hosts, one per installed set and SDK process (integration rows only).
+// ---------------------------------------------------------------------------------------------
+
+const SETS = Object.freeze({
+  /** C + I + U: embed-UI linked into the profile beside the connector and the instance the harness always links. */
+  full: Object.freeze({ label: 'cIU', link: Object.freeze([{ name: V3.embed.name, dir: V3.embed.dir, enabled: true }]) }),
+  /** C + I alone. */
+  noEmbed: Object.freeze({ label: 'cI', link: Object.freeze([]) }),
+})
+const hosts = new Map()
+function hostWith(sdk, set) {
+  if (!hosts.has(set)) {
+    hosts.set(set, (async () => {
+      // Canonical and outside the checkout: the child refuses a non-canonical main home and a Git ancestor.
+      const home = fs.realpathSync(newHome(INTEGRATION.homeLabel + '-' + set.label))
+      const host = await bootHost(home, { env: { FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_LINK: JSON.stringify(set.link) } })
+      let status
+      await until(async () => { status = (await host.get(ROUTE.status)).json; return status?.state === STATE.ready || status?.state === STATE.failed }, BUDGET.readyMs, BUDGET.pollMs)
+      return { home, host, status }
+    })())
+  }
+  return hosts.get(set)
+}
+const loaderErrors = (host) => host.output.split('\n').filter((line) => line.includes(CLIENT_LOADER_ERROR))
+
+export function registerEmbedCases(sdk) {
+  after(async () => {
+    for (const pending of hosts.values()) {
+      const setup = await pending.catch(() => undefined)
+      await setup?.host.stop().catch(() => {})
+      // Guard the one recursive delete: a home this file created directly under the test-homes root.
+      if (setup && path.dirname(setup.home) === fs.realpathSync(TEST_HOMES) && path.basename(setup.home).startsWith(INTEGRATION.homeLabel)) fs.rmSync(setup.home, { recursive: true, force: true })
+    }
+  })
+
+  // ================================================================ R-EMBED (1): the minimal package
+  caseTest(sdk, 'R-EMBED', '(1)', 'dsh-connector-ui exists in packages/dsh-connector-ui (lowercase name, S4-Q3) and is a root workspace', () => {
+    const manifest = needEmbed()
+    assert.equal(manifest.name, V3.embed.name)
+    assert.ok(readManifest(REPO).workspaces?.includes(EMBED.workspace), 'root workspaces lack ' + EMBED.workspace)
+  })
+  caseTest(sdk, 'R-EMBED', '(1)', 'the embed-UI manifest has a version, engines.dsh and a web dsh.client entry with a ./client export', () => {
+    const manifest = needEmbed()
+    assert.equal(typeof manifest.version, 'string', 'no version')
+    assert.equal(typeof manifest[FIELD.engines]?.dsh, 'string', 'no engines.dsh')
+    assert.equal(manifest[DSH_FIELD]?.client?.platform, EMBED.platform, 'no dsh.client with platform web')
+    assert.ok(exportKeys(manifest).includes(EMBED.clientExport), 'no ' + EMBED.clientExport + ' export')
+  })
+  caseTest(sdk, 'R-EMBED', '(1)', 'dsh-instance is an optional peer of embed-UI, and every Fishball peer it names is optional', () => {
+    const manifest = needEmbed()
+    const peers = Object.keys(manifest[FIELD.peers] ?? {})
+    assert.ok(peers.includes(V3.instance.name), 'dsh-instance is not a peer')
+    const required = peers.filter((p) => p.startsWith(FISHBALL_PREFIX) && manifest[FIELD.peersMeta]?.[p]?.optional !== true)
+    assert.deepEqual(required, [], 'Fishball peers not marked optional in ' + FIELD.peersMeta)
+  })
+  caseTest(sdk, 'R-EMBED', '(1)', "embed-UI's dsh.client injects every client package the V2 connector and instance main clients injected (design §9.1)", async () => {
+    const inject = needEmbed()[DSH_FIELD]?.client?.inject ?? []
+    assert.deepEqual((await baseInjects()).filter((name) => !inject.includes(name)), [], 'missing injects')
+  })
+
+  // ================================================================ R-EMBED (2): the moved client
+  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js and U-SHELL's parts client.shell.js, client.marks.js, client.attention.js, client.records.js, and client.instance.js", async () => {
+    needEmbed()
+    const files = ownFiles(await unitOf(V3.embed.name))
+    for (const file of [EMBED.clientEntry, ...Object.values(EMBED.clientChunks)]) assert.ok(files.includes(file), 'not shipped: ' + file)
+  })
+  caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (U-SHELL's client parts) carries the V2 contributions' slots and the moved instance card (client.instance.js) a Plugins card slot", async () => {
+    needEmbed()
+    const tokens = await unitTokens(V3.embed)
+    const stringsOf = (...files) => new Set(files.flatMap((file) => tokens.get(file)?.strings ?? []))
+    const connector = stringsOf(...Object.values(EMBED.clientChunks))
+    assert.deepEqual(EXPECTED_UI.map((e) => e.slot).filter((slot) => !connector.has(slot)), [], 'slots missing from the moved connector UI')
+    const instance = stringsOf(EMBED.cardChunk)
+    assert.ok(CARD_SLOTS.some((slot) => instance.has(slot)), 'the moved instance card names no Plugins card slot (' + CARD_SLOTS.join(', ') + ')')
+  })
+  caseTest(sdk, 'R-EMBED', '(2)', 'the instance exports its status-line module from src/child-settings/ (its one owner)', () => {
+    const exports = manifestOf(V3.instance).exports ?? {}
+    const targets = Object.values(exports).flatMap((v) => (typeof v === 'string' ? [v] : Object.values(v ?? {})))
+    assert.ok(targets.some((t) => typeof t === 'string' && t.startsWith(STATUS_LINE.exportTarget)), 'no instance export points into ' + STATUS_LINE.exportTarget + ': ' + JSON.stringify(exports))
+  })
+  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI reaches the status line through a committed relative symlink to the file a dsh-instance export names (src/child-settings/)", async () => {
+    needEmbed()
+    const link = path.join(V3.embed.dir, STATUS_LINE.embedLink)
+    assert.ok(fs.lstatSync(link, { throwIfNoEntry: false })?.isSymbolicLink(), STATUS_LINE.embedLink + ' is not a symlink')
+    const target = fs.readlinkSync(link)
+    assert.equal(path.isAbsolute(target), false, 'the symlink target is absolute: ' + target)
+    const { stdout } = await run('git', ['ls-files', '-s', '--', path.relative(REPO, link)], { cwd: REPO })
+    assert.match(stdout, GIT.symlinkMode, 'the symlink is not committed as a symlink: ' + JSON.stringify(stdout))
+    const exported = Object.values(manifestOf(V3.instance).exports ?? {})
+      .filter((t) => typeof t === 'string' && t.startsWith(STATUS_LINE.exportTarget)).map((t) => fs.realpathSync(path.join(V3.instance.dir, t)))
+    assert.ok(exported.includes(fs.realpathSync(link)), 'the symlink resolves to ' + fs.realpathSync(link) + ', which no dsh-instance export into ' + STATUS_LINE.exportTarget + ' names')
+  })
+  caseTest(sdk, 'R-EMBED', '(2)', 'no shipped JS file of embed-UI is a byte copy of a file the instance or the connector ships (moved, one owner)', async () => {
+    needEmbed()
+    const { units } = await observe()
+    const own = units.get(V3.embed.name).digests
+    const copies = []
+    for (const name of [V3.instance.name, V3.connector.name]) {
+      const other = new Map([...units.get(name).digests].map(([f, d]) => [d, f]))
+      for (const [f, d] of own) if (other.has(d)) copies.push(`embed-ui/${f} = ${name}/${other.get(d)}`)
+    }
+    assert.deepEqual(copies, [])
+  })
+
+  // ================================================================ R-EMBED (3) = PLAT-EP-03 row 1, HOST-EP-03 row 5
+  caseTest(sdk, 'PLAT-EP-03', 1, 'the connector manifest has no dsh.client and no ./client or ./records export', () => {
+    const manifest = manifestOf(V3.connector)
+    assert.equal(manifest[DSH_FIELD]?.client, undefined, 'dsh.client: ' + JSON.stringify(manifest[DSH_FIELD]?.client))
+    assert.deepEqual(exportKeys(manifest).filter((k) => OLD_CLIENT.connector.exports.includes(k)), [])
+  })
+  caseTest(sdk, 'PLAT-EP-03', 1, 'the connector packs no client.js or client.records.js', async () => {
+    const { packed } = await observe()
+    assert.deepEqual(packed[V3.connector.name].filter((f) => OLD_CLIENT.connector.files.includes(f)), [])
+  })
+  caseTest(sdk, 'PLAT-EP-03', 1, "the connector's shipped code registers no browser module and names no host-DSH slot", async () => {
+    assert.deepEqual(await hostUiFiles(V3.connector), [])
+  })
+  caseTest(sdk, 'HOST-EP-03', 5, 'the instance manifest has no dsh.client and no ./client export', () => {
+    const manifest = manifestOf(V3.instance)
+    assert.equal(manifest[DSH_FIELD]?.client, undefined, 'dsh.client: ' + JSON.stringify(manifest[DSH_FIELD]?.client))
+    assert.deepEqual(exportKeys(manifest).filter((k) => OLD_CLIENT.instance.exports.includes(k)), [])
+  })
+  caseTest(sdk, 'HOST-EP-03', 5, 'the instance packs no main client.js', async () => {
+    const { packed } = await observe()
+    assert.deepEqual(packed[V3.instance.name].filter((f) => OLD_CLIENT.instance.files.includes(f)), [])
+  })
+
+  // ================================================================ PLAT-EP-03 row 3: embed-UI is the only host-UI package
+  caseTest(sdk, 'PLAT-EP-03', 3, 'of the host-side packages (connector, instance, shared, embed-UI) only embed-UI declares dsh.client', () => {
+    needEmbed()
+    const withClient = [V3.connector, V3.instance, V3.shared, V3.embed].filter((p) => readManifest(p.dir)?.[DSH_FIELD]?.client !== undefined).map((p) => p.name)
+    assert.deepEqual(withClient, [V3.embed.name])
+  })
+  caseTest(sdk, 'PLAT-EP-03', 3, "the instance's own shipped code (not its child-side hosted-settings bundle) registers no browser module and names no host-DSH slot", async () => {
+    // src/child-settings/ is the fishball-hosted-settings bundle (R-HOST-11): its client runs only in
+    // the hosted child, never in the host DSH. Excluded by name, whichever package an ownership
+    // helper counts it under.
+    const hostSide = (await hostUiFiles(V3.instance)).filter((hit) => !hit.startsWith(CHILD_SETTINGS.folder))
+    assert.deepEqual(hostSide, [])
+  })
+
+  // ================================================================ PLAT-EP-03 row 5: each remains a native DSH bundle
+  for (const pkg of [V3.connector, V3.instance, V3.embed]) {
+    caseTest(sdk, 'PLAT-EP-03', 5, `DSH's own bundle inspection accepts ${pkg.name} as a bundle`, async () => {
+      manifestOf(pkg)
+      const answer = await dshInspect(sdk, pkg.dir)
+      assert.notEqual(answer.status, SDK.inspect.refused, JSON.stringify(answer))
+      assert.equal(answer.bundle, true, JSON.stringify(answer))
+      assert.equal(answer.name, pkg.name, JSON.stringify(answer))
+    })
+  }
+
+  // ================================================================ R-EMBED (4): the child copy and the instance's reach
+  caseTest(sdk, 'R-EMBED', '(4)', "the instance's code names no embed-UI package or folder (it never reads a file inside embed-UI)", async () => {
+    const { units } = await observe()
+    const refs = units.get(V3.instance.name).refs.filter((r) => r.target === V3.embed.name).map(describeRef)
+    const strings = []
+    for (const [file, t] of await unitTokens(V3.instance)) for (const s of t.strings) if (EMBED_WORDS.some((w) => s.includes(w))) strings.push(file + ': ' + JSON.stringify(s))
+    assert.deepEqual([...refs, ...strings], [])
+  })
+  caseTest(sdk, 'R-EMBED', '(4)', "the instance's child-code copy carries no main client: no Plugins card slot, no copy of the V2 instance client.js or of an embed-UI file", async (t) => {
+    const { copyChildCode } = await import(pathToFileURL(path.join(V3.instance.dir, ...CHILD_COPY.module)).href)
+    const root = await mkdtemp(path.join(npmTempRoot(), CHILD_COPY.tempPrefix))
+    t.after(async () => {
+      // Guard the one recursive delete: a directory this test created under the run's .runtime folder.
+      if (path.dirname(root) === path.resolve(NPM.tempRoot) && path.basename(root).startsWith(CHILD_COPY.tempPrefix)) await rm(root, { recursive: true, force: true })
+    })
+    const profile = path.join(root, CHILD_COPY.profileDir)
+    await mkdir(profile, { mode: CHILD_COPY.profileMode })
+    const snapshot = path.dirname(await copyChildCode({ profile }, { instanceId: randomUUID(), hostId: CHILD_COPY.hostId }))
+    const files = (await readdir(snapshot, { recursive: true })).map((f) => path.join(snapshot, f)).filter((f) => fs.statSync(f).isFile())
+    const { stdout: v2Client } = await run('git', ['show', BASE.commit + ':' + BASE.instanceClient], { cwd: REPO, maxBuffer: NPM.maxStdoutBytes })
+    const embedFiles = has(V3.embed) ? ownFiles(await unitOf(V3.embed.name)).filter((f) => JS_FILE.test(f)).map((f) => fs.readFileSync(path.join(V3.embed.dir, f), 'utf8')) : []
+    const found = []
+    for (const file of files.filter((f) => JS_FILE.test(f))) {
+      const text = await readFile(file, 'utf8')
+      const rel = path.relative(snapshot, file)
+      if (text === v2Client) found.push(rel + ': the V2 instance client.js')
+      if (embedFiles.includes(text)) found.push(rel + ': a copy of an embed-UI file')
+      for (const slot of CARD_SLOTS) if (text.includes("'" + slot + "'") || text.includes('"' + slot + '"')) found.push(rel + ': names ' + slot)
+    }
+    assert.deepEqual(found, [])
+  })
+
+  // ================================================================ definition of done, integration
+  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the main DSH boots with no client-loader error and its only Fishball client entry is dsh-connector-ui', async () => {
+    const { host } = await hostWith(sdk, SETS.full)
+    assert.deepEqual(loaderErrors(host), [], 'client-loader errors')
+    assert.deepEqual((await hostGraph(host)).map((e) => e.id).filter(FISHBALL_ENTRY), [V3.embed.name])
+  })
+  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the V2 contributions and a Plugins card render from dsh-connector-ui, with no failed plugin or page error', async (t) => {
+    const { host } = await hostWith(sdk, SETS.full)
+    const page = await openMainPage(t, { sdk, host })
+    // Attribution is by serving package: a registration belongs to the graph entry whose served
+    // bundle (or package-local chunk) made it. The moved parts may keep their V2 plugin names
+    // inside embed-UI (a pure move); no design section ties the slots to embed-UI's own name.
+    const fromEmbed = () => page.registrations.filter((r) => r.owner === V3.embed.name)
+    const missingOf = () => EXPECTED_UI.filter((e) => !fromEmbed().some((r) => r.slot === e.slot && (e.id === undefined || r.id === e.id) && (e.key === undefined || r.key === e.key)))
+    await page.waitFor(() => missingOf().length === 0 && fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)))
+    assert.deepEqual(page.failed(), [], 'failed plugins')
+    assert.deepEqual(page.errors, [], 'page errors')
+    const missing = missingOf()
+    assert.deepEqual(missing, [], 'contributions not registered by embed-UI; it registered ' + JSON.stringify(fromEmbed()))
+    assert.ok(fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)), 'embed-UI registered no Plugins card')
+  })
+  integrationCase(sdk, 'HOST-UC-08', 'post', 'C + I + U: the host shows no UI from the instance or the connector (no registration by another Fishball entry)', async (t) => {
+    const { host } = await hostWith(sdk, SETS.full)
+    const page = await openMainPage(t, { sdk, host })
+    // The served chunks register after their fetches; wait for embed-UI's first contribution.
+    await page.waitFor((regs) => regs.some((r) => r.owner === V3.embed.name))
+    assert.deepEqual(page.registrations.filter((r) => FISHBALL_ENTRY(r.owner) && r.owner !== V3.embed.name), [])
+  })
+  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the hosted child starts and its settings panel still shows the status line (ready)', async (t) => {
+    const { host, status } = await hostWith(sdk, SETS.full)
+    assert.equal(status?.state, STATE.ready, 'the hosted child is ready; status ' + JSON.stringify(status))
+    const page = await openSettingsPage(t, { sdk, child: await admitChild(host) })
+    await page.waitFor(MARK.status)
+    await until(() => page.byAttr(MARK.status).some((n) => n.props[MARK.status] === STATE.ready), BUDGET.readyMs, BUDGET.pollMs)
+    assert.ok(page.byAttr(MARK.status).some((n) => n.props[MARK.status] === STATE.ready), 'no ready status line; saw ' + page.byAttr(MARK.status).map((n) => n.props[MARK.status]))
+  })
+  integrationCase(sdk, 'R-EMBED', 'done', 'C + I alone: the main DSH boots with no client-loader error, no Fishball client entry, and the child still starts', async () => {
+    const { host, status } = await hostWith(sdk, SETS.noEmbed)
+    assert.deepEqual(loaderErrors(host), [], 'client-loader errors')
+    assert.deepEqual((await hostGraph(host)).map((e) => e.id).filter(FISHBALL_ENTRY), [])
+    assert.equal(status?.state, STATE.ready, 'the hosted child is ready; status ' + JSON.stringify(status))
+  })
+  integrationCase(sdk, 'PLAT-EP-03', 1, 'C + I alone: loading the connector adds no client entry, so no sidebar, slot or CSS (R-ARCH-03)', async () => {
+    const { host } = await hostWith(sdk, SETS.noEmbed)
+    assert.equal((await hostGraph(host)).some((e) => e.id === V3.connector.name), false)
+  })
+
+  // ================================================================ later tasks
+  caseTest(sdk, 'PLAT-EP-03', 1, 'loading the connector serves no HTML route in the host (the approval page lives on its own listener)', null, LATER.matrix)
+  caseTest(sdk, 'PLAT-EP-03', 2, 'the instance has no browser client and no session service injected', null, LATER.matrix)
+  caseTest(sdk, 'PLAT-EP-03', 4, 'fishball-ui ships inside core with no separate plugin entry', null, LATER.matrix)
+  caseTest(sdk, 'PLAT-EP-03', 5, "each package installs, enables, disables and lists on DSH's own Plugins page", null, LATER.matrix)
+  caseTest(sdk, 'PLAT-EP-03', 6, 'no file writes outside their own folders or profile rows; no host patch', null, LATER.matrix)
+  caseTest(sdk, 'R-EMBED', 'e2e', 'the moved UI in a browser on both SDKs', null, LATER.e2e)
+}
+

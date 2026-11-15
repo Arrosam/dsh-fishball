@@ -348,7 +348,7 @@ function assertReadOnlyAuthority(effective, entries) {
 /**
  * V3 Q20 "can override" (design e1e5577 §5a.2): the owner's own profile patch composes after core's
  * bundle patch, so a saved wider value wins; core keeps running and reports guards-overridden
- * (R-FB-09, checked by test/v3/f-guards). The launch overlay adds nothing that narrows it again.
+ * (R-FB-09, checked by test/v3/fishball-ui/guards). The launch overlay adds nothing that narrows it again.
  */
 function assertOwnerOverrideWins(effective) {
   assert.equal(findRows(effective, 'sandbox-policy')[0]?.config?.mode, OVERLAY.saved.config.mode, 'the owner\'s saved sandbox wins over core\'s guard (Q20)')
