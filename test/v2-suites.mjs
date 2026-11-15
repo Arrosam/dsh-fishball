@@ -145,6 +145,9 @@ export const V2_SUITES = Object.freeze({
     // V3 C-ROUTE (EVT-EP-01, EVT-EP-04 end to end, EVT-DT-01, WATCH-UC-01/02, WATCH-EP-01, WATCH-ST-01 rows 1–6, HAND-EP-01, HAND-DT-01/02, HAND-ST-01, HAND-UC-02 service part, PLAT-UC-03); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/routing/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
     file('test/v3/dsh-connector/routing/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
+    // V3 C-REVOKE step 1 (routing endPrincipal, askDropped, K1d Mailbox.retire misuse; R-TOK-05, R-ROUTE-06, R-WATCH-01, R-CON-05); run with test/run-v3.mjs.
+    file('test/v3/dsh-connector/revocation/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector revocation: endPrincipal, askDropped, Mailbox.retire misuse (C-REVOKE)'),
+    file('test/v3/dsh-connector/revocation/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector revocation: endPrincipal, askDropped, Mailbox.retire misuse (C-REVOKE)'),
     // V3 F-FACADE (EXT-DT-03 E6/E8 Fishball side, EXT-UC-02 A3, EXT-UC-04 A1 core side); run with test/run-v3.mjs.
     file('test/v3/fishball-core/bridge/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),
     file('test/v3/fishball-core/bridge/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),
