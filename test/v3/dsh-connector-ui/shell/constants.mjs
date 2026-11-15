@@ -212,7 +212,6 @@ export const LATER = Object.freeze({
   marks: 'U-MARKS (managed marks, Hand over / Take back from the hand-over service)',
   attn: 'U-ATTN (the fish and its attention dots, embed-UI attention tools contributed)',
   records: 'U-RECORDS (inline read-only ask_agent and permission records)',
-  askCard: "F-ASKCARD (an undecidable ask shows in Fishball's own page)",
   child: "X-MATRIX / E2E-UI (a real child: the page loads, cookie redemption, ticket replay; I-HOST's real locator)",
   e2e: 'E2E-UI (W6 browser flows: frame reload, the model-sync control on the Plugins page)',
   relay: 'X-MATRIX (row 7: no traffic over the lifecycle wire other than lifecycle)',
