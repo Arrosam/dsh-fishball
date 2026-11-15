@@ -59,7 +59,8 @@ export type RetireResult = { readonly ok: true } | Refusal<RetireRefusalCode>
  * - `enabled`: the entry is on;
  * - `disabled`: the user switched it off (K1d: a value can no longer change or be unset). Never
  *   replaced: re-enabling restores the same principal;
- * - `deleted`: the entry no longer exists. Replaced only after the user presses Retry.
+ * - `deleted`: the entry no longer exists. Never replaced on its own: Retry only shows the notice
+ *   that lists Reconnect, core's token field and Connect (R-HOST-10, R6 = B, R11; K1d).
  */
 export type HostedEntryState = 'enabled' | 'disabled' | 'deleted'
 

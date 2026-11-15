@@ -234,11 +234,13 @@ export interface PairStore {
     Promise<{ ok: true; pair: Pair } | { ok: false; code: 'already-paired' | 'id-invalid' | 'id-taken' | 'name-invalid' | 'name-taken' }>
   /**
    * The approval page's reconnect (R-OA-22, requirements 1.33 Q-A2 A; K1d replaces
-   * `renewFromPage`): a bound entry whose pair has this `id` keeps its principal (name, `pairedAt`,
-   * managed sessions, queued events) and records the newest `client.clientIdUrl` and
-   * `client.redirectUri`; the page then mints a new code and chain. Any other id, or an unpaired
-   * entry, is `already-paired`, and nothing changes. It binds nothing new and has no age condition
-   * (R-OA-23: no chain cap).
+   * `renewFromPage`): a bound entry whose pair has this `id` (bound on the page or by `pair`:
+   * R-OA-12 (2) refuses only "another id") keeps its principal (name, `pairedAt`, managed sessions,
+   * queued events) and records the newest `client.clientIdUrl` and `client.redirectUri`; the page
+   * then mints a new code and chain. Any other id is `already-paired`, and nothing changes. It binds
+   * nothing new and has no age condition (R-OA-23: no chain cap).
+   * @throws TypeError when the entry is unpaired: a caller bug, since the page calls `bindFromPage`
+   *   for an unpaired entry (as `succeed`'s TypeError; K1d-5).
    */
   reconnectFromPage(entryKey: EntryKey, id: string, client: { clientIdUrl: string; redirectUri: string }):
     Promise<{ ok: true; pair: Pair } | { ok: false; code: 'already-paired' }>
@@ -374,11 +376,6 @@ export interface RefreshRecord {
   readonly clientId: string
   readonly audience: string
   readonly generation: number
-  /**
-   * The chain's code redemption. A record only (K1d): no chain ends by age (R-OA-23). It stays in
-   * the interface because stored refresh records already carry it.
-   */
-  readonly chainStartedAt: EpochMs
   /** Set once spent; within LIFETIME.refreshGraceMs a repeat gets `successor` (R-OA-16 (4a)). */
   readonly spentAt?: EpochMs
 }
@@ -749,6 +746,7 @@ export interface GrantRegistry {
 
 export declare const ANSWERABLE_TYPES: readonly ["permission", "question", "plan-review", "ask"]
 export declare const APPROVAL_LISTENER: { readonly defaultPort: number; readonly retryMs: number; readonly decisionBodyBytes: number; readonly pendingRequestsMax: number; readonly headers: { readonly "cache-control": "no-store"; readonly "referrer-policy": "no-referrer"; readonly "content-security-policy": "default-src 'none'; frame-ancestors 'none'" }; readonly redirectStatus: 303 }
+export declare const AUTHORIZE_EXTENSION: { readonly agentIdParam: "agent_id" }
 export declare const BEARER_CHALLENGE: { readonly scheme: "Bearer"; readonly basicScheme: "Basic"; readonly params: readonly ["error", "error_description", "scope", "resource_metadata"]; readonly queryParameter: "access_token"; readonly queryClientSecret: "client_secret" }
 export declare const CIMD_LIMITS: { readonly maxBytes: 5120; readonly timeoutMs: number; readonly maxCacheMs: number; readonly cacheEntriesMax: number; readonly scheme: "https:"; readonly forbiddenAuthFields: readonly ["client_secret", "client_secret_expires_at"] }
 export declare const CLIENT_AUTH: { readonly basic: "client_secret_basic"; readonly post: "client_secret_post"; readonly none: "none" }
@@ -757,6 +755,7 @@ export declare const CONNECTOR_STATUS: { readonly approvalPortInUse: "approval-p
 export declare const CONTRIBUTED_TYPE_PREFIX: "contributed:"
 export declare const DECISION_KIND: { readonly approval: "approval"; readonly question: "question" }
 export declare const DECISION_KIND_OF: { readonly permission: "approval"; readonly ask: "approval"; readonly question: "question"; readonly "plan-review": "question" }
+export declare const DERIVED_AGENT_ID: { readonly prefix: "cid-"; readonly chars: 16; readonly alphabet: "abcdefghijklmnopqrstuvwxyz234567"; readonly digestAlgorithm: "sha256" }
 export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number; readonly jsonRpcVersion: "2.0" }
 export declare const ENTRY_STATUS: { readonly ok: "ok" }
 export declare const EVENT_TYPE: { readonly permission: "permission"; readonly question: "question"; readonly planReview: "plan-review"; readonly settlement: "settlement"; readonly retirement: "retirement"; readonly turnFinished: "turn-finished"; readonly state: "state"; readonly message: "message"; readonly ask: "ask"; readonly handover: "handover"; readonly takeback: "takeback"; readonly notice: "notice" }
@@ -769,8 +768,6 @@ export declare const HTTP_METHOD: { readonly get: "GET"; readonly post: "POST" }
 export declare const HTTP_REFUSAL: { readonly insecureListener: "insecure-listener"; readonly tooLarge: "limit-exceeded"; readonly rateLimited: "rate-limited" }
 export declare const HTTP_STATUS: { readonly ok: 200; readonly seeOther: 303; readonly badRequest: 400; readonly unauthorized: 401; readonly forbidden: 403; readonly notFound: 404; readonly methodNotAllowed: 405; readonly payloadTooLarge: 413; readonly tooManyRequests: 429; readonly internalServerError: 500; readonly serviceUnavailable: 503 }
 export declare const ID_GRAMMAR: { readonly pattern: RegExp }
-export declare const AUTHORIZE_EXTENSION: { readonly agentIdParam: "agent_id" }
-export declare const DERIVED_AGENT_ID: { readonly prefix: "cid-"; readonly chars: 16; readonly alphabet: "abcdefghijklmnopqrstuvwxyz234567"; readonly digestAlgorithm: "sha256" }
 export declare const ID_REFUSAL: { readonly idInvalid: "id-invalid" }
 export declare const LINK_REFUSAL: { readonly disconnected: "disconnected" }
 export declare const OAUTH_METADATA: {
@@ -828,10 +825,10 @@ export declare const RESOURCE: { readonly events: { readonly name: "agent-events
 export declare const RESPONSE_TYPE: { readonly code: "code" }
 export declare const RESYNC_REASON: { readonly staleCursor: "stale-cursor" }
 export declare const RETIREMENT_REASON: { readonly withdrawn: "withdrawn"; readonly revoked: "revoked"; readonly released: "released"; readonly reissued: "reissued"; readonly contributorWithdrawn: "contributor-withdrawn" }
+export declare const REVOCATION_KIND: { readonly disabled: "disabled"; readonly deleted: "deleted" }
 export declare const SCOPE: { readonly full: "agent"; readonly pair: "agent:pair" }
 export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.2.0"; readonly "@modelcontextprotocol/node": "2.1.0" }
 export declare const SETTINGS_REFUSAL: { readonly tokenDuplicate: "token-duplicate" }
-export declare const REVOCATION_KIND: { readonly disabled: "disabled"; readonly deleted: "deleted" }
 export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal" }
 export declare const SETTLEMENT_OUTCOME: { readonly allowed: "allowed"; readonly rejected: "rejected"; readonly answered: "answered" }
 export declare const TARGET_CODE: { readonly unreachable: "TARGET_UNREACHABLE"; readonly refused: "TOKEN_REFUSED"; readonly incompatible: "TARGET_INCOMPATIBLE"; readonly revoked: "token-revoked"; readonly insecure: "target-insecure"; readonly invalid: "target-invalid" }

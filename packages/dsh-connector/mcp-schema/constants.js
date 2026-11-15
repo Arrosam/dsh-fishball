@@ -511,8 +511,10 @@ export const ID_GRAMMAR = Object.freeze({ pattern: Object.freeze(new RegExp(`^${
  *   the agent's own id (§1.0c: `fishball_id` renamed `agent_id`) [spec: RFC 6749 §3.1 lets an
  *   authorization server define request parameters; one it does not know is ignored];
  * - DERIVED_AGENT_ID: the fixed id a client that passes none gets: `prefix` followed by the first
- *   `chars` characters of the RFC 4648 base32 encoding, in `alphabet` (lower case), of
- *   `digestAlgorithm(client id URL)`. Deterministic, no dot, and within ID_GRAMMAR (20 characters).
+ *   `chars` characters of the RFC 4648 base32 encoding, in `alphabet` (lower case, no padding), of
+ *   the raw `digestAlgorithm` bytes of the UTF-8 `client_id` string exactly as the request carries
+ *   it (no normalisation; K1d pins the input so two implementations derive one id). Deterministic,
+ *   no dot, and within ID_GRAMMAR (20 characters).
  */
 export const AUTHORIZE_EXTENSION = Object.freeze({ agentIdParam: 'agent_id' })
 export const DERIVED_AGENT_ID = Object.freeze({
