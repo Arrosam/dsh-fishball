@@ -130,6 +130,9 @@ export const V2_SUITES = Object.freeze({
     // V3 C-TOKENS (AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03, AUTH-DT-05, AUTH-ST-01 rows 1, 5–10, 12); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/tokens/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector token entries, generation, minimum length, revocation signal and cleanup (C-TOKENS)'),
     file('test/v3/dsh-connector/tokens/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector token entries, generation, minimum length, revocation signal and cleanup (C-TOKENS)'),
+    // V3 C-TOKENS-REVEAL settings page (AUTH-UC-01 main 2/4–6/E1/E2 at the route, AUTH-UC-15, AUTH-ST-08, PLAT-EP-03 row 1, HAND-EP-01 row 3); run with test/run-v3.mjs.
+    file('test/v3/dsh-connector/settings-page/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector settings page: create / notice routes, client.js, reveal modal (C-TOKENS-REVEAL)'),
+    file('test/v3/dsh-connector/settings-page/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector settings page: create / notice routes, client.js, reveal modal (C-TOKENS-REVEAL)'),
     // V3 C-OAUTH (AUTH-UC-03/06/07/08, AUTH-EP-01/02/05/07/09, AUTH-BVA-01/02/06, AUTH-DT-01, AUTH-ST-02, store/limiter rows of AUTH-ST-04/05, K1b-UC-02/DT-06, C-PAIR's token-endpoint rows); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/oauth/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector authorization server: token store, failure limiter, bearer verifier, token endpoint (C-OAUTH)'),
     file('test/v3/dsh-connector/oauth/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector authorization server: token store, failure limiter, bearer verifier, token endpoint (C-OAUTH)'),
