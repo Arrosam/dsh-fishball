@@ -7,22 +7,27 @@
  *    (src/config.js; C2: the only place they change), and "Open instance
  *    settings" while the attached instance registered `ui.settings`. The instance's own status,
  *    model, plugins and settings are the instance's pages, not this card.
- * 3. The Fishball view (slim §7) inside the connector's frame (§0.5 "The frame", D27): the
- *    attached instance's `ui.chat` (or its `ui.settings`, from the card) framed in DSH's main area,
- *    the `main` slot where a session's conversation shows, opened by the Fishball row in the sidebar's
- *    panel list. The frame shows the instance's state, Fishball's unread count and
- *    Connector settings; with no instance it shows an empty state and no iframe.
- * 4. The kit the other parts are built from (`exports.kit`): the one state stream, POST helper,
- *    style sheet and dictionary, and the seats (SEAT) where the attention part draws the fish's
- *    latch in the sidebar row and the frame. The marks (client.marks.js) and the
- *    ask_agent row with the card records (client.records.js) are parts of their own.
+ * 3. The window (U-DRAW; requirements 1.38 Q-U2, 1.41 Q-G3; R-UI-02): DSH's main area, the
+ *    `main` slot where a session's conversation shows, opened by the Fishball row in the sidebar's
+ *    panel list. It opens only the hosted child's page, through the instance's admission. A child
+ *    that is not ready shows its state and a Retry link to the instance's own settings page
+ *    (decided #77). With no usable instance (none, or only an external agent connected) it shows
+ *    the hint to open the Fishball instance's own page (Q-G3). Until C-WIRE, a DSH with only V2's
+ *    connector still frames V2's attached instance (the W3 fallback).
+ * 4. The kit the other parts are built from (`exports.kit`): the connector UI backend's snapshot
+ *    stream and its POST helper, the style sheet and dictionary, and the seats (SEAT) where the
+ *    attention part draws the fish's light and clears it when the window opens. The marks with
+ *    Hand over / Take back (client.marks.js) and the light with the notify prompt
+ *    (client.attention.js) are parts of their own. There are no cards (Q-U2) and no inline
+ *    records (Q-G4).
  * The in-process Fishball's own surfaces (its chat dock, pile, welcome card, model gate, the
  * Plugins page's Fishball tab and install dialog, the Messenger look) were removed with it.
  *
  * The mark is FishMark from the owner's fishball app (THIRD_PARTY_NOTICES); the connector's own
  * icon is FishMark with a wrench badge (assets/connector-icon.svg, D22).
  *
- * State comes from GET /api/fishball/events (server-sent snapshots).
+ * State comes from the connector's UI backend (its `events` route, server-sent snapshots; 1.34:
+ * "connector当后端，embed UI当前端"), or, for the V2 fallback only, from GET /api/fishball/events.
  */
 window.__ModuleLoader__.load({
   // V3 R-EMBED: moved here unchanged from packages/dsh-connector/client.js (R-ARCH-03: the connector
@@ -46,11 +51,10 @@ window.__ModuleLoader__.load({
     /** Client services read on demand (not injected: Fishball works without each of them). */
     const SERVICE = Object.freeze({ layout: 'layout' })
     const SUMMARY_VIEW = 'summary'
-    /** Host statuses (src/constants.js STATUS) the page compares against. */
-    const STATUS = Object.freeze({ starting: 'starting', live: 'live' })
-    /** Fishball's own feature plugins in the snapshot's `features` (src/builtins.js FEATURE_KEY; revision 10c). */
-    /** Whether a feature runs; a Host without the field (older) shows everything, as before. */
-    const API = Object.freeze({ events: 'api/fishball/events', send: 'api/fishball/send', managed: 'api/fishball/managed', attentionRead: '/api/fishball/connector/attention/read' })
+    /** The V2 Host status the V2 fallback's first snapshot carries (src/constants.js STATUS). */
+    const STATUS = Object.freeze({ starting: 'starting' })
+    /** V2's state stream, read only by the V2 fallback (its frame and its Sidebar icon setting). */
+    const API = Object.freeze({ events: 'api/fishball/events' })
     /**
      * The Fishball view (§7) and the connector's frame around it (design §0.5 "The frame", D27).
      * `panelId` is one key shared by the `main` occupant and its `sidebar.panellist` row, as DSH's
@@ -136,6 +140,8 @@ window.__ModuleLoader__.load({
       lang: Object.freeze({ parameter: 'lang', byLocale: Object.freeze({ en: 'en', zh: 'zh' }) }),
       /** The URL marks the framed address is cut at, so its path, other parameters and fragment stay verbatim. */
       url: Object.freeze({ fragment: '#', query: '?', separator: '&', assign: '=' }),
+      /** The instance's package, whose own settings page the window's Retry link opens (decided #77). */
+      instancePackage: 'dsh-instance',
     })
     /**
      * The V3 frame (U-SHELL; design §4.1, §4.2; R-UI-02, R-UI-03): the instance locator
@@ -148,9 +154,9 @@ window.__ModuleLoader__.load({
      *   into its own cookie, S4).
      * - `hostnameRefused` is K3's AdmitErrorCode: the page was not opened under a loopback name, so
      *   the view shows the refusal text and no frame (UIM-EP-02 row 4).
-     * - Retry is offered whenever the locator is there (R-UI-03: "the child status and Retry
-     *   outside the frame"); K3 `retry()` acts only for a `failed` child or `token-revoked` and
-     *   changes nothing otherwise (decided 1 = A), so pressing it in any other state is safe.
+     * - A child that is not ready shows its state and code and a Retry **link** to the instance's
+     *   own settings page, which holds Retry (R-UI-03 amended by 1.33, decided #77): embed-UI has no
+     *   Retry of its own.
      */
     const CHILD_UI = Object.freeze({
       readyState: 'ready',
@@ -172,6 +178,48 @@ window.__ModuleLoader__.load({
         admitFailed: '无法打开 Fishball 页面。',
       }),
     })
+    /**
+     * U-DRAW's words. The English of `noInstance` is decided item #76; "Handover to…", "online" /
+     * "offline" and "Hand over to <name>" are R-UI-10's; "Managed by" is R-NAME-05's; the rest,
+     * and every Chinese text, is PROPOSED (the zh review stays deferred, #76).
+     */
+    const DRAW_WORDING = Object.freeze({
+      en: Object.freeze({
+        noInstance: 'No Fishball child instance is running here. Open your Fishball instance\'s own page.',
+        retryLink: 'Retry',
+        handOverTo: 'Hand over to {name}', handOverMany: 'Handover to…', takeBack: 'Take back', managedBy: 'Managed by {name}',
+        idPrefix: 'ID:', online: 'online', offline: 'offline',
+        handOverNoteLabel: 'Note (optional)', handOverConfirm: 'Hand over', handingOver: 'Handing over…', cancel: 'Cancel', close: 'Close',
+        takeBackTitle: 'Take back',
+        'refusal.unknown-session': 'This session could not be found.',
+        'refusal.conflict': 'This session is already managed.',
+        'refusal.no-agent': 'That agent can no longer take this session.',
+        'refusal.not-managed': 'This session is not managed.',
+        'refusal.invalid-request': 'That request was not accepted.',
+        refusalFailed: 'That did not work.',
+        noticeDismiss: 'Dismiss', noticeCount: '{count} notices',
+      }),
+      zh: Object.freeze({
+        noInstance: '此处没有正在运行的 Fishball 子实例。请打开你的 Fishball 实例自己的页面。',
+        retryLink: '重试',
+        handOverTo: '交给 {name}', handOverMany: '交给…', takeBack: '收回', managedBy: '由 {name} 管理',
+        idPrefix: 'ID:', online: '在线', offline: '离线',
+        handOverNoteLabel: '备注（可选）', handOverConfirm: '交接', handingOver: '交接中…', cancel: '取消', close: '关闭',
+        takeBackTitle: '收回',
+        'refusal.unknown-session': '找不到此会话。',
+        'refusal.conflict': '此会话已有人管理。',
+        'refusal.no-agent': '该代理已无法接管此会话。',
+        'refusal.not-managed': '此会话没有被管理。',
+        'refusal.invalid-request': '请求未被接受。',
+        refusalFailed: '操作未成功。',
+        noticeDismiss: '关闭提示', noticeCount: '{count} 条提示',
+      }),
+    })
+    /**
+     * Stands for a `{name}` that is a node, not a string (withName): a character no dictionary or
+     * principal name holds.
+     */
+    const NAME_MARK = '\u0000'
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
     const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
@@ -180,12 +228,12 @@ window.__ModuleLoader__.load({
      * managed-row cell, the dot and the running flip. cellPx copies DSH's leading cell (the seat's
      * contract in dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the title"); the
      * cell is not sized by its parent, so a percentage would collapse. Revisit if DSH resizes it.
-     * The dots sit at the mark's top-right; green/yellow come from DSH's state tokens, so light and
-     * dark themes both read.
+     * The dot sits at the mark's top-right and marks the fish's light; its green comes from DSH's
+     * state token, so light and dark themes both read.
      */
     const ROW_MARK = Object.freeze({
       cellPx: 16,
-      dot: Object.freeze({ sizePx: 7, topPx: -1, rightPx: -1, unread: 'unread', action: 'action' }),
+      dot: Object.freeze({ sizePx: 7, topPx: -1, rightPx: -1, lit: 'lit' }),
       /** The flipping fish while a row runs (design ⑥): a half-turn, a hold, then the other half. */
       flipAnimation: 'fb-flip',
       flipSeconds: 1.8,
@@ -197,10 +245,9 @@ window.__ModuleLoader__.load({
      * fills (`seats.register(seat, value)`), so the shell draws them without knowing the part, and a
      * part that never loads leaves the shell's fallback. One value per seat; the latest wins.
      * - mark: the sidebar mark component `({size})` the sidebar row draws;
-     * - frameBadge: a component `({t})` in the frame's header;
-     * - pageOpened: a function the view calls once each time it mounts.
+     * - pageOpened: a function the window calls once each time it mounts.
      */
-    const SEAT = Object.freeze({ mark: 'mark', frameBadge: 'frameBadge', pageOpened: 'pageOpened' })
+    const SEAT = Object.freeze({ mark: 'mark', pageOpened: 'pageOpened' })
     const SLOT = Object.freeze({
       bundleConfig: 'plugins.bundle.config',
       headerActions: 'conversation.session.header.actions',
@@ -213,8 +260,6 @@ window.__ModuleLoader__.load({
        */
       main: 'main',
       panelList: 'sidebar.panellist',
-      toolview: 'tool.call.toolview',
-      chatNode: 'conversation.chat.node',
       /** DSH's 16px cell before a session row's title, mounted only while the row is idle (dsh-client-ui-workspace, rc.2). */
       rowLeading: 'sidebar.session.row.leading',
       /**
@@ -330,11 +375,19 @@ window.__ModuleLoader__.load({
     /** Only animate for people who have not asked for less motion (DSH's hero checks the same query). */
     const MOTION_QUERY = '(prefers-reduced-motion: no-preference)'
     const STYLE_ID = 'fishball-style'
-    const CLS = Object.freeze({ cardHead: 'fb-card-head', title: 'fb-title', pre: 'fb-pre', askRow: 'fb-ask-row', field: 'fb-field', note: 'fb-note', section: 'fb-section', row: 'fb-row', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', muted: 'fb-muted', recordBody: 'fb-record-body', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph' })
+    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', section: 'fb-section', row: 'fb-row', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', link: 'fb-link', light: 'fb-light', principal: 'fb-principal', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
+    /**
+     * The fish's prompt bubble (R-FN-01: "a bubble beside the sidebar fish"): it sits `gapPx` to
+     * the right of the fish's mark, level with its top, and keeps to `maxWidthPx` wide and
+     * `maxHeightPx` tall (a 4000-code-point message scrolls inside it). Without a visible mark (the
+     * sidebar is closed) it rests in the window's bottom-left corner, `edgePx` in, where the
+     * sidebar's foot is.
+     */
+    const NOTICE_BUBBLE = Object.freeze({ gapPx: 8, edgePx: 16, maxWidthPx: 280, maxHeightPx: 160, layer: 1000 })
 
     const en = {
       ...PROPOSED_WORDING.en,
-      unreadMany: '{max}+',
+      ...DRAW_WORDING.en,
       limits: 'Safety limits',
       viewTitle: 'Fishball', embedTitle: 'Fishball chat', embedRefresh: 'Refresh',
       embedUnavailable: '{name} is not running.', embedRetry: 'Retry',
@@ -345,35 +398,11 @@ window.__ModuleLoader__.load({
       'frameState.disabled': 'disabled', 'frameState.waiting': 'waiting', 'frameState.starting': 'starting', 'frameState.ready': 'running',
       'frameState.stopping': 'stopping', 'frameState.stopped': 'stopped', 'frameState.failed': 'failed',
       'frameState.connection-interrupted': 'connection interrupted', frameInterrupted: 'The connection to {name} was interrupted.',
-      frameUnread: '{count} unread', frameConnectorSettings: 'Connector settings',
       frameNoInstance: 'No Fishball instance is attached', frameOpenPlugins: 'Open Plugins',
       frameNoChat: '{name} is attached and has no chat page',
       frameRetrying: 'Retrying…', frameRetryFailed: 'Retry did not work.',
       instanceTitle: 'Fishball instance', instanceHint: '{name} is attached. Its own settings page opens in the Fishball view.',
       instanceOpenSettings: 'Open instance settings',
-      handOver: 'Hand over to Fishball',
-      handOverTitle: 'Hand over "{title}" to Fishball',
-      handOverNoteLabel: 'Note for Fishball (optional)',
-      handOverNotePlaceholder: 'For example: watch it and tell me when it is done, or approve builds and tests.',
-      handOverHint: 'Fishball reads this session\'s last answer and your note. Handing over makes Fishball look after this session.',
-      handOverConfirm: 'Hand over',
-      cancel: 'Cancel',
-      close: 'Close',
-      handingOver: 'Handing over…',
-      'handOverError.queue-full': 'Fishball\'s queue is full. Try again later.',
-      'handOverError.too-large': 'The note is too long.',
-      'handOverError.from-fishball': 'This is Fishball\'s own session.',
-      'handOverError.unknown-session': 'This session could not be read.',
-      'handOverError.unavailable': 'Fishball is not running.',
-      handOverFailed: 'That did not work.',
-      takeBack: 'Take back from Fishball',
-      manageTitle: 'Managed by Fishball',
-      // The banner's words. Same text as manageTitle (the refusal dialog's title) today, but a separate meaning.
-      managedBanner: 'Managed by Fishball',
-      managedRowUnread: 'Managed by Fishball, unread input from this session',
-      managedRowNeedsYou: 'Managed by Fishball, needs your action',
-      managedRowRunning: 'Managed by Fishball, working',
-      manageFailed: 'That did not work.',
       'field.maxQueuedInputs': 'Queued inputs not yet read',
       'field.maxActiveWatches': 'Active "tell me when finished" watches',
       'field.maxPendingApprovals': 'Permission requests open at once (waiting for Fishball or in your pile)',
@@ -388,23 +417,6 @@ window.__ModuleLoader__.load({
       'field.forwardExcerptBytes': 'Bytes of a session\'s last answer in a forward or watch notice',
       'field.userMessagesListed': 'Your messages list_user_messages shows a managed session',
       'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
-      cardReason: 'Reason',
-      cardFishballNote: 'Fishball',
-      askRowTitle: 'Ask Fishball',
-      askRowReply: 'Reply to Fishball',
-      askRowWaitingFishball: 'Waiting for Fishball',
-      'askResult.allowed': 'Allowed once',
-      'askResult.rejected': 'Rejected',
-      'askResult.question': 'Fishball asks a question',
-      'askResult.unavailable': 'Fishball cannot answer now',
-      'askResult.over-capacity': 'Too many requests waiting',
-      'askResult.no-longer-managed': 'No longer managed by Fishball',
-      'askResult.not-user-message': 'Not a message you typed',
-      'askResult.too-large': 'Too large to send',
-      'askResult.expired': 'Request not open',
-      'askResult.invalid-request': 'Invalid request',
-      'askResult.empty': 'Empty reply',
-      'askResult.cancelled': 'Cancelled',
       reset: 'Reset to default',
       overridden: 'Custom',
       save: 'Save',
@@ -413,16 +425,10 @@ window.__ModuleLoader__.load({
       invalid: 'Enter a whole number.',
       unavailable: 'Fishball is not loaded, so its limits cannot be changed right now.',
       readOnly: 'This deployment stores settings read-only.',
-      // The rebuilt settings page (§9): the isolated child's status, model, plugins and settings.
-      'record.question': 'Question', 'record.plan-review': 'Plan review', 'record.permission': 'Permission request',
-      'record.by.user': 'You', 'record.by.fishball': 'Fishball', 'record.place.pile': 'on the card', 'record.place.session': 'in the session',
-      'record.outcome.allowed': 'Allowed once', 'record.outcome.granted': 'Allowed and granted', 'record.outcome.rejected': 'Rejected',
-      'record.outcome.answered': 'Answered', 'record.outcome.skipped': 'Skipped', 'record.outcome.closed': 'Closed',
-      'record.from': 'From', 'record.answer': 'Answer', 'record.tool': 'Tool', 'record.arguments': 'Arguments', 'record.reason': 'Reason', 'record.note': 'Note', 'record.closed': 'Why it closed', 'record.own': 'Fishball asked you',
     }
     const zh = {
       ...PROPOSED_WORDING.zh,
-      unreadMany: '{max}+',
+      ...DRAW_WORDING.zh,
       limits: '安全限制',
       viewTitle: 'Fishball', embedTitle: 'Fishball 聊天', embedRefresh: '刷新',
       embedUnavailable: '{name} 未在运行。', embedRetry: '重试',
@@ -431,34 +437,11 @@ window.__ModuleLoader__.load({
       'frameState.disabled': '已禁用', 'frameState.waiting': '等待中', 'frameState.starting': '启动中', 'frameState.ready': '运行中',
       'frameState.stopping': '停止中', 'frameState.stopped': '已停止', 'frameState.failed': '失败',
       'frameState.connection-interrupted': '连接中断', frameInterrupted: '与 {name} 的连接中断。',
-      frameUnread: '{count} 条未读', frameConnectorSettings: 'Connector 设置',
       frameNoInstance: '没有已连接的 Fishball 实例', frameOpenPlugins: '打开插件',
       frameNoChat: '{name} 已连接，但没有聊天页面',
       frameRetrying: '正在重试…', frameRetryFailed: '重试未成功。',
       instanceTitle: 'Fishball 实例', instanceHint: '{name} 已连接。它自己的设置页面会在 Fishball 视图中打开。',
       instanceOpenSettings: '打开 Fishball 实例设置',
-      handOver: '交给 Fishball 管理',
-      handOverTitle: '把“{title}”交给 Fishball 管理',
-      handOverNoteLabel: '给 Fishball 的备注（可选）',
-      handOverNotePlaceholder: '例如：盯着它，完成时告诉我；或者批准构建和测试。',
-      handOverHint: 'Fishball 会读取此会话的最后一条回复和你的备注。交接后由 Fishball 照看此会话。',
-      handOverConfirm: '交给 Fishball',
-      cancel: '取消',
-      close: '关闭',
-      handingOver: '交接中…',
-      'handOverError.queue-full': 'Fishball 的队列已满，请稍后再试。',
-      'handOverError.too-large': '备注太长。',
-      'handOverError.from-fishball': '这是 Fishball 自己的会话。',
-      'handOverError.unknown-session': '无法读取此会话。',
-      'handOverError.unavailable': 'Fishball 未在运行。',
-      handOverFailed: '操作未成功。',
-      takeBack: '从 Fishball 收回',
-      manageTitle: '由 Fishball 管理',
-      managedBanner: '由 Fishball 管理',
-      managedRowUnread: '由 Fishball 管理，此会话有未读输入',
-      managedRowNeedsYou: '由 Fishball 管理，需要你处理',
-      managedRowRunning: '由 Fishball 管理，正在工作',
-      manageFailed: '操作未成功。',
       'field.maxQueuedInputs': '尚未读取的排队输入',
       'field.maxActiveWatches': '进行中的“完成时通知我”',
       'field.maxPendingApprovals': '同时打开的权限请求（等待 Fishball 或在你的待处理区）',
@@ -473,23 +456,6 @@ window.__ModuleLoader__.load({
       'field.forwardExcerptBytes': '转发或关注通知中会话最后回答的字节数',
       'field.userMessagesListed': 'list_user_messages 向受管会话列出的你的消息条数',
       'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
-      cardReason: '理由',
-      cardFishballNote: 'Fishball',
-      askRowTitle: '询问 Fishball',
-      askRowReply: '回复 Fishball',
-      askRowWaitingFishball: '等待 Fishball',
-      'askResult.allowed': '已允许一次',
-      'askResult.rejected': '已拒绝',
-      'askResult.question': 'Fishball 提了一个问题',
-      'askResult.unavailable': 'Fishball 暂时无法回答',
-      'askResult.over-capacity': '等待中的请求太多',
-      'askResult.no-longer-managed': '已不再由 Fishball 管理',
-      'askResult.not-user-message': '不是你输入的消息',
-      'askResult.too-large': '太大，无法发送',
-      'askResult.expired': '请求未打开',
-      'askResult.invalid-request': '请求无效',
-      'askResult.empty': '回复为空',
-      'askResult.cancelled': '已取消',
       reset: '恢复默认',
       overridden: '已自定义',
       save: '保存',
@@ -498,11 +464,6 @@ window.__ModuleLoader__.load({
       invalid: '请输入整数。',
       unavailable: 'Fishball 当前未加载，暂时无法修改限制。',
       readOnly: '本部署的设置为只读。',
-      'record.question': '问题', 'record.plan-review': '计划审阅', 'record.permission': '权限请求',
-      'record.by.user': '你', 'record.by.fishball': 'Fishball', 'record.place.pile': '在卡片上', 'record.place.session': '在会话中',
-      'record.outcome.allowed': '已允许一次', 'record.outcome.granted': '已允许并授权', 'record.outcome.rejected': '已拒绝',
-      'record.outcome.answered': '已回答', 'record.outcome.skipped': '已跳过', 'record.outcome.closed': '已关闭',
-      'record.from': '来自', 'record.answer': '回答', 'record.tool': '工具', 'record.arguments': '参数', 'record.reason': '理由', 'record.note': '备注', 'record.closed': '关闭原因', 'record.own': 'Fishball 问你',
     }
 
     const css = [
@@ -542,14 +503,21 @@ window.__ModuleLoader__.load({
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
       // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
       `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
-      `.${CLS.cardHead}{display:flex;flex-wrap:wrap;align-items:center;gap:8px}`,
-      `.${CLS.title}{color:var(--dsw-alias-label-primary);font-weight:500;overflow-wrap:anywhere}`,
-      `.${CLS.pre}{margin:0;padding:6px 8px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);font-family:var(--ds-font-family-code);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}`,
-      `.${CLS.askRow}{display:flex;flex-direction:column;gap:6px;padding:6px 0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}`,
       `.${CLS.managedRow}{position:relative;display:inline-flex;align-items:center;justify-content:center;width:${ROW_MARK.cellPx}px;height:${ROW_MARK.cellPx}px;color:var(--dsw-alias-label-primary)}`,
-      // The dots' two meanings get DSH's own state tokens; yellow is checked first in the component.
+      // The fish's light (§13.6): DSH's own success token, so light and dark themes both read.
       `.${CLS.managedRowDot}{position:absolute;top:${ROW_MARK.dot.topPx}px;right:${ROW_MARK.dot.rightPx}px;box-sizing:border-box;width:${ROW_MARK.dot.sizePx}px;height:${ROW_MARK.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-success-primary);pointer-events:none}`,
-      `.${CLS.managedRowDot}[data-fishball-dot="${ROW_MARK.dot.action}"]{background:var(--dsw-alias-state-warn-primary)}`,
+      // A principal's status light (R-UI-10): green online, red offline, DSH's state tokens; the
+      // element's text alternative carries the same, so colour is not the only signal.
+      `.${CLS.light}{display:inline-block;flex:none;width:${ROW_MARK.dot.sizePx}px;height:${ROW_MARK.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-error-primary)}`,
+      `.${CLS.light}[data-fishball-online="true"]{background:var(--dsw-alias-state-success-primary)}`,
+      `.${CLS.principal}{display:inline-flex;align-items:center;gap:6px;overflow-wrap:anywhere}`,
+      // The Retry link (decided #77) reads as a link: DSH's accent label colour, underlined, no button chrome.
+      `.${CLS.link}{padding:0;border:0;background:none;color:var(--dsw-alias-label-link,var(--fb-accent));font:inherit;text-decoration:underline;cursor:pointer}`,
+      // The notify prompt (R-FN-01): DSH's menu material and radius, beside the fish (NOTICE_BUBBLE).
+      `.${CLS.notice}{position:fixed;z-index:${NOTICE_BUBBLE.layer};display:flex;align-items:flex-start;gap:8px;box-sizing:border-box;max-width:${NOTICE_BUBBLE.maxWidthPx}px;max-height:${NOTICE_BUBBLE.maxHeightPx}px;overflow:auto;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:var(--dsw-menu-surface-fill,var(--dsw-alias-bg-layer-3));color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.5;text-align:start;cursor:pointer}`,
+      `.${CLS.notice}[data-fishball-notice-important="true"]{box-shadow:0 0 0 1px color-mix(in srgb, var(--fb-accent) 55%, transparent)}`,
+      `.${CLS.noticeText}{white-space:pre-wrap;overflow-wrap:anywhere}`,
+      `.${CLS.noticeCount}{flex:none;min-width:${UNREAD_BADGE.minWidth};height:${UNREAD_BADGE.height};padding:0 ${UNREAD_BADGE.paddingX};border-radius:${UNREAD_BADGE.radius};background:${UNREAD_BADGE.fill};color:${UNREAD_BADGE.textColor};font:${UNREAD_BADGE.fontWeight} ${UNREAD_BADGE.fontSize}/${UNREAD_BADGE.height} ${UNREAD_BADGE.fontFamily};text-align:center}`,
       // The one accent token and the one ring (§8.5). The ring mixes the accent with whatever
       // surface is under it, so it reads on light and dark; DSH's own variant supplies hover,
       // active and focus-visible.
@@ -559,22 +527,22 @@ window.__ModuleLoader__.load({
 
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
 
-    /** One shared EventSource for all components; reconnects by itself. */
-    const stateSource = (() => {
-      let snapshot = { status: STATUS.starting, sessionId: null, error: null, limits: {} }
+    /**
+     * One shared EventSource of server-sent snapshots at `path`, open while any component follows
+     * it; it reconnects by itself. The latest snapshot is the only state, and it is the server's.
+     */
+    function eventStore(path, initial) {
+      let snapshot = initial
       const listeners = new Set()
-      const publish = (next) => {
-        snapshot = next
-        for (const listener of listeners) listener()
-      }
       let source
       const open = () => {
         if (source) return
-        source = new EventSource(apiUrl(API.events))
+        source = new EventSource(apiUrl(path))
         source.onmessage = (event) => {
           let next
           try { next = JSON.parse(event.data) } catch { return }
-          publish(next)
+          snapshot = next
+          for (const listener of listeners) listener()
         }
       }
       return {
@@ -587,10 +555,32 @@ window.__ModuleLoader__.load({
           }
         },
         get: () => snapshot,
-        publish,
       }
-    })()
+    }
+    /** V2's state stream, followed only by the V2 fallback (its frame and its Sidebar icon setting). */
+    const stateSource = eventStore(API.events, Object.freeze({ status: STATUS.starting, sessionId: null, error: null, limits: {} }))
     const useFishball = () => React.useSyncExternalStore(stateSource.subscribe, stateSource.get)
+
+    /**
+     * The connector UI backend's snapshot before its first frame (dsh-connector src/ui/state.js
+     * `snapshot()`): nothing managed, no target, the light off, no notice. Embed-UI keeps no state
+     * of its own (1.34): every part draws the backend's latest snapshot.
+     */
+    const EMPTY_UI = Object.freeze({
+      marks: Object.freeze([]), targets: Object.freeze([]),
+      attention: Object.freeze({ count: 0, important: false }), notice: null, light: Object.freeze({ on: false, important: false }),
+    })
+    const uiStores = new Map()
+    /**
+     * The one store of the backend's `events` route `path` (the host half's `services` answer,
+     * `ui.events`), shared by every part, so a page opens one stream however many parts draw.
+     */
+    function uiSnapshots(path) {
+      if (!uiStores.has(path)) uiStores.set(path, eventStore(path, EMPTY_UI))
+      return uiStores.get(path)
+    }
+    /** The backend's snapshot, followed live (R-UI-05, R-UI-10: no reload). */
+    const useUi = (path) => { const store = uiSnapshots(path); return React.useSyncExternalStore(store.subscribe, store.get) }
 
     /** POST one command to the Host. @returns { ok, code, path, answer } (the Host's refusal code, an invalid setting's path, and the whole answer). */
     async function send(path, body) {
@@ -667,10 +657,34 @@ window.__ModuleLoader__.load({
     /** The icon the Sidebar icon setting chose: the sidebar mark and the managed-session marks share it. */
     const brandIconOf = (state) => BRAND_ICON[brandStyleOf(state)] ?? FishballIcon
 
-    /** Connector-owned attention latch: count is 0 or 1; no producer unread state. */
-    const unreadCount = (state) => state.unread?.count ?? 0
-    /** Reuse the existing row dot; attention adds no timer or separate animation. */
+    /** The fish's light as a dot on its mark (§13.6): no timer, no animation of its own. */
     const attentionDot = (dot) => h('span', { className: CLS.managedRowDot, 'data-fishball-dot': dot, 'aria-hidden': true })
+
+    /**
+     * A principal as R-NAME-08 shows it: its name as plain text, or, for a nameless one, a bold
+     * `ID:` and its id. React escapes both, so markup in a name is shown, never run (HAND-EP-02
+     * row 8). `principalText` is the same as one string, for a text alternative.
+     */
+    const principalLabel = (t, principal) => (principal.name === null
+      ? h(React.Fragment, null, h('strong', null, t('idPrefix')), ' ', principal.id)
+      : principal.name)
+    const principalText = (t, principal) => (principal.name === null ? t('idPrefix') + ' ' + principal.id : principal.name)
+    /**
+     * A dictionary text with `node` in place of its `{name}` (R-UI-10's "Hand over to <name>", whose
+     * name may hold the bold prefix): the text is asked for with a marker and cut there, so every
+     * language keeps its own word order.
+     */
+    function withName(t, key, node) {
+      const [before, after = ''] = t(key, { name: NAME_MARK }).split(NAME_MARK)
+      return h(React.Fragment, null, before, node, after)
+    }
+    /** A principal's status light (R-UI-10): green or red, with its words as the text alternative. */
+    const principalLight = (t, online) => h('span', {
+      className: CLS.light, role: 'img', 'data-fishball-online': String(online),
+      'aria-label': t(online ? 'online' : 'offline'), title: t(online ? 'online' : 'offline'),
+    })
+    /** A principal with its light, as every Hand over control shows it. */
+    const principalWithLight = (t, principal, content) => h('span', { className: CLS.principal }, principalLight(t, principal.online), content)
 
     /**
      * The seat registry (SEAT). `register` returns its disposer, so a part fills a seat inside its
@@ -708,11 +722,6 @@ window.__ModuleLoader__.load({
       return function Mark(props) {
         return h(seats.use(SEAT.mark) ?? Plain, props)
       }
-    }
-    /** The frame header's badge seat (the attention part's unread count); nothing while empty. */
-    function FrameBadge(props) {
-      const Badge = seats.use(SEAT.frameBadge)
-      return Badge === undefined ? null : h(Badge, props)
     }
 
     /**
@@ -843,18 +852,26 @@ window.__ModuleLoader__.load({
     ]
 
     /**
-     * What both Fishball views do while mounted: tell the attention part the page opened, once per
-     * mount (not on every snapshot or iframe refresh; a ref keeps a re-run effect from clearing
-     * twice), and put the framed page back to `chat` when the view goes.
-     * @returns the framed page (`framedPage`) and the language the frame opens in.
+     * Tells the attention part the window opened, once per mount (not on every snapshot or iframe
+     * refresh; a ref keeps a re-run effect from clearing twice): the backend then clears the latch
+     * and the prompt (§13.6, R-FN-01). The hint is the window too, so it counts.
      */
-    function useViewPage(frameLang) {
+    function useWindowOpened() {
       const opened = React.useRef(false)
       React.useEffect(() => {
         if (opened.current) return
         opened.current = true
         seats.get(SEAT.pageOpened)?.()
       }, [])
+    }
+
+    /**
+     * What the framing views do while mounted: the window's opening, and the framed page put back
+     * to `chat` when the view goes.
+     * @returns the framed page (`framedPage`) and the language the frame opens in.
+     */
+    function useViewPage(frameLang) {
+      useWindowOpened()
       React.useEffect(() => () => framedPage.set(FRAME_UI.page.chat), [])
       const page = React.useSyncExternalStore(framedPage.subscribe, framedPage.get)
       const lang = React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
@@ -882,20 +899,23 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The view's frame (design §0.5 "The frame"): DSH's session header with the title, the state
-     * tag and code, the attention badge seat, the Retry refusal, Retry, Refresh and the extra
-     * actions, then the body. Both views draw it, so the header cannot drift between them.
+     * The window's chrome (design §0.5 "The frame"): DSH's session header with the title, then the
+     * body. Every view draws it, so the header cannot drift between them. Optional parts:
+     * - `state` (and `code`): the state tag; the hint has none, as there is no child to describe;
+     * - `retry`: the V2 fallback's own Retry and its refusal (a V2 connector's attached instance;
+     *   the V3 window has no Retry of its own, decided #77);
+     * - `onRefresh`: Refresh, enabled by `canRefresh`;
+     * - `actions`: more header buttons.
      */
     function FrameChrome({ t, page, state, code, retry, canRetry, canRefresh, onRefresh, actions, body }) {
       return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
         h('header', { className: CLS.embedBar, 'data-window-drag': true },
           h('span', { className: CLS.embedName }, t('viewTitle')),
-          h(FrameState, { state, code, t }),
-          h(FrameBadge, { t }),
+          state === undefined ? null : h(FrameState, { state, code, t }),
           h('div', { className: CLS.embedActions },
-            retry.retryCode ? h('span', { role: 'alert', 'data-fishball-retry-error': retry.retryCode }, t('frameRetryFailed'), ' ', h('code', { className: CLS.code }, retry.retryCode)) : null,
-            canRetry ? accentButton({ size: 'sm', disabled: retry.retrying, 'data-fishball-frame-retry': true, onClick: () => void retry.retry() }, retry.retrying ? t('frameRetrying') : t('embedRetry')) : null,
-            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')),
+            retry?.retryCode ? h('span', { role: 'alert', 'data-fishball-retry-error': retry.retryCode }, t('frameRetryFailed'), ' ', h('code', { className: CLS.code }, retry.retryCode)) : null,
+            retry !== undefined && canRetry ? accentButton({ size: 'sm', disabled: retry.retrying, 'data-fishball-frame-retry': true, onClick: () => void retry.retry() }, retry.retrying ? t('frameRetrying') : t('embedRetry')) : null,
+            onRefresh === undefined ? null : h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')),
             actions)),
         body)
     }
@@ -923,30 +943,42 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The Fishball view over the instance locator (U-SHELL; design §4.2; R-UI-02, R-UI-03): the
-     * same main slot, header and empty states as the V2 view below, with the child's status, its
-     * code and Retry outside the frame, and the frame's address from admit only. A page opened
-     * under any name but a loopback one gets `hostname-refused` and shows R-UI-02's text instead
-     * of a frame. Nothing crosses the iframe (no `message` listener), as in V2.
+     * The Retry link of a child that is not ready (decided #77; R-UI-03 amended by 1.33): it opens
+     * the instance's own settings page, where Retry is, through DSH's plugin navigation. A link,
+     * not a button, because it takes the user to another page and starts nothing itself.
+     */
+    function retryLink(ctx, t) {
+      const open = (event) => {
+        event.preventDefault()
+        ctx.get(FRAME_UI.navigation)?.openBundle(FRAME_UI.instancePackage)
+      }
+      return h('p', { key: 'retry' }, h('a', { href: '#', className: CLS.link, 'data-fishball-retry-link': true, onClick: open }, t('retryLink')))
+    }
+
+    /**
+     * The window over the instance locator (U-SHELL, U-DRAW; design §4.2; R-UI-02; Q-G3; decided
+     * #77): the child's state and code outside the frame, and the frame's address from admit only.
+     * A child that is not ready shows its state and the Retry link, no frame. A page opened under
+     * any name but a loopback one gets `hostname-refused` and shows R-UI-02's text instead of a
+     * frame. Nothing crosses the iframe (no `message` listener), as in V2.
      */
     function makeChildView(ctx, t, route) {
       const frameLang = frameLangStore(ctx.locale)
       return function FishballChildView() {
-        const [status, setStatus] = usePoll(route.status, isHostAnswer, undefined)
+        const [status] = usePoll(route.status, isHostAnswer, undefined)
         const { page, lang } = useViewPage(frameLang)
         const [generation, setGeneration] = React.useState(0)
         const state = status?.status?.state ?? FRAME_UI.loading
         const code = status?.status?.code ?? null
         const ready = state === CHILD_UI.readyState
         const admission = useAdmission(route.admit, page, lang, ready, generation)
-        const retry = useRetry(route.retry, setStatus)
         // A hostname refusal stays until the page is opened under another name; any other refusal
         // can be asked again with Refresh, as a framed page can be reloaded.
         const hostnameRefused = admission?.refused === CHILD_UI.hostnameRefused
         const body = status === undefined
           ? loadingState(t)
           : !ready
-            ? emptyState(warningGlyph(), ...stateDetails(t, state, code))
+            ? emptyState(warningGlyph(), ...stateDetails(t, state, code), retryLink(ctx, t))
             : admission === undefined
               ? loadingState(t)
               : admission.refused !== undefined
@@ -955,11 +987,25 @@ window.__ModuleLoader__.load({
                   : h('p', { role: 'alert', 'data-fishball-admit-refused': admission.refused ?? '' }, t('admitFailed')))
                 : framedPageFrame(t, `${generation}:${admission.url}`, admission.url)
         return h(FrameChrome, {
-          t, page, state, code, retry,
-          canRetry: true,
+          t, page, state, code,
           canRefresh: admission !== undefined && !hostnameRefused,
           onRefresh: () => setGeneration((value) => value + 1),
           actions: null, body,
+        })
+      }
+    }
+
+    /**
+     * The window with no usable instance (Q-G3: "当不存在子实例，包括只连接外部实例时提示用户当前没有子实例运行，
+     * 需要转去外部实例的页面"; R-UI-08 amended by 1.41): the hint, and no frame, state or Retry. An
+     * external agent connected to this connector has its own page, which embed-UI cannot know.
+     */
+    function makeHintView(t) {
+      return function FishballHintView() {
+        useWindowOpened()
+        return h(FrameChrome, {
+          t, page: FRAME_UI.page.chat,
+          body: emptyState(warningGlyph(), h('p', { 'data-fishball-no-instance': true }, t('noInstance'))),
         })
       }
     }
@@ -1132,18 +1178,20 @@ window.__ModuleLoader__.load({
     // switch on DSH's own page for each plugin. Every change goes to Fishball's side only.
 
     /**
-     * What the parts share with the shell (client.marks.js, client.attention.js, client.records.js):
-     * one state stream, one POST helper, one style sheet and dictionary, and the seats. A part is a
-     * factory of this kit; client.js starts each result as a sub-plugin of the row.
+     * What the parts share with the shell (client.marks.js, client.attention.js): the backend's one
+     * snapshot stream and the POST helper, one style sheet and dictionary, the principal's label
+     * and light, and the seats. A part is a factory of this kit and the host half's availability;
+     * client.js starts each result as a sub-plugin of the row.
      */
     exports.kit = Object.freeze({
-      NS, SLOT, API, STATUS, CLS, EMBED_UI, ROW_MARK, UNREAD_BADGE, SEAT, seats,
-      useFishball, send, valueStore, brandIconOf, attentionDot, unreadCount,
+      NS, SLOT, CLS, ROW_MARK, NOTICE_BUBBLE, SEAT, seats,
+      useUi, send, valueStore, FishballIcon, attentionDot, principalLabel, principalText, withName, principalWithLight,
     })
     /**
      * The shell as a client plugin for what is usable now (readAvailability). The connector's
      * Plugins card follows its own row's settings namespace (configForms.whileServed), as in V2.
-     * @param available - the host half's answer (client.js readAvailability): its flags and `routes`.
+     * @param available - the host half's answer (client.js readAvailability): its flags, `routes`
+     *   and the backend's `ui` routes.
      */
     exports.shellPlugin = (available) => ({ name: PACKAGE_NAME, inject: ['slots', 'locale', 'configForms'], apply: (ctx) => apply(ctx, available) })
     function apply(ctx, available) {
@@ -1152,13 +1200,15 @@ window.__ModuleLoader__.load({
       ctx.effect(mountStyles, 'fishball: styles')
       // The Fishball view in DSH's main area, as Plugins and Tasks register theirs (§7). The key is
       // registered for the plugin's life, as theirs are.
-      // The page and its sidebar entry by availability (UIM-EP-01): the locator's view, else (W3
-      // only) the V2 connector frame, else none. With a connector but no page, the fish row stays
-      // (R-UI-08: "its fish has no page to open"), so it registers the view's slot only with a page.
-      const View = available.page ? makeChildView(ctx, t, available.routes) : available.legacy ? makeFishballView(ctx, t) : undefined
-      const Mark = makeMark(makePlainMark(available.legacy))
-      if (View !== undefined) ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.register({ name: SLOT.main, key: EMBED_UI.panelId, locale: NS }, View)), 'fishball: main view')
-      if (View !== undefined || available.handover || available.tools) ctx.effect(() => registerSidebarEntry(ctx, Mark, t), 'fishball: sidebar row')
+      // The window and its sidebar fish by availability (UIM-EP-01). With the connector's backend:
+      // the hosted child's window, or the hint without one (Q-G3, QD4). Else, until C-WIRE, the V2
+      // connector's frame. client.js starts the shell only with one of the two (Q-U1).
+      const View = available.connector
+        ? (available.page ? makeChildView(ctx, t, available.routes) : makeHintView(t))
+        : makeFishballView(ctx, t)
+      const Mark = makeMark(makePlainMark(!available.connector))
+      ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.register({ name: SLOT.main, key: EMBED_UI.panelId, locale: NS }, View)), 'fishball: main view')
+      ctx.effect(() => registerSidebarEntry(ctx, Mark, t), 'fishball: sidebar row')
       ctx.effect(() => {
         const section = limitsSection(ctx.configForms.get(ENTRY_ID))
         const Settings = makeSettingsPage(ctx, section, t)
