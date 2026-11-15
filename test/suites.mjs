@@ -127,6 +127,10 @@ export const V3_SUITES = Object.freeze({
   // The contract suites read every file of the packages they bound, so any change there reruns them.
   'contract.k1-mcp-schema': suite('K1 MCP schema freeze', v3('contract/k1-mcp-schema'),
     [...CONNECTOR_CONTRACTS, sub(PACKAGE.fishballCore, 'vendor'), ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
+  // K1d amends K1 and K3's tokens.d.ts; its retire rows drive the real mailbox module (c-mailbox's world).
+  'contract.k1d-amendments': suite('K1d amendments: token reveal, page id, Mailbox.transfer, SettingsWriter, SessionNotes', v3('contract/k1d-amendments'),
+    [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'host-services'), sub(PACKAGE.fishballCore, 'vendor'), sub(PACKAGE.fishballCore, 'scripts'),
+      sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'schema-value'), ...CONNECTOR_CORE]),
   'contract.k2-tools': suite('K2 contribution contract freeze', v3('contract/k2-tools'),
     [sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.fishballCore, 'vendor')]),
   'contract.k3-host-services': suite('K3 host-only service and core contract freeze', v3('contract/k3-host-services'),
