@@ -505,10 +505,18 @@ a reinstall replaces it (§5.4; R6 = B, R8).
   home, so the new child's start is a first start: a new hosted entry, its value imported once,
   then succession (R-HOST-09, below). **Uninstall:** the copy goes with the child runtime; the
   hosted entry's digest stays in the connector until the user deletes the entry. **User delete,
-  then Retry** (R-HOST-10; R6 = B): Retry creates **no** token automatically. It shows a notice that
-  the hosted token was deleted and a new one is needed. Because the import is the hosted child's
-  only source (1.31), how the user then gets one is open question R11. The child keeps its dead
-  copy until then.
+  then Retry** (R-HOST-10; R6 = B, R11): Retry creates **no** token automatically. It shows a notice
+  with the two ways the user replaces it (R11, requirements 1.32: "通过UI插件打开子实例，把新生成的token输入到子实例内的设置中。或者在instance插件中点击重新连接"):
+  - **Reconnect** in the instance's settings on the main DSH: one click runs the import once (a new
+    hosted entry, its value passed in once);
+  - a token the user generates with New token (§5.9), typed into the **write-only token field** of
+    the child's hosted settings section (the instance's `fishball-hosted-settings` bundle, opened
+    through embed-UI's frame). The field never shows a value, is cleared after the submit, and
+    passes the value once to `importToken` through the instance's child-side receiver.
+  Both are the instance's paths, so the instance stays the hosted child's only token source (1.31),
+  and core itself still has no token field in either mode. The child keeps its dead copy until
+  then. What happens to an old hosted entry that still exists when the user replaces its token is
+  Q-B1 (`.runtime/reports/v3-open-questions.md`).
 - **Reinstall succession (Q24, decided; R-HOST-09).** The instance keeps the entry key of the
   hosted entry it created (non-secret, in its lifecycle state). When a reinstalled child pairs
   with a new hosted token, the instance calls `retire(oldEntryKey, newEntryKey)`. In one storage
@@ -631,6 +639,17 @@ External behaviour follows MCP 2026-07-28 (requirements 1.17). Machine exchange 
 **Amended by requirements 1.31:** a hosted `fishball-core` uses machine exchange with the imported
 token; a standalone or remote-target `fishball-core` uses this browser flow through **Connect**
 (§6.3a, R-OA-19).
+**Amended by requirements 1.32 (R13: "授权页上填的是名字，ID是被连接的dsh接受来自fishball的id传入。fishball-ish的agent连接时必须提供一个id"; R14: "取消一次连接365天的限制，只要有token和id就能连接"):**
+the page below asks for the token and an optional **name only**; there is no id field. Authorize
+**claims** the entry for that browser client (no id yet) and issues a code whose tokens are
+**pair-only** until the agent calls `pair` with its own id (R-OA-22): `id-invalid` and `id-taken`
+move from the page to `pair`. Why `pair` and not OAuth: in the code grant the OAuth `client_id`
+must be the metadata-document URL (CIMD), so the fishball id cannot be the client id there, and
+the pair-only scope already exists for exactly this step (R-OA-04). Machine clients are unchanged:
+their fishball id **is** their OAuth `client_id`, which `client_credentials` with
+`client_secret_basic` carries on every token request [spec: OAuth Client Credentials extension;
+RFC 6749 §2.3.1], so no new parameter is needed. Refresh chains have **no maximum lifetime**
+(R-OA-23): the 365-day cap and the renewal of step 6 below are withdrawn.
 
 **Listeners.**
 
@@ -871,6 +890,8 @@ make one, so one comes only from a settings document edited by hand or a store e
 | Instance (I-HOST) | resolves the hosted value from the host's store at every child start and sends it on `mcp-credential` | imports it **once**, at the child's first start, from `createHosted`'s answer, through the child receiver into core's `importToken` (K3a); asks core whether it holds a credential; no token or credential reference in its settings; imports nothing for a remote target; the host stores nothing (R1, R10) |
 | Core link (F-LINK-SAVE) | `credentials()` reads `target.tokenRef` (standalone) or the wire value (hosted); `ClientCredentialsProvider` only | hosted: `importToken(value)` (K3a, the receiver's only) and `client_credentials`; standalone and remote: **Connect**, an authorization-code + PKCE `authProvider` built on `fishball-shared/oauth-client` (the S7c K2 token manager, moved from C-MCP-ADAPTER); one saved credential per target origin after first acceptance (R9); `target.tokenRef` and any token field withdrawn (R10) |
 | `fishball-shared` | no OAuth code | `./oauth-client` (CIMD client id, PKCE, `state`, `iss`, loopback callback through `ctx.authorization`, single-flight refresh), used by core and the adapter (R-ARCH-08) |
+| Pairing (C-PAIR, C-OAUTH-WEB; R13) | the page takes `id` and binds in one step (`PairStore.bindFromPage`); `pair` binds the caller's OAuth client id | the page takes no `id`; Authorize **claims** the entry for the client (`PairStore.claimFromPage`, no id); `pair` gains an `id` argument, required for a claimed browser entry, which binds it; machine clients unchanged |
+| Chain cap (C-OAUTH, C-OAUTH-WEB; R14) | `LIFETIME.refreshChainMaxMs` 365 d, `chainsOf`, `renewFromPage`, renewal on the page | all withdrawn (K1d); a chain ends only by reuse or entry revocation |
 | K1 `ENTRY_STATUS` | `ok`, `token-too-short`, `token-unconfigured` | `ok` only. The field stays, so `mcp/oauth/bearer-verifier.js` and `mcp/oauth-web/issue.js` (`status === ok`) are unchanged |
 | K1 `SETTINGS_REFUSAL` | `ref-duplicate`, `value-duplicate` | `token-duplicate` (PROPOSED, R3); plus R5's code if R5 is answered "refuse" |
 | K1 `TOKEN_VALUE.minChars`, `isTokenLongEnough` | 32 code points | withdrawn |
@@ -906,27 +927,8 @@ make one, so one comes only from a settings document edited by hand or a store e
   remote target: approval page, code exchange, grant saved, no token value anywhere in Fishball);
   REM-UC-01's precondition and REM-EP-02/03 (a token in core's settings) are rewritten to Connect.
 
-**Open product questions (R11–R14, raised 2026-11-15; recommendations in brackets).** R1–R10
-are answered (requirements 1.28–1.31).
-- **R11. A new hosted token after the user deleted the hosted entry.** R6 = B forbids an automatic
-  one, and 1.31 makes the import the hosted child's only source. What does the user do? Offer a
-  button with the notice, "Import a new token", that runs the import once on the user's click
-  (still generated, never typed); or let the hosted child use Connect as standalone does?
-  *[The button: the import stays the only hosted source, and nothing happens without the user.]*
-- **R12. Core's `client_id` for Connect.** The connector accepts only CIMD clients on public
-  `https:` hosts (R-OA-13). The adapter makes the user host the document (Q-S7C-2 = C). Same for
-  core (a required `connect.clientMetadataUrl` setting), or one document the Fishball project
-  publishes at a fixed URL? *[One published document at a fixed project URL: Connect then needs
-  no setup; a user setting can override it.]*
-- **R13. The id typed on the approval page.** The page binds the entry to the id the user types
-  (R-OA-12), but core has its own `identity.id` (R-ID-10). Show core's `identity.id` in Fishball
-  next to Connect for the user to copy, and refuse the grant if the page bound another id; or adopt
-  whatever id was typed? *[Show it and check it: the id stays core's, and a mistyped id fails at
-  once instead of later.]*
-- **R14. After the grant's 365-day limit** the renewal needs the token typed again (R-OA-16 (7)),
-  but nobody can see it any more. Delete the entry and New token plus Connect again (R4's rule), or
-  let a renewal with the same client and id pass the page without a token? *[Delete plus New token
-  plus Connect: no new rule, and the token stays the security boundary.]*
+**R11–R14 answered (requirements 1.32).** Every product question still open after them is
+collected, with options, in `.runtime/reports/v3-open-questions.md` (2026-11-16 sweep).
 
 ## 5a. The Fishball plugin set in any DSH
 
@@ -1115,15 +1117,18 @@ request to a server that is not a Fishball connector.
    with `code_verifier` and `resource`, and saves the grant once (R9, §5.4).
 5. Core's link connects with the access token and refreshes it per R-OA-16; `invalid_grant` drops
    the grant and shows **Connect** again, once, with no retry loop.
-- The page has already bound the entry to the typed id (R-OA-12), so core calls no `pair`; the
-  `already-paired` warning of R-ID-07 is a hosted-only path now. Core still reports its name with
-  `set_name` when the page left it empty (R-NAME).
+- **R13 (1.32):** right after the code exchange core calls `pair` with its `identity.id`, as in
+  hosted mode (R-OA-22, R-ID-07); `id-taken` and `already-paired` keep their hosted-mode handling.
+  Core reports its name with `set_name` when the page left it empty (R-NAME).
+- **R12 = B (1.32):** `connect.clientMetadataUrl` is a required core setting with no default, a
+  user-hosted CIMD document (the adapter's README template applies, with core's loopback callback
+  in `redirect_uris`). Without it Connect reports `needs-configuration` and sends nothing.
+- **R14 (1.32):** no chain cap, so a Connect grant lives until it is revoked; no renewal step.
 - A hosted child with a remote target uses the same Connect; the callback listens on the child's
   loopback, on the same machine as the user's browser.
 
-**Open points this creates** (§5.9 questions R12–R14): the `client_id` metadata document core uses,
-the id typed on the page versus core's `identity.id`, and renewal after the grant's 365-day limit
-when the token is no longer visible.
+R12–R14 are answered (requirements 1.32). The remaining product questions are collected in
+`.runtime/reports/v3-open-questions.md`.
 
 ### 6.4 Interception service and wake (R-INT, R-EVT-03; Q30 decided)
 
