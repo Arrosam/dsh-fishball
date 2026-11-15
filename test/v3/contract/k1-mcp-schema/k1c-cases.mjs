@@ -6,17 +6,15 @@ import { assertNoGeneratedSchema } from '../own-schema/absence.mjs'
  *
  * Each row is named "K1c-<technique>-<n> row <r> [SDK x] …" with one technique: EP, BVA or DT.
  * Level: unit over the loaded module's data, its declaration file and README read as text (as the
- * K1 and K1b rows), and over core's vendored copy loaded from packages/core/vendor/. ManagedState
+ * K1 and K1b rows). Core's vendored copy is gone (F-OWN-SCHEMA, design §1.0b row 1). ManagedState
  * has no implementation in K1c (C-ROUTE builds it), so no row drives its behaviour.
  *
- * Vendor byte equality: F-LINK's row "done 7" (test/v3/fishball-core/link/cases.mjs) runs the generator and
- * checks that every vendored file equals its connector source and the committed copy; it is not
- * repeated here. These rows check what K1c adds to the copy.
+ * Vendor byte equality was F-LINK's row "done 7"; F-OWN-SCHEMA removed the copy and its generator,
+ * and test/v3/contract/own-schema/ checks their absence.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { blankComments, model, splitTop } from '../k3-host-services/declarations.mjs'
 import { REPO } from '../../../support/constants.mjs'
 import { caseTest, declarationText } from './cases.mjs'
@@ -241,7 +239,7 @@ export function registerK1cCases(sdk) {
   })
 
   // ======================================================================================
-  // Spec 5: core's vendored copy (byte equality: F-LINK "done 7")
+  // Spec 5: core's vendored copy (withdrawn with the copy)
   // ======================================================================================
   // F-OWN-SCHEMA (design §1.0b row 1) withdraws both vendored-export rows.
   caseTest(sdk, 'K1c-EP-10', 1, 'core carries no generated schema', assertNoGeneratedSchema)

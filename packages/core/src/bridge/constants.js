@@ -19,6 +19,17 @@ const TOOL = MCP.tools
 const NAMESPACE = MCP.namespace
 const REFUSAL = MCP.refusal
 
+/**
+ * The operation names the X19 send gate is asked with (instance-extension-points §2.5, where the
+ * list is `SUPERVISION.sendOperations`). They are the gate's own vocabulary, not the connector's
+ * MCP surface, so they are not in `MCP`. They are spelled as the V2 contract's `OPERATION`, which
+ * the slim child's gate (slim/child/bridge.js) receives, but this façade may not import that
+ * contract (R-ARCH-10). After REMOVE-V2 this is the one definition. If a second Fishball-side
+ * party (a gate implementation) needs them, they move to `contracts/constants.js` by a K3
+ * amendment.
+ */
+const X19_OPERATION = Object.freeze({ sessionMessage: 'session.message', sessionRedirect: 'session.redirect' })
+
 /** K2's embed-UI alias namespace, keyed on its package name (design §13.3). */
 const EMBED_UI_NAMESPACE = NAMESPACE.aliases['dsh-connector-ui']
 
@@ -35,13 +46,9 @@ export const FACADE = Object.freeze({
   withheld: Object.freeze([TOOL.inboxPoll, TOOL.inboxAck, TOOL.pair, TOOL.setName]),
   /**
    * The manager→session sends the X19 send gate judges (instance-extension-points §2.5): each
-   * connector tool with the operation name the gate is asked with. The names are the X19 gate's
-   * own vocabulary, not the connector's MCP surface, so they are the façade's and not in `MCP`.
-   * They are spelled as the V2 contract's `OPERATION` (the slim child's gate in
-   * slim/child/bridge.js receives those), which this façade may not import (R-ARCH-10); REMOVE-V2
-   * leaves this the one definition.
+   * connector tool with the operation name the gate is asked with (`X19_OPERATION`).
    */
-  sendOperations: Object.freeze({ [TOOL.sessionMessage]: 'session.message', [TOOL.sessionRedirect]: 'session.redirect' }),
+  sendOperations: Object.freeze({ [TOOL.sessionMessage]: X19_OPERATION.sessionMessage, [TOOL.sessionRedirect]: X19_OPERATION.sessionRedirect }),
   /** The tools that bring image bytes into Fishball's context, behind the image gate. */
   imageTools: Object.freeze([TOOL.attachmentRead]),
   /** The argument of a send tool naming its target session (K1 `session_message` input). */

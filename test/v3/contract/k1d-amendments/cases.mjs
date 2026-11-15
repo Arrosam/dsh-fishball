@@ -15,7 +15,7 @@ import { assertNoGeneratedSchema } from '../own-schema/absence.mjs'
  * synchronous TypeError), State Transition is the owners' (todo rows).
  *
  * Level: unit over the frozen module (per SDK, the K1 harness), its declarations (K3's reader), the
- * READMEs, and core's generator run into a temp folder. The `retire` misuse rows drive the real
+ * READMEs, and (since F-OWN-SCHEMA) the absence of core's generated copy. The `retire` misuse rows drive the real
  * C-MAILBOX module through c-mailbox's own world (real DSH storage, no DSH child). Behaviour only a
  * later task can make runnable is `todo`, naming that task.
  */
@@ -23,7 +23,7 @@ import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { caseTest, todos } from '../k1-mcp-schema/cases.mjs'
-import { exportedStringsAndKeys, schemaModule, secondsAt } from '../k1-mcp-schema/schema-module.mjs'
+import { exportedStringsAndKeys, secondsAt } from '../k1-mcp-schema/schema-module.mjs'
 import { assertParams, member, serviceMembers, vocabulary } from '../k3-host-services/contracts.mjs'
 import { blankComments } from '../k3-host-services/declarations.mjs'
 import { FIXTURE as MBX, RETIREMENT_REASON, EVENT_TYPE } from '../../dsh-connector/mailbox/constants.mjs'
@@ -35,7 +35,7 @@ import {
   WITHDRAWN_MEMBER, WITHDRAWN_NAMES, WITHDRAWN_WORDS,
 } from './constants.mjs'
 import {
-  base32, codeLiterals, derivedIdParts, deriveId, frozenIdParts, docOf, exportedData, hasIdentifier, hostContracts, interfaceMembers, k1Declarations,
+  base32, codeLiterals, derivedIdParts, deriveId, frozenIdParts, docOf, hasIdentifier, hostContracts, interfaceMembers, k1Declarations,
   markdownBlocks, method, moduleIdPattern, readme, texts, typeValues,
 } from './subject.mjs'
 
@@ -414,7 +414,7 @@ function nameCases(sdk) {
 }
 
 // ================================================================================================
-// 8. Core's vendored copy (design §9.1; the generator's usage line)
+// 8. Core's vendored copy: removed by F-OWN-SCHEMA (design §1.0b row 1)
 
 // F-OWN-SCHEMA (design §1.0b row 1): no byte-equality/generator oracle remains.
 function vendorCases(sdk) {
