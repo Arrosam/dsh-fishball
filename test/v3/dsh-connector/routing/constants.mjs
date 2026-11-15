@@ -44,7 +44,7 @@ export const SUBJECT = Object.freeze({
   entry: process.env.FBTEST_C_ROUTE_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'routing', 'index.js'),
   open: 'openRouting',
   /** Members of the opened routing object the cases drive (subject.mjs). */
-  members: Object.freeze(['router', 'managed', 'handover', 'provide', 'messageAgent', 'askAgent', 'offer']),
+  members: Object.freeze(['router', 'managed', 'handover', 'provide', 'messageAgent', 'askAgent', 'offer', 'endPrincipal']),
   /** C-MAILBOX's entry and its two composition functions (as test/v3/dsh-connector/mailbox/subject.mjs binds them). */
   mailboxEntry: process.env.FBTEST_C_MAILBOX_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'mailbox', 'index.js'),
   mailboxOpen: 'openMailboxTables',
@@ -92,7 +92,7 @@ export const FALLBACK = Object.freeze({
  * named where a row relies on one.
  */
 export const RELAYED = Object.freeze({
-  revocation: 'Fishball 2026-11-14 #1: in W3 C-ROUTE ends management on TokenRegistry.onRevoked',
+  revocation: 'C-REVOKE step 1: routing.endPrincipal ends management; C-REVOKE\'s onRevoked handler calls it (routing no longer subscribes to onRevoked)',
   offerLedger: 'Fishball 2026-11-14 #2: C-ROUTE commits offers itself and keeps their live ledger',
   roomSignal: 'Fishball 2026-11-14 #3: the mailbox port signals freed room (onAcked)',
   askManagedOffline: 'Fishball 2026-11-14 #4: an ask from a session managed by an offline P waits in P\'s mailbox',

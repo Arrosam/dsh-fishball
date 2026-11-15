@@ -8,7 +8,9 @@
  * - `mailbox`: K1 `Mailbox` plus `onAcked(listener(principalKey, receipts)) → dispose`, fired after
  *   each successful `inbox_ack` with its receipts (the signal that frees room for held messages and
  *   marks offers acked). **C-WIRE and C-TOOLS must route every `inbox_ack` through this port.**
- * - `pairs` K1 `PairStore`; `tokens` K1 `TokenRegistry`; `presence` K1 `Presence`;
+ * - `pairs` K1 `PairStore`; `tokens` K1 `TokenRegistry` (read only: `get`; routing does not
+ *   subscribe to `onRevoked`, C-REVOKE calls `endPrincipal` from its own handler); `presence` K1
+ *   `Presence`;
  * - `settings`: `{get() → {agentToken?, maxQueuedInputs?}, onChange(fn) → dispose}`, the live
  *   `routing.agentToken` and `maxQueuedInputs` (unset = K1 QUEUE.maxQueuedInputs). K1
  *   `TokenRegistry` has no change event besides `onRevoked`, so a re-enable, an added or a removed
@@ -45,6 +47,8 @@ export { ROUTE_FALLBACK } from './constants.js'
 
 const UNAVAILABLE = Object.freeze({ ok: false, code: REFUSAL.unavailable })
 const OK = Object.freeze({ ok: true })
+/** `endPrincipal`'s answer for an entry with no current or last-seen pair: nothing was managed or live. */
+const NOBODY_ENDED = Object.freeze({ principalKey: undefined, sessions: Object.freeze([]), offers: Object.freeze([]) })
 
 /**
  * A detached copy of a caller's payload, taken as C-MAILBOX snapshots a draft (`structuredClone`).
@@ -62,7 +66,8 @@ function detachedPayload(payload) {
 
 /**
  * @returns {Promise<Routing>} see the module comment; members `router`, `managed`, `handover`,
- *   `provide`, `messageAgent`, `askAgent`, `offer`, `settle`, `withdraw`, `close`.
+ *   `provide`, `messageAgent`, `askAgent`, `offer`, `settle`, `withdraw`, `askDropped`,
+ *   `endPrincipal`, `close`.
  */
 export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, presence, settings, sessions, logger }) {
   const { tables, close: closeTables } = await openRoutingTables(ctx, storageDomain)
@@ -111,13 +116,9 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     return { route, committed }
   }
 
-  const ledger = createOfferLedger({ mailbox, produce })
-  managed = createManagedState({
-    table: tables.managed,
-    logger,
-    // The change stands even if a retirement fails (it is logged): the session is unmanaged either way.
-    leave: (sessionId, manager, reason) => ledger.retireSession(sessionId, manager, reason).catch(warn(LOG.retireFailed)),
-  })
+  // The change stands even if a retirement fails (it is logged): the session is unmanaged either way.
+  const ledger = createOfferLedger({ mailbox, produce, onRetireFailed: warn(LOG.retireFailed) })
+  managed = createManagedState({ table: tables.managed, logger, leave: ledger.retireSession })
 
   /** Moves held messages into the designated mailbox, in order, as far as they fit (K1c-3). */
   function flush() {
@@ -133,7 +134,10 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   /**
    * The pair each entry was last seen bound to, so a revocation still finds the manager after the
    * pair itself has been removed in the same sync (a delete frees the pair, R-ID-13). An entry is
-   * forgotten once its revocation is handled and the registry no longer lists it.
+   * forgotten once `endPrincipal` has ended its sessions and the registry no longer lists it. A
+   * `pairs.onChange` between that and the pair's removal (C-REVOKE removes it after the drop)
+   * remembers it again; it then stays as one stale record, tolerated because a deleted entry's key
+   * is never listed again, so nothing reads it.
    */
   const lastPair = new Map()
   const remember = () => { for (const pair of pairs.list()) lastPair.set(pair.entryKey, pair.principalKey) }
@@ -141,14 +145,6 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   disposers.push(managed.state.onChange(changed), presence.onChange(changed))
   disposers.push(pairs.onChange(() => { remember(); changed(); flush() }))
   disposers.push(settings.onChange(() => { changed(); flush() }))
-  // W3 (Fishball 2026-11-14 #1): a revoked entry's sessions become unmanaged and its live offers are
-  // retired `revoked` (R-ROUTE-06, R-TOK-05). The `system` note and the rest are C-REVOKE's.
-  disposers.push(tokens.onRevoked((entryKey) => {
-    changed()
-    const principalKey = pairs.pairOf(entryKey)?.principalKey ?? lastPair.get(entryKey)
-    if (tokens.get(entryKey) === undefined) lastPair.delete(entryKey)
-    if (principalKey !== undefined) managed.endAllOf(principalKey, RETIREMENT_REASON.revoked).catch(warn(LOG.retireFailed))
-  }))
 
   disposers.push(mailbox.onAcked((principalKey, receipts) => {
     ledger.markAcked(principalKey, receipts)
@@ -295,6 +291,48 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      * @returns whether the ask was live
      */
     askDropped: (offerId) => managed.withState(async () => ledger.settle(offerId, UNAVAILABLE)),
+
+    /**
+     * C-REVOKE step 1 (R-ROUTE-06, R-TOK-05, R-WATCH-01): the revoked entry's principal stops
+     * managing every session, and each of their live offers is retired `revoked`. C-REVOKE calls
+     * it from its own `onRevoked` handler (routing no longer subscribes, W4 brief G1), because a
+     * delete must drop the mailbox only after these retirements, and a listener cannot be awaited.
+     * The principal is the entry's pair, or the pair it was last seen bound to when the same sync
+     * removed it (`lastPair`). An `ask` is not retired: on disable its asker keeps waiting; on a
+     * delete C-REVOKE answers it through `askDropped` after the drop.
+     * @param options.freshRetirements - `true` for a disable (an acked offer gets a fresh
+     *   `retirement` in the held box, pollable on re-enable); `false` for a delete (the box is
+     *   dropped next, so nothing is committed for an acked offer; offers.js)
+     * @returns once every retirement has run (a failed one is logged and still listed):
+     *   `{principalKey, sessions, offers}`, the sessions it ended and their retired offers
+     *   (`{offerId, sessionId, type}`), so C-REVOKE writes one note per session and hands each offer
+     *   to the user;
+     *   `{principalKey: undefined, sessions: [], offers: []}` when it knows no current or last-seen pair
+     * @throws TypeError (synchronously) for a bad entry key or options (a caller bug)
+     * @throws (rejects) the managed table's storage error (`endAllOf`): the sessions before it are
+     *   ended, the rest stay managed, and the entry's last pair is kept, so a repeat call finds them.
+     *   C-REVOKE must then not drop the mailbox (the drop follows the retirements only).
+     */
+    endPrincipal(entryKey, options) {
+      if (!isNonEmptyString(entryKey)) throw new TypeError(MISUSE.entryKey)
+      if (typeof options?.freshRetirements !== 'boolean') throw new TypeError(MISUSE.freshRetirements)
+      // The entry's state changed (K3 onChange: entry state), and a revocation from a credential-store
+      // sync (TokenRegistry.refresh) never passes `settings.onChange`, so this is its only signal.
+      changed()
+      const principalKey = pairs.pairOf(entryKey)?.principalKey ?? lastPair.get(entryKey)
+      // Forgotten only once handled, so a call that rejects can be repeated (see lastPair).
+      const forget = () => { if (tokens.get(entryKey) === undefined) lastPair.delete(entryKey) }
+      if (principalKey === undefined) return Promise.resolve(NOBODY_ENDED)
+      const leaveOptions = Object.freeze({ freshRetirements: options.freshRetirements })
+      return managed.endAllOf(principalKey, RETIREMENT_REASON.revoked, leaveOptions).then((ended) => {
+        forget()
+        return Object.freeze({
+          principalKey,
+          sessions: Object.freeze(ended.map(({ sessionId }) => sessionId)),
+          offers: Object.freeze(ended.flatMap(({ left }) => left)),
+        })
+      })
+    },
 
     async close() {
       for (const dispose of disposers.splice(0)) dispose?.()
