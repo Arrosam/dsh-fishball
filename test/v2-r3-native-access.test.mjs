@@ -2,7 +2,7 @@
  * Round-2 BUG 3 — the native runtime admits the embed again after an in-process stop+start.
  *
  * Requirement R3 (round-2 brief): on the SAME runtime object (createNativeRuntime of
- * packages/instance/src/native-runtime/index.js), after shutdown() — or parentExit() + shutdown() —
+ * packages/dsh-instance/src/native-runtime/index.js), after shutdown() — or parentExit() + shutdown() —
  * followed by a new start(), and after restart(), nativeEmbedAccess() resolves again for the new
  * generation (generation equals the new instance id; not NOT_RUNNING / NOT_READY /
  * NATIVE_ACCESS_UNAVAILABLE), and an admission obtained before the stop has an aborted signal.

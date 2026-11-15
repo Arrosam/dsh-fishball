@@ -2,7 +2,7 @@
  * The isolated child's admin service (§9, §15 T11).
  *
  * The main settings page reads and changes the child's model, plugins and settings through the
- * admin relay (fishball-instance src/slim/host/admin.js). This module is the child half: it serves the admin wire
+ * admin relay (dsh-instance src/slim/host/admin.js). This module is the child half: it serves the admin wire
  * protocol (fishball-shared/admin-protocol) and applies every operation with the child's own
  * mounted DSH services.
  *
@@ -31,7 +31,7 @@ import {
   ADMIN, ADMIN_APPLICATIONS, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS,
   AdminFailure, createAdminProtocol, refuse, refusal, refusalOf,
 } from 'fishball-shared/admin-protocol'
-import { DIGEST, STATUS, STATUS_CODES } from 'fishball-connector/contract'
+import { DIGEST, STATUS, STATUS_CODES } from 'dsh-connector/contract'
 
 export { ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS, AdminFailure, refusal, refusalOf }
 export const { validateRequest, validateResult, createAdminCodec } = createAdminProtocol({ DIGEST, STATUS, STATUS_CODES })

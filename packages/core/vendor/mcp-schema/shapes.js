@@ -1,6 +1,6 @@
 /**
  * Shared JSON Schema shapes of the core tools and events (task K1). They restate the V2 domain's
- * payloads (contract 1.2 §4–§5, `packages/connector/contract/contract.js`) as MCP tool schemas,
+ * payloads (contract 1.2 §4–§5, `packages/dsh-connector/contract/contract.js`) as MCP tool schemas,
  * timer-free (no `expiresAt` on a descriptor, D1) and without the V2 watch fields (R-WATCH-03).
  * Bounds that the subset cannot express (lengths, counts, bytes) stay the domain's checks against
  * the V2 `LIMITS` and the connector settings, with the codes contract 1.2 names.
@@ -79,7 +79,7 @@ export const grantSummary = () => object(
 export const delivery = () => oneOfStrings(Object.values(DELIVERY))
 export const promptDecision = () => oneOfStrings(PROMPT_DECISIONS)
 
-/** The pending summary of the caller's own mailbox (design §3.3): `resources/read fishball://events`. */
+/** The pending summary of the caller's own mailbox (design §3.3): `resources/read dsh-agent://events`. */
 export const mailboxSummary = () => object({ pending: integer(), headSequence: integer(), mailboxGeneration: string() })
 
 /**

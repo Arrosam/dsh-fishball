@@ -25,7 +25,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ENVELOPE, ERROR, ROLE } from 'fishball-connector/contract'
+import { ENVELOPE, ERROR, ROLE } from 'dsh-connector/contract'
 import { ELLIPSIS, LIMITS_R11 } from './support/constants.mjs'
 import { HOOK, T } from './support/expect.mjs'
 import { bootStub, stopStub } from './support/instance-stub.mjs'

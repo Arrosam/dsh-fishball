@@ -1,7 +1,7 @@
 /**
  * Shared set-up for the rev11c files (your pile, buttons, tags; DESIGN §7a.6, §10e, §9): one booted host with the
  * scripted stock prompt after the broker (FBTEST_APPROVER_AFTER=1), Fishball live, and helpers that bring a
- * managed session's ask_fishball request into the pile (Fishball's fake model escalates it from a plan).
+ * managed session's ask_agent request into the pile (Fishball's fake model escalates it from a plan).
  * Expected values come from the requirements and DESIGN, never from the implementation.
  */
 import assert from 'node:assert/strict'
@@ -54,7 +54,7 @@ export function pileTools(ctx, { tok, cid }) {
     },
     /** The final result of the call with this id in a session started with driveStart. */
     async answered(sid, id) { const r = await resultOfCall(ctx.host, sid, id, 15000); assert.ok(r, 'a result for ' + id); return r.json },
-    /** Start a turn whose ask_fishball waits for Fishball (no plan); returns the request id once its notice arrived. */
+    /** Start a turn whose ask_agent waits for Fishball (no plan); returns the request id once its notice arrived. */
     async waiting(sid, text, id, after = [], opts) {
       await settledIdle(ctx.host, sid)
       await ctx.host.call('driveStart', { sessionId: sid, script: [askStep(t.askArgs({ text }, { why: 'why ' + text, ...opts }), id), ...after, [{ text: 'done' }]] })

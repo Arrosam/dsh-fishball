@@ -24,7 +24,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, it } from 'node:test'
-import { ENVELOPE, OPERATION } from 'fishball-connector/contract'
+import { ENVELOPE, OPERATION } from 'dsh-connector/contract'
 import { OUTCOME, PREFIX_TOOLS } from './support/constants.mjs'
 import { HOOK, T } from './support/expect.mjs'
 import { STUB, handOver, managedSession, stopStub, takeBack } from './support/instance-stub.mjs'

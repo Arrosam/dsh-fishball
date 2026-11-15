@@ -17,7 +17,7 @@ import { pathToFileURL } from 'node:url'
 import { REPO } from '../../support/constants.mjs'
 import { HARNESS, SKILL_SDK } from './constants.mjs'
 
-const INSTANCE_DIR = path.join(REPO, 'packages', 'instance')
+const INSTANCE_DIR = path.join(REPO, 'packages', 'dsh-instance')
 const REPO_URL = pathToFileURL(REPO + path.sep).href
 const NODE_SCHEME = 'node:'
 /** Only DSH's own packages are taken from the selected SDK. */
@@ -49,7 +49,7 @@ function install() {
   })
 }
 
-/** Import a packages/instance module bound to one installed SDK version. */
+/** Import a packages/dsh-instance module bound to one installed SDK version. */
 export function importInstance(version, relative) {
   install()
   return import(tagged(pathToFileURL(path.join(INSTANCE_DIR, relative)).href, version))

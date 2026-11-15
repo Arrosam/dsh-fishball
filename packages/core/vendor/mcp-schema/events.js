@@ -16,7 +16,7 @@ export const CONTRIBUTED_PAYLOAD_SCHEMA = frozen(contributedPayload())
 /** One mailbox event, as `inbox_poll` returns it. */
 export const MAILBOX_EVENT_SCHEMA = frozen(mailboxEvent())
 
-/** `resources/read fishball://events` contents: the summary only, never bodies (design §3.3). */
+/** `resources/read dsh-agent://events` contents: the summary only, never bodies (design §3.3). */
 export const MAILBOX_SUMMARY_SCHEMA = frozen(mailboxSummary())
 
 /** The payload schema of a `type`, or `undefined` for an unknown one. */

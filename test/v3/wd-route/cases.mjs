@@ -334,7 +334,7 @@ function partitions(sdk) {
     await judged(w)
     await judged(w, ESCALATE)
     await judged(w, TO_FISHBALL)
-    assert.equal(w.link.listeners, 0, 'Watchdog listens to fishball://events itself')
+    assert.equal(w.link.listeners, 0, 'Watchdog listens to dsh-agent://events itself')
     assert.deepEqual(w.link.calls.filter((c) => NOT_WATCHDOGS.includes(c.name)), [], 'Watchdog polled, acked or paired on its own')
     assert.deepEqual([...new Set(w.link.calls.map((c) => c.name))], [TOOL.approvalAnswer], 'Watchdog called other tools than approval_answer')
   })

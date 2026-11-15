@@ -16,7 +16,7 @@ import { EMBED_UI } from '../support/constants.mjs'
 import { FIXTURE as SDK_FIXTURE } from '../support/provider-sync-official.mjs';
 
 // Native settings are the editor. SET owns only lifecycle/notice/links in the child; model sync is
-// main-only (user decision 2026-11-11): it runs from the main fishball-instance card's owner routes.
+// main-only (user decision 2026-11-11): it runs from the main dsh-instance card's owner routes.
 // Component observations need real fixtures, never a fake passing policy model.
 const CONTEXT = Object.freeze({
   task: 'SET',
@@ -46,7 +46,7 @@ export const CASES = Object.freeze([
   },
   {
     id: 'SET-UC-03', title: 'Preview and add only selected missing API-key providers', technique: 'Use Case',
-    preconditions: ['Actor: owner on the main DSH fishball-instance card (the only sync entry point); ready child; disposable synthetic inventory and credentials only.', FIXTURE.providerA, FIXTURE.providerB, 'Target has separate existing provider/key.'],
+    preconditions: ['Actor: owner on the main DSH dsh-instance card (the only sync entry point); ready child; disposable synthetic inventory and credentials only.', FIXTURE.providerA, FIXTURE.providerB, 'Target has separate existing provider/key.'],
     steps: ['Main: Check once; inspect missing provider metadata initially selected; deselect b; Add selected a; inspect per-entry result and fresh check.', 'Alternative: cancel/zero selection writes nothing; present/conflicting target retained.', 'Exception: unsupported auth, stale preview/source/child, concurrent Add, write failure or answer lost.'],
     expected: ['Only chosen provider/profile/key transferred create-only; unit of selection provider, not model.', 'Partial/unknown result truthful; no rollback/auto retry/default-model mutation; native child catalog reflects adds.', 'Browser receives no credentials.', FIXTURE.unchanged],
   },
@@ -205,7 +205,7 @@ export const HTTP_CASES = Object.freeze([
     id: 'SET-BVA-02', title: 'Enforce preview expiry at 299999 300000 and 300001 milliseconds', technique: 'BVA',
     source: `${CONTEXT.source}; direct user decision during case authoring: valid only age <300000 ms`,
     preconditions: ['Separate fixture per SDK and boundary, explicitly disposable/synthetic owner auth.', 'Preview clock externally frozen until confirm at ages 299999, 300000 and 300001 ms; ready same child/wire, source unchanged, no Add pending, selected supported missing provider.', 'No runtime clock/seed API invented and no real credentials or sleeps.'],
-    steps: ['POST documented /api/fishball-instance/models/add with fixture {checkId, ids}.', 'Parse JSON without assuming envelope nesting; locate selected provider id and outcome on the same record object.'],
+    steps: ['POST documented /api/dsh-instance/models/add with fixture {checkId, ids}.', 'Parse JSON without assuming envelope nesting; locate selected provider id and outcome on the same record object.'],
     expected: ['Age 299999: selected provider record outcome=added.', 'Age 300000 and 300001: exact preview-expired JSON string token; no provider record outcome=added. No undocumented HTTP status oracle.', 'HTTP guard response does not independently prove absence of credential read/write; SET-ST-02 remains component TODO for that observation.'],
     missing: 'SET: supply FBTEST_V2_SET_HTTP_FIXTURES with separate per-SDK disposable synthetic-auth previews frozen at 299999/300000/300001 ms until confirmation.',
   }),
@@ -213,7 +213,7 @@ export const HTTP_CASES = Object.freeze([
 
 const EXPIRY = Object.freeze({
   environment: 'FBTEST_V2_SET_HTTP_FIXTURES',
-  endpoint: 'api/fishball-instance/models/add',
+  endpoint: 'api/dsh-instance/models/add',
   method: 'POST',
   deadlineAgeMs: 300000,
   boundaryAgesMs: Object.freeze([299999, 300000, 300001]),
@@ -322,11 +322,11 @@ function boundaryAvailability(sdk) {
 
 const SET = Object.freeze({
   route: Object.freeze({
-    status: '/api/fishball-instance/status',
-    retry: '/api/fishball-instance/retry',
-    restart: '/api/fishball-instance/restart',
-    check: '/api/fishball-instance/models/check',
-    add: '/api/fishball-instance/models/add',
+    status: '/api/dsh-instance/status',
+    retry: '/api/dsh-instance/retry',
+    restart: '/api/dsh-instance/restart',
+    check: '/api/dsh-instance/models/check',
+    add: '/api/dsh-instance/models/add',
   }),
   method: Object.freeze({ get: 'GET', post: 'POST' }),
   base: 'http://dsh.internal',

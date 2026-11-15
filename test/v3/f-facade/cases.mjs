@@ -460,7 +460,7 @@ function externalNameCases(sdk) {
     return fn
   }
   rule('EP 1 (constants)', `the bridge's ${EXTERNAL.constants}.dot and .separator equal K2's EXTERNAL_NAME.replaced and .replacement`, async () => {
-    assert.equal(typeof K2.externalName, 'object', 'fishball-connector/tools exports no EXTERNAL_NAME')
+    assert.equal(typeof K2.externalName, 'object', 'dsh-connector/tools exports no EXTERNAL_NAME')
     const constants = await bridgeExport(sdk, EXTERNAL.constants)
     assert.deepEqual([constants?.dot, constants?.separator], [K2.externalName.replaced, K2.externalName.replacement])
   })

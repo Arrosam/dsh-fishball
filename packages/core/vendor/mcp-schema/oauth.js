@@ -82,10 +82,10 @@ const quoted = (value) => `"${value}"`
 
 /**
  * The `WWW-Authenticate` value of the MCP endpoint's 401 and 403 (R-TOK-01, R-ID-06).
- * - no token presented: `Bearer scope="fishball", resource_metadata="…"`;
+ * - no token presented: `Bearer scope="agent", resource_metadata="…"`;
  * - an invalid one: the same with `error="invalid_token"` first;
  * - a pair-only token on a full-power call: `error="insufficient_scope"`, the reason as
- *   `error_description`, then `scope="fishball"` (the scope needed, never `fishball:pair`, [spec]).
+ *   `error_description`, then `scope="agent"` (the scope needed, never `agent:pair`, [spec]).
  * The parameter order is BEARER_CHALLENGE.params, so equal inputs give byte-identical headers.
  * Only the frozen error and reason words are written; any other value is dropped, so no caller
  * text can break the header's quoting (RFC 6750 §3).

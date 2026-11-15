@@ -4,7 +4,7 @@
  * A card record (`plugin:fishball/card-record`, v1, contract card-record.js) is projected by the
  * child's chat (src/slim/child/chat.js, ENTRY_KIND.record) and drawn here as one collapsed row
  * that expands to the card's details. The connector draws the same record in a managed session's
- * view (packages/embed-ui/src/client/client.records.js), but that module is a React component loaded by
+ * view (packages/dsh-connector-ui/src/client/client.records.js), but that module is a React component loaded by
  * DSH's client module loader, and this page has neither (§0.9 U6). What the two share is the
  * record schema and the words: the page's dictionaries (ui/i18n.js) repeat the connector's
  * `record.*` entries key for key in both languages, and the row shows the same fields in the same

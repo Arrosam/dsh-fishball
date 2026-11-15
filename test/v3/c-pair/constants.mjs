@@ -4,9 +4,9 @@
  * NAME-EP-01, NAME-EP-02, NAME-EP-03, NAME-EP-04, NAME-BVA-01, NAME-BVA-03, NAME-DT-01, NAME-DT-02,
  * NAME-ST-01 (rows 1–7).
  *
- * Every product value comes from K1, `fishball-connector/mcp-schema`: the runtime constants and
+ * Every product value comes from K1, `dsh-connector/mcp-schema`: the runtime constants and
  * rules from `index.js`, and the `PairStore` member list from the frozen `index.d.ts` (types only,
- * so it is read from the declaration text). Nothing comes from `packages/connector/src/pairs/`.
+ * so it is read from the declaration text). Nothing comes from `packages/dsh-connector/src/pairs/`.
  * The rest is case data (the ids, names and inputs the case tables name) and fixture keys, which
  * are not product values.
  */
@@ -14,7 +14,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {
   ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, nameKey, principalLabel,
-} from '../../../packages/connector/mcp-schema/index.js'
+} from '../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export { ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, nameKey, principalLabel }
@@ -27,7 +27,7 @@ export { ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TI
  * reason}`. FBTEST_C_PAIR_ENTRY moves the entry (e.g. to the dev checkout).
  */
 export const SUBJECT = Object.freeze({
-  entry: process.env.FBTEST_C_PAIR_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'pairs', 'index.js'),
+  entry: process.env.FBTEST_C_PAIR_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'pairs', 'index.js'),
   open: 'openPairStore',
   power: 'powerOf',
   /** AUTH-ST-01 row 11: no operation of the store may undo a binding (R-ID-09: there is no unpair). */
@@ -36,7 +36,7 @@ export const SUBJECT = Object.freeze({
 
 
 /** K1's declaration of the internal interfaces; the `PairStore` members are read from it. */
-const K1_TYPES = path.join(REPO, 'packages', 'connector', 'mcp-schema', 'index.d.ts')
+const K1_TYPES = path.join(REPO, 'packages', 'dsh-connector', 'mcp-schema', 'index.d.ts')
 /** The member names of K1's `export interface PairStore { … }`, in declaration order. */
 export function pairStoreMembers() {
   const body = /export interface PairStore \{([\s\S]*?)\n\}/.exec(fs.readFileSync(K1_TYPES, 'utf8'))

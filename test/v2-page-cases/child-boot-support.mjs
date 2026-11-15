@@ -2,8 +2,8 @@
  * CHILD-BOOT shared harness (test-owned): the staged instance files and one real DSH web host per
  * call, used by child-boot.test.mjs and child-boot-reopen.test.mjs. Black box: nothing here reads
  * or fakes the product's client code or the SDK client context.
- * - stageInstance copies `<plugin>/packages/instance` (FBTEST_PLUGIN_DIR picks the checkout; default
- *   this repo) into the throwaway home, with fishball-connector linked beside it (since R-EMBED the
+ * - stageInstance copies `<plugin>/packages/dsh-instance` (FBTEST_PLUGIN_DIR picks the checkout; default
+ *   this repo) into the throwaway home, with dsh-connector linked beside it (since R-EMBED the
  *   instance ships its status line in src/child-settings/ itself, so no client file is copied).
  * - startHost spawns child-boot-host.mjs, which boots the selected SDK's own `web` profile with an
  *   overlay that appends the given rows after the native rows, as the instance's launch overlay does.
@@ -23,14 +23,14 @@ export const FIXTURES = path.join(REPO, 'test', 'support', 'fixtures')
 
 export const CHILD_BOOT = Object.freeze({
   hostScript: path.join(HERE, 'child-boot-host.mjs'),
-  /** Checkout whose packages/instance and packages/connector are booted (baseline runs). */
+  /** Checkout whose packages/dsh-instance and packages/dsh-connector are booted (baseline runs). */
   pluginRoot: process.env.FBTEST_PLUGIN_DIR ? path.resolve(process.env.FBTEST_PLUGIN_DIR) : REPO,
-  instancePackage: Object.freeze(['packages', 'instance']),
-  connectorPackage: Object.freeze(['packages', 'connector']),
-  connectorName: 'fishball-connector',
+  instancePackage: Object.freeze(['packages', 'dsh-instance']),
+  connectorPackage: Object.freeze(['packages', 'dsh-connector']),
+  connectorName: 'dsh-connector',
   /** Not part of a shipped snapshot; never copied into the stage. */
   stageSkip: Object.freeze(['node_modules', 'test']),
-  stageDir: 'fishball-instance-stage',
+  stageDir: 'dsh-instance-stage',
   stageModules: 'node_modules',
   /** The SDK's package scope, linked into the stage only for rows that import SDK packages. */
   sdkScope: '@deepseek-ai',
@@ -109,7 +109,7 @@ export function stageInstance(home, { runtime } = {}) {
   const stage = path.join(home, CHILD_BOOT.stageDir)
   fs.cpSync(source, stage, { recursive: true, filter: (from) => !CHILD_BOOT.stageSkip.includes(path.relative(source, from).split(path.sep)[0]) })
   // R-EMBED (4): the instance ships its status line in src/child-settings/ itself; no client copy.
-  // The instance imports fishball-connector/contract; in an install it is a sibling package.
+  // The instance imports dsh-connector/contract; in an install it is a sibling package.
   const modules = path.join(stage, CHILD_BOOT.stageModules)
   fs.mkdirSync(modules, { recursive: true })
   fs.symlinkSync(path.join(CHILD_BOOT.pluginRoot, ...CHILD_BOOT.connectorPackage), path.join(modules, CHILD_BOOT.connectorName))

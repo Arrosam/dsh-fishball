@@ -1,7 +1,7 @@
 /**
  * The inbox consumer in the isolated child (§5.2, §6.3, §15 T05/T06/T07).
  *
- * The main host pushes every message a managed session sent to Fishball - message_fishball,
+ * The main host pushes every message a managed session sent to Fishball - message_agent,
  * a hand-over note, a watch notice or a system item - through `inbox.push`. This row is the one
  * consumer that delivers those items into Fishball's own chat session. T09 owns its own
  * `[question answer ...]` and `[card closed ...]` system items and this consumer declines them,
@@ -18,7 +18,7 @@
  * - The bridge acks only after the chat row queued the turn. A transient failure is thrown, so
  *   the bridge refuses the item and the host keeps it queued for redelivery (§5.2).
  */
-import { ContractError, ERROR } from 'fishball-connector/contract'
+import { ContractError, ERROR } from 'dsh-connector/contract'
 import { CARD_CLOSED, QUESTION_ANSWER, RECORD_ITEM } from '../inbox-markers.js'
 import { CARD_RECORD } from '../card-record.js'
 

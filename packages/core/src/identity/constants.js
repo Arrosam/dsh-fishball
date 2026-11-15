@@ -4,7 +4,7 @@
  *
  * The contract words are K1's, read through `../link/schema.js`: the scopes (`SCOPE`), the tool
  * names (`TOOL`), the refusal codes (`REFUSAL.alreadyPaired`, `idTaken`, `nameTaken`,
- * `nameInvalid`), `ID_REFUSAL.idInvalid`, the id grammar (`isFishballId`) and the name rules
+ * `nameInvalid`), `ID_REFUSAL.idInvalid`, the id grammar (`isAgentId`) and the name rules
  * (`normaliseName`, `principalLabel`). The link's statuses are the link's (`STATUS`).
  *
  * The settings rows are F-WIRE's (W3 brief, F-PAIR notes), so the defaults they need are exported

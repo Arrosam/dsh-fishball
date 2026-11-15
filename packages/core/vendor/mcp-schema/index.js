@@ -1,5 +1,5 @@
 /**
- * `fishball-connector/mcp-schema`: the frozen contract of the connector's MCP surface (task K1;
+ * `dsh-connector/mcp-schema`: the frozen contract of the connector's MCP surface (task K1;
  * design §3, §5.5, §5.5a, §5.8, §9.1, §11 V3-K). Data, pure builders and pure rules only: no DSH
  * import, no service, no state, no I/O. It loads in plain Node, because `fishball-core` vendors a
  * copy of it (design §9.1). The internal module interfaces W2 builds against are types only, in
@@ -22,7 +22,7 @@
  * - envelope.js: okResult, refusalResult;
  * - oauth.js: oauthUrls, protectedResourceMetadata, authorizationServerMetadata, tokenResponse,
  *   oauthErrorBody, bearerChallenge, invalidTokenChallenge, insufficientScopeChallenge;
- * - rules.js: isFishballId, normaliseName, checkName, nameKey, principalLabel, isTokenLongEnough,
+ * - rules.js: isAgentId, normaliseName, checkName, nameKey, principalLabel, isTokenLongEnough,
  *   formatOfferId, parseOfferId, isEventType.
  */
 export * from './constants.js'
@@ -34,5 +34,5 @@ export {
   invalidTokenChallenge, insufficientScopeChallenge,
 } from './oauth.js'
 export {
-  isFishballId, normaliseName, checkName, nameKey, principalLabel, isTokenLongEnough, formatOfferId, parseOfferId, isEventType,
+  isAgentId, normaliseName, checkName, nameKey, principalLabel, isTokenLongEnough, formatOfferId, parseOfferId, isEventType,
 } from './rules.js'

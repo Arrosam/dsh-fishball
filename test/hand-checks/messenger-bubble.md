@@ -96,7 +96,7 @@ There is no requirement-defined invalid bubble transition to invent. Existing pi
 
 ## Exact commands and red/green evidence
 
-Commands were handed to the parent for ask_fishball approval and execution. The test subagent did not execute shell directly. No full/system/server/browser/pack/install command was run for this regression.
+Commands were handed to the parent for ask_agent approval and execution. The test subagent did not execute shell directly. No full/system/server/browser/pack/install command was run for this regression.
 
 ### Green: current working-tree Messenger with new and existing focused regressions
 

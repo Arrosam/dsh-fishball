@@ -18,7 +18,7 @@
  * | DWT-05 | ST (target files deleted while DSH is down → restart) | DESIGN §5c "Target gone" | session.watches shows target-missing; no notice |
  * | INT-01 | ST (target's turn running → DSH killed → restart → the target's log is closed 'interrupted') | DESIGN §5c "`interrupted` (a crash) does not count" | no notice for the interrupted end; the watch stays active |
  * | QFL-01 | ST (maxQueuedInputs 1, one unacked item → target finishes → DSH restart → attach) | DESIGN §5c "keeps the watermark"; contract §9 | the notice is not lost: exactly one notice arrives after the restart |
- * | C1-EP-03 | EP (finished notice, no instance) | connector.md C1-EP-03; contract §9 | message_fishball with notify_when_finished is ok and queued; after the attach the finished notice (`watch`) is delivered once, after `m1` (`session`) |
+ * | C1-EP-03 | EP (finished notice, no instance) | connector.md C1-EP-03; contract §9 | message_agent with notify_when_finished is ok and queued; after the attach the finished notice (`watch`) is delivered once, after `m1` (`session`) |
  * | C1-P-06 | P (global arrival order) | connector.md C1-P-06; contract §9 | Hand over with note n1, then m1 with the flag, then the turn ends, then attach: `user` (n1 outside the untrusted block), `session` (m1), `watch`, each once |
  * | NIA-01 | ST (delivered → detach → attach) | contract §4.5, §9 "delivered once" | an acked notice is not pushed again after a reconnect |
  *
@@ -194,7 +194,7 @@ describe('P6 watches across restarts and without an instance (H-STUB)', () => {
     const kindsOf = async (needles) => (await stub().pushes()).map((f) => f.payload).filter((p) => needles.some((n) => p.text.includes(n)))
 
     let delivered
-    it('C1-EP-03 message_fishball with the flag and no instance: the notice is delivered once after the attach, after m1', LONG, async () => {
+    it('C1-EP-03 message_agent with the flag and no instance: the notice is delivered once after the attach, after m1', LONG, async () => {
       const sid = await managedSession(host(), 'c1-ep-03')
       await quietPushes(stub())
       await stub().detach()

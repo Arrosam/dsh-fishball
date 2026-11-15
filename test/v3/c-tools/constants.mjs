@@ -4,17 +4,17 @@
  * WATCH-UC-03, and the rows moved here from C-ROUTE (O8, Q-15): WATCH-UC-01 E1 and WATCH-ST-01
  * rows 7 and 8 (06-watch.md).
  *
- * Every product value is K1's (`fishball-connector/mcp-schema`: TOOLS, TOOL, REFUSAL, PAIR_ONLY,
- * MAILBOX, …) or the V2 contract vocabulary K1 reuses (`fishball-connector/contract`). The MCP
+ * Every product value is K1's (`dsh-connector/mcp-schema`: TOOLS, TOOL, REFUSAL, PAIR_ONLY,
+ * MAILBOX, …) or the V2 contract vocabulary K1 reuses (`dsh-connector/contract`). The MCP
  * error code of an unknown tool comes from the SDK under test (subject.mjs). The rest is fixture
  * data (ids, names, session ids) or the requirement words for the removed V2 tools.
  */
 import path from 'node:path'
-import { DECISION, RISK } from '../../../packages/connector/contract/contract.js'
+import { DECISION, RISK } from '../../../packages/dsh-connector/contract/contract.js'
 import {
   EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, PAIR_ADVICE, PAIR_ONLY, PROTOCOL, REFUSAL, RESOURCE, SCOPE, TOOL, TOOL_NAMES, TOOLS, formatOfferId,
   oauthUrls, toolDefinition,
-} from '../../../packages/connector/mcp-schema/index.js'
+} from '../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export {
@@ -27,10 +27,10 @@ export {
  * FBTEST_C_TOOLS_ENTRY / FBTEST_C_HTTP_ENTRY move them (another checkout).
  */
 export const SUBJECT = Object.freeze({
-  entry: process.env.FBTEST_C_TOOLS_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'mcp', 'tools', 'index.js'),
+  entry: process.env.FBTEST_C_TOOLS_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'mcp', 'tools', 'index.js'),
   /** The one factory that returns `populate(server, caller)` (subject.mjs states the assumed shape). */
   factory: /^create\w*Tools$/,
-  httpEntry: process.env.FBTEST_C_HTTP_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'mcp', 'http', 'index.js'),
+  httpEntry: process.env.FBTEST_C_HTTP_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'mcp', 'http', 'index.js'),
   gateFactory: 'createRequestGate',
   endpointFactory: 'createMcpEndpoint',
 })

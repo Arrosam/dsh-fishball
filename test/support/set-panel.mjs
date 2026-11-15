@@ -47,9 +47,9 @@ export const PANEL = Object.freeze({
   panelSlot: 'main',
   modules: Object.freeze({ react: 'react', reactDom: 'react-dom', primitives: '@deepseek-ai/dsh-client-ui-primitives' }),
   route: Object.freeze({
-    status: 'api/fishball-instance/status',
-    retry: 'api/fishball-instance/retry',
-    restart: 'api/fishball-instance/restart',
+    status: 'api/dsh-instance/status',
+    retry: 'api/dsh-instance/retry',
+    restart: 'api/dsh-instance/restart',
   }),
   status: Object.freeze({
     ready: Object.freeze({ state: 'ready', code: null }),

@@ -18,7 +18,7 @@ const SDK_TAG = 'sdk'
 const SDK_TAG_PATTERN = /[?&]sdk=([^&]+)/
 const REPO_ROOT = new URL('../../../', import.meta.url).href
 const HOST_SPECIFIER = /^(@deepseek-ai\/|zod(\/|$))/
-const MODULE_URL = new URL('../../../packages/connector/src/schema-value/index.js', import.meta.url)
+const MODULE_URL = new URL('../../../packages/dsh-connector/src/schema-value/index.js', import.meta.url)
 const ORACLE_SPECIFIER = '@deepseek-ai/dsh-tools'
 const ROOT = '$'
 

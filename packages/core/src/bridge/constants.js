@@ -21,7 +21,7 @@ import { EXTERNAL_NAME, NAME_GRAMMAR, NAMESPACE } from '../../vendor/tools/const
 import { OPERATION } from '../../vendor/contract/contract.js'
 
 /** K2's embed-UI alias namespace, keyed on its package name (design §13.3). */
-const EMBED_UI_NAMESPACE = NAMESPACE.aliases['fishball-embed-ui']
+const EMBED_UI_NAMESPACE = NAMESPACE.aliases['dsh-connector-ui']
 
 export const FACADE = Object.freeze({
   /** The link's public members the façade uses (O4: nothing else of `src/link/`). */

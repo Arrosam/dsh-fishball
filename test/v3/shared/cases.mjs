@@ -136,10 +136,10 @@ export function registerSharedCases(sdk) {
   })
 
   // ---- rows 1 and 2 (= HOST-EP-03 row 1): core and the instance never reach each other ----
-  caseTest(sdk, 'PLAT-EP-07', 1, 'fishball-instance (and any bundle it ships) imports or depends on fishball-core: never', async () => {
+  caseTest(sdk, 'PLAT-EP-07', 1, 'dsh-instance (and any bundle it ships) imports or depends on fishball-core: never', async () => {
     await assertNoEdges(V3.instance.name, [V3.core.name])
   })
-  caseTest(sdk, 'PLAT-EP-07', 2, 'fishball-core imports or depends on fishball-instance: never', async () => {
+  caseTest(sdk, 'PLAT-EP-07', 2, 'fishball-core imports or depends on dsh-instance: never', async () => {
     await assertNoEdges(V3.core.name, [V3.instance.name])
   }, has(V3.core) ? undefined : LATER.core)
   caseTest(sdk, 'HOST-EP-03', 1, 'neither core nor the instance imports the other; both import fishball-shared', async () => {
@@ -227,8 +227,8 @@ export function registerSharedCases(sdk) {
   caseTest(sdk, 'PLAT-EP-07', '7c', 'the feature plugins import and depend on no fishball-core module', async () => {
     for (const name of FEATURES) await assertNoEdges(name, [V3.core.name])
   })
-  caseTest(sdk, 'PLAT-EP-07', '7c', 'the feature plugins name no fishball-instance peer (they find core through the optional fishballInstance? inject)', null, LATER.featurePeers)
-  caseTest(sdk, 'PLAT-EP-07', '7c', 'embed-UI imports no connector code (only fishball-connector/tools)', async () => {
+  caseTest(sdk, 'PLAT-EP-07', '7c', 'the feature plugins name no dsh-instance peer (they find core through the optional fishballInstance? inject)', null, LATER.featurePeers)
+  caseTest(sdk, 'PLAT-EP-07', '7c', 'embed-UI imports no connector code (only dsh-connector/tools)', async () => {
     const unit = await unitOf(V3.embed.name)
     const code = edgesTo(unit, V3.connector.name).filter((r) => !EMBED_CONNECTOR_ALLOWED.includes(r.specifier)).map(describeRef)
     assert.deepEqual(code, [])

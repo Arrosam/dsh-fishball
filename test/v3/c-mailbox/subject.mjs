@@ -1,5 +1,5 @@
 /**
- * The one place that binds the cases to C-MAILBOX's module (`packages/connector/src/mailbox/`).
+ * The one place that binds the cases to C-MAILBOX's module (`packages/dsh-connector/src/mailbox/`).
  *
  * K1 freezes the `Mailbox` interface (commit, poll, ack, summary, retire, hold, release, drop) and
  * C-HTTP's `HintSink` (index.d.ts). The module's entry (mailbox/index.js) composes it in two steps,
@@ -55,7 +55,7 @@ const ENTRY = Object.freeze({ openTables: 'openMailboxTables', create: 'createMa
 
 /** The module's two entry points, bound to `sdk` (its `@deepseek-ai/*` imports resolve to that SDK). */
 async function moduleFor(sdk) {
-  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-MAILBOX "Owns" packages/connector/src/mailbox/)`)
+  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-MAILBOX "Owns" packages/dsh-connector/src/mailbox/)`)
   linkContractForSourceRun()
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
   for (const name of Object.values(ENTRY)) assert.equal(typeof mod[name], 'function', `mailbox/index.js does not export ${name}()`)

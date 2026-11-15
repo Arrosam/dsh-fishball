@@ -13,7 +13,7 @@
  *                              (a JSON array of patch ops, removed when that child stops)
  *   launchOverlayExport()      an async `launchOverlay(paths, …)` whose ops come from the relayed
  *                              `composedProfile({mainHome: paths.mainHome, installAnchor})` of
- *                              fishball-instance/native-runtime (dev a10a6774); the V2 pure
+ *                              dsh-instance/native-runtime (dev a10a6774); the V2 pure
  *                              `launchOverlay(…, entries)` refused an empty `entries` list
  *                              (UNSUPPORTED_PROFILE)
  *   placedCopy(H, name, dir)   <profile>/<dir>/<name> for dir in vendor, node_modules

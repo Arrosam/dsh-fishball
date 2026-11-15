@@ -1,5 +1,5 @@
 /**
- * The instance imports `fishball-connector/contract` (docs/package-layout.md §5). In the repo the
+ * The instance imports `dsh-connector/contract` (docs/package-layout.md §5). In the repo the
  * connector is not installed as its dependency, so a source-linked run needs the workspace-shaped
  * link at the repo root; the tarball install test resolves it as a sibling in the profile instead.
  *

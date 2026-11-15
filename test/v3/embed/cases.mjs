@@ -113,7 +113,7 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ R-EMBED (1): the minimal package
-  caseTest(sdk, 'R-EMBED', '(1)', 'fishball-embed-ui exists in packages/embed-ui (lowercase name, S4-Q3) and is a root workspace', () => {
+  caseTest(sdk, 'R-EMBED', '(1)', 'dsh-connector-ui exists in packages/dsh-connector-ui (lowercase name, S4-Q3) and is a root workspace', () => {
     const manifest = needEmbed()
     assert.equal(manifest.name, V3.embed.name)
     assert.ok(readManifest(REPO).workspaces?.includes(EMBED.workspace), 'root workspaces lack ' + EMBED.workspace)
@@ -125,10 +125,10 @@ export function registerEmbedCases(sdk) {
     assert.equal(manifest[DSH_FIELD]?.client?.platform, EMBED.platform, 'no dsh.client with platform web')
     assert.ok(exportKeys(manifest).includes(EMBED.clientExport), 'no ' + EMBED.clientExport + ' export')
   })
-  caseTest(sdk, 'R-EMBED', '(1)', 'fishball-instance is an optional peer of embed-UI, and every Fishball peer it names is optional', () => {
+  caseTest(sdk, 'R-EMBED', '(1)', 'dsh-instance is an optional peer of embed-UI, and every Fishball peer it names is optional', () => {
     const manifest = needEmbed()
     const peers = Object.keys(manifest[FIELD.peers] ?? {})
-    assert.ok(peers.includes(V3.instance.name), 'fishball-instance is not a peer')
+    assert.ok(peers.includes(V3.instance.name), 'dsh-instance is not a peer')
     const required = peers.filter((p) => p.startsWith(FISHBALL_PREFIX) && manifest[FIELD.peersMeta]?.[p]?.optional !== true)
     assert.deepEqual(required, [], 'Fishball peers not marked optional in ' + FIELD.peersMeta)
   })
@@ -157,7 +157,7 @@ export function registerEmbedCases(sdk) {
     const targets = Object.values(exports).flatMap((v) => (typeof v === 'string' ? [v] : Object.values(v ?? {})))
     assert.ok(targets.some((t) => typeof t === 'string' && t.startsWith(STATUS_LINE.exportTarget)), 'no instance export points into ' + STATUS_LINE.exportTarget + ': ' + JSON.stringify(exports))
   })
-  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI reaches the status line through a committed relative symlink to the file a fishball-instance export names (src/child-settings/)", async () => {
+  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI reaches the status line through a committed relative symlink to the file a dsh-instance export names (src/child-settings/)", async () => {
     needEmbed()
     const link = path.join(V3.embed.dir, STATUS_LINE.embedLink)
     assert.ok(fs.lstatSync(link, { throwIfNoEntry: false })?.isSymbolicLink(), STATUS_LINE.embedLink + ' is not a symlink')
@@ -167,7 +167,7 @@ export function registerEmbedCases(sdk) {
     assert.match(stdout, GIT.symlinkMode, 'the symlink is not committed as a symlink: ' + JSON.stringify(stdout))
     const exported = Object.values(manifestOf(V3.instance).exports ?? {})
       .filter((t) => typeof t === 'string' && t.startsWith(STATUS_LINE.exportTarget)).map((t) => fs.realpathSync(path.join(V3.instance.dir, t)))
-    assert.ok(exported.includes(fs.realpathSync(link)), 'the symlink resolves to ' + fs.realpathSync(link) + ', which no fishball-instance export into ' + STATUS_LINE.exportTarget + ' names')
+    assert.ok(exported.includes(fs.realpathSync(link)), 'the symlink resolves to ' + fs.realpathSync(link) + ', which no dsh-instance export into ' + STATUS_LINE.exportTarget + ' names')
   })
   caseTest(sdk, 'R-EMBED', '(2)', 'no shipped JS file of embed-UI is a byte copy of a file the instance or the connector ships (moved, one owner)', async () => {
     needEmbed()
@@ -262,12 +262,12 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ definition of done, integration
-  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the main DSH boots with no client-loader error and its only Fishball client entry is fishball-embed-ui', async () => {
+  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the main DSH boots with no client-loader error and its only Fishball client entry is dsh-connector-ui', async () => {
     const { host } = await hostWith(sdk, SETS.full)
     assert.deepEqual(loaderErrors(host), [], 'client-loader errors')
     assert.deepEqual((await hostGraph(host)).map((e) => e.id).filter(FISHBALL_ENTRY), [V3.embed.name])
   })
-  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the V2 contributions and a Plugins card render from fishball-embed-ui, with no failed plugin or page error', async (t) => {
+  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the V2 contributions and a Plugins card render from dsh-connector-ui, with no failed plugin or page error', async (t) => {
     const { host } = await hostWith(sdk, SETS.full)
     const page = await openMainPage(t, { sdk, host })
     // Attribution is by serving package: a registration belongs to the graph entry whose served

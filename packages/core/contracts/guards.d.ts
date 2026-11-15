@@ -14,7 +14,7 @@
 /** Root rows core's patch disables (session-creating rows, and no nested hosted Fishball). */
 export type GuardedRow =
   | 'ui-subagent' | 'ui-schedule' | 'schedule' | 'ui-permission' | 'ui-agent-preset' | 'entry-customization'
-  | 'ui-open-in-app' | 'open-in-app' | 'ui-sidebar-terminal' | 'terminal-controller' | 'fishball-instance'
+  | 'ui-open-in-app' | 'open-in-app' | 'ui-sidebar-terminal' | 'terminal-controller' | 'dsh-instance'
 
 /** DSH-shipped agent preset rows: switched off by core's patch, never deleted (1.24, Q-S6-2 B). */
 export type ShippedPresetRow = 'preset-standard' | 'preset-ptc' | 'preset-cordis' | 'preset-minimal'

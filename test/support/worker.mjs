@@ -83,7 +83,7 @@ function pluginPackages() {
   const target = process.env.FBTEST_PLUGIN_DIR
   if (!target) return [CONNECTOR, INSTANCE]
   const pkg = JSON.parse(fs.readFileSync(path.join(target, 'package.json'), 'utf8'))
-  if (pkg.workspaces) return [{ name: CONNECTOR.name, dir: path.join(target, 'packages', 'connector') }, { name: INSTANCE.name, dir: path.join(target, 'packages', 'instance') }]
+  if (pkg.workspaces) return [{ name: CONNECTOR.name, dir: path.join(target, 'packages', 'dsh-connector') }, { name: INSTANCE.name, dir: path.join(target, 'packages', 'dsh-instance') }]
   // Old single-package checkout: one bundle holding both rows; there is no instance package to link.
   return [{ name: pkg.name, dir: target }]
 }
@@ -911,7 +911,7 @@ const ops = {
     return { disposed: Boolean(handle), live: Boolean(ctx.agents.get(sessionId)) }
   },
 
-  // ---- Revision 11 rev11b operations (ask_fishball, list_user_messages) ----
+  // ---- Revision 11 rev11b operations (ask_agent, list_user_messages) ----
   /** Every user/message of a live session in log order: DSH message id, source kind, rpc id and the whole text. */
   userMessageLog({ sessionId }) {
     return liveAgent(sessionId).session.snapshotEvents().filter((e) => e.type === 'user/message').map((e) => {

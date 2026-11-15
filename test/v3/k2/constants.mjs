@@ -1,5 +1,5 @@
 /**
- * Vocabulary for the K2 cases: the freeze of `fishball-connector/tools` (v3-tasks.md row K2,
+ * Vocabulary for the K2 cases: the freeze of `dsh-connector/tools` (v3-tasks.md row K2,
  * "resolves K flags in EXT"). The K-flagged EXT cases are EXT-UC-03, EXT-EP-01, EXT-BVA-01…04 and
  * EXT-DT-01 (docs/test-design/v3/07-contributors.md at `fb1cbd2`).
  *
@@ -11,9 +11,9 @@ import path from 'node:path'
 
 /** The frozen module, as consumers import it (R-CONN declared the subpath; K2 fills the folder). */
 export const TOOLS_MODULE = Object.freeze({
-  specifier: 'fishball-connector/tools',
+  specifier: 'dsh-connector/tools',
   /** Its folder in the connector package (the K2 "Owns" column). */
-  folder: path.join('packages', 'connector', 'tools'),
+  folder: path.join('packages', 'dsh-connector', 'tools'),
   /** Source and declaration files whose text carries the service signatures (types only). */
   textFile: /\.(?:c|m)?(?:js|ts)$/,
 })
@@ -29,7 +29,7 @@ export const API = Object.freeze({ version: 1, define: 'defineTool', error: 'Too
 export const SERVICE = Object.freeze({ register: 'register', emit: 'emit', mine: 'mine', ctxParam: /^\s*ctx\b/ })
 
 /** R-EXT-12 / S5-Q3: the contributor field in `tools/list`. */
-export const META_KEY = 'io.github.dsh-fishball/contributor'
+export const META_KEY = 'io.github.dsh-connector/contributor'
 /** R-EXT-10: the only protocol revision handed to `execute`. */
 export const PROTOCOL_VERSION = '2026-07-28'
 
@@ -41,7 +41,7 @@ export const REGISTER_CODE = Object.freeze({
 /** EmitRefusal (R-EXT-16…19, design §13.2). */
 export const EMIT_CODE = Object.freeze({
   unavailable: 'contributor-unavailable', invalid: 'event-invalid', tooLarge: 'payload-too-large',
-  noFishball: 'no-fishball', rateLimited: 'rate-limited', duplicate: 'duplicate', queueFull: 'queue-full',
+  noAgent: 'no-agent', rateLimited: 'rate-limited', duplicate: 'duplicate', queueFull: 'queue-full',
   closed: 'registry-closed',
 })
 /** The shared result vocabulary a contributor's result may use or get (R-EXT-07/08, design §9.1 and §13.5). */
@@ -146,9 +146,9 @@ export const EXTERNAL_NAME_AMEND = Object.freeze({
   value: Object.freeze({ replaced: '.', replacement: '__' }),
   modelName: /^[A-Za-z0-9_-]+$/,
   vendored: path.join('packages', 'core', 'vendor', 'tools', 'constants.js'),
-  readme: path.join('packages', 'connector', 'tools', 'README.md'),
+  readme: path.join('packages', 'dsh-connector', 'tools', 'README.md'),
   readmeExports: '## Exported names',
-  declaration: path.join('packages', 'connector', 'tools', 'index.d.ts'),
+  declaration: path.join('packages', 'dsh-connector', 'tools', 'index.d.ts'),
   declares: /export declare const EXTERNAL_NAME\b/,
   /** Local names with no, one and several dots (grammar-valid, EXT-EP-01 row 1's class). */
   locals: Object.freeze(['tool', 'attention.signal', 'a.b.c-d_e']),

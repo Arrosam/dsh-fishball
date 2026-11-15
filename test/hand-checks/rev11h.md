@@ -5,7 +5,7 @@ Merged: `rebuild/managed-sessions` (a9c492b), then `c811a89` (rev11h b416d3e mer
 ## Suite
 - First full run: 1802 tests, 1798 pass, 3 fail, 1 skipped.
   - OWN-01 (test bug, fixed): Session messages now has `stop_session` and `redirect_session` (the manager's settled choice), so `OWN_PLUGINS.messages.tools` in `test/support/constants.mjs` gained both.
-  - STP-02 (test bug, fixed): an `ask_fishball` call has no DSH approval event, so "settled cancelled" was asserted on the wrong thing. STP-02 now checks the call ended aborted; new STP-02b makes a direct call wait for Fishball and checks `approval/decided` is `cancelled`.
+  - STP-02 (test bug, fixed): an `ask_agent` call has no DSH approval event, so "settled cancelled" was asserted on the wrong thing. STP-02 now checks the call ended aborted; new STP-02b makes a direct call wait for Fishball and checks `approval/decided` is `cancelled`.
   - FLW-12 (rev11g, timing): failed once, passes alone (rev11g-flow: 62 pass with own-plugins). Not rev11h.
 - Added assertions for the settled choices: `stopped` true/false, decisions outcome `ok`/`idle`, outbox kind `redirect`.
 - Second full run: 1803 tests, 1802 pass, 0 fail, 1 skipped.

@@ -6,8 +6,8 @@
  * K1b rows K1b-UC-02 and K1b-DT-06, and the C-PAIR rows that named C-OAUTH (AUTH-UC-02, AUTH-UC-04,
  * AUTH-EP-03, AUTH-EP-06 row 9, AUTH-ST-01 row 14).
  *
- * Every product value comes from K1, `fishball-connector/mcp-schema` (index.js; the `RevocationKind`
- * words from the frozen index.d.ts, types only). Nothing comes from `packages/connector/src/mcp/oauth/`.
+ * Every product value comes from K1, `dsh-connector/mcp-schema` (index.js; the `RevocationKind`
+ * words from the frozen index.d.ts, types only). Nothing comes from `packages/dsh-connector/src/mcp/oauth/`.
  * The rest is case data (the ids, hosts and inputs the case tables name), HTTP's own vocabulary and
  * fixture keys, which are not product values.
  */
@@ -17,14 +17,14 @@ import path from 'node:path'
 import {
   APPROVAL_LISTENER, BEARER_CHALLENGE, CLIENT_AUTH, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS, HTTP_METHOD, HTTP_STATUS,
   LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS, OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, SCOPE, TIME_UNIT, TOKEN_ENDPOINT_LIMITS, TOKEN_RESPONSE_HEADERS, TOKEN_VALUE,
-  authorizationServerMetadata, isFishballId, oauthErrorBody, oauthUrls, protectedResourceMetadata, tokenResponse,
-} from '../../../packages/connector/mcp-schema/index.js'
+  authorizationServerMetadata, isAgentId, oauthErrorBody, oauthUrls, protectedResourceMetadata, tokenResponse,
+} from '../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export {
   APPROVAL_LISTENER, BEARER_CHALLENGE, CLIENT_AUTH, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS, HTTP_METHOD, HTTP_STATUS,
   LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS, OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, SCOPE, TIME_UNIT, TOKEN_ENDPOINT_LIMITS, TOKEN_RESPONSE_HEADERS, TOKEN_VALUE,
-  authorizationServerMetadata, isFishballId, oauthErrorBody, oauthUrls, protectedResourceMetadata, tokenResponse,
+  authorizationServerMetadata, isAgentId, oauthErrorBody, oauthUrls, protectedResourceMetadata, tokenResponse,
 }
 
 /**
@@ -33,7 +33,7 @@ export {
  * documents the assumed signatures). FBTEST_C_OAUTH_ENTRY moves the entry (e.g. to the dev checkout).
  */
 export const SUBJECT = Object.freeze({
-  entry: process.env.FBTEST_C_OAUTH_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'mcp', 'oauth', 'index.js'),
+  entry: process.env.FBTEST_C_OAUTH_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'mcp', 'oauth', 'index.js'),
   factories: Object.freeze({
     store: /^(?:open|create)\w*TokenStore$/i,
     limiter: /^(?:open|create)\w*FailureLimiter$/i,
@@ -43,7 +43,7 @@ export const SUBJECT = Object.freeze({
 })
 
 /** K1's declaration file: `RevocationKind` is a type there, so its words are read from the text. */
-const K1_DTS = path.join(REPO, 'packages', 'connector', 'mcp-schema', 'index.d.ts')
+const K1_DTS = path.join(REPO, 'packages', 'dsh-connector', 'mcp-schema', 'index.d.ts')
 function revocationKind(stem) {
   const m = /export type RevocationKind\s*=\s*([^\n]+)/.exec(fs.readFileSync(K1_DTS, 'utf8'))
   const found = m && [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).find((k) => k.startsWith(stem))
@@ -89,7 +89,7 @@ export const FIXTURE = Object.freeze({
   /** The reference instant of the fake clock (README "clock"); times are offsets from it. */
   t0: Date.UTC(2026, 10, 14),
   day: DAY_MS,
-  /** A user-set or generated token value: `fbt_` + 32 random bytes, as C-TOKENS generates (R-TOK-08). */
+  /** A user-set or generated token value: `dsht_` + 32 random bytes, as C-TOKENS generates (R-TOK-08). */
   value: () => TOKEN_VALUE.generatedPrefix + randomBytes(TOKEN_VALUE.generatedBytes).toString('base64url'),
   /** A value one character under the minimum (AUTH-DT-01 rule 8). */
   shortValue: () => FIXTURE.value().slice(0, TOKEN_VALUE.minChars - 1),
@@ -109,7 +109,7 @@ export const FIXTURE = Object.freeze({
   address: '192.0.2.1',
   otherAddress: '192.0.2.2',
   /** AUTH-EP-01 row 7. */
-  foreignResource: 'https://other.example/api/fishball/mcp',
+  foreignResource: 'https://other.example/api/agent/mcp',
   /** AUTH-EP-01 row 4: a grant nobody serves. */
   unsupportedGrant: 'password',
   /** The browser client of the fake code and refresh grants (AUTH-UC-10's fixture). */

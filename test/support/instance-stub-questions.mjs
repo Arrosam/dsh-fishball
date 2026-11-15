@@ -10,7 +10,7 @@
  * or its signal aborts. Expected values come from the docs, never from the connector's source.
  */
 import assert from 'node:assert/strict'
-import { APPROVAL_KIND, CARD_CLOSED, CARD_RECORD, DECISION, ERROR, EVENT, INBOX_KIND, LIMITS, QUESTION_ANSWER, RECORD_ITEM, SETTLED_BY } from 'fishball-connector/contract'
+import { APPROVAL_KIND, CARD_CLOSED, CARD_RECORD, DECISION, ERROR, EVENT, INBOX_KIND, LIMITS, QUESTION_ANSWER, RECORD_ITEM, SETTLED_BY } from 'dsh-connector/contract'
 import { ASK_USER_QUESTION, LEGACY_INTERACTION, PLAN, PRESET, ROW_ID } from './constants.mjs'
 import { resultOfCall, settledIdle, step, storedRows } from './expect.mjs'
 import { ENVELOPE, OPERATION, bootStub, managedSession, restartStub, seedStoredInteractionConfig, userSession } from './instance-stub.mjs'
@@ -122,7 +122,7 @@ export function qTools(ctx) {
     /** A session that is yours (never handed over). */
     yours: (folder, preset = PRESET.ask) => userSession(host(), folder, preset),
     fishballId: async () => (await host().state()).sessionId,
-    /** Change connector settings through DSH's settings service (DSH's form of the fishball-connector row). */
+    /** Change connector settings through DSH's settings service (DSH's form of the dsh-connector row). */
     async settings(patch) { const r = await host().call('settingsUpdate', { patch }); assert.equal(r.ok, true, JSON.stringify(r.error)); return r },
     /** Restart after seeding retained values; host()/stub() resolve the replacement at call time. */
     seedStoredConfig: (patch, options) => seedStoredInteractionConfig(ctx.booted, patch, options),

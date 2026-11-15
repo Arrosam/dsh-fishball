@@ -1,6 +1,6 @@
 /**
  * The one place that binds the C-OAUTH-WEB cases to C-OAUTH-WEB's module
- * (`packages/connector/src/mcp/oauth-web/index.js`). The surface is the one Fishball relayed from
+ * (`packages/dsh-connector/src/mcp/oauth-web/index.js`). The surface is the one Fishball relayed from
  * the dev session (2026-11-14), and nothing else of the module is read:
  *
  * - `createApprovalHandler({gate, originOf, secure, cimd, tokens, pairs, store, limiter, dshName,
@@ -37,7 +37,7 @@ import { fakeCimd, fakeClock, fakeGate, fakeLimiter, fakeLogger, fakeOAuthStore,
 
 /** C-OAUTH-WEB's entry bound to one SDK, with the relayed exports required. */
 export async function webModule(sdk) {
-  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-OAUTH-WEB "Owns" packages/connector/src/mcp/oauth-web/)`)
+  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(process.cwd(), SUBJECT.entry)} does not exist (C-OAUTH-WEB "Owns" packages/dsh-connector/src/mcp/oauth-web/)`)
   resolveRuntimePackages()
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
   for (const name of [SUBJECT.handler, SUBJECT.listener, SUBJECT.fetcher, SUBJECT.codeGrant, SUBJECT.refreshGrant]) {

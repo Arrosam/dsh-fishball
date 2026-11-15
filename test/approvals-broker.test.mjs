@@ -41,7 +41,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, afterEach, before, describe, it } from 'node:test'
-import { ERROR, SETTLED_BY, DECISION, CARD_RECORD } from 'fishball-connector/contract'
+import { ERROR, SETTLED_BY, DECISION, CARD_RECORD } from 'dsh-connector/contract'
 import {
   ANSWER_TOOL, APPROVAL_FIELDS, APPROVAL_ID, APPROVAL_SUMMARY, APPROVER_HOLDS, APPROVER_THROWS, ARGS_STATUS, ASK_REASON, ASK_TOOL, ELLIPSIS, LIMITS, LIMITS_R11,
   OUTCOME, PRESET, STARTED_BY, STARTED_BY_OTHER, TITLE, TURN_BY, INTAKE_DIR,

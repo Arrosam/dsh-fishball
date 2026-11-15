@@ -11,7 +11,7 @@
  * 3. the stock `ClientCredentialsProvider` with `expectedIssuer` pinned to the target origin's K1
  *    issuer, so the secret goes only to that origin's token endpoint (spike S7 T4);
  * 4. `server/discover` at the pinned revision (modern only, Q12), `tools/list`, then a
- *    `subscriptions/listen` stream on `fishball://events` and tool-list changes;
+ *    `subscriptions/listen` stream on `dsh-agent://events` and tool-list changes;
  * 5. one `inbox_poll` on every (re)connect and on every events hint (hints may drop; polls
  *    recover them, design §6.5).
  * A failure is classified (`failureStatus`) and retried with bounded backoff; Fishball keeps
@@ -304,7 +304,7 @@ export class McpLink {
     if (!this.#current(generation)) return client
     const subscription = await client.listen({ resourceSubscriptions: [LINK_MCP.eventsUri], toolsListChanged: true })
     this.#subscription = subscription
-    // Connected means a listen stream on fishball-events (K3 TargetState). A V3 connector always
+    // Connected means a listen stream on agent-events (K3 TargetState). A V3 connector always
     // honours it, so a target that does not is not one (the user's decision, 2026-11-14).
     if (!subscription.honoredFilter?.resourceSubscriptions?.includes(LINK_MCP.eventsUri)) throw new LinkFailure(STATUS.incompatible)
     // Any end of the stream we did not cause ('graceful' included: a revocation closes it, R-TOK-05)

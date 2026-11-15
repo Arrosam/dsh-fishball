@@ -8,8 +8,8 @@
  * | Rule | Record | Granted scope | Action |
  * | --- | --- | --- | --- |
  * | 1, 2, 3, 7, 10 | absent | any | `pair({name})`: ok → write the record, work; `already-paired` → warning (match or mismatch); `id-taken` → need a new id |
- * | 4 | present | holds `fishball` | work, no `pair` (R-ID-05) |
- * | 5 | present | `fishball:pair` (anything without `fishball`) | hold: a new token is needed (R-ID-10), no `pair` |
+ * | 4 | present | holds `agent` | work, no `pair` (R-ID-05) |
+ * | 5 | present | `agent:pair` (anything without `agent`) | hold: a new token is needed (R-ID-10), no `pair` |
  * | 6 | present | (refused) | the link reports `token-refused` / `token-revoked`, and retries (no hold) |
  * | 8 | warning open | — | the link is held before its first request: nothing reaches the target |
  * | 9 | — | — | `client_credentials` only (the link's provider), state from `scope` and `pair` only (R-OA-18) |

@@ -3,7 +3,7 @@
  * brief"): UIM-UC-01 (integration part), UIM-UC-04 (U-SHELL's parts: one Fishball sidebar entry, no
  * `sidebar.brand.*` slot, no answer control), UIM-EP-01, UIM-EP-02, UIM-DT-01 rows 3, 7, 7b, and
  * R-EMBED's U-SHELL row. Requirements R-UI-01/02/03/04/06/08/09/11/12, R-ARCH-02/04, R-HOST-06,
- * S4-Q1 A; design §4.1–§4.2; the K3 freeze of `fishballChild` and `fishballConnectorHandover`.
+ * S4-Q1 A; design §4.1–§4.2; the K3 freeze of `dshInstanceChild` and `dshConnectorHandover`.
  *
  * Techniques, Use Cases first: UC (UIM-UC-01, UIM-UC-04: each flow is a test), EP (UIM-EP-01 by
  * service availability, UIM-EP-02 by main-page hostname), BVA (the hostname set's edges: the case
@@ -99,7 +99,7 @@ const assertNoMarks = (regs) => assert.deepEqual(regs.filter((r) => SLOT.marks.i
 const assertOneEntry = (regs) => assert.equal(bySlot(regs, SLOT.entry).length, 1, 'embed-UI\'s sidebar entries: ' + JSON.stringify(bySlot(regs, SLOT.entry).map((r) => r.id ?? r.key)))
 const assertNoBrand = (regs) => assert.deepEqual(regs.filter((r) => SLOT.brand.includes(r.slot)), [], 'a sidebar.brand.* slot was used')
 const assertCard = (regs) => assert.ok(regs.some((r) => SLOT.card.includes(r.slot)), 'no Plugins card (' + SLOT.card.join(', ') + ')')
-/** K3's literal vocabulary of a type, by a member path from a service (`fishballChild.admit` → request → field). */
+/** K3's literal vocabulary of a type, by a member path from a service (`dshInstanceChild.admit` → request → field). */
 const k3 = () => contracts(FOLDER.hostServices)
 const admitField = (field) => {
   const [request] = assertParams(member(serviceMembers(k3(), SERVICE.child), 'admit'), { params: 1 })
@@ -199,22 +199,22 @@ export function registerUShellCases(sdk) {
     assertOneEntry(regs)
     assertNoBrand(regs)
   })
-  integrationCase(sdk, 'UIM-UC-04', 'main 2', 'an ask_fishball view embed-UI registers, if any, renders no answer control at the call and at its result (R-UI-12)', async (t) => {
+  integrationCase(sdk, 'UIM-UC-04', 'main 2', 'an ask_agent view embed-UI registers, if any, renders no answer control at the call and at its result (R-UI-12)', async (t) => {
     const { page } = await shellOf(t, sdk, SCENARIO.all)
     const views = page.entries(SLOT.toolview).filter((e) => e.options.key === ASK_TOOL && page.embed().some((r) => r.options === e.options))
     for (const entry of views) {
       for (const phase of ['start', 'result']) {
         const rendered = await page.mount(entry, { phase, toolName: ASK_TOOL, callId: 'fbtest-call', block: { name: ASK_TOOL, args: {}, input: {}, output: {} }, useDisclosure: () => [false, () => {}], openFile() {}, loadImage: async () => null })
-        assert.deepEqual(controls(rendered.tree()).map((n) => n.tag + (n.props.role ? '[' + n.props.role + ']' : '')), [], 'controls in the ask_fishball view at ' + phase)
+        assert.deepEqual(controls(rendered.tree()).map((n) => n.tag + (n.props.role ? '[' + n.props.role + ']' : '')), [], 'controls in the ask_agent view at ' + phase)
         rendered.unmount()
       }
     }
   })
-  caseTest(sdk, 'UIM-UC-04', 'main 2', "embed-UI's shipped code names no ask_fishball answer route (the V2 Allow once / Reject path is gone; R-UI-12)", async () => {
+  caseTest(sdk, 'UIM-UC-04', 'main 2', "embed-UI's shipped code names no ask_agent answer route (the V2 Allow once / Reject path is gone; R-UI-12)", async () => {
     const hits = [...await embedTokens()].filter(([, t]) => t.strings.some((s) => s.includes(V2_ANSWER_ROUTE))).map(([file]) => file)
     assert.deepEqual(hits, [])
   })
-  caseTest(sdk, 'UIM-UC-04', 'main 2', "S1's conversation shows a read-only record row for its ask_fishball call; S1 waits", null, LATER.records)
+  caseTest(sdk, 'UIM-UC-04', 'main 2', "S1's conversation shows a read-only record row for its ask_agent call; S1 waits", null, LATER.records)
   caseTest(sdk, 'UIM-UC-04', 'main 3', 'Fishball answers → the same record shows the answer', null, LATER.records)
   integrationCase(sdk, 'UIM-UC-04', 'A1', 'C + U (no instance): the sidebar entry is still the one fish entry; the brand is unchanged', async (t) => {
     const { regs } = await shellOf(t, sdk, SCENARIO.connector)
@@ -245,7 +245,7 @@ export function registerUShellCases(sdk) {
     assert.deepEqual(registeredTools(setup), [])
     assertDiagnostics(setup, 1)
   })
-  integrationCase(sdk, 'UIM-EP-01', 2, 'fishballChild only → page, frame, status, Retry and the Plugins card; no marks or Hand over; no instance-missing', async (t) => {
+  integrationCase(sdk, 'UIM-EP-01', 2, 'dshInstanceChild only → page, frame, status, Retry and the Plugins card; no marks or Hand over; no instance-missing', async (t) => {
     const { setup, page, regs } = await shellOf(t, sdk, SCENARIO.child)
     assert.equal(pageEntries(page).length, 1, 'Fishball page entries')
     assertCard(regs)
@@ -256,13 +256,13 @@ export function registerUShellCases(sdk) {
     assert.deepEqual(registeredTools(setup), [], 'tools contributed with no connector')
     assertDiagnostics(setup, 0)
   })
-  integrationCase(sdk, 'UIM-EP-01', 3, 'connector services, no fishballChild → no page and no frame; one instance-missing line', async (t) => {
+  integrationCase(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → no page and no frame; one instance-missing line', async (t) => {
     const { setup, regs } = await shellOf(t, sdk, SCENARIO.connector)
     assertNoPage(regs)
     assertDiagnostics(setup, 1)
   })
-  caseTest(sdk, 'UIM-EP-01', 3, 'connector services, no fishballChild → marks and Hand over', null, LATER.marks)
-  caseTest(sdk, 'UIM-EP-01', 3, 'connector services, no fishballChild → fish with dots and the attention tools contributed', null, LATER.attn)
+  caseTest(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → marks and Hand over', null, LATER.marks)
+  caseTest(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → fish with dots and the attention tools contributed', null, LATER.attn)
   integrationCase(sdk, 'UIM-EP-01', 4, 'all three services → the page with its frame, status and Retry, and the Plugins card; no instance-missing', async (t) => {
     const { setup, page, regs } = await shellOf(t, sdk, SCENARIO.all)
     assert.equal(pageEntries(page).length, 1, 'Fishball page entries')
@@ -279,7 +279,7 @@ export function registerUShellCases(sdk) {
     assert.deepEqual(recordsOf(setup, FAKE.kind.admit), [], 'the older locator was asked for an admission')
     assertDiagnostics(setup, 1)
   })
-  integrationCase(sdk, 'UIM-EP-01', 6, 'the instance row disabled (no fishballChild) with the connector services → as #3: no page, one instance-missing line', async (t) => {
+  integrationCase(sdk, 'UIM-EP-01', 6, 'the instance row disabled (no dshInstanceChild) with the connector services → as #3: no page, one instance-missing line', async (t) => {
     const { setup, regs } = await shellOf(t, sdk, SCENARIO.disabled)
     assertNoPage(regs)
     assertDiagnostics(setup, 1)

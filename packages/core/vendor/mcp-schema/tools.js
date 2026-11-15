@@ -65,7 +65,7 @@ const DEFINITIONS = [
   tool(TOOL.approvalsList, 'List the live permission requests, questions and plan reviews of a session you manage.',
     object({ sessionId: string() }),
     success({ approvals: array(descriptor()) })),
-  tool(TOOL.approvalAnswer, 'Answer a permission request (or an ask_fishball request) by its current offer id.',
+  tool(TOOL.approvalAnswer, 'Answer a permission request (or an ask_agent request) by its current offer id.',
     object({ sessionId: string(), approvalId: string(), offerId: string(), answer: approvalAnswer() }),
     success({ accepted: constant(true) }, { grantId: string(), expiresAt: time() })),
   tool(TOOL.questionAnswer, 'Answer a question or plan review by its current offer id; questionId is its approvalId.',

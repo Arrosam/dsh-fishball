@@ -95,7 +95,7 @@ async function untilStatus(world, ref, status) {
   assert.equal(requireEntry(world, ref).status, status)
 }
 
-/** R-TOK-08 / design §5.2: `fbt_` + 32 random bytes in base64url (no padding): ≥ 256 bits. */
+/** R-TOK-08 / design §5.2: `dsht_` + 32 random bytes in base64url (no padding): ≥ 256 bits. */
 function assertGeneratedShape(value) {
   assert.ok(value.startsWith(TOKEN_VALUE.generatedPrefix), 'the generated value lacks the prefix')
   const body = value.slice(TOKEN_VALUE.generatedPrefix.length)
@@ -219,7 +219,7 @@ export function registerTokenCases(sdk) {
     assert.deepEqual(world.registry.list(), before, 'the refused save changed the entries')
     assert.equal(await world.resolve(A.ref), value, 'the refused save changed the value')
   })
-  row(sdk, ID.uc01, 'post', 'the generated value is fbt_ + 32 random bytes in base64url (≥ 256 bits)', async (t) => {
+  row(sdk, ID.uc01, 'post', 'the generated value is dsht_ + 32 random bytes in base64url (≥ 256 bits)', async (t) => {
     const world = await worldFor(t, sdk)
     await save(world, [entry(A)])
     assertGeneratedShape(await generatedValue(world, A.ref))
@@ -355,7 +355,7 @@ export function registerTokenCases(sdk) {
     assert.ok(Buffer.byteLength(value) > TOKEN_VALUE.minChars, 'harness: the fixture is not multi-byte')
     return lengthRow(t, value, ENTRY_STATUS.ok)
   })
-  row(sdk, ID.bva03, 7, 'generated: at least 32 characters (fbt_ + 43 base64url) and at least 256 bits', async (t) => {
+  row(sdk, ID.bva03, 7, 'generated: at least 32 characters (dsht_ + 43 base64url) and at least 256 bits', async (t) => {
     const world = await worldFor(t, sdk)
     await save(world, [entry(A)])
     const value = await generatedValue(world, A.ref)
@@ -471,7 +471,7 @@ export function registerTokenCases(sdk) {
     await untilStatus(world, A.ref, ENTRY_STATUS.ok)
     assert.equal(world.registry.match(value)?.entryKey, before.entryKey)
   })
-  row(sdk, ID.st01, 8, 'the token request returns a pair-only access token (scope fishball:pair)', null, LATER.accessTokens)
+  row(sdk, ID.st01, 8, 'the token request returns a pair-only access token (scope agent:pair)', null, LATER.accessTokens)
   row(sdk, ID.st01, 9, 'Bound(X) → delete → Gone: one `deleted` revocation; the entry is gone and its generated value unset', async (t) => {
     const { world, seen, value, before } = await readyEntry(t)
     await save(world, [])

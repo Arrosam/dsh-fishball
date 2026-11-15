@@ -136,7 +136,7 @@ export const FIXTURE = Object.freeze({
   version: '0.0.0-fbtest',
   probe: Object.freeze({ name: 'fbtest-guard-probe', module: path.join(import.meta.dirname, 'probe-row.mjs') }),
   standinModule: path.join(import.meta.dirname, 'standin-row.mjs'),
-  /** A stand-in fishball-instance: only records that it started (a real one would start a nested child). */
+  /** A stand-in dsh-instance: only records that it started (a real one would start a nested child). */
   instance: V3.instance.name,
   hostedSettings: HOSTED_SETTINGS,
   watchdog: Object.freeze({ name: 'fbtest-watchdog-presets', row: 'fbtest-preset-watchdog', order: 90 }),
@@ -183,5 +183,5 @@ export const LATER = Object.freeze({
   place: 'I-PLACE (the instance writes the hosted child profile with core last and places fishball-hosted-settings)',
   link: 'F-LINK (the manual token to the target)',
   status: 'F-STATUS (core reports no missing member for fishball-hosted-settings)',
-  matrix: 'X-MATRIX (the real fishball-instance package in a standalone DSH)',
+  matrix: 'X-MATRIX (the real dsh-instance package in a standalone DSH)',
 })

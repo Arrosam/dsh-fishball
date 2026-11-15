@@ -3,9 +3,9 @@
  * C-ROUTE, wave W3). Written from the requirements (R-EVS-02/03, R-ROUTE-01…06, R-WATCH-01/02/04/05,
  * R-CON-03/08/09/11, R-SEC-01, R-ARCH-03), the case files (docs/test-design/v3/03-handover.md,
  * 04-events-interception.md, 06-watch.md, 11-platform.md), the K1 / K1c freeze
- * (`fishball-connector/mcp-schema`: Router, Presence, ManagedState, MANAGED_REFUSAL, QUEUE,
+ * (`dsh-connector/mcp-schema`: Router, Presence, ManagedState, MANAGED_REFUSAL, QUEUE,
  * NoRecipient) and K3 (`host-services/handover.d.ts`), and Fishball's answers of 2026-11-14
- * (constants.mjs RELAYED). No file of packages/connector/src/routing/ or src/handover/ was read.
+ * (constants.mjs RELAYED). No file of packages/dsh-connector/src/routing/ or src/handover/ was read.
  *
  * Techniques, and only these five, Use Cases first: UC (WATCH-UC-01, WATCH-UC-02, HAND-UC-02
  * service part, PLAT-UC-03: one test per flow), EP (EVT-EP-01, EVT-EP-04 end to end, WATCH-EP-01,
@@ -27,7 +27,7 @@
  *   type (EVT-DT-01 rule 9); "nothing produced" = no new entry in any mailbox after WAIT.quietMs;
  * - "refused" = README's common oracle: the code, the managed set unchanged, no event, and no
  *   entry label, credential ref or token value in the answer;
- * - "connected" = an open listen stream on `fishball://events` (K1 CONNECTED; here FakePresence).
+ * - "connected" = an open listen stream on `dsh-agent://events` (K1 CONNECTED; here FakePresence).
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
@@ -148,7 +148,7 @@ function descriptor(type) {
   }
 }
 const message = () => ({ text: FIXTURE.text(++counter), images: [] })
-const designate = (w, id) => w.settings.set({ fishballToken: FIXTURE.entry(id) })
+const designate = (w, id) => w.settings.set({ agentToken: FIXTURE.entry(id) })
 
 async function manage(w, sessionId, key) {
   const result = await w.managed.manage(sessionId, key)
@@ -201,32 +201,32 @@ async function offerFallsBack(w, sessionId, type, fallback) {
   const { value } = await expectNone(w, () => w.routing.offer(sessionId, type, descriptor(type)))
   assert.deepEqual(value, { recipient: null, fallback })
 }
-/** A `message_fishball` that becomes one `message` in `key`'s mailbox. */
+/** A `message_agent` that becomes one `message` in `key`'s mailbox. */
 async function messageTo(w, sessionId, key) {
   const m = message()
-  const { value, event } = await expectOne(w, () => w.routing.messageFishball(sessionId, m), key, ET.message)
+  const { value, event } = await expectOne(w, () => w.routing.messageAgent(sessionId, m), key, ET.message)
   assert.deepEqual(value, { ok: true })
   assert.deepEqual(event.payload, m)
   return event
 }
-/** A `message_fishball` that is accepted and held in the no-recipient queue (nothing in any mailbox). */
+/** A `message_agent` that is accepted and held in the no-recipient queue (nothing in any mailbox). */
 async function messageHeld(w, sessionId = S.s1) {
   const m = message()
-  const { value } = await expectNone(w, () => w.routing.messageFishball(sessionId, m))
+  const { value } = await expectNone(w, () => w.routing.messageAgent(sessionId, m))
   assert.deepEqual(value, { ok: true })
   return m
 }
-/** An `ask_fishball` that becomes one `ask` offer in `key`'s mailbox and keeps the asker waiting. */
+/** An `ask_agent` that becomes one `ask` offer in `key`'s mailbox and keeps the asker waiting. */
 async function askTo(w, sessionId, key) {
-  const { value, event } = await expectOne(w, () => ({ promise: w.routing.askFishball(sessionId, { question: FIXTURE.question }) }), key, ET.ask)
+  const { value, event } = await expectOne(w, () => ({ promise: w.routing.askAgent(sessionId, { question: FIXTURE.question }) }), key, ET.ask)
   assert.equal(event.offer?.decisionKind, DECISION_KIND_OF[ET.ask])
-  assert.equal(await settlesWithin(value.promise, WAIT.quietMs), false, 'ask_fishball did not wait for its answer')
+  assert.equal(await settlesWithin(value.promise, WAIT.quietMs), false, 'ask_agent did not wait for its answer')
   return { event, promise: value.promise }
 }
-/** An `ask_fishball` answered `unavailable` at once, with nothing produced (R-CON-09). */
+/** An `ask_agent` answered `unavailable` at once, with nothing produced (R-CON-09). */
 async function askUnavailable(w, sessionId) {
-  const { value } = await expectNone(w, () => ({ promise: w.routing.askFishball(sessionId, { question: FIXTURE.question }) }))
-  assert.ok(await settlesWithin(value.promise, WAIT.quietMs), 'ask_fishball did not answer at once')
+  const { value } = await expectNone(w, () => ({ promise: w.routing.askAgent(sessionId, { question: FIXTURE.question }) }))
+  assert.ok(await settlesWithin(value.promise, WAIT.quietMs), 'ask_agent did not answer at once')
   assert.deepEqual(await value.promise, { ok: false, code: REFUSAL.unavailable })
 }
 /** The texts of the `message` events now pending in `key`'s mailbox, in mailbox order. */
@@ -335,7 +335,7 @@ function useCases(sdk) {
     w.session(S.s1)
     await assertRefused(w, () => w.handover.takeBack(S.s1), HANDOVER.codes.notManaged)
   })
-  worldRow(sdk, 'HAND-UC-02', 'post', 'after Take back S1\'s permission request goes to the user, and its message_fishball to the designated Fishball', async (w) => {
+  worldRow(sdk, 'HAND-UC-02', 'post', 'after Take back S1\'s permission request goes to the user, and its message_agent to the designated Fishball', async (w) => {
     const { p, d } = await managedByP(w)
     await takeBackOk(w, S.s1, p)
     await offerFallsBack(w, S.s1, ET.permission, FALLBACK.toUser)
@@ -343,32 +343,32 @@ function useCases(sdk) {
   })
   todoRow(sdk, 'HAND-UC-02', 'main 3', 'the mark disappears and S1 shows the Hand over control again (R-UI-10)', 'U-MARKS (embed-UI marks and the Hand over control)')
 
-  // PLAT-UC-03 — A main-DSH session calls message_fishball / ask_fishball.
-  worldRow(sdk, 'PLAT-UC-03', 'main', 'unmanaged S1: message_fishball → one message for D; ask_fishball → one ask for D, and S1 waits', async (w) => {
+  // PLAT-UC-03 — A main-DSH session calls message_agent / ask_agent.
+  worldRow(sdk, 'PLAT-UC-03', 'main', 'unmanaged S1: message_agent → one message for D; ask_agent → one ask for D, and S1 waits', async (w) => {
     const d = w.principal(ID.d, { connected: true, designated: true })
     w.session(S.s1)
     await messageTo(w, S.s1, d)
     await askTo(w, S.s1, d)
   })
-  todoRow(sdk, 'PLAT-UC-03', 'main answer', 'the waiting ask_fishball gets D\'s answer', LATER.toolsAnswer)
+  todoRow(sdk, 'PLAT-UC-03', 'main answer', 'the waiting ask_agent gets D\'s answer', LATER.toolsAnswer)
   worldRow(sdk, 'PLAT-UC-03', 'A1', 'S1 managed by P → both go to P, never D', async (w) => {
     const { p } = await managedByP(w)
     await messageTo(w, S.s1, p)
     await askTo(w, S.s1, p)
   })
-  worldRow(sdk, 'PLAT-UC-03', 'E1 no D', 'no D set → ask_fishball answers unavailable at once; message_fishball is held (queued), not refused', async (w) => {
+  worldRow(sdk, 'PLAT-UC-03', 'E1 no D', 'no D set → ask_agent answers unavailable at once; message_agent is held (queued), not refused', async (w) => {
     w.session(S.s1)
     w.principal(ID.q, { connected: true })
     await askUnavailable(w, S.s1)
     await messageHeld(w)
   })
-  worldRow(sdk, 'PLAT-UC-03', 'E1 D offline', 'D set but not connected → ask_fishball unavailable at once; message_fishball waits in D\'s mailbox (K1c-3: connected or not)', async (w) => {
+  worldRow(sdk, 'PLAT-UC-03', 'E1 D offline', 'D set but not connected → ask_agent unavailable at once; message_agent waits in D\'s mailbox (K1c-3: connected or not)', async (w) => {
     const d = w.principal(ID.d, { connected: false, designated: true })
     w.session(S.s1)
     await askUnavailable(w, S.s1)
     await messageTo(w, S.s1, d)
   })
-  worldRow(sdk, 'PLAT-UC-03', 'E1 full', `no D → message_fishball queues up to maxQueuedInputs (live ${FIXTURE.smallQueue}), then ${REFUSAL.queueFull}`, async (w) => {
+  worldRow(sdk, 'PLAT-UC-03', 'E1 full', `no D → message_agent queues up to maxQueuedInputs (live ${FIXTURE.smallQueue}), then ${REFUSAL.queueFull}`, async (w) => {
     w.session(S.s1)
     w.principal(ID.q)
     w.settings.set({ maxQueuedInputs: FIXTURE.smallQueue })
@@ -382,7 +382,7 @@ function useCases(sdk) {
     await quiet()
     assert.ok((await pendingOf(w, p)).some((e) => e.eventId === event.eventId), 'the offer left P\'s mailbox')
   })
-  worldRow(sdk, 'PLAT-UC-03', 'E2 ask', `S1 managed by P, P not connected → ask_fishball is an offer waiting in P's mailbox, not unavailable (${RELAYED.askManagedOffline})`, async (w) => {
+  worldRow(sdk, 'PLAT-UC-03', 'E2 ask', `S1 managed by P, P not connected → ask_agent is an offer waiting in P's mailbox, not unavailable (${RELAYED.askManagedOffline})`, async (w) => {
     const { p } = await managedByP(w, { pConnected: false })
     await askTo(w, S.s1, p)
   })
@@ -398,7 +398,7 @@ function useCases(sdk) {
 
 /** One more message with no recipient is `queue-full` and changes nothing. */
 async function assertQueueFull(w) {
-  const { value } = await expectNone(w, () => w.routing.messageFishball(S.s1, message()))
+  const { value } = await expectNone(w, () => w.routing.messageAgent(S.s1, message()))
   assert.deepEqual(value, { ok: false, code: REFUSAL.queueFull })
 }
 
@@ -452,20 +452,20 @@ function equivalencePartitions(sdk) {
     w.session(S.s1)
     await unwatched(w, S.s1)
   })
-  worldRow(sdk, 'EVT-EP-01', '10', 'message_fishball from a managed session → M', async (w) => {
+  worldRow(sdk, 'EVT-EP-01', '10', 'message_agent from a managed session → M', async (w) => {
     const { p } = await managedByP(w)
     await messageTo(w, S.s1, p)
   })
-  worldRow(sdk, 'EVT-EP-01', '11', 'message_fishball from an unmanaged session → D', async (w) => {
+  worldRow(sdk, 'EVT-EP-01', '11', 'message_agent from an unmanaged session → D', async (w) => {
     const d = w.principal(ID.d, { connected: true, designated: true })
     w.session(S.s1)
     await messageTo(w, S.s1, d)
   })
-  worldRow(sdk, 'EVT-EP-01', '12 managed', 'ask_fishball from a managed session → M', async (w) => {
+  worldRow(sdk, 'EVT-EP-01', '12 managed', 'ask_agent from a managed session → M', async (w) => {
     const { p } = await managedByP(w)
     await askTo(w, S.s1, p)
   })
-  worldRow(sdk, 'EVT-EP-01', '12 unmanaged', 'ask_fishball from an unmanaged session → D', async (w) => {
+  worldRow(sdk, 'EVT-EP-01', '12 unmanaged', 'ask_agent from an unmanaged session → D', async (w) => {
     const d = w.principal(ID.d, { connected: true, designated: true })
     w.session(S.s1)
     await askTo(w, S.s1, d)
@@ -492,8 +492,8 @@ function equivalencePartitions(sdk) {
     await manage(w, S.s1, m)
     const route = (sessionId) => w.router.recipientFor({ type: CONTRIBUTED, sessionId, contributor: FIXTURE.namespace })
     assert.deepEqual([route(S.s1), route(S.s2), route(null)], [{ recipient: m }, { recipient: d }, { recipient: d }], 'rules 1, 2, 4')
-    w.settings.set({ fishballToken: undefined })
-    assert.deepEqual([route(S.s2), route(null)], [{ recipient: null, fallback: FALLBACK.noFishball }, { recipient: null, fallback: FALLBACK.noFishball }], 'rules 3, 5')
+    w.settings.set({ agentToken: undefined })
+    assert.deepEqual([route(S.s2), route(null)], [{ recipient: null, fallback: FALLBACK.noAgent }, { recipient: null, fallback: FALLBACK.noAgent }], 'rules 3, 5')
   })
 
   // EVT-EP-04 — Per-principal isolation of streams and hints, end to end: C-ROUTE commits through
@@ -541,7 +541,7 @@ function equivalencePartitions(sdk) {
     assert.ok(!qs.some((x) => x.eventId === e.eventId || JSON.stringify(x).includes(e.payload.text)), 'Q sees P\'s event')
   })
   e2e('6', `${FIXTURE.burst} events to P in a burst → at least one hint, never more than one per commit; nothing on Q`, async ({ w, p, q }) => {
-    await Promise.all(Array.from({ length: FIXTURE.burst }, () => w.routing.messageFishball(S.s1, message())))
+    await Promise.all(Array.from({ length: FIXTURE.burst }, () => w.routing.messageAgent(S.s1, message())))
     await until(async () => (await pendingOf(w, FIXTURE.principal(ID.p))).length >= FIXTURE.burst, `${FIXTURE.burst} events in P's mailbox`)
     await hintsOn(p, 1)
     assert.ok(p.uris.length >= 1 && p.uris.length <= FIXTURE.burst, `P got ${p.uris.length} hints`)
@@ -726,7 +726,7 @@ function boundaryValues(sdk) {
   })
   worldRow(sdk, 'ROUTE-BVA-01', '3', `setting unset → the K1 default bound QUEUE.maxQueuedInputs (${QUEUE.maxQueuedInputs}): the ${QUEUE.maxQueuedInputs}th accepted, the next ${REFUSAL.queueFull}`, async (w) => {
     queueWorld(w)
-    for (let i = 0; i < QUEUE.maxQueuedInputs; i += 1) assert.deepEqual(await w.routing.messageFishball(S.s1, message()), { ok: true })
+    for (let i = 0; i < QUEUE.maxQueuedInputs; i += 1) assert.deepEqual(await w.routing.messageAgent(S.s1, message()), { ok: true })
     await assertQueueFull(w)
   })
   worldRow(sdk, 'ROUTE-BVA-01', '4', `held max, then the live setting raised to max + 1 → one more is accepted`, async (w) => {
@@ -752,7 +752,7 @@ const SESSION_TYPES = Object.freeze([...OFFER_TYPES, ...WATCH_TYPES, ...TO_D_TYP
 const NO_D = Object.freeze({
   [ET.message]: { recipient: null, fallback: FALLBACK.queue },
   [ET.ask]: { recipient: null, fallback: FALLBACK.unavailable },
-  [CONTRIBUTED]: { recipient: null, fallback: FALLBACK.noFishball },
+  [CONTRIBUTED]: { recipient: null, fallback: FALLBACK.noAgent },
 })
 /** A notice with no D reaches no agent and no user (RELAYED.noticeNoD): no recipient, not to-user, not queued. */
 function assertNoticeNowhere(answer) {
@@ -794,7 +794,7 @@ function decisionTables(sdk) {
     })
     assertNoticeNowhere(got[ET.notice])
   })
-  ruleThree('3', 'names an unmanaged session, no D set → message queue, ask unavailable, contributor no-fishball, offers to-user, notice nowhere', () => {})
+  ruleThree('3', 'names an unmanaged session, no D set → message queue, ask unavailable, contributor no-agent, offers to-user, notice nowhere', () => {})
   ruleThree('3a', 'D set to an entry that is not paired → as no D (K1c-3)', (w) => { w.principal(ID.d, { paired: false }); designate(w, ID.d) })
   ruleThree('3b', `D paired but disabled → as no D (${RELAYED.disabledD})`, (w) => { w.principal(ID.d, { connected: true, designated: true }); w.tokens.disable(ID.d) })
   worldRow(sdk, 'EVT-DT-01', '4', 'names no session, D exists → D', async (w) => {
@@ -847,18 +847,18 @@ function decisionTables(sdk) {
   })
 
   // HAND-DT-01 — handOver(sessionId, principalKey) outcome.
-  row(sdk, 'HAND-DT-01', 'codes', 'K3 HandOverRefusalCode is exactly unknown-session, conflict, no-fishball', () => {
-    const { unknownSession, conflict, noFishball } = HANDOVER.codes
-    assert.deepEqual(handoverCodes('HandOverRefusalCode'), [unknownSession, conflict, noFishball])
+  row(sdk, 'HAND-DT-01', 'codes', 'K3 HandOverRefusalCode is exactly unknown-session, conflict, no-agent', () => {
+    const { unknownSession, conflict, noAgent } = HANDOVER.codes
+    assert.deepEqual(handoverCodes('HandOverRefusalCode'), [unknownSession, conflict, noAgent])
   })
   worldRow(sdk, 'HAND-DT-01', '1', `no such session → ${HANDOVER.codes.unknownSession}, no event`, async (w) => {
     const p = w.principal(ID.p, { connected: true })
     await assertRefused(w, () => w.handover.handOver(FIXTURE.unknownSession, p), HANDOVER.codes.unknownSession)
   })
-  worldRow(sdk, 'HAND-DT-01', '2', `no enabled, paired principal at all → ${HANDOVER.codes.noFishball}, no event`, async (w) => {
+  worldRow(sdk, 'HAND-DT-01', '2', `no enabled, paired principal at all → ${HANDOVER.codes.noAgent}, no event`, async (w) => {
     const x = w.principal(ID.x, { paired: false })
     w.session(S.s1)
-    await assertRefused(w, () => w.handover.handOver(S.s1, x), HANDOVER.codes.noFishball)
+    await assertRefused(w, () => w.handover.handOver(S.s1, x), HANDOVER.codes.noAgent)
   })
   worldRow(sdk, 'HAND-DT-01', '3', 'enabled, paired, online → ok; manager = chosen; one handover with the note, with the usual hint', async (w) => {
     const p = w.principal(ID.p, { connected: true })
@@ -883,14 +883,14 @@ function decisionTables(sdk) {
     await handOverOk(w, S.s1, p)
   })
   for (const [part, how, revoke] of [['6 disabled', 'disabled', (w) => w.tokens.disable(ID.p)], ['6 deleted', 'deleted', async (w) => { w.tokens.remove(ID.p); await w.pairs.remove(FIXTURE.entry(ID.p)) }]]) {
-    worldRow(sdk, 'HAND-DT-01', part, `the chosen principal ${how} at call time → ${HANDOVER.codes.noFishball}, no event; onChange refreshes the control`, async (w) => {
+    worldRow(sdk, 'HAND-DT-01', part, `the chosen principal ${how} at call time → ${HANDOVER.codes.noAgent}, no event; onChange refreshes the control`, async (w) => {
       const p = w.principal(ID.p, { connected: true })
       w.principal(ID.q, { connected: true })
       w.session(S.s1)
       const seen = counting(w.handover)
       await revoke(w)
       await until(() => seen.n >= 1, 'onChange on the entry change')
-      await assertRefused(w, () => w.handover.handOver(S.s1, p), HANDOVER.codes.noFishball)
+      await assertRefused(w, () => w.handover.handOver(S.s1, p), HANDOVER.codes.noAgent)
     })
   }
   for (const [part, by] of [['7 other', ID.q], ['7 same', ID.p]]) {
@@ -903,22 +903,22 @@ function decisionTables(sdk) {
       assert.equal(w.managed.managerOf(S.s1), holder)
     })
   }
-  worldRow(sdk, 'HAND-DT-01', '7a', `enabled but unpaired → ${HANDOVER.codes.noFishball}`, async (w) => {
+  worldRow(sdk, 'HAND-DT-01', '7a', `enabled but unpaired → ${HANDOVER.codes.noAgent}`, async (w) => {
     const x = w.principal(ID.x, { paired: false })
     w.principal(ID.p, { connected: true })
     w.session(S.s1)
-    await assertRefused(w, () => w.handover.handOver(S.s1, x), HANDOVER.codes.noFishball)
+    await assertRefused(w, () => w.handover.handOver(S.s1, x), HANDOVER.codes.noAgent)
   })
-  worldRow(sdk, 'HAND-DT-01', '8', `unknown key → ${HANDOVER.codes.noFishball} (as a deleted entry, DECIDED #11)`, async (w) => {
+  worldRow(sdk, 'HAND-DT-01', '8', `unknown key → ${HANDOVER.codes.noAgent} (as a deleted entry, DECIDED #11)`, async (w) => {
     w.principal(ID.p, { connected: true })
     w.session(S.s1)
-    await assertRefused(w, () => w.handover.handOver(S.s1, FIXTURE.unknownKey), HANDOVER.codes.noFishball)
+    await assertRefused(w, () => w.handover.handOver(S.s1, FIXTURE.unknownKey), HANDOVER.codes.noAgent)
   })
   worldRow(sdk, 'HAND-DT-01', 'order 1', `unknown session and unknown key → ${HANDOVER.codes.unknownSession} (first in K3's order)`, async (w) => {
     w.principal(ID.p, { connected: true })
     await assertRefused(w, () => w.handover.handOver(FIXTURE.unknownSession, FIXTURE.unknownKey), HANDOVER.codes.unknownSession)
   })
-  worldRow(sdk, 'HAND-DT-01', 'order 2', `managed session and unknown key → ${HANDOVER.codes.conflict} (before ${HANDOVER.codes.noFishball})`, async (w) => {
+  worldRow(sdk, 'HAND-DT-01', 'order 2', `managed session and unknown key → ${HANDOVER.codes.conflict} (before ${HANDOVER.codes.noAgent})`, async (w) => {
     const { p } = await managedByP(w)
     await assertRefused(w, () => w.handover.handOver(S.s1, FIXTURE.unknownKey), HANDOVER.codes.conflict)
     assert.equal(w.managed.managerOf(S.s1), p)
@@ -1022,9 +1022,9 @@ function stateTransitions(sdk) {
       await handOverOk(w, S.s1, p)
     })
   }
-  worldRow(sdk, 'HAND-ST-01', '3', `Unmanaged → Hand over with no enabled, paired principal → Unmanaged; ${HANDOVER.codes.noFishball}`, async (w) => {
+  worldRow(sdk, 'HAND-ST-01', '3', `Unmanaged → Hand over with no enabled, paired principal → Unmanaged; ${HANDOVER.codes.noAgent}`, async (w) => {
     w.session(S.s1)
-    await assertRefused(w, () => w.handover.handOver(S.s1, FIXTURE.unknownKey), HANDOVER.codes.noFishball)
+    await assertRefused(w, () => w.handover.handOver(S.s1, FIXTURE.unknownKey), HANDOVER.codes.noAgent)
     assert.equal(w.managed.managerOf(S.s1), undefined)
   })
   worldRow(sdk, 'HAND-ST-01', '4', 'Managed(P) → Take back → Unmanaged; one takeback to P', async (w) => {
@@ -1091,11 +1091,11 @@ function stateTransitions(sdk) {
     w.presence.disconnect(p)
     await handOverOk(w, S.s1, p)
   })
-  worldRow(sdk, 'HAND-ST-01', '13', `Unmanaged → Hand over to a principal disabled a moment before → Unmanaged; ${HANDOVER.codes.noFishball}`, async (w) => {
+  worldRow(sdk, 'HAND-ST-01', '13', `Unmanaged → Hand over to a principal disabled a moment before → Unmanaged; ${HANDOVER.codes.noAgent}`, async (w) => {
     const p = w.principal(ID.p, { connected: true })
     w.session(S.s1)
     w.tokens.disable(ID.p)
-    await assertRefused(w, () => w.handover.handOver(S.s1, p), HANDOVER.codes.noFishball)
+    await assertRefused(w, () => w.handover.handOver(S.s1, p), HANDOVER.codes.noAgent)
   })
 
   // WATCH-ST-01 — Watch follows management (rows 1–6; rows 7–8 are C-TOOLS').
@@ -1253,11 +1253,11 @@ function stateTransitions(sdk) {
 
 // ================================================================================================
 // Merge-review fix 1 (integrate/v3-w2 review): `settle` on the managed chain, and the payloads
-// `message_fishball` and `settle` accept are taken as they were at the call. Requirements as the
+// `message_agent` and `settle` accept are taken as they were at the call. Requirements as the
 // review states them; the routing/index.js JSDoc of `settle` / `withdraw` is the contract.
 //   ROUTE-ST-03  the live-offer ledger under settle (Queued, Live, Settled, Withdrawn, Retired)
 //   ROUTE-DT-03  settle racing a release, a revocation or a withdraw: order on the chain decides
-//   ROUTE-EP-02  message_fishball payload mutated after the call: path × field × value × timing
+//   ROUTE-EP-02  message_agent payload mutated after the call: path × field × value × timing
 //   ROUTE-EP-03  settle's settlement payload: mutated after the call, uncopyable, schema-invalid
 // ================================================================================================
 
@@ -1268,7 +1268,7 @@ const gatedRow = (sdk, id, part, title, fn) => row(sdk, id, part, title, async (
 })
 /** A K1 settlement payload (EVENT_PAYLOAD_SHAPES.settlement) for `approvalId`. */
 const settlementOf = (approvalId, outcome = SETTLEMENT_OUTCOME.allowed, by = SETTLED_BY.principal) => ({ approvalId, outcome, by })
-/** The answer a waiting ask_fishball gets when its ask is settled (routing/index.js JSDoc of settle). */
+/** The answer a waiting ask_agent gets when its ask is settled (routing/index.js JSDoc of settle). */
 const askSettled = (settlement) => ({ ok: true, settlement })
 const UNKNOWN_OFFER = formatOfferId(MUTATION.unknownApproval, OFFER_ID.firstRevision)
 
@@ -1341,7 +1341,7 @@ function settleTransitions(sdk) {
     await expectRetirement(w, () => w.managed.release(S.s1, p), p, offer)
     await settleRefused(w, offer.offer.offerId, settlementOf(offer.payload.approvalId))
   })
-  worldRow(sdk, 'ROUTE-ST-03', '6', 'Live ask → settle → Settled: one settlement to D; the waiting ask_fishball resolves {ok: true, settlement}', async (w) => {
+  worldRow(sdk, 'ROUTE-ST-03', '6', 'Live ask → settle → Settled: one settlement to D; the waiting ask_agent resolves {ok: true, settlement}', async (w) => {
     const ask = await liveAsk(w)
     const s = settlementOf(ask.approvalId)
     await settledTo(w, () => w.routing.settle(ask.offerId, s), ask.d, ask.offerId, s)
@@ -1365,12 +1365,12 @@ function settleTransitions(sdk) {
     assert.deepEqual(mine.find((e) => e.type === ET.settlement).payload, s)
     await settleRefused(w, d.offerId, s)
   })
-  gatedRow(sdk, 'ROUTE-ST-03', '8', 'Queued ask (its commit in flight) → settle → true after the commit; one settlement to D; the waiting ask_fishball resolves {ok: true, settlement}', async (w) => {
+  gatedRow(sdk, 'ROUTE-ST-03', '8', 'Queued ask (its commit in flight) → settle → true after the commit; one settlement to D; the waiting ask_agent resolves {ok: true, settlement}', async (w) => {
     const d = w.principal(ID.d, { connected: true, designated: true })
     w.session(S.s1)
     let asked
     const { value } = await expectEntries(w, async () => {
-      const flight = await inFlight(w, ET.ask, () => w.routing.askFishball(S.s1, { question: FIXTURE.question }))
+      const flight = await inFlight(w, ET.ask, () => w.routing.askAgent(S.s1, { question: FIXTURE.question }))
       asked = flight.call
       const s = settlementOf(flight.draft.payload.approvalId)
       const settled = w.routing.settle(flight.draft.correlationId, s)
@@ -1420,7 +1420,7 @@ function settleTransitions(sdk) {
   }
 }
 
-/** A `message_fishball` payload with one image (K1 EVENT_PAYLOAD_SHAPES.message), so a nested field exists. */
+/** A `message_agent` payload with one image (K1 EVENT_PAYLOAD_SHAPES.message), so a nested field exists. */
 const imaged = () => { const n = ++counter; return { text: FIXTURE.text(n), images: [MUTATION.image(n)] } }
 /**
  * Writes a caller can make to a payload object (ROUTE-EP-02 partitions): top-level vs nested, and
@@ -1439,9 +1439,9 @@ const PAYLOAD_MUTATIONS = Object.freeze({
   'nested entry replaced': { valid: false, apply: (m) => { m.images[0] = MUTATION.notAnImage } },
 })
 const TIMINGS = Object.freeze({ beforeResolve: 'before the call resolves', afterResolve: 'after the call resolves' })
-/** Calls messageFishball with `m`, applying `mutate` at `timing`; returns the call's answer. */
+/** Calls messageAgent with `m`, applying `mutate` at `timing`; returns the call's answer. */
 async function callThenMutate(w, m, mutate, timing) {
-  const pending = w.routing.messageFishball(S.s1, m)
+  const pending = w.routing.messageAgent(S.s1, m)
   if (timing === TIMINGS.beforeResolve) mutate(m)
   const value = await pending
   if (timing === TIMINGS.afterResolve) mutate(m)
@@ -1471,7 +1471,7 @@ function refusedAtCall(call) {
 }
 
 function payloadPartitions(sdk) {
-  // ROUTE-EP-02 — message_fishball's payload is taken as it was at the call (merge review fix 1).
+  // ROUTE-EP-02 — message_agent's payload is taken as it was at the call (merge review fix 1).
   for (const [name, mutation] of Object.entries(PAYLOAD_MUTATIONS)) {
     for (const timing of Object.values(TIMINGS)) {
       worldRow(sdk, 'ROUTE-EP-02', `held ${name} ${timing === TIMINGS.beforeResolve ? 'early' : 'late'}`, `no recipient: payload held, then ${name} mutation ${timing} → the flush carries the payload as at the call; the next held and a new message follow in order`, async (w) => {
@@ -1500,7 +1500,7 @@ function payloadPartitions(sdk) {
       const before = await messageHeld(w)
       const bad = imaged()
       mutation.apply(bad)
-      await expectNone(w, () => refusedAtCall(() => w.routing.messageFishball(S.s1, bad)))
+      await expectNone(w, () => refusedAtCall(() => w.routing.messageAgent(S.s1, bad)))
       const after = await messageHeld(w)
       await flushedAs(w, [before, after])
     })
@@ -1509,7 +1509,7 @@ function payloadPartitions(sdk) {
       w.session(S.s1)
       const bad = imaged()
       mutation.apply(bad)
-      await expectNone(w, () => refusedAtCall(() => w.routing.messageFishball(S.s1, bad)))
+      await expectNone(w, () => refusedAtCall(() => w.routing.messageAgent(S.s1, bad)))
       await messageTo(w, S.s1, d)
     })
   }
@@ -1533,7 +1533,7 @@ function payloadPartitions(sdk) {
   gatedRow(sdk, 'ROUTE-EP-03', '3', 'settle queued behind the ask\'s in-flight commit; the settlement changed while queued → the committed payload and the ask\'s answer are as at the call', async (w) => {
     const d = w.principal(ID.d, { connected: true, designated: true })
     w.session(S.s1)
-    const { call, draft, gate } = await inFlight(w, ET.ask, () => w.routing.askFishball(S.s1, { question: FIXTURE.question }))
+    const { call, draft, gate } = await inFlight(w, ET.ask, () => w.routing.askAgent(S.s1, { question: FIXTURE.question }))
     const s = settlementOf(draft.payload.approvalId)
     const want = structuredClone(s)
     const settled = w.routing.settle(draft.correlationId, s)

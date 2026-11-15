@@ -16,7 +16,7 @@
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { BEARER, ERROR, LIMITS, ROUTES } from 'fishball-connector/contract'
+import { BEARER, ERROR, LIMITS, ROUTES } from 'dsh-connector/contract'
 import { APPROVALS_API } from './approvals.js'
 import { CHAT } from './chat.js'
 import { IMAGES, ImageApiError, imageIdOf } from './images.js'

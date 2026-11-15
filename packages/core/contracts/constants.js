@@ -9,7 +9,7 @@
  * behaviour; whatever is derived from these values lives in the module that derives it.
  *
  * The values of core's link that cross to the connector (target states and codes, the
- * `disconnected` answer) are K1's (`fishball-connector/mcp-schema` `TARGET_STATE`, `TARGET_CODE`,
+ * `disconnected` answer) are K1's (`dsh-connector/mcp-schema` `TARGET_STATE`, `TARGET_CODE`,
  * `LINK_REFUSAL`; DECIDED D7), not this file's. DECIDED Dn: the row of mcp-schema/README.md "User
  * decisions", the one record of the decisions of K1, K2 and K3.
  */
@@ -167,7 +167,7 @@ export const GUARDS = Object.freeze({
   /**
    * Core's own model tools, by module (relative to `src/guards/`) and exported name table (user
    * decision 2026-11-14: core's tools are not the preset's and are left out of the R-FB-13 check).
-   * Loaded lazily, because these modules import `fishball-connector/contract`, which a standalone
+   * Loaded lazily, because these modules import `dsh-connector/contract`, which a standalone
    * core may not resolve; a module that cannot load registers no tools, so its names cannot appear.
    */
   coreTools: Object.freeze([
@@ -194,7 +194,7 @@ export const GUARDS = Object.freeze({
    * The Cordis services the guards read, none injected (a missing one is "nothing to check"):
    * `profileContext` and `appReady` are read once at the row's start, the rest at each check.
    * `fishballInstance` is `EXTENSION_SERVICE` of src/slim/child/extensions.js, restated because that
-   * module imports `fishball-connector/contract`, which a standalone core may not resolve.
+   * module imports `dsh-connector/contract`, which a standalone core may not resolve.
    */
   services: Object.freeze({
     loader: 'loader',

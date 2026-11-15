@@ -26,8 +26,8 @@ export const PROFILE = 'fbtest'
  * plugin. The connector carries the row, client and settings namespace the host cases exercise;
  * the instance is the built-in Fishball. Both are linked into every test profile.
  */
-export const CONNECTOR = { name: 'fishball-connector', dir: path.join(REPO, 'packages', 'connector') }
-export const INSTANCE = { name: 'fishball-instance', dir: path.join(REPO, 'packages', 'instance') }
+export const CONNECTOR = { name: 'dsh-connector', dir: path.join(REPO, 'packages', 'dsh-connector') }
+export const INSTANCE = { name: 'dsh-instance', dir: path.join(REPO, 'packages', 'dsh-instance') }
 /**
  * V3 R-SHARED (R-ARCH-08): the library `fishball-shared` the instance (and later core) imports. Not a
  * plugin: it is linked as a plain dependency, never added to the profile's bundles.
@@ -39,7 +39,7 @@ export const SHARED = { name: 'fishball-shared', dir: path.join(REPO, 'packages'
  */
 export const CORE = { name: 'fishball-core', dir: path.join(REPO, 'packages', 'core') }
 /**
- * V3 R-EMBED: `fishball-embed-ui`, the only package with host-DSH UI. The V2 main clients moved into
+ * V3 R-EMBED: `dsh-connector-ui`, the only package with host-DSH UI. The V2 main clients moved into
  * its flat client chunks (DSH serves only `client.*.js` beside the `./client` entry).
  * V3 U-SHELL splits the moved connector UI, with no behaviour change, into the flat parts
  * `client.shell.js`, `client.marks.js`, `client.attention.js` and `client.records.js` (v3-w3 briefs
@@ -48,12 +48,12 @@ export const CORE = { name: 'fishball-core', dir: path.join(REPO, 'packages', 'c
  * `client.instance.js`. The status line stays the instance's `src/child-settings/client.status.js`.
  */
 export const EMBED_UI = Object.freeze({
-  name: 'fishball-embed-ui',
-  dir: path.join(REPO, 'packages', 'embed-ui'),
+  name: 'dsh-connector-ui',
+  dir: path.join(REPO, 'packages', 'dsh-connector-ui'),
   clientDir: Object.freeze(['src', 'client']),
-  connectorClient: path.join(REPO, 'packages', 'embed-ui', 'src', 'client', 'client.shell.js'),
-  instanceCard: path.join(REPO, 'packages', 'embed-ui', 'src', 'client', 'client.instance.js'),
-  statusLine: path.join(REPO, 'packages', 'instance', 'src', 'child-settings', 'client.status.js'),
+  connectorClient: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'client', 'client.shell.js'),
+  instanceCard: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'client', 'client.instance.js'),
+  statusLine: path.join(REPO, 'packages', 'dsh-instance', 'src', 'child-settings', 'client.status.js'),
   /** The served package-local chunks that carry the moved UI (its words and controls), U-SHELL's split. */
   clientChunks: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js', 'client.records.js', 'client.instance.js']),
   /** DSH's boot page graph global (dsh-client-modules, both SDKs). */
@@ -220,10 +220,10 @@ export const HIDDEN_TOOLS = [
   'spawn_teammate',
 ]
 /**
- * P5: the state's hiddenTools also lists message_fishball (Fishball's own inbound tool, hidden from
+ * P5: the state's hiddenTools also lists message_agent (Fishball's own inbound tool, hidden from
  * Fishball). It is not a fixture name: fbtest-tools never registers it.
  */
-export const STATE_HIDDEN_TOOLS = [...HIDDEN_TOOLS, 'message_fishball']
+export const STATE_HIDDEN_TOOLS = [...HIDDEN_TOOLS, 'message_agent']
 
 /** R-FILEWRITE: refused by name for Fishball. */
 export const FILE_TOOLS = ['write', 'edit', 'str_replace_editor', 'plugin_manager']
@@ -298,7 +298,7 @@ export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'erro
 export const STATE_KEYS_OPTIONAL = ['tags']
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
 /** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
-export const INBOUND_TOOL = 'message_fishball'
+export const INBOUND_TOOL = 'message_agent'
 export const OUTBOUND_TOOLS = ['message_session', 'start_session']
 export const RELAY = { kind: 'agent-message', form: 'relay', via: 'message' }
 /** A relay a redirect sent: the tool is recorded in its source (SOURCE.via.redirect, ORG-01). */
@@ -343,7 +343,7 @@ export const FORWARD_SUMMARY = 'The user forwarded a session'
 export const NOTE_TEXT = { delivered: 'Delivered to Fishball.', queuedPrefix: 'Queued for Fishball' }
 export const IDENTITY = { session: (id) => 'session/' + id, forward: (id) => 'user/forward/' + id, unchecked: 'fishball/unchecked-tools' }
 /** M10: the intake store (per-record files). */
-export const INTAKE_DIR = (home) => path.join(home, 'storages', 'fishball_intake')
+export const INTAKE_DIR = (home) => path.join(home, 'storages', 'dsh_connector_intake')
 
 // ---- P6 (watches) ----
 export const WATCH_API = { add: '/api/fishball/watches', remove: '/api/fishball/watches/remove' }
@@ -389,7 +389,7 @@ export const SUMMARY_HEADINGS = ['## Standing permissions', '## Commitments', '#
 /** P12 (plugin manager) adds get_plugin_settings and set_plugin_settings. */
 export const FISHBALL_TOOLS = ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings']
 export const KIND = { profile: 'profile', only: 'fishball-only', builtin: 'builtin', installed: 'fishball-installed' }
-/** Revision 10c adds other-sessions: message_fishball, registered for every other session and never visible to Fishball. */
+/** Revision 10c adds other-sessions: message_agent, registered for every other session and never visible to Fishball. */
 export const TOOL_STATUS = { visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked', otherSessions: 'other-sessions' }
 export const CHANGED_BY = { fishball: 'fishball', user: 'user' }
 export const CATALOG_KEYS = ['allowedTools', 'otherTools', 'plugins']
@@ -692,11 +692,11 @@ export const PRIVATE_ROW_PREFIX = 'fbo-'
  */
 export const OWN_PLUGINS = {
   // Revision 11 rev11a: release_session joins Session messages (DESIGN §5e "Which Fishball plugin", §10d).
-  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_fishball', 'release_session', 'stop_session', 'redirect_session'] },
+  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_agent', 'release_session', 'stop_session', 'redirect_session'] },
   watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
   plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
-  // Revision 11 rev11b: ask_fishball and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
-  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_fishball', 'list_user_messages', 'list_grants', 'revoke_grant', 'list_frozen_sessions', 'answer_prompt', 'withdraw_request', 'answer_question'] },
+  // Revision 11 rev11b: ask_agent and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
+  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_agent', 'list_user_messages', 'list_grants', 'revoke_grant', 'list_frozen_sessions', 'answer_prompt', 'withdraw_request', 'answer_question'] },
 }
 /** The five entries of the "Fishball" group (snapshot dsh 'fishball'): the four above and the Messenger look. */
 export const FISHBALL_GROUP_KEYS = [...Object.values(OWN_PLUGINS).map((p) => p.key), 'builtin:messenger']
@@ -822,12 +822,12 @@ export const PRE_REV11A = { commit: 'a5aed26' }
 export const FISHBALL_WORD = /Fishball/
 
 // ---- Revision 11 rev11b (asking Fishball first, passes, direct calls; DESIGN §7a.1-§7a.6, §9, §16; S35) ----
-/** The two tools rev11b adds to each managed agent, beside message_fishball (§7a.2, §5e). */
-export const ASK_FISHBALL = 'ask_fishball'
+/** The two tools rev11b adds to each managed agent, beside message_agent (§7a.2, §5e). */
+export const ASK_FISHBALL = 'ask_agent'
 export const LIST_USER_MESSAGES = 'list_user_messages'
 export const MANAGED_TOOLS = [INBOUND_TOOL, ASK_FISHBALL, LIST_USER_MESSAGES]
 /**
- * ask_fishball's result codes (§7a.2; contract given to the test writer). The interim `to-user` answer of rev11b is gone: from rev11c an escalated or timed-out request waits on a card. `ok` is true only for `allowed`.
+ * ask_agent's result codes (§7a.2; contract given to the test writer). The interim `to-user` answer of rev11b is gone: from rev11c an escalated or timed-out request waits on a card. `ok` is true only for `allowed`.
  */
 export const ASK_CODE = {
   allowed: 'allowed', rejected: 'rejected', question: 'question', unavailable: 'unavailable',
@@ -840,7 +840,7 @@ export const ASK_REFUSALS = [ASK_CODE.notUserMessage, ASK_CODE.tooLarge, ASK_COD
 export const DECISION = { allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate' }
 export const QUESTION_REQUIRED = 'question-required'
 /** S35 wording, appended to an allowed direct call's own output and following Fishball's reject reason (§7a.4). */
-export const HINT_NEXT = 'Next time, call ask_fishball before a call that needs approval, and explain why it is needed.'
+export const HINT_NEXT = 'Next time, call ask_agent before a call that needs approval, and explain why it is needed.'
 export const HINT_ALLOWED = 'Fishball approved this call once. ' + HINT_NEXT
 export const ALLOWED_TEXT = (output) => output + '\n\n' + HINT_ALLOWED
 export const REJECTED_TEXT = (reason) => 'Fishball rejected this call: ' + reason + '\n' + HINT_NEXT
@@ -874,7 +874,7 @@ export const PILE_CODE = { expired: 'expired', badBody: 'bad-body' }
 export const CLICK = { allow: 'allow', reject: 'reject' }
 /** Card kinds (§9 "Session cards"); rev11c builds 'asked' only (direct calls come with rev11e, questions with rev11g). */
 export const CARD_KIND = { asked: 'asked', direct: 'direct', question: 'question' }
-/** Keys every card of an ask_fishball request carries (§9; callId is what S37's running-row buttons match on). */
+/** Keys every card of an ask_agent request carries (§9; callId is what S37's running-row buttons match on). */
 export const CARD_KEYS = ['arguments', 'callId', 'kind', 'requestId', 'sessionId', 'since', 'toolName', 'why']
 /** rev11c's new limit (§16 "Revision 11's new limits"): plugin config, whole number of at least 1 (§16 "Rules"). */
 export const LIMITS_R11C = { pileMaxHeightVh: { default: 45, min: 1 } }

@@ -1,7 +1,7 @@
 /**
  * I1c — the instance's status in the contract's vocabulary (docs/slim-native-design.md §0.6,
  * §18.2 I1c R2/R4, §18.5 inst-OQ-03, conn-OQ-53; contract §1.1 `status`, §6 STATUS/STATUS_CODES).
- * Observation point: packages/instance/src/host/binding.js `contractStatus` (what the attachment's
+ * Observation point: packages/dsh-instance/src/host/binding.js `contractStatus` (what the attachment's
  * `status()` answers) and `INSTANCE_STATES` / `INSTANCE_CODES` (what the instance itself may show
  * on its card and status route). The card, the status route and Retry need a DSH boot (E1).
  *
@@ -88,12 +88,12 @@ describe('I1c vocabularies', () => {
     assert.deepEqual([...INSTANCE_CODES].sort(), [...STATUS_CODES, ...OWN.codes].sort())
   })
   it('I1c-V-03 the contract exports exactly §6\'s STATUS and STATUS_CODES', async () => {
-    const contract = await import('fishball-connector/contract')
+    const contract = await import('dsh-connector/contract')
     assert.deepEqual(Object.values(contract.STATUS).sort(), [...STATUS].sort())
     assert.deepEqual(Object.values(contract.STATUS_CODES).sort(), [...STATUS_CODES].sort())
   })
   it('I1c-V-04 the instance-only values (connector-missing and the four own codes) are not contract values', async () => {
-    const contract = await import('fishball-connector/contract')
+    const contract = await import('dsh-connector/contract')
     assert.ok(!Object.values(contract.STATUS).includes(OWN.state), OWN.state + ' is not a STATUS value')
     for (const code of OWN.codes) assert.ok(!Object.values(contract.STATUS_CODES).includes(code), code + ' is not a STATUS_CODES value')
   })

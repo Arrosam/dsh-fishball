@@ -5,7 +5,7 @@
  *
  * Every value comes from docs/test-design/v3/10-embed-ui-matrix.md, v3-requirements.md (R-UI-01…12,
  * R-ARCH-02/04, R-HOST-06, S4-Q1 A), v3-design.md §4.1–§4.2 and the K3 freeze
- * (packages/connector/host-services/*.d.ts and README.md, packages/connector/tools/index.d.ts), or
+ * (packages/dsh-connector/host-services/*.d.ts and README.md, packages/dsh-connector/tools/index.d.ts), or
  * from the brief. No embed-UI implementation was read.
  */
 import path from 'node:path'
@@ -13,9 +13,9 @@ import { REPO } from '../../support/constants.mjs'
 
 /** The three host-only services embed-UI follows at runtime (K3 README, design §4.2). */
 export const SERVICE = Object.freeze({
-  child: 'fishballChild',
-  handover: 'fishballConnectorHandover',
-  tools: 'fishballConnectorTools',
+  child: 'dshInstanceChild',
+  handover: 'dshConnectorHandover',
+  tools: 'dshConnectorTools',
 })
 /** K3: every host-only service has apiVersion 1; any other value counts as absent (UIM-EP-01 #5). */
 export const API_VERSION = Object.freeze({ current: 1, older: 2 })
@@ -64,13 +64,13 @@ export const SLOT = Object.freeze({
   marks: Object.freeze(['conversation.session.header.actions', 'sidebar.workspaces.session.menu.item', 'sidebar.session.row.leading', 'sidebar.session.row.trailing']),
   /** The Plugins card (R-HOST-07: the model-sync trigger lives there). */
   card: Object.freeze(['plugins.bundle.config', 'plugins.row.config']),
-  /** DSH's tool row; embed-UI's `ask_fishball` view, if any, is read-only (R-UI-12, R-UI-13). */
+  /** DSH's tool row; embed-UI's `ask_agent` view, if any, is read-only (R-UI-12, R-UI-13). */
   toolview: 'tool.call.toolview',
 })
-export const ASK_TOOL = 'ask_fishball'
+export const ASK_TOOL = 'ask_agent'
 /** R-UI-12: no answer control. These are the element kinds through which a user could answer. */
 export const CONTROL = Object.freeze({ tags: Object.freeze(['button', 'input', 'textarea', 'select', 'form']), roles: Object.freeze(['button', 'checkbox', 'radio', 'menuitem']), handler: 'onClick' })
-/** V2's answer route for a pending `ask_fishball` row (rev11c PILE_API), which the main DSH loses (R-UI-12). */
+/** V2's answer route for a pending `ask_agent` row (rev11c PILE_API), which the main DSH loses (R-UI-12). */
 export const V2_ANSWER_ROUTE = 'api/fishball/requests/answer'
 /** R-UI-03 / design §4.2: the Retry control's label (en). */
 export const RETRY_LABEL = 'Retry'
@@ -95,12 +95,12 @@ export const CHILD = Object.freeze({
  * `admit`'s body is exactly `{view, lang}`; the hostname is the request's own `Host`.
  */
 export const ROUTE = Object.freeze({
-  services: '/api/fishball-embed-ui/services',
-  status: '/api/fishball-embed-ui/child/status',
-  retry: '/api/fishball-embed-ui/child/retry',
-  admit: '/api/fishball-embed-ui/child/admit',
-  modelsCheck: '/api/fishball-embed-ui/child/models/check',
-  modelsAdd: '/api/fishball-embed-ui/child/models/add',
+  services: '/api/dsh-connector-ui/services',
+  status: '/api/dsh-connector-ui/child/status',
+  retry: '/api/dsh-connector-ui/child/retry',
+  admit: '/api/dsh-connector-ui/child/admit',
+  modelsCheck: '/api/dsh-connector-ui/child/models/check',
+  modelsAdd: '/api/dsh-connector-ui/child/models/add',
   /** The `child/*` routes: each answers `instance-missing` without a usable locator. */
   child: Object.freeze(['status', 'retry', 'admit', 'modelsCheck', 'modelsAdd']),
   servicesKeys: Object.freeze(['ok', 'page', 'handover', 'tools', 'legacy', 'routes']),
@@ -122,8 +122,8 @@ export const HOST_TRICK = Object.freeze({ userinfo: 'fishball-tunnel.example@loc
  * absent in row 7); a row checks they equal the contracts. Only the exported data is read.
  */
 export const HOST_CONSTANTS = Object.freeze({
-  file: path.join(REPO, 'packages', 'embed-ui', 'src', 'host', 'constants.js'),
-  tools: path.join(REPO, 'packages', 'connector', 'tools', 'constants.js'),
+  file: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'host', 'constants.js'),
+  tools: path.join(REPO, 'packages', 'dsh-connector', 'tools', 'constants.js'),
 })
 
 /** The fake host-only services (fake-services.mjs) and what they record. */
@@ -187,8 +187,12 @@ export const SPLIT = Object.freeze({
   chunk: /^client\.[A-Za-z0-9][A-Za-z0-9._-]*\.js$/,
   /** O6: the status line link keeps its name and target; its target at the task's base commit. */
   statusLink: 'client.status.js',
-  /** The link's target at the task's base commit `eeb90f66` (`git cat-file -p eeb90f66:packages/embed-ui/src/client/client.status.js`). */
-  statusTarget: '../../../instance/src/child-settings/client.status.js',
+  /**
+   * The link's target: at the task's base commit `eeb90f66` it was `../../../instance/…`
+   * (`git cat-file -p eeb90f66:packages/embed-ui/src/client/client.status.js`); RENAME-DSH
+   * (design §1.0c) moved the instance folder, so the target names `dsh-instance`.
+   */
+  statusTarget: '../../../dsh-instance/src/child-settings/client.status.js',
 })
 
 /** Integration rows boot host DSHs; they run at integration only (the same switch as R-EMBED's). */
@@ -207,7 +211,7 @@ export const BUDGET = Object.freeze({ readyMs: 60000, pollMs: 250, quietMs: 3000
 export const LATER = Object.freeze({
   marks: 'U-MARKS (managed marks, Hand over / Take back from the hand-over service)',
   attn: 'U-ATTN (the fish and its attention dots, embed-UI attention tools contributed)',
-  records: 'U-RECORDS (inline read-only ask_fishball and permission records)',
+  records: 'U-RECORDS (inline read-only ask_agent and permission records)',
   askCard: "F-ASKCARD (an undecidable ask shows in Fishball's own page)",
   child: "X-MATRIX / E2E-UI (a real child: the page loads, cookie redemption, ticket replay; I-HOST's real locator)",
   e2e: 'E2E-UI (W6 browser flows: frame reload, the model-sync control on the Plugins page)',

@@ -3,7 +3,7 @@ import path from 'node:path'
 import { open, readFile, rename, writeFile } from 'node:fs/promises'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { appendPluginRecord } from '@deepseek-ai/dsh-session'
-import { ContractError, ERROR, OPERATION, validateRequest } from 'fishball-connector/contract'
+import { ContractError, ERROR, OPERATION, validateRequest } from 'dsh-connector/contract'
 
 export const EXT_LIMITS = Object.freeze({ notifyKeys: 10_000, recordTextChars: 8000 })
 const EXT = Object.freeze({

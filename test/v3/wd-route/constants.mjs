@@ -4,7 +4,7 @@
  * and the `preset-watchdog` agent preset (R-WD-16, WD-EP-04 row 5).
  *
  * Product values come only from frozen contracts and requirements, never from an implementation:
- * - K1 `fishball-connector/mcp-schema` (event types, tool names, offer ids, `disconnected`);
+ * - K1 `dsh-connector/mcp-schema` (event types, tool names, offer ids, `disconnected`);
  * - K1's V2 contract module (`DECISION`, the `approval_answer` verbs);
  * - K3 `packages/core/contracts/constants.js` (`INTERCEPT.defaultPriority`, `GUARDS.watchdogAgentPreset`,
  *   `GUARDS.managerTools`);
@@ -16,8 +16,8 @@
  * The rest is fixture data and harness timing.
  */
 import path from 'node:path'
-import { DECISION } from '../../../packages/connector/contract/contract.js'
-import { EVENT_TYPE, LINK_REFUSAL, TOOL } from '../../../packages/connector/mcp-schema/index.js'
+import { DECISION } from '../../../packages/dsh-connector/contract/contract.js'
+import { EVENT_TYPE, LINK_REFUSAL, TOOL } from '../../../packages/dsh-connector/mcp-schema/index.js'
 import { GUARDS, INTERCEPT } from '../../../packages/core/contracts/constants.js'
 import { BOOT_TOOLS } from '../../support/constants.mjs'
 import { V3 } from '../shared/constants.mjs'

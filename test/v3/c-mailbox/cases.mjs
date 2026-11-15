@@ -134,7 +134,7 @@ async function assertRefused(mailbox, result, code, before, other = []) {
   const text = JSON.stringify(result)
   for (const secret of other) assert.ok(!text.includes(secret), `the refusal leaks ${secret}`)
 }
-/** The hints `key`'s listen streams got: each exactly `(key, fishball://events)`, nothing else. */
+/** The hints `key`'s listen streams got: each exactly `(key, dsh-agent://events)`, nothing else. */
 function hintsOf(world, key) {
   const calls = world.hints.for(key)
   for (const call of calls) assert.deepEqual(call, [key, RESOURCE.events.uri], 'a hint carries more than its pair and the events URI')
@@ -148,7 +148,7 @@ export function registerMailboxCases(sdk) {
   const assertSchema = async (schema, value, what) => assert.ok((await validator)(schema)(value), `${what} does not match its K1 schema: ${JSON.stringify(value)}`)
 
   // ---------------------------------------------------------------- EVT-UC-01 (Use Case) — first
-  row(sdk, ID.uc01, 'main 1', 'P opens subscriptions/listen on fishball://events and gets the acknowledgement', null, LATER.http)
+  row(sdk, ID.uc01, 'main 1', 'P opens subscriptions/listen on dsh-agent://events and gets the acknowledgement', null, LATER.http)
 
   row(sdk, ID.uc01, 'main 2', 'S1 asks a permission: the hint to P is sent by the time the commit resolves, and carries no event body', async (t) => {
     const w = await worldFor(t, sdk)
@@ -256,7 +256,7 @@ export function registerMailboxCases(sdk) {
     assert.equal((await w.mailbox.summary(P)).pending, 1)
   })
 
-  row(sdk, ID.ep02, 2, 'pair B reads fishball://events: B\'s mailbox only, never A\'s events', async (t) => {
+  row(sdk, ID.ep02, 2, 'pair B reads dsh-agent://events: B\'s mailbox only, never A\'s events', async (t) => {
     const w = await worldFor(t, sdk)
     const aEvents = await commitMany(w.mailbox, P, 2)
     const qEvent = await commitOk(w.mailbox, Q, EVENT_TYPE.message)
@@ -289,7 +289,7 @@ export function registerMailboxCases(sdk) {
     await assertRefused(w.mailbox, await w.mailbox.ack(P, [receiptOf(first), { eventId: second.eventId, payloadDigest: FIXTURE.wrongDigest }]), REFUSAL.digestMismatch, before, [Q])
   })
 
-  row(sdk, ID.ep02, 6, 'the fishball://events contents: {pending, headSequence, mailboxGeneration} only, never bodies', async (t) => {
+  row(sdk, ID.ep02, 6, 'the dsh-agent://events contents: {pending, headSequence, mailboxGeneration} only, never bodies', async (t) => {
     const w = await worldFor(t, sdk)
     const committed = [await commitOk(w.mailbox, P, EVENT_TYPE.permission), await commitOk(w.mailbox, P, EVENT_TYPE.message)]
     const summary = await w.mailbox.summary(P)

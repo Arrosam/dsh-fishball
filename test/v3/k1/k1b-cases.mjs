@@ -1,6 +1,6 @@
 /**
  * K1b black-box rows: the request gate and the grant dispatch frozen in
- * `fishball-connector/mcp-schema` (spec and decisions: k1b-constants.mjs). Written from the
+ * `dsh-connector/mcp-schema` (spec and decisions: k1b-constants.mjs). Written from the
  * requirements, the design, Fishball's K1b decisions and the frozen declaration names only; no K1b
  * implementation was read.
  *

@@ -1,7 +1,7 @@
 /**
  * H-STUB, the test side (docs/test-design/connector.md "H-STUB details"). bootStub() boots the real
- * DSH worker with only `fishball-connector` and the fake instance `fbtest-stub-instance` (no
- * `fishball-instance`), on a throwaway OS-temp home, and returns the host handle plus a client
+ * DSH worker with only `dsh-connector` and the fake instance `fbtest-stub-instance` (no
+ * `dsh-instance`), on a throwaway OS-temp home, and returns the host handle plus a client
  * for the stub's operations. Everything a case observes goes through public surfaces: the
  * contract frames the stub received, the managed session's own tool results, the connector's
  * /api/fishball routes, DSH's settings service and the session logs.
@@ -13,7 +13,7 @@ import fs from 'node:fs'
 import { tempPath } from './temp-path.mjs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { CONNECTOR_CONTRACT, ENVELOPE, INBOX_KIND, OPERATION } from 'fishball-connector/contract'
+import { CONNECTOR_CONTRACT, ENVELOPE, INBOX_KIND, OPERATION } from 'dsh-connector/contract'
 import { CONNECTOR, LEGACY_INTERACTION, PRESET, ROW_ID, RUNTIME } from './constants.mjs'
 import { callScript, jsonOf, patchFile, turn } from './expect.mjs'
 import { bootHost } from './host.mjs'
@@ -219,8 +219,8 @@ export async function sessionCall(host, sessionId, tool, args, { text, timeoutMs
   return { json: jsonOf(r.results[0]), result: r.results[0], turn: r }
 }
 
-/** A message_fishball call from a managed session. */
-export const messageFishball = (host, sessionId, args) => sessionCall(host, sessionId, 'message_fishball', args)
+/** A message_agent call from a managed session. */
+export const messageFishball = (host, sessionId, args) => sessionCall(host, sessionId, 'message_agent', args)
 
 /** Wait until no inbox item arrives for quietMs on the attachment; returns the count. */
 export async function quietPushes(stub, index, quietMs = STUB.quietMs) {

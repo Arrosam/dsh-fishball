@@ -8,7 +8,7 @@
  * with the contract's 401.
  */
 import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { BEARER } from 'fishball-connector/contract'
+import { BEARER } from 'dsh-connector/contract'
 
 /** Hex keeps the credential header-safe and matches this repository's other channel tokens. */
 const TOKEN = Object.freeze({ encoding: 'hex' })

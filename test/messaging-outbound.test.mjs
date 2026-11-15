@@ -13,7 +13,7 @@
  * | OUT-03 ×4 | DT (target) | §4.1, §7 | unknown id → unknown-session; a session that is not managed → not-managed; Fishball's own session → is-fishball; an archived managed session → an error frame; nothing delivered |
  * | OUT-03b | BVA (empty message) | §4.1 "message may be empty" | an empty message is accepted and delivered |
  * | OUT-04 | EP (managed target whose preset cannot be resumed) | §7 | an error frame; nothing delivered |
- * | OUT-05 | EP (absolute existing folder) | §4.1, DESIGN §5d | `{sessionId, managed:true}`; one new session in that folder with DSH's default preset; managed (by start); its requests list message_fishball and not the removed outbound tools; the first message is a relay and the session runs; no workspace registered |
+ * | OUT-05 | EP (absolute existing folder) | §4.1, DESIGN §5d | `{sessionId, managed:true}`; one new session in that folder with DSH's default preset; managed (by start); its requests list message_agent and not the removed outbound tools; the first message is a relay and the session runs; no workspace registered |
  * | OUT-06 | EP (workspace id) | §4.1 | the new session belongs to that workspace |
  * | OUT-06b | EP (workspace id, folder deleted) | §4.1 "never creates folders" | an error frame; the folder is not created; no session |
  * | OUT-07 ×6 | DT (folder) | §4.1, §3.1 | no folder key and '' break the exact-key / non-empty rules (the channel closes); a missing path, a file, a relative path and an unknown non-path value are refused with an error frame; nothing created, the folder never created |
@@ -40,7 +40,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { before, describe, it } from 'node:test'
-import { DELIVERY } from 'fishball-connector/contract'
+import { DELIVERY } from 'dsh-connector/contract'
 import { INBOUND_TOOL, LIMITS, OUTBOUND_TOOLS, PRESET, RELAY } from './support/constants.mjs'
 import { HOOK, T, toolNames } from './support/expect.mjs'
 import { ENVELOPE, STUB, handOver, userSession } from './support/instance-stub.mjs'
@@ -162,7 +162,7 @@ describe('bridge session.message, redirect, stop and start', () => {
     assert.equal((await w.host.call('header', { sessionId: json.sessionId })).agentPreset, await w.host.call('defaultPreset'), "DSH's default preset")
     assert.ok(await until(async () => (await w.host.call('markerState', { marker })).left === 0, G.settleMs, 100), 'the new session ran a turn')
     for (const r of await w.host.call('requests', { sessionId: json.sessionId })) {
-      assert.ok(toolNames(r).includes(INBOUND_TOOL), 'a managed session has message_fishball')
+      assert.ok(toolNames(r).includes(INBOUND_TOOL), 'a managed session has message_agent')
       for (const n of REMOVED_TOOLS) assert.equal(toolNames(r).includes(n), false, n)
     }
     assert.equal((await w.host.call('workspaces')).list.length, workspacesBefore, 'no workspace registered')

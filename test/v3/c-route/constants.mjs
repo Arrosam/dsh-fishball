@@ -5,11 +5,11 @@
  * HAND-ST-01, HAND-UC-02 (service part), PLAT-UC-03, and the K1c / K3 rules no case file numbers
  * (the ROUTE-* ids, cases.mjs).
  *
- * Every product value comes from K1 (`fishball-connector/mcp-schema`: event types, refusal codes,
+ * Every product value comes from K1 (`dsh-connector/mcp-schema`: event types, refusal codes,
  * MANAGED_REFUSAL, QUEUE, RETIREMENT_REASON, OFFER_ID, CONNECTED, TOOL_NAMES), K2
- * (`fishball-connector/tools`: `no-fishball`, the namespace separator) or K3
+ * (`dsh-connector/tools`: `no-agent`, the namespace separator) or K3
  * (`host-services/handover.d.ts`, types only, so its codes are restated in HANDOVER below and
- * checked against the declaration text). Nothing comes from `packages/connector/src/routing/` or
+ * checked against the declaration text). Nothing comes from `packages/dsh-connector/src/routing/` or
  * `src/handover/`. The rest is fixture data and harness timing, which are not product values.
  */
 import fs from 'node:fs'
@@ -17,9 +17,9 @@ import path from 'node:path'
 import {
   CONNECTED, CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, ENTRY_STATUS, EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, OFFER_ID, OFFER_TYPES, PATHS,
   QUEUE, REFUSAL, REQUEST_GATE, RETIREMENT_REASON, TOOL_NAMES, formatOfferId,
-} from '../../../packages/connector/mcp-schema/index.js'
-import { EMIT_REFUSAL, NAMESPACE } from '../../../packages/connector/tools/index.js'
-import { IMAGE_TYPES } from '../../../packages/connector/contract/contract.js'
+} from '../../../packages/dsh-connector/mcp-schema/index.js'
+import { EMIT_REFUSAL, NAMESPACE } from '../../../packages/dsh-connector/tools/index.js'
+import { IMAGE_TYPES } from '../../../packages/dsh-connector/contract/contract.js'
 import { REPO } from '../../support/constants.mjs'
 
 export {
@@ -28,7 +28,7 @@ export {
 }
 
 /** K1 settlement payload values (EVENT_PAYLOAD_SHAPES.settlement `{approvalId, outcome, by}`), for the settle rows. */
-export { SETTLED_BY, SETTLEMENT_OUTCOME } from '../../../packages/connector/mcp-schema/index.js'
+export { SETTLED_BY, SETTLEMENT_OUTCOME } from '../../../packages/dsh-connector/mcp-schema/index.js'
 
 /** K1 `RetireOutcome` of `Mailbox.retire` (DECIDED #W3-1; types only), as C-MAILBOX's cases name it. */
 export { RETIRE_OUTCOME } from '../c-mailbox/constants.mjs'
@@ -41,12 +41,12 @@ export const REVOCATION = Object.freeze({ disabled: 'disabled', deleted: 'delete
  * FBTEST_C_ROUTE_ENTRY moves the entry (e.g. to the dev checkout).
  */
 export const SUBJECT = Object.freeze({
-  entry: process.env.FBTEST_C_ROUTE_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'routing', 'index.js'),
+  entry: process.env.FBTEST_C_ROUTE_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'routing', 'index.js'),
   open: 'openRouting',
   /** Members of the opened routing object the cases drive (subject.mjs). */
-  members: Object.freeze(['router', 'managed', 'handover', 'provide', 'messageFishball', 'askFishball', 'offer']),
+  members: Object.freeze(['router', 'managed', 'handover', 'provide', 'messageAgent', 'askAgent', 'offer']),
   /** C-MAILBOX's entry and its two composition functions (as test/v3/c-mailbox/subject.mjs binds them). */
-  mailboxEntry: process.env.FBTEST_C_MAILBOX_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'mailbox', 'index.js'),
+  mailboxEntry: process.env.FBTEST_C_MAILBOX_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'mailbox', 'index.js'),
   mailboxOpen: 'openMailboxTables',
   mailboxCreate: 'createMailbox',
 })
@@ -55,19 +55,19 @@ export const SUBJECT = Object.freeze({
 export const MANAGED_STATE_METHODS = Object.freeze(['managerOf', 'managed', 'manage', 'release', 'onChange'])
 
 /**
- * K3 `fishballConnectorHandover` (host-services/handover.d.ts; types only). `codes` restates the
+ * K3 `dshConnectorHandover` (host-services/handover.d.ts; types only). `codes` restates the
  * refusal codes; `handoverCodes()` below reads them back from the declaration so a K3 amendment
  * fails the row instead of drifting.
  */
-const HANDOVER_DTS = path.join(REPO, 'packages', 'connector', 'host-services', 'handover.d.ts')
+const HANDOVER_DTS = path.join(REPO, 'packages', 'dsh-connector', 'host-services', 'handover.d.ts')
 export const HANDOVER = Object.freeze({
-  service: 'fishballConnectorHandover',
+  service: 'dshConnectorHandover',
   apiVersion: 1,
   /** Exactly these members (HAND-EP-01 row 5: no session read, approval or answer member). */
   members: Object.freeze(['apiVersion', 'managed', 'principals', 'onChange', 'handOver', 'takeBack']),
   principalFields: Object.freeze(['key', 'name', 'id', 'online', 'enabled', 'paired', 'designated']),
   refFields: Object.freeze(['key', 'name', 'id']),
-  codes: Object.freeze({ unknownSession: 'unknown-session', conflict: 'conflict', noFishball: EMIT_REFUSAL.noFishball, notManaged: MANAGED_REFUSAL.notManaged }),
+  codes: Object.freeze({ unknownSession: 'unknown-session', conflict: 'conflict', noAgent: EMIT_REFUSAL.noAgent, notManaged: MANAGED_REFUSAL.notManaged }),
   /** The `note` an event carries when the call omits it (K3 README "note"). */
   omittedNote: '',
 })
@@ -83,7 +83,7 @@ export const FALLBACK = Object.freeze({
   toUser: 'to-user',
   queue: 'queue',
   unavailable: 'unavailable',
-  noFishball: EMIT_REFUSAL.noFishball,
+  noAgent: EMIT_REFUSAL.noAgent,
   dropped: 'dropped',
 })
 
@@ -145,7 +145,7 @@ export const FIXTURE = Object.freeze({
 
 /**
  * Fixture data of the merge-review fix-1 rows (ROUTE-ST-03, ROUTE-DT-03, ROUTE-EP-02): the values a
- * caller writes into a `message_fishball` payload after the call, and an offer no one made.
+ * caller writes into a `message_agent` payload after the call, and an offer no one made.
  */
 export const MUTATION = Object.freeze({
   /** A valid replacement of the top-level `text`. */
@@ -187,10 +187,10 @@ export const WAIT = Object.freeze({
 /** Owners of rows C-ROUTE cannot check alone (v3-tasks.md W3–W4; the brief's "Not yours"). */
 export const LATER = Object.freeze({
   wire: 'C-WIRE (binding the session source to a real DSH session controller on both SDKs; Fishball 2026-11-14 #7)',
-  wireTools: 'C-WIRE (the main-session tools message_fishball / ask_fishball and the approval hook on a real DSH)',
+  wireTools: 'C-WIRE (the main-session tools message_agent / ask_agent and the approval hook on a real DSH)',
   wireRoutes: 'C-WIRE (the connector row: nothing but its listed routes is served; the service is a Cordis service of this process only)',
   wireToUser: 'C-WIRE (DSH approval binding: a retired or unmanaged offer is answered by the user in the session)',
-  toolsAnswer: 'C-TOOLS (approval_answer on the ask offer answers the waiting ask_fishball)',
+  toolsAnswer: 'C-TOOLS (approval_answer on the ask offer answers the waiting ask_agent)',
   succeed: 'C-SUCCEED (Q24 succession moves management and pending events, R-HOST-09)',
   revokeNote: 'C-REVOKE (the one system note in the session and the live offers to the user, R-ROUTE-06, R-TOK-05)',
   watchdog: 'WD-ROUTE (inside the Fishball DSH Watchdog receives no turn-finished / state; the connector sees one principal)',

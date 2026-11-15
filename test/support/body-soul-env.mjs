@@ -7,7 +7,7 @@
  *   under `@deepseek-ai/`, so one extra resolve hook maps that single name to the same runtime.
  * - Scratch directories are throwaway temp dirs (os.tmpdir()), removed after each test.
  * - The connector's `record.*` words live inside the closure of the moved connector UI
- *   (packages/embed-ui/src/client/client.shell.js, the page dictionaries' part since U-SHELL's split), so they are read from the source text.
+ *   (packages/dsh-connector-ui/src/client/client.shell.js, the page dictionaries' part since U-SHELL's split), so they are read from the source text.
  */
 import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -20,8 +20,8 @@ import { FIXTURE } from './provider-sync-official.mjs'
 import { resolveFromRuntime, resolveOfficialSDK } from './provider-sync-sdk.mjs'
 
 export const BODY_SOUL = Object.freeze({
-  instance: path.join(REPO, 'packages', 'instance'),
-  connector: path.join(REPO, 'packages', 'connector'),
+  instance: path.join(REPO, 'packages', 'dsh-instance'),
+  connector: path.join(REPO, 'packages', 'dsh-connector'),
   /** V3 R-CORE: the slim child, slim ui, persona and fishball-ui page packages moved here. */
   core: path.join(REPO, 'packages', 'core'),
   tempPrefix: 'fbtest-body-soul-',
@@ -37,7 +37,7 @@ function installHooks() {
   resolveFromRuntime((specifier) => BODY_SOUL.runtimePackages.includes(specifier))
 }
 
-/** Import a module of packages/instance by its path relative to that package. */
+/** Import a module of packages/dsh-instance by its path relative to that package. */
 export async function loadInstance(relative) {
   installHooks()
   return import(pathToFileURL(path.join(BODY_SOUL.instance, relative)).href)
@@ -49,7 +49,7 @@ export async function loadCore(relative) {
   return import(pathToFileURL(path.join(BODY_SOUL.core, relative)).href)
 }
 
-/** Import a module of packages/connector by its path relative to that package. */
+/** Import a module of packages/dsh-connector by its path relative to that package. */
 export async function loadConnector(relative) {
   installHooks()
   return import(pathToFileURL(path.join(BODY_SOUL.connector, relative)).href)

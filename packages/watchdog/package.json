@@ -14,7 +14,7 @@
     "node": ">=22",
     "dsh": ">=0.2.1-rc.5"
   },
-  "//peerDependencies": "No peer on fishball-instance or fishball-core (design §5a.1, §9.1): fishballInstance is looked up at runtime, so a DSH without core still loads this row and only logs fishball-core-missing (R-FB-06).",
+  "//peerDependencies": "No peer on dsh-instance or fishball-core (design §5a.1, §9.1): fishballInstance is looked up at runtime, so a DSH without core still loads this row and only logs fishball-core-missing (R-FB-06).",
   "peerDependencies": {
     "@deepseek-ai/dsh-agent": "*",
     "@deepseek-ai/dsh-llm": "*",

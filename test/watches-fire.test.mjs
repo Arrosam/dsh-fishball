@@ -28,10 +28,10 @@
  * | TOL-07b | BVA (one answer of about 16 KB) | contract §4.1 | text at most 12288 bytes, no broken character, truncated true |
  * | NTF-01 | EP (session.message + notifyWhenFinished) | contract §4.1; DESIGN §5c | {status:'delivered', watchId}; one notice after the target's turn, with its answer |
  * | NTF-02 | EP (session.start + notifyWhenFinished) | contract §4.1 | {sessionId, managed:true, watchId}; one notice after its first turn |
- * | NTF-03 ×2 | DT (flag × watch refused: limit) | contract §4.1 "A refused watch never undoes the message" | session.message: {status:'delivered', watchError:'limit-reached'}, no watchId, the message reaches the target; message_fishball: ok, watchError, the message is delivered |
- * | NTF-04 | EP (message_fishball + notify_when_finished) | DESIGN §5c; contract §4.5 | ok, a watch on the caller (createdBy agent, the caller); the `session` push first, then one `watch` push when the caller's turn ends |
- * | NTF-05 | EP (subagent of a managed session + flag) | DESIGN §5e "no Fishball tools" | the child has no message_fishball; no watch on the root or the child |
- * | NTF-06 ×3 | EP (no flag) | contract §4.1 "watchId? or watchError?" | session.message, session.start and message_fishball carry neither watchId/watch nor watchError; no watch is added |
+ * | NTF-03 ×2 | DT (flag × watch refused: limit) | contract §4.1 "A refused watch never undoes the message" | session.message: {status:'delivered', watchError:'limit-reached'}, no watchId, the message reaches the target; message_agent: ok, watchError, the message is delivered |
+ * | NTF-04 | EP (message_agent + notify_when_finished) | DESIGN §5c; contract §4.5 | ok, a watch on the caller (createdBy agent, the caller); the `session` push first, then one `watch` push when the caller's turn ends |
+ * | NTF-05 | EP (subagent of a managed session + flag) | DESIGN §5e "no Fishball tools" | the child has no message_agent; no watch on the root or the child |
+ * | NTF-06 ×3 | EP (no flag) | contract §4.1 "watchId? or watchError?" | session.message, session.start and message_agent carry neither watchId/watch nor watchError; no watch is added |
  * | NTF-07/08 | EP (fast turn: the target's first model call fails at once) | contract §4.1 "watermark read before the delivery" | session.message / session.start with the flag: one notice, reason error |
  * | QFL-02 | ST (queue full: maxQueuedInputs 1 and one unacked item → target finishes → the item is acked late → (a ready edge if nothing came yet)) | DESIGN §5c "A notice the ledger refuses keeps the watermark … scanned again"; contract §9; slim §5.2 ready edge | not delivered while full; exactly one notice later, with its answer, without a DSH restart (diagnostic: whether the ack alone was enough) |
  *
@@ -47,7 +47,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after, before, describe, it } from 'node:test'
-import { EVENT } from 'fishball-connector/contract'
+import { EVENT } from 'dsh-connector/contract'
 import { LIMITS, PRESET } from './support/constants.mjs'
 import { HOOK, T, callScript, jsonOf, toolNames, turn } from './support/expect.mjs'
 import { KIND, STUB, bootStub, managedSession, messageFishball, quietPushes, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
@@ -349,7 +349,7 @@ describe('P6 watches fire (H-STUB)', () => {
         assert.ok(await until(async () => (await host.call('requestsContaining', { needle: marker })).some((r) => r.sessionId === sid), STUB.waitMs, STUB.pollMs), 'delivered')
       })
 
-      it('message_fishball: ok with watchError limit-reached; the message is delivered', T, async () => {
+      it('message_agent: ok with watchError limit-reached; the message is delivered', T, async () => {
         const sid = await managedSession(host, 'n-03b')
         const text = tok('ntf03b')
         const { json } = await messageFishball(host, sid, { message: text, notify_when_finished: true })
@@ -377,7 +377,7 @@ describe('P6 watches fire (H-STUB)', () => {
       assertNotice(assert, got[0], { sid: reply.payload.sessionId, watchId: reply.payload.watchId, reason: REASON.error })
     })
 
-    it('NTF-04 message_fishball with the flag watches the caller (createdBy agent) and fires when its turn ends', T, async () => {
+    it('NTF-04 message_agent with the flag watches the caller (createdBy agent) and fires when its turn ends', T, async () => {
       const sid = await managedSession(host, 'n-04')
       const text = tok('ntf04')
       const { json } = await messageFishball(host, sid, { message: text, notify_when_finished: true })
@@ -391,15 +391,15 @@ describe('P6 watches fire (H-STUB)', () => {
       assert.deepEqual(order, [KIND.session, KIND.watch], 'the message first, then the notice')
     })
 
-    it('NTF-05 a subagent of a managed session has no message_fishball, so no watch', LONG, async () => {
+    it('NTF-05 a subagent of a managed session has no message_agent, so no watch', LONG, async () => {
       const std = await managedSession(host, 'n-05', PRESET.standard)
       const marker = tok('ntf05sub')
-      await host.call('queueMarker', { marker, except: std, script: [[{ tool: 'message_fishball', args: { message: tok('ntf05'), notify_when_finished: true } }], [{ text: 'sub done' }]] })
+      await host.call('queueMarker', { marker, except: std, script: [[{ tool: 'message_agent', args: { message: tok('ntf05'), notify_when_finished: true } }], [{ text: 'sub done' }]] })
       const r = await turn(host, std, [[{ tool: 'subagent', args: { description: 'fbtest sub', prompt: marker + ' please' } }], [{ text: 'parent done' }]])
       assert.equal(r.results[0]?.isError, false, r.results[0]?.text)
       assert.ok(await until(async () => (await host.call('markerState', { marker })).left === 0, STUB.waitMs, STUB.pollMs), 'precondition: the child ran')
       const child = (await host.call('markerState', { marker })).sessions[0]
-      for (const req of await host.call('requests', { sessionId: child })) assert.equal(toolNames(req).includes('message_fishball'), false, 'the child lists message_fishball')
+      for (const req of await host.call('requests', { sessionId: child })) assert.equal(toolNames(req).includes('message_agent'), false, 'the child lists message_agent')
       await quietPushes(stub)
       assert.equal((await watchesOn(stub, std)).length, 0, 'no watch on the root')
       assert.equal((await watchesOn(stub, child)).length, 0, 'no watch on the child')
@@ -419,9 +419,9 @@ describe('P6 watches fire (H-STUB)', () => {
         for (const key of ['watchId', 'watchError']) assert.equal(key in reply.payload, false, key)
         assert.equal((await watchesOn(stub, reply.payload.sessionId)).length, 0)
       })
-      it('message_fishball', T, async () => {
+      it('message_agent', T, async () => {
         const sid = await managedSession(host, 'n-06c')
-        const r = await turn(host, sid, callScript('message_fishball', { message: tok('n06') }))
+        const r = await turn(host, sid, callScript('message_agent', { message: tok('n06') }))
         const json = jsonOf(r.results[0])
         assert.equal(json?.ok, true, JSON.stringify(json))
         for (const key of ['watch', 'watchError']) assert.equal(key in json, false, key)

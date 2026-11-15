@@ -1,7 +1,7 @@
 /**
  * The child `admin` service's wire protocol (fishball-shared, R-ARCH-08).
  *
- * Moved from fishball-instance's src/slim/child/admin.js with its rules unchanged: the child
+ * Moved from dsh-instance's src/slim/child/admin.js with its rules unchanged: the child
  * serves this protocol (its applier and wire end stay with the child, src/slim/child/admin.js)
  * and the main host's relay (src/slim/host/admin.js) speaks it, so both ends validate one
  * definition instead of two drifting ones. The vocabulary, limits and typed refusal are plain module exports; `refuse` and
@@ -9,7 +9,7 @@
  *
  * The request/result validators and the frame codec read three values of the Fishball contract:
  * DIGEST (inventory digests) and STATUS/STATUS_CODES (admin.status). fishball-shared imports no
- * other V3 package (R-ARCH-08 rule 2), so each end passes its own `fishball-connector/contract`
+ * other V3 package (R-ARCH-08 rule 2), so each end passes its own `dsh-connector/contract`
  * values to `createAdminProtocol`, which wraps the moved validators and codec; the rules
  * themselves exist only here.
  */
@@ -25,7 +25,7 @@ const NO_KEYS = Object.freeze([])
  * owns the wire's `control` channel exclusively — its frames are envelope v2 and a foreign
  * frame closes the connection — so the admin protocol needs its own payload channel on the
  * same authenticated wire rather than a second socket. Merge hook (see the delivery report):
- * fishball-instance's src/native-runtime/wire.js must carry this channel and hand each end a
+ * dsh-instance's src/native-runtime/wire.js must carry this channel and hand each end a
  * transport view.
  */
 export const ADMIN = Object.freeze({

@@ -4,7 +4,7 @@
  * §5.1 (a detach sends a waiting request to its session), §9; slim-native-design §12). "Fishball stopped" and
  * "Permission requests turned off" become "the instance detaches" and "the transport closes": the Permission
  * requests switch is gone (slim §12) and the instance is the only answerer. The card is answered on the session's
- * ask_fishball row (POST /api/fishball/requests/answer, §10e). One host; cases run in order; the restart case is last.
+ * ask_agent row (POST /api/fishball/requests/answer, §10e). One host; cases run in order; the restart case is last.
  *
  * Retired:
  * LVE-06: Fishball's own requests (set_plugin_enabled and the other private-tree tools) are deleted with the in-process Fishball (slim-native-design §12); no instance operation files an own permission card
@@ -20,7 +20,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { DECISION, RISK } from 'fishball-connector/contract'
+import { DECISION, RISK } from 'dsh-connector/contract'
 import { ASK_CODE, AUDIT_ANSWER, CLICK, LIMITS, OUTCOME, PILE_CODE } from './support/constants.mjs'
 import { HOOK, T, cardOf, jsonOf, managedEntry, pileNow, resultById, untilNoCard } from './support/expect.mjs'
 import { ASK_STUB, askHost, askTools, assertShape, restartAsk, stopAsk, tokens } from './support/instance-stub-ask.mjs'
@@ -53,7 +53,7 @@ describe('Revision 11 rev11c: cards leave, and the cap', () => {
   }
 
   /**
-   * The instance goes away (detach or close) while an ask_fishball is a card: the agent gets unavailable, the
+   * The instance goes away (detach or close) while an ask_agent is a card: the agent gets unavailable, the
    * card leaves, and the identical call the agent then makes shows the session's stock prompt (§7a.5).
    */
   async function goneWhileCard(label, goAway) {

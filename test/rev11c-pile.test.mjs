@@ -1,7 +1,7 @@
 /**
  * Revision 11 rev11c: the cards that go to the user, in the snapshot, on the H-STUB harness (DESIGN §7a.6, §9
  * "Session cards", §10e; slim-native-design §12). The pile UI above Fishball's composer is deleted (slim §12: a
- * card that goes to the user is answered in its own session's ask_fishball row, a direct call on DSH's stock
+ * card that goes to the user is answered in its own session's ask_agent row, a direct call on DSH's stock
  * prompt), but the snapshot and the event stream keep `pile`, which is what the row's buttons read (§10e: buttons
  * "while the snapshot holds a card for that callId"). The attached instance escalates with `approval.answer`.
  * One host; cases run in order. Expected values come from the requirements and DESIGN.
@@ -22,7 +22,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { DECISION, SETTLED_BY } from 'fishball-connector/contract'
+import { DECISION, SETTLED_BY } from 'dsh-connector/contract'
 import { APPROVER_HOLDS, ASK_CODE, ASK_TOOL, CARD_KEYS, CARD_KIND, CLICK, ELLIPSIS, LIMITS, OUTCOME, REQUEST_PLACEHOLDER } from './support/constants.mjs'
 import { HOOK, T, bytes, cardArguments, cardOf, pileNow, untilCard, untilNoCard } from './support/expect.mjs'
 import { ASK_STUB, askHost, askTools, assertShape, stopAsk, tokens } from './support/instance-stub-ask.mjs'
@@ -86,7 +86,7 @@ describe('Revision 11 rev11c: the cards that go to you', () => {
       for (const key of CARD_KEYS) assert.ok(key in c, name + ' card has ' + key + ': ' + JSON.stringify(c))
       assert.equal(c.kind, CARD_KIND.asked)
       assert.equal(c.sessionId, sid)
-      assert.equal(c.callId, callId, 'the ask_fishball call the running row matches on (S37)')
+      assert.equal(c.callId, callId, 'the ask_agent call the running row matches on (S37)')
       assert.equal(c.toolName, ASK_TOOL, 'the tool the agent asks about')
       assert.deepEqual(cardArguments(c), { text }, 'the exact arguments')
       assert.equal(c.why, 'why ' + text, "the agent's reason")

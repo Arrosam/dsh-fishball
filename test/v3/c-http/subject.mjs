@@ -1,5 +1,5 @@
 /**
- * The one place that binds the C-HTTP cases to C-HTTP's module (`packages/connector/src/mcp/http/`).
+ * The one place that binds the C-HTTP cases to C-HTTP's module (`packages/dsh-connector/src/mcp/http/`).
  *
  * K1b freezes `RequestGate` (check, admit), `GateListenerFacts` and C-HTTP's `HintSink`
  * (index.d.ts), but no factory. The module's entry exports these two; the dev session adapts this
@@ -16,7 +16,7 @@
  *     pairs       K1 PairStore's `pairOf` and `seen` (C-PAIR's), faked below: the endpoint derives a
  *                 pair-only caller's 403 reason from it
  *     secure      the same boolean as the gate's facts.secure (one listener)
- *     readEvents  the `resources/read fishball://events` result (C-MAILBOX's), faked below
+ *     readEvents  the `resources/read dsh-agent://events` result (C-MAILBOX's), faked below
  *     logger      a cordis-style logger ({debug, info, warn, error}); the world records every line
  *   route.handler(req, res)   the raw Node handler DSH's `webServer.register({kind: 'exact', path:
  *                             PATHS.mcp, handler})` takes (design §3.1)
@@ -49,7 +49,7 @@ import {
 
 /** C-HTTP's entry bound to `sdk`, with exactly one factory of each kind. */
 async function factories(sdk) {
-  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(REPO, SUBJECT.entry)} does not exist (C-HTTP "Owns" packages/connector/src/mcp/http/)`)
+  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(REPO, SUBJECT.entry)} does not exist (C-HTTP "Owns" packages/dsh-connector/src/mcp/http/)`)
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
   const one = (pattern) => {
     const names = Object.keys(mod).filter((n) => typeof mod[n] === 'function' && pattern.test(n))
@@ -137,7 +137,7 @@ export class FakePairs {
   seen(principalKey, now) { this.seenCalls.push({ principalKey, now }) }
 }
 
-/** C-MAILBOX's `resources/read fishball://events` result, faked: an empty event list. */
+/** C-MAILBOX's `resources/read dsh-agent://events` result, faked: an empty event list. */
 const readEvents = async () => ({
   contents: [{ uri: RESOURCE.events.uri, mimeType: RESOURCE.events.mimeType, text: JSON.stringify([]) }],
 })
@@ -151,7 +151,7 @@ export class FakeTokens {
 
 /**
  * A K1 `Caller` of fishball id `id` on its own entry: full power with a principal key, or
- * pair-only (no binding, scope `fishball:pair`).
+ * pair-only (no binding, scope `agent:pair`).
  */
 export const callerOf = (id, audience, { pairOnly = false } = {}) => Object.freeze({
   entryKey: FIXTURE.entry(id),

@@ -18,7 +18,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ARGUMENTS_STATUS, ENVELOPE, EVENT, OPERATION } from 'fishball-connector/contract'
+import { ARGUMENTS_STATUS, ENVELOPE, EVENT, OPERATION } from 'dsh-connector/contract'
 import { ASK_TOOL, OUTCOME, PROMPT_DECISION } from './support/constants.mjs'
 import { HOOK, T, approvalAudit, pileNow } from './support/expect.mjs'
 import { stopStub } from './support/instance-stub.mjs'

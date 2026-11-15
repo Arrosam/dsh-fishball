@@ -3,8 +3,8 @@
  * AUTH-DT-08, AUTH-DT-09, AUTH-ST-04, AUTH-ST-05, AUTH-BVA-07, AUTH-BVA-08, AUTH-EP-08, AUTH-EP-10,
  * and K1b-DT-07 (the approval listener over the gate).
  *
- * Every product value comes from K1, `fishball-connector/mcp-schema` (`index.js`, typed by the
- * frozen `index.d.ts`). Nothing comes from `packages/connector/src/mcp/oauth-web/`. The rest is case
+ * Every product value comes from K1, `dsh-connector/mcp-schema` (`index.js`, typed by the
+ * frozen `index.d.ts`). Nothing comes from `packages/dsh-connector/src/mcp/oauth-web/`. The rest is case
  * data (the documents, ids, names and values the case tables name), the page wording the
  * requirements quote (R-OA-11, R-OA-12, R-OA-15) and fixture keys, which are not product values.
  */
@@ -12,14 +12,14 @@ import path from 'node:path'
 import {
   APPROVAL_LISTENER, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS,
   HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LIFETIME, OAUTH_ERROR, PATHS, PKCE, REFUSAL, REQUEST_GATE, RESPONSE_TYPE, SCOPE, TIME_UNIT,
-  TOKEN_VALUE, checkName, isFishballId, nameKey, oauthUrls,
-} from '../../../packages/connector/mcp-schema/index.js'
+  TOKEN_VALUE, checkName, isAgentId, nameKey, oauthUrls,
+} from '../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export {
   APPROVAL_LISTENER, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS,
   HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LIFETIME, OAUTH_ERROR, PATHS, PKCE, REFUSAL, REQUEST_GATE, RESPONSE_TYPE, SCOPE, TIME_UNIT,
-  TOKEN_VALUE, checkName, isFishballId, nameKey, oauthUrls,
+  TOKEN_VALUE, checkName, isAgentId, nameKey, oauthUrls,
 }
 
 /**
@@ -28,7 +28,7 @@ export {
  * FBTEST_C_OAUTH_WEB_ENTRY moves the entry (e.g. to the dev checkout).
  */
 export const SUBJECT = Object.freeze({
-  entry: process.env.FBTEST_C_OAUTH_WEB_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'mcp', 'oauth-web', 'index.js'),
+  entry: process.env.FBTEST_C_OAUTH_WEB_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'mcp', 'oauth-web', 'index.js'),
   handler: 'createApprovalHandler',
   listener: 'createApprovalListener',
   fetcher: 'createCimdFetcher',

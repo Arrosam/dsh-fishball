@@ -9,7 +9,7 @@ R-INT-01…09, R-HOST-11, R-FB-02/09/11/12/13; spikes V3-S2 `a499141`, V3-S3 `b4
 `86800d2` and `7c2230e`. Changing a name here is a K3 amendment. Values marked PROPOSED in the
 `.d.ts` files are **product choices**: frozen as they stand (decided 3 = A), and the user may still
 change any of them. Nothing imports
-fishball-instance, and the settings-section point names nothing about hosting.
+dsh-instance, and the settings-section point names nothing about hosting.
 
 The `.d.ts` files need `@deepseek-ai/cordis` (a DSH peer) for the `Context` members, and the DOM
 library for `HTMLElement`. Services are looked up at runtime (`ctx.get`); a trailing `?` in
@@ -71,7 +71,7 @@ These are the R-CORE point unchanged, with one rule added for `unmount`:
 
 ## Guards (vocabulary for F-GUARDS)
 
-- **Guarded rows:** the ten session-creating rows and `fishball-instance`.
+- **Guarded rows:** the ten session-creating rows and `dsh-instance`.
 - **Shipped presets:** `preset-standard`, `preset-ptc`, `preset-cordis` and `preset-minimal` are
   switched off, not deleted. They are the same on both SDKs.
 - **Offered presets:** `fishball` (the default) and `watchdog`.

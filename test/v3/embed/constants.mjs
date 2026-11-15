@@ -14,7 +14,7 @@ import { REPO } from '../../support/constants.mjs'
 
 /** R-EMBED (1)–(2): the new package and where the moved client lives. */
 export const EMBED = Object.freeze({
-  workspace: 'packages/embed-ui',
+  workspace: 'packages/dsh-connector-ui',
   clientExport: './client',
   platform: 'web',
   /**
@@ -48,6 +48,8 @@ export const OLD_CLIENT = Object.freeze({
 /** The V2 main-DSH client manifests R-EMBED moves (their combined inject list, design §9.1). */
 export const BASE = Object.freeze({
   commit: 'dac924f',
+  // Paths inside `commit`, read with `git show`: they keep the folder names that commit had,
+  // before RENAME-DSH (design §1.0c) moved packages/connector and packages/instance.
   manifests: Object.freeze(['packages/connector/package.json', 'packages/instance/package.json']),
   /** The V2 instance main client (its Plugins card), which the child copy must no longer carry. */
   instanceClient: 'packages/instance/client.js',
@@ -105,7 +107,7 @@ export const CARD_SLOTS = Object.freeze(['plugins.bundle.config', 'plugins.row.c
  * "The same UI renders from embed-UI" (definition of done): the V2 contributions the moved client
  * keeps, as S4 §2.2 lists them (slot, id or key). Conditional seats (the sidebar fish follows the
  * state; the row's trailing seat exists only on 0.2.2) and the surfaces U-SHELL drops (brand,
- * ask_fishball row) are not listed. A Plugins card is required in one of CARD_SLOTS; its key is not
+ * ask_agent row) are not listed. A Plugins card is required in one of CARD_SLOTS; its key is not
  * fixed by the requirements (see the R-EMBED test report).
  */
 export const EXPECTED_UI = Object.freeze([
@@ -116,7 +118,7 @@ export const EXPECTED_UI = Object.freeze([
 ])
 
 /** Words the instance must never use to reach into embed-UI's package (R-EMBED: "never reads a file inside"). */
-export const EMBED_WORDS = Object.freeze(['fishball-embed-ui', 'embed-ui'])
+export const EMBED_WORDS = Object.freeze(['dsh-connector-ui', 'embed-ui'])
 
 /** DSH's client-modules diagnostics start with this text (dsh-client-modules lib/index.js, both SDKs). */
 export const CLIENT_LOADER_ERROR = 'client-modules:'

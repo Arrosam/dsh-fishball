@@ -1,6 +1,6 @@
 /** Opt-in deterministic probes around the real connector on the disposable H-STUB host. */
 import assert from 'node:assert/strict'
-import { createSessionPort } from '../../../../packages/connector/src/slim/host/session-port.js'
+import { createSessionPort } from '../../../../packages/dsh-connector/src/slim/host/session-port.js'
 import { LIST_BOUNDARIES as C } from '../../session-list-boundaries-data.mjs'
 import { textOf } from '../../util.mjs'
 

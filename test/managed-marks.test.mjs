@@ -159,7 +159,7 @@ describe('managed-session marks: what the client reads (H-STUB)', () => {
 
   it('MKS-09 the client bundle carries the banner\'s and the header\'s words', T, async () => {
     const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found && bundle.status === 200, 'index references fishball-embed-ui/client.js')
+    assert.ok(bundle.found && bundle.status === 200, 'index references dsh-connector-ui/client.js')
     for (const word of [MANAGED_STUB.labels.banner, MANAGED_STUB.labels.handOver, MANAGED_STUB.labels.takeBack]) assert.ok(bundle.text.includes(word), word)
   })
 

@@ -45,7 +45,7 @@ const show = (v) => JSON.stringify(v)
 /** Preconditions that keep a "never" case from passing vacuously before core's guards exist. */
 function needGuardsHeld(rows) {
   const instance = rows.find((r) => r.id === INSTANCE)
-  assert.equal(instance?.disabled, true, "precondition: core's guards hold (fishball-instance off): " + show(instance))
+  assert.equal(instance?.disabled, true, "precondition: core's guards hold (dsh-instance off): " + show(instance))
 }
 function needReports(history) {
   assert.ok(history.some((h) => h.report !== null), 'precondition: core published a guard report')
@@ -227,7 +227,7 @@ export function registerGuardCases(sdk) {
     const files = ownFiles(await unitOf(V3.instance.name)).filter((f) => JS.test(f) && f.startsWith(INSTANCE_LAUNCH))
     assert.ok(files.length > 0, 'no shipped instance file under ' + INSTANCE_LAUNCH)
     const tokens = await tokensOf(fs.realpathSync(V3.instance.dir), files)
-    // fishball-instance is the instance's own row id, so it is not evidence of a guard definition.
+    // dsh-instance is the instance's own row id, so it is not evidence of a guard definition.
     const guardIds = ALL_GUARD_ROWS.filter((id) => id !== GUARDS.instanceRow)
     const hits = [...tokens].flatMap(([file, t]) => guardIds.filter((id) => t.strings.includes(id)).map((id) => file + ': ' + id))
     assert.deepEqual(hits, [])
@@ -270,7 +270,7 @@ export function registerGuardCases(sdk) {
     const installed = [FIXTURE.probe.name, INSTANCE, FIXTURE.hostedSettings, FIXTURE.watchdog.name]
     assert.deepEqual(others.filter((b) => installed.includes(b)), installed)
   })
-  caseTest(sdk, 'PLAT-DT-04', '3a', 'DSH recomposes live: fishball-instance (already started once) is then off, in the same process', async () => {
+  caseTest(sdk, 'PLAT-DT-04', '3a', 'DSH recomposes live: dsh-instance (already started once) is then off, in the same process', async () => {
     const f = await native()
     assert.equal(f.rows1.find((r) => r.id === INSTANCE)?.disabled, true, show(f.rows1))
   })
@@ -289,7 +289,7 @@ export function registerGuardCases(sdk) {
     assert.equal(f.manifest2.text, f.manifest1.text)
     assert.equal(f.manifest2.mtimeMs, f.manifest1.mtimeMs)
   })
-  caseTest(sdk, 'PLAT-DT-04', '3c', 'the later start: fishball-instance never starts, and the report is ok at app ready', async () => {
+  caseTest(sdk, 'PLAT-DT-04', '3c', 'the later start: dsh-instance never starts, and the report is ok at app ready', async () => {
     const f = await native()
     assert.deepEqual(f.starts2.filter((s) => s.row === INSTANCE), [], 'the instance started in the second process')
     assert.ok(isOk(f.report2), show(f.report2))
@@ -441,13 +441,13 @@ export function registerGuardCases(sdk) {
     assert.equal(f.bundles1.at(-1), CORE, 'precondition: core was moved last at its first start')
     assert.equal(f.manifest2.text, f.manifest1.text)
   })
-  caseTest(sdk, 'UIM-DT-01', '10b', 'F + I: after one restart fishball-instance is off and core is last; no nested child (the instance never ran in the restarted DSH)', async () => {
+  caseTest(sdk, 'UIM-DT-01', '10b', 'F + I: after one restart dsh-instance is off and core is last; no nested child (the instance never ran in the restarted DSH)', async () => {
     const f = await nohmr()
     assert.equal(f.bundles1.at(-1), CORE)
     assert.equal(f.rows2[0].disabled, true)
     assert.deepEqual(f.starts2, [])
   })
-  caseTest(sdk, 'UIM-DT-01', '10b', 'F + I with the real fishball-instance package (no nested child DSH process)', null, LATER.matrix)
+  caseTest(sdk, 'UIM-DT-01', '10b', 'F + I with the real dsh-instance package (no nested child DSH process)', null, LATER.matrix)
 
   // ============================================================================================
   // Scenario LAST (PLAT-DT-04 rules 2, 5, 6; HOST-UC-08 A3; R-FB-13 mismatch): core installed after
@@ -554,7 +554,7 @@ export function registerGuardCases(sdk) {
       f.bundles = await h.call('bundles')
     },
   ])
-  caseTest(sdk, 'PLAT-DT-04', 1, 'core last, HMR off: guards apply from the first start; fishball-instance never started; report ok', async () => {
+  caseTest(sdk, 'PLAT-DT-04', 1, 'core last, HMR off: guards apply from the first start; dsh-instance never started; report ok', async () => {
     const f = await shaped()
     assert.equal(f.rows.find((r) => r.id === INSTANCE)?.disabled, true)
     assert.deepEqual(f.starts.filter((s) => s.row === INSTANCE), [])

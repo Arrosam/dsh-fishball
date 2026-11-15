@@ -17,11 +17,11 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { APPROVAL_KIND } from '../../../packages/connector/contract/contract.js'
+import { APPROVAL_KIND } from '../../../packages/dsh-connector/contract/contract.js'
 import {
   CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, EVENT_TYPE, LINK_REFUSAL, OFFER_ID, RETIREMENT_REASON, SETTLED_BY,
   SETTLEMENT_OUTCOME, TOOL, formatOfferId,
-} from '../../../packages/connector/mcp-schema/index.js'
+} from '../../../packages/dsh-connector/mcp-schema/index.js'
 import { openWorld, removeRoot } from '../f-intercept/world.mjs'
 import { DECISION, FIXTURE, WAIT } from './constants.mjs'
 import { openRouting } from './subject.mjs'

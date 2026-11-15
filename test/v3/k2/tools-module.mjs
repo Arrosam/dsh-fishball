@@ -1,5 +1,5 @@
 /**
- * Black-box access to the frozen `fishball-connector/tools` module for the K2 cases.
+ * Black-box access to the frozen `dsh-connector/tools` module for the K2 cases.
  *
  * The module is reached through its package specifier (the connector's export map, linked at the
  * repository root as the suite runner links it), then imported bound to one installed SDK with the
@@ -18,7 +18,7 @@ import { API, FIXTURE, MCP_CORE, REGISTER_CODE, TOOLS_MODULE, WALK_DEPTH } from 
 
 const loaded = new Map()
 
-/** The file `fishball-connector/tools` resolves to (throws when the export map's target is missing). */
+/** The file `dsh-connector/tools` resolves to (throws when the export map's target is missing). */
 export function resolveToolsFile() {
   linkContractForSourceRun()
   return fileURLToPath(import.meta.resolve(TOOLS_MODULE.specifier))

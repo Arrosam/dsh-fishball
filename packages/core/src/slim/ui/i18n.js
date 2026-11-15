@@ -4,7 +4,7 @@
  * Every user-visible string of the page lives here, in an English and a Chinese dictionary with
  * the same keys: the shell, the chat, the composer, the approvals and reminders rows, the record
  * rows, the settings view, and the page's 503 stand-in words (`unavailable.*`). The main proxy's
- * 503 card (fishball-instance src/slim/host/embed.js) keeps its own copy of those words and of
+ * 503 card (dsh-instance src/slim/host/embed.js) keeps its own copy of those words and of
  * the `lang` rule, because a host module may not import fishball-core (R-BND-01); keep them in step.
  *
  * The language is the page URL's first `lang` parameter (contract 1.1 UI_LANG, which the
@@ -12,7 +12,7 @@
  * or no `lang`, selects English, DSH's own fallback locale (dsh-client-locale FALLBACK_LOCALE).
  * The page reads it once; a DSH language change reloads the frame (K2), so nothing here re-reads.
  *
- * The `record.*` entries repeat the connector's `record.*` words (packages/embed-ui/src/client/client.connector.js,
+ * The `record.*` entries repeat the connector's `record.*` words (packages/dsh-connector-ui/src/client/client.connector.js,
  * its en and zh dictionaries) key for key and word for word (§0.9 U6); a test compares them.
  *
  * Values are plain text with `{name}` placeholders, as DSH's own dictionaries write them, so the
@@ -198,7 +198,7 @@ const EN = Object.freeze({
   'settings.ns.llm-pi-ai': 'pi-ai model adapter',
   'settings.ns.ui-settings-general': 'General settings',
   'settings.ns.ui-theme': 'Theme',
-  'settings.ns.fishball-connector': 'Fishball connector',
+  'settings.ns.dsh-connector': 'Fishball connector',
   'settings.field.enabled': 'Enabled',
   'settings.field.provider': 'Provider',
   'settings.field.model': 'Model',
@@ -388,7 +388,7 @@ const ZH = Object.freeze({
   'settings.ns.llm-pi-ai': 'pi-ai 模型适配',
   'settings.ns.ui-settings-general': '常规设置',
   'settings.ns.ui-theme': '主题',
-  'settings.ns.fishball-connector': 'Fishball 连接器',
+  'settings.ns.dsh-connector': 'Fishball 连接器',
   'settings.field.enabled': '启用',
   'settings.field.provider': '提供商',
   'settings.field.model': '模型',

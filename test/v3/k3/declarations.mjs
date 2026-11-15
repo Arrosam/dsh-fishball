@@ -1,5 +1,5 @@
 /**
- * Black-box reader of the frozen K3 declaration files (`.d.ts` under packages/connector/host-services
+ * Black-box reader of the frozen K3 declaration files (`.d.ts` under packages/dsh-connector/host-services
  * and packages/core/contracts). K3 is "types only", so the cases read the declarations as text: no
  * product module is loaded, and no TypeScript compiler is needed (the repository and both SDKs ship
  * none). Syntax validity is checked with Node's own `module.stripTypeScriptTypes`.

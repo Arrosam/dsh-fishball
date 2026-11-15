@@ -1,7 +1,7 @@
 /**
  * A host row standing in for the host-only services embed-UI follows (K3 freeze):
- * `fishballChild` (child.d.ts), `fishballConnectorHandover` (handover.d.ts) and
- * `fishballConnectorTools` (tools/index.d.ts). One module, one row per service (`config.service`),
+ * `dshInstanceChild` (child.d.ts), `dshConnectorHandover` (handover.d.ts) and
+ * `dshConnectorTools` (tools/index.d.ts). One module, one row per service (`config.service`),
  * so a scenario can leave a service out or insert its row switched off.
  *
  * The fakes keep only the contract's own rules that the cases lean on (a non-loopback hostname

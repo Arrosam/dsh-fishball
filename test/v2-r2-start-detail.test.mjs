@@ -8,8 +8,8 @@
  *   home paths (/Users/<name>/…, /home/…, /root) become '[redacted]'. Not failed → `detail: null`.
  * - R2.2 lifecycle.log records the failure as a line {code: 'FAILED', reason} with reason the
  *   specific code (UPPER_SNAKE only, never message text, a path or a URL).
- * - R2.3 POST /api/fishball-instance/retry answers the same {state, code, detail} shape.
- * - R2.4 /api/fishball-instance/status and /api/fishball/native/status both carry detail.
+ * - R2.3 POST /api/dsh-instance/retry answers the same {state, code, detail} shape.
+ * - R2.4 /api/dsh-instance/status and /api/fishball/native/status both carry detail.
  *
  * Observation: a REAL DSH boot of the main profile (support/host.mjs) per SDK selected by
  * FBTEST_DSH_RUNTIME, its owner-only routes and <home>/fishball/runtime/lifecycle.log. Failures are
@@ -167,4 +167,4 @@ describe(`R2 [${SDK}] a failed start reports its specific reason`, { timeout: R2
 
 // Requirement clauses with no black-box seam in this harness stay visible as TODO, never as a pass.
 test.todo(`R2-BVA-02 [${SDK}] R2.1 detail at exactly 2000 and 2001 code points — no real start failure carries a message that long; needs a failure seam`)
-test.todo(`R2-UC-04 [${SDK}] R2.3 the main Plugins card (row fishball-instance) shows detail under the status line while failed — needs the main web UI in a browser; its data (status/Retry routes) is R2-UC-01/03`)
+test.todo(`R2-UC-04 [${SDK}] R2.3 the main Plugins card (row dsh-instance) shows detail under the status line while failed — needs the main web UI in a browser; its data (status/Retry routes) is R2-UC-01/03`)

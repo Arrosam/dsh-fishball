@@ -16,7 +16,7 @@
  *   view as well.
  *
  * Harness (child-boot-support.mjs, child-boot-host.mjs): the selected SDK's own `web` profile on a
- * throwaway home, with the instance's child rows from a staged copy of packages/instance (native-web
+ * throwaway home, with the instance's child rows from a staged copy of packages/dsh-instance (native-web
  * with the session route, the page, the settings panel, the session-tools/approvals/app manager
  * chain) plus two fixture rows: a detached `nativeRuntime` (no main DSH) and the scripted fake
  * model as the default model (test/support/fixtures/fake-llm.mjs; no real model, no network).

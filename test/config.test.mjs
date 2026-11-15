@@ -1,5 +1,5 @@
 /**
- * R-CONFIG: safety limits in the fishball-connector row config, edited live through ctx.settings.
+ * R-CONFIG: safety limits in the dsh-connector row config, edited live through ctx.settings.
  * C2 (conn-OQ-20, 474b876): the row keeps only the 14 active limits the connector still reads; the
  * in-process agent's fields (sources, Fishball-only plugins, hourly caps, context window, plugin
  * manager, outbox, pile height) went with it (slim §12). CFG-09 (Fishball's session never
@@ -23,7 +23,7 @@ import { HOOK, T, readPatch, savedRowConfig } from './support/expect.mjs'
 import { bootLive, newHome } from './support/host.mjs'
 
 // The default table after C2: the 6 active original fields the connector still reads, the 6 kept rev11-limits fields
-// and rev11b's userMessagesListed and userMessageExcerptChars (packages/connector config, conn-OQ-20).
+// and rev11b's userMessagesListed and userMessageExcerptChars (packages/dsh-connector config, conn-OQ-20).
 const DEFAULTS = Object.fromEntries(Object.entries({ ...LIMITS, ...LIMITS_R11, ...LIMITS_R11B }).map(([k, v]) => [k, v.default]))
 
 /** Invalid values, labelled by partition: every kept limit has the minimum 1 (the hourly caps with 0 are gone). */
@@ -53,7 +53,7 @@ describe('R-CONFIG limits', () => {
 
   it('CFG-01 defaults: all 14 active limit fields with the documented defaults, editable live', T, async () => {
     const d = await host.call('settingsDescribe')
-    assert.ok(d, 'settings entry "fishball-connector" exists')
+    assert.ok(d, 'settings entry "dsh-connector" exists')
     assert.equal(d.applies, 'live')
     for (const [k, v] of Object.entries(DEFAULTS)) assert.equal(d.value?.[k], v, 'settings value ' + k)
     assert.deepEqual((await host.state()).limits, DEFAULTS)

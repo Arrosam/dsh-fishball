@@ -1,7 +1,7 @@
 /**
- * A stand-in row with a guarded or watched row id (fishball-instance, fishball-hosted-settings): it
+ * A stand-in row with a guarded or watched row id (dsh-instance, fishball-hosted-settings): it
  * only appends "<row> <pid>" to `<DSH_HOME>/standin.log` when it starts, so a case can tell whether
- * the row ran in a given process. A real fishball-instance would start a nested child here.
+ * the row ran in a given process. A real dsh-instance would start a nested child here.
  */
 import fs from 'node:fs'
 import path from 'node:path'

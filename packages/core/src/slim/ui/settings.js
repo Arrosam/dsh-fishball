@@ -6,7 +6,7 @@
  * own catalog, and the child's plugins (installed, install by spec, and each plugin's settings). The
  * recommended list moved to the child's Fishball Recommended tab (ui/fishball-recommend-plugins).
  *
- * It calls the kept admin routes `/api/fishball/native/admin/*` (fishball-instance src/slim/host/settings-routes.js)
+ * It calls the kept admin routes `/api/fishball/native/admin/*` (dsh-instance src/slim/host/settings-routes.js)
  * and nothing else: the page is framed on the main origin, so those owner-only routes take the main
  * DSH's cookie, and the relay sends every operation but status and restart to the child's own admin
  * service (§0.7 "Admin routes"). The paths are absolute because the routes are the main DSH's, not
@@ -21,7 +21,7 @@
 
 import { DEFAULT_I18N, LANG } from './i18n.js'
 
-/** The admin routes' exact paths; keep the slugs in step with fishball-instance src/slim/host/settings-routes.js SLUGS. */
+/** The admin routes' exact paths; keep the slugs in step with dsh-instance src/slim/host/settings-routes.js SLUGS. */
 const ADMIN = Object.freeze({
   prefix: '/api/fishball/native/admin/',
   path: Object.freeze({
@@ -36,7 +36,7 @@ const ADMIN = Object.freeze({
   unreachable: 'unavailable',
 })
 
-/** The instance state the status block treats as running (fishball-instance src/slim/host/admin.js statusOutcome). */
+/** The instance state the status block treats as running (dsh-instance src/slim/host/admin.js statusOutcome). */
 const READY = 'ready'
 /** The empty effort choice: the model's own default, sent as no `reasoningEffort` at all. */
 const DEFAULT_EFFORT = ''

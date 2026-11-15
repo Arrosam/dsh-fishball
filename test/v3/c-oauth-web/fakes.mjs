@@ -16,9 +16,9 @@
  * - a logger that keeps every line, for the leak checks.
  */
 import {
-  ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, HOSTS, HTTP_REFUSAL, HTTP_STATUS, ID_REFUSAL, LIFETIME, REFUSAL, REQUEST_GATE, checkName, isFishballId,
+  ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, HOSTS, HTTP_REFUSAL, HTTP_STATUS, ID_REFUSAL, LIFETIME, REFUSAL, REQUEST_GATE, checkName, isAgentId,
   nameKey,
-} from '../../../packages/connector/mcp-schema/index.js'
+} from '../../../packages/dsh-connector/mcp-schema/index.js'
 
 const hostnameOf = (host) => (host ?? '').replace(/:\d+$/, '')
 const isLoopbackName = (hostname) => HOSTS.loopbackNames.includes(hostname)
@@ -108,7 +108,7 @@ export function fakePairs() {
     async bindFromPage(entryKey, id, name, client, now) {
       calls.push(['bindFromPage', entryKey, id, name, client])
       if (pairs.has(entryKey)) return { ok: false, code: REFUSAL.alreadyPaired }
-      if (!isFishballId(id)) return { ok: false, code: ID_REFUSAL.idInvalid }
+      if (!isAgentId(id)) return { ok: false, code: ID_REFUSAL.idInvalid }
       if (others(entryKey).some((p) => p.id === id)) return { ok: false, code: REFUSAL.idTaken }
       let stored = null
       if (name !== undefined) {

@@ -30,7 +30,7 @@ window.__ModuleLoader__.load({
     })
     /**
      * The non-secret continuation PG-ORIGIN carries across native admission in the fragment
-     * (fishball-instance src/slim/host/embed.js CONTINUATION, its host.js PLUGIN.ui and src/slim/ui/shell.js VIEW; keep
+     * (dsh-instance src/slim/host/embed.js CONTINUATION, its host.js PLUGIN.ui and src/slim/ui/shell.js VIEW; keep
      * all four in step). Any other name or value is ignored, never acted on.
      */
     const SETTINGS_VIEW = 'settings'

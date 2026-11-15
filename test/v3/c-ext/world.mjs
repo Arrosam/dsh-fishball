@@ -137,7 +137,7 @@ class FakeRouter {
   recipientFor(subject) {
     this.subjects.push(subject)
     const recipient = (subject.sessionId && this.managed.get(subject.sessionId)) || this.designated
-    return recipient ? { recipient } : { recipient: null, fallback: 'no-fishball' }
+    return recipient ? { recipient } : { recipient: null, fallback: 'no-agent' }
   }
 }
 

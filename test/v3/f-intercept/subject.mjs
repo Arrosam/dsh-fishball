@@ -16,7 +16,7 @@
  *   traced caller: a registration ends only by its disposer, which the world's plugins run as a
  *   fiber effect;
  * - `start()` is the world's "ready" point (its plugins have registered): `recover()` once, then
- *   the poll loop. Core polls once when started and once per `fishball://events` hint (design §6.3
+ *   the poll loop. Core polls once when started and once per `dsh-agent://events` hint (design §6.3
  *   "poll once on every (re)connect"), hands every polled event to `intake` in order, one poll at
  *   a time, and keeps paging while the connector says `hasMore`;
  * - `close()` stops the loop, closes the events module, then the ledger.

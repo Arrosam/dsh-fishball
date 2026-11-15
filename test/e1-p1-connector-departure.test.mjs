@@ -8,7 +8,7 @@
  * must stop the child (the earlier code returned that disposer from a callback Cordis treated as
  * a constructor, so the disposer was discarded).
  *
- * Observation points: `GET /api/fishball-instance/status` (the instance's own state), DSH's plugin
+ * Observation points: `GET /api/dsh-instance/status` (the instance's own state), DSH's plugin
  * manager (`setBundleEnabled`, the Plugins page action) and the instance's own runtime directory
  * (`lifecycle.log` transitions and the per-launch record). No product internals are read.
  *
@@ -29,10 +29,10 @@ import { describe, it } from 'node:test'
 import { bootHost, newHome } from './support/host.mjs'
 import { until } from './support/util.mjs'
 
-const STATUS_PATH = '/api/fishball-instance/status'
+const STATUS_PATH = '/api/dsh-instance/status'
 const STATE = Object.freeze({ ready: 'ready', missing: 'connector-missing' })
 const TIMEOUT = Object.freeze({ boot: 90_000, transition: 30_000, stop: 15_000 })
-const PLUGIN = Object.freeze({ connector: 'fishball-connector' })
+const PLUGIN = Object.freeze({ connector: 'dsh-connector' })
 
 const runtimeDir = (home) => path.join(home, 'fishball', 'runtime')
 const launchesOf = (home) => {

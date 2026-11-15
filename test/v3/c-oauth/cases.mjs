@@ -156,7 +156,7 @@ function useCases(sdk) {
     assert.equal(asm.status, HTTP_STATUS.ok)
     assert.equal(asm.body.issuer, issuer)
   })
-  uc02('main step 3', 'client_credentials with agent-a + v(E1) and the canonical resource on an unbound entry: 200, scope fishball:pair, expires_in 3600, standard fields only, no refresh_token', async (w) => {
+  uc02('main step 3', 'client_credentials with agent-a + v(E1) and the canonical resource on an unbound entry: 200, scope agent:pair, expires_in 3600, standard fields only, no refresh_token', async (w) => {
     const e = w.tokens.add()
     await issue(w, e, ID.agentA, SCOPE.pair)
     assert.deepEqual(w.pairs.writes, [], 'the token endpoint never pairs')
@@ -497,7 +497,7 @@ function equivalencePartitions(sdk) {
     assert.deepEqual(verify(w, token, w.clock.now(), FIXTURE.host.loopback), INVALID)
     assert.deepEqual(callerOf(verify(w, token, w.clock.now(), FIXTURE.host.localhost)), expectedCaller(w, e, ID.agentA, { host: FIXTURE.host.localhost }))
   })
-  ep02('9', 'a valid pair-only access token → a Caller with scope fishball:pair and no principal key', async (w, e) => {
+  ep02('9', 'a valid pair-only access token → a Caller with scope agent:pair and no principal key', async (w, e) => {
     const token = await issue(w, e, ID.n999, SCOPE.pair)
     assert.deepEqual(callerOf(verify(w, token)), expectedCaller(w, e, ID.n999))
   })
@@ -555,7 +555,7 @@ function equivalencePartitions(sdk) {
   todo(sdk, CASE.ep05, '6', 'the comparator itself is constant-time', LATER.tokens)
 
   // AUTH-EP-06 row 9 (C-PAIR's row).
-  row(sdk, CASE.ep06, '9', 'a token request with scope=fishball while unpaired: 200, narrowed to fishball:pair (not invalid_scope), for an unbound entry and one bound to another id', async (w) => {
+  row(sdk, CASE.ep06, '9', 'a token request with scope=fishball while unpaired: 200, narrowed to agent:pair (not invalid_scope), for an unbound entry and one bound to another id', async (w) => {
     const unbound = w.tokens.add()
     await issue(w, unbound, ID.agentA, SCOPE.pair, { scope: SCOPE.full })
     const other = boundEntry(w, ID.x)
@@ -706,7 +706,7 @@ function decisionTables(sdk) {
     for (const [, , credentials] of refusedRules) shapes.push(JSON.stringify(shape(await tokenRequest(w, { auth: CLIENT_AUTH.post, ...credentials(w) }))))
     assert.equal(new Set(shapes).size, 1, shapes.join('\n'))
   })
-  dt01('5', 'valid token, valid id, unbound → 200, scope fishball:pair, pair-only power', async (w) => {
+  dt01('5', 'valid token, valid id, unbound → 200, scope agent:pair, pair-only power', async (w) => {
     const e = w.tokens.add()
     assert.equal(verify(w, await issue(w, e, ID.agentA, SCOPE.pair)).scope, SCOPE.pair)
   })
@@ -714,11 +714,11 @@ function decisionTables(sdk) {
     const e = boundEntry(w, ID.agentA)
     assert.equal(verify(w, await issue(w, e, ID.agentA, SCOPE.full)).scope, SCOPE.full)
   })
-  dt01('7', 'valid token, valid id Y, bound to X ≠ Y → 200, scope fishball:pair, pair-only power', async (w) => {
+  dt01('7', 'valid token, valid id Y, bound to X ≠ Y → 200, scope agent:pair, pair-only power', async (w) => {
     const e = boundEntry(w, ID.agentA)
     assert.equal(verify(w, await issue(w, e, ID.n999, SCOPE.pair)).scope, SCOPE.pair)
   })
-  dt01('9', 'valid, unbound, the request asks scope=fishball → 200, scope fishball:pair (narrowed)', async (w) => {
+  dt01('9', 'valid, unbound, the request asks scope=fishball → 200, scope agent:pair (narrowed)', async (w) => {
     await issue(w, w.tokens.add(), ID.agentA, SCOPE.pair, { scope: SCOPE.full })
   })
   dt01('10', 'any 200: only access_token, token_type, expires_in, scope; no fishball_pairing, no refresh_token', async (w) => {
@@ -772,7 +772,7 @@ function stateTransitions(sdk) {
     w.pairs.bind(e.entryKey, ID.x)
     assert.deepEqual(callerOf(verify(w, token)), expectedCaller(w, e, ID.x))
   })
-  st02('2', 'Pair-only → the entry is bound by another id → Pair-only-mismatch (still fishball:pair, no principal key)', async (w) => {
+  st02('2', 'Pair-only → the entry is bound by another id → Pair-only-mismatch (still agent:pair, no principal key)', async (w) => {
     const e = w.tokens.add()
     const token = await issue(w, e, ID.x, SCOPE.pair)
     w.pairs.bind(e.entryKey, ID.y)

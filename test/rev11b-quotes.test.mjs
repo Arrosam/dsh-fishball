@@ -17,7 +17,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { DECISION, LIMITS as CONTRACT_LIMITS, RISK } from 'fishball-connector/contract'
+import { DECISION, LIMITS as CONTRACT_LIMITS, RISK } from 'dsh-connector/contract'
 import { ASK_CODE, LIMITS, NOTICE, REQUEST_PLACEHOLDER } from './support/constants.mjs'
 import { HOOK, T, approvalAudit, bytes, jsonOf, resultById, settledIdle, turn } from './support/expect.mjs'
 import { ASK_STUB, askHost, askTools, assertShape, stopAsk, tokens } from './support/instance-stub-ask.mjs'
@@ -73,7 +73,7 @@ describe('Revision 11 rev11b: quotes and request size', () => {
   }, HOOK)
   after(() => stopAsk(ctx), HOOK)
 
-  /** An ask_fishball that waits with these quotes; the instance rejects it. Returns the offer and its notice. */
+  /** An ask_agent that waits with these quotes; the instance rejects it. Returns the offer and its notice. */
   async function quotedRequest(text, quote) {
     const id = cid('q')
     const offer = await t.waiting(q, text, id, [], { quote })

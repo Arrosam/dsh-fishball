@@ -2,7 +2,7 @@
  * Vocabulary for the C-TOKENS cases (v3-tasks.md row C-TOKENS, wave W2; docs/test-design/v3/
  * 01-auth-pairing.md): AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03, AUTH-DT-05, AUTH-ST-01 rows 1, 5–10, 10a–10m (Q5 = B), 12.
  *
- * Every product value comes from the K1 freeze `fishball-connector/mcp-schema`, never from an
+ * Every product value comes from the K1 freeze `dsh-connector/mcp-schema`, never from an
  * implementation: the token-value rules (TOKEN_VALUE), the entry statuses (ENTRY_STATUS), the
  * settings refusals (SETTINGS_REFUSAL) and, from its declaration file (types only), the
  * `RevocationKind` words of `TokenRegistry.onRevoked`. DSH's own names (packages, the process
@@ -11,14 +11,14 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { ENTRY_STATUS, SETTINGS_REFUSAL, TOKEN_VALUE } from '../../../packages/connector/mcp-schema/index.js'
+import { ENTRY_STATUS, SETTINGS_REFUSAL, TOKEN_VALUE } from '../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../support/constants.mjs'
 
 export { ENTRY_STATUS, SETTINGS_REFUSAL, TOKEN_VALUE }
 
 /** The C-TOKENS "Owns" folder. FBTEST_C_TOKENS_ENTRY moves the entry (another checkout). */
 export const SUBJECT = Object.freeze({
-  entry: process.env.FBTEST_C_TOKENS_ENTRY ?? path.join(REPO, 'packages', 'connector', 'src', 'tokens', 'index.js'),
+  entry: process.env.FBTEST_C_TOKENS_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'tokens', 'index.js'),
   /** K1 freezes the `TokenRegistry` interface but no factory: the one export found by meaning. */
   factoryName: /^(?:open|create)\w*Token/i,
   /** `apply`'s reason for the connector-start sync (not a settings save; subject.mjs). */
@@ -26,7 +26,7 @@ export const SUBJECT = Object.freeze({
 })
 
 /** K1's declaration file: `RevocationKind` is a type there, so its words are read from the text. */
-const K1_DTS = path.join(REPO, 'packages', 'connector', 'mcp-schema', 'index.d.ts')
+const K1_DTS = path.join(REPO, 'packages', 'dsh-connector', 'mcp-schema', 'index.d.ts')
 const revocationKinds = () => {
   const m = /export type RevocationKind\s*=\s*([^\n]+)/.exec(fs.readFileSync(K1_DTS, 'utf8'))
   if (!m) throw new Error('K1 index.d.ts declares no RevocationKind')

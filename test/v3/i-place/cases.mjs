@@ -260,7 +260,7 @@ export function registerIPlaceCases(sdk) {
     const ops = await overlayOps(sdk, scratch(t, 'fbtest-iplace-ovl-'), [])
     assert.deepEqual(insertedOf(ops).map((r) => r.id).sort(), [...OVERLAY.runtimeRows].sort())
   })
-  caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay disables nothing but hmr: no guarded row, no shipped preset, no fishball-instance', async (t) => {
+  caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay disables nothing but hmr: no guarded row, no shipped preset, no dsh-instance', async (t) => {
     const ops = await overlayOps(sdk, scratch(t, 'fbtest-iplace-ovl-'), [])
     const disabled = ops.filter((op) => op?.disabled === true).map((op) => op.id)
     assert.deepEqual(disabled, [OVERLAY.hmr])
@@ -524,9 +524,9 @@ export function registerIPlaceCases(sdk) {
     for (const name of [...SET.features, SET.hostedSettings]) assert.ok(bundles.indexOf(name) < bundles.indexOf(SET.core), name + ' after core')
     assert.ok(launchOverlays(home)[0]?.some((op) => op?.id === OVERLAY.hmr && op.disabled === true), 'HMR not off')
   })
-  integrationCase(sdk, 'PLAT-DT-04', 1, 'hosted: no fishball-instance is ever started in the child (no nested child)', async () => {
+  integrationCase(sdk, 'PLAT-DT-04', 1, 'hosted: no dsh-instance is ever started in the child (no nested child)', async () => {
     const { home } = await ready()
-    assert.equal(profileBundles(home).includes(GUARDS.instanceRow), false, 'a fishball-instance bundle in the child')
+    assert.equal(profileBundles(home).includes(GUARDS.instanceRow), false, 'a dsh-instance bundle in the child')
     assert.equal(fs.existsSync(path.join(childHome(home), ...RELAYED.launches)), false, 'a nested child runtime in the child home')
   })
   integrationCase(sdk, 'HOST-DT-03', 6, 'a real hosted child: fishball-hosted-settings on; core\'s guards leave it enabled; settings panel generic + hosted', async (t) => {

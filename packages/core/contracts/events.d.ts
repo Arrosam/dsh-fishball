@@ -5,7 +5,7 @@
  * `INTERCEPT` beside this file, and `disconnected` is K1's `LINK_REFUSAL`. F-INTERCEPT builds the
  * service in `packages/core/src/events/`.
  *
- * Core holds its pair's one `fishball-events` subscription. Every polled event is recorded in
+ * Core holds its pair's one `agent-events` subscription. Every polled event is recorded in
  * core's acceptance ledger and then dispatched with no LLM involved:
  * - the candidates are the live registrations whose `types` include the event's `type` and whose
  *   `filter` returns `true` (a throwing filter counts as `false` for that registration);
@@ -120,7 +120,7 @@ export interface FishballInstanceEvents {
    *   earliest registration.
    * - Disposing is synchronous: from then on the registration matches nothing, and events in
    *   flight to it that are not committing fall back to Fishball once (EVT-UC-03 E1, R-WD-07).
-   * - DECIDED (#17, kept by the user; packages/connector/mcp-schema/README.md "User decisions"): an invalid registration (no `pluginId`, empty `types`, a non-function `filter` or
+   * - DECIDED (#17, kept by the user; packages/dsh-connector/mcp-schema/README.md "User decisions"): an invalid registration (no `pluginId`, empty `types`, a non-function `filter` or
    *   handler, a priority that is not a finite number) throws a `TypeError`, registering nothing.
    */
   intercept(registration: InterceptRegistration, onEvent: InterceptHandler): () => void

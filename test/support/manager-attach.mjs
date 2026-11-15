@@ -1,6 +1,6 @@
 /**
  * Shared observation and fault-injection helpers for the manager-attach black-box suites
- * (packages/instance/test/instance-ext/manager-attach-background.test.mjs).
+ * (packages/dsh-instance/test/instance-ext/manager-attach-background.test.mjs).
  *
  * Built only on public contracts: the `fishballInstance` / `fishballChat` services of a bootChild
  * harness, the selected SDK's real WorkspaceRegistry (public API: create / resolveByPath / get /

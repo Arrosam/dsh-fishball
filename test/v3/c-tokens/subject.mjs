@@ -1,5 +1,5 @@
 /**
- * The one place that binds the cases to C-TOKENS's module (`packages/connector/src/tokens/index.js`).
+ * The one place that binds the cases to C-TOKENS's module (`packages/dsh-connector/src/tokens/index.js`).
  *
  * K1 freezes what the module answers (`TokenRegistry`: `match`, `get`, `list`, `onRevoked`) but not
  * how it is built or fed the native settings; C-WIRE later mounts it in the connector row and owns
@@ -43,7 +43,7 @@ import { SUBJECT } from './constants.mjs'
  * "[SDK x]" runs the module on that SDK.
  */
 async function factory(sdk) {
-  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(REPO, SUBJECT.entry)} does not exist (C-TOKENS "Owns" packages/connector/src/tokens/)`)
+  assert.ok(fs.existsSync(SUBJECT.entry), `${path.relative(REPO, SUBJECT.entry)} does not exist (C-TOKENS "Owns" packages/dsh-connector/src/tokens/)`)
   const mod = await importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.entry))
   const named = Object.entries(mod).filter(([name, value]) => typeof value === 'function' && SUBJECT.factoryName.test(name))
   assert.equal(named.length, 1, `expected one factory export matching ${SUBJECT.factoryName}, found: ${Object.keys(mod).join(', ')}`)

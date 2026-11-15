@@ -83,7 +83,7 @@ const treeFiles = (dir) => (fs.existsSync(dir)
 
 export function registerFLinkCases(sdk) {
   // ---------------------------------------------------------------- REM-UC-02 (Use Case, first)
-  caseTest(sdk, 'REM-UC-02', 'precondition', 'on connect the link opens one fishball-events listen stream and polls the inbox once', async (t) => {
+  caseTest(sdk, 'REM-UC-02', 'precondition', 'on connect the link opens one agent-events listen stream and polls the inbox once', async (t) => {
     const { f } = await connected(t, sdk)
     assert.ok(await untilTrue(() => eventListens(f).length > 0), `no subscriptions/listen on ${K1.CONNECTED.listenResource}: ${JSON.stringify(f.listens)}`)
     assert.ok(await untilTrue(() => f.callsOf(K1.TOOL.inboxPoll).length > 0), 'no inbox_poll after connect')

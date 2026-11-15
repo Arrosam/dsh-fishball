@@ -15,13 +15,13 @@
  * | L55    | ST (forwardExcerptBytes 3072 → 100 → 3072) | §16, slim §8.3 | a Hand over with a note of a session whose answer is 500 bytes: last_answer cut to ≤ 100 bytes (a prefix), then whole |
  * | L56    | ST (requestUserMessageBytes 2048 → 100 → 2048) | §16, contract §4.5 approval item | latest_user_message of a 300-byte message in the approval item: ≤ 100 bytes (a prefix), then whole |
  * | L57    | ST (rationaleChars 500 → 10 → 500) | §16 (audit), contract §5.1 | the stored audit rationale of a 60-character reason: ≤ 10 characters (a prefix), then whole (the descriptor's own `reason` at 10: diagnostic) |
- * | L60    | BVA/ST (maxMessageBytes 65536 → 100 → 65536) | §16, §5b | message_fishball of 100 bytes ok, 101 bytes too-large; back at the default 101 bytes ok |
+ * | L60    | BVA/ST (maxMessageBytes 65536 → 100 → 65536) | §16, §5b | message_agent of 100 bytes ok, 101 bytes too-large; back at the default 101 bytes ok |
  * | L61    | ST (maxActiveWatches 50 → active+1 → 50) | §16, contract §6 WATCH_ERROR | one more watch is accepted, the next is watchError limit-reached; back at the default it is accepted |
  * | L62    | ST (maxPendingApprovals 8 → 1 → 8) | §16, §7a | with one request offered, a second session's request goes to its stock prompt at once and is not offered; back at the default it is offered |
  * | L63    | ST (stored approvalAnswerSeconds 120 → 2 → 120) | contract §3.2.2 | stored values reload without deadlines; the former 2-second boundary causes no prompt/audit; explicit rejection still settles |
  * | L64    | ST (argumentExcerptBytes 8192 → 10 → 8192) | §16, contract §5.1 | the descriptor's arguments are cut to ≤ 10 bytes with argumentsStatus truncated and allow is refused arguments-incomplete; back at the default the arguments are complete and whole |
  * | L65    | ST (auditEntriesKept 500 → 1 → 500) | §16 (audit lists) | after one more decision at 1, one audit record is kept; back at the default the next decision is kept beside it |
- * | L66    | BVA/ST (maxQueuedInputs 200 → 1 → 200, no instance) | §16, contract §9 | at 1 the first message_fishball is queued, the second refused queue-full; back at 200 the next is queued; after the attach both queued items arrive |
+ * | L66    | BVA/ST (maxQueuedInputs 200 → 1 → 200, no instance) | §16, contract §9 | at 1 the first message_agent is queued, the second refused queue-full; back at 200 the next is queued; after the attach both queued items arrive |
  * | L67    | ST (userMessagesListed 20 → 2 → 20, userMessageExcerptChars 1000 → 5 → 1000) | §16, §7a.2 | list_user_messages returns every message (≤ 20), then the 2 newest with excerpts of ≤ 5 characters (prefixes), then all whole again |
  * | L59    | ST (no restart) | §16 "applied without a restart" | active changes do not reattach/close the instance; L63 explicitly reloads inert raw storage and resets this comparison baseline |
  *
@@ -31,7 +31,7 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { ARGUMENTS_STATUS, DECISION, ERROR, EVENT, RISK, WATCH_ERROR, WATCH_MODE, WATCH_STATUS } from 'fishball-connector/contract'
+import { ARGUMENTS_STATUS, DECISION, ERROR, EVENT, RISK, WATCH_ERROR, WATCH_MODE, WATCH_STATUS } from 'dsh-connector/contract'
 import { ASK_REASON, ELLIPSIS, LEGACY_INTERACTION, LIMITS, LIMITS_R11, LIMITS_R11B, LIST_USER_MESSAGES, OUTCOME, P5_CODE } from './support/constants.mjs'
 import { HOOK, T, askSettled, auditOf, approvalAudit, bytes, settledIdle, stockSeen, turn, untrustedBlock } from './support/expect.mjs'
 import { KIND, OPERATION, STUB, handOver, messageFishball, quietPushes, sessionCall, seedStoredInteractionConfig, stopStub, userSession } from './support/instance-stub.mjs'

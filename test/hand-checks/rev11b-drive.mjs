@@ -260,7 +260,7 @@ try {
     const t7o = tok('off')
     const tOff0 = Date.now()
     const rOff = await turn(host, x, [askStep(ask({ text: t7o }), 'call_7o'), [{ text: 'done' }]], 'permission requests off')
-    note('7 Permission requests off: ask_fishball', { text: resultById(rOff, 'call_7o')?.text, ms: Date.now() - tOff0 })
+    note('7 Permission requests off: ask_agent', { text: resultById(rOff, 'call_7o')?.text, ms: Date.now() - tOff0 })
     const t7o2 = tok('off2')
     const rOff2 = await turn(host, x, [callStep({ text: t7o2 }, 'call_7o2'), [{ text: 'done' }]], 'direct while off')
     note('7 off: direct call', { text: resultById(rOff2, 'call_7o2')?.text, stock: (await stockSeen(host, t7o2)).length, fishballNotices: (await requestMessages(host, fb, t7o2)).length })

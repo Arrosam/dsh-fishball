@@ -6,14 +6,14 @@ The design is in [DESIGN.md](DESIGN.md) and [docs/slim-native-design.md](<docs/s
 
 ## Status
 
-Release **0.1.0-alpha.0**: two plugins, `fishball-connector` and `fishball-instance`, both at version `0.1.0-alpha.0`, connector contract 1.1. The packages are not published to npm.
+Release **0.1.0-alpha.0**: two plugins, `dsh-connector` and `dsh-instance`, both at version `0.1.0-alpha.0`, connector contract 1.1. The packages are not published to npm.
 
 The earlier single plugin `dsh-fishball` (v0.1.0, tag `v0.1.0`) is replaced. **There is no migration from it:** nothing of the old plugin (its session, history, settings, grants or plugins) is carried over. Remove it before installing this release (below). The older "dsh-fishball (df)" preview is archived at tag `archive/df-preview-2026-10-23`.
 
 ## Packages
 
-- **`fishball-connector`** ([packages/connector](packages/connector)): the body, in your main DSH profile. It manages your sessions for Fishball (Hand over, `message_fishball`, permission requests, questions, watches), draws Fishball's view and the frame around it, and offers an instance the documented connector contract ([docs/connector-contract.md](<docs/connector-contract.md>), version 1.1). Its limits are changed only in DSH's own settings form for `fishball-connector`. It also works alone: with no instance, Fishball's view shows an empty state.
-- **`fishball-instance`** ([packages/instance](packages/instance)): the built-in instance. It runs Fishball in its own private DSH profile, which is attached to the main DSH and stops with it, and serves Fishball's chat and settings pages. It needs the connector: without it, the instance's card says "connector missing" and nothing starts. It never installs the connector.
+- **`dsh-connector`** ([packages/dsh-connector](packages/dsh-connector)): the body, in your main DSH profile. It manages your sessions for Fishball (Hand over, `message_agent`, permission requests, questions, watches), draws Fishball's view and the frame around it, and offers an instance the documented connector contract ([docs/connector-contract.md](<docs/connector-contract.md>), version 1.1). Its limits are changed only in DSH's own settings form for `dsh-connector`. It also works alone: with no instance, Fishball's view shows an empty state.
+- **`dsh-instance`** ([packages/dsh-instance](packages/dsh-instance)): the built-in instance. It runs Fishball in its own private DSH profile, which is attached to the main DSH and stops with it, and serves Fishball's chat and settings pages. It needs the connector: without it, the instance's card says "connector missing" and nothing starts. It never installs the connector.
 
 The repository root is not a plugin. See [docs/package-layout.md](<docs/package-layout.md>).
 
@@ -32,14 +32,14 @@ The commands use the profile `web`; use your own profile name after `--profile`.
    dsh plugin --profile web remove dsh-fishball
    ```
 
-2. **Install the connector, then the instance**, into the same profile, from the two tarballs `fishball-connector-0.1.0-alpha.0.tgz` and `fishball-instance-0.1.0-alpha.0.tgz` (build them with `npm pack` in each package folder; see [docs/package-layout.md](<docs/package-layout.md>)):
+2. **Install the connector, then the instance**, into the same profile, from the two tarballs `dsh-connector-0.1.0-alpha.0.tgz` and `dsh-instance-0.1.0-alpha.0.tgz` (build them with `npm pack` in each package folder; see [docs/package-layout.md](<docs/package-layout.md>)):
 
    ```bash
-   dsh plugin --profile web add ./fishball-connector-0.1.0-alpha.0.tgz
-   dsh plugin --profile web add ./fishball-instance-0.1.0-alpha.0.tgz
+   dsh plugin --profile web add ./dsh-connector-0.1.0-alpha.0.tgz
+   dsh plugin --profile web add ./dsh-instance-0.1.0-alpha.0.tgz
    ```
 
-   Install the connector first. The instance declares it as a peer (`fishball-connector >=0.1.0-alpha.0 <2`), and DSH does not install peers by itself. pnpm also lists DSH's own packages as missing peers; DSH provides them when it runs, so that warning is expected.
+   Install the connector first. The instance declares it as a peer (`dsh-connector >=0.1.0-alpha.0 <2`), and DSH does not install peers by itself. pnpm also lists DSH's own packages as missing peers; DSH provides them when it runs, so that warning is expected.
 
 3. **Start DSH** as usual. The two plugins find each other by themselves; no profile edit is needed. Fishball starts once DSH is ready. On its first start the instance creates its private profile under `<DSH_HOME>/fishball/runtime`. The DSH home must be a canonical real path, not a path through a symbolic link such as `/tmp` (`/private/tmp` on macOS); otherwise the instance reports `INVALID_MAIN_HOME` and does not start. On that first start DSH itself may also create its default workspace, `~/Documents/deepseek-harness/default-workspace`, with one blank session. This is accepted, and opening Fishball still lands on Fishball's own conversation (see [v2-lite](<docs/planning/v2-lite.md>)).
 
@@ -47,22 +47,22 @@ To use the connector with your own instance, install only the connector in step 
 
 ## Uninstall
 
-DSH runs no plugin code when a plugin is removed. Remove on the Plugins page stops the plugin as Disable does, and `dsh plugin remove` only runs pnpm. So `fishball-instance` ships a cleanup command, `uninstall.js`. Run it **with DSH quit, before you remove the package**.
+DSH runs no plugin code when a plugin is removed. Remove on the Plugins page stops the plugin as Disable does, and `dsh plugin remove` only runs pnpm. So `dsh-instance` ships a cleanup command, `uninstall.js`. Run it **with DSH quit, before you remove the package**.
 
-### `fishball-instance`
+### `dsh-instance`
 
 1. Quit DSH. That also stops Fishball's child process.
 2. Run the cleanup command from the package installed in your profile:
 
    ```bash
-   node ~/.dsh/profiles/web/node_modules/fishball-instance/uninstall.js
+   node ~/.dsh/profiles/web/node_modules/dsh-instance/uninstall.js
    ```
 
-   It works on DSH's home: `$DSH_HOME` if it is set, else `~/.dsh`. For another home, add `--home <DSH_HOME>` and run the copy in that home's `profiles/<profile>/node_modules/fishball-instance/`.
+   It works on DSH's home: `$DSH_HOME` if it is set, else `~/.dsh`. For another home, add `--home <DSH_HOME>` and run the copy in that home's `profiles/<profile>/node_modules/dsh-instance/`.
 3. Remove the package:
 
    ```bash
-   dsh plugin --profile web remove fishball-instance
+   dsh plugin --profile web remove dsh-instance
    ```
 
    You can also start DSH again and remove it on the Plugins page.
@@ -80,9 +80,9 @@ DSH runs no plugin code when a plugin is removed. Remove on the Plugins page sto
 
 "Nothing to remove" (exit code 0) means that home has no tree. If you removed the package without running the command, quit DSH and delete `<DSH_HOME>/fishball/runtime` yourself.
 
-### `fishball-connector`
+### `dsh-connector`
 
-Remove it like any plugin: `dsh plugin --profile web remove fishball-connector`, or on the Plugins page. Its own data is kept, as for any DSH plugin. An instance that is still installed then shows "connector missing" and stops its child.
+Remove it like any plugin: `dsh plugin --profile web remove dsh-connector`, or on the Plugins page. Its own data is kept, as for any DSH plugin. An instance that is still installed then shows "connector missing" and stops its child.
 
 ### Reinstall
 
@@ -94,6 +94,6 @@ On the instance's card on DSH's Plugins page, **Model for Fishball** → **Check
 
 ## Licence
 
-[MIT](LICENSE). See [packages/connector/THIRD_PARTY_NOTICES.md](packages/connector/THIRD_PARTY_NOTICES.md) and [packages/instance/THIRD_PARTY_NOTICES.md](packages/instance/THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE). See [packages/dsh-connector/THIRD_PARTY_NOTICES.md](packages/dsh-connector/THIRD_PARTY_NOTICES.md) and [packages/dsh-instance/THIRD_PARTY_NOTICES.md](packages/dsh-instance/THIRD_PARTY_NOTICES.md).
 
 The repository is public on GitHub. The packages are not published to npm.

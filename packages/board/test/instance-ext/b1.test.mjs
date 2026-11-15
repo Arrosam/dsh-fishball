@@ -51,9 +51,9 @@ describe('B1 package and row', () => {
     assert.equal(manifest.version, '0.1.0-alpha.0')
     assert.equal(manifest.dsh?.bundle?.patch, './cordis.patch.yml')
     assert.match(manifest.engines?.dsh ?? '', />=0\.2\.1-rc\.5/)
-    // V3 realignment: docs/planning/v3-design.md §9.1 (line 1217) drops the `fishball-instance` peer;
+    // V3 realignment: docs/planning/v3-design.md §9.1 (line 1217) drops the `dsh-instance` peer;
     // the plugin finds fishball-core at runtime (R-FB-06), so no Fishball package is a peer.
-    assert.equal(manifest.peerDependencies?.['fishball-instance'], undefined, 'no fishball-instance peer (design §9.1)')
+    assert.equal(manifest.peerDependencies?.['dsh-instance'], undefined, 'no dsh-instance peer (design §9.1)')
     for (const file of ['index.js', 'src/constants.js', 'src/config.js', 'README.md']) await packageFile(BOARD, file)
   })
 

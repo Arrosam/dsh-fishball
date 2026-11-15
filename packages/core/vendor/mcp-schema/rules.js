@@ -12,7 +12,7 @@ import { isReservedNamespace, publicNameFor } from '../tools/names.js'
 const codePoints = (text) => [...text].length
 
 /** Whether a value is a valid fishball id (R-ID-02): 1–64 of `A–Z a–z 0–9 _ -`, no dot. */
-export const isFishballId = (value) => typeof value === 'string' && ID_GRAMMAR.pattern.test(value)
+export const isAgentId = (value) => typeof value === 'string' && ID_GRAMMAR.pattern.test(value)
 
 /**
  * A name as stored and shown (R-NAME-02, TQ-6 A): every run of Unicode White_Space becomes one
