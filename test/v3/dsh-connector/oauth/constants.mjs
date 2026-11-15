@@ -54,7 +54,6 @@ function revocationKind(stem) {
 export const REVOCATION = Object.freeze({
   get disabled() { return revocationKind('disabl') },
   get deleted() { return revocationKind('delet') },
-  get valueChanged() { return revocationKind('value') },
 })
 
 /** `BearerVerifier.verify`'s two refusals (K1 index.d.ts): no Bearer value, or an invalid one. */
@@ -91,9 +90,7 @@ export const FIXTURE = Object.freeze({
   day: DAY_MS,
   /** A user-set or generated token value: `dsht_` + 32 random bytes, as C-TOKENS generates (R-TOK-08). */
   value: () => TOKEN_VALUE.generatedPrefix + randomBytes(TOKEN_VALUE.generatedBytes).toString('base64url'),
-  /** A value one character under the minimum (AUTH-DT-01 rule 8). */
-  shortValue: () => FIXTURE.value().slice(0, TOKEN_VALUE.minChars - 1),
-  /** The first generation of a fake token entry; disable, delete and value change bump it (K1 TokenEntry). */
+  /** The first generation of a fake token entry; disable and delete bump it (K1 TokenEntry). */
   firstGeneration: 1,
   /** The fake registry's entry keys (K1 `EntryKey` is opaque). */
   entryKey: (n) => `fbtest-entry-${n}`,
