@@ -359,7 +359,6 @@ function transitions(sdk) {
   todo(sdk, CASE.platSt01, 5, 'Live(P) --time passes (fake clock), silence--> Live(P): no timer settles it', LATER.firstCommit)
   todo(sdk, CASE.platSt01, 6, 'Live(P) --P revoked--> Live(user): card in the session', LATER.revoke)
   todo(sdk, CASE.platSt01, 7, 'Live(P) --succession--> Live(P\'): revision + 1; the old id answers expired to any principal', LATER.succeed)
-  todo(sdk, CASE.platSt01, 8, 'Live(P) --Watchdog commits escalate--> Live(user card); Watchdog notified on settlement', LATER.escalate)
   todo(sdk, CASE.platSt01, 9, 'Live(P) --session ends / offer withdrawn--> Retired; retirement to P; a later answer is refused', LATER.firstCommit)
 
   // WATCH-ST-01 rows 7 and 8 (moved from C-ROUTE, O8).

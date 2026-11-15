@@ -423,7 +423,7 @@ function registerUseCases(sdk) {
     await assertEmitOk(world, c, note({ sessionId: FIXTURE.session.unmanaged }))
     assert.equal(lastCommit(world).recipient, D.principalKey)
   })
-  row(sdk, ID.uc02, 'A3', 'in HF\'s Fishball DSH the event reaches the Fishball agent through X9; Watchdog never sees it', null, LATER.facade)
+  row(sdk, ID.uc02, 'A3', 'in HF\'s Fishball DSH the event reaches the Fishball agent through X9', null, LATER.facade)
   row(sdk, ID.uc02, 'E1', 'no recipient (no D, no manager) → no-agent, nothing queued', async (t) => {
     const world = await worldFor(t, sdk, { designated: null })
     const c = await world.add(FIXTURE.pkg.ci, { tools: [] })
@@ -532,9 +532,8 @@ function registerUseCases(sdk) {
 
   // ---- EXT-UC-04: embed-UI contributes the attention tools (U-ATTN, FEAT-PEERS) ----
   row(sdk, ID.uc04, 'main 1', 'tools/list shows embed-ui.attention.signal and .state', null, LATER.attention)
-  row(sdk, ID.uc04, 'main 2', 'fold-notify\'s signal({important: true}) → {ok: true, accepted: true}; latch count 1, important', null, LATER.attention)
+  row(sdk, ID.uc04, 'main 2', 'a plugin\'s signal({important: true}) → {ok: true, accepted: true}; latch count 1, important', null, LATER.attention)
   row(sdk, ID.uc04, 'main 3', 'opening the Fishball page clears the latch once', null, LATER.attention)
-  row(sdk, ID.uc04, 'A1', 'without embed-UI the tools are absent; fold-notify gets unsupported-operation', null, LATER.peers)
 }
 
 // ------------------------------------------------------------------------------------------------

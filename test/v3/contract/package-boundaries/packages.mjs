@@ -15,7 +15,7 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import { Worker } from 'node:worker_threads'
 import { REPO } from '../../../support/constants.mjs'
-import { HOSTED_SETTINGS, JS_FILE, NPM, V3, V3_NAMES, WORKER } from './constants.mjs'
+import { JS_FILE, NPM, V3, V3_NAMES, WORKER } from './constants.mjs'
 
 const run = promisify(execFile)
 const MANIFEST = 'package.json'
@@ -98,26 +98,15 @@ function readSpecifiers(files) {
 }
 
 /**
- * Nested bundles that are their enclosing package's own code, by enclosing package. R-HOST-11 and
- * R-CORE (4): the hosted-only settings sections are instance-owned and ship in the instance's
- * package; `fishball-hosted-settings` is only the bundle id DSH lists them under (TQ-R4 decided B),
- * so its folder (`src/child-settings/` now, `bundled/hosted-settings/` from I-PLACE) is the
- * instance's, not a package of its own.
- */
-const OWN_BUNDLES = Object.freeze({ [V3.instance.name]: Object.freeze([HOSTED_SETTINGS]) })
-
-/**
  * A unit is one V3 package as shipped. Files of a nested V3 package inside a tarball (a folder with
  * its own package.json naming a V3 package: a placed bundle under the instance's `bundled/`, or a
- * bundled `node_modules/fishball-shared`) belong to that nested package, not to the tarball's owner,
- * except a bundle OWN_BUNDLES gives to the owner. A nested copy of a package that also has its own
- * folder is not analysed twice.
+ * bundled `node_modules/fishball-shared`) belong to that nested package, not to the tarball's owner.
+ * A nested copy of a package that also has its own folder is not analysed twice.
  */
 function unitsOf(owner, dir, files) {
-  const own = OWN_BUNDLES[owner] ?? []
   const nested = files.filter((f) => path.posix.basename(f) === MANIFEST && f !== MANIFEST)
     .map((f) => ({ prefix: path.posix.dirname(f) + '/', name: v3Name(readManifest(path.join(dir, path.posix.dirname(f)))?.name) }))
-    .filter((n) => n.name !== undefined && !own.includes(n.name))
+    .filter((n) => n.name !== undefined)
     .sort((a, b) => b.prefix.length - a.prefix.length)
   const units = new Map([[owner, { name: owner, dir, own: true, files: [] }]])
   for (const f of files) {

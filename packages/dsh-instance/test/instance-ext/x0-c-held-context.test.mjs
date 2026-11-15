@@ -13,11 +13,12 @@ import { bootChild, messageText } from '../../../../test/support/instance-ext.mj
 
 const C = Object.freeze({
   none: 0, one: 1, counts: Object.freeze([0, 1, 2]),
-  plugin: 'fishball-watchdog', file: 'notify-keys.jsonl',
+  // Any plugin id: manager.notify takes the caller's id as given (X10).
+  plugin: 'fbtest-plugin', file: 'notify-keys.jsonl',
   key: 'held-context-key-', text: 'quiet context 😀 ', changed: 'duplicate must not replace original',
   promptId: 'held-context-user-', prompt: 'ordinary manager input',
   role: 'user', block: 'text', source: Object.freeze({ kind: 'user' }),
-  noticeSource: Object.freeze({ kind: 'fishball-notice', form: 'plugin', pluginId: 'fishball-watchdog' }),
+  noticeSource: Object.freeze({ kind: 'fishball-notice', form: 'plugin', pluginId: 'fbtest-plugin' }),
   status: Object.freeze({ held: 'held', duplicate: 'duplicate', queued: 'queued' }),
   event: Object.freeze({ start: 'turn/start', user: 'user/message', splice: 'agent/inbox/spliced' }),
   target: 'next-step',

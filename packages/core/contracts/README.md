@@ -74,7 +74,7 @@ These are the R-CORE point unchanged, with one rule added for `unmount`:
 - **Guarded rows:** the ten session-creating rows and `dsh-instance`.
 - **Shipped presets:** `preset-standard`, `preset-ptc`, `preset-cordis` and `preset-minimal` are
   switched off, not deleted. They are the same on both SDKs.
-- **Offered presets:** `fishball` (the default) and `watchdog`.
+- **Offered preset:** `fishball`, the default and the only one.
 - **Policy:** sandbox `read-only`; `ctx.approval.config.policy` = `ask`, read directly; permission
   presets `[read-only]`, default `read-only`.
 - **Manager tools:** exactly `read`, `read_image` and `working_directory`, checked on resume
@@ -83,7 +83,6 @@ These are the R-CORE point unchanged, with one rule added for `unmount`:
   `bundle-order` or `manager-tools`.
   - Checks run at app ready, `settings/document-updated` and `plugin-manager/changed`, never
     before app ready.
-  - `fishball-hosted-settings` is never named.
 - **Reorder:** `moved`, `unchanged` or `failed` (PROPOSED), once per DSH. Core never moves itself
   back.
 - **Leftover sessions** are archived (`workspaceController.archiveSession`). That is X-MIG's

@@ -58,17 +58,17 @@ Requirements: R-UI-01…09, R-ARCH-03, R-ARCH-04, requirements §4 (rows 1–15)
 - **Postconditions:** embed-UI registered no `sidebar.brand.*` slot; its `ask_fishball` view is read-only.
 
 ### UIM-UC-05 — A managed session shows its Fishball requests and their outcomes inline
-**Req:** R-UI-13, R-NAME-08, R-UI-12, R-WD-09 · **Level:** e2e (both SDKs), integration (embed-UI client against scripted session events) · **Flags:** —
+**Req:** R-UI-13, R-NAME-08, R-UI-12 · **Level:** e2e (both SDKs), integration (embed-UI client against scripted session events) · **Flags:** —
 
 - **Actor:** DSH owner watching managed session S1 in H (C + I + U); S1 is managed by "Navigator".
 - **Preconditions:** embed-UI loaded; S1 handed over to Navigator.
 - **Main flow:**
   1. S1 requests permission for a command; it goes to Navigator → S1 shows a read-only record "sent to Navigator" inline, like a tool-use row.
-  2. Navigator (or its Watchdog) allows it → the same record shows "allowed".
+  2. Navigator allows it → the same record shows "allowed".
   3. S1 calls `ask_fishball("Which branch?")` → an inline record shows the question, sent to Navigator.
   4. Navigator answers "main" → the record shows the answer.
 - **Alternative flows:**
-  - A1. Watchdog sends a high-risk request to the user's card (Q13) → the record shows "sent to your card"; once the user settles the card, the record shows the user's answer.
+  - A1. Navigator escalates a high-risk request to the user's card (Q13) → the record shows "sent to your card"; once the user settles the card, the record shows the user's answer.
   - A2. S1 is managed by a nameless principal → the record names it `ID: <id>`.
   - A3. The decision is a justified reject → the record shows "rejected" with the justification text S1 received.
 - **Exception flows:**
@@ -144,7 +144,7 @@ Columns: MCP = endpoint served; Page = Fishball page in this DSH; Marks = marks 
 | 11 | F + C | — | — | — | — | — | — | unsupported: no checks promised (excluded) |
 | 12 | C used by hosted + standalone | yes | yes | yes | yes | yes | two | both default to "Fishball" locally: the first holds it, the second is nameless (`ID: <id>`) until renamed; clashing rename `name-taken` |
 | 13 | feature plugins, no core | no | no | no | no | no | no | each logs `fishball-core-missing` once; boot succeeds |
-| 13b | core only | no | own UI | no | no | no | yes | board, fold-notify, Watchdog absent |
+| 13b | core only | no | own UI | no | no | no | yes | board, fold-notify absent |
 | 14 | any F, guard overridden | — | yes | — | — | — | yes | `guards-overridden` naming the guard |
 | 15 | hosted child, core disabled | — | yes (status) | — | — | — | no | `fishball-off`; child starts |
 

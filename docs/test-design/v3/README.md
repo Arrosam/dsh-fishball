@@ -7,9 +7,9 @@ read. The requirements are the authority. The design is used only where a requir
 (for example R-TOK-05 → design §5.3) or for a proposed name that is still review vocabulary until
 V3-K; such expectations carry the flag `D§n`.
 
-**Q33 is decided B** (requirements §1.15, R-WD-03, R-WD-15): Watchdog is assigned passively.
-There is no `watchdog_check_now`; `watchdog_brief` / `watchdog_refine` are data-only and start no
-run; `watchdog_pause` / `watchdog_resume` start no run either. Cases that pin this carry `Q33`.
+**Watchdog left V3** (requirements 1.37): its cases (the former `05-watchdog.md`, area `WD`) are
+gone; its notes are the separate project's. A managed session's permission requests go to its
+Fishball and on to the user.
 No requirement question remains open in the requirements document. Test-planning questions TQ-1
 to TQ-5 and TQ-R1 to TQ-R4 are decided and folded into the requirements, design and cases on this branch; the rest
 are open in [questions.md](<questions.md>).
@@ -22,7 +22,6 @@ are open in [questions.md](<questions.md>).
 | 2 | Names | [02-names.md](<02-names.md>) |
 | 3 | Hand over / Take back | [03-handover.md](<03-handover.md>) |
 | 4 | `fishball-events`, exactly-one delivery, interception | [04-events-interception.md](<04-events-interception.md>) |
-| 5 | Watchdog activation, decisions, failure | [05-watchdog.md](<05-watchdog.md>) |
 | 6 | Watching = managing | [06-watch.md](<06-watch.md>) |
 | 7 | Contributor tools and events | [07-contributors.md](<07-contributors.md>) |
 | 8 | Hosted launch, token per pairing, reinstall takeover | [08-hosted.md](<08-hosted.md>) |
@@ -37,7 +36,7 @@ The parallel-development task table that consumes these cases is
 
 ## Counts
 
-183 active cases (plus 6 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
+164 active cases (plus 6 withdrawn ids kept for traceability). A UC, DT or ST case holds many rows (flows, rules, transitions); the counts below are
 cases, not rows.
 
 | Area | UC | EP | BVA | DT | ST | Total |
@@ -46,20 +45,19 @@ cases, not rows.
 | NAME | 3 | 4 | 2 | 3 | 1 | 13 |
 | HAND (Hand over / Take back) | 4 | 2 | 0 | 2 | 2 | 10 |
 | EVT (events, interception) | 3 | 5 | 2 | 4 | 2 | 16 |
-| WD (Watchdog) | 7 | 4 | 3 | 2 | 3 | 19 |
 | WATCH | 3 | 1 | 0 | 0 | 1 | 5 |
 | EXT (contributors) | 4 | 4 | 4 | 3 | 1 | 16 |
 | HOST (hosted mode) | 8 | 3 | 0 | 3 | 2 | 16 |
 | REM (standalone, remote) | 3 | 3 | 0 | 1 | 0 | 7 |
 | UIM (embed-UI, install matrix) | 5 | 2 | 0 | 2 | 0 | 9 |
 | PLAT (rest) | 7 | 7 | 2 | 4 | 1 | 21 |
-| **Total** | **60** | **48** | **21** | **34** | **20** | **183** |
+| **Total** | **53** | **44** | **18** | **32** | **17** | **164** |
 
-Levels (a case may span two): unit 58, integration 128, e2e 29. Provisional on a spike (`P:Sn`): 9.
+Levels (a case may span two): unit 47, integration 119, e2e 29. Provisional on a spike (`P:Sn`): 9.
 
 ## Conventions
 
-**Case ids.** `<AREA>-<TECHNIQUE>-<nn>`. Areas: `AUTH`, `NAME`, `HAND`, `EVT`, `WD`, `WATCH`, `EXT`,
+**Case ids.** `<AREA>-<TECHNIQUE>-<nn>`. Areas: `AUTH`, `NAME`, `HAND`, `EVT`, `WATCH`, `EXT`,
 `HOST`, `REM`, `UIM`, `PLAT`. Techniques, and only these five:
 
 | Code | Technique |
@@ -84,7 +82,6 @@ Levels (a case may span two): unit 58, integration 128, e2e 29. Provisional on a
 | --- | --- |
 | `P:Sn` | **Provisional**: depends on the result of spike V3-Sn. Re-check the case when the spike reports. |
 | `K` | An exact value, code or algorithm is fixed only at the V3-K freeze. The case uses the requirement's value, or the design's proposed one; re-check at V3-K. |
-| `Q33` | Pins the Q33 = B decision (R-WD-03, R-WD-15): no on-demand Watchdog run. |
 | `TQ-n` | Depends on open test-planning question n in [questions.md](<questions.md>). The expected result shown is the recommended answer. |
 | `D§n` | The expected value comes from design section n, because the requirement defers to it. |
 

@@ -28,8 +28,6 @@ export const PACKAGE = Object.freeze({
   fishballCore: 'packages/core',
   fishballShared: 'packages/shared',
   fishballBoard: 'packages/board',
-  fishballFoldNotify: 'packages/fold-notify',
-  fishballWatchdog: 'packages/watchdog',
 })
 
 const all = (pkg) => pkg + '/**'
@@ -125,10 +123,7 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.fishballCore, 'src', 'guards'), sub(PACKAGE.fishballCore, 'ui'), sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore),
       all(PACKAGE.dshInstance)]),
   'fishball-board.peers': suite('board and fold-notify without core (FEAT-PEERS)', v3('fishball-board/peers'),
-    [all(PACKAGE.fishballBoard), all(PACKAGE.fishballFoldNotify), all(PACKAGE.fishballWatchdog), sub(PACKAGE.dshConnector, 'mcp-schema')]),
-  // Watchdog stays a separate project (design §7); its V3 suite runs while its code is in the repo.
-  'fishball-watchdog.route': suite('Watchdog as an interceptor (WD-ROUTE)', v3('fishball-watchdog/route'),
-    [all(PACKAGE.fishballWatchdog), sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS]),
+    [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
   'contract.k1-mcp-schema': suite('K1 MCP schema freeze', v3('contract/k1-mcp-schema'),
     [...CONNECTOR_CONTRACTS, sub(PACKAGE.fishballCore, 'vendor'), ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
@@ -183,14 +178,13 @@ export const V2_GROUPS = Object.freeze({
   ]), [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
   'v2.fishball-core': suite('core\'s slim child and pages: chat, records, i18n, persona, skills, settings, lite', v2([
     'body-soul-i6-settings-view', 'body-soul-i7-records', 'body-soul-i9-lang', 'e1-p2-model-choice', 'e1-p4-header-name',
-    'persona-bold-render', 'test/instance-ext/x0-i.test.mjs', 'test/instance-ext/x0-s.test.mjs', 'test/instance-ext/x0-w.test.mjs',
+    'persona-bold-render', 'test/instance-ext/x0-i.test.mjs', 'test/instance-ext/x0-w.test.mjs',
     'test/private-skills/sk-bva.test.mjs', 'test/private-skills/sk-dt.test.mjs', 'test/private-skills/sk-ep.test.mjs',
     'test/private-skills/sk-st.test.mjs', 'test/private-skills/sk-uc.test.mjs',
     'test/v2-page-cases/lite.test.mjs', 'test/v2-page-cases/page.test.mjs', 'test/v2-page-cases/pg-origin.test.mjs',
     'test/v2-page-cases/ready.test.mjs', 'test/v2-page-cases/set.test.mjs',
     'test/v2-recommendation/sdk-0.2.1-rc.5.test.mjs', 'test/v2-recommendation/sdk-0.2.2-rc.1.test.mjs',
     'packages/dsh-instance/test/instance-ext/page-boot-unwind.test.mjs', 'packages/dsh-instance/test/instance-ext/page-open-listed.test.mjs',
-    'packages/dsh-instance/test/instance-ext/settings-shared-mount.test.mjs',
   ]), [all(PACKAGE.fishballCore), all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'contract')]),
   'v2.fishball-shared': suite('the shared library\'s provider-sync engine and host', v2(['provider-sync-engine', 'provider-sync-host']),
     [all(PACKAGE.fishballShared)]),

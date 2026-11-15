@@ -109,7 +109,6 @@ export const LATER = Object.freeze({
   domain: 'C-WIRE or the W3 merge: needs the real V2 session domain in a DSH host process (no child launch here) and its relayed populate port (Fishball Q2)',
   revoke: 'C-REVOKE (revocation: the offer goes to the user card)',
   succeed: 'C-SUCCEED (succession: same request, revision + 1, the old id expired)',
-  escalate: 'WD-DECIDE (Watchdog commits escalate)',
   attention: 'U-ATTN (embed-ui.attention.* contributed through C-EXT when embed-UI is present)',
   settings: 'C-WIRE (the connector settings schema: no setting stops delegated items)',
 })

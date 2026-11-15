@@ -1,18 +1,16 @@
 /**
  * The instance's status line (task I1, inst-OQ-01; V3 R-EMBED): the state tag, the safe code, its
  * reason, the failed start's detail and Retry while the instance is `failed`, polled from the
- * instance's status route. One source, two pages (SET, docs/planning/v2-set.md): the main DSH's
- * instance card in dsh-connector-ui and the child's hosted settings section here
- * (fishball-hosted-settings, client.js) both draw it, so both show and behave the same.
+ * instance's status route. The main DSH's instance card in dsh-connector-ui draws it.
  *
  * The instance owns this file (HOST-EP-03 row 2; it reads the instance's own routes). DSH's client
  * modules load a package-local chunk only from beside the package's own `client.js` (the
  * CLIENT_CHUNK rule of dsh-client-modules, the same in 0.2.1-rc.5 and 0.2.2-rc.1), so each page
- * loads it as its own chunk `client.status.js`: here it is the hosted settings package's sibling,
- * and dsh-connector-ui carries a relative symlink to this file beside its client entry (user
- * decision 2026-11-13; a release pack must dereference it, DESIGN.md). The registration therefore
- * names whichever package served the script: the path segment before the chunk name in its URL
- * (`…/plugins/<owner>/client.status.js`; both owners are unscoped names, one segment). Both SDKs
+ * loads it as its own chunk `client.status.js`: dsh-connector-ui carries a relative symlink to this
+ * file beside its client entry (user decision 2026-11-13; a release pack must dereference it,
+ * DESIGN.md). The registration therefore names whichever package served the script: the path
+ * segment before the chunk name in its URL (`…/plugins/<owner>/client.status.js`; the owner is an
+ * unscoped name, one segment). Both SDKs
  * load a chunk as a classic `<script src>` (defaultLoadBundle), so the URL is there. Without a
  * script URL (a custom bundle transport, or a plain Node import) the owner is unknown and nothing
  * registers: guessing one would register under the wrong package, and the loader then names the
@@ -37,8 +35,7 @@
      */
     const LOCALE = 'dsh-instance'
     /**
-     * The instance's status (host.js status(), served by src/native-web.js; in the child, by the
-     * relay routes of index.js with the same paths and shapes). The routes are relative to DSH's
+     * The instance's status (host.js status(), served by src/native-web.js). The routes are relative to DSH's
      * page. Status has no event, so the open card re-reads it at the cadence the connector's frame
      * reads `status()` (conn-OQ-25: once a second), only while it is mounted and the tab is
      * visible, one read at a time. `unavailable` is the route's own answer for a state it cannot
@@ -59,7 +56,7 @@
     const CLS = Object.freeze({ status: 'fb-instance-status', statusRow: 'fb-instance-status-row', hint: 'fb-instance-hint' })
     /**
      * Layout tokens shared with the main card's own rules. The sheet id is the V2 card's: each page
-     * mounts one sheet under it (the child this module's rules, the main card these plus its own).
+     * mounts one sheet under it (the main card mounts these rules plus its own).
      */
     const STYLE = Object.freeze({
       id: 'dsh-instance-style',

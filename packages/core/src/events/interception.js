@@ -96,7 +96,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
   /**
    * Hand one recorded event to one registration under a fresh `attempt`, and settle the record
    * when the handler settles (core keeps it open until then, S2-Q1 B). Not awaited by intake: a
-   * handler may decide for a long time (Watchdog's side session) without blocking the poll loop.
+   * handler may decide for a long time without blocking the poll loop.
    */
   async function offer(entry, event, attempt) {
     const { eventId } = event
@@ -221,7 +221,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
   }
 
   /**
-   * Synchronous unregister (R-WD-07 "at once"). Events it held that are offered or accepted and
+   * Synchronous unregister (R-INT-04, EVT-UC-03 E1). Events it held that are offered or accepted and
    * undecided fall back to Fishball once; one whose commit began stays fenced with it.
    */
   function dispose(entry) {

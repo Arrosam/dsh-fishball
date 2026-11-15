@@ -1,5 +1,0 @@
-# fishball-hosted-settings' bundle patch (R-HOST-11; TQ-R4 decided B): its one row. Placed only in a
-# hosted child, by the instance (native-runtime/placement.js), before fishball-core, so it is listed
-# on the child's Plugins page and the owner can switch it off. core's guards never name it.
-- insert:
-    - { id: fishball-hosted-settings, name: fishball-hosted-settings }

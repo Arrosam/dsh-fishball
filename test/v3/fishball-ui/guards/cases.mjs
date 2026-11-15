@@ -1,15 +1,18 @@
 /**
  * F-GUARDS black-box cases (.runtime/reports/v3-remaining-plan.md W2 row F-GUARDS; v3-tasks.md row
- * F-GUARDS): PLAT-UC-04 (composition), PLAT-DT-04, UIM-DT-01 rows 9, 10b, 14, HOST-DT-03 rule 6 and
- * HOST-UC-08 A3 and E2. Requirements R-FB-02, R-FB-09, R-FB-12, R-FB-13, R-HOST-11 (5), R-ARCH-02;
+ * F-GUARDS): PLAT-UC-04 (composition), PLAT-DT-04, UIM-DT-01 rows 9, 10b, 14 and HOST-UC-08 A3.
+ * The fishball-hosted-settings rows (HOST-DT-03 rule 6, HOST-UC-08 E2) left with that bundle, and
+ * a guarded DSH offers only core's agent preset (REMOVE-WD, design §1.0, §7). Requirements R-FB-02,
+ * R-FB-09, R-FB-12, R-FB-13, R-ARCH-02;
  * design §5a.2; spike V3-S6 (`86800d2`, `7c2230e`). Task done-when: "the guards are defined exactly
  * once; the report is set and cleared at app ready and on a settings change; the standalone
  * self-reorder works".
  *
  * Techniques, Use Cases first: Use Case (PLAT-UC-04 main, A1, A3, E1; HOST-UC-08 A3, E2), Decision
- * Table (PLAT-DT-04 rules 1–6; UIM-DT-01 rows; HOST-DT-03 rule 6; the override table A1 × guard
+ * Table (PLAT-DT-04 rules 1–6; UIM-DT-01 rows; the override table A1 × guard
  * class), State Transition (the report: none → ok / guards-overridden at app ready, then set and
- * cleared by each owner change and restore), EP (the classes of OverriddenGuard) and BVA (the
+ * cleared by each owner change and restore), EP (the classes of OverriddenGuard; the offered
+ * presets: core's alone, or one more) and BVA (the
  * app-ready boundary: nothing before it, a report at it).
  *
  * Level: integration. Each scenario is one throwaway standalone DSH home on the SDK the file names,
@@ -30,7 +33,7 @@ import { bootGraph, openSettingsPage } from '../../fishball-core/package/page.mj
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import { RELAYED } from '../../dsh-instance/placement/constants.mjs'
 import { bootEnv, scenario } from './harness.mjs'
-import { BUDGET, DSH_ROW, FIXTURE, GUARDS, LATER, NEVER_GUARDED, OWNER, PROFILE, REPORT, SDK_SCOPE, UI_COMPONENT } from './constants.mjs'
+import { BUDGET, DSH_ROW, FIXTURE, GUARDS, LATER, OWNER, PROFILE, REPORT, SDK_SCOPE, UI_COMPONENT } from './constants.mjs'
 
 const JS = /\.(?:c|m)?js$/
 const CORE = V3.core.name
@@ -101,7 +104,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const native = scenario('v3-fg-native', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [FIXTURE.probe.name, CORE, INSTANCE, FIXTURE.hostedSettings, FIXTURE.watchdog.name] }))
+      const h = await boot(bootEnv({ members: [FIXTURE.probe.name, CORE, INSTANCE, FIXTURE.other] }))
       f.home = h.home
       f.pid1 = h.pid
       f.readyAt1 = await h.call('readyAt')
@@ -112,7 +115,7 @@ export function registerGuardCases(sdk) {
       f.history1 = await h.call('history')
       f.bundles1 = await h.call('bundles')
       f.manifest1 = await h.call('manifestStat')
-      f.rows1 = await h.call('rows', { ids: [...ALL_GUARD_ROWS, NEVER_GUARDED] })
+      f.rows1 = await h.call('rows', { ids: [...ALL_GUARD_ROWS] })
       f.presets1 = await h.call('presets')
       f.policy1 = await h.call('policy')
       f.bundleList1 = await h.call('bundleList')
@@ -174,7 +177,7 @@ export function registerGuardCases(sdk) {
     const f = await native()
     assert.deepEqual(f.policy1, { ...GUARDS.policy, permissionPresets: [...GUARDS.policy.permissionPresets] })
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', 'agentPresets.list() offers exactly the Fishball presets, the default first preset of K3', async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'main', "agentPresets.list() offers exactly core's preset (K3 FishballAgentPreset), the default", async () => {
     const f = await native()
     assert.deepEqual([...f.presets1.ids].sort(), [...GUARDS.offeredPresets].sort())
     assert.equal(f.presets1.defaultId, GUARDS.policy.defaultAgentPreset)
@@ -216,12 +219,11 @@ export function registerGuardCases(sdk) {
       assert.ok(own?.dsh?.client, `${folder}/package.json declares no dsh.client`)
     }
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', "core's own patch (read by the SDK's patch loader) switches every guard row off and never names fishball-hosted-settings", async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'main', "core's own patch (read by the SDK's patch loader) switches every guard row off", async () => {
     assert.notEqual(corePatch(), null, 'packages/core/cordis.patch.yml is missing')
     const rows = await corePatchRows(sdk)
     const off = new Set(rows.filter((r) => r.id !== undefined && r.disabled === true).map((r) => r.id))
     assert.deepEqual(ALL_GUARD_ROWS.filter((id) => !off.has(id)), [], 'guard rows core\'s patch does not switch off')
-    assert.equal(JSON.stringify(rows).includes(NEVER_GUARDED), false, "core's patch names " + NEVER_GUARDED)
   })
   caseTest(sdk, 'PLAT-UC-04', 'main', "the guards are defined once: the instance's launch code no longer holds the guard rows (the LITE rows moved out)", async () => {
     const files = ownFiles(await unitOf(V3.instance.name)).filter((f) => JS.test(f) && f.startsWith(INSTANCE_LAUNCH))
@@ -267,7 +269,7 @@ export function registerGuardCases(sdk) {
     const f = await native()
     assert.equal(f.bundles1.at(-1), CORE, 'precondition: core moved')
     const others = f.bundles1.filter((b) => b !== CORE)
-    const installed = [FIXTURE.probe.name, INSTANCE, FIXTURE.hostedSettings, FIXTURE.watchdog.name]
+    const installed = [FIXTURE.probe.name, INSTANCE, FIXTURE.other]
     assert.deepEqual(others.filter((b) => installed.includes(b)), installed)
   })
   caseTest(sdk, 'PLAT-DT-04', '3a', 'DSH recomposes live: dsh-instance (already started once) is then off, in the same process', async () => {
@@ -321,14 +323,13 @@ export function registerGuardCases(sdk) {
       const o = f.override[key]
       assert.equal(o.set?.status, REPORT.overridden, show(o.set))
       assert.ok(o.set.overridden.includes(o.guard), `${o.guard} not named: ${show(o.set)}`)
-      assert.equal(o.set.overridden.includes(NEVER_GUARDED), false)
     })
     caseTest(sdk, 'PLAT-UC-04', 'A1', `override ${key}: restoring it clears the report at the next check (ok)`, async () => {
       const f = await native()
       assert.ok(isOk(f.override[key].cleared), show(f.override[key].cleared))
     })
   }
-  caseTest(sdk, 'PLAT-UC-04', 'A1', 'a shipped preset switched back on is also reported as agent-presets (a preset other than the Fishball ones is offered)', async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'A1', "a shipped preset switched back on is also reported as agent-presets (a preset other than core's is offered)", async () => {
     const f = await native()
     const o = f.override.preset
     assert.ok(o.set?.overridden?.includes(o.offered), show(o.set))
@@ -380,23 +381,8 @@ export function registerGuardCases(sdk) {
   caseTest(sdk, 'UIM-DT-01', 'all rows', 'R-ARCH-02: no other plugin is refused, hidden or disabled because core is present (the deselected stand-in only by its owner)', async () => {
     const f = await native()
     needGuardsHeld(f.rows1)
-    const watchdog = f.bundleList1.find((b) => b.name === FIXTURE.watchdog.name)
-    assert.equal(watchdog?.enabled, true, show(watchdog))
-  })
-
-  // ---------------------------------------------------------------- HOST-UC-08 E2 / HOST-DT-03 rule 6 (the guard side, in standalone)
-  caseTest(sdk, 'HOST-UC-08', 'E2', "core's guards never disable fishball-hosted-settings (its row stays enabled and runs)", async () => {
-    const f = await native()
-    needGuardsHeld(f.rows1)
-    const row = f.rows1.find((r) => r.id === NEVER_GUARDED)
-    assert.equal(row?.present, true)
-    assert.equal(row.disabled, false, show(row))
-  })
-  caseTest(sdk, 'HOST-UC-08', 'E2', 'guards-overridden never names fishball-hosted-settings, in any report of any boot', async () => {
-    const f = await native()
-    needReports(f.historyEnd1)
-    const all = [...f.history1, ...f.historyEnd1].map((h) => h.report).filter(Boolean).flatMap((r) => r.overridden)
-    assert.deepEqual(all.filter((g) => g.includes(NEVER_GUARDED)), [])
+    const other = f.bundleList1.find((b) => b.name === FIXTURE.other)
+    assert.equal(other?.enabled, true, show(other))
   })
 
   // ============================================================================================
@@ -455,7 +441,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const last = scenario('v3-fg-last', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [FIXTURE.watchdog.name, CORE], deselected: [FIXTURE.deselected] }))
+      const h = await boot(bootEnv({ members: [FIXTURE.other, CORE], deselected: [FIXTURE.deselected] }))
       f.home = h.home
       f.bundles0 = JSON.parse(fs.readFileSync(path.join(h.home, 'profiles', PROFILE, 'package.json'), 'utf8')).dsh.profile.bundles
       f.report1 = await waitReport(h, (r) => r !== null, BUDGET.readyMs)
@@ -509,19 +495,13 @@ export function registerGuardCases(sdk) {
     needReports(f.history1)
     assert.equal(f.bundles1.includes(FIXTURE.deselected), false, show(f.bundles1))
     assert.equal(f.bundles2.includes(FIXTURE.deselected), false, show(f.bundles2))
-    assert.ok(f.bundles2.includes(FIXTURE.watchdog.name))
+    assert.ok(f.bundles2.includes(FIXTURE.other))
   })
   caseTest(sdk, 'PLAT-UC-04', 'A1', 'R-FB-13: a resumed manager whose tools are not exactly the manager tools is reported as manager-tools', async () => {
     const f = await last()
     assert.ok(f.resumed3.resumed, show(f.resumed3))
     assert.notDeepEqual([...f.resumed3.tools].sort(), [...GUARDS.managerTools].sort(), 'precondition: the owner changed the tools')
     assert.ok(f.report3?.overridden?.includes(REPORT.managerTools), show(f.report3))
-  })
-  caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: the profile never contains fishball-hosted-settings and no client entry is it', async () => {
-    const f = await last()
-    assert.ok(f.graph.includes(CORE), 'precondition: core serves its client entry')
-    assert.equal(f.deps1.includes(NEVER_GUARDED), false)
-    assert.equal(f.graph.includes(NEVER_GUARDED), false, show(f.graph))
   })
   caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: the same core package shows the generic settings only (Read Only line, DSH links, no hosted section, no error)', async () => {
     const f = await last()
@@ -532,24 +512,18 @@ export function registerGuardCases(sdk) {
     assert.deepEqual(f.settings.roles, [], 'a notice or error placeholder')
     assert.deepEqual(f.settings.failed, [])
   })
-  caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: the guard report names nothing about fishball-hosted-settings', async () => {
-    const f = await last()
-    needReports(f.history1)
-    assert.equal(JSON.stringify(f.history1).includes(NEVER_GUARDED), false)
-  })
-  caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: core reports no missing member for fishball-hosted-settings', null, LATER.status)
 
   // ============================================================================================
-  // Scenario HOSTED-SHAPED (PLAT-DT-04 rule 1; HOST-DT-03 rule 6): the profile a hosted child gets
-  // (instance, hosted settings, features, then core last), HMR off, built here by the test.
+  // Scenario HOSTED-SHAPED (PLAT-DT-04 rule 1): the profile a hosted child gets (the instance, the
+  // other bundles, then core last), HMR off, built here by the test.
   // ============================================================================================
   const shaped = scenario('v3-fg-shaped', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [INSTANCE, FIXTURE.watchdog.name, FIXTURE.hostedSettings, CORE], hmr: false }))
+      const h = await boot(bootEnv({ members: [INSTANCE, FIXTURE.other, CORE], hmr: false }))
       f.report = await waitReport(h, (r) => r !== null, BUDGET.readyMs)
       await new Promise((resolve) => setTimeout(resolve, BUDGET.settleMs))
       f.history = await h.call('history')
-      f.rows = await h.call('rows', { ids: [INSTANCE, NEVER_GUARDED] })
+      f.rows = await h.call('rows', { ids: [INSTANCE] })
       f.starts = (await h.call('standinStarts')).filter((s) => s.pid === h.pid)
       f.bundles = await h.call('bundles')
     },
@@ -561,16 +535,29 @@ export function registerGuardCases(sdk) {
     assert.ok(isOk(f.report), show(f.report))
     assert.equal(f.bundles.at(-1), CORE)
   })
-  caseTest(sdk, 'HOST-DT-03', 6, 'fishball-hosted-settings on: core\'s guards leave it enabled and it runs', async () => {
-    const f = await shaped()
-    needGuardsHeld(f.rows)
-    const row = f.rows.find((r) => r.id === NEVER_GUARDED)
-    assert.equal(row?.disabled, false, show(row))
-    assert.ok(f.starts.some((s) => s.row === NEVER_GUARDED), 'it did not start')
+
+  // ============================================================================================
+  // Scenario PRESET (PLAT-UC-04 A1, EP over the offered presets): core last, plus a bundle that
+  // offers one more agent preset. K3 FishballAgentPreset is core's preset alone (design §7), so any
+  // other offered preset is an `agent-presets` override, reported from app ready on.
+  // ============================================================================================
+  const preset = scenario('v3-fg-preset', sdk, [
+    async (boot, f) => {
+      const h = await boot(bootEnv({ members: [FIXTURE.extraPreset.name, CORE] }))
+      f.report = await waitReport(h, (r) => r?.status === REPORT.overridden, BUDGET.readyMs)
+      f.presets = await h.call('presets')
+      f.bundles = await h.call('bundles')
+    },
+  ])
+  caseTest(sdk, 'PLAT-UC-04', 'A1', "one more agent preset offered beside core's: guards-overridden naming agent-presets only", async () => {
+    const f = await preset()
+    assert.equal(f.bundles.at(-1), CORE, 'precondition: core last, so no row guard applies late: ' + show(f.bundles))
+    assert.ok(f.presets.ids.includes(FIXTURE.extraPreset.id), 'precondition: the extra preset is offered: ' + show(f.presets))
+    assert.equal(f.report?.status, REPORT.overridden, show(f.report))
+    assert.deepEqual([...f.report.overridden], [REPORT.agentPresets], show(f.report))
   })
-  caseTest(sdk, 'HOST-DT-03', 6, 'guards-overridden does not name it (every report of the start)', async () => {
-    const f = await shaped()
-    needReports(f.history)
-    assert.equal(JSON.stringify(f.history).includes(NEVER_GUARDED), false)
+  caseTest(sdk, 'PLAT-UC-04', 'A1', "one more agent preset offered: the default stays core's preset", async () => {
+    const f = await preset()
+    assert.equal(f.presets.defaultId, GUARDS.policy.defaultAgentPreset, show(f.presets))
   })
 }

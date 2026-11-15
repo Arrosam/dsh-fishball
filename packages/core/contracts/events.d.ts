@@ -91,8 +91,7 @@ export interface InterceptControl {
   commit(send: () => Promise<CommitSendResult>): Promise<CommitResult>
 
   /**
-   * Hands the event back to the Fishball agent, which is then woken for it once (R-INT-05,
-   * R-WD-09). Allowed while the event is offered or accepted, before any `commit`. Resolves `true`
+   * Hands the event back to the Fishball agent, which is then woken for it once (R-INT-05). Allowed while the event is offered or accepted, before any `commit`. Resolves `true`
    * when the event went to Fishball, `false` when it was fenced (no longer this handler's, or a
    * commit began).
    */
@@ -119,7 +118,7 @@ export interface FishballInstanceEvents {
    * - `priority` is optional, default 0. Dispatch order: the highest `priority` first, then the
    *   earliest registration.
    * - Disposing is synchronous: from then on the registration matches nothing, and events in
-   *   flight to it that are not committing fall back to Fishball once (EVT-UC-03 E1, R-WD-07).
+   *   flight to it that are not committing fall back to Fishball once (EVT-UC-03 E1, R-INT-04).
    * - DECIDED (#17, kept by the user; packages/dsh-connector/mcp-schema/README.md "User decisions"): an invalid registration (no `pluginId`, empty `types`, a non-function `filter` or
    *   handler, a priority that is not a finite number) throws a `TypeError`, registering nothing.
    */

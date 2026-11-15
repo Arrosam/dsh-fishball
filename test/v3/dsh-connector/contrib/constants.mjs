@@ -151,7 +151,6 @@ export const LATER = Object.freeze({
   tools: 'C-TOOLS (tools/list composition: core tools first, pair-only tokens see none)',
   facade: 'F-FACADE (core\'s façade and the X9 path in the Fishball DSH)',
   attention: 'U-ATTN (embed-UI\'s attention latch and its contributed tools)',
-  peers: 'FEAT-PEERS (fold-notify\'s attention call and its unsupported-operation fallback)',
   wire: 'C-WIRE (the connector settings schema: no per-contributor rows, no quarantine control)',
   matrix: 'X-MATRIX (a real dsh-hmr hot reload on a real DSH)',
 })
