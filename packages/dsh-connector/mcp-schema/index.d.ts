@@ -52,7 +52,10 @@ export type AckResult = { ok: true; acked: number } | { ok: false; code: 'unknow
 // Internal module interfaces (W2)
 // ---------------------------------------------------------------------------------------------
 
-/** An opaque, stable key of one token entry (never the token, its ref or its label). */
+/**
+ * An opaque, stable key of one token entry (never the token or its label). It is the `key` of the
+ * entry's item in the connector's settings list (TokenSettingsItem), written at creation.
+ */
 export type EntryKey = string
 /**
  * A principal key: opaque and stable for one (entry, bound id). Handed to contributors as
@@ -91,38 +94,94 @@ export interface BearerVerifier {
   verify(authorization: string | undefined, audience: string, now: EpochMs): Caller | { error: 'missing' | 'invalid_token' }
 }
 
-/** The connector-side state of one token entry. Never carries the value. */
+/**
+ * The connector-side state of one token entry (K1d token amendment, design §5.1, §5.9). Never
+ * carries the value, its digest or a credential reference: the connector stores only the digest
+ * (TOKEN_VALUE.digestAlgorithm) in the entry's own record, and no caller outside C-TOKENS reads it.
+ */
 export interface TokenEntry {
   readonly entryKey: EntryKey
   readonly label: string
   readonly enabled: boolean
-  readonly ref: string
-  /** `ok`, `token-too-short` or `token-unconfigured` (ENTRY_STATUS). */
-  readonly status: 'ok' | 'token-too-short' | 'token-unconfigured'
   /**
-   * Bumped on disable, delete or value change. Every access and refresh token records the
-   * generation it was issued under, so a re-enable revives none (R-OA-06, S7 §4.4).
+   * Always ENTRY_STATUS.ok (K1d: a generated value is never too short or unset). The field stays so
+   * that a caller admitting only `ok` entries needs no change.
+   */
+  readonly status: typeof ENTRY_STATUS[keyof typeof ENTRY_STATUS]
+  /**
+   * Bumped on disable or delete. Every access and refresh token records the generation it was
+   * issued under, so a re-enable revives none (R-OA-06, S7 §4.4).
    */
   readonly generation: number
-  /** Whether the connector generated the value (so a delete unsets it, R-TOK-09). */
-  readonly generated: boolean
+  /**
+   * Whether `dshConnectorTokens.createHosted` made the entry (K1d; replaces `ref` and `generated`).
+   * C-SUCCEED's `hosted/` storage keeps which instance it was made for.
+   */
+  readonly hosted: boolean
 }
 
-export type RevocationKind = 'disabled' | 'deleted' | 'value-changed'
+/** REVOCATION_KIND's values: `disabled` or `deleted` (K1d withdrew `value-changed`: a value never changes). */
+export type RevocationKind = typeof REVOCATION_KIND[keyof typeof REVOCATION_KIND]
 
-/** C-TOKENS: token entries over native settings and `ctx.credentials`. */
+/** C-TOKENS: token entries over the connector's native settings list and its own digest records. */
 export interface TokenRegistry {
   /**
-   * Constant-time match of a presented value against the **enabled**, `ok` entries' digests
-   * (R-TOK-06). `undefined` for every miss, whatever the reason. Two entries never hold one
-   * value: such a settings save is refused `value-duplicate` (SETTINGS_REFUSAL), so a match is
+   * Constant-time match of a presented value's digest against the digests of the **enabled**, `ok`
+   * entries that are not in a duplicate (R-TOK-06, R3, R5). `undefined` for every miss, whatever
+   * the reason. Two entries never hold one digest: such a save is refused `token-duplicate`
+   * (SETTINGS_REFUSAL), and entries found duplicated outside a save refuse service, so a match is
    * unique.
    */
   match(value: string): TokenEntry | undefined
   get(entryKey: EntryKey): TokenEntry | undefined
   list(): readonly TokenEntry[]
-  /** Fires synchronously when an entry is disabled, deleted or its value changed (R-TOK-05). */
+  /** Fires synchronously when an entry is disabled or deleted (R-TOK-05). */
   onRevoked(listener: (entryKey: EntryKey, kind: RevocationKind, generation: number) => void): () => void
+}
+
+/** One item of the connector's native tokens list (design §5.1; K1d). Never a value or a digest. */
+export interface TokenSettingsItem {
+  readonly label: string
+  readonly enabled: boolean
+  /** The entry's EntryKey. */
+  readonly key: EntryKey
+}
+
+/**
+ * The one writer of the connector's settings document for the connector's own modules (K1d; C-WIRE
+ * binds it, W4b). C-TOKENS-REVEAL's `create` and `createHosted` call `addToken`; C-REVOKE calls
+ * `setDesignated(undefined)` on the delete of the designated entry (R-ROUTE-04); C-SUCCEED calls
+ * `removeToken` and `setDesignated` in a succession (R-HOST-09). Defined once so that these tasks
+ * share one port. Connector-internal: never a DSH service, never reachable over MCP or HTTP.
+ *
+ * Every method resolves only once the document is saved through DSH's settings service **and** the
+ * token registry's sync of that save has resolved, so a caller that continues sees the change in
+ * TokenRegistry and in routing. A method rejects when the save fails or that sync refuses it
+ * (SETTINGS_REFUSAL); the document then holds the previous list, and the caller undoes its own
+ * earlier steps. Calls run one after another, in call order.
+ */
+export interface SettingsWriter {
+  /** Appends `item` to the end of the tokens list. The entry's digest record must already exist (design §5.2 step 2). */
+  addToken(item: TokenSettingsItem): Promise<void>
+  /** Removes the item whose `key` is `entryKey`; resolves with nothing changed when there is none. */
+  removeToken(entryKey: EntryKey): Promise<void>
+  /** Sets `routing.agentToken` (the designated agent) to `entryKey`, or unsets it with `undefined`. */
+  setDesignated(entryKey: EntryKey | undefined): Promise<void>
+}
+
+/**
+ * The one "system note into a session" port (K1d; C-WIRE binds it, W4b): the revocation note of
+ * R-ROUTE-06 (C-REVOKE) and the succession note of R-HOST-09 step 7 (C-SUCCEED). Connector-internal.
+ */
+export interface SessionNotes {
+  /**
+   * Appends `note` to the transcript of the root session `sessionId` as a `system` entry that its
+   * agent reads at its next turn. It **starts no turn** (W4 Q2 = A) and is shown in the transcript
+   * as a non-waking entry. `note` is model-facing text, English only (W4 Q7). Resolves once the
+   * entry is stored; rejects when the session does not exist or the write fails, and the caller
+   * logs it.
+   */
+  system(sessionId: string, note: string): Promise<void>
 }
 
 export interface Pair {
@@ -160,22 +219,28 @@ export interface PairStore {
   list(): readonly Pair[]
   pairOf(entryKey: EntryKey): Pair | undefined
   byPrincipal(principalKey: PrincipalKey): Pair | undefined
-  /** `pair` (R-ID-03/04/13, R-NAME-06): already-paired before id-taken; a name never fails it. */
+  /**
+   * `pair` (R-ID-03/04/13, R-NAME-06): already-paired before id-taken; a name never fails it. For a
+   * machine client `id` is its OAuth client id (R-ID-01); the MCP tool's input is unchanged (K1d).
+   */
   pair(entryKey: EntryKey, id: string, name: string | undefined, now: EpochMs): Promise<PairResult>
   /**
-   * The approval page's bind (R-OA-12 (3)–(4)): unlike `pair`, a bad or held name refuses and
-   * binds nothing.
+   * The approval page's bind of an unpaired entry (R-OA-22; K1d): in one atomic step, with full
+   * rights at once. `id` is the agent's AUTHORIZE_EXTENSION.agentIdParam, or the id DERIVED_AGENT_ID
+   * gives for `client.clientIdUrl` when it passed none; the page asks only for the token and an
+   * optional name. Unlike `pair`, a bad or held name refuses and binds nothing.
    */
   bindFromPage(entryKey: EntryKey, id: string, name: string | undefined, client: { clientIdUrl: string; redirectUri: string }, now: EpochMs):
     Promise<{ ok: true; pair: Pair } | { ok: false; code: 'already-paired' | 'id-invalid' | 'id-taken' | 'name-invalid' | 'name-taken' }>
   /**
-   * The approval page's renewal (R-OA-12 (2), R-OA-16 (7)), called only once C-OAUTH-WEB has seen
-   * `OAuthTokenStore.chainsOf` answer `ended`: the pair must be bound to `client.clientIdUrl` and
-   * to `id`, else `already-paired`. It keeps the pair (id, name, `pairedAt`, managed sessions,
-   * pending events) and records `client.redirectUri`, which may be any redirect URI the client's
-   * metadata document allows (the user's decision, 2026-11-13). It binds nothing new.
+   * The approval page's reconnect (R-OA-22, requirements 1.33 Q-A2 A; K1d replaces
+   * `renewFromPage`): a bound entry whose pair has this `id` keeps its principal (name, `pairedAt`,
+   * managed sessions, queued events) and records the newest `client.clientIdUrl` and
+   * `client.redirectUri`; the page then mints a new code and chain. Any other id, or an unpaired
+   * entry, is `already-paired`, and nothing changes. It binds nothing new and has no age condition
+   * (R-OA-23: no chain cap).
    */
-  renewFromPage(entryKey: EntryKey, id: string, client: { clientIdUrl: string; redirectUri: string }):
+  reconnectFromPage(entryKey: EntryKey, id: string, client: { clientIdUrl: string; redirectUri: string }):
     Promise<{ ok: true; pair: Pair } | { ok: false; code: 'already-paired' }>
   /** `set_name`; `null` clears (R-NAME-02). */
   setName(principalKey: PrincipalKey, name: string | null): Promise<SetNameResult>
@@ -230,12 +295,16 @@ export interface Mailbox {
   ack(principalKey: PrincipalKey, receipts: readonly Receipt[]): Promise<AckResult>
   summary(principalKey: PrincipalKey): Promise<{ pending: number; headSequence: number; mailboxGeneration: string }>
   /**
-   * Replaces a pending event by a `retirement` naming it (R-EXT-19, R-TOK-05, R-HOST-09).
+   * Replaces a pending event by a `retirement` naming it (R-EXT-19, R-TOK-05, R-HOST-09). A pending
+   * event of a held mailbox counts as pending.
    * Resolves `{retired: true}` when it did, `{retired: false}` when the event was not pending in
    * this pair's mailbox (acked, already retired, unknown or another pair's): then nothing is
    * committed and nothing changes (K1 amendment at the W3 merge, DECIDED #W3-1). A caller that
    * must still tell the pair, because the pair may already have acked the event, sends a fresh
    * `retirement` on `false` (C-ROUTE: an ack can land between its own acked check and this call).
+   * @throws TypeError **synchronously**, before the call is queued, when `principalKey` is not a
+   *   non-empty string or `eventId` / `reason` would not make a valid `retirement` draft; nothing is
+   *   committed or changed (K1d, decided item 45: a caller bug, as K3 #17).
    */
   retire(principalKey: PrincipalKey, eventId: string, reason: 'withdrawn' | 'revoked' | 'released' | 'reissued' | 'contributor-withdrawn'): Promise<RetireOutcome>
   /**
@@ -260,6 +329,24 @@ export interface Mailbox {
    * correlation ids, so the asking sessions are answered `unavailable` (R-TOK-05).
    */
   drop(principalKey: PrincipalKey): Promise<{ droppedAsks: readonly string[] }>
+  /**
+   * Reinstall succession's event move (R-HOST-09 step 5; K1d, for C-SUCCEED's `retire`). In one
+   * serial step, every **pending** event of `fromPrincipal`'s mailbox (a held mailbox's included)
+   * moves to `toPrincipal`'s, in their original order and after its own events:
+   * - each keeps its `eventId`, `type`, `at`, `sourceSessionId`, `correlationId`, `offer`, `payload`
+   *   and `payloadDigest`, and is delivered once, from the new mailbox only;
+   * - `sequence` and `mailboxGeneration` become the new mailbox's (its head grows by `moved`);
+   * - acked and retired events stay behind; nothing new is committed (no `retirement`), and the
+   *   destination's `maxQueuedInputs` never refuses a moved event (it was accepted already);
+   * - neither mailbox's hold changes: a moved event is pollable once `toPrincipal`'s mailbox is
+   *   not held;
+   * - when `moved > 0`, the hint goes to `toPrincipal`'s listen streams, as after a commit.
+   * Moving nothing (an empty or unknown source) resolves `{moved: 0}`; a repeat moves nothing more.
+   * A failed write moves nothing. C-SUCCEED re-issues the moved offers itself (`reissued`).
+   * @throws TypeError **synchronously** (as `retire`) when either key is not a non-empty string or
+   *   both are the same; nothing changes.
+   */
+  transfer(fromPrincipal: PrincipalKey, toPrincipal: PrincipalKey): Promise<{ readonly moved: number }>
 }
 
 /** C-HTTP's side of the hint (R-EVT-04): the mailbox calls it after each commit, for that pair only. */
@@ -287,7 +374,10 @@ export interface RefreshRecord {
   readonly clientId: string
   readonly audience: string
   readonly generation: number
-  /** The chain's code redemption; the chain ends at `chainStartedAt + LIFETIME.refreshChainMaxMs` (R-OA-16 (5)). */
+  /**
+   * The chain's code redemption. A record only (K1d): no chain ends by age (R-OA-23). It stays in
+   * the interface because stored refresh records already carry it.
+   */
   readonly chainStartedAt: EpochMs
   /** Set once spent; within LIFETIME.refreshGraceMs a repeat gets `successor` (R-OA-16 (4a)). */
   readonly spentAt?: EpochMs
@@ -300,18 +390,6 @@ export interface CodeRecord {
   readonly audience: string
   readonly issuedAt: EpochMs
 }
-/**
- * Where an entry's refresh chains stand, for the renewal of R-OA-16 (7) (`chainsOf`):
- * - `none`: the entry has no chain (never redeemed a code, or a machine client);
- * - `live`: at least one chain can still be refreshed;
- * - `ended`: every chain reached `chainStartedAt + LIFETIME.refreshChainMaxMs` and none was
- *   revoked: the only state in which the page renews (R-OA-12 (2));
- * - `revoked`: a chain was revoked by reuse or a replayed code (R-OA-16 (2)), or a chain was issued
- *   under an older entry generation (a disable, delete or value change since, R-OA-16 (3)). The
- *   user's decision (2026-11-13): such an entry never renews, even when its chain had ended first.
- */
-export type ChainsState = 'none' | 'live' | 'ended' | 'revoked'
-
 /**
  * The OAuth token store (R-OA-05, R-OA-14, R-OA-16).
  * Ownership (K1a): the one `OAuthTokenStore` implementation is C-OAUTH's
@@ -330,18 +408,12 @@ export interface OAuthTokenStore {
   revokeChain(chainId: string): Promise<void>
   /** Revokes every token derived from an entry below `generation` (R-OA-06). */
   revokeEntry(entryKey: EntryKey, generation: number): Promise<void>
-  /**
-   * Where the entry's chains stand at `now` (ChainsState), with `generation` the entry's current
-   * one. It survives a restart as the refresh digests do, so the end reason of a chain is kept with
-   * it until the entry is deleted.
-   */
-  chainsOf(entryKey: EntryKey, generation: number, now: EpochMs): ChainsState
 }
 
 /** A FailureLimiter key's parts (FAILURE_LIMIT.keyParts): `clientId` is absent for an MCP bearer. */
 export interface FailureKey {
   readonly remoteAddress: string
-  /** The fishball id at the token endpoint, the CIMD URL on the approval page; never token material. */
+  /** The agent id at the token endpoint, the CIMD URL on the approval page; never token material. */
   readonly clientId?: string
 }
 
@@ -390,7 +462,7 @@ export type NoRecipient = { recipient: null; fallback: 'to-user' | 'queue' | 'un
  * C-ROUTE's router: exactly one recipient per event, decided at creation (R-EVS-03, EVT-DT-01).
  * A follow-up goes to `followsPrincipal`; a managed session's event to its manager; an unmanaged
  * session's (or no session's) `message`, `ask`, `notice` or contributor event to the designated
- * Fishball; unmanaged `turn-finished` / `state` are not produced at all (`dropped`).
+ * agent; unmanaged `turn-finished` / `state` are not produced at all (`dropped`).
  */
 export interface Router {
   recipientFor(subject: RouteSubject): { recipient: PrincipalKey } | NoRecipient
@@ -686,7 +758,7 @@ export declare const CONTRIBUTED_TYPE_PREFIX: "contributed:"
 export declare const DECISION_KIND: { readonly approval: "approval"; readonly question: "question" }
 export declare const DECISION_KIND_OF: { readonly permission: "approval"; readonly ask: "approval"; readonly question: "question"; readonly "plan-review": "question" }
 export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number; readonly jsonRpcVersion: "2.0" }
-export declare const ENTRY_STATUS: { readonly ok: "ok"; readonly tokenTooShort: "token-too-short"; readonly tokenUnconfigured: "token-unconfigured" }
+export declare const ENTRY_STATUS: { readonly ok: "ok" }
 export declare const EVENT_TYPE: { readonly permission: "permission"; readonly question: "question"; readonly planReview: "plan-review"; readonly settlement: "settlement"; readonly retirement: "retirement"; readonly turnFinished: "turn-finished"; readonly state: "state"; readonly message: "message"; readonly ask: "ask"; readonly handover: "handover"; readonly takeback: "takeback"; readonly notice: "notice" }
 export declare const FAILURE_LIMIT: { readonly windowMs: number; readonly keyParts: readonly ["remoteAddress", "clientId"]; readonly perKeyPerWindow: number; readonly perAddressPerWindow: number }
 export declare const GATE_SURFACE: { readonly mcp: "mcp"; readonly token: "token"; readonly approval: "approval" }
@@ -697,6 +769,8 @@ export declare const HTTP_METHOD: { readonly get: "GET"; readonly post: "POST" }
 export declare const HTTP_REFUSAL: { readonly insecureListener: "insecure-listener"; readonly tooLarge: "limit-exceeded"; readonly rateLimited: "rate-limited" }
 export declare const HTTP_STATUS: { readonly ok: 200; readonly seeOther: 303; readonly badRequest: 400; readonly unauthorized: 401; readonly forbidden: 403; readonly notFound: 404; readonly methodNotAllowed: 405; readonly payloadTooLarge: 413; readonly tooManyRequests: 429; readonly internalServerError: 500; readonly serviceUnavailable: 503 }
 export declare const ID_GRAMMAR: { readonly pattern: RegExp }
+export declare const AUTHORIZE_EXTENSION: { readonly agentIdParam: "agent_id" }
+export declare const DERIVED_AGENT_ID: { readonly prefix: "cid-"; readonly chars: 16; readonly alphabet: "abcdefghijklmnopqrstuvwxyz234567"; readonly digestAlgorithm: "sha256" }
 export declare const ID_REFUSAL: { readonly idInvalid: "id-invalid" }
 export declare const LINK_REFUSAL: { readonly disconnected: "disconnected" }
 export declare const OAUTH_METADATA: {
@@ -712,7 +786,7 @@ export declare const OAUTH_METADATA: {
   }
 }
 export declare const INSUFFICIENT_SCOPE_REASON: { readonly notPaired: "not-paired"; readonly idMismatch: "id-mismatch" }
-export declare const LIFETIME: { readonly accessTokenMs: 3600000; readonly codeMs: 60000; readonly pendingRequestMs: 600000; readonly refreshGraceMs: 10000; readonly refreshChainMaxMs: number }
+export declare const LIFETIME: { readonly accessTokenMs: 3600000; readonly codeMs: 60000; readonly pendingRequestMs: 600000; readonly refreshGraceMs: 10000 }
 export declare const MAILBOX: { readonly pageDefault: number; readonly pageMax: number; readonly disabledRetentionMs: 2592000000; readonly ackedReceiptMs: number }
 export declare const MANAGED_REFUSAL: { readonly alreadyManaged: "conflict"; readonly notManaged: "not-managed"; readonly otherManager: "forbidden" }
 export declare const NAME_RULES: { readonly minChars: 1; readonly maxChars: 64; readonly whitespaceRun: RegExp; readonly control: RegExp; readonly space: " "; readonly normalForm: "NFC"; readonly namelessPrefix: "ID: " }
@@ -756,7 +830,8 @@ export declare const RESYNC_REASON: { readonly staleCursor: "stale-cursor" }
 export declare const RETIREMENT_REASON: { readonly withdrawn: "withdrawn"; readonly revoked: "revoked"; readonly released: "released"; readonly reissued: "reissued"; readonly contributorWithdrawn: "contributor-withdrawn" }
 export declare const SCOPE: { readonly full: "agent"; readonly pair: "agent:pair" }
 export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.2.0"; readonly "@modelcontextprotocol/node": "2.1.0" }
-export declare const SETTINGS_REFUSAL: { readonly refDuplicate: "ref-duplicate"; readonly valueDuplicate: "value-duplicate" }
+export declare const SETTINGS_REFUSAL: { readonly tokenDuplicate: "token-duplicate" }
+export declare const REVOCATION_KIND: { readonly disabled: "disabled"; readonly deleted: "deleted" }
 export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal" }
 export declare const SETTLEMENT_OUTCOME: { readonly allowed: "allowed"; readonly rejected: "rejected"; readonly answered: "answered" }
 export declare const TARGET_CODE: { readonly unreachable: "TARGET_UNREACHABLE"; readonly refused: "TOKEN_REFUSED"; readonly incompatible: "TARGET_INCOMPATIBLE"; readonly revoked: "token-revoked"; readonly insecure: "target-insecure"; readonly invalid: "target-invalid" }
@@ -765,7 +840,7 @@ export declare const TIME_UNIT: { readonly msPerSecond: 1000 }
 export declare const TOKEN_ENDPOINT_LIMITS: { readonly formBodyBytes: number }
 export declare const TOKEN_RESPONSE_HEADERS: { readonly "cache-control": "no-store"; readonly pragma: "no-cache" }
 export declare const TOKEN_TYPE: "Bearer"
-export declare const TOKEN_VALUE: { readonly generatedPrefix: "dsht_"; readonly generatedBytes: 32; readonly minChars: 32; readonly opaqueBytes: 32; readonly digestAlgorithm: "sha256" }
+export declare const TOKEN_VALUE: { readonly generatedPrefix: "dsht_"; readonly generatedBytes: 32; readonly opaqueBytes: 32; readonly digestAlgorithm: "sha256" }
 export declare const TOOL: { readonly sessionsList: "sessions_list"; readonly sessionStart: "session_start"; readonly sessionMessage: "session_message"; readonly sessionRedirect: "session_redirect"; readonly sessionStop: "session_stop"; readonly sessionRead: "session_read"; readonly sessionRelease: "session_release"; readonly approvalsList: "approvals_list"; readonly approvalAnswer: "approval_answer"; readonly questionAnswer: "question_answer"; readonly questionAsk: "question_ask"; readonly questionAnswerOwn: "question_answer_own"; readonly promptsList: "prompts_list"; readonly promptAnswer: "prompt_answer"; readonly grantsList: "grants_list"; readonly grantRevoke: "grant_revoke"; readonly attachmentPut: "attachment_put"; readonly attachmentRead: "attachment_read"; readonly inboxPoll: "inbox_poll"; readonly inboxAck: "inbox_ack"; readonly pair: "pair"; readonly setName: "set_name" }
 export declare const WIRE: { readonly digestHexChars: 64; readonly digestPattern: RegExp }
 
@@ -813,7 +888,6 @@ export declare function normaliseName(value: unknown): string | undefined
 export declare function checkName(value: unknown): Readonly<{ ok: true; name: string } | { ok: false; code: 'name-invalid' }>
 export declare function nameKey(normalisedName: string): string
 export declare function principalLabel(name: string | null, id: string): Readonly<{ name: string } | { prefix: 'ID: '; id: string }>
-export declare function isTokenLongEnough(value: unknown): boolean
 export declare function formatOfferId(requestId: string, revision: number): string | undefined
 export declare function parseOfferId(value: unknown): Readonly<{ requestId: string; revision: number }> | undefined
 export declare function isEventType(value: unknown): value is EventType

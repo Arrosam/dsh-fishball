@@ -1,17 +1,17 @@
 /**
  * Pure rules the W2 modules share (task K1), so each has exactly one implementation: the id
- * grammar (C-OAUTH's token endpoint, C-OAUTH-WEB's page, C-PAIR, `fishball-core`), the name
- * normalisation and fold (C-PAIR, the page), the token-value minimum (C-TOKENS, C-OAUTH), offer
- * ids (C-ROUTE, C-SUCCEED), event types (C-MAILBOX, C-EXT) and the nameless display (embed-UI).
+ * grammar (C-OAUTH's token endpoint, C-OAUTH-WEB's page, C-PAIR, any agent such as
+ * `fishball-core`), the name normalisation and fold (C-PAIR, the page), offer ids (C-ROUTE,
+ * C-SUCCEED), event types (C-MAILBOX, C-EXT) and the nameless display (embed-UI).
  * Total functions: none throws, whatever the input.
  */
-import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, ID_GRAMMAR, NAME_RULES, OFFER_ID, REFUSAL, TOKEN_VALUE } from './constants.js'
+import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, ID_GRAMMAR, NAME_RULES, OFFER_ID, REFUSAL } from './constants.js'
 import { NAMESPACE } from '../tools/constants.js'
 import { isReservedNamespace, publicNameFor } from '../tools/names.js'
 
 const codePoints = (text) => [...text].length
 
-/** Whether a value is a valid fishball id (R-ID-02): 1–64 of `A–Z a–z 0–9 _ -`, no dot. */
+/** Whether a value is a valid agent id (R-ID-02): 1–64 of `A–Z a–z 0–9 _ -`, no dot. */
 export const isAgentId = (value) => typeof value === 'string' && ID_GRAMMAR.pattern.test(value)
 
 /**
@@ -50,9 +50,6 @@ export const nameKey = (normalisedName) => normalisedName.toLowerCase().toUpperC
 
 /** How a principal is shown (R-NAME-08): its name as plain text, or `{prefix: 'ID: ', id}` to render the prefix bold. */
 export const principalLabel = (name, id) => (name === null ? Object.freeze({ prefix: NAME_RULES.namelessPrefix, id }) : Object.freeze({ name }))
-
-/** Whether a user-set token value is long enough (R-TOK-08, TQ-4 A): at least 32 code points. */
-export const isTokenLongEnough = (value) => typeof value === 'string' && codePoints(value) >= TOKEN_VALUE.minChars
 
 /** `<requestId>.r<revision>` (OFFER_ID), or `undefined` when the parts would not parse back. */
 export function formatOfferId(requestId, revision) {

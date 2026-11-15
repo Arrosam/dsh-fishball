@@ -11,9 +11,9 @@
  *   BEARER_CHALLENGE, INSUFFICIENT_SCOPE_REASON, PAIR_ONLY, TOKEN_VALUE, LIFETIME, RATE_LIMITS,
  *   FAILURE_LIMIT, ENDPOINT_LIMITS, TOKEN_ENDPOINT_LIMITS, HTTP_METHOD, HTTP_REFUSAL, HOSTS, GATE_SURFACE, ORIGIN_RULE,
  *   REQUEST_GATE, APPROVAL_LISTENER, CIMD_LIMITS,
- *   ID_GRAMMAR, NAME_RULES, PAIR_TIMING, PAIR_ADVICE, OFFER_ID, EVENT_TYPE, CONTRIBUTED_TYPE_PREFIX, OFFER_TYPES,
+ *   ID_GRAMMAR, AUTHORIZE_EXTENSION, DERIVED_AGENT_ID, NAME_RULES, PAIR_TIMING, PAIR_ADVICE, OFFER_ID, EVENT_TYPE, CONTRIBUTED_TYPE_PREFIX, OFFER_TYPES,
  *   ANSWERABLE_TYPES, DECISION_KIND, DECISION_KIND_OF, QUEUE, MAILBOX, RESYNC_REASON,
- *   SETTLEMENT_OUTCOME, SETTLED_BY, RETIREMENT_REASON, ENTRY_STATUS, SETTINGS_REFUSAL, PAIR_STATE,
+ *   SETTLEMENT_OUTCOME, SETTLED_BY, RETIREMENT_REASON, ENTRY_STATUS, SETTINGS_REFUSAL, REVOCATION_KIND, PAIR_STATE,
  *   CONNECTOR_STATUS, TARGET_STATE, TARGET_CODE, LINK_REFUSAL, TOOL, REFUSAL, MANAGED_REFUSAL, ID_REFUSAL, NOTICE,
  *   WIRE;
  * - tools.js: TOOLS, TOOL_NAMES, toolDefinition, refusalSchema;
@@ -22,8 +22,8 @@
  * - envelope.js: okResult, refusalResult;
  * - oauth.js: oauthUrls, protectedResourceMetadata, authorizationServerMetadata, tokenResponse,
  *   oauthErrorBody, bearerChallenge, invalidTokenChallenge, insufficientScopeChallenge;
- * - rules.js: isAgentId, normaliseName, checkName, nameKey, principalLabel, isTokenLongEnough,
- *   formatOfferId, parseOfferId, isEventType.
+ * - rules.js: isAgentId, normaliseName, checkName, nameKey, principalLabel, formatOfferId,
+ *   parseOfferId, isEventType (K1d withdrew isTokenLongEnough: every token value is generated).
  */
 export * from './constants.js'
 export { TOOLS, TOOL_NAMES, toolDefinition, refusalSchema } from './tools.js'
@@ -34,5 +34,5 @@ export {
   invalidTokenChallenge, insufficientScopeChallenge,
 } from './oauth.js'
 export {
-  isAgentId, normaliseName, checkName, nameKey, principalLabel, isTokenLongEnough, formatOfferId, parseOfferId, isEventType,
+  isAgentId, normaliseName, checkName, nameKey, principalLabel, formatOfferId, parseOfferId, isEventType,
 } from './rules.js'
