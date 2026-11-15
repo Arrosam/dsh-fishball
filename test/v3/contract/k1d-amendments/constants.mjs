@@ -292,6 +292,5 @@ export const LATER = Object.freeze({
   succeed: 'C-SUCCEED (Mailbox.transfer behaviour, packages/dsh-connector/src/mailbox/ transfer only)',
   wire: 'C-WIRE (binds SettingsWriter and SessionNotes, W4b)',
   reveal: 'C-TOKENS-REVEAL (create / createHosted generate dsht_ values, digest-only records, token-duplicate)',
-  pageId: 'C-PAGE-ID (agent_id or the derived cid- id on the page, reconnect, no chain cap)',
   childRetry: 'K3b / I-HOST (child.d.ts retry() still says a deleted entry is replaced; host-services README names its owner)',
 })

@@ -2,9 +2,9 @@
  * A scripted browser for the approval page (AUTH-UC-10 "integration (flow with a scripted
  * browser)"): it dials a loopback listener with the `Host` a real browser would send, keeps
  * cookies, reads the server-rendered page and submits its form the way a user would. It knows only
- * HTML, not the page's field names: the token field is the one masked input (R-OA-11), the id field
- * the required text input, the name field the other text input; Authorize and Cancel are found by
- * their labels. Every response is kept, so a case can grep all of them for a token value.
+ * HTML, not the page's field names: the token field is the one masked input (R-OA-11), the name
+ * field the text input (R-OA-11 as amended by 1.32 R13: the page has no id field; the agent passes
+ * its id in the authorization request, R-OA-22); Authorize and Cancel are found by their labels. Every response is kept, so a case can grep all of them for a token value.
  */
 import http from 'node:http'
 import { FORM_TYPE, HTML_FORM, HTTP_HEADER, HTTP_METHOD, PAGE_TEXT } from './constants.mjs'
@@ -50,14 +50,17 @@ export function forms(html) {
 }
 
 const textInput = (i) => i.type === undefined || i.type === '' || i.type === HTML_FORM.text
-/** The page's fields by role (R-OA-11): token (masked), id (required), name (optional). */
+/**
+ * The page's fields by role (R-OA-11, 1.32 R13): token (masked) and name (optional). `texts` are
+ * every text input, so a case can show there is no other (no id field).
+ */
 export function fields(form) {
   const token = form.inputs.find((i) => i.type === HTML_FORM.password)
   const texts = form.inputs.filter(textInput)
-  const id = texts.find((i) => has(i, 'required')) ?? texts.find((i) => /id/i.test(i.name ?? ''))
-  const name = texts.find((i) => i !== id)
-  return { token, id, name, passwords: form.inputs.filter((i) => i.type === HTML_FORM.password) }
+  return { token, name: texts[0], texts, passwords: form.inputs.filter((i) => i.type === HTML_FORM.password) }
 }
+/** Whether an input is marked required (an HTML boolean attribute). */
+export const isRequired = (input) => has(input, 'required')
 
 function request({ port, method, path, headers, body }) {
   return new Promise((resolve, reject) => {
@@ -116,12 +119,13 @@ export class Browser {
     return undefined
   }
 
-  /** The form body a submit of `label` sends, with `fill` by role (`token`, `id`, `name`). */
+  /** The form body a submit of `label` sends, with `fill` by role (`token`, `name`). */
   formBody(label, fill = {}, page = this.page) {
     const found = this.control(label, page)
     if (!found) throw new Error(`no ${label} control on the page: ${pageText(page?.body ?? '')}`)
     const { form, button } = found
-    const roles = fields(form)
+    const { token, name } = fields(form)
+    const roles = { token, name }
     const body = new URLSearchParams()
     for (const input of form.inputs) {
       if (input.name === undefined || input.type === HTML_FORM.submit) continue

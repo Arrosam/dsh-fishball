@@ -39,7 +39,7 @@ import { SKILL_SDK } from '../../../private-skills/support/constants.mjs'
 import { importInstance } from '../../../private-skills/support/sdk.mjs'
 import { MCP } from '../../contract/k1-mcp-schema/constants.mjs'
 import { resolveRuntimePackages, storageContext } from '../pairs/subject.mjs'
-import { APPROVAL_LISTENER, FIXTURE, HOSTS, SUBJECT } from './constants.mjs'
+import { APPROVAL_LISTENER, FIXTURE, HOSTS, SUBJECT, TOKEN_STORE_MEMBERS } from './constants.mjs'
 import { FakeGate, FakePairStore, FakeTokenRegistry, fakeClock, recordingLogger } from './fakes.mjs'
 
 const LISTEN_HOST = HOSTS.loopbackNames[1]
@@ -105,7 +105,8 @@ export async function storeWorld(t, sdk) {
     const { ctx, helpers } = await storageContext(sdk, root)
     const opened = await made.store(ctx, helpers)
     const store = opened?.store ?? opened
-    for (const member of ['putAccess', 'getAccess', 'putCode', 'takeCode', 'putRefresh', 'getRefresh', 'revokeChain', 'revokeEntry', 'chainsOf']) {
+    // K1d OAuthTokenStore: `chainsOf` is withdrawn with the chain cap (R-OA-23); chain-cases.mjs checks it is gone.
+    for (const member of TOKEN_STORE_MEMBERS) {
       assert.equal(typeof store?.[member], 'function', `the token store has no ${member}()`)
     }
     return { ctx, store, close: opened?.close?.bind(opened) ?? store.close?.bind(store) }

@@ -22,7 +22,7 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import test from 'node:test'
 import {
-  ABSENT_TOOL_WORDS, ABSENT_TOOLS, ADVICE, APPROVAL_PATHS, AUTH_CODES, BYTES_UNIT, CC_EXTENSION, CIMD_MAX_BYTES, CONNECTOR_MANIFEST, CORE_TOOLS,
+  ABSENT_TOOL_WORDS, ABSENT_TOOLS, ADVICE, APPROVAL_PATHS, AUTH_CODES, BYTES_UNIT, CC_EXTENSION, CHAIN_CAP, CIMD_MAX_BYTES, CONNECTOR_MANIFEST, CORE_TOOLS,
   DURATION_S, ERROR_STATUS, EVENT_TYPES, EVENTS_URI, FAILURE_LIMIT_MEANING, FAILURE_LIMITER, FIELDS, IDS, INSTANT, INTERFACES, LATER, MAX_QUEUED_DEFAULT, MCP, MEANING, METADATA,
   NAME_MAX_CHARS, NO_NOTIFY, OAUTH_ERRORS, OFFER_ID, PAIR_RESULT, PATHS, PORT_RANGE, PROTOCOL_VERSION, RECORDED, REFUSAL, SCHEMA_MODULE, SCOPE,
   SCOPE_HINT, SECONDS_EPSILON, STOCK_TOKEN_REQUESTS_PER_FAILED_CALL, TOKEN_MIN_CHARS, TOKEN_STORE, TOOL_CODES, UNITS, WELL_KNOWN,
@@ -326,11 +326,15 @@ export function registerK1Cases(sdk) {
   caseTest(sdk, 'AUTH-BVA-08', '1–6', `the refresh grace window is frozen as ${DURATION_S.grace} s (R-OA-16 (4a), K)`, (mod) => {
     assertDuration(mod, MEANING.grace, DURATION_S.grace, 'grace window')
   })
-  caseTest(sdk, 'AUTH-ST-05', 'K', 'a maximum refresh-chain lifetime is frozen, longer than one access-token lifetime (R-OA-16 (5))', (mod) => {
-    const found = secondsAt(mod, MEANING.chain)
-    assert.ok(found.length > 0, 'no chain lifetime frozen with a unit in its name')
-    const accessTokenS = mod.LIFETIME.accessTokenMs / mod.TIME_UNIT.msPerSecond
-    assert.ok(found.some((l) => l.seconds > accessTokenS), 'a chain shorter than an access token would end every browser client within the hour: ' + JSON.stringify(found))
+  // Rewritten by K1d (R-OA-23, 1.32 R14; DECIDED #18 reversed): the row used to require a frozen
+  // maximum chain lifetime (R-OA-16 (5)); now no chain lifetime exists and the README records why.
+  caseTest(sdk, 'AUTH-ST-05', 'K', `no refresh-chain lifetime is frozen: no exported duration names a chain, LIFETIME has no ${CHAIN_CAP.withdrawn} (R-OA-23)`, (mod) => {
+    assert.deepEqual(secondsAt(mod, MEANING.chain), [], 'a chain lifetime is still exported')
+    assert.equal(Object.hasOwn(mod.LIFETIME, CHAIN_CAP.withdrawn), false)
+  })
+  caseTest(sdk, 'AUTH-ST-05', 'K (record)', `the README records the withdrawal: ${CHAIN_CAP.withdrawn} withdrawn under ${CHAIN_CAP.requirement}`, () => {
+    const rows = [...folderTexts(CHAIN_CAP.readme).values()].join('\n').split('\n').filter((line) => line.includes(CHAIN_CAP.withdrawn))
+    assert.ok(rows.some((line) => line.includes(CHAIN_CAP.requirement) && CHAIN_CAP.withdrawnWord.test(line)), `no README line says ${CHAIN_CAP.withdrawn} is withdrawn under ${CHAIN_CAP.requirement}`)
   })
   caseTest(sdk, 'AUTH-DT-04', '5–8', 'the disabled-entry retention is frozen as 30 days (R-TOK-05)', (mod) => {
     assertDuration(mod, MEANING.retention, DURATION_S.retention, 'retention')
