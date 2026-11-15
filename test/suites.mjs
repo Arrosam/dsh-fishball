@@ -116,6 +116,11 @@ export const V3_SUITES = Object.freeze({
       all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector-ui.shell': suite('host half and client shell (U-SHELL)', v3('dsh-connector-ui/shell'),
     [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshInstance, 'src', 'child-settings'), sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
+  // The draw rows run embed-UI over the real UI backend (C-UI-BACKEND) and the real contribution
+  // service (C-EXT), so a change in either reruns them.
+  'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration (U-DRAW)', v3('dsh-connector-ui/draw'),
+    [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshConnector, 'src', 'ui'), sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'tools'),
+      sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   // Reads the instance's whole placement and launch overlay, and core's patch it places.
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),
     [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared)]),
