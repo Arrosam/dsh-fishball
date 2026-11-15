@@ -8,6 +8,8 @@
  * service name, the routes and the snapshot shape below are this task's. K3b adopts or amends them.
  */
 
+import { CALL_CODE } from '../../tools/index.js'
+
 /** The in-process service embed-UI's host half looks up (`ctx.get`), as K3's other services. */
 export const UI_SERVICE = Object.freeze({
   name: 'dshConnectorUi',
@@ -34,9 +36,12 @@ export const UI_ROUTE = Object.freeze({
 })
 
 /**
- * The route bodies: each closed, every other key refused. `maxBytes` bounds one body: a Hand over
- * note is the largest field, and V2's own limit for one message to Fishball is 64 KiB
- * (config.js `maxMessageBytes` default), so a note within it always fits.
+ * The route bodies: each closed, every other key refused. `maxBytes` bounds one body, so one
+ * request cannot hand the hand-over service an unbounded note (no requirement sets a note limit;
+ * K3 takes any string). It is a route bound of this module, not the connector's `maxMessageBytes`
+ * setting (config.js), whose default is the same 64 KiB: the setting is the user's and can change,
+ * this bound does not follow it. DSH has already buffered the body when it is checked, so it
+ * bounds what is passed on, not what is read.
  */
 export const UI_BODY = Object.freeze({
   maxBytes: 65536,
@@ -47,6 +52,8 @@ export const UI_BODY = Object.freeze({
 /** The route refusals the backend answers itself (a K3 refusal keeps its own code). */
 export const UI_CODE = Object.freeze({
   invalid: 'invalid-request',
+  /** The hand-over service threw: K2's shared `operation-failed` wording, reused for the route (HTTP 500). */
+  failed: CALL_CODE.operationFailed,
   /** Declared by the notify tool (K2 `codes`): the message is empty after trimming. */
   messageEmpty: 'message-empty',
 })
@@ -72,7 +79,7 @@ export const UI_TOOL = Object.freeze({
   signal: Object.freeze({
     name: 'attention.signal',
     title: 'Light the fish',
-    description: 'Light the user\'s sidebar fish until they next open the window. Stateless: no count, no replay. important makes it animate.',
+    description: 'Light the user\'s sidebar fish until they next open the window; it also goes out when this tool is withdrawn or the designated agent disconnects. Stateless: no count, no replay. important makes it animate.',
     important: 'True when the user must act.',
   }),
   state: Object.freeze({
@@ -82,7 +89,7 @@ export const UI_TOOL = Object.freeze({
   }),
 })
 
-/** The latch's empty state (design §13.6, D3: a 0/1 latch with importance). */
+/** The latch's two counts (design §13.6, D3: a 0/1 latch with importance). */
 export const LATCH = Object.freeze({ clear: 0, set: 1 })
 
 /** Server-sent event framing (the HTML event-stream format V2's state stream uses too). */
@@ -92,16 +99,13 @@ export const SSE = Object.freeze({ prefix: 'data: ', suffix: '\n\n' })
 export const LOG = Object.freeze({
   format: '%s (%s)',
   handoverFailed: 'ui: the hand-over service failed',
-})
-
-/** Effect labels, shown in Cordis's own diagnostics. */
-export const LABEL = Object.freeze({
-  route: 'dsh-connector: ui route',
-  streams: 'dsh-connector: ui event streams',
+  publishFailed: 'ui: a change could not be published',
+  endFailed: 'ui: a contribution could not be ended',
 })
 
 /** Programming-error messages (a caller bug, thrown; never shown to a client). */
 export const MISUSE = Object.freeze({
   register: 'dsh-connector ui: contribute(register) needs a function',
   provideTwice: 'dsh-connector ui: provide() called twice; create one backend per connector activation',
+  closed: 'dsh-connector ui: contribute() after close(); the backend has ended',
 })

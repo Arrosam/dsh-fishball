@@ -8,13 +8,14 @@
  * with `no-store`, except the stream. Nothing here carries a token: principals are K3 keys only.
  *
  * The stream follows V2's state stream (src/http.js `events`): one frame at once, then one per
- * change. V2's is not reused because it is bound to V2's row state and leaves with REMOVE-V2.
+ * change. `json`, `isRecord` and the stream repeat src/http.js on purpose: that file is bound to
+ * V2's row state, is outside this task, and is deleted by REMOVE-V2, after which this copy is the
+ * only one. Revisit if src/http.js outlives REMOVE-V2.
  */
 import { HTTP, HTTP_METHOD, REQUEST_BODY_BUFFERED, RESPONSE_HEADERS } from '../constants.js'
 import { diagnosticOf } from '../errors.js'
 import { byteLength } from '../text.js'
-import { CALL_CODE } from '../../tools/index.js'
-import { LABEL, LOG, SSE, UI_BODY, UI_CODE, UI_ROUTE } from './constants.js'
+import { LOG, SSE, UI_BODY, UI_CODE, UI_ROUTE } from './constants.js'
 
 const json = (status, value) => new Response(JSON.stringify(value), { status, headers: RESPONSE_HEADERS.json })
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -59,7 +60,7 @@ export function uiRoutes({ handover, state, streams, logger }) {
     let result
     try { result = await run(body) } catch (error) {
       logger.warn(LOG.format, LOG.handoverFailed, diagnosticOf(error))
-      return json(HTTP.serverError, { ok: false, code: CALL_CODE.operationFailed })
+      return json(HTTP.serverError, { ok: false, code: UI_CODE.failed })
     }
     if (result?.ok !== true) return json(HTTP.conflict, { ok: false, code: result?.code, state: snapshot() })
     return answered(fieldsOf(result))
@@ -91,15 +92,22 @@ export function uiRoutes({ handover, state, streams, logger }) {
  * The open event streams. `open(request)` answers one stream; `publish()` sends the snapshot now
  * to every open one; `close()` ends them all. A stream ends when its request aborts, when its
  * reader cancels, or when a write to it fails (a browser that went away between abort and cleanup).
+ * After `close()` a new request gets a stream that ends at once, after its one frame.
  * @param snapshot - `() => Snapshot`
+ * @param logger - `{warn}`: a snapshot that throws while publishing is logged, never thrown into
+ *   the change that caused it (that change has already taken effect)
  */
-export function createStreams(snapshot) {
+export function createStreams(snapshot, logger) {
   const encoder = new TextEncoder()
   const open = new Set()
+  let closed = false
   const frame = (value) => encoder.encode(SSE.prefix + JSON.stringify(value) + SSE.suffix)
 
   function start(request) {
     let stream
+    // Built before the stream is tracked, so a snapshot that throws leaves no stream behind (the
+    // route then fails as a whole).
+    const first = frame(snapshot())
     const body = new ReadableStream({
       start(controller) {
         const end = () => {
@@ -110,8 +118,8 @@ export function createStreams(snapshot) {
         stream = { end, push: (bytes) => { try { controller.enqueue(bytes) } catch { end() } } }
         open.add(stream)
         request.signal?.addEventListener('abort', end, { once: true })
-        stream.push(frame(snapshot()))
-        if (request.signal?.aborted) end()
+        stream.push(first)
+        if (closed || request.signal?.aborted) end()
       },
       cancel: () => stream?.end(),
     })
@@ -122,19 +130,23 @@ export function createStreams(snapshot) {
     open: start,
     publish() {
       if (open.size === 0) return
-      const bytes = frame(snapshot())
+      let bytes
+      try { bytes = frame(snapshot()) } catch (error) {
+        logger.warn(LOG.format, LOG.publishFailed, diagnosticOf(error))
+        return
+      }
       for (const stream of [...open]) stream.push(bytes)
     },
-    close() { for (const stream of [...open]) stream.end() },
+    close() {
+      closed = true
+      for (const stream of [...open]) stream.end()
+    },
   })
 }
 
 /**
- * Registers each route for the context's life, as `connection.fetch` does for V2's (src/http.js).
- * @param ctx - the connector row's context (`effect`, `connection.fetch`)
+ * Registers one route, as V2's are (src/http.js), and returns its disposer. The caller holds it
+ * inside its own effect, so the routes leave with the service they belong to.
+ * @param ctx - the connector row's context (`connection.fetch`)
  */
-export function registerUiRoutes(ctx, routes) {
-  for (const route of routes) {
-    ctx.effect(() => ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }), `${LABEL.route} ${route.path}`)
-  }
-}
+export const registerUiRoute = (ctx, route) => ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED })
