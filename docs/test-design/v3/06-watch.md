@@ -47,7 +47,7 @@ Requirements: R-WATCH-01…05, R-EVS-02, R-EVS-03, R-CON-02. Conventions: [READM
 | 2 | handed over to D | D only |
 | 3 | unmanaged | nobody (not produced) |
 | 4 | managed by P, with D a different principal | P only, never D |
-| 5 | managed by a Fishball whose Watchdog supervises it | Fishball (never Watchdog) |
+| 5 | *(withdrawn: Watchdog left V3, requirements 1.37)* | — |
 | 6 | after Q24 succession P → P' | P' only |
 
 ## State Transitions

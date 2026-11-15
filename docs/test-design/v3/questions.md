@@ -14,9 +14,9 @@ The prefix `TQ` avoids clashing with the requirements' own `OQ-14` (first commit
 | TQ-1 | Direct-access split vs ids containing a dot | **decided C** (2026-11-11) | C-OAUTH, F-PAIR | AUTH-UC-07, AUTH-BVA-04, AUTH-DT-03 |
 | TQ-2 | Revocation: fate of item kinds §5.3 does not name; designated role | **decided A** (2026-11-11) | C-REVOKE | AUTH-UC-06, AUTH-DT-04 |
 | TQ-8 | Hand over edge cases: designated not connected / disabled; already managed | **superseded** by 1.20 (chosen target); edges now Q-HO-1 | C-ROUTE, U-MARKS | HAND-UC-01, HAND-DT-01, HAND-ST-01 |
-| TQ-10 | Watchdog decision for "beyond scope, not dangerous, not high-risk" | **decided** (R-WD-09 rule) | WD-DECIDE | WD-DT-01 |
-| TQ-11 | Watchdog supervision when Fishball stops managing the session | **decided** (R-WD-00) | WD-PATROL | WD-ST-02 |
-| TQ-9 | First patrol after a new claim or resume | **decided** (R-WD-03/15) | WD-PATROL | WD-UC-03, WD-BVA-02, WD-ST-02 |
+| TQ-10 | Watchdog decision for "beyond scope, not dangerous, not high-risk" | **withdrawn** (Watchdog left V3, requirements 1.37) | — | — |
+| TQ-11 | Watchdog supervision when Fishball stops managing the session | **withdrawn** (Watchdog left V3, requirements 1.37) | — | — |
+| TQ-9 | First patrol after a new claim or resume | **withdrawn** (Watchdog left V3, requirements 1.37) | — | — |
 | TQ-3 | Token request without `resource` | **decided A**, confirmed by S7 (2026-11-11) | C-OAUTH | AUTH-EP-01 |
 | TQ-4 | Token creation edge cases: minimum length value, store not writable, shared `ref` | **decided A** (2026-11-11) | C-TOKENS | AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03 |
 | TQ-5 | Access tokens across a connector restart; in-flight request at revocation | **decided A** (2026-11-11) | C-OAUTH | AUTH-UC-03, AUTH-UC-06 |

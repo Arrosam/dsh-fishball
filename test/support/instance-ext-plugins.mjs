@@ -1,6 +1,6 @@
 /**
- * Loading helpers for the W0 plugin skeletons (FN-1, WD-1, B1). The packages are created by
- * their own tasks; a missing file fails the case with the task id and the designed path, never
+ * Loading helpers for the W0 plugin skeleton B1 (board). The package is created by
+ * its own task; a missing file fails the case with the task id and the designed path, never
  * a bare ERR_MODULE_NOT_FOUND.
  */
 import { readFile } from 'node:fs/promises'
@@ -13,8 +13,6 @@ import { REPO } from './constants.mjs'
 linkContractForSourceRun()
 
 export const PACKAGE = Object.freeze({
-  fold: { name: 'fishball-fold-notify', dir: 'packages/fold-notify', task: 'FN-1' },
-  watchdog: { name: 'fishball-watchdog', dir: 'packages/watchdog', task: 'WD-1' },
   board: { name: 'fishball-board', dir: 'packages/board', task: 'B1' },
 })
 

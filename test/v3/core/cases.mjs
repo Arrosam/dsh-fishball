@@ -1,7 +1,7 @@
 /**
  * R-CORE black-box cases (v3-tasks.md W1 step 2, spec `test/v3-cases` at `fb1cbd2`):
- * HOST-UC-08 (the V2-mechanism part: a hosted child shows the generic and the hosted sections; the
- * generic panel works with none) and HOST-EP-03 rows 1–4, with the task's definition of done
+ * HOST-UC-08 (the V2-mechanism part: a hosted child shows the generic panel; the hosted-only
+ * sections left with fishball-hosted-settings, REMOVE-WD, design §1.0) and HOST-EP-03 rows 1–4, with the task's definition of done
  * ("hosted child behaves as before; no file exists in two packages; core and the instance never
  * import each other", PLAT-EP-07). Requirements R-HOST-11, R-ARCH-05, R-ARCH-08, R-HOST-04,
  * R-HOST-07, R-FB-01, R-BND-01.
@@ -17,20 +17,18 @@
  * scripted settings page fed by the child's own served bundles; page.mjs). No browser.
  *
  * "Behaves as before" is the V2 panel's public behaviour (docs/planning/v2-set.md): the panel, its
- * header entry, the Read Only line and the DSH Settings / Plugins links (generic), the status line
- * and Restart (hosted-only), and no model-sync control (R-HOST-07). Rows that need a later task are
+ * header entry, the Read Only line and the DSH Settings / Plugins links (generic), and no
+ * model-sync control (R-HOST-07). Rows that need a later task are
  * `todo` and name it.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { until } from '../../support/host.mjs'
-import { lifecycleLines } from '../../support/v2-r2.mjs'
 import { caseTest, dshInspect } from '../shared/cases.mjs'
 import { BUNDLED_FIELDS, DEP_FIELDS, DSH_FIELD, RUNTIME_DEP_FIELD, SDK, V3 } from '../shared/constants.mjs'
 import { manifestNames, observe, readManifest } from '../shared/packages.mjs'
 import {
-  BUDGET, CHILD_SETTINGS, CORE, HTTP, LATER, LIFECYCLE, MARK, MOVED, ROUTE, SLOT, STATE,
+  CHILD_SETTINGS, CORE, HTTP, LATER, MARK, MOVED, ROUTE, SLOT,
 } from './constants.mjs'
 import { hostedChildFor } from './hosted.mjs'
 import { childRequest, openSettingsPage } from './page.mjs'
@@ -77,24 +75,10 @@ async function slimChildModules() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// One real hosted setup per SDK process (the integration rows share it; Restart runs last).
+// One real hosted setup per SDK process (the integration rows share it).
 // ---------------------------------------------------------------------------------------------
 
 let readyChild
-
-/**
- * The graph entries the instance owns: entries whose own served script is a file of its
- * src/child-settings/. A chunk is never counted: leaving out its owner would leave out that
- * owner's own code too.
- */
-async function hostedSectionEntries(page) {
-  const owned = []
-  for (const script of page.scripts.filter((s) => s.entry)) {
-    const files = await shippedFileWith(V3.instance.name, script.source)
-    if (files.some((f) => f.startsWith(CHILD_SETTINGS.folder))) owned.push(script.id)
-  }
-  return owned
-}
 
 const describePlugins = (page) => JSON.stringify(page.plugins) + (page.errors.length ? ' errors: ' + page.errors.join(' | ') : '')
 
@@ -121,7 +105,7 @@ export function registerCoreCases(sdk) {
   })
   // The R-CORE snapshot "empty patch" ended with F-GUARDS, which adds the guard rows (design §5a.2,
   // R-FB-02, R-FB-12). What stays true for this row: the patch never brings the instance into core.
-  caseTest(sdk, 'HOST-EP-03', 1, "core's cordis.patch.yml carries the F-GUARDS rows and inserts no row or module of the instance or fishball-hosted-settings", async () => {
+  caseTest(sdk, 'HOST-EP-03', 1, "core's cordis.patch.yml carries the F-GUARDS rows and inserts no row or module of the instance", async () => {
     needCore()
     assert.ok(fs.existsSync(corePatchFile()), 'packages/core/' + CORE.patchFile + ' is missing')
     const patches = await corePatchRows(sdk)
@@ -195,22 +179,6 @@ export function registerCoreCases(sdk) {
     const holders = await filesHolding(SLOT.header)
     assert.deepEqual(holders.filter((h) => h.name === V3.instance.name).map((h) => h.file), [])
   })
-  caseTest(sdk, 'HOST-EP-03', 4, 'hosted child: the main slot holds one settings panel and only it renders the hosted sections', async (t) => {
-    const { child } = await readyChild(sdk)
-    const page = await openSettingsPage(t, { sdk, child })
-    assert.ok(page.panel, 'no main entry renders the settings panel; plugins ' + describePlugins(page))
-    await page.waitFor(MARK.status)
-    const elsewhere = []
-    for (const name of [SLOT.main, SLOT.header]) {
-      for (const entry of page.entriesOf(name)) {
-        if (entry === page.panel) continue
-        const tree = JSON.stringify(await page.renderAlone(entry))
-        if (tree.includes(MARK.panel + '"') || tree.includes(MARK.status) || tree.includes(MARK.restart)) elsewhere.push(name + ': ' + JSON.stringify(entry.options))
-      }
-    }
-    assert.deepEqual(elsewhere, [], 'a slot entry other than the panel renders the panel or a hosted section')
-  })
-
   // ================================================================ HOST-UC-08 (V2-mechanism part), integration
   caseTest(sdk, 'HOST-UC-08', 'main 2', 'hosted child: the panel shows the generic settings (Read Only line, DSH Settings and Plugins links, header entry)', async (t) => {
     const { child } = await readyChild(sdk)
@@ -223,84 +191,32 @@ export function registerCoreCases(sdk) {
     assert.ok(headers.some((h) => h.includes(MARK.entry)), 'no header entry opens the panel')
     assert.deepEqual(page.failed(), [], 'failed plugins')
   })
-  caseTest(sdk, 'HOST-UC-08', 'main 2', 'hosted child: the panel shows the hosted sections inside it (status line with the child state, Restart)', async (t) => {
-    const { child } = await readyChild(sdk)
-    const page = await openSettingsPage(t, { sdk, child })
-    assert.ok(page.panel, 'no settings panel; plugins ' + describePlugins(page))
-    const status = await page.waitFor(MARK.status)
-    assert.ok(status.length > 0, 'no status line in the panel')
-    await until(() => page.byAttr(MARK.status).some((n) => n.props[MARK.status] === STATE.ready), BUDGET.readyMs, BUDGET.pollMs)
-    assert.ok(page.byAttr(MARK.status).some((n) => n.props[MARK.status] === STATE.ready), 'the status line shows ready; saw ' + page.byAttr(MARK.status).map((n) => n.props[MARK.status]))
-    assert.equal(page.byAttr(MARK.restart).length, 1, 'one Restart')
-    assert.deepEqual(page.byAttr('role', MARK.roles.alert).map((n) => JSON.stringify(n.props)), [], 'no error shown')
-  })
-  caseTest(sdk, 'HOST-UC-08', 'main 2', "hosted child: the panel is core's code and the hosted sections are the instance's (served files)", async (t) => {
+  // The hosted-only sections (status line, Restart) left with fishball-hosted-settings (REMOVE-WD,
+  // design §1.0); a hosted child's panel is core's generic panel alone.
+  caseTest(sdk, 'HOST-UC-08', 'main 2', "hosted child: the panel is core's code (served files)", async (t) => {
     needCore()
     const { child } = await readyChild(sdk)
     const page = await openSettingsPage(t, { sdk, child })
-    await page.waitFor(MARK.status)
+    await page.settled()
     const panelScripts = page.scripts.filter((s) => s.source.includes(MARK.panel + "'") || s.source.includes(MARK.panel + '"'))
     assert.ok(panelScripts.length > 0, 'no served script renders the panel')
     for (const s of panelScripts) assert.ok((await shippedFileWith(V3.core.name, s.source)).length > 0, s.url + ' (' + s.id + ') is not a file of fishball-core')
-    const statusScripts = page.scripts.filter((s) => s.source.includes(MARK.status))
-    assert.ok(statusScripts.length > 0, 'no served script renders the status line')
-    for (const s of statusScripts) {
-      const files = await shippedFileWith(V3.instance.name, s.source)
-      assert.ok(files.some((f) => f.startsWith(CHILD_SETTINGS.folder)), s.url + ' (' + s.id + ') is not a file of the instance under ' + CHILD_SETTINGS.folder + ': ' + files.join(', '))
-    }
   })
   caseTest(sdk, 'HOST-UC-08', 'A4', 'hosted child: the panel has no model-sync trigger, makes no sync request, and the child has no sync route (R-HOST-07)', async (t) => {
     const { child } = await readyChild(sdk)
     const page = await openSettingsPage(t, { sdk, child })
     assert.ok(page.panel, 'no settings panel; plugins ' + describePlugins(page))
-    await page.waitFor(MARK.status)
+    await page.settled()
     assert.deepEqual(syncMarkers(page.tree()), [], 'model-sync markers in the panel')
     for (const target of MARK.openTargets) for (const node of page.byAttr(MARK.open, target)) await page.press(node)
     assert.deepEqual(syncMarkers(page.tree()), [], 'model-sync markers after using the links')
     assert.deepEqual(page.requests.filter((r) => ROUTE.sync.includes(r.pathname)), [], 'the panel requested a sync route')
     for (const route of ROUTE.sync) assert.equal((await childRequest(child, 'POST', route, '{}')).status, HTTP.notFound, 'the child answers ' + route)
   })
-  caseTest(sdk, 'HOST-UC-08', 'generic, no section', 'the generic panel works with no hosted section registered: generic settings only, no error, no placeholder, no hosted request', async (t) => {
-    const { child } = await readyChild(sdk)
-    const probe = await openSettingsPage(t, { sdk, child })
-    const hosted = await hostedSectionEntries(probe)
-    assert.ok(hosted.length > 0, 'no served client entry is a file of the instance under ' + CHILD_SETTINGS.folder + '; entries: ' + probe.graph.map((e) => e.id).join(', '))
-    const page = await openSettingsPage(t, { sdk, child, exclude: (entry) => hosted.includes(entry.id) })
-    assert.ok(page.panel, 'no settings panel without the hosted sections; plugins ' + describePlugins(page))
-    assert.equal(page.byAttr(MARK.readOnly).length, 1, 'the Read Only line is shown')
-    assert.deepEqual(page.byAttr(MARK.open).map((n) => n.props[MARK.open]).sort(), [...MARK.openTargets].sort())
-    assert.deepEqual([...page.byAttr(MARK.status), ...page.byAttr(MARK.restart)].map((n) => n.tag), [], 'a hosted section is shown')
-    assert.deepEqual(page.byAttr('role').map((n) => n.props.role + ': ' + JSON.stringify(n.children)), [], 'a notice, status or error placeholder is shown')
-    assert.deepEqual(page.requests.filter((r) => r.pathname.startsWith(ROUTE.instancePrefix)).map((r) => r.method + ' ' + r.pathname), [], 'the generic panel called a hosted route')
-    assert.deepEqual(page.failed(), [], 'failed plugins')
-    assert.deepEqual(page.errors, [], 'page console errors')
-  })
-  caseTest(sdk, 'HOST-UC-08', 'main 3', 'hosted child (ST ready → Restart → stopped → ready): Restart in the hosted section travels to the host, which restarts the child', async (t) => {
-    const { child, home, host } = await readyChild(sdk)
-    const page = await openSettingsPage(t, { sdk, child })
-    await page.waitFor(MARK.status)
-    const [restart] = page.byAttr(MARK.restart)
-    assert.ok(restart, 'no Restart in the panel')
-    const before = lifecycleLines(home).length
-    await page.press(restart)
-    let codes = []
-    const stoppedThenReady = () => {
-      codes = lifecycleLines(home).slice(before).map((l) => l.json.code)
-      const stop = codes.indexOf(LIFECYCLE.stop)
-      return stop >= 0 && codes.indexOf(LIFECYCLE.ready, stop) > stop
-    }
-    await until(stoppedThenReady, BUDGET.restartMs, BUDGET.pollMs)
-    assert.ok(stoppedThenReady(), 'the host did not stop and start the child again; lifecycle after the press: ' + codes.join(', '))
-    let status
-    await until(async () => { status = (await host.get(ROUTE.status)).json; return status?.state === STATE.ready }, BUDGET.restartMs, BUDGET.pollMs)
-    assert.equal(status?.state, STATE.ready, 'the host reports the child ready again')
-  })
-  caseTest(sdk, 'HOST-UC-08', 'main 3', 'a change in a hosted-only section is saved by the instance', null, LATER.saved)
 
   // HOST-EP-03 row 5 and the HOST-UC-08 postcondition "H shows no UI from the instance" are R-EMBED's: test/v3/embed/cases.mjs.
   // ================================================================ later tasks
   caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: the same core package shows the generic settings only and reports nothing missing', null, LATER.standalone)
   caseTest(sdk, 'HOST-UC-08', 'E1', 'fishball-core disabled: the sections do nothing and the child still starts (fishball-off)', null, LATER.host)
-  caseTest(sdk, 'HOST-UC-08', 'E2', "core's guards never disable fishball-hosted-settings; guards-overridden never names it", null, LATER.guards)
   caseTest(sdk, 'HOST-UC-08', 'e2e', 'the panel and the Plugins page in a browser', null, LATER.e2e)
 }

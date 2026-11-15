@@ -14,8 +14,8 @@ export const RUNTIME = Object.freeze({
   codeSnapshotPrefix: '.fishball-native-',
   // The snapshot holds only the instance's own lifecycle code (Q-5): the lifecycle row, the
   // native-web adapter and the parent-watch preload the launch imports by path (index.js), each with
-  // the relative-import closure of its module. The plugin set and fishball-hosted-settings are
-  // placed bundles (PLACEMENT), never snapshot code.
+  // the relative-import closure of its module. The plugin set is placed bundles (PLACEMENT), never
+  // snapshot code.
   snapshot: Object.freeze({ lifecycle: 'native-child.js', entries: Object.freeze(['native-web.js', 'src/native-runtime/parent-watch.js']) }),
   host: '127.0.0.1',
   socketName: 'control.sock',
@@ -159,10 +159,9 @@ export const NATIVE_WEB = Object.freeze({
 })
 
 /**
- * Placement of the plugin set and fishball-hosted-settings into the child profile (R-BND-01/02/03,
- * R-HOST-01/11, design §8.1; bundled-placement note `f71717e` P3 + 3a). Each placed package is
- * copied, at every child start and before the profile loads, to `<profile>/vendor/<name>` and
- * `<profile>/node_modules/<name>` with `dependencies[name] = file:./vendor/<name>`, so DSH resolves it
+ * Placement of the plugin set into the child profile (R-BND-01/02/03, R-HOST-01, design §8.1;
+ * bundled-placement note `f71717e` P3 + 3a). Each placed package is copied, at every child start
+ * and before the profile loads, to `<profile>/vendor/<name>` and `<profile>/node_modules/<name>` with `dependencies[name] = file:./vendor/<name>`, so DSH resolves it
  * as a profile package and a later pnpm operation in the child keeps it (I-PLACE probe, both SDKs:
  * `dsh plugin --profile fishball install <tarball>` succeeds, every placed copy stays, and the next
  * start places and loads again; core's own dependencies are not fetched). The host never resolves
@@ -174,21 +173,16 @@ export const PLACEMENT = Object.freeze({
    * fishball-core last, so its guard patch reaches every row the others insert (R-FB-12).
    * `directory` names a set member's folder: `bundled/<directory>` in a packed instance (REL-PACK
    * output, never committed; Q-22), else the sibling workspace folder `../<directory>` of a checkout.
-   * `own` is fishball-hosted-settings: the instance's own `src/child-settings/` stays its source
-   * (Q-6), and its manifest's paths are relative to the instance's package root, because its row
-   * imports instance modules beside that folder (the settings relay, the status routes).
+   * The set is core and board only (design `9a531192` §1.0, §7; requirements 1.37).
    */
   bundles: Object.freeze([
     Object.freeze({ name: 'fishball-board', directory: 'board' }),
-    Object.freeze({ name: 'fishball-fold-notify', directory: 'fold-notify' }),
-    Object.freeze({ name: 'fishball-watchdog', directory: 'watchdog' }),
-    Object.freeze({ name: 'fishball-hosted-settings', own: 'src/child-settings/package.json' }),
     Object.freeze({ name: 'fishball-core', directory: 'core' }),
   ]),
   /**
    * Libraries placed beside the bundles, never listed as bundles: fishball-shared, core's and the
-   * instance's bundled dependency (R-ARCH-08), and the connector's `./contract` export, which core,
-   * the hosted settings and the lifecycle rows import by name until F-STATUS (M1). Each source is
+   * instance's bundled dependency (R-ARCH-08), and the connector's `./contract` export, which core
+   * and the lifecycle rows import by name until F-STATUS (M1). Each source is
    * resolved through the instance's own dependency graph, by the name the copied modules import.
    * The contract is placed as that export alone, with a manifest naming only it, so the child sees
    * what a third-party client sees and nothing else of the connector.
@@ -200,8 +194,6 @@ export const PLACEMENT = Object.freeze({
   vendor: 'vendor',
   modules: 'node_modules',
   manifest: 'package.json',
-  manifestPath: './package.json',
-  relative: './',
   dependency: (name) => 'file:./vendor/' + name,
   // The record of the names placed so far (3a): a name is switched on only at its first placement.
   // It lives in the child profile, so a profile deleted by hand starts over with the set on.

@@ -13,7 +13,6 @@
 #   override any guard (Q20); core then reports `guards-overridden` and changes nothing back (R-FB-09).
 #
 # A guard is a bare `{id, disabled: true}` row; intended.js reads exactly that shape as a guard.
-# fishball-hosted-settings is never listed here (R-HOST-11 (5)).
 
 # Session-creating rows (V2 LITE). ui-subagent: header lineage and catalogue tree items open other
 # sessions; ui-schedule/schedule: scheduled prompts run as new sessions; ui-permission/
@@ -38,7 +37,7 @@
 # Agent presets (Q-S6-2 decided B, amended; requirements 1.24). The session-creating tools live inside
 # each shipped preset's `config.plugins`, which no patch can reach (S6 §3.2), so every DSH-shipped
 # preset is switched OFF here, never deleted. The ids are the same on both SDKs
-# (`dsh-web-app/presets/`). fishball-watchdog contributes its own `watchdog` preset (R-WD-16).
+# (`dsh-web-app/presets/`). Core's own preset is the only one offered (design `9a531192` §1.0, §7; requirements 1.37).
 - { id: preset-standard, disabled: true }
 - { id: preset-ptc, disabled: true }
 - { id: preset-cordis, disabled: true }

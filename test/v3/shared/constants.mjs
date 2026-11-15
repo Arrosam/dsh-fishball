@@ -21,17 +21,13 @@ export const V3 = Object.freeze({
   // S4-Q3 decided B (questions.md at b1295de): all lowercase, as npm and DSH's plugin manager require.
   embed: pkg('dsh-connector-ui', 'dsh-connector-ui'),
   board: pkg('fishball-board', 'board'),
-  foldNotify: pkg('fishball-fold-notify', 'fold-notify'),
-  watchdog: pkg('fishball-watchdog', 'watchdog'),
 })
-/** The hosted-only settings bundle (R-HOST-11); placed by the instance from I-PLACE on. */
-export const HOSTED_SETTINGS = 'fishball-hosted-settings'
 /** Every V3 package name (rows 3/7b: fishball-shared imports none of them). */
-export const V3_NAMES = Object.freeze([...Object.values(V3).map((p) => p.name), HOSTED_SETTINGS])
-/** R-BND-01: the plugin set and the hosted settings bundle (row 7c: the connector imports none of them). */
-export const SET_SIDE = Object.freeze([V3.core.name, V3.board.name, V3.foldNotify.name, V3.watchdog.name, HOSTED_SETTINGS])
-/** Design §9.1: the feature plugins find core only through the optional `fishballInstance?` inject. */
-export const FEATURES = Object.freeze([V3.board.name, V3.foldNotify.name, V3.watchdog.name])
+export const V3_NAMES = Object.freeze(Object.values(V3).map((p) => p.name))
+/** R-BND-01: the plugin set, board and core (design §1.0; row 7c: the connector imports none of them). */
+export const SET_SIDE = Object.freeze([V3.core.name, V3.board.name])
+/** Design §9.1: the feature plugin finds core only through the optional `fishballInstance?` inject. */
+export const FEATURES = Object.freeze([V3.board.name])
 /** Design §9.1: embed-UI may take `./tools` from the connector (types and data), nothing else. */
 export const EMBED_CONNECTOR_ALLOWED = Object.freeze(['dsh-connector/tools'])
 
@@ -46,7 +42,7 @@ export const ROOT_WORKSPACE = 'packages/shared'
 
 /**
  * HOST-EP-03 row 2 / R-SHARED "stay in the instance": the DSH-side modules, found in the instance's
- * shipped files wherever R-CORE later re-homes them (src/child-settings/), by name or folder.
+ * shipped files, by name or folder.
  */
 export const DSH_SIDE = Object.freeze({ basenames: Object.freeze(['native-web.js', 'settings-relay.js']), folder: 'slim/host/' })
 /** R-SHARED (3): a named reader of the files.js helpers that move (it imports them from the library); found by file name. */
@@ -92,8 +88,7 @@ export const LATER = Object.freeze({
   core: 'R-CORE (creates packages/core, W1 step 2)',
   embed: 'R-EMBED (creates packages/dsh-connector-ui, W1 step 3)',
   rowSixTwoPackages: 'R-CORE (until core exists, the instance is the only package that can import the library)',
-  hostedSettings: 'I-PLACE (fishball-hosted-settings, a placed bundle importing the library)',
-  featurePeers: 'FEAT-PEERS and WD-ROUTE (feature plugins drop the dsh-instance peer for the optional fishballInstance? inject)',
+  featurePeers: 'FEAT-PEERS (the feature plugin drops the dsh-instance peer for the optional fishballInstance? inject)',
   pluginsPage: 'X-MATRIX (no Plugins page of a started DSH lists fishball-shared)',
   hostTrace: 'X-SEC (PLAT-EP-07 runtime part: module-load trace of a running hosted setup C + I + U)',
   standalone: 'unassigned in v3-tasks.md (standalone install of the core tarball with no registry; core is not standalone-loadable before S6/F-GUARDS)',

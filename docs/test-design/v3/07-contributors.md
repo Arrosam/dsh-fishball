@@ -44,7 +44,7 @@ caller's loader-entry package. The EXT cases are no longer provisional on S5 unl
 - **Alternative flows:**
   - A1. No `sessionId` → the event goes to D.
   - A2. `sessionId` of an unmanaged session → to D.
-  - A3. In HF's Fishball DSH, no plugin intercepts `contributed:ci-watch.build.failed` → it reaches the Fishball agent through the X9 pipeline (fold-notify may batch it); Watchdog never sees it.
+  - A3. In HF's Fishball DSH, no plugin intercepts `contributed:ci-watch.build.failed` → it reaches the Fishball agent through the X9 pipeline (fold-notify may batch it).
 - **Exception flows:**
   - E1. No recipient (no D, no session manager) → `no-fishball`, nothing queued.
   - E2. Limits: see EXT-BVA-02/03.

@@ -6,15 +6,14 @@
  * relayed (RELAYED below). None comes from an implementation.
  */
 import path from 'node:path'
-import { HOSTED_SETTINGS, V3 } from '../shared/constants.mjs'
+import { V3 } from '../shared/constants.mjs'
 
-/** The four set members (R-FB-01, design §1.2) and the hosted settings bundle (R-HOST-11). */
+/** The set a hosted child holds: board and core (design §1.0, plan §4; R-FB-01). */
 export const SET = Object.freeze({
   core: V3.core.name,
-  features: Object.freeze([V3.board.name, V3.foldNotify.name, V3.watchdog.name]),
-  hostedSettings: HOSTED_SETTINGS,
-  /** Design §8.1 "Order": the features and fishball-hosted-settings come before core, core is last. */
-  get placed() { return Object.freeze([...this.features, this.hostedSettings, this.core]) },
+  features: Object.freeze([V3.board.name]),
+  /** Design §8.1 "Order": the features come before core, core is last. */
+  get placed() { return Object.freeze([...this.features, this.core]) },
   /** The library beside core in the child, never a profile bundle (R-BND-01, R-ARCH-08). */
   library: V3.shared.name,
   /** Placed for its contract only (RELAYED.copies), never a profile bundle. */
@@ -91,7 +90,7 @@ export const OVERLAY = Object.freeze({
 })
 
 /** The guards' vocabulary (K3 guards.d.ts, read by the F-GUARDS reader; design §5a.2 as amended at 32fca3c5). */
-export { GUARDS, NEVER_GUARDED, REPORT, DSH_ROW } from '../f-guards/constants.mjs'
+export { GUARDS, REPORT, DSH_ROW } from '../f-guards/constants.mjs'
 
 /** The DSH rows of the restored V2 guard cases (LITE-UC-03, LITE-EP-13, SET-EP-12). */
 export const POLICY = Object.freeze({
@@ -123,12 +122,13 @@ export const PANEL = Object.freeze({
   chunk: 'client.settings.js',
   /** The V2 panel folder I-PLACE drops (HOST-UC-08 A3; brief note 3). */
   dropped: path.join('ui', 'fishball-settings'),
-  /** The hosted-settings manifest injects core's client (brief note 3: `fishball-settings` → `fishball-core`). */
-  hostedInject: V3.core.name,
   /** The K3 settings-section service (settings-sections.d.ts SettingsSectionsServiceName). */
   service: 'fishballSettingsSections',
-  /** The child page's Fishball client entries once the panel is core's chunk (dev 6d13f6a1, relayed 2026-11-15). */
-  childEntries: Object.freeze(['fishball-page', 'fishball-recommend-plugins', V3.core.name, HOSTED_SETTINGS]),
+  /**
+   * The child page's Fishball client entries once the panel is core's chunk (dev 6d13f6a1, relayed
+   * 2026-11-15); fishball-hosted-settings left the set (REMOVE-WD, design §1.0).
+   */
+  childEntries: Object.freeze(['fishball-page', 'fishball-recommend-plugins', V3.core.name]),
   register: 'register',
 })
 
@@ -155,7 +155,6 @@ export const BUDGET = Object.freeze({ readyMs: 150000, restartMs: 150000, pollMs
 /** Owners of the rows I-PLACE cannot check. */
 export const LATER = Object.freeze({
   host: 'I-HOST (W4: the dshInstanceChild locator, Retry, lifecycle codes such as fishball-off)',
-  status: 'F-STATUS (core status: reports nothing missing for fishball-hosted-settings)',
   restartNotice: 'U-SHELL / E2E-UI (the "restart required" line in the UI)',
   relPack: 'REL-PACK (P-1 mechanism B: a real fishball-shared copy in each tarball; PLAT-EP-07 row 5 stays failing until then)',
   uninstall: 'I-HOST (HOST-ST-01 row 10: uninstall with the export offer, Q-23)',

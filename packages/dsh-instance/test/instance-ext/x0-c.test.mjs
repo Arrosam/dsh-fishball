@@ -19,23 +19,19 @@ import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { bootChild, messageSource, messageText } from '../../../../test/support/instance-ext.mjs'
 
-const MANAGER = 'fishball-fold-notify'
+// Any plugin ids: registerSetup, notify and bridge take the caller's id as given (X2, X10, X12).
+const MANAGER = 'fbtest-plugin'
 const U18 = Object.freeze({
   notifyFile: 'notify-keys.jsonl',
   notifyKeys: 10_000,
   retentionSeedKeys: 9_998,
   retentionKeyPrefix: 'cap-key-',
   event: Object.freeze({ splice: 'agent/inbox/spliced', user: 'user/message', turnStart: 'turn/start', turnEnd: 'turn/end', stepStart: 'step/start', stepEnd: 'step/end' }),
-  watchdog: 'fishball-watchdog',
-  notice: 'a watchdog notice',
+  plugin: 'fbtest-other-plugin',
+  notice: 'a plugin notice',
   queueFailure: 'injected agent queue rejection before acceptance',
   pendingKey: 'pending-notice-must-survive-accepted-history-trim',
-  handoverKey: 'watchdog-handover:fixture-episode',
-  recoveryKey: 'watchdog-recovery:fixture-episode',
-  handoverText: 'Watchdog unavailable; Fishball now handles supervision and approvals; no session was stopped.',
-  errorName: 'ExtensionError',
-  notImplemented: 'not-implemented',
-  send: Object.freeze({ session_id: 'session-without-watchdog', message: 'unchanged message 😀' }),
+  send: Object.freeze({ session_id: 'session-direct', message: 'unchanged message 😀' }),
   imageSend: Object.freeze({ sessionId: 'ses-target', message: '  unchanged\nmessage  ' }),
   attachmentMethods: Object.freeze(['readImage', 'saveImage', 'saveFile', 'readFileStream']),
   attachmentUseFailure: 'empty image send must not use attachment storage',
@@ -63,7 +59,7 @@ async function pendingNotice(t, dedupeKey, text = U18.notice, { activate = true 
     }
   } })
   // Error envelope is not specified; durable retry state and no accepted turn are specified.
-  await h.requireInstance().manager.notify({ pluginId: U18.watchdog, dedupeKey, text, wake: true }).catch(() => {})
+  await h.requireInstance().manager.notify({ pluginId: U18.plugin, dedupeKey, text, wake: true }).catch(() => {})
   assert.equal(attempts.length, 1, 'rejection injected at the actual followup boundary')
   assert.equal(queueLengthAtRejection, 0)
   assert.equal(h.manager().followups.length, 0, 'the rejected attempt was never accepted by the fixture queue')
@@ -82,13 +78,15 @@ function append(h, type, data) {
   h.manager().session.append(type, data)
 }
 
-describe('X0-C service surface (X1–X16 stub contract)', () => {
-  it('XC-EP-V-01 Samuel continues work with Fishball plugin updates — W0: the app row provides fishballInstance apiVersion 1 with every member', async (t) => {
+// V3 drops the side-agent, supervision, approval-claim and start-rule members (X13–X16) and the
+// inbox claim/batcher stubs (X9) with the plugins that consumed them (REMOVE-WD, design §1.0).
+describe('X0-C service surface', () => {
+  it('XC-EP-V-01 Samuel continues work with Fishball plugin updates — W0: the app row provides fishballInstance apiVersion 1 with its members', async (t) => {
     const h = await bootChild(t)
     const service = h.requireInstance()
     assert.equal(service.apiVersion, 1)
-    for (const member of ['manager', 'chat', 'inbox', 'ui', 'attention', 'bridge', 'sideAgents', 'approvals', 'supervision', 'sessionStarts']) {
-      assert.ok(service[member] !== undefined, 'fishballInstance.' + member + ' is missing (X1–X16)')
+    for (const member of ['manager', 'chat', 'inbox', 'ui', 'attention', 'bridge']) {
+      assert.ok(service[member] !== undefined, 'fishballInstance.' + member + ' is missing')
     }
   })
 
@@ -120,41 +118,7 @@ describe('X0-C service surface (X1–X16 stub contract)', () => {
   })
 })
 
-// Only surviving §1 public methods are enumerated; no withdrawn UI APIs are revived.
-const STUB_CASES = [
-  ['inbox.claim', (s) => s.inbox.claim({ pluginId: MANAGER, kind: 'user', match: () => undefined }, () => {})],
-  ['inbox.release', (s) => s.inbox.release('held-key', { deliver: true })],
-  ['inbox.setBatcher', (s) => s.inbox.setBatcher(MANAGER, () => {})],
-  // XC-EP-STUB-04 retired: attention.set was removed, not another not-implemented stub.
-  ['sideAgents.open', (s) => s.sideAgents.open({})],
-  ['sideAgents.runTurn', (s) => s.sideAgents.runTurn({}, 'decision', {})],
-  ['sideAgents.cancel', (s) => s.sideAgents.cancel({})],
-  ['approvals.claim', (s) => s.approvals.claim('session-managed', { id: U18.watchdog, name: 'Watchdog', onCard() {} })],
-  ['approvals.card', (s) => s.approvals.card('approval-1')],
-  ['approvals.onSettled', (s) => s.approvals.onSettled(() => {})],
-  ['approvals.answerApproval', (s) => s.approvals.answerApproval({ approvalId: 'approval-1', decision: 'allow', decidedBy: U18.watchdog })],
-  ['supervision.register', (s) => s.supervision.register(U18.watchdog)],
-  ['supervision.onManagedChange', (s) => s.supervision.onManagedChange(() => {})],
-  ['supervision.endingReason', (s) => s.supervision.endingReason()],
-  ['sessionStarts.register', (s) => s.sessionStarts.register(U18.watchdog, { parameter: 'watchdog', schema: {}, validate: () => ({ ok: true }), attach: async () => ({ ok: true }) })],
-]
-
-describe('X0-C U18 typed stub refusals', () => {
-  for (const [index, [member, invoke]] of STUB_CASES.entries()) {
-    it(`XC-EP-STUB-${String(index + (index < 3 ? 1 : 2)).padStart(2, '0')} Samuel never mistakes an unavailable capability for success — ${member} refuses with typed metadata`, async (t) => {
-      const h = await bootChild(t)
-      const service = h.requireInstance()
-      const [area, method] = member.split('.')
-      assert.equal(typeof service[area]?.[method], 'function', 'the designed public stub ' + member + ' is missing')
-      // §12.5 does not classify every signature as sync/async: either refusal must retain metadata.
-      await assert.rejects(Promise.resolve().then(() => invoke(service)), {
-        name: U18.errorName,
-        code: U18.notImplemented,
-        member,
-      })
-    })
-  }
-
+describe('X0-C U18 scoped bridge', () => {
   it('XC-EP-STUB-16 Samuel uses only the scoped connector operations — X12 EP/DT: in-list read delegates; out-of-list list is forbidden locally without a new handshake', async (t) => {
     const scope = Object.freeze({
       allowed: 'session.read',
@@ -167,7 +131,7 @@ describe('X0-C U18 typed stub refusals', () => {
     const h = await bootChild(t)
     const service = h.requireInstance()
     const handshakes = h.host.handshakes.length
-    const client = service.bridge(U18.watchdog, [scope.allowed])
+    const client = service.bridge(U18.plugin, [scope.allowed])
     // X12/U9 and X0-W (§1.1, §5.1, §6): membership, not payload validity, decides
     // these EP/DT rows. Both requests are valid per connector contract §4.1.
     const beforeAllowed = h.host.requests.length
@@ -283,8 +247,8 @@ describe('X0-C X2 manager.registerSetup', () => {
 
 describe('X0-C X10 manager.notify', () => {
   const notify = (service, overrides = {}) => service.manager.notify({
-    pluginId: U18.watchdog,
-    dedupeKey: 'wd-1',
+    pluginId: U18.plugin,
+    dedupeKey: 'notice-1',
     text: U18.notice,
     wake: true,
     ...overrides,
@@ -300,8 +264,8 @@ describe('X0-C X10 manager.notify', () => {
     assert.equal(result.status ?? result, 'queued')
     const queued = h.lastFollowup()
     assert.ok(queued, 'one turn was queued')
-    assert.match(messageText(queued), /a watchdog notice/)
-    assert.deepEqual(messageSource(queued), { kind: 'fishball-notice', form: 'plugin', pluginId: 'fishball-watchdog' })
+    assert.match(messageText(queued), /a plugin notice/)
+    assert.deepEqual(messageSource(queued), { kind: 'fishball-notice', form: 'plugin', pluginId: U18.plugin })
     assert.equal(h.manager().followups.length, 1)
   })
 
@@ -442,25 +406,6 @@ describe('X0-C X10 manager.notify', () => {
     assert.equal(attempts.length, 2, 'accepted key never queues again')
   })
 
-  for (const [kind, dedupeKey] of [['HANDOVER', U18.handoverKey], ['RECOVERY', U18.recoveryKey]]) {
-    it(`XC-ST-NOTIFY-${kind} Samuel receives the missing ${kind.toLowerCase()} update after child rows rebuild — pending reservation reuses one message identity`, async (t) => {
-      const { h, reservedId } = await pendingNotice(t, dedupeKey, U18.handoverText)
-      const service = h.requireInstance()
-      await h.close()
-      const restarted = await bootChild(t, { home: h.home, activate: true, sessionLogs: h.sessionLogs })
-      const reloaded = restarted.requireInstance()
-      assert.notEqual(reloaded, service, 'a new service reads the same home')
-      const recoveredCount = restarted.manager().followups.length
-      assert.ok(recoveredCount === 0 || recoveredCount === 1, 'startup may retry pending work, but never twice')
-      assert.equal(await notifyStatus(reloaded, { dedupeKey, text: U18.handoverText }), recoveredCount === 0 ? 'queued' : 'duplicate', 'only an observed accepted recovery can make retry duplicate')
-      assert.equal(restarted.manager().followups.length, 1)
-      assert.equal(restarted.lastFollowup().id, reservedId, 'restart preserves the reserved identity')
-      assert.ok(messageText(restarted.lastFollowup()).includes(U18.handoverText))
-      assert.equal(await notifyStatus(reloaded, { dedupeKey, text: U18.handoverText }), 'duplicate')
-      assert.equal(restarted.manager().followups.length, 1)
-    })
-  }
-
   /** Bulk setup only: clone storage emitted by a real accepted notice, never a guessed schema. */
   async function seedRetentionHistory(t, keys) {
     const pending = await pendingNotice(t, U18.pendingKey, U18.notice, { activate: false })
@@ -578,28 +523,25 @@ describe('X0-C X10 manager.notify', () => {
       const result = await notify(service, { dedupeKey: state })
       assert.equal(result.status ?? result, 'queued')
       assert.equal(h.manager().followups.length, 1)
-      assert.match(messageText(h.lastFollowup()), /a watchdog notice/)
+      assert.match(messageText(h.lastFollowup()), /a plugin notice/)
     })
   }
 })
 
-describe('X0-C U18/U20 effectively-off tool send path', () => {
-  for (const watchdogEnabled of [false, true]) {
-    for (const [index, tool] of ['message_session', 'redirect_session'].entries()) {
-      const id = watchdogEnabled ? `XC-DT-OFF-${tool}` : `XC-UC-03-M${index + 1}`
-      it(`${id} Samuel messages a session directly with watchdog ${watchdogEnabled ? 'enabled but unregistered/not ready' : 'disabled'} — ${tool} reaches connector unchanged`, async (t) => {
-        const h = await bootChild(t, { activate: true, watchdogEnabled })
-        h.requireInstance()
-        const before = h.host.requests.length
-        const result = await h.tool(tool, U18.send)
-        assert.equal(result.ok, true)
-        const operation = tool === 'message_session' ? 'session.message' : 'session.redirect'
-        assert.deepEqual(h.host.requests.slice(before).map(({ operation, payload }) => ({ operation, payload })), [{
-          operation,
-          payload: { sessionId: U18.send.session_id, message: U18.send.message, attachments: [] },
-        }], 'effective-off passes the existing connector payload without rewriting it')
-      })
-    }
+describe('X0-C U18/U20 direct tool send path', () => {
+  for (const [index, tool] of ['message_session', 'redirect_session'].entries()) {
+    it(`XC-UC-03-M${index + 1} Samuel messages a session directly — ${tool} reaches connector unchanged`, async (t) => {
+      const h = await bootChild(t, { activate: true })
+      h.requireInstance()
+      const before = h.host.requests.length
+      const result = await h.tool(tool, U18.send)
+      assert.equal(result.ok, true)
+      const operation = tool === 'message_session' ? 'session.message' : 'session.redirect'
+      assert.deepEqual(h.host.requests.slice(before).map(({ operation, payload }) => ({ operation, payload })), [{
+        operation,
+        payload: { sessionId: U18.send.session_id, message: U18.send.message, attachments: [] },
+      }], 'the send passes the existing connector payload without rewriting it')
+    })
   }
 })
 
@@ -646,12 +588,11 @@ it.todo('XC-UC-01-E2 Samuel keeps healthy capabilities when async setup fails �
 it.todo('XC-UC-02-E3 Samuel retries after durable queue acceptance lost its receipt — [owners: X0-C/FB-PUSH/X-E2E] reconcile the persisted stable identity against durable queue after rebuild, deliver once; current fake agent has no durable queue ledger')
 it.todo('XC-UC-02-E4 Samuel recovers from notification reservation persistence failure — [owner: X0-C] freeze safe store-fault fixture; no accepted success without persistence, recovery retries one stable identity')
 it.todo('XC-UC-02-A4 Samuel continues after a quiet notice survived rebuild — [owners: X0-C/X-E2E] durable hold acceptance/recovery adds text once to next user turn, never an independent wake')
-it.todo('XC-UC-03-F Samuel keeps working after watchdog failure — [owners: X0-S/X0-A/X0-I/WD-13] immediate whole-plugin Fishball handover, release claims, pass both send paths, no halt/stop, one durable retryable notice')
 it.todo('XC-UC-05-M Samuel receives routed updates while controlling sessions over MCP — [owners: MCP-S3/K1/X0-C/X0-W/FB-PUSH] freeze typed local control/intake port names/shapes before W1; no second control API, route before durable queue/wake/ack; no invented transport interface')
 
 /** All U18 observations stay at supplied services, agent queue and connector wire boundaries. */
 async function inboxPort(t) {
-  const h = await bootChild(t, { activate: true, watchdogEnabled: false })
+  const h = await bootChild(t, { activate: true })
   h.requireInstance()
   const chat = h.ctx.get('fishballChat')
   assert.equal(typeof chat?.deliverInbox, 'function', 'fishballChat.deliverInbox is missing')
@@ -694,35 +635,32 @@ async function rejectBatch(h, chat, items, expected, options) {
 const sampleImage = (overrides = {}) => ({ attachmentId: 'image-1', mediaType: 'image/png', width: 1, height: 1, bytes: 1, ...overrides })
 
 /** Enable the real images service; §12.5.1 empty inputs must never touch storage. */
-async function imageSendPort(t, watchdogEnabled = false) {
+async function imageSendPort(t) {
   const storageCalls = []
   const attachments = Object.fromEntries(U18.attachmentMethods.map((method) => [method, () => {
     storageCalls.push(method)
     assert.fail(U18.attachmentUseFailure)
   }]))
   t.after(() => assert.deepEqual(storageCalls, [], U18.attachmentUseFailure))
-  const h = await bootChild(t, { activate: true, watchdogEnabled, attachments })
+  const h = await bootChild(t, { activate: true, attachments })
   h.requireInstance()
   const images = h.ctx.get('fishballImages')
   assert.equal(typeof images?.message, 'function', 'fishballImages.message is missing')
   return { h, images }
 }
 
-describe('X0-C U18/U20 images service sends with watchdog effectively off', () => {
-  for (const watchdogEnabled of [false, true]) {
-    for (const [index, attachments] of [[], undefined].entries()) {
-      const id = watchdogEnabled ? `XC-DT-OFF-IMAGES-${index + 1}` : `XC-UC-03-A${index + 1}`
-      it(`${id} Samuel sends through images.message with watchdog ${watchdogEnabled ? 'enabled but unregistered/not ready' : 'disabled'} — ${attachments === undefined ? 'omitted' : 'empty'} attachments preserve exact wire text and delivered result`, async (t) => {
-        const { h, images } = await imageSendPort(t, watchdogEnabled)
-        const request = { ...U18.imageSend, ...(attachments === undefined ? {} : { attachments }) }
-        const original = structuredClone(request)
-        const before = h.host.requests.length
-        const result = await images.message(request)
-        assert.deepEqual(h.host.requests.slice(before).map(({ operation, payload }) => ({ operation, payload })), [{ operation: 'session.message', payload: { ...U18.imageSend, attachments: [] } }])
-        assert.deepEqual(result, { status: 'delivered' })
-        assert.deepEqual(request, original)
-      })
-    }
+describe('X0-C U18/U20 images service sends', () => {
+  for (const [index, attachments] of [[], undefined].entries()) {
+    it(`XC-UC-03-A${index + 1} Samuel sends through images.message — ${attachments === undefined ? 'omitted' : 'empty'} attachments preserve exact wire text and delivered result`, async (t) => {
+      const { h, images } = await imageSendPort(t)
+      const request = { ...U18.imageSend, ...(attachments === undefined ? {} : { attachments }) }
+      const original = structuredClone(request)
+      const before = h.host.requests.length
+      const result = await images.message(request)
+      assert.deepEqual(h.host.requests.slice(before).map(({ operation, payload }) => ({ operation, payload })), [{ operation: 'session.message', payload: { ...U18.imageSend, attachments: [] } }])
+      assert.deepEqual(result, { status: 'delivered' })
+      assert.deepEqual(request, original)
+    })
   }
 
   it('XC-DT-02 images.message returns unconfirmed unchanged and never retries or creates a watch', async (t) => {
@@ -898,5 +836,3 @@ describe('X0-C U18 deliverInbox array queue and receipt', () => {
     await rejectBatch(h, chat, [{ text: 'notice', images: Array.from({ length: U18.batch.imageMax + 1 }, () => ({})) }], { name: 'ContractError', code: 'too-large' }, { skipImages: true })
   })
 })
-
-it.todo('XC-UC-04-A1 Samuel receives images in item/image order — [owner: X0-I/FN-6 image integration] valid attachment.read/model fixture; image preparation failure queues no partial turn; W0 skipImages validates metadata and proves no fetch')

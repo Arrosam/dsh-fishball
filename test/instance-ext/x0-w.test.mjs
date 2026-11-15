@@ -10,7 +10,8 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { bootChild, contract } from '../support/instance-ext.mjs'
 
-const WATCHDOG = 'fishball-watchdog'
+// Any plugin id: the scoped bridge and attention.signal take the caller's id as given (X12, X8).
+const PLUGIN = 'fbtest-plugin'
 const ATTENTION = 'attention.signal'
 const TIMERFREE = 'interaction.timerfree'
 const ACCEPTED = Object.freeze({ accepted: true })
@@ -42,7 +43,7 @@ describe('X0-W X12 scoped bridge', () => {
   it('XW-P-01 an operation in the scope list reaches the host, with no new handshake', async (t) => {
     const { h, service } = await live(t)
     const handshakes = h.host.handshakes.length
-    const client = service.bridge(WATCHDOG, ['session.read'])
+    const client = service.bridge(PLUGIN, ['session.read'])
     assert.equal(typeof client.request, 'function')
     const result = await client.request('session.read', { sessionId: 's1', maxMessages: 1, maxBytes: 1 })
     assert.deepEqual(result, { messages: [], truncated: false })
@@ -52,7 +53,7 @@ describe('X0-W X12 scoped bridge', () => {
 
   it('XW-EP-01 an operation outside the scope list is refused forbidden, locally', async (t) => {
     const { h, service } = await live(t)
-    const client = service.bridge(WATCHDOG, ['session.read'])
+    const client = service.bridge(PLUGIN, ['session.read'])
     const before = h.host.requests.length
     assert.equal(await refusalOf(() => client.request('session.message', { sessionId: 's1', message: 'x', attachments: [] })), 'forbidden')
     assert.equal(h.host.requests.length, before, 'nothing reached the connector')
@@ -61,15 +62,15 @@ describe('X0-W X12 scoped bridge', () => {
   it('XW-EP-02 a scope list outside the instance required set is refused before any client exists', async (t) => {
     const { h, service } = await live(t)
     const before = h.host.requests.length
-    const value = await refusalOf(() => service.bridge(WATCHDOG, ['attachment.read']))
+    const value = await refusalOf(() => service.bridge(PLUGIN, ['attachment.read']))
     assert.ok(value !== undefined, 'the request is refused')
     assert.equal(h.host.requests.length, before, 'no request reached the connector')
   })
 
   it('XW-EP-03 two scoped clients are independent', async (t) => {
     const { h, service } = await live(t)
-    const read = service.bridge(WATCHDOG, ['session.read'])
-    const stop = service.bridge(WATCHDOG, ['session.stop'])
+    const read = service.bridge(PLUGIN, ['session.read'])
+    const stop = service.bridge(PLUGIN, ['session.stop'])
     assert.deepEqual(await read.request('session.read', { sessionId: 's1', maxMessages: 1, maxBytes: 1 }), { messages: [], truncated: false })
     assert.deepEqual(await stop.request('session.stop', { sessionId: 's1' }), { stopped: true })
     assert.equal(await refusalOf(() => stop.request('session.read', { sessionId: 's1', maxMessages: 1, maxBytes: 1 })), 'forbidden')
@@ -79,7 +80,7 @@ describe('X0-W X12 scoped bridge', () => {
 describe('X0-W X8 stateless attention', () => {
   it('XW-DT-01 with the capability, signal sends only importance and acknowledges acceptance', async (t) => {
     const { h, service } = await live(t, { capabilities: OPERATIONS })
-    assert.deepEqual(await service.attention.signal('fishball-fold-notify', { important: true }), ACCEPTED)
+    assert.deepEqual(await service.attention.signal(PLUGIN, { important: true }), ACCEPTED)
     const frames = attentionFrames(h)
     assert.equal(frames.length, 1, 'one attention frame')
     assert.deepEqual(frames[0].payload, { important: true })
@@ -87,14 +88,14 @@ describe('X0-W X8 stateless attention', () => {
 
   it('XW-DT-02 without the capability, signal is refused and nothing is sent', async (t) => {
     const { h, service } = await live(t, { capabilities: OPERATIONS.filter((operation) => operation !== ATTENTION) })
-    assert.equal(await refusalOf(() => service.attention.signal('fishball-fold-notify', { important: false })), 'unsupported-operation')
+    assert.equal(await refusalOf(() => service.attention.signal(PLUGIN, { important: false })), 'unsupported-operation')
     assert.equal(attentionWire(h.host).length, 0)
   })
 
   it('XW-ST-01 none → signal → reconnect without replay → dispose without clear', async (t) => {
     const { h, service } = await live(t, { capabilities: OPERATIONS })
     assert.equal(attentionWire(h.host).length, 0, 'nothing before a signal')
-    assert.deepEqual(await service.attention.signal('fishball-fold-notify', { important: true }), ACCEPTED)
+    assert.deepEqual(await service.attention.signal(PLUGIN, { important: true }), ACCEPTED)
     const original = h.host
     assert.equal(attentionFrames(h).length, 1)
     await h.reconnect({ capabilities: OPERATIONS })

@@ -46,7 +46,7 @@ const C = Object.freeze({
   tempPrefix: 'fbtest-ready-gate-',
   idType: 'string',
   // The existing notice path (X10) is outside the READY gate; queued is its documented wake outcome.
-  notice: Object.freeze({ pluginId: 'fishball-watchdog', dedupeKey: 'ready-gate-scope', text: 'a notice', wake: true }),
+  notice: Object.freeze({ pluginId: 'fbtest-plugin', dedupeKey: 'ready-gate-scope', text: 'a notice', wake: true }),
   noticeQueued: 'queued',
 })
 

@@ -1,6 +1,6 @@
 /**
  * Core's guards and their override report (task K3 freezes the vocabulary; design §5a.2;
- * R-FB-02, R-FB-09, R-FB-12, R-FB-13, R-HOST-11 (5); spike V3-S6 `86800d2` + round 2 `7c2230e`).
+ * R-FB-02, R-FB-09, R-FB-12, R-FB-13; spike V3-S6 `86800d2` + round 2 `7c2230e`).
  * Types; the runtime spellings are `constants.js`'s `GUARDS` beside this file (a change to one
  * changes both). F-GUARDS builds the patch rows, the self-reorder and the check, in
  * `packages/core/cordis.patch.yml`, `packages/core/ui/patch/` and `packages/core/src/guards/`.
@@ -19,8 +19,8 @@ export type GuardedRow =
 /** DSH-shipped agent preset rows: switched off by core's patch, never deleted (1.24, Q-S6-2 B). */
 export type ShippedPresetRow = 'preset-standard' | 'preset-ptc' | 'preset-cordis' | 'preset-minimal'
 
-/** The agent presets a guarded DSH offers: core's (the default) and fishball-watchdog's. */
-export type FishballAgentPreset = 'fishball' | 'watchdog'
+/** The one agent preset a guarded DSH offers: core's, the default (design `9a531192` §1.0, §7; requirements 1.37). */
+export type FishballAgentPreset = 'fishball'
 
 /** The policy core's patch sets, read back through public services only (S6 §3.5). */
 export interface IntendedPolicy {
@@ -43,11 +43,9 @@ export type ManagerTool = 'read' | 'read_image' | 'working_directory'
  * - `row:<id>`: a guarded row or a shipped preset row is enabled. An absent row counts as held,
  *   because it cannot run (S6's probe);
  * - `policy:<key>`: one `IntendedPolicy` value differs;
- * - `agent-presets`: `agentPresets.list()` offers a preset other than `fishball` / `watchdog`;
+ * - `agent-presets`: `agentPresets.list()` offers a preset other than `fishball`;
  * - `bundle-order`: core is not last in `dsh.profile.bundles`, so its patch may miss rows (R-FB-12);
  * - `manager-tools`: the resumed manager session's tools are not exactly `ManagerTool`.
- *
- * `fishball-hosted-settings` is never a guard and never appears here (R-HOST-11 (5)).
  */
 export type OverriddenGuard =
   | `row:${GuardedRow | ShippedPresetRow}`

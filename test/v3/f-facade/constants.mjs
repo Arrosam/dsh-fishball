@@ -134,8 +134,8 @@ export const GATE = Object.freeze({
  */
 export const PRESENT = Object.freeze({ blockType: 'text', unknownType: /unknown type/i })
 
-/** Watchdog's registration types (R-WD-08, R-INT-07: it never registers for `contributed:…`). */
-export const WATCHDOG_TYPES = Object.freeze([EVENT_TYPE.permission, EVENT_TYPE.settlement, EVENT_TYPE.retirement])
+/** A registration for other event types (R-INT-07: one registered for none of `contributed:…`). */
+export const OTHER_TYPES = Object.freeze([EVENT_TYPE.permission, EVENT_TYPE.settlement, EVENT_TYPE.retirement])
 
 /** DSH's own vocabulary (installed SDK). */
 export const DSH = Object.freeze({
@@ -175,8 +175,9 @@ export const FIXTURE = Object.freeze({
   modelText: 'fbtest ok',
   loggerName: 'fbtest-f-facade',
   tempPrefix: 'fbtest-f-facade-',
-  pluginFold: 'fbtest-fold-notify',
-  pluginWatchdog: 'fbtest-watchdog',
+  /** Any plugin ids: interception and attention.signal take the caller's id as given. */
+  plugin: 'fbtest-plugin',
+  pluginOther: 'fbtest-other-plugin',
   /** X's tools in C (E8) and C''s own (E6), each with a unique description the oracle finds. */
   x: Object.freeze([
     contributed('fbtest-x', 'lookup', 'FBTEST-X lookup a board item by key', { q: { type: 'string' } }),
@@ -207,5 +208,4 @@ export const WAIT = Object.freeze({ settleMs: 20000, quietMs: 300, pollMs: 25 })
 export const LATER = Object.freeze({
   remote: 'X-REMOTE (two DSH processes: the real connector C / C\' with its contributors, read through the façade of a real standalone or hosted Fishball)',
   status: 'F-STATUS (core\'s status shows the contributed-tool count, R-EXT-14 note)',
-  watchdog: 'WD-ROUTE + WD-WIRE (the real Watchdog row registered through fishballInstance next to the façade)',
 })

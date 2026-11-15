@@ -6,7 +6,7 @@
  * documentElement attributes, head/body appends, element creation, empty queries), `window`
  * (location, the module loader, listeners), the browser `fetch` the caller supplies, and timers.
  * Timers the page schedules are tracked so `clearTimers()` stops a status poll when a case ends.
- * Used by test/support/set-panel.mjs (V2 SET) and test/v3/core/page.mjs (V3 R-CORE).
+ * Used by test/v3/core/page.mjs (V3 R-CORE) and test/v3/embed/page.mjs (V3 R-EMBED).
  */
 import vm from 'node:vm'
 

@@ -46,10 +46,10 @@ R-BRD-01, 02, R-FN-01, R-MIG-01…05, R-COMPAT-01, R-SEC-01…04. Conventions: [
 - **Postconditions:** "connected" is not a timer on the answer.
 
 ### PLAT-UC-04 — Installing the plugin set makes an ordinary DSH Fishball
-**Req:** R-FB-01, R-FB-02, R-FB-09, R-FB-10, R-FB-12, R-FB-13, R-WD-16, R-ARCH-01, R-ARCH-06 · **Level:** integration (composition), e2e (page) · **Flags:** —
+**Req:** R-FB-01, R-FB-02, R-FB-09, R-FB-10, R-FB-12, R-FB-13, R-ARCH-01, R-ARCH-06 · **Level:** integration (composition), e2e (page) · **Flags:** —
 
 - **Actor:** owner of an ordinary DSH.
-- **Main flow:** install the four tarballs natively and restart → one Fishball manager session; the A-lite page (sidebar, navigation, new-session entries hidden and not focusable; shortcuts remapped or unbound); effective read-only with the private Skills exception; no new sessions can be created; the `fishball-recommended` tab; slim settings. DSH's plugin list shows four Fishball entries and **no** separate `fishball-ui`. `agentPresets.list()` is `[fishball, watchdog]` (`watchdog` if installed), default `fishball`; the four DSH-shipped presets (`standard`, `ptc`, `cordis`, `minimal`) are **switched off but still present** (not deleted); a new manager session runs `fishball` with exactly `read`, `read_image` and `working_directory`, read-only, and resumes the same in a new process (core checks its tool list, R-FB-13).
+- **Main flow:** install the four tarballs natively and restart → one Fishball manager session; the A-lite page (sidebar, navigation, new-session entries hidden and not focusable; shortcuts remapped or unbound); effective read-only with the private Skills exception; no new sessions can be created; the `fishball-recommended` tab; slim settings. DSH's plugin list shows four Fishball entries and **no** separate `fishball-ui`. `agentPresets.list()` is `[fishball]`, default `fishball`; the four DSH-shipped presets (`standard`, `ptc`, `cordis`, `minimal`) are **switched off but still present** (not deleted); a new manager session runs `fishball` with exactly `read`, `read_image` and `working_directory`, read-only, and resumes the same in a new process (core checks its tool list, R-FB-13).
 - **Alternative flows:**
   - A1. The owner overrides a guard row (e.g. re-enables `ui-subagent`, or switches a DSH-shipped agent preset back on) in their profile or the Plugins page → core keeps running, status `guards-overridden` naming that guard, one line on the page's status strip and one notice to Fishball; restoring it clears the report at the next check (app ready, `settings/document-updated` or `plugin-manager/changed`), with nothing published before app ready.
   - A2. The owner disables `fishball-core` → Fishball and its guards are off.
@@ -147,8 +147,8 @@ Each row fails exactly one check (and later checks would also fail); the expecte
 | --- | --- | --- |
 | 1 | board only | one `fishball-core-missing` line; boot ok |
 | 2 | fold-notify only | same |
-| 3 | Watchdog only | same; no Watchdog code runs (R-WD-01) |
-| 4 | all three, no core | three lines; boot ok |
+| 3 | *(withdrawn: Watchdog left V3, requirements 1.37)* | — |
+| 4 | both, no core | two lines; boot ok |
 
 ### PLAT-EP-05 — Secret leakage sweep
 **Req:** R-SEC-02, R-TOK-04 · **Level:** integration (full-run acceptance) · **Flags:** —
@@ -188,7 +188,7 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 | 4 | `fishball-shared` manifest | no `dsh` field: no bundle, row, `dsh.client` or service; not listed on any Plugins page |
 | 5 | every V3 package that imports `fishball-shared` | has it in `dependencies` and `bundleDependencies`; its packed tarball contains it |
 | 6 | contents of `fishball-shared` | every module in it is imported by **at least two** V3 packages; a module imported by only one package fails the check |
-| 7a | allowed edges **into** `fishball-shared` (TQ-R5 = B) | from `fishball-connector`, `fishball-embed-ui`, `fishball-core`, `fishball-instance`, `fishball-board`, `fishball-fold-notify`, `fishball-watchdog`, `fishball-hosted-settings`: all allowed |
+| 7a | allowed edges **into** `fishball-shared` (TQ-R5 = B) | from `fishball-connector`, `fishball-embed-ui`, `fishball-core`, `fishball-instance`, `fishball-board`, `fishball-fold-notify`, `fishball-hosted-settings`: all allowed |
 | 7b | edges **out of** `fishball-shared` | none to any V3 package |
 | 7c | other cross-package edges | unchanged: the feature plugins reach core only through the optional `fishballInstance?` inject; embed-UI imports no connector code (types from `./tools` only); the connector imports no Fishball-set package |
 | 8 | host DSH process of a running hosted setup (C + I + U, with the connector or embed-UI importing `fishball-shared`) | no module from `fishball-core`, the feature plugins or `fishball-hosted-settings` is loaded (module-load trace); `fishball-shared` modules may be |
@@ -237,12 +237,12 @@ Applies equally to core (R-FB-10). `fishball-hosted-settings` follows the same r
 ### PLAT-DT-02 — Standalone set completeness
 **Req:** R-BND-05, R-FB-07 · **Level:** integration · **Flags:** K (`plugin-set-incomplete`, D§8.2)
 
-| Rule | core | board | fold-notify | Watchdog | Core status | "watchdog is down" |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | on | on | on | on, loaded | ok | no |
-| 2 | on | — | — | — | ok; nothing reported (a feature that is not installed is not "missing", TQ-17 decided) | no |
-| 3 | on | on | on | on, incompatible (skipped) | reports Watchdog skipped | once per start |
-| 4 | on | on | on | off (owner) | reports nothing missing (K) | no |
+| Rule | core | board | fold-notify | Core status |
+| --- | --- | --- | --- | --- |
+| 1 | on | on | on | ok |
+| 2 | on | — | — | ok; nothing reported (a feature that is not installed is not "missing", TQ-17 decided) |
+| 3 | *(withdrawn: Watchdog left V3, requirements 1.37)* | | | |
+| 4 | *(withdrawn: Watchdog left V3, requirements 1.37)* | | | |
 
 ### PLAT-DT-04 — Core's bundle order and whether its guards apply
 **Req:** R-FB-12, R-FB-09, R-FB-02 · **Level:** integration (a real DSH per SDK) · **Flags:** —
@@ -275,7 +275,7 @@ Each rule runs the integration suite of every file of this directory that applie
 ## State Transitions
 
 ### PLAT-ST-01 — One offer (approval / question / plan review)
-**Req:** R-CON-05, R-CON-06, R-TOK-05, R-HOST-09, R-WD-09 · **Level:** unit · **Flags:** —
+**Req:** R-CON-05, R-CON-06, R-TOK-05, R-HOST-09 · **Level:** unit · **Flags:** —
 
 | # | From | Event | To |
 | --- | --- | --- | --- |
@@ -286,5 +286,5 @@ Each rule runs the integration suite of every file of this directory that applie
 | 5 | Live(P) | time passes / silence | Live(P) (no timer) |
 | 6 | Live(P) | P revoked | Live(user) (card in session) |
 | 7 | Live(P) | succession | Live(P'): the same request, offer revision + 1; the old id answers `expired` to any principal; a user answer during the succession settles the one request (S3 `b4dca86`) |
-| 8 | Live(P) | Watchdog commits `escalate` | Live(user card), Watchdog notified on settlement |
+| 8 | *(withdrawn: Watchdog left V3, requirements 1.37)* | | |
 | 9 | Live(P) | session ends / offer withdrawn | Retired; `retirement` to P |

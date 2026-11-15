@@ -23,10 +23,10 @@ export const CORE = Object.freeze({
   patchLabel: 'fbtest-v3-core',
   /**
    * F-GUARDS (design §5a.2, R-FB-02, R-FB-12): core's patch carries the guard rows. It may DISABLE the
-   * dsh-instance row, but it never inserts a row of the instance or of fishball-hosted-settings,
-   * nor a module of the instance package (R-BND-01, R-HOST-11 (5), R-ARCH-08 (2)).
+   * dsh-instance row, but it never inserts a row of the instance, nor a module of the instance
+   * package (R-BND-01, R-ARCH-08 (2)).
    */
-  neverInserted: Object.freeze(['dsh-instance', 'fishball-hosted-settings']),
+  neverInserted: Object.freeze(['dsh-instance']),
   fileScheme: 'file:',
   /** Core reaches the connector only for `./contract` (R-CORE; design §9.1 until F-STATUS drops it). */
   connectorAllowed: Object.freeze(['dsh-connector/contract']),
@@ -39,7 +39,7 @@ export const MOVED = Object.freeze({
   files: Object.freeze(['src/persona.js']),
 })
 
-/** R-CORE (4): the hosted-only sections' instance-owned home (later the fishball-hosted-settings source). */
+/** R-EMBED: the instance-owned home of its status line (client.status.js, HOST-EP-03 row 2). */
 export const CHILD_SETTINGS = Object.freeze({ folder: 'src/child-settings/', dir: path.join(V3.instance.dir, 'src', 'child-settings') })
 
 /**
@@ -108,11 +108,9 @@ export const TOKENS_WORKER = path.join(import.meta.dirname, 'tokens-worker.mjs')
 
 /** Owners of the rows R-CORE cannot check (v3-tasks.md at fb1cbd2). */
 export const LATER = Object.freeze({
-  place: 'I-PLACE (places the set and fishball-hosted-settings; replaces the V2 child-row insertion)',
+  place: 'I-PLACE (places the set; replaces the V2 child-row insertion)',
   host: 'I-HOST (lifecycle codes, fishball-off)',
-  guards: 'F-GUARDS (guard rows and guards-overridden)',
-  status: 'F-STATUS (core status: set completeness; never reports fishball-hosted-settings)',
+  status: 'F-STATUS (core status: set completeness)',
   standalone: 'F-GUARDS and S6 (standalone loading of core is not required in R-CORE)',
-  saved: 'unassigned in v3-tasks.md (the V2 hosted sections have no setting the instance saves; see the R-CORE test report)',
   e2e: 'E2E (W6 browser flows; no browser in this suite)',
 })

@@ -1,19 +1,20 @@
 /**
  * Vocabulary for the F-GUARDS cases: PLAT-UC-04 (composition), PLAT-DT-04, UIM-DT-01 rows 9, 10b,
  * 14, HOST-DT-03 rule 6 and HOST-UC-08 A3 and E2 (.runtime/reports/v3-remaining-plan.md, W2 row
- * F-GUARDS; docs/test-design/v3/11-platform.md, 10-embed-ui-matrix.md, 08-hosted.md).
+ * F-GUARDS; docs/test-design/v3/11-platform.md, 10-embed-ui-matrix.md, 08-hosted.md). The
+ * hosted-settings rows (HOST-DT-03 rule 6, HOST-UC-08 E2) left with that bundle (REMOVE-WD, design §1.0).
  *
  * Every guard value comes from the frozen K3 contract (packages/core/contracts/guards.d.ts), read as
  * declaration text with the K3 reader (../k3/declarations.mjs), so no product value is copied here:
  * the guarded rows, the shipped presets, the offered presets, the intended policy, the manager tools,
  * the report's statuses and the spelling of each overridden guard. Requirements: R-FB-02, R-FB-09,
- * R-FB-12, R-FB-13, R-HOST-11 (5); design §5a.2; spike V3-S6 (`86800d2`, `7c2230e`). None comes from
+ * R-FB-12, R-FB-13; design §5a.2; spike V3-S6 (`86800d2`, `7c2230e`). None comes from
  * an implementation.
  */
 import path from 'node:path'
 import { declarationTexts, model } from '../k3/declarations.mjs'
 import { FOLDER } from '../k3/constants.mjs'
-import { HOSTED_SETTINGS, V3 } from '../shared/constants.mjs'
+import { V3 } from '../shared/constants.mjs'
 
 const contract = model(declarationTexts(FOLDER.coreContracts))
 const declared = (name) => {
@@ -88,8 +89,6 @@ export const REPORT = Object.freeze({
 })
 if (!REPORT.ok || !REPORT.overridden) throw new Error('K3 GuardReport statuses not readable: ' + reportRaw)
 
-/** R-HOST-11 (5): never a guard, never named by the report. */
-export const NEVER_GUARDED = HOSTED_SETTINGS
 /** R-FB-01 / PLAT-UC-04 main: the component that ships inside core, never a plugin entry of its own. */
 export const UI_COMPONENT = 'fishball-ui'
 
@@ -119,7 +118,7 @@ export const OWNER = Object.freeze({
   presetRowOf: (id) => 'preset-' + id,
   /** File tools that also write (an owner widening the Fishball preset, R-FB-13). */
   writableFiles: Object.freeze({ read: true, readImage: true, write: true, edit: true }),
-  /** Read-only file tools (the stand-in for fishball-watchdog's preset). */
+  /** Read-only file tools (the extra preset stand-in's: it is reported for being offered, not for its tools). */
   readOnlyFiles: Object.freeze({ read: true, readImage: true, write: false, edit: false }),
 })
 
@@ -138,8 +137,13 @@ export const FIXTURE = Object.freeze({
   standinModule: path.join(import.meta.dirname, 'standin-row.mjs'),
   /** A stand-in dsh-instance: only records that it started (a real one would start a nested child). */
   instance: V3.instance.name,
-  hostedSettings: HOSTED_SETTINGS,
-  watchdog: Object.freeze({ name: 'fbtest-watchdog-presets', row: 'fbtest-preset-watchdog', order: 90 }),
+  /** An ordinary other bundle (R-ARCH-02: core refuses, hides or disables none). */
+  other: 'fbtest-other-plugin',
+  /**
+   * A bundle offering an agent preset that is not core's (K3 FishballAgentPreset is `fishball`
+   * alone, design §7): a guarded DSH reports it as `agent-presets`.
+   */
+  extraPreset: Object.freeze({ name: 'fbtest-extra-presets', row: 'fbtest-preset-extra', id: 'fbtest-extra', order: 90 }),
   /** Installed in the profile but never selected (PLAT-DT-04 rule 6). */
   deselected: 'fbtest-deselected',
   turnText: 'fbtest guard turn',
@@ -180,8 +184,7 @@ export const LATER = Object.freeze({
   wire: 'F-WIRE (core wiring: the one manager session, its notice to Fishball, the private Skills tool)',
   page: 'E2E-CORE (the A-lite page, shortcuts and the guards-overridden status-strip line in a browser)',
   pack: 'REL-PACK and X-MATRIX (native install of the four tarballs)',
-  place: 'I-PLACE (the instance writes the hosted child profile with core last and places fishball-hosted-settings)',
+  place: 'I-PLACE (the instance writes the hosted child profile with core last)',
   link: 'F-LINK (the manual token to the target)',
-  status: 'F-STATUS (core reports no missing member for fishball-hosted-settings)',
   matrix: 'X-MATRIX (the real dsh-instance package in a standalone DSH)',
 })

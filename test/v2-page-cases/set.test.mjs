@@ -12,7 +12,6 @@ import { BODY_SOUL, loadInstance } from '../support/body-soul-env.mjs';
 import { CASE as ENGINE_CASE, clone, inventory, provider } from '../support/provider-sync-engine.mjs';
 import { PREVIEW_LIFE_MS, SYNC_PLANTED, post, routeContext, syncHarness } from '../support/body-soul-sync.mjs';
 import { ACTIVE_SDK, parsedFrames, relayLink } from '../support/set-relay.mjs';
-import { EMBED_UI } from '../support/constants.mjs'
 import { FIXTURE as SDK_FIXTURE } from '../support/provider-sync-official.mjs';
 
 // Native settings are the editor. SET owns only lifecycle/notice/links in the child; model sync is
@@ -39,28 +38,10 @@ export const CASES = Object.freeze([
     expected: ['No model sync control, no duplicated plugin/model/config/recommendation/Watchdog editor or D2 obsolete controls.', FIXTURE.readonly, FIXTURE.unchanged, 'Allowed native destinations and explicit Fishball return work.'],
   },
   {
-    id: 'SET-UC-02', title: 'Restart only the exact owned child through existing lifecycle', technique: 'Use Case',
-    preconditions: ['Actor: owner; exact current child handle A host-owned; main and unrelated runtime fixtures tracked.'],
-    steps: ['Main: invoke existing lifecycle restart; confirm A stopped before starting B; refresh status and re-admit current generation.', 'Alternative: explicit Retry from failed state while main shell remains available.', 'Exception: ownership uncertain, stop/start failure or late A completion.'],
-    expected: ['Only exact owned child affected; no unsafe signal/second writer or main/unrelated process change.', 'Failure honestly visible; no stale completion claims ready or replaces B.', FIXTURE.unchanged],
-  },
-  {
     id: 'SET-UC-03', title: 'Preview and add only selected missing API-key providers', technique: 'Use Case',
     preconditions: ['Actor: owner on the main DSH dsh-instance card (the only sync entry point); ready child; disposable synthetic inventory and credentials only.', FIXTURE.providerA, FIXTURE.providerB, 'Target has separate existing provider/key.'],
     steps: ['Main: Check once; inspect missing provider metadata initially selected; deselect b; Add selected a; inspect per-entry result and fresh check.', 'Alternative: cancel/zero selection writes nothing; present/conflicting target retained.', 'Exception: unsupported auth, stale preview/source/child, concurrent Add, write failure or answer lost.'],
     expected: ['Only chosen provider/profile/key transferred create-only; unit of selection provider, not model.', 'Partial/unknown result truthful; no rollback/auto retry/default-model mutation; native child catalog reflects adds.', 'Browser receives no credentials.', FIXTURE.unchanged],
-  },
-  {
-    id: 'SET-EP-01', title: 'Render truthful current lifecycle status partitions', technique: 'EP',
-    preconditions: ['Independent ready, starting, stopped/failed, connector-missing and upgrade-required diagnostic fixtures.'],
-    steps: ['Render SET status and action availability for each partition.'],
-    expected: ['Truthful current state/reason, not all collapsed to ready; supported explicit Retry accessible outside failed frame.', 'No secret in public status.'],
-  },
-  {
-    id: 'SET-EP-02', title: 'Handle pending and failed status reads with explicit recovery', technique: 'EP',
-    preconditions: ['Status request held pending, then rejects; explicit retry fixture succeeds.'],
-    steps: ['Open SET; observe pending; complete failure; Retry explicitly.'],
-    expected: ['Pending/error/retry visible; no stale success hiding failure or automatic retry loop.'],
   },
   {
     id: 'SET-EP-03', title: 'Show empty missing-provider result without Add authority', technique: 'EP',
@@ -309,8 +290,9 @@ function boundaryAvailability(sdk) {
  * the task brief, never from the implementation. Seams, all real product code:
  * - src/slim/settings-relay.js: createSettingsRelayServer / createSettingsRelayClient over an
  *   in-memory transport pair (test-owned, below);
- * - src/child-settings/index.js (fishball-hosted-settings) apply(ctx) with a fake ctx whose registry collects the
- *   child Fetch routes, driven with real Request objects;
+ * - the child's lifecycle routes and the panel's hosted sections left with fishball-hosted-settings
+ *   (REMOVE-WD, design §1.0), so SET-UC-02, SET-EP-01 and SET-EP-02 are gone and the child side of
+ *   the relay is driven by raw frames only;
  * - model sync is main-only (user decision 2026-11-11): check/add go to the main card's owner routes
  *   (registerProviderSyncRoutes) over the real provider-sync bridge, coordinator, child target and
  *   engine of test/support/body-soul-sync.mjs (official disposable credential stores); the child row
@@ -322,35 +304,22 @@ function boundaryAvailability(sdk) {
 
 const SET = Object.freeze({
   route: Object.freeze({
-    status: '/api/dsh-instance/status',
-    retry: '/api/dsh-instance/retry',
-    restart: '/api/dsh-instance/restart',
     check: '/api/dsh-instance/models/check',
     add: '/api/dsh-instance/models/add',
   }),
-  method: Object.freeze({ get: 'GET', post: 'POST' }),
-  base: 'http://dsh.internal',
   site: Object.freeze({ header: 'sec-fetch-site', same: 'same-origin', cross: 'cross-site' }),
-  rowId: 'fishball-settings',
-  rowInject: Object.freeze(['nativeRuntime', 'connection']),
   /**
    * V3 rule (design e1e5577 §9.1 and §5a.2, R-HOST-04; Fishball decisions 2026-11-15, I-PLACE): no
    * launch-overlay row is `fishball-settings` any more. The generic panel is fishball-core's
-   * package-local chunk `client.settings.js` (its `settingsPlugin`), started by core's own client;
-   * the hosted-only sections with the relay routes are the instance-owned `fishball-hosted-settings`
-   * bundle (src/child-settings/, its own one-row patch), placed into the child profile with core.
+   * package-local chunk `client.settings.js` (its `settingsPlugin`), started by core's own client.
    */
-  hostedRowId: 'fishball-hosted-settings',
-  rowSource: Object.freeze(['src', 'child-settings', 'index.js']),
-  hostedPatch: path.join(BODY_SOUL.instance, 'src', 'child-settings', 'cordis.patch.yml'),
-  sharedChunk: Object.freeze(['src', 'child-settings', 'client.status.js']),
+  rowId: 'fishball-settings',
   panelClient: path.join(BODY_SOUL.core, 'client.settings.js'),
   panelChunk: Object.freeze({ owner: 'fishball-core', file: 'client.settings.js', plugin: 'settingsPlugin' }),
   /** The child profile's placed copies (the instance's placement: `<profile>/node_modules/<name>`). */
   placedModules: 'node_modules',
   /** The installed DSH whose installation a composed child runs (composedProfile's install anchor). */
   installAnchor: Object.freeze(['@deepseek-ai', 'dsh', 'package.json']),
-  instanceClient: EMBED_UI.statusLine,
   instanceManifest: path.join(BODY_SOUL.instance, 'package.json'),
   instancePatch: path.join(BODY_SOUL.instance, 'cordis.patch.yml'),
   relay: Object.freeze({
@@ -360,7 +329,6 @@ const SET = Object.freeze({
     timeout: 'settings-relay-timeout', closed: 'settings-relay-closed', failed: 'settings-relay-failed',
     invalid: 'invalid-request',
     requestKeys: Object.freeze(['id', 'op', 'payload', 'v']),
-    replyKeys: Object.freeze(['error', 'id', 'ok', 'result', 'v']),
     // Small bound so the time-bound cases need no long sleeps.
     shortTimeoutMs: 40,
   }),
@@ -377,20 +345,8 @@ const SET = Object.freeze({
   // Round-2 R2.1/R2.3: the status and Retry answers carry `detail` (null when not failed), and the
   // child routes keep the main card's answer shape (docs/planning/v2-set.md "Child Fetch routes").
   status: Object.freeze({
-    keys: Object.freeze(['code', 'detail', 'state']),
-    failed: 'failed',
     ready: Object.freeze({ state: 'ready', code: null, detail: null }),
     starting: Object.freeze({ state: 'starting', code: null, detail: null }),
-    unavailable: Object.freeze({ state: 'unavailable', code: null, detail: null }),
-    // Documented states/codes (docs/test-design/instance.md O1, I1-ST-02; §0.6 contract version).
-    partitions: Object.freeze([
-      Object.freeze({ state: 'ready', code: null }),
-      Object.freeze({ state: 'starting', code: null }),
-      Object.freeze({ state: 'stopped', code: null }),
-      Object.freeze({ state: 'failed', code: 'NATIVE_CHILD_EXITED' }),
-      Object.freeze({ state: 'connector-missing' }),
-      Object.freeze({ state: 'failed', code: 'NATIVE_CONTRACT_VERSION' }),
-    ]),
   }),
   // Identifiers of the moved items (docs/plugins/instance-extension-points.md §11.8 table, D2 amendment).
   obsolete: Object.freeze([/questionMode/, /approvalAnswerSeconds/, /answerSeconds/i, /watchdog/i, /recommend/i,
@@ -411,21 +367,21 @@ const deferred = () => { let resolve; const promise = new Promise((r) => { resol
 
 
 /**
- * The child row mounted with a fake ctx, its relay client reaching a real relay server whose
- * lifecycle handlers count calls. Model sync is main-only (user decision 2026-11-11): checkPost /
- * addPost go to the MAIN DSH's owner routes (registerProviderSyncRoutes), whose service is
- * `harness.sync` (syncHarness: the real bridge, coordinator and child engine) unless a case
- * overrides check/add. The child row itself registers no sync route.
+ * A real relay server (the main side) whose lifecycle handlers count calls, and the MAIN DSH's
+ * owner routes for model sync (user decision 2026-11-11): checkPost / addPost go to
+ * registerProviderSyncRoutes, whose service is `harness.sync` (syncHarness: the real bridge,
+ * coordinator and child engine) unless a case overrides check/add. The child side of the relay is
+ * raw frames on `link().child`: the hosted row that registered child routes left with
+ * fishball-hosted-settings (REMOVE-WD, design §1.0).
  */
-async function settingsFixture(t, { harness, status, retry, restart, check, add } = {}) {
+async function settingsFixture(t, { harness, check, add } = {}) {
   const { createSettingsRelayServer } = await loadInstance('src/slim/settings-relay.js');
   const { registerProviderSyncRoutes } = await loadInstance('src/slim/host/provider-sync-routes.js');
-  const row = await loadInstance(SET.rowSource.join('/'));
   const calls = { status: 0, retry: 0, restart: 0, check: 0, add: [] };
   const server = createSettingsRelayServer({
-    status: async () => { calls.status++; return status ? status(calls.status) : SET.status.ready; },
-    retry: async () => { calls.retry++; return retry ? retry(calls.retry) : SET.status.starting; },
-    restart: async () => { calls.restart++; return restart ? restart(calls.restart) : SET.status.starting; },
+    status: async () => { calls.status++; return SET.status.ready; },
+    retry: async () => { calls.retry++; return SET.status.starting; },
+    restart: async () => { calls.restart++; return SET.status.starting; },
   });
   const main = routeContext();
   registerProviderSyncRoutes(main.ctx, {
@@ -434,43 +390,13 @@ async function settingsFixture(t, { harness, status, retry, restart, check, add 
       add: async (payload) => { calls.add.push(clone(payload)); return add ? add(payload) : harness.sync.add(payload); },
     },
   });
-  const routes = new Map();
-  const listeners = new Set();
-  const disposers = [];
-  const ctx = {
-    connection: {
-      // DSH's fence: cross-site is refused, same-origin admitted (requestRejection → undefined).
-      requestRejection: ({ headers }) => (headers.get?.(SET.site.header) === SET.site.cross ? 403 : undefined),
-      fetch: { register(route) { routes.set(route.path, route); return () => routes.delete(route.path); } },
-    },
-    nativeRuntime: { onInstanceSettingsTransport(listener) { listeners.add(listener); return () => listeners.delete(listener); } },
-    effect(fn) { const dispose = fn(); if (typeof dispose === 'function') disposers.push(dispose); return dispose; },
-  };
-  row.apply(ctx);
   const texts = [];
   let current;
   function connect() {
     const link = relayLink();
     server.attach(link.main);
-    for (const listener of [...listeners]) listener(link.child);
     current = link;
     return link;
-  }
-  async function answer(response) {
-    const text = await response.text();
-    texts.push(text);
-    let json;
-    try { json = JSON.parse(text); } catch { json = undefined; }
-    return { status: response.status, json, text };
-  }
-  async function call(method, routePath, { body, site = SET.site.same } = {}) {
-    const route = routes.get(routePath);
-    assert.ok(route, 'child route registered: ' + routePath);
-    const headers = { 'content-type': 'application/json' };
-    if (site) headers[SET.site.header] = site;
-    const init = { method, headers };
-    if (body !== undefined) init.body = typeof body === 'string' ? body : JSON.stringify(body);
-    return answer(await route.fetch(new Request(SET.base + routePath, init)));
   }
   async function mainPost(routePath, body, site = SET.site.same) {
     const encoded = body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body);
@@ -478,16 +404,10 @@ async function settingsFixture(t, { harness, status, retry, restart, check, add 
     texts.push(result.text);
     return result;
   }
-  t.after(() => {
-    server.close();
-    for (const dispose of disposers.reverse()) { try { dispose(); } catch { /* already gone */ } }
-  });
+  t.after(() => server.close());
   return {
-    row, calls, routes, listeners, disposers, texts, connect, call,
+    calls, texts, connect,
     link: () => current,
-    statusRead: () => call(SET.method.get, SET.route.status),
-    retryPost: () => call(SET.method.post, SET.route.retry),
-    restartPost: () => call(SET.method.post, SET.route.restart),
     /** The main card's owner routes (the only sync entry point). */
     checkPost: (site) => mainPost(SET.route.check, undefined, site),
     addPost: (body, site) => mainPost(SET.route.add, body, site),
@@ -551,69 +471,32 @@ const EXECUTABLE = {
   // explicit return stay post-merge e2e: browser panel on both SDKs (docs/planning/v2-set.md "Remaining limits").
   async 'SET-UC-01'(t) {
     // V3 rule (design e1e5577 §9.1, §5a.2, R-HOST-04; Fishball 2026-11-15, I-PLACE): the launch
-    // overlay inserts neither settings row; the panel is core's chunk, the hosted sections a placed bundle.
+    // overlay inserts no settings row; the panel is core's chunk.
     const { operations } = await overlayOperations(SET.overlayRows);
     const overlayIds = insertedRows(operations).map((row) => row.id);
-    for (const id of [SET.rowId, SET.hostedRowId]) assert.equal(overlayIds.includes(id), false, 'the launch overlay must not insert ' + id);
+    assert.equal(overlayIds.includes(SET.rowId), false, 'the launch overlay must not insert ' + SET.rowId);
     // The generic panel: core's package-local chunk client.settings.js, whose plugin is fishball-settings.
     const registrations = [];
     new Function('window', fs.readFileSync(SET.panelClient, 'utf8'))({ __ModuleLoader__: { load: (entry) => registrations.push(entry) } });
     assert.deepEqual(registrations.map((r) => [r.id, r.chunk]), [[SET.panelChunk.owner, SET.panelChunk.file]], 'client.settings.js registers only core\'s chunk, no fishball-settings bundle');
     assert.equal(registrations[0].factory(() => ({}))[SET.panelChunk.plugin]?.name, SET.rowId, 'the chunk gives the fishball-settings panel plugin');
-    // R-HOST-11: the hosted-only sections are one row, from the bundle's own patch.
-    const { loadOverlayPatches } = await import(pathToFileURL(path.join(SDK_FIXTURE.runtime, '@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js')).href);
-    const hostedRows = insertedRows(loadOverlayPatches('fbset', SET.hostedPatch));
-    assert.deepEqual(hostedRows.map((r) => r.id), [SET.hostedRowId], 'fishball-hosted-settings\' patch inserts its one row');
-    const row = await loadInstance(SET.rowSource.join('/'));
-    assert.equal(row.name, SET.hostedRowId);
-    assert.deepEqual([...row.inject].sort(), [...SET.rowInject].sort(), 'host half needs nativeRuntime and connection');
-    // Never mounted in the main DSH: neither the main package's `dsh` field nor its own patch names
-    // either child row. (Since I-PLACE its `//files` comment names fishball-hosted-settings as the
-    // source it places, which mounts nothing.)
+    // Never mounted in the main DSH: neither the main package's `dsh` field nor its own patch names it.
     const mainMounts = JSON.stringify(JSON.parse(fs.readFileSync(SET.instanceManifest, 'utf8')).dsh) + fs.readFileSync(SET.instancePatch, 'utf8');
-    for (const id of [SET.rowId, SET.hostedRowId]) assert.equal(mainMounts.includes(id), false, 'main package does not mount ' + id);
-    // A composed child (placement, profile load and overlay; no process): the composed rows hold the
-    // hosted row once and no fishball-settings row, and the placed copies are byte copies of the
-    // sources, so the status line and the panel have one source in both processes.
+    assert.equal(mainMounts.includes(SET.rowId), false, 'main package does not mount ' + SET.rowId);
+    // A composed child (placement, profile load and overlay; no process): no composed row is
+    // fishball-settings, and the placed core is a byte copy of its source, so the panel has one
+    // source in both processes.
     const { composedProfile } = await loadInstance('src/native-runtime/index.js');
     const root = fs.realpathSync(await mkdtemp(path.join(os.tmpdir(), SET.tempPrefix)));
     t.after(() => rm(root, { recursive: true, force: true }));
     const composed = await composedProfile({ mainHome: root, installAnchor: path.join(SDK_FIXTURE.runtime, ...SET.installAnchor) });
     const composedIds = composed.entries.map((entry) => entry.id);
-    assert.equal(composedIds.filter((id) => id === SET.hostedRowId).length, 1, 'the composed child holds the fishball-hosted-settings row once');
     assert.equal(composedIds.includes(SET.rowId), false, 'no composed row is fishball-settings');
     const placed = (name, ...parts) => readFile(path.join(composed.paths.profile, SET.placedModules, name, ...parts));
-    assert.deepEqual(await placed(SET.hostedRowId, ...SET.sharedChunk), await readFile(SET.instanceClient), 'the placed client.status.js is a byte copy of the instance status line');
     assert.deepEqual(await placed(SET.panelChunk.owner, SET.panelChunk.file), await readFile(SET.panelClient), 'the placed core carries client.settings.js unchanged');
   },
 
-  // Executable remainder: relay seam (restart/retry relayed once, failure honest, no retry).
-  // Exact-owned-child stop/start ordering and late-A completion stay post-merge e2e: full child DSH boot.
-  async 'SET-UC-02'(t) {
-    let restartFails = false;
-    const f = await settingsFixture(t, {
-      restart: () => { if (restartFails) throw new Error('fixture restart refusal'); return SET.status.starting; },
-      retry: () => SET.status.starting,
-    });
-    f.connect();
-    const restarted = await f.restartPost();
-    assert.deepEqual(restarted.json, { ok: true, result: SET.status.starting }, 'restart answers {ok:true,result:{state,code}}');
-    assert.equal(f.calls.restart, 1, 'one restart per press');
-    restartFails = true;
-    const refused = await f.restartPost();
-    assert.equal(refused.json?.ok, false, 'a refused restart is not reported as success');
-    assert.equal(typeof refused.json?.error?.code, 'string', 'refusal carries a code for the alert');
-    assert.equal(f.calls.restart, 2, 'a refused restart is not retried');
-    const retried = await f.retryPost();
-    assert.deepEqual(retried.json, SET.status.starting, 'Retry answers the main host status {state, code, detail}');
-    assert.equal(f.calls.retry, 1);
-    f.link().lose();
-    const lost = await f.restartPost();
-    assert.equal(lost.json?.ok, false, 'restart with the relay down is refused, never success');
-    assert.equal(f.calls.restart, 2, 'nothing reaches the main host while the relay is down');
-  },
-
-  // Full chain: child routes → relay → main bridge → coordinator → child target/engine.
+  // Full chain: main owner routes → main bridge → coordinator → child target/engine.
   async 'SET-UC-03'(t) {
     const { h, f } = await syncedFixture(t, standardSync(t));
     const checked = await f.checkPost();
@@ -630,61 +513,6 @@ const EXECUTABLE = {
     const fresh = await f.checkPost();
     assert.deepEqual(sortedIds(fresh.json.result.missing), [ID.b], 'a fresh check lists only what is still missing');
     assertCleanTexts(h, f);
-  },
-
-  // Route-level partitions; the rendered tag/Retry placement stays post-merge e2e: browser.
-  async 'SET-EP-01'(t) {
-    let index = 0;
-    const f = await settingsFixture(t, { status: () => ({ ...SET.status.partitions[index], token: SET.sentinel }) });
-    const down = await f.statusRead();
-    assert.deepEqual(down.json, SET.status.unavailable, 'relay down → {state:unavailable, code:null, detail:null}');
-    f.connect();
-    for (; index < SET.status.partitions.length; index++) {
-      const expected = SET.status.partitions[index];
-      const answer = await f.statusRead();
-      assert.deepEqual(Object.keys(answer.json ?? {}).sort(), [...SET.status.keys], 'status answers exactly {state, code, detail}');
-      if (expected.state !== SET.status.failed) assert.equal(answer.json.detail, null, 'detail is null when not failed (R2.1)');
-      assert.equal(answer.json.state, expected.state, 'truthful state, not collapsed to ready');
-      if (Object.hasOwn(expected, 'code')) assert.equal(answer.json.code, expected.code, 'truthful safe code');
-      assert.equal(answer.text.includes(SET.sentinel), false, 'no secret in public status');
-    }
-  },
-
-  // Route-level; the rendered pending/error state stays post-merge e2e: browser.
-  async 'SET-EP-02'(t) {
-    const gate = deferred();
-    const f = await settingsFixture(t, {
-      status: async (n) => {
-        if (n === 1) return SET.status.ready;
-        if (n === 2) { await gate.promise; throw new Error('fixture status failure'); }
-        return SET.status.ready;
-      },
-      retry: () => SET.status.ready,
-    });
-    f.connect();
-    assert.deepEqual((await f.statusRead()).json, SET.status.ready);
-    const pending = f.statusRead();
-    let settled = false;
-    pending.then(() => { settled = true; });
-    await delay(SET.settleMs);
-    assert.equal(settled, false, 'the status read stays pending while the main host has not answered');
-    gate.resolve();
-    const failed = await pending;
-    assert.notEqual(failed.json?.state, SET.status.ready.state, 'a failed read never shows the stale ready');
-    await delay(SET.settleMs);
-    assert.equal(f.calls.status, 2, 'no automatic retry loop after a failed read');
-    const retried = await f.retryPost();
-    assert.deepEqual(retried.json, SET.status.ready, 'explicit Retry recovers');
-    assert.equal(f.calls.retry, 1);
-    // A throwing main handler answers the relay's typed failure (v2-set.md: settings-relay-failed).
-    const { createSettingsRelayServer, createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
-    const server = createSettingsRelayServer({ status: () => { throw new Error('boom'); }, retry: () => SET.status.ready, restart: () => SET.status.ready });
-    const client = createSettingsRelayClient({ timeoutMs: 1000 });
-    const link = relayLink();
-    server.attach(link.main);
-    client.attach(link.child);
-    t.after(() => { client.close(); server.close(); });
-    assert.deepEqual(await client.request('status', {}), { ok: false, error: { code: R.failed } });
   },
 
   // Route-level; "Nothing new to add" copy and the disabled Add stay post-merge e2e: browser.
@@ -739,7 +567,6 @@ const EXECUTABLE = {
     const saved = methods.map((name) => console[name]);
     for (const name of methods) console[name] = (...args) => { logs.push(args.map(String).join(' ')); };
     try {
-      await f.statusRead();
       const checked = await f.checkPost();
       for (const item of checked.json.result.missing) assert.deepEqual(Object.keys(item).sort(), ['id', 'models', 'name'], 'missing entries carry only id/name/models');
       for (const item of checked.json.result.notOffered) assert.deepEqual(Object.keys(item).sort(), ['id', 'name', 'reason'], 'notOffered entries carry only id/name/reason');
@@ -756,12 +583,8 @@ const EXECUTABLE = {
     assertCleanTexts(h, f);
     h.assertClean(logs);
     for (const id of [ID.a, ID.b]) assert.equal(logs.some((line) => line.includes(id)), false, 'the inventory is not logged');
-    // Relay replies carry only what the handler returned: the raw reply frames have no extra keys.
-    // (The sync answers above came from the main owner routes, never over the relay.)
-    for (const frame of parsedFrames(f.link().frames.toChild)) {
-      assert.equal(frame.v, R.version);
-      assert.ok(Object.keys(frame).every((key) => R.replyKeys.includes(key)), 'reply frame keys');
-    }
+    // Relay replies carry only what the handler returned (the sync answers above came from the
+    // main owner routes, never over the relay).
     const { createSettingsRelayServer, createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
     const server = createSettingsRelayServer({ status: () => SET.status.ready, retry: () => SET.status.ready, restart: () => SET.status.ready });
     const client = createSettingsRelayClient({ timeoutMs: 1000 });
@@ -850,11 +673,10 @@ const EXECUTABLE = {
   // Child-initiated sync is refused everywhere; the main sync never runs (user decision 2026-11-11).
   async 'SET-EP-14'(t) {
     const { h, f } = await syncedFixture(t, standardSync(t));
-    for (const gone of [SET.route.check, SET.route.add]) assert.equal(f.routes.has(gone), false, 'the child registers no ' + gone);
     const raw = relayLink();
     const { createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
     const replies = [];
-    // Raw frames on the same relay link the child row uses, as code in the child could send them.
+    // Raw frames on the relay link, as code in the child could send them.
     const link = f.link();
     link.child.onMessage((text) => replies.push(JSON.parse(text)));
     link.child.send(JSON.stringify({ v: R.version, id: 'ep14-check', op: 'check', payload: {} }));
@@ -896,10 +718,6 @@ const EXECUTABLE = {
     assertRefused(await f.checkPost(), undefined, 'a check while the child wire is gone is refused');
     assertRefused(await f.addPost({ checkId: 'fixture-check', ids: [ID.a] }), undefined, 'an add while the child wire is gone is refused');
     assertNoTransfer(h);
-    // The child's own relay going down never turns into a sync: the child has no sync route at all.
-    f.link().lose();
-    assert.equal(f.routes.has(SET.route.check), false, 'no child models/check route');
-    assert.equal(f.routes.has(SET.route.add), false, 'no child models/add route');
     const { createSettingsRelayClient } = await loadInstance('src/slim/settings-relay.js');
     const client = createSettingsRelayClient({ timeoutMs: 1000 });
     client.close();
@@ -959,9 +777,8 @@ const EXECUTABLE = {
   // Route/service level; the Cancel button clearing the UI list stays post-merge e2e: browser.
   async 'SET-ST-01'(t) {
     const { h, f } = await syncedFixture(t, standardSync(t));
-    await f.statusRead();
     await delay(SET.settleMs);
-    assert.equal(f.calls.check, 0, 'opening SET starts no sync');
+    assert.equal(f.calls.check, 0, 'nothing starts a sync by itself');
     assert.deepEqual(f.calls.add, []);
     const [one, two] = await Promise.all([f.checkPost(), f.checkPost()]);
     assert.equal(one.json?.result?.checkId, two.json?.result?.checkId, 'concurrent checks share one check in flight');
