@@ -135,6 +135,11 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.fishballCore, 'vendor')]),
   'contract.k3-host-services': suite('K3 host-only service and core contract freeze', v3('contract/k3-host-services'),
     [sub(PACKAGE.dshConnector, 'host-services'), sub(PACKAGE.fishballCore, 'contracts')]),
+  // K3a reads core's contracts and patch against the connector's published schema and tools, and
+  // scans the DSH-side package folders for imports of core.
+  'contract.k3a-core-seams': suite('K3a core-side seams: own MCP-surface copy, hosted import names, Connect, fishball-ui seam', v3('contract/k3a-core-seams'),
+    [sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore), sub(PACKAGE.dshConnector, 'host-services'), ...CONNECTOR_CONTRACTS,
+      all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance)]),
   'contract.package-boundaries': suite('package boundaries, imports, packing (R-SHARED, PLAT-EP-07)', v3('contract/package-boundaries'),
     [...Object.values(PACKAGE).map(all)]),
   'contract.embed': suite('connector-ui package and the moved client (R-EMBED)', v3('contract/embed'),
