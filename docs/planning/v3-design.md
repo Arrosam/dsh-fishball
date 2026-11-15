@@ -20,10 +20,10 @@ and "dsh的connector侧的插件间可以share一个包，fishball侧的插件�
 ```text
  DSH side (exposes a DSH over MCP to any agent)          Fishball side (one MCP client agent)
  ┌──────────────────────────────────────────────┐        ┌──────────────────────────────────────┐
- │ fishball-connector      MCP backend          │◄─ MCP ─┤ fishball-core   backend: session,    │
- │ fishball-embed-ui       its frontend         │ +OAuth │                 preset, link, Connect│
- │ fishball-instance       hosted-child helper  │        │ fishball-ui     every UI change,     │
- │ fishball-connector-adapter  MCP client row   │        │                 window style         │
+ │ dsh-connector           MCP backend          │◄─ MCP ─┤ fishball-core   backend: session,    │
+ │ dsh-connector-ui        its frontend         │ +OAuth │                 preset, link, Connect│
+ │ dsh-instance            hosted-child helper  │        │ fishball-ui     every UI change,     │
+ │ dsh-connector-adapter   MCP client row       │        │                 window style         │
  │ dsh-connector-shared    library              │        │ fishball-board  board tools          │
  └──────────────────────────────────────────────┘        │ fishball-shared library              │
    only coupling: the connector's public MCP surface      └──────────────────────────────────────┘
@@ -31,13 +31,13 @@ and "dsh的connector侧的插件间可以share一个包，fishball侧的插件�
 
 | Side | Package | Installed in | Owns |
 | --- | --- | --- | --- |
-| DSH | `fishball-connector` | a DSH to expose | the MCP endpoint and OAuth AS for **any** agent: tokens, pairs and names, mailbox, routing, hand-over, contribution service; every operation and all state behind embed-UI; its own settings page (tokens, limits, approval port) |
-| DSH | `fishball-embed-ui` | beside the connector (requires it) | draws only: the sidebar fish and its light, the **window** onto the hosted child's DSH page (with an instance) or a hint (without), the notify prompt; declares the `notify` tool, handled by the connector; no cards in main-DSH sessions; marks, Hand over and records per Q-G4/Q-G5 |
-| DSH | `fishball-instance` | a host DSH | a private child DSH: launch, lifecycle, plugin installation **by package name or tarball** from its settings, the token import into the child's credential store, model sync, the child locator; its own settings page; imports no Fishball code |
-| DSH | `fishball-connector-adapter` | a DSH that uses another DSH's connector | a stock `dsh-mcp-client` row with OAuth (§5.5b) |
+| DSH | `dsh-connector` | a DSH to expose | the MCP endpoint and OAuth AS for **any** agent: tokens, pairs and names, mailbox, routing, hand-over, contribution service; every operation and all state behind embed-UI; its own settings page (tokens, limits, approval port) |
+| DSH | `dsh-connector-ui` | beside the connector (requires it) | draws only: the sidebar fish and its light; the **window**, which opens only the hosted child's Fishball page; a hint when no child is running (no instance, or only an external agent connected) to go to the external instance's page (Q-G3); the notify prompt; the managed marks and Hand over / Take back (Q-G5); declares the `notify` tool, handled by the connector; no cards (Q-U2), no inline records (Q-G4) |
+| DSH | `dsh-instance` | a host DSH | a private child DSH: launch, lifecycle, plugin installation **by package name or tarball** from its settings, the token import into the child's credential store (`dsh-agent-token`) with the URL in `dsh-instance.targetUrl`, model sync entirely (writing the child's own DSH model settings, Q-G7), the child locator; its own settings page; imports no Fishball code |
+| DSH | `dsh-connector-adapter` | a DSH that uses another DSH's connector | a stock `dsh-mcp-client` row with OAuth (§5.5b) |
 | DSH | `dsh-connector-shared` | inside the DSH-side tarballs that use it | modules more than one DSH-side package uses |
-| Fishball | `fishball-core` | a Fishball DSH | backend: the manager session and preset, the MCP link, Connect, interception service, status, card store, pairing, non-UI guard rows, its own settings page |
-| Fishball | `fishball-ui` | a Fishball DSH (requires core) | every UI change inside Fishball: the A-lite page, UI guard rows, Recommended tab, status strip, pairing warning, ask cards, the two settings entries, the window style; no reply folding |
+| Fishball | `fishball-core` | a Fishball DSH | backend: the manager session and preset, the MCP link, Connect, interception service, status, card store, pairing, non-UI guard rows, its own settings page; runs normally without `fishball-ui`, with no status hint (Q-G1) |
+| Fishball | `fishball-ui` | a Fishball DSH (requires core) | every UI change inside Fishball: the A-lite page, UI guard rows, Recommended tab, status strip, pairing warning, ask cards, the two settings entries, the window style; no reply folding; without core it logs `fishball-core-missing` and changes nothing (Q-G2) |
 | Fishball | `fishball-board` | a Fishball DSH | board tools and archive |
 | Fishball | `fishball-shared` | inside the Fishball-side tarballs that use it | modules more than one Fishball-side package uses |
 
@@ -51,13 +51,49 @@ and "dsh的connector侧的插件间可以share一个包，fishball侧的插件�
 | 1 | `core/vendor/mcp-schema/` is generated from the connector's `mcp-schema` (F-LINK) | core keeps its **own** copy of the MCP-surface constants it needs, in `fishball-shared`; no generator reads the connector; drift is caught by a contract test against the connector's real `tools/list` and metadata (decided item D1) |
 | 2 | 17 core files import `fishball-connector/contract` (V2 path); core peers on `fishball-connector` | REMOVE-V2 (Q-E2 A) deletes the V2 child path; the peer goes |
 | 3 | the instance bundles core and the features (`bundled/`, `RUNTIME.bundledPlugins`, core-last placement, `fishball-hosted-settings`) | the instance installs whatever its settings name, by package name or tarball spec, through DSH's own plugin installation; no ordering rule; core and ui reorder themselves (R-FB-12) |
-| 4 | the instance's child rows import core (`native-child.js`, the `mcp-credential` receiver handing the value to core, K3a `importToken` / `hasCredential`) | the child-side row (instance code) writes the value into the child's credential store under `fishball-target-token`; core reads that reference; presence is DSH's `credentials.describe`; K3a is void (Q-G6 for the contract) |
+| 4 | the instance's child rows import core (`native-child.js`, the `mcp-credential` receiver handing the value to core, K3a `importToken` / `hasCredential`) | the child-side row (instance code) writes the value into the child's credential store under `dsh-agent-token`; core reads that reference; presence is DSH's `credentials.describe`; K3a is void (Q-G6 for the contract) |
 | 5 | `fishball-shared` is used by both sides: the admin protocol and provider-sync (instance host + core's `slim/child` halves), `files` (instance + core), `redact` (connector + instance) | split per side. The admin protocol, provider-sync (codec, engine, host) and `redact` move to `dsh-connector-shared`; their child halves move from core's `slim/child` into the instance's own child-side row, because applying model settings and admin operations in a child DSH is generic DSH work. `files` is duplicated: one copy in each library. `fishball-shared` keeps the core/ui contract and Fishball's own constants |
-| 6 | the adapter is Fishball-only and checks for the `/api/fishball` paths and the `fishball` scope | the adapter is a client of **this connector**, not of Fishball; the check stays but is a check for a `fishball-connector` endpoint (a DSH-side package naming its own server), so no Fishball-side code is involved (decided D2) |
-| 7 | the `fishball` OAuth scope and `fishball:pair`, the `/api/fishball/*` paths, `fishball_id`, the `fishball-events` resource and the `*_fishball` tool names | the connector's own namespace: names of the DSH-side package `fishball-connector`, offered to every agent alike; not Fishball-only behaviour (decided D3); renaming is Q-G8 |
-| 8 | `message_fishball` / `ask_fishball` and the designated "Fishball" principal | generic: any paired agent can be the designated principal; the names stay (Q-G8) |
+| 6 | the adapter is Fishball-only and checks for the `/api/fishball` paths and the `fishball` scope | the adapter is `dsh-connector-adapter`, a client of a `dsh-connector` endpoint; its check reads `/api/agent/mcp`, `/api/agent/oauth` and the `agent` scope (§1.0c); no Fishball-side code is involved |
+| 7 | the `fishball` OAuth scope and `fishball:pair`, the `/api/fishball/*` paths, `fishball_id`, the `fishball-events` resource and the `*_fishball` tool names | renamed neutrally (§1.0c, Q-G8 = B) |
+| 8 | `message_fishball` / `ask_fishball` and the designated "Fishball" principal | renamed `message_agent` / `ask_agent`, "designated agent" (§1.0c) |
 | 9 | embed-UI's hosted-child page, status, Retry and model-sync trigger came from the instance's locator, with Fishball wording | the window shows the child's DSH page generically; Fishball wording is `fishball-ui`'s styling inside the page |
 | 10 | the `fishballInstance` X1–X19 members the instance used to provide | already moved to core in V3 (Fishball side only) |
+
+### 1.0c Neutral names (requirements 1.41 Q-G8 = B, Q-G9 = B)
+
+Every DSH-side name that said "fishball" is renamed, because the DSH side serves any agent. The
+Fishball side keeps its names. Text written before 1.41 reads with this table.
+
+| Kind | Old | New |
+| --- | --- | --- |
+| Package | `fishball-connector` | `dsh-connector` |
+| Package | `fishball-embed-ui` | `dsh-connector-ui` |
+| Package | `fishball-instance` | `dsh-instance` |
+| Package | `fishball-connector-adapter` | `dsh-connector-adapter` |
+| Library | `fishball-shared` (DSH-side half) | `dsh-connector-shared` |
+| MCP endpoint | `/api/fishball/mcp` | `/api/agent/mcp` |
+| OAuth issuer | `/api/fishball/oauth` | `/api/agent/oauth` |
+| Token endpoint | `/api/fishball/oauth/token` | `/api/agent/oauth/token` |
+| Protected-resource metadata | `/.well-known/oauth-protected-resource/api/fishball/mcp` | `/.well-known/oauth-protected-resource/api/agent/mcp` |
+| AS metadata | `/.well-known/oauth-authorization-server/api/fishball/oauth` | `/.well-known/oauth-authorization-server/api/agent/oauth` |
+| OAuth scope | `fishball`, `fishball:pair` | `agent`, `agent:pair` |
+| Event resource | `fishball-events`, `fishball://events` | `agent-events`, `dsh-agent://events` |
+| Authorization parameter | `fishball_id` | `agent_id` |
+| Tools for sessions | `message_fishball`, `ask_fishball` | `message_agent`, `ask_agent` |
+| Routing setting | `routing.fishballToken` | `routing.agentToken` (the designated agent) |
+| Refusal codes | `no-fishball` | `no-agent` |
+| Host-only services | `fishballConnectorTools`, `fishballConnectorHandover`, `fishballConnectorTokens`, `fishballChild` | `dshConnectorTools`, `dshConnectorHandover`, `dshConnectorTokens`, `dshInstanceChild` |
+| Contributor metadata key | `io.github.dsh-fishball/contributor` | `io.github.dsh-connector/contributor` |
+| Storage domains | `fishball_tokens`, `fishball_oauth`, `fishball_intake` | `dsh_connector_tokens`, `dsh_connector_oauth`, `dsh_connector_intake` |
+| Generated token prefix | `fbt_` | `dsht_` |
+| Child credential reference (Q-G6) | (new) | `dsh-agent-token` |
+| Child target URL setting (Q-G6) | (new) | `dsh-instance.targetUrl` |
+| Notify tool | (new) | `dsh-connector-ui.notify` |
+| Fishball-only words in the connector | "designated Fishball", "Fishball principal" | "designated agent", "principal" |
+
+Unchanged: `fishball-core`, `fishball-ui`, `fishball-board`, `fishball-shared` (Fishball side), and
+the separate project `dsh-fishball-watchdog`, named by the user. Fishball's own `identity.id` is
+sent as `agent_id`; ids keep the `fb-` prefix core generates.
 
 ### 1.0a Earlier text (kept for reference; superseded where §1.0 differs)
 
@@ -544,7 +580,7 @@ a reinstall replaces it (§5.4; R6 = B, R8).
   the instance calls `createHosted` and sends the value **once** over the authenticated lifecycle
   wire (mutual HMAC proof, `src/native-runtime/wire.js`) on the channel `mcp-credential`, after
   `auth accepted`. The child-side receiver (instance code in the child) writes it into the **child
-  DSH's credential store** under the documented reference `fishball-target-token` and drops it
+  DSH's credential store** under the documented reference `dsh-agent-token` and drops it
   (requirements 1.39: no cross-side code call). Core reads its import from that reference and,
   once the target accepts it, saves its own copy by R9 (below) and unsets the reference. Whether a
   credential is present is DSH's own `credentials.describe`, not a core call. The host keeps
@@ -1135,7 +1171,7 @@ reports `fishball-off` (R-FB-10).
   - poll once on every (re)connect.
 - **The credentials (requirements 1.31: no token is ever set by hand):**
   - **hosted with the same-DSH connector:** the instance's one-time import, read from the child
-    credential reference `fishball-target-token` (§5.4); core uses it as its OAuth client secret with its fishball id as the client id
+    credential reference `dsh-agent-token` (§5.4); core uses it as its OAuth client secret with its fishball id as the client id
     (`ClientCredentialsProvider`, §5.5);
   - **standalone, and hosted with a remote target:** the grant from **Connect** (§6.3a); core
     holds no token value;
