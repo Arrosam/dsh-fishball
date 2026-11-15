@@ -16,8 +16,9 @@
  *                  (Fishball 2026-11-14 #3; fakes.mjs mailboxPort)
  *       pairs      K1 `PairStore` (list, pairOf, byPrincipal, onChange; fake)
  *       tokens     K1 `TokenRegistry` (get, list in native-settings order, onRevoked; fake). An
- *                  entry's enabled state is `get(entryKey).enabled`; `onRevoked` ends the
- *                  entry's management in W3 (Fishball 2026-11-14 #1)
+ *                  entry's enabled state is `get(entryKey).enabled`. Routing no longer subscribes
+ *                  to `onRevoked` (C-REVOKE step 1): a revocation ends management through
+ *                  `endPrincipal`, which C-REVOKE's own handler calls
  *       presence   K1 `Presence` (isConnected, onChange; fake; CONNECTED = an open listen stream)
  *       settings   `{get() → {agentToken?: EntryKey, maxQueuedInputs?: number}, onChange(fn) →
  *                  dispose}`: the live `routing.agentToken` and `maxQueuedInputs` (unset =
@@ -57,6 +58,9 @@
  *                                 (routing/index.js JSDoc; on the managed chain, merge review fix 1)
  *     withdraw(offerId) → Promise<boolean>
  *                                 the session's call ended: the offer is retired `withdrawn`
+ *     endPrincipal(entryKey, {freshRetirements}) → Promise<{principalKey, sessions, offers}>
+ *                                 C-REVOKE step 1: ends the entry's principal's management and
+ *                                 retires its live offers `revoked` (test/v3/dsh-connector/revocation)
  *     close() → Promise<void>     before the storage goes away
  *   }
  *
