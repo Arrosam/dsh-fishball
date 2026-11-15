@@ -12,12 +12,10 @@
  * - README: the "Managed state" section, ManagedState in "Internal module interfaces", the user
  *   decisions K1c-1 … K1c-4, and the "Left to a task" table no longer leaving C-ROUTE notice codes
  *   or "release emits nothing?" open;
- * - core's vendored copy (packages/core/vendor/) equals its connector source byte for byte.
+ * - (core's vendored copy was compared byte for byte until F-OWN-SCHEMA removed it, design §1.0b row 1.)
  *
  * ManagedState's behaviour is C-ROUTE's (it builds the one implementation); no row tests it here.
  */
-import path from 'node:path'
-import { REPO } from '../../../support/constants.mjs'
 
 /** The K1c runtime constant and its exact content (spec item 1). */
 export const MANAGED_REFUSAL_NAME = 'MANAGED_REFUSAL'

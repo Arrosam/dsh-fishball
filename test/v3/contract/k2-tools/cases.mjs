@@ -20,7 +20,6 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { pathToFileURL } from 'node:url'
 import { REPO } from '../../../support/constants.mjs'
 import {
   API, CALL_CODE, DESCRIPTION_MAX_BYTES, EMIT_CODE, EURO, EVENT_LIMITS, EXTERNAL_NAME_AMEND, FIXTURE, GRAMMAR, LATER, LIMIT_KEYS,
@@ -286,7 +285,7 @@ export function registerK2Cases(sdk) {
 
 /**
  * K2-AMEND-1 (DECIDED #W3-2, Equivalence Partitioning: the frozen value, its relation to the
- * separator, the contract texts, core's vendored copy, and public names with 0, 1 and n dots).
+ * separator, the contract texts, the absence of core's vendored copy (F-OWN-SCHEMA), and public names with 0, 1 and n dots).
  */
 export function registerExternalNameCases(sdk) {
   const A = EXTERNAL_NAME_AMEND

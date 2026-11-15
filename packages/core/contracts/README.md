@@ -65,7 +65,7 @@ state under published names and as core's own copy of the MCP surface. K3a's ear
   `connect.clientMetadataUrl` (required, no default), the `needs-configuration` codes (PROPOSED),
   the loopback `/callback` and the web callback path (PROPOSED). Core passes `identity.id` as
   `agent_id`.
-- **MCP surface** (`MCP`, `LINK`): core's own values; `test/v3/k3a/` compares `MCP` with the
+- **MCP surface** (`MCP`, `LINK`): core's own values; `test/v3/contract/k3a-core-seams/` and `test/v3/contract/own-schema/` compare `MCP` with the
   connector's published `tools/list` and OAuth metadata, so a K1 change shows as a failing row.
   F-OWN-SCHEMA repointed core's code to these values and deleted `vendor/` and its generator.
 - **fishball-ui** (`UI_SEAM`, `ui.d.ts`): fishball-ui reads `fishballInstance.ui` with `ctx.get`;

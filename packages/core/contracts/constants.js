@@ -178,7 +178,8 @@ const ISSUER_PATH = '/api/agent/oauth'
  * and `src/link/schema.js` holds the pure rules derived from them (id, name, event type, issuer).
  * The names are those of design §1.0c (requirements 1.41 Q-G8 = B).
  *
- * Drift is caught by the contract test `test/v3/k3a/`, which compares every value here with what
+ * Drift is caught by the contract tests `test/v3/contract/k3a-core-seams/` and
+ * `test/v3/contract/own-schema/`, which compare every value here with what
  * the connector publishes (its `tools/list` definitions and its OAuth metadata documents). A value
  * changes here only after the connector's own K1 changed it; the test then names the difference.
  *

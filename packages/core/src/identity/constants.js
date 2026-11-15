@@ -59,7 +59,7 @@ export const HELD_STATES = Object.freeze([
 ])
 
 /**
- * The link status while pairing holds it. K1's `TargetState` has no pairing word, so a held link
+ * The link status while pairing holds it. The link's target states (`LINK.state`) have no pairing word, so a held link
  * reports that the target does not let this token work (`token-refused`, `TOKEN_REFUSED`); the
  * pairing state says why. Not retried: the hold lasts until a choice or a settings change.
  */

@@ -49,9 +49,9 @@ const CONNECTOR_CONTRACTS = Object.freeze([
  * reached only from index.js (CONNECTOR_BOOT); the package's manifest is in that set too.
  */
 const CONNECTOR_CORE = Object.freeze(['constants', 'digest', 'errors', 'text'].map((name) => `${PACKAGE.dshConnector}/src/${name}.js`))
-/** The connector's manifest: k1 reads its dependencies, core's vendor script its export map. */
+/** The connector's manifest: k1 reads its dependencies. */
 const CONNECTOR_MANIFEST = PACKAGE.dshConnector + '/package.json'
-/** core's link and the vendored K1 copy every link-side module imports (core/src/link → vendor, contracts). */
+/** core's link and its own K3a contracts every link-side module imports (core/src/link → contracts; F-OWN-SCHEMA). */
 const CORE_LINK = Object.freeze([sub(PACKAGE.fishballCore, 'src', 'link'), sub(PACKAGE.fishballCore, 'contracts')])
 
 /**
@@ -80,7 +80,12 @@ const suite = (description, files, triggers) => Object.freeze({ description, fil
  */
 export const V3_SUITES = Object.freeze({
   'contract.own-schema': suite('core-owned MCP surface and real connector drift (F-OWN-SCHEMA)', v3('contract/own-schema'),
-    [sub(PACKAGE.fishballCore, 'contracts'), PACKAGE.fishballCore + '/src/*', PACKAGE.fishballCore + '/src/!(slim)/**', top(PACKAGE.fishballCore), sub(PACKAGE.fishballCore, 'ui'), all(PACKAGE.fishballBoard), all(PACKAGE.fishballShared), ...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'src', 'mcp'), sub(PACKAGE.dshConnector, 'host-services')]),
+    [sub(PACKAGE.fishballCore, 'contracts'), PACKAGE.fishballCore + '/src/*', PACKAGE.fishballCore + '/src/!(slim)/**', top(PACKAGE.fishballCore), sub(PACKAGE.fishballCore, 'ui'),
+      // The absence rows must rerun if a generated copy or its generator comes back.
+      sub(PACKAGE.fishballCore, 'vendor'), sub(PACKAGE.fishballCore, 'scripts'), all(PACKAGE.fishballBoard), all(PACKAGE.fishballShared), ...CONNECTOR_CONTRACTS,
+      // What the real-connector rows boot (as dsh-connector.mcp-tools).
+      sub(PACKAGE.dshConnector, 'src', 'mcp'), sub(PACKAGE.dshConnector, 'src', 'pairs'), sub(PACKAGE.dshConnector, 'src', 'mailbox'),
+      sub(PACKAGE.dshConnector, 'src', 'schema-value'), ...CONNECTOR_CORE, sub(PACKAGE.dshConnector, 'host-services')]),
   'dsh-connector.tokens': suite('token entries, generation, revocation signal (C-TOKENS)', v3('dsh-connector/tokens'),
     [sub(PACKAGE.dshConnector, 'src', 'tokens'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector.pairs': suite('pair store, pair / set_name, names (C-PAIR)', v3('dsh-connector/pairs'),
@@ -120,7 +125,9 @@ export const V3_SUITES = Object.freeze({
   'fishball-core.link': suite('MCP link (F-LINK)', v3('fishball-core/link'),
     [...CORE_LINK, top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
   'fishball-core.identity': suite('identity, pairing decisions, token-revoked (F-PAIR)', v3('fishball-core/identity'),
-    [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+    [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS,
+      // Its name rows read the own-schema suite's constants.
+      'test/v3/contract/own-schema/constants.mjs']),
   // The strip view is core's ui/status until F-UI moves it; the line reads the link's target rule.
   'fishball-core.status': suite('status, strip view, set completeness, guards notice (F-STATUS)', v3('fishball-core/status'),
     [sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballCore, 'ui', 'status'), ...CORE_LINK]),

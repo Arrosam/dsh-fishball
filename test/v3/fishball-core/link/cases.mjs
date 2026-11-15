@@ -17,9 +17,7 @@ import { assertNoGeneratedSchema } from '../../contract/own-schema/absence.mjs'
  * that need a later task are `todo` and name it. Every tunable value is K1's (constants.mjs).
  */
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
-import os from 'node:os'
 import path from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
@@ -77,10 +75,6 @@ async function assertRefusedBeforeAnyRequest(t, sdk, url, host) {
 
 /** Core's own source files under `dir` (relative), JS only. */
 const sourceFiles = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir, { recursive: true }).map(String).filter((f) => JS.test(f)) : [])
-/** Every regular file under `dir`, as sorted paths relative to it ([] when `dir` is missing). */
-const treeFiles = (dir) => (fs.existsSync(dir)
-  ? fs.readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => path.relative(dir, path.join(e.parentPath, e.name))).sort()
-  : [])
 
 export function registerFLinkCases(sdk) {
   // ---------------------------------------------------------------- REM-UC-02 (Use Case, first)
