@@ -21,7 +21,10 @@
  * `false` also answers an event that is gone because its box was dropped (a delete), and a fresh
  * retirement into that box would never be polled. So C-REVOKE drops a revoked pair's mailbox only
  * after routing's `revoked` retirements for it have run (the user's decision at the W3 merge,
- * option a); this module does not check for a dropped box itself.
+ * option a; `endPrincipal` resolves once they have); this module does not check for a dropped box
+ * itself. For a delete C-REVOKE also turns fresh retirements off (`freshRetirements: false`, the
+ * user's review note): the box is dropped next, so a retirement committed into it is a write
+ * nobody polls. A disable keeps them on, because the held box is pollable again on re-enable.
  * An `ask` is not retired when management ends: it is not an offer for revocation (K1
  * OFFER_TYPES), and its asker keeps waiting for the answer of the pair that got it.
  */
@@ -31,15 +34,22 @@ import { EVENT_TYPE, OFFER_TYPES } from '../../mcp-schema/index.js'
  * @param {object} deps
  * @param deps.mailbox - the K1 `Mailbox` port
  * @param {(subject: object, draft: object) => Promise<object>} deps.produce - the one commit path (index.js)
+ * @param {(error: unknown) => void} deps.onRetireFailed - logs a failed retirement of `retireSession`
  * @returns the ledger
  */
-export function createOfferLedger({ mailbox, produce }) {
+export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
   /** offerId → {type, sessionId, principalKey, eventId, acked, answer?}; `answer` resolves an ask's waiting call. */
   const live = new Map()
 
-  async function retireOne(offerId, record, reason) {
+  /**
+   * Retires one live offer by the rule above.
+   * @param freshRetirements - whether a not-pending (acked) offer gets a fresh `retirement`; only a
+   *   delete turns it off (module comment), so every other caller keeps the default.
+   */
+  async function retireOne(offerId, record, reason, freshRetirements = true) {
     live.delete(offerId)
     if (!record.acked && (await mailbox.retire(record.principalKey, record.eventId, reason)).retired) return
+    if (!freshRetirements) return
     await produce(
       { type: EVENT_TYPE.retirement, sessionId: record.sessionId, followsPrincipal: record.principalKey },
       { sourceSessionId: record.sessionId, correlationId: offerId, payload: { retiredEventId: record.eventId, reason } },
@@ -89,16 +99,18 @@ export function createOfferLedger({ mailbox, produce }) {
     },
 
     /**
-     * Retires every live offer of `sessionId` held by `principalKey` (K1c-2). Every offer is tried;
-     * the first failure is rethrown after the rest, so the caller can log it.
+     * Retires every live offer of `sessionId` held by `principalKey` (K1c-2). Every offer is tried,
+     * and each failure goes to `onRetireFailed`: it never rejects, because managed state's `leave`
+     * must not (the management change stands either way).
+     * @returns the offers it retired, `{offerId, sessionId, type}` each, failed ones included: they
+     *   are no longer live either way, so C-REVOKE still hands each to the user (R-ROUTE-06).
      */
-    async retireSession(sessionId, principalKey, reason) {
-      let failure
+    async retireSession(sessionId, principalKey, reason, freshRetirements) {
       const offers = [...live].filter(([, record]) => record.sessionId === sessionId && record.principalKey === principalKey && OFFER_TYPES.includes(record.type))
       for (const [offerId, record] of offers) {
-        try { await retireOne(offerId, record, reason) } catch (error) { failure ??= error }
+        try { await retireOne(offerId, record, reason, freshRetirements) } catch (error) { onRetireFailed(error) }
       }
-      if (failure !== undefined) throw failure
+      return Object.freeze(offers.map(([offerId, record]) => Object.freeze({ offerId, sessionId, type: record.type })))
     },
   })
 }

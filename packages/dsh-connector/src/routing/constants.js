@@ -83,6 +83,8 @@ export const MISUSE = Object.freeze({
   payload: 'fishball routing: a message or settlement payload must be a value structuredClone can copy',
   heldRecord: 'fishball routing: refused to store a held message that would not reopen (a caller passed a bad value)',
   principalKey: 'fishball routing: a principal key must be a non-empty string',
+  entryKey: 'fishball routing: endPrincipal needs an entry key, a non-empty string',
+  freshRetirements: 'fishball routing: endPrincipal needs {freshRetirements: boolean} (false for a delete)',
   maxQueuedInputs: 'fishball routing: maxQueuedInputs() must return a positive whole number',
 })
 
