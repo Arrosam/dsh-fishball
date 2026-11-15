@@ -8,9 +8,10 @@ import { digestOf, mintOpaque } from './secrets.js'
 
 /**
  * The entry and its pair when the entry is enabled and usable (R-OA-06, R-TOK-08) and still bound
- * to the browser client `clientIdUrl` the token was issued for; undefined otherwise.
+ * to the browser client `clientIdUrl` the token was issued for; undefined otherwise. A reconnect
+ * from another client id URL records that one (R-OA-22), so the older client's chains end there.
  * @param generation when given, the entry must still be at it (a refresh token records the one it
- *   was issued under, so a disable, delete or value change since revokes it, R-OA-16 (3))
+ *   was issued under, so a disable or delete since revokes it, R-OA-16 (3))
  */
 export function liveBinding({ tokens, pairs }, entryKey, clientIdUrl, generation) {
   const entry = tokens.get(entryKey)
@@ -28,7 +29,7 @@ export function liveBinding({ tokens, pairs }, entryKey, clientIdUrl, generation
  *   gives it full power; the refresh token's is the CIMD URL, which the refresh grant compares
  *   (Fishball 2026-11-14, item 2, agreed with C-OAUTH);
  * - `scope` is `agent`: a browser client is bound before its first token (R-OA-18).
- * @param chain `{chainId, chainStartedAt}`
+ * @param chain `{chainId}`: a new chain's at a code redemption, the presented record's at a rotation
  * @returns `{body, refreshDigest}`: the token response, and the new refresh token's store key, by
  *   which the refresh grant later sees whether the chain was revoked since
  */
@@ -37,7 +38,7 @@ export async function issueLink(store, { entry, pair }, clientIdUrl, audience, c
   const refreshToken = mintOpaque()
   const refreshDigest = digestOf(refreshToken)
   await store.putRefresh(refreshDigest, {
-    chainId: chain.chainId, entryKey: entry.entryKey, clientId: clientIdUrl, audience, generation: entry.generation, chainStartedAt: chain.chainStartedAt,
+    chainId: chain.chainId, entryKey: entry.entryKey, clientId: clientIdUrl, audience, generation: entry.generation,
   })
   store.putAccess(digestOf(accessToken), {
     entryKey: entry.entryKey, clientId: pair.id, audience, generation: entry.generation, issuedAt: now, chainId: chain.chainId,

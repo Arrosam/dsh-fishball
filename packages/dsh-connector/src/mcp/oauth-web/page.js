@@ -40,7 +40,8 @@ const hidden = (name, value) => `<input type="${FORM_INPUT.hidden}" name="${name
 const button = (label, action, extra = '') => `<button type="submit" name="${FORM_FIELD.action}" value="${action}"${extra}>${fill(label)}</button>`
 
 /**
- * The form of one pending request.
+ * The form of one pending request: the token and an optional name only (R-OA-11 as amended by
+ * requirements 1.32 R13; the id comes from the agent's request, R-OA-22).
  * @param view.clientName the document's `client_name` (shown as unverified, and only as the name field's hint)
  * @param view.clientHost the client id URL's host
  * @param view.redirectHost the redirect URI's host name
@@ -63,7 +64,6 @@ export function formPage(view, messageHtml) {
     hidden(FORM_FIELD.request, view.requestId),
     hidden(FORM_FIELD.nonce, view.nonce),
     input(FORM_INPUT.password, FORM_FIELD.token, PAGE_TEXT.tokenLabel, FORM_INPUT.autocompleteNewPassword, ' required'),
-    input(FORM_INPUT.text, FORM_FIELD.id, PAGE_TEXT.idLabel, FORM_INPUT.autocompleteOff, ' required'),
     input(FORM_INPUT.text, FORM_FIELD.name, PAGE_TEXT.nameLabel, FORM_INPUT.autocompleteOff, ` placeholder="${escapeHtml(view.clientName)}"`),
     button(PAGE_TEXT.authorize, FORM_ACTION.authorize),
     button(PAGE_TEXT.cancel, FORM_ACTION.cancel, ' formnovalidate'),

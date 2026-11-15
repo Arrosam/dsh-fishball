@@ -3,18 +3,21 @@
  * R-OA-07, R-ID-02, R-ID-08; design §5.5 token endpoint steps 3–6), as a K1b `GrantHandler`.
  *
  * Order (nothing past a refusal runs): the client secret is checked against the enabled, usable
- * entries (C-TOKENS' constant-time `match`), then the client id's grammar, then `resource`. A
- * refusal says nothing about ids or pairs (R-TOK-00): every credential refusal is the same
- * `invalid_client`. Counted toward FAILURE_LIMIT (Fishball 2026-11-14, #7): a secret that matches
- * no entry, and a matching secret with an invalid id (the credential is token + id, R-ID-01). Not
- * counted: no secret at all, a malformed Basic header, and `invalid_target`, none of which
- * guesses a credential.
+ * entries (C-TOKENS' constant-time `match`), then the client id's grammar, then that the entry was
+ * not bound on the approval page, then `resource`. A refusal says nothing about ids or pairs
+ * (R-TOK-00): every credential refusal is the same `invalid_client`. Counted toward FAILURE_LIMIT
+ * (Fishball 2026-11-14, #7): a secret that matches no entry, a matching secret with an invalid id
+ * (the credential is token + id, R-ID-01), and a matching secret of an entry the approval page bound (K1d: an entry bound on the page refuses
+ * `client_credentials`, so one token never serves two client types; decided item 4; counted so that
+ * its refusal is the same as any other in the limiter too, and tells nothing about the pair). Not
+ * counted: no secret at all, a malformed Basic header, and `invalid_target`, none of which guesses
+ * a credential.
  *
  * No refresh token (Q27, R-OA-07). The requested `scope` is ignored: the granted one follows the
  * pair (R-OA-04, OAuth 2.1 §1.4.1 narrowing), and the response says which.
  */
 import { GRANT, OAUTH_ERROR, isAgentId, oauthUrls, tokenResponse } from '../../../mcp-schema/index.js'
-import { powerOf } from '../../pairs/index.js'
+import { isPageBound, powerOf } from '../../pairs/index.js'
 import { TOKEN_FORM } from './constants.js'
 import { secretCandidates } from './client-auth.js'
 import { digestOf, newOpaqueValue } from './digest.js'
@@ -52,13 +55,16 @@ export function createClientCredentialsGrant({ tokenStore, tokenRegistry, pairSt
       if (ctx.client.secret === undefined || ctx.client.clientId === undefined) return UNAUTHENTICATED
       const found = authenticate(tokenRegistry, ctx.client)
       if (found === undefined) return BAD_CREDENTIAL
+      const { entry, clientId } = found
+      // A credential refusal, so it comes before `resource` as the others do.
+      const pair = pairStore.pairOf(entry.entryKey)
+      if (isPageBound(pair)) return BAD_CREDENTIAL
       // TQ-3 A: `resource` is required and must be this host's canonical MCP URI (R-OA-05).
       const audience = oauthUrls(ctx.origin).resource
       if (form[TOKEN_FORM.fields.resource] !== audience) return BAD_TARGET
       const accessToken = newOpaqueValue()
-      const { entry, clientId } = found
       tokenStore.putAccess(digestOf(accessToken), { entryKey: entry.entryKey, clientId, audience, generation: entry.generation, issuedAt: ctx.now })
-      const { scope } = powerOf(pairStore.pairOf(entry.entryKey), clientId)
+      const { scope } = powerOf(pair, clientId)
       return Object.freeze({ ok: true, body: tokenResponse({ accessToken, scope }) })
     },
   })

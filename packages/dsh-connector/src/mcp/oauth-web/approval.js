@@ -7,15 +7,21 @@
  *
  * Pending requests live in memory only (R-OA-15: none survives a restart). A token value is read
  * from the POST body, matched, and dropped: it is never stored, logged, rendered or redirected.
+ *
+ * The agent's id is fixed when the request is created (R-OA-22; requirements 1.32 R13, 1.33 Q-A1 B):
+ * the `agent_id` it passed, or the id derived from its client id URL. The page asks for none, so the
+ * person at the page can never type one. Authorize binds an unpaired entry at once, or reconnects
+ * a bound one whose pair holds that same id (Q-A2 A); no refresh chain's age plays a part (R-OA-23).
  */
 import {
   APPROVAL_LISTENER, GATE_SURFACE, HTTP_STATUS, ID_REFUSAL, LIFETIME, OAUTH_ERROR, PATHS, RATE_LIMITS, REFUSAL,
   RESPONSE_TYPE, TIME_UNIT, normaliseName, oauthUrls, principalLabel,
 } from '../../../mcp-schema/index.js'
 import { diagnosticOf } from '../../errors.js'
+import { requestedAgentId } from './agent-id.js'
 import { clientNameOf, isAllowedRedirect, isLoopbackOnly, redirectUrisOf } from './client-rules.js'
 import {
-  ADDRESS, AUTHORIZE_PARAM, CHAINS_STATE, FORM_ACTION, FORM_FIELD, LOG, PAGE_HTTP, PAGE_TEXT, RESPONSE_PARAM,
+  ADDRESS, AUTHORIZE_PARAM, FORM_ACTION, FORM_FIELD, LOG, PAGE_HTTP, PAGE_TEXT, RESPONSE_PARAM,
   URL_RULES,
 } from './constants.js'
 import { SILENT_LOGGER, readCapped } from './io.js'
@@ -23,9 +29,8 @@ import { issuerOriginFor } from './origin.js'
 import { errorPage, fill, formPage, principalHtml } from './page.js'
 import { digestOf, isS256Challenge, mintOpaque, sameSecret } from './secrets.js'
 
-/** The page's message for each refusal of `PairStore.bindFromPage`. */
+/** The page's message for each refusal of `PairStore.bindFromPage` but `already-paired` (shown with its pair). */
 const BIND_MESSAGE = Object.freeze({
-  [REFUSAL.alreadyPaired]: PAGE_TEXT.alreadyPaired,
   [ID_REFUSAL.idInvalid]: PAGE_TEXT.idInvalid,
   [REFUSAL.idTaken]: PAGE_TEXT.idTaken,
   [REFUSAL.nameInvalid]: PAGE_TEXT.nameInvalid,
@@ -164,12 +169,13 @@ export function createApprovalHandler(deps) {
     if (!isS256Challenge(single(query, AUTHORIZE_PARAM.codeChallengeMethod), challenge)) return fail(OAUTH_ERROR.invalidRequest)
     if (single(query, AUTHORIZE_PARAM.resource) !== urls.resource) return fail(OAUTH_ERROR.invalidTarget)
     // `scope` is ignored: the grant's scope follows the pair (S7b §4, RFC 6749 §3.3).
-    const created = { ...request, id: mintOpaque(), clientId, doc: fetched.doc, redirectUri, challenge, resource: urls.resource, createdAt: at }
+    const agentId = requestedAgentId(single(query, AUTHORIZE_PARAM.agentId), clientId)
+    const created = { ...request, id: mintOpaque(), clientId, agentId, doc: fetched.doc, redirectUri, challenge, resource: urls.resource, createdAt: at }
     remember(created)
     showForm(res, created)
   }
 
-  /** Mints the code of a bound or renewed pair and sends the browser back with it (R-OA-14). */
+  /** Mints the code of a bound or reconnected pair and sends the browser back with it (R-OA-14). */
   function issueCode(res, request, entryKey, at) {
     const code = mintOpaque()
     store.putCode(digestOf(code), {
@@ -179,20 +185,34 @@ export function createApprovalHandler(deps) {
     redirect(res, request.redirectUri, { [RESPONSE_PARAM.code]: code }, request)
   }
 
+  /** The client facts a bind or a reconnect records against the pair (R-OA-22). */
+  const clientOf = (request) => Object.freeze({ clientIdUrl: request.clientId, redirectUri: request.redirectUri })
+
   /**
-   * A valid token whose entry is bound: the renewal of R-OA-16 (7) when every chain of the entry
-   * ended at the entry's current generation (`chainsOf` = `ended`: a disable, re-enable or value
-   * change since makes the chains `revoked`), and the request comes from the client recorded at the
-   * bind with the bound id. `renewFromPage` checks the client and id again inside its write, and the
-   * redirect URI is any the document allows (already checked at `/authorize`). Otherwise
-   * `already-paired`.
+   * A valid token whose entry is bound: a reconnect when the pair holds the request's id (R-OA-22,
+   * Q-A2 A: the same principal, its name, sessions and queued events kept, so a typed name is not
+   * applied; the newest client id URL and redirect URI recorded), else `already-paired` with the
+   * bound pair's name and last-seen time. `reconnectFromPage` decides the id inside its write. An
+   * entry deleted between the token match and that write (or the `already-paired` read) leaves no
+   * pair, and the request fails as any storage failure does (500): the delete revoked the token anyway.
    */
-  async function boundEntry(res, request, entry, pair, id, at) {
-    const renewable = pair.clientIdUrl === request.clientId && pair.id === id
-      && store.chainsOf(entry.entryKey, entry.generation, at) === CHAINS_STATE.ended
-    const renewed = renewable ? await pairs.renewFromPage(entry.entryKey, id, { clientIdUrl: request.clientId, redirectUri: request.redirectUri }) : undefined
-    if (renewed?.ok) return issueCode(res, request, entry.entryKey, at)
-    return showForm(res, request, alreadyPairedHtml(pairs.pairOf(entry.entryKey) ?? pair))
+  async function reconnect(res, request, entry, at) {
+    const reconnected = await pairs.reconnectFromPage(entry.entryKey, request.agentId, clientOf(request))
+    if (reconnected.ok) return issueCode(res, request, entry.entryKey, at)
+    return showForm(res, request, alreadyPairedHtml(pairs.pairOf(entry.entryKey)))
+  }
+
+  /**
+   * An unpaired entry is bound at once (R-OA-22). A bind that finds the entry bound meanwhile (a
+   * concurrent bind) is handled as a bound entry, so the same id reconnects there too.
+   */
+  async function bindOrReconnect(res, request, form, entry, at) {
+    if (pairs.pairOf(entry.entryKey) === undefined) {
+      const bound = await pairs.bindFromPage(entry.entryKey, request.agentId, typedName(form), clientOf(request), at)
+      if (bound.ok) return issueCode(res, request, entry.entryKey, at)
+      if (bound.code !== REFUSAL.alreadyPaired) return showForm(res, request, fill(BIND_MESSAGE[bound.code]))
+    }
+    return reconnect(res, request, entry, at)
   }
 
   async function authorizeDecision(res, request, form, failureKey, at) {
@@ -211,15 +231,7 @@ export function createApprovalHandler(deps) {
       limiter.recordFailure(failureKey, at)
       return showForm(res, request, fill(PAGE_TEXT.invalidToken))
     }
-    const id = form.get(FORM_FIELD.id) ?? ''
-    const pair = pairs.pairOf(entry.entryKey)
-    if (pair !== undefined) return boundEntry(res, request, entry, pair, id, at)
-    const bound = await pairs.bindFromPage(entry.entryKey, id, typedName(form),
-      { clientIdUrl: request.clientId, redirectUri: request.redirectUri }, at)
-    if (bound.ok) return issueCode(res, request, entry.entryKey, at)
-    // A concurrent bind of this entry since `pairOf` answers `already-paired`, shown with its pair.
-    const raced = bound.code === REFUSAL.alreadyPaired ? pairs.pairOf(entry.entryKey) : undefined
-    return showForm(res, request, raced === undefined ? fill(BIND_MESSAGE[bound.code]) : alreadyPairedHtml(raced))
+    return bindOrReconnect(res, request, form, entry, at)
   }
 
   async function decision(req, res) {

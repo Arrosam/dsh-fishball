@@ -1,10 +1,10 @@
 /**
  * The connector's pair store (task C-PAIR): K1 `PairStore` over one record of a DSH
- * storage-domain table (design §5.8; R-ID-03/04/09/12/13, R-NAME-01…08, R-OA-12, R-OA-16 (7)).
+ * storage-domain table (design §5.5a, §5.8; R-ID-03/04/09/12/13, R-NAME-01…08, R-OA-12, R-OA-22).
  *
  * Atomicity (spike V3-S3 `b4dca86`): `KvTable.update` runs its transform at the record's slot on
  * the domain's one write chain, so a decision made inside it sees every earlier write and no later
- * one. Every operation that checks a uniqueness rule or a binding (bind, id, name, renewal)
+ * one. Every operation that checks a uniqueness rule or a binding (bind, id, name, reconnect)
  * decides inside that transform. Two racing `pair` calls on one token then bind exactly one, two on
  * one id bind exactly one, and no two principals ever hold one folded name; S3's naive get-then-put
  * control broke every one of these.
@@ -87,11 +87,13 @@ const pageNameOutcome = (registry, entryKey, requested) =>
   (requested === undefined || normaliseName(requested) === '' ? { name: null } : claimName(registry, entryKey, requested))
 
 /**
- * A step that sets one field of an existing pair, writing nothing when it already holds `value`
- * (`set_name` to the own current name, a renewal with the recorded redirect URI).
+ * A step that sets fields of an existing pair, writing nothing when it already holds every value
+ * (`set_name` to the own current name, a reconnect from the recorded client and redirect URI).
  */
-const setField = (registry, stored, field, value, result) =>
-  (stored[field] === value ? { result } : { next: withPairChanged(registry, stored.entryKey, { [field]: value }), result })
+const setFields = (registry, stored, changes, result) =>
+  (Object.entries(changes).every(([field, value]) => stored[field] === value)
+    ? { result }
+    : { next: withPairChanged(registry, stored.entryKey, changes), result })
 
 /**
  * The store over one KvTable of the registry domain.
@@ -206,9 +208,11 @@ export function createPairStore(table, { logger = SILENT_LOGGER } = {}) {
     },
 
     /**
-     * The approval page's bind (R-OA-12 (2)–(4), AUTH-DT-08). Order: `already-paired`, then the
-     * typed id (`id-invalid`, `id-taken`), then a non-empty name (`name-invalid`, `name-taken`);
-     * any refusal binds nothing. On success the client id URL and redirect URI are recorded.
+     * The approval page's bind of an unpaired entry (R-OA-22, R-OA-12 (3)–(4), AUTH-DT-08), with
+     * full rights at once. `id` is the one the agent passed in its authorization request, or the id
+     * derived from its client id URL (C-OAUTH-WEB decides which). Order: `already-paired`, then the
+     * id (`id-invalid`, `id-taken`), then a non-empty name (`name-invalid`, `name-taken`); any
+     * refusal binds nothing. On success the client id URL and redirect URI are recorded.
      */
     async bindFromPage(entryKey, id, name, client, now) {
       return change((registry) => {
@@ -223,23 +227,27 @@ export function createPairStore(table, { logger = SILENT_LOGGER } = {}) {
     },
 
     /**
-     * The page's renewal (R-OA-16 (7), R-OA-12 (2)). The pair must have been made by the page for
-     * exactly `client.clientIdUrl` (a `pair`-made pair records none, so it never renews here) and be
-     * bound to `id`; anything else is `already-paired`. It changes only the recorded redirect URI.
+     * The page's reconnect (R-OA-22, requirements 1.33 Q-A2 A; K1d replaced the renewal). A bound
+     * entry whose pair holds `id`, bound on the page or by `pair` (R-OA-12 (2) refuses only another
+     * id), keeps its principal: the principal key, id, name and `pairedAt` stay, so its managed
+     * sessions and queued events, keyed on the principal, stay too. Only the newest client id URL
+     * and redirect URI are recorded, so the newest browser client is the one whose chains stand
+     * (C-OAUTH-WEB's `liveBinding`) and a `pair`-made entry becomes page-bound. Any other id is
+     * `already-paired` and nothing changes. There is no age condition (R-OA-23).
      *
-     * Deliberately not checked here (Fishball 2026-11-14, Q1 A): that every chain of the entry
-     * ended and no disable, re-enable or value change happened since is C-OAUTH-WEB's
-     * `OAuthTokenStore.chainsOf(entry, generation) === 'ended'` gate, run before this call; that
-     * `client.redirectUri` is one the client's metadata document lists is C-OAUTH-WEB's document
-     * check. The store has neither the entry generation nor the document.
+     * Not checked here: that `client.redirectUri` is one the client's metadata document lists
+     * (C-OAUTH-WEB's document check at `/authorize`); the store has no document.
+     * @throws TypeError (the promise rejects) when the entry is unpaired: a caller bug, since the
+     *   page binds an unpaired entry with `bindFromPage` (K1d-5, as `succeed`'s TypeError).
      */
-    async renewFromPage(entryKey, id, client) {
+    async reconnectFromPage(entryKey, id, client) {
       return change((registry) => {
         const stored = findByEntry(registry, entryKey)
-        const sameClient = stored !== undefined && stored.clientIdUrl !== undefined && stored.clientIdUrl === client.clientIdUrl && stored.id === id
-        if (!sameClient) return { result: ALREADY_PAIRED }
-        const result = Object.freeze({ ok: true, pair: pairView(visible({ ...stored, redirectUri: client.redirectUri })) })
-        return setField(registry, stored, 'redirectUri', client.redirectUri, result)
+        if (stored === undefined) throw new TypeError(MISUSE.reconnectUnpaired)
+        if (stored.id !== id) return { result: ALREADY_PAIRED }
+        const changes = { clientIdUrl: client.clientIdUrl, redirectUri: client.redirectUri }
+        const result = Object.freeze({ ok: true, pair: pairView(visible({ ...stored, ...changes })) })
+        return setFields(registry, stored, changes, result)
       })
     },
 
@@ -255,7 +263,7 @@ export function createPairStore(table, { logger = SILENT_LOGGER } = {}) {
       return change(stepOnPrincipal(principalKey, (registry, stored) => {
         const claimed = name === null ? { name: null } : claimName(registry, stored.entryKey, name)
         if (claimed.code !== undefined) return { result: refusal(claimed.code) }
-        return setField(registry, stored, 'name', claimed.name, Object.freeze({ ok: true, name: claimed.name }))
+        return setFields(registry, stored, { name: claimed.name }, Object.freeze({ ok: true, name: claimed.name }))
       }))
     },
 
@@ -314,7 +322,7 @@ export function createPairStore(table, { logger = SILENT_LOGGER } = {}) {
       })
     },
 
-    /** `listener()` runs after each durable change of any pair (bind, name, renewal, lastSeenAt, removal). */
+    /** `listener()` runs after each durable change of any pair (bind, name, reconnect, lastSeenAt, removal). */
     onChange(listener) {
       listeners.add(listener)
       return () => { listeners.delete(listener) }
