@@ -138,7 +138,8 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ R-EMBED (2): the moved client
-  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js and U-SHELL's parts client.shell.js, client.marks.js, client.attention.js, client.records.js, and client.instance.js", async () => {
+  // Q-G4 = A: client.records.js is no longer one of the shipped parts.
+  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js and U-SHELL's parts client.shell.js, client.marks.js, client.attention.js, and client.instance.js", async () => {
     needEmbed()
     const files = ownFiles(await unitOf(V3.embed.name))
     for (const file of [EMBED.clientEntry, ...Object.values(EMBED.clientChunks)]) assert.ok(files.includes(file), 'not shipped: ' + file)
