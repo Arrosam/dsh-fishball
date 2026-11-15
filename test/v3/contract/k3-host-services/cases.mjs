@@ -430,9 +430,5 @@ export function registerK3Cases(sdk) {
     })
     assert.ok(cards.length > 0, 'no declaration with session, question and choices / free-answer fields')
   })
-  for (const [row, title] of [
-    ['main 2–3', 'the card shows in Fishball\'s conversation; the user\'s answer is committed once through core\'s link'],
-    ['A1', 'Fishball decides itself → no card'], ['E1', '48 h with no answer → still waiting; no timer answers'],
-    ['E2', 'settled elsewhere first → closed; a late answer gets already-settled / expired'],
-  ]) caseTest(sdk, 'PLAT-UC-07', row, title, null, LATER.askCard)
+  // PLAT-UC-07 main 2–3, A1, E1, E2 (the card's behaviour) are F-ASKCARD's: test/v3/fishball-core/asks/cases.mjs.
 }

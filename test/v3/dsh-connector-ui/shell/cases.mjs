@@ -227,7 +227,7 @@ export function registerUShellCases(sdk) {
     const page = await openPage(t, sdk, setup)
     assert.deepEqual(page.registrations.filter((r) => FISHBALL_OWNER(r.owner)), [])
   })
-  caseTest(sdk, 'UIM-UC-04', 'E1', "Fishball cannot decide → nothing appears in H's session for the user to press; the ask shows in Fishball's own page", null, LATER.askCard)
+  // UIM-UC-04 E1 (Fishball cannot decide → the card is in Fishball's own page only) is F-ASKCARD's: test/v3/fishball-core/asks/cases.mjs.
   caseTest(sdk, 'UIM-UC-04', 'post', "embed-UI's shipped code names no sidebar.brand.* slot", async () => {
     const hits = [...await embedTokens()].filter(([, t]) => t.strings.some((s) => SLOT.brand.includes(s))).map(([file]) => file)
     assert.deepEqual(hits, [])
