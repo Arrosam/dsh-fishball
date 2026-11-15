@@ -121,6 +121,8 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS]),
   'fishball-core.link': suite('MCP link (F-LINK)', v3('fishball-core/link'),
     [...CORE_LINK, sub(PACKAGE.fishballCore, 'scripts'), top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
+  'fishball-core.asks': suite('ask cards: ask_user, the asks service and routes (F-ASKCARD)', v3('fishball-core/asks'),
+    [sub(PACKAGE.fishballCore, 'src', 'asks'), PACKAGE.fishballCore + '/client.asks.js', ...CORE_LINK]),
   'fishball-core.identity': suite('identity, pairing decisions, token-revoked (F-PAIR)', v3('fishball-core/identity'),
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   // The strip view is core's ui/status until F-UI moves it; the line reads the link's target rule.

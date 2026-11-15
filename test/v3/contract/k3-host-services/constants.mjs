@@ -247,7 +247,6 @@ export const LATER = Object.freeze({
   shell: 'U-SHELL (embed-UI service detection, instance-missing, the sidebar entry)',
   marks: 'U-MARKS (Hand over control labels and order)',
   records: 'U-RECORDS (inline records)',
-  askCard: 'F-ASKCARD (the ask card in Fishball\'s own page)',
   tools: 'C-TOOLS / K1 (session_release over MCP)',
   e2e: 'E2E-UI / E2E-CORE (W6 browser flows; no browser in this suite)',
 })

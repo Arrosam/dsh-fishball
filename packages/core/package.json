@@ -23,6 +23,7 @@
   "files": [
     "client.js",
     "client.settings.js",
+    "client.asks.js",
     "contracts/constants.js",
     "src/",
     "ui/",

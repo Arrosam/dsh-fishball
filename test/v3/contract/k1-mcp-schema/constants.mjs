@@ -338,6 +338,5 @@ export const LATER = Object.freeze({
   status: 'F-STATUS (core status, plugin-set completeness)',
   board: 'FEAT-PEERS (board retention)',
   intercept: 'K3 (fishballInstance.events.intercept freeze) and F-INTERCEPT',
-  card: 'K3 (card fields) and F-ASKCARD',
   adapter: 'C-MCP-ADAPTER (provisional on spike V3-S7c)',
 })
