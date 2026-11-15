@@ -114,13 +114,15 @@ export function registerCoreCases(sdk) {
     assert.deepEqual(inserted.filter((row) => CORE.neverInserted.includes(row?.id)).map((row) => row.id), [], 'core inserts these rows')
     assert.deepEqual(inserted.filter((row) => isModuleOf(row?.name, V3.instance)).map((row) => `${row.id}: ${row.name}`), [], 'core inserts modules of dsh-instance')
   })
-  caseTest(sdk, 'HOST-EP-03', 1, 'core depends on fishball-shared (dependencies and bundleDependencies) and on the connector; never on the instance', () => {
+  // SPLIT-SHARED (requirements 1.40): core's library is its own side's fishball-shared, never dsh-connector-shared.
+  caseTest(sdk, 'HOST-EP-03', 1, 'core depends on fishball-shared (dependencies and bundleDependencies) and on the connector; never on the instance or dsh-connector-shared', () => {
     const manifest = coreManifest()
     assert.ok(Object.hasOwn(manifest[RUNTIME_DEP_FIELD] ?? {}, V3.shared.name), 'fishball-shared not in ' + RUNTIME_DEP_FIELD)
     assert.ok(BUNDLED_FIELDS.some((f) => (manifest[f] ?? []).includes(V3.shared.name)), 'fishball-shared not in ' + BUNDLED_FIELDS.join('/'))
     const named = manifestNames(manifest, DEP_FIELDS).map((e) => e.name)
     assert.ok(named.includes(V3.connector.name), 'dsh-connector is named in no dependency field')
     assert.equal(named.includes(V3.instance.name), false, 'core names dsh-instance')
+    assert.equal(manifestNames(manifest, [...DEP_FIELDS, ...BUNDLED_FIELDS]).some((e) => e.name === V3.dshShared.name), false, 'core names dsh-connector-shared')
   })
   caseTest(sdk, 'HOST-EP-03', 1, 'core reaches the connector only through dsh-connector/contract', async () => {
     needCore()

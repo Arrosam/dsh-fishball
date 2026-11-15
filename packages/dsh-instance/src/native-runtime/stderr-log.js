@@ -3,8 +3,8 @@ import { constants } from 'node:fs'
 import { open, rename } from 'node:fs/promises'
 import { RUNTIME } from './constants.js'
 import { exists } from './files.js'
-// Shared with the provider-sync host adapter, which the child also loads (fishball-shared, R-ARCH-08).
-import { redact } from 'fishball-shared/redact'
+// The same masking as the main host's provider-sync host adapter (dsh-connector-shared, R-ARCH-08).
+import { redact } from 'dsh-connector-shared/redact'
 
 const NEWLINE = '\n'
 const APPEND_FLAGS = constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | constants.O_NOFOLLOW

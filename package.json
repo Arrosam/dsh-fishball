@@ -1,7 +1,7 @@
 {
   "name": "dsh-fishball",
   "private": true,
-  "description": "Fishball for DeepSeek Harness: its packages in one repository (the workspaces below: dsh-connector, fishball-core, dsh-connector-ui, dsh-instance and the library fishball-shared). The root is not a plugin package.",
+  "description": "Fishball for DeepSeek Harness: its packages in one repository (the workspaces below: dsh-connector, fishball-core, dsh-connector-ui, dsh-instance, the DSH-side library dsh-connector-shared and the Fishball-side library fishball-shared). The root is not a plugin package.",
   "license": "MIT",
   "type": "module",
   "workspaces": [
@@ -9,6 +9,7 @@
     "packages/core",
     "packages/dsh-connector-ui",
     "packages/dsh-instance",
+    "packages/dsh-connector-shared",
     "packages/shared"
   ],
   "engines": {

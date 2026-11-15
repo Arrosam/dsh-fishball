@@ -16,7 +16,7 @@
  * normal page result, so the page can show the typed reason instead of a network error. A body
  * that is not a JSON object is the one HTTP 400, with the same typed shape.
  */
-import { ADMIN_ERROR, ADMIN_OPERATION } from 'fishball-shared/admin-protocol'
+import { ADMIN_ERROR, ADMIN_OPERATION } from 'dsh-connector-shared/admin-protocol'
 import { registerPostRoutes } from './fetch-routes.js'
 
 const SLUGS = Object.freeze({

@@ -1,11 +1,14 @@
 /**
+ * Fishball side's interim copy (requirements 1.40, design §1.0b row 5): dsh-connector-shared owns
+ * the DSH side's identical module. This copy serves only core's child half until I-HOST moves that
+ * half into dsh-instance, then it is deleted (package.json //TODO). Keep the two in step until then.
+ *
  * The child `admin` service's wire protocol (fishball-shared, R-ARCH-08).
  *
- * Moved from dsh-instance's src/slim/child/admin.js with its rules unchanged: the child
- * serves this protocol (its applier and wire end stay with the child, src/slim/child/admin.js)
- * and the main host's relay (src/slim/host/admin.js) speaks it, so both ends validate one
- * definition instead of two drifting ones. The vocabulary, limits and typed refusal are plain module exports; `refuse` and
- * ADMIN_APPLICATIONS are exported because the child's applier refuses and accepts the same way.
+ * Moved from dsh-instance's src/slim/child/admin.js with its rules unchanged: the child's applier
+ * and wire end (fishball-core src/slim/child/admin.js) serve it; the main host's relay speaks
+ * dsh-connector-shared's copy. The vocabulary, limits and typed refusal are plain module exports;
+ * `refuse` and ADMIN_APPLICATIONS are exported because the child's applier refuses and accepts the same way.
  *
  * The request/result validators and the frame codec read three values of the Fishball contract:
  * DIGEST (inventory digests) and STATUS/STATUS_CODES (admin.status). fishball-shared imports no

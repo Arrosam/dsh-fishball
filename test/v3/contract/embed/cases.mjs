@@ -205,9 +205,10 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ PLAT-EP-03 row 3: embed-UI is the only host-UI package
-  caseTest(sdk, 'PLAT-EP-03', 3, 'of the host-side packages (connector, instance, shared, embed-UI) only embed-UI declares dsh.client', () => {
+  // The host side's library is dsh-connector-shared since SPLIT-SHARED (requirements 1.40); fishball-shared is the Fishball side's.
+  caseTest(sdk, 'PLAT-EP-03', 3, 'of the host-side packages (connector, instance, dsh-connector-shared, embed-UI) only embed-UI declares dsh.client', () => {
     needEmbed()
-    const withClient = [V3.connector, V3.instance, V3.shared, V3.embed].filter((p) => readManifest(p.dir)?.[DSH_FIELD]?.client !== undefined).map((p) => p.name)
+    const withClient = [V3.connector, V3.instance, V3.dshShared, V3.embed].filter((p) => readManifest(p.dir)?.[DSH_FIELD]?.client !== undefined).map((p) => p.name)
     assert.deepEqual(withClient, [V3.embed.name])
   })
   caseTest(sdk, 'PLAT-EP-03', 3, "the instance's own shipped code (not its status-line chunk) registers no browser module and names no host-DSH slot", async () => {

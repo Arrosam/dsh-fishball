@@ -35,12 +35,12 @@
  *    directly and never write a file.
  */
 import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
-// The protocol comes from fishball-shared, never from the child's module (R-BND-01: the host loads
+// The protocol comes from dsh-connector-shared, never from the child's module (R-BND-01: the host loads
 // no Fishball-side module); it is bound to the same contract values the child binds it to.
 import {
   ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS,
   createAdminProtocol, refusal, refusalOf,
-} from 'fishball-shared/admin-protocol'
+} from 'dsh-connector-shared/admin-protocol'
 import { DIGEST, STATUS, STATUS_CODES } from '../contract.js'
 
 export { ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS }

@@ -1,3 +1,8 @@
+/**
+ * Fishball side's interim copy (requirements 1.40, design §1.0b row 5): dsh-connector-shared owns
+ * the DSH side's identical module. This copy serves only core's child half until I-HOST moves that
+ * half into dsh-instance, then it is deleted (package.json //TODO). Keep the two in step until then.
+ */
 /** One-shot provider additions. Only safe inventory crosses preview; secret records arrive at confirm. */
 import { createHash, randomBytes } from 'node:crypto'
 
