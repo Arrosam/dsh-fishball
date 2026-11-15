@@ -894,7 +894,7 @@ make one, so one comes only from a settings document edited by hand or a store e
   save of the tokens list does (duplicates refused with a notice, R3; R5's rule); **AUTH-ST-08** the
   reveal modal (open → copied / closed, never re-shown); **HOST-ST-03** the hosted value's
   lifecycle (first start → stored in the child; host restart, child restart, reinstall, uninstall,
-  delete then Retry → notice, no token, R6 = B); **REM-ST-02** the saved copy at the first connection
+  delete then Retry → notice, no token, R6 = B); **REM-ST-01** the saved copy at the first connection
   (standalone and hosted remote, R7).
 
 **Open product questions (R8–R9, raised 2026-11-15; recommendations in brackets).** R1–R7 are
