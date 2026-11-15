@@ -282,7 +282,10 @@ changes this object in the same change.
   that passes none gets `cid-` + the first 16 lowercase base32 characters of SHA-256(client id URL)
   (design §5.5a, R-OA-22). The page binds at once (`PairStore.bindFromPage`); a bound entry entered
   again with the same id reconnects the same principal (`PairStore.reconnectFromPage`), any other
-  id is `already-paired`. An entry bound on the page refuses `client_credentials` (`invalid_client`),
+  id is `already-paired`. A reconnect revokes every earlier refresh chain of the entry, from any
+  client id URL, with its access tokens and unredeemed codes (`OAuthTokenStore.revokeEntryChains`,
+  K1d-6), so only the reconnect's new chain lives. A chain keeps only its newest spent refresh
+  record besides its live one (K1d-7): an older spent token is unknown (`invalid_grant`), not reuse. An entry bound on the page refuses `client_credentials` (`invalid_client`),
   so one token never serves two client types (decided item 4). Machine clients and `pair` are
   unchanged: their id is their OAuth `client_id`.
 - Limit refusals at the endpoint are a JSON-RPC error body, code -31000 (`ENDPOINT_LIMITS.jsonRpcCode`,
@@ -477,6 +480,8 @@ constants migration, 2026-11-14).
 | K1d-3 | `SettingsWriter` (`addToken`, `removeToken`, `setDesignated`) and `SessionNotes.system`: connector-internal ports C-WIRE binds; a write resolves after the save and the registry's sync. PROPOSED details: writes run in call order; `removeToken` of an absent key is a no-op; `system` rejects for an unknown session | decided by Fishball, not the user (2026-11-16; W4 briefs G3) |
 | K1d-4 | The page id follows design §5.5a and R-OA-22 (1.33 Q-A1 B, Q-A2 A): the page binds at once with the passed `agent_id` or the derived `cid-` id (`bindFromPage`), and a same-id return reconnects (`reconnectFromPage`). This supersedes W4 briefs G3 item 6's earlier model (`pair` with an id for a browser client, `claimFromPage`, a claimed entry pair-only until `pair`) and open-questions decided items 2, 3 and 5. G3 item 6's K3a `importToken` is void (plan §5) and the locator `reconnect()` is not K1's (Reconnect is on the instance's page, Q-D1) | decided by Fishball from the design (2026-11-16) |
 | K1d-5 | `reconnectFromPage` of an unpaired entry throws `TypeError` (a caller bug); `RefreshRecord.chainStartedAt` is withdrawn with the chain cap (no V3 store has shipped, decided item 44); `DERIVED_AGENT_ID` hashes the UTF-8 `client_id` as received and base32-encodes the raw digest, unpadded | decided by Fishball, PROPOSED (2026-11-16) |
+| K1d-6 | A page reconnect revokes the principal's older refresh chains, from the same client id URL and from others, with their access tokens and unredeemed codes, before its new code is minted (`OAuthTokenStore.revokeEntryChains`); a first bind and an `already-paired` revoke nothing; chainless (machine) access tokens are kept | decided by Fishball, not the user (2026-11-16; C-PAGE-ID review) |
+| K1d-7 | Refresh records stay bounded with no chain cap: per chain the store keeps only the newest spent record and the live one, pruning older spent records at each rotation. The newest spent token is still reuse (it revokes the chain after the grace window); an older one is unknown (`invalid_grant`, the chain lives) | decided by Fishball, not the user (2026-11-16; C-PAGE-ID review) |
 
 ## Departure from the specification
 
