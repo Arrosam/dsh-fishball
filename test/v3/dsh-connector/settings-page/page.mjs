@@ -131,7 +131,9 @@ export async function openTokensPage(t, { sdk, world, routes }) {
     return { status: 'ready', value: { [CLIENT.tokensField]: world.doc.tokens }, base: undefined, user: undefined, revision, writable: true }
   }
   async function mutate(ops, expected) {
-    mutations.push({ ops, expected })
+    // The page's arrays come from the vm realm (another Array.prototype), so they are recorded as
+    // plain data of this realm: deepStrictEqual compares prototypes, which is not what a case asserts.
+    mutations.push({ ops: JSON.parse(JSON.stringify(ops)), expected })
     let accepted = true
     for (const op of ops) {
       if (op.op !== CLIENT.setOp || op.path?.[0] !== CLIENT.tokensField) continue
@@ -165,6 +167,8 @@ export async function openTokensPage(t, { sdk, world, routes }) {
       return {
         key, tree,
         text: () => textOf({ children: tree() }),
+        /** What a reader sees in `node`: its text plus the values its text fields display. */
+        shown: (node) => [textOf(node), ...byAttr([node], 'value').map((n) => String(n.props.value))].join('\n'),
         find: (attr, value) => byAttr(tree(), attr, value),
         one(attr, value) {
           const found = byAttr(tree(), attr, value)
