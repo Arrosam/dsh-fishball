@@ -95,6 +95,19 @@ state under published names and as core's own copy of the MCP surface. K3a's ear
 R-HOST-11 withdrawn). Core's settings are its own plugin settings page (`client.settings.js`), the
 same in standalone and hosted mode, and no plugin injects a section into it.
 
+**F-SETTINGS decisions (2026-11-16):**
+- **Slot: `plugins.bundle.config`, keyed by the bundle name `fishball-core`**, not
+  `plugins.row.config` as the plan row said. Both SDKs' `pluginNavigation` offers only
+  `openBundle(packageName)` and `openList()`, and `openBundle` lands on the bundle page, where
+  `plugins.bundle.config` is drawn at once; a row page needs one more "configure" press. So the
+  "Fishball settings" entry ("直接跳转到fishball core的设置") reaches the page in one step. The page
+  edits the namespace of core's row (`src/settings/constants.js` `SETTINGS.namespace`), a separate
+  fact spelled the same as the bundle.
+- **Target precedence (Fishball's decision):** in a hosted child core links to the instance's
+  `dsh-instance-child.targetUrl` (`HOSTED_IMPORT.targetSetting`); the user's `target.url` applies
+  only when the instance supplies none (absent, not a string, or blank), as in standalone.
+  `src/settings/target.js` `effectiveTarget` is the rule; F-WIRE feeds its result to the link.
+
 ## Guards (vocabulary for F-GUARDS)
 
 - **Guarded rows:** the ten session-creating rows and `dsh-instance`.

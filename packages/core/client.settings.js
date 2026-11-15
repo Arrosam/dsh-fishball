@@ -40,7 +40,9 @@ window.__ModuleLoader__.load({
      * - `tokenRef`: `HOSTED_IMPORT.credentialRef`, the reference core reads its import from. The
      *   field writes there, so a pasted token takes exactly the hosted import's path (Q-B2, design
      *   §5.4: "feed the same credential-reference path");
-     * - `instanceTarget`: `HOSTED_IMPORT.targetSetting`, the URL the instance supplies in a child;
+     * - `instanceTarget`: `HOSTED_IMPORT.targetSetting`, the URL the instance supplies in a child.
+     *   It wins over `target.url` (Fishball's decision 2026-11-16; `src/settings/target.js`
+     *   `effectiveTarget`, whose "has a value" test `instanceUrl` restates);
      * - `connectRoute`: `src/settings/constants.js` `CONNECT_ROUTE.path`, document-relative;
      * - `connectState` / `configuration`: `CONNECT.state` / `CONNECT.configuration` (K3a, PROPOSED codes).
      */
@@ -110,6 +112,7 @@ window.__ModuleLoader__.load({
       summary: 'Fishball\'s target, connection and identity.',
       'field.target.url': 'Target',
       'hint.target.url': 'The MCP URL of the DSH connector Fishball works with. Blank: no target.',
+      'hint.target.url.supplied': 'Not used while the instance supplies the target above; it applies when the instance supplies none.',
       'field.connect.clientMetadataUrl': 'Client metadata URL',
       'hint.connect.clientMetadataUrl': 'The https URL of the OAuth client metadata document you host for Connect. Connect needs it.',
       'field.identity.id': 'Fishball id',
@@ -120,7 +123,7 @@ window.__ModuleLoader__.load({
       'hint.token': 'Paste a token freshly generated in the target DSH\'s connector settings. It is saved for the next connection and never shown again.',
       'token.waiting': 'A token is waiting to be used',
       'token.none': 'No token waiting',
-      instanceTarget: 'Target supplied by the instance: {url}',
+      instanceTarget: 'Target supplied by the instance, in use: {url}',
       connectTitle: 'Connect',
       connect: 'Connect',
       'connect.needs-configuration': 'Connect needs configuration.',
@@ -152,6 +155,7 @@ window.__ModuleLoader__.load({
       summary: 'Fishball 的目标、连接与身份。',
       'field.target.url': '目标',
       'hint.target.url': 'Fishball 所连接的 DSH connector 的 MCP 地址。留空表示没有目标。',
+      'hint.target.url.supplied': '当 instance 提供上面的目标时不使用；instance 没有提供目标时才生效。',
       'field.connect.clientMetadataUrl': '客户端元数据地址',
       'hint.connect.clientMetadataUrl': '你为 Connect 托管的 OAuth 客户端元数据文档的 https 地址。Connect 需要它。',
       'field.identity.id': 'Fishball id',
@@ -162,7 +166,7 @@ window.__ModuleLoader__.load({
       'hint.token': '粘贴在目标 DSH 的 connector 设置中新生成的 token。它会保存供下一次连接使用，之后不再显示。',
       'token.waiting': '有一个 token 等待使用',
       'token.none': '没有等待使用的 token',
-      instanceTarget: '由 instance 提供的目标：{url}',
+      instanceTarget: '由 instance 提供的目标（正在使用）：{url}',
       connectTitle: '连接',
       connect: 'Connect',
       'connect.needs-configuration': 'Connect 需要先完成配置。',
@@ -369,12 +373,10 @@ window.__ModuleLoader__.load({
         alert === null ? null : h('p', { className: PAGE.css.error, role: 'alert' }, alert))
     }
 
-    /** The instance's target URL in a hosted child (read-only here: the instance owns that setting). */
-    function InstanceTarget({ form, t }) {
-      const snapshot = React.useSyncExternalStore((listener) => form.subscribe(listener), () => form.getSnapshot())
+    /** The instance's target URL in a hosted child, or `undefined` (`target.js` `hasInstanceTarget`). */
+    function instanceUrl(snapshot) {
       const url = snapshot.value?.[SHARED.instanceTarget.field]
-      if (typeof url !== 'string' || url.trim() === '') return null
-      return h('p', { className: PAGE.css.hint, 'data-fishball-instance-target': true }, t('instanceTarget', { url }))
+      return typeof url === 'string' && url.trim() !== '' ? url : undefined
     }
 
     function makePage(ctx, t, section, token) {
@@ -383,23 +385,26 @@ window.__ModuleLoader__.load({
       const instanceForm = ctx.configForms.get(SHARED.instanceTarget.row)
       return function FishballCoreSettings(props) {
         const state = React.useSyncExternalStore(subscribe, getSnapshot)
+        // Read-only here: the instance owns that setting. While it has a value core uses it, so the
+        // user's `target.url` stays editable but is said to apply only without it.
+        const supplied = instanceUrl(React.useSyncExternalStore((listener) => instanceForm.subscribe(listener), () => instanceForm.getSnapshot()))
         const credential = React.useSyncExternalStore(token.subscribe, token.get)
         const baseId = React.useId()
         useLocale(ctx)
         if (props.view === PAGE.summary) return t('summary')
         const disabled = !state.writable || state.saving
+        const [target, ...rest] = SHARED.settings.fields
         const fieldOf = (field) => {
           const value = state.fields[field]
           return h('div', { key: field, 'data-fishball-setting': field },
             h(SettingsValueField, {
-              id: `${baseId}-${field}`, label: t('field.' + field), hint: t('hint.' + field), text: value.text,
+              id: `${baseId}-${field}`, label: t('field.' + field), hint: t(field === target && supplied !== undefined ? 'hint.target.url.supplied' : 'hint.' + field), text: value.text,
               overridden: value.overridden, invalid: value.invalid, overriddenLabel: t('overridden'), resetLabel: t('reset'),
               invalidLabel: t('invalid'), disabled, onEdit: (text) => section.actions.edit(field, text), onReset: () => section.actions.resetField(field),
             }))
         }
-        const [target, ...rest] = SHARED.settings.fields
         return h('div', { className: PAGE.css.root, 'data-fishball-core-settings': true },
-          h(InstanceTarget, { form: instanceForm, t }),
+          supplied === undefined ? null : h('p', { className: PAGE.css.hint, 'data-fishball-instance-target': true }, t('instanceTarget', { url: supplied })),
           h(SettingsForm, {
             labels: { unavailable: t('unavailable'), readOnly: t('readOnly'), saveFailed: t('saveFailed'), save: t('save'), saving: t('saving') },
             state, onSave: section.actions.save, onDiscard: section.actions.discard,

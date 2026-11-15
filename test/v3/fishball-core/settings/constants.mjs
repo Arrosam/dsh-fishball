@@ -31,6 +31,8 @@ export const SUBJECT = Object.freeze({
   pluginExport: 'settingsPlugin',
   route: process.env.FBTEST_F_SETTINGS_ROUTE ?? path.join(REPO, 'packages', 'core', 'src', 'settings', 'index.js'),
   routeExport: 'registerSettingsRoutes',
+  /** The target-precedence rule, pure, from the same module (Fishball's decision, 2026-11-16). */
+  targetExports: Object.freeze({ effective: 'effectiveTarget', hasInstance: 'hasInstanceTarget' }),
 })
 
 /**
@@ -158,6 +160,8 @@ export const FIXTURE = Object.freeze({
   coreName: 'Navigator',
   storedName: 'Old name',
   instanceUrl: 'https://host.test/api/agent/mcp',
+  /** A second instance value, for "the instance's value changes". */
+  otherInstanceUrl: 'https://host2.test/api/agent/mcp',
   approvalUrl: 'https://dsh.test/api/agent/oauth/authorize?state=fbtest',
   revision: 7,
   /** A wrong but well-formed status word (the "any other answer" partition). */
