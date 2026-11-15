@@ -29,10 +29,16 @@ export const PROFILE = 'fbtest'
 export const CONNECTOR = { name: 'dsh-connector', dir: path.join(REPO, 'packages', 'dsh-connector') }
 export const INSTANCE = { name: 'dsh-instance', dir: path.join(REPO, 'packages', 'dsh-instance') }
 /**
- * V3 R-SHARED (R-ARCH-08): the library `fishball-shared` the instance (and later core) imports. Not a
- * plugin: it is linked as a plain dependency, never added to the profile's bundles.
+ * V3 R-SHARED (R-ARCH-08, one library per side since requirements 1.40 / SPLIT-SHARED): the libraries
+ * the packages import by name. `dsh-connector-shared` is the DSH side's (the instance and the connector
+ * import it); `fishball-shared` the Fishball side's (core imports it). Neither is a plugin: each is
+ * linked as a plain dependency, never added to the profile's bundles. `folder` is the package folder
+ * under `packages/` of whichever checkout is linked (FBTEST_PLUGIN_DIR may name another one).
  */
-export const SHARED = { name: 'fishball-shared', dir: path.join(REPO, 'packages', 'shared') }
+export const SHARED = { name: 'fishball-shared', folder: 'shared', dir: path.join(REPO, 'packages', 'shared') }
+export const DSH_SHARED = { name: 'dsh-connector-shared', folder: 'dsh-connector-shared', dir: path.join(REPO, 'packages', 'dsh-connector-shared') }
+/** Both libraries; a checkout that predates one of them simply has no folder for it. */
+export const LIBRARIES = Object.freeze([DSH_SHARED, SHARED])
 /**
  * V3 R-CORE: `fishball-core`, home of the slim child and ui, the persona and the fishball-ui page
  * packages. Nothing imports it by name (the instance copies it by path), so it is never linked.

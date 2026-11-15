@@ -1,7 +1,7 @@
 /**
- * File helpers both Fishball sides use (fishball-shared, R-ARCH-08). Moved unchanged from
- * dsh-instance's src/native-runtime/files.js, whose other helpers are the instance runtime's
- * alone: the runtime and the child's private Skills store both confine a path with `inside`.
+ * File helpers of the Fishball side (fishball-shared, R-ARCH-08): the child's private Skills
+ * store confines a path with `inside`. dsh-connector-shared/files is the DSH side's own copy
+ * (design §1.0b row 5: no module is shared across the sides).
  */
 import path from 'node:path'
 

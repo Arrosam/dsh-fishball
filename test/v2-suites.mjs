@@ -78,6 +78,15 @@ export const V2_SUITES = Object.freeze({
     // V3 R-SHARED (PLAT-EP-07 static rows, HOST-EP-03 rows 1–2); run with test/run-v3.mjs.
     file('test/v3/contract/package-boundaries/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-shared package boundaries (R-SHARED)'),
     file('test/v3/contract/package-boundaries/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-shared package boundaries (R-SHARED)'),
+    // V3 SPLIT-SHARED (one library per side, requirements 1.40: dsh-connector-shared and fishball-shared); run with test/run-v3.mjs.
+    file('test/v3/contract/split-shared/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 one shared library per side (SPLIT-SHARED)'),
+    file('test/v3/contract/split-shared/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 one shared library per side (SPLIT-SHARED)'),
+    // V3 K1d (token reveal, page id, Mailbox.transfer, SettingsWriter, SessionNotes amendments); run with test/run-v3.mjs.
+    file('test/v3/contract/k1d-amendments/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 K1d contract amendments (K1d)'),
+    file('test/v3/contract/k1d-amendments/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 K1d contract amendments (K1d)'),
+    // V3 K3a (core-side seams: own MCP-surface copy, hosted import names, Connect, fishball-ui seam); run with test/run-v3.mjs.
+    file('test/v3/contract/k3a-core-seams/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 K3a core-side seams (K3a)'),
+    file('test/v3/contract/k3a-core-seams/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 K3a core-side seams (K3a)'),
     // V3 K2 (freeze of dsh-connector/tools, K-flagged EXT cases); run with test/run-v3.mjs.
     file('test/v3/contract/k2-tools/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
     file('test/v3/contract/k2-tools/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),

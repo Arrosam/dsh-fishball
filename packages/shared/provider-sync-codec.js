@@ -1,11 +1,14 @@
 /**
+ * Fishball side's interim copy (requirements 1.40, design §1.0b row 5): dsh-connector-shared owns
+ * the DSH side's identical module. This copy serves only core's child half until I-HOST moves that
+ * half into dsh-instance, then it is deleted (package.json //TODO). Keep the two in step until then.
+ *
  * The provider-sync wire codec (fishball-shared, R-ARCH-08; §10, §15 T16).
  *
- * Moved unchanged from dsh-instance's src/slim/child/provider-sync-target.js: the main host's
- * source end (dsh-instance src/provider-sync-service.js) and the child's target end
- * (src/slim/child/provider-sync-target.js) both build, bound and check frames with it, and both
- * describe themselves with providerSyncIdentity, so the two ends cannot drift. The endpoint and
- * the child row stay with the target; the preview/confirm engine is ./provider-sync.js.
+ * Moved unchanged from dsh-instance's src/slim/child/provider-sync-target.js: the child's target
+ * end (fishball-core src/slim/child/provider-sync-target.js) builds, bounds and checks frames and
+ * describes itself with it; the main host's source end uses dsh-connector-shared's copy. The
+ * endpoint and the child row stay with the target; the preview/confirm engine is ./provider-sync.js.
  *
  * No value ever appears in a preview, a refusal or a result: group entries are exact-key checked
  * against metadata only, and the record validator lives in ./provider-sync.js.
@@ -191,7 +194,7 @@ function errorShape(value) {
 }
 
 /**
- * The frame codec both ends share. A request carries the source identity beside the source
+ * The frame codec of both ends (each side's copy). A request carries the source identity beside the source
  * inventory, because the target engine verifies that the inventory belongs to the peer that
  * sent it; the wire's mutual HMAC already authenticates the process, not the profile identity.
  */
@@ -253,8 +256,8 @@ export function createProviderSyncCodec() {
 
 /**
  * The target/source identity both ends exchange: a per-boot id, the canonical profile path hash,
- * and the running DSH version. The main service uses this helper too, so the source and target
- * cannot describe identity differently.
+ * and the running DSH version. Source and target describe identity with this helper, each from its
+ * side's copy.
  */
 export async function providerSyncIdentity(profile, runtimeId) {
   if (!profile || typeof profile.dir !== 'string' || profile.dir === '') throw new TypeError('fishball provider sync: a profile directory is required')

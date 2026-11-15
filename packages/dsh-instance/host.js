@@ -34,7 +34,7 @@ const PLUGIN = Object.freeze({
   // optional inject form anyway: every listed key gates activation.
   dependencies: ['profileContext', 'workspaceRegistry', 'sessions', 'sessionController', 'agents', 'appReady', 'connection', 'webServer',
     // B9: the provider-sync source host is built on this row's ctx (createChildProviderSync) and
-    // reads llm, settings, configEditor, credentials and authorization (fishball-shared/provider-sync-host).
+    // reads llm, settings, configEditor, credentials and authorization (dsh-connector-shared/provider-sync-host).
     // dsh-base turns settings/configEditor off only without profileContext, which is required
     // above anyway. llm is already a dependency of sessionController and credentials of
     // connection, so listing them adds no new reason for this row (and its child) to restart.

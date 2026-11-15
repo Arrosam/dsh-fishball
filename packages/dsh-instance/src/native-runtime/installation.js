@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url'
 import path from 'node:path'
 import { RUNTIME, PLACEMENT, HOST_LAUNCH, fail, NativeRuntimeError } from './constants.js'
 import { privateDirectory, writePrivate, exists, snapshotPath, writeProfileBundles, sameBundles } from './files.js'
-import { inside } from 'fishball-shared/files'
+import { inside } from 'dsh-connector-shared/files'
 import { placeBundles, snapshotLifecycle } from './placement.js'
 
 export async function resolveInstallation(installAnchor) {

@@ -15,7 +15,7 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import { Worker } from 'node:worker_threads'
 import { REPO } from '../../../support/constants.mjs'
-import { JS_FILE, NPM, V3, V3_NAMES, WORKER } from './constants.mjs'
+import { JS_FILE, LIBRARY_NAMES, NPM, V3, V3_NAMES, WORKER } from './constants.mjs'
 
 const run = promisify(execFile)
 const MANIFEST = 'package.json'
@@ -46,7 +46,8 @@ const posix = (p) => p.split(path.sep).join('/')
 /**
  * A throwaway copy of the repository's root manifest and `packages/` (tracked and untracked files,
  * not ignored ones), with a root `node_modules/` of links standing in for the workspace install, so
- * a bare `fishball-shared` resolves from an importing file as it would after `npm install`.
+ * a bare library name (`fishball-shared`, `dsh-connector-shared`) resolves from an importing file as
+ * it would after `npm install`.
  */
 async function workspaceCopy() {
   const root = await mkdtemp(path.join(npmTempRoot(), NPM.tempPrefix))
@@ -100,7 +101,7 @@ function readSpecifiers(files) {
 /**
  * A unit is one V3 package as shipped. Files of a nested V3 package inside a tarball (a folder with
  * its own package.json naming a V3 package: a placed bundle under the instance's `bundled/`, or a
- * bundled `node_modules/fishball-shared`) belong to that nested package, not to the tarball's owner.
+ * bundled `node_modules/<library>`) belong to that nested package, not to the tarball's owner.
  * A nested copy of a package that also has its own folder is not analysed twice.
  */
 function unitsOf(owner, dir, files) {
@@ -124,8 +125,9 @@ let cache
  * Result: { packed: {name: string[]}, units: Map<name, Unit> }, Unit = { name, own, manifest,
  * files: string[] (shipped, package-relative), digests: Map<jsFile, sha256>, parseErrors: string[], refs: Ref[] },
  * Ref = { file, kind, specifier (null when not a literal), target? (the V3 package it lands in,
- * when not the unit itself), sharedModule? (the fishball-shared file it lands on), outside? (a path
- * leaving the package into no V3 package), unresolved? }.
+ * when not the unit itself), library? and libraryModule? (the library, fishball-shared or
+ * dsh-connector-shared, and its file the reference lands on), outside? (a path leaving the package
+ * into no V3 package), unresolved? }.
  */
 export function observe() {
   cache ??= observeOnce()
@@ -148,10 +150,11 @@ async function observeOnce() {
     // Longest folder first, so a nested unit wins over the package that ships it.
     const dirs = [...units.values()].map((u) => ({ name: u.name, dir: fs.realpathSync(u.dir) })).sort((a, b) => b.dir.length - a.dir.length)
     const unitAt = (file) => dirs.find((d) => inside(d.dir, file))?.name
-    const sharedDir = dirs.find((d) => d.name === V3.shared.name)?.dir
-    const sharedModule = (file) => {
-      if (sharedDir !== undefined && inside(sharedDir, file)) return posix(path.relative(sharedDir, file))
-      const marker = path.sep + path.join(NODE_MODULES, V3.shared.name) + path.sep
+    /** The file of library `name` that `file` is, by the library's folder or a node_modules/<name>/ copy. */
+    const libraryModule = (name, file) => {
+      const dir = dirs.find((d) => d.name === name)?.dir
+      if (dir !== undefined && inside(dir, file)) return posix(path.relative(dir, file))
+      const marker = path.sep + path.join(NODE_MODULES, name) + path.sep
       const at = file.lastIndexOf(marker)
       return at < 0 ? undefined : posix(file.slice(at + marker.length))
     }
@@ -178,8 +181,9 @@ async function observeOnce() {
           const target = named ?? landed
           if (target !== undefined && target !== unit.name) entry.target = target
           if (resolved !== undefined && named === undefined && landed === undefined && !inside(own, resolved)) entry.outside = true
-          // Also set for the library's own internal imports, so usage can follow its re-exports.
-          if (resolved !== undefined && (target === V3.shared.name || landed === V3.shared.name)) entry.sharedModule = sharedModule(resolved)
+          // Also set for a library's own internal imports, so usage can follow its re-exports.
+          const library = LIBRARY_NAMES.find((n) => n === target || n === landed)
+          if (resolved !== undefined && library !== undefined) Object.assign(entry, { library, libraryModule: libraryModule(library, resolved) })
           if (ref.unresolved !== undefined) entry.unresolved = ref.unresolved
           unit.refs.push(entry)
         }

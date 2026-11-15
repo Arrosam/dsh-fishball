@@ -34,9 +34,10 @@ const V2B = Object.freeze({
     instance: Object.freeze({ name: 'dsh-instance', dir: BODY_SOUL.instance }),
   }),
   // V3 R-SHARED / R-ARCH-08 (approved design) adds the library workspace packages/shared;
+  // V3 SPLIT-SHARED / requirements 1.40 adds the DSH side's library workspace packages/dsh-connector-shared;
   // V3 R-CORE (1) / design §9.1 adds fishball-core's workspace packages/core;
   // V3 R-EMBED / design §9.1 (DESIGN.md §17) adds dsh-connector-ui's workspace packages/dsh-connector-ui.
-  workspaces: Object.freeze(['packages/dsh-connector', 'packages/core', 'packages/dsh-connector-ui', 'packages/dsh-instance', 'packages/shared']),
+  workspaces: Object.freeze(['packages/dsh-connector', 'packages/core', 'packages/dsh-connector-ui', 'packages/dsh-instance', 'packages/dsh-connector-shared', 'packages/shared']),
   /** Repository directories of the V3 packages (no V2 module may load from them). */
   v3Dirs: Object.freeze(['board', 'fold-notify', 'watchdog'].map((d) => path.join(REPO, 'packages', d))),
   /** A packed path segment naming a V3 area or the bundled asset directory. */
@@ -233,8 +234,8 @@ async function loadYaml() {
 // A. Artifact contents
 // =============================================================================================
 
-// EP V2B-ART-01: the workspace list is exactly the two V2 packages (no V3 workspace, none missing).
-test('V2B-ART-01 root workspaces are exactly connector and instance', () => {
+// EP V2B-ART-01: the workspace list is exactly the V2 packages plus the approved V3 workspaces above (none other, none missing).
+test('V2B-ART-01 root workspaces are exactly connector and instance plus the approved V3 workspaces', () => {
   assert.deepEqual(rootManifest().workspaces, [...V2B.workspaces])
 })
 

@@ -14,8 +14,12 @@ export const SET = Object.freeze({
   features: Object.freeze([V3.board.name]),
   /** Design §8.1 "Order": the features come before core, core is last. */
   get placed() { return Object.freeze([...this.features, this.core]) },
-  /** The library beside core in the child, never a profile bundle (R-BND-01, R-ARCH-08). */
-  library: V3.shared.name,
+  /**
+   * The libraries beside the bundles in the child, never profile bundles (R-BND-01, R-ARCH-08; one
+   * per side since SPLIT-SHARED): dsh-connector-shared for the instance's lifecycle code, and
+   * fishball-shared as core's own dependency.
+   */
+  libraries: Object.freeze([V3.dshShared.name, V3.shared.name]),
   /** Placed for its contract only (RELAYED.copies), never a profile bundle. */
   contractOnly: V3.connector.name,
 })
@@ -156,7 +160,7 @@ export const BUDGET = Object.freeze({ readyMs: 150000, restartMs: 150000, pollMs
 export const LATER = Object.freeze({
   host: 'I-HOST (W4: the dshInstanceChild locator, Retry, lifecycle codes such as fishball-off)',
   restartNotice: 'U-SHELL / E2E-UI (the "restart required" line in the UI)',
-  relPack: 'REL-PACK (P-1 mechanism B: a real fishball-shared copy in each tarball; PLAT-EP-07 row 5 stays failing until then)',
+  relPack: 'REL-PACK (P-1 mechanism B: a real copy of its side\'s library in each tarball; PLAT-EP-07 row 5 stays failing until then)',
   uninstall: 'I-HOST (HOST-ST-01 row 10: uninstall with the export offer, Q-23)',
   e2e: 'E2E-UI (W6 browser flows; no browser in this suite)',
 })
