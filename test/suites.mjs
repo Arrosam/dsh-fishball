@@ -118,6 +118,9 @@ export const V3_SUITES = Object.freeze({
     [...CORE_LINK, sub(PACKAGE.fishballCore, 'scripts'), top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
   'fishball-core.identity': suite('identity, pairing decisions, token-revoked (F-PAIR)', v3('fishball-core/identity'),
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+  // The strip view is core's ui/status until F-UI moves it; the line reads the link's target rule.
+  'fishball-core.status': suite('status, strip view, set completeness, guards notice (F-STATUS)', v3('fishball-core/status'),
+    [sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballCore, 'ui', 'status'), ...CORE_LINK]),
   // fishball-ui has no folder yet (F-UI moves it out of core): its guards are core's src/guards, ui/ and patch.
   'fishball-ui.guards': suite('guard rows, override report, self-reorder (F-GUARDS)', v3('fishball-ui/guards'),
     [sub(PACKAGE.fishballCore, 'src', 'guards'), sub(PACKAGE.fishballCore, 'ui'), sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore),
