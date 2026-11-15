@@ -1,7 +1,7 @@
 /**
  * Core's status (task F-STATUS; design §5a.2, §6.3a step 1, §8.2; R-FB-03, R-FB-04, R-FB-09,
- * R-FB-10, R-BND-05, R-EXT-14; requirements 1.37 and 1.41 Q-G1). It reads what other modules own and
- * owns no state of its own beyond the last snapshot it emitted:
+ * R-FB-10, R-BND-05, R-EXT-14; requirements 1.37 and 1.41 Q-G1). It reads what other modules own;
+ * its own state is only the last set check, the last snapshot and whether it noticed:
  * - the link's `{state, code}` (F-LINK, `token-revoked` decided by F-PAIR's gate);
  * - Connect's state (F-LINK-SAVE, K3a `FishballConnect`), for the strip's Connect control;
  * - the guard report (F-GUARDS), plus the one manager notice of design §5a.2;
@@ -10,12 +10,16 @@
  * It sends nothing to the target and writes nothing. fishball-ui draws `snapshot()` through
  * `fishballInstance.ui` (F-WIRE binds it); core reports nothing about a missing fishball-ui (Q-G1).
  *
- * The notice: the first `guards-overridden` report of this start gives Fishball's manager one
- * notice through `manager.notify`, keyed per start, so a restart may notice again and nothing in one
- * start notices twice (task brief: "one notice per DSH start"). Later changes show in the strip only.
+ * The notice: the first `guards-overridden` report gives Fishball's manager one notice through
+ * `manager.notify`, under a dedupe key that lives as long as the process (one DSH start). The
+ * manager keeps notice keys and answers `duplicate` for a key it accepted, so a row restarted in
+ * the same process (HMR, a live plugin change) cannot notice twice, a failed notice may be retried,
+ * and the next DSH start gets a new key (task brief: "one notice per DSH start"). Later changes
+ * show in the strip only.
  */
 import { randomUUID } from 'node:crypto'
 import { GUARDS } from '../../contracts/constants.js'
+import { codeOf } from '../events/diagnostics.js'
 import { emitIsolated, subscribe } from '../link/index.js'
 import { STATUS_MODEL } from './constants.js'
 import { stripLine } from './line.js'
@@ -29,8 +33,11 @@ const OFF = Object.freeze({ fishball: STATUS_MODEL.fishball.off })
 /** The status of a DSH by its `fishballStatus` service, or `fishball-off` when it has none. */
 export const statusOf = (service) => (typeof service?.snapshot === 'function' ? service.snapshot() : OFF)
 
-/** A failure's cause for the log: its code, else its name, else the value itself (never a message). */
-const reason = (error) => String(error?.code ?? error?.name ?? error)
+/**
+ * This DSH start's notice key. Held on the process's global object, not in a module variable,
+ * because a recomposed row may load this module afresh, which must not make a new start.
+ */
+const startNoticeKey = () => (globalThis[Symbol.for(STATUS_MODEL.startSymbol)] ??= STATUS_MODEL.notice.guardsKeyPrefix + randomUUID())
 
 /** Subscribes `fn` to an optional port's change stream; a port without one gives a no-op disposer. */
 const follow = (port, method, fn) => (typeof port?.[method] === 'function' ? port[method](fn) : () => {})
@@ -48,7 +55,7 @@ const follow = (port, method, fn) => (typeof port?.[method] === 'function' ? por
 export function createStatus(ctx, { link, target, connect, guards, bridge, notify }) {
   const logger = ctx.logger?.(STATUS_MODEL.logger)
   const listeners = new Set()
-  const noticeKey = STATUS_MODEL.notice.guardsKeyPrefix + randomUUID()
+  const noticeKey = startNoticeKey()
   let noticed = false
   let closed = false
   let set = null
@@ -57,11 +64,12 @@ export function createStatus(ctx, { link, target, connect, guards, bridge, notif
   let currentJson
 
   function build() {
+    const linkStatus = link.status()
     const connectStatus = connect === undefined ? null : connect.status()
-    const { line, control } = stripLine(link.status(), target(), connectStatus)
+    const { line, control } = stripLine(linkStatus, target(), connectStatus)
     return Object.freeze({
       fishball: STATUS_MODEL.fishball.on,
-      link: link.status(),
+      link: linkStatus,
       connect: connectStatus,
       line,
       control,
@@ -74,12 +82,12 @@ export function createStatus(ctx, { link, target, connect, guards, bridge, notif
   function maybeNotice(report) {
     if (noticed || notify === undefined || report?.status !== GUARDS.status.overridden) return
     noticed = true
-    const text = TEXT.guardsNotice(report.overridden.join(TEXT.listSeparator))
-    // Not retried: a lost notice still leaves the strip line, and a retry could notice twice.
+    const text = TEXT.guardsNotice(report.overridden.join(GUARDS.text.reportSeparator))
     // Deferred, so a notify that throws synchronously cannot break the refresh; a close() in the
-    // meantime still wins.
+    // meantime still wins. A failure (the manager not ready yet, at the app-ready check) is retried
+    // at the next refresh that still sees the guards overridden; the dedupe key keeps it one notice.
     Promise.resolve().then(() => (closed ? undefined : notify({ pluginId: STATUS_MODEL.notice.pluginId, dedupeKey: noticeKey, text })))
-      .catch((error) => { logger?.warn(TEXT.noticeFailed, reason(error)) })
+      .catch((error) => { noticed = false; logger?.warn(TEXT.noticeFailed, codeOf(error)) })
   }
 
   /** Rebuilds the snapshot and emits it when it differs from the last one. */
@@ -105,7 +113,7 @@ export function createStatus(ctx, { link, target, connect, guards, bridge, notif
       set = found
       refresh()
     } catch (error) {
-      logger?.warn(TEXT.setFailed, reason(error))
+      logger?.warn(TEXT.setFailed, codeOf(error))
     }
   }
 
@@ -124,7 +132,7 @@ export function createStatus(ctx, { link, target, connect, guards, bridge, notif
   if (typeof appReady?.onReady === 'function') disposers.push(appReady.onReady(() => { ready = true; void recheckSet() }))
   refresh()
 
-  return Object.freeze({
+  const status = Object.freeze({
     snapshot: () => current,
     /** Calls `fn(snapshot)` after each change. Returns its disposer. A throwing listener affects no other. */
     onChange: (fn) => subscribe(listeners, fn),
@@ -138,4 +146,7 @@ export function createStatus(ctx, { link, target, connect, guards, bridge, notif
       listeners.clear()
     },
   })
+  // Tied to the row as well, so a disposed row stops following even if its caller never closes it.
+  ctx.effect?.(() => () => status.close())
+  return status
 }
