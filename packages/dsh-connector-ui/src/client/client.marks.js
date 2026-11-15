@@ -27,6 +27,11 @@ globalThis.__ModuleLoader__?.load({
     const h = React.createElement
     /** The part's sub-plugin: its name and the client services it reads. */
     const PART = Object.freeze({ name: 'dsh-connector-ui: marks', inject: Object.freeze(['slots', 'locale']) })
+    /** Cordis effect labels. */
+    const LABEL = Object.freeze({
+      header: 'fishball: hand-over header action', menu: 'fishball: session menu', dialogs: 'fishball: hand-over dialogs',
+      rowMark: 'fishball: managed row mark', rowRunning: 'fishball: managed row running mark',
+    })
 
     /**
      * The one hand-over entry: the session header and the session-row menu share it. Menu order:
@@ -63,9 +68,9 @@ globalThis.__ModuleLoader__?.load({
      * @param available - the host half's availability; `ui` holds the backend's page-relative routes.
      */
     function marksPart(kit, available) {
-      const { NS, SLOT, CLS, valueStore, useUi, send, FishballIcon, principalLabel, principalText, withName, principalWithLight } = kit
+      const { NS, SLOT, CLS, valueStore, snapshotHook, send, FishballIcon, principalLabel, principalText, withName, principalWithLight } = kit
       const routes = available.ui
-      const useSnapshot = () => useUi(routes.events)
+      const useSnapshot = snapshotHook(routes)
       /** The session's mark (`{sessionId, principal}`), or undefined while it is unmanaged. */
       const markOf = (snapshot, sessionId) => snapshot.marks.find((mark) => mark.sessionId === sessionId)
       const refusalKey = (code) => (REFUSAL.known.includes(code) ? REFUSAL.prefix + code : REFUSAL.failed)
@@ -85,9 +90,18 @@ globalThis.__ModuleLoader__?.load({
        * the menu closes, so the entry cannot show it itself.
        */
       const takeBackNotice = valueStore(null)
+      /**
+       * Sessions whose Take back is in flight: a second click (another entry, a double click) sends
+       * nothing, so it cannot come back as a `not-managed` refusal of the first one's success.
+       */
+      const takingBack = new Set()
       async function takeBack(sessionId) {
-        const { ok, code } = await send(routes.takeBack, { sessionId })
-        takeBackNotice.set(ok ? null : { code })
+        if (takingBack.has(sessionId)) return
+        takingBack.add(sessionId)
+        try {
+          const { ok, code } = await send(routes.takeBack, { sessionId })
+          takeBackNotice.set(ok ? null : { code })
+        } finally { takingBack.delete(sessionId) }
       }
 
       function makeHandOverDialog(t) {
@@ -183,7 +197,12 @@ globalThis.__ModuleLoader__?.load({
         }
       }
 
-      /** The row menu's entries: Take back for a managed session, else one Hand over per target. */
+      /**
+       * The row menu's entries: Take back for a managed session, else one Hand over per target. The
+       * row menu is already a menu, and DSH's legacy row-menu slot takes flat MenuItemButton rows
+       * only (no nested menu), so its rows are the dropdown's rows (R-UI-10), each "Hand over to
+       * <principal>" with its light; the header carries the "Handover to…" dropdown itself.
+       */
       function makeMenuItems(t) {
         return function FishballHandOverMenuItems({ sessionId, useMenuOpenState }) {
           const snapshot = useSnapshot()
@@ -250,15 +269,15 @@ globalThis.__ModuleLoader__?.load({
         apply(ctx) {
           const t = ctx.locale.bind(NS)
           const register = (slot, entry, Component) => ctx.slots.register({ name: slot, locale: NS, ...entry }, Component)
-          ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => register(SLOT.headerActions, { id: HAND_OVER.id, order: HAND_OVER.headerOrder }, makeHeaderAction(t))), 'fishball: hand-over header action')
-          ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, () => register(SLOT.sessionMenu, { id: HAND_OVER.id, order: HAND_OVER.menuOrder }, makeMenuItems(t))), 'fishball: session menu')
+          ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => register(SLOT.headerActions, { id: HAND_OVER.id, order: HAND_OVER.headerOrder }, makeHeaderAction(t))), LABEL.header)
+          ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, () => register(SLOT.sessionMenu, { id: HAND_OVER.id, order: HAND_OVER.menuOrder }, makeMenuItems(t))), LABEL.menu)
           ctx.effect(() => ctx.slots.inject(SLOT.overlay, function* () {
             yield register(SLOT.overlay, { id: HAND_OVER.id }, makeHandOverDialog(t))
             yield register(SLOT.overlay, { id: HAND_OVER.noticeId }, makeTakeBackNotice(t))
-          }), 'fishball: hand-over dialogs')
-          ctx.effect(() => ctx.slots.inject(SLOT.rowLeading, () => register(SLOT.rowLeading, { id: MANAGED_ROW.id }, makeRowMark(t))), 'fishball: managed row mark')
+          }), LABEL.dialogs)
+          ctx.effect(() => ctx.slots.inject(SLOT.rowLeading, () => register(SLOT.rowLeading, { id: MANAGED_ROW.id }, makeRowMark(t))), LABEL.rowMark)
           // 0.2.2 keeps a row's trailing seat mounted while it runs; rc.5 has no such seat and this waits.
-          ctx.effect(() => ctx.slots.inject(SLOT.rowTrailing, () => register(SLOT.rowTrailing, { id: MANAGED_ROW.id }, makeRowRunningMark(t))), 'fishball: managed row running mark')
+          ctx.effect(() => ctx.slots.inject(SLOT.rowTrailing, () => register(SLOT.rowTrailing, { id: MANAGED_ROW.id }, makeRowRunningMark(t))), LABEL.rowRunning)
         },
       }
     }

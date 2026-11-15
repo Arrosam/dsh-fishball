@@ -132,6 +132,7 @@ export const LOG = Object.freeze({
   connectorMissing: 'connector-missing: no dshConnectorUi with apiVersion %d; embed-UI needs a local connector and does nothing',
   instanceMissing: 'instance-missing: no dshInstanceChild with apiVersion %d; the window shows the no-instance hint',
   routeUnavailable: 'route %s not registered (%s)',
+  toolsRefused: 'notify and attention tools not declared (%s)',
 })
 
 /** Cordis effect labels. */

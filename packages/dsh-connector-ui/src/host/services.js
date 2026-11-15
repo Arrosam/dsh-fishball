@@ -9,15 +9,20 @@
  */
 import { LABEL, LOG, SERVICE } from './constants.js'
 
+/** Whether a service object carries the contract's version (any other value is the service absent). */
+const isUsable = (service) => service?.apiVersion === SERVICE.apiVersion
+
 /** The service `name` if it is provided now with the contract's version, else undefined. */
 export function usable(ctx, name) {
   const service = ctx.get(name)
-  return service?.apiVersion === SERVICE.apiVersion ? service : undefined
+  return isUsable(service) ? service : undefined
 }
 
 /**
  * Whether a local connector is there (Q-U1: "embed UI是connector的附属插件，不能脱离connector运作"):
- * its UI backend, or (until C-WIRE) V2's connector service, which serves only the V2 frame.
+ * its UI backend, or (until C-WIRE) V2's connector service, which serves only the V2 frame. This
+ * is wider than availability's `connector` flag, which is the UI backend alone: the logs and the
+ * route refusals ask "is there a connector at all", the client asks "what can I draw".
  */
 export const hasConnector = (ctx) => usable(ctx, SERVICE.ui) !== undefined || ctx.get(SERVICE.legacyConnector) !== undefined
 
@@ -63,6 +68,7 @@ export function reportMissing(ctx, logger) {
 }
 
 /**
+ * @param logger - the row's logger.
  * Declares embed-UI's notify and attention tools (R-FN-01, R-EXT-13 amended by 1.34, design §13.6):
  * while both the UI backend and the contribution service are there, the backend's `contribute`
  * registers its tool definitions through `dshConnectorTools.register`. Both are reached through
@@ -72,10 +78,18 @@ export function reportMissing(ctx, logger) {
  * which takes the tools out of `tools/list` and resets the latch and the prompt (§13.6).
  * Embed-UI holds no tool handler and no state; the backend owns both (1.34).
  */
-export function contributeTools(ctx) {
+export function contributeTools(ctx, logger) {
   ctx.inject([SERVICE.ui, SERVICE.tools], (scope) => {
     const ui = scope[SERVICE.ui]
-    if (ui?.apiVersion !== SERVICE.apiVersion || scope[SERVICE.tools]?.apiVersion !== SERVICE.apiVersion) return
-    scope.effect(() => ui.contribute((definition) => scope[SERVICE.tools].register(definition)), LABEL.tools)
+    if (!isUsable(ui) || !isUsable(scope[SERVICE.tools])) return
+    scope.effect(() => {
+      // A refused registration (C-EXT: contributor-unidentified, namespace-reserved, tool-exists)
+      // leaves no tool behind (the backend disposes the ones it made) and is logged once on this
+      // row, instead of failing the sub-scope with no row log line.
+      try { return ui.contribute((definition) => scope[SERVICE.tools].register(definition)) } catch (error) {
+        logger.warn(LOG.toolsRefused, error?.code ?? error?.message ?? String(error))
+        return undefined
+      }
+    }, LABEL.tools)
   })
 }
