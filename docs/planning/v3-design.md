@@ -773,7 +773,8 @@ The user's words (W4 question 1, 2026-11-15): "不允许改token值，一旦生�
   settings page would be a second exception and a second owner-auth surface (R-ARCH-06).
 - **Not the native settings form.** It has no secret widget and no one-shot display (§5.2 finding).
 - **`fishball-embed-ui`**, because every host-DSH UI change Fishball makes is embed-UI's (R-ARCH-04),
-  and it already works with the connector alone, without an instance (R-UI-08). Its host half
+  and it already works with the connector alone, without an instance (R-UI-08). Without
+  embed-UI no token can be created (open question R2). Its host half
   already serves owner-only routes through `connection.fetch` behind DSH's Host and Origin fence
   (`src/host/routes.js`), and it already drives a connector host-only service (hand-over, Q3).
 
@@ -809,12 +810,12 @@ in the host's credential store (open question R1).
 **New token**. That is a new principal: the old one's sessions become unmanaged (R-ROUTE-06), its
 queued events are dropped, the designated role is cleared, and its id and name are freed (R-ID-13),
 so the agent pairs again with the new token and may take the same name. There is no combined
-control (open question R5).
+control (open question R4).
 
 **Native-list saves.** DSH's form cannot make a field read-only, so the registry checks each save
 of the tokens list: only label and switch edits, removals and reordering are accepted. An added
 item, or a changed or repeated `key`, refuses the whole save and writes the previous list back
-(`restoreTokens`, as `ref-duplicate` did). The code is PROPOSED `token-not-created` (open question R4).
+(`restoreTokens`, as `ref-duplicate` did). The code is PROPOSED `token-not-created` (open question R3).
 An item whose `key` has no record (for example a W2 development profile with `ref` items) is left
 out and logged at start; no V3 token entry has shipped, so nothing is migrated.
 
@@ -851,6 +852,18 @@ out and logged at start; no V3 token entry has shipped, so nothing is migrated.
 - Cases to author (new IDs): **AUTH-UC-15** create a token and copy it once; **AUTH-DT-13** what a
   save of the native tokens list does; **AUTH-ST-08** the reveal modal (open → copied / closed,
   never re-shown).
+
+**Open product questions (R1–R4, raised 2026-11-15; recommendations in brackets).**
+- **R1. Hosted values.** The instance must hand the hosted value to the child after every host
+  restart (R-HOST-05), so a readable copy must exist. Keep it in the host's credential store,
+  readable only by the instance through `ctx.credentials`, never shown, or mint a new hosted entry
+  at every host start? *[Keep it: the rule is about people seeing or editing a value.]*
+- **R2. Connector without embed-UI.** Then nothing can create a token. Accept that and say so in
+  the connector's settings description, or allow a second connector page? *[Accept it.]*
+- **R3. An item added in the native list.** Refuse the whole save and restore the previous list
+  (`token-not-created`), or drop just the new item? *[Refuse and restore, as `ref-duplicate` did.]*
+- **R4. A lost or leaked value.** Delete plus New token only, or also a "Replace" control that does
+  both at once? Either way the replacement is a new principal. *[Delete plus New token only.]*
 
 ## 5a. The Fishball plugin set in any DSH
 
