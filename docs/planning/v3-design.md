@@ -392,49 +392,62 @@ fishballChild = {
 
 ## 5. Tokens
 
-### 5.1 Model
+### 5.1 Model (amended by requirements 1.27)
 
-- A token is a **connector settings list entry** plus a value in DSH's credential store:
+- A token is a **connector settings list entry** plus a **digest** of its value in the
+  connector's own storage domain:
   ```yaml
   tokens:
-    - label: Fishball (local)        # shown in the native form; not a secret
+    - label: Claude on the laptop    # shown in the native form; not a secret
       enabled: true
-      ref: FISHBALL_TOKEN_LOCAL       # credential reference (POSIX env-var name), role('credential-ref')
+      key: 6kq2…                      # opaque entry key the connector wrote at creation; not a secret
   ```
-- The value lives **only** in `ctx.credentials` under `ref`. In the local provider, that means
-  `$DSH_HOME/.credentials.yaml`, then the environment and `.env` fallbacks.
-- The settings document holds the label, the switch and the reference name, never the value.
-  This is DSH's own pattern for keys: `apiKeyEnv: z.string().role('credential-ref')` in
-  `dsh-web-search-deepseek` and `dsh-llm-*`, resolved per operation with `credentials.resolve`.
-- `role('secret')` fields are **not** used. They are redacted on the wire but stored in the
-  settings document, which R-TOK-04 forbids.
+- **Only the connector generates a value**, and it is shown **once**, in the reveal modal (§5.9).
+  Nobody can view or edit it afterwards (requirements 1.27).
+- **Storage is digest-only.** The connector keeps `SHA-256(value)` (K1 `TOKEN_VALUE.digestAlgorithm`)
+  in the entry's record (C-TOKENS' `fishball_tokens` domain) and never the value. This is enough,
+  because nothing ever reads a value back:
+  - the client-credentials grant authenticates with `TokenRegistry.match(client_secret)`
+    (`mcp/oauth/client-credentials.js`), a constant-time compare of the presented value's digest;
+  - the approval page authorizes with the same `match(value)` (`mcp/oauth-web/approval.js`);
+  - access and refresh tokens are already digest-only and carry the entry's generation (§5.5).
+- **Why a plain digest and no HMAC key.** W2's HMAC fingerprint key (`tokens/fingerprint.js`, C-TOKENS
+  question 2 = A) existed so that a stored digest of a short, user-chosen value could not be
+  brute-forced offline. Every value is now 256 random bits, so a SHA-256 digest is not
+  guessable, and the key record is no longer needed.
+- **The one exception: hosted entries.** A "Fishball (hosted)" entry's value must be handed to the
+  child again after every host restart (§5.4), so `createHosted` also stores it in the host DSH's
+  credential store under a reference it chooses. It is never shown and never returned to any UI
+  (open question R1).
+- The settings document holds the label, the switch and the entry key, never the value, a digest
+  or a reference. `role('secret')` and `role('credential-ref')` fields are not used.
 
-### 5.2 Creation (R-TOK-08; Q5 decided)
+### 5.2 Creation (R-TOK-03, R-TOK-08, R-TOK-11; requirements 1.27)
 
-- The user adds a list entry in **Plugins → fishball-connector → settings**: DSH's native,
-  auto-generated form. There is no custom page.
-- On the settings change (`settings/document-updated`), for each enabled entry whose `ref` is not
-  configured (`credentials.describe(ref).configured === false`) and is writable, the connector:
-  1. generates a value: 32 random bytes from `crypto.randomBytes`, base64url, with prefix
-     `fbt_`, so secret scanners and DSH's own secret mask recognise it;
-  2. stores it with `credentials.set(ref, value)`;
-  3. keeps it in memory only for the comparison digest (§5.5).
-- The value is never shown in any DSH UI. The user hands it to an external agent by reading
-  their own credential store, or sets a value of their choice there or in the environment before
-  enabling the entry. The connector then uses it as is, if it has at least 32 characters
-  (else `token-too-short`). An unwritable store leaves the entry `token-unconfigured` and
-  unusable; two entries with one `ref` are refused at save with `ref-duplicate` (R-TOK-08, TQ-4
-  decided A).
-- **Finding:** in both SDKs DSH's generic plugin form has no secret-entry widget. The native
-  secret inputs (`SettingsSecretField` plus `remote.credentials.set`) are used only by DSH's own
-  Models and web-search pages. The plugin-manager auto form has no secret handling. So a typed-in
-  value through the generic form is not available without a custom page. That is why Q5 was
-  asked; the user chose this design (A).
+- The user presses **New token** in the section that `fishball-embed-ui` adds to the
+  connector's page in **Plugins** (§5.9), and types a label.
+- The connector then:
+  1. generates a value: 32 random bytes from `crypto.randomBytes`, base64url, with prefix `fbt_`,
+     so secret scanners and DSH's own secret mask can recognise it;
+  2. writes the entry's record (entry key, label, digest, generation 0) **before** the settings
+     item, so the sync that sees the new `key` finds its record;
+  3. adds `{label, enabled: true, key}` to the native list through the K1d `SettingsWriter`;
+  4. returns the value **once**, to the caller that asked for it, and keeps no copy.
+- If step 2 or 3 fails, nothing is returned and the record is removed again: there is no entry
+  whose value nobody saw.
+- **Withdrawn (1.27):** a value the user sets in the store or the environment; `token-too-short`
+  and its 32-character minimum (TQ-4's length part); `token-unconfigured`; `ref-duplicate` and
+  value-duplicate (C-TOKENS questions 4 and 5 lapse with them); "a value unset waits for a
+  save". The native list now accepts only label and switch edits, removals and reordering. A save that adds an item
+  or changes or repeats a `key` is refused, and the previous list is written back (the existing
+  `restoreTokens` path). Its code is K1d's to freeze; it is PROPOSED as `token-not-created`.
+- **Finding (still true):** DSH's generic plugin form has no secret-entry widget, so the reveal
+  cannot live in the native form. That is why it is a contributed section (§5.9).
 
 ### 5.3 Revocation
 
-Disabling or deleting an entry, or changing or unsetting its credential value, revokes the
-principal at the next request (R-TOK-05, R-OA-06). TQ-2 is decided **A**. Common to every
+Disabling or deleting an entry revokes the principal at the next request (a value can no longer
+change or be unset, requirements 1.27; K1 `RevocationKind` `value-changed` is withdrawn) (R-TOK-05, R-OA-06). TQ-2 is decided **A**. Common to every
 revocation:
 - every access token derived from the entry is invalid; MCP requests get 401 and the token
   endpoint answers `invalid_client`. A request already past the token check completes; the next
@@ -445,7 +458,7 @@ revocation:
   user in their sessions;
 - managed sessions become unmanaged, with one `system` note each.
 
-**Disable** (also a changed or unset value): every other queued event, of every type, `ask`
+**Disable:** every other queued event, of every type, `ask`
 included, is kept for **30 days**; re-enabling the same entry restores the same pair (R-ID-09) and
 the events are pollable again. The designated-Fishball role stays with the entry, so while it is
 off `ask_fishball` from an unmanaged session answers `unavailable` and `message_fishball` queues
@@ -459,8 +472,9 @@ off `ask_fishball` from an unmanaged session answers `unavailable` and `message_
 principal is available, so the session never waits for an answer that cannot come. While the
 entry is only disabled, the call keeps waiting: no timer settles it (R-CON-05).
 
-Deleting an entry also asks `credentials.unset(ref)` when the connector generated the value
-(recorded in its storage domain), and never otherwise.
+Deleting an entry drops its digest record. Deleting a hosted entry also asks
+`credentials.unset(ref)` for the value `createHosted` stored (§5.1). Nothing else is in the
+credential store to remove (requirements 1.27).
 
 ### 5.4 The Fishball DSH's token (R-HOST-05; Q8 decided)
 
@@ -469,7 +483,7 @@ Deleting an entry also asks `credentials.unset(ref)` when the connector generate
   (`{apiVersion: 1, createHosted(instanceId) → Promise<{ref, entryKey, label}>, retire(oldEntryKey, successorEntryKey)}`).
   `createHosted` creates a **new** "Fishball (hosted)" token entry, stores its value in the
   shared credential store and returns only the reference and an opaque entry key, never the
-  value. It is called only when the child holds no paired credential (first start, or after a
+  value. It shows no reveal modal: nobody needs to copy a hosted value (requirements 1.27; R1). It is called only when the child holds no paired credential (first start, or after a
   reinstall), never on restart or reconnect.
 - The instance resolves the value with `ctx.credentials.resolve` and sends it to the child over
   the authenticated lifecycle wire (mutual HMAC proof, `src/native-runtime/wire.js`) on a new
@@ -486,7 +500,7 @@ Deleting an entry also asks `credentials.unset(ref)` when the connector generate
   4. re-issues the old entry's live offers into the new mailbox with new offer ids (old ids then
      answer `expired`);
   5. moves pending events with their `eventId`s;
-  6. deletes the old entry and unsets its generated credential value;
+  6. deletes the old entry and unsets its hosted credential value;
   7. adds one `system` note per moved session.
   `retire` refuses any old entry that `createHosted` did not create for this instance. A failure
   rolls everything back, and the instance retries at its next start.
@@ -494,8 +508,8 @@ Deleting an entry also asks `credentials.unset(ref)` when the connector generate
   replacement (R-HOST-10).
 
 **Hosted with a remote target.** The instance's `target.tokenRef` names a reference in the host
-DSH's credential store. The user puts there the value of a token created in the remote
-connector's settings (§5.2). The hand-off to the child is the same as above.
+DSH's credential store. The user creates a token in the remote connector's DSH (§5.2), copies it
+from the reveal modal (§5.9) and puts it there. The hand-off to the child is the same as above.
 
 **Standalone.** `fishball-core`'s own settings name `target.url` and `target.tokenRef`. The value
 lives in the standalone DSH's credential store, and `fishball-core` resolves it per connection.
@@ -686,26 +700,28 @@ for both listeners.
 
 ### 5.6 Token hygiene: the token is the security boundary (R-TOK-00)
 
-- Entropy: generated tokens are 32 random bytes, base64url, `fbt_` prefix. A user-set value
-  under 32 characters is refused with `token-too-short` (TQ-4).
-- Storage: values live only in `ctx.credentials`. Digests live in memory, and pairs and access
-  tokens are stored by digest only. Nothing leaves in settings, logs, chat, tool results, test
+- Entropy: every token is generated: 32 random bytes, base64url, `fbt_` prefix. There is no
+  user-set value (requirements 1.27), so no length rule.
+- Storage: the connector keeps a SHA-256 digest of each value and never the value (§5.1); only a
+  hosted value is also in `ctx.credentials`. Pairs and access tokens are stored by digest only.
+  The value leaves the connector once, in the creation response to the reveal modal (§5.9). Nothing leaves in settings, logs, chat, tool results, test
   fixtures or error details.
 - Comparison is constant-time. 401 responses are uniform. Failed attempts are counted per remote
   address for backoff, and the counter holds no token material.
-- Revocation happens by disabling, deleting or changing the entry, and takes effect on the next
-  request for every derived access token.
+- Revocation happens by disabling or deleting the entry, and takes effect on the next request
+  for every derived access token. A value never changes; a lost one is replaced by delete plus
+  create (§5.9).
 - The Host and Origin checks, TLS rule, body limits and rate limits apply to the token endpoint,
   the MCP endpoint and the approval listener alike.
 - "Keep it minimal" applies only to pairing and ids (§5.8), never to this section.
 
 ### 5.7 Where the user manages tokens
 
-All of it is in DSH's native Plugins settings for `fishball-connector`: add, label, enable or
-disable, delete, choose the designated Fishball (`routing.fishballToken`), and see each entry's
-pair state (and, for an entry created by browser approval, its client id URL) (bound id, name, last seen, connected). Values live
-in DSH's credential store. Embed-UI, the instance and every Fishball DSH show only a token's label and
-its configured or unconfigured state, never the value.
+All of it is in DSH's native Plugins settings for `fishball-connector`: label, enable or
+disable, delete (and **create**, through embed-UI's New token section on the same page, §5.9), choose the designated Fishball (`routing.fishballToken`), and see each entry's
+pair state (and, for an entry created by browser approval, its client id URL) (bound id, name, last seen, connected). The
+connector keeps only a digest of each value (§5.1). Embed-UI, the instance and every Fishball DSH
+show only a token's label, never the value, except embed-UI's one-time reveal modal (§5.9).
 
 ### 5.8 Pairing and names (R-ID, R-NAME)
 
@@ -745,6 +761,96 @@ its configured or unconfigured state, never the value.
 - **Not hardened, by design.** The same token and the same id from two clients are one
   principal (R-ID-11). Pairing only prevents one token being spread over many agents. Events are
   delivered per pair, so one event wakes one agent.
+
+### 5.9 One-time reveal, and what it changes (requirements 1.27; W4 question 1)
+
+The user's words (W4 question 1, 2026-11-15): "不允许改token值，一旦生成确定了连看都不能看，只有生成的时候弹出modal显示token并允许复制".
+
+**Who owns the modal: `fishball-embed-ui`.** The design's ownership rules leave one choice:
+- **Not the connector.** R-ARCH-03 forbids it any browser client module or HTML route; its one
+  exception is the approval page on its own listener, which has no owner login (R-OA-11: whoever
+  holds a token authorizes) and so cannot be where a new token is minted. A connector-served
+  settings page would be a second exception and a second owner-auth surface (R-ARCH-06).
+- **Not the native settings form.** It has no secret widget and no one-shot display (§5.2 finding).
+- **`fishball-embed-ui`**, because every host-DSH UI change Fishball makes is embed-UI's (R-ARCH-04),
+  and it already works with the connector alone, without an instance (R-UI-08). Its host half
+  already serves owner-only routes through `connection.fetch` behind DSH's Host and Origin fence
+  (`src/host/routes.js`), and it already drives a connector host-only service (hand-over, Q3).
+
+**Where it appears.** A section in the **`plugins.detail.section`** slot of DSH's Plugins page
+(present on both SDKs, `dsh-client-ui-plugin-manager` `slot-contract.d.ts`), rendered only for the
+subject `fishball-connector` (the bundle and its row). It holds a label field and **New token**.
+The connector's own entry list and its configuration form stay DSH's native ones.
+
+**Flow.**
+1. The owner types a label and presses **New token**.
+2. Embed-UI's client POSTs `{label}` to a new embed-UI host route (owner-only, same rules as
+   `routes.js`, JSON body bound).
+3. The route calls the connector host-only service `fishballConnectorTokens.create(label)`
+   (a K3 amendment, frozen by K1d below): §5.2 steps 1–4. It resolves `{entryKey, label, value}`.
+   This is the **only** API that ever returns a value, and it does so once per entry.
+4. The route answers `{ok: true, entryKey, label, value}` with `Cache-Control: no-store`, and logs
+   nothing but the label.
+5. The client opens a modal showing the value, with **Copy** (`navigator.clipboard.writeText`) and
+   **Close**. The value lives only in that modal's state; closing it drops it. Nothing re-opens it.
+6. The native list refreshes and shows the new entry (label, switch, key, pair state).
+- A failure at step 3 answers a refusal code and shows no modal; nothing was created.
+- If the answer is lost after step 3 (page closed, network), the entry exists but nobody saw its
+  value: the owner deletes it and creates another. Nothing can show it again.
+- Hosted entries never use this path and never show a modal (§5.4).
+
+**Storage decision: digest only** (§5.1). The OAuth and client-credentials checks need only a
+digest: the client-credentials grant and the approval page both call `TokenRegistry.match(value)`,
+and the bearer verifier needs only `get(entryKey)` and the generation. The one exception is a
+hosted value, which the instance must re-read after a host restart (R-HOST-05), so it is also kept
+in the host's credential store (open question R1).
+
+**Regenerate: none.** A lost or leaked value is replaced by **delete** (in the native list) plus
+**New token**. That is a new principal: the old one's sessions become unmanaged (R-ROUTE-06), its
+queued events are dropped, the designated role is cleared, and its id and name are freed (R-ID-13),
+so the agent pairs again with the new token and may take the same name. There is no combined
+control (open question R5).
+
+**Native-list saves.** DSH's form cannot make a field read-only, so the registry checks each save
+of the tokens list: only label and switch edits, removals and reordering are accepted. An added
+item, or a changed or repeated `key`, refuses the whole save and writes the previous list back
+(`restoreTokens`, as `ref-duplicate` did). The code is PROPOSED `token-not-created` (open question R4).
+An item whose `key` has no record (for example a W2 development profile with `ref` items) is left
+out and logged at start; no V3 token entry has shipped, so nothing is migrated.
+
+**What this changes in existing code (W2 C-TOKENS, merged in `integrate/v3-w2`):**
+
+| Area | Today | After |
+| --- | --- | --- |
+| `tokens/registry.js` | each sync reads every `ref` with `credentials.resolve`, fingerprints it, generates for an unconfigured `ref`, refuses `ref-duplicate` / value-duplicate, tracks `awaitSave` (C-TOKENS Q5 = B), announces `value-changed`; `refresh()` on `credentials/reference-updated` | sync reads no credential: entries come from their records; `create(label)` generates, records the digest, adds the item; the save check above; revocations only `disabled` / `deleted`; `refresh()`, the credential listener, `awaitsSave`, `introduced`, `valueGroups` and `refClashesOf` go. `match` compares SHA-256 digests in constant time over every entry, as now |
+| `tokens/fingerprint.js` | HMAC key in a connector-owned credential record (C-TOKENS Q2 = A) | removed: a 256-bit random value needs no key (§5.1) |
+| `tokens/store.js` | record `{entryKey, ref, label, enabled, generation, generated, fingerprint, keyId, awaitSave, removed}` | `{entryKey, label, enabled, generation, digest, hostedRef?, removed}` (the `instanceId` stays in C-SUCCEED's `hosted/` storage); `TOKEN_STORE.version` 2 |
+| `tokens/constants.js`, `index.js` | `REVOCATION.valueChanged`, `SYNC_REASON.credentials`, `REF_PATTERN`, `findRefDuplicates`, value-duplicate logs | removed, except `REF_PATTERN` for the hosted reference |
+| Settings schema (C-WIRE, W4b) | planned items `{label, enabled, ref}` with `role('credential-ref')` | items `{label, enabled, key}`; no credential reference |
+| K1 `ENTRY_STATUS` | `ok`, `token-too-short`, `token-unconfigured` | `ok` only. The field stays, so `mcp/oauth/bearer-verifier.js` and `mcp/oauth-web/issue.js` (`status === ok`) are unchanged |
+| K1 `SETTINGS_REFUSAL` | `ref-duplicate`, `value-duplicate` | `token-not-created` (PROPOSED) |
+| K1 `TOKEN_VALUE.minChars`, `isTokenLongEnough` | 32 code points | withdrawn |
+| K1 `RevocationKind`, `TokenEntry` | `value-changed`; `ref`, `generated` | `disabled`, `deleted`; `hosted: boolean` replaces `ref` and `generated` (no caller outside `tokens/` reads them) |
+| K3 `host-services/tokens.d.ts` | `createHosted`, `entryState`, `retire`; `disabled` also means "changed or unset its value" | plus `create(label) → {entryKey, label, value}` and its refusal codes; `disabled` means switched off only |
+| Callers: `mcp/oauth/*`, `mcp/oauth-web/*`, `pairs/`, `routing/`, `handover/` | `match`, `get`, `list`, `onRevoked` | unchanged; C-OAUTH's `followRevocations` already treats every kind alike |
+
+**Requirements and cases withdrawn or changed** (IDs kept, as for R-OA-10):
+- Requirements changed: R-TOK-03, R-TOK-04, R-TOK-08, R-TOK-09, R-OA-06, R-CON-10, R-HOST-05
+  (remote target), R-UI-03; new R-TOK-11. Withdrawn parts: TQ-4's 32-character minimum and
+  `token-too-short`; `token-unconfigured`; `ref-duplicate`; value-duplicate (C-TOKENS question 4 = A);
+  the unset-value wait (C-TOKENS question 5 = B); the HMAC key (C-TOKENS question 2 = A, superseded);
+  "changed value" revocations (W4 question 1, which this answer dissolves).
+- Cases withdrawn: AUTH-UC-01 A1, A2, E1, E2, E3; AUTH-UC-06 A2, A3; AUTH-EP-04 rows 2–7, 7a;
+  AUTH-BVA-03 rows 1–6; AUTH-DT-04 row 12; AUTH-DT-05 rows 3, 4; AUTH-DT-08 rule 4; AUTH-ST-01 row
+  10 and C-TOKENS' rows 10a–10m.
+- Cases changed: AUTH-UC-01 (main: create and reveal; post: the one response that carries the
+  value); AUTH-EP-04 rows 1, 8; AUTH-DT-05 rows 1, 2 (a hosted value only); AUTH-ST-01 (state
+  Unconfigured removed; row 1 becomes "none → New token → Ready"); AUTH-ST-02 row 4, AUTH-ST-05
+  rows 6, 12b, 12d, AUTH-EP-02 row 5 and AUTH-ST-06 row 15: the "value changed" trigger goes;
+  HOST-UC-02 precondition (value copied from the modal); the K1 code-freeze row (AUTH-UC-02 K).
+- Cases to author (new IDs): **AUTH-UC-15** create a token and copy it once; **AUTH-DT-13** what a
+  save of the native tokens list does; **AUTH-ST-08** the reveal modal (open → copied / closed,
+  never re-shown).
 
 ## 5a. The Fishball plugin set in any DSH
 
@@ -822,8 +928,9 @@ rc.5 has no `presetForSession` ([impl], R-FB-13).
 ### 5a.3 Standalone setup, step by step
 
 1. Install the four tarballs (core is required; the three features are optional) in the DSH with DSH's native "add plugin", then restart that DSH.
-2. In the **target** DSH's connector settings, add a token entry (§5.2).
-3. Put that token's value in the standalone DSH's credential store, under the reference named in
+2. In the **target** DSH's connector settings, press New token (§5.2) and copy the value from
+   the reveal modal (§5.9); it is never shown again.
+3. Put that value in the standalone DSH's credential store, under the reference named in
    `fishball-core`'s settings, and enter the target URL there.
 4. Open the standalone DSH's web UI. It is the Fishball page.
 
@@ -1237,7 +1344,7 @@ Process stays: requirements → independent case authoring → implementation wi
 - **The token is the security boundary (R-TOK-00).** Ids, pairs and names are foolproofing
   only, and never relax a token rule (§5.6).
 - **Credentials:**
-  - Token values live only in `ctx.credentials`; MCP requests carry short-lived, audience-bound
+  - The connector keeps only digests of token values (a hosted value also in `ctx.credentials`, §5.1); MCP requests carry short-lived, audience-bound
     access tokens (§5.5).
   - Hosted: the token goes to the child over the authenticated wire, in memory only. Standalone:
     it stays in that DSH's credential store and is resolved per connection.
