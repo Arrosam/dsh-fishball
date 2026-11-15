@@ -1,7 +1,9 @@
 /**
  * C-OAUTH-WEB black-box cases (v3-tasks.md row C-OAUTH-WEB, wave W2): the approval listener, the
- * approval page, CIMD, PKCE, the `authorization_code` and `refresh_token` grants and the renewal
- * of an ended chain. Cases from docs/test-design/v3/01-auth-pairing.md and 09-standalone-remote.md
+ * approval page, CIMD, PKCE, the `authorization_code` and `refresh_token` grants. The rows of the
+ * old typed-id and chain-renewal model are rewritten to K1d's page id (C-PAGE-ID: the id is the
+ * request's `agent_id`, a reconnect keeps the principal, no chain ends by age; R-OA-22, R-OA-23;
+ * PAGE-ID-USE-CASES.md); the new C-PAGE-ID rows are page-id-cases.mjs. Cases from docs/test-design/v3/01-auth-pairing.md and 09-standalone-remote.md
  * that the row names: AUTH-UC-10, AUTH-DT-07, AUTH-DT-08, AUTH-DT-09, AUTH-ST-04, AUTH-ST-05,
  * AUTH-BVA-07, AUTH-BVA-08, AUTH-EP-08, AUTH-EP-10, plus K1b-DT-07 (the K1b todo row that named
  * C-OAUTH-WEB). Requirements R-OA-11…16, R-OA-17, R-OA-20, R-REM-05, R-ID-13; design §5.5a; K1
@@ -27,11 +29,11 @@
  */
 import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { fields, forms, masked, pageText } from './browser.mjs'
+import { fields, forms, isRequired, masked, pageText } from './browser.mjs'
 import {
   APPROVAL_LISTENER, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, DOC, ENTRY_STATUS, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT,
-  HOSTS, HTTP_HEADER, HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LATER, LIFETIME, OAUTH_ERROR, PAGE_TEXT, PARAM, PATHS, PLAIN_METHOD,
-  REFUSAL, RELAYED, REQUEST_GATE, SCOPE, STUB, SUBJECT, TIME_UNIT, oauthUrls,
+  HOSTS, HTTP_HEADER, HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LATER, LIFETIME, NAME_RULES, OAUTH_ERROR, PAGE_TEXT, PARAM, PATHS, PLAIN_METHOD,
+  REFRESH_RECORD_MEMBERS, REFUSAL, RELAYED, REQUEST_GATE, SCOPE, STUB, SUBJECT, TIME_UNIT, oauthUrls,
 } from './constants.mjs'
 import {
   approvalListener, authorizeParams, cimdFetcher, digest, documentOf, freePort, holdPort, lockDefaultPort, pkce, probe, read,
@@ -72,19 +74,25 @@ export async function open(w, { browser = w.browser(), overrides = {} } = {}) {
   const res = await browser.open(PATHS.authorize, authorizeParams(w, challenge, overrides))
   return { b: browser, verifier, challenge, page: res }
 }
-/** Opens a request and presses Authorize with `fill` (default: v(E5), id agent-w-1, no name). */
-async function approve(w, fill = {}, options = {}) {
-  const flow = await open(w, options)
-  const res = await flow.b.authorize({ token: V(5), id: ID.agentW, ...fill })
+/**
+ * Opens a request and presses Authorize with `fill` (default: v(E5), no name). The id is not a
+ * form field (R-OA-11, 1.32 R13): `fill.id` is the `agent_id` the request passes (default
+ * agent-w-1, subject.mjs authorizeParams), `fill.id: undefined` passes none (the derived id).
+ */
+export async function approve(w, fill = {}, options = {}) {
+  const { id, ...form } = fill
+  const overrides = Object.hasOwn(fill, 'id') ? { [PARAM.agentId]: id, ...options.overrides } : options.overrides
+  const flow = await open(w, { ...options, overrides })
+  const res = await flow.b.authorize({ token: V(5), ...form })
   return { ...flow, res, redirect: redirectOf(res) }
 }
 /** C-OAUTH's token request for the code of `flow` (AUTH-UC-10 main step 6). */
-const redeem = (w, flow, overrides = {}, options = {}) => w.token({
+export const redeem = (w, flow, overrides = {}, options = {}) => w.token({
   [PARAM.grantType]: GRANT.authorizationCode, [PARAM.code]: flow.redirect?.params[PARAM.code], [PARAM.redirectUri]: flow.redirectUri ?? FIXTURE.redirect,
   [PARAM.codeVerifier]: flow.verifier, [PARAM.clientId]: FIXTURE.clientId, [PARAM.resource]: w.urls.resource, ...overrides,
 }, options)
 /** C-OAUTH's `refresh_token` request. */
-const refresh = (w, rt, overrides = {}, options = {}) => w.token({
+export const refresh = (w, rt, overrides = {}, options = {}) => w.token({
   [PARAM.grantType]: GRANT.refreshToken, [PARAM.refreshToken]: rt, [PARAM.clientId]: FIXTURE.clientId, [PARAM.resource]: w.urls.resource, ...overrides,
 }, options)
 
@@ -108,7 +116,7 @@ export function assertCode(w, flow, options = {}) {
   assert.equal(flow.redirect.params[PARAM.state], state)
 }
 /** A redirected OAuth error (R-OA-14, R-OA-15): `error`, `iss`, `state` if sent, and no code. */
-function assertRedirectedError(w, res, error, options = {}) {
+export function assertRedirectedError(w, res, error, options = {}) {
   const { target = FIXTURE.redirect } = options
   const state = expectedState(options)
   const r = redirectOf(res)
@@ -131,7 +139,7 @@ function assertPageError(res) {
   assert.equal(forms(res.body).flatMap((f) => fields(f).passwords).length, 0, 'no token field for an invalid request')
 }
 /** The page itself (AUTH-DT-07 rule 1): 200, the frozen headers, one masked token field. */
-function assertPageShown(res) {
+export function assertPageShown(res) {
   assert.equal(res.status, HTTP_STATUS.ok, `page not shown: ${pageText(res.body)}`)
   assertPageHeaders(res)
   assert.equal(forms(res.body).flatMap((f) => fields(f).passwords).length, 1, 'one token field')
@@ -141,12 +149,12 @@ function assertPageHeaders(res) {
   for (const [name, value] of Object.entries(APPROVAL_LISTENER.headers)) assert.equal(res.headers[name], value, `page header ${name}`)
 }
 /** A GrantResult refusal with `error`. */
-function assertGrantError(result, error) {
+export function assertGrantError(result, error) {
   assert.equal(result.ok, false, `expected ${error}, got ${JSON.stringify(result)}`)
   assert.equal(result.error, error)
 }
 /** A GrantResult success: `scope: fishball`, 3600 s, a refresh token (R-OA-14, R-OA-16). */
-function assertGrantOk(result) {
+export function assertGrantOk(result) {
   assert.equal(result.ok, true, `expected a token response, got ${JSON.stringify(result)}`)
   assert.equal(result.body.scope, SCOPE.full)
   assert.equal(result.body.expires_in, LIFETIME.accessTokenMs / TIME_UNIT.msPerSecond)
@@ -156,9 +164,9 @@ function assertGrantOk(result) {
 }
 const sawCall = (w, name, arg) => w.store.calls.some(([n, a]) => n === name && (arg === undefined || a === arg))
 /** Every pair as plain data, to show a refusal changed nothing. */
-const snapshot = (w) => JSON.parse(JSON.stringify(w.pairs.list()))
+export const snapshot = (w) => JSON.parse(JSON.stringify(w.pairs.list()))
 /** No entry value appears anywhere the connector wrote or answered (R-OA-12, R-TOK-00). */
-function assertNoLeak(w, ...values) {
+export function assertNoLeak(w, ...values) {
   const haystacks = [
     ...w.browsers.flatMap((b) => b.responses.map((r) => `${r.path}\n${JSON.stringify(r.headers)}\n${r.body}`)),
     ...w.logger.lines.map((l) => l.text),
@@ -169,17 +177,15 @@ function assertNoLeak(w, ...values) {
 }
 
 /** A browser chain on E5: bound to agent-w-1 at `at()`, code redeemed. Returns the first token response. */
-async function chain(w, { redirectUri } = {}) {
+export async function chain(w, { redirectUri } = {}) {
   if (w.tokens.get(E(5)) === undefined) w.tokens.add(5, V(5))
   const flow = await approve(w, {}, redirectUri === undefined ? {} : { overrides: { [PARAM.redirectUri]: redirectUri } })
   assertCode(w, flow, redirectUri === undefined ? {} : { target: redirectUri })
   const first = assertGrantOk(await redeem(w, { ...flow, redirectUri }))
   const record = w.store.getRefresh(digest(first.refresh_token))
   assert.ok(record, 'the refresh token is stored by its lowercase hex SHA-256 digest')
-  return { flow, first, rt: first.refresh_token, chainId: record.chainId, startedAt: record.chainStartedAt }
+  return { flow, first, rt: first.refresh_token, chainId: record.chainId }
 }
-/** The chain's every chain ended: the clock moved to its maximum lifetime. */
-const endChain = (w, c) => w.clock.set(c.startedAt + LIFETIME.refreshChainMaxMs)
 
 /** One case test on a fresh world; `todo` (a LATER owner) registers a todo instead. */
 export function row(sdk, id, part, title, fn, todo, options) {
@@ -207,17 +213,18 @@ function useCases(sdk) {
     assertOnPage(page, FIXTURE.clientName, PAGE_TEXT.unverified, FIXTURE.loopback, PAGE_TEXT.localhost, new URL(FIXTURE.clientId).host,
       STUB.dshName, w.urls.resource, PAGE_TEXT.fullRights, PAGE_TEXT.oneAgent)
     const form = forms(page.body).find((f) => fields(f).token !== undefined)
-    const { token, id, name, passwords } = fields(form)
+    const { token, name, texts, passwords } = fields(form)
     assert.equal(passwords.length, 1, 'one masked field: the token; no password or ticket field')
     assert.equal(token.autocomplete, RELAYED.tokenAutocomplete, 'no autofill (R-OA-11)')
     assert.ok(!token.value, 'the token field is never echoed')
-    assert.ok(id && Object.hasOwn(id, 'required'), 'a required id field')
-    assert.ok(name && !Object.hasOwn(name, 'required'), 'an optional name field')
+    // 1.32 R13: the page asks for a name, not an id; the id comes with the request (R-OA-22).
+    assert.equal(texts.length, 1, 'one text field, the name: no id field')
+    assert.ok(name && !isRequired(name), 'an optional name field')
     assert.ok(!name.value, 'client_name is only a hint, never a default value')
     assert.ok(w.browsers[0].control(PAGE_TEXT.authorize) && w.browsers[0].control(PAGE_TEXT.cancel), 'Authorize and Cancel')
     assertPageHeaders(page)
   })
-  uc('main steps 4–5', 'v(E5) + agent-w-1, no name → E5 bound to agent-w-1 with the client recorded, no name, pairedAt; 303 with code, state, iss', async (w) => {
+  uc('main steps 4–5', 'v(E5), no name, agent_id agent-w-1 in the request → E5 bound to agent-w-1 with the client recorded, no name, pairedAt; 303 with code, state, iss', async (w) => {
     w.tokens.add(5, V(5))
     w.clock.set(at(seconds(1)))
     const flow = await approve(w)
@@ -290,16 +297,19 @@ function useCases(sdk) {
     assertCode(w, flow, { target: FIXTURE.redirectOtherPort })
     assertGrantOk(await redeem(w, { ...flow, redirectUri: FIXTURE.redirectOtherPort }))
   })
-  uc('A7', 'renewal: every chain ended; the recorded client re-enters v(E5) with agent-w-1 → a code; the same principal, nothing re-bound', async (w) => {
-    const c = await chain(w)
+  // A7 was the renewal of a chain ended by its 365-day lifetime (R-OA-16 (7)), withdrawn by
+  // R-OA-23; it is now the reconnect of R-OA-22 (Q-A2 A), with no age or chain condition.
+  uc('A7', 'reconnect: the bound client opens the page again with agent-w-1 and enters v(E5) → a code; the same principal, nothing re-bound', async (w) => {
+    await chain(w)
     const before = w.pairs.pairOf(E(5))
-    endChain(w, c)
+    w.clock.advance(seconds(1))
     const flow = await approve(w)
     assertCode(w, flow)
     assertGrantOk(await redeem(w, flow))
     const after = w.pairs.pairOf(E(5))
-    assert.deepEqual({ ...after, redirectUri: undefined }, { ...before, redirectUri: undefined }, 'same id, name, pairedAt and principal')
+    assert.deepEqual(after, before, 'same principal, id, name, pairedAt and client')
     assert.equal(w.pairs.calls.filter(([n]) => n === 'bindFromPage').length, 1, 'nothing re-bound')
+    assert.ok(w.pairs.calls.some(([n, entryKey, id]) => n === 'reconnectFromPage' && entryKey === E(5) && id === ID.agentW), 'reconnected through PairStore.reconnectFromPage')
   })
   uc('E1', 'a wrong, a disabled and a deleted value → one uniform "not valid"; the request stays pending; each attempt counted', async (w) => {
     w.tokens.add(5, V(5))
@@ -309,11 +319,11 @@ function useCases(sdk) {
     w.tokens.remove(7)
     const flow = await open(w)
     for (const [n, value] of [[1, V(1)], [2, V(6)], [3, V(7)]]) {
-      assertOnPage(await flow.b.authorize({ token: value, id: ID.agentW }), PAGE_TEXT.invalid)
+      assertOnPage(await flow.b.authorize({ token: value }), PAGE_TEXT.invalid)
       assert.equal(w.limiter.failures.length, n)
     }
     assert.deepEqual(w.limiter.failures.map((f) => f.key.clientId), [FIXTURE.clientId, FIXTURE.clientId, FIXTURE.clientId], 'keyed by the CIMD URL')
-    const res = await flow.b.authorize({ token: V(5), id: ID.agentW })
+    const res = await flow.b.authorize({ token: V(5) })
     assertCode(w, { res, redirect: redirectOf(res) })
   })
   uc('E2', 'v(E5) already paired → already-paired on the page: "create a new token", the bound name and last-seen; nothing changes', async (w) => {
@@ -324,32 +334,34 @@ function useCases(sdk) {
     assertOnPage(flow.res, PAGE_TEXT.createNew, NAME.watcher)
     assert.deepEqual(snapshot(w), before)
   })
-  uc('E2a', 'id agent-w-1 held → id-taken; agent.w → id-invalid; the held name Fishball → name-taken; E5 stays unpaired, the request pending', async (w) => {
+  uc('E2a', 'agent_id agent-w-1 held → id-taken; agent.w → id-invalid; the held name Fishball → name-taken; E5 stays unpaired, each request pending', async (w) => {
     w.tokens.add(1, V(1))
     w.tokens.add(5, V(5))
     await w.pairs.pair(E(1), ID.agentW, NAME.fishball, at())
-    const flow = await open(w)
     for (const [fill, code] of [[{ id: ID.agentW }, REFUSAL.idTaken], [{ id: ID.dotted }, ID_REFUSAL.idInvalid], [{ id: ID.other, name: NAME.fishball }, REFUSAL.nameTaken]]) {
-      assertOnPage(await flow.b.authorize({ token: V(5), ...fill }), code)
+      const flow = await approve(w, fill)
+      assertOnPage(flow.res, code)
       assert.equal(w.pairs.pairOf(E(5)), undefined)
+      // Pending: Cancel still answers the client with access_denied (R-OA-15).
+      assertRedirectedError(w, await flow.b.cancel(), OAUTH_ERROR.accessDenied)
     }
-    const res = await flow.b.authorize({ token: V(5), id: ID.other })
-    assertCode(w, { res, redirect: redirectOf(res) })
+    const flow = await approve(w, { id: ID.other })
+    assertCode(w, flow)
   })
   uc('E3', 'the request waits 10 min → Authorize shows "this request has expired, start again from your agent"', async (w) => {
     w.tokens.add(5, V(5))
     const flow = await open(w)
     w.clock.set(at(LIFETIME.pendingRequestMs))
-    assertOnPage(await flow.b.authorize({ token: V(5), id: ID.agentW }), PAGE_TEXT.expired)
+    assertOnPage(await flow.b.authorize({ token: V(5) }), PAGE_TEXT.expired)
     assert.equal(w.pairs.pairOf(E(5)), undefined)
   })
   uc('E4', 'a cross-site POST (other origin) and a replayed form value are refused; nothing bound', async (w) => {
     w.tokens.add(5, V(5))
     const flow = await open(w)
-    const cross = await flow.b.authorize({ token: V(5), id: ID.agentW }, { origin: `${HOSTS.remoteScheme}//evil.example` })
+    const cross = await flow.b.authorize({ token: V(5) }, { origin: `${HOSTS.remoteScheme}//evil.example` })
     assert.equal(cross.status, HTTP_STATUS.forbidden)
     assert.equal(w.pairs.pairOf(E(5)), undefined)
-    const captured = flow.b.formBody(PAGE_TEXT.authorize, { token: V(5), id: ID.agentW })
+    const captured = flow.b.formBody(PAGE_TEXT.authorize, { token: V(5) })
     await flow.b.cancel()
     const replay = await flow.b.post(captured)
     assert.equal(redirectOf(replay)?.params[PARAM.code], undefined, 'no code from a replayed form')
@@ -358,7 +370,7 @@ function useCases(sdk) {
   uc('E5', 'the connector restarts with a request pending → the request is gone', async (w) => {
     w.tokens.add(5, V(5))
     const flow = await open(w)
-    const captured = flow.b.formBody(PAGE_TEXT.authorize, { token: V(5), id: ID.agentW })
+    const captured = flow.b.formBody(PAGE_TEXT.authorize, { token: V(5) })
     await w.restart()
     const res = await flow.b.post(captured)
     assert.equal(redirectOf(res)?.params[PARAM.code], undefined)
@@ -510,7 +522,7 @@ function equivalencePartitions(sdk) {
     const { challenge } = pkce()
     const query = new URLSearchParams(authorizeParams(w, challenge, { [PARAM.resource]: tunnelUrls.resource })).toString()
     await b.send(HTTP_METHOD.get, `${PATHS.authorize}?${query}`, { headers: { [HTTP_HEADER.forwardedProto]: HOSTS.loopbackScheme.replace(':', '') } })
-    const res = await b.authorize({ token: V(5), id: ID.agentW }, { headers: { [HTTP_HEADER.forwardedProto]: HOSTS.loopbackScheme.replace(':', '') } })
+    const res = await b.authorize({ token: V(5) }, { headers: { [HTTP_HEADER.forwardedProto]: HOSTS.loopbackScheme.replace(':', '') } })
     assert.equal(redirectOf(res)?.params[PARAM.iss], tunnelUrls.issuer)
   }, trusted)
   todo(sdk, CASE.ep10, '5', 'only DSH\'s listener forwarded: machine exchange works, the page is unreachable (documented in the README)', LATER.docs)
@@ -540,7 +552,7 @@ function boundaryValues(sdk) {
       w.tokens.add(5, V(5))
       const flow = await open(w)
       w.clock.set(at(offset))
-      const res = await flow.b.authorize({ token: V(5), id: ID.agentW })
+      const res = await flow.b.authorize({ token: V(5) })
       if (ok) assertCode(w, { res, redirect: redirectOf(res) })
       else { assertOnPage(res, PAGE_TEXT.expired); assert.equal(w.pairs.pairOf(E(5)), undefined) }
     })
@@ -587,7 +599,7 @@ function boundaryValues(sdk) {
     row(sdk, CASE.dt08, `body ${part}`, `a decision body of ${bytes} bytes → ${over ? '413 with no body, nothing bound' : 'processed'}`, async (w) => {
       w.tokens.add(5, V(5))
       const flow = await open(w)
-      const body = padded(flow.b.formBody(PAGE_TEXT.authorize, { token: V(5), id: ID.agentW }), bytes)
+      const body = padded(flow.b.formBody(PAGE_TEXT.authorize, { token: V(5) }), bytes)
       assert.equal(Buffer.byteLength(body.body), bytes, 'harness: padded size')
       const res = await flow.b.post(body)
       if (over) {
@@ -604,7 +616,7 @@ function boundaryValues(sdk) {
       w.tokens.add(5, V(5))
       const flows = []
       for (let i = 0; i < count; i += 1) flows.push(await open(w))
-      const res = await flows[0].b.authorize({ token: V(5), id: ID.agentW })
+      const res = await flows[0].b.authorize({ token: V(5) })
       if (count > RELAYED.pendingMax) assertOnPage(res, PAGE_TEXT.expired)
       else assertCode(w, { res, redirect: redirectOf(res) })
     })
@@ -708,7 +720,7 @@ function decisionTables(sdk) {
       setup(w)
       const before = snapshot(w)
       const flow = await open(w)
-      assertOnPage(await flow.b.authorize({ token: value(), id: ID.agentW }), PAGE_TEXT.invalid)
+      assertOnPage(await flow.b.authorize({ token: value() }), PAGE_TEXT.invalid)
       assert.deepEqual(snapshot(w), before)
       assert.equal(w.limiter.failures.length, 1)
     })
@@ -717,7 +729,7 @@ function decisionTables(sdk) {
     for (const [, , setup] of invalidCases) setup(w)
     const flow = await open(w)
     const bodies = []
-    for (const [, , , value] of invalidCases) bodies.push(masked((await flow.b.authorize({ token: value(), id: ID.agentW })).body))
+    for (const [, , , value] of invalidCases) bodies.push(masked((await flow.b.authorize({ token: value() })).body))
     for (const body of bodies.slice(1)) assert.equal(body, bodies[0])
   })
   const bindsAs = (rule, title, fill, setup, expected) => dt08(rule, title, async (w) => {
@@ -729,7 +741,7 @@ function decisionTables(sdk) {
     assert.deepEqual({ id: pair.id, name: pair.name }, expected)
     assert.equal(pair.pairedAt, w.clock.now())
   })
-  bindsAs('5', 'valid; id valid and free; name empty → code; bound to the id with no name, pairedAt set', {}, undefined, { id: ID.agentW, name: null })
+  bindsAs('5', 'valid; agent_id valid and free; name empty → code; bound to the id with no name, pairedAt set', {}, undefined, { id: ID.agentW, name: null })
   bindsAs('5a', 'valid; id and name valid and free → bound and named', { name: NAME.watcher }, undefined, { id: ID.agentW, name: NAME.watcher })
   const refusedOnPage = (rule, title, fill, setup, code) => dt08(rule, title, async (w) => {
     w.tokens.add(5, V(5))
@@ -739,8 +751,9 @@ function decisionTables(sdk) {
     assertOnPage(flow.res, code)
     assert.deepEqual(snapshot(w), before)
   })
-  refusedOnPage('5b', 'an id with a dot → id-invalid', { id: ID.dotted }, undefined, ID_REFUSAL.idInvalid)
-  refusedOnPage('5b', 'an id over 64 characters → id-invalid', { id: ID.long }, undefined, ID_REFUSAL.idInvalid)
+  // Rule 5b now means the request's agent_id is invalid (R-OA-22 (a)); the page asks for no id.
+  refusedOnPage('5b', 'agent_id with a dot → id-invalid', { id: ID.dotted }, undefined, ID_REFUSAL.idInvalid)
+  refusedOnPage('5b', 'agent_id over 64 characters → id-invalid', { id: ID.long }, undefined, ID_REFUSAL.idInvalid)
   refusedOnPage('5c', 'an id a machine client\'s entry holds → id-taken', {}, (w) => w.pairs.pair(E(1), ID.agentW, undefined, at()), REFUSAL.idTaken)
   refusedOnPage('5c', 'an id a browser client\'s entry holds → id-taken', {}, (w) => w.pairs.bindFromPage(E(2), ID.agentW, undefined, { clientIdUrl: FIXTURE.otherClientId, redirectUri: FIXTURE.redirect }, at()), REFUSAL.idTaken)
   refusedOnPage('5c', 'an id a disabled entry holds → id-taken', {}, async (w) => { w.tokens.add(3, V(3)); await w.pairs.pair(E(3), ID.agentW, undefined, at()); w.tokens.disable(3) }, REFUSAL.idTaken)
@@ -753,34 +766,31 @@ function decisionTables(sdk) {
     await w.pairs.pair(E(5), ID.machine, NAME.watcher, at())
     const before = snapshot(w)
     const flow = await open(w)
-    const first = await flow.b.authorize({ token: V(5), id: ID.agentW })
+    const first = await flow.b.authorize({ token: V(5) })
     assertOnPage(first, PAGE_TEXT.createNew, NAME.watcher)
     assert.deepEqual(snapshot(w), before)
     w.pairs.seen(w.pairs.pairOf(E(5)).principalKey, at(LIFETIME.accessTokenMs))
-    const second = await flow.b.authorize({ token: V(5), id: ID.agentW })
+    const second = await flow.b.authorize({ token: V(5) })
     assert.notEqual(masked(second.body), masked(first.body), 'the page shows the bound pair\'s last-seen time')
   })
-  dt08('7', 'paired to this same browser client (chain live) → already-paired', async (w) => {
+  // Rule 7 was "already-paired" (1.9) and 7a / 7b the renewal of an ended chain (R-OA-16 (7)).
+  // R-OA-22 (1.33 Q-A2 A) makes the same id a reconnect; R-OA-23 withdraws 7a (no chain ends by
+  // age) and folds 7b into rule 8 (another id). PAGE-ID-USE-CASES.md AUTH-DT-08.
+  dt08('7', 'paired on the page to this same client, chain live, the same agent_id → code (reconnect); the principal unchanged', async (w) => {
     await chain(w)
     const before = snapshot(w)
-    assertOnPage((await approve(w)).res, PAGE_TEXT.createNew)
-    assert.deepEqual(snapshot(w), before)
-  })
-  dt08('7a', 'this same browser client, every chain ended, typed id = bound id → code (renewal); the pair unchanged', async (w) => {
-    const c = await chain(w)
-    const before = snapshot(w)
-    endChain(w, c)
     assertCode(w, await approve(w))
     assert.deepEqual(snapshot(w), before)
   })
-  dt08('7b', 'as 7a with typed id ≠ bound id → already-paired', async (w) => {
-    const c = await chain(w)
-    endChain(w, c)
+  dt08('8 (was 7b)', 'paired on the page to agent-w-1, another agent_id → already-paired; nothing changes', async (w) => {
+    await chain(w)
+    const before = snapshot(w)
     const flow = await approve(w, { id: ID.other })
     assertOnPage(flow.res, PAGE_TEXT.createNew)
     assert.equal(flow.redirect, undefined)
+    assert.deepEqual(snapshot(w), before)
   })
-  dt08('8', 'paired to another browser client → already-paired', async (w) => {
+  dt08('8', 'paired to another browser client with another id → already-paired', async (w) => {
     w.tokens.add(5, V(5))
     await w.pairs.bindFromPage(E(5), ID.other, undefined, { clientIdUrl: FIXTURE.otherClientId, redirectUri: FIXTURE.redirect }, at())
     const before = snapshot(w)
@@ -800,10 +810,12 @@ function decisionTables(sdk) {
     w.tokens.add(6, V(6))
     await w.pairs.pair(E(6), ID.machine, undefined, at())
     const flow = await open(w)
-    for (const fill of [{ token: V(1) }, { token: V(6) }, { token: V(5), id: ID.dotted }, { token: '' }, { token: V(5) }]) {
-      const res = await flow.b.authorize({ id: ID.agentW, ...fill })
+    for (const fill of [{ token: V(1) }, { token: V(6) }, { token: '' }, { token: V(5) }]) {
+      const res = await flow.b.authorize(fill)
       if (res.headers[HTTP_HEADER.location] === undefined) assertPageHeaders(res)
     }
+    const dotted = await approve(w, { id: ID.dotted, token: V(5) })
+    assertPageHeaders(dotted.res)
     assertNoLeak(w, V(1), V(5), V(6))
   })
 
@@ -923,20 +935,28 @@ function stateTransitions(sdk) {
   st04('2a', 'Pending → good token but id-invalid, id-taken, name-invalid or name-taken → Pending: the refusal on the page; nothing bound', async (w) => {
     w.tokens.add(5, V(5))
     await w.pairs.pair(E(1), ID.machine, NAME.fishball, at())
-    const flow = await open(w)
-    for (const [fill, code] of [[{ id: ID.dotted }, ID_REFUSAL.idInvalid], [{ id: ID.machine }, REFUSAL.idTaken], [{ name: 'x'.repeat(65) }, REFUSAL.nameInvalid], [{ name: NAME.fishball }, REFUSAL.nameTaken]]) {
-      assertOnPage(await flow.b.authorize({ token: V(5), id: ID.agentW, ...fill }), code)
+    // The id refusals come from the request's agent_id (R-OA-22), so each is its own request; a
+    // second Authorize on the same request shows the same refusal: it stayed pending.
+    for (const [id, code] of [[ID.dotted, ID_REFUSAL.idInvalid], [ID.machine, REFUSAL.idTaken]]) {
+      const flow = await approve(w, { id })
+      assertOnPage(flow.res, code)
+      assertOnPage(await flow.b.authorize({ token: V(5) }), code)
       assert.equal(w.pairs.pairOf(E(5)), undefined)
     }
-    const res = await flow.b.authorize({ token: V(5), id: ID.agentW })
+    const flow = await open(w)
+    for (const [name, code] of [[FIXTURE.idFill.repeat(NAME_RULES.maxChars + 1), REFUSAL.nameInvalid], [NAME.fishball, REFUSAL.nameTaken]]) {
+      assertOnPage(await flow.b.authorize({ token: V(5), name }), code)
+      assert.equal(w.pairs.pairOf(E(5)), undefined)
+    }
+    const res = await flow.b.authorize({ token: V(5) })
     assertCode(w, { res, redirect: redirectOf(res) })
   })
   st04('3', 'Pending → an invalid token → Pending: uniform "not valid"; failure counted', async (w) => {
     w.tokens.add(5, V(5))
     const flow = await open(w)
-    assertOnPage(await flow.b.authorize({ token: V(1), id: ID.agentW }), PAGE_TEXT.invalid)
+    assertOnPage(await flow.b.authorize({ token: V(1) }), PAGE_TEXT.invalid)
     assert.equal(w.limiter.failures.length, 1)
-    const res = await flow.b.authorize({ token: V(5), id: ID.agentW })
+    const res = await flow.b.authorize({ token: V(5) })
     assertCode(w, { res, redirect: redirectOf(res) })
   })
   st04('4', 'Pending → a valid but paired token → Pending: already-paired; nothing changes', async (w) => {
@@ -945,23 +965,23 @@ function stateTransitions(sdk) {
     await w.pairs.pair(E(6), ID.machine, undefined, at())
     const before = snapshot(w)
     const flow = await open(w)
-    assertOnPage(await flow.b.authorize({ token: V(6), id: ID.agentW }), PAGE_TEXT.createNew)
+    assertOnPage(await flow.b.authorize({ token: V(6) }), PAGE_TEXT.createNew)
     assert.deepEqual(snapshot(w), before)
-    const res = await flow.b.authorize({ token: V(5), id: ID.agentW })
+    const res = await flow.b.authorize({ token: V(5) })
     assertCode(w, { res, redirect: redirectOf(res) })
   })
-  st04('4a', 'Pending → a browser-bound token whose every chain ended, recorded client, bound id → CodeIssued; the pair unchanged', async (w) => {
-    const c = await chain(w)
+  // Row 4a was the renewal of a chain ended by age (withdrawn, R-OA-23); it is now the reconnect.
+  st04('4a', 'Pending → a page-bound token with its bound agent_id (no age or chain condition) → CodeIssued; the pair unchanged (reconnect)', async (w) => {
+    await chain(w)
     const before = snapshot(w)
-    endChain(w, c)
     assertCode(w, await approve(w))
     assert.deepEqual(snapshot(w), before)
-    assert.ok(w.pairs.calls.some(([n, entryKey, id]) => n === 'renewFromPage' && entryKey === E(5) && id === ID.agentW))
+    assert.ok(w.pairs.calls.some(([n, entryKey, id]) => n === 'reconnectFromPage' && entryKey === E(5) && id === ID.agentW))
   })
   st04('5', 'Pending → Cancel → Closed: access_denied; nothing bound; Authorize no longer issues a code', async (w) => {
     w.tokens.add(5, V(5))
     const flow = await open(w)
-    const captured = flow.b.formBody(PAGE_TEXT.authorize, { token: V(5), id: ID.agentW })
+    const captured = flow.b.formBody(PAGE_TEXT.authorize, { token: V(5) })
     assertRedirectedError(w, await flow.b.cancel(), OAUTH_ERROR.accessDenied)
     assert.equal(redirectOf(await flow.b.post(captured))?.params[PARAM.code], undefined)
     assert.equal(w.pairs.pairOf(E(5)), undefined)
@@ -970,15 +990,15 @@ function stateTransitions(sdk) {
     w.tokens.add(5, V(5))
     const flow = await open(w)
     w.clock.advance(LIFETIME.pendingRequestMs)
-    assertOnPage(await flow.b.authorize({ token: V(5), id: ID.agentW }), PAGE_TEXT.expired)
+    assertOnPage(await flow.b.authorize({ token: V(5) }), PAGE_TEXT.expired)
     assert.equal(w.pairs.pairOf(E(5)), undefined)
   })
   st04('7', 'Pending → the per-client failure limit reached → refused with the rate-limit answer, valid or not; nothing revealed', async (w) => {
     w.tokens.add(5, V(5))
     const flow = await open(w)
-    for (let i = 0; i < FAILURE_LIMIT.perKeyPerWindow; i += 1) assertOnPage(await flow.b.authorize({ token: V(1), id: ID.agentW }), PAGE_TEXT.invalid)
-    const valid = await flow.b.authorize({ token: V(5), id: ID.agentW })
-    const invalid = await flow.b.authorize({ token: V(1), id: ID.agentW })
+    for (let i = 0; i < FAILURE_LIMIT.perKeyPerWindow; i += 1) assertOnPage(await flow.b.authorize({ token: V(1) }), PAGE_TEXT.invalid)
+    const valid = await flow.b.authorize({ token: V(5) })
+    const invalid = await flow.b.authorize({ token: V(1) })
     assert.equal(valid.status, HTTP_STATUS.tooManyRequests)
     assert.equal(valid.headers[HTTP_HEADER.location], undefined)
     assert.equal(masked(valid.body), masked(invalid.body), 'a limited answer says nothing about the token')
@@ -1019,8 +1039,8 @@ function stateTransitions(sdk) {
     w.tokens.add(5, V(5))
     w.tokens.add(6, V(6))
     const issued = await approve(w)
-    const waiting = await open(w)
-    const captured = waiting.b.formBody(PAGE_TEXT.authorize, { token: V(6), id: ID.other })
+    const waiting = await open(w, { overrides: { [PARAM.agentId]: ID.other } })
+    const captured = waiting.b.formBody(PAGE_TEXT.authorize, { token: V(6) })
     await w.restart()
     assertGrantError(await redeem(w, issued), OAUTH_ERROR.invalidGrant)
     assert.equal(redirectOf(await waiting.b.post(captured))?.params[PARAM.code], undefined)
@@ -1045,7 +1065,9 @@ function stateTransitions(sdk) {
     assert.notEqual(rt2.refresh_token, c.rt)
     assert.notEqual(rt2.access_token, c.first.access_token)
     const record = w.store.getRefresh(digest(rt2.refresh_token))
-    assert.deepEqual({ chainId: record.chainId, startedAt: record.chainStartedAt }, { chainId: c.chainId, startedAt: c.startedAt })
+    // K1d `RefreshRecord` (K1d-5: `chainStartedAt` withdrawn with the chain cap): exactly these members.
+    assert.deepEqual(Object.keys(record).filter((k) => record[k] !== undefined).sort(), REFRESH_RECORD_MEMBERS)
+    assert.equal(record.chainId, c.chainId)
     w.clock.advance(LIFETIME.refreshGraceMs)
     assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
   })
@@ -1054,14 +1076,24 @@ function stateTransitions(sdk) {
     const [rt2, rt3] = await rotate(w, c.rt, 2)
     assert.notEqual(rt3.refresh_token, rt2.refresh_token)
   })
-  st05('3', 'Chain(RT3) → RT1 again outside the window → Revoked: invalid_grant; RT3 and every AT of the chain dead', async (w) => {
+  // K1d-7 (bounded refresh records): only the newest spent token of a chain is still known, so
+  // reuse is detected on RT2 (the newest spent after RT3 was issued), no longer on RT1.
+  st05('3', 'Chain(RT3) → RT2, the newest spent, again outside the window → Revoked: invalid_grant; RT3 and every AT of the chain dead', async (w) => {
+    const c = await chain(w)
+    const bodies = await rotate(w, c.rt, 2)
+    w.clock.advance(LIFETIME.refreshGraceMs)
+    assertGrantError(await refresh(w, bodies[0].refresh_token), OAUTH_ERROR.invalidGrant)
+    assert.ok(sawCall(w, 'revokeChain', c.chainId))
+    assertGrantError(await refresh(w, bodies[1].refresh_token), OAUTH_ERROR.invalidGrant)
+    for (const body of [c.first, ...bodies]) assert.equal(w.store.getAccess(digest(body.access_token)), undefined)
+  })
+  st05('3 (older spent, K1d-7)', 'Chain(RT3) → RT1, older than the newest spent, outside the window → invalid_grant as unknown; the chain is NOT revoked and RT3 still refreshes', async (w) => {
     const c = await chain(w)
     const bodies = await rotate(w, c.rt, 2)
     w.clock.advance(LIFETIME.refreshGraceMs)
     assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
-    assert.ok(sawCall(w, 'revokeChain', c.chainId))
-    assertGrantError(await refresh(w, bodies[1].refresh_token), OAUTH_ERROR.invalidGrant)
-    for (const body of [c.first, ...bodies]) assert.equal(w.store.getAccess(digest(body.access_token)), undefined)
+    assert.equal(sawCall(w, 'revokeChain'), false, 'an unknown token revoked the chain')
+    assertGrantOk(await refresh(w, bodies[1].refresh_token))
   })
   todo(sdk, CASE.st05, '3 (MCP)', 'the revoked chain\'s access tokens get 401 at the MCP endpoint', LATER.verifier)
   st05('3a', 'Chain(RT2, RT1 spent < 10 s ago) → RT1 again, same client and resource → the identical response; nothing revoked', async (w) => {
@@ -1102,14 +1134,20 @@ function stateTransitions(sdk) {
     })
   }
   todo(sdk, CASE.st05, '6 (MCP)', 'the entry\'s access tokens get 401 after disable, delete or value change', LATER.verifier)
-  st05('7', 'Revoked (entry disabled) → re-enabled → Revoked: no refresh token revived; re-entering the token is already-paired', async (w) => {
+  // Row 7's "re-entering is already-paired" is superseded by R-OA-22 (1.33 Q-A2 A; relayed reading,
+  // PAGE-ID-USE-CASES.md): the same id reconnects; the revoked chain stays revoked.
+  st05('7', 'Revoked (entry disabled) → re-enabled → Revoked: no refresh token revived; re-entering the token with the bound id reconnects (a new chain, the same principal)', async (w) => {
     const c = await chain(w)
+    const principal = w.pairs.pairOf(E(5)).principalKey
     w.tokens.disable(5)
     w.tokens.enable(5)
     assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
     const flow = await approve(w)
-    assertOnPage(flow.res, PAGE_TEXT.createNew)
-    assert.equal(flow.redirect, undefined)
+    assertCode(w, flow)
+    const fresh = assertGrantOk(await redeem(w, flow))
+    assert.notEqual(w.store.getRefresh(digest(fresh.refresh_token)).chainId, c.chainId)
+    assert.equal(w.pairs.pairOf(E(5)).principalKey, principal)
+    assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
   })
   st05('8', 'Chain(RTn) → connector restart → ATs gone; RTn refreshes to RTn+1; storage holds RTn\'s digest, never its value', async (w) => {
     const c = await chain(w)
@@ -1147,97 +1185,64 @@ function stateTransitions(sdk) {
     assertGrantError(result, RELAYED.secretOnGrant[GRANT.refreshToken])
     assert.equal(result.countedFailure, true)
   })
-  st05('10', 'Chain started at T → refresh at T + 365 days − 1 ms → RTn+1; the chain\'s start stays T', async (w) => {
+  // Rows 10–12e were the 365-day chain cap and the renewal of an ended chain (R-OA-16 (5), (7)),
+  // withdrawn by R-OA-23 (1.32 R14). Rows 10 and 11 now say "no age"; 12, 12a, 12b and 12e are the
+  // reconnect (R-OA-22); 12c and 12d are withdrawn (no chain condition on reconnect). The ages are
+  // AUTH-BVA-11 in page-id-cases.mjs as well.
+  st05('10', 'Chain started at T → refresh at T + 365 days − 1 ms → RTn+1', async (w) => {
     const c = await chain(w)
-    w.clock.set(c.startedAt + LIFETIME.refreshChainMaxMs - 1)
-    const next = assertGrantOk(await refresh(w, c.rt))
-    assert.equal(w.store.getRefresh(digest(next.refresh_token)).chainStartedAt, c.startedAt)
+    w.clock.set(at(FIXTURE.withdrawnChainCapMs - 1))
+    assertGrantOk(await refresh(w, c.rt))
   })
-  for (const [label, extraMs] of [['T + 365 days', 0], ['later', 1]]) {
-    st05('11', `Chain started at T → refresh at ${label} → Ended: invalid_grant; the pair and its name stay`, async (w) => {
+  for (const [label, offsetMs] of [['T + 365 days', FIXTURE.withdrawnChainCapMs], ['T + 10 years', FIXTURE.tenYearsMs]]) {
+    st05('11', `Chain started at T → refresh at ${label} → RTn+1 (no chain cap, R-OA-23); the pair unchanged`, async (w) => {
       const c = await chain(w)
       const before = snapshot(w)
-      w.clock.set(c.startedAt + LIFETIME.refreshChainMaxMs + extraMs)
-      assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
+      w.clock.set(at(offsetMs))
+      const next = assertGrantOk(await refresh(w, c.rt))
+      assert.equal(w.store.getRefresh(digest(next.refresh_token)).chainId, c.chainId, 'the same chain rotates')
       assert.deepEqual(snapshot(w), before)
     })
   }
-  st05('12', 'Ended → the recorded client re-enters the bound token with the bound id → a code, then a new chain started at the redemption, same principal', async (w) => {
+  st05('12', 'a live chain, years later → the bound client re-enters the token with the bound id → a code, then a new chain for the same principal', async (w) => {
     const c = await chain(w)
     const principal = w.pairs.pairOf(E(5)).principalKey
-    endChain(w, c)
+    w.clock.set(at(FIXTURE.tenYearsMs))
     const flow = await approve(w)
     assertCode(w, flow)
-    w.clock.advance(seconds(1))
     const fresh = assertGrantOk(await redeem(w, flow))
     const record = w.store.getRefresh(digest(fresh.refresh_token))
     assert.notEqual(record.chainId, c.chainId)
-    assert.equal(record.chainStartedAt, w.clock.now())
     assert.equal(w.store.getAccess(digest(fresh.access_token)).entryKey, E(5))
     assert.equal(w.pairs.pairOf(E(5)).principalKey, principal)
     assert.equal(w.tokens.list().length, 1, 'no new token')
+    // K1d-6: the reconnect revoked the principal's older chains; the new one rotates.
+    assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
+    assertGrantOk(await refresh(w, fresh.refresh_token))
   })
-  for (const [what, fill, setup] of [
-    ['another client id', {}, (w) => w.cimd.document(FIXTURE.otherClientId, documentOf(FIXTURE.otherClientId))],
-    ['another id', { id: ID.other }, () => {}],
+  st05('12a', 'a chain → re-entry with another id → already-paired; nothing changes', async (w) => {
+    await chain(w)
+    const before = snapshot(w)
+    const flow = await approve(w, { id: ID.other })
+    assertOnPage(flow.res, PAGE_TEXT.createNew)
+    assert.deepEqual(snapshot(w), before)
+  })
+  for (const [what, revoke, token] of [
+    ['reuse', async (w, c) => { await refresh(w, c.rt); w.clock.advance(LIFETIME.refreshGraceMs); await refresh(w, c.rt) }, () => V(5)],
+    ['disable and re-enable', async (w) => { w.tokens.disable(5); w.tokens.enable(5) }, () => V(5)],
   ]) {
-    st05('12a', `Ended → re-entry from ${what} → already-paired; nothing changes`, async (w) => {
-      const c = await chain(w)
-      setup(w)
-      endChain(w, c)
-      const before = snapshot(w)
-      const flow = await approve(w, fill, what === 'another client id' ? { overrides: { [PARAM.clientId]: FIXTURE.otherClientId } } : {})
-      assertOnPage(flow.res, PAGE_TEXT.createNew)
-      assert.deepEqual(snapshot(w), before)
-    })
-  }
-  for (const [what, revoke] of [
-    ['reuse', async (w, c) => { await refresh(w, c.rt); w.clock.advance(LIFETIME.refreshGraceMs); await refresh(w, c.rt) }],
-    ['disable and re-enable', async (w) => { w.tokens.disable(5); w.tokens.enable(5) }],
-  ]) {
-    st05('12b', `Revoked (by ${what}) → the same client re-enters the bound token with the bound id → already-paired`, async (w) => {
+    st05('12b', `Revoked (by ${what}) → the bound client re-enters the token with the bound id → a code (reconnect); the revoked chain stays revoked`, async (w) => {
       const c = await chain(w)
       await revoke(w, c)
-      endChain(w, c)
-      const flow = await approve(w)
-      assertOnPage(flow.res, PAGE_TEXT.createNew)
-      assert.equal(flow.redirect, undefined)
+      const flow = await approve(w, { token: token() })
+      assertCode(w, flow)
+      assertGrantOk(await redeem(w, flow))
+      assertGrantError(await refresh(w, c.rt), OAUTH_ERROR.invalidGrant)
     })
   }
-  st05('12b', 'Revoked (by a value change) → re-entry with the current value → already-paired', async (w) => {
-    const c = await chain(w)
-    w.tokens.changeValue(5, FIXTURE.changedValue(5))
-    endChain(w, c)
-    const flow = await approve(w, { token: FIXTURE.changedValue(5) })
-    assertOnPage(flow.res, PAGE_TEXT.createNew)
-    assert.equal(flow.redirect, undefined)
-  })
-  st05('12c', 'Ended while another chain of the entry is live (after a renewal) → re-entry → already-paired', async (w) => {
-    const c = await chain(w)
-    endChain(w, c)
-    const renewal = await approve(w)
-    assertGrantOk(await redeem(w, renewal))
-    const flow = await approve(w)
-    assertOnPage(flow.res, PAGE_TEXT.createNew)
-    assert.equal(flow.redirect, undefined)
-  })
-  for (const [what, act, token] of [
-    ['disabled and re-enabled', (w) => { w.tokens.disable(5); w.tokens.enable(5) }, V(5)],
-    ['given a new value', (w) => w.tokens.changeValue(5, FIXTURE.changedValue(5)), FIXTURE.changedValue(5)],
-  ]) {
-    st05('12d', `Ended, then the entry ${what} → re-entry from the recorded client with the bound id → already-paired`, async (w) => {
-      const c = await chain(w)
-      endChain(w, c)
-      act(w)
-      const flow = await approve(w, { token })
-      assertOnPage(flow.res, PAGE_TEXT.createNew)
-      assert.equal(flow.redirect, undefined)
-    })
-  }
-  st05('12e', 'Ended → renewal with another redirect URI the document lists → accepted; the new redirect URI recorded', async (w) => {
+  st05('12e', 'reconnect with another redirect URI the document lists → accepted; the new redirect URI recorded', async (w) => {
     w.cimd.document(FIXTURE.clientId, documentOf(FIXTURE.clientId, [FIXTURE.redirect, FIXTURE.redirectSecond]))
-    const c = await chain(w)
-    endChain(w, c)
+    await chain(w)
     const flow = await approve(w, {}, { overrides: { [PARAM.redirectUri]: FIXTURE.redirectSecond } })
     assertCode(w, flow, { target: FIXTURE.redirectSecond })
     assert.equal(w.pairs.pairOf(E(5)).redirectUri, FIXTURE.redirectSecond)

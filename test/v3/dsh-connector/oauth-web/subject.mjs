@@ -29,9 +29,10 @@ import path from 'node:path'
 import { INSTANCE } from '../../../support/constants.mjs'
 import { importInstance } from '../../../private-skills/support/sdk.mjs'
 import { resolveRuntimePackages } from '../pairs/subject.mjs'
+import { base32 } from '../../contract/k1d-amendments/subject.mjs'
 import { Browser } from './browser.mjs'
 import {
-  CLIENT_AUTH, FIXTURE, GRANT, HOSTS, LIFETIME, PARAM, PATHS, PKCE, RESPONSE_TYPE, STUB, SUBJECT, TOKEN_VALUE, documentFor, oauthUrls,
+  CLIENT_AUTH, DERIVED_AGENT_ID, FIXTURE, GRANT, HOSTS, LIFETIME, PARAM, PATHS, PKCE, RESPONSE_TYPE, STUB, SUBJECT, TOKEN_VALUE, documentFor, oauthUrls,
 } from './constants.mjs'
 import { fakeCimd, fakeClock, fakeGate, fakeLimiter, fakeLogger, fakeOAuthStore, fakePairs, fakeTimers, fakeTokens } from './fakes.mjs'
 
@@ -60,6 +61,13 @@ export function originOf(req, { secure }) {
 
 /** Lowercase hex SHA-256 (the relayed store-key decision; TOKEN_VALUE.digestAlgorithm). */
 export const digest = (value) => createHash(TOKEN_VALUE.digestAlgorithm).update(value).digest('hex')
+/**
+ * K1 DERIVED_AGENT_ID, computed by the test (K1d-5): the prefix and the first `chars` characters of
+ * the unpadded base32 (the RFC 4648 encoder the K1d gate checks against RFC 4648 §10's vectors) of
+ * the raw digest of the UTF-8 client id exactly as sent.
+ */
+export const derivedId = (clientId) => DERIVED_AGENT_ID.prefix
+  + base32(createHash(DERIVED_AGENT_ID.digestAlgorithm).update(clientId, 'utf8').digest(), DERIVED_AGENT_ID.alphabet).slice(0, DERIVED_AGENT_ID.chars)
 const base64url = (buf) => Buffer.from(buf).toString('base64url')
 /** RFC 7636 §4.1–4.2: a verifier and its S256 challenge. */
 export function pkce() {
@@ -76,7 +84,8 @@ const closeServer = (server) => new Promise((resolve) => { server.closeAllConnec
 /**
  * One connector's browser-authorization side over fakes, served on an ephemeral loopback port.
  * `options.trustedHosts` are DSH's `--trusted-host` list; `options.cimd` replaces the fake fetcher
- * (e.g. the real one over a stubbed transport).
+ * (e.g. the real one over a stubbed transport); `options.store(t)` resolves the OAuthTokenStore to
+ * use instead of the fake (C-OAUTH's real one, test/v3/dsh-connector/oauth/chain-cases.mjs).
  * @param {import('node:test').TestContext} t
  */
 export async function webWorld(t, sdk, options = {}) {
@@ -84,7 +93,7 @@ export async function webWorld(t, sdk, options = {}) {
   const clock = fakeClock(FIXTURE.t0)
   const tokens = fakeTokens(FIXTURE.entry)
   const pairs = fakePairs()
-  const store = fakeOAuthStore()
+  const store = options.store === undefined ? fakeOAuthStore() : await options.store(t)
   const limiter = fakeLimiter()
   const logger = fakeLogger()
   // `options.cimd(mod, clock)` builds the fetcher (e.g. the real one over a stubbed transport).
@@ -130,7 +139,7 @@ export async function webWorld(t, sdk, options = {}) {
     /** A connector restart: memory goes (the store's access tokens and codes, every pending request), persisted fakes stay. */
     async restart() {
       await closeServer(server)
-      store.restart()
+      store.restart?.()
       await boot()
       for (const b of world.browsers) { b.port = port; b.host = b.host.replace(/:\d+$/, `:${port}`); b.origin = b.origin.replace(/:\d+$/, `:${port}`) }
     },
@@ -155,12 +164,16 @@ export async function webWorld(t, sdk, options = {}) {
 /** The fixture document for a client id (constants.mjs documentFor). */
 export const documentOf = (clientId, redirectUris = [FIXTURE.redirect], extra = {}) => documentFor(clientId, redirectUris, extra)
 
-/** The `/authorize` query of a valid request (AUTH-DT-07 rule 1); `overrides` set or (undefined) drop members. */
+/**
+ * The `/authorize` query of a valid request (AUTH-DT-07 rule 1) from a Fishball-like client that
+ * passes its id, agent-w-1, as K1d's `agent_id` (R-OA-22 (a)); `overrides` set or (undefined) drop
+ * members, so `{[PARAM.agentId]: undefined}` is a generic client that passes none (R-OA-22 (b)).
+ */
 export function authorizeParams(w, challenge, overrides = {}) {
   const params = {
     [PARAM.responseType]: RESPONSE_TYPE.code, [PARAM.clientId]: FIXTURE.clientId, [PARAM.redirectUri]: FIXTURE.redirect,
     [PARAM.codeChallenge]: challenge, [PARAM.codeChallengeMethod]: PKCE.method, [PARAM.state]: FIXTURE.state,
-    [PARAM.resource]: w.urls.resource, ...overrides,
+    [PARAM.resource]: w.urls.resource, [PARAM.agentId]: FIXTURE.id.agentW, ...overrides,
   }
   return Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined))
 }

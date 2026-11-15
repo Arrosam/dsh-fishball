@@ -266,12 +266,21 @@ function pageCases(sdk) {
   const derivedDoc = () => [...commentBlocks(schemaCode().get(path.join(path.relative(process.cwd(), FILES.schemaDir), 'constants.js')) ?? ''), ...markdownBlocks(readme(FILES.schemaDir))]
     .filter((b) => b.includes('DERIVED_AGENT_ID')).join('\n')
   docRows(sdk, ID.page, 13, 'DERIVED_AGENT_ID', DERIVED_ID.inputDoc, derivedDoc)
-  todos(sdk, ID.page, LATER.pageId, [
-    ['B1', 'Authorize binds at once with the agent_id passed in the authorization request (id-invalid / id-taken on the page)'],
-    ['B2', 'a client that passes no id is bound to cid- + 16 base32 of SHA-256(client id URL)'],
-    ['B3', 'the same token with the same id reconnects the same principal (name, sessions, queued events kept); another id is already-paired'],
-    ['B4', 'no refresh chain ends by age: only reuse or a disable / delete of its entry ends it'],
-  ])
+  const revokeEntryChains = () => method(interfaceMembers(k1().m, PAGE.tokenStore), PAGE.revokeEntryChains)
+  caseTest(sdk, ID.page, 14, `${PAGE.tokenStore}.${PAGE.revokeEntryChains}(${PAGE.revokeEntryChainsParams.join(', ')}: ${PAGE.entryKeyType}) is declared and resolves void (K1d-6)`, () => {
+    const found = assertSignature(revokeEntryChains(), PAGE.revokeEntryChainsParams)
+    assert.equal(found.params[0].type.trim(), PAGE.entryKeyType)
+    assert.match(found.returns.trim(), PAGE.promiseVoid)
+  })
+  PAGE.revokeEntryChainsDoc.forEach(([what, patterns], i) => caseTest(sdk, ID.page, `15.${i + 1}`, `${PAGE.revokeEntryChains} documents: ${what}`, () => {
+    const { doc } = revokeEntryChains()
+    for (const re of patterns) assert.match(doc ?? '', re, `${PAGE.revokeEntryChains}'s declaration does not say ${what}`)
+  }))
+  // B1–B4 (the page id's behaviour, C-PAGE-ID) run in the module suites, not here:
+  // B1 agent_id binds at once, B2 the derived cid- id: dsh-connector/oauth-web/page-id-cases.mjs
+  // (AUTH-UC-10, AUTH-UC-15, AUTH-EP-15, AUTH-BVA-10); B3 reconnect / already-paired: the same file
+  // (AUTH-UC-16, AUTH-UC-17, AUTH-DT-08) and dsh-connector/pairs/reconnect-cases.mjs; B4 no chain
+  // cap: dsh-connector/oauth/chain-cases.mjs (AUTH-UC-19, AUTH-BVA-11) and oauth-web AUTH-ST-05.
 }
 
 // ================================================================================================

@@ -27,6 +27,7 @@ export const MISUSE = Object.freeze({
   invalidId: 'fishball pair store: the id is not a fishball id (the token endpoint admits only valid ids)',
   unknownPrincipal: 'fishball pair store: no pair has this principal key',
   selfSuccession: 'fishball pair store: an entry cannot succeed itself',
+  reconnectUnpaired: 'fishball pair store: a page reconnect needs a bound entry (an unpaired one is bound with bindFromPage)',
 })
 
 /** Background log lines (no token value, id or name is ever logged). */

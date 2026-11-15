@@ -223,6 +223,11 @@ export const FIELDS = Object.freeze({
  */
 const has = (...patterns) => (p) => patterns.every((re) => re.test(p))
 const lifetime = /lifetime|expir|ttl|valid/i
+/**
+ * AUTH-ST-05 row K as K1d rewrote it (R-OA-23, 1.32 R14): the chain cap is withdrawn, and the
+ * README is the freeze record that says so (the README's "Lifetimes and limits" row).
+ */
+export const CHAIN_CAP = Object.freeze({ withdrawn: 'refreshChainMaxMs', requirement: 'R-OA-23', withdrawnWord: /withdrawn/i, readme: /README\.md$/ })
 export const MEANING = Object.freeze({
   accessToken: has(/access/i, lifetime),
   code: (p) => /code/i.test(p) && lifetime.test(p) && !/pending|request/i.test(p),

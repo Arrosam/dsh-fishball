@@ -30,6 +30,9 @@ export const SUBJECT = Object.freeze({
   entry: process.env.FBTEST_C_PAIR_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'pairs', 'index.js'),
   open: 'openPairStore',
   power: 'powerOf',
+  /** C-PAGE-ID (K1d-4): the page's two PairStore members, and the one K1d withdrew with the chain cap. */
+  pageMembers: Object.freeze(['bindFromPage', 'reconnectFromPage']),
+  withdrawnMember: 'renewFromPage',
   /** AUTH-ST-01 row 11: no operation of the store may undo a binding (R-ID-09: there is no unpair). */
   unbindName: /unpair|unbind/i,
 })
@@ -93,13 +96,15 @@ export const FIXTURE = Object.freeze({
   firstRequestOffset: 5_000,
   /** The approval page's client (AUTH-UC-10's fixture). */
   client: Object.freeze({ clientIdUrl: 'https://agent.example/cimd.json', redirectUri: 'http://127.0.0.1:7777/cb' }),
+  /** C-PAGE-ID (AUTH-UC-16 A1): the same agent coming back from another client id URL and redirect. */
+  otherClient: Object.freeze({ clientIdUrl: 'https://other.example/cimd.json', redirectUri: 'http://127.0.0.1:7777/cb2' }),
   /** NAME-BVA-03 row 2: "10 at once". */
   crowd: 10,
   /** NAME-BVA-03 row 3: rounds of the pair / set_name race (either branch may win). */
   raceRounds: 8,
   id: Object.freeze({
     agentA: 'agent-a', a: 'a', b: 'b', x: 'x', y: 'y', abc: 'abc', ABC: 'ABC', n123: '123', n999: '999',
-    agentW: 'agent-w-1', crowd: (n) => `agent-${n}`, race: (n) => `racer-${n}`, holder: (n) => `holder-${n}`,
+    agentW: 'agent-w-1', other: 'agent-v-1', dotted: 'agent.w', crowd: (n) => `agent-${n}`, race: (n) => `racer-${n}`, holder: (n) => `holder-${n}`,
   }),
   name: Object.freeze({
     fishball: 'Fishball', fishballLower: 'fishball', ops: 'Ops', bob: 'Bob', agentA: 'Agent A', blank: '   ',

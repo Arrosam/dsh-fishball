@@ -10,16 +10,16 @@
  */
 import path from 'node:path'
 import {
-  APPROVAL_LISTENER, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS,
-  HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LIFETIME, OAUTH_ERROR, PATHS, PKCE, REFUSAL, REQUEST_GATE, RESPONSE_TYPE, SCOPE, TIME_UNIT,
-  TOKEN_VALUE, checkName, isAgentId, nameKey, oauthUrls,
+  APPROVAL_LISTENER, AUTHORIZE_EXTENSION, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS,
+  HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LIFETIME, NAME_RULES, OAUTH_ERROR, PATHS, PKCE, REFUSAL, REQUEST_GATE, RESPONSE_TYPE, SCOPE, TIME_UNIT,
+  DERIVED_AGENT_ID, ID_GRAMMAR, TOKEN_VALUE, checkName, isAgentId, nameKey, oauthUrls,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../../support/constants.mjs'
 
 export {
-  APPROVAL_LISTENER, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS,
-  HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LIFETIME, OAUTH_ERROR, PATHS, PKCE, REFUSAL, REQUEST_GATE, RESPONSE_TYPE, SCOPE, TIME_UNIT,
-  TOKEN_VALUE, checkName, isAgentId, nameKey, oauthUrls,
+  APPROVAL_LISTENER, AUTHORIZE_EXTENSION, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS,
+  HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LIFETIME, NAME_RULES, OAUTH_ERROR, PATHS, PKCE, REFUSAL, REQUEST_GATE, RESPONSE_TYPE, SCOPE, TIME_UNIT,
+  DERIVED_AGENT_ID, ID_GRAMMAR, TOKEN_VALUE, checkName, isAgentId, nameKey, oauthUrls,
 }
 
 /**
@@ -89,12 +89,25 @@ export const PAGE_TEXT = Object.freeze({
   cancel: /cancel/i,
 })
 
+/**
+ * K1d `RefreshRecord` (index.d.ts) of an unspent refresh token: these members and no other
+ * (`chainStartedAt` withdrawn with the chain cap, K1d-5; `spentAt` is set only once spent). Sorted.
+ */
+export const REFRESH_RECORD_MEMBERS = Object.freeze(['audience', 'chainId', 'clientId', 'entryKey', 'generation'])
+
 /** RFC 6749 §4.1 / RFC 7636 / RFC 9207 / RFC 8707 parameter names: wire syntax, not product values. */
 export const PARAM = Object.freeze({
   responseType: 'response_type', clientId: 'client_id', redirectUri: 'redirect_uri', codeChallenge: 'code_challenge',
   codeChallengeMethod: 'code_challenge_method', state: 'state', resource: 'resource', code: 'code', iss: 'iss', error: 'error',
   grantType: GRANT_DISPATCH.formField, codeVerifier: 'code_verifier', refreshToken: 'refresh_token',
+  /** K1d: the agent's id travels in the authorization request (R-OA-22), never in the page's form. */
+  agentId: AUTHORIZE_EXTENSION.agentIdParam,
 })
+/**
+ * Form fields a client might post to smuggle an id past the page (AUTH-EP-15 row 8): the page has
+ * no id field, so the decision must ignore them (R-OA-11 as amended by 1.32 R13).
+ */
+export const SMUGGLED_ID_FIELDS = Object.freeze(['id', AUTHORIZE_EXTENSION.agentIdParam])
 /** CIMD draft / RFC 7591 document members. */
 export const DOC = Object.freeze({
   clientId: 'client_id', clientName: 'client_name', redirectUris: 'redirect_uris', authMethod: 'token_endpoint_auth_method',
@@ -175,6 +188,19 @@ export const FIXTURE = Object.freeze({
   defaultPortLock: 'fbtest-c-oauth-web-default-port.lock',
   lockPollMs: 100,
   pkceVerifierBytes: 32,
+  /**
+   * AUTH-BVA-11 (R-OA-23): refresh ages around the withdrawn 365-day cap (decided #18, reversed by
+   * 1.32 R14) and one far beyond it. Case data, not a product value: K1d keeps no chain lifetime.
+   */
+  withdrawnChainCapMs: 365 * 24 * 60 * 60 * 1000,
+  tenYearsMs: 10 * 365 * 24 * 60 * 60 * 1000,
+  /** AUTH-BVA-10 (R-ID-02): the id grammar's bounds, and the classes of AUTH-EP-15 rows 4–6. */
+  idMaxChars: 64,
+  idFill: 'a',
+  invalidAgentIds: Object.freeze([['dot', 'agent.w'], ['space', 'a b'], ['@', 'a@b'], ['non-ASCII', '\u00e9']]),
+  validAgentIds: Object.freeze([['letters, digits, - and _', 'Az_09-']]),
+  /** AUTH-ST-09 row 7: the store key of a chainless (client_credentials) access token planted in the fake store. */
+  chainlessDigest: 'fbtest-chainless-access-digest',
 })
 
 /** The fixture CIMD documents. */

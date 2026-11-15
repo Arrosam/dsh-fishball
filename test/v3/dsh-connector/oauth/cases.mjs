@@ -1,10 +1,11 @@
 /**
- * C-OAUTH black-box cases (v3-tasks.md row C-OAUTH, wave W2): the token store, `chainsOf`, the
+ * C-OAUTH black-box cases (v3-tasks.md row C-OAUTH, wave W2): the token store, the
  * FailureLimiter, the BearerVerifier, the token endpoint's dispatch and `client_credentials`, and
  * both metadata documents. Cases from docs/test-design/v3/01-auth-pairing.md that the row names:
  * AUTH-UC-07, AUTH-UC-08, AUTH-EP-01, AUTH-EP-02 (rows 3–10), AUTH-EP-05, AUTH-EP-07, AUTH-EP-09,
  * AUTH-BVA-01, AUTH-BVA-02, AUTH-BVA-06, AUTH-DT-01, AUTH-ST-02; the C-OAUTH parts of AUTH-ST-04
- * (the failure limit, the code store) and AUTH-ST-05 (the refresh store and `chainsOf`); the K1b
+ * (the failure limit, the code store) and AUTH-ST-05 (the refresh store; `chainsOf` withdrawn by
+ * K1d, R-OA-23); the K1b
  * rows that named C-OAUTH (K1b-UC-02, K1b-DT-06); and the C-PAIR rows that named C-OAUTH (AUTH-UC-02
  * main 2–3, A2, E1; AUTH-UC-04 E1; AUTH-EP-03 rows 1–6; AUTH-EP-06 row 9; AUTH-ST-01 row 14).
  * Requirements R-OA-01…09, R-OA-17, R-TOK-00…07, R-ID-02/03; design §5.5; K1 and K1b index.d.ts.
@@ -21,7 +22,7 @@
 import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import {
-  BEARER_CHALLENGE, CALLER_FIELDS, CHAINS, CLIENT_AUTH, ENTRY_STATUS, ERROR_BODY_FIELDS, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT, GRANT_CONTEXT,
+  BEARER_CHALLENGE, CALLER_FIELDS, CLIENT_AUTH, ENTRY_STATUS, ERROR_BODY_FIELDS, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT, GRANT_CONTEXT,
   GRANT_DISPATCH, HOSTS, HTTP_METHOD, HTTP_STATUS, HTTP_WIRE, ID_CLASSES, ID_LENGTHS, ID_MAX, LATER, LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS,
   OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, SCOPE, TIME_UNIT, TOKEN_RESPONSE_HEADERS, VERIFY_ERROR, authorizationServerMetadata, oauthErrorBody,
   oauthUrls, protectedResourceMetadata, tokenResponse,
@@ -43,7 +44,7 @@ const CASE = Object.freeze({
 // ---------------------------------------------------------------------------------------------
 
 /** The fake clock: `offsetMs` after the reference instant. */
-const at = (offsetMs = 0) => FIXTURE.t0 + offsetMs
+export const at = (offsetMs = 0) => FIXTURE.t0 + offsetMs
 const seconds = (s) => s * TIME_UNIT.msPerSecond
 const basic = (id, secret) => `${BEARER_CHALLENGE.basicScheme} ${Buffer.from(`${encodeURIComponent(id)}${HTTP_WIRE.basicSeparator}${encodeURIComponent(secret)}`).toString('base64')}`
 const bearer = (value) => `${BEARER_CHALLENGE.scheme} ${value}`
@@ -74,7 +75,7 @@ const PRM_PATH = PATHS.protectedResourcePrefix + PATHS.mcp
 const ASM_PATH = PATHS.authorizationServerPrefix + PATHS.issuer
 /** Where the approval listener answers for a client under `host` (R-OA-11, S7b F4). */
 const approvalOrigin = (w, host = FIXTURE.host.loopback) => (HOSTS.loopbackNames.includes(host) ? `${HOSTS.loopbackScheme}//${host}:${w.facts.approvalPort()}` : w.origin(host))
-const audience = (w, host) => oauthUrls(w.origin(host)).resource
+export const audience = (w, host) => oauthUrls(w.origin(host)).resource
 
 /** A 200 token response: exactly K1's `tokenResponse` (standard fields only, no refresh token) with TOKEN_RESPONSE_HEADERS. */
 export function assertToken(res, scope) {
@@ -100,10 +101,10 @@ export function assertLimited(res) {
   return seconds(Number(retry))
 }
 /** A response as the client sees it, for "identical" (only the `Date` header may differ). */
-const shape = (res) => ({ status: res.status, text: res.text, headers: Object.fromEntries(Object.entries(res.headers).filter(([k]) => k !== HTTP_WIRE.date)) })
+export const shape = (res) => ({ status: res.status, text: res.text, headers: Object.fromEntries(Object.entries(res.headers).filter(([k]) => k !== HTTP_WIRE.date)) })
 
 /** A token for `clientId` on entry `e`, required to succeed with `scope`; returns the access token. */
-async function issue(w, e, clientId, scope, options = {}) {
+export async function issue(w, e, clientId, scope, options = {}) {
   return assertToken(await tokenRequest(w, { clientId, secret: e.value, ...options }), scope)
 }
 /** An enabled entry bound to `id` in the fake pair store (a `pair` made earlier at the MCP endpoint). */
@@ -113,7 +114,7 @@ function boundEntry(w, id) {
   return e
 }
 /** `verify` of a bearer value under `host` at `now`. */
-const verify = (w, value, now = w.clock.now(), host) => w.verifier.verify(bearer(value), audience(w, host), now)
+export const verify = (w, value, now = w.clock.now(), host) => w.verifier.verify(bearer(value), audience(w, host), now)
 /** K1 `Caller` as plain data (absent members dropped). */
 const callerOf = (c) => Object.fromEntries(CALLER_FIELDS.filter((k) => c?.[k] !== undefined).map((k) => [k, c[k]]))
 /** The Caller of a token of `clientId` on entry `e` (R-ID-03: full only when the entry is bound to `clientId`). */
@@ -122,7 +123,7 @@ function expectedCaller(w, e, clientId, { host, generation = FIXTURE.firstGenera
   const full = pair?.id === clientId
   return callerOf({ entryKey: e.entryKey, clientId, principalKey: full ? pair.principalKey : undefined, scope: full ? SCOPE.full : SCOPE.pair, audience: audience(w, host), generation })
 }
-const INVALID = Object.freeze({ error: VERIFY_ERROR.invalidToken })
+export const INVALID = Object.freeze({ error: VERIFY_ERROR.invalidToken })
 /** The fake C-OAUTH-WEB grants: a 200 with a refresh token, and the `invalid_grant` a machine client gets. */
 const okGrant = (grantType) => new FakeGrant(grantType, { ok: true, body: tokenResponse({ accessToken: FIXTURE.fakeAccess, scope: SCOPE.full, refreshToken: FIXTURE.fakeRefresh }) })
 const refusingGrant = (grantType, error, countedFailure = false) => new FakeGrant(grantType, { ok: false, error, countedFailure })
@@ -135,7 +136,7 @@ export function row(sdk, id, part, title, fn, todo) {
 }
 const todo = (sdk, id, part, title, owner) => row(sdk, id, part, title, null, owner)
 /** A store-only row (OAuthTokenStore over its own DSH storage). */
-const storeRow = (sdk, id, part, title, fn) => caseTest(sdk, id, part, title, async (t) => fn(await storeWorld(t, sdk)))
+export const storeRow = (sdk, id, part, title, fn) => caseTest(sdk, id, part, title, async (t) => fn(await storeWorld(t, sdk)))
 /** A limiter-only row (a fresh FailureLimiter). */
 const limiterRow = (sdk, id, part, title, fn) => caseTest(sdk, id, part, title, async () => fn(await limiterOf(sdk)))
 
@@ -833,7 +834,7 @@ function stateTransitions(sdk) {
     const access = (generation) => ({ entryKey, clientId: ID.x, audience: FIXTURE.foreignResource, generation, issuedAt: at() })
     s.store.putAccess(FIXTURE.digest(1), access(FIXTURE.firstGeneration))
     s.store.putAccess(FIXTURE.digest(2), access(FIXTURE.firstGeneration + 1))
-    await s.store.putRefresh(FIXTURE.digest(3), refreshRecord(entryKey, FIXTURE.chain(1), at(), FIXTURE.firstGeneration))
+    await s.store.putRefresh(FIXTURE.digest(3), refreshRecord(entryKey, FIXTURE.chain(1), FIXTURE.firstGeneration))
     await s.store.revokeEntry(entryKey, FIXTURE.firstGeneration + 1)
     assert.equal(s.store.getAccess(FIXTURE.digest(1)), undefined)
     assert.deepEqual({ ...s.store.getAccess(FIXTURE.digest(2)) }, access(FIXTURE.firstGeneration + 1))
@@ -913,23 +914,25 @@ function stateTransitions(sdk) {
   })
 
   // AUTH-ST-05: the token store's side of a refresh chain (the grant itself is C-OAUTH-WEB's).
+  // K1d (R-OA-23): no chain ends by age, so `chainsOf` and `RefreshRecord.chainStartedAt` are
+  // withdrawn; the rows that asked `chainsOf` (none, 1, 3, 8, 8b, 10, 11, 11 (restart), 12b, 12c,
+  // 12d, "chains of another entry") now ask what the store holds. Withdrawn outright: 10, 11,
+  // 11 (restart), 12c, 12d (store) and "none", which only meant a chain state; their "no age" and
+  // reconnect rows are AUTH-BVA-11 / AUTH-ST-05 in chain-cases.mjs and oauth-web.
   const E = FIXTURE.entryKey(1)
   const G = FIXTURE.firstGeneration
-  const MAX = LIFETIME.refreshChainMaxMs
   const st05 = (n, title, fn) => storeRow(sdk, CASE.st05, n, title, fn)
-  /** Chain(RT1 live): chain `n` of entry `entryKey`, started at `startedAt` under generation G. */
-  const liveChain = (s, n = 1, startedAt = at(), entryKey = E) => s.store.putRefresh(FIXTURE.digest(n), refreshRecord(entryKey, FIXTURE.chain(n), startedAt, G))
-  st05('none', '(no chain) → chainsOf is none', (s) => { assert.equal(s.store.chainsOf(E, G, at()), CHAINS.none) })
-  st05('1 (store)', 'Chain(RT1 live): putRefresh → getRefresh returns the record; chainsOf is live', async (s) => {
-    const record = refreshRecord(E, FIXTURE.chain(1), at(), G)
+  /** Chain(RT1 live): chain `n` of entry `entryKey` under generation G. */
+  const liveChain = (s, n = 1, entryKey = E) => s.store.putRefresh(FIXTURE.digest(n), refreshRecord(entryKey, FIXTURE.chain(n), G))
+  const access = (chainId) => ({ entryKey: E, clientId: FIXTURE.cimd, audience: FIXTURE.foreignResource, generation: G, issuedAt: at(), chainId })
+  st05('1 (store)', 'Chain(RT1 live): putRefresh of a K1d RefreshRecord (no chainStartedAt) → getRefresh returns exactly that record', async (s) => {
+    const record = refreshRecord(E, FIXTURE.chain(1), G)
     await s.store.putRefresh(FIXTURE.digest(1), record)
     assert.deepEqual({ ...s.store.getRefresh(FIXTURE.digest(1)) }, record)
-    assert.equal(s.store.chainsOf(E, G, at()), CHAINS.live)
   })
-  st05('3 (store)', 'Chain live → revokeChain → Revoked: its refresh and access tokens are gone, another chain\'s are kept; chainsOf is revoked', async (s) => {
+  st05('3 (store)', 'Chain live → revokeChain → Revoked: its refresh and access tokens are gone, another chain\'s are kept', async (s) => {
     await liveChain(s)
     await liveChain(s, 2)
-    const access = (chainId) => ({ entryKey: E, clientId: FIXTURE.cimd, audience: FIXTURE.foreignResource, generation: G, issuedAt: at(), chainId })
     s.store.putAccess(FIXTURE.digest(3), access(FIXTURE.chain(1)))
     s.store.putAccess(FIXTURE.digest(4), access(FIXTURE.chain(2)))
     await s.store.revokeChain(FIXTURE.chain(1))
@@ -937,62 +940,37 @@ function stateTransitions(sdk) {
     assert.equal(s.store.getAccess(FIXTURE.digest(3)), undefined)
     assert.ok(s.store.getRefresh(FIXTURE.digest(2)), 'the other chain\'s refresh token was revoked')
     assert.ok(s.store.getAccess(FIXTURE.digest(4)), 'the other chain\'s access token was revoked')
-    assert.equal(s.store.chainsOf(E, G, at()), CHAINS.revoked)
   })
-  st05('8 (store)', 'Chain(RTn live) → connector restart → the refresh record persists (its digest), access tokens are gone; chainsOf stays live', async (s) => {
-    const record = refreshRecord(E, FIXTURE.chain(1), at(), G)
+  st05('8 (store)', 'Chain(RTn live) → connector restart → the refresh record persists (its digest), access tokens are gone', async (s) => {
+    const record = refreshRecord(E, FIXTURE.chain(1), G)
     await s.store.putRefresh(FIXTURE.digest(1), record)
-    s.store.putAccess(FIXTURE.digest(2), { entryKey: E, clientId: FIXTURE.cimd, audience: FIXTURE.foreignResource, generation: G, issuedAt: at(), chainId: FIXTURE.chain(1) })
+    s.store.putAccess(FIXTURE.digest(2), access(FIXTURE.chain(1)))
     await s.reopen()
     assert.deepEqual({ ...s.store.getRefresh(FIXTURE.digest(1)) }, record)
     assert.equal(s.store.getAccess(FIXTURE.digest(2)), undefined)
-    assert.equal(s.store.chainsOf(E, G, at()), CHAINS.live)
   })
-  st05('8b (store)', 'Chain live → the entry\'s generation moved on (disabled while down) → chainsOf with the new generation is revoked', async (s) => {
+  st05('8b (store)', 'Chain live → the entry\'s generation moved on while down → revokeEntry with the new generation after the restart removes the chain', async (s) => {
     await liveChain(s)
     await s.reopen()
-    assert.equal(s.store.chainsOf(E, G + 1, at()), CHAINS.revoked)
+    await s.store.revokeEntry(E, G + 1)
+    assert.equal(s.store.getRefresh(FIXTURE.digest(1)), undefined)
   })
-  st05('10 (store)', 'Chain started at T → at T + 365 days − 1 ms → still live', async (s) => {
-    await liveChain(s)
-    assert.equal(s.store.chainsOf(E, G, at(MAX - FIXTURE.justUnderMs)), CHAINS.live)
-  })
-  st05('11 (store)', 'Chain started at T → at T + 365 days, or later → Ended', async (s) => {
-    await liveChain(s)
-    assert.equal(s.store.chainsOf(E, G, at(MAX)), CHAINS.ended)
-    assert.equal(s.store.chainsOf(E, G, at(MAX + FIXTURE.day)), CHAINS.ended)
-  })
-  st05('11 (restart)', 'Ended → connector restart → still Ended (the end is kept with the digests)', async (s) => {
-    await liveChain(s)
-    await s.reopen()
-    assert.equal(s.store.chainsOf(E, G, at(MAX)), CHAINS.ended)
-  })
-  st05('12b (store)', 'a chain revoked by reuse (revokeChain), even after it ended → revoked, also after a restart', async (s) => {
+  st05('12b (store)', 'a chain revoked by reuse (revokeChain) stays revoked after a restart', async (s) => {
     await liveChain(s)
     await s.store.revokeChain(FIXTURE.chain(1))
-    assert.equal(s.store.chainsOf(E, G, at(MAX)), CHAINS.revoked)
     await s.reopen()
-    assert.equal(s.store.chainsOf(E, G, at(MAX)), CHAINS.revoked)
+    assert.equal(s.store.getRefresh(FIXTURE.digest(1)), undefined)
   })
-  st05('12c (store)', 'one chain Ended while another chain of the entry is live → live', async (s) => {
-    await liveChain(s)
-    await liveChain(s, 2, at(FIXTURE.day))
-    assert.equal(s.store.chainsOf(E, G, at(MAX)), CHAINS.live)
-  })
-  st05('12d (store)', 'Ended, then the entry disabled and re-enabled or its value changed (a newer generation) → revoked, never ended', async (s) => {
-    await liveChain(s)
-    assert.equal(s.store.chainsOf(E, G, at(MAX)), CHAINS.ended)
-    assert.equal(s.store.chainsOf(E, G + 1, at(MAX)), CHAINS.revoked)
-  })
-  st05('chains of another entry', 'another entry\'s chains never change this entry\'s answer', async (s) => {
-    await liveChain(s, 1, at(), FIXTURE.entryKey(2))
-    assert.equal(s.store.chainsOf(E, G, at()), CHAINS.none)
+  st05('chains of another entry', 'revokeEntry of one entry never touches another entry\'s chain', async (s) => {
+    await liveChain(s, 1, FIXTURE.entryKey(2))
+    await s.store.revokeEntry(E, G + 1)
+    assert.ok(s.store.getRefresh(FIXTURE.digest(1)), 'another entry\'s chain was revoked')
   })
 }
 
-/** A refresh record of K1's shape for the store rows. */
-function refreshRecord(entryKey, chainId, chainStartedAt, generation) {
-  return { chainId, entryKey, clientId: FIXTURE.cimd, audience: FIXTURE.foreignResource, generation, chainStartedAt }
+/** A refresh record of K1d's shape (`RefreshRecord`: no `chainStartedAt`, K1d-5) for the store rows. */
+export function refreshRecord(entryKey, chainId, generation) {
+  return { chainId, entryKey, clientId: FIXTURE.cimd, audience: FIXTURE.foreignResource, generation }
 }
 
 export function registerCOAuthCases(sdk) {
