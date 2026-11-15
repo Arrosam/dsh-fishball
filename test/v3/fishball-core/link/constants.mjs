@@ -151,20 +151,7 @@ export const CLIENT_PIN = Object.freeze({
   manifest: 'package.json',
 })
 
-/**
- * Core's vendored copy of K1 (design §9.1) and its generator. The command and the output folder are
- * F-LINK's (packages/core/package.json `//files`): `node scripts/vendor-mcp-schema.mjs [coreDir]`
- * writes `<coreDir>/vendor/`, each file at its path relative to the connector package.
- */
-export const VENDOR = Object.freeze({
-  generator: path.join(REPO, 'packages', 'core', 'scripts', 'vendor-mcp-schema.mjs'),
-  connectorDir: path.join(REPO, 'packages', 'dsh-connector'),
-  committedDir: path.join(REPO, 'packages', 'core', 'vendor'),
-  directory: 'vendor',
-  entry: path.join('mcp-schema', 'index.js'),
-  tempPrefix: 'fbtest-f-link-vendor-',
-  timeoutMs: 60000,
-})
+// F-OWN-SCHEMA: generator fixtures withdrawn (design §1.0b row 1).
 
 /** Rows that need a later task. */
 export const LATER = Object.freeze({

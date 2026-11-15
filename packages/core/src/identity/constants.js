@@ -2,10 +2,11 @@
  * Values of core's identity and pairing (task F-PAIR; R-ID-05, R-ID-07, R-ID-10, R-NAME-03;
  * cases AUTH-UC-05, AUTH-DT-06, AUTH-ST-03, NAME-UC-02, NAME-DT-03) that are this module's own.
  *
- * The contract words are K1's, read through `../link/schema.js`: the scopes (`SCOPE`), the tool
- * names (`TOOL`), the refusal codes (`REFUSAL.alreadyPaired`, `idTaken`, `nameTaken`,
- * `nameInvalid`), `ID_REFUSAL.idInvalid`, the id grammar (`isAgentId`) and the name rules
- * (`normaliseName`, `principalLabel`). The link's statuses are the link's (`STATUS`).
+ * The contract words are core's own copy of the connector's (K3a `MCP`, design §1.0b row 1): the
+ * scopes (`MCP.scope`), the tool names (`MCP.tools`), the refusal codes (`MCP.refusal.alreadyPaired`,
+ * `idTaken`, `nameTaken`, `nameInvalid`, `idInvalid`), and, through `../link/schema.js`, the id
+ * grammar (`isAgentId`) and the name rules (`normaliseName`, `principalLabel`). The link's statuses
+ * are the link's (`STATUS`).
  *
  * The settings rows are F-WIRE's (W3 brief, F-PAIR notes), so the defaults they need are exported
  * here as `IDENTITY`.
@@ -95,7 +96,7 @@ export const CHOICE_REFUSAL = Object.freeze({
 
 /**
  * The granted `scope` of a token response is a list separated by single spaces (RFC 6749 §3.3);
- * core is fully paired only when it holds K1's `SCOPE.full` (R-OA-04, R-OA-18).
+ * core is fully paired only when it holds `MCP.scope.full` (R-OA-04, R-OA-18).
  */
 export const SCOPE_LIST = Object.freeze({ separator: ' ' })
 

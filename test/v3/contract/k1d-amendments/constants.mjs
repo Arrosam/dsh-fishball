@@ -36,12 +36,7 @@ export const FILES = Object.freeze({
   /** Files whose text is contract: sources, declarations, the prose freeze. */
   text: /\.(?:(?:c|m)?(?:js|ts)|md)$/,
   code: /\.(?:c|m)?(?:js|ts)$/,
-  /** Core's vendored copy and its generator (design §9.1; the script's usage line). */
-  coreVendor: path.join(REPO, 'packages', 'core', 'vendor'),
-  vendorScript: path.join(REPO, 'packages', 'core', 'scripts', 'vendor-mcp-schema.mjs'),
-  vendorFolder: 'vendor',
-  vendorEntry: path.join('mcp-schema', 'index.js'),
-  tempPrefix: 'fbtest-k1d-vendor-',
+  // F-OWN-SCHEMA: generator fixture paths withdrawn (design §1.0b row 1).
 })
 
 /** Design §5.2 step 1, §1.0c: 32 random bytes, base64url, prefix `dsht_`; §5.1: SHA-256 digest only. */

@@ -145,7 +145,6 @@ export const EXTERNAL_NAME_AMEND = Object.freeze({
   name: 'EXTERNAL_NAME',
   value: Object.freeze({ replaced: '.', replacement: '__' }),
   modelName: /^[A-Za-z0-9_-]+$/,
-  vendored: path.join('packages', 'core', 'vendor', 'tools', 'constants.js'),
   readme: path.join('packages', 'dsh-connector', 'tools', 'README.md'),
   readmeExports: '## Exported names',
   declaration: path.join('packages', 'dsh-connector', 'tools', 'index.d.ts'),

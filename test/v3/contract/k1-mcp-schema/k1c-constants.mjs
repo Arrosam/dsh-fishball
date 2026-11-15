@@ -106,8 +106,4 @@ export const README = Object.freeze({
   releaseDecision: 'K1c-2',
 })
 
-/**
- * Spec item 5: core's vendored `./mcp-schema` entry. Byte-for-byte equality of every vendored file
- * with its connector source is F-LINK's row "done 7" (test/v3/fishball-core/link/cases.mjs), not repeated here.
- */
-export const VENDORED_ENTRY = path.join(REPO, 'packages', 'core', 'vendor', 'mcp-schema', 'index.js')
+// F-OWN-SCHEMA: generated entry withdrawn (design §1.0b row 1).
